@@ -1,0 +1,19 @@
+# /moves/nong_wave.yaml — nong humanoid sequence example (right-arm wave).
+# Files like this are exported by the pose editor (code/nong/main_python_set_nong):
+# copy them into /moves/ on the SD card, then pick + run them on the module's
+# website (Sequences card) or with:  MOVE nong_wave.yaml
+#
+# pose = 8 joint angles (deg 0-180, neutral 90) in this order:
+#   L_SH_P L_SH_R L_EL_P L_EL_R R_SH_P R_SH_R R_EL_P R_EL_R
+# T = time of the move in ms (from the editor's keyframe timing).
+name: nong_wave
+loop: false
+steps:
+  - pose: "90 90 90 90 90 90 90 90 T 1000"    # start pose (neutral)
+  - pose: "90 90 90 90 170 90 90 90 T 900"    # raise right arm
+  - pose: "90 90 90 90 170 90 130 90 T 400"   # wave out
+  - pose: "90 90 90 90 170 90 50 90 T 400"    # wave in
+  - pose: "90 90 90 90 170 90 130 90 T 400"   # wave out
+  - pose: "90 90 90 90 170 90 50 90 T 400"    # wave in
+  - wait: 300
+  - pose: "90 90 90 90 90 90 90 90 T 1200"    # back to neutral

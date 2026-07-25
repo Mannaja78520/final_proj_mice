@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Module USB Console</title>
+<!--
+  Website-like control over USB — no WiFi needed.
+  Open this file in Chrome or Edge (Web Serial API), click Connect, pick the
+  module's COM port (115200). Works two ways:
+    - plugged into a module's USB: local commands (PING, UP, GOTO 2, ...)
+      and the whole RS485 fleet through it (#3 GOTO 2, #* PING)
+    - plugged into a USB-RS485 dongle: address modules directly (#3 INFO)
+  If Chrome refuses serial access from file://, serve the folder once with:
+    python -m http.server   ->  http://localhost:8000/usb-console.html
+-->
+<style>
+:root{--bg:#10141a;--card:#1a212b;--line:#2a3442;--txt:#dce3ec;--mut:#8b98a9;--acc:#4da3ff;--ok:#3ecf8e;--err:#ff6b6b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif;padding:14px;max-width:860px;margin:0 auto}
+h1{font-size:20px;margin-bottom:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+button{background:#243040;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;margin:2px}
+button:hover{border-color:var(--acc)}
+button.primary{background:var(--acc);border-color:var(--acc);color:#06121f;font-weight:600}
+button.danger{background:#3a2020;border-color:#5c2e2e;color:var(--err)}
+input,select{background:#0d1117;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 10px;font-size:14px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}
+.badge{background:#243040;border:1px solid var(--line);border-radius:20px;padding:3px 12px;font-size:13px;color:var(--mut)}
+.badge b{color:var(--txt)}
+#log{background:#0d1117;border:1px solid var(--line);border-radius:8px;padding:8px;height:280px;overflow-y:auto;font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap;word-break:break-all}
+.lbl{color:var(--mut);font-size:13px;min-width:60px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--mut);margin-right:6px}
+.dot.on{background:var(--ok)}
+.stage{font-size:34px;font-weight:700}
+</style>
+</head>
+<body>
+<h1><span class="dot" id="dot"></span>Module USB Console</h1>
+
+<div class="card">
+  <div class="row">
+    <button class="primary" id="btnConn" onclick="connect()">Connect (115200)</button>
+    <span class="lbl">Address</span>
+    <select id="addr">
+      <option value="">local (USB module)</option>
+      <option value="#1 ">#1</option><option value="#2 ">#2</option><option value="#3 ">#3</option>
+      <option value="#4 ">#4</option><option value="#5 ">#5</option><option value="#* ">#* broadcast</option>
+    </select>
+    <label class="lbl"><input type="checkbox" id="poll" checked> poll INFO 2s</label>
+  </div>
+  <div class="row">
+    <span class="badge">name <b id="bName">-</b></span>
+    <span class="badge">ID <b id="bId">-</b></span>
+    <span class="badge">type <b id="bType">-</b></span>
+    <span class="badge">wifi <b id="bWifi">-</b></span>
+    <span class="badge">SD <b id="bSd">-</b></span>
+    <span class="badge">stage <b id="bStage">-</b></span>
+    <span class="badge">state <b id="bState">-</b></span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="row">
+    <button onclick="tx('UP')">&#9650; Up</button>
+    <button onclick="tx('DOWN')">&#9660; Down</button>
+    <button class="danger" onclick="tx('STOP')">&#9632; Stop</button>
+    <button onclick="tx('HOME')">&#8962; Home</button>
+    <span id="gotoBtns"></span>
+  </div>
+  <div class="row">
+    <button onclick="tx('PING')">PING</button>
+    <button onclick="tx('INFO')">INFO</button>
+    <button onclick="tx('STAGE?')">STAGE?</button>
+    <button onclick="tx('SPEED?')">SPEED?</button>
+    <button onclick="tx('CFG')">CFG</button>
+    <button onclick="tx('PLAY STOP')">&#9632; audio</button>
+    <button onclick="send('#* PING')">discover bus</button>
+  </div>
+  <div class="row">
+    <span class="lbl">RGB</span><input type="color" id="rgbc" value="#0050ff">
+    <button onclick="sendRgb()">Set</button>
+    <button onclick="tx('RGB EFFECT rainbow')">rainbow</button>
+    <button onclick="tx('RGB EFFECT off')">off</button>
+    <span class="lbl">Vol</span><input type="number" id="vol" min="0" max="100" value="70" style="width:70px">
+    <button onclick="tx('VOL '+document.getElementById('vol').value)">Set</button>
+  </div>
+</div>
+
+<div class="card">
+  <div id="log"></div>
+  <div class="row">
+    <input id="cli" placeholder="any command — GOTO 2 / SET NAME lift-left / #3 PING" style="flex:1"
+           onkeydown="if(event.key==='Enter'){send(this.value);this.value=''}">
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let port=null,writer=null,buf='',gotoBuilt=-1;
+
+function log(t){const l=$('log');l.textContent+=t+'\n';l.scrollTop=l.scrollHeight;}
+
+async function connect(){
+  if(!('serial' in navigator)){alert('Web Serial needs Chrome or Edge');return;}
+  try{
+    port=await navigator.serial.requestPort();
+    await port.open({baudRate:115200});
+    writer=port.writable.getWriter();
+    $('dot').className='dot on';$('btnConn').textContent='Connected';
+    readLoop();
+    setTimeout(()=>send('INFO'),300);
+  }catch(e){log('! connect failed: '+e.message);}
+}
+
+async function readLoop(){
+  const dec=new TextDecoder();
+  const reader=port.readable.getReader();
+  try{
+    for(;;){
+      const {value,done}=await reader.read();
+      if(done)break;
+      buf+=dec.decode(value);
+      let i;
+      while((i=buf.indexOf('\n'))>=0){handleLine(buf.slice(0,i).trim());buf=buf.slice(i+1);}
+    }
+  }catch(e){log('! read error: '+e.message);}
+  $('dot').className='dot';$('btnConn').textContent='Connect (115200)';
+  port=null;writer=null;
+}
+
+function handleLine(l){
+  if(!l)return;
+  log(l);
+  // status JSON can arrive bare (local INFO) or as "@3 {...}" (bus reply)
+  let j=l;
+  if(j.startsWith('@')){const sp=j.indexOf(' ');if(sp>0)j=j.slice(sp+1);}
+  if(j.startsWith('{')){try{render(JSON.parse(j));}catch(e){}}
+}
+
+function render(st){
+  $('bName').textContent=st.name||'-';
+  $('bId').textContent=st.id;
+  $('bType').textContent=st.type;
+  $('bWifi').textContent=st.wifi?(st.wifi.mode==='off'?'off':st.wifi.mode+' '+st.wifi.ip):'-';
+  $('bSd').textContent=st.sd?'ok':'none';
+  const m=st.module||{};
+  $('bStage').textContent=(m.stage===undefined||m.stage<0)?'?':m.stage;
+  $('bState').textContent=m.state||'-';
+  if(m.stages!==undefined&&m.stages!==gotoBuilt){
+    gotoBuilt=m.stages;const g=$('gotoBtns');g.innerHTML='';
+    for(let i=0;i<m.stages;i++){
+      if(m.enc===false&&i>0&&i<m.stages-1)continue;
+      const b=document.createElement('button');b.textContent='GOTO '+i;b.onclick=()=>tx('GOTO '+i);g.appendChild(b);
+    }
+  }
+}
+
+async function send(cmd){
+  if(!writer){log('! not connected');return;}
+  log('> '+cmd);
+  await writer.write(new TextEncoder().encode(cmd+'\n'));
+}
+// tx() prefixes the selected bus address, send() sends the line as typed
+function tx(cmd){send($('addr').value+cmd);}
+function sendRgb(){
+  const h=$('rgbc').value;
+  tx('RGB '+parseInt(h.substr(1,2),16)+' '+parseInt(h.substr(3,2),16)+' '+parseInt(h.substr(5,2),16));
+}
+setInterval(()=>{if(writer&&$('poll').checked)tx('INFO');},2000);
+</script>
+</body>
+</html>

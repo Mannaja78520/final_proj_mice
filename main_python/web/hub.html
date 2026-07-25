@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mice Control Hub</title>
+<style>
+:root{--bg:#10141a;--card:#1a212b;--line:#2a3442;--txt:#dce3ec;--mut:#8b98a9;--acc:#4da3ff;--ok:#3ecf8e;--err:#ff6b6b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif;padding:18px;max-width:980px;margin:0 auto}
+h1{font-size:24px;margin-bottom:4px}
+h2{font-size:14px;color:var(--acc);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.sub{color:var(--mut);margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+button{background:#243040;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer}
+button:hover{border-color:var(--acc)}
+button.primary{background:var(--acc);border-color:var(--acc);color:#06121f;font-weight:600}
+.mod{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;background:#0d1117}
+.mod .nm{font-weight:700}
+.mod .ty{font-size:12px;color:#06121f;background:var(--ok);border-radius:10px;padding:1px 10px;font-weight:600}
+.mod .ty.nong{background:#ffd166}
+.mod .ip{color:var(--mut);font-size:13px;flex:1}
+.mini{color:var(--mut);font-size:13px}
+.port{display:inline-block;background:#243040;border:1px solid var(--line);border-radius:16px;padding:4px 12px;margin:3px;font-size:13px}
+a{color:var(--acc)}
+.spin{color:var(--mut)}
+</style>
+</head>
+<body>
+<h1>🤖 Mice Control Hub</h1>
+<div class="sub">the first page of everything — it finds all modules on the network by
+itself; click one to open its own website, or open the tools. New module types
+appear here automatically.</div>
+
+<div class="grid">
+  <div class="card" style="grid-column:1/-1">
+    <h2>Modules on the network <button onclick="scan(true)" style="float:right">⟳ Rescan</button></h2>
+    <div id="mods" class="spin">scanning the WiFi…</div>
+  </div>
+
+  <div class="card">
+    <h2>Tools</h2>
+    <div class="mod"><span class="nm">Nong Studio</span>
+      <span class="ip">pose &amp; sequence editor, 3D simulation</span>
+      <button class="primary" onclick="location.href='/studio/'">Open</button>
+    </div>
+    <div class="mini">tip: use the “Studio + monitor” button on a nong module above —
+      it opens the editor already connected, showing the real robot moving in 3D.</div>
+  </div>
+
+  <div class="card" style="grid-column:1/-1">
+    <h2>USB / RS485 on this PC
+      <span style="float:right">
+        <label class="mini"><input type="checkbox" id="autoUsb" onchange="autoUsbChanged()"> auto-check</label>
+        <button onclick="scanUsb()">🔍 Probe now</button>
+      </span>
+    </h2>
+    <div id="usbmods" class="mini">…</div>
+    <div class="mini">each port shows its result the moment IT answers — real
+      USB-UART ports take ~2 s; Bluetooth phantom ports are recognized by their
+      device type and skipped without opening them. A probed module shows who it
+      is + every RS485 module behind it. “auto-check” re-probes every 12 s while
+      this page is visible — it costs almost nothing (the PC just waits on the
+      port), but the port is briefly busy, so turn it off while connecting
+      Nong Studio over USB.</div>
+  </div>
+</div>
+
+<script>
+async function scan(force){
+  const el=document.getElementById('mods');
+  if(force)el.textContent='scanning the WiFi… (a few seconds)';
+  try{
+    const r=await fetch('/api/scan'+(force?'?force=1':'')).then(r=>r.json());
+    el.innerHTML='';
+    (r.modules||[]).forEach(m=>{
+      // answered on the network -> reachable like a normal station
+      el.appendChild(modRow(Object.assign({wifi_mode:'sta'},m),m.sd?'SD':'',null,0));
+    });
+    if(!(r.modules||[]).length)
+      el.innerHTML='<span class="mini">no modules found on '+ (r.lan||'?') +'/24 — are they powered and on the same WiFi? (⟳ Rescan)</span>';
+  }catch(e){el.textContent='scan failed: '+e;}
+}
+function modRow(m,extra,port,busId){
+  const d=document.createElement('div');d.className='mod';
+  d.innerHTML=`<span class="nm">${m.name||'?'}</span>
+    <span class="ty ${m.type||''}">${m.type||'?'}</span>
+    <span class="ip">#${m.id!=null?m.id:'?'}${extra?' · '+extra:''}${m.ip?' · '+m.ip:''}</span>`;
+  // ONE site for every transport: the module's own website, served by the hub
+  // with a transport shim (?dev=wifi:<ip> | usb:<port>[:<id>]). Same UI, same
+  // config, same login — no matter how the module is reached.
+  const dev=(m.wifi_mode==='sta'&&m.ip)?('wifi:'+m.ip)
+    :(port?('usb:'+port+(busId?(':'+busId):'')):'');
+  if(dev){
+    const open=document.createElement('button');open.className='primary';
+    open.textContent='⚙ Open module';
+    open.title='the full module site (control + setup + pins) over '+(dev.indexOf('wifi')===0?'WiFi':'USB/RS485');
+    open.onclick=()=>window.open('/mod?dev='+encodeURIComponent(dev)+'&name='+encodeURIComponent(m.name||''),'_blank');
+    d.appendChild(open);
+  }
+  if(m.wifi_mode==='sta'&&m.ip){
+    const open=document.createElement('button');
+    open.textContent='direct';
+    open.title='open the module\'s website directly (no hub) — same site';
+    open.onclick=()=>window.open('http://'+m.ip+'/','_blank');
+    d.appendChild(open);
+  }else if(m.wifi_mode==='ap'){
+    const s=document.createElement('span');s.className='mini';
+    s.textContent='⚠ hosts its OWN hotspot ('+(m.ip||'192.168.4.1')+') — join that WiFi to open the site, or use USB / set real WiFi in the USB page';
+    d.appendChild(s);
+  }else if(!port){
+    const s=document.createElement('span');s.className='mini';
+    s.textContent='WiFi off';
+    d.appendChild(s);
+  }
+  if(m.type==='nong'&&m.wifi_mode==='sta'&&m.ip){
+    const st=document.createElement('button');st.className='primary';
+    st.textContent='Studio + monitor';
+    st.onclick=()=>location.href='/studio/?ip='+encodeURIComponent(m.ip)+'&monitor=1';
+    d.appendChild(st);
+  }
+  if(m.type==='lift'&&(port||(m.wifi_mode==='sta'&&m.ip))){
+    const rb=document.createElement('button');
+    rb.textContent='💡 RGB';
+    rb.title='RGB modes: manual / effects / SD sequence / follow the PC speaker';
+    const target=(m.wifi_mode==='sta'&&m.ip)?('ip='+encodeURIComponent(m.ip))
+      :('port='+encodeURIComponent(port)+(busId?('&id='+busId):''));
+    rb.onclick=()=>window.open('/rgb.html?'+target+'&name='+encodeURIComponent(m.name||''),'_blank');
+    d.appendChild(rb);
+  }
+  return d;
+}
+// streaming probe: one request PER port, each slot fills in the moment its
+// port answers — fast ports never wait for slow ones, order stays stable
+let usbBusy=false;
+function renderUsbResult(slot,u){
+  slot.innerHTML='';
+  const head=document.createElement('div');head.className='mini';
+  head.style.marginTop='8px';
+  if(u.module){
+    head.textContent=u.port+' — module plugged in directly:';
+    slot.appendChild(head);
+    slot.appendChild(modRow(u.module,u.port,u.port,0));
+  }else{
+    head.textContent=u.port+' — '+(u.error||'no module answered (dongle only, or not a module)');
+    slot.appendChild(head);
+    if(u.bt){ // recognized as Bluetooth: skipped, but allow forcing it
+      const b=document.createElement('button');
+      b.textContent='probe anyway';b.style.marginLeft='8px';
+      b.onclick=async()=>{
+        head.textContent=u.port+' — probing (Bluetooth ports can take ~40 s)…';
+        b.remove();
+        const r=await fetch('/api/scanusb?port='+encodeURIComponent(u.port)).then(r=>r.json());
+        renderUsbResult(slot,r.usb[0]);
+      };
+      head.appendChild(b);
+    }
+  }
+  (u.rs485||[]).forEach(m=>{
+    const row=modRow(m,u.port+' → RS485',u.port,m.id);
+    row.style.marginLeft='24px';
+    slot.appendChild(row);
+  });
+}
+async function scanUsb(){
+  if(usbBusy)return;
+  usbBusy=true;
+  const el=document.getElementById('usbmods');
+  try{
+    const r=await fetch('/api/ports').then(r=>r.json()); // typed port list, no WiFi scan
+    const ports=r.ports||[];
+    el.innerHTML='';
+    if(!ports.length){el.innerHTML='<span class="mini">no serial ports found</span>';usbBusy=false;return;}
+    const jobs=[];
+    ports.forEach(p=>{
+      const slot=document.createElement('div');
+      el.appendChild(slot);
+      if(p.bt){
+        renderUsbResult(slot,{port:p.port,bt:true,module:null,rs485:[],
+          error:(p.desc||'Bluetooth')+' — skipped'});
+      }else{
+        slot.innerHTML='<div class="mini" style="margin-top:8px">'+p.port+' — probing… <span class="spin">('+(p.desc||'')+')</span></div>';
+        jobs.push(fetch('/api/scanusb?port='+encodeURIComponent(p.port))
+          .then(r=>r.json())
+          .then(r=>renderUsbResult(slot,r.usb[0]))
+          .catch(e=>{slot.innerHTML='<div class="mini">'+p.port+' — probe failed: '+e+'</div>';}));
+      }
+    });
+    await Promise.all(jobs);
+  }catch(e){el.textContent='probe failed: '+e;}
+  usbBusy=false;
+}
+// auto-check loop: re-probes every 12 s while the page is visible.
+// Cost is tiny (the server thread just waits on the port), but the port is
+// busy for ~2 s each round — disable while connecting Studio over USB.
+let autoUsbTimer=null;
+function autoUsbChanged(){
+  const on=document.getElementById('autoUsb').checked;
+  localStorage.setItem('hub_autousb',on?'1':'0');
+  clearInterval(autoUsbTimer);autoUsbTimer=null;
+  if(on)autoUsbTimer=setInterval(()=>{if(!document.hidden)scanUsb();},12000);
+}
+document.getElementById('autoUsb').checked=localStorage.getItem('hub_autousb')==='1';
+autoUsbChanged();
+scan(false);
+scanUsb();            // probe the cable ports once on load (BT ports skipped instantly)
+setInterval(()=>scan(false),15000);
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash",
+      "PowerShell",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "$in = [Console]::In.ReadToEnd() | ConvertFrom-Json; Add-Content -Encoding utf8 -Path 'E:\\final_proj\\mice\\code\\scient_test\\promt.md' -Value (\"`n### \" + (Get-Date -Format 'yyyy-MM-dd HH:mm') + \"`n\" + $in.prompt)"
+          }
+        ]
+      }
+    ]
+  }
+}

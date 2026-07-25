@@ -1,0 +1,15 @@
+# /moves/demo.yaml — a movement sequence.
+# Run it with:  MOVE demo.yaml   (RS485: #<id> MOVE demo.yaml, or the website)
+# Every step key maps to a normal command, so anything you can type works.
+name: demo
+loop: false
+steps:
+  - home: 1               # go to the bottom limit, zero the encoder
+  - effect: rainbow
+  - play: /music/intro.mp3
+  - goto: 2               # waits until the lift arrives
+  - wait: 2000            # ms
+  - rgb: [255, 40, 0]
+  - goto: 0
+  - effect: breathe
+  - cmd: "VOL 50"         # raw command escape hatch

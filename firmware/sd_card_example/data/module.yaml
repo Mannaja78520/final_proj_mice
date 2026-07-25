@@ -1,0 +1,66 @@
+# /data/module.yaml — per-module settings, loaded at boot.
+# Copy this folder structure onto the module's SD card.
+# Every key here can also be stored on the chip with the CFG command
+# (works without SD card; CFG values override this file).
+
+# lift module settings
+encoder: 1               # 0 = no encoder fitted: only up/down to the limit
+                         # switches, GOTO limited to stage 0 and the top stage
+stages: 4                # number of stops the lift knows
+stage_mm: 500            # rack travel between stages (mm)
+
+# --- mechanics: rack module 2, pinion 25 teeth ---
+mm_per_rev: 157.08       # rack mm per pinion rev = PI * module * teeth = PI*2*25
+counts_per_rev: 44       # encoder counts per PINION rev (encoder cpr x gearbox ratio)
+max_rpm: 100             # pinion RPM at full PWM — calibrate for accurate m/s
+
+# --- travel speed: pick ONE ---
+speed: 900               # raw PWM (100..1023), used while speed_mms is 0
+speed_mms: 0             # speed in mm/s (e.g. 200 = 0.2 m/s); overrides pwm when > 0
+
+# counts_per_stage: 4000 # optional explicit override; normally derived from
+                         # stage_mm x (counts_per_rev / mm_per_rev)
+
+leds: 30                 # LEDs on the WS2812B strip (max 120)
+volume: 70               # speaker startup volume 0..100
+
+# ============ nong module settings (humanoid upper body) ============
+# Nong hardware = 10 servos + this SD card only (no encoder / RGB / speaker —
+# leds & volume above are lift settings). 10 logical joints: 8 arm + 2 body,
+# always this order (see COMMANDS.md):
+#   1 L_SH_P  2 L_SH_R  3 L_EL_P  4 L_EL_R  5 R_SH_P  6 R_SH_R  7 R_EL_P
+#   8 R_EL_R  9 WAIST (yaw the body L/R)  10 SHRUG (both shoulders up/down)
+# As built: shoulders PDI-1181MG (270°), elbows MG90S (180°), WAIST TianKongRC
+# 35kg (270°), SHRUG MG90S (180°) — all changeable per joint at runtime.
+# Uncomment on a board that boots as type "nong". A single number instead of a
+# list applies to all 10 joints.
+
+# servo_pins: [32,33,25,26,21,22,27,14,13,15]  # pin per joint, -1 = on another board
+# joint_min:  [30,30,30,30,30,30,30,30,30,87]  # per-joint JOINT-angle limits (deg):
+# joint_max:  [150,150,150,150,150,150,150,150,150,93]  # arms 30..150, WAIST wide,
+#                          # SHRUG tiny (~6 deg). The gear maps joint->servo.
+# trim:       [0,0,0,0,0,0,0,0,0,0]            # mounting offset, added at the servo
+# invert:     [0,0,0,0,0,0,0,0,0,0]            # 1 = servo mirrored
+# neutral:    [90,90,90,90,90,90,90,90,90,90]  # HOME pose
+# --- per-joint servo + gear (each joint can use a DIFFERENT servo) ---
+# gear_pinion: [15,15,12,12,15,15,12,12,1,1]   # pinion (servo) teeth; WAIST/SHRUG 1:1
+# gear_gear:   [18,18,13,13,18,18,13,13,1,1]   # gear (joint) teeth
+# pulse_min:   [500,500,500,500,500,500,500,500,500,500]      # servo pulse (us)
+# pulse_max:   [2500,2500,2400,2400,2500,2500,2400,2400,2500,2400]
+# max_dps:     [375,375,400,400,375,375,400,400,200,400]      # per-joint deg/s limit
+# servo_range: [270,270,180,180,270,270,180,180,270,180]      # SERVO travel (deg)
+#                          # 180 = normal hobby servo, 270 = wide-angle. This is
+#                          # how far the SERVO turns, NOT how far the joint may
+#                          # turn (that is joint_min/joint_max above). Fitting a
+#                          # 270 servo = change this one number; poses and saved
+#                          # sequences are in joint degrees and keep working.
+# (LIMIT / GEAR / PULSE / RANGE / SERVO commands from Nong Studio change these
+#  live and save them to /data/nong_cal.yaml, which overrides this file at boot.)
+# speed_dps: 120           # deg/s used when a POSE step has no T
+# max_dps: 400             # physical servo limit — commanded times shorter than
+#                          # delta/max_dps are raised so the arm really arrives
+# link: 0                  # 1 ONLY on the leader of a 2-ESP humanoid
+#                          # (repeats POSE on RS485 so both boards move as one)
+# peer: 0                  # partner module id for link mode (0 = broadcast);
+#                          # set the other board's RS485 id so other robots
+#                          # on the same bus are not disturbed

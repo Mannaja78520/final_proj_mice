@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="468" font-family="system-ui,Segoe UI,sans-serif">
+<rect width="920" height="468" fill="#10141a"/>
+<text x="10" y="26" fill="#4da3ff" font-size="18" font-weight="700">ESP32 DevKit — GPIO capabilities</text>
+<rect x="10" y="34" width="12" height="12" rx="2" fill="#243040" stroke="#dce3ec"/>
+<text x="26" y="44" fill="#8b98a9" font-size="11">ok free</text>
+<rect x="89.5" y="34" width="12" height="12" rx="2" fill="#5c4a1e" stroke="#ffb454"/>
+<text x="105.5" y="44" fill="#8b98a9" font-size="11">strap (care)</text>
+<rect x="201.5" y="34" width="12" height="12" rx="2" fill="#333" stroke="#8b98a9"/>
+<text x="217.5" y="44" fill="#8b98a9" font-size="11">input-only 34-39</text>
+<rect x="339.5" y="34" width="12" height="12" rx="2" fill="#5c2e2e" stroke="#ff6b6b"/>
+<text x="355.5" y="44" fill="#8b98a9" font-size="11">uart0 1/3</text>
+<rect x="432.0" y="34" width="12" height="12" rx="2" fill="#3a2020" stroke="#ff6b6b"/>
+<text x="448.0" y="44" fill="#8b98a9" font-size="11">flash 6-11</text>
+<rect x="531.0" y="34" width="12" height="12" rx="2" fill="#3a2030" stroke="#ff8ac0"/>
+<text x="547.0" y="44" fill="#8b98a9" font-size="11">rgb 13</text>
+<rect x="10" y="60" width="144" height="48" rx="7" fill="#5c4a1e" stroke="#2a3442"/>
+<text x="18" y="80" fill="#ffb454" font-size="14" font-weight="700">GPIO0</text>
+<text x="18" y="94" fill="#ffb454" font-size="9" opacity="0.7">strap</text>
+<text x="18" y="105" fill="#8b98a9" font-size="9">pwm adc</text>
+<rect x="160" y="60" width="144" height="48" rx="7" fill="#5c2e2e" stroke="#2a3442"/>
+<text x="168" y="80" fill="#ff6b6b" font-size="14" font-weight="700">GPIO1</text>
+<text x="168" y="94" fill="#ff6b6b" font-size="9" opacity="0.7">uart0</text>
+<text x="168" y="105" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="310" y="60" width="144" height="48" rx="7" fill="#5c4a1e" stroke="#2a3442"/>
+<text x="318" y="80" fill="#ffb454" font-size="14" font-weight="700">GPIO2</text>
+<text x="318" y="94" fill="#ffb454" font-size="9" opacity="0.7">strap</text>
+<text x="318" y="105" fill="#8b98a9" font-size="9">pwm adc</text>
+<rect x="460" y="60" width="144" height="48" rx="7" fill="#5c2e2e" stroke="#2a3442"/>
+<text x="468" y="80" fill="#ff6b6b" font-size="14" font-weight="700">GPIO3</text>
+<text x="468" y="94" fill="#ff6b6b" font-size="9" opacity="0.7">uart0</text>
+<text x="468" y="105" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="610" y="60" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="618" y="80" fill="#dce3ec" font-size="14" font-weight="700">GPIO4</text>
+<text x="618" y="94" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="618" y="105" fill="#8b98a9" font-size="9">pwm adc</text>
+<rect x="760" y="60" width="144" height="48" rx="7" fill="#5c4a1e" stroke="#2a3442"/>
+<text x="768" y="80" fill="#ffb454" font-size="14" font-weight="700">GPIO5</text>
+<text x="768" y="94" fill="#ffb454" font-size="9" opacity="0.7">strap</text>
+<text x="768" y="105" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="10" y="114" width="144" height="48" rx="7" fill="#3a2020" stroke="#2a3442"/>
+<text x="18" y="134" fill="#ff6b6b" font-size="14" font-weight="700">GPIO6</text>
+<text x="18" y="148" fill="#ff6b6b" font-size="9" opacity="0.7">flash</text>
+<rect x="160" y="114" width="144" height="48" rx="7" fill="#3a2020" stroke="#2a3442"/>
+<text x="168" y="134" fill="#ff6b6b" font-size="14" font-weight="700">GPIO7</text>
+<text x="168" y="148" fill="#ff6b6b" font-size="9" opacity="0.7">flash</text>
+<rect x="310" y="114" width="144" height="48" rx="7" fill="#3a2020" stroke="#2a3442"/>
+<text x="318" y="134" fill="#ff6b6b" font-size="14" font-weight="700">GPIO8</text>
+<text x="318" y="148" fill="#ff6b6b" font-size="9" opacity="0.7">flash</text>
+<rect x="460" y="114" width="144" height="48" rx="7" fill="#3a2020" stroke="#2a3442"/>
+<text x="468" y="134" fill="#ff6b6b" font-size="14" font-weight="700">GPIO9</text>
+<text x="468" y="148" fill="#ff6b6b" font-size="9" opacity="0.7">flash</text>
+<rect x="610" y="114" width="144" height="48" rx="7" fill="#3a2020" stroke="#2a3442"/>
+<text x="618" y="134" fill="#ff6b6b" font-size="14" font-weight="700">GPIO10</text>
+<text x="618" y="148" fill="#ff6b6b" font-size="9" opacity="0.7">flash</text>
+<rect x="760" y="114" width="144" height="48" rx="7" fill="#3a2020" stroke="#2a3442"/>
+<text x="768" y="134" fill="#ff6b6b" font-size="14" font-weight="700">GPIO11</text>
+<text x="768" y="148" fill="#ff6b6b" font-size="9" opacity="0.7">flash</text>
+<rect x="10" y="168" width="144" height="48" rx="7" fill="#5c4a1e" stroke="#2a3442"/>
+<text x="18" y="188" fill="#ffb454" font-size="14" font-weight="700">GPIO12</text>
+<text x="18" y="202" fill="#ffb454" font-size="9" opacity="0.7">strap</text>
+<text x="18" y="213" fill="#8b98a9" font-size="9">pwm adc</text>
+<rect x="160" y="168" width="144" height="48" rx="7" fill="#3a2030" stroke="#2a3442"/>
+<text x="168" y="188" fill="#ff8ac0" font-size="14" font-weight="700">GPIO13</text>
+<text x="168" y="202" fill="#ff8ac0" font-size="9" opacity="0.7">rgb</text>
+<text x="168" y="213" fill="#8b98a9" font-size="9">pwm adc</text>
+<rect x="310" y="168" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="318" y="188" fill="#dce3ec" font-size="14" font-weight="700">GPIO14</text>
+<text x="318" y="202" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="318" y="213" fill="#8b98a9" font-size="9">pwm adc</text>
+<rect x="460" y="168" width="144" height="48" rx="7" fill="#5c4a1e" stroke="#2a3442"/>
+<text x="468" y="188" fill="#ffb454" font-size="14" font-weight="700">GPIO15</text>
+<text x="468" y="202" fill="#ffb454" font-size="9" opacity="0.7">strap</text>
+<text x="468" y="213" fill="#8b98a9" font-size="9">pwm adc</text>
+<rect x="610" y="168" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="618" y="188" fill="#dce3ec" font-size="14" font-weight="700">GPIO16</text>
+<text x="618" y="202" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="618" y="213" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="760" y="168" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="768" y="188" fill="#dce3ec" font-size="14" font-weight="700">GPIO17</text>
+<text x="768" y="202" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="768" y="213" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="10" y="222" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="18" y="242" fill="#dce3ec" font-size="14" font-weight="700">GPIO18</text>
+<text x="18" y="256" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="18" y="267" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="160" y="222" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="168" y="242" fill="#dce3ec" font-size="14" font-weight="700">GPIO19</text>
+<text x="168" y="256" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="168" y="267" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="310" y="222" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="318" y="242" fill="#dce3ec" font-size="14" font-weight="700">GPIO20</text>
+<text x="318" y="256" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="318" y="267" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="460" y="222" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="468" y="242" fill="#dce3ec" font-size="14" font-weight="700">GPIO21</text>
+<text x="468" y="256" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="468" y="267" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="610" y="222" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="618" y="242" fill="#dce3ec" font-size="14" font-weight="700">GPIO22</text>
+<text x="618" y="256" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="618" y="267" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="760" y="222" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="768" y="242" fill="#dce3ec" font-size="14" font-weight="700">GPIO23</text>
+<text x="768" y="256" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="768" y="267" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="10" y="276" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="18" y="296" fill="#dce3ec" font-size="14" font-weight="700">GPIO24</text>
+<text x="18" y="310" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="18" y="321" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="160" y="276" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="168" y="296" fill="#dce3ec" font-size="14" font-weight="700">GPIO25</text>
+<text x="168" y="310" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="168" y="321" fill="#8b98a9" font-size="9">pwm adc dac</text>
+<rect x="310" y="276" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="318" y="296" fill="#dce3ec" font-size="14" font-weight="700">GPIO26</text>
+<text x="318" y="310" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="318" y="321" fill="#8b98a9" font-size="9">pwm adc dac</text>
+<rect x="460" y="276" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="468" y="296" fill="#dce3ec" font-size="14" font-weight="700">GPIO27</text>
+<text x="468" y="310" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="468" y="321" fill="#8b98a9" font-size="9">pwm adc</text>
+<rect x="610" y="276" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="618" y="296" fill="#dce3ec" font-size="14" font-weight="700">GPIO28</text>
+<text x="618" y="310" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="618" y="321" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="760" y="276" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="768" y="296" fill="#dce3ec" font-size="14" font-weight="700">GPIO29</text>
+<text x="768" y="310" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="768" y="321" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="10" y="330" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="18" y="350" fill="#dce3ec" font-size="14" font-weight="700">GPIO30</text>
+<text x="18" y="364" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="18" y="375" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="160" y="330" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="168" y="350" fill="#dce3ec" font-size="14" font-weight="700">GPIO31</text>
+<text x="168" y="364" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="168" y="375" fill="#8b98a9" font-size="9">pwm</text>
+<rect x="310" y="330" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="318" y="350" fill="#dce3ec" font-size="14" font-weight="700">GPIO32</text>
+<text x="318" y="364" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="318" y="375" fill="#8b98a9" font-size="9">pwm adc</text>
+<rect x="460" y="330" width="144" height="48" rx="7" fill="#243040" stroke="#2a3442"/>
+<text x="468" y="350" fill="#dce3ec" font-size="14" font-weight="700">GPIO33</text>
+<text x="468" y="364" fill="#dce3ec" font-size="9" opacity="0.7">ok</text>
+<text x="468" y="375" fill="#8b98a9" font-size="9">pwm adc</text>
+<rect x="610" y="330" width="144" height="48" rx="7" fill="#333" stroke="#2a3442"/>
+<text x="618" y="350" fill="#8b98a9" font-size="14" font-weight="700">GPIO34</text>
+<text x="618" y="364" fill="#8b98a9" font-size="9" opacity="0.7">in</text>
+<text x="618" y="375" fill="#8b98a9" font-size="9">adc in-only</text>
+<rect x="760" y="330" width="144" height="48" rx="7" fill="#333" stroke="#2a3442"/>
+<text x="768" y="350" fill="#8b98a9" font-size="14" font-weight="700">GPIO35</text>
+<text x="768" y="364" fill="#8b98a9" font-size="9" opacity="0.7">in</text>
+<text x="768" y="375" fill="#8b98a9" font-size="9">adc in-only</text>
+<rect x="10" y="384" width="144" height="48" rx="7" fill="#333" stroke="#2a3442"/>
+<text x="18" y="404" fill="#8b98a9" font-size="14" font-weight="700">GPIO36</text>
+<text x="18" y="418" fill="#8b98a9" font-size="9" opacity="0.7">in</text>
+<text x="18" y="429" fill="#8b98a9" font-size="9">adc in-only</text>
+<rect x="160" y="384" width="144" height="48" rx="7" fill="#333" stroke="#2a3442"/>
+<text x="168" y="404" fill="#8b98a9" font-size="14" font-weight="700">GPIO37</text>
+<text x="168" y="418" fill="#8b98a9" font-size="9" opacity="0.7">in</text>
+<text x="168" y="429" fill="#8b98a9" font-size="9">adc in-only</text>
+<rect x="310" y="384" width="144" height="48" rx="7" fill="#333" stroke="#2a3442"/>
+<text x="318" y="404" fill="#8b98a9" font-size="14" font-weight="700">GPIO38</text>
+<text x="318" y="418" fill="#8b98a9" font-size="9" opacity="0.7">in</text>
+<text x="318" y="429" fill="#8b98a9" font-size="9">adc in-only</text>
+<rect x="460" y="384" width="144" height="48" rx="7" fill="#333" stroke="#2a3442"/>
+<text x="468" y="404" fill="#8b98a9" font-size="14" font-weight="700">GPIO39</text>
+<text x="468" y="418" fill="#8b98a9" font-size="9" opacity="0.7">in</text>
+<text x="468" y="429" fill="#8b98a9" font-size="9">adc in-only</text>
+</svg>

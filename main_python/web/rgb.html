@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RGB control</title>
+<style>
+:root{--bg:#10141a;--card:#1a212b;--line:#2a3442;--txt:#dce3ec;--mut:#8b98a9;--acc:#4da3ff;--ok:#3ecf8e;--err:#ff6b6b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif;padding:16px;max-width:760px;margin:0 auto}
+h1{font-size:20px;margin-bottom:2px}
+h2{font-size:13px;color:var(--acc);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
+.mini{color:var(--mut);font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+button{background:#243040;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer}
+button:hover{border-color:var(--acc)}
+button.primary{background:var(--acc);border-color:var(--acc);color:#06121f;font-weight:600}
+button.on{background:var(--ok);border-color:var(--ok);color:#06121f;font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+input,select{background:#0d1117;border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:6px 8px;font-size:14px}
+input[type=range]{padding:0;flex:1;accent-color:var(--acc)}
+input[type=color]{padding:2px;width:56px;height:40px}
+.lbl{color:var(--mut);font-size:13px;min-width:80px}
+#meter{width:100%;height:26px;background:#0d1117;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+#meterFill{height:100%;width:0%;background:linear-gradient(90deg,#3ecf8e,#ffd166,#ff6b6b)}
+.statline{font-size:12px;color:var(--mut)}
+a{color:var(--acc)}
+</style>
+</head>
+<body>
+<h1>💡 RGB — <span id="who">module</span></h1>
+<div class="mini" style="margin-bottom:8px"><a href="/">← hub</a> · works over WiFi or the USB cable, whichever this page was opened with</div>
+
+<div class="card">
+  <h2>RGB control <span class="mini">(manual)</span></h2>
+  <div class="row">
+    <input type="color" id="col" value="#0050ff" oninput="manualColor()">
+    <button onclick="manualColor()">Set</button>
+    <button onclick="cmd('RGB EFFECT off')">Off</button>
+  </div>
+  <div class="row"><span class="lbl">Brightness</span>
+    <input type="range" id="bri" min="0" max="255" value="128" oninput="cmd('RGB BRIGHT '+this.value,1)">
+  </div>
+</div>
+
+<div class="card">
+  <h2>RGB effects <span class="mini">(run on the module itself)</span></h2>
+  <div class="row">
+    <button onclick="cmd('RGB EFFECT solid')">solid</button>
+    <button onclick="cmd('RGB EFFECT rainbow')">🌈 rainbow</button>
+    <button onclick="cmd('RGB EFFECT chase')">chase</button>
+    <button onclick="cmd('RGB EFFECT breathe')">breathe</button>
+    <button onclick="cmd('RGB EFFECT off')">off</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>RGB sequence <span class="mini">(scripted from the SD card)</span></h2>
+  <div class="row">
+    <select id="seqSel" style="flex:1"></select>
+    <button class="primary" onclick="runSeq()">▶ Run</button>
+    <button onclick="cmd('MOVE STOP')">Stop</button>
+    <button onclick="loadSeqs()">⟳</button>
+  </div>
+  <div class="mini">a sequence YAML can script the strip with <code>rgb / effect /
+    bright / wait</code> steps and <code>loop: true</code> — see
+    <code>sd_card_example/moves/rgb_show.yaml</code>. Timed light shows,
+    no PC needed once it runs.</div>
+</div>
+
+<div class="card">
+  <h2>RGB follows the PC speaker 🔊</h2>
+  <div class="row">
+    <button id="musBtn" class="primary" onclick="toggleMusic()">Start — capture PC audio</button>
+    <select id="musStyle">
+      <option value="pulse">pulse — my color, brightness = volume</option>
+      <option value="party">party — colors spin, brightness = volume</option>
+    </select>
+  </div>
+  <div class="row"><span class="lbl">Sensitivity</span>
+    <input type="range" id="sens" min="1" max="20" value="8">
+  </div>
+  <div id="meter"><div id="meterFill"></div></div>
+  <div class="statline" id="musStat">when you press Start the browser asks what to share —
+    pick the screen (or the music tab) and tick <b>“share audio”</b>; the strip then
+    follows whatever the PC is playing. Works in Chrome/Edge on this PC.</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const qp=new URLSearchParams(location.search);
+const IP=qp.get('ip')||'', PORT=qp.get('port')||'', BUS=qp.get('id')||'';
+$('who').textContent=qp.get('name')||IP||PORT+(BUS?(' #'+BUS):'');
+
+let lastSend=0;
+async function cmd(c,throttled){
+  const now=performance.now();
+  if(throttled&&now-lastSend<90)return; // don't flood the link
+  lastSend=now;
+  const url=IP?('/api/robot/cmd?ip='+encodeURIComponent(IP)+'&c='+encodeURIComponent(c))
+             :('/api/usb/cmd?port='+encodeURIComponent(PORT)+(BUS?('&id='+BUS):'')+'&c='+encodeURIComponent(c));
+  try{return await fetch(url).then(r=>r.text());}catch(e){return'';}
+}
+function hex2rgb(h){return [parseInt(h.substr(1,2),16),parseInt(h.substr(3,2),16),parseInt(h.substr(5,2),16)];}
+function manualColor(){const[r,g,b]=hex2rgb($('col').value);cmd(`RGB ${r} ${g} ${b}`,1);}
+async function loadSeqs(){
+  const t=await cmd('FILES /moves');
+  try{
+    const fs=JSON.parse(t),s=$('seqSel');
+    s.innerHTML='';
+    fs.forEach(f=>{const o=document.createElement('option');o.value=o.textContent=f.n;s.appendChild(o);});
+    if(!fs.length)s.innerHTML='<option>(no SD card / no sequences)</option>';
+  }catch(e){$('seqSel').innerHTML='<option>(no SD card?)</option>';}
+}
+function runSeq(){const v=$('seqSel').value;if(v&&!v.startsWith('('))cmd('MOVE '+v);}
+
+// ---- music mode: PC audio -> level -> RGB ----
+let audioCtx=null,analyser=null,stream=null,musTimer=null,hue=0;
+async function toggleMusic(){
+  if(musTimer){stopMusic();return;}
+  try{
+    stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
+    if(!stream.getAudioTracks().length){
+      $('musStat').textContent='no audio in the capture — start again and tick “share audio” in the picker';
+      stream.getTracks().forEach(t=>t.stop());stream=null;return;
+    }
+    stream.getVideoTracks().forEach(t=>t.stop()); // only the sound is needed
+    audioCtx=new AudioContext();
+    const src=audioCtx.createMediaStreamSource(stream);
+    analyser=audioCtx.createAnalyser();
+    analyser.fftSize=512;
+    src.connect(analyser);
+    musTimer=setInterval(musicTick,110);
+    $('musBtn').textContent='■ Stop music mode';
+    $('musBtn').classList.add('on');
+    $('musStat').textContent='following the PC audio…';
+  }catch(e){$('musStat').textContent='capture cancelled or not allowed ('+e.message+')';}
+}
+function stopMusic(){
+  clearInterval(musTimer);musTimer=null;
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  if(audioCtx)audioCtx.close();
+  stream=audioCtx=analyser=null;
+  $('musBtn').textContent='Start — capture PC audio';
+  $('musBtn').classList.remove('on');
+  $('meterFill').style.width='0%';
+  $('musStat').textContent='stopped';
+  cmd('RGB EFFECT off');
+}
+function musicTick(){
+  const buf=new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(buf);
+  let sum=0;
+  for(const v of buf){const d=(v-128)/128;sum+=d*d;}
+  const rms=Math.sqrt(sum/buf.length);                 // 0..~1
+  const lvl=Math.min(1,rms*(+$('sens').value));
+  $('meterFill').style.width=Math.round(lvl*100)+'%';
+  let r,g,b;
+  if($('musStyle').value==='pulse'){
+    [r,g,b]=hex2rgb($('col').value).map(v=>Math.round(v*lvl));
+  }else{ // party: hue spins faster when loud
+    hue=(hue+2+lvl*14)%360;
+    const k=n=>{const h=(n+hue/30)%12;return Math.round(255*lvl*Math.max(0,Math.min(1,Math.min(h-3,9-h))));};
+    r=k(0);g=k(8);b=k(4);
+  }
+  cmd(`RGB ${r} ${g} ${b}`,1);
+}
+loadSeqs();
+</script>
+</body>
+</html>

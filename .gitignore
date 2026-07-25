@@ -1,0 +1,31 @@
+# ---- Build output (regenerated, never committed) ----
+
+# PlatformIO: build products + downloaded libraries (~230 MB)
+.pio/
+firmware/.pio/
+
+# CMake / ament build tree
+build/
+firmware/build/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ---- Editor / machine specific ----
+.vscode/.browse.c_cpp.db*
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch
+.idea/
+
+# Claude Code local permission overrides (per machine)
+.claude/settings.local.json
+
+# ---- OS junk ----
+Thumbs.db
+desktop.ini
+.DS_Store

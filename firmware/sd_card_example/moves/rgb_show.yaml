@@ -1,0 +1,22 @@
+# /moves/rgb_show.yaml — an RGB-only light show scripted from the SD card.
+# Run it with:  MOVE rgb_show.yaml   (module website, hub RGB page, or console)
+# loop: true repeats it forever until MOVE STOP.
+# Any rgb / effect / bright / wait step works — no PC needed while it runs.
+name: rgb_show
+loop: true
+steps:
+  - bright: 200
+  - rgb: [255, 0, 0]        # red
+  - wait: 600
+  - rgb: [255, 120, 0]      # orange
+  - wait: 600
+  - rgb: [0, 200, 80]       # green
+  - wait: 600
+  - rgb: [0, 80, 255]       # blue
+  - wait: 600
+  - effect: chase
+  - wait: 3000
+  - effect: breathe
+  - wait: 3000
+  - effect: rainbow
+  - wait: 4000
