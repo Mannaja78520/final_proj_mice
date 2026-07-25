@@ -9,3 +9,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0003 | 2026-07-24 16:32 | FIX: model invisible with an old saved rig — mergeRig now migrates 'zero' (and any per-joint array) to length 10; applyPose is NaN-safe; new ?selftest=migrate regression |
 | 0004 | 2026-07-24 16:45 | Shrug corrected to a see-saw ROLL (top-center joint rocks the shoulder bar: left up / right down), not a forward-back tilt; module website readout + labels updated to match |
 | 0005 | 2026-07-24 17:07 | Shrug pivot adjustable in mm: the see-saw now rocks about a bearing ABOVE the shoulder line (Rig setup > shrug pivot, default 60mm), not at the servo |
+| 0006 | 2026-07-26 00:32 | Save current tuned rig as your default: new star-Save-current-as-default button locks the cached tune into a protected slot; Reset now returns to YOUR default (factory only if none saved). Does NOT overwrite tuned dims. |

@@ -179,6 +179,12 @@ them to its SD card (`/data/nong_cal.yaml`), so they survive a reboot.
 Every change applies to the 3D model instantly, is remembered by the browser,
 and is saved inside each project file.
 
+**Make your tuning the default:** once the rig matches your robot, press
+**★ Save current as default**. That locks your current rig into a protected
+slot, and **Reset to default** then returns to *your* tuned rig instead of the
+factory scale — so your tuning can't be lost and nobody has to re-tune. (Reset
+falls back to the factory rig only if you never saved a default.)
+
 ## Your own 3D model (STL from SolidWorks)
 
 Export each body part as a separate STL in **mm** (conventions: part origin
