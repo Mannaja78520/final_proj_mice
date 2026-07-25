@@ -26,3 +26,7 @@ list it or make the test file table to test for me please and also make readme f
 make to other folder folder scient test
 
 also save the promt like the nong and lift and firmware and patch for test in the future we will know the change
+
+### 2026-07-26
+make the test app i can't check it 20ms all not in all test with eye
+but not for nong module and lift the test that mesure the speed i can catch the time but other test cannot see with eye what should i do.
