@@ -65,6 +65,13 @@ matched. Changing either speed recalculates the times.
 
 ## Editing a saved sequence
 
+The editor opens on your **Neutral pose** (Setup ▸ *Neutral pose* / *Set
+neutral = current*, the same pose as the robot's `HOME`), and keyframe 0 is
+built from it — so a new sequence starts where the robot actually rests. That
+is `neutral`, not the per-joint **zero°** in the rig table: `zero°` is the
+angle at which a joint *renders* straight in the 3D model, `neutral` is the
+pose the robot stands in.
+
 - **Local file:** timeline bar → "Edit saved…" dropdown → *Load for editing*
   brings any YAML from `sequences/` back into the timeline.
 - **From the robot SD:** Robot SD card card → *✎ Edit* next to a file
@@ -76,8 +83,20 @@ matched. Changing either speed recalculates the times.
 Pick the transport in the **Robot link** card:
 
 - **WiFi** — type the module IP (or `name.local`), press Connect.
-- **USB / RS485 (Web Serial)** — press *Connect USB* and pick the COM port
-  (Chrome/Edge). The **bus id** field selects how the port is used:
+- **USB / RS485 (shared)** — pick the COM port from the list (⟳ rescans) and
+  press Connect. The cable is driven **through the hub**, which is the one
+  program that opens the port and then shares it. That is what lets you keep
+  the module's own website (**⚙ Open module**) open on the **same cable at
+  the same time** — a COM port belongs to a single program, so two pages
+  opening it themselves is exactly the *"serial port already in use"* error.
+  Shared mode also works from a phone or another laptop on the WiFi.
+- **USB direct (Web Serial, exclusive)** — the old mode: this browser opens
+  the port itself (Chrome/Edge on the PC running the hub). Slightly lower
+  latency and it needs no hub, but it **takes the cable for itself** — while
+  this tab is connected, the module website and the hub's port probe cannot
+  use that port. Use it only when you want exactly one page on the cable.
+
+  The **bus id** field applies to both USB modes:
   - *empty* — the cable goes straight into the nong module's own USB;
   - *set to the nong's id* — commands are framed `#<id> …` (the RS485
     protocol), which works with a **USB-RS485 dongle** wired to the bus,
@@ -93,7 +112,24 @@ Pick the transport in the **Robot link** card:
 Then:
 
 - **live** — the robot follows every pose change in the editor; during
-  ▶ Play each segment is sent with its exact `T`.
+  ▶ Play the first keyframe is sent, then each segment with its exact `T`.
+  **Play moves the robot only with `live` ticked** — without it, ▶ Play is a
+  preview of the 3D model and nothing is sent. It works on every transport
+  (this used to be a WiFi-only path).
+
+  Each segment is sent as **one whole move** and the module interpolates it
+  itself, so ❚❚ **Pause** sends `STOP` to freeze the arm where it is —
+  otherwise the robot would finish the move it was already given. Resuming
+  re-sends that segment with only the time still left in it.
+
+  A keyframe's **hold** sends nothing at all: the module already holds its last
+  pose, so the editor simply waits before starting the next move. That is why a
+  hold is a real pause *between* the moves and not extra time at the end.
+
+  Live mode is **not** per-frame streaming — one command per segment, timed by
+  `T`, interpolated on the module. That is what keeps the motion smooth over a
+  slow link and keeps two linked boards in step. A command costs about 30 ms
+  over USB, so the arm starts within roughly a frame of the editor.
 - **monitor** — the opposite direction: the 3D model **follows the real
   robot** (its actual joint angles are polled continuously) and the status
   line shows which sequence is playing and how many ms the current move has

@@ -1,5 +1,26 @@
 # Project rules
 
+- **QC after every change — and add to it.** `python ../../qc/run_qc.py --quick`
+  while iterating (~3 s), the full `run_qc.py` before calling anything done
+  (~1 min, drives a real browser). **Whenever we add a feature or fix a bug,
+  add its check to `code/qc/checks/`** — the runner discovers `check_*.py` by
+  itself, so covering something new is one new file, and the suite grows with
+  the project instead of going stale. A new check only counts once you have
+  **broken the fix and watched it fail**; the live-drag check passed against
+  the very bug it was written for until it reproduced the real user action.
+  Assert on what reached the module (`fake_serial.wire`), never on what the UI
+  says about itself. See `code/qc/README.md`.
+- **Document every feature in `main_python/web/help.html`** — the offline
+  Features & help page the hub serves at `/help` and links from its main page.
+  This is enforced: the `docs` QC check fails when a command, module type,
+  servo preset or QC area exists that the page does not describe. Update the
+  page in the SAME change as the feature, not afterwards.
+- **Every web app must work on any screen.** Hub, module website (`WebUI.h`),
+  Nong Studio and the help page all carry media queries for phone / tablet /
+  large screen plus `pointer:coarse` touch targets. The `responsive` QC check
+  loads each page in a real browser at 360–1920px and fails if anything
+  scrolls sideways, so a new fixed-width layout is caught immediately.
+
 - This is **Nong Studio**: the pose & sequence editor for the `nong` humanoid
   module. **10 logical joints:** 8 arm (universal joint = 2 servos in each
   shoulder and elbow) + `WAIST` (joint 9, yaws the whole upper body left/right)

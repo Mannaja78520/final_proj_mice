@@ -5,16 +5,40 @@ One firmware for every module in the installation. Each module knows its own
 WiFi at the same time**, hosts its **own control website**, and keeps its data
 (settings YAML, music, movement sequences) on a **microSD card**.
 
-Current module types: `lift` (motor up/down between stages, RGB strip,
-speaker, stage tracking) and `nong` (humanoid upper body: 2 arms, universal
-shoulder + universal elbow per arm — hardware is just 8× MG90S + SD card;
-poses/sequences authored in the desktop editor at
-`code/nong/main_python_set_nong`). More types plug into `src/modules/`.
+Current module types, declared in `config/modules.json`: `lift` (motor up/down
+between stages, RGB strip, speaker, stage tracking), `nong` (humanoid upper
+body: 2 arms, universal shoulder + universal elbow per arm — hardware is just
+8× MG90S + SD card; poses/sequences authored in the desktop editor at
+`code/nong/main_python_set_nong`) and `cam` (ESP32-CAM: stills and a live view).
+Adding a type is one entry in that file, the class in `src/modules/<type>/` and
+an env in `platformio.ini` — the build guards, the factory, the website and the
+hub's flash list are all generated from it.
 
-**Upload once, choose later:** the same binary runs every module type — flash
-each board one time, then pick what it is with `SET TYPE lift|nong` (Settings
-card on the website) and reboot. The firmware lives here at `code/firmware`
-and is shared by the whole installation.
+**One binary per module type.** A board runs one type, so it carries one type:
+
+```
+pio run -e mice_nong             the humanoid
+pio run -e mice_lift             the lift
+pio run -e mice_cam              the camera (ESP32-CAM — a different board)
+pio run -e mice_blank            core only — a board that is not a module yet
+pio run -e mice_module_firmware  lift + nong in one binary (legacy, kept for now)
+```
+
+Everything else is shared, and the source is shared too — one env picks which
+module folder compiles, which commands exist and which web cards the board
+serves. Before this, every board carried every type: a nong flashed the lift's
+motor code, its RGB and MP3 support and its web cards, and only a JavaScript
+check kept them off the screen. Measured 2026-08-07: 74.9% of flash used on
+every board. Now a nong build is 65.5% and does not contain the lift's page at
+all.
+
+After flashing, the board still confirms what it is from NVS
+(`SET TYPE nong` + reboot, or the Settings card on its website). A binary only
+accepts the types it was built with — `SET TYPE lift` on a nong build answers
+`ERR unknown type (nong,blank)` instead of booting a module that is not there.
+
+The firmware lives here at `code/firmware` and is shared by the whole
+installation.
 
 ## Layout
 
@@ -23,6 +47,8 @@ config/                 hardware config, split per module + shared core:
   esp32_hardware.h              shared core ONLY (MCU/PWM, RS485, SD) + includes:
   esp32_hardware_lift_module.h    lift: motor/encoder/limits/rack + RGB + I2S amp
   esp32_hardware_nong_module.h    nong: servos/pulse/limits/gear
+  commands.json                 every command, declared once (scope core/lift/nong)
+  servos.json                   the servo presets
   (RGB strip + I2S speaker are lift-only, so they live in the lift file;
    only RS485 + SD are shared by every module type)
   conf_network.h                WiFi AP fallback
@@ -40,11 +66,28 @@ src/core/               shared services, used by every module type
   AudioPlayer           MP3/WAV from SD over I2S
   RgbStrip              WS2812B effects
   SequencePlayer        /moves/*.yaml step player
-src/modules/            one folder per module type
+src/modules/            one folder per module type (only this env's is compiled)
   lift/LiftModule       the lift implementation
   nong/NongModule       the humanoid upper body (8x MG90S, multi-ESP link mode)
+src/web/WebUI.h         the MASTER control page — not compiled; the per-type
+                        page is generated from it (see below)
+tools/gen_tables.py     build-time generator: this env's command table, servo
+                        table and web page -> .pio/build/<env>/generated/
 sd_card_example/        copy this onto each module's SD card
 ```
+
+### What is per module type
+
+| what | where it is marked |
+|---|---|
+| module class, pin entries, includes | `#if MICE_HAS_NONG` — `src/core/BuildTypes.h` |
+| web cards and their script | `<!--#type nong-->` … `<!--#end-->` in `src/web/WebUI.h` |
+| commands | `"scope": "nong"` in `config/commands.json` |
+
+Nothing is hidden at runtime: what the build does not carry is not in the
+binary. `python tools/gen_tables.py --types nong --out DIR` shows exactly what
+one type gets; with no arguments it writes the all-types tree to
+`firmware/generated/`, which is what the QC suite reads.
 
 ## Command language (same everywhere)
 

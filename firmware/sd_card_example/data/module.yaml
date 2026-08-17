@@ -54,6 +54,11 @@ volume: 70               # speaker startup volume 0..100
 #                          # turn (that is joint_min/joint_max above). Fitting a
 #                          # 270 servo = change this one number; poses and saved
 #                          # sequences are in joint degrees and keep working.
+# frame_hz:    [50,50,50,50,50,50,50,50,50,50]            # SERVO frame rate (Hz)
+#                          # DEFAULT 50 for every joint — it works. The PDI-1181MG
+#                          # datasheet says 330 Hz, but 330 made a marginal shoulder
+#                          # over-current on a move and cut out, so keep 50 unless a
+#                          # servo truly needs more AND the current stays safe.
 # (LIMIT / GEAR / PULSE / RANGE / SERVO commands from Nong Studio change these
 #  live and save them to /data/nong_cal.yaml, which overrides this file at boot.)
 # speed_dps: 120           # deg/s used when a POSE step has no T

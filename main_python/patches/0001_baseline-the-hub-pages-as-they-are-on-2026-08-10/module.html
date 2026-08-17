@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Module over USB</title>
+<script>
+// the USB page is now the unified module site (same as WiFi). Redirect any
+// old/cached link here to /mod so every transport lands on the same web.
+(function(){var p=new URLSearchParams(location.search),port=p.get('port');
+ if(port){var id=p.get('id');location.replace('/mod?dev=usb:'+encodeURIComponent(port)+(id?(':'+id):'')
+   +'&name='+encodeURIComponent(p.get('name')||''));}})();
+</script>
+<style>
+:root{--bg:#10141a;--card:#1a212b;--line:#2a3442;--txt:#dce3ec;--mut:#8b98a9;--acc:#4da3ff;--ok:#3ecf8e;--err:#ff6b6b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif;padding:14px;max-width:1000px;margin:0 auto}
+h1{font-size:20px}h2{font-size:13px;color:var(--acc);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
+.badge{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:3px 12px;font-size:13px;color:var(--mut)}
+.badge b{color:var(--txt)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+button{background:#243040;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:7px 12px;font-size:14px;cursor:pointer}
+button:hover{border-color:var(--acc)}
+button.primary{background:var(--acc);border-color:var(--acc);color:#06121f;font-weight:600}
+button.danger{background:#3a2020;border-color:#5c2e2e;color:var(--err)}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}
+input,select{background:#0d1117;border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:6px 8px;font-size:14px}
+input[type=range]{padding:0;flex:1;accent-color:var(--acc)}
+.lbl{color:var(--mut);font-size:13px;min-width:72px}
+.mini{color:var(--mut);font-size:12px}
+#log{background:#0d1117;border:1px solid var(--line);border-radius:8px;padding:8px;height:150px;overflow-y:auto;font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap;word-break:break-all}
+.jrow{display:grid;grid-template-columns:120px 1fr 60px 80px;gap:6px;align-items:center;margin:3px 0}
+.jrow .lbl{min-width:0}
+.jrow input[type=number]{width:100%;padding:3px 2px;text-align:center}
+.now{color:var(--mut);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="hname">module over USB</h1>
+  <span class="badge">port <b id="hport">-</b></span>
+  <span class="badge">bus id <b id="hbus">direct</b></span>
+  <span class="badge">type <b id="htype">-</b></span>
+  <span class="badge">wifi <b id="hwifi">-</b></span>
+  <span class="badge">SD <b id="hsd">-</b></span>
+  <a href="/" style="color:var(--acc)">← hub</a>
+</header>
+<div class="mini" style="margin-bottom:10px">everything here travels through the USB
+cable (the hub server relays the commands) — no WiFi needed. Config the module,
+set up its WiFi, drive it, run sequences. The port is auto-released ~10 s after
+the last command so Nong Studio can take it.</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Settings <span class="mini">(saved on the chip)</span></h2>
+    <div class="row"><span class="lbl">ID</span><input type="number" id="setId" min="1" max="247" style="width:80px"></div>
+    <div class="row"><span class="lbl">Name</span><input id="setName" style="flex:1"></div>
+    <div class="row"><span class="lbl">Type</span><select id="setType" style="flex:1"></select></div>
+    <div class="row"><span class="lbl">WiFi SSID</span><input id="setSsid" placeholder="no spaces" style="flex:1"></div>
+    <div class="row"><span class="lbl">WiFi pass</span><input id="setPass" style="flex:1"></div>
+    <div class="row"><span class="lbl">Radio</span>
+      <select id="setRadio" style="flex:1">
+        <option value="">keep as is</option>
+        <option value="ON">ON — join the WiFi above</option>
+        <option value="AP">AP — host own hotspot</option>
+        <option value="OFF">OFF — USB/RS485 only</option>
+      </select>
+    </div>
+    <div class="row"><button class="primary" onclick="saveSettings()">Save &amp; Reboot</button></div>
+    <div class="mini">set the WiFi here over USB — after reboot the module joins your
+      network and its normal website works.</div>
+  </div>
+
+  <div class="card" id="liftCard" style="display:none">
+    <h2>Lift</h2>
+    <div class="row" id="gotoBtns"></div>
+    <div class="row">
+      <button onclick="cmd('UP')">▲ Up</button>
+      <button onclick="cmd('DOWN')">▼ Down</button>
+      <button class="danger" onclick="cmd('STOP')">■ Stop</button>
+      <button onclick="cmd('HOME')">⌂ Home</button>
+    </div>
+    <div class="row"><span class="lbl">Stage</span><b id="stg">?</b>
+      <span class="lbl">state</span><span id="stgState" class="mini">-</span></div>
+    <div class="row"><span class="lbl">RGB</span>
+      <input type="color" id="rgbc" value="#0050ff" onchange="sendRgb()">
+      <button onclick="cmd('RGB EFFECT rainbow')">rainbow</button>
+      <button onclick="cmd('RGB EFFECT off')">off</button>
+      <button class="primary" onclick="openRgb()">💡 RGB modes…</button>
+    </div>
+    <div class="mini">RGB modes: manual · effects · SD sequences · follow the PC speaker</div>
+    <div class="row"><span class="lbl">Volume</span>
+      <input type="range" id="vol" min="0" max="100" value="70"
+             oninput="$('volNum').value=this.value" onchange="cmd('VOL '+this.value)">
+      <input type="number" id="volNum" min="0" max="100" value="70" style="width:70px"
+             onchange="$('vol').value=this.value;cmd('VOL '+this.value)">
+    </div>
+  </div>
+
+  <div class="card" id="nongCard" style="display:none;grid-column:1/-1">
+    <h2>Nong arms <span class="mini">(sliders send JOINT; “now” = real position)</span></h2>
+    <div id="jointRows"></div>
+    <div class="row">
+      <button onclick="cmd('HOME')">Neutral</button>
+      <button onclick="cmd('ATTACH')">Attach (power on)</button>
+      <button class="danger" onclick="cmd('RELAX')">⏻ Stop (power off)</button>
+      <span class="lbl">Speed °/s</span>
+      <input type="number" id="ndps" min="5" max="600" style="width:80px" onchange="cmd('SPEED '+this.value)">
+      <span class="mini" id="nongStat"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Sequences on SD</h2>
+    <div class="row">
+      <select id="moveSel" style="flex:1"></select>
+      <button class="primary" onclick="runSel()">▶ Run</button>
+      <button onclick="cmd('MOVE STOP')">Stop</button>
+      <button onclick="loadMoves()">⟳</button>
+    </div>
+    <div class="mini" id="seqStat"></div>
+  </div>
+
+  <div class="card">
+    <h2>Console</h2>
+    <div id="log"></div>
+    <div class="row">
+      <input id="cli" placeholder="any command, e.g. INFO / CFG / POSE? / TIME?" style="flex:1"
+             onkeydown="if(event.key==='Enter'){cmd(this.value);this.value=''}">
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const qp=new URLSearchParams(location.search);
+const PORT=qp.get('port')||'';
+const BUS=qp.get('id')||'';
+$('hport').textContent=PORT;
+if(BUS)$('hbus').textContent='#'+BUS;
+let st={},nongBuilt=false,busy=false;
+
+function log(t){const l=$('log');l.textContent+=t+'\n';l.scrollTop=l.scrollHeight;}
+async function cmd(c,quiet){ // quiet: background polling stays out of the console
+  if(!c)return'';
+  try{
+    const r=await fetch('/api/usb/cmd?port='+encodeURIComponent(PORT)
+      +(BUS?('&id='+BUS):'')+'&c='+encodeURIComponent(c));
+    const t=await r.text();
+    if(!quiet)log('> '+c+'  ->  '+t.slice(0,200));
+    return t;
+  }catch(e){if(!quiet)log('! '+c+' failed: '+e);return'';}
+}
+async function refresh(){
+  if(busy)return;
+  busy=true;
+  try{
+    const t=await cmd('INFO',true); // silent status poll
+    if(t.startsWith('{')){st=JSON.parse(t);render();}
+  }catch(e){}
+  busy=false;
+}
+function render(){
+  $('hname').textContent=st.name||'module';
+  document.title=(st.name||'module')+' (USB)';
+  $('htype').textContent=st.type||'-';
+  $('hsd').textContent=st.sd?'ok':'none';
+  const w=st.wifi||{};
+  $('hwifi').textContent=w.mode==='sta'?(w.ip||'joining…'):(w.mode==='ap'?('own hotspot '+(w.ip||'192.168.4.1')):'off');
+  if(!$('setId').value)$('setId').value=st.id;
+  if(!$('setName').value)$('setName').value=st.name;
+  if(st.types&&!$('setType').options.length){
+    st.types.forEach(t=>{const o=document.createElement('option');o.textContent=t;$('setType').appendChild(o);});
+    $('setType').value=st.type;
+  }
+  const m=st.module||{};
+  $('liftCard').style.display=st.type==='lift'?'':'none';
+  $('nongCard').style.display=st.type==='nong'?'':'none';
+  if(st.type==='lift'){
+    $('stg').textContent=(m.stage===undefined||m.stage<0)?'?':m.stage;
+    $('stgState').textContent=m.state||'-';
+    const g=$('gotoBtns');
+    if(m.stages&&!g.children.length)
+      for(let i=0;i<m.stages;i++){const b=document.createElement('button');b.textContent='GOTO '+i;b.onclick=()=>cmd('GOTO '+i);g.appendChild(b);}
+  }
+  if(st.type==='nong'&&Array.isArray(m.joints)){
+    const JN=['L Sh Pitch','L Sh Roll','L El Pitch','L El Roll','R Sh Pitch','R Sh Roll','R El Pitch','R El Roll'];
+    const box=$('jointRows');
+    if(!nongBuilt){
+      nongBuilt=true;
+      JN.forEach((n,i)=>{
+        const r=document.createElement('div');r.className='jrow';
+        const l=document.createElement('span');l.className='lbl';l.textContent=n;
+        const s=document.createElement('input');s.type='range';s.min=0;s.max=180;s.id='j'+i;s.value=Math.round(m.joints[i]);
+        const v=document.createElement('input');v.type='number';v.min=0;v.max=180;v.id='jv'+i;v.value=Math.round(m.joints[i]);
+        const now=document.createElement('span');now.className='now';now.id='jn'+i;
+        s.oninput=()=>{v.value=s.value;};
+        s.onchange=()=>cmd('JOINT '+(i+1)+' '+s.value);
+        v.onchange=()=>{s.value=v.value;cmd('JOINT '+(i+1)+' '+v.value);};
+        r.append(l,s,v,now);box.appendChild(r);
+      });
+    }
+    m.joints.forEach((a,i)=>{
+      if(m.min&&m.max){$('j'+i).min=$('jv'+i).min=m.min[i];$('j'+i).max=$('jv'+i).max=m.max[i];}
+      $('jn'+i).textContent='now '+a.toFixed(1)+'°';
+    });
+    $('nongStat').textContent=(m.moving?'moving':'idle')+(m.attached?'':' | POWER OFF')
+      +((m.gear_pinion&&m.gear_gear)?(' | gear '+m.gear_pinion+':'+m.gear_gear):'');
+    if(document.activeElement.id!=='ndps'&&m.speed_dps)$('ndps').value=Math.round(m.speed_dps);
+  }
+  if(st.seq)$('seqStat').textContent=st.seq.running?('running '+st.seq.file):'idle';
+}
+function sendRgb(){
+  const h=$('rgbc').value;
+  cmd('RGB '+parseInt(h.substr(1,2),16)+' '+parseInt(h.substr(3,2),16)+' '+parseInt(h.substr(5,2),16));
+}
+function openRgb(){
+  window.open('/rgb.html?port='+encodeURIComponent(PORT)+(BUS?('&id='+BUS):'')
+    +'&name='+encodeURIComponent(st.name||''),'_blank');
+}
+async function loadMoves(){
+  const t=await cmd('FILES /moves',true);
+  try{
+    const fs=JSON.parse(t),s=$('moveSel');
+    s.innerHTML='';
+    fs.forEach(f=>{const o=document.createElement('option');o.value=o.textContent=f.n;s.appendChild(o);});
+  }catch(e){}
+}
+function runSel(){const v=$('moveSel').value;if(v)cmd('MOVE '+v);}
+async function saveSettings(){
+  const reps=[];
+  if($('setId').value)reps.push(await cmd('SET ID '+$('setId').value));
+  if($('setName').value)reps.push(await cmd('SET NAME '+$('setName').value));
+  if($('setType').value)reps.push(await cmd('SET TYPE '+$('setType').value));
+  if($('setSsid').value)reps.push(await cmd('SET WIFI '+$('setSsid').value+' '+$('setPass').value));
+  if($('setRadio').value)reps.push(await cmd('SET WIFI '+$('setRadio').value));
+  if(reps.some(r=>r.startsWith('ERR')||r==='')){alert('some settings were NOT saved — check the console');return;}
+  await cmd('REBOOT');
+  alert('Saved. The module reboots (~3 s) — this page keeps working over USB.');
+}
+refresh();
+loadMoves();
+setInterval(refresh,2500);
+</script>
+</body>
+</html>

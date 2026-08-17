@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nong Studio — pose &amp; sequence editor</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Nong Studio</h1>
+  <span class="hint">click joint = show rings · drag a ring = rotate that servo · <b>Shift+drag</b> 🟢 wrist / 🟠 elbow = move arm (IK) · left-drag = orbit · wheel = zoom · right-drag = pan</span>
+  <span style="flex:1"></span>
+  <input id="projName" placeholder="project name" value="my_move">
+  <button onclick="saveProject()">Save</button>
+  <select id="projList" onchange="loadProject(this.value)"><option value="">Load…</option></select>
+</header>
+
+<div id="main">
+  <div id="viewport">
+    <div id="collideWarn">⚠ joints collide — the robot would crash</div>
+    <div id="viewCube" title="click a view to look straight at that plane and drag joints in it (like Fusion/SolidWorks)">
+      <div class="vcRow"><button data-view="top" onclick="setView('top')">Top</button></div>
+      <div class="vcRow">
+        <button data-view="left" onclick="setView('left')">Left</button>
+        <button data-view="front" onclick="setView('front')">Front</button>
+        <button data-view="right" onclick="setView('right')">Right</button>
+        <button data-view="back" onclick="setView('back')">Back</button>
+      </div>
+      <div class="vcRow">
+        <button data-view="bottom" onclick="setView('bottom')">Bottom</button>
+        <button data-view="iso" class="on" onclick="setView('iso')">3D</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="sideDrag" title="drag to make the panel wider or narrower"></div>
+
+  <div id="side">
+    <div id="sideTabs">
+      <!-- Task tabs. The old Movement/Setup split put the robot link, the SD
+           card and the zero calibration all in "Movement", so posing meant
+           scrolling past things you only touch once. ids kept so nothing else
+           changes. -->
+      <button class="tab on" id="tabBtnMove" onclick="showTab('pose')">Pose</button>
+      <button class="tab" id="tabBtnSeq" onclick="showTab('sequence')">Sequence</button>
+      <button class="tab" id="tabBtnRobot" onclick="showTab('robot')">Robot</button>
+      <button class="tab" id="tabBtnSetup" onclick="showTab('setup')">Setup</button>
+    </div>
+
+    <div id="tabMove">
+    <div class="card" data-stab="pose">
+      <h2>Joints <span class="mini">(joint deg, neutral 90, limited per joint)</span></h2>
+      <div id="sliders"></div>
+      <div class="row">
+        <button onclick="setNeutral()">Neutral pose</button>
+        <button onclick="neutralFromPose()" title="save the current pose as the neutral pose (kept in the rig)">Set neutral = current</button>
+        <button onclick="mirrorLR()">Mirror L↔R</button>
+      </div>
+    </div>
+
+    <div class="card" data-stab="pose">
+      <h2>Joint positions <span class="mini">(XYZ mm, origin = torso center)</span></h2>
+      <div id="jointXyz" class="mini" style="white-space:pre;font-family:ui-monospace,monospace"></div>
+      <div class="tblock"><div class="tlabel">move LEFT wrist to:</div>
+        <div class="trow">
+          <label class="tcell"><input type="number" id="tgtLx" step="5">x</label>
+          <label class="tcell"><input type="number" id="tgtLy" step="5">y</label>
+          <label class="tcell"><input type="number" id="tgtLz" step="5">z</label>
+          <button onclick="gotoXyz(0)">Go</button>
+        </div>
+      </div>
+      <div class="tblock"><div class="tlabel">move RIGHT wrist to:</div>
+        <div class="trow">
+          <label class="tcell"><input type="number" id="tgtRx" step="5">x</label>
+          <label class="tcell"><input type="number" id="tgtRy" step="5">y</label>
+          <label class="tcell"><input type="number" id="tgtRz" step="5">z</label>
+          <button onclick="gotoXyz(1)">Go</button>
+        </div>
+      </div>
+      <div class="mini">type a position and press Go — the arm follows (IK); then
+        “+ Add keyframe” puts it into the sequence.</div>
+    </div>
+
+    <div class="card" data-stab="pose">
+      <h2>Drag plane / view</h2>
+      <div class="row">
+        <select id="dragPlane" style="flex:1" onchange="viewForPlane(this.value)">
+          <option value="cam">screen (free 3D)</option>
+          <option value="xy">front — XY (left/right + up/down)</option>
+          <option value="yz">side — YZ (forward + up/down)</option>
+          <option value="xz">top — XZ (left/right + forward)</option>
+        </select>
+      </div>
+      <div class="mini">or use the <b>view buttons</b> at the top-right of the 3D
+        view (Front / Top / Left…): the camera snaps straight at that plane and
+        Shift+dragging a joint moves it flat in that plane — like Fusion/SolidWorks.</div>
+    </div>
+
+    <div class="card" data-stab="sequence">
+      <h2>Timing</h2>
+      <div class="row"><span class="lbl">Show speed</span>
+        <input type="number" id="speedDps" value="120" min="5" max="600" style="width:70px"
+               title="this SEQUENCE's speed — saved into its file and restored when you re-edit it, so each sequence runs at its own pace and a chain sets the right speed at every hand-over"
+               onchange="speedChanged()"> °/s
+        <span class="mini">per sequence</span>
+      </div>
+      <div class="row"><span class="lbl">Servo max</span>
+        <input type="number" id="maxDps" value="400" min="30" max="600" style="width:70px"
+               onchange="speedChanged()"> °/s
+      </div>
+      <div class="mini">time between keyframes = biggest joint change ÷ show speed.
+        <b>Servo max</b> is the physical limit (MG90S ≈ 400 °/s): each keyframe
+        has a <b>minimum time</b> = change ÷ max — you can always make a move
+        slower, but never faster than the servos can really go, so the arm
+        always reaches the pose. The firmware enforces the same rule
+        (<code>max_dps</code>).</div>
+    </div>
+
+    <div class="card" data-stab="robot">
+      <h2>Robot link</h2>
+      <div class="row">
+        <select id="connSel" onchange="connModeChanged()"
+                title="what the Connect button adds — WiFi and USB can BOTH be connected at the same time; commands take the cable when open, WiFi otherwise, file transfer prefers WiFi">
+          <option value="wifi">+ WiFi</option>
+          <option value="usb">+ USB / RS485 (shared)</option>
+          <option value="serial">+ USB direct (Web Serial, exclusive)</option>
+        </select>
+        <input id="robotIp" placeholder="module IP or name.local" style="flex:1">
+        <select id="usbPort" onchange="usbPortChanged()" style="flex:1;display:none"
+                title="which cable the module is plugged into. The hub owns the port and shares it, so the module website can stay open on this SAME port at the same time.">
+          <option value="">pick the USB port…</option>
+        </select>
+        <button id="usbRescan" onclick="loadPorts()" style="display:none"
+                title="rescan the PC's USB serial ports">⟳</button>
+        <input id="busId" type="number" min="1" max="247" placeholder="bus id"
+               title="RS485 address: leave empty when the cable goes straight into the nong module's USB. Set the module id when using a USB-RS485 dongle, or to reach the nong through ANOTHER module's USB port (commands are sent as #id ... on the bus)."
+               style="width:76px;display:none">
+        <button id="connBtn" onclick="connectRobot()">Connect</button>
+      </div>
+      <div class="mini"><b>USB / RS485 (shared)</b> goes through the hub, which owns
+        the cable and shares it — the module's own website (⚙ Open module) can be
+        open on the <b>same USB port at the same time</b>, and it works from a
+        phone or another laptop too. <b>USB direct</b> talks to the port straight
+        from this browser (Chrome/Edge on this PC only) and <b>takes the port for
+        itself</b>: nothing else can use that cable until you close this tab.</div>
+      <div class="row">
+        <button onclick="scanModules()">🔍 Find modules</button>
+        <select id="foundSel" style="flex:1" onchange="pickFound(this.value)">
+          <option value="">press Find — no typing needed</option>
+        </select>
+      </div>
+      <div class="statline" id="robotStat">not connected</div>
+      <div class="row">
+        <label><input type="checkbox" id="liveChk" onchange="liveChanged()"> live (robot follows editor)</label>
+        <label><input type="checkbox" id="monChk" onchange="monitorChanged()"> <b>monitor</b> (editor follows robot)</label>
+      </div>
+      <div class="row">
+        <button onclick="robotCmd('HOME')">Home</button>
+        <button onclick="robotCmd('RELAX')">Relax</button>
+        <button onclick="robotCmd('ATTACH')">Attach</button>
+        <button onclick="sendPose()">Send pose</button>
+      </div>
+      <div class="row">
+        <button id="modBtn" onclick="openModule()"
+                title="the connected module's own website — hardware pins, WiFi, users, servo type, SD files. Opens in a new tab; over shared USB it can stay open alongside this editor.">⚙ Open module config</button>
+        <span class="mini">pins · WiFi · users · servo type · SD files</span>
+      </div>
+      <div class="mini">monitor mode animates the 3D model with the robot's real
+        joint angles and shows which sequence is playing — use it to watch a
+        run from the SD card.</div>
+      <div class="mini">no SD card? the robot still runs on <b>live</b> commands
+        from here (poses, monitor) — only saved sequences need the card.</div>
+    </div>
+
+    <div class="card" data-stab="robot">
+      <h2>Zero position 🔒</h2>
+      <div id="zeroLocked">
+        <div class="row">
+          <span class="lbl">User</span><input id="zUser" style="flex:1" autocomplete="username">
+        </div>
+        <div class="row">
+          <span class="lbl">Pass</span><input id="zPass" type="password" style="flex:1" autocomplete="current-password">
+          <button class="primary" onclick="zeroUnlock()">Unlock</button>
+        </div>
+        <div class="statline" id="zStat">locked — the set-zero calibration needs the password</div>
+      </div>
+      <div id="zeroPanel" style="display:none">
+        <div class="mini">jog the arms straight with the sliders (Attach first), then
+          press <b>Set zero</b> — that pose becomes the robot's home = 90° per joint
+          (the arm won't move; trim absorbs the offset). Then <b>Move to zero</b>
+          returns there.</div>
+        <div class="row">
+          <button class="primary" onclick="robotZeroSet()">◎ Set zero (current = home)</button>
+          <button onclick="robotCmd('ZERO')">⌂ Move to zero</button>
+          <button onclick="zeroLock()">Lock</button>
+        </div>
+        <div class="row">
+          <span class="lbl">New user</span><input id="zNewUser" style="width:100px">
+          <span class="lbl">New pass</span><input id="zNewPass" style="width:100px">
+          <button onclick="zeroChangeCred()">Change login</button>
+        </div>
+        <div class="statline" id="zStat2"></div>
+      </div>
+    </div>
+
+    <div class="card" data-stab="sequence">
+      <h2>Robot SD card — /moves</h2>
+      <div class="row">
+        <button onclick="refreshSd()">⟳ List sequences</button>
+        <button class="primary" onclick="uploadYaml()">Upload current</button>
+      </div>
+      <div id="sdList" class="mini">connect first, then press List</div>
+      <div class="statline" id="sdStat"></div>
+    </div>
+    </div><!-- /tabMove -->
+
+    <div id="tabSetup" style="display:none">
+    <div class="card" data-stab="setup">
+      <h2>Model (STL + texture)</h2>
+      <div class="mini">Export STL from SolidWorks (mm) into <b>models/</b> and press ⟳,
+        or pick a file here and press Import (also accepts <b>PNG/JPG textures</b> —
+        draw a face or pattern in any paint program and import it). Assign a
+        shape and/or a texture per body part — the STL's <b>real size sets the
+        rig lengths automatically</b>, and the yellow joint balls + bones stay
+        visible so you always see the joints. If the STL origin doesn't match,
+        use the <b>rot / off / scale</b> boxes under the part.</div>
+      <div class="row">
+        <input type="file" id="stlFile" accept=".stl,.png,.jpg,.jpeg,.bmp,.gif" style="flex:1">
+        <button onclick="importStl()">Import</button>
+        <button onclick="refreshModels()">⟳</button>
+      </div>
+      <div id="meshAssign"></div>
+      <h2 style="margin-top:10px">Clothes / add-ons</h2>
+      <div class="mini">extra STL pieces (shirt, hat, decorations) layered over any
+        body part — they follow that part's movement and never replace it.</div>
+      <div id="addonList"></div>
+      <div class="row"><button onclick="addAddon()">+ Add piece</button></div>
+    </div>
+
+    <div class="card" data-stab="setup">
+      <h2>Rig setup <span class="mini">(match the 3D model to your robot)</span></h2>
+      <div class="mini"><b>zero°</b> = the joint angle where that joint is
+        drawn <i>straight</i> (arm along the body). It is just a reference — the
+        normal value is <b>90</b> (the neutral pose), and you do <u>not</u> need
+        0 or 180. Only change it if at 90° your real arm is not straight: move
+        the model's sliders to match the real robot, then type those angles as
+        the zeros. <b>axis</b> = roll/pitch/yaw (which way it turns);
+        <b>inv</b> flips the direction.</div>
+      <div class="mini"><b>min/max</b> = each joint's real travel in JOINT
+        degrees — a universal joint can't reach 0–180 (default 30–150); the
+        servo still runs 0–180 via the <b>gear</b> (12:13). Dragging respects
+        these. These match the module and can be pushed to it.</div>
+      <div id="rigJoints"></div>
+      <div id="rigDims"></div>
+      <div class="row">
+        <button class="primary" onclick="saveRigDefault()" title="Lock the current tuned rig in as your default, so Reset returns to this and it's kept safe">★ Save current as default</button>
+        <button onclick="shipRigDefault()" title="Write this rig into the project itself, so EVERY browser starts on it — not just this one. Use once the rig matches the real robot.">★★ Make this the factory default</button>
+        <button onclick="resetRig()" title="Return to your saved default (or the factory rig if you haven't saved one)">Reset to default</button>
+      </div>
+      <div class="row">
+        <button onclick="pullLimits()">⬇ Read from robot</button>
+        <button class="primary" onclick="pushLimits()">⬆ Send limits + gear to robot</button>
+      </div>
+      <div class="statline" id="limStat"></div>
+    </div>
+    </div><!-- /tabSetup -->
+  </div>
+</div>
+
+<div id="timeline">
+  <div class="tl-head">
+    <h2>Timeline</h2>
+    <button class="primary" onclick="addKey()">+ Add keyframe</button>
+    <button onclick="updateKey()">Update selected</button>
+    <button onclick="dupKey()">Duplicate</button>
+    <button onclick="delKey()">Delete</button>
+    <button onclick="moveKey(-1)">◀ move</button>
+    <button onclick="moveKey(1)">move ▶</button>
+    <span class="sep"></span>
+    <button onclick="checkCollisions(true)">⚠ Check crash</button>
+    <button class="primary" id="playBtn" onclick="togglePlay()">▶ Play</button>
+    <input type="range" id="scrub" min="0" max="1000" value="0" oninput="scrubTo(this.value)">
+    <span id="tlTime" class="mini">0.0s / 0.0s</span>
+    <label><input type="checkbox" id="loopChk"> loop</label>
+    <span class="sep"></span>
+    <input id="seqName" placeholder="sequence name" value="my_move" style="width:130px">
+    <input id="seqNext" placeholder="then run…" list="seqNextList" style="width:120px"
+           title="chain: when this sequence finishes, the module starts this one. Leave empty to just stop. Build a show from short files instead of one long one.">
+    <datalist id="seqNextList"></datalist>
+    <button class="primary" onclick="exportYaml()">Export YAML (SD card)</button>
+    <button onclick="uploadYaml()">Send to robot SD</button>
+    <button onclick="robotRun()">Run on robot</button>
+    <button onclick="robotCmd('MOVE STOP')">Stop</button>
+    <span class="sep"></span>
+    <select id="seqList"><option value="">Edit saved…</option></select>
+    <button onclick="editLocalSeq()">Load for editing</button>
+  </div>
+  <div id="keys"></div>
+  <div class="statline" id="tlStat">keyframe 0 is the <b>start pose</b> — select it any time to re-edit, then press “Update selected”.</div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="vendor/OrbitControls.js"></script>
+<script src="vendor/STLLoader.js"></script>
+<!-- the tuned rig, served by the hub; empty if none has been saved yet -->
+<script src="/rig_default.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

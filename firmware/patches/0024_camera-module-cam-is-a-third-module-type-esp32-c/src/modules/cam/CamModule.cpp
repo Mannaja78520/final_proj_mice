@@ -1,0 +1,248 @@
+#include "modules/cam/CamModule.h"
+#include "core/SDStore.h"
+#include "core/Util.h"
+#include <esp_camera.h>
+#include <SD.h>
+
+// Sizes a person would ask for, smallest first. Anything above SVGA needs
+// PSRAM; begin() lowers the starting size when there is none rather than
+// letting the driver fail at capture time, which looks like a broken camera.
+struct SizeName { const char* name; framesize_t size; };
+static const SizeName SIZES[] = {
+    {"qqvga", FRAMESIZE_QQVGA},   // 160x120
+    {"qvga",  FRAMESIZE_QVGA},    // 320x240
+    {"vga",   FRAMESIZE_VGA},     // 640x480
+    {"svga",  FRAMESIZE_SVGA},    // 800x600
+    {"xga",   FRAMESIZE_XGA},     // 1024x768
+    {"sxga",  FRAMESIZE_SXGA},    // 1280x1024
+    {"uxga",  FRAMESIZE_UXGA},    // 1600x1200
+};
+static const int NSIZES = sizeof(SIZES) / sizeof(SIZES[0]);
+
+static const char* sizeName(framesize_t f) {
+    for (int i = 0; i < NSIZES; i++)
+        if (SIZES[i].size == f) return SIZES[i].name;
+    return "?";
+}
+
+void CamModule::begin() {
+    pinMode(CAM_FLASH_PIN, OUTPUT);
+    digitalWrite(CAM_FLASH_PIN, LOW);
+
+    camera_config_t c = {};
+    c.ledc_channel = LEDC_CHANNEL_0;
+    c.ledc_timer   = LEDC_TIMER_0;
+    c.pin_d0 = CAM_Y2_PIN;   c.pin_d1 = CAM_Y3_PIN;
+    c.pin_d2 = CAM_Y4_PIN;   c.pin_d3 = CAM_Y5_PIN;
+    c.pin_d4 = CAM_Y6_PIN;   c.pin_d5 = CAM_Y7_PIN;
+    c.pin_d6 = CAM_Y8_PIN;   c.pin_d7 = CAM_Y9_PIN;
+    c.pin_xclk = CAM_XCLK_PIN;
+    c.pin_pclk = CAM_PCLK_PIN;
+    c.pin_vsync = CAM_VSYNC_PIN;
+    c.pin_href = CAM_HREF_PIN;
+    c.pin_sccb_sda = CAM_SIOD_PIN;
+    c.pin_sccb_scl = CAM_SIOC_PIN;
+    c.pin_pwdn = CAM_PWDN_PIN;
+    c.pin_reset = CAM_RESET_PIN;
+    c.xclk_freq_hz = CAM_XCLK_HZ;
+    c.pixel_format = PIXFORMAT_JPEG;
+
+    // With PSRAM there is room for two full frames, so a capture can be
+    // handed out while the next one is filling. Without it, one small frame is
+    // all that fits in internal RAM — say so rather than failing later.
+    bool psram = psramFound();
+    c.frame_size = psram ? FRAMESIZE_SVGA : FRAMESIZE_QVGA;
+    c.jpeg_quality = psram ? 12 : 16;
+    c.fb_count = psram ? 2 : 1;
+    c.fb_location = psram ? CAMERA_FB_IN_PSRAM : CAMERA_FB_IN_DRAM;
+    c.grab_mode = CAMERA_GRAB_LATEST;
+
+    esp_err_t err = esp_camera_init(&c);
+    if (err != ESP_OK) {
+        ready_ = false;
+        initErr_ = "camera init failed 0x" + String((int)err, HEX);
+        // The three real causes, in the order they actually happen. A number
+        // on its own sends people to the internet; this sends them to the
+        // ribbon cable.
+        Serial.println("[cam] " + initErr_ +
+                       " — check the ribbon is seated and the latch closed, "
+                       "that the board has 5V with enough current, and that "
+                       "nothing else is driving the camera pins");
+        return;
+    }
+    ready_ = true;
+    Serial.printf("[cam] ready, %s, PSRAM %s\n",
+                  sizeName(c.frame_size), psram ? "yes" : "NO (small frames only)");
+}
+
+void CamModule::loop() {}
+
+bool CamModule::grab(uint8_t** out, size_t* len) {
+    *out = nullptr;
+    *len = 0;
+    if (!ready_) return false;
+    camera_fb_t* fb = esp_camera_fb_get();
+    if (!fb) return false;
+    // Copy out before returning the buffer: the driver wants it back promptly,
+    // and the web server sends asynchronously, long after this returns.
+    uint8_t* copy = (uint8_t*)malloc(fb->len);
+    if (copy) {
+        memcpy(copy, fb->buf, fb->len);
+        *out = copy;
+        *len = fb->len;
+    }
+    esp_camera_fb_return(fb);
+    return copy != nullptr;
+}
+
+bool CamModule::applySize(const String& name, String& reply) {
+    sensor_t* s = esp_camera_sensor_get();
+    if (!s) { reply = "ERR no sensor"; return true; }
+    for (int i = 0; i < NSIZES; i++) {
+        if (!name.equalsIgnoreCase(SIZES[i].name)) continue;
+        if (!psramFound() && SIZES[i].size > FRAMESIZE_SVGA) {
+            reply = "ERR " + name + " needs PSRAM — svga is the largest here";
+            return true;
+        }
+        if (s->set_framesize(s, SIZES[i].size) != 0) {
+            reply = "ERR the sensor refused " + name;
+            return true;
+        }
+        reply = "OK size=" + name;
+        return true;
+    }
+    String all;
+    for (int i = 0; i < NSIZES; i++) { if (i) all += ' '; all += SIZES[i].name; }
+    reply = "ERR sizes: " + all;
+    return true;
+}
+
+// Write one frame to the card. Returns the path, or "" with err set.
+String CamModule::saveTo(const String& name, String& err) {
+    if (!sd_ || !sd_->available()) { err = "no sd card"; return ""; }
+    uint8_t* buf = nullptr;
+    size_t len = 0;
+    if (!grab(&buf, &len)) { err = ready_ ? "capture failed" : initErr_; return ""; }
+    String path = name.startsWith("/") ? name : ("/photos/" + name);
+    if (!path.endsWith(".jpg")) path += ".jpg";
+    sd_->lock();
+    SD.mkdir("/photos");
+    File f = SD.open(path, FILE_WRITE);
+    bool ok = f;
+    if (ok) {
+        ok = f.write(buf, len) == len;
+        f.close();
+    }
+    sd_->unlock();
+    free(buf);
+    if (!ok) { err = "cannot write " + path; return ""; }
+    shots_++;
+    lastFile_ = path;
+    return path;
+}
+
+bool CamModule::handleCommand(String* argv, int argc, String& reply) {
+    String cmd = argv[0];
+    cmd.toUpperCase();
+
+    if (cmd == "SNAP") {
+        if (!ready_) { reply = "ERR " + initErr_; return true; }
+        if (argc >= 2) {
+            String err;
+            String path = saveTo(Util::joinFrom(argv, argc, 1), err);
+            reply = path.length() ? ("OK saved " + path) : ("ERR " + err);
+            return true;
+        }
+        // no name: just prove the sensor works, and say how big a frame is
+        uint8_t* buf = nullptr;
+        size_t len = 0;
+        if (!grab(&buf, &len)) { reply = "ERR capture failed"; return true; }
+        free(buf);
+        shots_++;
+        reply = "OK captured " + String((unsigned)len) +
+                " bytes (SNAP <name> saves it, /api/cam.jpg shows it)";
+        return true;
+    }
+
+    if (cmd == "CAM") {
+        sensor_t* s = esp_camera_sensor_get();
+        if (argc == 1) {
+            if (!ready_ || !s) { reply = "ERR " + initErr_; return true; }
+            reply = "CAM size=" + String(sizeName(s->status.framesize)) +
+                    " quality=" + String(s->status.quality) +
+                    " flash=" + String(flash_ ? "on" : "off") +
+                    " vflip=" + String(s->status.vflip) +
+                    " hmirror=" + String(s->status.hmirror) +
+                    " psram=" + String(psramFound() ? 1 : 0) +
+                    " shots=" + String(shots_);
+            return true;
+        }
+        String what = argv[1];
+        what.toUpperCase();
+        if (what == "FLASH") {
+            if (argc < 3) { reply = "ERR usage: CAM FLASH ON|OFF"; return true; }
+            String v = argv[2];
+            v.toUpperCase();
+            flash_ = (v == "ON" || v == "1");
+            digitalWrite(CAM_FLASH_PIN, flash_ ? HIGH : LOW);
+            reply = "OK flash=" + String(flash_ ? "on" : "off");
+            return true;
+        }
+        if (!ready_ || !s) { reply = "ERR " + initErr_; return true; }
+        if (what == "SIZE") {
+            if (argc < 3) { reply = "ERR usage: CAM SIZE <qqvga..uxga>"; return true; }
+            return applySize(argv[2], reply);
+        }
+        if (what == "QUALITY") {
+            int q = argc >= 3 ? argv[2].toInt() : 0;
+            if (q < 10 || q > 63) { reply = "ERR quality 10 (best) - 63 (smallest)"; return true; }
+            s->set_quality(s, q);
+            reply = "OK quality=" + String(q);
+            return true;
+        }
+        if (what == "VFLIP" || what == "HMIRROR") {
+            int on = argc >= 3 ? argv[2].toInt() : 0;
+            if (what == "VFLIP") s->set_vflip(s, on ? 1 : 0);
+            else s->set_hmirror(s, on ? 1 : 0);
+            reply = "OK " + what + "=" + String(on ? 1 : 0);
+            return true;
+        }
+        reply = "ERR CAM [SIZE <name>|QUALITY <10-63>|FLASH ON|OFF|VFLIP 0|1|HMIRROR 0|1]";
+        return true;
+    }
+    return false;
+}
+
+void CamModule::addCapabilities(JsonArray caps) {
+    caps.add("camera");
+}
+
+void CamModule::status(JsonObject o) {
+    sensor_t* s = ready_ ? esp_camera_sensor_get() : nullptr;
+    o["ready"] = ready_;
+    if (!ready_) o["error"] = initErr_;
+    o["psram"] = psramFound();
+    o["flash"] = flash_;
+    o["shots"] = shots_;
+    if (lastFile_.length()) o["last"] = lastFile_;
+    if (s) {
+        o["size"] = sizeName(s->status.framesize);
+        o["quality"] = s->status.quality;
+    }
+}
+
+void CamModule::applySettings(JsonVariant cfg) {
+    // /data/module.yaml or CFG: size and quality, so a camera comes up the way
+    // it was left rather than on the driver's default every boot.
+    if (!cfg.is<JsonObject>()) return;
+    JsonObject o = cfg.as<JsonObject>();
+    if (o["cam_size"].is<const char*>()) {
+        String reply;
+        applySize(String((const char*)o["cam_size"]), reply);
+    }
+    if (o["cam_quality"].is<int>()) {
+        sensor_t* s = esp_camera_sensor_get();
+        int q = o["cam_quality"].as<int>();
+        if (s && q >= 10 && q <= 63) s->set_quality(s, q);
+    }
+}

@@ -1,0 +1,14 @@
+{
+  // Nong Studio — the pose & sequence editor.
+  //
+  // `root` points at where it ALREADY lives, and `url` keeps its historic
+  // "/studio/" address, so every existing link, bookmark and QC driver keeps
+  // working. Nothing was moved to make it an app.
+  "name": "Nong Studio",
+  "blurb": "pose & sequence editor, 3D simulation",
+  "icon": "🤖",
+  "root": "nong/main_python_set_nong/web",
+  "url": "/studio/",
+  "entry": "index.html",
+  "order": 10
+}

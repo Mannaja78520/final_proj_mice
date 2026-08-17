@@ -4,6 +4,11 @@
 .pio/
 firmware/.pio/
 
+# Generated firmware tables and web page (tools/gen_tables.py writes them per
+# build, one binary per module type — the source is config/*.json and
+# src/web/WebUI.h). This copy is the all-types one the tools and QC read.
+firmware/generated/
+
 # CMake / ament build tree
 build/
 firmware/build/
@@ -29,3 +34,11 @@ venv/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# QC scratch (browser profiles / dom dumps are recreated each run)
+qc/_profile_*
+qc/_boot_dom.html*
+qc/**/__pycache__/
+
+# staging workspace (promote.py) — a working copy, never committed
+.staging/

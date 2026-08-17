@@ -1,0 +1,11 @@
+{
+  // Features & help — the offline reference the hub serves.
+  // Kept at "/help" because the hub page and the docs QC check link to it.
+  "name": "Features & help",
+  "blurb": "everything the system can do — searchable, works offline",
+  "icon": "📖",
+  "root": "main_python/web",
+  "url": "/help",
+  "entry": "help.html",
+  "order": 20
+}

@@ -71,3 +71,9 @@ Add 2 servos to the nong module: one to shrug the shoulders up/down (MG90S, only
 
 ### 2026-07-24
 The PDI-1181MG is a 270° servo, same as the WAIST servo — not 180°.
+
+### 2026-07-26
+After updating Nong Studio and the nong module the servo sometimes disables itself. Did we use the deadband? PDI-1181 spec: deadband 2µs, 1520µs/330Hz, 6.0V, 0.11s/60deg @6.0V, 3.5 kg.cm.
+
+### 2026-07-26
+The PDI-1181 at L_shoulder roll disables when it changes position under load; holds fine once positioned; revives only on unplug/replug. R_SH_R same load works. It worked before the update — same hardware, other servos fine, only this one now can't.

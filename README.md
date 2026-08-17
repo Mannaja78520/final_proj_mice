@@ -36,8 +36,14 @@ PlatformIO / ESP32 (`nodemcu-32s`). Shared core services (identity in NVS,
 runtime pin map, command router, RS485 bus, web portal, SD store, audio, RGB,
 sequence player) plus one folder per module type in `src/modules/`.
 
+One binary per module type — a board carries only its own module's code and
+web page:
+
 ```
-pio run -e lift_module            # build (the env name is historic — one binary serves all types)
+pio run -e mice_nong             # the humanoid
+pio run -e mice_lift             # the lift
+pio run -e mice_blank            # core only, for a board that is not a module yet
+pio run -e mice_module_firmware  # every type in one binary (legacy, kept for now)
 ```
 
 **[firmware/COMMANDS.md](firmware/COMMANDS.md) is the authoritative reference**
@@ -114,9 +120,11 @@ pull several amps.
 
 ## Getting started
 
-1. Flash any ESP32 with `firmware/` — `pio run -e lift_module -t upload`.
+1. Flash any ESP32 with `firmware/` — `pio run -e mice_nong -t upload` (or
+   `-e mice_lift`, or `-e mice_blank` if the board is not a module yet).
 2. The board boots as **MOD-XXXXXX**, type `blank`. Open its website (it starts
-   its own AP if it cannot reach WiFi), set ID / name / type, reboot.
+   its own AP if it cannot reach WiFi), set ID / name / type, reboot. The type
+   list offers what this binary was built with.
 3. Run the hub (`main_python/`) on a PC on the same network — the module shows
    up in the list.
 4. For a `nong` board, open Nong Studio from the hub, build a sequence, export

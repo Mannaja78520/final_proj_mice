@@ -1,0 +1,51 @@
+{
+  // ============================================================
+  //  MODULE TYPES — what a board can be, declared once.
+  // ============================================================
+  //
+  //  A board runs ONE module type and is built for it (see platformio.ini).
+  //  This file is where a type exists; everything that has to know about it
+  //  is generated from here at build time:
+  //
+  //    src/core/BuildTypes.h      -> generated: MICE_HAS_<TYPE> per type
+  //    modules/ModuleTable.h      -> generated: the includes + the factory
+  //    the module website          -> which <!--#type X--> regions survive
+  //    the hub                     -> which types it offers to flash
+  //
+  //  ADDING A MODULE TYPE is therefore: one entry here, the module class
+  //  itself in src/modules/<type>/, and an env in platformio.ini. Nothing
+  //  else has a list to keep in step — that is what check_registries proves.
+  //
+  //  FIELDS
+  //    label    what a person calls it
+  //    blurb    one line: what this module DOES
+  //    class    the C++ class, which must subclass Module
+  //    header   where that class lives, as the #include is written
+  //    board    the PlatformIO board its env builds for
+  //    flashable  false for a type nobody flashes on purpose (blank is not
+  //               here at all — it is the fallback inside the firmware)
+
+  "modules": {
+    "lift": {
+      "label": "Lift",
+      "blurb": "motor up/down between stages, RGB strip, speaker, stage tracking",
+      "class": "LiftModule",
+      "header": "modules/lift/LiftModule.h",
+      "board": "nodemcu-32s"
+    },
+    "nong": {
+      "label": "Nong (humanoid)",
+      "blurb": "upper body: 2 arms with universal shoulder and elbow, waist and shrug",
+      "class": "NongModule",
+      "header": "modules/nong/NongModule.h",
+      "board": "nodemcu-32s"
+    },
+    "cam": {
+      "label": "Camera",
+      "blurb": "ESP32-CAM: stills and a live view over WiFi, and onto the SD card",
+      "class": "CamModule",
+      "header": "modules/cam/CamModule.h",
+      "board": "esp32cam"
+    }
+  }
+}

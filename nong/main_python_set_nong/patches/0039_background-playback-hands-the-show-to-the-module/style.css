@@ -1,0 +1,223 @@
+:root{--sunk:#0d1117;--btn:#243040;--on-acc:#06121f;--r-sm:7px;--r-md:10px;--r-lg:12px;--sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-6:24px;
+  --bg:#10141a; --card:#1a212b; --line:#2a3442; --txt:#dce3ec; --mut:#8b98a9;
+  --acc:#4da3ff; --ok:#3ecf8e; --warn:#ffb454; --err:#ff6b6b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--txt);
+  font:14px/1.45 system-ui,Segoe UI,Roboto,sans-serif;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+h1{font-size:18px;margin-right:10px}
+h2{font-size:13px;color:var(--acc);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+header{
+  display:flex;align-items:center;gap:8px;padding:8px 12px;
+  border-bottom:1px solid var(--line);background:var(--card);
+}
+.hint{color:var(--mut);font-size:12px}
+.mini{color:var(--mut);font-size:12px;font-weight:400;text-transform:none;letter-spacing:0}
+#main{flex:1;display:flex;min-height:0}
+#viewport{flex:1;position:relative;min-width:0}
+#viewport canvas{display:block}
+#side{
+  /* flex:0 0 320px, not width:320px. A flex item defaults to min-width:auto,
+     so a single wide row (a long file name, a 10-joint number line) could
+     force the panel WIDER than 320px. That silently shrank #viewport, and the
+     3D canvas kept the size it was last told — so the render overlapped the
+     settings panel and covered the controls. min-width:0 lets wide content
+     scroll inside the panel instead of pushing the layout around. */
+  flex:0 0 320px;min-width:0;
+  overflow-y:auto;overflow-x:hidden;border-left:1px solid var(--line);
+  background:var(--card);padding:10px;display:flex;flex-direction:column;gap:10px;
+}
+#sideTabs{display:flex;gap:6px}
+#sideTabs .tab{
+  flex:1;padding:8px 0;font-weight:600;background:#141a22;color:var(--mut);
+  border:1px solid var(--line);border-radius:8px;
+}
+#sideTabs .tab.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+#tabMove,#tabSetup{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}
+.lbl{color:var(--mut);font-size:12px;min-width:78px}
+button{
+  background:var(--btn);border:1px solid var(--line);color:var(--txt);
+  border-radius:7px;padding:6px 10px;font-size:13px;cursor:pointer;
+}
+button:hover{border-color:var(--acc)}
+button.primary{background:var(--acc);border-color:var(--acc);color:var(--on-acc);font-weight:600}
+input,select{
+  background:var(--sunk);border:1px solid var(--line);color:var(--txt);
+  border-radius:7px;padding:6px 8px;font-size:13px;
+}
+input[type=range]{padding:0;flex:1;accent-color:var(--acc)}
+input[type=checkbox]{accent-color:var(--acc)}
+.statline{font-size:12px;color:var(--mut);margin-top:4px}
+
+/* joint sliders — number column wide enough that the box never overflows */
+.jrow{display:grid;grid-template-columns:96px 1fr 64px;gap:6px;align-items:center;margin:3px 0}
+.jrow .jname{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jrow.sel .jname{color:var(--acc);font-weight:600}
+.jrow input[type=number]{width:100%;min-width:0;padding:3px 2px;text-align:center}
+
+/* STL transform blocks: rotate: / offset: / scale: each on its own line */
+.tblock{margin:4px 0}
+.tlabel{font-size:12px;color:var(--acc);margin-bottom:2px}
+.trow{display:flex;gap:6px}
+.tcell{display:flex;flex-direction:column;align-items:center;gap:1px;
+  font-size:10px;color:var(--mut);flex:1;min-width:0}
+.tcell input{width:100%;min-width:0;padding:3px 2px;text-align:center}
+
+/* draggable divider between the 3D view and the side panel */
+#sideDrag{width:6px;cursor:col-resize;background:var(--line);flex:0 0 auto}
+#sideDrag:hover{background:var(--acc)}
+
+/* rig joint rows: name | zero | min | max | axis | inv */
+.rigjrow{display:grid;grid-template-columns:78px 1fr 1fr 1fr 66px 24px;gap:4px;align-items:center;margin:2px 0}
+.rigjrow .jname{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rigjrow input[type=number]{width:100%;min-width:0;padding:3px 2px;text-align:center}
+.rigjrow select{width:100%;min-width:0;padding:3px 2px;font-size:11px}
+
+/* timeline */
+#timeline{border-top:1px solid var(--line);background:var(--card);padding:8px 12px}
+.tl-head{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tl-head h2{margin:0 8px 0 0}
+.sep{width:1px;height:22px;background:var(--line);margin:0 6px}
+#scrub{width:180px}
+#keys{
+  display:flex;gap:6px;overflow-x:auto;padding:8px 2px;min-height:64px;align-items:stretch;
+}
+.key{
+  min-width:96px;border:1px solid var(--line);border-radius:9px;padding:6px 8px;
+  background:var(--sunk);cursor:pointer;flex:0 0 auto;position:relative;
+}
+.key.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.key.bad{border-color:var(--err);box-shadow:0 0 0 1px var(--err);background:#1c0f12}
+.key.bad .kbar{background:var(--err)}
+.key .kbad{font-size:10px;color:var(--err);white-space:normal;max-width:150px}
+#collideWarn{
+  display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  background:#3a2020;border:1px solid var(--err);color:var(--err);
+  padding:6px 14px;border-radius:8px;font-size:13px;z-index:5;pointer-events:none;
+}
+/* view cube — standard-view buttons (Fusion/SolidWorks style) */
+#viewCube{
+  position:absolute;top:10px;right:10px;z-index:6;
+  background:rgba(26,33,43,.85);border:1px solid var(--line);border-radius:10px;
+  padding:6px;display:flex;flex-direction:column;gap:4px;align-items:center;
+}
+#viewCube .vcRow{display:flex;gap:4px;justify-content:center}
+#viewCube button{
+  background:var(--btn);border:1px solid var(--line);color:var(--txt);
+  border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;min-width:48px;
+}
+#viewCube button:hover{border-color:var(--acc)}
+#viewCube button.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc);font-weight:600}
+.key .kidx{font-weight:700;font-size:12px}
+.key .kidx small{color:var(--mut);font-weight:400}
+.key .kpose{font-size:10px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.key .ktime{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--mut);margin-top:3px}
+.key .ktime input{width:52px;padding:2px 4px;font-size:11px}
+.key .kbar{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;background:var(--acc);opacity:.6}
+.key:first-child .kbar{background:var(--ok)}
+#meshAssign .row{margin:3px 0}
+#meshAssign select{flex:1}
+
+/* ============================================================ responsive
+   Studio is a desktop-first tool, but it has to be usable on a tablet at the
+   robot and readable on a phone. Two things drive the breakpoints:
+     * the side panel is a fixed 320px column beside the 3D view — below about
+       860px that leaves the viewport too narrow to pose in, so the layout
+       stacks instead of shrinking;
+     * the joint and rig rows are fixed-width grids, so they need their own
+       narrower tracks rather than overflowing the panel.
+   Big screens get a wider panel: the rig table has 6 columns and benefits. */
+
+/* ---- large desktop: give the side panel and the timeline more room ---- */
+@media (min-width:1600px){
+  #side{width:400px}
+  .jrow{grid-template-columns:120px 1fr 76px}
+  #keys{min-height:76px}
+}
+
+/* ---- tablet: keep the split, tighten the panel ---- */
+@media (max-width:1100px) and (min-width:861px){
+  #side{width:288px}
+  .jrow{grid-template-columns:84px 1fr 58px}
+  .rigjrow{grid-template-columns:66px 1fr 1fr 1fr 58px 22px}
+}
+
+/* ---- phone / small tablet: stack the 3D view above the panel ---- */
+@media (max-width:860px){
+  /* stacked content is taller than the viewport, so the page itself scrolls
+     instead of the flex column being pinned to exactly 100% height */
+  html,body{height:auto;min-height:100%}
+  body{overflow:auto}
+  header{flex-wrap:wrap;gap:6px;padding:8px 10px}
+  h1{font-size:16px;margin-right:6px}
+  #main{flex-direction:column;min-height:0}
+  /* the viewport keeps a usable, thumb-friendly height instead of collapsing */
+  #viewport{flex:0 0 auto;height:52vh;min-height:260px;width:100%}
+  #sideDrag{display:none}          /* nothing left to drag between */
+  #side{
+    width:100%;max-width:none;border-left:none;
+    border-top:1px solid var(--line);overflow-y:visible;
+  }
+  /* wide fixed grids get narrower tracks rather than overflowing */
+  .jrow{grid-template-columns:76px 1fr 56px}
+  .rigjrow{grid-template-columns:60px 1fr 1fr 1fr 54px 20px;gap:3px}
+  .rigjrow select{font-size:10px}
+  #scrub{width:100%}
+  .tl-head{gap:5px}
+  .sep{display:none}
+  #timeline{padding:8px 10px}
+  /* the view cube overlaps the model on a small canvas — shrink and tuck it */
+  #viewCube{top:6px;right:6px;padding:4px;gap:3px}
+  #viewCube button{min-width:38px;padding:4px 6px;font-size:11px}
+}
+
+/* ---- very narrow phones: one input per line where a grid would crush ---- */
+@media (max-width:430px){
+  .jrow{grid-template-columns:64px 1fr 48px;gap:4px}
+  .jrow .jname{font-size:11px}
+  .rigjrow{grid-template-columns:52px 1fr 1fr 1fr 46px 18px}
+  .lbl{min-width:64px}
+  .key{min-width:88px}
+  #viewport{height:44vh;min-height:220px}
+}
+
+/* ---- touch: fingers need bigger targets than a mouse pointer ---- */
+@media (pointer:coarse){
+  button{min-height:36px;padding:8px 12px}
+  input,select{min-height:34px}
+  input[type=range]{height:30px}
+  #sideTabs .tab{padding:11px 0}
+  .key{min-width:104px}
+}
+
+/* a suspended keyframe: still in the timeline to edit, but not in the run */
+.key.off{opacity:.42;border-style:dashed}
+.key.off .kpose,.key.off .kidx{text-decoration:line-through}
+.key.off .kbar{background:var(--mut)}
+.key .kskip{
+  float:right;background:transparent;border:none;color:var(--ok);
+  font-size:12px;line-height:1;padding:0 2px;cursor:pointer;
+}
+.key.off .kskip{color:var(--mut)}
+.key .kskip:hover{color:var(--acc)}
+
+/* per-move speed override on a keyframe chip (blank = the sequence's speed) */
+.key .kdps{width:42px;padding:2px 3px;font-size:11px;text-align:center}
+.key .kdps::placeholder{color:var(--mut);opacity:.6}
+
+/* ---- shared floor: the same in every mice web app ------------------ */
+/* The focus ring is never removed, only restyled — keyboard users need to
+   see where they are, and :focus-visible keeps it off mouse clicks. */
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{
+  outline:2px solid var(--acc);outline-offset:2px;border-radius:var(--r-sm)}
+/* Motion is a preference, not a decoration. */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;
+    animation-iteration-count:1!important;transition-duration:.01ms!important;
+    scroll-behavior:auto!important}}

@@ -1,0 +1,61 @@
+{
+  // ============================================================
+  //  SERVO PRESETS — the one place a servo is described.
+  // ============================================================
+  //
+  //  Adding a servo is ONE entry here. It then appears in:
+  //    * the firmware's SERVO command  (generated into ServoPresets.h at BUILD
+  //      time by firmware/tools/gen_tables.py — the chip parses nothing and
+  //      pays nothing at runtime)
+  //    * Nong Studio's preset dropdown (fetched from the hub)
+  //    * QC, which fails if the two sides ever disagree
+  //
+  //  These used to be two hand-kept copies, in NongModule.cpp and app.js, which
+  //  could drift apart with nothing to notice.
+  //
+  //  FIELDS
+  //    label  what a person sees in the dropdown
+  //    min    pulse width in microseconds at one end of travel
+  //    max    pulse width at the other end
+  //    dps    how fast the servo can really turn, degrees/second. This is the
+  //           floor for move times — the arm is never asked to beat it.
+  //    range  the SERVO's own travel end to end, in degrees. NOT the joint's
+  //           limits (those are per robot, set with LIMIT). A 270 servo simply
+  //           turns further for the same joint angle; every saved pose still
+  //           works, which is why fitting one is a one-number change.
+  //    hz     frame rate. 50 suits analogue servos; some digital servos want
+  //           more. Raising it can increase current draw on a marginal unit.
+
+  "servos": {
+    "mg90s": {
+      "label": "MG90S",
+      "min": 500, "max": 2400, "dps": 400, "range": 180, "hz": 50
+    },
+
+    "pdi1181mg": {
+      // The nong's shoulders. Sold as a 270 servo, and its datasheet says
+      // 330 Hz — but measured on the built robot it sweeps ~180 across
+      // 500-2500us, which is what rig_default.json now uses with a 14:19 gear.
+      // The preset keeps the manufacturer's numbers; the robot's real values
+      // live in the saved rig and the board's calibration.
+      "label": "PDI-1181MG",
+      "min": 500, "max": 2500, "dps": 375, "range": 270, "hz": 50
+    },
+
+    "tiankong35": {
+      // WAIST — TianKongRC / TD-8135MG 35kg, driven through a swing-bar lever.
+      "label": "TianKongRC 35kg",
+      "min": 500, "max": 2500, "dps": 250, "range": 270, "hz": 50
+    },
+
+    "generic180": {
+      "label": "generic 180",
+      "min": 500, "max": 2500, "dps": 300, "range": 180, "hz": 50
+    },
+
+    "generic270": {
+      "label": "generic 270",
+      "min": 500, "max": 2500, "dps": 300, "range": 270, "hz": 50
+    }
+  }
+}
