@@ -381,8 +381,8 @@ upper body left/right so nong can look to the side) and `SHRUG` (lifts both
 shoulders a little). **10 logical joints**, always in this order (angles are
 **joint degrees** — the physical joint angle — neutral 90, clamped to each
 joint's own `[min,max]`; a 2-servo universal joint cannot reach the full 0–180,
-so the arm default range is 30–150, and SHRUG is deliberately tiny at 87–93 =
-~6°. The servo itself runs its own travel — 180 or 270°; the firmware converts
+so the arm default range is 30–150, and SHRUG runs 77–103 = 26° (90 ±13),
+which is what the 4-bar linkage fitted on 2026-08-19 actually swings. The servo itself runs its own travel — 180 or 270°; the firmware converts
 joint→servo through the gear, so the servo uses its full range while the joint
 stays safe):
 

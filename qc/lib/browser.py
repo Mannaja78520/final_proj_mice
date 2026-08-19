@@ -170,6 +170,20 @@ def _login_js():
 """ % _F.HUB_PASSWORD)
 
 
+def _tag():
+    """A suffix nothing else can be using.
+
+    Every temporary file and browser profile carries it. Before the checks ran
+    in parallel they did not have to: one process, one driver page, one profile
+    at a time. With a pool, two workers wrote `_qcdriver.html` into the SAME
+    studio folder and each loaded the other's test - which does not fail, it
+    passes the wrong test. The millisecond timestamp the profiles used was not
+    enough either: workers start together, and two of them landed in the same
+    millisecond. The pid is what actually differs.
+    """
+    return "%d_%d" % (os.getpid(), int(time.time() * 1000) % 100000)
+
+
 def page(driver_js, query="", seconds=20, studio_web=None):
     """Serve the real Studio index.html + a driver script, load it, wait, kill.
 
@@ -179,13 +193,18 @@ def page(driver_js, query="", seconds=20, studio_web=None):
     _quiet_start()
     web = studio_web or (QC.parent / "nong" / "main_python_set_nong" / "web")
     src = (web / "index.html").read_text(encoding="utf-8")
-    drv = web / "_qcdriver.html"
+    drv = web / ("_qcdriver_%s.html" % _tag())
+    # Callers name the driver page in their URL as `_qcdriver.html`, because
+    # that is what it is CALLED, not where it happens to live this run. The
+    # real file carries a per-process suffix so two workers cannot load each
+    # other's test, and the URL is corrected here rather than in ten checks.
+    query = query.replace("_qcdriver.html", drv.name)
     drv.write_text(src + _login_js() + PRELUDE + "<script>\n" + driver_js + "\n</script>",
                    encoding="utf-8")
     SCRATCH.mkdir(parents=True, exist_ok=True)
     # parenthesised: "/" and "%" share precedence, so without them python
     # tries Path % int
-    prof = str(SCRATCH / ("profile_%d" % int(time.time() * 1000)))
+    prof = str(SCRATCH / ("profile_%s" % _tag()))
     import fake_serial
     _before = len(fake_serial.qc_marks)      # before the browser can say anything
     try:
@@ -238,7 +257,7 @@ def _wait_for_done(seconds, grace=150, start=None):
     return False
 
 
-def raw_page(html, base, seconds=20, name="_qcraw.html"):
+def raw_page(html, base, seconds=20, name=None):
     """Serve an arbitrary page from the studio web folder and load it.
 
     Used by checks that drive OTHER pages (in iframes) rather than the studio
@@ -247,6 +266,7 @@ def raw_page(html, base, seconds=20, name="_qcraw.html"):
     """
     _quiet_start()
     web = QC.parent / "nong" / "main_python_set_nong" / "web"
+    name = name or ("_qcraw_%s.html" % _tag())
     f = web / name
     # NOT the studio PRELUDE: that reports via rawCmd(), which lives in app.js
     # and a raw page never loads it. Talk to the fake module directly instead.
@@ -299,7 +319,7 @@ window.qcWaitFor = function(cond, ms, step){
 """
     f.write_text(_login_js() + raw_prelude + html, encoding="utf-8")
     SCRATCH.mkdir(parents=True, exist_ok=True)
-    prof = str(SCRATCH / ("profile_%d" % int(time.time() * 1000)))
+    prof = str(SCRATCH / ("profile_%s" % _tag()))
     import fake_serial
     _before = len(fake_serial.qc_marks)      # before the browser can say anything
     try:

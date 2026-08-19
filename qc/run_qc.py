@@ -13,6 +13,8 @@ of going stale.
 
 Exit code 0 = everything green, 1 = something regressed.
 """
+import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -83,20 +85,44 @@ def write_receipt(passed, failed):
         pass                      # a receipt is an optimisation, never required
 
 
+def _int_arg(argv, name, default):
+    """`--jobs 8` or `--jobs=8`, without pulling in argparse."""
+    for i, a in enumerate(argv):
+        if a == name and i + 1 < len(argv):
+            try:
+                return max(1, int(argv[i + 1]))
+            except ValueError:
+                return default
+        if a.startswith(name + "="):
+            try:
+                return max(1, int(a.split("=", 1)[1]))
+            except ValueError:
+                return default
+    return default
+
+
+def _load(f):
+    """Import one check file. Returns (module, error) - never raises.
+
+    Split out of discover() so a pool worker can load the one check it was
+    given without importing the other eighty-five.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("qc_" + Path(f).stem, str(f))
+    mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)
+    except Exception as e:                           # a broken check is a failure
+        return None, e
+    return mod, None
+
+
 def discover():
     """Every checks/check_*.py, in file order. No registry to keep in sync."""
-    import importlib.util
     out = []
     for f in sorted((QC / "checks").glob("check_*.py")):
-        spec = importlib.util.spec_from_file_location("qc_" + f.stem, f)
-        mod = importlib.util.module_from_spec(spec)
-        try:
-            spec.loader.exec_module(mod)
-        except Exception as e:                       # a broken check is a failure
-            mod = None
-            out.append((f, None, e))
-            continue
-        out.append((f, mod, None))
+        mod, err = _load(f)
+        out.append((f, mod, err) if err is None else (f, None, err))
     return out
 
 
@@ -122,11 +148,85 @@ except (AttributeError, OSError):        # pre-3.7, or a stream that cannot be
     pass                                 # reconfigured — carry on regardless
 
 
+# Checks that grab something the whole MACHINE has only one of. They cannot
+# share a worker pool with anything, so they run on their own. Everything else
+# is safe in parallel because a separate process gets its own fake_serial, its
+# own qc_marks and its own hub - the isolation is the point, not a side effect.
+SOLO = {
+    "check_short_name",     # binds port 80
+    "check_name_claim",     # answers mDNS on 5353
+    "check_mdns",           # the same
+    "check_build_split",    # writes firmware/.pio, which other checks read
+    # Not a shared RESOURCE - a shared clock. It sleeps 150ms and expects the
+    # hub's show thread to have advanced by then, which is true on an idle
+    # machine and not true with ten workers competing for cores. It failed on
+    # the first parallel gate and passed three times out of three alone, which
+    # is the signature: the check is fine, the margin is not. Measuring time
+    # needs a quiet machine.
+    "check_hub_clock",
+}
+
+
+def _plan(msg):
+    """Say on the plan page what QC is doing, right now.
+
+    Asked for directly, 2026-08-20: *why it not update plan.html make update
+    everytime as default when run this plan*. A gate that runs for minutes with
+    the page saying nothing cannot be told from a gate that died. Best effort
+    only - the plan is a convenience and must never be able to fail a run.
+    """
+    try:
+        subprocess.run([sys.executable, str(CODE / "tools" / "plan.py"),
+                        "running", msg],
+                       capture_output=True, timeout=20)
+    except Exception:                              # noqa: BLE001
+        pass
+
+
+def _one(path_str):
+    """Run a single check in THIS process and return a picklable result.
+
+    Everything it prints is captured and handed back, so a pool of workers
+    cannot interleave half-lines from eight checks into unreadable soup.
+    """
+    import io
+    import contextlib
+    path = Path(path_str)
+    buf = io.StringIO()
+    mod, err = _load(path)
+    if err:
+        return (path_str, "", [], 0.0, "", err)
+    with contextlib.redirect_stdout(buf):
+        case, secs, crash = F.run_check(mod)
+    return (path_str, getattr(mod, "TITLE", path.stem),
+            [(bool(g), l, d) for g, l, d in case.results],
+            secs, crash or "", "")
+
+
 def main(argv):
     quick = "--quick" in argv
     listing = "--list" in argv
+    # HOW MANY AT ONCE. Default is most of the machine: the suite spent 836s on
+    # one core of 24 while the other 23 idled, and the user asked for the whole
+    # machine to be used. Not ALL of them - each browser check starts an Edge,
+    # and 24 browsers thrash a laptop rather than finishing sooner.
+    jobs = _int_arg(argv, "--jobs", default=max(2, min(10, (os.cpu_count() or 4) - 2)))
+    if "--serial" in argv:
+        jobs = 1
     verbose = "-v" in argv or "--verbose" in argv
-    pats = [a.lower() for a in argv if not a.startswith("-")]
+    # The VALUE after --jobs is not a filter. Without this, `--jobs 8` looked
+    # for checks whose name contains "8" and ran none of them.
+    skip_next = False
+    pats = []
+    for a in argv:
+        if skip_next:
+            skip_next = False
+            continue
+        if a == "--jobs":
+            skip_next = True
+            continue
+        if not a.startswith("-"):
+            pats.append(a.lower())
 
     found = discover()
     if listing:
@@ -151,6 +251,16 @@ def main(argv):
     broken, skipped = [], []
     failures = []
 
+    # The generated firmware tables are built ONCE, here, before any worker
+    # exists. Left to the checks, every process built them on first use and
+    # they wrote the same files at the same time.
+    try:
+        F.generated()
+    except Exception as e:                            # noqa: BLE001
+        print("%sgen_tables failed:%s %s" % (R, D, e))
+
+    # Which checks will actually run, after --quick and any filter.
+    wanted = []
     for f, mod, err in found:
         if err:
             broken.append((f.stem, err))
@@ -163,41 +273,76 @@ def main(argv):
         if quick and getattr(mod, "SLOW", False):
             skipped.append(title)
             continue
+        wanted.append((f, mod))
 
-        print("%s[%s]%s %s" % (B, area, D, title))
-        case, secs, crash = F.run_check(mod)
-        for good, label, detail in case.results:
+    def report(f, mod, case_results, secs, crash, printed):
+        """Print one check's block and count it. Same output, either path."""
+        nonlocal total_pass, total_fail
+        print("%s[%s]%s %s" % (B, getattr(mod, "AREA", "?"), D,
+                               getattr(mod, "TITLE", f.stem)))
+        if printed:
+            sys.stdout.write(printed)
+        n_fail = 0
+        for good, label, detail in case_results:
             if good:
                 total_pass += 1
                 if verbose:
                     print("   %sok%s   %s" % (G, D, label))
             else:
                 total_fail += 1
+                n_fail += 1
                 print("   %sFAIL%s %s" % (R, D, label))
                 if detail:
-                    print("        %s" % detail.replace("\n", "\n        "))
-                failures.append("%s / %s" % (title, label))
+                    print("        %s" % detail.replace(chr(10), chr(10) + "        "))
+                failures.append("%s / %s" % (getattr(mod, "TITLE", f.stem), label))
         if crash:
             total_fail += 1
+            n_fail += 1
             print("   %sCRASH%s %s" % (R, D, crash.strip().splitlines()[-1]))
             if verbose:
-                print("        " + crash.replace("\n", "\n        "))
-            failures.append("%s / crashed" % title)
-        if not case.results and not crash:
-            # A check that asserted NOTHING is not a pass — it is a check that
-            # has quietly stopped testing anything, which is worse than a
-            # missing check because the coverage still looks present. Two were
-            # in this state on 2026-08-17: check_contracts' command scan had
-            # gone vacuous when the sender was renamed, and check_docs greps
-            # for an if-chain that check_registries asserts was DELETED. Both
-            # printed this yellow note and both counted as green for months.
+                print("        " + crash.replace(chr(10), chr(10) + "        "))
+            failures.append("%s / crashed" % getattr(mod, "TITLE", f.stem))
+        if not case_results and not crash:
             total_fail += 1
+            n_fail += 1
             print("   %sFAIL%s asserted nothing — this check has gone silent"
                   % (R, D))
-            failures.append("%s / asserted nothing" % title)
+            failures.append("%s / asserted nothing" % getattr(mod, "TITLE", f.stem))
         print("   %s%d ok, %d failed, %.1fs%s"
-              % (G if not case.failed and not crash else R,
-                 len(case.passed), len(case.failed) + (1 if crash else 0), secs, D))
+              % (G if not n_fail else R,
+                 len([1 for g, _l, _d in case_results if g]), n_fail, secs, D))
+
+    solo = [(f, m) for f, m in wanted
+            if f.stem in SOLO or getattr(m, "SOLO", False)]
+    para = [(f, m) for f, m in wanted if (f, m) not in solo]
+    if jobs > 1 and len(para) > 1:
+        import concurrent.futures as _cf
+        print("%srunning %d checks on %d workers, %d on their own%s"
+              % (B, len(para), jobs, len(solo), D))
+        done_n = 0
+        by_path = {str(f): (f, m) for f, m in para}
+        with _cf.ProcessPoolExecutor(max_workers=jobs) as pool:
+            futs = [pool.submit(_one, str(f)) for f, _m in para]
+            for fut in _cf.as_completed(futs):
+                path_s, _title, results, secs, crash, err = fut.result()
+                f, mod = by_path[path_s]
+                if err:
+                    broken.append((f.stem, err))
+                    continue
+                report(f, mod, results, secs, crash, "")
+                done_n += 1
+                if done_n % 10 == 0:
+                    _plan("QC %d/%d checks" % (done_n, len(para) + len(solo)))
+        for f, mod in solo:
+            case, secs, crash = F.run_check(mod)
+            report(f, mod, case.results, secs, crash, "")
+        _plan("QC finished: %d passed, %d failed" % (total_pass, total_fail))
+
+    else:
+        # One at a time: --jobs 1, or a filter that left a single check.
+        for f, mod in wanted:
+            case, secs, crash = F.run_check(mod)
+            report(f, mod, case.results, secs, crash, "")
 
     print("\n" + "=" * 62)
     for name, err in broken:

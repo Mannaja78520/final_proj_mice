@@ -146,10 +146,12 @@ const DEFAULT_RIG = {
   neutral: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90], // editable "Neutral pose"
   // JOINT travel limits (deg). Arms: the 2-servo universal joint can't reach
   // the full 0..180 (default 30..150). WAIST turns the body a wide range;
-  // SHRUG only lifts the shoulders a few degrees (87..93 = ~6 deg). The module
+  // SHRUG swings 77..103 = 26 deg (90 +-13), measured on the 4-bar linkage
+  // fitted 2026-08-19. It was 87..93 while the shoulder bar was a see-saw.
+  // The module
   // clamps to the same joint limits.
-  min: [30, 30, 30, 30, 30, 30, 30, 30, 30, 87],
-  max: [150, 150, 150, 150, 150, 150, 150, 150, 150, 93],
+  min: [30, 30, 30, 30, 30, 30, 30, 30, 30, 77],
+  max: [150, 150, 150, 150, 150, 150, 150, 150, 150, 103],
   // PER-JOINT reduction gear + servo pulse. Each joint can use a different
   // servo: as built the SHOULDERS are PDI-1181MG (270 deg) through 15:18, the
   // ELBOWS are MG90S (180 deg) through 12:13, WAIST is a TianKongRC 35kg 270

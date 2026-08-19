@@ -84,7 +84,13 @@ BRIEF = ROOT / "tools" / "ai_brief.txt"
 
 # The panel. Different FAMILIES, deliberately: two models from one family tend
 # to be wrong in the same way, which is the thing a panel is supposed to fix.
-PANEL = ["gemini-3.1-pro-high", "claude-opus-4-6-thinking", "gpt-oss-120b-medium"]
+# Three FAMILIES, five voices, asked for by the user 2026-08-19. Sonnet and
+# Flash were added when GPT-OSS turned out to be contributing nothing at all
+# (see ask()): a panel of two is not a panel. Flash is here for breadth rather
+# than depth - it is fast and cheap, and a fifth reader costs little because
+# every one of them is given tools/ai_brief.txt and a hard line budget.
+PANEL = [] or ["gemini-3.1-pro-high", "claude-opus-4-6-thinking",
+         "claude-sonnet-4-6", "gemini-3.7-flash-high", "gpt-oss-120b-medium"]
 HEAD = "gemini-3.1-pro-high"
 
 # The SHAPE of an answer, enforced by agy rather than asked for in words.
@@ -117,7 +123,7 @@ def clean(text):
     return text.replace('"', "'").replace("“", "'").replace("”", "'")
 
 
-def ask(model, prompt, add_dirs, timeout=600, schema=True):
+def ask(model, prompt, add_dirs, timeout=600, schema=True, retry=True):
     """One model, one answer. Never raises: a panel with a hole is still a panel.
 
     The answer comes back as data, not prose, because agy can ENFORCE a schema
@@ -134,7 +140,7 @@ def ask(model, prompt, add_dirs, timeout=600, schema=True):
         cmd += ["--output-format", "json", "--json-schema", str(sf)]
     cmd += ["-p", clean(prompt), "--mode", "plan", "--model", model]
     t0 = time.time()
-    findings, raw, used = [], "", {}
+    findings, raw, used, error = [], "", {}, ""
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
                            encoding="utf-8", errors="replace")
@@ -142,9 +148,28 @@ def ask(model, prompt, add_dirs, timeout=600, schema=True):
         if schema:
             try:
                 data = json.loads(raw)
-                findings = (data.get("structured_output") or {}).get("findings") or []
                 used = data.get("usage") or {}
-                raw = json.dumps(findings)
+                out_obj = data.get("structured_output")
+                if data.get("status") == "ERROR" or out_obj is None:
+                    # The model could not answer in the enforced shape. This
+                    # was SILENT until 2026-08-19: gpt-oss-120b failed this way
+                    # on every panel run for days, and the report printed
+                    # "(nothing)" beside its name - which reads as "found no
+                    # problems" and is the most dangerous way to fail. It
+                    # answers fine in plain prose, so ask again without the
+                    # schema rather than losing the voice entirely.
+                    error = str(data.get("error") or "no structured answer")
+                    if retry:
+                        again = ask(model, prompt, add_dirs, timeout,
+                                    schema=None, retry=False)
+                        findings = prose_findings(again["text"])
+                        raw = again["text"]
+                        used = again.get("used") or used
+                        error = "" if findings else (
+                            "%s; prose retry gave nothing either" % error)
+                else:
+                    findings = out_obj.get("findings") or []
+                    raw = json.dumps(findings)
             except ValueError:
                 pass                    # not JSON: keep whatever came back
     except subprocess.TimeoutExpired:
@@ -155,7 +180,27 @@ def ask(model, prompt, add_dirs, timeout=600, schema=True):
         if sf:
             shutil.rmtree(sf.parent, ignore_errors=True)
     return {"model": model, "secs": round(time.time() - t0, 1),
-            "text": raw, "findings": findings, "used": used}
+            "text": raw, "findings": findings, "used": used, "error": error}
+
+
+def prose_findings(text, limit=8):
+    """A plain answer turned into findings, for a model that cannot do schema.
+
+    Deliberately dumb: one line, one finding, no file attributed. A model that
+    could not answer in the enforced shape has not earned a confident file:line,
+    and the head reviewer is told to weigh these the same as any other claim -
+    which is to say, not at all until the code is read.
+    """
+    out = []
+    for line in (text or "").splitlines():
+        line = line.strip().lstrip("-*# ").strip()
+        if len(line) < 12 or line.startswith("```") or line.startswith("{"):
+            continue
+        out.append({"file": "", "line": "", "severity": "unchecked",
+                    "what": line[:300]})
+        if len(out) >= limit:
+            break
+    return out
 
 
 def where_of(paths):
@@ -227,7 +272,22 @@ def run(question, paths, models=None, head=None, out=None):
              "files."
              % (brief, chr(10), ", ".join(files), chr(10), chr(10),
                 (chr(10)).join(seen) or "(none)", chr(10)))
+    # IF ONE RUNS OUT, USE THE REST - the user's rule, 2026-08-19. A voice that
+    # fails costs one opinion, which the other four cover. The HEAD failing used
+    # to cost the whole verdict, because nothing else read the findings. So when
+    # the head comes back empty AND broken, the next model on the panel reads
+    # them instead, and the report says who ended up judging.
     verdict = ask(head, judge, where)
+    if not verdict["findings"] and verdict.get("error"):
+        for spare in models:
+            if spare == head:
+                continue
+            print("   %s could not judge (%s) - asking %s"
+                  % (head, verdict["error"], spare))
+            verdict = ask(spare, judge, where)
+            if verdict["findings"]:
+                head = spare
+                break
     hu = (verdict.get("used") or {}).get("total_tokens") or 0
     spent += hu
     print("   %-28s %5.1fs  %2d findings  %s tokens  (head)"
@@ -241,6 +301,14 @@ def run(question, paths, models=None, head=None, out=None):
                                           f.get("line", ""), f.get("what", ""))
                 for f in fs] or [" - (nothing)"]
 
+    def said(a):
+        """What one model contributed - or why it contributed nothing."""
+        if a["findings"]:
+            return rows(a["findings"])
+        if a.get("error"):
+            return [" - **FAILED** %s" % a["error"]]
+        return [" - (nothing to report)"]
+
     report = ["# Panel review - %s" % stamp, "",
               "**Question.** %s" % question.strip(), "",
               "**Files.** %s" % (", ".join(files) or "none"),
@@ -252,7 +320,7 @@ def run(question, paths, models=None, head=None, out=None):
         report += ["### %s  _(%.1fs, %s tokens)_"
                    % (a["model"], a["secs"],
                       (a.get("used") or {}).get("total_tokens", "?")), ""]
-        report += rows(a["findings"]) + [""]
+        report += said(a) + [""]
     report += ["---", "",
                "_A verdict is a shortlist, not a fact. Every finding here is "
                "checked against the code before anything changes._"]

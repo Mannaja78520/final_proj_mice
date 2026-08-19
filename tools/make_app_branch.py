@@ -17,15 +17,12 @@ to go stale and nothing to remember to update.
 
 WHAT GOES IN, AND WHY EACH ONE
 ------------------------------
-The exe is not self-contained yet (MiceHub.spec has datas=[]), so it reads its
-pages off the disk beside it: `HERE/web` and `HERE.parent/shared/web`. That
-decides the whole layout below - it is not a choice, it is what the program
-looks for. When A15-1 bundles the pages into the exe this shrinks to one file.
+Since A15-1 the exe carries its own pages, so this branch is ONE program and a
+README - nothing to install, no folders that must stay beside it, and no Python
+on the machine that runs it. Proven by running the exe alone in an empty
+folder: it served the hub, the shared stylesheet, Studio and the help app.
 
-    main_python/MiceHub.exe        the hub
-    main_python/web/               the pages it serves
-    shared/web/                    the design system, themes and shared script
-    nong/main_python_set_nong/web/ Nong Studio, served at /studio/
+    MiceHub.exe                    the hub, and everything it serves
     README.md                      how to get just this, and how to run it
 
 Deliberately NOT included: the firmware sources, the QC suite, the plan, the
@@ -45,10 +42,7 @@ BRANCH = "app"
 
 # (source, destination-in-branch). Directories are copied whole.
 PARTS = [
-    ("main_python/MiceHub.exe", "main_python/MiceHub.exe"),
-    ("main_python/web", "main_python/web"),
-    ("shared/web", "shared/web"),
-    ("nong/main_python_set_nong/web", "nong/main_python_set_nong/web"),
+    ("main_python/MiceHub.exe", "MiceHub.exe"),
 ]
 
 README = """# Mice hub — the app only
@@ -69,7 +63,7 @@ Or, if you already have the project and want only this folder:
 
 ```
 git fetch origin app
-git checkout origin/app -- main_python shared nong
+git checkout origin/app -- MiceHub.exe
 ```
 
 ## Run it

@@ -78,13 +78,24 @@ class Finder:
     perfectly reachable on another one (routed networks do this), and a board
     identified over a cable reports its own address, so plugging one in is
     enough to find it on WiFi afterwards.
+
+    `grace` is how long something that MISSED a sweep stays in the list, marked
+    stale, before it is really forgotten. Zero keeps the old behaviour: one
+    missed probe and it is gone. That was wrong for the place this runs - the
+    user, 2026-08-19: the wifi it not stable sometime i lost connect some time
+    other pc lost connect. On a link like that one dropped packet made a hub or
+    a robot vanish from the screen while it sat there working, and nobody can
+    tell that from a real failure. Keeping the row and SAYING it is late is
+    honest; deleting it is not.
     """
 
     def __init__(self, name, probe, ttl, patient=None, skip_self=False,
-                 key=None, sweep=None):
+                 key=None, sweep=None, grace=0):
         self.name = name
         self.probe = probe
         self.ttl = ttl
+        self.grace = grace
+        self._seen = {}                     # ip -> (record, when it answered)
         self.patient = patient
         self.skip_self = skip_self
         self.key = key                      # how to sort; None keeps found order
@@ -107,6 +118,13 @@ class Finder:
         """
         with self._lock:
             self._at, self._found = 0.0, []
+            # The grace memory as well. Leaving it meant a "forgotten" finder
+            # still remembered: the next sweep re-added everything from before
+            # as STALE, and a check that had just cleared the list watched its
+            # predecessor's modules reappear. It only showed once the suite ran
+            # in a process pool, where one worker runs several checks in turn -
+            # alone, every check had a fresh process and nothing to inherit.
+            self._seen.clear()
 
     def cached(self):
         """What is known right now, without asking the network."""
@@ -151,7 +169,28 @@ class Finder:
                 with ThreadPoolExecutor(max_workers=8) as ex:
                     found += [r for r in ex.map(ask, missing) if r]
 
+            now = time.time()
+            for r in found:
+                if r.get("ip"):
+                    self._seen[r["ip"]] = (dict(r), now)
+
+            # Anything that answered recently but not THIS time is late, not
+            # gone. It comes back marked, so a screen can grey it out and say
+            # when it was last heard from instead of silently dropping a row.
+            if self.grace:
+                here = {r.get("ip") for r in found}
+                for ip, (rec, when) in list(self._seen.items()):
+                    if ip in here:
+                        continue
+                    if now - when > self.grace:
+                        del self._seen[ip]
+                        continue
+                    late = dict(rec)
+                    late["stale"] = True
+                    late["lastSeen"] = int(now - when)
+                    found.append(late)
+
             if self.key:
                 found.sort(key=self.key)
-            self._at, self._found = time.time(), found
+            self._at, self._found = now, found
             return list(found)

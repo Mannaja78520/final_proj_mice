@@ -189,6 +189,11 @@ input[type=color]{padding:2px;width:56px;height:40px}
 .state-load,.state-empty{color:var(--mut)}
 .state-err{color:var(--err)}
 .state-stale{color:var(--warn)}
+/* A row for something that missed its last check. Dimmed and edged in the
+   warning colour, never hidden: it was really there a moment ago, and on a
+   venue WiFi that drops it usually still is. The row keeps its controls -
+   clicking one is exactly how you find out whether it came back. */
+.mod.late{opacity:.72;border-left:3px solid var(--warn)}
 
 /* ------------------------------------------------------------ shared floor */
 /* The focus ring is never removed, only restyled — keyboard users need to see

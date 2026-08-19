@@ -102,12 +102,22 @@ def run(t):
         t.contains(ini, "[env:%s]" % env, "platformio.ini defines %s" % env)
 
     sizes = {}
+    # ALL FOUR AT ONCE. Each environment writes its own .pio/build/<env>, so
+    # they never touch each other's output - and building them in a for loop
+    # was 107 of the suite's 836 seconds, on a machine with 24 threads. The
+    # compiler itself is single-threaded per file; four compilers are not.
+    import concurrent.futures as _cf
+    t0 = time.time()
+    with _cf.ThreadPoolExecutor(max_workers=len(ENVS)) as pool:
+        built = dict(zip(ENVS, pool.map(
+            lambda e: _run([str(PIO), "run", "-e", e], F.FIRMWARE), ENVS)))
+    print("      (%d environments built in %.0fs, together)"
+          % (len(ENVS), time.time() - t0))
+
     for env, (types, absent) in ENVS.items():
-        t0 = time.time()
-        code, out = _run([str(PIO), "run", "-e", env], F.FIRMWARE)
+        code, out = built[env]
         if not t.ok(code == 0, "%s compiles" % env, _first_error(out)):
             continue
-        print("      (%s built in %.0fs)" % (env, time.time() - t0))
 
         m = re.search(r"Flash:\s*\[[^\]]*\]\s*([\d.]+)%", out)
         if t.ok(m, "%s reports flash usage" % env):

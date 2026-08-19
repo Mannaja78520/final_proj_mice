@@ -136,6 +136,21 @@ def already_green(where: Path):
     return True
 
 
+def _plan(msg):
+    """Tell the plan page what the promote is doing. Best effort, never fatal.
+
+    Asked for 2026-08-20: *make update everytime as default when run this
+    plan*. A gate takes minutes, and a page that says nothing for that long
+    cannot be told from a run that died. run_qc.py reports its own progress;
+    this covers the steps around it - the fingerprint check and the copy.
+    """
+    try:
+        subprocess.run([sys.executable, str(MAIN / "tools" / "plan.py"),
+                        "running", msg], capture_output=True, timeout=20)
+    except Exception:                                  # noqa: BLE001
+        pass
+
+
 def run_qc(where: Path):
     qc = where / "qc" / "run_qc.py"
     if not qc.is_file():
@@ -188,6 +203,7 @@ def promote():
         show(changed, added, gone)
         return 0
     print("about to promote %d changed + %d new file(s)" % (len(changed), len(added)))
+    _plan("promote: checking whether staging is already green")
     if not (already_green(STAGING) or run_qc(STAGING)):
         print("\nREFUSED: QC is not green in staging. Nothing was copied.")
         return 1

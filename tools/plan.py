@@ -26,6 +26,7 @@ because it records progress and a staging copy is stale the moment it is made.
 This finds it whether it is run from the real tree or from a staging copy.
 """
 import argparse
+import os
 import re
 import sys
 import time
@@ -60,6 +61,18 @@ def now():
     return time.strftime("%Y-%m-%d %H:%M")
 
 
+def _atomic(path, text):
+    """Write a file whole, or not at all.
+
+    A reader that catches a half-written file sees nonsense, and nothing in the
+    error says so. Both the page and the published state are written this way
+    because QC now updates them while it runs.
+    """
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text, encoding="utf-8", newline="")
+    os.replace(str(tmp), str(path))
+
+
 class Plan:
     """The STATE block, edited in place."""
 
@@ -68,7 +81,13 @@ class Plan:
         self.text = self.path.read_text(encoding="utf-8")
 
     def save(self):
-        self.path.write_text(self.text, encoding="utf-8", newline="")
+        # Written whole, then moved into place. Since 2026-08-20 the QC runner
+        # reports its progress here WHILE it runs, so something else may be
+        # reading this file at the moment it is written - and a reader that
+        # catches a half-written page sees a broken plan, which looked like a
+        # failing check rather than a torn read. os.replace is atomic on
+        # Windows and POSIX alike.
+        _atomic(self.path, self.text)
         self.publish()
 
     def publish(self):
@@ -100,9 +119,8 @@ class Plan:
             raw = raw.replace(ent, ch)
         out = {"stamp": _t.strftime("%Y-%m-%d %H:%M:%S"), "raw": raw}
         try:
-            (self.path.parent / "plan_state.js").write_text(
-                "window.PLAN_STATE=" + json.dumps(out) + ";" + chr(10),
-                encoding="utf-8", newline="")
+            _atomic(self.path.parent / "plan_state.js",
+                    "window.PLAN_STATE=" + json.dumps(out) + ";" + chr(10))
         except OSError:
             pass                      # a convenience, never a requirement
 
@@ -141,6 +159,40 @@ class Plan:
             raise SystemExit("no task %s" % tid)
         self.text = new
 
+    def add(self, tid, status, note, before=None):
+        """Put a NEW task into the STATE block, published like every other edit.
+
+        Added 2026-08-20 after the user asked why the page had not changed. It
+        had not, and the page was innocent: new tasks were being written into
+        PLAN.html by hand, and `plan_state.js` - the file the open page pulls
+        every four seconds - is only rewritten when this tool runs. So the page
+        sat on the last published state until the next status change happened
+        to republish it, which could be many minutes.
+
+        Editing the page by hand is now never necessary, which is the only
+        reliable way to stop it happening.
+        """
+        if status not in STATUSES:
+            raise SystemExit("status must be one of: %s" % ", ".join(STATUSES))
+        if re.search("^" + re.escape(tid) + ":", self.text, re.M):
+            raise SystemExit("%s already exists" % tid)
+        line = "%s: %-5s %s  — %s" % (tid, status, now(), note)
+        anchor = None
+        if before:
+            anchor = re.search("^" + re.escape(before) + ":", self.text, re.M)
+            if not anchor:
+                raise SystemExit("no task %s to put it before" % before)
+        if anchor:
+            at = anchor.start()
+        else:
+            # After the LAST task line, so a new id lands with its own area
+            # rather than at the top of the block.
+            ends = [m.end() for m in re.finditer(r"^[A-Z]\d+-\d+:.*$", self.text, re.M)]
+            if not ends:
+                raise SystemExit("no STATE block to add to")
+            at = ends[-1] + 1
+        self.text = self.text[:at] + line + chr(10) + self.text[at:]
+
     def summary(self):
         rows = re.findall(r"^([A-Z]\d+-\d+):\s+(\w+)", self.text, re.M)
         counts = {s: sum(1 for _, x in rows if x == s) for s in STATUSES}
@@ -152,12 +204,23 @@ class Plan:
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("action", help="one of: %s, running, note, show" % ", ".join(STATUSES))
-    ap.add_argument("rest", nargs="*", help="task ids, or the text for running/note")
+    ap.add_argument("action",
+                    help="one of: %s, running, note, add, publish, show"
+                         % ", ".join(STATUSES))
+    ap.add_argument("rest", nargs="*", help="task ids, or the text for running/note/add")
     ap.add_argument("--clear", action="store_true", help="running: nothing in flight")
+    ap.add_argument("--status", default="todo", help="add: status of the new task")
+    ap.add_argument("--before", help="add: put it in front of this task id")
     a = ap.parse_args(argv)
 
     p = Plan()
+    if a.action == "publish":
+        # For the one case hand-editing is unavoidable: republish so the open
+        # page sees it within four seconds instead of at the next status change.
+        p.publish()
+        print("published — the open page will pick it up")
+        return 0
+
     if a.action == "show":
         counts, run, live = p.summary()
         print(" · ".join("%d %s" % (v, k) for k, v in counts.items() if v))
@@ -169,6 +232,10 @@ def main(argv=None):
         p.set_running("" if a.clear else " ".join(a.rest))
     elif a.action == "note":
         p.append_note(a.rest[0], " ".join(a.rest[1:]))
+    elif a.action == "add":
+        if len(a.rest) < 2:
+            raise SystemExit("add: need a task id and what it is")
+        p.add(a.rest[0], a.status, " ".join(a.rest[1:]), a.before)
     elif a.action in STATUSES:
         for tid in a.rest:
             p.set_status(tid, a.action)

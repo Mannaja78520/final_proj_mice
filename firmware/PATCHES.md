@@ -35,3 +35,4 @@ Every change to the firmware is saved here as a numbered patch. Old patches are 
 | 0041 | 2026-08-19 12:59 | The board carries the shared theme file and script, so a board page wears the same theme as the hub |
 | 0042 | 2026-08-19 13:37 | Bounded RS485 broadcast stagger, and the camera says which sensor it found |
 | 0043 | 2026-08-19 15:12 | A grouped board with no neighbours looks for its group, so a room of boards can find each other |
+| 0044 | 2026-08-19 18:55 | The camera says which board and sensor it is, and finds its own pin layout |

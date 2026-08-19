@@ -118,6 +118,27 @@ is cheaper than building the wrong thing well.
 
     python tools/ai_panel.py --ask "<the question>" --dir <file-or-folder> --out <report.md>
 
+**FIVE voices, twice per piece of work.** The user's instruction, 2026-08-19:
+*use all to brain strome before code and after finish QC too need to make
+sure*. So the panel runs at BOTH ends - once on the design before anything is
+written, and once on the finished thing after QC is green, before it is
+promoted. The panel is five models from three makers (Gemini Pro, Opus, Sonnet,
+Gemini Flash, GPT-OSS) with Gemini Pro as head reviewer.
+
+Two failures that cost real reviews, both silent until 2026-08-19:
+
+* **GPT-OSS had been contributing NOTHING for days.** It errors when an answer
+  shape is enforced with a JSON schema, and the report printed `(nothing)`
+  beside its name - which reads as *found no problems* and actually meant
+  *never ran*. A model that cannot answer as data is now asked again in plain
+  prose, and a failure is printed as **FAILED**, never as an empty list.
+* **The head reviewer can fail too**, and when it did the whole verdict was
+  lost. Another model now judges in its place. The user's rule: *if run of
+  token of each use the rest* - one model running out costs one opinion, never
+  the review.
+
+`check_panel` holds all of that, so it cannot rot back.
+
 That tool is the standing answer to *do not trust one AI*: it asks several
 models the same question in parallel, then hands their answers to a HEAD
 reviewer that says which findings are real, which are wrong, and which cannot
@@ -279,6 +300,33 @@ things so they can be changed later without editing code.
 Evidence: Gemini's design output was better; it also proposed three CSS changes
 that broke the rules they aimed at, and Claude caught two bugs Gemini's own fixes
 introduced. Neither is trusted alone — see the multi-model rule in the plan.
+
+## The repeated cycles are commands — use them, do not retype them
+
+Asked for 2026-08-20: *any system or file involving repetitive tasks, convert
+them into executable scripts to minimize token usage as much as possible*. Two
+cycles were being written out by hand every time, and both are now one command:
+
+    python tools/sabotage.py --check page_version --spec - <<'JSON'
+    [{"file": "main_python/main.py", "find": "...", "replace": "",
+      "why": "what breaking this would mean"}]
+    JSON
+
+    python tools/land.py --done A17-3        quick suite, gate, promote, plan
+
+`sabotage.py` breaks the fix, runs the check, and **always** puts the file back
+— including when the check crashes, which a hand-written cycle does not. A
+sabotage whose text is not found is an ERROR, never a pass: patching nothing and
+watching the check pass reads as *the check is weak* when the truth is *the
+sabotage missed*. It earned itself on its first run by catching a weak assertion
+of mine — `check_page_version` asserted that the words `myVer === null` appeared,
+which survived breaking the line they were on.
+
+`land.py` runs the quick suite first (thirty seconds to learn what the gate takes
+five minutes to say), prints the one line worth reading out of three hundred, and
+marks tasks done **only** when the gate was green AND it really promoted.
+
+`check_dev_tools` holds both, so they cannot rot.
 
 ## Verification, every time
 

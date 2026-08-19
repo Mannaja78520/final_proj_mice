@@ -169,8 +169,32 @@ def run(t):
                     ("set_wpc", "white-pixel correction"),
                     ("set_lenc", "lens shading correction")):
         t.contains(src, fn + "(s, 1)", "the sensor's %s is enabled" % why)
-    t.contains(src, "set_framesize(s, FRAMESIZE_SVGA)",
-               "and it starts on the size that measured cleanest (svga)")
+    # The start size is per SENSOR now. SVGA was measured on an OV2640 and was
+    # applied to every board; a real ESP32-CAM here turned out to be an OV5640,
+    # a five megapixel part, and running it at SVGA while the frame buffer was
+    # allocated for the init size failed every capture after a clean init.
+    t.contains(src, "startSize(s->id.PID",
+               "the start size is chosen by which sensor this actually is")
+    start = src[src.find("static framesize_t startSize("):]
+    start = start[:start.find(chr(10) + "}") + 2]
+    t.contains(start, "FRAMESIZE_SVGA",
+               "an OV2640 still starts where it measured cleanest")
+    t.contains(start, "return initSize",
+               "and a sensor nobody has measured keeps the size its buffer "
+               "was allocated for")
+    t.contains(src, "sensorName(", "the board says which sensor it found")
+    # ...and it really TRIES them. Naming the table is not the same as looping
+    # over it: the first version of this assertion passed against a loop that
+    # had been disabled.
+    loop = src[src.find("esp_camera_init(&c);"):]
+    loop = loop[:loop.find("if (err != ESP_OK) {")]
+    t.contains(loop, "b < CAM_BOARD_COUNT",
+               "and it tries every pin layout it knows until one answers")
+    t.contains(loop, "esp_camera_deinit",
+               "letting the driver go between attempts, or the next one fails "
+               "for the wrong reason")
+    t.contains(src, "CAM_BOARDS[] = {",
+               "the layouts are a table, so adding a board is one line")
     # ...but NOT as the init size: the frame buffer is allocated for that, and
     # SVGA in internal RAM fails outright with `camera init failed 0x105`.
     init = src[src.find("camera_config_t c = {}"):src.find("esp_camera_init")]

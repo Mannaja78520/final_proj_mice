@@ -19,6 +19,7 @@ Stdlib only - no pip installs. Command reference: code/firmware/COMMANDS.md
 """
 
 import itertools
+import hashlib
 import json
 import os
 import re
@@ -38,15 +39,47 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutTimeout
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-# When frozen into an executable (PyInstaller), folders live next to the exe.
+# WHERE THE APP IS, and WHERE ITS FILES COME FROM, are two different questions
+# once the app is a single file. Asked for 2026-08-19: the second PC should not
+# need Python, or Node, or a folder of web pages - just the one exe.
+#
+#   HERE     the folder the exe sits in. Everything the hub WRITES goes there:
+#            the password hash, the known hubs, Studio's saved projects. It has
+#            to be a real folder that survives a restart.
+#   asset()  a read-only file that SHIPS with the app - a page, the CSS, a
+#            registry. In a one-file build PyInstaller unpacks those into a
+#            temporary folder (sys._MEIPASS) that is DELETED when the app
+#            exits, so nothing writable may ever be looked up through it. That
+#            distinction is the whole reason this is two things and not one.
+#
+# A file next to the exe wins over the bundled copy, so a venue can drop a
+# changed palette or a fixed page beside MiceHub.exe and see it immediately,
+# without a rebuild and without a Python installed anywhere.
 if getattr(sys, "frozen", False):
     HERE = Path(sys.executable).resolve().parent
+    _ROOTS = [HERE, Path(getattr(sys, "_MEIPASS", "") or HERE)]
+    # Writable trees live next to the exe. An older install kept them one level
+    # up; if that layout is there, keep using it, because updating the app must
+    # never hide someone's saved work.
+    DATA = HERE.parent if (HERE.parent / "nong").is_dir() else HERE
 else:
     HERE = Path(__file__).resolve().parent
+    _ROOTS = [HERE.parent]
+    DATA = HERE.parent
+
+
+def asset(*parts):
+    """A read-only file that ships with the app, wherever it ended up."""
+    found = None
+    for root in _ROOTS:
+        found = root.joinpath(*parts)
+        if found.exists():
+            return found
+    return found          # the last candidate, so errors name a real path
 
 # Registries: data files that describe things, so adding a web app / servo /
 # command is one edit in one place. See code/tools/registry.py.
-sys.path.insert(0, str((HERE.parent / "tools")))
+sys.path.insert(0, str(asset("tools")))
 try:
     import registry
 except Exception as _e:            # a broken registry must not stop the hub
@@ -55,7 +88,7 @@ except Exception as _e:            # a broken registry must not stop the hub
 
 import hub_auth                                            # noqa: E402
 
-HUB_WEB = HERE / "web"
+HUB_WEB = asset("main_python", "web")
 # Written at runtime, holds a password HASH. Never promoted (promote.py's
 # SKIP_FILES): it belongs to the machine, not to the source.
 AUTH_STORE = Path(os.environ.get("MICE_HUB_AUTH")
@@ -63,10 +96,10 @@ AUTH_STORE = Path(os.environ.get("MICE_HUB_AUTH")
 # The ONE design system, served at /mice.css to every page the hub serves —
 # including the module's own website, which links the same URL and gets the
 # board's compiled-in copy when it is reached over WiFi instead.
-SHARED_WEB = HERE.parent / "shared" / "web"
-WEBUI_H = HERE.parent / "firmware" / "src" / "web" / "WebUI.h"
-STUDIO = HERE.parent / "nong" / "main_python_set_nong"
-STUDIO_WEB = STUDIO / "web"
+SHARED_WEB = asset("shared", "web")
+WEBUI_H = asset("firmware", "src", "web", "WebUI.h")
+STUDIO = DATA / "nong" / "main_python_set_nong"
+STUDIO_WEB = asset("nong", "main_python_set_nong", "web")
 PROJECTS = STUDIO / "projects"
 SEQUENCES = STUDIO / "sequences"
 MODELS = STUDIO / "models"
@@ -351,12 +384,16 @@ def _probe_patiently(ip):
 # with its own scan - measured 2026-08-19, a hub on another subnet answered in
 # 0.03 s when idle and missed the 0.7 s window while scanning its cables, so it
 # appeared and disappeared between two refreshes.
+# The grace periods are why a row does not blink on a bad link: a thing that
+# misses a sweep stays listed, marked late, for this long. Modules get longer
+# than hubs because a module on WiFi time-slices between the show network and
+# its own hotspot and is the likelier of the two to answer late.
 HUBS = discovery.Finder("hubs", lambda ip: probe_hub(ip),
                         patient=lambda ip: probe_hub(ip, timeout=5.0),
-                        ttl=20, skip_self=True)
+                        ttl=20, skip_self=True, grace=90)
 MODULES = discovery.Finder("modules", lambda ip: probe_module(ip),
                            patient=lambda ip: _probe_patiently(ip),
-                           ttl=10, key=lambda m: m["id"])
+                           ttl=10, key=lambda m: m["id"], grace=45)
 
 
 def _ips_from_usb():
@@ -1076,7 +1113,7 @@ def check_takeover(kind, addr, bus, cmd):
 # so a PC that has never built the firmware is told exactly that instead of
 # being offered a button that cannot work.
 PIO_HOME = Path.home() / ".platformio"
-FIRMWARE_DIR = HERE.parent / "firmware"
+FIRMWARE_DIR = DATA / "firmware"
 BOOT_APP0 = (PIO_HOME / "packages" / "framework-arduinoespressif32" /
              "tools" / "partitions" / "boot_app0.bin")
 
@@ -1237,7 +1274,11 @@ def modules_here(force=False):
         key = board_key(mod)
         seen = out.get(key)
         if not seen:
-            seen = {k: v for k, v in mod.items() if k != "dev"}
+            # `stale` is deliberately NOT copied here: it belongs to the ROUTE
+            # that went quiet, not to the board. A nong on a cable that also
+            # missed a WiFi sweep is not late - it is in front of you.
+            seen = {k: v for k, v in mod.items() if k not in ("dev", "stale",
+                                                              "lastSeen")}
             seen["routes"] = []
             seen["key"] = "/".join(str(p) for p in key)
             out[key] = seen
@@ -1247,6 +1288,8 @@ def modules_here(force=False):
         for field in ("name", "type", "group", "fw", "ip", "id", "chip"):
             if mod.get(field) not in (None, "", []):
                 seen[field] = mod[field]
+        if mod.get("stale"):
+            route = dict(route, stale=True, lastSeen=mod.get("lastSeen"))
         if route not in seen["routes"]:
             seen["routes"].append(route)
 
@@ -1270,10 +1313,65 @@ def modules_here(force=False):
             continue
         add(mod, {"kind": "wifi", "dev": "wifi:" + ip, "ip": ip})
 
+    # A board is late only when EVERY way in is late. One live route is enough
+    # to call it present, which is the whole point of listing routes at all.
+    for seen in out.values():
+        rs = seen["routes"]
+        if rs and all(r.get("stale") for r in rs):
+            seen["stale"] = True
+            ago = [r.get("lastSeen") for r in rs if r.get("lastSeen") is not None]
+            seen["lastSeen"] = min(ago) if ago else None
+
     # A stable order, so the list does not shuffle under someone's hand between
     # two scans: named boards first, by name, then by whatever identity there is.
     return sorted(out.values(),
                   key=lambda m: ((m.get("name") or "~").lower(), str(m.get("id"))))
+
+
+_web_v = ["", 0.0]
+
+
+def web_version(ttl=2.0):
+    """A short id for the pages this hub is serving RIGHT NOW.
+
+    An open tab keeps the copy of hub.html and the stylesheets it loaded with.
+    The data on the page refreshes itself every few seconds, so a board coming
+    and going is seen - but a change to the INTERFACE is not, and nothing says
+    so. Asked about directly on 2026-08-20: *in web why i need to refresh by my
+    self to see the change*.
+
+    Built from the size and mtime of the files actually served, not from a
+    version number someone has to remember to bump - a number that has to be
+    edited by hand is a number that will be forgotten on the one change that
+    mattered. Contents are deliberately NOT hashed: this is polled by every
+    open tab, and reading a megabyte of Studio each time to answer a question
+    whose answer is nearly always *nothing changed* is a poor trade.
+
+    Cached for a moment because several tabs poll it, and the answer cannot
+    meaningfully change between two of their requests.
+    """
+    now = time.time()
+    if _web_v[0] and now - _web_v[1] < ttl:
+        return _web_v[0]
+    h = hashlib.sha1()
+    for root in (HUB_WEB, SHARED_WEB, STUDIO_WEB):
+        try:
+            for f in sorted(Path(root).rglob("*")):
+                # Names starting with _ are scratch, not app. QC writes its
+                # driver page INTO the studio folder while a browser check
+                # runs, and hashing it made the version flap several times a
+                # minute - every open tab would have announced an update
+                # because a temporary file appeared next to the real ones.
+                if f.name.startswith("_"):
+                    continue
+                if f.is_file() and f.suffix.lower() in (".html", ".css", ".js"):
+                    st = f.stat()
+                    h.update(f.name.encode("utf-8", "replace"))
+                    h.update(("%d:%d" % (int(st.st_mtime), st.st_size)).encode())
+        except OSError:
+            continue            # a folder that is not there changes nothing
+    _web_v[0], _web_v[1] = h.hexdigest()[:12], now
+    return _web_v[0]
 
 
 def shared_css():
@@ -1973,6 +2071,7 @@ class Handler(BaseHTTPRequestHandler):
             # themselves work with no password, because someone glancing at the
             # hub to see whether a board is alive should not have to type.
             if path in ("/api/login", "/api/logout", "/api/whoami",
+                        "/api/version",
                         "/api/users", "/api/users/add", "/api/users/remove"):
                 return self.auth_route(method, path)
             if hub_auth.gated(path, method) and not self.logged_in():
@@ -2096,6 +2195,18 @@ class Handler(BaseHTTPRequestHandler):
 
     def auth_route(self, method: str, path: str):
         a = auth()
+        if path == "/api/version":
+            # WHAT THE OPEN TAB IS RUNNING. Asked 2026-08-20: *in web why i
+            # need to refresh by my self to see the change*. The data on the
+            # page refreshes itself every few seconds, but hub.html and the
+            # stylesheets are fetched once, when the tab loads - so a change to
+            # the interface is invisible until someone reloads, and nothing
+            # says so.
+            #
+            # It sits with the OPEN routes on purpose: the login screen is one
+            # of the pages that can go stale, and a version nobody may read
+            # until they log in would not help there.
+            return self.send_json({"ok": True, "version": web_version()})
         if path == "/api/whoami":
             # Never leaks the password, only whether one has to be typed. The
             # page needs this to decide what to grey out.
@@ -2408,7 +2519,7 @@ class Handler(BaseHTTPRequestHandler):
                                    # The NAME, and honestly whether it works.
                                    # Printing mice.local while nothing answers
                                    # it sends people down a hole.
-                                   "name_url": ("http://%s:%d/" % (MDNS_NAME, PORT)
+                                   "name_url": ("http://%s:%d/" % (ns.name, PORT)
                                                 if ns and not ns.error else ""),
                                    "name_why": (ns.error if ns else "not started"),
                                    "modules": mods})
@@ -2754,6 +2865,59 @@ class Handler(BaseHTTPRequestHandler):
             return r.read()
 
 
+def start_short_name(port=80):
+    """Answer on port 80 as well, only to send people to the real one.
+
+    Asked for on 2026-08-19: why type mice.local:8642 rather than mice.local.
+    Because a bare name means port 80, and the hub is not there.
+
+    Moving the hub TO port 80 would be the obvious fix and the wrong one: on
+    Windows something else often holds it - IIS, Skype, another dev server -
+    and the hub would then fail to start at all, which reads as the app being
+    broken rather than as a port being taken.
+
+    So this is a second, tiny listener whose whole job is a redirect. If the
+    port is free the short name works; if it is not, nothing is said and
+    nothing breaks - the hub is already running on its own port by the time
+    this is tried.
+    """
+    class Redirect(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def do_GET(self):                       # noqa: N802
+            where = "http://%s:%d%s" % (self.headers.get("Host", lan_ip())
+                                        .split(":")[0], PORT, self.path)
+            body = ("the hub is at " + where).encode()
+            self.send_response(302)
+            self.send_header("Location", where)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        do_POST = do_GET
+        do_HEAD = do_GET
+
+        def log_message(self, *a, **k):
+            pass                                # a redirect is not news
+
+    class Polite(ThreadingHTTPServer):
+        # NEVER take a port another program is holding. ThreadingHTTPServer
+        # sets SO_REUSEADDR, and on Windows that is not the harmless
+        # "reuse a socket in TIME_WAIT" it is on Unix - it lets one process
+        # bind a port another process is already listening on, and then which
+        # of them gets a connection is anyone's guess. Backing off is the whole
+        # point of this listener: the hub is already up, and a short name is
+        # not worth taking someone else's port for.
+        allow_reuse_address = False
+
+    try:
+        srv = Polite((HOST, port), Redirect)
+    except OSError:
+        return None                             # someone else has it: fine
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv
+
+
 def main():
     for d in (PROJECTS, SEQUENCES, MODELS):
         d.mkdir(parents=True, exist_ok=True)
@@ -2769,12 +2933,41 @@ def main():
     # A NAME as well as an address. It is started here, after the socket is
     # bound, so a hub that cannot get port 5353 (Bonjour or avahi already has
     # it) still runs and simply says the name is unavailable.
-    NAME_SERVER[0] = mdns.Responder(MDNS_NAME, lan_ip)
+    # CLAIM A NAME NOBODY ELSE HAS. Two hubs both answering mice.local do not
+    # share it, they race: the same name reaches a different machine from one
+    # lookup to the next. So ask first, and if the short name is spoken for,
+    # take one of our own - mice-<this pc>.local. Nobody has to remember it,
+    # because other hubs are LINKS on the network screen, not names to type.
+    # The name THIS PC retreats to when the shared one is spoken for. It is
+    # worked out up front and handed to the responder, because a clash can
+    # also turn up minutes later - the other PC boots, or comes back after the
+    # WiFi dropped it - and by then nothing else knows this machine's name.
+    own_name = "mice-%s.local" % re.sub(r"[^a-z0-9-]", "",
+                                        socket.gethostname().lower())[:24]
+    NAME_SERVER[0] = mdns.Responder(MDNS_NAME, lan_ip, fallback=own_name)
+    other = NAME_SERVER[0].taken()
+    if other:
+        print("  (%s is already answered by %s - taking %s instead)"
+              % (MDNS_NAME, other, own_name))
+        # Rename the responder we already have rather than building a new one.
+        # A fresh Responder(own_name) would WANT the long name, and the reclaim
+        # only ever goes back to what it wanted - so a hub that retreated at
+        # startup would keep the hostname for ever, while one that retreated a
+        # minute later would take mice.local back when the other PC left. Two
+        # paths, two different behaviours, and nothing saying so.
+        NAME_SERVER[0].name = own_name
     if NAME_SERVER[0].start():
         print("  by name       -> http://%s:%d/   (phones, Macs, Windows)"
-              % (MDNS_NAME, PORT))
+              % (NAME_SERVER[0].name, PORT))
     else:
         print("  by name       -> not available:", NAME_SERVER[0].error)
+    # ...and the short name, when port 80 is free to take.
+    if start_short_name():
+        # The name this hub really answers to, not the one it wanted: after a
+        # clash those differ, and printing the shared one told the operator to
+        # type an address that reaches the OTHER machine.
+        print("  short name    -> http://%s/   (no port to type)"
+              % NAME_SERVER[0].name)
     print("The hub finds all modules by itself; Nong Studio is at /studio/.")
     print("Ctrl+C to stop.")
     threading.Timer(0.6, lambda: webbrowser.open(local)).start()

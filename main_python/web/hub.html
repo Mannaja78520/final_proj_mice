@@ -101,6 +101,18 @@ h1{font-size:24px;margin-bottom:var(--sp-1)}
 </style>
 </head>
 <body>
+<!-- The page you are reading may be older than the hub serving it. Asked
+     2026-08-20: *in web why i need to refresh by my self to see the change*.
+     The DATA here refreshes itself; the page itself was fetched once, when the
+     tab opened, so a change to the interface is invisible until a reload.
+     It never reloads on its own: somebody may be dragging a joint or halfway
+     through typing a WiFi password, and losing that to a surprise refresh is
+     worse than seeing an old screen for a minute. So it says so, and waits. -->
+<div class="banner info" id="newVer" hidden role="status" aria-live="polite">
+  <span>The hub has been updated. This page is the older version.</span>
+  <button class="primary" onclick="location.reload()">Reload</button>
+  <button onclick="dismissVer()">Not now</button>
+</div>
 <h1>🤖 Mice Control Hub</h1>
 <div class="sub">Welcome! This page finds your robot modules automatically —
 over WiFi and over any cable you plug in. <b>Click a module to open its own
@@ -733,6 +745,34 @@ function modsMeta(){
 }
 setInterval(modsMeta, 5000);
 
+// ---- is this page still the one the hub is serving? ------------------
+// The version is whatever /api/version said when the tab loaded. If it ever
+// differs, the files behind this page changed and what you are looking at is
+// old. Checked on the timer that was already running rather than a new one:
+// one more request every 20 seconds, and none while the tab is in the
+// background - a laptop with the hub open on a second screen should not be
+// polling all night.
+var myVer = null, verHidden = false;
+function dismissVer(){
+  verHidden = true;
+  var b = document.getElementById('newVer');
+  if(b) b.hidden = true;
+}
+async function checkVer(){
+  if(document.hidden) return;
+  try{
+    const r = await fetch('/api/version').then(r=>r.json());
+    if(!r || !r.version) return;
+    if(myVer === null){ myVer = r.version; return; }   // first answer is the baseline
+    if(r.version === myVer) return;
+    if(verHidden) return;            // asked to be left alone until next load
+    var b = document.getElementById('newVer');
+    if(b) b.hidden = false;
+  }catch(e){ /* hub restarting, or offline: say nothing, try again later */ }
+}
+setInterval(checkVer, 20000);
+checkVer();
+
 async function scan(force){
   const el=document.getElementById('mods');
   if(force)el.innerHTML='<span class="mini spin">looking for modules… (a few seconds)</span>';
@@ -775,6 +815,11 @@ async function scan(force){
 }
 function modRow(m,extra,port,busId,peer){
   const d=document.createElement('div');d.className='mod';
+  // A board that missed a sweep is LATE, not gone. The hub keeps it listed for
+  // a grace period (see Finder.grace) because the venue WiFi drops - and the
+  // row has to say so, or a lingering row is just a nicer-looking lie. It is
+  // marked in words as well as colour: never colour alone.
+  if(m.stale) d.classList.add('late');
   // Everything here comes off the wire from a board, so it goes through esc()
   // like the rest of the page. A module name is user-settable (SET NAME, the
   // module site) and any board on the same WiFi answers the sweep — an
@@ -782,7 +827,9 @@ function modRow(m,extra,port,busId,peer){
   // one page that holds every serial port and the flash API.
   d.innerHTML=`<span class="nm">${esc(m.name||'?')}</span>
     <span class="ty ${esc(m.type||'')}">${esc(m.type||'?')}</span>
-    <span class="ip">#${esc(m.id!=null?m.id:'?')}${extra?' · '+esc(extra):''}<span class="tech">${
+    <span class="ip">#${esc(m.id!=null?m.id:'?')}${extra?' · '+esc(extra):''}${
+      m.stale ? ' · <span class="state-stale">last answered '+
+                esc(m.lastSeen!=null?m.lastSeen+'s ago':'a while ago')+'</span>' : ''}<span class="tech">${
       m.ip?' · '+esc(m.ip):''}${
       (m.routes&&m.routes.length>1)
         ? ' · reachable '+esc(m.routes.map(r=>r.kind==='wifi'?'over WiFi':('on '+r.port)).join(' and '))

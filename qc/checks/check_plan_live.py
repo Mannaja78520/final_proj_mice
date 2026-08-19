@@ -118,3 +118,86 @@ def run(t):
          "a reload loses the scroll position and any text being read")
     t.contains(loader, "renderPlan()",
                "it redraws in place when the state moves")
+
+    # ---- written whole, even while something else is reading it -----
+    # Since 2026-08-20 the QC runner reports progress into this file WHILE it
+    # runs, so a reader can arrive mid-write. It really happened: check_plan_live
+    # crashed in a gate on a page that was half there, which reads as a broken
+    # check rather than a torn read. Driven rather than asserted from the source,
+    # because "it calls os.replace" is not the property - "nobody ever sees half
+    # a file" is.
+    import threading  # noqa: PLC0415
+    stop, torn = [False], []
+
+    def reader():
+        while not stop[0]:
+            try:
+                txt = work.read_text(encoding="utf-8")
+            except OSError:
+                continue                     # mid-rename on Windows: not torn
+            if txt and "</html>" not in txt:
+                torn.append(len(txt))
+
+    th = threading.Thread(target=reader, daemon=True)
+    th.start()
+    try:
+        for n in range(6):
+            subprocess.run([sys.executable, str(F.CODE / "tools" / "plan.py"),
+                            "running", "torn-read self-test %d" % n],
+                           capture_output=True, env=env, timeout=60)
+    finally:
+        stop[0] = True
+        th.join(timeout=3)
+    t.eq(torn, [],
+         "the plan is never seen half-written while something reports progress")
+
+    # The drive above is worth keeping but it does NOT discriminate: a 200 KB
+    # write finishes faster than the reader can catch it, so it passed with the
+    # atomic write removed. Proved with tools/sabotage.py rather than assumed.
+    # What actually holds the property is that both writes go through a rename.
+    tool_src = (F.CODE / "tools" / "plan.py").read_text(encoding="utf-8")
+    t.contains(tool_src, "os.replace",
+               "the page is moved into place, not written in place")
+    save = tool_src[tool_src.find("    def save(self):"):][:600]
+    t.ok("_atomic(self.path" in save and "self.path.write_text" not in save,
+         "saving the plan goes through the atomic write",
+         "writing in place lets a reader catch half a file, which looks like a "
+         "broken plan and not like the race it is")
+    pub = tool_src[tool_src.find("    def publish(self):"):][:1400]
+    t.ok("_atomic(" in pub,
+         "and so does publishing the state the open page reads",
+         "the page polls that file every four seconds; a torn read there is "
+         "a syntax error in a script tag, which fails silently")
+
+    # ---- a NEW task is added through the tool, so it gets published --
+    # Asked on 2026-08-20: *the plan.html did it auto change?* It had not, and
+    # the page was innocent. New tasks were being written into PLAN.html by
+    # hand, and plan_state.js - the file an open page pulls every four seconds
+    # - is only rewritten when this tool runs. So the page showed the last
+    # PUBLISHED state until some later status change happened to republish it.
+    # The fix is that adding a task is a command, not an edit.
+    tool = F.CODE / "tools" / "plan.py"
+    src = tool.read_text(encoding="utf-8")
+    t.contains(src, "def add(", "a task can be ADDED through the tool")
+
+    tid = "Z9-%d" % (_os.getpid() % 1000)
+    r = subprocess.run([sys.executable, str(tool), "add", tid, "qc self-test"],
+                       capture_output=True, text=True, timeout=60,
+                       env=env)
+    t.eq(r.returncode, 0, "adding a task succeeds")
+    t.contains(work.read_text(encoding="utf-8"), tid,
+               "the task really lands in the page")
+    fresh = json.loads((work.parent / "plan_state.js")
+                       .read_text(encoding="utf-8")
+                       .split("=", 1)[1].rstrip().rstrip(";"))
+    t.contains(fresh.get("raw", ""), tid,
+               "and the PUBLISHED state carries it, without a second command")
+
+    # Adding the same id twice is refused rather than silently duplicated: two
+    # lines with one id makes the progress card count it twice.
+    again = subprocess.run([sys.executable, str(tool), "add", tid, "again"],
+                           capture_output=True, text=True, timeout=60,
+                           env=env)
+    t.ok(again.returncode != 0, "adding the same id twice is refused",
+         "it returned %d; a duplicated id is counted twice by the progress card"
+         % again.returncode)

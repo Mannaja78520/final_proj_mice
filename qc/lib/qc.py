@@ -109,7 +109,26 @@ sys.path.insert(0, str(CODE / "tools"))
 # one tree's hub answered the other tree's request, which does not fail loudly,
 # it silently tests the wrong tree. The pid spreads them out; the range stays
 # well clear of the real hub on 8642.
-_hub_port = [8700 + (os.getpid() % 40) * 25]
+def _free_port():
+    """A port the OS says is free, right now.
+
+    It used to be derived from the pid: `8700 + (os.getpid() % 40) * 25`. That
+    was fine for two processes and wrong for a pool - Windows hands out pids in
+    multiples of 4, so `pid % 40` has only TEN possible values and workers
+    collide. A collision here does not fail loudly: one worker's hub answers
+    another worker's request, and the check quietly tests the wrong tree.
+    Asking the OS removes the guess entirely.
+    """
+    import socket
+    s = socket.socket()
+    try:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+    finally:
+        s.close()
+
+
+_hub_port = [_free_port()]
 
 
 def start_hub(fake=True):
@@ -141,7 +160,7 @@ def start_hub(fake=True):
     # which the stdlib server dumps as a traceback. Expected here, and it
     # drowns the actual results.
     socketserver.BaseServer.handle_error = lambda *a, **k: None
-    _hub_port[0] += 1
+    _hub_port[0] = _free_port()
     main.PORT = _hub_port[0]
     threading.Thread(target=main.main, daemon=True).start()
     base = "http://127.0.0.1:%d" % main.PORT

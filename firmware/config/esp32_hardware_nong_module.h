@@ -10,7 +10,7 @@
     //   8 R_EL_R  9 WAIST   10 SHRUG
     // Joints 1-8 are the two arms (universal joint = 2 servos each). Joint 9
     // WAIST yaws the whole upper body left/right (TianKongRC 35kg, 270 deg).
-    // Joint 10 SHRUG lifts both shoulders a few degrees through a 4-bar
+    // Joint 10 SHRUG lifts both shoulders through a 4-bar linkage, 26 deg
 // linkage (TianKongRC 35kg, 270 deg, direct 1:1).
     // These pins are the compile-time DEFAULTS — each board overrides them at
     // runtime from its own NVS pin map (Hardware pins on the website).
@@ -31,7 +31,7 @@
     // As built: SHOULDERS = PDI-1181MG (270 deg) through a 15:18 reduction,
     //           ELBOWS    = MG90S      (180 deg) through a 12:13 reduction,
     //           WAIST     = TianKongRC 35kg 270 deg, direct 1:1,
-    //           SHRUG     = TianKongRC 35kg 270 deg, direct 1:1 (~6 deg travel
+    //           SHRUG     = TianKongRC 35kg 270 deg, direct 1:1 (26 deg travel
 //                       at the joint, through a 4-bar linkage).
     // All of it is changeable at runtime from the web / Nong Studio
     // (GEAR, PULSE, SERVO, RANGE commands) — these are only the power-on defaults.
@@ -90,10 +90,12 @@
     // Per-joint JOINT limits / trim / invert / neutral (10 joints). The two
     // BODY joints differ from the arms: WAIST (9) yaws the body left/right so
     // it wants a wide range; SHRUG (10) only lifts the shoulders a little, so
-    // its range is deliberately tiny (~6 deg total, 87..93). All are overridable
+    // its range is 26 deg total (77..103, i.e. 90 +-13). It was 6 deg when
+    // the shoulder bar was a see-saw; the 4-bar linkage fitted on 2026-08-19
+    // swings much further. All are overridable
     // from module.yaml / LIMIT / Nong Studio.
-    #define NONG_MIN_DEF      { 30,  30,  30,  30,  30,  30,  30,  30,  30,  87}
-    #define NONG_MAX_DEF      {150, 150, 150, 150, 150, 150, 150, 150, 150,  93}
+    #define NONG_MIN_DEF      { 30,  30,  30,  30,  30,  30,  30,  30,  30,  77}
+    #define NONG_MAX_DEF      {150, 150, 150, 150, 150, 150, 150, 150, 150, 103}
     #define NONG_TRIM_DEF     {  0,   0,   0,   0,   0,   0,   0,   0,   0,   0}
     #define NONG_INVERT_DEF   {  0,   0,   0,   0,   0,   0,   0,   0,   0,   0}
     #define NONG_NEUTRAL_DEF  { 90,  90,  90,  90,  90,  90,  90,  90,  90,  90}

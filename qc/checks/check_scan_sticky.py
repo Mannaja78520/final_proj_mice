@@ -41,6 +41,15 @@ def run(t):
 
     main.probe_module = fake_probe
     main.lan_ip = lambda: SUBNET + ".4"
+    # And the addresses learned from CABLES, which are otherwise whatever this
+    # machine happens to have plugged in. scan_modules passes them as
+    # `also_ask`, so a real board on a real port - or the fake one, depending on
+    # what else is running - joins the patient pass and the assertion about
+    # WHICH address gets re-asked sees an extra one. It failed exactly that way
+    # in the first parallel gate and passed every time on its own, which is the
+    # signature of a test reading the machine instead of its own fixture.
+    real_usb = main._ips_from_usb              # noqa: SLF001
+    main._ips_from_usb = lambda: []            # noqa: SLF001
     main.MODULES.forget()
     try:
         # ---- answering promptly: found, as it always was ----------------
@@ -70,12 +79,34 @@ def run(t):
         t.ok(all(c[0] == SLOWPOKE for c in patient),
              "specifically the module that went quiet")
 
-        # ---- but a module that is really gone must disappear ------------
+        # ---- a module that stops answering is LATE before it is gone ----
+        # Added 2026-08-19 with the venue WiFi dropping every few minutes. A
+        # module that misses a sweep used to be deleted, so the screen said it
+        # was gone while it sat there working. It now stays, marked, for the
+        # finder's grace period - and the marking is the point, because a row
+        # that lingers with no explanation is a lie of a different shape.
         needed[0] = -1        # nothing there at all now
+        mods = main.scan_modules(force=True)
+        late = [m for m in mods if m["id"] == 42]
+        t.eq(len(late), 1, "a module that goes quiet is still listed, once")
+        if late:
+            t.ok(late[0].get("stale"),
+                 "and is marked late rather than shown as fine",
+                 "it is listed as if nothing happened: %r" % (late[0],))
+            t.ok(isinstance(late[0].get("lastSeen"), int),
+                 "with how long ago it last answered",
+                 "the screen has to say WHEN, or late is indistinguishable "
+                 "from working")
+
+        # ---- but the grace really does expire ---------------------------
+        # Time is moved, not waited for: the point is that the list empties on
+        # its own, and a check that sleeps 45 seconds would never be run.
+        for ip, (rec, when) in list(main.MODULES._seen.items()):
+            main.MODULES._seen[ip] = (rec, when - main.MODULES.grace - 5)
         mods = main.scan_modules(force=True)
         t.ok(not any(m["id"] == 42 for m in mods),
              "a module that is really gone does disappear",
-             "the re-probe is keeping a dead module on the list forever")
+             "the grace period is keeping a dead module on the list forever")
 
         # ---- and it must not re-probe forever once it is gone -----------
         del calls[:]
@@ -85,6 +116,7 @@ def run(t):
              "a module gone for good is still being chased every scan")
     finally:
         main.probe_module, main.lan_ip = real_probe, real_lan
+        main._ips_from_usb = real_usb          # noqa: SLF001
         main.MODULES.forget()
 
     # ---- a module on ANOTHER subnet ------------------------------------

@@ -533,7 +533,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: full gate on hub linking, then promote and push, started 2026-08-19 17:25
+# RUNNING: nothing right now
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -772,9 +772,9 @@ A7-1: done   2026-08-18 23:15  touches=firmware  — one applyJointSetting helpe
 A7-2: todo touches=firmware  — one joint-field validator table, used by JCFG too
 A7-3: todo touches=firmware  — one per-joint field descriptor (five hand-kept serialisers)
 A7-4: todo touches=firmware  hw=1 board + RGB strip + speaker + SD card (AudioPlayer reads its files off it) — [hw] moving RgbStrip and AudioPlayer needs a board with a strip and a speaker to prove nothing regressed. Original task: move RgbStrip and AudioPlayer into modules/lift/ SD CARD ARRIVED and is NOT mounting, measured on the nong 2026-08-19: INFO says sd=false after a clean reboot, FILES / answers ERR bad dir, while FILES /moves and /seq answer with empty arrays - so the board has a filesystem and no card. First suspect is the format: cards above 32 GB ship exFAT and the ESP32 driver reads FAT32 only. Second is seating. Not a firmware fault until the card is FAT32 and still refused SD CARD NOW MOUNTS - it was the wiring, not the format and not a pin clash. After the user rewired it: INFO says sd=true and caps includes sd. Then a full file round trip over RS485, which had never been tested outside fakes: FBEGIN, FDATA with 37 bytes of base64, FEND, the listing showing s=37, FREAD returning the identical bytes, FDEL removing it. So the file transfer, the card and the bus all work together on real hardware. Note for anyone testing by hand: FDATA takes BASE64 and reads only the first word, so plain text silently writes a few bytes rather than failing - my first attempt wrote 3 bytes from hello and looked like a bug in the firmware when it was a bug in the test
-A7-5: todo touches=firmware  hw=1 board + 2 servos minimum (a whole nong is better) + SD card for a saved show — [hw] SequencePlayer drives real servos; a fake cannot show a move still runs. Original task: SequencePlayer stops hard-coding lift and nong verbs
+A7-5: todo touches=firmware  hw=1 board + 2 servos minimum (a whole nong is better) + SD card for a saved show — [hw] SequencePlayer drives real servos; a fake cannot show a move still runs. Original task: SequencePlayer stops hard-coding lift and nong verbs SEQUENCE FROM SD PLAYED ON REAL SERVOS 2026-08-19, the whole chain the project was started for. A YAML sequence was written to /moves/bench-check.yaml over the RS485 bus (FBEGIN, two FDATA chunks of base64, FEND, listed at 231 bytes), then MOVE bench-check.yaml played it. POSE? sampled while it ran shows the board interpolating: R_EL_R and WAIST went 90 to 96/94 to 110/105, through 90, down to 70/75, and back to 90. Read back FROM THE BOARD while playing, not assumed from the file. So the SD, the file transfer, the YAML parser, the sequence player and two real servos all work together
 A7-6: todo touches=firmware  — call nongmath::ease, delete dead maxDelta, generate the CFG key list
-A7-7: todo touches=firmware,docs  hw=1 ESP32-CAM (COM17, CH340 shield) + SD card (SNAP writes the photo to it) — [hw] SNAP on a cam build needs the ESP32-CAM. Original task: SNAP can never work on a cam build: fix it or fix four documents PREMISE DISPROVED ON HARDWARE 2026-08-19: SNAP works on a cam build. The board answered OK captured 14671 bytes (SNAP <name> saves it, /api/cam.jpg shows it). What is left of this task is only the SD half - SNAP <name> writes to a card, and there is no card yet - plus checking whether the four documents describe it correctly. Do not rebuild what already works The SD half is now unblocked too: the card mounts on the nong and files write over the bus. SNAP <name> on the cam board can now be tested, which was the only part of A7-7 still waiting for hardware
+A7-7: done   2026-08-19 18:37  touches=firmware,docs  hw=1 ESP32-CAM (COM17, CH340 shield) + SD card (SNAP writes the photo to it) — [hw] SNAP on a cam build needs the ESP32-CAM. Original task: SNAP can never work on a cam build: fix it or fix four documents PREMISE DISPROVED ON HARDWARE 2026-08-19: SNAP works on a cam build. The board answered OK captured 14671 bytes (SNAP <name> saves it, /api/cam.jpg shows it). What is left of this task is only the SD half - SNAP <name> writes to a card, and there is no card yet - plus checking whether the four documents describe it correctly. Do not rebuild what already works The SD half is now unblocked too: the card mounts on the nong and files write over the bus. SNAP <name> on the cam board can now be tested, which was the only part of A7-7 still waiting for hardware SNAP REGRESSED ON THE BENCH, and it looks like power rather than code. Earlier today, same firmware, SNAP answered OK captured 14671 bytes. Now it answers ERR capture failed every time, including straight after a reboot, while the camera itself still initialises - the boot line says [cam] ready, qvga, PSRAM NO. What changed is the bench, not the build: there are now four boards and a servo rig on this PC's USB. An ESP32-CAM draws about 300 mA in bursts while clocking the sensor and compressing, far more than at init, so a rail that is fine for booting can fail a capture. TO TEST: give the CAM its own port or a powered hub, then SNAP again. SNAP <name> correctly answers ERR no sd card - that board has no card, and the honest error is the right one DONE ON HARDWARE, and the user's hunch was right: it is a different board. The camera reports pid 0x5640 - an OV5640, not the OV2640 everything assumed. Two faults followed from that. CAM never reported the sensor at all, so a board that initialised and then failed every capture gave no clue which part it was; it now says board, sensor, pid and version. And the start frame size was ONE hardcoded value, SVGA, measured on an OV2640, applied to every board while the frame buffer stayed allocated for the init size - on a five megapixel part with no PSRAM that is exactly how a capture fails after a clean init. The size is now a table keyed on the sensor, and an unmeasured part keeps the size its buffer was allocated for. Result: 6 captures out of 6, ~3.2 KB each, where before it failed every time. Also asked for: work with boards nobody has identified yet. The pin MAP is now a table too - ai-thinker, esp-eye, m5stack, m5stack-wide, ttgo-journal - tried in order until the camera answers. Proved by deliberately breaking the compiled-in pins: the board came back saying board=ai-thinker and captured 2986 bytes
 
 # A8  The device API
 A8-1: todo touches=main.py  — /api/robot/* and /api/usb/cmd become thin shims over /api/dev/*
@@ -997,7 +997,7 @@ A13-7: done   2026-08-19 15:12  touches=firmware hw=2+ boards (here)  — pairin
                 the others join, and PEERS lists them on both sides
 
 # A15  Getting it onto another PC
-A15-1: todo touches=MiceHub.spec,main.py  — ONE FILE, not one folder. Asked 2026-08-19: run the app
+A15-1: done   2026-08-19 23:44  touches=MiceHub.spec,main.py  — ONE FILE, not one folder. Asked 2026-08-19: run the app
                 on another PC without the whole repo. Today the exe cannot:
                 MiceHub.spec has datas=[] and main.py reads HERE/web and
                 HERE.parent/shared/web off the disk, so a copied exe serves an
@@ -1006,7 +1006,7 @@ A15-1: todo touches=MiceHub.spec,main.py  — ONE FILE, not one folder. Asked 20
                 to how do I run it elsewhere is: copy one file. The check is the
                 honest one - run the built exe from an EMPTY folder and open
                 every page
-A15-2: todo touches=git needs=A15-1  — branches, in the shape asked for: develop carries this
+A15-2: doing  2026-08-20 00:37  touches=git needs=A15-1  — branches, in the shape asked for: develop carries this
                 work, main stays what is known good. NOT a third branch holding
                 a copy of the app - a branch that duplicates files drifts from
                 the one it copied, and this project has already been bitten by a
@@ -1040,7 +1040,7 @@ A15-4: todo touches=README.md needs=A15-2  — a README that says how to get JUS
                 another PC who has not read anything else, so every command is
                 complete and none of them assumes this repo is already cloned
 
-A15-3: todo touches=git  — commit today's work. Nothing is committed yet: the RS485
+A15-3: doing  2026-08-20 00:37  touches=git  — commit today's work. Nothing is committed yet: the RS485
                 census fix, the themes, the QR and mDNS, remote flash, the model
                 panel and every measurement from the bench are all working tree
                 on one machine. That is the single biggest risk on this project
@@ -1057,6 +1057,110 @@ A13-9: done   2026-08-19 17:25  touches=main.py hw=4 cables incl RS485 (here)  �
                 ports are waited on last are reported as no answer. A single
                 port scan still works, which is why this looked like a bus
                 problem and is not one
+
+A13-10: done   2026-08-19 18:50  touches=main.py  — plain mice.local, with no port. Asked 2026-08-19: DONE 2026-08-19 and proved both ways on this machine. http://mice.local now works with no port: a second listener takes port 80 and only redirects, so the hub stays on 8642. Measured - 302 to mice.local:8642 and the hub page lands. The half that matters more was tested by taking port 80 away with a socket first: the hub starts exactly as before and the short name simply does not exist. Moving the hub TO port 80 would have meant a PC with IIS or Skype could not run it at all. One real Windows trap found on the way: ThreadingHTTPServer sets SO_REUSEADDR, and on Windows that is not the harmless TIME_WAIT reuse it is on Unix - it lets one process bind a port another process is LISTENING on, and then connections go to whichever. The redirect listener sets allow_reuse_address False so it can never steal port 80 from another server. Three sabotages, all caught TWO LIMITS, both deliberate. Port 80 is per machine: if something holds it on the other PC, that PC keeps the port in its address while this one does not - the hub must never fail to start over a convenience. And mice.local is one name: two hubs on the SAME network both answer it and whichever replies first wins, at random. That cannot happen on this bench because the two PCs are on different subnets and mDNS is link-local, but it would on one network. The answer is not a name to remember - mice-msi.local was rejected for exactly that - it is that mice.local means the hub on the machine you are at, and other PCs are LINKS in the Other PCs list, named by their own hostname and clicked rather than typed
+                why type mice.local:8642. Because a bare name means port 80 and
+                the hub is on 8642. Do NOT move the hub to 80 - on Windows
+                something else often holds it (IIS, Skype, another dev server)
+                and the hub would fail to start at all, which reads as the app
+                being broken. Instead take port 80 as a SECOND listener that
+                only redirects to the real one, and if the port is already
+                taken, carry on silently: the hub still works, the short name
+                just does not. It must never delay startup waiting for a port
+                it may not get
+A17-1: done   2026-08-20 00:37  touches=run_qc.py,qc/lib,check_build_split.py  — the suite uses the whole machine.
+                Asked for 2026-08-20: *make it faster before do other thing it
+                will make all of my process faster than before*. It ran 86
+                checks one at a time - 836s on one core of a 24-thread PC.
+                MEASURED, same assertions passing: 836s -> 236s, 3.5x.
+                Checks now run in a process pool (10 workers), which is safe
+                because a separate process gets its own fake_serial, its own
+                qc_marks and its own hub. The five-model panel was asked BEFORE
+                any of it was written and named five real hazards, all
+                confirmed in the code and all fixed:
+                  * _qcdriver.html was written under ONE name into the shared
+                    studio folder - two workers would each load the other's
+                    test, which passes the wrong test rather than failing;
+                  * hub ports came from 8700 + (pid % 40) * 25, and Windows
+                    pids are multiples of 4, so that has TEN values; a
+                    collision makes one worker's hub answer another's request;
+                  * gen_tables.py ran on first use in every process, all
+                    writing the same generated files;
+                  * browser profiles were keyed by millisecond, and workers
+                    start in the same millisecond;
+                  * port 80, mDNS 5353 and firmware/.pio are single-occupancy,
+                    so those four checks are kept serial.
+                check_qc_parallel holds all of it. The floor now is one browser
+                check that alone takes 175s: the pool cannot finish sooner than
+                its slowest member. Firmware builds run together too, but that
+                is only 107s -> 91s, because PlatformIO already parallelises
+                internally and four builds contend for the same cores
+
+A17-2: done   2026-08-20 00:37  touches=run_qc.py,promote.py  — the plan page updates itself while work runs.
+                Asked for 2026-08-20: *why it not update plan.html make update
+                everytime as default when run this plan*. run_qc.py now writes
+                progress every 10 checks and promote.py reports its stages, so
+                a gate that takes minutes cannot be mistaken for one that died.
+                Best effort by design: a plan file it cannot write must never
+                fail a gate
+
+A16-1: todo   touches=app.js,help.html hw=nong + a ruler (lab)  — the 4-bar's own curve, which is still
+                missing. Told 2026-08-19: the shoulder bar is now a 4-BAR
+                LINKAGE, not a see-saw, and the joint swings 26 deg (90 +-13)
+                instead of the old 6. The TRAVEL is done and checked
+                (check_shrug_range holds the firmware, Studio, COMMANDS.md and
+                the help table to the same number). What is NOT here is how far
+                each shoulder actually RISES at those angles - the user has not
+                measured the linkage yet and said so plainly: *i didn't put the
+                4-bar measure to you yet so put it to plan too i will check it
+                later*.
+                Until those rows exist the preview still assumes a symmetric
+                rock, which check_shrug_curve already says is wrong for a 4-bar:
+                the two sides do not rise by the same amount and the ratio
+                changes across the travel. Measure at 77 / 90 / 103 at least,
+                in mm, up positive, and put them in Rig setup > shrug curve
+
+A13-11: todo   2026-08-20 00:13  touches=main.py,hub.html hw=cam + 2 viewers (here)  — one camera, many screens. The board has ONE PARKED 2026-08-20 00:15 - needs the camera and two viewers on the bench; picked up again when the hardware is back (~11:00)
+                frame buffer and no PSRAM, so two viewers streaming straight
+                from it fight over the same memory and both stutter. The fix is
+                not on the board: the hub already proxies /api/cam.stream, so
+                it should pull ONE stream from the camera and fan it out to
+                every viewer. Prove it with two browsers open at once, and
+                measure what the board sees - it should be one client, whatever
+                the number of screens
+
+A13-13: done   2026-08-19 23:44  touches=discovery.py,main.py,mdns.py,hub.html hw=2 PCs + a flaky WiFi (here)  — the venue WiFi drops, and nothing may built and quick-green (1508/0); full gate was still running at 19:55 when the bench had to be packed up. All work is in .staging, nothing promoted for A13-12/A13-13 yet - rerun promote.py first thing
+                blink. Reported 2026-08-19 while the second PC was being
+                connected: the wifi it not stable sometime i lost connect some
+                time other pc lost connect. That is the NORMAL condition at a
+                venue, not a fault to wait out, and it breaks two things that
+                both looked finished:
+                  * discovery FORGETS on a single missed sweep. A hub or module
+                    that misses one probe is dropped from the list entirely, so
+                    the screen says it is gone when it is merely late. Keep it,
+                    marked last seen Ns ago, until a grace period really expires
+                    - the stale state the design rules already ask for;
+                  * the mice.local claim happens ONCE, at startup. If this PC is
+                    off the air when the other one boots, both claim the name
+                    and it flips between machines with nothing said. Needs a
+                    periodic re-check with a deterministic tie-break, so the two
+                    hubs settle it the same way without talking to each other
+
+A13-12: done   2026-08-19 20:37  touches=mdns.py,main.py hw=two hubs on one link (here)  — two hubs, one name. Raised Asked whether hubs should be picked by speed, like the internet choosing the fastest server. They should not, and the reason is worth keeping: hubs are NOT copies of each other. Each one owns its own cables, so a board plugged into the MSI can only be DRIVEN by the MSI - that is physics, not policy. What they share is visibility: any hub lists every board across every linked hub, and forwards a command to the machine holding the cable (dev = hub:IP/usb:COMx). So open whichever hub is nearest, it is a front door for all of them; the only differences are one network hop for a far board, and that a board is reachable only while its own PC is running a hub. That is exactly why the fix is NAMING rather than load balancing - you need to know which machine will do the work, not to be sent to the quickest one
+A17-3: done   2026-08-20 01:08  — an open hub page notices when the app it came from has changed. Asked 2026-08-20: *in web why i need to refresh by my self to see the change*. Data already refreshes (modules every 5s, rescan every 15s) but hub.html, mice.css and themes.css are only fetched when the tab loads, so a UI change is invisible until a manual reload
+                2026-08-19: mice.local:8642 does not fix the ambiguity, because
+                the PORT was never the ambiguous part - the NAME is. Two hubs on
+                one network both answer mice.local and whichever replies first
+                wins, differently each lookup.
+                Do what Bonjour does: PROBE before claiming. A hub asks whether
+                mice.local is already answered by someone else; if it is, it
+                does not answer for it and claims mice-<hostname>.local instead.
+                The first hub on a network then owns the short name outright,
+                every other hub has a unique one, and nobody has to remember a
+                unique one because other PCs are links in the Other PCs list.
+                Testable here, unlike on the bench: two hubs on THIS machine
+                share a link, which is exactly the case two PCs on different
+                subnets cannot reproduce
 
 END</code></pre>
 </details>

@@ -1360,3 +1360,60 @@ just /bug and paste %TEMP%\claude\e--final-proj-mice-code\019d2821-ΓÇª\scratc
 
 ### 2026-08-19 17:39
 it just let me tell something it cannot attatch bug
+
+### 2026-08-19 18:07
+now i update the other pc with new app and do the hardware first all of it because you can do other when am not in lab
+
+### 2026-08-19 18:22
+the esp32 cam it have more than 1 model you can find it maybe it a copy one
+
+and do you do anything now in the plan i don't see anything.
+if not do your work focus on hardware now
+
+### 2026-08-19 18:31
+yep and make it compatable with many board sometime when i buy the new one maybe i don't know which hardware i got
+
+### 2026-08-19 18:44
+make it in plan update the plan too which one doing now
+
+### 2026-08-19 18:59
+okay if it have the problem do not use only .local use :8642 but if in the same network it will have the same problem as you said before if it 8642 it still same because it go to mice.local:8642 can win for all by random which thing we can do in saturation?
+
+### 2026-08-19 19:50
+i have time until 19.59 to finish all of this and i will need to change place
+
+### 2026-08-19 20:19
+do your work am not in front of the PC for a long do thing you can do wait for me if you have question
+
+### 2026-08-19 23:38
+did all of this everything we do we use multi AI to brainstrome brefore code and after it?
+
+### 2026-08-19 23:40
+did we use multi AI claude gemini GPT for QC and brainstrome?
+
+### 2026-08-19 23:43
+if use GPT is it use my antigravity or other where gpt from
+
+### 2026-08-20 00:01
+the memory of vs code it use max is 3GB?
+
+### 2026-08-20 00:03
+i see in task maneger it said 3000MB not more than that that why i ask
+
+### 2026-08-20 00:05
+okay i get it but make sure we're use all of the resource to do our job make it fast as possible too do not cap the mem cpu or gpu or npu anymore for us
+
+### 2026-08-20 00:10
+make it faster before do other thing it will make all of my process faster than before
+
+### 2026-08-20 00:13
+so the plan.html i see you doing A13-11 why it not update plan.html make update everytime as default when run this plan
+
+### 2026-08-20 00:43
+the plan.html did it auto change?
+in web why i need to refresh by my self to see the change
+
+### 2026-08-20 01:12
+do you use this theory for any system or file involving repetitive tasks, convert them into executable scripts to minimize token usage as much as possible.
+
+or make it use everything to reduce token as much as possible to make sure long run not broke then let do your work
