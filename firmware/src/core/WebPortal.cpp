@@ -1159,7 +1159,22 @@ void WebPortal::loop() {
         // moment and fights any scan the user asked for. On a weak network
         // with no neighbours it fired every 60 s for nothing, and WIFI SCAN
         // kept coming back "ERR scan failed" because the two collided.
-        bool worthLooking = onRelay_ || peers_.count() > 0;
+        // A GROUPED board with no neighbours yet must still look, or it
+        // never gets any. Measured on the bench 2026-08-19 with three boards:
+        // two in one group, no venue WiFi, each on its own access point, each
+        // listing only itself - forever. peers_.count() > 0 is a condition
+        // that can only become true by finding a peer, and finding a peer is
+        // the thing it gates. Chicken and egg.
+        //
+        // The cost the old guard was protecting against is real - a scan every
+        // 60 s that finds nothing - so this does not remove it, it narrows it:
+        // only a board that BELONGS TO A GROUP goes looking on its own, and
+        // only while it has no network. That board can open exactly one kind
+        // of access point, a group-mate's, because the password is derived
+        // from the group name (Identity::apPassword) - so the scan it pays for
+        // is a scan that can actually succeed.
+        bool lonelyInGroup = id_->group().length() && WiFi.status() != WL_CONNECTED;
+        bool worthLooking = onRelay_ || peers_.count() > 0 || lonelyInGroup;
         if (worthLooking && (onRelay_ || rssi == 0 || rssi < wifilink::WEAK_RSSI)) {
             WiFi.scanDelete();
             // Same rule as WIFI SCAN: only stand the radio down when it is

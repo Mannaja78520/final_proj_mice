@@ -254,10 +254,49 @@ def probe_hub(ip, timeout=0.7):
             "savedAt": d.get("savedAt", ""), "has": True}
 
 
+# Hubs somebody typed in, because a sweep cannot reach them. Data in a file,
+# not a constant: the whole point is that it changes without editing code.
+KNOWN_HUBS = HERE / "known_hubs.json"
+
+
+def known_hubs():
+    """Addresses a person added by hand, newest last."""
+    try:
+        d = json.loads(KNOWN_HUBS.read_text(encoding="utf-8"))
+        return [str(x) for x in (d.get("hubs") or []) if str(x).strip()]
+    except (OSError, ValueError):
+        return []
+
+
+def remember_hub(ip, forget=False):
+    """Add or drop a typed-in hub. Returns the list as it now stands."""
+    ip = (ip or "").strip()
+    if not re.match(r"^[A-Za-z0-9._-]+(:\d+)?$", ip):
+        raise ValueError("that is not an address")
+    have = [h for h in known_hubs() if h != ip]
+    if not forget:
+        have.append(ip)
+    KNOWN_HUBS.write_text(json.dumps({"hubs": have}, indent=1),
+                          encoding="utf-8")
+    HUBS.forget()                      # so the next ask really looks
+    return have
+
+
 def scan_hubs(force=False):
-    """Other PCs running the hub on this subnet — so moving a rig between two
-    laptops needs no IP typed in."""
-    return HUBS.find(lan_ip(), force)
+    """Other PCs running the hub: found by sweeping, or named by a person.
+
+    The sweep only ever covers THIS PC's own /24, and that is not a bug to fix
+    with a wider sweep - 254 addresses already take seconds, and the case that
+    matters is not a bigger subnet but a DIFFERENT one. Measured on 2026-08-19:
+    two PCs on one venue WiFi, 10.126.226.203 and 10.123.98.148, could reach
+    each other perfectly over TCP and neither could ever discover the other,
+    because no sweep of one /24 contains the other. mDNS cannot bridge it
+    either: multicast is link-local by design.
+
+    So an address a person types is not a fallback here, it is the answer - and
+    it is remembered, so it is typed once.
+    """
+    return HUBS.find(lan_ip(), force, also_ask=known_hubs())
 
 
 # ---------------------------------------------------------------- discovery
@@ -306,7 +345,14 @@ def _probe_patiently(ip):
 # that name meant at import time, and then replacing main.probe_module — which
 # is how the QC checks stand in a module that answers slowly, and how anyone
 # would try it — silently changes nothing.
+# Two speeds, on purpose. Sweeping 254 addresses has to be quick, so the
+# ordinary probe waits 0.7 s. An address a PERSON named is different: there is
+# one of it, it is known to exist, and the machine at the other end may be busy
+# with its own scan - measured 2026-08-19, a hub on another subnet answered in
+# 0.03 s when idle and missed the 0.7 s window while scanning its cables, so it
+# appeared and disappeared between two refreshes.
 HUBS = discovery.Finder("hubs", lambda ip: probe_hub(ip),
+                        patient=lambda ip: probe_hub(ip, timeout=5.0),
                         ttl=20, skip_self=True)
 MODULES = discovery.Finder("modules", lambda ip: probe_module(ip),
                            patient=lambda ip: _probe_patiently(ip),
@@ -1068,8 +1114,17 @@ def flash_image(module_type):
             built = max(built, f.stat().st_mtime)
         else:
             missing.append(name or "boot_app0.bin")
+    # TWO kinds of ready, because the two ways of writing a board need
+    # different things. A cable write runs esptool and needs every part - the
+    # bootloader and the partition table included. An OTA sends ONE file, the
+    # app image, because that is all a running board can accept. A PC that was
+    # handed firmware.bin (rather than building it) can do the second and not
+    # the first, and that is a normal, useful state - it was reported as
+    # "nothing built here" until 2026-08-19.
+    app = any(q.endswith("firmware.bin") for _off, q in parts)
     return {"type": module_type, "env": env, "dir": str(d),
-            "ready": not missing, "missing": missing, "parts": parts,
+            "ready": not missing, "ota_ready": app,
+            "missing": missing, "parts": parts,
             "bytes": total, "built_at": int(built)}
 
 
@@ -1197,9 +1252,13 @@ def modules_here(force=False):
 
     for u in probe_usb_all(force):
         mod = u.get("module")
-        if not mod:
-            continue
-        add(mod, {"kind": "usb", "dev": "usb:" + u["port"], "port": u["port"]})
+        # A port with NO board of its own can still have a bus behind it - that
+        # is exactly what an RS485 adapter is. Skipping the port when its direct
+        # probe came back empty threw away every module on the bus, so a real
+        # rig showed three boards of four and the missing one was the nong.
+        # The fake never showed it: its port has both a module AND a bus.
+        if mod:
+            add(mod, {"kind": "usb", "dev": "usb:" + u["port"], "port": u["port"]})
         for b in (u.get("rs485") or []):
             add(b, {"kind": "rs485", "bus": b.get("id"),
                     "dev": "usb:%s:%s" % (u["port"], b.get("id")),
@@ -1312,10 +1371,17 @@ class Flasher:
             raise RuntimeError("already flashing %s — one board at a time"
                                % (self.port or self.type))
         im = flash_image(module_type)
-        if not im["ready"]:
+        # OTA sends ONE file - the app image - because that is all a running
+        # board can take: the bootloader and the partition table are written
+        # by esptool over a cable and are not part of an over-the-air update.
+        # So asking for all four parts here refused a PC that had exactly what
+        # this needs, which is the normal case for a machine that was given the
+        # images rather than building them.
+        app = [q for off, q in im["parts"] if q.endswith("firmware.bin")]
+        if not app:
             raise RuntimeError(
-                "no %s firmware on this PC (missing %s). Build it first: "
-                "pio run -e %s" % (module_type, ", ".join(im["missing"]), im["env"]))
+                "no %s app image on this PC. Build it with pio run -e %s, or "
+                "copy firmware.bin into %s" % (module_type, im["env"], im["dir"]))
         if not ip:
             raise RuntimeError("which module? this needs its WiFi address")
         with self.lock:
@@ -1680,6 +1746,29 @@ def probe_usb_port(port):
                         except ValueError:
                             pass
                         break
+            # A board on its OWN cable answers the broadcast too, so "no
+            # direct answer, one board in the census" is ambiguous: it is
+            # either an RS485 adapter with one module behind it, or a board
+            # whose direct probe was simply missed. Ask it plainly once more -
+            # an adapter has nothing to answer with, a board does. Without
+            # this, a camera on a plain USB cable was listed as a module on a
+            # bus, with an addressed dev string it did not need.
+            if not out["module"] and len(seen) == 1:
+                _drain_to_line_boundary(ser)
+                ser.write(b"INFO" + chr(10).encode())
+                for ln in _read_lines(ser, 1.2):
+                    if ln.startswith("{"):
+                        try:
+                            st = json.loads(ln)
+                            out["module"] = {"id": st.get("id"),
+                                             "name": st.get("name"),
+                                             "type": st.get("type"),
+                                             "group": st.get("group", ""),
+                                             "chip": st.get("chip", ""),
+                                             **_wifi_of(st)}
+                        except ValueError:
+                            pass
+                        break
             mod_id = out["module"]["id"] if out["module"] else None
             out["rs485"] = [v for k, v in sorted(seen.items()) if k != mod_id]
             if out["module"] or out["rs485"]:
@@ -1732,13 +1821,28 @@ def probe_usb_all(force=False):
         if real:
             ex = ThreadPoolExecutor(max_workers=len(real))
             futs = [(p, ex.submit(probe_usb_port, p)) for p in real]
-            deadline = time.time() + 7
+            # ONE budget for all of them, because they run at the same time -
+            # there is a worker per port, so the wall clock is the slowest port
+            # and not the sum. What it must cover, measured on four real cables
+            # 2026-08-19: an ordinary port answers in about 3 s, and a port with
+            # an RS485 bus behind it takes 4.7 s, because the census waits for
+            # the bus to go quiet and boards stagger their answers by id.
+            #
+            # It was 7 s, which was comfortable until the bus census got its
+            # floor - then a four-cable bench spent 10.8 s and reported 2 boards
+            # of 5, with the bus module among the missing. The ports that lose
+            # are simply the ones waited on last, which is why it looked like a
+            # bus fault and was not one.
+            budget = 20
+            deadline = time.time() + budget
             for p, f in futs:
                 try:
                     out.append(f.result(timeout=max(0.1, deadline - time.time())))
                 except FutTimeout:
                     out.append({"port": p, "module": None, "rs485": [],
-                                "error": "no answer within 7 s — skipped"})
+                                "error": "no answer within %d s — skipped. A port "
+                                         "with an RS485 bus behind it is the "
+                                         "slowest thing here" % budget})
             ex.shutdown(wait=False)
         out.sort(key=lambda u: u["port"])
         _usbscan_cache.update(at=time.time(), usb=out)
@@ -2562,10 +2666,21 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_err("cannot reach %s (%s)" % (host, type(e).__name__))
             return self.send_bytes(body, MIME[".json"])
 
+        # A hub the sweep cannot reach, named by a person. Gated: it changes
+        # what this hub talks to.
+        if path in ("/api/hubs/add", "/api/hubs/forget") and method == "POST":
+            try:
+                d = json.loads(self.body().decode() or "{}")
+                have = remember_hub(d.get("ip"), forget=path.endswith("forget"))
+                return self.send_json({"ok": True, "hubs": have})
+            except Exception as e:                 # noqa: BLE001
+                return self.send_err(e)
+
         if path == "/api/hubs":
             # Other mice hubs on this network, so nobody has to type an IP.
-            return self.send_json({"ok": True, "hubs": scan_hubs(
-                (q.get("force") or ["0"])[0] == "1")})
+            return self.send_json({"ok": True, "known": known_hubs(),
+                                   "hubs": scan_hubs(
+                                       (q.get("force") or ["0"])[0] == "1")})
 
         if path == "/api/export" and method == "POST":
             data = json.loads(self.body().decode())

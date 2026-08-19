@@ -132,14 +132,24 @@ class Finder:
 
             found = self.sweep.run(self.probe, my_ip, self.skip_self)
 
-            if self.patient:
-                seen = {r["ip"] for r in found if r.get("ip")}
-                known = [r["ip"] for r in self._found if r.get("ip")]
-                known += [ip for ip in also_ask if ip]
-                missing = [ip for ip in dict.fromkeys(known) if ip not in seen]
-                if missing:
-                    with ThreadPoolExecutor(max_workers=8) as ex:
-                        found += [r for r in ex.map(self.patient, missing) if r]
+            # Addresses the caller NAMED are always asked, whether or not
+            # this finder has a patient second pass. They are not a guess: the
+            # caller learned them from somewhere the sweep cannot see - a
+            # cable, or a person who typed one because the other PC is on a
+            # different subnet entirely. Asking only when `patient` was set
+            # meant a hub could be added, remembered, listed as known, and
+            # never once contacted.
+            #
+            # The patient probe is used when there is one, because that is the
+            # slower, more forgiving ask; otherwise the ordinary probe does.
+            ask = self.patient or self.probe
+            seen = {r["ip"] for r in found if r.get("ip")}
+            known = [r["ip"] for r in self._found if r.get("ip")] if self.patient else []
+            known += [ip for ip in also_ask if ip]
+            missing = [ip for ip in dict.fromkeys(known) if ip not in seen]
+            if missing:
+                with ThreadPoolExecutor(max_workers=8) as ex:
+                    found += [r for r in ex.map(ask, missing) if r]
 
             if self.key:
                 found.sort(key=self.key)

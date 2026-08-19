@@ -60,6 +60,11 @@ GATED = {
     "/api/dev/upload", "/api/dev/delete",
     "/api/model/upload", "/api/rigdefault",
     "/api/settings/peer", "/api/export",
+    # Which OTHER hubs this one talks to. Not a reading route: an
+    # address added here is probed, trusted enough to list, and offered
+    # as a link. Left open, anyone on the network could point this hub
+    # at a machine of their choosing.
+    "/api/hubs/add", "/api/hubs/forget",
     # a cable is taken away from whoever is using it
     "/api/usb/close",
     # who may use this hub at all

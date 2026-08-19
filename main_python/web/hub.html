@@ -359,6 +359,28 @@ controls.</b></div>
     </div>
   </div>
 
+  <!-- OTHER PCs. A sweep only ever covers this PC's own /24, and the case
+       that matters is a DIFFERENT one - measured 2026-08-19, two laptops on one
+       venue WiFi at 10.126.226.x and 10.123.98.x that could reach each other
+       perfectly and could never find each other. So an address is typed once
+       and remembered, and from then on the other hub is a LINK with its own
+       name on it: nothing to remember, nothing to type again. -->
+  <div class="card" data-tab="network" style="grid-column:1/-1">
+    <h2>🖥 Other PCs running the hub
+      <button onclick="loadHubs(true)" style="float:right">🔍 Search this network</button>
+    </h2>
+    <div class="mini">Each PC shares the boards on its own cables. Searching
+      finds the ones on this network; a PC on a different network has to be
+      named once, below.</div>
+    <div id="hubList" class="spin" aria-live="polite" style="margin-top:var(--sp-3)">looking…</div>
+    <div class="row" style="margin-top:var(--sp-3)">
+      <input id="hubAdd" placeholder="10.123.98.148" style="max-width:220px"
+             onkeydown="if(event.key==='Enter')addHub()">
+      <button onclick="addHub()">Add that PC</button>
+      <span class="mini" id="hubStat"></span>
+    </div>
+  </div>
+
   <div class="card" data-tab="network" style="grid-column:1/-1">
     <h2>🤝 Which modules work together
       <button onclick="loadNet()" style="float:right">⟳ Refresh</button>
@@ -409,7 +431,7 @@ function showTab(name){
     b.classList.toggle('on', b.getAttribute('data-go')===name);
   });
   try{ localStorage.setItem('hubTab', name); }catch(e){}
-  if(name==='network') loadNet();
+  if(name==='network'){ loadNet(); loadHubs(false); }
 }
 
 // ---- network & linking -------------------------------------------------
@@ -418,6 +440,83 @@ function showTab(name){
 // that is the whole linking step.
 var netMods = [];
 var netBusy = false;
+// Other hubs: what a sweep found, plus what a person named. Both are shown
+// the same way, because to the person using it there is no difference - it is
+// another PC with boards on it either way.
+async function loadHubs(force){
+  const el = $('hubList');
+  el.className = force ? 'spin' : '';
+  if (force) el.textContent = 'searching this network…';
+  try{
+    const r = await fetch('/api/hubs' + (force ? '?force=1' : '')).then(x => x.json());
+    const found = r.hubs || [], named = r.known || [];
+    el.innerHTML = '';
+    if (!found.length && !named.length) {
+      el.innerHTML = '<span class="mini">No other PC found yet. If one is on a '
+        + 'different network, type its address below - a search only covers '
+        + 'this PC' + String.fromCharCode(39) + 's own network.</span>';
+      return;
+    }
+    found.forEach(function(h){
+      const ip = h.ip || h;
+      const row = document.createElement('div');
+      row.className = 'mod';
+      const a = document.createElement('a');
+      a.href = 'http://' + ip + ':' + (h.port || location.port || 8642) + '/';
+      a.target = '_blank';
+      a.className = 'nm';
+      a.textContent = h.host || h.name || ip;   // its OWN name, not one to remember
+      row.appendChild(a);
+      const where = document.createElement('span');
+      where.className = 'ip tech';
+      where.textContent = ip;
+      row.appendChild(where);
+      if (named.indexOf(ip) >= 0) {
+        const drop = document.createElement('button');
+        drop.className = 'danger';
+        drop.textContent = 'forget';
+        drop.onclick = function(){ addHub(ip, true); };
+        row.appendChild(drop);
+      }
+      el.appendChild(row);
+    });
+    // Named but not answering: say so rather than leaving it out, or someone
+    // types the same address again wondering why nothing happened.
+    named.filter(function(ip){
+      return !found.some(function(h){ return (h.ip || h) === ip; });
+    }).forEach(function(ip){
+      const row = document.createElement('div');
+      row.className = 'mod';
+      row.innerHTML = '<span class="nm">' + esc(ip) + '</span>'
+        + '<span class="ip">added, but not answering</span>';
+      const drop = document.createElement('button');
+      drop.className = 'danger';
+      drop.textContent = 'forget';
+      drop.onclick = function(){ addHub(ip, true); };
+      row.appendChild(drop);
+      el.appendChild(row);
+    });
+  }catch(e){
+    el.innerHTML = '<div class="banner err" role="alert">Could not ask this hub '
+      + 'about other PCs. <button onclick="loadHubs(true)">Try again</button></div>';
+  }
+}
+
+async function addHub(ip, forget){
+  const box = $('hubAdd');
+  const addr = ip || (box ? box.value.trim() : '');
+  if (!addr) { $('hubStat').textContent = 'type the other PC' + String.fromCharCode(39) + 's address first'; return; }
+  $('hubStat').textContent = forget ? 'forgetting…' : 'adding…';
+  try{
+    const r = await fetch('/api/hubs/' + (forget ? 'forget' : 'add'),
+      {method:'POST', body: JSON.stringify({ip: addr})}).then(x => x.json());
+    if (r.ok === false) { $('hubStat').textContent = r.error || 'refused'; return; }
+    $('hubStat').textContent = '';
+    if (box && !forget) box.value = '';
+    loadHubs(true);
+  }catch(e){ $('hubStat').textContent = 'the hub did not answer'; }
+}
+
 async function loadNet(){
   var box = document.getElementById('netlist');
   if(!box) return;
@@ -644,6 +743,9 @@ async function scan(force){
     // the other over the air, so which copy you happened to click decided how
     // the arm was driven. See modules_here() in main.py.
     const r=await fetch('/api/modules'+(force?'?force=1':'')).then(r=>r.json());
+    // Kept for Home, which counts BOARDS. It used to count rows across
+    // three lists and reported a bench of four boards as nine.
+    window.MODS = r.modules || [];
     el.innerHTML='';
     (r.modules||[]).forEach(m=>{
       const wifi=(m.routes||[]).filter(x=>x.kind==='wifi')[0];
@@ -1267,12 +1369,31 @@ document.addEventListener('keydown', e => {
 // found, so it can never disagree with the Modules tab — two panels showing
 // different counts for the same robots is worse than one panel.
 function paintHome(){
-  var wifi = document.querySelectorAll('#mods .mod').length;
-  var cable = document.querySelectorAll('#usbmods .mod').length;
+  // COUNT BOARDS, not rows on screen. Counting rows added the same board up
+  // twice - once in the merged module list and once in the cable list - and a
+  // bench with four boards reported nine, six on USB and three on WiFi. The
+  // hub already merges them by chip (modules_here in main.py); Home has to ask
+  // that question rather than count what three lists happen to be showing.
+  // What the module scan last found, merged by the hub - not the rows three
+  // lists happen to be showing.
+  var mods = window.MODS || [];
   var other = document.querySelectorAll('#shared .mod').length;
-  var total = wifi + cable + other;
 
+  function has(m, kind){
+    return (m.routes || []).some(function(r){
+      return kind === 'wifi' ? r.kind === 'wifi' : r.kind !== 'wifi'; });
+  }
+  var cable = mods.filter(function(m){ return has(m, 'cable'); }).length;
+  var wifi  = mods.filter(function(m){ return has(m, 'wifi'); }).length;
+  var both  = mods.filter(function(m){ return has(m, 'cable') && has(m, 'wifi'); }).length;
+  var total = mods.length + other;
+
+  // This function now RESUMES after a network round trip, so the page it
+  // started painting may not be there any more - a tab switch, a reload, or a
+  // driver tearing the frame down. Anything looked up after an await has to be
+  // checked, or the painter throws into a page nobody is looking at.
   var sum = $('homeSum');
+  if (!sum) return;
   // LOADING, not empty. The scans start when the page loads and take a few
   // seconds; painting before they answer told someone with a rack of modules
   // that there were none. Empty means "we looked and there is nothing".
@@ -1288,18 +1409,23 @@ function paintHome(){
     sum.textContent = 'No modules found yet. Plug a board into this PC with a '
       + 'USB cable, or put one on this WiFi, and it appears here by itself.';
   } else {
+    // REACHABLE, not "on": a board with a cable and WiFi is one board with
+    // two ways in, and saying "3 on cables, 2 over WiFi" about four boards
+    // reads as five.
     var bits = [];
-    if (cable) bits.push(cable + (cable === 1 ? ' on a cable' : ' on cables'));
+    if (cable) bits.push(cable + ' reachable on a cable');
     if (wifi)  bits.push(wifi + ' over WiFi');
     if (other) bits.push(other + ' on another PC');
     sum.textContent = total + (total === 1 ? ' module' : ' modules') + ' — '
-                    + bits.join(', ') + '.';
+                    + bits.join(', ')
+                    + (both ? ' (' + both + ' can be reached both ways)' : '') + '.';
   }
 
   // Anything the page is currently unhappy about, gathered in one place. The
   // banners already exist on the other tabs; Home repeats them so a person
   // does not have to visit four tabs to find out something is wrong.
   var wrong = $('homeWrong');
+  if (!wrong) return;
   wrong.innerHTML = '';
   document.querySelectorAll('[data-tab] .banner.err').forEach(function(b){
     if (b.closest('[data-tab]').getAttribute('data-tab') === 'home') return;
@@ -1499,7 +1625,10 @@ async function paintFirmware(){
   catch(e){ stat.textContent = 'could not ask this PC what it has built.'; return; }
 
   const images = r.images || [];
-  const ready = images.filter(function(i){ return i.ready; });
+  // Anything writable AT ALL: a full set can go down a cable, an app
+  // image alone can still go over WiFi. A PC that was given the images
+  // rather than building them has exactly the second kind.
+  const ready = images.filter(function(i){ return i.ready || i.ota_ready; });
 
   // 1. no esptool: nothing here can work, so say that and offer nothing.
   $('fwNoTool').hidden = !!r.esptool;
@@ -1543,7 +1672,7 @@ async function paintFirmware(){
       (img.built_at ? ' · built ' + new Date(img.built_at * 1000).toLocaleString() : '');
 
     const targets = box.querySelector('.fwtargets');
-    if (!img.ready) {
+    if (!img.ready && !img.ota_ready) {
       // Not built: say so, say what is missing, and give the one command that
       // fixes it. No buttons, because there is nothing to write.
       const miss = box.querySelector('.fwmissing');
@@ -1596,6 +1725,15 @@ function fwTarget(img, board){
   // Three ways to reach a board, and a row only ever offers the one it has:
   // this PC's own cable, another PC's cable, or WiFi.
   const far = !overCable && !board.ip && !!board.farPort;
+  // A cable write needs the whole image set; this PC may only have the app
+  // image, which is enough over WiFi and not enough over a cable.
+  if ((overCable || far) && !img.ready) {
+    go.disabled = true;
+    go.textContent = '⚡ cable write needs the full image';
+    go.title = 'this PC has ' + img.type + '.bin but not the bootloader and '
+             + 'partition table, so it can update over WiFi and not over a cable';
+    return row;
+  }
   go.textContent = overCable ? '⚡ Write over the cable'
                  : far ? ('⚡ Write over the cable on ' + board.host)
                        : '⚡ Write over WiFi';

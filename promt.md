@@ -1309,3 +1309,54 @@ but we have upload via wifi if it don't have platformIO it will no problem or i 
 
 ### 2026-08-19 15:00
 and if the module connect the hub via wifi can other pc or smartphone  flash that module via wifi because host of the wifi have .bin to do like that?
+
+### 2026-08-19 15:39
+i already flash card to fat32 did you see?
+
+### 2026-08-19 15:42
+did you find sd card module?
+
+### 2026-08-19 15:47
+i already unplug and check wire again did you see now?
+
+### 2026-08-19 15:59
+then the app it can't flash the esp32 via wifi?
+i don't see any thing can no firmware .bin from the webapp.
+
+other pc ip is 10.123.98.148:8642
+
+### 2026-08-19 16:02
+sorry my false i press esc by accident.
+did you make the update button if we push the git it will know to update?
+can you make the  mice.local as default and we can link each hub via wifi? or it not dood to do like that do you have any idea?
+
+### 2026-08-19 16:05
+do not use ctrl+x or ctrl+c it use in the terminal and when i run the command it will use by accident too
+
+### 2026-08-19 16:45
+it have 3 method to run each model 
+1 usb
+2 rs485
+3 wifi
+
+we can use as fallback stage to run right? and find the best way make automatic change with no noise.
+make can connect the esp32 which connect the other hub pc but in the same network too because if use the same network but different room it cannot use esp32 peer but we can use via wifi to connect and control the esp32 by peer though hub or if you can make hub only in main and othewr pc connect  to hub only via wifi it will be better for me to not install the app to other pc but make ask bowser for permission and if approve we can connect it.
+
+### 2026-08-19 17:13
+is mice.local work now?
+if not yet make it later just ask
+
+### 2026-08-19 17:20
+who are you talking? what is this????
+
+### 2026-08-19 17:20
+who are you talking? what is this????
+
+and do your work now
+
+### 2026-08-19 17:37
+how to report the bug?
+just /bug and paste %TEMP%\claude\e--final-proj-mice-code\019d2821-ΓÇª\scratchpad\bug_report.md right?
+
+### 2026-08-19 17:39
+it just let me tell something it cannot attatch bug
