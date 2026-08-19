@@ -170,8 +170,13 @@ def run(t):
     m = re.search(r"static void emitLine\(.*?\n\}", mainc, re.S)
     if t.ok(m, "emitLine exists"):
         body = m.group(0)
-        t.ok("println" not in body and body.count("Serial.print") == 1,
-             "as ONE Serial.print, so the newline cannot be separated from it",
+        # Was: exactly one Serial.print. A0-8 moved the single write behind
+        # mice::writeOnce (core/PortWrite.h) so the REPLY path and the LOG path
+        # share one implementation of the rule instead of restating it twice.
+        # The property is unchanged and still asserted: ONE call, whole line.
+        t.ok("println" not in body and body.count("mice::writeOnce") == 1
+             and "Serial." not in body,
+             "as ONE write, so the newline cannot be separated from it",
              "emitLine emits in more than one call: %r" % body)
         t.ok(body.count(chr(92) + "n") == 2,
              "with the newline built into the same string",

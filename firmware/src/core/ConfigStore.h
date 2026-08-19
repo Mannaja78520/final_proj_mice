@@ -17,6 +17,9 @@ class ConfigStore {
 public:
     void begin();
     bool set(const String& key, float value);
+    // Same, but says WHY it refused — an unknown key and an out-of-range value
+    // are different problems and need different words.
+    bool set(const String& key, float value, String* why);
     bool clear(const String& key);
     void clearAll();
     // Copy stored overrides into doc (same shape as module.yaml). True if any.

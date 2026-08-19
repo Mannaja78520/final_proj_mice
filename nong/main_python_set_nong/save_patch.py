@@ -27,6 +27,10 @@ from snapshot import Snapshots, cli  # noqa: E402
 SNAP = Snapshots(
     root=ROOT / "web",
     patterns=["app.js", "index.html", "style.css"],
+    # style.css is only Studio's half of the design now — the tokens and the
+    # components live in shared/web/mice.css, which index.html links first. A
+    # snapshot without it restores half a stylesheet.
+    also=[(ROOT.parent.parent / "shared" / "web", ["*.css"], "shared")],
     patches=ROOT / "patches",
     index=ROOT / "PATCHES.md",
     what="web app",

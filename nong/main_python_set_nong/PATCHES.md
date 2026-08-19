@@ -39,3 +39,5 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0046 | 2026-08-09 04:03 | The hub is now the show clock: Play hands the timeline to the hub (POST /api/play) whenever the link goes through it, so a rehearsal keeps running with the tab hidden or the browser closed; the page only draws, returning to it re-syncs the play head, and the module hand-off is skipped while the hub drives. |
 | 0047 | 2026-08-09 17:34 | Live control follows the hand: a dragged pose now carries the time it has (measured from the link's own round trip, clamped 80-300ms) instead of letting the module ease at its SPEED setting, which made the arm trail the slider by 166ms per move. |
 | 0053 | 2026-08-10 21:44 | crash check warns instead of blocking - preview always plays, the robot only moves if you force it; playback lag cut; scrubbing moves the arm |
+| 0054 | 2026-08-18 09:46 | style.css keeps only Studio's own rules; tokens and components come from /mice.css |
+| 0055 | 2026-08-19 02:18 | Studio uses the shared tab |

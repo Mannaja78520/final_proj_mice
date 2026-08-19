@@ -43,6 +43,26 @@ def _wait_done(base, limit=30.0):
     return _status(base)
 
 
+
+def _fn(text, name):
+    """One function's source, brace matched, so an assertion cannot pass on
+    a different function that happens to contain the same words."""
+    i = text.find(name)
+    if i < 0:
+        return ""
+    j = text.index("{", i)
+    depth = 0
+    while j < len(text):
+        if text[j] == "{":
+            depth += 1
+        elif text[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[i:j + 1]
+        j += 1
+    return text[i:]
+
+
 def run(t):
     # ---- 1. there really are two app slots ---------------------------
     ini = (F.FIRMWARE / "platformio.ini").read_text(encoding="utf-8", errors="replace")
@@ -148,22 +168,44 @@ def run(t):
     # ---- 6. the page offers it, and says what it does --------------
     hub = (F.HUB / "web" / "hub.html").read_text(encoding="utf-8", errors="replace")
     t.contains(hub, "/api/ota", "the hub page can update a module over WiFi")
-    fn = hub[hub.find("async function otaModule"):]
-    fn = fn[:fn.find("\n// ----")]
-    t.contains(fn, "confirm(", "and asks first")
+    # A2-2: one screen writes firmware, over a cable or over WiFi, so the OTA
+    # path is fwWrite. Same properties, one implementation instead of two
+    # that drifted apart.
+    fn = _fn(hub, "async function fwWrite(")
+    # Was: contains "confirm(". That matched the browser's own confirm box,
+    # which named only an IP address. A1-4 replaced it with a panel that names
+    # the board, the link and the PC — so assert THAT, not the old spelling.
+    t.contains(fn, "confirmFlash(", "and asks first")
+    t.contains(fn, "via:", "saying how the board is reached")
+    t.contains(fn, "name:", "and which board it is, not just its address")
     t.contains(fn, "keeps the firmware it has now",
                "explaining that a failed update is not a brick")
-    t.contains(fn, "aria-live", "progress is announced, not just painted")
-    # WHICH firmware is asked, not assumed: this is also how a board is turned
-    # into a different module type without finding a cable.
-    t.contains(fn, "createElement('select')",
+    # Progress is announced from the row template, which is where the row is
+    # described now — one shape, cloned per board, instead of a string built
+    # inside the script.
+    tpl = hub[hub.find('<template id=?tplFwTarget?>'.replace('?', chr(34))):]
+    tpl = tpl[:tpl.find('</template>')]
+    # A comment saying aria-live is not aria-live: the first version of this
+    # assertion passed on the note explaining it, with the attribute removed.
+    tpl = re.sub(r"<!--.*?-->", "", tpl, flags=re.S)
+    t.contains(tpl, "aria-live", "progress is announced, not just painted")
+
+    # WHICH firmware is sent is still asked, not assumed — it is the image row
+    # whose button you press, and that image's type is what travels. This is
+    # also how a board becomes a different module type without a cable.
+    t.contains(fn, "encodeURIComponent(img.type)",
                "it asks which firmware to send")
-    t.contains(fn, "what it runs now",
-               "with the board's current type marked, and preselected")
-    # ...and a board given a DIFFERENT type still has the old one in its own
-    # memory, so it would come back as `blank` unless someone finishes the job.
-    hub2 = hub[hub.find("async function setType"):]
-    hub2 = hub2[:hub2.find("\n}")]
+    target = _fn(hub, "function fwTarget(")
+    t.contains(target, "board.type !== img.type",
+               "with the board's current type shown against the one offered")
+    t.contains(target, "runs ", "in words, on the board it would replace")
+
+    hub2 = hub[hub.find("async function applyTypeAfterFlash"):]
+    hub2 = hub2[:hub2.find("\n// kept so anything")]
     t.contains(hub2, "SET TYPE", "a type change is completed on the board itself")
     t.contains(hub2, "REBOOT", "and it is rebooted into the new type")
-    t.contains(fn, "setType(ip,chosen", "which the update triggers when the type changed")
+    t.contains(fn, "'wifi:' + board.ip",
+               "and the finished write is told which board it was")
+    watch = _fn(hub, "function fwWatch(")
+    t.contains(watch, "applyTypeAfterFlash",
+               "which the update triggers once the firmware is on")

@@ -18,14 +18,21 @@ Other devices on the same WiFi can open the hub too (phones, laptops).
 Stdlib only - no pip installs. Command reference: code/firmware/COMMANDS.md
 """
 
+import itertools
 import json
+import os
 import re
 import socket
 import sys
 import time
 import threading
 import urllib.parse
+import urllib.error
 import urllib.request
+
+import discovery
+import mdns
+import qr
 import webbrowser
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutTimeout
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -46,7 +53,17 @@ except Exception as _e:            # a broken registry must not stop the hub
     registry = None
     print("[hub] registries unavailable:", _e)
 
+import hub_auth                                            # noqa: E402
+
 HUB_WEB = HERE / "web"
+# Written at runtime, holds a password HASH. Never promoted (promote.py's
+# SKIP_FILES): it belongs to the machine, not to the source.
+AUTH_STORE = Path(os.environ.get("MICE_HUB_AUTH")
+                  or (HERE / "hub_auth.json"))
+# The ONE design system, served at /mice.css to every page the hub serves —
+# including the module's own website, which links the same URL and gets the
+# board's compiled-in copy when it is reached over WiFi instead.
+SHARED_WEB = HERE.parent / "shared" / "web"
 WEBUI_H = HERE.parent / "firmware" / "src" / "web" / "WebUI.h"
 STUDIO = HERE.parent / "nong" / "main_python_set_nong"
 STUDIO_WEB = STUDIO / "web"
@@ -56,6 +73,16 @@ MODELS = STUDIO / "models"
 
 HOST = "0.0.0.0"
 PORT = 8642
+
+# The gate. Built once, on first use, so importing this module (which QC does)
+# does not create a password file as a side effect of the import itself.
+_auth = []
+
+
+def auth():
+    if not _auth:
+        _auth.append(hub_auth.Auth(AUTH_STORE))
+    return _auth[0]
 
 MIME = {
     ".html": "text/html; charset=utf-8",
@@ -81,6 +108,43 @@ def safe_name(name: str) -> str:
     if not SAFE_NAME.match(name) or name.startswith("."):
         raise ValueError(f"bad name: {name!r}")
     return name
+
+
+_tmp_seq = itertools.count()      # makes each writer's temp file its own
+
+
+def write_atomic(dest: Path, text: str, newline=None, keep_backup=True):
+    """Write a file so a failure cannot destroy what was already there.
+
+    `Path.write_text` opens in "w", which truncates the target the instant it
+    opens — before a single byte of the new content is written. A save that
+    then fails (full disk, the process killed, a laptop lid closed mid-write)
+    left the user with NEITHER version. These are hand-built projects and
+    sequences representing hours of posing, and the editor holds the only other
+    copy in RAM.
+
+    So: write beside it, then swap. os.replace is atomic on Windows and POSIX,
+    so at every instant the destination is either wholly the old file or wholly
+    the new one. The previous version is also kept as <name>.bak, because
+    "saved over the wrong name" is the other way this work disappears and the
+    editor has no undo for it.
+    """
+    # The temp name carries the thread id and a counter. A single shared
+    # "<name>.tmp" looked atomic and was not: the hub is a ThreadingHTTPServer,
+    # so two saves of the same project at once (two tabs, or a double-click)
+    # both opened the SAME temp file and interleaved their bytes, and whichever
+    # renamed last published the mixture. Per-writer temp files cannot collide,
+    # and os.replace is still atomic, so the destination is only ever wholly
+    # one version or wholly the other.
+    tmp = dest.with_name("%s.%d.%d.tmp" % (dest.name, threading.get_ident(),
+                                           next(_tmp_seq)))
+    tmp.write_text(text, encoding="utf-8", newline=newline)
+    if keep_backup and dest.exists():
+        try:
+            os.replace(dest, dest.with_name(dest.name + ".bak"))
+        except OSError:
+            pass                      # a missing backup must not stop the save
+    os.replace(tmp, dest)
 
 
 # The module website is the ESP32's own WebUI.h HTML (single source of truth).
@@ -154,12 +218,26 @@ def lan_ip() -> str:
         return "127.0.0.1"
 
 
+def is_self(ip: str) -> bool:
+    """Is this address THIS PC?
+
+    Every address in 127.0.0.0/8 is loopback, not just 127.0.0.1 — so
+    `hub:127.0.0.2/...` forwards straight back to us and is served as if it came
+    from a peer. Harmless but wasteful, and it makes a hop appear where there is
+    none. `localhost` and our own LAN address count too.
+    """
+    ip = (ip or "").strip().split(":")[0]
+    if not ip:
+        return False
+    if ip == "localhost" or ip.startswith("127."):
+        return True
+    return ip == lan_ip()
+
+
 # Studio's settings, shared from this PC so another one can pull them over the
 # network. Sits with the other user data, not in the code.
 SETTINGS_FILE = STUDIO / "settings_shared.json"
 
-_hub_lock = threading.Lock()
-_hub_cache = {"at": 0.0, "hubs": []}
 
 
 def probe_hub(ip, timeout=0.7):
@@ -177,34 +255,32 @@ def probe_hub(ip, timeout=0.7):
 
 
 def scan_hubs(force=False):
-    """Other PCs running the hub on this subnet. Same sweep the module scan
-    uses, on the hub's own port — so moving a rig between two laptops needs no
-    IP typed in."""
-    with _hub_lock:
-        if not force and time.time() - _hub_cache["at"] < 20:
-            return _hub_cache["hubs"]
-        base = lan_ip().rsplit(".", 1)[0]
-        found = []
-        if base != "127.0.0":
-            me = lan_ip()
-            hosts = ["%s.%d" % (base, i) for i in range(1, 255) if "%s.%d" % (base, i) != me]
-            with ThreadPoolExecutor(max_workers=96) as ex:
-                for h in ex.map(probe_hub, hosts):
-                    if h:
-                        found.append(h)
-        _hub_cache.update(at=time.time(), hubs=found)
-        return found
+    """Other PCs running the hub on this subnet — so moving a rig between two
+    laptops needs no IP typed in."""
+    return HUBS.find(lan_ip(), force)
 
 
 # ---------------------------------------------------------------- discovery
-_scan_lock = threading.Lock()
-_scan_cache = {"at": 0.0, "modules": []}
+
+
+def hub_header():
+    """Who this hub is, for the board to remember.
+
+    A board's own website has no way back to the hub otherwise: several PCs at
+    a venue run this same program, the addresses move with the network, and a
+    link to the wrong one is worse than none. So the hub says who it is on
+    every request it makes, and the board offers the way back only while that
+    is still true. One place, so the two callers cannot disagree.
+    """
+    return {"X-Mice-Hub": "%s:%d" % (lan_ip(), PORT)}
 
 
 def probe_module(ip: str, timeout=0.6):
     """GET /api/status - returns module info dict or None."""
     try:
-        with urllib.request.urlopen("http://%s/api/status" % ip, timeout=timeout) as r:
+        req = urllib.request.Request("http://%s/api/status" % ip,
+                                     headers=hub_header())
+        with urllib.request.urlopen(req, timeout=timeout) as r:
             st = json.loads(r.read().decode())
         if "type" in st and "id" in st:
             return {"ip": ip, "id": st.get("id"), "name": st.get("name", ip),
@@ -220,6 +296,21 @@ def probe_module(ip: str, timeout=0.6):
 def _probe_patiently(ip):
     """Same probe, but give a module that is KNOWN to exist real time to answer."""
     return probe_module(ip, timeout=2.0)
+
+
+# The two things this hub looks for. Each is ONE line plus the question it
+# asks; the sweeping, the thread pool and the shelf life live in discovery.py
+# so a fix reaches both. Adding a third kind of thing is another line here.
+# Passed as small wrappers, not as the functions themselves, so the probe is
+# looked up WHEN IT RUNS. Handing over probe_module directly binds whatever
+# that name meant at import time, and then replacing main.probe_module — which
+# is how the QC checks stand in a module that answers slowly, and how anyone
+# would try it — silently changes nothing.
+HUBS = discovery.Finder("hubs", lambda ip: probe_hub(ip),
+                        ttl=20, skip_self=True)
+MODULES = discovery.Finder("modules", lambda ip: probe_module(ip),
+                           patient=lambda ip: _probe_patiently(ip),
+                           ttl=10, key=lambda m: m["id"])
 
 
 def _ips_from_usb():
@@ -244,53 +335,17 @@ def _ips_from_usb():
 
 
 def scan_modules(force=False):
-    """Scan the local /24 subnet for module boards (parallel, ~3 s).
+    """Every module board this PC can see on the network.
 
-    Two passes, because one is not honest. A module that shares its WiFi runs
-    AP_STA on a single radio: it serves the show network and its own access
-    point by time-slicing, so it sometimes answers a touch late. Measured on
-    the bench — the lift answered a 0.6 s probe 7 times in 8, and the hub
-    consequently LOST it on 2 scans out of 3 while it sat there perfectly
-    online and reachable.
+    Why a second, patient pass exists, and why it is not limited to this
+    subnet, is written down in discovery.Finder — it came from a measured
+    fault, not a theory, and it must not be tidied away.
 
-    So: sweep the subnet quickly to discover anything new, then go back and
-    ask the addresses we have seen before, patiently. That second pass is a
-    handful of hosts, costs nothing when they answer, and means a module that
-    was found once does not silently vanish from the hub.
-
-    The second pass also covers addresses the sweep can never reach: it only
-    walks the PC's own /24, so a module on a different subnet is invisible to
-    it however reachable it is. Modules identified over a CABLE report their
-    own IP, so plugging one in is enough to find it on WiFi afterwards.
+    Addresses learned over a CABLE are handed in as well: a board reports its
+    own IP, so plugging one in is enough to find it on WiFi afterwards, even
+    on a subnet this PC cannot sweep.
     """
-    with _scan_lock:
-        if not force and time.time() - _scan_cache["at"] < 10:
-            return _scan_cache["modules"]
-        base = lan_ip().rsplit(".", 1)[0]
-        found = []
-        if base != "127.0.0":
-            hosts = ["%s.%d" % (base, i) for i in range(1, 255)]
-            with ThreadPoolExecutor(max_workers=96) as ex:
-                for m in ex.map(probe_module, hosts):
-                    if m:
-                        found.append(m)
-
-        # Second pass: addresses we already know about. Deliberately NOT
-        # limited to the swept subnet — a module can be perfectly reachable
-        # from another one (routed dorm/campus networks do this), and the
-        # whole point is to stop losing modules that are actually there.
-        seen = {m["ip"] for m in found}
-        known = [m["ip"] for m in _scan_cache["modules"]] + _ips_from_usb()
-        missing = [ip for ip in dict.fromkeys(known) if ip and ip not in seen]
-        if missing:
-            with ThreadPoolExecutor(max_workers=8) as ex:
-                for m in ex.map(_probe_patiently, missing):
-                    if m:
-                        found.append(m)
-
-        found.sort(key=lambda m: m["id"])
-        _scan_cache.update(at=time.time(), modules=found)
-        return found
+    return MODULES.find(lan_ip(), force, also_ask=_ips_from_usb())
 
 
 def serial_ports():
@@ -400,18 +455,27 @@ def usb_close(port=None):
     with _usb_mgr_lock:
         ports = [port] if port else list(_usb_open)
         ents = [(p, _usb_open.pop(p)) for p in ports if p in _usb_open]
-    for _, ent in ents:
+    for p_name, ent in ents:
         # take the port's own lock first: never close the handle out from
         # under a command that is mid read/write on it
         got = ent["lock"].acquire(timeout=3)
+        if not got:
+            # Something is STILL mid read/write on this handle after 3 s — a
+            # @peer command waits up to 8. Closing anyway pulled the handle out
+            # from under it, which on Windows surfaces as a ClearCommError in
+            # the reader or a hang. Put the port back and let the next sweep
+            # take it; a cable held open a little longer is not a problem, a
+            # command dying mid-flight is.
+            with _usb_mgr_lock:
+                _usb_open.setdefault(p_name, ent)
+            continue
         try:
             if ent["ser"] is not None:
                 ent["ser"].close()
         except Exception:
             pass
         finally:
-            if got:
-                ent["lock"].release()
+            ent["lock"].release()
 
 
 def usb_in_use(port):
@@ -426,7 +490,16 @@ def _usb_reaper():
             idle = [p for p, ent in _usb_open.items()
                     if time.time() - ent["last"] > USB_IDLE_CLOSE]
         for p in idle:
-            usb_close(p)
+            # Look again, immediately before closing. The list above was taken
+            # seconds ago and usb_close then waits for the port's own lock, so
+            # a command that arrived in between would finish and have its cable
+            # shut the instant it let go — the next command failing on a closed
+            # port for no reason the user could see.
+            with _usb_mgr_lock:
+                ent = _usb_open.get(p)
+                still_idle = ent and time.time() - ent["last"] > USB_IDLE_CLOSE
+            if still_idle and not usb_in_use(p):
+                usb_close(p)
 
 
 # A firmware log line is a bracket tag: "[wifi]", "[sd]", "[  1234][I]" ... —
@@ -530,8 +603,8 @@ def _usb_cmd_once(port, cmd, bus_id=0, wait=2.0):
             if n:
                 chunk += ser.read(n)
             buf += chunk
-            while b"\n" in buf:
-                ln, buf = buf.split(b"\n", 1)
+            while (chr(10).encode()) in buf:
+                ln, buf = buf.split(chr(10).encode(), 1)
                 t = ln.decode(errors="replace").strip()
                 # skip blank lines and firmware LOG lines only. A log line is a
                 # bracket TAG like "[wifi] ...", "[sd] ...", "[  1234][I]...".
@@ -582,8 +655,39 @@ def _usb_cmd_once(port, cmd, bus_id=0, wait=2.0):
 #
 # The peer is a module NAME or bus id, not an address, so it keeps working
 # when the hotspot hands out a different address.
+def split_hub_dev(dev):
+    """`hub:<ip>/<inner dev>` -> (ip, inner), else (None, dev).
+
+    How a module on ANOTHER PC's cable is addressed. At a venue that is the
+    normal case: one laptop by the arm, one at the desk, and the arm reachable
+    only from whichever machine holds the cable.
+
+    The inner part is an ordinary dev string, and the PC named by <ip> is the
+    one that finally opens the port. Ownership never moves — that hub is still
+    the single owner of its own cables, which is exactly what makes forwarding
+    safe rather than a second program fighting for the same serial handle.
+    """
+    if not dev.startswith("hub:"):
+        return None, dev
+    rest = dev[4:]
+    if "/" not in rest:
+        raise ValueError("bad dev (use hub:<ip>/<dev>)")
+    ip, inner = rest.split("/", 1)
+    if not ip or not inner:
+        raise ValueError("bad dev (use hub:<ip>/<dev>)")
+    # A forwarded dev may never be forwarded again. Two hubs that each list the
+    # other could otherwise bounce one command back and forth until both ran
+    # out of request threads.
+    if inner.startswith("hub:"):
+        raise ValueError("a module on another PC cannot be reached through a third PC")
+    return ip, inner
+
+
 def parse_dev(dev):
     peer = ""
+    ip, dev = split_hub_dev(dev)
+    if ip:
+        raise ValueError("hub: addresses are forwarded whole, not parsed here")
     if "@" in dev:
         dev, peer = dev.split("@", 1)
     if dev.startswith("wifi:"):
@@ -934,6 +1038,15 @@ BOOT_APP0 = (PIO_HOME / "packages" / "framework-arduinoespressif32" /
 FLASH_PARTS = (("0x1000", "bootloader.bin"), ("0x8000", "partitions.bin"),
                ("0xe000", None), ("0x10000", "firmware.bin"))  # None = boot_app0
 
+# How much of an unwanted request body the hub will swallow to be polite
+# about the reason it is refusing. 4 MB is more than any page here posts.
+DRAIN_LIMIT = 4 * 1048576
+
+# The name this hub answers to on the local network. One place, so the page,
+# the console banner and the responder cannot disagree about it.
+MDNS_NAME = "mice.local"
+NAME_SERVER = [None]
+
 _flash_ports = set()          # ports esptool is holding right now
 _flash_lock = threading.Lock()
 
@@ -972,6 +1085,157 @@ def flash_images():
     types.append("blank")
     return [{k: v for k, v in im.items() if k != "parts"}
             for im in (flash_image(t) for t in types)]
+
+
+def send_firmware(to, port, module_type, user, password):
+    """Give this PC's firmware to the hub holding the cable, and let it write.
+
+    The image travels; the command does not. This hub does the sending rather
+    than the browser because the session cookie is SameSite=Lax: a POST from
+    this page straight to another hub carries no cookie and is refused.
+
+    It logs in as the operator each time and keeps nothing. A hub never stores
+    another hub's password — the person typing it is the one authorised on
+    that machine, and that is the whole point of the gate.
+    """
+    import base64
+    if not to:
+        raise ValueError("which PC? name the hub holding the cable")
+    im = flash_image(module_type)
+    if not im["ready"]:
+        raise RuntimeError(
+            "no %s firmware on THIS PC to send (missing %s). Build it first: "
+            "pio run -e %s" % (module_type, ", ".join(im["missing"]), im["env"]))
+    payload = {"port": port, "type": module_type, "from": socket.gethostname(),
+               "parts": [{"off": off, "name": Path(p).name,
+                          "b64": base64.b64encode(Path(p).read_bytes()).decode()}
+                         for off, p in im["parts"]]}
+
+    base = "http://%s:%d" % (to, PORT)
+    cookie = ""
+    if user or password:
+        req = urllib.request.Request(
+            base + "/api/login", method="POST",
+            data=json.dumps({"user": user, "password": password}).encode(),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            answer = json.loads(r.read().decode(errors="replace"))
+            if not answer.get("ok"):
+                raise RuntimeError("%s refused that login" % to)
+            cookie = (r.headers.get("Set-Cookie") or "").split(";")[0]
+
+    req = urllib.request.Request(
+        base + "/api/flash/remote", method="POST",
+        data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json",
+                 **({"Cookie": cookie} if cookie else {})})
+    try:
+        with urllib.request.urlopen(req, timeout=120) as r:
+            out = json.loads(r.read().decode(errors="replace"))
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            raise RuntimeError(
+                "%s wants a login before it will overwrite a board" % to) from e
+        # Say what the OTHER PC said. Without this the operator is told the
+        # number 400 about a machine they are not sitting at.
+        why = ""
+        try:
+            why = (json.loads(e.read().decode(errors="replace")) or {}).get("error", "")
+        except Exception:                     # noqa: BLE001 - a reason is a bonus
+            pass
+        raise RuntimeError("%s refused it: %s" % (to, why or e.reason)) from e
+    out["to"] = to
+    out["bytes"] = im["bytes"]
+    return out
+
+
+def board_key(mod):
+    """What makes this board THIS board.
+
+    The chip MAC when the board reports one - it cannot be changed, so it is
+    the only honest answer. Older firmware does not report it, and then the id
+    is all there is: it is used, but qualified with the type, because two blank
+    boards from the same box share a default id and are not the same board.
+
+    Returns a tuple so two boards can never collide by accident of formatting.
+    """
+    chip = (mod.get("chip") or "").strip().upper()
+    if chip:
+        return ("chip", chip)
+    ident = mod.get("id")
+    if ident is not None:
+        return ("id", str(ident), (mod.get("type") or "").lower())
+    return ("addr", mod.get("dev") or mod.get("ip") or repr(mod))
+
+
+def modules_here(force=False):
+    """Every module this PC can reach, once each, with every way to reach it.
+
+    The hub used to hand the page two lists and let it draw both. A board that
+    is plugged in AND on the WiFi appeared twice, as two robots, with different
+    controls on each row - so which row you happened to click decided whether
+    the command went down the cable or over the air.
+    """
+    out = {}
+
+    def add(mod, route):
+        key = board_key(mod)
+        seen = out.get(key)
+        if not seen:
+            seen = {k: v for k, v in mod.items() if k != "dev"}
+            seen["routes"] = []
+            seen["key"] = "/".join(str(p) for p in key)
+            out[key] = seen
+        # A board answering on WiFi knows its own name and type better than a
+        # cable probe that ran a minute ago, so later, richer answers win - but
+        # never overwrite something with nothing.
+        for field in ("name", "type", "group", "fw", "ip", "id", "chip"):
+            if mod.get(field) not in (None, "", []):
+                seen[field] = mod[field]
+        if route not in seen["routes"]:
+            seen["routes"].append(route)
+
+    for u in probe_usb_all(force):
+        mod = u.get("module")
+        if not mod:
+            continue
+        add(mod, {"kind": "usb", "dev": "usb:" + u["port"], "port": u["port"]})
+        for b in (u.get("rs485") or []):
+            add(b, {"kind": "rs485", "bus": b.get("id"),
+                    "dev": "usb:%s:%s" % (u["port"], b.get("id")),
+                    "port": u["port"]})
+
+    for mod in scan_modules(force):
+        ip = mod.get("ip")
+        if not ip:
+            continue
+        add(mod, {"kind": "wifi", "dev": "wifi:" + ip, "ip": ip})
+
+    # A stable order, so the list does not shuffle under someone's hand between
+    # two scans: named boards first, by name, then by whatever identity there is.
+    return sorted(out.values(),
+                  key=lambda m: ((m.get("name") or "~").lower(), str(m.get("id"))))
+
+
+def shared_css():
+    """The design system as one stylesheet: the palette, then the components.
+
+    Split into two files on 2026-08-19 so that changing a colour, or adding a
+    theme, means editing shared/web/themes.css and nothing else. They are
+    joined here rather than linked separately because every page - including
+    the module website served from the board's own flash - links exactly one
+    stylesheet, and none of them should have to change for a decision about
+    where the colours live.
+    """
+    parts = []
+    nl = chr(10).encode()
+    for name in ("themes.css", "mice.css"):
+        f = SHARED_WEB / name
+        if f.is_file():
+            parts.append(b"/* ---- " + name.encode() + b" ---- */" + nl)
+            parts.append(f.read_bytes())
+            parts.append(nl)
+    return b"".join(parts)
 
 
 def esptool_cmd():
@@ -1126,6 +1390,62 @@ class Flasher:
         self.thread.start()
         return self.status()
 
+    def start_received(self, port, module_type, parts, who):
+        """Flash an image that came from another PC over the network.
+
+        Same writer as a local flash — the only difference is where the bytes
+        came from, so the progress, the log and the one-cable-at-a-time rule
+        are shared rather than reimplemented. The files land in a temp folder
+        that is removed when the write finishes, however it finishes: a failed
+        flash must not leave a stale firmware on disk for the next one to pick
+        up by mistake.
+        """
+        import base64
+        import tempfile
+        if self.running():
+            raise RuntimeError("already flashing %s - one cable at a time" % self.port)
+        cmd, why = esptool_cmd()
+        if not cmd:
+            raise RuntimeError(why)
+        if not port:
+            raise RuntimeError("which port? name the cable the board is on")
+        if not parts:
+            raise RuntimeError("no firmware arrived")
+        # The port is about to become an argument to esptool. Nothing that
+        # is not a port shape gets that far.
+        if not re.fullmatch(r"(COM\d+|/dev/[\w./-]+)", port):
+            raise ValueError("%s is not a serial port" % port)
+        d = Path(tempfile.mkdtemp(prefix="mice_fw_"))
+        got = []
+        try:
+            for i, p in enumerate(parts):
+                # A name is a NAME: no folders, and never empty, or the write
+                # lands on the temp folder itself.
+                name = Path(str(p.get("name", ""))).name or ("part%d.bin" % i)
+                f = d / name
+                f.write_bytes(base64.b64decode(p.get("b64", "")))
+                # Offsets travel as they are written everywhere else here -
+                # 0x1000, not 4096 - so they are read in whatever base they
+                # arrive in and handed to esptool in the same form.
+                got.append((str(p.get("off", "0")), str(f)))
+        except Exception:
+            # Nothing has been started yet, so the folder is ours to remove.
+            # Leaving it behind on a bad payload is a slow disk leak that only
+            # shows up on the PC at the venue.
+            import shutil
+            shutil.rmtree(d, ignore_errors=True)
+            raise
+        got.sort(key=lambda pair: int(str(pair[0]), 0))   # by address, not by spelling
+        im = {"type": module_type, "parts": got, "ready": True,
+              "from": who, "tmp": str(d)}
+        with self.lock:
+            self.port, self.type, self.how = port, module_type, "usb"
+            self.percent, self.stage, self.log = 0, "receiving from " + who, []
+            self.ok, self.error = None, ""
+        self.thread = threading.Thread(target=self._run, args=(cmd, im), daemon=True)
+        self.thread.start()
+        return self.status()
+
     def _say(self, line):
         with self.lock:
             self.log.append(line)
@@ -1187,6 +1507,12 @@ class Flasher:
         finally:
             with _flash_lock:
                 _flash_ports.discard(port)
+            # An image that arrived from another PC lives in a temp folder.
+            # Remove it whether the write worked or not: leaving firmware on
+            # disk invites the next flash to pick up bytes nobody chose.
+            if im.get("tmp"):
+                import shutil
+                shutil.rmtree(im["tmp"], ignore_errors=True)
 
     def _why_failed(self):
         """The one line worth reading, in words that say what to do."""
@@ -1212,15 +1538,41 @@ flasher = Flasher()
 # with its identity + WiFi ip), then broadcasts "#* PING" so every module on
 # the RS485 bus behind that port answers too — works both through a module
 # (it bridges '#' lines onto the bus) and through a bare USB-RS485 dongle.
-def _read_lines(ser, seconds):
-    lines, buf, end = [], b"", time.time() + seconds
+def _read_lines(ser, seconds, quiet=0.0, at_least=0.0):
+    """Lines for `seconds`, or until the port has been quiet for `quiet`.
+
+    The quiet rule exists for the RS485 census. Modules stagger their answers
+    to a broadcast by their own id so the replies do not collide, so the LAST
+    board to speak is the one with the highest id - which makes a fixed window
+    a limit on which boards exist as far as the hub is concerned. Measured on
+    the bench 2026-08-19: a nong with id 67 answered 1344 ms after the
+    broadcast, while this waited 0.8 s. It was invisible, and reported no
+    error, which reads exactly like an empty bus.
+
+    Waiting for quiet instead means one quick board costs a fifth of a second
+    and a high id is still found, up to the cap.
+    """
+    lines, buf = [], b""
+    started = time.time()
+    end = started + seconds
+    last = started
     while time.time() < end:
         chunk = ser.read(256)
         if not chunk:
+            # Quiet only counts AFTER the floor. A quick board answers in 20 ms
+            # and the next one may be a second behind it, so stopping at the
+            # first silence hears the fast boards and calls the rest absent -
+            # which is the bug this whole rule exists to fix, moved rather than
+            # removed.
+            if (quiet and lines
+                    and (time.time() - started) >= at_least
+                    and (time.time() - last) >= quiet):
+                break
             continue
+        last = time.time()
         buf += chunk
-        while b"\n" in buf:
-            ln, buf = buf.split(b"\n", 1)
+        while (chr(10).encode()) in buf:
+            ln, buf = buf.split(chr(10).encode(), 1)
             t = ln.decode(errors="replace").strip()
             if t and not t.startswith("["):
                 lines.append(t)
@@ -1270,6 +1622,12 @@ def probe_usb_port(port):
                         out["module"] = {"id": st.get("id"), "name": st.get("name"),
                                          "type": st.get("type"),
                                          "group": st.get("group", ""),
+                                         # The chip MAC, when the board runs
+                                         # firmware new enough to report it.
+                                         # Without it the same board found on a
+                                         # cable and on WiFi cannot be told to
+                                         # be one board - see modules_here.
+                                         "chip": st.get("chip", ""),
                                          **_wifi_of(st)}
                         break
                     except ValueError:
@@ -1283,7 +1641,24 @@ def probe_usb_port(port):
             _drain_to_line_boundary(ser)
             ser.write(b"#* PING\n")
             seen = {}
-            for ln in _read_lines(ser, 0.8):
+            # 5.4 s is the worst case an OLD board can take: the stagger
+            # was id x 20 ms and ids go to 247. It almost never costs
+            # that, because the read stops once the bus has been quiet
+            # for 300 ms - one board with a low id is a fifth of a
+            # second. Current firmware answers within 240 ms whatever
+            # the id (RS485Bus.cpp).
+            # 1.6 s floor, then stop when the bus goes quiet, cap 5.4 s.
+            #
+            # The floor is what makes a late board findable: with the OLD
+            # stagger of id x 20 ms it covers every id up to 80, and current
+            # firmware answers within 240 ms whatever the id. The cap is the
+            # true worst case, id 247 on old firmware.
+            #
+            # THE LIMIT, said out loud: a board running old firmware with an id
+            # above 80 answers after the floor and may be missed if nothing
+            # else is talking. Reflashing it fixes that permanently, because
+            # the bounded stagger lands every board inside the floor.
+            for ln in _read_lines(ser, 5.4, quiet=0.3, at_least=1.6):
                 m = re.match(r"^@(\d+)\s+PONG\s+(\d+)\s+(.+)\s+(\S+)$", ln)
                 if m:
                     seen[int(m.group(1))] = {"id": int(m.group(1)), "name": m.group(3),
@@ -1295,7 +1670,13 @@ def probe_usb_port(port):
                 for ln in _read_lines(ser, 0.6):
                     if ln.startswith("@%d {" % mid):
                         try:
-                            seen[mid].update(_wifi_of(json.loads(ln.split(" ", 1)[1])))
+                            st = json.loads(ln.split(" ", 1)[1])
+                            seen[mid].update(_wifi_of(st))
+                            # ...and its chip, from the same answer. A module
+                            # behind an RS485 bus is reachable over WiFi too,
+                            # so it is exactly a board the hub can meet twice.
+                            if st.get("chip"):
+                                seen[mid]["chip"] = st["chip"]
                         except ValueError:
                             pass
                         break
@@ -1382,13 +1763,26 @@ class Handler(BaseHTTPRequestHandler):
     # that cannot have a length is the camera stream, and it says
     # `Connection: close` for itself.
     protocol_version = "HTTP/1.1"
-    def send_bytes(self, data: bytes, ctype="application/json", code=200):
+    def send_bytes(self, data: bytes, ctype="application/json", code=200,
+                   headers=()):
         self.send_response(code)
+        for k, v in headers:
+            self.send_header(k, v)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(data)
+
+    def send_redirect(self, where, code=302):
+        """Send the browser somewhere else. 302, not 301: a permanent redirect
+        is cached by the browser forever, and a wrong one can only be undone by
+        the user clearing their history."""
+        self.send_response(code)
+        self.send_header("Location", where)
+        self.send_header("Content-Length", "0")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
 
     def send_json(self, obj, code=200):
         self.send_bytes(json.dumps(obj).encode(), code=code)
@@ -1397,8 +1791,19 @@ class Handler(BaseHTTPRequestHandler):
         self.drain()          # never reject a POST without reading its body
         self.send_json({"ok": False, "error": str(msg)}, code=code)
 
-    def body(self) -> bytes:
-        n = int(self.headers.get("Content-Length") or 0)
+    def body(self, limit=0) -> bytes:
+        """The request body, optionally with a ceiling.
+
+        A firmware image arrives over the network as one POST, and this hub
+        reads whatever Content-Length claims. Without a ceiling, one header
+        saying two gigabytes is enough to take the hub down from anywhere on
+        the venue WiFi — so the route that expects a big body names how big.
+        """
+        n = max(0, int(self.headers.get("Content-Length") or 0))
+        if limit and n > limit:
+            self._body_read = True
+            raise ValueError("that is too big to accept (%d MB, limit %d MB)"
+                             % (n // 1048576, limit // 1048576))
         self._body_read = True
         return self.rfile.read(n) if n else b""
 
@@ -1412,7 +1817,17 @@ class Handler(BaseHTTPRequestHandler):
         """
         if getattr(self, "_body_read", False):
             return
-        n = int(self.headers.get("Content-Length") or 0)
+        n = max(0, int(self.headers.get("Content-Length") or 0))
+        # Politeness has a limit. A refused request still has its body read so
+        # the client sees the REASON rather than a dropped connection - but a
+        # header claiming half a gigabyte is not politeness, it is the whole
+        # hub blocked on one socket, and the gate refuses such a request before
+        # anything else looks at it. Past the cap, drop the connection instead:
+        # a rude client gets a rude answer, and the hub stays up.
+        if n > DRAIN_LIMIT:
+            self.close_connection = True
+            self._body_read = True
+            return
         if n:
             try:
                 self.rfile.read(n)
@@ -1421,7 +1836,13 @@ class Handler(BaseHTTPRequestHandler):
         self._body_read = True
 
     def log_message(self, fmt, *args):
-        if "/api/robot" in (args[0] if args else "") or "/api/scan" in (args[0] if args else ""):
+        # args[0] is the request line for a normal log call — but log_error()
+        # passes an HTTPStatus, and `"/api/robot" in HTTPStatus.NOT_IMPLEMENTED`
+        # raises TypeError inside send_error(). The handler thread then dies
+        # mid-reply and the client gets a reset connection instead of a clean
+        # error. A bare `curl -I` (HEAD, which has no handler here) does it.
+        first = str(args[0]) if args else ""
+        if "/api/robot" in first or "/api/scan" in first:
             return
         sys.stderr.write("[web] " + fmt % args + "\n")
 
@@ -1443,6 +1864,19 @@ class Handler(BaseHTTPRequestHandler):
         path = url.path
 
         if path.startswith("/api/"):
+            # LOGIN FIRST, for anything that changes something. Reading stays
+            # open: the module list, the status endpoints and the pages
+            # themselves work with no password, because someone glancing at the
+            # hub to see whether a board is alive should not have to type.
+            if path in ("/api/login", "/api/logout", "/api/whoami",
+                        "/api/users", "/api/users/add", "/api/users/remove"):
+                return self.auth_route(method, path)
+            if hub_auth.gated(path, method) and not self.logged_in():
+                self.drain()
+                return self.send_bytes(
+                    json.dumps({"ok": False, "need_login": True,
+                                "error": "log in before doing that"}).encode(),
+                    MIME[".json"], 401)
             return self.api(method, path, q)
 
         if method != "GET":
@@ -1477,8 +1911,42 @@ class Handler(BaseHTTPRequestHandler):
             # the module's OWN website (WebUI.h) served with a transport shim —
             # identical over WiFi/USB/RS485 (?dev=wifi:<ip> | usb:<port>[:<id>])
             return self.send_bytes(module_ui_html().encode(), MIME[".html"])
-        if path == "/module.html":  # legacy USB control page (kept as fallback)
-            return self.send_bytes((HUB_WEB / "module.html").read_bytes(), MIME[".html"])
+        if path == "/module.html":
+            # The old USB-only control page is GONE — /mod is the module's own
+            # website over every transport. The page that used to live here had
+            # already been reduced to a JavaScript redirect, and it had drifted:
+            # 8 joint sliders where the real module has 10, so a nong opened
+            # through it could not reach WAIST or SHRUG at all.
+            #
+            # The URL stays, as a redirect, because a bookmark or a printed link
+            # from before is not the user's mistake. ?port=COM5&id=2 was that
+            # page's addressing; /mod speaks dev=usb:COM5:2.
+            port = (q.get("port") or [""])[0]
+            if not port:
+                return self.send_redirect("/")
+            bus = (q.get("id") or [""])[0]
+            dev = "usb:" + port + ((":" + bus) if bus else "")
+            return self.send_redirect(
+                "/mod?" + urllib.parse.urlencode(
+                    {"dev": dev, "name": (q.get("name") or [""])[0]}))
+        # The one shared script: which theme the page is wearing. Served here
+        # and compiled into the board's flash, exactly like the stylesheet, so
+        # every surface gets the same behaviour from one file.
+        if path == "/mice.js":
+            f = SHARED_WEB / "mice.js"
+            if f.is_file():
+                return self.send_bytes(f.read_bytes(), "text/javascript; charset=utf-8")
+            return self.send_err("mice.js is missing", 404)
+
+        if path == "/mice.css":
+            # One design system for every surface. This route must stay ABOVE
+            # the studio fallback below, which would otherwise look for the
+            # file in Studio's web folder and 404.
+            # themes.css FIRST, then mice.css: the palette has to be defined
+            # before the components that use it, and serving them as one file
+            # means no page had to learn about a second stylesheet - and the
+            # board, which serves this from flash, still serves one thing.
+            return self.send_bytes(shared_css(), MIME[".css"])
         if path == "/rgb.html":     # RGB modes page (WiFi or USB target)
             return self.send_bytes((HUB_WEB / "rgb.html").read_bytes(), MIME[".html"])
         if path == "/pinout.svg":   # ESP32 pinout reference (served from the PC)
@@ -1514,6 +1982,84 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_err("not found: " + path, 404)
         self.send_bytes(f.read_bytes(), MIME.get(f.suffix.lower(), "application/octet-stream"))
 
+    # ------------------------------------------------------------ login
+    def logged_in(self) -> bool:
+        """A forwarded call carries the ORIGINATING hub's cookie, which this
+        hub cannot check — see the forwarding block in api(). It is answered
+        there, against this hub's own session, so by the time it reaches here
+        it has already been through the same gate."""
+        return auth().valid(auth().token_of(self.headers.get("Cookie", "")))
+
+    def auth_route(self, method: str, path: str):
+        a = auth()
+        if path == "/api/whoami":
+            # Never leaks the password, only whether one has to be typed. The
+            # page needs this to decide what to grey out.
+            return self.send_json({
+                "ok": True,
+                "authed": self.logged_in(),
+                "users": a.users() if self.logged_in() else [],
+                "locked_for": a.locked_for(self.client_address[0]),
+                "lock_seconds": hub_auth._LOCK_SECONDS,   # noqa: SLF001
+            })
+        if path == "/api/users":
+            # Names only, never a hash. Behind the login because the list of
+            # who can drive a robot is not something a stranger needs.
+            if not self.logged_in():
+                return self.send_bytes(json.dumps(
+                    {"ok": False, "need_login": True,
+                     "error": "log in to see the accounts"}).encode(),
+                    MIME[".json"], 401)
+            return self.send_json({"ok": True, "users": a.users(),
+                                   "max": hub_auth.MAX_USERS})
+
+        if method != "POST":
+            return self.send_err("POST only", 405)
+
+        if path in ("/api/users/add", "/api/users/remove"):
+            if not self.logged_in():
+                return self.send_bytes(json.dumps(
+                    {"ok": False, "need_login": True,
+                     "error": "log in first"}).encode(), MIME[".json"], 401)
+            try:
+                body = json.loads(self.body().decode() or "{}")
+            except ValueError:
+                body = {}
+            name = str(body.get("user") or "").strip()
+            if path.endswith("/add"):
+                ok, why = a.add_user(name, str(body.get("password") or ""))
+            else:
+                ok, why = a.remove_user(name)
+            return self.send_bytes(
+                json.dumps({"ok": ok, "error": why, "users": a.users()}).encode(),
+                MIME[".json"], 200 if ok else 400)
+
+        if path == "/api/logout":
+            a.logout(a.token_of(self.headers.get("Cookie", "")))
+            return self.send_bytes(
+                json.dumps({"ok": True}).encode(), MIME[".json"], 200,
+                headers=[("Set-Cookie",
+                          "%s=; Path=/; Max-Age=0; SameSite=Lax" % hub_auth.COOKIE)])
+        # /api/login
+        try:
+            body = json.loads(self.body().decode() or "{}")
+        except ValueError:
+            body = {}
+        token, why = a.login(str(body.get("password") or ""),
+                             self.client_address[0],
+                             user=str(body.get("user") or "") or None)
+        if not token:
+            # 401 with the REASON: wrong password and locked out need different
+            # actions from the person, so they must not look the same.
+            return self.send_bytes(
+                json.dumps({"ok": False, "error": why,
+                            "locked_for": a.locked_for(self.client_address[0])}).encode(),
+                MIME[".json"], 401)
+        return self.send_bytes(
+            json.dumps({"ok": True}).encode(), MIME[".json"], 200,
+            headers=[("Set-Cookie",
+                      "%s=%s; Path=/; HttpOnly; SameSite=Lax" % (hub_auth.COOKIE, token))])
+
     # ------------------------------------------------------------- API
     def api(self, method: str, path: str, q):
         # ---- unified device API: same for WiFi and USB/RS485 (dev=...) ----
@@ -1522,9 +2068,76 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/dev/"):
             dev = (q.get("dev") or [""])[0]
             what = path[len("/api/dev/"):]
+            # A module on ANOTHER PC's cable: hand the whole call to the hub
+            # that owns it, unchanged. Everything downstream then works exactly
+            # as it does locally — the same routes, the same module website,
+            # the same Studio — because only the address had to change.
+            try:
+                hub_ip, inner = split_hub_dev(dev)
+            except ValueError as e:
+                return self.send_err(str(e))
+            if hub_ip and is_self(hub_ip):
+                # That address IS this PC. Handle it here rather than making an
+                # HTTP round trip to ourselves — which works, but wastes a
+                # request thread and hides the real device behind a hop. Caught
+                # by check_shared_modules: forwarding to 127.0.0.2 (all of
+                # 127.0.0.0/8 is loopback) came back PONG from our own fake.
+                dev, hub_ip = inner, None
+            if hub_ip:
+                if self.headers.get("X-Mice-Forwarded"):
+                    return self.send_err(
+                        "that module is not on this PC's cables", 502)
+                try:
+                    body = self.body() if method == "POST" else None
+                    args = {k: v[0] for k, v in q.items() if v}
+                    args["dev"] = inner          # the address as THAT PC sees it
+                    url = "http://%s:%d%s?%s" % (hub_ip, PORT, path,
+                                                 urllib.parse.urlencode(args))
+                    req = urllib.request.Request(
+                        url, data=body, method="POST" if body is not None else "GET")
+                    req.add_header("X-Mice-Forwarded", "1")
+                    with urllib.request.urlopen(req, timeout=10) as r:
+                        out = r.read()
+                        ctype = r.headers.get("Content-Type",
+                                              "text/plain; charset=utf-8")
+                    return self.send_bytes(out, ctype)
+                except urllib.error.HTTPError as e:
+                    if e.code == 401:
+                        # THAT hub gates its own actions, and a session here is
+                        # not a session there — the token is issued by one
+                        # process and means nothing to another. Forwarding the
+                        # cookie would not help, and letting a forwarded call
+                        # through unchecked would mean anyone on the venue WiFi
+                        # could set one header and drive the robot. So the
+                        # person logs in there too, and is told so plainly.
+                        return self.send_bytes(json.dumps({
+                            "ok": False, "need_login": True, "hub": hub_ip,
+                            "error": "that module is on %s — open http://%s:%d/ "
+                                     "and log in there first" % (hub_ip, hub_ip, PORT),
+                        }).encode(), MIME[".json"], 401)
+                    return self.send_err(
+                        "the PC holding this module refused (%s): %s" % (hub_ip, e), 502)
+                except Exception as e:           # noqa: BLE001
+                    return self.send_err(
+                        "could not reach the PC holding this module (%s) — is it "
+                        "still on and running the hub? %s" % (hub_ip, e), 502)
             try:
                 if what == "cmd":
-                    return self.send_bytes(dev_cmd(dev, (q.get("c") or [""])[0]).encode(),
+                    c = (q.get("c") or [""])[0]
+                    # A motion command from the MODULE WEBSITE has to stop the
+                    # hub's show, exactly as one over /api/usb/cmd or
+                    # /api/robot/cmd does. This route was the hole: open
+                    # "⚙ Open module" on a robot the hub is playing, drag a
+                    # joint, and the show player kept sending POSE while the
+                    # page sent JOINT — two clocks on one arm, and the servos
+                    # fight. Done HERE and not inside dev_cmd(), or the show
+                    # player's own commands would stop the show.
+                    try:
+                        k, a, b, _peer = parse_dev(dev)
+                        check_takeover(k, a, b, c)
+                    except Exception:            # noqa: BLE001
+                        pass                     # a bad dev fails below anyway
+                    return self.send_bytes(dev_cmd(dev, c).encode(),
                                            "text/plain; charset=utf-8")
                 if what == "status":
                     return self.send_bytes(dev_status(dev), "application/json")
@@ -1649,6 +2262,82 @@ class Handler(BaseHTTPRequestHandler):
                 p["who"] = ("%s (%s)" % (known.get("name"), known.get("type"))) if known else ""
             return self.send_json({"ok": True, "ports": ports})
 
+        # ---- what THIS PC holds on its own cables --------------------------
+        # Another hub calls this every few seconds, so it is deliberately cheap
+        # and cache-backed: probe_usb_all(False) reuses the 8 s cache. Forcing
+        # a fresh probe here would let two PCs watching each other keep every
+        # cable permanently busy and starve their own users of the port.
+        if path == "/api/modules":
+            # ONE list, merged on the chip. See modules_here.
+            force = (q.get("force") or ["0"])[0] == "1"
+            try:
+                mods = modules_here(force)
+            except Exception as e:               # noqa: BLE001
+                return self.send_err(e)
+            return self.send_json({"ok": True, "modules": mods,
+                                   "lan": lan_ip()})
+
+        if path == "/api/mine":
+            mods = []
+            for u in probe_usb_all(False):
+                m = u.get("module")
+                if not m:
+                    continue
+                mods.append({"dev": "usb:" + u["port"],
+                             "name": m.get("name") or u["port"],
+                             "type": m.get("type", ""), "id": m.get("id"),
+                             "group": m.get("group", ""), "via": u["port"]})
+                for b in (u.get("rs485") or []):
+                    mods.append({"dev": "usb:%s:%s" % (u["port"], b.get("id")),
+                                 "name": b.get("name") or ("id %s" % b.get("id")),
+                                 "type": b.get("type", ""), "id": b.get("id"),
+                                 "group": b.get("group", ""),
+                                 "via": "%s #%s" % (u["port"], b.get("id"))})
+            # `url` is the address this hub can be reached at from ANOTHER
+            # device - the same one the QR encodes, computed in one place. The
+            # page cannot work it out itself: the hub is usually opened as
+            # 127.0.0.1, and 127.0.0.1 is the single address on the network
+            # that a phone cannot use.
+            ns = NAME_SERVER[0]
+            return self.send_json({"ok": True, "host": socket.gethostname(),
+                                   "url": "http://%s:%d/" % (lan_ip(), PORT),
+                                   # The NAME, and honestly whether it works.
+                                   # Printing mice.local while nothing answers
+                                   # it sends people down a hole.
+                                   "name_url": ("http://%s:%d/" % (MDNS_NAME, PORT)
+                                                if ns and not ns.error else ""),
+                                   "name_why": (ns.error if ns else "not started"),
+                                   "modules": mods})
+
+        # ---- every module on every PC, this one included --------------------
+        # scan_hubs() already finds the other hubs on this subnet (it is what
+        # the Studio settings transfer uses). This asks each of them what it is
+        # holding, and rewrites the address so it means the same module FROM
+        # HERE: hub:<their ip>/<their dev>.
+        if path == "/api/allmods":
+            force = (q.get("force") or ["0"])[0] == "1"
+            out, errs = [], []
+            for h in scan_hubs(force):
+                ip = h.get("ip")
+                if not ip:
+                    continue
+                try:
+                    with urllib.request.urlopen(
+                            "http://%s:%d/api/mine" % (ip, PORT), timeout=6) as r:
+                        d = json.loads(r.read().decode(errors="replace"))
+                    host = d.get("host") or ip
+                    for m in (d.get("modules") or []):
+                        m = dict(m)
+                        m["dev"] = "hub:%s/%s" % (ip, m["dev"])
+                        m["host"] = host
+                        m["hostIp"] = ip
+                        out.append(m)
+                except Exception as e:          # noqa: BLE001
+                    # A laptop that has just been closed is normal. Report it
+                    # per PC rather than failing the whole list.
+                    errs.append({"ip": ip, "error": str(e)})
+            return self.send_json({"ok": True, "modules": out, "errors": errs})
+
         if path == "/api/scanusb":
             # ?port=COMx probes ONE port (streaming UI: results render as
             # each port answers); no port = all non-Bluetooth ports at once
@@ -1689,6 +2378,57 @@ class Handler(BaseHTTPRequestHandler):
         # GET  /api/flash/images   what this PC could flash, and what is missing
         # POST /api/flash?port=&type=   start (the cable is taken for the job)
         # GET  /api/flash          progress, then ok/error
+        # Watching a write that is happening on ANOTHER PC. The page cannot
+        # ask that hub directly - it is a different origin, so the browser
+        # sends no cookie and the answer is refused - so this hub asks for it.
+        if path == "/api/flash/at":
+            ip = (q.get("ip") or [""])[0]
+            try:
+                with urllib.request.urlopen(
+                        "http://%s:%d/api/flash" % (ip, PORT), timeout=8) as r:
+                    return self.send_bytes(r.read(), MIME[".json"])
+            except Exception as e:            # noqa: BLE001
+                return self.send_json({"running": False, "ok": False,
+                                       "error": "%s is not answering (%s)" % (ip, e)})
+
+        # ---- flashing from ANOTHER PC (see remote_payload) ----
+        # The image arrives over the network and esptool runs HERE, because
+        # this is the PC holding the cable. Gated: it is the most destructive
+        # thing this hub can be asked to do.
+        if path == "/api/flash/remote" and method == "POST":
+            try:
+                d = json.loads(self.body(48 * 1048576).decode())
+                return self.send_json(flasher.start_received(
+                    d.get("port", ""), d.get("type", ""),
+                    d.get("parts") or [], d.get("from", "another PC")))
+            except Exception as e:            # noqa: BLE001
+                return self.send_err(e)
+
+        # ...and the other half: hand THIS PC's image to the hub that has the
+        # cable. The operator names that hub and logs into it here, because a
+        # hub does not hold another hub's password.
+        if path == "/api/flash/send" and method == "POST":
+            try:
+                d = json.loads(self.body().decode())
+                return self.send_json(send_firmware(
+                    d.get("to", ""), d.get("port", ""), d.get("type", ""),
+                    d.get("user", ""), d.get("password", "")))
+            except Exception as e:            # noqa: BLE001
+                return self.send_err(e)
+
+        # ---- the way a phone gets here ----
+        # Printed addresses do not survive a venue: someone reads 192.168.137.1
+        # off a laptop across the room and types 192.168.13.71. A QR is the
+        # only address that cannot be mistyped, and it works where mDNS does
+        # not - which is most places, because venue networks block multicast.
+        if path == "/api/qr":
+            text = (q.get("text") or [""])[0] or ("http://%s:%d/" % (lan_ip(), PORT))
+            try:
+                return self.send_bytes(qr.svg(text).encode(),
+                                       "image/svg+xml; charset=utf-8")
+            except ValueError as e:               # too long to encode
+                return self.send_err(e)
+
         if path == "/api/flash/images":
             cmd, why = esptool_cmd()
             return self.send_json({"images": flash_images(),
@@ -1755,9 +2495,14 @@ class Handler(BaseHTTPRequestHandler):
             name = safe_name(data["name"])
             if not name.endswith(".json"):
                 name += ".json"
-            (PROJECTS / name).write_text(
-                json.dumps(data["project"], indent=1), encoding="utf-8")
-            return self.send_json({"ok": True, "file": name})
+            existed = (PROJECTS / name).exists()
+            write_atomic(PROJECTS / name,
+                         json.dumps(data["project"], indent=1))
+            # `existed` goes back so the editor can say "replaced my_move.json"
+            # rather than letting a name collision pass in silence. The default
+            # name in the editor is "my_move", so saving over someone else's
+            # project is one careless click.
+            return self.send_json({"ok": True, "file": name, "replaced": existed})
 
         if path == "/api/model/upload" and method == "POST":
             name = safe_name((q.get("name") or [""])[0])
@@ -1774,8 +2519,9 @@ class Handler(BaseHTTPRequestHandler):
             rig = data.get("rig")
             if not isinstance(rig, dict) or "min" not in rig:
                 return self.send_err("that does not look like a rig")
-            (STUDIO / "rig_default.json").write_text(
-                json.dumps(rig, indent=1), encoding="utf-8")
+            # The tuned rig is the most expensive thing in this project to
+            # rebuild by hand, so it never gets truncated in place.
+            write_atomic(STUDIO / "rig_default.json", json.dumps(rig, indent=1))
             return self.send_json({"ok": True, "file": "rig_default.json",
                                    "keys": len(rig)})
 
@@ -1789,7 +2535,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_err("that does not look like a settings bundle")
             bundle["savedAt"] = time.strftime("%Y-%m-%d %H:%M:%S")
             bundle["savedBy"] = socket.gethostname()
-            SETTINGS_FILE.write_text(json.dumps(bundle, indent=1), encoding="utf-8")
+            write_atomic(SETTINGS_FILE, json.dumps(bundle, indent=1))
             return self.send_json({"ok": True, "savedAt": bundle["savedAt"]})
 
         if path == "/api/settings":
@@ -1826,8 +2572,9 @@ class Handler(BaseHTTPRequestHandler):
             name = safe_name(data["name"])
             if not name.endswith(".yaml"):
                 name += ".yaml"
-            (SEQUENCES / name).write_text(data["yaml"], encoding="utf-8", newline="\n")
-            return self.send_json({"ok": True, "file": name,
+            existed = (SEQUENCES / name).exists()
+            write_atomic(SEQUENCES / name, data["yaml"], newline="\n")
+            return self.send_json({"ok": True, "file": name, "replaced": existed,
                                    "path": str((SEQUENCES / name))})
 
         # ---- robot proxy (dodges CORS) ----
@@ -1886,7 +2633,9 @@ class Handler(BaseHTTPRequestHandler):
     def robot_get(ip: str, path: str) -> bytes:
         if not re.match(r"^[A-Za-z0-9._-]+(:\d+)?$", ip):
             raise ValueError("bad module address")
-        with urllib.request.urlopen("http://%s%s" % (ip, path), timeout=6) as r:
+        req = urllib.request.Request("http://%s%s" % (ip, path),
+                                     headers=hub_header())
+        with urllib.request.urlopen(req, timeout=6) as r:
             return r.read()
 
 
@@ -1902,6 +2651,15 @@ def main():
     print("Mice hub running:")
     print("  this PC       ->", local)
     print("  same WiFi     -> http://%s:%d/   (phones / other laptops)" % (lan_ip(), PORT))
+    # A NAME as well as an address. It is started here, after the socket is
+    # bound, so a hub that cannot get port 5353 (Bonjour or avahi already has
+    # it) still runs and simply says the name is unavailable.
+    NAME_SERVER[0] = mdns.Responder(MDNS_NAME, lan_ip)
+    if NAME_SERVER[0].start():
+        print("  by name       -> http://%s:%d/   (phones, Macs, Windows)"
+              % (MDNS_NAME, PORT))
+    else:
+        print("  by name       -> not available:", NAME_SERVER[0].error)
     print("The hub finds all modules by itself; Nong Studio is at /studio/.")
     print("Ctrl+C to stop.")
     threading.Timer(0.6, lambda: webbrowser.open(local)).start()

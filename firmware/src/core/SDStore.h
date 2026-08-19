@@ -47,5 +47,7 @@ private:
     bool ok_ = false;
     SemaphoreHandle_t mtx_ = nullptr;
     File wtx_;
-    String wtxPath_;
+    String wtxPath_;      // where the finished file belongs
+    String wtxTmp_;       // where it is written first (<path>.part), so an
+                          // interrupted upload cannot destroy the old file
 };

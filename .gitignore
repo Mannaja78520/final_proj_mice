@@ -42,3 +42,13 @@ qc/**/__pycache__/
 
 # staging workspace (promote.py) — a working copy, never committed
 .staging/
+
+# ---- Secrets. These belong to ONE machine and must never travel ----
+# hub_auth.json is the hub password as a salted hash; hub_password.txt is the
+# same password in plain text, written so nobody gets locked out of their own
+# robot. Both are per-machine, both are already in promote.py's SKIP_FILES,
+# and neither may reach a commit — history keeps what you delete later.
+main_python/hub_auth.json
+main_python/hub_auth.json.*
+main_python/hub_password.txt
+.qc-receipt.json

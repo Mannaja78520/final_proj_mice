@@ -27,6 +27,10 @@ from snapshot import Snapshots, cli  # noqa: E402
 SNAP = Snapshots(
     root=ROOT / "web",
     patterns=["*.html", "*.css", "*.js"],
+    # The pages carry no design system of their own any more: they link
+    # shared/web/mice.css. A snapshot without it would restore an old page
+    # against today's tokens, which is not the page anyone remembers.
+    also=[(ROOT.parent / "shared" / "web", ["*.css"], "shared")],
     patches=ROOT / "patches",
     index=ROOT / "PATCHES.md",
     what="hub pages",

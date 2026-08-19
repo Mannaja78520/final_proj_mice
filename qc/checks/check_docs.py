@@ -63,10 +63,23 @@ def run(t):
         t.contains(low, ty, "help page covers the %s module type" % ty)
 
     # ---- every servo preset the firmware offers ---------------------
-    nong_c = (F.FIRMWARE / "src/modules/nong/NongModule.cpp").read_text(
-        encoding="utf-8", errors="replace")
-    presets = set(re.findall(r't == "(\w+)"', nong_c))
-    for p in sorted(presets):
+    # Read from config/servos.json, the ONE place a preset is declared.
+    #
+    # This used to grep NongModule.cpp for `t == "<name>"` — an if-chain that
+    # was deliberately deleted when presets moved into the registry, and whose
+    # removal check_registries.py now ASSERTS. So one check enforced the
+    # removal of the very thing this one grepped for: the regex returned [],
+    # the loop below ran zero times, and a servo preset added without being
+    # documented shipped green. Nothing failed, because nothing was asked.
+    import sys
+    sys.path.insert(0, str(F.CODE / "tools"))
+    import registry
+    presets = sorted(registry.servos().keys())
+    # the guard, so this can never quietly go empty again
+    t.ok(len(presets) >= 4,
+         "the servo presets were really read (%d)" % len(presets),
+         "an empty list here means the loop below checks nothing")
+    for p in presets:
         t.contains(help_txt, p, "help page lists the %s servo preset" % p)
 
     # ---- every QC area is described (this file included) ------------

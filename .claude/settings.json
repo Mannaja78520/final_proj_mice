@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash",
+      "PowerShell",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "statusMessage": "reading the active plan",
+            "command": "$p='E:\\final_proj\\mice\\code\\docs\\PLAN.html'; if(Test-Path $p){ $t=Get-Content $p -Raw -Encoding utf8; $r=[regex]::Matches($t,'(?m)^([A-Z]\\d+-\\d+):\\s+(todo|doing|done|blocked)\\b'); if($r.Count){ $d=($r|Where-Object{$_.Groups[2].Value -eq 'done'}).Count; $n=($r|Where-Object{$_.Groups[2].Value -ne 'done'}|Select-Object -First 3|ForEach-Object{$_.Groups[1].Value+' ['+$_.Groups[2].Value+']'}) -join ', '; $c='ACTIVE PLAN: docs/PLAN.html - '+$d+' of '+$r.Count+' tasks done. Read that file before acting. Its STATE block is the only record of progress - update it as tasks move. Decisions already written in the plan are settled: do not re-ask them, ask only about genuinely new choices. Work in code/.staging and promote with promote.py only when qc/run_qc.py is green. Never run promote.py --init while staging holds unpromoted work. Next up: '+$n; @{hookSpecificOutput=@{hookEventName='SessionStart';additionalContext=$c}}|ConvertTo-Json -Compress } }"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "$in = [Console]::In.ReadToEnd() | ConvertFrom-Json; $p = $in.prompt; if ($p -and $p -notmatch '^\\s*<(task-notification|system-reminder|local-command)' -and $p -notmatch '^\\s*\\[SYSTEM NOTIFICATION') { Add-Content -Encoding utf8 -Path 'E:\\final_proj\\mice\\code\\promt.md' -Value (\"`n### \" + (Get-Date -Format 'yyyy-MM-dd HH:mm') + \"`n\" + $p) }"
+          }
+        ]
+      }
+    ]
+  }
+}

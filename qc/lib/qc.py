@@ -13,6 +13,7 @@ Nothing registers it — `run_qc.py` finds every `check_*.py` by itself, so
 adding a new area of the project to QC is just dropping a file in. See
 `qc/README.md`.
 """
+import os
 import sys
 import time
 import traceback
@@ -103,7 +104,12 @@ sys.path.insert(0, str(CODE / "tools"))
 
 
 # ---------------------------------------------------------------- hub
-_hub_port = [8700]
+# Where this run's hubs start. Two staging trees verified at once are two
+# processes, and both starting at 8700 meant they fought over ports — or worse,
+# one tree's hub answered the other tree's request, which does not fail loudly,
+# it silently tests the wrong tree. The pid spreads them out; the range stays
+# well clear of the real hub on 8642.
+_hub_port = [8700 + (os.getpid() % 40) * 25]
 
 
 def start_hub(fake=True):
@@ -113,6 +119,14 @@ def start_hub(fake=True):
     has to be in sys.modules BEFORE main.py imports it.
     """
     import threading
+    # The hub keeps its password hash in a file. Point it at a throwaway one
+    # per run: QC must never read, write or invalidate the real password on
+    # this machine, and a check that changed it would lock the user out of
+    # their own hub.
+    import os
+    import tempfile
+    os.environ["MICE_HUB_AUTH"] = str(Path(tempfile.gettempdir())
+                                      / ("mice_qc_auth_%d.json" % _hub_port[0]))
     if fake:
         sys.path.insert(0, str(QC / "lib"))
         import fake_serial
@@ -137,6 +151,11 @@ def start_hub(fake=True):
             break
         except Exception:
             time.sleep(0.1)
+    # Set a known password and LOG IN, exactly the way the page does — the
+    # cookie then rides on every later call through get/post/cmd. Checks that
+    # assert the gate itself (check_hub_auth) drive it without this session.
+    main.auth().set_password(HUB_PASSWORD)
+    login(base)
     return base, main
 
 
@@ -150,15 +169,70 @@ def hub_serial(main, port="COM99"):
     return ent["ser"] if ent else None
 
 
+# The password QC sets on the throwaway store, and the cookie it gets back.
+HUB_PASSWORD = "qc-test-password"
+_cookie = [""]
+
+
+def login(base, password=None):
+    """Log in for real and keep the cookie. Returns the Set-Cookie value."""
+    import json as _json
+    import urllib.request
+    req = urllib.request.Request(
+        base + "/api/login",
+        data=_json.dumps({"password": password or HUB_PASSWORD}).encode(),
+        method="POST")
+    with urllib.request.urlopen(req, timeout=10) as r:
+        _cookie[0] = (r.headers.get("Set-Cookie") or "").split(";")[0]
+    return _cookie[0]
+
+
+def logout_qc():
+    """Forget the session — for checks that need to be logged OUT."""
+    _cookie[0] = ""
+
+
+def _with_cookie(req):
+    if _cookie[0]:
+        req.add_header("Cookie", _cookie[0])
+    return req
+
+
 def get(url, timeout=30):
     """GET -> (status, body). An HTTP error is a result, not an exception:
     checks assert on the status themselves."""
     import urllib.request
     import urllib.error
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as r:
+        with urllib.request.urlopen(_with_cookie(urllib.request.Request(url)),
+                                    timeout=timeout) as r:
             return r.status, r.read().decode(errors="replace")
     except urllib.error.HTTPError as e:
+        return e.code, e.read().decode(errors="replace")
+
+
+def raw_get(url, timeout=30):
+    """GET without following redirects -> (status, Location or body).
+
+    `get()` uses urlopen, which follows a 302 silently — so a check written
+    with it cannot tell "the page is served here" from "the browser was sent
+    somewhere else", which is exactly the difference a redirect check is about.
+    """
+    import urllib.request
+    import urllib.error
+
+    class _NoFollow(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k):
+            return None
+
+    opener = urllib.request.build_opener(_NoFollow)
+    try:
+        with opener.open(_with_cookie(urllib.request.Request(url)),
+                         timeout=timeout) as r:
+            return r.status, r.read().decode(errors="replace")
+    except urllib.error.HTTPError as e:
+        if e.code in (301, 302, 303, 307, 308):
+            return e.code, e.headers.get("Location", "")
         return e.code, e.read().decode(errors="replace")
 
 
@@ -167,7 +241,7 @@ def post(url, data=b"", timeout=30):
     result the check asserts on, not an exception it has to catch."""
     import urllib.request
     import urllib.error
-    req = urllib.request.Request(url, data=data, method="POST")
+    req = _with_cookie(urllib.request.Request(url, data=data, method="POST"))
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, r.read().decode(errors="replace")

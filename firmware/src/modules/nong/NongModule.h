@@ -81,6 +81,29 @@ class SDStore;
 // servo is a one-number change (RANGE 1 270) — every saved move keeps working
 // and the arm does not move at home, because joint 90 sits at the middle of
 // the travel whatever the travel is.
+// WHICH joints a command is aimed at: one of them, or all of them.
+//
+// Five commands take `<1-10|name|ALL>` as their first argument — GEAR, PULSE,
+// RANGE, SERVO, HZ — and each used to spell out the same parsing, the same
+// bounds check and the same error sentence. Five copies of a rule about what a
+// person is allowed to type means changing it in one place and leaving four
+// behind, and the error message is part of that rule: it is what tells them
+// what they may type instead.
+//
+// Kept deliberately small. `one` is the joint index, or -1 meaning every
+// joint; `covers` is the loop guard the commands used to write by hand; and
+// `label` is what the reply calls it.
+struct JointSel {
+    int  one = -1;         // index, or -1 for ALL
+    bool ok  = false;      // did it parse at all
+
+    bool covers(int i) const { return one < 0 || i == one; }
+    bool isAll()       const { return one < 0; }
+    // What the reply calls it. Five commands built this same string by hand,
+    // so all five had to agree on the word for every joint at once.
+    String label() const;
+};
+
 class NongModule : public Module {
 public:
     static const int N = 10; // logical joints: 8 arm (2 arms x universal
@@ -162,6 +185,10 @@ private:
     uint32_t calDirtyAt_ = 0;        // when — the write happens once it goes quiet
 
     int jointIndex(const String& token) const;     // "3"|"L_EL_P" -> 0-based, -1 bad
+    // Parse `<1-10|name|ALL>` once, for every command that takes it.
+    JointSel selectJoints(const String& word) const;
+    // The one sentence that says what a person may type instead.
+    static const char* jointSelHelp() { return "ERR joint 1-10, name, or ALL"; }
     float clampJoint(int i, float deg) const;
     float maxDelta(const float tgt[N]) const;       // largest joint change (deg)
     float slowestMaxDps() const;                    // slowest joint's limit

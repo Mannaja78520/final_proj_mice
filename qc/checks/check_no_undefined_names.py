@@ -31,6 +31,7 @@ PAGES = [
     ("module site over USB", "/mod?dev=usb%3ACOM99"),
     ("nong studio", "/studio/"),
     ("help", "/help"),
+    ("rgb", "/rgb.html"),          # served by the hub, and long uncovered here
 ]
 
 PAGE = """

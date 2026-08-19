@@ -16,6 +16,27 @@ SLOW = False
 def run(t):
     base, main = F.start_hub()
 
+    # ---- the OLD USB page is gone, and its URL still works ----------
+    # main_python/web/module.html was a second module page: 295 lines, six
+    # cards duplicated from the module's real website, and 8 joint sliders
+    # where a nong has 10 — WAIST and SHRUG were unreachable through it. It had
+    # already been reduced to a JavaScript redirect that nothing linked to.
+    #
+    # Deleting a page is only safe if the links people kept still land
+    # somewhere. ?port=/&id= was its addressing; /mod speaks dev=usb:PORT:ID.
+    t.ok(not (F.HUB / "web" / "module.html").exists(),
+         "there is no second module page",
+         "two pages for one module is how they drifted apart the first time")
+
+    conn = F.raw_get(base + "/module.html?port=COM99&id=2&name=arm")
+    t.eq(conn[0], 302, "an old /module.html link still answers")
+    t.eq(conn[1], "/mod?dev=usb%3ACOM99%3A2&name=arm",
+         "and lands on the module's real website, on the same port and id")
+    # ...and with no port there is nothing to open, so it goes home rather
+    # than to a page addressed at nothing — which is what the old file did.
+    t.eq(F.raw_get(base + "/module.html")[1], "/",
+         "a bare /module.html goes to the hub, not to an empty module page")
+
     # ---- the pages a user actually opens ----------------------------
     # `must` is looked for anywhere in the body — app.js opens with a long
     # comment header, so checking only the first bytes proves nothing

@@ -44,6 +44,46 @@ function initSideDrag() {
   const side = $("side"), handle = $("sideDrag");
   const saved = +localStorage.getItem("nong_sidew");
   if (saved) side.style.width = Math.min(640, Math.max(240, saved)) + "px";
+  // The panel has a width, so SAY so — a separator that announces its
+  // position is one a screen reader can report and a keyboard can move.
+  const MINW = 240, MAXW = 640, STEP = 16;
+  handle.setAttribute("role", "separator");
+  handle.setAttribute("aria-orientation", "vertical");
+  handle.setAttribute("aria-label", "Resize the side panel");
+  handle.setAttribute("tabindex", "0");
+  const announce = () => {
+    handle.setAttribute("aria-valuenow", parseInt(side.style.width) || 320);
+    handle.setAttribute("aria-valuemin", MINW);
+    handle.setAttribute("aria-valuemax", MAXW);
+  };
+  const setWidth = (w, remember) => {
+    side.style.width = Math.min(MAXW, Math.max(MINW, w)) + "px";
+    announce();
+    resize();                       // keep the 3D canvas matched to the viewport
+    if (remember) localStorage.setItem("nong_sidew", parseInt(side.style.width) || 320);
+  };
+  announce();
+
+  // ARROW KEYS. Without this, someone who cannot hit the handle cannot resize
+  // the panel at all — which is exactly what was reported on a laptop
+  // touchpad. Home returns it to the default, so a panel dragged off-screen
+  // is always recoverable.
+  handle.addEventListener("keydown", (e) => {
+    const now = parseInt(side.style.width) || 320;
+    let w = null;
+    if (e.key === "ArrowLeft")  w = now + STEP;     // panel grows leftwards
+    else if (e.key === "ArrowRight") w = now - STEP;
+    else if (e.key === "Home")  w = 320;            // the default
+    else if (e.key === "PageUp") w = now + STEP * 4;
+    else if (e.key === "PageDown") w = now - STEP * 4;
+    if (w === null) return;
+    e.preventDefault();
+    setWidth(w, true);
+  });
+
+  // Double-click resets it, the shortcut people try first on a splitter.
+  handle.addEventListener("dblclick", () => setWidth(320, true));
+
   let dragging = false;
   handle.addEventListener("pointerdown", (e) => {
     dragging = true;
@@ -51,9 +91,7 @@ function initSideDrag() {
   });
   handle.addEventListener("pointermove", (e) => {
     if (!dragging) return;
-    const w = Math.min(640, Math.max(240, window.innerWidth - e.clientX));
-    side.style.width = w + "px";
-    resize(); // keep the 3D canvas matched to the new viewport size
+    setWidth(window.innerWidth - e.clientX, false);
   });
   handle.addEventListener("pointerup", () => {
     dragging = false;
@@ -597,7 +635,12 @@ function buildArm(side) {           // side: +1 = robot left (+X), -1 = right
   // Keep a handle on each anchor and its resting height. With a 4-bar shrug
   // the two shoulders do NOT move by the same amount, so each one is placed
   // from its own measured curve instead of both riding one rotation.
-  shrugAnchors[side < 0 ? "L" : "R"] = anchor;
+  // side > 0 is the LEFT arm everywhere else in this function (d.upperLenL,
+  // "L_upper", userData.arm = 0). This one line had it backwards, so the
+  // measured left rise was applied to the right shoulder and vice versa —
+  // the preview lifted the wrong shoulder, which is exactly the asymmetry the
+  // 4-bar measurement table exists to show.
+  shrugAnchors[side > 0 ? "L" : "R"] = anchor;
   shrugBaseY = -(d.shrugPivot || 0);
 
   const shP = new THREE.Group(); anchor.add(shP);      // joint base+0
@@ -1750,7 +1793,84 @@ function bumpKeys() {
   // not carry over to this
   crashForced = false;
   _pkCache = null;                          // kept for explicit invalidation
+  saveDraft();                              // and it is no longer only in RAM
 }
+
+// ---- the timeline survives the tab closing -------------------------------
+//
+// `keys` lived ONLY in memory until someone pressed Save. F5, Ctrl+W, a closed
+// lid, or this GPU-heavy three.js page losing its tab took every keyframe with
+// it, with no copy anywhere. Hours of posing, gone to a mis-hit key.
+//
+// The draft is deliberately its OWN localStorage key, never a project file: it
+// can therefore never overwrite something the user deliberately saved. It is
+// offered back on the next load, and the user chooses.
+const DRAFT_KEY = "nong_timeline_draft";
+let draftTimer = null;
+// Boot builds keyframe 0 itself, and that is not work anybody would mourn.
+// Without this the page saved a draft of the untouched default the moment it
+// opened, and then warned about "unsaved work" on every single close.
+let draftArmed = false;
+function saveDraft() {
+  if (!draftArmed) return;
+  clearTimeout(draftTimer);                 // coalesce a drag into one write
+  draftTimer = setTimeout(() => {
+    try {
+      if (keys.length <= 1) { localStorage.removeItem(DRAFT_KEY); return; }
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        at: Date.now(),
+        name: ($("projName") && $("projName").value) || "",
+        seq: ($("seqName") && $("seqName").value) || "",
+        keys: keys,
+      }));
+    } catch (e) {
+      // storage full or blocked: the draft is a safety net, never a blocker
+    }
+  }, 400);
+}
+function offerDraft() {
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); }
+  catch (e) { d = null; }
+  if (!d || !Array.isArray(d.keys) || d.keys.length <= 1) return;
+  if (keys.length > 1) return;              // real work is already on screen
+  const when = new Date(d.at || Date.now()).toLocaleString();
+  const st = $("tlStat");
+  if (st) {
+    st.textContent = "";
+    const msg = document.createElement("span");
+    msg.textContent = "There is unsaved work from " + when
+      + " (" + d.keys.length + " keyframes). ";
+    const yes = document.createElement("button");
+    yes.textContent = "Restore it";
+    yes.onclick = () => {
+      keys = d.keys;
+      if (d.name && $("projName")) $("projName").value = d.name;
+      if (d.seq && $("seqName")) $("seqName").value = d.seq;
+      selKey = 0;
+      if (keys.length) pose = [...keys[0].pose];
+      bumpKeys(); poseChanged(false); renderTimeline(); renderSliders();
+      st.textContent = "Restored the unsaved timeline. Save it to keep it.";
+    };
+    const no = document.createElement("button");
+    no.textContent = "Discard";
+    no.onclick = () => {
+      try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* nothing to do */ }
+      st.textContent = "";
+    };
+    st.append(msg, yes, document.createTextNode(" "), no);
+  }
+}
+// Closing with unsaved keyframes asks first. The browser shows its own wording;
+// all a page can do is say that there IS something to lose.
+window.addEventListener("beforeunload", (e) => {
+  if (keys.length <= 1) return;
+  let unsaved = false;
+  try { unsaved = !!localStorage.getItem(DRAFT_KEY); } catch (err) { unsaved = false; }
+  if (!unsaved) return;                     // saveProject() cleared it
+  e.preventDefault();
+  e.returnValue = "";
+});
 function playKeys() {
   const sig = keysSignature();
   if (_pkCache && _pkCache.sig === sig) return _pkCache.list;
@@ -1984,7 +2104,9 @@ async function hubPlay(fromMs) {
       "Pause or Stop here ends it.";
     return true;
   } catch (e) {
-    $("robotStat").textContent = "hub playback failed: " + (e.message || e);
+    $("robotStat").textContent = "The hub could not start the show, so the robot "
+      + "did not move. Check the hub is still running, then press Play again. "
+      + (e.message || e);
     return false;
   }
 }
@@ -2014,7 +2136,12 @@ function segRemaining(ms) {
 function scrubTo(v) {
   const was = playing;
   playing = false; $("playBtn").textContent = "▶ Play";
-  if (was) { livePause(); stopRobotSequence(); }   // scrubbing is taking over
+  // Every other stop path releases the keep-awake; this one did not, so
+  // scrubbing during playback left playClock firing every 60 ms and the silent
+  // <audio> element "playing" for the life of the page. Nothing looked wrong —
+  // playTick returns immediately while !playing — it just burned CPU and
+  // battery forever, and kept the tab permanently exempt from throttling.
+  if (was) { livePause(); stopRobotSequence(); keepAwake(false); }
   playT = totalMs() * (+v / 1000);
   pose = poseAt(playT).map((v,i)=>clampJ(i,v));
   applyPose(); renderSliders(); renderTimeline();
@@ -2119,11 +2246,25 @@ function renderRigUI() {
     const lo = document.createElement("input");
     lo.type = "number"; lo.min = 0; lo.max = 180; lo.value = RIG.min[i];
     lo.title = "minimum JOINT angle this joint can reach";
-    lo.onchange = () => { RIG.min[i] = Math.min(+lo.value, RIG.max[i] - 1); rigChanged(); };
+    // clampDeg, like `zero` two lines up. The min="0" max="180" attributes only
+    // bound the spinner arrows — a TYPED value goes straight through. So
+    // "-500" became this joint's minimum, was written to the robot's SD card by
+    // "Send limits + gear to robot" as LIMIT <j> -500 150, and from then on
+    // clampJ allowed poses far outside the joint's real travel. A typo in the
+    // editor should not become a persistent hardware setting.
+    lo.onchange = () => {
+      RIG.min[i] = Math.min(clampDeg(+lo.value || 0), RIG.max[i] - 1);
+      lo.value = RIG.min[i];               // show what was actually accepted
+      rigChanged();
+    };
     const hi = document.createElement("input");
     hi.type = "number"; hi.min = 0; hi.max = 180; hi.value = RIG.max[i];
     hi.title = "maximum JOINT angle this joint can reach";
-    hi.onchange = () => { RIG.max[i] = Math.max(+hi.value, RIG.min[i] + 1); rigChanged(); };
+    hi.onchange = () => {
+      RIG.max[i] = Math.max(clampDeg(+hi.value || 0), RIG.min[i] + 1);
+      hi.value = RIG.max[i];
+      rigChanged();
+    };
     const ax = document.createElement("select");
     ax.title = "which way this joint rotates: roll (X), pitch (Y) or yaw (Z)";
     ["x", "y", "z"].forEach(v => {
@@ -2550,16 +2691,81 @@ async function saveProject() {
     robotIp: $("robotIp").value, seqName: $("seqName").value,
     rig: RIG,
   };
-  const r = await fetch("/api/save", {
-    method: "POST", body: JSON.stringify({ name, project }),
-  }).then(r => r.json());
-  $("tlStat").textContent = r.ok ? "project saved: " + r.file : "save failed: " + r.error;
+  let r;
+  try {
+    r = await fetch("/api/save", {
+      method: "POST", body: JSON.stringify({ name, project }),
+    }).then(r => r.json());
+  } catch (e) {
+    // The draft is NOT cleared here: the work is still only in this browser.
+    $("tlStat").textContent = "could not save — the hub is not answering. Your "
+      + "work is still here, and is kept in this browser. " + (e.message || e);
+    return;
+  }
+  if (!r || !r.ok) {
+    $("tlStat").textContent = "could not save: " + ((r && r.error) || "unknown")
+      + ". Your work is still here.";
+    return;
+  }
+  // Safely on disk now, so the unsaved-work draft has done its job.
+  try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* nothing to do */ }
+  $("tlStat").textContent = r.replaced
+    ? "saved over the existing " + r.file + " (the previous version is kept as "
+      + r.file + ".bak)"
+    : "project saved: " + r.file;
   refreshProjects();
 }
 async function loadProject(file) {
   if (!file) return;
-  const p = await fetch("/api/load?name=" + encodeURIComponent(file)).then(r => r.json());
-  keys = p.keys || [];
+  // NOTHING is replaced until the whole file has been read and understood.
+  //
+  // Three ways this used to destroy work, all from assigning as it went:
+  //   * a 404 or a renamed file still parses as JSON (the hub answers
+  //     {"ok":false,...} and fetch does not reject), so `p.keys || []` wiped
+  //     the timeline to empty and said nothing. Pressing Save afterwards wrote
+  //     the empty version over a real project.
+  //   * a project from before WAIST and SHRUG carries 8-value poses. minTime()
+  //     then subtracted two undefined values, and the NaN it produced was
+  //     written into EVERY keyframe time by clampKeyTimes() — so the export
+  //     carried "T NaN" and that went down the cable to the robot.
+  //   * the project's rig replaced the live rig outright. Hours of tuning
+  //     (zero, tilt, dims, jointR, neutral, invert, shrugCurve exist nowhere
+  //     else) vanished with no prompt and no undo.
+  let p;
+  try {
+    const r = await fetch("/api/load?name=" + encodeURIComponent(file));
+    p = await r.json();
+    if (!r.ok || p.ok === false) throw new Error(p.error || ("could not read " + file));
+  } catch (e) {
+    const st = $("tlStat");
+    if (st) st.textContent = "could not load " + file + " — " + (e.message || e)
+      + ". Nothing on screen was changed.";
+    return;                              // the timeline stays exactly as it was
+  }
+  if (!Array.isArray(p.keys)) {
+    const st = $("tlStat");
+    if (st) st.textContent = file + " has no keyframes in it, so nothing was loaded.";
+    return;
+  }
+  // Repair the poses BEFORE they reach anything: pad short ones to NJ, drop
+  // non-numbers, and clamp to each joint's real travel.
+  const loaded = p.keys.filter(k => k && Array.isArray(k.pose)).map(k => {
+    const q = k.pose.slice(0, NJ).map(Number);
+    while (q.length < NJ) q.push(90);    // pre-WAIST/SHRUG project: neutral
+    return { ...k, pose: q.map((v, i) => clampJ(i, Number.isFinite(v) ? v : 90)) };
+  });
+  // A project carries the rig it was built with. That is worth having, but it
+  // is not worth losing today's tuning to — so ask, and default to keeping
+  // what is on screen.
+  let takeRig = false;
+  if (p.rig) {
+    takeRig = confirm(
+      "This project was saved with its own robot setup (joint limits, gears, "
+      + "pulse ranges, zero offsets).\n\n"
+      + "OK  — use the project's setup\n"
+      + "Cancel — keep the setup you have now (recommended)");
+  }
+  keys = loaded;
   bumpKeys();
   $("speedDps").value = p.speedDps || 120;
   $("maxDps").value = p.maxDps || 400;
@@ -2580,7 +2786,11 @@ async function loadProject(file) {
   }
   addons = p.addons || addons;
   saveMeshes();
-  if (p.rig) {
+  if (p.rig && takeRig) {
+    // Keep one step back. The rig is the most expensive thing in this editor
+    // to rebuild, so replacing it always leaves a copy to return to.
+    try { localStorage.setItem("nong_rig_prev", JSON.stringify(RIG)); }
+    catch (e) { /* storage full: the swap still happens, just without undo */ }
     RIG = mergeRig(p.rig);
     saveRig();
   }
@@ -2937,8 +3147,9 @@ function connModeChanged() {
   $("connBtn").textContent = direct && !serialPort ? "Connect USB" : "Connect";
   if (usb) { if (!$("usbPort").dataset.loaded) loadPorts(); }
   else if (direct && !("serial" in navigator))
-    $("robotStat").textContent = "this browser has no Web Serial — use the shared " +
-      "“+ USB (shared)” mode instead, or WiFi";
+    $("robotStat").textContent = "This browser cannot open a USB port by itself. "
+      + "Pick “+ USB (shared)” instead — the hub opens the cable and shares it — "
+      + "or connect over WiFi. (Web Serial works in Chrome and Edge.)";
 }
 
 // ------- shared USB: the hub owns the port, we send commands through it
@@ -2971,8 +3182,18 @@ function usbPortChanged() {   // picking another port drops the old link
   $("robotStat").textContent = linkBadge();
 }
 async function hubUsbCmd(c) {
-  const r = await fetch(`/api/usb/cmd?port=${encodeURIComponent(hubPort)}` +
-    `&id=${busId()}&c=${encodeURIComponent(c)}`);
+  // With a peer, the command has to go to the module behind the plugged-in
+  // one's hotspot, and only the unified endpoint understands that: the hub
+  // turns dev=usb:COM7@far-nong into REACH far-nong <command> down the cable.
+  // Without a peer this stays on the endpoint it always used, so nothing about
+  // the ordinary cable path changes.
+  const url = window.HUB_PEER
+    ? `/api/dev/cmd?dev=${encodeURIComponent(
+        "usb:" + hubPort + (busId() ? ":" + busId() : "") + "@" + window.HUB_PEER)}` +
+      `&c=${encodeURIComponent(c)}`
+    : `/api/usb/cmd?port=${encodeURIComponent(hubPort)}` +
+      `&id=${busId()}&c=${encodeURIComponent(c)}`;
+  const r = await fetch(url);
   const t = await r.text();
   if (!r.ok) {
     let msg = t;
@@ -3057,8 +3278,12 @@ function haveWifi() { return !!robotIp(); }
 // one call for "send this over the cable", whichever USB mode is connected
 function cableCmd(c) { return usbDirect() ? serialCmd(c) : hubUsbCmd(c); }
 async function httpCmd(c) {
-  return fetch(`/api/robot/cmd?ip=${encodeURIComponent(robotIp())}&c=${encodeURIComponent(c)}`)
-    .then(r => r.text());
+  // Same over WiFi: wifi:<ip>@peer reaches a module on that board's hotspot.
+  const url = window.HUB_PEER
+    ? `/api/dev/cmd?dev=${encodeURIComponent("wifi:" + robotIp() + "@" + window.HUB_PEER)}` +
+      `&c=${encodeURIComponent(c)}`
+    : `/api/robot/cmd?ip=${encodeURIComponent(robotIp())}&c=${encodeURIComponent(c)}`;
+  return fetch(url).then(r => r.text());
 }
 async function rawCmd(c) { // reply text or throws
   if (haveUsb()) return cableCmd(c);
@@ -3072,9 +3297,35 @@ async function rawCmd(c) { // reply text or throws
 // points at the SAME board the commands go to — hence the same precedence as
 // rawCmd: cable first, WiFi otherwise.
 function moduleDev() {
-  if (hubPort) return "usb:" + hubPort + (busId() ? ":" + busId() : "");
-  if (haveWifi()) return "wifi:" + robotIp();
+  // The peer rides along. Without it this link opened the website of the
+  // board on the CABLE while every command went to the module behind that
+  // board's hotspot — two different robots, one screen, no warning.
+  const at = window.HUB_PEER ? "@" + window.HUB_PEER : "";
+  if (hubPort) return "usb:" + hubPort + (busId() ? ":" + busId() : "") + at;
+  if (haveWifi()) return "wifi:" + robotIp() + at;
   return "";     // direct Web Serial: see openModule()
+}
+
+// Forget the peer the moment the person aims at something else by hand.
+// HUB_PEER comes from the ?dev= the page was opened with; it describes THAT
+// module, and keeping it after the cable or the address changes sends
+// commands to a board nobody chose.
+// A PERSON changing the target drops the peer. Deliberately on the events and
+// not inside usbPortChanged/connModeChanged: those are also called during boot
+// — the ?dev= handler calls connModeChanged() to set the connection up — so
+// doing it there threw the peer away the moment the page opened with one.
+// Setting a value from code fires no change event; choosing one by hand does.
+window.addEventListener("DOMContentLoaded", function () {
+  const port = document.getElementById("usbPort");
+  const mode = document.getElementById("connSel");
+  if (port) port.addEventListener("change", () => clearPeer("you picked another cable"));
+  if (mode) mode.addEventListener("change", () => clearPeer("you changed the connection"));
+});
+
+function clearPeer(why) {
+  if (!window.HUB_PEER) return;
+  window.HUB_PEER = "";
+  if (typeof log === "function") log("(no longer aiming at a peer module: " + why + ")");
 }
 function openModule() {
   const dev = moduleDev();
@@ -3171,7 +3422,8 @@ async function connectRobot() {
     refreshSd();
   } catch (e) {
     if (t === "usb" && !had) hubPort = "";   // never show a link that isn't there
-    $("robotStat").textContent = "cannot connect: " + (e.message || e);
+    $("robotStat").textContent = "Could not reach the robot. Check it is powered "
+      + "and on the same network or cable, then try again. " + (e.message || e);
   }
 }
 function sendPose(quiet) {
@@ -3314,8 +3566,17 @@ async function sdDownload(fname) {
 async function sdDelete(fname) {
   if (haveWifi()) {
     try {
-      await fetch(`/api/robot/delete?ip=${encodeURIComponent(robotIp())}` +
+      // READ the reply. fetch does not throw on 404 or 502, and the firmware
+      // answers 200 with the body "ERR delete failed" — so this branch used to
+      // report success for a file that is still sitting on the card, and the
+      // caller then removed it from the list. The cable branch below has always
+      // checked; only this one did not.
+      const res = await fetch(`/api/robot/delete?ip=${encodeURIComponent(robotIp())}` +
                   `&path=${encodeURIComponent("/moves/" + fname)}`);
+      const body = (await res.text()).trim();
+      if (!res.ok || body.startsWith("ERR")) {
+        throw new Error(body || ("the robot answered " + res.status));
+      }
       return;
     } catch (e) { if (!haveUsb()) throw e; }
   }
@@ -3327,6 +3588,9 @@ async function sdDelete(fname) {
 // ------- SD card manager: list /moves, run/edit/delete a sequence
 async function refreshSd() {
   const box = $("sdList");
+  // A loading state, so the panel is never a blank hole while a cable round
+  // trip runs — over USB with a peer this can take several seconds.
+  box.textContent = "Reading the robot's card…";
   try {
     let files;
     if (haveWifi()) {
@@ -3334,9 +3598,18 @@ async function refreshSd() {
         .then(r => r.json());
     } else if (haveUsb()) {
       files = JSON.parse(await cableCmd("FILES /moves"));
-    } else { box.textContent = "connect first (🔍 Find modules or USB)"; return; }
+    } else {
+      // An empty state says what goes here and names the ONE action that fills
+      // it, rather than a bare instruction with no subject.
+      box.textContent = "Not connected to a robot yet, so there is no card to "
+        + "read. Press 🔍 Find modules, or pick a USB cable above.";
+      return;
+    }
     box.innerHTML = "";
-    if (!files.length) box.textContent = "no sequences on the SD card yet";
+    if (!files.length) {
+      box.textContent = "This robot's card has no sequences on it yet. Build a "
+        + "timeline, then press “Send to robot” to put one there.";
+    }
     // the "then run…" chain box offers the files that are really on the card
     const dl = $("seqNextList");
     if (dl) {
@@ -3369,7 +3642,20 @@ async function refreshSd() {
       box.appendChild(row);
     });
     $("sdStat").textContent = "";
-  } catch (e) { box.textContent = "cannot list: " + (e.message || e); }
+  } catch (e) {
+    // An error says what to DO next, and offers the control that does it.
+    box.textContent = "";
+    const msg = document.createElement("span");
+    msg.textContent = "Could not read the robot's card. It may have gone off the "
+      + "network, or it has no card fitted. ";
+    const why = document.createElement("span");
+    why.className = "hint";                 // the raw reason, demoted
+    why.textContent = e.message || String(e);
+    const again = document.createElement("button");
+    again.textContent = "Try again";
+    again.onclick = () => refreshSd();
+    box.append(msg, why, document.createTextNode(" "), again);
+  }
 }
 async function uploadYaml() {
   if (nothingToWrite("sdStat")) return;
@@ -3419,6 +3705,18 @@ let handedOff = false;
 async function handOffToRobot() {
   if (handedOff || !playing) return;
   if (!haveUsb() && !haveWifi()) return;     // nothing to hand off TO
+  // Hand off only what was ALREADY driving the arm. Two ways this used to move
+  // a robot nobody asked to move:
+  //   previewOnly — the crash gate said this movement collides and the user
+  //     pressed Cancel. `playing` stays true so the preview still draws, so
+  //     hiding the tab uploaded and ran the very movement that was refused.
+  //   live unchecked — `haveWifi()` is only "an IP is typed in the box", not
+  //     "connected". Previewing a show with the live box OFF and then switching
+  //     window started the arm.
+  // In both cases the preview is a drawing, and a drawing must never become
+  // motion just because the tab lost focus.
+  if (previewOnly) return;
+  if (!liveLinked()) return;
   // Nothing to rescue when the HUB is the clock: it is a native process and
   // this page going away does not touch it. Handing the show to the module as
   // well would put two clocks on one robot — the thing all of this prevents.
@@ -3457,11 +3755,27 @@ document.addEventListener("visibilitychange", function () {
   }).catch(() => {});
 });
 
-function robotRun() {
+// Send the sequence, THEN play it. This used to send only `MOVE <name>.yaml`,
+// so the module ran whatever copy of that name was already on its SD card while
+// the crash check had just approved the timeline on screen. Edit a pose to fix
+// a collision, press Run, and the robot performed the old crashing version —
+// the safety check and the motion were looking at different data. Uploading
+// first is what makes the check mean anything.
+async function robotRun() {
   if (nothingToWrite("sdStat")) return;     // a file with no moves does nothing
   if (!crashGate("RUN it on the robot")) return;
-  const { name } = buildYaml();
-  robotCmd("MOVE " + name + ".yaml");
+  const { name, yaml } = buildYaml();
+  const st = $("sdStat");
+  if (st) st.textContent = "sending " + name + ".yaml to the robot…";
+  try {
+    await sdUpload(name + ".yaml", yaml);
+  } catch (e) {
+    if (st) st.textContent = "could not send the sequence, so nothing was run — "
+      + (e && e.message ? e.message : e);
+    return;
+  }
+  await robotCmd("MOVE " + name + ".yaml");
+  if (st) st.textContent = "the robot is running " + name + ".yaml on its own.";
 }
 
 // ---- zero-position calibration (password-gated; default manny/12345678) ----
@@ -3473,7 +3787,12 @@ function zeroUnlock() {
     $("zeroLocked").style.display = "none";
     $("zeroPanel").style.display = "";
     $("zPass").value = "";
-  } else { $("zStat").textContent = "wrong user or password"; }
+  } else {
+    // Say what to do, and never imply the reader is at fault. Which of the two
+    // is wrong is deliberately not revealed.
+    $("zStat").textContent = "That user name and password do not match. "
+      + "Check them and try again.";
+  }
 }
 function zeroLock() { $("zeroPanel").style.display = "none"; $("zeroLocked").style.display = ""; }
 function zeroChangeCred() {
@@ -3751,6 +4070,10 @@ refreshSeqs();
 refreshModels();
 connModeChanged();
 initSideDrag();
+// Boot is over: from here a change to the timeline is real work, so start
+// keeping a draft of it, and offer back anything a previous session lost.
+draftArmed = true;
+offerDraft();
 resize();
 requestAnimationFrame((t) => { lastFrame = t; tick(t); });
 // opened from the hub ("Studio + monitor" on a module): connect by itself,
@@ -3765,8 +4088,18 @@ requestAnimationFrame((t) => { lastFrame = t; tick(t); });
   const startMonitor = () => {
     if (qp.get("monitor") === "1") { $("monChk").checked = true; monitorChanged(); }
   };
-  if (dev.indexOf("usb:") === 0) {
-    const bits = dev.slice(4).split(":");
+  // A dev can carry a PEER: usb:COM7@far-nong means the module called
+  // far-nong, on the hotspot of the board plugged into COM7. Split that off
+  // first — it used to stay glued to the port name, so Studio went looking for
+  // a serial port literally called COM7@far-nong and failed to reach a module
+  // that was perfectly reachable.
+  const at = dev.indexOf("@");
+  const peer = at >= 0 ? dev.slice(at + 1) : "";
+  const addr = at >= 0 ? dev.slice(0, at) : dev;
+  window.HUB_PEER = peer;          // every command adds it back on
+
+  if (addr.indexOf("usb:") === 0) {
+    const bits = addr.slice(4).split(":");
     $("connSel").value = "usb";
     if (bits[1]) $("busId").value = bits[1];
     connModeChanged();
@@ -3779,8 +4112,8 @@ requestAnimationFrame((t) => { lastFrame = t; tick(t); });
       }
       return connectRobot();
     }).then(startMonitor);
-  } else if (qp.get("ip") || dev.indexOf("wifi:") === 0) {
-    $("robotIp").value = qp.get("ip") || dev.slice(5);
+  } else if (qp.get("ip") || addr.indexOf("wifi:") === 0) {
+    $("robotIp").value = qp.get("ip") || addr.slice(5);
     connectRobot().then(startMonitor);
   }
   // IK self-test (open with ?selftest=ik): drives the SAME solver that

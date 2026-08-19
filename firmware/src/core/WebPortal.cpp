@@ -1,4 +1,9 @@
 #include "core/WebPortal.h"
+#include "core/Log.h"
+#include "core/UserStore.h"
+// COMMAND_DOCS: what each command is allowed to do, generated from
+// config/commands.json. The gate below reads it instead of keeping its own list.
+#include "core/CommandHelp.h"
 #include "core/CommandRouter.h"
 #include "core/Identity.h"
 #include "core/RS485Bus.h"
@@ -12,9 +17,29 @@
 #include "modules/cam/CamModule.h"
 #endif
 #include <Update.h>
+
+#if MICE_HAS_CAM
+// The running module, but only when it really is the camera.
+//
+// `static_cast` asks no questions: on a board whose stored type is not "cam"
+// the module is a BlankModule, and casting it to CamModule* produced a
+// non-null pointer into an object far too small — which take() then read and
+// wrote past. Comparing the type the module reports is the check that cast
+// cannot do for itself.
+CamModule* WebPortal::camModule() {
+    Module* m = router_ ? router_->module() : nullptr;
+    if (!m || String(m->type()) != "cam") return nullptr;
+    return static_cast<CamModule*>(m);
+}
+#endif
 // The page for THIS build's module type, generated from the master
 // src/web/WebUI.h by tools/gen_tables.py into $BUILD_DIR/generated/.
 #include "web/ModuleUI.h"
+// The shared design system, generated from shared/web/mice.css into the same
+// folder. Served at /mice.css, which is exactly the URL the hub serves it on,
+// so the page links one stylesheet whether it is reached over WiFi or USB.
+#include "web/MiceCss.h"
+#include "web/MiceJs.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ESPmDNS.h>
@@ -40,7 +65,7 @@ void WebPortal::begin(Identity* id, CommandRouter* router, SDStore* sd, RS485Bus
         const char* hint = "";
         if (r == 201) hint = " (AP not found: wrong SSID, or 5GHz-only network — ESP32 is 2.4GHz only)";
         else if (r == 202 || r == 15) hint = " (auth failed: wrong password, or WPA3-only network)";
-        Serial.printf("[wifi] disconnected, reason=%u%s\n", r, hint);
+        LOGF(wifi, "disconnected, reason=%u%s", r, hint);
     }, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 
     WiFi.persistent(false);
@@ -110,7 +135,7 @@ void WebPortal::radioOff() {
     WiFi.mode(WIFI_OFF);
     apMode_ = false;
     wstate_ = W_IDLE;
-    Serial.println("[wifi] disabled — USB/RS485 only (WIFI ON to re-enable)");
+    LOGF(wifi, "disabled — USB/RS485 only (WIFI ON to re-enable)");
 }
 
 void WebPortal::ensureServer() {
@@ -129,10 +154,10 @@ void WebPortal::raiseAp() {
     // shares it automatically and modules from anywhere else cannot get in.
     String apPass = id_->apPassword();
     WiFi.softAP(apName.c_str(), apPass.c_str());
-    Serial.printf("[wifi] AP \"%s\" pass \"%s\" group \"%s\" ip=%s\n",
-                  apName.c_str(), apPass.c_str(),
-                  id_->group().length() ? id_->group().c_str() : "(none)",
-                  WiFi.softAPIP().toString().c_str());
+    LOGF(wifi, "AP \"%s\" pass \"%s\" group \"%s\" ip=%s",
+         apName.c_str(), apPass.c_str(),
+         id_->group().length() ? id_->group().c_str() : "(none)",
+         WiFi.softAPIP().toString().c_str());
 }
 
 void WebPortal::beginSta() {
@@ -144,8 +169,8 @@ void WebPortal::beginSta() {
     WiFi.begin(staSsid_.c_str(), staPass_.length() ? staPass_.c_str() : nullptr); // nullptr = open network
     wstate_ = W_CONNECTING;
     wstateAt_ = millis();
-    Serial.printf("[wifi] connecting to \"%s\" as \"%s\" in the background — USB/RS485 already live\n",
-                  staSsid_.c_str(), appliedHost_.c_str());
+    LOGF(wifi, "connecting to \"%s\" as \"%s\" in the background — "
+         "USB/RS485 already live", staSsid_.c_str(), appliedHost_.c_str());
 }
 
 // Fall back to being reachable over our own AP only. The AP itself is already
@@ -221,8 +246,8 @@ void WebPortal::checkLink(int n) {
 
     switch (wifilink::decide(onRelay_, mainRssi, bestRssi)) {
         case wifilink::RELAY:
-            Serial.printf("[wifi] \"%s\" is weak (%d dBm) — going through \"%s\" (%d dBm)\n",
-                          homeSsid_.c_str(), mainRssi, bestName.c_str(), bestRssi);
+            LOGF(wifi, "\"%s\" is weak (%d dBm) — going through \"%s\" (%d dBm)",
+                 homeSsid_.c_str(), mainRssi, bestName.c_str(), bestRssi);
             staSsid_ = bestName;
             staPass_ = id_->apPassword();   // only a group-mate will let us in
             onRelay_ = true;
@@ -233,8 +258,8 @@ void WebPortal::checkLink(int n) {
             beginSta();
             break;
         case wifilink::RETURN:
-            Serial.printf("[wifi] \"%s\" is strong again (%d dBm) — leaving \"%s\"\n",
-                          homeSsid_.c_str(), mainRssi, relayName_.c_str());
+            LOGF(wifi, "\"%s\" is strong again (%d dBm) — leaving \"%s\"",
+                 homeSsid_.c_str(), mainRssi, relayName_.c_str());
             staSsid_ = homeSsid_;
             staPass_ = homePass_;
             onRelay_ = false;
@@ -430,14 +455,14 @@ void WebPortal::networkUp() {
         } else {
             peers_.announce();
         }
-        Serial.printf("[wifi] mdns http://%s.local/\n", appliedHost_.c_str());
+        LOGF(wifi, "mdns http://%s.local/", appliedHost_.c_str());
     }
 }
 
 // Async scan after a failed connect: says whether the SSID is visible at all
 // on 2.4GHz and what auth it uses. Answers "why won't it join?" directly.
 void WebPortal::startDiagnostic() {
-    Serial.printf("[wifi] could not join \"%s\" — scanning...\n", staSsid_.c_str());
+    LOGF(wifi, "could not join \"%s\" — scanning...", staSsid_.c_str());
     WiFi.scanNetworks(true); // async, result polled in loop()
     wstate_ = W_DIAGNOSING;
     wstateAt_ = millis();
@@ -448,18 +473,21 @@ void WebPortal::finishDiagnostic(int n) {
     for (int i = 0; i < n; i++) {
         if (WiFi.SSID(i) == staSsid_) {
             seen = true;
-            Serial.printf("[wifi] \"%s\" IS visible (ch%d, %ddBm, enc=%d) -> check the password"
-                          " / disable WPA3-only on the router\n",
-                          staSsid_.c_str(), WiFi.channel(i), WiFi.RSSI(i), (int)WiFi.encryptionType(i));
+            LOGF(wifi, "\"%s\" IS visible (ch%d, %ddBm, enc=%d) -> check the password"
+                 " / disable WPA3-only on the router",
+                 staSsid_.c_str(), WiFi.channel(i), WiFi.RSSI(i), (int)WiFi.encryptionType(i));
         }
     }
     if (!seen) {
-        Serial.printf("[wifi] \"%s\" NOT visible on 2.4GHz. If it's a phone/laptop hotspot,"
-                      " switch it to 2.4GHz (iPhone: Maximize Compatibility)\n", staSsid_.c_str());
+        LOGF(wifi, "\"%s\" NOT visible on 2.4GHz. If it's a phone/laptop hotspot,"
+                 " switch it to 2.4GHz (iPhone: Maximize Compatibility)", staSsid_.c_str());
         if (n > 0) {
-            Serial.printf("[wifi] networks I can see:");
-            for (int i = 0; i < n && i < 10; i++) Serial.printf(" \"%s\"", WiFi.SSID(i).c_str());
-            Serial.println();
+            // Built into ONE string and logged ONCE. This used to be a
+            // printf, then a printf per network, then a println: twelve
+            // writes for one line, any of which another task could split.
+            String seen;
+            for (int i = 0; i < n && i < 10; i++) seen += " \"" + WiFi.SSID(i) + "\"";
+            LOGF(wifi, "networks I can see:%s", seen.c_str());
         }
     }
     WiFi.scanDelete();
@@ -471,7 +499,7 @@ void WebPortal::finishDiagnostic(int n) {
 // whenever SET NAME changed the identity.
 void WebPortal::applyHostname(const String& host) {
     appliedHost_ = host;
-    Serial.printf("[wifi] name changed, applying hostname \"%s\"\n", host.c_str());
+    LOGF(wifi, "name changed, applying hostname \"%s\"", host.c_str());
     if (wstate_ == W_AP) {
         raiseAp();      // rename the AP in place
         networkUp();
@@ -491,14 +519,115 @@ void WebPortal::pushConsole(const String& line) {
     if (serverStarted_ && ws_.count()) ws_.textAll("> " + line);
 }
 
+// A hub told us who it is. Remembered with the time, so the board can offer a
+// way back to it while that is still true - and stop when it is not.
+void WebPortal::noteHub(AsyncWebServerRequest* req) {
+    if (!req || !req->hasHeader("X-Mice-Hub")) return;
+    String who = req->header("X-Mice-Hub");
+    who.trim();
+    // An address and nothing else. This ends up in an href on the board's own
+    // page, so anything that is not host:port is dropped rather than escaped.
+    for (unsigned i = 0; i < who.length(); i++) {
+        char ch = who[i];
+        bool ok = isalnum(ch) || ch == '.' || ch == ':' || ch == '-';
+        if (!ok) return;
+    }
+    if (who.length() > 40) return;
+    hub_ = who;
+    hubAt_ = millis();
+}
+
+String WebPortal::lastHub() const {
+    if (!hub_.length()) return "";
+    if (millis() - hubAt_ > HUB_TTL_MS) return "";   // it has gone quiet
+    return hub_;
+}
+
 String WebPortal::statusJson() {
     // buildStatus includes the wifi section, so INFO over USB/RS485 and
     // /api/status over HTTP return identical JSON
     JsonDocument doc;
     router_->buildStatus(doc);
+    // Which hub last spoke to this board, if one still is. Only here, not in
+    // buildStatus: it is a fact about this HTTP server's callers, and INFO
+    // over a cable is answered by a board that has no callers.
+    String hub = lastHub();
+    if (hub.length()) doc["hub"] = hub;
     String out;
     serializeJson(doc, out);
     return out;
+}
+
+// ---------------------------------------------------------------- login
+// A session is a random token in a cookie, kept in RAM. Nothing is written to
+// flash: the password already lives in UserStore, and a token that survived a
+// reboot would outlive the person holding the board.
+//
+// Idle timeout is long enough for a show and short enough that a phone left on
+// a bench does not stay logged in overnight.
+static const uint32_t SESSION_IDLE_MS = 12UL * 60 * 60 * 1000;
+
+String WebPortal::cookieToken(AsyncWebServerRequest* req) {
+    if (!req->hasHeader("Cookie")) return "";
+    String all = req->header("Cookie");
+    int at = all.indexOf("mice_board=");
+    if (at < 0) return "";
+    int end = all.indexOf(';', at);
+    return all.substring(at + 11, end < 0 ? all.length() : end);
+}
+
+bool WebPortal::allowed(AsyncWebServerRequest* req) {
+    const String tok = cookieToken(req);
+    if (tok.length() < 8) return false;
+    const uint32_t now = millis();
+    for (int i = 0; i < SESSIONS; i++) {
+        if (!sessions_[i].token[0]) continue;
+        if (now - sessions_[i].seen > SESSION_IDLE_MS) { sessions_[i].token[0] = 0; continue; }
+        if (tok == sessions_[i].token) { sessions_[i].seen = now; return true; }
+    }
+    return false;
+}
+
+// What a command is allowed to do is DECLARED, not listed here. See
+// config/commands.json: query reports only, safety must never be refused.
+// A command this build does not know needs a session — fail closed, so a new
+// command is protected the moment it exists and before anyone remembers to
+// think about it.
+bool WebPortal::allowedCommand(AsyncWebServerRequest* req, const String& cmd) {
+    String verb = cmd;
+    verb.trim();
+    int sp = verb.indexOf(' ');
+    if (sp > 0) verb = verb.substring(0, sp);
+    verb.trim();
+    for (int i = 0; i < COMMAND_DOC_COUNT; i++) {
+        if (!verb.equalsIgnoreCase(COMMAND_DOCS[i].name)) continue;
+        if (COMMAND_DOCS[i].query || COMMAND_DOCS[i].safety) return true;
+        break;
+    }
+    return allowed(req);
+}
+
+String WebPortal::newSession() {
+    char tok[25];
+    for (int i = 0; i < 24; i++) {
+        const char* pool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        tok[i] = pool[esp_random() % 62];
+    }
+    tok[24] = 0;
+    // Reuse the oldest slot rather than refusing: being unable to log in on a
+    // fifth device is a worse failure than forgetting the first one.
+    int slot = 0;
+    for (int i = 1; i < SESSIONS; i++)
+        if (sessions_[i].seen < sessions_[slot].seen) slot = i;
+    memcpy(sessions_[slot].token, tok, sizeof(tok));
+    sessions_[slot].seen = millis();
+    return String(tok);
+}
+
+void WebPortal::endSession(AsyncWebServerRequest* req) {
+    const String tok = cookieToken(req);
+    for (int i = 0; i < SESSIONS; i++)
+        if (tok == sessions_[i].token) sessions_[i].token[0] = 0;
 }
 
 void WebPortal::setupRoutes() {
@@ -521,7 +650,72 @@ void WebPortal::setupRoutes() {
         req->send_P(200, "text/html", WEB_UI_HTML);
     });
 
+    // One stylesheet for every page in the product. Cached hard: it only
+    // changes when the firmware is reflashed, and a phone on a busy venue
+    // AP should not re-fetch it on every status refresh.
+    server_.on("/mice.css", HTTP_GET, [](AsyncWebServerRequest* req) {
+        AsyncWebServerResponse* res = req->beginResponse_P(200, "text/css", MICE_CSS);
+        res->addHeader("Cache-Control", "max-age=86400");
+        req->send(res);
+    });
+
+    server_.on("/mice.js", HTTP_GET, [](AsyncWebServerRequest* req) {
+        // The shared script, from flash. Same file the hub serves, so a page
+        // behaves the same whether it came over WiFi or through a cable.
+        AsyncWebServerResponse* r =
+            req->beginResponse_P(200, "text/javascript", MICE_JS);
+        r->addHeader("Cache-Control", "max-age=86400");
+        req->send(r);
+    });
+
+    // ---- logging in --------------------------------------------------
+    // The accounts already existed (UserStore, the USER command); until now
+    // nothing on the HTTP side ever asked. The page had a login card that only
+    // hid other cards.
+    server_.on("/api/login", HTTP_POST, [this](AsyncWebServerRequest* req) {
+        String user = req->hasParam("user", true) ? req->getParam("user", true)->value()
+                    : (req->hasParam("user") ? req->getParam("user")->value() : "");
+        String pass = req->hasParam("pass", true) ? req->getParam("pass", true)->value()
+                    : (req->hasParam("pass") ? req->getParam("pass")->value() : "");
+        if (!users.verify(user, pass)) {
+            // Deliberately the same answer for a wrong name and a wrong
+            // password: telling a stranger which half they got right is how
+            // they learn a valid user name.
+            req->send(401, "application/json", "{\"ok\":false,\"error\":\"wrong login\"}");
+            LOGF(sys, "login refused for \"%s\"", user.c_str());
+            return;
+        }
+        // mustChange: this board is still carrying the password it shipped
+        // with, which every other board in the room also has. The page keeps
+        // Setup locked until it is changed.
+        AsyncWebServerResponse* res = req->beginResponse(
+            200, "application/json",
+            String("{\"ok\":true,\"mustChange\":") +
+            (users.firstPassword() ? "true" : "false") + "}");
+        res->addHeader("Set-Cookie",
+                       "mice_board=" + newSession() + "; Path=/; HttpOnly; SameSite=Lax");
+        req->send(res);
+        LOGF(sys, "login ok for \"%s\"", user.c_str());
+    });
+
+    server_.on("/api/logout", HTTP_POST, [this](AsyncWebServerRequest* req) {
+        endSession(req);
+        AsyncWebServerResponse* res =
+            req->beginResponse(200, "application/json", "{\"ok\":true}");
+        res->addHeader("Set-Cookie", "mice_board=; Path=/; Max-Age=0; SameSite=Lax");
+        req->send(res);
+    });
+
+    // Whether this browser may change anything. The page asks so it can grey
+    // out what will be refused, instead of offering a button that fails.
+    server_.on("/api/whoami", HTTP_GET, [this](AsyncWebServerRequest* req) {
+        req->send(200, "application/json",
+                  String("{\"authed\":") + (allowed(req) ? "true" : "false") +
+                  ",\"mustChange\":" + (users.firstPassword() ? "true" : "false") + "}");
+    });
+
     server_.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest* req) {
+        noteHub(req);
         req->send(200, "application/json", statusJson());
     });
 
@@ -536,6 +730,12 @@ void WebPortal::setupRoutes() {
         if (!req->hasParam("c")) { req->send(400, "text/plain", "ERR missing c"); return; }
         String c = req->getParam("c")->value();
         c.trim();
+        // Reading is free; changing something is not. Which is which comes
+        // from commands.json, not from a list here.
+        if (!allowedCommand(req, c)) {
+            req->send(401, "text/plain", "ERR log in first");
+            return;
+        }
         // '#' lines bridge onto the RS485 bus: control other modules through
         // this one (their replies stream into the console via the WebSocket)
         if (c.startsWith("#") && rs485_) {
@@ -552,6 +752,7 @@ void WebPortal::setupRoutes() {
     });
 
     server_.on("/api/delete", HTTP_GET, [this](AsyncWebServerRequest* req) {
+        if (!allowed(req)) { req->send(401, "text/plain", "ERR log in first"); return; }
         if (!req->hasParam("path")) { req->send(400, "text/plain", "ERR missing path"); return; }
         String path = req->getParam("path")->value();
         if (!Util::safePath(path)) { req->send(400, "text/plain", "ERR bad path"); return; }
@@ -596,7 +797,8 @@ void WebPortal::setupRoutes() {
     });
 
     server_.on("/api/upload", HTTP_POST,
-        [](AsyncWebServerRequest* req) {
+        [this](AsyncWebServerRequest* req) {
+            if (!allowed(req)) { req->send(401, "text/plain", "ERR log in first"); return; }
             // _tempObject is set only after the final chunk closed cleanly
             // (the request destructor free()s it for us)
             bool ok = req->_tempObject != nullptr;
@@ -609,14 +811,26 @@ void WebPortal::setupRoutes() {
                 if (!Util::safePath(dir)) return;
                 int slash = filename.lastIndexOf('/');
                 if (slash >= 0) filename = filename.substring(slash + 1);
+                // Same rule as SDStore::openWrite: land in a .part file and
+                // only replace the real one once the whole upload arrived.
+                // FILE_WRITE truncates on open, so uploading over an existing
+                // name and then losing the connection used to destroy the file
+                // that was already there and deliver nothing in its place.
+                uploadDest_ = dir + "/" + filename;
+                uploadTmp_ = uploadDest_ + ".part";
                 sd_->lock();
-                req->_tempFile = SD.open(dir + "/" + filename, FILE_WRITE);
+                SD.remove(uploadTmp_.c_str());     // leftover from a dead upload
+                req->_tempFile = SD.open(uploadTmp_.c_str(), FILE_WRITE);
                 sd_->unlock();
-                // client aborts mid-upload: close under the SD mutex, not in ~File()
-                req->onDisconnect([this, req]() {
+                // client aborts mid-upload: close under the SD mutex, not in
+                // ~File(), and take the incomplete .part with it so the card
+                // is not littered with half files.
+                String tmp = uploadTmp_;
+                req->onDisconnect([this, req, tmp]() {
                     if (req->_tempFile) {
                         sd_->lock();
                         req->_tempFile.close();
+                        SD.remove(tmp.c_str());
                         sd_->unlock();
                     }
                 });
@@ -626,7 +840,11 @@ void WebPortal::setupRoutes() {
                 if (len) req->_tempFile.write(data, len);
                 if (final) {
                     req->_tempFile.close();
-                    req->_tempObject = malloc(1); // mark success
+                    SD.remove(uploadDest_.c_str());
+                    if (SD.rename(uploadTmp_.c_str(), uploadDest_.c_str()))
+                        req->_tempObject = malloc(1);   // mark success
+                    else
+                        SD.remove(uploadTmp_.c_str());
                 }
                 sd_->unlock();
             }
@@ -640,8 +858,15 @@ void WebPortal::setupRoutes() {
     // connections open for as long as someone watched it, and the rest of the
     // site would stop answering.
     server_.on("/api/cam.jpg", HTTP_GET, [this](AsyncWebServerRequest* req) {
-        CamModule* cam = static_cast<CamModule*>(router_->module());
-        camera_fb_t* fb = cam ? cam->take() : nullptr;
+        CamModule* cam = camModule();
+        if (!cam) {
+            req->send(503, "text/plain",
+                      "this board is not running as a camera. Its firmware has "
+                      "the camera, but its stored type is something else, so it "
+                      "started blank. Set it: SET TYPE cam, then reboot.");
+            return;
+        }
+        camera_fb_t* fb = cam->take();
         if (!fb) {
             req->send(503, "text/plain", "no picture — the camera did not start");
             return;
@@ -687,8 +912,13 @@ void WebPortal::setupRoutes() {
     // stream holds one for as long as someone watches — a second viewer would
     // be one connection from locking everyone out of the website.
     server_.on("/api/cam.stream", HTTP_GET, [this](AsyncWebServerRequest* req) {
-        CamModule* cam = static_cast<CamModule*>(router_->module());
-        if (!cam) { req->send(503, "text/plain", "no camera"); return; }
+        CamModule* cam = camModule();
+        if (!cam) {
+            req->send(503, "text/plain",
+                      "this board is not running as a camera. Set it: "
+                      "SET TYPE cam, then reboot.");
+            return;
+        }
         // A viewer whose connection died without a clean disconnect used to
         // latch this flag forever, and nobody could watch again until the
         // board rebooted. Hit within minutes of writing it. So a stream that
@@ -761,6 +991,8 @@ void WebPortal::setupRoutes() {
     // interrupted by a reboot is worse than an update that waited.
     server_.on("/api/ota", HTTP_POST,
         [this](AsyncWebServerRequest* req) {
+            // Replacing the firmware is the least undoable thing here.
+            if (!allowed(req)) { req->send(401, "text/plain", "ERR log in first"); return; }
             bool ok = req->_tempObject != nullptr;
             if (ok) {
                 req->send(200, "text/plain",
@@ -785,11 +1017,29 @@ void WebPortal::setupRoutes() {
                     otaErr_ = "ERR a sequence is playing — MOVE STOP first, or add force=1";
                     return;
                 }
-                Serial.println("[ota] receiving new firmware...");
+                LOGF(ota, "receiving new firmware...");
+                // An upload that never reached `final` — browser closed, WiFi
+                // dropped, PC walked away, power glitch on the sending side —
+                // used to leave Update OPEN. begin() then failed forever after
+                // with "Already Running", so a module up a truss could not be
+                // updated again without someone physically rebooting it. The
+                // abandoned attempt is worthless; clear it and start clean.
+                if (Update.isRunning()) {
+                    LOGF(ota, "an earlier upload never finished — dropping it");
+                    Update.abort();
+                }
                 if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
                     otaErr_ = "ERR cannot start the update: " + String(Update.errorString());
                     return;
                 }
+                // And make the NEXT one recoverable without a reboot: if this
+                // upload dies before `final`, drop it as the socket closes.
+                req->onDisconnect([]() {
+                    if (Update.isRunning()) {
+                        LOGF(ota, "upload cut off — dropping it");
+                        Update.abort();
+                    }
+                });
             }
             if (otaErr_.length()) return;         // already refused this upload
             if (len && Update.write(data, len) != len) {
@@ -799,8 +1049,7 @@ void WebPortal::setupRoutes() {
             }
             if (final) {
                 if (Update.end(true)) {
-                    Serial.printf("[ota] %u bytes written, rebooting\n",
-                                  (unsigned)(index + len));
+                    LOGF(ota, "%u bytes written, rebooting", (unsigned)(index + len));
                     req->_tempObject = malloc(1);  // mark success
                 } else {
                     otaErr_ = "ERR update did not finish: " + String(Update.errorString());
@@ -943,8 +1192,8 @@ void WebPortal::loop() {
                 wstate_ = W_ONLINE;
                 // the AP deliberately STAYS up: that is how a module out of
                 // router range gets on the network through this one
-                Serial.printf("[wifi] connected, ip=%s — still sharing AP \"%s\"\n",
-                              WiFi.localIP().toString().c_str(), WiFi.softAPSSID().c_str());
+                LOGF(wifi, "connected, ip=%s — still sharing AP \"%s\"",
+                     WiFi.localIP().toString().c_str(), WiFi.softAPSSID().c_str());
                 networkUp();
             } else if (now - wstateAt_ >= WIFI_CONNECT_TIMEOUT_MS) {
                 startDiagnostic();
@@ -970,8 +1219,8 @@ void WebPortal::loop() {
                 if (WiFi.status() == WL_CONNECTED) {
                     apMode_ = false;
                     wstate_ = W_ONLINE;
-                    Serial.printf("[wifi] joined \"%s\" late, ip=%s (fallback AP stays up)\n",
-                                  staSsid_.c_str(), WiFi.localIP().toString().c_str());
+                    LOGF(wifi, "joined \"%s\" late, ip=%s (fallback AP stays up)",
+                         staSsid_.c_str(), WiFi.localIP().toString().c_str());
                     networkUp();
                 } else if (now - lastStaRetry_ >= 60000) {
                     lastStaRetry_ = now;
@@ -992,8 +1241,8 @@ void WebPortal::loop() {
                 lastWifiCheck_ = now;
                 bool noIp = (uint32_t)WiFi.localIP() == 0;
                 if (WiFi.status() != WL_CONNECTED || noIp) {
-                    Serial.printf("[wifi] link lost (%s) — re-establishing\n",
-                                  noIp ? "no address" : "disconnected");
+                    LOGF(wifi, "link lost (%s) — re-establishing",
+                         noIp ? "no address" : "disconnected");
                     beginSta();       // full re-join, not a bare reconnect
                 }
             }

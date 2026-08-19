@@ -4,27 +4,45 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mice Control Hub</title>
+<link rel="stylesheet" href="/mice.css">
+<script src="/mice.js"></script>
 <style>
-:root{--sunk:#0d1117;--btn:#243040;--on-acc:#06121f;--warn:#ffb454;--r-sm:7px;--r-md:10px;--r-lg:12px;--sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-6:24px;--bg:#10141a;--card:#1a212b;--line:#2a3442;--txt:#dce3ec;--mut:#8b98a9;--acc:#4da3ff;--ok:#3ecf8e;--err:#ff6b6b}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif;padding:18px;max-width:980px;margin:0 auto}
-h1{font-size:24px;margin-bottom:4px}
-h2{font-size:14px;color:var(--acc);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+/* Only what is the HUB's own. Tokens, the reset, cards, buttons, inputs, the
+   quiet caption and the five states all come from /mice.css above. */
+body{padding:var(--sp-6);max-width:980px;margin:0 auto}
+h1{font-size:24px;margin-bottom:var(--sp-1)}
 .sub{color:var(--mut);margin-bottom:18px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
-button{background:var(--btn);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer}
-button:hover{border-color:var(--acc)}
-button.primary{background:var(--acc);border-color:var(--acc);color:var(--on-acc);font-weight:600}
-.mod{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;background:var(--sunk)}
+
+/* a module row: name / type / address / what you can do with it */
+.mod{display:flex;align-items:center;gap:var(--sp-2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-2) var(--sp-3);margin:var(--sp-2) 0;background:var(--sunk)}
 .mod .nm{font-weight:700}
-.mod .ty{font-size:12px;color:var(--on-acc);background:var(--ok);border-radius:10px;padding:1px 10px;font-weight:600}
-.mod .ty.nong{background:#ffd166}
+.ty{font-size:12px;color:var(--on-acc);background:var(--ty-other);border-radius:var(--r-md);padding:1px var(--sp-2);font-weight:600}
+/* Module-type badges use the --ty-* tokens, which are decoration — which board
+   is which — not state, so --ok/--warn/--err stay reserved for "this is fine /
+   careful / this failed". The badge also carries the type as TEXT, so the
+   colour is never the only signal. */
+.ty.nong{background:var(--ty-nong)}
+.ty.lift{background:var(--ty-lift)}
+.ty.cam{background:var(--ty-cam)}
 .mod .ip{color:var(--mut);font-size:13px;flex:1}
-.mini{color:var(--mut);font-size:13px}
-.port{display:inline-block;background:var(--btn);border:1px solid var(--line);border-radius:16px;padding:4px 12px;margin:3px;font-size:13px}
-a{color:var(--acc)}
+.port{display:inline-block;background:var(--btn);border:1px solid var(--line);border-radius:var(--r-pill);padding:var(--sp-1) var(--sp-3);margin:var(--sp-1);font-size:13px}
 .spin{color:var(--mut)}
+.login-input{flex:1 1 180px;min-width:0}
+/* A destination that LEAVES this page. Dashed, muted and carrying an arrow, so
+   it does not read as one more tab that swaps a card in place. */
+.tab-link{text-decoration:none;border-style:dashed;color:var(--mut);
+  display:inline-flex;align-items:center}
+.tab-link:hover{color:var(--acc);border-color:var(--acc)}
+.flash-modal{position:fixed;inset:0;z-index:100;display:flex;
+  align-items:center;justify-content:center;padding:var(--sp-3);
+  background:color-mix(in srgb,var(--bg) 80%,transparent)}
+.flash-panel{width:100%;max-width:400px;display:flex;flex-direction:column;gap:var(--sp-3)}
+.flash-meta{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-1) var(--sp-3);
+  background:var(--sunk);padding:var(--sp-2) var(--sp-3);
+  border-radius:var(--r-sm);font-size:13px;align-items:baseline}
+.flash-meta .lbl{min-width:0;white-space:nowrap}
+.flash-actions{display:flex;flex-direction:column;gap:var(--sp-2);margin-top:var(--sp-2)}
+.flash-actions button{width:100%;min-height:44px}
 
 /* ---------------------------------------------------------- responsive
    The hub is opened from phones on the same WiFi as often as from the PC, so
@@ -33,92 +51,316 @@ a{color:var(--acc)}
   body{max-width:1400px;margin:0 auto}
 }
 @media (max-width:720px){
-  body{padding:12px}
+  body{padding:var(--sp-3)}
   h1{font-size:20px}
-  .card{padding:12px}
+  .card{padding:var(--sp-3)}
   /* a module row is name / type / address / buttons — stack it so nothing is
      squeezed to a few characters, and let the buttons span the width */
   .mod{flex-wrap:wrap;gap:6px}
   .mod .nm{width:100%}
   .mod button{flex:1 1 auto}
-  h2 button{float:none!important;display:block;margin-top:8px;width:100%}
+  h2 button{float:none!important;display:block;margin-top:var(--sp-2);width:100%}
 }
 @media (max-width:430px){
   body{padding:9px}
   .mod .ip{font-size:11px;word-break:break-word}
 }
-@media (pointer:coarse){              /* fingers, not a mouse pointer */
-  button{min-height:36px;padding:8px 12px}
-  input,select{min-height:34px}
-}
 
 /* Tabs. The cards do not move in the DOM — they are shown or hidden by their
    data-tab, so every element id the rest of the page (and QC) relies on stays
    exactly where it was. */
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px}
-.tab{background:var(--card,var(--card));border:1px solid var(--line,var(--line));color:inherit;
-     padding:8px 16px;border-radius:9px;cursor:pointer;font:inherit;font-size:14px}
-.tab.on{border-color:var(--acc,var(--acc));color:var(--acc,var(--acc));font-weight:600}
-.tab:hover{border-color:var(--acc,var(--acc))}
-.netrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-        padding:9px 11px;border:1px solid var(--line,var(--line));border-radius:9px;margin-bottom:6px}
+/* The tab itself now comes from mice.css — the hub was the only one of the
+   three apps with an OUTLINE active tab, which is why it looked like a
+   different product from the module site and Studio that it opens. */
+.netrow{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;
+        padding:var(--sp-2) var(--sp-3);border:1px solid var(--line);border-radius:var(--r-md);margin-bottom:var(--sp-2)}
 .netrow .who{font-weight:600}
-.netrow .grp{font-family:ui-monospace,Consolas,monospace;font-size:12px;opacity:.85}
-.netrow.sel{border-color:var(--acc,var(--acc));background:rgba(77,163,255,.08)}
+.netrow .grp{font-family:var(--mono);font-size:12px;opacity:.85}
+.netrow.sel{border-color:var(--acc);background:var(--acc-soft)}
 .netrow input[type=checkbox]{width:18px;height:18px}
-@media (pointer:coarse){.tab{padding:11px 18px}.netrow{padding:12px}}
+@media (pointer:coarse){.netrow{padding:var(--sp-3)}}
 
-/* ---- shared floor: the same in every mice web app ------------------ */
-/* The focus ring is never removed, only restyled — keyboard users need to
-   see where they are, and :focus-visible keeps it off mouse clicks. */
-:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{
-  outline:2px solid var(--acc);outline-offset:2px;border-radius:var(--r-sm)}
-/* Motion is a preference, not a decoration. */
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01ms!important;
-    animation-iteration-count:1!important;transition-duration:.01ms!important;
-    scroll-behavior:auto!important}}
+/* One firmware image and everything it can be written to. */
+.fwbox{background:var(--sunk);border:1px solid var(--line);
+  border-radius:var(--r-md);padding:var(--sp-3);margin:var(--sp-2) 0}
+.fwtargets{display:flex;flex-direction:column;gap:var(--sp-1);margin-top:var(--sp-2)}
+.fwbar{flex:0 0 90px}
+/* Not built: present, explained, and plainly not usable — greying it out
+   without saying why is how someone concludes the feature is broken. */
+.fwunbuilt{opacity:.75;border-style:dashed}
 
-/* Honest states. An error keeps the last good data visible and says it is old,
-   rather than blanking the panel or pretending stale rows are live. */
-.banner{border-radius:var(--r-sm);padding:var(--sp-2) var(--sp-3);
-  margin-bottom:var(--sp-2);font-size:13px;display:flex;gap:var(--sp-2);
-  align-items:center;flex-wrap:wrap}
-.banner.err{border:1px solid var(--err);color:var(--err);background:rgba(255,107,107,.08)}
 /* flashing a board over its own cable */
 .flash{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;
-  margin:var(--sp-1) 0 var(--sp-2) 24px}
-.flash select{background:var(--btn);color:var(--txt);border:1px solid var(--line);
-  border-radius:var(--r-sm);padding:5px 8px;font-size:13px}
+  margin:var(--sp-1) 0 var(--sp-2) var(--sp-6)}
+.flash select{background:var(--btn);padding:5px var(--sp-2);font-size:13px}
 .pbar{flex:1;min-width:120px;height:6px;background:var(--sunk);
-  border:1px solid var(--line);border-radius:99px;overflow:hidden}
+  border:1px solid var(--line);border-radius:var(--r-pill);overflow:hidden}
 .pbar i{display:block;height:100%;width:0;background:var(--acc);transition:width 150ms}
 @media (max-width:430px){.flash{margin-left:0}.flash select{flex:1 1 100%}}
 @media (pointer:coarse){.flash select{padding:9px 10px}}
-.stale{font-size:12px;color:var(--warn);margin-bottom:var(--sp-2)}
 </style>
 </head>
 <body>
 <h1>🤖 Mice Control Hub</h1>
-<div class="sub">Start here. This page looks for your robot modules by itself —
+<div class="sub">Welcome! This page finds your robot modules automatically —
 over WiFi and over any cable you plug in. <b>Click a module to open its own
 controls.</b></div>
 
+<!-- Log in before doing. Reading the module list needs nothing, so this is a
+     card on the page rather than a wall in front of it: someone checking
+     whether a board is alive should never meet a password box. -->
+<div class="card" id="loginCard" hidden>
+  <h2>🔒 Log in to control</h2>
+  <div class="mini" id="loginWhy">Looking is free. Moving a robot, flashing a
+    board or deleting a file needs the hub password.</div>
+
+  <div class="banner info" id="loginFirstRun" role="status" hidden>
+    🔑 First run — the hub printed a password in the window it is running in,
+    on the PC itself. It is not shown here and never travels over the network.
+  </div>
+  <div class="banner err" id="loginErr" role="alert" hidden></div>
+  <div class="banner warn" id="loginLock" role="alert" hidden></div>
+
+  <form class="row" id="loginForm" onsubmit="return doLogin(event)">
+    <input id="loginUser" class="login-input" autocomplete="username"
+             placeholder="user (leave blank if there is only one)"
+             aria-label="Hub user">
+        <input id="loginPass" class="login-input" type="password"
+           autocomplete="current-password" placeholder="hub password"
+           aria-label="hub password" required>
+    <button type="submit" class="primary" id="loginBtn">Log in</button>
+    <span class="mini" id="loginBusy" role="status" hidden>checking…</span>
+  </form>
+</div>
+
+<!-- Flashing is not undoable from here, it takes about a minute, and the board
+     may be in someone else's hands across the room. Several PCs on this network
+     run this same hub, so the panel names the PC as well as the board: being on
+     the wrong browser tab is the easy mistake to make at a live event. -->
+<div class="flash-modal" id="flashModal" role="dialog" aria-modal="true"
+     aria-labelledby="fcTitle" hidden>
+  <div class="card flash-panel">
+    <h2 id="fcTitle">⚡ Flash firmware</h2>
+
+    <div id="fcAsk">
+      <div class="flash-meta" id="fcMeta"></div>
+      <div class="banner warn" id="fcChange" hidden></div>
+      <div class="mini" id="fcCost"></div>
+      <!-- Only when the board is on ANOTHER PC's cable: that machine has its
+           own accounts, and this one is not allowed to overwrite a board there
+           without a person who may. Nothing typed here is stored. -->
+      <div id="fcLogin" hidden>
+        <div class="mini" id="fcLoginWhy"></div>
+        <div class="row">
+          <input id="fcUser" placeholder="user on that PC" autocomplete="off">
+          <input id="fcPass" type="password" placeholder="password"
+                 autocomplete="off">
+        </div>
+      </div>
+      <div class="flash-actions">
+        <!-- The SAFE choice is the prominent one and sits where a thumb lands.
+             The destructive one is reachable, not convenient. -->
+        <button class="primary" id="fcCancel">Cancel — keep what it runs now</button>
+        <button class="danger" id="fcGo">⚡ Overwrite the firmware</button>
+      </div>
+    </div>
+
+    <div id="fcWorking" hidden>
+      <div class="mini" id="fcStage">starting…</div>
+      <div class="pbar"><i id="fcBar"></i></div>
+      <div class="mini" style="color:var(--warn)">⚠ do not unplug the board or close this page</div>
+    </div>
+
+    <div id="fcOk" hidden>
+      <div class="banner ok" id="fcOkMsg">✓ done</div>
+      <div class="flash-actions"><button class="primary" id="fcClose">Close</button></div>
+    </div>
+
+    <div id="fcErr" hidden>
+      <div class="banner err" id="fcErrMsg"></div>
+      <div class="flash-actions">
+        <button class="primary" id="fcErrClose">Cancel</button>
+        <button class="danger" id="fcRetry">⟳ Try again</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Seven destinations. Help LEAVES the page, so it is a link and looks like
+     one: a tab that navigates away is a tab that loses your place without
+     warning. Everything else shows and hides cards by data-tab, so no element
+     moves in the DOM and every id the rest of the page relies on stays put. -->
 <div class="tabs" id="tabs">
-  <button class="tab on" data-go="modules" onclick="showTab('modules')">Modules</button>
+  <button class="tab on" data-go="home" onclick="showTab('home')">Home</button>
+  <button class="tab" data-go="modules" onclick="showTab('modules')">Modules</button>
+  <button class="tab" data-go="firmware" onclick="showTab('firmware')">Firmware</button>
   <button class="tab" data-go="network" onclick="showTab('network')">Network</button>
   <button class="tab" data-go="tools" onclick="showTab('tools')">Tools</button>
+  <button class="tab" data-go="settings" onclick="showTab('settings')">Settings</button>
+  <a class="tab tab-link" href="/help">Help ↗</a>
 </div>
 
 <div class="grid">
+
+  <!-- HOME: what someone walking up to the hub needs first — is anything
+       there, how is it reached, and is anything wrong. Built from the scans
+       the page already runs, so it costs no extra request and cannot
+       disagree with the Modules tab. -->
+  <div class="card" data-tab="home" style="grid-column:1/-1">
+    <h2>👋 Right now</h2>
+    <div id="homeSum" class="mini" aria-live="polite">counting what is connected…</div>
+    <div id="homeWrong"></div>
+    <div class="row" id="homeGo"></div>
+  </div>
+
+  <!-- FIRMWARE. Its own screen, because replacing a board's firmware is a
+       different job from finding out what is connected — different moment,
+       often a different person, and the only one of the two that cannot be
+       undone. The `pio run` build command lives here too, off the first
+       screen where it used to greet everyone. -->
+  <div class="card" data-tab="firmware" style="grid-column:1/-1">
+    <h2>⚡ Firmware</h2>
+
+    <!-- Without esptool nothing here can work, so that is said first and
+         everything else is hidden rather than offered and then refused. -->
+    <div class="banner err" id="fwNoTool" hidden></div>
+    <div class="banner warn" id="fwNoBuild" hidden></div>
+
+    <div id="fwReady" hidden>
+      <div class="mini">Pick the firmware, then the board to write it to.
+        <b>Overwriting firmware cannot be undone</b> — the board keeps its id,
+        name, WiFi and pins, but the program is replaced.</div>
+      <div id="fwList"></div>
+    </div>
+    <div class="mini" id="fwStat" aria-live="polite">checking what this PC has built…</div>
+  </div>
+
+  <!-- Built once, cloned per row: the shape of a row lives in the HTML where
+       it can be read, not in a string inside the script. -->
+  <template id="tplFwImage">
+    <div class="fwbox">
+      <div class="row" style="margin-top:0">
+        <span class="ty"></span>
+        <b class="fwtype"></b>
+        <span class="mini fwmeta"></span>
+      </div>
+      <div class="mini fwmissing" hidden></div>
+      <div class="fwtargets"></div>
+    </div>
+  </template>
+
+  <template id="tplFwTarget">
+    <div class="mod">
+      <span class="nm"></span>
+      <span class="ip"></span>
+      <button class="danger fwgo"></button>
+      <div class="pbar fwbar" hidden><i></i></div>
+      <!-- aria-live: a board being overwritten must be audible, not only
+           visible. The bar moves; this says what is happening. -->
+      <span class="mini fwsay" aria-live="polite"></span>
+    </div>
+  </template>
+
+  <!-- SETTINGS: what the hub is, and who you are on it. Small, but real. -->
+  <div class="card" data-tab="settings" style="grid-column:1/-1">
+    <h2>⚙ Settings</h2>
+    <div class="mini" id="setWho">…</div>
+    <div class="row">
+      <button id="logoutBtn" onclick="doLogout()" hidden>Log out</button>
+      <a class="tab tab-link" href="/help">Features &amp; help ↗</a>
+    </div>
+    <!-- Accounts. The module has had these for years; the hub had ONE password
+         that everybody shared and nobody could be removed from. Same rules as
+         the board so the two do not disagree: 1-20 characters for a name,
+         8-32 for a password, and the LAST account can never be removed. -->
+    <div id="userBox" hidden>
+      <h2 style="margin-top:var(--sp-4)">Who can use this hub</h2>
+      <div id="userList" class="mini" aria-live="polite">…</div>
+      <div class="row">
+        <input id="uName" placeholder="new user name" autocomplete="off" style="flex:1 1 130px">
+        <input id="uPass" type="password" placeholder="their password"
+               autocomplete="new-password" style="flex:1 1 150px">
+        <button onclick="addUser()">Add</button>
+        <span class="mini" id="uStat"></span>
+      </div>
+      <div class="mini">A password is 8 to 32 characters with no spaces. Removing
+        someone logs them out immediately. The last account cannot be removed —
+        a hub nobody can log into has to be fixed by deleting its password file
+        on the PC.</div>
+    </div>
+
+    <div class="mini">The first password is generated on the PC that runs the hub
+      and written next to it, so it cannot be lost. It is never shown on a page.</div>
+  </div>
+
+  <!-- HOW MUCH TO SHOW. An address serves nothing while everything works, and
+       it sat on every row in the same grey as the name. One switch, one class
+       in the shared sheet, remembered per browser. -->
+  <div class="card" data-tab="settings">
+    <h2>🎨 Colour</h2>
+    <div class="row" id="themePick"></div>
+    <div class="mini">Dark stays the default: a bright screen spills light into
+      the show area. Adding another theme is one block in
+      <code>shared/web/themes.css</code> — it appears here by itself.</div>
+
+    <h2 style="margin-top:var(--sp-6)">🔧 How much to show</h2>
+    <div class="row">
+      <label for="advOn" style="display:flex;gap:var(--sp-2);align-items:center">
+        <input type="checkbox" id="advOn" onchange="setAdvanced(this.checked)">
+        Show technical details</label>
+    </div>
+    <div class="mini">Addresses, cable ports and signal strengths — what you need
+      the moment something is wrong, and noise the rest of the time. Names, types
+      and module numbers are always shown.</div>
+  </div>
+
+
   <div class="card" data-tab="modules" style="grid-column:1/-1">
-    <h2>Modules found over WiFi <button onclick="scan(true)" style="float:right">⟳ Rescan</button></h2>
+    <h2>📡 Modules found over WiFi <button onclick="scan(true)" style="float:right">⟳ Rescan</button></h2>
     <div id="modsmeta" class="mini" aria-live="polite"></div>
-    <div id="mods" class="spin" aria-live="polite">scanning the WiFi…</div>
+    <div id="mods" class="spin" aria-live="polite">Looking around the WiFi…</div>
+  </div>
+
+  <!-- Modules held on ANOTHER PC's cable. At a venue this is the normal case:
+       one laptop by the arm, one at the desk, and the arm reachable only from
+       whichever machine holds the cable. -->
+  <div class="card" data-tab="modules" style="grid-column:1/-1">
+    <h2>💻 On other PCs
+      <button onclick="loadShared(true)" style="float:right">⟳ Look again</button>
+    </h2>
+    <div class="mini">Modules plugged into another PC that is running this hub on
+      the same network. You can use them from here exactly like your own — the
+      other PC passes the commands down its own cable.</div>
+    <div id="shared" class="mini" aria-live="polite">Looking for other PCs…</div>
+  </div>
+
+  <!-- Getting a PHONE here is a network question, so it lives on the network
+       screen. The address is printed too, because a QR is useless to someone
+       reading this over a remote desktop - and the name is printed because it
+       is the one that survives the hub moving to another laptop. -->
+  <div class="card" data-tab="network">
+    <h2>📱 Open this on a phone</h2>
+    <div class="row" style="align-items:flex-start">
+      <img id="qrImg" src="/api/qr" alt="QR code for this hub's address"
+           width="180" height="180"
+           style="background:#fff;border-radius:var(--r-sm);flex:0 0 auto">
+      <div>
+        <div class="mini">Point a phone camera at it. Both have to be on the
+          same WiFi.</div>
+        <div style="margin-top:var(--sp-2)"><code id="qrUrl">…</code></div>
+        <!-- The NAME, when it is actually working. Printing mice.local while
+             nothing answers it sends people down a hole, so the hub says
+             whether its responder got the port and this only shows it then. -->
+        <div style="margin-top:var(--sp-1)" id="qrNameRow" hidden>
+          or by name: <code id="qrNameUrl"></code></div>
+        <div class="mini" id="qrWhyNoName" hidden></div>
+        <div class="mini" id="qrName" style="margin-top:var(--sp-1)"></div>
+      </div>
+    </div>
   </div>
 
   <div class="card" data-tab="network" style="grid-column:1/-1">
-    <h2>Which modules work together
+    <h2>🤝 Which modules work together
       <button onclick="loadNet()" style="float:right">⟳ Refresh</button>
     </h2>
     <div class="mini">Modules only link to modules in the <b>same group</b>. A group is
@@ -126,19 +368,19 @@ controls.</b></div>
       themselves, even with no venue WiFi. Another company's modules standing in
       the same room cannot join yours, and yours cannot join theirs, because a
       module's own hotspot password is derived from its group name.</div>
-    <div id="netlist" class="spin" aria-live="polite" style="margin-top:10px">looking for modules…</div>
+    <div id="netlist" class="spin" aria-live="polite" style="margin-top:12px">Looking for modules…</div>
     <div id="netact" style="margin-top:12px"></div>
   </div>
 
   <div class="card" data-tab="tools">
-    <h2>Apps &amp; tools</h2>
+    <h2>🧰 Apps &amp; tools</h2>
     <div id="tools" class="mini">loading…</div>
     <div class="mini">tip: use the “Studio + monitor” button on a nong module above —
       it opens the editor already connected, showing the real robot moving in 3D.</div>
   </div>
 
   <div class="card" data-tab="modules" style="grid-column:1/-1">
-    <h2>Modules plugged in by cable
+    <h2>🔌 Modules plugged in by cable
       <span style="float:right">
         <label class="mini"><input type="checkbox" id="autoUsb" onchange="autoUsbChanged()"> auto-check</label>
         <button onclick="scanUsb()">🔍 Probe now</button>
@@ -175,17 +417,24 @@ function showTab(name){
 // belongs to. Tick the ones that belong together and give them a group name:
 // that is the whole linking step.
 var netMods = [];
+var netBusy = false;
 async function loadNet(){
   var box = document.getElementById('netlist');
   if(!box) return;
+  // Clicking the Network tab starts a full probe of every cable. Without a
+  // guard, clicking it a few times ran several overlapping probes, each
+  // holding port locks and each writing its answer into the same list — the
+  // slowest one won, whichever was actually correct.
+  if(netBusy) return;
+  netBusy = true;
   box.className = 'spin'; box.textContent = 'looking for modules…';
-  var out = [];
+  var out = [], failed = 0;
   try{
     var r = await fetch('/api/scan').then(x=>x.json());
     (r.modules||[]).forEach(function(m){
       out.push({dev:'wifi:'+m.ip, label:m.name, type:m.type, via:m.ip, group:m.group||''});
     });
-  }catch(e){}
+  }catch(e){ failed++; }
   try{
     // /api/ports is only the TYPED port list — it carries no identity until a
     // port is actually probed, so reading it alone showed every module as
@@ -209,7 +458,8 @@ async function loadNet(){
                   type:b.type||'', via:u.port+' #'+b.id, group:b.group||''});
       });
     });
-  }catch(e){}
+  }catch(e){ failed++; }
+  netBusy = false;
   // the same module can answer on WiFi AND on its cable — show it once
   var seen = {}, uniq = [];
   out.forEach(function(m){
@@ -218,8 +468,24 @@ async function loadNet(){
     seen[k] = 1; uniq.push(m);
   });
   netMods = uniq;
-  if(!uniq.length){ box.className='mini'; box.textContent =
-    'No modules found yet. Plug one in over USB, or put it on this WiFi, then Refresh.'; return; }
+  if(!uniq.length){
+    box.className='mini';
+    // "Nothing found" and "could not look" are different facts, and saying the
+    // first when the second is true is the page lying to the reader. Both
+    // scans failing used to render as a confident empty list.
+    if(failed >= 2){
+      box.setAttribute('role','alert');
+      box.innerHTML = 'Could not look for modules — the hub did not answer. '
+        + 'Please check if it is running. '
+        + '<button onclick="loadNet()">Try again</button>';
+    }else{
+      box.removeAttribute('role');
+      box.textContent = 'We haven\'t found any modules yet. Please plug one in over USB, or put it '
+        + 'on this WiFi, then press Refresh.';
+    }
+    return;
+  }
+  box.removeAttribute('role');
   box.className = '';
   box.innerHTML = uniq.map(function(m,i){
     return '<label class="netrow" id="netrow'+i+'">'+
@@ -240,7 +506,7 @@ function netPick(){
   });
   var act = document.getElementById('netact');
   if(!picked.length){
-    act.innerHTML = '<div class="mini">Tick the modules that belong together, '+
+    act.innerHTML = '<div class="mini">Choose the modules you want to work together, '+
       'then give them a group name. Leave out any module that is not yours.</div>';
     return;
   }
@@ -250,10 +516,11 @@ function netPick(){
     '<div class="mini"><b>'+picked.length+' selected</b> — they will link to each other and to nobody else.</div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+
       '<input id="grpname" placeholder="group name (e.g. mice-show)" value="'+esc(suggest)+'" '+
-        'style="flex:1;min-width:180px;padding:8px;border-radius:8px;border:1px solid var(--line,var(--line));'+
-        'background:var(--card,var(--card));color:inherit">'+
+        'style="flex:1;min-width:180px;padding:var(--sp-2);border-radius:var(--r-sm);border:1px solid var(--line);'+
+        'background:var(--card);color:inherit">'+
       '<button onclick="linkSel()">🔗 Link these</button>'+
-      '<button onclick="unlinkSel()">✂ Unlink</button>'+
+      '<button class="danger" onclick="unlinkSel()" title="Remove the ticked modules from their '+
+      'group. They go back to the shared fallback password.">✂ Unlink the ticked modules</button>'+
     '</div><div id="grpout" class="mini" style="margin-top:8px"></div>';
 }
 
@@ -266,11 +533,22 @@ async function groupCmd(dev, cmd){
 async function applyGroup(name){
   var picked = [].slice.call(document.querySelectorAll('#netlist input:checked'))
                  .map(function(c){ return parseInt(c.getAttribute('data-i'),10); });
+  // SNAPSHOT the modules now, by value. Each groupCmd is a real round trip —
+  // up to two seconds over a cable — and loadNet() replaces netMods whenever
+  // the list refreshes or the tab is re-shown. Reading netMods[i] inside the
+  // loop meant a refresh mid-way sent "GROUP <name>" to whatever module had
+  // moved into that position: a permanent identity written to the wrong board,
+  // which then leaves the installation because its hotspot password is derived
+  // from the group name. A shorter list also threw on undefined and left the
+  // rest silently unlinked.
+  var targets = picked.map(function(i){ return netMods[i]; })
+                      .filter(function(m){ return m; });
   var out = document.getElementById('grpout');
+  if(!targets.length){ out.textContent = 'Tick the modules you want first.'; return; }
   out.textContent = 'applying…';
   var lines = [];
-  for(var k=0;k<picked.length;k++){
-    var m = netMods[picked[k]];
+  for(var k=0;k<targets.length;k++){
+    var m = targets[k];
     lines.push(m.label+': '+await groupCmd(m.dev, name ? 'GROUP '+name : 'GROUP CLEAR'));
   }
   out.innerHTML = lines.map(esc).join('<br>');
@@ -278,10 +556,31 @@ async function applyGroup(name){
 }
 function linkSel(){
   var n = (document.getElementById('grpname').value||'').trim();
-  if(!n){ document.getElementById('grpout').textContent = 'Give the group a name first.'; return; }
+  if(!n){ document.getElementById('grpout').textContent =
+    'Type a name in the group box above first, then press this again.'; return; }
   applyGroup(n);
 }
-function unlinkSel(){ applyGroup(''); }
+// Unlinking is not cosmetic: a module's hotspot password comes from its group
+// name, so clearing the group takes that board OUT of the installation and the
+// others stop finding it. Name exactly which boards are about to be changed —
+// "are you sure?" on its own tells the reader nothing.
+function unlinkSel(){
+  var picked = [].slice.call(document.querySelectorAll('#netlist input:checked'))
+                 .map(function(c){ return netMods[parseInt(c.getAttribute('data-i'),10)]; })
+                 .filter(function(m){ return m; });
+  if(!picked.length){
+    document.getElementById('grpout').textContent =
+      'Tick the modules you want to unlink first.';
+    return;
+  }
+  var names = picked.map(function(m){ return '  · ' + m.label; }).join('\n');
+  if(!confirm('Remove these ' + picked.length + ' module' +
+              (picked.length === 1 ? '' : 's') + ' from their group?\n\n' + names +
+              '\n\nEach one goes back to the shared fallback password, so the ' +
+              'rest of the installation will no longer find it until it is ' +
+              'linked again.')) return;
+  applyGroup('');
+}
 
 function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -293,17 +592,29 @@ async function loadApps(){
   try{
     const r=await fetch('/api/apps').then(r=>r.json());
     const apps=r.apps||[];
-    if(!apps.length){el.textContent='no tools registered';return;}
+    // An empty state teaches: say what goes here and how one gets here.
+    if(!apps.length){el.innerHTML='<span class="mini">No tools yet. A tool is a '
+      +'folder with an <code>app.json</code> in <code>code/apps/</code> — drop '
+      +'one in and it appears here.</span>';return;}
     el.innerHTML='';
     apps.forEach(a=>{
-      const d=document.createElement('div');d.className='mod';
+      const d=document.createElement('div');
+  // The row is edged in its module type's colour (mice.css). Information, not
+  // decoration - and the badge below still says the type in words, so the
+  // colour is never the only thing carrying it.
+  d.className='mod t-'+String(m.type||'other').replace(/[^a-z0-9]/gi,'').toLowerCase();
       d.innerHTML='<span class="nm">'+(a.icon?a.icon+' ':'')+a.name+'</span>'+
                   '<span class="ip">'+(a.blurb||'')+'</span>';
       const b=document.createElement('button');b.className='primary';b.textContent='Open';
       b.onclick=()=>window.open(a.path,'_blank');
       d.appendChild(b);el.appendChild(d);
     });
-  }catch(e){el.textContent='could not list the tools: '+e;}
+  }catch(e){
+    // An error says what to DO, and offers the control that does it.
+    el.innerHTML='<span class="mini">Could not read the tool list. The hub may '
+      +'have stopped. <span style="color:var(--mut)">'+esc(String(e.message||e))
+      +'</span></span> <button onclick="loadApps()">Try again</button>';
+  }
 }
 loadApps();
 
@@ -325,13 +636,24 @@ setInterval(modsMeta, 5000);
 
 async function scan(force){
   const el=document.getElementById('mods');
-  if(force)el.innerHTML='<span class="mini spin">scanning the WiFi… (a few seconds)</span>';
+  if(force)el.innerHTML='<span class="mini spin">looking for modules… (a few seconds)</span>';
   try{
-    const r=await fetch('/api/scan'+(force?'?force=1':'')).then(r=>r.json());
+    // ONE list, merged by the hub on the board's chip. A module that is
+    // plugged in AND on the WiFi used to appear twice, as two robots — and the
+    // two rows were not even equivalent, since one drove it over the cable and
+    // the other over the air, so which copy you happened to click decided how
+    // the arm was driven. See modules_here() in main.py.
+    const r=await fetch('/api/modules'+(force?'?force=1':'')).then(r=>r.json());
     el.innerHTML='';
     (r.modules||[]).forEach(m=>{
-      // answered on the network -> reachable like a normal station
-      el.appendChild(modRow(Object.assign({wifi_mode:'sta'},m),m.sd?'SD':'',null,0));
+      const wifi=(m.routes||[]).filter(x=>x.kind==='wifi')[0];
+      const cable=(m.routes||[]).filter(x=>x.kind==='usb'||x.kind==='rs485')[0];
+      el.appendChild(modRow(
+        Object.assign({}, m, {wifi_mode: wifi ? 'sta' : (m.wifi_mode||''),
+                              ip: wifi ? wifi.ip : (m.ip||'')}),
+        m.sd?'SD':'',
+        cable ? cable.port : null,
+        cable && cable.kind==='rs485' ? cable.bus : 0));
     });
     if(!(r.modules||[]).length)
       el.innerHTML='<span class="mini">no modules found on '+ (r.lan||'?') +'/24 — are they powered and on the same WiFi? (⟳ Rescan)</span>';
@@ -351,9 +673,18 @@ async function scan(force){
 }
 function modRow(m,extra,port,busId,peer){
   const d=document.createElement('div');d.className='mod';
-  d.innerHTML=`<span class="nm">${m.name||'?'}</span>
-    <span class="ty ${m.type||''}">${m.type||'?'}</span>
-    <span class="ip">#${m.id!=null?m.id:'?'}${extra?' · '+extra:''}${m.ip?' · '+m.ip:''}</span>`;
+  // Everything here comes off the wire from a board, so it goes through esc()
+  // like the rest of the page. A module name is user-settable (SET NAME, the
+  // module site) and any board on the same WiFi answers the sweep — an
+  // unescaped name lands inside a class attribute and inside markup, in the
+  // one page that holds every serial port and the flash API.
+  d.innerHTML=`<span class="nm">${esc(m.name||'?')}</span>
+    <span class="ty ${esc(m.type||'')}">${esc(m.type||'?')}</span>
+    <span class="ip">#${esc(m.id!=null?m.id:'?')}${extra?' · '+esc(extra):''}<span class="tech">${
+      m.ip?' · '+esc(m.ip):''}${
+      (m.routes&&m.routes.length>1)
+        ? ' · reachable '+esc(m.routes.map(r=>r.kind==='wifi'?'over WiFi':('on '+r.port)).join(' and '))
+        : ''}</span></span>`;
   // ONE site for every transport: the module's own website, served by the hub
   // with a transport shim (?dev=wifi:<ip> | usb:<port>[:<id>]). Same UI, same
   // config, same login — no matter how the module is reached.
@@ -380,7 +711,11 @@ function modRow(m,extra,port,busId,peer){
     d.appendChild(open);
   }else if(m.wifi_mode==='ap'){
     const s=document.createElement('span');s.className='mini';
-    s.textContent='⚠ hosts its OWN hotspot ('+(m.ip||'192.168.4.1')+') — join that WiFi to open the site, or use USB / set real WiFi in the USB page';
+    // Named "the USB page" until 2026-08-18, which was a page nothing linked
+    // to and which redirected away — instructions pointing at a dead end. The
+    // module's own website is the same site over WiFi and over the cable, so
+    // say where it actually is: plug the board in and it appears below.
+    s.textContent='⚠ hosts its OWN hotspot ('+(m.ip||'192.168.4.1')+') — join that WiFi to open the site, or plug it into this PC: it appears under "plugged in by cable" below, where you can set the real WiFi';
     d.appendChild(s);
   }else if(!port){
     const s=document.createElement('span');s.className='mini';
@@ -401,11 +736,21 @@ function modRow(m,extra,port,busId,peer){
   // replaced is never the one running: a failed or half-sent update leaves it
   // booting what it already had. Offered only on a module we can actually
   // reach by IP — over its own hotspot the PC is on that hotspot anyway.
-  if(m.wifi_mode==='sta'&&m.ip&&m.type&&m.type!=='blank'){
+  // Offered on a BLANK board too. It used to be hidden for type "blank", which
+  // is backwards: a blank board is exactly the one that needs new firmware and
+  // a type. A board reports blank whenever its stored type is not in the binary
+  // it is running — the normal state after being flashed as something new — and
+  // hiding this button left no way to finish the job without finding a cable.
+  if(m.wifi_mode==='sta'&&m.ip){
+    // The row is where you NOTICE a board needs new firmware, so the way there
+    // stays here — but the writing itself happens on one screen. Three ways to
+    // do the least undoable thing in the product is how they drift apart.
     const ota=document.createElement('button');
-    ota.textContent='⚡ update over WiFi';
-    ota.title='send this PC\'s '+m.type+' firmware to '+m.ip+' — no cable';
-    ota.onclick=()=>otaModule(ota,m.ip,m.type);
+    ota.textContent='⚡ firmware…';
+    ota.title=(m.type&&m.type!=='blank')
+      ? 'open Firmware to write this PC\'s '+m.type+' build to '+m.ip
+      : 'this board has no module type yet — open Firmware to give it one';
+    ota.onclick=()=>showTab('firmware');
     d.appendChild(ota);
   }
   if(m.type==='lift'&&(port||(m.wifi_mode==='sta'&&m.ip))){
@@ -443,8 +788,18 @@ function renderUsbResult(slot,u){
       b.onclick=async()=>{
         head.textContent=u.port+' — probing (Bluetooth ports can take ~40 s)…';
         b.remove();
-        const r=await fetch('/api/scanusb?port='+encodeURIComponent(u.port)).then(r=>r.json());
-        renderUsbResult(slot,r.usb[0]);
+        // An error reply has no `usb` key, so r.usb[0] threw and this slot sat
+        // on "probing…" for ever with its button already gone — no result, no
+        // error, and no way to ask again.
+        try{
+          const r=await fetch('/api/scanusb?port='+encodeURIComponent(u.port))
+                    .then(r=>r.json());
+          const got=(r&&r.usb&&r.usb[0])||{port:u.port,error:'no answer from that port'};
+          renderUsbResult(slot,got);
+        }catch(e){
+          renderUsbResult(slot,{port:u.port,
+            error:'could not ask the hub ('+(e.message||e)+')'});
+        }
       };
       head.appendChild(b);
     }
@@ -454,212 +809,144 @@ function renderUsbResult(slot,u){
     row.style.marginLeft='24px';
     slot.appendChild(row);
   });
-  // Flashing belongs on the PORT, not on the module: the most useful time to
-  // flash is when nothing answered on that cable.
-  slot.appendChild(flashBox(u.port, u.module && u.module.type));
-}
-
-// ---- update a module over WiFi (OTA) --------------------------------------
-// Same job as flashing, no cable. The row itself reports progress, because
-// that is where you clicked and where you are looking.
-// WHICH firmware — asked, never assumed.
-//
-// It used to send the type the module already was, which is the common case
-// but not the only one: this is also how you turn a board into something else
-// without finding a cable. So the row opens a picker, defaulted to what the
-// board is now.
-async function otaModule(btn,ip,type){
-  const info=await getFlashImages();
-  const ready=(info.images||[]).filter(i=>i.ready);
-  if(!ready.length){
-    alert('No firmware built on this PC yet.\n\n'+
-          'Run this in code/firmware first:\n  pio run -e mice_'+(type||'nong'));
-    return;
-  }
-  if(btn.dataset.picking)return;          // the picker is already open
-  btn.dataset.picking=1;
-  const box=document.createElement('span');
-  box.className='flash';box.style.margin='0';
-  const sel=document.createElement('select');
-  sel.title='which firmware to send to this module';
-  ready.forEach(i=>{
-    const o=document.createElement('option');o.value=i.type;
-    o.textContent=i.type+' ('+(i.bytes/1048576).toFixed(2)+' MB)'+
-      (i.type===type?' — what it runs now':'');
-    if(i.type===type)o.selected=true;
-    sel.appendChild(o);
-  });
-  const go=document.createElement('button');go.className='primary';go.textContent='Send';
-  const no=document.createElement('button');no.textContent='Cancel';
-  box.appendChild(sel);box.appendChild(go);box.appendChild(no);
-  btn.after(box);
-  const close=()=>{box.remove();delete btn.dataset.picking;btn.disabled=false;};
-  no.onclick=close;
-  const chosen=await new Promise(res=>{ go.onclick=()=>res(sel.value); no.onclick=()=>{close();res(null);}; });
-  if(!chosen)return;
-  const changing = chosen!==type;
-  if(!confirm('Send this PC\'s '+chosen+' firmware to '+ip+' over WiFi?\n\n'+
-              (changing
-                ? 'That is NOT what this board runs now ('+(type||'unknown')+'). '+
-                  'It will be set to "'+chosen+'" and rebooted twice.\n\n'
-                : '')+
-              'It is written to the board\'s spare slot, so if the update does '+
-              'not finish the module keeps the firmware it has now. It reboots '+
-              'when it succeeds, and it will refuse while it is moving.')){close();return;}
-  sel.disabled=go.disabled=no.disabled=true;
-  type=chosen;
-  const stat=document.createElement('span');stat.className='mini';
-  stat.setAttribute('aria-live','polite');
-  stat.textContent='sending…';
-  btn.disabled=true;box.after(stat);
-  let r;
-  try{ r=await fetch('/api/ota?ip='+encodeURIComponent(ip)+
-                     '&type='+encodeURIComponent(type),
-                     {method:'POST'}).then(x=>x.json()); }
-  catch(e){ r={ok:false,error:'the hub is not answering'}; }
-  if(r&&r.ok===false&&r.error){
-    stat.textContent='⚠ '+r.error;close();return;
-  }
-  const poll=setInterval(async()=>{
-    let s;
-    try{ s=await fetch('/api/flash').then(x=>x.json()); }catch(e){ return; }
-    stat.textContent=s.running?(s.stage+' — '+(s.percent||0)+'%')
-      :(s.ok?'✓ updated — the module is restarting'
-            :'⚠ '+(s.error||'the update failed'));
-    if(s.running)return;
-    clearInterval(poll);close();
-    if(s.ok&&changing)setType(ip,chosen,stat);
-  },700);
+  // Flashing MOVED to the Firmware screen (A2-2). This screen answers "what is
+  // connected"; that one replaces firmware, which is a different job, usually
+  // a different moment, and the only one of the two that cannot be undone.
+  // The insight that lived here came with it: the Firmware screen lists cables
+  // nothing answered on, because a blank board is never in a module list and
+  // is exactly the board you need to write to.
 }
 
 // A board flashed with a DIFFERENT type still has its OLD type in its own
 // memory, so it would come back as `blank` — the new firmware does not carry
 // the module it is told to be. Finish the job: wait for it to answer again,
 // set the type, reboot once more.
-async function setType(ip,type,stat){
-  stat.textContent='✓ updated — waiting for it to come back…';
-  const dev='wifi:'+ip;
-  for(let i=0;i<20;i++){
+// New firmware alone does NOT make a board that type. The type is stored on the
+// board, the binary only contains the module types it was built with, and
+// ModuleFactory falls back to BlankModule when the stored type is not one of
+// them. So a board carrying the cam firmware but still storing "blank" boots
+// blank, reports blank, and has no camera — the flash looked perfect.
+//
+// This bit the camera both ways:
+//   * over the cable, nothing set the type at all, so an ESP32-CAM flashed as
+//     "cam" always came back as "blank";
+//   * over WiFi, the type WAS set, but straight after an update the OLD
+//     firmware is still answering for a moment. It does not know "cam", so
+//     `SET TYPE cam` returned "ERR unknown type" and that was treated as a
+//     hard failure and never retried. The board then rebooted into the cam
+//     firmware still storing "blank".
+//
+// The board already reports which types its binary knows (the `types` array in
+// /api/dev/status). So the rule that fixes both: only ask the binary that is
+// answering RIGHT NOW, and only once it says it can actually be this type.
+// Then keep watching until the board reports the type for real.
+async function applyTypeAfterFlash(dev,type,stat){
+  const say=t=>{ if(stat)stat.textContent=t; };
+  say('✓ firmware sent — waiting for the board to restart…');
+  let seen=false,asked=-99;
+  for(let i=0;i<40;i++){                    // ~60 s: boards take their time
     await new Promise(r=>setTimeout(r,1500));
-    try{
-      const p=await fetch('/api/dev/cmd?dev='+encodeURIComponent(dev)+'&c=PING')
-        .then(r=>r.text());
-      if(!p.startsWith('PONG'))continue;
-      const r=await fetch('/api/dev/cmd?dev='+encodeURIComponent(dev)+
-                          '&c='+encodeURIComponent('SET TYPE '+type)).then(r=>r.text());
-      if(r.startsWith('ERR')){ stat.textContent='⚠ '+r; return; }
-      await fetch('/api/dev/cmd?dev='+encodeURIComponent(dev)+'&c=REBOOT');
-      stat.textContent='✓ updated and set to '+type+' — rebooting into it';
-      setTimeout(scanUsb,4000);
-      return;
-    }catch(e){ /* still restarting */ }
+    let st=null;
+    try{ st=await fetch('/api/dev/status?dev='+encodeURIComponent(dev))
+           .then(r=>r.json()); }
+    catch(e){ say('waiting for the board to come back…'); continue; }
+    if(!st||!Array.isArray(st.types)){ say('waiting for the board to come back…'); continue; }
+    seen=true;
+    if(st.type===type){                     // confirmed by the board itself
+      say('✓ done — this board is now "'+type+'"');
+      setTimeout(scanUsb,1500);
+      return true;
+    }
+    if(st.types.indexOf(type)<0){           // still the old firmware answering
+      say('waiting for the new firmware to start…');
+      continue;
+    }
+    if(i-asked<8){ say('waiting for it to restart as "'+type+'"…'); continue; }
+    const r=await fetch('/api/dev/cmd?dev='+encodeURIComponent(dev)+
+                        '&c='+encodeURIComponent('SET TYPE '+type))
+      .then(r=>r.text()).catch(()=>'');
+    if(!r||r.startsWith('ERR')){            // not ready yet — keep waiting
+      say('waiting for the new firmware to start…');
+      continue;
+    }
+    asked=i;
+    say('setting it to "'+type+'" and restarting…');
+    await fetch('/api/dev/cmd?dev='+encodeURIComponent(dev)+'&c=REBOOT').catch(()=>{});
   }
-  stat.textContent='✓ updated, but it did not answer in time — set its type '+
-                   'yourself with SET TYPE '+type;
+  say(seen
+      ? '⚠ the firmware went on, but the board never confirmed it is "'+type+'". '+
+        'Send it: SET TYPE '+type
+      : '⚠ the firmware went on, but the board did not answer. Check its power, '+
+        'then send it: SET TYPE '+type);
+  return false;
 }
+// kept so anything still calling setType(ip,...) keeps working
+async function setType(ip,type,stat){ return applyTypeAfterFlash('wifi:'+ip,type,stat); }
 
-// ---- flash this board -----------------------------------------------------
-// The hub owns every cable, so it is the only thing that CAN hand one to
-// esptool. Since the firmware is built per module type, "flash this board as a
-// nong" is now a real instruction rather than a wish.
-let flashImages=null;      // cached answer from /api/flash/images
-async function getFlashImages(){
-  if(flashImages)return flashImages;
-  try{ flashImages=await fetch('/api/flash/images').then(r=>r.json()); }
-  catch(e){ flashImages={images:[],esptool:false,why:'the hub is not answering'}; }
-  return flashImages;
-}
-function flashBox(port,isType){
-  const box=document.createElement('div');box.className='flash';
-  const stat=document.createElement('span');stat.className='mini';
-  stat.setAttribute('aria-live','polite');       // it updates by itself
-  stat.textContent='checking what can be flashed…';   // loading, never a blank hole
-  box.appendChild(stat);
-  getFlashImages().then(info=>{
-    const ready=(info.images||[]).filter(i=>i.ready);
-    if(!info.esptool){                            // error: say what would fix it
-      stat.textContent='⚡ flashing needs esptool — '+(info.why||'not found');
-      return;
-    }
-    if(!ready.length){                            // empty: nothing built yet
-      stat.textContent='⚡ no firmware built on this PC yet — run '+
-        'pio run -e mice_nong (or mice_lift) in code/firmware first';
-      return;
-    }
-    stat.textContent='⚡ flash '+port+' as';
-    const sel=document.createElement('select');
-    sel.title='which module type this board should become';
-    ready.forEach(i=>{
-      const o=document.createElement('option');o.value=i.type;
-      o.textContent=i.type+' ('+(i.bytes/1048576).toFixed(2)+' MB)';
-      if(i.type===isType)o.selected=true;         // it already is one: default to it
-      sel.appendChild(o);
-    });
-    // Types that EXIST but have never been built here are listed too, greyed
-    // out and saying so. Dropping them silently is what made this confusing:
-    // only "cam" had been built, so the picker offered one choice and gave no
-    // hint that nong and lift were even possible, let alone how to get them.
-    const notBuilt=(info.images||[]).filter(i=>!i.ready);
-    notBuilt.forEach(i=>{
-      const o=document.createElement('option');
-      o.value='';o.disabled=true;
-      o.textContent=i.type+' \u2014 not built on this PC yet';
-      sel.appendChild(o);
-    });
-    if(notBuilt.length){
-      const how=document.createElement('span');
-      how.className='mini';how.style.marginLeft='6px';
-      how.textContent='('+notBuilt.map(i=>i.type).join(', ')+
-        ' need: pio run -e '+notBuilt.map(i=>i.env).join(' -e ')+
-        ' in code/firmware)';
-      how.title='Build them once and they appear here. The hub can only flash '+
-        'firmware that already exists on this PC.';
-      box.appendChild(how);
-    }
-    const btn=document.createElement('button');
-    btn.textContent='Flash';
-    btn.title='write this firmware to the board on '+port+
-      ' — the cable is taken for about a minute';
-    const bar=document.createElement('div');bar.className='pbar';
-    const fill=document.createElement('i');bar.appendChild(fill);
-    bar.style.display='none';
-    box.appendChild(sel);box.appendChild(btn);box.appendChild(bar);
-    btn.onclick=async()=>{
-      const type=sel.value;
-      // Overwriting a board's firmware is not undoable from here, and it takes
-      // the cable away from everything else while it runs. Ask first.
-      if(!confirm('Flash the board on '+port+' as "'+type+'"?\n\n'+
-                  'This overwrites its firmware. The cable cannot be used for '+
-                  'anything else until it finishes (about a minute), and the '+
-                  'board keeps its stored id, name, WiFi and pins.'))return;
-      btn.disabled=true;sel.disabled=true;bar.style.display='';
-      stat.textContent='starting…';
-      let r;
-      try{ r=await fetch('/api/flash?port='+encodeURIComponent(port)+
-                         '&type='+encodeURIComponent(type),
-                         {method:'POST'}).then(x=>x.json()); }
-      catch(e){ r={ok:false,error:'the hub is not answering'}; }
-      if(r&&r.ok===false&&r.error){
-        stat.textContent='⚠ '+r.error;
-        btn.disabled=false;sel.disabled=false;bar.style.display='none';
-        return;
-      }
-      const poll=setInterval(async()=>{
-        let s;
-        try{ s=await fetch('/api/flash').then(x=>x.json()); }catch(e){ return; }
-        fill.style.width=(s.percent||0)+'%';
-        stat.textContent=s.running?(s.stage+' — '+(s.percent||0)+'%')
-          :(s.ok?'✓ flashed as '+type+' — the board is restarting'
-                :'⚠ '+(s.error||'flashing failed'));
-        if(s.running)return;
-        clearInterval(poll);
-        btn.disabled=false;sel.disabled=false;
-        if(s.ok){ fill.style.width='100%'; setTimeout(scanUsb,2500); } // re-identify it
-        else { bar.style.display='none'; }
-      },700);
+// ---- modules held on OTHER PCs --------------------------------------------
+//
+// A module on another laptop's cable used to be invisible here, which at a
+// venue is the normal setup: one PC by the arm, one at the desk. The hub that
+// owns the cable stays its only owner — this page just asks that hub to pass
+// the command along, so there is never a second program fighting for the same
+// serial handle.
+let sharedBusy = false, sharedHave = [];
+async function loadShared(force){
+  const box = document.getElementById('shared');
+  if(!box || sharedBusy) return;
+  sharedBusy = true;
+  // Looking takes a subnet sweep, so say so rather than leaving a blank hole.
+  box.className = 'mini spin';
+  box.textContent = 'Looking for other PCs on this network…';
+  let r;
+  try{
+    r = await fetch('/api/allmods'+(force?'?force=1':'')).then(x=>x.json());
+  }catch(e){
+    sharedBusy = false;
+    box.className = 'mini';
+    // "could not look" is a different fact from "found nothing", and saying
+    // the second when the first is true is the page lying.
+    box.innerHTML = 'Could not check for other PCs — this hub did not answer. '
+      + '<span style="color:var(--mut)">'+esc(String(e.message||e))+'</span> '
+      + '<button onclick="loadShared(true)">Try again</button>';
+    return;
+  }
+  sharedBusy = false;
+  const mods = (r && r.modules) || [];
+  const errs = (r && r.errors) || [];
+  sharedHave = mods;
+  box.className = 'mini';
+  if(!mods.length){
+    box.innerHTML = 'No other PCs are sharing a module right now. Start this hub '
+      + 'on the other PC and plug a module into it — it will appear here by itself.'
+      + (errs.length ? ' <span style="color:var(--warn)">'+errs.length
+         +' PC(s) did not answer.</span>' : '');
+    return;
+  }
+  box.innerHTML = '';
+  mods.forEach(function(m){
+    const row = modRow({name:m.name, type:m.type, id:m.id, group:m.group},
+                       'on '+m.host, null, 0);
+    // The row is built by the same function local modules use, so it gets the
+    // same buttons and the same module website — only the address differs.
+    row.querySelectorAll('button,.open').forEach(function(b){ b.remove(); });
+    const open = document.createElement('button');
+    open.textContent = '⚙ Open module';
+    open.title = 'this module is on '+m.host+' — the commands go through that PC';
+    open.onclick = function(){
+      window.open('/mod?dev='+encodeURIComponent(m.dev), '_blank');
     };
+    row.appendChild(open);
+    box.appendChild(row);
   });
-  return box;
+  if(errs.length){
+    const w = document.createElement('div');
+    w.className = 'mini';
+    w.style.color = 'var(--warn)';
+    w.textContent = '⚠ '+errs.length+' PC(s) on this network did not answer. '
+      + 'They may have been switched off.';
+    box.appendChild(w);
+  }
 }
 // The modules that joined THIS module's own hotspot.
 //
@@ -697,7 +984,10 @@ async function scanUsb(){
     const r=await fetch('/api/ports').then(r=>r.json()); // typed port list, no WiFi scan
     const ports=r.ports||[];
     el.innerHTML='';
-    if(!ports.length){el.innerHTML='<span class="mini">no serial ports found</span>';usbBusy=false;return;}
+    if(!ports.length){el.innerHTML='<span class="mini">No USB cables found. '
+      +'Plug a module into this PC, then press <b>Probe now</b>. If it is '
+      +'plugged in already, it may need its USB driver (CH340 or CP210x).</span>';
+      usbBusy=false;return;}
     const jobs=[];
     ports.forEach(p=>{
       const slot=document.createElement('div');
@@ -709,34 +999,736 @@ async function scanUsb(){
         slot.innerHTML='<div class="mini" style="margin-top:8px">'+p.port+' — probing… <span class="spin">('+(p.desc||'')+')</span></div>';
         jobs.push(fetch('/api/scanusb?port='+encodeURIComponent(p.port))
           .then(r=>r.json())
-          .then(r=>renderUsbResult(slot,r.usb[0]))
-          .catch(e=>{slot.innerHTML='<div class="mini">'+p.port+' — probe failed: '+e+'</div>';}));
+          // same guard: an error body has no `usb` array, and throwing here
+          // left the slot stuck on "probing…" for the life of the page
+          .then(r=>renderUsbResult(slot,(r&&r.usb&&r.usb[0])||
+                 {port:p.port,error:'no answer from that port'}))
+          .catch(e=>{slot.innerHTML='<div class="mini">'+esc(p.port)+
+            ' — could not check this cable. '+esc(String(e.message||e))+'</div>';}));
       }
     });
     await Promise.all(jobs);
-  }catch(e){el.textContent='probe failed: '+e;}
+  }catch(e){
+    el.innerHTML='<span class="mini">Could not check the USB cables. Is the hub '
+      +'still running? <span style="color:var(--mut)">'+esc(String(e.message||e))
+      +'</span></span> <button onclick="scanUsb()">Try again</button>';
+  }
   usbBusy=false;
 }
 // auto-check loop: re-probes every 12 s while the page is visible.
 // A port that a page is already driving (module site / Nong Studio over the
 // shared USB link) is NOT re-probed — the hub answers from the identity it
 // already has, so the probe never stutters their commands.
+// A write in progress must not be interrupted by the page's own rescans: the
+// rows redraw, the progress bar is torn out, and the screen looks idle while a
+// board is being overwritten. Removing the old per-row flash path (A2-2) took
+// this counter with it and left four calls to a function that no longer
+// existed, so the FIRST click on Write threw before anything was sent.
+let flashActive=0;
+function flashBusy(on){ flashActive=Math.max(0,flashActive+(on?1:-1)); }
+
 let autoUsbTimer=null;
 function autoUsbChanged(){
   const on=document.getElementById('autoUsb').checked;
   localStorage.setItem('hub_autousb',on?'1':'0');
   clearInterval(autoUsbTimer);autoUsbTimer=null;
-  if(on)autoUsbTimer=setInterval(()=>{if(!document.hidden)scanUsb();},12000);
+  if(on)autoUsbTimer=setInterval(()=>{
+
+    if(!document.hidden&&!flashActive)scanUsb();
+  },12000);
 }
 document.getElementById('autoUsb').checked=localStorage.getItem('hub_autousb')==='1';
 autoUsbChanged();
 // Start on the tab you were last on. Defaults to Modules, so a fresh browser
 // opens exactly the page it always did.
-showTab((function(){ try{ return localStorage.getItem('hubTab')||'modules'; }
+showTab((function(){ try{ return localStorage.getItem('hubTab')||'home'; }
                      catch(e){ return 'modules'; } })());
-scan(false);
-scanUsb();            // probe the cable ports once on load (BT ports skipped instantly)
-setInterval(()=>scan(false),15000);
+// Home shows "looking…" until these have answered at least once, and repaints
+// the moment they do rather than waiting for its own timer.
+window.HOME_SCANNED = false;
+Promise.allSettled([scan(false), scanUsb(), loadShared(false)]).then(function(){
+  window.HOME_SCANNED = true;
+  if (typeof paintHome === 'function') paintHome();
+});
+setInterval(()=>{ if(!flashActive)scan(false); },15000);
+
+// ---- logging in -------------------------------------------------------
+// hub.html had no element helper — every other line spells getElementById out.
+// One here, used only by the login code, so nothing existing changes meaning.
+function $(id){ return document.getElementById(id); }
+
+// The gate is on the hub, not here: this only decides what the page SAYS.
+// Hiding a button would be a lie anyway — the route is what is protected.
+var authed = false;
+
+async function refreshAuth(){
+  try{
+    const r = await fetch('/api/whoami');
+    const j = await r.json();
+    authed = !!j.authed;
+    $('loginCard').hidden = authed;
+    $('logoutBtn').hidden = !authed;
+    if (j.locked_for > 0) showLock(j.locked_for);
+  }catch(e){ /* the hub is unreachable; the page's own error state covers it */ }
+}
+
+function showLock(secs){
+  const el = $('loginLock');
+  el.hidden = false;
+  $('loginErr').hidden = true;
+  // The number comes from the hub. A page that counts down its own guess is
+  // telling the operator something untrue while they are already annoyed.
+  const tick = () => {
+    if (secs <= 0){ el.hidden = true; return; }
+    el.textContent = '⏳ Too many tries. Wait ' + secs + 's before trying again.';
+    secs--; setTimeout(tick, 1000);
+  };
+  tick();
+}
+
+async function doLogin(ev){
+  ev.preventDefault();
+  const pass = $('loginPass').value;
+  $('loginBusy').hidden = false;
+  $('loginBtn').disabled = true;
+  $('loginErr').hidden = true;
+  try{
+    // The user field is optional: a hub upgraded from the single-password
+    // version has one account, and leaving it blank logs into that one.
+    const who = $('loginUser') ? $('loginUser').value.trim() : '';
+    const r = await fetch('/api/login', {method:'POST',
+      body: JSON.stringify({user: who, password: pass})});
+    const j = await r.json();
+    if (j.ok){
+      $('loginPass').value = '';
+      authed = true;
+      $('loginCard').hidden = true;
+      $('logoutBtn').hidden = false;
+      scan(true);                       // the page can do more now — show it
+    } else if (j.locked_for > 0){
+      showLock(j.locked_for);
+    } else {
+      $('loginErr').hidden = false;
+      $('loginErr').textContent = '⚠ ' + (j.error || 'that did not work');
+    }
+  }catch(e){
+    $('loginErr').hidden = false;
+    $('loginErr').textContent = '⚠ could not reach the hub — ' + e.message;
+  }finally{
+    $('loginBusy').hidden = true;
+    $('loginBtn').disabled = false;
+  }
+}
+
+async function doLogout(){
+  try{ await fetch('/api/logout', {method:'POST'}); }catch(e){}
+  authed = false;
+  $('loginCard').hidden = false;
+  $('logoutBtn').hidden = true;
+}
+
+// Any refused action reveals the card and says why, rather than failing
+// silently or blaming the network. One wrapper, so a new call cannot forget.
+(function(){
+  const of = window.fetch.bind(window);
+  window.fetch = async function(u, o){
+    const r = await of(u, o);
+    if (r.status === 401){
+      authed = false;
+      $('loginCard').hidden = false;
+      $('logoutBtn').hidden = true;
+      $('loginErr').hidden = false;
+      $('loginErr').textContent = '⚠ log in first — that action changes something';
+      $('loginCard').scrollIntoView({block:'nearest'});
+    }
+    return r;
+  };
+})();
+refreshAuth();
+
+// ---- flashing: say what is about to be overwritten, and where -------
+// Which PC this hub is. Several machines on one network run this same page,
+// and the operator can easily be on the wrong tab — so the confirm says the
+// machine by name rather than only naming a COM port.
+var MY_PC = '';
+// Asked for at load so the page can show it straight away. The flash confirm
+// does NOT rely on this having arrived — see whoAmI().
+fetch('/api/mine').then(r => r.json()).then(j => { MY_PC = j.host || ''; })
+                  .catch(() => {});
+
+var _fcResolve = null;
+
+function fcRow(label, value){
+  return '<span class="lbl">' + esc(label) + '</span><span>' + value + '</span>';
+}
+
+// Returns a promise: true to go ahead, false to leave the board alone.
+// WHICH machine is about to overwrite a board's firmware. Never guessed.
+//
+// The confirm used to print `MY_PC || 'this PC'`, and MY_PC is filled by a
+// fetch at page load — so a quick click showed a dialog with the machine's
+// name missing, which is the single fact it exists to state. Overwriting
+// firmware is not undoable and the board may be in someone else's hands, so
+// this waits for the name instead of shrugging, and says so plainly if the
+// hub genuinely cannot answer.
+async function whoAmI(){
+  if (MY_PC) return MY_PC;
+  try{
+    const j = await fetch('/api/mine').then(r => r.json());
+    MY_PC = j.host || '';
+  }catch(e){ /* fall through to the honest wording below */ }
+  return MY_PC || 'this PC (the hub did not give its name)';
+}
+
+async function confirmFlash(o){
+  const pcName = await whoAmI();
+  const m = $('flashModal');
+  $('fcMeta').innerHTML =
+      fcRow('Board', '<b>' + esc(o.name || 'unnamed') + '</b>' +
+                     (o.id ? ' · #' + esc(String(o.id)) : '') +
+                     (o.now ? ' · runs <b>' + esc(o.now) + '</b> now' : '')) +
+      fcRow('Becomes', '<b>' + esc(o.type) + '</b>') +
+      fcRow('Over', esc(o.via)) +
+      fcRow('From this PC', '<b>' + esc(pcName) + '</b>');
+
+  const changing = o.now && o.type && o.now !== o.type;
+  $('fcChange').hidden = !changing;
+  if (changing)
+    $('fcChange').textContent =
+      '⚠ TYPE CHANGE — it runs "' + o.now + '" now and will become "' + o.type +
+      '". It reboots to apply that.';
+  $('fcCost').textContent = o.cost || '';
+
+  // The login half, shown only when the write happens somewhere else.
+  $('fcLogin').hidden = !o.login;
+  if (o.login) {
+    $('fcLoginWhy').textContent =
+      o.login + ' has its own accounts. This is used once, to send the ' +
+      'firmware, and is not kept.';
+    $('fcUser').value = ''; $('fcPass').value = '';
+  }
+
+  $('fcAsk').hidden = false;
+  $('fcWorking').hidden = true;
+  $('fcOk').hidden = true;
+  $('fcErr').hidden = true;
+  m.hidden = false;
+  $('fcCancel').focus();               // a dialog that opens takes the keyboard
+  return new Promise(res => { _fcResolve = res; });
+}
+
+// What was typed into the panel, read once by the caller straight after it
+// resolves. Kept out of the resolved value so every existing caller keeps its
+// simple true/false, and cleared as soon as it has been used.
+let _fcLogin = {user: '', password: ''};
+
+function fcClose(answer){
+  _fcLogin = answer
+    ? {user: $('fcUser').value, password: $('fcPass').value}
+    : {user: '', password: ''};
+  $('flashModal').hidden = true;
+  const r = _fcResolve; _fcResolve = null;
+  if (r) r(!!answer);
+}
+
+// Working / finished / failed, so the panel keeps telling the truth while the
+// minute passes instead of vanishing the moment it is confirmed.
+function fcWorking(stage, pct){
+  $('fcAsk').hidden = true; $('fcErr').hidden = true; $('fcOk').hidden = true;
+  $('fcWorking').hidden = false;
+  $('flashModal').hidden = false;
+  $('fcStage').textContent = stage || 'working…';
+  if (typeof pct === 'number') $('fcBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
+}
+function fcDone(msg){
+  $('fcWorking').hidden = true; $('fcOk').hidden = false;
+  $('fcOkMsg').textContent = '✓ ' + msg;
+}
+function fcFailed(why){
+  $('fcWorking').hidden = true; $('fcErr').hidden = false;
+  $('fcErrMsg').textContent = '⚠ ' + why;
+}
+
+$('fcCancel').onclick = () => fcClose(false);
+$('fcGo').onclick = () => fcClose(true);
+$('fcClose').onclick = () => { $('flashModal').hidden = true; };
+$('fcErrClose').onclick = () => { $('flashModal').hidden = true; };
+$('fcRetry').onclick = () => { $('fcErr').hidden = true; $('fcAsk').hidden = false; };
+// Escape cancels. A modal a keyboard user cannot leave is a trap, and the safe
+// answer is the one that should be easiest to give.
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('flashModal').hidden){
+    if (_fcResolve) fcClose(false); else $('flashModal').hidden = true;
+  }
+});
+
+// ---- Home, Firmware, Settings ---------------------------------------
+// Home does not fetch anything of its own. It reads what the scans already
+// found, so it can never disagree with the Modules tab — two panels showing
+// different counts for the same robots is worse than one panel.
+function paintHome(){
+  var wifi = document.querySelectorAll('#mods .mod').length;
+  var cable = document.querySelectorAll('#usbmods .mod').length;
+  var other = document.querySelectorAll('#shared .mod').length;
+  var total = wifi + cable + other;
+
+  var sum = $('homeSum');
+  // LOADING, not empty. The scans start when the page loads and take a few
+  // seconds; painting before they answer told someone with a rack of modules
+  // that there were none. Empty means "we looked and there is nothing".
+  if (!total && !window.HOME_SCANNED){
+    sum.textContent = 'Looking for modules — over WiFi, on the cables, and on '
+                    + 'any other PC running this hub…';
+    $('homeWrong').innerHTML = '';
+    $('homeGo').innerHTML = '';
+    return;
+  }
+  if (!total){
+    // EMPTY, not blank: say what it means and what to do about it.
+    sum.textContent = 'No modules found yet. Plug a board into this PC with a '
+      + 'USB cable, or put one on this WiFi, and it appears here by itself.';
+  } else {
+    var bits = [];
+    if (cable) bits.push(cable + (cable === 1 ? ' on a cable' : ' on cables'));
+    if (wifi)  bits.push(wifi + ' over WiFi');
+    if (other) bits.push(other + ' on another PC');
+    sum.textContent = total + (total === 1 ? ' module' : ' modules') + ' — '
+                    + bits.join(', ') + '.';
+  }
+
+  // Anything the page is currently unhappy about, gathered in one place. The
+  // banners already exist on the other tabs; Home repeats them so a person
+  // does not have to visit four tabs to find out something is wrong.
+  var wrong = $('homeWrong');
+  wrong.innerHTML = '';
+  document.querySelectorAll('[data-tab] .banner.err').forEach(function(b){
+    if (b.closest('[data-tab]').getAttribute('data-tab') === 'home') return;
+    var d = document.createElement('div');
+    d.className = 'banner err';
+    d.textContent = b.textContent;
+    wrong.appendChild(d);
+  });
+
+  // One way onward, chosen by what is actually there.
+  var go = $('homeGo');
+  go.innerHTML = '';
+  var b = document.createElement('button');
+  b.className = total ? 'primary' : '';
+  b.textContent = total ? 'Open Modules' : 'Look again';
+  b.onclick = total ? function(){ showTab('modules'); }
+                    : function(){ scan(true); scanUsb(); };
+  go.appendChild(b);
+}
+
+// Which firmware this PC can actually flash — the same question the Firmware
+// tab is for, answered with the endpoint the module rows already use.
+
+// ---- accounts --------------------------------------------------------
+// Only ever shows NAMES: the hub never sends a hash anywhere.
+async function loadUsers(){
+  const box = $('userBox');
+  if (!authed) { box.hidden = true; return; }
+  box.hidden = false;
+  try{
+    const r = await fetch('/api/users').then(x => x.json());
+    const list = $('userList');
+    list.innerHTML = '';
+    (r.users || []).forEach(function(u){
+      const chip = document.createElement('span');
+      chip.className = 'port';
+      chip.textContent = u;
+      // The last account has no remove button at all, rather than one that
+      // fails: offering an action that cannot work is its own bug.
+      if ((r.users || []).length > 1) {
+        // A control that ACTS is a button, not a link, and its danger comes
+        // from the shared sheet rather than an inline style nobody updates.
+        const x = document.createElement('button');
+        x.className = 'danger icon';
+        x.textContent = '✕';
+        x.title = 'remove ' + u;
+        x.onclick = function(){ removeUser(u); };
+        chip.appendChild(x);
+      }
+      list.appendChild(chip);
+    });
+    if (!(r.users || []).length) list.textContent = 'no accounts yet';
+  }catch(e){ $('userList').textContent = 'could not read the accounts'; }
+}
+
+async function addUser(){
+  const name = $('uName').value.trim(), pass = $('uPass').value;
+  $('uStat').textContent = 'adding…';
+  try{
+    const r = await fetch('/api/users/add', {method:'POST',
+      body: JSON.stringify({user:name, password:pass})}).then(x => x.json());
+    // The hub's reason says what to fix, so show it rather than a generic no.
+    $('uStat').textContent = r.ok ? '' : (r.error || 'refused');
+    if (r.ok) { $('uName').value = ''; $('uPass').value = ''; loadUsers(); }
+  }catch(e){ $('uStat').textContent = 'the hub did not answer'; }
+}
+
+async function removeUser(name){
+  if (!confirm('Remove ' + name + '? They are logged out straight away.')) return;
+  try{
+    const r = await fetch('/api/users/remove', {method:'POST',
+      body: JSON.stringify({user:name})}).then(x => x.json());
+    $('uStat').textContent = r.ok ? '' : (r.error || 'refused');
+    loadUsers();
+  }catch(e){ $('uStat').textContent = 'the hub did not answer'; }
+}
+
+// ---- the Firmware section -------------------------------------------
+// Everything here is built from two answers: what this PC has BUILT
+// (/api/flash/images) and what boards are reachable. Nothing about module
+// types is written down here — adding one to firmware/config/modules.json
+// makes it appear, which is the same promise the rest of the project keeps.
+async function fwBoards(){
+  // Every board this PC could write to. Asked of the two endpoints that
+  // already know — /api/mine is the cables this hub has probed, /api/scan is
+  // the WiFi — rather than reaching into the Modules screen's DOM, which
+  // would tie this section to how that one happens to render today.
+  //
+  // A board reachable BOTH ways appears once, carrying both, so it is offered
+  // the cable and WiFi rather than showing up twice.
+  const out = new Map();
+  const key = function(m, fallback){ return m.id != null ? 'id' + m.id : fallback; };
+  try{
+    const mine = await fetch('/api/mine').then(x => x.json());
+    (mine.modules || []).forEach(function(m){
+      const port = (m.dev || '').indexOf('usb:') === 0 ? m.dev.slice(4).split(':')[0] : '';
+      const k = key(m, 'port' + port);
+      out.set(k, Object.assign({name: m.name || port, id: m.id, type: m.type},
+                               out.get(k) || {}, {port: port}));
+    });
+  }catch(e){ /* no cables is not an error */ }
+  try{
+    const wifi = await fetch('/api/scan').then(x => x.json());
+    (wifi.modules || []).forEach(function(m){
+      const k = key(m, 'ip' + m.ip);
+      out.set(k, Object.assign({name: m.name || m.ip, id: m.id, type: m.type},
+                               out.get(k) || {}, {ip: m.ip}));
+    });
+  }catch(e){ /* nothing on the network is not an error */ }
+
+  // And every CABLE, including the ones nothing answered on. This is the case
+  // that matters most and the one a module list cannot show: a board with
+  // blank or broken firmware says nothing, so it never appears as a module —
+  // and it is exactly the board you need to write firmware to. The old
+  // per-row control knew this ("flashing belongs on the PORT, not on the
+  // module"); moving flashing here must not lose it.
+  try{
+    const ports = await fetch('/api/ports').then(x => x.json());
+    (ports.ports || []).forEach(function(p){
+      if (p.bt) return;                       // Bluetooth phantom, not a board
+      const already = [...out.values()].some(function(b){ return b.port === p.port; });
+      if (already) return;
+      out.set('port' + p.port, {name: p.port, port: p.port, silent: true,
+                               desc: p.desc || ''});
+    });
+  }catch(e){ /* no ports is not an error */ }
+
+  // ...and the boards on OTHER PCs' cables. At a venue there is one laptop
+  // with the toolchain on it and several without, and the board is plugged
+  // into whichever machine was nearest. /api/allmods already asks every hub,
+  // so the only new thing here is offering to send the firmware there.
+  try{
+    const all = await fetch('/api/allmods').then(x => x.json());
+    const me = await whoAmI();
+    (all.modules || []).forEach(function(m){
+      if (!m.host || m.host === me) return;      // this PC's own cables
+      const port = (String(m.dev || '').split('usb:')[1] || '').split(':')[0];
+      if (!port) return;                          // only a cable can be written
+      const k = key(m, 'far' + m.host + port);
+      out.set(k, Object.assign({name: m.name || port, id: m.id, type: m.type},
+                               out.get(k) || {},
+                               {farPort: port, host: m.host, hostIp: m.hostIp}));
+    });
+  }catch(e){ /* no other hubs is not an error */ }
+  return [...out.values()];
+}
+
+// The address beside the QR. Read from the hub rather than from
+// location.href: someone often opens the hub as 127.0.0.1, and 127.0.0.1 is
+// the one address on the network that will not work from a phone.
+// Technical detail: one class, one switch, remembered per browser. Applied
+// before anything paints, so an address never flashes up and vanishes.
+// The picker fills itself from the stylesheet - see shared/web/mice.js. The
+// page does not know which themes exist, and must not: that is the whole point
+// of keeping them in one file.
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.miceTheme) miceTheme.picker(document.getElementById('themePick'));
+});
+
+function setAdvanced(on){
+  document.body.classList.toggle('adv', !!on);
+  try{ localStorage.setItem('hub_adv', on ? '1' : '0'); }catch(e){ /* private mode */ }
+  const box = document.getElementById('advOn');
+  if (box) box.checked = !!on;
+}
+(function(){
+  let on = false;
+  try{ on = localStorage.getItem('hub_adv') === '1'; }catch(e){ /* private mode */ }
+  if (document.body) setAdvanced(on);
+  else document.addEventListener('DOMContentLoaded', function(){ setAdvanced(on); });
+})();
+
+async function paintQr(){
+  try{
+    const j = await fetch('/api/mine').then(x => x.json());
+    const url = j.url || (location.protocol + '//' + location.host + '/');
+    $('qrUrl').textContent = url;
+    $('qrName').textContent = j.host ? ('this PC is ' + j.host) : '';
+    $('qrNameRow').hidden = !j.name_url;
+    if (j.name_url) $('qrNameUrl').textContent = j.name_url;
+    $('qrWhyNoName').hidden = !!j.name_url;
+    if (!j.name_url)
+      $('qrWhyNoName').textContent =
+        'The name mice.local is not being answered on this PC' +
+        (j.name_why ? ' — ' + j.name_why : '') + '. The address above works.';
+    // Re-fetch the picture whenever the address could have changed - a laptop
+    // that moves between a venue WiFi and its own hotspot gets a new IP, and a
+    // QR of the old one sends the phone nowhere.
+    $('qrImg').src = '/api/qr?t=' + Date.now();
+  }catch(e){ $('qrUrl').textContent = 'the hub did not say what its address is'; }
+}
+
+async function paintFirmware(){
+  const stat = $('fwStat');
+  let r;
+  try{ r = await fetch('/api/flash/images').then(x => x.json()); }
+  catch(e){ stat.textContent = 'could not ask this PC what it has built.'; return; }
+
+  const images = r.images || [];
+  const ready = images.filter(function(i){ return i.ready; });
+
+  // 1. no esptool: nothing here can work, so say that and offer nothing.
+  $('fwNoTool').hidden = !!r.esptool;
+  if (!r.esptool) {
+    $('fwNoTool').textContent = 'This PC cannot flash a board: ' +
+      (r.why || 'esptool was not found') + '.';
+    $('fwReady').hidden = true;
+    stat.textContent = '';
+    return;
+  }
+
+  // 2. nothing built yet: say the EXACT command, built from which envs are
+  //    missing. Hardcoding one would confidently name the wrong firmware.
+  $('fwNoBuild').hidden = ready.length > 0;
+  if (!ready.length) {
+    const envs = images.map(function(i){ return i.env; }).join(' -e ');
+    $('fwNoBuild').innerHTML = 'No firmware has been built on this PC yet, so ' +
+      'there is nothing to flash. Build it once:<br><code>pio run -e ' +
+      esc(envs) + '</code><br>in <code>code/firmware</code>. It then appears here.';
+    // The list still renders below, so every type is visible with its own
+    // build command rather than one line about the first of them.
+  }
+
+  // 3. what can be written, and what cannot.
+  $('fwReady').hidden = false;
+  stat.textContent = '';
+  const list = $('fwList');
+  list.innerHTML = '';
+  const boards = await fwBoards();
+
+  // Everything this PC could flash, built or not. A type that is missing is
+  // the most useful thing this screen can tell you — it names the exact
+  // command — and hiding it leaves someone wondering where `lift` went.
+  images.forEach(function(img){
+    const box = $('tplFwImage').content.cloneNode(true);
+    box.querySelector('.ty').textContent = img.type;
+    box.querySelector('.ty').classList.add(img.type);
+    box.querySelector('.fwtype').textContent = img.type;
+    box.querySelector('.fwmeta').textContent =
+      (img.bytes ? (img.bytes / 1048576).toFixed(2) + ' MB' : '') +
+      (img.built_at ? ' · built ' + new Date(img.built_at * 1000).toLocaleString() : '');
+
+    const targets = box.querySelector('.fwtargets');
+    if (!img.ready) {
+      // Not built: say so, say what is missing, and give the one command that
+      // fixes it. No buttons, because there is nothing to write.
+      const miss = box.querySelector('.fwmissing');
+      miss.hidden = false;
+      miss.innerHTML = 'not built on this PC' +
+        (img.missing && img.missing.length
+          ? ' — missing ' + esc(img.missing.join(', ')) : '') +
+        '. Build it with <code>pio run -e ' + esc(img.env) +
+        '</code> in <code>code/firmware</code>.';
+      box.querySelector('.fwbox').classList.add('fwunbuilt');
+      list.appendChild(box);
+      return;
+    }
+    if (!boards.length) {
+      const none = document.createElement('div');
+      none.className = 'mini';
+      none.textContent = 'No board to write it to yet. Plug one in, or put it '
+                       + 'on this WiFi, and it appears here.';
+      targets.appendChild(none);
+    }
+    boards.forEach(function(b){ targets.appendChild(fwTarget(img, b)); });
+    list.appendChild(box);
+  });
+}
+
+// One board, and the ways this firmware can reach it. A board on WiFi only is
+// not offered a cable button that cannot work.
+function fwTarget(img, board){
+  const row = $('tplFwTarget').content.cloneNode(true);
+  row.querySelector('.nm').textContent = board.name;
+  // The ADDRESS is technical; what the board RUNS is not, and it is what
+  // decides whether to press the button. They are separated so the row still
+  // says the second thing with the switch off.
+  const where = row.querySelector('.ip');
+  where.innerHTML = '<span class="tech"></span><span class="fwnow"></span>';
+  where.querySelector('.tech').textContent =
+    (board.port ? board.port : '') +
+    (board.farPort ? (board.farPort + ' on ' + board.host) : '') +
+    ((board.port || board.farPort) && board.ip ? ' · ' : '');
+  where.querySelector('.fwnow').textContent =
+    (board.silent
+      ? '  — nothing answered on this cable (blank or stuck board)'
+      : (board.type && board.type !== img.type
+          ? '  (runs ' + board.type + ' now)' : ''));
+
+  const go = row.querySelector('.fwgo');
+  const bar = row.querySelector('.fwbar');
+  const say = row.querySelector('.fwsay');
+  const overCable = !!board.port;
+  // Three ways to reach a board, and a row only ever offers the one it has:
+  // this PC's own cable, another PC's cable, or WiFi.
+  const far = !overCable && !board.ip && !!board.farPort;
+  go.textContent = overCable ? '⚡ Write over the cable'
+                 : far ? ('⚡ Write over the cable on ' + board.host)
+                       : '⚡ Write over WiFi';
+  go.title = overCable
+    ? 'takes the cable for about a minute'
+    : far
+      ? ('the firmware is sent to ' + board.host +
+         ', which writes it over its own cable — this PC never touches the board')
+      : 'sent to the spare slot — if it does not finish, the board keeps what it has';
+  go.onclick = function(){ fwWrite(img, board, overCable, go, bar, say, far); };
+  return row;
+}
+
+async function fwWrite(img, board, overCable, go, bar, say, far){
+  if (!await confirmFlash({
+      name: board.name, id: board.id, now: board.type, type: img.type,
+      // The other PC has its own accounts, so the panel asks for a login on
+      // THAT machine. This hub never keeps it: it is used for the one request
+      // and forgotten, because a hub holding another hub's password is a hub
+      // that can overwrite boards nobody authorised.
+      login: far ? board.host : '',
+      via: overCable ? ('the cable on ' + board.port)
+         : far ? (board.host + ', over its cable ' + board.farPort)
+               : ('WiFi at ' + board.ip),
+      cost: overCable
+        ? 'About a minute, and the cable cannot be used for anything else '
+        + 'until it finishes. The board keeps its id, name, WiFi and pins.'
+        : 'It is written to the board\'s spare slot, so if it does not finish '
+        + 'the module keeps the firmware it has now.'})) return;
+
+  go.disabled = true; bar.hidden = false; say.textContent = 'starting…';
+  flashBusy(true);
+  try{
+    let r;
+    if (far) {
+      // The image travels; the command does not. esptool has to run on the PC
+      // holding the cable, so this PC hands over the firmware and then watches
+      // that hub through the proxy — the browser cannot ask it directly.
+      r = await fetch('/api/flash/send', {method: 'POST', body: JSON.stringify({
+            to: board.hostIp, port: board.farPort, type: img.type,
+            user: _fcLogin.user, password: _fcLogin.password})})
+          .then(x => x.json());
+    } else {
+      const url = overCable
+        ? '/api/flash?port=' + encodeURIComponent(board.port) +
+          '&type=' + encodeURIComponent(img.type)
+        : '/api/ota?ip=' + encodeURIComponent(board.ip) +
+          '&type=' + encodeURIComponent(img.type);
+      r = await fetch(url, {method: 'POST'}).then(x => x.json());
+    }
+    if (r && r.ok === false) {
+      say.textContent = '⚠ ' + (r.error || 'refused');
+      go.disabled = false; bar.hidden = true; flashBusy(false);
+      return;
+    }
+    fwWatch(bar, say, go, {
+      dev: overCable ? ('usb:' + board.port)
+         : far ? '' : ('wifi:' + board.ip),
+      type: img.type, was: board.type},
+      // A write on another PC is watched through that PC, not this one.
+      far ? ('/api/flash/at?ip=' + encodeURIComponent(board.hostIp)) : '/api/flash');
+  }catch(e){
+    say.textContent = '⚠ the hub is not answering';
+    go.disabled = false; bar.hidden = true; flashBusy(false);
+  }
+}
+
+// Follow it to the end. A progress bar that stops moving with no word is the
+// worst of the five states, so a stall says so rather than sitting there.
+function fwWatch(bar, say, go, want, from){
+  let quiet = 0, last = -1;
+  const tick = setInterval(async function(){
+    let s;
+    try{ s = await fetch(from || '/api/flash').then(x => x.json()); }
+    catch(e){ return; }
+    const pct = Math.round((s.percent || 0));
+    bar.querySelector('i').style.width = pct + '%';
+    say.textContent = s.stage || (pct + '%');
+    quiet = (pct === last) ? quiet + 1 : 0;
+    last = pct;
+    if (quiet > 40) say.textContent = 'still ' + pct + '% — it may have stalled';
+    if (s.done || s.error) {
+      clearInterval(tick);
+      flashBusy(false);
+      go.disabled = false;
+      bar.hidden = true;
+      if (s.error) {
+        say.textContent = '⚠ ' + s.error;
+      } else {
+        say.textContent = '✓ written, the board is restarting';
+        // Writing lift firmware to a board that called itself nong leaves it
+        // running the new program under the old name until its TYPE is set
+        // too. The old per-row flow did this; losing it would produce a board
+        // that boots, answers, and is wrong about what it is.
+        if (want && want.dev && want.type) applyTypeAfterFlash(want.dev, want.type, say);
+        else if (want && want.type && want.was && want.was !== want.type)
+          say.textContent = '✓ written. Set its type on that PC: SET TYPE ' + want.type;
+      }
+      setTimeout(function(){ scanUsb(); scan(true); }, 3000);
+    }
+  }, 700);
+}
+
+function paintSettings(){
+  loadUsers();
+  $('setWho').textContent = authed
+    ? ('Logged in on ' + (MY_PC || 'this PC') + ' — you can move, flash and delete.')
+    : ('Not logged in' + (MY_PC ? ' on ' + MY_PC : '') + ' — you can look at '
+       + 'everything, but changing anything needs the hub password.');
+}
+
+// Repaint whenever a tab is opened, and whenever a scan lands.
+(function(){
+  var was = window.showTab;
+  window.showTab = function(name){
+    was(name);
+    if (name === 'home') paintHome();
+    if (name === 'firmware') paintFirmware();
+    if (name === 'network') paintQr();
+    if (name === 'settings') paintSettings();
+  };
+})();
+setInterval(function(){
+  var home = document.querySelector('[data-tab="home"]');
+  if (home && home.style.display !== 'none') paintHome();
+}, 4000);
+
+// The page chose its tab near the top of this script, BEFORE the wrapper above
+// existed — so the panel it opened was never painted. Open it again now that
+// the wrapper is in place. Cheap, and it means a first load and a tab click
+// go through exactly the same path.
+showTab((function(){ try{ return localStorage.getItem('hubTab') || 'home'; }
+                     catch(e){ return 'home'; } })());
 </script>
 </body>
 </html>

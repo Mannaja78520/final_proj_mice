@@ -62,11 +62,31 @@ def run(t):
     # ---- every command Studio sends must exist in the firmware ------
     # Studio calling something the firmware does not implement fails
     # silently at runtime (the reply is just an error string).
+    # EVERY sender, not three of them. `cableCmd` is what Studio actually uses
+    # over a cable (10 call sites) and it was missing from this pattern, so
+    # this loop found exactly 3 commands — LIMIT?, MOVE, SETZERO — out of about
+    # thirty, and ran three times while looking like full coverage.
+    SENDERS = r'(?:rawCmd|robotCmd|serialCmd|cableCmd|httpCmd|hubUsbCmd|liveSend)'
     sends = set()
-    for m in re.finditer(r'(?:rawCmd|robotCmd|serialCmd)\(\s*[`"\']([A-Z][A-Z0-9?]*)', app):
+    for m in re.finditer(SENDERS + r'\(\s*[`"\']([A-Z][A-Z0-9?]*)', app):
         sends.add(m.group(1))
-    for m in re.finditer(r'(?:rawCmd|robotCmd)\(\s*[`"\']\$?\{?\s*([A-Z][A-Z0-9?]*)', app):
+    for m in re.finditer(SENDERS + r'\(\s*[`"\']\$?\{?\s*([A-Z][A-Z0-9?]*)', app):
         sends.add(m.group(1))
+    # `cableCmd("FBEGIN " + name)` and friends: the command is the head of a
+    # concatenation, so the literal does not run to the closing quote.
+    for m in re.finditer(SENDERS + r'\(\s*[`"\']([A-Z][A-Z0-9?]*)\s', app):
+        sends.add(m.group(1))
+
+    # The guard that stops this going quiet again. If a rename ever makes the
+    # patterns match nothing, THIS fails loudly instead of the loop below
+    # simply not running.
+    # 12 today, 3 while the pattern was broken. Ten is comfortably above the
+    # vacuous state and below the real count, so it catches "the scan stopped
+    # matching" without failing every time a command is added or removed.
+    t.ok(len(sends) >= 10,
+         "the scan really found Studio's commands (%d)" % len(sends),
+         "if this drops, the pattern stopped matching and the loop below is "
+         "checking nothing at all")
     known = set(re.findall(r'cmd\s*==\s*"([A-Z][A-Z0-9?]*)"', nong_c))
     # commands handled by the shared router, not the nong module
     router = {"INFO", "PING", "FILES", "PIN", "AUTH", "USER", "SET", "REBOOT",

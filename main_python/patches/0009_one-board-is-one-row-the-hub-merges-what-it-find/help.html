@@ -1,0 +1,1288 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mice — features &amp; help</title>
+<link rel="stylesheet" href="/mice.css">
+<style>
+  /* Only what is the HELP page's own. Tokens, the reset, the focus ring,
+     reduced motion and touch targets all come from /mice.css above.
+     This page is a document, not a control panel: it is the one surface with
+     its own type scale, and its own big section heads instead of the small
+     uppercase label h2 that every other app uses. */
+  body{-webkit-font-smoothing:antialiased}
+  .wrap{display:grid;grid-template-columns:236px minmax(0,1fr);gap:40px;
+        max-width:1180px;margin:0 auto;padding:0 var(--sp-6)}
+  nav{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+      padding:28px 0 40px;display:flex;flex-direction:column;gap:2px}
+  nav .brand{font-weight:700;font-size:17px;letter-spacing:-.01em;margin-bottom:2px}
+  nav .brandsub{font-size:12px;color:var(--mut);margin-bottom:14px;line-height:1.45}
+  nav .back{display:inline-block;font-size:12.5px;color:var(--acc);text-decoration:none;
+            margin-bottom:var(--sp-4);padding:5px 10px;border:1px solid var(--line);
+            border-radius:var(--r-sm);background:var(--card)}
+  nav .back:hover{border-color:var(--acc)}
+  nav a{color:var(--mut);text-decoration:none;font-size:13.5px;padding:5px 10px;
+        border-radius:6px;border-left:2px solid transparent}
+  nav a:hover{color:var(--txt);background:var(--acc-soft)}
+  nav a.on{color:var(--acc);border-left-color:var(--acc);background:var(--acc-soft);font-weight:600}
+  nav .grp{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
+           color:var(--mut);margin:var(--sp-4) 0 5px 10px;opacity:.72}
+  main{padding:34px 0 96px;min-width:0}
+  header.top{margin-bottom:30px}
+  header.top h1{font-size:31px;line-height:1.15;letter-spacing:-.022em;margin:0 0 var(--sp-2);
+                font-weight:700;text-wrap:balance}
+  header.top p{margin:0;color:var(--mut);max-width:64ch}
+  .stats{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-top:18px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);
+        padding:var(--sp-2) 13px}
+  .stat b{display:block;font-size:19px;line-height:1.2;font-variant-numeric:tabular-nums}
+  .stat span{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+  #q{width:100%;margin:22px 0 0;padding:11px 14px;border-radius:var(--r-sm);
+     background:var(--card);font-size:14.5px}
+  #q::placeholder{color:var(--mut)}
+  #none{display:none;color:var(--mut);padding:22px 2px;font-size:14px}
+  section{margin-top:46px;scroll-margin-top:20px}
+  .shead{border-bottom:1px solid var(--line);padding-bottom:11px;margin-bottom:18px}
+  /* a document heading, not the small uppercase section label in mice.css */
+  .shead h2{margin:0;font-size:21px;letter-spacing:-.015em;font-weight:700;
+            color:var(--txt);text-transform:none}
+  .where{font-family:var(--mono);font-size:11.5px;color:var(--acc);
+         text-transform:none;letter-spacing:0;display:block;margin-bottom:5px}
+  .shead p{margin:7px 0 0;color:var(--mut);font-size:14px;max-width:70ch}
+  .grp2{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--mut);
+        margin:26px 0 9px;font-weight:600}
+  .f{background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);
+     padding:var(--sp-3) 15px;margin-bottom:7px}
+  .f h3{margin:0 0 3px;font-size:14.5px;font-weight:650;letter-spacing:-.005em}
+  .f p{margin:0;color:var(--mut);font-size:13.5px}
+  .f p + p{margin-top:5px}
+  /* Code in prose must WRAP: command strings like "POSE <a1..a10> [T <ms>]"
+     are wider than a phone, and nowrap pushed the whole page sideways.
+     Inside tables it stays on one line — the table has its own scroll box. */
+  code{font-family:var(--mono);font-size:.875em;background:var(--code-bg);
+       border-radius:4px;padding:1.5px 5px;overflow-wrap:anywhere}
+  td code,th code{white-space:nowrap}
+  .f p code{color:var(--txt)}
+  .tag{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:1px 6px;
+       border-radius:4px;margin-left:7px;vertical-align:1.5px;white-space:nowrap}
+  .t-new{background:var(--ok-soft);color:var(--ok)}
+  .t-opt{background:var(--warn-soft);color:var(--warn)}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-sm);
+          background:var(--card);margin-bottom:7px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+  th,td{text-align:left;padding:var(--sp-2) 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);
+     font-weight:600;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  td:first-child{white-space:nowrap;font-family:var(--mono);font-size:12.5px}
+  td.wrap2{white-space:normal;font-family:var(--sans);font-size:13.5px}
+  .note{border-left:3px solid var(--warn);background:var(--warn-soft);
+        border-radius:0 var(--r-sm) var(--r-sm) 0;padding:11px 15px;margin:14px 0;font-size:13.5px}
+  .note b{color:var(--warn)}
+  .note code{background:color-mix(in srgb,var(--txt) 8%,transparent)}
+  footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);
+         color:var(--mut);font-size:12.5px}
+  @media (max-width:860px){
+    .wrap{grid-template-columns:1fr;gap:0;padding:0 18px}
+    nav{position:static;height:auto;flex-direction:row;flex-wrap:wrap;gap:5px;
+        padding:20px 0 6px;border-bottom:1px solid var(--line)}
+    nav .grp{display:none}
+    nav .brand,nav .brandsub,nav .back{width:100%;margin-bottom:6px}
+    main{padding-top:var(--sp-6)}
+  }
+  @media (pointer:coarse){ nav a{min-height:36px} }
+</style></head><body>
+
+
+<div class="wrap">
+<nav>
+  <div class="brand">Mice</div>
+  <div class="brandsub">Show-installation robot toolchain — complete feature reference</div>
+  <a class="back" href="/">← back to the hub</a>
+  <div class="grp">On the board</div>
+  <a href="#firmware">Firmware core</a>
+  <a href="#lift">Lift module</a>
+  <a href="#nong">Nong module</a>
+  <a href="#modsite">Module website</a>
+  <div class="grp">On the PC</div>
+  <a href="#hub">Mice Hub</a>
+  <a href="#studio">Nong Studio</a>
+  <a href="#qc">QC suite</a>
+  <div class="grp">Reference</div>
+  <a href="#transports">Transports</a>
+  <a href="#commands">Command language</a>
+  <a href="#files">Files &amp; formats</a>
+</nav>
+
+<main>
+<header class="top">
+  <h1>Every feature in the mice system</h1>
+  <p>One ESP32 firmware that becomes any module type, a PC hub that finds them all,
+     and a 3D editor for the humanoid. Grouped by <b>where each feature runs</b>.</p>
+  <div class="stats">
+    <div class="stat"><b>3</b><span>module types</span></div>
+    <div class="stat"><b>10</b><span>nong joints</span></div>
+    <div class="stat"><b>3</b><span>transports</span></div>
+    <div class="stat"><b>2</b><span>web apps + editor</span></div>
+    <div class="stat"><b>100</b><span>QC checks</span></div>
+  </div>
+  <input id="q" type="search" placeholder="Filter features — try &quot;servo&quot;, &quot;SD&quot;, &quot;USB&quot;, &quot;pin&quot;" autocomplete="off">
+  <!-- The empty state names the one action that fixes it, and gives real
+       examples from this page rather than only telling the reader to retry. -->
+  <div id="none">Nothing on this page matches that word. Try a shorter one, or
+    a word the robot itself uses — for example <b>servo</b>, <b>pose</b>,
+    <b>WiFi</b>, <b>SD</b> or <b>flash</b>.</div>
+</header>
+
+<!-- ===================== FIRMWARE CORE ===================== -->
+<section id="firmware">
+  <div class="shead">
+    <span class="where">code/firmware · runs on every ESP32</span>
+    <h2>Firmware core — shared by all module types</h2>
+    <p>One shared core, one build per module type. Nothing about wiring or identity
+       is compiled in — only which module the board <em>is</em>.</p>
+  </div>
+
+  <div class="grp2">Identity &amp; configuration</div>
+  <div class="f"><h3>One binary per module type<span class="tag t-new">new</span></h3>
+    <p>A board runs one module type, so it now carries one:
+       <code>pio run -e mice_nong</code>, <code>-e mice_lift</code>, or
+       <code>-e mice_blank</code> for a board that is not a module yet.</p>
+    <p>Every board used to carry every type — a humanoid flashed the lift's motor code,
+       its RGB strip, its MP3 support and its web cards, with only a JavaScript check
+       keeping them off the screen. That was 74.9% of the chip's flash on every board.
+       A nong build is now 65.5% and does not contain the lift's page at all: the wrong
+       controls are <b>absent</b>, not hidden, so no script bug can show them. The room
+       this frees is what makes flashing over WiFi (which needs two copies of the
+       firmware on the chip) possible later.</p>
+    <p>The source stays shared. One marker says which module type a card, a command or a
+       block of code belongs to, and the build takes only its own.</p></div>
+  <div class="f"><h3>The board still confirms its type</h3>
+    <p><code>SET TYPE lift|nong|blank</code> + reboot, from the Settings card or any
+       channel. A binary only accepts the types it was built with, so
+       <code>SET TYPE lift</code> on a humanoid build answers
+       <code>ERR unknown type (nong,blank)</code> instead of booting a module that is
+       not there.</p></div>
+  <div class="f"><h3>Runtime pin map, stored on the board</h3>
+    <p>Every pin lives in the board's own NVS memory, not in the source — motor, encoder,
+       limits, RS485, SD, I2S and all 10 servos. Set from the website or with
+       <code>PIN &lt;name&gt; &lt;gpio&gt;</code>. One firmware fits any wiring.</p>
+    <p><code>PIN VALID</code> classifies every GPIO (ok / strap / input-only / flash / rgb)
+       and reports pwm+adc+dac capability, so the picker can warn before you pick a
+       pin that cannot work. The WS2812 data pin is the one exception — FastLED fixes
+       it at compile time.</p></div>
+  <div class="f"><h3>Settings that survive without an SD card</h3>
+    <p><code>CFG &lt;key&gt; &lt;value&gt;</code> stores settings in NVS and overrides
+       <code>module.yaml</code>: <code>encoder leds speed speed_mms stages stage_mm
+       mm_per_rev counts_per_rev max_rpm counts_per_stage volume speed_dps max_dps
+       link</code>.</p></div>
+  <div class="f"><h3>Name &amp; bus address</h3>
+    <p><code>SET NAME</code> also renames the WiFi hostname, the <code>.local</code>
+       address and the AP hotspot. <code>SET ID 1–247</code> sets the RS485 address.</p></div>
+
+  <div class="grp2">Connectivity</div>
+  <div class="f"><h3>A bad network never stalls the robot<span class="tag t-new">new</span></h3>
+    <p>The WiFi code runs in the same loop as the servo interpolation, so anything that waits
+       there would stop a joint mid-move — exactly when the venue's network is worst. The
+       connect path is a polled state machine with timeouts: it tries, gives up, scans in the
+       background, falls back to its own hotspot, and keeps retrying the real network in case
+       it appears later. With WiFi set to <code>OFF</code> it does no radio work at all.</p>
+    <p>Even renaming the module defers its radio restart instead of waiting for it. QC fails
+       if a blocking wait is ever added back.</p></div>
+  <div class="f"><h3>Three WiFi modes</h3>
+    <p><code>SET WIFI ON</code> joins your network with hotspot fallback (default),
+       <code>AP</code> always hosts its own hotspot, <code>OFF</code> disables the radio
+       entirely for the fastest boot and USB/RS485-only operation.</p></div>
+  <div class="f"><h3>The radio changes live — nothing needs a reboot<span class="tag t-new">new</span></h3>
+    <p><code>WIFI</code> on its own answers one line saying exactly where the radio is:
+       mode, state, which network it is trying, its IP and signal, its own hotspot name and
+       how many modules are connected to it. <code>WIFI ON|OFF|AP</code> changes the mode on
+       the spot, <code>WIFI RETRY</code> tries the stored network again without waiting for
+       the 60&nbsp;second clock, and <code>WIFI SCAN</code> lists the 2.4&nbsp;GHz networks
+       this board can actually see — which answers "why won't it join?" directly.</p>
+    <p><code>SET WIFI &lt;ssid&gt; &lt;pass&gt;</code> now joins immediately too. It used to
+       answer <i>"reboot to apply"</i>, so correcting a mistyped network name meant
+       power-cycling a module and leaving the arm wherever it stopped. The scan is
+       asynchronous, so none of this can stall a joint mid-move.</p></div>
+  <div class="f"><h3>Every module shares its WiFi<span class="tag t-new">new</span></h3>
+    <p>A module in <code>ON</code> mode hosts its own hotspot <b>all the time</b>, including
+       while it is connected to the show network. So a module parked out of router range can
+       join a nearby module's hotspot and be reached through it, and a module you cannot
+       reach any other way is always still there at <code>192.168.4.1</code> to be fixed.
+       Previously the hotspot was dropped the moment the module got online, so it shared
+       nothing.</p>
+    <p>The credentials you set on the module are always what gets tried first — the ones
+       compiled into the firmware are only a factory fallback for a board nobody has set
+       up yet.</p></div>
+  <div class="f"><h3>A module that shares its WiFi answers a little slower<span class="tag t-new">fixed</span></h3>
+    <p>A module hosting its own hotspot <i>and</i> using the show network has one radio doing
+       both, so it time-slices and occasionally answers late. Two things were quietly
+       breaking because of it:</p>
+    <p><b>The hub lost modules that were online.</b> Its network sweep waited 0.6&nbsp;s per
+       address; the lift answered that 7 times in 8, so the hub dropped it from the list on
+       2 scans out of 3 while it sat there working perfectly. The hub now sweeps fast to
+       find anything new, then goes back and asks the addresses it already knows patiently.
+       A module that has genuinely gone still disappears.</p>
+    <p><b><code>REACH</code> failed most of the time over a shared hotspot</b> — 1 of 6,
+       while the far module answered the PC 6 of 6 throughout, so the far module was never
+       at fault. It now retries within a bounded budget: <b>20 of 20</b>, both directions.
+       Over a direct module hotspot (one hop, no sharing) a single attempt was always
+       enough.</p></div>
+  <div class="f"><h3>Modules on a different subnet are found too<span class="tag t-new">fixed</span></h3>
+    <p>The hub's network sweep only walks the PC's own /24, so a module on a different subnet
+       was invisible to it however reachable it actually was. Seen on a dorm network: the PC on
+       <code>10.94.163.x</code>, both modules on <code>192.168.100.x</code>, answering the PC
+       perfectly &mdash; and the hub listed nothing at all.</p>
+    <p>The hub was plugged into both over USB the whole time, and a module's <code>INFO</code>
+       carries its own IP. So plugging a module in once is now enough for the hub to find it
+       over WiFi afterwards, whatever subnet it ended up on. Addresses already known are
+       re-checked every scan regardless of subnet.</p></div>
+  <div class="f"><h3>Name the moves in a sequence<span class="tag t-new">new</span></h3>
+    <p>The timeline showed <code>0 start pose</code> and then 1, 2, 3 &mdash; which says nothing
+       about what the show does. Each move now has a name you type straight on its chip:
+       &ldquo;wave&rdquo;, &ldquo;reach cup&rdquo;, &ldquo;bow&rdquo;. The number stays, because
+       that is what every message and warning refers to.</p>
+    <p>The name is saved with the project and written into the exported file <b>as a
+       comment</b> &mdash; so every existing player still reads the file unchanged, the firmware
+       needs no new step key, and anyone opening the YAML can see what each step was meant to
+       be. Clearing a name removes it rather than storing an empty one.</p></div>
+  <div class="f"><h3>Clicking a move previews it at that move's speed<span class="tag t-new">fixed</span></h3>
+    <p>With a sequence set to 40 or 60&nbsp;deg/s, clicking a move in the timeline still snapped
+       the arm across at full speed. Two different jobs were sharing one path.</p>
+    <p>Dragging a slider should <b>follow your hand</b>, so the pose is sent with a time measured
+       from the link's own round trip &mdash; deliberately quick. Clicking a move is not that: it
+       should travel the way the move travels in the show, or what you are previewing is not what
+       will happen. Now it carries that move's own time, taken from the <i>played</i> timeline, so
+       a move after a suspended keyframe gets its re-timed value rather than the number stored
+       against it.</p>
+    <p>QC checks the time that actually reached the module, not the editor's opinion of it
+       &mdash; the editor's opinion was exactly what was wrong.</p></div>
+  <div class="f"><h3>The crash check now warns instead of blocking<span class="tag t-new">new</span></h3>
+    <p>The collision check runs while you pose the robot, while you play, and before Run or
+       upload. What changed is what happens when it finds something.</p>
+    <p><b>The 3D preview always plays.</b> Watching where the movement goes wrong is how you
+       fix it, so nothing stops you seeing it. Whether it also reaches the <b>robot</b> is a
+       separate question, and it is asked only when a module is actually connected: you get one
+       confirm naming the bad keyframes, with <b>OK = do it anyway</b> and <b>Cancel = stop and
+       fix it</b>. Refuse, and the preview plays on its own while the arm stays where it is.</p>
+    <p>Before this, Run and upload were blocked outright with no way past &mdash; and the check
+       works from your rig's dimensions, so a rig that does not match the real robot could call
+       a perfectly safe move a crash and leave you stuck. Forcing is allowed because it is your
+       arm and you can see it.</p>
+    <p><b>Play was the dangerous one.</b> It warned that only the 3D preview would play &mdash;
+       and then drove the real arm anyway. It said one thing and did another, on the single path
+       where being wrong bends metal. All three routes now go through one gate.</p>
+    <p>Permission lasts for <b>one action</b>. Editing the timeline withdraws it, so a
+       &ldquo;yes, run it anyway&rdquo; given for one movement never quietly covers a different
+       one.</p></div>
+  <div class="f"><h3>RELAX now relaxes every joint<span class="tag t-new">fixed</span></h3>
+    <p>Nine servos went limp on <code>RELAX</code> and SHRUG stayed stiff. The loop was never
+       wrong &mdash; it always covered all ten. Detaching a servo only hands the pin back to
+       plain GPIO; it says nothing about what level the line settles at. On a pin with an
+       internal pull-up the line then sits <b>high</b>, and a servo watching a permanently high
+       line holds its position instead of going limp.</p>
+    <p>SHRUG is on <b>GPIO&nbsp;15</b>, a strapping pin the ESP32 pulls up at reset. The other
+       nine happened to settle low, so they appeared to work. <code>RELAX</code> now drives
+       every servo line low itself &mdash; saying &ldquo;no pulses&rdquo; rather than hoping
+       &mdash; which is correct on every pin, not only the lucky ones.</p>
+    <p>QC previously covered <code>RELAX</code> only as a command that interrupts a sequence.
+       It now also checks that it reaches every joint, that a relaxed line is really idle, and
+       that no per-joint loop quietly stops at the eight arm joints and leaves WAIST and SHRUG
+       behind.</p></div>
+  <div class="f"><h3>Playback is much lighter<span class="tag t-new">fixed</span></h3>
+    <p>Studio lagged while playing and froze when you came back to the page. The cause was
+       work, not logic. The joint slider row was rewritten on <b>every</b> tick &mdash; six
+       properties per joint, sixty writes a frame &mdash; and two of those were the travel
+       limits, which had not changed. Setting a slider's min/max makes the browser re-check
+       and clamp its value, so those were the expensive ones.</p>
+    <p>On top of that, the show clock is called from both the animation frame and a timer, so
+       the picture was being redrawn about <b>76 times a second</b> on a 60&nbsp;Hz screen.
+       Together that was roughly <b>4500 DOM writes a second</b> for a row that mostly had not
+       changed.</p>
+    <p>Now a value is written only when it actually differs, the limits only when the rig
+       changes, and painting happens once per animation frame. Time still advances on whichever
+       timer fires &mdash; that is what keeps a hidden tab moving &mdash; only the painting is
+       limited.</p></div>
+  <div class="f"><h3>Dragging the timeline moves the real arm<span class="tag t-new">new</span></h3>
+    <p>Scrubbing used to move only the picture. Checking one move without playing the whole
+       show is the reason the scrubber exists, and a preview that moves while the robot stays
+       put is the one thing you cannot check against. The arm now follows the scrubber, using
+       the same path a slider drag does &mdash; so it carries the link's own round-trip timing
+       instead of easing at the module's speed setting.</p></div>
+  <div class="f"><h3>Nong Studio no longer leaks graphics memory<span class="tag t-new">fixed</span></h3>
+    <p>Studio could take the whole machine down after a while &mdash; not with an error, just
+       a crash. That is the signature of running the graphics card out of memory.</p>
+    <p>Rebuilding the 3D robot freed its <b>geometry</b> but never its <b>materials</b>, and a
+       fresh material is created for every mesh on every build. The robot is rebuilt on every
+       rig edit, so tuning the rig leaked a material &mdash; and its compiled shader &mdash; on
+       every change. Removing an object from the scene only drops the JavaScript reference; the
+       buffers stay on the card until they are handed back explicitly. Twenty-five rebuilds now
+       leave the counters exactly where they started, and QC measures it rather than trusting
+       it. Textures are deliberately left alone: they are cached and shared between builds.</p>
+    <p>The viewport size watcher was also made self-limiting, so it can never re-trigger itself
+       and spin the processor.</p></div>
+  <div class="f"><h3>Move your whole setup to another PC<span class="tag t-new">new</span></h3>
+    <p>Everything Nong Studio remembers &mdash; your tuned rig, your saved default, the STL
+       assignments, the panel width &mdash; lives in <b>that browser on that PC</b>. Tuning a
+       rig on the workshop machine and finding the show laptop knows nothing about it is what
+       this fixes. In Studio's <b>Setup</b> tab, under &ldquo;Move your setup to another
+       PC&rdquo;.</p>
+    <p><b>By file:</b> Export writes one JSON file; copy it across and press Import. It is
+       applied straight away and kept in that browser's cache.</p>
+    <p><b>Over the network:</b> on the PC that has the setup press <b>Share</b>; on the other
+       PC press <b>Find PCs</b>, pick it from the list, press <b>Get</b>. The search looks for
+       other mice hubs on the same network, so no address has to be typed &mdash; though you
+       can type one if the search cannot see it.</p>
+    <p>The transfer goes <i>through</i> your own hub rather than straight from the browser: a
+       page served by one hub is not allowed to read another hub's response, so the hub does
+       the fetching and hands it back. Sequences and projects are deliberately not included
+       &mdash; those are already files on the hub. Neither is the zero-calibration login,
+       which is per machine.</p></div>  <div class="f"><h3>Shrug: a 4-bar linkage is not a see-saw<span class="tag t-new">new</span></h3>
+    <p>One servo drives the linkage that lifts <b>both</b> shoulders, so there is only ever
+       one angle to command. But a 4-bar does not lift the two sides by the same amount, and
+       the ratio changes across the travel. The preview rocked a single rigid bar, so it always
+       drew the shoulders as exact mirror images &mdash; which is not what the robot does. The
+       <b>robot was right the whole time</b>; the picture was wrong.</p>
+    <p>Measure it once, in the rig setup: set SHRUG to a few angles and note how far each
+       shoulder actually rose, in millimetres, up positive. Two rows is the minimum; more rows
+       describe the curve the linkage really follows. The preview then places each shoulder at
+       its own height and stops rocking the bar, so the rotation is never counted twice on top
+       of your measurement.</p>
+    <p>Measured beats computed here: the real linkage carries horn spline offset, bearing slop
+       and mounting error, none of which the CAD model knows about. Leave the table empty and
+       nothing changes &mdash; every rig saved before this keeps looking exactly as it did.
+       Past the ends of your measurements the value holds rather than extrapolating a shoulder
+       off into space.</p></div>
+  <div class="f"><h3>Only one thing drives the servos at a time<span class="tag t-new">fixed</span></h3>
+    <p>The module keeps a sequence and plays it on its own clock &mdash; that is what lets a
+       show survive this page closing. But it meant the module could still be running when you
+       came back, and pressing Play then had the browser streaming poses <i>as well</i>: two
+       clocks on one robot, the arm fighting itself. Worse, Stop only stopped the browser, so
+       the servos kept moving from the module's own sequence.</p>
+    <p>Play, Pause and scrubbing now all stop the module first. Taking control takes it
+       completely.</p></div>
+  <div class="f"><h3>A show keeps running when you leave the page<span class="tag t-new">fixed</span></h3>
+    <p>A hidden browser tab has its animation loop stopped and its timers slowed to roughly
+       once a minute. No trick changes that reliably. The sequence ran at the wrong speed, or
+       simply stopped and sat still until you looked at the page again.</p>
+    <p>So Studio stops trying to be the clock. When a show is playing and you switch away,
+       the whole sequence is handed to the <b>module</b>, which plays it on its own
+       50&nbsp;Hz timer &mdash; it keeps going with the browser minimised or closed
+       completely, and it interpolates with the same formulas the preview uses, so the motion
+       is identical rather than merely similar. Coming back, the page says the module is
+       running it. Press <b>Stop</b> to end it.</p>
+    <p>Coming back also used to hang the page for a moment: the play head was advanced by the
+       whole time you were away in a single step, so the pose jumped across the show and every
+       joint was re-sent at once. One tick can no longer advance the show by more than a
+       frame.</p></div>
+  <div class="f"><h3>The USB lag<span class="tag t-new">fixed</span></h3>
+    <p>The hub waited up to 80&nbsp;ms before <i>every</i> command, to let a half-written log
+       line finish. That cost is paid on each command and is worst exactly when the board is
+       chatty &mdash; which became normal once every module started hosting a hotspot. On live
+       pose streaming (about 30 commands a second) it was most of the delay, and the arm
+       visibly trailed the sliders. The blank-line reply marker already tells a reply apart
+       from a stray log line, so the wait was doing nothing and is gone.</p></div>
+  <div class="f"><h3>The 3D view no longer covers the settings<span class="tag t-new">fixed</span></h3>
+    <p>One wide row in the side panel could push the panel wider than its 320&nbsp;px, which
+       silently shrank the 3D viewport &mdash; but nothing told the canvas to resize, so the
+       render spilled over the settings and covered the controls. The panel is now a fixed
+       track that wide content scrolls inside, and the canvas watches the viewport element
+       itself, so it follows every size change: dragging the splitter, switching tabs, a
+       scrollbar appearing.</p></div>
+  <div class="f"><h3>One design system across every page<span class="tag t-new">new</span></h3>
+    <p>The hub, this help page, the RGB page, Nong Studio and the module's own website read
+       their colours, radii and spacing from <b>one file</b>: <code>shared/web/mice.css</code>.
+       They used to hold <b>six copies</b> of it, each one commented &ldquo;the shared design
+       system&rdquo; and none of them shared &mdash; they had already drifted into three
+       different corner-radius scales and four names for the same grey caption.</p>
+    <p>Every page links it at <code>/mice.css</code>. The <b>board serves that same URL
+       itself</b>: the stylesheet is compiled into the firmware, so a module looks the same
+       whether you reach it over WiFi or through the hub over USB. QC fails if a page declares
+       its own tokens, hardcodes a colour that is already a token, forgets the link, or if the
+       copy in the board's flash is not byte for byte the shared file.</p>
+    <p>Dark stays the permanent default: the show area is kept dark and a bright screen spills
+       light into the event.</p></div>
+  <div class="f"><h3>Flashing says which board, and which PC<span class="tag t-new">new</span></h3>
+    <p>Overwriting firmware cannot be undone from this screen, it takes about a minute, and
+       the board is usually in someone's hands across the room. The old question named a COM
+       port or an IP address &mdash; neither tells you <em>which</em> of the boards in the room
+       you are about to overwrite.</p>
+    <p>The confirm now names the <b>board</b> (its name, its id and the type it runs now),
+       <b>what it will become</b> and whether that is a change, <b>how it is reached</b>
+       (this PC's cable, or WiFi), and <b>which PC is doing it, by name</b>. That last one
+       matters because several machines at a venue run this same hub on the same network, so
+       being on the wrong browser tab is the easy mistake.</p>
+    <p>Cancel is the prominent button and the one under your thumb; overwriting is styled as
+       destructive and has to be reached for. Escape cancels. QC clicks Cancel and then checks
+       the <em>hub</em>, not the page &mdash; a confirm that closes while the write has already
+       started would be worse than no confirm at all.</p></div>
+  <div class="f"><h3>The hub asks for a password before it does anything<span class="tag t-new">new</span></h3>
+    <p>The hub listens on every network connection so a phone on the same WiFi can reach it.
+       Until now that also meant <b>anyone</b> on that WiFi could drive the servos or reflash
+       a board. Now anything that <em>changes</em> something needs a login.</p>
+    <p><b>Looking stays free.</b> The module list, the status of every board, this help page
+       and the pages themselves all work with no password &mdash; someone checking whether a
+       board is alive should never meet a password box.</p>
+    <p>Two details that are easy to get wrong. First, the rule is not &ldquo;GET is safe&rdquo;:
+       <code>/api/usb/cmd</code> is a GET that <b>moves the arm</b>, so the gate is a list of
+       what changes something, not a rule about the kind of request. Second,
+       <b>stopping is never gated</b> &mdash; a password prompt while an arm is about to hit
+       someone is a safety failure, so starting a show needs a login and ending one never does.</p>
+    <p>On first run the hub prints a generated password <b>in its own window, on the PC</b>.
+       It is never shown on a page and never sent over the network, so seeing it means standing
+       at the machine. It is stored hashed, five wrong tries locks that caller out for a
+       minute, and a module on another PC needs a login on that PC too.</p></div>
+  <div class="f"><h3>One line per log, one write<span class="tag t-new">new</span></h3>
+    <p>The board writes its log lines to the same port it answers commands on. A log was
+       printed in <b>two</b> steps &mdash; the text, then the line ending &mdash; so a WiFi
+       event, which runs separately, could land between them and stick its message onto the
+       end of a reply. On the bench that looked like
+       <code>OK joining lift-test now (WIFI for progress)[wifi] disconnected, reason=8</code>,
+       and the PC read the whole thing as the answer.</p>
+    <p>Every log now goes through <b>one helper</b> that builds the line and hands it over in
+       a single write, which cannot be split. The subsystem names &mdash; <code>boot</code>,
+       <code>sys</code>, <code>wifi</code>, <code>sd</code>, <code>seq</code>,
+       <code>ota</code>, <code>cam</code> &mdash; live in one list instead of being typed at
+       36 places, a long line is cut with a visible <code>...</code> rather than lost, and a
+       log can never contain a line break in the middle, which would have looked like a
+       second reply.</p></div>
+  <div class="f"><h3>Keyboard and motion<span class="tag t-new">new</span></h3>
+    <p>Every page now shows a visible focus ring when you tab through it &mdash; three of the
+       four had none &mdash; and every page respects <code>prefers-reduced-motion</code>, so
+       animations stop for anyone who has asked their system to stop them. Touch targets are at
+       least 36&nbsp;px wherever the pointer is coarse.</p></div>
+  <div class="f"><h3>The hub tells the truth when it cannot reach anything<span class="tag t-new">fixed</span></h3>
+    <p>A failed scan used to replace the module list with the words "scan failed". Now the hub
+       <b>keeps the modules it last actually found</b>, marks them plainly as old
+       (&ldquo;showing what was found 40s ago &mdash; these may no longer be there&rdquo;), and
+       offers a <b>Try again</b> button. The list also carries a quiet &ldquo;checked just
+       now&rdquo; line, so you never have to wonder whether the page is frozen.</p>
+    <p>A control panel that goes blank when the network hiccups is broken however good it
+       looks; one that keeps presenting old robots as if they were still there is worse. QC
+       drives this for real &mdash; it loads the hub, breaks the scan endpoint, and fails if the
+       list blanks, if the data is not marked stale, or if there is no way to retry.</p></div>
+  <div class="f"><h3>Groups: which modules are allowed to link<span class="tag t-new">new</span></h3>
+    <p>A module belongs to a <b>group</b> &mdash; your installation. Its own hotspot password is
+       <i>derived</i> from the group name, so every module in one group shares it automatically
+       and nothing has to be typed twice.</p>
+    <p>That is what makes automatic linking safe. With no venue WiFi a grouped module scans,
+       finds a neighbour's hotspot and joins it <b>without ever having met it</b>, because the
+       only hotspot it can actually get into is a group-mate's. Two companies working the same
+       site each let their own modules find each other, and neither can touch the other's.
+       An <b>ungrouped</b> module never goes hunting: it would be using the shared built-in
+       password, which proves nothing about who owns the board.</p>
+    <p>Set it in the hub's <b>Network</b> tab &mdash; tick the modules that belong together and
+       name the group &mdash; or with <code>GROUP &lt;name&gt;</code> on any channel.</p></div>
+  <div class="f"><h3>A cold start with no WiFi used to strand every module<span class="tag t-new">fixed</span></h3>
+    <p>A neighbour was only recognised by a name the module had <i>already seen</i>, and a module
+       that just booted has seen nobody. So with the venue network down, every module sat on its
+       own hotspot unable to find any of the others. Found by pulling a module's USB cable and
+       running it from a charger. Grouped modules now recognise each other on a cold start.</p></div>
+  <div class="f"><h3>A weak link moves to a stronger neighbour<span class="tag t-new">new</span></h3>
+    <p>Falling back only when WiFi <i>fails</i> misses the case that actually hurts at a
+       venue: a module far from the router still connects, just badly &mdash; commands arrive
+       late and the show stutters. Signal strength is now checked too. If the show network is
+       weak and a neighbouring module's hotspot is clearly stronger, the module joins the
+       neighbour and is reached through it.</p>
+    <p>It comes back once the show network is <b>properly</b> good again, not merely less bad.
+       The two thresholds are deliberately different: with a single one, a module sitting near
+       the boundary flips between networks forever, dropping its link each time &mdash; which
+       at a show looks exactly like the robot randomly freezing.</p>
+    <p><code>WIFI</code> reports <code>via="&lt;module&gt;"</code> whenever a module is leaning
+       on a neighbour, so it is never a mystery. The rule is a pure function unit-tested on a
+       PC, because a real &minus;80&nbsp;dBm signal cannot be made to appear on a bench.</p></div>
+  <div class="f"><h3>Which WiFi a module uses, and how to get back<span class="tag t-new">new</span></h3>
+    <p>Credentials set on the board (<code>SET WIFI</code>, stored on the chip) always win over
+       the ones compiled into <code>config/conf_network.h</code> &mdash; those are only the
+       factory default for a board nobody has set up yet. Both currently point at the same
+       network.</p>
+    <p><code>WIFI CLEAR</code> forgets what was set on the board and goes back to the built-in
+       one, immediately. Without it a module could only ever be moved from one named network to
+       another, so a board pointed at a bench hotspot had no way home short of a reflash.</p></div>
+  <div class="f"><h3>One USB cable runs the whole installation<span class="tag t-new">new</span></h3>
+    <p>The usual situation at a venue: there is no usable WiFi. Plug the PC into <b>any one
+       module</b> and let every other module join that module's own hotspot. The hub lists
+       them under the cable and each one gets its normal buttons &mdash; its website, Nong
+       Studio, file upload, sequences &mdash; even though your PC has no route to it at all.</p>
+    <p>Internally the hub addresses them as <code>usb:COM11@nong</code>: over this cable,
+       then through it to the module named <code>nong</code>. It is a <b>name</b>, not an
+       address, so it keeps working when the hotspot hands out a different one. Nothing else
+       in any page changed &mdash; only the device string.</p>
+    <p>The same form works over WiFi (<code>wifi:10.0.0.5@nong</code>) when the module you
+       can see is the one with the good signal.</p></div>
+  <div class="f"><h3>Reach a module through another module<span class="tag t-new">new</span></h3>
+    <p>A module parked out of router range joins a nearby module's hotspot — but it is then
+       on that module's private network, where the PC has no route to it. So the module it
+       joined forwards for it. <code>PEERS</code> lists what a module can see, and
+       <code>REACH &lt;ip|name|id&gt; &lt;command&gt;</code> runs a command over there and
+       hands back exactly what that module answered:</p>
+    <p><code>PC → USB → lift-test → its own hotspot → nong</code><br>
+       <code>REACH nong PING</code> → <code>PONG 67 nong nong</code></p>
+    <p>It is the same shape as the RS485 bridge (<code>#3 GOTO 2</code>) — one command in,
+       one reply line out — so the hub's device routing and the module website's console
+       needed no changes at all.</p>
+    <p>It is for <b>finding and configuring</b> a module, not for driving one during a show:
+       it waits up to 800&nbsp;ms for the far module, so it answers <code>ERR busy</code>
+       rather than reach through while this module is mid-move and stop a joint dead. In a
+       show, address the module directly or use RS485.</p></div>
+  <div class="f"><h3>A reply is never a stray log line<span class="tag t-new">fixed</span></h3>
+    <p>The module logs to the same serial line it answers on, and the two used to collide
+       in three different ways. All three were found on the bench with two boards
+       reconnecting, and all three are now covered by QC:</p>
+    <p><b>A half-eaten log line came back as the reply.</b> The hub cleared the buffer
+       before each command, which could cut a log line in two. The orphaned tail had no
+       <code>[tag]</code> on it, so the log filter did not recognise it — <code>SET
+       WIFI</code> answered <i>"Hz-only network — ESP32 is 2.4GHz only)"</i>.</p>
+    <p><b>A log line was glued onto the end of a reply.</b> <code>Serial.println()</code>
+       is two writes — the text, then the newline — so a WiFi event on another task could
+       land between them. The board now writes each reply as a single
+       <code>"\n" + reply + "\n"</code>, which no other task can get inside.</p>
+    <p><b>Every reply came back shifted by one.</b> During a reconnect, <b>49 of 60</b>
+       commands returned the previous command's answer. That leading blank line is now the
+       marker the hub looks for: a real reply always has one in front of it, an orphaned
+       tail never does. The same hammer test on real hardware now scores <b>50 of 50</b>.
+       A board running older firmware still works — without the marker the hub falls back
+       to the old behaviour.</p></div>
+  <div class="f"><h3>RS485 bus — many modules on two wires</h3>
+    <p>Address any module with <code>#&lt;id&gt; &lt;command&gt;</code> and it answers
+       <code>@&lt;id&gt; …</code>. <code>#* PING</code> takes a census of the whole bus.
+       Modules bridge <code>#</code> lines onto the bus, so one module's USB port reaches
+       every other module behind it.</p></div>
+  <div class="f"><h3>Accounts stored on the board</h3>
+    <p>The website's Setup gate is backed by real accounts in NVS (default
+       <code>manny / 12345678</code>). <code>AUTH</code>, plus
+       <code>USER LIST|ADD|DEL|PASS</code> — user operations require valid credentials.
+       The raw command channel stays open for scripts and RS485.</p></div>
+
+  <div class="grp2">Storage &amp; playback</div>
+  <div class="f"><h3>SD card files over any channel<span class="tag t-opt">optional card</span></h3>
+    <p>List, upload, download and delete SD files over HTTP <em>or</em> the text protocol
+       — <code>FILES</code>, <code>FBEGIN</code>, <code>FDATA</code>, <code>FEND</code>,
+       <code>FREAD</code>, <code>FDEL</code>, in base64 chunks small enough for one RS485
+       frame. Folders: <code>/music</code>, <code>/moves</code>, <code>/data</code>.</p></div>
+  <div class="f"><h3>YAML sequence player</h3>
+    <p><code>MOVE &lt;file&gt;</code> runs a sequence from <code>/moves</code>; steps that
+       travel wait for arrival, others fire and continue. <code>MOVE STOP</code> ends it.</p></div>
+</section>
+
+<!-- ===================== LIFT ===================== -->
+<section id="lift">
+  <div class="shead">
+    <span class="where">SET TYPE lift</span>
+    <h2>Lift module</h2>
+    <p>A rack-and-pinion lift with staged positions, an LED strip and a speaker.</p>
+  </div>
+  <div class="f"><h3>Staged travel with real distances</h3>
+    <p><code>GOTO &lt;stage&gt;</code> auto-homes first if the position is unknown.
+       <code>UP</code>/<code>DOWN</code> run to a limit switch, <code>HOME</code> seeks the
+       bottom and zeroes the encoder, <code>STAGE?</code> reports where it is.</p></div>
+  <div class="f"><h3>Speed in real units, not PWM</h3>
+    <p><code>SPEED 0.2 MS</code> takes m/s (or <code>MMS</code> for mm/s) and maps it to PWM
+       from the actual mechanics — module-2 rack with a 25-tooth pinion gives 157.08 mm per
+       revolution. <code>TIME?</code> estimates any move live.</p></div>
+  <div class="f"><h3>Works without an encoder<span class="tag t-opt">optional</span></h3>
+    <p><code>CFG encoder 0</code> and the lift runs limit-switch to limit-switch: endpoint
+       stages only, open-loop speed mapping, and the web UI hides what no longer applies.</p></div>
+  <div class="f"><h3>RGB strip</h3>
+    <p><code>RGB r g b</code>, <code>RGB BRIGHT</code>, and effects
+       <code>solid rainbow chase breathe off</code>. A dedicated hub page adds a mode that
+       follows the PC speaker.</p></div>
+  <div class="f"><h3>Audio</h3>
+    <p><code>PLAY &lt;file&gt;</code> plays mp3/wav from <code>/music</code> over I2S,
+       <code>PLAY STOP</code> ends it, <code>VOL 0–100</code> sets level.</p></div>
+</section>
+
+<!-- ===================== NONG ===================== -->
+<section id="nong">
+  <div class="shead">
+    <span class="where">SET TYPE nong</span>
+    <h2>Nong module — humanoid upper body</h2>
+    <p>Two arms and a body: 10 logical joints driven by 10 servos, from one ESP32.
+       Every angle is a <b>joint degree</b> — the physical joint — so poses stay valid
+       no matter what servo or gear is fitted.</p>
+  </div>
+
+  <div class="grp2">Joints</div>
+  <div class="scroll"><table><thead><tr><th>#</th><th>Name</th><th class="wrap2">What it moves</th></tr></thead><tbody>
+    <tr><td>1&nbsp;/&nbsp;2</td><td>L_SH_P / L_SH_R</td><td class="wrap2">Left shoulder — pitch and roll (a universal joint, 2 servos)</td></tr>
+    <tr><td>3&nbsp;/&nbsp;4</td><td>L_EL_P / L_EL_R</td><td class="wrap2">Left elbow — pitch and roll</td></tr>
+    <tr><td>5&nbsp;/&nbsp;6</td><td>R_SH_P / R_SH_R</td><td class="wrap2">Right shoulder — pitch and roll</td></tr>
+    <tr><td>7&nbsp;/&nbsp;8</td><td>R_EL_P / R_EL_R</td><td class="wrap2">Right elbow — pitch and roll</td></tr>
+    <tr><td>9</td><td>WAIST</td><td class="wrap2">Yaws the whole upper body so nong can look to the side</td></tr>
+    <tr><td>10</td><td>SHRUG</td><td class="wrap2">Rocks the shoulder bar like a see-saw — one shoulder up, the other down (~6°)</td></tr>
+  </tbody></table></div>
+
+  <div class="grp2">Motion</div>
+  <div class="f"><h3>Whole-body and single-joint moves</h3>
+    <p><code>POSE</code> takes all 10 angles, <code>-</code> keeps a joint where it is, and an
+       old 8-value pose still loads. <code>JOINT WAIST 60</code> moves one joint by name.</p></div>
+  <div class="f"><h3>Smooth interpolation with an honest time floor</h3>
+    <p>Every move eases in and out over a duration <code>T</code>. A <code>T</code> shorter
+       than the servos can physically achieve is <b>raised</b>, per joint, so the
+       interpolation never "finishes" before the real arm arrives. The editor enforces the
+       identical formula while authoring.</p></div>
+  <div class="f"><h3>Hold, freeze and go limp</h3>
+    <p><code>STOP</code> freezes mid-move at the pose reached. <code>RELAX</code> unpowers
+       the servos so you can pose the arms by hand; <code>ATTACH</code> powers them again
+       holding the current pose. <code>HOME</code> returns to the neutral pose.</p></div>
+
+  <div class="grp2">Calibration — all per joint, all live, all persistent</div>
+  <div class="f"><h3>Set zero by hand</h3>
+    <p><code>SETZERO</code> declares wherever the arms are now to be home. Trim absorbs the
+       offset, so the arm does <em>not</em> move when you run it.</p></div>
+  <div class="f"><h3>Per-joint servo, gear, pulse, travel and frame rate</h3>
+    <p><code>GEAR</code> (pinion:gear), <code>PULSE</code> (µs range + max °/s),
+       <code>RANGE</code> (servo travel 180/270°), <code>RATE</code> (frame rate Hz),
+       <code>LIMIT</code> (joint travel). Nothing is hard-coded for the whole arm — a 270°
+       shoulder next to a 180° elbow is fine.</p>
+    <p>Presets via <code>SERVO &lt;joint|ALL&gt; &lt;type&gt;</code>:
+       <code>mg90s</code>, <code>pdi1181mg</code>, <code>tiankong35</code>,
+       <code>generic180</code>, <code>generic270</code>.</p></div>
+  <div class="note"><b>servo travel ≠ joint limits.</b>
+    <code>servo_range</code> is how far the <em>servo</em> turns — a property of the part you
+    bought. <code>joint_min</code>/<code>joint_max</code> is how far the <em>joint</em> may
+    turn — a property of your mechanism. Poses are always joint degrees, so fitting a 270°
+    servo is a one-number change and every saved sequence keeps working.</div>
+  <div class="f"><h3>Calibration survives a power cycle — with or without an SD card<span class="tag t-new">fixed</span></h3>
+    <p>Every change is saved <b>twice</b>: to the chip's own memory <b>always</b>, and to
+       <code>/data/nong_cal.yaml</code> as a readable copy when a card is fitted. So a board
+       with no card keeps its gear, limits, pulses, travel, rate and zero instead of coming
+       back on the factory defaults every time you unplug it.</p>
+    <p>At boot the card file is applied first and the chip copy second, so the chip copy
+       wins — it is written by every calibration command whether or not a card is present.
+       <code>CAL</code> reports which copies exist; <code>CAL CLEAR</code> forgets both and a
+       reboot returns to the defaults.</p></div>
+
+  <div class="grp2">Scaling out</div>
+  <div class="f"><h3>Split the humanoid across two boards</h3>
+    <p>Set <code>servo_pins</code> so each board drives only its own joints
+       (<code>-1</code> for the rest). The leader gets <code>link 1</code> +
+       <code>peer &lt;id&gt;</code> and repeats every move to its partner over RS485
+       <b>with the resolved duration</b>, so both move as one robot. Every board tracks all
+       10 angles, so status on the leader always shows the whole humanoid.</p></div>
+</section>
+
+<!-- ===================== MODULE SITE ===================== -->
+<section id="modsite">
+  <div class="shead">
+    <span class="where">served by the board — and by the hub over USB/RS485</span>
+    <h2>Module website</h2>
+    <p>One site per module, identical over every transport. The hub serves the board's own
+       HTML with a transport shim, so a board with no WiFi shows the same page over a cable.</p>
+  </div>
+  <div class="f"><h3>Three tabs, not one long page<span class="tag t-new">new</span></h3>
+    <p><b>Control</b> (the module'''s own controls), <b>Sequences &amp; files</b> (run a sequence,
+       the SD card, the console) and <b>Setup</b> (login, settings, pins, calibration). Thirteen
+       cards in one column meant scrolling past the arm controls to reach the SD card.</p>
+    <p>The Setup cards still stay hidden until you log in — one rule decides both which tab a
+       card is on and whether you may see it, so the two can never disagree.</p></div>
+  <div class="f"><h3>Controls match the real board</h3>
+    <p>Control cards render from the board's actual type — a nong board shows only nong
+       controls, a lift only lift. No login needed to drive the robot.</p></div>
+  <div class="f"><h3>Cards</h3>
+    <p>Modules on network · Lift · RGB Strip · Speaker · Nong Arms · Zero position ·
+       Servo type · Sequences · Hardware pins · SD Files · Settings · Console.</p></div>
+  <div class="f"><h3>Setup gate</h3>
+    <p>A login hides the configuration cards — Settings, Hardware pins, Zero calibration,
+       Servo type. Once in, you can add users, delete them and change your password.</p></div>
+  <div class="f"><h3>Pin picker with a pinout drawing</h3>
+    <p>GPIO dropdowns per function, with sub-tabs per module type inside the card and a ●
+       marking the board's real type. The hub injects an ESP32 pinout SVG served from the
+       PC, keeping it off the board's flash.</p></div>
+  <div class="f"><h3>Sequences &amp; files</h3>
+    <p>List <code>/moves</code>, run any sequence, upload, download and delete SD files —
+       over WiFi, USB or RS485 alike.</p></div>
+</section>
+
+<!-- ===================== HUB ===================== -->
+<section id="hub">
+  <div class="shead">
+    <span class="where">code/main_python · MiceHub.exe · port 8642</span>
+    <h2>Mice Hub — the PC app</h2>
+    <p>The first page you open. Finds every module by itself and links to each one's
+       website and to Nong Studio. Stdlib Python only; ships as a single exe.</p>
+  </div>
+  <div class="f"><h3>Finds modules on its own</h3>
+    <p>Parallel scan of the whole local subnet, plus every COM port on the PC. Bluetooth
+       phantom ports are recognised from the device type and skipped instead of being
+       probed — they hang for ~40 s if opened.</p></div>
+  <div class="f"><h3>Streaming USB probe</h3>
+    <p>One request per port, so each slot fills the moment that port answers and fast ports
+       never wait for slow ones. Identifies the module plugged in directly <em>and</em>
+       every module on the RS485 bus behind it.</p></div>
+  <div class="f"><h3>One cable, many pages<span class="tag t-new">fixed</span></h3>
+    <p>The hub owns each COM port and shares it, so the module website and Nong Studio can
+       drive one cable at the same time instead of colliding with "serial already in use".
+       Commands are atomic on the wire, so replies never interleave.</p></div>
+  <div class="f"><h3>Recovers from a replugged board<span class="tag t-new">fixed</span></h3>
+    <p>After a board is unplugged or reset, Windows leaves the handle looking open and every
+       write fails. The hub detects the stale handle, drops it and reopens — no restart.</p></div>
+  <div class="f"><h3>Serves the module site over any transport</h3>
+    <p><code>/mod?dev=wifi:&lt;ip&gt;</code> or <code>usb:&lt;port&gt;[:&lt;id&gt;]</code>.
+       A unified device API routes commands, status, file listing, upload, download and
+       delete to HTTP or serial as needed.</p></div>
+  <div class="f"><h3>Hosts Nong Studio</h3>
+    <p>Studio lives at <code>/studio/</code>, with "Studio + monitor" opening it already
+       connected to a discovered nong. Also serves the RGB page and the pinout reference.</p></div>
+  <div class="f"><h3>Adding a tool costs one folder<span class="tag t-new">new</span></h3>
+    <p>Every web app is a folder in <code>code/apps/</code> with an <code>app.json</code>
+       naming it. The hub lists it on the main page and serves it at
+       <code>/app/&lt;name&gt;/</code> — no route to add, no button to hand-write. Nong Studio
+       and this help page are registry entries pointing at where they already live, so no
+       link changed.</p>
+    <p>The manifests are JSON that allows <code>//</code> comments and trailing commas, so
+       they are comfortable to edit by hand.</p></div>
+  <div class="f"><h3>Sending the rig is 5x fewer commands<span class="tag t-new">new</span></h3>
+    <p><b>Send rig to robot</b> used to push five commands per joint — fifty round trips, about
+       1.6 s. The new <code>JCFG</code> command carries a joint's whole setup in one line, so it
+       is ten. Only joints that actually differ are sent at all, and a board older than
+       <code>JCFG</code> automatically gets the individual commands instead.</p></div>
+  <div class="f"><h3>The board says what it can do<span class="tag t-new">new</span></h3>
+    <p>Each module reports its <b>capabilities</b> in its status — <code>motion</code>,
+       <code>rgb</code>, <code>audio</code>, <code>joints</code>, <code>servos</code>,
+       <code>sd</code>, <code>rs485</code> and so on — and the module website shows each card
+       by capability rather than by module type. A new module type therefore shows the right
+       controls without the site being taught about it. A board running older firmware sends
+       no capabilities and still renders correctly.</p></div>
+  <div class="f"><h3>Commands declared once<span class="tag t-new">new</span></h3>
+    <p><code>firmware/config/commands.json</code> declares every command — which module type
+       it belongs to, its arguments and a one-line explanation. The board compiles it into a
+       table for its own <code>HELP</code>, and QC checks it <b>both ways</b>: a declared
+       command must have a handler, and a handler must be declared. It found two commands
+       (<code>PINS</code>, <code>PINS?</code>) that had existed undocumented.</p></div>
+  <div class="f"><h3>One servo table, shared by everything<span class="tag t-new">new</span></h3>
+    <p><code>firmware/config/servos.json</code> describes every servo preset once. The
+       firmware compiles it into a header at <b>build</b> time — the chip parses nothing and
+       pays nothing — and Nong Studio fetches the same file for its dropdown. They used to be
+       two hand-kept copies that could drift apart with nothing to notice; QC now fails if
+       they ever disagree.</p></div>
+  <div class="f"><h3>Reachable from other devices</h3>
+    <p>Binds all interfaces, so phones and laptops on the same WiFi can open the hub and
+       every module page through it.</p></div>
+  <div class="f"><h3>This help page, offline<span class="tag t-new">new</span></h3>
+    <p>Served from the PC at <code>/help</code> — no internet, no account. Linked from
+       Tools on the hub's main page, and searchable with the filter at the top.</p></div>
+  <div class="f"><h3>Works on any screen<span class="tag t-new">new</span></h3>
+    <p>The hub, the module website, Nong Studio and this page all lay out for phones,
+       tablets and large monitors, with bigger touch targets on a touchscreen. Studio
+       stacks the 3D view above its panel below 860px instead of squeezing both.</p></div>
+</section>
+
+<!-- ===================== STUDIO ===================== -->
+<section id="studio">
+  <div class="shead">
+    <span class="where">code/nong/main_python_set_nong · served at /studio/</span>
+    <h2>Nong Studio — pose &amp; sequence editor</h2>
+    <p>A 3D editor for the humanoid. Build poses, chain them into a timeline, watch the real
+       robot follow along, and export sequences the module plays from its SD card.
+       three.js is vendored — no CDN at runtime.</p>
+  </div>
+
+  <div class="grp2">Posing</div>
+  <div class="f"><h3>Four tabs, grouped by what you are doing<span class="tag t-new">new</span></h3>
+    <p><b>Pose</b> (joints, XYZ, view) · <b>Sequence</b> (timing, the robot SD card) ·
+       <b>Robot</b> (link, module config, zero calibration) · <b>Setup</b> (rig, model,
+       clothes). The old Movement/Setup split put the robot link, the SD card and the zero
+       calibration all under Movement, so posing meant scrolling past things you touch once.</p>
+    <p>Nothing moved in the page itself — only what is on screen at once — so every saved
+       project, link and shortcut behaves as before. QC fails if a card ever ends up on no
+       tab, which would hide a feature completely.</p></div>
+  <div class="f"><h3>Sliders, gizmos and inverse kinematics</h3>
+    <p>A slider per joint, clamped to that joint's own limits. Drag the 🟢 wrist ball for
+       4-DOF whole-arm IK, or the 🟠 elbow ball for shoulder-only IK. Gimbal rings follow
+       each joint's configured axis and tilt.</p></div>
+  <div class="f"><h3>Flat plane views<span class="tag t-new">new</span></h3>
+    <p>Front, Back, Left, Right, Top and Bottom are true <b>orthographic</b> views — parallel
+       edges stay parallel and nothing looks bigger for being nearer, so Shift+dragging a
+       joint in that plane matches exactly what is on screen. The iso/free view keeps
+       perspective, where depth is the point. Switching between them never moves the
+       camera.</p></div>
+  <div class="f"><h3>Live XYZ readout</h3>
+    <p>Joint positions in millimetres, origin at the torso centre.</p></div>
+  <div class="f"><h3>Collision checking</h3>
+    <p>Arms against torso, head and each other, sampled along the whole path — not just at
+       keyframes. Offending keyframes turn red and Run/Upload are blocked until it is fixed.</p></div>
+  <div class="f"><h3>Mirror and neutral</h3>
+    <p>Mirror a pose left↔right, jump to the neutral pose, or save the current pose <em>as</em>
+       the neutral.</p></div>
+
+  <div class="grp2">Timeline</div>
+  <div class="f"><h3>Keyframes with time and hold</h3>
+    <p>Each keyframe carries its move duration and a hold. Times auto-calculate from show
+       speed and are floored per joint by the slowest servo in that move — the same formula
+       the firmware uses. Any keyframe's time can also be typed in directly, which is how you
+       make one move slower than the rest.</p></div>
+  <div class="f"><h3>Speed per sequence, and per move<span class="tag t-new">new</span></h3>
+    <p><b>Show speed</b> (°/s) is saved into the sequence file as its first step and restored
+       when you re-edit it, so each sequence keeps its own pace. Change it and every keyframe
+       time is recalculated.</p>
+    <p>Each keyframe also has its own <b>°/s</b> box — leave it blank to run at the
+       sequence's speed, or set it to make that one gesture slower or snappier. The file
+       sets that speed before the move and puts the sequence speed back after, so the rest of
+       the show is untouched. Speed and time are two views of the same thing: set a speed and
+       the time follows, type a time and the override is dropped.</p>
+    <p>Because each file sets its own speed at the start, a chain hands over cleanly — a
+       fast sequence following a slow one runs at its own speed instead of inheriting the
+       previous one's.</p></div>
+  <div class="f"><h3>Suspend a keyframe instead of deleting it<span class="tag t-new">new</span></h3>
+    <p>The ● button on a keyframe chip suspends it: it stays in the timeline to edit, but is
+       skipped when playing, exporting and uploading — so you can try the sequence without
+       one move while you check something else, then switch it back on.</p>
+    <p>Skipping keyframe 2 of 1–2–3 creates a new, longer move 1→3. Its time is recomputed
+       <b>at the speed that applies</b> — keyframe 3's own °/s if it has one, otherwise the
+       sequence speed — so the arm covers the extra distance at the pace you asked for
+       instead of lunging. Suspending can only ever slow a move down: a time you typed
+       yourself is kept if it is already longer.</p>
+    <p>The crash check re-tests that new path, and the suspended pose never reaches the robot
+       or the exported file.</p></div>
+  <div class="f"><h3>Play, scrub and loop<span class="tag t-new">fixed</span></h3>
+    <p>Preview in 3D, or with <b>live</b> ticked drive the real robot: keyframe 0 first, then
+       each segment with its exact duration. A hold is a real pause <em>between</em> the
+       moves. Pause sends <code>STOP</code> to freeze the arm where it is, and resuming asks
+       only for the time still left in the segment.</p></div>
+  <div class="f"><h3>Let the robot run the show on its own<span class="tag t-new">new</span></h3>
+    <p>A browser stops its animation clock in a hidden tab, so a sequence driven <b>live</b>
+       from Studio freezes when you switch to another tab or app. Press <b>Send to robot</b>
+       then <b>Run on robot</b> instead: the module plays it from its own clock and you can
+       close the browser entirely.</p>
+    <p>This used to need an SD card. Now a board without one keeps the sequence in memory
+       (up to 8 KB, until it reboots) and plays it just the same — the editor is unchanged,
+       the board decides where it lands.</p>
+    <p>Robot-side playback is also <b>more accurate</b>, not less: the module interpolates
+       every move on its own 50 Hz clock, so timing does not depend on the browser or the
+       link. Tick <b>monitor</b> to watch the real robot in 3D while it runs.</p>
+    <p>While playing live, Studio now holds a silent audio track and drives the clock from a
+       timer, which keeps most browsers from throttling a background tab — best effort, and
+       no substitute for running it on the robot for a real show.</p></div>
+  <div class="f"><h3>Monitor mode — the model follows the robot</h3>
+    <p>The 3D rig animates from the robot's real joint angles, and the status line shows
+       which sequence is playing and how long the current move has left. Use it to watch a
+       run started from the SD card.</p></div>
+
+  <div class="grp2">Rig setup — calibrate the model to your robot</div>
+  <div class="f"><h3>Per joint: zero, limits, axis, invert, tilt</h3>
+    <p>Rotation axis (roll-X / pitch-Y / yaw-Z), invert, and a three-angle axis tilt. Tilt is
+       visual only — it is never sent to the module.</p></div>
+  <div class="f"><h3>Per joint: servo, gear, pulse, speed, travel, frame rate</h3>
+    <p>Plus group presets (shoulders / elbows / waist / shrug / all) and a warning when the
+       gear and joint limits together need more travel than the servo has.
+       <b>Send</b> pushes limits, gear, pulse, travel and rate to the robot;
+       <b>read back</b> pulls the robot's current values into the rig.</p></div>
+  <div class="f"><h3>Body dimensions and your own default</h3>
+    <p>Arm lengths, joint radii, shoulder width, shrug pivot height. <b>★ Save current as
+       default</b> locks your tuned rig in, so Reset returns to <em>yours</em> rather than
+       the factory scale.</p></div>
+  <div class="f"><h3>Opens on your neutral pose<span class="tag t-new">new</span></h3>
+    <p>The editor and keyframe 0 start at the Neutral pose from Setup — the same pose as the
+       robot's <code>HOME</code> — instead of a flat 90.</p></div>
+
+  <div class="grp2">Appearance</div>
+  <div class="f"><h3>Your own STL parts</h3>
+    <p>Import STL exports per body part, each with its own rotation, offset, scale and
+       colour. Part size automatically sets the rig's lengths. Texture images can be imported
+       and assigned.</p></div>
+  <div class="f"><h3>Clothes and add-ons</h3>
+    <p>Extra meshes attached to any part, for costume pieces and props.</p></div>
+
+  <div class="grp2">Getting moves onto the robot</div>
+  <div class="f"><h3>Export, upload and re-edit</h3>
+    <p>Export <code>/moves</code> YAML with an explicit <code>T</code> on every step so
+       linked boards stay in sync. Upload straight to the robot's SD card, or re-open a saved
+       YAML — local or downloaded from the robot — and keep editing.</p></div>
+  <div class="f"><h3>Many sequences on one card</h3>
+    <p>The card holds as many <code>/moves/*.yaml</code> as fit. The Robot SD card panel
+       lists them all with <b>▶ Run</b>, <b>✎ Edit</b> and delete on each, over WiFi, USB or
+       RS485 — and the module's own website has the same list in its Sequences card.
+       Name each export in the sequence-name box to keep them separate.</p></div>
+  <div class="f"><h3>Chain one sequence into the next<span class="tag t-new">new</span></h3>
+    <p>The <b>then run…</b> box writes <code>next:</code> into the file, so when it finishes
+       the module starts that one by itself — a show built from short files that can each be
+       run and edited on their own. The box offers the sequences already on the card.</p>
+    <p>It applies only when a sequence actually ends, so <code>loop</code> wins over it.
+       Chains stop after 16 files, so a file pointing back at itself cannot run forever, and
+       <code>MOVE STOP</code> ends the whole chain.</p></div>
+  <div class="f"><h3>Camera module<span class="tag t-new">new</span></h3>
+    <p>A third module type: an <b>ESP32-CAM</b> running the same firmware core as the lift
+       and the humanoid — same identity, same commands, same website, same RS485 address,
+       same update over WiFi. Build it with <code>pio run -e mice_cam</code>, or flash it
+       from the hub like any other board.</p>
+    <p><b>Take a picture</b> on its Control card shows one frame; the <b>live view</b> tick
+       box refreshes it once a second. <code>SNAP &lt;name&gt;</code> saves a picture to
+       <code>/photos</code> on its SD card. <code>CAM</code> reports and changes the sensor:
+       <code>CAM SIZE vga</code>, <code>CAM QUALITY 12</code>, <code>CAM FLASH ON</code>
+       (the white LED), <code>CAM VFLIP 1</code> and <code>CAM HMIRROR 1</code> for a camera
+       mounted upside down or behind glass.</p>
+    <p><b>It can never also drive a servo.</b> The camera and the on-board SD card use every
+       usable pin on that board, which is exactly why it is a module type of its own. Its
+       pins are fixed in the firmware rather than set on the Hardware pins page — they are
+       etched onto the board, so "changing" one could only break the camera.</p>
+    <p>The <b>live view</b> is a stream (<code>/api/cam.stream</code>), not one request per
+       picture: about <b>19 frames a second</b> at 320×240, where repeated stills managed 7
+       and the original one-second timer managed 1. Only <b>one person at a time</b> can
+       watch — the board has four connections in total, and a viewer holds one for as long
+       as the picture is on screen. Untick <b>live view</b> to give it back.</p>
+    <p>The picture is HTTP (<code>/api/cam.jpg</code>), never a command reply: a JPEG is far
+       too big for the one-line channels that RS485 and USB serial are. If the camera does
+       not start, the card says so — it is almost always the ribbon cable not seated, or a
+       5V supply that cannot hold the current.</p></div>
+  <div class="f"><h3>Update a module over WiFi<span class="tag t-new">new</span></h3>
+    <p><b>It asks which firmware to send.</b> The list is whatever this PC has built,
+       with the board's current type marked and preselected — so the usual case is two
+       clicks, and the unusual one is possible: picking a <i>different</i> type turns that
+       board into another kind of module without finding a cable. When you do that the hub
+       finishes the job, because a board flashed with a different type still has the old one
+       in its own memory and would come back as <code>blank</code>: it waits for the module,
+       sends <code>SET TYPE</code>, and reboots it once more.</p>
+    <p>It all happens on the <b>Firmware</b> screen. A module on the network appears there
+       with <b>⚡ Write over WiFi</b> — no cable, no reaching behind the set. The module's
+       own row still has a <b>⚡ firmware…</b> link, because the row is where you notice a
+       board needs updating; it takes you to the one screen that does the writing.</p>
+    <p><b>A failed update cannot brick a board.</b> The chip has two firmware slots
+       (1.875 MB each) and the update goes into the one that is <i>not</i> running. If the
+       WiFi drops, the PC walks away, or the image is bad, the board simply keeps booting
+       the firmware it already had. Ask a board where it stands with <code>OTA</code> —
+       it answers <code>running=app0 size=1294617 target=app1 room=1966080
+       free=671463</code>.</p>
+    <p>It is <b>refused while the module is moving or playing a sequence</b> — writing
+       flash stalls the servo loop, and a reboot in the middle of a show is worse than an
+       update that waits. Stop it first (or add <code>force=1</code> if you mean it).</p>
+    <p>The first update still has to arrive by cable: a board running older firmware has no
+       <code>/api/ota</code> to receive it. Flash it once over USB, and every update after
+       that can be over the air.</p></div>
+  <div class="f"><h3>Flash a board from the hub<span class="tag t-new">new</span></h3>
+    <p>Open <b>Firmware</b>. It lists every module type this PC has built, and under each
+       one every board it could write it to — this PC's cables, boards on the WiFi, and
+       cables on other PCs running the same hub. Pick the firmware, pick the board,
+       confirm, and the hub writes it: no PlatformIO, no command line. Cables where
+       <i>nothing</i> answered are listed too, which is exactly when you need this.</p>
+    <p>A type that has <b>not</b> been built is still shown, with the reason and the exact
+       command that fixes it — so a missing <code>lift</code> looks like something you can
+       do, not like something broken.</p>
+    <p>The hub owns every cable and shares it between its pages, but esptool cannot share.
+       So for the length of the flash the hub <b>gives that port up completely</b>: it
+       stops playing a show on it, closes the handle, and refuses to reopen it until
+       esptool is finished. That is what all the old <code>port is busy</code> failures
+       were.</p>
+    <p>It flashes what is on this PC: <code>pio run -e mice_nong</code> (or
+       <code>mice_lift</code>) has to have been run at least once in
+       <code>code/firmware</code>. If it has not, the page says so and names the command
+       instead of offering a button that cannot work. The board keeps its stored id, name,
+       WiFi and pins — those live in its own memory, not in the firmware.</p>
+    <p>If the board does not answer, hold its <b>BOOT/IO0</b> button as the flash starts,
+       and check the cable is a data cable. The message says so too.</p></div>
+  <div class="f"><h3>One board is one row, however it is reached<span class="tag t-new">new</span></h3>
+    <p>A module plugged into this PC <b>and</b> on the WiFi used to appear twice, as two
+       robots. The two rows were not even equivalent: one drove it down the cable and
+       the other over the air, so which copy you happened to click decided how the arm
+       moved. Now it is one row, and it says every way the board can be reached —
+       <i>reachable on COM9 and over WiFi</i>.</p>
+    <p>The hub matches boards on the <b>chip</b>: the ESP32's own MAC, which the board
+       now reports in <code>INFO</code> and <code>/api/status</code>. It is the only
+       identifier on a board that nobody can change — the id is a byte someone sets,
+       the name is typed, the type is chosen.</p>
+    <p>That matters in the direction people do not expect. Two <i>different</i> boards
+       out of the same box share a default id, and merging on the id would show them as
+       one robot — a command meant for one arm going to the other. So without a chip
+       (older firmware) the id is used only together with the type, and a board that
+       reports a chip is never merged with one that does not.</p></div>
+  <div class="f"><h3>Open the hub on a phone: a QR, and a name<span class="tag t-new">new</span></h3>
+    <p><b>Network</b> shows a QR of this hub's address. Point a phone camera at it and
+       the phone opens the hub — no number read across a room, no
+       <code>192.168.137.1</code> typed as <code>192.168.13.71</code>. The address is
+       printed beside it for anyone working over a remote desktop.</p>
+    <p>The QR is drawn by the hub itself, with nothing installed: the encoder is part
+       of the program. It is redrawn every time you open <b>Network</b>, because a
+       laptop that moves between a venue WiFi and its own hotspot gets a new address,
+       and a QR of the old one sends the phone nowhere.</p>
+    <p>There is a <b>name</b> as well: <code>http://mice.local:9203/</code>, answered by
+       the hub over multicast DNS, which phones, Macs and Windows already speak. A name
+       does not change when the address does.</p>
+    <p><b>Both exist because either can fail.</b> Many venue networks block multicast
+       between clients, and then no name resolves — the QR still works. If another
+       program on this PC already holds the mDNS port, the page says so plainly and
+       shows only the address, rather than printing a name that answers to nothing.</p></div>
+  <div class="f"><h3>Flash from a PC that never built the firmware<span class="tag t-new">new</span></h3>
+    <p>At a venue there is usually one laptop with PlatformIO on it and several without —
+       and the board is plugged into whichever machine was nearest. So the <b>image
+       travels, not the command</b>: <b>Firmware</b> lists boards on other PCs' cables as
+       <b>⚡ Write over the cable on <i>that PC</i></b>. This PC sends the firmware there,
+       and <i>that</i> PC writes it over its own cable. esptool only ever runs on the
+       machine holding the board.</p>
+    <p>That PC has its own accounts, so the confirm asks for a login on it. It is used for
+       the one request and <b>not stored</b>: no hub ever holds another hub's password.</p>
+    <p>Progress comes back from the machine doing the work, through this hub, because a
+       browser cannot ask another hub directly. When the write finishes, a board that is
+       becoming a <i>different</i> type is named along with the one command that finishes
+       the job there — this PC has no route to a board on someone else's cable.</p></div>
+  <div class="f"><h3>The hub keeps the show running<span class="tag t-new">new</span></h3>
+    <p>Press <b>Play</b> and the <b>hub</b> — the Python program, not the page — sends the
+       moves. Switch tabs, minimise the window, open something else: the rehearsal keeps
+       going, because nothing throttles a native process. The page is only the picture.</p>
+    <p>This is the missing middle clock. A browser cannot be fixed for it: a hidden tab has
+       its animation stopped and its timers slowed to about once a minute, by policy, in
+       every browser. Which clock you want depends on the job:</p>
+    <div class="scroll"><table><thead><tr><th>Clock</th><th class="wrap2">Survives</th><th class="wrap2">Use it for</th></tr></thead><tbody>
+      <tr><td>the module (<code>MOVE</code>, ▶ Run on robot)</td><td>the PC switched off</td><td>the show</td></tr>
+      <tr><td><b>the hub</b> (Play, connected through the hub)</td><td>the browser closed</td><td>editing and rehearsal</td></tr>
+      <tr><td>the browser</td><td>nothing</td><td>preview only</td></tr>
+    </tbody></table></div>
+    <p>It also works <b>before</b> anything is uploaded, which the module clock cannot —
+       you are still editing. Come back to the page and the play head jumps to where the
+       robot actually is, instead of sitting behind it.</p>
+    <p>USB direct (Web Serial) is the one exception: the browser holds that port itself, so
+       the hub cannot reach the robot and the old behaviour stands — the show is handed to
+       the module when you leave the page.</p></div>
+  <div class="f"><h3>Only one thing drives the robot<span class="tag t-new">new</span></h3>
+    <p>The module plays a sequence on its own clock, and Nong Studio can send poses down
+       the same cable at the same time. Both drove the same servos: the moves overlapped,
+       the arm fought itself, and <b>Pause</b> in Studio stopped only the browser while the
+       module carried on.</p>
+    <p>Now any command that <b>moves</b> the robot — <code>POSE</code>, <code>JOINT</code>,
+       <code>HOME</code>, <code>STOP</code>, <code>RELAX</code>, <code>ATTACH</code>
+       (and <code>UP</code>/<code>DOWN</code>/<code>GOTO</code> on a lift) — stops the
+       sequence the module was playing, and the reply says
+       <code>(sequence stopped)</code> so nothing loses track. Whoever moved the robot last
+       owns it.</p>
+    <p>Settings do <b>not</b> interrupt a show: <code>SPEED</code>, <code>LIMIT</code>,
+       <code>SERVO</code>, <code>RANGE</code> and every question keep it running, so you can
+       tune a sequence while it plays. When Studio connects to a module that is already
+       playing, it now says so instead of leaving you to guess.</p></div>
+  <div class="f"><h3>Projects</h3>
+    <p>Save and load editor projects as JSON, carrying the rig, meshes and timeline together.</p></div>
+
+  <div class="grp2">Connection</div>
+  <div class="f"><h3>WiFi and cable at the same time</h3>
+    <p>Pick a discovered module, or a COM port shared through the hub with an optional RS485
+       bus id. Both links can be open at once; commands take the cable when it is there.</p></div>
+  <div class="f"><h3>Open the module's config from the editor<span class="tag t-new">new</span></h3>
+    <p><b>⚙ Open module config</b> in the Robot link card opens the connected board's own
+       website in a new tab — hardware pins, WiFi, users, servo type, SD files. It follows
+       the same link your commands take, carrying the RS485 bus id when there is one, so it
+       always configures the board you are actually posing.</p>
+    <p>Over shared USB the module site and the editor stay open together on the one cable.
+       In direct Web Serial mode the browser owns the port exclusively, so the button says
+       to switch to shared USB instead.</p></div>
+  <div class="f"><h3>Live sending that keeps up and stays in order<span class="tag t-new">fixed</span></h3>
+    <p>One command in flight at a time: playback segments queue in order, while a drag keeps
+       only the <em>newest</em> pose. So a fast drag ends where you released it, and it paces
+       itself to the link instead of a fixed interval.</p></div>
+  <div class="f"><h3>Built-in self-tests</h3>
+    <p><code>?selftest=</code> <code>ik</code> · <code>gimbal</code> · <code>elbow</code> ·
+       <code>view</code> · <code>servo</code> · <code>migrate</code> — each reports its
+       verdict through the page title.</p></div>
+  <div class="f"><h3>Every change is a saved snapshot</h3>
+    <p><code>save_patch.py</code> preserves the whole web app per change into
+       <code>patches/NNNN_&lt;slug&gt;/</code> — append-only, with <code>--list</code> and
+       <code>--restore</code> (which backs up first).</p></div>
+</section>
+
+<!-- ===================== QC ===================== -->
+<section id="qc">
+  <div class="shead">
+    <span class="where">code/qc · python qc/run_qc.py</span>
+    <h2>QC suite</h2>
+    <p>100 assertions that re-check the whole system after any change. Every one of them is
+       a bug that actually shipped once. Stdlib plus the installed Edge — no installs.</p>
+  </div>
+  <div class="f"><h3>Two speeds</h3>
+    <p><code>--quick</code> skips the browser and runs in about 3 seconds while you work;
+       the full run drives the real web app in headless Edge in about a minute.
+       <code>--list</code> shows coverage, a word filters to one area.</p></div>
+  <div class="f"><h3>It extends itself</h3>
+    <p>The runner discovers <code>checks/check_*.py</code>, so covering something new is one
+       new file — no registry to keep in sync.</p></div>
+  <div class="f"><h3>What it guards</h3>
+    <p><b>connection</b> — cable sharing, one handle, replug recovery, busy-cable message,
+       RS485 framing, command latency.
+       <b>contracts</b> — firmware↔Studio joint count and order, the move-time floor, every
+       command Studio sends existing.
+       <b>hub</b> — pages, device API, the log-line vs JSON parsing rule.
+       <b>studio</b> — boot pose, saved-rig migration, fast drag, play/hold/pause/resume.
+       <b>responsive</b> — every page measured in a real browser at phone, tablet and
+       desktop widths, failing if anything scrolls sideways.
+       <b>firmware</b> — the real PlatformIO build must compile and still fit the chip,
+       every module type's build must compile and must NOT contain another type's page
+       (checked by searching the binary itself), plus native tests that run the
+       gear/travel maths and the move-time floor on the PC with no board.
+       <b>view</b> — the standard views really are orthographic, and the camera being
+       dragged is the one being rendered.
+       <b>calibration</b> · <b>sequences</b> · <b>edge cases</b> — tuning survives a power
+       cycle, suspend/chain/speed behave, and the awkward states do not throw.
+       <b>modsite</b> — the module site'''s tabs show one group at a time and the login gate
+       still hides every config card until you are in.
+       <b>wifi</b> — a bad or absent network cannot stall the servo loop: the connect path
+       stays a polled state machine with timeouts, and nothing in it blocks.
+       <b>transports</b> — the same command, an SD transfer and a pin-config round trip on
+       USB/UART, RS485, direct Web Serial and WiFi, so a link cannot break unnoticed.
+       <b>persistence</b> — every save path returns exactly what went in: projects keep their
+       rig and tilts, sequences survive byte for byte, and names with a path are refused.
+       <b>sendrig</b> — sending the rig stays one command per joint, and the values arrive intact.
+       <b>unattended</b> — the robot plays a sequence on its own with no SD card, so the
+       browser can be closed.
+       <b>protocol</b> — every command answers with exactly ONE line; a multi-line reply
+       poisons whatever command follows it.
+       <b>registries</b> — adding a web app, servo or command costs one file; the check
+       adds a throwaway app every run and proves it appears and serves with no code change.
+       <b>docs</b> — this page, which fails QC if a command, module type or QC area is
+       added without describing it here.
+       <b>design</b> — one design system in one file: no page may declare its own tokens or
+       copy a colour that is already one, every page must really link it, and the board's
+       compiled-in copy must match the shared file exactly.
+       <b>logging</b> — every firmware log line goes through one helper and reaches the port
+       as a single write, so a log raised on another task can never be glued onto the end of
+       a command reply.
+       <b>auth</b> — a caller with no session is refused by every route that changes
+       something (including the GETs that move servos), can still read everything, and can
+       always STOP a moving robot; the password is stored hashed and guessing gets locked out.
+       <b>qc</b> — the suite checks itself: a browser check reports its result over the fake
+       serial port, and a dropped report is retried, so a check can never fail for a reason
+       that is not the code under test.</p></div>
+  <div class="f"><h3>A fake robot, so nothing needs hardware</h3>
+    <p>A stand-in serial module with one <em>exclusive</em> port — a second open fails exactly
+       like Windows, which is what proves the hub shares a handle. It can also play dead to
+       reproduce a replugged board, and records every command with the time it arrived.</p></div>
+  <div class="note"><b>The rule that makes a check worth writing:</b> break the fix and watch
+    the check fail. A check that passes both before and after guards nothing.</div>
+</section>
+
+<!-- ===================== TRANSPORTS ===================== -->
+<section id="transports">
+  <div class="shead">
+    <span class="where">reference</span>
+    <h2>Transports — the same features on every link</h2>
+    <p>Text commands and SD file transfer work identically on all three. The difference is
+       reach and speed, never capability.</p>
+  </div>
+  <div class="scroll"><table><thead><tr><th>Link</th><th class="wrap2">Reaches</th><th class="wrap2">Notes</th></tr></thead><tbody>
+    <tr><td>WiFi</td><td class="wrap2">Any module on the network, from any device</td><td class="wrap2">Website + HTTP API. Fastest for whole-file transfer. Falls back to its own hotspot.</td></tr>
+    <tr><td>USB</td><td class="wrap2">The board on the cable</td><td class="wrap2">115200 baud. No network needed. Shared by the hub, so several pages can use one cable.</td></tr>
+    <tr><td>RS485</td><td class="wrap2">Every module on the bus</td><td class="wrap2">Framed <code>#id …</code> / <code>@id …</code>. Works through a dongle or through another module's USB port.</td></tr>
+  </tbody></table></div>
+</section>
+
+<!-- ===================== COMMANDS ===================== -->
+<section id="commands">
+  <div class="shead">
+    <span class="where">firmware/COMMANDS.md is the authoritative reference</span>
+    <h2>Command language</h2>
+    <p>One text protocol on every channel. Everything the web UIs do, a script can do too.</p>
+  </div>
+
+  <div class="grp2">Every module type</div>
+  <div class="scroll"><table><thead><tr><th>Command</th><th class="wrap2">Does</th></tr></thead><tbody>
+    <tr><td>PING</td><td class="wrap2">Answers id, name and type — safe to broadcast, used for discovery</td></tr>
+    <tr><td>HELP / HELP &lt;cmd&gt;</td><td class="wrap2">Bare <code>HELP</code> lists every command this board understands on one line; <code>HELP POSE</code> explains one. Generated from a single declaration, so it can never advertise a command it lacks — and a board of a different type correctly answers “no such command here”</td></tr>
+    <tr><td>INFO</td><td class="wrap2">One-line status JSON</td></tr>
+    <tr><td>SET ID | NAME | TYPE | WIFI</td><td class="wrap2">Identity, module type and radio mode</td></tr>
+    <tr><td>CFG</td><td class="wrap2">Read or write stored settings; <code>CFG CLEAR</code> resets them</td></tr>
+    <tr><td>PIN? | PIN VALID | PIN | PIN CLEAR</td><td class="wrap2">Read, validate, set and reset the hardware pin map</td></tr>
+    <tr><td>FILES | FBEGIN | FDATA | FEND | FREAD | FDEL</td><td class="wrap2">SD file access over the text channel</td></tr>
+    <tr><td>MOVE | MOVE STOP</td><td class="wrap2">Run or stop a YAML sequence from the card</td></tr>
+    <tr><td>AUTH | USER LIST|ADD|DEL|PASS</td><td class="wrap2">Setup-page accounts, stored on the board</td></tr>
+    <tr><td>REBOOT</td><td class="wrap2">Restarts about a second later</td></tr>
+  </tbody></table></div>
+
+  <div class="grp2">Lift only</div>
+  <div class="scroll"><table><thead><tr><th>Command</th><th class="wrap2">Does</th></tr></thead><tbody>
+    <tr><td>UP | DOWN | STOP | HOME</td><td class="wrap2">Travel to a limit, stop, or home and zero the encoder</td></tr>
+    <tr><td>GOTO | STAGE?</td><td class="wrap2">Go to a stage; report the current one</td></tr>
+    <tr><td>SPEED | SPEED?</td><td class="wrap2">Raw PWM, or real units with <code>MS</code> / <code>MMS</code></td></tr>
+    <tr><td>TIME?</td><td class="wrap2">Estimated time for one stage, or to a given stage</td></tr>
+    <tr><td>RGB | RGB BRIGHT | RGB EFFECT</td><td class="wrap2">Colour, brightness and effects</td></tr>
+    <tr><td>PLAY | PLAY STOP | VOL</td><td class="wrap2">Audio from the SD card</td></tr>
+  </tbody></table></div>
+
+  <div class="grp2">Nong only</div>
+  <div class="scroll"><table><thead><tr><th>Command</th><th class="wrap2">Does</th></tr></thead><tbody>
+    <tr><td>POSE | POSE?</td><td class="wrap2">Move all 10 joints, optionally over <code>T</code> ms; read the current pose</td></tr>
+    <tr><td>JOINT</td><td class="wrap2">Move one joint, by number or name</td></tr>
+    <tr><td>HOME | ZERO</td><td class="wrap2">Return to the neutral pose</td></tr>
+    <tr><td>STOP</td><td class="wrap2">Freeze mid-move — the pose holds</td></tr>
+    <tr><td>RELAX | ATTACH</td><td class="wrap2">Go limp to pose by hand; power up again holding position</td></tr>
+    <tr><td>SPEED | SPEED? | TIME?</td><td class="wrap2">Default speed in °/s, and move-time estimates</td></tr>
+    <tr><td>SETZERO</td><td class="wrap2">Make the current pose home — the arm does not move</td></tr>
+    <tr><td>LIMIT | LIMIT?</td><td class="wrap2">Per-joint joint travel; the JSON reply carries the whole calibration</td></tr>
+    <tr><td>GEAR | PULSE | RANGE | RATE</td><td class="wrap2">Per-joint reduction, pulse range, servo travel and frame rate</td></tr>
+    <tr><td>JCFG</td><td class="wrap2">One joint's whole setup in a single line — what GEAR+PULSE+RANGE+RATE+LIMIT do in five. <b>Send rig</b> uses it: 10 commands instead of 50, about 1.6 s down to 0.3 s</td></tr>
+    <tr><td>SERVO</td><td class="wrap2">Apply a servo preset to one joint or all</td></tr>
+  </tbody></table></div>
+</section>
+
+<!-- ===================== FILES ===================== -->
+<section id="files">
+  <div class="shead">
+    <span class="where">reference</span>
+    <h2>Files &amp; formats</h2>
+  </div>
+  <div class="scroll"><table><thead><tr><th>Path</th><th class="wrap2">What it is</th></tr></thead><tbody>
+    <tr><td>/moves/*.yaml</td><td class="wrap2">Sequences on the SD card. Steps map to commands: <code>pose</code>, <code>goto</code>, <code>home</code>, <code>up</code>, <code>down</code>, <code>stop</code>, <code>wait</code>, <code>rgb</code>, <code>effect</code>, <code>bright</code>, <code>play</code>, <code>vol</code></td></tr>
+    <tr><td>/data/nong_cal.yaml</td><td class="wrap2">Calibration written by LIMIT/GEAR/PULSE/RANGE/RATE/SETZERO; loaded at boot over module.yaml</td></tr>
+    <tr><td>/data/module.yaml</td><td class="wrap2">Per-board configuration — pins, joint limits, gear, servo specs, speeds, link/peer</td></tr>
+    <tr><td>/music/*</td><td class="wrap2">mp3 and wav for the lift's speaker</td></tr>
+    <tr><td>projects/*.json</td><td class="wrap2">Studio projects — rig, meshes and timeline together</td></tr>
+    <tr><td>sequences/*.yaml</td><td class="wrap2">Studio exports, ready to copy to a card or upload</td></tr>
+    <tr><td>models/*.stl</td><td class="wrap2">Your CAD exports, in millimetres</td></tr>
+  </tbody></table></div>
+</section>
+
+<footer>
+  Sources: <code>firmware/COMMANDS.md</code>, <code>firmware/src/web/WebUI.h</code>,
+  <code>main_python/main.py</code>, <code>nong/main_python_set_nong/</code>,
+  <code>qc/</code>. COMMANDS.md is authoritative for the command language.
+</footer>
+</main>
+</div>
+
+<script>
+(function(){
+  // Filter: hide any feature card or table row that does not match, then hide
+  // a section once nothing inside it is left.
+  var q = document.getElementById("q"), none = document.getElementById("none");
+  var secs = Array.prototype.slice.call(document.querySelectorAll("section"));
+  q.addEventListener("input", function(){
+    var term = q.value.trim().toLowerCase(), any = false;
+    secs.forEach(function(s){
+      // Decide about the HEADING first. Searching "camera" matches the Camera
+      // section's own title, and every card inside it is then relevant — but
+      // the rows were filtered on their own text first, so a section kept for
+      // its heading rendered as a title with nothing underneath it. Looking
+      // like the page has no answer is worse than not matching at all.
+      var head = s.querySelector(".shead").textContent.toLowerCase();
+      var headHit = !!term && head.indexOf(term) >= 0;
+      var hits = 0;
+      s.querySelectorAll(".f, tbody tr").forEach(function(el){
+        var show = !term || headHit ||
+                   el.textContent.toLowerCase().indexOf(term) >= 0;
+        el.style.display = show ? "" : "none";
+        if (show) hits++;
+      });
+      var keep = hits > 0 || headHit;
+      s.style.display = keep ? "" : "none";
+      // group labels and empty tables would otherwise float alone
+      s.querySelectorAll(".scroll").forEach(function(box){
+        var rows = box.querySelectorAll("tbody tr");
+        var live = Array.prototype.filter.call(rows, function(r){
+          return r.style.display !== "none"; }).length;
+        box.style.display = live ? "" : "none";
+      });
+      if (keep) any = true;
+    });
+    none.style.display = any ? "none" : "block";
+  });
+
+  // Sidebar follows the section you are reading.
+  var links = Array.prototype.slice.call(document.querySelectorAll("nav a"));
+  var byId = {};
+  links.forEach(function(a){ byId[a.getAttribute("href").slice(1)] = a; });
+  if ("IntersectionObserver" in window) {
+    var seen = {};
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ seen[e.target.id] = e.isIntersecting; });
+      var current = null;
+      secs.forEach(function(s){ if (seen[s.id] && !current) current = s.id; });
+      links.forEach(function(a){ a.classList.remove("on"); });
+      if (current && byId[current]) byId[current].classList.add("on");
+    }, { rootMargin: "-10% 0px -75% 0px" });
+    secs.forEach(function(s){ io.observe(s); });
+  }
+})();
+</script>
+</body></html>

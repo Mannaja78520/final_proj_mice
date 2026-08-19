@@ -71,6 +71,30 @@ def _wait_done(base, limit=20.0):
     return _json(F.get(base + "/api/flash"))
 
 
+
+def _fn(text, name):
+    """One function's source, brace matched.
+
+    Assertions stay scoped to the function under test, never the whole page:
+    the words this check looks for appear elsewhere too, and a file-wide
+    search passed against every sabotage of this.
+    """
+    i = text.find(name)
+    if i < 0:
+        return ""
+    j = text.index("{", i)
+    depth = 0
+    while j < len(text):
+        if text[j] == "{":
+            depth += 1
+        elif text[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[i:j + 1]
+        j += 1
+    return text[i:]
+
+
 def run(t):
     import tempfile
     from pathlib import Path
@@ -168,11 +192,16 @@ def run(t):
         t.contains(hub, "/api/flash", "the hub page can flash")
         t.contains(hub, "confirm(",
                    "and asks before overwriting a board's firmware")
-        box = hub[hub.find("function flashBox"):]
-        box = box[:box.find("\n  return box;")]
+        # Flashing moved to its own screen (A2-2), so these read the
+        # painter there. Scoped to that function, not the page, for the
+        # reason noted below: these words appear in more than one place.
+        box = _fn(hub, "async function paintFirmware(")
         t.contains(box, "esptool", "it explains when esptool is missing")
-        t.contains(box, "no firmware built", "and when nothing has been built yet")
-        t.contains(box, "aria-live", "progress is announced, not just painted")
+        t.contains(box, "built", "and when nothing has been built yet")
+        t.contains(_fn(hub, "function fwTarget("), "fwsay",
+                   "and each board says what is happening to it")
+        t.contains(hub, 'class="mini fwsay" aria-live',
+                   "progress is announced, not just painted")
     finally:
         os.environ.pop("MICE_ESPTOOL", None)
 
@@ -186,19 +215,19 @@ def run(t):
     # -e" and "not built" also appear in the all-empty message further down, so
     # a file-wide search passed against every sabotage of this.
     hub = (F.HUB / "web/hub.html").read_text(encoding="utf-8", errors="replace")
-    i = hub.find("function flashBox(")
-    j = hub.find("\nfunction ", i + 10)
-    body = hub[i:j if j > 0 else len(hub)]
-    t.ok(i >= 0, "the flash picker exists")
+    body = _fn(hub, "async function paintFirmware(")
+    t.ok(body, "the Firmware screen paints itself",
+         "flashing moved off the module rows onto its own screen (A2-2)")
 
-    t.contains(body, "filter(i=>!i.ready)",
-               "the picker looks at the types it CANNOT flash, not only the ready ones")
-    k = body.find("filter(i=>!i.ready)")
-    tail = body[k:k + 700] if k >= 0 else ""
-    t.contains(tail, "disabled=true",
-               "and lists them disabled, so they cannot be picked by mistake")
-    t.contains(tail, "not built on this PC yet",
-               "saying plainly why each one is unavailable")
-    t.contains(tail, "notBuilt.map(i=>i.env)",
-               "and naming the exact build command for those types",
-               )
+    # It walks EVERY image, not only the built ones. Filtering to `ready`
+    # is exactly what made unbuilt types vanish when the screen moved, and
+    # this check is what caught it.
+    t.contains(body, "images.forEach",
+               "it looks at every firmware type, not only the built ones")
+    t.contains(body, "!img.ready", "and treats an unbuilt one as its own case")
+    k = body.find("!img.ready")
+    tail = body[k:k + 900] if k >= 0 else ""
+    t.contains(tail, "not built on this PC",
+               "saying plainly why that type is unavailable")
+    t.contains(tail, "img.env", "and naming the exact build command for it")
+    t.contains(tail, "img.missing", "and which files are missing")

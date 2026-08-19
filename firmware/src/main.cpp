@@ -12,6 +12,8 @@
 #include <config.h>
 
 #include "core/Identity.h"
+#include "core/Log.h"
+#include "core/PortWrite.h"
 #include "core/ConfigStore.h"
 #include "core/HwConfig.h"
 #include "core/UserStore.h"
@@ -44,11 +46,16 @@ static String serialBuf;
 //
 //   OK joining "lift-test" now (WIFI for progress)[wifi] disconnected, reason=8
 //
-// A single write(buf, len) goes into the UART queue under one lock, so no
-// other task can get inside it. The leading newline also terminates any log
-// line that was still half-printed, so the reply always starts clean.
+// Through mice::writeOnce, the same call every LOG uses — one line, one write,
+// for the reason spelled out in core/PortWrite.h. Built into one String first
+// so it IS one buffer.
+//
+// The leading newline is this path's own: it terminates any log line that was
+// still half-printed when the reply came, so a reply always starts clean even
+// if a reader connected mid-line.
 static void emitLine(const String& s) {
-    Serial.print("\n" + s + "\n");
+    const String out = "\n" + s + "\n";
+    mice::writeOnce(out.c_str(), out.length());
 }
 
 void setup() {
@@ -61,7 +68,12 @@ void setup() {
 
   Serial.begin(115200);
   delay(100);
-  Serial.println("\n[boot] fw " FW_VERSION);
+  // Close whatever the ROM bootloader left half-printed: after a reset it
+  // prints at another baud and does not always finish its last line, so the
+  // first log would be glued onto that. Through the same one call as
+  // everything else that reaches this port.
+  mice::writeOnce("\n", 1);
+  LOGF(boot, "fw %s", FW_VERSION);
 
   identity.begin();
   cfgstore.begin();
@@ -75,14 +87,14 @@ void setup() {
     JsonDocument doc;
     if (sdstore.loadYaml("/data/module.yaml", doc)) {
       module->applySettings(doc.as<JsonVariant>());
-      Serial.println("[boot] applied /data/module.yaml");
+      LOGF(boot, "applied /data/module.yaml");
     }
   }
   {
     JsonDocument doc;
     if (cfgstore.applyTo(doc)) {
       module->applySettings(doc.as<JsonVariant>());
-      Serial.println("[boot] applied CFG overrides from NVS");
+      LOGF(boot, "applied CFG overrides from NVS");
     }
   }
 
@@ -103,10 +115,10 @@ void setup() {
     portal.pushConsole(line);
   });
 
-  Serial.printf("[boot] id=%u name=\"%s\" type=%s\n",
-                identity.id(), identity.name().c_str(), identity.type().c_str());
-  Serial.println("[boot] ready — commands on USB serial, RS485 (#<id> CMD) and http://" +
-                 identity.hostname() + ".local/");
+  LOGF(boot, "id=%u name=\"%s\" type=%s",
+       (unsigned)identity.id(), identity.name().c_str(), identity.type().c_str());
+  LOGF(boot, "ready — commands on USB serial, RS485 (#<id> CMD) and "
+       "http://%s.local/", identity.hostname().c_str());
 }
 
 void loop() {
@@ -127,6 +139,13 @@ void loop() {
       }
       serialBuf = "";
     } else if (c != '\r') {
+      // Bound it. Without this a host that sends bytes and never a
+      // terminator — a wrong baud rate, a half-open terminal, a cable
+      // picking up noise — grows this String until the heap is gone and
+      // the board dies with no message. The RS485 reader has had this
+      // guard for a long time (RS485Bus.cpp:25); the USB reader beside it
+      // never got one.
+      if (serialBuf.length() > 250) serialBuf = "";  // missed terminator
       serialBuf += c;
     }
   }

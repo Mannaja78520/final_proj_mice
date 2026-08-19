@@ -27,10 +27,17 @@ PAGE = """
 <iframe id="f" src="/"></iframe>
 <script>
 function done(s){ qcMark("NET " + s); qcMark("done"); }
-setTimeout(function(){
+window.addEventListener("load", async function(){
   try{
     var d = document.getElementById('f').contentDocument;
     var out = [];
+    // The hub page scans for modules as it loads, and the scan takes as long
+    // as it takes. Measuring after a fixed pause is a race the suite lost on
+    // three separate runs — wait for the page to be ready instead.
+    await qcWaitFor(function(){
+      return d.querySelector('#tabs .tab[data-go="network"]')
+          && d.querySelectorAll('#netlist input[type=checkbox]').length > 0;
+    }, 15000);
     var btn = d.querySelector('#tabs .tab[data-go="network"]');
     out.push("tabbtn=" + (btn ? "yes" : "no"));
     var card = d.querySelector('[data-tab="network"]');
@@ -58,7 +65,7 @@ setTimeout(function(){
       }, 6000);
     }, 800);
   } catch (e) { done("ERR=" + String(e).slice(0, 60)); }
-}, 3500);
+});
 </script>
 """
 

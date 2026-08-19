@@ -71,9 +71,40 @@ window.addEventListener("load", async function(){
     // report in chunks: one command line stays well inside an RS485 frame
     for (var k = 0; k < results.length; k++) {
       var r = results[k];
-      qcMark("R|" + r.url + "|" + r.w + "|" + r.over + "|" + r.tallest);
-      await new Promise(function(s){ setTimeout(s, 30); });
+      // AWAIT each report. These go to the module over one serial port that
+      // takes one caller at a time; firing 25 of them 30ms apart built a
+      // backlog that timed out under load, and the check then failed with
+      // "measurements missing" — pointing at a layout bug that did not exist.
+      await qcMark("R|" + r.url + "|" + r.w + "|" + r.over + "|" + r.tallest);
     }
+    qcMark("done");
+  }catch(e){ qcFail(e); }
+});
+</script>
+"""
+
+# Measured with the panel at its DEFAULT width, which is the width it has when
+# a person opens Studio — not a width chosen to make the numbers work.
+PANEL = """
+<style>html,body{margin:0}#f{width:1440px;height:900px;border:0}</style>
+<iframe id="f" src="/studio/"></iframe>
+<script>
+window.addEventListener("load", async function(){
+  try{
+    var d = document.getElementById('f').contentDocument;
+    var ok = await qcWaitFor(function(){
+      return d.querySelector('.jrow input[type=range]'); }, 15000);
+    if (!ok){ await qcMark("P over=-1 worst=panel~never~rendered"); return qcMark("done"); }
+    var side = d.getElementById('side');
+    var right = side.getBoundingClientRect().right, worst = "", by = 0;
+    side.querySelectorAll("*").forEach(function(el){
+      var o = el.getBoundingClientRect().right - right;
+      if (o > by) { by = o; worst = el.tagName.toLowerCase() +
+        (el.id ? "#" + el.id : "") +
+        (el.className ? "." + String(el.className).split(" ")[0] : ""); }
+    });
+    await qcMark("P over=" + Math.round(Math.max(by, side.scrollWidth - side.clientWidth)) +
+                 " worst=" + (worst || "none"));
     qcMark("done");
   }catch(e){ qcFail(e); }
 });
@@ -87,7 +118,12 @@ def run(t):
     fake_serial.reset()
     base, main = F.start_hub()
 
-    pages = ["/", "/help", "/studio/", "/mod?dev=usb%3A" + fake_serial.PORT]
+    # /rgb.html is here because it was NOT, for a long time. It is served by
+    # the hub and used at a venue on a phone, and it was in none of the three
+    # page lists — no responsive check, no throws check, no token check — so it
+    # drifted off the design system unnoticed.
+    pages = ["/", "/help", "/studio/", "/mod?dev=usb%3A" + fake_serial.PORT,
+             "/rgb.html"]
     devs = [[w, h] for w, h, _ in DEVICES]
     label = {w: name for w, _, name in DEVICES}
 
@@ -112,6 +148,27 @@ def run(t):
         # a couple of px is rounding on a scrollbar, not a layout break
         t.ok(over <= 2, "no sideways scrolling — " + name,
              "%dpx wider than the screen; widest element: %s" % (over, worst or "?"))
+
+    # ---- a PANEL must not clip its own controls either ---------------
+    # The page can pass everything above while a fixed-width panel inside it
+    # hides a control. Studio's side panel is 320px and held a grid of
+    # 96px + 1fr + 64px; the 1fr contained a range input, whose automatic
+    # minimum size is its intrinsic 131px, so the track refused to shrink and
+    # the joint number box sat 17px past the edge behind a scrollbar.
+    fake_serial.reset()
+    browser.raw_page(PANEL, base, seconds=30)
+    got = {}
+    for m in fake_serial.qc_marks:
+        if m.startswith("P "):
+            for kv in m[2:].split(" "):
+                k, _, v = kv.partition("=")
+                got[k] = v
+    if t.ok(got, "the studio panel was measured", fake_serial.qc_marks[-3:]):
+        over = int(got.get("over", "-1"))
+        t.ok(0 <= over <= 2,
+             "studio's side panel does not clip its own controls",
+             "%s px of it is off the edge; widest offender: %s"
+             % (over, got.get("worst", "?")))
 
     # ---- and the rules that make it stay that way -------------------
     for path, f in (("hub", F.HUB / "web" / "hub.html"),

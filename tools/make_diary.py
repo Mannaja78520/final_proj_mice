@@ -82,6 +82,14 @@ def build():
 if __name__ == "__main__":
     text = build()
     if "--print" in sys.argv:
+        # The diary contains characters the Windows console codepage (cp1252)
+        # cannot encode — "→" in the summary line above all. Printing them to a
+        # cp1252 stdout raises UnicodeEncodeError and the whole generator dies,
+        # so ask for UTF-8 out before writing a single line.
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except (AttributeError, OSError):     # pre-3.7, or a stream that cannot
+            pass                              # be reconfigured — try anyway
         print(text)
     else:
         dest = CODE / "docs" / "DIARY.md"

@@ -44,6 +44,7 @@ private:
     uint32_t pendingAt_ = 0;
     std::function<void(const String&)> busLine_;
     SemaphoreHandle_t sendMtx_ = nullptr;
+    bool warnedNoMtx_ = false;   // say it once if the lock is missing
 
     void handleLine(String line);
 };

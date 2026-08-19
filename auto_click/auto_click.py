@@ -13,10 +13,11 @@ DEFAULT_MINUTE = 15
 DEFAULT_SECOND = 0
 
 # Image to search
-DEFAULT_IMAGE = "chat_send_button_orange.png"
+DEFAULT_IMAGE = r"E:\\final_proj\\mice\\code\\auto_click\\chat_send_button_orange.png"
 
 # Confidence (0.0 - 1.0)
 DEFAULT_CONFIDENCE = 0.85
+
 
 # Retry until image is found
 DEFAULT_WAIT_IMAGE = True

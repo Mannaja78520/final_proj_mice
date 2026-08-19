@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RGB control</title>
+<link rel="stylesheet" href="/mice.css">
+<style>
+/* Only what is this page's own. Tokens, the reset, cards, buttons, inputs, the
+   quiet caption and the five state colours all come from /mice.css above. */
+body{
+  line-height:1.5;                /* a small dense page, not a document */
+  padding:var(--sp-4);max-width:760px;margin:0 auto;
+  overflow-x:hidden;              /* the page itself never scrolls sideways */
+}
+h1{font-size:20px;margin-bottom:var(--sp-1)}
+.card{margin:var(--sp-3) 0}
+/* a mode that is currently running — state, so it is --ok and it also says so */
+button.on{background:var(--ok);border-color:var(--ok);
+          color:var(--on-acc);font-weight:600}
+.lbl{min-width:80px}
+/* This page has room, so its brightness slider keeps a usable length. Sliders
+   are free to shrink everywhere else (mice.css) — Studio's panel is 320px and
+   a slider that will not shrink pushes the controls beside it off the edge. */
+input[type=range]{min-width:120px}
+#meter{width:100%;height:26px;background:var(--sunk);
+       border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
+#meterFill{height:100%;width:0%;
+  background:linear-gradient(90deg,var(--ok),var(--warn),var(--err))}
+/* Reserved height, so the card does not jump when the sequence list arrives.
+   Colour is never the only signal: each state also carries a word and a mark,
+   so it survives a screenshot and works for a colourblind reader. */
+#seqState{min-height:20px}
+
+@media (max-width:420px){
+  body{padding:var(--sp-3)}
+  .lbl{min-width:100%}            /* label above the control, not beside it */
+  .row>button{flex:1 1 auto}
+}
+</style>
+</head>
+<body>
+<h1>💡 RGB — <span id="who">module</span></h1>
+<div class="mini" style="margin-bottom:var(--sp-2)"><a href="/">← hub</a> · works over WiFi or the USB cable, whichever this page was opened with</div>
+
+<div class="card">
+  <h2>RGB control <span class="mini">(manual)</span></h2>
+  <div class="row">
+    <input type="color" id="col" value="#0050ff" oninput="manualColor()"
+           title="pick a colour and the strip changes as you drag">
+    <button onclick="manualColor()">Set</button>
+    <button onclick="cmd('RGB EFFECT off')">Off</button>
+  </div>
+  <div class="row"><span class="lbl">Brightness</span>
+    <input type="range" id="bri" min="0" max="255" value="128" oninput="cmd('RGB BRIGHT '+this.value,1)">
+  </div>
+  <div class="statline" id="manStat" aria-live="polite"></div>
+</div>
+
+<div class="card">
+  <h2>RGB effects <span class="mini">(run on the module itself)</span></h2>
+  <div class="row">
+    <button onclick="cmd('RGB EFFECT solid')">solid</button>
+    <button onclick="cmd('RGB EFFECT rainbow')">🌈 rainbow</button>
+    <button onclick="cmd('RGB EFFECT chase')">chase</button>
+    <button onclick="cmd('RGB EFFECT breathe')">breathe</button>
+    <button onclick="cmd('RGB EFFECT off')">off</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>RGB sequence <span class="mini">(scripted from the SD card)</span></h2>
+  <div class="row">
+    <select id="seqSel" style="flex:1"></select>
+    <button class="primary" id="runBtn" onclick="runSeq()">▶ Run</button>
+    <button onclick="cmd('MOVE STOP')">Stop</button>
+    <button id="seqRetry" onclick="loadSeqs()" title="ask the module for its sequence list again">⟳</button>
+  </div>
+  <!-- loading / empty / error / stale / ready all live here, and the space is
+       reserved above so the card never changes height when one replaces another -->
+  <div class="statline" id="seqState" aria-live="polite"></div>
+  <div class="mini">a sequence YAML can script the strip with <code>rgb / effect /
+    bright / wait</code> steps and <code>loop: true</code> — see
+    <code>sd_card_example/moves/rgb_show.yaml</code>. Timed light shows,
+    no PC needed once it runs.</div>
+</div>
+
+<div class="card">
+  <h2>RGB follows the PC speaker 🔊</h2>
+  <div class="row">
+    <button id="musBtn" onclick="toggleMusic()">Start — capture PC audio</button>
+    <select id="musStyle">
+      <option value="pulse">pulse — my color, brightness = volume</option>
+      <option value="party">party — colors spin, brightness = volume</option>
+    </select>
+  </div>
+  <div class="row"><span class="lbl">Sensitivity</span>
+    <input type="range" id="sens" min="1" max="20" value="8">
+  </div>
+  <div id="meter"><div id="meterFill"></div></div>
+  <div class="statline" id="musStat" aria-live="polite">when you press Start the browser asks what to share —
+    pick the screen (or the music tab) and tick <b>“share audio”</b>; the strip then
+    follows whatever the PC is playing. Works in Chrome/Edge on this PC.</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const qp=new URLSearchParams(location.search);
+const IP=qp.get('ip')||'', PORT=qp.get('port')||'', BUS=qp.get('id')||'';
+$('who').textContent=qp.get('name')||IP||PORT+(BUS?(' #'+BUS):'');
+
+let lastSend=0;
+// A failed command used to return '' and look exactly like a success, so a
+// dead cable or a module that had gone away was completely silent here — you
+// pressed a colour and simply nothing happened, with nothing to read. The
+// return value is unchanged (callers still get the text), but a failure now
+// says so, in words, with the reason after the sentence.
+async function cmd(c,throttled){
+  const now=performance.now();
+  if(throttled&&now-lastSend<90)return ''; // don't flood the link
+  lastSend=now;
+  const url=IP?('/api/robot/cmd?ip='+encodeURIComponent(IP)+'&c='+encodeURIComponent(c))
+             :('/api/usb/cmd?port='+encodeURIComponent(PORT)+(BUS?('&id='+BUS):'')+'&c='+encodeURIComponent(c));
+  try{
+    const r=await fetch(url);
+    const t=await r.text();
+    if(!r.ok){ say('The module did not accept that. '+(t||('reply '+r.status))); return ''; }
+    if(t.startsWith('ERR')){ say('The module refused it. '+t); return t; }
+    say('');
+    return t;
+  }catch(e){
+    say('Could not reach the module. Check it is powered and still on the same '
+        +'network or cable. '+(e.message||e));
+    return '';
+  }
+}
+function say(msg){
+  const el=$('manStat');
+  if(el)el.textContent=msg;
+}
+function hex2rgb(h){return [parseInt(h.substr(1,2),16),parseInt(h.substr(3,2),16),parseInt(h.substr(5,2),16)];}
+function manualColor(){const[r,g,b]=hex2rgb($('col').value);cmd(`RGB ${r} ${g} ${b}`,1);}
+
+// ---- the sequence list, in all five states ------------------------------
+// It used to have two: a list, or the guess "(no SD card?)" — which was put in
+// front of the reader whether the card was missing, the module was unreachable
+// or the reply was simply not JSON. Three different problems, one wrong answer,
+// and no way to tell which you had.
+let seqHave=[];                    // the last list that really arrived
+function seqState(kind,text){
+  const el=$('seqState');
+  if(!el)return;
+  el.className='statline state-'+kind;
+  el.textContent=text;
+}
+async function loadSeqs(){
+  const s=$('seqSel'),btn=$('seqRetry');
+  if(btn)btn.disabled=true;
+  seqState('load','Asking the module for its sequences…');
+  const t=await cmd('FILES /moves');
+  if(btn)btn.disabled=false;
+  let fs=null;
+  try{ fs=JSON.parse(t); }catch(e){ fs=null; }
+  if(!Array.isArray(fs)){
+    // KEEP whatever was last found rather than blanking it, and mark it old.
+    // Showing an empty list here would say "this module has no sequences",
+    // which is a different and untrue statement.
+    if(seqHave.length){
+      seqState('stale','⚠ old list — could not reach the module just now. '
+               +'Press ⟳ to try again.');
+    }else{
+      seqState('err','✗ Could not read the sequence list. The module may be '
+               +'unreachable, or it has no SD card. Press ⟳ to try again.');
+      s.innerHTML='<option>(list unavailable)</option>';
+    }
+    return;
+  }
+  seqHave=fs;
+  s.innerHTML='';
+  fs.forEach(f=>{const o=document.createElement('option');o.value=o.textContent=f.n;s.appendChild(o);});
+  if(!fs.length){
+    s.innerHTML='<option>(no sequences on the card)</option>';
+    seqState('empty','This module has an SD card but no sequences on it yet. '
+             +'Put a .yaml file in /moves on the card, then press ⟳.');
+    return;
+  }
+  seqState('ready','✓ '+fs.length+' sequence'+(fs.length===1?'':'s')+' on the card.');
+}
+function runSeq(){
+  const v=$('seqSel').value;
+  if(!v||v.startsWith('(')){
+    seqState('empty','Pick a sequence first — the list is empty right now.');
+    return;
+  }
+  cmd('MOVE '+v);
+}
+
+// ---- music mode: PC audio -> level -> RGB ----
+let audioCtx=null,analyser=null,stream=null,musTimer=null,hue=0;
+async function toggleMusic(){
+  if(musTimer){stopMusic();return;}
+  try{
+    stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
+    if(!stream.getAudioTracks().length){
+      $('musStat').textContent='no audio in the capture — start again and tick “share audio” in the picker';
+      stream.getTracks().forEach(t=>t.stop());stream=null;return;
+    }
+    stream.getVideoTracks().forEach(t=>t.stop()); // only the sound is needed
+    audioCtx=new AudioContext();
+    const src=audioCtx.createMediaStreamSource(stream);
+    analyser=audioCtx.createAnalyser();
+    analyser.fftSize=512;
+    src.connect(analyser);
+    musTimer=setInterval(musicTick,110);
+    $('musBtn').textContent='■ Stop music mode';
+    $('musBtn').classList.add('on');
+    $('musStat').textContent='following the PC audio…';
+  }catch(e){$('musStat').textContent='capture cancelled or not allowed ('+e.message+')';}
+}
+function stopMusic(){
+  clearInterval(musTimer);musTimer=null;
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  if(audioCtx)audioCtx.close();
+  stream=audioCtx=analyser=null;
+  musBusy=false;
+  $('musBtn').textContent='Start — capture PC audio';
+  $('musBtn').classList.remove('on');
+  $('meterFill').style.width='0%';
+  $('musStat').textContent='stopped';
+  cmd('RGB EFFECT off');
+}
+// One send at a time. The 90 ms throttle in cmd() is a CLOCK, not a queue: it
+// let ~9 requests a second onto a link that may serve two, and over USB the
+// port is shared with the module site's own polling. Requests piled up on the
+// port lock, the strip fell further and further behind the music, and stopping
+// music mode did not drain the backlog. Skipping a frame is invisible; a
+// growing queue is not.
+let musBusy=false;
+function musicTick(){
+  const buf=new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(buf);
+  let sum=0;
+  for(const v of buf){const d=(v-128)/128;sum+=d*d;}
+  const rms=Math.sqrt(sum/buf.length);                 // 0..~1
+  const lvl=Math.min(1,rms*(+$('sens').value));
+  $('meterFill').style.width=Math.round(lvl*100)+'%';
+  if(musBusy)return;                                   // last one is still out
+  let r,g,b;
+  if($('musStyle').value==='pulse'){
+    [r,g,b]=hex2rgb($('col').value).map(v=>Math.round(v*lvl));
+  }else{ // party: hue spins faster when loud
+    hue=(hue+2+lvl*14)%360;
+    const k=n=>{const h=(n+hue/30)%12;return Math.round(255*lvl*Math.max(0,Math.min(1,Math.min(h-3,9-h))));};
+    r=k(0);g=k(8);b=k(4);
+  }
+  musBusy=true;
+  cmd(`RGB ${r} ${g} ${b}`).finally(()=>{musBusy=false;});
+}
+loadSeqs();
+</script>
+</body>
+</html>

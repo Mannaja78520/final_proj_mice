@@ -17,22 +17,46 @@ from pathlib import Path
 
 class Snapshots:
     def __init__(self, root: Path, patterns, patches: Path, index: Path,
-                 what: str, restore_cmd: str):
+                 what: str, restore_cmd: str, also=None):
         self.root = Path(root)
         self.patterns = list(patterns)   # globs relative to root
         self.patches = Path(patches)
         self.index = Path(index)
         self.what = what                 # "web app" / "firmware"
         self.restore_cmd = restore_cmd   # shown in each patch.md
+        # Files that live OUTSIDE root but that the snapshot is worthless
+        # without — the shared stylesheet is the case this exists for: a page
+        # restored from 2026-06 with today's design system is not the page
+        # anyone remembers. Each entry is (folder, globs, prefix); the prefix is
+        # where they sit inside the patch, so an old patch that has no prefix
+        # folder still restores exactly the way it always did.
+        self.also = [(Path(r), list(pats), pre) for r, pats, pre in (also or [])]
 
     # ---- the files a snapshot covers -------------------------------
-    def sources(self):
+    def pairs(self):
+        """[(source file, path inside the patch, folder it restores to)]"""
         out = []
         for pat in self.patterns:
             for p in sorted(self.root.glob(pat)):
                 if p.is_file():
-                    out.append(p.relative_to(self.root))
+                    out.append((p, p.relative_to(self.root), self.root))
+        for root, pats, pre in self.also:
+            for pat in pats:
+                for p in sorted(root.glob(pat)):
+                    if p.is_file():
+                        out.append((p, Path(pre) / p.relative_to(root), root))
         return out
+
+    def sources(self):
+        return [rel for _, rel, _ in self.pairs()]
+
+    def _dest(self, rel):
+        """Where a file inside a patch belongs back in the tree."""
+        for root, _, pre in self.also:
+            pre = Path(pre)
+            if rel == pre or pre in rel.parents:
+                return root / rel.relative_to(pre)
+        return self.root / rel
 
     def existing(self):
         if not self.patches.is_dir():
@@ -56,10 +80,10 @@ class Snapshots:
         folder = self.patches / ("%04d_%s" % (n, self.slugify(desc)))
         folder.mkdir()
         saved = []
-        for rel in self.sources():
+        for src, rel, _ in self.pairs():
             dst = folder / rel
             dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(self.root / rel, dst)
+            shutil.copy2(src, dst)
             saved.append(rel.as_posix())
         when = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         (folder / "patch.md").write_text(
@@ -104,7 +128,7 @@ class Snapshots:
         for f in folder.rglob("*"):
             if f.is_file() and f.name != "patch.md":
                 rel = f.relative_to(folder)
-                dst = self.root / rel
+                dst = self._dest(rel)
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(f, dst)
                 count += 1

@@ -1,4 +1,5 @@
 #include "core/SDStore.h"
+#include "core/Log.h"
 #include "core/HwConfig.h"
 #include <SPI.h>
 #include <YAMLDuino.h>
@@ -15,21 +16,21 @@ bool SDStore::begin() {
     // that were never about the camera.
     if (hw.pins.sdCs < 0 || hw.pins.sdSck < 0 ||
         hw.pins.sdMiso < 0 || hw.pins.sdMosi < 0) {
-        Serial.println("[sd] no SPI card on this board (pins disabled)");
+        LOGF(sd, "no SPI card on this board (pins disabled)");
         ok_ = false;
         return false;
     }
     SPI.begin(hw.pins.sdSck, hw.pins.sdMiso, hw.pins.sdMosi, hw.pins.sdCs);
     ok_ = SD.begin(hw.pins.sdCs);
     if (!ok_) {
-        Serial.println("[sd] no card found, SD features disabled");
+        LOGF(sd, "no card found, SD features disabled");
         return false;
     }
     const char* dirs[] = {"/music", "/moves", "/data"};
     for (auto d : dirs) {
         if (!SD.exists(d)) SD.mkdir(d);
     }
-    Serial.printf("[sd] ok, %llu MB\n", SD.cardSize() / (1024ULL * 1024ULL));
+    LOGF(sd, "ok, %llu MB", (unsigned long long)(SD.cardSize() / (1024ULL * 1024ULL)));
     return true;
 }
 
@@ -50,7 +51,7 @@ bool SDStore::parseYaml(const String& text, JsonDocument& doc) {
     // it works on a board that has none.
     DeserializationError err = deserializeYml(doc, text.c_str());
     if (err) {
-        Serial.printf("[seq] yaml parse (memory): %s\n", err.c_str());
+        LOGF(seq, "yaml parse (memory): %s", err.c_str());
         return false;
     }
     return true;
@@ -68,7 +69,7 @@ bool SDStore::loadYaml(const char* path, JsonDocument& doc) {
     f.close();
     unlock();
     if (err) {
-        Serial.printf("[sd] yaml parse %s: %s\n", path, err.c_str());
+        LOGF(sd, "yaml parse %s: %s", path, err.c_str());
         return false;
     }
     return true;
@@ -123,12 +124,26 @@ bool SDStore::remove(const char* path) {
     return ok;
 }
 
+// Write BESIDE the target, then swap on success.
+//
+// FILE_WRITE is "w": SD.open truncates the destination the moment it opens,
+// before a single byte of the new file has arrived. An upload that then stops
+// part way — RS485 frame lost, USB pulled, the board browning out mid-move, a
+// WiFi POST timing out — destroyed the sequence that was already on the card
+// AND failed to deliver the new one. Uploading over an existing name is the
+// normal "Send to robot" flow, and the card is often the only copy at a venue.
+//
+// With a .part file, an interrupted upload leaves the old sequence untouched
+// and only a stray temporary behind.
 bool SDStore::openWrite(const char* path) {
     if (!ok_) return false;
     lock();
-    if (wtx_) { wtx_.close(); SD.remove(wtxPath_.c_str()); } // abort previous
-    wtx_ = SD.open(path, FILE_WRITE);
-    wtxPath_ = wtx_ ? path : "";
+    if (wtx_) { wtx_.close(); SD.remove(wtxTmp_.c_str()); }   // abort previous
+    wtxPath_ = path;
+    wtxTmp_ = wtxPath_ + ".part";
+    SD.remove(wtxTmp_.c_str());          // a leftover from a dead upload
+    wtx_ = SD.open(wtxTmp_.c_str(), FILE_WRITE);
+    if (!wtx_) { wtxPath_ = ""; wtxTmp_ = ""; }
     unlock();
     return (bool)wtx_;
 }
@@ -145,10 +160,20 @@ bool SDStore::closeWrite(bool keep) {
     if (!wtx_) return false;
     lock();
     wtx_.close();
-    if (!keep) SD.remove(wtxPath_.c_str());
+    bool ok = true;
+    if (!keep) {
+        // aborted: the old file was never touched, so only the temp goes
+        SD.remove(wtxTmp_.c_str());
+    } else {
+        // the whole file arrived — NOW replace the old one
+        SD.remove(wtxPath_.c_str());
+        ok = SD.rename(wtxTmp_.c_str(), wtxPath_.c_str());
+        if (!ok) SD.remove(wtxTmp_.c_str());   // do not leave a half-named file
+    }
     wtxPath_ = "";
+    wtxTmp_ = "";
     unlock();
-    return true;
+    return ok;
 }
 
 int SDStore::readChunk(const char* path, uint32_t offset, uint8_t* buf, size_t len) {

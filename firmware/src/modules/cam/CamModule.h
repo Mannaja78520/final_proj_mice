@@ -55,6 +55,10 @@ public:
     bool ready() const { return ready_; }
 
 private:
+    // What the sensor says it is, read directly, for when the driver refuses
+    // it without saying which sensor it refused.
+    static String probeSensor();
+
     SDStore* sd_ = nullptr;
     bool ready_ = false;         // the sensor answered at boot
     String initErr_;             // why it did not, in words

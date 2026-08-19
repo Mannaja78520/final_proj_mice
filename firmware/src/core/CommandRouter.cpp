@@ -1,4 +1,5 @@
 #include "core/CommandRouter.h"
+#include "core/Log.h"
 #include "core/CommandHelp.h"
 #include "core/ConfigStore.h"
 #include "core/Identity.h"
@@ -78,8 +79,8 @@ bool CommandRouter::preemptSequence(const String& line) {
     String cmd = argv[0];
     cmd.toUpperCase();
     if (!commandIsMotion(cmd)) return false;
-    Serial.println("[seq] " + cmd + " arrived while playing " + seq_->file() +
-                   " — stopping the sequence, the command takes over");
+    LOGF(seq, "%s arrived while playing %s — stopping the sequence, "
+              "the command takes over", cmd.c_str(), seq_->file().c_str());
     seq_->stop();
     return true;
 }
@@ -118,7 +119,12 @@ String CommandRouter::handleLocked(const String& line) {
                    " appass=" + id_->apPassword();
         }
         String g = Util::joinFrom(argv, argc, 1);
-        String up = argv[1];
+        // CLEAR is only CLEAR when it is the WHOLE argument. Testing argv[1]
+        // alone meant `GROUP clear skies` matched, so a group whose name starts
+        // with "clear" silently UNGROUPED the module instead of joining it —
+        // and since the AP password is derived from the group name, that board
+        // quietly left the installation.
+        String up = g;
         up.toUpperCase();
         if (up == "CLEAR") g = "";
         if (g.length() > 32) return "ERR group name too long (32 max)";
@@ -238,8 +244,17 @@ String CommandRouter::handleLocked(const String& line) {
             return "OK cleared all";
         }
         if (argc < 3) return "ERR usage: CFG [<key> <value>|CLEAR [key]]";
-        if (!cfg_->set(k, argv[2].toFloat()))
-            return "ERR keys: encoder leds speed speed_mms stages stage_mm mm_per_rev counts_per_rev max_rpm counts_per_stage volume speed_dps max_dps link peer";
+        String why;
+        if (!cfg_->set(k, argv[2].toFloat(), &why)) {
+            // An out-of-range value and an unknown key are different mistakes.
+            // Saying "keys: ..." for a value that was simply too large sent
+            // people looking for a spelling error that was not there.
+            if (why.startsWith("ERR unknown setting"))
+                return "ERR keys: encoder leds speed speed_mms stages stage_mm "
+                       "mm_per_rev counts_per_rev max_rpm counts_per_stage "
+                       "volume speed_dps max_dps link peer";
+            return why;
+        }
         return "OK " + k + "=" + argv[2] + " (reboot to apply)";
     }
 
@@ -334,8 +349,17 @@ String CommandRouter::handleLocked(const String& line) {
         if (argc < 2) return "ERR usage: FBEGIN <file>";
         String path = fullPath(Util::joinFrom(argv, argc, 1));
         if (!Util::safePath(path)) return "ERR bad path";
-        if (sd_->available() && sd_->openWrite(path.c_str()))
-            return "OK writing " + path;
+        if (sd_->available()) {
+            // A card IS fitted. If the write cannot be opened, say so — do not
+            // quietly fall back to memory and report "no SD card", which is
+            // both untrue and dangerous: the sender believes the sequence is
+            // stored, and it disappears at the next reboot. The card being
+            // full, write-protected or badly named all land here, and each one
+            // is worth knowing about.
+            if (sd_->openWrite(path.c_str())) return "OK writing " + path;
+            return "ERR the card is fitted but " + path + " could not be opened "
+                   "(full, write-protected, or a bad name?)";
+        }
         ramUpload_ = "";
         ramUpload_.reserve(1024);
         ramName_ = path;
@@ -435,9 +459,14 @@ String CommandRouter::handleLocked(const String& line) {
         String out = "OTA running=" + String(run ? run->label : "?") +
                      " size=" + String(ESP.getSketchSize());
         if (next) {
+            // The target is the OTHER slot, and OTA overwrites all of it. So
+            // the room for a new image is that partition's whole size. This
+            // used to subtract the RUNNING sketch's size — a different
+            // partition entirely — which understated the space, and underflowed
+            // into a huge number whenever the running image was the larger one.
             out += " target=" + String(next->label) +
                    " room=" + String((unsigned)next->size) +
-                   " free=" + String((unsigned)next->size - ESP.getSketchSize());
+                   " free=" + String((unsigned)next->size);
         } else {
             out += " target=none (this build has no second app slot)";
         }
@@ -457,6 +486,9 @@ String CommandRouter::handleLocked(const String& line) {
 void CommandRouter::buildStatus(JsonDocument& doc) {
     lock();
     doc["id"] = id_->id();
+    // Which physical board this is, so a hub that meets it twice - down a
+    // cable and over WiFi - knows it is meeting one board.
+    doc["chip"] = Identity::chip();
     doc["name"] = id_->name();
     doc["type"] = id_->type();
     doc["group"] = id_->group();   // which installation it belongs to
@@ -504,7 +536,7 @@ void CommandRouter::loop() {
     unlock();
 
     if (rebootAt_ && (int32_t)(millis() - rebootAt_) >= 0) {
-        Serial.println("[sys] rebooting...");
+        LOGF(sys, "rebooting...");
         delay(50);
         ESP.restart();
     }

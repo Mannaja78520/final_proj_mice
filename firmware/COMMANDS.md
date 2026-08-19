@@ -202,6 +202,16 @@ a **blank line immediately before it**. That blank line is what tells a real
 reply apart from the orphaned tail of a log line that was cut in half, which
 otherwise gets mistaken for the answer and shifts every reply by one.
 
+Since 2026-08-18 every log line is also emitted as a **single write** through one
+helper (`src/core/Log.h`), so a log raised on another task — a WiFi event, the
+OTA upload — can no longer land *inside* a reply and glue itself to the end of
+it. A log line still carries exactly one `[tag] ` prefix, still ends with one
+newline, and can never contain a newline in the middle: the tag list lives in
+one place and the formatting is asserted byte for byte by the PC tests in
+`test/test_logic`. What has NOT changed is the framing above — a reader that
+connects mid-line can still catch a half-printed log, which is what the blank
+line before a reply is for.
+
 WiFi is optional: boot is non-blocking (USB/RS485 respond ~1 s after power-on
 even with no network anywhere), and `SET WIFI OFF` turns the radio off
 completely for installations that only use the bus. One app pattern:
@@ -249,7 +259,7 @@ interchangeably.
 | Command | Reply | Notes |
 |---|---|---|
 | `PING` | `PONG <id> <name> <type>` | safe on broadcast, used for discovery |
-| `INFO` | one-line status JSON | same content as `/api/status` (minus wifi) |
+| `INFO` | one-line status JSON | same content as `/api/status` (minus wifi). Includes `chip` — the board's eFuse MAC as twelve hex digits, which is the only identifier on it that nobody can change: `id`, `name` and `type` are all set by a person. The hub matches on it to tell that the board on a cable and the board at an address are one board, and that two boards sharing a default id are not |
 | `HELP` / `HELP <cmd>` | `POSE <a1..a10> [T <ms>] - move every joint…` | every command **this board** understands, straight from `config/commands.json` and filtered at build time to this binary's module type — so it can never advertise one it lacks |
 | `SET ID <1-247>` | `OK id=3` | RS485 address, saved to chip immediately |
 | `SET NAME <name>` | `OK name=...` | spaces allowed; also renames WiFi hostname, `<name>.local`, AP SSID |

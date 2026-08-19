@@ -17,6 +17,14 @@ public:
 
     static String defaultName(); // "MOD-XXXXXX" from the chip MAC
 
+    // The chip's own MAC, as twelve hex digits. The ONE identifier on a
+    // board that no one can change: the id is a byte someone sets, the
+    // name is typed, the type is chosen. The hub needs it to tell that
+    // the board on this cable and the board at that address are one
+    // board - and to tell that two boards which share a default id are
+    // not.
+    static String chip();
+
     uint8_t id() const { return id_; }
     const String& name() const { return name_; }
     const String& type() const { return type_; }

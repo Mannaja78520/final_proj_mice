@@ -77,6 +77,8 @@ window.addEventListener("load", function(){ setTimeout(function(){
 
     report(out.join(" "));
   }catch(e){ report("ERR " + e.message); }
+  // Say so, rather than leaving the runner to guess with a stopwatch.
+  qcMark("done");
 }, 900); });
 """
 
@@ -133,7 +135,13 @@ def _drive(base):
     web = F.STUDIO_WEB
     drv = web / "_qcmod.html"
     html = F.get(base + "/mod?dev=usb%3A" + fake_serial.PORT)[1]
-    drv.write_text(html + "<script>\n" + DRIVER + "\n</script>", encoding="utf-8")
+    # This check builds its own page rather than going through
+    # browser.page, so it has to ask for the login script itself: its
+    # report goes to /api/usb/cmd, which needs a session now. Without it
+    # the page runs fine and simply cannot be heard, which reads as
+    # "nothing reported" — a failure that points at the wrong thing.
+    drv.write_text(browser._login_js() + html          # noqa: SLF001
+                   + "<script>\n" + DRIVER + "\n</script>", encoding="utf-8")
     browser.SCRATCH.mkdir(parents=True, exist_ok=True)
     prof = str(browser.SCRATCH / ("profile_mod_%d" % int(time.time() * 1000)))
     try:
@@ -145,7 +153,10 @@ def _drive(base):
                         "'%s/studio/_qcmod.html?dev=usb%%3A%s' -NoNewWindow"
                         % (browser.EDGE, browser.TAG, prof, base, fake_serial.PORT)],
                        timeout=60)
-        time.sleep(14)
+        # Wait for the page to report, not for the clock. A flat sleep is a
+        # bet on how fast the machine is today: under the full suite this one
+        # expired mid-run and failed a promote for a page that was working.
+        browser._wait_for_done(14)            # noqa: SLF001 - same wait as raw_page
     finally:
         drv.unlink(missing_ok=True)
         browser.kill()

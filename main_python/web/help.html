@@ -1,60 +1,57 @@
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mice — features &amp; help</title>
+<link rel="stylesheet" href="/mice.css">
+<script src="/mice.js"></script>
 <style>
-  :root{--sunk:#0d1117;--btn:#243040;--on-acc:#06121f;--r-sm:7px;--r-md:10px;--r-lg:12px;--sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-6:24px;
-    --bg:#10141a; --card:#1a212b; --line:#2a3442; --txt:#dce3ec; --mut:#8b98a9;
-    --acc:#4da3ff; --acc-soft:#16263a; --ok:#3ecf8e; --ok-soft:#122b22;
-    --warn:#ffb454; --warn-soft:#2e2416; --err:#ff6b6b;
-    --code-bg:#141b24; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
-    --sans:ui-sans-serif,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
-    --mono:ui-monospace,"Cascadia Code","Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--sans);
-       font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  /* Only what is the HELP page's own. Tokens, the reset, the focus ring,
+     reduced motion and touch targets all come from /mice.css above.
+     This page is a document, not a control panel: it is the one surface with
+     its own type scale, and its own big section heads instead of the small
+     uppercase label h2 that every other app uses. */
+  body{-webkit-font-smoothing:antialiased}
   .wrap{display:grid;grid-template-columns:236px minmax(0,1fr);gap:40px;
-        max-width:1180px;margin:0 auto;padding:0 24px}
+        max-width:1180px;margin:0 auto;padding:0 var(--sp-6)}
   nav{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
       padding:28px 0 40px;display:flex;flex-direction:column;gap:2px}
   nav .brand{font-weight:700;font-size:17px;letter-spacing:-.01em;margin-bottom:2px}
   nav .brandsub{font-size:12px;color:var(--mut);margin-bottom:14px;line-height:1.45}
   nav .back{display:inline-block;font-size:12.5px;color:var(--acc);text-decoration:none;
-            margin-bottom:16px;padding:5px 10px;border:1px solid var(--line);
-            border-radius:7px;background:var(--card)}
+            margin-bottom:var(--sp-4);padding:5px 10px;border:1px solid var(--line);
+            border-radius:var(--r-sm);background:var(--card)}
   nav .back:hover{border-color:var(--acc)}
   nav a{color:var(--mut);text-decoration:none;font-size:13.5px;padding:5px 10px;
         border-radius:6px;border-left:2px solid transparent}
   nav a:hover{color:var(--txt);background:var(--acc-soft)}
   nav a.on{color:var(--acc);border-left-color:var(--acc);background:var(--acc-soft);font-weight:600}
   nav .grp{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
-           color:var(--mut);margin:16px 0 5px 10px;opacity:.72}
-  nav a:focus-visible,#q:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+           color:var(--mut);margin:var(--sp-4) 0 5px 10px;opacity:.72}
   main{padding:34px 0 96px;min-width:0}
   header.top{margin-bottom:30px}
-  header.top h1{font-size:31px;line-height:1.15;letter-spacing:-.022em;margin:0 0 8px;
+  header.top h1{font-size:31px;line-height:1.15;letter-spacing:-.022em;margin:0 0 var(--sp-2);
                 font-weight:700;text-wrap:balance}
   header.top p{margin:0;color:var(--mut);max-width:64ch}
-  .stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
-  .stat{background:var(--card);border:1px solid var(--line);border-radius:8px;
-        padding:8px 13px;box-shadow:var(--shadow)}
+  .stats{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-top:18px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);
+        padding:var(--sp-2) 13px}
   .stat b{display:block;font-size:19px;line-height:1.2;font-variant-numeric:tabular-nums}
   .stat span{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
-  #q{width:100%;margin:22px 0 0;padding:11px 14px;border-radius:9px;
-     border:1px solid var(--line);background:var(--card);color:var(--txt);
-     font-family:var(--sans);font-size:14.5px;box-shadow:var(--shadow)}
+  #q{width:100%;margin:22px 0 0;padding:11px 14px;border-radius:var(--r-sm);
+     background:var(--card);font-size:14.5px}
   #q::placeholder{color:var(--mut)}
   #none{display:none;color:var(--mut);padding:22px 2px;font-size:14px}
   section{margin-top:46px;scroll-margin-top:20px}
   .shead{border-bottom:1px solid var(--line);padding-bottom:11px;margin-bottom:18px}
-  .shead h2{margin:0;font-size:21px;letter-spacing:-.015em;font-weight:700}
+  /* a document heading, not the small uppercase section label in mice.css */
+  .shead h2{margin:0;font-size:21px;letter-spacing:-.015em;font-weight:700;
+            color:var(--txt);text-transform:none}
   .where{font-family:var(--mono);font-size:11.5px;color:var(--acc);
          text-transform:none;letter-spacing:0;display:block;margin-bottom:5px}
   .shead p{margin:7px 0 0;color:var(--mut);font-size:14px;max-width:70ch}
   .grp2{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--mut);
         margin:26px 0 9px;font-weight:600}
-  .f{background:var(--card);border:1px solid var(--line);border-radius:9px;
-     padding:12px 15px;margin-bottom:7px;box-shadow:var(--shadow)}
+  .f{background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);
+     padding:var(--sp-3) 15px;margin-bottom:7px}
   .f h3{margin:0 0 3px;font-size:14.5px;font-weight:650;letter-spacing:-.005em}
   .f p{margin:0;color:var(--mut);font-size:13.5px}
   .f p + p{margin-top:5px}
@@ -69,19 +66,19 @@
        border-radius:4px;margin-left:7px;vertical-align:1.5px;white-space:nowrap}
   .t-new{background:var(--ok-soft);color:var(--ok)}
   .t-opt{background:var(--warn-soft);color:var(--warn)}
-  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:9px;
-          background:var(--card);box-shadow:var(--shadow);margin-bottom:7px}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-sm);
+          background:var(--card);margin-bottom:7px}
   table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
-  th,td{text-align:left;padding:8px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th,td{text-align:left;padding:var(--sp-2) 13px;border-bottom:1px solid var(--line);vertical-align:top}
   th{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);
      font-weight:600;white-space:nowrap}
   tr:last-child td{border-bottom:none}
   td:first-child{white-space:nowrap;font-family:var(--mono);font-size:12.5px}
   td.wrap2{white-space:normal;font-family:var(--sans);font-size:13.5px}
   .note{border-left:3px solid var(--warn);background:var(--warn-soft);
-        border-radius:0 8px 8px 0;padding:11px 15px;margin:14px 0;font-size:13.5px}
+        border-radius:0 var(--r-sm) var(--r-sm) 0;padding:11px 15px;margin:14px 0;font-size:13.5px}
   .note b{color:var(--warn)}
-  .note code{background:rgba(255,255,255,.07)}
+  .note code{background:color-mix(in srgb,var(--txt) 8%,transparent)}
   footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);
          color:var(--mut);font-size:12.5px}
   @media (max-width:860px){
@@ -90,24 +87,9 @@
         padding:20px 0 6px;border-bottom:1px solid var(--line)}
     nav .grp{display:none}
     nav .brand,nav .brandsub,nav .back{width:100%;margin-bottom:6px}
-    main{padding-top:24px}
+    main{padding-top:var(--sp-6)}
   }
-
-/* ---- shared floor: the same in every mice web app ------------------ */
-/* The focus ring is never removed, only restyled — keyboard users need to
-   see where they are, and :focus-visible keeps it off mouse clicks. */
-:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{
-  outline:2px solid var(--acc);outline-offset:2px;border-radius:var(--r-sm)}
-/* Motion is a preference, not a decoration. */
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01ms!important;
-    animation-iteration-count:1!important;transition-duration:.01ms!important;
-    scroll-behavior:auto!important}}
-
-/* Touch targets: a finger is not a mouse pointer. */
-@media (pointer:coarse){
-  button,.tab,input,select{min-height:36px}
-}
+  @media (pointer:coarse){ nav a{min-height:36px} }
 </style></head><body>
 
 
@@ -144,7 +126,11 @@
     <div class="stat"><b>100</b><span>QC checks</span></div>
   </div>
   <input id="q" type="search" placeholder="Filter features — try &quot;servo&quot;, &quot;SD&quot;, &quot;USB&quot;, &quot;pin&quot;" autocomplete="off">
-  <div id="none">Nothing matches that. Try a shorter word.</div>
+  <!-- The empty state names the one action that fixes it, and gives real
+       examples from this page rather than only telling the reader to retry. -->
+  <div id="none">Nothing on this page matches that word. Try a shorter one, or
+    a word the robot itself uses — for example <b>servo</b>, <b>pose</b>,
+    <b>WiFi</b>, <b>SD</b> or <b>flash</b>.</div>
 </header>
 
 <!-- ===================== FIRMWARE CORE ===================== -->
@@ -403,14 +389,62 @@
        itself, so it follows every size change: dragging the splitter, switching tabs, a
        scrollbar appearing.</p></div>
   <div class="f"><h3>One design system across every page<span class="tag t-new">new</span></h3>
-    <p>The hub, this help page, Nong Studio and the module's own website all read their
-       colours, radii and spacing from the <b>same set of tokens</b>. Twenty-seven hardcoded
-       copies of those colours were replaced with the variables they were copying &mdash; the
-       kind of thing that silently goes wrong the first time an accent colour changes, because
-       the copies stay behind. QC now fails if any page hardcodes a colour that is already a
-       token, so the four pages cannot drift apart into looking like different products.</p>
+    <p>The hub, this help page, the RGB page, Nong Studio and the module's own website read
+       their colours, radii and spacing from <b>one file</b>: <code>shared/web/mice.css</code>.
+       They used to hold <b>six copies</b> of it, each one commented &ldquo;the shared design
+       system&rdquo; and none of them shared &mdash; they had already drifted into three
+       different corner-radius scales and four names for the same grey caption.</p>
+    <p>Every page links it at <code>/mice.css</code>. The <b>board serves that same URL
+       itself</b>: the stylesheet is compiled into the firmware, so a module looks the same
+       whether you reach it over WiFi or through the hub over USB. QC fails if a page declares
+       its own tokens, hardcodes a colour that is already a token, forgets the link, or if the
+       copy in the board's flash is not byte for byte the shared file.</p>
     <p>Dark stays the permanent default: the show area is kept dark and a bright screen spills
        light into the event.</p></div>
+  <div class="f"><h3>Flashing says which board, and which PC<span class="tag t-new">new</span></h3>
+    <p>Overwriting firmware cannot be undone from this screen, it takes about a minute, and
+       the board is usually in someone's hands across the room. The old question named a COM
+       port or an IP address &mdash; neither tells you <em>which</em> of the boards in the room
+       you are about to overwrite.</p>
+    <p>The confirm now names the <b>board</b> (its name, its id and the type it runs now),
+       <b>what it will become</b> and whether that is a change, <b>how it is reached</b>
+       (this PC's cable, or WiFi), and <b>which PC is doing it, by name</b>. That last one
+       matters because several machines at a venue run this same hub on the same network, so
+       being on the wrong browser tab is the easy mistake.</p>
+    <p>Cancel is the prominent button and the one under your thumb; overwriting is styled as
+       destructive and has to be reached for. Escape cancels. QC clicks Cancel and then checks
+       the <em>hub</em>, not the page &mdash; a confirm that closes while the write has already
+       started would be worse than no confirm at all.</p></div>
+  <div class="f"><h3>The hub asks for a password before it does anything<span class="tag t-new">new</span></h3>
+    <p>The hub listens on every network connection so a phone on the same WiFi can reach it.
+       Until now that also meant <b>anyone</b> on that WiFi could drive the servos or reflash
+       a board. Now anything that <em>changes</em> something needs a login.</p>
+    <p><b>Looking stays free.</b> The module list, the status of every board, this help page
+       and the pages themselves all work with no password &mdash; someone checking whether a
+       board is alive should never meet a password box.</p>
+    <p>Two details that are easy to get wrong. First, the rule is not &ldquo;GET is safe&rdquo;:
+       <code>/api/usb/cmd</code> is a GET that <b>moves the arm</b>, so the gate is a list of
+       what changes something, not a rule about the kind of request. Second,
+       <b>stopping is never gated</b> &mdash; a password prompt while an arm is about to hit
+       someone is a safety failure, so starting a show needs a login and ending one never does.</p>
+    <p>On first run the hub prints a generated password <b>in its own window, on the PC</b>.
+       It is never shown on a page and never sent over the network, so seeing it means standing
+       at the machine. It is stored hashed, five wrong tries locks that caller out for a
+       minute, and a module on another PC needs a login on that PC too.</p></div>
+  <div class="f"><h3>One line per log, one write<span class="tag t-new">new</span></h3>
+    <p>The board writes its log lines to the same port it answers commands on. A log was
+       printed in <b>two</b> steps &mdash; the text, then the line ending &mdash; so a WiFi
+       event, which runs separately, could land between them and stick its message onto the
+       end of a reply. On the bench that looked like
+       <code>OK joining lift-test now (WIFI for progress)[wifi] disconnected, reason=8</code>,
+       and the PC read the whole thing as the answer.</p>
+    <p>Every log now goes through <b>one helper</b> that builds the line and hands it over in
+       a single write, which cannot be split. The subsystem names &mdash; <code>boot</code>,
+       <code>sys</code>, <code>wifi</code>, <code>sd</code>, <code>seq</code>,
+       <code>ota</code>, <code>cam</code> &mdash; live in one list instead of being typed at
+       36 places, a long line is cut with a visible <code>...</code> rather than lost, and a
+       log can never contain a line break in the middle, which would have looked like a
+       second reply.</p></div>
   <div class="f"><h3>Keyboard and motion<span class="tag t-new">new</span></h3>
     <p>Every page now shows a visible focus ring when you tab through it &mdash; three of the
        four had none &mdash; and every page respects <code>prefers-reduced-motion</code>, so
@@ -898,9 +932,10 @@
        finishes the job, because a board flashed with a different type still has the old one
        in its own memory and would come back as <code>blank</code>: it waits for the module,
        sends <code>SET TYPE</code>, and reboots it once more.</p>
-    <p>A module on the network gets <b>⚡ update over WiFi</b> in its row — no cable, no
-       reaching behind the set. The hub sends this PC's firmware for that module's type and
-       the board reboots into it.</p>
+    <p>It all happens on the <b>Firmware</b> screen. A module on the network appears there
+       with <b>⚡ Write over WiFi</b> — no cable, no reaching behind the set. The module's
+       own row still has a <b>⚡ firmware…</b> link, because the row is where you notice a
+       board needs updating; it takes you to the one screen that does the writing.</p>
     <p><b>A failed update cannot brick a board.</b> The chip has two firmware slots
        (1.875 MB each) and the update goes into the one that is <i>not</i> running. If the
        WiFi drops, the PC walks away, or the image is bad, the board simply keeps booting
@@ -914,10 +949,14 @@
        <code>/api/ota</code> to receive it. Flash it once over USB, and every update after
        that can be over the air.</p></div>
   <div class="f"><h3>Flash a board from the hub<span class="tag t-new">new</span></h3>
-    <p>On the <b>USB / cable</b> list every port now has <b>⚡ flash … as</b>. Pick
-       <code>nong</code>, <code>lift</code> or <code>blank</code>, confirm, and the hub
-       writes that firmware to the board — no PlatformIO, no command line. It works on a
-       port where <i>nothing</i> answered, which is exactly when you need it.</p>
+    <p>Open <b>Firmware</b>. It lists every module type this PC has built, and under each
+       one every board it could write it to — this PC's cables, boards on the WiFi, and
+       cables on other PCs running the same hub. Pick the firmware, pick the board,
+       confirm, and the hub writes it: no PlatformIO, no command line. Cables where
+       <i>nothing</i> answered are listed too, which is exactly when you need this.</p>
+    <p>A type that has <b>not</b> been built is still shown, with the reason and the exact
+       command that fixes it — so a missing <code>lift</code> looks like something you can
+       do, not like something broken.</p>
     <p>The hub owns every cable and shares it between its pages, but esptool cannot share.
        So for the length of the flash the hub <b>gives that port up completely</b>: it
        stops playing a show on it, closes the handle, and refuses to reopen it until
@@ -930,6 +969,88 @@
        WiFi and pins — those live in its own memory, not in the firmware.</p>
     <p>If the board does not answer, hold its <b>BOOT/IO0</b> button as the flash starts,
        and check the cable is a data cable. The message says so too.</p></div>
+  <div class="f"><h3>A way back to the hub, from the board's own page<span class="tag t-new">new</span></h3>
+    <p>Opening a module's website used to be a one-way trip. Typed straight into a
+       phone there is no Back to press, and the hub is the only screen that shows the
+       other modules. There is now a link in the board's header.</p>
+    <p>It never guesses. Several PCs at a venue run this same hub and the addresses
+       move with the network, so a link to the wrong one would land you on somebody
+       else's control panel. Opened <b>through</b> the hub, the link is simply back to
+       the hub serving the page. Opened <b>directly</b>, the board offers the hub that
+       last spoke to it — every hub says who it is on each request it makes — and it
+       names that PC in the link.</p>
+    <p>If no hub has been in touch, or the last one has been quiet for five minutes,
+       there is no link. The board never invents an address, and it forgets one that
+       has stopped being true.</p></div>
+  <div class="f"><h3>The board's page admits when something failed<span class="tag t-new">new</span></h3>
+    <p>Four things on the module's own website used to fail quietly and leave the page
+       showing a state the board was not in. Each now says what happened:</p>
+    <p>&bull; Changing a password signs you back in, and if that fails it says so —
+       before, Setup opened on a dead session, with every card visible and every action
+       behind it refused.<br>
+       &bull; A board that has never had a password chosen asks for one. If the board's
+       answer cannot be read, it <b>asks anyway</b>: being prompted once too often is
+       recoverable, and a prompt that turns itself off is not.<br>
+       &bull; <b>Log out</b> tells the board, and admits it if the board did not confirm —
+       a logout that only forgets locally leaves the cookie working for whoever sits
+       down next.<br>
+       &bull; A file list that could not be read says so instead of showing an empty
+       dropdown, which already means <i>nothing on this card</i>.</p></div>
+  <div class="f"><h3>Addresses and ports are hidden until you ask<span class="tag t-new">new</span></h3>
+    <p>An IP address tells you nothing while everything is working, and it was on every
+       row in the same grey as the name. <b>Settings &rarr; Show technical details</b>
+       brings back the addresses, the cable ports and the signal strengths, and the
+       choice is remembered in that browser.</p>
+    <p>Always shown, switch or no switch: the <b>name</b>, the <b>type</b> and the
+       <b>module number</b>. The number is not trivia — it is how a module is addressed
+       on the RS485 bus, and how two identical arms on a shelf are told apart.</p>
+    <p>It is one rule in the shared stylesheet (<code>.tech</code>), so a new screen
+       marks a detail as technical and it follows the same switch — nothing to wire up
+       and nothing to remember.</p></div>
+  <div class="f"><h3>One board is one row, however it is reached<span class="tag t-new">new</span></h3>
+    <p>A module plugged into this PC <b>and</b> on the WiFi used to appear twice, as two
+       robots. The two rows were not even equivalent: one drove it down the cable and
+       the other over the air, so which copy you happened to click decided how the arm
+       moved. Now it is one row, and it says every way the board can be reached —
+       <i>reachable on COM9 and over WiFi</i>.</p>
+    <p>The hub matches boards on the <b>chip</b>: the ESP32's own MAC, which the board
+       now reports in <code>INFO</code> and <code>/api/status</code>. It is the only
+       identifier on a board that nobody can change — the id is a byte someone sets,
+       the name is typed, the type is chosen.</p>
+    <p>That matters in the direction people do not expect. Two <i>different</i> boards
+       out of the same box share a default id, and merging on the id would show them as
+       one robot — a command meant for one arm going to the other. So without a chip
+       (older firmware) the id is used only together with the type, and a board that
+       reports a chip is never merged with one that does not.</p></div>
+  <div class="f"><h3>Open the hub on a phone: a QR, and a name<span class="tag t-new">new</span></h3>
+    <p><b>Network</b> shows a QR of this hub's address. Point a phone camera at it and
+       the phone opens the hub — no number read across a room, no
+       <code>192.168.137.1</code> typed as <code>192.168.13.71</code>. The address is
+       printed beside it for anyone working over a remote desktop.</p>
+    <p>The QR is drawn by the hub itself, with nothing installed: the encoder is part
+       of the program. It is redrawn every time you open <b>Network</b>, because a
+       laptop that moves between a venue WiFi and its own hotspot gets a new address,
+       and a QR of the old one sends the phone nowhere.</p>
+    <p>There is a <b>name</b> as well: <code>http://mice.local:9203/</code>, answered by
+       the hub over multicast DNS, which phones, Macs and Windows already speak. A name
+       does not change when the address does.</p>
+    <p><b>Both exist because either can fail.</b> Many venue networks block multicast
+       between clients, and then no name resolves — the QR still works. If another
+       program on this PC already holds the mDNS port, the page says so plainly and
+       shows only the address, rather than printing a name that answers to nothing.</p></div>
+  <div class="f"><h3>Flash from a PC that never built the firmware<span class="tag t-new">new</span></h3>
+    <p>At a venue there is usually one laptop with PlatformIO on it and several without —
+       and the board is plugged into whichever machine was nearest. So the <b>image
+       travels, not the command</b>: <b>Firmware</b> lists boards on other PCs' cables as
+       <b>⚡ Write over the cable on <i>that PC</i></b>. This PC sends the firmware there,
+       and <i>that</i> PC writes it over its own cable. esptool only ever runs on the
+       machine holding the board.</p>
+    <p>That PC has its own accounts, so the confirm asks for a login on it. It is used for
+       the one request and <b>not stored</b>: no hub ever holds another hub's password.</p>
+    <p>Progress comes back from the machine doing the work, through this hub, because a
+       browser cannot ask another hub directly. When the write finishes, a board that is
+       becoming a <i>different</i> type is named along with the one command that finishes
+       the job there — this PC has no route to a board on someone else's cable.</p></div>
   <div class="f"><h3>The hub keeps the show running<span class="tag t-new">new</span></h3>
     <p>Press <b>Play</b> and the <b>hub</b> — the Python program, not the page — sends the
        moves. Switch tabs, minimise the window, open something else: the rehearsal keeps
@@ -1040,7 +1161,19 @@
        <b>registries</b> — adding a web app, servo or command costs one file; the check
        adds a throwaway app every run and proves it appears and serves with no code change.
        <b>docs</b> — this page, which fails QC if a command, module type or QC area is
-       added without describing it here.</p></div>
+       added without describing it here.
+       <b>design</b> — one design system in one file: no page may declare its own tokens or
+       copy a colour that is already one, every page must really link it, and the board's
+       compiled-in copy must match the shared file exactly.
+       <b>logging</b> — every firmware log line goes through one helper and reaches the port
+       as a single write, so a log raised on another task can never be glued onto the end of
+       a command reply.
+       <b>auth</b> — a caller with no session is refused by every route that changes
+       something (including the GETs that move servos), can still read everything, and can
+       always STOP a moving robot; the password is stored hashed and guessing gets locked out.
+       <b>qc</b> — the suite checks itself: a browser check reports its result over the fake
+       serial port, and a dropped report is retried, so a check can never fail for a reason
+       that is not the code under test.</p></div>
   <div class="f"><h3>A fake robot, so nothing needs hardware</h3>
     <p>A stand-in serial module with one <em>exclusive</em> port — a second open fails exactly
        like Windows, which is what proves the hub shares a handle. It can also play dead to
@@ -1146,15 +1279,21 @@
   q.addEventListener("input", function(){
     var term = q.value.trim().toLowerCase(), any = false;
     secs.forEach(function(s){
+      // Decide about the HEADING first. Searching "camera" matches the Camera
+      // section's own title, and every card inside it is then relevant — but
+      // the rows were filtered on their own text first, so a section kept for
+      // its heading rendered as a title with nothing underneath it. Looking
+      // like the page has no answer is worse than not matching at all.
+      var head = s.querySelector(".shead").textContent.toLowerCase();
+      var headHit = !!term && head.indexOf(term) >= 0;
       var hits = 0;
       s.querySelectorAll(".f, tbody tr").forEach(function(el){
-        var show = !term || el.textContent.toLowerCase().indexOf(term) >= 0;
+        var show = !term || headHit ||
+                   el.textContent.toLowerCase().indexOf(term) >= 0;
         el.style.display = show ? "" : "none";
         if (show) hits++;
       });
-      // a section also counts as a hit when its own heading matches
-      var head = s.querySelector(".shead").textContent.toLowerCase();
-      var keep = hits > 0 || (term && head.indexOf(term) >= 0);
+      var keep = hits > 0 || headHit;
       s.style.display = keep ? "" : "none";
       // group labels and empty tables would otherwise float alone
       s.querySelectorAll(".scroll").forEach(function(box){

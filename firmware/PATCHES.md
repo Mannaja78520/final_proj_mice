@@ -25,3 +25,12 @@ Every change to the firmware is saved here as a numbered patch. Old patches are 
 | 0029 | 2026-08-09 19:24 | Camera live view is now an MJPEG stream (/api/cam.stream): many frames down one connection instead of one request per picture, 1 -> 7.3 -> 18.7 fps direct and 22.2 through the hub, because capture costs 25ms while a separate request cost 120ms on a server that closes every connection. One viewer at a time; the hub pipes it through for a module opened from there. |
 | 0030 | 2026-08-09 20:52 | Camera picture quality, measured: the orange/blue lines were corrupted scanlines, not noise. Sensor clock 20 -> 10 MHz (VGA: ~37 corrupted rows per frame -> 0-4), the OV2640's bpc/wpc/lenc/raw-gamma corrections enabled, and the sensor starts on SVGA because corruption tracks frame size (qqvga 0.8, qvga 26.4, vga 12.8, svga 1.6). SVGA cannot be the INIT size without PSRAM (init fails 0x105), so the buffer is allocated at QVGA and the sensor moved up after. Also: a dead live viewer no longer latches the camera forever. |
 | 0031 | 2026-08-09 21:16 | Camera picture quality, second pass: reverted the GRAB_WHEN_EMPTY experiment (the driver refuses it with one frame buffer, init 0x105) and re-tested PSRAM with every later fix in place - it still kills every large HTTP response, so it stays off. Live view now measures 80% completely clean frames at qqvga, and 1.4 bad rows out of 600 at svga. |
+| 0034 | 2026-08-18 09:46 | module website links /mice.css, which the board now serves from flash |
+| 0035 | 2026-08-18 12:26 | one logging helper: every log line is one write through LOGF, tags in one list |
+| 0036 | 2026-08-19 00:57 | board auth: nothing that changes anything answers a stranger |
+| 0037 | 2026-08-19 01:28 | the board stops publishing its own password, and demands a real one |
+| 0038 | 2026-08-19 09:05 | Boards report their chip id, so the hub can tell one board met twice from two boards that share a default id |
+| 0039 | 2026-08-19 10:12 | The board page admits when something failed: the re-login after a password change, the password prompt, logout and the file list |
+| 0040 | 2026-08-19 10:26 | A way back to the hub from the board page: the hub names itself on every request, the board offers the last one that spoke to it |
+| 0041 | 2026-08-19 12:59 | The board carries the shared theme file and script, so a board page wears the same theme as the hub |
+| 0042 | 2026-08-19 13:37 | Bounded RS485 broadcast stagger, and the camera says which sensor it found |

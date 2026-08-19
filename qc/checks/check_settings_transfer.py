@@ -88,9 +88,9 @@ def run(t):
                )
 
     import urllib.request
-    req = urllib.request.Request(base + "/api/settings",
+    req = F._with_cookie(urllib.request.Request(base + "/api/settings",
                                  data=json.dumps({"bundle": BUNDLE}).encode(),
-                                 method="POST")
+                                 method="POST"))
     with urllib.request.urlopen(req, timeout=20) as r:
         posted = json.loads(r.read().decode())
     t.ok(posted.get("ok"), "a bundle can be shared from this PC", posted)
@@ -102,9 +102,9 @@ def run(t):
     t.ok(got.get("savedAt"), "stamped with when it was shared")
     t.ok(got.get("savedBy"), "and which PC shared it, so you can tell them apart")
 
-    bad = urllib.request.Request(base + "/api/settings",
+    bad = F._with_cookie(urllib.request.Request(base + "/api/settings",
                                  data=json.dumps({"bundle": {"nope": 1}}).encode(),
-                                 method="POST")
+                                 method="POST"))
     try:
         with urllib.request.urlopen(bad, timeout=20) as r:
             body = r.read().decode()

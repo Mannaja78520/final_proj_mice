@@ -1,0 +1,1008 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mice Control Hub</title>
+<link rel="stylesheet" href="/mice.css">
+<style>
+/* Only what is the HUB's own. Tokens, the reset, cards, buttons, inputs, the
+   quiet caption and the five states all come from /mice.css above. */
+body{padding:var(--sp-6);max-width:980px;margin:0 auto}
+h1{font-size:24px;margin-bottom:var(--sp-1)}
+.sub{color:var(--mut);margin-bottom:18px}
+
+/* a module row: name / type / address / what you can do with it */
+.mod{display:flex;align-items:center;gap:var(--sp-2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-2) var(--sp-3);margin:var(--sp-2) 0;background:var(--sunk)}
+.mod .nm{font-weight:700}
+.mod .ty{font-size:12px;color:var(--on-acc);background:var(--ty-other);border-radius:var(--r-md);padding:1px var(--sp-2);font-weight:600}
+/* Module-type badges use the --ty-* tokens, which are decoration — which board
+   is which — not state, so --ok/--warn/--err stay reserved for "this is fine /
+   careful / this failed". The badge also carries the type as TEXT, so the
+   colour is never the only signal. */
+.mod .ty.nong{background:var(--ty-nong)}
+.mod .ty.lift{background:var(--ty-lift)}
+.mod .ty.cam{background:var(--ty-cam)}
+.mod .ip{color:var(--mut);font-size:13px;flex:1}
+.port{display:inline-block;background:var(--btn);border:1px solid var(--line);border-radius:var(--r-pill);padding:var(--sp-1) var(--sp-3);margin:var(--sp-1);font-size:13px}
+.spin{color:var(--mut)}
+
+/* ---------------------------------------------------------- responsive
+   The hub is opened from phones on the same WiFi as often as from the PC, so
+   it has to work at 360px as well as on a shop monitor. */
+@media (min-width:1500px){            /* big screen: stop the line getting long */
+  body{max-width:1400px;margin:0 auto}
+}
+@media (max-width:720px){
+  body{padding:var(--sp-3)}
+  h1{font-size:20px}
+  .card{padding:var(--sp-3)}
+  /* a module row is name / type / address / buttons — stack it so nothing is
+     squeezed to a few characters, and let the buttons span the width */
+  .mod{flex-wrap:wrap;gap:6px}
+  .mod .nm{width:100%}
+  .mod button{flex:1 1 auto}
+  h2 button{float:none!important;display:block;margin-top:var(--sp-2);width:100%}
+}
+@media (max-width:430px){
+  body{padding:9px}
+  .mod .ip{font-size:11px;word-break:break-word}
+}
+
+/* Tabs. The cards do not move in the DOM — they are shown or hidden by their
+   data-tab, so every element id the rest of the page (and QC) relies on stays
+   exactly where it was. */
+.tabs{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin:14px 0 var(--sp-1)}
+.tab{background:var(--card);border:1px solid var(--line);color:inherit;
+     padding:var(--sp-2) var(--sp-4);border-radius:var(--r-pill);cursor:pointer;font:inherit;font-size:14px}
+.tab.on{border-color:var(--acc);color:var(--acc);font-weight:600}
+.tab:hover{border-color:var(--acc)}
+.netrow{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;
+        padding:var(--sp-2) var(--sp-3);border:1px solid var(--line);border-radius:var(--r-md);margin-bottom:var(--sp-2)}
+.netrow .who{font-weight:600}
+.netrow .grp{font-family:var(--mono);font-size:12px;opacity:.85}
+.netrow.sel{border-color:var(--acc);background:var(--acc-soft)}
+.netrow input[type=checkbox]{width:18px;height:18px}
+@media (pointer:coarse){.tab{padding:11px 18px}.netrow{padding:var(--sp-3)}}
+
+/* flashing a board over its own cable */
+.flash{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;
+  margin:var(--sp-1) 0 var(--sp-2) var(--sp-6)}
+.flash select{background:var(--btn);padding:5px var(--sp-2);font-size:13px}
+.pbar{flex:1;min-width:120px;height:6px;background:var(--sunk);
+  border:1px solid var(--line);border-radius:var(--r-pill);overflow:hidden}
+.pbar i{display:block;height:100%;width:0;background:var(--acc);transition:width 150ms}
+@media (max-width:430px){.flash{margin-left:0}.flash select{flex:1 1 100%}}
+@media (pointer:coarse){.flash select{padding:9px 10px}}
+</style>
+</head>
+<body>
+<h1>🤖 Mice Control Hub</h1>
+<div class="sub">Welcome! This page finds your robot modules automatically —
+over WiFi and over any cable you plug in. <b>Click a module to open its own
+controls.</b></div>
+
+<div class="tabs" id="tabs">
+  <button class="tab on" data-go="modules" onclick="showTab('modules')">Modules</button>
+  <button class="tab" data-go="network" onclick="showTab('network')">Network</button>
+  <button class="tab" data-go="tools" onclick="showTab('tools')">Tools</button>
+</div>
+
+<div class="grid">
+  <div class="card" data-tab="modules" style="grid-column:1/-1">
+    <h2>📡 Modules found over WiFi <button onclick="scan(true)" style="float:right">⟳ Rescan</button></h2>
+    <div id="modsmeta" class="mini" aria-live="polite"></div>
+    <div id="mods" class="spin" aria-live="polite">Looking around the WiFi…</div>
+  </div>
+
+  <!-- Modules held on ANOTHER PC's cable. At a venue this is the normal case:
+       one laptop by the arm, one at the desk, and the arm reachable only from
+       whichever machine holds the cable. -->
+  <div class="card" data-tab="modules" style="grid-column:1/-1">
+    <h2>💻 On other PCs
+      <button onclick="loadShared(true)" style="float:right">⟳ Look again</button>
+    </h2>
+    <div class="mini">Modules plugged into another PC that is running this hub on
+      the same network. You can use them from here exactly like your own — the
+      other PC passes the commands down its own cable.</div>
+    <div id="shared" class="mini" aria-live="polite">Looking for other PCs…</div>
+  </div>
+
+  <div class="card" data-tab="network" style="grid-column:1/-1">
+    <h2>🤝 Which modules work together
+      <button onclick="loadNet()" style="float:right">⟳ Refresh</button>
+    </h2>
+    <div class="mini">Modules only link to modules in the <b>same group</b>. A group is
+      your installation — put your modules in one and they find each other by
+      themselves, even with no venue WiFi. Another company's modules standing in
+      the same room cannot join yours, and yours cannot join theirs, because a
+      module's own hotspot password is derived from its group name.</div>
+    <div id="netlist" class="spin" aria-live="polite" style="margin-top:12px">Looking for modules…</div>
+    <div id="netact" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card" data-tab="tools">
+    <h2>🧰 Apps &amp; tools</h2>
+    <div id="tools" class="mini">loading…</div>
+    <div class="mini">tip: use the “Studio + monitor” button on a nong module above —
+      it opens the editor already connected, showing the real robot moving in 3D.</div>
+  </div>
+
+  <div class="card" data-tab="modules" style="grid-column:1/-1">
+    <h2>🔌 Modules plugged in by cable
+      <span style="float:right">
+        <label class="mini"><input type="checkbox" id="autoUsb" onchange="autoUsbChanged()"> auto-check</label>
+        <button onclick="scanUsb()">🔍 Probe now</button>
+      </span>
+    </h2>
+    <div id="usbmods" class="mini" aria-live="polite">…</div>
+    <div class="mini">each port shows its result the moment IT answers — real
+      USB-UART ports take ~2 s; Bluetooth phantom ports are recognized by their
+      device type and skipped without opening them. A probed module shows who it
+      is + every RS485 module behind it. “auto-check” re-probes every 12 s while
+      this page is visible — it costs almost nothing (the PC just waits on the
+      port), but the port is briefly busy, so turn it off while connecting
+      Nong Studio over USB.</div>
+  </div>
+</div>
+
+<script>
+// ---- tabs -------------------------------------------------------------
+// Only the visibility changes; nothing is moved or re-created, so the module
+// list, USB list and tools keep working exactly as before.
+function showTab(name){
+  document.querySelectorAll('[data-tab]').forEach(function(el){
+    el.style.display = (el.getAttribute('data-tab')===name) ? '' : 'none';
+  });
+  document.querySelectorAll('#tabs .tab').forEach(function(b){
+    b.classList.toggle('on', b.getAttribute('data-go')===name);
+  });
+  try{ localStorage.setItem('hubTab', name); }catch(e){}
+  if(name==='network') loadNet();
+}
+
+// ---- network & linking -------------------------------------------------
+// Every module the hub can reach, however it is reached, with the group it
+// belongs to. Tick the ones that belong together and give them a group name:
+// that is the whole linking step.
+var netMods = [];
+var netBusy = false;
+async function loadNet(){
+  var box = document.getElementById('netlist');
+  if(!box) return;
+  // Clicking the Network tab starts a full probe of every cable. Without a
+  // guard, clicking it a few times ran several overlapping probes, each
+  // holding port locks and each writing its answer into the same list — the
+  // slowest one won, whichever was actually correct.
+  if(netBusy) return;
+  netBusy = true;
+  box.className = 'spin'; box.textContent = 'looking for modules…';
+  var out = [], failed = 0;
+  try{
+    var r = await fetch('/api/scan').then(x=>x.json());
+    (r.modules||[]).forEach(function(m){
+      out.push({dev:'wifi:'+m.ip, label:m.name, type:m.type, via:m.ip, group:m.group||''});
+    });
+  }catch(e){ failed++; }
+  try{
+    // /api/ports is only the TYPED port list — it carries no identity until a
+    // port is actually probed, so reading it alone showed every module as
+    // unnamed and ungrouped. /api/scanusb is what opens the cable and asks.
+    var p = await fetch('/api/ports').then(x=>x.json());
+    var real = (p.ports||[]).filter(function(x){ return !x.bt; });
+    var probes = real.map(function(x){
+      return fetch('/api/scanusb?port='+encodeURIComponent(x.port))
+        .then(function(r){ return r.json(); })
+        .then(function(r){ return (r.usb&&r.usb[0])||null; })
+        .catch(function(){ return null; });
+    });
+    (await Promise.all(probes)).forEach(function(u){
+      if(!u || !u.module) return;
+      out.push({dev:'usb:'+u.port, label:u.module.name||u.port,
+                type:u.module.type||'', via:u.port,
+                group:u.module.group||''});
+      // modules living BEHIND this one on RS485 count too
+      (u.rs485||[]).forEach(function(b){
+        out.push({dev:'usb:'+u.port+':'+b.id, label:b.name||('id '+b.id),
+                  type:b.type||'', via:u.port+' #'+b.id, group:b.group||''});
+      });
+    });
+  }catch(e){ failed++; }
+  netBusy = false;
+  // the same module can answer on WiFi AND on its cable — show it once
+  var seen = {}, uniq = [];
+  out.forEach(function(m){
+    var k = m.label + '|' + m.type;
+    if(seen[k]) return;
+    seen[k] = 1; uniq.push(m);
+  });
+  netMods = uniq;
+  if(!uniq.length){
+    box.className='mini';
+    // "Nothing found" and "could not look" are different facts, and saying the
+    // first when the second is true is the page lying to the reader. Both
+    // scans failing used to render as a confident empty list.
+    if(failed >= 2){
+      box.setAttribute('role','alert');
+      box.innerHTML = 'Could not look for modules — the hub did not answer. '
+        + 'Please check if it is running. '
+        + '<button onclick="loadNet()">Try again</button>';
+    }else{
+      box.removeAttribute('role');
+      box.textContent = 'We haven\'t found any modules yet. Please plug one in over USB, or put it '
+        + 'on this WiFi, then press Refresh.';
+    }
+    return;
+  }
+  box.removeAttribute('role');
+  box.className = '';
+  box.innerHTML = uniq.map(function(m,i){
+    return '<label class="netrow" id="netrow'+i+'">'+
+      '<input type="checkbox" data-i="'+i+'" onchange="netPick()">'+
+      '<span class="who">'+esc(m.label)+'</span>'+
+      '<span class="mini">'+esc(m.type||'?')+' · '+esc(m.via)+'</span>'+
+      '<span class="grp" style="margin-left:auto">'+
+        (m.group ? 'group: '+esc(m.group) : '<i>not linked</i>')+'</span></label>';
+  }).join('');
+  netPick();
+}
+
+function netPick(){
+  var picked = [].slice.call(document.querySelectorAll('#netlist input:checked'))
+                 .map(function(c){ return parseInt(c.getAttribute('data-i'),10); });
+  document.querySelectorAll('#netlist .netrow').forEach(function(el,i){
+    el.classList.toggle('sel', picked.indexOf(i)>=0);
+  });
+  var act = document.getElementById('netact');
+  if(!picked.length){
+    act.innerHTML = '<div class="mini">Choose the modules you want to work together, '+
+      'then give them a group name. Leave out any module that is not yours.</div>';
+    return;
+  }
+  var suggest = '';
+  for(var i=0;i<picked.length && !suggest;i++) suggest = netMods[picked[i]].group||'';
+  act.innerHTML =
+    '<div class="mini"><b>'+picked.length+' selected</b> — they will link to each other and to nobody else.</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">'+
+      '<input id="grpname" placeholder="group name (e.g. mice-show)" value="'+esc(suggest)+'" '+
+        'style="flex:1;min-width:180px;padding:var(--sp-2);border-radius:var(--r-sm);border:1px solid var(--line);'+
+        'background:var(--card);color:inherit">'+
+      '<button onclick="linkSel()">🔗 Link these</button>'+
+      '<button onclick="unlinkSel()" title="Remove the ticked modules from their '+
+      'group. They go back to the shared fallback password.">✂ Unlink the ticked modules</button>'+
+    '</div><div id="grpout" class="mini" style="margin-top:8px"></div>';
+}
+
+async function groupCmd(dev, cmd){
+  var u = '/api/dev/cmd?dev='+encodeURIComponent(dev)+'&c='+encodeURIComponent(cmd);
+  try{ return (await fetch(u).then(x=>x.text())).trim(); }
+  catch(e){ return 'ERR '+e; }
+}
+
+async function applyGroup(name){
+  var picked = [].slice.call(document.querySelectorAll('#netlist input:checked'))
+                 .map(function(c){ return parseInt(c.getAttribute('data-i'),10); });
+  // SNAPSHOT the modules now, by value. Each groupCmd is a real round trip —
+  // up to two seconds over a cable — and loadNet() replaces netMods whenever
+  // the list refreshes or the tab is re-shown. Reading netMods[i] inside the
+  // loop meant a refresh mid-way sent "GROUP <name>" to whatever module had
+  // moved into that position: a permanent identity written to the wrong board,
+  // which then leaves the installation because its hotspot password is derived
+  // from the group name. A shorter list also threw on undefined and left the
+  // rest silently unlinked.
+  var targets = picked.map(function(i){ return netMods[i]; })
+                      .filter(function(m){ return m; });
+  var out = document.getElementById('grpout');
+  if(!targets.length){ out.textContent = 'Tick the modules you want first.'; return; }
+  out.textContent = 'applying…';
+  var lines = [];
+  for(var k=0;k<targets.length;k++){
+    var m = targets[k];
+    lines.push(m.label+': '+await groupCmd(m.dev, name ? 'GROUP '+name : 'GROUP CLEAR'));
+  }
+  out.innerHTML = lines.map(esc).join('<br>');
+  loadNet();
+}
+function linkSel(){
+  var n = (document.getElementById('grpname').value||'').trim();
+  if(!n){ document.getElementById('grpout').textContent =
+    'Type a name in the group box above first, then press this again.'; return; }
+  applyGroup(n);
+}
+// Unlinking is not cosmetic: a module's hotspot password comes from its group
+// name, so clearing the group takes that board OUT of the installation and the
+// others stop finding it. Name exactly which boards are about to be changed —
+// "are you sure?" on its own tells the reader nothing.
+function unlinkSel(){
+  var picked = [].slice.call(document.querySelectorAll('#netlist input:checked'))
+                 .map(function(c){ return netMods[parseInt(c.getAttribute('data-i'),10)]; })
+                 .filter(function(m){ return m; });
+  if(!picked.length){
+    document.getElementById('grpout').textContent =
+      'Tick the modules you want to unlink first.';
+    return;
+  }
+  var names = picked.map(function(m){ return '  · ' + m.label; }).join('\n');
+  if(!confirm('Remove these ' + picked.length + ' module' +
+              (picked.length === 1 ? '' : 's') + ' from their group?\n\n' + names +
+              '\n\nEach one goes back to the shared fallback password, so the ' +
+              'rest of the installation will no longer find it until it is ' +
+              'linked again.')) return;
+  applyGroup('');
+}
+
+function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+// The tool list comes from the app registry (code/apps/*/app.json), so a new
+// web app appears here by dropping a folder in — no button to hand-write.
+async function loadApps(){
+  const el=document.getElementById('tools');
+  try{
+    const r=await fetch('/api/apps').then(r=>r.json());
+    const apps=r.apps||[];
+    // An empty state teaches: say what goes here and how one gets here.
+    if(!apps.length){el.innerHTML='<span class="mini">No tools yet. A tool is a '
+      +'folder with an <code>app.json</code> in <code>code/apps/</code> — drop '
+      +'one in and it appears here.</span>';return;}
+    el.innerHTML='';
+    apps.forEach(a=>{
+      const d=document.createElement('div');d.className='mod';
+      d.innerHTML='<span class="nm">'+(a.icon?a.icon+' ':'')+a.name+'</span>'+
+                  '<span class="ip">'+(a.blurb||'')+'</span>';
+      const b=document.createElement('button');b.className='primary';b.textContent='Open';
+      b.onclick=()=>window.open(a.path,'_blank');
+      d.appendChild(b);el.appendChild(d);
+    });
+  }catch(e){
+    // An error says what to DO, and offers the control that does it.
+    el.innerHTML='<span class="mini">Could not read the tool list. The hub may '
+      +'have stopped. <span style="color:var(--mut)">'+esc(String(e.message||e))
+      +'</span></span> <button onclick="loadApps()">Try again</button>';
+  }
+}
+loadApps();
+
+// When the module list was last actually confirmed, so a stale list can say so
+// instead of quietly presenting old modules as if they were still there.
+var modsAt = 0, modsHtml = '';
+function agoText(ms){
+  if(!ms) return '';
+  var s = Math.round((Date.now()-ms)/1000);
+  if(s < 5) return 'just now';
+  if(s < 90) return s + 's ago';
+  return Math.round(s/60) + ' min ago';
+}
+function modsMeta(){
+  var el = document.getElementById('modsmeta');
+  if(el) el.textContent = modsAt ? ('checked ' + agoText(modsAt)) : '';
+}
+setInterval(modsMeta, 5000);
+
+async function scan(force){
+  const el=document.getElementById('mods');
+  if(force)el.innerHTML='<span class="mini spin">scanning the WiFi… (a few seconds)</span>';
+  try{
+    const r=await fetch('/api/scan'+(force?'?force=1':'')).then(r=>r.json());
+    el.innerHTML='';
+    (r.modules||[]).forEach(m=>{
+      // answered on the network -> reachable like a normal station
+      el.appendChild(modRow(Object.assign({wifi_mode:'sta'},m),m.sd?'SD':'',null,0));
+    });
+    if(!(r.modules||[]).length)
+      el.innerHTML='<span class="mini">no modules found on '+ (r.lan||'?') +'/24 — are they powered and on the same WiFi? (⟳ Rescan)</span>';
+    modsAt = Date.now(); modsHtml = el.innerHTML;
+  }catch(e){
+    // Keep the last good list rather than going blank — but mark it plainly as
+    // old, and give the one control that fixes it. A control panel that blanks
+    // when the network hiccups is worse than one that admits the data is old.
+    el.innerHTML =
+      '<div class="banner err" role="alert">Could not reach the hub just now — '+
+      esc(String(e && e.message || e))+
+      ' <button onclick="scan(true)">Try again</button></div>' +
+      (modsHtml ? '<div class="stale">showing what was found '+agoText(modsAt)+
+                  ' — these may no longer be there</div>'+modsHtml : '');
+  }
+  modsMeta();
+}
+function modRow(m,extra,port,busId,peer){
+  const d=document.createElement('div');d.className='mod';
+  // Everything here comes off the wire from a board, so it goes through esc()
+  // like the rest of the page. A module name is user-settable (SET NAME, the
+  // module site) and any board on the same WiFi answers the sweep — an
+  // unescaped name lands inside a class attribute and inside markup, in the
+  // one page that holds every serial port and the flash API.
+  d.innerHTML=`<span class="nm">${esc(m.name||'?')}</span>
+    <span class="ty ${esc(m.type||'')}">${esc(m.type||'?')}</span>
+    <span class="ip">#${esc(m.id!=null?m.id:'?')}${extra?' · '+esc(extra):''}${m.ip?' · '+esc(m.ip):''}</span>`;
+  // ONE site for every transport: the module's own website, served by the hub
+  // with a transport shim (?dev=wifi:<ip> | usb:<port>[:<id>]). Same UI, same
+  // config, same login — no matter how the module is reached.
+  // `peer` = this module is not on the cable itself; it is on the HOTSPOT of
+  // the module that is. With no venue WiFi that is the only way to reach it,
+  // and "@name" is all the hub needs to route every call through the middle
+  // module (see parse_dev in main.py). Everything below — the module site,
+  // Studio, file transfer — then works unchanged.
+  const dev=peer?('usb:'+port+'@'+peer)
+    :(m.wifi_mode==='sta'&&m.ip)?('wifi:'+m.ip)
+    :(port?('usb:'+port+(busId?(':'+busId):'')):'');
+  if(dev){
+    const open=document.createElement('button');open.className='primary';
+    open.textContent='⚙ Open module';
+    open.title='the full module site (control + setup + pins) over '+(dev.indexOf('wifi')===0?'WiFi':'USB/RS485');
+    open.onclick=()=>window.open('/mod?dev='+encodeURIComponent(dev)+'&name='+encodeURIComponent(m.name||''),'_blank');
+    d.appendChild(open);
+  }
+  if(m.wifi_mode==='sta'&&m.ip){
+    const open=document.createElement('button');
+    open.textContent='direct';
+    open.title='open the module\'s website directly (no hub) — same site';
+    open.onclick=()=>window.open('http://'+m.ip+'/','_blank');
+    d.appendChild(open);
+  }else if(m.wifi_mode==='ap'){
+    const s=document.createElement('span');s.className='mini';
+    s.textContent='⚠ hosts its OWN hotspot ('+(m.ip||'192.168.4.1')+') — join that WiFi to open the site, or use USB / set real WiFi in the USB page';
+    d.appendChild(s);
+  }else if(!port){
+    const s=document.createElement('span');s.className='mini';
+    s.textContent='WiFi off';
+    d.appendChild(s);
+  }
+  // Nong Studio on the same link as the module site. Over USB it uses the
+  // hub's shared port proxy, so Studio and "⚙ Open module" can BOTH be open
+  // on that one cable — no "serial port already in use".
+  if(m.type==='nong'&&dev){
+    const st=document.createElement('button');st.className='primary';
+    st.textContent='Studio + monitor';
+    st.title='pose editor + live 3D over '+(dev.indexOf('wifi')===0?'WiFi':'this USB cable (shared — the module site can stay open too)');
+    st.onclick=()=>window.open('/studio/?dev='+encodeURIComponent(dev)+'&monitor=1','_blank');
+    d.appendChild(st);
+  }
+  // Update over WiFi. The board has two app slots, so the firmware being
+  // replaced is never the one running: a failed or half-sent update leaves it
+  // booting what it already had. Offered only on a module we can actually
+  // reach by IP — over its own hotspot the PC is on that hotspot anyway.
+  // Offered on a BLANK board too. It used to be hidden for type "blank", which
+  // is backwards: a blank board is exactly the one that needs new firmware and
+  // a type. A board reports blank whenever its stored type is not in the binary
+  // it is running — the normal state after being flashed as something new — and
+  // hiding this button left no way to finish the job without finding a cable.
+  if(m.wifi_mode==='sta'&&m.ip){
+    const ota=document.createElement('button');
+    ota.textContent='⚡ update over WiFi';
+    ota.title=(m.type&&m.type!=='blank')
+      ? 'send this PC\'s '+m.type+' firmware to '+m.ip+' — no cable'
+      : 'this board has no module type yet — send it firmware and set what it is';
+    ota.onclick=()=>otaModule(ota,m.ip,m.type);
+    d.appendChild(ota);
+  }
+  if(m.type==='lift'&&(port||(m.wifi_mode==='sta'&&m.ip))){
+    const rb=document.createElement('button');
+    rb.textContent='💡 RGB';
+    rb.title='RGB modes: manual / effects / SD sequence / follow the PC speaker';
+    const target=(m.wifi_mode==='sta'&&m.ip)?('ip='+encodeURIComponent(m.ip))
+      :('port='+encodeURIComponent(port)+(busId?('&id='+busId):''));
+    rb.onclick=()=>window.open('/rgb.html?'+target+'&name='+encodeURIComponent(m.name||''),'_blank');
+    d.appendChild(rb);
+  }
+  return d;
+}
+// streaming probe: one request PER port, each slot fills in the moment its
+// port answers — fast ports never wait for slow ones, order stays stable
+let usbBusy=false;
+function renderUsbResult(slot,u){
+  slot.innerHTML='';
+  const head=document.createElement('div');head.className='mini';
+  head.style.marginTop='8px';
+  if(u.module){
+    // "in use" is not a problem: the hub owns the cable and shares it, so the
+    // module site and Nong Studio can both be open on this port at once
+    head.textContent=u.port+' — module plugged in directly'+
+      (u.inuse?' (in use — shared, open as many pages as you like):':':');
+    slot.appendChild(head);
+    slot.appendChild(modRow(u.module,u.port,u.port,0));
+    addHotspotPeers(slot,u.port,u.module);
+  }else{
+    head.textContent=u.port+' — '+(u.error||'no module answered (dongle only, or not a module)');
+    slot.appendChild(head);
+    if(u.bt){ // recognized as Bluetooth: skipped, but allow forcing it
+      const b=document.createElement('button');
+      b.textContent='probe anyway';b.style.marginLeft='8px';
+      b.onclick=async()=>{
+        head.textContent=u.port+' — probing (Bluetooth ports can take ~40 s)…';
+        b.remove();
+        // An error reply has no `usb` key, so r.usb[0] threw and this slot sat
+        // on "probing…" for ever with its button already gone — no result, no
+        // error, and no way to ask again.
+        try{
+          const r=await fetch('/api/scanusb?port='+encodeURIComponent(u.port))
+                    .then(r=>r.json());
+          const got=(r&&r.usb&&r.usb[0])||{port:u.port,error:'no answer from that port'};
+          renderUsbResult(slot,got);
+        }catch(e){
+          renderUsbResult(slot,{port:u.port,
+            error:'could not ask the hub ('+(e.message||e)+')'});
+        }
+      };
+      head.appendChild(b);
+    }
+  }
+  (u.rs485||[]).forEach(m=>{
+    const row=modRow(m,u.port+' → RS485',u.port,m.id);
+    row.style.marginLeft='24px';
+    slot.appendChild(row);
+  });
+  // Flashing belongs on the PORT, not on the module: the most useful time to
+  // flash is when nothing answered on that cable.
+  slot.appendChild(flashBox(u.port, u.module && u.module.type));
+}
+
+// ---- update a module over WiFi (OTA) --------------------------------------
+// Same job as flashing, no cable. The row itself reports progress, because
+// that is where you clicked and where you are looking.
+// WHICH firmware — asked, never assumed.
+//
+// It used to send the type the module already was, which is the common case
+// but not the only one: this is also how you turn a board into something else
+// without finding a cable. So the row opens a picker, defaulted to what the
+// board is now.
+async function otaModule(btn,ip,type){
+  const info=await getFlashImages();
+  const ready=(info.images||[]).filter(i=>i.ready);
+  if(!ready.length){
+    alert('No firmware built on this PC yet.\n\n'+
+          'Run this in code/firmware first:\n  pio run -e mice_'+(type||'nong'));
+    return;
+  }
+  if(btn.dataset.picking)return;          // the picker is already open
+  btn.dataset.picking=1;
+  const box=document.createElement('span');
+  box.className='flash';box.style.margin='0';
+  const sel=document.createElement('select');
+  sel.title='which firmware to send to this module';
+  ready.forEach(i=>{
+    const o=document.createElement('option');o.value=i.type;
+    o.textContent=i.type+' ('+(i.bytes/1048576).toFixed(2)+' MB)'+
+      (i.type===type?' — what it runs now':'');
+    if(i.type===type)o.selected=true;
+    sel.appendChild(o);
+  });
+  const go=document.createElement('button');go.className='primary';go.textContent='Send';
+  const no=document.createElement('button');no.textContent='Cancel';
+  box.appendChild(sel);box.appendChild(go);box.appendChild(no);
+  btn.after(box);
+  const close=()=>{box.remove();delete btn.dataset.picking;btn.disabled=false;};
+  no.onclick=close;
+  const chosen=await new Promise(res=>{ go.onclick=()=>res(sel.value); no.onclick=()=>{close();res(null);}; });
+  if(!chosen)return;
+  const changing = chosen!==type;
+  if(!confirm('Send this PC\'s '+chosen+' firmware to '+ip+' over WiFi?\n\n'+
+              (changing
+                ? 'That is NOT what this board runs now ('+(type||'unknown')+'). '+
+                  'It will be set to "'+chosen+'" and rebooted twice.\n\n'
+                : '')+
+              'It is written to the board\'s spare slot, so if the update does '+
+              'not finish the module keeps the firmware it has now. It reboots '+
+              'when it succeeds, and it will refuse while it is moving.')){close();return;}
+  sel.disabled=go.disabled=no.disabled=true;
+  flashBusy(true);          // hold the auto-rescan off this row
+  type=chosen;
+  const stat=document.createElement('span');stat.className='mini';
+  stat.setAttribute('aria-live','polite');
+  stat.textContent='sending…';
+  btn.disabled=true;box.after(stat);
+  let r;
+  try{ r=await fetch('/api/ota?ip='+encodeURIComponent(ip)+
+                     '&type='+encodeURIComponent(type),
+                     {method:'POST'}).then(x=>x.json()); }
+  catch(e){ r={ok:false,error:'the hub is not answering'}; }
+  if(r&&r.ok===false&&r.error){
+    stat.textContent='⚠ '+r.error;close();flashBusy(false);return;
+  }
+  let lost=0;
+  const poll=setInterval(async()=>{
+    let s;
+    // A bare `return` left this polling for the life of the tab whenever the
+    // hub went away, with the row stuck on a message that would never change.
+    try{ s=await fetch('/api/flash').then(x=>x.json()); lost=0; }
+    catch(e){
+      if(++lost<10)return;
+      clearInterval(poll);close();
+      stat.textContent='⚠ lost contact with the hub — is it still running?';
+      flashBusy(false);
+      return;
+    }
+    stat.textContent=s.running?(s.stage+' — '+(s.percent||0)+'%')
+      :(s.ok?'✓ updated — the module is restarting'
+            :'⚠ '+(s.error||'the update failed'));
+    if(s.running)return;
+    clearInterval(poll);close();
+    // Always, not only when the type is changing: the board's STORED type can
+    // differ from the type it reports (a board reports "blank" whenever its
+    // stored type is missing from the running binary). applyTypeAfterFlash
+    // returns at once when the board already confirms the right type, so this
+    // costs nothing in the normal case and repairs the broken one.
+    if(s.ok)applyTypeAfterFlash('wifi:'+ip,chosen,stat)
+              .catch(()=>{}).then(()=>flashBusy(false));
+    else flashBusy(false);
+  },700);
+}
+
+// A board flashed with a DIFFERENT type still has its OLD type in its own
+// memory, so it would come back as `blank` — the new firmware does not carry
+// the module it is told to be. Finish the job: wait for it to answer again,
+// set the type, reboot once more.
+// New firmware alone does NOT make a board that type. The type is stored on the
+// board, the binary only contains the module types it was built with, and
+// ModuleFactory falls back to BlankModule when the stored type is not one of
+// them. So a board carrying the cam firmware but still storing "blank" boots
+// blank, reports blank, and has no camera — the flash looked perfect.
+//
+// This bit the camera both ways:
+//   * over the cable, nothing set the type at all, so an ESP32-CAM flashed as
+//     "cam" always came back as "blank";
+//   * over WiFi, the type WAS set, but straight after an update the OLD
+//     firmware is still answering for a moment. It does not know "cam", so
+//     `SET TYPE cam` returned "ERR unknown type" and that was treated as a
+//     hard failure and never retried. The board then rebooted into the cam
+//     firmware still storing "blank".
+//
+// The board already reports which types its binary knows (the `types` array in
+// /api/dev/status). So the rule that fixes both: only ask the binary that is
+// answering RIGHT NOW, and only once it says it can actually be this type.
+// Then keep watching until the board reports the type for real.
+async function applyTypeAfterFlash(dev,type,stat){
+  const say=t=>{ if(stat)stat.textContent=t; };
+  say('✓ firmware sent — waiting for the board to restart…');
+  let seen=false,asked=-99;
+  for(let i=0;i<40;i++){                    // ~60 s: boards take their time
+    await new Promise(r=>setTimeout(r,1500));
+    let st=null;
+    try{ st=await fetch('/api/dev/status?dev='+encodeURIComponent(dev))
+           .then(r=>r.json()); }
+    catch(e){ say('waiting for the board to come back…'); continue; }
+    if(!st||!Array.isArray(st.types)){ say('waiting for the board to come back…'); continue; }
+    seen=true;
+    if(st.type===type){                     // confirmed by the board itself
+      say('✓ done — this board is now "'+type+'"');
+      setTimeout(scanUsb,1500);
+      return true;
+    }
+    if(st.types.indexOf(type)<0){           // still the old firmware answering
+      say('waiting for the new firmware to start…');
+      continue;
+    }
+    if(i-asked<8){ say('waiting for it to restart as "'+type+'"…'); continue; }
+    const r=await fetch('/api/dev/cmd?dev='+encodeURIComponent(dev)+
+                        '&c='+encodeURIComponent('SET TYPE '+type))
+      .then(r=>r.text()).catch(()=>'');
+    if(!r||r.startsWith('ERR')){            // not ready yet — keep waiting
+      say('waiting for the new firmware to start…');
+      continue;
+    }
+    asked=i;
+    say('setting it to "'+type+'" and restarting…');
+    await fetch('/api/dev/cmd?dev='+encodeURIComponent(dev)+'&c=REBOOT').catch(()=>{});
+  }
+  say(seen
+      ? '⚠ the firmware went on, but the board never confirmed it is "'+type+'". '+
+        'Send it: SET TYPE '+type
+      : '⚠ the firmware went on, but the board did not answer. Check its power, '+
+        'then send it: SET TYPE '+type);
+  return false;
+}
+// kept so anything still calling setType(ip,...) keeps working
+async function setType(ip,type,stat){ return applyTypeAfterFlash('wifi:'+ip,type,stat); }
+
+// ---- modules held on OTHER PCs --------------------------------------------
+//
+// A module on another laptop's cable used to be invisible here, which at a
+// venue is the normal setup: one PC by the arm, one at the desk. The hub that
+// owns the cable stays its only owner — this page just asks that hub to pass
+// the command along, so there is never a second program fighting for the same
+// serial handle.
+let sharedBusy = false, sharedHave = [];
+async function loadShared(force){
+  const box = document.getElementById('shared');
+  if(!box || sharedBusy) return;
+  sharedBusy = true;
+  // Looking takes a subnet sweep, so say so rather than leaving a blank hole.
+  box.className = 'mini spin';
+  box.textContent = 'Looking for other PCs on this network…';
+  let r;
+  try{
+    r = await fetch('/api/allmods'+(force?'?force=1':'')).then(x=>x.json());
+  }catch(e){
+    sharedBusy = false;
+    box.className = 'mini';
+    // "could not look" is a different fact from "found nothing", and saying
+    // the second when the first is true is the page lying.
+    box.innerHTML = 'Could not check for other PCs — this hub did not answer. '
+      + '<span style="color:var(--mut)">'+esc(String(e.message||e))+'</span> '
+      + '<button onclick="loadShared(true)">Try again</button>';
+    return;
+  }
+  sharedBusy = false;
+  const mods = (r && r.modules) || [];
+  const errs = (r && r.errors) || [];
+  sharedHave = mods;
+  box.className = 'mini';
+  if(!mods.length){
+    box.innerHTML = 'No other PCs are sharing a module right now. Start this hub '
+      + 'on the other PC and plug a module into it — it will appear here by itself.'
+      + (errs.length ? ' <span style="color:var(--warn)">'+errs.length
+         +' PC(s) did not answer.</span>' : '');
+    return;
+  }
+  box.innerHTML = '';
+  mods.forEach(function(m){
+    const row = modRow({name:m.name, type:m.type, id:m.id, group:m.group},
+                       'on '+m.host, null, 0);
+    // The row is built by the same function local modules use, so it gets the
+    // same buttons and the same module website — only the address differs.
+    row.querySelectorAll('button,.open').forEach(function(b){ b.remove(); });
+    const open = document.createElement('button');
+    open.textContent = '⚙ Open module';
+    open.title = 'this module is on '+m.host+' — the commands go through that PC';
+    open.onclick = function(){
+      window.open('/mod?dev='+encodeURIComponent(m.dev), '_blank');
+    };
+    row.appendChild(open);
+    box.appendChild(row);
+  });
+  if(errs.length){
+    const w = document.createElement('div');
+    w.className = 'mini';
+    w.style.color = 'var(--warn)';
+    w.textContent = '⚠ '+errs.length+' PC(s) on this network did not answer. '
+      + 'They may have been switched off.';
+    box.appendChild(w);
+  }
+}
+
+// ---- flash this board -----------------------------------------------------
+// How many flashes / updates are in flight right now.
+//
+// The module lists rebuild themselves on a timer, and rebuilding means
+// `innerHTML=''` — which throws away the row a flash is reporting into. A
+// cable flash takes about a minute and an OTA thirty seconds or more, so the
+// row was destroyed mid-write every single time: the progress bar, the picker
+// and the status line all vanished and the row came back offering "⚡ update
+// over WiFi" as though nothing were happening. Watching a firmware write is
+// the worst possible moment to look idle. The write itself was never at risk
+// (the port is guarded server-side) — the SIGHT of it was.
+let flashActive=0;
+function flashBusy(on){ flashActive=Math.max(0,flashActive+(on?1:-1)); }
+// The hub owns every cable, so it is the only thing that CAN hand one to
+// esptool. Since the firmware is built per module type, "flash this board as a
+// nong" is now a real instruction rather than a wish.
+// Cached answer from /api/flash/images — but a FAILURE is never cached, and a
+// success does not live forever.
+//
+// It used to store whatever came back, including the error object. So one
+// missed request — the hub restarting, a laptop waking, a phone's WiFi
+// blinking — pinned this to "the hub is not answering" for the life of the
+// page. Every flash box afterwards said esptool was missing and every OTA said
+// "no firmware built on this PC", telling you to build firmware that was
+// already there. Flashing stayed dead until a manual reload. Expiring the good
+// answer also means firmware built AFTER the page opened is picked up.
+let flashImages=null, flashImagesAt=0;
+async function getFlashImages(){
+  if(flashImages&&Date.now()-flashImagesAt<30000)return flashImages;
+  try{
+    flashImages=await fetch('/api/flash/images').then(r=>r.json());
+    flashImagesAt=Date.now();
+  }catch(e){
+    return {images:[],esptool:false,why:'the hub is not answering'};
+  }
+  return flashImages;
+}
+function flashBox(port,isType){
+  const box=document.createElement('div');box.className='flash';
+  const stat=document.createElement('span');stat.className='mini';
+  stat.setAttribute('aria-live','polite');       // it updates by itself
+  stat.textContent='checking what can be flashed…';   // loading, never a blank hole
+  box.appendChild(stat);
+  getFlashImages().then(info=>{
+    const ready=(info.images||[]).filter(i=>i.ready);
+    if(!info.esptool){                            // error: say what would fix it
+      stat.textContent='⚡ flashing needs esptool — '+(info.why||'not found');
+      return;
+    }
+    if(!ready.length){                            // empty: nothing built yet
+      stat.textContent='⚡ no firmware built on this PC yet — run '+
+        'pio run -e mice_nong (or mice_lift) in code/firmware first';
+      return;
+    }
+    stat.textContent='⚡ flash '+port+' as';
+    const sel=document.createElement('select');
+    sel.title='which module type this board should become';
+    ready.forEach(i=>{
+      const o=document.createElement('option');o.value=i.type;
+      o.textContent=i.type+' ('+(i.bytes/1048576).toFixed(2)+' MB)';
+      if(i.type===isType)o.selected=true;         // it already is one: default to it
+      sel.appendChild(o);
+    });
+    // Types that EXIST but have never been built here are listed too, greyed
+    // out and saying so. Dropping them silently is what made this confusing:
+    // only "cam" had been built, so the picker offered one choice and gave no
+    // hint that nong and lift were even possible, let alone how to get them.
+    const notBuilt=(info.images||[]).filter(i=>!i.ready);
+    notBuilt.forEach(i=>{
+      const o=document.createElement('option');
+      o.value='';o.disabled=true;
+      o.textContent=i.type+' \u2014 not built on this PC yet';
+      sel.appendChild(o);
+    });
+    if(notBuilt.length){
+      const how=document.createElement('span');
+      how.className='mini';how.style.marginLeft='6px';
+      how.textContent='('+notBuilt.map(i=>i.type).join(', ')+
+        ' need: pio run -e '+notBuilt.map(i=>i.env).join(' -e ')+
+        ' in code/firmware)';
+      how.title='Build them once and they appear here. The hub can only flash '+
+        'firmware that already exists on this PC.';
+      box.appendChild(how);
+    }
+    const btn=document.createElement('button');
+    btn.textContent='Flash';
+    btn.title='write this firmware to the board on '+port+
+      ' — the cable is taken for about a minute';
+    const bar=document.createElement('div');bar.className='pbar';
+    const fill=document.createElement('i');bar.appendChild(fill);
+    bar.style.display='none';
+    box.appendChild(sel);box.appendChild(btn);box.appendChild(bar);
+    btn.onclick=async()=>{
+      const type=sel.value;
+      // Overwriting a board's firmware is not undoable from here, and it takes
+      // the cable away from everything else while it runs. Ask first.
+      if(!confirm('Flash the board on '+port+' as "'+type+'"?\n\n'+
+                  'This overwrites its firmware. The cable cannot be used for '+
+                  'anything else until it finishes (about a minute). The board '+
+                  'keeps its stored id, name, WiFi and pins, and it is set to '+
+                  '"'+type+'" and restarted once the firmware is on.'))return;
+      btn.disabled=true;sel.disabled=true;bar.style.display='';
+      stat.textContent='starting…';
+      flashBusy(true);        // hold the auto-rescan off this row
+      let r;
+      try{ r=await fetch('/api/flash?port='+encodeURIComponent(port)+
+                         '&type='+encodeURIComponent(type),
+                         {method:'POST'}).then(x=>x.json()); }
+      catch(e){ r={ok:false,error:'the hub is not answering'}; }
+      if(r&&r.ok===false&&r.error){
+        stat.textContent='⚠ '+r.error;
+        btn.disabled=false;sel.disabled=false;bar.style.display='none';
+        flashBusy(false);
+        return;
+      }
+      let lost=0;
+      const poll=setInterval(async()=>{
+        let s;
+        // A bare `return` here meant a hub that went away left this interval
+        // running for the life of the tab, with the row disabled and the
+        // message frozen. Give up after ~7 s of silence and SAY so.
+        try{ s=await fetch('/api/flash').then(x=>x.json()); lost=0; }
+        catch(e){
+          if(++lost<10)return;
+          clearInterval(poll);
+          btn.disabled=false;sel.disabled=false;bar.style.display='none';
+          stat.textContent='⚠ lost contact with the hub — is it still running?';
+          flashBusy(false);
+          return;
+        }
+        fill.style.width=(s.percent||0)+'%';
+        stat.textContent=s.running?(s.stage+' — '+(s.percent||0)+'%')
+          :(s.ok?'✓ flashed as '+type+' — the board is restarting'
+                :'⚠ '+(s.error||'flashing failed'));
+        if(s.running)return;
+        clearInterval(poll);
+        btn.disabled=false;sel.disabled=false;
+        if(s.ok){
+          fill.style.width='100%';
+          // Writing the firmware is only half the job. The board stores its own
+          // type, and a stored type the new binary does not have makes it boot
+          // blank — which is why an ESP32-CAM flashed as "cam" over the cable
+          // always came back as "blank". Set it, then confirm it. The row stays
+          // protected from the auto-rescan until that has finished too.
+          applyTypeAfterFlash('usb:'+port,type,stat)
+            .catch(()=>{}).then(()=>flashBusy(false));
+        }
+        else { bar.style.display='none'; flashBusy(false); }
+      },700);
+    };
+  });
+  return box;
+}
+// The modules that joined THIS module's own hotspot.
+//
+// This is the no-WiFi case, and it is the normal one at a venue: plug the PC
+// into any one module, let the rest join that module's hotspot, and the whole
+// installation is controllable down one cable. The hub asks the plugged-in
+// module who it can see (PEERS) and routes every call through it (REACH), so
+// each one gets a normal row here with its real site and Studio buttons.
+async function addHotspotPeers(slot,port,self){
+  let peers=[];
+  try{
+    peers=await fetch('/api/dev/peers?dev='+encodeURIComponent('usb:'+port))
+      .then(r=>r.json());
+  }catch(e){return;}
+  if(!Array.isArray(peers))return;
+  const others=peers.filter(p=>!p.self&&p.name&&(!self||p.id!==self.id));
+  if(!others.length)return;
+  const head=document.createElement('div');
+  head.className='mini';
+  head.style.margin='6px 0 2px 24px';
+  head.textContent='through '+(self&&self.name?self.name:port)+
+    '’s own hotspot — no venue WiFi needed:';
+  slot.appendChild(head);
+  others.forEach(p=>{
+    const row=modRow(p,port+' → '+(self&&self.name?self.name:'hotspot'),port,0,p.name);
+    row.style.marginLeft='24px';
+    slot.appendChild(row);
+  });
+}
+async function scanUsb(){
+  if(usbBusy)return;
+  usbBusy=true;
+  const el=document.getElementById('usbmods');
+  try{
+    const r=await fetch('/api/ports').then(r=>r.json()); // typed port list, no WiFi scan
+    const ports=r.ports||[];
+    el.innerHTML='';
+    if(!ports.length){el.innerHTML='<span class="mini">No USB cables found. '
+      +'Plug a module into this PC, then press <b>Probe now</b>. If it is '
+      +'plugged in already, it may need its USB driver (CH340 or CP210x).</span>';
+      usbBusy=false;return;}
+    const jobs=[];
+    ports.forEach(p=>{
+      const slot=document.createElement('div');
+      el.appendChild(slot);
+      if(p.bt){
+        renderUsbResult(slot,{port:p.port,bt:true,module:null,rs485:[],
+          error:(p.desc||'Bluetooth')+' — skipped'});
+      }else{
+        slot.innerHTML='<div class="mini" style="margin-top:8px">'+p.port+' — probing… <span class="spin">('+(p.desc||'')+')</span></div>';
+        jobs.push(fetch('/api/scanusb?port='+encodeURIComponent(p.port))
+          .then(r=>r.json())
+          // same guard: an error body has no `usb` array, and throwing here
+          // left the slot stuck on "probing…" for the life of the page
+          .then(r=>renderUsbResult(slot,(r&&r.usb&&r.usb[0])||
+                 {port:p.port,error:'no answer from that port'}))
+          .catch(e=>{slot.innerHTML='<div class="mini">'+esc(p.port)+
+            ' — could not check this cable. '+esc(String(e.message||e))+'</div>';}));
+      }
+    });
+    await Promise.all(jobs);
+  }catch(e){
+    el.innerHTML='<span class="mini">Could not check the USB cables. Is the hub '
+      +'still running? <span style="color:var(--mut)">'+esc(String(e.message||e))
+      +'</span></span> <button onclick="scanUsb()">Try again</button>';
+  }
+  usbBusy=false;
+}
+// auto-check loop: re-probes every 12 s while the page is visible.
+// A port that a page is already driving (module site / Nong Studio over the
+// shared USB link) is NOT re-probed — the hub answers from the identity it
+// already has, so the probe never stutters their commands.
+let autoUsbTimer=null;
+function autoUsbChanged(){
+  const on=document.getElementById('autoUsb').checked;
+  localStorage.setItem('hub_autousb',on?'1':'0');
+  clearInterval(autoUsbTimer);autoUsbTimer=null;
+  if(on)autoUsbTimer=setInterval(()=>{
+    if(!document.hidden&&!flashActive)scanUsb();
+  },12000);
+}
+document.getElementById('autoUsb').checked=localStorage.getItem('hub_autousb')==='1';
+autoUsbChanged();
+// Start on the tab you were last on. Defaults to Modules, so a fresh browser
+// opens exactly the page it always did.
+showTab((function(){ try{ return localStorage.getItem('hubTab')||'modules'; }
+                     catch(e){ return 'modules'; } })());
+scan(false);
+scanUsb();            // probe the cable ports once on load (BT ports skipped instantly)
+loadShared(false);    // and what the other PCs on this network are holding
+setInterval(()=>{ if(!flashActive)scan(false); },15000);
+</script>
+</body>
+</html>

@@ -1,0 +1,1411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mice — refactor plan</title>
+<style>
+/* Same design system as the rest of the product. No CDN: this has to open with
+   no internet, at a venue, from a USB stick if need be. */
+:root{
+  --bg:#10141a; --card:#1a212b; --sunk:#0d1117; --line:#2a3442;
+  --txt:#dce3ec; --mut:#8b98a9; --btn:#243040;
+  --acc:#4da3ff; --on-acc:#06121f;
+  --ok:#3ecf8e; --warn:#ffb454; --err:#ff6b6b;
+  --r-sm:10px; --r-md:14px; --r-lg:18px; --r-pill:999px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);
+  font:15px/1.6 system-ui,Segoe UI,Roboto,sans-serif;
+  padding:var(--sp-6);max-width:1100px;margin:0 auto;overflow-x:hidden}
+h1{font-size:26px;margin-bottom:var(--sp-1)}
+h2{font-size:15px;color:var(--acc);text-transform:uppercase;letter-spacing:.06em;
+   margin:var(--sp-6) 0 var(--sp-3)}
+h3{font-size:15px;margin:var(--sp-4) 0 var(--sp-2)}
+p,li{margin-bottom:var(--sp-2)}
+ul,ol{padding-left:var(--sp-6)}
+.sub{color:var(--mut);margin-bottom:var(--sp-4)}
+.card{background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:var(--sp-4);margin:var(--sp-3) 0}
+.card.warn{border-color:var(--warn)}
+.card.err{border-color:var(--err)}
+code,kbd{font:13px/1.5 ui-monospace,Consolas,monospace;background:var(--sunk);
+  border:1px solid var(--line);border-radius:var(--r-sm);padding:1px 6px}
+pre{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-md);
+  padding:var(--sp-3);overflow-x:auto;margin:var(--sp-2) 0}
+pre code{background:none;border:0;padding:0}
+table{border-collapse:collapse;width:100%;margin:var(--sp-2) 0}
+th,td{border:1px solid var(--line);padding:var(--sp-2);text-align:left;
+  vertical-align:top;font-size:14px}
+th{background:var(--sunk);color:var(--acc);font-size:13px;
+  text-transform:uppercase;letter-spacing:.05em}
+.wrap{overflow-x:auto}
+.pill{display:inline-block;border-radius:var(--r-pill);padding:1px var(--sp-2);
+  font-size:12px;font-weight:600;color:var(--on-acc)}
+.todo{background:var(--mut)} .doing{background:var(--acc)}
+.qc{background:var(--warn)}
+.done{background:var(--ok)}  .blocked{background:var(--err)}
+.mut{color:var(--mut)}
+.bar{height:10px;background:var(--sunk);border:1px solid var(--line);
+  border-radius:var(--r-pill);overflow:hidden;margin:var(--sp-2) 0}
+.bar i{display:block;height:100%;background:var(--acc);width:0}
+a{color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+/* ---- the progress view ------------------------------------------------ */
+/* The one card that answers "is anything happening?" — accent edge so it reads
+   before the table, red only when something is genuinely blocked. */
+.running{color:var(--warn);font-weight:600;margin-bottom:var(--sp-2)}
+.card.now{border-color:var(--acc);border-left-width:4px}
+.card.now.err{border-color:var(--err)}
+.nowhead{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+.nowhead b{font-size:17px}
+.nowwhat{margin:var(--sp-2) 0 0}
+#ptable td{vertical-align:top}
+#ptable td:first-child:not(.grouprow){white-space:nowrap;
+  font-family:ui-monospace,Consolas,monospace}
+#ptable td:nth-child(3){white-space:nowrap;color:var(--mut);font-size:13px}
+/* A finished row steps back so the unfinished ones carry the page; it is still
+   readable, not greyed out into nothing. */
+tr.r-done td{color:var(--mut)}
+tr.r-doing{background:color-mix(in srgb,var(--acc) 9%,transparent)}
+tr.r-qc{background:color-mix(in srgb,var(--warn) 9%,transparent)}
+.inflight{margin-top:var(--sp-3);display:flex;flex-direction:column;gap:var(--sp-1);font-size:14px}
+tr.r-blocked{background:color-mix(in srgb,var(--err) 9%,transparent)}
+.pill.hw{background:var(--warn);color:var(--on-acc)}
+tr.r-hw td{opacity:.85}
+.grouprow{background:var(--sunk);color:var(--acc);font-size:13px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.05em}
+details#stateBox{margin:var(--sp-4) 0}
+details#stateBox summary{cursor:pointer;padding:var(--sp-2) 0}
+@media (max-width:560px){
+  /* four columns do not fit a phone: the note gets its own line under the row */
+  #ptable thead{display:none}
+  #ptable tr{display:block;border-bottom:1px solid var(--line);padding:var(--sp-2) 0}
+  #ptable td{display:inline-block;border:0;padding:2px var(--sp-2)}
+  #ptable td:last-child{display:block}
+  #ptable td.grouprow{display:block;width:100%}
+}
+@media (max-width:560px){ body{padding:var(--sp-3)} }
+@media (pointer:coarse){ a,button{min-height:36px} }
+@media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
+
+/* The hardware table: the two rows that need a SECOND board are the answer to
+   the question that was asked, so they are marked rather than left to be
+   counted. */
+table.hw{width:100%;border-collapse:collapse;margin:12px 0}
+table.hw th,table.hw td{border:1px solid var(--line);padding:8px;
+  text-align:left;vertical-align:top;font-size:13px}
+table.hw th{background:var(--sunk)}
+table.hw tr.need2 td{background:color-mix(in srgb,var(--warn) 10%,transparent)}
+table.hw tr.need2 td:first-child{border-left:3px solid var(--warn)}
+
+/* The pinned answer. It is at the top because it is read in a different
+   situation from the rest of this page: standing over a box, deciding what to
+   put in it. */
+.pinned{background:color-mix(in srgb,var(--warn) 12%,transparent);
+  border:1px solid var(--warn);border-left:4px solid var(--warn);
+  border-radius:var(--r-md);padding:12px 14px;margin:0 0 16px;font-size:14px}
+.pinned a{white-space:nowrap}
+
+/* A landing is worth noticing from across the room, but nothing may MOVE:
+   this page is read while work is happening, and a jumping layout loses your
+   place. Colour only, and it decays. */
+@keyframes justchanged{from{box-shadow:0 0 0 3px var(--acc)}to{box-shadow:0 0 0 0 transparent}}
+.justchanged{animation:justchanged 1.6s ease-out}
+@media (prefers-reduced-motion: reduce){ .justchanged{animation:none} }
+
+/* Which PART a task needs, on the task. Warm rather than alarming: it is a
+   shopping note, not a failure. `soft` is for the ones that only improve the
+   checking - they must not read like something is blocked. */
+.pill.part{background:color-mix(in srgb,var(--warn) 16%,transparent);
+  border:1px solid var(--warn);color:var(--warn);border-radius:var(--r-pill);
+  padding:1px 8px;margin-right:6px;font-size:12px;white-space:normal;
+  display:inline-block}
+.pill.part.soft{background:transparent;border-color:var(--line);color:var(--mut)}
+
+/* The first question anyone asks this page: what can be done now. */
+.card.cando{background:var(--card);border:1px solid var(--line);
+  border-left:4px solid var(--ok);border-radius:var(--r-md);
+  padding:14px 16px;margin:0 0 16px}
+.card.cando p{margin:.4em 0;font-size:14px}
+</style>
+</head>
+<body>
+<!-- PINNED. Asked for 2026-08-19: the hardware answer has to be findable
+     without scrolling the whole plan, because it is read while packing. -->
+<div class="pinned">
+  📌 <b>Bring two ESP32 boards</b> — that is the only thing on this plan that
+  needs more than one. Add a <b>microSD card</b> (three tasks stop at it) and
+  <b>two RS485 transceivers</b> if you have them.
+  <a href="#packing">the full packing list, part by part →</a>
+</div>
+
+
+<h1>Mice — refactor plan</h1>
+<p class="sub">The working document for restructuring the module system.
+Written 2026-08-18. <b>This file is the source of truth for progress</b>, not any
+chat log.</p>
+
+<div class="card warn">
+<h3>Read this first — you may be a different session, or a different model</h3>
+<ol>
+<li><b>The code is the source of truth, not this document.</b> Verify before you
+  change. Several assumptions in the original brief turned out to be false; see
+  <a href="#facts">Verified facts</a>.</li>
+<li><b>Work in <code>code/.staging</code>, never the main tree.</b> Promote with
+  <code>python promote.py</code>, which runs the full QC suite and copies back
+  only if it is green.</li>
+<li><b>Never run <code>promote.py --init</code> while staging holds unpromoted
+  work.</b> It refreshes staging <i>from</i> main and will delete it. This has
+  already destroyed a feature once.</li>
+<li><b>Every fix needs a QC check, and the check only counts once you have
+  broken the fix and watched it fail.</b> See <code>qc/README.md</code>.</li>
+<li><b>Assert on what reached the module</b> (<code>fake_serial.wire</code>),
+  never on what the UI says about itself.</li>
+<li><b>Talking to Gemini via <code>agy</code>: the prompt must contain no
+  <code>"</code> character</b> — it silently truncates there, and a truncated
+  prompt still returns confident nonsense. Ask for FIND/REPLACE blocks, never
+  whole files (that times out).</li>
+<li><b>Update the <a href="#state">STATE block</a></b> as tasks move — and put
+  the <b>date and time</b> on the line you touch. Mark a task
+  <span class="pill doing">doing</span> when you PICK IT UP, not only
+  <span class="pill done">done</span> when it lands, or the page cannot show
+  that anything is happening. That block is how progress survives a context
+  limit, and the card at the top of <a href="#progress">Progress</a> is
+  rendered from it.</li>
+</ol>
+</div>
+
+<h2>The loop, per area</h2>
+<div class="wrap">
+<svg viewBox="0 0 980 96" width="100%" height="96" role="img"
+     aria-label="Workflow: inspect, verify, reproduce, design, implement, test, verify again">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6"
+            markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4da3ff"/>
+    </marker>
+  </defs>
+  <g font-family="system-ui,Segoe UI,Roboto,sans-serif" font-size="13">
+    <g fill="#1a212b" stroke="#2a3442">
+      <rect x="2"   y="30" width="118" height="36" rx="14"/>
+      <rect x="142" y="30" width="118" height="36" rx="14"/>
+      <rect x="282" y="30" width="130" height="36" rx="14"/>
+      <rect x="434" y="30" width="118" height="36" rx="14"/>
+      <rect x="574" y="30" width="130" height="36" rx="14"/>
+      <rect x="726" y="30" width="100" height="36" rx="14"/>
+      <rect x="848" y="30" width="130" height="36" rx="14"/>
+    </g>
+    <g fill="#dce3ec" text-anchor="middle">
+      <text x="61"  y="53">inspect</text>
+      <text x="201" y="53">verify</text>
+      <text x="347" y="53">reproduce</text>
+      <text x="493" y="53">design</text>
+      <text x="639" y="53">implement</text>
+      <text x="776" y="53">test</text>
+      <text x="913" y="53">verify again</text>
+    </g>
+    <g stroke="#4da3ff" stroke-width="2" marker-end="url(#a)">
+      <line x1="122" y1="48" x2="138" y2="48"/>
+      <line x1="262" y1="48" x2="278" y2="48"/>
+      <line x1="414" y1="48" x2="430" y2="48"/>
+      <line x1="554" y1="48" x2="570" y2="48"/>
+      <line x1="706" y1="48" x2="722" y2="48"/>
+      <line x1="828" y1="48" x2="844" y2="48"/>
+    </g>
+    <text x="490" y="16" fill="#8b98a9" text-anchor="middle" font-size="12">
+      no area is finished until QC is green and promote.py has run
+    </text>
+  </g>
+</svg>
+</div>
+
+<h2 id="facts">Verified facts — what the brief got wrong</h2>
+<p class="mut">Checked against the real tree. Do not rebuild things that do not
+exist.</p>
+<div class="wrap">
+<table>
+<tr><th>The brief assumed</th><th>The code shows</th><th>Evidence</th></tr>
+<tr><td><code>connect()</code> duplicated per module</td>
+    <td>WiFi, discovery, OTA, RS485 and SD exist <b>once</b>, in
+        <code>src/core/</code></td><td>grep, <code>firmware/src</code></td></tr>
+<tr><td>module management tangled with flashing</td>
+    <td><b>Already separate in Python.</b> They touch in 3 places, all correct
+        coordination over one cable</td>
+    <td><code>main.py:955-1231</code>, <code>:394</code>, <code>:1367</code></td></tr>
+<tr><td>a "Sub-PC" tier exists</td>
+    <td><b>No such concept.</b> Only match in the repo is the prompt log</td>
+    <td>grep, whole repo</td></tr>
+<tr><td>two Python servers</td>
+    <td>a <b>13-line stub</b> that <code>runpy</code>s the hub</td>
+    <td><code>nong/main_python_set_nong/main.py:12</code></td></tr>
+<tr><td>version redundancy</td>
+    <td><b>Two fields, both legitimate</b>: <code>FW_VERSION</code> and
+        <code>CAL_VERSION</code></td>
+    <td><code>esp32_hardware.h:14</code>, <code>NongModule.h:122</code></td></tr>
+</table>
+</div>
+
+<div class="card err">
+<h3>The two worst real problems</h3>
+<ol>
+<li><b>No authentication anywhere.</b> <code>WebPortal::setupRoutes</code>
+  (<code>WebPortal.cpp:519-875</code>) never calls <code>users.verify</code>; the
+  module login is browser-side only (<code>WebUI.h:775</code>) and the card
+  <b>prints the default password</b> (<code>WebUI.h:135-137</code>). The hub
+  binds <code>0.0.0.0</code> with no auth. Anyone on the venue WiFi can reflash a
+  board or drive the servos.</li>
+<li><b>A phone cannot discover the hub.</b> The address exists only as a console
+  <code>print</code> (<code>main.py:1958</code>) — on no page, no QR, no mDNS —
+  in a product designed to be used from a phone.</li>
+</ol>
+</div>
+
+<h2>Decisions already taken — do not re-open these</h2>
+<div class="wrap">
+<table>
+<tr><th>Decision</th><th>Why</th></tr>
+<tr><td>Restructure aggressively, area by area (architecture + UI together)</td>
+    <td>User's choice. Each area is finished before the next starts.</td></tr>
+<tr><td>QR code <b>and</b> mDNS, not one or the other</td>
+    <td>Venue networks block mDNS; the QR still works there. Belt and braces.</td></tr>
+<tr><td>Login before acting, enforced on the board and the hub</td>
+    <td>Today there is none at all — see above.</td></tr>
+<tr><td>Colour lives in ONE file, and dark stays the default</td>
+    <td>Asked for 2026-08-19: a file to change only the theme or colour, so a
+        new theme can be added later without reading anything else.
+        <code>shared/web/themes.css</code> holds every colour, one block per
+        theme; <code>mice.css</code> keeps shape only. Dark stays default
+        because a bright screen spills light into the show area. The picker
+        DISCOVERS themes from the file rather than repeating the list.</td></tr>
+<tr><td>Joyful colour is decoration; state colour still means state</td>
+    <td>Same conversation. A theme may bring as much colour as it likes through
+        its own accents, but ok / warn / err keep their meaning and nothing is
+        signalled by colour alone — otherwise a cheerful theme turns a warning
+        into an ornament.</td></tr>
+<tr><td>A remote flash logs in as the OPERATOR, not as the hub</td>
+    <td>Taken 2026-08-19 while building A2-4. The confirm panel asks for a login
+        on the PC holding the cable; it is used for that one request and never
+        stored. The alternative, a token shared between hubs, leaves every PC
+        holding a credential that can overwrite boards on every other PC.</td></tr>
+<tr><td>Remote flash sends the image over the network</td>
+    <td>So a PC that never built firmware can still flash. <code>esptool</code>
+        must run on the PC holding the cable.</td></tr>
+<tr><td>Remote flash confirms, naming the PC</td>
+    <td>Overwriting firmware is not undoable and the board may be in someone's
+        hands across the room.</td></tr>
+<tr><td>Gemini designs the visible surfaces; Claude builds and verifies logic</td>
+    <td>Evidence from 2026-08-17: Gemini's design output was better; it also
+        proposed three CSS changes that broke the rules they aimed at, and
+        Claude caught two bugs it introduced.</td></tr>
+<tr><td>Keep <b>both</b> pinout images, chosen by condition</td>
+    <td>The 38-pin WROOM reference is right for nong and lift
+        (<code>nodemcu-32s</code>) but wrong for an ESP32-CAM, and 133 KB cannot
+        come from board flash when the page is opened directly.</td></tr>
+<tr><td><b>Stopping is never behind a login.</b> Starting a show, moving a
+        joint, flashing or deleting all need one; <code>/api/play/stop</code>
+        never does</td>
+    <td>Claude's call during A1-3, 2026-08-18, flagged to the user rather than
+        asked, because the safe reading is not ambiguous: a password prompt
+        while an arm is about to hit a person or a set piece is a safety
+        failure, not security. The worst an unauthenticated caller can do is
+        stop the show — the same thing the power switch does, and always
+        recoverable. Written into <code>hub_auth.NEVER_GATED</code> and asserted
+        by <code>check_hub_auth</code> so it cannot be tidied away.</td></tr>
+<tr><td>Skip a task marked <span class="pill hw">needs hardware</span> and take the
+        next one a PC can finish; do the hardware ones when the user says the
+        board is on the bench</td>
+    <td>User's instruction, 2026-08-18. <code>qc/lib/fake_wifi.py</code> is a
+        Python re-implementation of the board's HTTP routes, so a change to
+        <code>WebPortal.cpp</code> can be read but not executed — calling that
+        verified would be a lie, and waiting for hardware stops all other
+        progress. Order inside the plan is unchanged; only what is worked
+        FIRST changes.</td></tr>
+<tr><td>Do <b>not</b> merge <code>SPEED</code>/<code>TIME</code>/<code>STOP</code>/<code>HOME</code>
+        across nong and lift</td>
+    <td>Same user-facing verb, unrelated code (deg/s vs PWM-and-mm/s;
+        interpolation freeze vs motor stop). Merging makes a
+        hardware-conditional god-function.</td></tr>
+</table>
+</div>
+
+
+
+<div class="card cando" id="canDo">
+  <h2 style="margin-top:0">What can be finished right now</h2>
+  <p class="mini">Asked for 2026-08-19: <i>which one can make now without
+     hardware or use only 1 esp, let do it till finish</i>. Computed from the
+     STATE block, so it stays true as tasks move — nothing here is typed by
+     hand.</p>
+  <div id="canDoBody">counting…</div>
+</div>
+
+<h2 id="hardware">What needs hardware, and how much of it</h2>
+<p class="mini">Asked for 2026-08-19: <i>which one need more than 1 hardware</i>.
+   Everything else in this plan a PC can finish on its own. Only two rows below
+   need a SECOND board; the rest need one board plus a particular part.</p>
+
+
+<h3 id="onbench">What is actually on the bench, 2026-08-19</h3>
+<p class="mini">The user's own summary, plus what each board answered when asked.
+   Five boards, four ways of reaching them - which is the first time this
+   project has had more than one route to test at once.</p>
+<ol class="mini">
+  <li><b>ESP32 on USB</b> to this PC — <code>COM9</code>, id 1, <i>lift</i>,
+      type lift, fw 1.0.0.</li>
+  <li><b>ESP32 on RS485</b> through a MAX485 — <code>COM23</code>, id 67,
+      <i>nong</i>, group <code>mice-show</code>, fw 1.0.0. <b>The wiring is
+      correct</b>: <code>#* PING</code> answered <code>@67 PONG 67 nong nong</code>,
+      addressed frames work, an id that is not there is silent, and a long JSON
+      reply arrives whole. Its two servos <b>WAIST</b> and <b>R_EL_R</b> (with
+      underscores) move on command: <code>JOINT WAIST 100</code> answered
+      <code>OK WAIST=100.0 T=83ms</code> and the user saw and heard it turn.</li>
+  <li><b>ESP32-CAM</b> on <code>COM18</code>, id 89, type cam. Flashed with the
+      current build it says <code>[cam] ready, qvga, PSRAM NO</code> and
+      <code>SNAP</code> captured <b>14671 bytes</b>. The
+      <i>Detected camera not supported</i> error was stale firmware, not the
+      sensor and not the ribbon.</li>
+  <li><b>ESP32 on external power</b> — no cable to this PC.</li>
+  <li><b>ESP32 on the pair PC</b> — id 42, <i>lab-pair</i>, type nong, group
+      <code>mice-show</code>, chip <code>6825DD163688</code>, flashed with the
+      current firmware. That PC runs no hub, only a browser, so this hub cannot
+      see that board — see A13-4 for why a browser can never share a USB port.</li>
+</ol>
+<p class="mini"><b>Still missing:</b> an SD card. It blocks A7-4, the photo half
+   of A7-7 and the saved-show half of A7-5.</p>
+
+<h3 id="packing">The packing list — what to bring, and what it unlocks</h3>
+<p class="mini">Asked for 2026-08-19: <i>which one need SD card, which one need
+   RS485, which one need the thing</i>. Same facts as the table below, sorted by
+   the PART instead of by the task, because that is the order things get packed
+   in. Nothing here is a guess about what exists — every row names the task that
+   cannot be finished without it.</p>
+
+<table class="hw">
+<tr><th>Part</th><th>How many</th><th>Without it, these cannot be done</th></tr>
+
+<tr class="need2"><td><b>ESP32 boards</b></td>
+    <td><b>2</b> (3 is better — one to keep as a known-good)</td>
+    <td><b>A3-5</b> hotspot peers (two boards, no wiring at all) · <b>A3-8</b>
+        as the second device if a phone cannot be used. Everything else needs
+        one board, and there are already 3 TEST boards on the bench.</td></tr>
+
+<tr><td><b>RS485 transceivers</b> (MAX485) — <b>HERE, and working</b></td>
+    <td>done</td>
+    <td><b>A3-5</b> the bus half — carrying the group to modules behind a board.
+        Nothing on a PC carries a real bus, so this is the one thing the whole
+        QC suite cannot fake. The hotspot half of A3-5 does NOT need these.</td></tr>
+
+<tr><td><b>microSD card</b> (FAT32, in the board's slot)</td>
+    <td>1, ideally 2</td>
+    <td><b>A7-4</b> AudioPlayer reads its files off the card · <b>A7-5</b> a
+        saved show is loaded from it · <b>A7-7</b> SNAP writes a photo to it.
+        Also the only way to check the board page's new
+        <i>could not read /moves — is the SD card in?</i> message against a real
+        missing card rather than a forced failure.</td></tr>
+
+<tr><td><b>Servos</b></td>
+    <td>2 minimum; a whole nong is better</td>
+    <td><b>A7-5</b> — the risk there is a move that plays silently WRONG, and
+        only a moving arm shows that. Two servos prove the player still drives
+        what it is told to; a real nong proves the ten-joint case.</td></tr>
+
+<tr><td><b>RGB strip</b> (WS2812 / NeoPixel)</td>
+    <td>1</td>
+    <td><b>A7-4</b> — that moving RgbStrip into modules/lift/ still lights.</td></tr>
+
+<tr><td><b>Speaker</b> (with the DFPlayer or amp the lift uses)</td>
+    <td>1</td>
+    <td><b>A7-4</b> — the AudioPlayer half of the same move.</td></tr>
+
+<tr><td><b>ESP32-CAM</b> + its CH340 shield</td>
+    <td>1 (already on the bench, COM17)</td>
+    <td><b>A7-7</b> — whether SNAP can work on a cam build at all, or whether
+        four documents describe something that cannot exist.</td></tr>
+
+<tr><td><b>A phone or second laptop</b></td>
+    <td>1</td>
+    <td><b>A3-8</b> the hotspot fault, as a real client ·
+        <b>A10-3</b> and <b>A9-*</b> to look at the themes and the small screens
+        on a real phone rather than a resized browser.</td></tr>
+
+<tr><td><b>USB data cables</b></td>
+    <td>one per board</td>
+    <td>Everything. A charge-only cable is the most common cause of <i>the board
+        did not answer</i>, and it looks identical.</td></tr>
+</table>
+
+<p class="mini"><b>If you bring only one thing:</b> a second board. It unlocks the
+   half of A3-5 that needs no wiring, and it gives A3-8 a real client. <b>If you
+   bring two:</b> add the SD card — three separate tasks stop at it.</p>
+
+<table class="hw">
+<tr><th>Task</th><th>Boards</th><th>Also needed</th><th>What it would prove</th></tr>
+
+<tr class="need2"><td><b>A3-5</b> group over RS485 and hotspot peers</td>
+    <td><b>2 boards</b></td>
+    <td>Two RS485 transceiver boards (MAX485 or similar) and a two-wire A/B link
+        between them, for the bus half. The <i>hotspot</i> half needs no wiring
+        at all — two boards and no venue WiFi is enough.</td>
+    <td>That a module carries its group to the modules behind it, and that peers
+        found over a hotspot stop showing as <i>not linked</i>. Nothing on a PC
+        carries a real bus, so this cannot be faked.</td></tr>
+
+<tr class="need2"><td><b>A3-8</b> the PC's internet drops while sharing its hotspot</td>
+    <td><b>1 board + a second device</b></td>
+    <td>The real laptop that shows the fault, and a phone or another laptop as
+        the client. A board can stand in for the client if a phone cannot.</td>
+    <td>Whether this is a fourth cause or one of the three fixed on 2026-08-06
+        coming back. <code>ping -S 192.168.137.1</code> is NOT a valid test —
+        it answers from the PC itself.</td></tr>
+
+<tr><td><b>A7-4</b> move RgbStrip and AudioPlayer into modules/lift/</td>
+    <td>1 board</td>
+    <td>An RGB strip and a speaker on it</td>
+    <td>That moving the code changed nothing — a strip that lights and a sound
+        that plays. A fake cannot show either.</td></tr>
+
+<tr><td><b>A7-5</b> SequencePlayer stops hard-coding lift and nong verbs</td>
+    <td>1 board</td>
+    <td>At least two servos wired, ideally a real nong</td>
+    <td>That a saved show still runs after the verbs stop being written into the
+        player. The risk is a move that plays silently wrong, which only a
+        moving arm shows.</td></tr>
+
+<tr><td><b>A7-7</b> SNAP on a cam build</td>
+    <td>1 board</td>
+    <td>The ESP32-CAM (COM17 on its CH340 shield)</td>
+    <td>Whether SNAP can work at all on a cam build, or whether four documents
+        are describing something that cannot exist.</td></tr>
+
+<tr><td><b>A4-3</b> the way back to the hub <span class="mini">(built, PC-verified)</span></td>
+    <td>1 board</td>
+    <td>The board on WiFi, reached directly rather than through the hub</td>
+    <td>The half that runs on the chip: that the board remembers the hub which
+        spoke to it and forgets it after five minutes. The page behaviour is
+        already driven on a PC; this is the part a PC cannot execute.</td></tr>
+</table>
+
+<p class="mini"><b>Short answer:</b> bring <b>two boards</b> and, if you can, a pair
+   of RS485 transceivers with two wires between them. Two boards alone already
+   unlock the hotspot-peer half of A3-5 and the A3-8 reproduction. The camera,
+   the strip and the speaker each need only one board, but they need that part
+   attached.</p>
+
+<h2 id="progress">Progress</h2>
+
+<!-- What is happening RIGHT NOW. Rendered from the STATE block below, so there
+     is nothing extra to keep in sync. -->
+<div class="card now" id="nowCard">
+  <div class="nowhead">
+    <span class="pill doing" id="nowPill">—</span>
+    <b id="nowId">—</b>
+    <span class="mut" id="nowWhen"></span>
+  </div>
+  <p id="nowWhat" class="nowwhat">—</p>
+</div>
+
+<div class="bar"><i id="pbar"></i></div>
+<p class="mut" id="pnote">—</p>
+<p class="mut" id="plast">—</p>
+<p class="running" id="prun" hidden></p>
+
+<div class="wrap">
+<table id="ptable">
+  <thead><tr><th>Task</th><th>Status</th><th>When</th><th>What</th></tr></thead>
+  <tbody id="pbody"></tbody>
+</table>
+</div>
+
+<details id="stateBox">
+<summary>The STATE block — <b>the only place progress is recorded</b>. Edit it by
+hand, a person or any AI; everything above re-renders from it.</summary>
+<p class="mut">Format: <code>id: status [YYYY-MM-DD [HH:MM]] — note</code>, one
+per line, continuation lines indented. A line starting <code>#</code> is a group
+heading. Status is one of
+<span class="pill todo">todo</span> <span class="pill doing">doing</span>
+<span class="pill qc">qc</span> <span class="pill done">done</span>
+<span class="pill blocked">blocked</span>. Use <code>qc</code> for work that is
+built and waiting on the suite or a promote — it is finished but not landed, and
+without it a task in flight looks like nothing happening.
+The timestamp is when the status last changed — when a task was picked up, or
+when it landed.</p>
+
+<pre id="state"><code>STATE
+# RUNNING: A13-7: two boards forming their own network with no venue WiFi, started 2026-08-19 15:02
+
+# A0  Groundwork — the duplication that makes every later area harder
+A0-1: done 2026-08-18  — this file
+A0-2: done 2026-08-18  — docs/architecture/ written from three explorations
+A0-3: done 2026-08-18  — promoted 2026-08-18, QC 1574/0. Also fixed two things found on the
+                way: promt.md was about to be destroyed by promote (now in
+                SKIP_FILES, it is a live log not source), and a hub could forward
+                to itself over HTTP because all of 127.0.0.0/8 is loopback
+                (now short-circuited by is_self, guarded by a check that was
+                proven to discriminate)
+A0-4: done 2026-08-18 09:46  — promoted 2026-08-18, QC 1607/0. shared/web/mice.css is the only
+                :root in the product; every page links /mice.css and the BOARD
+                serves that same URL from flash (gen_tables.py compiles the file
+                into web/MiceCss.h), so a module looks the same over WiFi and
+                over USB. Radii unified on 10/14/18/999, the four caption
+                classes became one rule, soft tints and --code-bg are now
+                derived with color-mix instead of five hand-picked hexes, and
+                color-scheme:dark fixes the native checkbox/slider/scrollbar.
+                check_design_system.py guards it (broken twice, failed twice).
+                Two things found on the way: promote.py was about to push a QC
+                run's settings_shared.json over the real one (now in SKIP_FILES,
+                guarded by check_no_data_loss), and the three snapshot patchers
+                now carry the shared stylesheet, or an old page would restore
+                against today's tokens
+A0-5: done 2026-08-18 10:31  — promoted 2026-08-18, QC 1611/0. Deleted. It was a second module
+                page: 295 lines, six cards duplicated from WebUI.h, and 8 joint
+                sliders where a nong has 10, so WAIST and SHRUG were unreachable
+                through it. Nothing linked to it and it already redirected away
+                in JavaScript. /module.html survives as a 302 that carries
+                ?port=&id= across to /mod?dev=usb:PORT:ID, so an old bookmark
+                still lands on the right module; bare /module.html goes to the
+                hub instead of to a page addressed at nothing. The hub's AP-mode
+                message no longer sends people to it. check_hub_api guards both
+                halves (broken twice, failed twice). promote.py does not delete,
+                it warns — the file had to be removed from the real tree by hand
+A0-6: done 2026-08-18 12:26  — one logging helper in firmware. src/core/Log.h
+                holds the tag list ONCE (X-macro generates both the enum and the
+                names); mlog::line formats the whole line and issues exactly ONE
+                Serial.write, which cannot be split by another task — the bench
+                bug where a WiFi event glued its log onto the end of a reply.
+                34 call sites moved off Serial.println/printf across 5 files,
+                including the SSID scan that built one line out of twelve
+                writes. A log can no longer contain a newline (it would read as
+                two replies) and an over-long line is cut with a visible ...
+                The formatting is Arduino-free so the PC tests assert the real
+                bytes: 5 new native tests, 25 total. check_logging.py guards
+                that nothing goes around the helper (broken twice, failed
+                twice). Flash unchanged at 66.5%. COMMANDS.md carries the
+                one-write rule. NOT tested on hardware
+A0-7: done 2026-08-18 17:18  — RS485Bus::send. MY PREMISE WAS WRONG, and
+                the code said so: I parked this as an RS485 copy of the A0-6
+                logging bug, but Serial2 is written in exactly ONE function,
+                send() serialises on sendMtx_ (created because the async web
+                task and loop() both send), and the driver enable is held across
+                the whole frame. Nothing can get between those two writes. The
+                hole that WAS open is narrower: the lock is applied as
+                `if (sendMtx_)`, so a board that never created it would skip
+                locking in silence and let two tasks interleave halves of two
+                frames onto a bus every module obeys. That is now reported once
+                instead of ignored. check_rs485_frame.py pins the three things
+                that make a frame whole — one writer, the lock held ACROSS the
+                writes, the driver raised and lowered once — broken three ways,
+                failed three ways. Builds; not tested on hardware
+A0-8: done 2026-08-18 17:18  — the reply path (main.cpp emitLine) and the log path now both
+                build one buffer and write once, in two different places. Share
+                one, so the rule cannot be half-kept. Found while doing A0-6
+A0-9: done 2026-08-18 17:18  — Studio's side panel overflows 32px at its default width: the
+                joint number box sits past the edge and the panel grows a
+                scrollbar. Pre-existing, measured against the unmodified tree
+                while doing A0-4, NOT caused by it
+A0-11: done 2026-08-18 13:50  — the browser checks FLAKE under full-suite load: check_responsive
+                reported measurements missing inside run_qc.py, then passed 35/0
+                on its own; an earlier full run failed transports/ui which then
+                passed 194/0. A suite that fails randomly is a suite people stop
+                believing, and promote.py is gated on it. Give the browser
+                checks a retry, or more settle time, and prove it by running the
+                full suite several times.
+                FOUND IT: qcMark in qc/lib/browser.py swallowed a failed fetch
+                with a bare catch, so a dropped report vanished and the check
+                failed with measurements missing. It now retries four times.
+                check_qc_reports.py drives it against a network that refuses the
+                first two requests: before the fix R1 and R2 were lost, after it
+                all six arrive. Fixed as a BLOCKER — it was stopping A0-6 from
+                promoting, not a later cleanup.
+                REOPENED and finished during A1-3: the dropped report was only
+                HALF of it. The other half was drivers measuring on a stopwatch
+                — a fixed setTimeout, then count — which under load measured a
+                page that had not finished and reported a bug that did not
+                exist. Three more full runs failed on three more checks. Fixed
+                three ways: check_responsive now AWAITS each report instead of
+                firing 25 at a port that takes one caller at a time; a shared
+                qcWaitFor(condition, deadline) went into both browser preludes
+                and check_network_tab uses it; and the wait deadline went from
+                25s to 150s of grace, which costs nothing because the wait ends
+                the instant a page says done. Two consecutive full runs green
+A0-10: done   2026-08-19 02:31  touches=hub.html,WebUI.h,studio  — three tab systems, all called showTab, with different class One tab component in mice.css, used by the hub, the module website and Studio. They had three: the hub outlined its active tab while the other two filled theirs, so the hub looked like a different product from the screens it opens. Filled won - two of three already used it, it survives a dark room and an angled screen, and an outline differs from an unselected tab only by colour, which fails a screenshot and a colourblind reader. Every id, data attribute and handler kept; .mtab stays as a NAME beside .tab because scripts and QC select on it. check_tabs.py measures the COMPUTED colours of all three in a real browser. Two weak assertions of mine were exposed by breaking it: all-three-match is satisfied by three apps that are equally wrong, and the report separator was being eaten by the mark sanitiser so the comparison could never fail.
+                names and different active styles: the hub is an outline tab,
+                the module site and Studio are filled. Left alone by A0-4
+                because unifying them changes markup QC drives
+
+A0-12: done   2026-08-18 23:15  touches=qc/,promote.py  — a change costs two full QC runs: one by hand before promoting and
+                one inside promote.py as the gate. The gate must stay FULL — three
+                times on 2026-08-18 a change broke a check that looked unrelated
+                (a stylesheet broke Studio's panel, the logging helper broke
+                check_wifi_live, the login gate broke check_modsite_tabs) — but
+                the SECOND run is pure waste. Make promote reuse a run that just
+                passed on an unchanged tree, or run the fast checks first and
+                stop at the first failure so a broken change fails in seconds
+                instead of nine minutes. ~20 of the 50 checks launch a real
+                browser and that is nearly all of the time.
+                TWO SUITES CANNOT RUN AT ONCE TODAY, which is why waiting hurts:
+                browser.kill() kills every Edge carrying the QC tag, so a second
+                run murders the first one's browser, and every run reports
+                through the same fake serial port into one shared qc_marks list.
+                Fixing that — a tag per run, and marks owned by the run that
+                produced them — is what would let two changes be verified in
+                parallel instead of queueing
+A0-13: done   2026-08-19 02:49  touches=qc/,promote.py  — MORE THAN ONE .staging, so two changes can be verified at the PROVEN, not asserted: two browser-driven suites ran at the same time in two trees, both green - 45/0 in 47.6s and 45/0 in 48.3s, 49s wall clock for what was 96s serial. Each run takes its identity from its own pid: browser.TAG carries it (kill matches on the tag, so a shared one meant one run killed the other's browser mid-measurement - which looks exactly like a flaky check), and _hub_port starts at 8700+(pid%40)*25 (two runs on 8700 could have one tree's hub answer the other tree's request, which does not fail loudly, it silently tests the wrong tree). promote.py takes --staging DIR. Promoting stays SERIAL on purpose: both trees copy into the same real tree and two promotes touching one file is a lost edit - the failure that ate the settings_shared.json fix earlier.
+                same time instead of queueing behind one 10 minute suite. The
+                user's idea, 2026-08-18, and two staging trees are two PROCESSES
+                so they do not share qc_marks or the fake port — the collision
+                that bit us inside ONE process does not apply. Four things stop
+                it today, all small and all verified:
+                  * qc/lib/browser.py TAG is the constant MICEQCBROWSER and
+                    kill() matches on it, so one run kills the other run's
+                    browser — needs a per-process suffix;
+                  * qc/lib/qc.py _hub_port starts at 8700 in both, so the two
+                    trees fight over ports and one hub can answer the other's
+                    requests — base it on the pid or take a free port;
+                  * the QC auth file is named mice_qc_auth_<port>.json, so the
+                    same port means the same file (falls out of the port fix);
+                  * promote.py hardcodes STAGING = MAIN/.staging — needs to take
+                    the tree as an argument.
+                Then promote them one at a time, since both copy into the same
+                real tree and two promotes touching one file is a lost edit.
+                HOW MANY. Measured on this machine 2026-08-18: 24 cores, 31 GB
+                RAM, 47.8 GB free, and a staging tree is 648 MB of which 624 MB
+                is firmware/.pio — the SOURCE is about 24 MB. So disk allows
+                ~70 trees and the CPU is not the constraint either. The real
+                ceilings are different:
+                  * LOAD MAKES BROWSER CHECKS FLAKE. Every intermittent failure
+                    chased on 2026-08-18 was load-induced timing. Twenty suites
+                    at once is twenty times that load on the checks that were
+                    just stabilised, so the number must rise only as the flake
+                    causes are proven fixed;
+                  * INDEPENDENT WORK RUNS OUT. Parallel trees only help when the
+                    tasks touch different files, and this plan does not have
+                    twenty such streams — every A2 task edits hub.html and every
+                    A4 task edits WebUI.h. Three to five is what actually exists;
+                  * and one build cache would save most of the disk anyway:
+                    point PLATFORMIO_CORE_DIR at a shared folder so the trees do
+                    not each carry 624 MB of the same libraries.
+                So: start at THREE, measure wall-clock and how many runs come
+                back green first time, and raise it only if that stays clean.
+                Twenty trees on a suite that flakes under load is twenty times
+                the debugging, not twenty times the work
+
+# A1  Authentication — there is none today
+A1-1: done   2026-08-19 00:57  touches=WebPortal.cpp  hw=1 board (done on nong id 85, 2026-08-19) — [hw] runs in WebPortal.cpp on the board; fake_wifi is a Python stand-in, so auth there can be read but never executed. Original task: enforce auth on the board's mutating HTTP routes VERIFIED ON REAL HARDWARE 2026-08-19, nong id 85 lift-test at 192.168.137.72. Before: GET /api/cmd?c=SET NAME hacked returned 200 and ran, from any device on the WiFi. After: 401. Reading stays open (PING, INFO, /api/status, the page, the stylesheet) because the hub's own discovery probes /api/status and gating it would hide every board. STOP stays open on purpose - refusing a stop is the dangerous answer. What is gated comes from config/commands.json (query / safety flags compiled into COMMAND_DOCS), not a list in C++, so allowing a new command is one entry and an unknown command fails CLOSED. Two registry faults found on the way and fixed: CAM was declared query:true while its help said it changes the sensor, and PIN VALID now needs a login because PIN is correctly declared as changing - only PIN? is a query.
+A1-2: done   2026-08-19 01:28  touches=WebUI.h,UserStore.cpp  hw=1 board (done on nong id 85, 2026-08-19) — [hw] same: the board's login card and first-login change live in WebUI.h + UserStore on the chip. Original task: stop printing the default password; force a change on first login VERIFIED ON HARDWARE 2026-08-19, nong id 85. The card no longer prints manny/12345678 and neither does the served page source - view-source is not a lock. A board still carrying the shipped password answers mustChange:true and the website will not open Setup until it is changed. Checked BY VALUE, not by a flag set when the account is created: this very board had been in service since before the firmware, so a flag would have called it set up and never asked - the boards most likely to still have the shipped password are exactly the ones a flag misses. Caught before flashing. Minimum length went 1 to 8 (what the shipped one already was) and changing it TO 12345678 is refused, because forcing a change is theatre otherwise. Measured on the board: login mustChange:true, 7 chars refused, change-to-itself refused, real change accepted, old password then 401.
+A1-3: done 2026-08-18 13:50  — hub login for mutating routes. main_python/
+                hub_auth.py holds the gate; nothing that CHANGES anything is
+                reachable without a session, and everything that only reads
+                still is. Three things the obvious design would have got wrong:
+                (1) the rule is not POST — /api/usb/cmd, /api/robot/cmd and
+                /api/robot/delete are GETs that move servos and delete files, so
+                the gate is a LIST of what changes something; (2) STOPPING is
+                never gated (NEVER_GATED), because a password prompt while an arm
+                is about to hit someone is a safety failure — starting a show
+                needs a login, ending one never does; (3) a module on another PC
+                is gated by THAT hub, since a session here means nothing there,
+                and the error says to go and log in on that PC. Password is
+                PBKDF2 + random salt, generated on first run and printed only in
+                the hub's own console on the PC, never on a page and never over
+                the network; five wrong tries locks that caller for a minute and
+                no one else. check_hub_auth.py drives it from outside with no
+                session, 57 assertions, and asserts on fake_serial.wire — a gate
+                that answers 401 AFTER the arm moved has protected nothing.
+                Broken three ways, failed three ways. Gemini designed the login
+                card; its .banner.info/.warn moved into mice.css (a banner is a
+                shared component) and the lockout countdown now reads the real
+                number from the hub instead of a hardcoded 30s
+A1-4: done 2026-08-18 15:19  — remote flash confirms, naming the PC. The old
+                question was a browser confirm() box naming only a COM port or
+                an IP — neither tells you WHICH board in the room you are about
+                to overwrite. It is now an in-page panel that names the board
+                (name, id, the type it runs now), what it becomes and whether
+                that is a change, how it is reached, and THIS PC BY NAME —
+                several machines at a venue run the same hub on the same
+                network, so the wrong browser tab is the easy mistake. Cancel is
+                the prominent button and under the thumb; overwrite is styled
+                destructive and has to be reached for; Escape cancels; the
+                dialog takes focus. Being a real panel and not confirm() also
+                means QC can READ it. check_flash_confirm.py clicks Cancel and
+                then asks the HUB whether a write began — a confirm that closes
+                while the write has started is worse than none. Broken twice
+                (drop the PC name; make cancel answer yes), failed twice.
+                Gemini designed it; .banner.ok moved into mice.css, its
+                id=flashBusy collided with hub.html's flashBusy() function, and
+                it needed Escape and focus handling. check_ota asserted the
+                literal confirm( and now asserts the panel instead
+
+# A2  The hub's screens
+A2-1: done   2026-08-18 23:15  touches=hub.html  — hub nav: Home Modules Firmware Network Tools Settings Help Seven destinations. Help is a LINK not a tab. Home and Settings are real, not placeholders: Home counts what the scans already found so it cannot disagree with Modules, and repeats any error banner from the other tabs; Settings says who you are on which PC. Firmware is an honest empty state pointing at where flashing lives today. Gemini designed the bar; its placeholder copy named internal task ids on a user-facing page, and its filled-active-tab idea is A0-10 territory. Also fixed a real bug found by looking: .banner is display:flex which BEATS the hidden attribute, so hidden banners showed as empty coloured bars - mice.css now makes [hidden] win everywhere. check_hub_nav.py drives all seven in a browser; broken three ways, and the third break exposed a weak assertion of mine plus a report truncated at the first newline.
+A2-2: done   2026-08-19 04:30  touches=hub.html needs=A2-1  — a real Firmware section, separate from module management one screen writes firmware; unbuilt types show their build command; a finished write sets the board type; flashBusy restored (the cleanup deleted it and the first Write threw) one Firmware screen writes over cable or WiFi; unbuilt types are listed with the exact pio command; a finished write sets the board type. Two real faults were found by rebuilding the checks rather than renaming their selectors: the cleanup deleted flashBusy so the FIRST click on Write threw before anything was sent, and check_hub_nav measured the panel before it had painted. check_flash_type now drives fwWrite itself with the network stubbed and asserts on the SET TYPE that reached the board - broken four ways, and three of those assertions were too weak on the first try. Gemini reviewed it and claimed the OTA path must poll /api/ota and that want is shared state; both are false, checked against the code. Patch 0006, gate 1917/0
+A2-3: done   2026-08-19 04:59  touches=hub.html,mice.css  — .danger styling so destructive actions look destructive danger is a component in mice.css now, with hover and disabled states and a compact icon button, not a colour pasted per control. The unlink button never had it; the remove-account control had a red spelled out in an inline style, which is how a design system quietly stops being one - and it is now a button, since a control that ACTS is not a link. check_danger.py holds the line: the rule must be built from --err with no literal colour, every destructive handler in the list must carry it, and no control may hand-roll it. Broken three ways plus a CONTROL edit that had to keep passing
+A2-4: done   2026-08-19 04:59  touches=main.py,hub.html needs=A2-2  — POST /api/flash/remote, image sent over the network the image travels, not the command. POST /api/flash/send hands this PC's built image to the hub holding the cable; POST /api/flash/remote receives it, unpacks it and runs esptool THERE; GET /api/flash/at proxies that PC's progress back, because the browser cannot ask another hub directly - the session cookie is SameSite=Lax so a cross-origin POST carries nothing. New decision, not in the plan: the operator types a login for the other PC in the confirm panel, used once and never stored, rather than a shared token that would leave every PC holding a credential that overwrites boards on every other PC. Found while writing the check: drain() swallowed whatever Content-Length claimed, so one header saying 900 MB blocked the hub on a REFUSED request, before any route saw it - capped at 4 MB. Eight sabotages, all caught. Gate 1950/0, patch 0007
+A2-5: done   2026-08-19 04:30  touches=hub.html  — move the pio build command off the first screen the pio run build command is off the first screen. It lives on Firmware now, built from the envs that are actually missing rather than one written into the page
+
+# A3  Discovery and identity
+A3-1: done   2026-08-18 23:15  touches=main.py  — one discovery layer: Discovery to Registry to ConnectionManager main_python/discovery.py holds the sweep once: Sweep walks one /24 in parallel, Finder is one kind of thing with a shelf life and an optional patient second pass. scan_hubs and scan_modules were the same loop with different probes and TTLs, and the divergence was real - the module scan had learned to be patient with a board that answers late and the hub scan never did. A new kind of thing is now ONE line, driven in the check by adding a fake one and watching it find something. Two design points worth keeping: probes are passed as wrappers so they are looked up WHEN THEY RUN (binding the function at construction silently breaks every monkey-patch, including the QC ones), and Finder.forget() is public so a check does not poke internals. check_discovery.py broken four ways - the fourth was a CONTROL, a harmless edit that must not fail, and it DID, exposing that I had asserted the spelling of a line rather than the object it produces
+A3-2: done   2026-08-19 05:00  touches=main.py  — one subnet sweep helper (scan_hubs and scan_modules are the same loop) no new work: A3-1 already did it. scan_hubs and scan_modules are each one line over discovery.Finder (main.py:255 and :321), which is exactly what this task asked for. Verified in the code rather than rebuilt
+A3-3: done   2026-08-19 08:56  touches=main.py,hub.html needs=A3-1  — QR at /api/qr and mDNS mice.local both halves, both stdlib-only because the hub is copied to a venue laptop and run. main_python/qr.py is a QR encoder written from the standard - GF(256) Reed-Solomon, zig-zag placement, all eight masks scored - served as SVG at /api/qr and shown on the Network screen beside the address, redrawn each time the tab opens because a laptop that moves between venue WiFi and its own hotspot gets a new IP. main_python/mdns.py answers mice.local; if Bonjour or avahi already holds 5353 the hub still runs and the page says the name is unavailable rather than printing one that answers to nothing. Verifying a thing that cannot be eyeballed: the check reads the picture BACK and also checks the parity by Reed-Solomon syndromes, which is different arithmetic; both constant tables are then verified by computation, not recall - all eight format strings match the BCH(15,5) code, and every version's capacity matches the free-module count from my own placement. Thirteen sabotages, all caught, one of which found a real fault: the responder sent the multicast copy FIRST, so on a network where multicast fails - the exact case mDNS exists for - the throw meant the unicast answer was never sent. Gate 1994/0, patch 0008
+A3-4: done   2026-08-19 09:47  touches=main.py  — stable identity, dedupe a board that is on WiFi and cable boards report chip - the ESP32 eFuse MAC - in INFO and /api/status, from the same source already used for the default name and bus id, so it adds no new truth. modules_here() merges cables, RS485 children and WiFi into one list per board with every route; the module screen renders one row saying reachable on COM9 and over WiFi. The dangerous direction is the opposite of the reported bug: two DIFFERENT boards out of one box share a default id, so merging on the id would send a command meant for one arm to the other - without a chip the id counts only with the type, and a board with a chip is never merged with one without. Six sabotages, all caught; the sixth needed a new case, a half-awake board reporting its chip and nothing else, which must not blank the name the cable already knew. Firmware builds mice_nong and mice_blank; COMMANDS.md documents the field. One check was found to be testing nothing: check_ui_states broke /api/scan, which the list no longer calls. Gate 2016/0, patches 0009 and fw 0038 VERIFIED ON HARDWARE 2026-08-19. A board flashed with the current firmware answers INFO with chip 6825DD163688 - the eFuse MAC, twelve hex digits, exactly as designed. Before the flash the same board reported no chip at all (fw 1.0.0), which is what every board on this bench still does
+A3-5: todo touches=firmware  hw=2 boards; RS485 transceivers x2 + A/B wires for the bus half (the hotspot half needs no wiring) — [hw] RS485 peers and hotspot peers are board-to-board; nothing on a PC carries a real bus. Original task: carry group on RS485 and hotspot peers (they always show not linked) UNBLOCKED 2026-08-19: RS485 is wired and working - broadcast on COM23 answered @67 PONG 67 nong nong through a MAX485. Both halves are now doable
+A3-6: done   2026-08-19 10:07  touches=hub.html  — hide IP, port, COM, dBm behind Advanced addresses, cable ports and signal strengths sit behind one switch in Settings, remembered per browser. It is ONE rule in shared/web/mice.css - .tech and body.adv .tech - not a decision repeated per page, and every page in the project already links that sheet, so the board site can join the same switch with one class. The module id stays visible with the switch off even though it shares a span with the address: it is how a board is addressed on the bus and how two identical arms on a shelf are told apart. Six sabotages; the one that got through first was the lazy fix - hiding the whole span, which takes the id with it - because innerText of a display:none element falls back to its raw text, so asking the hidden span reports it as visible. Measured on the rendered row instead. Gate 2031/0, patch 0010
+
+# A4  The module's own website
+A4-1: done   2026-08-18 23:15  touches=WebUI.h  — board site: what am I, at a glance The board reports fw, group and seq.running in the same status payload it always sent, and none of them reached the screen. The header now shows the firmware version - the first question anyone asks about a board behaving oddly, previously only reachable by sending INFO on a console - plus the group when it is in one, and a line saying what it is DOING and HOW you reached it: playing a named sequence or not running anything, over WiFi or over the cable through the hub. That distinction matters because unplugging a cable is not the same failure as losing WiFi. Also fixed the FAKE: it never reported fw or group though the firmware always has, so a page showing them looked broken here while working on hardware - it now reads FW_VERSION from the firmware header so the two cannot drift. check_modsite_glance.py broken three ways; break 2 survived at first because the check only ever drove the IDLE state, so the branch that names a running sequence was untested - it now drives both
+A4-2: done   2026-08-19 10:42  touches=WebUI.h  — fix two dead error handlers in WebUI.h the plan said two dead handlers; the code had five empty catches, four of which lied, and rule 1 says the code wins. Fixed: the re-login after a password change was ignored, so Setup opened on a DEAD session with every card visible and every action refused; mustChange was read from a body that might not parse, and swallowing it left false - a board still carrying the shipped password silently stopped asking anyone to change it, the security prompt turning itself off; logout was fired and forgotten directly under a comment promising it reaches the board; and a failed file list left an empty dropdown, which already means nothing on this card. The fifth catch was legitimate and now says catch(e){okCur=false;} so the check can keep an absolute guard - catch(e){} must not appear in that file at all, the pattern that produced all four. Four sabotages, all caught. Firmware builds nong, lift and blank
+A4-3: done   2026-08-19 10:42  touches=WebUI.h  hw=1 board on WiFi, to verify the half that runs on the chip (built and PC-verified) — a way back to the hub from the board site the trap is not the link, it is guessing the address: several PCs at a venue run this hub, so a wrong link lands someone on a stranger's control panel. Two cases only. Through the hub the page IS the hub, so / is right by construction. Reached directly, the board offers the hub that last identified itself - the hub sends X-Mice-Hub on every request it makes, from one helper so its two callers cannot disagree - and offers NOTHING when none has. The board keeps it in RAM with a five minute TTL and the header is character-checked before it becomes an href, since it arrives from the network. Five sabotages, all caught. The board-side memory runs on the chip and cannot be driven from a PC: that half is held to the source and the check says so. Gate 2055/0, patches fw 0039-0040 and hub 0011-0012
+A4-4: todo touches=WebUI.h  — both pinout images, chosen by board type and transport
+A4-5: todo touches=WebUI.h  — the five states everywhere they are missing
+A4-6: todo touches=studio,WebUI.h  — Studio writes its status into a hidden tab
+
+# A5  Connection state
+A5-1: todo touches=hub.html,main.py,WebUI.h  — one connection state machine, errors say what to do next
+
+# A6  Tools and help
+A6-1: todo touches=hub.html needs=A2-1  — Tools and Help reachable from every screen
+A6-2: todo touches=hub.html,help.html needs=A6-1  — contextual help per tool, regrouped by task
+A6-3: todo touches=hub.html  — broken registry no longer reads as no tools
+
+# A7  Firmware structure
+A7-1: done   2026-08-18 23:15  touches=firmware  — one applyJointSetting helper (13 copies of 3 idioms) THE COUNT WAS WRONG: the plan said 13 copies of 3 idioms, the code has 5 of each. GEAR PULSE RANGE SERVO HZ each parsed the <1-10|name|ALL> word themselves, each carried its own copy of the sentence ERR joint 1-10 name or ALL, each wrote its own loop guard, and each built its own all-or-name label for the reply. The error message is the part that matters: it tells a person what they may type instead, so five copies means changing the rule in one command and leaving four telling people something untrue. Now one small struct JointSel - covers(i), label(), and one jointSelHelp() sentence - with selectJoints() parsing it once. No class hierarchy, readable in one screen. check_joint_select.py, broken two ways. It says plainly what it cannot prove: driving those commands over the wire was tried and REMOVED because the fake module is a Python stand-in that never implemented them, so a green run means the rule is written once, not that the five commands ran
+A7-2: todo touches=firmware  — one joint-field validator table, used by JCFG too
+A7-3: todo touches=firmware  — one per-joint field descriptor (five hand-kept serialisers)
+A7-4: todo touches=firmware  hw=1 board + RGB strip + speaker + SD card (AudioPlayer reads its files off it) — [hw] moving RgbStrip and AudioPlayer needs a board with a strip and a speaker to prove nothing regressed. Original task: move RgbStrip and AudioPlayer into modules/lift/
+A7-5: todo touches=firmware  hw=1 board + 2 servos minimum (a whole nong is better) + SD card for a saved show — [hw] SequencePlayer drives real servos; a fake cannot show a move still runs. Original task: SequencePlayer stops hard-coding lift and nong verbs
+A7-6: todo touches=firmware  — call nongmath::ease, delete dead maxDelta, generate the CFG key list
+A7-7: todo touches=firmware,docs  hw=1 ESP32-CAM (COM17, CH340 shield) + SD card (SNAP writes the photo to it) — [hw] SNAP on a cam build needs the ESP32-CAM. Original task: SNAP can never work on a cam build: fix it or fix four documents PREMISE DISPROVED ON HARDWARE 2026-08-19: SNAP works on a cam build. The board answered OK captured 14671 bytes (SNAP <name> saves it, /api/cam.jpg shows it). What is left of this task is only the SD half - SNAP <name> writes to a card, and there is no card yet - plus checking whether the four documents describe it correctly. Do not rebuild what already works
+
+# A8  The device API
+A8-1: todo touches=main.py  — /api/robot/* and /api/usb/cmd become thin shims over /api/dev/*
+A8-2: todo touches=main.py  — usb_close must not close a handle it failed to lock
+A8-3: done   2026-08-18 23:15  touches=studio  — Studio cannot parse an @peer dev Studio parsed a dev by cutting off usb: and splitting on colon, so usb:COM7@far-nong came out as a PORT NAME - it offered a serial port called COM7@far-nong in the dropdown and failed to reach a module that was perfectly reachable. wifi:<ip>@peer went the same way, into the IP box. Now the peer is split off first and SENT: with a peer the command goes to the unified endpoint, which the hub already understands and turns into REACH <peer> <command> down the cable, and without one nothing about the ordinary cable path changes. That is what makes one USB cable enough for a whole installation with no venue WiFi. check_studio_peer.py asserts on the WIRE, not the page - break 2 parses the peer correctly and never sends it, which the page reports as connected. Two harness bugs found doing it: the studio prelude still reported through rawCmd so a connection bug silenced the very check meant to find it, and fake_serial.wire is (when, command) pairs which my join treated as strings - the same mistake was sitting in check_hub_auth, only working because nothing had reached the wire
+A1-5: done   2026-08-19 03:24  touches=main.py,hub.html  — hub LOGINS become USERS, added from The hub has accounts now, added and removed from Settings, with the module's own rules copied so the two cannot disagree: names 1-20 of letters digits _ and -, passwords 8-32 with no spaces, at most 16, and the LAST account can never be removed. Two deliberate differences from the module: the hub HASHES (the module stores in the clear) and every account gets its OWN salt, so two people who pick the same password do not share a hash. The risky part was migration, not the feature - a hub that already had a password must not be locked out by the upgrade, so the old single-password file is read as an account named mice and a login that sends no user name still works. Driven against a real old-format file in check_hub_users. A wrong USER NAME gives exactly the same answer as a wrong password, because different wording is how a stranger learns which names are real.
+                the web, the same shape the module already has. The user asked
+                for this on 2026-08-18 after being locked out: make like
+                authority have the user and pass, make can add user like the
+                module. firmware/src/core/UserStore.h is the model to copy —
+                names 1-20 of letters, digits, _ and -, passwords 1-32 with no
+                spaces, at most 16 users, and the LAST user can never be
+                removed so nobody can lock everyone out. The hub should hash
+                them, which the module does not. Half-started and then parked
+                on the user's instruction to follow the plan first; what DID
+                land is the one-password gate (A1-3) plus a readable
+                hub_password.txt, so nobody is locked out in the meantime
+A9-6: done   2026-08-18 23:15  touches=studio  — the splitter between the 3D view and the side
+                panel is 6px wide (style.css:71) and cannot be grabbed on a
+                laptop touchpad. Reported from a real machine, 2026-08-18: it
+                is too short and I cannot drag. 6px is under every pointer
+                target guideline and there is no keyboard way to resize either,
+                so a person who cannot hit it cannot make the panel wider at
+                all. Widen the HIT area without widening the visible line — a
+                transparent grab zone either side is the usual answer — and
+                give it arrow-key resizing. Belongs with A9 because it is the
+                same failure as the rest: it works on the machine it was built
+                on and not on the machine someone uses
+A3-8: todo    [hw] the PC's internet drops while it is sharing its hotspot,  hw=1 board + a second device (a phone will do) + the laptop that shows the fault
+                seen again 2026-08-18. Three causes were already found and
+                fixed on 2026-08-06 — a stale legacy ICS pairing, WiFi channel
+                roaming, and Radmin VPN pinned to ifMetric 1 stealing the
+                route — so this is either a fourth cause or one of those coming
+                back. Needs the real machine and a second device to reproduce;
+                `ping -S 192.168.137.1` is NOT a valid client test. Original
+                task:
+# A9  Every screen — phone, tablet, laptop, desktop, TV
+A9-1: todo touches=qc/  — the device list QC measures stops at 1920. Add the ones people
+                really use: a 320px phone, a 1280x800 laptop, a 1440p desktop, a
+                4K desktop, and a TV at 1920 and 3840. Today check_responsive
+                covers 360 / 390 / 768 / 1024 / 1920 only, so nothing above a
+                desktop monitor is measured at all and a TV is nobody's
+                breakpoint
+A9-2: todo touches=mice.css needs=A9-1  hw=a TV or a large screen, to judge three-metre legibility (optional) — a TV is watched from three metres, not thirty centimetres.
+                Everything is legible there or it is not usable: type, spacing
+                and touch/focus targets need a step up past about 2000px rather
+                than the same 15px body text stretched across two metres of
+                glass. One rule in mice.css, not five copies
+A9-3: todo touches=mice.css,hub.html,WebUI.h  hw=a TV remote or a keyboard-only run, to prove arrow-key operation (optional) — a TV has no mouse and no touch: it is driven by a remote, which
+                is arrow keys and Enter. Every screen must be reachable and
+                operable in DOM order with a visible focus ring, no hover-only
+                affordance, and no control that can only be reached by dragging.
+                The focus ring exists already (mice.css); the ORDER and the
+                hover-only cases have never been checked
+A9-4: todo touches=mice.css,hub.html,WebUI.h,studio needs=A9-1  — stop the wide screens wasting themselves. The hub caps at
+                1400px above 1500px wide, Studio's panel grows once at 1600px,
+                and the module site caps at 1400px — three different answers to
+                the same question. Decide one behaviour for a big screen and
+                apply it everywhere: either a readable column with the space
+                given to the CONTENT that benefits, or a second column
+A9-5: todo touches=qc/ needs=A9-1  — prove it, do not eyeball it. Extend the responsive check to
+                assert, at every width above, that nothing scrolls sideways,
+                that no PANEL clips its own controls (the check added in A0-9),
+                that body text is at least the size the distance needs, and that
+                every interactive element meets the target size for that input
+                kind. A screenshot at one width proves one width
+# A10  Colour and joy, without losing the dark
+A10-1: done   2026-08-19 13:18  touches=shared/web/themes.css  — ONE file holds every colour in the project. Asked for themes.css written: Midnight (default), Carnival, Daylight, designed by Gemini Pro and measured here - its Daylight accent failed 4.5:1 and was changed. mice.css now names no colour at all; both are served joined as one stylesheet by the hub and from board flash, so no page changed. Shared mice.js discovers themes from the stylesheet, so adding one is that block and nothing else. IN STAGING, NOT PROMOTED
+                directly, 2026-08-19: a file to change only the theme or colour,
+                so a new one can be added later without reading anything else.
+                Every theme is one block in shared/web/themes.css; mice.css keeps
+                the SHAPE (radius, spacing, type scale) and stops naming colours
+                at all. The test is the project's usual one: can someone add the
+                next theme without opening any other file
+A10-2: done   2026-08-19 13:18  touches=mice.css needs=A10-1  — mice.css hands its palette over. Today :root holds both the
+                colours and the shape, so changing a colour means editing the
+                stylesheet every page depends on. After this it holds shape only,
+                and every colour comes from the theme file
+A10-3: done   2026-08-19 13:18  touches=hub.html,WebUI.h,studio needs=A10-1  hw=a phone, to look at the themes on a real screen (optional) — a theme picker that READS the file rather than shared/web/mice.js is served by the hub at /mice.js and compiled into board flash by gen_tables, like mice.css - so the hub, the module website and the help page all get one file. The picker DISCOVERS themes from document.styleSheets, so adding one is a block in themes.css and nothing else; the check adds a theme and fails if it does not appear. The model panel caught two things I missed: --ty-lift was byte-identical to --ok in all three themes, and the switcher hardcoded the default theme name. Gate 2122/0
+                repeating it: the list of themes is discovered from the blocks in
+                themes.css, so adding a block is the whole job - no second list
+                to keep in sync, the same rule the module and command registries
+                already follow. Remembered per browser and applied before the
+                first paint, or the old colours flash up and swap
+A10-4: todo touches=themes.css needs=A10-1  — three to start with, and dark stays the default because a
+                bright screen spills light into the show area: Midnight (what
+                the project looks like today), Carnival (the colourful dark the
+                user asked for - more hue, same contrast) and Daylight (a bright
+                room, or a TV with sun on it)
+A10-5: done   2026-08-19 13:18  touches=mice.css,hub.html needs=A10-2  — the joy pass. Colour that MEANS something stays
+                meaning it (module type, ok/warn/err) and decoration comes from
+                the theme's own accents, so a joyful theme cannot make a warning
+                look like a decoration. Never colour as the only signal
+A10-6: todo touches=qc/ needs=A10-3  — prove both halves. The check ADDS a theme block to the file,
+                reloads, and expects it in the picker (if it does not appear, the
+                list is being repeated somewhere); and it computes the contrast
+                of text on background for every shipped theme, because colourful
+                is where readable usually goes to die
+
+# A11  More it can do, without more to learn
+A11-1: todo touches=hub.html  — find a module by typing. One box that filters on name, id
+                and type, no modes and no syntax. It is the feature that stops
+                mattering how long the list gets
+A11-2: todo touches=hub.html needs=A11-1  — pin the ones you actually use; pinned first, the rest
+                below. A venue rig has four modules that matter and a shelf of
+                spares that do not
+A11-3: todo touches=hub.html,WebUI.h  — one STOP that stops everything, in reach on every screen.
+                It exists per module today, which is the wrong place to look for
+                it when something is moving that should not be
+A11-4: todo touches=hub.html  — the last thing you opened, one click away on Home. Nobody
+                opens a control panel to read it
+A11-5: todo touches=hub.html,WebUI.h  — the keyboard: / to search, ? for the list of shortcuts,
+                Esc closes anything open. Every one of them discoverable from
+                that list, so it is not folklore
+A11-6: todo touches=hub.html  — one button that copies a plain-text diagnostics bundle -
+                what this PC is, what it found, what firmware each board runs.
+                The thing anyone is asked for first when they report a problem
+
+# A12  The plan, and other documents, read themselves
+A12-1: done touches=docs/PLAN.html,tools/plan.py  — the plan updates while it is open, with nothing to
+                press. Asked for 2026-08-19. It is opened as file:///E:/..., and
+                a file:// page may not fetch a file beside it - the browser
+                gives it a null origin - but it MAY load a script, so plan.py
+                publishes docs/plan_state.js and the page pulls it in every four
+                seconds and redraws in place. No reload, so the scroll position
+                and any text being read stay put. Proved by putting a marker
+                ONLY in the published file and watching Edge render it. Also
+                fixed: a stale .staging/docs/PLAN.html from the day before,
+                which said work was still to do that had landed - it is now a
+                page that says so and points at the real one. check_plan_live.py,
+                four sabotages, including one for the obvious later tidy-up of
+                replacing the script tag with fetch, which works over http and
+                does nothing at all for the person reading the file
+A12-2: todo touches=tools/livedoc.py needs=A12-1  — the same for any other document. Asked for
+                2026-08-19: make it like this for another plan too. One tool
+                that renders a markdown file to a page that keeps itself
+                current, with the same script-tag trick and a checklist counter
+                when the document has one. The rule that keeps it honest: the
+                markdown is the only source and the HTML is generated, never
+                edited, or there are two copies of one document drifting apart
+A12-3: todo touches=docs/PLAN.html  — which hardware each change needs, on the change itself.
+                Done for the tasks that need it (hw= on the line, a chip in the
+                table and on the next-up card); this is the rest: keep it true
+                as tasks are added, and say so in the packing list when a part
+                stops being needed
+
+# A13  The camera board, and the bus that now exists
+A13-1: done   2026-08-19 13:22  touches=firmware hw=1 ESP32-CAM (here)  — the camera on this board is not one the firmware NOT A CAMERA FAULT AND NOT A WIRING FAULT. The board was running fw 1.0.0; flashed with the current mice_cam build it says [cam] ready, qvga, PSRAM NO and SNAP captured 14671 bytes. So the sensor is supported, the ribbon is fine and the 5V rail is adequate - the whole symptom was stale firmware. The diagnostic that reads the sensor id over SCCB stays in CamModule anyway: it is what turns Detected camera not supported into either an id to support or nothing answered on SCCB, and those need opposite fixes. Board is id 89, name undefined, type cam
+                accepts: it boots with camera_probe(): Detected camera not
+                supported. Find out which sensor it actually has - the driver
+                reports the id it read - and support that type, from the
+                registry rather than by adding a branch. Nothing about A7-7
+                means anything until a camera initialises
+A13-2: done   2026-08-19 15:02  touches=firmware,main.py hw=RS485 + nong id 67 (here)  — RS485 is real now, so the things a FOUND A REAL BUG THE FAKES COULD NEVER SHOW. On the bench bus the nong (id 67) answers a broadcast after 1344 ms, because RS485Bus.cpp:62 staggers replies by id*20 ms to avoid collisions - and main.py:1618 listens for 0.8 s. So the hub discovers only ids up to 40, while default ids run 1-247: most boards are invisible on a real bus. The hub sees the two USB boards and not the nong, with no error, which reads as an empty bus. Measured, not theorised: rts and dtr make no difference, the reply is 1344 ms every time, and 67 x 20 = 1340 MEASURED, and one half is still unmeasured, said plainly. The OLD stagger is confirmed on real hardware: the nong on id 67 answers a bus broadcast at 1344 ms, which is 67 x 20. The NEW bounded stagger cannot be measured on the bus yet, because the only board on the bus is the nong and it cannot be reflashed - it is on RS485, not USB, and esptool needs a direct UART. A board on USB answers a broadcast in 3-6 ms whatever its id, because the USB path does not stagger at all; that is the transport, not the fix. So: hub side measured and fixed, firmware side written and checked against a fake that now staggers, and honestly not yet proved on a real bus NOW MEASURED ON THE REAL BUS, both halves. The nong (id 67) was reflashed over USB and put back on RS485. Broadcast reply BEFORE: 1344 ms, which is 67 x 20. AFTER: 188, 195, 193 and 196 ms across four runs, against a design figure of (67 % 24) x 10 = 190. So the bounded stagger is real, not just modelled - every board now answers a broadcast inside the hub's floor whatever its id. The same board also reports chip B4BFE91C5A74 over the bus, so A3-4 is verified through RS485 as well as over USB. Why the flash had to happen over USB is worth keeping: esptool needs the ROM bootloader, entered by holding GPIO0 low during reset via DTR and RTS, and RS485 has no such lines to EN or IO0
+                fake bus could never show can be measured: an addressed command
+                to #67, a broadcast that several boards answer, and what happens
+                when two answers collide. The hub already speaks this protocol;
+                what has never been proved is that it survives a real bus
+A13-3: done   2026-08-19 13:37  touches=firmware hw=nong id 67 with WAIST and R-EL-R (here)  — the two bench servos are the first real VERIFIED ON REAL HARDWARE, and confirmed by the user watching it: JOINT WAIST 100 over RS485 answered OK WAIST=100.0 T=83ms, POSE? showed slot 9 change to 100.0, and the servo audibly and visibly turned. Returned to 90 the same way. The first real joint this project has moved through the bus. One correction worth keeping: the servo is R_EL_R with underscores, not R-EL-R - and the board says so itself, listing all ten names in the error, which is A7-1's one-sentence rule earning its keep
+                joints this project has had. Prove a move still runs after the
+                A7 refactors: send it to a named joint, watch it turn, and
+                assert on what came back rather than on what was sent
+
+# A14  One login across the PCs, later
+A14-1: todo touches=hub_auth.py,hub.html  — PARKED ON PURPOSE 2026-08-19, at the user's word: pair
+                test first, the login later. The want is one account that works
+                on every PC. Facebook or Google sign-in cannot do it: OAuth needs
+                internet AT LOGIN TIME, a registered redirect URL and HTTPS,
+                while this hub runs plain HTTP on a LAN address that changes, at
+                a venue that often has no internet - so on show day nobody could
+                log in to stop a robot. The offline options are: copy the account
+                file between hubs (one compromised PC becomes all of them), a
+                pairing code shown on screen like pairing a TV (no internet, and
+                the trust is deliberate), or a secret derived from the
+                installation group name (already exists for the hotspot, and is
+                only as strong as a group name someone chose). Recommendation
+                when this is picked up: the pairing code, because it is the only
+                one where a person decides, on both machines, that these two PCs
+                belong together
+
+A13-4: todo touches=main.py,hub.html hw=2 PCs on one WiFi + boards (here)  — asked for 2026-08-19: a second PC on the MEASURED THE LIMIT 2026-08-19: a second PC that only opens the hub in a browser can never share its USB port. The Web Serial API is the only route a page has to a serial port and it requires a secure context - the hub is plain HTTP on a LAN address, so the browser refuses. Two real options remain: run the hub on that PC (then /api/allmods aggregates its cables, which already works), or put the board on WiFi so no PC is involved at all - the board answers the hub directly and the second PC is only power. The second is better whenever the WiFi allows it, because it removes a machine from the chain rather than adding software to it
+                same WiFi as the hub host can open the hub and see inside, but
+                it does not get the boards that host has on ITS cables. So the
+                host must SHARE its cables across the WiFi, not only its pages.
+                Half of this exists - /api/allmods aggregates every hub's
+                modules and rewrites the address as hub:IP/usb:COMx, and
+                parse_dev routes a command through the holding hub - so the
+                work is to find what is actually missing rather than to build it
+                again: the module list on the other PC, the module site opened
+                through the far hub, and Studio pointed at a board on a cable
+                that is not its own
+A13-5: todo touches=main.py hw=2 PCs (here)  — the pair test itself. On this bench the hub found no
+                other hub at all, and the first suspect is not the code: the
+                WiFi is 10.126.226.x, a campus-style network, and those very
+                often isolate clients from each other so no PC can reach any
+                other. Prove which it is before changing anything - a hub that
+                cannot be reached is not a hub that was not found. If the
+                network does isolate, the answer is the hotspot path that
+                already exists, not a fix to discovery
+
+A13-6: todo touches=firmware,main.py hw=2 boards + RS485 (here)  — firmware over the BUS, since esptool cannot do
+                it. Asked 2026-08-19: why can we not upload over RS485 or WiFi.
+                WiFi already works - the board has OTA and writes the spare app
+                slot, so a failed update keeps the firmware it has. RS485 cannot
+                use esptool at all: the ROM bootloader is entered by holding
+                GPIO0 low during reset through DTR and RTS, and a differential
+                pair has no such lines. But the running firmware already accepts
+                a file over the bus (FBEGIN FDATA FEND) and already knows how to
+                write an OTA slot, so the two joined would be a real bus update
+                with no ROM bootloader involved. The board must be able to
+                refuse a bad image and keep running the old one, exactly as OTA
+                does now
+A13-7: doing  2026-08-19 15:02  touches=firmware hw=2+ boards (here)  — pairing with no venue WiFi, which is what the user ROOT CAUSE FOUND ON HARDWARE, and it is a chicken and egg. WebPortal.cpp:1162 reads worthLooking = onRelay_ || peers_.count() > 0, so a board hunts for neighbours only if it is ALREADY on a relay or ALREADY knows a peer. A board that just booted with no venue WiFi knows nobody, so it never scans, so it never finds anybody. Measured with three real boards - nong 67 and lift-test 85 both in group mice-show, lift 1 in other-company, all three in ap-only with apclients=0 - and PEERS on each returns only itself. This is exactly the always show not linked in A3-5, and no fake could produce it. The guard was added because the scan fired every 60 s for nothing when there were no neighbours; the fix has to keep that cost down while letting a GROUPED board look, since its AP password is derived from the group and can only open a group-mate's network
+                actually asked for: when the usual network is not there, the
+                modules should find each other by themselves. The pieces exist -
+                a module falls back to hosting its own hotspot, and the password
+                for it is derived from the GROUP so only modules in the same
+                installation can join - but nothing has ever been measured with
+                two real boards. Prove: with the network absent, one board hosts,
+                the others join, and PEERS lists them on both sides
+
+# A15  Getting it onto another PC
+A15-1: todo touches=MiceHub.spec,main.py  — ONE FILE, not one folder. Asked 2026-08-19: run the app
+                on another PC without the whole repo. Today the exe cannot:
+                MiceHub.spec has datas=[] and main.py reads HERE/web and
+                HERE.parent/shared/web off the disk, so a copied exe serves an
+                unstyled hub with no Studio. Bundle the web folders into the
+                exe and read them from sys._MEIPASS when frozen. Then the answer
+                to how do I run it elsewhere is: copy one file. The check is the
+                honest one - run the built exe from an EMPTY folder and open
+                every page
+A15-2: todo touches=git needs=A15-1  — branches, in the shape asked for: develop carries this
+                work, main stays what is known good. NOT a third branch holding
+                a copy of the app - a branch that duplicates files drifts from
+                the one it copied, and this project has already been bitten by a
+                stale copy of the plan. If a source-only bundle is still wanted
+                after A15-1, generate it with a script so it cannot drift
+A13-8: todo touches=none hw=a module on WiFi + a phone (here)  — prove a PHONE can update a robot. Asked
+                2026-08-19: if the module is on the hub's WiFi, can another PC
+                or a phone flash it, since the hub holds the .bin. Reading the
+                code says yes and nothing has ever tested it: the browser never
+                touches firmware, it posts to /api/ota ON THE HUB and the hub
+                pushes the bytes, so a phone needs only a browser and a login.
+                The two limits to prove as well: the HUB must reach the module -
+                a module on a board hotspot the hub is not on cannot be updated
+                from anywhere - and /api/ota is gated, so an unauthenticated
+                phone is refused
+
+A15-4: todo touches=README.md needs=A15-2  — a README that says how to get JUST the part you need,
+                asked for 2026-08-19. Three routes, each with the exact command:
+                the one file (download the exe from the release and run it),
+                one branch without the history (git clone --branch <name>
+                --depth 1 <url>), and one FOLDER out of the repo without the
+                rest (git sparse-checkout). Written for someone standing at
+                another PC who has not read anything else, so every command is
+                complete and none of them assumes this repo is already cloned
+
+A15-3: todo touches=git  — commit today's work. Nothing is committed yet: the RS485
+                census fix, the themes, the QR and mDNS, remote flash, the model
+                panel and every measurement from the bench are all working tree
+                on one machine. That is the single biggest risk on this project
+                right now, and it is not a technical one
+
+END</code></pre>
+</details>
+
+<h2>What the multi-model review has actually caught</h2>
+<p>Kept as evidence, because the cost of asking two or three other models is a
+few minutes and the argument for it is only as good as its record. Every one of
+these was verified against the code before it was acted on, and every one was
+in code written the same day, with its own QC check already green.</p>
+<div class="wrap">
+<table>
+<tr><th>Found</th><th>What it was</th></tr>
+<tr><td><code>main.cpp:142</code> unbounded line buffer</td>
+    <td>Claude Opus 4.6. A USB host that never sends a newline grew a String
+        until the heap died. The guard already existed twenty lines away in
+        <code>RS485Bus.cpp:25</code>; the USB reader beside it never got one.</td></tr>
+<tr><td><code>app.js</code> stale peer</td>
+    <td>Gemini 3.7 Flash. <code>window.HUB_PEER</code> was set once at page load
+        and never cleared, so changing the cable by hand kept sending commands
+        to the module behind the OLD board's hotspot.</td></tr>
+<tr><td><code>app.js</code> module link drops the peer</td>
+    <td>Same review. The open-the-website link pointed at the plugged-in board
+        while the commands went to the peer — two robots, one screen.</td></tr>
+<tr><td><code>hub.html</code> false empty state</td>
+    <td>Same review. Home painted <i>No modules found yet</i> before the scans
+        it counts had answered.</td></tr>
+</table>
+</div>
+<p class="mut">Two of those three JavaScript faults are the same shape: a value
+that describes ONE session, kept in a global that nothing resets. Worth
+remembering next time a page grows a <code>window.SOMETHING</code>.</p>
+
+<h2>Working in parallel — what can go together</h2>
+<p>One QC run is 9 to 14 minutes and the gate must stay FULL (three times on
+2026-08-18 a change broke a check that looked unrelated). So the saving is not
+in running less: it is in putting SEVERAL finished tasks through ONE gate.
+A0-7 + A0-8 + A0-9 cost one gate instead of three.</p>
+<p>That only works when the tasks do not touch the same file. These are the
+lanes. Take at most one task from each lane into a batch, and edits inside a
+lane stay strictly one at a time.</p>
+<div class="wrap">
+<table>
+<tr><th>Lane</th><th>Tasks that live there</th></tr>
+<tr><td><code>main_python/web/hub.html</code></td>
+    <td>A2-1 A2-2 A2-3 A2-5 A3-6 A6-1 A6-2 A6-3</td></tr>
+<tr><td>firmware C++ (<code>src/</code>)</td>
+    <td>A3-5 A7-1 A7-2 A7-3 A7-4 A7-5 A7-6 A7-7</td></tr>
+<tr><td><code>main_python/main.py</code></td>
+    <td>A2-4 A3-1 A3-2 A3-3 A3-4 A8-1 A8-2</td></tr>
+<tr><td><code>firmware/src/web/WebUI.h</code></td>
+    <td>A4-1 A4-2 A4-3 A4-4 A4-5</td></tr>
+<tr><td><code>shared/web/mice.css</code></td><td>A9-2 A9-4</td></tr>
+<tr><td><code>qc/</code></td><td>A0-13 A9-1 A9-5</td></tr>
+<tr><td>Nong Studio</td><td>A4-6 A8-3</td></tr>
+</table>
+</div>
+<div class="card warn">
+<h3>The ones that cross lanes — these run ALONE</h3>
+<p><b>A0-10</b> (three tab systems) touches hub.html, WebUI.h and Studio at
+once. <b>A0-12</b> touches QC and the firmware build. <b>A9-3</b> and
+<b>A5-1</b> are cross-cutting by nature. Batching one of these with anything
+else is how two edits become one lost edit.</p>
+<p>And whatever is verified in parallel, <b>promote one at a time</b>: every
+tree copies into the same real tree.</p>
+</div>
+
+<h2>Verification, every time</h2>
+<pre><code>python qc/run_qc.py --quick        while iterating (~10 s)
+pio run -e mice_nong -e mice_cam -e mice_lift -e mice_blank
+python qc/run_qc.py                full, drives a real browser (~8 min)
+python promote.py                  runs the suite again, copies back only if green
+python -m PyInstaller --onefile --icon main_python/nong.ico \
+       --name MiceHub main_python/main.py     when main.py changed</code></pre>
+<p><b>Nothing here is tested on hardware.</b> Every check runs against fakes. A
+real ESP32-CAM, a nong arm and a two-PC setup are needed — especially for
+area 1 (auth) and area 7 (firmware restructure).</p>
+
+<script>
+// Render the whole progress view from the STATE block, so that block stays the
+// single place anyone edits. No framework, no network: this file has to open
+// from a USB stick at a venue with no internet.
+// Rendered on demand rather than once, so the page can take a new STATE block
+// and redraw itself without reloading - see the live loader at the end.
+function renderPlan(){
+  var LINE = /^([A-Z]\d+-\d+):\s*(todo|doing|qc|done|blocked)\s*(\d{4}-\d\d-\d\d(?:\s+\d\d:\d\d)?)?\s*(?:—|--)?\s*(.*)$/;
+  var raw = document.getElementById('state').textContent.split('\n');
+  var rows = [], groups = [], cur = null, group = '', running = '';
+
+  raw.forEach(function(l){
+    var r = l.match(/^#\s*RUNNING:\s*(.*)$/);
+    if (r) running = r[1].trim();
+  });
+
+  raw.forEach(function(l){
+    if (/^#\s*RUNNING:/.test(l)) return;        // handled above, not a group
+    if (/^#\s/.test(l)) {                       // a group heading
+      group = l.replace(/^#\s*/, '').trim();
+      groups.push(group);
+      return;
+    }
+    var m = LINE.exec(l.trim());
+    if (m && l === l.replace(/^\s+/, '')) {     // a task line starts at column 0
+      // `hw=...` is pulled out of the note HERE, once, so every part of this
+      // page that shows a task shows it the same way - and none of them print
+      // the raw field at someone. The NOW card printed it verbatim until this
+      // moved out of the table renderer.
+      var note = m[4] || '', hw = '';
+      var hwm = note.match(/(^|\s)hw=(.*?)(?:\s+—|\s+--|$)/);
+      if (hwm) { hw = hwm[2].trim(); note = note.replace(hwm[0], ' ').trim(); }
+      cur = {id: m[1], status: m[2], when: m[3] || '', what: note, hw: hw,
+             group: group};
+      rows.push(cur);
+    } else if (cur && /^\s+\S/.test(l)) {       // an indented continuation
+      cur.what += ' ' + l.trim();
+    }
+  });
+
+  if (!rows.length) {
+    // Nothing parsed. That is a bug in this page or a broken STATE block —
+    // never a plan with no tasks — so it must not render as "0 done".
+    var box = document.getElementById('nowCard');
+    box.className = 'card now err';
+    document.getElementById('nowPill').textContent = 'error';
+    document.getElementById('nowPill').className = 'pill blocked';
+    document.getElementById('nowId').textContent = 'the STATE block could not be read';
+    document.getElementById('nowWhat').textContent =
+      'This page found ' + raw.length + ' lines and no task in them. The counts '
+      + 'and the table below are NOT progress — fix the block or this renderer.';
+    document.getElementById('pnote').textContent = 'no tasks parsed';
+    document.getElementById('plast').textContent = '';
+    return;
+  }
+
+  var n = {todo:0, doing:0, qc:0, done:0, blocked:0};
+  rows.forEach(function(r){ n[r.status]++; });
+  var total = rows.length || 1;
+
+  document.getElementById('pbar').style.width = Math.round(n.done/total*100) + '%';
+  document.getElementById('pnote').textContent =
+    n.done + ' done · ' + n.doing + ' being worked on · ' + n.qc +
+    ' waiting for QC · ' + n.blocked + ' blocked · ' + n.todo +
+    ' to do — ' + total + ' tasks total';
+
+  // When did anything last move? A plan with no recent timestamp is a plan
+  // nobody is working on, and that is worth being able to see at a glance.
+  var stamped = rows.filter(function(r){ return r.when; })
+                    .sort(function(a,b){ return a.when < b.when ? 1 : -1; });
+  // How long ago, in words, recomputed every few seconds. A timestamp alone
+  // does not tell you whether this page is live or was abandoned this morning.
+  function ago(when){
+    var t = Date.parse(when.replace(' ', 'T'));
+    if (isNaN(t)) return '';
+    var mins = Math.round((Date.now() - t) / 60000);
+    if (mins < 1)  return 'just now';
+    if (mins < 60) return mins + ' min ago';
+    var h = Math.floor(mins / 60);
+    return h + (h === 1 ? ' hour ' : ' hours ') + (mins % 60) + ' min ago';
+  }
+
+  function paintAge(){
+    var el = document.getElementById('plast');
+    if (!stamped.length){ el.textContent = 'nothing carries a timestamp yet'; return; }
+    el.textContent = 'last moved: ' + stamped[0].when + ' (' + ago(stamped[0].when) +
+                     ') — ' + stamped[0].id + ' (' + stamped[0].status + ')';
+    var r = document.getElementById('prun');
+    if (running && !/^nothing/i.test(running)){
+      r.hidden = false;
+      var m = running.match(/(\d{4}-\d\d-\d\d \d\d:\d\d)/);
+      r.textContent = '⏳ running now: ' + running + (m ? ' — started ' + ago(m[1]) : '');
+    } else {
+      r.hidden = true;
+    }
+  }
+  paintAge();
+  // One timer for the life of the page, not one per redraw: this function runs
+  // again every time the plan changes, and a second interval per redraw would
+  // end up with dozens of them repainting the same clock.
+  if (!window._ageTimer) window._ageTimer = setInterval(function(){
+    if (window._paintAge) window._paintAge(); }, 5000);
+  window._paintAge = paintAge;
+
+  // (The page used to reload itself every 45 seconds here. It now updates in
+  //  place instead — see the live loader at the bottom of this script.)
+
+  // ---- the NOW card: what is being worked on, or what is next ----------
+  var doing = rows.filter(function(r){ return r.status === 'doing' || r.status === 'qc'; });
+  var blocked = rows.filter(function(r){ return r.status === 'blocked'; });
+  var next = rows.filter(function(r){ return r.status === 'todo'; })[0];
+  var card = document.getElementById('nowCard');
+  var pill = document.getElementById('nowPill');
+  var pick, label;
+  if (blocked.length)   { pick = blocked[0]; label = 'blocked'; }
+  else if (doing.length){ pick = doing[0];
+                          label = pick.status === 'qc' ? 'waiting for QC' : 'doing'; }
+  else if (next)        { pick = next;       label = 'next up'; }
+
+  if (!pick) {
+    document.getElementById('nowId').textContent = 'everything is done';
+    document.getElementById('nowWhat').textContent = '';
+    pill.textContent = 'done'; pill.className = 'pill done';
+  } else {
+    pill.textContent = label;
+    pill.className = 'pill ' + (label === 'next up' ? 'todo'
+                       : label === 'waiting for QC' ? 'qc' : label);
+    card.className = 'card now ' + (label === 'blocked' ? 'err' : '');
+    document.getElementById('nowId').textContent =
+      pick.id + (pick.group ? '  ·  ' + pick.group.replace(/^[A-Z]\d+\s+/, '') : '');
+    document.getElementById('nowWhen').textContent =
+      pick.when ? (label === 'doing' ? 'started ' + pick.when : '') : '';
+    // The NEXT thing to do is exactly where a hardware requirement matters
+    // most: it is the difference between picking it up and packing for it.
+    var nw = document.getElementById('nowWhat');
+    nw.textContent = '';
+    if (pick.hw && !/optional|done on/.test(pick.hw)) {
+      var np = document.createElement('span');
+      np.className = 'pill part';
+      np.textContent = '🔌 ' + pick.hw;
+      nw.appendChild(np);
+      nw.appendChild(document.createTextNode(' '));
+    }
+    nw.appendChild(document.createTextNode(pick.what));
+  }
+  // Everything in flight, by name and stage. One line per task, because
+  // "1 in progress" hid two finished tasks waiting on the same QC run.
+  if (doing.length > 1) {
+    var list = document.createElement('div');
+    list.className = 'inflight';
+    doing.filter(function(r){ return r !== pick; }).forEach(function(r){
+      var line = document.createElement('div');
+      var pill = document.createElement('span');
+      pill.className = 'pill ' + r.status;
+      pill.textContent = r.status === 'qc' ? 'waiting for QC' : 'being worked on';
+      line.appendChild(pill);
+      line.appendChild(document.createTextNode(
+        ' ' + r.id + ' — ' + r.what.replace(/^\[hw\]\s*/, '').slice(0, 90)));
+      list.appendChild(line);
+    });
+    card.appendChild(list);
+  }
+
+  // ---- what needs no hardware, and what is waiting for parts ---------
+  // The question that decides what gets picked up next, so it is answered at
+  // the top of the page and recomputed from the same rows as everything else.
+  var todo = rows.filter(function(r){ return r.status === 'todo'; });
+  var freeNow = todo.filter(function(r){ return !r.hw; });
+  // "One board" means ONE BOARD AND NOTHING ELSE. A task that reads
+  // "1 board + RGB strip + speaker + SD card" is not doable with a bare board
+  // on the bench, and putting it in that list is how someone picks it up and
+  // then cannot finish it.
+  function boardOnly(hw){
+    return /^1 (board|esp)/i.test(hw) && !/\+/.test(hw) && !/transceiver|servo|strip|speaker|SD card|camera/i.test(hw);
+  }
+  var oneBoard = todo.filter(function(r){ return r.hw && boardOnly(r.hw); });
+  var moreKit = todo.filter(function(r){
+    return r.hw && !boardOnly(r.hw) && !/optional/i.test(r.hw); });
+  var niceToHave = todo.filter(function(r){ return r.hw && /optional/i.test(r.hw); });
+
+  function idList(list){
+    return list.map(function(r){ return r.id; }).join(' · ') || 'none';
+  }
+  var cd = document.getElementById('canDoBody');
+  if (cd) {
+    cd.innerHTML =
+      '<p><b>' + (freeNow.length + niceToHave.length) + ' need no hardware at all</b> — ' +
+        idList(freeNow.concat(niceToHave)) + '</p>' +
+      '<p><b>' + oneBoard.length + ' need one board and nothing else</b> — ' +
+        idList(oneBoard) + '</p>' +
+      '<p class="mut"><b>' + moreKit.length + ' are waiting for parts</b> — ' +
+        moreKit.map(function(r){ return r.id + ' (' + r.hw + ')'; }).join('<br>') + '</p>';
+  }
+
+  // ---- the full table, grouped ----------------------------------------
+  var body = document.getElementById('pbody'), lastGroup = null;
+  body.innerHTML = '';                   // redrawn, not appended to
+  rows.forEach(function(r){
+    if (r.group !== lastGroup) {
+      lastGroup = r.group;
+      var gr = body.insertRow();
+      var gc = gr.insertCell(); gc.colSpan = 4; gc.className = 'grouprow';
+      gc.textContent = r.group;
+    }
+    var tr = body.insertRow();
+    tr.className = 'r-' + r.status;
+    tr.insertCell().textContent = r.id;
+    var st = tr.insertCell();
+    var sp = document.createElement('span');
+    sp.className = 'pill ' + r.status; sp.textContent = r.status;
+    st.appendChild(sp);
+    // A dash, not an empty cell: "not started" and "we forgot to write it
+    // down" look identical when the cell is blank.
+    tr.insertCell().textContent = r.when || '—';
+    // [hw] in the note means a PC cannot finish this one — say so in the table
+    // rather than leaving it looking like ordinary work nobody has started.
+    var what = tr.insertCell();
+    // WHICH hardware, on the task itself. Asked for 2026-08-19: knowing that
+    // something needs hardware is not useful while standing over a box - the
+    // useful thing is which part, so `hw=` on the task line is shown here.
+    var text = r.what, hw = r.hw;
+
+    if (text.indexOf('[hw]') === 0) {
+      var chip = document.createElement('span');
+      chip.className = 'pill hw';
+      chip.textContent = 'needs hardware';
+      what.appendChild(chip);
+      text = text.slice(4).trim();
+      tr.className += ' r-hw';
+    }
+    if (hw) {
+      var part = document.createElement('span');
+      // "optional" is a different thing from "blocked" and must not read the
+      // same: one stops the work, the other only improves the checking.
+      var soft = /optional|done on/.test(hw);
+      part.className = 'pill part' + (soft ? ' soft' : '');
+      part.textContent = (soft ? '' : '🔌 ') + hw;
+      what.appendChild(part);
+      if (!soft) tr.className += ' r-hw';
+    }
+    what.appendChild(document.createTextNode(' ' + text));
+  });
+}
+
+renderPlan();
+
+// ---- LIVE, without a refresh -----------------------------------------
+// Asked for 2026-08-19: it should update while it is open, with nothing to
+// press. That rules out the obvious answer: this page is opened from
+// file:///E:/..., and a file:// page may not fetch() or XHR a file next to it -
+// the browser gives it a null origin and blocks it. It MAY load a script.
+//
+// So tools/plan.py writes docs/plan_state.js beside this page every time it
+// changes anything, and this pulls that script in on a timer with a
+// cache-busting query. When the stamp inside it moves, the STATE block is
+// replaced and the whole view is drawn again - no reload, no flicker, and the
+// scroll position and any open selection stay exactly where they were.
+//
+// If plan_state.js is not there (an old checkout, or the file was opened from
+// somewhere else), nothing breaks: the page simply shows what the STATE block
+// in it says, which is what it did before.
+(function(){
+  var last = null, quiet = 0;
+  function tick(){
+    var el = document.createElement('script');
+    el.src = 'plan_state.js?t=' + Date.now();
+    el.onload = function(){
+      el.remove();
+      var st = window.PLAN_STATE;
+      if (!st || !st.raw) return;
+      // Compared against what is ON SCREEN, not against the last stamp seen.
+      // Treating the first read as a baseline meant a page opened AFTER a
+      // change sat there stale until the next one - which is exactly the case
+      // of opening the plan to see what happened while you were away.
+      var pre = document.getElementById('state');
+      if (st.raw.trim() === pre.textContent.trim()) return;
+      last = st.stamp;
+      pre.textContent = st.raw;
+      renderPlan();
+      // A quiet flash on the progress card, so a glance from across the room
+      // catches that something landed. Nothing moves: the card is where it was.
+      var card = document.getElementById('nowCard');
+      if (card) { card.classList.remove('justchanged');
+                  void card.offsetWidth;              // restart the animation
+                  card.classList.add('justchanged'); }
+    };
+    el.onerror = function(){ el.remove(); quiet++; };   // no state file: fine
+    document.head.appendChild(el);
+  }
+  setInterval(tick, 4000);
+  tick();
+})();
+</script>
+</body>
+</html>

@@ -23,13 +23,47 @@ import time
 from pathlib import Path
 
 MAIN = Path(__file__).resolve().parent
+# Which working copy to promote. `.staging` unless told otherwise, so two trees
+# can be worked and verified at the same time:
+#
+#     python promote.py --staging .staging-ui
+#
+# Promoting stays SERIAL even so: both trees copy into the same real tree, and
+# two promotes touching one file is a lost edit.
 STAGING = MAIN / ".staging"
 
-# Never copied either way: build output, VCS, caches, and the built exe (QC
-# runs main.py directly; the exe is rebuilt after promotion when main.py moved).
+
+def _pick_staging(name):
+    """Where the working copy is. A bare name is relative to the repo."""
+    if not name:
+        return MAIN / ".staging"
+    p = Path(name)
+    return p if p.is_absolute() else MAIN / name
+
+# Never copied either way: build output, VCS, caches, the built exe (QC runs
+# main.py directly; the exe is rebuilt after promotion when main.py moved), and
+# the LIVE LOGS.
+#
+# promt.md is appended to by the UserPromptSubmit hook in the REAL tree while
+# work happens in staging, so staging's copy is stale the moment it is made.
+# Promoting it copied a 2.7 KB snapshot over a 23 KB log and would have thrown
+# the prompt history away. A file the running system writes to is not source,
+# and must not travel with the source.
 SKIP_DIRS = {".git", ".pio", "__pycache__", ".staging", "node_modules",
              ".vscode", "dist", "build"}
-SKIP_FILES = {"MiceHub.exe"}
+# docs/PLAN.html is here for the same reason: its STATE block records progress
+# and is edited in the REAL tree as work lands, by whoever or whatever is doing
+# the work. Promoting a staging copy would roll that progress backwards.
+# Two more the RUNNING system writes:
+#   settings_shared.json  the hub rewrites it whenever a browser saves a
+#     shared setting, and QC starts the hub — so staging's copy carries a
+#     QC run's timestamp and would overwrite the real one.
+#   hub_auth.json  THIS machine's password hash. Promoting a staging copy
+#     would replace the real password with a test one and lock the user
+#     out of their own hub.
+SKIP_FILES = {"MiceHub.exe", "promt.md", "PLAN.html",
+              "settings_shared.json", "hub_auth.json", "hub_password.txt",
+              ".qc-receipt.json"}   # proof about ONE tree; meaningless in another
 SKIP_SUFFIX = {".pyc", ".pyo", ".tmp"}
 
 
@@ -63,6 +97,43 @@ def init(force=False):
         copied += 1
     print("staging ready at %s (%d file(s) copied)" % (STAGING, copied))
     print("work in there; `python promote.py` moves it back once QC is green.")
+
+
+def already_green(where: Path):
+    """True when a FULL green run has already covered this exact tree.
+
+    run_qc.py leaves a receipt naming the hash of every source file it could
+    have read. If that hash still matches, running the suite again proves
+    nothing the first run did not — it just costs another nine to fifteen
+    minutes, which was the biggest single tax on landing work.
+
+    This can never let something through unseen: change one byte and the hash
+    no longer matches, so the suite runs. A filtered or --quick run leaves no
+    receipt at all.
+    """
+    import json
+    receipt = where / ".qc-receipt.json"
+    if not receipt.is_file():
+        return False
+    try:
+        got = json.loads(receipt.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not got.get("full"):
+        return False
+
+    import subprocess as sp
+    r = sp.run([sys.executable, "-c",
+                "import sys; sys.path.insert(0, r'%s'); "
+                "import run_qc; print(run_qc.tree_fingerprint())" % (where / "qc")],
+               cwd=str(where), capture_output=True, text=True, timeout=300)
+    now = (r.stdout or "").strip().splitlines()[-1:] or [""]
+    if now[0] != got.get("tree"):
+        return False
+    print("QC already passed on this exact tree at %s (%s checks) — not running "
+          "it again.\nChange any file and it runs in full."
+          % (got.get("when", "?"), got.get("passed", "?")))
+    return True
 
 
 def run_qc(where: Path):
@@ -117,7 +188,7 @@ def promote():
         show(changed, added, gone)
         return 0
     print("about to promote %d changed + %d new file(s)" % (len(changed), len(added)))
-    if not run_qc(STAGING):
+    if not (already_green(STAGING) or run_qc(STAGING)):
         print("\nREFUSED: QC is not green in staging. Nothing was copied.")
         return 1
     for rel in changed + added:
@@ -139,7 +210,14 @@ def main(argv):
     ap.add_argument("--init", action="store_true", help="create/refresh the staging copy")
     ap.add_argument("--check", action="store_true", help="run full QC in staging, promote nothing")
     ap.add_argument("--diff", action="store_true", help="show what would move")
+    ap.add_argument("--staging", metavar="DIR", default=".staging",
+                    help="which working copy to use (default .staging) — a second one lets another change be verified at the same time")
     a = ap.parse_args(argv)
+
+    # Rebind the module-level path once, so every helper below keeps
+    # working unchanged whichever tree was asked for.
+    global STAGING
+    STAGING = _pick_staging(a.staging)
 
     if a.init:
         init()

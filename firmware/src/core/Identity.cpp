@@ -10,6 +10,15 @@ String Identity::defaultName() {
     return String(buf);
 }
 
+String Identity::chip() {
+    uint64_t mac = ESP.getEfuseMac();
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%02X%02X%02X%02X%02X%02X",
+             (uint8_t)(mac), (uint8_t)(mac >> 8), (uint8_t)(mac >> 16),
+             (uint8_t)(mac >> 24), (uint8_t)(mac >> 32), (uint8_t)(mac >> 40));
+    return String(buf);
+}
+
 void Identity::begin() {
     prefs_.begin("module", false);
     // MAC-derived defaults so freshly flashed boards don't collide on the bus

@@ -3,6 +3,11 @@
 #include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
 #include "core/PeerDiscovery.h"
+// Which module types this binary was built with. Needed HERE, not only in the
+// .cpp: members guarded by MICE_HAS_* are declared in this header, and without
+// it the guard is simply false while the class is being defined — the
+// declaration vanishes and the .cpp fails to find its own method.
+#include "core/BuildTypes.h"
 
 class Identity;
 class CommandRouter;
@@ -64,11 +69,41 @@ public:
     // modules when the browser is bridging through this one)
     void pushConsole(const String& line);
 
+    // The last hub that identified itself to this board, and when. RAM only:
+    // it is a convenience for the page, not configuration, and a hub that has
+    // gone away must stop being offered rather than persist across a reboot.
+    String lastHub() const;
+    void noteHub(AsyncWebServerRequest* req);
+
+private:
+    String hub_;              // "ip:port" from X-Mice-Hub
+    uint32_t hubAt_ = 0;      // millis() when it last spoke
+
+public:
+    // How long a hub stays offered after its last word. Long enough to cover a
+    // quiet minute, short enough that a PC which has left the network is not
+    // still linked to from a board someone is holding.
+    static const uint32_t HUB_TTL_MS = 5UL * 60UL * 1000UL;
+
 private:
     enum WifiState { W_IDLE, W_CONNECTING, W_DIAGNOSING, W_ONLINE, W_AP };
 
     Identity* id_ = nullptr;
     CommandRouter* router_ = nullptr;
+
+    // ---- who is allowed to change something -------------------------
+    // Sessions live in RAM only: a reboot logs everyone out, which on a board
+    // at a venue is the behaviour you want. Four slots because four people
+    // with four phones is already more than this has ever needed, and the
+    // oldest is reused rather than refusing a login.
+    static const int SESSIONS = 4;
+    struct Session { char token[25] = {0}; uint32_t seen = 0; };
+    Session sessions_[SESSIONS];
+    bool allowed(AsyncWebServerRequest* req);          // has a live session
+    bool allowedCommand(AsyncWebServerRequest* req, const String& cmd);
+    String newSession();
+    void endSession(AsyncWebServerRequest* req);
+    static String cookieToken(AsyncWebServerRequest* req);
     SDStore* sd_ = nullptr;
     RS485Bus* rs485_ = nullptr;
     AsyncWebServer server_{80};
@@ -78,8 +113,27 @@ private:
     // why an OTA upload was refused or failed, so the reply says something
     // useful instead of a bare 500 (see the /api/ota handler)
     String otaErr_;
+    // an HTTP upload lands here first and only replaces the real file once the
+    // whole thing arrived, so a dropped connection cannot destroy what is on
+    // the card already
+    String uploadDest_;
+    String uploadTmp_;
     bool camStreaming_ = false;   // one live view at a time
     uint32_t camStreamAt_ = 0;    // last chunk, so a dead viewer frees it
+
+#if MICE_HAS_CAM
+    // The camera routes used to do `static_cast<CamModule*>(router_->module())`
+    // and then test the result for null — which can never be null, because a
+    // static_cast of a non-null pointer never is. On a board whose stored type
+    // is not "cam" the running module is a BlankModule, so that cast handed the
+    // camera code a pointer to a much smaller object and take() read and wrote
+    // past the end of it, from an HTTP GET anyone could make.
+    //
+    // A board carrying the cam firmware but storing another type is not exotic:
+    // it is what happens after flashing until SET TYPE lands. So check the real
+    // type and let the routes answer honestly instead.
+    class CamModule* camModule();
+#endif
 
     WifiState wstate_ = W_IDLE;
     uint32_t staRestartAt_ = 0;   // deferred STA restart, so a rename never blocks

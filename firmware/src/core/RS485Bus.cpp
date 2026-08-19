@@ -1,4 +1,5 @@
 #include "core/RS485Bus.h"
+#include "core/Log.h"
 #include "core/CommandRouter.h"
 #include "core/Identity.h"
 #include "core/HwConfig.h"
@@ -57,14 +58,51 @@ void RS485Bus::handleLine(String line) {
     if (!broadcast) {
         send("@" + String(id_->id()) + " " + reply);
     } else if (payload.startsWith("PING") || payload.startsWith("ping")) {
-        // discovery: stagger replies by id so they don't collide on the bus
+        // Discovery: stagger replies so they do not collide on the bus. The
+        // gap has to beat the time a line takes to travel - a PONG is about
+        // 30 characters, which is 2.6 ms at 115200 - and 10 ms is comfortably
+        // clear of that.
+        //
+        // The SLOT is what changed on 2026-08-19. It used to be id x 20 ms,
+        // which is fine for id 3 and means 5.1 SECONDS for id 247. The hub
+        // listened for 0.8 s, so every board above id 40 was invisible on a
+        // real bus - measured with a nong on id 67 answering at 1344 ms, and
+        // impossible to see against a fake that answers instantly.
+        //
+        // Now the delay is bounded: 24 slots of 10 ms, so every board has
+        // answered within 240 ms whatever its id. Two boards can share a slot
+        // (ids 24 apart); that is what the addressed follow-up is for, and a
+        // collision that loses one answer is recoverable where a five second
+        // wait is simply never made.
         pendingReply_ = "@" + String(id_->id()) + " " + reply;
-        pendingAt_ = millis() + (uint32_t)id_->id() * 20;
+        pendingAt_ = millis() + (uint32_t)(id_->id() % 24) * 10;
     }
 }
 
+// The ONLY place anything is written to Serial2. That matters: the line and its
+// terminator are two calls, and on the USB port that exact shape was a real bug
+// (a WiFi event landing between Serial.println's two writes — see core/Log.h).
+// Here it is safe, for reasons that are worth stating rather than rediscovering:
+//
+//   * one writer, this function;
+//   * serialised by sendMtx_, created in begin() because the async web task and
+//     loop() both send;
+//   * and the driver is held HIGH across both writes, dropped only after
+//     flush(), so the whole frame is one transmission on the wire.
+//
+// The lock is the load-bearing part. Without it two tasks can interleave halves
+// of two frames onto a bus every module is listening to, and the modules would
+// act on the wreckage. So a missing mutex is reported instead of silently
+// skipping the lock — it can only happen if begin() was never reached or the
+// mutex could not be allocated, and both mean this board should not be trusted
+// to talk on the bus.
 void RS485Bus::send(const String& line) {
-    if (sendMtx_) xSemaphoreTake(sendMtx_, portMAX_DELAY);
+    if (sendMtx_) {
+        xSemaphoreTake(sendMtx_, portMAX_DELAY);
+    } else if (!warnedNoMtx_) {
+        warnedNoMtx_ = true;                 // once, not once per frame
+        LOGF(sys, "RS485 send has no lock — frames from two tasks can interleave");
+    }
     digitalWrite(hw.pins.rs485De, HIGH);
     delayMicroseconds(20);
     Serial2.print(line);

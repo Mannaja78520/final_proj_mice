@@ -27,14 +27,54 @@ wire = []
 # forwarded command cannot be mistaken for one sent straight down the cable —
 # which is the exact difference between loading a show onto the right robot
 # and loading it onto the wrong one.
+# One fake board, one chip id - twelve hex digits, exactly as a real one
+# formats its eFuse MAC.
+CHIP = "A0B1C2D3E4F5"
+FAR_CHIP = "A0B1C2D3E4F6"        # the module behind it on RS485
+
+# The two boards the fake bus answers as. The slow one is the point: its reply
+# lands later than any fixed window a hub might guess at, which is exactly the
+# case that was invisible until a real bus was on the bench.
+BUS_QUICK = "@1 PONG 1 nong-test nong"          # the near board
+BUS_SLOW_ID = 67                                # answers late, on purpose
+BUS_SLOW = "@%d PONG %d nong-far nong" % (BUS_SLOW_ID, BUS_SLOW_ID)
+BUS_SLOW_DELAY = 1.35        # what id 67 really took, measured
+
+# Replies a board still owes the bus. Cancelled by reset(), so one check's
+# late answer cannot land in the middle of the NEXT check's serial stream.
+# That is not hypothetical: the first full run with the staggered fake failed
+# seven checks, none of them about the bus, with the symptom this project
+# already knows - measurements missing.
+pending_bus = []
+
 far_wire = []
 qc_marks = []                  # "MOVE QCMARK <x>" the page sent (see browser.py)
+
+
+# What firmware the fake claims to run — READ from the firmware's own header,
+# not typed here, so a version bump cannot leave the fake behind.
+def _fw_version():
+    import re as _re
+    from pathlib import Path as _P
+    hdr = _P(__file__).resolve().parents[2] / "firmware" / "config" / "esp32_hardware.h"
+    try:
+        m = _re.search(r'#define\s+FW_VERSION\s+"([^"]+)"',
+                       hdr.read_text(encoding="utf-8", errors="replace"))
+        return m.group(1) if m else "0.0.0"
+    except OSError:
+        return "0.0.0"
+
+
+FW_VERSION = _fw_version()
 _t0 = [None]
 _motion_cache = [None]         # commands that stop a running sequence (see _Nong)
 
 
 def reset():
     """Forget the recorded traffic (call at the start of a check)."""
+    for _t in pending_bus:
+        _t.cancel()                  # a reply owed to a check that has ended
+    del pending_bus[:]
     del wire[:], far_wire[:], qc_marks[:], opens[:]
     _t0[0] = None
     dead[0] = False
@@ -69,8 +109,22 @@ class SerialException(Exception):
 class _Nong:
     """The module firmware's line protocol, enough of it to drive the UIs."""
 
-    def __init__(self, log=None):
+    def __init__(self, log=None, chip=None, ident=1, name="nong-test"):
+        # Its OWN id and name. They used to be written into two strings, so
+        # every fake board answered as the same one - and a module behind the
+        # RS485 bus therefore inherited the near board's identity, which merged
+        # the two into one row and hid exactly the kind of fault the merge
+        # exists to catch.
+        self.ident = ident
+        self.mod_name = name
         self.log = wire if log is None else log
+        # Its own chip, because two fakes that report the same one would be
+        # merged into a single board by the hub - hiding the very fault the
+        # merge exists to fix.
+        self.chip = chip or CHIP
+        # Empty by default: a board that no hub has spoken to must offer no way
+        # back, and that is the case worth being able to drive.
+        self.hub = ""
         self.joints = [90.0] * 10
         self.jcfg = {}   # joint -> the last JCFG applied
         self.pins = {"servo1": 32, "servo2": 33}
@@ -107,7 +161,21 @@ class _Nong:
 
     def info(self):
         return json.dumps({
-            "id": 1, "name": "nong-test", "type": "nong", "sd": True,
+            "id": self.ident, "name": self.mod_name,
+            "type": "nong", "sd": True,
+            # The chip MAC, which the real board now reports and the hub
+            # merges on. A fake without it would make every board look
+            # like old firmware and never exercise the merge.
+            "chip": self.chip,
+            # Which hub last spoke to this board over HTTP. The real one
+            # fills this from the X-Mice-Hub header (WebPortal::noteHub);
+            # the fake carries it so the page can be driven both ways.
+            "hub": self.hub,
+            # The real board reports these two and the fake never did, so a
+            # page that showed them looked broken here while working against
+            # hardware. A fake that under-reports hides the bugs it exists to
+            # catch: CommandRouter::buildStatus is the contract.
+            "fw": FW_VERSION, "group": "",
             "wifi": {"ip": "", "mode": "off"},
             # same shape as the real board: seq is top level, and says whether
             # the module is playing something on its OWN clock right now
@@ -133,7 +201,7 @@ class _Nong:
         if head == "INFO":
             return self.info()
         if head == "PING":
-            return "PONG 1 nong-test nong"
+            return "PONG %d %s nong" % (self.ident, self.mod_name)
         if head == "POSE":
             vals = [float(x) for x in c.split()[1:] if x.replace(".", "").replace("-", "").isdigit()]
             with self.lock:
@@ -229,7 +297,7 @@ class _Nong:
 NONG = _Nong()
 # A SECOND module, on the far side of NONG's own hotspot. The PC has no route
 # to it at all - everything it is told arrives via `REACH` through NONG.
-FAR = _Nong(far_wire)
+FAR = _Nong(far_wire, FAR_CHIP, 67, "nong-far")
 
 
 class Serial:
@@ -269,6 +337,19 @@ class Serial:
         with self._rxlock:
             self._rx.clear()
 
+    def _bus_reply(self, text, after):
+        """Put one board's answer on the wire, later, the way a bus does."""
+        import threading
+
+        def land():
+            with self._rxlock:
+                self._rx += (chr(10) + text + chr(10)).encode()
+
+        t = threading.Timer(after, land)
+        pending_bus.append(t)
+        t.daemon = True
+        t.start()
+
     def write(self, data: bytes):
         # Windows after an unplug/reset: the handle stays "open" but every
         # write fails. Set fake_serial.dead = True to reproduce it.
@@ -285,11 +366,28 @@ class Serial:
                 time.sleep(random.uniform(0.002, 0.012))   # wire + module latency
                 if raw.startswith("#"):                    # RS485 frame -> "@id ..."
                     bid, _, rest = raw[1:].partition(" ")
-                    r = NONG.line(rest)
+                    # Addressed frames reach the board they name. Answering
+                    # every id as the near board made a bus child report the
+                    # near board's chip, which merged two boards into one.
+                    who = FAR if bid == str(BUS_SLOW_ID) else NONG
+                    r = who.line(rest)
                     if bid == "*":
-                        out = "@1 PONG 1 nong-test nong"
-                    else:
-                        out = "@%s %s" % (bid, r)
+                        # A BROADCAST IS NOT INSTANT, and pretending it was is
+                        # what hid a real bug for the life of this project.
+                        #
+                        # Boards stagger their answers by their own id so the
+                        # replies do not collide, so the last board to speak is
+                        # the one with the highest id. The hub used to listen
+                        # for a fixed 0.8 s, which silently made every board
+                        # above id 40 not exist. Measured on the bench
+                        # 2026-08-19: a nong on id 67 answered after 1344 ms.
+                        #
+                        # So the fake answers as two boards: one quick, and one
+                        # SLOW enough that a fixed short window would miss it.
+                        self._bus_reply(BUS_QUICK, 0.02)
+                        self._bus_reply(BUS_SLOW, BUS_SLOW_DELAY)
+                        continue
+                    out = "@%s %s" % (bid, r)
                 else:
                     out = NONG.line(raw)
                 with self._rxlock:

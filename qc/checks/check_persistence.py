@@ -131,14 +131,12 @@ def _post(base, path, obj):
 
 
 def _post_raw(base, path, body):
-    import urllib.error
-    import urllib.request
-    req = urllib.request.Request(base + path, data=body, method="POST")
+    # Through F.post, not a hand-rolled request: the hub now needs a login for
+    # anything that writes, and F.post is what carries the session. A check
+    # that built its own request silently lost the cookie and got a 401 that
+    # looked like the save being broken.
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
-            return r.status, r.read().decode(errors="replace")
-    except urllib.error.HTTPError as e:
-        return e.code, e.read().decode(errors="replace")
+        return F.post(base + path, body, timeout=20)
     except Exception as e:  # noqa: BLE001
         return 0, repr(e)
 

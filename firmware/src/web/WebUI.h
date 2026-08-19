@@ -34,40 +34,33 @@ static const char WEB_UI_HTML[] PROGMEM = R"rawliteral(<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Module Control</title>
+<!-- The ONE design system, shared/web/mice.css. The BOARD serves it from flash
+     (gen_tables.py compiles that file into web/MiceCss.h); the hub serves the
+     same URL when this page is reached over USB — one link, either transport. -->
+<link rel="stylesheet" href="/mice.css">
+<script src="/mice.js"></script>
 <style>
-:root{--sunk:#0d1117;--btn:#243040;--on-acc:#06121f;--r-sm:7px;--r-md:10px;--r-lg:12px;--sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-6:24px;--bg:#10141a;--card:#1a212b;--line:#2a3442;--txt:#dce3ec;--mut:#8b98a9;--acc:#4da3ff;--ok:#3ecf8e;--warn:#ffb454;--err:#ff6b6b}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif;padding:14px;max-width:1100px;margin:0 auto}
-h1{font-size:22px}h2{font-size:15px;color:var(--acc);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+/* Only what is the MODULE WEBSITE's own. Tokens, the reset, cards, buttons,
+   inputs, badges, the quiet caption and the shared floor come from mice.css. */
+body{padding:14px;max-width:1100px;margin:0 auto}
 header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
-.badge{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:3px 12px;font-size:13px;color:var(--mut)}
-.badge b{color:var(--txt)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:14px}
-#modTabs{display:flex;gap:6px;margin:0 0 12px}
-.mtab{flex:1;padding:9px 0;font-weight:600;background:#141a22;color:var(--mut);
-  border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:14px}
-.mtab.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
-@media(max-width:720px){.mtab{font-size:13px;padding:11px 0}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
-button{background:var(--btn);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:9px 16px;font-size:15px;cursor:pointer}
-button:hover{border-color:var(--acc)}
-button.primary{background:var(--acc);border-color:var(--acc);color:var(--on-acc);font-weight:600}
-button.danger{background:#3a2020;border-color:#5c2e2e;color:var(--err)}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
-input,select{background:var(--sunk);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 10px;font-size:14px}
-input[type=range]{padding:0;flex:1}
-input[type=color]{padding:2px;width:52px;height:38px}
+.grid{grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:14px}
+/* The look comes from mice.css now. .mtab stays as a NAME — scripts and QC
+   select on it — but it no longer describes a second kind of tab. */
+#modTabs{margin:0 0 var(--sp-3)}
+@media(max-width:720px){.tab{font-size:13px}}
+/* the one big number on the page: what the module is doing right now */
 .stage{font-size:52px;font-weight:700;text-align:center;line-height:1.1}
 .stage small{display:block;font-size:13px;color:var(--mut);font-weight:400}
-.lbl{color:var(--mut);font-size:13px;min-width:72px}
 table{width:100%;border-collapse:collapse;font-size:14px}
-td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
-td a{color:var(--acc);text-decoration:none;margin-right:8px;cursor:pointer}
-#log{background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:8px;height:130px;overflow-y:auto;font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap;word-break:break-all}
+td,th{padding:6px var(--sp-2);border-bottom:1px solid var(--line);text-align:left}
+td a{color:var(--acc);text-decoration:none;margin-right:var(--sp-2);cursor:pointer}
+#log{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--sp-2);height:130px;overflow-y:auto;font:12px/1.5 var(--mono);white-space:pre-wrap;word-break:break-all}
+/* a link light: the word beside it says the same thing, so colour is never
+   the only signal */
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--mut);margin-right:6px}
 .dot.on{background:var(--ok)}.dot.warn{background:var(--warn)}
-.statline{font-size:13px;color:var(--mut)}
-.peer{display:inline-block;background:var(--btn);border:1px solid var(--line);border-radius:20px;
+.peer{display:inline-block;background:var(--btn);border:1px solid var(--line);border-radius:var(--r-pill);
   padding:6px 14px;margin:3px;color:var(--txt);text-decoration:none;font-size:14px}
 a.peer:hover{border-color:var(--acc)}
 .peer.self{border-color:var(--ok);cursor:default}
@@ -77,8 +70,8 @@ a.peer:hover{border-color:var(--acc)}
    desk, and over USB it is served by the hub to whatever device is at hand. */
 @media (min-width:1500px){body{max-width:1400px;margin:0 auto}}
 @media (max-width:720px){
-  body{padding:12px}
-  .card{padding:12px}
+  body{padding:var(--sp-3)}
+  .card{padding:var(--sp-3)}
   .row{flex-wrap:wrap}
   .row label,.row .lbl{min-width:0}
   h2 button,h2 span{float:none!important}
@@ -86,25 +79,9 @@ a.peer:hover{border-color:var(--acc)}
      truncating the function name to nothing */
   .pinrow{flex-wrap:wrap}
   .pinrow select{flex:1 1 120px}
-  input,select{max-width:100%}
   pre,#console{font-size:11px}
 }
 @media (max-width:430px){body{padding:9px}}
-@media (pointer:coarse){
-  button{min-height:36px;padding:8px 12px}
-  input,select{min-height:34px}
-}
-
-/* ---- shared floor: the same in every mice web app ------------------ */
-/* The focus ring is never removed, only restyled — keyboard users need to
-   see where they are, and :focus-visible keeps it off mouse clicks. */
-:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{
-  outline:2px solid var(--acc);outline-offset:2px;border-radius:var(--r-sm)}
-/* Motion is a preference, not a decoration. */
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01ms!important;
-    animation-iteration-count:1!important;transition-duration:.01ms!important;
-    scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
@@ -112,29 +89,45 @@ a.peer:hover{border-color:var(--acc)}
   <h1 id="hname">module</h1>
   <span class="badge">ID <b id="hid">-</b></span>
   <span class="badge">type <b id="htype">-</b></span>
+  <!-- Which installation this board belongs to. The hub has a whole screen
+       about grouping and the board itself never said which group it was in. -->
+  <span class="badge" id="hgroupwrap" hidden>group <b id="hgroup">-</b></span>
+  <!-- The first question anyone asks about a board behaving oddly. It was
+       only reachable by sending INFO on a console. -->
+  <span class="badge">fw <b id="hfw">-</b></span>
   <span class="badge">wifi <b id="hwifi">-</b></span>
   <span class="badge">SD <b id="hsd">-</b></span>
   <span class="badge"><span class="dot" id="wsdot"></span>live</span>
   <span style="flex:1"></span>
+  <!-- The way back. Hidden until it is known to be right - see showHubLink. -->
+  <a id="hubBack" class="tab" href="/" hidden>&#8592; back to the hub</a>
   <button class="primary" id="setupBtn" onclick="setupToggle()">&#9881; Setup / Login</button>
 </header>
+
+<!-- What it is doing, and how you are reached to it. Both in words, because
+     someone standing next to an arm needs to know whether it is about to move
+     before they reach into it, and because unplugging a cable means something
+     different from losing WiFi. -->
+<div id="hnow" class="statline" aria-live="polite">asking the board what it is…</div>
 
 <!-- Tabs, not a longer page. Thirteen cards in one column meant scrolling
      past the lift controls to reach the SD card. Nothing MOVED to build this:
      each card carries data-tab and showTab() decides what is on screen, so
      every id, handler and login rule is exactly as it was. -->
-<div id="modTabs">
-  <button class="mtab on" data-mtab="control" onclick="showTab('control')">Move it</button>
-  <button class="mtab" data-mtab="files" onclick="showTab('files')">Shows &amp; files</button>
-  <button class="mtab" data-mtab="setup" onclick="showTab('setup')">Setup &amp; wiring</button>
+<div id="modTabs" class="tabs equal">
+  <button class="tab mtab on" data-mtab="control" onclick="showTab('control')">Move it</button>
+  <button class="tab mtab" data-mtab="files" onclick="showTab('files')">Shows &amp; files</button>
+  <button class="tab mtab" data-mtab="setup" onclick="showTab('setup')">Setup &amp; wiring</button>
 </div>
 <div class="grid">
   <div class="card" data-tab="setup" id="loginCard" style="grid-column:1/-1;display:none">
     <h2>Setup login &#128274;</h2>
     <div id="loginForm">
       <div class="statline">log in to configure this module — <b>identity, WiFi mode,
-        Hardware pins, users, zero calibration</b>. Same over WiFi / USB / RS485.
-        Default account <b>manny</b> / <b>12345678</b>.</div>
+        Hardware pins, users, zero calibration</b>. Same over WiFi / USB / RS485.</div>
+      <!-- The password used to be printed right here, on a page anyone on the
+           WiFi can open. A board that has never had its password changed says
+           so after logging in, and Setup stays locked until it is. -->
       <div class="row">
         <span class="lbl">User</span><input id="liUser" autocomplete="username" style="width:150px">
         <span class="lbl">Pass</span><input id="liPass" type="password" autocomplete="current-password" style="width:150px">
@@ -142,6 +135,24 @@ a.peer:hover{border-color:var(--acc)}
         <span class="statline" id="liStat"></span>
       </div>
     </div>
+    <!-- Shown only when the board is still carrying its shipped password.
+         Setup stays locked behind this: a board nobody has secured is the
+         same as a board with no login at all. -->
+    <div id="mustChangeBox" class="banner err" style="display:none">
+      <div>
+        <b>This board still has the password it came with.</b>
+        Every board that has not been changed has the same one, so anyone who
+        has seen another board can open this one. Choose a new password to
+        unlock Setup.
+        <div class="row">
+          <span class="lbl">New</span>
+          <input id="mcPass" type="password" autocomplete="new-password" style="width:170px">
+          <button class="primary" onclick="doFirstChange()">Set it</button>
+          <span class="statline" id="mcStat"></span>
+        </div>
+      </div>
+    </div>
+
     <div id="usersBox" style="display:none">
       <div class="row">
         <span class="statline">logged in as <b id="liWho">-</b> — the Setup cards below are now editable.</span>
@@ -316,7 +327,7 @@ a.peer:hover{border-color:var(--acc)}
   <div class="card" data-tab="control" id="camCard" style="grid-column:1/-1">
     <h2>Camera</h2>
     <div class="row">
-      <button class="primary" onclick="camShot()">&#128247; Take a picture</button>
+      <button class="primary" id="camShotBtn" onclick="camShot()">&#128247; Take a picture</button>
       <label><input type="checkbox" id="camLive" onchange="camLiveToggle()"> live view</label>
       <span class="lbl">Size</span>
       <select id="camSize" onchange="cmd('CAM SIZE '+this.value)">
@@ -383,7 +394,10 @@ a.peer:hover{border-color:var(--acc)}
     <div class="row"><span class="lbl">ID</span><input type="number" id="setId" min="1" max="247" style="width:90px"></div>
     <div class="row"><span class="lbl">Name</span><input id="setName" style="flex:1"></div>
     <div class="row"><span class="lbl">Type</span><select id="setType" style="flex:1"></select></div>
-    <div class="row"><span class="lbl">WiFi SSID</span><input id="setSsid" placeholder="no spaces" style="flex:1"></div>
+    <div class="row"><span class="lbl">WiFi SSID</span><input id="setSsid"
+      placeholder="the network name, spaces are fine"
+      title="The exact network name. Spaces are fine — &quot;MSI 3058&quot; works."
+      style="flex:1"></div>
     <div class="row"><span class="lbl">WiFi pass</span><input id="setPass" style="flex:1"></div>
     <div class="row"><span class="lbl">WiFi mode</span>
       <select id="setRadio" style="flex:1">
@@ -427,6 +441,13 @@ function render(){
   $('hname').textContent=st.name||'module';
   document.title=(st.name||'module')+' control';
   $('hid').textContent=st.id;
+  // group is optional: a board that is in no installation says nothing rather
+  // than showing an empty label
+  if(st.group){ $('hgroup').textContent=st.group; $('hgroupwrap').hidden=false; }
+  else $('hgroupwrap').hidden=true;
+  $('hfw').textContent=st.fw||'?';
+  showHubLink(st);
+  paintNow(st);
   $('htype').textContent=st.type;
   $('hsd').textContent=st.sd?'ok':'none';
   // CONTROL is locked to the board's real type (no login needed): a nong
@@ -614,7 +635,15 @@ async function savePair(){
   $('npeer').dataset.touched=1;
   const r1=await cmd('CFG link '+($('nlink').checked?1:0));
   const r2=await cmd('CFG peer '+($('npeer').value||0));
-  if(r1.startsWith('ERR')||r2.startsWith('ERR')){alert('not saved - check the console');return;}
+  // An EMPTY reply means the request never got through — cmd() returns '' on a
+  // fetch failure. Only 'ERR' was checked, so a WiFi hiccup while saving the
+  // 2-ESP pairing rebooted the humanoid mid-session with the OLD leader/partner
+  // setting and told the user it had saved.
+  if(!r1||!r2||r1.startsWith('ERR')||r2.startsWith('ERR')){
+    alert('These settings were NOT saved, so the board has not been restarted.\n\n'
+         +'Check the console below for what the module said, then try again.');
+    return;
+  }
   await cmd('REBOOT');
 }
 // ---- nong servo type / travel (which servo is on which joint) --------------
@@ -635,7 +664,21 @@ async function setRate(){ svReply(await cmd('RATE '+$('svJoint').value+' '+($('s
 // four of them in total — one live view would leave the rest of the site
 // unable to answer. A cache-busting number keeps the browser from showing the
 // picture it already has.
-let camTimer=null;
+// Until when the camera line is holding a message worth reading.
+//
+// The status poll runs every 500 ms and used to rewrite this line each time,
+// so "no picture — <the real reason>", "picture taken", "live…" and "the live
+// view stopped" were all wiped within half a second of appearing. The reason a
+// camera is not working is the one thing the card exists to tell you, and it
+// was on screen too briefly to read. (It was meant to be guarded by camTimer,
+// which was declared and then never assigned, so the guard was always open.)
+let camHold=0;
+function camSay(text,holdMs){
+  const el=$('camStat');
+  if(!el)return;
+  el.textContent=text;
+  camHold=Date.now()+(holdMs===undefined?8000:holdMs);
+}
 // Ask through FETCH, not through <img src>.
 //
 // The hub serves this same page for a module it reaches over WiFi or a cable,
@@ -649,8 +692,8 @@ async function camShot(){
   try{
     const r=await fetch('/api/cam.jpg?'+Date.now());
     if(!r.ok){
-      const why=(await r.text()).slice(0,120);
-      $('camStat').textContent='no picture — '+(why||('the module answered '+r.status));
+      const why=(await r.text()).slice(0,160);
+      camSay('no picture — '+(why||('the module answered '+r.status)),15000);
       return;
     }
     const b=await r.blob();
@@ -658,11 +701,10 @@ async function camShot(){
     img.dataset.url=URL.createObjectURL(b);
     img.src=img.dataset.url;
     img.style.display='';
-    $('camStat').textContent='picture taken '+new Date().toLocaleTimeString()+
-      ' · '+(b.size/1024).toFixed(1)+' kB';
+    camSay('picture taken '+new Date().toLocaleTimeString()+
+      ' · '+(b.size/1024).toFixed(1)+' kB');
   }catch(e){
-    $('camStat').textContent='no picture — cannot reach the module ('+
-      (e.message||e)+')';
+    camSay('no picture — cannot reach the module ('+(e.message||e)+')',15000);
   }
 }
 // Live view: ONE connection carrying many frames (MJPEG), which the browser
@@ -683,29 +725,44 @@ function camUrl(path){
 }
 function camLiveToggle(){
   const img=$('camImg');
+  // The board has ONE frame buffer without PSRAM, and take() reclaims whatever
+  // frame is out on loan. Pressing "Take a picture" while the live view is
+  // running therefore pulls the frame out from under the stream mid-send, and
+  // the picture arrives torn. One reader of the sensor at a time.
+  const shot=$('camShotBtn');
+  if(shot){
+    shot.disabled=$('camLive').checked;
+    shot.title=shot.disabled
+      ? 'turn the live view off first — the camera can only be read by one thing at a time'
+      : '';
+  }
   if($('camLive').checked){
-    $('camStat').textContent='live…';
+    camSay('live…',3000);
     img.style.display='';
-    img.onerror=()=>{$('camStat').textContent=
-      'the live view stopped — someone else may be watching (one at a time)';};
+    img.onerror=()=>camSay(
+      'the live view stopped — someone else may be watching (one at a time)',15000);
     img.src=camUrl('cam.stream')+(camUrl('cam.stream').indexOf('?')<0?'?':'&')+'t='+Date.now();
   }else{
     // Dropping the src is what closes the connection, and the board only
     // allows one viewer — leaving it open would lock everyone else out.
     img.removeAttribute('src');
-    $('camStat').textContent='live view off';
+    camSay('live view off',3000);
   }
 }
 function camStatus(m){
   if(m.ready===false){
-    $('camStat').textContent='camera not started: '+(m.error||'unknown')+
-      ' — check the ribbon cable and the 5V supply';
+    // The camera failing to start outranks anything being held: it IS the
+    // answer to "why is there no picture".
+    camSay('camera not started: '+(m.error||'unknown')+
+      ' — check the ribbon cable and the 5V supply',15000);
     return;
   }
   if(m.size&&document.activeElement.id!=='camSize')$('camSize').value=m.size;
   if(m.quality&&document.activeElement.id!=='camQ')$('camQ').value=m.quality;
   if(m.flash!==undefined)$('camFlash').checked=!!m.flash;
-  if(!camTimer&&m.shots!==undefined)
+  // The idle line is the LEAST important thing this element ever shows, so it
+  // waits until whatever is being held has had its time on screen.
+  if(Date.now()>camHold&&m.shots!==undefined)
     $('camStat').textContent=m.shots+' picture(s) since boot'+
       (m.psram?'':' · no PSRAM: small frames only')+(m.last?(' · last '+m.last):'');
 }
@@ -732,16 +789,129 @@ function applyTabs(){
 }
 function showTab(name){ modTab=name; applyTabs(); }
 
-// ---- Setup login (accounts stored on the board, default manny/12345678) ----
+// ---- Setup login (accounts stored on the board, see USER) ----
+// The shipped password is deliberately not written here either: this file
+// is served to anyone who opens the page, and view-source is not a lock.
 let auth=null; // {user,pass} while logged in
+// Set from the board's own answer: it is still carrying its shipped password.
+let mustChange=false;
+
+// Choose the first real password. Until this succeeds, Setup stays shut — a
+// board nobody has secured is the same as a board with no login at all.
+async function doFirstChange(){
+  const np=$('mcPass').value;
+  if(np.length < 8){ $('mcStat').textContent='at least 8 characters'; return; }
+  const r=await cmd('USER PASS '+auth.user+' '+auth.pass+' '+np);
+  if(!r.startsWith('OK')){ $('mcStat').textContent=r.replace(/^ERR ?/,'') || 'the board refused it'; return; }
+  // The password just changed, so the old session and the stored one are both
+  // stale: log in again with the new one rather than pretending nothing moved.
+  auth.pass=np; mustChange=false;
+  // The new password invalidated the old session, so this is what keeps the
+  // page usable. Ignoring the result meant Setup opened on a DEAD session:
+  // every card visible, every action behind it refused, and nothing saying so.
+  try{
+    const s=await fetch('/api/login',{method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:'user='+encodeURIComponent(auth.user)+'&pass='+encodeURIComponent(np)});
+    if(!s.ok){
+      $('mcStat').textContent='The password was changed, but signing back in '+
+        'failed. Log in again with the new one.';
+      return;
+    }
+  }catch(e){
+    $('mcStat').textContent='The password was changed, but the board stopped '+
+      'answering. Reload this page and log in with the new one.';
+    return;
+  }
+  $('mcPass').value=''; $('mcStat').textContent='';
+  $('mustChangeBox').style.display='none';
+  $('usersBox').style.display='';
+  applyTabs(); loadUsers(); loadPins();
+  $('setupBtn').textContent='⚙ Setup (open)';
+}
+// What this board is doing, and how this page is reached to it — one honest
+// line, in words. `dev` in the address means the HUB is serving this page over
+// a cable or the bus; without it the board served the page itself over WiFi.
+function paintNow(st){
+  var doing;
+  if(st.seq && st.seq.running)
+    doing = 'playing ' + (st.seq.file || 'a sequence') + ' right now';
+  else
+    doing = 'not running anything';
+
+  var dev = new URLSearchParams(location.search).get('dev') || '';
+  var how;
+  if(dev.indexOf('usb:')===0)       how = 'reached over a cable, through the hub';
+  else if(dev.indexOf('rs485:')===0)how = 'reached over the RS485 bus, through the hub';
+  else if(dev)                      how = 'reached through the hub';
+  else if(st.wifi && st.wifi.mode==='ap')
+    how = 'you are on this board\'s own hotspot';
+  else if(st.wifi && st.wifi.ip)    how = 'reached over WiFi at ' + st.wifi.ip;
+  else                              how = 'reached directly';
+
+  $('hnow').textContent = doing + ' — ' + how + '.';
+}
+
 function setupToggle(){
   // the button is now a shortcut to the Setup tab; clicking it again goes back
   // to Control, so it still toggles the way it always did
   showTab(modTab==='setup' ? 'control' : 'setup');
 }
+// True when the HUB is serving this page over a cable or the bus: its shim
+// rewrites /api/... into /api/dev/..., so there is no board HTTP session to
+// get, and holding the cable is already physical access.
+function viaHub(){ return !!new URLSearchParams(location.search).get('dev'); }
+
+// THE WAY BACK. Opening a board's page is otherwise a one-way trip: typed into
+// a phone there is no Back to press, and the hub is the only screen that shows
+// the other modules.
+//
+// Two ways to know where the hub is, and neither is a guess. Through the hub,
+// this page IS on the hub, so '/' is right by construction. Reached directly,
+// the board offers the hub that last identified itself to it - see noteHub in
+// WebPortal.cpp - and offers nothing when no hub has been in touch, because a
+// link to the wrong PC is worse than no link.
+function showHubLink(st){
+  const a=$('hubBack');
+  if(!a) return;
+  if(viaHub()){ a.href='/'; a.textContent='← back to the hub'; a.hidden=false; return; }
+  const hub=(st&&st.hub)||'';
+  if(!hub){ a.hidden=true; return; }
+  a.href='http://'+hub+'/';
+  a.textContent='← the hub on '+hub;
+  a.hidden=false;
+}
+
 async function doLogin(){
   const u=$('liUser').value.trim(),p=$('liPass').value;
   const r=await cmd('AUTH '+u+' '+p);
+  if(r.startsWith('OK') && !viaHub()){
+    // Talking to the board directly: ask for a SESSION. Without this the page
+    // would look logged in and then be refused by every route that changes
+    // something — the cards would open and nothing behind them would work.
+    try{
+      const s=await fetch('/api/login',{method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'user='+encodeURIComponent(u)+'&pass='+encodeURIComponent(p)});
+      if(!s.ok){ $('liStat').textContent='the board refused that login'; return; }
+      // If the answer cannot be read, ASK for a password rather than not.
+      // Swallowing this left mustChange false, so a board still carrying the
+      // shipped password quietly stopped asking anyone to change it - the
+      // prompt turning itself off is the one failure mode that matters here.
+      // Being asked once too often is recoverable; not being asked is not.
+      try{ mustChange = (await s.json()).mustChange === true; }
+      catch(e){ mustChange = true; }
+    }catch(e){ $('liStat').textContent='could not reach the board to log in'; return; }
+  }
+  if(r.startsWith('OK') && mustChange){
+    // Logged in, but this board has never had a password chosen. Do not open
+    // Setup: ask for one first. Everything else stays exactly as it was.
+    auth={user:u,pass:p};
+    $('loginForm').style.display='none';
+    $('mustChangeBox').style.display='';
+    $('liWho').textContent=u;$('liPass').value='';
+    return;
+  }
   if(r.startsWith('OK')){
     auth={user:u,pass:p};
     $('loginForm').style.display='none';$('usersBox').style.display='';
@@ -753,6 +923,18 @@ async function doLogin(){
   }else{$('liStat').textContent='wrong user or password';}
 }
 function doLogout(){
+  // End the session on the BOARD too, not just in this tab. A logout that
+  // only forgets locally leaves the cookie working for whoever sits down next.
+  // Told to the BOARD, and the answer is waited for. A logout that only
+  // forgets locally leaves the cookie working for whoever sits down next -
+  // which is the very thing the line above promises not to do, and the empty
+  // catch used to break that promise silently.
+  if(!viaHub()){
+    fetch('/api/logout',{method:'POST'})
+      .then(r=>{ if(!r.ok) throw new Error('refused'); })
+      .catch(()=>{ $('liStat').textContent='Logged out here, but the board did '+
+        'not confirm it. Close this browser to be sure.'; });
+  }
   auth=null;
   $('loginForm').style.display='';$('usersBox').style.display='none';
   applyTabs();
@@ -796,9 +978,20 @@ async function delUser(u){
 async function loadList(dir,sel){
   const s=$(sel);
   if(!s)return;   // /music only exists on a board that has a speaker
+  // An empty dropdown means "this card has nothing on it". A dropdown that
+  // could not be READ has to say so instead, or a failed request looks like
+  // an empty SD card and someone goes looking for files that are there.
   try{const r=await fetch('/api/files?dir='+dir);const fs=await r.json();
     s.innerHTML='';
-    fs.forEach(f=>{const o=document.createElement('option');o.value=dir+'/'+f.n;o.textContent=f.n;s.appendChild(o);});}catch(e){}
+    fs.forEach(f=>{const o=document.createElement('option');o.value=dir+'/'+f.n;o.textContent=f.n;s.appendChild(o);});
+    if(!fs.length){const o=document.createElement('option');o.disabled=true;
+      o.textContent='nothing in '+dir;s.appendChild(o);}
+  }catch(e){
+    s.innerHTML='';
+    const o=document.createElement('option');o.disabled=true;
+    o.textContent='could not read '+dir+' - is the SD card in?';
+    s.appendChild(o);
+  }
 }
 function runSel(){const v=$('moveSel').value;if(v)cmd('MOVE '+v);}
 async function loadFiles(){
@@ -815,7 +1008,11 @@ async function loadFiles(){
       const g=document.createElement('a');g.href='/api/download?path='+encodeURIComponent(p);g.textContent='get';
       const d=document.createElement('a');d.textContent='del';
       d.onclick=async()=>{
-        if(!confirm('Delete '+p+'?'))return;
+        // Name the exact file. "Delete?" on its own tells the reader nothing,
+        // and this cannot be undone — the card may be the only copy.
+        if(!confirm('Delete "'+p+'" from this module\'s SD card?\n\n'
+                   +'This cannot be undone. If this is the only copy of that '
+                   +'sequence, it is gone.'))return;
         log(await (await fetch('/api/delete?path='+encodeURIComponent(p))).text());
         refreshLists();
       };
@@ -823,11 +1020,22 @@ async function loadFiles(){
       tr.appendChild(td1);tr.appendChild(td2);tr.appendChild(td3);
       tb.appendChild(tr);
     });
-  }catch(e){}
+  }catch(e){
+    // An empty catch made 'could not ask' look identical to 'nothing there'.
+    // The element is fileTbl's tbody — the same one the success path fills at
+    // the top of this function. An earlier version of this handler looked up
+    // 'fileRows', which does not exist, so the guard swallowed it and the
+    // message never appeared: an error state that was itself broken.
+    const t=$('fileTbl');
+    if(t&&t.tBodies[0])t.tBodies[0].innerHTML=
+      '<tr><td colspan="3" class="statline">Could not read the card. The board '
+      +'may be busy, or it has no SD card fitted. Press refresh to try again.'
+      +'</td></tr>';
+  }
 }
 async function upload(){
   const f=$('upFile').files[0];
-  if(!f){alert('choose a file');return;}
+  if(!f){alert('Pick a file first — use the Choose file button next to Upload.');return;}
   const fd=new FormData();fd.append('file',f,f.name);
   $('upStat').textContent='uploading...';
   try{
@@ -851,8 +1059,14 @@ async function loadPeers(){
       if(!p.self)el.href='http://'+p.ip+'/';
       g.appendChild(el);
     });
-    if(!ps.length)g.innerHTML='<span class="statline">no modules found</span>';
-  }catch(e){}
+    // An empty state says what would fill it, not just that it is empty.
+    if(!ps.length)g.innerHTML='<span class="statline">No other modules have '
+      +'joined this one yet. Modules appear here once they are on the same '
+      +'group and within radio range.</span>';
+  }catch(e){
+    if(g)g.innerHTML='<span class="statline">Could not check for other modules '
+      +'just now. This list will try again in a few seconds.</span>';
+  }
 }
 setInterval(loadPeers,15000);
 async function saveSettings(){
@@ -862,7 +1076,17 @@ async function saveSettings(){
   if(id)reps.push(await cmd('SET ID '+id));
   if(name)reps.push(await cmd('SET NAME '+name));
   if(type)reps.push(await cmd('SET TYPE '+type));
-  if(ssid)reps.push(await cmd('SET WIFI '+ssid+' '+pass));
+  // QUOTE the network name. wifiargs::parse treats an unquoted first argument
+  // as "the ssid up to the first space", so "MSI 3058" was stored as ssid
+  // "MSI" with password "3058 <the real password>" and the board simply never
+  // joined — with every read-back showing exactly what you typed. Network names
+  // contain spaces constantly (phone hotspots especially). The parser has
+  // always handled quotes; this page just never sent them, and the field's
+  // "no spaces" placeholder was covering for it.
+  // The password is quoted too: parse() unquotes it, so a password with a
+  // trailing space survives instead of being trimmed away.
+  if(ssid)reps.push(await cmd('SET WIFI "'+ssid.replace(/"/g,'')+'" "'+
+                              pass.replace(/"/g,'')+'"'));
   const sr=$('setRadio');
   if(sr.dataset.touched&&sr.value)reps.push(await cmd('SET WIFI '+sr.value));  // ON | AP | OFF
   if(reps.some(r=>r.startsWith('ERR')||r==='')){
@@ -932,7 +1156,11 @@ async function loadPins(){
   // IS answering — something on the PC side is DROPPING the array reply (an old
   // Mice hub / MiceHub.exe that skips serial lines starting with "["). That is
   // NOT a firmware problem, so don't send the user re-flashing.
-  let okCur=false; try{pinCur=JSON.parse((ct||'').trim());okCur=true;}catch(e){}
+  // The failure IS handled here - okCur carries it to the message below -
+  // but it says so out loud, so that an empty catch anywhere on this page
+  // stays a fault rather than a thing to argue about case by case.
+  let okCur=false;
+  try{pinCur=JSON.parse((ct||'').trim());okCur=true;}catch(e){okCur=false;}
   try{
     pinValid=JSON.parse((vt||'').trim());
     if(!Array.isArray(pinValid)) throw new Error('not an array');
@@ -1007,10 +1235,27 @@ async function savePins(){
   const used={};let dupe=false;
   sels.forEach(s=>{const v=+s.value;if(v>=0){if(used[v])dupe=true;used[v]=1;}});
   if(dupe&&!confirm('Two functions share a GPIO — save anyway?'))return;
-  $('pinStat').textContent='saving...';
-  for(const s of sels){const k=s.id.slice(4);if(+s.value!==pinCur[k].gpio)await cmd('PIN '+k+' '+s.value);}
+  $('pinStat').textContent='Saving the pins…';
+  // Every reply is READ. This loop used to ignore them all and then reboot
+  // saying "Pins saved", so a rejected pin (bad GPIO, or a select that fell
+  // back to empty and sent "PIN <name> ") left the board restarting with a
+  // half-applied pin map and nothing on screen to say so.
+  const bad=[];
+  for(const s of sels){
+    const k=s.id.slice(4);
+    if(+s.value===pinCur[k].gpio)continue;          // unchanged
+    const r=await cmd('PIN '+k+' '+s.value);
+    if(!r||r.startsWith('ERR'))bad.push(k+': '+(r||'no reply'));
+  }
+  if(bad.length){
+    $('pinStat').textContent='Not saved — '+bad.length+' pin(s) were refused.';
+    alert('These pins were NOT accepted, so the board has not been restarted:\n\n  '
+         +bad.join('\n  ')+'\n\nFix them and save again.');
+    return;
+  }
+  $('pinStat').textContent='Pins saved. Restarting the board…';
   await cmd('REBOOT');
-  alert('Pins saved. The board reboots to apply them.');
+  alert('Pins saved. The board restarts now to apply them.');
 }
 applyTabs();   // start on Control with setup locked
 connectWs();

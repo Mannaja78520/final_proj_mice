@@ -1,7 +1,9 @@
 #include "modules/cam/CamModule.h"
+#include "core/Log.h"
 #include "core/SDStore.h"
 #include "core/Util.h"
 #include <esp_camera.h>
+#include <Wire.h>   // SCCB is I2C: the probe reads the sensor id directly
 #include <SD.h>
 
 // Sizes a person would ask for, smallest first. Anything above SVGA needs
@@ -23,6 +25,39 @@ static const char* sizeName(framesize_t f) {
     for (int i = 0; i < NSIZES; i++)
         if (SIZES[i].size == f) return SIZES[i].name;
     return "?";
+}
+
+
+// Read the sensor's identity over SCCB, which is I2C with a different name.
+// Every camera the driver knows answers on 0x30, and the two id registers are
+// at 0x0A (product, high) and 0x0B (low) on the OV family; the GC family
+// answers 0xF0/0xF1. Both are read, because which one is right is exactly
+// what we do not know yet.
+String CamModule::probeSensor() {
+    Wire.begin(CAM_SIOD_PIN, CAM_SIOC_PIN, 100000);
+    auto rd = [](uint8_t addr, uint8_t reg) -> int {
+        Wire.beginTransmission(addr);
+        Wire.write(reg);
+        if (Wire.endTransmission(false) != 0) return -1;
+        if (Wire.requestFrom((int)addr, 1) != 1) return -1;
+        return Wire.read();
+    };
+    String out;
+    bool any = false;
+    for (uint8_t addr = 8; addr < 0x78; addr++) {
+        Wire.beginTransmission(addr);
+        if (Wire.endTransmission() == 0) {
+            any = true;
+            int a = rd(addr, 0x0A), b = rd(addr, 0x0B);
+            int c1 = rd(addr, 0xF0), c2 = rd(addr, 0xF1);
+            out += "SCCB 0x" + String(addr, HEX) +
+                   " ov=" + String(a, HEX) + String(b, HEX) +
+                   " gc=" + String(c1, HEX) + String(c2, HEX) + " ";
+        }
+    }
+    if (!any) return "nothing answered on SCCB - check the ribbon, the 5V "
+                     "supply and that XCLK is running";
+    return out;
 }
 
 void CamModule::begin() {
@@ -70,13 +105,17 @@ void CamModule::begin() {
     if (err != ESP_OK) {
         ready_ = false;
         initErr_ = "camera init failed 0x" + String((int)err, HEX);
+        // WHICH camera? The driver refuses without saying, and the two causes
+        // need opposite fixes: an unsupported sensor is a build flag, a silent
+        // one is a ribbon or a power supply. So ask the chip directly, on the
+        // same two wires, and put the answer where a person will see it.
+        initErr_ += " (" + probeSensor() + ")";
         // The three real causes, in the order they actually happen. A number
         // on its own sends people to the internet; this sends them to the
         // ribbon cable.
-        Serial.println("[cam] " + initErr_ +
-                       " — check the ribbon is seated and the latch closed, "
-                       "that the board has 5V with enough current, and that "
-                       "nothing else is driving the camera pins");
+        LOGF(cam, "%s — check the ribbon is seated and the latch closed, "
+                  "that the board has 5V with enough current, and that "
+                  "nothing else is driving the camera pins", initErr_.c_str());
         return;
     }
     ready_ = true;
@@ -103,18 +142,18 @@ void CamModule::begin() {
         s->set_framesize(s, FRAMESIZE_SVGA);
     }
     size_t spiFree = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
-    Serial.printf("[cam] ready, %s, PSRAM %s (%u bytes of it reached the heap)\n",
-                  sizeName(c.frame_size), psram ? "yes" : "NO (small frames only)",
-                  (unsigned)spiFree);
+    LOGF(cam, "ready, %s, PSRAM %s (%u bytes of it reached the heap)",
+         sizeName(c.frame_size), psram ? "yes" : "NO (small frames only)",
+         (unsigned)spiFree);
     if (psram && spiFree == 0) {
         // Seen on a real AI-Thinker board: the chip is there, the camera uses
         // it, but none of it was handed to the allocator — and then a plain
         // malloc(16 KB) panics inside the heap. Captures are unaffected
         // (nothing here allocates), so this is a warning, not a failure.
         psramSick_ = true;
-        Serial.println("[cam] WARNING: PSRAM is present but 0 bytes reached the "
-                       "heap — this board cannot serve large allocations. "
-                       "Pictures still work; nothing in this module allocates.");
+        LOGF(cam, "WARNING: PSRAM is present but 0 bytes reached the heap — this "
+                  "board cannot serve large allocations. Pictures still work; "
+                  "nothing in this module allocates.");
     }
 }
 

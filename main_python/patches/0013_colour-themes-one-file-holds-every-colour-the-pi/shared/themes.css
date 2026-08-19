@@ -1,0 +1,116 @@
+/* EVERY COLOUR IN THE PROJECT. Nothing else names one.
+   ==========================================================================
+
+   Asked for directly, 2026-08-19: one file to change the theme or the colours,
+   so a new theme can be added later without reading anything else. This is
+   that file. `mice.css` next door owns SHAPE — radius, spacing, the type
+   scale — and has no colours in it at all.
+
+   TO ADD A THEME
+   --------------
+   Copy a block, change the name in the selector, change the values. That is
+   the whole job: the picker on every page DISCOVERS the themes by reading this
+   file, so there is no list anywhere to keep in sync. qc/checks/check_themes.py
+   adds a block of its own and fails if it does not show up.
+
+   THE RULES A THEME MUST KEEP, and they are checked, not trusted
+   -------------------------------------------------------------
+   * `--txt` on `--bg` and on `--card`: at least 7:1 contrast. This is read
+     across a room, in a dark hall, on a laptop screen at an angle.
+   * `--mut` on both: at least 4.5:1. It is a demotion, not a disappearance.
+   * `--acc` on `--bg`: at least 4.5:1, because links are text.
+   * `--ok` `--warn` `--err` mean STATE and nothing else — never decoration —
+     and each must be clearly distinguishable from the accent and from each
+     other. Measured as a colour distance, not as a contrast ratio: two colours
+     can have identical brightness and be blue and red, and the first version
+     of that check called the shipped palette broken because it asked the wrong
+     question.
+   * Nothing is ever signalled by colour alone. A joyful theme must not be able
+     to turn a warning into an ornament.
+   * The `--ty-*` module-type colours are DECORATION and must not equal a state
+     colour. They did: `--ty-lift` was byte-identical to `--ok` in all three
+     themes, so a lift board's row was edged in the colour that means *fine* -
+     and a green edge then meant neither thing. Found by the model panel on
+     2026-08-19, which is the first thing it caught that I had not.
+
+   WHERE THEY COME FROM
+   --------------------
+   Midnight is what the project has always looked like. Carnival and Daylight
+   were designed by Gemini 3.1 Pro on 2026-08-19; every value was then measured
+   here, and one was changed: Daylight's accent came back as #0d6efd, which is
+   4.27:1 on its background and fails the rule above, so it is #0b5ed7 (5.54:1).
+   Nothing else was touched. */
+
+
+/* ---- Midnight — the default, and it stays the default -------------------
+   Dark is not a preference here. A bright screen spills light into the show
+   area, and the operator is usually standing next to a lit set in a dark
+   room. */
+:root,
+:root[data-theme="midnight"]{
+  --theme-name:"Midnight";
+  --theme-note:"the dark one. Stays the default: a bright screen spills light into the show area";
+
+  /* surfaces — three depths, no more: page, raised, inset */
+  --bg:#10141a; --card:#1a212b; --sunk:#0d1117; --line:#2a3442;
+
+  /* text. --mut is a demotion, never for something you must read to operate */
+  --txt:#dce3ec; --mut:#8b98a9;
+
+  /* ONE accent carries interaction; ok/warn/err mean state and nothing else */
+  --acc:#4da3ff; --on-acc:#06121f; --btn:#243040;
+  --ok:#3ecf8e; --warn:#ffb454; --err:#ff6b6b;
+
+  /* Which KIND of board a row is. Decoration, deliberately separate from the
+     state colours above so --ok/--warn/--err keep meaning only "fine /
+     careful / failed". Each badge shows its type as text too. */
+  --ty-nong:#ffd166; --ty-lift:#5cc8ff; --ty-cam:#a78bfa; --ty-other:#8b98a9;
+
+  color-scheme:dark;
+}
+
+/* ---- Carnival — dark, and enjoying itself -------------------------------
+   The colourful one that was asked for. Same discipline, more hue: a violet
+   ground instead of slate, and an accent that is unmistakably not a state
+   colour. Measured: text 15.3:1, muted 7.5:1, accent 11.9:1. */
+:root[data-theme="carnival"]{
+  --theme-name:"Carnival";
+  --theme-note:"dark, with colour. For when the hall is dark and the rig is not";
+
+  --bg:#1a1025; --card:#2b1b3d; --sunk:#110a18; --line:#4a2b6b;
+  --txt:#f2e6ff; --mut:#b899d9;
+  --acc:#00e5ff; --on-acc:#001a1c; --btn:#402060;
+  --ok:#00f58c; --warn:#ffc233; --err:#ff3366;
+  --ty-nong:#ffb84d; --ty-lift:#8affff; --ty-cam:#c9a0ff; --ty-other:#b899d9;
+
+  color-scheme:dark;
+}
+
+/* ---- Daylight — for a bright room, or a TV with sun on it ---------------
+   The one case dark genuinely loses: a laptop outdoors, or a screen opposite
+   a window. Measured: text 14.6:1, muted 5.9:1, accent 5.5:1. */
+:root[data-theme="daylight"]{
+  --theme-name:"Daylight";
+  --theme-note:"light. For a bright room, or a screen with sun on it";
+
+  --bg:#f8f9fa; --card:#ffffff; --sunk:#e9ecef; --line:#ced4da;
+  --txt:#212529; --mut:#5a6268;
+  /* #0b5ed7, not the #0d6efd this was designed with: that measured 4.27:1 on
+     this background, and links are text. */
+  --acc:#0b5ed7; --on-acc:#ffffff; --btn:#e2e6ea;
+  --ok:#198754; --warn:#d97706; --err:#dc3545;
+  --ty-nong:#b8860b; --ty-lift:#1f6feb; --ty-cam:#6f42c1; --ty-other:#5a6268;
+
+  color-scheme:light;
+}
+
+/* Soft tints, DERIVED from the colour they belong to rather than picked by
+   hand, so changing a colour above moves its background with it — in every
+   theme, without any theme having to list them. */
+:root{
+  --acc-soft:color-mix(in srgb,var(--acc) 14%,var(--bg));
+  --ok-soft:color-mix(in srgb,var(--ok) 12%,var(--bg));
+  --warn-soft:color-mix(in srgb,var(--warn) 12%,var(--bg));
+  --err-soft:color-mix(in srgb,var(--err) 12%,var(--bg));
+  --code-bg:color-mix(in srgb,var(--card) 70%,var(--bg));
+}

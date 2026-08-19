@@ -1,0 +1,220 @@
+/* mice.css — THE design system. One file, read by every web surface.
+ *
+ * It used to be six copies: hub.html, module.html, rgb.html, help.html,
+ * Studio's style.css and the module website in firmware/src/web/WebUI.h, each
+ * commented "the SHARED design system" and none of them actually shared. They
+ * had already drifted — three radius scales, four names for the same grey
+ * caption, and colours copied as raw hex that stayed behind whenever the
+ * accent moved.
+ *
+ * WHO READS THIS FILE
+ *   hub, help, rgb          <link href="/mice.css">, served by main_python
+ *   Nong Studio             <link href="/mice.css">, then its own style.css
+ *   the module website      <link href="/mice.css">, served by the BOARD from
+ *                           flash (firmware/tools/gen_tables.py compiles this
+ *                           file into web/MiceCss.h) and by the hub when the
+ *                           same page is reached over USB — one URL either way
+ *
+ * The one deliberate copy is docs/PLAN.html, which has to open from a USB
+ * stick with no server at all, so it cannot link anything.
+ *
+ * WHAT BELONGS HERE
+ *   tokens, the reset, base elements, and a component that appears on three or
+ *   more surfaces. One-offs stay in the page that owns them. Anything below is
+ *   overridable: every page links this file FIRST, so its own rules win.
+ */
+
+/* ------------------------------------------------------------------ tokens */
+:root{
+  /* surfaces — three depths, no more: page, raised, inset */
+  --bg:#10141a; --card:#1a212b; --sunk:#0d1117; --line:#2a3442;
+
+  /* text. --mut is a demotion, never for something you must read to operate */
+  --txt:#dce3ec; --mut:#8b98a9;
+
+  /* ONE accent carries interaction; ok/warn/err mean state and nothing else */
+  --acc:#4da3ff; --on-acc:#06121f; --btn:#243040;
+  --ok:#3ecf8e; --warn:#ffb454; --err:#ff6b6b;
+
+  /* Soft tints, DERIVED from the colour they belong to rather than picked by
+     hand, so changing --err moves its background with it. These replaced
+     #16263a / #122b22 / #2e2416 / #141b24 and an rgba() copy of --err. */
+  --acc-soft:color-mix(in srgb,var(--acc) 14%,var(--bg));
+  --ok-soft:color-mix(in srgb,var(--ok) 12%,var(--bg));
+  --warn-soft:color-mix(in srgb,var(--warn) 12%,var(--bg));
+  --err-soft:color-mix(in srgb,var(--err) 12%,var(--bg));
+  --code-bg:color-mix(in srgb,var(--card) 70%,var(--bg));
+
+  /* Which KIND of board a row is. Decoration, deliberately separate from the
+     state colours above so --ok/--warn/--err keep meaning only "fine /
+     careful / failed". Each badge shows its type as text too. */
+  --ty-nong:#ffd166; --ty-lift:#3ecf8e; --ty-cam:#a78bfa; --ty-other:#8b98a9;
+
+  /* Shape. Radius pairs with size: controls --r-sm, cards --r-md, panels
+     --r-lg. This is the hub/Studio scale; the module website and the help page
+     used a tighter 7/10/12 and now follow the rest. */
+  --r-sm:10px; --r-md:14px; --r-lg:18px; --r-pill:999px;
+
+  /* Rhythm: a 4px scale, nothing between the steps */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px;
+
+  /* Dark is the permanent default (a bright screen spills light into the
+     show area), and this is what tells the BROWSER that: scrollbars, the
+     checkbox, the select popup and the empty half of a slider are drawn by
+     the platform and ignore every rule above. */
+  color-scheme:dark;
+
+  /* Type */
+  --sans:system-ui,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,Consolas,monospace;
+}
+
+/* ------------------------------------------------------------------- base */
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* [hidden] must actually hide. The attribute is only a `display:none` rule in
+   the browser's own stylesheet, so ANY rule here that sets display beats it —
+   .banner is display:flex, and a hidden banner showed as an empty coloured bar
+   with no text in it. Seen on the hub's login card, which carries three
+   banners that are hidden until they have something to say. */
+[hidden]{display:none!important}
+
+/* No padding or max-width here: the page frame is each app's own decision —
+   the hub is a centred column, Studio fills the viewport. */
+body{background:var(--bg);color:var(--txt);
+     font-family:var(--sans);font-size:15px;line-height:1.6}
+
+h1{font-size:22px;line-height:1.25}
+/* the small uppercase section label, on every app but the help page */
+h2{font-size:14px;color:var(--acc);text-transform:uppercase;letter-spacing:.06em;
+   margin-bottom:var(--sp-2)}
+a{color:var(--acc)}
+
+/* -------------------------------------------------------------- components */
+.card{background:var(--card);border:1px solid var(--line);
+      border-radius:var(--r-lg);padding:var(--sp-4)}
+
+/* minmax(min(300px,100%),...) so a 300px track cannot force the page wider
+   than a 360px phone — a fixed 300px minimum is a sideways scrollbar. */
+.grid{display:grid;gap:var(--sp-4);
+      grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
+
+.row{display:flex;flex-wrap:wrap;gap:var(--sp-2);align-items:center;
+     margin:var(--sp-2) 0}
+.lbl{color:var(--mut);font-size:13px;min-width:72px}
+
+/* Four names grew for the same quiet caption — .mini on the hub, .hint in
+   Studio, .statline on the module website, .now beside a joint. Renaming them
+   would break element ids and QC drivers that already use them, so they are
+   one rule instead of four. */
+.mini,.hint,.statline,.now{color:var(--mut);font-size:13px}
+
+.badge{background:var(--card);border:1px solid var(--line);
+       border-radius:var(--r-pill);padding:var(--sp-1) var(--sp-3);
+       font-size:13px;color:var(--mut)}
+.badge b{color:var(--txt)}
+
+button{background:var(--btn);border:1px solid var(--line);color:var(--txt);
+       border-radius:var(--r-sm);padding:var(--sp-2) var(--sp-3);
+       font-family:inherit;font-size:14px;cursor:pointer}
+button:hover{border-color:var(--acc)}
+/* A disabled control still has to say what it is: dimmed, not invisible */
+button:disabled{opacity:.55;cursor:not-allowed}
+button:disabled:hover{border-color:var(--line)}
+/* one primary per view */
+button.primary{background:var(--acc);border-color:var(--acc);color:var(--on-acc);
+               font-weight:600}
+/* Destructive actions look destructive. Derived from --err rather than two
+   more literals nobody remembers to update. */
+button.danger{background:color-mix(in srgb,var(--err) 14%,transparent);
+              border-color:var(--err);color:var(--err)}
+button.danger:hover:not(:disabled){background:color-mix(in srgb,var(--err) 24%,transparent)}
+button.danger:disabled{opacity:.5}
+/* A destructive control written as a link still has to look destructive: the
+   hub had one spelled out in an inline style, which is how a design system
+   stops being one. */
+a.danger{color:var(--err)}
+/* Compact square button for a single glyph — remove, close, dismiss. Sized to
+   the touch target, not to the glyph, so it is still hittable on a phone. */
+button.icon{padding:0;min-width:34px;min-height:34px;line-height:1;
+            font-size:15px}
+
+input,select,textarea{background:var(--sunk);border:1px solid var(--line);
+       color:var(--txt);border-radius:var(--r-sm);padding:var(--sp-2);
+       font-family:inherit;font-size:14px;max-width:100%}
+/* min-width:0 is load-bearing. A range input is a replaced element with an
+   intrinsic width — 131px in Chromium — and as a grid or flex item its
+   automatic minimum size is that width, so a 1fr track containing one REFUSES
+   to shrink below it. Measured in Studio: a 238px row whose columns resolved
+   to 96px + 131px + 64px = 303px, pushing the joint number box 17px past the
+   panel edge and putting a scrollbar under every slider. */
+input[type=range]{padding:0;flex:1;min-width:0;accent-color:var(--acc)}
+input[type=checkbox]{accent-color:var(--acc)}
+input[type=color]{padding:2px;width:56px;height:40px}
+
+/* A TAB. One appearance, for the hub, the module website and Studio — they
+   had three, all driven by a function called showTab, and the hub looked like
+   a different product from the two screens it opens.
+
+   Active is FILLED, not outlined. Two of the three already were; it survives a
+   dark room and a screen seen at an angle; and an outlined tab differs from an
+   unselected one only by colour, which fails a screenshot and fails a
+   colourblind reader. Filled changes the shape of the thing, not just its hue.
+
+   `.tabs.equal` is the row where every tab shares the width — the module site
+   and Studio both want that, the hub does not. */
+.tabs{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin:14px 0 var(--sp-1)}
+.tabs.equal{gap:6px;flex-wrap:nowrap}
+/* Tabs that share the width do not need padding pushing them apart: they are
+   already centred in their own share of the row. The shared tab's 16px sides
+   put 128px of padding into Studio's 320px panel and pushed the joint controls
+   off the edge again — the exact fault A0-9 measured and fixed. */
+.tabs.equal .tab{flex:1;text-align:center;min-width:0;
+                 padding-left:var(--sp-1);padding-right:var(--sp-1)}
+
+.tab{background:color-mix(in srgb,var(--card) 60%,var(--bg));
+     border:1px solid var(--line);color:var(--mut);
+     padding:var(--sp-2) var(--sp-4);border-radius:var(--r-pill);
+     font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.tab:hover{border-color:var(--acc);color:var(--txt)}
+.tab.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
+@media (pointer:coarse){ .tab{padding:11px 18px} }
+
+/* ------------------------------------------------- the states people forget */
+/* An error keeps the last good data on screen and says it is old, rather than
+   blanking the panel or presenting stale rows as live. Colour is never the
+   only signal — each of these carries a word as well. */
+.banner{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2);
+        border-radius:var(--r-sm);padding:var(--sp-2) var(--sp-3);
+        margin-bottom:var(--sp-2);font-size:13px}
+.banner.err{border:1px solid var(--err);color:var(--err);background:var(--err-soft)}
+/* Not every banner is a failure. A first-run notice is information and a
+   rate-limit is a caution — using --err for those spends the one colour that
+   should mean something has gone wrong. */
+.banner.info{border:1px solid var(--acc);color:var(--acc);background:var(--acc-soft)}
+.banner.warn{border:1px solid var(--warn);color:var(--warn);background:var(--warn-soft)}
+.banner.ok{border:1px solid var(--ok);color:var(--ok);background:var(--ok-soft)}
+.stale{font-size:12px;color:var(--warn);margin-bottom:var(--sp-2)}
+.state-load,.state-empty{color:var(--mut)}
+.state-err{color:var(--err)}
+.state-stale{color:var(--warn)}
+
+/* ------------------------------------------------------------ shared floor */
+/* The focus ring is never removed, only restyled — keyboard users need to see
+   where they are, and :focus-visible keeps it off mouse clicks. */
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{
+  outline:2px solid var(--acc);outline-offset:2px;border-radius:var(--r-sm)}
+
+/* Motion is a preference, not a decoration. */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;
+    animation-iteration-count:1!important;transition-duration:.01ms!important;
+    scroll-behavior:auto!important}}
+
+/* A finger is not a mouse pointer. Every app is opened on a phone at the
+   robot, so this is not optional anywhere. */
+@media (pointer:coarse){
+  button{min-height:36px;padding:var(--sp-2) var(--sp-3)}
+  input,select,textarea{min-height:34px}
+  input[type=range]{height:36px}
+}

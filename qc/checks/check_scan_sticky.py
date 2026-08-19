@@ -41,7 +41,7 @@ def run(t):
 
     main.probe_module = fake_probe
     main.lan_ip = lambda: SUBNET + ".4"
-    main._scan_cache.update(at=0.0, modules=[])
+    main.MODULES.forget()
     try:
         # ---- answering promptly: found, as it always was ----------------
         mods = main.scan_modules(force=True)
@@ -85,7 +85,7 @@ def run(t):
              "a module gone for good is still being chased every scan")
     finally:
         main.probe_module, main.lan_ip = real_probe, real_lan
-        main._scan_cache.update(at=0.0, modules=[])
+        main.MODULES.forget()
 
     # ---- a module on ANOTHER subnet ------------------------------------
     # The sweep only walks the PC's own /24. Seen on a dorm network: the PC on
@@ -102,7 +102,7 @@ def run(t):
 
     main.probe_module = fake_probe2
     main.lan_ip = lambda: SUBNET + ".4"
-    main._scan_cache.update(at=0.0, modules=[])
+    main.MODULES.forget()
     main._usb_ident.clear()
     try:
         mods = main.scan_modules(force=True)
@@ -120,7 +120,7 @@ def run(t):
         t.eq(len([m for m in mods if m["id"] == 67]), 1, "listed exactly once")
     finally:
         main.probe_module, main.lan_ip = real_probe2, real_lan2
-        main._scan_cache.update(at=0.0, modules=[])
+        main.MODULES.forget()
         main._usb_ident.clear()
 
     src = (F.CODE / "main_python/main.py").read_text(encoding="utf-8", errors="replace")

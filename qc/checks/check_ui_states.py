@@ -13,10 +13,10 @@ the scan endpoint is then made to fail, and the check asserts the page:
   * offers the one control that fixes it (retry),
   * and announces the change to a screen reader.
 
-Also enforces the shared design contract across ALL the web apps, because four
-pages that drift apart stop looking like one product: every colour a component
-uses must come from a token, the focus ring must exist, and motion must respect
-the reader's preference.
+Also enforces that no app has grown a second design system beside the shared
+one, because pages that drift apart stop looking like one product. The system
+itself — one file, linked by every page, compiled into the board's flash — is
+check_design_system.py.
 """
 import re
 
@@ -33,6 +33,10 @@ APPS = [
     ("help", "main_python/web/help.html"),
     ("studio", "nong/main_python_set_nong/web/style.css"),
     ("module site", "firmware/src/web/WebUI.h"),
+    # The RGB page was missing from this list, and it had quietly copied the
+    # token VALUES as raw hex instead of referencing the tokens — exactly what
+    # this check exists to stop. Uncovered is how that happens.
+    ("rgb", "main_python/web/rgb.html"),
 ]
 
 # Colours that ARE tokens. A literal copy is the bug the token contract exists
@@ -55,7 +59,11 @@ setTimeout(function(){
 
     // now break the hub the way a dropped network breaks it
     w.fetch = function(u){
-      if (String(u).indexOf('/api/scan') === 0) return Promise.reject(new Error('offline'));
+      // A3-4: the module list is one merged list from /api/modules now, so
+      // that is the call a dropped network breaks. Breaking /api/scan tested
+      // nothing after the page stopped using it - and the list kept painting
+      // happily while this check believed it was measuring a failure.
+      if (String(u).indexOf('/api/modules') === 0) return Promise.reject(new Error('offline'));
       return Promise.resolve({json:function(){return Promise.resolve({});},
                               text:function(){return Promise.resolve("");}});
     };
@@ -214,23 +222,22 @@ def run(t):
                "and it stands down while the hub is already playing")
 
     # ---- the shared design contract, across every app -------------------
+    # The tokens, the focus ring and the reduced-motion rule now live once, in
+    # shared/web/mice.css, instead of in six copies that had already drifted.
+    # check_design_system.py owns that contract in full — including that the
+    # board serves the same bytes. What belongs HERE is the part that keeps
+    # these particular apps honest: none of them may quietly grow a second
+    # design system to sit beside the one they read.
     for name, rel in APPS:
         src = (F.CODE / rel).read_text(encoding="utf-8", errors="replace")
-        m = re.search(r":root\s*\{.*?\}", src, re.S)
-        if not t.ok(m, "%s declares design tokens" % name):
-            continue
-        root, body = m.group(0), src[m.end():]
-        for tok in ("--on-acc", "--sunk", "--r-sm", "--sp-2"):
-            t.contains(root, tok, "%s has the %s token" % (name, tok))
+        t.ok(not re.search(r":root\s*\{", src),
+             "%s reads the shared design system instead of declaring one" % name,
+             "a second :root block is exactly how six copies happened")
         stray = [lit for lit in TOKEN_LITERALS
-                 if lit in body.lower() or lit.upper() in body]
+                 if lit in src.lower() or lit.upper() in src]
         t.ok(not stray,
              "%s uses tokens, not copies of them" % name,
              "hardcoded %s — change the accent and these stay wrong" % stray)
-        t.contains(src, "focus-visible",
-                   "%s keeps a visible focus ring" % name)
-        t.contains(src, "prefers-reduced-motion",
-                   "%s respects reduced motion" % name)
 
     # ---- and the hub really degrades honestly ---------------------------
     if not browser.available():

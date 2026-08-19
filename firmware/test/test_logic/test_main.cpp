@@ -10,6 +10,10 @@
 #include "modules/nong/NongMath.h"
 #include "core/WifiArgs.h"
 #include "core/WifiLink.h"
+#include "core/Log.h"
+#include <algorithm>
+#include <cstdarg>
+#include <string>
 
 using namespace nongmath;
 
@@ -202,6 +206,74 @@ void test_it_returns_when_the_network_is_properly_back(void) {
     TEST_ASSERT_EQUAL_INT(STAY, decide(true, 0, -40));      // main gone: stay put
 }
 
+// ------------------------------------------------------------------- logging
+// A log line goes out as ONE write, and these assert the BYTES that write
+// carries. The interleaving bug this helper exists to stop cannot be
+// reproduced on a PC, but every property that makes the fix work can be:
+// the tag is machine-readable, the line ends exactly once, and nothing inside
+// it can ever look like a second line.
+static std::string logline(mlog::Tag tag, const char* fmt, ...) {
+    char buf[256];
+    va_list ap;
+    va_start(ap, fmt);
+    const size_t n = mlog::vformat(buf, sizeof(buf), tag, fmt, ap);
+    va_end(ap);
+    return std::string(buf, n);
+}
+
+// The hub tells a log line from a JSON reply by the bracket tag alone
+// (main.py:_LOG_LINE, ^BRACKET word BRACKET). Get this wrong and pin config
+// answers unsupported over USB while WiFi works — which is exactly what
+// happened once already.
+void test_log_line_starts_with_a_machine_readable_tag(void) {
+    TEST_ASSERT_EQUAL_STRING("[wifi] joined home\n", logline(mlog::wifi, "joined home").c_str());
+    TEST_ASSERT_EQUAL_STRING("[boot] fw 1.2.3\n", logline(mlog::boot, "fw %s", "1.2.3").c_str());
+    TEST_ASSERT_EQUAL_STRING("[sd] ok, 32 MB\n", logline(mlog::sd, "ok, %d MB", 32).c_str());
+}
+
+// Every tag in the list must produce its own name. A tag that renders as ?
+// means the enum and the name table have drifted, which the X-macro exists to
+// make impossible — so this is the test that proves the X-macro works.
+void test_every_tag_has_its_own_name(void) {
+    for (int i = 0; i < mlog::TAG_COUNT; i++) {
+        const char* name = mlog::tagName((mlog::Tag)i);
+        TEST_ASSERT_TRUE(name && name[0] && name[0] != '?');
+    }
+    TEST_ASSERT_EQUAL_STRING("boot", mlog::tagName(mlog::boot));
+    TEST_ASSERT_EQUAL_STRING("cam", mlog::tagName(mlog::cam));
+}
+
+// ONE line ending, at the end. A log line with a newline in the middle reads
+// as two lines to anything parsing this port, and a reply is one line — so an
+// embedded newline would forge a second, empty reply.
+void test_a_log_line_can_never_look_like_two(void) {
+    const std::string s = logline(mlog::seq, "step 1\n step 2\n\n");
+    TEST_ASSERT_EQUAL_UINT(1, (unsigned)std::count(s.begin(), s.end(), '\n'));
+    TEST_ASSERT_EQUAL_CHAR('\n', s[s.size() - 1]);
+    TEST_ASSERT_TRUE(s.find("step 1  step 2") != std::string::npos);  // became spaces
+}
+
+// A message longer than the buffer is CUT and says so. Silently losing the end
+// of a diagnostic is how you debug the wrong problem for an hour.
+void test_an_over_long_line_is_cut_visibly(void) {
+    const std::string big(400, 'x');
+    const std::string s = logline(mlog::wifi, "%s", big.c_str());
+    TEST_ASSERT_TRUE(s.size() <= 256);
+    TEST_ASSERT_EQUAL_UINT(1, (unsigned)std::count(s.begin(), s.end(), '\n'));
+    TEST_ASSERT_TRUE(s.find("...") != std::string::npos);
+    TEST_ASSERT_EQUAL_CHAR('\n', s[s.size() - 1]);
+}
+
+// The SSID list that used to be twelve separate writes now goes through one
+// call, so the whole line either arrives or is visibly truncated.
+void test_the_ssid_list_is_one_line(void) {
+    std::string seen;
+    for (int i = 0; i < 10; i++) seen += " \"network-" + std::to_string(i) + "\"";
+    const std::string s = logline(mlog::wifi, "networks I can see:%s", seen.c_str());
+    TEST_ASSERT_EQUAL_UINT(1, (unsigned)std::count(s.begin(), s.end(), '\n'));
+    TEST_ASSERT_TRUE(s.rfind("[wifi] networks I can see:", 0) == 0);
+}
+
 // Unity calls these around every test. Nothing here holds state — every
 // function under test is pure — so they are deliberately empty.
 void setUp(void) {}
@@ -229,5 +301,10 @@ int main(int, char **) {
     RUN_TEST(test_no_move_to_an_equally_bad_neighbour);
     RUN_TEST(test_it_cannot_flap);
     RUN_TEST(test_it_returns_when_the_network_is_properly_back);
+    RUN_TEST(test_log_line_starts_with_a_machine_readable_tag);
+    RUN_TEST(test_every_tag_has_its_own_name);
+    RUN_TEST(test_a_log_line_can_never_look_like_two);
+    RUN_TEST(test_an_over_long_line_is_cut_visibly);
+    RUN_TEST(test_the_ssid_list_is_one_line);
     return UNITY_END();
 }

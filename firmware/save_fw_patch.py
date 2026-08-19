@@ -27,6 +27,10 @@ SNAP = Snapshots(
     root=ROOT,
     patterns=["src/**/*.cpp", "src/**/*.h", "config/**/*.h", "config/**/*.json",
               "tools/*.py", "platformio.ini", "COMMANDS.md"],
+    # The module website links shared/web/mice.css, and gen_tables.py compiles
+    # that file into the board's flash. Restoring an old WebUI.h without it
+    # would restore the page but not what it looks like.
+    also=[(ROOT.parent / "shared" / "web", ["*.css"], "shared")],
     patches=ROOT / "patches",
     index=ROOT / "PATCHES.md",
     what="firmware",

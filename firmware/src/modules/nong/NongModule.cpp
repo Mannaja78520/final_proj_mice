@@ -215,6 +215,20 @@ void NongModule::begin() {
     writeServos();
 }
 
+String JointSel::label() const {
+    return one < 0 ? String("all") : String(JOINT_NAMES[one]);
+}
+
+JointSel NongModule::selectJoints(const String& word) const {
+    JointSel s;
+    String w = word;
+    w.toUpperCase();
+    if (w == "ALL") { s.one = -1; s.ok = true; return s; }
+    s.one = jointIndex(word);
+    s.ok = s.one >= 0;
+    return s;
+}
+
 int NongModule::jointIndex(const String& token) const {
     for (int i = 0; i < N; i++)
         if (token.equalsIgnoreCase(JOINT_NAMES[i])) return i;
@@ -602,15 +616,15 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
         }
         int p = argv[2].toInt(), g = argv[3].toInt();
         if (p < 1 || g < 1) { reply = "ERR pinion/gear must be >=1"; return true; }
-        String w = argv[1]; w.toUpperCase();
-        int j = (w == "ALL") ? -1 : jointIndex(argv[1]);
-        if (j < 0 && w != "ALL") { reply = "ERR joint 1-10, name, or ALL"; return true; }
+        const JointSel sel = selectJoints(argv[1]);
+        if (!sel.ok) { reply = jointSelHelp(); return true; }
+        const int j = sel.one;
         for (int i = 0; i < N; i++)
-            if (j < 0 || i == j) { gearPinion_[i] = p; gearGear_[i] = g; }
+            if (sel.covers(i)) { gearPinion_[i] = p; gearGear_[i] = g; }
         writeServos();   // re-apply the current pose through the new ratio
         saveCalSoon();
         forward("GEAR " + argv[1] + " " + argv[2] + " " + argv[3]);
-        reply = "OK gear " + (j < 0 ? String("all") : String(JOINT_NAMES[j])) + " " +
+        reply = "OK gear " + sel.label() + " " +
                 String(p) + ":" + String(g) + " (servo = joint x " + String((float)g / p, 3) + ")";
         return true;
     }
@@ -628,12 +642,12 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
             reply = "ERR need 100<=min, max>min+100, max<=5000 (us)"; return true;
         }
         float dps = (argc >= 5) ? argv[4].toFloat() : 0;
-        String w = argv[1]; w.toUpperCase();
-        int j = (w == "ALL") ? -1 : jointIndex(argv[1]);
-        if (j < 0 && w != "ALL") { reply = "ERR joint 1-10, name, or ALL"; return true; }
+        const JointSel sel = selectJoints(argv[1]);
+        if (!sel.ok) { reply = jointSelHelp(); return true; }
+        const int j = sel.one;
         bool changed = false;    // only re-attach when the pulse REALLY moved
         for (int i = 0; i < N; i++)
-            if (j < 0 || i == j) {
+            if (sel.covers(i)) {
                 if (pulseMin_[i] != lo || pulseMax_[i] != hi) changed = true;
                 pulseMin_[i] = lo; pulseMax_[i] = hi;
                 if (dps >= 30) maxDps_[i] = dps;
@@ -642,7 +656,7 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
         saveCalSoon();
         forward("PULSE " + argv[1] + " " + argv[2] + " " + argv[3] +
                 (argc >= 5 ? (" " + argv[4]) : ""));
-        reply = "OK pulse " + (j < 0 ? String("all") : String(JOINT_NAMES[j])) + " " +
+        reply = "OK pulse " + sel.label() + " " +
                 String(lo) + "-" + String(hi) + "us";
         return true;
     }
@@ -663,11 +677,11 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
                     String(NONG_RANGE_MAX_DEG) + " deg (180 normal, 270 wide)";
             return true;
         }
-        String w = argv[1]; w.toUpperCase();
-        int j = (w == "ALL") ? -1 : jointIndex(argv[1]);
-        if (j < 0 && w != "ALL") { reply = "ERR joint 1-10, name, or ALL"; return true; }
+        const JointSel sel = selectJoints(argv[1]);
+        if (!sel.ok) { reply = jointSelHelp(); return true; }
+        const int j = sel.one;
         for (int i = 0; i < N; i++)
-            if (j < 0 || i == j) servoRange_[i] = r;
+            if (sel.covers(i)) servoRange_[i] = r;
         // trim stays as it is: it is an offset in SERVO degrees and means the
         // same thing at any travel. Neutral (joint 90) sits at the middle of
         // the travel either way, so a joint parked at home does not move; away
@@ -676,7 +690,7 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
         writeServos();   // re-apply the current pose through the new travel
         saveCalSoon();
         forward("RANGE " + argv[1] + " " + argv[2]);
-        reply = "OK servo travel " + (j < 0 ? String("all") : String(JOINT_NAMES[j])) +
+        reply = "OK servo travel " + sel.label() +
                 " = " + String(r, 0) + " deg (home unchanged; check the travel "
                 "away from home, then SETZERO if it needs re-trimming)";
         return true;
@@ -699,12 +713,12 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
         }
         const int lo = ps->pulseMin, hi = ps->pulseMax, hz = ps->frameHz;
         const float dps = ps->maxDps, rng = ps->travelDeg;
-        String w = argv[1]; w.toUpperCase();
-        int j = (w == "ALL") ? -1 : jointIndex(argv[1]);
-        if (j < 0 && w != "ALL") { reply = "ERR joint 1-10, name, or ALL"; return true; }
+        const JointSel sel = selectJoints(argv[1]);
+        if (!sel.ok) { reply = jointSelHelp(); return true; }
+        const int j = sel.one;
         bool changed = false;    // only re-attach when pulse/rate REALLY changed
         for (int i = 0; i < N; i++)
-            if (j < 0 || i == j) {
+            if (sel.covers(i)) {
                 if (pulseMin_[i] != lo || pulseMax_[i] != hi || frameHz_[i] != hz)
                     changed = true;
                 pulseMin_[i] = lo; pulseMax_[i] = hi; maxDps_[i] = dps;
@@ -714,7 +728,7 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
         else writeServos();       // travel/speed changed: re-apply the pose
         saveCalSoon();
         forward("SERVO " + argv[1] + " " + argv[2]);
-        reply = "OK " + (j < 0 ? String("all") : String(JOINT_NAMES[j])) + " = " + t +
+        reply = "OK " + sel.label() + " = " + t +
                 " (" + String(lo) + "-" + String(hi) + "us, " + String(dps, 0) +
                 " deg/s, " + String(rng, 0) + " deg travel, " + String(hz) + " Hz)";
         return true;
@@ -735,19 +749,19 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
                     String(NONG_FRAME_HZ_MAX) + " Hz (50 normal, 330 for PDI-1181MG)";
             return true;
         }
-        String w = argv[1]; w.toUpperCase();
-        int j = (w == "ALL") ? -1 : jointIndex(argv[1]);
-        if (j < 0 && w != "ALL") { reply = "ERR joint 1-10, name, or ALL"; return true; }
+        const JointSel sel = selectJoints(argv[1]);
+        if (!sel.ok) { reply = jointSelHelp(); return true; }
+        const int j = sel.one;
         bool changed = false;    // only re-attach when the rate REALLY changed
         for (int i = 0; i < N; i++)
-            if (j < 0 || i == j) {
+            if (sel.covers(i)) {
                 if (frameHz_[i] != hz) changed = true;
                 frameHz_[i] = hz;
             }
         if (changed) reattach(j); // the frame rate is set when the servo attaches
         saveCalSoon();
         forward("RATE " + argv[1] + " " + argv[2]);
-        reply = "OK frame rate " + (j < 0 ? String("all") : String(JOINT_NAMES[j])) +
+        reply = "OK frame rate " + sel.label() +
                 " = " + String(hz) + " Hz";
         return true;
     }

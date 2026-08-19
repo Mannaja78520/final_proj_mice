@@ -28,6 +28,7 @@ here, from ONE source each:
     config/commands.json  -> core/CommandHelp.h       this type's commands
     config/servos.json    -> modules/nong/ServoPresets.h
     src/web/WebUI.h       -> web/ModuleUI.h           this type's page
+    ../shared/web/mice.css-> web/MiceCss.h            the shared design system
 
 `src/web/WebUI.h` stays the one master page and is not compiled itself. It
 marks per-type regions with lines of their own:
@@ -68,6 +69,15 @@ from registry import strip_jsonc  # noqa: E402
 SERVOS_JSON = FIRMWARE / "config" / "servos.json"
 MODULES_JSON = FIRMWARE / "config" / "modules.json"
 WEBUI_MASTER = FIRMWARE / "src" / "web" / "WebUI.h"
+# The ONE design system, shared with the hub, the help page, the RGB page and
+# Nong Studio. The board has no filesystem to read it from, so it is compiled
+# into flash here and served at /mice.css — the same URL the hub serves when
+# the same page is opened over USB.
+MICE_CSS = CODE / "shared" / "web" / "mice.css"
+# The palette, joined with the above into one served stylesheet.
+THEMES_CSS = CODE / "shared" / "web" / "themes.css"
+# The one shared script (theme handling), compiled in the same way.
+MICE_JS = CODE / "shared" / "web" / "mice.js"
 DEFAULT_OUT = FIRMWARE / "generated"
 
 
@@ -210,11 +220,12 @@ def gen_commands(out, types):
         # "unknown cmd".
         if c["scope"] != "core" and c["scope"] not in types:
             continue
-        rows.append("    { %-10s %-8s %-38s %-64s %-6s %s }," % (
+        rows.append("    { %-10s %-8s %-38s %-64s %-6s %-6s %s }," % (
             c_str(c["name"]) + ",", c_str(c["scope"]) + ",",
             c_str(c.get("args", "")) + ",", c_str(c["help"]) + ",",
             ("true," if c.get("query") else "false,"),
-            "true" if c.get("motion") else "false"))
+            ("true," if c.get("motion") else "false,"),
+            "true" if c.get("safety") else "false"))
 
     text = BANNER % COMMANDS_JSON.name + """
 #pragma once
@@ -230,6 +241,12 @@ struct CommandDoc {
     const char* help;
     bool        query;      // reports only, changes nothing
     bool        motion;     // starts or stops physical movement
+    // Must work with NO login. `motion` cannot say this: it is true for both
+    // starting a move and stopping one, and refusing a STOP is the dangerous
+    // answer — someone watching an arm about to hit a person cannot be asked
+    // for a password first. Declared in commands.json, so making another
+    // command always-allowed is one entry there and no change here.
+    bool        safety;
 };
 
 static const CommandDoc COMMAND_DOCS[] = {
@@ -344,6 +361,45 @@ def gen_webui(out, types):
                      "%.1f KB page for %s" % (size / 1024.0,
                                               "+".join(types) or "core only"))
     return size
+
+
+def gen_micecss(out):
+    """The shared stylesheet, as a PROGMEM string the board can serve.
+
+    Not a copy anyone edits: it is regenerated from shared/web/mice.css on
+    every build, so the module website cannot drift away from the hub the way
+    six hand-kept copies of the same tokens already did once.
+    """
+    # The palette lives in themes.css and the components in mice.css (split on
+    # 2026-08-19 so a colour can be changed in one small file). The board still
+    # serves ONE stylesheet, so they are joined here in that order - a theme
+    # has to be defined before the rules that use it.
+    css = ""
+    for f in (THEMES_CSS, MICE_CSS):
+        if f.is_file():
+            css += ("/* ---- %s ---- */" + chr(10) + "%s" + chr(10)) % (
+                f.name, f.read_text(encoding="utf-8"))
+    if ")rawliteral" in css:            # would close the C++ raw string early
+        raise SystemExit("the stylesheet contains )rawliteral, which cannot be embedded")
+    text = (BANNER % ("../" + MICE_CSS.name)
+            + '#pragma once\n#include <Arduino.h>\n\n'
+              'static const char MICE_CSS[] PROGMEM = R"rawliteral('
+            + css + ')rawliteral";\n')
+    write_if_changed(out_path(out, "web/MiceCss.h"), text,
+                     "%.1f KB stylesheet" % (len(css.encode("utf-8")) / 1024.0))
+
+    # ...and the shared script beside it. Same reasoning, same one source: a
+    # board reached over WiFi has to behave like the same product as a board
+    # reached through the hub.
+    js = MICE_JS.read_text(encoding="utf-8") if MICE_JS.is_file() else ""
+    if ")rawliteral" in js:
+        raise SystemExit("mice.js contains )rawliteral, which cannot be embedded")
+    jtext = (BANNER % ("../" + MICE_JS.name)
+             + '#pragma once' + chr(10) + '#include <Arduino.h>' + chr(10) + chr(10)
+             + 'static const char MICE_JS[] PROGMEM = R"rawliteral('
+             + js + ')rawliteral";' + chr(10))
+    write_if_changed(out_path(out, "web/MiceJs.h"), jtext,
+                     "%.1f KB shared script" % (len(js.encode("utf-8")) / 1024.0))
 
 
 # ------------------------------------------------- the module types in C++
@@ -464,6 +520,7 @@ def generate(out, types):
     gen_servos(out, types)
     gen_commands(out, types)
     gen_webui(out, types)
+    gen_micecss(out)
 
 
 def main(argv=None):
