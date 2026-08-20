@@ -98,3 +98,69 @@
 
   window.miceTheme = { list: themes, get: get, set: set, picker: picker };
 })();
+
+
+/* ONE ANSWER TO -CAN I DRIVE THE ROBOT- , FOR ALL THREE SCREENS.
+ * ==============================================================
+ * The hub page, the board's own website and Nong Studio each used to decide
+ * this for themselves and each said it differently: a coloured dot, a badge of
+ * channel names, a status line. Three vocabularies for one question, and only
+ * one of them ever said what to DO about it.
+ *
+ * So the states live here, in the file every screen already loads - served at
+ * /mice.js by the hub and compiled into the board's flash, so it works with no
+ * hub in sight.
+ *
+ * Every state carries what to do next, because that is the whole point: -not
+ * connected- tells an operator nothing they did not already know. The wording
+ * was written by Gemini Pro on 2026-08-20, kept short on purpose - it is read
+ * by somebody standing next to a robot, not sitting down with a manual.
+ *
+ * The ORDER is the design. A port held by another program is reported before
+ * -no robot found-, because the second is what it looks like and the first is
+ * what it is; and a login is reported before staleness, because logging in is
+ * what fixes it. Each state answers a different next action - that is the test
+ * for whether a state deserves to exist at all.
+ */
+(function () {
+  var STALE_MS = 3000;          // six missed pushes at the board's 500ms rate
+
+  function read(f) {
+    f = f || {};
+    var age = (typeof f.ageMs === "number") ? f.ageMs : null;
+
+    if (f.portBusy)
+      return st("busy", "The cable is held by another program.",
+                "Close it, or reach this board through the hub.");
+    if (f.needLogin)
+      return st("login", "Login required.", "Enter the hub password.");
+    if (!f.cable && !f.wifi && !f.viaHub)
+      return st("none", "No robot found.",
+                "Plug in a cable, or put the board on the WiFi.");
+    if (!f.everHeard)
+      return st("waiting", "Waiting for the robot.",
+                "Check that it has power and has finished starting.");
+    if (age !== null && age >= (f.staleMs || STALE_MS))
+      return st("stale", "No answer for " + secs(age) + ".",
+                "What is on screen is the last thing it sent, not what " +
+                "it is doing now.");
+    if (f.cable)
+      return st("cable", "Connected over the cable.", "", true);
+    if (f.viaHub)
+      return st("hub", "Connected through the hub.", "", true);
+    return st("wifi", "Connected over WiFi.", "", true);
+  }
+
+  function st(state, says, next, ok) {
+    return { state: state, says: says, next: next || "", ok: !!ok };
+  }
+
+  function secs(ms) {
+    var s = Math.round(ms / 1000);
+    if (s < 60) return s + " seconds";
+    var m = Math.round(s / 60);
+    return m + (m === 1 ? " minute" : " minutes");
+  }
+
+  window.miceLink = { read: read, STALE_MS: STALE_MS };
+})();

@@ -68,6 +68,7 @@ from registry import strip_jsonc  # noqa: E402
 
 SERVOS_JSON = FIRMWARE / "config" / "servos.json"
 MODULES_JSON = FIRMWARE / "config" / "modules.json"
+CAM_BOARDS_JSON = FIRMWARE / "config" / "cam_boards.json"
 WEBUI_MASTER = FIRMWARE / "src" / "web" / "WebUI.h"
 # The ONE design system, shared with the hub, the help page, the RGB page and
 # Nong Studio. The board has no filesystem to read it from, so it is compiled
@@ -513,12 +514,88 @@ def defines_of(env):
     return names
 
 
+# Field order in the generated table. It is written down ONCE, here, because
+# both the C++ struct and every row are emitted from it - a hand-kept struct and
+# a hand-kept row list are two places to get the same order wrong, and the
+# symptom of getting it wrong is a camera that initialises and returns noise.
+CAM_PIN_ORDER = ("pwdn", "reset", "xclk", "siod", "sioc",
+                 "y9", "y8", "y7", "y6", "y5", "y4", "y3", "y2",
+                 "vsync", "href", "pclk")
+
+
+def gen_cam_boards(out, types):
+    """config/cam_boards.json -> modules/cam/CamBoards.h
+
+    The camera driver tries these in order until a sensor answers, so the list
+    is data the hub needs too: it draws the pin diagram for whichever board a
+    module reports, from this same file. Two copies of a pin map would be two
+    chances for the picture to lie about the wiring.
+    """
+    data = json.loads(strip_jsonc(CAM_BOARDS_JSON.read_text(encoding="utf-8")))
+    boards = data.get("boards", {})
+    if not boards:
+        raise SystemExit("no boards in %s" % CAM_BOARDS_JSON)
+
+    rows = []
+    for key, b in boards.items():
+        if not re.match(r"^[a-z][a-z0-9-]*$", key):
+            raise SystemExit("camera board %r must be lower-case letters, "
+                             "digits and dashes" % key)
+        pins = b.get("pins") or {}
+        missing = [k for k in CAM_PIN_ORDER if k not in pins]
+        if missing:
+            raise SystemExit("camera board %r is missing pins: %s"
+                             % (key, ", ".join(missing)))
+        for k in CAM_PIN_ORDER:
+            v = pins[k]
+            if not isinstance(v, int) or v < -1 or v > 48:
+                raise SystemExit("camera board %r: %s is %r, which is not a "
+                                 "GPIO (-1 means not wired)" % (key, k, v))
+        # The flash LED and the status LED are part of the board too. They
+        # were compiled in until 2026-08-20, which meant a board with no flood
+        # LED had GPIO 4 driven anyway - on an ESP-EYE that pin is a camera
+        # data line. -1 means this board has none, and the firmware then drives
+        # nothing rather than guessing.
+        ex = b.get("extra") or {}
+        nums = ", ".join("%3d" % pins[k] for k in CAM_PIN_ORDER)
+        rows.append("    { %-18s %s, %3d, %3d }," % (
+            c_str(key) + ",", nums,
+            int(ex.get("flash", -1)), int(ex.get("led", -1))))
+        if b.get("note"):
+            rows.insert(len(rows) - 1, "    // %s" % b["note"])
+
+    text = BANNER % CAM_BOARDS_JSON.name + """
+#pragma once
+#include <Arduino.h>
+
+// One camera board's wiring, exactly as config/cam_boards.json describes it.
+// -1 means the board does not wire that signal at all.
+struct CamPins {
+    const char* name;
+    int8_t pwdn, reset, xclk, siod, sioc;
+    int8_t y9, y8, y7, y6, y5, y4, y3, y2;
+    int8_t vsync, href, pclk;
+    int8_t flash, led;      // -1: this board has none
+};
+
+// Tried in this order until a sensor answers on the SCCB bus, so the commonest
+// board is first: every wrong guess costs one failed init.
+static const CamPins CAM_BOARDS[] = {
+""" + chr(10).join(rows) + """
+};
+static const int CAM_BOARD_COUNT = sizeof(CAM_BOARDS) / sizeof(CAM_BOARDS[0]);
+"""
+    write_if_changed(out / "modules" / "cam" / "CamBoards.h", text,
+                     "%d camera boards" % len(boards))
+
+
 def generate(out, types):
     print("gen_tables: %s -> %s" % ("+".join(types) or "core only", out))
     gen_buildtypes(out, types)
     gen_module_table(out, types)
     gen_servos(out, types)
     gen_commands(out, types)
+    gen_cam_boards(out, types)
     gen_webui(out, types)
     gen_micecss(out)
 

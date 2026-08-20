@@ -1,0 +1,66 @@
+// Every ESP32 camera board this firmware knows how to wire up.
+//
+// It was a table inside CamModule.cpp until 2026-08-20. It is data, and the
+// standing rule for this project is that a list lives in data: adding the next
+// camera board must be one entry here, with nothing else to edit and no C++ to
+// read. The user's reason, and the reason this matters more for cameras than
+// for anything else - *make it compatable with many board sometime when i buy
+// the new one maybe i don't know which hardware i got*.
+//
+// firmware/tools/gen_tables.py turns this into modules/cam/CamBoards.h, and the
+// hub DRAWS the pin diagram for whichever board a module reports from this same
+// file - so a new board arrives complete with its own picture, and the picture
+// cannot disagree with the firmware because there is only one source.
+//
+// Pin numbers are GPIOs; -1 means the board does not wire that signal at all.
+// The order the boards appear in is the order the camera driver tries them, so
+// the commonest board goes first: a wrong guess costs one failed init each.
+{
+  "boards": {
+    "ai-thinker": {
+      "label": "AI-Thinker ESP32-CAM",
+      "note": "the one this project was built on, and the commonest clone",
+      "pins": {"pwdn": 32, "reset": -1, "xclk": 0, "siod": 26, "sioc": 27,
+               "y9": 35, "y8": 34, "y7": 39, "y6": 36,
+               "y5": 21, "y4": 19, "y3": 18, "y2": 5,
+               "vsync": 25, "href": 23, "pclk": 22},
+      "extra": {"flash": 4, "led": 33}
+    },
+    "esp-eye": {
+      "label": "ESP-EYE",
+      "note": "no power-down pin, and the data lines are in a different order",
+      "extra": {"flash": -1, "led": -1},
+      "pins": {"pwdn": -1, "reset": -1, "xclk": 4, "siod": 18, "sioc": 23,
+               "y9": 36, "y8": 37, "y7": 38, "y6": 39,
+               "y5": 35, "y4": 14, "y3": 13, "y2": 34,
+               "vsync": 5, "href": 27, "pclk": 25}
+    },
+    "m5stack": {
+      "label": "M5Stack camera",
+      "note": "power-down not wired, reset is",
+      "extra": {"flash": -1, "led": -1},
+      "pins": {"pwdn": -1, "reset": 15, "xclk": 27, "siod": 25, "sioc": 23,
+               "y9": 19, "y8": 36, "y7": 18, "y6": 39,
+               "y5": 5, "y4": 34, "y3": 35, "y2": 32,
+               "vsync": 22, "href": 26, "pclk": 21}
+    },
+    "m5stack-wide": {
+      "label": "M5Stack camera (wide)",
+      "note": "as above, with SIOD on a different pin",
+      "extra": {"flash": -1, "led": -1},
+      "pins": {"pwdn": -1, "reset": 15, "xclk": 27, "siod": 22, "sioc": 23,
+               "y9": 19, "y8": 36, "y7": 18, "y6": 39,
+               "y5": 5, "y4": 34, "y3": 35, "y2": 32,
+               "vsync": 25, "href": 26, "pclk": 21}
+    },
+    "ttgo-journal": {
+      "label": "TTGO T-Journal",
+      "note": "reset wired, power-down not",
+      "extra": {"flash": -1, "led": -1},
+      "pins": {"pwdn": 0, "reset": 15, "xclk": 27, "siod": 25, "sioc": 23,
+               "y9": 36, "y8": 36, "y7": 19, "y6": 18,
+               "y5": 5, "y4": 4, "y3": 34, "y2": 35,
+               "vsync": 22, "href": 26, "pclk": 21}
+    }
+  }
+}

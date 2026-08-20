@@ -213,13 +213,25 @@ SHIM = """<script>
   ws.close=function(){clearInterval(t);};
   return ws;
  };
- // PC pinout image into the Hardware pins card (served from the hub, not the ESP32)
+ // The pin drawing, into the Hardware pins card. It comes from the HUB, not
+ // from board flash - the WROOM reference is 133 KB and a board cannot spare
+ // that. WHICH drawing is the hub's decision (/api/pinout): the 38-pin WROOM
+ // is right for a nong or a lift and wrong for a camera, whose GPIOs are
+ // nearly all taken by the sensor. Wiring a servo to GPIO 26 because the
+ // picture showed it free would put it on the SCCB data line.
  window.addEventListener('load',function(){setTimeout(function(){
   var pg=document.getElementById('pinGroups'); if(!pg)return;
-  var d=document.createElement('div'); d.style.margin='6px 0';
-  d.innerHTML='<a href="/pinout.svg" target="_blank" style="color:var(--acc)">\\uD83D\\uDCCD open ESP32 pinout reference</a>'+
-   ' <img src="/pinout.svg" alt="ESP32 pinout" style="display:block;max-width:100%;margin-top:6px;border:1px solid var(--line);border-radius:8px">';
-  pg.parentNode.insertBefore(d, pg);
+  of('/api/pinout?dev='+D).then(function(r){return r.json();}).then(function(p){
+   if(!p||!p.ok)return;
+   var d=document.createElement('div'); d.style.margin='6px 0';
+   var why=p.why?(' <span class="mini" style="color:var(--mut)">'+p.why+'</span>'):'';
+   // A guess says so, in the warning colour, right next to the picture. A
+   // diagram presented as certain when it is not is worse than none at all.
+   if(p.sure===false)why=' <span class="mini" style="color:var(--warn)">'+p.why+'</span>';
+   d.innerHTML='<a href="'+p.url+'" target="_blank" style="color:var(--acc)">\\uD83D\\uDCCD open pinout</a>'+why+
+    ' <img src="'+p.url+'" alt="pin map" style="display:block;max-width:100%;margin-top:6px;border:1px solid var(--line);border-radius:8px">';
+   pg.parentNode.insertBefore(d, pg);
+  }).catch(function(){});
  },600);});
 })();
 </script>"""
@@ -800,6 +812,50 @@ def dev_cmd(dev, c):
     return usb_cmd(addr, _via(c, peer), bus, wait=PEER_WAIT if peer else 2.0)
 
 
+def pinout_for(dev):
+    """Which pin diagram is right for the board on the other end of `dev`.
+
+    Decided HERE rather than in the page, because the page would have to know
+    the difference between a camera and an arm, guess a board name, and get it
+    wrong quietly. One question, one answer, one place to fix it.
+
+    A camera is asked which board it is - it already knows, from the pin map
+    that let its sensor answer at all. If it cannot say, the commonest clone is
+    offered WITH a note saying it was a guess: a diagram presented as certain
+    when it is not is worse than no diagram, because somebody wires to it.
+    """
+    kind = ""
+    for m in modules_here():
+        for r in m.get("routes", []):
+            if r.get("dev") == dev:
+                kind = (m.get("type") or "").lower()
+                break
+    if kind and kind != "cam":
+        return {"url": "/pinout.svg", "board": "", "sure": True,
+                "why": "38-pin ESP32 WROOM, which is what a %s runs on" % kind}
+
+    board, sure = "", False
+    try:
+        reply = dev_cmd(dev, "CAM") or ""
+        m = re.search(r"board=([a-z0-9-]+)", reply)
+        if m and m.group(1) in cam_boards():
+            board, sure = m.group(1), True
+    except Exception:                                        # noqa: BLE001
+        pass                          # offline, or not a camera after all
+    if not board:
+        if kind != "cam":
+            # Not a camera and not identified: the general reference is still
+            # the honest answer, since every non-camera board here is a WROOM.
+            return {"url": "/pinout.svg", "board": "", "sure": True,
+                    "why": "38-pin ESP32 WROOM"}
+        board = "ai-thinker"
+    b = cam_boards().get(board) or {}
+    return {"url": "/pinout.svg?board=" + board, "board": board, "sure": sure,
+            "why": (b.get("label") or board) if sure else
+                   "guessed %s - the board did not say which it is"
+                   % (b.get("label") or board)}
+
+
 def dev_status(dev):
     kind, addr, bus, peer = parse_dev(dev)
     if peer:
@@ -1328,6 +1384,119 @@ def modules_here(force=False):
                   key=lambda m: ((m.get("name") or "~").lower(), str(m.get("id"))))
 
 
+def esc(text):
+    """Text that is safe inside SVG/XML. The labels come from a data file, and
+    a data file is edited by people - an unescaped & or < there would produce a
+    diagram the browser refuses to render at all."""
+    return (str(text).replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;").replace('"', "&quot;"))
+
+
+CAM_BOARDS_JSON = asset("firmware", "config", "cam_boards.json")
+
+
+def cam_boards():
+    """Every camera board, from the file the FIRMWARE is built from.
+
+    Not a copy. `firmware/config/cam_boards.json` becomes CamBoards.h at build
+    time and is read here at run time, so a diagram cannot disagree with the
+    wiring the board is actually using - which is the whole risk with a picture.
+    Asked for on 2026-08-19: *make it compatable with many board sometime when i
+    buy the new one maybe i don't know which hardware i got*.
+    """
+    try:
+        import registry
+        return json.loads(registry.strip_jsonc(
+            CAM_BOARDS_JSON.read_text(encoding="utf-8"))).get("boards", {})
+    except Exception as e:                                   # noqa: BLE001
+        print("[hub] camera boards unavailable:", e)
+        return {}
+
+
+# The order signals are drawn in: the bus first, then the eight data lines,
+# then the timing. It matches how the board is actually read rather than the
+# order the struct happens to store them in.
+CAM_SIGNALS = [
+    ("pwdn", "power down"), ("reset", "reset"), ("xclk", "clock out"),
+    ("siod", "SCCB data"), ("sioc", "SCCB clock"),
+    ("y9", "data 7"), ("y8", "data 6"), ("y7", "data 5"), ("y6", "data 4"),
+    ("y5", "data 3"), ("y4", "data 2"), ("y3", "data 1"), ("y2", "data 0"),
+    ("vsync", "frame sync"), ("href", "line valid"), ("pclk", "pixel clock"),
+]
+
+
+def cam_pinout_svg(name):
+    """A pin diagram for ONE camera board, drawn from its entry.
+
+    Drawn rather than shipped, for two reasons that are not about elegance:
+    a picture has to be found for every board someone might buy, and a picture
+    can be wrong - this cannot, because it is rendered from the same numbers the
+    firmware compiles. It is also about 3 KB rather than 133 KB, which matters
+    because the WROOM reference is too big to come off board flash at all.
+
+    Colours come from the stylesheet, not from literals, so it follows whichever
+    theme the page is using - including the light one, where a diagram drawn in
+    pale grey on white would be unreadable.
+    """
+    b = cam_boards().get(name)
+    if not b:
+        return None
+    pins = b.get("pins", {})
+    rows, y = [], 78
+    for key, label in CAM_SIGNALS:
+        gpio = pins.get(key)
+        if gpio is None:
+            continue
+        # A signal the board does not wire is SHOWN, greyed, saying "not wired".
+        # Leaving it out would make two boards look identical when the
+        # difference is exactly the missing pin - an ESP-EYE has no power-down
+        # line, and a reader has to be able to see that.
+        wired = gpio >= 0
+        rows.append(
+            '<text x="14" y="%d" class="sig">%s</text>'
+            '<text x="150" y="%d" class="%s">%s</text>'
+            '<text x="205" y="%d" class="lbl">%s</text>'
+            % (y, key.upper(), y, "gpio" if wired else "off",
+               ("GPIO %d" % gpio) if wired else "not wired", y, label))
+        y += 21
+
+    extra = b.get("extra") or {}
+    if extra:
+        y += 8
+        rows.append('<text x="14" y="%d" class="head">also on this board</text>' % y)
+        y += 20
+        for key, gpio in sorted(extra.items()):
+            rows.append('<text x="14" y="%d" class="sig">%s</text>'
+                        '<text x="150" y="%d" class="gpio">GPIO %d</text>'
+                        % (y, key.upper(), y, gpio))
+            y += 21
+
+    height = y + 16
+    return ("""<svg xmlns="http://www.w3.org/2000/svg" width="380" height="%d"
+     viewBox="0 0 380 %d" role="img" aria-label="%s pin map">
+  <style>
+    /* The page's own tokens: this is embedded in a page that has a theme, and
+       a diagram that ignores it is a foreign object on the screen. The
+       fallbacks are for the file opened on its own, with no page around it. */
+    .bg   { fill: var(--sunk, #0d1117); stroke: var(--line, #2a3442); }
+    text  { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+    .head { fill: var(--acc, #4da3ff); font-weight: 600; font-size: 13px; }
+    .sub  { fill: var(--mut, #8b98a8); font-size: 11px; }
+    .sig  { fill: var(--txt, #e6edf3); }
+    .gpio { fill: var(--ok, #3ecf8e); }
+    .off  { fill: var(--mut, #8b98a8); font-style: italic; }
+    .lbl  { fill: var(--mut, #8b98a8); }
+  </style>
+  <rect class="bg" x="1" y="1" width="378" height="%d" rx="10" stroke-width="1"/>
+  <text x="14" y="28" class="head">%s</text>
+  <text x="14" y="46" class="sub">%s</text>
+  <text x="14" y="62" class="sub">drawn from firmware/config/cam_boards.json</text>
+  %s
+</svg>
+""" % (height, height, esc(b.get("label", name)), height - 2,
+       esc(b.get("label", name)), esc(b.get("note", "")), chr(10) + "  ".join(rows)))
+
+
 _web_v = ["", 0.0]
 
 
@@ -1351,23 +1520,44 @@ def web_version(ttl=2.0):
     meaningfully change between two of their requests.
     """
     now = time.time()
-    if _web_v[0] and now - _web_v[1] < ttl:
+    frozen = bool(getattr(sys, "frozen", False))
+    # A ONE-FILE BUILD CANNOT CHANGE WHILE IT RUNS. PyInstaller unpacks the
+    # bundle to a fresh temporary folder at every launch, so every file gets a
+    # new mtime - and using mtime there made the version differ after a plain
+    # restart of the SAME exe, so every open tab announced an update that had
+    # not happened. Frozen: size and path only, computed once and kept.
+    if _web_v[0] and (frozen or now - _web_v[1] < ttl):
         return _web_v[0]
     h = hashlib.sha1()
     for root in (HUB_WEB, SHARED_WEB, STUDIO_WEB):
+        root = Path(root)
         try:
-            for f in sorted(Path(root).rglob("*")):
+            for f in sorted(root.rglob("*")):
                 # Names starting with _ are scratch, not app. QC writes its
                 # driver page INTO the studio folder while a browser check
                 # runs, and hashing it made the version flap several times a
                 # minute - every open tab would have announced an update
                 # because a temporary file appeared next to the real ones.
-                if f.name.startswith("_"):
+                if f.name.startswith("_") or not f.is_file():
                     continue
-                if f.is_file() and f.suffix.lower() in (".html", ".css", ".js"):
-                    st = f.stat()
-                    h.update(f.name.encode("utf-8", "replace"))
-                    h.update(("%d:%d" % (int(st.st_mtime), st.st_size)).encode())
+                # Pictures count too. Skipping them meant a changed pinout or
+                # icon was invisible to an open tab, which is exactly the kind
+                # of change somebody makes and then wonders why nothing moved.
+                if f.suffix.lower() not in (".html", ".css", ".js", ".svg",
+                                            ".png", ".ico", ".webp", ".json"):
+                    continue
+                st = f.stat()
+                # The PATH, not the name: two folders each hold an index.html,
+                # and keying on the name alone meant moving a file between them
+                # changed nothing at all.
+                try:
+                    who = f.relative_to(root).as_posix()
+                except ValueError:
+                    who = f.name
+                h.update((root.name + "/" + who).encode("utf-8", "replace"))
+                h.update(("%d" % st.st_size).encode())
+                if not frozen:
+                    h.update((":%d" % int(st.st_mtime)).encode())
         except OSError:
             continue            # a folder that is not there changes nothing
     _web_v[0], _web_v[1] = h.hexdigest()[:12], now
@@ -2152,7 +2342,25 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_bytes(shared_css(), MIME[".css"])
         if path == "/rgb.html":     # RGB modes page (WiFi or USB target)
             return self.send_bytes((HUB_WEB / "rgb.html").read_bytes(), MIME[".html"])
-        if path == "/pinout.svg":   # ESP32 pinout reference (served from the PC)
+        if path == "/pinout.svg":
+            # TWO diagrams, and which one is right depends on the board. The
+            # 38-pin WROOM reference is correct for nong and lift and simply
+            # WRONG for an ESP32-CAM, whose GPIOs are nearly all spoken for by
+            # the sensor - somebody wiring a servo to GPIO 26 because the
+            # picture showed it free would be wiring it to the SCCB data line.
+            #
+            # The camera one is DRAWN from firmware/config/cam_boards.json, per
+            # board, so it exists for every board the firmware knows and cannot
+            # disagree with the wiring the firmware compiled. The WROOM one
+            # stays a file: it is a real reference drawing of a real part, and
+            # nothing generates that.
+            board = (q.get("board") or [""])[0]
+            if board:
+                svg = cam_pinout_svg(board)
+                if not svg:
+                    return self.send_bytes(
+                        b"", MIME[".svg"], 404)
+                return self.send_bytes(svg.encode(), MIME[".svg"])
             return self.send_bytes((HUB_WEB / "pinout.svg").read_bytes(), MIME[".svg"])
         if path == "/rig_default.js":
             # The tuned rig, as a plain script so app.js can read it
@@ -2492,6 +2700,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({"ok": True, "modules": mods,
                                    "lan": lan_ip()})
 
+        if path == "/api/pinout":
+            # Which drawing belongs with the board being looked at. Reading it
+            # changes nothing, so it needs no login - the pin card is exactly
+            # what somebody reads before they touch a wire.
+            dev = (q.get("dev") or [""])[0]
+            if not dev:
+                return self.send_json({"ok": False, "error": "no dev"})
+            return self.send_json(dict(pinout_for(dev), ok=True))
         if path == "/api/mine":
             mods = []
             for u in probe_usb_all(False):

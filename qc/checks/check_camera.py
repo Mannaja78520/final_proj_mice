@@ -193,8 +193,58 @@ def run(t):
     t.contains(loop, "esp_camera_deinit",
                "letting the driver go between attempts, or the next one fails "
                "for the wrong reason")
-    t.contains(src, "CAM_BOARDS[] = {",
-               "the layouts are a table, so adding a board is one line")
+    # The table moved OUT of the C++ on 2026-08-20, into
+    # firmware/config/cam_boards.json, so that adding a board is one entry in
+    # data and the hub can draw that board's pin diagram from the same file.
+    # This assertion followed it rather than being deleted: the property it
+    # guards - one table, not a branch per board - is exactly the same, and it
+    # is the reason a camera nobody has seen before can still be wired up.
+    t.contains(src, 'include "modules/cam/CamBoards.h"',
+               "the layouts come from the generated table")
+    # ---- it says WHICH board, even when the compiled-in pins worked --
+    # Found by the five-model panel on 2026-08-20. esp_camera_init is tried
+    # first with the compiled-in pins, so on an AI-Thinker - the commonest
+    # board - it succeeds and the loop never runs. board_ then kept its default
+    # and the hub showed the pin diagram marked as a GUESS, about the one board
+    # the firmware is certain of.
+    first = src[src.find("esp_err_t err = esp_camera_init(&c);"):]
+    first = first[:first.find("for (int b = 0; err != ESP_OK")]
+    t.contains(first, "board_ = m.name",
+               "a board found on the compiled-in pins is still named")
+    t.contains(first, "CAM_XCLK_PIN",
+               "by matching those pins against the table, not by assuming")
+
+    # ---- LEDs belong to the board, not to the build ------------------
+    # BOTH paths must adopt them: the compiled-in attempt and the loop. The
+    # first version of this asserted the word appeared anywhere in the file,
+    # which stayed true when the compiled-in path stopped calling it.
+    t.contains(first, "adoptLeds(board_)",
+               "the compiled-in path takes that board's LED pins")
+    loop_ok = src[src.find("for (int b = 0; err != ESP_OK"):]
+    loop_ok = loop_ok[:loop_ok.find("if (err != ESP_OK) {")]
+    t.contains(loop_ok, "adoptLeds(board_)",
+               "and so does a board found by trying the table")
+    t.contains(src, "if (flashPin_ >= 0)",
+               "and a board with no flood LED drives nothing",
+               )
+    t.ok("digitalWrite(CAM_FLASH_PIN, flash_" not in src,
+         "the compiled-in flash pin is never driven blindly",
+         "GPIO 4 is the flood LED on an AI-Thinker and XCLK on an ESP-EYE: "
+         "driving it because the build said so breaks the camera")
+
+    # ---- and the SCCB probe asks every bus, not just ours ------------
+    probe = src[src.find("String CamModule::probeSensor"):]
+    probe = probe[:probe.find("String CamModule::probeBus")]
+    t.contains(probe, "CAM_BOARDS[b].siod",
+               "the sensor probe tries every SCCB pin pair the table knows",
+               )
+    t.contains(probe, "on any pin pair",
+               "and says so when nothing answers anywhere")
+
+    t.ok("CAM_BOARDS[] = {" not in src,
+         "and are not ALSO written out in the C++",
+         "two copies of a pin map is two chances for the diagram and the "
+         "wiring to disagree, and the diagram is what someone wires to")
     # ...but NOT as the init size: the frame buffer is allocated for that, and
     # SVGA in internal RAM fails outright with `camera init failed 0x105`.
     init = src[src.find("camera_config_t c = {}"):src.find("esp_camera_init")]

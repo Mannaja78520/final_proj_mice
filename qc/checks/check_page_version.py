@@ -57,6 +57,36 @@ def run(t):
     t.eq(main.web_version(ttl=0), first,
          "and it goes back when the file does, so it is the FILES that decide")
 
+    # ---- a changed PICTURE counts too -------------------------------
+    # Raised by the panel 2026-08-20 and true: the hash looked only at html,
+    # css and js, so a redrawn pinout or a new icon was invisible to an open
+    # tab. That is exactly the change somebody makes and then wonders why
+    # nothing moved.
+    pic = F.HUB / "web" / "pinout.svg"
+    if pic.is_file():
+        st = pic.stat()
+        try:
+            os.utime(pic, (st.st_atime, st.st_mtime + 61))
+            t.ok(main.web_version(ttl=0) != first,
+                 "a changed picture moves the version too",
+                 "images were skipped, so a redrawn diagram never reached an "
+                 "open page")
+        finally:
+            os.utime(pic, (st.st_atime, st.st_mtime))
+
+    # A ONE-FILE BUILD must not appear to change just by restarting: PyInstaller
+    # unpacks to a new temp folder each launch, so every mtime is new. Frozen
+    # builds therefore use size and path only.
+    src_v = (F.HUB / "main.py").read_text(encoding="utf-8")
+    i = src_v.find("def web_version")
+    body_v = src_v[i:src_v.find(chr(10) + "def ", i)]
+    t.contains(body_v, "if not frozen:",
+               "a frozen build ignores mtimes, which change on every launch")
+    t.ok("relative_to" in body_v,
+         "files are keyed by path, not by name alone",
+         "two folders each hold an index.html; keying on the name meant moving "
+         "a file between them changed nothing")
+
     # ---- scratch files do not count as a new version ----------------
     # Found by this check failing in the first parallel gate: QC writes its
     # driver page into the studio web folder while a browser check runs, so the
@@ -74,7 +104,7 @@ def run(t):
     # open stats a megabyte of Studio several times a minute forever.
     src = (F.HUB / "main.py").read_text(encoding="utf-8")
     i = src.find("def web_version")
-    t.contains(src[i:i + 1600], "ttl",
+    t.contains(src[i:src.find(chr(10) + "def ", i)], "ttl",
                "the answer is cached for a moment, since every tab asks")
 
     # ---- and it is readable WITHOUT logging in ----------------------

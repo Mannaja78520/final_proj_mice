@@ -77,7 +77,7 @@ def run(t):
 
 def _load_title(base):
     web = F.STUDIO_WEB
-    drv = web / "_qcdriver.html"
+    drv = web / ("_qcdriver_%s.html" % browser._tag())
     drv.write_text((web / "index.html").read_text(encoding="utf-8")
                    + browser.PRELUDE + "<script>\n" + DRIVER + "\n</script>",
                    encoding="utf-8")
@@ -92,10 +92,10 @@ def _load_title(base):
         # actually finish and the title is readable
         ps = ("$a=@('--headless=new','--disable-gpu','--no-sandbox','--no-first-run',"
               "'--disable-extensions','--%s','--user-data-dir=%s',"
-              "'--virtual-time-budget=15000','--dump-dom','%s/studio/_qcdriver.html'); "
+              "'--virtual-time-budget=15000','--dump-dom','%s/studio/%s'); "
               "Start-Process -FilePath '%s' -ArgumentList $a -NoNewWindow -Wait "
               "-RedirectStandardOutput '%s' -RedirectStandardError '%s.err'"
-              % (browser.TAG, prof, base, browser.EDGE, out, out))
+              % (browser.TAG, prof, base, drv.name, browser.EDGE, out, out))
         subprocess.run(["powershell", "-NoProfile", "-Command", ps], timeout=200)
         dom = Path(out).read_text(encoding="utf-8", errors="replace")
     except Exception:

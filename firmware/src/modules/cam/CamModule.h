@@ -58,8 +58,18 @@ private:
     // What the sensor says it is, read directly, for when the driver refuses
     // it without saying which sensor it refused.
     static String probeSensor();
+    // One SCCB bus, scanned. probeSensor() walks every pin pair the
+    // board table knows and calls this for each distinct one.
+    static String probeBus(int sda, int scl);
     // Which board layout turned out to be right, found by trying them.
     String board_ = "compiled-in";
+    // Which pins THIS board lights, taken from the board that answered. -1
+    // means the board has none, and -1 is never driven: an output pulled low
+    // on a pin that turns out to be a camera data line breaks the camera it
+    // was meant to light. On an ESP-EYE the compiled-in flash pin IS XCLK.
+    int flashPin_ = -1;
+    int ledPin_ = -1;
+    void adoptLeds(const String& name);
 
     SDStore* sd_ = nullptr;
     bool ready_ = false;         // the sensor answered at boot

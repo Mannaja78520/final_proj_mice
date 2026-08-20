@@ -86,6 +86,13 @@ def main(argv=None):
     landed = "promoted" in out
     print("promote: " + ("landed in the real tree" if landed
                          else "REFUSED - nothing was copied"))
+    # A promote that reused the RECEIPT prints no verdict at all - the suite did
+    # not run because the tree had not changed since it last went green. That is
+    # a success, and reading it as a red gate marked finished work as still in
+    # flight and left the plan saying the opposite of the truth.
+    if landed and ok is None:
+        ok = True
+        print("gate:  not re-run - the tree was already green (receipt)")
     if ok and landed:
         for tid in a.done:
             plan("done", tid)

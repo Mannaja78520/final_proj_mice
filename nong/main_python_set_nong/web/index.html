@@ -49,6 +49,19 @@
       <button class="tab" id="tabBtnSetup" onclick="showTab('setup')">Setup</button>
     </div>
 
+    <!-- SOMETHING WENT WRONG, WHEREVER YOU WERE LOOKING. Each card has its own
+         status line, which is right for routine chatter but wrong for a
+         failure: the message lands in the Robot card while you are posing, and
+         the monitor loop overwrites it a second later anyway. Both were real -
+         `USB disconnected` was written into a hidden card and erased by the
+         next poll before anyone could read it.
+         So failures come here instead: always visible, and only ever written by
+         notice(), never by a polling loop. -->
+    <div id="notice" class="banner err" hidden role="alert" aria-live="assertive">
+      <span id="noticeText"></span>
+      <button onclick="clearNotice()" title="dismiss">&times;</button>
+    </div>
+
     <div id="tabMove">
     <div class="card" data-stab="pose">
       <h2>Joints <span class="mini">(joint deg, neutral 90, limited per joint)</span></h2>
@@ -345,6 +358,11 @@
 <script src="vendor/OrbitControls.js"></script>
 <script src="vendor/STLLoader.js"></script>
 <!-- the tuned rig, served by the hub; empty if none has been saved yet -->
+<!-- The shared script: the theme picker, and the ONE list of connection
+     states every mice screen answers with. Studio was the only screen
+     not loading it, so it had its own vocabulary for being connected -
+     and its own silence about what to do when it was not. -->
+<script src="/mice.js"></script>
 <script src="/rig_default.js"></script>
 <script src="app.js"></script>
 </body>

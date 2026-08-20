@@ -109,6 +109,18 @@ a.peer:hover{border-color:var(--acc)}
      before they reach into it, and because unplugging a cable means something
      different from losing WiFi. -->
 <div id="hnow" class="statline" aria-live="polite">asking the board what it is…</div>
+<!-- THE NUMBERS ON THIS PAGE MAY BE OLD. The board pushes its status twice a
+     second; when that stops, everything on screen keeps its last value and
+     goes on looking live. For a page that shows where an arm IS, that is the
+     dangerous state: somebody reads an angle, reaches in, and the arm is
+     somewhere else. So after three seconds of silence - six missed pushes -
+     the page says so, and keeps saying it until a message arrives. It does not
+     blank the numbers: the last known pose is still the most useful thing on
+     the screen, as long as nobody mistakes it for the current one. -->
+<div id="staleWarn" class="banner warn" hidden role="status" aria-live="polite">
+  <span>No answer from the board for <b id="staleAge">a moment</b>. These
+        numbers are the last ones it sent, not what it is doing now.</span>
+</div>
 
 <!-- Tabs, not a longer page. Thirteen cards in one column meant scrolling
      past the lift controls to reach the SD card. Nothing MOVED to build this:
@@ -435,8 +447,45 @@ function connectWs(){
   W=new WebSocket('ws://'+location.host+'/ws');
   W.onopen=()=>$('wsdot').className='dot on';
   W.onclose=()=>{$('wsdot').className='dot';setTimeout(connectWs,2000);};
-  W.onmessage=e=>{try{st=JSON.parse(e.data);render();}catch(_){log(e.data);}};
+  W.onmessage=e=>{try{st=JSON.parse(e.data);heard();render();}catch(_){log(e.data);}};
 }
+
+// When the board last said anything. Null until the first message: a page that
+// has never heard from the board is LOADING, which is not the same as one whose
+// numbers have gone old, and saying "these numbers are old" about numbers that
+// were never there would be a lie in the other direction.
+var lastHeard=null;
+// Six missed pushes. The board sends status every 500ms, so three seconds is
+// long enough that a busy board is not called dead, and short enough that
+// nobody reads a stale angle for long. See WebPortal.cpp lastPush_.
+var STALE_MS=3000;
+function heard(){
+  lastHeard=Date.now();
+  var w=$('staleWarn'); if(w)w.hidden=true;
+}
+function staleTick(){
+  var w=$('staleWarn'); if(!w)return;
+  if(lastHeard===null){                    // still LOADING, never heard yet
+    w.hidden=true;
+    return;
+  }
+  var age=Date.now()-lastHeard;
+  w.hidden = age < STALE_MS;
+  if(age>=STALE_MS){
+    var a=$('staleAge');
+    // The SHARED list decides the words - shared/web/mice.js, compiled into
+    // this board's flash, and the same list the hub page and Nong Studio use.
+    // The fallback is not decoration: this page is served from flash and must
+    // still work if the shared script is ever missing.
+    var say = window.miceLink
+      ? window.miceLink.read({cable:true, everHeard:true, ageMs:age}) : null;
+    if(a)a.textContent = say ? say.says.replace(/^No answer for /, '')
+                                      .replace(/\.$/, '')
+                             : (age<60000 ? (Math.round(age/1000)+' seconds')
+                                          : (Math.round(age/60000)+' minutes'));
+  }
+}
+setInterval(staleTick,500);
 function render(){
   $('hname').textContent=st.name||'module';
   document.title=(st.name||'module')+' control';
@@ -1262,7 +1311,7 @@ connectWs();
 refreshLists();
 loadPeers();
 fetch('/api/status').then(r=>r.json()).then(s=>{
-  st=s;render();
+  st=s;heard();render();
   $('setId').value=s.id;$('setName').value=s.name;
   setTimeout(()=>{if(s.types)$('setType').value=s.type;},0);
 });

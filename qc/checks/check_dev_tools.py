@@ -76,3 +76,9 @@ def run(t):
          "lying about what is in the tree")
     t.contains(lsrc, "promoted",
                "and it checks that the promote really copied")
+    # A promote that reused the receipt prints no verdict, because the suite did
+    # not run - the tree had not changed since it last went green. Reading that
+    # as a red gate marked finished work as still in flight, and the plan then
+    # said the opposite of the truth.
+    t.contains(lsrc, "ok is None",
+               "a promote that reused the green receipt counts as a pass")

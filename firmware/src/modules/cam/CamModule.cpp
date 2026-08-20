@@ -49,25 +49,13 @@ static const int NSIZES = sizeof(SIZES) / sizeof(SIZES[0]);
 //
 // Adding a board is one line here. Nothing else in the firmware needs to know
 // it exists - the same promise the module, servo and command registries make.
-struct CamPins {
-    const char* name;
-    int8_t pwdn, reset, xclk, siod, sioc;
-    int8_t y9, y8, y7, y6, y5, y4, y3, y2;
-    int8_t vsync, href, pclk;
-};
-
-static const CamPins CAM_BOARDS[] = {
-    // The one this project was built on, and the commonest clone.
-    {"ai-thinker", 32, -1,  0, 26, 27, 35, 34, 39, 36, 21, 19, 18,  5, 25, 23, 22},
-    // ESP-EYE: no power-down pin, and the data lines are in a different order.
-    {"esp-eye",    -1, -1,  4, 18, 23, 36, 37, 38, 39, 35, 14, 13, 34,  5, 27, 25},
-    // M5Stack cameras, with and without the power-down pin wired.
-    {"m5stack",    -1, 15, 27, 25, 23, 19, 36, 18, 39,  5, 34, 35, 32, 22, 26, 21},
-    {"m5stack-wide", -1, 15, 27, 22, 23, 19, 36, 18, 39,  5, 34, 35, 32, 25, 26, 21},
-    // TTGO T-Journal: reset wired, power-down not.
-    {"ttgo-journal", 0, 15, 27, 25, 23, 36, 36, 19, 18,  5,  4, 34, 35, 22, 26, 21},
-};
-static const int CAM_BOARD_COUNT = sizeof(CAM_BOARDS) / sizeof(CAM_BOARDS[0]);
+// The board table is DATA: firmware/config/cam_boards.json, turned into
+// CamBoards.h by gen_tables.py. It moved out of this file on 2026-08-20 so that
+// adding a camera board is one entry with no C++ to read - and so the hub can
+// draw the pin diagram for whichever board a module reports from the same
+// source. Two copies of a pin map are two chances for the picture to lie about
+// the wiring.
+#include "modules/cam/CamBoards.h"
 
 static framesize_t startSize(uint16_t pid, framesize_t initSize) {
     switch (pid) {
@@ -126,7 +114,39 @@ static const char* sizeName(framesize_t f) {
 // answers 0xF0/0xF1. Both are read, because which one is right is exactly
 // what we do not know yet.
 String CamModule::probeSensor() {
-    Wire.begin(CAM_SIOD_PIN, CAM_SIOC_PIN, 100000);
+    // EVERY SCCB BUS, not just the compiled-in one. This runs when init failed
+    // on every layout, to tell a dead camera apart from wrong pins - and it
+    // used to ask only the pins this firmware was built for, so on any other
+    // board it reported *nothing answered* and blamed the ribbon. The boards
+    // share pin pairs, so each distinct pair is tried once.
+    String out;
+    bool any = false;
+    for (int b = -1; b < CAM_BOARD_COUNT; b++) {
+        int sda = (b < 0) ? CAM_SIOD_PIN : CAM_BOARDS[b].siod;
+        int scl = (b < 0) ? CAM_SIOC_PIN : CAM_BOARDS[b].sioc;
+        if (sda < 0 || scl < 0) continue;
+        bool seen = false;
+        for (int k = -1; k < b; k++) {          // already tried this pair?
+            int s2 = (k < 0) ? CAM_SIOD_PIN : CAM_BOARDS[k].siod;
+            int c2 = (k < 0) ? CAM_SIOC_PIN : CAM_BOARDS[k].sioc;
+            if (s2 == sda && c2 == scl) { seen = true; break; }
+        }
+        if (seen) continue;
+        String found = probeBus(sda, scl);
+        if (found.length()) {
+            any = true;
+            out += "on SDA " + String(sda) + "/SCL " + String(scl) + ": " + found;
+        }
+    }
+    if (!any) return "nothing answered on SCCB, on any pin pair this firmware "
+                     "knows - check the ribbon, the 5V supply and that XCLK is "
+                     "running";
+    return out;
+}
+
+// One bus, scanned. Split out so the caller can walk every board's pins.
+String CamModule::probeBus(int sda, int scl) {
+    Wire.begin(sda, scl, 100000);
     auto rd = [](uint8_t addr, uint8_t reg) -> int {
         Wire.beginTransmission(addr);
         Wire.write(reg);
@@ -135,11 +155,9 @@ String CamModule::probeSensor() {
         return Wire.read();
     };
     String out;
-    bool any = false;
     for (uint8_t addr = 8; addr < 0x78; addr++) {
         Wire.beginTransmission(addr);
         if (Wire.endTransmission() == 0) {
-            any = true;
             int a = rd(addr, 0x0A), b = rd(addr, 0x0B);
             int c1 = rd(addr, 0xF0), c2 = rd(addr, 0xF1);
             out += "SCCB 0x" + String(addr, HEX) +
@@ -147,14 +165,34 @@ String CamModule::probeSensor() {
                    " gc=" + String(c1, HEX) + String(c2, HEX) + " ";
         }
     }
-    if (!any) return "nothing answered on SCCB - check the ribbon, the 5V "
-                     "supply and that XCLK is running";
     return out;
 }
 
+// Take the LED pins belonging to the board that actually answered. Anything
+// the board does not have stays -1, and -1 is never driven: an output pulled
+// low on a pin that turns out to be a data line breaks the camera it was meant
+// to light.
+void CamModule::adoptLeds(const String& name) {
+    flashPin_ = -1;
+    ledPin_ = -1;
+    for (int b = 0; b < CAM_BOARD_COUNT; b++) {
+        if (name == CAM_BOARDS[b].name) {
+            flashPin_ = CAM_BOARDS[b].flash;
+            ledPin_ = CAM_BOARDS[b].led;
+            break;
+        }
+    }
+    if (name == "compiled-in") flashPin_ = CAM_FLASH_PIN;
+    if (flashPin_ >= 0) {
+        pinMode(flashPin_, OUTPUT);
+        digitalWrite(flashPin_, LOW);
+    }
+}
+
 void CamModule::begin() {
-    pinMode(CAM_FLASH_PIN, OUTPUT);
-    digitalWrite(CAM_FLASH_PIN, LOW);
+    // The flood LED is set up AFTER the board is known (see below): driving a
+    // compiled-in GPIO 4 on a board that has no flood LED means driving one of
+    // that board's camera data lines. On an ESP-EYE, GPIO 4 is XCLK.
 
     camera_config_t c = {};
     c.ledc_channel = LEDC_CHANNEL_0;
@@ -204,6 +242,26 @@ void CamModule::begin() {
     // cheap and happens once at boot; a person holding an unknown clone would
     // otherwise be reading pinout diagrams.
     esp_err_t err = esp_camera_init(&c);
+    if (err == ESP_OK) {
+        // IT STILL HAS TO SAY WHICH BOARD. The compiled-in pins are a board -
+        // they are one of the rows in the table - and leaving board_ empty
+        // because the first attempt happened to work meant the commonest board
+        // of all reported nothing. The hub then showed its pin diagram marked
+        // as a guess, about the one board the firmware is certain of. Found by
+        // the model panel on 2026-08-20.
+        for (int b = 0; b < CAM_BOARD_COUNT; b++) {
+            const CamPins& m = CAM_BOARDS[b];
+            if (m.xclk == CAM_XCLK_PIN && m.siod == CAM_SIOD_PIN &&
+                m.sioc == CAM_SIOC_PIN && m.y2 == CAM_Y2_PIN &&
+                m.pclk == CAM_PCLK_PIN) {
+                board_ = m.name;
+                break;
+            }
+        }
+        if (board_.length() == 0) board_ = "compiled-in";
+        adoptLeds(board_);
+        LOGF(cam, "camera started on the compiled-in pins (%s)", board_.c_str());
+    }
     for (int b = 0; err != ESP_OK && b < CAM_BOARD_COUNT; b++) {
         const CamPins& m = CAM_BOARDS[b];
         esp_camera_deinit();
@@ -216,6 +274,7 @@ void CamModule::begin() {
         err = esp_camera_init(&c);
         if (err == ESP_OK) {
             board_ = m.name;
+            adoptLeds(board_);
             LOGF(cam, "this is a %s board - found by trying, not by being told",
                  m.name);
         }
@@ -400,7 +459,7 @@ bool CamModule::handleCommand(String* argv, int argc, String& reply) {
             String v = argv[2];
             v.toUpperCase();
             flash_ = (v == "ON" || v == "1");
-            digitalWrite(CAM_FLASH_PIN, flash_ ? HIGH : LOW);
+            if (flashPin_ >= 0) digitalWrite(flashPin_, flash_ ? HIGH : LOW);
             reply = "OK flash=" + String(flash_ ? "on" : "off");
             return true;
         }

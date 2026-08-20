@@ -52,7 +52,9 @@ def run(t):
                       ("check_mdns", "answers mDNS on 5353"),
                       ("check_build_split", "writes the firmware build dir"),
                       ("check_hub_clock", "measures time, which needs a quiet "
-                                          "machine")):
+                                          "machine"),
+                      ("check_themes", "rewrites the stylesheet every page "
+                                       "is served")):
         t.ok(name in solo, "%s runs alone - it %s" % (name, why),
              "two of these at once fight over something the machine has one of")
 
@@ -77,6 +79,26 @@ def run(t):
          "two workers would each load the other's test page")
     t.contains(br, 'query.replace("_qcdriver.html"',
                "and the URL follows the real file, so checks need not know")
+
+    # The checks that write their OWN scratch page into the shared studio
+    # folder, rather than going through browser.page(). Raised by the panel:
+    # two of them used fixed names, so in a pool one worker could load the
+    # other's page - which does not fail, it tests the wrong thing.
+    import re as _re2  # noqa: PLC0415
+    for f in sorted((F.QC / "checks").glob("check_*.py")):
+        if f.name == "check_qc_parallel.py":
+            continue          # this file QUOTES the pattern it looks for
+        txt = f.read_text(encoding="utf-8")
+        for m in _re2.finditer(r'web / \("?(_qc[a-z]*)', txt):
+            after = txt[m.start():m.start() + 120]
+            t.ok("_tag()" in after,
+                 "%s names its scratch page per process" % f.stem,
+                 "a fixed name in a shared folder means two workers overwrite "
+                 "each other: %s" % after.splitlines()[0].strip())
+        for m in _re2.finditer(r'web / "(_qc[a-z]*\.html)"', txt):
+            t.ok(False, "%s names its scratch page per process" % f.stem,
+                 "it writes %s, a fixed name in a folder every worker shares"
+                 % m.group(1))
     t.ok("getpid" in br,
          "the suffix uses the pid, not only a timestamp",
          "workers start in the same millisecond; the pid is what differs")

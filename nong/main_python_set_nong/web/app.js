@@ -23,6 +23,40 @@ const $ = (id) => document.getElementById(id);
 const STAB_BTN = { pose: "tabBtnMove", sequence: "tabBtnSeq",
                    robot: "tabBtnRobot", setup: "tabBtnSetup" };
 let sideTab = "pose";
+// ---------------------------------------------------------------- notices
+// A FAILURE HAS TO SURVIVE BEING LOOKED AWAY FROM. The per-card status lines
+// are right for routine chatter and wrong for a failure, for two reasons that
+// were both real in this file:
+//
+//   * the card belongs to ONE tab, so `USB disconnected` was written into the
+//     Robot card while the operator was posing, and nobody saw it;
+//   * the monitor loop rewrites robotStat on every poll, so even a message
+//     somebody WAS looking at vanished within a second.
+//
+// So a failure also comes here: one line under the tab strip, visible on every
+// tab, written only by this function and cleared only by hand or by the next
+// notice. Routine status keeps going to the cards, because a line that shouts
+// about everything is a line nobody reads.
+// The SAME message, said again, is not news. The monitor loop polls every
+// second and its failure branch says "monitor: no reply" every time, so
+// without this a dismissed notice reappeared before the mouse had moved away -
+// and a warning you cannot get rid of is one you learn to ignore. A DIFFERENT
+// message always shows, dismissed or not: that is something new going wrong.
+let noticeSaid = null;
+function notice(text) {
+  const box = $("notice"), t = $("noticeText");
+  if (!box || !t || !text) return;
+  if (text === noticeSaid && box.hidden) return;   // dismissed, and unchanged
+  noticeSaid = text;
+  t.textContent = text;
+  box.hidden = false;
+}
+
+function clearNotice() {
+  const box = $("notice");
+  if (box) box.hidden = true;      // noticeSaid is kept: see notice()
+}
+
 function showTab(which) {
   if (which === "move") which = "pose";          // the old name
   if (!STAB_BTN[which]) which = "pose";
@@ -265,11 +299,13 @@ async function shipRigDefault() {
       ? "saved this rig as the factory default — every fresh browser now starts on it, "
         + "and Reset returns to it ✓"
       : "could not save: " + (r.error || "unknown");
-  } catch (e) { $("limStat").textContent = "could not save: " + (e.message || e); }
+    notice($("limStat").textContent);
+  } catch (e) { $("limStat").textContent = "could not save: " + (e.message || e); notice($("limStat").textContent); }
 }
 function loadRigDefault() {
   try {
     const d = JSON.parse(localStorage.getItem("nong_rig_default") || "null");
+  notice($("limStat").textContent);
     return d ? mergeRig(d) : null;
   } catch (e) { return null; }
 }
@@ -2109,6 +2145,7 @@ async function hubPlay(fromMs) {
     $("robotStat").textContent = "The hub could not start the show, so the robot "
       + "did not move. Check the hub is still running, then press Play again. "
       + (e.message || e);
+    notice($("robotStat").textContent);
     return false;
   }
 }
@@ -2513,6 +2550,7 @@ async function pushLimits() {
   if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first (Robot link card)"; return; }
   try {
     let have = null;
+  notice($("limStat").textContent);
     $("limStat").textContent = "reading what the robot has…";
     try { have = JSON.parse(await rawCmd("LIMIT?")); } catch (e) { have = null; }
     const at = (key, i) => {
@@ -2571,13 +2609,15 @@ async function pushLimits() {
       `${jobs.length > 1 ? "s" : ""} (limits, gear, pulse, travel, frame rate)` +
       (useBatch ? "" : " — this board is older than JCFG, so each setting went separately") +
       (have ? "" : " — could not read the robot first, so everything was sent") + " ✓";
-  } catch (e) { $("limStat").textContent = "send failed: " + (e.message || e); }
+    notice($("limStat").textContent);
+  } catch (e) { $("limStat").textContent = "send failed: " + (e.message || e); notice($("limStat").textContent); }
 }
 // read the module's current limits + gear back into the rig
 async function pullLimits() {
   if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first"; return; }
   try {
     const t = await rawCmd("LIMIT?");
+  notice($("limStat").textContent);
     const j = JSON.parse(t);
     // accept 8-joint (old firmware) or 10-joint replies: keep what the robot
     // sends and fill any joint it omits from the current rig, so a shorter
@@ -2598,7 +2638,7 @@ async function pullLimits() {
     pull(j.frame_hz, "frameHz");
     saveRig(); renderRigUI(); buildRobot(); renderSliders();
     $("limStat").textContent = "read limits + gear from the robot ✓";
-  } catch (e) { $("limStat").textContent = "read failed: " + (e.message || e); }
+  } catch (e) { $("limStat").textContent = "read failed: " + (e.message || e); notice($("limStat").textContent); }
 }
 
 // ---------------------------------------------------------------- edit existing sequences
@@ -2606,6 +2646,7 @@ async function pullLimits() {
 // back into timeline keyframes, so any saved sequence can be re-edited.
 function parseSeqYaml(text) {
   const out = { name: "", loop: false, next: "", speed: 0, keys: [], skipped: 0 };
+  notice($("limStat").textContent);
   let curSpeed = 0;             // the speed in force at this point in the file
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.replace(/#.*$/, "").trimEnd();
@@ -2673,10 +2714,11 @@ async function editSdSeq(fname) {
   try {
     const text = await sdDownload(fname);
     loadParsedSeq(parseSeqYaml(text), "robot SD " + fname);
-  } catch (e) { $("tlStat").textContent = "cannot read " + fname + ": " + (e.message || e); }
+  } catch (e) { $("tlStat").textContent = "cannot read " + fname + ": " + (e.message || e); notice($("tlStat").textContent); }
 }
 async function refreshSeqs() {
   const r = await fetch("/api/list?kind=sequences").then(r => r.json());
+  notice($("tlStat").textContent);
   const sel = $("seqList");
   sel.innerHTML = "<option value=''>Edit saved…</option>";
   (r.files || []).filter(f => f.endsWith(".yaml")).forEach(f => {
@@ -2702,11 +2744,13 @@ async function saveProject() {
     // The draft is NOT cleared here: the work is still only in this browser.
     $("tlStat").textContent = "could not save — the hub is not answering. Your "
       + "work is still here, and is kept in this browser. " + (e.message || e);
+    notice($("tlStat").textContent);
     return;
   }
   if (!r || !r.ok) {
     $("tlStat").textContent = "could not save: " + ((r && r.error) || "unknown")
       + ". Your work is still here.";
+    notice($("tlStat").textContent);
     return;
   }
   // Safely on disk now, so the unsaved-work draft has done its job.
@@ -2827,7 +2871,8 @@ function getGeo(file, cb) {
   stlLoader.load("/models/" + encodeURIComponent(file),
     (geo) => { stlCache[file] = geo; cb(geo); },
     undefined,
-    () => { $("tlStat").textContent = "cannot load models/" + file; });
+    () => { $("tlStat").textContent = "cannot load models/" + file; notice($("tlStat").textContent); });
+    notice($("tlStat").textContent);
 }
 // STL files carry no texture coordinates — project simple UVs from the two
 // largest bounding-box axes so a painted PNG/JPG can be shown on them
@@ -3152,6 +3197,7 @@ function connModeChanged() {
     $("robotStat").textContent = "This browser cannot open a USB port by itself. "
       + "Pick “+ USB (shared)” instead — the hub opens the cable and shares it — "
       + "or connect over WiFi. (Web Serial works in Chrome and Edge.)";
+    notice($("robotStat").textContent);
 }
 
 // ------- shared USB: the hub owns the port, we send commands through it
@@ -3249,6 +3295,7 @@ async function serialReadLoop() {
   } catch (e) { /* port closed / unplugged */ }
   serialPort = null;
   $("robotStat").textContent = "USB disconnected";
+  notice($("robotStat").textContent);
 }
 function serialCmd(c) {
   return new Promise((res, rej) => {
@@ -3341,9 +3388,11 @@ function openModule() {
     $("robotStat").textContent = "direct Web Serial owns this cable, so the module " +
       "site cannot share it — switch the link to “+ USB (shared)” and connect again, " +
       "then this button works with both open at once.";
+    notice($("robotStat").textContent);
     return;
   }
   $("robotStat").textContent = "connect first — pick a USB port or find a module on WiFi";
+  notice($("robotStat").textContent);
 }
 async function robotCmd(c) {
   try {
@@ -3369,7 +3418,19 @@ function linkBadge() { // shown in robotStat so you see every open channel
   if (usbDirect()) parts.push("USB direct" + bus + " ✓");
   else if (hubPort) parts.push("USB " + hubPort + bus + " (shared) ✓");
   if (haveWifi()) parts.push("WiFi " + robotIp());
-  return parts.join(" + ") || "not connected";
+  if (parts.length) return parts.join(" + ");
+  // NOT CONNECTED IS NOT AN ANSWER. It says what the operator already knows and
+  // nothing about what to do, and the same two words were used by three
+  // different screens for three different situations. window.miceLink is the
+  // one list, shared with the hub page and the board's own website - see
+  // shared/web/mice.js. It is optional here only because Studio can be opened
+  // from a file with no hub serving that script.
+  if (window.miceLink) {
+    const s = window.miceLink.read({ cable: false, wifi: false, viaHub: false,
+                                     everHeard: false });
+    return s.says + (s.next ? "  " + s.next : "");
+  }
+  return "not connected";
 }
 
 // ------- auto-discovery: the hub server scans the WiFi — just click one
@@ -3426,6 +3487,7 @@ async function connectRobot() {
     if (t === "usb" && !had) hubPort = "";   // never show a link that isn't there
     $("robotStat").textContent = "Could not reach the robot. Check it is powered "
       + "and on the same network or cable, then try again. " + (e.message || e);
+    notice($("robotStat").textContent);
   }
 }
 function sendPose(quiet) {
@@ -3668,12 +3730,13 @@ async function uploadYaml() {
     $("sdStat").textContent =
       `uploaded ${name}.yaml to /moves — press its ▶ Run button (or pick it on the module website)`;
     refreshSd();
-  } catch (e) { $("sdStat").textContent = "upload failed: " + (e.message || e); }
+  } catch (e) { $("sdStat").textContent = "upload failed: " + (e.message || e); notice($("sdStat").textContent); }
 }
 // Stop any sequence the MODULE is playing on its own.
 //
 // Safe to call when nothing is running: the firmware answers "OK move stopped"
 // either way, and it costs one command. Calling it too often is harmless;
+  notice($("sdStat").textContent);
 // calling it too seldom leaves two things driving the servos at once.
 //
 // Since the firmware learned to preempt (any MOTION command from outside stops
@@ -3807,9 +3870,11 @@ function zeroChangeCred() {
 async function robotZeroSet() {
   if (!haveUsb() && !haveWifi()) { $("zStat2").textContent = "connect to the robot first"; return; }
   const r = await robotCmd("SETZERO");
+  notice($("zStat2").textContent);
   $("zStat2").textContent = r.startsWith("OK")
     ? "zero set — this pose is now the robot's home (90° per joint)"
     : ("failed: " + r);
+  notice($("zStat2").textContent);
 }
 
 // ------- monitor mode: the 3D model follows the REAL robot
@@ -3846,6 +3911,7 @@ async function monitorTick() {
       (m.attached === false ? " | relaxed" : "");
   } catch (e) {
     $("robotStat").textContent = "monitor: no reply (" + (e.message || e) + ")";
+    notice($("robotStat").textContent);
   }
 }
 

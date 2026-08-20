@@ -133,7 +133,7 @@ def _drive(base):
     """
     import time
     web = F.STUDIO_WEB
-    drv = web / "_qcmod.html"
+    drv = web / ("_qcmod_%s.html" % browser._tag())
     html = F.get(base + "/mod?dev=usb%3A" + fake_serial.PORT)[1]
     # This check builds its own page rather than going through
     # browser.page, so it has to ask for the login script itself: its
@@ -150,8 +150,9 @@ def _drive(base):
                         "'--headless=new','--disable-gpu','--no-sandbox',"
                         "'--no-first-run','--disable-extensions','--%s',"
                         "'--user-data-dir=%s',"
-                        "'%s/studio/_qcmod.html?dev=usb%%3A%s' -NoNewWindow"
-                        % (browser.EDGE, browser.TAG, prof, base, fake_serial.PORT)],
+                        "'%s/studio/%s?dev=usb%%3A%s' -NoNewWindow"
+                        % (browser.EDGE, browser.TAG, prof, base, drv.name,
+                           fake_serial.PORT)],
                        timeout=60)
         # Wait for the page to report, not for the clock. A flat sleep is a
         # bet on how fast the machine is today: under the full suite this one

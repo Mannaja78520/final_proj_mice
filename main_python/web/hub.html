@@ -710,10 +710,14 @@ async function loadApps(){
     el.innerHTML='';
     apps.forEach(a=>{
       const d=document.createElement('div');
-  // The row is edged in its module type's colour (mice.css). Information, not
-  // decoration - and the badge below still says the type in words, so the
-  // colour is never the only thing carrying it.
-  d.className='mod t-'+String(m.type||'other').replace(/[^a-z0-9]/gi,'').toLowerCase();
+      // A TOOL IS NOT A MODULE. This line was copied from the module list and
+      // still read `m.type` - but the loop variable here is `a`, and an app has
+      // no module type at all. `m` was undefined, the exception left loadApps
+      // half-finished, and the Tools list rendered NOTHING. It looked like
+      // there were no tools rather than like a broken page, which is why it
+      // survived: an empty list is a plausible state. Found by the model panel
+      // on 2026-08-20 and confirmed in a browser - zero rows drawn.
+      d.className='mod';
       d.innerHTML='<span class="nm">'+(a.icon?a.icon+' ':'')+a.name+'</span>'+
                   '<span class="ip">'+(a.blurb||'')+'</span>';
       const b=document.createElement('button');b.className='primary';b.textContent='Open';

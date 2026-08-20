@@ -30,6 +30,14 @@
   `src/modules/<type>/` and an env in `platformio.ini`. The build guards
   (`BuildTypes.h`) and the factory (`ModuleTable.h`) are GENERATED from that
   file — do not hand-list a type in `ModuleFactory.cpp` again.
+- **A new CAMERA BOARD is one entry in `config/cam_boards.json`.** The pin map
+  used to be a table inside `CamModule.cpp`; since 2026-08-20 `gen_tables.py`
+  turns the json into `modules/cam/CamBoards.h`, and the HUB draws that board's
+  pin diagram from the same file. So a board added there arrives complete with
+  its own drawing, and the drawing cannot disagree with the wiring the firmware
+  compiled. The generator refuses an entry with a missing pin or a GPIO that
+  does not exist, and says which — a board entered wrongly is a camera that
+  initialises and returns noise.
 - **Anything that belongs to ONE module type must be behind its guard**, or
   every board pays for it:
   | what | how |

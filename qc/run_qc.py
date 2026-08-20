@@ -164,6 +164,12 @@ SOLO = {
     # is the signature: the check is fine, the margin is not. Measuring time
     # needs a quiet machine.
     "check_hub_clock",
+    # It ADDS A THEME to the real shared/web/themes.css and takes it out again -
+    # which is the only honest way to prove a new theme needs no code. But that
+    # file is served to every page, so while it runs, any other check reading
+    # the stylesheet sees a theme that is not there, and the page-version hash
+    # sees the file change twice. Raised by the panel 2026-08-20.
+    "check_themes",
 }
 
 
