@@ -1,4 +1,5 @@
 #include "modules/nong/NongModule.h"
+#include "modules/nong/JointRules.h"
 #include "modules/nong/NongMath.h"
 #include "modules/nong/ServoPresets.h"
 #include "core/SDStore.h"
@@ -158,29 +159,15 @@ void NongModule::saveCal() {
     saveCalNvs();               // always — this is the one that needs no card
     if (!sd_ || !sd_->available()) return;
     String y = "# nong calibration — written by LIMIT/GEAR/SETZERO (Nong Studio).\n";
-    y += "joint_min: [";
-    for (int i = 0; i < N; i++) { if (i) y += ","; y += String(minDeg_[i], 0); }
-    y += "]\njoint_max: [";
-    for (int i = 0; i < N; i++) { if (i) y += ","; y += String(maxDeg_[i], 0); }
-    y += "]\ntrim: [";
-    for (int i = 0; i < N; i++) { if (i) y += ","; y += String(trim_[i], 1); }
-    y += "]\nneutral: [";
-    for (int i = 0; i < N; i++) { if (i) y += ","; y += String(neutral_[i], 0); }
-    y += "]\ngear_pinion: [";
-    for (int i = 0; i < N; i++) { if (i) y += ","; y += String(gearPinion_[i]); }
-    y += "]\ngear_gear: [";
-    for (int i = 0; i < N; i++) { if (i) y += ","; y += String(gearGear_[i]); }
-    y += "]\npulse_min: [";
-    for (int i = 0; i < N; i++) { if (i) y += ","; y += String(pulseMin_[i]); }
-    y += "]\npulse_max: [";
-    for (int i = 0; i < N; i++) { if (i) y += ","; y += String(pulseMax_[i]); }
-    y += "]\nmax_dps: [";
-    for (int i = 0; i < N; i++) { if (i) y += ","; y += String(maxDps_[i], 0); }
-    y += "]\nservo_range: [";
-    for (int i = 0; i < N; i++) { if (i) y += ","; y += String(servoRange_[i], 0); }
-    y += "]\nframe_hz: [";
-    for (int i = 0; i < N; i++) { if (i) y += ","; y += String(frameHz_[i]); }
-    y += "]\n";
+    // Every field the table knows, in the order it lists them. This was eleven
+    // hand-written blocks, and one of the other serialisers was already
+    // missing frame_hz. A field added to the table now appears here without
+    // anyone having to remember to come back.
+    for (int f = 0; f < fieldCount_; f++) {
+        y += String(fields_[f].key) + ": [";
+        for (int i = 0; i < N; i++) { if (i) y += ","; y += fieldText(f, i); }
+        y += "]\n";
+    }
     sd_->saveText("/data/nong_cal.yaml", y);
 }
 
@@ -191,7 +178,39 @@ void NongModule::loadCal() {
         applySettings(doc.as<JsonVariant>()); // reuses the array/gear parsing
 }
 
+// The one list of per-joint fields, pointed at this instance's arrays. Built
+// once at boot rather than written out as a literal, because the arrays belong
+// to the object - see the JointField comment in NongModule.h for why the
+// binary blob is left alone.
+void NongModule::buildFields() {
+    int n = 0;
+    fields_[n++] = { "joint_min",   minDeg_,     nullptr, 0 };
+    fields_[n++] = { "joint_max",   maxDeg_,     nullptr, 0 };
+    fields_[n++] = { "trim",        trim_,       nullptr, 1 };
+    fields_[n++] = { "neutral",     neutral_,    nullptr, 0 };
+    fields_[n++] = { "gear_pinion", nullptr,     gearPinion_, 0 };
+    fields_[n++] = { "gear_gear",   nullptr,     gearGear_,   0 };
+    fields_[n++] = { "pulse_min",   nullptr,     pulseMin_,   0 };
+    fields_[n++] = { "pulse_max",   nullptr,     pulseMax_,   0 };
+    fields_[n++] = { "max_dps",     maxDps_,     nullptr, 0 };
+    fields_[n++] = { "servo_range", servoRange_, nullptr, 0 };
+    fields_[n++] = { "frame_hz",    nullptr,     frameHz_,    0 };
+    fieldCount_ = n;
+}
+
+// One field of one joint, written the way every API writes it. Having this in
+// one place is the point: the three serialisers used to each choose their own
+// number of decimals, so the same trim read 1.5 in one and 2 in another.
+String NongModule::fieldText(int f, int joint) const {
+    const JointField& d = fields_[f];
+    if (d.i) return String(d.i[joint]);
+    // (int) on the decimals: Arduino's String has overloads for several
+    // integer widths, and a uint8_t matches more than one of them.
+    return String(d.f[joint], (int)d.decimals);
+}
+
 void NongModule::begin() {
+    buildFields();
     // Saved calibration (LIMIT/GEAR/... from Nong Studio) overrides module.yaml.
     // SD first, then NVS: the chip copy is written by every calibration command
     // whether or not a card is fitted, so it is never older than the file — and
@@ -241,9 +260,6 @@ float NongModule::clampJoint(int i, float deg) const {
     return constrain(deg, minDeg_[i], maxDeg_[i]);
 }
 
-float NongModule::maxDelta(const float tgt[N]) const {
-    return nongmath::maxDelta(cur_, tgt, N);
-}
 
 uint32_t NongModule::durationFor(const float tgt[N]) const {
     return nongmath::durationFor(cur_, tgt, N, speedDps_, NONG_MIN_MOVE_MS);
@@ -308,7 +324,13 @@ void NongModule::loop() {
             lastTick_ = now;
             float t = (float)(now - moveStart_) / (float)moveDur_;
             if (t >= 1.0f) { t = 1.0f; moving_ = false; }
-            float e = 0.5f - 0.5f * cosf(PI * t); // ease in-out
+            // The SHAPE OF EVERY MOVE, from the one place that defines it.
+            // This was the same cosine written out again - and without the
+            // clamp nongmath::ease does at both ends, so a t below zero
+            // (a move whose start time is in the future, which a show clock
+            // can produce) would have driven the joint backwards past where
+            // it started.
+            float e = nongmath::ease(t);
             for (int i = 0; i < N; i++)
                 cur_[i] = from_[i] + (target_[i] - from_[i]) * e;
             writeServos();
@@ -466,24 +488,16 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
         const float dps = argv[6].toFloat(), rng = argv[7].toFloat();
         const int hz = argv[8].toInt();
         const float lo = argv[9].toFloat(), hi = argv[10].toFloat();
-        // same limits the individual commands enforce — a batch must never be
-        // a way to smuggle in a value they would have refused
-        if (pinion < 1 || gear < 1) { reply = "ERR pinion/gear must be >=1"; return true; }
-        if (pmin < 100 || pmax <= pmin + 100 || pmax > 5000) {
-            reply = "ERR need 100<=pmin, pmax>pmin+100, pmax<=5000"; return true;
-        }
-        if (dps < 30) { reply = "ERR max_dps must be >= 30"; return true; }
-        if (rng < NONG_RANGE_MIN_DEG || rng > NONG_RANGE_MAX_DEG) {
-            reply = "ERR servo travel must be " + String(NONG_RANGE_MIN_DEG) + ".." +
-                    String(NONG_RANGE_MAX_DEG) + " deg";
-            return true;
-        }
-        if (hz < NONG_FRAME_HZ_MIN || hz > NONG_FRAME_HZ_MAX) {
-            reply = "ERR frame rate must be " + String(NONG_FRAME_HZ_MIN) + ".." +
-                    String(NONG_FRAME_HZ_MAX) + " Hz";
-            return true;
-        }
-        if (hi <= lo) { reply = "ERR joint max must exceed min"; return true; }
+        // The SAME rules the single-field commands enforce, because they are
+        // the same rules - see JointRules.h. A batch must never be a way to
+        // smuggle in a value GEAR or PULSE would have refused, and the only
+        // way to be sure of that is for both to ask the same function.
+        if (!jointrule::gear(pinion, gear, reply)) return true;
+        if (!jointrule::pulse(pmin, pmax, reply)) return true;
+        if (!jointrule::dps(dps, reply)) return true;
+        if (!jointrule::travel(rng, reply)) return true;
+        if (!jointrule::hz(hz, reply)) return true;
+        if (!jointrule::limits(lo, hi, reply)) return true;
 
         const bool reattachNeeded = (pulseMin_[j] != pmin) || (pulseMax_[j] != pmax) ||
                                     (frameHz_[j] != hz);
@@ -615,7 +629,7 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
             return true;
         }
         int p = argv[2].toInt(), g = argv[3].toInt();
-        if (p < 1 || g < 1) { reply = "ERR pinion/gear must be >=1"; return true; }
+        if (!jointrule::gear(p, g, reply)) return true;
         const JointSel sel = selectJoints(argv[1]);
         if (!sel.ok) { reply = jointSelHelp(); return true; }
         const int j = sel.one;
@@ -638,9 +652,7 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
             return true;
         }
         int lo = argv[2].toInt(), hi = argv[3].toInt();
-        if (lo < 100 || hi <= lo + 100 || hi > 5000) {
-            reply = "ERR need 100<=min, max>min+100, max<=5000 (us)"; return true;
-        }
+        if (!jointrule::pulse(lo, hi, reply)) return true;
         float dps = (argc >= 5) ? argv[4].toFloat() : 0;
         const JointSel sel = selectJoints(argv[1]);
         if (!sel.ok) { reply = jointSelHelp(); return true; }
@@ -672,11 +684,7 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
             return true;
         }
         float r = argv[2].toFloat();
-        if (r < NONG_RANGE_MIN_DEG || r > NONG_RANGE_MAX_DEG) {
-            reply = "ERR servo travel must be " + String(NONG_RANGE_MIN_DEG) + ".." +
-                    String(NONG_RANGE_MAX_DEG) + " deg (180 normal, 270 wide)";
-            return true;
-        }
+        if (!jointrule::travel(r, reply)) return true;
         const JointSel sel = selectJoints(argv[1]);
         if (!sel.ok) { reply = jointSelHelp(); return true; }
         const int j = sel.one;
@@ -744,11 +752,7 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
             return true;
         }
         int hz = argv[2].toInt();
-        if (hz < NONG_FRAME_HZ_MIN || hz > NONG_FRAME_HZ_MAX) {
-            reply = "ERR frame rate " + String(NONG_FRAME_HZ_MIN) + ".." +
-                    String(NONG_FRAME_HZ_MAX) + " Hz (50 normal, 330 for PDI-1181MG)";
-            return true;
-        }
+        if (!jointrule::hz(hz, reply)) return true;
         const JointSel sel = selectJoints(argv[1]);
         if (!sel.ok) { reply = jointSelHelp(); return true; }
         const int j = sel.one;
@@ -806,18 +810,22 @@ void NongModule::status(JsonObject o) {
         jmin.add(minDeg_[i]);
         jmax.add(maxDeg_[i]);
     }
-    // per-joint servo + gear (each joint can be a different servo)
-    JsonArray gp = o["gear_pinion"].to<JsonArray>();
-    JsonArray gg = o["gear_gear"].to<JsonArray>();
-    JsonArray pmin = o["pulse_min"].to<JsonArray>();
-    JsonArray pmax = o["pulse_max"].to<JsonArray>();
-    JsonArray mdps = o["max_dps"].to<JsonArray>();
-    JsonArray srng = o["servo_range"].to<JsonArray>();
-    JsonArray fhz = o["frame_hz"].to<JsonArray>();
-    for (int i = 0; i < N; i++) {
-        gp.add(gearPinion_[i]); gg.add(gearGear_[i]);
-        pmin.add(pulseMin_[i]); pmax.add(pulseMax_[i]);
-        mdps.add(maxDps_[i]); srng.add(servoRange_[i]); fhz.add(frameHz_[i]);
+    // Per-joint servo + gear, from the ONE table (see JointField). This was
+    // seven hand-declared arrays and a loop that had to name every field
+    // again; a field added to the table appears here on its own.
+    //
+    // joint_min and joint_max are added above under their older names, min and
+    // max, which Studio and the hub already read - so they are skipped here
+    // rather than sent twice under a second name.
+    for (int f = 0; f < fieldCount_; f++) {
+        const char* key = fields_[f].key;
+        if (!strcmp(key, "joint_min") || !strcmp(key, "joint_max") ||
+            !strcmp(key, "trim") || !strcmp(key, "neutral")) continue;
+        JsonArray a = o[key].to<JsonArray>();
+        for (int i = 0; i < N; i++) {
+            if (fields_[f].i) a.add(fields_[f].i[i]);
+            else              a.add(fields_[f].f[i]);
+        }
     }
     o["moving"] = moving_;
     o["attached"] = attached_;

@@ -75,6 +75,42 @@ def run(t):
          "and says it only when there really are none",
          "an empty state that shows on an error is how a broken list hides")
 
+    # ---- BROKEN is not EMPTY ----------------------------------------
+    # A malformed app.json used to be reported three different wrong ways: the
+    # hub answered 200 with an empty list, so the page said *No tools yet* and
+    # told the operator to go and ADD a tool; or registry.apps() raised, the
+    # request became a 500, and the page said *the hub may have stopped*, which
+    # is false and throws away the file and line that RegistryError already
+    # knew. Both hid a real fault behind a tidy state.
+    man = F.CODE / "apps" / "help" / "app.json"
+    keep = man.read_text(encoding="utf-8")
+    try:
+        man.write_text(keep.replace("{", "{,", 1), encoding="utf-8")
+        with urllib.request.urlopen(base + "/api/apps", timeout=10) as r:
+            broke = json.loads(r.read())
+            code = r.status
+        t.eq(code, 200, "a broken registry is still an answer, not a 500")
+        t.ok(broke.get("ok") is False,
+             "and the answer says it failed",
+             "an empty list with ok:true is indistinguishable from having no "
+             "tools, which is what made this invisible")
+        t.contains(str(broke.get("error", "")), "app.json",
+                   "naming the file that could not be read")
+        t.contains(str(broke.get("error", "")), "line",
+                   "and where in it")
+
+        dom2 = _load(base + "/")
+        card2 = dom2[dom2.find('id="tools"'):]
+        card2 = card2[:card2.find("</div>", card2.find("</div>") + 6) + 6]
+        t.ok("could not be read" in card2,
+             "the page says the list could not be read")
+        t.ok("No tools yet" not in card2,
+             "and does NOT tell the operator to go and add one",
+             "that is advice for a different situation, and it hides a fault "
+             "somebody could fix in ten seconds if they were told which file")
+    finally:
+        man.write_text(keep, encoding="utf-8", newline="")
+
     # The specific mistake, kept out by name: the loop variable is `a`, and
     # anything reaching for a module's fields here is the same bug again.
     body = fn[fn.find("apps.forEach"):]

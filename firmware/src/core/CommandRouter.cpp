@@ -250,9 +250,7 @@ String CommandRouter::handleLocked(const String& line) {
             // Saying "keys: ..." for a value that was simply too large sent
             // people looking for a spelling error that was not there.
             if (why.startsWith("ERR unknown setting"))
-                return "ERR keys: encoder leds speed speed_mms stages stage_mm "
-                       "mm_per_rev counts_per_rev max_rpm counts_per_stage "
-                       "volume speed_dps max_dps link peer";
+                return "ERR keys: " + cfg_->keys();
             return why;
         }
         return "OK " + k + "=" + argv[2] + " (reboot to apply)";

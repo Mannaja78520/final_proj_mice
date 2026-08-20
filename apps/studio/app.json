@@ -10,5 +10,6 @@
   "root": "nong/main_python_set_nong/web",
   "url": "/studio/",
   "entry": "index.html",
-  "order": 10
+  "order": 10,
+  "help": "studio"
 }

@@ -2250,6 +2250,181 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:  # noqa: BLE001
             self.send_err(e, 500)
 
+    def dev_route(self, method: str, what: str, q):
+        """One call to a module, whichever way it is reached.
+
+        `what` is the part after /api/dev/ - cmd, status, files,
+        download, delete or upload - and `q` carries `dev`, which says
+        HOW: wifi:IP, usb:COM, usb:COM:busid, or hub:IP/... for a module
+        on another PC's cable.
+
+        Split out of route() on 2026-08-20 so /api/robot/* can be a shim
+        over it rather than a second implementation. The two had already
+        drifted: /api/robot/cmd guarded against a second show clock and
+        the rest of /api/robot/* did not, and none of them could reach a
+        module through another hub or behind a peer, which this path has
+        done since A2-4.
+        """
+        dev = (q.get("dev") or [""])[0]
+        # A module on ANOTHER PC's cable: hand the whole call to the hub
+        # that owns it, unchanged. Everything downstream then works exactly
+        # as it does locally — the same routes, the same module website,
+        # the same Studio — because only the address had to change.
+        try:
+            hub_ip, inner = split_hub_dev(dev)
+        except ValueError as e:
+            return self.send_err(str(e))
+        if hub_ip and is_self(hub_ip):
+            # That address IS this PC. Handle it here rather than making an
+            # HTTP round trip to ourselves — which works, but wastes a
+            # request thread and hides the real device behind a hop. Caught
+            # by check_shared_modules: forwarding to 127.0.0.2 (all of
+            # 127.0.0.0/8 is loopback) came back PONG from our own fake.
+            dev, hub_ip = inner, None
+        if hub_ip:
+            if self.headers.get("X-Mice-Forwarded"):
+                return self.send_err(
+                    "that module is not on this PC's cables", 502)
+            try:
+                body = self.body() if method == "POST" else None
+                args = {k: v[0] for k, v in q.items() if v}
+                args["dev"] = inner          # the address as THAT PC sees it
+                url = "http://%s:%d%s?%s" % (hub_ip, PORT, path,
+                                             urllib.parse.urlencode(args))
+                req = urllib.request.Request(
+                    url, data=body, method="POST" if body is not None else "GET")
+                req.add_header("X-Mice-Forwarded", "1")
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    out = r.read()
+                    ctype = r.headers.get("Content-Type",
+                                          "text/plain; charset=utf-8")
+                return self.send_bytes(out, ctype)
+            except urllib.error.HTTPError as e:
+                if e.code == 401:
+                    # THAT hub gates its own actions, and a session here is
+                    # not a session there — the token is issued by one
+                    # process and means nothing to another. Forwarding the
+                    # cookie would not help, and letting a forwarded call
+                    # through unchecked would mean anyone on the venue WiFi
+                    # could set one header and drive the robot. So the
+                    # person logs in there too, and is told so plainly.
+                    return self.send_bytes(json.dumps({
+                        "ok": False, "need_login": True, "hub": hub_ip,
+                        "error": "that module is on %s — open http://%s:%d/ "
+                                 "and log in there first" % (hub_ip, hub_ip, PORT),
+                    }).encode(), MIME[".json"], 401)
+                return self.send_err(
+                    "the PC holding this module refused (%s): %s" % (hub_ip, e), 502)
+            except Exception as e:           # noqa: BLE001
+                return self.send_err(
+                    "could not reach the PC holding this module (%s) — is it "
+                    "still on and running the hub? %s" % (hub_ip, e), 502)
+        try:
+            if what == "cmd":
+                c = (q.get("c") or [""])[0]
+                # A motion command from the MODULE WEBSITE has to stop the
+                # hub's show, exactly as one over /api/usb/cmd or
+                # /api/robot/cmd does. This route was the hole: open
+                # "⚙ Open module" on a robot the hub is playing, drag a
+                # joint, and the show player kept sending POSE while the
+                # page sent JOINT — two clocks on one arm, and the servos
+                # fight. Done HERE and not inside dev_cmd(), or the show
+                # player's own commands would stop the show.
+                try:
+                    k, a, b, _peer = parse_dev(dev)
+                    check_takeover(k, a, b, c)
+                except Exception:            # noqa: BLE001
+                    pass                     # a bad dev fails below anyway
+                return self.send_bytes(dev_cmd(dev, c).encode(),
+                                       "text/plain; charset=utf-8")
+            if what == "status":
+                return self.send_bytes(dev_status(dev), "application/json")
+            if what == "files":
+                return self.send_bytes(dev_files(dev, (q.get("dir") or ["/moves"])[0]),
+                                       "application/json")
+            if what == "peers":
+                kind, addr, bus, peer = parse_dev(dev)
+                if kind == "wifi" and not peer:
+                    return self.send_bytes(Handler.robot_get(addr, "/api/peers"),
+                                           "application/json")
+                # Over a cable this is the whole point: with no venue WiFi
+                # the other modules sit on THIS module's own hotspot, and
+                # the PEERS command is the only way anything upstream can
+                # learn they exist. It used to answer [] and the fleet was
+                # invisible from the one cable that could reach it.
+                try:
+                    return self.send_bytes(dev_cmd(dev, "PEERS").encode(),
+                                           "application/json")
+                except Exception:
+                    return self.send_json([])
+            if what == "cam.stream":
+                # The live view, piped straight through. An <img> cannot go
+                # through the fetch shim, so the page addresses this URL
+                # itself; the hub copies the module's multipart body to the
+                # browser until one of them goes away.
+                kind, addr, bus, peer = parse_dev(dev)
+                if kind != "wifi" or peer:
+                    return self.send_err(
+                        "a live view cannot come down the USB/RS485 cable — "
+                        "open this module over WiFi", 501)
+                import http.client
+                up = http.client.HTTPConnection(addr, timeout=20)
+                up.request("GET", "/api/cam.stream")
+                r = up.getresponse()
+                if r.status != 200:
+                    up.close()
+                    return self.send_err(r.read().decode(errors="replace")[:200],
+                                         r.status)
+                self.send_response(200)
+                self.send_header("Content-Type", r.getheader("Content-Type"))
+                self.send_header("Cache-Control", "no-store")
+                # No length is possible: it ends when the viewer leaves. So
+                # this one response opts out of keep-alive explicitly,
+                # rather than leaving the browser waiting for a length.
+                self.send_header("Connection", "close")
+                self.close_connection = True
+                self.end_headers()
+                try:
+                    while True:
+                        chunk = r.read(2048)
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk)
+                except Exception:            # noqa: BLE001 - the browser
+                    pass                      # closed the tab; that is normal
+                finally:
+                    up.close()
+                return
+            if what == "cam.jpg":
+                # A camera frame, for the module site served BY the hub.
+                # The page asks for /api/cam.jpg; the shim rewrites it to
+                # here, and this fetches it from the board.
+                kind, addr, bus, peer = parse_dev(dev)
+                if kind != "wifi" or peer:
+                    # Not a limitation worth hiding: a JPEG cannot travel on
+                    # a one-line command channel, which is all a cable is.
+                    return self.send_err(
+                        "a picture cannot come down the USB/RS485 cable — "
+                        "open this module over WiFi to see the camera", 501)
+                return self.send_bytes(
+                    Handler.robot_get(addr, "/api/cam.jpg"), "image/jpeg")
+            if what == "download":
+                return self.send_bytes(dev_download(dev, (q.get("path") or [""])[0]),
+                                       "application/octet-stream")
+            if what == "delete":
+                return self.send_bytes(dev_delete(dev, (q.get("path") or [""])[0]).encode(),
+                                       "text/plain; charset=utf-8")
+            if what == "upload" and method == "POST":
+                return self.send_bytes(dev_upload(dev, (q.get("dir") or ["/moves"])[0],
+                                                  safe_name((q.get("name") or ["f"])[0]),
+                                                  self.body()).encode(),
+                                       "text/plain; charset=utf-8")
+            return self.send_err("unknown dev endpoint " + what, 404)
+        except Exception as e:  # noqa: BLE001
+            return self.send_err(e, 502)
+
+    # ---- hub: discovery ----
+
     def route(self, method: str):
         url = urllib.parse.urlparse(self.path)
         q = urllib.parse.parse_qs(url.query)
@@ -2489,166 +2664,8 @@ class Handler(BaseHTTPRequestHandler):
         # These back the one module website served at /mod?dev=... so it is
         # identical over every transport.
         if path.startswith("/api/dev/"):
-            dev = (q.get("dev") or [""])[0]
-            what = path[len("/api/dev/"):]
-            # A module on ANOTHER PC's cable: hand the whole call to the hub
-            # that owns it, unchanged. Everything downstream then works exactly
-            # as it does locally — the same routes, the same module website,
-            # the same Studio — because only the address had to change.
-            try:
-                hub_ip, inner = split_hub_dev(dev)
-            except ValueError as e:
-                return self.send_err(str(e))
-            if hub_ip and is_self(hub_ip):
-                # That address IS this PC. Handle it here rather than making an
-                # HTTP round trip to ourselves — which works, but wastes a
-                # request thread and hides the real device behind a hop. Caught
-                # by check_shared_modules: forwarding to 127.0.0.2 (all of
-                # 127.0.0.0/8 is loopback) came back PONG from our own fake.
-                dev, hub_ip = inner, None
-            if hub_ip:
-                if self.headers.get("X-Mice-Forwarded"):
-                    return self.send_err(
-                        "that module is not on this PC's cables", 502)
-                try:
-                    body = self.body() if method == "POST" else None
-                    args = {k: v[0] for k, v in q.items() if v}
-                    args["dev"] = inner          # the address as THAT PC sees it
-                    url = "http://%s:%d%s?%s" % (hub_ip, PORT, path,
-                                                 urllib.parse.urlencode(args))
-                    req = urllib.request.Request(
-                        url, data=body, method="POST" if body is not None else "GET")
-                    req.add_header("X-Mice-Forwarded", "1")
-                    with urllib.request.urlopen(req, timeout=10) as r:
-                        out = r.read()
-                        ctype = r.headers.get("Content-Type",
-                                              "text/plain; charset=utf-8")
-                    return self.send_bytes(out, ctype)
-                except urllib.error.HTTPError as e:
-                    if e.code == 401:
-                        # THAT hub gates its own actions, and a session here is
-                        # not a session there — the token is issued by one
-                        # process and means nothing to another. Forwarding the
-                        # cookie would not help, and letting a forwarded call
-                        # through unchecked would mean anyone on the venue WiFi
-                        # could set one header and drive the robot. So the
-                        # person logs in there too, and is told so plainly.
-                        return self.send_bytes(json.dumps({
-                            "ok": False, "need_login": True, "hub": hub_ip,
-                            "error": "that module is on %s — open http://%s:%d/ "
-                                     "and log in there first" % (hub_ip, hub_ip, PORT),
-                        }).encode(), MIME[".json"], 401)
-                    return self.send_err(
-                        "the PC holding this module refused (%s): %s" % (hub_ip, e), 502)
-                except Exception as e:           # noqa: BLE001
-                    return self.send_err(
-                        "could not reach the PC holding this module (%s) — is it "
-                        "still on and running the hub? %s" % (hub_ip, e), 502)
-            try:
-                if what == "cmd":
-                    c = (q.get("c") or [""])[0]
-                    # A motion command from the MODULE WEBSITE has to stop the
-                    # hub's show, exactly as one over /api/usb/cmd or
-                    # /api/robot/cmd does. This route was the hole: open
-                    # "⚙ Open module" on a robot the hub is playing, drag a
-                    # joint, and the show player kept sending POSE while the
-                    # page sent JOINT — two clocks on one arm, and the servos
-                    # fight. Done HERE and not inside dev_cmd(), or the show
-                    # player's own commands would stop the show.
-                    try:
-                        k, a, b, _peer = parse_dev(dev)
-                        check_takeover(k, a, b, c)
-                    except Exception:            # noqa: BLE001
-                        pass                     # a bad dev fails below anyway
-                    return self.send_bytes(dev_cmd(dev, c).encode(),
-                                           "text/plain; charset=utf-8")
-                if what == "status":
-                    return self.send_bytes(dev_status(dev), "application/json")
-                if what == "files":
-                    return self.send_bytes(dev_files(dev, (q.get("dir") or ["/moves"])[0]),
-                                           "application/json")
-                if what == "peers":
-                    kind, addr, bus, peer = parse_dev(dev)
-                    if kind == "wifi" and not peer:
-                        return self.send_bytes(Handler.robot_get(addr, "/api/peers"),
-                                               "application/json")
-                    # Over a cable this is the whole point: with no venue WiFi
-                    # the other modules sit on THIS module's own hotspot, and
-                    # the PEERS command is the only way anything upstream can
-                    # learn they exist. It used to answer [] and the fleet was
-                    # invisible from the one cable that could reach it.
-                    try:
-                        return self.send_bytes(dev_cmd(dev, "PEERS").encode(),
-                                               "application/json")
-                    except Exception:
-                        return self.send_json([])
-                if what == "cam.stream":
-                    # The live view, piped straight through. An <img> cannot go
-                    # through the fetch shim, so the page addresses this URL
-                    # itself; the hub copies the module's multipart body to the
-                    # browser until one of them goes away.
-                    kind, addr, bus, peer = parse_dev(dev)
-                    if kind != "wifi" or peer:
-                        return self.send_err(
-                            "a live view cannot come down the USB/RS485 cable — "
-                            "open this module over WiFi", 501)
-                    import http.client
-                    up = http.client.HTTPConnection(addr, timeout=20)
-                    up.request("GET", "/api/cam.stream")
-                    r = up.getresponse()
-                    if r.status != 200:
-                        up.close()
-                        return self.send_err(r.read().decode(errors="replace")[:200],
-                                             r.status)
-                    self.send_response(200)
-                    self.send_header("Content-Type", r.getheader("Content-Type"))
-                    self.send_header("Cache-Control", "no-store")
-                    # No length is possible: it ends when the viewer leaves. So
-                    # this one response opts out of keep-alive explicitly,
-                    # rather than leaving the browser waiting for a length.
-                    self.send_header("Connection", "close")
-                    self.close_connection = True
-                    self.end_headers()
-                    try:
-                        while True:
-                            chunk = r.read(2048)
-                            if not chunk:
-                                break
-                            self.wfile.write(chunk)
-                    except Exception:            # noqa: BLE001 - the browser
-                        pass                      # closed the tab; that is normal
-                    finally:
-                        up.close()
-                    return
-                if what == "cam.jpg":
-                    # A camera frame, for the module site served BY the hub.
-                    # The page asks for /api/cam.jpg; the shim rewrites it to
-                    # here, and this fetches it from the board.
-                    kind, addr, bus, peer = parse_dev(dev)
-                    if kind != "wifi" or peer:
-                        # Not a limitation worth hiding: a JPEG cannot travel on
-                        # a one-line command channel, which is all a cable is.
-                        return self.send_err(
-                            "a picture cannot come down the USB/RS485 cable — "
-                            "open this module over WiFi to see the camera", 501)
-                    return self.send_bytes(
-                        Handler.robot_get(addr, "/api/cam.jpg"), "image/jpeg")
-                if what == "download":
-                    return self.send_bytes(dev_download(dev, (q.get("path") or [""])[0]),
-                                           "application/octet-stream")
-                if what == "delete":
-                    return self.send_bytes(dev_delete(dev, (q.get("path") or [""])[0]).encode(),
-                                           "text/plain; charset=utf-8")
-                if what == "upload" and method == "POST":
-                    return self.send_bytes(dev_upload(dev, (q.get("dir") or ["/moves"])[0],
-                                                      safe_name((q.get("name") or ["f"])[0]),
-                                                      self.body()).encode(),
-                                           "text/plain; charset=utf-8")
-                return self.send_err("unknown dev endpoint " + what, 404)
-            except Exception as e:  # noqa: BLE001
-                return self.send_err(e, 502)
+            return self.dev_route(method, path[len("/api/dev/"):], q)
 
-        # ---- hub: discovery ----
         if path == "/api/servos":
             # The ONE servo table, shared with the firmware (which compiles it
             # into a header). Studio reads this instead of keeping a second
@@ -2661,9 +2678,21 @@ class Handler(BaseHTTPRequestHandler):
             # what the hub page offers to open — rendered from the registry, so
             # a new app appears without editing hub.html
             if not registry:
-                return self.send_json({"ok": False, "apps": [], "error": "registry unavailable"})
-            out = [{k: a[k] for k in ("id", "name", "blurb", "icon", "path", "order")}
-                   for a in registry.apps() if a.get("show", True)]
+                return self.send_json({"ok": False, "apps": [],
+                                       "error": "registry unavailable"})
+            # A MALFORMED app.json IS THE LIKELY FAULT, and it used to be the
+            # worst-reported one: registry.apps() raises RegistryError naming
+            # the file and the line, nothing caught it, the request became a
+            # 500, and the page said *the hub may have stopped* - which is
+            # false, and throws away the only detail that fixes it. Answer with
+            # the reason instead, so the screen can print the file and line.
+            try:
+                out = [{k: a[k] for k in ("id", "name", "blurb", "icon",
+                                          "path", "order", "help")}
+                       for a in registry.apps() if a.get("show", True)]
+            except Exception as e:                          # noqa: BLE001
+                return self.send_json({"ok": False, "apps": [],
+                                       "error": str(e)[:300]})
             return self.send_json({"ok": True, "apps": out})
 
         if path == "/api/scan":
@@ -2783,18 +2812,21 @@ class Handler(BaseHTTPRequestHandler):
         # /module.html, and Nong Studio's "USB (shared)" link — so they can
         # all be open on the same port at once. Optional id = RS485 address
         # of a module BEHIND this port.
+        # The cable spelling of the same call - see the /api/robot/* note above.
+        # Studio uses this one so a module site and Studio can share one cable
+        # (usb transport -> cableCmd), and it was the third implementation of
+        # "send this command to that module". `usb:COM` and `usb:COM:busid` are
+        # exactly what dev_route already understands.
         if path == "/api/usb/cmd":
             port = (q.get("port") or [""])[0]
             c = (q.get("c") or [""])[0]
-            bus = int((q.get("id") or ["0"])[0] or 0)
+            bus = (q.get("id") or ["0"])[0] or "0"
             if not port or not c:
                 return self.send_err("need port and c")
-            check_takeover("usb", port, bus, c)   # never two clocks on one robot
-            try:
-                return self.send_bytes(usb_cmd(port, c, bus).encode(),
-                                       "text/plain; charset=utf-8")
-            except Exception as e:  # noqa: BLE001
-                return self.send_err(e, 502)
+            dev = "usb:" + port + ((":" + bus) if bus not in ("", "0") else "")
+            inner = dict(q)
+            inner["dev"] = [dev]
+            return self.dev_route(method, "cmd", inner)
 
         if path == "/api/usb/close":
             # hand the cable back to an outside program (esptool, a serial
@@ -3020,37 +3052,25 @@ class Handler(BaseHTTPRequestHandler):
                                    "path": str((SEQUENCES / name))})
 
         # ---- robot proxy (dodges CORS) ----
-        if path == "/api/robot/cmd":
+        # /api/robot/* IS /api/dev/* OVER WIFI. It is the older spelling, still
+        # used by Nong Studio and anything that learned the hub before cables
+        # were reachable, and it was a SECOND implementation of the same five
+        # calls. The two had already drifted: only /api/robot/cmd guarded
+        # against a second show clock, and none of these could reach a module
+        # through another hub or behind a peer - which the dev path has done
+        # since A2-4. So they are shims now: same address, one code path.
+        if path.startswith("/api/robot/") and path != "/api/robot/upload":
+            what = path[len("/api/robot/"):]
+            if what not in ("cmd", "status", "files", "download", "delete"):
+                return self.send_err("unknown robot call: " + what)
             ip = (q.get("ip") or [""])[0]
-            c = (q.get("c") or [""])[0]
-            if not ip or not c:
+            if not ip:
+                return self.send_err("need ip")
+            if what == "cmd" and not (q.get("c") or [""])[0]:
                 return self.send_err("need ip and c")
-            check_takeover("wifi", ip, 0, c)      # never two clocks on one robot
-            r = self.robot_get(ip, "/api/cmd?c=" + urllib.parse.quote(c))
-            return self.send_bytes(r, "text/plain; charset=utf-8")
-
-        if path == "/api/robot/status":
-            ip = (q.get("ip") or [""])[0]
-            return self.send_bytes(self.robot_get(ip, "/api/status"))
-
-        if path == "/api/robot/files":
-            ip = (q.get("ip") or [""])[0]
-            d = (q.get("dir") or ["/moves"])[0]
-            return self.send_bytes(self.robot_get(ip, "/api/files?dir=" + urllib.parse.quote(d)))
-
-        if path == "/api/robot/download":
-            ip = (q.get("ip") or [""])[0]
-            p = (q.get("path") or [""])[0]
-            return self.send_bytes(
-                self.robot_get(ip, "/api/download?path=" + urllib.parse.quote(p)),
-                "text/yaml; charset=utf-8")
-
-        if path == "/api/robot/delete":
-            ip = (q.get("ip") or [""])[0]
-            p = (q.get("path") or [""])[0]
-            return self.send_bytes(
-                self.robot_get(ip, "/api/delete?path=" + urllib.parse.quote(p)),
-                "text/plain; charset=utf-8")
+            inner = dict(q)
+            inner["dev"] = ["wifi:" + ip]
+            return self.dev_route(method, what, inner)
 
         if path == "/api/robot/upload" and method == "POST":
             data = json.loads(self.body().decode())

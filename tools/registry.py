@@ -73,6 +73,13 @@ APPS_DIR = CODE / "apps"
 APP_DEFAULTS = {
     "name": "", "blurb": "", "icon": "", "entry": "index.html",
     "root": "", "url": "", "order": 100, "show": True,
+    # Which part of the help page is about this tool. Empty means the tool has
+    # no section, and then no help link is offered rather than one pointing at
+    # the top of a page of a thousand lines - landing on the wrong paragraph
+    # reads as an answer, which is worse than landing nowhere. Declared here
+    # so a new tool brings its own help link with it, like everything else in
+    # this registry.
+    "help": "",
 }
 
 

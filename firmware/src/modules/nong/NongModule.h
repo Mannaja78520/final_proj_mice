@@ -171,6 +171,35 @@ private:
     // servo FRAME RATE in Hz (50 normal, 330 for the PDI-1181MG digital servo).
     // Set at attach time; a wrong rate can make a digital servo cut torque.
     int frameHz_[N] = NONG_FRAME_HZ_DEF;
+    // EVERY PER-JOINT FIELD, ONCE. Three places write these out as text - the
+    // YAML export, the LIMIT? reply and the status JSON - and each used to
+    // spell out every field by hand. Adding a field meant editing all three,
+    // and forgetting one was SILENT: the field would save, load and drive the
+    // servo perfectly while being missing from one API, so Studio or the hub
+    // would show a stale value with nothing to explain it.
+    //
+    // The table names the field once and says how to read it. The binary
+    // calibration blob is deliberately NOT driven from here: it is a fixed
+    // struct whose layout is checked by CAL_VERSION, and a table would add a
+    // way to get that wrong without removing a copy the compiler already
+    // guards.
+    struct JointField {
+        const char* key;          // the name every API uses
+        const float* f;           // exactly one of these is set
+        const int* i;
+        uint8_t decimals;         // how it is written as text
+    };
+    // Filled in the constructor, because it points at this instance's arrays.
+    // Room to spare on purpose. The first version of this table was sized
+    // exactly to the fields it listed, and frame_hz was missed - the very
+    // mistake the table exists to prevent, hidden by an array with no room
+    // to notice.
+    JointField fields_[16];
+    int fieldCount_ = 0;
+    void buildFields();
+    // One field of one joint, as text, in the one format every API shares.
+    String fieldText(int f, int joint) const;
+
     float speedDps_ = NONG_DEFAULT_SPEED_DPS;  // show speed (all joints)
     bool link_ = false;              // leader: repeat pose cmds on RS485
     int peer_ = 0;                   // partner module id (0 = broadcast to all)
@@ -190,7 +219,6 @@ private:
     // The one sentence that says what a person may type instead.
     static const char* jointSelHelp() { return "ERR joint 1-10, name, or ALL"; }
     float clampJoint(int i, float deg) const;
-    float maxDelta(const float tgt[N]) const;       // largest joint change (deg)
     float slowestMaxDps() const;                    // slowest joint's limit
     uint32_t durationFor(const float tgt[N]) const; // ms from speed setting
     uint32_t minDuration(const float tgt[N]) const; // physical floor from max_dps

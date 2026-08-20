@@ -170,6 +170,10 @@ SOLO = {
     # the stylesheet sees a theme that is not there, and the page-version hash
     # sees the file change twice. Raised by the panel 2026-08-20.
     "check_themes",
+    # It breaks an app.json on purpose to prove a broken registry does not read
+    # as an empty one, and puts it back. Any check reading the app registry
+    # while that is happening sees a fault that is not theirs.
+    "check_tools_list",
 }
 
 

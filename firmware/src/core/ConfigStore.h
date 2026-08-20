@@ -25,6 +25,12 @@ public:
     // Copy stored overrides into doc (same shape as module.yaml). True if any.
     bool applyTo(JsonDocument& doc);
     String list();
+    // Every key this store accepts, from the one table that defines them.
+    // The CFG command used to print a hand-typed list, which is a second
+    // copy of a list that already exists - and the kind that goes stale
+    // silently, because a missing key only shows up when somebody is
+    // already lost enough to have asked for help.
+    String keys() const;
 
 private:
     Preferences prefs_;

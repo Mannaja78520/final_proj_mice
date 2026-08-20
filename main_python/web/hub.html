@@ -443,7 +443,33 @@ function showTab(name){
     b.classList.toggle('on', b.getAttribute('data-go')===name);
   });
   try{ localStorage.setItem('hubTab', name); }catch(e){}
+  helpFor(name);
   if(name==='network'){ loadNet(); loadHubs(false); }
+}
+
+// HELP ABOUT WHAT YOU ARE LOOKING AT. The help page has had a section anchor
+// per area from the start, and nothing ever linked to one: every Help link
+// went to the top of a page of over a thousand lines, so finding the paragraph
+// about the screen in front of you meant scrolling past everything else. The
+// link now carries the current tab's section.
+//
+// A tab with no section of its own keeps the plain link rather than guessing:
+// landing on the wrong paragraph is worse than landing at the top, because it
+// reads as an answer.
+var HELP_SECTION = {
+  home:     'hub',
+  modules:  'modsite',
+  firmware: 'firmware',
+  network:  'transports',
+  tools:    'hub',
+  settings: 'hub'
+};
+function helpFor(name){
+  var a = document.querySelector('#tabs a.tab-link');
+  if(!a) return;
+  var sec = HELP_SECTION[name];
+  a.href = sec ? ('/help#' + sec) : '/help';
+  a.title = sec ? ('Help about ' + name) : 'Help';
 }
 
 // ---- network & linking -------------------------------------------------
@@ -703,7 +729,22 @@ async function loadApps(){
   try{
     const r=await fetch('/api/apps').then(r=>r.json());
     const apps=r.apps||[];
-    // An empty state teaches: say what goes here and how one gets here.
+    // BROKEN IS NOT EMPTY. When the registry cannot be read the hub answers
+    // 200 with {ok:false, apps:[], error:...} - so this never reached the
+    // catch below, and the page told the operator to go and ADD a tool when
+    // the truth was that the list could not be read at all. Wrong advice, and
+    // it hid a real fault behind a tidy empty state.
+    if(r.ok===false||r.error){
+      el.innerHTML='<span class="mini">The tool list could not be read: '
+        +'<span style="color:var(--warn)">'+esc(String(r.error||'unknown'))
+        +'</span>. Your tools are still there. Check that every '
+        +'<code>code/apps/*/app.json</code> is valid JSON — the hub prints the '
+        +'reason in its window.</span> '
+        +'<button onclick="loadApps()">Try again</button>';
+      return;
+    }
+    // An empty state teaches: say what goes here and how one gets here. It is
+    // only reached when the hub really did read the registry and found none.
     if(!apps.length){el.innerHTML='<span class="mini">No tools yet. A tool is a '
       +'folder with an <code>app.json</code> in <code>code/apps/</code> — drop '
       +'one in and it appears here.</span>';return;}
@@ -722,7 +763,17 @@ async function loadApps(){
                   '<span class="ip">'+(a.blurb||'')+'</span>';
       const b=document.createElement('button');b.className='primary';b.textContent='Open';
       b.onclick=()=>window.open(a.path,'_blank');
-      d.appendChild(b);el.appendChild(d);
+      d.appendChild(b);
+      // Help about THIS tool, when the tool says which section is about it
+      // (app.json -> help). No section, no link: one pointing at the top of the
+      // help page is not help, it is a thousand lines and a scrollbar.
+      if(a.help){
+        const h=document.createElement('a');
+        h.className='tab tab-link'; h.href='/help#'+encodeURIComponent(a.help);
+        h.textContent='Help ↗'; h.title='Help about '+a.name;
+        d.appendChild(h);
+      }
+      el.appendChild(d);
     });
   }catch(e){
     // An error says what to DO, and offers the control that does it.

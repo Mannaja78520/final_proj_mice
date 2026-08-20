@@ -30,6 +30,15 @@ static const KeyMap MAP[] = {
     {"peer", "peer", 0, 247},              // nong: partner module id (0 = broadcast)
 };
 
+String ConfigStore::keys() const {
+    String out;
+    for (auto& m : MAP) {
+        if (out.length()) out += " ";
+        out += m.yaml;
+    }
+    return out;
+}
+
 void ConfigStore::begin() {
     prefs_.begin("modcfg", false);
 }
