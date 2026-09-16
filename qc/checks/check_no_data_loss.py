@@ -121,7 +121,9 @@ def run(t):
     portal = (F.CODE / "firmware/src/core/WebPortal.cpp").read_text(
         encoding="utf-8", errors="replace")
     k = portal.find('server_.on("/api/upload"')
-    body_up = portal[k:k + 2600] if k >= 0 else ""
+    # to the next route, not a fixed char count: the handler grew when the
+    # destination became per-request and the rename fell off a 2600-char window
+    body_up = portal[k:portal.find("\n    server_.on(", k)] if k >= 0 else ""
     t.contains(body_up, ".part",
                "the HTTP upload route does the same")
     t.contains(body_up, "SD.rename",
@@ -154,9 +156,28 @@ def run(t):
     for rel in ("main_python/MiceHub.exe",           # rebuilt, never authored
                 "promt.md",                          # the live prompt log
                 "docs/PLAN.html",                    # progress, edited as it lands
+                "docs/plan_state.js",                # ...and what it reads
+                "docs/system_integral.html",         # the other plan page
+                "docs/system_integral_state.js",     # ...and what it reads
                 "main_python/hub_auth.json",         # this machine's password
                 "main_python/hub_password.txt",      # ...and the readable copy
-                "nong/main_python_set_nong/settings_shared.json"):
+                # The login for an outside app, on THIS machine. It sits here
+                # rather than under apps/ because every file in an app folder
+                # is served with no login at all - a review caught that
+                # placement before it shipped. Promoting a staged copy would
+                # put a test login over the real one.
+                "main_python/faces_login.json",
+                "nong/main_python_set_nong/settings_shared.json",
+                # The patch LOGS, one per area. Each patcher appends to the
+                # copy in the REAL tree, so a staging copy is stale the moment
+                # a snapshot is taken - and promoting it would rewrite the
+                # history with an older one, losing the newest entries. Caught
+                # 2026-09-08 while checkpointing before another agent started,
+                # with three of them already out of step.
+                "PATCHES.md",
+                "firmware/PATCHES.md",
+                "nong/main_python_set_nong/PATCHES.md",
+                "docs/HANDOVER.md"):
         t.ok(promote.skip(Path(rel)),
              "promote leaves %s alone" % rel,
              "the running system writes this file — promoting a staging copy "

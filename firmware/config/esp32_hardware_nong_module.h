@@ -58,6 +58,12 @@
     #define NONG_SERVO_RANGE_DEF   { 270, 270, 180, 180, 270, 270, 180, 180, 270, 270}
     #define NONG_RANGE_MIN_DEG     60     // sanity bounds for the RANGE command
     #define NONG_RANGE_MAX_DEG     360
+    // How far the OFFSET command may correct one joint, in JOINT degrees, either
+    // way. A servo horn refits in whole teeth — about 14 deg of shaft, so under
+    // 12 deg of joint on the geared shoulders — and 30 covers two teeth on the
+    // 1:1 waist. Past that the arm is assembled wrong and an offset only drives
+    // the servo towards its end stop, where it stalls and cooks its gearbox.
+    #define NONG_OFFSET_MAX_DEG    30
     // Per-joint SERVO FRAME RATE (Hz). DEFAULT 50 for every joint — this is the
     // rate the robot ran at BEFORE, and it works. The PDI-1181MG datasheet lists
     // 330 Hz as its rate, and 330 Hz IS available (RATE command / Studio), BUT
@@ -104,5 +110,34 @@
     // Nong Studio can show the true joint angle; commands stay in servo deg.
     #define NONG_GEAR_PINION       12
     #define NONG_GEAR_GEAR         13
+
+    // ===== Speaker amp (A7-9, A24-16) =====
+    // NONG_-prefixed, like NONG_SERVO_PINS: esp32_hardware.h includes the lift
+    // header AND this one in every build, so a bare I2S_BCLK_PIN here silently
+    // overwrote the lift's own 27 (found 2026-08-27). HwConfig picks the set
+    // that matches the built type.
+    // Only 0/2/12 are free after 10 servos, SD (5/18/19/23) and RS485
+    // (4/16/17), and all three are strap pins. Which one carries the audio
+    // matters at RESET, not while running:
+    //   GPIO2  wants LOW or floating at reset — the analog amp's filter
+    //          capacitor to GND holds it there, so this is the safe one.
+    //   GPIO12 wants LOW at reset (HIGH selects 1.8V flash and the board will
+    //          not boot) — also fine behind the same filter.
+    //   GPIO0  wants HIGH at reset and shares the auto-flash transistor, so it
+    //          is the WRONG place for a wire pulled toward GND.
+    // Hence DOUT (the one wire an analog amp needs) sits on GPIO2, and GPIO0
+    // carries LRC, which only a 3-wire I2S amp uses at all.
+    #define NONG_I2S_BCLK_PIN 12
+    #define NONG_I2S_LRC_PIN  0
+    #define NONG_I2S_DOUT_PIN 2
+    // Which amplifier a fresh nong assumes — one id from config/amps.json.
+    // The user's part, said 2026-08-27: a MAX98357A, digital I2S. It needs all
+    // three pins, which is exactly what a full nong has left. Each board
+    // overrides this from its Hardware-pins page (NVS), no reflash.
+    // WATCH AT BOOT: GPIO0 must be HIGH at reset, and here it carries LRC. If
+    // the board drops into download mode with the amp plugged in, add a 10k
+    // pull-up from GPIO0 to 3V3, or move the speaker to an analog amp (one
+    // wire on GPIO2) instead.
+    #define NONG_AUDIO_AMP_DEFAULT "max98357a"
 
 #endif

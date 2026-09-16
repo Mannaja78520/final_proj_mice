@@ -76,7 +76,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-if ROOT.name == ".staging":
+if ROOT.name.startswith(".staging"):
     REAL = ROOT.parent
 else:
     REAL = ROOT
@@ -89,8 +89,33 @@ BRIEF = ROOT / "tools" / "ai_brief.txt"
 # (see ask()): a panel of two is not a panel. Flash is here for breadth rather
 # than depth - it is fast and cheap, and a fifth reader costs little because
 # every one of them is given tools/ai_brief.txt and a hard line budget.
-PANEL = [] or ["gemini-3.1-pro-high", "claude-opus-4-6-thinking",
-         "claude-sonnet-4-6", "gemini-3.7-flash-high", "gpt-oss-120b-medium"]
+# THE GEMINI VOICES ONLY, since 2026-08-20. Not a downgrade - a split, decided
+# with the user after measuring where each voice actually earned its place:
+#
+#   * GEMINI PRO stays and is the reason this tool exists. It is the only way
+#     to reach Gemini at all, and it is the best designer of anything a person
+#     looks at. It earned it again the same day, on the flash control: keep ONE
+#     button, let the hub pick the transport, and name the transport in the
+#     status line so a four-minute wait explains itself. Better than what would
+#     have been built without asking.
+#   * CLAUDE OPUS AND SONNET LEFT THIS LIST, and did NOT leave the review. They
+#     are now asked as Claude Code subagents instead, on the user's own
+#     Anthropic plan. Same models, one less layer, and not sharing the pooled
+#     Antigravity quota that ran dry on 2026-08-20 with nothing available until
+#     about the 25th. Measured the same day: two subagents cost 51k and 64k
+#     tokens and found two real defects - an optional md5 that would let a
+#     corrupted image boot, and a stale-row colour regression - while one agy
+#     panel run cost 676k tokens and returned nothing at all, because every
+#     model read files for ten minutes and only then hit the error.
+#   * GPT-OSS LEFT because it has never demonstrably found anything here. It
+#     spent days failing silently behind a `(nothing)` that read as approval,
+#     and after that was fixed it still has no finding to its name.
+#
+# So: this file is the GEMINI half of the panel, and the Claude half is the
+# Agent tool. Both halves still run - see the plan and CLAUDE.md - and the rule
+# that matters is unchanged: every finding is a shortlist to check against the
+# code, never a fact.
+PANEL = ["gemini-3.1-pro-high", "gemini-3.7-flash-high"]
 HEAD = "gemini-3.1-pro-high"
 
 # The SHAPE of an answer, enforced by agy rather than asked for in words.
@@ -121,6 +146,34 @@ SCHEMA = {
 def clean(text):
     """A prompt agy will not truncate. Quotes are the whole problem."""
     return text.replace('"', "'").replace("“", "'").replace("”", "'")
+
+
+# WHEN THE TOOL FAILS, THAT IS NOT AN OPINION.
+#
+# agy prints its own troubles on stdout like any other text: an expired login,
+# a used-up quota, a timeout. The prose fallback below then parses those lines
+# into "findings" and, because there were findings, the run counts as a success.
+# Measured 2026-08-20: a panel of five came back with all five models broken -
+# two needing a re-login and three out of quota for five days - and the report
+# listed the login URL as a finding of severity "unchecked". 603,425 tokens
+# spent, no review done, and nothing in the report saying so.
+#
+# The rule this file already carries is that a failure prints FAILED and never
+# an empty list. This is the same rule one step earlier: a failure must not be
+# able to disguise itself as content.
+_TOOL_FAILURE = re.compile(
+    r"quota reached|Authentication required|authentication (failed|timed out)"
+    r"|Please upgrade your subscription|rate.?limit|Error: ",
+    re.I)
+
+
+def tool_failed(text):
+    """The reason this model said nothing usable, or "" if it really answered."""
+    for line in (text or "").splitlines():
+        line = line.strip()
+        if line and _TOOL_FAILURE.search(line):
+            return line[:160]
+    return ""
 
 
 def ask(model, prompt, add_dirs, timeout=600, schema=True, retry=True):
@@ -179,6 +232,13 @@ def ask(model, prompt, add_dirs, timeout=600, schema=True, retry=True):
     finally:
         if sf:
             shutil.rmtree(sf.parent, ignore_errors=True)
+    # LAST WORD: if what came back is the TOOL complaining, it is a failure
+    # however many lines of it there are. Without this the prose fallback turns
+    # an expired login into eight confident-looking findings and the run reports
+    # a successful review — see tool_failed().
+    broke = tool_failed(raw)
+    if broke:
+        findings, error = [], broke
     return {"model": model, "secs": round(time.time() - t0, 1),
             "text": raw, "findings": findings, "used": used, "error": error}
 
@@ -203,6 +263,13 @@ def prose_findings(text, limit=8):
     return out
 
 
+SOURCE_SUFFIXES = (".py", ".js", ".css", ".html", ".h", ".cpp", ".json", ".md")
+# Build output and dependency trees are not the work under review, and one of
+# them (.pio) is larger than everything else here put together.
+SKIP_DIRS = {".pio", "node_modules", "__pycache__", "build", "dist", "generated"}
+NAME_CAP = 60
+
+
 def where_of(paths):
     """The directories to hand to agy, and the file names to name in the prompt.
 
@@ -223,10 +290,35 @@ def where_of(paths):
         if q.is_dir():
             if q not in dirs:
                 dirs.append(q)
-            names += sorted(f.name for f in q.iterdir()
-                            if f.is_file() and f.suffix in (
-                                ".py", ".js", ".css", ".html", ".h", ".cpp",
-                                ".json", ".md"))
+            # RECURSE. iterdir() reads the top level only, and naming a project
+            # root then listed seven files that happened to sit beside the
+            # source. Measured 2026-08-20: a question about
+            # firmware/src/core/BusUpdate.cpp reported its files as
+            # ".qc-receipt.json, CHANGELOG.md, CLAUDE.md, NEXT_SESSION.md,
+            # README.md, promote.py, promt.md" — none of them the subject. The
+            # models could still reach the real files through --add-dir, so the
+            # answer looked plausible while the stated scope was fiction.
+            found = []
+            for f in q.rglob("*"):
+                if not f.is_file() or f.suffix not in SOURCE_SUFFIXES:
+                    continue
+                # The RELATIVE parts, not the absolute ones. Testing f.parts
+                # walks the whole path from the drive letter down — which
+                # includes `.staging`, so the dot rule threw away every file in
+                # the tree this tool exists to review. It reported zero files
+                # for a folder holding eleven.
+                rel = f.relative_to(q)
+                if any(p in SKIP_DIRS or p.startswith(".") for p in rel.parts):
+                    continue
+                found.append(str(rel).replace("\\", "/"))
+            found.sort()
+            if len(found) > NAME_CAP:
+                # Say it was trimmed. A truncated list presented as the whole
+                # is the same lie in a smaller font.
+                names += found[:NAME_CAP] + ["...and %d more under %s"
+                                             % (len(found) - NAME_CAP, q.name)]
+            else:
+                names += found
         elif q.is_file():
             if q.parent not in dirs:
                 dirs.append(q.parent)
@@ -314,16 +406,54 @@ def run(question, paths, models=None, head=None, out=None):
               "**Files.** %s" % (", ".join(files) or "none"),
               "**Cost.** %s tokens across %d models"
               % (spent or "?", len(models) + 1), "",
-              "## The head reviewer (%s)" % head, ""] + rows(verdict["findings"])
+              # said(), not rows(). rows() falls back to "(nothing)", and on
+              # the HEAD line that reads as "the reviewer found no problems"
+              # when it means "the reviewer never ran". That is the exact
+              # failure this file was written to stop, and it was still live
+              # here on 2026-08-20: five broken models, and a verdict that
+              # said "(nothing)".
+              "## The head reviewer (%s)" % head, ""] + said(verdict)
     report += ["", "## What each model said", ""]
     for a in answers:
         report += ["### %s  _(%.1fs, %s tokens)_"
                    % (a["model"], a["secs"],
                       (a.get("used") or {}).get("total_tokens", "?")), ""]
         report += said(a) + [""]
-    report += ["---", "",
-               "_A verdict is a shortlist, not a fact. Every finding here is "
-               "checked against the code before anything changes._"]
+    # NO PANEL AT ALL IS NOT A CLEAN REVIEW.
+    #
+    # When every model is broken, the report is a page of FAILED lines, and a
+    # page of FAILED lines still LOOKS like a review that found nothing. It has
+    # to say, at the top and on the console, that no review happened - and the
+    # exit code has to be non-zero so a script cannot treat it as a pass.
+    # Measured 2026-08-20: two models needed a re-login and three were out of
+    # quota for five days; the run cost 603,425 tokens and read as complete.
+    alive = [a for a in answers if a["findings"] or not a.get("error")]
+    dead = not alive
+    if dead:
+        why = sorted({a.get("error", "")[:60] for a in answers if a.get("error")})
+        # THE HEAD CAN SURVIVE A DEAD PANEL, and then the banner has to say
+        # something different. Seen 2026-08-20: both panel models timed out,
+        # the head read the files itself and produced six specific findings,
+        # and the page still said "nothing below is a judgement about the
+        # code" - which was untrue of the very next paragraph. A warning that
+        # is wrong about its own page teaches people to skip warnings.
+        if verdict["findings"]:
+            banner = ["> **THE PANEL FAILED — this is ONE model's unreviewed "
+                      "opinion.** All %d panel models failed, so nothing "
+                      "cross-checked the findings below and no second voice "
+                      "disagreed with them. Treat them as a shortlist to read "
+                      "the code against, which is the rule anyway, but with "
+                      "none of the safety a panel is for." % len(answers), ""]
+        else:
+            banner = ["> **NO REVIEW HAPPENED.** All %d models failed, so "
+                      "nothing below is a judgement about the code — it is a "
+                      "list of outages. Do not read the absence of findings "
+                      "as approval." % len(answers), ""]
+        banner += ["> - %s" % w for w in why] + [""]
+        report[4:4] = banner
+        print("\n!! NO REVIEW HAPPENED - all %d models failed:" % len(answers))
+        for w in why:
+            print("     " + w)
 
     text = "\n".join(report)
     if out:
@@ -332,7 +462,7 @@ def run(question, paths, models=None, head=None, out=None):
         print("\nwrote", out)
     else:
         print("\n" + verdict["text"])
-    return text
+    return "" if dead else text
 
 
 def main(argv):
@@ -352,10 +482,12 @@ def main(argv):
     if not a.ask:
         ap.print_help()
         return 2
-    run(a.ask, a.dir,
-        models=[m.strip() for m in a.models.split(",")] if a.models else None,
-        head=a.head, out=a.out)
-    return 0
+    # Non-zero when the panel did not run, so a caller that gates on this
+    # cannot mistake an outage for an all-clear.
+    got = run(a.ask, a.dir,
+              models=[m.strip() for m in a.models.split(",")] if a.models else None,
+              head=a.head, out=a.out)
+    return 0 if got else 3
 
 
 if __name__ == "__main__":

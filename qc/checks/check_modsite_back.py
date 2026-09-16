@@ -38,6 +38,16 @@ setTimeout(async function(){
   try{
     var w = document.getElementById('f').contentWindow;
     var d = document.getElementById('f').contentDocument;
+    // WAIT for the board page, do not BET on it. A fixed pause is a bet on how
+    // fast the machine is today, and in the parallel gate on 2026-08-20 this
+    // one lost: the page was not ready, showHubLink did not exist yet, and the
+    // check reported six wrong VALUES rather than the one true fact that the
+    // page had not loaded.
+    await qcWaitFor(function(){
+      return typeof w.showHubLink === 'function'
+          && document.getElementById('f').contentDocument.getElementById('hubBack');
+    }, 40000);
+    d = document.getElementById('f').contentDocument;
     if (typeof w.showHubLink !== 'function') return done("missing=showHubLink");
     var a = d.getElementById('hubBack');
     if (!a) return done("missing=hubBack");
@@ -74,7 +84,7 @@ def run(t):
     fake_serial.reset()
     base, _main = F.start_hub()
     url = "/mod?dev=usb%3A" + urllib.parse.quote(fake_serial.PORT)
-    browser.raw_page(DRIVER % url, base, seconds=35)
+    browser.raw_page(DRIVER % url, base, seconds=70)
 
     got = {}
     for m in fake_serial.qc_marks:
@@ -84,6 +94,18 @@ def run(t):
                 got[k] = v
     if not t.ok(got, "the board page reported back",
                 "%r" % (fake_serial.qc_marks[-3:],)):
+        return
+    # A PAGE THAT NEVER LOADED IS ONE FACT, NOT SIX WRONG VALUES.
+    # The driver reports `missing=` or `ERR=` and then stops, so every
+    # assertion below reads None and fails with a confident-looking expected
+    # value it was never in a position to measure. That is what happened in
+    # the gate on 2026-08-20: six failures about the hub link, when the truth
+    # was that the board page had not finished loading.
+    if "missing" in got or "ERR" in got:
+        t.ok(False, "the board page loaded far enough to be measured",
+             "the driver stopped early (%s), so nothing below was measured. "
+             "That is a page that did not load in time, not a missing hub link."
+             % (got.get("missing") or got.get("ERR")))
         return
 
     t.eq(got.get("hub_shown"), "yes",

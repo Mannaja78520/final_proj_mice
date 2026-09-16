@@ -22,6 +22,7 @@ import json
 
 import browser
 import fake_serial
+import fake_wifi
 import qc as F
 
 AREA = "hub"
@@ -61,8 +62,13 @@ setTimeout(async function(){
     var names = rows.map(function(r){
       var n = r.querySelector('.nm'); return n ? n.textContent : '?'; });
     var text = rows.length ? rows[0].textContent.replace(/[^A-Za-z0-9]+/g, "_") : "";
+    // The WAYS IN are their own line under the row now, and reading them out of
+    // the row's whole text meant reading past a 90-character cut - which is how
+    // this check reported a row that had stopped naming WiFi when it had not.
+    var via = rows.length ? rows[0].querySelector('.via') : null;
     done(["rows=" + rows.length,
           "names=" + names.join(",").replace(/[^A-Za-z0-9,]+/g, "_"),
+          "via=" + (via ? via.textContent.replace(/[^A-Za-z0-9]+/g, "_") : "none"),
           "says=" + text.slice(0, 90)].join(" "));
   } catch (e) { done("ERR=" + String(e).replace(/[^A-Za-z0-9=]+/g, "_").slice(0,50)); }
 }, 4000);
@@ -179,6 +185,18 @@ def run(t):
     t.ok(main.board_key({"chip": "A1"}) != main.board_key({"id": 1}),
          "and a board with a chip is never confused with one without")
 
+    # ---- the REAL WiFi probe must carry the chip itself --------------
+    # Every stub above hands its answer a chip, which is how the gap stayed
+    # invisible: probe_module dropped `chip` from /api/status while the USB
+    # probe kept it, so on the bench (2026-08-26) one board answered on a
+    # cable AND over WiFi and drew two rows - keyed as two different boards.
+    fake_wifi.reset()
+    wip = fake_wifi.start()
+    seen = main.probe_module(wip)
+    t.ok(seen, "the real WiFi probe answers a standing board")
+    t.eq((seen or {}).get("chip"), fake_wifi.CHIP,
+         "and it carries the chip MAC off /api/status, like the USB probe does")
+
     # ---- and the SCREEN shows one row --------------------------------
     if not browser.available():
         return
@@ -196,8 +214,8 @@ def run(t):
     t.eq(got.get("rows"), "1",
          "a board on a cable AND on the WiFi is ONE row, not two")
     t.eq(got.get("names"), "armA", "and it is named once")
-    t.contains(got.get("says", ""), "COM9",
+    t.contains(got.get("via", ""), "COM9",
                "the row says it can be reached on the cable")
-    t.contains(got.get("says", ""), "WiFi",
+    t.contains(got.get("via", ""), "WiFi",
                "and over WiFi, so nobody has to guess which row does what")
 

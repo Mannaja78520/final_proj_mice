@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include "core/BusUpdate.h"
 
 class Identity;
 class Module;
@@ -71,6 +72,8 @@ private:
     ConfigStore* cfg_ = nullptr;
     SemaphoreHandle_t mtx_ = nullptr;
     uint32_t rebootAt_ = 0;
+    // Firmware arriving as commands, so the channel does not matter.
+    BusUpdate fw_;
 
     String handleLocked(const String& line);
     bool preemptSequence(const String& line);   // true when it stopped one

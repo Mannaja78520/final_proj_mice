@@ -29,7 +29,12 @@ first, every session. It holds:
     **read from the machine, never guessed** — `date "+%Y-%m-%d %H:%M"` when you
     pick a task up, and the `when:` line in the patch snapshot you just saved
     when it lands. Stamps written from memory drifted by up to five hours here,
-    and two of them were in the future, which makes the whole page untrustworthy.
+    and two of them were in the future, which makes the whole page untrustworthy;
+* **Anything the user asks for goes into the STATE block the moment it is
+  asked, in their own words, before the work starts.** Asked 2026-08-22 after
+  having to ask several times: *make sure you will update the plan.html
+  everytime too i need to told you everytime*. If the user ever has to ask
+  whether the plan was updated, the rule was broken.
 * **decisions already taken** — do not re-open them and do not ask the user
   again. They are settled and the reasons are written down.
 * **verified facts** — assumptions from the original brief that the code
@@ -60,6 +65,28 @@ then review and edit if wrong, to save time*. So:
   touch files that do not overlap. Two parallel edits to one file is a lost
   edit, and this session has already lost work to a stray path;
 * promote tasks together when they landed together — one QC gate for the batch;
+* and do not run anything HEAVY while a gate is running, even when it touches
+  nothing the gate reads. Measured 2026-08-20: a gate failed with
+  `ConnectionAbortedError: WinError 10053` in `check_flash_remote`, which POSTs
+  a 1.3 MB image between two hub instances — while an ollama model had the GPU
+  at 96% and a 9 GB model download had the network. The same check passed alone
+  in 11.9 s immediately afterwards. That is the THIRD load-induced false
+  failure in one day (`check_flash_confirm`, `check_responsive`, this one), and
+  each cost a full 7-minute gate to learn nothing. A red gate that is really
+  the machine being busy is worse than a slow one: it sends the next half hour
+  into code that was never wrong;
+* **Writing a file from Python on Windows rewrites every line ending.**
+  `Path.write_text()` translates `\n` to `\r\n`, so a one-line edit turns the
+  whole file CRLF while the rest of the repo stays LF. Cost a gate on
+  2026-08-20: `shared/web/mice.css` came back with 317 CRLF endings, the hub
+  served the raw bytes and QC read the file with universal newlines, so
+  `check_design_system` reported the board and the hub serving different
+  stylesheets — 316 bytes apart, one per line. Nothing was wrong with the CSS.
+  Use `write_bytes`, or `open(..., newline="")`, or the Edit tool, which does
+  not translate;
+* and do not EDIT `.staging` while a gate is running. `promote.py` copies what
+  is on disk when it finishes, not what was there when it started, so a file
+  edited mid-run can be promoted without any check having read that version;
 * but NEVER run two things that drive the fake module at once. `run_qc.py`,
   `promote.py` and any throwaway measurement script all report through the same
   fake serial port and the same `qc_marks` list. Running a measurement during a
@@ -273,6 +300,27 @@ against a fake had never suggested.
    it truncates there silently and still returns confident nonsense. Ask for
    FIND/REPLACE blocks, never whole files (whole files time out).
 
+## Comments: keep the WHY, cut the story
+
+Asked for 2026-08-20, to reduce output on every change. Comments here are the
+biggest thing written, and many retell a whole incident where two lines carry
+the lesson.
+
+**Keep:** the measurement and its date, the reason a line is the way it is,
+what breaking it would cost, and the trap that is not visible in the code.
+**Cut:** narrating what the code plainly says, retelling a bug already recorded
+in a check's docstring, and repeating a rule stated elsewhere in this file.
+
+**Cap: about 6 lines for a block, 1 for a line comment.** Longer only where a
+real bug was paid for and the detail is what stops it returning. One fact, one
+line — not one fact, one paragraph.
+
+The QC check docstring is where a long story belongs: it is read when the check
+fails, which is exactly when the story matters.
+
+Replies to the user: short by default. Full length only for warnings,
+destructive steps, step-by-step sequences, and answers to *why*.
+
 ## Nothing hardcoded — the user's standing rule
 
 Asked for directly, 2026-08-18, and it applies to Claude AND to Gemini: write
@@ -293,6 +341,22 @@ things so they can be changed later without editing code.
   through four files to answer what does this do. Plain, obvious, commented.
 * The test: **can someone add the next one without opening this file?** If not,
   the list is in the wrong place.
+
+## Every screen is for a designer, not a programmer
+
+Asked 2026-08-22: *all of the website in this project are designer use not
+programmer... if find the web which it hard to use make it simple*. On every
+page the hub serves:
+
+* anything settable is clickable — a value somebody has to edit in a file or
+  type into a URL bar is a bug;
+* plain words on the surface; technical detail (addresses, ids, ports,
+  exception text, status codes) hides behind the technical switch;
+* simple on top and complete underneath — the Home / Modules split is the
+  pattern.
+
+`check_designer_first` holds this. The banned-word list lives in DATA
+(`qc/data/designer_words.json`) — the next word costs no code.
 
 ## Division of labour, agreed with the user
 
@@ -344,7 +408,13 @@ once it edited the REAL tree instead of staging, and twice a promote simply did
 not run because the shell was still inside `firmware/`.
 
 Rebuild the exe when `main.py` changed:
-`python -m PyInstaller --onefile --icon main_python/nong.ico --name MiceHub main_python/main.py`
+`python -m PyInstaller --clean MiceHub.spec` — **the spec, never a bare
+`--onefile` command.** The old line here named the script directly, which does
+two damaging things: it builds an exe with no web pages and no registries (it
+starts, prints `registries unavailable: No module named 'registry'` and answers
+500 on every page), and PyInstaller REWRITES `MiceHub.spec` with a generated
+stub, destroying the curated one. Both happened on 2026-08-21; the spec had to
+be restored with `git checkout -- MiceHub.spec`.
 
 ## Two standing cautions
 
@@ -362,8 +432,28 @@ Rebuild the exe when `main.py` changed:
 with `file:line` evidence, produced from three full explorations. Read those
 before exploring from scratch; a cold session does not need to repeat the work.
 
+## Every equation is written down too — keep it that way
+
+`docs/ref.html` answers *which equation or outside reference does this part
+use*, one entry per formula, each naming the real file and line. Asked for
+2026-08-28: *alway update this ref too if we add something new or edit it*.
+
+**So: change a formula, add an entry.** The entries are DATA in
+`docs/ref_data.js`, so it costs one entry and no page code. `check_ref` holds
+the bargain — it fails when an entry names a file that does not exist, when a
+field is missing, and when a function in `NongMath.h` has no entry at all. It
+is a test rather than a promise because a reference nobody updates is worse
+than none: it is believed.
+
 ## Sub-project rules still apply
 
 `firmware/CLAUDE.md` and `nong/main_python_set_nong/CLAUDE.md` carry rules for
 those folders (COMMANDS.md must stay in sync, patch after every web change,
 document every feature in `help.html`). They are not replaced by this file.
+
+## Session limits: current routing rule
+
+Follow docs/COORDINATION.md, including its provider-limit and resume procedure.
+User 2026-09-14: Codex helps first; Gemini/other providers are fallback when
+Codex is limited or unavailable. This supersedes older fixed role/panel routing
+above. Preserve verification and record exact task/tree/evidence in BRIDGE.

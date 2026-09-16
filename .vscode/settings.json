@@ -1,0 +1,13 @@
+{
+  "http.proxy": "",
+  "http.proxyStrictSSL": false,
+  "http.proxySupport": "off",
+  "http.timeout": 300000,
+  "http.noProxy": ["*"],
+  "claude.maxRetries": 10,
+  "claude.retryDelay": 10000,
+  "claude.connectionTimeout": 60000,
+  "claude.requestTimeout": 300000,
+  "remote.autoForwardPorts": false,
+  "remote.autoForwardPortsSource": "off"
+}

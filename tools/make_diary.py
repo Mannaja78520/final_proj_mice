@@ -17,7 +17,13 @@ import sys
 from collections import OrderedDict
 from pathlib import Path
 
+# The REAL tree, always - a working copy is never the right place to read
+# from. Every PATCHES.md is in promote.py's SKIP_FILES because each patcher
+# appends to the copy in the real tree, so a freshly made working copy holds
+# none of them and the diary built there would be empty while looking fine.
 CODE = Path(__file__).resolve().parent.parent
+if CODE.name.startswith(".staging"):
+    CODE = CODE.parent
 
 SOURCES = [
     ("studio", CODE / "nong" / "main_python_set_nong" / "PATCHES.md"),

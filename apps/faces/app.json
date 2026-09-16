@@ -1,0 +1,10 @@
+{
+  // The outside programs Mice follows. Reconize is the first, not a special
+  // case: config/partners.json describes each one, so the next app is an entry
+  // and no code (asked 2026-09-08).
+  "name": "Reconize",
+  "blurb": "the face app: who it recognises, and what the rig does about it",
+  "icon": "👋",
+  "order": 45,
+  "help": "faces"
+}

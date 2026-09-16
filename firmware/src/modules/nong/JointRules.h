@@ -87,4 +87,20 @@ inline bool limits(float lo, float hi, String& err) {
     return true;
 }
 
+// The mounting correction for one joint, in JOINT degrees. It is a servo horn
+// refitted a tooth or two out, not a way to re-aim the arm: a horn tooth is
+// about 14 deg of shaft, so anything past a quarter turn of the joint means the
+// arm is assembled wrong and no offset will save it. Bounded because trim is
+// added straight into servo degrees — a wild value drives the servo into its own
+// end stop and holds it there, stalled, which is how a gearbox is destroyed.
+inline bool offset(float deg, String& err) {
+    if (deg < -NONG_OFFSET_MAX_DEG || deg > NONG_OFFSET_MAX_DEG) {
+        err = "ERR offset must be -" + String(NONG_OFFSET_MAX_DEG) + ".." +
+              String(NONG_OFFSET_MAX_DEG) + " deg (it corrects a horn fitted a "
+              "tooth out; a bigger error means it is assembled wrong)";
+        return false;
+    }
+    return true;
+}
+
 }  // namespace jointrule

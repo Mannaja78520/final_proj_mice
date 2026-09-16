@@ -1,0 +1,88 @@
+/* ox.css — the /o/ version's layout layer. Sits ON the shared design system
+ * (/mice.css is linked first and owns tokens + components); this file only
+ * decides how a page is ARRANGED: the workbench zones, the sheet over them,
+ * and the one card skeleton every card shares. No colours here — anything a
+ * colour could say is already a token or a state class in the shared files.
+ */
+
+/* The page frame: a workbench column, wide enough for two module cards
+   side by side on a desk, never wider than a reading width. */
+.wrap{max-width:980px;margin:0 auto;padding:0 var(--sp-3) var(--sp-6)}
+
+/* ---------------------------------------------------------- zone navigation */
+/* Three zones in show-night order. The nav is quiet until it is useful: it
+   appears after login (the gate hides the zones anyway) and sticks while a
+   long Tonight list scrolls. */
+.znav{position:sticky;top:0;z-index:5;display:flex;gap:var(--sp-2);
+      flex-wrap:wrap;padding:var(--sp-2) 0;margin-bottom:var(--sp-3);
+      background:color-mix(in srgb,var(--bg) 88%,transparent)}
+.znav a{padding:var(--sp-1) var(--sp-3);border-radius:var(--r-pill);
+        border:1px solid var(--line);text-decoration:none;font-size:14px}
+.znav a:hover{border-color:var(--acc)}
+.zone{margin-bottom:var(--sp-6)}
+
+/* ------------------------------------------------- the one card skeleton */
+/* Every card on every /o/ surface is this anatomy:
+       .xcard > .xt (title row) + .xs (state line) + .xb (body) + .xa (actions)
+   and five state classes on the card decide what the slots say. One
+   skeleton means the five states are written once, not per feature. */
+.xcard{display:flex;flex-direction:column;gap:var(--sp-2)}
+.xt{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2)}
+.xt .grow{flex:1;min-width:0;font-weight:600}
+.xs{min-height:1.2em}
+.xa{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+
+/* loading: body dims, actions stay visible so nothing jumps */
+.xcard.loading .xb{opacity:.45}
+.xcard.loading .xa button{pointer-events:none}
+/* empty/error/stale speak through the state line; colour comes from the
+   shared state classes (.state-empty/.state-err/.state-stale), words always
+   ride with them — never colour alone. */
+.xcard.stale{border-left:3px solid var(--warn)}
+
+/* A module card reuses the shared type edge (.mod.t-* from mice.css). */
+.xcard.mod{border-top-width:2px}
+
+/* ------------------------------------------------------------------ sheets */
+/* A sheet is a full-screen overlay holding ONE job (flash, pair, settings).
+   Real routes stay real URLs; the sheet is how you reach them from a card. */
+.sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;
+       justify-content:center;background:color-mix(in srgb,var(--bg) 75%,transparent)}
+@media (min-width:640px){.sheet{align-items:center}}
+.sheet-panel{background:var(--bg);border:1px solid var(--line);
+             border-radius:var(--r-lg) var(--r-lg) 0 0;width:100%;max-width:720px;
+             max-height:92vh;overflow:auto;padding:var(--sp-4)}
+@media (min-width:640px){.sheet-panel{border-radius:var(--r-lg)}}
+.sheet-head{display:flex;align-items:center;gap:var(--sp-2);margin-bottom:var(--sp-3)}
+.sheet-head h2{margin:0;flex:1;text-transform:none;letter-spacing:0;
+               font-size:18px;color:var(--txt)}
+
+/* Flash wizard steps: shown one at a time, back always safe. */
+.fwstep[hidden]{display:none}
+.fwpick{display:flex;align-items:center;gap:var(--sp-2);padding:var(--sp-2);
+        border:1px solid var(--line);border-radius:var(--r-md);cursor:pointer}
+.fwpick:hover{border-color:var(--acc)}
+.fwpick input{width:18px;height:18px}
+
+/* progress: an honest bar - it moves slowly on a bus line, so the word
+   beside it names the route while it runs */
+.pbar{height:10px;border:1px solid var(--line);border-radius:var(--r-pill);
+      overflow:hidden;background:var(--sunk)}
+.pbar i{display:block;height:100%;width:0;background:var(--acc);
+        transition:width .4s}
+
+/* report rows on the complaints card */
+.rep{border-top:1px solid var(--line);padding-top:var(--sp-2);
+     margin-top:var(--sp-2)}
+.rep:first-child{border-top:0;padding-top:0;margin-top:0}
+.rep .when{font-size:12px;color:var(--mut)}
+
+/* QR block: the picture plus the address spoken in text next to it */
+.qrrow{display:flex;gap:var(--sp-3);align-items:center;flex-wrap:wrap}
+
+/* ---- Studio shell (the copy under /o/studio/) -------------------------- */
+/* One quiet way home, and the workshop keeps the desk layout it had. */
+.backhub{font-size:13px;color:var(--acc);text-decoration:none;padding:var(--sp-1)
+         var(--sp-2);border:1px solid var(--line);border-radius:var(--r-sm);
+         background:var(--card);white-space:nowrap}
+.backhub:hover{border-color:var(--acc)}

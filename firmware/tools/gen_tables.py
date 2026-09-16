@@ -27,6 +27,7 @@ here, from ONE source each:
 
     config/commands.json  -> core/CommandHelp.h       this type's commands
     config/servos.json    -> modules/nong/ServoPresets.h
+    config/amps.json      -> core/AmpTable.h          the speaker amps
     src/web/WebUI.h       -> web/ModuleUI.h           this type's page
     ../shared/web/mice.css-> web/MiceCss.h            the shared design system
 
@@ -67,8 +68,11 @@ sys.path.insert(0, str(CODE / "tools"))
 from registry import strip_jsonc  # noqa: E402
 
 SERVOS_JSON = FIRMWARE / "config" / "servos.json"
+AMPS_JSON = FIRMWARE / "config" / "amps.json"
+RGB_PINS_JSON = FIRMWARE / "config" / "rgb_pins.json"
 MODULES_JSON = FIRMWARE / "config" / "modules.json"
 CAM_BOARDS_JSON = FIRMWARE / "config" / "cam_boards.json"
+CAM_CONTROLS_JSON = FIRMWARE / "config" / "cam_controls.json"
 WEBUI_MASTER = FIRMWARE / "src" / "web" / "WebUI.h"
 # The ONE design system, shared with the hub, the help page, the RGB page and
 # Nong Studio. The board has no filesystem to read it from, so it is compiled
@@ -197,6 +201,179 @@ inline String servoPresetNames() {
 COMMANDS_JSON = FIRMWARE / "config" / "commands.json"
 
 
+AMP_MODES = ("i2s", "analog", "dac", "none")
+AUDIO_PIN_KEYS = ("i2s_bclk", "i2s_lrc", "i2s_dout")
+
+
+# GPIOs that exist on an ESP32 and can drive an output. 34-39 are input-only
+# and 6-11 belong to the flash chip, so a strip on any of them is a wire that
+# never blinks - refused here rather than compiled.
+RGB_BAD_PINS = set(range(6, 12)) | set(range(34, 40))
+
+
+def gen_rgb_pins(out, types):
+    """config/rgb_pins.json -> modules/lift/RgbPins.h
+
+    FastLED fixes the data pin at COMPILE time (it is a template parameter), so
+    the strip's pin was the one pin on the board a person could not choose from
+    the website - and nothing on that page said why. This writes a switch with
+    one instantiation per allowed pin, so the page can offer them and the
+    choice lands in NVS like every other pin. Each entry costs a few hundred
+    bytes of flash: that is why the list is short and lives in a file somebody
+    can edit without touching code.
+    """
+    if "lift" not in types:
+        return 0                     # only a lift build carries a strip
+    data = json.loads(strip_jsonc(RGB_PINS_JSON.read_text(encoding="utf-8")))
+    pins = [int(p["gpio"]) for p in data.get("pins", [])]
+    if not pins:
+        raise SystemExit("no pins in %s" % RGB_PINS_JSON)
+    for g in pins:
+        if g in RGB_BAD_PINS or not 0 <= g <= 39:
+            raise SystemExit("rgb pin %d cannot drive a strip (input-only, "
+                             "flash, or not a GPIO on this chip)" % g)
+    if len(set(pins)) != len(pins):
+        raise SystemExit("the same rgb pin is listed twice in %s" % RGB_PINS_JSON)
+    default = int(data.get("default", pins[0]))
+    if default not in pins:
+        raise SystemExit("the default rgb pin %d is not in the list" % default)
+
+    cases = "\n".join(
+        "    case %d: FastLED.addLeds<WS2812B, %d, GRB>(leds, n); return true;"
+        % (g, g) for g in pins)
+    body = """
+#pragma once
+#include <FastLED.h>
+
+// Which pin a strip may be wired to. One case per pin because FastLED takes it
+// as a template parameter; the board picks at boot from what NVS holds.
+#define RGB_PIN_DEFAULT {default}
+
+inline bool rgbAddLeds(int gpio, CRGB* leds, int n) {{
+    switch (gpio) {{
+{cases}
+    }}
+    return false;              // not a pin this build was given
+}}
+
+static const int RGB_PINS[] = {{ {list} }};
+static const int RGB_PIN_COUNT = {count};
+""".format(default=default, cases=cases,
+           list=", ".join(str(g) for g in pins), count=len(pins))
+
+    write_if_changed(out_path(out, "modules/lift/RgbPins.h"),
+                     BANNER % RGB_PINS_JSON.name + body,
+                     "%d rgb data pins" % len(pins))
+    return len(pins)
+
+
+def gen_amps(out, types):
+    """config/amps.json -> core/AmpTable.h
+
+    The amp is a per-board WIRING fact, so the firmware carries the whole list
+    and the board's website picks one by name. A mode this generator does not
+    know is refused here rather than compiled: an unknown mode would fall back
+    to digital I2S, which is exactly the silent wrong-amp bug this replaces.
+    """
+    data = json.loads(strip_jsonc(AMPS_JSON.read_text(encoding="utf-8")))
+    amps = data.get("amps", {})
+    if not amps:
+        raise SystemExit("no amps in %s" % AMPS_JSON)
+
+    rows = []
+    for key, a in amps.items():
+        if not ident_ok(key):
+            raise SystemExit("amp id %r must be lower-case letters/digits/_" % key)
+        for field in ("label", "mode", "pins", "mono", "wiring"):
+            if field not in a:
+                raise SystemExit("amp %r is missing %r" % (key, field))
+        if a["mode"] not in AMP_MODES:
+            raise SystemExit("amp %r: mode %r is not one of %s"
+                             % (key, a["mode"], ", ".join(AMP_MODES)))
+        for p in a["pins"]:
+            if p not in AUDIO_PIN_KEYS:
+                raise SystemExit("amp %r wires %r, which is not an audio pin (%s)"
+                                 % (key, p, ", ".join(AUDIO_PIN_KEYS)))
+        # An i2s amp that names no pin would be driven with nothing wired.
+        if a["mode"] == "i2s" and len(a["pins"]) != 3:
+            raise SystemExit("amp %r is i2s, so it must wire all three pins" % key)
+        if a["mode"] == "analog" and a["pins"] != ["i2s_dout"]:
+            raise SystemExit("amp %r is analog: it carries audio on i2s_dout "
+                             "alone" % key)
+        rows.append("    { %-14s %-42s %-10s %-6s %5s, %s }," % (
+            c_str(key) + ",", c_str(a["label"]) + ",",
+            c_str(a["mode"]) + ",",
+            c_str(",".join(a["pins"])) + ",",
+            "true" if a["mono"] else "false",
+            c_str(a["wiring"])))
+
+    text = BANNER % AMPS_JSON.name + """
+#pragma once
+#include <Arduino.h>
+
+// One amplifier, exactly as config/amps.json describes it. `mode` is how the
+// ESP32 must drive it — an analog amp (TPA3110, PAM8403) takes a line signal,
+// so writing digital I2S at it plays noise, not sound.
+struct AmpKind {
+    const char* id;
+    const char* label;
+    const char* mode;     // i2s | analog | dac | none
+    const char* pins;     // comma separated audio pin keys actually wired
+    bool        mono;
+    const char* wiring;   // the plain sentence the website prints
+};
+
+static const AmpKind AMP_KINDS[] = {
+%s
+};
+static const int AMP_KIND_COUNT = sizeof(AMP_KINDS) / sizeof(AMP_KINDS[0]);
+
+// Look one up by the name the AMP command takes; nullptr when unknown.
+inline const AmpKind* findAmp(const String& id) {
+    for (int i = 0; i < AMP_KIND_COUNT; i++)
+        if (id.equalsIgnoreCase(AMP_KINDS[i].id)) return &AMP_KINDS[i];
+    return nullptr;
+}
+
+// "tpa3110 max98357a ..." — for the command's own help, so it can never
+// offer something the table does not have.
+inline String ampNames() {
+    String s;
+    for (int i = 0; i < AMP_KIND_COUNT; i++) {
+        if (i) s += ' ';
+        s += AMP_KINDS[i].id;
+    }
+    return s;
+}
+
+// One amp as JSON. AMP? answers with this, so the page prints the wiring
+// sentence for the amp the BOARD has, never one it guessed from the id.
+inline String ampJson(const AmpKind& a) {
+    String s = "{\\"id\\":\\"";
+    s += a.id;
+    s += "\\",\\"label\\":\\""; s += a.label;
+    s += "\\",\\"mode\\":\\"";  s += a.mode;
+    s += "\\",\\"pins\\":\\"";  s += a.pins;
+    s += "\\",\\"mono\\":";     s += a.mono ? "true" : "false";
+    s += ",\\"wiring\\":\\"";   s += a.wiring;
+    return s + "\\"}";
+}
+
+// The whole list as JSON, for the Amplifier dropdown on the board's page.
+inline String ampListJson() {
+    String s = "[";
+    for (int i = 0; i < AMP_KIND_COUNT; i++) {
+        if (i) s += ',';
+        s += ampJson(AMP_KINDS[i]);
+    }
+    return s + "]";
+}
+""" % "\n".join(rows)
+
+    write_if_changed(out_path(out, "core/AmpTable.h"), text,
+                     "%d amps" % len(rows))
+
+
 def gen_commands(out, types):
     data = json.loads(strip_jsonc(COMMANDS_JSON.read_text(encoding="utf-8")))
     cmds = data.get("commands", [])
@@ -305,6 +482,181 @@ inline bool commandIsMotion(const String& cmd) {
 
     write_if_changed(out_path(out, "core/CommandHelp.h"), text,
                      "%d commands" % len(rows))
+    return len(rows)
+
+
+def gen_camcontrols(out, types):
+    """config/cam_controls.json -> modules/cam/CamControls.h
+
+    The table a person sees and the switch that applies it, from one file, so
+    a control cannot be offered on a page the firmware has no way to apply.
+
+    EVERY SETTER IS NULL-CHECKED. `sensor_t` is a struct of function pointers
+    filled in per sensor, and a part that does not implement a control leaves
+    its pointer null - calling it does not return an error, it panics the board
+    with LoadProhibited. Four setters were already being called unchecked here;
+    exposing two dozen from data would have made that a certainty.
+    """
+    data = json.loads(strip_jsonc(CAM_CONTROLS_JSON.read_text(encoding="utf-8")))
+    controls = data.get("controls", {})
+    if not controls:
+        raise SystemExit("no controls in %s" % CAM_CONTROLS_JSON)
+
+    rows, applies, reads = [], [], []
+    for key, c in controls.items():
+        if not re.match(r"^[a-z][a-z0-9_]*$", key):
+            raise SystemExit("camera control %r must be lower-case letters, "
+                             "digits and underscores" % key)
+        for field in ("setter", "kind", "lo", "hi", "def", "label"):
+            if field not in c:
+                raise SystemExit("camera control %r is missing %r" % (key, field))
+        if c["kind"] not in ("range", "toggle", "choice"):
+            raise SystemExit("camera control %r: kind must be range, toggle "
+                             "or choice" % key)
+        lo, hi, dflt = int(c["lo"]), int(c["hi"]), int(c["def"])
+        if not lo <= dflt <= hi:
+            raise SystemExit("camera control %r: default %d is outside %d..%d"
+                             % (key, dflt, lo, hi))
+        choices = c.get("choices") or []
+        if c["kind"] == "choice" and len(choices) != hi - lo + 1:
+            raise SystemExit("camera control %r: %d choices for the range "
+                             "%d..%d" % (key, len(choices), lo, hi))
+        rows.append("    { %-18s %-26s %-10s %5d, %5d, %5d, %-34s %-12s %s }," % (
+            c_str(key) + ",", c_str(c["label"]) + ",", c_str(c["kind"]) + ",",
+            lo, hi, dflt, c_str(" ".join(choices)) + ",",
+            c_str(c.get("group", "advanced")) + ",", c_str(c.get("needs", ""))))
+        # Almost every setter takes an int; set_gainceiling takes an enum, and
+        # a bare int there is a compile error. The cast is declared with the
+        # control rather than special-cased here.
+        cast = "(%s)" % c["cast"] if c.get("cast") else ""
+        applies.append(
+            '    if (name.equalsIgnoreCase("%s")) {\n'
+            '        if (!s->set_%s) return false;\n'
+            '        return s->set_%s(s, %sv) == 0;\n'
+            '    }' % (key, c["setter"], c["setter"], cast))
+        reads.append('    if (name.equalsIgnoreCase("%s")) return s->status.%s;'
+                     % (key, c.get("status", c["setter"])))
+
+    text = BANNER % CAM_CONTROLS_JSON.name + """
+#pragma once
+#include <Arduino.h>
+#include <esp_camera.h>
+
+// One camera setting, exactly as config/cam_controls.json declares it.
+struct CamControl {
+    const char* name;
+    const char* label;
+    const char* kind;       // range | toggle | choice
+    int         lo;
+    int         hi;
+    int         def;        // where the driver starts, and what AUTO restores
+    const char* choices;    // space separated, for kind == choice
+    // WHERE IT BELONGS ON THE PAGE, and what it depends on - both declared
+    // with the control, so adding one lands it in the right group with the
+    // right note and no page code decides anything.
+    const char* group;      // basic | exposure | colour | advanced
+    const char* needs;      // e.g. "aec=0": only applies while that is so
+};
+
+static const CamControl CAM_CONTROLS[] = {
+%s
+};
+static const int CAM_CONTROL_COUNT =
+    sizeof(CAM_CONTROLS) / sizeof(CAM_CONTROLS[0]);
+
+inline const CamControl* findCamControl(const String& name) {
+    for (int i = 0; i < CAM_CONTROL_COUNT; i++)
+        if (name.equalsIgnoreCase(CAM_CONTROLS[i].name)) return &CAM_CONTROLS[i];
+    return nullptr;
+}
+
+// -> true when the sensor took it. False means this part does not implement
+// that control, which is an answer, not a crash: an unimplemented setter is a
+// NULL POINTER in sensor_t and calling it panics the board.
+inline bool applyCamControl(sensor_t* s, const String& name, int v) {
+    if (!s) return false;
+%s
+    return false;
+}
+
+inline int readCamControl(sensor_t* s, const String& name) {
+    if (!s) return 0;
+%s
+    return 0;
+}
+""" % ("\n".join(rows), "\n".join(applies), "\n".join(reads))
+
+    write_if_changed(out_path(out, "modules/cam/CamControls.h"), text,
+                     "%d camera controls" % len(rows))
+    return len(rows)
+
+
+def gen_seqsteps(out, types):
+    """The YAML step keys a saved sequence may use -> core/SeqSteps.h.
+
+    SequencePlayer used to carry these as an if-else chain, so adding a step
+    meant editing C++ that already knew about both module types by name. They
+    are declared on the command they call instead, and this writes the table
+    the player walks.
+
+    ONE KEY CAN COME FROM TWO ENTRIES. `home`, `stop` and `speed` exist for
+    both lift and nong, and a build that carries both (mice_module_firmware)
+    sees the entry twice. Identical declarations collapse to one row; a real
+    disagreement is refused here rather than silently picking whichever came
+    first in the file.
+    """
+    data = json.loads(strip_jsonc(COMMANDS_JSON.read_text(encoding="utf-8")))
+    by_key = {}
+    for c in data.get("commands", []):
+        if c["scope"] != "core" and c["scope"] not in types:
+            continue                    # not in this binary, so not a step here
+        for st in c.get("steps", []):
+            if "key" not in st:
+                raise SystemExit("command %s: a step needs a key" % c["name"])
+            key = st["key"]
+            if not ident_ok(key.replace("-", "_")):
+                raise SystemExit("step key %r is not a plain name" % key)
+            cmd = c["name"] + ((" " + st["sub"]) if st.get("sub") else "")
+            row = (cmd, bool(st.get("wait")))
+            if key in by_key and by_key[key] != row:
+                raise SystemExit(
+                    "step %r means two different things: %r and %r"
+                    % (key, by_key[key], row))
+            by_key[key] = row
+
+    rows = ["    { %-10s %-18s %s }," % (c_str(k) + ",", c_str(cmd) + ",",
+                                         "true" if wait else "false")
+            for k, (cmd, wait) in sorted(by_key.items())]
+
+    text = BANNER % COMMANDS_JSON.name + """
+#pragma once
+#include <Arduino.h>
+
+// One YAML step key, as config/commands.json declares it.
+//
+// `wait` cannot be derived from `motion`: STOP and RELAX are both motion and
+// both must NOT wait, or a sequence stops dead on them — STOP has nothing to
+// finish, and RELAX unpowers the servos so `busy` never clears.
+struct SeqStepDoc {
+    const char* key;        // what the step is called in the file
+    const char* cmd;        // the command line it becomes, without the value
+    bool        wait;       // let the move finish before the next step
+};
+
+static const SeqStepDoc SEQ_STEPS[] = {
+%s
+};
+static const int SEQ_STEP_COUNT = sizeof(SEQ_STEPS) / sizeof(SEQ_STEPS[0]);
+
+inline const SeqStepDoc* findSeqStep(const String& key) {
+    for (int i = 0; i < SEQ_STEP_COUNT; i++)
+        if (key.equalsIgnoreCase(SEQ_STEPS[i].key)) return &SEQ_STEPS[i];
+    return nullptr;
+}
+""" % "\n".join(rows)
+
+    write_if_changed(out_path(out, "core/SeqSteps.h"), text,
+                     "%d sequence steps" % len(rows))
     return len(rows)
 
 
@@ -594,8 +946,12 @@ def generate(out, types):
     gen_buildtypes(out, types)
     gen_module_table(out, types)
     gen_servos(out, types)
+    gen_amps(out, types)
+    gen_rgb_pins(out, types)
     gen_commands(out, types)
+    gen_seqsteps(out, types)
     gen_cam_boards(out, types)
+    gen_camcontrols(out, types)
     gen_webui(out, types)
     gen_micecss(out)
 

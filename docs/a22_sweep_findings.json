@@ -1,0 +1,455 @@
+{
+ "hub-python": [
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 3341,
+   "summary": "Hub-to-hub module forwarding always fails: dev_route builds the forward URL from `path`, which is not a parameter or global of dev_route (symtable confirms global-unassigned), so every hub:<ip>/<dev> call raises NameError and answers 502.",
+   "verdict": "CONFIRMED",
+   "reason": "def dev_route(self, method, what, q) has no `path` parameter/binding; symtable reports path 'global', assigned=False, and no module-level `path` exists \u2014 the NameError at \"url = \\\"http://%s:%d%s?%s\\\" % (hub_ip, PORT, path, ...)\" is caught by the except at 3367 which returns send_err(..., 502)."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 3855,
+   "summary": "POST /api/report (unauthenticated by design) writes to a filename built from the client-supplied `time` field with only ':' replaced, so '../..' survives and an anonymous poster can write *.json files outside reports/ (toward known_hubs.json, config/, projects, hub_auth.json).",
+   "verdict": "CONFIRMED",
+   "reason": "\"fname = rep_dir / (report[\"time\"].replace(\":\", \"-\") + \"_\" + report[\"id\"] + \".json\")\" with t = data.get(\"time\") straight from the body, and hub_auth.OPEN lists \"/api/report\" as ungated \u2014 only ':' is sanitized so ../.. escapes reports/; one caveat: the server-appended \"_<uuid12>.json\" suffix means an attacker picks the directory+prefix but cannot hit one exact existing filename."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 4148,
+   "summary": "POST /api/flash/bus replaces a board's firmware via the command channel but is absent from hub_auth.GATED/GATED_POST (exact-string match), so unlike /api/flash, /api/ota and /api/flash/remote it needs no login.",
+   "verdict": "CONFIRMED",
+   "reason": "\"if path == \\\"/api/flash/bus\\\" and method == \\\"POST\\\": return self.send_json(flasher.start_bus(...))\", and gated() is exact-match (\"if path in NEVER_GATED ... if path in GATED ... return path in GATED_POST and method == POST\") \u2014 \"/api/flash/bus\" appears in none of the lists while \"/api/ota\", \"/api/flash/remote\" are in GATED and \"/api/flash\" in GATED_POST."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 4188,
+   "summary": "The never-gated emergency /api/stopall calls modules_here(), which can run (or wait on) a full USB sweep held under _usbscan_lock with a 20 s budget, delaying every board's MOVE STOP by up to ~20 s.",
+   "verdict": "CONFIRMED",
+   "reason": "\"for m in modules_here():\" precedes every dev_cmd(r.get(\"dev\"), \"MOVE STOP\"); probe_usb_all(False) does \"with _usbscan_lock:\" then \"budget = 20\" when the cache is older than 8 s, so the stop waits out a full sweep (plus any lock already held by another scan) before the first STOP is sent."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 4266,
+   "summary": "Open endpoints read bodies with no ceiling: ungated POST /api/model/upload does write_bytes(self.body()) with limit=0 (reads whatever Content-Length claims into RAM, then to disk), and /api/report reads raw Content-Length unbounded \u2014 disk/memory fill from any phone, no login. DRAIN_LIMIT is only applied on refusal paths.",
+   "verdict": "CONFIRMED",
+   "reason": "\"(MODELS / name).write_bytes(self.body())\" calls def body(self, limit=0) which does \"return self.rfile.read(n) if n else b''\" for whatever n Content-Length claims; /api/report likewise does self.rfile.read(length) at 3822; DRAIN_LIMIT appears only inside drain() (refusal path), and NEVER_GATED includes \"/api/model/upload\"."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 1115,
+   "summary": "dev_download treats any board reply starting with 'ERR' as EOF, so a mid-file error ends the loop and the partial bytes are served as a complete download with 200 \u2014 a corrupted file arrives looking fine.",
+   "verdict": "CONFIRMED",
+   "reason": "\"if r == \\\"EOF\\\" or r.startswith(\\\"ERR\\\"): break\" then \"out += chunk\" and \"return out\" \u2014 the sole caller at 3465 is \"return self.send_bytes(dev_download(dev, ...), \\\"application/octet-stream\\\")\" with no length or integrity check, so a truncated file ships as a 200 download."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 1322,
+   "summary": "ShowPlayer.stop joins the clock thread for 3 s but a @peer command waits up to PEER_WAIT=8 s; on timeout stop() sets thread=None and reports stopped while the old thread is still mid dev_cmd \u2014 after a restart clears stop_flag the abandoned thread can keep playing (two clocks, the fault check_takeover exists to prevent).",
+   "verdict": "CONFIRMED",
+   "reason": "\"th.join(timeout=3.0) ... self.thread = None\" runs regardless of whether the thread finished, while dev_cmd uses \"wait or (PEER_WAIT if peer else None)\" with PEER_WAIT = 8.0 \u2014 a restart inside the remaining ~5 s window executes \"self.stop_flag.clear()\" (line 1312), so the old thread's next flag check passes and it keeps sending POSE beside the new clock."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 4508,
+   "summary": "The main hub binds with ThreadingHTTPServer's inherited allow_reuse_address=1, which the code's own Polite class (port-80 redirect) explicitly rejects as unsafe on Windows \u2014 two MiceHub instances can both hold :PORT and connections land on either unpredictably.",
+   "verdict": "CONFIRMED",
+   "reason": "main() does \"srv = ThreadingHTTPServer((HOST, PORT), Handler)\" inheriting allow_reuse_address=1, while class Polite at 4487 sets \"allow_reuse_address = False\" with the comment that on Windows SO_REUSEADDR \"lets one process bind a port another process is already listening on, and then which of them gets a connection is anyone's guess.\""
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 3917,
+   "summary": "POST /api/reports (status update) and the background _translate_report_later both do read-modify-write of the same report JSON with no locking; the translator can run up to 180 s, so closing a report while translation is in flight silently loses either the status or text_en.",
+   "verdict": "CONFIRMED",
+   "reason": "Status update does \"j = _json.loads(f.read_text(...)); j[\\\"status\\\"] = status; write_atomic(f, ...)\" (3914-3917) with no lock, and _translate_report_later does \"urlopen(req, timeout=180)\" then \"data = json.loads(fname.read_text(...)); data[\\\"text_en\\\"] = out; write_atomic(fname, ...)\" (173-180) \u2014 last writer wins whole-file, so whichever field the other wrote is lost."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 2718,
+   "summary": "Flasher.start calls _claim but assigns/starts the new thread object outside the lock, so a second POST landing in the claim-to-start gap also passes running() and spawns a second flash job (two esptools on one cable) \u2014 the residual gap ShowPlayer closed with its _starting lock.",
+   "verdict": "CONFIRMED",
+   "reason": "_claim checks \"if self.running(): raise\" under self.lock but only writes port/type/log fields; \"self.thread = threading.Thread(target=self._run, args=(cmd, im), daemon=True); self.thread.start()\" sits at 2719-2720 outside any lock, and running() reads self.thread \u2014 so a second _claim in that gap sees the stale/None thread; _run's brief \"with _flash_lock: _flash_ports.add(port)\" does not serialize the esptool subprocess itself."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 2769,
+   "summary": "start_received creates a temp dir and decodes the received image BEFORE _claim; if _claim refuses ('already flashing') the folder with the full firmware image is never removed \u2014 cleanup lives only in the part-parse except and in _run's finally, neither of which runs.",
+   "verdict": "CONFIRMED",
+   "reason": "\"d = Path(tempfile.mkdtemp(prefix=\\\"mice_fw_\\\"))\" at 2746; shutil.rmtree(d) runs only in the part-decode except (2763-2764), and \"self._claim(port, module_type, \\\"usb\\\")\" at 2769 raises \"already flashing %s - one board at a time\" before the thread starts, so _run's finally rmtree(im[\"tmp\"]) (2857-2859) never executes \u2014 the folder leaks."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 1000,
+   "summary": "Raw Python error text reaches designers: a malformed dev string surfaces 'invalid literal for int() with base 10', malformed JSON bodies on /api/save etc. become 500s quoting JSONDecodeError or KeyError('project'), violating the plain-words-on-the-surface rule.",
+   "verdict": "CONFIRMED",
+   "reason": "\"return (\\\"usb\\\", rest[0], int(rest[1]) if len(rest) > 1 and rest[1] else 0, peer)\" raises ValueError whose str is \"invalid literal for int() with base 10: ...\"; do_GET catches it and send_err(e, 500) sends {\"error\": str(msg)} verbatim \u2014 same for json.loads failures and data[\"project\"] (KeyError -> \"'project'\") on /api/save."
+  }
+ ],
+ "shared-web": [
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/hub.html",
+   "line": 197,
+   "summary": "Report button calls openReport(), which is never defined anywhere on the page - clicking Report throws a ReferenceError and the report modal can never be opened.",
+   "verdict": "CONFIRMED",
+   "reason": "Repo-wide grep shows openReport only at hub.html:197 onclick and hub.html:893 comment '// openReport/closeReport live further down'; submitReport (895) and closeReport (1049) exist but no openReport definition, only /mice.js is loaded (line 8), and the landed snapshot patches_code/0003_landed-a21-7 still had 'function openReport(){' proving the definition was lost."
+  },
+  {
+   "file": "e:/final_proj/mice/code/shared/web/mice.css",
+   "line": 273,
+   "summary": ".pin styles use tokens --muted and --fg which are defined in no theme (themes.css defines --mut/--txt), so the unpinned star inherits full-strength text colour and hover changes nothing.",
+   "verdict": "CONFIRMED",
+   "reason": "mice.css:273 'color:var(--muted)' and :274 '.pin:hover{color:var(--fg)}'; a sweep of every css/html/js/py in the repo finds zero '--muted:' or '--fg:' definitions while shared/web/themes.css:58 defines '--txt:#dce3ec; --mut:#8b98a9', so color computes to inherited full-strength text and the hover rule sets the same inherited value."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/hub.html",
+   "line": 2083,
+   "summary": "Top-level localStorage reads/writes for the auto-USB checkbox are not wrapped in try/catch like every other access in the file; where storage access throws, all page initialisation after line 2083 never runs.",
+   "verdict": "CONFIRMED",
+   "reason": "Line 2083 is bare top-level 'document.getElementById('autoUsb').checked=localStorage.getItem('hub_autousb')==='1';' (and 2076 bare setItem inside autoUsbChanged) while all nine other localStorage accesses (lines 730, 799, 810, 828, 835, 2087, 2857, 2863, 3189) are try/catch-wrapped, and everything after sits in the same single script block opened at line 719 - including the 401 fetch wrapper IIFE at 2177."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/rgb.html",
+   "line": 213,
+   "summary": "Music mode depends on getDisplayMedia, a secure-context-only API, but the hub serves plain http over LAN (its own diagnostics text says so) - Start always fails there, and the failure message blames the operator.",
+   "verdict": "CONFIRMED",
+   "reason": "rgb.html:213 'stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});' with catch at 228 showing 'capture cancelled or not allowed ('+e.message+')'; grep finds no isSecureContext/mediaDevices feature-detect anywhere in the page (button always rendered at line 98), and hub.html:2436-2437 states 'navigator.clipboard is undefined outside a secure context, and this hub is plain http on a LAN address'."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/hub.html",
+   "line": 1199,
+   "summary": "Network-tab module list deduplicates by display label plus type, so two different boards sharing a name and type collapse into one row and the second can never be linked into a group.",
+   "verdict": "CONFIRMED",
+   "reason": "hub.html:1199-1201 'var k = m.label + '|' + m.type; if(seen[k]) return; seen[k] = 1; uniq.push(m);' under the comment at 1196 about 'the same module ... on WiFi AND on its cable', and applyGroup (1266) maps ticked checkbox data-i indexes into that same deduped netMods list ('picked.map(function(i){ return netMods[i]; })') before sending GROUP commands, so a collapsed board has no row to tick and cannot be linked."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/hub.html",
+   "line": 1024,
+   "summary": "The .secondary button class is used on three controls but defined in no served stylesheet, so the intended quieter variant silently renders as a plain default button.",
+   "verdict": "CONFIRMED",
+   "reason": "Usages at hub.html:197 class=\"secondary\", :321 Cancel, :1024 \"b.className = (st === s ? 'primary' : 'secondary');\"; the hub serves only themes.css and mice.css (main.py:2033, 3562-3566) and grep over shared/web plus main_python/web finds no '.secondary' rule, while mice.css defines only button.primary (122), button.danger (126) and button.icon (136)."
+  }
+ ],
+ "nong-studio": [
+  {
+   "file": "e:/final_proj/mice/code/nong/main_python_set_nong/web/app.js",
+   "line": 2947,
+   "summary": "Six botched-edit notice(<status>.textContent) statements push routine status text into the global FAILURE banner (getGeo 2947, parseSeqYaml 2691, loadRigDefault 308, pushLimits 2595, pullLimits 2662, plus a bare top-level call at 3820 inside stopRobotSequence's comment block).",
+   "verdict": "CONFIRMED",
+   "reason": "All six sites exist verbatim \u2014 e.g. 2947 is a stray statement after the stlLoader.load(...) call ends (`notice($(\"tlStat\").textContent);` runs on every getGeo), 2691 is parseSeqYaml's second line, 3820 sits between comment lines 3819/3821 \u2014 and index.html:56-64 declares the target `class=\"banner err\" role=\"alert\"` that is 'only ever written by notice(), never by a polling loop'."
+  },
+  {
+   "file": "e:/final_proj/mice/code/nong/main_python_set_nong/web/app.js",
+   "line": 2198,
+   "summary": "Pause cannot stop the hub's show once the 'live' checkbox is off: livePause() returns before calling hubStop(), so a hub-driven sequence keeps driving the robot while the editor shows '\u25b6 Play'.",
+   "verdict": "CONFIRMED",
+   "reason": "2198 `if (!liveLinked()) return;` precedes 2199 `hubStop()`; /api/play/stop is fetched nowhere else (grep: only 2195), unticking live (liveChanged 3964-3966) stops nothing, and both stop paths route through it (togglePlay 2112 `if (!playing) { livePause(); return; }`, scrubTo 2225)."
+  },
+  {
+   "file": "e:/final_proj/mice/code/nong/main_python_set_nong/web/app.js",
+   "line": 1586,
+   "summary": "recalcTimes() silently overwrites hand-typed keyframe times: delKey/dupKey/moveKey/speedChanged recompute every t from poses at sequence speed because typing a T deleted k.dps.",
+   "verdict": "CONFIRMED",
+   "reason": "Typed-time handler 1771-1775 does `k.t = Math.max(kmin, want); delete k.dps;`, so keyDps() (1568) falls back to speedDps() and recalcTimes 1585-1586 `keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i))` discards every typed time \u2014 called from dupKey 1619, delKey 1627, moveKey 1636."
+  },
+  {
+   "file": "e:/final_proj/mice/code/nong/main_python_set_nong/web/app.js",
+   "line": 2910,
+   "summary": "The project-load rig swap promises an undo ('Keep one step back... always leaves a copy to return to') by writing localStorage 'nong_rig_prev', but nothing ever reads that key.",
+   "verdict": "CONFIRMED",
+   "reason": "Repo-wide grep finds 'nong_rig_prev' only at the write `try { localStorage.setItem(\"nong_rig_prev\", JSON.stringify(RIG)); }` (2910, plus stale patch copies); the catch even admits 'the swap still happens, just without undo', and resetRig (2570-2584) consults only nong_rig_default/DEFAULT_RIG."
+  },
+  {
+   "file": "e:/final_proj/mice/code/nong/main_python_set_nong/web/app.js",
+   "line": 3873,
+   "summary": "SD upload shares the cable with the live POSE stream with no ordering: sdUploadSerial's FBEGIN/FDATA/FEND run unserialized against livePump's POSE commands on the same transport.",
+   "verdict": "CONFIRMED",
+   "reason": "serialCmd writes immediately per call (3388-3389 `const writer = serialPort.writable.getWriter(); writer.write(...)`), livePump (3619-3647) shares no lock with sdUploadSerial's chunk loop (3661-3666), playing stays true across 3873 `await sdUpload(name + \".yaml\", yaml);` until 3876, and keepAwake's 60 ms playClock (2062) keeps playTick issuing `liveSend(\"POSE ...\")` (4100-4109) during the upload \u2014 minor overstatement only: Web Serial writes are whole framed lines, so commands interleave in arbitrary order rather than mid-line."
+  },
+  {
+   "file": "e:/final_proj/mice/code/nong/main_python_set_nong/web/app.js",
+   "line": 2292,
+   "summary": "'Export YAML' fails silently when the hub is down: exportYaml has no try/catch, so the fetch rejection is unhandled and tlStat says nothing; sibling uploadYaml wraps the same call.",
+   "verdict": "CONFIRMED",
+   "reason": "2289-2300 exportYaml is a bare `await fetch(\"/api/export\", ...).then(r => r.json());` with no try/catch (a dead hub rejects before .json()), while uploadYaml 3809-3814 catches into `$(\"sdStat\").textContent = \"upload failed: ...\"`; refreshProjects (2922), refreshSeqs (2792) and refreshModels (3226) are likewise unprotected."
+  },
+  {
+   "file": "e:/final_proj/mice/code/nong/main_python_set_nong/web/app.js",
+   "line": 2805,
+   "summary": "Projects drop the 'then run\u2026' chain: saveProject omits seqNext and loadProject never restores it, so Save + Load silently strips chaining that YAML export preserves.",
+   "verdict": "CONFIRMED",
+   "reason": "saveProject's object 2804-2809 lists keys/speedDps/maxDps/loop/meshes/addons/robotIp/seqName/rig with no seqNext, loadProject restores `$(\"loopChk\")`, `$(\"robotIp\")`, `$(\"seqName\")` (2891-2893) but never `$(\"seqNext\")`, though buildYaml reads it (2271) and the YAML round-trip keeps it (2738 `$(\"seqNext\").value = p.next || \"\"`)."
+  },
+  {
+   "file": "e:/final_proj/mice/code/nong/main_python_set_nong/web/app.js",
+   "line": 2261,
+   "summary": "A per-move speed override on keyframe 1 (the first move) is never exported because buildYaml only emits '- speed:' for i > 0.",
+   "verdict": "REFUTED",
+   "reason": "In buildYaml's `playKeys().forEach((k, i) => ...)` index 0 is the start pose (2268 marks it `# start pose`) and the first move is i = 1, which passes the `if (i > 0 && want !== cur)` guard and emits its `- speed:` step \u2014 and parseSeqYaml (2714-2718) attributes the first speed step to the sequence and later ones to the following pose, so the override survives the round trip."
+  },
+  {
+   "file": "e:/final_proj/mice/code/nong/main_python_set_nong/web/app.js",
+   "line": 1527,
+   "summary": "Mirror L\u2194R leaves SHRUG untouched, correct only while the see-saw is symmetric; with a calibrated asymmetric shrugCurve the mirrored pose lifts the same shoulder, and the inline comment asserts the symmetric assumption.",
+   "verdict": "CONFIRMED",
+   "reason": "1527-1528 swaps only the eight arm joints and flips WAIST, keeping `pose[9]`, under the comment 'the shrug lifts both shoulders equally so it is unchanged', but shrugRise (933-945) returns distinct `{ l, r }` rises interpolated from RIG.shrugCurve and applyPose applies them at 834 `const rise = shrugRise(pose[9])`."
+  },
+  {
+   "file": "e:/final_proj/mice/code/nong/main_python_set_nong/web/app.js",
+   "line": 3929,
+   "summary": "The Zero card's padlock is client-side theatre: unlock compares against credentials hardcoded in the served JS (default manny/12345678), and robotZeroSet sends SETZERO with no credential attached.",
+   "verdict": "CONFIRMED",
+   "reason": "3929 `function zeroCredOr() { return zeroCred() || { user: \"manny\", pass: \"12345678\" }; }` is compared purely in zeroUnlock (3932), changeable only per-browser (zeroChangeCred 3947 stores to this browser's localStorage), and robotZeroSet sends the bare command `await robotCmd(\"SETZERO\")` (3953) \u2014 commands.json:112 gives SETZERO no auth field."
+  },
+  {
+   "file": "e:/final_proj/mice/code/nong/main_python_set_nong/web/app.js",
+   "line": 2752,
+   "summary": "Edit/Play-saved never check response.ok: a renamed/deleted sequence yields a 404 error body parsed as YAML and the misleading message 'no pose steps found in sequences/x.yaml'; loadProject got exactly this fix.",
+   "verdict": "CONFIRMED",
+   "reason": "2752 (editLocalSeq) and 2786 (playLocalSeq) do `fetch(\"/api/loadseq...\").then(r => r.text())` with no r.ok check, the hub answers a missing file `send_json({\"ok\": False, \"error\": ...}, 404)` (main.py 3192-3194, 4223-4227), so parseSeqYaml finds no pose lines and loadParsedSeq prints `\"no pose steps found in \" + sourceLabel` (2725), whereas loadProject checks `if (!r.ok || p.ok === false) throw` at 2856."
+  }
+ ],
+ "firmware-core": [
+  {
+   "file": "e:/final_proj/mice/code/firmware/src/core/WebPortal.cpp",
+   "line": 658,
+   "summary": "WebSocket /ws executes any command with no login check \u2014 the WS handler calls router_->handle(line) directly while /api/cmd gates every command through allowedCommand(), so anyone on the WiFi can run SET, USER ADD, FWBEGIN/FWEND, REBOOT, FDEL unauthenticated.",
+   "verdict": "CONFIRMED",
+   "reason": "Lines 650-662: WS_EVT_DATA does `String reply = router_->handle(line); client->text(\"> \" + reply);` with no allowed()/allowedCommand() call; `grep setAuthentication|addFilter` over firmware/src returns nothing, and CommandRouter::handleLocked itself has no auth."
+  },
+  {
+   "file": "e:/final_proj/mice/code/firmware/src/core/WebPortal.cpp",
+   "line": 823,
+   "summary": "/api/upload writes and renames the file onto SD in the body handler with no auth check; allowed(req) runs only in the completion handler afterwards, so the 401 arrives after the bytes are already on the card.",
+   "verdict": "CONFIRMED",
+   "reason": "onUpload lambda (823-867) opens uploadTmp_ at index==0, writes data and renames onto uploadDest_ when final (859-860) with no allowed() anywhere; only the onRequest lambda (817) checks allowed(req), which fires after the body is parsed. The same class was fixed for OTA \u2014 line 1026 comment 'THE LOGIN IS CHECKED HERE, NOT ONLY IN THE HANDLER ABOVE.'"
+  },
+  {
+   "file": "e:/final_proj/mice/code/firmware/src/core/RS485Bus.cpp",
+   "line": 25,
+   "summary": "RX line buffer is wiped mid-line once it passes 250 chars, so any single-line reply longer than that arrives as a headless tail fragment through a bridge.",
+   "verdict": "CONFIRMED",
+   "reason": "`if (buf_.length() > 250) buf_ = \"\"; // garbage / missed terminator` discards the accumulated line mid-receive; INFO serializes buildStatus (~15 fields incl. types/caps/wifi/module objects, several hundred bytes, CommandRouter.cpp:514-553) and PEERS JSON exceed 250 chars, while FREAD caps at 120 'keeps the reply inside one RS485 frame' (CommandRouter.cpp:410) \u2014 the long-reply hazard is real and known."
+  },
+  {
+   "file": "e:/final_proj/mice/code/firmware/config/commands.json",
+   "line": 48,
+   "summary": "GROUP is declared query:true, so WebPortal::allowedCommand lets it run WITHOUT login, yet `GROUP <name>` mutates installation membership and the derived AP password \u2014 one anonymous GET /api/cmd?c=GROUP+other re-points the board's linking identity.",
+   "verdict": "CONFIRMED",
+   "reason": "commands.json:48 has \"query\": true; WebPortal.cpp:620 `if (COMMAND_DOCS[i].query || COMMAND_DOCS[i].safety) return true;`; GROUP handler (CommandRouter.cpp:115-136) calls id_->setGroup(g), notes 'the AP password changes with the group', and restarts the radio."
+  },
+  {
+   "file": "e:/final_proj/mice/code/firmware/config/commands.json",
+   "line": 64,
+   "summary": "AUTH is declared query:true, making it runnable without login via /api/cmd \u2014 an unlimited password-guessing oracle against UserStore; /api/login POST also has no rate limit or lockout.",
+   "verdict": "CONFIRMED",
+   "reason": "commands.json:64 \"query\": true bypasses login per WebPortal.cpp:620; AUTH handler (CommandRouter.cpp:265-268) returns `\"OK \" + argv[1] : \"ERR bad login\"` straight from users.verify, and the /api/login POST (WebPortal.cpp:691-715) shows no rate limiting or lockout."
+  },
+  {
+   "file": "e:/final_proj/mice/code/firmware/src/core/RS485Bus.cpp",
+   "line": 77,
+   "summary": "Broadcast-reply staggering has a single pendingReply_ slot with no arbitration: a second broadcast PING inside the stagger window silently overwrites the first, and an addressed request handled meanwhile sends its reply immediately into another board's PONG slot.",
+   "verdict": "CONFIRMED",
+   "reason": "RS485Bus.h:43 declares one String pendingReply_; loop() sends it when due (30-33); handleLine assigns unconditionally `pendingReply_ = ... pendingAt_ = millis() + (id % 24) * 10;` with no emptiness guard, while non-broadcast replies send immediately at lines 58-59 regardless of any pending PONG."
+  },
+  {
+   "file": "e:/final_proj/mice/code/firmware/src/core/CommandRouter.cpp",
+   "line": 440,
+   "summary": "MOVE with no SD card plays whatever text is held in RAM regardless of which file was named \u2014 `MOVE showB.yaml` silently plays showA if showA was uploaded last; the reply says 'held in memory' but never names the mismatch.",
+   "verdict": "CONFIRMED",
+   "reason": "Lines 440-443: `if (!sd_->available() && seq_->hasText()) { seq_->startText(seq_->text(), err); return \"OK playing the sequence held in memory\"; }` \u2014 argv[1] (the requested path, built at 435-436) is never consulted; deliberate per the comment ('play what was sent instead') but the wrong-show behavior is exactly as claimed."
+  },
+  {
+   "file": "e:/final_proj/mice/code/firmware/src/core/SequencePlayer.cpp",
+   "line": 144,
+   "summary": "An unknown step key is skipped with no log, error or reply \u2014 a typo'd step (`got:` instead of `goto:`) makes the move vanish silently.",
+   "verdict": "CONFIRMED",
+   "reason": "Line 143-145: `const SeqStepDoc* s = findSeqStep(key); if (!s) continue;   // unknown keys are ignored...` \u2014 no log, no error string, nothing reaches the caller; kind 'ux' fits since the code comments it as deliberate so files for other module types still play."
+  },
+  {
+   "file": "e:/final_proj/mice/code/firmware/src/core/Util.cpp",
+   "line": 8,
+   "summary": "tokenize silently drops everything past maxTok (16 in CommandRouter::handleLocked): a long line loses its tail with no error and the truncated command still executes.",
+   "verdict": "CONFIRMED",
+   "reason": "Util.cpp:8 `while (i < n && argc < maxTok)` exits once argc hits maxTok, discarding remaining characters with no error signal; CommandRouter.cpp:90 calls `Util::tokenize(line, argv, 16)` and proceeds to execute whatever was parsed (joinFrom uses the capped argc, so trailing args are gone)."
+  },
+  {
+   "file": "e:/final_proj/mice/code/firmware/src/core/WebPortal.cpp",
+   "line": 835,
+   "summary": "Concurrent /api/uploads share the single uploadDest_/uploadTmp_ members: a second upload's index==0 reopens the same .part file and redirects the first upload's final rename.",
+   "verdict": "CONFIRMED",
+   "reason": "WebPortal.h:119-120 declare one String uploadDest_, uploadTmp_ pair; lines 835-839 overwrite both and SD.remove/reopen the shared .part path, and the final rename (859-860) reads whichever name was last written \u2014 ESPAsyncWebServer processes connections concurrently, so two overlapping POSTs interleave into one destination."
+  },
+  {
+   "file": "e:/final_proj/mice/code/firmware/src/core/WebPortal.cpp",
+   "line": 251,
+   "summary": "checkLink's tie-break contradicts its own comment 'a module we already know beats a guess of the same strength': the override fires regardless of strength, so a far weaker known peer AP displaces a stronger unknown candidate.",
+   "verdict": "CONFIRMED",
+   "reason": "Lines 245-251: after bestRssi is updated by RSSI comparison, `if (known && !bestKnown) { bestRssi = rssi; bestName = ssid; bestKnown = true; }` overwrites unconditionally \u2014 rssi here can be weaker than the previous bestRssi, and wifilink::decide then judges on the weakened value; nothing enforces 'same strength'."
+  },
+  {
+   "file": "e:/final_proj/mice/code/firmware/src/core/SequencePlayer.cpp",
+   "line": 133,
+   "summary": "A negative `wait:` value wraps to ~49.7 days and the show stalls forever with no message.",
+   "verdict": "REFUTED",
+   "reason": "The wrap cancels instead of stalling: `waitUntil_ = millis() + (uint32_t)v.as<long>()` with -1 gives millis()+0xFFFFFFFF \u2261 millis()-1 (mod 2^32), and the gate at line 84 `(int32_t)(millis() - waitUntil_) < 0` then computes +1 \u2265 0 \u2014 a negative wait fires immediately, it cannot produce a 49.7-day stall."
+  }
+ ],
+ "voice-reports": [
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 3855,
+   "summary": "/api/report builds the filename from the client-supplied `time` field with only colons stripped, so an unauthenticated poster controls directory components (backslashes/dots survive) \u2014 arbitrary-path .json writes outside HERE/reports.",
+   "verdict": "CONFIRMED",
+   "reason": "Code reads `fname = rep_dir / (report[\"time\"].replace(\":\", \"-\") + \"_\" + report[\"id\"] + \".json\")` with `t = data.get(\"time\") or \"\"` taken verbatim from the body; backslashes, dots and forward slashes survive, the endpoint is in OPEN (hub_auth.py:163 'A REPORT anyone can send \u2014 no login'), and write_atomic happily creates/renames at the joined path."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 178,
+   "summary": "Lost-update race: background translate thread does read-modify-write of the report file with no lock, so a status change made while translation runs is overwritten back to 'open'; conversely the status writer's backup swap makes the translator's read raise and kills text_en for good.",
+   "verdict": "CONFIRMED",
+   "reason": "`data = json.loads(fname.read_text(...)); data[\"text_en\"] = out; write_atomic(...)` runs lock-free (all threading.Lock uses are USB/flash, none near reports) against the identical unlocked read-modify-write at 3914-3917; write_atomic's `os.replace(dest, dest.bak)` window (line 241) makes the translator's read_text raise FileNotFoundError, which the bare `except Exception: pass` swallows permanently."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 181,
+   "summary": "Translation is attempted exactly once and every failure is swallowed with pass \u2014 a report filed while the helper is off/slow/loading never gets text_en, and the complaints screen has no retry.",
+   "verdict": "CONFIRMED",
+   "reason": "`except Exception: pass` at 181-182, exactly one call site (threading.Thread at 3862), and GET /api/reports states 'No model call here - a list refresh must be instant' (3870-3871); nothing anywhere retries or records the failure, so text_en stays absent forever."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 3213,
+   "summary": "voice_proxy constructs urllib.request.Request OUTSIDE its try block; a scheme-less `service` address raises ValueError('unknown url type') uncaught, killing the request thread \u2014 the browser gets a dropped connection.",
+   "verdict": "REFUTED",
+   "reason": "Probed on this machine's Python 3.12.10: Request('localhost:8767/translate') does NOT raise (parses type='localhost') and urlopen's URLError IS caught at line 3229 returning the designed 503; even for a colon-less address where Request() raises ValueError, do_GET/do_POST wrap everything in `except Exception as e: self.send_err(e, 500)` (3290-3300), so the browser always gets a JSON refusal, never a dropped connection."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 3229,
+   "summary": "Any timeout talking to the helper is reported as 'the voice helper is not running \u2026 Start it: python apps\\voice\\service.py' \u2014 a slow first model load exceeding the 180 s timeout sends the designer down the wrong fix.",
+   "verdict": "CONFIRMED",
+   "reason": "`except (urllib.error.URLError, OSError) as e: return self.send_err(\"the voice helper is not running on this PC (%s)...\", 503)` \u2014 socket.timeout subclasses OSError, and the method's own docstring says 'A first question can wait for the model to load', so a load/generation longer than timeout=180 produces exactly the wrong instruction."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 3821,
+   "summary": "/api/report reads the full request body with no size ceiling although the endpoint is deliberately unauthenticated \u2014 Content-Length alone makes the hub allocate arbitrary memory.",
+   "verdict": "CONFIRMED",
+   "reason": "`length = int(self.headers.get(\"Content-Length\", 0)); raw = self.rfile.read(length)...` reads whatever the header claims with no check, on a route listed OPEN in hub_auth.py:163; the body() helper with a limit param exists three lines below (3235-3249) and its own docstring warns 'one header saying two gigabytes is enough to take the hub down from anywhere on the venue WiFi'. (Minor overstatement: only the big-body route passes limit=, most others call body() bare.)"
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 3919,
+   "summary": "Status-update endpoint wraps write_atomic in the same try/except used for JSON parsing, so any write failure is swallowed by continue and the endpoint answers 'not found' \u2014 a silent save failure reported as a lookup miss.",
+   "verdict": "CONFIRMED",
+   "reason": "The loop is `j = _json.loads(f.read_text(...))` \u2026 `write_atomic(f, ...)` \u2026 `return {\"ok\": True}` all inside one try whose handler is `except Exception: continue`, falling through to `return self.send_json({\"ok\": False, \"error\": \"not found\"})` \u2014 an OSError from write_atomic is indistinguishable from a missing id."
+  },
+  {
+   "file": "e:/final_proj/mice/code/apps/voice/service.py",
+   "line": 103,
+   "summary": "Brain.write_store uses ONE fixed temp name per store (path.with_suffix('.part')), so two simultaneous saves of the same store from ThreadingHTTPServer threads interleave bytes and publish the mixture \u2014 the exact bug write_atomic in main.py documents and fixed.",
+   "verdict": "CONFIRMED",
+   "reason": "`tmp = path.with_suffix(\".part\")` then open(tmp,\"w\") under ThreadingHTTPServer (line 683) with do_store calling write_store from request threads and no lock; main.py write_atomic lines 230-235 document precisely this failure ('both opened the SAME temp file and interleaved their bytes, and whichever renamed last published the mixture') and fix it with per-writer temp names."
+  },
+  {
+   "file": "e:/final_proj/mice/code/apps/voice/service.py",
+   "line": 632,
+   "summary": "ASCII shortcut is all-or-nothing: one stray non-ASCII character sends an already-English report through the LLM 'translator', whose reply comes back translated=True and displaces the visitor's exact words in the complaints list preview.",
+   "verdict": "CONFIRMED",
+   "reason": "`if all(ord(c) < 128 for c in text): return ... translated=False` else the model call whose prompt says 'keep the meaning, plain wording' (400-401) and replies translated=True (642); main.py stores it as text_en whenever `out != text` (line 176), and hub.html:975 renders `rep.text_en || rep.text`.}, {"
+  },
+  {
+   "file": "e:/final_proj/mice/code/apps/voice/service.py",
+   "line": 680,
+   "summary": "The two readers of the same `service` key resolve a URL without a port differently: the helper falls back to port 8767, the hub proxies to the literal URL and lands on port 80 \u2014 every proxied call answers 'not running' though the helper started fine.",
+   "verdict": "CONFIRMED",
+   "reason": "service.py:680 `port = args.port or u.port or 8767` binds 8767 when the config URL omits a port, while main.py voice_service_url returns `cfg.get(\"service\").rstrip(\"/\")` verbatim and voice_proxy builds `target = base + ...` (3209) \u2014 'http://127.0.0.1' proxies to port 80, gets connection-refused, and the handler at 3229 says the helper is not running."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/main.py",
+   "line": 3828,
+   "summary": "Designer-facing report errors are programmer shorthand returned with HTTP 200 and surfaced verbatim in the hub banner: 'bad json', 'empty', 'write failed: <raw exception>'.",
+   "verdict": "CONFIRMED",
+   "reason": "send_json defaults to code=200 (3189-3190) and the route returns `{\"ok\": False, \"error\": \"bad json\"}` (3825), `\"empty\"` (3828), `\"write failed: \" + str(e)` (3859); hub.html:930 throws `new Error((r && r.error) || 'server said no')` and 938 prints `'Report failed (' + (e.message||e) + ')...'` in the stopSaid banner \u2014 while service.py next door says 'that request was not readable' (465, 625)."
+  },
+  {
+   "file": "e:/final_proj/mice/code/tools/reports.py",
+   "line": 84,
+   "summary": "Docstring promises an untranslated report prints 'as written, plus why', but translate_text collapses every refusal to None and the tool always prints the same 'start the voice helper' hint \u2014 misleading when the helper is running with the model disabled.",
+   "verdict": "CONFIRMED",
+   "reason": "translate_text returns None identically for config-unreadable (28), helper-down exception (49-50), and ok:false (llm off \u2192 do_translate returns {ok:False,'off in config/voice.json'}), and line 84 unconditionally prints '(not translated - start the voice helper, then run again)' \u2014 the promised 'plus why' never varies despite the four distinct causes."
+  }
+ ],
+ "help-accuracy": [
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/help.html",
+   "line": 1235,
+   "summary": "Help prints the mDNS address as http://mice.local:9203/ but the hub listens on 8642, so anyone typing the documented name lands nowhere",
+   "verdict": "CONFIRMED",
+   "reason": "help.html:1235 prints \"<code>http://mice.local:9203/</code>\" but main.py:113 is \"PORT = 8642\" (and mdns.py:164 says \"adding a port does not help because the port was never the ambiguous part\"); no code anywhere binds 9203, so the printed URL answers nothing."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/help.html",
+   "line": 745,
+   "summary": "Help names the module site tabs Control / Sequences & files / Setup; the board's real tabs are labelled Move it / Shows & files / Setup & wiring",
+   "verdict": "CONFIRMED",
+   "reason": "help.html:745 says \"<b>Control</b> ... <b>Sequences &amp; files</b> ... <b>Setup</b>\" while WebUI.h:136-138 renders the actual buttons: \"showTab('control')\">Move it\", \"Shows &amp; files\", \"Setup &amp; wiring\"."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/help.html",
+   "line": 485,
+   "summary": "Hub pairing and other-hub linking are missing from help, which still says every other PC needs its own login \u2014 the Network tab now offers code pairing and linked hubs sharing boards",
+   "verdict": "CONFIRMED",
+   "reason": "help.html:485 still reads \"a module on another PC needs a login on that PC too\"; case-insensitive grep finds zero 'pair' matches in help.html, while hub.html:625 has \"Show a code for another PC\", hub.html:597 \"Other PCs running the hub\", main.py:4339-4377 defines /api/pair/status|start|stop|claim|link, and hub_auth.py:76 gates \"/api/pair/start\", \"/api/pair/stop\", \"/api/pair/status\", \"/api/pair/link\"."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/help.html",
+   "line": 884,
+   "summary": "The Report-a-problem button, complaints screen and automatic English translation of reports are undocumented anywhere on the help page",
+   "verdict": "CONFIRMED",
+   "reason": "hub.html:197-198 has \"id=\\\"reportBtn\\\" ... title=\\\"Report a problem \u2014 no login needed\\\">\ud83d\udc1b Report\" and main.py:3811/3865 serve /api/report//api/reports with _translate_report_later (main.py:156) POSTing to the voice service \"/translate\" \u2014 but help.html contains zero matches for translat/complaint/\"Report a problem\"; its only 'report' hits are the verb (\"INFO reports...\")."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/help.html",
+   "line": 1424,
+   "summary": "Command-language reference has Lift-only and Nong-only tables but no cam table \u2014 SNAP and the eight CAM commands appear nowhere in the Command language section",
+   "verdict": "CONFIRMED",
+   "reason": "Section id=\"commands\" (help.html:1402-1448) holds exactly three groups \u2014 \"Every module type\", \"Lift only\" (1424), \"Nong only\" (1434) \u2014 with no SNAP/CAM row, while COMMANDS.md:602-612 documents SNAP, CAM, CAM SIZE/QUALITY/FLASH/LIST/SET/AUTO; help mentions CAM commands only in the Studio-section card at help.html:1106-1109."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/help.html",
+   "line": 110,
+   "summary": "Sticky sidebar table of contents omits the Camera and Voice sections entirely, so two of the page's main sections are unreachable from the nav and never highlight while scrolling",
+   "verdict": "CONFIRMED",
+   "reason": "The nav (help.html:105-117) lists only #firmware #lift #nong #modsite #hub #studio #qc #transports #commands #files, while <section id=\"camera\"> exists at line 843 and <section id=\"voice\"> at line 884."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/help.html",
+   "line": 754,
+   "summary": "Module-website card list omits the Camera card, which exists on the board's site",
+   "verdict": "CONFIRMED",
+   "reason": "help.html:754 lists \"Modules on network \u00b7 Lift \u00b7 RGB Strip \u00b7 Speaker \u00b7 Nong Arms \u00b7 Zero position \u00b7 Servo type \u00b7 Sequences \u00b7 Hardware pins \u00b7 SD Files \u00b7 Settings \u00b7 Console\" \u2014 no Camera \u2014 yet WebUI.h:348-350 defines \"<!--#type cam--> <div class=\"card\" data-tab=\"control\" id=\"camCard\"> <h2>Camera</h2>\", a per-type card just like the listed Lift/RGB/Nong ones (WebUI.h:207,264)."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/help.html",
+   "line": 745,
+   "summary": "Garbled triple-apostrophe text rendered to readers: \"module'''s\" appears twice on the page",
+   "verdict": "CONFIRMED",
+   "reason": "Grep for ''' over help.html hits exactly two lines: 745 \"(the module'''s own controls)\" and 1349 \"the module site'''s tabs show one group at a time\" \u2014 the file is served as-is, so readers see three literal apostrophes."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/help.html",
+   "line": 130,
+   "summary": "Header stat tile and QC section both say 100 checks/assertions; there are 146 check files, and the guarded-areas list omits existing areas like tools (15 voice-app checks)",
+   "verdict": "CONFIRMED",
+   "reason": "help.html:130 says \"<b>100</b><span>QC checks</span>\" and 1322 \"100 assertions\", but ls qc/checks/check_*.py | wc -l = 146; the What-it-guards list (1332-1377) ends at areas docs/design/logging/auth/qc with no 'tools', while 15 checks carry AREA = \"tools\" (check_voice*.py, check_panel.py, check_dev_tools.py, ...)."
+  },
+  {
+   "file": "e:/final_proj/mice/code/main_python/web/help.html",
+   "line": 1457,
+   "summary": "Sequence-file step-key list is missing five keys the firmware player supports: joint, speed, relax, attach, cmd",
+   "verdict": "CONFIRMED",
+   "reason": "help.html:1457 lists only \"pose, goto, home, up, down, stop, wait, rgb, effect, bright, play, vol\", but COMMANDS.md:747-751 documents \"- joint:\", \"- speed: 150\", \"- relax: 1 / - attach: 1\", \"- cmd: \\\"ANY RAW COMMAND\\\"\", and the firmware really supports them: config/commands.json:101-108 declares step keys joint/speed/relax/attach and SequencePlayer.cpp:132-138 handles wait/cmd before the generated SeqSteps table."
+  }
+ ]
+}

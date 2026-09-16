@@ -67,7 +67,14 @@ setTimeout(function(){
     var stub = function(u){
       u = String(u); urls.push(u);
       if (u.indexOf('/api/ota') >= 0) return reply({ok:true});
-      if (u.indexOf('/api/flash') >= 0) return reply({done:true, percent:100});
+      // THE REAL SHAPE, not a convenient one. This used to answer
+      // {done:true}, a key /api/flash has never sent — so the harness proved
+      // the page worked against a document the hub does not produce, and the
+      // watcher's never-finishing bug lived here undetected for exactly that
+      // reason. A fake that is kinder than reality tests nothing.
+      if (u.indexOf('/api/flash') >= 0)
+        return reply({running:false, ok:true, percent:100, error:'',
+                      stage:'restarting the board', how:'wifi', log:[]});
       if (u.indexOf('/api/dev/status') >= 0)
         return reply({id:1, type:stored, types:['blank','cam']});
       if (u.indexOf('/api/dev/cmd') >= 0){
@@ -149,6 +156,15 @@ setTimeout(function(){
         if (polls <= 2) return reply({id:1, type:'blank', types:['blank','nong']});
         return reply({id:1, type:storedType, types:['blank','cam']});
       }
+      // A FINISHED, SUCCESSFUL flash job, in the shape /api/flash really
+      // returns: running/percent/stage/ok/error/how/log, and NO `done` key.
+      // That is the whole point - the watcher used to wait for `done`, so it
+      // only ever ended on a FAILURE and a successful write left the button
+      // disabled and the type never applied.
+      if (u.indexOf('/api/flash') >= 0){
+        return reply({running:false, ok:true, percent:100, error:'',
+                      stage:'restarting the board', how:'usb', log:[]});
+      }
       if (u.indexOf('/api/dev/cmd') >= 0){
         var c = decodeURIComponent((u.split('&c=')[1] || '').split('&')[0]);
         if (c.indexOf('SET TYPE') === 0){
@@ -163,6 +179,31 @@ setTimeout(function(){
       return reply({});
     };
 
+    // ---- does the WATCHER ever finish on a success? ----------------
+    // Everything below is downstream of this. A watcher that never completes
+    // is a button stuck disabled, a bar stuck on screen, and a board left
+    // running new firmware under its old type - with no error anywhere.
+    var wbar = w.document.createElement('div');
+    wbar.innerHTML = '<i></i>';
+    wbar.hidden = false;
+    var wsay = w.document.createElement('span');
+    var wgo = w.document.createElement('button');
+    wgo.disabled = true;
+    var watched = 'no';
+    try{
+      w.fwWatch(wbar, wsay, wgo, {dev:'', type:'', was:''});
+    }catch(e){ watched = 'threw'; }
+
+    setTimeout(function(){
+      if (watched !== 'threw')
+        watched = (wgo.disabled === false && wbar.hidden === true) ? 'yes' : 'no';
+      // fresh counters: the watcher's own poll must not colour the numbers
+      // the type test below reports.
+      polls = 0; sent = []; sentEarly = 0; storedType = 'blank';
+      runTypeTest();
+    }, 3500);
+
+    function runTypeTest(){
     var stat = w.document.createElement('span');
     w.applyTypeAfterFlash('usb:COM99', 'cam', stat);
 
@@ -174,8 +215,10 @@ setTimeout(function(){
       out.push("stored=" + storedType);                // must end up cam
       out.push("said=" + (/cam/i.test(stat.textContent) ? "cam" : "no"));
       out.push("gaveup=" + (/^\\u26a0/.test(stat.textContent.trim()) ? "yes" : "no"));
+      out.push("watchdone=" + watched);                // must be yes
       done(out.join(" "));
     }, 14000);
+    }
   } catch (e) { done("ERR=" + String(e).slice(0,60)); }
 }, 5000);
 </script>
@@ -209,6 +252,36 @@ def run(t):
     watch = _fn(hub, "fwWatch")
     t.contains(watch, "applyTypeAfterFlash",
                "a finished write sets the board's type")
+
+    # ...AND THE WATCHER HAS TO GET THERE. Every field the completion test
+    # reads must be a field the hub really sends, or the type step is perfect
+    # code that never runs. Found 2026-08-20: the test was `if (s.done ||
+    # s.error)` and /api/flash has never sent a `done` key — status() returns
+    # running/percent/stage/ok/error/how/log and /api/flash/at only proxies the
+    # same document. So a write that SUCCEEDED never finished in the UI: the
+    # button stayed disabled, the bar stayed on screen, and the board kept
+    # running new firmware under its old type. Only a FAILED write ended
+    # cleanly, which is why nobody noticed.
+    import re as _re                                          # noqa: PLC0415
+    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    # The FLASH job's status, not the show player's — main.py has more than one
+    # `def status(self)`, and taking the first one made this assert against the
+    # wrong document entirely.
+    st = src[:src.find('"how": self.how')]
+    st = st[st.rfind("    def status(self):"):]
+    sends = set(_re.findall(r'"(\w+)":', st))
+    t.ok(sends, "the hub's flash status names its fields", str(sorted(sends)))
+    cond = watch[watch.find("const finished ="):]
+    cond = cond[:cond.find(";")]
+    reads = set(_re.findall(r"s\.(\w+)", cond))
+    unknown = sorted(r for r in reads if r not in sends and r != "done")
+    t.eq(unknown, [],
+         "the completion test only reads fields /api/flash actually sends")
+    t.ok(reads & sends,
+         "and it reads at least one field that is really there",
+         "a watcher waiting on a key nothing sends never finishes, so every "
+         "step after it - including setting the board's type - silently never "
+         "happens on the one path that matters, the successful one")
     write = _fn(hub, "fwWrite")
     t.contains(write, "usb:", "the cable path addresses the board by its port")
     t.contains(write, "wifi:", "and the WiFi path by its address")
@@ -233,7 +306,7 @@ def run(t):
         return
     fake_serial.reset()
     base, main = F.start_hub()
-    browser.raw_page(PAGE, base, seconds=26)
+    browser.raw_page(PAGE, base, seconds=30)
 
     marks = [m for m in fake_serial.qc_marks if m.startswith("FT ")]
     if not t.ok(marks, "the hub page reported back",
@@ -260,6 +333,16 @@ def run(t):
          "and it does not report failure while the board is still restarting")
     t.eq(got.get("said"), "cam",
          "the row says which type the board ended up as")
+
+    # DRIVEN, in a real browser, against the real /api/flash document: a
+    # SUCCESSFUL job has to finish. Asserting on the source alone was not
+    # enough — proved with tools/sabotage.py, where restoring the old
+    # `s.done || s.error` test passed a source-level check happily, because
+    # `error` is a field the hub really sends. Only running it catches that
+    # the condition can never become true on the path that succeeds.
+    t.eq(got.get("watchdone"), "yes",
+         "a flash that SUCCEEDED finishes: the bar hides and the button "
+         "comes back")
 
     # ---- the SCREEN finishes the job -----------------------------------
     fake_serial.reset()

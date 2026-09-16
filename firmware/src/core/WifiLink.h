@@ -63,4 +63,38 @@ inline Action decide(bool onRelay, int mainRssi, int bestPeerRssi) {
     return STAY;
 }
 
+// Picking WHICH scan result to aim at — the other half of the same question,
+// with the same excuse to be pure and PC-tested: the interesting case needs a
+// neighbour order no bench can arrange.
+//
+// Rule: a module we have MET beats every guess, whatever the signal difference
+// — its hotspot password is derived from the group, so we can actually get in;
+// a stronger guess may simply refuse us. Within one kind, the stronger signal
+// wins. rssi 0 means "not seen".
+//
+// Names are COPIED into std::string members on purpose: the caller feeds
+// c_str() of a scan-loop String that is reassigned every iteration, so a
+// borrowed pointer would silently end up naming whatever was scanned last.
+#include <string>
+struct PeerPick {
+    int knownRssi = 0;  std::string knownName;
+    int guessRssi = 0;  std::string guessName;
+
+    void feed(bool known, int rssi, const char* name) {
+        if (rssi == 0 || !name) return;
+        if (known) {
+            if (!knownRssi || rssi > knownRssi) { knownRssi = rssi; knownName = name; }
+        } else {
+            if (!guessRssi || rssi > guessRssi) { guessRssi = rssi; guessName = name; }
+        }
+    }
+
+    // The candidate to aim at, or nullptr for none. Valid while *this lives.
+    const char* best(int& rssi, bool& known) const {
+        if (knownRssi) { rssi = knownRssi; known = true;  return knownName.c_str(); }
+        if (guessRssi) { rssi = guessRssi; known = false; return guessName.c_str(); }
+        rssi = 0; known = false; return nullptr;
+    }
+};
+
 }  // namespace wifilink

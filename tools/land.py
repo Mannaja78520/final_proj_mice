@@ -24,7 +24,19 @@ import argparse
 import re
 import subprocess
 import sys
+
 from pathlib import Path
+
+# THAI, OR ANY OTHER LANGUAGE, MUST NOT KILL A TOOL. Windows hands python a
+# cp1252 console here, which cannot encode Thai at all: printing one Thai word
+# raised UnicodeEncodeError and the command died after it had already changed
+# the file. Measured 2026-08-22. UTF-8 out, and never crash on a character.
+for _out in (sys.stdout, sys.stderr):
+    try:
+        _out.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass        # a check that IMPORTS this tool has replaced stdout
+                    # with a StringIO, which has no reconfigure at all
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -42,6 +54,21 @@ def run(cmd, **kw):
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
                        errors="replace", cwd=str(ROOT), **kw)
     return r.returncode, re.sub(r"\x1b\[[0-9;]*m", "", (r.stdout or "") + (r.stderr or ""))
+
+
+def snap(desc):
+    """Numbered patch of the whole code tree once the work IS in the real
+    tree - A24-1: every landed change gets a number without anyone remembering
+    to ask. Never fatal: a missing patcher must not fail a green gate."""
+    try:
+        r = subprocess.run([sys.executable, str(ROOT / "tools" / "save_code_patch.py"), desc],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", cwd=str(ROOT), timeout=300)
+        line = (r.stdout or "").strip().splitlines()
+        if line:
+            print("patch: " + line[-1])
+    except Exception:                                   # noqa: BLE001
+        pass
 
 
 def verdict(text):
@@ -63,6 +90,16 @@ def main(argv=None):
     ap.add_argument("--skip-quick", action="store_true")
     a = ap.parse_args(argv)
 
+    def finish(good, why=""):
+        # The LAST line decides. On 2026-08-23 the deciding word sat at the end
+        # of hundreds of lines that a truncated read never reached, and a landed
+        # promote was reported as REFUSED. Whoever reads only the tail now
+        # reads the truth.
+        print("LAND RESULT: %s%s%s" % ("LANDED" if good else "NOT LANDED",
+                                       (" - " + why) if why else "",
+                                       (" (" + " ".join(a.done) + ")") if a.done else ""))
+        return 0 if good else 1
+
     if not a.skip_quick:
         plan("running", "quick suite before the gate")
         code, out = run([sys.executable, str(ROOT / "qc" / "run_qc.py"), "--quick"])
@@ -72,7 +109,16 @@ def main(argv=None):
             print("   - " + l)
         if not ok:
             plan("running", "quick suite FAILED - not gating")
-            return 1
+            return finish(False, "quick suite failed")
+
+    # Numbered patch BEFORE the gate copies anything: promote carries the
+    # whole tree INCLUDING this patch into the real tree, so the rollback
+    # point for THIS landing is IN the real tree the moment it lands. Taken
+    # after the snapshot the other way round left patch 0003 stranded in
+    # staging - the one landing someone might need to undo was the one main
+    # had no patch for.
+    snap(("landing " + " ".join(a.done)) if a.done
+         else "landing - no task ids given")
 
     plan("running", "full gate, then promote")
     code, out = run([sys.executable, str(ROOT.parent / "promote.py")]
@@ -82,8 +128,32 @@ def main(argv=None):
     print("gate:  " + (lines[0] if lines else "?"))
     for l in lines[1:]:
         print("   - " + l)
+    # KEEP THE EVIDENCE. Printing only the verdict threw away the crash text
+    # twice - once for a check that never reproduced, once for a timing failure
+    # whose numbers would have named the cause. A red gate now leaves the whole
+    # run on disk, and says where.
+    if not ok:
+        from pathlib import Path as _P
+        import tempfile as _tf
+        keep = _P(_tf.gettempdir()) / "mice_last_gate.log"
+        try:
+            keep.write_text(out, encoding="utf-8")
+            print("   full output kept: %s" % keep)
+        except OSError:
+            pass
 
+    # Staging byte-identical to the real tree means the work IS in the real
+    # tree - promote copies nothing and prints "nothing to promote". Calling
+    # that REFUSED left finished work marked doing forever (A22-2, A20-1).
+    synced = "nothing to promote" in out
     landed = "promoted" in out
+    if synced and not landed:
+        print("promote: already in the real tree - nothing was copied")
+        for tid in a.done:
+            plan("done", tid)
+        plan("running", "--clear")
+        return finish(True, "already in the real tree")
+
     print("promote: " + ("landed in the real tree" if landed
                          else "REFUSED - nothing was copied"))
     # A promote that reused the RECEIPT prints no verdict at all - the suite did
@@ -92,14 +162,14 @@ def main(argv=None):
     # flight and left the plan saying the opposite of the truth.
     if landed and ok is None:
         ok = True
-        print("gate:  not re-run - the tree was already green (receipt)")
+        print("gate:  no QC verdict found - assuming a reused green receipt")
     if ok and landed:
         for tid in a.done:
             plan("done", tid)
         plan("running", "--clear")
-    else:
-        plan("running", "gate red - staging holds unpromoted work")
-    return 0 if (ok and landed) else 1
+        return finish(True)
+    plan("running", "gate red - staging holds unpromoted work")
+    return finish(False, "promote refused or gate red")
 
 
 if __name__ == "__main__":

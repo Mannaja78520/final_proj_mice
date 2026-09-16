@@ -1,0 +1,14 @@
+{
+  // WHERE OUR WATCHER ANSWERS. Not where Reconize is - that is one entry in
+  // config/partners.json, because Reconize is one of several outside programs
+  // and this is our own helper.
+  //
+  // The hub resolves this per call, so moving the helper needs no restart of
+  // anything. Same bargain config/voice.json already makes.
+  //
+  // LOOPBACK ONLY, and the helper refuses to start otherwise. It holds the
+  // login for an outside app and can drive the robot through the hub, so
+  // anything that could reach its port could move the rig without a password.
+  // Remote callers come through the hub, where the login gate is.
+  "service": "http://127.0.0.1:8769"
+}

@@ -22,14 +22,20 @@ void RS485Bus::loop() {
             if (buf_.length()) handleLine(buf_);
             buf_ = "";
         } else if (c != '\r') {
-            if (buf_.length() > 250) buf_ = ""; // garbage / missed terminator
+            // 250 ate every FILES listing that crossed a bridge - the head
+            // was wiped and only a tail arrived. 2048 still bounds runaway
+            // noise with no terminator, but leaves room for real replies.
+            if (buf_.length() > 2048) buf_ = "";
             buf_ += c;
         }
     }
-    // staggered broadcast reply due?
-    if (pendingReply_.length() && (int32_t)(millis() - pendingAt_) >= 0) {
-        send(pendingReply_);
-        pendingReply_ = "";
+    // staggered broadcast replies due? Every queued slot is checked, not just
+    // the newest — the newest used to be the ONLY slot and ate older PONGs.
+    for (uint8_t i = 0; i < PENDING_N; i++) {
+        if (pending_[i].length() && (int32_t)(millis() - pendingAt_[i]) >= 0) {
+            send(pending_[i]);
+            pending_[i] = "";
+        }
     }
 }
 
@@ -74,8 +80,19 @@ void RS485Bus::handleLine(String line) {
         // (ids 24 apart); that is what the addressed follow-up is for, and a
         // collision that loses one answer is recoverable where a five second
         // wait is simply never made.
-        pendingReply_ = "@" + String(id_->id()) + " " + reply;
-        pendingAt_ = millis() + (uint32_t)(id_->id() % 24) * 10;
+        // Queue it: first free slot. Full queue? Give up the place of the entry
+        // scheduled LAST (it has waited least and nothing is about to fire);
+        // signed delta, so a millis() rollover cannot flip the comparison.
+        uint8_t slot = PENDING_N;
+        for (uint8_t i = 0; i < PENDING_N; i++)
+            if (!pending_[i].length()) { slot = i; break; }
+        if (slot == PENDING_N) {
+            slot = 0;
+            for (uint8_t i = 1; i < PENDING_N; i++)
+                if ((int32_t)(pendingAt_[i] - pendingAt_[slot]) > 0) slot = i;
+        }
+        pending_[slot] = "@" + String(id_->id()) + " " + reply;
+        pendingAt_[slot] = millis() + (uint32_t)(id_->id() % 24) * 10;
     }
 }
 
@@ -96,6 +113,12 @@ void RS485Bus::handleLine(String line) {
 // skipping the lock — it can only happen if begin() was never reached or the
 // mutex could not be allocated, and both mean this board should not be trusted
 // to talk on the bus.
+// Driver-enable timing, in microseconds, DERIVED from the baud rate rather
+// than typed. One byte is 10 bits at 8N1, so at 115200 a byte is 86.8us.
+static const uint32_t RS485_BYTE_US = (10UL * 1000000UL) / RS485_BAUD;
+static const uint32_t RS485_SETUP_US = RS485_BYTE_US / 2 + 5;
+static const uint32_t RS485_HOLD_US = RS485_BYTE_US * 2;
+
 void RS485Bus::send(const String& line) {
     if (sendMtx_) {
         xSemaphoreTake(sendMtx_, portMAX_DELAY);
@@ -104,11 +127,22 @@ void RS485Bus::send(const String& line) {
         LOGF(sys, "RS485 send has no lock — frames from two tasks can interleave");
     }
     digitalWrite(hw.pins.rs485De, HIGH);
-    delayMicroseconds(20);
+    delayMicroseconds(RS485_SETUP_US);
     Serial2.print(line);
     Serial2.print('\n');
-    Serial2.flush(); // wait until the last byte left the UART before releasing the bus
-    delayMicroseconds(20);
+    Serial2.flush(); // the FIFO is empty here - the shift register is not
+    // AND THEN WAIT FOR THE SHIFT REGISTER. flush() empties the FIFO; the
+    // byte already being clocked out lives beyond it, and dropping the
+    // driver enable while it is still going cuts that character in half.
+    // The receiver sees a framing error, which arrives as 0x00 - a NUL
+    // where a letter should be, which is exactly the corruption measured
+    // at the bench on 2026-08-20.
+    //
+    // 20us was less than a quarter of one byte at 115200 (86.8us), so the
+    // margin was not small, it was absent. Derived from the baud rate now,
+    // so changing RS485_BAUD cannot leave this behind. Found by the
+    // five-model panel, looking at real corrupted replies.
+    delayMicroseconds(RS485_HOLD_US);
     digitalWrite(hw.pins.rs485De, LOW);
     if (sendMtx_) xSemaphoreGive(sendMtx_);
 }

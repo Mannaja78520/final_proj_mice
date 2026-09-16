@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Camera — Mice</title>
+<link rel="stylesheet" href="/mice.css">
+<!--
+  THE CAMERA ON ITS OWN. Asked for 2026-08-21: *how to go to camera view while
+  not go to the module*. Watching a camera meant opening that board's whole
+  website and finding the Camera card on it — right when you are setting a
+  board up, wrong when you only want to see what it sees.
+
+  It lists every camera the hub can reach and shows them together. Several
+  people can have this open at once: the hub holds ONE connection per camera
+  and feeds every viewer from it (main_python/cam_relay.py).
+-->
+<link rel="stylesheet" href="style.css">
+<div class="head">
+  <button class="secondary" onclick="location.href='/'">🏠 Hub</button>
+  <h1>📷 Cameras</h1>
+  <button onclick="load(true)">⟳ Look again</button>
+  <span class="mini" id="stat" aria-live="polite">looking…</span>
+  <label class="mini" style="display:inline-flex;gap:var(--sp-2);align-items:center;margin-left:auto">
+    <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
+    Show technical details</label>
+</div>
+<!-- One login, every page (A25-5). -->
+<div class="card" id="loginHere" style="margin-bottom:var(--sp-4)"></div>
+<div class="grid" id="cams"></div>
+<div class="mini" id="none" hidden>
+  No camera answered. A camera module has to be powered and on this network or
+  on a cable, and its <b>type</b> has to be <code>cam</code>.
+</div>
+
+<script src="/mice.js"></script>
+<script src="app.js"></script>

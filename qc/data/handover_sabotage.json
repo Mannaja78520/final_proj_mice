@@ -1,0 +1,20 @@
+[
+  {
+    "file": "tools/handover.py",
+    "find": "snap = patcher(WORK, script)\n        snap.patches",
+    "replace": "snap = patcher(WORK, script)\n        snap.root = ROOT / snap.root.relative_to(WORK)\n        snap.patches",
+    "why": "checkpoint quietly saves main source instead of the unpromoted draft"
+  },
+  {
+    "file": "tools/handover.py",
+    "find": "for path in (index, stage_index):",
+    "replace": "for path in (index,):",
+    "why": "staging keeps a stale index which promotion can copy over newer history"
+  },
+  {
+    "file": "tools/handover.py",
+    "find": "if not _same_snapshot(main[name], staged[name]):",
+    "replace": "if False:",
+    "why": "a modified old snapshot is accepted as safe to promote"
+  }
+]

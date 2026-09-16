@@ -32,7 +32,19 @@ import json
 import re
 import subprocess
 import sys
+
 from pathlib import Path
+
+# THAI, OR ANY OTHER LANGUAGE, MUST NOT KILL A TOOL. Windows hands python a
+# cp1252 console here, which cannot encode Thai at all: printing one Thai word
+# raised UnicodeEncodeError and the command died after it had already changed
+# the file. Measured 2026-08-22. UTF-8 out, and never crash on a character.
+for _out in (sys.stdout, sys.stderr):
+    try:
+        _out.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass        # a check that IMPORTS this tool has replaced stdout
+                    # with a StringIO, which has no reconfigure at all
 
 ROOT = Path(__file__).resolve().parent.parent
 

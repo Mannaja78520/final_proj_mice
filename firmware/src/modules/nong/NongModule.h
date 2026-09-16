@@ -5,13 +5,14 @@
 #include <config.h>
 #include "modules/Module.h"
 #include "core/HwConfig.h"
+#include "core/AudioPlayer.h"
 
 class SDStore;
 
 // Nong humanoid module: upper body with two arms, no fingers.
-// HARDWARE: 8 MG90S servos + the microSD card (for /moves sequences) — that
-// is all. No encoder, no RGB strip, no speaker (those are lift hardware; a
-// board is one type at a time, so nong reuses their pins for servos).
+// HARDWARE: 8 MG90S servos + the microSD card (for /moves sequences), and —
+// since A7-9 — an optional I2S speaker. No encoder, no RGB strip (a board is
+// one type at a time, so nong reuses lift's pins for servos).
 // Each arm has a universal joint in the shoulder and a universal joint in
 // the elbow, every universal joint built from 2 MG90S servos -> 8 joints:
 //
@@ -122,6 +123,8 @@ public:
     void addCapabilities(JsonArray caps) override;
     void status(JsonObject o) override;
     bool busy() override;
+    void silence() override { audio_.stop(); }
+    void silenceLoop() override { audio_.stopIfLooping(); }
     void applySettings(JsonVariant s) override;
 
     // Calibration is stored TWICE, on purpose:
@@ -147,6 +150,7 @@ public:
 private:
     SDStore* sd_;
     Servo servos_[N];
+    AudioPlayer audio_;   // speaker (A7-9): PLAY/VOL off the SD card, same as lift
 
     // settings (see /data/module.yaml and the CFG command).
     // NOTE: the arrays MUST have full defaults — without a module.yaml the
@@ -219,6 +223,14 @@ private:
     // The one sentence that says what a person may type instead.
     static const char* jointSelHelp() { return "ERR joint 1-10, name, or ALL"; }
     float clampJoint(int i, float deg) const;
+    // Servo degrees per joint degree for ONE joint — its own reduction. trim is
+    // stored in servo degrees while OFFSET and SETZERO both work in joint
+    // degrees, so this is the conversion, in one place because two copies of it
+    // could disagree about which way up the ratio goes.
+    float servoPerJoint(int i) const {
+        const int p = gearPinion_[i] < 1 ? 1 : gearPinion_[i];
+        return (float)gearGear_[i] / (float)p;
+    }
     float slowestMaxDps() const;                    // slowest joint's limit
     uint32_t durationFor(const float tgt[N]) const; // ms from speed setting
     uint32_t minDuration(const float tgt[N]) const; // physical floor from max_dps

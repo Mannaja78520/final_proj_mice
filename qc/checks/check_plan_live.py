@@ -74,6 +74,23 @@ def run(t):
     t.contains(after, mark,
                "with the text that was asked for")
 
+    # ---- a task id may carry a suffix letter ------------------------
+    # A9-3b is the half of A9-3 that needs no hardware. Both the tool and the
+    # page used to stop at the digit, so that task could be set to `doing`
+    # without complaint and then be missing from every count and from the
+    # page itself - work in progress that the page said did not exist.
+    # Driven on a STATE block written here, so it does not depend on which
+    # tasks happen to exist today.
+    tiny = work.parent / "tiny.html"
+    tiny.write_bytes(('<pre id="state"><code>STATE\n'
+                      '# RUNNING: nothing right now\n'
+                      'A9-3b: doing    2026-08-21 21:52  — the PC-only half\n'
+                      'A9-3: blocked  2026-08-20 23:56  — the hardware half\n'
+                      '</code></pre>').encode("utf-8"))
+    counts, _run, live = plan.Plan(tiny).summary()
+    t.eq(counts["doing"], 1, "a task id with a suffix letter is counted")
+    t.eq(live, ["A9-3b"], "and named as one of the things in flight")
+
     # ---- published beside it, for the page to read -----------------
     state = work.parent / "plan_state.js"
     t.ok(state.is_file(), "the state is published beside the page",
@@ -101,6 +118,8 @@ def run(t):
     page = path.read_text(encoding="utf-8")
     t.contains(page, "plan_state.js",
                "the page loads the published state")
+    t.contains(page, r"[A-Z]\d+-\d+[a-z]?",
+               "and its renderer reads suffixed ids, like the tool does")
     loader = page[page.find("LIVE, without a refresh"):]
     loader = loader[:4000]
     t.contains(loader, "createElement('script')",
@@ -201,3 +220,92 @@ def run(t):
     t.ok(again.returncode != 0, "adding the same id twice is refused",
          "it returned %d; a duplicated id is counted twice by the progress card"
          % again.returncode)
+
+    # A STATUS WORD AS THE FIRST WORD OF A NOTE IS A MISTYPED --status.
+    # `add <id> doing "..."` filed "doing" as note text and left the task
+    # `todo` while it was actively being worked, so the page said nothing was
+    # in flight - the one thing it exists to show. The user caught it on
+    # 2026-08-28, after it had already happened silently to an earlier task.
+    # Refusing costs nothing; guessing the status would be worse.
+    for word in ("doing", "done", "blocked"):
+        bad = subprocess.run(
+            [sys.executable, str(tool), "add", "Z8-%s" % word[:2], word,
+             "the note", "after", "it"],
+            capture_output=True, text=True, timeout=60, env=env)
+        t.ok(bad.returncode != 0,
+             "a note beginning with %r is refused, not filed as todo" % word,
+             bad.stdout + bad.stderr)
+        t.contains((bad.stdout + bad.stderr), "--status",
+                   "and the refusal names the flag that was meant")
+
+    # ...while a QUOTED note is ordinary text, even when it opens with one of
+    # those words. "qc self-test" is a real note this very check writes.
+    for note in ("qc self-test of the note guard",
+                 "the arm is doing the wrong thing when a show is done"):
+        ok = subprocess.run(
+            [sys.executable, str(tool), "add", "Z7-%d" % len(note), note],
+            capture_output=True, text=True, timeout=60, env=env)
+        t.eq(ok.returncode, 0, "a quoted note starting %r is still fine"
+             % note.split(" ", 1)[0])
+
+    # ---- two plans, and a stamp must not land on the wrong one --------
+    # There are two pages now: docs/PLAN.html for the rig, and
+    # docs/system_integral.html for joining Mice to outside programs. The
+    # second was numbered from A1 at the user's request, so 37 of its 41 ids
+    # ALSO exist on the robot plan. Stamping the wrong page is invisible - the
+    # page being watched simply never changes and the work looks stalled.
+    #
+    # Driven in a throwaway tree with its own docs/, never against the real
+    # plans: a check that could mark a real task done when the guard breaks is
+    # a check that damages the thing it is guarding.
+    two = Path(_tf.mkdtemp(prefix="qc_pages_"))
+    (two / "tools").mkdir()
+    (two / "docs").mkdir()
+    _sh.copy(F.CODE / "tools" / "plan.py", two / "tools" / "plan.py")
+    both = "<pre id='state'><code>STATE\n# RUNNING: nothing\n%s\n</code></pre>"
+    (two / "docs" / "PLAN.html").write_text(
+        both % "A1-1: todo   - on both plans\nA25-5: todo   - robot only",
+        encoding="utf-8", newline="")
+    (two / "docs" / "system_integral.html").write_text(
+        both % "A1-1: todo   - on both plans\nA5-4: todo   - system only",
+        encoding="utf-8", newline="")
+    twotool = two / "tools" / "plan.py"
+    clean = {k: v for k, v in _os.environ.items() if k != "MICE_PLAN"}
+
+    before_robot = (two / "docs" / "PLAN.html").read_text(encoding="utf-8")
+    before_sys = (two / "docs" / "system_integral.html").read_text(encoding="utf-8")
+    clash = subprocess.run([sys.executable, str(twotool), "done", "A1-1"],
+                           capture_output=True, text=True, timeout=60, env=clean)
+    said = clash.stdout + clash.stderr
+    t.ok(clash.returncode != 0,
+         "an id BOTH plans carry is refused, not guessed",
+         "guessing writes to a page nobody is watching: " + said)
+    t.contains(said, "--page", "and the refusal names the flag that settles it")
+    t.eq((two / "docs" / "PLAN.html").read_text(encoding="utf-8"), before_robot,
+         "a refused stamp leaves the robot plan untouched")
+    t.eq((two / "docs" / "system_integral.html").read_text(encoding="utf-8"),
+         before_sys, "and leaves the integration plan untouched")
+
+    # An id only ONE page has needs no flag - there is nothing to confuse.
+    for tid, page, other in (("A5-4", "system_integral.html", "PLAN.html"),
+                             ("A25-5", "PLAN.html", "system_integral.html")):
+        untouched = (two / "docs" / other).read_text(encoding="utf-8")
+        r2 = subprocess.run([sys.executable, str(twotool), "doing", tid],
+                            capture_output=True, text=True, timeout=60, env=clean)
+        t.eq(r2.returncode, 0, "%s needs no --page, only one plan has it" % tid)
+        t.contains((two / "docs" / page).read_text(encoding="utf-8"),
+                   "%s: doing" % tid, "and it landed on the right page")
+        t.eq((two / "docs" / other).read_text(encoding="utf-8"), untouched,
+             "while the other plan was not written at all")
+
+    # And naming the page always wins, even when both carry the id.
+    named = subprocess.run(
+        [sys.executable, str(twotool), "--page", "system", "done", "A1-1"],
+        capture_output=True, text=True, timeout=60, env=clean)
+    t.ok(named.returncode == 0, "--page settles it",
+         named.stdout + named.stderr)
+    t.contains((two / "docs" / "system_integral.html").read_text(encoding="utf-8"),
+               "A1-1: done", "on the page that was named")
+    t.contains((two / "docs" / "PLAN.html").read_text(encoding="utf-8"),
+               "A1-1: todo", "and the other plan still says todo")
+    _sh.rmtree(two, ignore_errors=True)

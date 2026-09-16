@@ -7,10 +7,14 @@ raw keyframe list instead of the play list is a silent bug: the editor shows
 one thing and the robot does another.
 """
 import re
+import sys
 
 import browser
 import fake_serial
 import qc as F
+
+sys.path.insert(0, str(F.CODE / "tools"))
+import registry  # noqa: E402 - the ONE reader for config/commands.json
 
 AREA = "sequences"
 TITLE = "suspend keyframes, chain files, many on one card"
@@ -223,10 +227,16 @@ def run(t):
     t.eq(got.get("SS"), "0",
          "the speed step is understood, not reported as an unsupported step")
 
-    # the firmware really applies it — this is what makes a chain deterministic
-    t.contains((F.FIRMWARE / "src/core/SequencePlayer.cpp").read_text(
-        encoding="utf-8", errors="replace"),
-        'key == "speed"', "the player applies a speed step")
+    # The firmware really applies it — what makes a chain deterministic. The
+    # step keys are DATA since A7-5 (declared on the command they call), so
+    # this reads the registry: grepping SequencePlayer.cpp for `key ==
+    # "speed"` went looking for a chain that is no longer there, and would
+    # have failed a working player while a deleted step key passed unnoticed.
+    steps = {st["key"] for c in registry.commands()
+             for st in (c.get("steps") or [])}
+    t.ok("speed" in steps, "the player applies a speed step",
+         "declared in firmware/config/commands.json, which generates the "
+         "table SequencePlayer walks; steps found: %s" % sorted(steps))
     t.contains((F.FIRMWARE / "COMMANDS.md").read_text(encoding="utf-8", errors="replace"),
                "Speed per sequence", "COMMANDS.md documents per-sequence speed")
 

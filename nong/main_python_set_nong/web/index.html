@@ -7,17 +7,24 @@
 <link rel="stylesheet" href="/mice.css">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<!-- app: a viewport-and-panel layout, not a centred column. The shared
+     big-screen rule in mice.css scales columns on a wall screen and
+     deliberately leaves this alone - scaling a 3D canvas and its drag
+     maths is a different question, and Studio is used at a desk. -->
+<body class="app">
 <header>
+  <button class="secondary" onclick="location.href='/'">🏠 Hub</button>
   <h1>Nong Studio</h1>
-  <span class="hint">Click a joint to show its rings · drag a ring to turn that servo · <b>Shift+drag</b> 🟢 wrist / 🟠 elbow = move arm (IK) · left-drag = orbit · wheel = zoom · right-drag = pan</span>
+  <details class="pose-help disclosure" id="poseHelp">
+    <summary>How to pose</summary>
+    <p class="hint">Choose a joint, then drag its ring or use the sliders. Add a keyframe to keep a pose.</p>
+    <span class="hint">Click a joint to show its rings · drag a ring to turn that servo · <b>Shift+drag</b> 🟢 wrist / 🟠 elbow = move arm (IK) · left-drag = orbit · wheel = zoom · right-drag = pan</span>
+  </details>
   <span style="flex:1"></span>
-  <input id="projName" placeholder="project name" value="my_move">
+  <input id="projName" aria-label="Project name" placeholder="project name" value="my_move">
   <button onclick="saveProject()">Save</button>
-  <select id="projList" onchange="loadProject(this.value)"><option value="">Load…</option></select>
-</header>
-
-<div id="main">
+  <select id="projList" aria-label="Open a saved project" onchange="loadProject(this.value)"><option value="">Load…</option></select>
+</header><div id="main">
   <div id="viewport">
     <div id="collideWarn">⚠ joints collide — the robot would crash</div>
     <div id="viewCube" title="click a view to look straight at that plane and drag joints in it (like Fusion/SolidWorks)">
@@ -62,19 +69,35 @@
       <button onclick="clearNotice()" title="dismiss">&times;</button>
     </div>
 
+    <div class="card" data-stab="login" id="loginCard" style="display:none;">
+      <h2>Login Required</h2>
+      <div class="mini">You must log in to configure or control the robot. Posing and sequencing are available without login.</div>
+      <div class="row" style="margin-top:12px;">
+        <span class="lbl">Username</span><input id="loginUser" style="flex:1">
+      </div>
+      <div class="row">
+        <span class="lbl">Password</span><input id="loginPass" type="password" style="flex:1" onkeydown="if(event.key==='Enter') appLogin()">
+      </div>
+      <div class="row">
+        <button class="primary" onclick="appLogin()">Log in</button>
+      </div>
+      <div id="loginStat" class="err"></div>
+    </div>
+
     <div id="tabMove">
     <div class="card" data-stab="pose">
-      <h2>Joints <span class="mini">(joint deg, neutral 90, limited per joint)</span></h2>
+      <h2>Shape a pose</h2>
+      <p class="mini">Move a slider or drag a joint in the preview.</p>
       <div id="sliders"></div>
       <div class="row">
         <button onclick="setNeutral()">Neutral pose</button>
-        <button onclick="neutralFromPose()" title="save the current pose as the neutral pose (kept in the rig)">Set neutral = current</button>
+        <button onclick="neutralFromPose()" title="save the current pose as the neutral pose (kept in the rig)">Keep this as neutral</button>
         <button onclick="mirrorLR()">Mirror L↔R</button>
       </div>
     </div>
 
-    <div class="card" data-stab="pose">
-      <h2>Joint positions <span class="mini">(XYZ mm, origin = torso center)</span></h2>
+    <details class="card disclosure" data-stab="pose" id="precisePose">
+      <summary>Place a wrist precisely</summary>
       <div id="jointXyz" class="mini" style="white-space:pre;font-family:ui-monospace,monospace"></div>
       <div class="tblock"><div class="tlabel">move LEFT wrist to:</div>
         <div class="trow">
@@ -94,10 +117,10 @@
       </div>
       <div class="mini">type a position and press Go — the arm follows (IK); then
         “+ Add keyframe” puts it into the sequence.</div>
-    </div>
+    </details>
 
-    <div class="card" data-stab="pose">
-      <h2>Drag plane / view</h2>
+    <details class="card disclosure" data-stab="pose" id="posePlane">
+      <summary>Choose a drawing plane</summary>
       <div class="row">
         <select id="dragPlane" style="flex:1" onchange="viewForPlane(this.value)">
           <option value="cam">screen (free 3D)</option>
@@ -109,7 +132,7 @@
       <div class="mini">or use the <b>view buttons</b> at the top-right of the 3D
         view (Front / Top / Left…): the camera snaps straight at that plane and
         Shift+dragging a joint moves it flat in that plane — like Fusion/SolidWorks.</div>
-    </div>
+    </details>
 
     <div class="card" data-stab="sequence">
       <h2>Timing</h2>
@@ -132,7 +155,9 @@
     </div>
 
     <div class="card" data-stab="robot">
-      <h2>Robot link</h2>
+      <h2>Robot link <label class="mini" style="display:inline-flex;gap:var(--sp-2);align-items:center;float:right;font-weight:400">
+        <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
+        Show technical details</label></h2>
       <div class="row">
         <select id="connSel" onchange="connModeChanged()"
                 title="what the Connect button adds — WiFi and USB can BOTH be connected at the same time; commands take the cable when open, WiFi otherwise, file transfer prefers WiFi">
@@ -140,16 +165,23 @@
           <option value="usb">+ USB / RS485 (shared)</option>
           <option value="serial">+ USB direct (Web Serial, exclusive)</option>
         </select>
-        <input id="robotIp" placeholder="module IP or name.local" style="flex:1">
+        <!-- typed addresses are technical detail: behind the switch (A21-2).
+             The wrappers carry the hide - app.js flips display on the inputs
+             themselves, and an inline style would defeat a class on them. -->
+        <span class="tech" style="flex:1">
+          <input id="robotIp" placeholder="module IP or name.local" style="width:100%">
+        </span>
         <select id="usbPort" onchange="usbPortChanged()" style="flex:1;display:none"
                 title="which cable the module is plugged into. The hub owns the port and shares it, so the module website can stay open on this SAME port at the same time.">
           <option value="">pick the USB port…</option>
         </select>
         <button id="usbRescan" onclick="loadPorts()" style="display:none"
                 title="rescan the PC's USB serial ports">⟳</button>
-        <input id="busId" type="number" min="1" max="247" placeholder="bus id"
-               title="RS485 address: leave empty when the cable goes straight into the nong module's USB. Set the module id when using a USB-RS485 dongle, or to reach the nong through ANOTHER module's USB port (commands are sent as #id ... on the bus)."
-               style="width:76px;display:none">
+        <span class="tech" style="width:76px">
+          <input id="busId" type="number" min="1" max="247" placeholder="bus id"
+                 title="RS485 address: leave empty when the cable goes straight into the nong module's USB. Set the module id when using a USB-RS485 dongle, or to reach the nong through ANOTHER module's USB port (commands are sent as #id ... on the bus)."
+                 style="width:100%">
+        </span>
         <button id="connBtn" onclick="connectRobot()">Connect</button>
       </div>
       <div class="mini"><b>USB / RS485 (shared)</b> goes through the hub, which owns
@@ -201,9 +233,9 @@
       </div>
       <div id="zeroPanel" style="display:none">
         <div class="mini">jog the arms straight with the sliders (Attach first), then
-          press <b>Set zero</b> — that pose becomes the robot's home = 90° per joint
-          (the arm won't move; trim absorbs the offset). Then <b>Move to zero</b>
-          returns there.</div>
+          press <b>Set zero</b> — that pose becomes the robot's home, and the
+          <b>start°</b> angles you chose above are left alone. The arm won't move:
+          the offset is absorbed instead. Then <b>Move to zero</b> returns there.</div>
         <div class="row">
           <button class="primary" onclick="robotZeroSet()">◎ Set zero (current = home)</button>
           <button onclick="robotCmd('ZERO')">⌂ Move to zero</button>
@@ -287,6 +319,24 @@
     </div>
 
     <div class="card" data-stab="setup">
+      <h2>Servo offset — one joint at a time</h2>
+      <div class="mini">A servo horn only fits back on in whole teeth, so a joint is
+        often a few degrees out even when everything else is right. Nudge the joint
+        here until it looks straight: <b>−</b> and <b>+</b> move it by 0.5°, or type
+        a number. <b>0</b> clears that joint.</div>
+      <div class="mini" style="margin-top:4px">The arm moves as you press, and the
+        robot remembers this by itself. It only shifts where that joint sits — every
+        pose and sequence you have saved keeps working.
+        <b>Set zero</b>, on the Robot tab, does all ten at once instead.</div>
+      <div id="trimUI"></div>
+      <div class="row">
+        <button onclick="pullOffsets()" title="Read the offsets the robot is using now">⬇ Read from robot</button>
+        <button onclick="clearOffsets()" title="Set every joint's offset back to zero, on this page and on the robot">Clear all</button>
+      </div>
+      <div class="statline" id="trimStat"></div>
+    </div>
+
+    <div class="card" data-stab="setup">
       <h2>Move your setup to another PC</h2>
       <div class="mini">Everything Studio remembers &mdash; your rig, your saved default,
         the STL assignments &mdash; is kept in <b>this browser on this PC</b>. Use this to
@@ -315,10 +365,29 @@
       </div>
       <div class="statline" id="setStat" aria-live="polite"></div>
     </div>
+
+    <div class="card" data-stab="setup" id="userManageCard" style="display:none;">
+      <h2>Manage Logins (Super Admin)</h2>
+      <div class="mini">Add, edit, or remove users. (Leave password blank to keep current, or to remove if modifying).</div>
+      <div class="row">
+        <select id="muList" onchange="muSelect()"><option value="">New User...</option></select>
+      </div>
+      <div class="row">
+        <span class="lbl">Username</span><input id="muUser" style="width:120px">
+        <span class="lbl">Password</span><input id="muPass" style="width:120px" type="password">
+      </div>
+      <div class="row">
+        <button class="primary" onclick="muSave()">Save User</button>
+        <button onclick="muDelete()">Delete User</button>
+      </div>
+      <div class="statline" id="muStat"></div>
+    </div>
+
     </div><!-- /tabSetup -->
   </div>
 </div>
 
+<div id="timeDrag" title="drag to make the timeline taller or shorter"></div>
 <div id="timeline">
   <div class="tl-head">
     <h2>Timeline</h2>
@@ -331,8 +400,6 @@
     <span class="sep"></span>
     <button onclick="checkCollisions(true)">⚠ Check crash</button>
     <button class="primary" id="playBtn" onclick="togglePlay()">▶ Play</button>
-    <input type="range" id="scrub" min="0" max="1000" value="0" oninput="scrubTo(this.value)">
-    <span id="tlTime" class="mini">0.0s / 0.0s</span>
     <label><input type="checkbox" id="loopChk"> loop</label>
     <span class="sep"></span>
     <input id="seqName" placeholder="sequence name" value="my_move" style="width:130px">
@@ -342,15 +409,36 @@
     <button class="primary" onclick="exportYaml()">Export YAML (SD card)</button>
     <button onclick="uploadYaml()">Send to robot SD</button>
     <button onclick="robotRun()"
-            title="Sends the sequence to the module and lets the MODULE play it on its own clock. This keeps running if you switch app, minimise the browser, or close this page entirely.">▶ Run on robot</button>
-    <button onclick="robotCmd('MOVE STOP')">Stop</button>
+            title="Sends the sequence to the module and lets the MODULE play it on its own clock. This keeps running if you switch app, minimise the browser, or close this page entirely. It starts at the move you have clicked and carries on to the end - it never travels back to the first pose to begin.">▶ Run on robot</button>
+    <button onclick="robotCmd('MOVE STOP')">⏹ Stop robot</button>
     <span class="hint" id="playHint">“Play” previews here in the browser and pauses when this page is hidden.
       “Run on robot” hands it to the module — that one keeps going with this page closed.</span>
     <span class="sep"></span>
     <select id="seqList"><option value="">Edit saved…</option></select>
     <button onclick="editLocalSeq()">Load for editing</button>
+    <button onclick="playLocalSeq()"
+            title="Loads this saved sequence into the timeline and starts playing it right away — same as Edit, then Play.">▶ Play saved</button>
+  </div>
+  <div id="timebar">
+    <div class="tb-top">
+      <span class="tb-label">Time bar — drag to any moment, then press Play</span>
+      <button class="tb-btn" onclick="rewind()"
+              title="Jump the whole show back to the very beginning.">⏹ Back to start</button>
+      <button class="tb-btn" onclick="zoomTimeline(0.5)" title="Zoom out timeline">🔍 -</button>
+      <button class="tb-btn" onclick="zoomTimeline(2)" title="Zoom in timeline">🔍 +</button>
+      <span id="tlTime" class="tb-clock">0.0s / 0.0s</span>
+    </div>
+    <div class="tb-scroll" style="overflow-x: auto; padding-bottom: 8px;">
+      <div class="tb-track" id="tbTrack" style="width: 100%; min-width: 100%;">
+        <div id="tbBlocks" class="tb-blocks" aria-hidden="true"></div>
+        <input type="range" id="scrub" min="0" max="1000" value="0" step="1"
+               aria-label="time in the show" oninput="scrubTo(this.value)" style="width: 100%;">
+      </div>
+      <div id="tbRuler" class="tb-ruler" aria-hidden="true" style="width: 100%; min-width: 100%;"></div>
+    </div>
   </div>
   <div id="keys"></div>
+  <div id="timelineEmpty" class="empty-state" hidden><b>Your first pose starts here.</b>Shape the robot, then press + Add keyframe. Add another pose to make a movement.</div>
   <div class="statline" id="tlStat">keyframe 0 is the <b>start pose</b> — select it any time to re-edit, then press “Update selected”.</div>
 </div>
 

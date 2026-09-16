@@ -142,6 +142,27 @@ def run(t):
         s, b = cmd_over(dev, "PIN servo1 27")
         t.contains(b.lower(), "ok", "%s: a pin can be SET" % label)
 
+    # ---- A24-5: the hub signs in to a GATED board ---------------------
+    # The real board answers `401 ERR log in first` to any changing command
+    # from a stranger (measured on the bench 2026-08-26: POSE over USB worked,
+    # the same POSE over WiFi was refused, because only the OTA path ever
+    # logged in). reset() clears the session the loop above may have made, so
+    # this proves the hub logs in by itself and retries instead of handing
+    # the page a 401.
+    fake_wifi.reset()
+    s, b = F.get("http://%s/api/cmd?c=%s"
+                 % (wifi_ip, urllib.parse.quote("POSE 95 90 90 90 90 90 90 90 90 90")))
+    t.eq(s, 401, "the gated board refuses a stranger's POSE")
+    t.ok(fake_wifi.MODULE.session == "",
+         "and the refusal came before any session existed")
+    s, b = cmd_over("wifi:%s" % wifi_ip,
+                    "POSE 95 90 90 90 90 90 90 90 90 90 T 500")
+    t.eq(s, 200, "WiFi: the same POSE through the hub goes through")
+    t.ok(fake_wifi.MODULE.session != "",
+         "because the hub logged in to the board first")
+    t.contains(fake_wifi.MODULE.cmds[-1], "POSE",
+               "and the command itself reached the board")
+
     # ---- WiFi file transfer takes its own branch ----------------------
     # Studio uploads over WiFi with the module's HTTP API, not FBEGIN/FDATA.
     s, b = F.get("%s/api/robot/files?ip=%s&dir=/moves" % (base, wifi_ip))

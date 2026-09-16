@@ -48,8 +48,16 @@ def run(t):
     # The Tools card, not the whole page: module rows use the same class, and
     # counting those would have hidden this bug just as well as the old checks
     # did.
+    #
+    # THE SLICE HAS TO GROW WITH THE LIST. It used to end at the second
+    # </div> after id="tools", which held exactly two rows - so the day a
+    # third tool was added the check reported the page had drawn two and lost
+    # the last one. The page was right and the ruler was too short. Ending at
+    # the next CARD is what actually bounds this list.
     card = dom[dom.find('id="tools"'):]
-    card = card[:card.find("</div>", card.find("</div>") + 6) + 6] if "</div>" in card else card
+    nxt = card.find('class="card"')
+    if nxt > 0:
+        card = card[:nxt]
     names = re.findall(r'class="nm">([^<]*)<', card)
     t.eq(len(names), len(apps),
          "every tool the hub reports has a row on the page")

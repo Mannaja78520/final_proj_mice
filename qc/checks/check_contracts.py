@@ -5,12 +5,16 @@ until the robot moves wrongly.
 Every rule here exists because the two sides drifted apart once.
 """
 import re
+import sys
 
 import qc as F
 
 AREA = "contracts"
 TITLE = "firmware <-> studio agreement"
 SLOW = False
+
+sys.path.insert(0, str(F.CODE / "tools"))
+import registry  # noqa: E402 - the ONE reader for config/commands.json
 
 JOINT_ORDER = ["L_SH_P", "L_SH_R", "L_EL_P", "L_EL_R",
                "R_SH_P", "R_SH_R", "R_EL_P", "R_EL_R", "WAIST", "SHRUG"]
@@ -106,12 +110,25 @@ def run(t):
     # file uploads, runs, and simply leaves that step out.
     player = (F.FIRMWARE / "src/core/SequencePlayer.cpp").read_text(
         encoding="utf-8", errors="replace")
-    m = re.search(r"function buildYaml\(\)\s*\{(.*?)\n\}", app, re.S)
+    # `\w*` for the argument: buildYaml took none until A24-19 gave it the
+    # resume point, and pinning the empty parentheses made a signature change
+    # read as "the exporter is gone".
+    m = re.search(r"function buildYaml\(\w*\)\s*\{(.*?)\n\}", app, re.S)
     if t.ok(m, "studio's buildYaml found"):
         body = m.group(1)
         step_keys = set(re.findall(r'`?\s*-\s*(\w+):', body))
         step_keys |= set(re.findall(r'"\s*-\s*(\w+):', body))
-        handled = set(re.findall(r'key == "(\w+)"', player))
+        # WHAT THE PLAYER UNDERSTANDS IS DATA NOW (A7-5). This used to scrape
+        # `key == "..."` out of SequencePlayer.cpp, so the moment those keys
+        # moved into config/commands.json the check found none and would have
+        # called every step Studio writes unhandled. Read the registry, which
+        # is what the player really walks, plus the two keys that are not
+        # commands and so cannot be declared on one.
+        handled = {"wait", "cmd"}
+        handled |= {st["key"]
+                    for c in registry.commands()
+                    for st in (c.get("steps") or [])}
+        handled |= set(re.findall(r'key == "(\w+)"', player))   # any left in code
         for k in sorted(step_keys):
             t.ok(k in handled, "the player understands the '%s:' step studio writes" % k,
                  "unknown keys are ignored silently, so this step would do nothing")
@@ -122,6 +139,51 @@ def run(t):
                 t.ok(('"%s"' % k) in player or k == "name",
                      "the player reads the top-level '%s:' studio writes" % k,
                      "written by the editor but never read by the firmware")
+        # A per-move speed on the FIRST keyframe must be written too. The old
+        # `i > 0` exemption dropped it, so the robot played the opening move
+        # at the sequence speed the timeline never showed (sweep, 2026-08-26).
+        sm = re.search(r"if \(([^)]*)\)\s*\{ lines\.push\(`  - speed:", body)
+        t.ok(sm is not None and "i > 0" not in sm.group(1),
+             "no first-move exemption on per-move speeds")
+
+    # ---- routine status must not reach the global notice area --------
+    # Several functions carried a stray `notice(<status>.textContent)` that
+    # fired the red banner during normal use (sweep, 2026-08-26). Only the
+    # HAPPY path is policed here - a notice inside a catch is the banner
+    # working, and a guard refusal ("connect to the robot first") is a
+    # failure too. The body ends at the function's own closing brace;
+    # cutting at the first CATCH (inline or on its own line) keeps the
+    # window honest - a line-start-only cut ran past functions whose catch
+    # is inline. A notice is allowed only when the message it shows names a
+    # failure.
+    FAILWORDS = r"could not|cannot|failed|no reply|disconnected|connect to"
+    for fn in ("loadRigDefault", "pushLimits", "pullLimits", "saveRigDefault"):
+        fm = re.search(r"(?:async )?function %s\b.*?\{(.*?)\n\}" % fn, app, re.S)
+        if t.ok(fm, "%s found" % fn):
+            happy = re.split(r"\}\s*catch|\n\s*catch", fm.group(1), 1)[0]
+            bad = []
+            for nm in re.finditer(r"notice\(\$\(", happy):
+                sets = re.findall(r'textContent\s*=\s*([^;\n]+)',
+                                  happy[max(0, nm.start() - 220):nm.start()])
+                msg = sets[-1] if sets else ""
+                if not re.search(FAILWORDS, msg, re.I):
+                    bad.append(happy[nm.start():nm.start() + 40])
+            t.eq(bad, [],
+                 "%s does not push routine status into the notice box" % fn)
+    # these four had notices with NO failure meaning at all - parsing, list
+    # refresh, and a success zero-set. None is allowed, catch or not.
+    for fn in ("parseSeqYaml", "refreshSeqs"):
+        fm = re.search(r"(?:async )?function %s\b.*?\{(.*?)\n\}" % fn, app, re.S)
+        if t.ok(fm, "%s found" % fn):
+            t.eq(fm.group(1).count("notice("), 0,
+                 "%s never touches the notice box" % fn)
+    zm = re.search(r"function robotZeroSet\b.*?\{(.*?)\n\}", app, re.S)
+    if t.ok(zm, "robotZeroSet found"):
+        zb = zm.group(1)
+        t.ok(zb.count("notice(") == 2
+             and 'if (!r.startsWith("OK")) notice(' in zb,
+             "zero-set notices only when SETZERO failed or was unreachable",
+             "the success text reached the red banner on every click")
 
     # ---- COMMANDS.md is the reference and must not go stale ---------
     for c in ("POSE", "STOP", "GEAR", "RANGE", "LIMIT", "PULSE", "RATE"):

@@ -52,13 +52,13 @@
   --theme-note:"the dark one. Stays the default: a bright screen spills light into the show area";
 
   /* surfaces — three depths, no more: page, raised, inset */
-  --bg:#10141a; --card:#1a212b; --sunk:#0d1117; --line:#2a3442;
+  --bg:#18191d; --card:#23252b; --sunk:#121317; --line:#3a3d47;
 
   /* text. --mut is a demotion, never for something you must read to operate */
-  --txt:#dce3ec; --mut:#8b98a9;
+  --txt:#efeded; --mut:#aaaab5;
 
   /* ONE accent carries interaction; ok/warn/err mean state and nothing else */
-  --acc:#4da3ff; --on-acc:#06121f; --btn:#243040;
+  --acc:#aebcff; --on-acc:#191e35; --btn:#30343f;
   --ok:#3ecf8e; --warn:#ffb454; --err:#ff6b6b;
 
   /* Which KIND of board a row is. Decoration, deliberately separate from the

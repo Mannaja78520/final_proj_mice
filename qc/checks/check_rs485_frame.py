@@ -98,5 +98,9 @@ def run(t):
         m = re.search(r"%s\.length\(\)\s*>\s*(\d+)" % var, code)
         if t.ok(m, "the %s line reader bounds its buffer" % name,
                 "an unterminated stream grows it until the heap is gone"):
-            t.ok(int(m.group(1)) <= 512,
-                 "and bounds it somewhere sane (%s chars)" % m.group(1))
+            # 512 ate every FILES listing that crossed a bridge - the head
+            # was wiped mid-line and only a tail arrived (A22-1). 4096 still
+            # bounds runaway noise while leaving room for real replies.
+            t.ok(1024 <= int(m.group(1)) <= 4096,
+                 "and bounds it somewhere sane (%s chars)" % m.group(1),
+                 "too small and real replies are truncated mid-line")

@@ -88,6 +88,7 @@ bool CommandRouter::preemptSequence(const String& line) {
 String CommandRouter::handleLocked(const String& line) {
     String argv[16]; // roomy: file names with spaces come through as tokens
     int argc = Util::tokenize(line, argv, 16);
+    if (argc < 0) return "ERR too many words (max 16)";
     if (argc == 0) return "ERR empty";
     String cmd = argv[0];
     cmd.toUpperCase();
@@ -390,7 +391,7 @@ String CommandRouter::handleLocked(const String& line) {
     if (cmd == "FEND") {
         if (ramOpen_) {
             ramOpen_ = false;
-            seq_->setText(ramUpload_);
+            seq_->setText(ramUpload_, ramName_);
             String name = ramName_;
             ramUpload_ = "";
             return "OK held " + name + " in memory (" + String(seq_->text().length()) +
@@ -430,6 +431,9 @@ String CommandRouter::handleLocked(const String& line) {
         a.toUpperCase();
         if (a == "STOP") {
             seq_->stop();
+            // A sequence's `play:` step belongs to the sequence: ending the
+            // show must end its sound too, or the music outlives the move.
+            if (module_) module_->silence();
             return "OK move stopped";
         }
         String path = Util::joinFrom(argv, argc, 1);
@@ -437,9 +441,19 @@ String CommandRouter::handleLocked(const String& line) {
         String err;
         // With no card there is no file to open — play what was sent instead,
         // so the robot runs the show on its own and the browser can be closed.
+        // Only when it IS the sequence asked for: RAM holds one upload, and
+        // silently playing a different show than the one named is worse than
+        // refusing.
         if (!sd_->available() && seq_->hasText()) {
+            const String& held = seq_->textName();
+            bool match = held.length() == 0 || path == held ||
+                         path == "/moves/" + held;
+            if (!match)
+                return "ERR no SD card - the board holds \"" + held +
+                       "\" in memory, not " + path +
+                       " (send FBEGIN/FCHUNK/FEND again to swap it)";
             if (!seq_->startText(seq_->text(), err)) return "ERR " + err;
-            return "OK playing the sequence held in memory";
+            return "OK playing " + held + " (from memory)";
         }
         if (!seq_->start(path, err)) return "ERR " + err;
         return "OK playing " + path;
@@ -470,6 +484,36 @@ String CommandRouter::handleLocked(const String& line) {
         }
         return out;
     }
+
+    // ---- FIRMWARE over whatever channel this command arrived on ----
+    // See core/BusUpdate.h for why this exists at all. Short version: esptool
+    // needs DTR and RTS to reach the ROM bootloader and RS485 has neither, and
+    // the WiFi updater needs a web server the board may not be running. Both
+    // are ways of getting an image IN; this is the board writing its own spare
+    // OTA slot from ordinary commands, so the channel stops mattering.
+    if (cmd == "FWBEGIN") {
+        // The md5 is REQUIRED, not optional - see the note in BusUpdate.cpp.
+        // Making it optional meant an update could run with no integrity check
+        // and nothing saying so.
+        if (argc < 3) return "ERR usage: FWBEGIN <bytes> <md5hex>";
+        return fw_.begin((size_t)argv[1].toInt(), argv[2]);
+    }
+    if (cmd == "FWDATA") {
+        if (argc < 4) return "ERR usage: FWDATA <seq> <bytes> <base64>";
+        return fw_.data((uint32_t)argv[1].toInt(), (size_t)argv[2].toInt(),
+                        argv[3]);
+    }
+    if (cmd == "FWEND") {
+        String out = fw_.end();
+        // The reply has to LEAVE before the board does, and on RS485 that means
+        // the driver has to finish clocking it out. requestReboot waits, so the
+        // sender learns the image was accepted instead of losing the answer to
+        // the restart and having to guess.
+        if (out.startsWith("OK")) requestReboot();
+        return out;
+    }
+    if (cmd == "FWABORT") return fw_.abort();
+    if (cmd == "FWSTAT") return fw_.stat();
 
     if (cmd == "REBOOT") {
         requestReboot();

@@ -1,0 +1,21 @@
+{
+  "service": "http://127.0.0.1:8767",
+  "faqThreshold": 0.75,
+  "faqAskAgain": 0.0,
+  "stt": {
+    "enabled": true,
+    "model": "small"
+  },
+  "llm": {
+    "enabled": true,
+    "model": "Qwen/Qwen3.5-4B"
+  },
+  "tts": {
+    "enabled": true,
+    "language": "th",
+    "voices": {
+      "th": "th-TH-PremwadeeNeural",
+      "en": "en-US-JennyNeural"
+    }
+  }
+}

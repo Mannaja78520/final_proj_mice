@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mice — system integration plan</title>
+<style>
+/* The product's own tokens, copied deliberately: this page has to open with no
+   internet, from a USB stick, at a venue. No CDN, no build step. */
+:root{
+  --bg:#10141a; --card:#1a212b; --sunk:#0d1117; --line:#2a3442;
+  --txt:#dce3ec; --mut:#8b98a9; --btn:#243040;
+  --acc:#4da3ff; --on-acc:#06121f;
+  --ok:#3ecf8e; --warn:#ffb454; --err:#ff6b6b;
+  --r-sm:12px; --r-md:18px; --r-lg:24px; --r-pill:999px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px;
+  --sans:system-ui,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.55 var(--sans);
+     padding:var(--sp-6);max-width:1000px;margin:0 auto}
+h1{font-size:26px;line-height:1.25;letter-spacing:-.025em;margin-bottom:var(--sp-2)}
+h2{font-size:16px;font-weight:650;margin:var(--sp-6) 0 var(--sp-3)}
+p{margin-bottom:var(--sp-3)}
+.mut{color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
+      padding:var(--sp-6);margin-bottom:var(--sp-4)}
+.row{display:flex;gap:var(--sp-3);align-items:baseline;flex-wrap:wrap}
+.tag{font:12px var(--mono);padding:2px 8px;border-radius:var(--r-pill);
+     border:1px solid var(--line);white-space:nowrap}
+.t-todo{color:var(--mut)} .t-doing{color:var(--acc);border-color:var(--acc)}
+.t-done{color:var(--ok)} .t-blocked{color:var(--warn)} .t-qc{color:var(--warn)}
+.task{padding:var(--sp-3) 0;border-bottom:1px solid var(--line)}
+.task:last-child{border-bottom:0}
+.tid{font:13px var(--mono);color:var(--acc);min-width:70px}
+.note{color:var(--mut);font-size:14px}
+.bar{height:8px;background:var(--sunk);border-radius:var(--r-pill);overflow:hidden;
+     margin:var(--sp-3) 0}
+.bar i{display:block;height:100%;background:var(--ok)}
+pre{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-md);
+    padding:var(--sp-4);overflow-x:auto;font:12px/1.5 var(--mono);white-space:pre-wrap}
+code{font:12px var(--mono)}
+a{color:var(--acc)}
+@keyframes flash{from{border-color:var(--acc)}to{border-color:var(--line)}}
+.justchanged{animation:flash 1.2s ease-out}
+</style>
+</head>
+<body>
+
+<h1>System integration plan</h1>
+<p class="mut">Everything that joins Mice to programs outside it. The rig's own work
+stays in <a href="PLAN.html">PLAN.html</a> — this page is the other half, so neither
+overwrites the other's progress.</p>
+
+<div class="card" id="nowCard">
+  <div class="row"><b>Progress</b><span class="mut" id="counts">—</span></div>
+  <div class="bar"><i id="barfill" style="width:0%"></i></div>
+  <div class="mut" id="nowline">reading the state block…</div>
+</div>
+
+<h2>What this is for</h2>
+<div class="card">
+  <p><b>Reconize</b> (<code>E:\final_proj\mice\Face_Regonize</code>) recognises faces. The
+  rig should follow it: greet a known person by name with a move, answer questions aloud
+  while the nong points the way, take questions only when somebody is standing there, let
+  other Python programs drive the rig, and notice when that app updates.</p>
+  <p><b>It is never modified.</b> Its own updater runs <code>git checkout --detach</code>,
+  so anything we put in its folder would be wiped or would block its update. We only call
+  it over HTTP, and we never read its SQLite file — it runs without WAL, so a long read
+  would block its own writes.</p>
+  <p><b>Outside apps are generic from the start.</b> One entry per program in
+  <code>config/partners.json</code>: address, how to log in, where its events come from,
+  how its fields map to ours, its folder to watch. Reconize is the first entry, not a
+  special case — the second app is one entry and no code.</p>
+</div>
+
+<h2>Decided, and not to be re-asked</h2>
+<div class="card">
+  <p>Watch first, push later · their count is the truth · the start button comes last ·
+  the tile is called <b>Reconize</b> · the camera app becomes <b>ESP32 camera</b> ·
+  presence mode is opt-in and only gates <i>asking questions</i>, never the nong's own
+  sequences or commands · an unknown person is never greeted with a guessed name ·
+  wording is per camera and editable on the screen · field changes are reported, never
+  acted on by themselves.</p>
+</div>
+
+<h2>What the review caught</h2>
+<div class="card">
+  <p>Five rounds with Codex through claudex-loop. <b>22 findings, each checked against the
+  real code before it was accepted.</b> The ones that would have hurt:</p>
+  <ul style="margin-left:var(--sp-6)">
+    <li><b>Both passwords served to anyone on the WiFi</b> — a file under <code>apps/</code>
+        is served with no login (<code>main.py:3702-3715</code>). Credentials moved.</li>
+    <li><b>A person's name went into SSML unescaped</b> (<code>tts.ps1:22-26</code>) — a
+        name with <code>&amp;</code> breaks the speech, or injects markup.</li>
+    <li><b>A greeting would have started after Stop All.</b> Stop now clears the queue.</li>
+    <li><b>Strangers never reach us from agent cameras</b>
+        (<code>node_agent.py:285-290</code>), so each source declares what it can report.</li>
+    <li><b>The show clock was never the audio problem</b> — one sender per hub is.</li>
+  </ul>
+</div>
+
+<h2>State</h2>
+<p class="mut">The only record of progress. Edited with
+<code>python tools/plan.py --page system doing A1-1</code>.
+Its own series, starting at A1 — the robot's own work keeps A1–A25 on
+<a href="PLAN.html">PLAN.html</a>, and the two pages never share a state file.</p>
+
+<pre id="state"><code>STATE
+# RUNNING: nothing right now
+A0-1: done   2026-09-09 19:42  — renumber this page from A26-* to its own A1 series. User asked 2026-09-09: make the plan number insite the plan start with A1 because it not the same plan
+A0-2: done   2026-09-09 19:42  — delete .staging/.claude/settings.local.json, so the next promote cannot overwrite the bypass permissions just set
+A0-3: done   2026-09-09 19:42  — promote.py skips any directory whose NAME STARTS WITH .staging, and skips .claude too. .gitignore gets .staging*/. Without this the two staging trees copy into each other
+A0-4: done   2026-09-09 19:45  — plan.py refuses an id the target page does not contain, so a stamp cannot land silently on the wrong plan
+A0-5: done   2026-09-09 20:23  — &lt;section id="faces"&gt; in main_python/web/help.html: the last gap before the tile can pass the gate
+A0-6: done   2026-09-09 20:23  — prove check_faces_app by sabotage, then ONE gate promotes what .staging holds: the tooling, the A25-5 login files, and the tile + rename
+A0-7: done   2026-09-09 20:23  — python promote.py --init --staging .staging-integral: the second tree. User asked 2026-09-09: make another staging with integral staging because it do different task
+A1-1: done   2026-09-09 20:23  — apps/faces/{app.json,index.html,links.json}: the tile that opens Reconize. Addresses are data, and NO url in the manifest
+A1-2: done   2026-09-09 20:23  — apps/camera/app.json name to "ESP32 camera": that app only ever knew ESP32-CAM boards
+A1-3: done   2026-09-09 20:23  — the tile links to its help section, and check_help_links holds the link
+A2-1: done   2026-09-10 12:25  — config/partners.json: one entry per outside program (address, login, event sources, field map, folder). Reconize is the first entry, not a special case. User asked: make can add more app than this in the future not only face reconize
+A2-2: done   2026-09-10 12:42  — the tile reads partners.json; links.json goes away, so an address lives in exactly one place
+A3-1: done   2026-09-10 12:42  — apps/faces/service.py skeleton: /health and /state, binds LOOPBACK ONLY because it holds two logins
+A3-2: done   2026-09-10 13:14  — log in to their API, hold the token, renew before 480 min
+A3-3: done   2026-09-10 13:30  — the history poll with a real cursor: walk pages, 120 s lag window, seen-set. Their detected_at is stamped before commit, so a last-row cursor drops rows
+A3-4: done   2026-09-10 16:45  — de-duplicate across sources on (person, +/- cooldown); when two copies disagree keep the one with a real camera
+A3-5: done   2026-09-14 17:28  — apps/faces/wsclient.py: their live feed, with the poll demoted to catch-up Codex takes over from limited Claude; checking integral watcher concurrency and gate. Gemini took over from limited Codex, firmware built, running quick QC in isolated tree
+A3-6: done   2026-09-14 17:39  — the screen says Watching / Not watching, and what each source can actually report Gemini added Watcher status and source capabilities to apps/faces/index.html and added CORS to service.py
+A4-1: done   2026-09-14 17:42  — voice and language told apart in apps/voice/service.py, cache key included, or two voices share one cached wav
+A4-2: done   2026-09-14 17:42  — the text XML-escaped before it reaches SSML in tts.ps1: a person's name with &amp; breaks the speech or injects markup Escaped text in tts.ps1 before SSML injection
+A4-3: todo   — config/speakers.json, and the output list DISCOVERED from modules reporting audio. User asked: make when need to use the speaker can select which speaker or module use which voice source
+A4-4: todo   — POST /api/speak {to, text, voice}: one queue, one session id per audio job, so a stale feed is refused not mixed in
+A4-5: todo   — Stop All clears the queue and cancels pending speech: the panic button means quiet, with nothing arriving a moment later
+A5-1: doing  2026-09-14 18:36  — apps/faces/rules.json: per-camera wording, {title}/{name}, role entry/exit/watch. User asked: when it unknow use the common word like only Mr. or Ms., edit by admin, by camera
+A5-2: doing  2026-09-14 18:36  — the rules engine: known / already / unknown, and never a guessed name
+A5-3: doing  2026-09-14 18:36  — cooldown per person
+A5-4: doing  2026-09-14 18:36  — whenBusy as ONE serialized step at the owner, not read-then-act; unconditional takeover only for an explicit take
+A5-5: doing  2026-09-14 18:36  — only a source that declares hasCamera may greet; a history-only event counts and nothing else
+A6-1: todo   — their detected_today is the truth, ours the fallback
+A6-2: todo   — milestone rules, fired-list persisted, with its own writer and its own file
+A6-3: todo   — POST /api/faces/act and /count: a foreign Python program needs one address and one verb. User asked: 100 people arrived, celebrate
+A7-1: todo   — presence mode: opt-in, gates only ASKING QUESTIONS, fails OPEN, and off for sources with no camera
+A8-1: todo   — the rules editor screen at /app/faces/: every word editable, saved through the watcher, no restart
+A8-2: todo   — help section for the editor screen, like every other screen has
+A9-1: todo   — read .git/HEAD through refs/heads/main AND packed-refs, plus VERSION. Never run git in their folder
+A9-2: todo   — contract check on OBSERVED payloads; OpenAPI only for the structure it really describes
+A9-3: todo   — it TELLS us and never changes behaviour on its own
+A10-1: todo  — read their front end for what reads well; screenshots of ours beside theirs at 360 / 768 / 1440
+A10-2: todo  — the ideas become tokens and components in shared/web/mice.css. No React, no build step
+A10-3: todo  — the pages adopt them: hub, module, Studio, help, and the new screen
+A11-1: todo  — the start button (chosen: last). Gated, launches their start.bat and our watcher
+A0-8: done   2026-09-10 12:25  — five tools climb out of the staging tree by the exact name .staging - plan.py, handover.py, ai_panel.py, make_app_branch.py, next_batch.py - so every one of them breaks inside .staging-integral. Same defect as promote.py SKIP_DIRS, fixed there and left in the siblings
+A0-9: done   2026-09-14 17:41  — docs/plan_state.js is NOT in promote.py SKIP_FILES while system_integral_state.js is, so a stale working-copy version can overwrite live plan progress - the exact fault PLAN.html is skipped for. Needs the skip, an entry in check_no_data_loss, and a check that the two plan pages are treated the same way Added plan_state.js to SKIP_FILES and check_no_data_loss
+A0-10: done   2026-09-10 13:14  — qc dead_port(): a check that needs an address where nothing answers must HOLD the socket bound. _free_port() closes it first, so under a parallel gate another worker binds that number and the dead port answers - check_voice_bench failed exactly this way on the day two more port-binding checks were added
+A0-11: done   2026-09-10 19:46  — promote.py copies every file that DIFFERS, including files the working tree never touched. My 16:32 promote of .staging-integral therefore reverted 21 files in main that the other session had promoted after my tree was refreshed at 13:30 - firmware, Nong Studio web, three qc files. Their work is intact in .staging. Fix: record a hash per file at --init and refuse to copy a file that moved in MAIN while staging left it alone
+A0-12: doing 2026-09-10 19:59  — on any problem ask Codex first through claudex-loop, and only fall back to the Gemini panel when Codex is limited - asked 2026-09-10. codex.exe is not on PATH: it lives in the ChatGPT VSCode extension bin, so the runner needs --cli pointed at it
+</code></pre>
+
+<script>
+// Draw the state block, and pull system_integral_state.js on a timer so the page
+// updates while it is open. Same mechanism as PLAN.html, pointed at this page's
+// own state file: one file per page, or the two pages overwrite each other.
+function renderPlan(){
+  var raw = document.getElementById('state').textContent;
+  var rows = [], counts = {todo:0, doing:0, done:0, blocked:0, qc:0};
+  raw.split('\n').forEach(function(line){
+    var m = line.match(/^([A-Z]\d+-\d+):\s+(\w+)\s*(.*)$/);
+    if (!m) return;
+    if (counts[m[2]] !== undefined) counts[m[2]]++;
+    rows.push({id:m[1], status:m[2], note:m[3]});
+  });
+  var host = document.getElementById('tasks');
+  if (!host){ host = document.createElement('div');
+              host.id = 'tasks'; host.className = 'card';
+              document.body.appendChild(host); }
+  host.innerHTML = rows.map(function(r){
+    return '<div class="task"><div class="row"><span class="tid">' + r.id +
+      '</span><span class="tag t-' + r.status + '">' + r.status + '</span></div>' +
+      '<div class="note">' + r.note.replace(/[&<>]/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }) + '</div></div>';
+  }).join('');
+  var total = rows.length || 1;
+  document.getElementById('counts').textContent =
+    counts.done + ' done · ' + counts.doing + ' doing · ' + counts.todo + ' to do' +
+    (counts.blocked ? ' · ' + counts.blocked + ' blocked' : '');
+  document.getElementById('barfill').style.width =
+    Math.round(counts.done / total * 100) + '%';
+  var busy = rows.filter(function(r){ return r.status === 'doing'; });
+  document.getElementById('nowline').textContent = busy.length
+    ? 'in flight: ' + busy.map(function(r){ return r.id; }).join(', ')
+    : 'nothing in flight';
+}
+renderPlan();
+
+(function(){
+  function tick(){
+    var el = document.createElement('script');
+    el.src = 'system_integral_state.js?t=' + Date.now();
+    el.onload = function(){
+      el.remove();
+      var st = window.PLAN_STATE;
+      if (!st || !st.raw) return;
+      var pre = document.getElementById('state');
+      if (st.raw.trim() === pre.textContent.trim()) return;
+      pre.textContent = st.raw;
+      renderPlan();
+      var card = document.getElementById('nowCard');
+      if (card){ card.classList.remove('justchanged');
+                 void card.offsetWidth;
+                 card.classList.add('justchanged'); }
+    };
+    el.onerror = function(){ el.remove(); };   // no state file yet: fine
+    document.head.appendChild(el);
+  }
+  setInterval(tick, 4000);
+  tick();
+})();
+</script>
+</body>
+</html>

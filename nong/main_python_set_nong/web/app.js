@@ -23,7 +23,7 @@ const $ = (id) => document.getElementById(id);
 const STAB_BTN = { pose: "tabBtnMove", sequence: "tabBtnSeq",
                    robot: "tabBtnRobot", setup: "tabBtnSetup" };
 let sideTab = "pose";
-// ---------------------------------------------------------------- notices
+// --- notices ---
 // A FAILURE HAS TO SURVIVE BEING LOOKED AWAY FROM. The per-card status lines
 // are right for routine chatter and wrong for a failure, for two reasons that
 // were both real in this file:
@@ -61,12 +61,25 @@ function showTab(which) {
   if (which === "move") which = "pose";          // the old name
   if (!STAB_BTN[which]) which = "pose";
   sideTab = which;
+  
+  let renderWhich = which;
+  if (!currentUser && (which === "robot" || which === "setup")) {
+    renderWhich = "login";
+  }
+  
   // both old containers stay visible; the cards inside decide for themselves
   $("tabMove").style.display = "";
   $("tabSetup").style.display = "";
   document.querySelectorAll("[data-stab]").forEach(el => {
-    el.style.display = el.dataset.stab === which ? "" : "none";
+    el.style.display = el.dataset.stab === renderWhich ? "" : "none";
   });
+  
+  const userCard = $("userManageCard");
+  if (userCard) {
+    userCard.style.display = (currentUser === "super_admin" && renderWhich === "setup") ? "" : "none";
+    if (userCard.style.display === "") populateUserList();
+  }
+  
   Object.keys(STAB_BTN).forEach(k => {
     const b = $(STAB_BTN[k]);
     if (b) b.classList.toggle("on", k === which);
@@ -132,8 +145,7 @@ function initSideDrag() {
     localStorage.setItem("nong_sidew", parseInt(side.style.width) || 320);
   });
 }
-
-// ---------------------------------------------------------------- rig data
+// --- rig data ---
 // 10 logical joints: 8 arm (2 arms x universal shoulder+elbow) then the two
 // BODY joints — WAIST (yaws the whole upper body left/right) and SHRUG (lifts
 // both shoulders a little). ARMJ = the arm joints only (IK / arm FK use these);
@@ -178,6 +190,10 @@ const DEFAULT_RIG = {
   axis: [...DEFAULT_AXIS],        // rotation axis per joint (roll/pitch/yaw)
   invert: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   neutral: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90], // editable "Neutral pose"
+  // Mounting correction per joint, in JOINT degrees — a servo horn refitted a
+  // tooth out. The BOARD stores it in servo degrees as `trim`; the conversion is
+  // its job, so nothing here has to know a gear ratio.
+  offset: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   // JOINT travel limits (deg). Arms: the 2-servo universal joint can't reach
   // the full 0..180 (default 30..150). WAIST turns the body a wide range;
   // SHRUG swings 77..103 = 26 deg (90 +-13), measured on the 4-bar linkage
@@ -245,7 +261,7 @@ function mergeRig(saved) {
   // undefined, applyPose computes NaN for the WAIST/SHRUG body rotation, and
   // the whole robot (torso+head+arms all live under bodyGroup) renders at NaN
   // = invisible. Any per-joint array read by applyPose/buildRobot belongs here.
-  ["zero", "min", "max", "axis", "invert", "neutral",
+  ["zero", "min", "max", "axis", "invert", "neutral", "offset",
    "gearPinion", "gearGear", "pulseMin", "pulseMax", "servoMaxDps", "servoRange",
    "frameHz"].forEach(fixLen);
   // The SHRUG 4-bar calibration. An empty list means "not measured", which is
@@ -295,17 +311,19 @@ async function shipRigDefault() {
     const r = await fetch("/api/rigdefault", {
       method: "POST", body: JSON.stringify({ rig: RIG }),
     }).then(r => r.json());
-    $("limStat").textContent = r.ok
-      ? "saved this rig as the factory default — every fresh browser now starts on it, "
-        + "and Reset returns to it ✓"
-      : "could not save: " + (r.error || "unknown");
-    notice($("limStat").textContent);
+    if (r.ok) {
+      $("limStat").textContent = "saved this rig as the factory default — every fresh "
+        + "browser now starts on it, and Reset returns to it ✓";
+    } else {
+      // Only a FAILURE reaches the global banner; good news stays on its card.
+      $("limStat").textContent = "could not save: " + (r.error || "unknown");
+      notice($("limStat").textContent);
+    }
   } catch (e) { $("limStat").textContent = "could not save: " + (e.message || e); notice($("limStat").textContent); }
 }
 function loadRigDefault() {
   try {
     const d = JSON.parse(localStorage.getItem("nong_rig_default") || "null");
-  notice($("limStat").textContent);
     return d ? mergeRig(d) : null;
   } catch (e) { return null; }
 }
@@ -406,11 +424,17 @@ async function findHubs() {
   try {
     const r = await fetch("/api/hubs?force=1").then(r => r.json());
     const hubs = (r.hubs || []).filter(h => h.has);
-    sel.innerHTML = hubs.length
-      ? hubs.map(h => "<option value='" + h.ip + "'>" + h.ip +
-          (h.name ? " — " + h.name : "") +
-          (h.savedAt ? " (" + h.savedAt + ")" : "") + "</option>").join("")
-      : "<option value=''>none found</option>";
+    // h.name comes off the network (the other PC's own report) - it goes in
+    // as TEXT, never as markup, so a hostile name cannot write HTML here.
+    sel.innerHTML = "";
+    hubs.forEach(h => {
+      const o = document.createElement("option");
+      o.value = h.ip;
+      o.textContent = h.ip + (h.name ? " — " + h.name : "") +
+        (h.savedAt ? " (" + h.savedAt + ")" : "");
+      sel.appendChild(o);
+    });
+    if (!hubs.length) sel.innerHTML = "<option value=''>none found</option>";
     setSettingsStat(hubs.length
       ? hubs.length + " PC(s) have shared settings — pick one and press Get"
       : "no other PC on this network has shared settings yet. On that PC, "
@@ -445,8 +469,9 @@ const PAIRS = [
   { joints: [4, 5], label: "R shoulder" },
   { joints: [6, 7], label: "R elbow" },
 ];
-
-// ---------------------------------------------------------------- state
+let currentUser = null;
+let pendingConnect = null;
+// --- state ---
 // Start on the Neutral pose from Setup, not a flat 90 — RIG is already loaded
 // above, so a tuned neutral (and the keyframe 0 that boot builds from this)
 // matches the robot's own HOME instead of a pose the arm may not even hold.
@@ -492,8 +517,7 @@ function saveMeshes() {
 let modelFiles = []; // .stl files available in models/
 
 const MIN_MOVE_MS = 80;                  // same floor as the firmware
-
-// ---------------------------------------------------------------- scene
+// --- scene ---
 const viewport = $("viewport");
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -501,7 +525,7 @@ renderer.outputEncoding = THREE.sRGBEncoding; // painted textures keep their col
 viewport.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x10141a);
+scene.background = new THREE.Color(getComputedStyle(document.body).getPropertyValue("--bg").trim());
 const camera = new THREE.PerspectiveCamera(50, 1, 1, 8000);
 // A standard view (Front/Top/Left…) is only a true PLANE view in an
 // ORTHOGRAPHIC projection. Under perspective the camera merely points at the
@@ -614,8 +638,7 @@ function partMat(part) {
     roughness: 0.65,
   });
 }
-
-// ---------------------------------------------------------------- build rig
+// --- build rig ---
 // Everything is rebuilt from RIG whenever the Rig setup card changes, so the
 // model can be matched to the real robot at runtime.
 let robot = null;
@@ -944,8 +967,7 @@ function shrugRise(j) {
   }
   return { l: +last.l || 0, r: +last.r || 0 };
 }
-
-// ---------------------------------------------------------------- gizmo rings
+// --- gizmo rings ---
 const gizmo = new THREE.Group();
 let rings = [];            // [{mesh, joint, localAxis}]
 function clearGizmo() {
@@ -976,8 +998,7 @@ function showGizmo(pairIdx) {
   });
   renderSliders();
 }
-
-// ---------------------------------------------------------------- picking / drag
+// --- picking / drag ---
 const ray = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let drag = null; // {kind:'ring'|'ik', ...}
@@ -1099,8 +1120,7 @@ window.addEventListener("pointerup", () => {
 });
 
 function clampDeg(v) { return Math.min(180, Math.max(0, Math.round(v * 10) / 10)); }
-
-// ---------------------------------------------------------------- IK (4-DOF arm)
+// --- IK (4-DOF arm) ---
 function wristPos(arm, out) {
   return wristBalls[arm].getWorldPosition(out || new THREE.Vector3());
 }
@@ -1208,8 +1228,7 @@ function solve3(A, b) { // gaussian elimination, 3x3
   }
   return [M[0][3] / M[0][0], M[1][3] / M[1][1], M[2][3] / M[2][2]];
 }
-
-// ---------------------------------------------------------------- collisions
+// --- collisions ---
 // Self-collision check: arms vs torso box, head sphere, and each other.
 // Bodies are capsules along the arm segments (radii from the built-in
 // shapes) with a small safety margin. Checked for every keyframe AND along
@@ -1368,8 +1387,7 @@ function checkCollisions(showAlert) {
   }
   return problems;
 }
-
-// ---------------------------------------------------------------- sliders
+// --- sliders ---
 function renderSliders() {
   const box = $("sliders");
   if (!box.dataset.built) {
@@ -1515,11 +1533,32 @@ function poseChanged(throttled, liveMs) {
 }
 
 function setNeutral() { pose = [...RIG.neutral]; poseChanged(false); }
-function neutralFromPose() { // editable neutral: saved in the rig + projects
+async function neutralFromPose() { // the start pose: saved here AND on the robot
   RIG.neutral = [...pose];
   saveRig();
-  $("tlStat").textContent = "neutral pose = " + RIG.neutral.map(Math.round).join(" ") +
-    " (used by the Neutral pose button; the robot's own HOME pose is 'neutral' in module.yaml)";
+  renderRigUI();                      // the start° column shows the new numbers
+  const shown = RIG.neutral.map(Math.round).join(" ");
+  // Sent as ONE whole-pose line, not ten. Until 2026-09-10 this only ever saved
+  // in the browser, so the editor and the robot disagreed about where home was
+  // and nothing on the page said so.
+  // Any link will do, exactly as "send rig" decides. liveLinked() was wrong
+  // here: it also requires the live-follow tick, so with that off the button
+  // saved in the browser and quietly sent the robot nothing.
+  if (!haveUsb() && !haveWifi()) {
+    $("tlStat").textContent = "start pose = " + shown +
+      " — saved here. Connect the robot and press Send rig to give it these.";
+    return;
+  }
+  try {
+    const r = await rawCmd("NEUTRAL " + RIG.neutral.map(fmtA).join(" "));
+    $("tlStat").textContent = /^ERR/i.test(r || "")
+      ? "the robot did not take the start pose: " + r
+      : "start pose = " + shown + " — the robot will start here from now on. "
+        + "Press Home to move there.";
+  } catch (e) {
+    $("tlStat").textContent = "saved here, but it did not reach the robot: "
+      + (e.message || e);
+  }
 }
 function mirrorLR() {
   // swap the arms; flip the waist to the other side (reflect about 90); the
@@ -1528,8 +1567,7 @@ function mirrorLR() {
           clampJ(8, 180 - pose[8]), pose[9]];
   poseChanged(false);
 }
-
-// ---------------------------------------------------------------- timing
+// --- timing ---
 // Show speed sets the automatic time; servo max speed sets the PHYSICAL
 // floor: a keyframe time can always be made longer, never shorter than
 // biggest-delta / max — otherwise the real arm can't reach the pose before
@@ -1585,12 +1623,20 @@ function recalcTimes() {   // keeps each keyframe's own speed override
   for (let i = 1; i < keys.length; i++)
     keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
 }
+// ONE keyframe's predecessor changed (delete / reorder): re-time only it.
+// recalcTimes() would silently overwrite every hand-typed time on the line,
+// and a typed time wins over the automatic one by design.
+function retimeAt(i) {
+  bumpKeys();
+  if (i >= 1 && keys[i])
+    keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
+  clampKeyTimes();
+}
 function clampKeyTimes() { // raise any hand-edited time that fell below the floor
   bumpKeys();
   for (let i = 0; i < keys.length; i++) keys[i].t = Math.max(keys[i].t, keyMin(i));
 }
-
-// ---------------------------------------------------------------- timeline
+// --- timeline ---
 function addKey() {
   clearBadMarks(); // poses changed: collision marks are stale until re-checked
   const k = { pose: [...pose], t: 1000, hold: 0 };
@@ -1616,15 +1662,22 @@ function dupKey() {
   keys.splice(selKey + 1, 0, JSON.parse(JSON.stringify(keys[selKey])));
   bumpKeys();
   selKey++;
-  recalcTimes(); renderTimeline();
+  // The copy keeps its source's time, which makes it a HOLD of that length:
+  // the move into the copy covers zero distance (same pose as the keyframe
+  // before it). No predecessor pose changed anywhere else on the line, so no
+  // other time moves — recalcTimes() here used to wipe every hand-typed one.
+  clampKeyTimes(); renderTimeline();
 }
 function delKey() {
   if (keys.length <= 1 || !keys[selKey]) return;
   clearBadMarks();
+  const gone = selKey;
   keys.splice(selKey, 1);
   bumpKeys();
   selKey = Math.max(0, selKey - 1);
-  recalcTimes(); renderTimeline(); selectKey(selKey);
+  // Only the keyframe that FOLLOWED the deleted one starts from a different
+  // pose now; every hand-typed time further down must survive.
+  retimeAt(gone); renderTimeline(); selectKey(selKey);
 }
 function moveKey(d) {
   const i = selKey, j = i + d;
@@ -1633,7 +1686,12 @@ function moveKey(d) {
   [keys[i], keys[j]] = [keys[j], keys[i]];
   bumpKeys();
   selKey = j;
-  recalcTimes(); renderTimeline();
+  // Both swapped keyframes changed what they travel FROM, and so did the
+  // keyframe AFTER them (it now follows the other of the pair).
+  const last = Math.max(i, j);
+  retimeAt(i); retimeAt(j);
+  if (keys[last + 1]) retimeAt(last + 1);
+  renderTimeline();
 }
 // How long the move INTO keyframe i takes, as the show would run it. Reads
 // the played timeline, so a keyframe that follows a suspended one gets the
@@ -1645,6 +1703,41 @@ function keyTravelMs(i) {
   if (at === 0) return 0;                     // the start pose: nowhere to come from
   return keys[i] ? keys[i].t : 0;             // suspended: fall back to its own
 }
+// Where the show's clock sits when the move INTO keyframe i begins — the same
+// walk totalMs() makes over the PLAYED list, holds counted. Selecting a
+// keyframe parks the clock here, so Play carries on from the move on screen.
+// A suspended keyframe has no move of its own: the show jumps the gap, so the
+// clock lands where that jump begins (end of the show if none follows).
+function keyStartMs(i) {
+  const K = playKeys();
+  let at = K.findIndex(k => k.src === i);
+  if (at < 0) {
+    at = K.findIndex(k => k.src > i);
+    if (at < 0) return totalMs();
+  }
+  if (at <= 0) return 0;
+  let t = K[0].hold || 0;
+  for (let j = 1; j < at; j++) t += K[j].t + (K[j].hold || 0);
+  return t;
+}
+
+// Which PLAYED keyframe the clock at `ms` is standing on — keyStartMs() run
+// backwards, and the same walk main.py's _play_once makes when the hub resumes
+// a show. Inside a move: that move is the one to run. Inside a hold: the next
+// one. The answer is an index into playKeys(), never into keys[].
+function keyIndexAtMs(ms) {
+  const K = playKeys();
+  if (K.length < 2) return 0;
+  let clock = K[0].hold || 0;
+  if (ms <= clock) return 0;
+  for (let i = 1; i < K.length; i++) {
+    clock += K[i].t;
+    if (ms < clock) return i;                       // part-way through its move
+    clock += K[i].hold || 0;
+    if (ms < clock) return Math.min(i + 1, K.length - 1);   // in its hold
+  }
+  return K.length - 1;
+}
 
 function selectKey(i) {
   selKey = i;
@@ -1653,6 +1746,11 @@ function selectKey(i) {
     // travel there at the move's own speed, not at drag speed
     poseChanged(false, keyTravelMs(i));
   }
+  // the clock follows the click: Play and the scrubber sit at this move, not
+  // wherever the last play left them
+  playT = keyStartMs(i);
+  const total = totalMs();
+  $("scrub").value = total ? Math.round(playT / total * 1000) : 0;
   renderTimeline();
 }
 function totalMs() {
@@ -1664,6 +1762,7 @@ function totalMs() {
 }
 function renderTimeline() {
   const box = $("keys");
+  $("timelineEmpty").hidden = keys.length > 0;
   box.innerHTML = "";
   keys.forEach((k, i) => {
     const el = document.createElement("div");
@@ -1671,12 +1770,32 @@ function renderTimeline() {
     el.onclick = (e) => {
       if (e.target.tagName !== "INPUT" && e.target.tagName !== "BUTTON") selectKey(i);
     };
+    // Clicking anywhere on the chip selects it, which is worth keeping for a
+    // mouse - so the chip names the control that does the same job for the
+    // keyboard. check_keyboard_only reads this: a clickable box that cannot
+    // point at its own keyboard equivalent is counted as mouse-only.
+    el.setAttribute("data-keyboard", ".kgo");
     const bar = document.createElement("div"); bar.className = "kbar";
     const idx = document.createElement("div"); idx.className = "kidx";
     // Number, then a name you can type. A timeline of "0 1 2 3 4 5" tells you
     // nothing about what the show does; "wave", "reach cup", "bow" does. The
     // number stays because it is what every message and error refers to.
-    idx.textContent = String(i);
+    //
+    // The number is a real BUTTON, not text: selecting a keyframe used to be
+    // possible only by clicking the chip, so with a keyboard alone the
+    // timeline could not be moved through at all (A9-3b, measured 2026-08-21).
+    // Gemini Pro chose this over making the chip itself tabbable, because the
+    // chip contains a text field and two number fields - a control that
+    // contains controls is wrong for a screen reader and takes the focus its
+    // own fields need.
+    const go = document.createElement("button");
+    go.className = "kgo";
+    go.textContent = String(i);
+    go.title = "go to move " + i + " and show that pose";
+    go.setAttribute("aria-label", "go to move " + i + (k.name ? ": " + k.name : ""));
+    go.setAttribute("aria-pressed", i === selKey ? "true" : "false");
+    go.onclick = (e) => { e.stopPropagation(); selectKey(i); };
+    idx.appendChild(go);
     if (i === 0) {
       const st = document.createElement("small");
       st.textContent = " start pose";
@@ -1784,7 +1903,25 @@ function renderTimeline() {
       mn.append(document.createTextNode("min " + kmin + " · "), dIn,
                 document.createTextNode("°/s"));
     }
+    // ♪ lives on the existing speed line rather than in a row of its own:
+    // most moves never carry music, and a row per keyframe for a rare thing
+    // is how a timeline stops fitting on a laptop.
+    const mus = document.createElement("button");
+    mus.type = "button";
+    mus.className = "kmus" + (keyCue(k, "play") ? " on" : "");
+    mus.textContent = "♪";
+    mus.setAttribute("aria-pressed", musOpen.has(i) ? "true" : "false");
+    mus.title = keyCue(k, "play")
+      ? "plays " + cueTrack(k) + (cueLoop(k) ? " on repeat" : "") + " from here"
+      : "give this move a track from the robot's card";
+    mus.onclick = () => {
+      if (musOpen.has(i)) musOpen.delete(i); else musOpen.add(i);
+      loadMusicList();
+      renderTimeline();
+    };
+    mn.appendChild(mus);
     el.append(bar, idx, pv, tr, mn);
+    if (musOpen.has(i) || keyCue(k, "play")) el.append(musicRow(k, i));
     if (k.bad) { // collision found by checkCollisions(): mark the chip red
       el.classList.add("bad");
       const b = document.createElement("div");
@@ -1795,6 +1932,91 @@ function renderTimeline() {
     box.appendChild(el);
   });
   $("tlTime").textContent = (playT / 1000).toFixed(1) + "s / " + (totalMs() / 1000).toFixed(1) + "s";
+  renderTimeBar();
+}
+
+// The blocks and ruler under the time bar: a picture of the show, drawn from the
+// SAME numbers playback uses (keyStartMs / keyTravelMs / totalMs), so the bar
+// cannot disagree with what the robot does.
+//
+// Called from renderTimeline() only — never per frame. renderTimeline() rebuilds
+// every chip with innerHTML="", so driving a playhead through it would do that
+// sixty times a second; the playhead is the range's own thumb and moves by
+// value alone (see playTick).
+let tlZoom = 1;
+function zoomTimeline(factor) {
+  tlZoom = Math.max(0.5, Math.min(10, tlZoom * factor));
+  const tr = $("tbTrack");
+  const ru = $("tbRuler");
+  if (tr) tr.style.width = (tlZoom * 100) + "%";
+  if (ru) ru.style.width = (tlZoom * 100) + "%";
+  renderTimeBar();
+}
+
+function renderTimeBar() {
+  const box = $("tbBlocks"), ruler = $("tbRuler");
+  if (!box) return;                      // an older page without the bar
+  box.innerHTML = "";
+  const K = playKeys(), total = totalMs();
+  if (!total || K.length < 2) {
+    const empty = document.createElement("div");
+    empty.className = "tb-blk";
+    empty.style.left = "0"; empty.style.width = "100%";
+    empty.textContent = K.length < 2 ? "add a second pose to make a movement"
+                                     : "these poses are all the same";
+    box.appendChild(empty);
+    if (ruler) ruler.innerHTML = "";
+    return;
+  }
+  const pct = ms => (ms / total * 100) + "%";
+  // keyframe 0 has no move to arrive by, so only its hold occupies the start —
+  // the same reason totalMs() counts K[0].hold but not K[0].t.
+  const band = (left, width, cls, label, title) => {
+    if (width <= 0) return;
+    const d = document.createElement("div");
+    d.className = "tb-blk" + (cls ? " " + cls : "");
+    d.style.left = pct(left); d.style.width = pct(width);
+    if (label && width / total > 0.06) d.textContent = label;
+    d.title = title;
+    box.appendChild(d);
+  };
+  if (K[0].hold) band(0, K[0].hold, "hold", "wait",
+                      "waits " + (K[0].hold / 1000).toFixed(1) + "s before starting");
+  for (let i = 1; i < K.length; i++) {
+    const src = K[i].src, k = keys[src] || K[i];
+    const start = keyStartMs(src), dur = keyTravelMs(src);
+    const name = k.name || String(src);
+    band(start, dur, (src === selKey ? "sel" : "") + (k.bad ? " bad" : ""), name,
+         "move " + src + (k.name ? " (" + k.name + ")" : "") +
+         " takes " + (dur / 1000).toFixed(1) + "s");
+    if (K[i].hold) band(start + dur, K[i].hold, "hold", "wait",
+                        "then waits " + (K[i].hold / 1000).toFixed(1) + "s");
+  }
+  if (!ruler) return;
+  // Ticks in real seconds. The count comes from the bar's own width so a phone
+  // gets two labels and a desktop gets eight, instead of a crowded smear.
+  ruler.innerHTML = "";
+  const w = ruler.getBoundingClientRect().width || 600;
+  const steps = Math.max(2, Math.min(8, Math.floor(w / 90)));
+  for (let s = 0; s <= steps; s++) {
+    const t = total * s / steps;
+    const tick = document.createElement("span");
+    tick.className = "tb-tick" + (s === 0 ? " first" : s === steps ? " last" : "");
+    tick.style.left = pct(t);
+    tick.textContent = (t / 1000).toFixed(t < 10000 ? 1 : 0) + "s";
+    ruler.appendChild(tick);
+  }
+}
+
+// Back to start. Goes through scrubTo() rather than setting playT, because
+// scrubTo is where the ONE-PLAYER discipline lives: it pauses the preview, ends
+// the module's own sequence and lets the tab idle. Setting playT directly would
+// leave the robot running its copy of the show from the old position.
+function rewind() {
+  scrubTo(0);
+  $("scrub").value = 0;
+  _lastScrub = 0;
+  $("tlStat").textContent = "back at the start — press Play to run the whole show";
 }
 
 // ------- the timeline AS IT PLAYS
@@ -1822,7 +2044,8 @@ function keysSignature() {
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
     s += ";" + (k.name || "") + "," + (k.off ? 1 : 0) + "," + k.t + "," + (k.hold || 0) + "," +
-         (k.dps || 0) + "," + k.pose;
+         (k.dps || 0) + "," + k.pose + "," + (k.cues || []).join("|") + "," +
+         (k.cuesAfter || []).join("|");
   }
   return s;
 }
@@ -1919,8 +2142,15 @@ function playKeys() {
 function buildPlayKeys() {
   const out = [];
   let gap = false;                 // was anything suspended since the last one?
+  // Cues from suspended keyframes move to the next one that plays: suspending
+  // a move must not silently delete the show's music from the exported file.
+  let carry = [];
   keys.forEach((k, i) => {
-    if (k.off) { gap = true; return; }
+    if (k.off) {
+      gap = true;
+      carry = carry.concat(k.cues || [], k.cuesAfter || []);
+      return;
+    }
     const prev = out.length ? out[out.length - 1] : null;
     let t = k.t;
     if (prev && gap) {
@@ -1944,9 +2174,17 @@ function buildPlayKeys() {
     // The name travels with the PLAYED move. buildYaml() writes from this
     // list, so a name left behind here never reaches the exported file.
     out.push({ pose: k.pose, hold: k.hold || 0, src: i, dps: k.dps || 0, t,
-               name: k.name || "" });
+               name: k.name || "",
+               // cues travel with the PLAYED move, like the name above: both
+               // buildYaml and hubShowSteps read this list, so a cue left
+               // behind here reaches neither the file nor the robot
+               cues: carry.concat(k.cues || []),
+               cuesAfter: (k.cuesAfter || []).slice() });
+    carry = [];
     gap = false;
   });
+  if (carry.length && out.length)
+    out[out.length - 1].cuesAfter = out[out.length - 1].cuesAfter.concat(carry);
   return out;
 }
 function anySuspended() { return keys.some(k => k.off); }
@@ -2123,6 +2361,10 @@ function hubShowSteps() {
     pose: k.pose.map(v => +fmtA(v)),
     t: i === 0 ? minTime(pose, K[0].pose) : k.t,
     hold: k.hold || 0,
+    // the hub decides which cue is a command it may send (main.py cue_lines),
+    // so the editor passes the file's own words straight through
+    cues: k.cues || [],
+    cues_after: k.cuesAfter || [],
   }));
 }
 async function hubPlay(fromMs) {
@@ -2153,8 +2395,11 @@ function hubStop() {
   return fetch("/api/play/stop", { method: "POST" }).catch(() => {});
 }
 function livePause() {
+  // Stop the HUB's clock FIRST, whatever the link state: a show started while
+  // Live was unticked is hub-driven, and an early return here left that clock
+  // running — Pause stopped the drawing but the robot carried on.
+  hubStop();
   if (!liveLinked()) return;
-  hubStop();          // whichever clock is running, this ends it
   liveAbort();        // drop moves not yet sent — pausing cancels them
   liveSend("STOP");
   lastLiveSeg = -1;   // resume re-sends the segment, with the time still left
@@ -2191,10 +2436,17 @@ function scrubTo(v) {
   // ease at its SPEED setting.
   if (liveLinked()) sendPoseLive();
 }
-
-// ---------------------------------------------------------------- YAML export
+// --- YAML export ---
 function fmtA(a) { return (Math.round(a * 10) / 10).toString(); }
-function buildYaml() {
+// fromMs: where the show's clock is parked. A file built from a parked clock
+// starts at THAT keyframe, not at the first one — the robot is already standing
+// at the pose you clicked, and sending it back to keyframe 0 first is a long
+// unplanned sweep across the rig. The user, 2026-08-28: *my body of robot will
+// broke it hit other thing that i don't want if it warp to pose 1*.
+// The skipped keyframes are still WALKED: `speed` is state, so a file that
+// starts in the middle must carry the speed in force there, or the rest of the
+// show runs at the wrong one.
+function buildYaml(fromMs) {
   const name = ($("seqName").value || "sequence").trim().replace(/[^\w.-]+/g, "_");
   const lines = [
     "# generated by Nong Studio (code/nong/main_python_set_nong)",
@@ -2208,23 +2460,43 @@ function buildYaml() {
   // also makes a chain deterministic — sequence B sets its own speed instead
   // of inheriting whatever A happened to leave the module on.
   // One source of truth: the editor reads this step back when re-editing.
-  let cur = Math.round(speedDps());
+  const seqDps = Math.round(speedDps());
+  const K0 = playKeys();
+  // where this file starts. 0 (the whole show) unless a clock was handed in.
+  const from = fromMs > 0 ? keyIndexAtMs(fromMs) : 0;
+  // the speed in force at that point, which is what the leading step must be
+  let cur = seqDps;
+  for (let s = 0; s < from && s < K0.length; s++) cur = Math.round(K0[s].dps || seqDps);
   lines.push(`  - speed: ${cur}`);
   // suspended keyframes are left out entirely — the robot never sees them
   playKeys().forEach((k, i) => {
+    if (i < from) return;      // walked for state above, never written as motion
     // a move with its own speed emits a speed step first, and the next move
     // without one puts the sequence speed back — so the file reads exactly as
-    // the timeline runs, and the module's speed tracks it move by move
+    // the timeline runs, and the module's speed tracks it move by move.
+    // No i>0 exemption: an override on the FIRST move must be written too,
+    // or the robot plays it at the sequence speed the timeline never showed.
     const want = Math.round(k.dps || speedDps());
-    if (i > 0 && want !== cur) { lines.push(`  - speed: ${want}`); cur = want; }
+    if (want !== cur) { lines.push(`  - speed: ${want}`); cur = want; }
     // The name you gave the move, as a comment above it. A comment so
     // every existing player still reads the file unchanged — the
     // firmware ignores it, and a person opening the YAML can see what
     // each step was meant to be.
     if (k.name) lines.push(`  # ${k.name.replace(/[\r\n]/g, " ")}`);
-    lines.push(`  - pose: "${k.pose.map(fmtA).join(" ")} T ${k.t}"` +
-               (i === 0 ? "    # start pose" : ""));
+    // The cues this keyframe carried in, written back where they came from —
+    // before the move, the same order the file had them in. Without this an
+    // edit-and-export silently threw the show's music away.
+    (k.cues || []).forEach(c => lines.push(`  - ${c}`));
+    // The FIRST move written is the only one whose starting point the file
+    // cannot know — the robot is wherever it is standing, not where the
+    // timeline says. Give it at least the time that distance really needs, so
+    // a resumed show can never begin with a lunge. Never faster, only slower.
+    const t = (i === from && from > 0) ? Math.max(k.t, minTime(pose, k.pose)) : k.t;
+    lines.push(`  - pose: "${k.pose.map(fmtA).join(" ")} T ${t}"` +
+               (i === 0 ? "    # start pose"
+                        : i === from ? "    # resumed from here" : ""));
     if (k.hold > 0) lines.push(`  - wait: ${k.hold}`);
+    (k.cuesAfter || []).forEach(c => lines.push(`  - ${c}`));
   });
   const next = ($("seqNext").value || "").trim().replace(/[^\w.-]+/g, "");
   if (next) {
@@ -2247,17 +2519,27 @@ function nothingToWrite(where) {
 async function exportYaml() {
   if (nothingToWrite("tlStat")) return;
   const { name, yaml } = buildYaml();
-  const r = await fetch("/api/export", {
-    method: "POST", body: JSON.stringify({ name: name + ".yaml", yaml }),
-  }).then(r => r.json());
-  $("tlStat").innerHTML = r.ok
-    ? `saved <b>${r.file}</b> in the sequences/ folder — copy it to the SD card /moves/, ` +
-      `then pick it on the module website (Sequences card) or send: MOVE ${r.file}`
-    : "export failed: " + r.error;
+  // Every failure path must SAY something: an unhandled rejection here left
+  // the old status line standing, and a silent export reads as saved work.
+  try {
+    const r = await fetch("/api/export", {
+      method: "POST", body: JSON.stringify({ name: name + ".yaml", yaml }),
+    });
+    const j = await r.json();
+    if (!r.ok || !j.ok) throw new Error((j && j.error) || ("HTTP " + r.status));
+    // j.file echoes a name that was typed into this page; as text, never
+    // as markup.
+    $("tlStat").textContent =
+      `saved ${j.file} in the sequences/ folder — copy it to the SD card /moves/, ` +
+      `then pick it on the module website (Sequences card) or send: MOVE ${j.file}`;
+  } catch (e) {
+    $("tlStat").textContent = "export failed — the hub is not answering, or "
+      + "refused the name. Nothing was written. " + (e.message || e);
+    notice($("tlStat").textContent);
+  }
   refreshSeqs();
 }
-
-// ---------------------------------------------------------------- rig setup UI
+// --- rig setup UI ---
 const DIM_LABELS = {
   shoulderX: "shoulder ±X", shoulderY: "shoulder Y",
   upperLenL: "L upper arm", upperLenR: "R upper arm",
@@ -2270,7 +2552,7 @@ function renderRigUI() {
   jb.innerHTML = "";
   // header
   const hdr = document.createElement("div"); hdr.className = "rigjrow";
-  ["joint", "zero°", "min°", "max°", "axis", "inv"].forEach(t => {
+  ["joint", "zero°", "start°", "min°", "max°", "axis", "inv"].forEach(t => {
     const s = document.createElement("span"); s.className = "mini"; s.textContent = t;
     hdr.appendChild(s);
   });
@@ -2282,6 +2564,21 @@ function renderRigUI() {
     zero.type = "number"; zero.min = 0; zero.max = 180; zero.value = RIG.zero[i];
     zero.title = "zero deg: joint angle where this joint is straight (arm along the body)";
     zero.onchange = () => { RIG.zero[i] = clampDeg(+zero.value); rigChanged(); };
+    // START angle. Asked for 2026-09-10: *when start make can change position of
+    // servo when start not only 90 can select own deg per joint*. Kept inside
+    // this joint's own min/max, like `lo`/`hi` below and for the same reason —
+    // a typed number goes straight past the min/max attributes, and this one is
+    // written to the board and used on every boot.
+    const neu = document.createElement("input");
+    neu.type = "number"; neu.min = 0; neu.max = 180; neu.value = RIG.neutral[i];
+    neu.title = "where this joint goes when the robot starts, and when you "
+              + "press Neutral or Home";
+    neu.onchange = () => {
+      RIG.neutral[i] = Math.max(RIG.min[i], Math.min(RIG.max[i],
+                                clampDeg(+neu.value || 0)));
+      neu.value = RIG.neutral[i];          // show what was actually accepted
+      rigChanged();
+    };
     const lo = document.createElement("input");
     lo.type = "number"; lo.min = 0; lo.max = 180; lo.value = RIG.min[i];
     lo.title = "minimum JOINT angle this joint can reach";
@@ -2317,7 +2614,7 @@ function renderRigUI() {
     chk.type = "checkbox"; chk.checked = !!RIG.invert[i];
     chk.onchange = () => { RIG.invert[i] = chk.checked ? 1 : 0; rigChanged(); };
     inv.append(chk);
-    row.append(name, zero, lo, hi, ax, inv);
+    row.append(name, zero, neu, lo, hi, ax, inv);
     jb.appendChild(row);
   });
   // PER-JOINT servo + gear (each joint can use a different servo)
@@ -2454,6 +2751,9 @@ function renderRigUI() {
     row.append(name, inp, document.createElement("span"));
     db.appendChild(row);
   });
+  // One call site rather than the eleven that reach renderRigUI, so the offset
+  // rows cannot be left showing yesterday's numbers after a reset or a pull.
+  renderOffsets();
 }
 // known servos — pulse range, physical speed and TRAVEL (how far the servo
 // itself turns end to end: 180 for a normal hobby servo, 270 for a wide-angle
@@ -2525,6 +2825,121 @@ function rigChanged() {
   buildRobot();
   renderSliders();
 }
+
+// ---- servo offset, one joint at a time -----------------------------------
+//
+// Asked for 2026-09-10: *make can set offset to servo because sometime i set it
+// not exact 0 or 90*. A servo horn refits in whole teeth, so a joint lands a few
+// degrees out; until now the only cure was Set zero, which rewrites all ten from
+// the current pose and is behind a password.
+//
+// The number here is JOINT degrees — what a person can see on the arm. The board
+// keeps it in servo degrees (`trim`) and does the conversion, so the same typed
+// number moves every joint by the same visible amount whatever its gearing.
+// It is NOT drawn in the 3D preview: the preview shows the pose the robot was
+// asked for, and an offset is the difference between that and where the arm
+// really is. Drawing it would hide the very error being corrected.
+const OFFSET_STEP = 0.5;      // one press. Below this nothing is visible on the arm.
+const OFFSET_MAX = 30;        // matches NONG_OFFSET_MAX_DEG on the board
+
+function renderOffsets() {
+  const box = $("trimUI");
+  if (!box) return;
+  box.innerHTML = "";
+  JOINT_LABELS.forEach((label, i) => {
+    const row = document.createElement("div");
+    row.className = "trow-t" + (Math.abs(RIG.offset[i]) > 0.01 ? " set" : "");
+    const name = document.createElement("span");
+    name.className = "t-lbl"; name.textContent = label;
+    const val = document.createElement("input");
+    val.type = "number"; val.className = "t-val";
+    val.step = OFFSET_STEP; val.min = -OFFSET_MAX; val.max = OFFSET_MAX;
+    val.value = RIG.offset[i];
+    val.setAttribute("aria-label", "offset for " + label + ", in degrees");
+    val.title = "how far this joint is corrected, in degrees on the arm";
+    val.onchange = () => sendOffset(i, +val.value || 0);
+    const step = (delta, text, hint) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "t-btn"; b.textContent = text;
+      b.title = hint;
+      b.onclick = () => sendOffset(i, RIG.offset[i] + delta);
+      return b;
+    };
+    const zero = document.createElement("button");
+    zero.type = "button"; zero.className = "t-btn"; zero.textContent = "0";
+    zero.title = "clear this joint's offset";
+    zero.onclick = () => sendOffset(i, 0);
+    row.append(name,
+               step(-OFFSET_STEP, "−", "move " + label + " back " + OFFSET_STEP + "°"),
+               val,
+               step(OFFSET_STEP, "+", "move " + label + " on " + OFFSET_STEP + "°"),
+               zero);
+    box.appendChild(row);
+  });
+}
+
+// One joint, straight to the robot. Kept and shown even with nothing connected,
+// so the offsets travel with the rig to another PC — but the status line says
+// plainly that the robot has not been told.
+async function sendOffset(i, deg) {
+  const clamped = Math.max(-OFFSET_MAX, Math.min(OFFSET_MAX, Math.round(deg * 2) / 2));
+  RIG.offset[i] = clamped;
+  saveRig();
+  renderOffsets();
+  const st = $("trimStat");
+  if (!haveUsb() && !haveWifi()) {
+    if (st) st.textContent = JOINT_LABELS[i] + " offset " + clamped
+      + "° — saved here. Connect the robot to move it.";
+    return;
+  }
+  try {
+    const r = await rawCmd("OFFSET " + (i + 1) + " " + clamped);
+    if (st) st.textContent = /^ERR/i.test(r || "")
+      ? "the robot refused it: " + r
+      : JOINT_LABELS[i] + " is now corrected by " + clamped + "°";
+  } catch (e) {
+    if (st) st.textContent = "saved here, but it did not reach the robot: "
+      + (e.message || e);
+  }
+}
+
+async function pullOffsets() {
+  const st = $("trimStat");
+  if (!haveUsb() && !haveWifi()) {
+    if (st) st.textContent = "connect to the robot first (Robot link card)";
+    notice(st.textContent);
+    return;
+  }
+  try {
+    const j = JSON.parse(await rawCmd("LIMIT?"));
+    if (Array.isArray(j.offset))
+      RIG.offset = RIG.offset.map((d, i) =>
+        (j.offset[i] !== undefined ? Number(j.offset[i]) : d));
+    saveRig();
+    renderOffsets();
+    if (st) st.textContent = "read the offsets the robot is using ✓";
+  } catch (e) {
+    if (st) st.textContent = "read failed: " + (e.message || e);
+    notice($("trimStat").textContent);
+  }
+}
+
+async function clearOffsets() {
+  RIG.offset = RIG.offset.map(() => 0);
+  saveRig();
+  renderOffsets();
+  const st = $("trimStat");
+  if (!haveUsb() && !haveWifi()) {
+    if (st) st.textContent = "every offset cleared here — the robot still has its own";
+    return;
+  }
+  try {
+    await rawCmd("OFFSET ALL 0");
+    if (st) st.textContent = "every joint's offset cleared, here and on the robot ✓";
+  } catch (e) {
+    if (st) st.textContent = "cleared here, but the robot was not told: " + (e.message || e);
+  }
+}
 function resetRig() {
   // Reset returns to YOUR saved default if you set one, else the factory rig.
   const mine = loadRigDefault();
@@ -2547,10 +2962,9 @@ function resetRig() {
 // send only the lines that differ — pushing again after a small edit is then a
 // couple of commands instead of fifty.
 async function pushLimits() {
-  if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first (Robot link card)"; return; }
+  if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first (Robot link card)"; notice($("limStat").textContent); return; }
   try {
     let have = null;
-  notice($("limStat").textContent);
     $("limStat").textContent = "reading what the robot has…";
     try { have = JSON.parse(await rawCmd("LIMIT?")); } catch (e) { have = null; }
     const at = (key, i) => {
@@ -2569,6 +2983,8 @@ async function pushLimits() {
       const pmin = RIG.pulseMin[i], pmax = RIG.pulseMax[i];
       const dps = Math.round(RIG.servoMaxDps[i]);
       const rng = Math.round(RIG.servoRange[i]), hz = Math.round(RIG.frameHz[i]);
+      const neu = Math.round(RIG.neutral[i]);
+      const off = Math.round(RIG.offset[i] * 2) / 2;   // half a degree, as the buttons step
       const parts = [];
       if (!(same("min", i, mn) && same("max", i, mx)))
         parts.push(`LIMIT ${i + 1} ${mn} ${mx}`);
@@ -2578,11 +2994,21 @@ async function pushLimits() {
         parts.push(`PULSE ${i + 1} ${pmin} ${pmax} ${dps}`);
       if (!same("servo_range", i, rng)) parts.push(`RANGE ${i + 1} ${rng}`);
       if (!same("frame_hz", i, hz)) parts.push(`RATE ${i + 1} ${hz}`);
-      if (!parts.length) continue;
+      if (!same("neutral", i, neu)) parts.push(`NEUTRAL ${i + 1} ${neu}`);
+      // The offset stays OUT of the JCFG batch on purpose: JCFG collapses the
+      // five fields set together when a servo is configured, while an offset is
+      // nudged on its own — and keeping it out leaves that batch's positional
+      // contract alone. It therefore rides in `always`, NOT in `parts`: the batch
+      // path does `continue` past parts, so a line put there would have been
+      // silently dropped on every board that understands JCFG.
+      const always = same("offset", i, off) ? [] : [`OFFSET ${i + 1} ${off}`];
+      if (!parts.length && !always.length) continue;
       jobs.push({
-        joint: i + 1, parts,
+        joint: i + 1, parts, always,
+        // neutral is APPENDED, never inserted: an older board ignores the extra
+        // token, and QC reads the first nine values by position.
         batch: `JCFG ${i + 1} ${RIG.gearPinion[i]} ${RIG.gearGear[i]} ${pmin} ${pmax} ` +
-               `${dps} ${rng} ${hz} ${mn} ${mx}`,
+               `${dps} ${rng} ${hz} ${mn} ${mx} ${neu}`,
       });
     }
     if (!jobs.length) {
@@ -2594,7 +3020,9 @@ async function pushLimits() {
     for (let k = 0; k < jobs.length; k++) {
       const job = jobs[k];
       $("limStat").textContent = `sending joint ${job.joint} (${k + 1}/${jobs.length})…`;
-      if (useBatch) {
+      // whatever the batch cannot carry goes first, so it is sent either way
+      for (const c of job.always) { await rawCmd(c); sent++; }
+      if (useBatch && job.parts.length) {
         const r = await rawCmd(job.batch);
         sent++;
         // an older board does not know JCFG — drop to the individual commands
@@ -2606,18 +3034,17 @@ async function pushLimits() {
     }
     $("limStat").textContent =
       `sent ${sent} command${sent > 1 ? "s" : ""} for ${jobs.length} joint` +
-      `${jobs.length > 1 ? "s" : ""} (limits, gear, pulse, travel, frame rate)` +
+      `${jobs.length > 1 ? "s" : ""} (limits, gear, pulse, travel, frame rate, ` +
+      `start angle, offset)` +
       (useBatch ? "" : " — this board is older than JCFG, so each setting went separately") +
       (have ? "" : " — could not read the robot first, so everything was sent") + " ✓";
-    notice($("limStat").textContent);
   } catch (e) { $("limStat").textContent = "send failed: " + (e.message || e); notice($("limStat").textContent); }
 }
 // read the module's current limits + gear back into the rig
 async function pullLimits() {
-  if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first"; return; }
+  if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first"; notice($("limStat").textContent); return; }
   try {
     const t = await rawCmd("LIMIT?");
-  notice($("limStat").textContent);
     const j = JSON.parse(t);
     // accept 8-joint (old firmware) or 10-joint replies: keep what the robot
     // sends and fill any joint it omits from the current rig, so a shorter
@@ -2636,18 +3063,226 @@ async function pullLimits() {
     pull(j.max_dps, "servoMaxDps");
     pull(j.servo_range, "servoRange");
     pull(j.frame_hz, "frameHz");
+    pull(j.neutral, "neutral");
+    pull(j.offset, "offset");
     saveRig(); renderRigUI(); buildRobot(); renderSliders();
-    $("limStat").textContent = "read limits + gear from the robot ✓";
+    $("limStat").textContent =
+      "read limits, gear, start angles and offsets from the robot ✓";
   } catch (e) { $("limStat").textContent = "read failed: " + (e.message || e); notice($("limStat").textContent); }
 }
-
-// ---------------------------------------------------------------- edit existing sequences
+// --- edit existing sequences ---
 // Parse a /moves YAML (the format this editor exports and the firmware plays)
 // back into timeline keyframes, so any saved sequence can be re-edited.
+// --- music on a keyframe ---
+//
+// A move's music is a cue the FILE already carries: `play: song.mp3` before
+// the keyframe, `vol: 80` for the level (main.py cue_lines turns them into
+// commands). Everything about playing them already works - the editor's job
+// is only to make the two clickable, because a value somebody has to type
+// into a YAML file is a bug on a screen made for designers.
+//
+// The track list is read from the ROBOT (its /music folder), so the picker
+// can only ever offer files that are really on the card.
+let musicList = null;        // null = never read, [] = card has no tracks
+let musicNote = "";          // why the list is not usable, in plain words
+let musicBusy = false;
+const musOpen = new Set();   // which keyframes have the picker open
+
+function keyCue(k, key) {
+  const c = (k.cues || []).find(x => x.toLowerCase().startsWith(key + ":"));
+  return c ? c.slice(c.indexOf(":") + 1).trim() : "";
+}
+function setKeyCue(k, key, val) {
+  // other cue lines (rgb:, effect:, a step this editor does not know) are
+  // kept exactly as they came in - this only ever rewrites the one key
+  const rest = (k.cues || []).filter(x => !x.toLowerCase().startsWith(key + ":"));
+  k.cues = val === "" ? rest : rest.concat(key + ": " + val);
+  if (!k.cues.length) delete k.cues;
+  bumpKeys();
+}
+// A play cue is `play: song.mp3` or `play: song.mp3 LOOP` — the file's own
+// words, kept verbatim, so the repeat travels with the sequence and every way of
+// running it obeys (the hub, the module's page, Run on robot). These two read the
+// halves apart; a track name may contain spaces, so only a trailing LOOP counts.
+function cueTrack(k) {
+  return keyCue(k, "play").replace(/\s+LOOP$/i, "");
+}
+function cueLoop(k) {
+  return /\s+LOOP$/i.test(keyCue(k, "play"));
+}
+function setCueTrack(k, track, loop) {
+  setKeyCue(k, "play", track ? track + (loop ? " LOOP" : "") : "");
+}
+async function loadMusicList() {
+  if (musicBusy || musicList) return;
+  musicBusy = true;
+  musicNote = "reading the robot's music folder…";
+  try {
+    if (!liveLinked()) throw new Error("offline");
+    const r = await fetch("/api/dev/files?dir=/music&dev="
+                          + encodeURIComponent(moduleDev()));
+    const list = await r.json();
+    musicList = list.map(f => f.n).filter(n => /\.(mp3|wav)$/i.test(n));
+    musicNote = musicList.length ? "" :
+      "no tracks on the robot's card yet — add one in the hub: " +
+      "Modules ▸ Open module ▸ Files ▸ /music";
+  } catch (e) {
+    musicList = null;
+    musicNote = "connect the robot to choose a track — it reads the /music "
+              + "folder on its own card. What is already set is kept.";
+  }
+  musicBusy = false;
+  renderTimeline();
+}
+// Put a track from THIS PC onto the robot's card, then choose it. Music is
+// binary, so it cannot go through sdUpload() (that one encodes text) - it
+// goes as raw bytes through the hub, which already knows how to reach this
+// module over WiFi or down a cable. A browser holding the cable itself
+// (Web Serial) has no hub path, and says so rather than failing quietly.
+async function pickMusicFile(k) {
+  const inp = document.createElement("input");
+  inp.type = "file";
+  inp.accept = ".mp3,.wav,audio/mpeg,audio/wav";
+  inp.onchange = () => {
+    const f = inp.files && inp.files[0];
+    if (f) uploadMusicFile(k, f);
+  };
+  inp.click();
+}
+// The upload itself, given a file: separate from the dialog because a file
+// picker cannot be opened by a script, and an upload path no check can reach
+// is an upload path nothing guards.
+async function uploadMusicFile(k, f) {
+  if (usbDirect()) {
+    musicNote = "this browser is holding the cable itself, so the hub cannot "
+              + "send the file. Connect through the hub, or add the track on "
+              + "the module website: Files ▸ /music.";
+    renderTimeline();
+    return;
+  }
+  musicNote = "sending " + f.name + " to the robot…";
+  renderTimeline();
+  try {
+    const r = await fetch("/api/dev/upload?dir=/music&name="
+                          + encodeURIComponent(f.name) + "&dev="
+                          + encodeURIComponent(moduleDev()),
+                          { method: "POST", body: await f.arrayBuffer() });
+    const said = (await r.text()).trim();
+    if (!said.startsWith("OK")) throw new Error(said);
+    musicList = null;                   // the card has one more file on it now
+    await loadMusicList();
+    setKeyCue(k, "play", f.name);
+    musicNote = f.name + " is on the robot's card — press ▶ to hear it";
+  } catch (e) {
+    musicNote = "the track did not reach the robot: " + (e.message || e);
+  }
+  renderTimeline();
+}
+
+// The picker for one keyframe: a track and a level, or plain words about why
+// the list is not there. Shown when the ♪ is pressed, and whenever the move
+// already has music - a show's sound must be visible without hunting for it.
+function musicRow(k, i) {
+  const row = document.createElement("div");
+  row.className = "ktime kmusrow";
+  const cur = cueTrack(k);
+  const sel = document.createElement("select");
+  sel.className = "kmustrack";
+  sel.setAttribute("aria-label", "music for move " + (i + 1));
+  const names = musicList ? musicList.slice() : [];
+  if (cur && names.indexOf(cur) < 0) names.push(cur);   // keep what is set
+  [["", "no music"]].concat(names.map(n => [n, n])).forEach(([v, label]) => {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = label;
+    if (v === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+  sel.disabled = !musicList && !cur;
+  sel.title = musicList ? "the tracks on the robot's card"
+                        : "the robot's track list could not be read";
+  sel.onchange = () => {
+    // keep the repeat when only the track changes, or ticking it then picking a
+    // different song would quietly untick it again
+    setCueTrack(k, sel.value, cueLoop(k));
+    if (!sel.value) setKeyCue(k, "vol", "");   // no track, no level
+    renderTimeline();
+  };
+  const vol = document.createElement("input");
+  vol.type = "number"; vol.min = 0; vol.max = 100; vol.step = 5;
+  vol.className = "kmusvol";
+  vol.value = keyCue(k, "vol");
+  vol.placeholder = "vol";
+  vol.disabled = !cur;
+  vol.title = cur ? "volume for this track, 0-100"
+                  : "choose a track first, then set its volume";
+  vol.onchange = () => {
+    const v = vol.value === "" ? "" : String(Math.max(0, Math.min(100, Math.round(+vol.value || 0))));
+    setKeyCue(k, "vol", v);
+    renderTimeline();
+  };
+  // Repeat. Asked for 2026-09-10: *make can loop the music of that sequence
+  // when select that sequence to run*. It is written into the sequence FILE, so
+  // it holds however the show is started.
+  const rep = document.createElement("label");
+  rep.className = "kmusloop";
+  const repChk = document.createElement("input");
+  repChk.type = "checkbox";
+  repChk.checked = cueLoop(k);
+  repChk.disabled = !cur;
+  rep.title = cur ? "Keep playing this track again and again until the show "
+                    + "ends or you press Stop. It restarts in a blink, not as a "
+                    + "seamless join."
+                  : "choose a track first, then it can repeat";
+  repChk.onchange = () => { setCueTrack(k, cur, repChk.checked); renderTimeline(); };
+  rep.append(repChk, document.createTextNode(" repeat"));
+  // Hear it, and add one — both from here, because the two things a person
+  // wants while choosing music are to LISTEN to it and to put a new track on
+  // the robot, and neither was worth walking to another page for.
+  const play = document.createElement("button");
+  play.type = "button"; play.className = "kmusbtn"; play.textContent = "▶";
+  play.disabled = !cur || !liveLinked();
+  play.title = !liveLinked() ? "connect the robot to hear it"
+             : cur ? "play " + cur + " on the robot now, once through"
+                   : "choose a track first";
+  play.onclick = async () => {
+    const v = keyCue(k, "vol");
+    try {
+      if (v !== "") await rawCmd("VOL " + v);
+      musicNote = await rawCmd("PLAY " + cur);
+    } catch (e) { musicNote = "the robot did not take it: " + (e.message || e); }
+    renderTimeline();
+  };
+  const stop = document.createElement("button");
+  stop.type = "button"; stop.className = "kmusbtn"; stop.textContent = "■";
+  stop.disabled = !liveLinked();
+  stop.title = "stop the sound";
+  stop.onclick = async () => {
+    try { musicNote = await rawCmd("PLAY STOP"); } catch (e) { musicNote = String(e.message || e); }
+    renderTimeline();
+  };
+  const add = document.createElement("button");
+  add.type = "button"; add.className = "kmusbtn"; add.textContent = "＋";
+  add.disabled = !liveLinked();
+  add.title = liveLinked() ? "put a track from this PC onto the robot's card"
+                           : "connect the robot to add a track";
+  add.onclick = () => pickMusicFile(k);
+  row.append(document.createTextNode("♪"), sel, vol, rep, play, stop, add);
+  if (musicNote) {
+    const n = document.createElement("span");
+    n.className = "kmusnote";
+    n.textContent = musicNote;
+    row.appendChild(n);
+  }
+  return row;
+}
+
 function parseSeqYaml(text) {
-  const out = { name: "", loop: false, next: "", speed: 0, keys: [], skipped: 0 };
-  notice($("limStat").textContent);
+  const out = { name: "", loop: false, next: "", speed: 0, keys: [], skipped: 0, cues: 0 };
   let curSpeed = 0;             // the speed in force at this point in the file
+  // Non-pose steps (`play:`, `vol:`, `rgb:`) are CUES: kept in the editor's
+  // own words and handed back to the file and to the hub, so a show edited
+  // here keeps its music instead of losing it on the way through (A24-22).
+  let pend = [];
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.replace(/#.*$/, "").trimEnd();
     let m;
@@ -2664,6 +3299,7 @@ function parseSeqYaml(text) {
         // a speed step before this pose that differs from the sequence speed is
         // that MOVE's own speed, so it survives a round trip through the file
         if (curSpeed && curSpeed !== out.speed) k.dps = curSpeed;
+        if (pend.length) { k.cues = pend; out.cues += pend.length; pend = []; }
         out.keys.push(k);
       } else out.skipped++;
     } else if ((m = line.match(/^\s*-\s*wait:\s*(\d+)/))) {
@@ -2674,7 +3310,14 @@ function parseSeqYaml(text) {
       // the move that follows them. Neither is an unsupported step.
       curSpeed = +m[1];
       if (!out.speed) out.speed = curSpeed;
-    } else if (/^\s*-\s*\w+:/.test(line)) out.skipped++; // rgb/play/... steps
+    } else if ((m = line.match(/^\s*-\s*([A-Za-z_][\w-]*):\s*"?(.*?)"?\s*$/))) {
+      pend.push((m[1].toLowerCase() + ": " + m[2]).trim());
+    } else if (/^\s*-\s/.test(line)) out.skipped++;   // not a step we can read
+  }
+  // cues after the last pose belong to the end of the show
+  if (pend.length && out.keys.length) {
+    out.keys[out.keys.length - 1].cuesAfter = pend;
+    out.cues += pend.length;
   }
   return out;
 }
@@ -2701,14 +3344,23 @@ function loadParsedSeq(p, sourceLabel) {
   renderTimeline();
   $("tlStat").textContent = `loaded ${keys.length} keyframes from ${sourceLabel}` +
     (p.speed >= 5 ? ` at its own ${Math.round(p.speed)} °/s` : "") +
-    (p.skipped ? ` (${p.skipped} non-pose steps skipped — rgb/music steps are kept only in the original file)` : "") +
+    (p.cues ? ` with ${p.cues} music/light step(s), which play with the show and are written back on export` : "") +
+    (p.skipped ? ` (${p.skipped} step(s) this editor does not read — kept only in the original file)` : "") +
     " — edit, then Export / Upload again";
 }
 async function editLocalSeq() {
   const f = $("seqList").value;
   if (!f) return;
-  const text = await fetch("/api/loadseq?name=" + encodeURIComponent(f)).then(r => r.text());
-  loadParsedSeq(parseSeqYaml(text), "sequences/" + f);
+  // A missing file must say so: its 404 body parsed as YAML reported
+  // "no pose steps found", which reads like an empty sequence, not a wrong one.
+  const r = await fetch("/api/loadseq?name=" + encodeURIComponent(f));
+  if (!r.ok) {
+    $("tlStat").textContent = "cannot read sequences/" + f + " — the hub answered "
+      + r.status + ". Pick it in the list again, or refresh.";
+    notice($("tlStat").textContent);
+    return;
+  }
+  loadParsedSeq(parseSeqYaml(await r.text()), "sequences/" + f);
 }
 async function editSdSeq(fname) {
   try {
@@ -2716,23 +3368,58 @@ async function editSdSeq(fname) {
     loadParsedSeq(parseSeqYaml(text), "robot SD " + fname);
   } catch (e) { $("tlStat").textContent = "cannot read " + fname + ": " + (e.message || e); notice($("tlStat").textContent); }
 }
+// Play a SAVED sequence without first loading it for editing: the same
+// loader Edit uses, then the same Play button — so it plays exactly like an
+// edited sequence, through whichever clock applies (hub when hub-driven).
+async function playSavedSeq(sourceLabel, getText) {
+  const stat = $("tlStat");
+  stat.textContent = "loading " + sourceLabel + "…";
+  let text;
+  try { text = await getText(); }
+  catch (e) {
+    stat.textContent = "cannot read " + sourceLabel + ": " + (e.message || e);
+    notice(stat.textContent);
+    return;
+  }
+  if (playing) togglePlay();          // swap timelines only while stopped
+  const before = keys;
+  loadParsedSeq(parseSeqYaml(text), sourceLabel);
+  if (keys === before) return;        // nothing loaded — its message is shown
+  playT = 0;                          // a fresh show starts at the top
+  $("scrub").value = 0;
+  togglePlay();
+}
+async function playLocalSeq() {
+  const f = $("seqList").value;
+  if (!f) { $("tlStat").textContent = "pick a saved sequence in the list first."; return; }
+  await playSavedSeq("sequences/" + f, async () => {
+    const r = await fetch("/api/loadseq?name=" + encodeURIComponent(f));
+    if (!r.ok) throw new Error("the hub answered HTTP " + r.status
+      + " — is sequences/" + f + " still there?");
+    return r.text();
+  });
+}
+async function playSdSeq(fname) {
+  await playSavedSeq("robot SD " + fname, () => sdDownload(fname));
+}
 async function refreshSeqs() {
   const r = await fetch("/api/list?kind=sequences").then(r => r.json());
-  notice($("tlStat").textContent);
   const sel = $("seqList");
   sel.innerHTML = "<option value=''>Edit saved…</option>";
   (r.files || []).filter(f => f.endsWith(".yaml")).forEach(f => {
     const o = document.createElement("option"); o.value = o.textContent = f; sel.appendChild(o);
   });
 }
-
-// ---------------------------------------------------------------- project save/load
+// --- project save/load ---
 async function saveProject() {
   const name = ($("projName").value || "project").trim();
   const project = {
     keys, speedDps: speedDps(), maxDps: maxDps(), loop: $("loopChk").checked,
     meshes: meshCfg, addons,
     robotIp: $("robotIp").value, seqName: $("seqName").value,
+    // The chain is part of the show: a project saved with one and reopened
+    // without it exported a different sequence than the one saved.
+    seqNext: ($("seqNext").value || "").trim(),
     rig: RIG,
   };
   let r;
@@ -2820,6 +3507,9 @@ async function loadProject(file) {
   $("robotIp").value = p.robotIp || "";
   $("seqName").value = p.seqName || file.replace(/\.json$/, "");
   $("projName").value = file.replace(/\.json$/, "");
+  // The chain rides with the project; an older project without one clears the
+  // field rather than keeping a chain this project never had.
+  $("seqNext").value = p.seqNext || "";
   if (p.meshes) {
     MESH_PARTS.forEach(part => {
       const v = p.meshes[part];
@@ -2855,8 +3545,7 @@ async function refreshProjects() {
     const o = document.createElement("option"); o.value = o.textContent = f; sel.appendChild(o);
   });
 }
-
-// ---------------------------------------------------------------- STL meshes
+// --- STL meshes ---
 // Each part keeps its SKELETON (joint ball + bone) visible even with an STL,
 // so joint positions and lengths always stay readable. Every STL has its own
 // rotation / offset / scale (exports rarely share the robot's origin), and
@@ -2872,7 +3561,6 @@ function getGeo(file, cb) {
     (geo) => { stlCache[file] = geo; cb(geo); },
     undefined,
     () => { $("tlStat").textContent = "cannot load models/" + file; notice($("tlStat").textContent); });
-    notice($("tlStat").textContent);
 }
 // STL files carry no texture coordinates — project simple UVs from the two
 // largest bounding-box axes so a painted PNG/JPG can be shown on them
@@ -3155,8 +3843,7 @@ async function refreshModels() {
   modelFiles = (r.files || []).filter(f => isStl(f) || isImg(f));
   renderModelsUI();
 }
-
-// ---------------------------------------------------------------- robot link
+// --- robot link ---
 // Transports, one command language (see firmware COMMANDS.md):
 //   wifi   — HTTP through the local python proxy (/api/robot/*)
 //   usb    — the cable, THROUGH THE HUB (/api/usb/cmd?port=..&id=..). This is
@@ -3193,11 +3880,12 @@ function connModeChanged() {
   $("usbRescan").style.display = usb ? "" : "none";
   $("connBtn").textContent = direct && !serialPort ? "Connect USB" : "Connect";
   if (usb) { if (!$("usbPort").dataset.loaded) loadPorts(); }
-  else if (direct && !("serial" in navigator))
+  else if (direct && !("serial" in navigator)) {
     $("robotStat").textContent = "This browser cannot open a USB port by itself. "
       + "Pick “+ USB (shared)” instead — the hub opens the cable and shares it — "
       + "or connect over WiFi. (Web Serial works in Chrome and Edge.)";
     notice($("robotStat").textContent);
+  }
 }
 
 // ------- shared USB: the hub owns the port, we send commands through it
@@ -3235,9 +3923,10 @@ async function hubUsbCmd(c) {
   // turns dev=usb:COM7@far-nong into REACH far-nong <command> down the cable.
   // Without a peer this stays on the endpoint it always used, so nothing about
   // the ordinary cable path changes.
-  const url = window.HUB_PEER
-    ? `/api/dev/cmd?dev=${encodeURIComponent(
-        "usb:" + hubPort + (busId() ? ":" + busId() : "") + "@" + window.HUB_PEER)}` +
+  // /api/usb/cmd only ever means a port on THIS PC. A peer or another hub
+  // needs the unified endpoint, which understands the whole dev string.
+  const url = (window.HUB_PEER || window.HUB_VIA)
+    ? `/api/dev/cmd?dev=${encodeURIComponent(moduleDev())}` +
       `&c=${encodeURIComponent(c)}`
     : `/api/usb/cmd?port=${encodeURIComponent(hubPort)}` +
       `&id=${busId()}&c=${encodeURIComponent(c)}`;
@@ -3328,8 +4017,8 @@ function haveWifi() { return !!robotIp(); }
 function cableCmd(c) { return usbDirect() ? serialCmd(c) : hubUsbCmd(c); }
 async function httpCmd(c) {
   // Same over WiFi: wifi:<ip>@peer reaches a module on that board's hotspot.
-  const url = window.HUB_PEER
-    ? `/api/dev/cmd?dev=${encodeURIComponent("wifi:" + robotIp() + "@" + window.HUB_PEER)}` +
+  const url = (window.HUB_PEER || window.HUB_VIA)
+    ? `/api/dev/cmd?dev=${encodeURIComponent(moduleDev())}` +
       `&c=${encodeURIComponent(c)}`
     : `/api/robot/cmd?ip=${encodeURIComponent(robotIp())}&c=${encodeURIComponent(c)}`;
   return fetch(url).then(r => r.text());
@@ -3350,8 +4039,12 @@ function moduleDev() {
   // board on the CABLE while every command went to the module behind that
   // board's hotspot — two different robots, one screen, no warning.
   const at = window.HUB_PEER ? "@" + window.HUB_PEER : "";
-  if (hubPort) return "usb:" + hubPort + (busId() ? ":" + busId() : "") + at;
-  if (haveWifi()) return "wifi:" + robotIp() + at;
+  // The hub prefix goes back on FIRST: hub:<ip>/usb:COM7 is that port on the
+  // other PC. Without it the same string names a local port and drives
+  // whatever is plugged in here.
+  const via = window.HUB_VIA || "";
+  if (hubPort) return via + "usb:" + hubPort + (busId() ? ":" + busId() : "") + at;
+  if (haveWifi()) return via + "wifi:" + robotIp() + at;
   return "";     // direct Web Serial: see openModule()
 }
 
@@ -3377,6 +4070,11 @@ function clearPeer(why) {
   if (typeof log === "function") log("(no longer aiming at a peer module: " + why + ")");
 }
 function openModule() {
+  if (!currentUser) {
+    showTab("robot");
+    $("loginStat").textContent = "Log in to configure the module.";
+    return;
+  }
   const dev = moduleDev();
   if (dev) {
     // The hub shares the cable, so the module site and this editor can both
@@ -3395,6 +4093,7 @@ function openModule() {
   notice($("robotStat").textContent);
 }
 async function robotCmd(c) {
+  if (!currentUser) return "";
   try {
     const t = await rawCmd(c);
     $("robotStat").textContent = "> " + c.slice(0, 60) + "  →  " + t.slice(0, 120);
@@ -3460,6 +4159,17 @@ function pickFound(ip) {
   connectRobot();
 }
 async function connectRobot() {
+  if (!currentUser) {
+    showTab("robot"); // This will actually show the login card since they aren't logged in
+    $("loginStat").textContent = "Log in to connect to the robot.";
+    if (!pendingConnect) {
+      pendingConnect = {};
+      pendingConnect.promise = new Promise((resolve, reject) => {
+        pendingConnect.resolve = resolve; pendingConnect.reject = reject;
+      });
+    }
+    return pendingConnect.promise;
+  }
   const t = transport(), had = hubPort;
   try {
     if (t === "usb") {
@@ -3536,8 +4246,8 @@ const LIVE_T_MIN = 80, LIVE_T_MAX = 300;
 function liveT() {
   return Math.max(LIVE_T_MIN, Math.min(LIVE_T_MAX, Math.round(liveRtt * 1.3)));
 }
-function liveSend(c) { liveQueue.push(c); livePump(); }
-function sendPoseLive() { livePending = pose.slice(); livePump(); }
+function liveSend(c) { if (!currentUser) return; liveQueue.push(c); livePump(); }
+function sendPoseLive() { if (!currentUser) return; livePending = pose.slice(); livePump(); }
 function liveAbort() { liveQueue = []; livePending = null; }
 function livePump() {
   if (liveBusy) return;
@@ -3691,6 +4401,10 @@ async function refreshSd() {
       const run = document.createElement("button");
       run.textContent = "▶ Run"; run.className = "primary";
       run.onclick = () => robotCmd("MOVE " + f.n);
+      const play = document.createElement("button");
+      play.textContent = "▶ Preview";
+      play.title = "load this sequence into the timeline and play it here, in Studio";
+      play.onclick = () => playSdSeq(f.n);
       const edit = document.createElement("button");
       edit.textContent = "✎ Edit";
       edit.title = "load this sequence from the SD card into the timeline";
@@ -3702,7 +4416,7 @@ async function refreshSd() {
         try { await sdDelete(f.n); } catch (e) { $("sdStat").textContent = "" + e; }
         refreshSd();
       };
-      row.append(name, run, edit, del);
+      row.append(name, run, play, edit, del);
       box.appendChild(row);
     });
     $("sdStat").textContent = "";
@@ -3736,7 +4450,6 @@ async function uploadYaml() {
 //
 // Safe to call when nothing is running: the firmware answers "OK move stopped"
 // either way, and it costs one command. Calling it too often is harmless;
-  notice($("sdStat").textContent);
 // calling it too seldom leaves two things driving the servos at once.
 //
 // Since the firmware learned to preempt (any MOTION command from outside stops
@@ -3788,9 +4501,14 @@ async function handOffToRobot() {
   if (hubDriven()) return;
   handedOff = true;
   try {
-    const { name, yaml } = buildYaml();
-    await sdUpload(name + ".yaml", yaml);    // falls back to module memory with no SD
-    await robotCmd("MOVE " + name + ".yaml");
+    // Hand over from where the show HAS GOT TO, not from the top. Hiding the
+    // tab half way through used to send the arm back to keyframe 0 first —
+    // the same sweep as Run, but nobody pressed anything to cause it.
+    const part = playT > 0 && keyIndexAtMs(playT) > 0;
+    const { name, yaml } = buildYaml(playT);
+    const file = (part ? name + ".part" : name) + ".yaml";
+    await sdUpload(file, yaml);              // falls back to module memory with no SD
+    await robotCmd("MOVE " + file);
     // stop being the clock: the module owns the show now
     playing = false;
     keepAwake(false);
@@ -3829,18 +4547,29 @@ document.addEventListener("visibilitychange", function () {
 async function robotRun() {
   if (nothingToWrite("sdStat")) return;     // a file with no moves does nothing
   if (!crashGate("RUN it on the robot")) return;
-  const { name, yaml } = buildYaml();
+  // Run from where the clock is parked. Clicking a keyframe parks it there, so
+  // Run continues the show from the pose on screen instead of sweeping back to
+  // the first one — which is what the robot's arm would have to travel through.
+  // A partial run is written under its own name: <name>.yaml stays the whole
+  // show, so running part of it never overwrites the saved sequence.
+  const resumeMs = playT;
+  const part = resumeMs > 0 && keyIndexAtMs(resumeMs) > 0;
+  const { name, yaml } = buildYaml(resumeMs);
+  const file = (part ? name + ".part" : name) + ".yaml";
   const st = $("sdStat");
-  if (st) st.textContent = "sending " + name + ".yaml to the robot…";
+  if (st) st.textContent = "sending " + file + " to the robot…";
   try {
-    await sdUpload(name + ".yaml", yaml);
+    await sdUpload(file, yaml);
   } catch (e) {
     if (st) st.textContent = "could not send the sequence, so nothing was run — "
       + (e && e.message ? e.message : e);
     return;
   }
-  await robotCmd("MOVE " + name + ".yaml");
-  if (st) st.textContent = "the robot is running " + name + ".yaml on its own.";
+  await robotCmd("MOVE " + file);
+  if (st) st.textContent = part
+    ? "the robot is running from the move you picked, to the end — it does not "
+      + "go back to the start. The whole show is still saved as " + name + ".yaml."
+    : "the robot is running " + file + " on its own.";
 }
 
 // ---- zero-position calibration (password-gated; default manny/12345678) ----
@@ -3868,13 +4597,12 @@ function zeroChangeCred() {
   $("zStat2").textContent = "login changed (this browser)";
 }
 async function robotZeroSet() {
-  if (!haveUsb() && !haveWifi()) { $("zStat2").textContent = "connect to the robot first"; return; }
+  if (!haveUsb() && !haveWifi()) { $("zStat2").textContent = "connect to the robot first"; notice($("zStat2").textContent); return; }
   const r = await robotCmd("SETZERO");
-  notice($("zStat2").textContent);
   $("zStat2").textContent = r.startsWith("OK")
-    ? "zero set — this pose is now the robot's home (90° per joint)"
+    ? "zero set — this pose is now the robot's home. Your start angles are unchanged."
     : ("failed: " + r);
-  notice($("zStat2").textContent);
+  if (!r.startsWith("OK")) notice($("zStat2").textContent);
 }
 
 // ------- monitor mode: the 3D model follows the REAL robot
@@ -3886,6 +4614,9 @@ function liveChanged() {
 function monitorChanged() {
   if ($("monChk").checked) {
     $("liveChk").checked = false;
+    // Same trap as livePause: a show started while Live was ticked belongs to
+    // the HUB's clock, and switching this page to watching must end it.
+    hubStop();
     playing = false; $("playBtn").textContent = "▶ Play";
     monTimer = setInterval(monitorTick, 350);
     $("robotStat").textContent = "monitoring…";
@@ -3914,8 +4645,7 @@ async function monitorTick() {
     notice($("robotStat").textContent);
   }
 }
-
-// ---------------------------------------------------------------- main loop
+// --- main loop ---
 function resize() {
   const w = viewport.clientWidth, h = viewport.clientHeight;
   renderer.setSize(w, h);
@@ -4124,8 +4854,7 @@ function runServoSelfTest() {
     : `SERVO PASS slowJointStretched=${fastElbow}->${slowElbow}ms otherMoveUnchanged=${shAfter}ms presets=perGroup travel=ok frameRate=default50`;
   console.log(document.title);
 }
-
-// ---------------------------------------------------------------- boot
+// --- boot ---
 renderRigUI();
 buildRobot();
 showTab("pose");   // open on what you do first, not on setup
@@ -4166,8 +4895,20 @@ requestAnimationFrame((t) => { lastFrame = t; tick(t); });
   const addr = at >= 0 ? dev.slice(0, at) : dev;
   window.HUB_PEER = peer;          // every command adds it back on
 
-  if (addr.indexOf("usb:") === 0) {
-    const bits = addr.slice(4).split(":");
+  // A dev can also name ANOTHER PC: hub:10.0.0.5/usb:COM7 is COM7 on that
+  // machine, not this one. Split the prefix off the same way the peer is, or
+  // the tests below never match and Studio drives a LOCAL port with the same
+  // name — the wrong robot, silently.
+  let via = "";
+  let inner = addr;
+  if (inner.indexOf("hub:") === 0) {
+    const slash = inner.indexOf("/");
+    if (slash > 0) { via = inner.slice(0, slash + 1); inner = inner.slice(slash + 1); }
+  }
+  window.HUB_VIA = via;            // every command puts it back on
+
+  if (inner.indexOf("usb:") === 0) {
+    const bits = inner.slice(4).split(":");
     $("connSel").value = "usb";
     if (bits[1]) $("busId").value = bits[1];
     connModeChanged();
@@ -4180,8 +4921,8 @@ requestAnimationFrame((t) => { lastFrame = t; tick(t); });
       }
       return connectRobot();
     }).then(startMonitor);
-  } else if (qp.get("ip") || addr.indexOf("wifi:") === 0) {
-    $("robotIp").value = qp.get("ip") || addr.slice(5);
+  } else if (qp.get("ip") || inner.indexOf("wifi:") === 0) {
+    $("robotIp").value = qp.get("ip") || inner.slice(5);
     connectRobot().then(startMonitor);
   }
   // IK self-test (open with ?selftest=ik): drives the SAME solver that
@@ -4335,4 +5076,83 @@ function runElbowSelfTest() {
   const elbowUntouched = Math.abs(pose[2] - before[2]) + Math.abs(pose[3] - before[3]) < 0.1;
   pose = [...RIG.neutral]; poseChanged(false);
   document.title = `ELBOW ${err < 8 && shMoved && elbowUntouched ? "PASS" : "FAIL"} err=${err.toFixed(1)}mm shoulderMoved=${shMoved} elbowJointsUntouched=${elbowUntouched}`;
+}
+
+// ---- Login Overlay System ----
+function getAccounts() {
+  try {
+    const acc = JSON.parse(localStorage.getItem('nongAccounts'));
+    if (acc && typeof acc === 'object') return acc;
+  } catch (e) {}
+  return { 'super_admin': 'admin123', 'admin': 'admin123' };
+}
+function saveAccounts(acc) {
+  localStorage.setItem('nongAccounts', JSON.stringify(acc));
+}
+function appLogin() {
+  const u = $("loginUser").value.trim();
+  const p = $("loginPass").value;
+  const acc = getAccounts();
+  if (acc[u] && acc[u] === p) {
+    currentUser = u;
+    $("loginPass").value = "";
+    $("loginStat").textContent = "";
+    showTab(sideTab);
+    localStorage.setItem("nongZeroCred", JSON.stringify({ user: u, pass: p }));
+    window.dispatchEvent(new Event('resize'));
+    if (pendingConnect) {
+      const pending = pendingConnect;
+      pendingConnect = null;
+      connectRobot().then(pending.resolve, pending.reject);
+    }
+  } else {
+    $("loginStat").textContent = "Invalid username or password.";
+  }
+}
+function populateUserList() {
+  const list = $("muList");
+  if (!list) return;
+  list.innerHTML = '<option value="">New User...</option>';
+  const acc = getAccounts();
+  for (const u in acc) {
+    const opt = document.createElement("option");
+    opt.value = u;
+    opt.textContent = u;
+    list.appendChild(opt);
+  }
+}
+function muSelect() {
+  const u = $("muList").value;
+  $("muUser").value = u;
+  $("muPass").value = "";
+  $("muStat").textContent = "";
+}
+function muSave() {
+  const u = $("muUser").value.trim();
+  const p = $("muPass").value;
+  if (!u) { $("muStat").textContent = "Username required."; return; }
+  const acc = getAccounts();
+  if (p) {
+    acc[u] = p;
+  } else if (!acc[u]) {
+    $("muStat").textContent = "Password required for new user."; return;
+  }
+  saveAccounts(acc);
+  $("muStat").textContent = "User saved.";
+  populateUserList();
+  $("muList").value = u;
+}
+function muDelete() {
+  const u = $("muUser").value.trim();
+  if (!u) return;
+  if (u === "super_admin") { $("muStat").textContent = "Cannot delete super_admin."; notice("Cannot delete super_admin."); return; }
+  const acc = getAccounts();
+  if (acc[u]) {
+    delete acc[u];
+    saveAccounts(acc);
+    $("muStat").textContent = "User deleted.";
+    populateUserList();
+    $("muUser").value = "";
+    $("muPass").value = "";
+  }
 }

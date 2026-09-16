@@ -54,7 +54,11 @@ header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14p
 .stage small{display:block;font-size:13px;color:var(--mut);font-weight:400}
 table{width:100%;border-collapse:collapse;font-size:14px}
 td,th{padding:6px var(--sp-2);border-bottom:1px solid var(--line);text-align:left}
-td a{color:var(--acc);text-decoration:none;margin-right:var(--sp-2);cursor:pointer}
+td a,td .linky{color:var(--acc);text-decoration:none;margin-right:var(--sp-2);cursor:pointer}
+/* Deleting a file is an action, not a place, so it is a real button drawn to
+   match the link beside it. As an <a> with no href it answered a click and
+   could not be reached by Tab at all - the file list was mouse-only. */
+td .linky{background:none;border:0;padding:0;font:inherit}
 #log{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--sp-2);height:130px;overflow-y:auto;font:12px/1.5 var(--mono);white-space:pre-wrap;word-break:break-all}
 /* a link light: the word beside it says the same thing, so colour is never
    the only signal */
@@ -82,27 +86,40 @@ a.peer:hover{border-color:var(--acc)}
   pre,#console{font-size:11px}
 }
 @media (max-width:430px){body{padding:9px}}
+header{padding:var(--sp-3) 0;gap:var(--sp-3)}
+#hname{flex:1 1 180px}
+#hnow{margin:var(--sp-3) 0 var(--sp-4)}
+.module-options{display:flex;justify-content:flex-end}
+#modTabs{padding:var(--sp-2);background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg)}
+#modTabs .tab:not(.on){background:transparent;border-color:transparent}
 </style>
 </head>
 <body>
 <header>
   <h1 id="hname">module</h1>
-  <span class="badge">ID <b id="hid">-</b></span>
+  <span class="badge tech">ID <b id="hid">-</b></span>
   <span class="badge">type <b id="htype">-</b></span>
   <!-- Which installation this board belongs to. The hub has a whole screen
        about grouping and the board itself never said which group it was in. -->
   <span class="badge" id="hgroupwrap" hidden>group <b id="hgroup">-</b></span>
   <!-- The first question anyone asks about a board behaving oddly. It was
        only reachable by sending INFO on a console. -->
-  <span class="badge">fw <b id="hfw">-</b></span>
-  <span class="badge">wifi <b id="hwifi">-</b></span>
-  <span class="badge">SD <b id="hsd">-</b></span>
+  <span class="badge tech">fw <b id="hfw">-</b></span>
+  <!-- the address and signal are technical detail now - how you are reached
+       stays on the surface in words in #hnow (A21-2) -->
+  <span class="badge tech">wifi <b id="hwifi">-</b></span>
+  <span class="badge">Storage <b id="hsd">-</b></span>
   <span class="badge"><span class="dot" id="wsdot"></span>live</span>
   <span style="flex:1"></span>
   <!-- The way back. Hidden until it is known to be right - see showHubLink. -->
   <a id="hubBack" class="tab" href="/" hidden>&#8592; back to the hub</a>
-  <button class="primary" id="setupBtn" onclick="setupToggle()">&#9881; Setup / Login</button>
+  <button id="setupBtn" onclick="setupToggle()">Setup / Login</button>
 </header>
+<div class="module-options">    <label style="display:flex;gap:var(--sp-2);align-items:center;font-size:12.5px;
+                  color:var(--mut);cursor:pointer;margin-bottom:var(--sp-2)">
+      <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
+      Show technical details</label>
+</div>
 
 <!-- What it is doing, and how you are reached to it. Both in words, because
      someone standing next to an arm needs to know whether it is about to move
@@ -134,6 +151,7 @@ a.peer:hover{border-color:var(--acc)}
 <div class="grid">
   <div class="card" data-tab="setup" id="loginCard" style="grid-column:1/-1;display:none">
     <h2>Setup login &#128274;</h2>
+
     <div id="loginForm">
       <div class="statline">log in to configure this module — <b>identity, WiFi mode,
         Hardware pins, users, zero calibration</b>. Same over WiFi / USB / RS485.</div>
@@ -152,7 +170,7 @@ a.peer:hover{border-color:var(--acc)}
          same as a board with no login at all. -->
     <div id="mustChangeBox" class="banner err" style="display:none">
       <div>
-        <b>This board still has the password it came with.</b>
+        <b>You are logged in. This board still has the password it came with.</b>
         Every board that has not been changed has the same one, so anyone who
         has seen another board can open this one. Choose a new password to
         unlock Setup.
@@ -200,10 +218,10 @@ a.peer:hover{border-color:var(--acc)}
     <div class="stage"><span id="stg">-</span><small id="stgState">state: -</small></div>
     <div class="row" id="gotoBtns" style="justify-content:center"></div>
     <div class="row" style="justify-content:center">
-      <button onclick="cmd('UP')">&#9650; Up</button>
-      <button onclick="cmd('DOWN')">&#9660; Down</button>
-      <button class="danger" onclick="cmd('STOP')">&#9632; Stop</button>
-      <button onclick="cmd('HOME')">&#8962; Home</button>
+      <button onclick="liftCmd('UP')">&#9650; Up</button>
+      <button onclick="liftCmd('DOWN')">&#9660; Down</button>
+      <button class="danger" onclick="liftCmd('STOP')">&#9632; Stop</button>
+      <button onclick="liftCmd('HOME')">&#8962; Home</button>
     </div>
     <div class="row" style="justify-content:center">
       <span class="lbl">Speed</span>
@@ -218,7 +236,7 @@ a.peer:hover{border-color:var(--acc)}
   </div>
 
   <div class="card" data-tab="control" id="rgbCard">
-    <h2>RGB Strip</h2>
+    <h2>Light strip</h2>
     <div class="row"><span class="lbl">Color</span>
       <input type="color" id="rgbc" value="#0050ff" onchange="sendRgb()">
       <button onclick="sendRgb()">Set</button>
@@ -234,26 +252,11 @@ a.peer:hover{border-color:var(--acc)}
     </div>
   </div>
 
-  <div class="card" data-tab="control" id="audCard">
-    <h2>Speaker</h2>
-    <div class="row">
-      <select id="musicSel" style="flex:1"></select>
-      <button class="primary" onclick="playSel()">&#9658;</button>
-      <button onclick="cmd('PLAY STOP')">&#9632;</button>
-    </div>
-    <div class="row"><span class="lbl">Volume</span>
-      <input type="range" id="vol" min="0" max="100" value="70"
-             oninput="document.getElementById('volNum').value=this.value" onchange="cmd('VOL '+this.value)">
-      <input type="number" id="volNum" min="0" max="100" value="70" style="width:70px"
-             onchange="cmd('VOL '+this.value)">
-    </div>
-    <div class="statline" id="nowPlaying">stopped</div>
-  </div>
 <!--#end-->
 
 <!--#type nong-->
   <div class="card" data-tab="control" id="nongCard" style="grid-column:1/-1">
-    <h2>Nong Arms</h2>
+    <h2>Move the arms</h2>
     <div class="row">
       <span class="lbl">Mode</span>
       <select id="nmode" onchange="nongModeChanged()">
@@ -335,6 +338,39 @@ a.peer:hover{border-color:var(--acc)}
   </div>
 <!--#end-->
 
+  <!-- Speaker: SHARED, not lift-only - nong wires one too since A7-9.
+       showCard() hides it on boards whose caps have no audio. It sits
+       BELOW the arm and lift controls on purpose: the first thing on
+       Move it should be the robot, not the music (user, 2026-09-07). -->
+  <div class="card" data-tab="control" id="audCard">
+    <h2>Speaker</h2>
+    <div class="row">
+      <select id="musicSel" style="flex:1"></select>
+      <button class="primary" onclick="playSel()">&#9658;</button>
+      <button onclick="cmd('PLAY STOP')">&#9632;</button>
+    </div>
+    <div class="row"><span class="lbl">Volume</span>
+      <input type="range" id="vol" min="0" max="100" value="70"
+             oninput="document.getElementById('volNum').value=this.value" onchange="cmd('VOL '+this.value)">
+      <input type="number" id="volNum" min="0" max="100" value="70" style="width:70px"
+             onchange="cmd('VOL '+this.value)">
+    </div>
+    <div class="statline" id="nowPlaying">stopped</div>
+
+    <!-- Live sound from the PC (A24-32/A24-34). Gemini Pro put it here rather
+         than on the hub home: the thing it needs is a robot, and this is the
+         page you are on when you have one. It only works through the hub -
+         the browser sends the sound to the hub, which sends it to the board -
+         so on a board opened by its own address it says so instead of failing. -->
+    <div class="row" style="margin-top:8px">
+      <button class="primary" id="castBtn" onclick="castToggle()">&#127911; Play this PC sound</button>
+      <button id="castMicBtn" onclick="castMic()">&#127908; Talk through the robot</button>
+      <span class="lbl" id="castLevel" style="min-width:64px"></span>
+    </div>
+    <div class="statline" id="castStat">the robot can play whatever this PC is playing</div>
+  </div>
+
+
 <!--#type cam-->
   <div class="card" data-tab="control" id="camCard" style="grid-column:1/-1">
     <h2>Camera</h2>
@@ -346,16 +382,24 @@ a.peer:hover{border-color:var(--acc)}
         <option>qqvga</option><option>qvga</option><option>vga</option>
         <option selected>svga</option><option>xga</option><option>sxga</option><option>uxga</option>
       </select>
-      <span class="lbl">Quality</span>
-      <input type="number" id="camQ" min="10" max="63" value="12" style="width:70px"
-             title="10 = best picture, 63 = smallest file" onchange="cmd('CAM QUALITY '+this.value)">
       <label><input type="checkbox" id="camFlash" onchange="cmd('CAM FLASH '+(this.checked?'ON':'OFF'))"> flash</label>
     </div>
     <div class="row">
-      <label><input type="checkbox" id="camVflip" onchange="cmd('CAM VFLIP '+(this.checked?1:0))"> flip</label>
-      <label><input type="checkbox" id="camHmir" onchange="cmd('CAM HMIRROR '+(this.checked?1:0))"> mirror</label>
       <span class="statline" id="camStat">idle</span>
     </div>
+    <!-- EVERY SETTING THE SENSOR HAS, built from what the board answers to
+         CAM LIST — never a list written here. Adding one is an entry in
+         config/cam_controls.json, and it arrives with its group, its range,
+         its default and whatever it depends on. The four that used to be
+         hardcoded (size, quality, flip, mirror) are among them now. -->
+    <details id="camSetBox" style="margin-top:var(--sp-3)">
+      <summary><b>Settings</b> <span class="mini" id="camSetCount"></span></summary>
+      <div class="row" style="margin-top:var(--sp-2)">
+        <button onclick="camAuto()">↺ Everything back to default</button>
+        <span class="mini" id="camSetStat" aria-live="polite"></span>
+      </div>
+      <div id="camGroups"></div>
+    </details>
     <img id="camImg" alt="the camera's view" style="display:none;max-width:100%;
          border:1px solid var(--line);border-radius:var(--r-md);margin-top:8px">
     <div class="statline">a picture is one frame over HTTP. <b>Take a picture</b> shows it here;
@@ -365,7 +409,7 @@ a.peer:hover{border-color:var(--acc)}
 <!--#end-->
 
   <div class="card" data-tab="files">
-    <h2>Sequences</h2>
+    <h2>Play a saved show</h2>
     <div class="row">
       <select id="moveSel" style="flex:1"></select>
       <button class="primary" onclick="runSel()">Run</button>
@@ -389,10 +433,13 @@ a.peer:hover{border-color:var(--acc)}
   </div>
 
   <div class="card" data-tab="files" style="grid-column:1/-1">
-    <h2>SD Files</h2>
+    <h2>Files on the memory card</h2>
     <div class="row">
+      <!-- The folders a board really uses. /photos is where the camera saves
+           what it takes (CamModule.cpp), and leaving it out meant no picture
+           the robot took could be reached from this page at all. -->
       <select id="dirSel" onchange="loadFiles()">
-        <option>/music</option><option>/moves</option><option>/data</option>
+        <option>/music</option><option>/moves</option><option>/data</option><option>/photos</option>
       </select>
       <input type="file" id="upFile">
       <button onclick="upload()">Upload</button>
@@ -438,6 +485,28 @@ const $=id=>document.getElementById(id);
 let st={},gotoBuilt=-1,W=null;
 
 function log(t){const l=$('log');l.textContent+=t+'\n';l.scrollTop=l.scrollHeight;}
+// WHO refused, in plain words, or '' when nothing did. Two different gates can
+// answer a command and they need different actions from the person: the BOARD
+// wants the Setup login on this page, the HUB wants its own login on the hub
+// page. Both used to be swallowed - the answer went to the technical log and
+// the button looked broken (the Speaker triangle, 2026-09-07).
+function refusal(t){
+  if(!t) return 'the board did not answer. Check it is powered and on the network.';
+  if(t.indexOf('need_login')>=0 || t.indexOf('log in before doing that')>=0)
+    return 'the hub has not let you in yet — log in on the hub page (← back to '
+         + 'the hub), then come back. Or open this board on its own address and '
+         + 'log in here.';
+  if(t.indexOf('log in first')>=0)
+    return 'this board is locked — open Setup & wiring ▸ Setup login and log in, '
+         + 'then try again.';
+  return t.indexOf('ERR')===0 ? t : '';
+}
+// Say it where the person is looking, not only in the log.
+function sayRefusal(where,t){
+  const why=refusal(t);
+  if(where&&$(where)) $(where).textContent = why || $(where).textContent;
+  return why;
+}
 async function cmd(c){
   if(!c)return'';
   try{const r=await fetch('/api/cmd?c='+encodeURIComponent(c));const t=await r.text();log('> '+c+'  ->  '+t);return t;}
@@ -519,6 +588,7 @@ function render(){
   showCard('rgbCard',has('rgb'));
   showCard('audCard',has('audio'));
   showCard('camCard',has('camera'));
+  applyTabs();          // one pass, after the capabilities are known
   if(st.wifi){
     $('hwifi').textContent=st.wifi.mode==='ap'?'AP '+st.wifi.ip:(st.wifi.mode==='sta'?st.wifi.ip+' ('+st.wifi.rssi+'dBm)':'off');
     const wm=(st.wifi.wmode||'on');
@@ -537,6 +607,7 @@ function render(){
   // so ask before calling — this is the one place the page is allowed to be
   // unsure what is in it.
   if(typeof liftStatus==='function')liftStatus(m);
+  if(typeof audioStatus==='function')audioStatus(m);
   if(typeof nongStatus==='function')nongStatus(m,has);
   if(typeof camStatus==='function')camStatus(m);
   if(st.seq)$('seqStat').textContent=st.seq.running?('running '+st.seq.file):'idle';
@@ -544,7 +615,145 @@ function render(){
     st.types.forEach(t=>{const o=document.createElement('option');o.textContent=t;$('setType').appendChild(o);});
 }
 // a card belonging to another module type is absent in a per-type build
-function showCard(id,on){const e=$(id);if(e)e.style.display=on?'':'none';}
+// A card the board CAN use. It only records the fact - applyTabs() is the one
+// place that decides what is on screen. It used to write display directly, and
+// render() runs on every status push (twice a second), so every card the board
+// supports came back on whichever tab you had open half a second after you
+// switched: Setup and Shows both showed the arm controls (user, 2026-09-07).
+function showCard(id,on){
+  const e=$(id);
+  if(!e)return;
+  e.dataset.cap = on ? '1' : '0';
+}
+// ---- speaker: SHARED — lift and nong both wire one (A7-9) ------------------
+function audioStatus(m){
+  if(!m.audio)return;
+  $('nowPlaying').textContent=(m.audio.playing?('playing '+m.audio.file):'stopped')+' | vol '+m.audio.vol;
+  castHealth(m.audio);   // the board's own word on the live sound
+  if(document.activeElement.id!=='vol')$('vol').value=m.audio.vol;
+  if(document.activeElement.id!=='volNum')$('volNum').value=m.audio.vol;
+}
+// ---- live sound from this PC (A24-32) ------------------------------------
+// The browser captures what the PC is playing, downsamples it to the rate the
+// board plays at, and posts it to the HUB, which paces it out as UDP. The
+// board never decodes anything and never touches its SD card, so this works
+// even on a board whose card is out.
+//
+// The hub routes are called on location.origin on purpose: the shim that makes
+// this page work through the hub rewrites every '/api/' string into '/api/dev/',
+// which is right for board commands and wrong for these.
+var castOn=false,castCtx=null,castStream=null,castNode=null,castRate=22050,castMisses=0,castWhat='';
+function castDev(){ return new URLSearchParams(location.search).get('dev')||''; }
+// Two sources, one pipe. THE PICKER CANNOT BE AVOIDED for the PC's own sound:
+// Chrome and Edge on Windows only hand over system audio together with a screen
+// or a tab, and getDisplayMedia with audio alone is refused (user asked why,
+// 2026-09-07). The microphone has no such rule, which is why talking through
+// the robot is its own button and asks for nothing but the microphone.
+async function castToggle(){ return castStart('pc'); }
+async function castMic(){ return castStart('mic'); }
+async function castStart(how){
+  if(castOn){ castStop('stopped - the robot is quiet again'); return; }
+  if(!castDev()){
+    $('castStat').textContent='this one needs the hub: open this module from the '
+      +'hub page and the button works. The sound goes PC to hub to robot.';
+    return;
+  }
+  try{
+    castStream = how==='mic'
+      ? await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,
+                                                          noiseSuppression:true}})
+      : await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
+  }catch(e){
+    $('castStat').textContent = how==='mic'
+      ? 'the browser did not give the microphone. Press it again and choose Allow.'
+      : 'the browser did not share the sound. Press the button again, pick a '
+        +'screen or a tab, and tick SHARE AUDIO in that window.';
+    return;
+  }
+  // The picture is not wanted and never was: stop the video track at once, so
+  // nothing is captured beyond the sound and the browser's sharing bar goes.
+  castStream.getVideoTracks().forEach(t=>t.stop());
+  if(!castStream.getAudioTracks().length){
+    castStop(how==='mic' ? 'that microphone gave no sound'
+                         : 'no sound in what was shared - start again and tick SHARE AUDIO in the picker');
+    return;
+  }
+  castWhat = how==='mic' ? 'your microphone' : 'this PC sound';
+  var said={};
+  try{
+    const r=await fetch(location.origin+'/api/stream/start',{method:'POST',
+      body:JSON.stringify({dev:castDev(),rate:castRate,name:castWhat})});
+    said=await r.json();
+    if(!r.ok||!said.ok) throw new Error(said.error||('the hub answered '+r.status));
+  }catch(e){
+    castStop(refusal(JSON.stringify(said))||('could not start it: '+(e.message||e)));
+    return;
+  }
+  castCtx=new AudioContext({sampleRate:castRate});
+  const src=castCtx.createMediaStreamSource(castStream);
+  castNode=castCtx.createScriptProcessor(2048,1,1);
+  castNode.onaudioprocess=e=>{
+    const f=e.inputBuffer.getChannelData(0);
+    const pcm=new Int16Array(f.length);
+    let peak=0;
+    for(let i=0;i<f.length;i++){
+      const v=Math.max(-1,Math.min(1,f[i]));
+      if(v>peak)peak=v;
+      pcm[i]=v*32767;
+    }
+    $('castLevel').textContent='|'.repeat(Math.round(peak*8));
+    // A dropped chunk is not worth a message - the next one is 46 ms away -
+    // but a pipe that has stopped taking anything IS, or the page sits there
+    // showing a moving level bar while the robot is silent.
+    fetch(location.origin+'/api/stream/feed',{method:'POST',body:pcm.buffer})
+      .then(r=>{ castMisses = r.ok ? 0 : castMisses+1;
+                 if(castMisses===10) $('castStat').textContent=
+                   'the hub stopped taking the sound - press Stop and start it again'; })
+      .catch(()=>{ if(++castMisses===10) $('castStat').textContent=
+                   'the hub is not answering - press Stop and start it again'; });
+  };
+  src.connect(castNode); castNode.connect(castCtx.destination);
+  // the browser's own stop-sharing button must end it too, or the page says it
+  // is playing while nothing is being sent
+  castStream.getAudioTracks()[0].onended=()=>castStop('sharing ended - the robot is quiet again');
+  castOn=true;
+  $(how==='mic'?'castMicBtn':'castBtn').textContent='Stop';
+  $('castStat').textContent='the robot is playing '+castWhat;
+}
+function castStop(why){
+  castOn=false;
+  // Teardown: an already-closed piece is not worth a line on screen, but it
+  // goes in the technical log rather than nowhere - an empty catch is how the
+  // four bugs check_modsite_errors was written for got in.
+  try{ if(castNode)castNode.disconnect(); }catch(e){ log('! cast: '+e); }
+  try{ if(castCtx)castCtx.close(); }catch(e){ log('! cast: '+e); }
+  try{ if(castStream)castStream.getTracks().forEach(t=>t.stop()); }catch(e){ log('! cast: '+e); }
+  castNode=castCtx=castStream=null;
+  fetch(location.origin+'/api/stream/stop',{method:'POST'})
+    .catch(()=>{ $('castStat').textContent='stopped here, but the hub did not '
+      +'confirm it. If the robot is still playing, press Stop again.'; });
+  $('castBtn').innerHTML='&#127911; Play this PC sound';
+  $('castMicBtn').innerHTML='&#127908; Talk through the robot';
+  $('castLevel').textContent='';
+  if(why)$('castStat').textContent=why;
+}
+// What the board itself says about the live sound, in words rather than
+// counters: a designer needs to know it is arriving and whether it is breaking
+// up, not how many datagrams landed.
+function castHealth(a){
+  if(!castOn||!a||!a.stream)return;
+  const s=a.stream;
+  if(!s.on)return;
+  const bad=(s.underruns||0);
+  $('castStat').textContent = bad>2
+    ? 'the sound is breaking up - the WiFi is struggling (' + bad + ' gaps so far)'
+    : 'the robot is playing '+castWhat;
+}
+async function playSel(){
+  const v=$('musicSel').value;
+  if(!v){$('nowPlaying').textContent='choose a track first — upload one in Shows & files if the list is empty';return;}
+  sayRefusal('nowPlaying', await cmd('PLAY '+v));
+}
 //#type lift
 // ---- lift: stages, travel speed, RGB strip, speaker ------------------------
 function liftStatus(m){
@@ -564,27 +773,33 @@ function liftStatus(m){
     gotoBuilt=gk;const g=$('gotoBtns');g.innerHTML='';
     for(let i=0;i<m.stages;i++){
       if(!m.enc&&i>0&&i<m.stages-1)continue; // no encoder: endpoints only
-      const b=document.createElement('button');b.textContent=i;b.onclick=()=>cmd('GOTO '+i);g.appendChild(b);
+      const b=document.createElement('button');b.textContent=i;b.onclick=()=>liftCmd('GOTO '+i);g.appendChild(b);
     }
   }
   if(m.rgb&&document.activeElement.id!=='rgbb'){$('rgbb').value=m.rgb.bright;}
   if(m.rgb&&document.activeElement.id!=='rgbe'){$('rgbe').value=m.rgb.effect;}
-  if(m.audio){
-    $('nowPlaying').textContent=(m.audio.playing?('playing '+m.audio.file):'stopped')+' | vol '+m.audio.vol;
-    if(document.activeElement.id!=='vol')$('vol').value=m.audio.vol;
-    if(document.activeElement.id!=='volNum')$('volNum').value=m.audio.vol;
-  }
 }
-function setSpeed(){
+// The lift's own buttons, with the answer shown. They threw it away, so on a
+// board that wants a login they did nothing and said nothing - the same fault
+// the Speaker triangle had (A24-27), found again by the panel on this card.
+async function liftCmd(c){
+  const r = await cmd(c);
+  const why = refusal(r);
+  $('stgState').textContent = why || ('state: ' + r.replace(/^OK ?/, ''));
+}
+async function setSpeed(){
   const v=$('spdVal').value;
-  if(!v)return;
-  cmd($('spdUnit').value==='ms'?('SPEED '+v+' MS'):('SPEED '+v));
+  // An empty box used to return in silence: a button that does nothing, with
+  // nothing said (panel finding, verified 2026-09-08).
+  if(!v){$('spdInfo').textContent='type a speed first, then press Set';return;}
+  const r=await cmd($('spdUnit').value==='ms'?('SPEED '+v+' MS'):('SPEED '+v));
+  const why=refusal(r);
+  if(why)$('spdInfo').textContent=why;
 }
 function sendRgb(){
   const h=$('rgbc').value;
   cmd('RGB '+parseInt(h.substr(1,2),16)+' '+parseInt(h.substr(3,2),16)+' '+parseInt(h.substr(5,2),16));
 }
-function playSel(){const v=$('musicSel').value;if(v)cmd('PLAY '+v);}
 //#end
 //#type nong
 // ---- nong: joints, kinematics readout, servo setup -------------------------
@@ -689,8 +904,12 @@ async function savePair(){
   // 2-ESP pairing rebooted the humanoid mid-session with the OLD leader/partner
   // setting and told the user it had saved.
   if(!r1||!r2||r1.startsWith('ERR')||r2.startsWith('ERR')){
+    // What the board actually said, HERE. It used to send people to the console
+    // "below", which lives on the Shows and files tab - a fix you cannot reach
+    // from the card you are standing on (panel finding, verified 2026-09-08).
+    const why = refusal(r1) || refusal(r2) || [r1, r2].filter(x=>x).join(' / ');
     alert('These settings were NOT saved, so the board has not been restarted.\n\n'
-         +'Check the console below for what the module said, then try again.');
+         + (why || 'the board did not answer') + '\n\nFix that, then press Save again.');
     return;
   }
   await cmd('REBOOT');
@@ -772,6 +991,149 @@ function camUrl(path){
   return dev ? ('/api/dev/'+path+'?dev='+encodeURIComponent(dev))
              : ('/api/'+path);
 }
+// ---- the settings panel, built from CAM LIST ------------------------------
+// Nothing about which settings exist is written here. The board answers one
+// line per control with its value, kind, range, default, group and what it
+// depends on, so a control added to config/cam_controls.json appears with no
+// change to this page.
+const CAM_GROUPS=[['basic','Picture'],['exposure','Exposure'],
+                  ['colour','Colour'],['advanced','Advanced']];
+let camCtl={};                       // name -> the line the board sent
+let camAsked=false;                  // the panel is read once, when it can be
+
+function camParse(text){
+  const out={};
+  (text||'').split('\n').forEach(function(ln){
+    const m=ln.match(/^(\w+)=(-?\d+)\s+(\w+)\s+(-?\d+)\.\.(-?\d+)\s+def=(-?\d+)(.*)$/);
+    if(!m) return;
+    const rest=m[7]||'';
+    const grab=function(k){ const g=rest.match(new RegExp(k+'=([^ ]+)')); return g?g[1]:''; };
+    // `label` and `choices` run to the end of their own word list, so they are
+    // taken from the raw tail rather than by the single-word grab above.
+    const lab=rest.match(/ label=([^=]*?)(?: (?:missing|needs|choices)=|$)/);
+    const cho=rest.match(/ choices=(.*)$/);
+    out[m[1]]={name:m[1],value:+m[2],kind:m[3],lo:+m[4],hi:+m[5],def:+m[6],
+               group:grab('group')||'advanced',
+               label:(lab?lab[1]:m[1]).trim(),
+               missing:/ missing=1/.test(rest),
+               needs:grab('needs'),
+               choices:cho?cho[1].trim().split(/\s+/):[]};
+  });
+  return out;
+}
+
+// Is a control's condition met right now? "aec=0" means it only applies while
+// auto exposure is off — the slider is shown either way, disabled and saying
+// why, because hiding it makes people hunt for a control that is right there.
+function camNeedsMet(c){
+  if(!c.needs) return true;
+  const p=c.needs.split('='); const other=camCtl[p[0]];
+  return !other || String(other.value)===p[1];
+}
+
+function camDraw(){
+  const box=$('camGroups'); if(!box) return;
+  box.innerHTML='';
+  const names=Object.keys(camCtl);
+  $('camSetCount').textContent=names.length?('· '+names.length+' settings'):'';
+  CAM_GROUPS.forEach(function(g){
+    const mine=names.filter(function(n){ return camCtl[n].group===g[0]; });
+    if(!mine.length) return;
+    const h=document.createElement('h3');
+    h.textContent=g[1]; h.style.margin='var(--sp-3) 0 var(--sp-1)';
+    box.appendChild(h);
+    mine.forEach(function(n){ box.appendChild(camRow(camCtl[n])); });
+  });
+}
+
+function camRow(c){
+  const row=document.createElement('div');
+  row.className='row';
+  const lab=document.createElement('label');
+  lab.className='lbl'; lab.style.minWidth='150px';
+  lab.textContent=c.label; lab.htmlFor='camc_'+c.name;
+  row.appendChild(lab);
+
+  let input;
+  if(c.kind==='toggle'){
+    input=document.createElement('input');
+    input.type='checkbox'; input.checked=!!c.value;
+  }else if(c.kind==='choice'){
+    input=document.createElement('select');
+    c.choices.forEach(function(name,i){
+      const o=document.createElement('option');
+      o.value=String(c.lo+i); o.textContent=name;
+      if(c.lo+i===c.value) o.selected=true;
+      input.appendChild(o);
+    });
+  }else{
+    input=document.createElement('input');
+    input.type='range'; input.min=c.lo; input.max=c.hi; input.value=c.value;
+    input.style.flex='1 1 120px';
+  }
+  input.id='camc_'+c.name;
+  const out=document.createElement('span');
+  out.className='mini'; out.style.minWidth='34px';
+  out.textContent=c.kind==='range'?String(c.value):'';
+  input.oninput=function(){ if(c.kind==='range') out.textContent=input.value; };
+  input.onchange=function(){
+    const v=c.kind==='toggle'?(input.checked?1:0):input.value;
+    camSet(c.name,v);
+  };
+  row.appendChild(input);
+  row.appendChild(out);
+
+  // Why it cannot be touched — never a control that is simply dead.
+  const why=document.createElement('span');
+  why.className='mini';
+  if(c.missing){
+    input.disabled=true;
+    why.textContent='this sensor does not have it';
+  }else if(!camNeedsMet(c)){
+    input.disabled=true;
+    const p=c.needs.split('=');
+    why.textContent='needs '+((camCtl[p[0]]||{}).label||p[0])
+                   +' '+(p[1]==='0'?'off':'on');
+  }
+  row.appendChild(why);
+  return row;
+}
+
+async function camLoad(){
+  const box=$('camSetBox'); if(!box) return;
+  try{
+    const txt=await cmd('CAM LIST');
+    if(!txt || txt.indexOf('ERR')===0){
+      $('camSetStat').textContent=txt||'no answer';
+      return;
+    }
+    camCtl=camParse(txt);
+    camDraw();
+    $('camSetStat').textContent='';
+  }catch(e){ $('camSetStat').textContent='could not read the settings'; }
+}
+
+async function camSet(name,v){
+  $('camSetStat').textContent='';
+  try{
+    const r=await cmd('CAM SET '+name+' '+v);
+    if(String(r).indexOf('ERR')===0){ $('camSetStat').textContent=r; return; }
+    if(camCtl[name]) camCtl[name].value=+v;
+    // A control others depend on has just changed, so the ones waiting on it
+    // become usable (or stop being) — redraw rather than leaving them lying.
+    camDraw();
+  }catch(e){ $('camSetStat').textContent='the board did not answer'; }
+}
+
+async function camAuto(){
+  $('camSetStat').textContent='putting everything back…';
+  try{
+    const r=await cmd('CAM AUTO');
+    $('camSetStat').textContent=r||'';
+    await camLoad();
+  }catch(e){ $('camSetStat').textContent='the board did not answer'; }
+}
+
 function camLiveToggle(){
   const img=$('camImg');
   // The board has ONE frame buffer without PSRAM, and take() reclaims whatever
@@ -788,8 +1150,13 @@ function camLiveToggle(){
   if($('camLive').checked){
     camSay('live…',3000);
     img.style.display='';
+    // Several people CAN watch now: the hub holds one connection to the board
+    // and feeds every viewer from it (main_python/cam_relay.py). What is left
+    // is the board being unreachable or the sensor being unplugged, so the
+    // message says that instead of blaming another viewer.
     img.onerror=()=>camSay(
-      'the live view stopped — someone else may be watching (one at a time)',15000);
+      'the live view stopped — the camera stopped answering. Check it is '
+      +'powered and on the network, then turn the live view on again',15000);
     img.src=camUrl('cam.stream')+(camUrl('cam.stream').indexOf('?')<0?'?':'&')+'t='+Date.now();
   }else{
     // Dropping the src is what closes the connection, and the board only
@@ -807,8 +1174,12 @@ function camStatus(m){
     return;
   }
   if(m.size&&document.activeElement.id!=='camSize')$('camSize').value=m.size;
-  if(m.quality&&document.activeElement.id!=='camQ')$('camQ').value=m.quality;
   if(m.flash!==undefined)$('camFlash').checked=!!m.flash;
+  // The settings are read ONCE, the first time the camera is working. They do
+  // not arrive in the status push (two dozen values twice a second is a lot of
+  // traffic to tell somebody nothing changed), and a control this page did not
+  // change does not change by itself.
+  if(!camAsked){ camAsked=true; camLoad(); }
   // The idle line is the LEAST important thing this element ever shows, so it
   // waits until whatever is being held has had its time on screen.
   if(Date.now()>camHold&&m.shots!==undefined)
@@ -825,7 +1196,8 @@ function applyTabs(){
   document.querySelectorAll('[data-tab]').forEach(el=>{
     const right = el.dataset.tab === modTab;
     const allowed = !el.classList.contains('setupCard') || !!auth;
-    el.style.display = (right && allowed) ? '' : 'none';
+    const canDo = el.dataset.cap !== '0';   // this board has no such hardware
+    el.style.display = (right && allowed && canDo) ? '' : 'none';
   });
   // the login card itself lives on Setup and shows whether or not you are in
   const lc=$('loginCard'); if(lc && modTab==='setup') lc.style.display='';
@@ -933,43 +1305,61 @@ function showHubLink(st){
 
 async function doLogin(){
   const u=$('liUser').value.trim(),p=$('liPass').value;
-  const r=await cmd('AUTH '+u+' '+p);
-  if(r.startsWith('OK') && !viaHub()){
-    // Talking to the board directly: ask for a SESSION. Without this the page
-    // would look logged in and then be refused by every route that changes
-    // something — the cards would open and nothing behind them would work.
-    try{
-      const s=await fetch('/api/login',{method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:'user='+encodeURIComponent(u)+'&pass='+encodeURIComponent(p)});
-      if(!s.ok){ $('liStat').textContent='the board refused that login'; return; }
-      // If the answer cannot be read, ASK for a password rather than not.
-      // Swallowing this left mustChange false, so a board still carrying the
-      // shipped password quietly stopped asking anyone to change it - the
-      // prompt turning itself off is the one failure mode that matters here.
-      // Being asked once too often is recoverable; not being asked is not.
-      try{ mustChange = (await s.json()).mustChange === true; }
-      catch(e){ mustChange = true; }
-    }catch(e){ $('liStat').textContent='could not reach the board to log in'; return; }
-  }
-  if(r.startsWith('OK') && mustChange){
-    // Logged in, but this board has never had a password chosen. Do not open
-    // Setup: ask for one first. Everything else stays exactly as it was.
-    auth={user:u,pass:p};
-    $('loginForm').style.display='none';
-    $('mustChangeBox').style.display='';
-    $('liWho').textContent=u;$('liPass').value='';
-    return;
-  }
-  if(r.startsWith('OK')){
+  if(viaHub()){
+    // Through the hub there is no board HTTP session - holding the cable IS
+    // the access. AUTH checks the pair against the board's own accounts over
+    // the wire, where the web gate does not apply.
+    const r=await cmd('AUTH '+u+' '+p);
+    if(!r.startsWith('OK')){
+      // The HUB can refuse before the board ever sees the password, and saying
+      // "wrong user or password" for that sent people to change a password
+      // that was right (2026-09-07). Name the gate that actually said no.
+      $('liStat').textContent = refusal(r) || 'wrong user or password';
+      return;
+    }
     auth={user:u,pass:p};
     $('loginForm').style.display='none';$('usersBox').style.display='';
     $('liWho').textContent=u;$('liPass').value='';
-    applyTabs();
-    $('setupBtn').textContent='⚙ Setup (open)';
-    loadUsers();
-    loadPins(); // build the pin pickers now that the card is visible
-  }else{$('liStat').textContent='wrong user or password';}
+    applyTabs();$('setupBtn').textContent='⚙ Setup (open)';
+    loadUsers();loadPins();
+    return;
+  }
+  // Direct: ONE call to the board's own gate. The old flow first ran the AUTH
+  // command over /api/cmd, which needed AUTH open to strangers before any
+  // login - an unlimited guessing hole (A22-1, 2026-08-25). /api/login
+  // verifies the same accounts server-side and answers a wrong name exactly
+  // like a wrong password.
+  let s;
+  try{
+    s=await fetch('/api/login',{method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:'user='+encodeURIComponent(u)+'&pass='+encodeURIComponent(p)});
+    // If the answer cannot be read, ASK for a password rather than not.
+    // Swallowing this left mustChange false, so a board still carrying the
+    // shipped password quietly stopped asking anyone to change it - being
+    // asked once too often is recoverable; not being asked is not.
+    try{ mustChange = (await s.json()).mustChange === true; }
+    catch(e){ mustChange = true; }
+  }catch(e){ $('liStat').textContent='could not reach the board to log in'; return; }
+  if(!s.ok){ $('liStat').textContent='wrong user or password'; return; }
+  auth={user:u,pass:p};
+  $('liWho').textContent=u;$('liPass').value='';
+  if(mustChange){
+    // This board has never had a password chosen. Do not open Setup: ask for
+    // one first. SAY THE LOGIN WORKED though - a red box and no other word
+    // read as a refused login, and people went off to hunt a password that
+    // was right all along (2026-09-07).
+    $('loginForm').style.display='none';
+    $('mustChangeBox').style.display='';
+    $('liStat').textContent='logged in as '+u+' — one more step: choose a '
+      +'password for this board, then Setup opens.';
+    return;
+  }
+  $('loginForm').style.display='none';$('usersBox').style.display='';
+  applyTabs();
+  $('setupBtn').textContent='⚙ Setup (open)';
+  loadUsers();
+  loadPins(); // build the pin pickers now that the card is visible
 }
 function doLogout(){
   // End the session on the BOARD too, not just in this tab. A logout that
@@ -1014,10 +1404,29 @@ async function addUser(){
 async function changeMyPass(){
   if(!auth)return;
   const np=$('pwNew').value;
-  if(!np){$('userStat').textContent='enter a new password';return;}
+  if(np.length<8){$('userStat').textContent='at least 8 characters';return;}
   const r=await cmd('USER PASS '+auth.user+' '+auth.pass+' '+np);
-  if(r.startsWith('OK'))auth.pass=np;
-  $('userStat').textContent=r;$('pwNew').value='';
+  if(!r.startsWith('OK')){
+    $('userStat').textContent=refusal(r)||r.replace(/^ERR ?/,'')||'the board refused it';
+    return;
+  }
+  auth.pass=np; $('pwNew').value='';
+  // THE PASSWORD JUST ENDED THIS SESSION. doFirstChange has logged in again
+  // since the day that bit it; this one did not, so Setup stayed open on a
+  // dead session and every action behind it was refused with nothing saying
+  // why (panel finding, verified 2026-09-08).
+  if(viaHub()){ $('userStat').textContent='password changed'; return; }
+  try{
+    const s2=await fetch('/api/login',{method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:'user='+encodeURIComponent(auth.user)+'&pass='+encodeURIComponent(np)});
+    $('userStat').textContent = s2.ok
+      ? 'password changed, and you are still logged in'
+      : 'The password was changed, but signing back in failed. Log in again with the new one.';
+  }catch(e){
+    $('userStat').textContent='The password was changed, but this page could not '
+      +'sign back in. Log in again with the new one.';
+  }
 }
 async function delUser(u){
   if(!auth||!confirm('Delete user '+u+'?'))return;
@@ -1055,20 +1464,28 @@ async function loadFiles(){
       const td2=document.createElement('td');td2.textContent=(f.s/1024).toFixed(1)+' kB';
       const td3=document.createElement('td');
       const g=document.createElement('a');g.href='/api/download?path='+encodeURIComponent(p);g.textContent='get';
-      const d=document.createElement('a');d.textContent='del';
+      const d=document.createElement('button');d.textContent='del';d.className='linky';
+      d.title='delete '+f.n+' from the SD card';
       d.onclick=async()=>{
         // Name the exact file. "Delete?" on its own tells the reader nothing,
         // and this cannot be undone — the card may be the only copy.
         if(!confirm('Delete "'+p+'" from this module\'s SD card?\n\n'
                    +'This cannot be undone. If this is the only copy of that '
                    +'sequence, it is gone.'))return;
-        log(await (await fetch('/api/delete?path='+encodeURIComponent(p))).text());
+        // A network error here must still SAY something, or a click that did
+        // nothing looks like a deleted file.
+        try{
+          log(await (await fetch('/api/delete?path='+encodeURIComponent(p))).text());
+        }catch(e){ log('could not reach the board to delete '+p+' - it may still be there'); }
         refreshLists();
       };
       td3.appendChild(g);td3.appendChild(d);
       tr.appendChild(td1);tr.appendChild(td2);tr.appendChild(td3);
       tb.appendChild(tr);
     });
+    if(!fs.length)tb.innerHTML='<tr><td colspan="3" class="statline">'
+      +'This folder on the card is empty. Upload a file, or press refresh.'
+      +'</td></tr>';
   }catch(e){
     // An empty catch made 'could not ask' look identical to 'nothing there'.
     // The element is fileTbl's tbody — the same one the success path fills at
@@ -1089,15 +1506,23 @@ async function upload(){
   $('upStat').textContent='uploading...';
   try{
     const r=await fetch('/api/upload?dir='+$('dirSel').value,{method:'POST',body:fd});
-    $('upStat').textContent=r.ok?'done':'failed ('+await r.text()+')';
+    const said=await r.text();
+    // A24-33: this used to print the raw answer - failed ({ok:false,error:HTTP
+    // Error 401: Unauthorized}) - which names no fix and is not a sentence
+    // anyone should have to read on a screen made for designers.
+    $('upStat').textContent = r.ok ? ('added ' + f.name + ' to ' + $('dirSel').value)
+                                   : (refusal(said) || ('could not put the file on the card: ' + said));
     refreshLists();
-  }catch(e){$('upStat').textContent='failed';}
+  }catch(e){$('upStat').textContent='the file did not reach the board — check it is still connected, then try again.';}
 }
 function refreshLists(){loadFiles();loadList('/music','musicSel');loadList('/moves','moveSel');}
 async function loadPeers(){
+  // Looked up OUTSIDE the try: the catch below says what went wrong, and a
+  // lookup inside would make the catch itself throw on its own name.
+  const g=$('peerList');
   try{
     const r=await fetch('/api/peers');const ps=await r.json();
-    const g=$('peerList');g.innerHTML='';
+    g.innerHTML='';
     ps.forEach(p=>{
       const el=document.createElement(p.self?'span':'a');
       el.className='peer'+(p.self?' self':'');
@@ -1134,12 +1559,26 @@ async function saveSettings(){
   // "no spaces" placeholder was covering for it.
   // The password is quoted too: parse() unquotes it, so a password with a
   // trailing space survives instead of being trimmed away.
-  if(ssid)reps.push(await cmd('SET WIFI "'+ssid.replace(/"/g,'')+'" "'+
-                              pass.replace(/"/g,'')+'"'));
+  // A PASSWORD ON ITS OWN IS A REAL CHANGE. This used to send nothing unless
+  // the NAME box was filled, so somebody retyping only the password saved
+  // nothing and was told everything was saved (panel finding, verified
+  // 2026-09-08). The board needs both in one command, so the name it is
+  // already on is used when the box is left empty.
+  const netNow = (st.wifi && st.wifi.ssid) || '';
+  const netUse = ssid || (pass ? netNow : '');
+  if(!ssid && pass && !netNow){
+    reps.push('ERR this board has no network yet - type the network name too');
+  }else if(netUse){
+    reps.push(await cmd('SET WIFI "'+netUse.replace(/"/g,'')+'" "'+
+                        pass.replace(/"/g,'')+'"'));
+  }
   const sr=$('setRadio');
   if(sr.dataset.touched&&sr.value)reps.push(await cmd('SET WIFI '+sr.value));  // ON | AP | OFF
   if(reps.some(r=>r.startsWith('ERR')||r==='')){
-    alert('Some settings were NOT saved - check the console. Not rebooting.');
+    const bad = reps.map(refusal).filter(x=>x)[0]
+             || reps.filter(r=>r.startsWith('ERR')).join(' / ');
+    alert('Some settings were NOT saved, so the board has not been restarted.\n\n'
+         + (bad || 'the board did not answer') + '\n\nFix that, then press Save again.');
     return;
   }
   await cmd('REBOOT');
@@ -1148,26 +1587,30 @@ async function saveSettings(){
 // ---- hardware pin map ----
 // Only the groups this build carries: the board's own PIN? answer lists no
 // other type's pins either, so a tab for them would be empty.
-const PIN_GROUPS={bus:'RS485 bus',sd:'microSD card',
+const PIN_GROUPS={bus:'RS485 bus',sd:'microSD card',audio:'Speaker',
 //#type lift
-  lift:'Lift (motor / encoder / limits)',audio:'I2S speaker',
+  lift:'Lift (motor / encoder / limits)',
 //#end
 //#type nong
   nong:'Nong servos',
 //#end
 };
 // which module type each pin group belongs to ("core" = shown for every type).
-// SD + RS485 (bus) are on every module; the I2S speaker (audio) and RGB strip
-// are lift-only hardware, so the audio pins show only under the lift tab.
-const GROUP_TYPE={bus:'core',sd:'core',
+// SD + RS485 (bus) are on every module; the speaker (audio) is wired on lift
+// AND nong (A7-9) — a group may be an ARRAY of types. cam/blank have neither.
+const GROUP_TYPE={bus:'core',sd:'core',audio:['lift','nong'],rgb:'lift',
 //#type lift
-  lift:'lift',audio:'lift',
+  lift:'lift',
 //#end
 //#type nong
   nong:'nong',
 //#end
 };
+function pinGroupTypes(g){const v=GROUP_TYPE[g];
+  if(!v||v==='core')return null;             // core shows under every tab
+  return Array.isArray(v)?v:[v];}
 const GROUP_LABEL={
+  rgb:'Light strip',
 //#type lift
   lift:'Lift module',
 //#end
@@ -1176,14 +1619,55 @@ const GROUP_LABEL={
 //#end
 };
 let pinValid=[],pinCur={},pinBy={},pinTab=null;
+// ---- the amplifier (A24-16) ------------------------------------------------
+// Which amp is wired decides HOW the chip drives it and WHICH audio pins even
+// exist: an analog amp (TPA3118/TPA3110/PAM8403) takes one wire, an I2S amp
+// takes three. Fed the wrong kind a speaker plays noise, so this is picked by
+// name here rather than compiled in.
+let ampList=[],ampCur=null,ampPick=null;
+function ampById(id){return ampList.filter(a=>a.id===id)[0]||null;}
+// pin keys this amp really wires; null when the board has no amp list at all
+function ampPinKeys(){const a=ampById(ampPick);
+  if(!a)return null;
+  return a.pins?a.pins.split(','):[];}
+async function loadAmp(){
+  try{
+    const [vt,ct]=await Promise.all([cmd('AMP VALID'),cmd('AMP?')]);
+    ampList=JSON.parse((vt||'').trim());
+    ampCur=JSON.parse((ct||'').trim());
+    ampPick=ampCur.id;
+  }catch(e){ampList=[];ampCur=null;ampPick=null;}  // a board with no speaker
+}
+function renderAmpPicker(box){
+  if(!ampList.length)return;
+  const wrap=document.createElement('div');wrap.className='row';
+  const cell=document.createElement('label');
+  cell.style.cssText='display:flex;flex-direction:column;font-size:11px;color:var(--mut);gap:1px';
+  cell.appendChild(document.createTextNode('Amplifier'));
+  const sel=document.createElement('select');sel.id='ampSel';sel.style.minWidth='240px';
+  ampList.forEach(a=>{const o=document.createElement('option');
+    o.value=a.id;o.textContent=a.label;sel.appendChild(o);});
+  sel.value=ampPick||'none';
+  sel.onchange=()=>{ampPick=sel.value;renderPinGroups();};
+  cell.appendChild(sel);wrap.appendChild(cell);
+  if(ampCur&&ampPick!==ampCur.id){
+    const w=document.createElement('span');w.className='statline';
+    w.style.cssText='color:var(--warn);align-self:flex-end';
+    w.textContent='not saved yet — press Save & reboot';
+    wrap.appendChild(w);
+  }
+  box.appendChild(wrap);
+  const help=document.createElement('div');help.className='statline';
+  help.textContent=(ampById(ampPick)||{}).wiring||'';
+  box.appendChild(help);
+}
 function pinClass(g){return {ok:'',strap:'color:var(--warn)',in:'color:var(--mut)',
   uart0:'color:var(--err)',flash:'color:var(--err)',rgb:'color:var(--err)'}[g]||'';}
 function buildPinTabs(){
   // one tab per module type present in the pin map (dynamic — future types
   // appear automatically). The tab picks which module's pins you configure;
   // the shared buses (RS485/SD/I2S) always show under any tab.
-  const modTypes=[...new Set(Object.values(pinCur).map(v=>GROUP_TYPE[v.group]))]
-    .filter(t=>t&&t!=='core');
+  const modTypes=[...new Set(Object.values(pinCur).flatMap(v=>pinGroupTypes(v.group)||[]))];
   if(!modTypes.length)return;
   if(!pinTab||!modTypes.includes(pinTab))
     pinTab=(st.type&&modTypes.includes(st.type))?st.type:modTypes[0];
@@ -1227,6 +1711,7 @@ async function loadPins(){
       msg+'<br>reply: '+((''+vt+' / '+ct).slice(0,90))+'</div>';
     return;
   }
+  await loadAmp();   // after the pins: a board without a speaker just has none
   buildPinTabs();
   renderPinGroups();
 }
@@ -1245,11 +1730,19 @@ function renderPinGroups(){
   Object.entries(PIN_GROUPS).forEach(([grp,title])=>{
     // show the selected tab's module pins + the shared/core buses.
     // (pinTab guard: if no tab yet, show everything rather than hide all)
-    if(pinTab&&GROUP_TYPE[grp]!=='core'&&GROUP_TYPE[grp]!==pinTab)return;
-    const items=Object.entries(pinCur).filter(([k,v])=>v.group===grp);
-    if(!items.length)return;
+    const ts=pinGroupTypes(grp);
+    if(pinTab&&ts&&!ts.includes(pinTab))return;
+    let items=Object.entries(pinCur).filter(([k,v])=>v.group===grp);
+    // Show only the audio pins the chosen amp uses — nobody should wire BCLK
+    // for an amp that ignores it, and the built-in DAC's pins are fixed.
+    const keep=(grp==='audio')?ampPinKeys():null;
+    if(keep)items=items.filter(([k])=>keep.indexOf(k)>=0);
+    const ampHere=(grp==='audio'&&ampList.length);
+    if(!items.length&&!ampHere)return;
     const h=document.createElement('div');h.className='lbl';h.style.margin='8px 0 2px';h.textContent=title;
     box.appendChild(h);
+    if(ampHere)renderAmpPicker(box);
+    if(!items.length)return;
     const wrap=document.createElement('div');wrap.className='row';
     items.forEach(([k,v])=>{
       const cell=document.createElement('label');cell.style.cssText='display:flex;flex-direction:column;font-size:11px;color:var(--mut);gap:1px';
@@ -1295,6 +1788,12 @@ async function savePins(){
     if(+s.value===pinCur[k].gpio)continue;          // unchanged
     const r=await cmd('PIN '+k+' '+s.value);
     if(!r||r.startsWith('ERR'))bad.push(k+': '+(r||'no reply'));
+  }
+  // the amp rides the same button: it is stored beside the pins and, like
+  // them, only takes effect at the reboot below.
+  if(ampCur&&ampPick&&ampPick!==ampCur.id){
+    const r=await cmd('AMP '+ampPick);
+    if(!r||r.startsWith('ERR'))bad.push('amplifier: '+(r||'no reply'));
   }
   if(bad.length){
     $('pinStat').textContent='Not saved — '+bad.length+' pin(s) were refused.';

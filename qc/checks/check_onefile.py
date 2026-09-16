@@ -98,6 +98,25 @@ def run(t):
                 "no datas= assignment found; a one-file build with an empty "
                 "datas is exactly the bug this task fixed"):
         return
+
+    # ---- THE DOCUMENTED COMMAND MUST USE THE SPEC ---------------------
+    # CLAUDE.md told a session to run PyInstaller against main.py directly.
+    # That does two kinds of damage, both seen on 2026-08-21: the exe ships
+    # with no web pages and no registries (it starts, says "registries
+    # unavailable: No module named 'registry'" and answers 500 on every page),
+    # and PyInstaller REWRITES MiceHub.spec with a generated stub, destroying
+    # the curated one — so the next build from "the spec" is broken too. The
+    # rule cost three builds and a `git checkout -- MiceHub.spec`.
+    rules = (F.CODE / "CLAUDE.md").read_text(encoding="utf-8", errors="replace")
+    builds = [ln for ln in rules.splitlines() if "PyInstaller" in ln]
+    t.ok(builds, "the project rules say how to build the app")
+    bad = [ln for ln in builds if "main_python/main.py" in ln]
+    t.ok(not bad,
+         "and never by naming the script instead of the spec",
+         "this line rebuilds a broken exe AND overwrites MiceHub.spec: %s"
+         % (bad[0].strip()[:120] if bad else ""))
+    t.ok(any("MiceHub.spec" in ln for ln in builds),
+         "the documented command runs MiceHub.spec")
     joined = " ".join(listed).replace("\\", "/")
     for folder in ("main_python/web", "shared/web",
                    "nong/main_python_set_nong/web", "firmware/config"):
@@ -120,6 +139,66 @@ def run(t):
                  [Path(y).as_posix() for y in listed]),
              "the build carries %s, which the registry reads" % rel,
              "the exe will start and quietly serve an empty list without it")
+    # EVERY file main.py asks asset() for, read out of main.py itself. Frozen,
+    # asset() looks beside the exe and inside the bundle - and nowhere else -
+    # so a shipped file that is in neither makes the hub behave as though the
+    # file said nothing. config/page_access.json was exactly that on
+    # 2026-09-09: the packaged hub would have gated no card at all and printed
+    # nothing about it. A hand-kept list would have missed the next one too.
+    mainsrc = (F.CODE / "main_python" / "main.py").read_text(encoding="utf-8")
+    wanted = set()
+    for call in ast.walk(ast.parse(mainsrc)):
+        if not (isinstance(call, ast.Call)
+                and getattr(call.func, "id", "") == "asset"):
+            continue
+        parts = [a.value for a in call.args
+                 if isinstance(a, ast.Constant) and isinstance(a.value, str)]
+        if len(parts) == len(call.args) and parts:
+            wanted.add("/".join(parts))
+
+    # The DESTINATIONS, not every string in the block. Reading all of them was
+    # this check's own first version and it passed while the bundle was wrong:
+    # `str(ROOT / "firmware" / "config")` contributes the bare word `config`,
+    # which happily "covered" config/page_access.json with nothing carrying it.
+    dests = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and any(
+                getattr(x, "id", "") == "datas" for x in node.targets):
+            for tup in ast.walk(node.value):
+                if (isinstance(tup, ast.Tuple) and len(tup.elts) == 2
+                        and isinstance(tup.elts[1], ast.Constant)
+                        and isinstance(tup.elts[1].value, str)):
+                    dests.append(Path(tup.elts[1].value).as_posix())
+
+    def carried(rel):
+        """Covered only on whole path SEGMENTS.
+
+        A string prefix would say main_python/web covers main_python/web_ox,
+        which is a different folder entirely. `.` is one file at the bundle
+        root, so it covers nothing.
+        """
+        parts = rel.split("/")
+        for d in dests:
+            if d == ".":
+                continue
+            dp = d.split("/")
+            if parts[:len(dp)] == dp:
+                return True
+        return False
+
+    # Two the code deliberately tolerates being absent, said so in main.py
+    # itself: *both folders may be absent while the designs are built*
+    # (main_python/main.py:100-101). They are the A23-1 comparison pages,
+    # mounted additively; the pages people actually use are untouched.
+    OPTIONAL = {"main_python/web_gemini", "main_python/web_ox"}
+    for rel in sorted(wanted - OPTIONAL):
+        t.ok(carried(rel),
+             "the build carries %s, which main.py asks asset() for" % rel,
+             "frozen, asset() searches beside the exe and inside the bundle "
+             "only - a file in neither leaves the hub acting as if it were "
+             "empty, with nothing on any screen saying so. Carried: %s"
+             % dests)
+
     for never in ("projects", "sequences", "models", "hub_auth"):
         t.ok(never not in joined,
              "and never bundles %s, which the hub writes" % never,

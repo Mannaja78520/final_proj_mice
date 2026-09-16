@@ -2,14 +2,18 @@
 
 namespace Util {
 
+// Returns the token count, or NEGATIVE when the line holds more than maxTok:
+// silently dropping the tail made "PLAY 1 2 ... 15" and its truncated twin
+// indistinguishable, and the truncated command still ran.
 int tokenize(const String& line, String argv[], int maxTok) {
     int argc = 0;
     int i = 0, n = line.length();
-    while (i < n && argc < maxTok) {
+    while (i < n) {
         while (i < n && line[i] == ' ') i++;
         if (i >= n) break;
         int start = i;
         while (i < n && line[i] != ' ') i++;
+        if (argc >= maxTok) return -(argc + 1);
         argv[argc++] = line.substring(start, i);
     }
     return argc;

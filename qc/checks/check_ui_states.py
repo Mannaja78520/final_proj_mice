@@ -221,6 +221,18 @@ def run(t):
     t.contains(hand, "hubDriven",
                "and it stands down while the hub is already playing")
 
+    # ---- the RGB page's music mode says WHY it cannot listen ------------
+    # Capture only exists in a secure context (localhost counts). Over plain
+    # http on the venue WiFi the browser refuses before asking anything, and
+    # the old catch printed the raw error - a designer cannot act on that.
+    rgb = _nocomment((F.CODE / "main_python/web/rgb.html").read_text(
+        encoding="utf-8", errors="replace"), "js")
+    t.ok(rgb.find("blocks audio capture") > rgb.find("location.hostname"),
+         "music mode on a plain-IP address says to open it as localhost",
+         "the address is what the browser refuses, not the permission")
+    t.ok("press Start again and allow it" in rgb,
+         "and on localhost it blames the permission, with a way to retry")
+
     # ---- the shared design contract, across every app -------------------
     # The tokens, the focus ring and the reduced-motion rule now live once, in
     # shared/web/mice.css, instead of in six copies that had already drifted.

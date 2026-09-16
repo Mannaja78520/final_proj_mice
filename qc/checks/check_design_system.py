@@ -41,6 +41,19 @@ SURFACES = [
     ("module site", "firmware/src/web/WebUI.h", True),
     ("studio page", "nong/main_python_set_nong/web/index.html", True),
     ("studio css", "nong/main_python_set_nong/web/style.css", False),
+    # A23-1's two competitor versions obey the same one-design-system rule.
+    # The studio copies share their engine with the incumbent, so only the
+    # pages are listed here.
+    ("ox hub", "main_python/web_ox/hub.html", True),
+    ("ox rgb", "main_python/web_ox/rgb.html", True),
+    ("ox help", "main_python/web_ox/help.html", True),
+    ("ox css", "main_python/web_ox/ox.css", False),
+    ("gemini hub", "main_python/web_gemini/hub.html", True),
+    ("gemini rgb", "main_python/web_gemini/rgb.html", True),
+    ("gemini help", "main_python/web_gemini/help.html", True),
+    ("gemini css", "main_python/web_gemini/g.css", False),
+    ("ox studio page", "main_python/web_ox/studio/index.html", True),
+    ("gemini studio page", "main_python/web_gemini/studio/index.html", True),
 ]
 
 # Colours that ARE tokens. A literal copy is the bug this check exists to
@@ -189,9 +202,36 @@ def run(t):
     dev = "usb:" + urllib.parse.quote(fake_serial.PORT)
     for name, url in (("hub", "/"), ("help", "/help"), ("rgb", "/rgb.html"),
                       ("studio", "/studio/"),
+                      ("ox hub", "/o/"), ("ox rgb", "/o/rgb.html"),
+                      ("ox studio", "/o/studio"),
+                      ("gemini hub", "/g/"), ("gemini rgb", "/g/rgb.html"),
+                      ("gemini studio", "/g/studio"),
                       ("module site", "/mod?dev=" + dev)):
         st, page = F.get(base + url)
         t.eq(st, 200, "the hub serves the %s page" % name)
         t.ok('href="/mice.css"' in page,
              "the %s page links /mice.css" % name,
              "served page carries no link to the design system")
+
+    # ---- A23-1: the two versions stay whole inside their own mounts -----
+    # Each competitor version carries rgb/help/studio under ITS mount; a link
+    # left pointing at the incumbent's "/" silently exits the version being
+    # judged. And the tools list must read the registry's real field: rows
+    # built from `a.url` (no registry row has one) rendered as "#" links that
+    # looked fine and opened nothing.
+    for tag, folder, jsname in (("ox", "web_ox", "ox.js"),
+                                ("gemini", "web_gemini", "g.js")):
+        base = F.CODE / "main_python" / folder
+        jssrc = (base / jsname).read_text(encoding="utf-8", errors="replace")
+        t.ok("a.path" in jssrc and "a.url" not in jssrc,
+             "%s tools open the registry's path field" % tag,
+             "the registry has no url key — an a.url row opens nothing")
+        hubsrc = (base / "hub.html").read_text(encoding="utf-8", errors="replace")
+        # rgb opens from a module card, so its link lives in the JS; help is
+        # a plain link on the page.
+        for want, where, wname in (("/%s/rgb.html" % tag[0], jssrc, jsname),
+                                   ("/%s/help.html" % tag[0], hubsrc,
+                                    "hub.html")):
+            t.ok(want in where, "%s links %s from %s" % (tag, want, wname),
+                 "the feature is served but nothing in this version "
+                 "reaches it")

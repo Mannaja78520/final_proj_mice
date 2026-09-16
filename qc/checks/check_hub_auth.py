@@ -15,15 +15,26 @@ of them wrong is its own failure:
   * every route that only READS still works with no session, because someone
     glancing at the hub to see whether a board is alive must not have to type;
   * STOPPING a moving robot is never gated. A password prompt while an arm is
-    about to hit someone is a safety failure, not security.
+    about to hit someone is a safety failure, not security;
+  * and THE TOOLS are never gated either. Asked for 2026-08-21: *make the tool
+    can use everytime like the nong studio... but when need to command the
+    robot need to use the login*. Most of the work in Studio happens before
+    there is a robot at all — posing, timing, saving the project, exporting the
+    YAML — and none of it reaches a board. A login in front of that made the
+    editor unusable until a robot existed. The line is drawn at the BOARD, not
+    at the file: writing a project here is open, sending anything to a module
+    is not.
 
 It also checks the secret itself: stored hashed, never echoed back, and a
 wrong password gets slower rather than being guessable at leisure.
 """
 import json
+import tempfile
+import threading
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
 
 import fake_serial
 import qc as F
@@ -46,12 +57,22 @@ MUTATING = [
     ("GET", "/api/robot/delete?ip=127.0.0.1&path=/moves/show.yaml"),
     ("GET", "/api/usb/close?port=COM99"),
     ("POST", "/api/play"),
-    ("POST", "/api/save"),
     ("POST", "/api/settings"),
-    ("POST", "/api/rigdefault"),
-    ("POST", "/api/export"),
     ("POST", "/api/flash"),
     ("POST", "/api/ota"),
+    # the command-channel reflash - same overwrite, every transport at once
+    ("POST", "/api/flash/bus?dev=usb%3ACOM99&type=nong"),
+]
+
+# The tool half: it works with no session, because nothing here reaches a
+# board. Each is asked for with no login and must NOT come back as 401 — it may
+# well refuse the empty body these are sent with, and that is a different
+# answer from "log in first".
+TOOL_ROUTES = [
+    ("POST", "/api/save"),          # a Studio project
+    ("POST", "/api/export"),        # a sequence, as YAML, on this PC
+    ("POST", "/api/rigdefault"),    # this person's own rig, kept as the default
+    ("POST", "/api/model/upload"),  # an STL to look at
 ]
 
 READABLE = ["/api/ports", "/api/scan", "/api/mine", "/api/hubs", "/api/servos",
@@ -84,6 +105,19 @@ def run(t):
         t.ok("need_login" in body,
              "and says a login is what is missing, not that it broke",
              body[:120])
+
+    # ---- and the tools work with no session at all --------------------
+    for method, path in TOOL_ROUTES:
+        code, body = _bare(base + path, method)
+        t.ok(code != 401 and "need_login" not in body,
+             "no session: %s %s still works" % (method, path),
+             "answered %d %s — this is the editor working before there is a "
+             "robot, which is most of what it is for; the gate belongs on the "
+             "routes that reach a BOARD" % (code, body[:100]))
+    t.ok(not (set(hub_auth.GATED) & {p for _m, p in TOOL_ROUTES}),
+         "and none of them is listed as gated",
+         "an open route that is also in GATED is one 'tidy-up' away from "
+         "locking the editor again")
 
     # The one that matters most, asserted on the WIRE and not on the reply:
     # a refused command must never have reached the module. A gate that
@@ -177,8 +211,75 @@ def run(t):
     tok, why = a.login("right", "10.9.9.10")
     t.ok(tok, "another caller can still log in", why)
 
+    # ---- two processes, one first run ----------------------------------
+    # Seen 2026-08-26 as two different generated passwords printed in ONE
+    # start: two hub processes shared a store path, both saw no file, both
+    # generated, and the files ended up describing only the second - the
+    # session you then talked to kept accepting the first. An exclusive
+    # create decides who generates; the losers adopt the winner's store.
+    race_dir = Path(tempfile.mkdtemp())
+    made, made_lock = [], threading.Lock()
+
+    def contender():
+        one = hub_auth.Auth(race_dir / "hub_auth.json", out=lambda *x: None)
+        with made_lock:
+            made.append(one)
+
+    threads = [threading.Thread(target=contender) for _ in range(4)]
+    for th in threads:
+        th.start()
+    for th in threads:
+        th.join()
+    fresh = [one for one in made if one.first_run_password]
+    t.eq(len(fresh), 1,
+         "four hubs racing on one fresh store: exactly ONE generates")
+    winner = fresh[0].users() if fresh else None
+    t.ok(winner is not None and all(one.users() == winner for one in made),
+         "and every loser serves the winner's accounts",
+         "two processes holding different secrets for one store is the "
+         "lockout this already caused once")
+
+    # ---- and a hub rewritten underneath heals instead of locking out ----
+    heal = Path(tempfile.mkdtemp()) / "hub_auth.json"
+    gate = hub_auth.Auth(heal, out=lambda *x: None)
+    twin = hub_auth.Auth(heal, out=lambda *x: None)     # a second process
+    twin.set_password("second-process-pw")              # ...rewriting the files
+    tok, why = gate.login("second-process-pw", "10.9.9.30")
+    t.ok(tok, "a hub whose files were rewritten accepts the NEW password",
+         "the operator read the password off disk and this process went on "
+         "refusing it - its stale memory locked them out of their own hub")
+
     # ---- and the session really opens the gate ------------------------
     a.set_password(F.HUB_PASSWORD)               # put it back for later checks
     F.login(base)
     code, _ = F.get(base + "/api/usb/cmd?port=COM99&c=PING")
     t.eq(code, 200, "logged in, the same call goes through")
+
+    # ---- the password file belongs to ITS OWN store --------------------
+    # Every QC run makes a throwaway store (mice_qc_auth_<pid>.json) and used
+    # to write its random password into main_python/hub_password.txt - the one
+    # file that tells the operator this PC's real hub login. Found 2026-09-07
+    # when the user could not log in and that file offered a password their hub
+    # had never had, "set" a day before the real one.
+    import hub_auth as HA
+    # In the system temp folder, NOT inside main_python: a folder appearing
+    # there mid-run is a folder the build-stamp checks are busy enumerating,
+    # and this crashed check_stale_build in the full suite while passing on
+    # its own (2026-09-07).
+    tmp = Path(tempfile.mkdtemp(prefix="qc_authnames_"))
+    try:
+        real = HA.Auth(tmp / HA.DEFAULT_STORE_NAME, out=lambda *x: None)
+        t.eq(real.plain_file().name, "hub_password.txt",
+             "the real store still writes the file people are told to read")
+        throwaway = HA.Auth(tmp / "mice_qc_auth_31337.json", out=lambda *x: None)
+        t.eq(throwaway.plain_file().name, "mice_qc_auth_31337.txt",
+             "a throwaway store writes beside ITSELF, never over the real one")
+        throwaway.set_password("not-the-real-one")
+        t.ok(not (tmp / "hub_password.txt").exists()
+             or (tmp / "hub_password.txt").read_text(encoding="utf-8")
+             .find("not-the-real-one") < 0,
+             "and setting a password on it leaves the real file alone",
+             "the operator reads that file to get into their own hub")
+    finally:
+        import shutil
+        shutil.rmtree(tmp, ignore_errors=True)

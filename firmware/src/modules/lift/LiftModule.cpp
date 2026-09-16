@@ -140,6 +140,7 @@ bool LiftModule::handleCommand(String argv[], int argc, String& reply) {
     if (cmd == "STOP") {
         pendingStage_ = -1;
         stopMotor();
+        silence();          // A24-18: still AND quiet
         reply = "OK stopped";
         return true;
     }
@@ -260,30 +261,13 @@ bool LiftModule::handleCommand(String argv[], int argc, String& reply) {
         reply = "OK rgb set";
         return true;
     }
-    if (cmd == "PLAY") {
-        if (argc < 2) { reply = "ERR usage: PLAY <file>|STOP"; return true; }
-        String a = argv[1];
-        a.toUpperCase();
-        if (a == "STOP") {
-            audio_.stop();
-            reply = "OK audio stopped";
-            return true;
-        }
-        String path = Util::joinFrom(argv, argc, 1);
-        if (!path.startsWith("/")) path = "/music/" + path;
-        if (!audio_.play(path)) {
-            reply = "ERR cannot play " + path;
-            return true;
-        }
-        reply = "OK playing " + path;
-        return true;
-    }
-    if (cmd == "VOL") {
-        if (argc < 2) { reply = "ERR usage: VOL <0-100>"; return true; }
-        audio_.setVolume((uint8_t)constrain(argv[1].toInt(), 0, 100));
-        reply = "OK vol=" + String(audio_.volume());
-        return true;
-    }
+    // The PLAY/VOL bodies live in AudioPlayer itself (core/AudioPlayer.cpp) so
+    // every type that wires a speaker parses them identically.
+    if (cmd == "PLAY") { audio_.playCmd(argv, argc, reply); return true; }
+    if (cmd == "VOL")  { audio_.volCmd(argv, argc, reply);  return true; }
+    if (cmd == "AMP")  { audio_.ampCmd(argv, argc, reply);  return true; }
+    if (cmd == "AMP?") { audio_.ampCmd(argv, argc, reply);  return true; }
+    if (cmd == "STREAM" || cmd == "STREAM?") { audio_.streamCmd(argv, argc, reply); return true; }
     return false;
 }
 

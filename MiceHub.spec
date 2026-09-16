@@ -16,9 +16,13 @@ missing file.
 
 Build:  python -m PyInstaller --clean MiceHub.spec
 """
+import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(SPECPATH)                                    # noqa: F821 - code/
+sys.path.insert(0, str(ROOT / "main_python"))
+import build_stamp                                       # noqa: E402
 
 datas = [
     (str(ROOT / "main_python" / "web"), "main_python/web"),
@@ -29,6 +33,12 @@ datas = [
     # or a servo is one entry in these files, so they are not optional extras.
     (str(ROOT / "tools" / "registry.py"), "tools"),
     (str(ROOT / "firmware" / "config"), "firmware/config"),
+    # The hub's OWN config: config/voice.json (where the voice helper answers)
+    # and config/page_access.json (which pages work with no login). Missing
+    # here, the exe starts perfectly and quietly behaves as if the files said
+    # nothing - no gated card is hidden, and no screen says why. Exactly the
+    # apps/ mistake below, one folder over.
+    (str(ROOT / "config"), "config"),
     # The web apps themselves. Missed on the first build, and the exe started
     # perfectly and served an EMPTY app list - the registry loaded, found no
     # folder, and reported nothing wrong. Only running the exe on its own
@@ -37,6 +47,14 @@ datas = [
     (str(ROOT / "apps"), "apps"),
     # Served to a module's own page when it is reached over WiFi.
     (str(ROOT / "firmware" / "src" / "web" / "WebUI.h"), "firmware/src/web"),
+    # The receipt: a sha for every source file that went into this build, so
+    # the running exe can say when it is older than the tree beside it. Written
+    # here rather than kept by hand - a version number somebody has to bump is
+    # a version number that will be wrong on the build that mattered.
+    # Written to a temp folder, not into the tree: `--clean` empties the build
+    # directory, and a datas entry pointing at a file that was just deleted
+    # fails the whole build.
+    (str(build_stamp.write(ROOT, Path(tempfile.gettempdir()) / "mice_build")), "."),
 ]
 
 a = Analysis(                                            # noqa: F821

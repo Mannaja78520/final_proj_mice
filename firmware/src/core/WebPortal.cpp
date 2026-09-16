@@ -1,4 +1,5 @@
 #include "core/WebPortal.h"
+#include "core/BrownoutGuard.h"
 #include "core/Log.h"
 #include "core/UserStore.h"
 // COMMAND_DOCS: what each command is allowed to do, generated from
@@ -82,7 +83,13 @@ void WebPortal::begin(Identity* id, CommandRouter* router, SDStore* sd, RS485Bus
     // the cheaper side of the trade. A battery-powered module type would want
     // this back.
     WiFi.setSleep(false);
-    applyMode(wifiModeCfg_);
+    // A BOARD THAT CANNOT SURVIVE ITS OWN RADIO STARTING comes up without it.
+    // Only at BOOT, and only after repeated brownout resets - see
+    // core/BrownoutGuard.h. An explicit WIFI ON still turns the radio on,
+    // because refusing the operator's own command would make the board feel
+    // broken rather than careful.
+    applyMode(brownout.tripped() ? String("off") : wifiModeCfg_);
+    if (brownout.tripped()) LOGF(wifi, "%s", brownout.why().c_str());
 }
 
 // Bring the radio to `mode` immediately. Called at boot and again by every
@@ -201,9 +208,8 @@ void WebPortal::applyCreds(const String& ssid, const String& pass) {
 // has nothing to lean on — which is correct: there is nothing to prove is a
 // module rather than someone's phone.
 void WebPortal::checkLink(int n) {
-    int mainRssi = 0, bestRssi = 0;
-    String bestName;
-    bool bestKnown = false;
+    int mainRssi = 0;
+    wifilink::PeerPick pick;
     for (int i = 0; i < n; i++) {
         String ssid = WiFi.SSID(i);
         int rssi = WiFi.RSSI(i);
@@ -235,14 +241,15 @@ void WebPortal::checkLink(int n) {
             if (ssid == homeSsid_) continue;
             if (triedAp_ == ssid) continue;   // did not work last time; rotate
         }
-        if (!bestRssi || rssi > bestRssi) {
-            bestRssi = rssi;
-            bestName = ssid;
-            bestKnown = known;
-        }
-        // a module we already know beats a guess of the same strength
-        if (known && !bestKnown) { bestRssi = rssi; bestName = ssid; bestKnown = true; }
+        pick.feed(known, rssi, ssid.c_str());
     }
+
+    // A KNOWN module beats every guess — the old inline tie-break was
+    // order-dependent and let a stronger unknown win depending on scan order.
+    int bestRssi = 0;
+    bool bestKnown = false;
+    const char* bestNameC = pick.best(bestRssi, bestKnown);
+    String bestName(bestNameC ? bestNameC : "");
 
     switch (wifilink::decide(onRelay_, mainRssi, bestRssi)) {
         case wifilink::RELAY:
@@ -361,6 +368,15 @@ String WebPortal::wifiCommand(const String& arg) {
     String a = arg;
     a.trim();
     a.toUpperCase();
+
+    // SAY WHY THE RADIO IS OFF, on the one command somebody types when they
+    // notice it is. The boot log carries this too, but a board that has been
+    // resetting for ten minutes has scrolled its boot log away — and "wifi is
+    // off" with no reason reads as a setting somebody changed, which sends the
+    // next half hour into the wrong place entirely.
+    if (a.length() == 0 && brownout.tripped()) {
+        return "WIFI off — " + brownout.why();
+    }
 
     if (a == "ON" || a == "OFF" || a == "AP") {
         String m = a;
@@ -636,12 +652,15 @@ void WebPortal::setupRoutes() {
         if (type == WS_EVT_CONNECT) {
             client->text(statusJson());
         } else if (type == WS_EVT_DATA) {
-            AwsFrameInfo* info = (AwsFrameInfo*)arg;
-            if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-                String line((const char*)data, len);
-                String reply = router_->handle(line);
-                client->text("> " + reply); // UI treats non-JSON frames as console output
-            }
+            // PUSH ONLY. No page and no hub ever sends on this socket - status
+            // goes out, nothing comes in. The HTTP gate cannot be applied here
+            // (the handshake cookie is not reachable from this event), so a
+            // frame that arrives is by definition not ours to run: before
+            // 2026-08-25 any WiFi neighbour could open the socket and drive
+            // the board (A22-1 panel).
+            (void)arg;
+            (void)data;
+            (void)len;
         }
     });
     server_.addHandler(&ws_);
@@ -806,26 +825,35 @@ void WebPortal::setupRoutes() {
         },
         [this](AsyncWebServerRequest* req, String filename, size_t index,
                uint8_t* data, size_t len, bool final) {
+            // Gate HERE: chunks write mid-request, so a late 401 came after the file landed.
+            if (!allowed(req)) return;
+            // The destination is worked out from THIS request's own data on
+            // every chunk — `dir` is a URL query (every caller sends it so)
+            // and `filename` arrives with each callback. They must not be
+            // members: two uploads at once used to rewrite each other's paths,
+            // one request renaming or deleting the other's target. Two uploads
+            // to the SAME name still race (last rename wins) — that is inherent.
+            String dir = req->hasParam("dir") ? req->getParam("dir")->value() : "/data";
+            if (!Util::safePath(dir)) return;
+            int slash = filename.lastIndexOf('/');
+            if (slash >= 0) filename = filename.substring(slash + 1);
+            const String dest = dir + "/" + filename;
+            const String tmp = dest + ".part";
+            if (!Util::safePath(dest)) return;   // ".." cannot ride in a name
+
             if (index == 0) {
-                String dir = req->hasParam("dir") ? req->getParam("dir")->value() : "/data";
-                if (!Util::safePath(dir)) return;
-                int slash = filename.lastIndexOf('/');
-                if (slash >= 0) filename = filename.substring(slash + 1);
                 // Same rule as SDStore::openWrite: land in a .part file and
                 // only replace the real one once the whole upload arrived.
                 // FILE_WRITE truncates on open, so uploading over an existing
                 // name and then losing the connection used to destroy the file
                 // that was already there and deliver nothing in its place.
-                uploadDest_ = dir + "/" + filename;
-                uploadTmp_ = uploadDest_ + ".part";
                 sd_->lock();
-                SD.remove(uploadTmp_.c_str());     // leftover from a dead upload
-                req->_tempFile = SD.open(uploadTmp_.c_str(), FILE_WRITE);
+                SD.remove(tmp.c_str());            // leftover from a dead upload
+                req->_tempFile = SD.open(tmp.c_str(), FILE_WRITE);
                 sd_->unlock();
                 // client aborts mid-upload: close under the SD mutex, not in
                 // ~File(), and take the incomplete .part with it so the card
                 // is not littered with half files.
-                String tmp = uploadTmp_;
                 req->onDisconnect([this, req, tmp]() {
                     if (req->_tempFile) {
                         sd_->lock();
@@ -840,11 +868,11 @@ void WebPortal::setupRoutes() {
                 if (len) req->_tempFile.write(data, len);
                 if (final) {
                     req->_tempFile.close();
-                    SD.remove(uploadDest_.c_str());
-                    if (SD.rename(uploadTmp_.c_str(), uploadDest_.c_str()))
+                    SD.remove(dest.c_str());
+                    if (SD.rename(tmp.c_str(), dest.c_str()))
                         req->_tempObject = malloc(1);   // mark success
                     else
-                        SD.remove(uploadTmp_.c_str());
+                        SD.remove(tmp.c_str());
                 }
                 sd_->unlock();
             }
@@ -1007,6 +1035,21 @@ void WebPortal::setupRoutes() {
                uint8_t* data, size_t len, bool final) {
             if (index == 0) {
                 otaErr_ = "";
+                // THE LOGIN IS CHECKED HERE, NOT ONLY IN THE HANDLER ABOVE.
+                //
+                // AsyncWebServer runs THIS handler as the bytes arrive and the
+                // completion handler only afterwards - so a check that lived
+                // solely up there ran after Update.end(true) had already
+                // switched the boot partition. The 401 was true and far too
+                // late: anyone on the venue WiFi could curl -F an image onto a
+                // board and the refusal arrived once it was flashed.
+                //
+                // Found 2026-08-21. It is the same shape as the md5 hole found
+                // the same day: a guard that exists and is not armed.
+                if (!allowed(req)) {
+                    otaErr_ = "ERR log in first";
+                    return;
+                }
                 bool force = req->hasParam("force") &&
                              req->getParam("force")->value() == "1";
                 if (!force && router_->module() && router_->module()->busy()) {
@@ -1030,6 +1073,26 @@ void WebPortal::setupRoutes() {
                 }
                 if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
                     otaErr_ = "ERR cannot start the update: " + String(Update.errorString());
+                    return;
+                }
+                // AND THE IMAGE IS CHECKED. With UPDATE_SIZE_UNKNOWN and no
+                // md5 registered, Update.end(true) verifies nothing at all: a
+                // truncated upload answered "OK updated, rebooting" and booted
+                // whatever arrived. The bus path already required an md5 - this
+                // one did not, so the same hole was open on the transport most
+                // likely to drop a connection halfway.
+                String md5 = req->hasParam("md5") ? req->getParam("md5")->value()
+                                                  : String();
+                if (md5.length() != 32) {
+                    Update.abort();
+                    otaErr_ = "ERR send the image md5 as ?md5=<32 hex> - "
+                              "without it nothing can tell a good image from a "
+                              "damaged one";
+                    return;
+                }
+                if (!Update.setMD5(md5.c_str())) {
+                    Update.abort();
+                    otaErr_ = "ERR that md5 is not 32 hex characters";
                     return;
                 }
                 // And make the NEXT one recoverable without a reboot: if this

@@ -28,6 +28,7 @@ function step(){
       RIG.pulseMin[i] = 505;  RIG.pulseMax[i] = 2495;
       RIG.servoMaxDps[i] = 321; RIG.servoRange[i] = 181;
       RIG.frameHz[i] = 51;    RIG.min[i] = 26; RIG.max[i] = 154;
+      RIG.neutral[i] = 95;    // the start angle rides along, appended last
     }
     qcMark("start");
     pushLimits().then(function(){
@@ -74,6 +75,12 @@ def run(t):
         one = applied.get("1") or list(applied.values())[0]
         t.eq(one[:8], ["14", "19", "505", "2495", "321", "181", "51", "26"],
              "the values arrived intact (gear, pulse, dps, travel, hz, min)")
+        # The start angle is APPENDED, never inserted. That is the whole reason
+        # the line above is untouched: inserting neutral anywhere earlier would
+        # shift min/max and fail a change that was actually correct.
+        t.eq(len(one), 10, "the batch carries ten values, not nine")
+        t.eq(one[8:], ["154", "95"],
+             "max is still 9th and the start angle is last")
 
     # ---- nothing is sent when the robot already matches ---------------
     before = len(fake_serial.wire)

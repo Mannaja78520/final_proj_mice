@@ -128,6 +128,30 @@ def _free_port():
         s.close()
 
 
+# A port that STAYS dead, for the checks that need somewhere nothing answers.
+#
+# `_free_port()` closes the socket before handing the number back, so the
+# number is only free for an instant. That is fine for something about to bind
+# it and WRONG for a check that needs it to stay empty: under a parallel gate
+# another worker can take that very number, the "dead" address answers, and
+# the check fails for a reason that has nothing to do with the code it tests.
+# Measured 2026-09-10 - check_voice_bench failed in a gate and passed alone,
+# on the day two more port-binding checks were added.
+#
+# So hold the socket: bound, never listening. Nobody else can take the number
+# while this process owns it, and connecting to it is refused, which is
+# exactly what "nothing is there" has to mean.
+_dead_keep = []
+
+
+def dead_port():
+    import socket
+    s = socket.socket()
+    s.bind(("127.0.0.1", 0))
+    _dead_keep.append(s)            # held for the life of the process
+    return s.getsockname()[1]
+
+
 _hub_port = [_free_port()]
 
 
@@ -160,20 +184,55 @@ def start_hub(fake=True):
     # which the stdlib server dumps as a traceback. Expected here, and it
     # drowns the actual results.
     socketserver.BaseServer.handle_error = lambda *a, **k: None
-    _hub_port[0] = _free_port()
-    main.PORT = _hub_port[0]
-    threading.Thread(target=main.main, daemon=True).start()
-    base = "http://127.0.0.1:%d" % main.PORT
-    for _ in range(60):                          # wait for the socket
-        try:
-            get(base + "/api/ports", timeout=2)
-            break
-        except Exception:
-            time.sleep(0.1)
+    # A PORT THE OS OFFERED CAN STILL REFUSE TO BIND. _free_port() closes the
+    # socket before the hub binds it again, and in that gap Windows can hand
+    # the same number to another worker or fold it into a reserved range
+    # (WinNAT/Hyper-V): the hub thread then dies on bind with WinError 10013
+    # or the port is taken, and every later request answers "connection
+    # refused" six seconds later - which reads as a broken check, not a busy
+    # machine. That cost two full gates on 2026-09-08 alone (check_responsive,
+    # check_themes), so this tries again on a fresh port and says so plainly
+    # when it truly cannot listen.
+    base = ""
+    for attempt in range(4):
+        _hub_port[0] = _free_port()
+        main.PORT = _hub_port[0]
+        th = threading.Thread(target=main.main, daemon=True)
+        th.start()
+        base = "http://127.0.0.1:%d" % main.PORT
+        for _ in range(60):                      # wait for the socket
+            try:
+                get(base + "/api/ports", timeout=2)
+                break
+            except Exception:
+                if not th.is_alive():
+                    break                        # it died on bind: new port
+                time.sleep(0.1)
+        else:
+            break                                # timed out, but still alive
+        if th.is_alive():
+            break                                # answering: we are up
+    else:
+        raise Failure("the QC hub could not listen on any port after 4 tries "
+                      "- something on this machine is taking them, or a "
+                      "reserved range moved")
     # Set a known password and LOG IN, exactly the way the page does — the
     # cookie then rides on every later call through get/post/cmd. Checks that
     # assert the gate itself (check_hub_auth) drive it without this session.
+    # POINT THE PASSWORD AT THE THROWAWAY STORE, WHATEVER HAPPENED BEFORE.
+    # main.AUTH_STORE is worked out when main is imported, and a check that
+    # does `import main` before calling this - several do - has already bound
+    # it to the REAL one. set_password then rewrote the user's actual hub
+    # password and the plain-text copy beside it, on their machine. Found on
+    # 2026-08-20 when the hub refused a login at the bench and the password
+    # file read `qc-test-password`.
+    import tempfile as _tf
+    throwaway = Path(_tf.gettempdir()) / ("mice_qc_auth_%d.json" % os.getpid())
+    main.AUTH_STORE = throwaway
+    main._auth[:] = []                    # noqa: SLF001 - rebuild against it
     main.auth().set_password(HUB_PASSWORD)
+    assert main.auth().store == throwaway, (
+        "QC is about to write the real password file: %s" % main.auth().store)
     login(base)
     return base, main
 

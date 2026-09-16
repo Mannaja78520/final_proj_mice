@@ -1,0 +1,190 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reconize — Mice</title>
+<link rel="stylesheet" href="/mice.css">
+<script src="/mice.js"></script>
+<!--
+  THE FACE APP, from our side. This page opens Reconize, says whether it is
+  running, and polls the watcher to report if the rig is watching.
+-->
+
+<h1>👁 Reconize</h1>
+<div class="mini" style="margin-bottom:var(--sp-4)">
+  <a href="/">👈 hub</a> · the face app that knows who is here
+  <label style="display:inline-flex;gap:var(--sp-2);align-items:center;float:right">
+    <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
+    Show technical details</label>
+</div>
+
+<div class="card" id="loginHere"></div>
+
+<div class="card">
+  <h2>Reconize App</h2>
+  <p class="mini" id="whatIs">Reconize runs beside Mice on this PC. It watches the
+    cameras and knows who is who; the rig follows it.</p>
+  <div class="row" style="margin-bottom:var(--sp-3)">
+    <button class="primary" id="openBtn" onclick="openApp()">Open in New Tab ↗</button>
+    <button id="startBtn" onclick="launchReconize()">▶ Start Reconize</button>
+    <button id="checkBtn" onclick="probe()">Check Status</button>
+    <span class="statline" id="stat" role="status" aria-live="polite">checking…</span>
+  </div>
+  <div class="statline tech mini" id="where"></div>
+
+  <!-- Embedded Live View -->
+  <div id="frameCard" style="margin-top:var(--sp-3); display:none">
+    <iframe id="reconFrame" src="about:blank" style="width:100%; height:75vh; border:1px solid var(--border,#2e3846); border-radius:8px; background:#111"></iframe>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Watcher Status</h2>
+  <div class="row" style="align-items:baseline">
+    <span class="statline" id="wStat" role="status" aria-live="polite">polling watcher…</span>
+  </div>
+  <div id="wSrcs" style="margin-top:var(--sp-4); display:none">
+    <p class="mini">What each source can report:</p>
+    <ul class="mini" id="wSrcList" style="list-style:inside; margin-top:var(--sp-2)"></ul>
+  </div>
+</div>
+
+<script>
+const PARTNER = "reconize";
+let links = {
+  open: "http://localhost:5173",
+  api: "http://127.0.0.1:8000",
+  health: "/api/health"
+};
+let autoStartAttempted = false;
+let probeTimer = null;
+
+async function load(){
+  let all;
+  try{
+    all = await fetch("/api/partners", {cache: "no-store"}).then(r => r.json());
+    if (all.ok && all.partners && all.partners[PARTNER]) {
+      links = all.partners[PARTNER];
+    }
+  }catch(e){
+    // Keep defaults
+  }
+  const w = document.getElementById("where");
+  w.textContent = "app " + links.open + " · api " + links.api;
+  probe(true);
+  pollWatcher();
+}
+
+function say(msg, tech){
+  const el = document.getElementById("stat");
+  el.textContent = msg;
+  if (tech){
+    const t = document.createElement("span");
+    t.className = "tech mini";
+    t.textContent = " " + tech;
+    el.appendChild(t);
+  }
+}
+
+function openApp(){
+  if (!links) return say("the addresses have not loaded yet — try again in a moment");
+  window.open(links.open, "_blank");
+}
+
+function showFrame() {
+  const frameCard = document.getElementById("frameCard");
+  const frame = document.getElementById("reconFrame");
+  if (frame.src === "about:blank" || !frame.src) {
+    frame.src = links.open;
+  }
+  frameCard.style.display = "block";
+}
+
+async function probe(autoLaunchIfDown = false){
+  clearTimeout(probeTimer);
+  say("checking…");
+  try{
+    const r = await fetch(links.api + links.health, {cache: "no-store"});
+    if (r.ok) {
+      say("Reconize is running.", "port 5173 / 8000");
+      showFrame();
+      return true;
+    } else {
+      say("Reconize answered, but not happily.", "HTTP " + r.status);
+    }
+  }catch(e){
+    if (autoLaunchIfDown && !autoStartAttempted) {
+      autoStartAttempted = true;
+      say("Reconize is not running. Starting automatically in background…");
+      launchReconize(true);
+      return false;
+    }
+    say("Reconize is starting up or not answering… waiting for face model to load.", String(e.message || e));
+  }
+  return false;
+}
+
+async function launchReconize(keepPolling = false) {
+  const btn = document.getElementById("startBtn");
+  btn.disabled = true;
+  say("Sending launch command to Hub…");
+  try {
+    const res = await fetch("/api/reconize/start", {method: "POST"}).then(r => r.json());
+    if (res.ok) {
+      say(res.already_running ? "Reconize is already running." : "Launched! Starting backend & frontend in background…");
+      let attempts = 0;
+      function pollUntilReady() {
+        attempts++;
+        probe(false).then(running => {
+          if (!running && attempts < 20) {
+            say("Loading face models & web server… (" + (attempts * 2) + "s)");
+            probeTimer = setTimeout(pollUntilReady, 2000);
+          }
+        });
+      }
+      probeTimer = setTimeout(pollUntilReady, 2500);
+    } else {
+      say("Could not auto-start: " + (res.error || "unknown error"));
+    }
+  } catch(e) {
+    say("Could not contact Hub launch API: " + e.message);
+  } finally {
+    setTimeout(() => { btn.disabled = false; }, 3000);
+  }
+}
+
+async function pollWatcher() {
+  const el = document.getElementById("wStat");
+  const srcs = document.getElementById("wSrcs");
+  const list = document.getElementById("wSrcList");
+  try {
+    const r = await fetch("http://localhost:8769/state", {cache: "no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const state = await r.json();
+    
+    el.textContent = state.watching ? "Watching" : "Not watching";
+    el.className = state.watching ? "statline ok" : "statline warn";
+
+    if (state.sources && state.sources.length > 0) {
+      srcs.style.display = "block";
+      list.innerHTML = "";
+      for (const s of state.sources) {
+        const li = document.createElement("li");
+        const cam = s.hasCamera ? "📷 has camera" : "no camera";
+        const rep = s.reports && s.reports.length ? s.reports.join(", ") : "nothing";
+        li.textContent = `${s.kind}: ${cam}, reports ${rep}`;
+        list.appendChild(li);
+      }
+    } else {
+      srcs.style.display = "none";
+    }
+  } catch (e) {
+    el.textContent = "Watcher is not answering on this PC (it only runs locally)";
+    el.className = "statline err";
+    srcs.style.display = "none";
+  }
+  setTimeout(pollWatcher, 3000);
+}
+
+miceLogin.mount(document.getElementById("loginHere"));
+load();
+</script>

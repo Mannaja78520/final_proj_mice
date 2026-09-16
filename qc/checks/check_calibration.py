@@ -71,7 +71,8 @@ def run(t):
     # ---- every calibration command must persist -------------------------
     # A command that changes calibration but never asks for a save is a
     # setting that silently disappears on the next power cycle.
-    for cmd in ("LIMIT", "GEAR", "PULSE", "RANGE", "RATE", "SERVO", "SETZERO"):
+    for cmd in ("LIMIT", "GEAR", "PULSE", "RANGE", "RATE", "SERVO", "SETZERO",
+                "NEUTRAL"):   # the start pose is calibration too: it must survive a reboot
         m = re.search(r'cmd == "%s"' % cmd, src)
         if not t.ok(m, "%s exists" % cmd):
             continue

@@ -1,0 +1,17 @@
+{
+  // The camera view on its own.
+  //
+  // Asked for 2026-08-21: *how to go to camera view while not go to the
+  // module*. Opening a camera meant opening that module's whole website and
+  // finding the Camera card on it — fine when you are configuring a board,
+  // wrong when you just want to see what it sees.
+  //
+  // It is an APP, which in this project means one entry here and nothing else
+  // to edit: the hub lists it, serves it and links it from the Tools list
+  // because it is in this folder, not because anything was told about it.
+  "name": "ESP32 camera",
+  "blurb": "watch any camera on the rig — several people at once",
+  "icon": "📷",
+  "order": 15,
+  "help": "camera"
+}

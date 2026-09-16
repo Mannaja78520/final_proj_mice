@@ -36,3 +36,23 @@ Every change to the firmware is saved here as a numbered patch. Old patches are 
 | 0042 | 2026-08-19 13:37 | Bounded RS485 broadcast stagger, and the camera says which sensor it found |
 | 0043 | 2026-08-19 15:12 | A grouped board with no neighbours looks for its group, so a room of boards can find each other |
 | 0044 | 2026-08-19 18:55 | The camera says which board and sensor it is, and finds its own pin layout |
+| 0045 | 2026-09-08 20:40 | checkpoint before Codex starts on the interface |
+| 0046 | 2026-09-08 20:54 | Codex starting A25-1; existing staging handover tool and dev-tools check preserved. UI work has not started. |
+| 0047 | 2026-09-08 20:55 | handover tool landed; Codex has the brief and has not started |
+| 0048 | 2026-09-08 20:56 | Codex resuming A25-1 after prior promotion finished; checking snapshot histories before UI edits |
+| 0049 | 2026-09-08 20:59 | Codex is working in staging; bridge opened |
+| 0011 | 2026-08-04 15:27 | live WIFI command, shared AP while connected, atomic reply framing, quoted-password fix |
+| 0012 | 2026-08-04 18:18 | REACH and PEERS: reach a module through another module's hotspot |
+| 0013 | 2026-08-04 18:54 | REACH retries so a radio-sharing module is reliable over a shared hotspot |
+| 0014 | 2026-08-04 19:21 | one cable, no venue WiFi: peers behind a module hotspot are fully controllable |
+| 0015 | 2026-08-04 19:54 | WIFI CLEAR back to the built-in network, and a weak link relays through a stronger neighbour |
+| 0016 | 2026-08-04 22:47 | scanning no longer damages the link; hub finds modules on another subnet |
+| 0017 | 2026-08-05 01:14 | groups: modules only link within their own installation, hotspot password derived from the group |
+| 0018 | 2026-08-06 11:29 | module website joins the shared design system (tokens, focus ring, reduced motion) |
+| 0019 | 2026-08-06 21:18 | module website: plainer tab labels |
+| 0020 | 2026-08-07 00:52 | FIX: isNong was never defined, so the nong joint sliders never rendered on the module site |
+| 0032 | 2026-08-10 18:53 | RELAX drives every servo line low: SHRUG is on GPIO15 (pull-up), so detach alone left it high and the servo held |
+| 0033 | 2026-08-10 19:52 | SHRUG is now a TianKongRC 35kg (270 deg, 250 deg/s, 500-2500us) - the 4-bar gear 1:2.25 and joint limits are unchanged |
+| 0050 | 2026-09-08 21:03 | A25-1 shared rainbow removed, warmer neutral palette, quieter hub tools and module header; Studio and light tool next |
+| 0051 | 2026-09-08 21:33 | Codex's interface work gated and promoted |
+| 0052 | 2026-09-08 22:23 | A25 landed: rainbow guarded, shortcuts tab named |

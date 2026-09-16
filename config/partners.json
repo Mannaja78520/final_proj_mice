@@ -19,7 +19,17 @@
     "api": "http://127.0.0.1:8080",
     "health": "/",
     "folder": "E:/final_proj/mice/All-Jao-Games",
-    "start": "python -m http.server 8080"
+    "start": "python -m http.server 8080",
+    "login": { "kind": "none", "path": "" },
+    "events": [
+      {
+        "kind": "status",
+        "path": "/",
+        "reports": ["game_state"],
+        "hasCamera": false,
+        "map": {}
+      }
+    ]
   },
 
   "reconize": {

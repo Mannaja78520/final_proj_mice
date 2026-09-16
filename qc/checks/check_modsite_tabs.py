@@ -51,9 +51,22 @@ window.addEventListener("load", function(){ setTimeout(function(){
     }
     out.push("tabs:" + document.querySelectorAll(".mtab").length);
 
+    // BEFORE ANY TAB IS TOUCHED. The board has already said what it is by now,
+    // and the page must have settled on its own: switching tabs re-applies the
+    // rule, so every assertion made after a click can pass while the page a
+    // person actually opens is wrong.
+    out.push("liftCardAtLoad:" + vis("#liftCard"));
+    out.push("camCardAtLoad:" + vis("#camCard"));
+
     // start: Control, and NOTHING from setup — nobody has logged in
     showTab("control");
     out.push("ctlOnControl:" + countShown("control"));
+    // A card for hardware this board does NOT have stays away on its own tab:
+    // the fake is a nong, so the lift's motor card and the camera card are not
+    // its business. This is the other half of the same rule - one function
+    // decides, using both the tab and what the board says it can do.
+    out.push("liftCardOnNong:" + vis("#liftCard"));
+    out.push("camCardOnNong:" + vis("#camCard"));
     out.push("setupOnControl:" + countShown("setup"));
     out.push("filesOnControl:" + countShown("files"));
 
@@ -75,10 +88,20 @@ window.addEventListener("load", function(){ setTimeout(function(){
     out.push("filesOnFiles:" + countShown("files"));
     out.push("ctlOnFiles:" + countShown("control"));
 
-    report(out.join(" "));
-  }catch(e){ report("ERR " + e.message); }
-  // Say so, rather than leaving the runner to guess with a stopwatch.
-  qcMark("done");
+    // AND IT MUST STAY THAT WAY WHEN THE BOARD SPEAKS. The page redraws on
+    // every status push, twice a second; showCard() used to write display
+    // itself, so every card the board supports came back on whichever tab was
+    // open (user, 2026-09-07: setup and wring it why show the same as move it).
+    // Waiting for a real push is the whole point - counting immediately after
+    // a click is what let this through.
+    setTimeout(function(){
+      try{
+        out.push("ctlOnFilesAfterPush:" + countShown("control"));
+        report(out.join(" "));
+      }catch(e){ report("ERR " + e.message); }
+      qcMark("done");
+    }, 1800);
+  }catch(e){ report("ERR " + e.message); qcMark("done"); }
 }, 900); });
 """
 
@@ -105,6 +128,16 @@ def run(t):
     t.ok(int(got.get("filesOnFiles", 0)) >= 2,
          "the files tab carries sequences, SD and the console")
     t.eq(got.get("ctlOnFiles"), "0", "and the controls are put away there")
+    t.eq(got.get("ctlOnFilesAfterPush"), "0",
+         "and they stay away when the board pushes its status")
+    t.eq(got.get("liftCardAtLoad"), "hidden",
+         "the page settles by itself: no lift card on a nong before anyone "
+         "touches a tab")
+    t.eq(got.get("camCardAtLoad"), "hidden", "and no camera card either")
+    t.eq(got.get("liftCardOnNong"), "hidden",
+         "a nong does not show the lift's motor card")
+    t.eq(got.get("camCardOnNong"), "hidden",
+         "nor the camera card")
 
     # ---- THE risk: the login gate must survive the tabs ---------------
     t.eq(got.get("loginVisible"), "shown",

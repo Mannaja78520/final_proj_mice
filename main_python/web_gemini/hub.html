@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mice — Show · Rig · Maintenance · Config</title>
+<link rel="stylesheet" href="/mice.css">
+<link rel="stylesheet" href="/g/g.css">
+<script src="/mice.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+<section id="loginCard" class="card" hidden>
+  <h2 style="text-transform:none;letter-spacing:0;color:var(--txt)">Log in to drive the rig</h2>
+  <p class="mini">Reading is open to everyone. Moving robots, writing software
+     and changing people need the password.</p>
+  <form id="loginForm">
+    <div class="row"><label class="lbl" for="loginUser">Name</label>
+      <input id="loginUser" autocomplete="username" placeholder="blank on a one-password hub"></div>
+    <div class="row"><label class="lbl" for="loginPass">Password</label>
+      <input id="loginPass" type="password" autocomplete="current-password" required></div>
+    <div class="row">
+      <button class="primary" id="loginBtn" type="submit">Log in</button>
+      <span id="loginBusy" class="mini" hidden>checking…</span>
+    </div>
+  </form>
+  <p class="banner err" id="loginErr" hidden></p>
+  <p class="banner warn" id="loginLock" hidden></p>
+</section>
+
+<header class="stopbar">
+  <h1>Mice</h1>
+  <button id="logoutBtn" class="secondary" hidden>Log out</button>
+  <button id="stopAllBtn" class="danger" title="every module stops, now"
+          onclick="stopEverything()">STOP</button>
+</header>
+<!-- the STOP result speaks here, in the colour of what happened - the red
+     fail banner stays failures-only -->
+<p class="banner ok" id="stopSaid" hidden></p>
+
+<nav class="gtabs" id="gtabs" hidden>
+  <button class="tab on" data-tab="show">Show</button>
+  <button class="tab" data-tab="rig">Rig</button>
+  <button class="tab" data-tab="maint">Maintenance</button>
+  <button class="tab" data-tab="config">Config</button>
+</nav>
+
+<main id="app" hidden>
+
+<!-- ============================================== SHOW — the live run -->
+<section id="tab-show">
+  <p class="tsub">What is running right now. Everything else can wait.</p>
+  <div class="card" style="margin-bottom:var(--sp-3)">
+    <div class="stopbar"><b>Active problems</b><span style="flex:1"></span></div>
+    <p class="mini" id="probLine">nothing wrong right now</p>
+    <div id="probList"></div>
+  </div>
+  <div class="grp"><h3>Pinned boards</h3><div id="pinList"></div></div>
+  <div class="grp"><h3>Every board, right now</h3><div id="showList"></div></div>
+  <p class="mini" id="showEmpty" hidden>No board is doing anything yet. Go to
+     <b>Rig</b> and open one.</p>
+</section>
+
+<!-- ==================================== RIG — build the set before the show -->
+<section id="tab-rig" hidden>
+  <p class="tsub">Every board this PC can reach. Open one to drive it.</p>
+  <div class="row">
+    <button onclick="refreshMods(true)">Look again</button>
+    <label class="row mini" style="margin:0"><input type="checkbox" id="showPorts">
+      show bare cables</label>
+  </div>
+  <div class="grp"><h3>On WiFi</h3><div id="wifiList"></div>
+    <p class="mini" id="wifiEmpty" hidden>No board answered on the network.</p></div>
+  <div class="grp"><h3>On cables here</h3><div id="usbList"></div>
+    <p class="mini" id="usbEmpty" hidden>No cable has a board answering on it.</p></div>
+  <div class="grp"><h3>On other PCs</h3><div id="farList"></div>
+    <p class="mini" id="farEmpty" hidden>No other PC is sharing a board. Start
+      the hub there too and it appears by itself.</p></div>
+</section>
+
+<!-- ============================ MAINTENANCE — careful, machine-changing -->
+<section id="tab-maint" hidden>
+  <p class="tsub">Things that rewrite a board or link two PCs. Done before the
+     show, not during it.</p>
+  <div class="card" style="margin-bottom:var(--sp-3)">
+    <div class="stopbar"><b>Write firmware to a board</b><span style="flex:1"></span>
+      <button class="primary" onclick="openSheet('flashSheet')">Start</button></div>
+    <p class="mini">Pick what to install, pick the board, confirm, watch it go.
+       A write takes about a minute over a cable, several over RS485.</p>
+  </div>
+  <div class="card">
+    <div class="stopbar"><b>Link two PCs (pairing)</b><span style="flex:1"></span>
+      <button onclick="openPair()">Pair hubs</button></div>
+    <p class="mini">Show a code on one PC, type it into the other. After that,
+      both PCs accept the same passwords.</p>
+  </div>
+  <div class="card">
+    <div class="stopbar"><b>Tools on this PC</b><span style="flex:1"></span></div>
+    <p class="mini" id="appsLine">loading…</p>
+    <div id="appsList" style="margin-top:var(--sp-2)"></div>
+  </div>
+</section>
+
+<!-- ================================= CONFIG — set once, then leave alone -->
+<section id="tab-config" hidden>
+  <p class="tsub">Set once. Nothing here changes the show.</p>
+  <div class="grid">
+    <div class="card">
+      <h2 style="text-transform:none;letter-spacing:0;color:var(--txt)">Colours &amp; detail</h2>
+      <div class="row" id="themePick"></div>
+      <label class="row mini"><input type="checkbox" id="advOn">
+        show addresses, ports and ids everywhere</label>
+    </div>
+    <div class="card">
+      <h2 style="text-transform:none;letter-spacing:0;color:var(--txt)">People who may log in</h2>
+      <p class="mini" id="usersLine">loading…</p>
+      <div id="usersList"></div>
+      <form id="userForm" class="row">
+        <input id="userName" placeholder="name" required>
+        <input id="userPass" type="password" placeholder="password" required>
+        <button>Add</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2 style="text-transform:none;letter-spacing:0;color:var(--txt)">Find this hub from a phone</h2>
+      <div class="qrrow">
+        <img id="qrImg" alt="QR code for this hub's address" width="110" height="110"
+             src="/api/qr" style="max-width:100%">
+        <div><p id="qrUrl" class="mono"></p><p class="mini" id="qrName"></p></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 style="text-transform:none;letter-spacing:0;color:var(--txt)">Problems reported</h2>
+      <p class="mini" id="repLine">loading…</p>
+      <div id="repList"></div>
+      <div class="row">
+        <button onclick="reportOpen()">Report a problem</button>
+        <button class="secondary" onclick="loadReports(true)">Refresh</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2 style="text-transform:none;letter-spacing:0;color:var(--txt)">This hub itself</h2>
+      <p class="mini" id="updLine">checking for updates…</p>
+      <div class="row">
+        <button id="updBtn" onclick="selfUpdate(this)" hidden>Update now</button>
+        <button onclick="copyDiag(this)">Copy diagnostics</button>
+      </div>
+      <p class="mini tech" id="diagTech"></p>
+    </div>
+    <div class="card">
+      <h2 style="text-transform:none;letter-spacing:0;color:var(--txt)">Everything explained</h2>
+      <p class="mini">All features, commands and wiring, offline.</p>
+      <a href="/g/help.html">Open help</a>
+    </div>
+  </div>
+</section>
+
+</main>
+</div><!-- /wrap -->
+
+<div class="sheet" id="flashSheet" hidden>
+  <div class="sheet-panel">
+    <div class="sheet-head"><h2>Write firmware to a board</h2>
+      <button class="icon" onclick="closeSheets()">✕</button></div>
+    <div class="fwstep" id="fw1">
+      <h3 class="mini">1 · What to install</h3>
+      <p class="mini state-load" id="fwImgLine">asking this PC what it has built…</p>
+      <div id="fwImgs"></div>
+      <div class="row"><button class="primary" id="fwNext1" disabled onclick="fwToBoards()">Next</button></div>
+    </div>
+    <div class="fwstep" id="fw2" hidden>
+      <h3 class="mini">2 · Which board</h3>
+      <p class="mini state-load" id="fwBoardLine">listing every board it can reach…</p>
+      <div id="fwBoardsBox"></div>
+      <div class="row"><button onclick="fwBack1()">Back</button>
+        <button class="primary" id="fwNext2" disabled onclick="fwToConfirm()">Next</button></div>
+    </div>
+    <div class="fwstep" id="fw3" hidden>
+      <h3 class="mini">3 · Confirm</h3>
+      <div id="fwConfirm"></div>
+      <div class="row"><button onclick="fwBack2()">Back</button>
+        <button class="primary" id="fwGo">Overwrite the board</button></div>
+      <p class="banner err" id="fwErr" hidden></p>
+      <div class="pbar" id="fwBar" hidden><i></i></div>
+      <p class="mini" id="fwSay"></p>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="pairSheet" hidden>
+  <div class="sheet-panel">
+    <div class="sheet-head"><h2>Link two PCs</h2>
+      <button class="icon" onclick="closeSheets()">✕</button></div>
+    <div id="pairNo" class="banner info">Log in first — pairing copies accounts,
+      so it needs the password.</div>
+    <div id="pairYes" hidden>
+      <div class="card" style="margin-bottom:var(--sp-3)">
+        <b>Show a code on THIS PC</b>
+        <p class="mini" id="pairLeft"></p>
+        <div class="row"><button onclick="pairStart()">Show a code</button>
+          <button class="secondary" onclick="pairStop()">Hide it</button></div>
+        <p class="mono" id="pairCode" style="font-size:28px"></p>
+      </div>
+      <div class="card">
+        <b>Type a code from THE OTHER PC</b>
+        <div class="row"><label class="lbl" for="pairAddr">Other PC</label>
+          <input id="pairAddr" placeholder="its address, e.g. 192.168.1.20"></div>
+        <div class="row"><label class="lbl" for="pairInput">Code</label>
+          <input id="pairInput" class="mono" placeholder="the code it shows"></div>
+        <div class="row"><button class="primary" onclick="pairLink(false)">Pair</button></div>
+        <p class="banner err" id="pairErr" hidden></p>
+        <p class="banner ok" id="pairDone" hidden></p>
+        <div id="pairClash" hidden>
+          <p class="banner warn" id="pairClashWhy"></p>
+          <div class="row">
+            <button class="danger" onclick="pairLink(true)">Replace it</button>
+            <button class="secondary" onclick="pairClashKeep()">Keep mine</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="report-modal" id="repModal" hidden>
+  <div class="report-panel">
+    <h2>Report a problem</h2>
+    <textarea id="repText" placeholder="What happened? What did you expect?"></textarea>
+    <label class="checkbox-row"><input type="checkbox" id="repIncDiag">
+      include diagnostics</label>
+    <div class="report-actions">
+      <button class="primary" onclick="reportSend()">Send</button>
+      <button class="secondary" onclick="reportClose()">Cancel</button>
+    </div>
+    <p class="report-busy" id="repBusy">sending…</p>
+  </div>
+</div>
+
+<div class="banner err" id="noticeWrap" hidden style="position:fixed;left:0;right:0;bottom:0;z-index:60;margin:0;border-radius:0">
+  <span id="noticeText" style="flex:1"></span>
+  <button class="icon secondary" onclick="noticeClear()">✕</button>
+</div>
+
+<script src="/g/g.js"></script>
+</body>
+</html>

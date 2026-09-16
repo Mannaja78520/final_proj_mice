@@ -146,6 +146,32 @@ def run(t):
     s = _wait_done(base)
     t.ok(s["ok"] is True, "the update is accepted", s.get("error"))
     t.eq(s["percent"], 100, "and reaches 100%")
+    # ---- the board that has never heard of a login --------------------
+    # The hub logs in before it sends, because the board demands it (A18-1).
+    # But a board built before that answers 404 to /api/login and has no gate
+    # on /api/ota either — and it is the board that most needs an update.
+    # Insisting on a session stranded camera id 77 on its old firmware until
+    # the hub was taught to carry on. Measured on hardware 2026-08-21.
+    keep = fake_wifi.MODULE.ota
+    fake_wifi.MODULE.ota = b""
+    fake_wifi.MODULE.no_login_route = True
+    fake_wifi.MODULE.session = ""
+    try:
+        old = json.loads(F.post(base + "/api/ota?ip=%s&type=%s" % (ip, ty))[1])
+        t.ok(old.get("running") or old.get("ok") is not False,
+             "an update starts for a board with no login route at all")
+        s_old = _wait_done(base)
+        t.ok(s_old["ok"] is True,
+             "and an old board is still updated over WiFi",
+             "refusing here strands every board built before the login "
+             "existed: %s" % s_old.get("error"))
+        t.ok(len(fake_wifi.MODULE.ota) > 0,
+             "with the image really arriving (%d bytes)"
+             % len(fake_wifi.MODULE.ota))
+    finally:
+        fake_wifi.MODULE.no_login_route = False
+        fake_wifi.MODULE.ota = keep
+
     sent = fake_wifi.MODULE.ota
     built = (F.FIRMWARE / ".pio" / "build" / ("mice_" + ty) / "firmware.bin").read_bytes()
     t.ok(len(sent) == len(built),

@@ -13,6 +13,7 @@
 #include "core/Log.h"
 #include <algorithm>
 #include <cstdarg>
+#include <cstring>
 #include <string>
 
 using namespace nongmath;
@@ -206,6 +207,71 @@ void test_it_returns_when_the_network_is_properly_back(void) {
     TEST_ASSERT_EQUAL_INT(STAY, decide(true, 0, -40));      // main gone: stay put
 }
 
+// ---- picking the candidate to aim at (WebPortal::checkLink used to inline
+// this as an order-dependent tie-break that contradicted its own comment) --
+
+// A met module's hotspot password comes from the group, so we can actually get
+// in; a stronger stranger may simply refuse us. Signal does not outrank known.
+void test_a_known_module_beats_a_stronger_guess(void) {
+    PeerPick p;
+    p.feed(false, -40, "Stranger");
+    p.feed(true,  -70, "LiftA");
+    int rssi; bool known;
+    TEST_ASSERT_EQUAL_STRING("LiftA", p.best(rssi, known));
+    TEST_ASSERT_TRUE(known);
+    TEST_ASSERT_EQUAL_INT(-70, rssi);
+}
+
+// ...and the same whichever order the scan reports them in.
+void test_the_pick_does_not_depend_on_scan_order(void) {
+    int rssi; bool known;
+    PeerPick p;
+    p.feed(true, -70, "LiftA");
+    p.feed(false, -40, "Stranger");
+    TEST_ASSERT_EQUAL_STRING("LiftA", p.best(rssi, known));
+    TEST_ASSERT_TRUE(known);
+}
+
+void test_within_a_kind_the_stronger_signal_wins(void) {
+    int rssi; bool known;
+    PeerPick p;
+    p.feed(true, -60, "Weak");
+    p.feed(true, -45, "Strong");
+    p.feed(false, -35, "Guess");
+    p.best(rssi, known);
+    TEST_ASSERT_TRUE(known);
+    TEST_ASSERT_EQUAL_INT(-45, rssi);
+
+    PeerPick q;                       // no known ones at all: best guess
+    q.feed(false, -55, "Far");
+    q.feed(false, -42, "Near");
+    const char* name = q.best(rssi, known);
+    TEST_ASSERT_FALSE(known);
+    TEST_ASSERT_EQUAL_INT(-42, rssi);
+    TEST_ASSERT_EQUAL_STRING("Near", name);
+}
+
+void test_an_empty_scan_picks_nothing(void) {
+    int rssi = -1; bool known = true;
+    PeerPick p;
+    p.feed(true, 0, "Ghost");         // rssi 0 means not seen: ignored
+    TEST_ASSERT_NULL(p.best(rssi, known));
+    TEST_ASSERT_EQUAL_INT(0, rssi);
+    TEST_ASSERT_FALSE(known);
+}
+
+// The caller feeds c_str() of a loop-local String that is REASSIGNED every
+// iteration; a borrowed pointer would name whatever was scanned last.
+void test_fed_names_are_copied_not_borrowed(void) {
+    char buf[16];
+    std::strcpy(buf, "LiftA");
+    PeerPick p;
+    p.feed(true, -60, buf);
+    std::strcpy(buf, "LastScanned");   // the scan moved on
+    int rssi; bool known;
+    TEST_ASSERT_EQUAL_STRING("LiftA", p.best(rssi, known));
+}
+
 // ------------------------------------------------------------------- logging
 // A log line goes out as ONE write, and these assert the BYTES that write
 // carries. The interleaving bug this helper exists to stop cannot be
@@ -301,6 +367,11 @@ int main(int, char **) {
     RUN_TEST(test_no_move_to_an_equally_bad_neighbour);
     RUN_TEST(test_it_cannot_flap);
     RUN_TEST(test_it_returns_when_the_network_is_properly_back);
+    RUN_TEST(test_a_known_module_beats_a_stronger_guess);
+    RUN_TEST(test_the_pick_does_not_depend_on_scan_order);
+    RUN_TEST(test_within_a_kind_the_stronger_signal_wins);
+    RUN_TEST(test_an_empty_scan_picks_nothing);
+    RUN_TEST(test_fed_names_are_copied_not_borrowed);
     RUN_TEST(test_log_line_starts_with_a_machine_readable_tag);
     RUN_TEST(test_every_tag_has_its_own_name);
     RUN_TEST(test_a_log_line_can_never_look_like_two);

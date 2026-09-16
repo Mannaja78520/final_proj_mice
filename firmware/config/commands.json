@@ -20,6 +20,15 @@
   //    help   one line, written for a person reading HELP on a serial console
   //    query  true when it only reports and changes nothing (safe to poke)
   //    motion true when it STARTS or STOPS physical movement.
+  //    steps  the YAML step keys in a saved sequence that call this command.
+  //           key  what a step is called in the file ("- pose: 90 45 ...")
+  //           sub  a fixed word between the command and the value, for the
+  //                subcommands ("effect" -> RGB EFFECT <value>)
+  //           wait true when the player must let the move FINISH before the
+  //                next step. Not derivable from `motion`: STOP and RELAX are
+  //                motion and must not wait, or a sequence hangs on them.
+  //           SequencePlayer walks the generated table instead of an if-else
+  //           chain, so a new step key is one entry here.
   //
   //  Why `motion` exists: the board can play a sequence on its own clock while
   //  an app (Nong Studio, the module website, a script) sends poses on the
@@ -36,7 +45,7 @@
     { "name": "INFO",   "scope": "core", "args": "",                    "query": true,  "help": "one-line status JSON" },
     { "name": "HELP",   "scope": "core", "args": "[<command>]",         "query": true,  "help": "list commands, or explain one" },
     { "name": "SET",    "scope": "core", "args": "ID|NAME|TYPE|WIFI …",                 "help": "identity, module type and radio mode" },
-    { "name": "GROUP",  "scope": "core", "args": "[<name>|CLEAR]",     "query": true,  "help": "which installation this module belongs to; modules only link within a group" },
+    { "name": "GROUP",  "scope": "core", "args": "[<name>|CLEAR]",                     "help": "which installation this module belongs to; modules only link within a group" },
     { "name": "PEERS",  "scope": "core", "args": "",                    "query": true,  "help": "the other modules this one can see, as JSON" },
     { "name": "REACH",  "scope": "core", "args": "<ip|name|id> <command>",               "help": "run a command on another module through this one and return its reply" },
     { "name": "WIFI",   "scope": "core", "args": "[ON|OFF|AP|RETRY|SCAN|CLEAR]", "query": false, "help": "radio state, and change it live — never needs a reboot" },
@@ -52,43 +61,71 @@
     { "name": "FREAD",  "scope": "core", "args": "<file> <off> <n>",    "query": true,  "help": "read n bytes from an SD file as base64" },
     { "name": "FDEL",   "scope": "core", "args": "<file>",                              "help": "delete an SD file" },
     { "name": "MOVE",   "scope": "core", "args": "<file>|STOP",                         "help": "run a /moves sequence from the card, or stop it" },
-    { "name": "AUTH",   "scope": "core", "args": "<user> <pass>",       "query": true,  "help": "check a Setup-page login" },
+    { "name": "AUTH",   "scope": "core", "args": "<user> <pass>",                       "help": "check a Setup-page login" },
     { "name": "USER",   "scope": "core", "args": "LIST|ADD|DEL|PASS …",                 "help": "accounts stored on the board" },
     { "name": "OTA",    "scope": "core", "args": "",                    "query": true,  "help": "update-over-WiFi state: which slot runs, which one an update would go to, and how much room it has" },
     { "name": "REBOOT", "scope": "core", "args": "",                                    "help": "restart about a second later" },
 
+    // ---- new firmware, over whatever channel you are already talking on ----
+    // esptool needs DTR and RTS to reach the ROM bootloader, and RS485 has
+    // neither; the WiFi updater needs a web server the board may not run. These
+    // five have no such requirement — the board writes its own spare OTA slot
+    // from ordinary command lines, so a cable, the bus and WiFi all work the
+    // same way. FW, not F: FBEGIN/FDATA/FEND above write an SD FILE.
+    { "name": "FWBEGIN", "scope": "core", "args": "<bytes> <md5hex>",                   "help": "start new firmware: reserve the spare app slot for an image of this size. The md5 is required - it is the only thing that can tell a good image from a damaged one" },
+    { "name": "FWDATA",  "scope": "core", "args": "<seq> <bytes> <base64>",             "help": "one firmware chunk (≤150 bytes). It carries its own length because a truncated line is still valid base64; a short chunk or one out of order is refused, never written" },
+    { "name": "FWEND",   "scope": "core", "args": "",                                   "help": "check the whole image against its md5, then reboot into it" },
+    { "name": "FWABORT", "scope": "core", "args": "",                                   "help": "abandon an update and keep running the firmware already there" },
+    { "name": "FWSTAT",  "scope": "core", "args": "",                   "query": true,  "help": "how far an update has got, so a sender that lost its place can ask" },
+
     // ---------------- lift ----------------
-    { "name": "UP",     "scope": "lift", "args": "",                                    "motion": true, "help": "run up until the limit switch or STOP" },
-    { "name": "DOWN",   "scope": "lift", "args": "",                                    "motion": true, "help": "run down until the limit switch or STOP" },
+    { "name": "UP",     "scope": "lift", "args": "",                                    "motion": true, "steps": [{"key": "up", "wait": true}], "help": "run up until the limit switch or STOP" },
+    { "name": "DOWN",   "scope": "lift", "args": "",                                    "motion": true, "steps": [{"key": "down", "wait": true}], "help": "run down until the limit switch or STOP" },
     { "name": "STOP",   "scope": "lift", "args": "",                                    "motion": true,
-    "safety": true, "help": "stop, and cancel any GOTO" },
-    { "name": "HOME",   "scope": "lift", "args": "",                                    "motion": true, "help": "seek the bottom limit and zero the encoder" },
-    { "name": "GOTO",   "scope": "lift", "args": "<stage>",                             "motion": true, "help": "go to a stage, homing first if the position is unknown" },
+    "safety": true, "steps": [{"key": "stop"}], "help": "stop, and cancel any GOTO" },
+    { "name": "HOME",   "scope": "lift", "args": "",                                    "motion": true, "steps": [{"key": "home", "wait": true}], "help": "seek the bottom limit and zero the encoder" },
+    { "name": "GOTO",   "scope": "lift", "args": "<stage>",                             "motion": true, "steps": [{"key": "goto", "wait": true}], "help": "go to a stage, homing first if the position is unknown" },
     { "name": "STAGE",  "scope": "lift", "args": "",                    "query": true,  "help": "alias of STAGE?" },
     { "name": "STAGE?", "scope": "lift", "args": "",                    "query": true,  "help": "which stage it is at, or -1 if not homed" },
-    { "name": "SPEED",  "scope": "lift", "args": "<pwm>|<v> MS|MMS",                    "help": "travel speed as PWM, or in real units" },
+    { "name": "SPEED",  "scope": "lift", "args": "<pwm>|<v> MS|MMS",                    "steps": [{"key": "speed"}], "help": "travel speed as PWM, or in real units" },
     { "name": "SPEED?", "scope": "lift", "args": "",                    "query": true,  "help": "the current speed setting, both ways" },
     { "name": "TIME",   "scope": "lift", "args": "[<stage>]",           "query": true,  "help": "alias of TIME?" },
     { "name": "TIME?",  "scope": "lift", "args": "[<stage>]",           "query": true,  "help": "estimated travel time for one stage, or to a stage" },
-    { "name": "RGB",    "scope": "lift", "args": "<r> <g> <b>|BRIGHT <n>|EFFECT <name>", "help": "LED strip colour, brightness or effect" },
-    { "name": "PLAY",   "scope": "lift", "args": "<file>|STOP",                         "help": "play mp3/wav from /music, or stop" },
-    { "name": "VOL",    "scope": "lift", "args": "<0-100>",                             "help": "audio volume" },
+    { "name": "RGB",    "scope": "lift", "args": "<r> <g> <b>|BRIGHT <n>|EFFECT <name>", "steps": [{"key": "rgb"}, {"key": "effect", "sub": "EFFECT"}, {"key": "bright", "sub": "BRIGHT"}], "help": "LED strip colour, brightness or effect" },
+    { "name": "PLAY",   "scope": "lift", "args": "<file> [LOOP]|STOP",                  "steps": [{"key": "play"}], "help": "play mp3/wav from /music (LOOP repeats it), or stop" },
+    { "name": "VOL",    "scope": "lift", "args": "<0-100>",                             "steps": [{"key": "vol"}], "help": "audio volume" },
+    { "name": "STREAM", "scope": "lift", "args": "ON [port] [rate]|OFF",      "help": "play live audio sent from the PC over UDP (A24-32)" },
+    { "name": "STREAM?", "scope": "lift", "args": "",                     "query": true,  "help": "is live audio playing, and is it breaking up" },
+    { "name": "AMP",    "scope": "lift", "args": "<id>|VALID",                          "help": "choose amplifier kind from config/amps.json (reboot to apply)" },
+    { "name": "AMP?",   "scope": "lift", "args": "",                     "query": true,  "help": "current amplifier and wiring hint" },
 
     // ---------------- nong ----------------
-    { "name": "POSE",    "scope": "nong", "args": "<a1..a10> [T <ms>]",                 "motion": true, "help": "move every joint; '-' keeps one where it is" },
+    // PLAY/VOL exist on lift too (same parser in core/AudioPlayer.cpp) — a
+    // command may be declared once per type that wires the hardware.
+    { "name": "PLAY",    "scope": "nong", "args": "<file> [LOOP]|STOP",                  "steps": [{"key": "play"}], "help": "play mp3/wav from /music (LOOP repeats it), or stop" },
+    { "name": "VOL",     "scope": "nong", "args": "<0-100>",                             "steps": [{"key": "vol"}], "help": "audio volume" },
+    { "name": "STREAM", "scope": "nong", "args": "ON [port] [rate]|OFF",      "help": "play live audio sent from the PC over UDP (A24-32)" },
+    { "name": "STREAM?", "scope": "nong", "args": "",                     "query": true,  "help": "is live audio playing, and is it breaking up" },
+    { "name": "AMP",     "scope": "nong", "args": "<id>|VALID",                          "help": "choose amplifier kind from config/amps.json (reboot to apply)" },
+    { "name": "AMP?",    "scope": "nong", "args": "",                     "query": true,  "help": "current amplifier and wiring hint" },
+    { "name": "POSE",    "scope": "nong", "args": "<a1..a10> [T <ms>]",                 "motion": true, "steps": [{"key": "pose", "wait": true}], "help": "move every joint; '-' keeps one where it is" },
     { "name": "POSE?",   "scope": "nong", "args": "",                   "query": true,  "help": "the current 10 joint angles" },
-    { "name": "JOINT",   "scope": "nong", "args": "<1-10|name> <deg> [T <ms>]",         "motion": true, "help": "move one joint, by number or name" },
-    { "name": "HOME",    "scope": "nong", "args": "[T <ms>]",                           "motion": true, "help": "move to the neutral pose" },
+    { "name": "JOINT",   "scope": "nong", "args": "<1-10|name> <deg> [T <ms>]",         "motion": true, "steps": [{"key": "joint", "wait": true}], "help": "move one joint, by number or name" },
+    { "name": "HOME",    "scope": "nong", "args": "[T <ms>]",                           "motion": true, "steps": [{"key": "home", "wait": true}], "help": "move to the neutral pose" },
     { "name": "ZERO",    "scope": "nong", "args": "",                                   "motion": true, "help": "alias of HOME" },
     { "name": "STOP",    "scope": "nong", "args": "",                                   "motion": true,
-    "safety": true, "help": "freeze mid-move; the pose holds" },
-    { "name": "RELAX",   "scope": "nong", "args": "",                                   "motion": true, "help": "unpower the servos so the arms can be posed by hand" },
-    { "name": "ATTACH",  "scope": "nong", "args": "",                                   "motion": true, "help": "power the servos again, holding the current pose" },
-    { "name": "SPEED",   "scope": "nong", "args": "<deg_per_s>",                        "help": "speed used when a POSE carries no T" },
+    "safety": true, "steps": [{"key": "stop"}], "help": "freeze mid-move; the pose holds" },
+    { "name": "RELAX",   "scope": "nong", "args": "",                                   "motion": true, "steps": [{"key": "relax"}], "help": "unpower the servos so the arms can be posed by hand" },
+    { "name": "ATTACH",  "scope": "nong", "args": "",                                   "motion": true, "steps": [{"key": "attach"}], "help": "power the servos again, holding the current pose" },
+    { "name": "SPEED",   "scope": "nong", "args": "<deg_per_s>",                        "steps": [{"key": "speed"}], "help": "speed used when a POSE carries no T" },
     { "name": "SPEED?",  "scope": "nong", "args": "",                   "query": true,  "help": "the current speed in deg/s" },
     { "name": "TIME",    "scope": "nong", "args": "[<a1..a10>]",        "query": true,  "help": "alias of TIME?" },
     { "name": "TIME?",   "scope": "nong", "args": "[<a1..a10>]",        "query": true,  "help": "estimated and minimum duration of a move" },
     { "name": "SETZERO", "scope": "nong", "args": "",                                   "motion": true, "help": "call the current pose home; trim absorbs it so nothing moves" },
+    { "name": "NEUTRAL", "scope": "nong", "args": "[<1-10|name|ALL> <deg>]|<a1..a10>",   "steps": [{"key": "neutral"}], "help": "the angle each joint goes to on boot and on HOME; no args reports every joint" },
+    { "name": "NEUTRAL?", "scope": "nong", "args": "",                  "query": true,  "help": "the start angle of every joint" },
+    { "name": "OFFSET",  "scope": "nong", "args": "[<1-10|name|ALL> <deg>]",          "motion": true, "steps": [{"key": "offset"}], "help": "nudge one joint a few degrees, for a servo horn fitted a tooth out" },
+    { "name": "OFFSET?", "scope": "nong", "args": "",                   "query": true,  "help": "how far each joint is being corrected" },
     { "name": "LIMIT",   "scope": "nong", "args": "<1-10|name> <min> <max>",            "help": "how far that JOINT may turn" },
     { "name": "LIMIT?",  "scope": "nong", "args": "",                   "query": true,  "help": "all limits, gear, pulse and travel as JSON" },
     { "name": "GEAR",    "scope": "nong", "args": "[<1-10|name|ALL> <pinion> <gear>]",  "help": "per-joint reduction; no args reports every joint" },
@@ -96,7 +133,7 @@
     { "name": "RANGE",   "scope": "nong", "args": "[<1-10|name|ALL> <deg>]",            "help": "per-joint SERVO travel (180/270) — not the joint's limits" },
     { "name": "RATE",    "scope": "nong", "args": "[<1-10|name|ALL> <hz>]",             "help": "per-joint servo frame rate" },
     { "name": "SERVO",   "scope": "nong", "args": "[<1-10|name|ALL> <type>]",           "help": "apply a servo preset from config/servos.json" },
-    { "name": "JCFG",    "scope": "nong", "args": "<1-10|name> <pinion> <gear> <pmin> <pmax> <dps> <range> <hz> <min> <max>", "help": "one joint's whole setup in a single line — what GEAR+PULSE+RANGE+RATE+LIMIT do in five" },
+    { "name": "JCFG",    "scope": "nong", "args": "<1-10|name> <pinion> <gear> <pmin> <pmax> <dps> <range> <hz> <min> <max> [neutral]", "help": "one joint's whole setup in a single line — what GEAR+PULSE+RANGE+RATE+LIMIT do in five" },
     { "name": "CAL",     "scope": "nong", "args": "[CLEAR]",                            "help": "where the calibration is stored; CLEAR forgets it" },
 
     // ---------------- cam ----------------

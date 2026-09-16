@@ -90,7 +90,7 @@ def run(t):
          "5 s still hides the boards with the highest ids")
 
     bus = (F.FIRMWARE / "src" / "core" / "RS485Bus.cpp").read_text(encoding="utf-8")
-    j = bus.find("pendingAt_ =")
+    j = bus.find("pendingAt_[slot] =")     # queued since A22-1 batch 4
     line = bus[j:j + 120]
     t.contains(line, "%",
                "and a board's own delay is bounded, not proportional to its id")

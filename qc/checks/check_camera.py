@@ -165,10 +165,18 @@ def run(t):
                "the sensor clock is 10 MHz, not the usual 20")
     t.ok("corrupted" in campins or "coloured lines" in campins,
          "with the reason, so it is not 'optimised' back to 20 MHz")
-    for fn, why in (("set_bpc", "black-pixel correction"),
-                    ("set_wpc", "white-pixel correction"),
-                    ("set_lenc", "lens shading correction")):
-        t.contains(src, fn + "(s, 1)", "the sensor's %s is enabled" % why)
+    # Applied through the generated table since 2026-08-21, not called on the
+    # sensor directly: an unimplemented setter is a NULL pointer in sensor_t
+    # and calling it panics the board. The corrections still have to be ON —
+    # they are what the measurements above depend on — so this asserts the
+    # boot path asks for each one, in whichever form.
+    for name, why in (("bpc", "black-pixel correction"),
+                      ("wpc", "white-pixel correction"),
+                      ("lenc", "lens shading correction")):
+        t.ok(('applyCamControl(s, "%s", 1)' % name) in src
+             or ("set_%s(s, 1)" % name) in src,
+             "the sensor's %s is enabled" % why,
+             "it is switched on at boot, through the null-checked table")
     # The start size is per SENSOR now. SVGA was measured on an OV2640 and was
     # applied to every board; a real ESP32-CAM here turned out to be an OV5640,
     # a five megapixel part, and running it at SVGA while the frame buffer was

@@ -33,7 +33,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#define MICE_LOG_TAGS(X) X(boot) X(sys) X(wifi) X(sd) X(seq) X(ota) X(cam)
+#define MICE_LOG_TAGS(X) X(boot) X(sys) X(wifi) X(sd) X(seq) X(ota) X(cam) X(audio)
 
 namespace mlog {
 

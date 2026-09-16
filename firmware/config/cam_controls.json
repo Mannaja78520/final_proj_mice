@@ -1,0 +1,91 @@
+// Every camera sensor setting a person can change, declared once.
+//
+// Asked for 2026-08-21: *make the esp32 cam can setting all everything we can
+// setup ... or can check to be auto like default*. The sensor has two dozen
+// controls and the firmware exposed four of them, so the rest may as well not
+// have existed.
+//
+// It is DATA for the same reason the boards, commands, servos and module types
+// are: adding the next control is one entry here. firmware/tools/gen_tables.py
+// turns this into modules/cam/CamControls.h - the table the CAM command lists
+// and the generated switch that calls the setter - and the hub builds its
+// camera panel from the same file, so a control cannot appear on the page
+// without the firmware knowing how to apply it.
+//
+// FIELDS
+//   setter  the esp32-camera sensor_t function, without the set_ prefix.
+//           The generated code CHECKS THE POINTER before calling: a sensor
+//           that does not implement a control leaves it null, and calling it
+//           panics the board with LoadProhibited rather than answering.
+//   status  the field in sensor_t.status that reads the value back. Left out
+//           when it is spelled the same as the setter.
+//   kind    range = a number between lo and hi · toggle = 0 or 1 ·
+//           choice = one of `choices`, by index
+//   def     what the driver starts at, and what AUTO puts back.
+//
+// NOT LISTED, deliberately: focus. The OV2640 on these boards is FIXED FOCUS -
+// there is no autofocus to switch on, and a control that does nothing is worse
+// than an absent one.
+{
+  "controls": {
+    "brightness":  {"setter": "brightness",  "group": "basic", "kind": "range",  "lo": -2, "hi": 2, "def": 0,
+                    "label": "Brightness"},
+    "contrast":    {"setter": "contrast",    "group": "basic", "kind": "range",  "lo": -2, "hi": 2, "def": 0,
+                    "label": "Contrast"},
+    "saturation":  {"setter": "saturation",  "group": "basic", "kind": "range",  "lo": -2, "hi": 2, "def": 0,
+                    "label": "Saturation"},
+    "sharpness":   {"setter": "sharpness",   "group": "basic", "kind": "range",  "lo": -2, "hi": 2, "def": 0,
+                    "label": "Sharpness"},
+
+    "quality":     {"setter": "quality",     "group": "basic", "kind": "range",  "lo": 10, "hi": 63, "def": 16,
+                    "label": "JPEG quality", "note": "10 is best and biggest"},
+
+    "awb":         {"setter": "whitebal",    "status": "awb",  "group": "colour", "kind": "toggle", "lo": 0, "hi": 1, "def": 1,
+                    "label": "Auto white balance"},
+    "awb_gain":    {"setter": "awb_gain",    "group": "colour", "kind": "toggle", "lo": 0, "hi": 1, "def": 1,
+                    "label": "Auto white balance gain"},
+    "wb_mode":     {"setter": "wb_mode",     "group": "colour", "kind": "choice", "lo": 0, "hi": 4, "def": 0,
+                    "label": "White balance",
+                    "choices": ["auto", "sunny", "cloudy", "office", "home"]},
+
+    "aec":         {"setter": "exposure_ctrl", "status": "aec", "group": "exposure", "kind": "toggle", "lo": 0, "hi": 1, "def": 1,
+                    "label": "Auto exposure"},
+    "aec2":        {"setter": "aec2",        "group": "exposure", "kind": "toggle", "lo": 0, "hi": 1, "def": 0,
+                    "label": "Auto exposure (DSP)"},
+    "ae_level":    {"setter": "ae_level",    "group": "exposure", "kind": "range",  "lo": -2, "hi": 2, "def": 0,
+                    "label": "Exposure level"},
+    "aec_value":   {"setter": "aec_value",   "group": "exposure", "needs": "aec=0", "kind": "range",  "lo": 0, "hi": 1200, "def": 300,
+                    "label": "Exposure time", "note": "only when auto exposure is off"},
+
+    "agc":         {"setter": "gain_ctrl",   "status": "agc",  "group": "exposure", "kind": "toggle", "lo": 0, "hi": 1, "def": 1,
+                    "label": "Auto gain"},
+    "agc_gain":    {"setter": "agc_gain",    "group": "exposure", "needs": "agc=0", "kind": "range",  "lo": 0, "hi": 30, "def": 0,
+                    "label": "Gain", "note": "only when auto gain is off"},
+    "gainceiling": {"setter": "gainceiling", "group": "exposure", "kind": "range",  "lo": 0, "hi": 6, "def": 0,
+                    "label": "Gain ceiling", "cast": "gainceiling_t",
+                    "note": "the only setter that takes an enum instead of an int"},
+
+    "bpc":         {"setter": "bpc",         "group": "advanced", "kind": "toggle", "lo": 0, "hi": 1, "def": 1,
+                    "label": "Black pixel correction"},
+    "wpc":         {"setter": "wpc",         "group": "advanced", "kind": "toggle", "lo": 0, "hi": 1, "def": 1,
+                    "label": "White pixel correction"},
+    "raw_gma":     {"setter": "raw_gma",     "group": "advanced", "kind": "toggle", "lo": 0, "hi": 1, "def": 1,
+                    "label": "Gamma correction"},
+    "lenc":        {"setter": "lenc",        "group": "advanced", "kind": "toggle", "lo": 0, "hi": 1, "def": 1,
+                    "label": "Lens correction"},
+    "dcw":         {"setter": "dcw",         "group": "advanced", "kind": "toggle", "lo": 0, "hi": 1, "def": 1,
+                    "label": "Downsize cropping"},
+
+    "hmirror":     {"setter": "hmirror",     "group": "basic", "kind": "toggle", "lo": 0, "hi": 1, "def": 0,
+                    "label": "Mirror left-right"},
+    "vflip":       {"setter": "vflip",       "group": "basic", "kind": "toggle", "lo": 0, "hi": 1, "def": 0,
+                    "label": "Flip upside down"},
+
+    "special_effect": {"setter": "special_effect", "group": "colour", "kind": "choice", "lo": 0, "hi": 6, "def": 0,
+                    "label": "Effect",
+                    "choices": ["none", "negative", "grayscale", "red", "green", "blue", "sepia"]},
+    "colorbar":    {"setter": "colorbar",    "group": "advanced", "kind": "toggle", "lo": 0, "hi": 1, "def": 0,
+                    "label": "Test pattern",
+                    "note": "shows colour bars instead of the picture - for proving the link works"}
+  }
+}

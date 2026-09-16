@@ -47,7 +47,7 @@ def _plan_path():
     todo and every annotation as missing.
     """
     here = Path(__file__).resolve().parent.parent
-    if here.name == ".staging":
+    if here.name.startswith(".staging"):
         here = here.parent
     return here / "docs" / "PLAN.html"
 

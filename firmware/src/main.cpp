@@ -20,6 +20,7 @@
 #include "core/SDStore.h"
 #include "core/SequencePlayer.h"
 #include "core/CommandRouter.h"
+#include "core/BrownoutGuard.h"
 #include "core/RS485Bus.h"
 #include "core/WebPortal.h"
 #include "modules/Module.h"
@@ -59,6 +60,13 @@ static void emitLine(const String& s) {
 }
 
 void setup() {
+  // FIRST, before anything draws current: was the last reset a brownout, and
+  // how many in a row? A board whose supply cannot start it resets forever and
+  // is never reachable on ANY channel, including the two that need no radio.
+  // See core/BrownoutGuard.h — after two in a row the radio stays off so the
+  // board can at least be talked to over USB and RS485.
+  brownout.begin();
+
   // load the runtime pin map from NVS first (fast) so every service below
   // uses the web-configured pins, then park the RS485 transceiver in receive
   // mode — until DE is driven LOW a floating pin could jam the shared bus
@@ -117,6 +125,9 @@ void setup() {
 
   LOGF(boot, "id=%u name=\"%s\" type=%s",
        (unsigned)identity.id(), identity.name().c_str(), identity.type().c_str());
+  // The boot survived the radio starting, which is the only thing a
+  // marginal supply ever fails at. See BrownoutGuard::markBooted.
+  brownout.markBooted();
   LOGF(boot, "ready — commands on USB serial, RS485 (#<id> CMD) and "
        "http://%s.local/", identity.hostname().c_str());
 }
@@ -144,8 +155,8 @@ void loop() {
       // picking up noise — grows this String until the heap is gone and
       // the board dies with no message. The RS485 reader has had this
       // guard for a long time (RS485Bus.cpp:25); the USB reader beside it
-      // never got one.
-      if (serialBuf.length() > 250) serialBuf = "";  // missed terminator
+      // never got one. 250 ate FILES listings too - same fix, same day.
+      if (serialBuf.length() > 2048) serialBuf = "";  // missed terminator
       serialBuf += c;
     }
   }

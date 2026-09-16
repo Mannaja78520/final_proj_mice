@@ -37,7 +37,17 @@ window.addEventListener("load", async function(){
     await qcWaitFor(function(){
       return d.querySelector('#tabs .tab[data-go="network"]')
           && d.querySelectorAll('#netlist input[type=checkbox]').length > 0;
-    }, 15000);
+    // 40s, not 15. This waits on a full probe of every cable, and under a
+    // parallel gate that is slow: the tab asks /api/scan, then /api/ports,
+    // then opens each port with /api/scanusb. When the wait expired the check
+    // reported "it lists the modules it can find (0)", which reads as the tab
+    // being broken. It was not - it had not finished looking. Failed that way
+    // in the gate on 2026-08-20 and passed alone every time.
+    // 55s since 2026-08-28: the same failure came back when the suite grew to
+    // 159 checks (A24-19 added two browser ones to the same three workers).
+    // The whole check takes 57s alone, so 40s of it was never going to be
+    // enough under load. Patience raised; nothing it asserts has changed.
+    }, 55000);
     var btn = d.querySelector('#tabs .tab[data-go="network"]');
     out.push("tabbtn=" + (btn ? "yes" : "no"));
     var card = d.querySelector('[data-tab="network"]');
@@ -51,6 +61,13 @@ window.addEventListener("load", async function(){
       setTimeout(function(){
         var boxes = d.querySelectorAll("#netlist input[type=checkbox]");
         out.push("rows=" + boxes.length);
+        // WHY there are no rows, when there are none. The page shows a
+        // spinner while it is still looking and replaces it with a sentence
+        // once it has an answer, so its own state tells the difference
+        // between "found nothing" and "had not finished" - and reporting the
+        // first when the second is true is the check lying about the product.
+        var nl = d.getElementById("netlist");
+        out.push("still=" + (nl && /spin/.test(nl.className) ? "yes" : "no"));
         if (boxes.length) {
           boxes[0].checked = true;
           boxes[0].dispatchEvent(new Event("change", {bubbles:true}));
@@ -87,7 +104,7 @@ def run(t):
     real_scan = main.scan_modules
     main.scan_modules = lambda force=False: []
     try:
-        browser.raw_page(PAGE, base, seconds=32)
+        browser.raw_page(PAGE, base, seconds=80)   # 57s alone, so 62 was too tight under a full gate
     finally:
         main.scan_modules = real_scan
 
@@ -105,6 +122,17 @@ def run(t):
     t.eq(got.get("modskept"), "yes",
          "and does not destroy the module list")
     t.eq(got.get("usbkept"), "yes", "nor the USB list")
+    # STILL LOOKING IS NOT FOUND NOTHING. The page keeps its spinner class
+    # while the probe runs and swaps it for a sentence once it has an answer,
+    # so it says which of the two happened. Reporting "the tab found nothing"
+    # about a tab that had not finished sends somebody to debug discovery over
+    # a slow machine - it did exactly that in the gate on 2026-08-20.
+    if got.get("rows") == "0" and got.get("still") == "yes":
+        t.ok(False, "the Network tab finished looking before time ran out",
+             "it was still searching when the window closed, so this run says "
+             "nothing about whether the tab lists or links modules. That is a "
+             "slow probe, not a broken tab.")
+        return
     t.ok(int(got.get("rows", "0")) >= 1,
          "it lists the modules it can find (%s)" % got.get("rows"),
          "the tab found nothing, so nothing could be linked")

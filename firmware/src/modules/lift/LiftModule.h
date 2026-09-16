@@ -6,7 +6,7 @@
 #include <config.h>
 #include "modules/Module.h"
 #include "core/HwConfig.h"
-#include "core/RgbStrip.h"
+#include "modules/lift/RgbStrip.h"
 #include "core/AudioPlayer.h"
 
 class SDStore;
@@ -45,6 +45,8 @@ public:
     void addCapabilities(JsonArray caps) override;
     void status(JsonObject o) override;
     bool busy() override;
+    void silence() override { audio_.stop(); }
+    void silenceLoop() override { audio_.stopIfLooping(); }
     void applySettings(JsonVariant s) override;
 
 private:

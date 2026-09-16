@@ -113,11 +113,6 @@ private:
     // why an OTA upload was refused or failed, so the reply says something
     // useful instead of a bare 500 (see the /api/ota handler)
     String otaErr_;
-    // an HTTP upload lands here first and only replaces the real file once the
-    // whole thing arrived, so a dropped connection cannot destroy what is on
-    // the card already
-    String uploadDest_;
-    String uploadTmp_;
     bool camStreaming_ = false;   // one live view at a time
     uint32_t camStreamAt_ = 0;    // last chunk, so a dead viewer frees it
 

@@ -1,0 +1,39 @@
+{
+  // ============================================================
+  //  WS2812 DATA PINS — which GPIOs a light strip may be wired to.
+  // ============================================================
+  //
+  //  WHY THIS FILE EXISTS (2026-09-08). Every other pin on a board is chosen
+  //  from its website and stored in NVS. The strip's data pin could not be:
+  //  FastLED takes it as a TEMPLATE parameter
+  //
+  //      FastLED.addLeds<WS2812B, RGB_LED_PIN, GRB>(...)
+  //
+  //  so it is fixed when the firmware is built, and the Hardware-pins page had
+  //  nothing to offer. That breaks the rule this project is built on - a value
+  //  a person can only change by editing code is a bug - and nothing on the
+  //  page said why.
+  //
+  //  So the firmware carries a SWITCH over the pins listed here, one FastLED
+  //  instantiation each, and the page offers exactly these. Adding a pin is one
+  //  line; it costs a few hundred bytes of flash, which is why this is a short
+  //  list of sensible GPIOs and not all forty.
+  //
+  //  RULES FOR A PIN ON THIS LIST
+  //    * it must be an OUTPUT-capable GPIO (34-39 are input-only)
+  //    * not 6-11 (the flash chip) and not a strapping pin if it can be helped
+  //    * not one the lift already needs for its motor, encoder or limits
+  //
+  //  `default` is what a lift board assumes when nothing has been chosen. It
+  //  must appear in `pins`, and the generator refuses the file if it does not.
+
+  "default": 13,
+  "pins": [
+    { "gpio": 13, "note": "the original wiring, and still the default" },
+    { "gpio": 14, "note": "free on a lift" },
+    { "gpio": 15, "note": "strapping pin: fine as an output once booted" },
+    { "gpio": 25, "note": "free on a lift (a nong uses it for servo 3)" },
+    { "gpio": 26, "note": "free on a lift (a nong uses it for servo 4)" },
+    { "gpio": 27, "note": "free on a lift" }
+  ]
+}

@@ -23,7 +23,8 @@ function step(){
     if (typeof showTab !== "function") return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);
     var out = [];
-    var tabs = ["pose", "sequence", "robot", "setup"];
+    var tabs = ["pose", "sequence", "robot", "setup", "login"];
+    var navTabs = ["pose", "sequence", "robot", "setup"];
 
     // every card must belong to a tab that exists
     var all = document.querySelectorAll("#side .card");
@@ -37,7 +38,7 @@ function step(){
 
     // each tab shows its own cards and hides the others
     var counts = [];
-    tabs.forEach(function(name){
+    navTabs.forEach(function(name){
       showTab(name);
       var shown = 0, wrong = 0;
       tagged.forEach(function(c){

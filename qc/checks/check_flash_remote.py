@@ -182,7 +182,7 @@ def run(t):
         # including the login, without needing a second machine in QC.
         r = json.loads(F.post(base + "/api/flash/send", json.dumps({
             "to": "127.0.0.1", "port": port, "type": "nong",
-            "user": "mice", "password": F.HUB_PASSWORD}).encode())[1])
+            "user": "super_admin", "password": F.HUB_PASSWORD}).encode())[1])
         t.ok(r.get("ok") is not False, "a hub can send its firmware to another PC",
              "hub said: " + json.dumps(r)[:300])
         done = _wait(base)

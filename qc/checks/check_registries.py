@@ -59,6 +59,21 @@ def run(t):
     by_id = {a["id"]: a for a in listed}
     for want in ("studio", "help"):
         t.ok(want in by_id, "%s is registered" % want, sorted(by_id))
+    # A tile points at THIS hub, always. `url` exists to keep a historic path
+    # (registry.py:91), and it overrides `path` with whatever it says - so an
+    # absolute address there sends the whole gate at a foreign host, and the
+    # fetch below dies with a traceback instead of naming the rule. Checked
+    # first so the failure says what is wrong. Found 2026-09-09 while proving
+    # the face app's own check by sabotage.
+    for a in listed:
+        t.ok(a["path"].startswith("/") and "://" not in a["path"],
+             "%s points at this hub, not at an outside address" % a["name"],
+             "path is %r - an app that lives elsewhere is opened by a button "
+             "on its page, from an address in its own data file, never by "
+             "putting a foreign host into app.json" % a["path"])
+    if any("://" in a["path"] for a in listed):
+        return
+
     for a in listed:
         s, _ = F.get(base + a["path"])
         t.eq(s, 200, "%s actually serves at %s" % (a["name"], a["path"]))

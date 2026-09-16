@@ -56,6 +56,9 @@ static const int NSIZES = sizeof(SIZES) / sizeof(SIZES[0]);
 // source. Two copies of a pin map are two chances for the picture to lie about
 // the wiring.
 #include "modules/cam/CamBoards.h"
+// Every sensor setting, and the null-checked switch that applies one.
+// config/cam_controls.json -> modules/cam/CamControls.h
+#include "modules/cam/CamControls.h"
 
 static framesize_t startSize(uint16_t pid, framesize_t initSize) {
     switch (pid) {
@@ -307,10 +310,14 @@ void CamModule::begin() {
     // this, and they cost nothing at runtime.
     sensor_t* s = esp_camera_sensor_get();
     if (s) {
-        s->set_bpc(s, 1);        // black-pixel correction
-        s->set_wpc(s, 1);        // white-pixel correction
-        s->set_lenc(s, 1);       // lens shading correction
-        s->set_raw_gma(s, 1);    // gamma on the raw data
+        // Through the generated table, which CHECKS THE POINTER. sensor_t is
+        // a struct of function pointers filled in per part, and one a sensor
+        // does not implement is NULL - calling it panics the board with
+        // LoadProhibited instead of failing. These four were called straight.
+        applyCamControl(s, "bpc", 1);        // black-pixel correction
+        applyCamControl(s, "wpc", 1);        // white-pixel correction
+        applyCamControl(s, "lenc", 1);       // lens shading correction
+        applyCamControl(s, "raw_gma", 1);    // gamma on the raw data
         // Start on the size that measured CLEANEST on this sensor. Corrupted
         // scanlines per frame, 10 MHz, five frames each:
         //     qqvga 0.8   qvga 26.4   vga 12.8   svga 1.6
@@ -381,6 +388,17 @@ bool CamModule::applySize(const String& name, String& reply) {
         if (s->set_framesize(s, SIZES[i].size) != 0) {
             reply = "ERR the sensor refused " + name;
             return true;
+        }
+        // THROW AWAY THE FRAMES IN FLIGHT. The sensor changes size on its next
+        // frame, but the buffer still holds the previous one and, with one
+        // frame buffer and GRAB_LATEST, the next capture hands that back —
+        // measured on the bench 2026-08-21: straight after a change to qqvga a
+        // SNAP returned 15,007 bytes while a real qqvga frame is about 2,000,
+        // and vga returned 2,127. The picture was the OLD size, so changing
+        // size looked like it did nothing.
+        for (int drop = 0; drop < 2; drop++) {
+            camera_fb_t* fb = esp_camera_fb_get();
+            if (fb) esp_camera_fb_return(fb);
         }
         reply = "OK size=" + name;
         return true;
@@ -477,12 +495,72 @@ bool CamModule::handleCommand(String* argv, int argc, String& reply) {
         }
         if (what == "VFLIP" || what == "HMIRROR") {
             int on = argc >= 3 ? argv[2].toInt() : 0;
-            if (what == "VFLIP") s->set_vflip(s, on ? 1 : 0);
-            else s->set_hmirror(s, on ? 1 : 0);
+            String which = what == "VFLIP" ? "vflip" : "hmirror";
+            if (!applyCamControl(s, which, on ? 1 : 0)) {
+                reply = "ERR this sensor has no " + which;
+                return true;
+            }
             reply = "OK " + what + "=" + String(on ? 1 : 0);
             return true;
         }
-        reply = "ERR CAM [SIZE <name>|QUALITY <10-63>|FLASH ON|OFF|VFLIP 0|1|HMIRROR 0|1]";
+        // ---- everything the sensor can do, from config/cam_controls.json ----
+        if (what == "LIST") {
+            // name=value/lo..hi/default per line, so a page can build itself
+            // and a person on a serial console can read it.
+            reply = "CAM CONTROLS " + String(CAM_CONTROL_COUNT);
+            for (int i = 0; i < CAM_CONTROL_COUNT; i++) {
+                const CamControl& c = CAM_CONTROLS[i];
+                reply += "\n" + String(c.name) + "=" +
+                         String(readCamControl(s, c.name)) + " " +
+                         String(c.kind) + " " + String(c.lo) + ".." +
+                         String(c.hi) + " def=" + String(c.def) +
+                         " group=" + String(c.group) +
+                         " label=" + String(c.label);
+                // Whether this part HAS it. A page that offers a control the
+                // sensor lacks gets ERR when someone touches it; better to
+                // show it greyed with the reason. Asked without changing
+                // anything: set it to what it already reads.
+                if (!applyCamControl(s, c.name, readCamControl(s, c.name)))
+                    reply += " missing=1";
+                if (c.needs[0]) reply += " needs=" + String(c.needs);
+                if (c.choices[0]) reply += " choices=" + String(c.choices);
+            }
+            return true;
+        }
+        if (what == "AUTO") {
+            // Back to what the driver starts with. The one control this must
+            // NOT touch is the frame size: the buffer was allocated for it.
+            int done = 0;
+            for (int i = 0; i < CAM_CONTROL_COUNT; i++)
+                if (applyCamControl(s, CAM_CONTROLS[i].name, CAM_CONTROLS[i].def))
+                    done++;
+            reply = "OK back to default (" + String(done) + " of " +
+                    String(CAM_CONTROL_COUNT) + " settings)";
+            return true;
+        }
+        if (what == "SET") {
+            if (argc < 4) { reply = "ERR usage: CAM SET <name> <value>"; return true; }
+            const CamControl* c = findCamControl(argv[2]);
+            if (!c) {
+                reply = "ERR no setting called " + argv[2] + " — CAM LIST shows them";
+                return true;
+            }
+            int v = argv[3].toInt();
+            if (v < c->lo || v > c->hi) {
+                reply = "ERR " + String(c->name) + " is " + String(c->lo) +
+                        " to " + String(c->hi);
+                return true;
+            }
+            if (!applyCamControl(s, c->name, v)) {
+                // Not a crash and not a lie: this part does not have it.
+                reply = "ERR this sensor has no " + String(c->name);
+                return true;
+            }
+            reply = "OK " + String(c->name) + "=" + String(v);
+            return true;
+        }
+        reply = "ERR CAM [SIZE <name>|QUALITY <10-63>|FLASH ON|OFF|VFLIP 0|1"
+                "|HMIRROR 0|1|LIST|SET <name> <value>|AUTO]";
         return true;
     }
     return false;

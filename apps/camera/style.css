@@ -1,0 +1,12 @@
+body{margin:0;padding:var(--sp-4);background:var(--bg);color:var(--txt);
+     font-family:var(--sans)}
+.head{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;
+      margin-bottom:var(--sp-4)}
+.head h1{font-size:20px;margin:0}
+.grid{display:grid;gap:var(--sp-4);
+      grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}
+/* The picture keeps its box whether or not a frame has arrived, so the page
+   does not jump when the first one lands. */
+.shot{width:100%;aspect-ratio:4/3;object-fit:contain;background:var(--sunk);
+      border:1px solid var(--line);border-radius:var(--r-md);display:block}
+.cam h2{font-size:15px;margin:0 0 var(--sp-2)}

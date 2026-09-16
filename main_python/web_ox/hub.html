@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mice — the workbench</title>
+<link rel="stylesheet" href="/mice.css">
+<link rel="stylesheet" href="/o/ox.css">
+<script src="/mice.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============================================================ gate -->
+<section id="loginCard" class="card xcard" hidden>
+  <div class="xt"><span class="grow">One password and you can drive everything</span></div>
+  <p class="mini">Reading stays open. Moving a robot, writing software or
+     deleting anything needs the hub password.</p>
+  <form id="loginForm" class="xb">
+    <div class="row"><label class="lbl" for="loginUser">Name</label>
+      <input id="loginUser" autocomplete="username" placeholder="leave blank on a one-password hub"></div>
+    <div class="row"><label class="lbl" for="loginPass">Password</label>
+      <input id="loginPass" type="password" autocomplete="current-password" required></div>
+    <div class="xa">
+      <button class="primary" id="loginBtn" type="submit">Log in</button>
+      <span id="loginBusy" class="mini" hidden>checking…</span>
+    </div>
+  </form>
+  <p class="banner err" id="loginErr" hidden></p>
+  <p class="banner warn" id="loginLock" hidden></p>
+</section>
+
+<!-- ========================================================== stopbar -->
+<header class="stopbar">
+  <h1>Mice workbench</h1>
+  <span class="badge" id="whoBadge" hidden></span>
+  <button id="logoutBtn" class="secondary" hidden>Log out</button>
+  <button id="stopAllBtn" class="danger" title="every module stops moving, now"
+          onclick="stopEverything()">STOP EVERYTHING</button>
+</header>
+<!-- the STOP result speaks here, in the colour of what happened - the red
+     fail banner stays failures-only -->
+<p class="banner ok" id="stopSaid" hidden></p>
+
+<nav class="znav" id="znav" hidden>
+  <a href="#tonight">Tonight</a>
+  <a href="#setup">Set up</a>
+  <a href="#wrong">When something goes wrong</a>
+  <span style="flex:1"></span>
+  <button class="icon" title="Settings — theme, technical detail, people"
+          onclick="openSheet('settingsSheet')">⚙</button>
+</nav>
+
+<main id="app" hidden>
+
+<!-- ==================================================== zone: tonight -->
+<section class="zone" id="tonight">
+  <h2>Tonight</h2>
+  <div class="grid" id="modGrid">
+    <div class="card xcard loading" id="modState">
+      <div class="xt"><span class="grow">The rig</span></div>
+      <p class="xs state-load">Looking for boards on the network and the
+         cables…</p>
+    </div>
+  </div>
+  <div class="row">
+    <button onclick="refreshMods(true)">Look again</button>
+    <label class="row mini" style="margin:0"><input type="checkbox" id="showPorts">
+      show bare cables too</label>
+  </div>
+  <div class="card xcard" id="sharedCard" hidden>
+    <div class="xt"><span class="grow">Boards on other PCs</span></div>
+    <p class="xs mini" id="sharedLine">looking…</p>
+    <div class="xb" id="sharedList"></div>
+  </div>
+</section>
+
+<!-- ===================================================== zone: set up -->
+<section class="zone" id="setup">
+  <h2>Set up</h2>
+  <div class="grid">
+    <div class="card xcard">
+      <div class="xt"><span class="grow">Put new software on a board</span></div>
+      <p class="xs mini">Pick what to install, pick the board, watch it go.</p>
+      <div class="xa"><button class="primary" onclick="openSheet('flashSheet')">Start</button></div>
+    </div>
+    <div class="card xcard">
+      <div class="xt"><span class="grow">Let another PC in</span></div>
+      <p class="xs mini">Show a code here, or type one from the other PC.</p>
+      <div class="xa"><button onclick="openPair()">Pair hubs</button></div>
+    </div>
+    <div class="card xcard">
+      <div class="xt"><span class="grow">Open this hub from a phone</span></div>
+      <div class="xb qrrow">
+        <img id="qrImg" alt="QR code for this hub's address" width="120" height="120"
+             src="/api/qr" style="max-width:100%">
+        <div>
+          <p id="qrUrl" class="mono"></p>
+          <p class="mini" id="qrName"></p>
+        </div>
+      </div>
+    </div>
+    <div class="card xcard">
+      <div class="xt"><span class="grow">Tools and apps</span></div>
+      <p class="xs mini" id="appsLine">loading…</p>
+      <div class="xb row" id="appsList"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================ zone: gone wrong -->
+<section class="zone" id="wrong">
+  <h2>When something goes wrong</h2>
+  <div class="grid">
+    <div class="card xcard">
+      <div class="xt"><span class="grow">Problems people reported</span></div>
+      <p class="xs mini" id="repLine">loading…</p>
+      <div class="xb" id="repList"></div>
+      <div class="xa">
+        <button onclick="reportOpen()">Report a problem</button>
+        <button class="secondary" onclick="loadReports(true)">Refresh</button>
+      </div>
+    </div>
+    <div class="card xcard">
+      <div class="xt"><span class="grow">What this hub knows about itself</span></div>
+      <p class="xs mini" id="diagLine">Diagnostics are one click away.</p>
+      <div class="xa">
+        <button onclick="copyDiag(this)">Copy diagnostics</button>
+        <span class="tech mini" id="diagTech"></span>
+      </div>
+    </div>
+    <div class="card xcard">
+      <div class="xt"><span class="grow">Keep this hub up to date</span></div>
+      <p class="xs mini" id="updLine">checking…</p>
+      <div class="xa"><button id="updBtn" onclick="selfUpdate(this)"
+        hidden>Update now</button></div>
+    </div>
+    <div class="card xcard">
+      <div class="xt"><span class="grow">Everything explained</span></div>
+      <p class="xs mini">Features, commands, wiring — offline, no internet needed.</p>
+      <div class="xa"><a href="/o/help.html">Open the help page</a></div>
+    </div>
+  </div>
+</section>
+
+</main>
+</div><!-- /wrap -->
+
+<!-- ======================================================== sheets -->
+<div class="sheet" id="flashSheet" hidden>
+  <div class="sheet-panel">
+    <div class="sheet-head"><h2>Put new software on a board</h2>
+      <button class="icon" onclick="closeSheets()">✕</button></div>
+    <div class="fwstep" id="fw1">
+      <h3 class="mini">Step 1 of 3 — what to install</h3>
+      <p class="xs state-load" id="fwImgLine">asking this PC what it has built…</p>
+      <div class="xb" id="fwImgs"></div>
+      <div class="xa"><button class="primary" id="fwNext1" disabled
+        onclick="fwToBoards()">Next: pick the board</button></div>
+    </div>
+    <div class="fwstep" id="fw2" hidden>
+      <h3 class="mini">Step 2 of 3 — which board</h3>
+      <p class="xs state-load" id="fwBoardLine">listing every board it can reach…</p>
+      <div class="xb" id="fwBoardsBox"></div>
+      <div class="xa">
+        <button onclick="fwBack1()">Back</button>
+        <button class="primary" id="fwNext2" disabled
+          onclick="fwToConfirm()">Next: check and go</button></div>
+    </div>
+    <div class="fwstep" id="fw3" hidden>
+      <h3 class="mini">Step 3 of 3 — confirm</h3>
+      <div class="xb" id="fwConfirm"></div>
+      <div class="xa">
+        <button onclick="fwBack2()">Back</button>
+        <button class="primary" id="fwGo">Write it</button></div>
+      <p class="banner err" id="fwErr" hidden></p>
+      <div class="pbar" id="fwBar" hidden><i></i></div>
+      <p class="xs mini" id="fwSay"></p>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="pairSheet" hidden>
+  <div class="sheet-panel">
+    <div class="sheet-head"><h2>Let another PC in</h2>
+      <button class="icon" onclick="closeSheets()">✕</button></div>
+    <div id="pairNo" class="banner info">Log in first — pairing copies accounts,
+      so it needs the password.</div>
+    <div id="pairYes" hidden>
+      <div class="xcard card" style="margin-bottom:var(--sp-3)">
+        <div class="xt"><span class="grow">Show a code on THIS PC</span></div>
+        <p class="xs mini" id="pairLeft"></p>
+        <div class="xa"><button onclick="pairStart()">Show a code</button>
+          <button class="secondary" onclick="pairStop()">Hide it</button></div>
+        <p class="mono" id="pairCode" style="font-size:28px"></p>
+      </div>
+      <div class="xcard card">
+        <div class="xt"><span class="grow">Type a code from THE OTHER PC</span></div>
+        <div class="xb">
+          <div class="row"><label class="lbl" for="pairAddr">Other PC</label>
+            <input id="pairAddr" placeholder="its address, e.g. 192.168.1.20"></div>
+          <div class="row"><label class="lbl" for="pairInput">Code</label>
+            <input id="pairInput" class="mono" placeholder="the code it shows"></div>
+        </div>
+        <div class="xa"><button class="primary" onclick="pairLink(false)">Pair</button></div>
+        <p class="banner err" id="pairErr" hidden></p>
+        <p class="banner ok" id="pairDone" hidden></p>
+        <div id="pairClash" hidden>
+          <p class="banner warn" id="pairClashWhy"></p>
+          <div class="xa">
+            <button class="danger" onclick="pairLink(true)">Replace it</button>
+            <button class="secondary" onclick="pairFace('pairEnter')">Keep mine</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="settingsSheet" hidden>
+  <div class="sheet-panel">
+    <div class="sheet-head"><h2>Settings</h2>
+      <button class="icon" onclick="closeSheets()">✕</button></div>
+    <div class="xcard card" style="margin-bottom:var(--sp-3)">
+      <div class="xt"><span class="grow">Colours</span></div>
+      <div class="xb row" id="themePick"></div>
+    </div>
+    <div class="xcard card" style="margin-bottom:var(--sp-3)">
+      <div class="xt"><span class="grow">Technical detail</span>
+        <label class="row mini" style="margin:0"><input type="checkbox" id="advOn">
+          show addresses, ports and ids everywhere</label></div>
+    </div>
+    <div class="xcard card">
+      <div class="xt"><span class="grow">People who may log in</span></div>
+      <p class="xs mini" id="usersLine"></p>
+      <div class="xb" id="usersList"></div>
+      <form id="userForm" class="xa">
+        <input id="userName" placeholder="name" required>
+        <input id="userPass" type="password" placeholder="password" required>
+        <button>Add</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- report modal: the shared pattern from mice.css -->
+<div class="report-modal" id="repModal" hidden>
+  <div class="report-panel">
+    <h2>Report a problem</h2>
+    <textarea id="repText" placeholder="What happened? What did you expect?"></textarea>
+    <label class="checkbox-row"><input type="checkbox" id="repIncDiag">
+      include what the hub knows about itself (diagnostics)</label>
+    <div class="report-actions">
+      <button class="primary" onclick="reportSend()">Send</button>
+      <button class="secondary" onclick="reportClose()">Cancel</button>
+    </div>
+    <p class="report-busy" id="repBusy">sending…</p>
+  </div>
+</div>
+
+<div class="banner err" id="noticeWrap" hidden style="position:fixed;left:0;right:0;bottom:0;z-index:60;margin:0;border-radius:0">
+  <span id="noticeText" style="flex:1"></span>
+  <button class="icon secondary" onclick="noticeClear()">✕</button>
+</div>
+
+<script src="/o/ox.js"></script>
+</body>
+</html>

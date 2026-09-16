@@ -1,0 +1,44 @@
+{
+  // WHO CAN USE WHAT WITHOUT LOGGING IN.
+  //
+  // Asked 2026-09-09: *make our app except the TOOL and module can use with
+  // out login, other thing need to be login same as face reconize, because i
+  // need to use the tool some time with no login in site.*
+  //
+  // A tool has to work at a venue with nobody logged in. Everything else asks
+  // first. This file is the whole rule - adding a page costs one line here and
+  // no code.
+  //
+  // WHAT THIS IS NOT: it is not a lock. The lock is hub_auth.GATED, which
+  // answers `401 log in first` to every route that moves a robot, writes a
+  // file, replaces firmware or takes a port. This file decides what a person
+  // SEES and can press. Reading stays open either way.
+
+  // Pages that work with no login. A path that starts with one of these is
+  // open. Everything else shows the sign-in box in place of its controls.
+  "openPages": [
+    "/app/",          // every tool: Reconize, ESP32 camera, Voice, Studio, Help
+    "/mod",           // a module's own page, and /mod.html
+    "/module.html",
+    "/docs/"          // the plans and the reference: no controls at all, and
+                      // PLAN.html has to open from a USB stick with no hub
+  ],
+
+  // Cards on the hub home that need a session. Named rather than guessed, so
+  // the next one is a line here. A card not named stays visible to everyone.
+  "needLogin": [
+    "flash",          // replacing firmware is not undoable
+    "settings",       // shared settings reach every page and every board
+    "pair",           // pairing hands another PC this rig
+    "lights",         // the light tool drives real hardware
+    "control"         // anything that moves a robot
+  ],
+
+  // What the box says where a card used to be. Editable, because the words on
+  // a screen are the designer's, not the programmer's.
+  "words": {
+    "title": "Sign in to use this",
+    "body": "Tools and module pages work without signing in. Everything else asks first.",
+    "button": "Sign in"
+  }
+}

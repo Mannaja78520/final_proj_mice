@@ -63,8 +63,11 @@ class Snapshots:
             return []
         out = []
         for p in self.patches.iterdir():
-            if p.is_dir() and p.name[:4].isdigit():
-                out.append((int(p.name[:4]), p))
+            # leading digits, not name[:4]: "%04d" grows past four digits at
+            # patch 10000 and a fixed slice would alias it onto patch 1000
+            head = p.name.split("_")[0]
+            if p.is_dir() and head.isdigit():
+                out.append((int(head), p))
         return sorted(out)
 
     @staticmethod
@@ -74,6 +77,9 @@ class Snapshots:
 
     # ---- save / list / restore -------------------------------------
     def save(self, desc, quiet=False):
+        # one line, no pipes: a newline or | in a description would split the
+        # markdown rows in both patch.md and PATCHES.md
+        desc = " ".join(desc.split()).replace("|", "/")
         self.patches.mkdir(parents=True, exist_ok=True)
         got = self.existing()
         n = (got[-1][0] + 1) if got else 1
@@ -88,8 +94,10 @@ class Snapshots:
         when = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         (folder / "patch.md").write_text(
             "# Patch %04d\n\n- **when:** %s\n- **change:** %s\n- **files:** %s\n\n"
-            "Restore this exact version with:  `%s %d`\n"
+            "Restore these files to this version with:  `%s %d`\n"
+            "(files added since are left alone - nothing is ever deleted)\n"
             % (n, when, desc, ", ".join(saved), self.restore_cmd, n), encoding="utf-8")
+        self.index.parent.mkdir(parents=True, exist_ok=True)
         if not self.index.exists():
             self.index.write_text(
                 "# %s patches\n\nEvery change to the %s is saved here as a numbered "
@@ -97,7 +105,7 @@ class Snapshots:
                 "restore with `%s <n>`.\n\n| # | when | change |\n|---|---|---|\n"
                 % (self.what.capitalize(), self.what, self.restore_cmd), encoding="utf-8")
         with self.index.open("a", encoding="utf-8") as f:
-            f.write("| %04d | %s | %s |\n" % (n, when, desc.replace("|", "/")))
+            f.write("| %04d | %s | %s |\n" % (n, when, desc))
         if not quiet:
             print("saved patch %04d -> %s (%d file(s))" % (n, folder.name, len(saved)))
         return n
@@ -151,6 +159,9 @@ def cli(snap, argv, doc):
     elif argv[0] == "--list":
         snap.show_list()
     elif argv[0] == "--restore":
-        snap.restore(argv[1])
+        if len(argv) < 2 or not argv[1].isdigit():
+            print("usage: --restore <number>")
+        else:
+            snap.restore(argv[1])
     else:
         snap.save(" ".join(argv))

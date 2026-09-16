@@ -77,3 +77,95 @@ After updating Nong Studio and the nong module the servo sometimes disables itse
 
 ### 2026-07-26
 The PDI-1181 at L_shoulder roll disables when it changes position under load; holds fine once positioned; revives only on unplug/replug. R_SH_R same load works. It worked before the update — same hardware, other servos fine, only this one now can't.
+
+### 2026-09-02 14:06
+make use only servo run when start esp32 from 0-180 program
+
+### 2026-09-02 14:23
+edit only main make it can run
+
+### 2026-09-02 14:26
+edit only main make it can run
+
+### 2026-09-02 14:27
+edit only main make it can run
+
+### 2026-09-02 15:01
+<ide_opened_file>The user opened the file e:\P_tle\firmware\.claude\settings.local.json in the IDE. This may or may not be related to the current task.</ide_opened_file>
+what your model now
+
+### 2026-09-02 15:01
+what your model now
+
+### 2026-09-02 15:01
+what your model now
+
+### 2026-09-02 15:01
+what your model now\
+
+### 2026-09-02 15:02
+<ide_opened_file>The user opened the file e:\P_tle\firmware\.claude\settings.local.json in the IDE. This may or may not be related to the current task.</ide_opened_file>
+what your model now
+
+### 2026-09-02 15:02
+<ide_opened_file>The user opened the file e:\P_tle\firmware\.claude\settings.local.json in the IDE. This may or may not be related to the current task.</ide_opened_file>
+what your model now
+
+### 2026-09-02 15:02
+check the time line edit settings.local.json make can run nvidia
+
+### 2026-09-02 15:04
+no i mean can run openrouter run the nvidia model chat to help me coding
+
+### 2026-09-02 15:08
+"ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_AUTH_TOKEN": "REDACTED_API_KEY",
+    "ANTHROPIC_MODEL":
+
+### 2026-09-02 15:09
+<ide_opened_file>The user opened the file e:\P_tle\firmware\.claude\settings.local.json in the IDE. This may or may not be related to the current task.</ide_opened_file>
+hello what your model now
+
+### 2026-09-02 15:14
+<ide_opened_file>The user opened the file e:\P_tle\firmware\.claude\settings.local.json in the IDE. This may or may not be related to the current task.</ide_opened_file>
+edit the main make it can run
+
+### 2026-09-02 15:21
+what your model
+
+### 2026-09-02 15:21
+<ide_opened_file>The user opened the file e:\P_tle\firmware\.claude\settings.local.json in the IDE. This may or may not be related to the current task.</ide_opened_file>
+edit the main make it can run
+
+### 2026-09-02 15:22
+why you so idiot?
+
+### 2026-09-02 15:26
+but you can't do it i just told vyou to edit the main to make it can run but you can't do it it just esp32 servo
+
+### 2026-09-02 15:27
+edit the main make it can run
+
+### 2026-09-02 15:27
+<ide_opened_file>The user opened the file e:\P_tle\firmware\.claude\settings.local.json in the IDE. This may or may not be related to the current task.</ide_opened_file>
+what your model now?
+
+### 2026-09-02 15:28
+what your model now?
+
+### 2026-09-02 15:29
+edit the main make it can run
+
+do not add any websiete
+
+### 2026-09-02 15:41
+fuck you cannot do anything sorry for that
+
+### 2026-09-03 02:47
+hi
+
+### 2026-09-03 02:47
+hi who are you
+
+### 2026-09-03 02:47
+what your model

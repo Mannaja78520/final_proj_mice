@@ -17,6 +17,13 @@ board, and a module's commands are only on a board built for that module.
 
 ### 1. WiFi — website
 
+The module page groups controls into Move it, Shows & files, and Setup & wiring.
+The technical-details switch is available on all three tabs; it reveals the
+module ID and firmware version. The hub light tool labels RGB controls in plain
+words and reports command success or refusal beside the control used. Optional
+saved shows and PC music controls expand on click; RGB EFFECT rainbow is unchanged.
+
+
 Open `http://<name>.local/` or the IP printed on serial (e.g. `http://10.77.237.159/`).
 Everything is clickable, and the **Console** card at the bottom sends any raw
 command from this table. If the module can't join WiFi it opens its own AP
@@ -124,10 +131,10 @@ Other endpoints:
 | `GET /api/download?path=/music/a.mp3` | download a file |
 | `POST /api/upload?dir=/music` | upload (multipart form file) |
 | `GET /api/delete?path=/music/a.mp3` | delete a file |
-| `WS /ws` | WebSocket: status JSON pushed every 500 ms; send any command line as a text frame, reply comes back as `> ...` |
+| `WS /ws` | WebSocket: status JSON pushed every 500 ms. Push-only — frames sent to it are ignored, because the socket carries no login to check |
 | `GET /api/cam.stream` | the **live view** (cam modules only): MJPEG, many frames down one connection. ~19 fps at QVGA against ~7 for repeated stills, because this server closes a connection after every response. **One viewer at a time** — a second is refused with 503, since the board has four connections in total |
 | `GET /api/cam.jpg` | one JPEG from the camera (cam modules only). One frame per request on purpose — an MJPEG stream would hold one of the board's four connections open for as long as anyone watched |
-| `POST /api/ota` | **new firmware over WiFi** (multipart, one `firmware.bin`). Refused while the module is moving or a sequence is playing — add `?force=1` to override. Answers `OK updated, rebooting into the new firmware`, then reboots |
+| `POST /api/ota?md5=<32 hex>` | **new firmware over WiFi** (multipart, one `firmware.bin`). The **md5 is required** and the login is checked before a single byte is written — without either, a truncated or unauthorised upload used to switch the boot partition and *then* report the problem. Refused while the module is moving or a sequence is playing — add `?force=1` to override. Answers `OK updated, rebooting into the new firmware`, then reboots |
 
 ### 3. UART (USB serial)
 
@@ -189,6 +196,50 @@ Examples:
 #* RGB 255 0 0            (all modules red, no replies)
 #* PING                -> @1 PONG 1 ... then @3 PONG 3 ... (staggered)
 ```
+
+A line longer than **250 characters is discarded** as garbage (a missed
+terminator looks exactly like a very long line). That limit is what sets the
+firmware-update chunk size — see below.
+
+### Flashing new firmware, on any of the three channels
+
+There are three ways to get an image onto a board, and only the third works
+everywhere:
+
+| way | how it gets in | works over |
+|---|---|---|
+| esptool | pulls **EN** and **IO0** with DTR/RTS to reach the ROM bootloader | USB only |
+| `POST /api/ota` | the board's own web server writes the spare app slot | WiFi only |
+| `FWBEGIN`/`FWDATA`/`FWEND` | the board writes its own spare app slot from ordinary command lines | **USB, RS485 and WiFi** |
+
+So a board with no radio and no reset lines — an RS485-only module, or an STM32
+later — is updated with the third one. There is nothing special about the
+transport: the commands are text like every other command here.
+
+```
+#7 FWBEGIN 1294617 6f1c…      -> @7 OK FWBEGIN 1294617   (md5 required)
+#7 FWDATA 0 150 f0e1d2…       -> @7 OK 0 150
+#7 FWDATA 1 150 …             -> @7 OK 1 300
+   …about 8600 chunks…
+#7 FWEND                      -> @7 OK FWEND restarting
+```
+
+Each chunk carries its own number **and its own decoded length**. A chunk that
+is not the one expected is refused — `ERR out of order: expected 41` — and so is
+one that arrived short — `ERR chunk short: got 102 of 150 bytes`. The length is
+there because a truncated line is still *valid* base64: measured on 2026-08-20,
+one chunk in nine thousand lost 64 characters, decoded cleanly to 102 bytes, and
+nothing noticed until `FWEND` found the image 48 bytes light. Neither refusal
+advances the sequence, so the sender simply repeats that chunk. The md5 is checked at `FWEND`,
+while the board is still running firmware that works; only a good image causes
+the reboot. `FWABORT` at any point leaves the board on what it already had.
+
+Chunks are ≤150 bytes because base64 costs a third and `#<id> FWDATA <seq> `
+has to fit in the 250-character line above. That makes an update slow — minutes,
+not seconds — which is the price of not having a reset line.
+
+The hub drives all of this for you: `POST /api/flash/bus?dev=<dev>&type=<type>`,
+with progress on `GET /api/flash` like the other two.
 
 ## Writing your own controller app (Python etc.)
 
@@ -291,9 +342,14 @@ interchangeably.
 | `FREAD <file> <off> <n>` | `<base64>` / `EOF` | read n bytes (≤120) from an SD file |
 | `FDEL <file>` | `OK deleted /moves/wave.yaml` | delete an SD file |
 | `MOVE <file>` | `OK playing /moves/demo.yaml` | run a YAML sequence from SD (`MOVE demo.yaml` looks in `/moves`) |
-| `MOVE STOP` | `OK move stopped` | |
+| `MOVE STOP` | `OK move stopped` | ends the show, and silences the speaker with it |
 | `OTA` | `OTA running=app0 size=1294617 target=app1 room=1966080 free=671463` | where an update over WiFi would go, and whether it fits. Two app slots exist, so the running firmware is never the one being written |
 | `REBOOT` | `OK rebooting` | restarts ~1 s later |
+| `FWBEGIN <bytes> <md5hex>` | `OK FWBEGIN 1294617` | start new **firmware**: reserve the spare app slot for an image of this size. The md5 is **required** — the per-chunk length catches a truncated line and the byte total catches a short image, but only the md5 catches a *corrupted* one |
+| `FWDATA <seq> <bytes> <base64>` | `OK 0 150` | one firmware chunk (≤150 bytes), carrying its own decoded length. `<bytes>` is **required** and must be 1..150 — a missing or non-numeric length reads as 0 and used to switch the check off. Out of order is refused with `ERR out of order: expected N`; a line damaged in flight with `ERR chunk short: got 102 of 150 bytes`. Neither is written, and neither advances the sequence, so the sender just repeats it |
+| `FWEND` | `OK FWEND restarting` | check the whole image against its md5, then reboot into it |
+| `FWABORT` | `OK update abandoned …` | stop, and keep running the firmware already there |
+| `FWSTAT` | `FWSTAT 4500/1294617 next=30` | how far an update has got |
 | `AUTH <user> <pass>` | `OK <user>` / `ERR bad login` | check Setup-page login (accounts stored in NVS) |
 | `USER LIST <user> <pass>` | `["manny",...]` | list accounts (caller must be valid) |
 | `USER ADD <user> <pass> <new> <newpass>` | `OK added ...` | add an account (any logged-in user can) |
@@ -337,7 +393,7 @@ web UI shows only the endpoint stage buttons. `SPEED <v> MS` still works
 | Command | Reply | Notes |
 |---|---|---|
 | `UP` / `DOWN` | `OK up` / `OK down` | run until limit switch or `STOP` |
-| `STOP` | `OK stopped` | also cancels `GOTO` |
+| `STOP` | `OK stopped` | also cancels `GOTO`, and silences the speaker |
 | `HOME` | `OK homing` | slow down to bottom limit, zeroes the encoder |
 | `GOTO <stage>` | `OK goto 2` | 0..stages-1; auto-homes first if position unknown |
 | `STAGE?` | `2` (or `-1` if not homed) | current stage |
@@ -349,9 +405,79 @@ web UI shows only the endpoint stage buttons. `SPEED <v> MS` still works
 | `RGB <r> <g> <b> [bright]` | `OK rgb set` | 0-255 each |
 | `RGB BRIGHT <0-255>` | `OK bright=128` | |
 | `RGB EFFECT <name>` | `OK effect=rainbow` | `solid rainbow chase breathe off` |
-| `PLAY <file>` | `OK playing /music/a.mp3` | mp3/wav from SD; `PLAY a.mp3` looks in `/music` |
+| `PLAY <file> [LOOP]` | `OK playing /music/a.mp3` / `OK looping /music/a.mp3` | mp3/wav from SD; `PLAY a.mp3` looks in `/music`. `LOOP` repeats the track until `PLAY STOP`, `MOVE STOP`, or the show ends. `LOOP` is taken off the END, so a file name may still contain spaces. The lap is not seamless: the file is reopened, so there is a brief gap |
 | `PLAY STOP` | `OK audio stopped` | |
 | `VOL <0-100>` | `OK vol=70` | runtime only; persist with `CFG volume` |
+| `AMP <id>` | `OK amp=tpa3118 (reboot to apply)` | which amplifier is wired; ids come from `config/amps.json` |
+| `AMP VALID` | `[{"id":"tpa3118",…}]` | every amp this firmware knows, for the Amplifier picker |
+### The light strip's data pin — `PIN rgb_data`
+
+Every pin is set from the board's page and kept in NVS. The strip's was the one
+exception: FastLED takes it as a *template* parameter, so it was fixed when the
+firmware was built. Since 2026-09-08 the firmware carries one instantiation per
+allowed pin, generated from `config/rgb_pins.json`, and `PIN rgb_data <gpio>`
+picks between them — a pin outside that list is refused, because a strip wired
+there would never blink.
+
+Adding a pin to the list is one line in that file and costs a few hundred bytes
+of flash. Lift builds only; a nong has no strip.
+
+| `AMP?` | `{"id":"tpa3118","mode":"analog",…}` | the amp this board is set to, with its wiring line |
+| `STREAM ON [port] [rate]` | `OK stream on udp 4210 22050 Hz mono` | live audio from the PC: the board plays what arrives on that UDP port |
+| `STREAM OFF` | `OK stream off` | |
+| `STREAM?` | `{"on":true,"fill":22,"underruns":0,"max_gap_ms":9,…}` | is it playing, and is it breaking up |
+
+### Live audio from the PC — `STREAM`
+
+The robot as a speaker the PC talks through (A24-32). The PC sends raw 16-bit
+mono PCM in UDP datagrams; the board fills a 200 ms ring buffer and feeds I2S
+from the module loop. Nothing decodes, and the SD card is not touched - a board
+whose card is out still plays.
+
+It is UDP and not the web server on purpose: a TCP retransmission stalls
+playback, and the async server stops answering for the length of a track while
+an SD decode holds the SPI mutex. A late packet is dropped instead.
+
+`STREAM?` is the acceptance test, not decoration:
+
+| field | means |
+|---|---|
+| `fill` | how full the buffer is, 0-100 |
+| `packets` / `dropped` | datagrams taken / thrown away because the buffer was full |
+| `underruns` | times it ran dry; it then holds silence until half full again |
+| `max_gap_ms` | longest gap between two feeds - the starvation number |
+
+Measured on a real nong (id 67, MAX98357A, WiFi, ten servos and RS485 running,
+2026-09-07): 250 datagrams, 0 dropped, `max_gap_ms` **9** against a 200 ms
+buffer.
+
+Starting a stream stops a file that is playing, and `PLAY` stops the stream:
+one output, one owner.
+
+### Which amplifier is wired — `AMP`
+
+The amp is a per-board wiring fact, stored in NVS beside the pins, and it
+decides how the chip drives the speaker:
+
+| mode | amps | wires | what the ESP32 sends |
+|---|---|---|---|
+| `analog` | TPA3118, TPA3116, TPA3110, PAM8403 | **DOUT only** | 1-bit delta-sigma through an RC filter into a line input |
+| `i2s` | MAX98357A, PCM5102A | BCLK + LRC + DOUT | digital I2S |
+| `dac` | any analog amp on GPIO25/26 | none (fixed pins) | the ESP32's own 8-bit DAC |
+| `none` | — | — | `PLAY` answers that no speaker is wired |
+
+An analog amp fed digital I2S plays **loud noise, not sound** — that is the
+whole reason this is a setting. Pick it by name under Setup → Hardware pins,
+which shows the wiring sentence for the amp you chose and only the GPIO boxes
+that amp actually uses. Adding an amp is one entry in `config/amps.json`.
+
+Defaults out of the box: **nong → MAX98357A** (BCLK 12, LRC 0, DOUT 2 — the
+only three pins a full nong has left) and **lift → TPA3118** (DOUT 2 alone).
+Neither is fixed: change it on the page, no reflash.
+
+⚠ On a nong, LRC sits on **GPIO0**, which must be HIGH at reset. If the board
+drops into download mode with the amp plugged in, add a 10k pull-up from GPIO0
+to 3V3, or switch that board to an analog amp, which uses GPIO2 alone.
 
 ### Speed in m/s — how it works (rack & pinion)
 
@@ -368,9 +494,11 @@ speed correct.
 
 ## Commands — nong module (humanoid upper body)
 
-Two arms, no fingers. **Hardware: 10 servos + (optional) microSD card**
-(no encoder, no RGB strip, no speaker; those belong to the lift wiring, so
-`RGB`/`PLAY`/`VOL` answer `ERR unknown cmd` on a nong board). **The SD card is
+Two arms, no fingers. **Hardware: 10 servos + (optional) microSD card +
+(optional) I2S speaker** (no encoder, no RGB strip; those belong to the lift
+wiring, so `RGB` answers `ERR unknown cmd` on a nong board. The speaker shares
+lift's `PLAY`/`VOL` commands and parser — wire the amp, set its pins under
+Setup → Hardware pins, and put mp3/wav files in `/music`). **The SD card is
 optional** — without it the nong still runs fully on live commands
 (POSE/JOINT/HOME/SETZERO… from Nong Studio over WiFi/USB/RS485); the card is
 only needed to store `/moves` sequences and to remember calibration across
@@ -418,22 +546,27 @@ floor while authoring.
 | `POSE <a1..a10> [T <ms>]` | `OK pose T=800ms` | all 10 joints; `-` keeps a joint; a shorter list (e.g. an old 8-joint pose) leaves the rest untouched; no `T` = duration from speed; `T` below the physical minimum is raised |
 | `POSE?` | `90.0 45.0 ...` | current 10 angles |
 | `JOINT <1-10\|name> <deg> [T <ms>]` | `OK L_EL_P=120.0 T=500ms` | one joint, e.g. `JOINT WAIST 60` |
-| `HOME [T <ms>]` / `ZERO` | `OK home T=1000ms` | move to the zero/home pose |
-| `SETZERO` | `OK zero set ...` | calibrate: the current pose becomes home = 90° per joint (jog the arms straight first; trim absorbs the offset, the arm doesn't move). Saved to SD if present |
-| `STOP` | `OK stopped` | freeze mid-move (pose holds) |
+| `HOME [T <ms>]` / `ZERO` | `OK home T=1000ms` | move to the `neutral` pose — the angles `NEUTRAL` sets, not a flat 90 |
+| `NEUTRAL [<1-10\|name\|ALL> <deg>]` | `OK neutral L_SH_P = 95 deg (press Home to go there)` | the angle each joint goes to **on boot** and on `HOME`. Per joint, clamped to that joint's limits, saved to NVS + `/data/nong_cal.yaml`. Does **not** move the arm |
+| `NEUTRAL <a1..a10>` | `OK neutral set for all 10 joints` | the whole start pose in one line; `-` keeps a joint |
+| `NEUTRAL?` | `NEUTRAL L_SH_P=95 L_SH_R=85 ...` | the start angle of every joint |
+| `OFFSET [<1-10\|name\|ALL> <deg>]` | `OK offset L_EL_P = 3.0 deg on the arm` | correct ONE joint that was assembled a few degrees out - a servo horn only refits in whole teeth. The value is in **joint** degrees (what you see on the arm); the board scales it into the servo-degree `trim` by that joint's own gear, so the same number moves every joint the same visible amount. Range -30..30. **The arm moves** - that is how you aim it. No args reports every joint. Saved to NVS + `/data/nong_cal.yaml` |
+| `OFFSET?` | `OFFSET L_SH_P=0.0 L_EL_P=3.0 ...` | how far each joint is being corrected, in joint degrees |
+| `SETZERO` | `OK zero set ...` | calibrate: the current pose becomes home (jog the arms straight first; trim absorbs the offset, the arm doesn't move). **Leaves `NEUTRAL` alone** — it used to overwrite it with 90, which silently threw away the chosen start pose. Saved to SD if present |
+| `STOP` | `OK stopped` | freeze mid-move (pose holds), and silence the speaker |
 | `RELAX` | `OK relaxed (servos limp)` | servos unpowered — pose the arms by hand |
 | `ATTACH` | `OK attached` | power the servos again, hold current pose |
 | `SPEED <deg_per_s>` | `OK speed=120 deg/s` | 5–`max_dps`; persist with `CFG speed_dps` |
 | `SPEED?` | `SPEED 120 deg/s (90 deg in ~0.75s)` | |
 | `TIME? [a1..a10]` | `EST 800 ms @ 120 deg/s (min 225 ms @ max 400 deg/s)` | estimated + minimum duration of a move (editor helper) |
-| `LIMIT?` | `{"min":[..],"max":[..],"gear_pinion":[..],"gear_gear":[..],"pulse_min":[..],"pulse_max":[..],"max_dps":[..],"servo_range":[..]}` | per-joint joint limits + gear + servo (JSON) |
+| `LIMIT?` | `{"min":[..],"max":[..],"gear_pinion":[..],"gear_gear":[..],"pulse_min":[..],"pulse_max":[..],"max_dps":[..],"servo_range":[..],"frame_hz":[..],"neutral":[..],"offset":[..]}` | per-joint joint limits + gear + servo + start angle + offset (JSON; `offset` is in JOINT degrees, unlike the servo-degree `trim` in the YAML). This is the one reply Nong Studio reads before deciding what to send |
 | `LIMIT <1-8\|name> <min> <max>` | `OK L_EL_P limit 30..150` | set one **joint's** travel; clamps the pose, saved to `/data/nong_cal.yaml` |
 | `GEAR [<1-8\|name\|ALL> <pinion> <gear>]` | `OK gear L_SH_P 15:18 ...` | **per-joint** servo→joint reduction; no args reports all 10 |
 | `PULSE [<1-8\|name\|ALL> <minUs> <maxUs> [maxDps]]` | `OK pulse L_SH_P 500-2500us` | **per-joint** servo pulse range (+ optional speed limit); no args reports all 10 |
 | `RANGE [<1-10\|name\|ALL> <deg>]` | `OK servo travel L_SH_P = 270 deg` | **per-joint SERVO travel**: 180 for a normal servo, 270 for a wide-angle one (60–360); no args reports all 10 |
 | `RATE [<1-10\|name\|ALL> <hz>]` | `OK frame rate L_SH_P = 330 Hz` | **per-joint SERVO frame rate**: 50 for a normal hobby servo, **330 for the PDI-1181MG** digital servo (40–400). A wrong rate can make a digital servo chatter or cut torque ("disable itself"); no args reports all 10 |
 | `SERVO [<1-10\|name\|ALL> <type>]` | `OK L_SH_P = pdi1181mg (500-2500us, 375 deg/s, 270 deg travel, 330 Hz)` | apply a servo preset — sets pulse + speed + travel + **frame rate**: `mg90s` (50Hz), `pdi1181mg` (270°, 330Hz), `tiankong35`, `generic180`, `generic270` (or a custom servo with `PULSE` + `RANGE` + `RATE`) |
-| `JCFG <1-10\|name> <pinion> <gear> <pmin> <pmax> <dps> <range> <hz> <min> <max>` | `OK L_SH_P 14:19 500-2500us 375dps 180deg 330Hz limit 25..155` | **one joint's whole setup in a single line** — exactly what `GEAR`+`PULSE`+`RANGE`+`RATE`+`LIMIT` do in five. Nong Studio's *send rig* uses it: 10 lines instead of 50, ~1.6 s down to ~0.3 s. Validated identically, so a batch cannot smuggle in a value the individual commands would refuse |
+| `JCFG <1-10\|name> <pinion> <gear> <pmin> <pmax> <dps> <range> <hz> <min> <max> [neutral]` | `OK L_SH_P 14:19 500-2500us 375dps 180deg 330Hz limit 25..155` | **one joint's whole setup in a single line** — exactly what `GEAR`+`PULSE`+`RANGE`+`RATE`+`LIMIT` do in five. Nong Studio's *send rig* uses it: 10 lines instead of 50, ~1.6 s down to ~0.3 s. Validated identically, so a batch cannot smuggle in a value the individual commands would refuse |
 | `CAL` | `CAL chip=saved sd=no card ...` | where the calibration is stored |
 | `CAL CLEAR` | `OK calibration cleared ...` | forget it on the chip **and** the card; reboot loads the defaults |
 
@@ -558,6 +691,18 @@ Hardware pins page does not offer them.
 | `CAM SIZE <name>` | `OK size=vga` | `qqvga qvga vga svga xga sxga uxga` — above SVGA needs PSRAM |
 | `CAM QUALITY <10-63>` | `OK quality=12` | 10 is the best picture, 63 the smallest file |
 | `CAM FLASH ON\|OFF` | `OK flash=on` | the white flood LED (GPIO 4, shared with the SD card's data line) |
+| `CAM LIST` | `CAM CONTROLS 24` then one line each: `brightness=0 range -2..2 def=0` | every setting the sensor has, with its value, range and default |
+| `CAM SET <name> <value>` | `OK brightness=2` | one setting, by the name `CAM LIST` gives. A sensor that does not implement it answers `ERR this sensor has no <name>` — the OV2640 has no `sharpness` |
+| `CAM AUTO` | `OK back to default (23 of 24 settings)` | every setting back to the driver's default. The count is honest: a control this sensor lacks is not counted |
+
+The settings are **declared in `config/cam_controls.json`**, which generates
+both the table and the code that applies it — so adding one is one entry there
+and no C++. Frame **size** is deliberately not part of `CAM AUTO`: the frame
+buffer was allocated for the size the board booted with.
+
+Changing size drops the two frames already in flight, because with one frame
+buffer the next capture would otherwise hand back the picture taken *before*
+the change — which is what made changing size look like it did nothing.
 | `CAM VFLIP 0\|1` / `CAM HMIRROR 0\|1` | `OK vflip=1` | for a camera mounted upside down or behind glass |
 
 The **picture itself** is `GET /api/cam.jpg`, not a command: a JPEG is far too
@@ -570,7 +715,17 @@ ones, so sizes above SVGA are refused rather than failing at capture time.
 
 ## Sequence files (`/moves/*.yaml` on SD)
 
-Each step key maps to a command, so anything above works in a file:
+Each step key maps to a command, so anything above works in a file. **The list
+is declared, not written here**: every step is a `steps` entry on the command
+it calls in `config/commands.json`, and `tools/gen_tables.py` generates the
+table the player walks (`core/SeqSteps.h`). Adding a step key is one entry
+there — no C++ changes — and a build only carries the steps for the module
+types it was built with.
+
+A step's value is passed to the command when there is one, so
+`- home: T 700` runs `HOME T 700`. The old `- home: 1` form still works: the
+`1` is a placeholder because YAML needs a value, and the handlers ignore a
+token they were not expecting.
 
 | YAML step | Runs | Waits? |
 |---|---|---|
@@ -583,6 +738,7 @@ Each step key maps to a command, so anything above works in a file:
 | `- effect: rainbow` | `RGB EFFECT rainbow` | no |
 | `- bright: 200` | `RGB BRIGHT 200` | no |
 | `- play: /music/a.mp3` | `PLAY /music/a.mp3` | no (plays in background) |
+| `- play: /music/a.mp3 LOOP` | `PLAY /music/a.mp3 LOOP` | no. Repeats until the show ends or `MOVE STOP`. A sequence that reaches its own end silences a LOOPING track; a one-shot is left to finish on purpose |
 | `- vol: 80` | `VOL 80` | no |
 
 ### Only one thing drives the servos
@@ -609,7 +765,7 @@ Which commands count is declared once, in `config/commands.json`
 
 | stops a running sequence | does not |
 |---|---|
-| `POSE` `JOINT` `HOME` `ZERO` `STOP` `RELAX` `ATTACH` `SETZERO` (nong) | `SPEED` `LIMIT` `GEAR` `PULSE` `RANGE` `RATE` `SERVO` `JCFG` `CAL` |
+| `POSE` `JOINT` `HOME` `ZERO` `STOP` `RELAX` `ATTACH` `SETZERO` `NEUTRAL` `OFFSET` (nong) | `SPEED` `LIMIT` `GEAR` `PULSE` `RANGE` `RATE` `SERVO` `JCFG` `CAL` |
 | `UP` `DOWN` `STOP` `HOME` `GOTO` (lift) | `RGB` `PLAY` `VOL`, every `?` query, `CFG`, `INFO`, file transfer |
 
 Changing the **speed** of a running show changes it, rather than ending it —

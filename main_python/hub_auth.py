@@ -99,7 +99,6 @@ GATED_POST = {
     # Voice endpoints: asked 2026-09-14 to require login first before doing anything
     "/api/voice/start",
     "/api/voice/stop",
-    "/api/jao/start",
     "/api/voice/ask",
     "/api/voice/transcribe",
     "/api/voice/say",
@@ -178,6 +177,7 @@ OPEN = {
     # report. Addresses only - the logins are not in that file and never will
     # be - and the tile has to draw itself before anybody has signed in.
     "/api/partners",
+    "/api/jao/start", "/api/reconize/start",
     # A report is a complaint, not a command: it changes nothing on any
     # board, and complaining must never need a password (A21-6).
     "/api/report",

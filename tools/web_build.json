@@ -1,0 +1,33 @@
+{
+  "inline_apps": [
+    "apps/camera",
+    "apps/voice"
+  ],
+  "studio": {
+    "path": "nong/main_python_set_nong/web",
+    "parts": [
+      "00_header.js",
+      "notices.js",
+      "rig_data.js",
+      "state.js",
+      "scene.js",
+      "build_rig.js",
+      "gizmo_rings.js",
+      "picking_drag.js",
+      "ik_4_dof_arm.js",
+      "collisions.js",
+      "sliders.js",
+      "timing.js",
+      "timeline.js",
+      "yaml_export.js",
+      "rig_setup_ui.js",
+      "edit_existing_sequences.js",
+      "music_on_a_keyframe.js",
+      "project_save_load.js",
+      "stl_meshes.js",
+      "robot_link.js",
+      "main_loop.js",
+      "boot.js"
+    ]
+  }
+}

@@ -4100,7 +4100,7 @@ class Handler(BaseHTTPRequestHandler):
                     pass
             return self.send_json({"ok": True, "message": "voice service stopped"})
 
-        if path == "/api/jao/start" and method == "POST":
+        if (path == "/api/jao/start" or path == "/api/partner/jao/start") and method in ("GET", "POST"):
             try:
                 with urllib.request.urlopen("http://127.0.0.1:8080/", timeout=0.6) as r:
                     if r.getcode() in (200, 301, 302, 304):
@@ -4130,6 +4130,39 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json({"ok": True, "message": "All Jao Games server started on port 8080"})
             except Exception as e:
                 return self.send_err("could not start games server: %s" % e, 500)
+
+        if (path == "/api/reconize/start" or path == "/api/partner/reconize/start") and method in ("GET", "POST"):
+            already = False
+            try:
+                with urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=0.6) as r:
+                    if r.getcode() == 200:
+                        already = True
+            except Exception:
+                pass
+            if already:
+                return self.send_json({"ok": True, "already_running": True,
+                                       "message": "Reconize is already running"})
+            face_dir = Path("E:/final_proj/mice/Face_Regonize")
+            if not face_dir.is_dir():
+                cand = (HERE.parent.parent / "Face_Regonize").resolve()
+                if cand.is_dir():
+                    face_dir = cand
+            if not face_dir.is_dir():
+                return self.send_err("Face_Regonize folder not found at %s" % face_dir, 404)
+            try:
+                vbs = face_dir / "Start Reconize.vbs"
+                if vbs.is_file() and os.name == "nt":
+                    subprocess.Popen(["wscript.exe", str(vbs)], cwd=str(face_dir))
+                else:
+                    bat = face_dir / "start.bat"
+                    if bat.is_file() and os.name == "nt":
+                        flags = subprocess.CREATE_NEW_PROCESS_GROUP
+                        subprocess.Popen(["cmd.exe", "/c", str(bat)], cwd=str(face_dir), creationflags=flags)
+                    else:
+                        return self.send_err("No launch script found in Face_Regonize", 404)
+                return self.send_json({"ok": True, "message": "Reconize launch started"})
+            except Exception as e:
+                return self.send_err("could not start Reconize: %s" % e, 500)
 
         if path == "/api/voice" or path.startswith("/api/voice/"):
             return self.voice_proxy(method, path, q)

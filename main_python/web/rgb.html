@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RGB control</title>
+<title>Mice — light strip</title>
 <link rel="stylesheet" href="/mice.css">
+<script src="/mice.js"></script>
 <style>
 /* Only what is this page's own. Tokens, the reset, cards, buttons, inputs, the
    quiet caption and the five state colours all come from /mice.css above. */
@@ -26,11 +27,14 @@ input[type=range]{min-width:120px}
 #meter{width:100%;height:26px;background:var(--sunk);
        border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
 #meterFill{height:100%;width:0%;
-  background:linear-gradient(90deg,var(--ok),var(--warn),var(--err))}
+  background:var(--acc)}
 /* Reserved height, so the card does not jump when the sequence list arrives.
    Colour is never the only signal: each state also carries a word and a mark,
    so it survives a screenshot and works for a colourblind reader. */
 #seqState{min-height:20px}
+
+/* The wall-screen rule lives in mice.css now - one answer for every
+   centred-column page, instead of this one having its own. */
 
 @media (max-width:420px){
   body{padding:var(--sp-3)}
@@ -40,74 +44,89 @@ input[type=range]{min-width:120px}
 </style>
 </head>
 <body>
-<h1>💡 RGB — <span id="who">module</span></h1>
-<div class="mini" style="margin-bottom:var(--sp-2)"><a href="/">← hub</a> · works over WiFi or the USB cable, whichever this page was opened with</div>
+<h1>Light strip — <span id="who">module</span><span id="whoTech" class="tech mini"></span></h1>
+<div class="mini" style="margin-bottom:var(--sp-2)"><a href="/">← hub</a> · works over WiFi or the USB cable, whichever this page was opened with
+  <label style="display:inline-flex;gap:var(--sp-2);align-items:center;float:right">
+    <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
+    Show technical details</label></div>
+<!-- One login, every page (A25-5). The session is one cookie on one origin,
+     so this and the hub are the same session in both directions. -->
+<div class="card" id="loginHere" style="margin-bottom:var(--sp-4)"></div>
 
-<div class="card">
-  <h2>RGB control <span class="mini">(manual)</span></h2>
+<div class="card" data-needs-login="lights">
+  <h2>Pick a colour</h2>
+  <p class="mini">Choose a colour and the strip follows. Adjust the brightness to suit your space.</p>
   <div class="row">
-    <input type="color" id="col" value="#0050ff" oninput="manualColor()"
+    <input type="color" id="col" aria-label="Strip colour" value="#0050ff" oninput="manualColor()"
            title="pick a colour and the strip changes as you drag">
     <button onclick="manualColor()">Set</button>
     <button onclick="cmd('RGB EFFECT off')">Off</button>
   </div>
-  <div class="row"><span class="lbl">Brightness</span>
+  <div class="row"><label class="lbl" for="bri">Brightness</label>
     <input type="range" id="bri" min="0" max="255" value="128" oninput="cmd('RGB BRIGHT '+this.value,1)">
   </div>
-  <div class="statline" id="manStat" aria-live="polite"></div>
+  <div class="statline action-status" id="manStat" aria-live="polite"></div>
 </div>
 
-<div class="card">
-  <h2>RGB effects <span class="mini">(run on the module itself)</span></h2>
+<div class="card" data-needs-login="lights">
+  <h2>Try an effect</h2>
+  <p class="mini">A little motion, or a steady glow. The module keeps it running.</p>
   <div class="row">
-    <button onclick="cmd('RGB EFFECT solid')">solid</button>
-    <button onclick="cmd('RGB EFFECT rainbow')">🌈 rainbow</button>
-    <button onclick="cmd('RGB EFFECT chase')">chase</button>
-    <button onclick="cmd('RGB EFFECT breathe')">breathe</button>
-    <button onclick="cmd('RGB EFFECT off')">off</button>
+    <button onclick="cmd('RGB EFFECT solid',0,'effectStat')">solid</button>
+    <button onclick="cmd('RGB EFFECT rainbow',0,'effectStat')">🌈 rainbow</button>
+    <button onclick="cmd('RGB EFFECT chase',0,'effectStat')">chase</button>
+    <button onclick="cmd('RGB EFFECT breathe',0,'effectStat')">breathe</button>
+    <button onclick="cmd('RGB EFFECT off',0,'effectStat')">off</button>
   </div>
+  <div id="effectStat" class="statline action-status" aria-live="polite"></div>
 </div>
 
-<div class="card">
-  <h2>RGB sequence <span class="mini">(scripted from the SD card)</span></h2>
+<details class="card disclosure" id="lightShows" data-needs-login="lights">
+  <summary>Play a saved light show</summary>
   <div class="row">
-    <select id="seqSel" style="flex:1"></select>
+    <select id="seqSel" aria-label="Saved light show" style="flex:1"></select>
     <button class="primary" id="runBtn" onclick="runSeq()">▶ Run</button>
-    <button onclick="cmd('MOVE STOP')">Stop</button>
-    <button id="seqRetry" onclick="loadSeqs()" title="ask the module for its sequence list again">⟳</button>
+    <button onclick="cmd('MOVE STOP',0,'seqAction')">Stop</button>
+    <button id="seqRetry" onclick="loadSeqs()" title="ask the module for its sequence list again">Refresh</button>
   </div>
   <!-- loading / empty / error / stale / ready all live here, and the space is
        reserved above so the card never changes height when one replaces another -->
   <div class="statline" id="seqState" aria-live="polite"></div>
-  <div class="mini">a sequence YAML can script the strip with <code>rgb / effect /
+  <div class="statline action-status" id="seqAction" aria-live="polite"></div>
+  <div class="mini">Upload a light show on the module page under <b>Shows &amp; files</b>, then press Refresh here. It can play without this PC.
+    <span class="tech">A sequence YAML can script the strip with <code>rgb / effect /
     bright / wait</code> steps and <code>loop: true</code> — see
     <code>sd_card_example/moves/rgb_show.yaml</code>. Timed light shows,
-    no PC needed once it runs.</div>
-</div>
+    no PC needed once it runs.</span></div>
+</details>
 
-<div class="card">
-  <h2>RGB follows the PC speaker 🔊</h2>
+<details class="card disclosure" id="lightMusic" data-needs-login="lights">
+  <summary>Let the lights follow music</summary>
   <div class="row">
-    <button id="musBtn" onclick="toggleMusic()">Start — capture PC audio</button>
-    <select id="musStyle">
-      <option value="pulse">pulse — my color, brightness = volume</option>
-      <option value="party">party — colors spin, brightness = volume</option>
+    <button id="musBtn" onclick="toggleMusic()">Start — follow this PC’s sound</button>
+    <select id="musStyle" aria-label="How the lights follow music">
+      <option value="pulse">Pulse with my colour</option>
+      <option value="party">Cycle through colours</option>
     </select>
   </div>
-  <div class="row"><span class="lbl">Sensitivity</span>
+  <div class="row"><label class="lbl" for="sens">Sensitivity</label>
     <input type="range" id="sens" min="1" max="20" value="8">
   </div>
   <div id="meter"><div id="meterFill"></div></div>
   <div class="statline" id="musStat" aria-live="polite">when you press Start the browser asks what to share —
     pick the screen (or the music tab) and tick <b>“share audio”</b>; the strip then
     follows whatever the PC is playing. Works in Chrome/Edge on this PC.</div>
-</div>
+  <div id="musicAction" class="statline action-status" aria-live="polite"></div>
+</details>
 
 <script>
 const $=id=>document.getElementById(id);
 const qp=new URLSearchParams(location.search);
 const IP=qp.get('ip')||'', PORT=qp.get('port')||'', BUS=qp.get('id')||'';
-$('who').textContent=qp.get('name')||IP||PORT+(BUS?(' #'+BUS):'');
+$('who').textContent=qp.get('name')||'module';
+// the address is technical detail: on the surface only when it IS the name
+const wt=[]; if(IP)wt.push(IP); if(PORT)wt.push('port '+PORT); if(BUS)wt.push('bus #'+BUS);
+$('whoTech').textContent=wt.length?' — '+wt.join(' · '):'';
 
 let lastSend=0;
 // A failed command used to return '' and look exactly like a success, so a
@@ -115,28 +134,56 @@ let lastSend=0;
 // pressed a colour and simply nothing happened, with nothing to read. The
 // return value is unchanged (callers still get the text), but a failure now
 // says so, in words, with the reason after the sentence.
-async function cmd(c,throttled){
+// THE LAST VALUE OF A DRAG IS THE ONE THAT MATTERS. Throttling threw it away:
+// let go of the slider inside the 90 ms window and the strip kept the colour
+// from before, while the slider showed the new one (panel, verified
+// 2026-09-08). So a dropped call is remembered and sent when the window closes.
+let pending=null,pendTimer=null;
+async function cmd(c,throttled,target="manStat"){
   const now=performance.now();
-  if(throttled&&now-lastSend<90)return ''; // don't flood the link
+  if(throttled&&now-lastSend<90){
+    pending={c,target};
+    if(!pendTimer)pendTimer=setTimeout(()=>{
+      pendTimer=null;
+      const last=pending; pending=null;
+      if(last)cmd(last.c,0,last.target);              // not throttled: this is the final value
+    },90-(now-lastSend));
+    return '';
+  }
+  pending=null;
   lastSend=now;
   const url=IP?('/api/robot/cmd?ip='+encodeURIComponent(IP)+'&c='+encodeURIComponent(c))
              :('/api/usb/cmd?port='+encodeURIComponent(PORT)+(BUS?('&id='+BUS):'')+'&c='+encodeURIComponent(c));
   try{
     const r=await fetch(url);
     const t=await r.text();
-    if(!r.ok){ say('The module did not accept that. '+(t||('reply '+r.status))); return ''; }
-    if(t.startsWith('ERR')){ say('The module refused it. '+t); return t; }
-    say('');
+    // The sentence on the surface, the machine's own words behind the
+    // technical switch - the same split every other page here uses. They used
+    // to be glued together, so a designer read "reply 500" (panel, 2026-09-08).
+    if(!r.ok){ say(r.status===401||r.status===403
+      ?'Log in on the hub, then try again.'
+      :'The module did not accept that. Check its connection on the module page, then try again.',
+      t||('reply '+r.status),target); return ''; }
+    if(t.startsWith('ERR')){ say('The module refused it. Check its settings on the module page, then try again.', t,target); return t; }
+    if(!c.startsWith('FILES '))say('Updated on the module.','',target);
     return t;
   }catch(e){
     say('Could not reach the module. Check it is powered and still on the same '
-        +'network or cable. '+(e.message||e));
+        +'network or cable.', e.message||String(e),target);
     return '';
   }
 }
-function say(msg){
-  const el=$('manStat');
-  if(el)el.textContent=msg;
+function say(msg,tech,target="manStat"){
+  const el=$(target);
+  if(!el)return;
+  el.textContent=msg;
+  // the detail rides along in a span the technical switch already governs
+  if(tech){
+    const t=document.createElement('span');
+    t.className='tech mini';
+    t.textContent=' '+tech;
+    el.appendChild(t);
+  }
 }
 function hex2rgb(h){return [parseInt(h.substr(1,2),16),parseInt(h.substr(3,2),16),parseInt(h.substr(5,2),16)];}
 function manualColor(){const[r,g,b]=hex2rgb($('col').value);cmd(`RGB ${r} ${g} ${b}`,1);}
@@ -167,10 +214,10 @@ async function loadSeqs(){
     // which is a different and untrue statement.
     if(seqHave.length){
       seqState('stale','⚠ old list — could not reach the module just now. '
-               +'Press ⟳ to try again.');
+               +'Press Refresh to try again.');
     }else{
       seqState('err','✗ Could not read the sequence list. The module may be '
-               +'unreachable, or it has no SD card. Press ⟳ to try again.');
+               +'unreachable, or it has no SD card. Press Refresh to try again.');
       s.innerHTML='<option>(list unavailable)</option>';
     }
     return;
@@ -181,7 +228,7 @@ async function loadSeqs(){
   if(!fs.length){
     s.innerHTML='<option>(no sequences on the card)</option>';
     seqState('empty','This module has an SD card but no sequences on it yet. '
-             +'Put a .yaml file in /moves on the card, then press ⟳.');
+             +'Upload a show on the module page under Shows & files, then press Refresh.');
     return;
   }
   seqState('ready','✓ '+fs.length+' sequence'+(fs.length===1?'':'s')+' on the card.');
@@ -192,7 +239,7 @@ function runSeq(){
     seqState('empty','Pick a sequence first — the list is empty right now.');
     return;
   }
-  cmd('MOVE '+v);
+  cmd('MOVE '+v,0,'seqAction');
 }
 
 // ---- music mode: PC audio -> level -> RGB ----
@@ -215,7 +262,16 @@ async function toggleMusic(){
     $('musBtn').textContent='■ Stop music mode';
     $('musBtn').classList.add('on');
     $('musStat').textContent='following the PC audio…';
-  }catch(e){$('musStat').textContent='capture cancelled or not allowed ('+e.message+')';}
+  }catch(e){
+    // A browser only allows capture from a secure context (localhost counts);
+    // over plain http on the venue WiFi it refuses before asking anything,
+    // and "cancelled" would send someone hunting for a permission that
+    // was never offered.
+    $('musStat').textContent=(location.hostname==='localhost'||location.hostname==='127.0.0.1')
+      ?'capture cancelled or not allowed - press Start again and allow it'
+      :'the browser blocks audio capture on this address. Open the hub as '
+      +'localhost on this PC, or serve it over https, and music mode will start';
+  }
 }
 function stopMusic(){
   clearInterval(musTimer);musTimer=null;
@@ -223,11 +279,11 @@ function stopMusic(){
   if(audioCtx)audioCtx.close();
   stream=audioCtx=analyser=null;
   musBusy=false;
-  $('musBtn').textContent='Start — capture PC audio';
+  $('musBtn').textContent='Start — follow this PC’s sound';
   $('musBtn').classList.remove('on');
   $('meterFill').style.width='0%';
   $('musStat').textContent='stopped';
-  cmd('RGB EFFECT off');
+  cmd('RGB EFFECT off',0,'musicAction');
 }
 // One send at a time. The 90 ms throttle in cmd() is a CLOCK, not a queue: it
 // let ~9 requests a second onto a link that may serve two, and over USB the
@@ -254,9 +310,10 @@ function musicTick(){
     r=k(0);g=k(8);b=k(4);
   }
   musBusy=true;
-  cmd(`RGB ${r} ${g} ${b}`).finally(()=>{musBusy=false;});
+  cmd(`RGB ${r} ${g} ${b}`,0,'musicAction').finally(()=>{musBusy=false;});
 }
 loadSeqs();
+miceLogin.mount(document.getElementById('loginHere'));
 </script>
 </body>
 </html>

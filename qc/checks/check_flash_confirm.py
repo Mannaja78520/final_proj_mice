@@ -46,18 +46,36 @@ window.addEventListener("load", async function(){
     var ready = await qcWaitFor(function(){
       return [].slice.call(d.querySelectorAll('button'))
                .some(function(b){ return /write over/i.test(b.textContent); });
-    }, 20000);
+    }, 40000);
+    // 40s, not 20. The three waits below can run back to back, and the page
+    // window has to cover all of them - see raw_page(seconds=) at the bottom.
+    // Under a parallel gate this tab is slow to draw its first row because it
+    // asks /api/ports, /api/mine and /api/scan before it has anything to show.
     if (!ready){ await say("ready", "no"); return qcMark("done"); }
 
     var flash = [].slice.call(d.querySelectorAll('button'))
                   .filter(function(b){ return /write over/i.test(b.textContent); })[0];
     flash.click();
 
+    // TWO DIFFERENT QUESTIONS, measured separately. This used to wait for the
+    // modal AND for its details in one 8s window, and report the whole thing as
+    // "asked". Under a loaded machine the details arrived late, and the check
+    // then said the page had flashed WITHOUT ASKING - which is not what
+    // happened, and is the most alarming thing it could have said. Failed twice
+    // in parallel gates on 2026-08-20 and passed alone every time.
     var shown = await qcWaitFor(function(){
       var m = d.getElementById('flashModal');
-      return m && !m.hidden && d.getElementById('fcMeta').textContent.length > 10;
-    }, 8000);
+      var ask = d.getElementById('fcAsk');
+      // The QUESTION has to be visible, not just the dialog it lives in. The
+      // shell is also used for the progress and result states, so watching it
+      // alone passed with the ask panel hidden - proved with tools/sabotage.py.
+      return m && !m.hidden && ask && !ask.hidden;
+    }, 20000);
     await say("asked", shown ? "yes" : "no");
+    var detailed = shown && await qcWaitFor(function(){
+      return d.getElementById('fcMeta').textContent.length > 10;
+    }, 20000);
+    await say("detailed", detailed ? "yes" : "no");
     if (!shown) return qcMark("done");
 
 
@@ -97,7 +115,7 @@ def run(t):
     # what the hub thinks before anyone touches anything
     before = json.loads(F.get(base + "/api/flash")[1])
 
-    browser.raw_page(DRIVER, base, seconds=40)
+    browser.raw_page(DRIVER, base, seconds=115)
     got = {}
     for m in fake_serial.qc_marks:
         if m.startswith("FC "):
@@ -106,9 +124,32 @@ def run(t):
 
     if not t.ok(got, "the hub page reported back", fake_serial.qc_marks[-4:]):
         return
+
+    # THE ROW NOT APPEARING IS NOT THE PAGE FLASHING WITHOUT ASKING.
+    #
+    # Told apart because conflating them is alarming and wrong, which this
+    # check already learned once about its two later waits. In the parallel
+    # gate on 2026-08-20 the Firmware row took longer than its window to
+    # render - the tab asks /api/ports, /api/mine and /api/scan first, and a
+    # loaded machine is slow at all three - so no Flash button existed to
+    # click. The check reported "clicking Flash ASKS instead of flashing",
+    # which reads as the safety gate being gone. It was not: nothing had been
+    # clicked at all.
+    if got.get("ready") == "no":
+        t.ok(False,
+             "the Firmware row appeared in time to be clicked",
+             "no button matching 'write over' rendered before the window ran "
+             "out, so nothing was clicked and this run says nothing about "
+             "whether flashing asks first. That is a slow page, not a missing "
+             "confirm.")
+        return
     if not t.eq(got.get("asked"), "yes",
                 "clicking Flash ASKS instead of flashing"):
         return
+    # A separate question, so a slow machine cannot make the page look as if it
+    # flashed without asking - see the driver.
+    t.eq(got.get("detailed"), "yes",
+         "and the confirm fills in which board, before anything is written")
 
     meta = got.get("meta", "")
     # The four facts a person needs to know they are about to overwrite the

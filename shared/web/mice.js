@@ -164,3 +164,286 @@
 
   window.miceLink = { read: read, STALE_MS: STALE_MS };
 })();
+
+/* The technical-detail switch: one behaviour, every page.
+ *
+ * .tech in mice.css hides addresses, ids and ports until somebody asks;
+ * body.adv is the asking. The choice lives under the localStorage key
+ * hub_adv - the key hub.html chose first, so one preference follows a
+ * person across every page. A page joins by including this file and, when
+ * it wants the control, a checkbox with id advOn wired to
+ * onchange="miceAdv.set(this.checked)".
+ */
+(function () {
+  var KEY = "hub_adv";
+
+  function on() {
+    try { return localStorage.getItem(KEY) === "1"; } catch (e) { return false; }
+  }
+
+  function apply(v) {
+    if (!document.body) return;
+    document.body.classList.toggle("adv", v);
+    var boxes = document.querySelectorAll("#advOn");
+    for (var i = 0; i < boxes.length; i++) boxes[i].checked = v;
+  }
+
+  function set(v) {
+    v = !!v;
+    try { localStorage.setItem(KEY, v ? "1" : "0"); } catch (e) {}
+    apply(v);
+  }
+
+  if (document.body) apply(on());
+  else document.addEventListener("DOMContentLoaded", function () { apply(on()); });
+
+  window.miceAdv = { on: on, set: set };
+})();
+
+/* Log in from ANY page, not only the hub's own.
+ *
+ * Asked 2026-09-09, from the Voice app: *where to login in this page, make can
+ * login in the page not only in the hub and sync each other*. The page said
+ * "log in before doing that" and offered no way to do it - the only login
+ * control in the product was the card on the hub page.
+ *
+ * The session was already shared: it is one cookie on one origin, so logging
+ * in anywhere logs you in everywhere. What was missing is the control, and one
+ * control is what this is - every page mounts the same component rather than
+ * growing a login of its own.
+ *
+ *   <div id="loginHere"></div>          somewhere sensible on the page
+ *   miceLogin.mount(document.getElementById("loginHere"));
+ *   miceLogin.required();               when an action came back refused
+ *
+ * A page that only READS needs none of this: reading is open on purpose.
+ */
+(function () {
+  var mounts = [];
+  var who = { authed: false, users: [] };
+
+  function say(el, msg) {
+    var s = el.querySelector(".mlStat");
+    if (s) s.textContent = msg || "";
+  }
+
+  function paint() {
+    for (var i = 0; i < mounts.length; i++) {
+      var el = mounts[i];
+      var inBox = el.querySelector(".mlIn");
+      var outBox = el.querySelector(".mlOut");
+      if (!inBox || !outBox) continue;
+      inBox.hidden = who.authed;
+      outBox.hidden = !who.authed;
+      // Everything else on the page that waits on a session hears it from
+      // here, so there is ONE place that knows whether somebody is logged in.
+      try {
+        document.dispatchEvent(new CustomEvent("mice-auth",
+                                               { detail: { authed: who.authed } }));
+      } catch (e) { /* an old browser: the gate simply stays as it is */ }
+      var w = el.querySelector(".mlWho");
+      if (w) w.textContent = who.user || (who.users && who.users[0]) || "";
+    }
+  }
+
+  function refresh() {
+    return fetch("/api/whoami").then(function (r) { return r.json(); })
+      .then(function (j) {
+        who.authed = !!j.authed;
+        who.users = j.users || [];
+        paint();
+        return who.authed;
+      })
+      .catch(function () {
+        // The hub is not answering. Say nothing rather than claiming logged
+        // out: a page that logs you out on a hiccup is a page you stop
+        // trusting.
+        return who.authed;
+      });
+  }
+
+  function login(el) {
+    var user = (el.querySelector(".mlUser") || {}).value || "";
+    var pass = (el.querySelector(".mlPass") || {}).value || "";
+    if (!pass) { say(el, "type the hub password, then press Log in"); return; }
+    say(el, "checking…");
+    fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: user, password: pass })
+    }).then(function (r) { return r.json().then(function (j) { return [r, j]; }); })
+      .then(function (pair) {
+        var r = pair[0], j = pair[1];
+        var p = el.querySelector(".mlPass");
+        if (p) p.value = "";
+        if (r.ok && j.ok) {
+          who.authed = true;
+          who.user = user;
+          say(el, "");
+          paint();
+          // Every page and every tab shares the cookie, so tell them all.
+          document.dispatchEvent(new CustomEvent("mice-login", { detail: who }));
+          return;
+        }
+        say(el, j.locked_for > 0
+          ? ("too many tries - wait " + j.locked_for + " seconds")
+          : (j.error || "that password was not right"));
+      })
+      .catch(function () {
+        say(el, "the hub is not answering. Check it is still running.");
+      });
+  }
+
+  function logout(el) {
+    fetch("/api/logout", { method: "POST" })
+      .then(function () { who.authed = false; paint();
+        document.dispatchEvent(new CustomEvent("mice-login", { detail: who })); })
+      .catch(function () { say(el, "logged out here, but the hub did not confirm it"); });
+  }
+
+  function mount(el) {
+    if (!el) return;
+    el.classList.add("mlogin");
+    el.innerHTML =
+      '<div class="mlIn row" hidden>' +
+      '  <span class="lbl">Log in</span>' +
+      '  <input class="mlUser" placeholder="username" autocomplete="off">' +
+      '  <input class="mlPass" type="password" placeholder="password" autocomplete="new-password">' +
+      '  <button class="primary mlGo" type="button">Log in</button>' +
+      '</div>' +
+      '<div class="mlOut row" hidden>' +
+      '  <span class="lbl">Logged in</span><b class="mlWho"></b>' +
+      '  <button class="mlOff" type="button">Log out</button>' +
+      '</div>' +
+      '<div class="statline mlStat" role="status" aria-live="polite"></div>';
+    el.querySelector(".mlGo").onclick = function () { login(el); };
+    el.querySelector(".mlOff").onclick = function () { logout(el); };
+    el.querySelector(".mlPass").onkeydown = function (e) {
+      if (e.key === "Enter") login(el);
+    };
+    mounts.push(el);
+    refresh();
+  }
+
+  /* An action came back refused. Show the control, put the person in the
+   * password box, and hand back the sentence to print where they are looking.
+   */
+  function required(msg) {
+    refresh();
+    for (var i = 0; i < mounts.length; i++) {
+      var p = mounts[i].querySelector(".mlPass");
+      if (p && !who.authed) { p.focus(); break; }
+    }
+    return msg || "log in first - the box at the top of this page - then try again";
+  }
+
+  window.miceLogin = { mount: mount, refresh: refresh, required: required,
+                       authed: function () { return who.authed; } };
+})();
+
+/* miceGate - what a person can SEE and press before they sign in.
+ *
+ * Asked 2026-09-09: *make our app except the TOOL and module can use with out
+ * login, other thing need to be login same as face reconize.* A tool has to
+ * work at a venue with nobody logged in; everything else asks first.
+ *
+ * How a page uses it: put data-needs-login="flash" on the card. If that name
+ * is listed in config/page_access.json, the card is replaced by a sign-in box
+ * until somebody logs in, and comes back the moment they do. The list is data,
+ * so the next card costs one line there and no code here.
+ *
+ * THIS IS NOT THE LOCK. hub_auth.GATED is, and it answers `401 log in first`
+ * to every route that moves a robot, writes a file, replaces firmware or takes
+ * a port. This only decides what is shown - so a card the file forgets is a
+ * card a stranger can press and be refused by the hub, never a way in.
+ *
+ * A gated card is briefly visible while /api/whoami is still answering. That
+ * is on purpose: shipping them hidden would leave them hidden for good if the
+ * script ever failed, and a logged-in person unable to flash a board is worse
+ * than a card that shows for a moment.
+ */
+(function () {
+  var rule = null;                  // what /api/access said, read once per page
+
+  function load() {
+    if (rule) return Promise.resolve(rule);
+    return fetch("/api/access").then(function (r) { return r.json(); })
+      .then(function (j) { rule = j || {}; return rule; })
+      .catch(function () {
+        // The hub is not answering. Gate NOTHING rather than everything: this
+        // decides what is shown, and hiding the whole page because one read
+        // failed helps nobody. The hub still refuses the actions.
+        rule = { ok: false, needLogin: [], words: {} };
+        return rule;
+      });
+  }
+
+  function boxFor(name, w, el) {
+    var box = document.createElement("div");
+    box.className = "card mg-gate";
+    box.setAttribute("data-gate-for", name);
+    // Stand exactly where the card stood. The hub shows and hides cards by
+    // data-tab, so a box without it would appear on EVERY tab; and a card that
+    // spanned the grid leaves a hole if its replacement does not.
+    if (el.getAttribute("data-tab"))
+      box.setAttribute("data-tab", el.getAttribute("data-tab"));
+    if (el.getAttribute("style")) box.setAttribute("style", el.getAttribute("style"));
+    var b = document.createElement("b");
+    b.textContent = w.title || "Sign in to use this";
+    var p = document.createElement("p");
+    p.textContent = w.body ||
+      "Tools and module pages work without signing in. Everything else asks first.";
+    var go = document.createElement("button");
+    go.type = "button";
+    go.className = "primary";
+    go.textContent = w.button || "Sign in";
+    go.onclick = function () {
+      if (window.miceLogin) window.miceLogin.required();
+    };
+    // textContent throughout: the words come out of a file a person edits, and
+    // a file a person edits is not markup.
+    box.appendChild(b); box.appendChild(p); box.appendChild(go);
+    return box;
+  }
+
+  function boxOf(name) {
+    var boxes = document.querySelectorAll("[data-gate-for]");
+    for (var i = 0; i < boxes.length; i++)
+      if (boxes[i].getAttribute("data-gate-for") === name) return boxes[i];
+    return null;
+  }
+
+  function apply(authed) {
+    var need = (rule && rule.needLogin) || [];
+    var w = (rule && rule.words) || {};
+    var all = document.querySelectorAll("[data-needs-login]");
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      var name = el.getAttribute("data-needs-login");
+      var gated = !authed && need.indexOf(name) >= 0;
+      // ONE box per kind, however many cards carry that name. The lights page
+      // has four of them; four identical explanations stacked up is not an
+      // explanation, it is noise. It stands before the first of them.
+      var box = boxOf(name);
+      if (gated && !box) el.parentNode.insertBefore(boxFor(name, w, el), el);
+      if (!gated && box) box.parentNode.removeChild(box);
+      // A CLASS, never el.hidden. Cards hide themselves for their own reasons
+      // - the pairing card is hidden until another PC appears - and writing
+      // el.hidden here would REVEAL such a card the moment somebody logged in.
+      // The class hides on top of that and gives the element's own state back
+      // untouched when it is removed.
+      if (el.classList) el.classList.toggle("mg-off", gated);
+    }
+  }
+
+  document.addEventListener("mice-auth", function (e) {
+    load().then(function () {
+      apply(!!(e.detail && e.detail.authed));
+    });
+  });
+
+  window.miceGate = {
+    apply: function (authed) { return load().then(function () { apply(authed); }); },
+    rule: function () { return rule; }
+  };
+})();

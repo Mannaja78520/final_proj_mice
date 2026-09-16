@@ -1,0 +1,88 @@
+{
+  // ============================================================
+  //  AMPLIFIERS — the one place a speaker amp is described.
+  // ============================================================
+  //
+  //  Adding an amp is ONE entry here. It then appears in:
+  //    * the firmware's AMP command (generated into core/AmpTable.h at BUILD
+  //      time by firmware/tools/gen_tables.py — the chip parses no JSON)
+  //    * the Amplifier dropdown on the board's Hardware-pins page, with its
+  //      wiring line, so a person picks their amp by NAME and never edits code
+  //    * QC, which fails if the two sides disagree
+  //
+  //  WHY THIS FILE EXISTS (2026-08-27). AudioPlayer always built
+  //  AudioOutputI2S — digital I2S, right for a MAX98357A and WRONG for the
+  //  TPA3110 the user actually has. A TPA3110 (and a PAM8403) is an ANALOG
+  //  class-D amp: its input is a line signal, so fed raw I2S bits it plays
+  //  loud noise. The amp is a per-board WIRING fact, like a pin, so it is
+  //  stored per board in NVS and chosen from the website.
+  //
+  //  FIELDS
+  //    label    what a person sees in the dropdown
+  //    mode     how the ESP32 has to drive it — the only three the chip has:
+  //               i2s     digital I2S on 3 pins (AudioOutputI2S)
+  //               analog  ONE pin, 1-bit delta-sigma (AudioOutputI2SNoDAC),
+  //                       through an RC filter into an analog amp's input
+  //               dac     the ESP32's own 8-bit DAC, fixed on GPIO25/26
+  //               none    no speaker on this board; PLAY says so plainly
+  //    pins     which of the three audio pins are really wired. The page
+  //             shows only these, so nobody wires a pin the amp ignores.
+  //    mono     force one channel (a single speaker, or a mono amp)
+  //    wiring   the plain sentence printed under the dropdown. No jargon:
+  //             this is the line a designer follows with the part in hand.
+  //
+  //  A nong board has ONLY GPIO 0, 2 and 12 free after 10 servos, the SD card
+  //  (5/18/19/23) and RS485 (4/16/17) — and 25/26 are servos 3 and 4, so the
+  //  built-in DAC is not available on a full nong. That is why `analog` (one
+  //  pin) is the mode that fits a nong with a TPA3110.
+
+  "amps": {
+    "tpa3118": {
+      "label": "TPA3118 or TPA3116 board (analog in)",
+      "mode": "analog",
+      "pins": ["i2s_dout"],
+      "mono": true,
+      "wiring": "Only the DOUT pin is wired. DOUT through a 1k resistor to the amp's L input, and a 100nF capacitor from that same point to GND. Amp GND to board GND. The amp needs its own 12V-24V supply, not the board's 5V. Leave BCLK and LRC unconnected."
+    },
+
+    "tpa3110": {
+      "label": "TPA3110 or PAM8403 (analog in)",
+      "mode": "analog",
+      "pins": ["i2s_dout"],
+      "mono": true,
+      "wiring": "Only the DOUT pin is wired. DOUT through a 1k resistor to the amp's input, and a 100nF capacitor from that same point to GND. Amp GND to board GND. Leave BCLK and LRC unconnected."
+    },
+
+    "max98357a": {
+      "label": "MAX98357A (I2S amp board)",
+      "mode": "i2s",
+      "pins": ["i2s_bclk", "i2s_lrc", "i2s_dout"],
+      "mono": true,
+      "wiring": "Three wires straight to the amp board: BCLK to BCLK, LRC to LRC, DOUT to DIN. Amp GND to board GND, amp VIN to 5V."
+    },
+
+    "pcm5102a": {
+      "label": "PCM5102A sound board into an analog amp",
+      "mode": "i2s",
+      "pins": ["i2s_bclk", "i2s_lrc", "i2s_dout"],
+      "mono": false,
+      "wiring": "BCLK to BCK, LRC to LCK, DOUT to DIN on the PCM5102A board, then its LOUT/ROUT to the analog amp's input. Best sound of the three, one extra board."
+    },
+
+    "builtin_dac": {
+      "label": "The board's own sound pin (GPIO25/26)",
+      "mode": "dac",
+      "pins": [],
+      "mono": true,
+      "wiring": "GPIO25 through a 1uF capacitor to the amp's input, amp GND to board GND. The chip fixes these two pins, so they cannot be changed here - and on a full nong they already drive servos 3 and 4."
+    },
+
+    "none": {
+      "label": "No speaker on this board",
+      "mode": "none",
+      "pins": [],
+      "mono": false,
+      "wiring": "Nothing is wired. The speaker card stays hidden and PLAY answers that no speaker is wired."
+    }
+  }
+}

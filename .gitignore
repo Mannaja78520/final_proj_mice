@@ -61,3 +61,29 @@ main_python/hub_password.txt
 # External partner game assets (code stays in All-Jao-Games repo, launcher only)
 apps/jao/*.js
 apps/jao/*.css
+
+# ---- Local Snapshot Backups & Patches ----
+patches_code/
+firmware/patches/
+nong/main_python_set_nong/patches/
+*.bak
+*.bak.json
+
+# ---- Local Logs, Scratch & Test Artifacts ----
+*.log
+scratch/
+scratch.js
+test.mp3
+test_tts.wav
+pwned_*.json
+*_cookies.txt
+cookies.txt
+a.json
+b.json
+a.txt
+b.txt
+dist/thesis_references_bundle/
+dist/*.zip
+dist/*.json
+
+

@@ -15,8 +15,8 @@ class Identity;
 //   #3 GOTO 2        -> @3 OK goto 2
 //   #3 SET NAME LiftA
 //   #* RGB 255 0 0     (broadcast: executed by everyone, nobody replies)
-//   #* PING            (broadcast discovery: each module replies @<id> PONG...
-//                       staggered by id*20ms to avoid bus collisions)
+//   #* PING            (broadcast discovery: each module replies @<id> PONG,
+//                       staggered into 24 slots of 10 ms to avoid collisions)
 //
 // Bridging: a PC connected to just ONE module (USB serial or the website
 // console) can master the whole bus through it — any line starting with '#'
@@ -40,8 +40,14 @@ private:
     Identity* id_ = nullptr;
     CommandRouter* router_ = nullptr;
     String buf_;
-    String pendingReply_;
-    uint32_t pendingAt_ = 0;
+
+    // Broadcast replies waiting for their staggered slot. A QUEUE, not one
+    // slot: two overlapping scans used to overwrite each other's PONG and the
+    // hub silently lost boards. Four is plenty — slots fire every 10 ms; when
+    // full, the newest entry gives its place to the newcomer.
+    static const uint8_t PENDING_N = 4;
+    String pending_[PENDING_N];
+    uint32_t pendingAt_[PENDING_N] = {0};
     std::function<void(const String&)> busLine_;
     SemaphoreHandle_t sendMtx_ = nullptr;
     bool warnedNoMtx_ = false;   // say it once if the lock is missing

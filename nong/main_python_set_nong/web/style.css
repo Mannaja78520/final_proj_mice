@@ -1,3 +1,8 @@
+/* 11px is the floor this design system sets, and these were 10px - a
+   size that reads as a hint that something is there rather than as
+   text. Measured by check_responsive at every width, not guessed:
+   Studio failed the readability floor on a phone AND on a 4K screen,
+   which is what told us it was the type scale and not the layout. */
 /* Nong Studio — only what is STUDIO's own.
    Tokens, the reset, cards, buttons, inputs, the quiet caption and the shared
    floor (focus ring, reduced motion, touch targets) come from /mice.css, which
@@ -59,7 +64,7 @@ input[type=checkbox]{accent-color:var(--acc)}
 .tlabel{font-size:12px;color:var(--acc);margin-bottom:2px}
 .trow{display:flex;gap:6px}
 .tcell{display:flex;flex-direction:column;align-items:center;gap:1px;
-  font-size:10px;color:var(--mut);flex:1;min-width:0}
+  font-size:11px;color:var(--mut);flex:1;min-width:0}
 .tcell input{width:100%;min-width:0;padding:3px 2px;text-align:center}
 
 /* Draggable divider between the 3D view and the side panel.
@@ -86,18 +91,94 @@ input[type=checkbox]{accent-color:var(--acc)}
     transparent 11px, var(--line) 11px, var(--line) 13px, transparent 13px)}
 }
 
-/* rig joint rows: name | zero | min | max | axis | inv */
-.rigjrow{display:grid;grid-template-columns:78px 1fr 1fr 1fr 66px 24px;gap:4px;align-items:center;margin:2px 0}
+/* rig joint rows: name | zero | neutral | min | max | axis | inv */
+.rigjrow{display:grid;grid-template-columns:78px 1fr 1fr 1fr 1fr 66px 24px;gap:4px;align-items:center;margin:2px 0}
 .rigjrow .jname{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rigjrow input[type=number]{width:100%;min-width:0;padding:3px 2px;text-align:center}
 .rigjrow select{width:100%;min-width:0;padding:3px 2px;font-size:11px}
 
+/* servo offset: label | − | value | + | reset, one row per joint */
+.trow-t{display:grid;grid-template-columns:1fr 28px 54px 28px 28px;gap:var(--sp-1);
+        align-items:center;margin:2px 0}
+.t-lbl{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;
+       text-overflow:ellipsis}
+.t-val{width:100%;min-width:0;padding:3px 2px;text-align:center}
+.t-btn{padding:3px 0;font-size:12px;line-height:1}
+/* a joint being corrected is worth seeing at a glance */
+.trow-t.set .t-lbl{color:var(--acc)}
+@media (pointer:coarse){
+  /* the columns themselves have to grow: mice.css gives the button a 36px
+     height, but a 28px-wide target is still a miss with a thumb */
+  .trow-t{grid-template-columns:1fr 40px 58px 40px 40px}
+}
+@media (max-width:430px){
+  .trow-t{grid-template-columns:1fr 26px 48px 26px 26px}
+}
+
 /* timeline */
+
+#timeDrag {
+  flex: 0 0 auto;
+  height: 14px;
+  cursor: row-resize;
+  touch-action: none;
+  background: linear-gradient(to bottom, transparent 6px, var(--line) 6px, var(--line) 8px, transparent 8px);
+}
+#timeDrag:hover,
+#timeDrag:focus-visible {
+  background: linear-gradient(to bottom, transparent 6px, var(--acc) 6px, var(--acc) 8px, transparent 8px);
+}
+@media (pointer:coarse) {
+  #timeDrag {
+    height: 24px;
+    background: linear-gradient(to bottom, transparent 11px, var(--line) 11px, var(--line) 13px, transparent 13px);
+  }
+}
+#timeline {
+  overflow-y: auto;
+}
+
 #timeline{border-top:1px solid var(--line);background:var(--card);padding:8px 12px}
 .tl-head{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .tl-head h2{margin:0 8px 0 0}
 .sep{width:1px;height:22px;background:var(--line);margin:0 6px}
-#scrub{width:180px}
+/* ---- the time bar: its own row, so a wrapping .tl-head cannot bury it ---- */
+#timebar{margin:var(--sp-2) 0}
+.tb-top{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+.tb-label{font-size:11px;color:var(--mut)}
+.tb-btn{font-size:12px}
+.tb-clock{font-size:16px;font-variant-numeric:tabular-nums;color:var(--acc);
+          margin-left:auto}
+.tb-track{position:relative;height:28px;margin-top:var(--sp-1)}
+.tb-blocks{position:absolute;inset:0;border:1px solid var(--line);
+           border-radius:var(--r-md);background:var(--sunk);overflow:hidden;
+           pointer-events:none}
+/* one block per move, WIDTH = how long that move takes. The chip strip below
+   gives every move the same width; this row is the one that shows the timing. */
+.tb-blk{position:absolute;top:0;bottom:0;background:var(--card);
+        border-right:1px solid var(--line);font-size:11px;color:var(--mut);
+        overflow:hidden;white-space:nowrap;padding:0 3px;line-height:26px}
+.tb-blk.hold{background:var(--sunk);opacity:.55}
+.tb-blk.sel{outline:1px solid var(--acc);outline-offset:-1px}
+.tb-blk.off{opacity:.25}
+.tb-blk.bad{border-color:var(--err);
+            background:color-mix(in srgb,var(--err) 12%,var(--bg))}
+/* The slider IS the bar: it keeps pointer, touch and keyboard for free, and its
+   thumb is the playhead. z-index so it sits over the blocks it reads against. */
+#scrub{position:absolute;inset:0;width:100%;height:28px;margin:0;
+       appearance:none;-webkit-appearance:none;background:transparent;z-index:1}
+#scrub::-webkit-slider-runnable-track{background:transparent;border:0}
+#scrub::-moz-range-track{background:transparent;border:0}
+#scrub::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+       width:8px;height:26px;border-radius:var(--r-sm);background:var(--acc);
+       box-shadow:0 0 0 1px var(--card);cursor:ew-resize}
+#scrub::-moz-range-thumb{width:8px;height:26px;border:none;
+       border-radius:var(--r-sm);background:var(--acc);cursor:ew-resize}
+#scrub:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.tb-ruler{position:relative;height:14px;font-size:11px;color:var(--mut)}
+.tb-tick{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.tb-tick.first{transform:none}
+.tb-tick.last{transform:translateX(-100%)}
 #keys{
   display:flex;gap:6px;overflow-x:auto;padding:8px 2px;min-height:64px;align-items:stretch;
 }
@@ -110,7 +191,7 @@ input[type=checkbox]{accent-color:var(--acc)}
 .key.bad{border-color:var(--err);box-shadow:0 0 0 1px var(--err);
          background:color-mix(in srgb,var(--err) 12%,var(--bg))}
 .key.bad .kbar{background:var(--err)}
-.key .kbad{font-size:10px;color:var(--err);white-space:normal;max-width:150px}
+.key .kbad{font-size:11px;color:var(--err);white-space:normal;max-width:150px}
 #collideWarn{
   display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);
   background:color-mix(in srgb,var(--err) 18%,var(--bg));
@@ -132,11 +213,45 @@ input[type=checkbox]{accent-color:var(--acc)}
 #viewCube button.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc);font-weight:600}
 .key .kidx{font-weight:700;font-size:12px}
 .key .kidx small{color:var(--mut);font-weight:400}
-.key .kpose{font-size:10px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+/* The move number is the keyboard's way into a keyframe, so it is a button -
+   but it must still read as the number it always was, not as a control bolted
+   on top of one. No box until you hover, and the shared focus ring does the
+   rest when Tab lands on it. */
+.key .kgo{
+  background:transparent;border:1px solid transparent;color:inherit;
+  font:inherit;font-weight:700;padding:0 3px;border-radius:var(--r-sm);
+  cursor:pointer;min-width:18px}
+.key .kgo:hover{border-color:var(--line)}
+.key.sel .kgo{color:var(--acc)}
+.key .kpose{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
 .key .ktime{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--mut);margin-top:3px}
 .key .ktime input{width:52px;padding:2px 4px;font-size:11px}
+/* Music on a move. The ♪ is the whole control while a move has no track, so
+   the timeline does not grow a row per keyframe for something most moves
+   never use; accent means this move starts a track, and the row opens under
+   the chip when it does or when the ♪ is pressed. */
+.key .kmus{background:transparent;border:1px solid transparent;color:var(--mut);
+  font:inherit;padding:0 4px;margin-left:auto;border-radius:var(--r-sm);cursor:pointer}
+.key .kmus:hover{border-color:var(--line)}
+.key .kmus.on{color:var(--acc)}
+.key .kmusrow{flex-wrap:wrap}
+.key .kmusbtn{background:var(--sunk);border:1px solid var(--line);color:inherit;
+  font:inherit;padding:1px 6px;border-radius:var(--r-sm);cursor:pointer}
+.key .kmusbtn:hover:not(:disabled){border-color:var(--acc)}
+.key .kmusbtn:disabled{opacity:.45;cursor:default}
+.key .kmusrow select{flex:1;min-width:88px;font-size:11px;padding:2px 4px}
+.key .kmusrow input.kmusvol{width:52px}
+.key .kmusloop{display:inline-flex;align-items:center;gap:2px;font-size:11px;
+               color:var(--mut);white-space:nowrap}
+.key .kmusloop:has(input:checked){color:var(--acc)}
+.key .kmusnote{flex-basis:100%;color:var(--mut);line-height:1.35}
+@media (pointer:coarse){
+  .key .kmus{min-height:28px;min-width:28px}
+  .key .kmusrow select,.key .kmusrow input.kmusvol,.key .kmusbtn{min-height:28px}
+  .key .kmusloop input{min-height:22px;min-width:22px}
+}
 .key .kbar{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;background:var(--acc);opacity:.6}
-.key:first-child .kbar{background:var(--ok)}
+.key:first-child .kbar{background:var(--acc)}
 #meshAssign .row{margin:3px 0}
 #meshAssign select{flex:1}
 
@@ -161,7 +276,7 @@ input[type=checkbox]{accent-color:var(--acc)}
 @media (max-width:1100px) and (min-width:861px){
   #side{width:288px}
   .jrow{grid-template-columns:84px 1fr 58px}
-  .rigjrow{grid-template-columns:66px 1fr 1fr 1fr 58px 22px}
+  .rigjrow{grid-template-columns:66px 1fr 1fr 1fr 1fr 58px 22px}
 }
 
 /* ---- phone / small tablet: stack the 3D view above the panel ---- */
@@ -182,10 +297,12 @@ input[type=checkbox]{accent-color:var(--acc)}
   }
   /* wide fixed grids get narrower tracks rather than overflowing */
   .jrow{grid-template-columns:76px 1fr 56px}
-  .rigjrow{grid-template-columns:60px 1fr 1fr 1fr 54px 20px;gap:3px}
-  .rigjrow select{font-size:10px}
-  #scrub{width:100%}
+  .rigjrow{grid-template-columns:60px 1fr 1fr 1fr 1fr 54px 20px;gap:3px}
+  .rigjrow select{font-size:11px}
+  /* #scrub needs no width override any more: it fills its own row at every
+     width, which is the whole point of taking it out of .tl-head */
   .tl-head{gap:5px}
+  .tb-clock{margin-left:0}
   .sep{display:none}
   #timeline{padding:8px 10px}
   /* the view cube overlaps the model on a small canvas — shrink and tuck it */
@@ -197,7 +314,7 @@ input[type=checkbox]{accent-color:var(--acc)}
 @media (max-width:430px){
   .jrow{grid-template-columns:64px 1fr 48px;gap:4px}
   .jrow .jname{font-size:11px}
-  .rigjrow{grid-template-columns:52px 1fr 1fr 1fr 46px 18px}
+  .rigjrow{grid-template-columns:52px 1fr 1fr 1fr 1fr 46px 18px}
   .lbl{min-width:64px}
   .key{min-width:88px}
   #viewport{height:44vh;min-height:220px}
@@ -208,13 +325,19 @@ input[type=checkbox]{accent-color:var(--acc)}
   button{min-height:36px;padding:8px 12px}
   input,select{min-height:34px}
   input[type=range]{height:30px}
+  /* a finger needs the whole row, not an 8px playhead */
+  .tb-track,#scrub{height:44px}
+  .tb-blk{line-height:42px}
+  #scrub::-webkit-slider-thumb{width:16px;height:42px}
+  #scrub::-moz-range-thumb{width:16px;height:42px}
   #sideTabs .tab{padding:11px 0}
   .key{min-width:104px}
 }
 
 /* a suspended keyframe: still in the timeline to edit, but not in the run */
 .key.off{opacity:.42;border-style:dashed}
-.key.off .kpose,.key.off .kidx{text-decoration:line-through}
+/* A button does not inherit the strike-through from its chip, so it is named. */
+.key.off .kpose,.key.off .kidx,.key.off .kgo{text-decoration:line-through}
 .key.off .kbar{background:var(--mut)}
 .key .kskip{
   float:right;background:transparent;border:none;color:var(--ok);
@@ -236,5 +359,23 @@ input[type=checkbox]{accent-color:var(--acc)}
   color:var(--txt);font:inherit;font-size:11px;min-width:0}
 .kname::placeholder{color:var(--mut);opacity:.55}
 .kname:hover{border-color:var(--line)}
-.kname:focus{border-color:var(--acc);background:var(--sunk);outline:none}
+/* No `outline:none` here. It hid the shared focus ring on the one field a
+   keyboard reaches most - measured 2026-08-21, the name box looked identical
+   focused and unfocused. The border and background still do the quiet work
+   for a mouse; :focus-visible draws the ring only for the keyboard. */
+.kname:focus{border-color:var(--acc);background:var(--sunk)}
 @media (pointer:coarse){.kname{min-height:24px;font-size:12px}}
+
+/* Short guidance in the header leaves the canvas room to breathe. */
+header{flex-wrap:wrap;padding:var(--sp-3) var(--sp-4);gap:var(--sp-3)}
+.pose-help{position:relative;padding:0 var(--sp-3);font-size:13px}
+.pose-help[open]{flex-basis:100%}
+.pose-help .hint{display:block;max-width:80ch;margin:var(--sp-2) 0}
+#side .card{padding:var(--sp-4)}
+#side .card.disclosure{padding:var(--sp-2) var(--sp-3)}
+#side h2{font-size:15px}
+.jrow{margin:var(--sp-2) 0}
+#timeline{padding:var(--sp-3) var(--sp-4)}
+.tl-head{gap:var(--sp-2)}
+#timelineEmpty{margin:var(--sp-2) 0}
+#viewCube{background:color-mix(in srgb,var(--card) 92%,transparent);border-radius:var(--r-md)}

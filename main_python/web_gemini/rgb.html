@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mice — RGB</title>
+<link rel="stylesheet" href="/mice.css">
+<link rel="stylesheet" href="/g/g.css">
+<script src="/mice.js"></script>
+<style>
+/* Page-local layout only; tokens/components from /mice.css, grouping from
+   /g/g.css. The page reads as four groups in the order you reach for them. */
+body{padding:var(--sp-4) var(--sp-3) var(--sp-6)}
+.topline{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2);
+         max-width:1080px;margin:0 auto var(--sp-3)}
+.topline h1{margin:0;font-size:20px}
+.page{max-width:1080px;margin:0 auto}
+
+.padrow{display:flex;gap:var(--sp-3);align-items:flex-start;flex-wrap:wrap;
+        margin-bottom:var(--sp-2)}
+#col{width:120px;height:120px;padding:0;border:1px solid var(--line);
+     border-radius:var(--r-md);background:none;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:var(--sp-2);flex:1;min-width:200px}
+.chip{width:44px;height:44px;border-radius:var(--r-pill);border:1px solid var(--line);
+      cursor:pointer;padding:0}
+.chip:hover{border-color:var(--acc)}
+
+.slider{display:flex;align-items:center;gap:var(--sp-2)}
+.slider input[type=range]{flex:1;min-width:120px}
+.slider .word{font-size:13px;color:var(--mut);min-width:52px}
+.slider .word:last-child{text-align:right}
+
+button.on{background:var(--ok);border-color:var(--ok);color:var(--on-acc);font-weight:600}
+#seqState,#manStat,#musStat{min-height:20px}
+#meter{height:26px;background:var(--sunk);border:1px solid var(--line);
+       border-radius:var(--r-sm);overflow:hidden;margin-top:var(--sp-2)}
+#meterFill{height:100%;width:0%;
+           background:var(--acc)}
+@media (max-width:420px){
+  #col{width:96px;height:96px}
+  .chip{width:38px;height:38px}
+}
+</style>
+</head>
+<body>
+
+<div class="topline">
+  <a href="/g/">← Show</a>
+  <h1>💡 RGB — <span id="who">module</span><span id="whoTech" class="tech mini"></span></h1>
+  <span style="flex:1"></span>
+  <label class="row mini" style="margin:0"><input type="checkbox" id="advOn"
+    onchange="miceAdv.set(this.checked)"> technical detail</label>
+</div>
+
+<div class="page">
+
+<div class="grp">
+  <h3>Colour right now</h3>
+  <div class="card">
+    <div class="padrow">
+      <input type="color" id="col" value="#0050ff" oninput="manualColor()"
+             title="pick a colour and the strip changes as you drag"
+             aria-label="pick any colour">
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="slider">
+      <span class="word">dim</span>
+      <input type="range" id="bri" min="0" max="255" value="128"
+             oninput="cmd('RGB BRIGHT '+this.value,1)" aria-label="brightness">
+      <span class="word">bright</span>
+    </div>
+    <div class="statline xs" id="manStat" aria-live="polite"></div>
+    <div class="row"><button onclick="cmd('RGB EFFECT off')">Strip off</button></div>
+  </div>
+</div>
+
+<div class="grp">
+  <h3>Effects that run without this PC</h3>
+  <div class="card row" id="fxRow">
+    <button data-fx="solid">solid</button>
+    <button data-fx="rainbow">🌈 rainbow</button>
+    <button data-fx="chase">chase</button>
+    <button data-fx="breathe">breathe</button>
+  </div>
+</div>
+
+<div class="grp">
+  <h3>Light shows saved on the module's card</h3>
+  <div class="card">
+    <div class="row">
+      <select id="seqSel" style="flex:1;min-width:160px"></select>
+      <button class="primary" id="runBtn" onclick="runSeq()">▶ Run</button>
+      <button onclick="cmd('MOVE STOP')">Stop</button>
+      <button id="seqRetry" class="icon" onclick="loadSeqs()" title="ask the module for its list again">⟳</button>
+    </div>
+    <div class="statline xs" id="seqState" aria-live="polite"></div>
+    <p class="mini">A show is a small text file (<code>.yaml</code>) on the card:
+       colour, effect, brightness and wait steps, and it can loop. Once it runs,
+       no PC is needed.</p>
+  </div>
+</div>
+
+<div class="grp">
+  <h3>Follow whatever the PC is playing 🔊</h3>
+  <div class="card">
+    <div class="row">
+      <button class="primary" id="musBtn" onclick="toggleMusic()">Start listening</button>
+      <select id="musStyle" aria-label="style">
+        <option value="pulse">pulse — my colour, loudness = brightness</option>
+        <option value="party">party — colours spin, loudness = brightness</option>
+      </select>
+    </div>
+    <div class="slider">
+      <span class="word">shy</span>
+      <input type="range" id="sens" min="1" max="20" value="8" aria-label="sensitivity">
+      <span class="word">jumpy</span>
+    </div>
+    <div id="meter"><div id="meterFill"></div></div>
+    <p class="mini" id="musStat" aria-live="polite">Press start, pick the screen or
+       tab that plays the sound, tick “share audio”. Chrome/Edge on this PC; over
+       the venue WiFi open the hub as localhost instead.</p>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+/* ---- the wire engine is the incumbent's, verbatim in behaviour ---- */
+const $=id=>document.getElementById(id);
+const qp=new URLSearchParams(location.search);
+const IP=qp.get('ip')||'', PORT=qp.get('port')||'', BUS=qp.get('id')||'';
+$('who').textContent=qp.get('name')||'module';
+const wt=[]; if(IP)wt.push(IP); if(PORT)wt.push('port '+PORT); if(BUS)wt.push('bus #'+BUS);
+$('whoTech').textContent=wt.length?' — '+wt.join(' · '):'';
+
+let lastSend=0;
+async function cmd(c,throttled){
+  const now=performance.now();
+  if(throttled&&now-lastSend<90)return '';
+  lastSend=now;
+  const url=IP?('/api/robot/cmd?ip='+encodeURIComponent(IP)+'&c='+encodeURIComponent(c))
+             :('/api/usb/cmd?port='+encodeURIComponent(PORT)+(BUS?('&id='+BUS):'')+'&c='+encodeURIComponent(c));
+  try{
+    const r=await fetch(url);
+    const t=await r.text();
+    if(!r.ok){ say('The module did not accept that. '+(t||('reply '+r.status))); return ''; }
+    if(t.startsWith('ERR')){ say('The module refused it. '+t); return t; }
+    say('');
+    return t;
+  }catch(e){
+    say('Could not reach the module. Check it is powered and still on the same '
+        +'network or cable. '+(e.message||e));
+    return '';
+  }
+}
+function say(msg){ const el=$('manStat'); if(el)el.textContent=msg; }
+function hex2rgb(h){return [parseInt(h.substr(1,2),16),parseInt(h.substr(3,2),16),parseInt(h.substr(5,2),16)];}
+function manualColor(){const[r,g,b]=hex2rgb($('col').value);cmd(`RGB ${r} ${g} ${b}`,1);}
+
+/* the usual colours are DATA, not buttons scattered in HTML */
+const CHIPS=["#ff2020","#ff8800","#ffe000","#22cc44","#0050ff","#8844ff","#ff44aa","#ffffff"];
+CHIPS.forEach(c=>{
+  const b=document.createElement("button");
+  b.className="chip"; b.style.background=c;
+  b.title=c;
+  b.setAttribute("aria-label","colour "+c);
+  b.onclick=()=>{ $('col').value=c; manualColor(); };
+  $('chips').appendChild(b);
+});
+
+/* effects: mark the one that answered */
+document.querySelectorAll("#fxRow [data-fx]").forEach(b=>{
+  b.onclick=async()=>{ await cmd("RGB EFFECT "+b.dataset.fx); markFx(b.dataset.fx); };
+});
+function markFx(name){
+  document.querySelectorAll("#fxRow [data-fx]").forEach(b=>{
+    b.classList.toggle("on",b.dataset.fx===name);
+  });
+}
+
+/* ---- the sequence list, five states, keeps the last good list ---- */
+let seqHave=[];
+function seqState(kind,text){
+  const el=$('seqState');
+  if(!el)return;
+  el.className='statline state-'+kind+' xs';
+  el.textContent=text;
+}
+async function loadSeqs(){
+  const s=$('seqSel'),btn=$('seqRetry');
+  if(btn)btn.disabled=true;
+  seqState('load','Asking the module for its shows…');
+  const t=await cmd('FILES /moves');
+  if(btn)btn.disabled=false;
+  let fs=null;
+  try{ fs=JSON.parse(t); }catch(e){ fs=null; }
+  if(!Array.isArray(fs)){
+    if(seqHave.length){
+      seqState('stale','⚠ old list — could not reach the module just now. Press ⟳ to try again.');
+    }else{
+      seqState('err','✗ Could not read the list. The module may be unreachable, or has no card. Press ⟳ to try again.');
+      s.innerHTML='<option>(list unavailable)</option>';
+    }
+    return;
+  }
+  seqHave=fs;
+  s.innerHTML='';
+  fs.forEach(f=>{const o=document.createElement('option');o.value=o.textContent=f.n;s.appendChild(o);});
+  if(!fs.length){
+    s.innerHTML='<option>(no shows on the card)</option>';
+    seqState('empty','The card has no shows yet. Put a .yaml file in /moves on the card, then press ⟳.');
+    return;
+  }
+  seqState('ready','✓ '+fs.length+' show'+(fs.length===1?'':'s')+' on the card.');
+}
+function runSeq(){
+  const v=$('seqSel').value;
+  if(!v||v.startsWith('(')){
+    seqState('empty','Pick a show first — the list is empty right now.');
+    return;
+  }
+  cmd('MOVE '+v);
+}
+
+/* ---- music mode: PC audio -> level -> strip (engine unchanged) ---- */
+let audioCtx=null,analyser=null,stream=null,musTimer=null,hue=0;
+async function toggleMusic(){
+  if(musTimer){stopMusic();return;}
+  try{
+    stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
+    if(!stream.getAudioTracks().length){
+      $('musStat').textContent='no audio in the capture — start again and tick “share audio” in the picker';
+      stream.getTracks().forEach(t=>t.stop());stream=null;return;
+    }
+    stream.getVideoTracks().forEach(t=>t.stop());
+    audioCtx=new AudioContext();
+    const src=audioCtx.createMediaStreamSource(stream);
+    analyser=audioCtx.createAnalyser();
+    analyser.fftSize=512;
+    src.connect(analyser);
+    musTimer=setInterval(musicTick,110);
+    $('musBtn').textContent='■ Stop listening';
+    $('musBtn').classList.add('on');
+    $('musStat').textContent='following the PC audio…';
+  }catch(e){
+    $('musStat').textContent=(location.hostname==='localhost'||location.hostname==='127.0.0.1')
+      ?'capture cancelled or not allowed - press Start again and allow it'
+      :'the browser blocks audio capture on this address. Open the hub as '
+      +'localhost on this PC, or serve it over https, and music mode will start';
+  }
+}
+function stopMusic(){
+  clearInterval(musTimer);musTimer=null;
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  if(audioCtx)audioCtx.close();
+  stream=audioCtx=analyser=null;
+  musBusy=false;
+  $('musBtn').textContent='Start listening';
+  $('musBtn').classList.remove('on');
+  $('meterFill').style.width='0%';
+  $('musStat').textContent='stopped';
+  cmd('RGB EFFECT off');
+  markFx("");
+}
+let musBusy=false;
+function musicTick(){
+  const buf=new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(buf);
+  let sum=0;
+  for(const v of buf){const d=(v-128)/128;sum+=d*d;}
+  const rms=Math.sqrt(sum/buf.length);
+  const lvl=Math.min(1,rms*(+$('sens').value));
+  $('meterFill').style.width=Math.round(lvl*100)+'%';
+  if(musBusy)return;
+  let r,g,b;
+  if($('musStyle').value==='pulse'){
+    [r,g,b]=hex2rgb($('col').value).map(v=>Math.round(v*lvl));
+  }else{
+    hue=(hue+2+lvl*14)%360;
+    const k=n=>{const h=(n+hue/30)%12;return Math.round(255*lvl*Math.max(0,Math.min(1,Math.min(h-3,9-h))));};
+    r=k(0);g=k(8);b=k(4);
+  }
+  musBusy=true;
+  cmd(`RGB ${r} ${g} ${b}`).finally(()=>{musBusy=false;});
+}
+loadSeqs();
+if(window.miceAdv)$('advOn').checked=miceAdv.on();
+</script>
+</body>
+</html>

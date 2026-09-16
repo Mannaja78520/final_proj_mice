@@ -30,12 +30,36 @@ import os
 import re
 import sys
 import time
+
 from pathlib import Path
 
+# THAI, OR ANY OTHER LANGUAGE, MUST NOT KILL A TOOL. Windows hands python a
+# cp1252 console here, which cannot encode Thai at all: printing one Thai word
+# raised UnicodeEncodeError and the command died after it had already changed
+# the file. Measured 2026-08-22. UTF-8 out, and never crash on a character.
+for _out in (sys.stdout, sys.stderr):
+    try:
+        _out.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass        # a check that IMPORTS this tool has replaced stdout
+                    # with a StringIO, which has no reconfigure at all
+
 STATUSES = ("todo", "doing", "qc", "done", "blocked")
+# What a task id looks like. The trailing letter is not decoration: A9-3b is
+# the half of A9-3 that needs no hardware, and while the pattern ended at the
+# digit that task was set to `doing` without complaint and then left out of
+# every count and out of the page - work in progress that the page said did
+# not exist. The same pattern is in PLAN.html's renderer.
+ID = r"^[A-Z]\d+-\d+[a-z]?"
 
 
-def plan_path():
+# The pages this tool can drive. A third one is one line here.
+#   robot   docs/PLAN.html            the rig's own work, A1-A25
+#   system  docs/system_integral.html joining Mice to programs outside it
+PAGES = {"robot": "PLAN.html", "system": "system_integral.html"}
+
+
+def plan_path(page="robot"):
     """The ONE plan, always in the real tree.
 
     Climbing out of `.staging` is not a nicety: a copy in there is a day old
@@ -52,9 +76,61 @@ def plan_path():
     if override:
         return Path(override)
     here = Path(__file__).resolve().parent.parent
-    if here.name == ".staging":
+    if here.name.startswith(".staging"):
         here = here.parent
-    return here / "docs" / "PLAN.html"
+    return here / "docs" / PAGES.get(page, PAGES["robot"])
+
+
+def pages_with(tid):
+    """Which pages already carry this task id. Empty when the id is new.
+
+    Two pages that resolve to the SAME file are one page, not two - MICE_PLAN
+    points every page at one temporary file, and without this the QC check
+    that drives this tool for real would look ambiguous to itself.
+    """
+    found, seen = [], set()
+    for name in sorted(PAGES):
+        path = plan_path(name)
+        key = str(path).lower()
+        if key in seen or not path.is_file():
+            continue
+        seen.add(key)
+        if re.search(r"^%s:\s" % re.escape(tid),
+                     path.read_text(encoding="utf-8"), re.M):
+            found.append(name)
+    return found
+
+
+def resolve_page(page, ids, action=""):
+    """Which page an edit belongs to when --page was not given.
+
+    Both plans number their tasks from A1, so `A1-1` is a real task on BOTH:
+    the board's auth gate on the robot plan, and the Reconize tile on the
+    integration plan. A stamp landing on the wrong one is INVISIBLE - the page
+    being watched simply never changes, and the work looks stalled. So an id
+    carried by more than one page is refused until --page says which.
+
+    An id that only ONE page has needs no flag: there is nothing to confuse.
+    """
+    if page:
+        return page
+    where = {}
+    for tid in ids:
+        for name in pages_with(tid):
+            where.setdefault(name, []).append(tid)
+    if len(where) > 1:
+        raise SystemExit(
+            "these ids are on more than one plan, so a stamp could land on the "
+            "wrong page and nobody would see it:\n"
+            + "\n".join("  %-7s has %s" % (name, ", ".join(tids))
+                        for name, tids in sorted(where.items()))
+            + "\nSay which page you mean - one of these:\n"
+            + "\n".join("  python tools/plan.py --page %s %s %s"
+                        % (name, action, " ".join(ids))
+                        for name in sorted(where)))
+    if len(where) == 1:
+        return next(iter(where))
+    return "robot"
 
 
 def now():
@@ -76,8 +152,8 @@ def _atomic(path, text):
 class Plan:
     """The STATE block, edited in place."""
 
-    def __init__(self, path=None):
-        self.path = path or plan_path()
+    def __init__(self, path=None, page="robot"):
+        self.path = path or plan_path(page)
         self.text = self.path.read_text(encoding="utf-8")
 
     def save(self):
@@ -89,6 +165,18 @@ class Plan:
         # Windows and POSIX alike.
         _atomic(self.path, self.text)
         self.publish()
+
+    def state_file(self):
+        """The state script beside THIS page.
+
+        PLAN.html keeps `plan_state.js` because that is the name its renderer
+        loads; any other page gets `<name>_state.js`. One file per page: the
+        integration page and the robot page would otherwise overwrite each
+        other's progress, which is the whole reason they are two pages.
+        """
+        if self.path.name == "PLAN.html":
+            return self.path.parent / "plan_state.js"
+        return self.path.with_name(self.path.stem + "_state.js")
 
     def publish(self):
         """Write the STATE block beside the page, as a script it can load.
@@ -119,14 +207,18 @@ class Plan:
             raw = raw.replace(ent, ch)
         out = {"stamp": _t.strftime("%Y-%m-%d %H:%M:%S"), "raw": raw}
         try:
-            _atomic(self.path.parent / "plan_state.js",
+            _atomic(self.state_file(),
                     "window.PLAN_STATE=" + json.dumps(out) + ";" + chr(10))
         except OSError:
             pass                      # a convenience, never a requirement
 
     def set_status(self, tid, status, stamp=True):
         """Rewrite one task's status and timestamp, keeping everything else."""
-        pat = re.compile(r"^(%s):\s+(%s)(\s+\d{4}-\d\d-\d\d(?: \d\d:\d\d)?)?(\s*)"
+        # Trailing spaces only, never \s: \s eats the NEWLINE after a bare task
+        # line (no em-dash note), and the rewrite glues the next line onto this
+        # one - the id below vanished from the block and later edits to it
+        # silently did nothing.
+        pat = re.compile(r"^(%s):\s+(%s)(\s+\d{4}-\d\d-\d\d(?: \d\d:\d\d)?)?([ \t]*)"
                          % (re.escape(tid), "|".join(STATUSES)), re.M)
         when = ("  " + now()) if stamp else ""
         new, n = pat.subn(lambda m: "%s: %-5s%s  " % (m.group(1), status, when), self.text)
@@ -159,7 +251,7 @@ class Plan:
             raise SystemExit("no task %s" % tid)
         self.text = new
 
-    def add(self, tid, status, note, before=None):
+    def add(self, tid, status, note, before=None, hw=None):
         """Put a NEW task into the STATE block, published like every other edit.
 
         Added 2026-08-20 after the user asked why the page had not changed. It
@@ -176,7 +268,11 @@ class Plan:
             raise SystemExit("status must be one of: %s" % ", ".join(STATUSES))
         if re.search("^" + re.escape(tid) + ":", self.text, re.M):
             raise SystemExit("%s already exists" % tid)
-        line = "%s: %-5s %s  — %s" % (tid, status, now(), note)
+        # hw= goes on the line itself, so the one place a task is
+        # recorded is also the place that says whether a PC can finish
+        # it. check_packing_list keeps it and the packing table honest.
+        tag = ("  hw=%s" % hw) if hw else ""
+        line = "%s: %-5s %s%s  — %s" % (tid, status, now(), tag, note)
         anchor = None
         if before:
             anchor = re.search("^" + re.escape(before) + ":", self.text, re.M)
@@ -187,14 +283,14 @@ class Plan:
         else:
             # After the LAST task line, so a new id lands with its own area
             # rather than at the top of the block.
-            ends = [m.end() for m in re.finditer(r"^[A-Z]\d+-\d+:.*$", self.text, re.M)]
+            ends = [m.end() for m in re.finditer(ID + r":.*$", self.text, re.M)]
             if not ends:
                 raise SystemExit("no STATE block to add to")
             at = ends[-1] + 1
         self.text = self.text[:at] + line + chr(10) + self.text[at:]
 
     def summary(self):
-        rows = re.findall(r"^([A-Z]\d+-\d+):\s+(\w+)", self.text, re.M)
+        rows = re.findall("^(" + ID[1:] + r"):\s+(\w+)", self.text, re.M)
         counts = {s: sum(1 for _, x in rows if x == s) for s in STATUSES}
         run = re.search(r"^# RUNNING: (.*)$", self.text, re.M)
         live = [tid for tid, s in rows if s in ("doing", "qc")]
@@ -204,6 +300,11 @@ class Plan:
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--page", default=None, choices=sorted(PAGES),
+                    help="which plan page: robot (the rig) or system "
+                         "(joining Mice to outside programs). Left off, the "
+                         "page is worked out from the task id - and an id "
+                         "both pages have is refused rather than guessed")
     ap.add_argument("action",
                     help="one of: %s, running, note, add, publish, show"
                          % ", ".join(STATUSES))
@@ -211,19 +312,28 @@ def main(argv=None):
     ap.add_argument("--clear", action="store_true", help="running: nothing in flight")
     ap.add_argument("--status", default="todo", help="add: status of the new task")
     ap.add_argument("--before", help="add: put it in front of this task id")
+    ap.add_argument("--hw", help="add: what hardware it needs, e.g. '2 boards + RS485'. Leave it off for a task a PC alone can finish - the field is what makes a task skippable "
+                    "when the boards are not on the bench, and what puts the part on the packing list.")
     a = ap.parse_args(argv)
 
-    p = Plan()
+    # Which ids this action touches, so the page can be worked out from them.
+    # `add` is left out on purpose: its id does not exist yet anywhere.
+    ids = []
+    if a.action in STATUSES:
+        ids = list(a.rest)
+    elif a.action == "note" and a.rest:
+        ids = [a.rest[0]]
+    p = Plan(page=resolve_page(a.page, ids, a.action))
     if a.action == "publish":
         # For the one case hand-editing is unavoidable: republish so the open
         # page sees it within four seconds instead of at the next status change.
         p.publish()
-        print("published — the open page will pick it up")
+        print("published - the open page will pick it up")
         return 0
 
     if a.action == "show":
         counts, run, live = p.summary()
-        print(" · ".join("%d %s" % (v, k) for k, v in counts.items() if v))
+        print(" | ".join("%d %s" % (v, k) for k, v in counts.items() if v))
         print("RUNNING:", run)
         print("in flight:", ", ".join(live) or "nothing")
         return 0
@@ -235,7 +345,20 @@ def main(argv=None):
     elif a.action == "add":
         if len(a.rest) < 2:
             raise SystemExit("add: need a task id and what it is")
-        p.add(a.rest[0], a.status, " ".join(a.rest[1:]), a.before)
+        # A STATUS ON ITS OWN, WITH THE NOTE AFTER IT, IS A MISTYPED --status.
+        # `add A24-19 doing "..."` filed the word "doing" as the first word of
+        # the NOTE and left the task `todo` while it was being worked, so the
+        # page said nothing was in flight - the one thing it exists to show.
+        # Caught by the user 2026-08-28, after it had happened silently once.
+        # Tested on the ARGUMENT, not the joined note: "qc self-test" as one
+        # quoted note is ordinary text and must still be allowed.
+        if len(a.rest) > 2 and a.rest[1].lower() in STATUSES:
+            raise SystemExit(
+                "%r is a status, not what the task IS.\n"
+                "Did you mean:  plan.py add %s \"<what it is>\" --status %s\n"
+                "(the flag goes AFTER the note - argparse eats it otherwise)"
+                % (a.rest[1], a.rest[0], a.rest[1].lower()))
+        p.add(a.rest[0], a.status, " ".join(a.rest[1:]), a.before, a.hw)
     elif a.action in STATUSES:
         for tid in a.rest:
             p.set_status(tid, a.action)
@@ -244,7 +367,7 @@ def main(argv=None):
 
     p.save()
     counts, run, live = p.summary()
-    print("plan updated — in flight: %s | %s" % (", ".join(live) or "nothing", run))
+    print("plan updated - in flight: %s | %s" % (", ".join(live) or "nothing", run))
     return 0
 
 

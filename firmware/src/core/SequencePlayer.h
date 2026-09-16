@@ -51,7 +51,13 @@ public:
     bool startText(const String& yaml, String& err);
     bool hasText() const { return ramYaml_.length() > 0; }
     const String& text() const { return ramYaml_; }
-    void setText(const String& yaml) { ramYaml_ = yaml; }
+    // The name the text arrived under (FEND's FBEGIN name), so MOVE can
+    // refuse when asked for a different file than the one held.
+    void setText(const String& yaml, const String& name = "") {
+        ramYaml_ = yaml;
+        ramName_ = name;
+    }
+    const String& textName() const { return ramName_; }
     void stop();
     void loop(); // called from CommandRouter::loop() under the router mutex
 
@@ -70,7 +76,9 @@ private:
     bool waitBusy_ = false;
     int chain_ = 0;      // how many files deep this run already is
     String ramYaml_;     // the in-memory sequence, when there is no card
+    String ramName_;     // the name it arrived under, for MOVE to check
 
     bool startAt(const String& path, String& err, int depth);
     void execStep(JsonVariant step);
+    void endOfShow();   // the show ended by itself: end a REPEATING track too
 };

@@ -74,6 +74,43 @@ def run(t):
         gone = port not in main._usb_open                   # noqa: SLF001
     t.ok(gone, "and is taken out of the table")
 
+    # ---- and the caller can TELL which happened ----------------------
+    # This is what the flasher needed and did not have. It called usb_close,
+    # slept 300ms and ran esptool into a handle that was still open; measured
+    # at the bench 2026-08-20, the flash died at 21% with "the chip stopped
+    # responding" and left the board in the bootloader. The same flash from a
+    # command line with the hub stopped worked first try.
+    lock2 = threading.Lock()
+    entry2 = {"ser": FakeSerial(), "lock": lock2, "at": time.time()}
+    with main._usb_mgr_lock:                                # noqa: SLF001
+        main._usb_open[port] = entry2                       # noqa: SLF001
+    lock2.acquire()
+    try:
+        shut = main.usb_close(port)
+        t.eq(shut, [],
+             "usb_close reports that it closed nothing")
+        t.ok(not main.usb_free(port),
+             "and usb_free agrees the cable is still held",
+             "the flasher asks this before it runs esptool; if it lies, the "
+             "board ends up half-written")
+    finally:
+        lock2.release()
+    # And the POSITIVE case: an empty list means nothing closed, so a function
+    # that always returns an empty list would have passed the assertion above.
+    freed = main.usb_close(port)
+    t.eq(freed, [port],
+         "and it names the cable when it really did close one")
+    t.ok(main.usb_free(port), "once it is free, usb_free says so")
+
+    # The flasher must WAIT for that, not sleep and hope.
+    src_f = (F.HUB / "main.py").read_text(encoding="utf-8")
+    run = src_f[src_f.find("def _run(self, cmd, im)"):]
+    run = run[:run.find("write_flash")]
+    t.contains(run, "usb_free(port)",
+               "the flasher checks the cable is really free")
+    t.contains(run, "still in use by this hub",
+               "and says so plainly rather than flashing anyway")
+
     # ---- and the reason stays written down ---------------------------
     src = (F.HUB / "main.py").read_text(encoding="utf-8")
     fn = src[src.find("def usb_close"):]

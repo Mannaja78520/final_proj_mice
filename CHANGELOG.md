@@ -9,6 +9,38 @@ Folder-level history also exists in two other places and is not repeated here:
 
 ---
 
+## 2026-08-21
+
+### Added — the hub says when its own program is out of date
+
+`MiceHub.exe` is built from this tree and goes stale the moment the source
+changes. One did: a hub running the previous day's build answered everything
+happily with four fixes missing, and the only clue was a password that did not
+match. The build now carries a checksum for every source file that went into
+it, the running hub compares that against the tree beside it, and a caution
+banner names the changed files and the rebuild command. A PC that has only the
+program — a venue laptop — has nothing to compare against, so it says nothing
+rather than guessing. Reported on `/api/version`, `/api/selfupdate` and in the
+diagnostics bundle.
+
+### Added — every control works with the keyboard alone
+
+Tab reaches every control on the hub, the module website and Nong Studio, and
+Enter presses it. One place was mouse-only: a Studio keyframe could only be
+selected by clicking its chip, so the timeline could not be walked at all. The
+move **number is now a button**. The move-name box also got its focus ring back
+— it had been switched off, so the field a keyboard reaches most looked
+identical focused and unfocused.
+
+### Fixed — a busy machine no longer reports pages as broken
+
+`check_no_undefined_names` failed three times in one day with
+`Failed to fetch`, which is a connection that never completed and says nothing
+about the page's code. It now retries a page once and reports *not proven*
+rather than *broken*, so a red gate means a real fault again.
+
+---
+
 ## 2026-08-09
 
 ### Changed — "update over WiFi" now asks which firmware

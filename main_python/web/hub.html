@@ -14,8 +14,12 @@ h1{font-size:24px;margin-bottom:var(--sp-1)}
 .sub{color:var(--mut);margin-bottom:18px}
 
 /* a module row: name / type / address / what you can do with it */
-.mod{display:flex;align-items:center;gap:var(--sp-2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-2) var(--sp-3);margin:var(--sp-2) 0;background:var(--sunk)}
+.mod{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-2) var(--sp-3);margin:var(--sp-2) 0;background:var(--sunk)}
 .mod .nm{font-weight:700}
+/* Every way this board can be reached, under the row rather than beside it:
+   a board on a cable, on the WiFi and on the laptop next door has three, and
+   three more items on one line pushes the buttons off a phone. */
+.mod .via{flex-basis:100%;font-size:12px;color:var(--mut);margin-top:2px}
 .ty{font-size:12px;color:var(--on-acc);background:var(--ty-other);border-radius:var(--r-md);padding:1px var(--sp-2);font-weight:600}
 /* Module-type badges use the --ty-* tokens, which are decoration — which board
    is which — not state, so --ok/--warn/--err stay reserved for "this is fine /
@@ -24,7 +28,20 @@ h1{font-size:24px;margin-bottom:var(--sp-1)}
 .ty.nong{background:var(--ty-nong)}
 .ty.lift{background:var(--ty-lift)}
 .ty.cam{background:var(--ty-cam)}
-.mod .ip{color:var(--mut);font-size:13px;flex:1}
+/* ONE LINE, ALWAYS. A module that misses a sweep gains "· last answered 12s
+   ago" in this span, and as a flex child that wraps its text the row grew
+   taller and shoved every row below it down the page. Asked for 2026-08-21:
+   *it add the line and make below shift down ... it make user headace*.
+   min-width:0 is what lets a flex child shrink below its content at all;
+   without it overflow:hidden does nothing here. The tail that gets clipped is
+   the technical detail, which is last on purpose and already has its own
+   show/hide switch — the name, the id and the stale note are never the part
+   that disappears. */
+.mod .ip{color:var(--mut);font-size:13px;flex:1;min-width:0;
+         white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* The stale note keeps its own space and never shrinks: it is the one part of
+   the row a person must be able to read when the rig is misbehaving. */
+.mod .state-stale{flex:0 0 auto;white-space:nowrap;font-size:13px}
 .port{display:inline-block;background:var(--btn);border:1px solid var(--line);border-radius:var(--r-pill);padding:var(--sp-1) var(--sp-3);margin:var(--sp-1);font-size:13px}
 .spin{color:var(--mut)}
 .login-input{flex:1 1 180px;min-width:0}
@@ -37,12 +54,50 @@ h1{font-size:24px;margin-bottom:var(--sp-1)}
   align-items:center;justify-content:center;padding:var(--sp-3);
   background:color-mix(in srgb,var(--bg) 80%,transparent)}
 .flash-panel{width:100%;max-width:400px;display:flex;flex-direction:column;gap:var(--sp-3)}
+/* The shortcut list. A row is a real button so it can be tapped on a phone,
+   but it must not look like a form of six primary actions - so it is flat
+   until pointed at, and the KEY carries the emphasis, not the row. */
+.keyrow{width:100%;justify-content:flex-start;text-align:left;
+  background:none;border:1px solid transparent;padding:var(--sp-2)}
+.keyrow:hover{border-color:var(--line);background:var(--sunk)}
+.keyrow .badge{min-width:56px;justify-content:center;display:inline-flex}
+/* A keyboard shortcut is meaningless without a keyboard, so the way IN stays
+   (the list is a menu on a phone) but it does not claim prime space. */
+.keys-tab{font-size:16px;line-height:1}
+@media (pointer:coarse){.keyrow{min-height:44px;align-items:center}}
 .flash-meta{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-1) var(--sp-3);
   background:var(--sunk);padding:var(--sp-2) var(--sp-3);
   border-radius:var(--r-sm);font-size:13px;align-items:baseline}
 .flash-meta .lbl{min-width:0;white-space:nowrap}
 .flash-actions{display:flex;flex-direction:column;gap:var(--sp-2);margin-top:var(--sp-2)}
 .flash-actions button{width:100%;min-height:44px}
+
+/* Report modal — a simple box anyone can use to complain. */
+.report-modal{position:fixed;inset:0;z-index:100;display:flex;
+  align-items:center;justify-content:center;padding:var(--sp-3);
+  background:color-mix(in srgb,var(--bg) 80%,transparent)}
+.report-panel{width:100%;max-width:480px;display:flex;flex-direction:column;gap:var(--sp-3);
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:var(--sp-4)}
+.report-panel h2{margin:0}
+.report-panel textarea{width:100%;min-height:100px;padding:var(--sp-2);
+  background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-md);
+  color:var(--txt);font:inherit;resize:vertical}
+.report-panel textarea:focus{outline:2px solid var(--acc);outline-offset:2px}
+.report-panel .checkbox-row{display:flex;align-items:center;gap:var(--sp-2);
+  font-size:14px;color:var(--mut)}
+.report-panel .checkbox-row input{width:18px;height:18px}
+.report-actions{display:flex;flex-direction:column;gap:var(--sp-2);margin-top:var(--sp-2)}
+.report-actions button{width:100%;min-height:44px}
+.report-busy{display:none;color:var(--mut);font-size:14px}
+.report-busy.show{display:block}
+
+/* stopbar actions - STOP and Report side by side */
+.stopbar-actions{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+@media (max-width:430px){
+  .stopbar-actions{flex-direction:column;align-items:stretch}
+  .stopbar-actions button{width:100%}
+}
 
 /* ---------------------------------------------------------- responsive
    The hub is opened from phones on the same WiFi as often as from the PC, so
@@ -98,6 +153,15 @@ h1{font-size:24px;margin-bottom:var(--sp-1)}
 .pbar i{display:block;height:100%;width:0;background:var(--acc);transition:width 150ms}
 @media (max-width:430px){.flash{margin-left:0}.flash select{flex:1 1 100%}}
 @media (pointer:coarse){.flash select{padding:9px 10px}}
+/* A tool is a destination: its description gets room and its action stays quiet. */
+.js-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:var(--sp-3);margin-top:var(--sp-4)}
+.mod.tool-tile{display:grid;grid-template-columns:1fr auto;border-left:1px solid var(--line);padding:var(--sp-4);margin:0;gap:var(--sp-2)}
+.tool-tile .nm{grid-column:1/-1}
+.tool-tile .ip{grid-column:1/-1;white-space:normal;overflow:visible;line-height:1.5;min-height:3em}
+.tool-tile button{text-align:left}
+.tool-tile .tab-link{font-size:12px;padding:var(--sp-2);border:0}
+#tabs{padding:var(--sp-2);background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg);margin:var(--sp-4) 0 var(--sp-6)}
+#tabs .tab:not(.on){background:transparent;border-color:transparent}
 </style>
 </head>
 <body>
@@ -113,10 +177,39 @@ h1{font-size:24px;margin-bottom:var(--sp-1)}
   <button class="primary" onclick="location.reload()">Reload</button>
   <button onclick="dismissVer()">Not now</button>
 </div>
-<h1>🤖 Mice Control Hub</h1>
-<div class="sub">Welcome! This page finds your robot modules automatically —
-over WiFi and over any cable you plug in. <b>Click a module to open its own
-controls.</b></div>
+<!-- And the PROGRAM can be older than the page. MiceHub.exe is built from this
+     source tree and goes out of date the moment main.py changes; on 2026-08-21
+     a hub built the day before was serving happily with four fixes missing and
+     the only clue was a password that did not match.
+     No dismiss button on purpose: reloading fixes an old page, and nothing the
+     browser can do fixes an old program. It stays until the exe is rebuilt.
+     Shown only where it can be acted on - a hub with no source tree beside it
+     cannot know, and says nothing rather than guessing. -->
+<div class="banner warn" id="staleExe" hidden role="alert">
+  <span id="staleExeWhy"></span>
+  <span class="mono" id="staleExeFix"></span>
+</div>
+<!-- STOP, FROM ANYWHERE. There was no stop control on this page at all: the
+     only one was inside Nong Studio, on another screen, behind a tab. Somebody
+     standing next to a moving arm does not navigate.
+     It sits with the title so it is on every tab, it never asks - a stop that
+     needs confirming arrives after the thing you were trying to prevent - and
+     it is NOT disabled while it works. Gemini Pro designed this and proposed
+     disabling it during transmission; that is right for an ordinary button and
+     wrong for this one, because if the first press did not land the operator
+     has to be able to press again. It shows progress instead. -->
+<div class="stopbar">
+  <h1>Mice Control Hub</h1>
+  <div class="stopbar-actions">
+    <button class="danger" id="stopAll" onclick="stopEverything()"
+            title="Stop the show and every board this hub can reach">⏹ STOP</button>
+    <button class="secondary" id="reportBtn" onclick="openReport()"
+            title="Report a problem — no login needed">🐛 Report</button>
+  </div>
+</div>
+<div class="banner err" id="stopSaid" hidden role="alert" aria-live="assertive"></div>
+<div class="sub page-intro">A little space for your whole rig. Open a module to move it,
+or start a sequence in Nong Studio. Your modules appear here when they connect.</div>
 
 <!-- Log in before doing. Reading the module list needs nothing, so this is a
      card on the page rather than a wall in front of it: someone checking
@@ -133,12 +226,11 @@ controls.</b></div>
   <div class="banner err" id="loginErr" role="alert" hidden></div>
   <div class="banner warn" id="loginLock" role="alert" hidden></div>
 
-  <form class="row" id="loginForm" onsubmit="return doLogin(event)">
-    <input id="loginUser" class="login-input" autocomplete="username"
-             placeholder="user (leave blank if there is only one)"
-             aria-label="Hub user">
-        <input id="loginPass" class="login-input" type="password"
-           autocomplete="current-password" placeholder="hub password"
+  <form class="row" id="loginForm" autocomplete="off" onsubmit="return doLogin(event)">
+    <input id="loginUser" class="login-input" autocomplete="off"
+           placeholder="username" aria-label="Hub user">
+    <input id="loginPass" class="login-input" type="password"
+           autocomplete="new-password" placeholder="password"
            aria-label="hub password" required>
     <button type="submit" class="primary" id="loginBtn">Log in</button>
     <span class="mini" id="loginBusy" role="status" hidden>checking…</span>
@@ -198,17 +290,74 @@ controls.</b></div>
   </div>
 </div>
 
+<!-- The shortcut list. Reuses the flash modal's overlay and card so there is
+     one dialog shape on this page rather than two that drift apart.
+     Its rows are BUTTONS, not text: on a phone there is no keyboard, so the
+     same list that documents the shortcuts is also the way to run them. That
+     was Gemini Pro's idea, 2026-08-20, and it is the difference between a
+     panel that is useless on a phone and one that is a menu. -->
+<div class="flash-modal" id="keysModal" role="dialog" aria-modal="true"
+     aria-labelledby="keysTitle" hidden>
+  <div class="card flash-panel">
+    <h2 id="keysTitle">⌨ Keyboard shortcuts</h2>
+    <div class="mini">Tap one to run it — the keys need a keyboard, these do not.</div>
+    <div id="keysList"></div>
+    <div class="flash-actions">
+      <button class="primary" id="keysClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Report modal — anyone can press Report on any tab, no login needed.
+     Stores one file per report beside the hub's machine-local files.
+     Never promoted — it belongs to the machine, not the source. -->
+<div class="report-modal" id="reportModal" role="dialog" aria-modal="true"
+     aria-labelledby="reportTitle" hidden>
+  <div class="report-panel">
+    <h2 id="reportTitle">🐛 Report a problem</h2>
+    <div class="mini">What were you doing? What went wrong? Write in any language.</div>
+    <textarea id="reportText" placeholder="I was trying to… and then…"
+              aria-label="Describe the problem"></textarea>
+    <div class="checkbox-row">
+      <input type="checkbox" id="reportAttachDiag" checked>
+      <label for="reportAttachDiag">Attach system summary (what is connected, firmware versions, no passwords)</label>
+    </div>
+    <div class="report-busy" id="reportBusy">Sending…</div>
+    <!-- What went wrong, INSIDE the box the person is looking at. The failure
+         used to be written to #stopSaid, which lives on the screen behind
+         this one (panel finding, verified 2026-09-08). -->
+    <div class="statline" id="reportSaid" role="status" aria-live="polite"></div>
+    <div class="report-actions">
+      <button class="primary" id="reportSend" onclick="submitReport()">Send report</button>
+      <button class="secondary" onclick="closeReport()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Seven destinations. Help LEAVES the page, so it is a link and looks like
      one: a tab that navigates away is a tab that loses your place without
      warning. Everything else shows and hides cards by data-tab, so no element
      moves in the DOM and every id the rest of the page relies on stays put. -->
 <div class="tabs" id="tabs">
+  <!-- HOME FIRST, TOOLS SECOND. Tools was the fifth tab and hard to reach, so
+       it moved to the front on 2026-08-21 - and that put the tab the page
+       opens on in second place, which the user corrected the next morning:
+       *make home tab become first before tool*. The leftmost tab and the tab
+       you land on should be the same one. Tools keeps the place right beside
+       it, which is what "easy to go to the tool" needed. -->
   <button class="tab on" data-go="home" onclick="showTab('home')">Home</button>
+  <button class="tab" data-go="tools" onclick="showTab('tools')">🧰 Tools</button>
   <button class="tab" data-go="modules" onclick="showTab('modules')">Modules</button>
   <button class="tab" data-go="firmware" onclick="showTab('firmware')">Firmware</button>
   <button class="tab" data-go="network" onclick="showTab('network')">Network</button>
-  <button class="tab" data-go="tools" onclick="showTab('tools')">Tools</button>
   <button class="tab" data-go="settings" onclick="showTab('settings')">Settings</button>
+  <button class="tab" data-go="complaints" onclick="showTab('complaints')">📋 Complaints</button>
+  <!-- The way in for somebody who will never press "?" - which is everybody
+       who does not already know the shortcuts exist. A keyboard feature whose
+       only entry point is a keystroke is a feature for the person who wrote
+       it. Designed by Gemini Pro, 2026-08-20. -->
+  <button class="tab keys-tab" id="keysOpen" title="Keyboard shortcuts"
+          onclick="toggleKeys(true)" aria-haspopup="dialog">⌨ Shortcuts</button>
   <a class="tab tab-link" href="/help">Help ↗</a>
 </div>
 
@@ -218,9 +367,33 @@ controls.</b></div>
        there, how is it reached, and is anything wrong. Built from the scans
        the page already runs, so it costs no extra request and cannot
        disagree with the Modules tab. -->
+  <!-- The tools, on the first screen. Asked for 2026-08-21 together with the
+       tab move: opening Studio took a tab, a scroll and a click, and Studio is
+       what most visits are for. The rows are drawn by the same function that
+       fills the Tools tab, from the same registry, so the two lists cannot
+       drift apart. No login: none of this reaches a robot. -->
+  <div class="card" data-tab="home" data-needs-login="control" style="grid-column:1/-1">
+    <h2>Make something move</h2>
+    <div class="mini">These work whether or not a robot is here — build a
+      sequence now, send it to a module later.</div>
+    <div class="js-tools" id="homeTools">loading…</div>
+  </div>
+
   <div class="card" data-tab="home" style="grid-column:1/-1">
-    <h2>👋 Right now</h2>
+    <h2>Your modules</h2>
     <div id="homeSum" class="mini" aria-live="polite">counting what is connected…</div>
+    <!-- The last board opened, one click away. Coming back to the same robot is
+         the commonest thing anybody does here, and it took a tab, a scroll and
+         a click. Per browser, because it is a convenience for this person at
+         this machine, not a fact about the rig. -->
+    <div class="row" id="lastOpened" hidden></div>
+    <!-- THE MODULES THEMSELVES, not a count of them. Asked for 2026-08-21:
+         *the home it look noting show ... show only connected each module and
+         connect from what it hard to use*. It was one sentence ("4 modules — 2
+         reachable on a cable") and a button, which is a summary of a screen
+         somebody then had to go and find. These are the same rows the Modules
+         tab draws, from the same list, so the two can never disagree. -->
+    <div id="homeMods" aria-live="polite"></div>
     <div id="homeWrong"></div>
     <div class="row" id="homeGo"></div>
   </div>
@@ -230,7 +403,7 @@ controls.</b></div>
        often a different person, and the only one of the two that cannot be
        undone. The `pio run` build command lives here too, off the first
        screen where it used to greet everyone. -->
-  <div class="card" data-tab="firmware" style="grid-column:1/-1">
+  <div class="card" data-tab="firmware" data-needs-login="flash" style="grid-column:1/-1">
     <h2>⚡ Firmware</h2>
 
     <!-- Without esptool nothing here can work, so that is said first and
@@ -274,12 +447,49 @@ controls.</b></div>
   </template>
 
   <!-- SETTINGS: what the hub is, and who you are on it. Small, but real. -->
-  <div class="card" data-tab="settings" style="grid-column:1/-1">
+  <div class="card" data-tab="settings" data-needs-login="settings" style="grid-column:1/-1">
     <h2>⚙ Settings</h2>
     <div class="mini" id="setWho">…</div>
     <div class="row">
       <button id="logoutBtn" onclick="doLogout()" hidden>Log out</button>
+      <!-- The first thing anyone is asked for when they report a problem.
+           Placed here by Gemini Pro, 2026-08-20. -->
+      <button id="diagBtn" onclick="copyDiag()">📋 Copy diagnostics</button>
+      <button id="updBtn" onclick="checkUpdate()">⭳ Check for an update</button>
+      <!-- For the PC that just opened this page over WiFi. A browser cannot
+           reach that machine's serial ports at ANY address, so the only way it
+           drives its own cables is to run this. Asked 2026-08-21. -->
+      <a class="tab tab-link" id="getApp" href="/api/app" download="MiceHub.exe"
+         hidden>⬇ Get the hub for this PC</a>
       <a class="tab tab-link" href="/help">Features &amp; help ↗</a>
+    </div>
+    <span class="mini" id="diagSay" aria-live="polite"></span>
+    <!-- The plain half of the bundle, always shown once collected: what is
+         connected and what needs attention, with no ids or ports on it
+         (A21-5). The technical rest sits behind the page-wide switch below.
+         Gemini Pro, 2026-08-24: ride that switch rather than adding a second
+         toggle to this card. -->
+    <div id="diagPlain" class="mini" hidden
+         style="white-space:pre-wrap;margin-top:var(--sp-2)"></div>
+    <div id="diagTechWrap" class="tech" hidden>
+      <hr>
+      <div class="mini">Everything below is for support - the same text the
+        Copy button sends.</div>
+      <pre id="diagTechText" style="white-space:pre-wrap;font-family:var(--mono);
+           font-size:12px;max-height:280px;overflow:auto"></pre>
+    </div>
+    <div class="mini" id="updSay" aria-live="polite"></div>
+    <!-- NOT an edge case: navigator.clipboard exists only in a SECURE context
+         - https, or localhost. This hub is plain http on a LAN address, so on
+         a phone at 192.168.x.x there is no clipboard at all and this textarea
+         is the ONLY way to get the text. It is therefore built to be used, not
+         apologised for: the text is already selected and ready to copy. -->
+    <div id="diagFall" hidden>
+      <div class="mini">Your browser will not let a page write to the
+        clipboard here (that needs https, or opening the hub on the PC
+        itself). The text is selected — copy it by hand.</div>
+      <textarea id="diagText" rows="12" readonly
+                style="width:100%;font-family:var(--mono);font-size:12px"></textarea>
     </div>
     <!-- Accounts. The module has had these for years; the hub had ONE password
          that everybody shared and nobody could be removed from. Same rules as
@@ -328,21 +538,38 @@ controls.</b></div>
 
 
   <div class="card" data-tab="modules" style="grid-column:1/-1">
-    <h2>📡 Modules found over WiFi <button onclick="scan(true)" style="float:right">⟳ Rescan</button></h2>
+    <!-- Called "Modules found over WiFi" until 2026-08-22, which stopped being
+         true when the list started carrying every way in: a board on a cable,
+         on the bus behind another board, or on the laptop next door is in here
+         too, once each. -->
+    <h2>📡 Every module — one row each
+      <button onclick="scan(true)" style="float:right">⟳ Rescan</button></h2>
+    <div class="mini">However it is reached: a USB cable, the RS485 bus, WiFi,
+      or another PC running this hub. Each line underneath a module says which.</div>
     <div id="modsmeta" class="mini" aria-live="polite"></div>
-    <div id="mods" class="spin" aria-live="polite">Looking around the WiFi…</div>
+    <!-- FIND ONE BY TYPING. A bench with four boards fits on a screen; an
+         installation with twenty does not, and scrolling a list looking for a
+         name is how the wrong robot gets opened. It filters what is already
+         there - no request, no waiting - and says how many it hid, because a
+         list that silently shrank is worse than a long one. -->
+    <input id="modFind" type="search" placeholder="Find a module — name, id or type"
+           autocomplete="off" oninput="filterMods()" style="width:100%;margin:8px 0">
+    <div id="modFindNone" class="mini" hidden></div>
+    <div id="mods" class="spin" aria-live="polite">Looking for modules — on the
+      cables, over WiFi, and on any other PC running this hub…</div>
   </div>
 
   <!-- Modules held on ANOTHER PC's cable. At a venue this is the normal case:
        one laptop by the arm, one at the desk, and the arm reachable only from
        whichever machine holds the cable. -->
   <div class="card" data-tab="modules" style="grid-column:1/-1">
-    <h2>💻 On other PCs
+    <h2>💻 The other PCs sharing modules
       <button onclick="loadShared(true)" style="float:right">⟳ Look again</button>
     </h2>
-    <div class="mini">Modules plugged into another PC that is running this hub on
-      the same network. You can use them from here exactly like your own — the
-      other PC passes the commands down its own cable.</div>
+    <div class="mini">Their modules are already in the list above, once each,
+      with the PC that holds them named underneath — you use them from here
+      exactly like your own, and that PC passes the commands down its own
+      cable. This is just which machines are sharing.</div>
     <div id="shared" class="mini" aria-live="polite">Looking for other PCs…</div>
   </div>
 
@@ -393,6 +620,66 @@ controls.</b></div>
     </div>
   </div>
 
+  <!-- ONE LOGIN ON EVERY PC (A14-1). Sits beside the list of other PCs
+       because it answers the question that list raises: I can see that hub,
+       why does it not know me. Hidden until logged in — every route behind
+       these buttons is gated, and offering a control that will 401 is worse
+       than not offering it. -->
+  <div class="card" data-tab="network" id="pairBox" data-needs-login="pair" hidden style="grid-column:1/-1">
+    <h2>🔗 One login on every PC</h2>
+    <div class="mini">Each PC keeps its own accounts, so a name that works here
+      is a stranger there. Pair them once — the way a TV is paired — and the
+      same name and password work on both. No internet, and nothing to do
+      again afterwards.</div>
+
+    <div class="row" id="pairIdle">
+      <button class="primary" onclick="pairShow()">Show a code for another PC</button>
+      <button onclick="pairAskCode()">I have a code from another PC</button>
+    </div>
+
+    <div id="pairShowing" hidden>
+      <div id="pairCode" style="font-family:var(--mono);font-size:30px;
+           letter-spacing:.15em;margin:var(--sp-3) 0">…</div>
+      <div class="row">
+        <span class="mini" id="pairLeft" aria-live="polite"></span>
+        <button onclick="pairStop()">Stop showing it</button>
+      </div>
+      <div class="mini">On the other PC: <b>Network → One login on every PC →
+        I have a code</b>, then this PC's address and these characters.</div>
+    </div>
+
+    <div id="pairEnter" hidden>
+      <div class="row">
+        <input id="pairAddr" placeholder="10.123.98.148" style="max-width:200px"
+               autocomplete="off" onkeydown="if(event.key==='Enter')pairLink(false)">
+        <input id="pairInput" placeholder="ABCD-EFGH" autocomplete="off"
+               style="max-width:170px;font-family:var(--mono)"
+               onkeydown="if(event.key==='Enter')pairLink(false)">
+        <button class="primary" onclick="pairLink(false)">Pair</button>
+        <button onclick="pairReset()">Cancel</button>
+        <span class="mini" id="pairStat" aria-live="polite"></span>
+      </div>
+      <div class="mini">The address is the PC showing the code — the same one
+        the list above uses. Upper or lower case, dash or no dash.</div>
+    </div>
+
+    <!-- The clash is the NORMAL case, not an error: every hub starts with the
+         same generated account name. -->
+    <div id="pairClash" hidden>
+      <div class="banner warn" role="alert" id="pairClashWhy"></div>
+      <div class="row">
+        <button class="primary" onclick="pairReset()">Keep mine</button>
+        <button class="danger" onclick="pairLink(true)">Replace with theirs</button>
+      </div>
+    </div>
+
+    <div class="banner ok" id="pairDone" hidden role="status"></div>
+    <div id="pairErrBox" hidden>
+      <div class="banner err" id="pairErr" role="alert"></div>
+      <div class="row"><button onclick="pairReset()">Try again</button></div>
+    </div>
+  </div>
+
   <div class="card" data-tab="network" style="grid-column:1/-1">
     <h2>🤝 Which modules work together
       <button onclick="loadNet()" style="float:right">⟳ Refresh</button>
@@ -408,9 +695,18 @@ controls.</b></div>
 
   <div class="card" data-tab="tools">
     <h2>🧰 Apps &amp; tools</h2>
-    <div id="tools" class="mini">loading…</div>
+    <div id="tools" class="js-tools mini">loading…</div>
     <div class="mini">tip: use the “Studio + monitor” button on a nong module above —
       it opens the editor already connected, showing the real robot moving in 3D.</div>
+  </div>
+
+  <!-- Complaints screen — reads reports from /api/reports, newest first.
+       One short line per report, click to open full detail.
+       Fixed / Not-a-problem to close. Closed stays in list (not deleted). -->
+  <div class="card" data-tab="complaints">
+    <h2>📋 Complaints</h2>
+    <div class="mini">Reports from anyone who pressed <b>Report</b>. Newest first. Click a row to see the full text. <b>Fixed</b> or <b>Not a problem</b> closes it — it stays in the list so the next person finds it.</div>
+    <div id="complaintsList" class="mini">loading…</div>
   </div>
 
   <div class="card" data-tab="modules" style="grid-column:1/-1">
@@ -445,6 +741,7 @@ function showTab(name){
   try{ localStorage.setItem('hubTab', name); }catch(e){}
   helpFor(name);
   if(name==='network'){ loadNet(); loadHubs(false); }
+  if(name==='complaints'){ loadComplaints(); }
 }
 
 // HELP ABOUT WHAT YOU ARE LOOKING AT. The help page has had a section anchor
@@ -457,19 +754,366 @@ function showTab(name){
 // landing on the wrong paragraph is worse than landing at the top, because it
 // reads as an answer.
 var HELP_SECTION = {
-  home:     'hub',
-  modules:  'modsite',
-  firmware: 'firmware',
-  network:  'transports',
-  tools:    'hub',
-  settings: 'hub'
+  home:       'hub',
+  modules:    'modsite',
+  firmware:   'firmware',
+  network:    'transports',
+  tools:      'hub',
+  settings:   'hub',
+  complaints: 'hub'
 };
+// Filter the rows already on the page. Matching happens on what a person
+// would type: the name, the number, the type - not the internal address.
+function filterMods(){
+  var q = (document.getElementById('modFind').value || '').trim().toLowerCase();
+  var rows = document.querySelectorAll('#mods .mod');
+  var hidden = 0, total = rows.length;
+  rows.forEach(function(el){
+    var hay = (el.textContent || '').toLowerCase();
+    var show = !q || hay.indexOf(q) >= 0;
+    el.style.display = show ? '' : 'none';
+    if (!show) hidden++;
+  });
+  var none = document.getElementById('modFindNone');
+  if (!none) return;
+  if (q && hidden === total && total) {
+    // The empty state of a SEARCH is not the empty state of a list: the
+    // modules are still there, the word is just wrong.
+    none.textContent = 'No module matches "' + q + '". All ' + total +
+                       ' are still connected — clear the box to see them.';
+    none.hidden = false;
+  } else if (q && hidden) {
+    none.textContent = hidden + ' of ' + total + ' hidden by the filter.';
+    none.hidden = false;
+  } else {
+    none.hidden = true;
+  }
+}
+
+// ---- pinned modules --------------------------------------------------
+// A venue rig has four modules that matter and a shelf of spares that do not,
+// and the spares are not fewer than the ones you use - they are usually more.
+// Scrolling past them to reach the same four boards, every time, is the whole
+// problem this solves.
+//
+// PINNED BY BOARD ID, not by name and not by address. A name is user-settable
+// (SET NAME, the module site) and an address changes whenever the board moves
+// between a cable and the WiFi, or the router hands out a different lease -
+// so either would silently lose the pin on the board it was pinned to. The id
+// is the one thing that stays with the chip.
+//
+// Kept in localStorage for the same reason as the last-opened shortcut: which
+// modules YOU care about is a fact about this person at this machine, not
+// about the rig. Another laptop at the same venue is looking after other
+// boards, and syncing this to the hub would make them fight over it.
+function pinnedIds(){
+  try{
+    var v = JSON.parse(localStorage.getItem('pinnedMods') || '[]');
+    return Array.isArray(v) ? v : [];
+  }catch(e){ return []; }
+}
+function isPinned(id){ return id != null && pinnedIds().indexOf(id) >= 0; }
+function togglePin(id){
+  if (id == null) return;
+  var list = pinnedIds();
+  var at = list.indexOf(id);
+  if (at >= 0) list.splice(at, 1); else list.push(id);
+  try{ localStorage.setItem('pinnedMods', JSON.stringify(list)); }catch(e){}
+}
+// Pinned first, everything else in the order the hub gave. NOT sorted by name
+// or id inside each group: the hub's order is already meaningful (it merges
+// each board's routes) and re-sorting would move rows around for reasons a
+// person watching the list cannot see.
+function pinnedFirst(mods){
+  var pins = pinnedIds();
+  var yes = [], no = [];
+  (mods || []).forEach(function(m){
+    (pins.indexOf(m.id) >= 0 ? yes : no).push(m);
+  });
+  return yes.concat(no);
+}
+
+// The last board opened, one click away. Kept per browser, because it is a
+// convenience for THIS person at THIS machine, not a fact about the rig.
+function rememberOpened(dev, name){
+  try{ localStorage.setItem('lastMod', JSON.stringify({dev:dev, name:name, at:Date.now()})); }
+  catch(e){}
+}
+function paintLastOpened(){
+  var el = document.getElementById('lastOpened');
+  if (!el) return;
+  var raw = null;
+  try{ raw = JSON.parse(localStorage.getItem('lastMod') || 'null'); }catch(e){}
+  if (!raw || !raw.dev){ el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = '';
+  // THE NAME IT HAS NOW, not the one it had when it was opened. A board can be
+  // renamed from its own website while this page is open, and remembering the
+  // old name here means the button offers a robot that no longer exists by
+  // that name. Matched on the ADDRESS, which a rename does not change.
+  var live = (window.MODS || []).filter(function(m){
+    return (m.routes || []).some(function(r){ return r.dev === raw.dev; }); })[0];
+  var name = (live && live.name) || raw.name || 'the last module';
+  var b = document.createElement('button');
+  b.textContent = '↩ ' + name;
+  b.title = 'Open ' + (name || raw.dev) + ' again';
+  b.onclick = function(){ window.open('/mod?dev=' + encodeURIComponent(raw.dev), '_blank'); };
+  var when = document.createElement('span');
+  when.className = 'mini';
+  // THE CLOCK AND THE DATE, not only "3 min ago". Asked for 2026-08-22: *the
+  // last open time stamp too make it last open time and date*. "2 days ago" is
+  // fine for something that happened this afternoon and useless for deciding
+  // whether that was before or after you changed the wiring. The relative form
+  // stays as well, because it is the one that reads instantly.
+  when.textContent = ' last opened ' + stamp(raw.at)
+                   + (agoText(raw.at) ? ' (' + agoText(raw.at) + ')' : '');
+  el.appendChild(b); el.appendChild(when);
+}
+
+// One press stops the show clock and every board the hub can reach. The clock
+// first: stopping the boards while it runs means the next tick starts them
+// again. See /api/stopall, which is deliberately never behind the login.
+var stopping = false;
+async function stopEverything(){
+  var b = document.getElementById('stopAll');
+  var said = document.getElementById('stopSaid');
+  if(b){ b.textContent = '⏹ STOPPING…'; }
+  stopping = true;
+  try{
+    const r = await fetch('/api/stopall', {method:'POST'}).then(x=>x.json());
+    var n = (r.stopped||[]).length, bad = (r.failed||[]);
+    said.className = 'banner ' + (bad.length ? 'warn' : 'ok');
+    said.textContent = bad.length
+      ? ('Stopped ' + n + ', but could NOT reach: ' + bad.join(', ') +
+         ' — use the power switch for those.')
+      : ('Stopped: ' + (n ? (r.stopped||[]).join(', ') : 'nothing was moving') + '.');
+    said.hidden = false;
+  }catch(e){
+    // A stop that failed must SHOUT. Silence here reads as "it worked".
+    said.className = 'banner err';
+    said.textContent = 'The stop did not reach the hub (' + (e.message||e) +
+                       '). Use the power switch.';
+    said.hidden = false;
+  }finally{
+    stopping = false;
+    if(b){ b.textContent = '⏹ STOP'; }
+  }
+}
+
+// Report modal — anyone can send, no login, stored machine-local, never promoted.
+// openReport/closeReport live further down, with the complaints screen they
+// share the modal with - one definition each, or the last silently wins.
+async function submitReport(){
+  var text = document.getElementById('reportText');
+  var busy = document.getElementById('reportBusy');
+  var send = document.getElementById('reportSend');
+  if(!text || !text.value.trim()){
+    alert('Write what happened first.');
+    return;
+  }
+  if(busy) busy.classList.add('show');
+  if(send){ send.disabled = true; send.textContent = 'Sending…'; }
+  try{
+    var payload = {
+      text: text.value.trim(),
+      page: location.pathname + location.search,
+      module: (window.CURRENT_MOD && window.CURRENT_MOD.id) || '',
+      build: (window.BUILD_VER || ''),
+      time: new Date().toISOString(),
+      attachDiag: document.getElementById('reportAttachDiag').checked
+    };
+    const r = await fetch('/api/report', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    }).then(x => x.json());
+    if(r && r.ok){
+      closeReport();
+      // Briefly show success in the stop banner area
+      var said = document.getElementById('stopSaid');
+      if(said){
+        said.className = 'banner ok';
+        said.textContent = 'Report sent — thank you.';
+        said.hidden = false;
+        setTimeout(function(){ said.hidden = true; }, 5000);
+      }
+    }else{
+      throw new Error((r && r.error) || 'server said no');
+    }
+  }catch(e){
+    if(busy) busy.classList.remove('show');
+    if(send){ send.disabled = false; send.textContent = 'Send report'; }
+    var here = document.getElementById('reportSaid');
+    if(here) here.textContent = 'That did not send. Try again, or copy your '
+      + 'text somewhere safe and send it later.';
+    var said = document.getElementById('stopSaid');
+    if(said){
+      said.className = 'banner err';
+      said.textContent = 'Report failed (' + (e.message||e) + '). Try again or copy the text and email it.';
+      said.hidden = false;
+    }
+  }
+}
+
 function helpFor(name){
   var a = document.querySelector('#tabs a.tab-link');
   if(!a) return;
   var sec = HELP_SECTION[name];
   a.href = sec ? ('/help#' + sec) : '/help';
   a.title = sec ? ('Help about ' + name) : 'Help';
+}
+
+// ---- complaints screen --------------------------------------------------
+// Loads /api/reports, renders newest first. One line per report, click for full.
+// Shows English translation (text_en) in the list, original + translation in detail.
+// Fixed / Not-a-problem closes it (updates status, file stays).
+async function loadComplaints(){
+  var el = document.getElementById('complaintsList');
+  if(!el) return;
+  el.textContent = 'loading…';
+  try{
+    const r = await fetch('/api/reports').then(x => x.json());
+    var list = r.reports || [];
+    if(!list.length){
+      el.innerHTML = '<div class="mini">No reports yet.</div>';
+      return;
+    }
+    el.innerHTML = '';
+    list.forEach(function(rep){
+      var row = document.createElement('div');
+      row.className = 'mod';
+      row.style.cursor = 'pointer';
+      row.style.borderLeftColor = rep.status === 'fixed' ? 'var(--ok)' :
+                                    rep.status === 'not-a-problem' ? 'var(--mut)' : 'var(--warn)';
+      // Use English translation for the preview
+      var displayText = rep.text_en || rep.text || '';
+      var short = displayText.slice(0, 120);
+      if(displayText.length > 120) short += '…';
+      row.innerHTML =
+        '<span class="nm">' + esc(rep.time ? rep.time.replace('T', ' ').slice(0, 19) : '?') + '</span>' +
+        '<span class="ip tech">' + esc(rep.module || 'no module') + '</span>' +
+        '<span class="mini" style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+          esc(short) + '</span>';
+      row.onclick = function(){ openComplaintDetail(rep); };
+      // The whole row answers a click, so it must say where the keyboard does
+      // the same job: a real button inside it, named by data-keyboard.
+      row.dataset.keyboard = 'button';
+      var open = document.createElement('button');
+      open.className = 'linky';
+      open.textContent = 'open';
+      open.title = 'Read the full report and reply';
+      open.onclick = function(){ openComplaintDetail(rep); };
+      row.appendChild(open);
+      el.appendChild(row);
+    });
+  }catch(e){
+    el.textContent = 'Failed to load: ' + (e && e.message || e);
+  }
+}
+
+function openComplaintDetail(rep){
+  var m = document.getElementById('reportModal');
+  if(!m) return;
+  document.getElementById('reportTitle').textContent = '📋 Complaint detail';
+  var t = document.getElementById('reportText');
+  // Show both original and English translation
+  var original = rep.text || '';
+  var translated = rep.text_en || '';
+  if (translated && translated !== original && translated !== "(translation unavailable)") {
+    t.value = 'Original:\n' + original + '\n\nEnglish:\n' + translated;
+  } else {
+    t.value = original;
+  }
+  t.readOnly = true;
+  var chk = document.getElementById('reportAttachDiag');
+  chk.hidden = true;
+  var busy = document.getElementById('reportBusy');
+  if(busy) busy.classList.remove('show');
+  var send = document.getElementById('reportSend');
+  if(send){ send.hidden = true; }
+  // Add status buttons
+  var actions = m.querySelector('.report-actions');
+  if(actions){
+    var old = actions.querySelector('.status-btns');
+    if(old) old.remove();
+    var btns = document.createElement('div');
+    btns.className = 'status-btns';
+    btns.style.display = 'flex';
+    btns.style.gap = '8px';
+    btns.style.marginTop = '8px';
+    var st = rep.status || 'open';
+    ['fixed', 'not-a-problem', 'open'].forEach(function(s){
+      var b = document.createElement('button');
+      b.className = (st === s ? 'primary' : 'secondary');
+      b.style.flex = '1';
+      b.textContent = s === 'fixed' ? '✓ Fixed' : s === 'not-a-problem' ? '⦻ Not a problem' : '↺ Reopen';
+      b.onclick = function(){ setComplaintStatus(rep.id, s); };
+      btns.appendChild(b);
+    });
+    actions.insertBefore(btns, actions.firstChild);
+  }
+  m.hidden = false;
+}
+
+async function setComplaintStatus(id, status){
+  // The ANSWER decides, not the fact that a request was sent. This closed the
+  // box and reloaded the list whatever came back, so a refusal (not logged in,
+  // hub busy) read as saved (panel finding, verified 2026-09-08).
+  const el = document.getElementById('reportSaid');
+  try{
+    const r = await fetch('/api/reports', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({id: id, status: status})
+    });
+    const said = await r.json().catch(() => ({}));
+    if (!r.ok || said.ok === false){
+      const why = said.need_login
+        ? 'log in first — the button at the top right — then set it again'
+        : (said.error || 'the hub would not change it');
+      if (el) el.textContent = why; else alert(why);
+      return;
+    }
+    closeReport();
+    loadComplaints();
+  }catch(e){
+    const why = 'the hub is not answering. Check it is still running, then try again.';
+    if (el) el.textContent = why; else alert(why);
+  }
+}
+
+// Report modal — anyone can send, no login, stored machine-local, never promoted.
+// Lost with a duplicate-closeReport cleanup on 2026-08-25 and restored from
+// patch 0003: closeReport() first so a complaint's retitled heading never
+// leaks onto a fresh report.
+function openReport(){
+  closeReport();
+  var m = document.getElementById('reportModal');
+  if(!m) return;
+  m.hidden = false;
+  var t = document.getElementById('reportText');
+  if(t){ t.focus(); }
+}
+function closeReport(){
+  var m = document.getElementById('reportModal');
+  if(m) m.hidden = true;
+  // complaint detail retitles the modal - without this reset the next
+  // report opens under yesterday's heading
+  var title = document.getElementById('reportTitle');
+  if(title) title.textContent = '🐛 Report a problem';
+  var t = document.getElementById('reportText');
+  if(t){ t.value = ''; t.readOnly = false; }
+  var chk = document.getElementById('reportAttachDiag');
+  if(chk){ chk.hidden = false; chk.checked = true; }
+  var busy = document.getElementById('reportBusy');
+  if(busy) busy.classList.remove('show');
+  var send = document.getElementById('reportSend');
+  if(send){ send.hidden = false; send.disabled = false; send.textContent = 'Send report'; }
+  var actions = m && m.querySelector('.report-actions');
+  if(actions){
+    var btns = actions.querySelector('.status-btns');
+    if(btns) btns.remove();
+  }
 }
 
 // ---- network & linking -------------------------------------------------
@@ -724,8 +1368,44 @@ function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){
 
 // The tool list comes from the app registry (code/apps/*/app.json), so a new
 // web app appears here by dropping a folder in — no button to hand-write.
+// Drawn into EVERY tools container - the Tools tab and the card on Home -
+// from one answer, so the two lists cannot say different things.
+function toolBoxes(){
+  return [].slice.call(document.querySelectorAll('.js-tools'));
+}
+function toolsSay(html){
+  toolBoxes().forEach(function(b){ b.innerHTML = html; });
+}
+// One row for one tool.
+//
+// A TOOL IS NOT A MODULE. This was copied from the module list and still read
+// `m.type` - but the loop variable is `a`, and an app has no module type at
+// all. `m` was undefined, the exception left loadApps half-finished, and the
+// Tools list rendered NOTHING. It looked like there were no tools rather than
+// like a broken page, which is why it survived: an empty list is a plausible
+// state. The user met the same exception again on 2026-08-21 from an exe built
+// nine hours before the fix.
+function toolRow(a){
+  const d=document.createElement('div');
+  d.className='mod tool-tile';
+  d.innerHTML='<span class="nm">'+(a.icon?a.icon+' ':'')+esc(a.name||'?')+'</span>'+
+              '<span class="ip">'+esc(a.blurb||'')+'</span>';
+  const b=document.createElement('button');b.textContent='Open';
+  b.title='open '+(a.name||'this tool')+' in a new tab';
+  b.onclick=()=>window.open(a.path,'_blank');
+  d.appendChild(b);
+  // Help about THIS tool, when the tool says which section is about it
+  // (app.json -> help). No section, no link: one pointing at the top of the
+  // help page is not help, it is a thousand lines and a scrollbar.
+  if(a.help){
+    const h=document.createElement('a');
+    h.className='tab tab-link'; h.href='/help#'+encodeURIComponent(a.help);
+    h.textContent='Help ↗'; h.title='Help about '+a.name;
+    d.appendChild(h);
+  }
+  return d;
+}
 async function loadApps(){
-  const el=document.getElementById('tools');
   try{
     const r=await fetch('/api/apps').then(r=>r.json());
     const apps=r.apps||[];
@@ -735,51 +1415,37 @@ async function loadApps(){
     // the truth was that the list could not be read at all. Wrong advice, and
     // it hid a real fault behind a tidy empty state.
     if(r.ok===false||r.error){
-      el.innerHTML='<span class="mini">The tool list could not be read: '
-        +'<span style="color:var(--warn)">'+esc(String(r.error||'unknown'))
-        +'</span>. Your tools are still there. Check that every '
-        +'<code>code/apps/*/app.json</code> is valid JSON — the hub prints the '
-        +'reason in its window.</span> '
-        +'<button onclick="loadApps()">Try again</button>';
+      toolsSay('<span class="mini">The tool list could not be read. Your tools are still there. '
+        +'Try again; if it keeps happening, restart the hub on this PC. '
+        +'<span class="tech">'+esc(String(r.error||'unknown'))+' — check '
+        +'<code>code/apps/*/app.json</code> in the hub window.</span></span> '
+        +'<button onclick="loadApps()">Try again</button>');
       return;
     }
     // An empty state teaches: say what goes here and how one gets here. It is
     // only reached when the hub really did read the registry and found none.
-    if(!apps.length){el.innerHTML='<span class="mini">No tools yet. A tool is a '
-      +'folder with an <code>app.json</code> in <code>code/apps/</code> — drop '
-      +'one in and it appears here.</span>';return;}
-    el.innerHTML='';
-    apps.forEach(a=>{
-      const d=document.createElement('div');
-      // A TOOL IS NOT A MODULE. This line was copied from the module list and
-      // still read `m.type` - but the loop variable here is `a`, and an app has
-      // no module type at all. `m` was undefined, the exception left loadApps
-      // half-finished, and the Tools list rendered NOTHING. It looked like
-      // there were no tools rather than like a broken page, which is why it
-      // survived: an empty list is a plausible state. Found by the model panel
-      // on 2026-08-20 and confirmed in a browser - zero rows drawn.
-      d.className='mod';
-      d.innerHTML='<span class="nm">'+(a.icon?a.icon+' ':'')+a.name+'</span>'+
-                  '<span class="ip">'+(a.blurb||'')+'</span>';
-      const b=document.createElement('button');b.className='primary';b.textContent='Open';
-      b.onclick=()=>window.open(a.path,'_blank');
-      d.appendChild(b);
-      // Help about THIS tool, when the tool says which section is about it
-      // (app.json -> help). No section, no link: one pointing at the top of the
-      // help page is not help, it is a thousand lines and a scrollbar.
-      if(a.help){
-        const h=document.createElement('a');
-        h.className='tab tab-link'; h.href='/help#'+encodeURIComponent(a.help);
-        h.textContent='Help ↗'; h.title='Help about '+a.name;
-        d.appendChild(h);
-      }
-      el.appendChild(d);
+    if(!apps.length){toolsSay('<div class="empty-state"><b>No tools yet.</b>'
+      +'Open Help to get started, or try again after adding your tools. '
+      +'<a href="/help">Open Help</a> '
+      +'<button onclick="loadApps()">Try again</button>'
+      +'<span class="tech">Tools live in code/apps/, each with an app.json.</span></div>');return;}
+    toolsSay('');
+    // A FRESH row per list, never a clone: cloneNode copies the markup and
+    // drops every handler, so the copy on Home would have looked identical and
+    // done nothing when pressed.
+    toolBoxes().forEach(function(box){
+      apps.forEach(function(a){ box.appendChild(toolRow(a)); });
     });
   }catch(e){
-    // An error says what to DO, and offers the control that does it.
-    el.innerHTML='<span class="mini">Could not read the tool list. The hub may '
-      +'have stopped. <span style="color:var(--mut)">'+esc(String(e.message||e))
-      +'</span></span> <button onclick="loadApps()">Try again</button>';
+    // An error says what to DO, and offers the control that does it - and
+    // WHICH BUILD said it. On 2026-08-21 this exact box read "m is not
+    // defined": a ReferenceError fixed nine hours before the exe that was
+    // running had been built. Without the build date the message sends people
+    // to look for a bug in code that was already correct.
+    toolsSay('<span class="mini">Could not read the tool list. Check the hub is still '
+      +'running on this PC, then try again. <span class="tech">'+esc(String(e.message||e))
+      +(window.HUB_BUILT?' — hub build '+esc(window.HUB_BUILT):'')+'</span></span> '
+      +'<button onclick="loadApps()">Try again</button>');
   }
 }
 loadApps();
@@ -787,6 +1453,15 @@ loadApps();
 // When the module list was last actually confirmed, so a stale list can say so
 // instead of quietly presenting old modules as if they were still there.
 var modsAt = 0, modsHtml = '';
+// A wall-clock stamp: 2026-08-22 00:41. Written out rather than left to
+// toLocaleString, which prints a different order on every machine - and this
+// is read beside timestamps the hub and the plan write in exactly this shape.
+function stamp(ms){
+  if(!ms) return '';
+  var d = new Date(ms), p = function(n){ return (n < 10 ? '0' : '') + n; };
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+       + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
 function agoText(ms){
   if(!ms) return '';
   var s = Math.round((Date.now()-ms)/1000);
@@ -807,6 +1482,21 @@ setInterval(modsMeta, 5000);
 // one more request every 20 seconds, and none while the tab is in the
 // background - a laptop with the hub open on a second screen should not be
 // polling all night.
+// The hub says which of its own source files changed since the exe was built,
+// so this only has to show the sentence - deciding what counts as stale is the
+// hub's job, and only the hub can see the files.
+function paintStale(r){
+  // Kept for any message that needs to say WHICH build is speaking - the tool
+  // list's error is the one that needed it.
+  window.HUB_BUILT = (r && r.built) || '';
+  var b = document.getElementById('staleExe');
+  if(!b) return;
+  b.hidden = !(r && r.stale);
+  if(b.hidden) return;
+  document.getElementById('staleExeWhy').textContent = '⚠ ' + (r.staleWhy || '');
+  document.getElementById('staleExeFix').textContent = r.rebuild || '';
+}
+
 var myVer = null, verHidden = false;
 function dismissVer(){
   verHidden = true;
@@ -818,6 +1508,9 @@ async function checkVer(){
   try{
     const r = await fetch('/api/version').then(r=>r.json());
     if(!r || !r.version) return;
+    paintStale(r);            // before the baseline return: a stale exe is
+                              // true on the very first answer, not only after
+                              // something changes
     if(myVer === null){ myVer = r.version; return; }   // first answer is the baseline
     if(r.version === myVer) return;
     if(verHidden) return;            // asked to be left alone until next load
@@ -828,30 +1521,25 @@ async function checkVer(){
 setInterval(checkVer, 20000);
 checkVer();
 
+// Which scan is the current one. The wider sweep below finishes seconds after
+// the local list, so a sweep started before a newer scan - or before a scan
+// that FAILED - must not repaint over what the newer one put there. Without
+// this the error banner was drawn and then quietly replaced by rows from a
+// sweep that had been in flight the whole time, which reads as the failure
+// never having happened.
+var scanGen = 0;
 async function scan(force){
   const el=document.getElementById('mods');
+  const gen = ++scanGen;
   if(force)el.innerHTML='<span class="mini spin">looking for modules… (a few seconds)</span>';
   try{
-    // ONE list, merged by the hub on the board's chip. A module that is
-    // plugged in AND on the WiFi used to appear twice, as two robots — and the
-    // two rows were not even equivalent, since one drove it over the cable and
-    // the other over the air, so which copy you happened to click decided how
-    // the arm was driven. See modules_here() in main.py.
+    // THIS PC FIRST, and drawn the moment it answers. Asking for everything
+    // in one call made the list wait on a sweep of the whole network before it
+    // could draw the board plugged into this very machine - seconds of empty
+    // screen for a fact the hub already had.
     const r=await fetch('/api/modules'+(force?'?force=1':'')).then(r=>r.json());
-    // Kept for Home, which counts BOARDS. It used to count rows across
-    // three lists and reported a bench of four boards as nine.
     window.MODS = r.modules || [];
-    el.innerHTML='';
-    (r.modules||[]).forEach(m=>{
-      const wifi=(m.routes||[]).filter(x=>x.kind==='wifi')[0];
-      const cable=(m.routes||[]).filter(x=>x.kind==='usb'||x.kind==='rs485')[0];
-      el.appendChild(modRow(
-        Object.assign({}, m, {wifi_mode: wifi ? 'sta' : (m.wifi_mode||''),
-                              ip: wifi ? wifi.ip : (m.ip||'')}),
-        m.sd?'SD':'',
-        cable ? cable.port : null,
-        cable && cable.kind==='rs485' ? cable.bus : 0));
-    });
+    repaintMods();
     if(!(r.modules||[]).length)
       el.innerHTML='<span class="mini">no modules found on '+ (r.lan||'?') +'/24 — are they powered and on the same WiFi? (⟳ Rescan)</span>';
     modsAt = Date.now(); modsHtml = el.innerHTML;
@@ -865,11 +1553,133 @@ async function scan(force){
       ' <button onclick="scan(true)">Try again</button></div>' +
       (modsHtml ? '<div class="stale">showing what was found '+agoText(modsAt)+
                   ' — these may no longer be there</div>'+modsHtml : '');
+    modsMeta();
+    return;                       // nothing local to merge the far ones into
   }
+  mergeFar(force, gen);           // ...and the other PCs' boards, when they answer
   modsMeta();
 }
-function modRow(m,extra,port,busId,peer){
+
+// ...and then the boards OTHER PCs hold, merged into the same rows.
+//
+// A second call on purpose. Asking every hub on the network takes a sweep, and
+// waiting for it before drawing anything left the screen empty for seconds
+// while the hub already knew about the board on this PC's own cable. So the
+// local list is painted first and this repaints it when the wider answer
+// arrives - each board still ONE row, because the merge is done in the hub
+// (modules_everywhere) on the board's chip, not here.
+async function mergeFar(force, gen){
+  try{
+    const r = await fetch('/api/modules/all'+(force?'?force=1':'')).then(x=>x.json());
+    if(gen !== scanGen) return;          // a newer scan has happened since
+    if(!r || !r.ok || !Array.isArray(r.modules)) return;
+    window.MODS = r.modules;
+    window.MODS_HOST = r.host || '';
+    window.HUB_ERRS = r.errors || [];
+    repaintMods();
+    modsHtml = document.getElementById('mods').innerHTML;
+    paintHome();
+  }catch(e){
+    // The other PCs not answering is not this list being wrong: what is on
+    // screen is still every board THIS machine can reach. The card further
+    // down is where that failure belongs, and it says so itself.
+  }
+}
+
+// Draw the module list from what is already known, pinned modules first.
+// Split out of scan() so that PINNING costs a repaint and not a network sweep:
+// a sweep takes seconds and pokes every board on the venue WiFi, which is a
+// silly price for reordering a list. Also means the order is re-applied after
+// a pin without waiting for the next scan.
+function repaintMods(){
+  const el=document.getElementById('mods');
+  if(!el) return;
+  const mods = pinnedFirst(window.MODS || []);
+  // Nothing to draw: scan() writes its own "no modules found" message, so the
+  // rows are left alone - but the FILTER still has to be settled, or
+  // #modFindNone keeps saying "3 of 5 hidden by the filter" beside a message
+  // saying none were found at all. Two statements, contradicting each other,
+  // no error anywhere.
+  const home = document.getElementById('homeMods');
+  if(!mods.length){
+    if(home) home.innerHTML='';
+    filterMods(); return;
+  }
+  el.innerHTML='';
+  if(home) home.innerHTML='';
+  // ONE row per board, drawn into BOTH lists from the same data - but not the
+  // same amount of it. Asked for 2026-08-22: *make the home show the each
+  // module once easy to use but in module you show like before which from
+  // what*. So Home is the short answer (this robot is here, open it) and the
+  // Modules tab is the long one (and here is every cable, PC and bus it can
+  // be reached through). Same rows, same order, one line of detail fewer.
+  mods.forEach(m=>{
+      const wifi=(m.routes||[]).filter(x=>x.kind==='wifi')[0];
+      const cable=(m.routes||[]).filter(x=>x.kind==='usb'||x.kind==='rs485')[0];
+      const far=(m.routes||[]).filter(x=>x.kind==='hub')[0];
+      const shown = Object.assign({}, m, {wifi_mode: wifi ? 'sta' : (m.wifi_mode||''),
+                                          ip: wifi ? wifi.ip : (m.ip||'')});
+      const port = cable ? cable.port : null;
+      const bus = cable && cable.kind==='rs485' ? cable.bus : 0;
+      el.appendChild(modRow(shown, m.sd?'SD':'', port, bus, null, far));
+      if(home) home.appendChild(modRow(shown, m.sd?'SD':'', port, bus, null, far,
+                                       {via: false}));
+    });
+  // The filter is applied to ROWS, so a repaint has to re-apply it or a
+  // pin would silently un-hide everything the person had filtered out.
+  filterMods();
+  // Keep the last-good markup in step with what is on screen. The error path
+  // in scan() restores `modsHtml` when a sweep fails; without this line a pin
+  // made between two scans would vanish the moment one failed - the rows would
+  // come back in the old order with the old star, while localStorage still
+  // held the pin. That reads as the pin not having worked.
+  //
+  // `modsAt` is deliberately NOT touched: it records when the DATA was
+  // fetched, and a repaint learns nothing new about the rig. Moving it would
+  // make stale rows claim to be fresh, which is the one thing the stale
+  // banner exists to prevent.
+  modsHtml = el.innerHTML;
+}
+// HOW this module is reached, in words, one line per way in. Asked for
+// 2026-08-21: *the other like this pc can see the module from which module or
+// other make it below*. It used to be a heading over a separate list ("On
+// other PCs"), which turned one robot into two rows; as a detail under the row
+// it says the same thing without splitting the board in half.
+// ADDRESSES stay inside .tech, which the "technical detail" switch hides: an
+// IP is the thing this page agreed to keep out of a normal person's way, and a
+// new line that prints one in plain text undoes that everywhere at once.
+// Which PC, and which cable, are not addresses - they are how you tell one
+// robot from another, so they stay.
+function viaHtml(r, me){
+  const where = (!r.host || r.host === me || r.mine) ? 'this PC' : r.host;
+  const tech = function(s){ return '<span class="tech">' + esc(s) + '</span>'; };
+  if(r.kind === 'wifi')  return 'over WiFi' + tech(' · ' + (r.ip || '?'));
+  if(r.kind === 'usb')   return 'cable ' + esc(r.port || '?') + ' · ' + esc(where);
+  if(r.kind === 'rs485') return 'RS485 #' + esc(r.bus != null ? r.bus : '?')
+                              + ' behind ' + esc(r.port || '?') + ' · ' + esc(where);
+  if(r.kind === 'hub'){
+    const tail = String(r.dev || '').split('/').slice(1).join('/');
+    return 'through ' + esc(r.host || 'another PC')
+         + (tail ? tech(' · ' + tail.replace('usb:', 'cable ')) : '');
+  }
+  return esc(r.kind || 'unknown');
+}
+// `opts.via === false` draws the row without its ways-in line: that detail
+// belongs on the Modules tab, and Home is the screen somebody glances at.
+function modRow(m,extra,port,busId,peer,far,opts){
+  opts = opts || {};
   const d=document.createElement('div');d.className='mod';
+  // The type colour on the row's left edge. mice.css has styled `.mod.t-nong`,
+  // `.t-lift` and `.t-cam` for a long time and NOTHING ever added those
+  // classes - modRow only ever set `mod` - so every board has been showing the
+  // default grey and the colour coding never once worked. Found 2026-08-20 by
+  // grepping for who sets them: only the stylesheet mentions them.
+  //
+  // Sanitised rather than escaped: a type comes off the wire from a board and
+  // classList.add throws on a string with a space in it, which would take the
+  // whole row down. esc() is the right tool for markup and the wrong one here.
+  const tyClass=String(m.type||'').replace(/[^a-z0-9-]/gi,'');
+  if(tyClass) d.classList.add('t-'+tyClass);
   // A board that missed a sweep is LATE, not gone. The hub keeps it listed for
   // a grace period (see Finder.grace) because the venue WiFi drops - and the
   // row has to say so, or a lingering row is just a nicer-looking lie. It is
@@ -880,15 +1690,37 @@ function modRow(m,extra,port,busId,peer){
   // module site) and any board on the same WiFi answers the sweep — an
   // unescaped name lands inside a class attribute and inside markup, in the
   // one page that holds every serial port and the flash API.
+  // THE STALE NOTE IS ITS OWN SLOT, not more text inside .ip. Inside, it made
+  // the meta line longer, the line wrapped, the row grew and every row below
+  // jumped down the page. Keeping .ip to one line fixed the jump but then
+  // clipped the note itself away — a page that has stopped shifting and
+  // started lying. As a separate flex item that never shrinks it is always
+  // readable, and the technical tail is what truncates instead.
   d.innerHTML=`<span class="nm">${esc(m.name||'?')}</span>
     <span class="ty ${esc(m.type||'')}">${esc(m.type||'?')}</span>
-    <span class="ip">#${esc(m.id!=null?m.id:'?')}${extra?' · '+esc(extra):''}${
-      m.stale ? ' · <span class="state-stale">last answered '+
-                esc(m.lastSeen!=null?m.lastSeen+'s ago':'a while ago')+'</span>' : ''}<span class="tech">${
-      m.ip?' · '+esc(m.ip):''}${
-      (m.routes&&m.routes.length>1)
-        ? ' · reachable '+esc(m.routes.map(r=>r.kind==='wifi'?'over WiFi':('on '+r.port)).join(' and '))
-        : ''}</span></span>`;
+    <span class="ip">#${esc(m.id!=null?m.id:'?')}${extra?' · '+esc(extra):''}<span class="tech">${
+      m.ip?' · '+esc(m.ip):''}</span></span>${
+      m.stale ? '<span class="state-stale">last answered '+
+                esc(m.lastSeen!=null?m.lastSeen+'s ago':'a while ago')+'</span>' : ''}`;
+  // The pin, first in the row so the pinned ones are scannable down one edge.
+  // It is a toggle and it says which state it is in, in WORDS as well as the
+  // symbol - a filled star against an outlined one is not a difference
+  // everybody can see, and this page never uses colour or shape alone.
+  if(m.id!=null){
+    const pin=document.createElement('button');
+    pin.className='pin'+(isPinned(m.id)?' on':'');
+    pin.setAttribute('aria-pressed', isPinned(m.id)?'true':'false');
+    pin.textContent=isPinned(m.id)?'★':'☆';
+    pin.title=(isPinned(m.id)?'Pinned — click to unpin. ':'Pin this module. ')
+             +'Pinned modules are listed first, on this computer only.';
+    pin.onclick=(ev)=>{ ev.stopPropagation(); togglePin(m.id);
+      // Repaint from what is already known rather than re-scanning the
+      // network: a pin is a local preference and must not cost a sweep of
+      // the venue WiFi, which takes seconds and hits every board.
+      repaintMods(); };
+    d.insertBefore(pin, d.firstChild);
+  }
+
   // ONE site for every transport: the module's own website, served by the hub
   // with a transport shim (?dev=wifi:<ip> | usb:<port>[:<id>]). Same UI, same
   // config, same login — no matter how the module is reached.
@@ -897,14 +1729,20 @@ function modRow(m,extra,port,busId,peer){
   // and "@name" is all the hub needs to route every call through the middle
   // module (see parse_dev in main.py). Everything below — the module site,
   // Studio, file transfer — then works unchanged.
+  // A board this PC cannot reach itself is still openable THROUGH the PC that
+  // holds it - the hub passes every call on, which is what `hub:<ip>/<dev>`
+  // means. Last, because a way in that goes through one more machine is one
+  // more thing that can be switched off.
   const dev=peer?('usb:'+port+'@'+peer)
     :(m.wifi_mode==='sta'&&m.ip)?('wifi:'+m.ip)
-    :(port?('usb:'+port+(busId?(':'+busId):'')):'');
+    :(port?('usb:'+port+(busId?(':'+busId):''))
+    :((far&&far.dev)?far.dev:''));
   if(dev){
     const open=document.createElement('button');open.className='primary';
     open.textContent='⚙ Open module';
     open.title='the full module site (control + setup + pins) over '+(dev.indexOf('wifi')===0?'WiFi':'USB/RS485');
-    open.onclick=()=>window.open('/mod?dev='+encodeURIComponent(dev)+'&name='+encodeURIComponent(m.name||''),'_blank');
+    open.onclick=()=>{ rememberOpened(dev, m.name||('#'+m.id));
+      window.open('/mod?dev='+encodeURIComponent(dev)+'&name='+encodeURIComponent(m.name||''),'_blank'); };
     d.appendChild(open);
   }
   if(m.wifi_mode==='sta'&&m.ip){
@@ -966,6 +1804,16 @@ function modRow(m,extra,port,busId,peer){
     rb.onclick=()=>window.open('/rgb.html?'+target+'&name='+encodeURIComponent(m.name||''),'_blank');
     d.appendChild(rb);
   }
+  // ...and, underneath, every way this board can be reached. One line each, so
+  // "it is on the other laptop" is a fact about THIS module rather than a
+  // second list of modules somewhere else on the page.
+  if(m.routes && m.routes.length && opts.via !== false){
+    const via=document.createElement('div');
+    via.className='via';
+    via.innerHTML='reached ' + m.routes.map(function(r){
+      return viaHtml(r, window.MODS_HOST || ''); }).join('&nbsp; · &nbsp;');
+    d.appendChild(via);
+  }
   return d;
 }
 // streaming probe: one request PER port, each slot fills in the moment its
@@ -981,7 +1829,17 @@ function renderUsbResult(slot,u){
     head.textContent=u.port+' — module plugged in directly'+
       (u.inuse?' (in use — shared, open as many pages as you like):':':');
     slot.appendChild(head);
-    slot.appendChild(modRow(u.module,u.port,u.port,0));
+    // A LINE, NOT A SECOND ROW. Reported 2026-08-22: *i found the problem it
+    // show more than 1 time that why i consern this user don't know which
+    // module*. This board is already in the one list at the top of this tab,
+    // with its buttons and every way it can be reached; drawing the whole row
+    // again here made one robot look like two.
+    const said=document.createElement('div');
+    said.className='via';
+    said.style.margin='0 0 4px 2px';
+    said.textContent='✓ ' + (u.module.name || ('#'+u.module.id)) + ' ('
+      + (u.module.type || '?') + ') — in the list at the top of this tab';
+    slot.appendChild(said);
     addHotspotPeers(slot,u.port,u.module);
   }else{
     head.textContent=u.port+' — '+(u.error||'no module answered (dongle only, or not a module)');
@@ -1008,10 +1866,18 @@ function renderUsbResult(slot,u){
       head.appendChild(b);
     }
   }
+  // The boards BEHIND this cable, on the RS485 bus. A line each, for the same
+  // reason as the board on the cable itself: the hub already lists them once,
+  // up at the top of this tab, with "RS485 #2 behind COM9" written under the
+  // row. Drawing them again here is how a bench of two boards read as four.
   (u.rs485||[]).forEach(m=>{
-    const row=modRow(m,u.port+' → RS485',u.port,m.id);
-    row.style.marginLeft='24px';
-    slot.appendChild(row);
+    const line=document.createElement('div');
+    line.className='via';
+    line.style.margin='0 0 4px 26px';
+    line.textContent='↳ RS485 #' + (m.id != null ? m.id : '?') + '  '
+      + (m.name || '') + (m.type ? ' (' + m.type + ')' : '')
+      + ' — in the list at the top of this tab';
+    slot.appendChild(line);
   });
   // Flashing MOVED to the Firmware screen (A2-2). This screen answers "what is
   // connected"; that one replaces firmware, which is a different job, usually
@@ -1127,20 +1993,40 @@ async function loadShared(force){
          +' PC(s) did not answer.</span>' : '');
     return;
   }
-  box.innerHTML = '';
+  // ONE ROW PER PC, not per module. The modules themselves are in the one list
+  // at the top of the Modules tab now, each carrying "through <that PC>" as a
+  // detail - so repeating them here made one robot into two rows again, which
+  // is the thing the user asked to be rid of on 2026-08-21. What is left is the
+  // question this card is actually for: which machines are sharing, and how
+  // much.
+  const byHost = {};
   mods.forEach(function(m){
-    const row = modRow({name:m.name, type:m.type, id:m.id, group:m.group},
-                       'on '+m.host, null, 0);
-    // The row is built by the same function local modules use, so it gets the
-    // same buttons and the same module website — only the address differs.
-    row.querySelectorAll('button,.open').forEach(function(b){ b.remove(); });
-    const open = document.createElement('button');
-    open.textContent = '⚙ Open module';
-    open.title = 'this module is on '+m.host+' — the commands go through that PC';
-    open.onclick = function(){
-      window.open('/mod?dev='+encodeURIComponent(m.dev), '_blank');
+    const h = m.host || m.hostIp || '?';
+    (byHost[h] = byHost[h] || {ip: m.hostIp, mods: []}).mods.push(m);
+  });
+  box.innerHTML = '';
+  Object.keys(byHost).sort().forEach(function(host){
+    const pc = byHost[host];
+    const row = document.createElement('div');
+    row.className = 'mod';
+    row.innerHTML = '<span class="nm">🖥 '+esc(host)+'</span>'
+      + '<span class="ip">'+pc.mods.length
+      + (pc.mods.length === 1 ? ' module' : ' modules')
+      + '<span class="tech"> · '+esc(pc.ip||'')+'</span></span>'
+      + '<div class="via">'+esc(pc.mods.map(function(m){
+          return (m.name || ('#'+m.id)) + ' (' + (m.type||'?') + ')'; }).join(', '))
+      + '</div>';
+    const go = document.createElement('button');
+    go.textContent = 'Show in the list';
+    go.title = 'these are already in the list at the top of this tab, with '
+             + host + ' named under each one';
+    go.onclick = function(){
+      const f = document.getElementById('modFind');
+      if(f){ f.value = ''; filterMods(); f.focus(); }
+      const top = document.getElementById('mods');
+      if(top) top.scrollIntoView({behavior: 'smooth', block: 'start'});
     };
-    row.appendChild(open);
+    row.appendChild(go);
     box.appendChild(row);
   });
   if(errs.length){
@@ -1265,13 +2151,29 @@ function $(id){ return document.getElementById(id); }
 // Hiding a button would be a lie anyway — the route is what is protected.
 var authed = false;
 
+// ONE place that knows whether somebody is signed in. Four places used to set
+// `authed` and each had to remember every consequence itself; when the sign-in
+// box was added three of them forgot it, so signing out left every card on
+// screen unlocked. Adding the next consequence is one line, here.
+function setAuthed(v){
+  authed = !!v;
+  $('loginCard').hidden = authed;
+  $('logoutBtn').hidden = !authed;
+  if (!authed) {
+    if ($('loginUser') && document.activeElement !== $('loginUser')) $('loginUser').value = '';
+    if ($('loginPass') && document.activeElement !== $('loginPass')) $('loginPass').value = '';
+  }
+  // Cards marked data-needs-login show a sign-in box instead of themselves.
+  // This page keeps its own login card rather than mounting miceLogin, because
+  // it carries the first-run and locked-out banners no other page has.
+  if (window.miceGate) miceGate.apply(authed);
+}
+
 async function refreshAuth(){
   try{
     const r = await fetch('/api/whoami');
     const j = await r.json();
-    authed = !!j.authed;
-    $('loginCard').hidden = authed;
-    $('logoutBtn').hidden = !authed;
+    setAuthed(j.authed);
     if (j.locked_for > 0) showLock(j.locked_for);
   }catch(e){ /* the hub is unreachable; the page's own error state covers it */ }
 }
@@ -1305,10 +2207,9 @@ async function doLogin(ev){
     const j = await r.json();
     if (j.ok){
       $('loginPass').value = '';
-      authed = true;
-      $('loginCard').hidden = true;
-      $('logoutBtn').hidden = false;
+      setAuthed(true);
       scan(true);                       // the page can do more now — show it
+      pairPaint();                      // ...including pairing this PC
     } else if (j.locked_for > 0){
       showLock(j.locked_for);
     } else {
@@ -1326,9 +2227,8 @@ async function doLogin(ev){
 
 async function doLogout(){
   try{ await fetch('/api/logout', {method:'POST'}); }catch(e){}
-  authed = false;
-  $('loginCard').hidden = false;
-  $('logoutBtn').hidden = true;
+  setAuthed(false);
+  $('pairBox').hidden = true;           // its every button would now 401
 }
 
 // Any refused action reveals the card and says why, rather than failing
@@ -1338,9 +2238,7 @@ async function doLogout(){
   window.fetch = async function(u, o){
     const r = await of(u, o);
     if (r.status === 401){
-      authed = false;
-      $('loginCard').hidden = false;
-      $('logoutBtn').hidden = true;
+      setAuthed(false);
       $('loginErr').hidden = false;
       $('loginErr').textContent = '⚠ log in first — that action changes something';
       $('loginCard').scrollIntoView({block:'nearest'});
@@ -1466,11 +2364,207 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// ---- keyboard shortcuts ----------------------------------------------
+// ONE LIST, read by the handler AND by the help panel. That is the whole
+// point: a shortcut the handler knows and the list does not is folklore -
+// it works for whoever wrote it and nobody else ever finds out. Adding one
+// is a single entry here, and it appears in both places at once, which is
+// the same rule the command registry and the module registry already follow.
+// `var`, not `const`: a top-level const is not a property of window, and
+// QC drives this page from a parent frame that has to reach it.
+var SHORTCUTS = [
+  {key: '/',   show: '/',   what: 'jump to the module search box',
+   run: () => { showTab('modules');
+                const b = $('modFind'); if (b){ b.focus(); b.select(); } }},
+  {key: '?',   show: '?',   what: 'show this list', run: () => toggleKeys(true)},
+  {key: 'Escape', show: 'Esc', what: 'close whatever is open',
+   run: () => closeAnyOpen()},
+];
+
+// Everything a key press might need to dismiss, in one place, so Esc cannot
+// half-close the page - a dialog shut while its backdrop stays is worse than
+// one that never opened.
+function closeAnyOpen(){
+  let did = false;
+  const modal = $('flashModal');
+  if (modal && !modal.hidden){
+    if (_fcResolve) fcClose(false); else modal.hidden = true;
+    did = true;
+  }
+  const keys = $('keysModal');
+  if (keys && !keys.hidden){ toggleKeys(false); did = true; }
+  // A search box with something in it is also "something open": Esc clears the
+  // filter and gives the whole list back, which is what a person means by
+  // "get me out of this" while looking at three rows out of twenty.
+  const find = $('modFind');
+  if (!did && find && find.value){ find.value = ''; filterMods(); did = true; }
+  return did;
+}
+
+// ---- handing the app to the PC reading this page ----------------------
+// Only offered when this hub HAS one: a hub run from source has no exe, and a
+// download link that 404s is worse than no link.
+async function paintGetApp(){
+  const a = $('getApp');
+  if (!a) return;
+  try{
+    const d = await fetch('/api/app/version').then(r => r.json());
+    if (!d.sha && !d.bytes) { a.hidden = true; return; }
+    a.hidden = false;
+    a.textContent = '⬇ Get the hub for this PC (' +
+      (d.bytes / 1048576).toFixed(0) + ' MB)';
+    a.title = "Run this on the PC with the cable. A browser cannot reach that "
+            + "PC's USB ports from here — the program can, and this hub finds "
+            + "it by itself once it is running.";
+  }catch(e){ a.hidden = true; }
+}
+
+// ---- updating the hub itself -----------------------------------------
+// Two presses, never one. Checking is safe and says what is offered; the
+// replace is a second, separate decision, because it swaps the program the
+// person is currently using.
+async function checkUpdate(){
+  const say = $('updSay');
+  say.textContent = 'asking GitHub…';
+  let s;
+  try{ s = await fetch('/api/selfupdate').then(r => r.json()); }
+  catch(e){ say.textContent = '⚠ ' + (e && e.message || e); return; }
+  if (!s.can){
+    // No internet is the ordinary case at a venue, so this is a plain
+    // sentence rather than an error.
+    say.textContent = s.why || 'nothing to update';
+    return;
+  }
+  say.textContent = '';
+  const line = document.createElement('span');
+  line.textContent = 'A newer build is offered: ' + (s.offered || '').slice(0, 12) +
+    (s.when ? ' (' + s.when.slice(0, 10) + ')' : '') +
+    (s.message ? ' — ' + s.message : '') + '  ';
+  const go = document.createElement('button');
+  go.className = 'danger';
+  go.textContent = '⭳ Replace this hub now';
+  go.onclick = async () => {
+    go.disabled = true;
+    say.textContent = 'downloading…';
+    let r;
+    try{ r = await fetch('/api/selfupdate', {method: 'POST'}).then(x => x.json()); }
+    catch(e){ say.textContent = '⚠ ' + (e && e.message || e); return; }
+    say.textContent = (r.ok ? '✓ ' : '⚠ ') + (r.message || '');
+  };
+  say.appendChild(line);
+  say.appendChild(go);
+}
+
+// ---- the diagnostics bundle ------------------------------------------
+// One button, because the four questions asked after "it does not work" are
+// always the same ones and getting them out of somebody over chat takes half
+// an hour.
+//
+// The text is fetched from the hub rather than built here: which PC this is,
+// which firmware images are built, whether esptool exists - the page does not
+// know any of that, and a bundle assembled from what the browser happens to
+// have loaded would be missing exactly the parts that matter.
+//
+// TWO HALVES (A21-5): the plain summary renders on the card; the technical
+// rest shows only under the page-wide technical switch. The Copy button and
+// the fallback always carry the WHOLE bundle - support needs both halves.
+const DIAG_MARK = '--- technical detail below, for support ---';
+function showDiag(text){
+  const i = text.indexOf(DIAG_MARK);
+  const cut = i < 0 ? text.length : i;
+  $('diagPlain').textContent = text.slice(0, cut).trim();
+  $('diagPlain').hidden = false;
+  $('diagTechWrap').hidden = false;
+  $('diagTechText').textContent =
+      i < 0 ? '' : text.slice(i + DIAG_MARK.length).trim();
+}
+async function copyDiag(){
+  const say = $('diagSay'), fall = $('diagFall');
+  say.textContent = 'collecting…';
+  fall.hidden = true;
+  let text;
+  try{
+    text = await fetch('/api/diag').then(r => r.text());
+  }catch(e){
+    say.textContent = '⚠ could not reach the hub: ' + (e && e.message || e);
+    return;
+  }
+  showDiag(text);
+  // navigator.clipboard is undefined outside a secure context, and this hub is
+  // plain http on a LAN address - so on a phone this branch is the NORMAL one,
+  // not the failure. Both paths end with the person holding the text.
+  try{
+    if (!navigator.clipboard) throw new Error('no clipboard here');
+    await navigator.clipboard.writeText(text);
+    say.textContent = '✓ Copied — paste it wherever you were asked for it.';
+    return;
+  }catch(e){
+    fall.hidden = false;
+    const box = $('diagText');
+    box.value = text;
+    box.focus();
+    box.select();
+    say.textContent = 'Ready to copy by hand:';
+  }
+}
+
+// Show or hide the list, drawing it FROM THE SAME ARRAY the handler uses.
+// Built each time it opens rather than once at load: it costs nothing for
+// three rows, and it means a shortcut added to SHORTCUTS can never be missing
+// from the list because the list was rendered before it existed.
+function toggleKeys(show){
+  const m = $('keysModal');
+  if (!m) return;
+  if (show){
+    const list = $('keysList');
+    list.innerHTML = '';
+    SHORTCUTS.forEach(s => {
+      const b = document.createElement('button');
+      b.className = 'row keyrow';
+      b.innerHTML = '<span class="badge"><b>' + esc(s.show) + '</b></span>' +
+                    '<span>' + esc(s.what) + '</span>';
+      b.onclick = () => {
+        // CLOSE FIRST, then act. `/` focuses the search box, and focusing
+        // something behind a dialog that is still covering it does nothing a
+        // person can see - they would tap it, watch nothing happen, and stop
+        // trusting the list.
+        toggleKeys(false);
+        s.run();
+      };
+      list.appendChild(b);
+    });
+  }
+  m.hidden = !show;
+  if (show) $('keysClose').focus();
+  else if ($('keysOpen')) $('keysOpen').focus();
+}
+if ($('keysClose')) $('keysClose').onclick = () => toggleKeys(false);
+
+document.addEventListener('keydown', e => {
+  // NEVER STEAL A KEY FROM SOMEONE TYPING. `/` and `?` are ordinary characters
+  // in a module name, a WiFi password or a search box, and a shortcut that
+  // eats them turns every text field into a trap. Escape is the exception:
+  // leaving a field is exactly what it is for.
+  const el = e.target;
+  const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' ||
+                        el.tagName === 'SELECT' || el.isContentEditable);
+  if (typing && e.key !== 'Escape'){ return; }
+  if (e.ctrlKey || e.altKey || e.metaKey) return;   // leave browser keys alone
+  const hit = SHORTCUTS.filter(s => s.key === e.key)[0];
+  if (!hit) return;
+  // Escape inside a field means "leave the field", and the browser does not do
+  // that by itself. Blur first, then let the shortcut run.
+  if (typing && e.key === 'Escape'){ el.blur(); }
+  e.preventDefault();
+  hit.run();
+});
+
 // ---- Home, Firmware, Settings ---------------------------------------
 // Home does not fetch anything of its own. It reads what the scans already
 // found, so it can never disagree with the Modules tab — two panels showing
 // different counts for the same robots is worse than one panel.
 function paintHome(){
+  paintLastOpened();
   // COUNT BOARDS, not rows on screen. Counting rows added the same board up
   // twice - once in the merged module list and once in the cable list - and a
   // bench with four boards reported nine, six on USB and three on WiFi. The
@@ -1478,17 +2572,27 @@ function paintHome(){
   // that question rather than count what three lists happen to be showing.
   // What the module scan last found, merged by the hub - not the rows three
   // lists happen to be showing.
+  // ONE list now holds every board, including the ones on other PCs - so the
+  // count is its length, and adding a second list's rows to it (which is what
+  // this did) would count the boards on the laptop next door twice.
   var mods = window.MODS || [];
-  var other = document.querySelectorAll('#shared .mod').length;
 
+  // COUNTED PER WAY IN, and each module counted once in each. Asked for
+  // 2026-08-22: *show which module connect now from wifi how many from rs485
+  // from usb*. USB and RS485 were lumped together as "on a cable", which hides
+  // the difference that matters when something is missing: a board on the bus
+  // is reached THROUGH another board.
   function has(m, kind){
-    return (m.routes || []).some(function(r){
-      return kind === 'wifi' ? r.kind === 'wifi' : r.kind !== 'wifi'; });
+    return (m.routes || []).some(function(r){ return r.kind === kind; });
   }
-  var cable = mods.filter(function(m){ return has(m, 'cable'); }).length;
+  var usb   = mods.filter(function(m){ return has(m, 'usb'); }).length;
+  var bus   = mods.filter(function(m){ return has(m, 'rs485'); }).length;
   var wifi  = mods.filter(function(m){ return has(m, 'wifi'); }).length;
-  var both  = mods.filter(function(m){ return has(m, 'cable') && has(m, 'wifi'); }).length;
-  var total = mods.length + other;
+  var other = mods.filter(function(m){ return has(m, 'hub'); }).length;
+  var cable = mods.filter(function(m){ return has(m, 'usb') || has(m, 'rs485'); }).length;
+  var both  = mods.filter(function(m){ return (has(m, 'usb') || has(m, 'rs485'))
+                                           && has(m, 'wifi'); }).length;
+  var total = mods.length;
 
   // This function now RESUMES after a network round trip, so the page it
   // started painting may not be there any more - a tab switch, a reload, or a
@@ -1515,12 +2619,14 @@ function paintHome(){
     // two ways in, and saying "3 on cables, 2 over WiFi" about four boards
     // reads as five.
     var bits = [];
-    if (cable) bits.push(cable + ' reachable on a cable');
+    if (usb)   bits.push(usb + ' on a USB cable');
+    if (bus)   bits.push(bus + ' on the RS485 bus');
     if (wifi)  bits.push(wifi + ' over WiFi');
-    if (other) bits.push(other + ' on another PC');
-    sum.textContent = total + (total === 1 ? ' module' : ' modules') + ' — '
-                    + bits.join(', ')
-                    + (both ? ' (' + both + ' can be reached both ways)' : '') + '.';
+    if (other) bits.push(other + ' through another PC');
+    sum.textContent = total + (total === 1 ? ' module' : ' modules') + ', '
+                    + 'reachable: ' + bits.join(', ')
+                    + (both ? ' (' + both + ' both by cable and over WiFi)' : '')
+                    + '.';
   }
 
   // Anything the page is currently unhappy about, gathered in one place. The
@@ -1537,14 +2643,15 @@ function paintHome(){
     wrong.appendChild(d);
   });
 
-  // One way onward, chosen by what is actually there.
+  // One way onward. With the modules themselves on this screen, "Open Modules"
+  // was a button to a copy of what was already in front of the reader; looking
+  // again is the thing that is not otherwise possible from here.
   var go = $('homeGo');
   go.innerHTML = '';
   var b = document.createElement('button');
-  b.className = total ? 'primary' : '';
-  b.textContent = total ? 'Open Modules' : 'Look again';
-  b.onclick = total ? function(){ showTab('modules'); }
-                    : function(){ scan(true); scanUsb(); };
+  b.className = total ? '' : 'primary';
+  b.textContent = total ? '⟳ Look again' : 'Look again';
+  b.onclick = function(){ scan(true); scanUsb(); };
   go.appendChild(b);
 }
 
@@ -1605,6 +2712,112 @@ async function removeUser(name){
   }catch(e){ $('uStat').textContent = 'the hub did not answer'; }
 }
 
+// ---- pairing: one login on every PC (A14-1) --------------------------
+// Six states in one card, and only one is ever on screen: idle, showing a
+// code, typing a code, the name-clash question, done, failed.
+var pairTimer = 0;
+
+function pairFace(which){
+  ['pairIdle','pairShowing','pairEnter','pairClash','pairDone','pairErrBox']
+    .forEach(function(id){ $(id).hidden = (id !== which); });
+}
+
+function pairReset(){
+  clearTimeout(pairTimer);
+  $('pairStat').textContent = '';
+  pairFace('pairIdle');
+}
+
+async function pairPaint(){
+  // THE HUB DECIDES, not the page's own `authed`. A reload that lands on the
+  // Network tab paints this card before /api/whoami has answered, so trusting
+  // that variable hid the card from someone who was logged in — and only from
+  // them, since a stranger sees the same nothing. Asking the gated route
+  // answers both questions at once: may I pair, and is a code already live.
+  try{
+    const r = await fetch('/api/pair/status').then(x => x.json());
+    const may = r.ok !== false && !r.need_login;
+    $('pairBox').hidden = !may;
+    if (!may) return;
+    if (r.showing) pairCountdown(r.code, r.seconds); else pairReset();
+  }catch(e){ $('pairBox').hidden = true; }
+}
+
+function pairCountdown(code, secs){
+  $('pairCode').textContent = code;
+  pairFace('pairShowing');
+  clearTimeout(pairTimer);
+  const tick = function(){
+    if (secs <= 0){ pairReset(); return; }
+    // Minutes and seconds: 240s means nothing to someone holding a phone.
+    $('pairLeft').textContent = 'Good for ' + Math.floor(secs / 60) + 'm '
+      + ('0' + (secs % 60)).slice(-2) + 's';
+    secs--; pairTimer = setTimeout(tick, 1000);
+  };
+  tick();
+}
+
+async function pairShow(){
+  try{
+    const r = await fetch('/api/pair/start', {method:'POST'}).then(x => x.json());
+    if (!r.ok) return pairFailed(r.error || 'the hub refused');
+    pairCountdown(r.code, r.seconds);
+  }catch(e){ pairFailed('the hub did not answer'); }
+}
+
+async function pairStop(){
+  try{ await fetch('/api/pair/stop', {method:'POST'}); }catch(e){}
+  pairReset();
+}
+
+function pairAskCode(){
+  pairFace('pairEnter');
+  $('pairAddr').focus();
+}
+
+function pairFailed(why){
+  $('pairErr').textContent = why;
+  pairFace('pairErrBox');
+}
+
+async function pairLink(replace){
+  // The ADDRESS and the CODE are remembered across the clash question: the
+  // person answering it typed them a moment ago and must not type them twice.
+  const addr = $('pairAddr').value.trim(), code = $('pairInput').value.trim();
+  $('pairStat').textContent = 'pairing…';
+  try{
+    const r = await fetch('/api/pair/link', {method:'POST',
+      body: JSON.stringify({ip: addr, code: code, replace: !!replace})})
+      .then(x => x.json());
+    $('pairStat').textContent = '';
+    if (r.ok === false) return pairFailed(r.error || 'refused');
+    if ((r.clashed || []).length) return pairClash(r);
+    pairDone(r);
+  }catch(e){ pairFailed('the hub did not answer'); }
+}
+
+function pairClash(r){
+  // Named, never a generic warning: WHICH account is the whole question, and
+  // the answer decides who can still log in here in a minute.
+  const names = (r.clashed || []).join(', ');
+  $('pairClashWhy').textContent =
+    'This PC already has an account called ' + names + '. Replacing it means '
+    + names + ' logs in with the password set on ' + (r.from || 'that PC')
+    + ' — and everyone logged in here is logged out. Keeping it leaves that '
+    + 'one name different on the two PCs.';
+  pairFace('pairClash');
+}
+
+function pairDone(r){
+  const took = (r.added || []).concat(r.replaced || []);
+  $('pairDone').textContent = took.length
+    ? ('✓ Paired with ' + (r.from || 'that PC') + ' — ' + took.join(', ')
+       + ' can now log in here with the same password.')
+    : ('✓ Already paired with ' + (r.from || 'that PC') + ' — nothing to copy.');
+  pairFace('pairDone');
+  loadUsers();
+}
+
 // ---- the Firmware section -------------------------------------------
 // Everything here is built from two answers: what this PC has BUILT
 // (/api/flash/images) and what boards are reachable. Nothing about module
@@ -1623,10 +2836,19 @@ async function fwBoards(){
   try{
     const mine = await fetch('/api/mine').then(x => x.json());
     (mine.modules || []).forEach(function(m){
-      const port = (m.dev || '').indexOf('usb:') === 0 ? m.dev.slice(4).split(':')[0] : '';
-      const k = key(m, 'port' + port);
+      const parts = (m.dev || '').indexOf('usb:') === 0 ? m.dev.slice(4).split(':') : [];
+      const port = parts[0] || '';
+      // A MODULE ON THE BUS IS NOT A MODULE ON THE CABLE. `usb:COM23:1` names
+      // board 1 out on the RS485 pair, reached through whatever is on COM23 —
+      // which may be a plain dongle with no board on it at all. Slicing the
+      // port out and calling it a cable board offered a write that esptool
+      // would have aimed at the wrong end of the wire entirely.
+      const bus = parts.length > 1 && parts[1] ? parseInt(parts[1], 10) : 0;
+      const k = key(m, 'port' + port + ':' + bus);
       out.set(k, Object.assign({name: m.name || port, id: m.id, type: m.type},
-                               out.get(k) || {}, {port: port}));
+                               out.get(k) || {},
+                               bus ? {bus: bus, dev: m.dev}
+                                   : {port: port, dev: m.dev}));
     });
   }catch(e){ /* no cables is not an error */ }
   try{
@@ -1827,8 +3049,20 @@ function fwTarget(img, board){
   // Three ways to reach a board, and a row only ever offers the one it has:
   // this PC's own cable, another PC's cable, or WiFi.
   const far = !overCable && !board.ip && !!board.farPort;
+  // ...and a fourth, for a board that has none of them. A module out on the
+  // RS485 pair has no cable of its own and may have no radio at all, and both
+  // of the usual ways need one: esptool pulls EN and IO0 with DTR and RTS,
+  // which two differential wires do not have, and the WiFi updater posts to a
+  // web server that is not running. It writes its own spare slot from ordinary
+  // commands instead — slower, and the only thing that works.
+  //
+  // ONE BUTTON, not a choice. The hub knows how it can reach the board and
+  // picks; nobody standing at a bench wants to choose a four-minute path when
+  // a one-minute path exists. The method is NAMED on the button and again
+  // while it runs, because that is what explains the wait.
+  const overBus = !overCable && !far && !board.ip && !!board.bus;
   // A cable write needs the whole image set; this PC may only have the app
-  // image, which is enough over WiFi and not enough over a cable.
+  // image, which is enough over WiFi or the bus and not enough over a cable.
   if ((overCable || far) && !img.ready) {
     go.disabled = true;
     go.textContent = '⚡ cable write needs the full image';
@@ -1838,18 +3072,25 @@ function fwTarget(img, board){
   }
   go.textContent = overCable ? '⚡ Write over the cable'
                  : far ? ('⚡ Write over the cable on ' + board.host)
+                 : overBus ? '⚡ Write over RS485'
                        : '⚡ Write over WiFi';
   go.title = overCable
     ? 'takes the cable for about a minute'
     : far
       ? ('the firmware is sent to ' + board.host +
          ', which writes it over its own cable — this PC never touches the board')
-      : 'sent to the spare slot — if it does not finish, the board keeps what it has';
-  go.onclick = function(){ fwWrite(img, board, overCable, go, bar, say, far); };
+      : overBus
+        ? ('this board has no cable of its own, so the image goes out on the '
+           + 'bus as ordinary commands — several minutes, and it keeps the '
+           + 'firmware it has if anything goes wrong')
+        : 'sent to the spare slot — if it does not finish, the board keeps what it has';
+  go.onclick = function(){
+    fwWrite(img, board, overCable, go, bar, say, far, overBus);
+  };
   return row;
 }
 
-async function fwWrite(img, board, overCable, go, bar, say, far){
+async function fwWrite(img, board, overCable, go, bar, say, far, overBus){
   if (!await confirmFlash({
       name: board.name, id: board.id, now: board.type, type: img.type,
       // The other PC has its own accounts, so the panel asks for a login on
@@ -1859,12 +3100,20 @@ async function fwWrite(img, board, overCable, go, bar, say, far){
       login: far ? board.host : '',
       via: overCable ? ('the cable on ' + board.port)
          : far ? (board.host + ', over its cable ' + board.farPort)
+         : overBus ? ('the RS485 bus, as module ' + board.bus)
                : ('WiFi at ' + board.ip),
       cost: overCable
         ? 'About a minute, and the cable cannot be used for anything else '
         + 'until it finishes. The board keeps its id, name, WiFi and pins.'
-        : 'It is written to the board\'s spare slot, so if it does not finish '
-        + 'the module keeps the firmware it has now.'})) return;
+        : overBus
+          // Say the number. A progress bar that moves this slowly reads as a
+          // stuck one unless somebody was told in advance what to expect.
+          ? 'Several minutes — the image goes out in small pieces, because a '
+          + 'bus line holds only so much. It is written to the board\'s spare '
+          + 'slot, so if it does not finish the module keeps the firmware it '
+          + 'has now.'
+          : 'It is written to the board\'s spare slot, so if it does not finish '
+          + 'the module keeps the firmware it has now.'})) return;
 
   go.disabled = true; bar.hidden = false; say.textContent = 'starting…';
   flashBusy(true);
@@ -1882,6 +3131,9 @@ async function fwWrite(img, board, overCable, go, bar, say, far){
       const url = overCable
         ? '/api/flash?port=' + encodeURIComponent(board.port) +
           '&type=' + encodeURIComponent(img.type)
+        : overBus
+          ? '/api/flash/bus?dev=' + encodeURIComponent(board.dev) +
+            '&type=' + encodeURIComponent(img.type)
         : '/api/ota?ip=' + encodeURIComponent(board.ip) +
           '&type=' + encodeURIComponent(img.type);
       r = await fetch(url, {method: 'POST'}).then(x => x.json());
@@ -1893,7 +3145,7 @@ async function fwWrite(img, board, overCable, go, bar, say, far){
     }
     fwWatch(bar, say, go, {
       dev: overCable ? ('usb:' + board.port)
-         : far ? '' : ('wifi:' + board.ip),
+         : far ? '' : overBus ? board.dev : ('wifi:' + board.ip),
       type: img.type, was: board.type},
       // A write on another PC is watched through that PC, not this one.
       far ? ('/api/flash/at?ip=' + encodeURIComponent(board.hostIp)) : '/api/flash');
@@ -1910,14 +3162,47 @@ function fwWatch(bar, say, go, want, from){
   const tick = setInterval(async function(){
     let s;
     try{ s = await fetch(from || '/api/flash').then(x => x.json()); }
-    catch(e){ return; }
+    catch(e){
+      // NOT a bare return. The hub stops answering exactly when it matters -
+      // mid-flash - and returning quietly left the counter frozen, so the
+      // stall line below never ran and the bar sat still for ever with no
+      // word (panel finding, verified 2026-09-08).
+      if (++quiet > 6)
+        say.textContent = 'the hub stopped answering while it was writing. '
+          + 'Leave the board alone and check the hub is still running.';
+      return;
+    }
     const pct = Math.round((s.percent || 0));
     bar.querySelector('i').style.width = pct + '%';
-    say.textContent = s.stage || (pct + '%');
+    // NAME THE ROUTE WHILE IT RUNS. The three ways take about a minute, about
+    // a minute, and about five, and the slow one is slow because a bus line
+    // carries 150 bytes at a time — not because anything is wrong. Without the
+    // word on screen a bar creeping this slowly reads as a stuck one.
+    const how = s.how === 'bus' ? ' over RS485'
+              : s.how === 'wifi' ? ' over WiFi'
+              : s.how === 'usb' ? ' over the cable' : '';
+    say.textContent = (s.stage || (pct + '%')) + how;
     quiet = (pct === last) ? quiet + 1 : 0;
     last = pct;
-    if (quiet > 40) say.textContent = 'still ' + pct + '% — it may have stalled';
-    if (s.done || s.error) {
+    // A bus write really does sit on one percent for a while; 40 ticks of 700 ms
+    // is 28 seconds, which is normal there and not normal on a cable.
+    if (quiet > (s.how === 'bus' ? 140 : 40))
+      say.textContent = 'still ' + pct + '%' + how + ' — it may have stalled';
+    // FINISHED MEANS THE JOB STOPPED AND HAS A VERDICT.
+    //
+    // This used to test `s.done`, and /api/flash has never sent a `done` key —
+    // status() returns running/percent/stage/ok/error/how/log and nothing else,
+    // and /api/flash/at only proxies the same document. So the watcher ended on
+    // an ERROR and never on success: the button stayed disabled, the bar stayed
+    // on screen, and applyTypeAfterFlash never ran — which is the step that
+    // stops a board running lift firmware under the name nong.
+    //
+    // `ok` is null while the job runs and true/false when it is over, so
+    // "stopped, and it said how it went" is the honest test. `s.done` is kept
+    // in case some other producer ever sends one.
+    const finished = s.done || s.error ||
+                     (s.running === false && s.ok !== null && s.ok !== undefined);
+    if (finished) {
       clearInterval(tick);
       flashBusy(false);
       go.disabled = false;
@@ -1954,7 +3239,7 @@ function paintSettings(){
     was(name);
     if (name === 'home') paintHome();
     if (name === 'firmware') paintFirmware();
-    if (name === 'network') paintQr();
+    if (name === 'network') { paintQr(); pairPaint(); }
     if (name === 'settings') paintSettings();
   };
 })();

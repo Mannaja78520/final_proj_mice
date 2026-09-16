@@ -26,6 +26,8 @@ import json
 import urllib.error
 import urllib.parse
 import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import threading
 
 import fake_serial
 import qc as F
@@ -138,6 +140,55 @@ def run(t):
         st, reply = 0, str(e)
     t.ok("could not reach" in reply.lower() or st >= 400,
          "a PC that has gone away is reported as unreachable, not as empty",
+         "got %s: %r" % (st, reply[:160]))
+
+    # ---- a real forward to a real second hub -----------------------------
+    # Everything above exercises forwarding only against dead or self
+    # addresses, so a NameError INSIDE the forward code answered 502 for
+    # every hub-to-hub call under green gates. Found 2026-08-25: dev_route
+    # built the forward URL from `path`, a name not in scope there. This
+    # stub IS the far hub - a live HTTP server answering /api/dev/cmd the
+    # way a hub with a module on COM99 would. is_self is paused because
+    # every 127.x address counts as this PC and would be short-circuited
+    # before any forward happens.
+    class _Far(BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def do_GET(self):
+            if "/api/dev/cmd" in self.path:
+                body = b"PONG 99 far-stub nong"
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            else:
+                self.send_error(404)
+
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), _Far)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    real_is_self = main.is_self
+    main.is_self = lambda ip: False
+    # The forward dials hub_ip:<this hub's own PORT> - two hubs at a venue
+    # run the same port by convention. Point that constant at the stub for
+    # the length of one call; `base` above already carries the real local
+    # port, so calls INTO this hub are unaffected.
+    real_port = main.PORT
+    main.PORT = srv.server_address[1]
+    try:
+        far = "hub:127.0.0.1/usb:COM99"
+        st, reply = get(base + "/api/dev/cmd?dev=" + urllib.parse.quote(far)
+                        + "&c=PING", timeout=15)
+    except urllib.error.HTTPError as e:
+        st, reply = e.code, e.read().decode(errors="replace")
+    finally:
+        main.is_self = real_is_self
+        main.PORT = real_port
+        srv.shutdown()
+        srv.server_close()
+    t.ok(st == 200 and "PONG" in reply,
+         "a command for another PC's module is forwarded and its answer comes back",
          "got %s: %r" % (st, reply[:160]))
 
     # ---- the list of everything, including other PCs ---------------------

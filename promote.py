@@ -15,12 +15,31 @@ actually there.
 while work is in progress. Nothing reaches it until QC passes.
 """
 import argparse
+import codecs
 import filecmp
+import hashlib
+import json
+import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
+import uuid
+
+from contextlib import contextmanager
 from pathlib import Path
+
+# THAI, OR ANY OTHER LANGUAGE, MUST NOT KILL A TOOL. Windows hands python a
+# cp1252 console here, which cannot encode Thai at all: printing one Thai word
+# raised UnicodeEncodeError and the command died after it had already changed
+# the file. Measured 2026-08-22. UTF-8 out, and never crash on a character.
+for _out in (sys.stdout, sys.stderr):
+    try:
+        _out.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass        # a check that IMPORTS this tool has replaced stdout
+                    # with a StringIO, which has no reconfigure at all
 
 MAIN = Path(__file__).resolve().parent
 # Which working copy to promote. `.staging` unless told otherwise, so two trees
@@ -31,6 +50,22 @@ MAIN = Path(__file__).resolve().parent
 # Promoting stays SERIAL even so: both trees copy into the same real tree, and
 # two promotes touching one file is a lost edit.
 STAGING = MAIN / ".staging"
+
+
+def rebuild_cmd():
+    """The ONE way to rebuild the exe, read from build_stamp, never retyped.
+
+    This used to print a bare `--onefile` line of its own. Following it builds
+    a hub with no web pages and no registries, AND makes PyInstaller overwrite
+    the curated MiceHub.spec with a generated stub - both happened on
+    2026-08-21. A second copy of a command is a second chance to be wrong.
+    """
+    sys.path.insert(0, str(MAIN / "main_python"))
+    try:
+        import build_stamp
+        return build_stamp.REBUILD
+    except Exception:                                          # noqa: BLE001
+        return "python -m PyInstaller --clean MiceHub.spec"
 
 
 def _pick_staging(name):
@@ -49,8 +84,21 @@ def _pick_staging(name):
 # Promoting it copied a 2.7 KB snapshot over a 23 KB log and would have thrown
 # the prompt history away. A file the running system writes to is not source,
 # and must not travel with the source.
-SKIP_DIRS = {".git", ".pio", "__pycache__", ".staging", "node_modules",
-             ".vscode", "dist", "build"}
+# `.staging` is NOT in this set on purpose - it is matched by prefix in skip(),
+# so a second working copy is skipped too. See the note there.
+SKIP_DIRS = {".git", ".pio", "__pycache__", "node_modules",
+             ".vscode", "dist", "build",
+             # .claude  this machine's Claude Code settings and permissions.
+             # Staging's copy is stale the moment it is made, and promoting it
+             # put an old permissions file over the live one. Machine-local
+             # config is not source, the same as hub_auth.json.
+             ".claude",
+             # apps/voice/tts_cache  spoken-answer audio the helper builds
+             # at run time from qa_data.json - derived, not source.
+             "tts_cache",
+             # reports/  one JSON per complaint, written at runtime by /api/report.
+             # Machine-local, never promoted — like hub_auth.json.
+             "reports"}
 # docs/PLAN.html is here for the same reason: its STATE block records progress
 # and is edited in the REAL tree as work lands, by whoever or whatever is doing
 # the work. Promoting a staging copy would roll that progress backwards.
@@ -61,23 +109,49 @@ SKIP_DIRS = {".git", ".pio", "__pycache__", ".staging", "node_modules",
 #   hub_auth.json  THIS machine's password hash. Promoting a staging copy
 #     would replace the real password with a test one and lock the user
 #     out of their own hub.
-SKIP_FILES = {"MiceHub.exe", "promt.md", "PLAN.html",
+SKIP_FILES = {"MiceHub.exe", "promt.md", "PLAN.html", "plan_state.js",
+              # The integration page and its state: live progress, same as
+              # PLAN.html. A promote copies staging over the tree, so leaving
+              # them out is what stops a day-old copy erasing what landed.
+              "system_integral.html", "system_integral_state.js",
               "settings_shared.json", "hub_auth.json", "hub_password.txt",
-              ".qc-receipt.json"}   # proof about ONE tree; meaningless in another
+              # The login for an outside app. THIS MACHINE'S, like the
+              # hub password beside it: promoting a staged copy would put
+              # a test login over the real one, and a copy in a working
+              # tree is a second place for a password to leak from.
+              "faces_login.json",
+              ".qc-receipt.json",   # proof about ONE tree; meaningless in another
+              # The patch LOGS. Every patcher appends to the copy in the real
+              # tree, so a staging copy is stale the moment a snapshot is taken
+              # - and promoting it would rewrite the history with an older one,
+              # losing the newest entries. Found 2026-09-08, before it bit.
+              "PATCHES.md", "HANDOVER.md",
+              # the note two agents leave each other; it belongs
+              # to the real tree, like the plan
+              "BRIDGE.md"}
 SKIP_SUFFIX = {".pyc", ".pyo", ".tmp"}
 
 
 def skip(p: Path) -> bool:
-    if any(part in SKIP_DIRS for part in p.parts):
-        return True
+    for part in p.parts:
+        # EVERY working copy, not only the one called `.staging`. This tool has
+        # always taken --staging DIR, so a second tree (`.staging-integral`,
+        # for a different job) is normal - and an exact-name match skipped only
+        # the first. --init would then copy one whole tree inside the other,
+        # and each promote would carry the other tree's files. A copy of a copy
+        # of the source is how a finished feature was lost here once.
+        if part in SKIP_DIRS or part.startswith(".staging"):
+            return True
     return p.name in SKIP_FILES or p.suffix in SKIP_SUFFIX
 
 
 def walk(root: Path):
     """Every file worth copying, as paths relative to root."""
-    for f in root.rglob("*"):
-        if f.is_file():
-            rel = f.relative_to(root)
+    for folder, dirs, files in os.walk(root):
+        base = Path(folder).relative_to(root)
+        dirs[:] = sorted(d for d in dirs if not skip(base / d))
+        for name in sorted(files):
+            rel = base / name
             if not skip(rel):
                 yield rel
 
@@ -99,6 +173,19 @@ def init(force=False):
     print("work in there; `python promote.py` moves it back once QC is green.")
 
 
+def fingerprint(where: Path):
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c",
+             "import sys; sys.path.insert(0, sys.argv[1]); "
+             "import run_qc; print(run_qc.tree_fingerprint())", str(where / "qc")],
+            cwd=str(where), capture_output=True, text=True, timeout=300)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    lines = result.stdout.strip().splitlines()
+    return lines[-1] if result.returncode == 0 and lines else None
+
+
 def already_green(where: Path):
     """True when a FULL green run has already covered this exact tree.
 
@@ -111,7 +198,6 @@ def already_green(where: Path):
     no longer matches, so the suite runs. A filtered or --quick run leaves no
     receipt at all.
     """
-    import json
     receipt = where / ".qc-receipt.json"
     if not receipt.is_file():
         return False
@@ -119,16 +205,13 @@ def already_green(where: Path):
         got = json.loads(receipt.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return False
-    if not got.get("full"):
+    if (not isinstance(got, dict) or got.get("full") is not True
+            or type(got.get("failed")) is not int or got["failed"] != 0
+            or type(got.get("passed")) is not int or got["passed"] <= 0
+            or not isinstance(got.get("tree"), str) or len(got["tree"]) != 64
+            or any(c not in "0123456789abcdef" for c in got["tree"])):
         return False
-
-    import subprocess as sp
-    r = sp.run([sys.executable, "-c",
-                "import sys; sys.path.insert(0, r'%s'); "
-                "import run_qc; print(run_qc.tree_fingerprint())" % (where / "qc")],
-               cwd=str(where), capture_output=True, text=True, timeout=300)
-    now = (r.stdout or "").strip().splitlines()[-1:] or [""]
-    if now[0] != got.get("tree"):
+    if fingerprint(where) != got["tree"]:
         return False
     print("QC already passed on this exact tree at %s (%s checks) — not running "
           "it again.\nChange any file and it runs in full."
@@ -151,16 +234,58 @@ def _plan(msg):
         pass
 
 
-def run_qc(where: Path):
+def build_web(where: Path):
+    if not (where / "tools" / "build_web.py").exists(): return True
+    print("building web assets in %s ..." % where, flush=True)
+    try:
+        result = subprocess.run(
+            [sys.executable, str(where / "tools" / "build_web.py"), str(where)],
+            cwd=str(where), timeout=300)
+        return result.returncode == 0
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        print("WEB BUILD FAILED: %s" % exc)
+        return False
+
+def run_qc(where: Path, *, built=False):
+    if not built and not build_web(where):
+        return False
     qc = where / "qc" / "run_qc.py"
     if not qc.is_file():
         print("no QC suite at %s" % qc)
         return False
     print("running the FULL QC suite in %s ...\n" % where)
     t0 = time.time()
-    r = subprocess.run([sys.executable, str(qc)], cwd=str(where))
-    print("\nQC finished in %.0fs, exit %d" % (time.time() - t0, r.returncode))
-    return r.returncode == 0
+    # A descendant retaining stdout must not keep promotion waiting for pipe EOF.
+    fd, log_name = tempfile.mkstemp(prefix="mice-promote-qc-", suffix=".log")
+    os.close(fd)
+    decoder = codecs.getincrementaldecoder("utf-8")("replace")
+    proc = None
+    try:
+        with open(log_name, "wb") as output, open(log_name, "rb") as reader:
+            proc = subprocess.Popen([sys.executable, "-u", str(qc)], cwd=str(where),
+                                    stdout=output, stderr=subprocess.STDOUT)
+            while True:
+                done = proc.poll() is not None
+                chunk = reader.read()
+                sys.stdout.write(decoder.decode(chunk, final=done))
+                sys.stdout.flush()
+                if done:
+                    break
+                time.sleep(0.1)
+    finally:
+        if proc is not None and proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+        try:
+            os.unlink(log_name)
+        except OSError:
+            print("QC log retained at %s" % log_name)
+    print("\nQC finished in %.0fs, exit %d" % (time.time() - t0, proc.returncode))
+    return proc.returncode == 0
 
 
 def changes():
@@ -197,15 +322,50 @@ def show(changed, added, gone):
         print("nothing to promote — staging matches the real tree.")
 
 
+def file_hash(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+
+
+@contextmanager
+def promotion_lock():
+    lock = MAIN / ".staging-promotion.lock"
+    token = "%s:%s" % (os.getpid(), uuid.uuid4().hex)
+    try:
+        lock.mkdir()
+    except FileExistsError:
+        raise RuntimeError("another promotion/check owns %s; no lock was removed" % lock) from None
+    owner = lock / "owner.txt"
+    try:
+        owner.write_bytes(token.encode("ascii"))
+        yield
+    finally:
+        if owner.is_file() and owner.read_bytes() == token.encode("ascii"):
+            owner.unlink()
+            lock.rmdir()
+
+
 def promote():
+    if not build_web(STAGING):
+        print("REFUSED: web build failed. Nothing was copied.")
+        return 1
     changed, added, gone = changes()
     if not (changed or added):
         show(changed, added, gone)
         return 0
     print("about to promote %d changed + %d new file(s)" % (len(changed), len(added)))
+    main_before = {rel: file_hash(MAIN / rel) for rel in walk(STAGING)}
     _plan("promote: checking whether staging is already green")
-    if not (already_green(STAGING) or run_qc(STAGING)):
+    if not (already_green(STAGING) or run_qc(STAGING, built=True)):
         print("\nREFUSED: QC is not green in staging. Nothing was copied.")
+        return 1
+    if not already_green(STAGING) and not STAGING.parent.name.startswith("qc_land_"):
+        print("REFUSED: staging no longer has an exact green receipt. Nothing was copied.")
+        return 1
+    changed, added, gone = changes()
+    conflicts = [rel for rel in changed + added
+                 if file_hash(MAIN / rel) != main_before.get(rel)]
+    if conflicts:
+        print("REFUSED: main changed during the gate: " + ", ".join(map(str, conflicts)))
         return 1
     for rel in changed + added:
         dst = MAIN / rel
@@ -215,8 +375,7 @@ def promote():
     show(changed, added, gone)
     if any(rel.as_posix().endswith("main_python/main.py") for rel in changed + added):
         print("\nNOTE: main_python/main.py changed — rebuild MiceHub.exe:")
-        print("  python -m PyInstaller --onefile --icon main_python/nong.ico "
-              "--name MiceHub main_python/main.py")
+        print("  " + rebuild_cmd())
     return 0
 
 
@@ -244,9 +403,14 @@ def main(argv):
     if a.diff:
         show(*changes())
         return 0
-    if a.check:
-        return 0 if run_qc(STAGING) else 1
-    return promote()
+    try:
+        with promotion_lock():
+            if a.check:
+                return 0 if run_qc(STAGING) else 1
+            return promote()
+    except RuntimeError as exc:
+        print("REFUSED: %s" % exc)
+        return 1
 
 
 if __name__ == "__main__":

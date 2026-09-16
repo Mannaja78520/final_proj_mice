@@ -39,26 +39,29 @@ import qc as F  # noqa: E402
 RECEIPT = CODE / ".qc-receipt.json"
 
 SKIP_PARTS = {".git", ".pio", "__pycache__", ".staging", "node_modules",
-              ".vscode", "dist", "build", "patches", "generated"}
+              ".vscode", ".claude", ".unsnooze", "dist", "build", "patches",
+              "patches_code", "generated", "tts_cache", "reports"}
 
 
 def tree_fingerprint():
     """One hash over every source file, so any edit invalidates the receipt."""
     import hashlib
     h = hashlib.sha256()
-    for f in sorted(CODE.rglob("*")):
-        if not f.is_file():
-            continue
+    files = []
+    for parent, dirs, names in os.walk(CODE):
+        dirs[:] = [name for name in dirs if name not in SKIP_PARTS
+                   and not name.startswith('.staging')]
+        files.extend(Path(parent) / name for name in names)
+    for f in sorted(files):
         rel = f.relative_to(CODE)
-        if any(part in SKIP_PARTS for part in rel.parts):
-            continue
-        if f.suffix in (".pyc", ".pyo", ".tmp", ".exe", ".bin", ".elf"):
+        if f.suffix in (".pyc", ".pyo", ".tmp", ".exe", ".bin", ".elf", ".log"):
             continue
         # The receipt itself, and files the RUNNING system writes, are not
         # source: including them would invalidate every receipt immediately.
         if f.name in (".qc-receipt.json", "promt.md", "PLAN.html",
                       "settings_shared.json", "hub_auth.json",
-                      "hub_password.txt"):
+                      "hub_password.txt", "faces_login.json", "BRIDGE.md", "HANDOVER.md",
+                      "plan_state.js", "system_integral.html", "system_integral_state.js"):
             continue
         # PATCHES.md is the INDEX of those snapshots (the snapshots themselves
         # are already skipped, above). Saving one is the last step of every web
@@ -71,12 +74,12 @@ def tree_fingerprint():
     return h.hexdigest()
 
 
-def write_receipt(passed, failed):
+def write_receipt(passed, failed, fingerprint=None):
     import json
     import time as _t
     try:
         RECEIPT.write_text(json.dumps({
-            "tree": tree_fingerprint(),
+            "tree": fingerprint if fingerprint is not None else tree_fingerprint(),
             "passed": passed, "failed": failed,
             "when": _t.strftime("%Y-%m-%d %H:%M"),
             "full": True,
@@ -174,6 +177,27 @@ SOLO = {
     # as an empty one, and puts it back. Any check reading the app registry
     # while that is happening sees a fault that is not theirs.
     "check_tools_list",
+    # Another clock, not another resource. It drives a browser on fixed
+    # setTimeout deadlines - pause at 1000ms, resume, finish at +4000 - and
+    # then asserts the robot walked the timeline in ORDER. With ten workers
+    # competing those deadlines slip and the order changes. It failed once in
+    # a parallel gate on 2026-08-20 and passed twice alone, which is the
+    # signature: the check is right, the margin is not.
+    "check_studio_playback",
+    # These spawn the REAL voice helper as a second process next to their own
+    # hub, then knock on it over HTTP. With ten workers competing, the helper
+    # or the hub was starved past its connect window and the check died with
+    # WinError 10061 (refused) 129 s in — while passing alone in 3.7 s. Same
+    # signature twice on 2026-08-25 gates; a refused socket is not an answer
+    # any assertion can weigh.
+    "check_translate",
+    "check_voice",
+    # check_voice_stt and check_voice_tts also boot the real helper and were
+    # added to SOLO 2026-09-12: they crashed in the parallel gate with the same
+    # refused-socket signature but passed alone, same root cause - the helper
+    # subprocess was starved past its connect window.
+    "check_voice_stt",
+    "check_voice_tts",
 }
 
 
@@ -238,6 +262,13 @@ def main(argv):
         if not a.startswith("-"):
             pats.append(a.lower())
 
+    if not listing:
+        print('Building web assets before QC...', flush=True)
+        built = subprocess.run([sys.executable, str(CODE / 'tools/build_web.py'), str(CODE)])
+        if built.returncode:
+            print('QC REFUSED: web build failed.', flush=True)
+            RECEIPT.unlink(missing_ok=True)
+            return 1
     found = discover()
     if listing:
         print("%sQC coverage%s — %d checks\n" % (B, D, len(found)))
@@ -268,6 +299,12 @@ def main(argv):
         F.generated()
     except Exception as e:                            # noqa: BLE001
         print("%sgen_tables failed:%s %s" % (R, D, e))
+
+    full_run = not pats and not quick
+    before_tree = None
+    if full_run:
+        print('Fingerprinting QC inputs...', flush=True)
+        before_tree = tree_fingerprint()
 
     # Which checks will actually run, after --quick and any filter.
     wanted = []
@@ -324,25 +361,57 @@ def main(argv):
 
     solo = [(f, m) for f, m in wanted
             if f.stem in SOLO or getattr(m, "SOLO", False)]
-    para = [(f, m) for f, m in wanted if (f, m) not in solo]
+    rest = [(f, m) for f, m in wanted if (f, m) not in solo]
+
+    # A BROWSER IS NOT A CORE. Ten workers each starting Edge saturates the
+    # machine, and every check that waits on a page then slips its deadline:
+    # two different browser checks failed in parallel gates on 2026-08-20 and
+    # passed alone every time. Throttling the whole suite to fix that would
+    # give the speed back for nothing, since most checks never open a browser.
+    # So the browser ones get their own narrower lane, and everything else
+    # still uses the machine.
+    def needs_browser(f):
+        try:
+            return "import browser" in f.read_text(encoding="utf-8")
+        except OSError:
+            return False
+    heavy = [(f, m) for f, m in rest if needs_browser(f)]
+    para = [(f, m) for f, m in rest if (f, m) not in heavy]
     if jobs > 1 and len(para) > 1:
         import concurrent.futures as _cf
-        print("%srunning %d checks on %d workers, %d on their own%s"
-              % (B, len(para), jobs, len(solo), D))
+        # ONE BROWSER AT A TIME. Three was still too many: four different
+        # browser checks passed alone and failed in a gate on 2026-08-20, each
+        # costing a nine-minute rerun - which is far more than the couple of
+        # minutes running them in turn costs. The other seventy-odd checks
+        # still use the whole machine; only this phase is single file.
+        # THREE, and this is a measurement not a preference. Four browser
+        # checks failed in gates on 2026-08-20 - but at least one of those
+        # gates had bench measurements running against real boards at the same
+        # time, which is interference, not contention. One-at-a-time made the
+        # gate 932s, slower than the 836s it started at, so the cure cost more
+        # than the disease. Back to three, watched.
+        browser_jobs = max(1, min(3, jobs))
+        print("%srunning %d checks on %d workers, %d browser checks on %d, "
+              "%d on their own%s"
+              % (B, len(para), jobs, len(heavy), browser_jobs, len(solo), D))
         done_n = 0
-        by_path = {str(f): (f, m) for f, m in para}
-        with _cf.ProcessPoolExecutor(max_workers=jobs) as pool:
-            futs = [pool.submit(_one, str(f)) for f, _m in para]
-            for fut in _cf.as_completed(futs):
-                path_s, _title, results, secs, crash, err = fut.result()
-                f, mod = by_path[path_s]
-                if err:
-                    broken.append((f.stem, err))
-                    continue
-                report(f, mod, results, secs, crash, "")
-                done_n += 1
-                if done_n % 10 == 0:
-                    _plan("QC %d/%d checks" % (done_n, len(para) + len(solo)))
+        total_n = len(para) + len(heavy) + len(solo)
+        for group, width in ((para, jobs), (heavy, browser_jobs)):
+            if not group:
+                continue
+            by_path = {str(f): (f, m) for f, m in group}
+            with _cf.ProcessPoolExecutor(max_workers=width) as pool:
+                futs = [pool.submit(_one, str(f)) for f, _m in group]
+                for fut in _cf.as_completed(futs):
+                    path_s, _title, results, secs, crash, err = fut.result()
+                    f, mod = by_path[path_s]
+                    if err:
+                        broken.append((f.stem, err))
+                        continue
+                    report(f, mod, results, secs, crash, "")
+                    done_n += 1
+                    if done_n % 10 == 0:
+                        _plan("QC %d/%d checks" % (done_n, total_n))
         for f, mod in solo:
             case, secs, crash = F.run_check(mod)
             report(f, mod, case.results, secs, crash, "")
@@ -360,14 +429,21 @@ def main(argv):
     if skipped:
         print("%sskipped (--quick):%s %s" % (Y, D, ", ".join(skipped)))
     ok = total_fail == 0 and not broken
+    after_tree = None
+    if ok and full_run:
+        print('Checking that QC inputs stayed unchanged...', flush=True)
+        after_tree = tree_fingerprint()
+        if after_tree != before_tree:
+            ok = False
+            total_fail += 1
+            failures.append('QC input tree changed during checks; receipt refused')
     print("%s%s%s  %d passed, %d failed in %.1fs"
           % (G if ok else R, "QC PASS" if ok else "QC FAIL", D,
              total_pass, total_fail, time.time() - t_all))
     # A receipt only for a FULL green run: a filtered or --quick run has not
     # seen everything, so promote must not be allowed to trust it.
-    full_run = not pats and not quick
     if ok and full_run:
-        write_receipt(total_pass, total_fail)
+        write_receipt(total_pass, total_fail, after_tree)
     elif RECEIPT.exists() and full_run:
         RECEIPT.unlink()          # this tree is not green any more
 

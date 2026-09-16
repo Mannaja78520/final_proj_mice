@@ -1,0 +1,52 @@
+{
+ "when": "2026-08-20 16:10",
+ "note": "taken before the 30-pin ESP32 + second MAX485 were wired in",
+ "ports": [
+  {
+   "port": "COM5",
+   "desc": "Standard Serial over Bluetooth link (COM5)",
+   "hwid": "BTHENUM\\{00001101-0000-1000-8000-00805F9B34FB}_LOCALMFG&0002\\7&E9DD4C9&0&849D4B10836B_C00000000"
+  },
+  {
+   "port": "COM9",
+   "desc": "Silicon Labs CP210x USB to UART Bridge (COM9)",
+   "hwid": "USB VID:PID=10C4:EA60 SER=0001 LOCATION=1-6.2"
+  },
+  {
+   "port": "COM25",
+   "desc": "Silicon Labs CP210x USB to UART Bridge (COM25)",
+   "hwid": "USB VID:PID=10C4:EA60 SER= LOCATION=1-6.4"
+  },
+  {
+   "port": "COM23",
+   "desc": "USB-SERIAL CH340 (COM23)",
+   "hwid": "USB VID:PID=1A86:7523 SER= LOCATION=1-6.3"
+  },
+  {
+   "port": "COM3",
+   "desc": "Standard Serial over Bluetooth link (COM3)",
+   "hwid": "BTHENUM\\{00001101-0000-1000-8000-00805F9B34FB}_LOCALMFG&0002\\7&E9DD4C9&0&C82478656F6B_C00000000"
+  },
+  {
+   "port": "COM4",
+   "desc": "Standard Serial over Bluetooth link (COM4)",
+   "hwid": "BTHENUM\\{00001101-0000-1000-8000-00805F9B34FB}_LOCALMFG&0000\\7&E9DD4C9&0&000000000000_00000000"
+  },
+  {
+   "port": "COM7",
+   "desc": "Standard Serial over Bluetooth link (COM7)",
+   "hwid": "BTHENUM\\{00001101-0000-1000-8000-00805F9B34FB}_LOCALMFG&0000\\7&E9DD4C9&0&000000000000_00000001"
+  },
+  {
+   "port": "COM18",
+   "desc": "USB Serial Port (COM18)",
+   "hwid": "USB VID:PID=0403:6001 SER=A5069RR4A"
+  }
+ ],
+ "known": {
+  "COM9": "#1 lift, plain cable, replies clean (668 bytes, 0 NULs)",
+  "COM25": "#85 lift-test (type nong), plain cable, clean (1009 bytes), REFLASHED today with the new mice_nong",
+  "COM23": "MAX485 to nong #67 - answered nothing at all today",
+  "COM18": "ESP32-CAM #89, plain cable. Direct read is PERFECT (497 bytes, 0 NULs x3); through the hub it comes back with ~266 NULs. The corruption is in the hub's read path."
+ }
+}

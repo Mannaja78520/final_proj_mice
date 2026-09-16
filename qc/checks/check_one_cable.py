@@ -115,8 +115,59 @@ def run(t):
         t.ok(float(m.group(1)) >= 4.0,
              "long enough for two hops and a retry (%ss)" % m.group(1),
              "the page gives up while the module is still answering")
-    t.contains(src, "wait=PEER_WAIT if peer else",
-               "and a local command is NOT slowed down by it")
+    # MEASURED, not spelled. This used to assert the literal text
+    # `wait=PEER_WAIT if peer else`, and reformatting that one line to let
+    # FWEND ask for a longer budget broke the check while the behaviour was
+    # untouched. What matters is which budget each kind of call actually gets,
+    # so ask dev_cmd and watch what it hands down.
+    import sys                                                # noqa: PLC0415
+    sys.path.insert(0, str(F.HUB))
+    import main                                               # noqa: PLC0415
+    seen = {}
+    real = main.usb_cmd
+    main.usb_cmd = lambda addr, c, bus=0, wait=None: seen.setdefault("wait", wait)
+    try:
+        main.dev_cmd("usb:COM_QC", "PING")
+        local = seen.pop("wait", None)
+        main.dev_cmd("usb:COM_QC@armB", "PING")
+        forwarded = seen.pop("wait", None)
+        main.dev_cmd("usb:COM_QC", "FWEND", wait=60)
+        asked = seen.pop("wait", None)
+    finally:
+        main.usb_cmd = real
+    t.ok(forwarded == main.PEER_WAIT,
+         "a forwarded command really gets PEER_WAIT (%s)" % forwarded)
+    t.ok(local is not None and local < main.PEER_WAIT,
+         "and a local command is NOT slowed down by it (%s)" % local,
+         "every ordinary command would then wait as long as the slowest "
+         "two-hop one, and live pose streaming is thirty of them a second")
+    t.eq(asked, 60,
+         "while a caller that knows better can ask for longer")
+
+    # AND THE SAME JOURNEY GETS THE SAME BUDGET ON WIFI. A forwarded command is
+    # two hops whatever it travels over - across the link, through the module,
+    # onto its hotspot and back - but PEER_WAIT was applied only on the cable
+    # path, so `wifi:<ip>@<peer>` was cut off at the ordinary 6 s while
+    # `usb:<port>@<peer>` got the longer budget for identical work. Found by a
+    # model review 2026-08-20 and confirmed by reading both branches.
+    seen_wifi = {}
+    real_get = main.Handler.robot_get
+    def _spy(ip, path, timeout=None):
+        seen_wifi["t"] = timeout
+        return b"OK"
+    main.Handler.robot_get = staticmethod(_spy)
+    try:
+        main.dev_cmd("wifi:10.0.0.9@armB", "PING")
+        wifi_peer = seen_wifi.pop("t", None)
+        main.dev_cmd("wifi:10.0.0.9", "PING")
+        wifi_plain = seen_wifi.pop("t", None)
+    finally:
+        main.Handler.robot_get = real_get
+    t.eq(wifi_peer, main.PEER_WAIT,
+         "a forwarded command over WiFi gets PEER_WAIT too")
+    t.ok(wifi_plain is None or wifi_plain < main.PEER_WAIT,
+         "while a direct WiFi command does not (%s)" % wifi_plain,
+         "the ordinary case must stay quick; only the two-hop one is slow")
 
     # ---- the hub page offers them, or none of this is reachable --------
     hub = (F.CODE / "main_python/web/hub.html").read_text(encoding="utf-8", errors="replace")

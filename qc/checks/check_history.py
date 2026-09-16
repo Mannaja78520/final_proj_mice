@@ -27,13 +27,29 @@ PATCHERS = [
 ]
 
 
+def real_root():
+    """Where the patch LOGS live, which is never a working copy.
+
+    Every PATCHES.md is in promote.py's SKIP_FILES: each patcher appends to
+    the copy in the real tree, so promoting a staged one would rewrite the
+    history with an older copy. A working copy therefore has none of them.
+    `.staging` only appears to - those are stale copies left from before the
+    skip rule existed, and this check has been reading them ever since.
+    Found 2026-09-10, in the first tree made after that rule.
+    """
+    return F.CODE.parent if F.CODE.name.startswith(".staging") else F.CODE
+
+
 def run(t):
+    logs = real_root()
     for name, script, index in PATCHERS:
         t.ok((F.CODE / script).is_file(),
              "%s has a way to snapshot its pages" % name,
              "changes there leave no 'old' version to compare against")
-        t.ok((F.CODE / index).is_file(),
-             "%s records what each snapshot changed" % name)
+        t.ok((logs / index).is_file(),
+             "%s records what each snapshot changed" % name,
+             "the log lives in the real tree at %s - a working copy never "
+             "carries one" % (logs / index))
 
     # the hub patcher must actually cover the pages, not just exist
     src = (F.CODE / "main_python/save_hub_patch.py").read_text(

@@ -64,8 +64,7 @@
   .f p code{color:var(--txt)}
   .tag{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:1px 6px;
        border-radius:4px;margin-left:7px;vertical-align:1.5px;white-space:nowrap}
-  .t-new{background:var(--ok-soft);color:var(--ok)}
-  .t-opt{background:var(--warn-soft);color:var(--warn)}
+  .t-new,.t-opt{background:var(--sunk);color:var(--mut)}
   .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-sm);
           background:var(--card);margin-bottom:7px}
   table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
@@ -90,19 +89,31 @@
     main{padding-top:var(--sp-6)}
   }
   @media (pointer:coarse){ nav a{min-height:36px} }
+  .tasks{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:var(--sp-3)}
+  .tasks .f{margin:0;padding:var(--sp-4);border-radius:var(--r-md)}
+  .f{border-radius:var(--r-md);padding:var(--sp-4);margin-bottom:var(--sp-3)}
+  #bytask{margin-top:var(--sp-6)}
+  nav .grp{font-size:11px;opacity:1}
 </style></head><body>
 
 
 <div class="wrap">
 <nav>
   <div class="brand">Mice</div>
-  <div class="brandsub">Show-installation robot toolchain — complete feature reference</div>
+  <div class="brandsub">A friendly guide to your robot rig</div>
   <a class="back" href="/">← back to the hub</a>
+  <label style="display:flex;gap:var(--sp-2);align-items:center;font-size:12.5px;
+                color:var(--mut);padding:5px 10px;cursor:pointer">
+    <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
+    Show technical details</label>
   <div class="grp">On the board</div>
-  <a href="#firmware">Firmware core</a>
+  <a href="#bytask">Start with a task</a>
+  <a href="#firmware">Board setup</a>
   <a href="#lift">Lift module</a>
   <a href="#nong">Nong module</a>
   <a href="#modsite">Module website</a>
+  <a href="#camera">Camera</a>
+  <a href="#voice">Voice</a>
   <div class="grp">On the PC</div>
   <a href="#hub">Mice Hub</a>
   <a href="#studio">Nong Studio</a>
@@ -115,17 +126,17 @@
 
 <main>
 <header class="top">
-  <h1>Every feature in the mice system</h1>
-  <p>One ESP32 firmware that becomes any module type, a PC hub that finds them all,
-     and a 3D editor for the humanoid. Grouped by <b>where each feature runs</b>.</p>
-  <div class="stats">
+  <h1>A little help with your rig</h1>
+  <p>Start with what you want to do. Find your modules, shape a movement,
+     or bring a show to life. The complete reference is here when you need it.</p>
+  <div class="stats tech">
     <div class="stat"><b>3</b><span>module types</span></div>
     <div class="stat"><b>10</b><span>nong joints</span></div>
     <div class="stat"><b>3</b><span>transports</span></div>
     <div class="stat"><b>2</b><span>web apps + editor</span></div>
-    <div class="stat"><b>100</b><span>QC checks</span></div>
+    <div class="stat"><b>every</b><span>change is QC-checked</span></div>
   </div>
-  <input id="q" type="search" placeholder="Filter features — try &quot;servo&quot;, &quot;SD&quot;, &quot;USB&quot;, &quot;pin&quot;" autocomplete="off">
+  <input id="q" type="search" aria-label="Search this guide" placeholder="Find help — try &quot;pose&quot;, &quot;music&quot; or &quot;connect&quot;" autocomplete="off">
   <!-- The empty state names the one action that fixes it, and gives real
        examples from this page rather than only telling the reader to retry. -->
   <div id="none">Nothing on this page matches that word. Try a shorter one, or
@@ -140,6 +151,20 @@
      the wording plainened here; every link goes to a section that already
      exists, so there is one copy of the content and two ways to reach it. -->
 <section id="bytask">
+  <div class="f" id="calmInterface"><h3>Find your way around</h3>
+    <p>Mice opens in a calm dark theme, with soft corners and no decorative rainbow.
+       Choose another theme in the hub’s Settings. Module colours and their written type
+       badges still identify each kind of robot; the light strip’s rainbow effect still works.</p>
+    <p><b>Home</b> has your tools and modules. <b>Modules</b> has connection details.
+       Each module page keeps <b>Move it</b>, <b>Shows &amp; files</b> and <b>Setup &amp; wiring</b>
+       separate. Its <b>Show technical details</b> switch is available on every tab.</p>
+    <p>In Studio, start with the sliders. Open <b>How to pose</b> for help, or
+       <b>Place a wrist precisely</b> and <b>Choose a drawing plane</b> for finer control.
+       An empty timeline explains how to add your first pose.</p>
+    <p>The light tool starts with colour, brightness and effects. Open <b>Play a saved light show</b>
+       or <b>Let the lights follow music</b> when you want them. Actions answer in their own
+       card; a refusal explains what to try next. The sound meter uses one colour to show volume.</p>
+  </div>
   <div class="shead">
     <span class="where">start here</span>
     <h2>What do you want to do?</h2>
@@ -156,6 +181,13 @@
     <div class="f"><h3>Run the robot</h3>
       <p>Day to day: find the modules, drive them, flash new firmware.</p>
       <p><a href="#hub">Mice Hub</a></p></div>
+    <div class="f"><h3>See what a camera sees</h3>
+      <p>Watching a camera on any screen, setting up how it looks, and knowing
+         who it recognises.</p>
+      <p><a href="#camera">ESP32 camera</a> · <a href="#faces">Reconize</a></p></div>
+    <div class="f"><h3>Ask it a question</h3>
+      <p>Talking to the rig: a question in, an answer out.</p>
+      <p><a href="#voice">Voice</a></p></div>
     <div class="f"><h3>Teach it to move</h3>
       <p>Making poses and sequences, or typing commands at it directly.</p>
       <p><a href="#studio">Nong Studio</a> ·
@@ -290,6 +322,34 @@
        against it.</p>
     <p>QC checks the time that actually reached the module, not the editor's opinion of it
        &mdash; the editor's opinion was exactly what was wrong.</p></div>
+  <div class="f"><h3>The time bar<span class="tag t-new">new</span></h3>
+    <p>Under the Timeline buttons there is a <b>time bar</b> across the whole width. Each
+       move is a block as wide as it is long, so a two-second move really looks twice a
+       one-second one, and the waits between them show as their own lighter bands. The
+       seconds are marked underneath.</p>
+    <p><b>Drag anywhere on it</b> to go to that moment. The robot follows as you drag, so you
+       can find the exact place you want. Then press <b>Play</b> and the show carries on
+       <b>from there</b> — it does not jump back to the beginning. Pause and Play again also
+       continues from where it stopped. <b>⏹ Back to start</b> is the one button that returns
+       to zero on purpose.</p>
+    <p>The bar used to be a small slider mixed in with the Timeline buttons, and it moved
+       around whenever the buttons wrapped onto another line — so it could not be found. It
+       now has a row of its own and stays put at every screen size.</p></div>
+  <div class="f"><h3>A move's music can repeat<span class="tag t-new">new</span></h3>
+    <p>Press <b>♪</b> on a move, choose a track, and tick <b>repeat</b>. The track then plays
+       again and again until the show ends or you press Stop, instead of falling silent when
+       it reaches its end.</p>
+    <p>The repeat is saved <i>inside the sequence file</i>, so it works however you start the
+       show: the ▶ Run on robot button, the module's own page, or the hub. The restart is
+       quick but not a seamless join — there is a short gap while the file is reopened.</p></div>
+  <div class="f"><h3>Clicking a move also moves the play clock there<span class="tag t-new">new</span></h3>
+    <p>Clicking a move used to show the pose but left the play clock wherever the last run
+       stopped, so pressing Play carried on from a different point in the show than the one on
+       screen.</p>
+    <p>Now the clock and the scrubber jump to <b>where that move begins</b> &mdash; everything
+       before it, waits counted. Press Play and the show starts at that move, at that move's own
+       speed. A suspended keyframe is stepped over the same way the show itself steps over it:
+       the clock lands where the run jumps the gap.</p></div>
   <div class="f"><h3>The crash check now warns instead of blocking<span class="tag t-new">new</span></h3>
     <p>The collision check runs while you pose the robot, while you play, and before Run or
        upload. What changed is what happens when it finds something.</p>
@@ -465,6 +525,24 @@
        It is never shown on a page and never sent over the network, so seeing it means standing
        at the machine. It is stored hashed, five wrong tries locks that caller out for a
        minute, and a module on another PC needs a login on that PC too.</p></div>
+  <div class="f"><h3>Tools work with nobody signed in<span class="tag t-new">new</span></h3>
+    <p>At a venue you often need a tool in your hand before anyone has signed in. So the
+       <b>Tools</b> and the <b>module pages</b> open with no login at all &mdash; Reconize,
+       ESP32 camera, Voice, Studio and this help page included.</p>
+    <p>Everything else asks first. Where <b>Flash firmware</b>, <b>Settings</b>, the lights
+       or a card that moves a robot would be, you see a small box saying
+       <i>Sign in to use this</i>, with the way in on it. Sign in and the cards come back in
+       place, on the same screen &mdash; you are never sent to another page to find a
+       password box.</p>
+    <p><b>This is not the lock.</b> The lock is the list above, and it is on the hub: the
+       robot does not move for anybody who has not signed in, whatever a page shows. The box
+       decides what you <em>see</em>, so a card nobody marked is a card that still refuses
+       when pressed.</p>
+    <p>Which pages open freely, and which cards ask first, is one file:
+       <b>config/page_access.json</b>. The words on the box are in it too, so they can be
+       changed without touching any code. If that file is ever broken, nothing is hidden and
+       the hub says which file to fix &mdash; hiding the whole screen because the file
+       describing it is broken would help nobody.</p></div>
   <div class="f"><h3>One line per log, one write<span class="tag t-new">new</span></h3>
     <p>The board writes its log lines to the same port it answers commands on. A log was
        printed in <b>two</b> steps &mdash; the text, then the line ending &mdash; so a WiFi
@@ -484,6 +562,26 @@
        four had none &mdash; and every page respects <code>prefers-reduced-motion</code>, so
        animations stop for anyone who has asked their system to stop them. Touch targets are at
        least 36&nbsp;px wherever the pointer is coarse.</p></div>
+  <div class="f"><h3>Everything works with the keyboard alone<span class="tag t-new">new</span></h3>
+    <p>Tab reaches every control on the hub, the module website and Nong Studio, and Enter
+       presses it &mdash; useful with a broken trackpad, a laptop on a shelf, or a screen
+       reader. The one place that was mouse-only was the Studio timeline: a keyframe could
+       only be selected by clicking its chip. The move <b>number is now a button</b>
+       (&ldquo;go to move 3&rdquo;), so the whole timeline can be walked with Tab.</p>
+    <p>QC opens each page in a real browser, walks <i>every tab</i>, and fails if anything is
+       drawn as clickable but cannot be reached by Tab, or if a control looks the same
+       focused as unfocused.</p></div>
+  <div class="f"><h3>The hub says when its own program is out of date<span class="tag t-new">new</span></h3>
+    <p><code>MiceHub.exe</code> is built from this source tree, and it goes out of date the
+       moment the source changes. A hub running yesterday's build answers every request
+       happily with the newest fixes missing &mdash; that really happened, and the only clue
+       was a password that did not match.</p>
+    <p>The build now carries a receipt (a checksum for every source file that went into it),
+       and the running hub compares it against the tree beside it. If they differ, a caution
+       banner names the files that changed and the command that rebuilds it:
+       <code>python -m PyInstaller --clean MiceHub.spec</code>. On a PC that has only the
+       program and no source &mdash; a venue laptop &mdash; there is nothing to compare, so
+       it says nothing rather than guessing.</p></div>
   <div class="f"><h3>The hub tells the truth when it cannot reach anything<span class="tag t-new">fixed</span></h3>
     <p>A failed scan used to replace the module list with the words "scan failed". Now the hub
        <b>keeps the modules it last actually found</b>, marks them plainly as old
@@ -620,9 +718,18 @@
     <p><code>RGB r g b</code>, <code>RGB BRIGHT</code>, and effects
        <code>solid rainbow chase breathe off</code>. A dedicated hub page adds a mode that
        follows the PC speaker.</p></div>
-  <div class="f"><h3>Audio</h3>
-    <p><code>PLAY &lt;file&gt;</code> plays mp3/wav from <code>/music</code> over I2S,
-       <code>PLAY STOP</code> ends it, <code>VOL 0–100</code> sets level.</p></div>
+  <div class="f"><h3>Speaker</h3>
+    <p><code>PLAY &lt;file&gt;</code> plays mp3/wav from <code>/music</code>,
+       <code>PLAY STOP</code> ends it, <code>VOL 0–100</code> sets level.
+       Add <code>LOOP</code> — <code>PLAY song.mp3 LOOP</code> — and the track keeps
+       repeating until you stop it or the show ends.
+       Pick which amplifier is wired under <b>Setup → Hardware pins</b>: the
+       page shows the wiring for the one you choose and only the pins it uses.
+       A lift ships set to a TPA3118, which needs one wire. Getting this wrong
+       is the usual cause of loud noise instead of sound, because an amp with a
+       line input cannot read the digital kind of signal.
+       (<code>AMP</code> sets it from the command line, <code>AMP?</code> says
+       what is set.)</p></div>
 </section>
 
 <!-- ===================== NONG ===================== -->
@@ -655,14 +762,43 @@
        interpolation never "finishes" before the real arm arrives. The editor enforces the
        identical formula while authoring.</p></div>
   <div class="f"><h3>Hold, freeze and go limp</h3>
-    <p><code>STOP</code> freezes mid-move at the pose reached. <code>RELAX</code> unpowers
+    <p><code>STOP</code> freezes mid-move at the pose reached, and silences the speaker — stopping a show means quiet as well as still. <code>RELAX</code> unpowers
        the servos so you can pose the arms by hand; <code>ATTACH</code> powers them again
        holding the current pose. <code>HOME</code> returns to the neutral pose.</p></div>
 
   <div class="grp2">Calibration — all per joint, all live, all persistent</div>
   <div class="f"><h3>Set zero by hand</h3>
     <p><code>SETZERO</code> declares wherever the arms are now to be home. Trim absorbs the
-       offset, so the arm does <em>not</em> move when you run it.</p></div>
+       offset, so the arm does <em>not</em> move when you run it. It leaves your chosen
+       start angles alone.</p></div>
+  <div class="f"><h3>Servo offset — nudge one joint that sits a few degrees out</h3>
+    <p>A servo horn only fits back on in whole teeth &mdash; about 14&deg; of shaft &mdash; so a
+       joint often lands a few degrees off even when everything else is right. In Nong
+       Studio's <b>Setup</b> tab, the <b>Servo offset</b> card gives every joint a
+       <b>&minus;</b>, a number and a <b>+</b>. Press until the arm looks straight; each
+       press is half a degree, and the arm moves as you press. <b>0</b> clears one joint,
+       <b>Clear all</b> clears the lot.</p>
+    <p>The number is degrees <b>on the arm</b>, so the same value shifts every joint by the
+       same visible amount whatever its gearing. The robot keeps it in its own memory, and
+       your saved poses and sequences all keep working &mdash; an offset only changes where
+       that one joint sits, not what any pose means. Range is &minus;30 to 30: past that a
+       joint is assembled wrong, and a bigger offset would only drive the servo into its
+       own end stop.</p>
+    <p>The command is <code>OFFSET</code> &mdash; <code>OFFSET L_EL_P 3</code> for one joint,
+       <code>OFFSET ALL 0</code> to clear every one. <code>OFFSET?</code> reports them.
+       <b>Set zero</b> on the Robot tab is the all-at-once version: it takes the pose the
+       robot is standing in and calls that home.</p></div>
+  <div class="f"><h3>Where each joint starts — your own angle, not always 90°</h3>
+    <p>Every joint has its own <b>start angle</b>: where it goes when the robot is
+       switched on, and where <code>HOME</code> and the <b>Neutral pose</b> button send it.
+       Set it in Nong Studio's <b>Setup</b> tab, in the <b>start°</b> box beside each joint,
+       then press <b>Send rig to robot</b>. Or shape the robot by hand and press
+       <b>Keep this as neutral</b>, which sends all ten at once.</p>
+    <p>The command is <code>NEUTRAL</code> — one joint
+       (<code>NEUTRAL WAIST 60</code>), all of them (<code>NEUTRAL ALL 90</code>), or the
+       whole pose in one line. <code>NEUTRAL?</code> reads back what the robot is set to.
+       Setting it does not move the arm; press <b>Home</b> when you want it to go there.
+       The robot keeps these in its own memory, so they survive being unplugged.</p></div>
   <div class="f"><h3>Per-joint servo, gear, pulse, travel and frame rate</h3>
     <p><code>GEAR</code> (pinion:gear), <code>PULSE</code> (µs range + max °/s),
        <code>RANGE</code> (servo travel 180/270°), <code>RATE</code> (frame rate Hz),
@@ -687,6 +823,53 @@
        reboot returns to the defaults.</p></div>
 
   <div class="grp2">Scaling out</div>
+  <div class="f"><h3>Speaker<span class="tag t-new">new</span></h3>
+    <p>The nong gets a speaker the same way the lift does: <code>PLAY &lt;file&gt;</code>
+       plays mp3/wav from <code>/music</code>, <code>PLAY STOP</code> ends it,
+       <code>VOL 0–100</code> sets level. Choose the amplifier and set its pins
+       under <b>Setup → Hardware pins</b>. A nong ships set to a MAX98357A,
+       which uses the only three pins a ten-servo nong has left: 12, 0 and 2.
+       If the board will not start with the speaker plugged in, add a 10k
+       resistor from pin 0 to 3V3, or choose an amplifier that needs one wire.</p>
+    <p><b>Music in a show.</b> Put the track on the robot's card first: open the
+       module, go to <b>Files</b>, choose the <code>/music</code> folder and
+       upload the mp3 or wav. Then a saved show can name it — a
+       <code>play:</code> step in the file starts it, <code>vol:</code> sets the
+       level — and the music plays whether the show is run by the robot itself
+       or <b>from this PC</b>, in Nong Studio or from the hub. Editing a show
+       here keeps its music, stopping the show stops the music, and a track
+       that started before the point you resumed from is not restarted.</p>
+    <p><b>The light strip's pin.</b> It used to be fixed when the firmware
+       was built — the one pin on the board you could not choose. Now the
+       Hardware-pins page offers it under <b>Light strip</b>, like every other
+       pin, from a short list the firmware was built to drive. If the pin you
+       want is not offered, it can be added to
+       <code>firmware/config/rgb_pins.json</code> and the board reflashed.</p>
+    <p><b>Playing this PC's sound on the robot.</b> Open the module from the
+       hub, find the <b>Speaker</b> card and press <b>Play this PC's sound</b>.
+       The browser asks which screen or tab to share — tick <b>share audio</b>
+       in that window — and from then on whatever this PC plays comes out of
+       the robot, live, until you press <b>Stop</b>. It needs no SD card: the
+       sound is sent as it plays (<code>STREAM ON</code>, <code>STREAM OFF</code>
+       and <code>STREAM?</code> underneath), so a robot with its card out can
+       still talk. If the sound starts breaking up the card says so — that is
+       the WiFi struggling, not the robot.</p>
+    <p><b>Why it asks to share a screen.</b> Windows only lets a browser take
+       the PC's sound together with a screen or a tab — there is no sound-only
+       choice, in any browser. Nothing but the sound is sent: the picture is
+       dropped the moment the sharing starts. If you only want to <b>talk</b>
+       through the robot, press <b>🎤 Talk through the robot</b> instead — that
+       uses the microphone and asks for no screen at all.</p>
+    <p><b>Giving a move a track.</b> In Nong Studio every keyframe carries a
+       <b>♪</b> button beside its speed. Press it and choose a track — the list
+       is read from the robot's own <code>/music</code> folder, so it only ever
+       offers files that are really on the card — then set the volume beside
+       it. <b>No music</b> takes the track off again, volume and all. With no
+       robot connected the list cannot be read, so the picker keeps and shows
+       what the file already says instead of emptying it.</p>
+    <p>The same picker carries <b>▶</b> to hear the track on the robot right
+       away, <b>■</b> to stop it, and <b>＋</b> to send a track from this PC
+       onto the robot's card without leaving the editor.</p></div>
   <div class="f"><h3>Split the humanoid across two boards</h3>
     <p>Set <code>servo_pins</code> so each board drives only its own joints
        (<code>-1</code> for the rest). The leader gets <code>link 1</code> +
@@ -704,7 +887,7 @@
        HTML with a transport shim, so a board with no WiFi shows the same page over a cable.</p>
   </div>
   <div class="f"><h3>Three tabs, not one long page<span class="tag t-new">new</span></h3>
-    <p><b>Control</b> (the module'''s own controls), <b>Sequences &amp; files</b> (run a sequence,
+    <p><b>Control</b> (the module's own controls), <b>Sequences &amp; files</b> (run a sequence,
        the SD card, the console) and <b>Setup</b> (login, settings, pins, calibration). Thirteen
        cards in one column meant scrolling past the arm controls to reach the SD card.</p>
     <p>The Setup cards still stay hidden until you log in — one rule decides both which tab a
@@ -714,7 +897,7 @@
        controls, a lift only lift. No login needed to drive the robot.</p></div>
   <div class="f"><h3>Cards</h3>
     <p>Modules on network · Lift · RGB Strip · Speaker · Nong Arms · Zero position ·
-       Servo type · Sequences · Hardware pins · SD Files · Settings · Console.</p></div>
+       Camera · Servo type · Sequences · Hardware pins · SD Files · Settings · Console.</p></div>
   <div class="f"><h3>Setup gate</h3>
     <p>A login hides the configuration cards — Settings, Hardware pins, Zero calibration,
        Servo type. Once in, you can add users, delete them and change your password.</p></div>
@@ -802,6 +985,177 @@
 </section>
 
 <!-- ===================== STUDIO ===================== -->
+<section id="camera">
+  <div class="shead">
+    <span class="where">code/apps/camera · served at /app/camera/</span>
+    <h2>ESP32 camera — watch a board's camera on its own</h2>
+    <p>Every camera board the hub can reach, in one place, without opening a
+       module's whole website to find its Camera card.</p>
+    <p>It is called <b>ESP32 camera</b> because that is all it can show. The list
+       is built from modules of type <i>cam</i> — the ESP32-CAM boards. A webcam
+       plugged into this PC is not one of them and will not appear here.</p>
+  </div>
+
+  <h3>Several people can watch at once</h3>
+  <p>The board itself can only be read by one thing at a time, and that is the
+     hardware rather than a limit anybody chose: it has a single frame buffer,
+     and taking a frame reclaims the one already on loan, so two streams would
+     tear each other's pictures. The hub therefore holds <b>one</b> connection
+     to each camera and feeds every viewer from it. Open this page on as many
+     screens as you like.</p>
+  <p>A slow viewer — a phone on poor WiFi — is given the newest frame each time
+     it is ready for another, so it drops frames rather than holding anyone
+     else back. If a camera stops answering, the live view says so instead of
+     leaving an old picture on screen pretending to be now.</p>
+
+  <h3>A camera has to be on WiFi to be seen</h3>
+  <p>Pictures do not travel down a USB or RS485 cable: those carry one line of
+     text at a time, and a JPEG is not that. A camera reachable only on a cable
+     is listed, and says so, with its picture controls switched off. Its
+     <b>settings</b> still work over the cable.</p>
+
+  <h3>Settings</h3>
+  <p>Every setting the sensor has — brightness, contrast, saturation, white
+     balance, exposure, gain, effects and the correction switches — lives on
+     the module's own page under <b>Settings</b>, grouped, with one control to
+     put everything back to default. The list is built from what the board
+     reports, so it is always what that board can really do.</p>
+  <p>Two things it will tell you rather than hide. A setting this sensor does
+     not have is shown greyed with <i>this sensor does not have it</i> — the
+     OV2640 has no sharpness, for instance. And a setting that only applies
+     while another is off (exposure time needs auto exposure off, gain needs
+     auto gain off) says which one to turn off.</p>
+  <p><b>There is no autofocus.</b> The OV2640 on these boards is fixed focus,
+     so there is nothing to switch on and no control for it.</p>
+</section>
+
+<section id="faces">
+  <div class="shead">
+    <span class="where">code/apps/faces · served at /app/faces/</span>
+    <h2>👋 Reconize — the app that knows who is here</h2>
+    <p>Reconize is a separate program that watches cameras and recognises people.
+       It runs beside Mice on the same PC. This page is how you open it, and in
+       time it is how the rig follows it.</p>
+  </div>
+
+  <h3>What works today</h3>
+  <p>One button, <b>Open Reconize</b>, and a line telling you whether Reconize is
+     running. Nothing here moves a robot yet. That is on purpose: the button
+     ships before anything that can make an arm swing.</p>
+  <p>If it says Reconize is not answering, start it with <b>start.bat</b> in its
+     own folder and wait about fifteen seconds — it loads a face model before it
+     answers anything, so <i>not answering</i> and <i>not started</i> look the
+     same for those first seconds.</p>
+
+  <h3>Where Reconize lives, and how to move it</h3>
+  <p>Its addresses are written in <b>config/partners.json</b> — one entry for
+     each outside program Mice follows. Change the address there and the button
+     follows on the next refresh. Nothing is compiled in, so moving Reconize to
+     another port or another PC costs one edit and no rebuild.</p>
+  <p>That same file is how the <b>next</b> outside program is added: one entry,
+     no code. Each entry says where the app is, how to log in to it, where its
+     events come from, and — just as important — what each of those sources
+     <i>cannot</i> tell us, so the rig never promises more than it can see.</p>
+  <p><b>No password is kept in that folder, and none ever will be.</b> Every file
+     belonging to a tool is served to anyone who can reach the hub, with no login
+     at all — so a password put there would be readable by everybody on the venue
+     WiFi. Logins for Reconize live beside the hub's own password file instead,
+     outside anything that is served.</p>
+
+  <h3>We never change Reconize itself</h3>
+  <p>It updates itself, often, and its updater throws away anything it finds that
+     it did not write. So Mice never puts a file in its folder, never runs its
+     updater, and never opens its database directly — reading that database while
+     it is running would block its own writing. Everything goes through its
+     web address, the same way any other program would talk to it.</p>
+
+  <h3>What is coming, in order</h3>
+  <p>Reading who was recognised · greeting somebody by name with a move ·
+     choosing which speaker says it and in which voice · rules you can edit here,
+     with different words per camera · counting arrivals and firing a
+     celebration at a number you choose · a mode where the rig only takes
+     questions while somebody is standing in front of it.</p>
+  <p>Each of those arrives as its own small change, and the plan for all of it is
+     <b>docs/system_integral.html</b>, beside this project's own plan.</p>
+</section>
+
+<section id="voice">
+  <div class="shead">
+    <span class="where">code/apps/voice · served at /app/voice/</span>
+    <h2>🎤 Voice</h2>
+  </div>
+  <div class="f"><h3>Ask the rig a question</h3>
+    <p>The Voice app in the Tools list: type a question, the rig answers. The
+       answers come from a helper program that runs on this PC next to the
+       hub (the hub itself never carries an AI — it only passes the question
+       along and the answer back).</p></div>
+  <div class="f"><h3>Speak instead of typing<span class="tag t-new">new</span></h3>
+    <p>The Voice page has a <b>Press to talk</b> button: press it, speak, press
+       again to stop, and your words appear in the box ready to send. The
+       listening runs on this PC too. Which languages it hears — and the words
+       each language gets wrong often — live in <code>config/voice.json</code>;
+       adding a language is one entry there.</p></div>
+  <div class="f"><h3>Saved answers first<span class="tag t-new">new</span></h3>
+    <p>A question close to a saved one is answered instantly from
+       <code>apps/voice/qa_data.json</code> — the same trick as the original
+       prototype, and the part that works with no AI at all. Add or change an
+       answer by editing that file; the helper reads it fresh every time, so
+       there is nothing to restart.</p>
+    <p>If a question is only <b>somewhat</b> close to a saved one, the rig does
+       not guess — it asks the visitor to say it again. A confident wrong
+       answer is worse than asking twice.</p>
+    <p>A saved answer can also carry a <b>move</b>: give the entry a
+       <code>move</code> (a saved sequence file) and a <code>module</code>
+       (which robot plays it — its <b>name</b> as the modules screen shows it),
+       and the robot performs that sequence when the answer is given. The name
+       is looked up at play time, so the robot can be plugged into any PC
+       without editing anything; if no robot of that name is connected, the
+       page says so plainly. While that robot is already moving, another ask is
+       answered in words — it never queues and never cuts the running move.
+       A <b>Stop the move</b> button stays beside it until the sequence
+       ends.</p></div>
+  <div class="f"><h3>One brain, many PCs<span class="tag t-new">new</span></h3>
+    <p>The answering helper normally listens to this PC only. To make one PC
+       the brain for every hub at the venue, write that PC's address in
+       <code>service</code> in <code>config/voice.json</code> there (instead of
+       127.0.0.1) and point every other hub's own <code>config/voice.json</code>
+       at it. Sharing is opt-in by editing, never automatic — and the tradeoff
+       is written next to the setting: the helper itself has no password, so
+       anything on the venue WiFi could then ask it or make it speak. Moving a
+       robot stays safe: that still needs a login at whichever hub you use.</p></div>
+  <div class="f"><h3>Out loud<span class="tag t-new">new</span></h3>
+    <p>The rig can also <b>speak</b> its answer, using this PC's own voice —
+       no internet needed. Turn it on with the <b>Sound</b> switch on the
+       Voice page; the choice is remembered. Which language uses which voice
+       is one line each under <code>tts</code> in
+       <code>config/voice.json</code>, and answers are prepared ahead of time
+       so a saved answer sounds instantly.</p></div>
+  <div class="f"><h3>Teach it new answers<span class="tag t-new">new</span></h3>
+    <p>The <b>⚙ Settings</b> button on the Voice page opens everything a
+       designer changes, in plain words:</p>
+    <p><b>Answers</b> — add what people ask (one way of asking per line) and
+       what the rig replies, then press it aloud with <b>▶</b> to hear it
+       before a visitor does. Picking a saved sequence and a robot by name
+       turns the answer into a move; both are dropdowns, nothing typed.
+       <b>Voice and language</b> switches speaking and listening on and off,
+       tries the voice out loud, and shows the listening model as
+       fast / balanced / most accurate instead of its id. <b>Words it gets
+       wrong</b> adds words the listening mishears — one box, one Add, no
+       training. Ids and thresholds sit last behind the
+       <b>Show technical details</b> switch.</p>
+    <p>Saving needs the same login as everything that can change the rig.
+       A change reaches the running helper at once — nothing to restart,
+       no file to edit by hand.</p></div>
+  <div class="f"><h3>Starting the helper</h3>
+    <p>If the page says the voice helper is not running, start it from the
+       <b>code</b> folder:</p>
+    <p><code>python apps\voice\service.py</code></p>
+    <p>Everything about it lives in <code>config/voice.json</code>: where it
+       answers, how close a question must be to count as saved, and which
+       model and voice to use. Asking is behind the same login gate as every
+       other command that can move the rig.</p></div>
+</section>
+
 <section id="studio">
   <div class="shead">
     <span class="where">code/nong/main_python_set_nong · served at /studio/</span>
@@ -881,6 +1235,15 @@
     <p>This used to need an SD card. Now a board without one keeps the sequence in memory
        (up to 8 KB, until it reboots) and plays it just the same — the editor is unchanged,
        the board decides where it lands.</p>
+    <p><b>It starts from the move you clicked.</b> Click a pose in the timeline and the play
+       head parks there; Run then carries on from that pose to the end. It does not travel
+       back to the first pose first — on a robot built into a rig, that trip back is where
+       the arm hits something. The same is true when you switch tabs part way through a
+       show: the robot is handed the rest of it, not the whole thing from the start. A part
+       run is saved beside the full one as <code>&lt;name&gt;.part.yaml</code>, so your
+       saved sequence is never overwritten by running a piece of it. And the first move
+       after a jump is given as much time as the distance really needs, however fast the
+       timeline had it — the robot may be standing anywhere when you press Run.</p>
     <p>Robot-side playback is also <b>more accurate</b>, not less: the module interpolates
        every move on its own 50 Hz clock, so timing does not depend on the browser or the
        link. Tick <b>monitor</b> to watch the real robot in 3D while it runs.</p>
@@ -924,9 +1287,16 @@
        YAML — local or downloaded from the robot — and keep editing.</p></div>
   <div class="f"><h3>Many sequences on one card</h3>
     <p>The card holds as many <code>/moves/*.yaml</code> as fit. The Robot SD card panel
-       lists them all with <b>▶ Run</b>, <b>✎ Edit</b> and delete on each, over WiFi, USB or
-       RS485 — and the module's own website has the same list in its Sequences card.
-       Name each export in the sequence-name box to keep them separate.</p></div>
+       lists them all with <b>▶ Run</b>, <b>▶ Preview</b>, <b>✎ Edit</b> and delete on each,
+       over WiFi, USB or RS485 — and the module's own website has the same list in its
+       Sequences card. Name each export in the sequence-name box to keep them separate.</p></div>
+  <div class="f"><h3>Play a saved sequence without editing it<span class="tag t-new">new</span></h3>
+    <p><b>▶ Play saved</b> (next to “Load for editing”) loads the sequence you picked and
+       starts playing it right away, exactly as if you had loaded it and pressed Play — so
+       it follows whichever clock applies: through the hub the show keeps running even with
+       this page closed; over USB it plays from here.</p>
+    <p><b>▶ Preview</b> on a Robot SD card row does the same for a file still only on the
+       card, while <b>▶ Run</b> hands it to the robot itself.</p></div>
   <div class="f"><h3>Chain one sequence into the next<span class="tag t-new">new</span></h3>
     <p>The <b>then run…</b> box writes <code>next:</code> into the file, so when it finishes
        the module starts that one by itself — a show built from short files that can each be
@@ -1040,7 +1410,11 @@
        on the RS485 bus, and how two identical arms on a shelf are told apart.</p>
     <p>It is one rule in the shared stylesheet (<code>.tech</code>), so a new screen
        marks a detail as technical and it follows the same switch — nothing to wire up
-       and nothing to remember.</p></div>
+       and nothing to remember.</p>
+    <p>The same switch is now on <b>every</b> screen: this help page, the RGB wall
+       page, the camera page, Nong Studio (typed addresses hide; Find modules still
+       works with no typing) and each module's own website under
+       <b>&#9881; Setup / Login</b>. One choice, remembered everywhere.</p></div>
   <div class="f"><h3>One board is one row, however it is reached<span class="tag t-new">new</span></h3>
     <p>A module plugged into this PC <b>and</b> on the WiFi used to appear twice, as two
        robots. The two rows were not even equivalent: one drove it down the cable and
@@ -1065,7 +1439,7 @@
        of the program. It is redrawn every time you open <b>Network</b>, because a
        laptop that moves between a venue WiFi and its own hotspot gets a new address,
        and a QR of the old one sends the phone nowhere.</p>
-    <p>There is a <b>name</b> as well: <code>http://mice.local:9203/</code>, answered by
+    <p>There is a <b>name</b> as well: <code>http://mice.local:8642/</code>, answered by
        the hub over multicast DNS, which phones, Macs and Windows already speak. A name
        does not change when the address does.</p>
     <p><b>Both exist because either can fail.</b> Many venue networks block multicast
@@ -1085,6 +1459,19 @@
        browser cannot ask another hub directly. When the write finishes, a board that is
        becoming a <i>different</i> type is named along with the one command that finishes
        the job there — this PC has no route to a board on someone else's cable.</p></div>
+  <div class="f"><h3>Two hubs, one rig<span class="tag t-new">new</span></h3>
+    <p>Two PCs on the same WiFi can <b>link</b>: one shows a short <b>code</b>, you type it
+       into the other, and from then on each hub lists the other's modules in its own
+       <b>Modules</b> tab. Open one of them and it works exactly like a board on this PC's
+       own cable — drive it, run sequences, watch it. The link is by address, so it
+       survives a module moving between the two PCs.</p></div>
+  <div class="f"><h3>Report a problem<span class="tag t-new">new</span></h3>
+    <p>Every hub page carries a <b>Report</b> button. It saves what went wrong — which page,
+       what was happening — into a <code>reports</code> folder next to the program, and the
+       hub keeps a <b>complaints screen</b> where each report can be marked fixed or
+       not-a-problem. A complaint written in another language is translated into English
+       automatically about a minute later, so the whole list reads in one language.
+       Nothing is sent to the internet: reports stay on this PC.</p></div>
   <div class="f"><h3>The hub keeps the show running<span class="tag t-new">new</span></h3>
     <p>Press <b>Play</b> and the <b>hub</b> — the Python program, not the page — sends the
        moves. Switch tabs, minimise the window, open something else: the rehearsal keeps
@@ -1179,7 +1566,7 @@
        dragged is the one being rendered.
        <b>calibration</b> · <b>sequences</b> · <b>edge cases</b> — tuning survives a power
        cycle, suspend/chain/speed behave, and the awkward states do not throw.
-       <b>modsite</b> — the module site'''s tabs show one group at a time and the login gate
+       <b>modsite</b> — the module site's tabs show one group at a time and the login gate
        still hides every config card until you are in.
        <b>wifi</b> — a bad or absent network cannot stall the servo loop: the connect path
        stays a polled state machine with timeouts, and nothing in it blocks.
@@ -1194,7 +1581,7 @@
        poisons whatever command follows it.
        <b>registries</b> — adding a web app, servo or command costs one file; the check
        adds a throwaway app every run and proves it appears and serves with no code change.
-       <b>docs</b> — this page, which fails QC if a command, module type or QC area is
+       <b>tooling</b> - the promotion pipeline<br>\n<b>docs</b> — this page, which fails QC if a command, module type or QC area is
        added without describing it here.
        <b>design</b> — one design system in one file: no page may declare its own tokens or
        copy a colour that is already one, every page must really link it, and the board's
@@ -1248,19 +1635,21 @@
     <tr><td>CFG</td><td class="wrap2">Read or write stored settings; <code>CFG CLEAR</code> resets them</td></tr>
     <tr><td>PIN? | PIN VALID | PIN | PIN CLEAR</td><td class="wrap2">Read, validate, set and reset the hardware pin map</td></tr>
     <tr><td>FILES | FBEGIN | FDATA | FEND | FREAD | FDEL</td><td class="wrap2">SD file access over the text channel</td></tr>
-    <tr><td>MOVE | MOVE STOP</td><td class="wrap2">Run or stop a YAML sequence from the card</td></tr>
+    <tr><td>MOVE | MOVE STOP</td><td class="wrap2">Run or stop a YAML sequence from the card. Stopping it also stops any sound the sequence started</td></tr>
     <tr><td>AUTH | USER LIST|ADD|DEL|PASS</td><td class="wrap2">Setup-page accounts, stored on the board</td></tr>
     <tr><td>REBOOT</td><td class="wrap2">Restarts about a second later</td></tr>
+    <tr><td>FWBEGIN | FWDATA | FWEND | FWABORT | FWSTAT</td><td class="wrap2"><b>New firmware over any channel, including RS485.</b> The other two ways both need something a bus does not have: <code>esptool</code> reaches the ESP32's boot loader by pulling <b>EN</b> and <b>IO0</b> with the cable's DTR and RTS lines, and <code>POST /api/ota</code> talks to the board's own web server. A two-wire bus has neither, so instead the board writes its own spare slot from ordinary commands and the link underneath stops mattering. Each chunk carries its number <i>and</i> its length — a line cut short is still valid base64, so without the length a short chunk decodes silently and the image ends up wrong. Out-of-order and short chunks are both refused without advancing, so the sender just repeats one. The image is checked against its md5 at <code>FWEND</code>, while the board is still running firmware that works, and only a good one causes the reboot; <code>FWABORT</code> leaves it on what it had. It is slow — minutes, not seconds — which is the price of having no reset line. Started for you by the hub's <b>Firmware</b> tab</td></tr>
   </tbody></table></div>
 
   <div class="grp2">Lift only</div>
   <div class="scroll"><table><thead><tr><th>Command</th><th class="wrap2">Does</th></tr></thead><tbody>
-    <tr><td>UP | DOWN | STOP | HOME</td><td class="wrap2">Travel to a limit, stop, or home and zero the encoder</td></tr>
+    <tr><td>UP | DOWN | STOP | HOME</td><td class="wrap2">Travel to a limit, stop, or home and zero the encoder. <b>STOP</b> also silences the speaker</td></tr>
     <tr><td>GOTO | STAGE?</td><td class="wrap2">Go to a stage; report the current one</td></tr>
     <tr><td>SPEED | SPEED?</td><td class="wrap2">Raw PWM, or real units with <code>MS</code> / <code>MMS</code></td></tr>
     <tr><td>TIME?</td><td class="wrap2">Estimated time for one stage, or to a given stage</td></tr>
     <tr><td>RGB | RGB BRIGHT | RGB EFFECT</td><td class="wrap2">Colour, brightness and effects</td></tr>
     <tr><td>PLAY | PLAY STOP | VOL</td><td class="wrap2">Audio from the SD card</td></tr>
+    <tr><td>AMP | AMP VALID | AMP?</td><td class="wrap2">Which amplifier is wired to this board. Normally chosen by name under <b>Setup → Hardware pins</b>; the board remembers it and uses it after the next restart</td></tr>
   </tbody></table></div>
 
   <div class="grp2">Nong only</div>
@@ -1268,7 +1657,7 @@
     <tr><td>POSE | POSE?</td><td class="wrap2">Move all 10 joints, optionally over <code>T</code> ms; read the current pose</td></tr>
     <tr><td>JOINT</td><td class="wrap2">Move one joint, by number or name</td></tr>
     <tr><td>HOME | ZERO</td><td class="wrap2">Return to the neutral pose</td></tr>
-    <tr><td>STOP</td><td class="wrap2">Freeze mid-move — the pose holds</td></tr>
+    <tr><td>STOP</td><td class="wrap2">Freeze mid-move — the pose holds, the speaker goes quiet, and a linked partner board stops too</td></tr>
     <tr><td>RELAX | ATTACH</td><td class="wrap2">Go limp to pose by hand; power up again holding position</td></tr>
     <tr><td>SPEED | SPEED? | TIME?</td><td class="wrap2">Default speed in °/s, and move-time estimates</td></tr>
     <tr><td>SETZERO</td><td class="wrap2">Make the current pose home — the arm does not move</td></tr>
@@ -1276,6 +1665,12 @@
     <tr><td>GEAR | PULSE | RANGE | RATE</td><td class="wrap2">Per-joint reduction, pulse range, servo travel and frame rate</td></tr>
     <tr><td>JCFG</td><td class="wrap2">One joint's whole setup in a single line — what GEAR+PULSE+RANGE+RATE+LIMIT do in five. <b>Send rig</b> uses it: 10 commands instead of 50, about 1.6 s down to 0.3 s</td></tr>
     <tr><td>SERVO</td><td class="wrap2">Apply a servo preset to one joint or all</td></tr>
+    <tr><td>PLAY | PLAY STOP | VOL | AMP</td><td class="wrap2">The same speaker the lift has. A nong ships set to a MAX98357A on pins 12, 0 and 2 — the only three left once ten servos, the card and the bus have theirs</td></tr>
+  </tbody></table></div>
+  <div class="grp2">Camera only</div>
+  <div class="scroll"><table><thead><tr><th>Command</th><th class="wrap2">Does</th></tr></thead><tbody>
+    <tr><td>SNAP</td><td class="wrap2">Take a picture; with a name it is saved to <code>/photos</code> on the card</td></tr>
+    <tr><td>CAM</td><td class="wrap2">What the sensor is set to, and change it: <code>SIZE</code>, <code>QUALITY</code>, <code>FLASH ON|OFF</code>, <code>VFLIP</code>, <code>HMIRROR</code></td></tr>
   </tbody></table></div>
 </section>
 
@@ -1286,10 +1681,10 @@
     <h2>Files &amp; formats</h2>
   </div>
   <div class="scroll"><table><thead><tr><th>Path</th><th class="wrap2">What it is</th></tr></thead><tbody>
-    <tr><td>/moves/*.yaml</td><td class="wrap2">Sequences on the SD card. Steps map to commands: <code>pose</code>, <code>goto</code>, <code>home</code>, <code>up</code>, <code>down</code>, <code>stop</code>, <code>wait</code>, <code>rgb</code>, <code>effect</code>, <code>bright</code>, <code>play</code>, <code>vol</code></td></tr>
+    <tr><td>/moves/*.yaml</td><td class="wrap2">Sequences on the SD card. Steps map to commands: <code>pose</code>, <code>joint</code>, <code>home</code>, <code>relax</code>, <code>attach</code>, <code>speed</code>, <code>goto</code>, <code>up</code>, <code>down</code>, <code>stop</code>, <code>rgb</code>, <code>effect</code>, <code>bright</code>, <code>play</code>, <code>vol</code></td></tr>
     <tr><td>/data/nong_cal.yaml</td><td class="wrap2">Calibration written by LIMIT/GEAR/PULSE/RANGE/RATE/SETZERO; loaded at boot over module.yaml</td></tr>
     <tr><td>/data/module.yaml</td><td class="wrap2">Per-board configuration — pins, joint limits, gear, servo specs, speeds, link/peer</td></tr>
-    <tr><td>/music/*</td><td class="wrap2">mp3 and wav for the lift's speaker</td></tr>
+    <tr><td>/music/*</td><td class="wrap2">mp3 and wav for the module speaker (lift or nong)</td></tr>
     <tr><td>projects/*.json</td><td class="wrap2">Studio projects — rig, meshes and timeline together</td></tr>
     <tr><td>sequences/*.yaml</td><td class="wrap2">Studio exports, ready to copy to a card or upload</td></tr>
     <tr><td>models/*.stl</td><td class="wrap2">Your CAD exports, in millimetres</td></tr>

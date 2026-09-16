@@ -129,3 +129,26 @@ def run(t):
     # all four, and it is cheap to keep out.
     empty = ui.count("catch(e){}")
     t.eq(empty, 0, "no error on this page is caught and thrown away")
+
+    # ---- three more found by the panel sweep (A22-1, 2026-08-25) -------
+    # loadPeers: the element its own catch reports into must be looked up
+    # BEFORE the try, or the catch throws on its own name and the failure
+    # message never shows.
+    k = ui.find("async function loadPeers")
+    peers = ui[k:k + 700] if k >= 0 else ""
+    t.ok(k >= 0 and peers.find("$('peerList')") < peers.find("try{"),
+         "loadPeers finds its list before trying to fill it",
+         "a lookup inside the try makes the catch itself throw")
+
+    # delete button: a click that could not reach the board must say so.
+    d = ui.find("d.onclick=async()=>{")
+    del_fn = ui[d:d + 900] if d >= 0 else ""
+    t.ok(d >= 0 and "could not reach the board to delete" in del_fn,
+         "deleting a file admits when it never happened",
+         "a silent rejection looks exactly like a deleted file")
+
+    # loadFiles: an empty card says it is empty — same promise loadList made
+    # above for dropdowns.
+    f = ui.find("if(!fs.length)tb.innerHTML=")
+    t.ok(f > 0 and "folder on the card is empty" in ui[f:f + 160],
+         "an empty folder says so instead of drawing nothing")

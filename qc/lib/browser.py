@@ -26,6 +26,7 @@ from pathlib import Path
 import tempfile
 
 QC = Path(__file__).resolve().parent.parent
+CODE = QC.parent
 EDGE = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 # Marks our processes so we never kill the user's own browser — and carries
 # this RUN's process id, so two QC runs (two staging trees, verified at the
@@ -184,7 +185,18 @@ def _tag():
     return "%d_%d" % (os.getpid(), int(time.time() * 1000) % 100000)
 
 
-def page(driver_js, query="", seconds=20, studio_web=None):
+def _studio_login_js():
+    """Use Studio's real login once after its blocking app script has loaded."""
+    return '''<script>
+if (typeof appLogin === "function") {
+  document.getElementById("loginUser").value = "super_admin";
+  document.getElementById("loginPass").value = "admin123";
+  appLogin();
+}
+</script>'''
+
+
+def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True):
     """Serve the real Studio index.html + a driver script, load it, wait, kill.
 
     The temp page lives in the studio web folder so every relative asset
@@ -199,7 +211,8 @@ def page(driver_js, query="", seconds=20, studio_web=None):
     # real file carries a per-process suffix so two workers cannot load each
     # other's test, and the URL is corrected here rather than in ten checks.
     query = query.replace("_qcdriver.html", drv.name)
-    drv.write_text(src + _login_js() + PRELUDE + "<script>\n" + driver_js + "\n</script>",
+    login = _studio_login_js() if studio_login else ""
+    drv.write_text(_login_js() + src + PRELUDE + login + "<script>\n" + driver_js + "\n</script>",
                    encoding="utf-8")
     SCRATCH.mkdir(parents=True, exist_ok=True)
     # parenthesised: "/" and "%" share precedence, so without them python
@@ -369,7 +382,18 @@ def sweep():
     that still wrote into the repo)."""
     for p in list(SCRATCH.glob("profile_*")) + list(QC.glob("_profile_*")):
         _rmtree(str(p))
-    for p in list(QC.glob("_boot_dom.html*")) + list(SCRATCH.glob("*.html*")):
+    left = list(QC.glob("_boot_dom.html*")) + list(SCRATCH.glob("*.html*"))
+    # Driver pages are written INTO the web folders, because a page can only be
+    # opened from the server that serves it. Each caller deletes its own, but a
+    # run that is killed or crashes does not - and the leftovers then sit in a
+    # source directory looking like source. Found 2026-08-20: five of them in
+    # nong/main_python_set_nong/web, and nothing in promote.py's skip rules
+    # would have stopped them travelling into the real tree.
+    for web in (CODE / "main_python" / "web",
+                CODE / "nong" / "main_python_set_nong" / "web"):
+        for pat in ("_qcdriver_*.html", "_qcraw_*.html", "_qcmod_*.html"):
+            left += list(web.glob(pat))
+    for p in left:
         try:
             p.unlink()
         except OSError:

@@ -92,6 +92,44 @@ def run(t):
         t.contains(body, "401",
                    "%s refuses with 401 rather than doing it anyway" % route)
 
+    # An UPLOAD is refused before its FIRST byte lands. The body handler
+    # streams chunks to the card while the request is still arriving, so a
+    # 401 from the completion handler arrived after the file was already
+    # written - /api/ota had exactly this hole until 2026-08-21, and upload
+    # kept it one more day.
+    #
+    # route_body cannot see any of this: it stops at the first callback's
+    # closing brace, which for a two-lambda server_.on() is only HALF the
+    # route. Match the parentheses instead, so both callbacks are inside.
+    def full_route(path):
+        i = portal.find('server_.on("%s"' % path)
+        if i < 0:
+            return ""
+        depth, j = 0, portal.find("(", i)
+        while j < len(portal):
+            if portal[j] == "(":
+                depth += 1
+            elif portal[j] == ")":
+                depth -= 1
+                if depth == 0:
+                    return portal[i:j + 1]
+            j += 1
+        return portal[i:]
+
+    up = full_route("/api/upload")
+    t.ok(up.count("allowed(req)") >= 2,
+         "an upload is refused before its first byte reaches the card",
+         "the SD write happens in the body handler, mid-request")
+
+    # ---- the status socket runs no commands ----------------------------
+    # Nothing legitimate sends on /ws - the page polls over HTTP where the
+    # gate lives, and a socket frame carries no session to check. handle()
+    # there was command execution for anyone on the WiFi (A22-1 panel).
+    ws = portal[portal.find("ws_.onEvent"):portal.find("server_.addHandler")]
+    t.ok(ws and "router_->handle" not in ws,
+         "the status socket is push-only",
+         "/ws has no login to check, so an arriving frame ran ungated")
+
     # ---- and the reading routes are NOT ------------------------------
     # Not politeness: the hub finds boards by probing /api/status, so gating it
     # would make every module vanish from every hub on the network.
@@ -133,3 +171,30 @@ def run(t):
             liars.append("%s: %s" % (c["name"], c.get("help")))
     t.eq(liars, [],
          "no command claims to be read-only while its help says it changes things")
+
+    # ---- these can never be query:true ---------------------------------
+    # AUTH is a password ORACLE: marked query:true, /api/cmd would run it
+    # for anyone on the WiFi, no login needed - unlimited guessing against
+    # the board's own accounts (A22-1 sweep, 2026-08-25). GROUP mutates
+    # when given a name, and allowedCommand sees only the verb, so the
+    # whole verb has to stay behind the login.
+    for name in ("AUTH", "GROUP"):
+        open_flag = [c for c in cmds if c["name"] == name and c.get("query")]
+        t.ok(not open_flag,
+             "%s runs only with a login, never as an open query" % name,
+             "query:true would let /api/cmd run it before any login")
+
+    # ---- and the page itself stopped feeding the oracle ----------------
+    # doLogin used to try the typed pair with an open AUTH command BEFORE
+    # asking for a session - the exact call a stranger would make, shipped as
+    # the front door. Direct logins go to /api/login now; only the
+    # through-the-hub page still uses AUTH, where holding the cable IS access.
+    page = (F.FIRMWARE / "src/web/WebUI.h").read_text(encoding="utf-8",
+                                                      errors="replace")
+    i = page.find("async function doLogin")
+    fn = page[i:page.find("function doLogout", i)] if i >= 0 else ""
+    t.ok(i >= 0, "the module page has a login flow")
+    t.ok(fn.count("cmd('AUTH") == 1
+         and 0 <= fn.find("viaHub()") < fn.find("cmd('AUTH") < fn.find("/api/login"),
+         "a direct login asks the board's gate; only the hub path uses AUTH",
+         "AUTH tried over /api/cmd from the login form is the oracle again")

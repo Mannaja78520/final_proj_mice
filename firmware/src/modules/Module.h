@@ -35,6 +35,17 @@ public:
     // true while a motion is in progress (sequence player waits on this)
     virtual bool busy() { return false; }
 
+    // Stop any sound this module is making. STOP is the panic button, and a
+    // show stopped in a hurry must not leave music playing over a robot that
+    // has frozen — so every STOP path calls this, including MOVE STOP, which
+    // lives in core and cannot know whether a speaker is wired.
+    virtual void silence() {}
+
+    // Silence ONLY a track that was told to repeat. A show that runs off its
+    // last step leaves a one-shot playing on purpose — a long track may outlive
+    // a short show — but a repeating one would never end by itself.
+    virtual void silenceLoop() {}
+
     // Settings loaded from /data/module.yaml on the SD card, called before begin().
     virtual void applySettings(JsonVariant s) {}
 };

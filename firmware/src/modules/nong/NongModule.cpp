@@ -232,6 +232,7 @@ void NongModule::begin() {
     }
     attached_ = true;
     writeServos();
+    audio_.begin(sd_);
 }
 
 String JointSel::label() const {
@@ -341,6 +342,7 @@ void NongModule::loop() {
         calDirty_ = false;
         saveCal();
     }
+    audio_.loop();
 }
 
 bool NongModule::handleCommand(String argv[], int argc, String& reply) {
@@ -412,22 +414,105 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
         reply = "OK home T=" + String(moveDur_) + "ms";
         return true;
     }
+    // NEUTRAL [<1-10|name|ALL> <deg>] | <a1..a10> — the pose the arm goes to on
+    // boot and on HOME. Asked for 2026-09-10: *when start make can change
+    // position of servo when start not only 90 can select own deg per joint*.
+    // It does NOT move the arm: changing where home IS should not send the robot
+    // there while somebody is holding it.
+    if (cmd == "NEUTRAL" || cmd == "NEUTRAL?") {
+        if (cmd == "NEUTRAL?" || argc == 1) {
+            reply = "NEUTRAL";
+            for (int i = 0; i < N; i++)
+                reply += " " + String(JOINT_NAMES[i]) + "=" + String(neutral_[i], 0);
+            return true;
+        }
+        if (argc >= 1 + N) {                       // the whole pose in one line
+            for (int i = 0; i < N; i++) {
+                const String& tok = argv[1 + i];
+                if (tok == "-" || tok == "~") continue;   // keep this one
+                neutral_[i] = clampJoint(i, tok.toFloat());
+            }
+            reclamp();
+            saveCalSoon();
+            forward("NEUTRAL " + Util::joinFrom(argv, argc, 1));
+            reply = "OK neutral set for all 10 joints (press Home to go there)";
+            return true;
+        }
+        if (argc < 3) { reply = "ERR usage: NEUTRAL <1-10|name|ALL> <deg>"; return true; }
+        const JointSel sel = selectJoints(argv[1]);
+        if (!sel.ok) { reply = jointSelHelp(); return true; }
+        const float d = argv[2].toFloat();
+        for (int i = 0; i < N; i++)
+            if (sel.covers(i)) neutral_[i] = clampJoint(i, d);
+        reclamp();
+        saveCalSoon();
+        forward("NEUTRAL " + argv[1] + " " + argv[2]);
+        reply = "OK neutral " + sel.label() + " = " +
+                String(neutral_[sel.isAll() ? 0 : sel.one], 0) +
+                " deg (press Home to go there)";
+        return true;
+    }
+    // OFFSET [<1-10|name|ALL> <deg>] — correct ONE joint that was assembled a
+    // few degrees out. Asked for 2026-09-10: *make can set offset to servo
+    // because sometime i set it not exact 0 or 90*. A servo horn only refits in
+    // whole teeth (~14 deg of shaft), so "straight" is rarely where the servo
+    // thinks it is, and SETZERO — the only writer until now — rewrites all ten
+    // joints at once from the current pose.
+    //
+    // The argument is in JOINT degrees, because that is what a person can see
+    // and measure on the arm; trim_ is in SERVO degrees, so it is scaled by this
+    // joint's own reduction, exactly as SETZERO does. The arm DOES move: seeing
+    // the correction is the point.
+    //
+    // No invert special case, and that is not an oversight: trim is added before
+    // invert (NongMath::jointToServoDeg), so it travels through the mirror the
+    // same way the joint term does. +1 deg of offset moves the arm the same way
+    // +1 deg of joint angle would, on an inverted joint as much as a plain one.
+    // Moving trim after the invert would silently reverse every plus button.
+    if (cmd == "OFFSET" || cmd == "OFFSET?") {
+        if (cmd == "OFFSET?" || argc == 1) {
+            reply = "OFFSET";
+            for (int i = 0; i < N; i++)
+                reply += " " + String(JOINT_NAMES[i]) + "=" +
+                         String(trim_[i] / servoPerJoint(i), 1);
+            return true;
+        }
+        if (argc < 3) { reply = "ERR usage: OFFSET <1-10|name|ALL> <deg>"; return true; }
+        const JointSel sel = selectJoints(argv[1]);
+        if (!sel.ok) { reply = jointSelHelp(); return true; }
+        const float d = argv[2].toFloat();
+        if (!jointrule::offset(d, reply)) return true;
+        for (int i = 0; i < N; i++)
+            if (sel.covers(i)) trim_[i] = d * servoPerJoint(i);
+        writeServos();     // the arm nudges now, which is how you aim it
+        saveCalSoon();
+        forward("OFFSET " + argv[1] + " " + argv[2]);
+        reply = "OK offset " + sel.label() + " = " + String(d, 1) +
+                " deg on the arm";
+        return true;
+    }
     if (cmd == "SETZERO") {
-        // Calibrate: "wherever the arms are now, call this the zero/home pose
-        // (90 deg per joint)." No position feedback on MG90S, so jog the
-        // servos straight first (sliders / ATTACH), then press Set zero.
-        // trim absorbs the offset so the arm does NOT move; future 90 = here.
+        // Calibrate: "wherever the arms are now, call this the home pose." No
+        // position feedback on MG90S, so jog the servos straight first (sliders
+        // / ATTACH), then press Set zero. trim absorbs the offset so the arm
+        // does NOT move.
+        //
+        // Trimmed against neutral_[i], not against a literal 90, and neutral_
+        // is NOT overwritten. It used to do both, so calibrating threw away the
+        // per-joint start angles NEUTRAL exists to set — and silently: the arm
+        // does not move, so the loss only showed on the next boot.
         for (int i = 0; i < N; i++) {
             // each joint has its own reduction, so use ITS ratio
-            float sPerJoint = (float)gearGear_[i] / (float)gearPinion_[i];
-            trim_[i] += (cur_[i] - 90.0f) * sPerJoint; // pre-invert servo offset
-            cur_[i] = from_[i] = target_[i] = neutral_[i] = 90.0f;
+            const float sPerJoint = servoPerJoint(i);
+            trim_[i] += (cur_[i] - neutral_[i]) * sPerJoint; // pre-invert offset
+            cur_[i] = from_[i] = target_[i] = neutral_[i];
         }
         moving_ = false;
         writeServos();  // holds the same physical position (trim compensates)
         saveCal();
         forward("SETZERO");
-        reply = "OK zero set (this pose is now home = 90 deg)";
+        reply = "OK zero set (this pose is now home — your neutral angles are "
+                "unchanged)";
         return true;
     }
     if (cmd == "RELAX") {
@@ -478,7 +563,7 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
     if (cmd == "JCFG") {
         if (argc < 11) {
             reply = "ERR usage: JCFG <1-10|name> <pinion> <gear> <pmin> <pmax> "
-                    "<dps> <range> <hz> <min> <max>";
+                    "<dps> <range> <hz> <min> <max> [neutral]";
             return true;
         }
         int j = jointIndex(argv[1]);
@@ -506,6 +591,10 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
         maxDps_[j] = dps;        servoRange_[j] = rng;
         frameHz_[j] = hz;
         minDeg_[j] = lo;         maxDeg_[j] = hi;
+        // Neutral is APPENDED, never inserted: an older Studio's 11-token line
+        // still applies, an older board ignores a 12th token, and QC's
+        // positional read of the first nine values stays true.
+        if (argc >= 12) neutral_[j] = clampJoint(j, argv[11].toFloat());
         reclamp();
         if (reattachNeeded) reattach(j);   // only this joint, never all ten
         else writeServos();                // the new gear/travel applies at once
@@ -541,7 +630,8 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
         // freeze mid-move: current interpolated pose becomes the target
         for (int i = 0; i < N; i++) target_[i] = cur_[i];
         moving_ = false;
-        forward("STOP");
+        silence();          // A24-18: still AND quiet
+        forward("STOP");    // the partner board stops and goes quiet too
         reply = "OK stopped";
         return true;
     }
@@ -599,6 +689,19 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
             for (int i = 0; i < N; i++) { if (i) reply += ","; reply += String(servoRange_[i], 0); }
             reply += "],\"frame_hz\":[";
             for (int i = 0; i < N; i++) { if (i) reply += ","; reply += String(frameHz_[i]); }
+            // neutral rides along here because this is the one reply Studio reads
+            // before deciding what to send — without it, "send rig" could never
+            // tell a start angle that already matched from one that did not.
+            reply += "],\"neutral\":[";
+            for (int i = 0; i < N; i++) { if (i) reply += ","; reply += String(neutral_[i], 0); }
+            // In JOINT degrees, like the OFFSET command and the box on screen —
+            // NOT the raw servo-degree trim the YAML stores under `trim`. One
+            // number, one unit, wherever a person sees it.
+            reply += "],\"offset\":[";
+            for (int i = 0; i < N; i++) {
+                if (i) reply += ",";
+                reply += String(trim_[i] / servoPerJoint(i), 1);
+            }
             reply += "]}";
             return true;
         }
@@ -769,7 +872,14 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
                 " = " + String(hz) + " Hz";
         return true;
     }
-    // no RGB / PLAY / VOL here: nong hardware is 8 servos + the SD card only
+    // The speaker arrived with A7-9: PLAY/VOL share AudioPlayer's parser with
+    // lift. There is still no RGB strip on a nong.
+    if (cmd == "PLAY") { audio_.playCmd(argv, argc, reply); return true; }
+    if (cmd == "VOL")  { audio_.volCmd(argv, argc, reply);  return true; }
+    // Which amp is wired is a per-board fact (A24-16), so it is asked and set
+    // here, not compiled in — a TPA3110 fed digital I2S plays noise.
+    if (cmd == "AMP" || cmd == "AMP?") { audio_.ampCmd(argv, argc, reply); return true; }
+    if (cmd == "STREAM" || cmd == "STREAM?") { audio_.streamCmd(argv, argc, reply); return true; }
     return false;
 }
 
@@ -794,6 +904,7 @@ void NongModule::addCapabilities(JsonArray caps) {
     caps.add("joints");       // the arm/pose card
     caps.add("servos");       // per-joint servo type, gear, pulse, travel, rate
     caps.add("calibration");  // SETZERO / CAL
+    caps.add("audio");        // the speaker card (A7-9), same as lift
     if (link_) caps.add("link");
 }
 
@@ -819,8 +930,10 @@ void NongModule::status(JsonObject o) {
     // rather than sent twice under a second name.
     for (int f = 0; f < fieldCount_; f++) {
         const char* key = fields_[f].key;
+        // neutral is NOT skipped: it is a setting somebody chose, so the page
+        // and the hub have to be able to show what the board is actually set to.
         if (!strcmp(key, "joint_min") || !strcmp(key, "joint_max") ||
-            !strcmp(key, "trim") || !strcmp(key, "neutral")) continue;
+            !strcmp(key, "trim")) continue;
         JsonArray a = o[key].to<JsonArray>();
         for (int i = 0; i < N; i++) {
             if (fields_[f].i) a.add(fields_[f].i[i]);
@@ -835,4 +948,11 @@ void NongModule::status(JsonObject o) {
     // sequence progress for monitor mode: remaining ms of the current move
     o["move_ms"] = moveDur_;
     o["move_left"] = moving_ ? (uint32_t)max(0L, (long)(moveDur_ - (millis() - moveStart_))) : 0;
+    JsonObject audio = o["audio"].to<JsonObject>();
+    audio["playing"] = audio_.playing();
+    audio["file"] = audio_.current();
+    audio["vol"] = audio_.volume();
+    // Live-stream health: the page and the PC read the same numbers the
+    // design is judged on (A24-32) - fill, underruns, longest feed gap.
+    audio["stream"] = serialized(audio_.stream().statusJson());
 }

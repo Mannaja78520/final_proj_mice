@@ -36,7 +36,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-if ROOT.name == ".staging":
+if ROOT.name.startswith(".staging"):
     ROOT = ROOT.parent
 BRANCH = "app"
 
@@ -112,8 +112,9 @@ def main(argv):
         for m in missing:
             print("   ", m)
         if "MiceHub.exe" in " ".join(missing):
-            print("\nbuild it with:\n  python -m PyInstaller --onefile "
-                  "--icon main_python/nong.ico --name MiceHub main_python/main.py")
+            sys.path.insert(0, str(ROOT / "main_python"))
+            import build_stamp        # the one rebuild command, never retyped
+            print("\nbuild it with:\n  " + build_stamp.REBUILD)
         return 1
 
     with tempfile.TemporaryDirectory(prefix="mice_app_") as tmp:
