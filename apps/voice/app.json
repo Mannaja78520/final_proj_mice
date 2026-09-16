@@ -1,0 +1,19 @@
+{
+  // The voice app: someone asks, the rig answers out loud.
+  //
+  // Asked 2026-08-22, grown from the working prototype in code/llm/test.py.
+  // It is an APP like Camera and Studio - one entry here and nothing else to
+  // edit: the hub lists it, serves it and links it from the Tools list
+  // because it is in this folder. The heavy half (whisper, Qwen, edge-tts)
+  // runs as a SEPARATE helper process (service.py in this folder) because
+  // torch can never live inside MiceHub.exe; the hub only proxies to it at
+  // /api/voice/* and says plainly when it is not running.
+  //
+  // Settings live in config/voice.json; the answers live in qa_data.json
+  // beside this file. Both are data a person edits, not code.
+  "name": "Voice",
+  "blurb": "ask the rig a question - FAQ answers instantly, a local model for the rest",
+  "icon": "🎤",
+  "order": 25,
+  "help": "voice"
+}

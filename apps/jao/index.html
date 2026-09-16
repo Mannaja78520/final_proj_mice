@@ -1,0 +1,121 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>All Jao Games — Mice</title>
+<link rel="stylesheet" href="/mice.css">
+<script src="/mice.js"></script>
+
+<h1>🎮 All Jao Games</h1>
+<div class="mini" style="margin-bottom:var(--sp-4)">
+  <a href="/">👈 hub</a> · mini-games suite: claw machine, matching, quiz, and wheel of fortune
+  <label style="display:inline-flex;gap:var(--sp-2);align-items:center;float:right">
+    <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
+    Show technical details</label>
+</div>
+
+<div class="card" id="loginHere"></div>
+
+<div class="card">
+  <h2>Open Games</h2>
+  <p class="mini" id="whatIs">All Jao Games runs beside Mice on this PC. It features interactive games that can be played in the browser while Mice Hub and Voice AI run simultaneously.</p>
+  <div class="row">
+    <button class="primary" id="openBtn" onclick="openApp()">Open All Jao Games</button>
+    <button id="checkBtn" onclick="probe()">Check it is running</button>
+    <button id="startBtn" onclick="startServer()">▶ Start Game Server</button>
+    <span class="statline" id="stat" role="status" aria-live="polite">checking…</span>
+  </div>
+  <div class="statline tech mini" id="where"></div>
+</div>
+
+<div class="card">
+  <h2>Available Mini-Games</h2>
+  <div class="row" style="display:flex;flex-wrap:wrap;gap:var(--sp-3);margin-top:var(--sp-2)">
+    <div style="flex:1;min-width:180px;padding:var(--sp-3);background:var(--bg-card,#1e232a);border-radius:8px;border:1px solid var(--border,#2e3846)">
+      <h3 style="margin-top:0">🕹️ Claw Machine</h3>
+      <p class="mini">Grab cute prizes with arcade-style claw controls and physics.</p>
+    </div>
+    <div style="flex:1;min-width:180px;padding:var(--sp-3);background:var(--bg-card,#1e232a);border-radius:8px;border:1px solid var(--border,#2e3846)">
+      <h3 style="margin-top:0">🃏 Matching Game</h3>
+      <p class="mini">Test your memory by flipping and pairing matching cards.</p>
+    </div>
+    <div style="flex:1;min-width:180px;padding:var(--sp-3);background:var(--bg-card,#1e232a);border-radius:8px;border:1px solid var(--border,#2e3846)">
+      <h3 style="margin-top:0">❓ Quiz Game</h3>
+      <p class="mini">Multi-choice trivia game with timer and scoring.</p>
+    </div>
+    <div style="flex:1;min-width:180px;padding:var(--sp-3);background:var(--bg-card,#1e232a);border-radius:8px;border:1px solid var(--border,#2e3846)">
+      <h3 style="margin-top:0">🎡 Lucky Wheel</h3>
+      <p class="mini">Spin the prize wheel with dynamic physics and sound effects.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const PARTNER = "jao_games";
+let links = {
+  open: "http://127.0.0.1:8080",
+  api: "http://127.0.0.1:8080",
+  health: "/"
+};
+
+async function load() {
+  try {
+    const all = await fetch("/api/partners", {cache: "no-store"}).then(r => r.json());
+    if (all.ok && all.partners && all.partners[PARTNER]) {
+      links = all.partners[PARTNER];
+    }
+  } catch (e) {
+    // Hub not ready yet, keep default
+  }
+  const w = document.getElementById("where");
+  w.textContent = "app " + links.open + " · external folder: " + (links.folder || "All-Jao-Games");
+  probe();
+}
+
+function say(msg, tech) {
+  const el = document.getElementById("stat");
+  el.textContent = msg;
+  if (tech) {
+    const t = document.createElement("span");
+    t.className = "tech mini";
+    t.textContent = " " + tech;
+    el.appendChild(t);
+  }
+}
+
+function openApp() {
+  if (!links || !links.open) return say("Address not ready");
+  window.open(links.open, "_blank");
+}
+
+async function probe() {
+  say("checking…");
+  try {
+    await fetch(links.open, {method: "HEAD", mode: "no-cors", cache: "no-store"});
+    say("All Jao Games is running.", "port 8080");
+  } catch (e) {
+    say("Game server is not answering on " + links.open + ". Click '▶ Start Game Server' or run `python -m http.server 8080` in its folder.", String(e.message || e));
+  }
+}
+
+async function startServer() {
+  const btn = document.getElementById("startBtn");
+  btn.disabled = true;
+  say("Launching game server…");
+  try {
+    const r = await fetch("/api/jao/start", {method: "POST", headers: {"Content-Type": "application/json"}}).then(res => res.json());
+    if (r.ok) {
+      say(r.already_running ? "Game server is already running." : "Launched! Waiting for server to respond…");
+      setTimeout(probe, 1500);
+    } else {
+      say("Failed to launch: " + (r.error || "unknown error"));
+    }
+  } catch (e) {
+    say("Failed to contact Hub API: " + e.message);
+  } finally {
+    setTimeout(() => { btn.disabled = false; }, 2000);
+  }
+}
+
+miceLogin.mount(document.getElementById("loginHere"));
+load();
+</script>

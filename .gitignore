@@ -40,8 +40,13 @@ qc/_profile_*
 qc/_boot_dom.html*
 qc/**/__pycache__/
 
-# staging workspace (promote.py) — a working copy, never committed
-.staging/
+# staging workspaces (promote.py --staging DIR) — working copies, never
+# committed. The glob matters: a second tree for a different job is normal
+# (.staging-integral), and the bare name would have committed the whole of it.
+.staging*/
+
+# this machine's Claude Code settings and permissions, not source
+.claude/settings.local.json
 
 # ---- Secrets. These belong to ONE machine and must never travel ----
 # hub_auth.json is the hub password as a salted hash; hub_password.txt is the
@@ -52,3 +57,7 @@ main_python/hub_auth.json
 main_python/hub_auth.json.*
 main_python/hub_password.txt
 .qc-receipt.json
+
+# External partner game assets (code stays in All-Jao-Games repo, launcher only)
+apps/jao/*.js
+apps/jao/*.css

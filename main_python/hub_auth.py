@@ -39,6 +39,7 @@ import hmac
 import json
 import os
 import secrets
+import threading
 import time
 from pathlib import Path
 
@@ -55,11 +56,14 @@ GATED = {
     # last route that should ever be open; /api/flash/send gives this PC's
     # firmware away and needs a login for the same reason.
     "/api/flash/remote", "/api/flash/send",
-    # files are written or destroyed
+    # ...and the same overwrite by command channel - it reaches a cable, the
+    # bus, WiFi or another PC's module, so leaving it open was wider than any
+    # single transport (found by the A22-1 sweep, 2026-08-25).
+    "/api/flash/bus",
+    # files are written or destroyed ON A BOARD
     "/api/robot/upload", "/api/robot/delete",
     "/api/dev/upload", "/api/dev/delete",
-    "/api/model/upload", "/api/rigdefault",
-    "/api/settings/peer", "/api/export",
+    "/api/settings/peer",
     # Which OTHER hubs this one talks to. Not a reading route: an
     # address added here is probed, trusted enough to list, and offered
     # as a link. Left open, anyone on the network could point this hub
@@ -69,15 +73,44 @@ GATED = {
     "/api/usb/close",
     # who may use this hub at all
     "/api/users/add", "/api/users/remove",
+    # Pairing, from BOTH ends. /api/pair/status is a GET and still gated:
+    # it hands back the code on the screen, which is the one secret in the
+    # whole exchange. /api/pair/link makes this hub take another hub's
+    # accounts, which decides who can drive the robots here.
+    "/api/pair/start", "/api/pair/stop", "/api/pair/status", "/api/pair/link",
 }
+
+# Proved by something OTHER than a session. There is exactly one, and it is
+# the point of pairing: the far hub has no account here yet, so a login is
+# impossible by definition. The pairing code is the credential — five minutes,
+# one use, five wrong tries and it dies (hub_pair.Pairing).
+CODE_GATED = {"/api/pair/claim"}
 
 # Paths that READ on GET and CHANGE on POST. Gating the whole path would take
 # away the status the pages poll for, so only the writing half is gated.
 GATED_POST = {
     "/api/settings",      # GET reads the shared settings, POST writes them
     "/api/play",          # GET reports the show, POST starts it
+    # Live audio out of a robot standing in a room full of people: starting it
+    # is as much "make the rig do something" as starting a show. Reading where
+    # it is up to stays open, like every other status.
+    "/api/stream/start", "/api/stream/feed",
     "/api/flash",         # GET reports progress, POST starts a reflash
-    "/api/save",          # writes a project
+    # Voice endpoints: asked 2026-09-14 to require login first before doing anything
+    "/api/voice/start",
+    "/api/voice/stop",
+    "/api/jao/start",
+    "/api/voice/ask",
+    "/api/voice/transcribe",
+    "/api/voice/say",
+    # A20-12 settings: reading the voice stores is open, saving them rewrites
+    # what the rig answers and how it listens - gated like /api/settings.
+    "/api/voice/config",
+    "/api/voice/faq",
+    # Reading which build is available is as harmless as reading the module
+    # list; replacing the hub is the most destructive thing it can be asked to
+    # do, and it is on a network several people share.
+    "/api/selfupdate",   # GET says what version is offered; POST replaces the program itself.
 }
 
 # NEVER gated, deliberately, however much they change:
@@ -90,15 +123,44 @@ GATED_POST = {
 #                   stop the show, which is the same thing the physical power
 #                   switch does and is always recoverable.
 #
+#   /api/stopall    the same argument, for every board at once. Added with the
+#                   stop control that reaches every screen (A11-3). If anything,
+#                   the case is stronger: this is the one somebody presses while
+#                   an arm is moving towards a person, and it is the only
+#                   control in the product where a login prompt could cause an
+#                   injury rather than prevent one. It stops things; it starts
+#                   nothing.
+#
+#   THE TOOLS. Asked for directly, 2026-08-21: *make the tool can use everytime
+#                   like the nong studio... but when need to command the robot
+#                   need to use the login*. Studio is not only a way to drive a
+#                   robot - most of the work in it happens before there is one:
+#                   posing, timing a sequence, saving it, exporting the YAML.
+#                   None of that reaches a board, and a password in front of it
+#                   made the editor unusable until a robot existed. So a project
+#                   saved, a sequence exported, an STL uploaded and a rig kept as
+#                   the default are all open, and the routes that reach a BOARD
+#                   are exactly as gated as they were.
+#
+#                   What this costs: anyone on the venue WiFi can write a
+#                   project or a sequence file into this PC's own folders. They
+#                   could already read them, and they still cannot send one to a
+#                   robot, replace firmware, or delete anything off an SD card.
+#
 # Listed rather than merely absent, so nobody "tidies" it into GATED later.
-NEVER_GATED = {"/api/play/stop"}
+NEVER_GATED = {"/api/play/stop", "/api/stopall",
+               # and silence: a robot talking over a room must be
+               # stoppable by whoever is standing next to it, for the
+               # same reason a moving one must be.
+               "/api/stream/stop",
+               "/api/save", "/api/export", "/api/model/upload", "/api/rigdefault"}
 
 # Read-only siblings that must NOT be gated, listed so the intent is explicit
 # rather than implied by absence. The QC check asserts against this.
 OPEN = {
     "/api/status", "/api/scan", "/api/ports", "/api/mine", "/api/allmods",
     "/api/scanusb", "/api/hubs", "/api/servos", "/api/apps", "/api/list",
-    "/api/modules",
+    "/api/modules", "/api/modules/all",
     "/api/load", "/api/loadseq", "/api/flash/images",
     # Watching a write on another PC reads that PC; it changes nothing
     # here, and the page needs it precisely while it is not able to ask
@@ -107,6 +169,18 @@ OPEN = {
     # The QR is how a phone GETS to the login screen. Gating it would
     # be a lock on the outside of the front door.
     "/api/qr",
+    # Which pages work with no login, and which cards ask first. A page has
+    # to draw itself BEFORE anybody has signed in, so gating this would put
+    # the sign-in box behind a sign-in box. It says nothing secret either:
+    # the same list is written on the help page in plain words.
+    "/api/access",
+    # Where the outside programs live, and what each of their event sources can
+    # report. Addresses only - the logins are not in that file and never will
+    # be - and the tile has to draw itself before anybody has signed in.
+    "/api/partners",
+    # A report is a complaint, not a command: it changes nothing on any
+    # board, and complaining must never need a password (A21-6).
+    "/api/report",
     "/api/robot/status", "/api/robot/files", "/api/robot/download",
     "/api/dev/status", "/api/dev/files", "/api/dev/download", "/api/dev/peers",
 }
@@ -119,13 +193,27 @@ PASS_MAX = 32
 MAX_USERS = 16
 # What the single password becomes when an older hub is opened for the first
 # time by this version. Also the account a bare password logs into.
-DEFAULT_USER = "mice"
+DEFAULT_USER = "super_admin"
+# The real hub's store. Any OTHER name is somebody's throwaway (a QC run
+# makes one per process), and its password file is named after it.
+DEFAULT_STORE_NAME = "hub_auth.json"
 
 COOKIE = "mice_session"
 _ITERATIONS = 240_000
 _MAX_TRIES = 5
 _LOCK_SECONDS = 60
 _IDLE_SECONDS = 12 * 3600      # a show is long; a working day is not
+
+
+def _is_hex(s: str, length: int) -> bool:
+    """Exactly `length` hex characters — the shape _hash() writes."""
+    if len(s) != length:
+        return False
+    try:
+        bytes.fromhex(s)
+    except ValueError:
+        return False
+    return True
 
 
 def gated(path: str, method: str = "GET") -> bool:
@@ -147,7 +235,8 @@ class Auth:
     def __init__(self, store: Path, out=print):
         self.store = Path(store)
         self._sessions = {}          # token -> last seen (monotonic)
-        self._fails = {}             # who -> [count, locked until]
+        self._fails = {}
+        self._count_lock = threading.Lock()             # who -> [count, locked until]
         self._out = out
         self.first_run_password = None
         self._load()
@@ -168,20 +257,77 @@ class Auth:
                     self._save()
                     self._out("[auth] the hub password is now the account "
                               + DEFAULT_USER + " — add more on the Settings screen")
+                users = self._data.setdefault("users", {})
+                if DEFAULT_USER not in users:
+                    pw = "admin123"
+                    users[DEFAULT_USER] = self._hash(pw)
+                    if "admin" not in users:
+                        users["admin"] = self._hash(pw)
+                    self._save()
                 return
             except (OSError, ValueError):
                 self._out("[auth] password file unreadable — generating a new one")
-        # First run. Generate one, print it HERE on the PC, and never anywhere
-        # else. Four words would be friendlier to type; this is short enough to
-        # read off a screen and long enough not to be guessed at a venue.
-        pw = secrets.token_urlsafe(9)
-        self.set_password(pw)
+        self._claim_or_adopt()
+
+    def _claim_or_adopt(self):
+        """First run — possibly SHARED by two hub processes at once.
+
+        Two starts racing on one store both used to see no file, both
+        generated, and the console printed two different passwords while the
+        files described only the second (seen 2026-08-26). An exclusive
+        create decides who generates; everyone else adopts the winner's file.
+        """
+        try:
+            os.close(os.open(self.store, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+        except FileExistsError:
+            if self._await_adopt():
+                return
+            # Nobody produced a readable store in time: the placeholder is
+            # ours to fill. Same as before, last writer wins.
+        self._generate()
+
+    def _await_adopt(self, seconds=5.0) -> bool:
+        """Another process claimed this first run; wait for its store."""
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            time.sleep(0.05)
+            try:
+                data = json.loads(self.store.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            if isinstance(data, dict) and data.get("users"):
+                self._data = data
+                self._out("[auth] another hub process set the password "
+                          "first — adopting %s" % self.store.name)
+                return True
+        return False
+
+    def _generate(self):
+        pw = "admin123"
+        self._data = {"users": {
+            "admin": self._hash(pw),
+            "super_admin": self._hash(pw)
+        }}
+        self._save()
+        self._write_plain(pw, "admin")
+        self._write_plain(pw, "super_admin")
         self.first_run_password = pw
         self._out("")
         self._out("  This hub now needs a password before anything can be moved,")
         self._out("  flashed or deleted. Reading stays open.")
         self._out("")
-        self._out("      password:  %s" % pw)
+        self._out("      admin password:  %s" % pw)
+        self._out("      super_admin password:  %s" % pw)
+        self._out("")
+        self._out("  Stored hashed in %s, and written in plain text in %s"
+                  % (self.store.name, self.plain_file().name))
+        self._out("  so it cannot be lost. Both stay on this PC.")
+        self._out("")
+        self._out("  This hub now needs a password before anything can be moved,")
+        self._out("  flashed or deleted. Reading stays open.")
+        self._out("")
+        self._out("      admin password:  %s" % pw)
+        self._out("      super_admin password:  %s" % pw)
         self._out("")
         self._out("  Stored hashed in %s, and written in plain text in %s"
                   % (self.store.name, self.plain_file().name))
@@ -201,8 +347,16 @@ class Auth:
         main_python/web, never main_python itself, and check_hub_auth asserts
         that no URL reaches this file. Someone who can read this file can
         already read everything else on the PC.
+
+        THE NAME FOLLOWS THE STORE. It used to be hub_password.txt for every
+        store, so each QC run - which makes its own mice_qc_auth_<pid>.json -
+        wrote its throwaway password over the real one. Found 2026-09-07 when
+        the file offered a password the hub had never had, and the user could
+        not log in.
         """
-        return self.store.with_name("hub_password.txt")
+        if self.store.name == DEFAULT_STORE_NAME:
+            return self.store.with_name("hub_password.txt")
+        return self.store.with_suffix(".txt")
 
     def _write_plain(self, password: str, user: str = DEFAULT_USER):
         text = (
@@ -271,6 +425,94 @@ class Auth:
         self._sessions.clear()      # a removed person must not stay logged in
         return True, None
 
+    # ------------------------------------------------------------- pairing
+    # One login on every PC (A14-1). The accounts are COPIED once, after a
+    # person proved a pairing code on both machines — see hub_pair.py.
+    def export_accounts(self) -> dict:
+        """Every account as name -> {salt, hash}. Never a password.
+
+        These bytes leave the PC, which is the whole point — the same password
+        then works on the other hub with no internet and no link between them
+        afterwards. It is also why nothing may call this without a live
+        pairing code.
+        """
+        return {n: {"salt": r["salt"], "hash": r["hash"]}
+                for n, r in self._data.get("users", {}).items()
+                if r.get("salt") and r.get("hash")}
+
+    def import_accounts(self, accounts, replace: bool = False):
+        """Take another hub's accounts. -> dict(added, clashed, replaced,
+        skipped, why).
+
+        NEVER DELETES, and never overwrites unless a person asked twice.
+
+        A clash is not the rare case, it is the normal one: every hub
+        generates the DEFAULT_USER account on first run, so two fresh PCs both
+        have that name with different passwords. Skipping it silently would
+        make pairing useless exactly when both are new — and the local one
+        often cannot be removed first, because remove_user refuses the last
+        account. So the first attempt REPORTS the clash and changes nothing,
+        and the page offers replacing it as a second, deliberate press.
+        """
+        users = self._data.setdefault("users", {})
+        out = {"added": [], "clashed": [], "replaced": [], "skipped": [],
+               "why": None}
+        for name, rec in sorted((accounts or {}).items()):
+            if not self.valid_name(name) or not isinstance(rec, dict):
+                out["skipped"].append(str(name)[:NAME_MAX])
+                continue
+            salt, digest = str(rec.get("salt") or ""), str(rec.get("hash") or "")
+            # A record that is not hex would raise inside _matches and take
+            # the login route down with it, so it is refused here instead.
+            if not _is_hex(salt, 32) or not _is_hex(digest, 64):
+                out["skipped"].append(name)
+                continue
+            here = name in users
+            if here and users[name].get("salt") == salt \
+                    and users[name].get("hash") == digest:
+                # Already the same account — pairing twice is not a change,
+                # and calling it one would end every session for nothing.
+                continue
+            if here and not replace:
+                out["clashed"].append(name)
+                continue
+            if not here and len(users) >= MAX_USERS:
+                out["why"] = ("this hub is full at %d accounts — remove one "
+                              "and pair again" % MAX_USERS)
+                out["skipped"].append(name)
+                continue
+            users[name] = {"salt": salt, "hash": digest}
+            out["replaced" if here else "added"].append(name)
+        if out["added"] or out["replaced"]:
+            self._save()
+        if out["replaced"]:
+            # A replaced account has a different password now. Whoever is
+            # logged in under the old one must not stay logged in, for the
+            # same reason set_password ends every session.
+            self._sessions.clear()
+        return out
+
+    def note_paired(self, host: str, names):
+        """Append to the readable password file: these logins live elsewhere.
+
+        hub_password.txt says *this PC's login*, and after pairing that is no
+        longer the whole truth — the imported accounts have no password on
+        this machine to write down. Someone reading the file to get into the
+        hub would otherwise be told about one account out of five.
+        """
+        if not names:
+            return
+        try:
+            with open(self.plain_file(), "a", encoding="utf-8",
+                      newline="") as f:
+                f.write("\nPaired with %s on %s: %s\nTheir passwords are set "
+                        "on %s, not here.\n"
+                        % (host or "another PC",
+                           time.strftime("%Y-%m-%d %H:%M"),
+                           ", ".join(sorted(names)), host or "that PC"))
+        except OSError:                     # a read-only folder is not fatal
+            pass
+
     def _save(self):
         self._data["set_at"] = time.strftime("%Y-%m-%d %H:%M")
         self.store.parent.mkdir(parents=True, exist_ok=True)
@@ -303,6 +545,25 @@ class Auth:
                                   bytes.fromhex(rec["salt"]), _ITERATIONS)
         return hmac.compare_digest(want, got)   # constant time, not ==
 
+    def _resync(self) -> bool:
+        """Adopt the store from disk if it changed under us -> did it change?
+
+        A file read costs nothing next to the PBKDF2 that always follows a
+        mismatch, so re-reading on every wrong password is free.
+        """
+        try:
+            data = json.loads(self.store.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return False
+        if not isinstance(data, dict) or not data.get("users") \
+                or data == self._data:
+            return False
+        self._data = data
+        # The sessions in memory belonged to accounts this file no longer
+        # describes — the same reason set_password clears them.
+        self._sessions.clear()
+        return True
+
     # ---------------------------------------------------------- logging in
     def locked_for(self, who: str) -> int:
         """Seconds this caller must wait, 0 if they may try now."""
@@ -321,10 +582,22 @@ class Auth:
         if wait:
             return None, "too many tries — wait %d seconds" % wait
         if not self._matches(password or "", user):
-            n, _ = self._fails.get(who, (0, 0.0))
-            n += 1
-            until = time.monotonic() + _LOCK_SECONDS if n >= _MAX_TRIES else 0.0
-            self._fails[who] = (n, until)
+            # THE FILE IS THE TRUTH, NOT THIS PROCESS'S MEMORY. Seen
+            # 2026-08-26: a second hub process regenerated the password while
+            # this one served; the files described the new one and this one
+            # went on refusing it — the operator locked out of their own hub.
+            # Re-read once before counting a failed try.
+            self._resync()
+        if not self._matches(password or "", user):
+            # COUNTED UNDER A LOCK. Read-modify-write from two request threads
+            # interleaves and loses a try, so five wrong passwords could take
+            # more than five attempts to lock out - a brute-force gate quietly
+            # weaker than the number it advertises. Found 2026-08-21.
+            with self._count_lock:
+                n, _ = self._fails.get(who, (0, 0.0))
+                n += 1
+                until = time.monotonic() + _LOCK_SECONDS if n >= _MAX_TRIES else 0.0
+                self._fails[who] = (n, until)
             left = _MAX_TRIES - n
             if left > 0:
                 # Deliberately the same wording whether the NAME or the
@@ -335,7 +608,7 @@ class Auth:
             return None, "too many tries — wait %d seconds" % _LOCK_SECONDS
         self._fails.pop(who, None)
         token = secrets.token_urlsafe(24)
-        self._sessions[token] = time.monotonic()
+        self._sessions[token] = (time.monotonic(), user or DEFAULT_USER)
         return token, None
 
     def logout(self, token: str):
@@ -345,11 +618,23 @@ class Auth:
         seen = self._sessions.get(token or "")
         if seen is None:
             return False
-        if time.monotonic() - seen > _IDLE_SECONDS:
+        last_time, user = seen
+        if time.monotonic() - last_time > _IDLE_SECONDS:
             self._sessions.pop(token, None)
             return False
-        self._sessions[token] = time.monotonic()    # still being used
+        self._sessions[token] = (time.monotonic(), user)    # still being used
         return True
+
+    def user_of(self, token: str) -> str:
+        seen = self._sessions.get(token or "")
+        if seen is None:
+            return ""
+        last_time, user = seen
+        if time.monotonic() - last_time > _IDLE_SECONDS:
+            self._sessions.pop(token, None)
+            return ""
+        self._sessions[token] = (time.monotonic(), user)
+        return user
 
     def token_of(self, cookie_header: str) -> str:
         for part in (cookie_header or "").split(";"):

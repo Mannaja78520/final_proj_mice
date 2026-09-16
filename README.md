@@ -118,6 +118,49 @@ joint and changeable at runtime.
 Power servos from a separate 5 V supply with common ground; eight MG90S can
 pull several amps.
 
+## Just give me the part I need
+
+Three ways in, smallest first. Every command below was run to check it works,
+and the sizes are what it actually downloaded.
+
+**1 · Only the app — one file, nothing to install (≈19 MB).**
+The `app` branch holds the built hub and nothing else, so this is the whole
+download:
+
+```
+git clone --branch app --depth 1 https://github.com/Mannaja78520/final_proj_mice.git
+```
+
+Then run `MiceHub.exe`. No Python, no PlatformIO, no repository. If you have no
+git, the same file downloads from the branch page on GitHub with the **Code →
+Download ZIP** button.
+
+**2 · One branch, without the history (≈24 MB).**
+`--depth 1` takes the current state only — every past commit is what makes a
+full clone big:
+
+```
+git clone --branch main --depth 1 https://github.com/Mannaja78520/final_proj_mice.git
+```
+
+**3 · One folder out of the repository, without the rest.**
+For working on the hub without downloading the firmware, or the other way
+round:
+
+```
+git clone --filter=blob:none --sparse --depth 1 https://github.com/Mannaja78520/final_proj_mice.git
+cd final_proj_mice
+git sparse-checkout set main_python
+```
+
+Swap `main_python` for `firmware`, or `nong/main_python_set_nong`, or name
+several at once. `git sparse-checkout disable` brings everything back without
+re-downloading.
+
+> The repository root **is** this `code` folder, so the path is `main_python`
+> and not `code/main_python` — a full clone of the parent project is not what
+> these URLs give you.
+
 ## Getting started
 
 1. Flash any ESP32 with `firmware/` — `pio run -e mice_nong -t upload` (or
@@ -130,8 +173,81 @@ pull several amps.
 4. For a `nong` board, open Nong Studio from the hub, build a sequence, export
    the YAML to the SD card's `/moves/`, then run it with `MOVE <file>`.
 
+## Complete Installation & Multi-App Simultaneous Running Guide
+
+All system components and partner applications run simultaneously on dedicated, non-overlapping ports:
+
+| Application / Service | Default Port | Role & Function | Launch Command |
+|---|---|---|---|
+| **Mice Control Hub** | `8642` | Main robot orchestrator, web dashboard, module bus scanner | `dist/MiceHub.exe` or `python main_python/main.py` |
+| **Voice AI Service** | `8767` | Speech-to-text, neural TTS voice synthesis, Q&A | `python apps/voice/service.py` (or via Hub button) |
+| **All Jao Games** | `8080` | Interactive mini-games (Claw, Matching, Quiz, Wheel) | `python -m http.server 8080` (or via Hub button) |
+| **Reconize** (Face App) | `5173` / `8000` | Facial recognition, visitor log & camera events | `start.bat` in `Face_Regonize` |
+
+---
+
+### Step 1: Install Prerequisites
+
+- **Python**: Version 3.10 to 3.12 recommended.
+- **Git**: Installed and configured.
+- Install python dependencies:
+  ```bash
+  pip install -r requirements.txt
+  ```
+
+---
+
+### Step 2: Running Everything Together
+
+You can run all 4 apps at the exact same time without port conflicts:
+
+#### 1. Start Mice Hub (Port 8642)
+From the repository root:
+```bash
+python main_python/main.py
+```
+*(Or launch prebuilt `dist/MiceHub.exe`)*
+- Open browser: **`http://127.0.0.1:8642/`**
+
+#### 2. Start Voice AI Service (Port 8767)
+From the repository root:
+```bash
+python apps/voice/service.py
+```
+*(Or navigate to Hub -> 🎤 Voice -> Click "▶ Start AI Model")*
+- Features: Select voice & language (`th-TH-PremwadeeNeural` ⭐, `en-US-JennyNeural` ⭐, etc.).
+- Offline STT (Faster-Whisper) + Microsoft Neural TTS + instant FAQ engine.
+
+#### 3. Start All Jao Games (Port 8080)
+From the Hub dashboard, click the **🎮 All Jao Games** tile, then click **"▶ Start Game Server"** or **"Open All Jao Games"**.
+Alternatively, start the server manually in terminal:
+```bash
+python -m http.server 8080 --directory "E:/final_proj/mice/All-Jao-Games"
+```
+- Open browser: **`http://127.0.0.1:8080/`**
+- Mini-games suite: Claw Machine, Card Matching, Quiz Game, and Wheel of Fortune.
+
+#### 4. Start Reconize Face App (Ports 5173 & 8000)
+From the Hub dashboard, click the **👋 Reconize** tile, then run `start.bat` in `E:/final_proj/mice/Face_Regonize`.
+- Web UI: **`http://127.0.0.1:5173/`**
+- API: **`http://127.0.0.1:8000/`**
+
+---
+
+### Step 3: Verification & QC Testing
+
+Verify all Mice components pass the quality gate:
+```bash
+python qc/run_qc.py "voice"
+```
+Or run the full QC suite:
+```bash
+python qc/run_qc.py
+```
+
 ## Not in this repository
 
 `.pio/` (PlatformIO build output and downloaded libraries, ~230 MB) and other
 build trees are ignored — `pio run` regenerates them. The CAD models live
-outside this folder, in `../model/`.
+outside this folder, in `../model/`. Partner app sources (`All-Jao-Games` and
+`Face_Regonize`) are maintained in their respective author repositories.

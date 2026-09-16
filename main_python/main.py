@@ -18,11 +18,15 @@ Other devices on the same WiFi can open the hub too (phones, laptops).
 Stdlib only - no pip installs. Command reference: code/firmware/COMMANDS.md
 """
 
+import base64
 import itertools
 import hashlib
 import json
 import os
 import re
+import shutil
+import subprocess
+import uuid
 import socket
 import sys
 import time
@@ -86,9 +90,18 @@ except Exception as _e:            # a broken registry must not stop the hub
     registry = None
     print("[hub] registries unavailable:", _e)
 
+import build_stamp                                         # noqa: E402
+import cam_relay                                           # noqa: E402
 import hub_auth                                            # noqa: E402
+import hub_pair                                            # noqa: E402
+import stream_audio                                        # noqa: E402
 
 HUB_WEB = asset("main_python", "web")
+# A23-1 comparison versions (brief: docs/a23_brief.md). Additive mounts
+# only - the incumbent pages at / are untouched until the user picks a
+# winner, and both folders may be absent while the designs are built.
+GEMINI_WEB = asset("main_python", "web_gemini")
+OX_WEB = asset("main_python", "web_ox")
 # Written at runtime, holds a password HASH. Never promoted (promote.py's
 # SKIP_FILES): it belongs to the machine, not to the source.
 AUTH_STORE = Path(os.environ.get("MICE_HUB_AUTH")
@@ -116,6 +129,131 @@ def auth():
     if not _auth:
         _auth.append(hub_auth.Auth(AUTH_STORE))
     return _auth[0]
+
+
+# The pairing code lives in MEMORY, like a session: restarting the hub stops
+# showing it. Nothing about a code is worth surviving a restart.
+PAIRING = hub_pair.Pairing()
+# ...and the accounts this hub fetched, held only until the person answers the
+# one question a copy can raise: a name that exists on both PCs.
+PAIR_PENDING = hub_pair.Pending()
+
+# The Voice app's helper (apps/voice/service.py) runs as its own process —
+# torch can never live inside this stdlib program. The hub only forwards to
+# it. WHERE it answers is resolved per call, not at import: both so editing
+# config/voice.json needs no restart, and because QC boots several hubs in
+# one process, where an import-time path would freeze whichever environment
+# existed first.
+def voice_service_url():
+    """(address, why-not). An empty address means the proxy must refuse — and
+    say which of the two reasons it is, because the fix differs: a broken file
+    wants repairing, a missing address wants writing."""
+    path = Path(os.environ.get("MICE_VOICE_CONFIG")
+                or asset("config", "voice.json"))
+    try:
+        if registry:
+            cfg = registry.load(path)
+        else:
+            cfg = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as e:                  # noqa: BLE001 - a broken store must
+        return "", ("config/voice.json could not be read (%s)" % e)
+    url = (cfg.get("service") or "http://127.0.0.1:8767").rstrip("/")
+    if url and "://" in url:
+        parts = urllib.parse.urlsplit(url)
+        try:
+            portless = parts.port is None
+        except ValueError:                  # malformed netloc: let urlopen say so
+            portless = False
+        if portless and (parts.hostname or "").strip():
+            # A portless address would ask :80 while the helper answers on its
+            # own default - the same fallback apps/voice/service.py uses.
+            url = "%s://%s:8767" % (parts.scheme or "http", parts.hostname)
+    return url, ""
+
+
+# Which pages work with no login. Read per request, like the voice address
+# above and for the same reason: a designer editing the words should see them
+# on the next refresh, not after a restart of a frozen exe.
+#
+# A BROKEN FILE MUST NOT LOCK ANYBODY OUT. This decides what is SHOWN, never
+# what is allowed - the gate is hub_auth.GATED - so when the file cannot be
+# read the honest answer is the safe one: treat nothing as gated, and say why.
+# Failing the other way would hide the whole hub behind a box nobody can pass
+# because the file that describes the box is the broken one.
+PAGE_ACCESS_FALLBACK = {"openPages": [], "needLogin": [], "words": {}}
+
+
+def read_page_access():
+    path = Path(os.environ.get("MICE_PAGE_ACCESS")
+                or asset("config", "page_access.json"))
+    try:
+        cfg = (registry.load(path) if registry
+               else json.loads(path.read_text(encoding="utf-8")))
+    except Exception as e:                                  # noqa: BLE001
+        out = dict(PAGE_ACCESS_FALLBACK)
+        out["ok"] = False
+        out["error"] = "config/page_access.json could not be read (%s)" % e
+        return out
+    return {"ok": True,
+            "openPages": list(cfg.get("openPages") or []),
+            "needLogin": list(cfg.get("needLogin") or []),
+            "words": dict(cfg.get("words") or {})}
+
+
+# The outside programs the rig follows. One entry each in config/partners.json,
+# so the second program is an entry and no code (asked 2026-09-08). Read per
+# request for the same reason as the two above: a designer moving an app to
+# another port should see it work on the next refresh.
+#
+# It holds ADDRESSES, never a login. Logins live beside hub_auth.json, out of
+# the served tree, out of promotion and out of the exe.
+def read_partners():
+    path = Path(os.environ.get("MICE_PARTNERS")
+                or asset("config", "partners.json"))
+    try:
+        cfg = (registry.load(path) if registry
+               else json.loads(path.read_text(encoding="utf-8")))
+    except Exception as e:                                  # noqa: BLE001
+        return {"ok": False, "partners": {},
+                "error": "config/partners.json could not be read (%s)" % e}
+    return {"ok": True, "partners": cfg}
+
+
+_reports_lock = threading.Lock()   # one read-modify-write of a report at a time
+
+
+def _translate_report_later(fname, text):
+    """Fill one report file's text_en in place, in the background.
+
+    A complaint saved in any language gains an English twin a minute later:
+    submitting must not wait on a first model load, and the list must never
+    translate per refresh. Any failure leaves the file exactly as the visitor
+    wrote it - untranslated is honest, a wrong guess is not.
+    """
+    try:
+        base, why_not = voice_service_url()
+        if not base:
+            return
+        req = urllib.request.Request(
+            base + "/translate",
+            data=json.dumps({"text": text}).encode("utf-8"),
+            headers={"Content-Type": "application/json"}, method="POST")
+        # The model may load on this call - the same long wait /api/voice allows.
+        with urllib.request.urlopen(req, timeout=180) as resp:
+            vdata = json.loads(resp.read().decode("utf-8"))
+        out = (vdata.get("text") or "").strip() if vdata.get("ok") else ""
+        if not out or out == text:
+            return
+        # The status screen edits the same file. One lock around each
+        # read-modify-write, or whichever writes second puts back a copy
+        # without the other's change (a closed report reopens itself, or the
+        # translation silently vanishes).
+        with _reports_lock:
+            data = json.loads(fname.read_text(encoding="utf-8"))
+            data["text_en"] = out
+            write_atomic(fname, json.dumps(data, ensure_ascii=False, indent=2))
+    except Exception:                       # noqa: BLE001 - the report stands alone
+        pass
 
 MIME = {
     ".html": "text/html; charset=utf-8",
@@ -371,7 +509,11 @@ def probe_module(ip: str, timeout=0.6):
                     "type": st.get("type", "?"), "sd": st.get("sd", False),
                     # which installation it belongs to — the Network tab shows
                     # this, and it is the whole point of the linking screen
-                    "group": st.get("group", "")}
+                    "group": st.get("group", ""),
+                    # Bench 2026-08-26: dropping the chip keyed one board as
+                    # two - cable route under its MAC, WiFi route under
+                    # id+type - so the page drew a row per way in.
+                    "chip": st.get("chip", "")}
     except Exception:
         pass
     return None
@@ -539,6 +681,36 @@ def _usb_get(port):
         ser.rts = False
         try:
             ser.open()
+            # A FRESH HANDLE MAY HAVE JUST RESET THE BOARD. Opening a port
+            # toggles the control lines on some adapters however carefully DTR
+            # and RTS are cleared first - measured on an FTDI adapter at the
+            # bench, 2026-08-20. Let whatever the board says on the way up land
+            # here, once, rather than in the middle of the first reply.
+            #
+            # THE CAP IS NOT OPTIONAL. Every arriving byte pushes `quiet`
+            # forward, so a board that never stops talking pushed it forever
+            # and this loop never ended - and because the scan walks every
+            # port in turn, ONE noisy board hung the whole module list, not
+            # just its own cable. Measured on the bench 2026-08-21: a wedged
+            # board on COM26 sent 23,395 lines in three seconds and a probe
+            # of six ports never returned. No fake had ever flooded, so 3120
+            # passing checks said nothing about it.
+            #
+            # Both clocks start NOW, so 4 s is the TOTAL, not four seconds
+            # after the settle: a quiet board is done in 1.2 s and a talking
+            # one is cut off at 4. The cost of the cut is small and known - a
+            # board still printing boot lines at 4 s has its INFO reply read
+            # out of the noise, which works because a reply is identified by
+            # the blank line in front of it, and at worst it is found on the
+            # next scan instead of this one.
+            quiet = time.time() + 1.2
+            hard = time.time() + 4.0
+            while time.time() < quiet and time.time() < hard:
+                if ser.in_waiting:
+                    ser.read(ser.in_waiting)
+                    quiet = time.time() + 0.25   # still talking; wait again
+                else:
+                    time.sleep(0.03)
         except Exception as e:  # noqa: BLE001
             raise OSError(usb_busy_hint(port, e))
         ent["ser"] = ser
@@ -547,9 +719,20 @@ def _usb_get(port):
 
 
 def usb_close(port=None):
+    """Close cables and say which ones really closed.
+
+    The return value matters: a port somebody is mid-command on is deliberately
+    NOT closed (see below), and the caller has to be able to tell. The flasher
+    could not - it called this, slept 300ms and ran esptool into a handle that
+    was still open, which fails at whatever percent it happens to reach and
+    leaves the board sitting in the bootloader. Measured at the bench
+    2026-08-20: 21%, "the chip stopped responding", and the same flash from a
+    command line with the hub stopped worked first try.
+    """
     with _usb_mgr_lock:
         ports = [port] if port else list(_usb_open)
         ents = [(p, _usb_open.pop(p)) for p in ports if p in _usb_open]
+    shut = []
     for p_name, ent in ents:
         # take the port's own lock first: never close the handle out from
         # under a command that is mid read/write on it
@@ -567,10 +750,23 @@ def usb_close(port=None):
         try:
             if ent["ser"] is not None:
                 ent["ser"].close()
+            shut.append(p_name)
         except Exception:
             pass
         finally:
             ent["lock"].release()
+    return shut
+
+
+def usb_free(port):
+    """True when this hub holds no handle on that cable.
+
+    What the flasher actually needs to know. `usb_close` returning is not the
+    same as the port being free: a port it could not lock is put back on
+    purpose, and esptool then meets a handle that is still open.
+    """
+    with _usb_mgr_lock:
+        return port not in _usb_open
 
 
 def usb_in_use(port):
@@ -601,6 +797,19 @@ def _usb_reaper():
 # only letters/digits/spaces inside the brackets. A JSON reply that starts with
 # "[" is always "[{" / "[\"" / "[[" / "[<num>," so it never matches this.
 _LOG_LINE = re.compile(r"^\[[\w ]*\]")
+
+# A BOARD THAT JUST REBOOTED, mid-conversation. Opening the port resets some
+# boards - measured at the bench 2026-08-20 on an FTDI adapter, where the ESP32
+# came up with `ets Jul 29 2019` and `rst:0x1 (POWERON_RESET)` while the hub was
+# waiting for a reply. The first-stage ROM log is printed at a different rate
+# from the firmware's 115200, so it arrives as NUL bytes and fragments - and
+# usb_cmd handed that back as the answer.
+#
+# That is what made a camera look like a corrupted RS485 module for an hour: the
+# same board read DIRECTLY, once the boot log had finished, answered ten times
+# out of ten with not one byte lost.
+_BOOT_NOISE = re.compile(r"ets [A-Z][a-z]{2} +\d|rst:0x|boot:0x|"
+                         r"configsip:|clk_drv:|Brownout detector")
 
 
 def _drain_to_line_boundary(ser):
@@ -686,6 +895,9 @@ def _usb_cmd_once(port, cmd, bus_id=0, wait=2.0):
         # working: if the window ends without ever seeing the marker, the
         # first plausible line is used, exactly as before.
         saw_blank, fallback = False, None
+        rebooted = [False]      # the board restarted while we were waiting
+        boots = [0]             # how many times — more than one is a boot LOOP
+        brownout = [False]      # and whether the board said why
         while time.time() < end:
             # read(1) returns the moment a byte arrives; read(256) would wait
             # for 256 bytes OR the full port timeout, and a reply like
@@ -714,7 +926,60 @@ def _usb_cmd_once(port, cmd, bus_id=0, wait=2.0):
                 if _LOG_LINE.match(t):
                     saw_blank = False   # a log line ended; no marker any more
                     continue
+                # Boot output is not an answer. It also means the board has
+                # just restarted, so whatever we asked never reached the
+                # firmware - the caller gets a timeout and can ask again,
+                # rather than a reply built out of a reset.
+                if _BOOT_NOISE.search(t):
+                    rebooted[0] = True
+                    # ONE reset is a coincidence; four in eight seconds is a
+                    # power fault. `rst:0x` is printed exactly once per boot, so
+                    # counting it separates the two - and they have completely
+                    # different fixes, which is the whole point of telling them
+                    # apart. Measured on the bench 2026-08-20: a 30-pin board
+                    # with a MAX485 attached rebooted every 1.6 s and the hub
+                    # called it "no reply", which sent an afternoon into
+                    # checking bus wiring that was never wrong.
+                    if "rst:0x" in t:
+                        boots[0] += 1
+                    if "Brownout" in t:
+                        brownout[0] = True
+                    saw_blank = False
+                    continue
+                # A LINE WITH NUL BYTES IN IT IS NEVER AN ANSWER.
+                #
+                # _BOOT_NOISE matches clean ASCII, and the whole reason this
+                # exists is that the ROM log arrives at ANOTHER BAUD - so it
+                # arrives as NULs and fragments, and a garbled boot line
+                # matches none of the patterns above. It then became `fallback`
+                # and was handed back as the reply, which is precisely the bug
+                # the boot-noise work was written to stop, surviving in the one
+                # form it takes most often. Found by a model review 2026-08-20.
+                #
+                # Nothing the firmware sends contains a NUL: every reply is one
+                # line of text written in one call (see main.cpp emitLine), so
+                # this cannot throw away a real answer.
+                if "\x00" in t:
+                    rebooted[0] = True
+                    saw_blank = False
+                    continue
                 if not saw_blank:
+                    # A BUS REPLY CARRIES ITS OWN MARKER, and needs no blank
+                    # line in front of it. `@<id> ` IS the RS485 frame format,
+                    # so it identifies a reply at least as surely as the blank
+                    # line does — an orphaned log tail cannot start with it.
+                    #
+                    # This matters for a plain USB-RS485 dongle, where there is
+                    # no board on the cable to re-emit the frame. A bridging
+                    # board wraps what it heard on the bus in the usual
+                    # "\n<reply>\n" (main.cpp's rs485.onBusLine → emitLine); a
+                    # dongle is just wire, and the frame arrives raw. Measured
+                    # 2026-08-20: `#1 PING` through a dongle answered
+                    # `@1 PONG 1 lift lift` on the wire, and the hub reported
+                    # "no reply from COM23 (bus id 1)" — it had read the answer
+                    # and thrown it away.
+                    if want and t.startswith(want):
+                        return t[len(want):]
                     # no blank line in front of this: either an orphan tail, or
                     # a board on older firmware. Remember it and keep looking.
                     if fallback is None:
@@ -726,10 +991,31 @@ def _usb_cmd_once(port, cmd, bus_id=0, wait=2.0):
                         return t[len(want):]
                 elif not t.startswith(("#", "@", "->")):
                     return t
-        if fallback is not None and not want:
+        if fallback is not None and not want and not rebooted[0]:
             return fallback          # older firmware: no blank-line marker
-        raise TimeoutError("no reply from " + port +
-                           ((" (bus id %d)" % bus_id) if bus_id else ""))
+        # SAY THAT IT REBOOTED. "no reply" sends somebody looking at wiring; a
+        # board that restarted mid-command is a different problem with a
+        # different fix, and the hub can see the difference in the boot log it
+        # just read.
+        # A BOOT LOOP IS NOT A SLOW BOARD. Three different failures, three
+        # different next steps, and the hub can tell them apart from the boot
+        # log it just read - so it should, rather than making somebody take a
+        # meter to the bus to find out.
+        if brownout[0] or boots[0] > 1:
+            raise TimeoutError(
+                "%s is restarting over and over - %d times while waiting%s. "
+                "The board resets before it can answer anything, so this is a "
+                "POWER fault, not wiring and not the bus. Check that the RS485 "
+                "transceiver is fed from 5V/VIN rather than 3.3V, and that the "
+                "USB port can supply the current spike when the radio starts."
+                % (port, boots[0],
+                   ", saying 'Brownout detector was triggered'"
+                   if brownout[0] else ""))
+        raise TimeoutError(
+            ("%s restarted while answering - the command never reached the "
+             "firmware. Ask again." % port) if rebooted[0] else
+            ("no reply from " + port +
+             ((" (bus id %d)" % bus_id) if bus_id else "")))
 
 
 # ---------------- unified device access (WiFi or USB/RS485, one API) ------
@@ -803,13 +1089,70 @@ def _via(c, peer):
 # and the page got a 502 while the module was answering perfectly well.
 PEER_WAIT = 8.0
 
+# Boards gate what CHANGES over WiFi (A1-1): /api/cmd answers
+# `401 ERR log in first` to anyone without a session. Found on the bench
+# 2026-08-26: POSE over USB worked while the same POSE over WiFi was refused,
+# because only the OTA path ever logged in. The hub logs in once per board and
+# reuses that session for its commands; cookies stay in this process's memory.
+BOARD_COOKIE = "mice_board"
+SHIPPED_BOARD_LOGIN = ("manny", "12345678")   # UserStore.cpp, a board out of the box
+_board_cookies = {}                           # board ip -> session value
 
-def dev_cmd(dev, c):
+
+def board_login(ip, user="", password=""):
+    """Log in to a board's own web login. -> (cookie, why); why is for a person."""
+    who, pwd = (user, password) if (user or password) else SHIPPED_BOARD_LOGIN
+    body = urllib.parse.urlencode({"user": who, "pass": pwd}).encode()
+    req = urllib.request.Request(
+        "http://%s/api/login" % ip, data=body, method="POST",
+        headers={"Content-Type": "application/x-www-form-urlencoded"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            for part in (r.headers.get("Set-Cookie") or "").split(";"):
+                k, _, v = part.strip().partition("=")
+                if k == BOARD_COOKIE and v:
+                    return v, None
+        return "", "%s let the login through but sent no session" % ip
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            return "", (
+                "%s refused the login for \"%s\". A board keeps its OWN "
+                "accounts: give the one set on that board, or set it back "
+                "to the shipped login on its own page." % (ip, who))
+        if e.code == 404:
+            # A BOARD TOO OLD TO HAVE A LOGIN. Its gates are absent entirely,
+            # so it still takes commands - and it is exactly the board that
+            # most needs updating. Refusing here would strand every board
+            # built before the auth work on whatever firmware it has.
+            return "", ""
+        return "", "%s answered %d to the login" % (ip, e.code)
+    except Exception as e:                      # noqa: BLE001
+        return "", "cannot reach %s to log in (%s)" % (ip, type(e).__name__)
+
+
+def dev_cmd(dev, c, wait=None):
+    """One command to a module, over whatever link its `dev` names.
+
+    `wait` is for the rare command that takes the board a long time to answer.
+    FWEND is the case that forced it: the board checks the md5 of a 1.3 MB image
+    before it will boot into it, and that is many seconds of work — far past the
+    2 s a POSE or a PING needs. Timing that out would report a FAILED update for
+    one that actually succeeded, which is the worst of the possible wrong
+    answers: the operator reflashes a board that was already fine.
+    """
     kind, addr, bus, peer = parse_dev(dev)
     if kind == "wifi":
+        # A FORWARDED COMMAND IS TWO HOPS ON EVERY TRANSPORT, not just USB.
+        # PEER_WAIT was applied only on the cable path, so `wifi:<ip>@<peer>`
+        # got the ordinary 6 s while `usb:<port>@<peer>` got the longer budget
+        # — for exactly the same journey: over the link, through the module,
+        # onto its hotspot, and back. Found by a model review 2026-08-20 and
+        # confirmed by reading both branches.
         return Handler.robot_get(
-            addr, "/api/cmd?c=" + urllib.parse.quote(_via(c, peer))).decode(errors="replace")
-    return usb_cmd(addr, _via(c, peer), bus, wait=PEER_WAIT if peer else 2.0)
+            addr, "/api/cmd?c=" + urllib.parse.quote(_via(c, peer)),
+            timeout=wait or (PEER_WAIT if peer else None)).decode(errors="replace")
+    return usb_cmd(addr, _via(c, peer), bus,
+                   wait=wait or (PEER_WAIT if peer else 2.0))
 
 
 def pinout_for(dev):
@@ -886,8 +1229,13 @@ def dev_download(dev, path):
     out, off = b"", 0
     while True:
         r = usb_cmd(addr, _via("FREAD %s %d 120" % (name, off), peer), bus)             if kind == "usb" else dev_cmd(dev, "FREAD %s %d 120" % (name, off))
-        if r == "EOF" or r.startswith("ERR"):
+        if r == "EOF":
             break
+        if r.startswith("ERR"):
+            # Serving the bytes read so far would hand back a truncated file
+            # that looks complete - the route's handler turns this into a
+            # visible error instead.
+            raise RuntimeError("download of %s stopped: %s" % (name, r))
         chunk = base64.b64decode(r)
         out += chunk
         off += len(chunk)
@@ -912,11 +1260,9 @@ def dev_upload(dev, dirp, name, data: bytes):
             ("--%s\r\nContent-Disposition: form-data; name=\"file\"; "
              "filename=\"%s\"\r\nContent-Type: application/octet-stream\r\n\r\n" % (boundary, name)).encode()
             + data + ("\r\n--%s--\r\n" % boundary).encode())
-        req = urllib.request.Request(
-            "http://%s/api/upload?dir=%s" % (addr, urllib.parse.quote(dirp)), data=body,
-            method="POST", headers={"Content-Type": "multipart/form-data; boundary=" + boundary})
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return resp.read().decode(errors="replace")
+        return _robot_post(addr, "/api/upload?dir=" + urllib.parse.quote(dirp),
+                           body, "multipart/form-data; boundary=" + boundary,
+                           timeout=20).decode(errors="replace")
     # USB: FBEGIN / FDATA (base64) / FEND
     import base64
     path = (dirp.rstrip("/") + "/" + name) if dirp else name
@@ -952,6 +1298,129 @@ def dev_upload(dev, dirp, name, data: bytes):
 # `POSE ... T <ms>`, which the module interpolates itself. The hub only decides
 # WHEN each move starts, so the motion is identical to a module-played show,
 # not merely similar.
+_CUE_CMDS = {}
+
+
+def cue_cmds():
+    """Step key -> the command line it becomes, e.g. {'play': 'PLAY'}.
+
+    Read from firmware/config/commands.json, the SAME data the firmware's own
+    step table is generated from (gen_tables.gen_seqsteps), so a new step key
+    costs no hub code. MOTION commands are left out on purpose: while the hub
+    is the clock, a step that moves the robot would be a second clock, and
+    that is the one rule check_one_player exists to hold. Without a registry
+    (a build with no config folder) the map is empty and non-pose steps are
+    skipped, which is what the hub did before A24-22.
+    """
+    if not _CUE_CMDS and registry:
+        for c in registry.commands():
+            if c.get("motion"):
+                continue
+            for st in c.get("steps") or []:
+                key = str(st.get("key") or "").lower()
+                if key:
+                    _CUE_CMDS[key] = c["name"] + (
+                        (" " + st["sub"]) if st.get("sub") else "")
+    return _CUE_CMDS
+
+
+def cue_lines(cues):
+    """Sequence step lines (`play: song.mp3`) -> the commands to send.
+
+    Anything the map does not name is dropped here: a motion step (the hub is
+    the clock) and a key this board's firmware does not carry both play only
+    from the module's own SD card, exactly as before A24-22.
+    """
+    out = []
+    for line in cues or []:
+        key, _, val = str(line).partition(":")
+        cmd = cue_cmds().get(key.strip().lower())
+        if cmd:
+            out.append((cmd + " " + val.strip().strip('"')).strip())
+    return out
+
+
+def seq_steps(text):
+    """A saved-show yaml (the bytes /api/loadseq serves) -> play steps.
+
+    One parser, hub-side, so every caller gets identical timing. It mirrors
+    what Studio's parseSeqYaml and the firmware agree on: a pose line may
+    carry an explicit `T <ms>`; `wait` becomes the previous step's hold; a
+    `speed` step sets deg/s for the moves after it; an OLD arms-only pose
+    has 8 values and pads to 10 with neutral 90s. Exports always carry T,
+    so the computed-T path is for hand-written files only - it is the
+    firmware rule, max joint delta over deg/s with the same 80 ms floor.
+    Chains (`next:`) are returned but NEVER followed: one answer plays one
+    sequence.
+    """
+    steps, loop = [], False
+    cur_speed, seq_speed = 0.0, 0.0
+    name, nxt = "", ""
+    pending = []                          # cues waiting for the next keyframe
+    for raw in text.splitlines():
+        s = re.sub(r"#.*$", "", raw).strip()
+        m = re.match(r"^name:\s*(.+)$", s)
+        if m:
+            name = m.group(1).strip()
+            continue
+        m = re.match(r"^next:\s*(.+)$", s)
+        if m:
+            nxt = m.group(1).strip()
+            continue
+        m = re.match(r"^loop:\s*(true|false)", s)
+        if m:
+            loop = m.group(1) == "true"
+            continue
+        m = re.match(r"^-\s*speed:\s*([\d.]+)", s)
+        if m:
+            cur_speed = float(m.group(1))
+            if not seq_speed:
+                seq_speed = cur_speed
+            continue
+        m = re.match(r"^-\s*wait:\s*(\d+)", s)
+        if m:
+            if steps:
+                steps[-1]["hold"] = int(m.group(1))
+            continue
+        m = re.match(r'^-\s*pose:\s*"?([\d.\s]+?)(?:\s+T\s+(\d+))?"?\s*$', s)
+        if not m:
+            # A non-pose step (`play:`, `vol:`, `rgb:`) is a CUE: it fires when
+            # the show reaches this line, exactly where the module's own player
+            # would run it. Until A24-22 they were dropped here, so the same
+            # file played silently from the hub and with music from the SD card.
+            m = re.match(r'^-\s*([A-Za-z_][\w-]*):\s*"?(.*?)"?\s*$', s)
+            if m:
+                # kept as the FILE's own words (`play: song.mp3`), not as a
+                # command: which command a key becomes is decided in one place,
+                # ShowPlayer.start, and an editor that round-trips the file
+                # then carries steps it does not itself understand.
+                pending.append(("%s: %s" % (m.group(1).lower(),
+                                            m.group(2))).strip())
+            continue                      # unknown keys still play only from
+                                          # the module's own SD card
+        nums = [float(v) for v in m.group(1).split()]
+        if len(nums) == 8:
+            nums += [90.0, 90.0]          # WAIST and SHRUG at neutral
+        if len(nums) != 10:
+            raise ValueError("a pose needs 8 or 10 joints, got %d"
+                             % len(nums))
+        t = int(m.group(2) or 0)
+        if not t:
+            if not steps:
+                t = 1000                  # time to reach the start pose
+            else:
+                prev = steps[-1]["pose"]
+                delta = max(abs(a - b) for a, b in zip(prev, nums))
+                t = max(ShowPlayer.MIN_T,
+                        int(delta / (cur_speed or seq_speed or 60.0) * 1000))
+        steps.append({"pose": nums, "t": t, "hold": 0, "cues": pending})
+        pending = []
+    if steps and pending:
+        # cues after the last keyframe: they fire when the show ends
+        steps[-1]["cues_after"] = pending
+    return {"name": name, "next": nxt, "loop": loop, "steps": steps}
+
+
 class ShowPlayer:
     """One player per hub. Runs a sequence on a real thread, at real times."""
 
@@ -960,6 +1429,11 @@ class ShowPlayer:
 
     def __init__(self):
         self.lock = threading.Lock()
+        # Held across stop-then-start, so two callers cannot each find
+        # nothing to stop and each spawn a clock. Separate from `lock`,
+        # which the running thread takes constantly - holding that one
+        # across a join would deadlock.
+        self._starting = threading.Lock()
         self.thread = None
         self.stop_flag = threading.Event()
         self.dev = ""
@@ -996,23 +1470,41 @@ class ShowPlayer:
         parse_dev(dev)                       # raises on a malformed device
         steps = [{"pose": [float(v) for v in s["pose"]],
                   "t": max(0, int(s.get("t", 0))),
-                  "hold": max(0, int(s.get("hold", 0)))} for s in steps]
+                  "hold": max(0, int(s.get("hold", 0))),
+                  # cues travel through the API as the file's own step lines
+                  # (`play: song.mp3`), so an editor can carry steps it does
+                  # not understand; they become commands here, once.
+                  "cues": cue_lines(s.get("cues")),
+                  "cues_after": cue_lines(s.get("cues_after"))}
+                 for s in steps]
         if len(steps) < 2:
             raise ValueError("a show needs at least two keyframes")
         for s in steps:
             if len(s["pose"]) != 10:
                 raise ValueError("every keyframe needs 10 joint angles")
-        self.stop()
-        with self.lock:
-            self.dev, self.steps, self.loop, self.name = dev, steps, bool(loop), name
-            self.total_ms = self.total(steps)
-            self.at_ms = max(0, min(int(from_ms), self.total_ms))
-            self.step, self.last, self.error = -1, "", ""
-            self.started_at = time.time()
-        self.stop_flag.clear()
-        self.thread = threading.Thread(target=self._run, daemon=True)
-        self.thread.start()
-        return self.status()
+        # STOP AND CLAIM UNDER ONE LOCK. stop() read self.thread outside it, so
+        # two POSTs for the same robot could each find nothing to stop and each
+        # spawn a clock - two threads sending POSE to one arm, which is the
+        # exact fault check_takeover exists to prevent and could never see.
+        # Found 2026-08-21.
+        with self._starting:
+            self.stop()
+            with self.lock:
+                self.dev, self.steps, self.loop, self.name = dev, steps, bool(loop), name
+                self.total_ms = self.total(steps)
+                self.at_ms = max(0, min(int(from_ms), self.total_ms))
+                self.step, self.last, self.error = -1, "", ""
+                self.started_at = time.time()
+            # A FRESH EVENT PER RUN. stop_flag is how the old clock hears
+            # "stop"; clearing one shared event here would also release a run
+            # whose thread stop() gave up waiting for - and two clocks would
+            # play one arm. The old thread keeps the old, SET event.
+            flag = threading.Event()
+            self.stop_flag = flag
+            self.thread = threading.Thread(target=self._run, args=(flag,),
+                                           daemon=True)
+            self.thread.start()
+            return self.status()
 
     def stop(self, freeze=True, why=""):
         """Stop playing. `freeze` also tells the module to hold where it is."""
@@ -1020,11 +1512,26 @@ class ShowPlayer:
         if th and th.is_alive():
             self.stop_flag.set()
             th.join(timeout=3.0)
+            if th.is_alive():
+                # Its OWN event is set, so it exits at its next wake-up even
+                # though we stopped waiting - but say so; silence would read
+                # as stopped when a command is still in flight.
+                with self.lock:
+                    self.error = "the previous show was still finishing"
             if freeze:
                 try:
                     self._say("STOP")
                 except Exception as e:      # noqa: BLE001 - a dead cable must
                     self.error = str(e)     # not stop us from marking it stopped
+            if self._had_music():
+                # A24-18 made the board's own STOP silence the speaker, but the
+                # show is stopped here on boards that may still be older, and
+                # stopall stops without freezing at all. Music over a robot that
+                # has already frozen is what a panic stop must never leave.
+                try:
+                    self._say("PLAY STOP")
+                except Exception:           # noqa: BLE001
+                    pass
         self.thread = None
         if why:
             with self.lock:
@@ -1038,11 +1545,11 @@ class ShowPlayer:
             self.last = r
         return r
 
-    def _sleep(self, seconds):
+    def _sleep(self, flag, seconds):
         """Wait, but wake up immediately when someone presses stop."""
-        return not self.stop_flag.wait(max(0.0, seconds))
+        return not flag.wait(max(0.0, seconds))
 
-    def _run(self):
+    def _run(self, flag):
         try:
             # Take the robot: a module playing its own sequence would otherwise
             # be a second clock. Newer firmware also does this by itself when
@@ -1050,7 +1557,7 @@ class ShowPlayer:
             # right and makes the intent visible on the wire.
             self._say("MOVE STOP")
             while True:
-                if not self._play_once():
+                if not self._play_once(flag):
                     return
                 if not self.loop:
                     return
@@ -1060,7 +1567,7 @@ class ShowPlayer:
             with self.lock:
                 self.error = str(e)
 
-    def _play_once(self):
+    def _play_once(self, flag):
         """One pass through the steps, from self.at_ms. False = stopped."""
         # where in the show at_ms lands: which step, and how much of it is left
         start_i, into = 1, 0
@@ -1069,9 +1576,12 @@ class ShowPlayer:
         if at <= clock:
             # still at (or before) the start pose — put the robot on it first
             t = max(self.MIN_T, self.steps[0].get("t", 0) or self.MIN_T)
+            if flag.is_set():
+                return False
             self._mark(0, at)
+            self._cues(self.steps[0])
             self._say(self._pose_cmd(self.steps[0]["pose"], t))
-            if not self._sleep(t / 1000.0):
+            if not self._sleep(flag, t / 1000.0):
                 return False
         else:
             for i in range(1, len(self.steps)):
@@ -1093,15 +1603,45 @@ class ShowPlayer:
             # the robot replays a move the editor has already been through.
             left = max(self.MIN_T, s["t"] - into) if into else max(self.MIN_T, s["t"])
             into = 0
+            if flag.is_set():
+                return False
             self._mark(i, self._elapsed_to(i))
+            self._cues(s)
             self._say(self._pose_cmd(s["pose"], left))
-            if not self._sleep(left / 1000.0):
+            if not self._sleep(flag, left / 1000.0):
                 return False
             if s["hold"]:
-                if not self._sleep(s["hold"] / 1000.0):
+                if not self._sleep(flag, s["hold"] / 1000.0):
                     return False
         self._mark(len(self.steps) - 1, self.total_ms)
+        for c in self.steps[-1].get("cues_after") or []:
+            self._say(c)
         return True
+
+    def _had_music(self):
+        """Did this show start any audio? Only then is PLAY STOP worth sending
+        - a board with no speaker answers ERR, and that would be the last thing
+        the status line said about a stop that worked."""
+        with self.lock:
+            steps = list(self.steps)
+        return any(c.startswith("PLAY") and not c.upper().startswith("PLAY STOP")
+                   for s in steps
+                   for c in (s.get("cues") or []) + (s.get("cues_after") or []))
+
+    def _cues(self, step):
+        """Fire this keyframe's cues (PLAY, VOL, RGB) before its move starts.
+
+        A cue never blocks the clock: it is sent and the move goes out behind
+        it, so music that fails to start cannot freeze the show. Cues on steps
+        a resume SKIPPED are not fired - a module cannot seek inside an mp3,
+        so restarting the track from the top would be worse than silence.
+        """
+        for c in step.get("cues") or []:
+            try:
+                self._say(c)
+            except Exception as e:          # noqa: BLE001
+                with self.lock:
+                    self.error = "cue %s: %s" % (c, e)
 
     def _pose_cmd(self, pose, t):
         vals = " ".join(("%g" % round(v, 1)) for v in pose)
@@ -1119,6 +1659,9 @@ class ShowPlayer:
 
 
 show = ShowPlayer()
+# One sender per hub, like the show clock: two things streaming to one
+# board would interleave datagrams into noise.
+streamer = stream_audio.Sender()
 
 # Which commands mean "somebody else is moving this robot now".
 #
@@ -1235,6 +1778,66 @@ def flash_images():
             for im in (flash_image(t) for t in types)]
 
 
+def pair_with(to, code, replace=False):
+    """Take the accounts from the hub showing `code` (A14-1).
+
+    THIS hub asks, not the browser: a POST from the page straight to another
+    hub carries no cookie (SameSite=Lax), the same reason send_firmware works
+    this way. Nothing is kept afterwards — the accounts are copied once and
+    the two hubs never need each other again, which is what makes this work at
+    a venue with no internet and a network that drops.
+    """
+    to = (to or "").strip()
+    if not to:
+        raise ValueError("which PC? name the one showing the code")
+
+    # A Replace is the SECOND half of one decision, so it spends no second
+    # code: the accounts fetched a moment ago are still held here. Walking
+    # back to the other PC for a new code would ask the person to prove
+    # something they just proved.
+    who, accounts = PAIR_PENDING.get(to) if replace else (None, None)
+    if accounts is None:
+        if len(hub_pair.normalise(code)) != hub_pair.CODE_LEN:
+            raise ValueError("type the whole code shown on the other PC")
+        answer = claim_accounts(to, code)
+        who = answer.get("host") or to
+        accounts = answer.get("accounts") or {}
+        PAIR_PENDING.hold(to, who, accounts)
+    out = auth().import_accounts(accounts, replace=replace)
+    auth().note_paired(who, out["added"] + out["replaced"])
+    if out["added"] or out["replaced"]:
+        try:                 # two PCs that share accounts are one installation
+            remember_hub(to)
+        except (OSError, ValueError):
+            pass
+    if not out["clashed"]:                   # nothing left to decide about
+        PAIR_PENDING.drop(to)
+    out.update({"from": who, "users": auth().users()})
+    return out
+
+
+def claim_accounts(to, code):
+    """Spend the code on the far hub and bring back what it hands over."""
+    req = urllib.request.Request(
+        "http://%s:%d/api/pair/claim" % (to, PORT), method="POST",
+        data=json.dumps({"code": code}).encode(),
+        headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return json.loads(r.read().decode(errors="replace"))
+    except urllib.error.HTTPError as e:
+        # Say what the OTHER PC said: a wrong code and no code being shown at
+        # all need different actions from the person standing here.
+        why = ""
+        try:
+            why = (json.loads(e.read().decode(errors="replace")) or {}).get("error", "")
+        except Exception:                     # noqa: BLE001 - a reason is a bonus
+            pass
+        raise RuntimeError(why or ("%s refused that code" % to)) from e
+    except Exception as e:                    # noqa: BLE001
+        raise RuntimeError("cannot reach %s (%s)" % (to, type(e).__name__)) from e
+
+
 def send_firmware(to, port, module_type, user, password):
     """Give this PC's firmware to the hub holding the cable, and let it write.
 
@@ -1340,10 +1943,20 @@ def modules_here(force=False):
             out[key] = seen
         # A board answering on WiFi knows its own name and type better than a
         # cable probe that ran a minute ago, so later, richer answers win - but
-        # never overwrite something with nothing.
+        # never overwrite something with nothing, and NEVER from a route that
+        # has gone quiet. Renaming a board (SET NAME, or the module site) is
+        # answered at once on the cable while the WiFi sweep keeps handing back
+        # the record it last heard, for the whole grace period: the row then
+        # flips between the old name and the new one every few seconds, and
+        # the person who just renamed it cannot tell which board they are
+        # looking at. A late answer may still ADD a field nothing else knows.
+        fresh = not mod.get("stale")
         for field in ("name", "type", "group", "fw", "ip", "id", "chip"):
-            if mod.get(field) not in (None, "", []):
-                seen[field] = mod[field]
+            if mod.get(field) in (None, "", []):
+                continue
+            if not fresh and seen.get(field) not in (None, "", []):
+                continue
+            seen[field] = mod[field]
         if mod.get("stale"):
             route = dict(route, stale=True, lastSeen=mod.get("lastSeen"))
         if route not in seen["routes"]:
@@ -1382,6 +1995,90 @@ def modules_here(force=False):
     # two scans: named boards first, by name, then by whatever identity there is.
     return sorted(out.values(),
                   key=lambda m: ((m.get("name") or "~").lower(), str(m.get("id"))))
+
+
+def remote_modules(force=False):
+    """What the OTHER PCs on this network are holding. (modules, errors).
+
+    Split out so /api/allmods and the merged list below cannot drift into two
+    different ideas of what another hub is offering.
+    """
+    out, errs = [], []
+    for h in scan_hubs(force):
+        ip = h.get("ip")
+        if not ip:
+            continue
+        try:
+            with urllib.request.urlopen(
+                    "http://%s:%d/api/mine" % (ip, PORT), timeout=6) as r:
+                d = json.loads(r.read().decode(errors="replace"))
+            host = d.get("host") or ip
+            for m in (d.get("modules") or []):
+                m = dict(m)
+                m["dev"] = "hub:%s/%s" % (ip, m["dev"])
+                m["host"] = host
+                m["hostIp"] = ip
+                out.append(m)
+        except Exception as e:                                # noqa: BLE001
+            # A laptop that has just been closed is normal. Report it per PC
+            # rather than failing the whole list.
+            errs.append({"ip": ip, "error": str(e)})
+    return out, errs
+
+
+def modules_everywhere(force=False):
+    """Every module ANY hub here can reach, once each. (modules, errors).
+
+    Asked for 2026-08-21: *the module make it list the module only once for me
+    please... make it list once show which module arviable on the top*. The
+    page used to draw two lists - this PC's modules, and other PCs' modules -
+    so a board plugged into the laptop next door appeared in one list while the
+    same board on the venue WiFi appeared in the other. One robot, two rows,
+    and the row you happened to press decided which machine carried the
+    command.
+
+    Merged HERE and not in the page, because `board_key` is the answer to *is
+    this the same board* and it already lives here. A copy of that rule in
+    JavaScript is a second answer to the same question.
+
+    Every way in survives as a route, each saying which PC it goes through, so
+    the row can show one module and the detail under it can show all four ways
+    to reach it.
+    """
+    mine = modules_here(force)
+    here = socket.gethostname()
+    out = {}
+    for m in mine:
+        key = board_key(m)
+        m = dict(m)
+        m["mine"] = True
+        m["routes"] = [dict(r, host=here, mine=True) for r in (m.get("routes") or [])]
+        out[key] = m
+
+    remote, errs = remote_modules(force)
+    for m in remote:
+        key = board_key(m)
+        route = {"kind": "hub", "dev": m.get("dev"), "host": m.get("host"),
+                 "hostIp": m.get("hostIp"), "mine": False}
+        seen = out.get(key)
+        if not seen:
+            seen = {k: v for k, v in m.items() if k not in ("dev", "host", "hostIp")}
+            seen["routes"] = []
+            seen["mine"] = False
+            seen["key"] = "/".join(str(p) for p in key)
+            out[key] = seen
+        # A board this PC can reach directly is still the same board when the
+        # laptop next door can reach it too - so the far route is ADDED, never
+        # a second row. Never overwrite something with nothing.
+        for field in ("name", "type", "group", "fw", "ip", "id", "chip"):
+            if m.get(field) not in (None, "", []) and not seen.get(field):
+                seen[field] = m[field]
+        if route not in seen["routes"]:
+            seen["routes"].append(route)
+
+    return sorted(out.values(),
+                  key=lambda m: ((m.get("name") or "~").lower(),
+                                 str(m.get("id")))), errs
 
 
 def esc(text):
@@ -1585,6 +2282,321 @@ def shared_css():
     return b"".join(parts)
 
 
+# Where the built hub is published. The `app` branch holds MiceHub.exe and
+# nothing else; there are no GitHub releases, so this asks the branch.
+APP_REPO = "Mannaja78520/final_proj_mice"
+APP_BRANCH = "app"
+APP_API = "https://api.github.com/repos/%s/commits/%s" % (APP_REPO, APP_BRANCH)
+APP_RAW = "https://raw.githubusercontent.com/%s/%s/MiceHub.exe" % (APP_REPO, APP_BRANCH)
+
+
+def _my_sha_file():
+    """Beside the exe, so it travels with the thing it describes."""
+    return Path(sys.executable).parent / "MiceHub.sha"
+
+
+def update_state():
+    """What is running, what is offered, and whether it may be replaced now."""
+    frozen = getattr(sys, "frozen", False)
+    mine = ""
+    f = _my_sha_file()
+    if f.is_file():
+        mine = f.read_text(encoding="utf-8", errors="replace").strip()[:40]
+
+    out = {"ok": True, "frozen": frozen, "running": mine, "offered": "",
+           "when": "", "message": "", "can": False, "why": ""}
+    # OLDER THAN THE SOURCE BESIDE IT is a different question from *is there a
+    # newer build on GitHub*, and it is the one that bit on 2026-08-21. It is
+    # answered on every branch below, including the busy ones, because a hub
+    # that refuses to update right now still needs to say what it is running.
+    st = build_stamp.state()
+    out.update({"stale": st["stale"], "staleWhy": build_stamp.why(st),
+                "rebuild": build_stamp.REBUILD, "built": st["built"],
+                "changed": st["changed"]})
+    if not frozen:
+        out["why"] = ("this is main.py, not the built app - update it with git "
+                      "pull, which also brings the firmware and the checks")
+        return out
+    # BUSY MEANS NO. Replacing the program mid-flash leaves a board half
+    # written, and mid-show stops the installation in front of an audience.
+    if flasher.running():
+        out["why"] = "a board is being flashed - wait for it to finish"
+        return out
+    if show.running():
+        out["why"] = "a show is playing - stop it first"
+        return out
+    try:
+        req = urllib.request.Request(APP_API, headers={"Accept":
+                                     "application/vnd.github+json"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            d = json.loads(r.read().decode(errors="replace"))
+        out["offered"] = (d.get("sha") or "")[:40]
+        out["when"] = ((d.get("commit") or {}).get("committer") or {}).get("date", "")
+        out["message"] = ((d.get("commit") or {}).get("message") or "").split("\n")[0][:90]
+        out["can"] = bool(out["offered"]) and out["offered"] != mine
+        if not out["can"] and out["offered"]:
+            out["why"] = "this is already the newest build"
+    except Exception as e:                                    # noqa: BLE001
+        # No internet is the NORMAL case at a venue, so it is a plain answer
+        # and not an error page.
+        out["why"] = "cannot reach GitHub (%s)" % str(e)[:60]
+
+    # THE HUB NEXT DOOR. On show day there is no internet, and the newest build
+    # a PC can reach is the one on the desk beside it, not GitHub.
+    near = hub_offers()
+    if near and near.get("sha") and near["sha"] != mine:
+        newer = (not out["offered"]) or (near.get("when", "") > out.get("when", ""))
+        if newer:
+            out.update({"offered": near["sha"], "when": near.get("when", ""),
+                        "message": "from %s on this network" % near["host"],
+                        "from": "http://%s:%d/api/app" % (near["ip"], PORT),
+                        "can": True, "why": ""})
+    return out
+
+
+def app_here():
+    """This hub's own program, if it is a built one. (path, bytes, sha) or None.
+
+    A browser can never reach another PC's serial ports, at any address - so the
+    only way that PC drives its own cables is to run this program. At a venue
+    there is usually no internet, which makes the hub on the next desk the
+    nearest place to get it.
+    """
+    if not getattr(sys, "frozen", False):
+        return None
+    exe = Path(sys.executable)
+    if not exe.is_file():
+        return None
+    sha = ""
+    f = _my_sha_file()
+    if f.is_file():
+        sha = f.read_text(encoding="utf-8", errors="replace").strip()[:40]
+    return exe, exe.stat().st_size, sha
+
+
+def hub_offers():
+    """The newest build any OTHER hub on this network is running.
+
+    Asked 2026-08-21. GitHub is the right source when there is internet and the
+    wrong one when there is not - which is the show-day case. A hub on the same
+    switch is reachable either way.
+    """
+    best = None
+    for h in scan_hubs(False):
+        ip = h.get("ip")
+        if not ip or is_self(ip):
+            continue
+        try:
+            with urllib.request.urlopen(
+                    "http://%s:%d/api/app/version" % (ip, PORT), timeout=5) as r:
+                d = json.loads(r.read().decode(errors="replace"))
+        except Exception:                                     # noqa: BLE001
+            continue                  # a closed laptop is normal, not an error
+        if not d.get("sha") or not d.get("bytes"):
+            continue
+        d["ip"] = ip
+        d["host"] = h.get("host") or ip
+        if not best or (d.get("when") or "") > (best.get("when") or ""):
+            best = d
+    return best
+
+
+def do_update():
+    """Fetch the published exe and put it in place. Returns (ok, message)."""
+    st = update_state()
+    if not st["can"]:
+        return False, st["why"] or "nothing to update"
+    # Whatever update_state chose: GitHub, or the hub on the next desk.
+    where = st.get("from") or APP_RAW
+    try:
+        with urllib.request.urlopen(where, timeout=180) as r:
+            blob = r.read()
+    except Exception as e:                                    # noqa: BLE001
+        return False, "download failed: %s" % str(e)[:90]
+    # A truncated download that overwrote the app would leave nothing to run.
+    if len(blob) < 2_000_000 or blob[:2] != b"MZ":
+        return False, ("that download is not a Windows program (%d bytes) - "
+                       "nothing was replaced" % len(blob))
+    exe = Path(sys.executable)
+    old = exe.with_name("MiceHub.old.exe")
+    try:
+        old.unlink(missing_ok=True)
+        # Windows will not overwrite a RUNNING exe, but it will rename one.
+        # The old file stays as the way back if the new one will not start.
+        exe.rename(old)
+        exe.write_bytes(blob)
+        _my_sha_file().write_text(st["offered"], encoding="utf-8")
+    except OSError as e:
+        return False, "could not replace the program: %s" % str(e)[:90]
+    return True, ("updated to %s - close this window and start MiceHub.exe "
+                  "again. The previous version is MiceHub.old.exe"
+                  % st["offered"][:12])
+
+
+# The line the bundle splits on: everything above it is for the person
+# reading, everything below is for support. The page and the check split on
+# this exact string - changing it here changes all three or nothing.
+DIAG_TECH_MARK = "--- technical detail below, for support ---"
+
+
+def diagnostics() -> str:
+    """Everything anyone asks for first, as one block of plain text.
+
+    "It does not work" is never enough to act on. The answer is always the same
+    four questions - which PC, what does it see, what firmware is on the
+    boards, and what can this machine even do - and getting them out of
+    somebody over chat takes half an hour. This is one button instead.
+
+    TWO HALVES, asked 2026-08-22 (A21-5): IN PLAIN WORDS first - what is
+    connected, what needs attention, each with its fix, NO ids, ports or
+    addresses - then DIAG_TECH_MARK, then the technical bundle below it,
+    which stays complete because support needs every id. The page shows the
+    plain half and hides the rest behind the technical switch.
+
+    PLAIN TEXT, NOT JSON. It gets pasted into a message by a person, and JSON
+    pasted into a chat window is a wall nobody reads.
+
+    NOTHING SECRET, EVER. This is written to be shared, so a password in it is
+    a password published. The hub keeps one in plain text beside itself
+    (hub_password.txt), a module's WiFi credentials come back in some status
+    replies, and the AP password is derived from the group name. None of them
+    belong here, and check_diagnostics exists to keep it that way - a bundle
+    that leaks is worse than no bundle, because the leak travels further than
+    the problem it was meant to solve.
+    """
+    import platform                                          # noqa: PLC0415
+
+    def line(k, v):
+        return "%-14s %s" % (k, v)
+
+    def pline(k, v):
+        return "  %-11s %s" % (k, v)
+
+    def disp_name(m):
+        # probe_module defaults an unnamed WiFi module's name to its IP;
+        # an address in the plain half breaks the no-addresses promise.
+        # search, not fullmatch: a name like 192.168.4.21:8642 or a forwarded
+        # hub: prefix still carries an address and must be stripped too
+        nm = m.get("name") or ""
+        if re.search(r"\b\d{1,3}(?:\.\d{1,3}){3}\b", nm):
+            nm = ""
+        return nm or ("unnamed %s robot" % (m.get("type") or "?"))
+
+    # Gather once; the plain half and the technical half read the SAME data.
+    _st = build_stamp.state()
+    esp_cmd, esp_why = esptool_cmd()
+    images = flash_images()
+    ports = serial_ports()
+    mods = modules_here()
+
+    # ASK THE BOARD which firmware it runs. The module list is built from
+    # PING, which answers id, name and type and nothing else - so `fw` is
+    # simply not in it. One extra command per board, on an explicit button
+    # press, with a short wait: a board that has gone quiet says so and does
+    # not hold up the rest.
+    def ask_fw(m):
+        dev = (m.get("routes") or [{}])[0].get("dev")
+        if not dev:
+            return "?"
+        try:
+            info = dev_cmd(dev, "INFO", wait=2.0) or ""
+            got = json.loads(info[info.find("{"):info.rfind("}") + 1])
+            return got.get("fw") or "?"
+        except Exception as e:                                # noqa: BLE001
+            return "no answer (%s)" % str(e)[:40]
+
+    fws = {m.get("id"): ask_fw(m) for m in mods}
+
+    # ---- the plain half -------------------------------------------------
+    plain = ["IN PLAIN WORDS", ""]
+    if mods:
+        names = ", ".join(disp_name(m) for m in mods)
+        plain.append(pline("robots", "%d connected - %s"
+                           % (len(mods), names)))
+    else:
+        plain.append(pline("robots", "none found - are they powered, "
+                                     "and on this WiFi?"))
+
+    worry = []
+    if _st["built"] and _st["stale"]:
+        worry.append("this hub program is older than the files beside it - "
+                     "run the updater or get the newest MiceHub.exe")
+    if not esp_cmd:
+        worry.append("the flashing tool is missing - boards can still be used, "
+                     "but new firmware cannot be installed until it is set up")
+    for im in images:
+        if not im.get("ready") and not im.get("ota_ready"):
+            worry.append("no %s firmware is built on this PC yet - build it "
+                         "before trying to flash a %s board"
+                         % (im.get("type"), im.get("type")))
+    if not ports:
+        worry.append("no cable is plugged into this PC - boards on a wire "
+                     "will not appear until one is")
+    for m in mods:
+        who = disp_name(m)
+        if m.get("stale"):
+            worry.append("%s is answering slowly - it may be busy or going "
+                         "offline" % who)
+        elif str(fws.get(m.get("id"))).startswith("no answer"):
+            worry.append("%s did not answer when asked about itself - "
+                         "check its power" % who)
+    if worry:
+        plain.append("")
+        plain.append(pline("needs attention:", ""))
+        plain.extend("  - " + w for w in worry)
+    else:
+        plain.append(pline("all good:", "nothing needs attention right now."))
+
+    # ---- the technical half, exactly as it has always been --------------
+    out = ["mice diagnostics  " + time.strftime("%Y-%m-%d %H:%M:%S"),
+           "=" * 58]
+    out += plain
+    out += ["", DIAG_TECH_MARK, "", "THIS PC"]
+    out.append(line("host", socket.gethostname()))
+    out.append(line("os", "%s %s" % (platform.system(), platform.release())))
+    out.append(line("python", platform.python_version()))
+    out.append(line("hub at", "%s:%d" % (lan_ip(), PORT)))
+    out.append(line("web build", str(web_version())))
+    out.append(line("frozen", "yes (MiceHub.exe)" if getattr(sys, "frozen", False)
+                    else "no (running main.py)"))
+    # The first question after any strange report: is this even today's build?
+    if _st["built"]:
+        out.append(line("exe built", "%s%s" % (
+            _st["built"], "  STALE - %s" % build_stamp.why(_st)
+            if _st["stale"] else "  (matches the source beside it)")))
+    out.append(line("esptool", "yes" if esp_cmd else "NO - %s"
+                    % (esp_why or "not found")))
+
+    out += ["", "FIRMWARE BUILT ON THIS PC"]
+    for im in images:
+        state = "ready" if im.get("ready") else (
+            "app only (WiFi/bus, not cable)" if im.get("ota_ready") else "NOT BUILT")
+        out.append(line("  " + str(im.get("type")), "%s  %s" % (
+            state, ("%.2f MB" % (im["bytes"] / 1048576.0)) if im.get("bytes") else "")))
+
+    out += ["", "SERIAL PORTS"]
+    if not ports:
+        out.append("  none")
+    for p in ports:
+        out.append(line("  " + str(p.get("port")), "%s%s" % (
+            p.get("desc") or "?", "  (bluetooth)" if p.get("bt") else "")))
+
+    out += ["", "MODULES FOUND"]
+    if not mods:
+        out.append("  none - are they powered, and on this WiFi?")
+    for m in mods:
+        ways = ", ".join("%s%s" % (r.get("kind"),
+                                   (" " + str(r.get("port"))) if r.get("port") else "")
+                         for r in m.get("routes", []))
+        out.append(line("  #%s" % m.get("id"), "%s  type=%s  fw=%s  via %s%s" % (
+            m.get("name") or "?", m.get("type") or "?",
+            fws.get(m.get("id"), "?"), ways,
+            "  [LATE]" if m.get("stale") else "")))
+
+    out += ["", "(no passwords are included in this text)"]
+    return chr(10).join(out)
+
+
 def esptool_cmd():
     """The command that runs esptool, or None with the reason it cannot.
 
@@ -1637,6 +2649,29 @@ class Flasher:
     def running(self):
         return bool(self.thread and self.thread.is_alive())
 
+    def _claim(self, port, module_type, how, target=None, args=(), stage=""):
+        """Take the job and START it, or refuse - ALL UNDER ONE LOCK.
+
+        Every start path used to test running() outside the lock and set the
+        fields after it. Two POSTs in that window - a double click, or two
+        tabs - both passed the test and both spawned a thread, so two writers
+        drove one shared job and each overwrote the other's progress. The GET
+        showed whichever wrote last and neither caller was told. Found
+        2026-08-21. Starting the thread here closes the same gap that remained
+        between claim returning and the thread object being assigned.
+        """
+        with self.lock:
+            if self.running():
+                raise RuntimeError("already flashing %s - one board at a time"
+                                   % (self.port or self.type))
+            self.port, self.type, self.how = port, module_type, how
+            self.percent, self.stage, self.log = 0, stage or "starting", []
+            self.ok, self.error = None, ""
+            if target:
+                self.thread = threading.Thread(target=target, args=args,
+                                               daemon=True)
+                self.thread.start()
+
     def status(self):
         with self.lock:
             return {"running": self.running(), "port": self.port,
@@ -1654,10 +2689,7 @@ class Flasher:
     # Only firmware.bin travels. The bootloader and the partition table are the
     # parts that would brick a board if they went wrong, they almost never
     # change, and OTA cannot write them anyway — that is the point of OTA.
-    def start_ota(self, ip, module_type):
-        if self.running():
-            raise RuntimeError("already flashing %s — one board at a time"
-                               % (self.port or self.type))
+    def start_ota(self, ip, module_type, user="", password=""):
         im = flash_image(module_type)
         # OTA sends ONE file - the app image - because that is all a running
         # board can take: the bootloader and the partition table are written
@@ -1672,30 +2704,54 @@ class Flasher:
                 "copy firmware.bin into %s" % (module_type, im["env"], im["dir"]))
         if not ip:
             raise RuntimeError("which module? this needs its WiFi address")
-        with self.lock:
-            self.port, self.type, self.how = ip, module_type, "wifi"
-            self.percent, self.stage, self.log = 0, "connecting", []
-            self.ok, self.error = None, ""
-        self.thread = threading.Thread(target=self._run_ota, args=(ip, im), daemon=True)
-        self.thread.start()
+        self._claim(ip, module_type, "wifi", self._run_ota,
+                    (ip, im, user, password))
         return self.status()
 
-    def _run_ota(self, ip, im):
+    # The board wants a session before it will take firmware, and it is right
+    # to: /api/ota replaces the program on a machine anyone on the venue WiFi
+    # can reach. Measured on board 42 over real WiFi, 2026-08-21:
+    # `401 ERR log in first`. Before the gate moved into the body handler
+    # (A18-1) the board wrote the image and refused afterwards, so this was
+    # broken the whole time and looked like it worked.
+    BOARD_COOKIE = BOARD_COOKIE         # one source: the module constant above
+
+    def _board_session(self, ip, user, password):
+        """Log in to a board. -> (cookie, why). One body, shared with dev_cmd."""
+        return board_login(ip, user, password)
+
+    def _run_ota(self, ip, im, user="", password=""):
         import http.client
         try:
             path = [p for off, p in im["parts"] if p.endswith("firmware.bin")][0]
             data = Path(path).read_bytes()
-            self._say("sending %s (%.2f MB) to %s over WiFi"
-                      % (Path(path).name, len(data) / 1048576.0, ip))
+            cookie, why = self._board_session(ip, user, password)
+            # An empty reason with no cookie is the ONE case that goes on: a
+            # board too old to have a login at all (see _board_session).
+            if not cookie and why:
+                with self.lock:
+                    self.ok, self.stage, self.error = False, "failed", why
+                self._say(why)
+                return
+            self._say("%s %s; sending %s (%.2f MB) over WiFi"
+                      % ("logged in to" if cookie else
+                         "no login on (old firmware)", ip,
+                         Path(path).name, len(data) / 1048576.0))
             b = "----miceota"
             head = ("--%s\r\nContent-Disposition: form-data; name=\"file\"; "
                     "filename=\"firmware.bin\"\r\nContent-Type: "
                     "application/octet-stream\r\n\r\n" % b).encode()
             tail = ("\r\n--%s--\r\n" % b).encode()
             conn = http.client.HTTPConnection(ip, timeout=90)
-            conn.putrequest("POST", "/api/ota")
+            # The board REQUIRES the md5 now: with UPDATE_SIZE_UNKNOWN and
+            # nothing registered, its end(true) verified nothing, so a
+            # dropped connection booted a half-written image.
+            conn.putrequest("POST", "/api/ota?md5=" +
+                            hashlib.md5(data).hexdigest())    # noqa: S324
             conn.putheader("Content-Type", "multipart/form-data; boundary=" + b)
             conn.putheader("Content-Length", str(len(head) + len(data) + len(tail)))
+            if cookie:
+                conn.putheader("Cookie", "%s=%s" % (self.BOARD_COOKIE, cookie))
             conn.endheaders()
             conn.send(head)
             with self.lock:
@@ -1723,9 +2779,146 @@ class Flasher:
                 self.error = ("%s — is it on WiFi, and does its firmware have "
                               "OTA? (OTA over the cable first, once)" % e)
 
+    # ---- over the COMMAND CHANNEL, whatever that channel is --------------
+    #
+    # The third way, and the only one that works on a two-wire bus. Asked for
+    # 2026-08-20: *make it can flash through all this 3 method too if i need to
+    # shieft to stm 32 it cannot use wifi it can use only rs485*.
+    #
+    # Why the other two cannot do it:
+    #   * esptool reaches the ROM bootloader by pulling EN and IO0 with DTR and
+    #     RTS. RS485 is two differential wires and has neither, so no amount of
+    #     work on the hub side gets there;
+    #   * the WiFi updater posts to the board's own web server, which a board
+    #     with no radio does not have.
+    # Both of those are ways of getting an image IN. This one is the board
+    # writing its own spare OTA slot from ordinary command lines, so the link
+    # underneath stops mattering — and `dev_cmd` already speaks every one of
+    # them, including a module behind another module's hotspot and a module on
+    # another PC's cable.
+    #
+    # It is SLOW: 150 bytes a chunk (see BusUpdate.h — an RS485 line is capped
+    # at 250 characters and base64 costs a third), so a 1.3 MB image is around
+    # nine thousand round trips. Six minutes on a cable, longer on the bus. That
+    # is the price of not having a reset line, and it is paid rarely.
+    BUS_CHUNK = 150
+
+    def start_bus(self, dev, module_type):
+        im = flash_image(module_type)
+        app = [q for off, q in im["parts"] if q.endswith("firmware.bin")]
+        if not app:
+            raise RuntimeError(
+                "no %s app image on this PC. Build it with pio run -e %s, or "
+                "copy firmware.bin into %s" % (module_type, im["env"], im["dir"]))
+        if not dev:
+            raise RuntimeError("which module? this needs its dev address")
+        self._claim(dev, module_type, "bus", self._run_bus, (dev, app[0]))
+        return self.status()
+
+    def _run_bus(self, dev, path):
+        try:
+            data = Path(path).read_bytes()
+            total = len(data)
+            digest = hashlib.md5(data).hexdigest()          # noqa: S324
+            self._say("sending %s (%.2f MB) to %s as commands"
+                      % (Path(path).name, total / 1048576.0, dev))
+
+            # Ask FIRST whether it fits. The board answers from its real
+            # partition table, so "no room" arrives before a single byte is
+            # written rather than half way through, when the running firmware
+            # is already gone.
+            # 30 s, for the same reason FWEND gets 60: this is not a question,
+            # it is work. Reserving the slot erases it, and erasing most of two
+            # megabytes of flash is seconds, not milliseconds. Timing out here
+            # would report a failed update before a single byte was sent —
+            # while the board was busy doing exactly what it was asked.
+            reply = (dev_cmd(dev, "FWBEGIN %d %s" % (total, digest),
+                             wait=30) or "").strip()
+            if not reply.startswith("OK"):
+                raise RuntimeError(reply or "the board did not answer FWBEGIN")
+            with self.lock:
+                self.stage = "writing"
+
+            seq, sent = 0, 0
+            while sent < total:
+                piece = data[sent:sent + self.BUS_CHUNK]
+                # The LENGTH is on the wire because a truncated line is still
+                # legal base64. Measured 2026-08-20 on a 1.29 MB image over a
+                # cable: one chunk in nine thousand lost 64 characters, decoded
+                # cleanly to 102 bytes instead of 150, and nothing noticed until
+                # FWEND counted the image 48 bytes short — four minutes gone,
+                # with no way to tell which chunk did it.
+                line = "FWDATA %d %d %s" % (seq, len(piece),
+                                            base64.b64encode(piece).decode())
+                # A LOST LINE IS RETRIED, NOT SKIPPED. The board refuses a chunk
+                # that is not the one it expects and says which one it wants, so
+                # a dropped reply costs a repeat and never a hole in the image.
+                # Silently carrying on is how a board ends up booting rubbish.
+                for attempt in range(4):
+                    try:
+                        ans = (dev_cmd(dev, line) or "").strip()
+                    except Exception as e:                    # noqa: BLE001
+                        # A LOST REPLY IS THE ORDINARY CASE ON A BUS, and
+                        # dev_cmd reports it by raising. Letting that escape
+                        # would end the whole update on the first dropped line
+                        # — nine thousand chunks means even a rare loss is
+                        # near-certain, so retrying has to survive an exception
+                        # and not merely an ERR string.
+                        ans = "no answer (%s)" % str(e)[:80]
+                    if ans.startswith("OK"):
+                        break
+                    if "expected" in ans:
+                        want = re.search(r"expected (\d+)", ans)
+                        if want and int(want.group(1)) == seq + 1:
+                            break     # it took this one; only the reply was lost
+                    # "chunk short" and "not valid base64" both mean the line
+                    # was damaged in flight and the board did NOT advance, so
+                    # the same chunk goes again — this is the self-healing case
+                    # and it must not be mistaken for a hard refusal.
+                    if attempt == 3:
+                        raise RuntimeError(
+                            "chunk %d would not go: %s" % (seq, ans or "no answer"))
+                seq += 1
+                sent += len(piece)
+                # THE BOARD'S OWN RUNNING TOTAL, checked rather than ignored.
+                # It is already on the wire in every OK reply, and comparing it
+                # turns any remaining drift into an error at the chunk that
+                # caused it instead of a mystery at the end of the transfer.
+                said = re.match(r"OK \d+ (\d+)", ans)
+                if said and int(said.group(1)) != sent:
+                    raise RuntimeError(
+                        "the board has %s bytes after chunk %d but %d were sent "
+                        "— stopping rather than finishing an image that would "
+                        "not match" % (said.group(1), seq - 1, sent))
+                with self.lock:
+                    self.percent = int(sent * 100 / total)
+
+            with self.lock:
+                self.stage = "checking the image"
+            # FWEND is where a wrong image is caught, while the board is still
+            # running firmware that works. Only then does it reboot.
+            # 60 s, not the usual 2: the board hashes the whole image before it
+            # will boot into it, and reporting a timeout here would mean an
+            # operator reflashing a board that had in fact just succeeded.
+            reply = (dev_cmd(dev, "FWEND", wait=60) or "").strip()
+            with self.lock:
+                self.ok = reply.startswith("OK")
+                self.percent = 100 if self.ok else self.percent
+                self.stage = "restarting the board" if self.ok else "failed"
+                if not self.ok:
+                    self.error = reply[:200] or "the board did not answer FWEND"
+            self._say(reply[:200])
+        except Exception as e:            # noqa: BLE001
+            try:
+                dev_cmd(dev, "FWABORT")   # leave it running what it had
+            except Exception:             # noqa: BLE001, S110
+                pass
+            with self.lock:
+                self.ok, self.stage = False, "failed"
+                self.error = ("%s — the board keeps the firmware it already "
+                              "had; nothing was switched over" % e)
+
     def start(self, port, module_type):
-        if self.running():
-            raise RuntimeError("already flashing %s — one cable at a time" % self.port)
         im = flash_image(module_type)
         if not im["ready"]:
             raise RuntimeError(
@@ -1736,12 +2929,7 @@ class Flasher:
             raise RuntimeError(why)
         if not port:
             raise RuntimeError("which port? pick the cable the board is on")
-        with self.lock:
-            self.port, self.type, self.how = port, module_type, "usb"
-            self.percent, self.stage, self.log = 0, "starting", []
-            self.ok, self.error = None, ""
-        self.thread = threading.Thread(target=self._run, args=(cmd, im), daemon=True)
-        self.thread.start()
+        self._claim(port, module_type, "usb", self._run, (cmd, im))
         return self.status()
 
     def start_received(self, port, module_type, parts, who):
@@ -1756,8 +2944,6 @@ class Flasher:
         """
         import base64
         import tempfile
-        if self.running():
-            raise RuntimeError("already flashing %s - one cable at a time" % self.port)
         cmd, why = esptool_cmd()
         if not cmd:
             raise RuntimeError(why)
@@ -1786,18 +2972,19 @@ class Flasher:
             # Nothing has been started yet, so the folder is ours to remove.
             # Leaving it behind on a bad payload is a slow disk leak that only
             # shows up on the PC at the venue.
-            import shutil
             shutil.rmtree(d, ignore_errors=True)
             raise
         got.sort(key=lambda pair: int(str(pair[0]), 0))   # by address, not by spelling
         im = {"type": module_type, "parts": got, "ready": True,
               "from": who, "tmp": str(d)}
-        with self.lock:
-            self.port, self.type, self.how = port, module_type, "usb"
-            self.percent, self.stage, self.log = 0, "receiving from " + who, []
-            self.ok, self.error = None, ""
-        self.thread = threading.Thread(target=self._run, args=(cmd, im), daemon=True)
-        self.thread.start()
+        try:
+            self._claim(port, module_type, "usb", self._run, (cmd, im),
+                        stage="receiving from " + who)
+        except Exception:
+            # Usually "already flashing": the write never started, so nobody
+            # owns the folder yet - same rule as the bad-payload path above.
+            shutil.rmtree(d, ignore_errors=True)
+            raise
         return self.status()
 
     def _say(self, line):
@@ -1828,9 +3015,26 @@ class Flasher:
                     pass
             with _flash_lock:
                 _flash_ports.add(port)
-            usb_close(port)
-            _usb_touch.pop(port, None)
-            _usb_ident.pop(port, None)     # whatever it was, it is about to change
+            # WAIT UNTIL THE CABLE IS REALLY OURS TO GIVE UP. usb_close does
+            # not close a port somebody is mid-command on - it puts it back, on
+            # purpose - so calling it once and sleeping 300ms was a guess.
+            # esptool then met a handle that was still open and died at
+            # whatever percent it had reached, leaving the board in the
+            # bootloader answering nothing. Measured at the bench 2026-08-20:
+            # 21%, "the chip stopped responding".
+            deadline = time.time() + 12
+            while True:
+                usb_close(port)
+                _usb_touch.pop(port, None)
+                _usb_ident.pop(port, None)   # whatever it was, it is about to change
+                if usb_free(port):
+                    break
+                if time.time() > deadline:
+                    raise RuntimeError(
+                        "%s is still in use by this hub after 12s - something "
+                        "is mid-command on it. Close the module page or Studio "
+                        "tab using that cable and try again." % port)
+                time.sleep(0.5)
             time.sleep(0.3)                # let Windows actually release the handle
 
             args = list(cmd) + ["--chip", "esp32", "--port", port,
@@ -1953,8 +3157,14 @@ def probe_usb_port(port):
         out["error"] = "pyserial not installed (pip install pyserial)"
         return out
     light = usb_in_use(port)
-    if light and port in _usb_ident:
-        cached = dict(_usb_ident[port])
+    # ONE LOOKUP, not a test and then a read. Another thread pops this key the
+    # moment a command changes a board's identity (GROUP, SET NAME) - exactly
+    # while `light` is true, which is the only case this path is for - so the
+    # test could pass and the read raise KeyError, turning a cached answer into
+    # a bare 500. Found 2026-08-21.
+    cached = _usb_ident.get(port) if light else None
+    if cached is not None:
+        cached = dict(cached)
         cached["inuse"] = True
         return cached
     try:
@@ -2018,6 +3228,13 @@ def probe_usb_port(port):
                     seen[int(m.group(1))] = {"id": int(m.group(1)), "name": m.group(3),
                                              "type": m.group(4), "ip": "", "wifi_mode": ""}
             # ask each bus module for its INFO to learn its WiFi ip (for links)
+            #
+            # THE LIMIT, said out loud: only the first SIX are asked. Each ask
+            # costs up to 0.6 s and the scan walks every port, so a seventh
+            # board on one bus keeps an empty group and chip - it is listed
+            # and reachable, but reads as "not linked" the way every bus board
+            # did before A3-5. Raising this trades a slower Modules screen for
+            # correctness on buses that big, and no bench here has one yet.
             for mid in list(seen)[:6]:
                 _drain_to_line_boundary(ser)
                 ser.write(("#%d INFO\n" % mid).encode())
@@ -2031,6 +3248,13 @@ def probe_usb_port(port):
                             # so it is exactly a board the hub can meet twice.
                             if st.get("chip"):
                                 seen[mid]["chip"] = st["chip"]
+                            # ...AND ITS GROUP (A3-5). The Network tab and
+                            # /api/allmods have always read this field for bus
+                            # boards; nothing ever filled it, so a module
+                            # behind the bus read "not linked" however it was
+                            # grouped — and ticking it to fix that would send
+                            # GROUP to a board that already had one.
+                            seen[mid]["group"] = st.get("group", "")
                         except ValueError:
                             pass
                         break
@@ -2183,6 +3407,61 @@ class Handler(BaseHTTPRequestHandler):
         self.drain()          # never reject a POST without reading its body
         self.send_json({"ok": False, "error": str(msg)}, code=code)
 
+    def voice_proxy(self, method, path, q):
+        """Hand /api/voice/* to the helper and its answer back, unchanged.
+
+        The helper is a separate process (apps/voice/service.py) because torch
+        can never live inside this program; forwarding is all the hub does. A
+        first question can wait for the model to load, hence the long timeout.
+        When nothing is listening, the words name what to start - that IS the
+        fix, and no page has to guess it.
+        """
+        base, why_not = voice_service_url()
+        if not base:
+            return self.send_err(
+                "the voice helper has no address - %s" % why_not, 500)
+        try:
+            target = base + (path[len("/api/voice"):] or "/")
+            flat = {k: v[0] for k, v in q.items() if v}
+            if flat:
+                target += "?" + urllib.parse.urlencode(flat)
+            # Built INSIDE the try: a bad saved address (no scheme) raises
+            # here, and outside it killed the request thread with no answer.
+            req = urllib.request.Request(
+                target,
+                data=self.body() if method == "POST" else None,
+                method=method)
+            req.add_header("Content-Type",
+                           self.headers.get("Content-Type") or "application/json")
+            with urllib.request.urlopen(req, timeout=180) as r:
+                # The helper names its own type - /say answers audio/wav,
+                # everything else json. Forcing a MIME here would turn the
+                # sound into a download the browser refuses to play.
+                return self.send_bytes(
+                    r.read(), r.headers.get("Content-Type") or MIME[".json"])
+        except urllib.error.HTTPError as e:
+            # The helper's own honest error passes through with its code.
+            return self.send_bytes(e.read(), MIME[".json"], e.code)
+        except ValueError as e:
+            # A saved helper address with no scheme lands here, not in
+            # URLError - name the setting rather than dropping the request.
+            return self.send_err(
+                "the voice helper address is not usable (%s). Check it on "
+                "the Voice tab." % e, 500)
+        except (urllib.error.URLError, OSError) as e:
+            reason = getattr(e, "reason", e)
+            if isinstance(reason, TimeoutError) or isinstance(e, TimeoutError):
+                # Three minutes gone is NOT the same as nobody listening:
+                # sending someone to start the helper would be the wrong fix.
+                return self.send_err(
+                    "the voice helper did not answer within three minutes - "
+                    "it may still be loading a model. Try again in a moment.",
+                    504)
+            return self.send_err(
+                "the voice helper is not running on this PC (%s). Start it "
+                "from the code folder:  python apps\\voice\\service.py" % e,
+                503)
+
     def body(self, limit=0) -> bytes:
         """The request body, optionally with a ceiling.
 
@@ -2289,8 +3568,13 @@ class Handler(BaseHTTPRequestHandler):
                 body = self.body() if method == "POST" else None
                 args = {k: v[0] for k, v in q.items() if v}
                 args["dev"] = inner          # the address as THAT PC sees it
-                url = "http://%s:%d%s?%s" % (hub_ip, PORT, path,
-                                             urllib.parse.urlencode(args))
+                # `path` does not exist here — dev_route only knows `what`,
+                # the part after /api/dev/. Building the URL from a name that
+                # is not in scope raised NameError on EVERY hub-to-hub
+                # forward, and the except below turned it into "could not
+                # reach the PC holding this module". Found by the A22-1 sweep.
+                url = "http://%s:%d/api/dev/%s?%s" % (hub_ip, PORT, what,
+                                                      urllib.parse.urlencode(args))
                 req = urllib.request.Request(
                     url, data=body, method="POST" if body is not None else "GET")
                 req.add_header("X-Mice-Forwarded", "1")
@@ -2367,16 +3651,16 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send_err(
                         "a live view cannot come down the USB/RS485 cable — "
                         "open this module over WiFi", 501)
-                import http.client
-                up = http.client.HTTPConnection(addr, timeout=20)
-                up.request("GET", "/api/cam.stream")
-                r = up.getresponse()
-                if r.status != 200:
-                    up.close()
-                    return self.send_err(r.read().decode(errors="replace")[:200],
-                                         r.status)
+                # THROUGH THE RELAY, so the board is watched once however many
+                # people are looking. Piping each browser straight to the
+                # board meant the second viewer opened a second stream and was
+                # refused - correctly, because the board has one frame buffer
+                # and take() reclaims the frame already on loan.
+                relay = cam_relay.CamRelay.get(addr)
+                relay.join()
                 self.send_response(200)
-                self.send_header("Content-Type", r.getheader("Content-Type"))
+                self.send_header("Content-Type",
+                                 "multipart/x-mixed-replace; boundary=mice")
                 self.send_header("Cache-Control", "no-store")
                 # No length is possible: it ends when the viewer leaves. So
                 # this one response opts out of keep-alive explicitly,
@@ -2384,16 +3668,20 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header("Connection", "close")
                 self.close_connection = True
                 self.end_headers()
+                seen = 0
                 try:
                     while True:
-                        chunk = r.read(2048)
-                        if not chunk:
-                            break
-                        self.wfile.write(chunk)
+                        seen, jpeg = relay.next_frame(seen)
+                        if jpeg is None:
+                            break        # the camera went quiet; end honestly
+                        self.wfile.write(
+                            b"\r\n--mice\r\nContent-Type: image/jpeg\r\n"
+                            b"Content-Length: " + str(len(jpeg)).encode() +
+                            b"\r\n\r\n" + jpeg)
                 except Exception:            # noqa: BLE001 - the browser
                     pass                      # closed the tab; that is normal
                 finally:
-                    up.close()
+                    relay.leave()
                 return
             if what == "cam.jpg":
                 # A camera frame, for the module site served BY the hub.
@@ -2552,12 +3840,35 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_bytes((HUB_WEB / "help.html").read_bytes(), MIME[".html"])
         if path == "/studio" or path == "/studio/":
             return self.send_bytes((STUDIO_WEB / "index.html").read_bytes(), MIME[".html"])
-        if path.startswith("/studio/"):
+        # A23-1: each version carries its OWN copy of Studio under its mount,
+        # so the comparison is whole-page, not a shared engine with two skins.
+        if path == "/o/studio" or path == "/o/studio/":
+            return self.send_bytes((OX_WEB / "studio" / "index.html").read_bytes(),
+                                   MIME[".html"])
+        if path == "/g/studio" or path == "/g/studio/":
+            return self.send_bytes((GEMINI_WEB / "studio" / "index.html").read_bytes(),
+                                   MIME[".html"])
+        if path in ("/g", "/g/") or path in ("/o", "/o/"):
+            # The two A23-1 versions' entry pages. Missing tree = an honest
+            # empty state naming the folder that would hold it.
+            base = GEMINI_WEB if path.startswith("/g") else OX_WEB
+            idx = base / "hub.html"
+            if not idx.is_file():
+                return self.send_err("not built yet: %s" % base.name, 404)
+            return self.send_bytes(idx.read_bytes(), MIME[".html"])
+        if path.startswith("/g/"):
+            base, rel = GEMINI_WEB, path[len("/g/"):]
+        elif path.startswith("/o/"):
+            base, rel = OX_WEB, path[len("/o/"):]
+        elif path.startswith("/studio/"):
             base, rel = STUDIO_WEB, path[len("/studio/"):]
         elif path.startswith("/models/"):
             base, rel = MODELS, path[len("/models/"):]
         elif path.startswith("/hubweb/"):
             base, rel = HUB_WEB, path[len("/hubweb/"):]
+        elif path.startswith("/docs/"):
+            # Reference pages: PLAN.html (plan), ref.html (equations, references)
+            base, rel = DATA / "docs", path[len("/docs/"):]
         else:
             # studio's absolute asset paths (/app.js, /style.css, /vendor/..)
             base, rel = STUDIO_WEB, path.lstrip("/")
@@ -2576,6 +3887,9 @@ class Handler(BaseHTTPRequestHandler):
         it has already been through the same gate."""
         return auth().valid(auth().token_of(self.headers.get("Cookie", "")))
 
+    def logged_in_user(self) -> str:
+        return auth().user_of(auth().token_of(self.headers.get("Cookie", "")))
+
     def auth_route(self, method: str, path: str):
         a = auth()
         if path == "/api/version":
@@ -2589,7 +3903,19 @@ class Handler(BaseHTTPRequestHandler):
             # It sits with the OPEN routes on purpose: the login screen is one
             # of the pages that can go stale, and a version nobody may read
             # until they log in would not help there.
-            return self.send_json({"ok": True, "version": web_version()})
+            #
+            # THE EXE ITSELF CAN BE OLD TOO, and until 2026-08-21 nothing said
+            # so: a hub built the day before answered every request happily
+            # with four fixes missing. This is the endpoint every open tab
+            # already polls, so the answer rides along here rather than costing
+            # a second request. `build_stamp.state` caches and says nothing at
+            # all when there is no source tree to compare against.
+            st = build_stamp.state()
+            return self.send_json({"ok": True, "version": web_version(),
+                                   "stale": st["stale"],
+                                   "staleWhy": build_stamp.why(st),
+                                   "rebuild": build_stamp.REBUILD,
+                                   "built": st["built"]})
         if path == "/api/whoami":
             # Never leaks the password, only whether one has to be typed. The
             # page needs this to decide what to grey out.
@@ -2624,7 +3950,10 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 body = {}
             name = str(body.get("user") or "").strip()
-            if path.endswith("/add"):
+            
+            if self.logged_in_user() != "super_admin":
+                ok, why = False, "only super_admin can manage accounts"
+            elif path.endswith("/add"):
                 ok, why = a.add_user(name, str(body.get("password") or ""))
             else:
                 ok, why = a.remove_user(name)
@@ -2695,12 +4024,299 @@ class Handler(BaseHTTPRequestHandler):
                                        "error": str(e)[:300]})
             return self.send_json({"ok": True, "apps": out})
 
+        if path == "/api/access":
+            # Which pages work with no login, and which cards on the hub ask
+            # first. Open on purpose: a page has to be able to draw itself
+            # before anybody has signed in, and this says nothing secret - it
+            # is the same list a person can read on the help page.
+            #
+            # Read per request, never cached: a designer editing the file
+            # should see the screen change on the next refresh, not after a
+            # restart. That is the same bargain config/voice.json already made.
+            return self.send_json(read_page_access())
+
+        if path == "/api/partners":
+            # Where each outside program lives, and what each of its event
+            # sources can and cannot report. Open like /api/access and for the
+            # same reason: a page shows the tile before anybody has signed in,
+            # and there is nothing secret in an address.
+            return self.send_json(read_partners())
+
+        if path == "/api/voice/start" and method == "POST":
+            base, _ = voice_service_url()
+            if base:
+                try:
+                    with urllib.request.urlopen(base + "/health", timeout=0.8) as r:
+                        if r.getcode() == 200:
+                            return self.send_json({"ok": True, "already_running": True,
+                                                   "message": "voice service is already running"})
+                except Exception:
+                    pass
+            py = sys.executable if not getattr(sys, "frozen", False) else (
+                shutil.which("python") or shutil.which("python3") or r"C:\Program Files\Python312\python.exe" or "python")
+            if getattr(sys, "frozen", False):
+                root_dir = Path(sys.executable).parent.parent
+            else:
+                root_dir = HERE.parent
+            script = root_dir / "apps" / "voice" / "service.py"
+            if not script.is_file():
+                script = Path("apps/voice/service.py").resolve()
+                root_dir = script.parent.parent.parent
+            if not script.is_file():
+                return self.send_err("apps/voice/service.py not found on disk", 404)
+            try:
+                flags = 0
+                if os.name == "nt":
+                    flags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
+                subprocess.Popen(
+                    [py, str(script)],
+                    cwd=str(root_dir),
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=flags)
+                return self.send_json({"ok": True, "message": "voice service started"})
+            except Exception as e:
+                return self.send_err("could not start voice service: %s" % e, 500)
+
+        if path == "/api/voice/stop" and method == "POST":
+            base, _ = voice_service_url()
+            if base:
+                try:
+                    req = urllib.request.Request(base + "/stop", data=b"{}", method="POST")
+                    with urllib.request.urlopen(req, timeout=2.0) as r:
+                        pass
+                except Exception:
+                    pass
+            if os.name == "nt":
+                try:
+                    cmd = (
+                        "Get-CimInstance Win32_Process | "
+                        "Where-Object { $_.CommandLine -like '*apps*voice*service.py*' } | "
+                        "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
+                    )
+                    subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
+                                   capture_output=True, timeout=5)
+                except Exception:
+                    pass
+            return self.send_json({"ok": True, "message": "voice service stopped"})
+
+        if path == "/api/jao/start" and method == "POST":
+            try:
+                with urllib.request.urlopen("http://127.0.0.1:8080/", timeout=0.6) as r:
+                    if r.getcode() in (200, 301, 302, 304):
+                        return self.send_json({"ok": True, "already_running": True,
+                                               "message": "All Jao Games server is already running"})
+            except Exception:
+                pass
+            py = sys.executable if not getattr(sys, "frozen", False) else (
+                shutil.which("python") or shutil.which("python3") or r"C:\Program Files\Python312\python.exe" or "python")
+            jao_dir = Path("E:/final_proj/mice/All-Jao-Games")
+            if not jao_dir.is_dir():
+                cand = (HERE.parent.parent / "All-Jao-Games").resolve()
+                if cand.is_dir():
+                    jao_dir = cand
+            if not jao_dir.is_dir():
+                return self.send_err("All-Jao-Games folder not found at %s" % jao_dir, 404)
+            try:
+                flags = 0
+                if os.name == "nt":
+                    flags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
+                subprocess.Popen(
+                    [py, "-m", "http.server", "8080", "--directory", str(jao_dir)],
+                    cwd=str(jao_dir),
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=flags)
+                return self.send_json({"ok": True, "message": "All Jao Games server started on port 8080"})
+            except Exception as e:
+                return self.send_err("could not start games server: %s" % e, 500)
+
+        if path == "/api/voice" or path.startswith("/api/voice/"):
+            return self.voice_proxy(method, path, q)
+
         if path == "/api/scan":
             force = (q.get("force") or ["0"])[0] == "1"
             return self.send_json({"ok": True, "lan": lan_ip(),
                                    "modules": scan_modules(force),
                                    "ports": serial_ports()})
 
+        if path == "/api/app/version":
+            me = app_here()
+            if not me:
+                return self.send_json({"ok": True, "sha": "", "bytes": 0,
+                                       "why": "this hub runs from source, so "
+                                              "it has no app to hand out"})
+            exe, size, sha = me
+            return self.send_json({"ok": True, "sha": sha, "bytes": size,
+                                   "when": time.strftime(
+                                       "%Y-%m-%dT%H:%M:%SZ",
+                                       time.gmtime(exe.stat().st_mtime)),
+                                   "host": socket.gethostname()})
+        if path == "/api/app":
+            # A browser cannot reach that PC's serial ports at any address, so
+            # the PC has to run something that can. This is it.
+            me = app_here()
+            if not me:
+                return self.send_err("this hub runs from source - there is no "
+                                     "built app to download", 404)
+            exe, _size, _sha = me
+            return self.send_bytes(
+                exe.read_bytes(), "application/octet-stream",
+                headers=(("Content-Disposition",
+                          "attachment; filename=MiceHub.exe"),))
+        if path == "/api/selfupdate":
+            # METHOD FIRST. A plain `if path ==` that answers the GET makes the
+            # POST below unreachable, so the button would report state and
+            # never update.
+            if method == "POST":
+                ok, msg = do_update()
+                return self.send_json({"ok": ok, "message": msg})
+            return self.send_json(update_state())
+        if path == "/api/diag":
+            # PLAIN TEXT, not JSON: a person pastes this into a message, and
+            # they should be able to read what they are handing over before
+            # they send it. Open like the rest of reading - and it carries no
+            # password, which check_diagnostics enforces rather than trusts.
+            return self.send_bytes(diagnostics().encode("utf-8"),
+                                   "text/plain; charset=utf-8")
+        if path == "/api/report" and method == "POST":
+            # A REPORT anyone can send — no login, no password, stored machine-local.
+            # The page sends: text, page, module, build, time, attachDiag (bool).
+            # We add: client IP, user agent, and if attachDiag, the diagnostics text.
+            # Saved as one JSON file per report under HERE/reports/ (never promoted).
+            # json/uuid come from the module imports - a local import here made
+            # the names local to this WHOLE router function, and every endpoint
+            # that reads them earlier (pairing, saves, OTA, play) died with
+            # UnboundLocalError. 33 red checks from two lines.
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                if length > 1048576:
+                    # This endpoint is deliberately open, so the cap is not
+                    # optional: a lying Content-Length must not become RAM.
+                    # Same rudeness rule as drain() - past the cap, drop the
+                    # connection instead of reading it.
+                    self.close_connection = True
+                    self._body_read = True
+                    return self.send_json({"ok": False,
+                                           "error": "that report is too big"})
+                raw = self.rfile.read(length).decode("utf-8") if length else "{}"
+                data = json.loads(raw)
+            except Exception:
+                return self.send_json({"ok": False, "error": "bad json"})
+            text = (data.get("text") or "").strip()[:4000]
+            if not text:
+                return self.send_json({"ok": False, "error": "empty"})
+            page = str(data.get("page") or "")[:60]
+            module = str(data.get("module") or "")[:60]
+            build = str(data.get("build") or "")[:80]
+            # The visitor's clock lands in a FILENAME below, so it is stripped
+            # to plain characters first - an unfiltered ..\..\ wrote the
+            # report wherever it pointed on this PC (A22-1 panel, 2026-08-25).
+            t = "".join(ch for ch in str(data.get("time") or "")
+                        if ch.isalnum() or ch in "-T:.Z ")[:40]
+            attach = bool(data.get("attachDiag"))
+            # Build the report record
+            report = {
+                "id": uuid.uuid4().hex[:12],
+                "time": t or time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "text": text,
+                "page": page,
+                "module": module,
+                "build": build,
+                "attachDiag": attach,
+                "client": self.client_address[0] if self.client_address else "",
+                "ua": self.headers.get("User-Agent", "")[:200],
+            }
+            if attach:
+                try:
+                    report["diag"] = diagnostics()
+                except Exception:
+                    report["diag"] = "diagnostics unavailable"
+            # Write to HERE/reports/ (not SKIP_FILES - those are for promote.py)
+            # but a sibling of the hub: machine-local, never in source.
+            rep_dir = HERE / "reports"
+            rep_dir.mkdir(exist_ok=True)
+            fname = rep_dir / (report["time"].replace(":", "-") + "_" + report["id"] + ".json")
+            try:
+                write_atomic(fname, json.dumps(report, ensure_ascii=False, indent=2))
+            except Exception as e:
+                return self.send_json({"ok": False, "error": "write failed: " + str(e)})
+            # English lands in the file later; the visitor's own words are
+            # already saved, so nothing waits on the model here.
+            threading.Thread(target=_translate_report_later,
+                             args=(fname, text), daemon=True).start()
+            return self.send_json({"ok": True, "id": report["id"]})
+        if path == "/api/reports" and method == "GET":
+            # LIST reports for the complaints screen — no login, anyone can see.
+            # Returns: [ {id, time, text, text_en, page, module, build, status, ...} ]
+            # text_en was translated ONCE when the report was filed (see
+            # _translate_report_later); empty means no translation yet and the
+            # pages fall back to the original words. No model call here - a
+            # list refresh must be instant even with the helper switched off.
+            rep_dir = HERE / "reports"
+            if not rep_dir.is_dir():
+                return self.send_json({"ok": True, "reports": []})
+            out = []
+            # Read under the SAME lock the writers hold: on Windows an open
+            # read handle makes the writers' os.replace fail, so an unlocked
+            # list refresh could eat a just-finished translation.
+            with _reports_lock:
+                for f in sorted(rep_dir.glob("*.json"), reverse=True):
+                    try:
+                        data = json.loads(f.read_text(encoding="utf-8"))
+                    except Exception:
+                        continue          # a corrupt sibling, not ours
+                    # Never send diag in the list - only the summary fields.
+                    # A closed report keeps its file so the next person finds it.
+                    out.append({
+                        "id": data.get("id"),
+                        "time": data.get("time"),
+                        "text": data.get("text") or "",
+                        "text_en": data.get("text_en") or "",
+                        "page": data.get("page"),
+                        "module": data.get("module"),
+                        "build": data.get("build"),
+                        "status": data.get("status", "open"),
+                        "client": data.get("client", ""),
+                    })
+            return self.send_json({"ok": True, "reports": out})
+        if path == "/api/reports" and method == "POST":
+            # UPDATE a report status: {id: "...", status: "fixed" | "not-a-problem"}
+            # No login — the point is a designer can close it from the screen.
+            import json as _json
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                raw = self.rfile.read(length).decode("utf-8") if length else "{}"
+                data = _json.loads(raw)
+            except Exception:
+                return self.send_json({"ok": False, "error": "bad json"})
+            rid = (data.get("id") or "").strip()
+            status = (data.get("status") or "").strip()
+            if not rid or status not in ("fixed", "not-a-problem", "open"):
+                return self.send_json({"ok": False, "error": "bad payload"})
+            rep_dir = HERE / "reports"
+            if not rep_dir.is_dir():
+                return self.send_json({"ok": False, "error": "not found"})
+            for f in rep_dir.glob("*.json"):
+                try:
+                    # Read under the SAME lock as the writer: a copy taken
+                    # outside it can put back a version without the other's
+                    # change (the translation vanishing again).
+                    with _reports_lock:
+                        try:
+                            j = _json.loads(f.read_text(encoding="utf-8"))
+                        except Exception:
+                            continue            # a corrupt sibling, not ours
+                        if j.get("id") != rid:
+                            continue
+                        j["status"] = status
+                        write_atomic(f, _json.dumps(j, ensure_ascii=False, indent=2))
+                except Exception as e:
+                    return self.send_json(
+                        {"ok": False, "error": "could not save: %s" % e})
+                return self.send_json({"ok": True})
+                return self.send_json({"ok": True})
+            return self.send_json({"ok": False, "error": "not found"})
         if path == "/api/ports":
             # just the typed port list (no WiFi scan, no port opening) — the
             # streaming USB probe uses this, then probes each port on its own.
@@ -2741,12 +4357,18 @@ class Handler(BaseHTTPRequestHandler):
             mods = []
             for u in probe_usb_all(False):
                 m = u.get("module")
-                if not m:
-                    continue
-                mods.append({"dev": "usb:" + u["port"],
-                             "name": m.get("name") or u["port"],
-                             "type": m.get("type", ""), "id": m.get("id"),
-                             "group": m.get("group", ""), "via": u["port"]})
+                # A CABLE WITH NO BOARD OF ITS OWN STILL HAS BOARDS BEHIND IT.
+                # `continue` here skipped the whole port, and the bus loop
+                # below sits inside it - so a plain USB-to-RS485 dongle listed
+                # nothing at all, and a module reachable ONLY over the bus was
+                # invisible to this screen and to every other hub. Measured
+                # 2026-08-21: probe_usb_port(COM23) found board 67 behind the
+                # dongle while /api/mine returned four modules without it.
+                if m:
+                    mods.append({"dev": "usb:" + u["port"],
+                                 "name": m.get("name") or u["port"],
+                                 "type": m.get("type", ""), "id": m.get("id"),
+                                 "group": m.get("group", ""), "via": u["port"]})
                 for b in (u.get("rs485") or []):
                     mods.append({"dev": "usb:%s:%s" % (u["port"], b.get("id")),
                                  "name": b.get("name") or ("id %s" % b.get("id")),
@@ -2775,28 +4397,24 @@ class Handler(BaseHTTPRequestHandler):
         # holding, and rewrites the address so it means the same module FROM
         # HERE: hub:<their ip>/<their dev>.
         if path == "/api/allmods":
+            # The FLAT list of what other PCs hold, one entry per way in. The
+            # Firmware tab wants exactly this (it sends an image to a named
+            # port on a named PC). The merged one-row-per-board list is
+            # /api/modules/all.
             force = (q.get("force") or ["0"])[0] == "1"
-            out, errs = [], []
-            for h in scan_hubs(force):
-                ip = h.get("ip")
-                if not ip:
-                    continue
-                try:
-                    with urllib.request.urlopen(
-                            "http://%s:%d/api/mine" % (ip, PORT), timeout=6) as r:
-                        d = json.loads(r.read().decode(errors="replace"))
-                    host = d.get("host") or ip
-                    for m in (d.get("modules") or []):
-                        m = dict(m)
-                        m["dev"] = "hub:%s/%s" % (ip, m["dev"])
-                        m["host"] = host
-                        m["hostIp"] = ip
-                        out.append(m)
-                except Exception as e:          # noqa: BLE001
-                    # A laptop that has just been closed is normal. Report it
-                    # per PC rather than failing the whole list.
-                    errs.append({"ip": ip, "error": str(e)})
+            out, errs = remote_modules(force)
             return self.send_json({"ok": True, "modules": out, "errors": errs})
+
+        if path == "/api/modules/all":
+            # ONE LIST. Every module any hub here can reach, each board once,
+            # carrying every route including which PC it goes through.
+            force = (q.get("force") or ["0"])[0] == "1"
+            try:
+                mods, errs = modules_everywhere(force)
+            except Exception as e:               # noqa: BLE001
+                return self.send_err(e)
+            return self.send_json({"ok": True, "modules": mods, "errors": errs,
+                                   "host": socket.gethostname(), "lan": lan_ip()})
 
         if path == "/api/scanusb":
             # ?port=COMx probes ONE port (streaming UI: results render as
@@ -2908,8 +4526,27 @@ class Handler(BaseHTTPRequestHandler):
         # it already has if the update does not complete
         if path == "/api/ota" and method == "POST":
             try:
+                # The board's OWN login, when it is not the shipped one. Read
+                # from the body as well as the query so a password never has
+                # to travel in a URL, where it lands in every access log.
+                try:
+                    d = json.loads(self.body().decode() or "{}")
+                except ValueError:
+                    d = {}
                 return self.send_json(flasher.start_ota(
-                    (q.get("ip") or [""])[0], (q.get("type") or [""])[0]))
+                    (q.get("ip") or [""])[0], (q.get("type") or [""])[0],
+                    user=str(d.get("user") or (q.get("user") or [""])[0]),
+                    password=str(d.get("password") or (q.get("password") or [""])[0])))
+            except Exception as e:            # noqa: BLE001
+                return self.send_err(e)
+        # and the same job again over the COMMAND channel, which is the only
+        # one an RS485 board has — see Flash.start_bus. `dev` is an ordinary
+        # dev address, so this reaches a cable, the bus, WiFi, a module behind
+        # another module's hotspot, or a module on another PC, unchanged.
+        if path == "/api/flash/bus" and method == "POST":
+            try:
+                return self.send_json(flasher.start_bus(
+                    (q.get("dev") or [""])[0], (q.get("type") or [""])[0]))
             except Exception as e:            # noqa: BLE001
                 return self.send_err(e)
 
@@ -2927,8 +4564,134 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_err(e)
         if path == "/api/play":
             return self.send_json(show.status())
+        # ---- live audio to a module's speaker (A24-32) ----
+        # POST /api/stream/start  {dev|ip, port, rate, file}
+        # POST /api/stream/feed   raw 16-bit mono PCM, from the browser capture
+        # POST /api/stream/stop   |  GET /api/stream  where it is up to
+        if path == "/api/stream/start" and method == "POST":
+            try:
+                d = json.loads(self.body().decode() or "{}")
+                dev = str(d.get("dev") or "")
+                ip = str(d.get("ip") or "")
+                if dev and not ip:
+                    kind, addr, _bus, _peer = parse_dev(dev)
+                    if kind != "wifi":
+                        return self.send_err(
+                            "live audio goes over WiFi - open this module over "
+                            "WiFi, or give its address", 501)
+                    ip = addr.split(":")[0]
+                port = int(d.get("port") or stream_audio.DEF_PORT)
+                rate = int(d.get("rate") or stream_audio.DEF_RATE)
+                # The BOARD is told first: it must be listening before the
+                # first datagram, or the start of the sound is simply gone.
+                said = dev_cmd(dev or ("wifi:" + ip),
+                               "STREAM ON %d %d" % (port, rate))
+                if not said.startswith("OK"):
+                    return self.send_err("the board refused the stream: " + said)
+                st = streamer.start(ip, port, rate, str(d.get("name") or "live"))
+                if d.get("file"):
+                    pcm = stream_audio.wav_pcm(SEQUENCES.parent / "music"
+                                               / safe_name(str(d["file"])), rate)
+                    threading.Thread(target=streamer.feed_all, args=(pcm,),
+                                     daemon=True).start()
+                return self.send_json({"ok": True, "board": said, **st})
+            except Exception as e:            # noqa: BLE001
+                return self.send_err(e)
+        if path == "/api/stream/feed" and method == "POST":
+            took = streamer.feed(self.body())
+            return self.send_json({"ok": True, "took": took,
+                                   "queued": streamer.q.qsize()})
+        if path == "/api/stream/stop" and method == "POST":
+            st = streamer.stop()
+            try:
+                if st.get("ip"):
+                    dev_cmd("wifi:" + st["ip"], "STREAM OFF")
+            except Exception as e:            # noqa: BLE001
+                st["error"] = str(e)
+            return self.send_json({"ok": True, **st})
+        if path == "/api/stream":
+            return self.send_json({"ok": True, **streamer.status()})
+
+        if path == "/api/stream/voice" and method == "POST":
+            try:
+                data = json.loads(self.body().decode())
+                text = data.get("text")
+                dev = data.get("dev")
+                req = urllib.request.Request("http://127.0.0.1:8767/say", data=json.dumps({"text": text, "lang": ""}).encode(), headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    wav_bytes = r.read()
+                import io, wave
+                with wave.open(io.BytesIO(wav_bytes)) as w:
+                    pcm = w.readframes(w.getnframes())
+                    rate = w.getframerate()
+                kind, addr, _, _ = parse_dev(dev)
+                ip = addr.split(":")[0]
+                dev_cmd(dev, "STREAM ON %d %d" % (stream_audio.DEF_PORT, rate))
+                streamer.start(ip, stream_audio.DEF_PORT, rate, "voice")
+                threading.Thread(target=streamer.feed_all, args=(pcm,), daemon=True).start()
+                return self.send_json({"ok": True})
+            except Exception as e:
+                return self.send_err(str(e))
+
         if path == "/api/play/stop":
             return self.send_json(show.stop())
+
+        if path == "/api/stopall" and method == "POST":
+            # EVERYTHING, AT ONCE. The show clock first, because it is what
+            # keeps sending new positions - stopping the boards while the clock
+            # runs means the next tick starts them moving again. Then every
+            # board the hub can reach, each one told directly rather than by
+            # broadcast: a broadcast reaches whatever is listening, and the
+            # answer to "did it stop?" has to be per board or it is not an
+            # answer.
+            #
+            # It never asks first. A stop that needs confirming is a stop that
+            # arrives after the thing you were trying to prevent.
+            stopped, failed, slow = [], [], []
+            try:
+                show.stop(freeze=False, why="somebody pressed stop")
+            except Exception:                              # noqa: BLE001
+                pass
+            mods = [m for m in modules_here() if m.get("routes")]
+
+            # ONE THREAD PER BOARD, ALL AT ONCE. Stopping them in a row meant
+            # each stop queued behind whatever that cable was already doing -
+            # a flash holds its port lock for up to 30s (FWEND) - so the last
+            # board waited for every board before it (A22-1 panel, 2026-08-25).
+            def _stop_one(m, out):
+                who = ("#%s %s" % (m.get("id"), m.get("name") or "")).strip()
+                # The first route that answers is enough - the board is one
+                # board however many ways in it has.
+                for r in m.get("routes") or []:
+                    try:
+                        dev_cmd(r.get("dev"), "MOVE STOP")
+                        out.append((who, True))
+                        return
+                    except Exception:                      # noqa: BLE001
+                        continue
+                out.append((who, False))
+
+            # `got` must exist BEFORE the comprehension runs - a tuple
+            # assignment evaluates the whole right side first, and the
+            # threads' args referenced it while it was still unborn.
+            got = []
+            threads = [
+                threading.Thread(target=_stop_one, args=(m, got), daemon=True)
+                for m in mods]
+            for th in threads:
+                th.start()
+            deadline = time.time() + PEER_WAIT + 2
+            for th in threads:
+                th.join(max(0.1, deadline - time.time()))
+            for who, done in got:
+                (stopped if done else failed).append(who)
+            said = {w for w, _d in got}
+            slow = [(" #%s %s" % (m.get("id"), m.get("name") or "")).strip()
+                    for m in mods
+                    if ("#%s %s" % (m.get("id"), m.get("name") or "")).strip()
+                    not in said]
+            return self.send_json({"ok": not failed, "stopped": stopped,
+                                   "failed": failed, "slow": slow})
 
         # ---- studio: local storage ----
         if path == "/api/list":
@@ -2952,6 +4715,24 @@ class Handler(BaseHTTPRequestHandler):
             if not f.is_file():
                 return self.send_err("no sequence " + name, 404)
             return self.send_bytes(f.read_bytes(), "text/yaml; charset=utf-8")
+
+        if path == "/api/seqsteps":
+            # The same file loadseq serves, PARSED for POST /api/play - the
+            # voice answer that moves a robot needs steps, not yaml text.
+            # Reads only, so it is ungated like loadseq; starting the show
+            # still goes through gated /api/play.
+            name = safe_name((q.get("name") or [""])[0])
+            f = SEQUENCES / name
+            if not f.is_file():
+                return self.send_err("no sequence " + name, 404)
+            try:
+                got = seq_steps(f.read_text(encoding="utf-8"))
+            except ValueError as e:
+                return self.send_err("cannot play %s: %s" % (name, e))
+            if len(got["steps"]) < 2:
+                return self.send_err(
+                    "%s has fewer than two poses - nothing to play" % name)
+            return self.send_json({"ok": True, "file": name, **got})
 
         if path == "/api/save" and method == "POST":
             data = json.loads(self.body().decode())
@@ -3041,6 +4822,58 @@ class Handler(BaseHTTPRequestHandler):
                                    "hubs": scan_hubs(
                                        (q.get("force") or ["0"])[0] == "1")})
 
+        # ---- pairing: one login on every PC (A14-1) ----
+        # Three of these are gated like any other change. The fourth cannot be
+        # — see /api/pair/claim below.
+        if path == "/api/pair/status":
+            code, left = PAIRING.showing()
+            return self.send_json({"ok": True, "showing": bool(code),
+                                   "code": hub_pair.pretty(code),
+                                   "seconds": left,
+                                   "host": socket.gethostname(),
+                                   "users": auth().users()})
+
+        if path == "/api/pair/start" and method == "POST":
+            code, secs = PAIRING.start()
+            return self.send_json({"ok": True, "showing": True,
+                                   "code": hub_pair.pretty(code),
+                                   "seconds": secs,
+                                   "host": socket.gethostname(),
+                                   "users": auth().users()})
+
+        if path == "/api/pair/stop" and method == "POST":
+            PAIRING.stop()
+            return self.send_json({"ok": True, "showing": False,
+                                   "code": "", "seconds": 0})
+
+        if path == "/api/pair/claim" and method == "POST":
+            # DELIBERATELY OUTSIDE THE LOGIN (hub_auth.CODE_GATED). The hub
+            # asking has no account here — that is the thing being fixed — so
+            # the code is the credential. It dies after five wrong tries, so
+            # leaving this open costs one guess in 32^8 per code shown.
+            try:
+                d = json.loads(self.body().decode() or "{}")
+            except ValueError:
+                d = {}
+            ok, why = PAIRING.claim(str(d.get("code") or ""))
+            if not ok:
+                return self.send_bytes(
+                    json.dumps({"ok": False, "error": why}).encode(),
+                    MIME[".json"], 401)
+            return self.send_json({"ok": True, "host": socket.gethostname(),
+                                   "accounts": auth().export_accounts()})
+
+        if path == "/api/pair/link" and method == "POST":
+            try:
+                d = json.loads(self.body().decode() or "{}")
+            except ValueError:
+                d = {}
+            try:
+                return self.send_json(dict({"ok": True}, **pair_with(
+                    d.get("ip"), d.get("code"), replace=bool(d.get("replace")))))
+            except Exception as e:                 # noqa: BLE001
+                return self.send_err(e)
+
         if path == "/api/export" and method == "POST":
             data = json.loads(self.body().decode())
             name = safe_name(data["name"])
@@ -3092,13 +4925,67 @@ class Handler(BaseHTTPRequestHandler):
         return self.send_err("unknown endpoint " + path, 404)
 
     @staticmethod
-    def robot_get(ip: str, path: str) -> bytes:
+    def robot_get(ip: str, path: str, timeout=None) -> bytes:
         if not re.match(r"^[A-Za-z0-9._-]+(:\d+)?$", ip):
             raise ValueError("bad module address")
-        req = urllib.request.Request("http://%s%s" % (ip, path),
-                                     headers=hub_header())
-        with urllib.request.urlopen(req, timeout=6) as r:
+
+        def once(cookie=None):
+            headers = hub_header()
+            if cookie:
+                headers["Cookie"] = "%s=%s" % (BOARD_COOKIE, cookie)
+            req = urllib.request.Request("http://%s%s" % (ip, path),
+                                         headers=headers)
+            # 6 s suits every ordinary command. FWEND does not: the board
+            # verifies the md5 of a whole 1.3 MB image before it will boot into
+            # it. See dev_cmd — a timeout there would report a failed update
+            # for one that worked.
+            with urllib.request.urlopen(req, timeout=timeout or 6) as r:
+                return r.read()
+
+        try:
+            return once(_board_cookies.get(ip))
+        except urllib.error.HTTPError as e:
+            if e.code != 401:
+                raise
+        # The board refused the command as a stranger. Log in — the shipped
+        # account unless the caller gave this board its own earlier — and ask
+        # once more as a session.
+        cookie, why = board_login(ip)
+        if not cookie:
+            raise RuntimeError(why or ("the module at %s wants its own login"
+                                       % ip)) from None
+        _board_cookies[ip] = cookie
+        return once(cookie)
+
+
+def _robot_post(ip: str, path: str, body: bytes, ctype: str, timeout=20) -> bytes:
+    """POST to a board, logging in if it asks - the twin of robot_get.
+
+    Uploads went out as a STRANGER: robot_get has carried a board session
+    since the boards grew a login, and this path never did, so every upload
+    through the hub over WiFi died on `HTTP Error 401: Unauthorized` while
+    commands to the same board worked. Reported by the user 2026-09-07 with
+    that exact line on screen (A24-33).
+    """
+    def once(cookie=None):
+        headers = {"Content-Type": ctype}
+        if cookie:
+            headers["Cookie"] = "%s=%s" % (BOARD_COOKIE, cookie)
+        req = urllib.request.Request("http://%s%s" % (ip, path), data=body,
+                                     method="POST", headers=headers)
+        with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.read()
+
+    try:
+        return once(_board_cookies.get(ip))
+    except urllib.error.HTTPError as e:
+        if e.code != 401:
+            raise
+    cookie, why = board_login(ip)
+    if not cookie:
+        raise RuntimeError(why or ("the module at %s wants its own login" % ip))
+    _board_cookies[ip] = cookie
+    return once(cookie)
 
 
 def start_short_name(port=80):
@@ -3157,6 +5044,21 @@ def start_short_name(port=80):
 def main():
     for d in (PROJECTS, SEQUENCES, MODELS):
         d.mkdir(parents=True, exist_ok=True)
+    # ONE HUB PER PORT. The listener sets SO_REUSEADDR (ThreadingHTTPServer
+    # default), and on Windows that lets a second hub bind the SAME port -
+    # connections then land on either process at random and half the pages
+    # silently misbehave. Ask before binding: if something here already
+    # answers like a hub, open that one instead of fighting it.
+    try:
+        with urllib.request.urlopen(
+                "http://127.0.0.1:%d/api/version" % PORT, timeout=2) as r:
+            if "mice" in r.read(200).decode("utf-8", "replace").lower():
+                print("a hub is already running on port %d - opening "
+                      "http://127.0.0.1:%d/ instead" % (PORT, PORT))
+                webbrowser.open("http://127.0.0.1:%d/" % PORT)
+                return
+    except Exception:                       # noqa: BLE001 - nothing there: bind
+        pass
     srv = ThreadingHTTPServer((HOST, PORT), Handler)
     local = "http://127.0.0.1:%d/" % PORT
     try:

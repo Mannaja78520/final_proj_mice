@@ -1,0 +1,16 @@
+# Local dummy previews
+/dummy/
+/dummy.html
+
+# Local dependencies and npm cache
+node_modules/
+.npm-cache/
+
+# External All Jao Games assets (must not be committed into Mice repository)
+claw-game*
+matching-game*
+quiz-game*
+script.js
+style.css
+wheel-engine*
+wheel-state*

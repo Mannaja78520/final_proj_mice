@@ -1,0 +1,104 @@
+{
+  // OUTSIDE PROGRAMS THE RIG FOLLOWS. One entry each.
+  //
+  // Asked 2026-09-08: *make can add more app than this in the future, not only
+  // face reconize, make it dynamic to easy to add.* So Reconize is the FIRST
+  // ENTRY, not a special case. The second program is an entry here and no code.
+  //
+  // We never modify a partner. Reconize updates itself with
+  // `git checkout --detach`, so anything we put in its folder is wiped or
+  // blocks its update. We call it over HTTP and never open its database - it
+  // runs without WAL, so a long read blocks its own writing.
+  //
+  // EVERY FIELD BELOW WAS READ OUT OF THEIR CODE ON 2026-09-10, not guessed.
+  // The file and line is written beside each claim that could rot.
+
+  "jao_games": {
+    "name": "All Jao Games",
+    "open": "http://127.0.0.1:8080",
+    "api": "http://127.0.0.1:8080",
+    "health": "/",
+    "folder": "E:/final_proj/mice/All-Jao-Games",
+    "start": "python -m http.server 8080"
+  },
+
+  "reconize": {
+    "name": "Reconize",
+    "open": "http://127.0.0.1:5173",          // their React front end
+    "api": "http://127.0.0.1:8000",           // their FastAPI
+    "health": "/api/health",                  // main.py:182, needs no login
+    "folder": "E:/final_proj/mice/Face_Regonize",
+    "start": "start.bat",
+
+    // One person, seen twice, is one arrival. A central-inference match
+    // publishes under the real camera (their api/nodes.py:332-338) and the
+    // background persistence publishes it again tagged "kiosk"
+    // (api/recognition.py:139-145), so the same face arrives twice within a
+    // second or two. Strangers are never merged - they have no identity.
+    "dedupeSeconds": 20,
+
+    // Labels that arrive in the camera field but are NOT places. Their
+    // kiosk publishes node_id as the literal string "kiosk" and their own
+    // comment says the kiosk never registers itself as a node. Greeting
+    // somebody "at" it would put them at a door that does not exist.
+    "notACamera": ["kiosk"],
+
+    // api/auth.py:12 mounts the router at /api/auth, so login is /api/auth/login.
+    "login": { "kind": "jwt", "path": "/api/auth/login", "expires_min": 480 },
+
+    // WHERE EVENTS COME FROM, and - just as important - what each source can
+    // NOT tell us. The two sources have opposite holes, and pretending
+    // otherwise is how the rig would greet the wrong person at the wrong door.
+    "events": [
+      {
+        // api/nodes.py:482 mounts the websocket, api/nodes.py:67 the /api/node
+        // prefix. The body is exactly the six fields mapped below
+        // (api/nodes.py:332-338).
+        "kind": "ws",
+        "path": "/api/node/events-feed?token={token}",
+
+        // KNOWN FACES ONLY. Both publishers guard it: api/nodes.py:331 sends
+        // only when status == matched, and api/recognition.py:130 only when
+        // person_id is set. A stranger never appears here at all.
+        "reports": ["known"],
+        "hasCamera": true,
+        "map": { "who": "name", "id": "participant_id", "camera": "node_id",
+                 "when": "at", "repeat": "checkin" }
+      },
+      {
+        // api/history.py:13 mounts /api/history. Newest first, page defaults
+        // to 1 (api/history.py:30,68), so a burst needs paging, not one read.
+        "kind": "poll",
+        "path": "/api/history?page_size=100&page={page}",
+        "items": "items",
+
+        // STRANGERS ARRIVE HERE, AND NOWHERE ELSE - but with NO camera. The
+        // row is built at api/history.py:71-84 and carries id, upload_id,
+        // upload_filename, person_id, name, participant_id, confidence,
+        // status, detected_at. There is no node_id in it. So a history event
+        // may be counted, and must never be treated as somebody at the door.
+        "reports": ["known", "unknown"],
+        "hasCamera": false,
+        "map": { "who": "name", "id": "participant_id",
+                 "when": "detected_at", "status": "status", "row": "id" },
+
+        // detected_at is stamped when the row is BUILT, not when it commits
+        // (models/models.py:64, default_factory=datetime.now). An older
+        // looking row can therefore land after a newer one. So the poll
+        // re-reads this many seconds behind its checkpoint and throws away
+        // repeats by row id. 120 s is a starting figure, to be measured
+        // against their real timing on the bench.
+        "lagSeconds": 120
+      }
+    ],
+
+    // Their count is the truth, ours the fallback (api/reports.py:16, field at
+    // :51). READ WHAT IT COUNTS BEFORE BUILDING A MILESTONE ON IT: it is
+    // `count(distinct Attendance.person_id)` since midnight (api/reports.py:25)
+    // - distinct RECOGNISED people today. A stranger has no Attendance row, so
+    // strangers are not in this number, and one person seen ten times is one.
+    // A rule that says *100 people arrived* therefore means 100 known people.
+    "count": { "path": "/api/reports/dashboard", "field": "detected_today",
+               "means": "distinct recognised people since midnight" }
+  }
+}

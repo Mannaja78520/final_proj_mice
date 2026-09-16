@@ -1,0 +1,17 @@
+# Mice Hub & Robot Control Core
+pyserial>=3.5
+pygame>=2.5.0
+requests>=2.28.0
+
+# Voice AI Service (STT, Neural TTS & Optional Local LLM)
+faster-whisper>=1.0.0
+edge-tts>=6.1.9
+sounddevice>=0.4.6
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Optional Local LLM (PyTorch + HuggingFace Transformers)
+# Note: For CUDA support on Windows, install torch with CUDA from pytorch.org
+torch>=2.2.0
+transformers>=4.40.0
+accelerate>=0.28.0

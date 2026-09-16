@@ -1,0 +1,175 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Voice — Mice</title>
+<link rel="stylesheet" href="/mice.css">
+<script src="/mice.js"></script>
+<!--
+  THE VOICE APP. Asked 2026-08-22: someone asks the rig a question and it
+  answers. This page is the front; the answering itself happens in a separate
+  helper (apps/voice/service.py) that this PC runs beside the hub, because a
+  local AI cannot live inside the hub program. The hub forwards every call to
+  it and says plainly when it has not been started.
+
+  The saved answers (qa_data.json) are what make it fast: a question close to
+  a saved one never waits for the model at all.
+-->
+<link rel="stylesheet" href="style.css">
+
+<script src="app.js"></script>
+
+<div class="wrap">
+  <div class="head">
+    <button class="secondary" onclick="location.href='/'">🏠 Hub</button>
+    <h1>🎤 Voice</h1>
+    <span class="mini" id="stat" aria-live="polite">checking the voice helper…</span>
+    <button onclick="load()" hidden id="retry">⟳ Try again</button>
+  </div>
+
+  <!-- The helper is not running: the words name what to start, because that
+       IS the fix. Nothing here pretends the rig is listening. -->
+  <div class="card" id="down" hidden>
+    <p><b>The voice helper is not running on this PC.</b></p>
+    <p>The hub is fine — the part that answers questions is a separate helper,
+       because a local AI is too big to live inside the hub program.</p>
+    <p>Start it from the <b>code</b> folder:</p>
+    <p><code>python apps\voice\service.py</code></p>
+    <div class="row" style="margin-top:var(--sp-3)">
+      <button class="primary" id="startVoiceBtn" onclick="startVoiceService()">▶ Start AI Model</button>
+      <span class="mini" id="startVoiceStat" aria-live="polite"></span>
+    </div>
+    <p style="margin-top:var(--sp-2)">Or press <b>Try again</b> if started manually. The hub finds it by itself.</p>
+  </div>
+
+  <div class="card" id="ready" hidden>
+    <div class="row" style="justify-content:space-between">
+      <span class="mini" id="parts"></span>
+      <div class="row">
+        <button class="secondary" id="stopVoiceBtn" onclick="stopVoiceService()" style="color:var(--err,#e84d4d);border-color:var(--err,#e84d4d)" title="Unload all AI models and stop voice service to free memory">⏹ Unload Model</button>
+        <button onclick="load()" title="Refresh status">⟳</button>
+      </div>
+    </div>
+    <textarea id="q" placeholder="Type a question…"></textarea>
+    <div class="row">
+      <button id="talk" onclick="talk()" style="padding:var(--sp-3)">🎤 Press to talk</button>
+      <button class="primary" onclick="ask()">Ask</button>
+      <button id="convStart" onclick="startConv()" class="primary" hidden>▶ Start conversation</button>
+      <button id="convStop" onclick="stopConv()" class="primary" hidden style="background:#e84d4d">■ Stop</button>
+      <label class="mini"><input type="checkbox" id="sound"> Sound</label>
+      <span class="mini" id="wait" aria-live="polite"></span>
+    </div>
+  </div>
+
+  <div class="card" id="answerCard" hidden>
+    <div id="convLog" style="max-height:300px;overflow-y:auto;margin-bottom:var(--sp-3);display:flex;flex-direction:column;gap:var(--sp-2)"></div>
+    <div style="border-top:1px solid var(--line);padding-top:var(--sp-3)">
+      <p class="ans" id="answer"></p>
+      <span class="badge" id="source"></span>
+    </div>
+    <div id="speakingNow" hidden style="margin-top:var(--sp-3);padding:12px 16px;background:var(--bg2,#f0f4ff);border-radius:12px;border-left:4px solid var(--acc,#4285f4);font-size:1.05em;line-height:1.5">
+      <span style="font-size:.8em;color:var(--mut,#888)">🔊 Speaking:</span>
+      <p id="speakingText" style="margin:4px 0 0 0;font-weight:500"></p>
+    </div>
+  </div>
+
+  <!-- SETTINGS (A20-12). Everything the store holds, in designer words:
+       Answers first because that is what changes most during a show, then
+       voice, then the words the listener mishears, and the ids last behind
+       the technical switch. Reading is open; every save goes through the
+       gated /api/voice/config and /api/voice/faq like /api/settings does. -->
+  <!-- LOG IN HERE, not only on the hub. It is one session - the same cookie
+       on the same origin - so logging in here logs you in there and back
+       (A25-5, asked from this page: it said "log in before doing that" and
+       offered no way to do it). The control itself is shared: see
+       miceLogin in shared/web/mice.js, so there is one of it, not five. -->
+  <div class="card" id="loginHere" style="margin-bottom:var(--sp-4)"></div>
+
+  <div class="row" id="setRow" hidden style="margin-bottom:var(--sp-4)">
+    <button onclick="toggleSet()">⚙ Settings</button>
+    <label class="mini" style="display:flex;gap:var(--sp-2);align-items:center">
+      <input type="checkbox" id="advOn" onchange="setAdvanced(this.checked)">
+      Show technical details</label>
+  </div>
+
+  <div id="settings" hidden>
+    <div class="card">
+      <h2 style="margin-top:0;font-size:17px">💬 Answers</h2>
+      <p class="mini">What the rig says without thinking — and a move it can
+         do while saying it.</p>
+      <div id="ansList"></div>
+      <p class="mini" id="ansEmpty" hidden>No answers yet. Add what people ask,
+         and what the rig replies.</p>
+      <div class="row"><button onclick="openForm(-1)">＋ Add an answer</button></div>
+      <div id="aForm" hidden style="margin-top:var(--sp-3)">
+        <textarea id="aQ" style="min-height:56px"
+                  placeholder="The ways people ask it — one line each"></textarea>
+        <textarea id="aA" style="min-height:48px"
+                  placeholder="What the rig replies"></textarea>
+        <div class="row">
+          <select id="aMove" style="flex:1 1 140px"></select>
+          <select id="aRobot" style="flex:1 1 140px"></select>
+        </div>
+        <p class="mini">A move plays on the robot you pick — by name, wherever
+           it is plugged in that day.</p>
+        <div class="row">
+          <button class="primary" onclick="saveAnswer()">Save answer</button>
+          <button onclick="closeForm()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;font-size:17px">🗣 Voice and language</h2>
+      <label class="mini" style="display:flex;gap:var(--sp-2);align-items:center">
+        <input type="checkbox" id="speakOn"> Speak the answers out loud</label>
+      <div class="row" style="margin-top:var(--sp-2);gap:var(--sp-2);align-items:center">
+        <select id="ttsLang" onchange="fillVoices()" style="flex:1 1 110px"></select>
+        <select id="ttsVoice" style="flex:2 1 200px"></select>
+        <button onclick="tryVoice()">▶ Try it</button>
+      </div>
+      <p class="mini" style="margin-top:var(--sp-1);color:var(--dim,#888)">
+        ⭐ <b>Neural voices</b> (Premwadee / Jenny) read context smoothly and naturally. Windows voices run offline.
+      </p>
+      <label class="mini" style="display:flex;gap:var(--sp-2);align-items:center;margin-top:var(--sp-3)">
+        <input type="checkbox" id="listenOn"> Listen to spoken questions</label>
+      <div class="row" id="modelRow" style="margin-top:var(--sp-2)"></div>
+      <div class="row" style="margin-top:var(--sp-3)">
+        <button class="primary" onclick="postConfig('vStat')">Save voice</button>
+        <span class="mini" id="vStat" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;font-size:17px">🔤 Words it gets wrong</h2>
+      <p class="mini">Words the listening often mishears. Adding one steers
+         the listener — nothing is trained, nothing breaks.</p>
+      <div id="biasRows"></div>
+      <div class="row" style="margin-top:var(--sp-3)">
+        <button class="primary" onclick="postConfig('wStat')">Save words</button>
+        <span class="mini" id="wStat" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="card tech">
+      <h2 style="margin-top:0;font-size:17px">🔧 Advanced</h2>
+      <div class="row"><span class="mini" style="flex:1">helper address</span>
+        <input id="svcUrl" style="flex:2 1 180px"></div>
+      <div class="row"><span class="mini" style="flex:1">saved-match threshold</span>
+        <input id="faqTh" type="number" min="0" max="1" step="0.05" style="flex:1 1 80px"></div>
+      <div class="row"><span class="mini" style="flex:1">ask-again threshold</span>
+        <input id="askAgain" type="number" min="0" max="1" step="0.05" style="flex:1 1 80px"></div>
+      <div class="row"><span class="mini" style="flex:1">local AI model</span>
+        <input id="llmModel" style="flex:2 1 180px"></div>
+      <div class="row"><span class="mini" style="flex:1">longest reply (words)</span>
+        <input id="llmMax" type="number" min="32" step="32" style="flex:1 1 80px"></div>
+      <p class="mini">The address decides who reaches this brain. Anything past
+         127.0.0.1 shares it over the WiFi — and the helper itself has no
+         password.</p>
+      <div class="row">
+        <button class="primary" onclick="postConfig('xStat')">Save advanced</button>
+        <span class="mini" id="xStat" aria-live="polite"></span>
+      </div>
+    </div>
+  </div>
+</div>
+

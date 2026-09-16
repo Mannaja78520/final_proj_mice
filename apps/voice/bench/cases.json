@@ -1,0 +1,48 @@
+{
+  // The voice bench's fixed questions - the measurement set.
+  //
+  // Asked 2026-08-22 as A20-6: BEFORE any accuracy work, record ~25 real
+  // questions with their expected text, and let a script turn them into three
+  // numbers - word error rate, answer-hit rate, per-part latency. Nothing
+  // after this may be called better without moving one of those numbers.
+  //
+  // One entry per question:
+  //   id           short name, also the WAV filename
+  //   text         the words a visitor actually says
+  //   expectAnswer the ONE saved answer a correct rig replies with
+  //   lang         "th" or "en" - drives both the TTS voice and, from A20-7,
+  //                the recogniser's language setting
+  //   ttsVoice     optional edge-tts voice for synthesis; defaults per lang
+  //
+  // The WAVs themselves are GENERATED into bench/audio/ by --prepare (edge-tts
+  // speaks them), because there is no human speaker at a PC at night. They are
+  // recordings of text, which is exactly what an STT bench needs; a real-voice
+  // pass can be recorded over them later without touching anything here.
+  "cases": [
+    {"id": "th-toilet",      "lang": "th", "text": "ห้องน้ำอยู่ที่ไหน",                              "expectAnswer": "เดินตรงไปจะเห็นป้ายห้องน้ำทางซ้ายครับ"},
+    {"id": "th-parking",     "lang": "th", "text": "ที่จอดรถอยู่ที่ไหน",                             "expectAnswer": "ที่จอดรถอยู่ด้านหลังอาคารครับ เดินผ่านประตูทางออกด้านขวาได้เลย"},
+    {"id": "th-hours",       "lang": "th", "text": "เปิดกี่โมง",                                     "expectAnswer": "เปิดทำการทุกวันจันทร์ถึงศุกร์ เวลา 8:00 - 17:00 น. ครับ"},
+    {"id": "th-wifi",        "lang": "th", "text": "รหัส wifi คืออะไร",                              "expectAnswer": "รหัส WiFi คือ Welcome2024 ครับ"},
+    {"id": "th-name",        "lang": "th", "text": "คุณชื่ออะไร",                                    "expectAnswer": "ผมชื่อน้อง หุ่นยนต์ผู้ช่วยในงานนี้ครับ"},
+    {"id": "th-cando",       "lang": "th", "text": "คุณทำอะไรได้บ้าง",                               "expectAnswer": "ผมตอบคำถามและโชว์การเคลื่อนไหวของแขนกลได้ครับ"},
+    {"id": "th-hello",       "lang": "th", "text": "สวัสดี",                                        "expectAnswer": "สวัสดีครับ ยินดีที่ได้พบครับ"},
+    {"id": "th-thanks",      "lang": "th", "text": "ขอบคุณ",                                        "expectAnswer": "ด้วยความยินดีครับ"},
+    {"id": "th-food",        "lang": "th", "text": "ห้องอาหารอยู่ชั้นไหน",                           "expectAnswer": "ห้องอาหารอยู่ชั้น 2 ครับ ขึ้นบันไดหรือลิฟต์ทางขวาได้เลย"},
+    {"id": "th-exit",        "lang": "th", "text": "ทางออกอยู่ที่ไหน",                               "expectAnswer": "ทางออกอยู่ปลายทางเดินด้านขวามือครับ"},
+    {"id": "th-show",        "lang": "th", "text": "ขอดูโชว์หน่อย",                                  "expectAnswer": "ได้เลยครับ กำลังเริ่มโชว์ให้ดูครับ"},
+    {"id": "th-stop",        "lang": "th", "text": "หยุดก่อน",                                      "expectAnswer": "หยุดให้แล้วครับ"},
+    {"id": "th-maker",       "lang": "th", "text": "ใครสร้างคุณ",                                   "expectAnswer": "ทีม Mice สร้างผมขึ้นมาครับ"},
+    {"id": "th-weather",     "lang": "th", "text": "พรุ่งนี้ฝนจะตกไหม",                              "expectAnswer": "ผมไม่มีข้อมูล weather ให้ดูได้จริงครับ"},
+    {"id": "th-price",       "lang": "th", "text": "ค่าเข้างานเท่าไหร่",                              "expectAnswer": "เข้าชมฟรีครับ"},
+    {"id": "en-toilet",      "lang": "en", "text": "where is the toilet",                            "expectAnswer": "Down the hall, second door on the left."},
+    {"id": "en-parking",     "lang": "en", "text": "where can I park",                              "expectAnswer": "Parking is behind the building, through the right-hand exit."},
+    {"id": "en-hours",       "lang": "en", "text": "what time do you open",                         "expectAnswer": "We open at eight and close at five."},
+    {"id": "en-wifi",        "lang": "en", "text": "what is the wifi password",                     "expectAnswer": "The WiFi password is Welcome2024."},
+    {"id": "en-name",        "lang": "en", "text": "what is your name",                             "expectAnswer": "I am Nong, the robot guide at this show."},
+    {"id": "en-cando",       "lang": "en", "text": "what can you do",                               "expectAnswer": "I answer questions and show what this robot arm can do."},
+    {"id": "en-hello",       "lang": "en", "text": "hello",                                         "expectAnswer": "Hello, welcome to the show."},
+    {"id": "en-food",        "lang": "en", "text": "where is the food court",                       "expectAnswer": "The food court is on floor two, up the stairs or the lift on the right."},
+    {"id": "en-exit",        "lang": "en", "text": "where is the exit",                             "expectAnswer": "The exit is at the end of the corridor on your right."},
+    {"id": "en-price",       "lang": "en", "text": "how much is a ticket",                          "expectAnswer": "Entry is free."}
+  ]
+}
