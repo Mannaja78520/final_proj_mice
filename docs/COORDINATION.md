@@ -22,6 +22,39 @@ work is in a staging copy. BRIDGE is the append-only ownership and handoff
 log; PLAN remains the only task progress record. HANDOVER is a checkpoint,
 not proof of present ownership. Old timestamps do not release a claim.
 
+## Every task is in the plan, with its agent AND session
+
+User, 2026-09-16: *make sure every agent save task to plan so we can track
+each agent*, *the same agent provider but in different session*, and *all
+agent can hand off ... for the hit limit one*. tools/plan.py enforces it:
+
+    python tools/plan.py session codex          once per session -> codex:09162250-a1b2
+    set MICE_AGENT=codex:09162250-a1b2          or pass --agent on each call
+    python tools/plan.py add A0-20 "<the user's words>" --status doing
+    python tools/plan.py qc A0-20               built, at the gate
+    python tools/plan.py done A0-20             landed
+    python tools/plan.py handoff A0-20 "<exact next step>"   stopping / limit
+    python tools/plan.py doing A0-20            pick up a handed-off task
+    python tools/plan.py show                   in flight, with owners
+
+- A task is added the moment it is asked, BEFORE work, owned by
+  provider:session. A provider alone (claude, codex) is refused.
+- doing on a task another session holds is refused. Ask for a handoff.
+- Before a limit or stop: run handoff (task returns to todo, owner open, next
+  step on the line) AND append the HANDOFF block to BRIDGE below.
+- --take is only for a session that stopped WITHOUT a handoff; write why in
+  BRIDGE first. A session cut off by its limit cannot hand off, so re-run
+  `doing <id>` at each step: an owner silent for 45 min shows as
+  `SILENT - stopped?` in `plan.py show`, and only then may another take it.
+- promote.py talks for you: it writes PROMOTE-START / PROMOTE-DONE to BRIDGE
+  (set MICE_AGENT), and REFUSES a file main changed after staging's copy,
+  writing a REQUEST naming it. Answer that REQUEST in BRIDGE, or merge main's
+  version into staging, then promote again. Nong Studio projects/ never
+  promote - they are user data.
+- A mistake that touched shared files is written to BRIDGE as a NOTICE: what
+  happened, what was fixed, what is true now, and the lesson. The next agent
+  must not have to rediscover it.
+
 ## Serialize claims and shared bookkeeping
 
 Use E:/final_proj/mice/code/.staging-coordination.lock as a SHORT mutex for

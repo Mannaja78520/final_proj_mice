@@ -62,7 +62,8 @@ def run(t):
     # A different mark every run: writing the SAME text twice changes nothing,
     # and "nothing changed" would then look like a broken tool.
     mark = "QC checked the plan tool (%d)" % _os.getpid()
-    env = dict(_os.environ, MICE_PLAN=str(work))
+    # add/doing/qc need an owner since A0-19; check_plan_owner tests that rule.
+    env = dict(_os.environ, MICE_PLAN=str(work), MICE_AGENT="qc:planlive")
     before = work.read_text(encoding="utf-8")
     r = subprocess.run([sys.executable, str(F.CODE / "tools" / "plan.py"),
                         "running", mark],
@@ -271,6 +272,7 @@ def run(t):
         encoding="utf-8", newline="")
     twotool = two / "tools" / "plan.py"
     clean = {k: v for k, v in _os.environ.items() if k != "MICE_PLAN"}
+    clean["MICE_AGENT"] = "qc:planlive"
 
     before_robot = (two / "docs" / "PLAN.html").read_text(encoding="utf-8")
     before_sys = (two / "docs" / "system_integral.html").read_text(encoding="utf-8")

@@ -78,6 +78,8 @@ GATED = {
     # whole exchange. /api/pair/link makes this hub take another hub's
     # accounts, which decides who can drive the robots here.
     "/api/pair/start", "/api/pair/stop", "/api/pair/status", "/api/pair/link",
+    # starts an outside program (Reconize) on this PC
+    "/api/partners/start",
 }
 
 # Proved by something OTHER than a session. There is exactly one, and it is
@@ -97,8 +99,6 @@ GATED_POST = {
     "/api/stream/start", "/api/stream/feed",
     "/api/flash",         # GET reports progress, POST starts a reflash
     # Voice endpoints: asked 2026-09-14 to require login first before doing anything
-    "/api/voice/start",
-    "/api/voice/stop",
     "/api/voice/ask",
     "/api/voice/transcribe",
     "/api/voice/say",
@@ -177,7 +177,6 @@ OPEN = {
     # report. Addresses only - the logins are not in that file and never will
     # be - and the tile has to draw itself before anybody has signed in.
     "/api/partners",
-    "/api/jao/start", "/api/reconize/start",
     # A report is a complaint, not a command: it changes nothing on any
     # board, and complaining must never need a password (A21-6).
     "/api/report",
@@ -257,13 +256,6 @@ class Auth:
                     self._save()
                     self._out("[auth] the hub password is now the account "
                               + DEFAULT_USER + " — add more on the Settings screen")
-                users = self._data.setdefault("users", {})
-                if DEFAULT_USER not in users:
-                    pw = "admin123"
-                    users[DEFAULT_USER] = self._hash(pw)
-                    if "admin" not in users:
-                        users["admin"] = self._hash(pw)
-                    self._save()
                 return
             except (OSError, ValueError):
                 self._out("[auth] password file unreadable — generating a new one")

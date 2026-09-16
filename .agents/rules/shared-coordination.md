@@ -25,3 +25,11 @@ another patch or QC restart. Follow the mandatory consultation procedure in
 docs/COORDINATION.md. Do not replace the requested consultation with a claim
 that you already solved it, another trial run, or a prompt for the user to relay.
 Report the actual response or invocation failure; never invent review evidence.
+
+## Plan ownership, every agent and session (user 2026-09-16)
+
+Every task goes into the plan the moment it is asked, owned by
+provider:session (`python tools/plan.py session <provider>`, then
+`--agent` or MICE_AGENT). Never a provider alone. Before a limit or stop,
+`python tools/plan.py handoff <id> "<next step>"` so any agent can continue.
+Full rule: docs/COORDINATION.md, *Every task is in the plan*.

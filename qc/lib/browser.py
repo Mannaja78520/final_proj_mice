@@ -263,11 +263,21 @@ def _wait_for_done(seconds, grace=150, start=None):
         start = len(fake_serial.qc_marks)
     deadline = time.time() + seconds + grace
     while time.time() < deadline:
-        if any(m == "done" for m in fake_serial.qc_marks[start:]):
+        # A tagged "GATE~done" is done too: check_crash_gate sent one and every
+        # gate sat out the whole grace for it - 170 s wasted (2026-09-16).
+        if any(is_done(m) for m in fake_serial.qc_marks[start:]):
             time.sleep(0.4)          # let the last report land
             return True
-        time.sleep(0.4)
+        time.sleep(0.2)
+    if len(fake_serial.qc_marks) > start:
+        # The page talked but never said done: the grace was wasted, not needed.
+        print("QC SLOW: a page reported but never sent done - waited %.0fs "
+              "for nothing" % (seconds + grace), flush=True)
     return False
+
+
+def is_done(mark):
+    return mark == "done" or mark.endswith("~done")
 
 
 def raw_page(html, base, seconds=20, name=None):

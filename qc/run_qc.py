@@ -262,7 +262,25 @@ def main(argv):
         if not a.startswith("-"):
             pats.append(a.lower())
 
-    if not listing:
+    # --changed: only the checks for what differs from the tree this one lands
+    # in; the full suite when a core file or more than one system changed
+    # (rules in qc/data/scope.json). Asked 2026-09-16.
+    exact = None
+    if "--changed" in argv:
+        import scope
+        if not CODE.name.startswith(".staging"):
+            print("--changed needs a working copy (.staging*) to compare with")
+            return 2
+        got = scope.decide(CODE, scope.changed(CODE, CODE.parent))
+        print("%sSCOPE:%s %s -> %s" % (B, D, got[-1], got[0] if got[0] != "checks"
+                                        else "%d checks" % len(got[1])), flush=True)
+        if got[0] == "quick":
+            quick = True
+        elif got[0] == "checks":
+            exact = set(got[1])
+
+    # --no-build: promote.py has just built these assets itself.
+    if not listing and "--no-build" not in argv:
         print('Building web assets before QC...', flush=True)
         built = subprocess.run([sys.executable, str(CODE / 'tools/build_web.py'), str(CODE)])
         if built.returncode:
@@ -300,7 +318,7 @@ def main(argv):
     except Exception as e:                            # noqa: BLE001
         print("%sgen_tables failed:%s %s" % (R, D, e))
 
-    full_run = not pats and not quick
+    full_run = not pats and not quick and exact is None
     before_tree = None
     if full_run:
         print('Fingerprinting QC inputs...', flush=True)
@@ -314,6 +332,8 @@ def main(argv):
             continue
         area = getattr(mod, "AREA", "?")
         title = getattr(mod, "TITLE", f.stem)
+        if exact is not None and f.stem not in exact:
+            continue
         if pats and not any(p in area.lower() or p in f.stem.lower()
                             or p in title.lower() for p in pats):
             continue

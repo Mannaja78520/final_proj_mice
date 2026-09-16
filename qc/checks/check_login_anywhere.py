@@ -47,6 +47,14 @@ async function runTest() {
   
   var out = [];
   try{
+    // Both boxes start hidden until the hub says who is logged in. Reading
+    // them before that answer lands failed once the voice page grew heavier
+    // (2026-09-16): nothing was offered yet, and nothing was wrong.
+    for (var i = 0; i < 100; i++){
+      var a = box.querySelector(".mlIn"), b = box.querySelector(".mlOut");
+      if ((a && !a.hidden) || (b && !b.hidden)) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
 
     out.push("mounted:" + (box && box.querySelector(".mlPass") ? "yes" : "no"));
 
@@ -57,7 +65,12 @@ async function runTest() {
     var wasIn = box.querySelector(".mlOut");
     if (wasIn && !wasIn.hidden){
       box.querySelector(".mlOff").click();
-      await new Promise(r => setTimeout(r, 2500));
+      // wait for the logged-out box itself, not a fixed 2.5 s
+      for (var j = 0; j < 100; j++){
+        var inb = box.querySelector(".mlIn");
+        if (inb && !inb.hidden) break;
+        await new Promise(r => setTimeout(r, 100));
+      }
     }
     var shown = box.querySelector(".mlIn");
     out.push("offersLogin:" + (shown && !shown.hidden ? "yes" : "no"));

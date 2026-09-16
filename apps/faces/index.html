@@ -7,6 +7,14 @@
 <!--
   THE FACE APP, from our side. This page opens Reconize, says whether it is
   running, and polls the watcher to report if the rig is watching.
+  The greeting, the rules and the numbers arrive in later steps
+  (see docs/system_integral.html).
+
+  Addresses come from config/partners.json, through /api/partners - the same
+  one list everything else that talks to an outside app reads. Moving Reconize
+  to another port is one edit there and no code here. Passwords are NOT in that
+  file and never will be: every file in an app folder is served without a
+  login, and a partner entry holds addresses only.
 -->
 
 <h1>👁 Reconize</h1>
@@ -20,21 +28,15 @@
 <div class="card" id="loginHere"></div>
 
 <div class="card">
-  <h2>Reconize App</h2>
+  <h2>Open it</h2>
   <p class="mini" id="whatIs">Reconize runs beside Mice on this PC. It watches the
     cameras and knows who is who; the rig follows it.</p>
-  <div class="row" style="margin-bottom:var(--sp-3)">
-    <button class="primary" id="openBtn" onclick="openApp()">Open in New Tab ↗</button>
-    <button id="startBtn" onclick="launchReconize()">▶ Start Reconize</button>
-    <button id="checkBtn" onclick="probe()">Check Status</button>
+  <div class="row">
+    <button class="primary" id="openBtn" onclick="openApp()">Open Reconize</button>
+    <button id="checkBtn" onclick="probe()">Check it is running</button>
     <span class="statline" id="stat" role="status" aria-live="polite">checking…</span>
   </div>
   <div class="statline tech mini" id="where"></div>
-
-  <!-- Embedded Live View -->
-  <div id="frameCard" style="margin-top:var(--sp-3); display:none">
-    <iframe id="reconFrame" src="about:blank" style="width:100%; height:75vh; border:1px solid var(--border,#2e3846); border-radius:8px; background:#111"></iframe>
-  </div>
 </div>
 
 <div class="card">
@@ -49,28 +51,37 @@
 </div>
 
 <script>
+// WHICH outside program this tile is for. One name, so a second tile is a copy
+// of this file with a different name in it and no new code anywhere.
 const PARTNER = "reconize";
-let links = {
-  open: "http://localhost:5173",
-  api: "http://127.0.0.1:8000",
-  health: "/api/health"
-};
-let autoStartAttempted = false;
-let probeTimer = null;
+let links = null;
 
+// The addresses come from config/partners.json through /api/partners - the ONE
+// list, shared with the watcher and everything else that talks to an outside
+// app. This page used to keep its own links.json beside it; two lists disagree
+// the first time one of them is edited.
 async function load(){
   let all;
   try{
     all = await fetch("/api/partners", {cache: "no-store"}).then(r => r.json());
-    if (all.ok && all.partners && all.partners[PARTNER]) {
-      links = all.partners[PARTNER];
-    }
   }catch(e){
-    // Keep defaults
+    say("cannot ask the hub where Reconize lives — is the hub still running?");
+    return;
+  }
+  if (!all.ok){
+    say("the list of outside apps could not be read.",
+        all.error || "config/partners.json");
+    return;
+  }
+  links = (all.partners || {})[PARTNER];
+  if (!links){
+    say("config/partners.json has no entry called " + PARTNER +
+        " — add one and this button works, with no code change.");
+    return;
   }
   const w = document.getElementById("where");
   w.textContent = "app " + links.open + " · api " + links.api;
-  probe(true);
+  probe();
   pollWatcher();
 }
 
@@ -85,70 +96,64 @@ function say(msg, tech){
   }
 }
 
-function openApp(){
+// Starts Reconize (Main, never Dummy) through the hub when it is silent, waits
+// for it, then opens it. The tab is opened NOW, inside the click, because a
+// tab opened after a wait is blocked as a pop-up.
+let opening = false;
+async function openApp(){
   if (!links) return say("the addresses have not loaded yet — try again in a moment");
-  window.open(links.open, "_blank");
-}
-
-function showFrame() {
-  const frameCard = document.getElementById("frameCard");
-  const frame = document.getElementById("reconFrame");
-  if (frame.src === "about:blank" || !frame.src) {
-    frame.src = links.open;
+  if (opening) return;
+  opening = true;
+  const btn = document.getElementById("openBtn");
+  btn.disabled = true;
+  const tab = window.open("about:blank", "_blank");
+  try{
+    const until = Date.now() + 120000;     // a cold face model can be slow
+    let got;
+    while (true){
+      try{
+        const r = await fetch("/api/partners/start?id=" + PARTNER,
+                              {method: "POST", cache: "no-store"});
+        got = await r.json();
+      }catch(e){
+        throw ["cannot reach the hub — is it still running?", String(e.message || e)];
+      }
+      if (got.need_login) throw ["log in first (the box above), then press Open Reconize again."];
+      if (!got.ok) throw [got.error || "Reconize could not be started.", [].concat(got.log || []).join(" ")];
+      if (got.ready) break;
+      say("starting Reconize… (" + got.starting.join(", ") + ") — this takes about fifteen seconds",
+          "log " + [].concat(got.log || []).join(" "));
+      if (Date.now() > until) throw ["Reconize is taking too long to start.", [].concat(got.log || []).join(" ")];
+      await new Promise(res => setTimeout(res, 2000));
+    }
+    // Where it really answered this time - their port can change with an update.
+    const where = got.open || links.open;
+    say("Reconize is running.", where);
+    if (tab && !tab.closed) tab.location.href = where;
+    else window.open(where, "_blank");
+  }catch(err){
+    if (tab && !tab.closed) tab.close();
+    say(...(Array.isArray(err) ? err : ["Reconize could not be started.", String(err)]));
+  }finally{
+    opening = false;
+    btn.disabled = false;
   }
-  frameCard.style.display = "block";
 }
 
-async function probe(autoLaunchIfDown = false){
-  clearTimeout(probeTimer);
+// Its /api/health needs no login (their main.py:182). A browser can reach it
+// directly, so this page does not need the hub for the one thing it does today.
+async function probe(){
+  if (!links) return;
   say("checking…");
   try{
     const r = await fetch(links.api + links.health, {cache: "no-store"});
-    if (r.ok) {
-      say("Reconize is running.", "port 5173 / 8000");
-      showFrame();
-      return true;
-    } else {
-      say("Reconize answered, but not happily.", "HTTP " + r.status);
-    }
+    say(r.ok ? "Reconize is running." : "Reconize answered, but not happily.",
+        "HTTP " + r.status);
   }catch(e){
-    if (autoLaunchIfDown && !autoStartAttempted) {
-      autoStartAttempted = true;
-      say("Reconize is not running. Starting automatically in background…");
-      launchReconize(true);
-      return false;
-    }
-    say("Reconize is starting up or not answering… waiting for face model to load.", String(e.message || e));
-  }
-  return false;
-}
-
-async function launchReconize(keepPolling = false) {
-  const btn = document.getElementById("startBtn");
-  btn.disabled = true;
-  say("Sending launch command to Hub…");
-  try {
-    const res = await fetch("/api/reconize/start", {method: "POST"}).then(r => r.json());
-    if (res.ok) {
-      say(res.already_running ? "Reconize is already running." : "Launched! Starting backend & frontend in background…");
-      let attempts = 0;
-      function pollUntilReady() {
-        attempts++;
-        probe(false).then(running => {
-          if (!running && attempts < 20) {
-            say("Loading face models & web server… (" + (attempts * 2) + "s)");
-            probeTimer = setTimeout(pollUntilReady, 2000);
-          }
-        });
-      }
-      probeTimer = setTimeout(pollUntilReady, 2500);
-    } else {
-      say("Could not auto-start: " + (res.error || "unknown error"));
-    }
-  } catch(e) {
-    say("Could not contact Hub launch API: " + e.message);
-  } finally {
-    setTimeout(() => { btn.disabled = false; }, 3000);
+    // A cold start loads a face model first - about fifteen seconds - so "not
+    // answering" is not the same as "not started".
+    say("Reconize is not running. Press Open Reconize and it starts by itself.",
+        String(e.message || e));
   }
 }
 
@@ -157,6 +162,7 @@ async function pollWatcher() {
   const srcs = document.getElementById("wSrcs");
   const list = document.getElementById("wSrcList");
   try {
+    // The watcher binds to loopback only.
     const r = await fetch("http://localhost:8769/state", {cache: "no-store"});
     if (!r.ok) throw new Error("HTTP " + r.status);
     const state = await r.json();

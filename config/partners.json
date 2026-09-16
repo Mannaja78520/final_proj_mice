@@ -13,32 +13,31 @@
   // EVERY FIELD BELOW WAS READ OUT OF THEIR CODE ON 2026-09-10, not guessed.
   // The file and line is written beside each claim that could rot.
 
-  "jao_games": {
-    "name": "All Jao Games",
-    "open": "http://127.0.0.1:8080",
-    "api": "http://127.0.0.1:8080",
-    "health": "/",
-    "folder": "E:/final_proj/mice/All-Jao-Games",
-    "start": "python -m http.server 8080",
-    "login": { "kind": "none", "path": "" },
-    "events": [
-      {
-        "kind": "status",
-        "path": "/",
-        "reports": ["game_state"],
-        "hasCamera": false,
-        "map": {}
-      }
-    ]
-  },
-
   "reconize": {
     "name": "Reconize",
-    "open": "http://127.0.0.1:5173",          // their React front end
+    "open": "http://localhost:5173",          // their React front end (::1 only)
     "api": "http://127.0.0.1:8000",           // their FastAPI
     "health": "/api/health",                  // main.py:182, needs no login
+    // MAIN, never the Dummy copy (user 2026-09-16: *run only main not
+    // dummy*). The hub refuses a folder whose path holds a word listed here.
     "folder": "E:/final_proj/mice/Face_Regonize",
+    "refuseFolders": ["dummy"],
     "start": "start.bat",
+
+    // What "Open Reconize" starts, hidden. The commands are read from THEIR
+    // `start` file on every press, because their app changes often; the list
+    // below is only the fallback when that file cannot be read, and its
+    // `check` addresses only a first guess until each part prints its own.
+    // localhost, not 127.0.0.1: vite listens on ::1 only (measured 2026-09-16).
+    "launch": [
+      { "name": "face engine", "cwd": "backend",
+        "run": [".venv/Scripts/python.exe", "-m", "uvicorn", "app.main:app",
+                "--port", "8000"],
+        "check": "http://127.0.0.1:8000/api/health" },
+      { "name": "screen", "cwd": "frontend",
+        "run": ["cmd", "/c", "npm run dev"],
+        "check": "http://localhost:5173/" }
+    ],
 
     // One person, seen twice, is one arrival. A central-inference match
     // publishes under the real camera (their api/nodes.py:332-338) and the

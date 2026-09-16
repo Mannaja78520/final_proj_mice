@@ -251,6 +251,48 @@ class Plan:
             raise SystemExit("no task %s" % tid)
         self.text = new
 
+    # ---- who owns a task: provider AND session ---------------------------
+    # Asked 2026-09-16: *make sure every agent save task to plan so we can
+    # track each agent* and *the same agent provider but in different session*.
+    # So the owner is `agent=claude:5a33`, never `claude` alone, written on the
+    # task line like hw=.
+    def owner(self, tid):
+        m = re.search("^" + re.escape(tid) + r":[^—\n]*?\bagent=(\S+)", self.text, re.M)
+        return m.group(1) if m else ""
+
+    def silent_min(self, tid):
+        """Minutes since this task's owner last stamped it, or None.
+
+        A session cut off by its limit cannot hand off - it simply stops
+        (user 2026-09-16: *is he know he hit limit?*). So an owner that has
+        not stamped its task for SILENT_MIN is shown as probably stopped.
+        Working sessions re-run `doing <id>` at each step, which re-stamps."""
+        m = re.search("^" + re.escape(tid) + r":\s+\w+\s+(\d{4}-\d\d-\d\d \d\d:\d\d)",
+                      self.text, re.M)
+        if not m:
+            return None
+        try:
+            then = time.mktime(time.strptime(m.group(1), "%Y-%m-%d %H:%M"))
+        except ValueError:
+            return None
+        return int((time.time() - then) // 60)
+
+    def status_of(self, tid):
+        m = re.search("^" + re.escape(tid) + r":\s+(\w+)", self.text, re.M)
+        return m.group(1) if m else ""
+
+    def set_owner(self, tid, agent):
+        line = re.compile("^(" + re.escape(tid) + r":[^—\n]*?)(\s*\bagent=\S+)?(\s*—)", re.M)
+        new, n = line.subn(lambda m: m.group(1).rstrip() + "  agent=" + agent + "  " +
+                           m.group(3).lstrip(), self.text, count=1)
+        if not n:
+            # a line with no em-dash note: the owner goes on the end
+            bare = re.compile("^(" + re.escape(tid) + r":[^\n]*?)(\s+agent=\S+)?[ \t]*$", re.M)
+            new, n = bare.subn(lambda m: m.group(1) + "  agent=" + agent, self.text, count=1)
+        if not n:
+            raise SystemExit("no task %s" % tid)
+        self.text = new
+
     def add(self, tid, status, note, before=None, hw=None):
         """Put a NEW task into the STATE block, published like every other edit.
 
@@ -293,8 +335,41 @@ class Plan:
         rows = re.findall("^(" + ID[1:] + r"):\s+(\w+)", self.text, re.M)
         counts = {s: sum(1 for _, x in rows if x == s) for s in STATUSES}
         run = re.search(r"^# RUNNING: (.*)$", self.text, re.M)
-        live = [tid for tid, s in rows if s in ("doing", "qc")]
+        def tag(tid):
+            who = self.owner(tid)
+            if not who:
+                return tid
+            quiet = self.silent_min(tid)
+            if who != "open" and quiet is not None and quiet >= SILENT_MIN:
+                return "%s(%s, SILENT %dm - stopped?)" % (tid, who, quiet)
+            return "%s(%s)" % (tid, who)
+        live = [tag(tid) for tid, s in rows if s in ("doing", "qc")]
         return counts, (run.group(1) if run else "(no RUNNING line)"), live
+
+
+AGENT = re.compile(r"^[a-z][a-z0-9-]*:[A-Za-z0-9._-]+$")
+# An owner that has not re-stamped its task for this long is shown as
+# probably stopped (limit hit, crash, closed window). MICE_SILENT_MIN overrides.
+SILENT_MIN = int(os.environ.get("MICE_SILENT_MIN") or 45)
+
+
+def agent_of(given):
+    """provider:session from --agent or MICE_AGENT. Refuses a bare provider:
+    two sessions of one provider must never look like one owner."""
+    who = (given or os.environ.get("MICE_AGENT") or "").strip()
+    if not who:
+        raise SystemExit(
+            "who is doing this? pass --agent provider:session (or set MICE_AGENT).\n"
+            "No session name yet? run:  python tools/plan.py session <provider>")
+    if not AGENT.match(who):
+        raise SystemExit("%r is not provider:session - e.g. claude:5a33, "
+                         "codex:2241-k7. A provider alone is refused." % who)
+    return who
+
+
+def new_session(provider):
+    import secrets
+    return "%s:%s-%s" % (provider.lower(), time.strftime("%m%d%H%M"), secrets.token_hex(2))
 
 
 def main(argv=None):
@@ -312,16 +387,27 @@ def main(argv=None):
     ap.add_argument("--clear", action="store_true", help="running: nothing in flight")
     ap.add_argument("--status", default="todo", help="add: status of the new task")
     ap.add_argument("--before", help="add: put it in front of this task id")
+    ap.add_argument("--agent", help="provider:session that owns this step, e.g. "
+                    "claude:5a33 (or set MICE_AGENT). Required for add, doing, qc "
+                    "and handoff")
+    ap.add_argument("--take", action="store_true",
+                    help="doing: take a task another session still owns - only "
+                         "when that session stopped (limit hit) and left no handoff")
     ap.add_argument("--hw", help="add: what hardware it needs, e.g. '2 boards + RS485'. Leave it off for a task a PC alone can finish - the field is what makes a task skippable "
                     "when the boards are not on the bench, and what puts the part on the packing list.")
     a = ap.parse_args(argv)
 
     # Which ids this action touches, so the page can be worked out from them.
     # `add` is left out on purpose: its id does not exist yet anywhere.
+    if a.action == "session":
+        # No plan write: just a name this session reuses for every step.
+        print(new_session(a.rest[0] if a.rest else "agent"))
+        return 0
+
     ids = []
     if a.action in STATUSES:
         ids = list(a.rest)
-    elif a.action == "note" and a.rest:
+    elif a.action in ("note", "handoff") and a.rest:
         ids = [a.rest[0]]
     p = Plan(page=resolve_page(a.page, ids, a.action))
     if a.action == "publish":
@@ -358,10 +444,37 @@ def main(argv=None):
                 "Did you mean:  plan.py add %s \"<what it is>\" --status %s\n"
                 "(the flag goes AFTER the note - argparse eats it otherwise)"
                 % (a.rest[1], a.rest[0], a.rest[1].lower()))
+        who = agent_of(a.agent)
         p.add(a.rest[0], a.status, " ".join(a.rest[1:]), a.before, a.hw)
+        p.set_owner(a.rest[0], who)
+    elif a.action == "handoff":
+        # HANDOFF (user 2026-09-16: *all agent can hand off ... for the hit
+        # limit one*): back to todo with the next step written on it, so ANY
+        # agent or session can pick it up with `doing`.
+        if len(a.rest) < 2:
+            raise SystemExit("handoff: need a task id and the next step")
+        who = agent_of(a.agent)
+        tid = a.rest[0]
+        p.set_status(tid, "todo")
+        p.append_note(tid, "HANDOFF from %s %s: %s" % (who, now(), " ".join(a.rest[1:])))
+        p.set_owner(tid, "open")
     elif a.action in STATUSES:
+        who = agent_of(a.agent) if a.action in ("doing", "qc") else \
+            (a.agent or os.environ.get("MICE_AGENT") or "")
         for tid in a.rest:
+            held = p.owner(tid)
+            if (a.action == "doing" and p.status_of(tid) in ("doing", "qc")
+                    and held not in ("", "open", who) and not a.take):
+                quiet = p.silent_min(tid)
+                hint = ("it has been SILENT %d min - probably stopped (limit?); "
+                        "write why in BRIDGE, then run again with --take" % quiet
+                        if quiet is not None and quiet >= SILENT_MIN else
+                        "it is active - ask it in BRIDGE to hand off")
+                raise SystemExit("%s is %s by %s: %s."
+                                 % (tid, p.status_of(tid), held, hint))
             p.set_status(tid, a.action)
+            if who:
+                p.set_owner(tid, who)
     else:
         raise SystemExit("unknown action: %s" % a.action)
 

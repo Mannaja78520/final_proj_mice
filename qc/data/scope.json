@@ -1,0 +1,32 @@
+{
+  // WHICH CHECKS A CHANGE NEEDS. Asked 2026-09-16: *if we change some thing we
+  // can gate and qc about that ... full check when edit the whole system or
+  // more than 1 system*. Read by qc/lib/scope.py; no code change to tune it.
+
+  // Touch any of these and the FULL suite runs: every page or board uses them.
+  // A path ending in / means everything under it.
+  "fullWhen": [
+    "main_python/main.py", "main_python/hub_auth.py", "main_python/registry.py",
+    "shared/web/", "qc/lib/", "qc/run_qc.py", "qc/data/scope.json",
+    "promote.py", "tools/registry.py", "tools/build_web.py", "tools/gen_tables.py",
+    "firmware/src/core/", "firmware/platformio.ini", "MiceHub.spec"
+  ],
+
+  // How many path parts name one SYSTEM. apps/voice and apps/faces are two
+  // systems; main_python is one. Anything not listed uses 1.
+  "systemDepth": { "apps": 2, "nong": 2, "firmware": 3, "config": 1 },
+
+  // More systems than this in one change and the full suite runs.
+  "maxSystems": 1,
+
+  // Changes here are never a system of their own and select nothing: the
+  // plan, logs and notes. They cannot break a check.
+  "ignore": ["docs/PLAN.html", "docs/plan_state.js", "docs/BRIDGE.md",
+             "docs/system_integral.html", "docs/system_integral_state.js",
+             "promt.md", "firmware/promt.md", "PATCHES.md"],
+
+  // Too common to find the right checks by name alone - these are matched by
+  // their folder too (faces/index.html, not every index.html).
+  "genericNames": ["index", "app", "service", "main", "style", "help", "config",
+                   "readme", "__init__", "template", "data", "utils", "common"]
+}

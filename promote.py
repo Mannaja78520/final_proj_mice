@@ -98,7 +98,14 @@ SKIP_DIRS = {".git", ".pio", "__pycache__", "node_modules",
              "tts_cache",
              # reports/  one JSON per complaint, written at runtime by /api/report.
              # Machine-local, never promoted — like hub_auth.json.
-             "reports"}
+             "reports",
+             # projects/  Nong Studio saves. USER DATA: on 2026-09-16 a
+             # staging copy from 08-10 was one promote away from replacing
+             # the user's save of that evening.
+             "projects",
+             # sequences/  the YAML files Studio saves - user data too: the
+             # same night staging's July my_move.yaml nearly replaced a 23:07 save.
+             "sequences"}
 # docs/PLAN.html is here for the same reason: its STATE block records progress
 # and is edited in the REAL tree as work lands, by whoever or whatever is doing
 # the work. Promoting a staging copy would roll that progress backwards.
@@ -246,14 +253,25 @@ def build_web(where: Path):
         print("WEB BUILD FAILED: %s" % exc)
         return False
 
-def run_qc(where: Path, *, built=False):
+def fingerprint(where: Path):
+    """run_qc's own hash of the tree, so a scoped gate can prove staging did
+    not change under it (a full gate proves it with its receipt)."""
+    r = subprocess.run([sys.executable, "-c",
+                        "import sys; sys.path.insert(0, r'%s'); "
+                        "import run_qc; print(run_qc.tree_fingerprint())" % (where / "qc")],
+                       cwd=str(where), capture_output=True, text=True, timeout=300)
+    return ((r.stdout or "").strip().splitlines() or [""])[-1]
+
+
+def run_qc(where: Path, *, built=False, scoped=False):
     if not built and not build_web(where):
         return False
     qc = where / "qc" / "run_qc.py"
     if not qc.is_file():
         print("no QC suite at %s" % qc)
         return False
-    print("running the FULL QC suite in %s ...\n" % where)
+    print("running the %s QC suite in %s ...\n"
+          % ("SCOPED (checks for what changed)" if scoped else "FULL", where))
     t0 = time.time()
     # A descendant retaining stdout must not keep promotion waiting for pipe EOF.
     fd, log_name = tempfile.mkstemp(prefix="mice-promote-qc-", suffix=".log")
@@ -262,7 +280,12 @@ def run_qc(where: Path, *, built=False):
     proc = None
     try:
         with open(log_name, "wb") as output, open(log_name, "rb") as reader:
-            proc = subprocess.Popen([sys.executable, "-u", str(qc)], cwd=str(where),
+            # --no-build: the web build already ran here; a second one only cost
+            # time (found 2026-09-16).
+            args = [sys.executable, "-u", str(qc), "--no-build"]
+            if scoped:
+                args.append("--changed")
+            proc = subprocess.Popen(args, cwd=str(where),
                                     stdout=output, stderr=subprocess.STDOUT)
             while True:
                 done = proc.poll() is not None
@@ -344,7 +367,50 @@ def promotion_lock():
             lock.rmdir()
 
 
-def promote():
+def main_is_newer(files):
+    """Files main changed AFTER staging's copy was taken.
+
+    Copying one of these throws away someone else's newer work. A promote
+    copies with copy2, which keeps the time, so a file staging really owns
+    is never older than main's. Measured 2026-09-16: promote.py, README.md
+    and COORDINATION.md were overwritten this way by a shared .staging.
+    """
+    out = []
+    for rel in files:
+        src, dst = STAGING / rel, MAIN / rel
+        if dst.is_file() and dst.stat().st_mtime > src.stat().st_mtime + 2:
+            out.append(rel)
+    return out
+
+
+def bridge(event, lines):
+    """Tell the other agents, in the log every one of them reads, under the
+    shared mutex (docs/COORDINATION.md). Best effort: never blocks a promote."""
+    if not (MAIN / "docs" / "BRIDGE.md").is_file():
+        return                   # a throwaway tree (QC) has no BRIDGE to tell
+    lock = MAIN / ".staging-coordination.lock"
+    who = os.environ.get("MICE_AGENT") or "unknown-session (set MICE_AGENT)"
+    for _ in range(50):
+        try:
+            lock.mkdir()
+            break
+        except FileExistsError:
+            time.sleep(0.2)
+    else:
+        print("(BRIDGE busy - %s not recorded)" % event)
+        return
+    try:
+        (lock / "owner.txt").write_text(who, encoding="utf-8")
+        stamp = time.strftime("%Y-%m-%d %H:%M:%S %z")
+        block = "\n### %s — %s\nEvent: %s\n%s\n" % (stamp, who, event, "\n".join(lines))
+        with open(MAIN / "docs" / "BRIDGE.md", "a", encoding="utf-8", newline="") as f:
+            f.write(block)
+    finally:
+        (lock / "owner.txt").unlink(missing_ok=True)
+        lock.rmdir()
+
+
+def promote(full=False):
     if not build_web(STAGING):
         print("REFUSED: web build failed. Nothing was copied.")
         return 1
@@ -353,12 +419,41 @@ def promote():
         show(changed, added, gone)
         return 0
     print("about to promote %d changed + %d new file(s)" % (len(changed), len(added)))
+    # ASK, DO NOT OVERWRITE (user 2026-09-16: *check each other and ask need
+    # promote or not then promote with no conflict*).
+    newer = main_is_newer(changed)
+    if newer:
+        names = [r.as_posix() for r in newer]
+        print("REFUSED: main has NEWER versions of %d file(s) than staging:" % len(names))
+        for n in names:
+            print("   ", n)
+        print("Someone else changed them. Merge main's version into staging first,")
+        print("or ask the owner in docs/BRIDGE.md. Nothing was copied.")
+        bridge("REQUEST (promote refused: main is newer)",
+               ["Tree: %s" % STAGING,
+                "Files: " + ", ".join(names),
+                "Next: whoever changed these in main - say in BRIDGE whether the "
+                "staging copy may replace them, or merge them into staging."])
+        return 1
+    bridge("PROMOTE-START", ["Tree: %s" % STAGING,
+                             "Files: " + ", ".join(r.as_posix() for r in changed + added),
+                             "Next: do not edit these in main until PROMOTE-DONE."])
     main_before = {rel: file_hash(MAIN / rel) for rel in walk(STAGING)}
     _plan("promote: checking whether staging is already green")
-    if not (already_green(STAGING) or run_qc(STAGING, built=True)):
+    # SCOPED BY DEFAULT (user, 2026-09-16): run_qc --changed runs the checks for
+    # what changed, and the full suite by itself when a core file or more than
+    # one system changed (qc/data/scope.json). --full forces the whole suite.
+    green = already_green(STAGING)
+    before = "" if (green or full) else fingerprint(STAGING)
+    if not (green or run_qc(STAGING, built=True, scoped=not full)):
         print("\nREFUSED: QC is not green in staging. Nothing was copied.")
         return 1
-    if not already_green(STAGING) and not STAGING.parent.name.startswith("qc_land_"):
+    if before and not already_green(STAGING):
+        # Scoped: no full receipt, so prove the tree is the one that was checked.
+        if fingerprint(STAGING) != before:
+            print("REFUSED: staging changed during the gate. Nothing was copied.")
+            return 1
+    elif not already_green(STAGING) and not STAGING.parent.name.startswith("qc_land_"):
         print("REFUSED: staging no longer has an exact green receipt. Nothing was copied.")
         return 1
     changed, added, gone = changes()
@@ -372,6 +467,8 @@ def promote():
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(STAGING / rel, dst)
     print("\npromoted %d file(s) to %s" % (len(changed) + len(added), MAIN))
+    bridge("PROMOTE-DONE", ["Tree: %s" % STAGING,
+                            "Files: %d copied into main" % (len(changed) + len(added))])
     show(changed, added, gone)
     if any(rel.as_posix().endswith("main_python/main.py") for rel in changed + added):
         print("\nNOTE: main_python/main.py changed — rebuild MiceHub.exe:")
@@ -385,6 +482,8 @@ def main(argv):
     ap.add_argument("--init", action="store_true", help="create/refresh the staging copy")
     ap.add_argument("--check", action="store_true", help="run full QC in staging, promote nothing")
     ap.add_argument("--diff", action="store_true", help="show what would move")
+    ap.add_argument("--full", action="store_true",
+                    help="run the whole QC suite even for a one-system change")
     ap.add_argument("--staging", metavar="DIR", default=".staging",
                     help="which working copy to use (default .staging) — a second one lets another change be verified at the same time")
     a = ap.parse_args(argv)
@@ -407,7 +506,7 @@ def main(argv):
         with promotion_lock():
             if a.check:
                 return 0 if run_qc(STAGING) else 1
-            return promote()
+            return promote(full=a.full)
     except RuntimeError as exc:
         print("REFUSED: %s" % exc)
         return 1

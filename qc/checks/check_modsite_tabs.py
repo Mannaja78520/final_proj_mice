@@ -26,14 +26,18 @@ DRIVER = """
 // XHR, not fetch: this page carries the hub's transport shim, which rewrites
 // every /api/ fetch into /api/dev/... — a report sent with fetch came back as
 // /api/dev/dev/cmd and vanished. The shim does not wrap XMLHttpRequest.
-function report(s){
+function report(s, then){
   try{
     var x = new XMLHttpRequest();
     x.open("GET", "/api/usb/cmd?port=COM99&id=0&c=" +
            encodeURIComponent("MOVE QCMARK " + s.replace(/ /g, "~")), true);
+    // The fake port takes one writer at a time: send the next mark only after
+    // this one has landed, or "done" races the result and the result is lost.
+    if (then) x.onloadend = then;
     x.send();
-  }catch(e){}
+  }catch(e){ if (then) then(); }
 }
+function finish(s){ report(s, function(){ report("done"); }); }
 window.addEventListener("load", function(){ setTimeout(function(){
   try{
     var out = [];
@@ -97,11 +101,12 @@ window.addEventListener("load", function(){ setTimeout(function(){
     setTimeout(function(){
       try{
         out.push("ctlOnFilesAfterPush:" + countShown("control"));
-        report(out.join(" "));
-      }catch(e){ report("ERR " + e.message); }
-      qcMark("done");
+        // finish(), not qcMark("done"): this page has no qcMark, the throw ate
+        // "done" and every gate waited the full 150 s grace (2026-09-16).
+        finish(out.join(" "));
+      }catch(e){ finish("ERR " + e.message); }
     }, 1800);
-  }catch(e){ report("ERR " + e.message); qcMark("done"); }
+  }catch(e){ finish("ERR " + e.message); }
 }, 900); });
 """
 
@@ -112,7 +117,8 @@ def run(t):
     fake_serial.reset()
     base, main = F.start_hub()
     _drive(base)
-    marks = [m.replace("~", " ") for m in fake_serial.qc_marks]
+    marks = [m.replace("~", " ") for m in fake_serial.qc_marks
+             if not browser.is_done(m)]
     if not t.ok(marks and not any("ERR" in m for m in marks),
                 "the module site loaded and ran", marks or "(nothing reported)"):
         return

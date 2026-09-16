@@ -143,7 +143,19 @@ class State:
         self.live_error = ""
 
     def partner(self):
-        return (self.partners or {}).get(self.partner_id) or {}
+        entry = (self.partners or {}).get(self.partner_id) or {}
+        # Their port can change with any update: follow where the hub last saw
+        # it answer (main_python/partner_launch.py). Re-probed every 10 s at most.
+        now = time.time()
+        if entry and now - getattr(self, "_live_at", 0) > 10:
+            self._live_at = now
+            try:
+                sys.path.insert(0, str(CODE / "main_python"))
+                import partner_launch
+                self._live = partner_launch.live(self.partner_id, entry)
+            except Exception:                                # noqa: BLE001
+                self._live = entry
+        return getattr(self, "_live", None) or entry
 
     # ---- logging in to the outside app -------------------------------
 

@@ -25,7 +25,6 @@ import json
 import os
 import re
 import shutil
-import subprocess
 import uuid
 import socket
 import sys
@@ -94,6 +93,7 @@ import build_stamp                                         # noqa: E402
 import cam_relay                                           # noqa: E402
 import hub_auth                                            # noqa: E402
 import hub_pair                                            # noqa: E402
+import partner_launch                                      # noqa: E402
 import stream_audio                                        # noqa: E402
 
 HUB_WEB = asset("main_python", "web")
@@ -157,7 +157,7 @@ def voice_service_url():
             cfg = json.loads(path.read_text(encoding="utf-8"))
     except Exception as e:                  # noqa: BLE001 - a broken store must
         return "", ("config/voice.json could not be read (%s)" % e)
-    url = (cfg.get("service") or "http://127.0.0.1:8767").rstrip("/")
+    url = (cfg.get("service") or "").rstrip("/")
     if url and "://" in url:
         parts = urllib.parse.urlsplit(url)
         try:
@@ -168,7 +168,7 @@ def voice_service_url():
             # A portless address would ask :80 while the helper answers on its
             # own default - the same fallback apps/voice/service.py uses.
             url = "%s://%s:8767" % (parts.scheme or "http", parts.hostname)
-    return url, ""
+    return url, ("" if url else "config/voice.json has no `service` address")
 
 
 # Which pages work with no login. Read per request, like the voice address
@@ -216,6 +216,10 @@ def read_partners():
     except Exception as e:                                  # noqa: BLE001
         return {"ok": False, "partners": {},
                 "error": "config/partners.json could not be read (%s)" % e}
+    # Where each one REALLY answered last time it was started - their ports
+    # can change with any update of theirs (partner_launch.live).
+    cfg = {k: partner_launch.live(k, v) if isinstance(v, dict) else v
+           for k, v in cfg.items()}
     return {"ok": True, "partners": cfg}
 
 
@@ -1095,7 +1099,7 @@ PEER_WAIT = 8.0
 # because only the OTA path ever logged in. The hub logs in once per board and
 # reuses that session for its commands; cookies stay in this process's memory.
 BOARD_COOKIE = "mice_board"
-SHIPPED_BOARD_LOGIN = ("manny", "12345678")   # UserStore.cpp, a board out of the box
+SHIPPED_BOARD_LOGIN = ("admin", "admin123")   # UserStore.cpp, a board out of the box
 _board_cookies = {}                           # board ip -> session value
 
 
@@ -4042,129 +4046,36 @@ class Handler(BaseHTTPRequestHandler):
             # and there is nothing secret in an address.
             return self.send_json(read_partners())
 
-        if path == "/api/voice/start" and method == "POST":
-            base, _ = voice_service_url()
-            if base:
-                try:
-                    with urllib.request.urlopen(base + "/health", timeout=0.8) as r:
-                        if r.getcode() == 200:
-                            return self.send_json({"ok": True, "already_running": True,
-                                                   "message": "voice service is already running"})
-                except Exception:
-                    pass
-            py = sys.executable if not getattr(sys, "frozen", False) else (
-                shutil.which("python") or shutil.which("python3") or r"C:\Program Files\Python312\python.exe" or "python")
-            if getattr(sys, "frozen", False):
-                root_dir = Path(sys.executable).parent.parent
-            else:
-                root_dir = HERE.parent
-            script = root_dir / "apps" / "voice" / "service.py"
-            if not script.is_file():
-                script = Path("apps/voice/service.py").resolve()
-                root_dir = script.parent.parent.parent
-            if not script.is_file():
-                return self.send_err("apps/voice/service.py not found on disk", 404)
-            try:
-                flags = 0
-                if os.name == "nt":
-                    flags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
-                subprocess.Popen(
-                    [py, str(script)],
-                    cwd=str(root_dir),
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    creationflags=flags)
-                return self.send_json({"ok": True, "message": "voice service started"})
-            except Exception as e:
-                return self.send_err("could not start voice service: %s" % e, 500)
-
-        if path == "/api/voice/stop" and method == "POST":
-            base, _ = voice_service_url()
-            if base:
-                try:
-                    req = urllib.request.Request(base + "/stop", data=b"{}", method="POST")
-                    with urllib.request.urlopen(req, timeout=2.0) as r:
-                        pass
-                except Exception:
-                    pass
-            if os.name == "nt":
-                try:
-                    cmd = (
-                        "Get-CimInstance Win32_Process | "
-                        "Where-Object { $_.CommandLine -like '*apps*voice*service.py*' } | "
-                        "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
-                    )
-                    subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
-                                   capture_output=True, timeout=5)
-                except Exception:
-                    pass
-            return self.send_json({"ok": True, "message": "voice service stopped"})
-
-        if (path == "/api/jao/start" or path == "/api/partner/jao/start") and method in ("GET", "POST"):
-            try:
-                with urllib.request.urlopen("http://127.0.0.1:8080/", timeout=0.6) as r:
-                    if r.getcode() in (200, 301, 302, 304):
-                        return self.send_json({"ok": True, "already_running": True,
-                                               "message": "All Jao Games server is already running"})
-            except Exception:
-                pass
-            py = sys.executable if not getattr(sys, "frozen", False) else (
-                shutil.which("python") or shutil.which("python3") or r"C:\Program Files\Python312\python.exe" or "python")
-            jao_dir = Path("E:/final_proj/mice/All-Jao-Games")
-            if not jao_dir.is_dir():
-                cand = (HERE.parent.parent / "All-Jao-Games").resolve()
-                if cand.is_dir():
-                    jao_dir = cand
-            if not jao_dir.is_dir():
-                return self.send_err("All-Jao-Games folder not found at %s" % jao_dir, 404)
-            try:
-                flags = 0
-                if os.name == "nt":
-                    flags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
-                subprocess.Popen(
-                    [py, "-m", "http.server", "8080", "--directory", str(jao_dir)],
-                    cwd=str(jao_dir),
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    creationflags=flags)
-                return self.send_json({"ok": True, "message": "All Jao Games server started on port 8080"})
-            except Exception as e:
-                return self.send_err("could not start games server: %s" % e, 500)
-
-        if (path == "/api/reconize/start" or path == "/api/partner/reconize/start") and method in ("GET", "POST"):
-            already = False
-            try:
-                with urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=0.6) as r:
-                    if r.getcode() == 200:
-                        already = True
-            except Exception:
-                pass
-            if already:
-                return self.send_json({"ok": True, "already_running": True,
-                                       "message": "Reconize is already running"})
-            face_dir = Path("E:/final_proj/mice/Face_Regonize")
-            if not face_dir.is_dir():
-                cand = (HERE.parent.parent / "Face_Regonize").resolve()
-                if cand.is_dir():
-                    face_dir = cand
-            if not face_dir.is_dir():
-                return self.send_err("Face_Regonize folder not found at %s" % face_dir, 404)
-            try:
-                vbs = face_dir / "Start Reconize.vbs"
-                if vbs.is_file() and os.name == "nt":
-                    subprocess.Popen(["wscript.exe", str(vbs)], cwd=str(face_dir))
-                else:
-                    bat = face_dir / "start.bat"
-                    if bat.is_file() and os.name == "nt":
-                        flags = subprocess.CREATE_NEW_PROCESS_GROUP
-                        subprocess.Popen(["cmd.exe", "/c", str(bat)], cwd=str(face_dir), creationflags=flags)
-                    else:
-                        return self.send_err("No launch script found in Face_Regonize", 404)
-                return self.send_json({"ok": True, "message": "Reconize launch started"})
-            except Exception as e:
-                return self.send_err("could not start Reconize: %s" % e, 500)
+        if path == "/api/partners/start":
+            # Starts a program on this PC, so it is gated (hub_auth.GATED).
+            # Safe to press repeatedly: a part already up or loading is left be.
+            pid = (q.get("id") or [""])[0]
+            got = read_partners()
+            entry = (got.get("partners") or {}).get(pid)
+            if not entry:
+                return self.send_json({"ok": False, "error": got.get("error") or
+                                       "config/partners.json has no entry called %r" % pid})
+            return self.send_json(partner_launch.start(pid, entry))
 
         if path == "/api/voice" or path.startswith("/api/voice/"):
+            if path == "/api/voice/health":
+                base, why_not = voice_service_url()
+                if base:
+                    try:
+                        urllib.request.urlopen(base + "/health", timeout=0.5).read()
+                    except Exception:
+                        import subprocess
+                        script = HERE.parent / "apps" / "voice" / "service.py"
+                        if script.is_file():
+                            subprocess.Popen([sys.executable, str(script)], cwd=str(HERE.parent))
+                            # Poll for up to 8 seconds while it imports torch/models
+                            for _ in range(16):
+                                time.sleep(0.5)
+                                try:
+                                    if urllib.request.urlopen(base + "/health", timeout=0.5).getcode() == 200:
+                                        break
+                                except Exception:
+                                    pass
             return self.voice_proxy(method, path, q)
 
         if path == "/api/scan":

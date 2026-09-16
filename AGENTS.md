@@ -50,3 +50,11 @@ those files and update the real plan without promoting unrelated source work.
 Continue authorized work through verification. Report what changed, evidence,
 and any remaining limits. A failed model call is not an approving review, and
 a simulated module check is not a hardware measurement.
+
+## Plan ownership, every agent and session (user 2026-09-16)
+
+Every task goes into the plan the moment it is asked, owned by
+provider:session (`python tools/plan.py session <provider>`, then
+`--agent` or MICE_AGENT). Never a provider alone. Before a limit or stop,
+`python tools/plan.py handoff <id> "<next step>"` so any agent can continue.
+Full rule: docs/COORDINATION.md, *Every task is in the plan*.
