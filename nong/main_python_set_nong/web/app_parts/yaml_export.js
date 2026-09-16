@@ -81,6 +81,15 @@ function nothingToWrite(where) {
 async function exportYaml() {
   if (nothingToWrite("tlStat")) return;
   const { name, yaml } = buildYaml();
+  // SAVING OVER A FILE ASKS FIRST (user 2026-09-16: every save went to
+  // my_move.yaml, because that is the name the box starts with).
+  const have = [...$("seqList").options].map(o => o.value);
+  if (have.includes(name + ".yaml") &&
+      !confirm(name + ".yaml is already saved. Replace it?\n\n" +
+               "Cancel, then type a new name in the sequence name box to keep both.")) {
+    $("tlStat").textContent = "not saved — " + name + ".yaml was left as it was";
+    return;
+  }
   // Every failure path must SAY something: an unhandled rejection here left
   // the old status line standing, and a silent export reads as saved work.
   try {
@@ -92,12 +101,13 @@ async function exportYaml() {
     // j.file echoes a name that was typed into this page; as text, never
     // as markup.
     $("tlStat").textContent =
-      `saved ${j.file} in the sequences/ folder — copy it to the SD card /moves/, ` +
-      `then pick it on the module website (Sequences card) or send: MOVE ${j.file}`;
+      `saved ${j.file} on this PC — voice answers and the other apps can use it now. ` +
+      `Send to robot SD puts it on the board.`;
   } catch (e) {
     $("tlStat").textContent = "export failed — the hub is not answering, or "
       + "refused the name. Nothing was written. " + (e.message || e);
     notice($("tlStat").textContent);
   }
-  refreshSeqs();
+  await refreshSeqs();
+  $("seqList").value = name + ".yaml";   // the list shows what was just saved
 }

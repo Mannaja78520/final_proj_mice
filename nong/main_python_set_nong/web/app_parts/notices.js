@@ -61,6 +61,57 @@ function showTab(which) {
   });
 }
 
+// THE TIMELINE HANDLE DRAGS TOO (user 2026-09-16: *timeline below has the
+// drag but cannot drag to make it smaller or bigger ... like the right side,
+// with a scroller*). #timeDrag had CSS and no code. Same rules as the side
+// panel: remembered, keyboard, double-click resets; #timeline scrolls inside.
+function initTimeDrag() {
+  const tl = $("timeline"), handle = $("timeDrag");
+  if (!tl || !handle) return;
+  const MINH = 120, STEP = 24;
+  const maxH = () => Math.max(MINH, Math.round(window.innerHeight * 0.8));
+  handle.setAttribute("role", "separator");
+  handle.setAttribute("aria-orientation", "horizontal");
+  handle.setAttribute("aria-label", "Resize the timeline");
+  handle.setAttribute("tabindex", "0");
+  const setHeight = (h, remember) => {
+    if (h === null) { tl.style.height = ""; localStorage.removeItem("nong_timeh"); }
+    else tl.style.height = Math.min(maxH(), Math.max(MINH, Math.round(h))) + "px";
+    handle.setAttribute("aria-valuenow", parseInt(tl.style.height) || 0);
+    resize();                       // the 3D view gets the space back
+    if (remember && h !== null) localStorage.setItem("nong_timeh", parseInt(tl.style.height));
+  };
+  const saved = +localStorage.getItem("nong_timeh");
+  if (saved) setHeight(saved, false);
+  const now = () => parseInt(tl.style.height) || tl.getBoundingClientRect().height;
+  handle.addEventListener("keydown", (e) => {
+    let h = null, hit = true;
+    if (e.key === "ArrowUp") h = now() + STEP;        // timeline grows upwards
+    else if (e.key === "ArrowDown") h = now() - STEP;
+    else if (e.key === "PageUp") h = now() + STEP * 4;
+    else if (e.key === "PageDown") h = now() - STEP * 4;
+    else if (e.key === "Home") { setHeight(null, true); e.preventDefault(); return; }
+    else hit = false;
+    if (!hit) return;
+    e.preventDefault();
+    setHeight(h, true);
+  });
+  handle.addEventListener("dblclick", () => setHeight(null, true));
+  let dragging = false, startY = 0, startH = 0;
+  handle.addEventListener("pointerdown", (e) => {
+    dragging = true; startY = e.clientY; startH = now();
+    try { handle.setPointerCapture(e.pointerId); } catch (_) { /* pointer already gone */ }
+  });
+  handle.addEventListener("pointermove", (e) => {
+    if (dragging) setHeight(startH + (startY - e.clientY), false);
+  });
+  handle.addEventListener("pointerup", () => {
+    if (!dragging) return;
+    dragging = false;
+    if (tl.style.height) localStorage.setItem("nong_timeh", parseInt(tl.style.height));
+  });
+}
+
 // draggable divider: make the side panel wider or narrower (remembered)
 function initSideDrag() {
   const side = $("side"), handle = $("sideDrag");

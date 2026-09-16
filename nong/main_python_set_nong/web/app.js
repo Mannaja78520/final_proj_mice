@@ -86,6 +86,57 @@ function showTab(which) {
   });
 }
 
+// THE TIMELINE HANDLE DRAGS TOO (user 2026-09-16: *timeline below has the
+// drag but cannot drag to make it smaller or bigger ... like the right side,
+// with a scroller*). #timeDrag had CSS and no code. Same rules as the side
+// panel: remembered, keyboard, double-click resets; #timeline scrolls inside.
+function initTimeDrag() {
+  const tl = $("timeline"), handle = $("timeDrag");
+  if (!tl || !handle) return;
+  const MINH = 120, STEP = 24;
+  const maxH = () => Math.max(MINH, Math.round(window.innerHeight * 0.8));
+  handle.setAttribute("role", "separator");
+  handle.setAttribute("aria-orientation", "horizontal");
+  handle.setAttribute("aria-label", "Resize the timeline");
+  handle.setAttribute("tabindex", "0");
+  const setHeight = (h, remember) => {
+    if (h === null) { tl.style.height = ""; localStorage.removeItem("nong_timeh"); }
+    else tl.style.height = Math.min(maxH(), Math.max(MINH, Math.round(h))) + "px";
+    handle.setAttribute("aria-valuenow", parseInt(tl.style.height) || 0);
+    resize();                       // the 3D view gets the space back
+    if (remember && h !== null) localStorage.setItem("nong_timeh", parseInt(tl.style.height));
+  };
+  const saved = +localStorage.getItem("nong_timeh");
+  if (saved) setHeight(saved, false);
+  const now = () => parseInt(tl.style.height) || tl.getBoundingClientRect().height;
+  handle.addEventListener("keydown", (e) => {
+    let h = null, hit = true;
+    if (e.key === "ArrowUp") h = now() + STEP;        // timeline grows upwards
+    else if (e.key === "ArrowDown") h = now() - STEP;
+    else if (e.key === "PageUp") h = now() + STEP * 4;
+    else if (e.key === "PageDown") h = now() - STEP * 4;
+    else if (e.key === "Home") { setHeight(null, true); e.preventDefault(); return; }
+    else hit = false;
+    if (!hit) return;
+    e.preventDefault();
+    setHeight(h, true);
+  });
+  handle.addEventListener("dblclick", () => setHeight(null, true));
+  let dragging = false, startY = 0, startH = 0;
+  handle.addEventListener("pointerdown", (e) => {
+    dragging = true; startY = e.clientY; startH = now();
+    try { handle.setPointerCapture(e.pointerId); } catch (_) { /* pointer already gone */ }
+  });
+  handle.addEventListener("pointermove", (e) => {
+    if (dragging) setHeight(startH + (startY - e.clientY), false);
+  });
+  handle.addEventListener("pointerup", () => {
+    if (!dragging) return;
+    dragging = false;
+    if (tl.style.height) localStorage.setItem("nong_timeh", parseInt(tl.style.height));
+  });
+}
+
 // draggable divider: make the side panel wider or narrower (remembered)
 function initSideDrag() {
   const side = $("side"), handle = $("sideDrag");
@@ -2548,6 +2599,15 @@ function nothingToWrite(where) {
 async function exportYaml() {
   if (nothingToWrite("tlStat")) return;
   const { name, yaml } = buildYaml();
+  // SAVING OVER A FILE ASKS FIRST (user 2026-09-16: every save went to
+  // my_move.yaml, because that is the name the box starts with).
+  const have = [...$("seqList").options].map(o => o.value);
+  if (have.includes(name + ".yaml") &&
+      !confirm(name + ".yaml is already saved. Replace it?\n\n" +
+               "Cancel, then type a new name in the sequence name box to keep both.")) {
+    $("tlStat").textContent = "not saved — " + name + ".yaml was left as it was";
+    return;
+  }
   // Every failure path must SAY something: an unhandled rejection here left
   // the old status line standing, and a silent export reads as saved work.
   try {
@@ -2559,14 +2619,15 @@ async function exportYaml() {
     // j.file echoes a name that was typed into this page; as text, never
     // as markup.
     $("tlStat").textContent =
-      `saved ${j.file} in the sequences/ folder — copy it to the SD card /moves/, ` +
-      `then pick it on the module website (Sequences card) or send: MOVE ${j.file}`;
+      `saved ${j.file} on this PC — voice answers and the other apps can use it now. ` +
+      `Send to robot SD puts it on the board.`;
   } catch (e) {
     $("tlStat").textContent = "export failed — the hub is not answering, or "
       + "refused the name. Nothing was written. " + (e.message || e);
     notice($("tlStat").textContent);
   }
-  refreshSeqs();
+  await refreshSeqs();
+  $("seqList").value = name + ".yaml";   // the list shows what was just saved
 }
 // --- rig setup UI ---
 const DIM_LABELS = {
@@ -3434,7 +3495,7 @@ async function playSdSeq(fname) {
 async function refreshSeqs() {
   const r = await fetch("/api/list?kind=sequences").then(r => r.json());
   const sel = $("seqList");
-  sel.innerHTML = "<option value=''>Edit saved…</option>";
+  sel.innerHTML = "<option value=''>Open saved YAML…</option>";
   (r.files || []).filter(f => f.endsWith(".yaml")).forEach(f => {
     const o = document.createElement("option"); o.value = o.textContent = f; sel.appendChild(o);
   });
@@ -4896,6 +4957,7 @@ refreshSeqs();
 refreshModels();
 connModeChanged();
 initSideDrag();
+initTimeDrag();
 // Boot is over: from here a change to the timeline is real work, so start
 // keeping a draft of it, and offer back anything a previous session lost.
 draftArmed = true;

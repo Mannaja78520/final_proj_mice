@@ -11,6 +11,7 @@ refreshSeqs();
 refreshModels();
 connModeChanged();
 initSideDrag();
+initTimeDrag();
 // Boot is over: from here a change to the timeline is real work, so start
 // keeping a draft of it, and offer back anything a previous session lost.
 draftArmed = true;

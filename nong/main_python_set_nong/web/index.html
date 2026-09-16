@@ -406,7 +406,7 @@
     <input id="seqNext" placeholder="then run…" list="seqNextList" style="width:120px"
            title="chain: when this sequence finishes, the module starts this one. Leave empty to just stop. Build a show from short files instead of one long one.">
     <datalist id="seqNextList"></datalist>
-    <button class="primary" onclick="exportYaml()">Export YAML (SD card)</button>
+    <button class="primary" onclick="exportYaml()" title="Saves the timeline as a YAML file on this PC, under the sequence name. Voice and the other apps can play it.">💾 Save YAML</button>
     <button onclick="uploadYaml()">Send to robot SD</button>
     <button onclick="robotRun()"
             title="Sends the sequence to the module and lets the MODULE play it on its own clock. This keeps running if you switch app, minimise the browser, or close this page entirely. It starts at the move you have clicked and carries on to the end - it never travels back to the first pose to begin.">▶ Run on robot</button>
@@ -414,7 +414,7 @@
     <span class="hint" id="playHint">“Play” previews here in the browser and pauses when this page is hidden.
       “Run on robot” hands it to the module — that one keeps going with this page closed.</span>
     <span class="sep"></span>
-    <select id="seqList"><option value="">Edit saved…</option></select>
+    <select id="seqList" onchange="editLocalSeq()" title="Pick a saved YAML: its moves open in the timeline, ready to edit."><option value="">Open saved YAML…</option></select>
     <button onclick="editLocalSeq()">Load for editing</button>
     <button onclick="playLocalSeq()"
             title="Loads this saved sequence into the timeline and starts playing it right away — same as Edit, then Play.">▶ Play saved</button>

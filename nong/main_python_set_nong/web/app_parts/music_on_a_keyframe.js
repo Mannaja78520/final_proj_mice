@@ -330,7 +330,7 @@ async function playSdSeq(fname) {
 async function refreshSeqs() {
   const r = await fetch("/api/list?kind=sequences").then(r => r.json());
   const sel = $("seqList");
-  sel.innerHTML = "<option value=''>Edit saved…</option>";
+  sel.innerHTML = "<option value=''>Open saved YAML…</option>";
   (r.files || []).filter(f => f.endsWith(".yaml")).forEach(f => {
     const o = document.createElement("option"); o.value = o.textContent = f; sel.appendChild(o);
   });
