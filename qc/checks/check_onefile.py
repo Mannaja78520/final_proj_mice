@@ -204,3 +204,13 @@ def run(t):
              "and never bundles %s, which the hub writes" % never,
              "bundling it would put saved work in a folder that is deleted "
              "when the app exits")
+
+    # ---- an exe built inside the code tree serves pages LIVE ----------
+    # User 2026-09-17: make every change fast. code/dist/MiceHub.exe reads
+    # pages from code/ first, so a page edit needs a refresh, not a rebuild;
+    # a venue install (no code tree beside it) keeps the bundled copies.
+    main_src = (F.CODE / "main_python" / "main.py").read_text(encoding="utf-8")
+    t.ok('_ROOTS.insert(1, HERE.parent)' in main_src
+         and '(HERE.parent / "main_python" / "main.py").is_file()' in main_src,
+         "an exe inside the code tree reads pages live from it",
+         "without it every page change costs an exe rebuild and a hub restart")

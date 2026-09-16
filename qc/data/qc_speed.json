@@ -10,6 +10,8 @@
   // plain checks at once (capped at the core count minus two)
   "workers": 10,
 
-  // checks that open a headless Edge at once. 3 since 2026-08-20.
-  "browserLanes": 3
+  // checks that open a headless Edge at once. Measured 2026-09-17, full suite,
+  // quiet machine: 3 = 540 s, 6 = 192 s, 9 = 174 s, 12 = 303 s with a false
+  // failure (too many browsers). 9 is the fastest width that stayed green.
+  "browserLanes": 9
 }

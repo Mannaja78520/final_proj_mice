@@ -52,6 +52,45 @@ def _run(args, cwd, timeout=900):
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
 
+def _inputs_key():
+    """One hash over everything a firmware build reads."""
+    import hashlib
+    h = hashlib.sha256()
+    roots = [F.FIRMWARE, F.CODE / "config", F.CODE / "shared" / "web"]
+    skip = {".pio", "patches", "__pycache__", ".vscode"}
+    for root in roots:
+        for f in sorted(root.rglob("*")):
+            rel = f.relative_to(root)
+            if not f.is_file() or skip & set(rel.parts) or f.name in ("promt.md", "PATCHES.md"):
+                continue
+            h.update(rel.as_posix().encode())
+            h.update(f.read_bytes())
+    return h.hexdigest()
+
+
+def _cached(cache, key):
+    import json
+    try:
+        got = json.loads(cache.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if got.get("key") != key:
+        return None
+    if not all((F.FIRMWARE / ".pio" / "build" / e / "firmware.bin").is_file()
+               for e in list(ENVS) + [LEGACY]) or LEGACY not in got.get("out", {}):
+        return None
+    return {e: (0, got["out"].get(e, "")) for e in list(ENVS) + [LEGACY]}
+
+
+def _store(cache, key, built):
+    import json
+    try:
+        cache.write_text(json.dumps({"key": key, "out": {e: o for e, (_c, o) in built.items()}}),
+                         encoding="utf-8")
+    except OSError:
+        pass
+
+
 def run(t):
     # ---- 1. the generator splits the page, with no board involved ----
     # Fast, and it is where a broken marker shows up first.
@@ -108,11 +147,32 @@ def run(t):
     # compiler itself is single-threaded per file; four compilers are not.
     import concurrent.futures as _cf
     t0 = time.time()
-    with _cf.ThreadPoolExecutor(max_workers=len(ENVS)) as pool:
-        built = dict(zip(ENVS, pool.map(
-            lambda e: _run([str(PIO), "run", "-e", e], F.FIRMWARE), ENVS)))
-    print("      (%d environments built in %.0fs, together)"
-          % (len(ENVS), time.time() - t0))
+    # REUSE A GOOD BUILD WHEN NOTHING IT READS CHANGED (2026-09-17: 136 s of
+    # every gate, almost always for identical firmware). The key hashes every
+    # input - firmware sources, the registries and the shared stylesheet
+    # compiled into it; one changed byte builds again. The checks below still
+    # run on the real binaries either way.
+    key = _inputs_key()
+    # A reused build is only honest if any source change moves the key.
+    probe = F.FIRMWARE / "src" / "_qc_key_probe.h"
+    try:
+        probe.write_bytes(b"// qc: proves a source edit changes the build key\n")
+        t.ok(_inputs_key() != key, "a changed firmware file forces a real build",
+             "the cache would reuse binaries that no longer match the source")
+    finally:
+        probe.unlink(missing_ok=True)
+    cache = F.FIRMWARE / ".pio" / "qc_build_cache.json"
+    built = _cached(cache, key)
+    if built is None:
+        with _cf.ThreadPoolExecutor(max_workers=len(ENVS) + 1) as pool:
+            built = dict(zip(list(ENVS) + [LEGACY], pool.map(
+                lambda e: _run([str(PIO), "run", "-e", e], F.FIRMWARE), list(ENVS) + [LEGACY])))
+        if all(code == 0 for code, _o in built.values()):
+            _store(cache, key, built)
+        print("      (%d environments built in %.0fs, together)"
+              % (len(ENVS), time.time() - t0))
+    else:
+        print("      (firmware inputs unchanged - reused the last good build)")
 
     for env, (types, absent) in ENVS.items():
         code, out = built[env]
@@ -142,7 +202,8 @@ def run(t):
     # ---- 3. the split must actually save something --------------------
     # It is the reason this exists: 74.9% of flash on every board, with a
     # camera type still to come.
-    code, out = _run([str(PIO), "run", "-e", LEGACY], F.FIRMWARE)
+    # built in the same parallel pool above, and reused with it
+    code, out = built[LEGACY]
     m = re.search(r"Flash:\s*\[[^\]]*\]\s*([\d.]+)%", out)
     if t.ok(code == 0 and m, "the all-types build still compiles (%s)" % LEGACY,
             _first_error(out)):

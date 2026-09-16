@@ -44,7 +44,7 @@ DEVICES = [
 DRIVER = """
 <style>body{margin:0;background:#111}iframe{border:0;display:block}</style>
 <script>
-var PAGES = %s, DEVS = %s;
+var PAGES = %s, DEVS = %s, LANES = %d;
 function measure(url, w, h){
   return new Promise(function(res){
     var f = document.createElement("iframe");
@@ -136,10 +136,22 @@ function measure(url, w, h){
 }
 window.addEventListener("load", async function(){
   try{
-    var results = [];
+    // SEVERAL IFRAMES AT ONCE. One at a time was 169 s of an 540 s gate
+    // (2026-09-17). Each iframe has its own width and its own layout, so they
+    // do not disturb each other's measurement; results keep their order.
+    var jobs = [];
     for (var i = 0; i < PAGES.length; i++)
-      for (var j = 0; j < DEVS.length; j++)
-        results.push(await measure(PAGES[i], DEVS[j][0], DEVS[j][1]));
+      for (var j = 0; j < DEVS.length; j++) jobs.push([PAGES[i], DEVS[j][0], DEVS[j][1]]);
+    var results = new Array(jobs.length), next = 0;
+    async function lane(){
+      while (next < jobs.length){
+        var k = next++;
+        results[k] = await measure(jobs[k][0], jobs[k][1], jobs[k][2]);
+      }
+    }
+    var lanes = [];
+    for (var n = 0; n < LANES; n++) lanes.push(lane());
+    await Promise.all(lanes);
     // report in chunks: one command line stays well inside an RS485 frame
     for (var k = 0; k < results.length; k++) {
       var r = results[k];
@@ -204,7 +216,8 @@ def run(t):
     devs = [[w, h] for w, h, _ in DEVICES]
     label = {w: name for w, _, name in DEVICES}
 
-    html = DRIVER % (json.dumps(pages), json.dumps(devs))
+    # 6 iframes at once: measured, see the driver comment
+    html = DRIVER % (json.dumps(pages), json.dumps(devs), 6)
     # 4 pages x 5 widths x 1.4 s settle, plus load time
     browser.raw_page(html, base, seconds=len(pages) * len(devs) * 2 + 22)
 

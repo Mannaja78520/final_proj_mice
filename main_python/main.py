@@ -62,6 +62,12 @@ from pathlib import Path
 if getattr(sys, "frozen", False):
     HERE = Path(sys.executable).resolve().parent
     _ROOTS = [HERE, Path(getattr(sys, "_MEIPASS", "") or HERE)]
+    # Built inside the code tree (code/dist/MiceHub.exe): serve pages, CSS and
+    # registries LIVE from that tree, so a page change needs a refresh, not a
+    # rebuild (user 2026-09-17: make every change fast). A venue install has
+    # no code tree beside it and keeps the bundled copies.
+    if (HERE.parent / "main_python" / "main.py").is_file() and (HERE.parent / "apps").is_dir():
+        _ROOTS.insert(1, HERE.parent)
     # Writable trees live next to the exe. An older install kept them one level
     # up; if that layout is there, keep using it, because updating the app must
     # never hide someone's saved work.

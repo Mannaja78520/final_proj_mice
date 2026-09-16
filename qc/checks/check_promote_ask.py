@@ -62,6 +62,17 @@ def run(t):
     t.ok(not (main / ".staging-coordination.lock").exists(),
          "and the shared BRIDGE lock is released afterwards")
 
+    # tools/bridge.py is the one-command way to the same log and lock
+    spec_b = importlib.util.spec_from_file_location("bridge_tool", str(F.CODE / "tools" / "bridge.py"))
+    B = importlib.util.module_from_spec(spec_b)
+    spec_b.loader.exec_module(B)
+    B.REAL = main
+    os.environ["MICE_AGENT"] = os.environ.get("MICE_AGENT") or "qc:bridge"
+    B.main(["notice", "qc wrote this line"])
+    said = (main / "docs" / "BRIDGE.md").read_text(encoding="utf-8")
+    t.ok("Event: NOTICE" in said and "qc wrote this line" in said,
+         "tools/bridge.py writes a BRIDGE entry in one command", said[-200:])
+
     # ---- every land is a commit of exactly what it copied ----------------
     import subprocess
     repo = Path(tempfile.mkdtemp(prefix="qc_promote_git_"))
@@ -88,7 +99,21 @@ def run(t):
                            capture_output=True, text=True).stdout.split()
     t.ok(shown == ["landed.txt"],
          "and it holds only the files it copied, never another session's work", shown)
+    # a file deleted in main (a rename) is committed as a deletion, not an error
+    # removed the way a rename removes it: already out of the index
+    subprocess.run(g + ["rm", "-q", "landed.txt"], check=True, capture_output=True)
+    sha2 = P.commit_copied([Path("landed.txt")])
+    gone = subprocess.run(g + ["show", "--name-status", "--format=", "HEAD"],
+                          capture_output=True, text=True).stdout.split()
+    t.ok(bool(sha2) and gone[:2] == ["D", "landed.txt"],
+         "a deleted file lands as a deletion in the commit", (sha2, gone))
     P.MAIN = main
+
+    # --only lands just the named files, and nothing else staging carries
+    (stage / "mine.txt").write_text("my newer edit", encoding="utf-8")
+    ch, ad, _gone = P.changes(["mine.txt"])
+    t.ok([r.as_posix() for r in ch + ad] == ["mine.txt"],
+         "--only limits the landing to the named files", [r.as_posix() for r in ch + ad])
     # ...and the real promote uses it on what it copied. Read from the live
     # function: driving a whole promote needs a full gate, which this is not.
     import inspect

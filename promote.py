@@ -311,11 +311,17 @@ def run_qc(where: Path, *, built=False, scoped=False):
     return proc.returncode == 0
 
 
-def changes():
-    """(changed, added, only_in_main) between staging and the real tree."""
+def changes(only=None):
+    """(changed, added, only_in_main) between staging and the real tree.
+
+    `only`: land just these paths (promote.py --only), with every guard intact -
+    replaces the hand-written partial copies of 2026-09-16/17."""
     changed, added = [], []
     stage = set(walk(STAGING))
+    wanted = {Path(p).as_posix() for p in only} if only else None
     for rel in sorted(stage):
+        if wanted is not None and rel.as_posix() not in wanted:
+            continue
         src, dst = STAGING / rel, MAIN / rel
         if not dst.exists():
             added.append(rel)
@@ -436,7 +442,16 @@ def commit_copied(files):
     if who.startswith("claude"):
         msg += "\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n"
     try:
-        subprocess.run(git + ["add", "--"] + paths, check=True, capture_output=True, timeout=120)
+        # A path already removed (git rm, a rename) makes `git add` refuse the
+        # whole list - it did on 2026-09-17. Add what exists; record the rest
+        # as removals.
+        here = [x for x in paths if (MAIN / x).exists()]
+        gone = [x for x in paths if not (MAIN / x).exists()]
+        if here:
+            subprocess.run(git + ["add", "--"] + here, check=True, capture_output=True, timeout=120)
+        if gone:
+            subprocess.run(git + ["rm", "-r", "-q", "--cached", "--ignore-unmatch", "--"] + gone,
+                           check=True, capture_output=True, timeout=120)
         r = subprocess.run(git + ["commit", "-q", "-m", msg, "--"] + paths,
                            capture_output=True, text=True, timeout=120)
         if r.returncode:
@@ -451,14 +466,31 @@ def commit_copied(files):
         return ""
 
 
-def promote(full=False):
+def hint_split(files):
+    """A core file in a feature batch makes the gate run everything (~9 min).
+    Say so up front, so the next batch lands the two separately."""
+    try:
+        sys.path.insert(0, str(STAGING / "qc" / "lib"))
+        import scope
+        paths = [r.as_posix() for r in files]
+        kind = scope.decide(STAGING, paths)
+        core = [p for p in paths if scope._under(p, scope.rules(STAGING).get("fullWhen") or [])]
+        if kind[0] == "full" and core and len(core) < len(paths):
+            print("NOTE: %s forces the FULL gate for this whole batch. Land core "
+                  "files on their own next time for a fast scoped gate." % ", ".join(core[:3]))
+    except Exception:                                        # noqa: BLE001
+        pass
+
+
+def promote(full=False, only=None):
     if not build_web(STAGING):
         print("REFUSED: web build failed. Nothing was copied.")
         return 1
-    changed, added, gone = changes()
+    changed, added, gone = changes(only)
     if not (changed or added):
         show(changed, added, gone)
         return 0
+    hint_split(changed + added)
     print("about to promote %d changed + %d new file(s)" % (len(changed), len(added)))
     # ASK, DO NOT OVERWRITE (user 2026-09-16: *check each other and ask need
     # promote or not then promote with no conflict*).
@@ -497,7 +529,7 @@ def promote(full=False):
     elif not already_green(STAGING) and not STAGING.parent.name.startswith("qc_land_"):
         print("REFUSED: staging no longer has an exact green receipt. Nothing was copied.")
         return 1
-    changed, added, gone = changes()
+    changed, added, gone = changes(only)
     conflicts = [rel for rel in changed + added
                  if file_hash(MAIN / rel) != main_before.get(rel)]
     if conflicts:
@@ -526,6 +558,8 @@ def main(argv):
     ap.add_argument("--init", action="store_true", help="create/refresh the staging copy")
     ap.add_argument("--check", action="store_true", help="run full QC in staging, promote nothing")
     ap.add_argument("--diff", action="store_true", help="show what would move")
+    ap.add_argument("--only", nargs="+", metavar="PATH",
+                    help="land only these files (the gate still checks the whole staging tree)")
     ap.add_argument("--full", action="store_true",
                     help="run the whole QC suite even for a one-system change")
     ap.add_argument("--staging", metavar="DIR", default=".staging",
@@ -550,7 +584,7 @@ def main(argv):
         with promotion_lock():
             if a.check:
                 return 0 if run_qc(STAGING) else 1
-            return promote(full=a.full)
+            return promote(full=a.full, only=a.only)
     except RuntimeError as exc:
         print("REFUSED: %s" % exc)
         return 1
