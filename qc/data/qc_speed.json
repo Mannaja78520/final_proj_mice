@@ -12,6 +12,8 @@
 
   // checks that open a headless Edge at once. Measured 2026-09-17, full suite,
   // quiet machine: 3 = 540 s, 6 = 192 s, 9 = 174 s, 12 = 303 s with a false
-  // failure (too many browsers). 9 is the fastest width that stayed green.
-  "browserLanes": 9
+  // failure (too many browsers). 9 went red three gates in a row the same
+  // night, a different browser check each time, all green alone, while the
+  // PC was busy (gates 298 s, not 174 s). 6 keeps the margin.
+  "browserLanes": 6
 }

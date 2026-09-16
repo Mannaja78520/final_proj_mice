@@ -72,10 +72,19 @@ def parts_of(entry):
                 cwd = steps.pop(0)[3:].strip().strip('"')
             if steps:
                 out.append((cwd, " && ".join(steps)))
-    if out:
-        return out, "their " + bat.name
-    return [(p.get("cwd") or "", " ".join(p.get("run") or []))
-            for p in entry.get("launch") or []], "config/partners.json"
+    source = "their " + bat.name
+    if not out:
+        out = [(p.get("cwd") or "", " ".join(p.get("run") or []))
+               for p in entry.get("launch") or []]
+        source = "config/partners.json"
+    # PHONES TOO (user 2026-09-17: the QR links on a phone did not open).
+    # `addArgs` maps a piece of a command to flags added after it, so their
+    # dev server listens on the network without editing their files.
+    extra = entry.get("addArgs") or {}
+    out = [(cwd, cmd + "".join(" " + flags for piece, flags in extra.items()
+                               if piece in cmd and flags not in cmd))
+           for cwd, cmd in out]
+    return out, source
 
 
 def _memo_path(pid):

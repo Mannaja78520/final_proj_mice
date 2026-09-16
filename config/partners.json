@@ -41,6 +41,12 @@
     // dummy*). The hub refuses a folder whose path holds a word listed here.
     "folder": "E:/final_proj/mice/Face_Regonize",
     "refuseFolders": ["dummy"],
+
+    // Their dev server listens on this PC only; this opens it to phones on the
+    // same WiFi (their QR codes and /camera-node links). Their own vite proxy
+    // forwards the API, so the API itself stays on this PC. Anyone on that
+    // WiFi can then reach Reconize - their own login still guards it.
+    "addArgs": { "npm run dev": "-- --host 0.0.0.0" },
     "start": "start.bat",
 
     // What "Open Reconize" starts, hidden. The commands are read from THEIR

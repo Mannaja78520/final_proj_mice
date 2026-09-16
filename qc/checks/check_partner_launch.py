@@ -86,6 +86,16 @@ def run(t):
     parts, source = PL.parts_of(entry)
     t.ok(len(parts) == 1 and parts[0][0] == "srv" and "their" in source,
          "the commands are read from their own start file", (parts, source))
+
+    # PHONES (user 2026-09-17): Reconize's screen must listen on the network,
+    # added from our data, never by editing their start file.
+    real_parts, _src = PL.parts_of(rec)
+    screen = [c for _cwd, c in real_parts if "npm run dev" in c]
+    t.ok(screen and "--host 0.0.0.0" in screen[0],
+         "Reconize's screen starts listening for phones on the same WiFi", real_parts)
+    t.ok("--host" not in (Path(rec.get("folder") or "") / (rec.get("start") or "x")).read_text(
+             encoding="utf-8", errors="replace") if (Path(rec.get("folder") or "") / (rec.get("start") or "x")).is_file() else True,
+         "and their own start.bat is left untouched")
     try:
         first = PL.start(pid, entry)
         t.ok(first.get("ok") and first.get("starting") == ["srv"],
