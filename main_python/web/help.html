@@ -322,6 +322,13 @@
        against it.</p>
     <p>QC checks the time that actually reached the module, not the editor's opinion of it
        &mdash; the editor's opinion was exactly what was wrong.</p></div>
+  <div class="f"><h3>Clicking a move while the show plays is safe<span class="tag t-new">fixed</span></h3>
+    <p>Clicking a move during Play used to send the show back to the pose <i>before</i> it and
+       replay the move &mdash; a sudden swing that can hit something or break a servo.</p>
+    <p>Now a click during Play stops the show, moves the arm from where it <b>is</b> to the pose
+       you clicked at the show's speed, and then carries on with the next move. Nothing goes
+       backwards. Jumping along the time bar also moves the arm at the show's speed, never at
+       slider speed.</p></div>
   <div class="f"><h3>The time bar<span class="tag t-new">new</span></h3>
     <p>Under the Timeline buttons there is a <b>time bar</b> across the whole width. Each
        move is a block as wide as it is long, so a two-second move really looks twice a

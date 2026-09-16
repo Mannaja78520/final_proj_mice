@@ -98,7 +98,7 @@ def run(t):
     app = (F.STUDIO / "web/app.js").read_text(encoding="utf-8", errors="replace")
     t.contains(app, "function keyTravelMs",
                "the move's own time is worked out from the played timeline")
-    t.contains(app, "poseChanged(false, keyTravelMs(i))",
-               "and clicking a keyframe uses it")
+    t.contains(app, "travel = Math.max(keyTravelMs(i), autoTime(from, pose, keyDps(i)))",
+               "and clicking a keyframe uses it, never faster than the show from where the arm is")
     t.contains(app, "else sendPoseLive();",
                "while a drag still follows the hand")

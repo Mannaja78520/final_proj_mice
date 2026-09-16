@@ -62,6 +62,37 @@ def run(t):
     t.ok(not (main / ".staging-coordination.lock").exists(),
          "and the shared BRIDGE lock is released afterwards")
 
+    # ---- every land is a commit of exactly what it copied ----------------
+    import subprocess
+    repo = Path(tempfile.mkdtemp(prefix="qc_promote_git_"))
+    g = ["git", "-C", str(repo), "-c", "user.name=qc", "-c", "user.email=qc@x"]
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.name", "qc"], check=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.email", "qc@x"], check=True)
+    # Both tracked, both then changed - main's real state: other sessions'
+    # uncommitted edits sit beside the files a promote just copied.
+    for name in ("landed.txt", "someone_else.txt"):
+        (repo / name).write_text("baseline", encoding="utf-8")
+    subprocess.run(g + ["add", "."], check=True, capture_output=True)
+    subprocess.run(g + ["commit", "-q", "-m", "base"], check=True, capture_output=True)
+    (repo / "landed.txt").write_text("promoted", encoding="utf-8")
+    (repo / "someone_else.txt").write_text("another session's work", encoding="utf-8")
+    P.MAIN = repo
+    sha = P.commit_copied([Path("landed.txt")])
+    t.ok(bool(sha), "a promote leaves a commit to roll back to", sha)
+    shown = subprocess.run(g + ["show", "--name-only", "--format=", "HEAD"],
+                           capture_output=True, text=True).stdout.split()
+    t.ok(shown == ["landed.txt"],
+         "and it holds only the files it copied, never another session's work", shown)
+    P.MAIN = main
+    # ...and the real promote uses it on what it copied. Read from the live
+    # function: driving a whole promote needs a full gate, which this is not.
+    import inspect
+    src = inspect.getsource(P.promote)
+    t.ok("commit_copied(changed + added)" in src
+         and src.index("shutil.copy2(STAGING / rel, dst)") < src.index("commit_copied("),
+         "promote commits right after it copies", "")
+
     t.ok(P.skip(Path("nong/main_python_set_nong/projects/all_move.json")),
          "Nong Studio saves never travel with a promote")
     t.ok(P.skip(Path("nong/main_python_set_nong/sequences/my_move.yaml")),

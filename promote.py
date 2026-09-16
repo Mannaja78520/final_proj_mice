@@ -410,6 +410,40 @@ def bridge(event, lines):
         lock.rmdir()
 
 
+def commit_copied(files):
+    """Commit EXACTLY the files this promote copied - a rollback point per land.
+
+    User 2026-09-16: *make commit everytime when change too to make sure it
+    have rollback*. The pathspec matters: main carries other sessions'
+    uncommitted work, and a bare `git commit -a` would sweep it in under
+    this agent's name. Returns the short sha, or "" when there is no repo.
+    """
+    if not files or not (MAIN / ".git").exists():
+        return ""
+    paths = [r.as_posix() for r in files]
+    who = os.environ.get("MICE_AGENT") or "unknown-session"
+    tasks = os.environ.get("MICE_TASKS") or ""
+    msg = "promote(%s): %d file(s)%s\n\n%s\n" % (
+        who, len(paths), (" for " + tasks) if tasks else "", "\n".join(paths))
+    if who.startswith("claude"):
+        msg += "\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n"
+    git = ["git", "-C", str(MAIN)]
+    try:
+        subprocess.run(git + ["add", "--"] + paths, check=True, capture_output=True, timeout=120)
+        r = subprocess.run(git + ["commit", "-q", "-m", msg, "--"] + paths,
+                           capture_output=True, text=True, timeout=120)
+        if r.returncode:
+            print("commit skipped: %s" % (r.stderr or r.stdout).strip()[:200])
+            return ""
+        sha = subprocess.run(git + ["rev-parse", "--short", "HEAD"],
+                             capture_output=True, text=True, timeout=30).stdout.strip()
+        print("committed %s - roll back with: git revert %s" % (sha, sha))
+        return sha
+    except Exception as e:                                   # noqa: BLE001
+        print("commit skipped: %s" % e)
+        return ""
+
+
 def promote(full=False):
     if not build_web(STAGING):
         print("REFUSED: web build failed. Nothing was copied.")
@@ -467,8 +501,11 @@ def promote(full=False):
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(STAGING / rel, dst)
     print("\npromoted %d file(s) to %s" % (len(changed) + len(added), MAIN))
+    sha = commit_copied(changed + added)
     bridge("PROMOTE-DONE", ["Tree: %s" % STAGING,
-                            "Files: %d copied into main" % (len(changed) + len(added))])
+                            "Files: %d copied into main" % (len(changed) + len(added)),
+                            "Commit: %s  (roll back with: git revert %s)" % (sha, sha)
+                            if sha else "Commit: none (not a git repo, or git failed)"])
     show(changed, added, gone)
     if any(rel.as_posix().endswith("main_python/main.py") for rel in changed + added):
         print("\nNOTE: main_python/main.py changed — rebuild MiceHub.exe:")

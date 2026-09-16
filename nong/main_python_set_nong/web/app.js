@@ -1739,16 +1739,36 @@ function keyIndexAtMs(ms) {
   return K.length - 1;
 }
 
+// CLICKING A MOVE WHILE IT PLAYS (user 2026-09-16): the clock was parked at
+// the START of that move and play kept running, so the show went back to the
+// pose before it and replayed the move - a sudden servo swing that can break
+// the robot. Now: stop every clock, travel from where the arm IS to the
+// clicked pose at the show's speed, park the clock where that pose is
+// reached, and carry on from there once the arm has arrived.
+let seekToken = 0;
 function selectKey(i) {
-  selKey = i;
-  if (keys[i]) {
-    pose = [...keys[i].pose];
-    // travel there at the move's own speed, not at drag speed
-    poseChanged(false, keyTravelMs(i));
+  const was = playing;
+  const token = ++seekToken;
+  if (was) {
+    playing = false; $("playBtn").textContent = "▶ Play";
+    livePause(); stopRobotSequence(); keepAwake(false);
   }
-  // the clock follows the click: Play and the scrubber sit at this move, not
-  // wherever the last play left them
-  playT = keyStartMs(i);
+  selKey = i;
+  let travel = 0;
+  if (keys[i]) {
+    const from = pose.slice();
+    pose = [...keys[i].pose];
+    // the move's own speed, and never faster than the show's speed allows
+    // from where the arm stands now - the start pose has no move of its own
+    travel = Math.max(keyTravelMs(i), autoTime(from, pose, keyDps(i)));
+    poseChanged(false, travel);
+  }
+  // the clock follows the click: stopped, Play replays this move; playing,
+  // the show continues AFTER it, since the arm is travelling there already
+  playT = was ? keyStartMs(i) + keyTravelMs(i) : keyStartMs(i);
+  if (was) setTimeout(() => {
+    if (token === seekToken && !playing) togglePlay();
+  }, travel);
   const total = totalMs();
   $("scrub").value = total ? Math.round(playT / total * 1000) : 0;
   renderTimeline();
@@ -2419,6 +2439,8 @@ function segRemaining(ms) {
 }
 function scrubTo(v) {
   const was = playing;
+  ++seekToken;                       // a scrub cancels a pending resume
+  const from = pose.slice();
   playing = false; $("playBtn").textContent = "▶ Play";
   // Every other stop path releases the keep-awake; this one did not, so
   // scrubbing during playback left playClock firing every 60 ms and the silent
@@ -2434,7 +2456,14 @@ function scrubTo(v) {
   // thing you cannot check against. Uses the same path a slider drag does, so
   // it carries the link's own round-trip timing rather than letting the module
   // ease at its SPEED setting.
-  if (liveLinked()) sendPoseLive();
+  // A JUMP along the bar is not a drag: sent at drag time (80-300 ms) the arm
+  // swung across at full servo speed. Anything slower than a drag goes at
+  // the show's speed from where the arm is (2026-09-16).
+  if (liveLinked()) {
+    const safe = autoTime(from, pose, speedDps());
+    if (safe > LIVE_T_MAX) liveSend("POSE " + pose.map(fmtA).join(" ") + " T " + safe);
+    else sendPoseLive();
+  }
 }
 // --- YAML export ---
 function fmtA(a) { return (Math.round(a * 10) / 10).toString(); }
