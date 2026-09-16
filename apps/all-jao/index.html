@@ -1,11 +1,11 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>All Jao Games — Mice</title>
+<title>All-Jao Games — Mice</title>
 <link rel="stylesheet" href="/mice.css">
 <script src="/mice.js"></script>
 
-<h1>🎮 All Jao Games</h1>
+<h1>🎮 All-Jao Games</h1>
 <div class="mini" style="margin-bottom:var(--sp-4)">
   <a href="/">👈 hub</a> · mini-games suite: claw machine, matching, quiz, and wheel of fortune
   <label style="display:inline-flex;gap:var(--sp-2);align-items:center;float:right">
@@ -13,11 +13,11 @@
     Show technical details</label>
 </div>
 
-<div class="card" id="loginHere"></div>
+<!-- No hub login here (user 2026-09-17): the games have their own login. -->
 
 <div class="card">
   <h2>Play Games</h2>
-  <p class="mini" id="whatIs">All Jao Games runs beside Mice on this PC. The server starts automatically when opening this page.</p>
+  <p class="mini" id="whatIs">All-Jao Games runs beside Mice on this PC. The server starts automatically when opening this page.</p>
   <div class="row" style="margin-bottom:var(--sp-3)">
     <button class="primary" id="openBtn" onclick="openApp()">Open in New Tab ↗</button>
     <button id="startBtn" onclick="startServer(true)">▶ Restart Server</button>
@@ -55,7 +55,7 @@
 </div>
 
 <script>
-const PARTNER = "jao_games";
+const PARTNER = "all-jao";
 let links = {
   open: "http://127.0.0.1:8080",
   api: "http://127.0.0.1:8080",
@@ -108,13 +108,13 @@ async function probe(autoLaunchIfDown = false) {
   say("checking…");
   try {
     await fetch(links.open, {method: "HEAD", mode: "no-cors", cache: "no-store"});
-    say("All Jao Games is running.", "port 8080");
+    say("All-Jao Games is running.", "port 8080");
     showFrame();
     return true;
   } catch (e) {
     if (autoLaunchIfDown && !autoStartAttempted) {
       autoStartAttempted = true;
-      say("Starting All Jao Games server automatically…");
+      say("Starting All-Jao Games server automatically…");
       startServer();
       return false;
     }
@@ -128,7 +128,7 @@ async function startServer() {
   btn.disabled = true;
   say("Launching game server in background…");
   try {
-    const r = await fetch("/api/jao/start", {method: "POST", headers: {"Content-Type": "application/json"}}).then(res => res.json());
+    const r = await fetch("/api/all-jao/start", {method: "POST", headers: {"Content-Type": "application/json"}}).then(res => res.json());
     if (r.ok) {
       say(r.already_running ? "Game server is already running." : "Launched! Connecting to games…");
       let attempts = 0;
@@ -151,6 +151,5 @@ async function startServer() {
   }
 }
 
-miceLogin.mount(document.getElementById("loginHere"));
 load();
 </script>

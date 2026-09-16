@@ -1,7 +1,7 @@
 {
-  "name": "All Jao Games",
+  "name": "All-Jao Games",
   "blurb": "mini-games suite: claw machine, matching, quiz, and wheel of fortune",
   "icon": "🎮",
   "order": 30,
-  "help": "games"
+  "help": "all-jao"
 }

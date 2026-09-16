@@ -12,7 +12,8 @@ WHAT THIS HOLDS
     confusing log;
   * a folder with a `refuseFolders` word in it (Dummy) is refused before
     anything runs;
-  * the route is gated: starting a program on this PC needs a login;
+  * no hub login from this PC (the apps have their own), a login from the
+    network;
   * the real registry entry names Main, refuses dummy, and says how to start;
   * the page's button calls the route rather than only opening a tab.
 """
@@ -28,7 +29,7 @@ import qc as F
 
 
 AREA = "hub"
-TITLE = "Open Reconize starts the Main copy, gated, never twice, never Dummy"
+TITLE = "Open Reconize starts the Main copy, never twice, never Dummy"
 
 
 def _port():
@@ -113,11 +114,23 @@ def run(t):
         PL._memo_path(pid).unlink(missing_ok=True)
 
     # ---- the route is gated, and the page uses it ----------------------
-    base, _main = F.start_hub()
+    # WHO MAY START ONE (user 2026-09-17: *why need to login first, it own app
+    # have it own login*): anyone at this PC, with no hub login; a caller on
+    # the network still logs in. The hub runs in-process here, so "on the
+    # network" is simulated by making is_self() say no.
+    base, main = F.start_hub()
     F.logout_qc()
     code, body = F.post(base + "/api/partners/start?id=nobody")
-    t.ok(code == 401 or '"need_login"' in body,
-         "starting a program needs a login", (code, body[:200]))
+    t.ok(code == 200 and '"need_login"' not in body,
+         "at this PC, opening an outside app needs no hub login", (code, body[:200]))
+    real_is_self = main.is_self
+    main.is_self = lambda ip: False
+    try:
+        code, body = F.post(base + "/api/partners/start?id=nobody")
+        t.ok(code == 401 and '"need_login"' in body,
+             "from the network it still needs a login", (code, body[:200]))
+    finally:
+        main.is_self = real_is_self
     F.login(base)
     code, body = F.post(base + "/api/partners/start?id=nobody")
     t.ok(code == 200 and not json.loads(body).get("ok"),

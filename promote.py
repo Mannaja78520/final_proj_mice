@@ -421,13 +421,20 @@ def commit_copied(files):
     if not files or not (MAIN / ".git").exists():
         return ""
     paths = [r.as_posix() for r in files]
+    git = ["git", "-C", str(MAIN)]
+    # Ignored on purpose (patches/ snapshots): one ignored path makes `git add`
+    # refuse the WHOLE list, which left patch 0084's land uncommitted.
+    ignored = subprocess.run(git + ["check-ignore", "--"] + paths,
+                             capture_output=True, text=True, timeout=60).stdout.split()
+    paths = [p for p in paths if p not in set(ignored)]
+    if not paths:
+        return ""
     who = os.environ.get("MICE_AGENT") or "unknown-session"
     tasks = os.environ.get("MICE_TASKS") or ""
     msg = "promote(%s): %d file(s)%s\n\n%s\n" % (
         who, len(paths), (" for " + tasks) if tasks else "", "\n".join(paths))
     if who.startswith("claude"):
         msg += "\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\n"
-    git = ["git", "-C", str(MAIN)]
     try:
         subprocess.run(git + ["add", "--"] + paths, check=True, capture_output=True, timeout=120)
         r = subprocess.run(git + ["commit", "-q", "-m", msg, "--"] + paths,

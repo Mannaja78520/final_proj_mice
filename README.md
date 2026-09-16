@@ -181,7 +181,7 @@ All system components and partner applications run simultaneously on dedicated, 
 |---|---|---|---|
 | **Mice Control Hub** | `8642` | Main robot orchestrator, web dashboard, module bus scanner | `dist/MiceHub.exe` or `python main_python/main.py` |
 | **Voice AI Service** | `8767` | Speech-to-text, neural TTS voice synthesis, Q&A | `python apps/voice/service.py` (or via Hub button) |
-| **All Jao Games** | `8080` | Interactive mini-games (Claw, Matching, Quiz, Wheel) | `python -m http.server 8080` (or via Hub button) |
+| **All-Jao Games** | `8080` | Interactive mini-games (Claw, Matching, Quiz, Wheel) | `python -m http.server 8080` (or via Hub button) |
 | **Reconize** (Face App) | `5173` / `8000` | Facial recognition, visitor log & camera events | `start.bat` in `Face_Regonize` |
 
 ---
@@ -218,8 +218,8 @@ python apps/voice/service.py
 - Features: Select voice & language (`th-TH-PremwadeeNeural` ⭐, `en-US-JennyNeural` ⭐, etc.).
 - Offline STT (Faster-Whisper) + Microsoft Neural TTS + instant FAQ engine.
 
-#### 3. Start All Jao Games (Port 8080)
-From the Hub dashboard, click the **🎮 All Jao Games** tile, then click **"▶ Start Game Server"** or **"Open All Jao Games"**.
+#### 3. Start All-Jao Games (Port 8080)
+From the Hub dashboard, click the **🎮 All-Jao Games** tile, then click **"▶ Start Game Server"** or **"Open All-Jao Games"**.
 Alternatively, start the server manually in terminal:
 ```bash
 python -m http.server 8080 --directory "E:/final_proj/mice/All-Jao-Games"

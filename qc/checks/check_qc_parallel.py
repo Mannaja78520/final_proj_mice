@@ -117,11 +117,19 @@ def run(t):
                "browser checks are told apart from the rest")
     t.contains(src, "browser_jobs",
                "and run in a narrower lane of their own")
-    m2 = re.search(r"browser_jobs = max\(1, min\((\d+), jobs\)\)", src)
-    if t.ok(m2, "the lane has a width"):
-        t.ok(int(m2.group(1)) <= 3,
-             "and it is narrow (%s at most)" % m2.group(1),
-             "the point is fewer browsers at once, not fewer workers")
+    # The width is DATA since 2026-09-17 (qc/data/qc_speed.json), changed
+    # only with a measurement: read it there, not as a literal in the runner.
+    import json as _json
+    raw = (F.CODE / "qc/data/qc_speed.json").read_text(encoding="utf-8")
+    speed = _json.loads(re.sub(r'("(?:\\.|[^"\\])*")|//[^\n]*',
+                               lambda m: m.group(1) or "", raw))
+    lanes = speed.get("browserLanes")
+    t.ok(isinstance(lanes, int) and lanes >= 1, "the lane has a width", speed)
+    t.contains(src, 'SPEED.get("browserLanes")',
+               "and the runner takes it from qc_speed.json")
+    t.ok(isinstance(lanes, int) and lanes < (speed.get("workers") or 10),
+         "and it is narrower than the plain lane (%s)" % lanes,
+         "the point is fewer browsers at once, not fewer workers")
 
     t.contains(src, "F.generated()",
                "the firmware tables are generated once, before any worker")

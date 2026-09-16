@@ -28,8 +28,9 @@
     <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
     Show technical details</label>
 </div>
-<!-- One login, every page (A25-5). -->
-<div class="card" id="loginHere" style="margin-bottom:var(--sp-4)"></div>
+<!-- No hub login here (user 2026-09-17): Reconize has its own login, and
+     opening it from this PC needs none. The hub still asks a caller on the
+     network, in main.py. -->
 
 <div class="card">
   <h2>Open it</h2>
@@ -41,6 +42,11 @@
     <span class="statline" id="stat" role="status" aria-live="polite">checking…</span>
   </div>
   <div class="statline tech mini" id="where"></div>
+  <!-- Reconize itself, inside this page, once it answers. -->
+  <div id="frameCard" style="margin-top:var(--sp-3)" hidden>
+    <iframe id="reconFrame" title="Reconize" src="about:blank"
+            style="width:100%;height:75vh;border:1px solid var(--line);border-radius:var(--r-md)"></iframe>
+  </div>
 </div>
 
 <div class="card">
@@ -85,7 +91,9 @@ async function load(){
   }
   const w = document.getElementById("where");
   w.textContent = "app " + links.open + " · api " + links.api;
-  probe();
+  // Opening the page is asking for Reconize: start it if it is silent.
+  ensureRunning().catch(err =>
+    say(...(Array.isArray(err) ? err : ["Reconize could not be started.", String(err)])));
   pollWatcher();
 }
 
@@ -100,18 +108,14 @@ function say(msg, tech){
   }
 }
 
-// Starts Reconize (Main, never Dummy) through the hub when it is silent, waits
-// for it, then opens it. The tab is opened NOW, inside the click, because a
-// tab opened after a wait is blocked as a pop-up.
-let opening = false;
-async function openApp(){
-  if (!links) return say("the addresses have not loaded yet — try again in a moment");
-  if (opening) return;
-  opening = true;
-  const btn = document.getElementById("openBtn");
-  btn.disabled = true;
-  const tab = window.open("about:blank", "_blank");
-  try{
+// Starts Reconize (Main, never Dummy) through the hub when it is silent and
+// waits until it answers. Returns where it answered; throws [words, detail].
+let starting = null;
+function ensureRunning(){
+  if (!starting) starting = startLoop().finally(() => { starting = null; });
+  return starting;
+}
+async function startLoop(){
     const until = Date.now() + 120000;     // a cold face model can be slow
     let got;
     while (true){
@@ -122,7 +126,7 @@ async function openApp(){
       }catch(e){
         throw ["cannot reach the hub — is it still running?", String(e.message || e)];
       }
-      if (got.need_login) throw ["log in first (the box above), then press Open Reconize again."];
+      if (got.need_login) throw ["Reconize can only be started from the PC that runs Mice, or after signing in on the hub page."];
       if (!got.ok) throw [got.error || "Reconize could not be started.", [].concat(got.log || []).join(" ")];
       if (got.ready) break;
       say("starting Reconize… (" + got.starting.join(", ") + ") — this takes about fifteen seconds",
@@ -133,13 +137,31 @@ async function openApp(){
     // Where it really answered this time - their port can change with an update.
     const where = got.open || links.open;
     say("Reconize is running.", where);
+    showFrame(where);
+    return where;
+}
+
+function showFrame(where){
+  const frame = document.getElementById("reconFrame");
+  if (frame.src === "about:blank") frame.src = where;
+  document.getElementById("frameCard").hidden = false;
+}
+
+// The tab is opened NOW, inside the click: a tab opened after a wait is
+// blocked as a pop-up.
+async function openApp(){
+  if (!links) return say("the addresses have not loaded yet — try again in a moment");
+  const btn = document.getElementById("openBtn");
+  btn.disabled = true;
+  const tab = window.open("about:blank", "_blank");
+  try{
+    const where = await ensureRunning();
     if (tab && !tab.closed) tab.location.href = where;
     else window.open(where, "_blank");
   }catch(err){
     if (tab && !tab.closed) tab.close();
     say(...(Array.isArray(err) ? err : ["Reconize could not be started.", String(err)]));
   }finally{
-    opening = false;
     btn.disabled = false;
   }
 }
@@ -195,6 +217,5 @@ async function pollWatcher() {
   setTimeout(pollWatcher, 3000);
 }
 
-miceLogin.mount(document.getElementById("loginHere"));
 load();
 </script>

@@ -74,6 +74,21 @@ def tree_fingerprint():
     return h.hexdigest()
 
 
+def _speed():
+    """How wide the suite runs. DATA, so a measurement is one edit, not code."""
+    import json
+    import re as _re
+    try:
+        raw = (QC / "data" / "qc_speed.json").read_text(encoding="utf-8")
+        return json.loads(_re.sub(r'("(?:\\.|[^"\\])*")|//[^\n]*',
+                                  lambda m: m.group(1) or "", raw))
+    except Exception:                                        # noqa: BLE001
+        return {}
+
+
+SPEED = _speed()
+
+
 def write_receipt(passed, failed, fingerprint=None):
     import json
     import time as _t
@@ -244,7 +259,8 @@ def main(argv):
     # one core of 24 while the other 23 idled, and the user asked for the whole
     # machine to be used. Not ALL of them - each browser check starts an Edge,
     # and 24 browsers thrash a laptop rather than finishing sooner.
-    jobs = _int_arg(argv, "--jobs", default=max(2, min(10, (os.cpu_count() or 4) - 2)))
+    jobs = _int_arg(argv, "--jobs", default=max(2, min(
+        int(SPEED.get("workers") or 10), (os.cpu_count() or 4) - 2)))
     if "--serial" in argv:
         jobs = 1
     verbose = "-v" in argv or "--verbose" in argv
@@ -256,7 +272,7 @@ def main(argv):
         if skip_next:
             skip_next = False
             continue
-        if a == "--jobs":
+        if a in ("--jobs", "--browsers"):
             skip_next = True
             continue
         if not a.startswith("-"):
@@ -410,28 +426,41 @@ def main(argv):
         # time, which is interference, not contention. One-at-a-time made the
         # gate 932s, slower than the 836s it started at, so the cure cost more
         # than the disease. Back to three, watched.
-        browser_jobs = max(1, min(3, jobs))
+        # Widths are DATA (qc/data/qc_speed.json), overridable per run with
+        # --browsers N, so a measurement never needs a code edit.
+        browser_jobs = _int_arg(argv, "--browsers",
+                                default=int(SPEED.get("browserLanes") or 3))
         print("%srunning %d checks on %d workers, %d browser checks on %d, "
               "%d on their own%s"
               % (B, len(para), jobs, len(heavy), browser_jobs, len(solo), D))
         done_n = 0
         total_n = len(para) + len(heavy) + len(solo)
+        # BOTH LANES AT ONCE. They ran one after the other, so the browser lane
+        # idled through the whole plain phase - measured 2026-09-17 with the
+        # CPU at 2% during a gate: the suite was waiting, not working.
+        pools, futs, by_path = [], [], {}
         for group, width in ((para, jobs), (heavy, browser_jobs)):
             if not group:
                 continue
-            by_path = {str(f): (f, m) for f, m in group}
-            with _cf.ProcessPoolExecutor(max_workers=width) as pool:
-                futs = [pool.submit(_one, str(f)) for f, _m in group]
-                for fut in _cf.as_completed(futs):
-                    path_s, _title, results, secs, crash, err = fut.result()
-                    f, mod = by_path[path_s]
-                    if err:
-                        broken.append((f.stem, err))
-                        continue
-                    report(f, mod, results, secs, crash, "")
-                    done_n += 1
-                    if done_n % 10 == 0:
-                        _plan("QC %d/%d checks" % (done_n, total_n))
+            pool = _cf.ProcessPoolExecutor(max_workers=width)
+            pools.append(pool)
+            for f, m in group:
+                by_path[str(f)] = (f, m)
+                futs.append(pool.submit(_one, str(f)))
+        try:
+            for fut in _cf.as_completed(futs):
+                path_s, _title, results, secs, crash, err = fut.result()
+                f, mod = by_path[path_s]
+                if err:
+                    broken.append((f.stem, err))
+                    continue
+                report(f, mod, results, secs, crash, "")
+                done_n += 1
+                if done_n % 10 == 0:
+                    _plan("QC %d/%d checks" % (done_n, total_n))
+        finally:
+            for pool in pools:
+                pool.shutdown(wait=True)
         for f, mod in solo:
             case, secs, crash = F.run_check(mod)
             report(f, mod, case.results, secs, crash, "")

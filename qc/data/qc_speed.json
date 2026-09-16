@@ -1,0 +1,15 @@
+{
+  // HOW WIDE THE QC SUITE RUNS. Read by qc/run_qc.py; one run can override
+  // with --jobs N and --browsers N. Asked 2026-09-17: *can you use more than
+  // that i think my pc can do it* (24 cores, 31 GB).
+  //
+  // Change a number only with a measurement behind it: three green full runs
+  // in a row at the new width, with nothing else heavy on the machine. A red
+  // gate that is really the machine being busy costs more than it saves.
+
+  // plain checks at once (capped at the core count minus two)
+  "workers": 10,
+
+  // checks that open a headless Edge at once. 3 since 2026-08-20.
+  "browserLanes": 3
+}

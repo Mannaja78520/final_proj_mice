@@ -13,6 +13,25 @@
   // EVERY FIELD BELOW WAS READ OUT OF THEIR CODE ON 2026-09-10, not guessed.
   // The file and line is written beside each claim that could rot.
 
+  "all-jao": {
+    "name": "All-Jao Games",
+    "open": "http://127.0.0.1:8080",
+    "api": "http://127.0.0.1:8080",
+    "health": "/",
+    "folder": "E:/final_proj/mice/All-Jao-Games",
+    "start": "python -m http.server 8080",
+    "login": { "kind": "none", "path": "" },
+    "events": [
+      {
+        "kind": "status",
+        "path": "/",
+        "reports": ["game_state"],
+        "hasCamera": false,
+        "map": {}
+      }
+    ]
+  },
+
   "reconize": {
     "name": "Reconize",
     "open": "http://localhost:5173",          // their React front end (::1 only)

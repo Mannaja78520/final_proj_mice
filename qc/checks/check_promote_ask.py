@@ -77,8 +77,12 @@ def run(t):
     subprocess.run(g + ["commit", "-q", "-m", "base"], check=True, capture_output=True)
     (repo / "landed.txt").write_text("promoted", encoding="utf-8")
     (repo / "someone_else.txt").write_text("another session's work", encoding="utf-8")
+    (repo / ".gitignore").write_text("patches/\n", encoding="utf-8")
+    (repo / "patches").mkdir()
+    (repo / "patches" / "0001.txt").write_text("snapshot", encoding="utf-8")
     P.MAIN = repo
-    sha = P.commit_copied([Path("landed.txt")])
+    # an ignored snapshot copied alongside must not sink the whole commit
+    sha = P.commit_copied([Path("landed.txt"), Path("patches/0001.txt")])
     t.ok(bool(sha), "a promote leaves a commit to roll back to", sha)
     shown = subprocess.run(g + ["show", "--name-only", "--format=", "HEAD"],
                            capture_output=True, text=True).stdout.split()
