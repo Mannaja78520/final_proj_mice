@@ -17,15 +17,19 @@
   login, and a partner entry holds addresses only.
 -->
 
-<h1>👁 Reconize</h1>
-<div class="mini" style="margin-bottom:var(--sp-4)">
-  <a href="/">👈 hub</a> · the face app that knows who is here
-  <label style="display:inline-flex;gap:var(--sp-2);align-items:center;float:right">
+<!-- The same head every app page has (Cameras, Voice): Hub button, title,
+     status, technical switch. Asked 2026-09-17: *why UI it not the same as
+     other? make it like other.* -->
+<div class="head">
+  <button class="secondary" onclick="location.href='/'">🏠 Hub</button>
+  <h1>👁 Reconize</h1>
+  <span class="mini">the face app that knows who is here</span>
+  <label class="mini" style="display:inline-flex;gap:var(--sp-2);align-items:center;margin-left:auto">
     <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
     Show technical details</label>
 </div>
-
-<div class="card" id="loginHere"></div>
+<!-- One login, every page (A25-5). -->
+<div class="card" id="loginHere" style="margin-bottom:var(--sp-4)"></div>
 
 <div class="card">
   <h2>Open it</h2>
@@ -40,11 +44,11 @@
 </div>
 
 <div class="card">
-  <h2>Watcher Status</h2>
+  <h2>Is the rig following it?</h2>
   <div class="row" style="align-items:baseline">
-    <span class="statline" id="wStat" role="status" aria-live="polite">polling watcher…</span>
+    <span class="statline" id="wStat" role="status" aria-live="polite">checking…</span>
   </div>
-  <div id="wSrcs" style="margin-top:var(--sp-4); display:none">
+  <div id="wSrcs" class="tech" style="margin-top:var(--sp-4); display:none">
     <p class="mini">What each source can report:</p>
     <ul class="mini" id="wSrcList" style="list-style:inside; margin-top:var(--sp-2)"></ul>
   </div>
@@ -167,7 +171,7 @@ async function pollWatcher() {
     if (!r.ok) throw new Error("HTTP " + r.status);
     const state = await r.json();
     
-    el.textContent = state.watching ? "Watching" : "Not watching";
+    el.textContent = state.watching ? "Yes - the rig sees who arrives." : "Not yet - the rig is not seeing anybody arrive.";
     el.className = state.watching ? "statline ok" : "statline warn";
 
     if (state.sources && state.sources.length > 0) {
@@ -184,7 +188,7 @@ async function pollWatcher() {
       srcs.style.display = "none";
     }
   } catch (e) {
-    el.textContent = "Watcher is not answering on this PC (it only runs locally)";
+    el.textContent = "The face helper is not running on this PC, so the rig cannot follow Reconize yet.";
     el.className = "statline err";
     srcs.style.display = "none";
   }

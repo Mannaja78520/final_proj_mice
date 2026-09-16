@@ -73,6 +73,11 @@ def run(t):
     code, body = F.get(base + faces["path"])
     t.eq(code, 200, "and its page really serves at %s" % faces["path"])
     t.contains(body, "Open Reconize", "with the one button this step is about")
+    # The same head as every other app page (user 2026-09-17: *why UI it not
+    # the same as other? make it like other*).
+    t.ok('<div class="head">' in body and "🏠 Hub</button>" in body,
+         "and the same head as the other app pages: Hub button, title, switch",
+         "the page had its own h1 and a text link back to the hub")
 
     # ---- ONE list of addresses, not one per page ----------------------
     # The tile used to carry its own links.json beside it. Two lists disagree
