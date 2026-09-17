@@ -51,6 +51,17 @@ agent can hand off ... for the hit limit one*. tools/plan.py enforces it:
   writing a REQUEST naming it. Answer that REQUEST in BRIDGE, or merge main's
   version into staging, then promote again. Nong Studio projects/ never
   promote - they are user data.
+- MAIN STAYS CLEAN (user decision 2026-09-17, A0-24). No agent writes source
+  in main directly. One task, one branch, one copy:
+
+      python tools/branch.py start A0-24     (main must be clean)
+      python tools/branch.py save  A0-24     commit the copy to task/A0-24-<session>
+      python tools/branch.py check A0-24     conflicts with main, before landing
+      python tools/branch.py land  A0-24     QC gate, then one merge commit on main
+      python tools/branch.py live            commit plan, logs and Studio saves
+
+  The plan, BRIDGE, prompt logs and user saves are still written live in
+  main; `live` commits them. Roll a land back with `git revert -m 1 <sha>`.
 - Each session may keep its OWN tree: `python promote.py --staging
   .staging-<session> --init`. --init records what main held per file
   (.staging-base.json); a promote refuses any file main changed since then,
