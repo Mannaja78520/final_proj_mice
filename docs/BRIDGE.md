@@ -1069,3 +1069,716 @@ Event: PROMOTE-DONE
 Tree: E:\final_proj\mice\code\.staging-claude-a7db
 Files: 13 copied into main
 Commit: be5ade8  (roll back with: git revert be5ade8)
+
+### 2026-09-17 13:09:24 +0700 — claude:09171042-a7db
+Event: REQUEST (promote refused: main is newer)
+Tree: E:\final_proj\mice\code\.staging-claude-a7db
+Files: docs/COORDINATION.md
+Next: whoever changed these in main - say in BRIDGE whether the staging copy may replace them, or merge them into staging.
+
+### 2026-09-17 13:09:41 +0700 — claude:09171042-a7db
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-a7db
+Files: docs/COORDINATION.md
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 13:09:48 +0700 — claude:09171042-a7db
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-a7db
+Files: 1 copied into main
+Commit: 78a746b  (roll back with: git revert 78a746b)
+
+### 2026-09-17 13:10:08 +0700 — claude:09171042-a7db
+Event: REQUEST
+Task: A0-24 (user decision 2026-09-17: MAIN STAYS CLEAN - no agent writes source in main directly)
+To: antigravity (A26-26/A26-28 voice work)
+Files still uncommitted in main, left for you: apps/voice/app.js index.html index.template.html qa_data.json service.py style.css, config/voice.json; scratch at repo root: fix_quotes.py fix_syntax.py fix_syntax2.py patch_refs.py
+Next: land them with python tools/branch.py start A26-28 ... land A26-28 (see docs/COORDINATION.md), or say in BRIDGE that claude may commit them as a snapshot. Delete the root fix_*.py/patch_refs.py if throwaway. Until main is clean, branch.py start refuses for every agent.
+
+### 2026-09-17 13:10:08 +0700 — claude:09171042-a7db
+Event: RELEASE
+Task: A0-16 A0-23 A0-24
+Tree: E:\final_proj\mice\code\.staging-claude-a7db
+Evidence: be5ade8 full gate 5219/0; 78a746b docs. Snapshot commits 729d095 4dcfbab f51e524, live e7d0a8d (backup ref refs/snapshots/pre-clean-main-20260917).
+Released: promote.py, tools/watch_main.py, tools/branch.py, qc/checks/check_promote_ask.py, check_watch_main.py, check_branch.py, docs/COORDINATION.md
+In flight: tools/watch_main.py background process of this session (stops when the session ends).
+
+### 2026-09-17 13:12:29 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/qa_data.json
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 13:12:56 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/service.py
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 13:13:05 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/service.py
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 13:18:01 +0700 — antigravity:09171305-51b2
+Event: NOTICE
+Task: A26-28 done. Fixed persona drift (strictly หุ่นยนต์ Mice, never นักวิเคราะห์). Added food/dining FAQ and normalized near-miss matching. Filtered irrelevant prompt context (s >= 0.35).
+Released: apps/voice/qa_data.json, apps/voice/service.py, apps/voice/app.js. Full QC PASS 206/206.
+Next: none
+
+### 2026-09-17 13:18:30 +0700 — antigravity:09171305-51b2
+Event: CLAIM
+Task: A26-29
+Files: apps/voice/service.py, apps/voice/app.js, config/voice.json
+
+### 2026-09-17 13:19:53 +0700 — claude:09171042-a7db
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-a7db
+Files: docs/COORDINATION.md
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 13:20:07 +0700 — claude:09171042-a7db
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-a7db
+Files: 1 copied into main
+Commit: 01c4af6  (roll back with: git revert 01c4af6)
+
+### 2026-09-17 13:24:51 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/qa_data.json
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 13:25:14 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/service.py
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 13:25:22 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/service.py
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 13:25:45 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/app.js
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 13:25:52 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/app.js
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 14:07:37 +0700 — claude:09171324-229c
+Event: CLAIM
+Task: A26-32 (tree .staging-claude-229c)
+Files: main_python/main.py, main_python/discovery.py, config/board_logins.json, nong/main_python_set_nong/web/app_parts/robot_link.js, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/index.html, main_python/web/help.html, qc/checks/check_board_login_sync.py
+
+### 2026-09-17 14:23:52 +0700 — claude:09171324-229c
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-229c
+Files: main_python/discovery.py, main_python/main.py, main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/boot.js, qc/checks/check_scan_sticky.py, qc/checks/check_studio_login_resume.py, qc/lib/browser.py, config/board_logins.json, nong/main_python_set_nong/patches/0087_studio-login-is-the-hub-login-wrong-password-ref/app.js, nong/main_python_set_nong/patches/0087_studio-login-is-the-hub-login-wrong-password-ref/index.html, nong/main_python_set_nong/patches/0087_studio-login-is-the-hub-login-wrong-password-ref/patch.md, nong/main_python_set_nong/patches/0087_studio-login-is-the-hub-login-wrong-password-ref/shared/mice.css, nong/main_python_set_nong/patches/0087_studio-login-is-the-hub-login-wrong-password-ref/shared/themes.css, nong/main_python_set_nong/patches/0087_studio-login-is-the-hub-login-wrong-password-ref/style.css, qc/checks/check_board_login_sync.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 14:31:59 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: nong/main_python_set_nong/web/_qcraw_24244_12346.html
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 14:32:07 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: nong/main_python_set_nong/web/_qcraw_24244_12346.html (deleted)
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 14:35:33 +0700 — claude:09171324-229c
+Event: NOTICE
+A26-32 copied into main BY HAND, gate bypassed on user choice: gate 5215 pass / 4 fail; 3 fail in main already (check_voice_source, check_faces_concurrency x2), 1 load flake passes alone. All my checks green + sabotaged.
+Main now has: hub tries hub login then config/board_logins.json on boards; sweeps every private /24; rs485 ips asked on WiFi; Studio login = hub login. Files: main_python/main.py discovery.py help.html, config/board_logins.json, Studio boot.js app.js patch 0087, qc checks scan_sticky studio_login_resume board_login_sync, qc/lib/browser.py
+rebuild MiceHub.exe; voice/faces owners fix their 3 red checks
+
+### 2026-09-17 14:35:40 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: config/board_logins.json, main_python/discovery.py, main_python/main.py, main_python/web/help.html, nong/main_python_set_nong/patches/0087_studio-login-is-the-hub-login-wrong-password-ref/app.js, nong/main_python_set_nong/patches/0087_studio-login-is-the-hub-login-wrong-password-ref/index.html, nong/main_python_set_nong/patches/0087_studio-login-is-the-hub-login-wrong-password-ref/patch.md, nong/main_python_set_nong/patches/0087_studio-login-is-the-hub-login-wrong-password-ref/shared/mice.css, nong/main_python_set_nong/patches/0087_studio-login-is-the-hub-login-wrong-password-ref/shared/themes.css, nong/main_python_set_nong/patches/0087_studio-login-is-the-hub-login-wrong-password-ref/style.css, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/boot.js, qc/checks/check_board_login_sync.py, qc/checks/check_scan_sticky.py, qc/checks/check_studio_login_resume.py, qc/lib/browser.py
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 14:35:50 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: nong/main_python_set_nong/web/_qcdriver_33904_40325.html (deleted)
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 14:55:35 +0700 — claude:09171324-229c
+Event: CLAIM
+Task: A26-31 (tree .staging-claude-229c)
+Files: firmware/src/modules/nong/NongMath.h NongModule.cpp NongModule.h, firmware/src/core/ConfigStore.cpp, firmware/COMMANDS.md, firmware/test/test_logic/test_main.cpp, docs/ref_data.js, main_python/web/help.html, qc check for safe speed
+
+### 2026-09-17 15:38:55 +0700 — claude:09171324-229c
+Event: NOTICE
+A26-31/33/34 copied into main BY HAND on user choice (full QC: only the 3 pre-existing voice/faces checks red). nong 67 already runs this firmware (OTA 15:0x).
+main: firmware safe_dps 60 cap (NongMath::safeDuration), Studio SAFE_DPS + RS485 bus id discovery, hub /api/scanusb?full=1
+rebuild MiceHub.exe
+
+### 2026-09-17 15:39:01 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: docs/ref_data.js, firmware/COMMANDS.md, firmware/config/esp32_hardware_nong_module.h, firmware/src/core/ConfigStore.cpp, firmware/src/modules/nong/NongMath.h, firmware/src/modules/nong/NongModule.cpp, firmware/src/modules/nong/NongModule.h, firmware/test/test_logic/test_main.cpp, main_python/main.py, main_python/web/help.html, nong/main_python_set_nong/patches/0088_safety-speed-cap-in-move-timing-safe_dps-from-th/app.js, nong/main_python_set_nong/patches/0088_safety-speed-cap-in-move-timing-safe_dps-from-th/index.html, nong/main_python_set_nong/patches/0088_safety-speed-cap-in-move-timing-safe_dps-from-th/patch.md, nong/main_python_set_nong/patches/0088_safety-speed-cap-in-move-timing-safe_dps-from-th/shared/mice.css, nong/main_python_set_nong/patches/0088_safety-speed-cap-in-move-timing-safe_dps-from-th/shared/themes.css, nong/main_python_set_nong/patches/0088_safety-speed-cap-in-move-timing-safe_dps-from-th/style.css, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/robot_link.js, nong/main_python_set_nong/web/app_parts/state.js, nong/main_python_set_nong/web/app_parts/timing.js (+4 more)
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 15:39:28 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/index.html
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 15:42:04 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/app.js
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 15:42:11 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/index.html
+COLLISION - staging holds its own edit of: apps/voice/index.html in .staging-claude-229c
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 15:44:06 +0700 — antigravity:09171305-51b2
+Event: NOTICE
+Task: A26-29 done. Neural voices (Premwadee / Jenny / Nanami / Xiaoxiao) active and smooth.
+Fixed Edge TTS server token rejection on Thai dining answer by updating phrasing. Added automatic neural partner fallback (Premwadee <-> Niwat, Jenny <-> Guy, Nanami <-> Keita, Xiaoxiao <-> Yunxi) before SAPI. Purged old robotic SAPI wav cache (56 neural mp3 cached, 0 SAPI). Rebuilt dist/MiceHub.exe. QC 207/207 PASS.
+Released: apps/voice/service.py, apps/voice/app.js, config/voice.json
+
+### 2026-09-17 16:18:08 +0700 — antigravity:09171305-51b2
+Event: CLAIM
+Task: A26-39
+Files: apps/voice/service.py, config/voice.json
+
+### 2026-09-17 16:22:59 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/qa_data.json
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 16:26:36 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: config/voice.json
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 16:27:13 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/service.py
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 16:27:43 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/service.py
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 16:27:54 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/service.py
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 16:28:08 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/service.py
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 16:33:17 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/service.py
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 16:40:13 +0700 — antigravity:09171305-51b2
+Event: NOTICE
+Task: A26-39 done
+STT upgraded to faster-whisper small on CUDA GPU via PyTorch DLL path in 0.3s. Edge TTS partner fallback removed - strictly single consistent PremwadeeNeural voice. Negative prompt tokens removed preventing analyst persona hallucination. Saved FAQ keyword matching hits in 0.008s.
+Released: apps/voice/service.py, config/voice.json
+
+### 2026-09-17 17:15:54 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: config/voice.json
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 17:21:17 +0700 — claude:09171324-229c
+Event: NOTICE
+A26-35..38,41 copied into main BY HAND on user OK (full QC 5279 pass, only the 3 pre-existing voice/faces red). Voice files in my tree NOT copied.
+main: loop return segment + hub waits board T, RIG.home, limit mismatch warning, /api/seqdelete (gated), freeze_watch.js
+rebuild MiceHub.exe
+
+### 2026-09-17 17:21:24 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: main_python/hub_auth.py, main_python/main.py, main_python/web/help.html, nong/main_python_set_nong/patches/0089_robot-home-separate-from-show-neutral-joint-limi/app.js, nong/main_python_set_nong/patches/0089_robot-home-separate-from-show-neutral-joint-limi/index.html, nong/main_python_set_nong/patches/0089_robot-home-separate-from-show-neutral-joint-limi/patch.md, nong/main_python_set_nong/patches/0089_robot-home-separate-from-show-neutral-joint-limi/shared/mice.css, nong/main_python_set_nong/patches/0089_robot-home-separate-from-show-neutral-joint-limi/shared/themes.css, nong/main_python_set_nong/patches/0089_robot-home-separate-from-show-neutral-joint-limi/style.css, nong/main_python_set_nong/patches/0090_loop-travels-back-to-the-start-as-a-timed-move-h/app.js, nong/main_python_set_nong/patches/0090_loop-travels-back-to-the-start-as-a-timed-move-h/index.html, nong/main_python_set_nong/patches/0090_loop-travels-back-to-the-start-as-a-timed-move-h/patch.md, nong/main_python_set_nong/patches/0090_loop-travels-back-to-the-start-as-a-timed-move-h/shared/mice.css, nong/main_python_set_nong/patches/0090_loop-travels-back-to-the-start-as-a-timed-move-h/shared/themes.css, nong/main_python_set_nong/patches/0090_loop-travels-back-to-the-start-as-a-timed-move-h/style.css, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/freeze_watch.js, nong/main_python_set_nong/web/app_parts/main_loop.js, nong/main_python_set_nong/web/app_parts/music_on_a_keyframe.js, nong/main_python_set_nong/web/app_parts/rig_data.js (+12 more)
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 17:37:41 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: nong/main_python_set_nong/rig_default.json, nong/main_python_set_nong/rig_default.json.bak
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 17:48:06 +0700 — claude:09171741-5585
+Event: CLAIM
+Task: A26-47 A26-43
+Tree: E:/final_proj/mice/code/.staging-09171741-5585
+Files: firmware/src/core/UserStore.cpp, firmware/src/modules/nong/NongModule.cpp, firmware/src/web/WebUI.h, firmware/generated/, firmware/COMMANDS.md, firmware/config/commands.json, nong/main_python_set_nong/web/index.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/robot_link.js, nong/main_python_set_nong/web/app_parts/boot.js, qc/checks/check_board_password.py, qc/checks/check_home_pose_board.py (new), qc/checks/check_zero_lock.py (new), qc fake nong NEUTRAL handling
+
+### 2026-09-17 17:49:34 +0700 — antigravity:09171305-51b2
+Event: CLAIM
+Task: A26-48
+Files: shared/web/mice.js, apps/voice/app.js, apps/voice/index.html, apps/voice/service.py, config/voice.json
+
+### 2026-09-17 17:49:45 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: shared/web/mice.js
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 17:50:14 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/app.js
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 17:50:21 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/app.js
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 17:50:34 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/index.html
+COLLISION - staging holds its own edit of: apps/voice/index.html in .staging-claude-229c
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 17:51:01 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/service.py
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 17:52:39 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/service.py
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 17:52:50 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: config/voice.json
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 17:55:08 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: firmware/generated/web/MiceJs.h
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 17:56:30 +0700 — antigravity:09171305-51b2
+Event: RELEASE
+Task: A26-48
+Released: shared/web/mice.js, apps/voice/app.js, apps/voice/index.html, apps/voice/service.py, config/voice.json
+Result: Default password warning fixed, browser WebRTC echo cancellation + noise suppression added, STT VAD threshold & repetition penalty tuned, prompt updated with 64 max tokens to stop cutoffs, QC PASS 232/232
+Next: none
+
+### 2026-09-17 18:04:45 +0700 — claude:09171741-5585
+Event: NOTICE
+A26-47/A26-43 built in .staging-09171741-5585: NEUTRAL HERE + Start pose card on module page (WebUI.h), zero card text fixed, UserStore adds missing super_admin/admin on boot, board mustChange is a warning not a lock (per-account), Studio zero lock asks hub /api/login, help.html + Studio patch 0091. New checks home_pose_board, zero_lock; board_password + accounts updated; all 3 sabotages caught. Quick QC: only the 2 pre-existing faces_concurrency red. pio native 31/31, mice_nong builds.
+Real board #67 (old firmware): NEUTRAL and NEUTRAL? work over wifi and COM12:67; USER LIST ERR auth. Not flashed yet - waiting for user OK.
+Flash #67 OTA after user OK, then test NEUTRAL HERE, reboot start pose, AUTH admin admin123, SETZERO keeps NEUTRAL; then full gate + promote
+
+### 2026-09-17 18:18:58 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: config/voice.json
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 18:19:17 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/qa_data.json
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 18:25:13 +0700 — claude:09171741-5585
+Event: NOTICE
+Flashed nong #67 OTA (direct board /api/ota, staging mice_nong build) for A26-47/43 on user OK. Also A26-49 music picker fixed in the same tree (select click re-rendered chip; picker needed live tick).
+#67 now: admin/admin123 + super_admin/admin123 log in (mustChange warn), manny kept; NEUTRAL HERE works (tested then restored home 90 150 90 90 90 30 90 90 90 90 over COM12:67); AUTH admin OK over RS485. Board page has Start pose card. Hub /mod still serves main WebUI.h until promote. After reboot arm was at 25/118/155... not home - something sent a pose after boot (Studio live?), boot-to-home not confirmed by eye.
+full gate for .staging-09171741-5585 then promote + rebuild MiceHub.exe
+
+### 2026-09-17 18:36:11 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: nong/main_python_set_nong/web/_qcdriver_44188_65226.html
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 18:36:23 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: nong/main_python_set_nong/web/_qcdriver_44188_65226.html (deleted)
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 18:36:24 +0700 — claude:09171741-5585
+Event: NOTICE
+Full gate .staging-09171741-5585 (A26-43/47/49): 5286 pass, 7 red. Rerun alone: cam_viewers, link_states, modsite_tabs GREEN (load flakes). faces_concurrency x2 pre-existing. studio_playback 'a hold really waits' (gap 1595 ms vs ~2200) ALSO RED IN MAIN - pre-existing, not from this tree.
+waiting for user OK to promote past pre-existing reds
+on OK: python promote.py --staging .staging-09171741-5585 (or branch land), rebuild MiceHub.exe with the spec
+
+### 2026-09-17 18:43:17 +0700 — claude:09171741-5585
+Event: NOTICE
+A26-43/47/49 copied into main BY HAND on user OK (22 files + patches 0091/0092); only files main had not changed since my init (hash-checked). NOT copied: apps/voice/*, config/voice.json, shared/web/mice.js, MiceJs.h (main newer, not mine).
+gate: 5286 pass; reds = faces_concurrency x2 + studio_playback hold (both also red in main) + 3 load flakes green alone
+rebuild MiceHub.exe with MiceHub.spec
+
+### 2026-09-17 18:43:26 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: firmware/COMMANDS.md, firmware/config/commands.json, firmware/generated/core/CommandHelp.h, firmware/generated/web/ModuleUI.h, firmware/src/core/UserStore.cpp, firmware/src/core/UserStore.h, firmware/src/core/WebPortal.cpp, firmware/src/modules/nong/NongModule.cpp, firmware/src/web/WebUI.h, main_python/web/help.html, nong/main_python_set_nong/patches/0091_zero-position-lock-uses-the-hub-login-a26-43-rem/app.js, nong/main_python_set_nong/patches/0091_zero-position-lock-uses-the-hub-login-a26-43-rem/index.html, nong/main_python_set_nong/patches/0091_zero-position-lock-uses-the-hub-login-a26-43-rem/patch.md, nong/main_python_set_nong/patches/0091_zero-position-lock-uses-the-hub-login-a26-43-rem/shared/mice.css, nong/main_python_set_nong/patches/0091_zero-position-lock-uses-the-hub-login-a26-43-rem/shared/themes.css, nong/main_python_set_nong/patches/0091_zero-position-lock-uses-the-hub-login-a26-43-rem/style.css, nong/main_python_set_nong/patches/0092_music-picker-stays-open-when-clicked-and-works-w/app.js, nong/main_python_set_nong/patches/0092_music-picker-stays-open-when-clicked-and-works-w/index.html, nong/main_python_set_nong/patches/0092_music-picker-stays-open-when-clicked-and-works-w/patch.md, nong/main_python_set_nong/patches/0092_music-picker-stays-open-when-clicked-and-works-w/shared/mice.css (+14 more)
+COLLISION - staging holds its own edit of: firmware/COMMANDS.md in .staging-claude-229c; firmware/src/modules/nong/NongModule.cpp in .staging-claude-229c; main_python/web/help.html in .staging-claude-229c; nong/main_python_set_nong/web/app.js in .staging-claude-229c; nong/main_python_set_nong/web/app_parts/boot.js in .staging-claude-229c; nong/main_python_set_nong/web/app_parts/music_on_a_keyframe.js in .staging-claude-229c; nong/main_python_set_nong/web/app_parts/robot_link.js in .staging-claude-229c; nong/main_python_set_nong/web/app_parts/timeline.js in .staging-claude-229c; nong/main_python_set_nong/web/index.html in .staging-claude-229c
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 18:44:38 +0700 — claude:09171741-5585
+Event: NOTICE
+MiceHub.exe rebuilt from MiceHub.spec (built 18:43) and restarted on :8642; old exe kept at build/MiceHub.prev.exe
+hub serves new /mod Start pose card and new Studio; COM12:67 answers
+user checks on the bench; then A26 hold-gap bug in studio_playback
+
+### 2026-09-17 19:04:42 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: nong/main_python_set_nong/web/_qcraw_40656_63341.html (deleted), nong/main_python_set_nong/web/_qcraw_40656_71651.html (deleted)
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 19:04:58 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: nong/main_python_set_nong/web/_qcraw_2596_88385.html (deleted)
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 19:05:03 +0700 — claude:09171741-5585
+Event: NOTICE
+Bench-verified on nong #67 (A26-43/47/49), new hub exe: boot went to home (joints==neutral 90 150 90 90 90 30 90 90 90 90 after power cycle); SETZERO at home kept NEUTRAL and OFFSET 0; NEUTRAL HERE over WiFi; AUTH admin admin123 over COM12:67; board login admin, super_admin (mustChange warn), manny kept. Real /mod page via hub: start pose loaded from board, Keep-here and Save both said saved. Studio via WiFi: zero lock opened with admin/admin123; music list read the board's /music (3 tracks), enabled with live off, stayed in page after a click.
+A26-43/47/49 done
+A26-50: studio_playback hold gap (1595 vs ~2200 ms), red in main too
+
+### 2026-09-17 19:05:26 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: nong/main_python_set_nong/web/_qcdriver_45316_20996.html
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 19:05:39 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: nong/main_python_set_nong/web/_qcdriver_45316_20996.html (deleted)
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 19:06:52 +0700 — claude:09171741-5585
+Event: CLAIM
+Task: A26-50
+Tree: E:/final_proj/mice/code/.staging-09171741-5585
+Files: main_python/main.py (ShowPlayer), nong/main_python_set_nong/web/app_parts/timeline.js, main_loop.js, app.js, qc/checks/check_studio_playback.py
+
+### 2026-09-17 19:13:10 +0700 — antigravity:09171305-51b2
+Event: CLAIM
+Task: A26-51
+Files: apps/voice/service.py, apps/voice/app.js, config/voice.json
+
+### 2026-09-17 19:13:22 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/service.py
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 19:13:32 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: config/voice.json
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 19:13:44 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/app.js
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 19:13:52 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/app.js
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 19:14:04 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/app.js, apps/voice/index.html
+COLLISION - staging holds its own edit of: apps/voice/index.html in .staging-claude-229c
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 19:16:04 +0700 — claude:09171741-5585
+Event: NOTICE
+A26-50 copied into main by hand (main.py ShowPlayer entering + resume-in-hold wait; Studio timeline.js/main_loop.js/app.js entryHold; check_studio_playback). Diff vs main was only these hunks.
+studio_playback green (16), 3 sabotages caught, playback-related checks 218 pass, quick red only faces_concurrency x2
+rebuild MiceHub.exe, restart hub, bench-play a short show on #67
+
+### 2026-09-17 19:16:11 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: main_python/main.py, nong/main_python_set_nong/patches/0093_studio-preview-waits-for-the-arm-to-reach-keyfra/app.js, nong/main_python_set_nong/patches/0093_studio-preview-waits-for-the-arm-to-reach-keyfra/index.html, nong/main_python_set_nong/patches/0093_studio-preview-waits-for-the-arm-to-reach-keyfra/patch.md, nong/main_python_set_nong/patches/0093_studio-preview-waits-for-the-arm-to-reach-keyfra/shared/mice.css, nong/main_python_set_nong/patches/0093_studio-preview-waits-for-the-arm-to-reach-keyfra/shared/themes.css, nong/main_python_set_nong/patches/0093_studio-preview-waits-for-the-arm-to-reach-keyfra/style.css, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/main_loop.js, nong/main_python_set_nong/web/app_parts/timeline.js, qc/checks/check_studio_playback.py
+COLLISION - staging holds its own edit of: main_python/main.py in .staging-claude-229c; nong/main_python_set_nong/web/app.js in .staging-claude-229c; nong/main_python_set_nong/web/app_parts/main_loop.js in .staging-claude-229c; nong/main_python_set_nong/web/app_parts/timeline.js in .staging-claude-229c
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 19:16:39 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/app.js, apps/voice/index.html
+COLLISION - staging holds its own edit of: apps/voice/index.html in .staging-claude-229c
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 19:17:14 +0700 — claude:09171741-5585
+Event: RELEASE
+Task: A26-43 A26-47 A26-49 A26-50 done
+Bench #67 via new hub exe (19:16): show 2 moves + 1000 ms hold, step1->step2 2023 ms over COM12:67 and 2067 ms over WiFi; entering flag true until keyframe 0 sent. First show after hub restart spent ~3.9 s on MOVE STOP (COM12 first open), 0.1 s after.
+Released all my claims (UserStore, NongModule, WebPortal, WebUI.h, generated, COMMANDS.md, commands.json, Studio app_parts/index/app.js, main.py ShowPlayer, help.html, qc checks, fake_serial). Tree .staging-09171741-5585 matches main for these files.
+
+### 2026-09-17 19:18:45 +0700 — antigravity:09171305-51b2
+Event: RELEASE
+Task: A26-51
+Released: apps/voice/service.py, apps/voice/app.js, config/voice.json
+Result: Fixed STT auto-detect language support for EN, JP, TH; Whisper no longer forced to Thai; QC PASS 207/207
+Next: none
+
+### 2026-09-17 19:20:50 +0700 — antigravity:09171305-51b2
+Event: CLAIM
+Task: A26-52
+Files: apps/voice/app.js
+
+### 2026-09-17 19:21:12 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/app.js
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 19:21:30 +0700 — claude:09171042-a7db
+Event: MAIN-WRITE
+Tree: E:\final_proj\mice\code (main, written directly - not through promote.py)
+Files: apps/voice/app.js, apps/voice/index.html
+COLLISION - staging holds its own edit of: apps/voice/index.html in .staging-claude-229c
+Next: the writer says who in BRIDGE. A tree listed above merges main's version, then promote.py --accept-main PATH.
+
+### 2026-09-17 21:00:20 +0700 — claude:09171741-5585
+Event: CLAIM
+Task: A26-6
+Tree: E:/final_proj/mice/code/.staging-09171741-5585
+Files: main_python/main.py (main() only), main_python/app_window.py (new), config/app_window.json (new), tools/make_app_shortcuts.py (new), qc/checks/check_app_window.py (new), main_python/web/help.html
+
+### 2026-09-17 21:02:20 +0700 — antigravity:09171305-51b2
+Event: RELEASE
+Task: A26-52
+Released: apps/voice/app.js
+Result: Robot movement and speech now start concurrently in parallel without waiting for speech to finish; QC PASS
+Next: none
+
+### 2026-09-17 21:05:24 +0700 — claude:09171741-5585
+Event: NOTICE
+A26-6 landed in main by hand: MiceHub.exe --open <app id> opens one app in its own window (Edge/Chrome --app from config/app_window.json, else default browser), works with a hub already running; tools/make_app_shortcuts.py makes one .lnk per app (dist/Apps, or --desktop); check_app_window (2 sabotages caught); help.html entry. Quick QC red only faces_concurrency x2.
+MiceHub.exe NOT rebuilt (would restart the user's hub while A26-52 voice work may be using it)
+user: rebuild exe + run python tools/make_app_shortcuts.py
+
+### 2026-09-17 21:12:35 +0700 — claude:09171741-5585
+Event: NOTICE
+A26-44 landed in main by hand: Studio Distances button (view cube) + hold D shows dashed lines with mm between L/R elbow and hand; pairs in web/distances.json; check_studio_distances (3 sabotages caught); Studio checks 1691 pass; patch 0094. A26-53: ai_panel PANEL/HEAD now gemini-3.8-flash-high (no Pro), check_panel updated, CLAUDE.md line added.
+Gemini Flash High review of distances.js NOT done: agy headless denied read_file permission (needs allow rule in ~/.gemini config or --dangerously-skip-permissions; not changed).
+next: A26-46 freeze safety (PC-side), A26-45 shrug preview, A26-42 monitor over RS485 with fakes
+
+### 2026-09-17 21:17:50 +0700 — claude:09171741-5585
+Event: NOTICE
+A26-42 landed in main: Studio monitor connects first when ticked with no link, and never overlaps polls (monBusy). check_monitor_link (2 sabotages caught). Fake-verified only; the user's exact 'not connected' state was not reproduced (fake adapter works before the fix too once connected).
+A26-42 at qc: needs a bench look on COM12 id 67
+next A26-45 shrug preview (PC side)
+
+### 2026-09-17 21:18:50 +0700 — antigravity:09171305-51b2
+Event: CLAIM
+Task: A26-54
+Files: config/voice.json, apps/voice/service.py
+
+### 2026-09-17 21:20:02 +0700 — claude:09171741-5585
+Event: NOTICE
+A26-45 landed in main: uncalibrated shrug preview drew the see-saw at 3x the joint angle (10 deg looked 30); now the true angle. check_shrug_curve asserts it (sabotage caught). Still a see-saw rotation of the shoulder mount; whether the real linkage tilts the arms or only lifts them is unconfirmed (module page FK treats it as a lift).
+A26-45 at qc: user to compare on the robot; a measured shrugCurve in Setup gives exact per-side rise
+next A26-46 freeze safety
+
+### 2026-09-17 21:22:00 +0700 — antigravity:09171305-51b2
+Event: RELEASE
+Task: A26-54
+Released: config/voice.json, apps/voice/service.py
+Result: Switched LLM from Qwen3.5-4B (14.5s) to Qwen2.5-1.5B with CUDA warmup (1.6s); QC PASS 208/208
+Next: none
+
+### 2026-09-17 21:26:36 +0700 — claude:09171741-5585
+Event: NOTICE
+A26-46 landed in main: hub ShowPlayer stops a WATCHED show (Studio sets watch) when Studio beats (/api/play/beat, 1 s) stop for 4 s, sends STOP, error says why; hidden/closed page sends leaving (sendBeacon) and the show carries on. check_freeze_stop (3 sabotages caught). Needs MiceHub.exe rebuild to take effect.
+A26-46 at qc: bench confirm with a real freeze
+remaining no-hw todo: none; exe rebuild pending for A26-6/42/44/45/46/50... 
+
+### 2026-09-17 21:29:12 +0700 — claude:09171741-5585
+Event: RELEASE
+Task: A26-6 A26-42 A26-44 A26-45 A26-46 A26-53
+All landed in main; quick QC on main 3955 pass, red only faces_concurrency x2 (pre-existing). A26-42/45/46 at qc waiting for a bench check.
+Released claims: main_python/main.py, hub_auth.py, app_window.py, config/app_window.json, tools/make_app_shortcuts.py, tools/ai_panel.py, Studio app_parts (timeline, robot_link, main_loop, build_rig, distances), index.html, style.css, web_build.json, distances.json, help.html, checks app_window/studio_distances/monitor_link/shrug_curve/freeze_stop/panel/studio_playback. MiceHub.exe NOT rebuilt.
+
+### 2026-09-17 21:38:20 +0700 — antigravity:09171305-51b2
+Event: CLAIM
+Task: A26-55
+Files: config/voice.json
+
+### 2026-09-17 21:42:13 +0700 — antigravity:09171305-51b2
+Event: RELEASE
+Task: A26-55
+Released: config/voice.json, apps/voice/service.py
+Result: Switched to lowest LLM Qwen2.5-0.5B-Instruct (~1.4s); QC PASS 208/208
+Next: none
+
+### 2026-09-17 21:58:54 +0700 — antigravity:09172142-d4d9
+Event: CLAIM
+Task: A26-56
+Files: config/voice.json, apps/voice/service.py
+
+### 2026-09-17 22:09:01 +0700 — antigravity:09172142-d4d9
+Event: RELEASE
+Task: A26-56
+Released: config/voice.json, apps/voice/service.py
+Result: Local model optimized to 0.47s warm latency (SDPA + inference_mode + 32 maxTokens); scenario persona prompting, rate/pitch TTS styling, and Google AI Studio integration added; QC PASS 208/208
+Next: none
+
+### 2026-09-17 22:10:57 +0700 — claude:09171741-5585
+Event: NOTICE
+MiceHub.exe rebuilt from MiceHub.spec (22:10) and restarted on :8642 on user request; not stale; /api/play/beat answers. Shortcuts made in dist/Apps. Old exe at build/MiceHub.prev.exe.
+A26-54 done
+none
+
+### 2026-09-17 22:38:48 +0700 — antigravity:09172238-fdf3
+Event: CLAIM
+Task: A26-57
+Files: config/voice.json, apps/voice/service.py
+
+### 2026-09-17 22:46:52 +0700 — antigravity:09172238-fdf3
+Event: RELEASE
+Task: A26-57
+Released: config/voice.json, apps/voice/service.py, apps/voice/qa_data.json
+Result: Added Thai verse reading & recitation support with preserved line breaks and rhythmic TTS pauses; Sunthorn Phu verse preloaded in qa_data.json; QC PASS 208/208
+Next: none
+
+### 2026-09-17 22:48:29 +0700 — antigravity:09172238-fdf3
+Event: CLAIM
+Task: A26-58
+Files: apps/voice/app.js, apps/voice/index.template.html, apps/voice/service.py
+
+### 2026-09-17 22:55:03 +0700 — antigravity:09172238-fdf3
+Event: RELEASE
+Task: A26-58
+Released: apps/voice/app.js, apps/voice/index.template.html, apps/voice/service.py
+Result: Added Move toggle, global robot override selector, badge display for robot/sequence per answer, and multi-robot with different sequences support. Full QC PASS 208/208.
+Next: none
+
+### 2026-09-17 23:33:00 +0700 — antigravity:09172238-fdf3
+Event: NOTICE
+Hub restarted
+MiceHub.exe restarted on :8642 on user request, serving voice app, studio, and health check cleanly
+none
+
+### 2026-09-17 23:36:44 +0700 — antigravity:09172238-fdf3
+Event: CLAIM
+Task: A26-59
+Files: apps/voice/service.py, apps/voice/app.js, apps/voice/index.template.html
+
+### 2026-09-17 23:45:42 +0700 — antigravity:09172238-fdf3
+Event: RELEASE
+Task: A26-59
+Released: apps/voice/service.py, apps/voice/app.js, apps/voice/index.template.html
+Result: Linked Voice AI and Face Recognition. Voice answers address detected person by name across TH/EN/JA/ZH with fallback to basic answers when no face is detected; live faceBadge and polling in voice app; full QC PASS.
+Next: none
+
+### 2026-09-17 23:55:30 +0700 — antigravity:09172238-fdf3
+Event: CLAIM
+Task: A26-60
+Files: apps/voice/index.template.html, apps/voice/app.js, apps/voice/service.py
+
+### 2026-09-18 00:22:35 +0700 — claude:09180022-caee
+Event: CLAIM
+Task: A26-60
+Files: apps/voice/app.js, apps/voice/index.template.html, apps/voice/index.html, config/partners.json
+Why: user transferred A26-60 from antigravity:09172238-fdf3 (Gemini limit), 2026-09-18 chat: *hand off gemini now he hit limit*. Work continues in main where antigravity left the voice files (staging copy is older).
+
+### 2026-09-18 00:37:07 +0700 — claude:09180022-caee
+Event: RELEASE
+Task: A26-60
+Released: apps/voice/app.js, apps/voice/index.html, config/partners.json, qc/checks/check_voice_reconize.py
+Result: Open Reconize on Voice now opens the tab inside the click, starts Reconize via /api/partners/start and waits for ready, then lands on their live camera page (partners.json reconize.camera = /recognition; no address in app.js; a phone gets the hub host). Driven against the live hub: localhost:5173/recognition from the PC, 192.168.3.108:5173/recognition from the network. check_voice_reconize caught 3/3 sabotages; quick QC 3957/0. Edited in MAIN, where antigravity left A26-58/59 uncommitted (staging is older) - not landed via branch.py yet.
+Next: user tests with the laptop camera; then land A26-58..60 together.
+
+### 2026-09-18 01:40:03 +0700 — claude:09180022-caee
+Event: RELEASE
+Task: A26-61
+Released: apps/voice/service.py, apps/voice/app.js, apps/voice/index.template.html, apps/voice/index.html, main_python/web/help.html, qc/checks/check_voice_identify.py, AND (outside this tree) Face_Regonize/backend/app/api/recognition.py
+Result: New "Check who I am" button on the Voice page: one frame from the device's own camera -> /api/voice/identify -> the face app with ?persist=false -> the name, and nothing written (no stored frame, no FaceDetection row, no Attendance row, no events entry). Their recognition.py gained persist: bool = True (default unchanged) guarding the background task. The name is remembered in the helper for 120 s, because with nothing persisted there is no history row to read back. Where the face app answers now comes from config/partners.json (MICE_PARTNERS honoured), not a literal in service.py.
+Evidence: live hub, enrolled photo through /api/voice/identify returned the person and the answer greeted them by name; Reconize history stayed 0 rows and nothing new under Face_Regonize/storage. check_voice_identify: 9 assertions, 6/6 sabotages caught (including one in THEIR file). Quick QC 3978/0. The test row my earlier camera test created was deleted with its image.
+Next: A26-58..61 all sit uncommitted in main; land them together. A browser-level click test of the camera button still needs a fake media device.
+
+### 2026-09-18 01:41:32 +0700 — antigravity:09180141-5a1f
+Event: NOTICE
+A26-60 and A26-61 verified with live user laptop camera (พุฒิพงศ์ / ID: 0001) and landed
+Open Reconize button and multi-person greeting working, 142 QC passed
+Release claims on apps/voice/
+
+### 2026-09-18 02:03:04 +0700 — claude:09180022-caee
+Event: RELEASE
+Task: A26-62
+Released: apps/voice/service.py, apps/voice/app.js, apps/voice/index.template.html, apps/voice/index.html, config/voice.json, main_python/web/help.html, qc/checks/check_voice_identify.py
+Result: The Voice page now looks by itself and lets you pick the camera. "Check by itself" grabs a frame every face.autoSeconds (config/voice.json, default 5 s), still persist=false, stops while the tab is hidden, clears its timer and releases the camera when switched off. The camera list starts from the label Reconize already stores app-wide (their settings camera_label, read through the helper's new GET /camera), with a per-browser override in localStorage - the same two-identifier rule their own cameras.ts documents. No camera address or interval is written into the page.
+Evidence: check_voice_identify now 16 assertions, including the page's real class driven in node with a fake camera (it opens the labelled device with deviceId exact, keeps looking, stops on switch-off and releases the track). 5 more sabotages caught after this change. Quick QC 3987/0. Live hub: /api/voice/camera answers, the built page carries the switch and the list.
+Next: the user confirms in front of the laptop camera. A26-58..62 are all uncommitted in main; land them together.
+
+### 2026-09-18 02:27:23 +0700 — claude:09180022-caee
+Event: RELEASE
+Task: A26-63
+Released: apps/voice/service.py, apps/voice/app.js, apps/voice/index.html, main_python/web/help.html, qc/checks/check_voice_identify.py
+Result: Voice can now READ a camera the face app is already watching instead of opening one. The helper lists their stations (their /api/node/status) in GET /camera; picking one in the Voice camera list sets no local camera at all - /face?camera=<node> filters the shared live feed that apps/faces/service.py already receives (their events_feed; each event carries the station). That is their own one-camera-many-programs design, used rather than duplicated. The watcher's address is now data too (face.watcher in config/voice.json, or MICE_FACES_STATE), which is what let a check point it at a fake.
+Evidence: check_voice_identify now 22 assertions, 4 more sabotages caught (filter removed, stations dropped, page not naming the station, page treating a station as a local camera). Quick QC 3990 passed with 2 failures in check_ota, which passed 45/0 alone straight afterwards - the known load flake, not this work. No station is registered on this PC right now, so the live list is empty until one runs.
+Next: user confirms with a real camera; A26-58..63 all uncommitted in main, land together.
+
+### 2026-09-18 02:46:32 +0700 — claude:09180022-caee
+Event: PROMOTE-DONE (committed to main, not via promote.py)
+Task: A26-58..66
+Result: Landed as two commits on main after the user said *land all*: c13026e (A26-58..63, the Voice face work) and 7662ddb (A26-64 one voice for every language, A26-65 the badge forgets). The face app's own change is its own commit in E:/final_proj/mice/Face_Regonize: 50391ee persist=false. branch.py was not usable - main carries other sessions' uncommitted work, so only the voice files were staged.
+A26-64: tts.oneVoice wins over the per-language map for every language; the list comes from GET /voices (edge-tts multilingual voices), nothing hardcoded in the page; empty keeps the old behaviour. Evidence: same mixed TH/EN sentence, 28512 bytes of audio from en-US-AvaMultilingualNeural vs 16128 from en-US-JennyNeural. Nobody has LISTENED to it yet - the user has to.
+A26-65: identify() with no match calls forget_person(), and lookOnce clears the badge; how long a name survives is face.rememberSeconds in the new Faces settings card (default 120).
+Also fixed: service.py died on import when stdout has no encoding (a captured stdout in a QC worker).
+Evidence: check_voice_one_voice 10 assertions, check_voice_identify 28, 6 more sabotages caught. Quick QC 4009 passed, 0 failed.
+Next: the user listens to a multilingual voice and says whether the Thai name is read properly, and confirms the badge clears when they leave.
+
+### 2026-09-18 03:06:40 +0700 — claude:09180022-caee
+Event: PROMOTE-DONE (committed to main)
+Task: A26-67, A26-68
+Result: ddf22c1. Scenario card on the Voice settings screen: cfg.scenarios is a list, cfg.scenario names the one in use (plain text there still works), each scenario carries prompt + voice + rate + pitch, and its voice beats tts.oneVoice. A line holding two scripts is now spoken by tts.mixedVoice, or the first multilingual voice the speech service reports, instead of a voice tied to one language. match_faq now matches a short Thai/CJK word inside a saved question (3+ characters, a quarter of the question, not a word in faqStopWords), and all four system prompts forbid inventing a password, price, time, floor or place.
+Evidence: check_voice_answers 9 assertions, check_voice_one_voice 20; 7 sabotages caught (two needed a UTF-8 spec FILE - Thai passed through a heredoc reaches sabotage.py mangled). Quick QC 4029/0. Live helper: ไวไฟ and รหัสไวไฟ both answer from the saved answers, source=faq.
+Still open, for whoever picks it up: the local model's Thai quality (mixed ครับ/ค่ะ, cut-off replies) and wrong-language replies on very short questions. That is model and prompt work, not matching - the saved answers now cover the common asks, which is the safer half.
