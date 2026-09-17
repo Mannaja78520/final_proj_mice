@@ -241,8 +241,9 @@ panels in CLAUDE.md. Preserve required checks and independent review.
   result path, actual error and reset time if reported. A timeout is not proof
   of a quota limit. Retry only after changing a diagnosed cause or narrowing
   the question; no repeated blind requests. Announce any fallback.
-- If Codex cannot continue, use an available Gemini reviewer through the
-  existing ai_panel.py/agy workflow. Discover current model IDs; do not invent
+- If Codex cannot continue, the fallback is Gemini 3.8 Flash High (user
+  2026-09-17): agy -p ... --mode plan --model gemini-3.8-flash-high, with
+  tools/ai_brief.txt prepended. Discover current model IDs; do not invent
   them. A failed or empty review is never approval. If every provider is
   unavailable, preserve work and leave the next diagnostic step in BRIDGE.
 
