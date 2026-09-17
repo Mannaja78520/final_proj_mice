@@ -64,7 +64,9 @@ GATED = {
     "/api/robot/upload", "/api/robot/delete",
     "/api/dev/upload", "/api/dev/delete",
     # a saved show on this PC is removed (moved aside, but gone from the list)
-    "/api/seqdelete",
+    "/api/seqdelete", "/api/show/delete",
+    # a show of several sequences starts moving the robot
+    "/api/show/play",
     "/api/settings/peer",
     # Which OTHER hubs this one talks to. Not a reading route: an
     # address added here is probed, trusted enough to list, and offered

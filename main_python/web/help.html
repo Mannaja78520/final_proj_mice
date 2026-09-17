@@ -1304,14 +1304,27 @@
   </div>
 
   <div class="grp2">Posing</div>
-  <div class="f"><h3>Four tabs, grouped by what you are doing<span class="tag t-new">new</span></h3>
+  <div class="f"><h3>Five tabs, grouped by what you are doing<span class="tag t-new">new</span></h3>
     <p><b>Pose</b> (joints, XYZ, view) · <b>Sequence</b> (timing, the robot SD card) ·
+       <b>Shows</b> (several sequences in a row) ·
        <b>Robot</b> (link, module config, zero calibration) · <b>Setup</b> (rig, model,
        clothes). The old Movement/Setup split put the robot link, the SD card and the zero
        calibration all under Movement, so posing meant scrolling past things you touch once.</p>
     <p>Nothing moved in the page itself — only what is on screen at once — so every saved
        project, link and shortcut behaves as before. QC fails if a card ever ends up on no
        tab, which would hide a feature completely.</p></div>
+  <div class="f"><h3>Shows — several sequences in a row<span class="tag t-new">new</span></h3>
+    <p>A <b>show</b> is a list of saved sequences played one after another: greeting, then
+       a wave, then byebye. Open the <b>Shows</b> tab, add saved sequences in the order you
+       want them, set a pause after any of them in milliseconds, name the show and press
+       <b>Save show</b>. <b>▶ Run on robot</b> hands the whole thing to the hub, so it keeps
+       going with the page closed; <b>⏹ Stop</b> ends it from anywhere.</p>
+    <p>A show only stores the sequence <i>names</i>, never a copy — so one greeting can sit
+       in ten shows, and editing the greeting changes all ten. Shows are small files in
+       <code>nong/main_python_set_nong/shows/</code> you can also write by hand. Deleting a
+       show moves it to <code>shows/.deleted</code> rather than erasing it, and never
+       touches its sequences. A show naming a sequence that is gone refuses to start and
+       says which step is wrong, instead of playing half of itself.</p></div>
   <div class="f"><h3>Sliders, gizmos and inverse kinematics</h3>
     <p>A slider per joint, clamped to that joint's own limits. Drag the 🟢 wrist ball for
        4-DOF whole-arm IK, or the 🟠 elbow ball for shoulder-only IK. Gimbal rings follow

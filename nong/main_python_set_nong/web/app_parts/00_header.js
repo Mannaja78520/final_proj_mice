@@ -20,6 +20,6 @@ const $ = (id) => document.getElementById(id);
 // shown by it, so NOTHING moved in the DOM — every id, handler and QC driver
 // works exactly as before, and only what is on screen at once changed.
 // "move" is still accepted so any older link or habit keeps working.
-const STAB_BTN = { pose: "tabBtnMove", sequence: "tabBtnSeq",
+const STAB_BTN = { pose: "tabBtnMove", sequence: "tabBtnSeq", shows: "tabBtnShows",
                    robot: "tabBtnRobot", setup: "tabBtnSetup" };
 let sideTab = "pose";

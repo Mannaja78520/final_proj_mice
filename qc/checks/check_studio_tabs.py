@@ -23,8 +23,10 @@ function step(){
     if (typeof showTab !== "function") return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);
     var out = [];
-    var tabs = ["pose", "sequence", "robot", "setup", "login"];
-    var navTabs = ["pose", "sequence", "robot", "setup"];
+    // the tab list is the page's own STAB_BTN, so a new tab needs no edit here
+    var navTabs = Object.keys(STAB_BTN);
+    var tabs = navTabs.concat(["login"]);
+    out.push("tabs:" + navTabs.join(","));
 
     // every card must belong to a tab that exists
     var all = document.querySelectorAll("#side .card");
@@ -89,7 +91,10 @@ def run(t):
 
     # ---- each tab shows its own, and only its own -----------------------
     per = dict(x.split("=") for x in got.get("perTab", "").split(",") if "=" in x)
-    for name in ("pose", "sequence", "robot", "setup"):
+    names = [n for n in got.get("tabs", "").split(",") if n]
+    t.ok({"pose", "sequence", "robot", "setup"} <= set(names),
+         "the four task tabs are still there", names)
+    for name in names:
         v = per.get(name, "0")
         t.ok("!" not in v, "%s tab hides the other tabs' cards" % name,
              "%s cards from another tab were visible" % v.split("!")[-1])
@@ -103,6 +108,6 @@ def run(t):
 
     # ---- the four buttons exist and are wired ---------------------------
     html = (F.STUDIO_WEB / "index.html").read_text(encoding="utf-8", errors="replace")
-    for tab in ("pose", "sequence", "robot", "setup"):
+    for tab in names:
         t.ok(re.search(r"showTab\('%s'\)" % tab, html),
              "there is a button for the %s tab" % tab)

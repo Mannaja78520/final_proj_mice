@@ -105,7 +105,9 @@ SKIP_DIRS = {".git", ".pio", "__pycache__", "node_modules",
              "projects",
              # sequences/  the YAML files Studio saves - user data too: the
              # same night staging's July my_move.yaml nearly replaced a 23:07 save.
-             "sequences"}
+             "sequences",
+             # shows/  Studio's lists of sequences played in series - user data.
+             "shows"}
 # docs/PLAN.html is here for the same reason: its STATE block records progress
 # and is edited in the REAL tree as work lands, by whoever or whatever is doing
 # the work. Promoting a staging copy would roll that progress backwards.

@@ -22,6 +22,7 @@
       "yaml_export.js",
       "rig_setup_ui.js",
       "edit_existing_sequences.js",
+      "shows.js",
       "music_on_a_keyframe.js",
       "project_save_load.js",
       "stl_meshes.js",

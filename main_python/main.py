@@ -103,6 +103,7 @@ import cam_relay                                           # noqa: E402
 import hub_auth                                            # noqa: E402
 import hub_pair                                            # noqa: E402
 import partner_launch                                      # noqa: E402
+import shows as shows_mod                                  # noqa: E402
 import stream_audio                                        # noqa: E402
 
 HUB_WEB = asset("main_python", "web")
@@ -125,6 +126,7 @@ STUDIO_WEB = asset("nong", "main_python_set_nong", "web")
 PROJECTS = STUDIO / "projects"
 SEQUENCES = STUDIO / "sequences"
 MODELS = STUDIO / "models"
+SHOWS = shows_mod.Shows(STUDIO / "shows", SEQUENCES)   # sequences in series (shows.py)
 
 HOST = "0.0.0.0"
 PORT = 8642
@@ -4871,6 +4873,30 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json({"ok": True})
             except Exception as e:
                 return self.send_err(str(e))
+
+        # ---- shows: saved sequences in series (shows.py) ----
+        if path == "/api/shows":
+            return self.send_json({"ok": True, "shows": SHOWS.names()})
+        if path == "/api/show":
+            try:
+                return self.send_json({"ok": True, "show": SHOWS.load((q.get("name") or [""])[0])})
+            except (ValueError, FileNotFoundError) as e:
+                return self.send_err(e, 404)
+        if path in ("/api/show/save", "/api/show/delete", "/api/show/play") and method == "POST":
+            try:
+                d = json.loads(self.body().decode() or "{}")
+                if path == "/api/show/save":
+                    fname, existed = SHOWS.save(d.get("show") or {})
+                    return self.send_json({"ok": True, "file": fname, "replaced": existed})
+                if path == "/api/show/delete":
+                    return self.send_json({"ok": True, "kept": SHOWS.delete(d.get("name"))})
+                sh = SHOWS.load(d.get("name")) if d.get("name") and not d.get("show") \
+                    else SHOWS.clean(d.get("show"))
+                steps = SHOWS.steps(sh, seq_steps)
+                return self.send_json(show.start(d["dev"], steps, sh["loop"],
+                                                 sh["name"] or "show"))
+            except (ValueError, FileNotFoundError, KeyError) as e:
+                return self.send_err(e)
 
         if path == "/api/play/beat" and method == "POST":
             # Can only keep a show alive or let it run alone - never start one -

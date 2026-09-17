@@ -56,6 +56,7 @@
            changes. -->
       <button class="tab on" id="tabBtnMove" onclick="showTab('pose')">Pose</button>
       <button class="tab" id="tabBtnSeq" onclick="showTab('sequence')">Sequence</button>
+      <button class="tab" id="tabBtnShows" onclick="showTab('shows')">Shows</button>
       <button class="tab" id="tabBtnRobot" onclick="showTab('robot')">Robot</button>
       <button class="tab" id="tabBtnSetup" onclick="showTab('setup')">Setup</button>
     </div>
@@ -265,6 +266,33 @@
       </div>
       <div id="sdList" class="mini">connect first, then press List</div>
       <div class="statline" id="sdStat"></div>
+    </div>
+
+    <!-- SHOWS (user 2026-09-17): saved sequences played one after another, e.g.
+         greeting then byebye. The show only lists sequence names (shows/*.json),
+         so one sequence can be in many shows. Logic in app_parts/shows.js. -->
+    <div class="card" data-stab="shows">
+      <h2>Shows — sequences in a row</h2>
+      <div class="row">
+        <select id="showList" onchange="openShow()" title="open a saved show"><option value="">Open saved show…</option></select>
+        <button onclick="newShow()">New</button>
+        <button onclick="deleteShow()" title="delete the open show (moved to shows/.deleted, not erased)">🗑 Delete</button>
+      </div>
+      <div class="row">
+        <span class="lbl">Name</span><input id="showName" placeholder="welcome" style="flex:1">
+        <label><input type="checkbox" id="showLoop"> loop</label>
+      </div>
+      <div class="row">
+        <select id="showAddSeq" style="flex:1" title="a saved sequence to add at the end"><option value="">Add a saved sequence…</option></select>
+        <button onclick="addShowItem()">+ Add</button>
+      </div>
+      <div id="showItems"></div>
+      <div class="row">
+        <button onclick="saveShow()">💾 Save show</button>
+        <button class="primary" onclick="playShow()">▶ Run on robot</button>
+        <button onclick="stopShow()">⏹ Stop</button>
+      </div>
+      <div class="statline" id="showStat">Pick sequences in the order they should play. Pause is the wait after that sequence, in ms.</div>
     </div>
     </div><!-- /tabMove -->
 

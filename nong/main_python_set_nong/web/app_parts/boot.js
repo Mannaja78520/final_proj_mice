@@ -8,6 +8,7 @@ renderTimeline();
 poseChanged(false);     // also primes the live collision banner
 refreshProjects();
 refreshSeqs();
+refreshShows(); renderShow();
 refreshModels();
 connModeChanged();
 initSideDrag();
@@ -266,7 +267,7 @@ async function appLogin() {
   }
   if (ok) {
     $("loginPass").value = "";
-    localStorage.setItem("nongZeroCred", JSON.stringify({ user: u, pass: p }));
+    localStorage.removeItem("nongZeroCred");   // old copy of a password; the zero lock asks the hub now
     loggedIn(u);
   } else {
     $("loginStat").textContent = why || "Wrong username or password.";

@@ -20,7 +20,7 @@ const $ = (id) => document.getElementById(id);
 // shown by it, so NOTHING moved in the DOM — every id, handler and QC driver
 // works exactly as before, and only what is on screen at once changed.
 // "move" is still accepted so any older link or habit keeps working.
-const STAB_BTN = { pose: "tabBtnMove", sequence: "tabBtnSeq",
+const STAB_BTN = { pose: "tabBtnMove", sequence: "tabBtnSeq", shows: "tabBtnShows",
                    robot: "tabBtnRobot", setup: "tabBtnSetup" };
 let sideTab = "pose";
 // --- notices ---
@@ -924,10 +924,12 @@ function applyPose() {
     } else {
       // Uncalibrated: the original symmetric see-saw, unchanged. SHRUG is a
       // ROLL about the front-back axis (Z) — one shoulder rises while the
-      // other drops. Exaggerated x3 so the small (~6°) move reads.
+      // other drops.
       if (shrugAnchors.L) shrugAnchors.L.position.y = shrugBaseY;
       if (shrugAnchors.R) shrugAnchors.R.position.y = shrugBaseY;
-      shoulderMount.rotation.set(0, 0, THREE.MathUtils.degToRad(jointDelta(9) * 3));
+      // At the TRUE angle: it was drawn x3 so a small move would read, and 10
+      // deg on the robot showed as 30 (user 2026-09-17, A26-45).
+      shoulderMount.rotation.set(0, 0, THREE.MathUtils.degToRad(jointDelta(9)));
     }
   }
 }
@@ -1866,7 +1868,9 @@ function renderTimeline() {
     const el = document.createElement("div");
     el.className = "key" + (i === selKey ? " sel" : "") + (k.off ? " off" : "");
     el.onclick = (e) => {
-      if (e.target.tagName !== "INPUT" && e.target.tagName !== "BUTTON") selectKey(i);
+      // Not from a control: selecting re-renders the chip, which closed the music
+      // list the moment it opened (A26-49, a SELECT was not in the old list).
+      if (!e.target.closest("input,button,select,label,textarea")) selectKey(i);
     };
     // Clicking anywhere on the chip selects it, which is worth keeping for a
     // mouse - so the chip names the control that does the same job for the
@@ -2393,6 +2397,7 @@ function togglePlay() {
   $("playBtn").textContent = playing ? "❚❚ Pause" : "▶ Play";
   lastFrame = performance.now();
   lastPlayMs = 0;                 // fresh clock, so a pause never leaps forward
+  entryHold = false;
   keepAwake(playing);             // keep the tab off the throttling list
   lastLiveSeg = -1;
   if (playing && playT >= totalMs()) playT = 0;
@@ -2415,7 +2420,14 @@ function togglePlay() {
   // which is the whole reason it exists. This preview keeps drawing, and sends
   // nothing (playTick skips its live sends while hubDriven()).
   if (previewOnly) return;          // refused at the crash gate: draw only
-  if (hubDriven()) { hubPlay(playT); return; }
+  if (hubDriven()) {
+    // From the start the hub first TRAVELS to keyframe 0 (as long as the board
+    // needs); the show clock starts after. Hold the preview until then, or it
+    // runs ahead of the arm by the whole entry move (A26-50).
+    if (playT === 0) { entryHold = true; hubPlay(0).then(ok => ok ? waitEntry() : (entryHold = false)); }
+    else hubPlay(playT);
+    return;
+  }
   // A segment is the move INTO a keyframe, so segmentAt() starts at 1 and
   // keyframe 0 is never one of them. Put the robot on it first, or its first
   // move starts from wherever it happens to be standing instead of from the
@@ -2484,6 +2496,7 @@ async function hubPlay(fromMs) {
       body: JSON.stringify({
         dev: moduleDev(), steps, loop: $("loopChk").checked,
         name: ($("seqName").value || "sequence").trim(), from_ms: Math.round(fromMs || 0),
+        watch: !document.hidden,        // stop the arm if this page freezes (A26-46)
       }),
     }).then(r => r.json());
     if (r.error) throw new Error(r.error);
@@ -2499,6 +2512,34 @@ async function hubPlay(fromMs) {
     return false;
   }
 }
+let entryHold = false;       // true while the hub travels to keyframe 0
+async function waitEntry() {
+  while (entryHold && playing) {
+    try {
+      const st = await fetch("/api/play").then(r => r.json());
+      if (!st.running || !st.entering) break;
+    } catch (e) { break; }             // no answer: let the preview run
+    await new Promise(r => setTimeout(r, 120));
+  }
+  entryHold = false;
+  lastPlayMs = 0;                      // start the clock now, not at Play
+}
+// Heartbeat for a hub-played show: a FROZEN page cannot beat, so the hub stops
+// the arm; a page that is hidden or closed says so first, and the show carries
+// on by itself as it always has (A26-46).
+setInterval(() => {
+  if (playing && !document.hidden && hubDriven())
+    fetch("/api/play/beat", { method: "POST", body: "{}" }).catch(() => {});
+}, 1000);
+function hubLeaving() {
+  try { navigator.sendBeacon("/api/play/beat", JSON.stringify({ leaving: true })); } catch (e) { /* no beacon: the timeout decides */ }
+}
+document.addEventListener("visibilitychange", () => {
+  if (!playing || !hubDriven()) return;
+  if (document.hidden) hubLeaving();
+  else fetch("/api/play/beat", { method: "POST", body: "{}" }).catch(() => {});
+});
+window.addEventListener("pagehide", () => { if (playing && hubDriven()) hubLeaving(); });
 function hubStop() {
   return fetch("/api/play/stop", { method: "POST" }).catch(() => {});
 }
@@ -3202,6 +3243,121 @@ async function pullLimits() {
 // --- edit existing sequences ---
 // Parse a /moves YAML (the format this editor exports and the firmware plays)
 // back into timeline keyframes, so any saved sequence can be re-edited.
+// --- shows: saved sequences in series ---
+// User 2026-09-17: mix and match sequences (greeting, then byebye). A show is a
+// list of sequence NAMES saved by the hub in shows/*.json (main_python/shows.py);
+// the hub plays it as one run, so it works over WiFi or the cable.
+let showDraft = { name: "", loop: false, items: [] };
+
+async function refreshShows() {
+  try {
+    const [s, q] = await Promise.all([
+      fetch("/api/shows").then(r => r.json()),
+      fetch("/api/list?kind=sequences").then(r => r.json())]);
+    const sel = $("showList"), add = $("showAddSeq");
+    if (!sel || !add) return;
+    sel.innerHTML = "<option value=''>Open saved show…</option>";
+    (s.shows || []).forEach(n => { const o = document.createElement("option"); o.value = o.textContent = n; sel.appendChild(o); });
+    if (showDraft.name && (s.shows || []).includes(showDraft.name)) sel.value = showDraft.name;
+    add.innerHTML = "<option value=''>Add a saved sequence…</option>";
+    (q.files || []).filter(f => f.endsWith(".yaml")).forEach(f => {
+      const o = document.createElement("option"); o.value = o.textContent = f; add.appendChild(o);
+    });
+  } catch (e) { /* Studio opened without the hub: nothing to list */ }
+}
+function renderShow() {
+  const box = $("showItems");
+  if (!box) return;
+  $("showName").value = showDraft.name;
+  $("showLoop").checked = showDraft.loop;
+  box.innerHTML = "";
+  if (!showDraft.items.length) {
+    box.innerHTML = "<div class='mini'>No sequences yet — add one above.</div>";
+    return;
+  }
+  showDraft.items.forEach((it, i) => {
+    const row = document.createElement("div"); row.className = "row";
+    const n = document.createElement("span"); n.className = "lbl"; n.textContent = (i + 1) + ".";
+    const name = document.createElement("span"); name.style.flex = "1"; name.textContent = it.seq;
+    const hold = document.createElement("input");
+    hold.type = "number"; hold.min = 0; hold.step = 100; hold.value = it.hold || 0; hold.style.width = "80px";
+    hold.title = "pause after this sequence, in ms";
+    hold.onchange = () => { it.hold = Math.max(0, +hold.value || 0); };
+    const btn = (label, title, fn) => { const b = document.createElement("button"); b.textContent = label; b.title = title; b.onclick = fn; return b; };
+    row.append(n, name, document.createTextNode("pause"), hold,
+      btn("▲", "play earlier", () => moveShowItem(i, -1)),
+      btn("▼", "play later", () => moveShowItem(i, 1)),
+      btn("✕", "take out of this show", () => { showDraft.items.splice(i, 1); renderShow(); }));
+    box.appendChild(row);
+  });
+}
+function readShowForm() {
+  showDraft.name = $("showName").value.trim();
+  showDraft.loop = $("showLoop").checked;
+  return showDraft;
+}
+function newShow() { showDraft = { name: "", loop: false, items: [] }; renderShow(); $("showStat").textContent = "new show — add sequences, then Save."; }
+function addShowItem() {
+  const f = $("showAddSeq").value;
+  if (!f) { $("showStat").textContent = "pick a saved sequence to add first."; return; }
+  showDraft.items.push({ seq: f, hold: 0 });
+  renderShow();
+}
+function moveShowItem(i, d) {
+  const j = i + d, it = showDraft.items;
+  if (j < 0 || j >= it.length) return;
+  [it[i], it[j]] = [it[j], it[i]];
+  renderShow();
+}
+async function openShow() {
+  const n = $("showList").value;
+  if (!n) return;
+  const r = await fetch("/api/show?name=" + encodeURIComponent(n)).then(r => r.json());
+  if (!r.ok) { $("showStat").textContent = "cannot open " + n + ": " + (r.error || "not found"); notice($("showStat").textContent); return; }
+  showDraft = r.show; showDraft.name = showDraft.name || n;
+  renderShow();
+  $("showStat").textContent = "opened " + n + " (" + showDraft.items.length + " sequences).";
+}
+async function showPost(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.ok === false || j.error) throw new Error(j.need_login ? "log in first" : (j.error || "HTTP " + r.status));
+  return j;
+}
+async function saveShow() {
+  const s = readShowForm();
+  if (!s.name) { $("showStat").textContent = "give the show a name first."; return; }
+  try {
+    const j = await showPost("/api/show/save", { show: s });
+    $("showStat").textContent = (j.replaced ? "saved over " : "saved ") + s.name + ".";
+    refreshShows();
+  } catch (e) { $("showStat").textContent = "not saved: " + (e.message || e); notice($("showStat").textContent); }
+}
+async function deleteShow() {
+  const n = $("showList").value || readShowForm().name;
+  if (!n) { $("showStat").textContent = "open a show to delete first."; return; }
+  if (!confirm("Delete the show " + n + "?\n\nIt is moved to shows/.deleted, not erased. Its sequences stay.")) return;
+  try {
+    await showPost("/api/show/delete", { name: n });
+    newShow(); refreshShows();
+    $("showStat").textContent = n + " deleted (kept in shows/.deleted).";
+  } catch (e) { $("showStat").textContent = "not deleted: " + (e.message || e); notice($("showStat").textContent); }
+}
+async function playShow() {
+  const s = readShowForm();
+  const dev = moduleDev();
+  if (!dev) { $("showStat").textContent = "connect to the robot first (Robot tab)."; notice($("showStat").textContent); return; }
+  if (!s.items.length) { $("showStat").textContent = "add at least one sequence first."; return; }
+  try {
+    await showPost("/api/show/play", { dev, show: s });
+    $("showStat").textContent = "the hub is running " + (s.name || "this show") +
+      " — it keeps going with this page closed. ⏹ Stop ends it.";
+  } catch (e) { $("showStat").textContent = "did not start: " + (e.message || e); notice($("showStat").textContent); }
+}
+async function stopShow() {
+  try { await fetch("/api/play/stop", { method: "POST" }); $("showStat").textContent = "stopped."; }
+  catch (e) { $("showStat").textContent = "the hub did not answer the stop."; }
+}
 // --- music on a keyframe ---
 //
 // A move's music is a cue the FILE already carries: `play: song.mp3` before
@@ -3215,6 +3371,7 @@ async function pullLimits() {
 let musicList = null;        // null = never read, [] = card has no tracks
 let musicNote = "";          // why the list is not usable, in plain words
 let musicBusy = false;
+function robotLinked() { return haveUsb() || haveWifi(); }
 const musOpen = new Set();   // which keyframes have the picker open
 
 function keyCue(k, key) {
@@ -3247,7 +3404,9 @@ async function loadMusicList() {
   musicBusy = true;
   musicNote = "reading the robot's music folder…";
   try {
-    if (!liveLinked()) throw new Error("offline");
+    // Any link will do. liveLinked() also needs the live tick, so with it off the
+    // picker stayed locked and the volume with it (A26-49).
+    if (!robotLinked()) throw new Error("offline");
     const r = await fetch("/api/dev/files?dir=/music&dev="
                           + encodeURIComponent(moduleDev()));
     const list = await r.json();
@@ -3369,8 +3528,8 @@ function musicRow(k, i) {
   // the robot, and neither was worth walking to another page for.
   const play = document.createElement("button");
   play.type = "button"; play.className = "kmusbtn"; play.textContent = "▶";
-  play.disabled = !cur || !liveLinked();
-  play.title = !liveLinked() ? "connect the robot to hear it"
+  play.disabled = !cur || !robotLinked();
+  play.title = !robotLinked() ? "connect the robot to hear it"
              : cur ? "play " + cur + " on the robot now, once through"
                    : "choose a track first";
   play.onclick = async () => {
@@ -3383,7 +3542,7 @@ function musicRow(k, i) {
   };
   const stop = document.createElement("button");
   stop.type = "button"; stop.className = "kmusbtn"; stop.textContent = "■";
-  stop.disabled = !liveLinked();
+  stop.disabled = !robotLinked();
   stop.title = "stop the sound";
   stop.onclick = async () => {
     try { musicNote = await rawCmd("PLAY STOP"); } catch (e) { musicNote = String(e.message || e); }
@@ -3391,8 +3550,8 @@ function musicRow(k, i) {
   };
   const add = document.createElement("button");
   add.type = "button"; add.className = "kmusbtn"; add.textContent = "＋";
-  add.disabled = !liveLinked();
-  add.title = liveLinked() ? "put a track from this PC onto the robot's card"
+  add.disabled = !robotLinked();
+  add.title = robotLinked() ? "put a track from this PC onto the robot's card"
                            : "connect the robot to add a track";
   add.onclick = () => pickMusicFile(k);
   row.append(document.createTextNode("♪"), sel, vol, rep, play, stop, add);
@@ -4766,30 +4925,35 @@ async function robotRun() {
     : "the robot is running " + file + " on its own.";
 }
 
-// ---- zero-position calibration (password-gated; default manny/12345678) ----
-function zeroCred() { try { return JSON.parse(localStorage.getItem("nongZeroCred")) || null; } catch (e) { return null; } }
-function zeroCredOr() { return zeroCred() || { user: "manny", pass: "12345678" }; }
-function zeroUnlock() {
-  const c = zeroCredOr();
-  if ($("zUser").value === c.user && $("zPass").value === c.pass) {
+// ---- zero-position calibration (locked behind the HUB login) ----
+// Checked by the hub, not against a password kept in this browser: that one
+// (manny/12345678) refused admin/admin123 while the hub accepted it (A26-43).
+async function zeroUnlock() {
+  const u = $("zUser").value.trim(), p = $("zPass").value;
+  let ok = false, why = "";
+  try {
+    const r = await fetch("/api/login", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: u, password: p }) });
+    const j = await r.json().catch(() => ({}));
+    ok = r.ok && !!j.ok;
+    if (j.locked_for > 0) why = `Too many tries. Wait ${j.locked_for} seconds.`;
+  } catch (e) {
+    const acc = getAccounts();                 // no hub: Studio's own accounts
+    ok = !!(acc[u] && acc[u] === p);
+  }
+  $("zPass").value = "";
+  if (ok) {
     $("zeroLocked").style.display = "none";
     $("zeroPanel").style.display = "";
-    $("zPass").value = "";
+    $("zStat").textContent = "";
   } else {
-    // Say what to do, and never imply the reader is at fault. Which of the two
-    // is wrong is deliberately not revealed.
-    $("zStat").textContent = "That user name and password do not match. "
-      + "Check them and try again.";
+    // Which of the two is wrong is deliberately not revealed.
+    $("zStat").textContent = why || "That user name and password do not match. "
+      + "Use your hub login and try again.";
   }
 }
 function zeroLock() { $("zeroPanel").style.display = "none"; $("zeroLocked").style.display = ""; }
-function zeroChangeCred() {
-  const u = $("zNewUser").value.trim(), p = $("zNewPass").value;
-  if (!u || !p) { $("zStat2").textContent = "enter a new user and password"; return; }
-  localStorage.setItem("nongZeroCred", JSON.stringify({ user: u, pass: p }));
-  $("zNewUser").value = ""; $("zNewPass").value = "";
-  $("zStat2").textContent = "login changed (this browser)";
-}
 async function robotZeroSet() {
   if (!haveUsb() && !haveWifi()) { $("zStat2").textContent = "connect to the robot first"; notice($("zStat2").textContent); return; }
   const r = await robotCmd("SETZERO");
@@ -4812,13 +4976,29 @@ function monitorChanged() {
     // the HUB's clock, and switching this page to watching must end it.
     hubStop();
     playing = false; $("playBtn").textContent = "▶ Play";
-    monTimer = setInterval(monitorTick, 350);
     $("robotStat").textContent = "monitoring…";
+    // Watching needs a link. Ticked before Connect (or after a first try that
+    // timed out while the hub opened the port) it said "not connected" forever
+    // although the cable worked (A26-42). So connect first, once.
+    const start = () => { if ($("monChk").checked && !monTimer) monTimer = setInterval(monitorTick, 350); };
+    if (haveUsb() || haveWifi()) start();
+    else Promise.resolve(connectRobot()).then(() => {
+      if (haveUsb() || haveWifi()) return start();
+      $("monChk").checked = false;
+      $("robotStat").textContent = "monitor needs the robot connected — pick the cable or "
+        + "WiFi above and press Connect, then tick monitor again.";
+      notice($("robotStat").textContent);
+    });
   } else {
     clearInterval(monTimer); monTimer = null;
   }
 }
+let monBusy = false;
 async function monitorTick() {
+  // One status request at a time. Over RS485 a reply can take longer than the
+  // 350 ms tick, and piling requests onto one shared cable made them fail.
+  if (monBusy) return;
+  monBusy = true;
   try {
     const s = await getStatus();
     const m = s.module || {};
@@ -4837,6 +5017,8 @@ async function monitorTick() {
   } catch (e) {
     $("robotStat").textContent = "monitor: no reply (" + (e.message || e) + ")";
     notice($("robotStat").textContent);
+  } finally {
+    monBusy = false;
   }
 }
 // --- freeze watch ---
@@ -4891,6 +5073,98 @@ function freezeCheck(now) {
     body: JSON.stringify({ text: "STUDIO FREEZE " + JSON.stringify(state), page: "studio",
                            time: new Date().toISOString(), attachDiag: false }) }).catch(() => {});
 }
+// --- distances in the 3D view (A26-44) ---
+//
+// User 2026-09-17: *see the distance between the point that i need to know in
+// robot ... elbow and hand or elbow -> elbow ... hold that key or can click*.
+// Click Distances (or hold D) to see dashed lines with the length in mm. The
+// pairs are DATA in distances.json: a new pair is an entry there, not code.
+let distPairs = null;        // null = not read yet, [] = none listed
+let distOn = false;          // switched on by the button
+let distHeld = false;        // on while D is held
+let distLines = [];
+const distLayer = document.createElement("div");
+distLayer.id = "distLayer";
+distLayer.hidden = true;
+viewport.appendChild(distLayer);
+
+function distPoint(name) {   // world position of a named point, or null
+  const m = /^([LR])_(elbow|hand)$/.exec(name || "");
+  if (!m) return null;
+  const arm = m[1] === "L" ? 0 : 1;   // arm 0 is the robot's left (+X), see buildArm
+  const ball = (m[2] === "elbow" ? elbowBalls : wristBalls)[arm];
+  return ball ? ball.getWorldPosition(new THREE.Vector3()) : null;
+}
+async function distLoad() {
+  if (distPairs) return;
+  try {
+    const j = await fetch("distances.json").then(r => r.json());
+    distPairs = (j.pairs || []).filter(p => p && p.from && p.to);
+  } catch (e) {
+    distPairs = [];
+    distLayer.dataset.note = "the list of distances (distances.json) could not be read";
+  }
+}
+function distShown() { return distOn || distHeld; }
+function distSet(on) {
+  distOn = on;
+  const b = $("distBtn");
+  if (b) { b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); }
+  distLoad().then(distDraw);
+}
+function distClear() {
+  distLines.forEach(l => { scene.remove(l); l.geometry.dispose(); l.material.dispose(); });
+  distLines = [];
+  distLayer.textContent = "";
+}
+// Called every frame from tick(); does nothing while switched off.
+function distDraw() {
+  if (!distShown() || !distPairs) {
+    if (distLines.length || !distLayer.hidden) { distClear(); distLayer.hidden = true; }
+    return;
+  }
+  distClear();
+  distLayer.hidden = false;
+  scene.updateMatrixWorld();
+  const cam = activeCam(), rect = renderer.domElement.getBoundingClientRect();
+  const color = getComputedStyle(document.documentElement).getPropertyValue("--acc").trim() || "#4ea1ff";
+  let drawn = 0;
+  distPairs.forEach(p => {
+    const a = distPoint(p.from), b = distPoint(p.to);
+    if (!a || !b) return;
+    const g = new THREE.BufferGeometry().setFromPoints([a, b]);
+    const line = new THREE.Line(g, new THREE.LineDashedMaterial(
+      { color: new THREE.Color(color), dashSize: 8, gapSize: 6, depthTest: false }));
+    line.computeLineDistances();
+    line.renderOrder = 30;
+    scene.add(line);
+    distLines.push(line);
+    const mid = a.clone().add(b).multiplyScalar(0.5).project(cam);
+    if (mid.z > 1) return;                      // behind the camera
+    const tag = document.createElement("span");
+    tag.className = "distTag";
+    tag.textContent = Math.round(a.distanceTo(b)) + " mm";
+    tag.title = p.label || (p.from + " to " + p.to);
+    tag.style.left = ((mid.x + 1) / 2 * rect.width) + "px";
+    tag.style.top = ((1 - mid.y) / 2 * rect.height) + "px";
+    distLayer.appendChild(tag);
+    drawn++;
+  });
+  if (!drawn) {
+    const n = document.createElement("span");
+    n.className = "distNote";
+    n.textContent = distLayer.dataset.note || "no distances to show — the robot model is not built yet";
+    distLayer.appendChild(n);
+  }
+}
+window.addEventListener("keydown", (e) => {
+  if (e.key !== "d" && e.key !== "D") return;
+  const t = e.target;
+  if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;  // typing a "d"
+  if (!distHeld) { distHeld = true; distLoad().then(distDraw); }
+});
+window.addEventListener("keyup", (e) => { if (e.key === "d" || e.key === "D") distHeld = false; });
+window.addEventListener("blur", () => { distHeld = false; });
 // --- main loop ---
 function resize() {
   const w = viewport.clientWidth, h = viewport.clientHeight;
@@ -4941,6 +5215,7 @@ let _drawing = false;          // true only inside the animation frame
 let _lastScrub = -1, _lastTime = "";
 function playTick() {
   if (!playing) { lastPlayMs = 0; return; }
+  if (entryHold) { lastPlayMs = 0; return; }   // the arm is still travelling to keyframe 0
   const now = performance.now();
   if (!lastPlayMs) { lastPlayMs = now; return; }
   // Clamp the step. A hidden tab has its timers throttled (to about once a
@@ -5016,6 +5291,7 @@ function tick(now) {
   _drawing = false;
   lastFrame = now;
   controls.update();
+  distDraw();              // distances follow the pose and the camera (A26-44)
   renderer.render(scene, activeCam());
 }
 
@@ -5113,6 +5389,7 @@ renderTimeline();
 poseChanged(false);     // also primes the live collision banner
 refreshProjects();
 refreshSeqs();
+refreshShows(); renderShow();
 refreshModels();
 connModeChanged();
 initSideDrag();
@@ -5371,7 +5648,7 @@ async function appLogin() {
   }
   if (ok) {
     $("loginPass").value = "";
-    localStorage.setItem("nongZeroCred", JSON.stringify({ user: u, pass: p }));
+    localStorage.removeItem("nongZeroCred");   // old copy of a password; the zero lock asks the hub now
     loggedIn(u);
   } else {
     $("loginStat").textContent = why || "Wrong username or password.";

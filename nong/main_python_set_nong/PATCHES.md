@@ -95,3 +95,11 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0088 | 2026-09-17 15:03 | Safety speed cap in move timing (SAFE_DPS from the robot) and RS485 adapter bus id found by itself (A26-31, A26-33) |
 | 0089 | 2026-09-17 16:16 | Robot home separate from show neutral, joint-limit mismatch warning, delete saved YAML, freeze report (A26-35..38) |
 | 0090 | 2026-09-17 16:22 | Loop travels back to the start as a timed move; hub waits the board's real move time (A26-41) |
+| 0091 | 2026-09-17 18:00 | Zero position lock uses the hub login (A26-43); removed browser-only change-login |
+| 0092 | 2026-09-17 18:23 | Music picker stays open when clicked and works without live follow (A26-49) |
+| 0093 | 2026-09-17 19:16 | Studio preview waits for the arm to reach keyframe 0 before its clock starts (A26-50) |
+| 0094 | 2026-09-17 21:11 | Distances in mm between elbows and hands: click Distances or hold D (A26-44) |
+| 0095 | 2026-09-17 21:16 | Monitor connects by itself and polls one at a time over RS485 (A26-42) |
+| 0096 | 2026-09-17 21:19 | Shrug preview turns by the real angle, not x3 (A26-45) |
+| 0097 | 2026-09-17 21:26 | A frozen Studio page stops the hub show; hidden or closed does not (A26-46) |
+| 0098 | 2026-09-18 04:20 | Shows tab: saved sequences played one after another by name, the hub runs the show (A26-40) |
