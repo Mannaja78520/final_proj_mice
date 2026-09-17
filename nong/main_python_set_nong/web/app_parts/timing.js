@@ -26,6 +26,8 @@ function minTime(from, to) {
   let need = 0;
   for (let i = 0; i < NJ; i++)
     need = Math.max(need, Math.abs(to[i] - from[i]) / jointMaxDps(i));
+  // safety floor, same as firmware nongmath::safeDuration (ease peaks at pi/2 x average)
+  need = Math.max(need, deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, SAFE_DPS));
   return Math.max(MIN_MOVE_MS, Math.ceil(need * 1000));
 }
 // A move runs at the sequence's speed unless that keyframe overrides it, so one

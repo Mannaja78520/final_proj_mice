@@ -3225,21 +3225,24 @@ def _wifi_of(st):
     return {"ip": w.get("ip", ""), "wifi_mode": w.get("mode", "")}
 
 
-def probe_usb_port(port):
+def probe_usb_port(port, full=False):
     """Identify the module on a COM port + every RS485 module behind it.
 
     While a client is DRIVING that cable (module website open, Nong Studio
     connected) the full probe is skipped: it would hold the port's lock for
     ~1.5 s every round and stutter their commands. The identity is already
     known from the first probe, so the cached answer is returned with
-    "inuse": True instead."""
+    "inuse": True instead.
+
+    `full` forces the bus census anyway: Studio asks for it once, right after
+    its own commands on that cable got no reply (an RS485 adapter, 2026-09-17)."""
     out = {"port": port, "module": None, "rs485": [], "error": ""}
     try:
         import serial  # noqa: F401
     except ImportError:
         out["error"] = "pyserial not installed (pip install pyserial)"
         return out
-    light = usb_in_use(port)
+    light = usb_in_use(port) and not full
     # ONE LOOKUP, not a test and then a read. Another thread pops this key the
     # moment a command changes a board's identity (GROUP, SET NAME) - exactly
     # while `light` is true, which is the only case this path is for - so the
@@ -3380,11 +3383,11 @@ _usbscan_lock = threading.Lock()
 _usbscan_cache = {"at": 0.0, "usb": []}
 
 
-def probe_usb_one(port, timeout=8):
+def probe_usb_one(port, timeout=8, full=False):
     """Probe a single port with a watchdog (used by the streaming hub UI:
     each port renders the moment IT answers — nobody waits for the slow ones)."""
     ex = ThreadPoolExecutor(max_workers=1)
-    f = ex.submit(probe_usb_port, port)
+    f = ex.submit(probe_usb_port, port, full)
     try:
         return f.result(timeout=timeout)
     except FutTimeout:
@@ -4597,7 +4600,8 @@ class Handler(BaseHTTPRequestHandler):
             # each port answers); no port = all non-Bluetooth ports at once
             port = (q.get("port") or [""])[0]
             if port:
-                return self.send_json({"ok": True, "usb": [probe_usb_one(port)]})
+                full = (q.get("full") or ["0"])[0] == "1"
+                return self.send_json({"ok": True, "usb": [probe_usb_one(port, full=full)]})
             force = (q.get("force") or ["0"])[0] == "1"
             return self.send_json({"ok": True, "usb": probe_usb_all(force)})
 

@@ -92,3 +92,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0085 | 2026-09-17 03:14 | Save YAML under its own name with a replace warning; picking a saved YAML opens it in the timeline (A0-20) |
 | 0086 | 2026-09-17 03:19 | Timeline panel drags taller or shorter, keeps its height, arrow keys and double-click reset (A0-17) |
 | 0087 | 2026-09-17 14:20 | Studio login is the hub login: wrong password refused by the hub, a hub session logs Studio in (A26-32) |
+| 0088 | 2026-09-17 15:03 | Safety speed cap in move timing (SAFE_DPS from the robot) and RS485 adapter bus id found by itself (A26-31, A26-33) |

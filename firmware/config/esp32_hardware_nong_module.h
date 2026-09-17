@@ -84,6 +84,9 @@
                                           // under load). A commanded T shorter than
                                           // largest-delta/max_dps is raised to it, so
                                           // the real arm always reaches the pose.
+    #define NONG_SAFE_DPS          60.0f  // SAFETY cap: no joint's PEAK speed goes past this,
+                                          // whatever T a move asks for (user 2026-09-17,
+                                          // arm hit something). CFG safe_dps to change.
     #define NONG_MIN_MOVE_MS       80     // shortest interpolated move
     #define NONG_DEFAULT_NEUTRAL   90.0f  // neutral angle for every joint
     // Per-servo travel limits (deg). The universal joint cannot reach the

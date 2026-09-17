@@ -328,7 +328,7 @@ interchangeably.
 | `WIFI CLEAR` | `OK forgot the stored network, now using "manny" from the firmware` | forget credentials set on this board and fall back to the one compiled into `config/conf_network.h`. The way back after pointing a module at a bench hotspot |
 | `WIFI RETRY` | `OK retrying "manny" now` | try the stored network again without waiting for the 60 s clock |
 | `WIFI SCAN` | `OK 4 network(s): "manny"(-48dBm) ...` | which 2.4GHz networks this board can actually see. Asynchronous — ask again a moment later for the result |
-| `CFG <key> <value>` | `OK ... (reboot to apply)` | keys: `encoder leds speed speed_mms stages stage_mm mm_per_rev counts_per_rev max_rpm counts_per_stage volume speed_dps max_dps link` — works without SD card, overrides module.yaml |
+| `CFG <key> <value>` | `OK ... (reboot to apply)` | keys: `encoder leds speed speed_mms stages stage_mm mm_per_rev counts_per_rev max_rpm counts_per_stage volume speed_dps max_dps safe_dps link` — works without SD card, overrides module.yaml |
 | `CFG CLEAR [key]` | `OK cleared ...` | remove one / all stored settings |
 | `PIN?` | `{"motor_a":{"gpio":33,...},...}` | current hardware pin map (JSON) |
 | `PINS` / `PINS?` | same as `PIN?` | aliases, so either spelling works |
@@ -541,6 +541,13 @@ would start from a pose that was never reached. Longer times are always
 allowed. The reply reports the effective `T`; the editor enforces the same
 floor while authoring.
 
+**Every move is also held under a safety speed, `safe_dps`** (default 60 deg/s,
+`CFG safe_dps <5-1000>` + reboot, reported in `INFO` as `safe_dps`). It is
+measured from where the arm IS now, not from the pose the editor thinks it is
+in, and it caps the PEAK speed of the cosine ease: `T >= largest delta × π/2 ÷
+safe_dps`. An explicit `T` never goes past it. Added 2026-09-17 after the arm
+hit something on a fast jump.
+
 | Command | Reply | Notes |
 |---|---|---|
 | `POSE <a1..a10> [T <ms>]` | `OK pose T=800ms` | all 10 joints; `-` keeps a joint; a shorter list (e.g. an old 8-joint pose) leaves the rest untouched; no `T` = duration from speed; `T` below the physical minimum is raised |
@@ -639,6 +646,7 @@ frame_hz:     [50,50,50,50,50,50,50,50,50,50]  # SERVO frame rate (Hz): DEFAULT
 speed_dps: 120                                # deg/s when a POSE has no T
 max_dps: [375,375,400,400,375,375,400,400,200,400] # per-joint speed limit (floor
                                               # for move times); WAIST is slower
+safe_dps: 60                                  # safety cap on peak joint speed, every move
 link: 0                                       # 1 on the LEADER only (2-ESP humanoid, below)
 peer: 0                                       # partner module id (0 = broadcast to all)
 ```

@@ -105,6 +105,26 @@ void test_bad_speed_is_survivable(void) {
     TEST_ASSERT_TRUE(minDuration(from, to, dps, 1, MIN_MS) >= MIN_MS);
 }
 
+// Safety cap (2026-09-17): no joint's PEAK speed on the cosine ease may pass
+// safeDps. A 90 deg jump at 60 deg/s needs 90 * pi/2 / 60 = 2.356 s.
+void test_safe_duration_caps_peak_speed(void) {
+    float from[2] = {90, 90};
+    float to[2]   = {90, 180};
+    const uint32_t ms = safeDuration(from, to, 2, 60.0f, MIN_MS);
+    TEST_ASSERT_UINT32_WITHIN(2, 2356, ms);
+    // sample the eased path: the fastest step never beats 60 deg/s (+1% slack)
+    float peak = 0, prev = 90;
+    for (int k = 1; k <= 1000; k++) {
+        float t = (float)k / 1000.0f;
+        float x = 90 + 90 * ease(t);
+        float v = (x - prev) / ((float)ms / 1000.0f / 1000.0f);
+        if (v > peak) peak = v;
+        prev = x;
+    }
+    TEST_ASSERT_TRUE(peak <= 60.6f);
+    TEST_ASSERT_TRUE(safeDuration(from, to, 2, 0.0f, MIN_MS) >= MIN_MS);
+}
+
 // ---------------------------------------------------------------- easing
 void test_ease_is_smooth_and_bounded(void) {
     TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, ease(0.0f));
@@ -356,6 +376,7 @@ int main(int, char **) {
     RUN_TEST(test_time_never_below_the_minimum);
     RUN_TEST(test_duration_scales_with_speed);
     RUN_TEST(test_bad_speed_is_survivable);
+    RUN_TEST(test_safe_duration_caps_peak_speed);
     RUN_TEST(test_ease_is_smooth_and_bounded);
     RUN_TEST(test_quoted_ssid_keeps_its_spaces);
     RUN_TEST(test_quoted_password_loses_its_quotes);

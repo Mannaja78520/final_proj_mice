@@ -35,6 +35,9 @@ function step(){
 
     if (!document.getElementById("liveChk")) return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);
+    // the file's moves are faster than the 60 deg/s safety cap on purpose; this
+    // check is about honouring a file's own T, the cap has check_contracts
+    SAFE_DPS = 1000;
     document.getElementById("loopChk").checked = false;
     document.getElementById("liveChk").checked = true;
     liveChanged();

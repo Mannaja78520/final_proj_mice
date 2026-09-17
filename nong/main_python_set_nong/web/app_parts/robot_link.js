@@ -72,7 +72,23 @@ function usbPortChanged() {   // picking another port drops the old link
   if (hubPort && hubPort !== $("usbPort").value) hubPort = "";
   $("robotStat").textContent = linkBadge();
 }
+// A USB-RS485 adapter has no board of its own: the nong answers only when
+// addressed by its bus id. The id box is technical detail (hidden), so fill it
+// from the hub's cable probe (user 2026-09-17: "no reply from COM12").
+async function findBusId(port) {
+  try {
+    const r = await fetch("/api/scanusb?full=1&port=" + encodeURIComponent(port)).then(r => r.json());
+    const u = (r.usb || [])[0] || {};
+    if (u.module) return false;                              // a board on this cable itself
+    const nongs = (u.rs485 || []).filter(m => m.type === "nong");
+    if (!nongs.length) return false;
+    $("busId").value = nongs[0].id;
+    return true;
+  } catch (e) { return false; }                              // no hub probe: id stays as typed
+}
 async function hubUsbCmd(c) {
+  if (!hubPort && !(window.HUB_PEER || window.HUB_VIA))
+    throw new Error("the USB link is closed - press Connect again");
   // With a peer, the command has to go to the module behind the plugged-in
   // one's hotspot, and only the unified endpoint understands that: the hub
   // turns dev=usb:COM7@far-nong into REACH far-nong <command> down the cable.
@@ -335,7 +351,15 @@ async function connectRobot() {
     } else if (t === "serial" && !usbDirect()) {
       await serialConnect();
     }
-    const s = await getStatus();
+    let s;
+    try { s = await getStatus(); }
+    catch (e) {
+      // silent cable with no bus id: maybe an RS485 adapter - ask the hub who is behind it
+      if (t !== "usb" || busId() || !(await findBusId(hubPort))) throw e;
+      s = await getStatus();
+    }
+    const safe = s.module && +s.module.safe_dps;
+    if (safe > 0 && safe !== SAFE_DPS) { SAFE_DPS = safe; clampKeyTimes(); renderTimeline(); }
     // If the module is playing a sequence on its OWN clock, say so here. It is
     // the moment the question "why is the robot moving by itself?" gets asked —
     // it happens after a hand-off, or when the board was left running from an

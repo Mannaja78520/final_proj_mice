@@ -87,6 +87,22 @@ window.REF = [
          "MIN_MOVE_MS = 80 on both sides."
 },
 {
+  id: "safe-speed",
+  group: "Nong — the humanoid",
+  name: "The safety speed cap on every move",
+  where: [{file: "firmware/src/modules/nong/NongMath.h", line: 100,
+           what: "safeDuration()"},
+          {file: "nong/main_python_set_nong/web/app_parts/timing.js", line: 30,
+           what: "minTime() — Nong Studio applies the same floor"}],
+  eq: "t = biggest joint change &times; &pi;/2 &divide; safe_dps,  floor 80 ms",
+  why: "The cosine ease is fastest in the middle, at &pi;/2 times the average " +
+       "speed, so this is the shortest time in which no joint ever passes " +
+       "safe_dps. Measured from where the arm really is. Added 2026-09-17 after " +
+       "the arm hit something on a fast jump; default 60 &deg;/s, CFG safe_dps.",
+  from: "Derivative of 0.5 - 0.5 cos(&pi;t) peaks at &pi;/2 per unit time (calculus of the raised cosine ease above).",
+  watch: "Firmware and Studio must use the same safe_dps; Studio reads it from INFO on connect."
+},
+{
   id: "show-time",
   group: "Nong — the humanoid",
   name: "How long a move takes at show speed",

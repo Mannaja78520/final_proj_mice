@@ -240,7 +240,12 @@
     <p><code>CFG &lt;key&gt; &lt;value&gt;</code> stores settings in NVS and overrides
        <code>module.yaml</code>: <code>encoder leds speed speed_mms stages stage_mm
        mm_per_rev counts_per_rev max_rpm counts_per_stage volume speed_dps max_dps
-       link</code>.</p></div>
+       safe_dps link</code>.</p></div>
+  <div class="f"><h3>The arm never moves faster than its safety speed<span class="tag t-new">new</span></h3>
+    <p>Every move of the nong, from Studio, a show or a command, is slowed so no joint passes
+       <b>60&deg;/s</b> at its fastest point. It is measured from where the arm really is, so a jump to
+       a far pose takes longer instead of slamming. Change it with <code>CFG safe_dps &lt;5-1000&gt;</code>
+       and a reboot. Studio reads the robot's value when it connects and times moves the same way.</p></div>
   <div class="f"><h3>Name &amp; bus address</h3>
     <p><code>SET NAME</code> also renames the WiFi hostname, the <code>.local</code>
        address and the AP hotspot. <code>SET ID 1–247</code> sets the RS485 address.</p></div>
@@ -1062,6 +1067,9 @@
        asks for its own login, the hub first tries the account you logged in with, then the
        logins robots ship with (listed in <b>config/board_logins.json</b>). A robot with none of
        those accounts says so, and still works over its USB or RS485 cable.</p></div>
+  <div class="f"><h3>A USB-RS485 adapter needs no bus id typed<span class="tag t-new">new</span></h3>
+    <p>In Nong Studio pick <b>+ USB / RS485 (shared)</b>, choose the port and press Connect. If nothing
+       answers on the cable itself, Studio asks the hub which robot is on the bus behind it and uses that one.</p></div>
   <div class="f"><h3>super_admin looks after everyone<span class="tag t-new">new</span></h3>
     <p>Only super_admin can add or remove accounts, rename anyone, and set a new password for
        anyone (✎ and 🔑 beside each name on the hub's Accounts card). The last super_admin can

@@ -48,6 +48,7 @@ void NongModule::applySettings(JsonVariant s) {
     arrOrScalarI("frame_hz", frameHz_);         // 50 normal, 330 for PDI-1181MG
 
     speedDps_ = s["speed_dps"] | speedDps_;
+    safeDps_  = s["safe_dps"] | safeDps_;
     link_     = (s["link"] | (link_ ? 1 : 0)) != 0;
     peer_     = s["peer"] | peer_;
     if (peer_ < 0 || peer_ > 247) peer_ = 0;
@@ -63,6 +64,8 @@ void NongModule::applySettings(JsonVariant s) {
     }
     if (speedDps_ < 5) speedDps_ = 5;
     if (speedDps_ > slowestMaxDps()) speedDps_ = slowestMaxDps();
+    if (!(safeDps_ >= 5)) safeDps_ = 5;               // NaN too
+    if (safeDps_ > slowestMaxDps()) safeDps_ = slowestMaxDps();
     reclamp();
 }
 
@@ -269,7 +272,9 @@ uint32_t NongModule::durationFor(const float tgt[N]) const {
 // physical floor: no servo can move faster than ITS OWN max_dps, so the move
 // must be at least as long as the slowest joint needs for its own travel
 uint32_t NongModule::minDuration(const float tgt[N]) const {
-    return nongmath::minDuration(cur_, tgt, maxDps_, N, NONG_MIN_MOVE_MS);
+    uint32_t phys = nongmath::minDuration(cur_, tgt, maxDps_, N, NONG_MIN_MOVE_MS);
+    uint32_t safe = nongmath::safeDuration(cur_, tgt, N, safeDps_, NONG_MIN_MOVE_MS);
+    return max(phys, safe);
 }
 
 void NongModule::startMove(const float tgt[N], uint32_t ms) {
@@ -943,6 +948,7 @@ void NongModule::status(JsonObject o) {
     o["moving"] = moving_;
     o["attached"] = attached_;
     o["speed_dps"] = speedDps_;
+    o["safe_dps"] = safeDps_;
     o["link"] = link_;
     o["peer"] = peer_;
     // sequence progress for monitor mode: remaining ms of the current move
