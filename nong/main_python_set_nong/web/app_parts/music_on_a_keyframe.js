@@ -327,6 +327,24 @@ async function playLocalSeq() {
 async function playSdSeq(fname) {
   await playSavedSeq("robot SD " + fname, () => sdDownload(fname));
 }
+// Delete a saved YAML (user 2026-09-17). The hub moves it to
+// sequences/.deleted/, so a mis-click can still be undone by hand.
+async function deleteLocalSeq() {
+  const f = $("seqList").value;
+  if (!f) { $("tlStat").textContent = "pick a saved YAML in the list first."; return; }
+  if (!confirm("Delete " + f + "?\n\nIt is moved to sequences/.deleted on this PC, not erased.")) return;
+  try {
+    const r = await fetch("/api/seqdelete", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: f }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) throw new Error(j.need_login ? "log in first" : (j.error || "HTTP " + r.status));
+    $("tlStat").textContent = f + " deleted (kept in sequences/.deleted).";
+    await refreshSeqs();
+  } catch (e) {
+    $("tlStat").textContent = "could not delete " + f + ": " + (e.message || e);
+    notice($("tlStat").textContent);
+  }
+}
 async function refreshSeqs() {
   const r = await fetch("/api/list?kind=sequences").then(r => r.json());
   const sel = $("seqList");

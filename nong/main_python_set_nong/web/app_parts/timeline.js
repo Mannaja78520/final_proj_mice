@@ -140,7 +140,16 @@ function totalMs() {
   let t = 0;
   for (let i = 1; i < K.length; i++) t += K[i].t + (K[i].hold || 0);
   t += K.length ? (K[0].hold || 0) : 0;
-  return t;
+  return t + loopReturnMs();
+}
+// LOOP WRAP (user 2026-09-17): the arm has to travel from the last pose back to
+// the first, which takes real time under the safety cap. The preview used to
+// jump there at once and ran ahead of the robot. With loop on, that travel is a
+// segment of its own: index K.length, pose K[0]. Never written to the file.
+function loopReturnMs() {
+  const K = playKeys();
+  if (!$("loopChk") || !$("loopChk").checked || K.length < 2) return 0;
+  return autoTime(K[K.length - 1].pose, K[0].pose, speedDps());
 }
 function renderTimeline() {
   const box = $("keys");
@@ -586,7 +595,12 @@ function poseAt(ms) {
     t += seg + (K[i].hold || 0);
     if (ms < t) return [...K[i].pose];
   }
-  return [...K[K.length - 1].pose];
+  const ret = loopReturnMs(), last = K[K.length - 1].pose;
+  if (ret && ms < t + ret) {
+    const f = 0.5 - 0.5 * Math.cos(Math.PI * (ms - t) / ret);
+    return last.map((a, j) => a + (K[0].pose[j] - a) * f);
+  }
+  return [...(ret ? K[0].pose : last)];
 }
 // Which MOVE is running at ms, or -1 when nothing is moving. The phases mirror
 // poseAt() exactly: hold at keyframe 0, move into 1, hold at 1, move into 2 …
@@ -604,6 +618,7 @@ function segmentAt(ms) {
     t += K[i].t + (K[i].hold || 0);
     if (ms < t) return -1;                     // holding on keyframe i
   }
+  if (K.length && ms < t + loopReturnMs()) return K.length;   // loop: back to the start
   return -1;
 }
 // ---- keeping playback alive when the tab is not in front -------------
@@ -739,7 +754,7 @@ function hubDriven() {
 function hubShowSteps() {
   const K = playKeys();
   if (K.length < 2) return null;
-  return K.map((k, i) => ({
+  const steps = K.map((k, i) => ({
     pose: k.pose.map(v => +fmtA(v)),
     t: i === 0 ? minTime(pose, K[0].pose) : k.t,
     hold: k.hold || 0,
@@ -748,6 +763,10 @@ function hubShowSteps() {
     cues: k.cues || [],
     cues_after: k.cuesAfter || [],
   }));
+  // loop: the travel back to the start is a step of its own, timed like the preview
+  const ret = loopReturnMs();
+  if (ret) steps.push({ pose: steps[0].pose.slice(), t: ret, hold: 0, cues: [], cues_after: [] });
+  return steps;
 }
 async function hubPlay(fromMs) {
   const steps = hubShowSteps();
@@ -797,6 +816,8 @@ function segRemaining(ms) {
     t += K[i].t + (K[i].hold || 0);
     if (ms < t) return 0;                      // in a hold, nothing is running
   }
+  const ret = loopReturnMs();
+  if (ret && ms < t + ret) return Math.max(1, Math.round(t + ret - ms));
   return 0;
 }
 function scrubTo(v) {

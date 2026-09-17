@@ -29,13 +29,13 @@ function renderRigUI() {
     // a typed number goes straight past the min/max attributes, and this one is
     // written to the board and used on every boot.
     const neu = document.createElement("input");
-    neu.type = "number"; neu.min = 0; neu.max = 180; neu.value = RIG.neutral[i];
-    neu.title = "where this joint goes when the robot starts, and when you "
-              + "press Neutral or Home";
+    neu.type = "number"; neu.min = 0; neu.max = 180; neu.value = RIG.home[i];
+    neu.title = "robot home: where this joint goes when the robot starts, and "
+              + "when you press Home";
     neu.onchange = () => {
-      RIG.neutral[i] = Math.max(RIG.min[i], Math.min(RIG.max[i],
-                                clampDeg(+neu.value || 0)));
-      neu.value = RIG.neutral[i];          // show what was actually accepted
+      RIG.home[i] = Math.max(RIG.min[i], Math.min(RIG.max[i],
+                             clampDeg(+neu.value || 0)));
+      neu.value = RIG.home[i];             // show what was actually accepted
       rigChanged();
     };
     const lo = document.createElement("input");
@@ -442,7 +442,7 @@ async function pushLimits() {
       const pmin = RIG.pulseMin[i], pmax = RIG.pulseMax[i];
       const dps = Math.round(RIG.servoMaxDps[i]);
       const rng = Math.round(RIG.servoRange[i]), hz = Math.round(RIG.frameHz[i]);
-      const neu = Math.round(RIG.neutral[i]);
+      const neu = Math.round(RIG.home[i]);          // the board's NEUTRAL = robot home
       const off = Math.round(RIG.offset[i] * 2) / 2;   // half a degree, as the buttons step
       const parts = [];
       if (!(same("min", i, mn) && same("max", i, mx)))
@@ -522,7 +522,7 @@ async function pullLimits() {
     pull(j.max_dps, "servoMaxDps");
     pull(j.servo_range, "servoRange");
     pull(j.frame_hz, "frameHz");
-    pull(j.neutral, "neutral");
+    pull(j.neutral, "home");
     pull(j.offset, "offset");
     saveRig(); renderRigUI(); buildRobot(); renderSliders();
     $("limStat").textContent =

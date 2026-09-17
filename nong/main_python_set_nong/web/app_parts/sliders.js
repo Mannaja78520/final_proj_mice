@@ -144,11 +144,19 @@ function poseChanged(throttled, liveMs) {
 }
 
 function setNeutral() { pose = [...RIG.neutral]; poseChanged(false); }
-async function neutralFromPose() { // the start pose: saved here AND on the robot
+// Neutral is the SHOW's rest pose and stays in Studio; robot home is separate
+// (user 2026-09-17: home = start position of the robot, neutral = the show's).
+function neutralFromPose() {
   RIG.neutral = [...pose];
   saveRig();
+  $("tlStat").textContent = "show neutral = " + RIG.neutral.map(Math.round).join(" ") +
+    " — kept in Studio. The robot's start position is set with Keep this as robot home.";
+}
+async function homeFromPose() { // robot home: saved here AND on the robot
+  RIG.home = [...pose];
+  saveRig();
   renderRigUI();                      // the start° column shows the new numbers
-  const shown = RIG.neutral.map(Math.round).join(" ");
+  const shown = RIG.home.map(Math.round).join(" ");
   // Sent as ONE whole-pose line, not ten. Until 2026-09-10 this only ever saved
   // in the browser, so the editor and the robot disagreed about where home was
   // and nothing on the page said so.
@@ -156,18 +164,18 @@ async function neutralFromPose() { // the start pose: saved here AND on the robo
   // here: it also requires the live-follow tick, so with that off the button
   // saved in the browser and quietly sent the robot nothing.
   if (!haveUsb() && !haveWifi()) {
-    $("tlStat").textContent = "start pose = " + shown +
+    $("robotStat").textContent = "robot home = " + shown +
       " — saved here. Connect the robot and press Send rig to give it these.";
     return;
   }
   try {
-    const r = await rawCmd("NEUTRAL " + RIG.neutral.map(fmtA).join(" "));
-    $("tlStat").textContent = /^ERR/i.test(r || "")
-      ? "the robot did not take the start pose: " + r
-      : "start pose = " + shown + " — the robot will start here from now on. "
+    const r = await rawCmd("NEUTRAL " + RIG.home.map(fmtA).join(" "));
+    $("robotStat").textContent = /^ERR/i.test(r || "")
+      ? "the robot did not take the home pose: " + r
+      : "robot home = " + shown + " — the robot will start here from now on. "
         + "Press Home to move there.";
   } catch (e) {
-    $("tlStat").textContent = "saved here, but it did not reach the robot: "
+    $("robotStat").textContent = "home saved here, but it did not reach the robot: "
       + (e.message || e);
   }
 }

@@ -72,6 +72,28 @@ function usbPortChanged() {   // picking another port drops the old link
   if (hubPort && hubPort !== $("usbPort").value) hubPort = "";
   $("robotStat").textContent = linkBadge();
 }
+// Studio and the robot must agree on joint limits, or a pose drawn at 25 deg
+// is clamped to 30 on the arm and the two no longer match (user 2026-09-17).
+// Says so on connect and offers both ways to fix it; which is right is the user's call.
+async function checkLimitsMatch() {
+  const box = $("limMismatch");
+  if (!box) return;
+  try {
+    const j = JSON.parse(await rawCmd("LIMIT?"));
+    const diff = [];
+    for (let i = 0; i < NJ; i++) {
+      const rmin = Array.isArray(j.min) ? Math.round(+j.min[i]) : null;
+      const rmax = Array.isArray(j.max) ? Math.round(+j.max[i]) : null;
+      if (rmin === null || rmax === null || isNaN(rmin) || isNaN(rmax)) continue;
+      if (rmin !== Math.round(RIG.min[i]) || rmax !== Math.round(RIG.max[i]))
+        diff.push(`${JOINT_LABELS[i]}: Studio ${Math.round(RIG.min[i])}–${Math.round(RIG.max[i])}°, robot ${rmin}–${rmax}°`);
+    }
+    box.hidden = !diff.length;
+    $("limMismatchText").textContent = diff.length
+      ? "Studio and the robot allow different joint angles, so the arm will not match the preview. " + diff.join(" · ")
+      : "";
+  } catch (e) { box.hidden = true; }            // an old board without LIMIT?: say nothing
+}
 // A USB-RS485 adapter has no board of its own: the nong answers only when
 // addressed by its bus id. The id box is technical detail (hidden), so fill it
 // from the hub's cable probe (user 2026-09-17: "no reply from COM12").
@@ -358,6 +380,7 @@ async function connectRobot() {
       if (t !== "usb" || busId() || !(await findBusId(hubPort))) throw e;
       s = await getStatus();
     }
+    checkLimitsMatch();                   // not awaited: connecting must not wait on it
     const safe = s.module && +s.module.safe_dps;
     if (safe > 0 && safe !== SAFE_DPS) { SAFE_DPS = safe; clampKeyTimes(); renderTimeline(); }
     // If the module is playing a sequence on its OWN clock, say so here. It is

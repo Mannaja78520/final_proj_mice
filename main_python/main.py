@@ -1628,6 +1628,14 @@ class ShowPlayer:
             self.last = r
         return r
 
+    @staticmethod
+    def _took(reply, asked):
+        """How long the move really takes: the board may lengthen T (safety cap,
+        servo limit) and says so as `OK pose T=<ms>ms`. Waiting only the asked
+        time sent the next pose before the arm arrived (bench 2026-09-17)."""
+        m = re.search(r"T=(\d+)ms", reply or "")
+        return max(asked, int(m.group(1))) if m else asked
+
     def _sleep(self, flag, seconds):
         """Wait, but wake up immediately when someone presses stop."""
         return not flag.wait(max(0.0, seconds))
@@ -1663,7 +1671,7 @@ class ShowPlayer:
                 return False
             self._mark(0, at)
             self._cues(self.steps[0])
-            self._say(self._pose_cmd(self.steps[0]["pose"], t))
+            t = self._took(self._say(self._pose_cmd(self.steps[0]["pose"], t)), t)
             if not self._sleep(flag, t / 1000.0):
                 return False
         else:
@@ -1690,7 +1698,7 @@ class ShowPlayer:
                 return False
             self._mark(i, self._elapsed_to(i))
             self._cues(s)
-            self._say(self._pose_cmd(s["pose"], left))
+            left = self._took(self._say(self._pose_cmd(s["pose"], left)), left)
             if not self._sleep(flag, left / 1000.0):
                 return False
             if s["hold"]:
@@ -4895,6 +4903,25 @@ class Handler(BaseHTTPRequestHandler):
             if not f.is_file():
                 return self.send_err("no sequence " + name, 404)
             return self.send_bytes(f.read_bytes(), "text/yaml; charset=utf-8")
+
+        if path == "/api/seqdelete" and method == "POST":
+            # Asked 2026-09-17: *make can edit and delete the yaml too*. Moved
+            # into sequences/.deleted/ with a time stamp, never erased: a show
+            # is a person's work and a mis-click must be recoverable by hand.
+            data = json.loads(self.body().decode() or "{}")
+            try:
+                name = safe_name(str(data.get("name") or ""))
+            except ValueError:
+                name = ""
+            f = SEQUENCES / name
+            if not name or not f.is_file():
+                return self.send_err("no saved sequence called " + name, 404)
+            bin_ = SEQUENCES / ".deleted"
+            bin_.mkdir(exist_ok=True)
+            dest = bin_ / (time.strftime("%Y%m%d-%H%M%S_") + name)
+            f.replace(dest)
+            return self.send_json({"ok": True, "file": name,
+                                   "kept": ".deleted/" + dest.name})
 
         if path == "/api/seqsteps":
             # The same file loadseq serves, PARSED for POST /api/play - the

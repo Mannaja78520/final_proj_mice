@@ -107,15 +107,18 @@ function playTick() {
       // same numbers the YAML holds); after a pause, only what is left
       const K = playKeys();
       const rem = segRemaining(playT);
-      const tt = K[seg].t - rem <= 50 ? K[seg].t : rem;
-      liveSend("POSE " + K[seg].pose.map(fmtA).join(" ") + " T " + tt);
+      // seg === K.length is the loop's travel back to the start pose
+      const to = seg === K.length ? { pose: K[0].pose, t: loopReturnMs() } : K[seg];
+      const tt = to.t - rem <= 50 ? to.t : rem;
+      liveSend("POSE " + to.pose.map(fmtA).join(" ") + " T " + tt);
     }
   }
 }
 
 function tick(now) {
   requestAnimationFrame(tick);
-  _drawing = true;          // this pass may paint; the interval's may not
+  freezeCheck(now);
+  _drawing = true;         // this pass may paint; the interval's may not
   playTick();               // no-op when the interval already advanced it
   _drawing = false;
   lastFrame = now;

@@ -91,7 +91,7 @@
       <div id="sliders"></div>
       <div class="row">
         <button onclick="setNeutral()">Neutral pose</button>
-        <button onclick="neutralFromPose()" title="save the current pose as the neutral pose (kept in the rig)">Keep this as neutral</button>
+        <button onclick="neutralFromPose()" title="save the current pose as the show's neutral pose (kept in Studio, the robot is not changed)">Keep this as neutral</button>
         <button onclick="mirrorLR()">Mirror L↔R</button>
       </div>
     </div>
@@ -197,12 +197,20 @@
         </select>
       </div>
       <div class="statline" id="robotStat">not connected</div>
+      <div class="warn" id="limMismatch" hidden>
+        <span id="limMismatchText"></span>
+        <div class="row">
+          <button onclick="pullLimits().then(checkLimitsMatch)">Use the robot's limits</button>
+          <button onclick="pushLimits().then(checkLimitsMatch)">Send Studio's limits to the robot</button>
+        </div>
+      </div>
       <div class="row">
         <label><input type="checkbox" id="liveChk" onchange="liveChanged()"> live (robot follows editor)</label>
         <label><input type="checkbox" id="monChk" onchange="monitorChanged()"> <b>monitor</b> (editor follows robot)</label>
       </div>
       <div class="row">
-        <button onclick="robotCmd('HOME')">Home</button>
+        <button onclick="robotCmd('HOME')" title="move the robot to its home (start) position">Home</button>
+        <button onclick="homeFromPose()" title="make the pose on screen the robot's home: where it goes when it starts and when you press Home">Keep this as robot home</button>
         <button onclick="robotCmd('RELAX')">Relax</button>
         <button onclick="robotCmd('ATTACH')">Attach</button>
         <button onclick="sendPose()">Send pose</button>
@@ -418,6 +426,8 @@
     <button onclick="editLocalSeq()">Load for editing</button>
     <button onclick="playLocalSeq()"
             title="Loads this saved sequence into the timeline and starts playing it right away — same as Edit, then Play.">▶ Play saved</button>
+    <button onclick="deleteLocalSeq()"
+            title="Delete the picked saved YAML from this PC. It is moved to sequences/.deleted, not erased.">🗑 Delete</button>
   </div>
   <div id="timebar">
     <div class="tb-top">

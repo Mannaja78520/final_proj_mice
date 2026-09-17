@@ -240,7 +240,10 @@ const DEFAULT_RIG = {
   zero: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
   axis: [...DEFAULT_AXIS],        // rotation axis per joint (roll/pitch/yaw)
   invert: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  neutral: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90], // editable "Neutral pose"
+  neutral: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90], // the show's "Neutral pose" (Studio only)
+  // Robot HOME: where the board goes on power-up and on Home (its NEUTRAL
+  // command). Split from neutral on user request 2026-09-17.
+  home: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
   // Mounting correction per joint, in JOINT degrees — a servo horn refitted a
   // tooth out. The BOARD stores it in servo degrees as `trim`; the conversion is
   // its job, so nothing here has to know a gear ratio.
@@ -312,7 +315,9 @@ function mergeRig(saved) {
   // undefined, applyPose computes NaN for the WAIST/SHRUG body rotation, and
   // the whole robot (torso+head+arms all live under bodyGroup) renders at NaN
   // = invisible. Any per-joint array read by applyPose/buildRobot belongs here.
-  ["zero", "min", "max", "axis", "invert", "neutral", "offset",
+  // A rig saved before the split used neutral for both; keep that robot's home.
+  if (!Array.isArray(r.home) && Array.isArray(r.neutral)) r.home = [...r.neutral];
+  ["zero", "min", "max", "axis", "invert", "neutral", "home", "offset",
    "gearPinion", "gearGear", "pulseMin", "pulseMax", "servoMaxDps", "servoRange",
    "frameHz"].forEach(fixLen);
   // The SHRUG 4-bar calibration. An empty list means "not measured", which is
@@ -1587,11 +1592,19 @@ function poseChanged(throttled, liveMs) {
 }
 
 function setNeutral() { pose = [...RIG.neutral]; poseChanged(false); }
-async function neutralFromPose() { // the start pose: saved here AND on the robot
+// Neutral is the SHOW's rest pose and stays in Studio; robot home is separate
+// (user 2026-09-17: home = start position of the robot, neutral = the show's).
+function neutralFromPose() {
   RIG.neutral = [...pose];
   saveRig();
+  $("tlStat").textContent = "show neutral = " + RIG.neutral.map(Math.round).join(" ") +
+    " — kept in Studio. The robot's start position is set with Keep this as robot home.";
+}
+async function homeFromPose() { // robot home: saved here AND on the robot
+  RIG.home = [...pose];
+  saveRig();
   renderRigUI();                      // the start° column shows the new numbers
-  const shown = RIG.neutral.map(Math.round).join(" ");
+  const shown = RIG.home.map(Math.round).join(" ");
   // Sent as ONE whole-pose line, not ten. Until 2026-09-10 this only ever saved
   // in the browser, so the editor and the robot disagreed about where home was
   // and nothing on the page said so.
@@ -1599,18 +1612,18 @@ async function neutralFromPose() { // the start pose: saved here AND on the robo
   // here: it also requires the live-follow tick, so with that off the button
   // saved in the browser and quietly sent the robot nothing.
   if (!haveUsb() && !haveWifi()) {
-    $("tlStat").textContent = "start pose = " + shown +
+    $("robotStat").textContent = "robot home = " + shown +
       " — saved here. Connect the robot and press Send rig to give it these.";
     return;
   }
   try {
-    const r = await rawCmd("NEUTRAL " + RIG.neutral.map(fmtA).join(" "));
-    $("tlStat").textContent = /^ERR/i.test(r || "")
-      ? "the robot did not take the start pose: " + r
-      : "start pose = " + shown + " — the robot will start here from now on. "
+    const r = await rawCmd("NEUTRAL " + RIG.home.map(fmtA).join(" "));
+    $("robotStat").textContent = /^ERR/i.test(r || "")
+      ? "the robot did not take the home pose: " + r
+      : "robot home = " + shown + " — the robot will start here from now on. "
         + "Press Home to move there.";
   } catch (e) {
-    $("tlStat").textContent = "saved here, but it did not reach the robot: "
+    $("robotStat").textContent = "home saved here, but it did not reach the robot: "
       + (e.message || e);
   }
 }
@@ -1834,7 +1847,16 @@ function totalMs() {
   let t = 0;
   for (let i = 1; i < K.length; i++) t += K[i].t + (K[i].hold || 0);
   t += K.length ? (K[0].hold || 0) : 0;
-  return t;
+  return t + loopReturnMs();
+}
+// LOOP WRAP (user 2026-09-17): the arm has to travel from the last pose back to
+// the first, which takes real time under the safety cap. The preview used to
+// jump there at once and ran ahead of the robot. With loop on, that travel is a
+// segment of its own: index K.length, pose K[0]. Never written to the file.
+function loopReturnMs() {
+  const K = playKeys();
+  if (!$("loopChk") || !$("loopChk").checked || K.length < 2) return 0;
+  return autoTime(K[K.length - 1].pose, K[0].pose, speedDps());
 }
 function renderTimeline() {
   const box = $("keys");
@@ -2280,7 +2302,12 @@ function poseAt(ms) {
     t += seg + (K[i].hold || 0);
     if (ms < t) return [...K[i].pose];
   }
-  return [...K[K.length - 1].pose];
+  const ret = loopReturnMs(), last = K[K.length - 1].pose;
+  if (ret && ms < t + ret) {
+    const f = 0.5 - 0.5 * Math.cos(Math.PI * (ms - t) / ret);
+    return last.map((a, j) => a + (K[0].pose[j] - a) * f);
+  }
+  return [...(ret ? K[0].pose : last)];
 }
 // Which MOVE is running at ms, or -1 when nothing is moving. The phases mirror
 // poseAt() exactly: hold at keyframe 0, move into 1, hold at 1, move into 2 …
@@ -2298,6 +2325,7 @@ function segmentAt(ms) {
     t += K[i].t + (K[i].hold || 0);
     if (ms < t) return -1;                     // holding on keyframe i
   }
+  if (K.length && ms < t + loopReturnMs()) return K.length;   // loop: back to the start
   return -1;
 }
 // ---- keeping playback alive when the tab is not in front -------------
@@ -2433,7 +2461,7 @@ function hubDriven() {
 function hubShowSteps() {
   const K = playKeys();
   if (K.length < 2) return null;
-  return K.map((k, i) => ({
+  const steps = K.map((k, i) => ({
     pose: k.pose.map(v => +fmtA(v)),
     t: i === 0 ? minTime(pose, K[0].pose) : k.t,
     hold: k.hold || 0,
@@ -2442,6 +2470,10 @@ function hubShowSteps() {
     cues: k.cues || [],
     cues_after: k.cuesAfter || [],
   }));
+  // loop: the travel back to the start is a step of its own, timed like the preview
+  const ret = loopReturnMs();
+  if (ret) steps.push({ pose: steps[0].pose.slice(), t: ret, hold: 0, cues: [], cues_after: [] });
+  return steps;
 }
 async function hubPlay(fromMs) {
   const steps = hubShowSteps();
@@ -2491,6 +2523,8 @@ function segRemaining(ms) {
     t += K[i].t + (K[i].hold || 0);
     if (ms < t) return 0;                      // in a hold, nothing is running
   }
+  const ret = loopReturnMs();
+  if (ret && ms < t + ret) return Math.max(1, Math.round(t + ret - ms));
   return 0;
 }
 function scrubTo(v) {
@@ -2665,13 +2699,13 @@ function renderRigUI() {
     // a typed number goes straight past the min/max attributes, and this one is
     // written to the board and used on every boot.
     const neu = document.createElement("input");
-    neu.type = "number"; neu.min = 0; neu.max = 180; neu.value = RIG.neutral[i];
-    neu.title = "where this joint goes when the robot starts, and when you "
-              + "press Neutral or Home";
+    neu.type = "number"; neu.min = 0; neu.max = 180; neu.value = RIG.home[i];
+    neu.title = "robot home: where this joint goes when the robot starts, and "
+              + "when you press Home";
     neu.onchange = () => {
-      RIG.neutral[i] = Math.max(RIG.min[i], Math.min(RIG.max[i],
-                                clampDeg(+neu.value || 0)));
-      neu.value = RIG.neutral[i];          // show what was actually accepted
+      RIG.home[i] = Math.max(RIG.min[i], Math.min(RIG.max[i],
+                             clampDeg(+neu.value || 0)));
+      neu.value = RIG.home[i];             // show what was actually accepted
       rigChanged();
     };
     const lo = document.createElement("input");
@@ -3078,7 +3112,7 @@ async function pushLimits() {
       const pmin = RIG.pulseMin[i], pmax = RIG.pulseMax[i];
       const dps = Math.round(RIG.servoMaxDps[i]);
       const rng = Math.round(RIG.servoRange[i]), hz = Math.round(RIG.frameHz[i]);
-      const neu = Math.round(RIG.neutral[i]);
+      const neu = Math.round(RIG.home[i]);          // the board's NEUTRAL = robot home
       const off = Math.round(RIG.offset[i] * 2) / 2;   // half a degree, as the buttons step
       const parts = [];
       if (!(same("min", i, mn) && same("max", i, mx)))
@@ -3158,7 +3192,7 @@ async function pullLimits() {
     pull(j.max_dps, "servoMaxDps");
     pull(j.servo_range, "servoRange");
     pull(j.frame_hz, "frameHz");
-    pull(j.neutral, "neutral");
+    pull(j.neutral, "home");
     pull(j.offset, "offset");
     saveRig(); renderRigUI(); buildRobot(); renderSliders();
     $("limStat").textContent =
@@ -3496,6 +3530,24 @@ async function playLocalSeq() {
 }
 async function playSdSeq(fname) {
   await playSavedSeq("robot SD " + fname, () => sdDownload(fname));
+}
+// Delete a saved YAML (user 2026-09-17). The hub moves it to
+// sequences/.deleted/, so a mis-click can still be undone by hand.
+async function deleteLocalSeq() {
+  const f = $("seqList").value;
+  if (!f) { $("tlStat").textContent = "pick a saved YAML in the list first."; return; }
+  if (!confirm("Delete " + f + "?\n\nIt is moved to sequences/.deleted on this PC, not erased.")) return;
+  try {
+    const r = await fetch("/api/seqdelete", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: f }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) throw new Error(j.need_login ? "log in first" : (j.error || "HTTP " + r.status));
+    $("tlStat").textContent = f + " deleted (kept in sequences/.deleted).";
+    await refreshSeqs();
+  } catch (e) {
+    $("tlStat").textContent = "could not delete " + f + ": " + (e.message || e);
+    notice($("tlStat").textContent);
+  }
 }
 async function refreshSeqs() {
   const r = await fetch("/api/list?kind=sequences").then(r => r.json());
@@ -4012,6 +4064,28 @@ function usbPortChanged() {   // picking another port drops the old link
   if (hubPort && hubPort !== $("usbPort").value) hubPort = "";
   $("robotStat").textContent = linkBadge();
 }
+// Studio and the robot must agree on joint limits, or a pose drawn at 25 deg
+// is clamped to 30 on the arm and the two no longer match (user 2026-09-17).
+// Says so on connect and offers both ways to fix it; which is right is the user's call.
+async function checkLimitsMatch() {
+  const box = $("limMismatch");
+  if (!box) return;
+  try {
+    const j = JSON.parse(await rawCmd("LIMIT?"));
+    const diff = [];
+    for (let i = 0; i < NJ; i++) {
+      const rmin = Array.isArray(j.min) ? Math.round(+j.min[i]) : null;
+      const rmax = Array.isArray(j.max) ? Math.round(+j.max[i]) : null;
+      if (rmin === null || rmax === null || isNaN(rmin) || isNaN(rmax)) continue;
+      if (rmin !== Math.round(RIG.min[i]) || rmax !== Math.round(RIG.max[i]))
+        diff.push(`${JOINT_LABELS[i]}: Studio ${Math.round(RIG.min[i])}–${Math.round(RIG.max[i])}°, robot ${rmin}–${rmax}°`);
+    }
+    box.hidden = !diff.length;
+    $("limMismatchText").textContent = diff.length
+      ? "Studio and the robot allow different joint angles, so the arm will not match the preview. " + diff.join(" · ")
+      : "";
+  } catch (e) { box.hidden = true; }            // an old board without LIMIT?: say nothing
+}
 // A USB-RS485 adapter has no board of its own: the nong answers only when
 // addressed by its bus id. The id box is technical detail (hidden), so fill it
 // from the hub's cable probe (user 2026-09-17: "no reply from COM12").
@@ -4298,6 +4372,7 @@ async function connectRobot() {
       if (t !== "usb" || busId() || !(await findBusId(hubPort))) throw e;
       s = await getStatus();
     }
+    checkLimitsMatch();                   // not awaited: connecting must not wait on it
     const safe = s.module && +s.module.safe_dps;
     if (safe > 0 && safe !== SAFE_DPS) { SAFE_DPS = safe; clampKeyTimes(); renderTimeline(); }
     // If the module is playing a sequence on its OWN clock, say so here. It is
@@ -4764,6 +4839,58 @@ async function monitorTick() {
     notice($("robotStat").textContent);
   }
 }
+// --- freeze watch ---
+// User 2026-09-17: the whole Studio page freezes, while playing, dragging, in
+// live mode, and sometimes doing nothing. It did not reproduce headless (0 long
+// tasks, fake robot), so the page records it where it happens: a frame gap over
+// FREEZE_MS while the tab is visible sends one report to the hub (/api/report)
+// with what was running and the slowest recent hub calls.
+const FREEZE_MS = 1500;
+const _fw = { last: 0, hiddenSince: 0, sentAt: -1e9, calls: [], longs: [] };
+(function () {
+  const realFetch = window.fetch.bind(window);
+  window.fetch = function (url, opts) {            // remember how long hub calls take
+    const t0 = performance.now(), u = String(url && url.url || url).slice(0, 90);
+    const done = () => {
+      _fw.calls.push({ u, ms: Math.round(performance.now() - t0), at: Math.round(t0) });
+      if (_fw.calls.length > 40) _fw.calls.shift();
+    };
+    const p = realFetch(url, opts);
+    p.then(done, done);
+    return p;
+  };
+  try {
+    new PerformanceObserver(l => l.getEntries().forEach(e => {
+      _fw.longs.push({ ms: Math.round(e.duration), at: Math.round(e.startTime) });
+      if (_fw.longs.length > 20) _fw.longs.shift();
+    })).observe({ entryTypes: ["longtask"] });
+  } catch (e) { /* older browser: frame gaps still count */ }
+  document.addEventListener("visibilitychange", () => {
+    _fw.hiddenSince = document.hidden ? performance.now() : 0;
+    _fw.last = 0;                                  // a hidden tab is not a freeze
+  });
+})();
+function freezeCheck(now) {
+  const gap = _fw.last ? now - _fw.last : 0;
+  _fw.last = now;
+  if (gap < FREEZE_MS || document.hidden || now - _fw.sentAt < 30000) return;
+  _fw.sentAt = now;
+  const gi = (renderer && renderer.info) || {};
+  const state = {
+    gapMs: Math.round(gap), playing: typeof playing !== "undefined" && playing,
+    live: !!($("liveChk") && $("liveChk").checked),
+    monitor: !!($("monChk") && $("monChk").checked),
+    usb: haveUsb(), wifi: haveWifi(), keys: keys.length,
+    gpu: { geometries: gi.memory && gi.memory.geometries, textures: gi.memory && gi.memory.textures,
+           programs: gi.programs && gi.programs.length },
+    heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null,
+    longTasks: _fw.longs.filter(x => x.at > now - gap - 2000),
+    slowCalls: _fw.calls.filter(c => c.ms > 300 || c.at > now - gap - 2000).slice(-15),
+  };
+  fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: "STUDIO FREEZE " + JSON.stringify(state), page: "studio",
+                           time: new Date().toISOString(), attachDiag: false }) }).catch(() => {});
+}
 // --- main loop ---
 function resize() {
   const w = viewport.clientWidth, h = viewport.clientHeight;
@@ -4873,15 +5000,18 @@ function playTick() {
       // same numbers the YAML holds); after a pause, only what is left
       const K = playKeys();
       const rem = segRemaining(playT);
-      const tt = K[seg].t - rem <= 50 ? K[seg].t : rem;
-      liveSend("POSE " + K[seg].pose.map(fmtA).join(" ") + " T " + tt);
+      // seg === K.length is the loop's travel back to the start pose
+      const to = seg === K.length ? { pose: K[0].pose, t: loopReturnMs() } : K[seg];
+      const tt = to.t - rem <= 50 ? to.t : rem;
+      liveSend("POSE " + to.pose.map(fmtA).join(" ") + " T " + tt);
     }
   }
 }
 
 function tick(now) {
   requestAnimationFrame(tick);
-  _drawing = true;          // this pass may paint; the interval's may not
+  freezeCheck(now);
+  _drawing = true;         // this pass may paint; the interval's may not
   playTick();               // no-op when the interval already advanced it
   _drawing = false;
   lastFrame = now;

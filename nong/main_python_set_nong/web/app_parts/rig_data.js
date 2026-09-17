@@ -42,7 +42,10 @@ const DEFAULT_RIG = {
   zero: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
   axis: [...DEFAULT_AXIS],        // rotation axis per joint (roll/pitch/yaw)
   invert: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  neutral: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90], // editable "Neutral pose"
+  neutral: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90], // the show's "Neutral pose" (Studio only)
+  // Robot HOME: where the board goes on power-up and on Home (its NEUTRAL
+  // command). Split from neutral on user request 2026-09-17.
+  home: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
   // Mounting correction per joint, in JOINT degrees — a servo horn refitted a
   // tooth out. The BOARD stores it in servo degrees as `trim`; the conversion is
   // its job, so nothing here has to know a gear ratio.
@@ -114,7 +117,9 @@ function mergeRig(saved) {
   // undefined, applyPose computes NaN for the WAIST/SHRUG body rotation, and
   // the whole robot (torso+head+arms all live under bodyGroup) renders at NaN
   // = invisible. Any per-joint array read by applyPose/buildRobot belongs here.
-  ["zero", "min", "max", "axis", "invert", "neutral", "offset",
+  // A rig saved before the split used neutral for both; keep that robot's home.
+  if (!Array.isArray(r.home) && Array.isArray(r.neutral)) r.home = [...r.neutral];
+  ["zero", "min", "max", "axis", "invert", "neutral", "home", "offset",
    "gearPinion", "gearGear", "pulseMin", "pulseMax", "servoMaxDps", "servoRange",
    "frameHz"].forEach(fixLen);
   // The SHRUG 4-bar calibration. An empty list means "not measured", which is

@@ -93,3 +93,5 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0086 | 2026-09-17 03:19 | Timeline panel drags taller or shorter, keeps its height, arrow keys and double-click reset (A0-17) |
 | 0087 | 2026-09-17 14:20 | Studio login is the hub login: wrong password refused by the hub, a hub session logs Studio in (A26-32) |
 | 0088 | 2026-09-17 15:03 | Safety speed cap in move timing (SAFE_DPS from the robot) and RS485 adapter bus id found by itself (A26-31, A26-33) |
+| 0089 | 2026-09-17 16:16 | Robot home separate from show neutral, joint-limit mismatch warning, delete saved YAML, freeze report (A26-35..38) |
+| 0090 | 2026-09-17 16:22 | Loop travels back to the start as a timed move; hub waits the board's real move time (A26-41) |

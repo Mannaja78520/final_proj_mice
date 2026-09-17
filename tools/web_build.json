@@ -26,6 +26,7 @@
       "project_save_load.js",
       "stl_meshes.js",
       "robot_link.js",
+      "freeze_watch.js",
       "main_loop.js",
       "boot.js"
     ]

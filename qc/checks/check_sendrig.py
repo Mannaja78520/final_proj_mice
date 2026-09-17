@@ -31,7 +31,7 @@ function step(){
       RIG.pulseMin[i] = 505;  RIG.pulseMax[i] = 2495;
       RIG.servoMaxDps[i] = 321; RIG.servoRange[i] = 181;
       RIG.frameHz[i] = 51;    RIG.min[i] = 26; RIG.max[i] = 154;
-      RIG.neutral[i] = 95;    // the start angle rides along, appended last
+      RIG.home[i] = 95;       // the robot home (start angle) rides along, appended last
     }
     qcMark("start");
     pushLimits().then(function(){

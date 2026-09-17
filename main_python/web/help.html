@@ -1067,6 +1067,24 @@
        asks for its own login, the hub first tries the account you logged in with, then the
        logins robots ship with (listed in <b>config/board_logins.json</b>). A robot with none of
        those accounts says so, and still works over its USB or RS485 cable.</p></div>
+  <div class="f"><h3>Robot home and show neutral are two different poses<span class="tag t-new">new</span></h3>
+    <p><b>Home</b> is where the robot goes when it powers on and when you press Home. Set it in Nong Studio's
+       Robot card with <b>Keep this as robot home</b>, or in the Setup table's start° column. <b>Neutral</b> is the
+       rest pose of a show and stays in Studio: <b>Keep this as neutral</b> never changes the robot.</p></div>
+  <div class="f"><h3>Studio says when its joint limits differ from the robot's<span class="tag t-new">new</span></h3>
+    <p>When Studio connects it compares its joint limits with the robot's. If they differ, the arm would stop short
+       of the preview, so Studio says which joints and offers <b>Use the robot's limits</b> or
+       <b>Send Studio's limits to the robot</b>.</p></div>
+  <div class="f"><h3>A looping show goes back to its start at the robot's pace<span class="tag t-new">new</span></h3>
+    <p>With <b>loop</b> on, the end of the show is followed by the move back to the first pose, timed like any
+       other move, so the preview and the real arm stay together round after round. The hub also waits as long as
+       the robot says a move really takes.</p></div>
+  <div class="f"><h3>Delete a saved YAML<span class="tag t-new">new</span></h3>
+    <p>Pick it in the saved list and press <b>🗑 Delete</b>. It is moved to <b>sequences/.deleted</b> on this PC,
+       so a mistake can be put back. To edit one, press <b>Load for editing</b>, change it, and <b>💾 Save YAML</b>.</p></div>
+  <div class="f"><h3>A frozen Studio page reports itself<span class="tag t-new">new</span></h3>
+    <p>If the Studio page stops for more than 1.5 seconds, it sends the hub a short report of what was running
+       (playing, live, monitor, slow robot calls). It appears with the other reports on the hub.</p></div>
   <div class="f"><h3>A USB-RS485 adapter needs no bus id typed<span class="tag t-new">new</span></h3>
     <p>In Nong Studio pick <b>+ USB / RS485 (shared)</b>, choose the port and press Connect. If nothing
        answers on the cable itself, Studio asks the hub which robot is on the bus behind it and uses that one.</p></div>
