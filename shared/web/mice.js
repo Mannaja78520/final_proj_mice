@@ -243,6 +243,9 @@
       } catch (e) { /* an old browser: the gate simply stays as it is */ }
       var w = el.querySelector(".mlWho");
       if (w) w.textContent = who.user || (who.users && who.users[0]) || "";
+      // STILL ON THE SHIPPED PASSWORD (user 2026-09-17): say so until changed.
+      var warn = el.querySelector(".mlWarn");
+      if (warn) warn.hidden = !(who.authed && who.mustChange);
     }
   }
 
@@ -251,6 +254,9 @@
       .then(function (j) {
         who.authed = !!j.authed;
         who.users = j.users || [];
+        who.user = j.user || who.user;
+        who.role = j.role || "";
+        who.mustChange = !!j.mustChange;
         paint();
         return who.authed;
       })
@@ -280,7 +286,7 @@
           who.authed = true;
           who.user = user;
           say(el, "");
-          paint();
+          refresh();                  // role and the default-password flag
           // Every page and every tab shares the cookie, so tell them all.
           document.dispatchEvent(new CustomEvent("mice-login", { detail: who }));
           return;
@@ -292,6 +298,23 @@
       .catch(function () {
         say(el, "the hub is not answering. Check it is still running.");
       });
+  }
+
+  // Your own account. The hub decides what is allowed and says why not.
+  function account(el, path, body, done) {
+    say(el, "saving…");
+    return fetch(path, { method: "POST", body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        say(el, j.ok ? done : (j.error || "not changed"));
+        if (j.ok) {
+          ["mlOld", "mlNew", "mlNewName"].forEach(function (c) {
+            var i = el.querySelector("." + c); if (i) i.value = ""; });
+          refresh();
+        }
+        return !!j.ok;
+      })
+      .catch(function () { say(el, "the hub is not answering"); return false; });
   }
 
   function logout(el) {
@@ -314,10 +337,34 @@
       '<div class="mlOut row" hidden>' +
       '  <span class="lbl">Logged in</span><b class="mlWho"></b>' +
       '  <button class="mlOff" type="button">Log out</button>' +
+      '  <button class="mlMine" type="button">My account</button>' +
+      '</div>' +
+      '<div class="mlWarn warn" hidden>This account still uses the default password ' +
+      '(admin123). Please change it: press My account.</div>' +
+      '<div class="mlAcct row" hidden>' +
+      '  <input class="mlOld" type="password" placeholder="current password" autocomplete="current-password">' +
+      '  <input class="mlNew" type="password" placeholder="new password (8 or more)" autocomplete="new-password">' +
+      '  <button class="primary mlSetPw" type="button">Change password</button>' +
+      '  <input class="mlNewName" placeholder="new username" autocomplete="off">' +
+      '  <button class="mlSetName" type="button">Change username</button>' +
       '</div>' +
       '<div class="statline mlStat" role="status" aria-live="polite"></div>';
     el.querySelector(".mlGo").onclick = function () { login(el); };
     el.querySelector(".mlOff").onclick = function () { logout(el); };
+    el.querySelector(".mlMine").onclick = function () {
+      var box = el.querySelector(".mlAcct"); box.hidden = !box.hidden;
+    };
+    el.querySelector(".mlSetPw").onclick = function () {
+      account(el, "/api/users/password", {
+        old: el.querySelector(".mlOld").value,
+        password: el.querySelector(".mlNew").value }, "password changed");
+    };
+    el.querySelector(".mlSetName").onclick = function () {
+      var name = el.querySelector(".mlNewName").value.trim();
+      account(el, "/api/users/rename", { "new": name }, "username changed").then(function (ok) {
+        if (ok) who.user = name;
+      });
+    };
     el.querySelector(".mlPass").onkeydown = function (e) {
       if (e.key === "Enter") login(el);
     };
@@ -338,7 +385,8 @@
   }
 
   window.miceLogin = { mount: mount, refresh: refresh, required: required,
-                       authed: function () { return who.authed; } };
+                       authed: function () { return who.authed; },
+                       role: function () { return who.role || ""; } };
 })();
 
 /* miceGate - what a person can SEE and press before they sign in.

@@ -5,7 +5,7 @@
 
 // Login accounts for the module's Setup page, stored in the ESP32's own
 // memory (NVS) so they persist and work from any device — no SD card needed.
-// Seeded with the default admin manny/12345678 on first boot. Any logged-in
+// Seeded with super_admin/admin123 and admin/admin123 on first boot. Any logged-in
 // user can add more users. Passwords must not contain spaces (the command
 // tokenizer splits on them).
 class UserStore {
@@ -25,12 +25,12 @@ public:
     // 12345678 and never been asked — the boards most likely to be running the
     // shipped password are exactly the ones a flag would miss.
     bool firstPassword();
-    static const char* shippedPassword() { return "12345678"; }
+    static const char* shippedPassword() { return "admin123"; }   // must match UserStore.cpp seeds
     static int minPassLength() { return 8; }
 
 private:
     Preferences prefs_;
-    JsonDocument users_;   // { "manny": "12345678", ... }
+    JsonDocument users_;   // { "super_admin": "admin123", ... }
     void save();
     static bool validName(const String& s);
     static bool validPass(const String& s);

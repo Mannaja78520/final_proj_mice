@@ -3736,7 +3736,8 @@ class Handler(BaseHTTPRequestHandler):
             # hub to see whether a board is alive should not have to type.
             if path in ("/api/login", "/api/logout", "/api/whoami",
                         "/api/version",
-                        "/api/users", "/api/users/add", "/api/users/remove"):
+                        "/api/users", "/api/users/add", "/api/users/remove",
+                        "/api/users/rename", "/api/users/password"):
                 return self.auth_route(method, path)
             if hub_auth.gated(path, method) and not self.logged_in():
                 self.drain()
@@ -3934,6 +3935,11 @@ class Handler(BaseHTTPRequestHandler):
                 "ok": True,
                 "authed": self.logged_in(),
                 "users": a.users() if self.logged_in() else [],
+                # who is logged in, their role, and whether they still use the
+                # shipped password - the pages show a "please change" banner
+                "user": self.logged_in_user() if self.logged_in() else "",
+                "role": a.role_of(self.logged_in_user()) if self.logged_in() else "",
+                "mustChange": a.must_change(self.logged_in_user()) if self.logged_in() else False,
                 "locked_for": a.locked_for(self.client_address[0]),
                 "lock_seconds": hub_auth._LOCK_SECONDS,   # noqa: SLF001
             })
@@ -3945,7 +3951,11 @@ class Handler(BaseHTTPRequestHandler):
                     {"ok": False, "need_login": True,
                      "error": "log in to see the accounts"}).encode(),
                     MIME[".json"], 401)
-            return self.send_json({"ok": True, "users": a.users(),
+            me = self.logged_in_user()
+            # super_admin sees every account; anyone else only their own
+            mine = a.accounts() if a.is_super(me) else                 [x for x in a.accounts() if x["name"] == me]
+            return self.send_json({"ok": True, "users": [x["name"] for x in mine],
+                                   "accounts": mine, "me": me,
                                    "max": hub_auth.MAX_USERS})
 
         if method != "POST":
@@ -3962,14 +3972,44 @@ class Handler(BaseHTTPRequestHandler):
                 body = {}
             name = str(body.get("user") or "").strip()
             
-            if self.logged_in_user() != "super_admin":
-                ok, why = False, "only super_admin can manage accounts"
+            if not a.is_super(self.logged_in_user()):
+                ok, why = False, "only super_admin can add or remove accounts"
             elif path.endswith("/add"):
-                ok, why = a.add_user(name, str(body.get("password") or ""))
+                ok, why = a.add_user(name, str(body.get("password") or ""),
+                                     str(body.get("role") or hub_auth.ROLE_USER))
             else:
                 ok, why = a.remove_user(name)
             return self.send_bytes(
                 json.dumps({"ok": ok, "error": why, "users": a.users()}).encode(),
+                MIME[".json"], 200 if ok else 400)
+
+        if path in ("/api/users/rename", "/api/users/password"):
+            # Your OWN account: anyone logged in (a password change also asks
+            # for the current one). ANY account: super_admin only.
+            if not self.logged_in():
+                return self.send_bytes(json.dumps(
+                    {"ok": False, "need_login": True,
+                     "error": "log in first"}).encode(), MIME[".json"], 401)
+            try:
+                body = json.loads(self.body().decode() or "{}")
+            except ValueError:
+                body = {}
+            me = self.logged_in_user()
+            target = str(body.get("user") or me).strip()
+            boss = a.is_super(me)
+            if target != me and not boss:
+                ok, why = False, "only super_admin can change someone else's account"
+            elif path.endswith("/rename"):
+                ok, why = a.rename_user(target, str(body.get("new") or "").strip())
+            elif target == me and not a.check_password(me, str(body.get("old") or "")):
+                ok, why = False, "your current password was not right"
+            else:
+                ok, why = a.change_password(
+                    target, str(body.get("password") or ""),
+                    keep_token=a.token_of(self.headers.get("Cookie", "")))
+            return self.send_bytes(
+                json.dumps({"ok": ok, "error": why,
+                            "me": self.logged_in_user()}).encode(),
                 MIME[".json"], 200 if ok else 400)
 
         if path == "/api/logout":

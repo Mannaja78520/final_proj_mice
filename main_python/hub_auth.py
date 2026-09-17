@@ -72,7 +72,7 @@ GATED = {
     # a cable is taken away from whoever is using it
     "/api/usb/close",
     # who may use this hub at all
-    "/api/users/add", "/api/users/remove",
+    "/api/users/add", "/api/users/remove", "/api/users/rename", "/api/users/password",
     # Pairing, from BOTH ends. /api/pair/status is a GET and still gated:
     # it hands back the code on the screen, which is the one secret in the
     # whole exchange. /api/pair/link makes this hub take another hub's
@@ -197,6 +197,11 @@ MAX_USERS = 16
 # What the single password becomes when an older hub is opened for the first
 # time by this version. Also the account a bare password logs into.
 DEFAULT_USER = "super_admin"
+# THE SHIPPED LOGIN (user 2026-09-17: super_admin/admin123 and admin/admin123
+# everywhere, shown as default until changed). Any account still on it has
+# must_change set, and every page says so.
+DEFAULT_PASSWORD = "admin123"
+ROLE_SUPER, ROLE_USER = "super_admin", "user"
 # The real hub's store. Any OTHER name is somebody's throwaway (a QC run
 # makes one per process), and its password file is named after it.
 DEFAULT_STORE_NAME = "hub_auth.json"
@@ -262,11 +267,12 @@ class Auth:
                               + DEFAULT_USER + " — add more on the Settings screen")
                 users = self._data.setdefault("users", {})
                 if DEFAULT_USER not in users:
-                    pw = "admin123"
+                    pw = DEFAULT_PASSWORD
                     users[DEFAULT_USER] = self._hash(pw)
                     if "admin" not in users:
                         users["admin"] = self._hash(pw)
                     self._save()
+                self._normalise()
                 return
             except (OSError, ValueError):
                 self._out("[auth] password file unreadable — generating a new one")
@@ -306,11 +312,12 @@ class Auth:
         return False
 
     def _generate(self):
-        pw = "admin123"
+        pw = DEFAULT_PASSWORD
         self._data = {"users": {
             "admin": self._hash(pw),
             "super_admin": self._hash(pw)
         }}
+        self._normalise()
         self._save()
         self._write_plain(pw, "admin")
         self._write_plain(pw, "super_admin")
@@ -399,7 +406,98 @@ class Auth:
         """Who can log in. Names only — a hash never leaves this object."""
         return sorted(self._data.get("users", {}))
 
-    def add_user(self, name: str, password: str):
+    # ------------------------------------------------------------ roles
+    # user 2026-09-17: *each user can change it own pass and user but
+    # super_admin is can change everyone user and pass also can delete or add
+    # new user*. Authority is the ROLE on the record, never the account name:
+    # renaming super_admin must not take its power away (Codex review).
+    def _normalise(self):
+        """Give every record a role and a must_change flag; keep >=1 super."""
+        users = self._data.setdefault("users", {})
+        changed = False
+        for name, rec in users.items():
+            if rec.get("role") not in (ROLE_SUPER, ROLE_USER):
+                rec["role"] = ROLE_SUPER if name == DEFAULT_USER else ROLE_USER
+                changed = True
+            if "must_change" not in rec:
+                rec["must_change"] = self._rec_matches(rec, DEFAULT_PASSWORD)
+                changed = True
+        if users and not any(r.get("role") == ROLE_SUPER for r in users.values()):
+            first = DEFAULT_USER if DEFAULT_USER in users else sorted(users)[0]
+            users[first]["role"] = ROLE_SUPER
+            changed = True
+        if changed:
+            self._save()
+
+    @staticmethod
+    def _rec_matches(rec, password):
+        try:
+            want = bytes.fromhex(rec["hash"])
+            got = hashlib.pbkdf2_hmac("sha256", password.encode(),
+                                      bytes.fromhex(rec["salt"]), _ITERATIONS)
+        except (KeyError, ValueError):
+            return False
+        return hmac.compare_digest(want, got)
+
+    def role_of(self, name: str) -> str:
+        return (self._data.get("users", {}).get(name) or {}).get("role", "")
+
+    def is_super(self, name: str) -> bool:
+        return self.role_of(name) == ROLE_SUPER
+
+    def must_change(self, name: str) -> bool:
+        return bool((self._data.get("users", {}).get(name) or {}).get("must_change"))
+
+    def accounts(self):
+        """name, role and whether it still has the shipped password. Never a hash."""
+        return [{"name": n, "role": r.get("role", ROLE_USER),
+                 "mustChange": bool(r.get("must_change"))}
+                for n, r in sorted(self._data.get("users", {}).items())]
+
+    def _supers(self):
+        return [n for n, r in self._data.get("users", {}).items()
+                if r.get("role") == ROLE_SUPER]
+
+    def rename_user(self, old: str, new: str):
+        """-> (ok, why). Sessions follow the account, so nobody is logged out."""
+        users = self._data.setdefault("users", {})
+        if old not in users:
+            return False, "there is no account called %s" % old
+        if not self.valid_name(new):
+            return False, "a name is 1 to %d letters, digits, _ or -" % NAME_MAX
+        if new == old:
+            return True, None
+        if new in users:
+            return False, "there is already an account called %s" % new
+        users[new] = users.pop(old)
+        for token, (seen, who) in list(self._sessions.items()):
+            if who == old:
+                self._sessions[token] = (seen, new)
+        self._save()
+        return True, None
+
+    def change_password(self, name: str, password: str, keep_token: str = ""):
+        """-> (ok, why). Ends that account's OTHER sessions, keeps the caller's."""
+        users = self._data.setdefault("users", {})
+        if name not in users:
+            return False, "there is no account called %s" % name
+        if not self.valid_password(password):
+            return False, ("a password is %d to %d characters, no spaces"
+                           % (PASS_MIN, PASS_MAX))
+        rec = users[name]
+        rec.update(self._hash(password))
+        rec["must_change"] = password == DEFAULT_PASSWORD
+        self._save()
+        for token, (_seen, who) in list(self._sessions.items()):
+            if who == name and token != keep_token:
+                self._sessions.pop(token, None)
+        return True, None
+
+    def check_password(self, name: str, password: str) -> bool:
+        rec = self._data.get("users", {}).get(name)
+        return bool(rec) and self._rec_matches(rec, password or "")
+
+    def add_user(self, name: str, password: str, role: str = ROLE_USER):
         """-> (ok, why). `why` is shown to a person, so it says what to fix."""
         if not self.valid_name(name):
             return False, "a name is 1 to %d letters, digits, _ or -" % NAME_MAX
@@ -411,7 +509,9 @@ class Auth:
             return False, "there is already an account called %s" % name
         if len(users) >= MAX_USERS:
             return False, "this hub already has %d accounts" % MAX_USERS
-        users[name] = self._hash(password)
+        users[name] = dict(self._hash(password),
+                           role=role if role in (ROLE_SUPER, ROLE_USER) else ROLE_USER,
+                           must_change=password == DEFAULT_PASSWORD)
         self._save()
         return True, None
 
@@ -423,9 +523,15 @@ class Auth:
         # by deleting its password file by hand, which at a venue is a dead hub.
         if len(users) <= 1:
             return False, "this is the only account — everyone would be locked out"
+        if users[name].get("role") == ROLE_SUPER and len(self._supers()) <= 1:
+            return False, ("%s is the last super_admin — nobody could manage the "
+                           "accounts" % name)
         del users[name]
         self._save()
-        self._sessions.clear()      # a removed person must not stay logged in
+        # a removed person must not stay logged in - but whoever removed them does
+        for token, (_seen, who) in list(self._sessions.items()):
+            if who == name:
+                self._sessions.pop(token, None)
         return True, None
 
     # ------------------------------------------------------------- pairing
@@ -439,7 +545,9 @@ class Auth:
         afterwards. It is also why nothing may call this without a live
         pairing code.
         """
-        return {n: {"salt": r["salt"], "hash": r["hash"]}
+        return {n: {"salt": r["salt"], "hash": r["hash"],
+                    "role": r.get("role", ROLE_USER),
+                    "must_change": bool(r.get("must_change"))}
                 for n, r in self._data.get("users", {}).items()
                 if r.get("salt") and r.get("hash")}
 
@@ -484,7 +592,10 @@ class Auth:
                               "and pair again" % MAX_USERS)
                 out["skipped"].append(name)
                 continue
-            users[name] = {"salt": salt, "hash": digest}
+            users[name] = {"salt": salt, "hash": digest,
+                           # a pairing never promotes anyone the far hub did not
+                           "role": rec.get("role") if rec.get("role") in (ROLE_SUPER, ROLE_USER) else ROLE_USER,
+                           "must_change": bool(rec.get("must_change"))}
             out["replaced" if here else "added"].append(name)
         if out["added"] or out["replaced"]:
             self._save()
@@ -530,7 +641,9 @@ class Auth:
         users = self._data.setdefault("users", {}) if hasattr(self, "_data") else {}
         if not hasattr(self, "_data"):
             self._data = {"users": users}
-        users[user] = self._hash(password)
+        users[user] = dict(users.get(user) or {}, **self._hash(password))
+        users[user]["must_change"] = password == DEFAULT_PASSWORD
+        self._normalise()                 # a new record still gets its role
         self._save()
         self._write_plain(password, user)
         # Changing a password ends every session: if it changed because one
