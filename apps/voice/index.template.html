@@ -182,8 +182,15 @@
         <input type="checkbox" id="autoDetectLang" onchange="toggleAutoDetect(this.checked)" checked>
         <b>Multi-lang mode</b> (auto-detect question language; uncheck to force the language above)
       </label>
+      <div class="row" style="margin-top:var(--sp-2);align-items:center">
+        <span class="mini" style="flex:1">One voice for every language</span>
+        <select id="oneVoice" onchange="pickOneVoice()" style="flex:2 1 170px"></select>
+      </div>
       <p class="mini" style="margin-top:var(--sp-1);color:var(--dim,#888)">
-        <b>Neural voices</b> (Premwadee / Jenny / Nanami / Xiaoxiao) read context smoothly and naturally.
+        Pick one of these and the rig always speaks with it, in any language —
+        the answer can hold a Thai name inside an English sentence and it is
+        still read properly. Leave it on <b>a voice per language</b> to use the
+        list above instead, where an English voice cannot say a Thai name.
       </p>
       <label class="mini" style="display:flex;gap:var(--sp-2);align-items:center;margin-top:var(--sp-3)">
         <input type="checkbox" id="listenOn"> Listen to spoken questions</label>
@@ -202,6 +209,21 @@
       <div class="row" style="margin-top:var(--sp-3)">
         <button class="primary" onclick="postConfig('wStat')">Save words</button>
         <span class="mini" id="wStat" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;font-size:17px">Faces</h2>
+      <div class="row"><span class="mini" style="flex:1">forget a face after (seconds)</span>
+        <input id="faceForget" type="number" min="2" step="5" style="flex:1 1 80px"></div>
+      <div class="row"><span class="mini" style="flex:1">look again every (seconds)</span>
+        <input id="faceEvery" type="number" min="2" step="1" style="flex:1 1 80px"></div>
+      <p class="mini">After that many seconds with nobody in front of the
+         camera, the rig stops using the name and answers the plain way. A
+         look that sees nobody forgets the name at once, whatever this says.</p>
+      <div class="row">
+        <button class="primary" onclick="postConfig('fStat')">Save faces</button>
+        <span class="mini" id="fStat" aria-live="polite"></span>
       </div>
     </div>
 

@@ -39,10 +39,12 @@
       "en": "en-US-JennyNeural",
       "ja": "ja-JP-NanamiNeural",
       "zh": "zh-CN-XiaoxiaoNeural"
-    }
+    },
+    "oneVoice": ""
   },
   "face": {
     "autoSeconds": 5,
-    "cameraLabel": ""
+    "cameraLabel": "",
+    "rememberSeconds": 120
   }
 }

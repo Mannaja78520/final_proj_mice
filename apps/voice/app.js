@@ -198,8 +198,11 @@ class VoiceApp {
     if (r.ok && r.person) {
       this.updateFace(r.person);
       if (line) line.textContent = "";
-    } else if (line) {
-      line.textContent = r.error || "nobody I know is in front of the camera";
+    } else {
+      // The badge must agree with the look that just happened: it used to
+      // keep showing the last name while this line said the frame was empty.
+      this.updateFace("");
+      if (line) line.textContent = r.error || "nobody I know is in front of the camera";
     }
     return r;
   }
@@ -1270,12 +1273,12 @@ static MODEL_WORDS = [["base", "Fast"], ["small", "Balanced"],
     }
     grSel.value = cur;
   }
-  this.fillAnswers(); this.fillVoice(); this.fillWords(); this.fillAdvanced();
+  this.fillAnswers(); this.fillVoice(); this.fillWords(); this.fillFaces(); this.fillAdvanced();
 }
 
   async postConfig(statId){
   this.$(statId).textContent = "";
-  this.collectWords(); this.collectVoice(); this.collectAdvanced();       // every save writes the whole store
+  this.collectWords(); this.collectVoice(); this.collectFaces(); this.collectAdvanced();  // every save writes the whole store
   let r;
   try {
     r = await fetch("/api/voice/config", {method: "POST",
@@ -1715,6 +1718,7 @@ static SAMPLES = {
   });
   this.$("ttsLang").value = t.language || langs[0] || "th";
   this.fillVoices();
+  this.fillOneVoice();
   const row = this.$("modelRow");
   row.textContent = "";
   let known = false;
@@ -1766,12 +1770,49 @@ static SAMPLES = {
   this.speak(VoiceApp.SAMPLES[this.$("ttsLang").value] || "Hello", this.$("ttsLang").value);
 }
 
+  // The voices that can speak every language come from the helper, which
+  // asks the speech service itself - no list of names lives in this page.
+  async fillOneVoice(){
+  const sel = this.$("oneVoice");
+  if (!sel) return;
+  const want = ((this.cfg.tts || {}).oneVoice || "");
+  if (!this.allVoices) {
+    try {
+      const r = await fetch("/api/voice/voices").then(res => res.json());
+      this.allVoices = (r && r.ok && r.voices) ? r.voices : [];
+    } catch(e) { this.allVoices = []; }
+  }
+  sel.textContent = "";
+  const add = (value, text) => {
+    const o = document.createElement("option");
+    o.value = value; o.textContent = text;
+    if (value === want) o.selected = true;
+    sel.appendChild(o);
+  };
+  add("", "a voice per language (above)");
+  this.allVoices.forEach(v => add(v.name, v.says || v.name));
+  if (want && !this.allVoices.some(v => v.name === want)) add(want, want);
+  if (!this.allVoices.length) {
+    // Offline, or the speech service refused: say so rather than showing
+    // an empty box that looks broken.
+    add("", "no shared voices found — the PC may be offline");
+  }
+}
+
+  pickOneVoice(){
+  const sel = this.$("oneVoice");
+  const on = !!(sel && sel.value);
+  ["ttsLang", "ttsVoice"].forEach(id => { if (this.$(id)) this.$(id).disabled = on; });
+}
+
   collectVoice(){
   this.cfg.tts = this.cfg.tts || {};
   this.cfg.tts.enabled = this.$("speakOn").checked;
   this.cfg.tts.language = this.$("ttsLang").value;
   this.cfg.tts.voices = this.cfg.tts.voices || {};
   this.cfg.tts.voices[this.cfg.tts.language] = this.$("ttsVoice").value;
+  // Empty means the per-language map above. Anything else speaks everything.
+  this.cfg.tts.oneVoice = this.$("oneVoice") ? this.$("oneVoice").value : "";
   this.cfg.stt = this.cfg.stt || {};
   this.cfg.stt.enabled = this.$("listenOn").checked;
   const pick = document.querySelector('input[name="sttModel"]:checked');
@@ -1874,6 +1915,26 @@ static SAMPLES = {
     });
     if (typeof this.fillWords === "function") this.fillWords();
   }
+
+// ---- Faces ------------------------------------------------------------
+// How long a name stays after the person is gone, and how often the camera
+// looks. Both were numbers in the code until the user asked for them:
+// *make can setting by my self in setting to setting the time out time*.
+  fillFaces(){
+  const f = this.cfg.face || {};
+  this.$("faceForget").value = f.rememberSeconds ?? 120;
+  this.$("faceEvery").value = f.autoSeconds ?? 5;
+}
+  collectFaces(){
+  const num = (id, fallback) => {
+    const v = parseFloat(this.$(id).value);
+    return Number.isFinite(v) ? v : fallback;
+  };
+  const f = this.cfg.face = this.cfg.face || {};
+  f.rememberSeconds = num("faceForget", f.rememberSeconds ?? 120);
+  f.autoSeconds = num("faceEvery", f.autoSeconds ?? 5);
+  this.camSeconds = f.autoSeconds;
+}
 
 // ---- Advanced ---------------------------------------------------------
   fillAdvanced(){
@@ -1996,6 +2057,8 @@ window.toggleTestMode = (...args) => window.voiceApp.toggleTestMode(...args);
 window.runTestPrompt = (...args) => window.voiceApp.runTestPrompt(...args);
 window.fillVoice = (...args) => window.voiceApp.fillVoice(...args);
 window.fillVoices = (...args) => window.voiceApp.fillVoices(...args);
+window.pickOneVoice = (...args) => window.voiceApp.pickOneVoice(...args);
+window.fillOneVoice = (...args) => window.voiceApp.fillOneVoice(...args);
 window.tryVoice = (...args) => window.voiceApp.tryVoice(...args);
 window.collectVoice = (...args) => window.voiceApp.collectVoice(...args);
 window.fillWords = (...args) => window.voiceApp.fillWords(...args);

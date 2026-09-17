@@ -56,6 +56,8 @@ class _FakeFaceApp(BaseHTTPRequestHandler):
                                           "camera_label": "Front door"}]})
         if self.path.startswith("/state"):              # the mice faces watcher
             from datetime import datetime
+            if SEEN.get("quiet"):                      # nobody in front of anything
+                return self._send({"ok": True, "people": []})
             now = datetime.now().isoformat()
             return self._send({"ok": True, "people": [
                 {"who": "Door Person", "known": True, "when": now, "camera": "CAM-Door"},
@@ -70,6 +72,8 @@ class _FakeFaceApp(BaseHTTPRequestHandler):
             return self._send({"access_token": "tok-123"})
         SEEN["auth"] = self.headers.get("Authorization") or ""
         SEEN["bytes"] = len(body)
+        if SEEN.get("quiet"):                          # an empty frame
+            return self._send({"faces_total": 0, "results": []})
         return self._send({"faces_total": 1,
                            "results": [{"status": "matched", "name": "Manny Ha"}]})
 
@@ -97,7 +101,7 @@ def _helper(tmp, face_port):
         "faqThreshold": 0.75, "faqAskAgain": 0,
         "stt": {"enabled": False}, "llm": {"enabled": False},
         "tts": {"enabled": False},
-        "face": {"autoSeconds": 2,
+        "face": {"autoSeconds": 2, "rememberSeconds": 3,
                  "watcher": "http://127.0.0.1:%d/state" % face_port},
     }), encoding="utf-8")
     faq = tmp / "qa.json"
@@ -170,12 +174,46 @@ def run(t):
         st, body = F.get(base + "/face?camera=CAM-Hall")
         t.eq(json.loads(body).get("person"), "Hall",
              "another camera answers with its own people, not the first one's")
+        _forgetting(t, base)
         _their_side(t)
         _the_button(t)
         _the_camera_logic(t)
     finally:
         proc.terminate()
         srv.shutdown()
+
+
+def _forgetting(t, base):
+    """The name must not outlive the person.
+
+    A26-65 (user 2026-09-18): *in face detect when don't have face why it
+    still said phuthiphong*. Two separate promises, both broken before:
+      * a look that sees nobody drops the name AT ONCE - it used to keep
+        showing the last one while the same look reported an empty frame;
+      * and a name with nobody looking again expires after the time the
+        USER sets (face.rememberSeconds), not a 120 written in the code.
+    """
+    SEEN["quiet"] = True                                # nobody in the room now
+    try:
+        st, body = _post(base + "/identify", b"\xff\xd8empty-frame")
+        got = json.loads(body)
+        t.ok(got.get("ok") is False and "no face" in (got.get("error") or ""),
+             "an empty frame is answered in plain words", "answer was %r" % got)
+        st, body = F.get(base + "/face")
+        t.eq(json.loads(body).get("person"), "",
+             "a look that sees nobody drops the name at once")
+
+        SEEN["quiet"] = False                           # the person is back
+        _post(base + "/identify", b"\xff\xd8a-face")
+        st, body = F.get(base + "/face")
+        t.eq(json.loads(body).get("person"), "Manny", "and it is picked up again")
+        SEEN["quiet"] = True                            # then walks away
+        time.sleep(3.4)                                 # cfg face.rememberSeconds = 3
+        st, body = F.get(base + "/face")
+        t.eq(json.loads(body).get("person"), "",
+             "the name is forgotten after the time the user set")
+    finally:
+        SEEN["quiet"] = False
 
 
 def _the_button(t):
@@ -186,6 +224,10 @@ def _the_button(t):
          and "window.whoAmI" in page,
          "the Voice page has a Check who I am button, wired up",
          "button, onclick or the window.whoAmI bridge is missing")
+    t.ok('id="faceForget"' in page and 'id="faceEvery"' in page
+         and "collectFaces" in page,
+         "the forget time and the look interval can be set on the page",
+         "the Faces settings card is missing a field")
     t.ok('id="autoFace"' in page and 'id="camPick"' in page
          and "window.toggleAutoFace" in page and "window.pickCamera" in page,
          "the page can also look by itself, on a camera you pick",
@@ -196,6 +238,11 @@ def _the_button(t):
     t.ok("finally" in body and "this.closeCam()" in body,
          "one look puts the camera away again, even when it fails",
          "whoAmI has no finally that closes the camera")
+    lo = js.find("  async lookOnce(){")
+    look = js[lo:js.find("\n  // The button:", lo)] if lo >= 0 else ""
+    t.ok('this.updateFace("")' in look,
+         "a look that found nobody clears the badge, not just the line under it",
+         "lookOnce leaves the old name on the badge")
     p = js.find("  async pollFace(){")
     poll = js[p:js.find("\n  updateFace(", p)] if p >= 0 else ""
     t.ok("camera=" in poll and "this.camStation" in poll,

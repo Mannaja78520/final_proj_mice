@@ -36,9 +36,13 @@ from urllib.parse import parse_qs, urlparse
 # Windows defaults stdout to cp1252, which cannot encode Thai or the UI's
 # Unicode markers — that turned answers into "i8" garbage and crashed any
 # print() of transcribed/LLM text. Force UTF-8 so stdout matches the data.
-if sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+# A captured stdout has encoding None, and importing this file then died on
+# the first line of it - which is how a check that only wanted to read the
+# voice map crashed (2026-09-18).
+if (getattr(sys.stdout, "encoding", "") or "").lower() not in ("utf-8", "utf8"):
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
 
 # Ensure CUDA DLLs (cublas64_12.dll, cudnn, etc.) shipped with PyTorch are found by ctranslate2 / faster_whisper on Windows
 try:
@@ -512,6 +516,14 @@ class Brain:
         language MISSING from the map is a mistake and says so instead.
         """
         tcfg = self.cfg.get("tts", {})
+        # ONE voice for every language, when one is chosen. A per-language map
+        # cannot say a Thai name inside an English answer: the English voice
+        # reads the Thai letters as nothing (user 2026-09-18, with Multi-lang
+        # on and their own name in the reply). A multilingual voice speaks the
+        # whole sentence, so the choice is a voice, not a language.
+        one = str(tcfg.get("oneVoice") or "").strip()
+        if one:
+            return one, one
         voices = tcfg.get("voices") or {}
         lang = (lang or "").strip()
         if not lang and text:
@@ -526,6 +538,32 @@ class Brain:
         name = str(voices[lang]).strip()
         return (name or "<windows default %s>" % lang), name
 
+    def speaking_voices(self):
+        """Every voice that can speak ALL languages, from the voice service
+        itself - so the list in the settings screen is never a list typed
+        into this file. Cached: it is a network call and it never changes
+        during a run.
+        """
+        got = getattr(self, "_voice_list", None)
+        if got is not None:
+            return got
+        out = []
+        try:
+            import asyncio
+            import edge_tts
+            for v in asyncio.run(edge_tts.list_voices()):
+                name = str(v.get("ShortName") or "")
+                # Microsoft's own name for the voices that are not tied to
+                # one language. There is no other flag in their list.
+                if "Multilingual" in name:
+                    out.append({"name": name,
+                                "says": str(v.get("FriendlyName") or name),
+                                "gender": str(v.get("Gender") or "")})
+        except Exception:                               # noqa: BLE001
+            out = []                                    # offline: the map still works
+        self._voice_list = out
+        return out
+
     def tts_status(self):
         tcfg = self.cfg.get("tts", {})
         if not tcfg.get("enabled"):
@@ -533,6 +571,8 @@ class Brain:
         ident, _name = self.resolve_voice("")
         if not ident:
             return "no voices listed - add one under tts"
+        if str(tcfg.get("oneVoice") or "").strip():
+            return "%s speaking (every language)" % ident
         n = len(tcfg.get("voices") or {})
         return "%s speaking (%d mapped)" % (ident, n)
 
@@ -1264,6 +1304,11 @@ class Brain:
             if who and who not in names:
                 names.append(who)
         if not names:
+            # Nobody there, or nobody known: drop the name NOW rather than
+            # letting the remembered one ride on. The badge said a name while
+            # the same look reported an empty frame (user 2026-09-18: *when
+            # don't have face why it still said phuthiphong*).
+            self.forget_person()
             faces = got.get("faces_total") or got.get("faces") or 0
             return "", ("nobody the face app knows was in that picture"
                         if faces else "no face in that picture - move into the light")
@@ -1324,11 +1369,27 @@ class Brain:
             pass
         return ""
 
-    # How long a face checked from the Voice page's own camera counts as
-    # present. The same 120 s the camera path uses, and it has to be a
-    # memory of its own: persist=false leaves no history row, so the next
-    # poll would find nothing and the name would vanish two seconds later.
-    SEEN_SECONDS = 120
+    def seen_seconds(self):
+        """How long a face from this page's own camera counts as present.
+
+        It has to be a memory of its own: persist=false leaves no history
+        row, so the next poll finds nothing and the name would vanish two
+        seconds later. It is a SETTING because the right length depends on
+        the room - user 2026-09-18, after the badge kept naming somebody who
+        had walked away: *make can setting by my self in setting to setting
+        the time out time*.
+        """
+        try:
+            return max(2.0, float((self.cfg.get("face") or {}).get("rememberSeconds") or 120))
+        except Exception:                               # noqa: BLE001
+            return 120.0
+
+    def forget_person(self):
+        """A look that saw nobody means nobody is there - say so at once."""
+        self._seen_person = ""
+        self._seen_at = 0.0
+        self._cached_person = ""
+        self._cached_person_at = time.time()
 
     def get_detected_person(self, req_person=None, camera=""):
         if req_person and str(req_person).strip():
@@ -1339,7 +1400,7 @@ class Brain:
             return self._query_faces_service(camera)
         now = time.time()
         seen_at = getattr(self, "_seen_at", 0.0)
-        if getattr(self, "_seen_person", "") and (now - seen_at < self.SEEN_SECONDS):
+        if getattr(self, "_seen_person", "") and (now - seen_at < self.seen_seconds()):
             return self._seen_person
         if hasattr(self, "_cached_person_at") and (now - self._cached_person_at < 2.0):
             return getattr(self, "_cached_person", "")
@@ -1384,6 +1445,12 @@ class VoiceHandler(BaseHTTPRequestHandler):
                                "person": self.brain.get_detected_person(camera=want)})
         if path == "/camera":
             return self._json(dict({"ok": True}, **self.brain.camera_choice()))
+        if path == "/voices":
+            try:
+                return self._json({"ok": True, "voices": self.brain.speaking_voices()})
+            except Exception as e:                      # noqa: BLE001
+                return self._json({"ok": False, "error": "the voice list could not be "
+                                                         "read: %s" % e}, 500)
         return self._json({"ok": False, "error": "unknown address"}, 404)
 
     def do_store(self, path, key):
