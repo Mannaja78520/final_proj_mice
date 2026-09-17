@@ -285,7 +285,10 @@ def run_qc(where: Path, *, built=False, scoped=False):
             args = [sys.executable, "-u", str(qc), "--no-build"]
             if scoped:
                 args.append("--changed")
-            proc = subprocess.Popen(args, cwd=str(where),
+            env = dict(os.environ)
+            if ONLY:
+                env["MICE_QC_ONLY"] = "|".join(ONLY)
+            proc = subprocess.Popen(args, cwd=str(where), env=env,
                                     stdout=output, stderr=subprocess.STDOUT)
             while True:
                 done = proc.poll() is not None
@@ -482,10 +485,15 @@ def hint_split(files):
         pass
 
 
+ONLY = []           # promote.py --only, for the scoped gate
+
+
 def promote(full=False, only=None):
     if not build_web(STAGING):
         print("REFUSED: web build failed. Nothing was copied.")
         return 1
+    global ONLY
+    ONLY = [Path(p).as_posix() for p in only] if only else []
     changed, added, gone = changes(only)
     if not (changed or added):
         show(changed, added, gone)

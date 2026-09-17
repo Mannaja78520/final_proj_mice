@@ -23,7 +23,9 @@
   // plan, logs and notes. They cannot break a check.
   "ignore": ["docs/PLAN.html", "docs/plan_state.js", "docs/BRIDGE.md",
              "docs/system_integral.html", "docs/system_integral_state.js",
-             "promt.md", "firmware/promt.md", "PATCHES.md"],
+             "promt.md", "firmware/promt.md", "PATCHES.md",
+             // written by QC or the running hub, never a change to land
+             ".qc-receipt.json", "nong/main_python_set_nong/settings_shared.json"],
 
   // Too common to find the right checks by name alone - these are matched by
   // their folder too (faces/index.html, not every index.html).

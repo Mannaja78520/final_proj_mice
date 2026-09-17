@@ -57,3 +57,15 @@ def run(t):
 
     t.eq(d("docs/PLAN.html", "promt.md")[0], "quick",
          "only the plan changed: the quick suite, never nothing")
+
+    # promote.py --only scopes the gate to the landed files, not to whatever
+    # else the shared staging carries (2026-09-17: a receipt file and a QC
+    # leftover turned a 3-file land into a full gate).
+    got = d("main_python/web/hub.html", ".qc-receipt.json",
+            "nong/main_python_set_nong/settings_shared.json")
+    t.ok(got[0] == "checks",
+         "files QC or the hub write never widen a one-page change to the full gate", got)
+    run_src = (F.CODE / "qc" / "run_qc.py").read_text(encoding="utf-8")
+    prom = (F.CODE / "promote.py").read_text(encoding="utf-8")
+    t.ok('os.environ.get("MICE_QC_ONLY")' in run_src and 'env["MICE_QC_ONLY"]' in prom,
+         "a promote --only gate is scoped to exactly the files it lands")

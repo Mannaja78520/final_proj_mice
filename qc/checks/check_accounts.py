@@ -108,6 +108,23 @@ def run(t):
     code, j = boss.call("/api/users/remove", {"user": "qc_user_b"})
     t.ok(code == 200 and j.get("ok"), "and removes one", j)
 
+    # a SECOND super_admin, with its own name and password (user 2026-09-17)
+    boss.call("/api/users/remove", {"user": "qc_boss2"})
+    code, j = boss.call("/api/users/add", {"user": "qc_boss2", "password": "second123", "role": "super_admin"})
+    boss2 = Session(base)
+    boss2.call("/api/login", {"user": "qc_boss2", "password": "second123"})
+    code2, who2 = boss2.call("/api/whoami")
+    code3, j3 = boss2.call("/api/users/add", {"user": "qc_user_d", "password": "fourth1234"})
+    t.ok(code == 200 and who2.get("role") == "super_admin" and code3 == 200,
+         "super_admin adds another super_admin, who can manage accounts too", (j, who2, j3))
+    code, j = user.call("/api/users/add", {"user": "qc_sneak", "password": "sneaky1234", "role": "super_admin"})
+    t.ok(code >= 400, "an ordinary user cannot make themselves or anyone a super_admin", j)
+    boss.call("/api/users/remove", {"user": "qc_user_d"})
+    boss.call("/api/users/remove", {"user": "qc_boss2"})
+    hub_page = (F.CODE / "main_python" / "web" / "hub.html").read_text(encoding="utf-8")
+    t.ok('id="uRole"' in hub_page and "role:$('uRole').value" in hub_page,
+         "the Accounts card lets super_admin choose the role when adding")
+
     # renamed, super_admin keeps its powers through the routes too
     code, j = boss.call("/api/users/rename", {"new": "qc_boss"})
     code2, j2 = boss.call("/api/users/add", {"user": "qc_user_c", "password": "another123"})

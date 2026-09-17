@@ -76,3 +76,4 @@ def run(t):
         t.ok(after == written, "and Cancel leaves the saved file exactly as it was")
     finally:
         seq.unlink(missing_ok=True)
+        seq.with_name(seq.name + ".bak").unlink(missing_ok=True)   # the save keeps one

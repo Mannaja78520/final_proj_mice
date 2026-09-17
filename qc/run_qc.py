@@ -287,7 +287,10 @@ def main(argv):
         if not CODE.name.startswith(".staging"):
             print("--changed needs a working copy (.staging*) to compare with")
             return 2
-        got = scope.decide(CODE, scope.changed(CODE, CODE.parent))
+        # promote.py --only names the files being landed: scope those, not
+        # every difference the shared staging happens to carry (2026-09-17)
+        only = [x for x in (os.environ.get("MICE_QC_ONLY") or "").split("|") if x]
+        got = scope.decide(CODE, only or scope.changed(CODE, CODE.parent))
         print("%sSCOPE:%s %s -> %s" % (B, D, got[-1], got[0] if got[0] != "checks"
                                         else "%d checks" % len(got[1])), flush=True)
         if got[0] == "quick":

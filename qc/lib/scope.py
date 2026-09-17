@@ -19,7 +19,7 @@ from pathlib import Path
 SKIP_DIRS = {".git", ".pio", "__pycache__", "node_modules", ".vscode", ".claude",
              "dist", "build", "patches", "patches_code", "generated", "tts_cache",
              "reports", "scratch"}
-SKIP_EXT = {".pyc", ".pyo", ".tmp", ".exe", ".bin", ".elf", ".log"}
+SKIP_EXT = {".pyc", ".pyo", ".tmp", ".exe", ".bin", ".elf", ".log", ".bak"}
 
 
 def rules(code):

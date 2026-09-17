@@ -502,6 +502,11 @@ or start a sequence in Nong Studio. Your modules appear here when they connect.<
         <input id="uName" placeholder="new user name" autocomplete="off" style="flex:1 1 130px">
         <input id="uPass" type="password" placeholder="their password"
                autocomplete="new-password" style="flex:1 1 150px">
+        <select id="uRole" aria-label="what the new person may do"
+                title="super_admin can add, rename and remove people">
+          <option value="user">user</option>
+          <option value="super_admin">super_admin</option>
+        </select>
         <button onclick="addUser()">Add</button>
         <span class="mini" id="uStat"></span>
       </div>
@@ -2713,7 +2718,7 @@ async function addUser(){
   $('uStat').textContent = 'adding…';
   try{
     const r = await fetch('/api/users/add', {method:'POST',
-      body: JSON.stringify({user:name, password:pass})}).then(x => x.json());
+      body: JSON.stringify({user:name, password:pass, role:$('uRole').value})}).then(x => x.json());
     // The hub's reason says what to fix, so show it rather than a generic no.
     $('uStat').textContent = r.ok ? '' : (r.error || 'refused');
     if (r.ok) { $('uName').value = ''; $('uPass').value = ''; loadUsers(); }
