@@ -1,39 +1,201 @@
-{
- "faqs": [
-  {
-   "questions": [
+ {
+  "faqs": [
+   {
+    "questions": [
+     "ท่องกลอนให้ฟังหน่อย",
+     "ท่องกลอน",
+     "อ่านกลอนให้ฟังหน่อย",
+     "ขอกลอนหน่อย",
+     "อ่านกลอน",
+     "บทกลอน",
+     "recite a poem",
+     "recite poem"
+    ],
+    "answer": "แล้วสอนว่าอย่าไว้ใจมนุษย์\nมันแสนสุดลึกล้ำเหลือกำหนด\nถึงเถาวัลย์พันเกี่ยวที่เลี้ยวลด\nก็ไม่คดเหมือนหนึ่งในน้ำใจคน",
+    "answer_en": "Do not place your deepest trust in mortal kind,\nFor vast and fathomless is the human mind.\nThough winding vines twist in tangled bend,\nMan's devious heart is harder to comprehend.",
+    "answer_ja": "人の心は底知れず、たやすく信じることなかれ。\n幾重に曲がりくねる蔓草よりも、\n人の心こそ真に曲がりくねるものなり。",
+    "answer_zh": "莫把凡人深信轻，人心深邃难勘明。\n纵使藤蔓多弯折，难及人心曲折情。"
+   },
+   {
+    "questions": [
     "ห้องน้ำไปทางไหน",
     "ห้องน้ำอยู่ที่ไหน",
     "ห้องสุขาอยู่ตรงไหน",
-    "toilet อยู่ไหน"
+    "toilet อยู่ไหน",
+    "where is the toilet",
+    "where is the restroom",
+    "where is the bathroom",
+    "トイレはどこですか",
+    "お手洗いはどこですか",
+    "トイレはどこ",
+    "洗手间在哪里",
+    "厕所在哪里",
+    "洗手间怎么走"
    ],
-   "answer": "เดินตรงไปจะเห็นป้ายห้องน้ำทางซ้ายครับ"
+   "answer": "เดินตรงไปจะเห็นป้ายห้องน้ำทางซ้ายครับ",
+   "answer_en": "Walk straight ahead, you will see the restroom sign on your left.",
+   "answer_ja": "まっすぐ進むと左手にトイレの案内標識が見えます。",
+   "answer_zh": "直走在左手边就能看到洗手间的指示牌。"
   },
   {
    "questions": [
     "ที่จอดรถอยู่ที่ไหน",
     "จอดรถได้ที่ไหน",
-    "parking อยู่ตรงไหน"
+    "parking อยู่ตรงไหน",
+    "where is the parking",
+    "where can I park",
+    "where is parking",
+    "駐車場はどこですか",
+    "駐車はどこにできますか",
+    "駐車場はどこ",
+    "停车场在哪里",
+    "车停在哪里",
+    "停车场怎么走"
    ],
-   "answer": "ที่จอดรถอยู่ด้านหลังอาคารครับ เดินผ่านประตูทางออกด้านขวาได้เลย"
+   "answer": "ที่จอดรถอยู่ด้านหลังอาคารครับ เดินผ่านประตูทางออกด้านขวาได้เลย",
+   "answer_en": "The parking area is behind the building. You can exit through the right door.",
+   "answer_ja": "駐車場は建物の裏手にあります。右側の出口から出てください。",
+   "answer_zh": "停车场在楼后，从右侧出口出去即可。"
   },
   {
    "questions": [
     "เวลาทำการคือเมื่อไหร่",
     "เปิดกี่โมง",
     "ปิดกี่โมง",
-    "เปิดทำการกี่โมง"
+    "เปิดทำการกี่โมง",
+    "what time do you open",
+    "what are your opening hours",
+    "when are you open",
+    "what time do you close",
+    "営業時間は何時ですか",
+    "何時に開きますか",
+    "何時に閉まりますか",
+    "营业时间是什么时候",
+    "几点开门",
+    "几点关门",
+    "开放时间"
    ],
-   "answer": "เปิดทำการทุกวันจันทร์ถึงศุกร์ เวลา 8:00 - 17:00 น. ครับ"
+   "answer": "เปิดทำการทุกวันจันทร์ถึงศุกร์ เวลา 8:00 - 17:00 น. ครับ",
+   "answer_en": "We are open Monday to Friday from 8:00 to 17:00.",
+   "answer_ja": "月曜日から金曜日まで、午前8時から午後5時まで営業しています。",
+   "answer_zh": "每周一至周五开放，时间为8:00至17:00。"
   },
   {
    "questions": [
     "wifi รหัสคืออะไร",
+    "รหัส wifi อะไร",
     "password wifi คืออะไร",
     "รหัส wifi คืออะไร",
-    "ขอ wifi หน่อย"
+    "ขอ wifi หน่อย",
+    "what is the wifi password",
+    "wifi password",
+    "what is the password for wifi",
+    "wifiのパスワードは何ですか",
+    "wifi パスワード",
+    "Wi-Fiパスワード",
+    "wifi密码是什么",
+    "无线网密码",
+    "无线网络密码是多少"
    ],
-   "answer": "รหัส WiFi คือ Welcome2024 ครับ"
+   "answer": "รหัส WiFi คือ Welcome2024 ครับ",
+   "answer_en": "The WiFi password is Welcome2024.",
+   "answer_ja": "WiFiのパスワードは Welcome2024 です。",
+   "answer_zh": "WiFi密码是 Welcome2024。"
+  },
+  {
+   "questions": [
+    "hello",
+    "hi",
+    "hey",
+    "good morning",
+    "good afternoon",
+    "good evening",
+    "how are you",
+    "who are you",
+    "สวัสดี",
+    "สวัสดีครับ",
+    "สวัสดีค่ะ",
+    "หวัดดี",
+    "หวัดดีครับ",
+    "หวัดดีค่ะ",
+    "วัดดี",
+    "วัดดีครับ",
+    "วัดดีค่ะ",
+    "ดีครับ",
+    "ดีค่ะ",
+    "ทักทาย",
+    "สบายดีไหม",
+    "เธอคือใคร",
+    "คุณคือใคร",
+    "hello robot",
+    "hi robot",
+    "hello mice",
+    "hi mice",
+    "こんにちは",
+    "おはようございます",
+    "こんばんは",
+    "お元気ですか",
+    "你好",
+    "早上好",
+    "下午好",
+    "晚上好",
+    "你是谁"
+   ],
+   "answer": "สวัสดีครับ! ผมคือหุ่นยนต์ Mice ยินดีต้อนรับครับ มีอะไรให้ผมช่วยไหมครับ",
+   "answer_en": "Hello! I am Mice robot. Welcome! How can I help you today?",
+   "answer_ja": "こんにちは！マイスロボットです。いらっしゃいませ！何かお手伝いしましょうか？",
+   "answer_zh": "您好！我是Mice机器人。欢迎光临！请问有什么我可以帮您的吗？",
+   "move": "hello.yaml",
+   "module": "nong"
+  },
+  {
+   "questions": [
+    "กินอะไรดี",
+    "กินหลายดี",
+    "กินไรดี",
+    "กินข้าวที่ไหนดี",
+    "กินข้าวที่ไหน",
+    "มีอะไรกินบ้าง",
+    "หาอะไรกิน",
+    "หิวข้าว",
+    "หิวแล้ว",
+    "หิว",
+    "โรงอาหารอยู่ที่ไหน",
+    "โรงอาหารอยู่ไหน",
+    "โรงอาหารไปทางไหน",
+    "ร้านอาหารอยู่ที่ไหน",
+    "ร้านอาหารอยู่ไหน",
+    "ร้านอาหารไปทางไหน",
+    "ศูนย์อาหารอยู่ที่ไหน",
+    "ศูนย์อาหารอยู่ไหน",
+    "canteen อยู่ไหน",
+    "where to eat",
+    "what should I eat",
+    "what to eat",
+    "where can I eat",
+    "where is the cafeteria",
+    "where is the canteen",
+    "where is the food court",
+    "where is the restaurant",
+    "I'm hungry",
+    "food",
+    "食堂はどこですか",
+    "レストランはどこですか",
+    "どこで食べられますか",
+    "何を食べたらいいですか",
+    "お腹が空きました",
+    "吃什么好",
+    "哪里有吃的",
+    "食堂在哪里",
+    "餐厅在哪里",
+    "哪里可以吃饭",
+    "我饿了",
+    "美食广场在哪里"
+   ],
+   "answer": "โรงอาหารและศูนย์อาหารอยู่ชั้น 1 ครับ มีอาหารและเครื่องดื่มบริการครับ",
+   "answer_en": "The cafeteria and food court are on the 1st floor near the front entrance.",
+   "answer_ja": "食堂とフードコートは1階の正面入口付近にあります。",
+   "answer_zh": "食堂和美食广场位于一楼正门附近，有丰富的餐点可供选择。"
   }
  ]
 }

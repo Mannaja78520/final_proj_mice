@@ -36,6 +36,7 @@
     "name": "Reconize",
     "open": "http://localhost:5173",          // their React front end (::1 only)
     "api": "http://127.0.0.1:8000",           // their FastAPI
+    "camera": "/recognition",                 // their live webcam page; Voice opens it
     "health": "/api/health",                  // main.py:182, needs no login
     // MAIN, never the Dummy copy (user 2026-09-16: *run only main not
     // dummy*). The hub refuses a folder whose path holds a word listed here.

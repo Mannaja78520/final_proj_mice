@@ -1,21 +1,48 @@
 {
   "service": "http://127.0.0.1:8767",
   "faqThreshold": 0.75,
-  "faqAskAgain": 0.0,
+  "faqAskAgain": 0,
+  "scenario": "พนักงานต้อนรับในศูนย์การค้า สุภาพและยิ้มแย้ม",
+  "googleApiKey": "",
   "stt": {
     "enabled": true,
-    "model": "small"
+    "model": "small",
+    "language": "auto",
+    "languages": {
+      "th": {
+        "bias": "หุ่นยนต์ น้อง ไมซ์ สวัสดี"
+      },
+      "en": {
+        "bias": "Mice robot hello"
+      },
+      "ja": {
+        "bias": "マイス ロボット こんにちは"
+      },
+      "zh": {
+        "bias": "机器人 你好"
+      }
+    }
   },
   "llm": {
     "enabled": true,
-    "model": "Qwen/Qwen3.5-4B"
+    "provider": "local",
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "maxTokens": 32
   },
   "tts": {
     "enabled": true,
     "language": "th",
+    "rate": "+0%",
+    "pitch": "+0Hz",
     "voices": {
       "th": "th-TH-PremwadeeNeural",
-      "en": "en-US-JennyNeural"
+      "en": "en-US-JennyNeural",
+      "ja": "ja-JP-NanamiNeural",
+      "zh": "zh-CN-XiaoxiaoNeural"
     }
+  },
+  "face": {
+    "autoSeconds": 5,
+    "cameraLabel": ""
   }
 }

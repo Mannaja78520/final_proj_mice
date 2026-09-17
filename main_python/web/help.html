@@ -703,7 +703,9 @@
        every other module behind it.</p></div>
   <div class="f"><h3>Accounts stored on the board</h3>
     <p>The website's Setup gate is backed by real accounts in NVS (default
-       <code>manny / 12345678</code>). <code>AUTH</code>, plus
+       <code>super_admin / admin123</code> and <code>admin / admin123</code>, added on start-up to any board that
+       lacks them; existing accounts are kept). A default password shows a <i>please change</i> note but does not
+       lock Setup. <code>AUTH</code>, plus
        <code>USER LIST|ADD|DEL|PASS</code> — user operations require valid credentials.
        The raw command channel stays open for scripts and RS485.</p></div>
 
@@ -1069,8 +1071,34 @@
        those accounts says so, and still works over its USB or RS485 cable.</p></div>
   <div class="f"><h3>Robot home and show neutral are two different poses<span class="tag t-new">new</span></h3>
     <p><b>Home</b> is where the robot goes when it powers on and when you press Home. Set it in Nong Studio's
-       Robot card with <b>Keep this as robot home</b>, or in the Setup table's start° column. <b>Neutral</b> is the
+       Robot card with <b>Keep this as robot home</b>, in the Setup table's start° column, or on the robot's own page
+       (<b>⚙ Open module</b>): jog the arm, then <b>Keep where the arm is now as home</b>, or type the start angles
+       and press <b>Save these start angles</b>. <b>Neutral</b> is the
        rest pose of a show and stays in Studio: <b>Keep this as neutral</b> never changes the robot.</p></div>
+  <div class="f"><h3>A frozen Studio page stops the robot<span class="tag t-new">new</span></h3>
+    <p>When the hub plays a show from Nong Studio and the Studio page freezes, the hub stops the show and the robot
+       within a few seconds, and says why. Hiding the tab or closing Studio on purpose still lets the show carry on by
+       itself. <span class="tech">Studio beats <code>POST /api/play/beat</code> every second while on screen; a watched
+       show silent for 4 s is stopped (<code>ShowPlayer.BEAT_TIMEOUT</code>).</span></p></div>
+  <div class="f"><h3>See distances on the robot in Studio<span class="tag t-new">new</span></h3>
+    <p>Press <b>📏 Distances</b> under the view buttons in Nong Studio's 3D view, or hold the <b>D</b> key, to see
+       dashed lines with the length in mm: each elbow to its hand, elbow to elbow and hand to hand. They follow the
+       pose as you move it. <span class="tech">The pairs are listed in
+       <code>nong/main_python_set_nong/web/distances.json</code>; add a pair there to measure something else.</span></p></div>
+  <div class="f"><h3>Open one app on its own<span class="tag t-new">new</span></h3>
+    <p>Each app (Nong Studio, Voice, Faces, Camera…) can open in its own window without going through the hub page.
+       Double-click its shortcut in the <b>Apps</b> folder next to <b>MiceHub.exe</b>. If the hub is not running yet,
+       the shortcut starts it too; if it is, the same hub is used, so the robot cables are still shared.
+       <span class="tech">Shortcut = <code>MiceHub.exe --open &lt;app id&gt;</code>. Make the shortcuts again after adding an
+       app: <code>python tools/make_app_shortcuts.py</code> (add <code>--desktop</code> for the Desktop). The browser used
+       for the window is listed in <code>config/app_window.json</code>.</span></p></div>
+  <div class="f"><h3>A move's music list stays open<span class="tag t-new">new</span></h3>
+    <p>Press <b>♪</b> on a move to choose a track and its volume. The list now works whenever the robot is
+       connected, with or without <b>live</b>, and clicking it no longer closes it before you can choose.</p></div>
+  <div class="f"><h3>The Zero position lock uses your hub login<span class="tag t-new">new</span></h3>
+    <p>In Nong Studio the <b>Zero position</b> card opens with the same user name and password as the hub
+       (for example <code>admin / admin123</code>). The old browser-only password is gone. On the robot's own
+       page the zero card is under Setup, after logging in.</p></div>
   <div class="f"><h3>Studio says when its joint limits differ from the robot's<span class="tag t-new">new</span></h3>
     <p>When Studio connects it compares its joint limits with the robot's. If they differ, the arm would stop short
        of the preview, so Studio says which joints and offers <b>Use the robot's limits</b> or
@@ -1175,6 +1203,36 @@
        listening runs on this PC too. Which languages it hears — and the words
        each language gets wrong often — live in <code>config/voice.json</code>;
        adding a language is one entry there.</p></div>
+  <div class="f"><h3>It can greet you by name<span class="tag t-new">new</span></h3>
+    <p>Beside the answer box there is a face badge and two buttons.
+       <b>Check who I am</b> uses the camera of the device the page is open on:
+       it takes one picture, asks the face app who it is, and shows the name.
+       <b>The picture is not kept</b> — nothing is written to the face app's
+       history and no image lands on the disk. The name is remembered for two
+       minutes, so the next answers greet that person by name in Thai,
+       English, Japanese or Chinese.</p>
+    <p>Next to it, <b>Check by itself</b> keeps looking every few seconds, so
+       nobody has to press anything — still keeping no pictures. It stops
+       while the tab is hidden, and it lets the camera go the moment it is
+       switched off. How often it looks is <code>face.autoSeconds</code> in
+       <code>config/voice.json</code>.</p>
+    <p>The list beside the switch holds two kinds of camera.
+       <b>Cameras the face app watches</b> are the stations it already runs —
+       its kiosk, a CCTV camera, a phone, or a PC watching several cameras at
+       once. Picking one of those opens <i>no</i> camera here: the face app is
+       already looking through that lens, and Voice simply reads what it sees.
+       That is how one camera serves both programs at the same time. Under
+       <b>This device</b> are the cameras of the machine the page is open on,
+       for when no station is running.</p>
+    <p>It starts on the camera the face app saved as its own default, so
+       choosing there chooses here too; picking another is remembered in this
+       browser only, the same way the face app's kiosk remembers its own.</p>
+    <p><b>Open Reconize</b> opens the face app's own camera page instead, in a
+       new tab, and starts the face app first if it is not running. That way
+       keeps a record of every sighting, which is what an event needs; the
+       button above is for a quick hello. Where the face app lives is one
+       entry in <code>config/partners.json</code> — a second face app is an
+       entry there, not new code.</p></div>
   <div class="f"><h3>Saved answers first<span class="tag t-new">new</span></h3>
     <p>A question close to a saved one is answered instantly from
        <code>apps/voice/qa_data.json</code> — the same trick as the original

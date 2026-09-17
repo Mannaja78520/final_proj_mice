@@ -20,8 +20,8 @@
 
 <div class="wrap">
   <div class="head">
-    <button class="secondary" onclick="location.href='/'">🏠 Hub</button>
-    <h1>🎤 Voice</h1>
+    <button class="secondary" onclick="location.href='/'">Hub</button>
+    <h1>Voice</h1>
     <span class="mini" id="stat" aria-live="polite">checking the voice helper…</span>
     <button onclick="load()" hidden id="retry">⟳ Try again</button>
   </div>
@@ -32,45 +32,74 @@
     <p><b>The voice helper is not running on this PC.</b></p>
     <p>The hub is fine — the part that answers questions is a separate helper,
        because a local AI is too big to live inside the hub program.</p>
-    <p>Start it from the <b>code</b> folder:</p>
-    <p><code>python apps\voice\service.py</code></p>
-    <div class="row" style="margin-top:var(--sp-3)">
-      <button class="primary" id="startVoiceBtn" onclick="startVoiceService()">▶ Start AI Model</button>
-      <span class="mini" id="startVoiceStat" aria-live="polite"></span>
+    <div class="row" style="margin-top:var(--sp-3);gap:8px;align-items:center">
+      <button class="primary" id="btnStartVoice" onclick="startVoiceService()">Start AI Voice Helper</button>
+      <button onclick="load()" title="Refresh status">⟳ Try again</button>
+      <span class="mini" id="downStat" aria-live="polite"></span>
     </div>
-    <p style="margin-top:var(--sp-2)">Or press <b>Try again</b> if started manually. The hub finds it by itself.</p>
+    <p class="mini" style="margin-top:var(--sp-2);color:var(--dim,#888)">
+      Or start manually: <code>python apps\voice\service.py</code>
+    </p>
   </div>
 
   <div class="card" id="ready" hidden>
-    <div class="row" style="justify-content:space-between">
-      <span class="mini" id="parts"></span>
-      <div class="row">
-        <button class="secondary" id="stopVoiceBtn" onclick="stopVoiceService()" style="color:var(--err,#e84d4d);border-color:var(--err,#e84d4d)" title="Unload all AI models and stop voice service to free memory">⏹ Unload Model</button>
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="mini" id="parts"></span>
+        <span id="faceBadge" class="mini badge" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;background:var(--dim-bg,#f3f4f6);border:1px solid var(--line,#ddd)" title="Detected person from Face Recognition">👤 <span id="faceName">Searching face…</span></span>
+        <button class="secondary mini" id="btnWhoAmI" onclick="whoAmI()" style="padding:2px 8px;font-size:12px" title="Look once with this camera. The picture is not kept.">Check who I am</button>
+        <label class="mini" style="display:flex;gap:4px;align-items:center;cursor:pointer" title="Keep looking every few seconds. Nothing is saved, and it stops when this tab is hidden."><input type="checkbox" id="autoFace" onchange="toggleAutoFace()"> Check by itself</label>
+        <select id="camPick" class="mini" hidden onchange="pickCamera()" title="Which camera to look with" style="padding:2px 4px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--card);color:var(--txt);max-width:180px"></select>
+        <button class="secondary mini" id="btnOpenReconize" onclick="openReconize()" style="padding:2px 8px;font-size:12px" title="Open Reconize face recognition in new tab">Open Reconize</button>
+      </div>
+      <div class="row" style="gap:6px;align-items:center">
+        <button class="secondary mini" id="btnLoadModel" onclick="loadModel()">Load Model</button>
+        <button class="secondary mini" id="btnUnloadModel" onclick="unloadModel()" style="color:var(--err,#e84d4d);border-color:var(--err,#e84d4d)">Unload Model</button>
         <button onclick="load()" title="Refresh status">⟳</button>
       </div>
     </div>
+    <div id="camBox" hidden style="margin-top:var(--sp-2)">
+      <video id="camVid" playsinline muted autoplay
+             style="width:240px;max-width:100%;border-radius:var(--r-md);border:1px solid var(--line)"></video>
+      <p class="mini" id="camSay" style="color:var(--dim,#888)">Look at the camera…</p>
+      <p class="mini" style="color:var(--dim,#888)">The picture is not kept — nothing is written to the face app.</p>
+    </div>
     <textarea id="q" placeholder="Type a question…"></textarea>
-    <div class="row">
-      <button id="talk" onclick="talk()" style="padding:var(--sp-3)">🎤 Press to talk</button>
+    <div class="row" style="flex-wrap:wrap;gap:var(--sp-2);align-items:center">
+      <button id="talk" onclick="talk()" style="padding:var(--sp-3)">Press to talk</button>
       <button class="primary" onclick="ask()">Ask</button>
-      <button id="convStart" onclick="startConv()" class="primary" hidden>▶ Start conversation</button>
-      <button id="convStop" onclick="stopConv()" class="primary" hidden style="background:#e84d4d">■ Stop</button>
-      <label class="mini"><input type="checkbox" id="sound"> Sound</label>
+      <button id="convStart" onclick="startConv()" class="primary" hidden>Start conversation</button>
+      <button id="convStop" onclick="stopConv()" class="primary" hidden style="background:#e84d4d">Stop</button>
+      <label class="mini" style="display:flex;gap:4px;align-items:center"><input type="checkbox" id="sound"> Sound</label>
+      <label class="mini" style="display:flex;gap:4px;align-items:center;cursor:pointer" title="Enable or disable robot motion during answers"><input type="checkbox" id="moveOn" checked> <b>Move</b></label>
+      <label class="mini" style="display:flex;gap:4px;align-items:center" title="Target robot: Auto (per-answer), All robots, or a specific robot override">
+        <span>Robot:</span>
+        <select id="globalRobot" class="mini" style="padding:2px 4px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--card);color:var(--txt)">
+          <option value="">(Per-answer)</option>
+          <option value="__all__">All robots</option>
+        </select>
+      </label>
+      <label class="mini" style="display:flex;gap:4px;align-items:center;cursor:pointer" title="Multi-lang mode: auto-detect question language and auto-reply in matching language. When unchecked, forces the language set in Settings.">
+        <input type="checkbox" id="autoDetectBeta" onchange="toggleAutoDetect(this.checked)" checked>
+        <b>Multi-lang mode</b>
+      </label>
       <span class="mini" id="wait" aria-live="polite"></span>
     </div>
   </div>
 
   <div class="card" id="answerCard" hidden>
-    <div id="convLog" style="max-height:300px;overflow-y:auto;margin-bottom:var(--sp-3);display:flex;flex-direction:column;gap:var(--sp-2)"></div>
-    <div style="border-top:1px solid var(--line);padding-top:var(--sp-3)">
+    <div id="convLog" style="max-height:420px;overflow-y:auto;margin-bottom:var(--sp-2);display:flex;flex-direction:column;gap:var(--sp-2)"></div>
+    <div id="fallbackAnswer" hidden style="border-top:1px solid var(--line);padding-top:var(--sp-3)">
       <p class="ans" id="answer"></p>
       <span class="badge" id="source"></span>
     </div>
-    <div id="speakingNow" hidden style="margin-top:var(--sp-3);padding:12px 16px;background:var(--bg2,#f0f4ff);border-radius:12px;border-left:4px solid var(--acc,#4285f4);font-size:1.05em;line-height:1.5">
-      <span style="font-size:.8em;color:var(--mut,#888)">🔊 Speaking:</span>
-      <p id="speakingText" style="margin:4px 0 0 0;font-weight:500"></p>
+    <div id="speakingNow" hidden>
+      <span class="label">Speaking out loud:</span>
+      <p id="speakingText"></p>
     </div>
   </div>
+
+
 
   <!-- SETTINGS (A20-12). Everything the store holds, in designer words:
        Answers first because that is what changes most during a show, then
@@ -85,7 +114,7 @@
   <div class="card" id="loginHere" style="margin-bottom:var(--sp-4)"></div>
 
   <div class="row" id="setRow" hidden style="margin-bottom:var(--sp-4)">
-    <button onclick="toggleSet()">⚙ Settings</button>
+    <button onclick="toggleSet()">Settings</button>
     <label class="mini" style="display:flex;gap:var(--sp-2);align-items:center">
       <input type="checkbox" id="advOn" onchange="setAdvanced(this.checked)">
       Show technical details</label>
@@ -93,7 +122,7 @@
 
   <div id="settings" hidden>
     <div class="card">
-      <h2 style="margin-top:0;font-size:17px">💬 Answers</h2>
+      <h2 style="margin-top:0;font-size:17px">Answers</h2>
       <p class="mini">What the rig says without thinking — and a move it can
          do while saying it.</p>
       <div id="ansList"></div>
@@ -101,16 +130,38 @@
          and what the rig replies.</p>
       <div class="row"><button onclick="openForm(-1)">＋ Add an answer</button></div>
       <div id="aForm" hidden style="margin-top:var(--sp-3)">
+        <label class="mini" style="font-weight:600">Ways of asking (one per line, any language):</label>
         <textarea id="aQ" style="min-height:56px"
                   placeholder="The ways people ask it — one line each"></textarea>
-        <textarea id="aA" style="min-height:48px"
-                  placeholder="What the rig replies"></textarea>
-        <div class="row">
-          <select id="aMove" style="flex:1 1 140px"></select>
-          <select id="aRobot" style="flex:1 1 140px"></select>
+        <div class="row" style="margin-top:var(--sp-2);justify-content:space-between;align-items:center">
+          <label class="mini" style="font-weight:600">Replies by language:</label>
+          <div class="row" style="gap:var(--sp-2);align-items:center">
+            <button type="button" class="mini" id="btnTranslateAll" onclick="autoTranslateAnswers()">Auto-translate to all languages</button>
+            <span class="mini" id="transStat" aria-live="polite"></span>
+          </div>
         </div>
-        <p class="mini">A move plays on the robot you pick — by name, wherever
-           it is plugged in that day.</p>
+        <textarea id="aA" style="min-height:44px;margin-top:var(--sp-1)"
+                  placeholder="What the rig replies (Thai / Primary)"></textarea>
+        <textarea id="aAEn" style="min-height:44px;margin-top:var(--sp-2)"
+                  placeholder="What the rig replies in English (Optional - auto-translates)"></textarea>
+        <textarea id="aAJa" style="min-height:44px;margin-top:var(--sp-2)"
+                  placeholder="What the rig replies in Japanese (Optional - auto-translates)"></textarea>
+        <textarea id="aAZh" style="min-height:44px;margin-top:var(--sp-2)"
+                  placeholder="What the rig replies in Chinese (Optional - auto-translates)"></textarea>
+        <div style="margin-top:var(--sp-2)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span class="mini" style="font-weight:bold">Robot moves & sequences:</span>
+            <button type="button" class="mini secondary" onclick="addMoveRow()">+ Add robot</button>
+          </div>
+          <div id="movesList" style="display:flex;flex-direction:column;gap:6px">
+            <div class="row move-row" style="gap:6px;align-items:center">
+              <select id="aRobot" style="flex:1 1 130px"></select>
+              <select id="aMove" style="flex:1 1 150px"></select>
+            </div>
+            <div id="extraMoves"></div>
+          </div>
+          <p class="mini" style="margin-top:4px">Select which robot plays which sequence. You can choose different sequences for different robots.</p>
+        </div>
         <div class="row">
           <button class="primary" onclick="saveAnswer()">Save answer</button>
           <button onclick="closeForm()">Cancel</button>
@@ -119,16 +170,20 @@
     </div>
 
     <div class="card">
-      <h2 style="margin-top:0;font-size:17px">🗣 Voice and language</h2>
+      <h2 style="margin-top:0;font-size:17px">Voice and language</h2>
       <label class="mini" style="display:flex;gap:var(--sp-2);align-items:center">
         <input type="checkbox" id="speakOn"> Speak the answers out loud</label>
-      <div class="row" style="margin-top:var(--sp-2);gap:var(--sp-2);align-items:center">
-        <select id="ttsLang" onchange="fillVoices()" style="flex:1 1 110px"></select>
-        <select id="ttsVoice" style="flex:2 1 200px"></select>
-        <button onclick="tryVoice()">▶ Try it</button>
+      <div class="row" style="margin-top:var(--sp-2)">
+        <select id="ttsLang" onchange="fillVoices()" style="flex:1 1 90px"></select>
+        <select id="ttsVoice" style="flex:2 1 150px"></select>
+        <button onclick="tryVoice()">Try it</button>
       </div>
+      <label class="mini" style="display:flex;gap:var(--sp-2);align-items:center;margin-top:var(--sp-2)">
+        <input type="checkbox" id="autoDetectLang" onchange="toggleAutoDetect(this.checked)" checked>
+        <b>Multi-lang mode</b> (auto-detect question language; uncheck to force the language above)
+      </label>
       <p class="mini" style="margin-top:var(--sp-1);color:var(--dim,#888)">
-        ⭐ <b>Neural voices</b> (Premwadee / Jenny) read context smoothly and naturally. Windows voices run offline.
+        <b>Neural voices</b> (Premwadee / Jenny / Nanami / Xiaoxiao) read context smoothly and naturally.
       </p>
       <label class="mini" style="display:flex;gap:var(--sp-2);align-items:center;margin-top:var(--sp-3)">
         <input type="checkbox" id="listenOn"> Listen to spoken questions</label>
@@ -140,7 +195,7 @@
     </div>
 
     <div class="card">
-      <h2 style="margin-top:0;font-size:17px">🔤 Words it gets wrong</h2>
+      <h2 style="margin-top:0;font-size:17px">Words it gets wrong</h2>
       <p class="mini">Words the listening often mishears. Adding one steers
          the listener — nothing is trained, nothing breaks.</p>
       <div id="biasRows"></div>
@@ -151,7 +206,7 @@
     </div>
 
     <div class="card tech">
-      <h2 style="margin-top:0;font-size:17px">🔧 Advanced</h2>
+      <h2 style="margin-top:0;font-size:17px">Advanced</h2>
       <div class="row"><span class="mini" style="flex:1">helper address</span>
         <input id="svcUrl" style="flex:2 1 180px"></div>
       <div class="row"><span class="mini" style="flex:1">saved-match threshold</span>
