@@ -1782,3 +1782,59 @@ Task: A26-67, A26-68
 Result: ddf22c1. Scenario card on the Voice settings screen: cfg.scenarios is a list, cfg.scenario names the one in use (plain text there still works), each scenario carries prompt + voice + rate + pitch, and its voice beats tts.oneVoice. A line holding two scripts is now spoken by tts.mixedVoice, or the first multilingual voice the speech service reports, instead of a voice tied to one language. match_faq now matches a short Thai/CJK word inside a saved question (3+ characters, a quarter of the question, not a word in faqStopWords), and all four system prompts forbid inventing a password, price, time, floor or place.
 Evidence: check_voice_answers 9 assertions, check_voice_one_voice 20; 7 sabotages caught (two needed a UTF-8 spec FILE - Thai passed through a heredoc reaches sabotage.py mangled). Quick QC 4029/0. Live helper: ไวไฟ and รหัสไวไฟ both answer from the saved answers, source=faq.
 Still open, for whoever picks it up: the local model's Thai quality (mixed ครับ/ค่ะ, cut-off replies) and wrong-language replies on very short questions. That is model and prompt work, not matching - the saved answers now cover the common asks, which is the safer half.
+
+### 2026-09-18 04:26 +0700 - claude:09180350-df25
+Event: PROMOTE-DONE (committed to main)
+Task: A26-31 A26-32 A26-33 A26-34 A26-40 A26-42 A26-45 A26-46
+Result: Two dead sessions' unfinished tasks checked against the code and closed.
+ * A26-31/32/33/34 were already landed AND measured on nong 67 (dea386b, 777863b);
+   verified in the code here (safe_dps is a real ConfigStore key, check_contracts
+   ties firmware NONG_SAFE_DPS to Studio SAFE_DPS) and marked done, not re-done.
+ * A26-42/45/46 (+A26-6/44/53) were green in main's working tree but NEVER
+   COMMITTED - claude:09171741-5585 stopped after releasing them. Ran the three
+   checks alone (28/0), then committed as 6d1d709.
+ * A26-40 (Shows tab) was the only real half-finished work. It existed ONLY in
+   the orphan tree .staging-claude-229c, which is a day behind main, so it was
+   re-applied hunk by hunk instead of copied - copying would have reverted the
+   A26-44 distances overlay and the A26-53 zero lock. Landed 6fd1dfb.
+Evidence: check_shows 17 assertions, 4/4 sabotages caught (the first round found
+ two weak assertions and they were strengthened); check_studio_tabs 3/3 and it
+ now reads the tab list from the page's own STAB_BTN. Quick QC 4028 passed, 2
+ failed - both the known pre-existing check_faces_concurrency reds, red in main
+ before any of tonight's work.
+TRAP worth keeping: run_qc.py REBUILDS nong/.../web/app.js from app_parts/ before
+ it runs, so any sabotage of the built app.js reads as SILENT. Sabotage the part.
+Next: A26-5, A26-7, A26-8, A26-14, A21-12, A21-17 (the older ownerless ones),
+ then the Voice Thai answer quality left open by A26-68.
+
+### 2026-09-18 05:25 +0700 - claude:09180350-df25
+Event: PROMOTE-DONE (committed to main)
+Task: A26-5 A26-7 A26-8 A26-14 A21-12 A21-17
+Result: The older ownerless tasks, checked against the code and closed or handed back.
+ * A26-7 (4d8de66): three of the four suspected RS485 defects were already
+   fixed by A26-32/33 and measured on nong 67. The fourth was real and is
+   fixed: the hub page preferred wifi:<ip> over the cable whenever a board
+   claimed an STA address - a claim learned over the cable itself, which says
+   nothing about whether this PC is on that network. WiFi now wins only when
+   m.routes holds a LIVE wifi route. New check_open_route drives the page's own
+   repaintMods() and reads the address Open module really opens; 4/4 sabotages.
+   NOT seen on a real rig.
+ * A26-8 (4d8de66): the answer stands (the screen is never sent, no extra lag)
+   and is now on the help page. The one real defect, the comment saying a
+   dropped chunk is 46 ms away, is fixed to 93 - and check_stream_audio now
+   COMPUTES it from castRate and the buffer size, so it cannot rot; 3/3.
+ * A21-12 (0fba1f4): reviewing the references found that ref_sources.js held
+   146 audited sources and NOTHING loaded them - ref.html read only
+   ref_data.js. The page now draws a Sources section and the search filters it;
+   check_ref had never read ref_sources.js at all and now holds it; 5/5.
+   DECIDED: numbers 79/87/89/93 have no source (dropped in the 2026-09-12
+   audit). Renumbering 146 entries unattended is riskier than the gap, so the
+   gap is recorded by number; a REUSED number is still refused.
+ * A26-5 and A26-14 closed as standing rules that are already in CLAUDE.md and
+   docs/COORDINATION.md, not buildable tasks.
+ * A21-17 (thesis v3) SET BACK TO TODO. What is really here: the reference
+   bundle tool works. What is NOT here: the chapter documents - ch1-4, the
+   canva flow, edited_v2 and the textbook PDF live outside this repo. It needs
+   the user to say which chapter file is current; it is not closeable at night.
+Quick QC 4041 passed, 2 failed (the known check_faces_concurrency reds).
+Next: the Voice Thai answer quality left open by A26-68.
