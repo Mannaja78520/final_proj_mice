@@ -44,6 +44,9 @@ qc/**/__pycache__/
 # committed. The glob matters: a second tree for a different job is normal
 # (.staging-integral), and the bare name would have committed the whole of it.
 .staging*/
+# and the coordination files beside them (.staging-trees.txt, -landed.jsonl,
+# -base.json, locks): bookkeeping, never source, and they must not dirty main
+.staging*
 
 # this machine's Claude Code settings and permissions, not source
 .claude/settings.local.json

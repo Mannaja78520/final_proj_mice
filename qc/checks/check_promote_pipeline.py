@@ -97,10 +97,11 @@ def run(t):
 
         p.MAIN, p.STAGING = _fixture(root / "main-edit")
         _write(p.MAIN / "web.js", "old")
+        p.save_base({"web.js": p.file_hash(p.MAIN / "web.js")})   # staging started from "old"
         def concurrent_gate(*args, **kwargs):
             _write(p.MAIN / "web.js", "concurrent edit")
             return True
-        with mock.patch.object(p, "_plan"), mock.patch.object(p, "already_green", side_effect=[False, True]), \
+        with mock.patch.object(p, "_plan"), mock.patch.object(p, "already_green", side_effect=[False, True, True]), \
                 mock.patch.object(p, "run_qc", side_effect=concurrent_gate), \
                 contextlib.redirect_stdout(io.StringIO()):
             code = p.main(["--staging", str(p.STAGING)])
@@ -110,7 +111,8 @@ def run(t):
         p.MAIN, p.STAGING = _fixture(root / "stale-proof")
         with mock.patch.object(p, "_plan"), mock.patch.object(p, "already_green", side_effect=[False, False]), \
                 mock.patch.object(p, "run_qc", return_value=True), contextlib.redirect_stdout(io.StringIO()):
-            code = p.main(["--staging", str(p.STAGING)])
+            # --full: a scoped gate proves the tree by fingerprint instead of a receipt
+            code = p.main(["--full", "--staging", str(p.STAGING)])
         t.eq(code, 1, "QC exit zero without exact receipt refuses promotion")
         t.ok(not list(p.MAIN.iterdir()), "stale receipt copies nothing")
 

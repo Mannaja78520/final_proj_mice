@@ -8,7 +8,11 @@ and was one promote away from replacing the user's Nong Studio save with a
 copy from August.
 
 Holds:
-  * a file main changed AFTER staging's copy is refused, by name;
+  * a file main changed AFTER staging's copy is refused, by name - by content
+    hash against the base --init recorded, not mtime (A0-16: a staging edit
+    made after another session's promote looked newer and overwrote it);
+  * --init refresh never overwrites a staging edit; --accept-main lifts a
+    refusal once main's version is merged;
   * the refusal is written to BRIDGE as a REQUEST, so the other agent sees it;
   * a file staging really changed later still promotes (no false refusal);
   * Nong Studio projects/ never travel with a promote - they are user data.
@@ -40,20 +44,47 @@ def run(t):
     stage.mkdir()
     P.MAIN, P.STAGING = main, stage
 
-    old = time.time() - 3600
-    # theirs.txt: staging holds an OLD copy, main was changed after it
-    (stage / "theirs.txt").write_text("stale staging copy", encoding="utf-8")
-    os.utime(stage / "theirs.txt", (old, old))
+    for name in ("theirs.txt", "mine.txt", "later.txt", "gone.txt", "unedited.txt"):
+        (main / name).write_text("main before", encoding="utf-8")
+    P.init()
+    # theirs.txt: another session promoted over it after staging's copy
     (main / "theirs.txt").write_text("someone's newer work", encoding="utf-8")
-    # mine.txt: staging changed it after main's copy
-    (main / "mine.txt").write_text("main before", encoding="utf-8")
-    os.utime(main / "mine.txt", (old, old))
+    # mine.txt: only staging changed it
     (stage / "mine.txt").write_text("my newer edit", encoding="utf-8")
+    # later.txt: the mtime trap - main changed first, staging edited AFTER,
+    # so staging's file is newer and mtime alone let it overwrite main
+    old = time.time() - 3600
+    (main / "later.txt").write_text("another promote", encoding="utf-8")
+    os.utime(main / "later.txt", (old, old))
+    (stage / "later.txt").write_text("my later edit", encoding="utf-8")
+    # gone.txt: main deleted it; staging edited it
+    (main / "gone.txt").unlink()
+    (stage / "gone.txt").write_text("my edit", encoding="utf-8")
+    # fresh.txt: new in staging, never in main; nobase.txt: no record at all
+    (stage / "fresh.txt").write_text("new", encoding="utf-8")
+    (main / "nobase.txt").write_text("main", encoding="utf-8")
+    (stage / "nobase.txt").write_text("staging", encoding="utf-8")
 
-    newer = [r.as_posix() for r in P.main_is_newer([Path("theirs.txt"), Path("mine.txt")])]
-    t.ok(newer == ["theirs.txt"],
-         "a file main changed after staging's copy is caught, and only that one",
+    asked = [Path(n) for n in ("theirs.txt", "mine.txt", "later.txt", "gone.txt",
+                               "fresh.txt", "nobase.txt", "unedited.txt")]
+    newer = sorted(r.as_posix() for r in P.main_moved(asked))
+    t.ok(newer == ["gone.txt", "later.txt", "nobase.txt", "theirs.txt"],
+         "main changed/deleted since the copy, or unknown base, is refused - and only those",
          newer)
+
+    # --init refresh never overwrites a staging edit, and takes main's other changes
+    (main / "unedited.txt").write_text("main moved on", encoding="utf-8")
+    P.init()
+    t.ok((stage / "mine.txt").read_text(encoding="utf-8") == "my newer edit"
+         and (stage / "unedited.txt").read_text(encoding="utf-8") == "main moved on",
+         "--init refresh keeps staging's edits and refreshes the rest", "")
+    t.ok([r.as_posix() for r in P.main_moved([Path("later.txt")])] == ["later.txt"],
+         "and a kept edit still carries its OLD base, so the conflict stays", "")
+
+    # after merging by hand, --accept-main advances the base and the refusal lifts
+    P.accept_main(["later.txt"])
+    t.ok(P.main_moved([Path("later.txt")]) == [],
+         "--accept-main takes main's current copy as the base", "")
 
     P.bridge("REQUEST (promote refused: main is newer)", ["Files: theirs.txt"])
     said = (main / "docs" / "BRIDGE.md").read_text(encoding="utf-8")

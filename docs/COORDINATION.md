@@ -51,6 +51,15 @@ agent can hand off ... for the hit limit one*. tools/plan.py enforces it:
   writing a REQUEST naming it. Answer that REQUEST in BRIDGE, or merge main's
   version into staging, then promote again. Nong Studio projects/ never
   promote - they are user data.
+- Each session may keep its OWN tree: `python promote.py --staging
+  .staging-<session> --init`. --init records what main held per file
+  (.staging-base.json); a promote refuses any file main changed since then,
+  by content hash. After merging main's version: `--accept-main PATH`.
+  --init refresh never overwrites a file the tree edited.
+- `python tools/watch_main.py` (background, one per machine) writes a
+  MAIN-WRITE entry to BRIDGE within seconds of any direct write to main, and
+  names every staging tree holding its own edit of that file (COLLISION).
+  Writes a promote made are not reported. Read MAIN-WRITE before promoting.
 - A mistake that touched shared files is written to BRIDGE as a NOTICE: what
   happened, what was fixed, what is true now, and the lesson. The next agent
   must not have to rediscover it.

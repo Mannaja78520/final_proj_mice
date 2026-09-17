@@ -163,21 +163,79 @@ def walk(root: Path):
                 yield rel
 
 
+# What main held when each staging file was copied: {path: sha256}. A promote
+# refuses a file main changed since then (A0-16). mtime could not tell: a copy
+# keeps main's old time, so a later staging edit looked newer than another
+# session's promote. The .staging prefix keeps it out of walk() and QC's hash.
+BASE_NAME = ".staging-base.json"
+LANDED_LOG = ".staging-landed.jsonl"     # in MAIN: what each promote wrote, for watch_main.py
+TREES_LIST = ".staging-trees.txt"        # in MAIN: every working copy --init made
+
+
+def load_base(tree=None):
+    """Unreadable or corrupt means unknown - and unknown refuses, never guesses."""
+    try:
+        got = json.loads(((tree or STAGING) / BASE_NAME).read_bytes())
+    except (OSError, ValueError):
+        return {}
+    return got if isinstance(got, dict) else {}
+
+
+def save_base(base, tree=None):
+    path = (tree or STAGING) / BASE_NAME
+    tmp = path.with_name(BASE_NAME + ".tmp")
+    tmp.write_bytes(json.dumps(base, indent=0, sort_keys=True).encode("utf-8"))
+    os.replace(tmp, path)
+
+
 def init(force=False):
     if STAGING.exists() and not force:
         n = sum(1 for _ in walk(STAGING))
         print("staging already exists (%d files) — refreshing changed files" % n)
     STAGING.mkdir(parents=True, exist_ok=True)
-    copied = 0
+    base = load_base()
+    copied, kept = 0, []
     for rel in walk(MAIN):
-        src, dst = MAIN / rel, STAGING / rel
-        if dst.exists() and filecmp.cmp(src, dst, shallow=False):
-            continue
+        src, dst, key = MAIN / rel, STAGING / rel, rel.as_posix()
+        if dst.exists():
+            if filecmp.cmp(src, dst, shallow=False):
+                base[key] = file_hash(dst)
+                continue
+            # Only replace a copy staging never edited. The old refresh
+            # overwrote unpromoted work, and lost a finished feature once.
+            if base.get(key) != file_hash(dst):
+                kept.append(key)
+                continue
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
+        base[key] = file_hash(dst)
         copied += 1
+    save_base(base)
+    listed = MAIN / TREES_LIST
+    known = listed.read_text(encoding="utf-8").split("\n") if listed.is_file() else []
+    if str(STAGING) not in known:
+        with open(listed, "a", encoding="utf-8", newline="") as f:
+            f.write(str(STAGING) + "\n")
     print("staging ready at %s (%d file(s) copied)" % (STAGING, copied))
+    if kept:
+        print("kept %d staging file(s) that differ from main and were edited here:" % len(kept))
+        for key in kept[:20]:
+            print("   ", key)
     print("work in there; `python promote.py` moves it back once QC is green.")
+
+
+def accept_main(paths):
+    """After merging main's version into staging: main's current copy becomes the base."""
+    base = load_base()
+    for p in paths:
+        key = Path(p).as_posix()
+        h = file_hash(MAIN / key)
+        if h is None:
+            base.pop(key, None)
+        else:
+            base[key] = h
+        print("base of %s is now main's %s" % (key, (h or "absence")[:12]))
+    save_base(base)
 
 
 def fingerprint(where: Path):
@@ -252,16 +310,6 @@ def build_web(where: Path):
     except (OSError, subprocess.TimeoutExpired) as exc:
         print("WEB BUILD FAILED: %s" % exc)
         return False
-
-def fingerprint(where: Path):
-    """run_qc's own hash of the tree, so a scoped gate can prove staging did
-    not change under it (a full gate proves it with its receipt)."""
-    r = subprocess.run([sys.executable, "-c",
-                        "import sys; sys.path.insert(0, r'%s'); "
-                        "import run_qc; print(run_qc.tree_fingerprint())" % (where / "qc")],
-                       cwd=str(where), capture_output=True, text=True, timeout=300)
-    return ((r.stdout or "").strip().splitlines() or [""])[-1]
-
 
 def run_qc(where: Path, *, built=False, scoped=False):
     if not built and not build_web(where):
@@ -376,18 +424,20 @@ def promotion_lock():
             lock.rmdir()
 
 
-def main_is_newer(files):
-    """Files main changed AFTER staging's copy was taken.
-
-    Copying one of these throws away someone else's newer work. A promote
-    copies with copy2, which keeps the time, so a file staging really owns
-    is never older than main's. Measured 2026-09-16: promote.py, README.md
-    and COORDINATION.md were overwritten this way by a shared .staging.
+def main_moved(files):
+    """Files main changed (or deleted) since staging's copy - or with no record
+    of what staging started from. Copying one throws away someone's work.
+    2026-09-16: promote.py, README.md and COORDINATION.md were overwritten
+    this way by a shared .staging. See BASE_NAME for why this is not mtime.
     """
+    base = load_base()
     out = []
     for rel in files:
-        src, dst = STAGING / rel, MAIN / rel
-        if dst.is_file() and dst.stat().st_mtime > src.stat().st_mtime + 2:
+        m, s = file_hash(MAIN / rel), file_hash(STAGING / rel)
+        if m == s:
+            continue
+        b = base.get(rel.as_posix())
+        if (b is None and m is not None) or (b is not None and m != b):
             out.append(rel)
     return out
 
@@ -407,7 +457,7 @@ def bridge(event, lines):
             time.sleep(0.2)
     else:
         print("(BRIDGE busy - %s not recorded)" % event)
-        return
+        return False
     try:
         (lock / "owner.txt").write_text(who, encoding="utf-8")
         stamp = time.strftime("%Y-%m-%d %H:%M:%S %z")
@@ -417,6 +467,7 @@ def bridge(event, lines):
     finally:
         (lock / "owner.txt").unlink(missing_ok=True)
         lock.rmdir()
+    return True
 
 
 def commit_copied(files):
@@ -502,13 +553,14 @@ def promote(full=False, only=None):
     print("about to promote %d changed + %d new file(s)" % (len(changed), len(added)))
     # ASK, DO NOT OVERWRITE (user 2026-09-16: *check each other and ask need
     # promote or not then promote with no conflict*).
-    newer = main_is_newer(changed)
+    newer = main_moved(changed + added)
     if newer:
         names = [r.as_posix() for r in newer]
-        print("REFUSED: main has NEWER versions of %d file(s) than staging:" % len(names))
+        print("REFUSED: main changed %d file(s) since staging copied them:" % len(names))
         for n in names:
             print("   ", n)
-        print("Someone else changed them. Merge main's version into staging first,")
+        print("Someone else changed them. Merge main's version into staging, then:")
+        print("  python promote.py --staging %s --accept-main %s" % (STAGING, " ".join(names)))
         print("or ask the owner in docs/BRIDGE.md. Nothing was copied.")
         bridge("REQUEST (promote refused: main is newer)",
                ["Tree: %s" % STAGING,
@@ -543,10 +595,18 @@ def promote(full=False, only=None):
     if conflicts:
         print("REFUSED: main changed during the gate: " + ", ".join(map(str, conflicts)))
         return 1
+    wrote = {rel.as_posix(): file_hash(STAGING / rel) for rel in changed + added}
+    # Logged BEFORE the copy, so watch_main.py never reports this land as a direct write.
+    with open(MAIN / LANDED_LOG, "a", encoding="utf-8", newline="") as f:
+        f.write(json.dumps({"when": time.strftime("%Y-%m-%d %H:%M:%S"), "tree": str(STAGING),
+                            "who": os.environ.get("MICE_AGENT", ""), "files": wrote}) + "\n")
+    base = load_base()
     for rel in changed + added:
         dst = MAIN / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(STAGING / rel, dst)
+        base[rel.as_posix()] = wrote[rel.as_posix()]
+    save_base(base)
     print("\npromoted %d file(s) to %s" % (len(changed) + len(added), MAIN))
     sha = commit_copied(changed + added)
     bridge("PROMOTE-DONE", ["Tree: %s" % STAGING,
@@ -572,6 +632,8 @@ def main(argv):
                     help="run the whole QC suite even for a one-system change")
     ap.add_argument("--staging", metavar="DIR", default=".staging",
                     help="which working copy to use (default .staging) — a second one lets another change be verified at the same time")
+    ap.add_argument("--accept-main", nargs="+", metavar="PATH",
+                    help="after merging main's version into staging, take main's current copy as the base")
     a = ap.parse_args(argv)
 
     # Rebind the module-level path once, so every helper below keeps
@@ -580,11 +642,19 @@ def main(argv):
     STAGING = _pick_staging(a.staging)
 
     if a.init:
-        init()
+        try:
+            with promotion_lock():      # a refresh during a promote compares stale copies
+                init()
+        except RuntimeError as exc:
+            print("REFUSED: %s" % exc)
+            return 1
         return 0
     if not STAGING.exists():
         print("no staging copy yet — run: python promote.py --init")
         return 1
+    if a.accept_main:
+        accept_main(a.accept_main)
+        return 0
     if a.diff:
         show(*changes())
         return 0

@@ -213,6 +213,10 @@ SOLO = {
     # subprocess was starved past its connect window.
     "check_voice_stt",
     "check_voice_tts",
+    # Two hubs POST a 1.3 MB image to each other, then a browser page has 30 s
+    # to report. Failed 3 full gates in a row on 2026-09-17, green alone each
+    # time (40 s) - the same starved-margin signature as above.
+    "check_flash_remote",
 }
 
 
