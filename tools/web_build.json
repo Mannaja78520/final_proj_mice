@@ -27,6 +27,7 @@
       "stl_meshes.js",
       "robot_link.js",
       "freeze_watch.js",
+      "distances.js",
       "main_loop.js",
       "boot.js"
     ]

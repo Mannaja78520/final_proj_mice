@@ -149,7 +149,7 @@ GATED_POST = {
 #                   robot, replace firmware, or delete anything off an SD card.
 #
 # Listed rather than merely absent, so nobody "tidies" it into GATED later.
-NEVER_GATED = {"/api/play/stop", "/api/stopall",
+NEVER_GATED = {"/api/play/stop", "/api/stopall", "/api/play/beat",
                # and silence: a robot talking over a room must be
                # stoppable by whoever is standing next to it, for the
                # same reason a moving one must be.

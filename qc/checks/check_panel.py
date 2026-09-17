@@ -53,10 +53,12 @@ def run(t):
     t.ok(len(ai_panel.PANEL) >= 2,
          "the Gemini half of the panel is more than one voice",
          "it asks %d: %s" % (len(ai_panel.PANEL), ai_panel.PANEL))
-    t.ok(any("pro" in m for m in ai_panel.PANEL),
-         "and Pro is one of them",
-         "Flash alone is for lookups; the judgement calls need Pro, which is "
-         "also the only model that designs the visible surfaces well")
+    # User 2026-09-17 (A26-53): Gemini 3.8 Flash High reviews, never Pro -
+    # *not better enough and consume my token a lot*.
+    t.ok(not any("pro" in m for m in ai_panel.PANEL + [ai_panel.HEAD])
+         and ai_panel.HEAD == "gemini-3.8-flash-high",
+         "the panel uses Gemini 3.8 Flash High, not Pro",
+         "Pro costs the user too many tokens for what it adds")
     t.ok("subagent" in src.lower(),
          "and the file says where the CLAUDE voices come from now",
          "a panel that silently shrank from five voices to two, with nothing "

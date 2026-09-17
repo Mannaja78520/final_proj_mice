@@ -37,10 +37,15 @@ function step(){
     playT = 0;
     togglePlay();
     qcMark("playing");
-    // pause in the MIDDLE of the second move, then resume
-    setTimeout(function(){ qcMark("pause"); togglePlay(); }, %d);
-    setTimeout(function(){ qcMark("resume"); togglePlay(); }, %d);
-    setTimeout(function(){ qcMark("done"); }, %d + 4000);
+    // The show clock starts once the arm has reached keyframe 0 (A26-50), so
+    // the pause is timed from THEN - mid second move, then resume.
+    (function afterEntry(){
+      if (typeof entryHold !== "undefined" && entryHold) return setTimeout(afterEntry, 20);
+      qcMark("entry-done-at-" + Math.round(playT));
+      setTimeout(function(){ qcMark("pause"); togglePlay(); }, %d);
+      setTimeout(function(){ qcMark("resume"); togglePlay(); }, %d);
+      setTimeout(function(){ qcMark("done"); }, %d + 4000);
+    })();
   }catch(e){ qcFail(e); }
 }
 window.addEventListener("load", function(){ setTimeout(step, 1200); });
@@ -86,6 +91,17 @@ def run(t):
     # "in a hold" branch, the next move goes out the instant the hold begins,
     # the arm arrives early, and all the waiting piles up at the END.
     stamps = [p[0] for p in poses]
+    # The first POSE is the travel INTO keyframe 0, timed by the board - not a
+    # move + hold, so its gap is checked on its own.
+    entry_t = poses[0][2] or 0
+    if len(stamps) > 1:
+        t.ok(stamps[1] - stamps[0] >= entry_t * 0.9,
+             "the first move waits for the arm to reach keyframe 0",
+             "gap %d ms, entry move T %d" % (stamps[1] - stamps[0], entry_t))
+    t.ok("entry-done-at-0" in marks,
+         "and the preview clock waited for it too, instead of running ahead",
+         [m for m in marks if m.startswith("entry-done")])
+    stamps = stamps[1:]
     moves = [s for i, s in enumerate(stamps) if i == 0 or s - stamps[i - 1] > 50]
     gaps = [moves[i + 1] - moves[i] for i in range(len(moves) - 1)]
     clean = [g for g in gaps if g > 300]        # ignore the pause/resume pair
@@ -111,3 +127,27 @@ def run(t):
             t.ok(0 < left < MOVE,
                  "resume asks only for the time still left in the segment",
                  "asked for T=%s of a %d ms move" % (left, MOVE))
+
+    # ---- RESUME INSIDE A HOLD (A26-50). The hub skipped what was left of the
+    # hold and sent the next move at once, so the arm ran ahead of the preview.
+    import time
+    fake_serial.reset()
+    steps = [{"pose": [90] * 10, "t": 80, "hold": 0},
+             {"pose": [60] * 10, "t": MOVE, "hold": HOLD},
+             {"pose": [120] * 10, "t": MOVE, "hold": 0}]
+    at = MOVE + 200                       # 200 ms into the 1200 ms hold
+    t0 = time.time()
+    st = main.show.start("usb:%s" % fake_serial.PORT, steps, from_ms=at)
+    t.ok(st.get("entering") is False,
+         "a resume past keyframe 0 does not claim to be travelling there", st)
+    while main.show.running() and not fake_serial.poses():
+        time.sleep(0.02)
+    waited = (time.time() - t0) * 1000
+    main.show.stop()
+    t.ok(waited >= (HOLD - 200) * 0.85,
+         "a resume inside a hold waits what is left of it before the next move",
+         "next move after %d ms, %d ms of hold were left" % (waited, HOLD - 200))
+    st = main.show.start("usb:%s" % fake_serial.PORT, steps)
+    t.ok(st.get("entering") is True,
+         "a play from the start says it is travelling to keyframe 0", st)
+    main.show.stop()

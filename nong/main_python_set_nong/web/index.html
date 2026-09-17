@@ -39,6 +39,10 @@
         <button data-view="bottom" onclick="setView('bottom')">Bottom</button>
         <button data-view="iso" class="on" onclick="setView('iso')">3D</button>
       </div>
+      <div class="vcRow">
+        <button id="distBtn" aria-pressed="false" onclick="distSet(!distOn)"
+                title="show distances in mm: elbow to hand, elbow to elbow, hand to hand. Hold D to see them only while held.">📏 Distances</button>
+      </div>
     </div>
   </div>
 
@@ -237,7 +241,7 @@
           <span class="lbl">Pass</span><input id="zPass" type="password" style="flex:1" autocomplete="current-password">
           <button class="primary" onclick="zeroUnlock()">Unlock</button>
         </div>
-        <div class="statline" id="zStat">locked — the set-zero calibration needs the password</div>
+        <div class="statline" id="zStat">locked — log in with your hub user name and password</div>
       </div>
       <div id="zeroPanel" style="display:none">
         <div class="mini">jog the arms straight with the sliders (Attach first), then
@@ -248,11 +252,6 @@
           <button class="primary" onclick="robotZeroSet()">◎ Set zero (current = home)</button>
           <button onclick="robotCmd('ZERO')">⌂ Move to zero</button>
           <button onclick="zeroLock()">Lock</button>
-        </div>
-        <div class="row">
-          <span class="lbl">New user</span><input id="zNewUser" style="width:100px">
-          <span class="lbl">New pass</span><input id="zNewPass" style="width:100px">
-          <button onclick="zeroChangeCred()">Change login</button>
         </div>
         <div class="statline" id="zStat2"></div>
       </div>

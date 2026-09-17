@@ -159,7 +159,9 @@ function renderTimeline() {
     const el = document.createElement("div");
     el.className = "key" + (i === selKey ? " sel" : "") + (k.off ? " off" : "");
     el.onclick = (e) => {
-      if (e.target.tagName !== "INPUT" && e.target.tagName !== "BUTTON") selectKey(i);
+      // Not from a control: selecting re-renders the chip, which closed the music
+      // list the moment it opened (A26-49, a SELECT was not in the old list).
+      if (!e.target.closest("input,button,select,label,textarea")) selectKey(i);
     };
     // Clicking anywhere on the chip selects it, which is worth keeping for a
     // mouse - so the chip names the control that does the same job for the
@@ -686,6 +688,7 @@ function togglePlay() {
   $("playBtn").textContent = playing ? "❚❚ Pause" : "▶ Play";
   lastFrame = performance.now();
   lastPlayMs = 0;                 // fresh clock, so a pause never leaps forward
+  entryHold = false;
   keepAwake(playing);             // keep the tab off the throttling list
   lastLiveSeg = -1;
   if (playing && playT >= totalMs()) playT = 0;
@@ -708,7 +711,14 @@ function togglePlay() {
   // which is the whole reason it exists. This preview keeps drawing, and sends
   // nothing (playTick skips its live sends while hubDriven()).
   if (previewOnly) return;          // refused at the crash gate: draw only
-  if (hubDriven()) { hubPlay(playT); return; }
+  if (hubDriven()) {
+    // From the start the hub first TRAVELS to keyframe 0 (as long as the board
+    // needs); the show clock starts after. Hold the preview until then, or it
+    // runs ahead of the arm by the whole entry move (A26-50).
+    if (playT === 0) { entryHold = true; hubPlay(0).then(ok => ok ? waitEntry() : (entryHold = false)); }
+    else hubPlay(playT);
+    return;
+  }
   // A segment is the move INTO a keyframe, so segmentAt() starts at 1 and
   // keyframe 0 is never one of them. Put the robot on it first, or its first
   // move starts from wherever it happens to be standing instead of from the
@@ -777,6 +787,7 @@ async function hubPlay(fromMs) {
       body: JSON.stringify({
         dev: moduleDev(), steps, loop: $("loopChk").checked,
         name: ($("seqName").value || "sequence").trim(), from_ms: Math.round(fromMs || 0),
+        watch: !document.hidden,        // stop the arm if this page freezes (A26-46)
       }),
     }).then(r => r.json());
     if (r.error) throw new Error(r.error);
@@ -792,6 +803,34 @@ async function hubPlay(fromMs) {
     return false;
   }
 }
+let entryHold = false;       // true while the hub travels to keyframe 0
+async function waitEntry() {
+  while (entryHold && playing) {
+    try {
+      const st = await fetch("/api/play").then(r => r.json());
+      if (!st.running || !st.entering) break;
+    } catch (e) { break; }             // no answer: let the preview run
+    await new Promise(r => setTimeout(r, 120));
+  }
+  entryHold = false;
+  lastPlayMs = 0;                      // start the clock now, not at Play
+}
+// Heartbeat for a hub-played show: a FROZEN page cannot beat, so the hub stops
+// the arm; a page that is hidden or closed says so first, and the show carries
+// on by itself as it always has (A26-46).
+setInterval(() => {
+  if (playing && !document.hidden && hubDriven())
+    fetch("/api/play/beat", { method: "POST", body: "{}" }).catch(() => {});
+}, 1000);
+function hubLeaving() {
+  try { navigator.sendBeacon("/api/play/beat", JSON.stringify({ leaving: true })); } catch (e) { /* no beacon: the timeout decides */ }
+}
+document.addEventListener("visibilitychange", () => {
+  if (!playing || !hubDriven()) return;
+  if (document.hidden) hubLeaving();
+  else fetch("/api/play/beat", { method: "POST", body: "{}" }).catch(() => {});
+});
+window.addEventListener("pagehide", () => { if (playing && hubDriven()) hubLeaving(); });
 function hubStop() {
   return fetch("/api/play/stop", { method: "POST" }).catch(() => {});
 }

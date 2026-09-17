@@ -774,30 +774,35 @@ async function robotRun() {
     : "the robot is running " + file + " on its own.";
 }
 
-// ---- zero-position calibration (password-gated; default manny/12345678) ----
-function zeroCred() { try { return JSON.parse(localStorage.getItem("nongZeroCred")) || null; } catch (e) { return null; } }
-function zeroCredOr() { return zeroCred() || { user: "manny", pass: "12345678" }; }
-function zeroUnlock() {
-  const c = zeroCredOr();
-  if ($("zUser").value === c.user && $("zPass").value === c.pass) {
+// ---- zero-position calibration (locked behind the HUB login) ----
+// Checked by the hub, not against a password kept in this browser: that one
+// (manny/12345678) refused admin/admin123 while the hub accepted it (A26-43).
+async function zeroUnlock() {
+  const u = $("zUser").value.trim(), p = $("zPass").value;
+  let ok = false, why = "";
+  try {
+    const r = await fetch("/api/login", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: u, password: p }) });
+    const j = await r.json().catch(() => ({}));
+    ok = r.ok && !!j.ok;
+    if (j.locked_for > 0) why = `Too many tries. Wait ${j.locked_for} seconds.`;
+  } catch (e) {
+    const acc = getAccounts();                 // no hub: Studio's own accounts
+    ok = !!(acc[u] && acc[u] === p);
+  }
+  $("zPass").value = "";
+  if (ok) {
     $("zeroLocked").style.display = "none";
     $("zeroPanel").style.display = "";
-    $("zPass").value = "";
+    $("zStat").textContent = "";
   } else {
-    // Say what to do, and never imply the reader is at fault. Which of the two
-    // is wrong is deliberately not revealed.
-    $("zStat").textContent = "That user name and password do not match. "
-      + "Check them and try again.";
+    // Which of the two is wrong is deliberately not revealed.
+    $("zStat").textContent = why || "That user name and password do not match. "
+      + "Use your hub login and try again.";
   }
 }
 function zeroLock() { $("zeroPanel").style.display = "none"; $("zeroLocked").style.display = ""; }
-function zeroChangeCred() {
-  const u = $("zNewUser").value.trim(), p = $("zNewPass").value;
-  if (!u || !p) { $("zStat2").textContent = "enter a new user and password"; return; }
-  localStorage.setItem("nongZeroCred", JSON.stringify({ user: u, pass: p }));
-  $("zNewUser").value = ""; $("zNewPass").value = "";
-  $("zStat2").textContent = "login changed (this browser)";
-}
 async function robotZeroSet() {
   if (!haveUsb() && !haveWifi()) { $("zStat2").textContent = "connect to the robot first"; notice($("zStat2").textContent); return; }
   const r = await robotCmd("SETZERO");
@@ -820,13 +825,29 @@ function monitorChanged() {
     // the HUB's clock, and switching this page to watching must end it.
     hubStop();
     playing = false; $("playBtn").textContent = "▶ Play";
-    monTimer = setInterval(monitorTick, 350);
     $("robotStat").textContent = "monitoring…";
+    // Watching needs a link. Ticked before Connect (or after a first try that
+    // timed out while the hub opened the port) it said "not connected" forever
+    // although the cable worked (A26-42). So connect first, once.
+    const start = () => { if ($("monChk").checked && !monTimer) monTimer = setInterval(monitorTick, 350); };
+    if (haveUsb() || haveWifi()) start();
+    else Promise.resolve(connectRobot()).then(() => {
+      if (haveUsb() || haveWifi()) return start();
+      $("monChk").checked = false;
+      $("robotStat").textContent = "monitor needs the robot connected — pick the cable or "
+        + "WiFi above and press Connect, then tick monitor again.";
+      notice($("robotStat").textContent);
+    });
   } else {
     clearInterval(monTimer); monTimer = null;
   }
 }
+let monBusy = false;
 async function monitorTick() {
+  // One status request at a time. Over RS485 a reply can take longer than the
+  // 350 ms tick, and piling requests onto one shared cable made them fail.
+  if (monBusy) return;
+  monBusy = true;
   try {
     const s = await getStatus();
     const m = s.module || {};
@@ -845,5 +866,7 @@ async function monitorTick() {
   } catch (e) {
     $("robotStat").textContent = "monitor: no reply (" + (e.message || e) + ")";
     notice($("robotStat").textContent);
+  } finally {
+    monBusy = false;
   }
 }

@@ -48,6 +48,7 @@ let _drawing = false;          // true only inside the animation frame
 let _lastScrub = -1, _lastTime = "";
 function playTick() {
   if (!playing) { lastPlayMs = 0; return; }
+  if (entryHold) { lastPlayMs = 0; return; }   // the arm is still travelling to keyframe 0
   const now = performance.now();
   if (!lastPlayMs) { lastPlayMs = now; return; }
   // Clamp the step. A hidden tab has its timers throttled (to about once a
@@ -123,6 +124,7 @@ function tick(now) {
   _drawing = false;
   lastFrame = now;
   controls.update();
+  distDraw();              // distances follow the pose and the camera (A26-44)
   renderer.render(scene, activeCam());
 }
 

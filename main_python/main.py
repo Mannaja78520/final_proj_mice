@@ -97,6 +97,7 @@ except Exception as _e:            # a broken registry must not stop the hub
     registry = None
     print("[hub] registries unavailable:", _e)
 
+import app_window                                          # noqa: E402
 import build_stamp                                         # noqa: E402
 import cam_relay                                           # noqa: E402
 import hub_auth                                            # noqa: E402
@@ -1508,6 +1509,10 @@ class ShowPlayer:
     """One player per hub. Runs a sequence on a real thread, at real times."""
 
     TICK = 0.02          # how often the thread wakes to check the clock / stop
+    # A page that asked to be WATCHED beats every second while it is on screen.
+    # Silent this long without saying it was leaving = frozen: stop the arm
+    # (A26-46). Longer than a slow STL load, shorter than a walk to the robot.
+    BEAT_TIMEOUT = 4.0
     MIN_T = 80           # ms, the same floor the firmware and Studio use
 
     def __init__(self):
@@ -1529,6 +1534,9 @@ class ShowPlayer:
         self.last = ""       # the module's answer to the most recent command
         self.error = ""
         self.started_at = 0.0
+        self.entering = False
+        self.watched = False     # a visible Studio page is beating for this show
+        self.last_beat = 0.0
 
     # ---- what a caller sees ----
     def status(self):
@@ -1539,6 +1547,9 @@ class ShowPlayer:
                 "at_ms": int(self.at_ms), "total_ms": int(self.total_ms),
                 "step": self.step, "steps": len(self.steps),
                 "last": self.last, "error": self.error,
+                # travelling to keyframe 0: the show clock has not started yet,
+                # so Studio holds its preview (A26-50)
+                "entering": self.entering,
             }
 
     def running(self):
@@ -1548,7 +1559,15 @@ class ShowPlayer:
     def total(steps):
         return sum(int(s.get("t", 0)) + int(s.get("hold", 0)) for s in steps)
 
-    def start(self, dev, steps, loop=False, name="", from_ms=0):
+    def beat(self, leaving=False):
+        """Studio is alive (leaving=False), or is going away ON PURPOSE - hidden
+        or closed - and the show should carry on by itself (leaving=True)."""
+        with self.lock:
+            self.watched = not leaving
+            self.last_beat = time.monotonic()
+        return {"ok": True, "running": self.running(), "watched": self.watched}
+
+    def start(self, dev, steps, loop=False, name="", from_ms=0, watch=False):
         """Take over this device and play. Any previous run is stopped first."""
         parse_dev(dev)                       # raises on a malformed device
         steps = [{"pose": [float(v) for v in s["pose"]],
@@ -1578,6 +1597,10 @@ class ShowPlayer:
                 self.at_ms = max(0, min(int(from_ms), self.total_ms))
                 self.step, self.last, self.error = -1, "", ""
                 self.started_at = time.time()
+                self.watched, self.last_beat = bool(watch), time.monotonic()
+                # set HERE, not in the thread: a status read straight after
+                # start() must already say the entry travel is under way
+                self.entering = self.at_ms <= steps[0]["hold"]
             # A FRESH EVENT PER RUN. stop_flag is how the old clock hears
             # "stop"; clearing one shared event here would also release a run
             # whose thread stop() gave up waiting for - and two clocks would
@@ -1637,8 +1660,27 @@ class ShowPlayer:
         return max(asked, int(m.group(1))) if m else asked
 
     def _sleep(self, flag, seconds):
-        """Wait, but wake up immediately when someone presses stop."""
-        return not flag.wait(max(0.0, seconds))
+        """Wait, but wake up immediately when someone presses stop - or when
+        the watching page has frozen (see BEAT_TIMEOUT)."""
+        end = time.monotonic() + max(0.0, seconds)
+        while True:
+            left = end - time.monotonic()
+            if flag.wait(max(0.0, min(left, 0.1))):
+                return False
+            with self.lock:
+                silent = self.watched and time.monotonic() - self.last_beat > self.BEAT_TIMEOUT
+            if silent:
+                flag.set()
+                with self.lock:
+                    self.error = ("Studio stopped answering (the page froze?), so the "
+                                  "show was stopped to keep the robot safe")
+                try:
+                    self._say("STOP")
+                except Exception:           # noqa: BLE001 - stopping is best effort
+                    pass
+                return False
+            if left <= 0:
+                return True
 
     def _run(self, flag):
         try:
@@ -1661,7 +1703,7 @@ class ShowPlayer:
     def _play_once(self, flag):
         """One pass through the steps, from self.at_ms. False = stopped."""
         # where in the show at_ms lands: which step, and how much of it is left
-        start_i, into = 1, 0
+        start_i, into, hold_left = 1, 0, 0
         clock = self.steps[0].get("hold", 0)
         at = self.at_ms
         if at <= clock:
@@ -1671,9 +1713,13 @@ class ShowPlayer:
                 return False
             self._mark(0, at)
             self._cues(self.steps[0])
-            t = self._took(self._say(self._pose_cmd(self.steps[0]["pose"], t)), t)
-            if not self._sleep(flag, t / 1000.0):
-                return False
+            try:
+                t = self._took(self._say(self._pose_cmd(self.steps[0]["pose"], t)), t)
+                if not self._sleep(flag, t / 1000.0):
+                    return False
+            finally:
+                with self.lock:
+                    self.entering = False
         else:
             for i in range(1, len(self.steps)):
                 seg = self.steps[i]["t"]
@@ -1682,12 +1728,17 @@ class ShowPlayer:
                     break
                 clock += seg
                 if at < clock + self.steps[i].get("hold", 0):
+                    # resumed inside a hold: wait what is LEFT of it first, or
+                    # the next move goes out early (A26-50)
+                    hold_left = clock + self.steps[i].get("hold", 0) - at
                     start_i, into = i + 1, 0
                     clock += self.steps[i].get("hold", 0)
                     break
                 clock += self.steps[i].get("hold", 0)
                 start_i = i + 1
 
+        if hold_left and not self._sleep(flag, hold_left / 1000.0):
+            return False
         for i in range(start_i, len(self.steps)):
             s = self.steps[i]
             # A resumed move gets the time it has LEFT, not the whole time, or
@@ -4747,7 +4798,7 @@ class Handler(BaseHTTPRequestHandler):
                 d = json.loads(self.body().decode())
                 return self.send_json(show.start(
                     d["dev"], d["steps"], d.get("loop"), d.get("name", ""),
-                    d.get("from_ms", 0)))
+                    d.get("from_ms", 0), bool(d.get("watch"))))
             except Exception as e:            # noqa: BLE001
                 return self.send_err(e)
         if path == "/api/play":
@@ -4821,6 +4872,14 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 return self.send_err(str(e))
 
+        if path == "/api/play/beat" and method == "POST":
+            # Can only keep a show alive or let it run alone - never start one -
+            # so it needs no login, like stop (A26-46).
+            try:
+                d = json.loads(self.body().decode() or "{}")
+            except ValueError:
+                d = {}
+            return self.send_json(show.beat(bool(d.get("leaving"))))
         if path == "/api/play/stop":
             return self.send_json(show.stop())
 
@@ -5248,9 +5307,28 @@ def start_short_name(port=80):
     return srv
 
 
+def open_target(argv):
+    """What to show when started: the hub page, or ONE app with --open <id>.
+
+    -> (url path, show fn). An unknown id is refused with the real list rather
+    than silently opening the hub: a desktop icon pointing at a renamed app
+    should say so.
+    """
+    want = app_window.open_arg(argv)
+    if not want:
+        return "/", webbrowser.open
+    app = registry.app_by_id(want) if registry else None
+    if not app:
+        known = ", ".join(a["id"] for a in (registry.apps() if registry else []))
+        raise SystemExit("no app called %r - the apps are: %s" % (want, known or "(none)"))
+    cfg = app_window.load_config(asset("config", "app_window.json"))
+    return app["path"], lambda url: app_window.open_window(url, cfg)
+
+
 def main():
     for d in (PROJECTS, SEQUENCES, MODELS):
         d.mkdir(parents=True, exist_ok=True)
+    path, show = open_target(sys.argv[1:])
     # ONE HUB PER PORT. The listener sets SO_REUSEADDR (ThreadingHTTPServer
     # default), and on Windows that lets a second hub bind the SAME port -
     # connections then land on either process at random and half the pages
@@ -5261,8 +5339,8 @@ def main():
                 "http://127.0.0.1:%d/api/version" % PORT, timeout=2) as r:
             if "mice" in r.read(200).decode("utf-8", "replace").lower():
                 print("a hub is already running on port %d - opening "
-                      "http://127.0.0.1:%d/ instead" % (PORT, PORT))
-                webbrowser.open("http://127.0.0.1:%d/" % PORT)
+                      "http://127.0.0.1:%d%s instead" % (PORT, PORT, path))
+                show("http://127.0.0.1:%d%s" % (PORT, path))
                 return
     except Exception:                       # noqa: BLE001 - nothing there: bind
         pass
@@ -5315,7 +5393,7 @@ def main():
               % NAME_SERVER[0].name)
     print("The hub finds all modules by itself; Nong Studio is at /studio/.")
     print("Ctrl+C to stop.")
-    threading.Timer(0.6, lambda: webbrowser.open(local)).start()
+    threading.Timer(0.6, lambda: show(local.rstrip("/") + path)).start()
     # warm the module scan so the hub page fills instantly
     threading.Thread(target=scan_modules, daemon=True).start()
     threading.Thread(target=_usb_reaper, daemon=True).start()  # idle port release

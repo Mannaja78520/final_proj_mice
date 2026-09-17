@@ -210,6 +210,13 @@ input[type=checkbox]{accent-color:var(--acc)}
   border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;min-width:48px;
 }
 #viewCube button:hover{border-color:var(--acc)}
+/* distances overlay (A26-44): labels sit over the 3D view, never catch the mouse */
+#distLayer{position:absolute;inset:0;pointer-events:none;z-index:4}
+#distLayer .distTag{position:absolute;transform:translate(-50%,-50%);
+  background:var(--bg);color:var(--txt);border:1px solid var(--acc);
+  border-radius:var(--r-sm);padding:1px 6px;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#distLayer .distNote{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
+  background:var(--bg);color:var(--mut);border:1px solid var(--line);border-radius:var(--r-sm);padding:4px 10px;font-size:12px}
 #viewCube button.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc);font-weight:600}
 .key .kidx{font-weight:700;font-size:12px}
 .key .kidx small{color:var(--mut);font-weight:400}

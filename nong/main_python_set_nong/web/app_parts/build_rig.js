@@ -225,10 +225,12 @@ function applyPose() {
     } else {
       // Uncalibrated: the original symmetric see-saw, unchanged. SHRUG is a
       // ROLL about the front-back axis (Z) — one shoulder rises while the
-      // other drops. Exaggerated x3 so the small (~6°) move reads.
+      // other drops.
       if (shrugAnchors.L) shrugAnchors.L.position.y = shrugBaseY;
       if (shrugAnchors.R) shrugAnchors.R.position.y = shrugBaseY;
-      shoulderMount.rotation.set(0, 0, THREE.MathUtils.degToRad(jointDelta(9) * 3));
+      // At the TRUE angle: it was drawn x3 so a small move would read, and 10
+      // deg on the robot showed as 30 (user 2026-09-17, A26-45).
+      shoulderMount.rotation.set(0, 0, THREE.MathUtils.degToRad(jointDelta(9)));
     }
   }
 }
