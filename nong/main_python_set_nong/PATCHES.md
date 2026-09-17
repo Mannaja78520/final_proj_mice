@@ -88,3 +88,6 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0081 | 2026-09-08 22:23 | A25 landed: rainbow guarded, shortcuts tab named |
 | 0082 | 2026-09-10 14:50 | Time bar in its own row, music can repeat, per-joint start pose |
 | 0083 | 2026-09-10 16:57 | Per-joint servo offset: nudge one joint without re-zeroing the rest |
+| 0084 | 2026-09-16 23:42 | Clicking a move during Play travels from where the arm is at show speed and carries on; time-bar jumps move at show speed (A0-18 safety) |
+| 0085 | 2026-09-17 03:14 | Save YAML under its own name with a replace warning; picking a saved YAML opens it in the timeline (A0-20) |
+| 0086 | 2026-09-17 03:19 | Timeline panel drags taller or shorter, keeps its height, arrow keys and double-click reset (A0-17) |

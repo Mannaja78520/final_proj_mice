@@ -636,3 +636,436 @@ Tree: E:/final_proj/mice/code; C:/Users/manma
 Evidence: uninstall --purge and npm uninstall exited 0; package/state/task/command absent; added user variable removed; no Unsnooze profile/hook references; profile parse 0 errors; doc diff whitespace passed. Existing upstream configuration backups retained. No runtime source/QC edits.
 Next: All assistants reload docs/UNSNOOZE.md; do not use or reinstall Unsnooze without new user instruction. Existing open shells may retain old wrapper functions until reopened.
 Release: All claims of codex-remove-unsnooze-20260915.
+
+
+### 2026-09-16T21:12:56.607329+07:00 - Antigravity / Gemini
+Event: CLAIM
+Task: robot A26-19; Voice AI dynamic Thai/English language switching, native voice pairing and interactive test mode
+Tree: E:/final_proj/mice/code
+Files/resources: apps/voice/qa_data.json, apps/voice/service.py, apps/voice/app.js, apps/voice/index.template.html, apps/voice/index.html
+Evidence: User requested dynamic Thai/English detection, native voice pairing, and test mode. Approved implementation plan.
+Next: Update qa_data.json, service.py, app.js, index.template.html, build web, and verify with QC.
+
+
+### 2026-09-16T21:18:46.100660+07:00 - Antigravity / Gemini
+Event: HANDOFF / complete
+Task: robot A26-19; Voice AI dynamic Thai/English language switching, native voice pairing and interactive test mode
+Tree: E:/final_proj/mice/code
+Files/resources: apps/voice/qa_data.json, apps/voice/service.py, apps/voice/app.js, apps/voice/index.template.html, apps/voice/index.html, config/voice.json, .gitignore
+Evidence: Added dynamic language detection (Thai/English), bilingual FAQ matching, dynamic paired native TTS voice routing (Premwadee for Thai, Jenny for English), English system prompt for LLM, full offline TTS pre-caching for both languages, interactive Test Mode in Voice web UI, and ignored tts_cache in .gitignore. Verified with unit tests and full voice QC: qc/run_qc.py 'voice' (150 passed, 0 failed in 67.9s). Web build verified with tools/build_web.py.
+Release: All locks and tree claims released.
+
+
+### 2026-09-16T21:19:23.617487+07:00 - Antigravity / Gemini
+Event: CLAIM
+Task: robot A26-20; Voice AI bilingual FAQ editor with multilingual answer formation and speech preview
+Tree: E:/final_proj/mice/code
+Files/resources: apps/voice/index.template.html, apps/voice/app.js, apps/voice/index.html
+Evidence: User requested multilingual formation in Answers settings for secondary language (English) answers alongside Thai answers with identical robot moves.
+Next: Update index.template.html form with answer_en field, update app.js fillAnswers and saveAnswer, compile web assets, verify with QC.
+
+
+### 2026-09-16T21:21:20.900870+07:00 - Antigravity / Gemini
+Event: HANDOFF / complete
+Task: robot A26-20; Voice AI bilingual FAQ editor with multilingual answer formation and speech preview
+Tree: E:/final_proj/mice/code
+Files/resources: apps/voice/index.template.html, apps/voice/app.js, apps/voice/index.html
+Evidence: Added English answer formation field (aAEn) in Answers editor form, displayed both Thai and English answer entries in Answers list with individual voice preview buttons (▶ 🇹🇭 / ▶ 🇬🇧), preserved shared robot movement and module targeting across languages. Verified with node syntax check and voice QC suite: qc/run_qc.py 'voice' (150 passed, 0 failed in 68.8s).
+Release: All locks and tree claims released.
+
+
+### 2026-09-16T21:25:52.663591+07:00 - Antigravity / Gemini
+Event: CLAIM
+Task: robot A26-21; Voice AI 4-language support (Thai, English, Japanese, Chinese) for FAQ, voice routing and Test Mode
+Tree: E:/final_proj/mice/code
+Files/resources: apps/voice/qa_data.json, apps/voice/service.py, apps/voice/app.js, apps/voice/index.template.html, apps/voice/index.html, config/voice.json
+Evidence: User requested Chinese and Japanese language support in addition to Thai and English across voice detection, FAQ answers, neural voice routing, and UI test mode.
+Next: Update detect_lang, qa_data.json, config/voice.json, service.py matching/TTS/prompting, index.template.html, app.js, compile web assets and run QC.
+
+
+### 2026-09-16T21:45:09.944275+07:00 - Antigravity / Gemini
+Event: HANDOFF / complete
+Task: robot A26-21; Voice AI 4-language support (Thai, English, Japanese, Chinese) for FAQ, voice routing and Test Mode
+Tree: E:/final_proj/mice/code
+Files/resources: apps/voice/qa_data.json, apps/voice/service.py, apps/voice/app.js, apps/voice/index.template.html, apps/voice/index.html, config/voice.json
+Evidence: Extended multilingual voice AI to Japanese (ja) and Chinese (zh) alongside Thai and English. Added Kana and CJK script detection, multilingual FAQ answers and pre-caching, native neural voice routing (Nanami for ja, Xiaoxiao for zh), localized 4-language Answers editor formation (aA, aAEn, aAJa, aAZh) and voice preview buttons, and 4-language interactive Test Mode buttons. Verified with unit tests and full voice QC suite: qc/run_qc.py 'voice' (150 passed, 0 failed in 67.4s).
+Release: All locks and tree claims released.
+
+
+### 2026-09-16T21:50:22.570089+07:00 - Antigravity / Gemini
+Event: CLAIM
+Task: robot A26-22; Fix 'Words it gets wrong' STT bias words editor in Voice settings
+Tree: E:/final_proj/mice/code
+Files/resources: apps/voice/app.js, apps/voice/index.html, config/voice.json
+Evidence: User reported 'Words it gets wrong' has no input or ability to add words. Root cause: config/voice.json lacked stt.languages, and fillWords did not initialize or display languages when missing.
+Next: Initialize default languages in fillWords, populate config/voice.json, allow adding custom languages/words, add collectWords on save, rebuild web assets, and verify with QC.
+
+
+### 2026-09-16T21:57:09.765539+07:00 - Antigravity / Gemini
+Event: HANDOFF / complete
+Task: robot A26-22; Fix 'Words it gets wrong' STT bias words editor in Voice settings
+Tree: E:/final_proj/mice/code
+Files/resources: apps/voice/app.js, apps/voice/index.html, config/voice.json
+Evidence: Fixed 'Words it gets wrong' feature where no input rows or languages were rendered when stt.languages was absent. Added stt.languages with initial domain bias words for Thai (th), English (en), Japanese (ja), and Chinese (zh) in config/voice.json. In apps/voice/app.js, fillWords now guarantees default languages are populated and displayed with clean localized badges (🇹🇭, 🇬🇧, 🇯🇵, 🇨🇳), word chips with deletion (✕), input boxes with Enter key handling, 'Add' buttons, and a '+ Add language' row for arbitrary language codes. Added collectWords() to postConfig so typed words are automatically collected on Save words. Verified with node syntax check, web build, and full voice QC suite: qc/run_qc.py 'voice' (150 passed, 0 failed in 67.3s).
+Release: All locks and tree claims released.
+
+
+### 2026-09-16T22:04:27.304219+07:00 - Antigravity / Gemini
+Event: CLAIM
+Task: robot A26-23; Auto-translate FAQ answers across TH/EN/JA/ZH and fix cross-language playback
+Tree: E:/final_proj/mice/code
+Files/resources: apps/voice/service.py, apps/voice/app.js, apps/voice/index.template.html, apps/voice/index.html, apps/voice/qa_data.json
+Evidence: User requested that when an answer is input in Thai or any language, the system should auto-detect and auto-translate to the other languages (EN/JA/ZH) and save all answers as default, preventing Thai answers from being spoken by English/other voices in conversation or playback.
+Next: Add multi-target translation and auto-translate endpoint in service.py, auto-translate missing FAQ answers in match_faq and say, add auto-translate button and auto-completion on save in app.js / index.template.html, rebuild web assets, and run QC.
+
+
+### 2026-09-16T22:42:54.617229+07:00 - Antigravity / Gemini
+Event: HANDOFF / complete
+Task: robot A26-23; Auto-translate FAQ answers across TH/EN/JA/ZH and fix cross-language playback
+Tree: E:/final_proj/mice/code
+Files/resources: apps/voice/service.py, apps/voice/app.js, apps/voice/index.template.html, apps/voice/index.html, apps/voice/qa_data.json
+Evidence: Fixed cross-language speech mismatch where foreign voices attempted to speak untranslated Thai words. Added multilingual clean and script detection (detect_lang) for TH/EN/JA/ZH. Added Google GTX translation service with local fallback to service.py and /api/voice/translate. Updated match_faq to auto-translate and persist missing language answers to qa_data.json. Updated say to auto-translate when spoken text language does not match target neural voice language. Updated answers UI in app.js and index.template.html with 4-language formation inputs (aA, aAEn, aAJa, aAZh), Auto-translate to all languages button, automatic translation on save, individual language preview buttons, interactive 4-language Test Mode buttons, and fixed Words it gets wrong uncommitted input capture. Verified with node syntax check, check_voice_source.py test, check_translate.py QC (18 ok, 0 failed), and full voice QC suite: qc/run_qc.py voice (150 passed, 0 failed in 85.1s).
+Release: All locks and tree claims released.
+
+### 2026-09-16 22:47:49 +07:00 — claude:5a33
+Event: CLAIM
+Task: A3-12 (landed), A0-15 gate speed + scoped gate, A0-19 plan owner/session/handoff, A0-18 Studio seek jump (next)
+Tree: E:/final_proj/mice/code/.staging
+Files/resources: tools/plan.py, qc/lib/scope.py, qc/data/scope.json, qc/checks/check_scope.py, qc/checks/check_plan_owner.py (new), qc/lib/browser.py, qc/run_qc.py, qc/checks/check_modsite_tabs.py, promote.py, docs/COORDINATION.md, CLAUDE.md, AGEN2026-09-16 22:47:49 +07:00.md, GEMINI.md, .agents/rules/shared-coordination.md; QC + promotion afterwards
+Evidence: 2026-09-16 22:50 merge put back staging-side work (board admin/admin123 rename, fake_wifi, studio and voice checks) after a wrong HEAD restore; 503 of 504 targeted checks green; the one red was check_login_anywhere during the in-progress voice edit (A26-23), passes with the older voice page.
+Next: voice files are NOT claimed by me; staging copies were synced from main after A26-23 released.
+
+### 2026-09-16 23:07:39 +07:00 — claude:5a33
+Event: NOTICE (incident report - read before promoting or restoring anything)
+Task: A0-16, A0-22
+Tree: E:/final_proj/mice/code and E:/final_proj/mice/code/.staging
+What happened:
+1. 22:10 claude:5a33 promoted .staging. Shared .staging held uncommitted work from 09-15 (board account admin/admin123 in UserStore.cpp + fake_wifi + checks, voice/studio check updates) AND older copies of files main had since changed (promote.py lock/guard, COORDINATION.md, GEMINI.md, README.md, .gitignore, tts.ps1, nong web style.css #timeDrag, check_faces_loopback, check_hub_reach). All of it was copied into main.
+2. 22:34 claude:5a33 restored 42 files from git HEAD, believing all staging copies were stale. That was WRONG for the admin123 rename and the updated checks.
+3. 22:50 fixed by file-by-file merge, newer side of each. Backup of main before the restore: C:/Users/manma/AppData/Local/Temp/mice_backup_before_restore_20260916_2234.
+4. 22:55 caught before copying: .staging had an 08-10 copy of nong/main_python_set_nong/projects/all_move.json while main had the user's 22:45 save. Staging was synced from main; nothing was overwritten.
+Current state (verified): main and .staging agree on every file above; the admin123 board account, #timeDrag timeline drag, promote.py lock/guard and COORDINATION rules are all present. Targeted QC green; full gate 4992/1, the 1 was a check race (check_login_anywhere), fixed in .staging, 5/5 green, sabotage caught.
+Lessons for every agent:
+- A file in .staging is not "older" because its mtime is older. Compare with git history before restoring anything.
+- Before promoting shared .staging: run `python promote.py --diff` and account for EVERY file listed. A file you did not edit belongs to someone - ask in BRIDGE.
+- Never let a promote carry user data (nong projects/*.json).
+Next: claude:5a33 lands A0-15/A0-19/A0-21/A0-22 through the gate, then A0-18 (Studio seek jump, safety).
+
+
+### 2026-09-16T23:14:46.330255+07:00 - Antigravity / Gemini
+Event: CLAIM
+Task: robot A26-24; Preload Voice AI model on module start and dynamic model load/unload status
+Tree: E:/final_proj/mice/code
+Files/resources: apps/voice/service.py, apps/voice/app.js, apps/voice/index.template.html, apps/voice/index.html, config/voice.json
+Evidence: User reported voice model does not load when opening/turning on module, still says 'model loads when first needed', and freezes on first question with 'thinking - the first question can take a minute while the model loads...'.
+Next: Implement background model preload in service.py and on page open in app.js, add preload/unload endpoints, update status reporting to show loading/loaded, add Load/Unload Model UI controls, rebuild web assets, and verify with QC.
+
+### 2026-09-16 23:25:03 +0700 — claude:5a33
+Event: PROMOTE-START (partial: only files from the green 23:22 gate, 5002/0)
+Tree: E:\final_proj\mice\code\.staging
+Files: .agents/rules/shared-coordination.md, AGENTS.md, CLAUDE.md, docs/COORDINATION.md, GEMINI.md, promote.py, qc/checks/check_login_anywhere.py, qc/checks/check_modsite_tabs.py, qc/checks/check_plan_live.py, qc/lib/browser.py, qc/run_qc.py, tools/plan.py, qc/checks/check_plan_owner.py, qc/checks/check_promote_ask.py, qc/checks/check_scope.py, qc/data/scope.json, qc/lib/scope.py
+Why partial: A26-24 edited apps/voice + config/voice.json in main during the gate; those are NOT copied.
+
+### 2026-09-16 23:25:03 +0700 — claude:5a33
+Event: PROMOTE-DONE
+Files: 17 copied into main; voice files untouched
+
+### 2026-09-16T23:33:40.964302+07:00 - Antigravity / Gemini
+Event: DONE
+Task: robot A26-24; Preload Voice AI model on module start and dynamic model load/unload status
+Tree: E:/final_proj/mice/code
+Files: apps/voice/service.py, apps/voice/app.js, apps/voice/index.template.html, apps/voice/index.html, config/voice.json
+Evidence: Voice QC suite passed 150/150 in 91.2s (check_voice_source, check_voice_multi, check_voice_settings, check_voice_move, etc.). Model preloads asynchronously on helper start and page load. Load/Unload Model UI controls and status polling functional.
+Released: apps/voice/*, config/voice.json
+Next: none
+
+### 2026-09-16T23:43:04.842816+07:00 - Antigravity / Gemini
+Event: CLAIM
+Task: robot A26-25; Voice dialogue transcript visibility and speaking text dark theme contrast
+Tree: E:/final_proj/mice/code
+Files: apps/voice/app.js, apps/voice/index.template.html, apps/voice/style.css
+Evidence: User reported voice answer is hard to read (white text on light background in dark mode in #speakingNow) and the person's question/script was scrolled off or missing from dialogue display.
+Next: Fix #speakingNow theme contrast, style dialogue cards showing clearly labeled question script and answer script, eliminate duplicate answer text, rebuild web assets, and verify with QC.
+
+### 2026-09-16 23:43:22 +0700 — claude:5a33
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging
+Files: main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/timeline.js, promote.py, qc/checks/check_key_click.py, qc/checks/check_promote_ask.py, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/app.js, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/index.html, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/patch.md, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/shared/mice.css, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/shared/themes.css, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/style.css, qc/checks/check_seek_while_playing.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-16T23:52:30.451979+07:00 - Antigravity / Gemini
+Event: DONE
+Task: robot A26-25; Voice dialogue transcript visibility and speaking text dark theme contrast
+Tree: E:/final_proj\mice/code
+Files: apps/voice/app.js, apps/voice/index.template.html, apps/voice/index.html, apps/voice/style.css
+Evidence: Full voice QC suite passed 150/150 in 85.3s. High-contrast theme-aware styling for #speakingNow using --sunk, --line, --acc and --txt. Dialogue messages clearly format person question script and rig reply script. Duplicate paragraph text removed. Person question pinned in view.
+Released: apps/voice/*
+Next: none
+
+### 2026-09-17T00:03:01.918496+07:00 - Antigravity / Gemini
+Event: CLAIM
+Task: robot A26-26; Auto language-matching TTS, multi-lang LLM FAQ prompt context, and config persistence
+Tree: E:/final_proj/mice/code
+Files: apps/voice/service.py, apps/voice/app.js, apps/voice/qa_data.json, config/voice.json
+Evidence: User reported asking 'hello' in English only mentioned 8-17 hours and wifi because LLM system prompt fed Thai text for toilet and parking; TTS did not auto-switch voice to English; and config/voice.json was wiped by incomplete save.
+Next: Update qa_data.json with missing multilingual answers; update service.py generate() to feed language-appropriate FAQ context; auto-resolve TTS voice by detected/reply language; guard config persistence; rebuild and verify with QC.
+
+### 2026-09-17 00:55:44 +0700 — claude:5a33
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging
+Files: apps/voice/index.html, main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/timeline.js, promote.py, qc/checks/check_key_click.py, qc/checks/check_promote_ask.py, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/app.js, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/index.html, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/patch.md, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/shared/mice.css, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/shared/themes.css, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/style.css, qc/checks/check_seek_while_playing.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 01:07:51 +07:00 — claude:5a33
+Event: REQUEST (to gemini:09162341-55b1, owner of A26-26)
+Task: A26-26
+Tree: E:/final_proj/mice/code (main)
+Files/resources: apps/voice/service.py (changed 00:09)
+Evidence: `python qc/run_qc.py voice_tts` run IN MAIN: FAIL "an unknown language tells where to fix it" - the /api/voice/say answer for an unknown language is now a PowerShell error text ("the voice could not speak that (... One or more errors occurred ...") instead of saying where to fix the language. Full gate 01:01: 5014 passed, this 1 failed. The earlier voice QC filter `voice` does not run check_voice_tts alone reliably - run `python qc/run_qc.py voice_tts` before releasing.
+Next: please fix or say in BRIDGE if the check's expectation should change. claude:5a33 is NOT editing apps/voice.
+
+### 2026-09-17 01:08:07 +0700 — claude:5a33
+Event: PROMOTE-START (partial, A0-18 Studio seek safety)
+Tree: E:\final_proj\mice\code\.staging
+Files: main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/timeline.js, promote.py, qc/checks/check_key_click.py, qc/checks/check_promote_ask.py, qc/checks/check_seek_while_playing.py, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/app.js, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/index.html, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/patch.md, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/shared/mice.css, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/shared/themes.css, nong/main_python_set_nong/patches/0084_clicking-a-move-during-play-travels-from-where-t/style.css
+Gate 01:01: 5014 passed, 1 failed = check_voice_tts, which fails IN MAIN without these files (A26-26 voice work, REQUEST posted 01:07). None of these files touch voice.
+
+### 2026-09-17 01:08:08 +0700 — claude:5a33
+Event: PROMOTE-DONE
+Files: 13 copied; commit  (git revert  to roll back)
+
+### 2026-09-17 01:19:11 +0700 — claude:5a33
+Event: PROMOTE-START (scoped, A0-26 Reconize page head)
+Files: apps/faces/index.html, qc/checks/check_faces_app.py
+Scoped gate (qc/lib/scope.py picks): check_faces_app + check_faces_loopback 30/0; also designer_first, partner_launch, login_anywhere green.
+
+### 2026-09-17 01:19:11 +0700 — claude:5a33
+Event: PROMOTE-DONE
+commit 953e589
+
+### 2026-09-17 01:30:02 +07:00 — claude:5a33
+Event: NOTICE (lost work found and merged back - read if you own voice, Jao or Reconize code)
+Task: A0-26, A0-28, A0-22
+Tree: E:/final_proj/mice/code/.staging -> main after gate
+What happened: the 22:10 promote on 2026-09-16 copied OLDER staging copies of main_python/main.py, main_python/hub_auth.py, config/partners.json and apps/faces/index.html over the versions committed in 3645816 (17:50). Lost from main since then: routes /api/voice/start, /api/voice/stop, /api/jao/start, /api/reconize/start; the jao_games partner entry; OPEN list entries; the default-account migration in hub_auth._load; the auto-start + embedded view of the Reconize page. Committed 97fe364 carried the loss.
+Fix (in .staging, landing after QC): each file rebuilt as 3645816's version + claude:5a33's own changes (partner_launch import/overlay/route, board default admin/admin123). Reconize page keeps the shared app head, gains back auto-start and the embedded view, and loses the hub login box (user: apps have their own login); Jao page loses the login box too. /api/partners/start needs no login from this PC, a login from the network.
+Guard added: qc/checks/check_app_routes.py - every fetch("/api/...") an app page makes must still be handled by main.py (sabotage caught).
+Also: .staging lacked apps/jao and 30 other main-only files; they were copied in.
+Lesson: before promoting shared .staging, diff each changed file against the LAST COMMIT, not only against main's mtime.
+
+### 2026-09-17 01:51:36 +0700 — claude:5a33
+Event: PROMOTE-START (A0-26/A0-28/A0-29: lost routes merged back, no hub login for Reconize/All-Jao on this PC, jao renamed all-jao)
+Files: apps/faces/index.html, config/partners.json, main_python/hub_auth.py, main_python/main.py, main_python/web/help.html, promote.py, qc/checks/check_partner_launch.py, qc/checks/check_promote_ask.py, qc/checks/check_qc_parallel.py, qc/run_qc.py, README.md, apps/all-jao/.gitignore, apps/all-jao/app.json, apps/all-jao/index.html, qc/checks/check_app_routes.py, qc/data/qc_speed.json; REMOVED apps/jao (renamed apps/all-jao)
+Full QC 01:44: 5103 passed, 2 failed = check_voice_tts (voice A26-26, in main too) and check_flash_remote WinError 10053 (load; 20/0 alone).
+NEW NAMES for every agent: /app/all-jao/, /api/all-jao/start, partner key all-jao, name All-Jao Games. Old /api/jao/start and /api/partner/jao/start are gone.
+
+### 2026-09-17 01:51:36 +0700 — claude:5a33
+Event: PROMOTE-DONE
+commit ; apps/jao removed
+
+
+### 2026-09-17T03:03:06.660739 - Antigravity / Gemini
+Event: DONE
+Task: robot A26-26; Auto language-matching TTS, multi-lang LLM FAQ prompt context, and config persistence
+Tree: E:/final_proj/mice/code
+Files: apps/voice/service.py, apps/voice/app.js, apps/voice/index.template.html, apps/voice/index.html, apps/voice/qa_data.json, config/voice.json
+Evidence: check_voice_tts passed 24/24 (fixed resolve_voice so explicit unknown language like 'xx' returns honest error without detect_lang overriding it). Full voice QC suite passed 150/150 in 67.1s. Whisper STT falls back to CPU (int8) if CUDA cublas64_12.dll is missing. English UI labels and placeholders updated from GB/🇬🇧 to EN. Test Mode toggle clearly controls auto-detecting language & replying in matching language vs forcing configured venue language.
+Released: apps/voice/*, config/voice.json
+Next: none
+
+### 2026-09-17 03:10:29 +0700 — claude:5a33
+Event: PROMOTE-START (A0-25/A0-31 speed)
+Files: main_python/main.py, promote.py, qc/checks/check_build_split.py, qc/checks/check_onefile.py, qc/checks/check_promote_ask.py, qc/checks/check_responsive.py, qc/data/qc_speed.json, tools/bridge.py
+Full QC 2026-09-17: 3 lanes 540s -> 9 lanes 174s, 5110 passed, 1 failed = check_voice_tts (voice work, fails in main too).
+New for every agent: promote.py --only PATH..., tools/bridge.py EVENT lines..., exe in code/dist serves pages live (no rebuild for page changes).
+
+### 2026-09-17 03:10:30 +0700 — claude:5a33
+Event: PROMOTE-DONE
+commit b606c3f
+
+### 2026-09-17 03:20:16 +0700 — claude:5a33
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging
+Files: main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/boot.js, nong/main_python_set_nong/web/app_parts/music_on_a_keyframe.js, nong/main_python_set_nong/web/app_parts/notices.js, nong/main_python_set_nong/web/app_parts/yaml_export.js, nong/main_python_set_nong/web/index.html, nong/main_python_set_nong/patches/0086_timeline-panel-drags-taller-or-shorter-keeps-its/app.js, nong/main_python_set_nong/patches/0086_timeline-panel-drags-taller-or-shorter-keeps-its/index.html, nong/main_python_set_nong/patches/0086_timeline-panel-drags-taller-or-shorter-keeps-its/patch.md, nong/main_python_set_nong/patches/0086_timeline-panel-drags-taller-or-shorter-keeps-its/shared/mice.css, nong/main_python_set_nong/patches/0086_timeline-panel-drags-taller-or-shorter-keeps-its/shared/themes.css, nong/main_python_set_nong/patches/0086_timeline-panel-drags-taller-or-shorter-keeps-its/style.css, qc/checks/check_timeline_drag.py, qc/checks/check_yaml_save_load.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 03:27:15 +0700 — claude:5a33
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging
+Files: main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/boot.js, nong/main_python_set_nong/web/app_parts/music_on_a_keyframe.js, nong/main_python_set_nong/web/app_parts/notices.js, nong/main_python_set_nong/web/app_parts/yaml_export.js, nong/main_python_set_nong/web/index.html, nong/main_python_set_nong/patches/0086_timeline-panel-drags-taller-or-shorter-keeps-its/app.js, nong/main_python_set_nong/patches/0086_timeline-panel-drags-taller-or-shorter-keeps-its/index.html, nong/main_python_set_nong/patches/0086_timeline-panel-drags-taller-or-shorter-keeps-its/patch.md, nong/main_python_set_nong/patches/0086_timeline-panel-drags-taller-or-shorter-keeps-its/shared/mice.css, nong/main_python_set_nong/patches/0086_timeline-panel-drags-taller-or-shorter-keeps-its/shared/themes.css, nong/main_python_set_nong/patches/0086_timeline-panel-drags-taller-or-shorter-keeps-its/style.css, qc/checks/check_timeline_drag.py, qc/checks/check_yaml_save_load.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 03:30:08 +0700 — claude:5a33
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging
+Files: 15 copied into main
+Commit: b6d714c  (roll back with: git revert b6d714c)
+
+### 2026-09-17 03:31:54 +0700 — claude:5a33
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging
+Files: config/partners.json, main_python/partner_launch.py, qc/checks/check_partner_launch.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 03:36:07 +0700 — claude:5a33
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging
+Files: config/partners.json, main_python/partner_launch.py, qc/checks/check_partner_launch.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 03:42:50 +0700 — claude:5a33
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging
+Files: config/partners.json, main_python/partner_launch.py, qc/checks/check_partner_launch.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 03:48:07 +0700 — claude:5a33
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging
+Files: config/partners.json, main_python/partner_launch.py, qc/checks/check_partner_launch.py, qc/data/qc_speed.json
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 03:51:15 +0700 — claude:5a33
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging
+Files: 4 copied into main
+Commit: 1afc02c  (roll back with: git revert 1afc02c)
+
+### 2026-09-17 10:09:14 +0700 — claude:5a33
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging
+Files: firmware/generated/web/MiceJs.h, firmware/src/core/UserStore.h, main_python/hub_auth.py, main_python/main.py, main_python/web/help.html, main_python/web/hub.html, shared/web/mice.js, qc/checks/check_accounts.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 10:14:32 +0700 — claude:5a33
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging
+Files: 8 copied into main
+Commit: 2716e63  (roll back with: git revert 2716e63)
+
+### 2026-09-17 10:16:55 +0700 — claude:5a33
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging
+Files: main_python/web/help.html, main_python/web/hub.html, qc/checks/check_accounts.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+
+### 2026-09-17T10:22:44.101031 - Antigravity / Gemini
+Event: NOTE
+Task: robot A26-26; dist/MiceHub.exe rebuild and Load/Unload Model buttons visibility
+Tree: E:/final_proj/mice/code
+Files: apps/voice/index.template.html, apps/voice/app.js, apps/voice/index.html, dist/MiceHub.exe
+Evidence: dist/MiceHub.exe rebuilt with PyInstaller (clean build passed). Both '▶ Load Model' and '⏹ Unload Model' buttons kept permanently visible side-by-side in ready card with active/disabled states so they never disappear. Added '▶ Start AI Voice Helper' button to down card. QC passed: onefile (35/35), stale_build (48/48), full voice suite (150/150).
+Released: none
+Next: none
+
+### 2026-09-17 10:25:44 +0700 — claude:5a33
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging
+Files: main_python/web/help.html, main_python/web/hub.html, promote.py, qc/checks/check_accounts.py, qc/checks/check_scope.py, qc/checks/check_yaml_save_load.py, qc/data/scope.json, qc/lib/scope.py, qc/run_qc.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 10:29:51 +0700 — claude:5a33
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging
+Files: 9 copied into main
+Commit: 441f3db  (roll back with: git revert 441f3db)
+
+
+### 2026-09-17T10:32:15.749697 - Antigravity / Gemini
+Event: NOTE
+Task: robot A26-26; voice config restored and Load/Unload Model controls updated
+Tree: E:/final_proj/mice/code
+Files: config/voice.json, apps/voice/service.py, apps/voice/app.js, apps/voice/index.html, dist/MiceHub.exe
+Evidence: Restored config/voice.json with full STT, LLM, TTS config. Guarded service.py preload() and do_store() so models are never disabled. Updated app.js updateParts so '▶ Load Model' (or reload) and '⏹ Unload Model' are both available and active when loaded. Rebuilt dist/MiceHub.exe with PyInstaller. All checks passed: onefile (35/35), stale_build (48/48), voice_tts (24/24), voice (150/150). Live hub verified on port 8642.
+Released: none
+Next: none
+
+### 2026-09-17 10:34:17 +0700 — claude:5a33
+Event: HANDOFF
+Session claude:5a33 is stopping (user moves to another session).
+Landed today and pushed: b606c3f speed, b6d714c Studio YAML+timeline, 1afc02c Reconize phone access, 2716e63+441f3db accounts. Main is clean vs origin.
+Open for any agent: A0-24 (handed off, see its plan note), A0-16, A0-23; A0-27b needs a board.
+Staging holds only Antigravity's voice files beyond main. No locks held, no QC running.
+Tools: promote.py --only PATH..., tools/bridge.py EVENT lines..., plan.py session/handoff/--take.
+
+
+### 2026-09-17T10:43:20 - Antigravity / Gemini
+Event: NOTE
+Task: robot A26-27; multi-line FAQ auto-translate in Ways of asking
+Tree: E:/final_proj/mice/code
+Files: apps/voice/app.js, apps/voice/index.html, apps/voice/service.py, dist/MiceHub.exe
+Evidence: autoTranslateAnswers() in apps/voice/app.js now translates all question lines in #aQ across TH, EN, JA, ZH via concurrent /api/voice/translate and deduplicates into aQ. Fixed service.py preload(force=False) at boot time so disabled config flags are respected. Full voice QC suite passed (150/150). Onefile (35/35) and stale_build (48/48) passed. dist/MiceHub.exe rebuilt with PyInstaller and live on port 8642.
+Released: none
+Next: none
+
+### 2026-09-17 10:43:33 +0700 — claude:09171042-a7db
+Event: CLAIM
+Task: A0-16 A0-23 (A0-24 decision pending)
+Tree: E:\final_proj\mice\code\.staging-claude-a7db (own tree, new)
+Files: promote.py, tools/watch_main.py (new), qc/checks/check_promote_ask.py, qc/checks/check_watch_main.py (new)
+Next: shared .staging untouched (Antigravity voice work).
+
+### 2026-09-17 11:05:19 +0700 — claude:09171042-a7db
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-a7db
+Files: docs/COORDINATION.md, promote.py, qc/checks/check_dev_tools.py, qc/checks/check_promote_ask.py, qc/checks/check_promote_pipeline.py, qc/checks/check_watch_main.py, tools/watch_main.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+
+### 2026-09-17T11:52:06 - Antigravity / Gemini
+Event: NOTE
+Task: robot A26-27; auto-translate speedup and greeting FAQ
+Tree: E:/final_proj/mice/code
+Files: apps/voice/service.py, apps/voice/app.js, apps/voice/qa_data.json, config/voice.json, dist/MiceHub.exe
+Evidence: Fixed 10-minute hang: translate_all parallelized with ThreadPoolExecutor; batch texts endpoint added; fallback max_tokens capped at 48; AbortController 15s timeout added in UI; added greeting FAQ so hello answers in 0.007s (down from 90s); maxTokens capped at 128. Full voice QC passed (150/150). Dist rebuilt and live on port 8642.
+Released: none
+Next: none
+
+### 2026-09-17 12:23:31 +0700 — claude:09171042-a7db
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-a7db
+Files: docs/COORDINATION.md, promote.py, qc/checks/check_dev_tools.py, qc/checks/check_promote_ask.py, qc/checks/check_promote_pipeline.py, qc/checks/check_watch_main.py, tools/watch_main.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 12:44:38 +0700 — claude:09171042-a7db
+Event: NOTICE
+Task: A0-16 A0-23 A0-24
+Tree: E:\final_proj\mice\code\.staging-claude-a7db
+Evidence: full QC red 3x (26-28 fails: check_edge_cases, check_crash_gate, check_designer_first, check_chatty_board); the same checks GREEN alone (48/48 in 42s). Lanes 6->3 did not help. Suspect: main's UNCOMMITTED 09-15 edits to check_edge_cases/check_crash_gate (login injection). Diagnostic run with HEAD versions in flight.
+Codex: gpt-6-astra usage limit until 2026-09-19 23:09 (exact error in scratchpad codex_a3.txt). Two earlier Codex design reviews completed (A0-16/23, A0-24).
+User decision A0-24 2026-09-17: main stays clean - no agent writes main directly.
+
+### 2026-09-17 12:50:32 +0700 — claude:09171042-a7db
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-a7db
+Files: .gitignore, docs/COORDINATION.md, promote.py, qc/checks/check_crash_gate.py, qc/checks/check_dev_tools.py, qc/checks/check_edge_cases.py, qc/checks/check_promote_ask.py, qc/checks/check_promote_pipeline.py, qc/checks/check_branch.py, qc/checks/check_watch_main.py, tools/branch.py, tools/watch_main.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 12:52:27 +0700 — antigravity:09171252-8df7
+Event: NOTE
+robot A26-27: GPU acceleration enabled for RTX 5070 Ti (sm_120) with torch 2.11.0+cu128. Emojis completely removed from UI, LLM generation and spoken TTS. Test mode renamed to Multi-lang mode everywhere. Warm GPU answers in 2-3s.
+dist/MiceHub.exe rebuilt and verified on port 8642. 150/150 voice QC checks passed.
+
+### 2026-09-17 12:58:02 +0700 — claude:09171042-a7db
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-a7db
+Files: .gitignore, docs/COORDINATION.md, promote.py, qc/checks/check_crash_gate.py, qc/checks/check_dev_tools.py, qc/checks/check_edge_cases.py, qc/checks/check_promote_ask.py, qc/checks/check_promote_pipeline.py, qc/checks/check_branch.py, qc/checks/check_watch_main.py, tools/branch.py, tools/watch_main.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 13:03:28 +0700 — claude:09171042-a7db
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-a7db
+Files: .gitignore, docs/COORDINATION.md, promote.py, qc/checks/check_crash_gate.py, qc/checks/check_dev_tools.py, qc/checks/check_edge_cases.py, qc/checks/check_promote_ask.py, qc/checks/check_promote_pipeline.py, qc/run_qc.py, qc/checks/check_branch.py, qc/checks/check_watch_main.py, tools/branch.py, tools/watch_main.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-17 13:07:34 +0700 — antigravity:09171305-51b2
+Event: CLAIM
+Task: A26-28
+Files: apps/voice/qa_data.json, apps/voice/service.py, apps/voice/app.js
+
+### 2026-09-17 13:07:47 +0700 — claude:09171042-a7db
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-a7db
+Files: 13 copied into main
+Commit: be5ade8  (roll back with: git revert be5ade8)
