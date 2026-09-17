@@ -96,7 +96,7 @@ def run(t):
     # while a connect is in flight), so every scan is a deliberate outage and
     # has to be undone properly. It was not: wstate_ stayed W_ONLINE while the
     # module held no address, and the bench showed
-    #     state=online ssid="manny" ip=0.0.0.0
+    #     state=online ssid="admin" ip=0.0.0.0
     # with the hub unable to reach it at all.
     # wstate_ is switched on TWICE — once to build the WIFI status line and
     # once to actually drive the radio. Only the second one matters here, so

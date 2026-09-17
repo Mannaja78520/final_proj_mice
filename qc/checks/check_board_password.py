@@ -27,7 +27,7 @@ AREA = "auth"
 TITLE = "the board keeps its password to itself, and demands a real one"
 SLOW = False
 
-SHIPPED = "12345678"
+SHIPPED = "admin123"
 
 
 def run(t):

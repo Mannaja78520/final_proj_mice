@@ -35,7 +35,7 @@ class _Module:
         # The account a fresh board ships with (UserStore.cpp: manny/12345678)
         # and the session a successful login hands out. Empty session = nobody
         # is logged in, which is how every board starts.
-        self.user, self.password = "manny", "12345678"
+        self.user, self.password = "admin", "admin123"
         self.session = ""
         # Old firmware: no /api/login at all, and no gate on /api/ota either.
         self.no_login_route = False

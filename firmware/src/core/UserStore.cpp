@@ -8,7 +8,8 @@ void UserStore::begin() {
     if (blob.length()) deserializeJson(users_, blob);
     if (!users_.is<JsonObject>() || users_.as<JsonObject>().size() == 0) {
         users_.clear();
-        users_["manny"] = "12345678";  // the account a fresh board starts with
+        users_["admin"] = "admin123";
+        users_["super_admin"] = "admin123";  // the account a fresh board starts with
         save();
     }
 }
