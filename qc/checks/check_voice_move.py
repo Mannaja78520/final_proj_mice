@@ -192,7 +192,7 @@ def run(t):
         F.post(base + "/api/play/stop", b"")
 
         # ---- 4: the page glue exists ------------------------------------
-        page = (F.CODE / "apps" / "voice" / "index.html").read_text(
+        page = (F.CODE / "apps" / "voice" / "app.js").read_text(
             encoding="utf-8", errors="replace")
         t.contains(page, "/api/seqsteps", "the page loads the parsed steps")
         t.contains(page, "/api/play", "and posts the show itself")

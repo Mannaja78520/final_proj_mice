@@ -40,7 +40,9 @@ import registry  # noqa: E402
 
 UI = F.FIRMWARE / "src" / "web" / "WebUI.h"
 CAM = F.FIRMWARE / "src" / "modules" / "cam" / "CamModule.cpp"
-APP = F.CODE / "apps" / "camera" / "index.html"
+APP = F.CODE / "apps" / "camera" / "app.js"
+IDX = F.CODE / "apps" / "camera" / "index.html"
+IDX = F.CODE / "apps" / "camera" / "index.html"
 
 
 def run(t):
@@ -95,7 +97,7 @@ def run(t):
         return
     t.eq(apps["camera"]["path"], "/app/camera/", "and the hub serves it")
     t.ok(APP.is_file(), "its page is there", str(APP))
-    page = APP.read_text(encoding="utf-8", errors="replace")
+    page = APP.read_text(encoding="utf-8", errors="replace") + IDX.read_text(encoding="utf-8", errors="replace") + IDX.read_text(encoding="utf-8", errors="replace")
     t.contains(page, "cam.stream", "it shows the live view")
     t.contains(page, "/api/mine", "built from the cameras the hub can reach")
     t.contains(page, "/mice.css", "and it uses the one design system")

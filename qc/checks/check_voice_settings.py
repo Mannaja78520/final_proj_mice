@@ -55,9 +55,11 @@ def _helper(tmp):
 
 
 def _page():
-    return (F.CODE / "apps" / "voice" / "index.html").read_text(
+    page = (F.CODE / "apps" / "voice" / "index.html").read_text(
         encoding="utf-8", errors="replace")
-
+    js = (F.CODE / "apps" / "voice" / "app.js").read_text(
+        encoding="utf-8", errors="replace")
+    return page + js
 
 def _raw_post(url, body):
     """POST with NO session - start_hub logs itself in, and its cookie rides
