@@ -67,6 +67,20 @@ sub,sup{font-size:.75em;color:var(--mut)}
 
 .empty{color:var(--mut);padding:var(--sp-6) 0;text-align:center}
 
+/* The sources. 179 of them were curated and then loaded by nothing - the page
+   only ever read ref_data.js, so the whole audit was invisible to anyone
+   opening this file (found 2026-09-18). One row each, numbered the way the
+   audit numbered them, so a citation can be looked up. */
+.src{display:grid;grid-template-columns:44px 1fr;gap:var(--sp-2) var(--sp-3);
+  border-bottom:1px solid var(--line);padding:var(--sp-3) 0}
+.src .n{color:var(--mut);font-size:13px;font-variant-numeric:tabular-nums}
+.src .t{font-weight:600}
+.src .m{color:var(--mut);font-size:13px}
+.src a{word-break:break-all;font-size:13px}
+@media (max-width:520px){
+  .src{grid-template-columns:34px 1fr}
+}
+
 @media (max-width:520px){
   body{padding:var(--sp-3)}
   h1{font-size:21px}
@@ -93,7 +107,13 @@ real file and line it lives at. Open this file directly — it needs no server.<
 
 <main id="list"></main>
 
+<h2 id="sources-head">Sources</h2>
+<p class="sub" id="sources-note">Every reference the entries above are built on.
+The search box filters these too.</p>
+<div id="sources"></div>
+
 <script src="ref_data.js"></script>
+<script src="ref_sources.js"></script>
 <script>
 // The entries are DATA (ref_data.js). This only draws them, so adding the next
 // one never touches this file.
@@ -153,8 +173,53 @@ function draw(filter) {
   count.textContent = shown + " of " + (window.REF || []).length;
 }
 
-q.addEventListener("input", function () { draw(q.value); });
+// ---- the sources ----------------------------------------------------------
+// ref_sources.js is DATA in the same way ref_data.js is, and until 2026-09-18
+// no page loaded it at all: 179 audited references, with their publishers,
+// their access notes and the date each was checked, that nobody could see.
+// Drawn here rather than in a second page, because the question "where does
+// this number come from" is asked while looking at the equation.
+var srcBox = document.getElementById("sources");
+var srcNote = document.getElementById("sources-note");
+
+function drawSources(filter) {
+  var f = (filter || "").trim().toLowerCase();
+  var all = window.REF_SOURCES || [];
+  srcBox.innerHTML = "";
+  var shown = 0;
+  all.forEach(function (s) {
+    var hay = [s.author, s.title, s.year, s.kind, s.locator, s.scope, s.doi]
+              .join(" ").toLowerCase();
+    if (f && hay.indexOf(f) < 0) return;
+    shown++;
+    var row = document.createElement("div");
+    row.className = "src";
+    var link = s.url
+      ? '<a href="' + esc(s.url) + '" rel="noopener">' + esc(s.url) + "</a>"
+      : '<span class="m">no link recorded</span>';
+    row.innerHTML = '<div class="n">' + esc(s.number) + "</div>"
+      + "<div><div class=\"t\">" + esc(s.title) + "</div>"
+      + '<div class="m">' + esc(s.author) + " · " + esc(s.year) + " · "
+      + esc(s.kind) + (s.locator ? " · " + esc(s.locator) : "") + "</div>"
+      + link
+      + (s.access ? '<div class="m">' + esc(s.access)
+                    + (s.accessed ? " · checked " + esc(s.accessed) : "") + "</div>" : "")
+      + "</div>";
+    srcBox.appendChild(row);
+  });
+  if (!all.length) {
+    srcNote.textContent = "ref_sources.js did not load. It must sit in this same folder.";
+    return;
+  }
+  srcNote.textContent = f
+    ? shown + " of " + all.length + ' sources match "' + f + '".'
+    : all.length + " references the entries above are built on. "
+      + "The search box filters these too.";
+}
+
+q.addEventListener("input", function () { draw(q.value); drawSources(q.value); });
 draw("");
+drawSources("");
 </script>
 </body>
 </html>

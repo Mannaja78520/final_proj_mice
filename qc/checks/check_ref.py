@@ -137,3 +137,60 @@ def run(t):
              "NongMath's %s() is in the reference" % fn,
              "a formula the robot runs on that the reference does not mention - "
              "add an entry to docs/ref_data.js")
+
+    # ---- THE SOURCES ARE ON THE PAGE ---------------------------------
+    # 179 references were audited into docs/ref_sources.js over several
+    # sessions - publisher, locator, access note and the date each was checked.
+    # Nothing loaded the file. ref.html read ref_data.js and only ref_data.js,
+    # so every one of those sources was invisible to anyone opening the page,
+    # and the audit could not be told from never having happened (found
+    # 2026-09-18, A21-12). A reference nobody can see is worse than none, for
+    # the same reason a stale one is: it is believed to be there.
+    srcf = docs / "ref_sources.js"
+    if not t.ok(srcf.is_file(), "docs/ref_sources.js is there", str(srcf)):
+        return
+    t.contains(html, 'src="ref_sources.js"',
+               "the page loads the sources too, with a script tag",
+               )
+    t.contains(html, "REF_SOURCES",
+               "and really draws them, rather than only loading the file")
+    src = srcf.read_text(encoding="utf-8", errors="replace")
+
+    # Each source is a block; the fields are what makes it a REFERENCE rather
+    # than a note. `doi` may be empty - not everything has one - but a title
+    # with no author, year or link cannot be looked up by anybody.
+    blocks = re.findall(r"\{\s*key:.*?\n  \}", src, re.S)
+    t.ok(len(blocks) >= 100,
+         "the sources file holds the audited references (%d)" % len(blocks),
+         "ref_sources.js suddenly got much shorter - work was lost")
+    numbers, keys, bad = [], [], []
+    for b in blocks:
+        def field(name, blk=b):
+            m = re.search(r"\b" + name + r':\s*"([^"]*)"', blk)
+            return (m.group(1) if m else "").strip()
+        key, num = field("key"), re.search(r"\bnumber:\s*(\d+)", b)
+        keys.append(key)
+        if num:
+            numbers.append(int(num.group(1)))
+        for need in ("author", "title", "year", "kind", "url"):
+            if not field(need):
+                bad.append("%s: no %s" % (key or "?", need))
+        u = field("url")
+        if u and not u.startswith(("http://", "https://")):
+            bad.append("%s: url is not a link (%s)" % (key, u[:40]))
+    t.ok(not bad, "every source says who wrote it, when, what it is and where to read it",
+         bad[:8])
+    t.eq(len(set(keys)), len(keys), "no two sources share a key")
+    t.eq(len(set(numbers)), len(numbers), "no two sources share a number")
+    # ASCENDING, not contiguous. Four numbers (79, 87, 89, 93) have no source:
+    # references were dropped during the 2026-09-12 audit and the rest were
+    # never renumbered. Renumbering 146 curated entries is a bigger risk than
+    # the gap, so the gap is DECIDED and recorded here (2026-09-18) rather than
+    # closed. What still has to hold is that the order is the reading order and
+    # that a number is never reused - a reused number is two different papers
+    # behind one citation, which is the failure that actually misleads.
+    t.ok(numbers == sorted(numbers),
+         "the sources are numbered in the order they are listed",
+         "out of order: a reader scanning for a number would miss it")
+    t.eq(sorted(set(range(1, max(numbers) + 1)) - set(numbers)), [79, 87, 89, 93],
+         "the only gaps are the four known ones from the 2026-09-12 audit")
