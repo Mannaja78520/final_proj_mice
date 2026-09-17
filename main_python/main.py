@@ -21,6 +21,7 @@ Stdlib only - no pip installs. Command reference: code/firmware/COMMANDS.md
 import base64
 import itertools
 import hashlib
+import ipaddress
 import json
 import os
 import re
@@ -561,6 +562,30 @@ MODULES = discovery.Finder("modules", lambda ip: probe_module(ip),
                            ttl=10, key=lambda m: m["id"], grace=45)
 
 
+def lan_ips():
+    """Every private IPv4 this PC has, lan_ip() first.
+
+    Bench 2026-09-17: PC on venue WiFi 10.56.15.8 AND running hotspot
+    192.168.137.1; the sweep covered only the first, so nong on the hotspot
+    was never found. Link-local and VPN (non-private) addresses are skipped.
+    """
+    out = [lan_ip()]
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            out.append(info[4][0])
+    except OSError:
+        pass
+    keep = []
+    for ip in dict.fromkeys(out):
+        try:
+            a = ipaddress.ip_address(ip)
+        except ValueError:
+            continue
+        if a.is_private and not a.is_loopback and not a.is_link_local:
+            keep.append(ip)
+    return keep or [lan_ip()]
+
+
 def _ips_from_usb():
     """WiFi addresses of modules we have identified over a CABLE.
 
@@ -576,9 +601,13 @@ def _ips_from_usb():
     """
     out = []
     for ident in list(_usb_ident.values()):
-        ip = ((ident or {}).get("module") or {}).get("ip") or ""
-        if ip and ip not in ("0.0.0.0", "192.168.4.1"):   # AP self-address is not routable to us
-            out.append(ip)
+        # RS485 boards behind the cable count too: nong #67 reported its WiFi
+        # ip only through the bus (bench 2026-09-17).
+        boards = [(ident or {}).get("module") or {}] + list((ident or {}).get("rs485") or [])
+        for b in boards:
+            ip = (b or {}).get("ip") or ""
+            if ip and ip not in ("0.0.0.0", "192.168.4.1"):   # AP self-address is not routable to us
+                out.append(ip)
     return out
 
 
@@ -593,7 +622,7 @@ def scan_modules(force=False):
     own IP, so plugging one in is enough to find it on WiFi afterwards, even
     on a subnet this PC cannot sweep.
     """
-    return MODULES.find(lan_ip(), force, also_ask=_ips_from_usb())
+    return MODULES.find(lan_ips(), force, also_ask=_ips_from_usb())
 
 
 def serial_ports():
@@ -1108,11 +1137,54 @@ PEER_WAIT = 8.0
 BOARD_COOKIE = "mice_board"
 SHIPPED_BOARD_LOGIN = ("admin", "admin123")   # UserStore.cpp, a board out of the box
 _board_cookies = {}                           # board ip -> session value
+# The account typed into the hub's login, reused on boards (user 2026-09-17:
+# *when login to hub and the log in to the module too*). Memory only, never disk.
+_hub_login = {"user": "", "password": ""}
+
+
+def board_logins():
+    """Logins to try on a board, in order: the hub login, then config/board_logins.json.
+
+    Bench 2026-09-17: nong #67 had only manny/12345678, the hub tried only
+    admin/admin123, so every WiFi move from Studio was refused while RS485 worked.
+    """
+    out = []
+    if _hub_login["user"] and _hub_login["password"]:
+        out.append((_hub_login["user"], _hub_login["password"]))
+    path = Path(os.environ.get("MICE_BOARD_LOGINS")
+                or asset("config", "board_logins.json"))
+    try:
+        cfg = json.loads(path.read_text(encoding="utf-8"))
+        for e in cfg.get("logins") or []:
+            pair = (str(e.get("user") or ""), str(e.get("password") or ""))
+            if pair[0] and pair[1]:
+                out.append(pair)
+    except (OSError, ValueError, AttributeError):
+        pass
+    out.append(SHIPPED_BOARD_LOGIN)          # a broken file must not lose the default
+    return list(dict.fromkeys(out))
 
 
 def board_login(ip, user="", password=""):
-    """Log in to a board's own web login. -> (cookie, why); why is for a person."""
-    who, pwd = (user, password) if (user or password) else SHIPPED_BOARD_LOGIN
+    """Log in to a board's own web login. -> (cookie, why); why is for a person.
+
+    No account given: every login from board_logins() is tried until one works.
+    """
+    if user or password:
+        return _board_login_one(ip, user, password)
+    why = ""
+    for who, pwd in board_logins():
+        cookie, why = _board_login_one(ip, who, pwd)
+        if cookie or why == "":              # a session, or a board with no login
+            return cookie, why
+        if "refused the login" not in why:
+            return cookie, why               # unreachable: trying more will not help
+    return "", ("%s refused every known login. A board keeps its OWN accounts: "
+                "log in to the hub with that board's account, or set it back to "
+                "the shipped login on its own page." % ip)
+
+
+def _board_login_one(ip, who, pwd):
     body = urllib.parse.urlencode({"user": who, "pass": pwd}).encode()
     req = urllib.request.Request(
         "http://%s/api/login" % ip, data=body, method="POST",
@@ -4033,6 +4105,9 @@ class Handler(BaseHTTPRequestHandler):
                 json.dumps({"ok": False, "error": why,
                             "locked_for": a.locked_for(self.client_address[0])}).encode(),
                 MIME[".json"], 401)
+        # Same account goes to the boards next time one asks (board_logins).
+        _hub_login.update(user=a.user_of(token) or str(body.get("user") or ""),
+                          password=str(body.get("password") or ""))
         return self.send_bytes(
             json.dumps({"ok": True}).encode(), MIME[".json"], 200,
             headers=[("Set-Cookie",

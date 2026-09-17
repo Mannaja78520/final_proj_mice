@@ -234,26 +234,54 @@ function getAccounts() {
 function saveAccounts(acc) {
   localStorage.setItem('nongAccounts', JSON.stringify(acc));
 }
-function appLogin() {
-  const u = $("loginUser").value.trim();
-  const p = $("loginPass").value;
-  const acc = getAccounts();
-  if (acc[u] && acc[u] === p) {
-    currentUser = u;
-    $("loginPass").value = "";
-    $("loginStat").textContent = "";
-    showTab(sideTab);
-    localStorage.setItem("nongZeroCred", JSON.stringify({ user: u, pass: p }));
-    window.dispatchEvent(new Event('resize'));
-    if (pendingConnect) {
-      const pending = pendingConnect;
-      pendingConnect = null;
-      connectRobot().then(pending.resolve, pending.reject);
-    }
-  } else {
-    $("loginStat").textContent = "Invalid username or password.";
+// The login is the HUB's login (user 2026-09-17). Studio used to check a
+// local-only account list, so it opened while the hub still answered every
+// robot command with "log in before doing that". Local accounts are used only
+// when there is no hub at all (Studio opened from a file).
+function loggedIn(u) {
+  currentUser = u;
+  $("loginStat").textContent = "";
+  showTab(sideTab);
+  window.dispatchEvent(new Event('resize'));
+  if (pendingConnect) {
+    const pending = pendingConnect;
+    pendingConnect = null;
+    connectRobot().then(pending.resolve, pending.reject);
   }
 }
+async function appLogin() {
+  const u = $("loginUser").value.trim();
+  const p = $("loginPass").value;
+  let ok = false, why = "";
+  try {
+    const r = await fetch("/api/login", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: u, password: p }) });
+    const j = await r.json().catch(() => ({}));
+    ok = r.ok && !!j.ok;
+    why = j.locked_for > 0 ? `Too many tries. Wait ${j.locked_for} seconds.` : "";
+  } catch (e) {
+    const acc = getAccounts();                 // no hub: local accounts only
+    ok = !!(acc[u] && acc[u] === p);
+  }
+  if (ok) {
+    $("loginPass").value = "";
+    localStorage.setItem("nongZeroCred", JSON.stringify({ user: u, pass: p }));
+    loggedIn(u);
+  } else {
+    $("loginStat").textContent = why || "Wrong username or password.";
+  }
+}
+// Logged in on the hub page (or another tab)? Then Studio is logged in too.
+async function syncHubLogin() {
+  if (currentUser) return;
+  try {
+    const j = await fetch("/api/whoami").then(r => r.json());
+    if (j.authed && !currentUser) loggedIn(j.user || "user");
+  } catch (e) { /* no hub: the login card stays */ }
+}
+window.addEventListener("load", syncHubLogin);
+window.addEventListener("focus", syncHubLogin);
 function populateUserList() {
   const list = $("muList");
   if (!list) return;

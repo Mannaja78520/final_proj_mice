@@ -41,21 +41,29 @@ class Sweep:
     def hosts(self, my_ip):
         """Every address on my /24, or nothing when there is no network.
 
+        `my_ip` may be a list: a PC on venue WiFi that also runs a hotspot has
+        two /24s, and boards sit on the hotspot one (bench 2026-09-17).
+
         127.0.0.x means no usable interface: sweeping loopback finds only this
         PC pretending to be everyone, which is worse than finding nothing.
         """
-        base = my_ip.rsplit(".", 1)[0]
-        if base == "127.0.0":
-            return []
-        return ["%s.%d" % (base, i) for i in range(1, 255)]
+        mine = [my_ip] if isinstance(my_ip, str) else list(my_ip)
+        out = []
+        for base in dict.fromkeys(ip.rsplit(".", 1)[0] for ip in mine):
+            if base != "127.0.0":
+                out += ["%s.%d" % (base, i) for i in range(1, 255)]
+        return out
 
     def run(self, probe, my_ip, skip_self=False):
         hosts = self.hosts(my_ip)
         if skip_self:
-            hosts = [h for h in hosts if h != my_ip]
+            mine = {my_ip} if isinstance(my_ip, str) else set(my_ip)
+            hosts = [h for h in hosts if h not in mine]
         if not hosts:
             return []
-        with ThreadPoolExecutor(max_workers=self.workers) as ex:
+        # One pool per /24's worth of waiting, so two subnets take no longer than one.
+        workers = self.workers * max(1, len(hosts) // 254)
+        with ThreadPoolExecutor(max_workers=workers) as ex:
             return [r for r in ex.map(probe, hosts) if r]
 
 

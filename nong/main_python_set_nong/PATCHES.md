@@ -91,3 +91,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0084 | 2026-09-16 23:42 | Clicking a move during Play travels from where the arm is at show speed and carries on; time-bar jumps move at show speed (A0-18 safety) |
 | 0085 | 2026-09-17 03:14 | Save YAML under its own name with a replace warning; picking a saved YAML opens it in the timeline (A0-20) |
 | 0086 | 2026-09-17 03:19 | Timeline panel drags taller or shorter, keeps its height, arrow keys and double-click reset (A0-17) |
+| 0087 | 2026-09-17 14:20 | Studio login is the hub login: wrong password refused by the hub, a hub session logs Studio in (A26-32) |

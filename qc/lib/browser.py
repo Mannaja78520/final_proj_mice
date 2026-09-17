@@ -187,16 +187,18 @@ def _tag():
 
 def _studio_login_js():
     """Use Studio's real login once after its blocking app script has loaded."""
+    import qc as _F
     return '''<script>
 if (typeof appLogin === "function") {
   document.getElementById("loginUser").value = "super_admin";
-  document.getElementById("loginPass").value = "admin123";
+  document.getElementById("loginPass").value = "%s";
   appLogin();
 }
-</script>'''
+</script>''' % _F.HUB_PASSWORD
 
 
-def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True):
+def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True,
+         hub_login=True):
     """Serve the real Studio index.html + a driver script, load it, wait, kill.
 
     The temp page lives in the studio web folder so every relative asset
@@ -212,7 +214,7 @@ def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True):
     # other's test, and the URL is corrected here rather than in ten checks.
     query = query.replace("_qcdriver.html", drv.name)
     login = _studio_login_js() if studio_login else ""
-    drv.write_text(_login_js() + src + PRELUDE + login + "<script>\n" + driver_js + "\n</script>",
+    drv.write_text((_login_js() if hub_login else "") + src + PRELUDE + login + "<script>\n" + driver_js + "\n</script>",
                    encoding="utf-8")
     SCRATCH.mkdir(parents=True, exist_ok=True)
     # parenthesised: "/" and "%" share precedence, so without them python
