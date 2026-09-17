@@ -95,6 +95,28 @@ def detect_lang(text):
     return "th"
 
 
+def scripts_in(text):
+    """Which writing systems one line really holds, e.g. {"th", "en"}.
+
+    detect_lang answers "which ONE language is this", which is the wrong
+    question for a sentence like *Hello พุฒิพงศ์, welcome*: it is two, and a
+    voice tied to either one drops the other half (user 2026-09-18: *make TTS
+    can read all lang in the same time*).
+    """
+    found = set()
+    for ch in text or "":
+        cp = ord(ch)
+        if 0x0E00 <= cp <= 0x0E7F:
+            found.add("th")
+        elif (0x3040 <= cp <= 0x309F) or (0x30A0 <= cp <= 0x30FF):
+            found.add("ja")
+        elif 0x4E00 <= cp <= 0x9FFF:
+            found.add("zh")
+        elif ("a" <= ch <= "z") or ("A" <= ch <= "Z"):
+            found.add("en")
+    return found
+
+
 def short_person_name(person):
     """Extract a friendly conversational first/short name."""
     if not person:
@@ -289,6 +311,17 @@ class Brain:
             self.faq_err = "%s: %s" % (e.__class__.__name__, e)
             return []
 
+    # Words that are a QUESTION, not a subject. Alone, "อะไร" (what) sits
+    # inside "กินอะไรดี" and would answer every asker with the food desk.
+    # In the store, so the next one costs no code.
+    STOP_WORDS = ("อะไร", "ไหน", "ที่ไหน", "ยังไง", "อย่างไร", "ทำไม",
+                  "เมื่อไหร่", "ใคร", "ไหม", "หรอ", "เหรอ", "ครับ", "ค่ะ",
+                  "คะ", "นะ", "ได้", "何", "どこ", "什么", "哪里")
+
+    def faq_stop_words(self):
+        got = self.cfg.get("faqStopWords")
+        return tuple(got) if isinstance(got, list) and got else self.STOP_WORDS
+
     def match_faq(self, text, lang=""):
         """The closest saved ENTRY over the threshold, or (None, score).
 
@@ -320,6 +353,19 @@ class Brain:
                         coverage = len(qc) / max(len(got), 1)
                         sub_score = 0.80 + 0.15 * min(1.0, coverage)
                         score = max(score, sub_score)
+                # A short word that IS a saved question's subject: Thai and
+                # CJK write without spaces, so the eight-character floor above
+                # never fires for a real word. "ไวไฟ" inside "รหัสไวไฟ" missed
+                # the saved answer and the local model invented a greeting
+                # instead (user 2026-09-18). Three characters and a third of
+                # the saved question is the floor - below that a word like
+                # "ไป" would match half the store. A quarter, because a saved
+                # question is often long: "ไวไฟ" is 4 of the 14 in
+                # "รหัสไวไฟคืออะไร".
+                if (detect_lang(qc) in ("th", "ja", "zh") and len(got) >= 3
+                        and got not in self.faq_stop_words()
+                        and got in qc and len(got) / max(len(qc), 1) >= 0.25):
+                    score = max(score, 0.76 + 0.15 * (len(got) / max(len(qc), 1)))
                 if score > best:
                     best, hit = score, item
         if best >= th and hit:
@@ -521,9 +567,19 @@ class Brain:
         # reads the Thai letters as nothing (user 2026-09-18, with Multi-lang
         # on and their own name in the reply). A multilingual voice speaks the
         # whole sentence, so the choice is a voice, not a language.
-        one = str(tcfg.get("oneVoice") or "").strip()
+        # The scenario's own voice first, then the one-voice-for-everything,
+        # then the per-language map.
+        one = (self.active_scenario().get("voice")
+               or str(tcfg.get("oneVoice") or "").strip())
         if one:
             return one, one
+        # Nobody chose one, but this line is in two languages at once. A voice
+        # from the map can only read its own half, so borrow a voice that
+        # reads everything for this line rather than dropping words.
+        if len(scripts_in(text)) > 1:
+            mixed = self.mixed_voice()
+            if mixed:
+                return mixed, mixed
         voices = tcfg.get("voices") or {}
         lang = (lang or "").strip()
         if not lang and text:
@@ -537,6 +593,51 @@ class Brain:
                           "tts in config/voice.json" % (lang or "?"))
         name = str(voices[lang]).strip()
         return (name or "<windows default %s>" % lang), name
+
+    def scenarios(self):
+        """The scenarios in the store, as a list. Always data, never code."""
+        got = self.cfg.get("scenarios")
+        return [s for s in got if isinstance(s, dict)] if isinstance(got, list) else []
+
+    def active_scenario(self):
+        """The scenario in use: what the rig is pretending to be, and how it
+        should sound while doing it.
+
+        `scenario` in the store is either the NAME of one in `scenarios`, or -
+        as it was before scenarios existed - the prompt itself. Both keep
+        working, so an old config is not broken by this.
+
+        User 2026-09-18: *in senario i will promt what senario and the voice
+        it run sound like that*. A scenario therefore carries its own voice,
+        rate and pitch: a poem is read slower than a shop greeting, and both
+        may want the same one voice for every language, because *when
+        different people come in same event it have different country person
+        ... when it use different tone voice people will confuse*.
+        """
+        want = str(self.cfg.get("scenario")
+                   or (self.cfg.get("llm") or {}).get("scenario") or "").strip()
+        for s in self.scenarios():
+            if str(s.get("name") or "").strip() == want and want:
+                return {"name": want, "prompt": str(s.get("prompt") or "").strip(),
+                        "voice": str(s.get("voice") or "").strip(),
+                        "rate": str(s.get("rate") or "").strip(),
+                        "pitch": str(s.get("pitch") or "").strip()}
+        return {"name": "", "prompt": want, "voice": "", "rate": "", "pitch": ""}
+
+    def mixed_voice(self):
+        """The voice used for a line that holds more than one language.
+
+        `tts.mixedVoice` names it; left empty, the first voice the speech
+        service itself reports as multilingual is used, so this works on a
+        fresh install with nothing configured and no name written in here.
+        Empty (and offline) means the old behaviour: the detected language's
+        own voice, reading its own half.
+        """
+        named = str((self.cfg.get("tts") or {}).get("mixedVoice") or "").strip()
+        if named:
+            return named
+        got = self.speaking_voices()
+        return got[0]["name"] if got else ""
 
     def speaking_voices(self):
         """Every voice that can speak ALL languages, from the voice service
@@ -600,8 +701,11 @@ class Brain:
             ident, voice = self.resolve_voice(lang, text=text)
             if not ident:
                 return None, voice
-        rate = str(tcfg.get("rate") or "").strip()
-        pitch = str(tcfg.get("pitch") or "").strip()
+        # A scenario may set its own speed and pitch - a poem read at shop
+        # speed is the complaint this answers.
+        act = self.active_scenario()
+        rate = act.get("rate") or str(tcfg.get("rate") or "").strip()
+        pitch = act.get("pitch") or str(tcfg.get("pitch") or "").strip()
         path = self._cache_path(ident, text, rate=rate, pitch=pitch)
         try:
             return path.read_bytes(), None
@@ -874,7 +978,9 @@ class Brain:
     def generate(self, history, lang="", person=""):
         """The model's answer, or (None, why-not) in plain words."""
         with self._lock:
-            scenario = (self.cfg.get("scenario") or self.cfg.get("llm", {}).get("scenario") or "").strip()
+            # A name in `scenario` resolves to that scenario's prompt; plain
+            # text is still its own prompt (active_scenario).
+            scenario = self.active_scenario().get("prompt") or ""
             use_google = (self.cfg.get("llm", {}).get("provider") == "google_studio" or
                           (self.cfg.get("googleApiKey") and not self.cfg.get("llm", {}).get("enabled")))
             if use_google:
@@ -966,21 +1072,21 @@ class Brain:
                           + scenario_hint
                           + person_hint
                           + ("\nRelevant FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                          + "Always follow the created FAQ answers as closely as possible, never deviate off-topic. If question matches or relates to FAQ, answer from it. Otherwise answer directly in 1 short sentence as the Mice robot.")
+                          + "Always follow the created FAQ answers as closely as possible, never deviate off-topic. If question matches or relates to FAQ, answer from it. Otherwise answer directly in 1 short sentence as the Mice robot. NEVER invent a password, price, time, floor or place that is not in the FAQ above - say you do not know, and to ask a member of staff.")
             elif lang == "ja":
                 system = ("あなたはMiceロボットです。\n"
                           "スタイル：簡潔、直接的、絵文字なし。最大1文で短く答えてください。\n"
                           + scenario_hint
                           + person_hint
                           + ("\n関連FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                          + "作成されたFAQ回答にできる限り忠実に従い、脱線しないでください。FAQに関連していればそれに従い、それ以外はMiceロボットとして1文で簡潔に答えてください。")
+                          + "作成されたFAQ回答にできる限り忠実に従い、脱線しないでください。FAQに関連していればそれに従い、それ以外はMiceロボットとして1文で簡潔に答えてください。FAQにないパスワード・料金・時間・場所を作り出さないでください。分からない場合は分からないと答えてください。")
             elif lang == "zh":
                 system = ("你是Mice机器人助手。\n"
                           "风格：简明扼要、直接清晰、绝不使用表情符号。最多1句简短回答。\n"
                           + scenario_hint
                           + person_hint
                           + ("\n相关FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                          + "请尽可能紧密依据所给的FAQ答案回答，切勿偏离主题。如果问题与FAQ相关则按FAQ回答，否则作为Mice机器人用1句简短回答。")
+                          + "请尽可能紧密依据所给的FAQ答案回答，切勿偏离主题。如果问题与FAQ相关则按FAQ回答，否则作为Mice机器人用1句简短回答。不要编造FAQ中没有的密码、价格、时间或地点；不知道就说不知道，请询问工作人员。")
             elif is_verse and lang == "th":
                 system = ("คุณคือหุ่นยนต์ Mice เมื่อผู้ใช้ขอให้อ่านหรือท่องบทกลอน จงท่องบทกลอนภาษาไทยที่ไพเราะ 1 บท (4 วรรค) แบ่งบรรทัดละวรรค ห้ามปฏิเสธ ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
                           + scenario_hint
@@ -990,7 +1096,7 @@ class Brain:
                           + scenario_hint
                           + person_hint
                           + ("\nFAQ ที่เกี่ยวข้อง:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                          + "จงตอบโดยยึดตามข้อมูลคำตอบที่สร้างไว้ (FAQ) ให้ใกล้เคียงที่สุดเสมอ หากคำถามเกี่ยวข้องกับ FAQ ให้ตอบตามนั้น หากไม่ตรงให้ตอบสั้นๆ ในฐานะหุ่นยนต์ Mice 1 ประโยคเป็นภาษาไทย")
+                          + "จงตอบโดยยึดตามข้อมูลคำตอบที่สร้างไว้ (FAQ) ให้ใกล้เคียงที่สุดเสมอ หากคำถามเกี่ยวข้องกับ FAQ ให้ตอบตามนั้น หากไม่ตรงให้ตอบสั้นๆ ในฐานะหุ่นยนต์ Mice 1 ประโยคเป็นภาษาไทย ห้ามแต่งรหัสผ่าน ราคา เวลา ชั้น หรือสถานที่ที่ไม่มีใน FAQ ถ้าไม่รู้ให้บอกว่าไม่ทราบและให้สอบถามเจ้าหน้าที่")
             limit = 96 if is_verse else int(self.cfg.get("llm", {}).get("maxTokens", 32))
             messages = [{"role": "system", "content": system}] + history
             reply = self._complete(messages, max_tokens=limit)

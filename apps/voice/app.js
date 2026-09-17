@@ -1273,12 +1273,12 @@ static MODEL_WORDS = [["base", "Fast"], ["small", "Balanced"],
     }
     grSel.value = cur;
   }
-  this.fillAnswers(); this.fillVoice(); this.fillWords(); this.fillFaces(); this.fillAdvanced();
+  this.fillAnswers(); this.fillVoice(); this.fillWords(); this.fillScenario(); this.fillFaces(); this.fillAdvanced();
 }
 
   async postConfig(statId){
   this.$(statId).textContent = "";
-  this.collectWords(); this.collectVoice(); this.collectFaces(); this.collectAdvanced();  // every save writes the whole store
+  this.collectWords(); this.collectVoice(); this.collectScenario(); this.collectFaces(); this.collectAdvanced();  // every save writes the whole store
   let r;
   try {
     r = await fetch("/api/voice/config", {method: "POST",
@@ -1916,6 +1916,90 @@ static SAMPLES = {
     if (typeof this.fillWords === "function") this.fillWords();
   }
 
+// ---- Scenario ---------------------------------------------------------
+// What the rig is being, and how it sounds while being it. A scenario is one
+// entry in cfg.scenarios; cfg.scenario names the one in use. Plain text in
+// cfg.scenario still works and is shown as "(just these words)", so a store
+// written before scenarios existed opens unchanged.
+  scenarioList(){
+  return Array.isArray(this.cfg.scenarios) ? this.cfg.scenarios : [];
+}
+
+  async fillScenario(){
+  const sel = this.$("scenPick");
+  if (!sel) return;
+  const want = (this.cfg.scenario || "").trim();
+  const list = this.scenarioList();
+  const named = list.find(s => (s.name || "").trim() === want && want);
+  sel.textContent = "";
+  const add = (v, txt) => {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = txt;
+    sel.appendChild(o);
+  };
+  add("", "(just these words)");
+  list.forEach(s => add(s.name || "", s.name || "(no name)"));
+  sel.value = named ? named.name : "";
+  const use = named || {prompt: want, voice: "", rate: "", pitch: ""};
+  this.$("scenPrompt").value = use.prompt || "";
+  this.$("scenRate").value = use.rate || "";
+  this.$("scenPitch").value = use.pitch || "";
+  await this.fillOneVoice();                 // shares the voice list
+  const vs = this.$("scenVoice");
+  vs.textContent = "";
+  const addV = (v, txt) => {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = txt;
+    if (v === (use.voice || "")) o.selected = true;
+    vs.appendChild(o);
+  };
+  addV("", "the voice settings above");
+  (this.allVoices || []).forEach(v => addV(v.name, v.says || v.name));
+  if (use.voice && !(this.allVoices || []).some(v => v.name === use.voice))
+    addV(use.voice, use.voice);
+}
+
+  pickScenario(){
+  const name = this.$("scenPick").value;
+  const s = this.scenarioList().find(x => (x.name || "") === name);
+  this.$("scenPrompt").value = s ? (s.prompt || "") : "";
+  this.$("scenRate").value = s ? (s.rate || "") : "";
+  this.$("scenPitch").value = s ? (s.pitch || "") : "";
+  this.$("scenVoice").value = s ? (s.voice || "") : "";
+}
+
+  addScenario(){
+  const name = (prompt("Name this scenario") || "").trim();
+  if (!name) return;
+  this.cfg.scenarios = this.scenarioList();
+  if (!this.cfg.scenarios.some(s => (s.name || "") === name))
+    this.cfg.scenarios.push({name, prompt: this.$("scenPrompt").value.trim(),
+                             voice: this.$("scenVoice").value,
+                             rate: this.$("scenRate").value.trim(),
+                             pitch: this.$("scenPitch").value.trim()});
+  this.cfg.scenario = name;
+  this.fillScenario();
+}
+
+  collectScenario(){
+  const sel = this.$("scenPick");
+  if (!sel) return;
+  const name = sel.value;
+  const body = {prompt: this.$("scenPrompt").value.trim(),
+                voice: this.$("scenVoice").value,
+                rate: this.$("scenRate").value.trim(),
+                pitch: this.$("scenPitch").value.trim()};
+  if (!name) {                                // no scenario: the words alone
+    this.cfg.scenario = body.prompt;
+    return;
+  }
+  this.cfg.scenarios = this.scenarioList();
+  const at = this.cfg.scenarios.findIndex(s => (s.name || "") === name);
+  if (at < 0) this.cfg.scenarios.push(Object.assign({name}, body));
+  else this.cfg.scenarios[at] = Object.assign({}, this.cfg.scenarios[at], body);
+  this.cfg.scenario = name;
+}
+
 // ---- Faces ------------------------------------------------------------
 // How long a name stays after the person is gone, and how often the camera
 // looks. Both were numbers in the code until the user asked for them:
@@ -2058,6 +2142,9 @@ window.runTestPrompt = (...args) => window.voiceApp.runTestPrompt(...args);
 window.fillVoice = (...args) => window.voiceApp.fillVoice(...args);
 window.fillVoices = (...args) => window.voiceApp.fillVoices(...args);
 window.pickOneVoice = (...args) => window.voiceApp.pickOneVoice(...args);
+window.pickScenario = (...args) => window.voiceApp.pickScenario(...args);
+window.addScenario = (...args) => window.voiceApp.addScenario(...args);
+window.fillScenario = (...args) => window.voiceApp.fillScenario(...args);
 window.fillOneVoice = (...args) => window.voiceApp.fillOneVoice(...args);
 window.tryVoice = (...args) => window.voiceApp.tryVoice(...args);
 window.collectVoice = (...args) => window.voiceApp.collectVoice(...args);

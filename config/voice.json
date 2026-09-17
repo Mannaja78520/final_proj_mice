@@ -2,7 +2,7 @@
   "service": "http://127.0.0.1:8767",
   "faqThreshold": 0.75,
   "faqAskAgain": 0,
-  "scenario": "พนักงานต้อนรับในศูนย์การค้า สุภาพและยิ้มแย้ม",
+  "scenario": "Mall greeter",
   "googleApiKey": "",
   "stt": {
     "enabled": true,
@@ -40,11 +40,21 @@
       "ja": "ja-JP-NanamiNeural",
       "zh": "zh-CN-XiaoxiaoNeural"
     },
-    "oneVoice": ""
+    "oneVoice": "",
+    "mixedVoice": ""
   },
   "face": {
     "autoSeconds": 5,
     "cameraLabel": "",
     "rememberSeconds": 120
-  }
+  },
+  "scenarios": [
+    {
+      "name": "Mall greeter",
+      "prompt": "พนักงานต้อนรับในศูนย์การค้า สุภาพและยิ้มแย้ม",
+      "voice": "",
+      "rate": "",
+      "pitch": ""
+    }
+  ]
 }

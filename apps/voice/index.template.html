@@ -213,6 +213,37 @@
     </div>
 
     <div class="card">
+      <h2 style="margin-top:0;font-size:17px">Scenario</h2>
+      <div class="row" style="align-items:center">
+        <span class="mini" style="flex:1">what the rig is doing</span>
+        <select id="scenPick" onchange="pickScenario()" style="flex:2 1 170px"></select>
+        <button onclick="addScenario()" title="Add a new scenario">+ new</button>
+      </div>
+      <textarea id="scenPrompt" rows="3" style="margin-top:var(--sp-2)"
+        placeholder="A polite shopping-mall greeter. Short, warm answers."></textarea>
+      <div class="row" style="margin-top:var(--sp-2);align-items:center">
+        <span class="mini" style="flex:1">voice for this scenario</span>
+        <select id="scenVoice" style="flex:2 1 170px"></select>
+      </div>
+      <div class="row" style="margin-top:var(--sp-2);align-items:center">
+        <span class="mini" style="flex:1">speed</span>
+        <input id="scenRate" style="flex:1 1 70px" placeholder="+0%">
+        <span class="mini" style="flex:1">pitch</span>
+        <input id="scenPitch" style="flex:1 1 70px" placeholder="+0Hz">
+      </div>
+      <p class="mini">The words above tell the rig who it is being; the voice,
+         speed and pitch are how it sounds while being it. A poem wants a
+         slower speed than a shop greeting. A scenario voice wins over the
+         voice settings, so one scenario can hold one voice for every visitor,
+         whatever language they speak.</p>
+      <div class="row">
+        <button class="primary" onclick="postConfig('sStat')">Save scenario</button>
+        <button onclick="tryVoice()">Try it</button>
+        <span class="mini" id="sStat" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="card">
       <h2 style="margin-top:0;font-size:17px">Faces</h2>
       <div class="row"><span class="mini" style="flex:1">forget a face after (seconds)</span>
         <input id="faceForget" type="number" min="2" step="5" style="flex:1 1 80px"></div>
