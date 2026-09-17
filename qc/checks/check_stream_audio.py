@@ -25,6 +25,7 @@ What this holds, against a real socket rather than a mock:
   * starting a stream is gated like every other command that makes the rig do
     something, and STOPPING it is not - silence must never need a password.
 """
+import re
 import socket
 import sys
 import threading
@@ -135,6 +136,20 @@ def run(t):
          "the video goes before any audio is wired up",
          "leaving it running keeps the browser's sharing bar and the capture "
          "alive for a picture nobody wanted")
+
+    # ---- the chunk time in the comment is the real one -------------------
+    # A24-32's comment said a dropped chunk costs 46 ms. It never did: the
+    # graph is 2048 samples at castRate 22050, which is 93. 46 is the figure
+    # for 44100. A number in a comment that nobody can check rots, and this one
+    # is the number a person uses to decide whether a gap matters (A26-8), so
+    # it is computed from the code rather than trusted.
+    rate = re.search(r"castRate\s*=\s*(\d+)", page)
+    buf = re.search(r"createScriptProcessor\((\d+)", page)
+    if t.ok(rate and buf, "the page says its sample rate and its buffer size",
+            "castRate / createScriptProcessor not found in WebUI.h"):
+        want = round(1000 * int(buf.group(1)) / int(rate.group(1)))
+        t.contains(page, "the next one is %d ms away" % want,
+                   "and the comment quotes that same chunk time (%d ms)" % want)
 
     # ---- the gate -----------------------------------------------------
     t.ok(hub_auth.gated("/api/stream/start", "POST"),

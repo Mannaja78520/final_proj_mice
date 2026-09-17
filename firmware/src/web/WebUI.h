@@ -170,10 +170,9 @@ header{padding:var(--sp-3) 0;gap:var(--sp-3)}
          same as a board with no login at all. -->
     <div id="mustChangeBox" class="banner err" style="display:none">
       <div>
-        <b>You are logged in. This board still has the password it came with.</b>
-        Every board that has not been changed has the same one, so anyone who
-        has seen another board can open this one. Choose a new password to
-        unlock Setup.
+        <b>You are logged in. This account still has the default password.</b>
+        Every board has the same one, so anyone who has seen another board can
+        open this one. Setup is open; please choose a new password.
         <div class="row">
           <span class="lbl">New</span>
           <input id="mcPass" type="password" autocomplete="new-password" style="width:170px">
@@ -269,12 +268,26 @@ header{padding:var(--sp-3) 0;gap:var(--sp-3)}
     <div id="jointRows"></div>
     <div class="statline" id="jxyz" style="white-space:pre-wrap"></div>
     <div class="row">
-      <button onclick="cmd('HOME')">Neutral</button>
+      <button onclick="cmd('HOME')">Go home</button>
       <button onclick="cmd('ATTACH')">Attach (power on)</button>
       <button class="danger" onclick="cmd('RELAX')" title="cut servo power (detach) - the arms go limp">&#9211; Stop (power off)</button>
       <span class="lbl">Speed &deg;/s</span>
       <input type="number" id="ndps" min="5" max="600" style="width:80px" onchange="cmd('SPEED '+this.value)">
       <span class="statline" id="nongStat"></span>
+    </div>
+    <div id="homeCard" style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px">
+      <h2>Start pose (robot home)</h2>
+      <div class="statline">where the arm goes when it powers on and when you press
+        <b>Go home</b>. Setting it does not move the arm.</div>
+      <div class="row">
+        <button class="primary" id="homeHereBtn" onclick="homeHere()">Keep where the arm is now as home</button>
+        <button onclick="cmd('HOME')">Go home</button>
+      </div>
+      <div class="row" id="homeRows"></div>
+      <div class="row">
+        <button id="homeSaveBtn" onclick="homeSave()">Save these start angles</button>
+        <span class="statline" id="homeStat">reading the start pose…</span>
+      </div>
     </div>
     <div class="row">
       <span class="lbl">2-ESP pair</span>
@@ -287,11 +300,13 @@ header{padding:var(--sp-3) 0;gap:var(--sp-3)}
 
     <div class="setupCard" style="display:none;border-top:1px solid var(--line);margin-top:12px;padding-top:10px">
       <h2>Zero position</h2>
-      <div class="statline">jog the arms straight with the sliders (Attach on), then
-        press <b>Set zero</b> — this pose becomes home = 90&deg; (the arm won't move).</div>
+      <div class="statline">for fixing a servo horn that sits crooked: jog the arm to
+        where it <b>should</b> be for its start pose (Attach on), then press
+        <b>Set zero</b>. The arm won't move, and the start angles above stay the same.</div>
       <div class="row">
-        <button class="primary" onclick="cmd('SETZERO')">&#9678; Set zero (current = home)</button>
+        <button class="primary" onclick="zeroSet()">&#9678; Set zero here</button>
         <button onclick="cmd('ZERO')">&#8962; Move to zero</button>
+        <span class="statline" id="zeroStat"></span>
       </div>
     </div>
 
@@ -702,7 +717,9 @@ async function castStart(how){
       pcm[i]=v*32767;
     }
     $('castLevel').textContent='|'.repeat(Math.round(peak*8));
-    // A dropped chunk is not worth a message - the next one is 46 ms away -
+    // A dropped chunk is not worth a message - the next one is 93 ms away
+    // (2048 samples at castRate 22050; the old comment said 46, which is the
+    // figure for 44100 and was never true here) -
     // but a pipe that has stopped taking anything IS, or the page sits there
     // showing a moving level bar while the robot is silent.
     fetch(location.origin+'/api/stream/feed',{method:'POST',body:pcm.buffer})
@@ -867,6 +884,7 @@ function renderNong(m){
       r.appendChild(l);r.appendChild(s);r.appendChild(v);r.appendChild(now);
       box.appendChild(r);
     });
+    homeBuild(m); homeLoad();
   }
   m.joints.forEach((a,i)=>{
     const off=(m.pins&&m.pins[i]<0)||mode!=='slider';
@@ -894,6 +912,46 @@ function renderNong(m){
   if(document.activeElement.id!=='ndps')$('ndps').value=Math.round(m.speed_dps);
   if(document.activeElement.id!=='npeer'&&m.peer!==undefined&&!$('npeer').dataset.touched)
     {$('npeer').value=m.peer;$('nlink').checked=!!m.link;}
+}
+// ---- start pose (NEUTRAL): where the arm goes on power-on and on HOME ----
+function homeBuild(m){
+  const box=$('homeRows'); box.textContent='';
+  JN.forEach((n,i)=>{
+    const l=document.createElement('label');l.className='lbl';l.style.minWidth='0';
+    l.textContent=n+' ';
+    const v=document.createElement('input');v.type='number';v.id='hv'+i;v.style.width='64px';
+    if(m.min&&m.max){v.min=m.min[i];v.max=m.max[i];}
+    l.appendChild(v);box.appendChild(l);
+  });
+}
+function homeFill(a){ a.forEach((d,i)=>{ if($('hv'+i)) $('hv'+i).value=Math.round(d); }); }
+// LIMIT? not NEUTRAL?: it is JSON on the board and the hub's fake alike.
+async function homeLoad(){
+  const r=await cmd('LIMIT?'); let j=null;
+  try{ j=JSON.parse(r); }catch(e){ j=null; }   // not JSON: an ERR, said below
+  if(j&&j.neutral){ homeFill(j.neutral); $('homeStat').textContent=''; return; }
+  $('homeStat').textContent=refusal(r)||'could not read the start pose from the board.';
+}
+async function homeHere(){
+  const r=await cmd('NEUTRAL HERE');
+  if(!r.startsWith('OK')){ $('homeStat').textContent=refusal(r)||'the board did not take it.'; return; }
+  const nums=(r.split('=')[1]||'').match(/-?\d+(\.\d+)?/g)||[];
+  if(nums.length>=10) homeFill(nums.slice(0,10).map(Number)); else await homeLoad();
+  $('homeStat').textContent='saved — the arm starts here from now on.';
+}
+async function homeSave(){
+  const vals=JN.map((n,i)=>$('hv'+i).value.trim());
+  if(vals.some(v=>v===''||isNaN(+v))){ $('homeStat').textContent='fill in every start angle first.'; return; }
+  const r=await cmd('NEUTRAL '+vals.join(' '));
+  if(!r.startsWith('OK')){ $('homeStat').textContent=refusal(r)||'the board did not take it.'; return; }
+  await homeLoad();   // the board clamps to each joint's limits: show what it kept
+  $('homeStat').textContent='saved — press Go home to move there.';
+}
+async function zeroSet(){
+  const r=await cmd('SETZERO');
+  $('zeroStat').textContent=r.startsWith('OK')
+    ? 'zero set — the arm did not move, and the start angles are unchanged.'
+    : (refusal(r)||'the board did not take it.');
 }
 async function savePair(){
   $('npeer').dataset.touched=1;
@@ -1344,17 +1402,12 @@ async function doLogin(){
   if(!s.ok){ $('liStat').textContent='wrong user or password'; return; }
   auth={user:u,pass:p};
   $('liWho').textContent=u;$('liPass').value='';
-  if(mustChange){
-    // This board has never had a password chosen. Do not open Setup: ask for
-    // one first. SAY THE LOGIN WORKED though - a red box and no other word
-    // read as a refused login, and people went off to hunt a password that
-    // was right all along (2026-09-07).
-    $('loginForm').style.display='none';
-    $('mustChangeBox').style.display='';
-    $('liStat').textContent='logged in as '+u+' — one more step: choose a '
-      +'password for this board, then Setup opens.';
-    return;
-  }
+  // Still on the default password: open Setup AND ask, never lock (user
+  // 2026-09-17: the defaults are for every board, "please change" is a note).
+  // Say the login worked - a red box alone read as a refusal (2026-09-07).
+  $('mustChangeBox').style.display = mustChange ? '' : 'none';
+  $('liStat').textContent = mustChange ? 'logged in as '+u+' — this is the '
+    +'default password; please change it below when you can.' : '';
   $('loginForm').style.display='none';$('usersBox').style.display='';
   applyTabs();
   $('setupBtn').textContent='⚙ Setup (open)';

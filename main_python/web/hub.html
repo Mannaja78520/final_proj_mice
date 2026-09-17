@@ -1622,7 +1622,15 @@ function repaintMods(){
       const wifi=(m.routes||[]).filter(x=>x.kind==='wifi')[0];
       const cable=(m.routes||[]).filter(x=>x.kind==='usb'||x.kind==='rs485')[0];
       const far=(m.routes||[]).filter(x=>x.kind==='hub')[0];
+      // `wifiSeen` is the only honest answer to "can THIS hub reach it over
+      // WiFi": a wifi route exists only when the sweep really got an answer
+      // back. m.ip and m.wifi_mode are the board's own claim, learned over the
+      // cable - true about the board, and no promise at all that this PC
+      // shares that network. Opening a module on an unreachable claimed IP is
+      // what made the hub say "no reply" with the cable sitting right there
+      // (A26-7).
       const shown = Object.assign({}, m, {wifi_mode: wifi ? 'sta' : (m.wifi_mode||''),
+                                          wifiSeen: !!wifi && !wifi.stale,
                                           ip: wifi ? wifi.ip : (m.ip||'')});
       const port = cable ? cable.port : null;
       const bus = cable && cable.kind==='rs485' ? cable.bus : 0;
@@ -1738,10 +1746,17 @@ function modRow(m,extra,port,busId,peer,far,opts){
   // holds it - the hub passes every call on, which is what `hub:<ip>/<dev>`
   // means. Last, because a way in that goes through one more machine is one
   // more thing that can be switched off.
+  // WiFi only outranks the cable when the hub ACTUALLY reached the board that
+  // way this sweep (wifiSeen). A claimed IP from a cable probe is not a route:
+  // it sent people to an address on a network this PC may not be on, while the
+  // cable that was working sat unused (A26-7, user: *hub can see it via rs485
+  // but cannot control the robot*).
+  const byWifi = m.wifiSeen && m.ip;
   const dev=peer?('usb:'+port+'@'+peer)
-    :(m.wifi_mode==='sta'&&m.ip)?('wifi:'+m.ip)
+    :byWifi?('wifi:'+m.ip)
     :(port?('usb:'+port+(busId?(':'+busId):''))
-    :((far&&far.dev)?far.dev:''));
+    :((m.wifi_mode==='sta'&&m.ip)?('wifi:'+m.ip)
+    :((far&&far.dev)?far.dev:'')));
   if(dev){
     const open=document.createElement('button');open.className='primary';
     open.textContent='⚙ Open module';
