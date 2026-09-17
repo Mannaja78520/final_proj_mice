@@ -1838,3 +1838,43 @@ Result: The older ownerless tasks, checked against the code and closed or handed
    the user to say which chapter file is current; it is not closeable at night.
 Quick QC 4041 passed, 2 failed (the known check_faces_concurrency reds).
 Next: the Voice Thai answer quality left open by A26-68.
+
+### 2026-09-18 08:40 +0700 - claude:09180350-df25
+Event: RELEASE (night session ends)
+Task: A26-69 + the QC reds + MiceHub.exe
+Result:
+ * A26-69 (7efce37) the Voice Thai quality the user asked for. Five guards on
+   every answer - one polite particle, one word for itself, never half a
+   sentence, the language that was asked, no self-quoting - plus Thai's own
+   token budget (32 suited English and cut Thai mid-word). qa_data.json 7 -> 24
+   saved answers. All of it DATA in config/voice.json with a clickable settings
+   card. Driven against the REAL Qwen2.5-0.5B three times; the runs are what
+   found the pronoun mixing, the quoted answers, the bare ครับ and an invented
+   Premier League final. 16 sabotages caught over three rounds.
+ * THE FULL SUITE WAS RUN, twice, which nobody had done over the A26-46 work.
+   It started at 3 reds and ends at 1, and that one (check_flash_type) passes
+   alone in 50 s - the documented load flake.
+   - check_ui_states (9220815): read whichever visibilitychange listener came
+     first, and A26-46 added one ahead of the hand-off. The product was right.
+     Latent since 21:26 because --quick skips it, and every report on A26-46,
+     including mine when I committed it, was a --quick number.
+   - check_faces_concurrency (a2e7e86): the two "known pre-existing reds" were
+     a cold network probe, not a race. State.partner() probes where the outside
+     app is answering and costs ~2.6 s with Reconize not running, and _accept()
+     calls it BEFORE the duplicate lookup, so the check's 2 s budget expired
+     first. Also recorded: a sabotage of either lock alone is silent here and
+     that is the CODE being right - two doors, each with its own lock.
+ * MiceHub.exe rebuilt from the spec (main.py gained the Shows API) and left
+   RUNNING on :8642. /api/shows answers, /api/version says stale:false, built
+   2026-09-18 05:23. The spec was not rewritten. Old exe at build/MiceHub.prev2.exe.
+Parked with the research done, not half-built: A4-3 (speakers) - discovery
+ already exists, every board answers AMP? and amps.json says which amp is
+ wired, so the output list needs no firmware; what is left is the picker, and
+ A4-4/A4-5 are what make the pick mean anything. Do the three together.
+Set back to todo after checking the code: A5-1..A5-5 (marked doing 2026-09-14,
+ nothing built - no rules.json anywhere), A21-17 (thesis, the chapters are not
+ in this repo).
+Still open: match_faq scores ชอบอะไร against the saved ชื่ออะไร high enough to
+ answer with the robot's name; retuning the threshold unattended risks every
+ other match. Nobody has LISTENED to the new Thai answers.
+Next: none claimed. Released everything.
