@@ -41,7 +41,10 @@ WANT = [95, 85, 100, 80, 96, 84, 101, 79, 92, 88]
 
 DRIVER = """
 function step(){
+    
+
   try{
+
     if (typeof pushLimits !== "function" || typeof neutralFromPose !== "function")
       return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);

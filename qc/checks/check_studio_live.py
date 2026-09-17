@@ -18,7 +18,10 @@ UPDATES = len(range(40, 131, 2)) + 1        # how many values the drag pushes
 
 DRIVER = """
 function step(){
+    
+
   try{
+
     if (typeof poseChanged !== "function" || !document.getElementById("liveChk"))
       return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);

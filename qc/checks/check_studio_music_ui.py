@@ -34,7 +34,10 @@ SLOW = True
 DRIVER = """
 const wait = ms => new Promise(r => setTimeout(r, ms));
 async function step(){
+    
+
   try{
+
     while (!document.getElementById("liveChk") || !haveUsb()) await wait(200);
     document.getElementById("liveChk").checked = true;
     liveChanged();

@@ -74,7 +74,10 @@ DRIVER = """
   } catch (e) { window.navigator.serial = stub; }
 
   function step(){
+    
+
     try{
+
       if (typeof serialConnect !== "function") return setTimeout(step, 200);
       qcMark2("stub-" + (navigator.serial === stub ? "installed" : "REJECTED"));
       document.getElementById("connSel").value = "serial";

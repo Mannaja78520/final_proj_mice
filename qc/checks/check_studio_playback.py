@@ -18,7 +18,10 @@ MOVE, HOLD = 1000, 1200        # ms per segment in the test timeline
 
 DRIVER = """
 function step(){
+    
+
   try{
+
     if (typeof addKey !== "function" || !document.getElementById("liveChk"))
       return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);

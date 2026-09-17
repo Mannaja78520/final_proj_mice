@@ -24,7 +24,10 @@ SLOW = True
 
 DRIVER = """
 function step(){
+    
+
   try{
+
     if (typeof addKey !== "function" || !document.getElementById("liveChk"))
       return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);

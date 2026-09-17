@@ -22,7 +22,10 @@ SLOW = True
 
 DRIVER = """
 function step(){
+    
+
   try{
+
     if (typeof playKeys !== "function") return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);
     qcMark("connected");

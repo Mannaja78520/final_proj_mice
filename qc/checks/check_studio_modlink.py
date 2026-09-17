@@ -15,7 +15,10 @@ SLOW = True
 
 DRIVER = """
 function step(){
+    
+
   try{
+
     if (typeof moduleDev !== "function") return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);
     qcMark("connected");

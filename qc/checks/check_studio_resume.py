@@ -61,7 +61,10 @@ function build(vals, ms){
   keys.forEach(function(k, i){ if (i) { k.t = ms; k.hold = 0; } });
 }
 function step(){
+    
+
   try{
+
     if (typeof addKey !== "function" || !document.getElementById("liveChk"))
       return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);

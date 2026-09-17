@@ -46,7 +46,10 @@ SPACED = "/music/two words.mp3"
 
 DRIVER = """
 function step(){
+    
+
   try{
+
     if (typeof addKey !== "function" || typeof cueLoop !== "function")
       return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);

@@ -29,7 +29,10 @@ T_A, T_B = 900, 1100
 
 DRIVER = """
 function step(){
+    
+
   try{
+
     if (!document.getElementById("liveChk")) return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);
     document.getElementById("loopChk").checked = false;

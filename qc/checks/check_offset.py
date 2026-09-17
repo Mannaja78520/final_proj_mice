@@ -48,7 +48,10 @@ SLOW = True
 
 DRIVER = """
 function step(){
+    
+
   try{
+
     if (typeof sendOffset !== "function" || typeof renderOffsets !== "function")
       return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);
