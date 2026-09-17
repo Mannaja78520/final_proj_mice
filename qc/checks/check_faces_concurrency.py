@@ -1,4 +1,18 @@
-"""Poll/live races and partial-frame timeouts must not duplicate or corrupt arrivals."""
+"""Poll/live races and partial-frame timeouts must not duplicate or corrupt arrivals.
+
+WHY A SINGLE-LOCK SABOTAGE IS SILENT HERE, checked 2026-09-18 so nobody spends
+another hour on it. There are two doors into the same dedupe, and each takes
+`_events_lock` for itself: `note()` for the live feed (service.py:349) and
+`accept()` for the poll (service.py:466). On the live path they nest, which an
+RLock allows, so taking the lock off EITHER one alone changes nothing that can
+be observed - the other door is still shut. Both were verified to be real, not
+redundant: the poll calls accept() without ever going through note().
+
+Take both off and this check says so at once, by name: *second arrival cannot
+enter incomplete duplicate lookup*, and *simultaneous copies publish one
+arrival* becomes two. That is the fault it exists for - the same person greeted
+twice because two sources published the same match together.
+"""
 import importlib.util
 import socket
 import threading
@@ -19,6 +33,29 @@ def module(name):
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+def _warm(state):
+    """Pay for the partner probe BEFORE timing a race.
+
+    `State.partner()` does not just read config: it asks partner_launch where
+    the outside app is answering now, because their port changes with any
+    update, and it re-probes every 10 s. With Reconize not running - which is
+    the normal state of a QC machine - that probe waits out a TCP connect and
+    costs about 2.6 s, MEASURED here 2026-09-18.
+
+    `_accept` calls partner() before it reaches the duplicate lookup, so the
+    first ingest spent those 2.6 s before ever reaching the paused `recent`,
+    and this check's 2-second budget had already expired. It failed for four
+    sessions running, was written off as a known red, and had nothing to do
+    with the race it is named after. Warming the cache first means the budget
+    measures the race again.
+
+    Worth knowing separately, and NOT changed here: that probe runs inside the
+    events lock on the arrival path, so an outside app that is switched off
+    holds the lock for ~2.6 s once every 10 s for every arrival.
+    """
+    state.partner()
 
 
 def event(camera=""):
@@ -44,6 +81,7 @@ def run(t):
             return value
 
     state.recent = PausedRecent()
+    _warm(state)
 
     def ingest(camera):
         try:
@@ -74,6 +112,7 @@ def run(t):
 
     # Pause real poll processing at its HTTP boundary while the live feed publishes.
     state = svc.State("reconize")
+    _warm(state)                 # a fresh State has a cold partner probe again
     state.token, state.token_dies = "poll-token", 10**12
     entered.clear()
     release.clear()
