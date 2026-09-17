@@ -208,10 +208,26 @@ def run(t):
     # Assert the LISTENER, not one spelling of it: this used to match the exact
     # text `document.hidden) handOffToRobot()`, so adding an early return to the
     # same branch failed a check about behaviour that had not changed.
-    vis = code[code.find('addEventListener("visibilitychange"'):]
-    vis = vis[:vis.find("\n});")]
-    t.contains(vis, "document.hidden", "and the hidden page really is what triggers it")
-    t.contains(vis, "handOffToRobot()", "which is when the module is given the show")
+    #
+    # And not the FIRST listener either. There are three of them now - the
+    # freeze watch, the hub beat (A26-46) and this one - and this read whichever
+    # the build happened to put first. A26-46's beat listener landed ahead of it
+    # in app_parts order, so the check failed on a page where handOffToRobot was
+    # sitting right there, untouched, in the listener that owns it (2026-09-18).
+    # So: SOME listener must do this, which is what the product promises.
+    parts, at = [], code.find('addEventListener("visibilitychange"')
+    while at >= 0:
+        end = code.find("\n});", at)
+        parts.append(code[at:end if end > at else at + 900])
+        at = code.find('addEventListener("visibilitychange"', at + 10)
+    t.ok(any("document.hidden" in v for v in parts),
+         "and the hidden page really is what triggers it",
+         "%d visibilitychange listener(s), none of them reading document.hidden"
+         % len(parts))
+    t.ok(any("document.hidden" in v and "handOffToRobot()" in v for v in parts),
+         "which is when the module is given the show",
+         "%d visibilitychange listener(s) and not one of them hands the show "
+         "over when the page is hidden" % len(parts))
     # ...except when the HUB is the clock, because then nothing needs rescuing:
     # the hub is a native process and this page going away does not touch it.
     # Handing the show to the module as well would be two clocks again.
