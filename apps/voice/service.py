@@ -95,6 +95,162 @@ def detect_lang(text):
     return "th"
 
 
+# ---------------------------------------------------------------------------
+# THREE THINGS A 0.5B MODEL GETS WRONG IN THAI, and what is done about each.
+# User 2026-09-18: *the local model writes weak Thai - it mixes ครับ and ค่ะ,
+# cuts replies off, and sometimes answers in the wrong language on very short
+# questions*. None of the three is fixable by asking the prompt more nicely,
+# which had already been tried: a model this small follows an instruction it
+# has room for and forgets the rest. So each one is CHECKED after the answer
+# comes back, and a bad answer is refused rather than spoken.
+#
+# The word lists and the fallback sentences are DATA (config/voice.json), so a
+# fifth particle or a different apology costs an entry, not a code change.
+
+# The end of a finished sentence, per language. Thai does not use a full stop,
+# so a Thai sentence is finished when it ends on a polite particle - which is
+# also why the particle rule below matters for more than manners.
+SENTENCE_END = {
+    "th": ("ครับ", "ค่ะ", "คะ", "นะครับ", "นะคะ", "จ้า", "!", "?", "\n"),
+    "en": (".", "!", "?", "\n"),
+    "ja": ("。", "！", "？", "\n"),
+    "zh": ("。", "！", "？", "\n"),
+}
+DEF_PARTICLES = ("ครับ", "คร้าบ", "ค่ะ", "คะ", "ฮะ", "จ้า", "จ้ะ", "จ๊ะ")
+
+
+def answers_in(text, lang, particles=None):
+    """Is this reply written in the language it was asked in?
+
+    A very short Thai question - *ไวไฟ*, *ร้อนจัง* - gives a small model almost
+    nothing to hold on to, and it answers in English or Chinese perhaps one
+    time in five. The prompt already forbids it in four languages. This is the
+    part that can actually be enforced: the scripts in the reply are a fact.
+
+    Numbers, punctuation and a Latin product name inside a Thai sentence are
+    fine - *รหัส WiFi คือ Welcome2024 ครับ* is a good Thai answer - so the test
+    is not that the script stands alone, and not that it wins on character
+    count either, which that sentence would lose.
+
+    THE POLITE PARTICLE DOES NOT COUNT. Measured against the real 0.5B model
+    2026-09-18: asked *ร้อนจัง* it answered `ครับ temperatures are hot today`,
+    and asked *ไกลไหม* it answered `ครับ` and nothing else. Both carry Thai and
+    both are worthless, because the only Thai in them is the ending. So the
+    particles are taken off before looking, and what has to be Thai is what is
+    left - which is the part that carries the answer.
+    """
+    bare = text or ""
+    if lang == "th":
+        for p in (particles or DEF_PARTICLES):
+            bare = bare.replace(p, " ")
+    got = scripts_in(bare)
+    if not got:
+        return False               # digits, punctuation or a bare particle
+    if lang in ("th", "ja", "zh"):
+        return lang in got
+    return "en" in got or not got - {"en"}
+
+
+def trim_unfinished(text, lang, particles=None):
+    """Cut a reply back to its last finished sentence, or return "".
+
+    The model stops when it runs out of room, not when it has finished, so a
+    tight token budget ends replies mid-word. Half a sentence read aloud is
+    worse than a shorter whole one: the robot sounds like it broke.
+
+    Only ever called when generation really hit the ceiling, so a reply that
+    simply is short is never touched.
+    """
+    text = (text or "").strip()
+    if not text:
+        return ""
+    ends = SENTENCE_END.get(lang) or SENTENCE_END["en"]
+    if lang == "th":
+        ends = tuple(particles or DEF_PARTICLES) + ("!", "?", "\n")
+    if text.endswith(tuple(ends)):
+        return text
+    cut = -1
+    for e in ends:
+        i = text.rfind(e)
+        if i >= 0:
+            cut = max(cut, i + len(e))
+    return text[:cut].strip() if cut > 0 else ""
+
+
+def one_particle(text, keep, particles=None):
+    """One voice, one polite particle.
+
+    The robot is one character, and the saved answers all end in ครับ. The
+    model does not know that and ends one sentence ครับ and the next ค่ะ, which
+    in Thai reads as two different people talking - the single thing that made
+    the answers sound wrong even when they were right.
+
+    Replaces any OTHER particle where a particle belongs: at the end of the
+    text, or before a space or punctuation. Never inside a word, so ค่ะ in a
+    quoted sentence somebody asked about is left alone.
+    """
+    keep = (keep or "").strip()
+    if not keep:
+        return text or ""
+    others = [p for p in (particles or DEF_PARTICLES) if p and p != keep]
+    if not others:
+        return text or ""
+    pat = re.compile("(?:%s)(?=$|[\\s\\.,!?ฯ])" % "|".join(re.escape(p) for p in others))
+    return pat.sub(keep, text or "")
+
+
+# หนู is a first-person word too, and also means mouse - this robot is called
+# Mice, so it is left OUT on purpose. One entry in politePronouns brings it back.
+DEF_PRONOUNS = ("ผม", "ฉัน", "ดิฉัน", "กระผม", "ข้าพเจ้า")
+
+
+def one_pronoun(text, keep, pronouns=None):
+    """One robot, one word for itself.
+
+    Measured against the real model 2026-09-18: one answer said ครับ ฉันสามารถ
+    ... and the next ผมสามารถ .... In Thai the first-person word carries as
+    much character as the ending does, and two of them in one conversation is
+    the same fault as ครับ/ค่ะ - it sounds like two speakers.
+
+    Thai is written without spaces, so a pronoun is not marked off by one - it
+    turns up mid-sentence as often as at the start (*เพื่อให้ฉันสามารถ*), and a
+    rule that only looked after a space missed exactly those. So it is swapped
+    anywhere EXCEPT before ท, which is what tells ฉัน apart from ฉันท์, a kind
+    of verse the rig is asked to recite, and from ฉันทะ.
+
+    What is on the list matters more than this code: หนู is a first-person word
+    in Thai and also means mouse, and this robot is called Mice, so it is
+    deliberately NOT shipped in politePronouns. It is one entry away for
+    anybody who wants it.
+    """
+    keep = (keep or "").strip()
+    if not keep:
+        return text or ""
+    others = sorted((p for p in (pronouns or DEF_PRONOUNS) if p and p != keep),
+                    key=len, reverse=True)      # ดิฉัน before ฉัน
+    if not others:
+        return text or ""
+    pat = re.compile(r"(?:%s)(?!ท)"
+                     % "|".join(re.escape(p) for p in others))
+    return pat.sub(keep, text or "")
+
+
+def unquote_whole(text):
+    """Take the quotation marks off an answer that is entirely inside them.
+
+    The model wraps a whole reply in " or “ ” perhaps one time in ten, which a
+    speech voice reads as a pause and a person reads as the robot quoting
+    somebody else. Only a pair that wraps EVERYTHING is removed - a quote
+    inside a sentence is somebody's actual words and stays.
+    """
+    t = (text or "").strip()
+    for a, b in (('"', '"'), ("“", "”"), ("'", "'"),
+                 ("‘", "’"), ("«", "»")):
+        if len(t) > 2 and t.startswith(a) and t.endswith(b) and b not in t[1:-1]:
+            return t[1:-1].strip()
+    return t
+
+
 def scripts_in(text):
     """Which writing systems one line really holds, e.g. {"th", "en"}.
 
@@ -885,10 +1041,16 @@ class Brain:
                 pass
         return True
 
-    def _complete(self, messages, max_tokens=None):
+    def _complete(self, messages, max_tokens=None, details=False):
         """One model call on exactly the messages given - no persona added.
 
         Callers hold the lock and have already checked the model is loaded.
+
+        `details=True` also says whether generation RAN OUT of room rather than
+        finishing. That is a fact from the token count, not a guess at the
+        text, and it is the only reliable way to tell "this reply is short" from
+        "this reply was cut off" - which matters because Thai has no full stop
+        to look for (user 2026-09-18: *it cuts replies off*).
         """
         import torch
         tok, mdl = self._llm
@@ -908,8 +1070,14 @@ class Brain:
                 do_sample=False,
                 use_cache=True,
                 pad_token_id=tok.eos_token_id)
-        reply = tok.decode(out[0][inputs.input_ids.shape[1]:],
-                           skip_special_tokens=False)
+        made = out[0][inputs.input_ids.shape[1]:]
+        reply = tok.decode(made, skip_special_tokens=False)
+        if details:
+            # No end-of-text token in what came back = it stopped because the
+            # budget ran out, not because it had finished.
+            ran_out = len(made) >= limit and (
+                tok.eos_token_id is None or int(made[-1]) != int(tok.eos_token_id))
+            return self.clean(reply), bool(ran_out)
         return self.clean(reply)
 
     def _ensure_llm(self):
@@ -1072,37 +1240,112 @@ class Brain:
                           + scenario_hint
                           + person_hint
                           + ("\nRelevant FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                          + "Always follow the created FAQ answers as closely as possible, never deviate off-topic. If question matches or relates to FAQ, answer from it. Otherwise answer directly in 1 short sentence as the Mice robot. NEVER invent a password, price, time, floor or place that is not in the FAQ above - say you do not know, and to ask a member of staff.")
+                          + "Always follow the created FAQ answers as closely as possible, never deviate off-topic. If question matches or relates to FAQ, answer from it. Otherwise answer directly in 1 short sentence as the Mice robot. NEVER invent a password, price, time, floor, place or EVENT that is not in the FAQ above - say you do not know, and to ask a member of staff.")
             elif lang == "ja":
                 system = ("あなたはMiceロボットです。\n"
                           "スタイル：簡潔、直接的、絵文字なし。最大1文で短く答えてください。\n"
                           + scenario_hint
                           + person_hint
                           + ("\n関連FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                          + "作成されたFAQ回答にできる限り忠実に従い、脱線しないでください。FAQに関連していればそれに従い、それ以外はMiceロボットとして1文で簡潔に答えてください。FAQにないパスワード・料金・時間・場所を作り出さないでください。分からない場合は分からないと答えてください。")
+                          + "作成されたFAQ回答にできる限り忠実に従い、脱線しないでください。FAQに関連していればそれに従い、それ以外はMiceロボットとして1文で簡潔に答えてください。FAQにないパスワード・料金・時間・場所・イベントを作り出さないでください。分からない場合は分からないと答えてください。")
             elif lang == "zh":
                 system = ("你是Mice机器人助手。\n"
                           "风格：简明扼要、直接清晰、绝不使用表情符号。最多1句简短回答。\n"
                           + scenario_hint
                           + person_hint
                           + ("\n相关FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                          + "请尽可能紧密依据所给的FAQ答案回答，切勿偏离主题。如果问题与FAQ相关则按FAQ回答，否则作为Mice机器人用1句简短回答。不要编造FAQ中没有的密码、价格、时间或地点；不知道就说不知道，请询问工作人员。")
+                          + "请尽可能紧密依据所给的FAQ答案回答，切勿偏离主题。如果问题与FAQ相关则按FAQ回答，否则作为Mice机器人用1句简短回答。不要编造FAQ中没有的密码、价格、时间、地点或活动；不知道就说不知道，请询问工作人员。")
             elif is_verse and lang == "th":
                 system = ("คุณคือหุ่นยนต์ Mice เมื่อผู้ใช้ขอให้อ่านหรือท่องบทกลอน จงท่องบทกลอนภาษาไทยที่ไพเราะ 1 บท (4 วรรค) แบ่งบรรทัดละวรรค ห้ามปฏิเสธ ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
                           + scenario_hint
                           + person_hint)
             else:
+                # ONE PARTICLE, said before anything else. The model ended one
+                # sentence ครับ and the next ค่ะ, which in Thai reads as two
+                # different people. one_particle() fixes what gets through, but
+                # asking for it costs nothing and gives the model the character
+                # to write in (user 2026-09-18).
+                keep = (self.answer_cfg().get("politeParticle") or "ครับ")
+                me = (self.answer_cfg().get("politePronoun") or "ผม")
                 system = ("คุณคือหุ่นยนต์ Mice ให้ข้อมูลบริการและสถานที่ จงตอบเป็นภาษาไทยเท่านั้น สั้นๆ ตรงประเด็น 1 ประโยคจบในตัว ห้ามตอบเป็นภาษาอังกฤษหรือภาษาอื่น ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
+                          + ("ลงท้ายประโยคด้วยคำว่า '%s' เสมอ ห้ามใช้คำลงท้ายอื่น เช่น ค่ะ คะ จ้า และเรียกตัวเองว่า '%s' เสมอ ห้ามใช้ ฉัน หรือ ดิฉัน เพราะคุณเป็นหุ่นยนต์ตัวเดียวและต้องพูดด้วยน้ำเสียงเดียวกันทุกประโยค\n" % (keep, me))
                           + scenario_hint
                           + person_hint
                           + ("\nFAQ ที่เกี่ยวข้อง:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                          + "จงตอบโดยยึดตามข้อมูลคำตอบที่สร้างไว้ (FAQ) ให้ใกล้เคียงที่สุดเสมอ หากคำถามเกี่ยวข้องกับ FAQ ให้ตอบตามนั้น หากไม่ตรงให้ตอบสั้นๆ ในฐานะหุ่นยนต์ Mice 1 ประโยคเป็นภาษาไทย ห้ามแต่งรหัสผ่าน ราคา เวลา ชั้น หรือสถานที่ที่ไม่มีใน FAQ ถ้าไม่รู้ให้บอกว่าไม่ทราบและให้สอบถามเจ้าหน้าที่")
-            limit = 96 if is_verse else int(self.cfg.get("llm", {}).get("maxTokens", 32))
+                          + "จงตอบโดยยึดตามข้อมูลคำตอบที่สร้างไว้ (FAQ) ให้ใกล้เคียงที่สุดเสมอ หากคำถามเกี่ยวข้องกับ FAQ ให้ตอบตามนั้น หากไม่ตรงให้ตอบสั้นๆ ในฐานะหุ่นยนต์ Mice 1 ประโยคเป็นภาษาไทย ห้ามแต่งรหัสผ่าน ราคา เวลา ชั้น สถานที่ หรือกิจกรรม/ข่าวที่ไม่มีใน FAQ ถ้าไม่รู้ให้บอกว่าไม่ทราบและให้สอบถามเจ้าหน้าที่")
+            # ROOM TO FINISH A SENTENCE, per language. 32 tokens was chosen for
+            # speed and is fine for English; Thai costs two to four tokens per
+            # word, so the same budget stopped Thai answers in the middle of a
+            # word (user 2026-09-18: *it cuts replies off*). The budget is DATA
+            # so it can be tuned per language without touching this file.
+            limit = 96 if is_verse else self.token_budget(lang)
             messages = [{"role": "system", "content": system}] + history
-            reply = self._complete(messages, max_tokens=limit)
-            if reply and person:
+            reply, ran_out = self._complete(messages, max_tokens=limit, details=True)
+            reply = self.tidy_answer(reply, lang, ran_out=ran_out, verse=is_verse)
+            if not reply:
+                # Nothing whole survived. Saying so is the honest answer: a
+                # robot reading half a sentence aloud sounds broken, and one
+                # that invents the rest breaks the rule that matters most.
+                return self.cannot_answer(lang), None
+            if not answers_in(reply, lang, self.particles()) and not is_verse:
+                # ONE retry, with the language demand on its own line where a
+                # small model cannot lose it among the FAQ and the persona.
+                again = [{"role": "system", "content": self.only_this_language(lang)}] + history
+                reply2, ran2 = self._complete(again, max_tokens=limit, details=True)
+                reply2 = self.tidy_answer(reply2, lang, ran_out=ran2)
+                reply = reply2 if reply2 and answers_in(reply2, lang, self.particles()) else ""
+            if not reply:
+                return self.cannot_answer(lang), None
+            if person:
                 reply = personalize_answer(reply, person, lang=lang)
             return reply, None
+
+    # ---- the three guards, as small pieces that can be tested alone --------
+    def answer_cfg(self):
+        return self.cfg.get("answer") or {}
+
+    def token_budget(self, lang):
+        a = self.answer_cfg()
+        by = a.get("maxTokensByLang") or {}
+        fallback = int(self.cfg.get("llm", {}).get("maxTokens", 32))
+        try:
+            return max(1, int(by.get(lang, fallback)))
+        except (TypeError, ValueError):
+            return fallback
+
+    def particles(self):
+        a = self.answer_cfg()
+        return tuple(a.get("politeParticles") or DEF_PARTICLES)
+
+    def pronouns(self):
+        a = self.answer_cfg()
+        return tuple(a.get("politePronouns") or DEF_PRONOUNS)
+
+    def cannot_answer(self, lang):
+        """What the robot says when it has nothing whole to say."""
+        said = (self.answer_cfg().get("cannotAnswer") or {})
+        return (said.get(lang) or said.get("th")
+                or "ขออภัยครับ ผมยังไม่เข้าใจคำถามนี้ ลองถามใหม่อีกครั้งได้ไหมครับ")
+
+    def only_this_language(self, lang):
+        said = (self.answer_cfg().get("onlyThisLanguage") or {})
+        return (said.get(lang) or said.get("th")
+                or "ตอบเป็นภาษาไทยเท่านั้น สั้นๆ 1 ประโยค")
+
+    def tidy_answer(self, reply, lang, ran_out=False, verse=False):
+        """Whole sentences, in one voice. "" when nothing whole survives."""
+        reply = unquote_whole(reply)
+        if not reply:
+            return ""
+        if lang == "th":
+            a = self.answer_cfg()
+            reply = one_particle(reply, a.get("politeParticle"), self.particles())
+            reply = one_pronoun(reply, a.get("politePronoun"), self.pronouns())
+        # A verse is lines, not sentences - trimming it to a particle would eat
+        # the poem. Its budget is larger for the same reason.
+        if ran_out and not verse:
+            reply = trim_unfinished(reply, lang, self.particles())
+        return reply.strip()
 
     def translate(self, text):
         """Any language in, English out - or (None, why-not).

@@ -243,6 +243,46 @@
       </div>
     </div>
 
+    <!-- A26-69: the three things the small model got wrong in Thai. Every one
+         of these was a number or a word inside the code until now. -->
+    <div class="card">
+      <h2 style="margin-top:0;font-size:17px">How it speaks Thai</h2>
+      <div class="row" style="align-items:center">
+        <span class="mini" style="flex:1">polite word at the end of a sentence</span>
+        <select id="ansParticle" style="flex:1 1 110px"></select>
+      </div>
+      <p class="mini">The rig is one character, so it uses one polite word. It
+         used to end one sentence <b>ครับ</b> and the next <b>ค่ะ</b>, which in
+         Thai sounds like two different people. Any other one it writes is
+         changed to this.</p>
+      <div class="row" style="align-items:center">
+        <span class="mini" style="flex:1">what it calls itself</span>
+        <select id="ansPronoun" style="flex:1 1 110px"></select>
+      </div>
+      <p class="mini">The same reason: it used to say <b>ผม</b> in one answer and
+         <b>ฉัน</b> in the next. Any other one it writes is changed to this.</p>
+      <div class="row" style="align-items:center">
+        <span class="mini" style="flex:1">room to finish a Thai sentence (words worth)</span>
+        <input id="ansThai" type="number" min="16" step="8" style="flex:1 1 80px">
+      </div>
+      <p class="mini">Thai costs two to four times more room than English, so
+         the same setting that suited English stopped Thai answers in the middle
+         of a word. Raise this if answers still end too soon; lower it if they
+         take too long to arrive. An answer that is still unfinished is cut back
+         to its last whole sentence rather than read out broken.</p>
+      <div class="row" style="align-items:center">
+        <span class="mini" style="flex:1">what it says when it has nothing to say</span>
+        <input id="ansSorry" style="flex:2 1 200px">
+      </div>
+      <p class="mini">Said when the answer came out unfinished, or in the wrong
+         language. Saying this is better than guessing - the rig never invents a
+         password, a price, a time or a place.</p>
+      <div class="row">
+        <button class="primary" onclick="postConfig('aStat')">Save Thai</button>
+        <span class="mini" id="aStat" aria-live="polite"></span>
+      </div>
+    </div>
+
     <div class="card">
       <h2 style="margin-top:0;font-size:17px">Faces</h2>
       <div class="row"><span class="mini" style="flex:1">forget a face after (seconds)</span>

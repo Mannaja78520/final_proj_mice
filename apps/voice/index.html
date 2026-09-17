@@ -1323,12 +1323,12 @@ static MODEL_WORDS = [["base", "Fast"], ["small", "Balanced"],
     }
     grSel.value = cur;
   }
-  this.fillAnswers(); this.fillVoice(); this.fillWords(); this.fillScenario(); this.fillFaces(); this.fillAdvanced();
+  this.fillAnswers(); this.fillVoice(); this.fillWords(); this.fillScenario(); this.fillThai(); this.fillFaces(); this.fillAdvanced();
 }
 
   async postConfig(statId){
   this.$(statId).textContent = "";
-  this.collectWords(); this.collectVoice(); this.collectScenario(); this.collectFaces(); this.collectAdvanced();  // every save writes the whole store
+  this.collectWords(); this.collectVoice(); this.collectScenario(); this.collectThai(); this.collectFaces(); this.collectAdvanced();  // every save writes the whole store
   let r;
   try {
     r = await fetch("/api/voice/config", {method: "POST",
@@ -2050,6 +2050,52 @@ static SAMPLES = {
   this.cfg.scenario = name;
 }
 
+// ---- How it speaks Thai ------------------------------------------------
+// A26-69, user 2026-09-18: the local model *mixes ครับ and ค่ะ, cuts replies
+// off, and sometimes answers in the wrong language*. The particle, the Thai
+// room and the apology were all inside the code; they are settings now, and
+// the LIST of particles comes from the store, so the next one costs no code.
+  fillThai(){
+  const a = this.cfg.answer || {};
+  // Both lists come from the STORE, so a third particle or another pronoun is
+  // an entry in config/voice.json and no page code.
+  const pick = (id, list, chosen) => {
+    const sel = this.$(id);
+    if (!sel) return;
+    sel.innerHTML = "";
+    (list || []).forEach(p => {
+      const o = document.createElement("option");
+      o.value = o.textContent = p;
+      sel.appendChild(o);
+    });
+    sel.value = chosen || (list || [])[0] || "";
+  };
+  pick("ansParticle", a.politeParticles || ["ครับ", "ค่ะ"], a.politeParticle);
+  pick("ansPronoun", a.politePronouns || ["ผม", "ฉัน"], a.politePronoun);
+  const flat = (this.cfg.llm || {}).maxTokens || 32;
+  this.$("ansThai").value = (a.maxTokensByLang || {}).th ?? flat;
+  this.$("ansSorry").value = (a.cannotAnswer || {}).th || "";
+}
+  collectThai(){
+  const a = this.cfg.answer = this.cfg.answer || {};
+  const sel = this.$("ansParticle");
+  if (sel && sel.value) a.politeParticle = sel.value;
+  const who = this.$("ansPronoun");
+  if (who && who.value) a.politePronoun = who.value;
+  const v = parseInt(this.$("ansThai").value, 10);
+  if (Number.isFinite(v) && v > 0) {
+    a.maxTokensByLang = a.maxTokensByLang || {};
+    a.maxTokensByLang.th = v;
+  }
+  const sorry = (this.$("ansSorry").value || "").trim();
+  // An empty box keeps the sentence it had: a blank apology would leave the
+  // rig silent at the one moment it has to say something.
+  if (sorry) {
+    a.cannotAnswer = a.cannotAnswer || {};
+    a.cannotAnswer.th = sorry;
+  }
+}
+
 // ---- Faces ------------------------------------------------------------
 // How long a name stays after the person is gone, and how often the camera
 // looks. Both were numbers in the code until the user asked for them:
@@ -2438,6 +2484,46 @@ if (document.readyState === "loading") {
         <button class="primary" onclick="postConfig('sStat')">Save scenario</button>
         <button onclick="tryVoice()">Try it</button>
         <span class="mini" id="sStat" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <!-- A26-69: the three things the small model got wrong in Thai. Every one
+         of these was a number or a word inside the code until now. -->
+    <div class="card">
+      <h2 style="margin-top:0;font-size:17px">How it speaks Thai</h2>
+      <div class="row" style="align-items:center">
+        <span class="mini" style="flex:1">polite word at the end of a sentence</span>
+        <select id="ansParticle" style="flex:1 1 110px"></select>
+      </div>
+      <p class="mini">The rig is one character, so it uses one polite word. It
+         used to end one sentence <b>ครับ</b> and the next <b>ค่ะ</b>, which in
+         Thai sounds like two different people. Any other one it writes is
+         changed to this.</p>
+      <div class="row" style="align-items:center">
+        <span class="mini" style="flex:1">what it calls itself</span>
+        <select id="ansPronoun" style="flex:1 1 110px"></select>
+      </div>
+      <p class="mini">The same reason: it used to say <b>ผม</b> in one answer and
+         <b>ฉัน</b> in the next. Any other one it writes is changed to this.</p>
+      <div class="row" style="align-items:center">
+        <span class="mini" style="flex:1">room to finish a Thai sentence (words worth)</span>
+        <input id="ansThai" type="number" min="16" step="8" style="flex:1 1 80px">
+      </div>
+      <p class="mini">Thai costs two to four times more room than English, so
+         the same setting that suited English stopped Thai answers in the middle
+         of a word. Raise this if answers still end too soon; lower it if they
+         take too long to arrive. An answer that is still unfinished is cut back
+         to its last whole sentence rather than read out broken.</p>
+      <div class="row" style="align-items:center">
+        <span class="mini" style="flex:1">what it says when it has nothing to say</span>
+        <input id="ansSorry" style="flex:2 1 200px">
+      </div>
+      <p class="mini">Said when the answer came out unfinished, or in the wrong
+         language. Saying this is better than guessing - the rig never invents a
+         password, a price, a time or a place.</p>
+      <div class="row">
+        <button class="primary" onclick="postConfig('aStat')">Save Thai</button>
+        <span class="mini" id="aStat" aria-live="polite"></span>
       </div>
     </div>
 

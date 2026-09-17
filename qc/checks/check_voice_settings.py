@@ -16,6 +16,7 @@ subprocess, so what passes here is what a browser does.
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -134,6 +135,28 @@ def run(t):
                    "advanced hides behind the same switch as the hub's")
         t.ok("No answers yet" in p,
              "the answers section says what its empty state is")
+
+        # A26-69: the polite particle, the Thai room and the apology were all
+        # values inside the code. Anything settable is clickable, so each has
+        # a control - and the particle LIST comes from the store, so the next
+        # one costs an entry and no page code.
+        for box, what in (("ansParticle", "the polite word it ends on"),
+                          ("ansPronoun", "what the robot calls itself"),
+                          ("ansThai", "how much room a Thai sentence gets"),
+                          ("ansSorry", "what it says when it has nothing to say")):
+            t.contains(p, 'id="%s"' % box,
+                       "%s can be set on the page, not in a file" % what)
+        for key in ("politeParticles", "politePronouns"):
+            t.contains(p, key,
+                       "%s is read from the store, not written into the page" % key)
+        # The CALL, not the method. A method that is defined and never called
+        # reads as wired and is not: the card would draw, take what somebody
+        # typed, and drop it on save. That sabotage went unnoticed 2026-09-18.
+        for fn in ("fillThai", "collectThai"):
+            t.ok(re.search(r"this\.%s\(\)" % fn, p),
+                 "the card is really %s with the rest"
+                 % ("loaded" if fn.startswith("fill") else "saved"),
+                 "%s() is defined but nothing calls it" % fn)
 
         # ---- 5: a broken saved address ANSWERS, it does not hang ----------
         # urllib raises ValueError on an address with no scheme (the real

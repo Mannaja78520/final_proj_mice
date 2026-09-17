@@ -1273,12 +1273,12 @@ static MODEL_WORDS = [["base", "Fast"], ["small", "Balanced"],
     }
     grSel.value = cur;
   }
-  this.fillAnswers(); this.fillVoice(); this.fillWords(); this.fillScenario(); this.fillFaces(); this.fillAdvanced();
+  this.fillAnswers(); this.fillVoice(); this.fillWords(); this.fillScenario(); this.fillThai(); this.fillFaces(); this.fillAdvanced();
 }
 
   async postConfig(statId){
   this.$(statId).textContent = "";
-  this.collectWords(); this.collectVoice(); this.collectScenario(); this.collectFaces(); this.collectAdvanced();  // every save writes the whole store
+  this.collectWords(); this.collectVoice(); this.collectScenario(); this.collectThai(); this.collectFaces(); this.collectAdvanced();  // every save writes the whole store
   let r;
   try {
     r = await fetch("/api/voice/config", {method: "POST",
@@ -1998,6 +1998,52 @@ static SAMPLES = {
   if (at < 0) this.cfg.scenarios.push(Object.assign({name}, body));
   else this.cfg.scenarios[at] = Object.assign({}, this.cfg.scenarios[at], body);
   this.cfg.scenario = name;
+}
+
+// ---- How it speaks Thai ------------------------------------------------
+// A26-69, user 2026-09-18: the local model *mixes ครับ and ค่ะ, cuts replies
+// off, and sometimes answers in the wrong language*. The particle, the Thai
+// room and the apology were all inside the code; they are settings now, and
+// the LIST of particles comes from the store, so the next one costs no code.
+  fillThai(){
+  const a = this.cfg.answer || {};
+  // Both lists come from the STORE, so a third particle or another pronoun is
+  // an entry in config/voice.json and no page code.
+  const pick = (id, list, chosen) => {
+    const sel = this.$(id);
+    if (!sel) return;
+    sel.innerHTML = "";
+    (list || []).forEach(p => {
+      const o = document.createElement("option");
+      o.value = o.textContent = p;
+      sel.appendChild(o);
+    });
+    sel.value = chosen || (list || [])[0] || "";
+  };
+  pick("ansParticle", a.politeParticles || ["ครับ", "ค่ะ"], a.politeParticle);
+  pick("ansPronoun", a.politePronouns || ["ผม", "ฉัน"], a.politePronoun);
+  const flat = (this.cfg.llm || {}).maxTokens || 32;
+  this.$("ansThai").value = (a.maxTokensByLang || {}).th ?? flat;
+  this.$("ansSorry").value = (a.cannotAnswer || {}).th || "";
+}
+  collectThai(){
+  const a = this.cfg.answer = this.cfg.answer || {};
+  const sel = this.$("ansParticle");
+  if (sel && sel.value) a.politeParticle = sel.value;
+  const who = this.$("ansPronoun");
+  if (who && who.value) a.politePronoun = who.value;
+  const v = parseInt(this.$("ansThai").value, 10);
+  if (Number.isFinite(v) && v > 0) {
+    a.maxTokensByLang = a.maxTokensByLang || {};
+    a.maxTokensByLang.th = v;
+  }
+  const sorry = (this.$("ansSorry").value || "").trim();
+  // An empty box keeps the sentence it had: a blank apology would leave the
+  // rig silent at the one moment it has to say something.
+  if (sorry) {
+    a.cannotAnswer = a.cannotAnswer || {};
+    a.cannotAnswer.th = sorry;
+  }
 }
 
 // ---- Faces ------------------------------------------------------------

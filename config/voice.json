@@ -29,6 +29,45 @@
     "model": "Qwen/Qwen2.5-0.5B-Instruct",
     "maxTokens": 32
   },
+  "answer": {
+    "politeParticle": "ครับ",
+    "politeParticles": [
+      "ครับ",
+      "คร้าบ",
+      "ค่ะ",
+      "คะ",
+      "ฮะ",
+      "จ้า",
+      "จ้ะ",
+      "จ๊ะ"
+    ],
+    "politePronoun": "ผม",
+    "politePronouns": [
+      "ผม",
+      "ฉัน",
+      "ดิฉัน",
+      "กระผม",
+      "ข้าพเจ้า"
+    ],
+    "maxTokensByLang": {
+      "th": 96,
+      "en": 48,
+      "ja": 64,
+      "zh": 64
+    },
+    "cannotAnswer": {
+      "th": "ขออภัยครับ ผมยังไม่เข้าใจคำถามนี้ ลองถามใหม่อีกครั้ง หรือสอบถามเจ้าหน้าที่ได้ครับ",
+      "en": "Sorry, I did not understand that. Please ask me again, or ask a member of staff.",
+      "ja": "申し訳ありません、聞き取れませんでした。もう一度お願いします。",
+      "zh": "抱歉，我没有听懂，请再问一次，或询问工作人员。"
+    },
+    "onlyThisLanguage": {
+      "th": "ตอบเป็นภาษาไทยเท่านั้น 1 ประโยคสั้นๆ ลงท้ายด้วยครับ",
+      "en": "Answer in English only, one short sentence.",
+      "ja": "日本語のみで、短い一文で答えてください。",
+      "zh": "只用中文回答，一句简短的话。"
+    }
+  },
   "tts": {
     "enabled": true,
     "language": "th",
