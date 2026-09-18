@@ -93,7 +93,13 @@ def _helper(tmp, face_port):
         "name": "Reconize", "open": "http://localhost:5173",
         "api": "http://127.0.0.1:%d" % face_port, "camera": "/recognition"}}),
         encoding="utf-8")
-    login = F.CODE / "main_python" / "faces_login.json"
+    # A THROWAWAY login, not the real one: the real faces_login.json holds a
+    # password and never leaves the real tree (promote.py SKIP_FILES), so this
+    # whole check used to stop at its first line when run from .staging - and
+    # nothing said so. The fake face app accepts anything.
+    login = tmp / "faces_login.json"
+    login.write_text(json.dumps({"reconize": {"username": "qc", "password": "qc"}}),
+                     encoding="utf-8")
     cfg = tmp / "voice.json"
     port = F._free_port()
     cfg.write_text(json.dumps({
@@ -106,7 +112,7 @@ def _helper(tmp, face_port):
     }), encoding="utf-8")
     faq = tmp / "qa.json"
     faq.write_text('{"faqs": []}', encoding="utf-8")
-    env = dict(os.environ, MICE_PARTNERS=str(partners))
+    env = dict(os.environ, MICE_PARTNERS=str(partners), MICE_FACES_LOGIN=str(login))
     log = open(tmp / "svc.log", "wb")
     proc = subprocess.Popen(
         [sys.executable, "-u", str(F.CODE / "apps" / "voice" / "service.py"),
@@ -178,6 +184,7 @@ def run(t):
         _their_side(t)
         _the_button(t)
         _the_camera_logic(t)
+        _face_app_off(t, base, srv)         # shuts the fake face app down
     finally:
         proc.terminate()
         srv.shutdown()
@@ -214,6 +221,52 @@ def _forgetting(t, base):
              "the name is forgotten after the time the user set")
     finally:
         SEEN["quiet"] = False
+
+
+def _face_app_off(t, base, srv):
+    """A face app that is NOT RUNNING must say so, and offer to start itself.
+
+    User 2026-09-18, with the face app stopped: *the face app did not accept
+    the saved login (<urlopen error [WinError 10061] No connection could be
+    made because the target machine actively refused it>)*. 10061 is a refused
+    CONNECTION - nothing was listening - and the sentence sent them looking
+    for a password that was never wrong. The two cases have opposite fixes, so
+    they are told apart by the exception: HTTPError means the face app
+    answered and said no, any other OSError means it was not there.
+
+    The fake is really shut here (server_close, not only shutdown - a bound
+    socket would accept the connection and hang instead of refusing it).
+    """
+    srv.shutdown()
+    srv.server_close()
+    st, body = _post(base + "/identify", b"\xff\xd8a-face")
+    got = json.loads(body)
+    t.ok(got.get("ok") is False and "not running" in (got.get("error") or ""),
+         "a face app that is off is reported as off, not as a bad password",
+         "answer was %r" % got)
+    t.ok(got.get("canStart") is True,
+         "and the page is told it can be started from here",
+         "canStart came back as %r" % got.get("canStart"))
+    t.ok(bool(got.get("detail")) and "login" not in (got.get("error") or ""),
+         "the WinError is kept as technical detail, out of the plain sentence",
+         "answer was %r" % got)
+
+    src = (F.CODE / "apps" / "voice" / "service.py").read_text(encoding="utf-8")
+    at = src.find("    def identify(self, jpeg):")
+    block = src[at:src.find("\n    def _query_reconize_direct", at)] if at >= 0 else ""
+    t.ok("except urllib.error.HTTPError" in block and "except OSError" in block,
+         "a refused password and a silent face app are told apart",
+         "identify catches them with one except again")
+
+    js = (F.CODE / "apps" / "voice" / "app.js").read_text(encoding="utf-8")
+    t.ok("r.canStart" in js and "async startFaceApp()" in js
+         and "/api/partners/start?id=reconize" in js,
+         "the page turns that sentence into a Start button",
+         "app.js has no start button for a silent face app")
+    page = (F.CODE / "apps" / "voice" / "index.html").read_text(encoding="utf-8",
+                                                                errors="replace")
+    t.ok("startFaceApp" in page, "and the built page carries it",
+         "index.html was not rebuilt from the template")
 
 
 def _the_button(t):

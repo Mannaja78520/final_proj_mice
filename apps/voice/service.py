@@ -56,6 +56,17 @@ except Exception:
     pass
 
 CODE = Path(__file__).resolve().parents[2]          # apps/voice/service.py -> code
+
+# EVERY child process this helper runs is started with this, or Windows opens a
+# console for it. Speaking a sentence that is not cached runs edge_tts and may
+# run tts.ps1, so a black window flashed over whatever the user was doing on
+# every new phrase (user 2026-09-18: *why it have terminal popup every time*).
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
+
+# What the page says when nothing answers at the face app's address. The page
+# turns this one sentence into a Start button, so the words name the fix.
+FACE_APP_OFF = "the face app is not running yet - start it and look again"
+
 _tmp_seq = itertools.count()                        # one temp name per writer
 THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 SPECIAL_RE = re.compile(r"<\|[^|]+\|>")             # <|im_end|> and friends
@@ -887,7 +898,8 @@ class Brain:
                         cmd.extend(["--pitch", pitch])
                     for attempt in range(2):
                         try:
-                            r = subprocess.run(cmd, capture_output=True, timeout=15)
+                            r = subprocess.run(cmd, capture_output=True, timeout=15,
+                                               creationflags=NO_WINDOW)
                             if r.returncode == 0 and len(r.stdout) >= 100:
                                 wav = r.stdout
                                 break
@@ -899,7 +911,7 @@ class Brain:
                         ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
                          "-File", str(CODE / "apps" / "voice" / "tts.ps1"),
                          "-Text", text, "-Lang", lang, "-Voice", local_voice],
-                        capture_output=True, timeout=60)
+                        capture_output=True, timeout=60, creationflags=NO_WINDOW)
                     wav = r.stdout
                     if r.returncode != 0 or len(wav) < 44 or not wav.startswith(b"RIFF"):
                         why = r.stderr.decode("utf-8", "replace").strip()
@@ -1521,10 +1533,22 @@ class Brain:
         except Exception:                               # noqa: BLE001
             return ""
 
+    def _faces_login_path(self):
+        """Where the saved face-app login lives.
+
+        The real file never leaves the real tree (promote.py SKIP_FILES keeps
+        the password out of every copy), so a check running in .staging found
+        nothing and stopped at the first line of every face test. The override
+        lets it point at a throwaway login, exactly as MICE_PARTNERS points at
+        a fake face app.
+        """
+        return Path(os.environ.get("MICE_FACES_LOGIN")
+                    or (CODE / "main_python" / "faces_login.json"))
+
     def _reconize_login(self, timeout=3.0):
         """A Reconize token, cached for half an hour. '' when it cannot log in."""
         import urllib.request
-        l_path = CODE / "main_python" / "faces_login.json"
+        l_path = self._faces_login_path()
         if not l_path.is_file():
             return ""
         creds = json.loads(l_path.read_text(encoding="utf-8")).get("reconize") or {}
@@ -1624,13 +1648,19 @@ class Brain:
         import urllib.request
         api = self._reconize_api()
         if not api:
-            return "", "config/partners.json does not say where the face app is"
+            return "", "config/partners.json does not say where the face app is", ""
         try:
             tok = self._reconize_login()
-        except Exception as e:                          # noqa: BLE001
-            return "", "the face app did not accept the saved login (%s)" % e
+        except urllib.error.HTTPError as e:             # it answered, and said no
+            return "", "the face app did not accept the saved login", str(e)
+        except OSError as e:                            # nothing was listening
+            # WinError 10061 is a REFUSED CONNECTION, not a refused password.
+            # Saying "did not accept the saved login" sent the user looking for
+            # a wrong password that was never wrong (user 2026-09-18). Nothing
+            # is running: the fix is to start it, so the page offers that.
+            return "", FACE_APP_OFF, str(e)
         if not tok:
-            return "", "no saved login for the face app - see main_python/faces_login.json"
+            return "", "no saved login for the face app - see main_python/faces_login.json", ""
         b = uuid.uuid4().hex
         body = b"".join([
             ('--%s\r\nContent-Disposition: form-data; name="photo"; '
@@ -1643,8 +1673,10 @@ class Brain:
         try:
             with urllib.request.urlopen(req, timeout=60) as r:
                 got = json.loads(r.read().decode("utf-8"))
-        except urllib.error.URLError as e:
-            return "", "the face app is not answering (%s)" % e
+        except urllib.error.HTTPError as e:
+            return "", "the face app refused to look at that picture", str(e)
+        except OSError as e:
+            return "", FACE_APP_OFF, str(e)
         names = []
         for m in (got.get("results") or got.get("matches") or []):
             if str(m.get("status") or "matched") != "matched":
@@ -1660,18 +1692,18 @@ class Brain:
             self.forget_person()
             faces = got.get("faces_total") or got.get("faces") or 0
             return "", ("nobody the face app knows was in that picture"
-                        if faces else "no face in that picture - move into the light")
+                        if faces else "no face in that picture - move into the light"), ""
         person = " และ ".join(names[:2]) if len(names) <= 2 else "%s, %s และทุกท่าน" % (names[0], names[1])
         self._seen_person = person
         self._seen_at = time.time()
-        return person, ""
+        return person, "", ""
 
     def _query_reconize_direct(self):
         """Fallback: query Reconize directly at :8000/api/history if faces service isn't answering."""
         import urllib.request
         from datetime import datetime
         try:
-            l_path = CODE / "main_python" / "faces_login.json"
+            l_path = self._faces_login_path()
             if not l_path.is_file():
                 return ""
             creds = json.loads(l_path.read_text(encoding="utf-8")).get("reconize") or {}
@@ -1973,12 +2005,15 @@ class VoiceHandler(BaseHTTPRequestHandler):
             return self._json({"ok": False, "error":
                                "no picture arrived - is the camera on?"}, 400)
         try:
-            person, why_not = self.brain.identify(jpeg)
+            person, why_not, detail = self.brain.identify(jpeg)
         except Exception as e:                          # noqa: BLE001
             return self._json({"ok": False, "error": "looking failed: %s: %s"
                                                      % (e.__class__.__name__, e)}, 500)
         if why_not:
-            return self._json({"ok": False, "error": why_not})
+            # canStart is what turns the sentence into a button: only a face app
+            # that is SILENT can be started, and a wrong password never can.
+            return self._json({"ok": False, "error": why_not, "detail": detail,
+                               "canStart": why_not == FACE_APP_OFF})
         return self._json({"ok": True, "person": person})
 
     def do_transcribe(self):

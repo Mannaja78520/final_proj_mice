@@ -40,6 +40,13 @@ import discovery
 import mdns
 import qr
 import webbrowser
+
+# Every child this hub runs carries this, or Windows gives the child its own
+# console window - and MiceHub.exe has no console to lend it, so the window
+# pops up over whatever the user was doing (user 2026-09-18). It does not
+# change the child's stdout, so a pipe still reads its output.
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
+
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutTimeout
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -3191,7 +3198,8 @@ class Flasher:
             import subprocess
             p = subprocess.Popen(args, stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT, text=True,
-                                 errors="replace", bufsize=1)
+                                 errors="replace", bufsize=1,
+                                 creationflags=NO_WINDOW)
             for line in p.stdout:
                 line = line.rstrip()
                 if line:
@@ -4302,7 +4310,8 @@ class Handler(BaseHTTPRequestHandler):
                         "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
                     )
                     subprocess.run(["powershell", "-NoProfile", "-Command", cmd],
-                                   capture_output=True, timeout=5)
+                                   capture_output=True, timeout=5,
+                                   creationflags=NO_WINDOW)
                 except Exception:
                     pass
             return self.send_json({"ok": True, "message": "voice service stopped"})
@@ -4339,37 +4348,18 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_err("could not start games server: %s" % e, 500)
 
         if (path == "/api/reconize/start" or path == "/api/partner/reconize/start") and method in ("GET", "POST"):
-            already = False
-            try:
-                with urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=0.6) as r:
-                    if r.getcode() == 200:
-                        already = True
-            except Exception:
-                pass
-            if already:
-                return self.send_json({"ok": True, "already_running": True,
-                                       "message": "Reconize is already running"})
-            face_dir = Path("E:/final_proj/mice/Face_Regonize")
-            if not face_dir.is_dir():
-                cand = (HERE.parent.parent / "Face_Regonize").resolve()
-                if cand.is_dir():
-                    face_dir = cand
-            if not face_dir.is_dir():
-                return self.send_err("Face_Regonize folder not found at %s" % face_dir, 404)
-            try:
-                vbs = face_dir / "Start Reconize.vbs"
-                if vbs.is_file() and os.name == "nt":
-                    subprocess.Popen(["wscript.exe", str(vbs)], cwd=str(face_dir))
-                else:
-                    bat = face_dir / "start.bat"
-                    if bat.is_file() and os.name == "nt":
-                        flags = subprocess.CREATE_NEW_PROCESS_GROUP
-                        subprocess.Popen(["cmd.exe", "/c", str(bat)], cwd=str(face_dir), creationflags=flags)
-                    else:
-                        return self.send_err("No launch script found in Face_Regonize", 404)
-                return self.send_json({"ok": True, "message": "Reconize launch started"})
-            except Exception as e:
-                return self.send_err("could not start Reconize: %s" % e, 500)
+            # The same starter /api/partners/start uses, so Reconize comes up
+            # HIDDEN and its folder and port are read from
+            # config/partners.json. It used to run their start.bat, which opens
+            # two `cmd /k` windows and a Chrome tab nobody asked for, and it
+            # carried its own copy of the folder and the port - two places to
+            # disagree with the one list (user 2026-09-18: *make it in background*).
+            got = read_partners()
+            entry = (got.get("partners") or {}).get("reconize")
+            if not entry:
+                return self.send_err(got.get("error") or
+                                     "config/partners.json has no reconize entry", 404)
+            return self.send_json(partner_launch.start("reconize", entry))
 
         if path == "/api/voice" or path.startswith("/api/voice/"):
             return self.voice_proxy(method, path, q)

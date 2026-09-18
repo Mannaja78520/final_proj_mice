@@ -197,14 +197,65 @@ class VoiceApp {
     }
     if (r.ok && r.person) {
       this.updateFace(r.person);
-      if (line) line.textContent = "";
+      if (line) this.sayCam("");
     } else {
       // The badge must agree with the look that just happened: it used to
       // keep showing the last name while this line said the frame was empty.
       this.updateFace("");
-      if (line) line.textContent = r.error || "nobody I know is in front of the camera";
+      this.sayCam(r.error || "nobody I know is in front of the camera",
+                  r.detail, r.canStart);
     }
     return r;
+  }
+
+  // The one line under the camera. Plain words on the surface; the address or
+  // the WinError behind the technical switch, which is the rule every page
+  // here follows. A face app that is merely SILENT gets a button, because
+  // starting it is the fix and nobody should have to find a folder for it.
+  sayCam(text, detail, canStart){
+    const line = this.$("camSay");
+    if (!line) return;
+    line.textContent = text || "";
+    if (detail) {
+      const t = document.createElement("span");
+      t.className = "tech";
+      t.textContent = " (" + detail + ")";
+      line.appendChild(t);
+    }
+    if (!canStart) return;
+    const b = document.createElement("button");
+    b.className = "secondary mini";
+    b.id = "btnStartFace";
+    b.style.cssText = "margin-left:8px;padding:2px 8px;font-size:12px";
+    b.textContent = "Start the face app";
+    b.onclick = () => this.startFaceApp();
+    line.appendChild(b);
+  }
+
+  // Starts the face app in the background and looks again when it answers.
+  // No tab is opened: the person asked who they are, not to be sent to
+  // another app (openReconize is the button for that).
+  async startFaceApp(){
+    const b = this.$("btnStartFace");
+    if (b) b.disabled = true;
+    const until = Date.now() + 120000;         // a cold face model is slow
+    try {
+      while (true) {
+        const got = await fetch("/api/partners/start?id=reconize",
+                                {method: "POST", cache: "no-store"}).then(r => r.json());
+        if (got.need_login) throw new Error("the face app starts only on this PC, or after signing in");
+        if (!got.ok) throw new Error(got.error || "the face app could not be started");
+        if (got.ready) break;
+        this.sayCam("Starting the face app… about fifteen seconds");
+        if (Date.now() > until) throw new Error("the face app is taking too long to start");
+        await new Promise(res => setTimeout(res, 2000));
+      }
+      this.sayCam("Looking…");
+      const r = await this.lookOnce();
+      if (r.ok && r.person) this.say("Hello " + r.person);
+    } catch (e) {
+      this.sayCam(e.message || String(e));
+    }
   }
 
   // The button: look once, say hello, put the camera away again.
