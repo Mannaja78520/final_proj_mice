@@ -62,7 +62,7 @@
     { "name": "FDEL",   "scope": "core", "args": "<file>",                              "help": "delete an SD file" },
     { "name": "MOVE",   "scope": "core", "args": "<file>|STOP",                         "help": "run a /moves sequence from the card, or stop it" },
     { "name": "AUTH",   "scope": "core", "args": "<user> <pass>",                       "help": "check a Setup-page login" },
-    { "name": "USER",   "scope": "core", "args": "LIST|ADD|DEL|PASS …",                 "help": "accounts stored on the board" },
+    { "name": "USER",   "scope": "core", "args": "LIST|ADD|DEL|PASS|RENAME …",          "help": "accounts stored on the board: LIST, ADD, DEL, PASS, RENAME; roles super_admin and user" },
     { "name": "OTA",    "scope": "core", "args": "",                    "query": true,  "help": "update-over-WiFi state: which slot runs, which one an update would go to, and how much room it has" },
     { "name": "REBOOT", "scope": "core", "args": "",                                    "help": "restart about a second later" },
 
@@ -122,7 +122,7 @@
     { "name": "TIME",    "scope": "nong", "args": "[<a1..a10>]",        "query": true,  "help": "alias of TIME?" },
     { "name": "TIME?",   "scope": "nong", "args": "[<a1..a10>]",        "query": true,  "help": "estimated and minimum duration of a move" },
     { "name": "SETZERO", "scope": "nong", "args": "",                                   "motion": true, "help": "call the current pose home; trim absorbs it so nothing moves" },
-    { "name": "NEUTRAL", "scope": "nong", "args": "[<1-10|name|ALL> <deg>]|<a1..a10>",   "steps": [{"key": "neutral"}], "help": "the angle each joint goes to on boot and on HOME; no args reports every joint" },
+    { "name": "NEUTRAL", "scope": "nong", "args": "[<1-10|name|ALL> <deg>]|<a1..a10>|HERE",   "steps": [{"key": "neutral"}], "help": "the angle each joint goes to on boot and on HOME; HERE keeps where the arm is now; no args reports every joint" },
     { "name": "NEUTRAL?", "scope": "nong", "args": "",                  "query": true,  "help": "the start angle of every joint" },
     { "name": "OFFSET",  "scope": "nong", "args": "[<1-10|name|ALL> <deg>]",          "motion": true, "steps": [{"key": "offset"}], "help": "nudge one joint a few degrees, for a servo horn fitted a tooth out" },
     { "name": "OFFSET?", "scope": "nong", "args": "",                   "query": true,  "help": "how far each joint is being corrected" },

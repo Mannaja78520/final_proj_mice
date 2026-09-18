@@ -258,37 +258,64 @@ String CommandRouter::handleLocked(const String& line) {
     }
 
     // ---- login accounts for the Setup page (stored in NVS) ----
-    //   AUTH <user> <pass>                 -> OK <user> | ERR bad login
-    //   USER LIST <user> <pass>            -> ["manny",...]
-    //   USER ADD  <user> <pass> <new> <newpass>
+    //   AUTH <user> <pass>                 -> OK <user> [role] | ERR bad login
+    //   USER LIST <user> <pass>            -> [{"name":...,"role":...,"mustChange":...}]
+    //   USER ADD  <user> <pass> <new> <newpass> [role]
     //   USER DEL  <user> <pass> <target>
-    //   USER PASS <user> <pass> <newpass>  -> change your own password
+    //   USER PASS <user> <pass> <newpass> [target]  -> change your own password (or super_admin changes target)
+    //   USER RENAME <user> <pass> <newname> [target]-> rename self (or super_admin renames target)
     if (cmd == "AUTH") {
         if (argc < 3) return "ERR usage: AUTH <user> <pass>";
-        return users.verify(argv[1], argv[2]) ? "OK " + argv[1] : "ERR bad login";
+        if (!users.verify(argv[1], argv[2])) return "ERR bad login";
+        return "OK " + argv[1] + " " + users.role(argv[1]);
     }
     if (cmd == "USER") {
-        if (argc < 2) return "ERR usage: USER LIST|ADD|DEL|PASS <user> <pass> ...";
+        if (argc < 2) return "ERR usage: USER LIST|ADD|DEL|PASS|RENAME <user> <pass> ...";
         String sub = argv[1];
         sub.toUpperCase();
         // every USER op requires a valid caller (argv[2]=user, argv[3]=pass)
         if (argc < 4 || !users.verify(argv[2], argv[3])) return "ERR auth";
-        if (sub == "LIST") return users.listJson();
+        String caller = argv[2];
+        bool callerIsSuper = users.isSuper(caller);
+
+        if (sub == "LIST") return users.listJson(caller);
         if (sub == "ADD") {
-            if (argc < 6) return "ERR usage: USER ADD <user> <pass> <new> <newpass>";
-            return users.add(argv[4], argv[5]) ? "OK added " + argv[4]
-                                               : "ERR exists or bad name/pass (no spaces)";
+            if (!callerIsSuper) return "ERR only super_admin can add accounts";
+            if (argc < 6) return "ERR usage: USER ADD <user> <pass> <new> <newpass> [role]";
+            String role = (argc >= 7) ? argv[6] : "user";
+            return users.add(argv[4], argv[5], role) ? "OK added " + argv[4]
+                                                     : "ERR exists or bad name/pass (no spaces)";
         }
         if (sub == "DEL") {
+            if (!callerIsSuper) return "ERR only super_admin can remove accounts";
             if (argc < 5) return "ERR usage: USER DEL <user> <pass> <target>";
-            return users.remove(argv[4]) ? "OK removed " + argv[4]
-                                         : "ERR not found or last user";
+            String target = argv[4];
+            if (users.isSuper(target) && users.countSupers() <= 1) {
+                return "ERR cannot remove the last super_admin";
+            }
+            return users.remove(target) ? "OK removed " + target
+                                        : "ERR not found or last user";
         }
         if (sub == "PASS") {
-            if (argc < 5) return "ERR usage: USER PASS <user> <pass> <newpass>";
-            return users.setPass(argv[2], argv[4]) ? "OK password changed" : "ERR bad password";
+            if (argc < 5) return "ERR usage: USER PASS <user> <pass> <newpass> [target]";
+            String newpass = argv[4];
+            String target = (argc >= 6) ? argv[5] : caller;
+            if (target != caller && !callerIsSuper) {
+                return "ERR only super_admin can change someone else's password";
+            }
+            return users.setPass(target, newpass) ? "OK password changed" : "ERR bad password";
         }
-        return "ERR USER LIST|ADD|DEL|PASS";
+        if (sub == "RENAME") {
+            if (argc < 5) return "ERR usage: USER RENAME <user> <pass> <newname> [target]";
+            String newname = argv[4];
+            String target = (argc >= 6) ? argv[5] : caller;
+            if (target != caller && !callerIsSuper) {
+                return "ERR only super_admin can rename someone else's account";
+            }
+            return users.rename(target, newname) ? "OK renamed " + target + " to " + newname
+                                                 : "ERR exists or bad name";
+        }
+        return "ERR USER LIST|ADD|DEL|PASS|RENAME";
     }
 
     // ---- hardware pin map (stored in NVS, set from the web; reboot to apply)

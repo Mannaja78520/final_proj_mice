@@ -97,11 +97,16 @@ private:
     // with four phones is already more than this has ever needed, and the
     // oldest is reused rather than refusing a login.
     static const int SESSIONS = 4;
-    struct Session { char token[25] = {0}; uint32_t seen = 0; };
+    struct Session {
+        char token[25] = {0};
+        char user[21] = {0};
+        uint32_t seen = 0;
+    };
     Session sessions_[SESSIONS];
     bool allowed(AsyncWebServerRequest* req);          // has a live session
     bool allowedCommand(AsyncWebServerRequest* req, const String& cmd);
-    String newSession();
+    String newSession(const String& user = "");
+    String sessionUser(AsyncWebServerRequest* req);
     void endSession(AsyncWebServerRequest* req);
     static String cookieToken(AsyncWebServerRequest* req);
     SDStore* sd_ = nullptr;

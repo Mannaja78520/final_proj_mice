@@ -184,22 +184,29 @@ header{padding:var(--sp-3) 0;gap:var(--sp-3)}
 
     <div id="usersBox" style="display:none">
       <div class="row">
-        <span class="statline">logged in as <b id="liWho">-</b> — the Setup cards below are now editable.</span>
+        <span class="statline">logged in as <b id="liWho">-</b> <span id="liRole" class="badge"></span> — the Setup cards below are now editable.</span>
         <button onclick="doLogout()">Log out</button>
       </div>
-      <div class="row"><span class="lbl">Accounts</span><span id="userList" class="statline">-</span></div>
-      <div class="row">
+      <div class="row"><span class="lbl">Accounts</span><div id="userList" class="statline" style="display:flex;flex-wrap:wrap;gap:4px">-</div></div>
+      <div class="row" id="addUserRow">
         <span class="lbl">Add user</span>
         <input id="nuUser" placeholder="username" style="width:120px">
-        <input id="nuPass" placeholder="password (no spaces)" style="width:150px">
+        <input id="nuPass" type="password" placeholder="password" style="width:130px">
+        <select id="nuRole" title="what the new person may do">
+          <option value="user">user</option>
+          <option value="super_admin">super_admin</option>
+        </select>
         <button onclick="addUser()">Add</button>
       </div>
       <div class="row">
-        <span class="lbl">My password</span>
-        <input id="pwNew" placeholder="new password" style="width:150px">
-        <button onclick="changeMyPass()">Change</button>
+        <span class="lbl">My account</span>
+        <input id="rnUser" placeholder="new username" style="width:120px">
+        <button onclick="renameMyUser()">Rename</button>
+        <input id="pwNew" type="password" placeholder="new password" style="width:130px">
+        <button onclick="changeMyPass()">Change password</button>
         <span class="statline" id="userStat"></span>
       </div>
+      <div class="mini tech" style="margin-top:4px">Accounts stored hashed (SHA-256 + salt) in NVS. The last super_admin cannot be removed or demoted.</div>
     </div>
   </div>
 
@@ -1375,9 +1382,12 @@ async function doLogin(){
       $('liStat').textContent = refusal(r) || 'wrong user or password';
       return;
     }
-    auth={user:u,pass:p};
+    const rParts = r.trim().split(/\s+/);
+    const rRole = rParts[2] || (u === 'super_admin' ? 'super_admin' : 'user');
+    auth={user:u,pass:p,role:rRole};
     $('loginForm').style.display='none';$('usersBox').style.display='';
     $('liWho').textContent=u;$('liPass').value='';
+    const lr=$('liRole'); if(lr) lr.textContent=auth.role==='super_admin'?'super_admin':'user';
     applyTabs();$('setupBtn').textContent='⚙ Setup (open)';
     loadUsers();loadPins();
     return;
@@ -1388,6 +1398,7 @@ async function doLogin(){
   // verifies the same accounts server-side and answers a wrong name exactly
   // like a wrong password.
   let s;
+  let loginData = {};
   try{
     s=await fetch('/api/login',{method:'POST',
       headers:{'Content-Type':'application/x-www-form-urlencoded'},
@@ -1396,12 +1407,16 @@ async function doLogin(){
     // Swallowing this left mustChange false, so a board still carrying the
     // shipped password quietly stopped asking anyone to change it - being
     // asked once too often is recoverable; not being asked is not.
-    try{ mustChange = (await s.json()).mustChange === true; }
+    try{
+      loginData = await s.json();
+      mustChange = loginData.mustChange === true; // mustChange = (await s.json()).mustChange === true
+    }
     catch(e){ mustChange = true; }
   }catch(e){ $('liStat').textContent='could not reach the board to log in'; return; }
   if(!s.ok){ $('liStat').textContent='wrong user or password'; return; }
-  auth={user:u,pass:p};
+  auth={user:u,pass:p,role:loginData.role||(u==='super_admin'?'super_admin':'user')};
   $('liWho').textContent=u;$('liPass').value='';
+  const lr2=$('liRole'); if(lr2) lr2.textContent=auth.role==='super_admin'?'super_admin':'user';
   // Still on the default password: open Setup AND ask, never lock (user
   // 2026-09-17: the defaults are for every board, "please change" is a note).
   // Say the login worked - a red box alone read as a refusal (2026-09-07).
@@ -1437,22 +1452,78 @@ async function loadUsers(){
   const r=await cmd('USER LIST '+auth.user+' '+auth.pass);
   const box=$('userList');box.innerHTML='';
   let list;try{list=JSON.parse(r.trim());}catch(e){box.textContent=r;return;}
-  list.forEach(u=>{
+  const boss = auth.role === 'super_admin';
+  const addRow = $('addUserRow'); if(addRow) addRow.style.display = boss ? '' : 'none';
+  const lr=$('liRole'); if(lr) lr.textContent=boss?'super_admin':'user';
+  list.forEach(x=>{
+    const u = (typeof x === 'object' && x.name) ? x.name : x;
+    const role = (typeof x === 'object') ? x.role : (u === 'super_admin' ? 'super_admin' : 'user');
+    const isMust = (typeof x === 'object') ? !!x.mustChange : false;
+
     const chip=document.createElement('span');chip.className='peer';chip.style.margin='2px';
-    chip.textContent=u+(u===auth.user?' (you)':'');
-    if(u!==auth.user&&list.length>1){
-      const x=document.createElement('a');x.textContent=' ✕';x.style.cursor='pointer';x.style.color='var(--err)';
-      x.onclick=()=>delUser(u);chip.appendChild(x);
+    chip.textContent=u + (role === 'super_admin' ? ' · super_admin' : '') +
+                        (isMust ? ' · default password' : '') +
+                        (u === auth.user ? ' (you)' : '');
+
+    if (boss && u !== auth.user) {
+      const rn = document.createElement('button');
+      rn.className = 'icon'; rn.textContent = '✏'; rn.title = 'rename ' + u;
+      rn.style.marginLeft = '4px';
+      rn.onclick = async ()=>{
+        const nu = prompt('New username for ' + u);
+        if (nu && nu.trim()) {
+          const res = await cmd('USER RENAME ' + auth.user + ' ' + auth.pass + ' ' + nu.trim() + ' ' + u);
+          $('userStat').textContent = res;
+          loadUsers();
+        }
+      };
+      chip.appendChild(rn);
+
+      const pw = document.createElement('button');
+      pw.className = 'icon'; pw.textContent = '🔑'; pw.title = 'set password for ' + u;
+      pw.style.marginLeft = '4px';
+      pw.onclick = async ()=>{
+        const np = prompt('New password for ' + u + ' (8-32 chars, no spaces)');
+        if (np && np.length >= 8) {
+          const res = await cmd('USER PASS ' + auth.user + ' ' + auth.pass + ' ' + np + ' ' + u);
+          $('userStat').textContent = res;
+          loadUsers();
+        }
+      };
+      chip.appendChild(pw);
+    }
+
+    if (boss && list.length > 1 && !(role === 'super_admin' && list.filter(a => (a.role||'user')==='super_admin').length <= 1)) {
+      const x=document.createElement('a');x.textContent=' ✕';x.style.cursor='pointer';x.style.color='var(--err)';x.style.marginLeft='4px';
+      x.title='delete ' + u;
+      x.onclick=()=>delUser(u);
+      chip.appendChild(x);
     }
     box.appendChild(chip);
   });
 }
 async function addUser(){
   if(!auth)return;
-  const u=$('nuUser').value.trim(),p=$('nuPass').value;
+  const u=$('nuUser').value.trim(),p=$('nuPass').value,role=($('nuRole')?$('nuRole').value:'user');
   if(!u||!p){$('userStat').textContent='enter a username and password';return;}
-  const r=await cmd('USER ADD '+auth.user+' '+auth.pass+' '+u+' '+p);
+  if(p.length < 8){$('userStat').textContent='at least 8 characters';return;}
+  const r=await cmd('USER ADD '+auth.user+' '+auth.pass+' '+u+' '+p+' '+role);
   $('userStat').textContent=r;$('nuUser').value='';$('nuPass').value='';loadUsers();
+}
+async function renameMyUser(){
+  if(!auth)return;
+  const nu=$('rnUser').value.trim();
+  if(!nu){$('userStat').textContent='enter a new username';return;}
+  const r=await cmd('USER RENAME '+auth.user+' '+auth.pass+' '+nu);
+  if(r.startsWith('OK')){
+    auth.user = nu;
+    $('liWho').textContent = nu;
+    $('rnUser').value = '';
+    $('userStat').textContent = 'username changed to ' + nu;
+    loadUsers();
+  } else {
+    $('userStat').textContent = refusal(r) || r;
+  }
 }
 async function changeMyPass(){
   if(!auth)return;

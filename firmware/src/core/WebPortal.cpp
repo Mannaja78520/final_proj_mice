@@ -623,7 +623,7 @@ bool WebPortal::allowedCommand(AsyncWebServerRequest* req, const String& cmd) {
     return allowed(req);
 }
 
-String WebPortal::newSession() {
+String WebPortal::newSession(const String& user) {
     char tok[25];
     for (int i = 0; i < 24; i++) {
         const char* pool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -636,8 +636,22 @@ String WebPortal::newSession() {
     for (int i = 1; i < SESSIONS; i++)
         if (sessions_[i].seen < sessions_[slot].seen) slot = i;
     memcpy(sessions_[slot].token, tok, sizeof(tok));
+    memset(sessions_[slot].user, 0, sizeof(sessions_[slot].user));
+    strncpy(sessions_[slot].user, user.c_str(), sizeof(sessions_[slot].user) - 1);
     sessions_[slot].seen = millis();
     return String(tok);
+}
+
+String WebPortal::sessionUser(AsyncWebServerRequest* req) {
+    const String tok = cookieToken(req);
+    if (tok.length() < 8) return "";
+    const uint32_t now = millis();
+    for (int i = 0; i < SESSIONS; i++) {
+        if (!sessions_[i].token[0]) continue;
+        if (now - sessions_[i].seen > SESSION_IDLE_MS) { sessions_[i].token[0] = 0; continue; }
+        if (tok == sessions_[i].token) { return String(sessions_[i].user); }
+    }
+    return "";
 }
 
 void WebPortal::endSession(AsyncWebServerRequest* req) {
@@ -704,15 +718,16 @@ void WebPortal::setupRoutes() {
             LOGF(sys, "login refused for \"%s\"", user.c_str());
             return;
         }
-        // mustChange: this board is still carrying the password it shipped
-        // with, which every other board in the room also has. The page keeps
-        // Setup locked until it is changed.
+        // mustChange: THIS account is still on the shipped password. A warning,
+        // not a lock (user 2026-09-17): the default logins are re-added on every
+        // boot, so "any account" would be true forever and Setup never opened.
         AsyncWebServerResponse* res = req->beginResponse(
             200, "application/json",
             String("{\"ok\":true,\"mustChange\":") +
-            (users.firstPassword() ? "true" : "false") + "}");
+            (pass == UserStore::shippedPassword() ? "true" : "false") +
+            ",\"user\":\"" + user + "\",\"role\":\"" + users.role(user) + "\"}");
         res->addHeader("Set-Cookie",
-                       "mice_board=" + newSession() + "; Path=/; HttpOnly; SameSite=Lax");
+                       "mice_board=" + newSession(user) + "; Path=/; HttpOnly; SameSite=Lax");
         req->send(res);
         LOGF(sys, "login ok for \"%s\"", user.c_str());
     });
@@ -728,9 +743,15 @@ void WebPortal::setupRoutes() {
     // Whether this browser may change anything. The page asks so it can grey
     // out what will be refused, instead of offering a button that fails.
     server_.on("/api/whoami", HTTP_GET, [this](AsyncWebServerRequest* req) {
+        bool auth = allowed(req);
+        String u = sessionUser(req);
+        String r = auth ? users.role(u) : "";
+        bool mc = auth ? users.mustChange(u) : users.firstPassword();
         req->send(200, "application/json",
-                  String("{\"authed\":") + (allowed(req) ? "true" : "false") +
-                  ",\"mustChange\":" + (users.firstPassword() ? "true" : "false") + "}");
+                  String("{\"authed\":") + (auth ? "true" : "false") +
+                  ",\"user\":\"" + u + "\"" +
+                  ",\"role\":\"" + r + "\"" +
+                  ",\"mustChange\":" + (mc ? "true" : "false") + "}");
     });
 
     server_.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest* req) {
