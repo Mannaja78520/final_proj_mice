@@ -1944,3 +1944,24 @@ MiceHub.exe rebuilt at 11:50 - the exe bundles the web pages and hub.html
 Cleanup: test sequences, the test show and shows/.deleted all removed. A hub is
  running from SOURCE (main_python/main.py) on :8642, not the exe.
 Full suite before the arm tests: 4093 passed, 0 failed.
+
+### 2026-09-18 13:20 +0700 - claude:09180350-df25
+Event: NOTICE (new tasks queued from the user, nothing built)
+Task: A26-70 A26-71 A26-72 A26-73 A26-74
+User 2026-09-18 asked for A0-27b to be run in its OWN session to save tokens, so
+A26-70 holds the ready-to-paste prompt for it and A0-27b stays todo. The prompt
+warns about the ~15 uncommitted lines those four firmware files carry from
+another session, and records that UserStore keeps PLAIN passwords with no role
+field today.
+Four more, all WAITING ON THE USER and none of them startable yet:
+ * A26-71 shrug gear calibration -> PDF for the thesis. The user measures full
+   left, full right and middle (middle = 90 deg) at several servo degrees; we
+   turn the readings into a calibration. DO NOT INVENT NUMBERS.
+ * A26-72 forward and inverse kinematics from the STEP file of the real full
+   robot, and a Nong Studio PRESET the user can select. Waiting on the file.
+ * A26-73 the Anycubic slicer project (PET-G) plus the STEP file with insert
+   nuts and bolts: calculate the gears and the printed-part masses.
+ * A26-74 servo mass and the load per joint against the servo torque already in
+   the registry, to give the MAXIMUM weight of clothing the robot can wear.
+   Depends on A26-72 and A26-73.
+The user also said the shrug measurement (A16-1) waits - do other work first.
