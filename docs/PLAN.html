@@ -398,7 +398,7 @@ exist.</p>
         adapter · <b>A26-35</b> Studio freeze · <b>A26-36</b> Studio pose vs real arm
         · <b>A26-38</b> robot home vs show neutral · <b>A26-41</b> loop back to the start in sync
         · <b>A26-42</b> monitor over RS485 · <b>A26-43</b> zero lock login · <b>A26-47</b> robot home pose on the module page · <b>A26-45</b> shrug preview
-        · <b>A26-46</b> stop the robot when Studio freezes.</td></tr>
+        · <b>A26-46</b> stop the robot when Studio freezes &bull; <b>A26-75</b> accounts verification on nong #67 midway bench rig.</td></tr>
 
 <tr><td><b>RS485 transceivers</b> (MAX485) — <b>HERE, and working</b></td>
     <td>done</td>
@@ -592,7 +592,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: QC finished: 4123 passed, 0 failed, started 2026-09-18 14:50
+# RUNNING: QC finished: 5548 passed, 4 failed, started 2026-09-18 15:29
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1451,6 +1451,7 @@ A26-71: todo  2026-09-18 12:10  hw=nong + a way to measure the shrug angle  agen
 A26-72: todo  2026-09-18 12:10  agent=claude:09180350-df25  — User 2026-09-18: the forward invert kinematric i will send the step file later is the full part and my real robot edit in nong studio too make it preset i will select to use later and i need to to calculate all of it for me. So: from the STEP file of the real full robot, work out forward and inverse kinematics, put the real dimensions into Nong Studio as a PRESET the user can pick, and show the working. WAITING ON THE STEP FILE.
 A26-73: todo  2026-09-18 12:10  agent=claude:09180350-df25  — User 2026-09-18: in anycubic slicer in mf3 it have slice for all pet-g to make this robot so calculate the gear and everything i will have slicer present later i have all weight in that also i will add the insert nut and bolt in step file let calculate all of it when i finish and let you do it. So: from the Anycubic slicer project (PET-G) plus the STEP file with insert nuts and bolts, calculate the gears and the printed-part masses. WAITING ON THE SLICER PRESET AND THE FINISHED STEP FILE.
 A26-74: todo  2026-09-18 12:10  agent=claude:09180350-df25  — User 2026-09-18: also calculate the servo weight too i need it to use to make sure my servo it can handle all of weight and the maximum of the weight of the shirt that we can use thx. So: add servo mass, total the load each joint carries, check it against the servo torque already in the registry, and give the MAXIMUM weight of clothing the robot can wear. Depends on A26-72 and A26-73 for the real masses.
+A26-75: todo  2026-09-18 15:31  hw=nong 67 on COM12 / WiFi  agent=gemini:09181526-32bc  — Flash and hardware-verify A0-27b role accounts on Nong 67 (midway bench rig) when reconnected. User 2026-09-18: don't have connect to module yet it not here make it task to do later with midway. Flash firmware.bin to Nong 67 (COM12 / 10.126.95.70), verify roles (super_admin/user), self-rename, and last super_admin removal guard over USB and WiFi.
 
 END</code></pre>
 </details>
