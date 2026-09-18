@@ -57,7 +57,21 @@ window.addEventListener("load", async function(){
          routes: [{kind: "rs485", dev: "usb:COM29:67", port: "COM29", bus: 67}]},
         {id: 14, name: "wifi-stale", type: "nong", ip: "10.0.0.14", wifi_mode: "sta",
          routes: [{kind: "wifi", dev: "wifi:10.0.0.14", ip: "10.0.0.14", stale: true},
-                  {kind: "usb", dev: "usb:COM29", port: "COM29"}]}
+                  {kind: "usb", dev: "usb:COM29", port: "COM29"}]},
+        // MEASURED ON THE BENCH 2026-09-18 (nong 67, COM12 + WiFi): the board
+        // says its own radio is off, over the cable, while the hub's cached
+        // wifi route still says live - a route only turns stale after a SWEEP
+        // fails. The page opened the dead address until the board's own answer
+        // was allowed to win.
+        {id: 15, name: "radio-off", type: "nong", ip: "10.0.0.15", wifi_mode: "off",
+         routes: [{kind: "wifi", dev: "wifi:10.0.0.15", ip: "10.0.0.15"},
+                  {kind: "usb", dev: "usb:COM29", port: "COM29"}]},
+        // Radio off and NO cable either: there is no way in this hub can stand
+        // behind, so the row stays and the button does not appear. Offering the
+        // dead address would be a control that leads nowhere, which is the one
+        // thing every screen here is not allowed to do.
+        {id: 16, name: "radio-off-nocable", type: "nong", ip: "10.0.0.16", wifi_mode: "off",
+         routes: [{kind: "wifi", dev: "wifi:10.0.0.16", ip: "10.0.0.16"}]}
       ];
       w.repaintMods();
 
@@ -69,12 +83,13 @@ window.addEventListener("load", async function(){
       var rows = d.querySelectorAll("#mods .mod");
       out.push("rows=" + rows.length);
       for (var i = 0; i < rows.length; i++) {
-        var name = (rows[i].textContent.match(/(wifi-live|cable-only|bus-only|wifi-stale)/) || [])[0];
+        var name = (rows[i].textContent.match(/(wifi-live|cable-only|bus-only|wifi-stale|radio-off-nocable|radio-off)/) || [])[0];
         var btns = rows[i].querySelectorAll("button");
         var open = null;
         for (var j = 0; j < btns.length; j++)
           if (btns[j].textContent.indexOf("Open module") >= 0) open = btns[j];
-        if (!name || !open) { out.push("miss=" + (name || "?")); continue; }
+        if (!name) { out.push("miss=?"); continue; }
+        if (!open) { out.push(name + "=NOBUTTON"); continue; }
         got.url = "";
         open.onclick();
         var dev = decodeURIComponent((got.url.match(/dev=([^&]*)/) || ["", ""])[1]);
@@ -107,7 +122,7 @@ def run(t):
     if "ERR" in got:
         return t.ok(False, "the page ran without throwing", str(got))
     t.eq(got.get("builder"), "yes", "the page's own row builder is what was driven")
-    t.eq(got.get("rows"), "4", "all four boards were drawn")
+    t.eq(got.get("rows"), "6", "all six boards were drawn")
 
     t.eq(got.get("wifi-live"), "wifi:10.0.0.11",
          "a board the hub really reached over WiFi still opens over WiFi")
@@ -122,3 +137,13 @@ def run(t):
          "a WiFi route that has gone quiet does not outrank a live cable",
          "opened %r - a stale route is the hub saying it stopped answering, "
          "which is exactly when the cable should win" % got.get("wifi-stale"))
+    t.ok(got.get("radio-off") == "usb:COM29",
+         "a board saying its own radio is off beats a cached live WiFi route",
+         "opened %r - MEASURED on the bench 2026-09-18: WIFI OFF over the cable "
+         "and the page still sent every call to the dead address, because a "
+         "route only turns stale after a sweep fails. The board's own answer is "
+         "newer and first-hand" % got.get("radio-off"))
+    t.ok(got.get("radio-off-nocable") == "NOBUTTON",
+         "with no way in the hub can stand behind, there is no button to press",
+         "got %r - offering a dead address is a control that leads nowhere"
+         % got.get("radio-off-nocable"))

@@ -1629,8 +1629,18 @@ function repaintMods(){
       // shares that network. Opening a module on an unreachable claimed IP is
       // what made the hub say "no reply" with the cable sitting right there
       // (A26-7).
+      // ...and a live route is not the last word either. MEASURED ON THE BENCH
+      // 2026-09-18, nong 67 on COM12 and WiFi: WIFI OFF over the cable, and the
+      // page still opened wifi:10.126.95.70 - because a route only turns stale
+      // after a SWEEP fails, and until the next sweep the hub still believed
+      // it. The board was saying `wifi_mode: off` in the same breath, over the
+      // cable, and the line below was overwriting that honest answer with
+      // 'sta'. A board saying its own radio is off beats a cached sweep result
+      // every time: it is newer, and it is first-hand.
+      const radioOff = (m.wifi_mode||'') === 'off';
       const shown = Object.assign({}, m, {wifi_mode: wifi ? 'sta' : (m.wifi_mode||''),
-                                          wifiSeen: !!wifi && !wifi.stale,
+                                          radioOff: radioOff,
+                                          wifiSeen: !!wifi && !wifi.stale && !radioOff,
                                           ip: wifi ? wifi.ip : (m.ip||'')});
       const port = cable ? cable.port : null;
       const bus = cable && cable.kind==='rs485' ? cable.bus : 0;
@@ -1755,7 +1765,7 @@ function modRow(m,extra,port,busId,peer,far,opts){
   const dev=peer?('usb:'+port+'@'+peer)
     :byWifi?('wifi:'+m.ip)
     :(port?('usb:'+port+(busId?(':'+busId):''))
-    :((m.wifi_mode==='sta'&&m.ip)?('wifi:'+m.ip)
+    :((m.wifi_mode==='sta'&&m.ip&&!m.radioOff)?('wifi:'+m.ip)
     :((far&&far.dev)?far.dev:'')));
   if(dev){
     const open=document.createElement('button');open.className='primary';
