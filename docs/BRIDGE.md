@@ -1878,3 +1878,39 @@ Still open: match_faq scores ชอบอะไร against the saved ชื่�
  answer with the robot's name; retuning the threshold unattended risks every
  other match. Nobody has LISTENED to the new Thai answers.
 Next: none claimed. Released everything.
+
+### 2026-09-18 12:35 +0700 - claude:09180350-df25
+Event: NOTICE (bench session, nong 67 on the user's desk)
+Task: A26-7 A26-42 A26-34
+Boards arrived, so hardware went first. Rig: nong id 67, RS485 on COM12 (bus id
+67) and WiFi 10.126.95.70 (ssid manny). NOTHING MOVED all session - every test
+was read-only or radio-only, and the pose was 90,150,90,90,90,30,90,90,90,90 at
+the start and at the end.
+ * A26-7 FOUND A SECOND HOLE AND FIXED IT (7d966dd). This morning's fix made
+   WiFi win only on a LIVE route, which covers a route already marked stale. On
+   the bench that was not enough: a route only turns stale AFTER a sweep fails,
+   so between the board leaving WiFi and the next sweep the page still opened
+   the dead address. Sent WIFI OFF over the cable and watched the live page open
+   wifi:10.126.95.70 (unreachable); with the fix it opens usb:COM12:67, while
+   the row still carries the claimed ip and a cached live route. The board was
+   saying wifi_mode off over the cable at that moment and the page was
+   overwriting that with 'sta'. check_open_route 9 assertions, 3/3 sabotages.
+   MEASURED LIMIT, not fixed: when the hub's whole record is stale (still reads
+   sta and the old ip because nothing re-probed) no client-side rule helps -
+   that wants a probe before opening, or a cable fallback on no answer.
+ * A26-42 BENCH-PROVEN. Studio at ?dev=usb:COM12:67 with a hub login:
+   haveUsb=true, badge [USB COM12 -> RS485 #67 (shared)], INFO id=67 with joints
+   identical to POSE? read straight off the board, monitorTick clean. The fault
+   does not reproduce.
+ * A26-34 VERIFIED, no change needed. Logged OUT on the same URL the login card
+   is shown and it says 'Log in to connect to the robot.' The misleading 'Could
+   not reach the robot...' line is not on this path. A26-32 already closed it.
+Method note for the next session: driving a real board from headless Edge must
+ NOT use --virtual-time-budget. Virtual time fast-forwards timers but not the
+ real RS485 round trips, so the page is measured before it has connected and
+ reads as broken. Run it in real time and have the page POST its result to
+ /api/report (open, machine-local), then read the newest file in
+ main_python/reports/.
+Full suite after all of it: 4093 passed, 0 failed.
+NOT DONE, needs the user to say go: anything that MOVES the arm - A26-40 (a real
+ show on the robot) and A26-46 (freeze-stop with the arm actually running).
