@@ -1914,3 +1914,33 @@ Method note for the next session: driving a real board from headless Edge must
 Full suite after all of it: 4093 passed, 0 failed.
 NOT DONE, needs the user to say go: anything that MOVES the arm - A26-40 (a real
  show on the robot) and A26-46 (freeze-stop with the arm actually running).
+
+### 2026-09-18 12:55 +0700 - claude:09180350-df25
+Event: NOTICE (bench session part 2 - the arm was moved, with the user watching)
+Task: A26-40 A26-46
+User gave the go-ahead to move the arm. Both tests used ONE joint (index 0,
+limits 25..155) moving 10 degrees from the arm's real pose, at the board's own
+safe_dps 60, and the arm ended exactly where it started:
+90,150,90,90,90,30,90,90,90,90.
+ * A26-40 SHOWS, PROVEN ON THE ROBOT. Two saved sequences joined by NAME into a
+   show, saved and reopened through the real API, then played over RS485.
+   Asserted on the module, not the page: POSE? was 90 before, 100 mid-show
+   (inside the first sequence) and 90 at the end (the second returned it).
+   total_ms 2800 = 600+600+400 hold+600+600, so steps() really added the pause
+   BETWEEN the two sequences on hardware. Delete moved the file to
+   shows/.deleted and left the sequences untouched.
+ * A26-46 FREEZE-STOP, PROVEN BOTH WAYS on a real 10.8 s watched show. Beating
+   once a second, it ran healthily and the clock advanced 0 -> 2700 ms. Beats
+   stopped: it carried on to 4500 and 6300 ms and the hub stopped it at about
+   4 s of silence - mid-show, not at its natural end - saying 'Studio stopped
+   answering (the page froze?), so the show was stopped'. The ARM really
+   stopped: POSE? read identical three times, two seconds apart.
+   A warning worth keeping: the first attempt looked like the hub stopping the
+   show too early. It was not - the start and the first beat were in two
+   separate tool calls, seconds apart, so no beat ever arrived. Beat and
+   measure inside ONE process or the test lies.
+MiceHub.exe rebuilt at 11:50 - the exe bundles the web pages and hub.html
+ carries today's A26-7 fix, so an exe user needs this build. Spec not rewritten.
+Cleanup: test sequences, the test show and shows/.deleted all removed. A hub is
+ running from SOURCE (main_python/main.py) on :8642, not the exe.
+Full suite before the arm tests: 4093 passed, 0 failed.
