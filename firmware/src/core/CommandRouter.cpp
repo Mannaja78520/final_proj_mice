@@ -12,6 +12,7 @@
 #include "modules/ModuleFactory.h"
 #include "core/HwConfig.h"
 #include "core/UserStore.h"
+#include "core/Perf.h"
 #include <WiFi.h>
 #include <config.h>
 #include <mbedtls/base64.h>
@@ -31,10 +32,31 @@ void CommandRouter::begin(Identity* id, Module* module, SDStore* sd, SequencePla
     mtx_ = xSemaphoreCreateRecursiveMutex();
 }
 
-void CommandRouter::lock()   { xSemaphoreTakeRecursive(mtx_, portMAX_DELAY); }
-void CommandRouter::unlock() { xSemaphoreGiveRecursive(mtx_); }
+void CommandRouter::lock() {
+    xSemaphoreTakeRecursive(mtx_, portMAX_DELAY);
+    if (depth_++ == 0) { heldAt_ = micros(); strcpy(what_, "other"); }
+}
+void CommandRouter::unlock() {
+    // a long hold here is a servo frame waiting - PERF? names the holder
+    if (--depth_ == 0) perf::held(micros() - heldAt_, what_);
+    xSemaphoreGiveRecursive(mtx_);
+}
+
+// Read-only commands that touch nothing the router lock guards: the SD card has
+// its own lock, PERF? its own counters. Taking the router lock for them made a
+// FILES listing hold every servo frame for 20 ms (nong 67, 2026-09-21).
+// /api/files already ran without it. Add a command here ONLY if it reads no
+// module, identity or sequence state.
+static bool needsNoLock(const String& line) {
+    String argv[2];
+    Util::tokenize(line, argv, 2);
+    String c = argv[0];
+    c.toUpperCase();
+    return c == "FILES" || c == "FREAD" || c == "PERF?";
+}
 
 String CommandRouter::handle(const String& line) {
+    if (needsNoLock(line)) return handleLocked(line);
     lock();
     // Anything that moves the robot takes the robot: the board stops playing
     // its own sequence rather than running two clocks into the same servos.
@@ -90,6 +112,8 @@ String CommandRouter::handleLocked(const String& line) {
     int argc = Util::tokenize(line, argv, 16);
     if (argc < 0) return "ERR too many words (max 16)";
     if (argc == 0) return "ERR empty";
+    if (xSemaphoreGetMutexHolder(mtx_) == xTaskGetCurrentTaskHandle())
+        strlcpy(what_, argv[0].c_str(), sizeof(what_));   // only the holder names it
     String cmd = argv[0];
     cmd.toUpperCase();
 
@@ -541,6 +565,7 @@ String CommandRouter::handleLocked(const String& line) {
     }
     if (cmd == "FWABORT") return fw_.abort();
     if (cmd == "FWSTAT") return fw_.stat();
+    if (cmd == "PERF?") return perf::report();
 
     if (cmd == "REBOOT") {
         requestReboot();
@@ -553,7 +578,15 @@ String CommandRouter::handleLocked(const String& line) {
 }
 
 void CommandRouter::buildStatus(JsonDocument& doc) {
+    // The radio's own state needs no router lock: read it first, so the
+    // WiFi driver calls do not hold up the servo frames waiting on the lock.
+    bool sta = WiFi.status() == WL_CONNECTED;
+    bool ap = WiFi.getMode() & WIFI_MODE_AP;
+    String ip = sta ? WiFi.localIP().toString() : (ap ? WiFi.softAPIP().toString() : "");
+    String ssid = sta ? WiFi.SSID() : "";
+    int rssi = sta ? WiFi.RSSI() : 0;
     lock();
+    strcpy(what_, "status");
     doc["id"] = id_->id();
     // Which physical board this is, so a hub that meets it twice - down a
     // cable and over WiFi - knows it is meeting one board.
@@ -581,13 +614,11 @@ void CommandRouter::buildStatus(JsonDocument& doc) {
     // wifi info here (not only on the web) so INFO over USB/RS485 tells an
     // app where to find the module's website/HTTP API
     JsonObject wifi = doc["wifi"].to<JsonObject>();
-    bool sta = WiFi.status() == WL_CONNECTED;
-    bool ap = WiFi.getMode() & WIFI_MODE_AP;
     wifi["mode"] = sta ? "sta" : (ap ? "ap" : "off");
     wifi["wmode"] = id_->wifiMode();   // configured mode: on | ap | off (default on)
-    wifi["ip"] = sta ? WiFi.localIP().toString() : (ap ? WiFi.softAPIP().toString() : "");
-    wifi["ssid"] = sta ? WiFi.SSID() : "";
-    wifi["rssi"] = sta ? WiFi.RSSI() : 0;
+    wifi["ip"] = ip;
+    wifi["ssid"] = ssid;
+    wifi["rssi"] = rssi;
     wifi["host"] = id_->hostname();
     module_->status(doc["module"].to<JsonObject>());
     unlock();
@@ -600,12 +631,14 @@ void CommandRouter::requestReboot(uint32_t delayMs) {
 
 void CommandRouter::loop() {
     lock();
+    strcpy(what_, "loop");
     module_->loop();
     seq_->loop();
     unlock();
 
     if (rebootAt_ && (int32_t)(millis() - rebootAt_) >= 0) {
         LOGF(sys, "rebooting...");
+        if (beforeReboot) beforeReboot();
         delay(50);
         ESP.restart();
     }

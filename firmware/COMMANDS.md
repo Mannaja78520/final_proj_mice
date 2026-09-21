@@ -350,6 +350,7 @@ interchangeably.
 | `FWEND` | `OK FWEND restarting` | check the whole image against its md5, then reboot into it |
 | `FWABORT` | `OK update abandoned …` | stop, and keep running the firmware already there |
 | `FWSTAT` | `FWSTAT 4500/1294617 next=30` | how far an update has got |
+| `PERF?` | `PERF loop_avg_us=1010 loop_max_us=4200 work_max_us=300 passes=990 frames=50 frame_max_ms=21 heap=150000 heap_min=120000 heap_big=90000 stack_free=5000 window_ms=1000 up_s=600 boots=1 reset=poweron` | is the board keeping up. Loop, frame and stack figures cover the time since the last `PERF?`; `heap_min` is since boot; `boots` counts resets since power-on (above 1 = it restarted); `reset` is why the last one happened (`CRASH`, `WATCHDOG`, `BROWNOUT` mean trouble) |
 | `AUTH <user> <pass>` | `OK <user>` / `ERR bad login` | check Setup-page login (accounts stored in NVS) |
 | `USER LIST <user> <pass>` | `["manny",...]` | list accounts (caller must be valid) |
 | `USER ADD <user> <pass> <new> <newpass>` | `OK added ...` | add an account (any logged-in user can) |
@@ -556,6 +557,7 @@ hit something on a fast jump.
 | `HOME [T <ms>]` / `ZERO` | `OK home T=1000ms` | move to the `neutral` pose — the angles `NEUTRAL` sets, not a flat 90 |
 | `NEUTRAL [<1-10\|name\|ALL> <deg>]` | `OK neutral L_SH_P = 95 deg (press Home to go there)` | the angle each joint goes to **on boot** and on `HOME`. Per joint, clamped to that joint's limits, saved to NVS + `/data/nong_cal.yaml`. Does **not** move the arm |
 | `NEUTRAL <a1..a10>` | `OK neutral set for all 10 joints` | the whole start pose in one line; `-` keeps a joint |
+| `NEUTRAL HERE` | `OK neutral = 90 150 90 ... (the arm starts here from now on)` | where the arm is **now** becomes the start pose; the module page's *Keep where the arm is now* button. Does not move the arm; the 2-ESP partner is sent the numbers |
 | `NEUTRAL?` | `NEUTRAL L_SH_P=95 L_SH_R=85 ...` | the start angle of every joint |
 | `OFFSET [<1-10\|name\|ALL> <deg>]` | `OK offset L_EL_P = 3.0 deg on the arm` | correct ONE joint that was assembled a few degrees out - a servo horn only refits in whole teeth. The value is in **joint** degrees (what you see on the arm); the board scales it into the servo-degree `trim` by that joint's own gear, so the same number moves every joint the same visible amount. Range -30..30. **The arm moves** - that is how you aim it. No args reports every joint. Saved to NVS + `/data/nong_cal.yaml` |
 | `OFFSET?` | `OFFSET L_SH_P=0.0 L_EL_P=3.0 ...` | how far each joint is being corrected, in joint degrees |

@@ -42,8 +42,9 @@ def run(t):
     writes = [m.start() for m in re.finditer(r"Serial2\.(print|println|write)\s*\(", code)]
     t.ok(writes, "the bus is written somewhere at all")
 
-    send = re.search(r"void RS485Bus::send\([^)]*\)\s*\{", code)
-    if not t.ok(send, "RS485Bus::send exists"):
+    # sendNow is the wire writer; send() only queues for it (check_bus_nonblocking)
+    send = re.search(r"void RS485Bus::sendNow\([^)]*\)\s*\{", code)
+    if not t.ok(send, "RS485Bus::sendNow exists"):
         return
     # the body of send(), by brace matching
     i, depth = send.end(), 1
@@ -74,7 +75,7 @@ def run(t):
     # ---- the driver is held for the whole frame --------------------------
     t.eq(len(re.findall(r"digitalWrite\(hw\.pins\.rs485De", body)), 2,
          "the driver is raised and lowered exactly once per frame")
-    t.contains(body, "Serial2.flush",
+    t.contains(body, "uart_wait_tx_done",
                "and the last byte is out before the driver is released",
                )
 

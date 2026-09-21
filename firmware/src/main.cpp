@@ -21,6 +21,7 @@
 #include "core/SequencePlayer.h"
 #include "core/CommandRouter.h"
 #include "core/BrownoutGuard.h"
+#include "core/Perf.h"
 #include "core/RS485Bus.h"
 #include "core/WebPortal.h"
 #include "modules/Module.h"
@@ -66,6 +67,7 @@ void setup() {
   // See core/BrownoutGuard.h — after two in a row the radio stays off so the
   // board can at least be talked to over USB and RS485.
   brownout.begin();
+  perf::begin();
 
   // load the runtime pin map from NVS first (fast) so every service below
   // uses the web-configured pins, then park the RS485 transceiver in receive
@@ -115,6 +117,7 @@ void setup() {
   // modules may put frames on the bus themselves (nong "link" mode
   // broadcasts POSE to follower boards so multiple ESP32s move in sync)
   module->busSend = [](const String& line) { rs485.send(line); };
+  router.beforeReboot = [] { rs485.drain(2000); };
 
   // replies from other modules on the bus surface on USB and the web console,
   // so a PC connected to just this module can master the whole RS485 fleet
@@ -133,9 +136,13 @@ void setup() {
 }
 
 void loop() {
+  perf::passBegin();
   rs485.loop();
+  perf::part("rs485");
   router.loop();   // module motion/rgb/audio + sequences + deferred reboot
+  perf::part("module");
   portal.loop();
+  perf::part("web");
 
   // USB serial accepts the same command lines (handy for bring-up).
   // Lines starting with '#' are bridged onto the RS485 bus (address any
@@ -174,5 +181,7 @@ void loop() {
   // delay(1) yields to the scheduler for one tick. Nothing here needs to spin
   // faster: the servos are written at their frame rate (50 Hz by default) from
   // a millis() clock, not once per pass.
+  perf::part("usb");
+  perf::passEnd();
   delay(1);
 }

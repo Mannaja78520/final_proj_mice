@@ -77,6 +77,7 @@
     { "name": "FWEND",   "scope": "core", "args": "",                                   "help": "check the whole image against its md5, then reboot into it" },
     { "name": "FWABORT", "scope": "core", "args": "",                                   "help": "abandon an update and keep running the firmware already there" },
     { "name": "FWSTAT",  "scope": "core", "args": "",                   "query": true,  "help": "how far an update has got, so a sender that lost its place can ask" },
+    { "name": "PERF?",   "scope": "core", "args": "",                   "query": true,  "help": "is the board keeping up: loop time, servo frame gap, free memory, resets since power-on and why the last one happened" },
 
     // ---------------- lift ----------------
     { "name": "UP",     "scope": "lift", "args": "",                                    "motion": true, "steps": [{"key": "up", "wait": true}], "help": "run up until the limit switch or STOP" },

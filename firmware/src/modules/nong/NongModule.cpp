@@ -5,6 +5,7 @@
 #include "core/SDStore.h"
 #include "core/Util.h"
 #include "core/HwConfig.h"
+#include "core/Perf.h"
 #include <Preferences.h>
 
 static const char* JOINT_NAMES[NongModule::N] = {
@@ -327,6 +328,8 @@ void NongModule::loop() {
     if (moving_) {
         uint32_t now = millis();
         if (now - lastTick_ >= 20) { // 50 Hz servo update
+            // the first frame of a move follows an idle gap, not a late frame
+            if (now - moveStart_ >= 20) perf::frame(now - lastTick_);
             lastTick_ = now;
             float t = (float)(now - moveStart_) / (float)moveDur_;
             if (t >= 1.0f) { t = 1.0f; moving_ = false; }
@@ -443,7 +446,21 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
             reply = "OK neutral set for all 10 joints (press Home to go there)";
             return true;
         }
-        if (argc < 3) { reply = "ERR usage: NEUTRAL <1-10|name|ALL> <deg>"; return true; }
+        if (argc == 2 && argv[1].equalsIgnoreCase("HERE")) {
+            // Where the arm IS becomes home: jog it on the module page, press one
+            // button. The partner gets the numbers, not HERE - its own pose may lag.
+            String line;
+            for (int i = 0; i < N; i++) {
+                neutral_[i] = clampJoint(i, cur_[i]);
+                line += " " + String(neutral_[i], 0);
+            }
+            reclamp();
+            saveCalSoon();
+            forward("NEUTRAL" + line);
+            reply = "OK neutral =" + line + " (the arm starts here from now on)";
+            return true;
+        }
+        if (argc < 3) { reply = "ERR usage: NEUTRAL <1-10|name|ALL> <deg> | HERE"; return true; }
         const JointSel sel = selectJoints(argv[1]);
         if (!sel.ok) { reply = jointSelHelp(); return true; }
         const float d = argv[2].toFloat();
