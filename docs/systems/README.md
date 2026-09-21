@@ -30,4 +30,4 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 | [agents](agents.md) | Plan, handoff and multi-AI tooling: plan.py, bridge, review panel, AI entry files. |
 | [bench](bench.md) | Scripts for real boards on the bench. |
 | [docs](docs.md) | Plan, references, thesis sources, architecture notes, panel reports. |
-| [misc](misc.md) | One-off scripts and experiments kept for reference. Move a file out of here when it becomes part of a system. |
+| [misc](misc.md) | One-off scripts and experiments kept for reference, and any loose file at the top of the tree. Move a file out of here when it becomes part of a system. |

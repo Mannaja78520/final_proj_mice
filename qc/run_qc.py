@@ -234,6 +234,11 @@ SOLO = {
 }
 
 
+# SOLO checks that must finish before anything else starts: others read what
+# they produce. See the note where they run.
+RUN_FIRST = {"check_build_split"}
+
+
 def _plan(msg):
     """Say on the plan page what QC is doing, right now.
 
@@ -459,6 +464,16 @@ def main(argv):
         # BOTH LANES AT ONCE. They ran one after the other, so the browser lane
         # idled through the whole plain phase - measured 2026-09-17 with the
         # CPU at 2% during a gate: the suite was waiting, not working.
+        # The firmware build goes FIRST, alone. check_flash, check_ota and
+        # check_ota_only read the images it leaves in firmware/.pio/build, and
+        # on a fresh staging tree there are none until it has run - so the
+        # first gate on every new staging went red on those three and the
+        # second passed (A26-83, seen five times on 2026-09-21).
+        first = [(f, m) for f, m in solo if f.stem in RUN_FIRST]
+        solo = [(f, m) for f, m in solo if f.stem not in RUN_FIRST]
+        for f, mod in first:
+            case, secs, crash = F.run_check(mod)
+            report(f, mod, case.results, secs, crash, "")
         pools, futs, by_path = [], [], {}
         for group, width in ((para, jobs), (heavy, browser_jobs)):
             if not group:

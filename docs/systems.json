@@ -119,13 +119,13 @@
      "depends": ["fw-core"]},
 
     {"id": "docs", "summary": "Plan, references, thesis sources, architecture notes, panel reports.",
+     "listFiles": false,
      "files": ["docs/", "tools/build_thesis_bundle.py", "tools/build_complete_thesis_bundle.py"],
      "depends": []},
 
-    {"id": "misc", "summary": "One-off scripts and experiments kept for reference. Move a file out of here when it becomes part of a system.",
-     "files": ["scient_test/", "auto_click/", "update_*.py", "show_todo.py", "web.js",
-               "scratch.js", "test.mp3", "*.txt", "*.json", "check_*.py", "fix_*.py",
-               "add_*.py", "do_fix.py", "patch_refs.py", "read_driver.py", "panel_*.md"],
+    {"id": "misc", "summary": "One-off scripts and experiments kept for reference, and any loose file at the top of the tree. Move a file out of here when it becomes part of a system.",
+     "listFiles": false,
+     "files": ["scient_test/", "auto_click/", "*"],
      "depends": []}
   ]
 }

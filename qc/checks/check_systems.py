@@ -79,5 +79,13 @@ def run(t):
              "a header edited below the marker is reported as stale")
         t.eq(s.owner(demo, s.load(tmp)), "hub-net",
              "a file goes to the system that names it most specifically")
+
+        # files the running system writes (promote.py SKIP_FILES) are not in
+        # the map: a staging tree never has them, so listing them made every
+        # header differ between main and staging (2026-09-21, docs.md)
+        (tmp / "promote.py").write_text('SKIP_FILES = {"LIVE.html"}\n')
+        (tmp / "docs" / "LIVE.html").write_text("x")
+        t.ok("docs/LIVE.html" not in s.files(tmp, s.load(tmp)),
+             "live files named in promote.py SKIP_FILES are left out of the map")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
