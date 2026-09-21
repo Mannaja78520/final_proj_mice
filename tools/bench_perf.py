@@ -115,7 +115,13 @@ def tasks(s, base):
     yield "retarget 20/s while moving", lambda: [
         (ask(s, "POSE %s T 600" % pose(base, (i % 3 - 1) * 8), 0.02),
          time.sleep(0.05)) for i in range(60)]
-    yield "status spam 20/s", lambda: [ask(s, "INFO", 0.05) for _ in range(60)]
+    if isinstance(s, Wifi):
+        yield "status spam 20/s", lambda: [ask(s, "INFO", 0.05) for _ in range(60)]
+    else:
+        # 115200 baud carries ~11.5 KB/s and one INFO is ~1.2 KB: 20/s is 24 KB/s,
+        # more than the wire can move, so the reply backlog - not the board -
+        # would be measured. 5/s is what a cable can really carry.
+        yield "status spam 5/s", lambda: [(ask(s, "INFO", 0.2)) for _ in range(15)]
     if isinstance(s, Wifi):
         yield "web page x5 while moving", lambda: (
             ask(s, "POSE %s T 3000" % pose(base, 8), 0.3),
