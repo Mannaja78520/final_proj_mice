@@ -274,6 +274,13 @@
        answer <i>"reboot to apply"</i>, so correcting a mistyped network name meant
        power-cycling a module and leaving the arm wherever it stopped. The scan is
        asynchronous, so none of this can stall a joint mid-move.</p></div>
+  <div class="f"><h3>The fastest way in is picked for you<span class="tag t-new">new</span></h3>
+    <p>When a robot is plugged in, on the RS485 cable and on WiFi all at once, the hub times
+       each way and sends commands down the quickest one. Measured on a nong: the RS485
+       cable answered in about 6&nbsp;ms, WiFi in about 60&nbsp;ms. <b>⚙ Open module</b>
+       keeps choosing while it is open, so if the cable is pulled it carries on over WiFi.
+       The Modules tab marks the way in use as <i>fastest, in use</i>; the timings are
+       behind the technical switch. The settings are in <code>config/route_latency.json</code>.</p></div>
   <div class="f"><h3>Every module shares its WiFi<span class="tag t-new">new</span></h3>
     <p>A module in <code>ON</code> mode hosts its own hotspot <b>all the time</b>, including
        while it is connected to the show network. So a module parked out of router range can

@@ -110,8 +110,13 @@ import cam_relay                                           # noqa: E402
 import hub_auth                                            # noqa: E402
 import hub_pair                                            # noqa: E402
 import partner_launch                                      # noqa: E402
+import route_latency                                       # noqa: E402
 import shows as shows_mod                                  # noqa: E402
 import stream_audio                                        # noqa: E402
+
+# Which way to each board is fastest (A26-79). See route_latency.py.
+LAT = route_latency.Latency(asset("config", "route_latency.json"))
+_lat_tls = threading.local()   # when this thread's last command hit the wire
 
 HUB_WEB = asset("main_python", "web")
 # A23-1 comparison versions (brief: docs/a23_brief.md). Additive mounts
@@ -882,15 +887,30 @@ def _drain_to_line_boundary(ser):
     ser.reset_input_buffer()
 
 
-def usb_cmd(port, cmd, bus_id=0, wait=2.0):
+def usb_cmd(port, cmd, bus_id=0, wait=2.0, client=True):
     """One command line over USB; returns the reply line (RS485-framed when
     bus_id is set, so modules BEHIND this port are controllable too).
 
     Safe to call from several clients at once (module website + Nong Studio +
     probe): the per-port lock makes each command atomic on the wire, so the
-    replies can never interleave."""
+    replies can never interleave. Every answer is timed for route_latency."""
+    dev = ("usb:%s:%s" % (port, bus_id)) if bus_id else ("usb:" + port)
+    _lat_tls.sent = None
     try:
-        return _usb_cmd_once(port, cmd, bus_id, wait)
+        reply = _usb_cmd_raw(port, cmd, bus_id, wait, client)
+    except Exception:
+        if not cmd.startswith("REACH "):
+            LAT.fail(dev)
+        raise
+    sent = _lat_tls.sent        # per thread: another caller cannot overwrite it
+    if sent and not cmd.startswith("REACH "):   # a forwarded hop is not this route
+        LAT.record(dev, (time.perf_counter() - sent) * 1000.0, len(reply or ""))
+    return reply
+
+
+def _usb_cmd_raw(port, cmd, bus_id=0, wait=2.0, client=True):
+    try:
+        return _usb_cmd_once(port, cmd, bus_id, wait, client)
     except TimeoutError:
         raise                  # the module just did not answer — handle is fine
     except OSError:
@@ -903,7 +923,7 @@ def usb_cmd(port, cmd, bus_id=0, wait=2.0):
         # is all that replugging the cable actually needs.
         usb_close(port)
         try:
-            return _usb_cmd_once(port, cmd, bus_id, wait)
+            return _usb_cmd_once(port, cmd, bus_id, wait, client)
         except Exception:
             _usb_ident.pop(port, None)   # cached identity is no longer trusted
             raise
@@ -916,19 +936,26 @@ def usb_cmd(port, cmd, bus_id=0, wait=2.0):
 _IDENTITY_CHANGING = ("GROUP", "SET NAME", "SET ID", "SET TYPE", "SET WIFI")
 
 
-def _usb_cmd_once(port, cmd, bus_id=0, wait=2.0):
-    _usb_touch[port] = time.time()   # a client is working on this cable
+def _usb_cmd_once(port, cmd, bus_id=0, wait=2.0, client=True):
+    # client=False is the latency probe: it must not keep the port looking
+    # busy, or it would hold open a cable an outside tool is waiting for.
+    if client:
+        _usb_touch[port] = time.time()   # a client is working on this cable
     up = cmd.strip().upper()
     if any(up.startswith(k) for k in _IDENTITY_CHANGING):
         _usb_ident.pop(port, None)   # re-probe rather than repeat a stale answer
     ent = _usb_get(port)
     with ent["lock"]:
-        ent["last"] = time.time()
-        _usb_touch[port] = time.time()
+        if client:
+            ent["last"] = time.time()
+            _usb_touch[port] = time.time()
         ser = ent["ser"]
         _drain_to_line_boundary(ser)
         line = ("#%d %s" % (bus_id, cmd)) if bus_id else cmd
         ser.write((line + "\n").encode())
+        # the wire time starts here: opening the port and waiting for the
+        # lock are not the route's latency (route_latency.py)
+        _lat_tls.sent = time.perf_counter()
         want = ("@%d " % bus_id) if bus_id else None
         buf, end = b"", time.time() + wait
         # The firmware writes every reply as "\n<reply>\n" in ONE call, so a
@@ -1098,6 +1125,8 @@ def split_hub_dev(dev):
     the single owner of its own cables, which is exactly what makes forwarding
     safe rather than a second program fighting for the same serial handle.
     """
+    if dev.startswith("auto:"):
+        dev = resolve_auto(dev)       # the fastest local route (A26-79)
     if not dev.startswith("hub:"):
         return None, dev
     rest = dev[4:]
@@ -1241,9 +1270,18 @@ def dev_cmd(dev, c, wait=None):
         # — for exactly the same journey: over the link, through the module,
         # onto its hotspot, and back. Found by a model review 2026-08-20 and
         # confirmed by reading both branches.
-        return Handler.robot_get(
-            addr, "/api/cmd?c=" + urllib.parse.quote(_via(c, peer)),
-            timeout=wait or (PEER_WAIT if peer else None)).decode(errors="replace")
+        t0 = time.perf_counter()
+        try:
+            out = Handler.robot_get(
+                addr, "/api/cmd?c=" + urllib.parse.quote(_via(c, peer)),
+                timeout=wait or (PEER_WAIT if peer else None)).decode(errors="replace")
+        except Exception:
+            if not peer:
+                LAT.fail("wifi:" + addr)
+            raise
+        if not peer:     # a forwarded command times two hops, not this route
+            LAT.record("wifi:" + addr, (time.perf_counter() - t0) * 1000.0, len(out))
+        return out
     return usb_cmd(addr, _via(c, peer), bus,
                    wait=wait or (PEER_WAIT if peer else 2.0))
 
@@ -1263,7 +1301,7 @@ def pinout_for(dev):
     kind = ""
     for m in modules_here():
         for r in m.get("routes", []):
-            if r.get("dev") == dev:
+            if r.get("dev") == dev or dev == "auto:" + (m.get("key") or ""):
                 kind = (m.get("type") or "").lower()
                 break
     if kind and kind != "cam":
@@ -2070,6 +2108,96 @@ def board_key(mod):
     return ("addr", mod.get("dev") or mod.get("ip") or repr(mod))
 
 
+_route_table = {}   # board key -> its live local devs, fallback order (A26-79)
+
+
+def _live_devs(m):
+    """Routes worth choosing between: live, and WiFi only if the radio is on.
+
+    Fallback order, used until something is measured: WiFi first, then the
+    cable - the order the hub page used before latency was measured (A26-7).
+    """
+    rs = [r for r in m.get("routes") or [] if not r.get("stale")]
+    radio_off = (m.get("wifi_mode") or "") == "off"
+    wifi = [r["dev"] for r in rs if r.get("kind") == "wifi" and not radio_off]
+    cable = [r["dev"] for r in rs if r.get("kind") in ("usb", "rs485")]
+    return wifi + cable
+
+
+def _pick_route(m):
+    """Stamp each route with its measured ms and the board with `best`."""
+    key = m.get("key") or ""
+    for r in m.get("routes") or []:
+        if r.get("kind") in ("usb", "rs485", "wifi"):
+            LAT.bind(r["dev"], key)
+            ms = LAT.ms(r["dev"])
+            if ms is not None:
+                r["ms"] = round(ms, 1)
+    live = _live_devs(m)
+    _route_table[key] = live
+    m["best"] = LAT.choose(key, live) if len(live) > 1 else (live[0] if live else None)
+
+
+def resolve_auto(dev):
+    """`auto:<board key>` -> the fastest live route to that board, right now.
+
+    Resolved on EVERY call, so a page opened on auto: follows the board from
+    cable to WiFi and back without being reopened.
+    """
+    key = dev[5:]
+    live = _route_table.get(key)
+    if live is None:
+        for m in modules_here():
+            if m.get("key") == key:
+                live = _route_table.get(key)
+                break
+    if not live:
+        raise ValueError("that board is not reachable any way right now")
+    return LAT.choose(key, live) if len(live) > 1 else live[0]
+
+
+def route_probe_once():
+    """PING the routes nobody is timing, for boards reached more than one way.
+
+    Gentle on purpose (Codex review 2026-09-21): never while a show plays,
+    never a port that is closed (opening one can reset the board), never
+    counted as a client using the cable. A route in use is timed by its own
+    traffic; this only keeps the OTHER routes known.
+    """
+    if show.running():
+        return 0
+    n = 0
+    fresh_for = LAT.cfg["sampleTtlSec"] / 2.0
+    for key, live in list(_route_table.items()):
+        if len(live) < 2:
+            continue
+        for dev in live:
+            age = LAT.age(dev)
+            if age is not None and age < fresh_for:
+                continue
+            try:
+                kind, addr, bus, _peer = parse_dev(dev)
+                if kind == "usb":
+                    if addr not in _usb_open or addr in _flash_ports:
+                        continue
+                    usb_cmd(addr, "PING", bus, wait=1.0, client=False)
+                else:
+                    dev_cmd(dev, "PING", wait=2.0)
+                n += 1
+            except Exception:                 # noqa: BLE001 - usb_cmd/dev_cmd
+                pass                          # already marked the route failed
+    return n
+
+
+def route_probe_loop():
+    while True:
+        time.sleep(LAT.cfg["probeEverySec"])
+        try:
+            route_probe_once()
+        except Exception as e:                # noqa: BLE001
+            print("[hub] route probe:", e)
+
+
 def modules_here(force=False):
     """Every module this PC can reach, once each, with every way to reach it.
 
@@ -2141,6 +2269,7 @@ def modules_here(force=False):
             seen["stale"] = True
             ago = [r.get("lastSeen") for r in rs if r.get("lastSeen") is not None]
             seen["lastSeen"] = min(ago) if ago else None
+        _pick_route(seen)
 
     # A stable order, so the list does not shuffle under someone's hand between
     # two scans: named boards first, by name, then by whatever identity there is.
@@ -5413,6 +5542,7 @@ def main():
     # warm the module scan so the hub page fills instantly
     threading.Thread(target=scan_modules, daemon=True).start()
     threading.Thread(target=_usb_reaper, daemon=True).start()  # idle port release
+    threading.Thread(target=route_probe_loop, daemon=True).start()  # A26-79
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

@@ -1762,7 +1762,14 @@ function modRow(m,extra,port,busId,peer,far,opts){
   // cable that was working sat unused (A26-7, user: *hub can see it via rs485
   // but cannot control the robot*).
   const byWifi = m.wifiSeen && m.ip;
+  // More than one way in on THIS PC: let the hub pick the fastest on every
+  // call (auto:), so the page follows the board if the best route changes.
+  // Studio parses its dev itself, so it is given the current best, not auto:.
+  const local = (m.routes||[]).filter(function(r){
+    return !r.stale && (r.kind==='usb'||r.kind==='rs485'||r.kind==='wifi'); });
+  const auto = (!peer && m.key && m.best && local.length > 1) ? ('auto:'+m.key) : '';
   const dev=peer?('usb:'+port+'@'+peer)
+    :auto?auto
     :byWifi?('wifi:'+m.ip)
     :(port?('usb:'+port+(busId?(':'+busId):''))
     :((m.wifi_mode==='sta'&&m.ip&&!m.radioOff)?('wifi:'+m.ip)
@@ -1770,7 +1777,7 @@ function modRow(m,extra,port,busId,peer,far,opts){
   if(dev){
     const open=document.createElement('button');open.className='primary';
     open.textContent='⚙ Open module';
-    open.title='the full module site (control + setup + pins) over '+(dev.indexOf('wifi')===0?'WiFi':'USB/RS485');
+    open.title='the full module site (control + setup + pins) over '+(auto?'the fastest way in (the hub keeps choosing)':dev.indexOf('wifi')===0?'WiFi':'USB/RS485');
     open.onclick=()=>{ rememberOpened(dev, m.name||('#'+m.id));
       window.open('/mod?dev='+encodeURIComponent(dev)+'&name='+encodeURIComponent(m.name||''),'_blank'); };
     d.appendChild(open);
@@ -1798,10 +1805,11 @@ function modRow(m,extra,port,busId,peer,far,opts){
   // hub's shared port proxy, so Studio and "⚙ Open module" can BOTH be open
   // on that one cable — no "serial port already in use".
   if(m.type==='nong'&&dev){
+    const sdev = auto ? m.best : dev;
     const st=document.createElement('button');st.className='primary';
     st.textContent='Studio + monitor';
-    st.title='pose editor + live 3D over '+(dev.indexOf('wifi')===0?'WiFi':'this USB cable (shared — the module site can stay open too)');
-    st.onclick=()=>window.open('/studio/?dev='+encodeURIComponent(dev)+'&monitor=1','_blank');
+    st.title='pose editor + live 3D over '+(sdev.indexOf('wifi')===0?'WiFi':'this USB cable (shared — the module site can stay open too)');
+    st.onclick=()=>window.open('/studio/?dev='+encodeURIComponent(sdev)+'&monitor=1','_blank');
     d.appendChild(st);
   }
   // Update over WiFi. The board has two app slots, so the firmware being
@@ -1840,8 +1848,12 @@ function modRow(m,extra,port,busId,peer,far,opts){
   if(m.routes && m.routes.length && opts.via !== false){
     const via=document.createElement('div');
     via.className='via';
+    // which way is fastest is measured by the hub (A26-79): the one in use
+    // says so in plain words, the milliseconds sit behind the technical switch
     via.innerHTML='reached ' + m.routes.map(function(r){
-      return viaHtml(r, window.MODS_HOST || ''); }).join('&nbsp; · &nbsp;');
+      const ms = r.ms != null ? '<span class="tech"> · ' + esc(r.ms) + ' ms</span>' : '';
+      const used = (m.best && r.dev === m.best && m.routes.length > 1) ? ' <b>(fastest, in use)</b>' : '';
+      return viaHtml(r, window.MODS_HOST || '') + ms + used; }).join('&nbsp; · &nbsp;');
     d.appendChild(via);
   }
   return d;

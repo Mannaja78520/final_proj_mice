@@ -1,0 +1,10 @@
+{
+  "_why": "How the hub picks the fastest way to a board reached more than one way (USB cable, RS485, WiFi). Read by main_python/route_latency.py. User 2026-09-21: use the less latency as possible.",
+  "probeEverySec": 10,
+  "sampleTtlSec": 30,
+  "smallReplyBytes": 200,
+  "smoothing": 0.3,
+  "switchMarginMs": 5,
+  "switchMarginPct": 20,
+  "switchAfterSamples": 3
+}
