@@ -386,7 +386,6 @@ or start a sequence in Nong Studio. Your modules appear here when they connect.<
          the commonest thing anybody does here, and it took a tab, a scroll and
          a click. Per browser, because it is a convenience for this person at
          this machine, not a fact about the rig. -->
-    <div class="row" id="lastOpened" hidden></div>
     <!-- THE MODULES THEMSELVES, not a count of them. Asked for 2026-08-21:
          *the home it look noting show ... show only connected each module and
          connect from what it hard to use*. It was one sentence ("4 modules — 2
@@ -838,41 +837,46 @@ function pinnedFirst(mods){
   return yes.concat(no);
 }
 
-// The last board opened, one click away. Kept per browser, because it is a
-// convenience for THIS person at THIS machine, not a fact about the rig.
-function rememberOpened(dev, name){
-  try{ localStorage.setItem('lastMod', JSON.stringify({dev:dev, name:name, at:Date.now()})); }
-  catch(e){}
+// When each board was last opened, ON ITS OWN ROW (A26-87, 2026-09-21). It was
+// one "↩ nong" line apart from the rows: with two boards called nong nobody
+// could tell which it meant, and it saved the ADDRESS - so after the robot
+// changed WiFi the shortcut opened a dead one. Now it is keyed by the board
+// (m.key = its chip) and the row's own Open button uses today's route.
+// Kept per browser: a convenience for THIS person at THIS machine.
+function openedTimes(){
+  try{ return JSON.parse(localStorage.getItem('openedAt') || '{}') || {}; }
+  catch(e){ return {}; }
 }
+function rememberOpened(dev, name, key){
+  try{
+    var all = openedTimes();
+    all[key || dev] = Date.now();
+    localStorage.setItem('openedAt', JSON.stringify(all));
+  }catch(e){}
+}
+// THE CLOCK AND THE DATE, not only "3 min ago" (asked 2026-08-22: *make it last
+// open time and date*); the relative form stays because it reads instantly.
+function openedText(m){
+  // by the board, or by any route to it (openers that do not know the key)
+  var all = openedTimes(), at = all[m.key] || 0;
+  (m.routes || []).forEach(function(r){ if ((all[r.dev] || 0) > at) at = all[r.dev]; });
+  if (!at) return '';
+  return 'last opened ' + stamp(at) + (agoText(at) ? ' (' + agoText(at) + ')' : '');
+}
+// The old single "last opened" entry, moved onto its board once, by the route
+// it saved or by its name, then forgotten.
 function paintLastOpened(){
-  var el = document.getElementById('lastOpened');
-  if (!el) return;
   var raw = null;
   try{ raw = JSON.parse(localStorage.getItem('lastMod') || 'null'); }catch(e){}
-  if (!raw || !raw.dev){ el.hidden = true; return; }
-  el.hidden = false;
-  el.innerHTML = '';
-  // THE NAME IT HAS NOW, not the one it had when it was opened. A board can be
-  // renamed from its own website while this page is open, and remembering the
-  // old name here means the button offers a robot that no longer exists by
-  // that name. Matched on the ADDRESS, which a rename does not change.
+  if (!raw || !raw.at) return;
   var live = (window.MODS || []).filter(function(m){
-    return (m.routes || []).some(function(r){ return r.dev === raw.dev; }); })[0];
-  var name = (live && live.name) || raw.name || 'the last module';
-  var b = document.createElement('button');
-  b.textContent = '↩ ' + name;
-  b.title = 'Open ' + (name || raw.dev) + ' again';
-  b.onclick = function(){ window.open('/mod?dev=' + encodeURIComponent(raw.dev), '_blank'); };
-  var when = document.createElement('span');
-  when.className = 'mini';
-  // THE CLOCK AND THE DATE, not only "3 min ago". Asked for 2026-08-22: *the
-  // last open time stamp too make it last open time and date*. "2 days ago" is
-  // fine for something that happened this afternoon and useless for deciding
-  // whether that was before or after you changed the wiring. The relative form
-  // stays as well, because it is the one that reads instantly.
-  when.textContent = ' last opened ' + stamp(raw.at)
-                   + (agoText(raw.at) ? ' (' + agoText(raw.at) + ')' : '');
-  el.appendChild(b); el.appendChild(when);
+    return (m.routes || []).some(function(r){ return r.dev === raw.dev; }) ||
+           (raw.name && m.name === raw.name); })[0];
+  if (!live || !live.key) return;
+  var all = openedTimes();
+  if (!all[live.key]) all[live.key] = raw.at;
+  try{ localStorage.setItem('openedAt', JSON.stringify(all));
+       localStorage.removeItem('lastMod'); }catch(e){}
 }
 
 // One press stops the show clock and every board the hub can reach. The clock
@@ -1728,7 +1732,8 @@ function modRow(m,extra,port,busId,peer,far,opts){
     <span class="ip">#${esc(m.id!=null?m.id:'?')}${extra?' · '+esc(extra):''}<span class="tech">${
       m.ip?' · '+esc(m.ip):''}</span></span>${
       m.stale ? '<span class="state-stale">last answered '+
-                esc(m.lastSeen!=null?m.lastSeen+'s ago':'a while ago')+'</span>' : ''}`;
+                esc(m.lastSeen!=null?m.lastSeen+'s ago':'a while ago')+'</span>' : ''}${
+      openedText(m) ? '<span class="mini opened">'+esc(openedText(m))+'</span>' : ''}`;
   // The pin, first in the row so the pinned ones are scannable down one edge.
   // It is a toggle and it says which state it is in, in WORDS as well as the
   // symbol - a filled star against an outlined one is not a difference
@@ -1782,7 +1787,7 @@ function modRow(m,extra,port,busId,peer,far,opts){
     const open=document.createElement('button');open.className='primary';
     open.textContent='⚙ Open module';
     open.title='the full module site (control + setup + pins) over '+(auto?'the fastest way in (the hub keeps choosing)':dev.indexOf('wifi')===0?'WiFi':'USB/RS485');
-    open.onclick=()=>{ rememberOpened(dev, m.name||('#'+m.id));
+    open.onclick=()=>{ rememberOpened(dev, m.name||('#'+m.id), m.key);
       window.open('/mod?dev='+encodeURIComponent(dev)+'&name='+encodeURIComponent(m.name||''),'_blank'); };
     d.appendChild(open);
   }

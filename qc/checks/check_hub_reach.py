@@ -136,7 +136,14 @@ def run(t):
                       .strip().replace(chr(10), " ")[-70:])
     t.eq(forgot, [],
          "every way of opening a module records it")
-    t.contains(page, 'id="lastOpened"', "and Home has somewhere to show it")
-    ph = page[page.find("function paintHome(){"):]
-    t.contains(ph[:200], "paintLastOpened",
-               "which is painted when Home is drawn")
+    # ON EACH ROW, keyed by the board (A26-87): one separate "↩ nong" line
+    # could not say which of two nongs it meant, and it kept an address that
+    # went dead when the robot changed WiFi.
+    t.contains(page, "openedText(m)",
+               "and each module's own row says when it was last opened")
+    t.ok("all[key || dev] = Date.now()" in page and "m.key);" in page,
+         "the time is saved by the board, not by its address",
+         "an address changes with the WiFi; the board's key does not")
+    t.ok('id="lastOpened"' not in page,
+         "the separate last-opened line is gone",
+         "two places saying different things about the same board")
