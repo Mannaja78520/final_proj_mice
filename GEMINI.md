@@ -1,5 +1,13 @@
 # Mice shared session instructions
 
+## Find the subsystem first (A26-76, user 2026-09-21)
+
+Before reading code: `python tools/systems.py which <file>` (or open
+`docs/systems/README.md`) and read that ONE header in `docs/systems/`. Stay in
+that system's files; its header lists the checks to run. A new file or system:
+add it to `docs/systems.json`, then `python tools/systems.py build`.
+`check_systems` fails on a file nobody owns or a stale header.
+
 Read AGENTS.md, CLAUDE.md, docs/COORDINATION.md and the latest relevant
 docs/BRIDGE.md entries before editing. Use the named robot/system plan task.
 Follow shared claims, mutex, staging, QC and provider-limit takeover rules.

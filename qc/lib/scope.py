@@ -99,4 +99,10 @@ def decide(code, paths, checks_dir=None):
             picked.append(f.stem)
     if not picked:
         return ("quick", "no check names %s" % ", ".join(sorted(paths)[:3]))
+    # checks every scoped gate runs whatever changed: the system map must not
+    # drift just because the change did not name it (Codex review 2026-09-21)
+    for stem in r.get("alwaysRun") or []:
+        if stem not in picked and (Path(checks_dir or Path(code) / "qc" / "checks")
+                                   / (stem + ".py")).is_file():
+            picked.append(stem)
     return ("checks", picked, "%s changed" % systems[0])

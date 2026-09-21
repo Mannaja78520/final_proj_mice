@@ -217,6 +217,20 @@ SOLO = {
     # to report. Failed 3 full gates in a row on 2026-09-17, green alone each
     # time (40 s) - the same starved-margin signature as above.
     "check_flash_remote",
+    # It lists every file in the tree to prove each has one subsystem, and
+    # other checks create and delete files while they run: the first full
+    # gate 2026-09-21 saw studio's header "out of date" for a file that
+    # existed only for a moment. Alone, it sees the tree as it really is.
+    "check_systems",
+    # A browser drives Studio's crash preview on timers. Red in two full gates
+    # in a row 2026-09-21 ("the crash-gate driver reported"), green alone in
+    # 8 s each time - the starved-margin signature again.
+    "check_crash_gate",
+    # Both drive the hub page through a flash on browser timers. Between them
+    # red in five full gates on 2026-09-21 ("the hub page reported back") and
+    # green alone and together (65 s) every time.
+    "check_flash_type",
+    "check_flash_confirm",
 }
 
 

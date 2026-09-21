@@ -1,5 +1,13 @@
 # Mice — read this before doing anything
 
+## Find the subsystem first (A26-76, user 2026-09-21)
+
+Before reading code: `python tools/systems.py which <file>` (or open
+`docs/systems/README.md`) and read that ONE header in `docs/systems/`. Stay in
+that system's files; its header lists the checks to run. A new file or system:
+add it to `docs/systems.json`, then `python tools/systems.py build`.
+`check_systems` fails on a file nobody owns or a stale header.
+
 ## There is an active plan. Follow it.
 
 **`docs/PLAN.html`** is the working document for the current refactor. Open it
@@ -407,7 +415,8 @@ current directory, and that has silently drifted three times in this project:
 once it edited the REAL tree instead of staging, and twice a promote simply did
 not run because the shell was still inside `firmware/`.
 
-Rebuild the exe when `main.py` changed:
+Rebuild the exe when anything in `main_python/` or `config/` changed (the hub
+is being split into several files, A26-76):
 `python -m PyInstaller --clean MiceHub.spec` — **the spec, never a bare
 `--onefile` command.** The old line here named the script directly, which does
 two damaging things: it builds an exe with no web pages and no registries (it
@@ -452,6 +461,10 @@ those folders (COMMANDS.md must stay in sync, patch after every web change,
 document every feature in `help.html`). They are not replaced by this file.
 
 ## Session limits: current routing rule
+
+**No Gemini Pro (user 2026-09-17):** every Gemini review or design question
+uses `gemini-3.8-flash-high` — Pro *not better enough and consume my token a
+lot*. This overrides every "Pro is the default" line above.
 
 Follow docs/COORDINATION.md, including its provider-limit and resume procedure.
 User 2026-09-14: Codex helps first; Gemini/other providers are fallback when

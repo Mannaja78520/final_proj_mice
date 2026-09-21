@@ -19,6 +19,10 @@
   // More systems than this in one change and the full suite runs.
   "maxSystems": 1,
 
+  // Run in every scoped gate as well: every file has one subsystem and every
+  // header in docs/systems/ is current (A26-76). A --quick run includes it.
+  "alwaysRun": ["check_systems"],
+
   // Changes here are never a system of their own and select nothing: the
   // plan, logs and notes. They cannot break a check.
   "ignore": ["docs/PLAN.html", "docs/plan_state.js", "docs/BRIDGE.md",
