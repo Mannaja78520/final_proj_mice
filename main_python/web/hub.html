@@ -1472,7 +1472,11 @@ function agoText(ms){
   var s = Math.round((Date.now()-ms)/1000);
   if(s < 5) return 'just now';
   if(s < 90) return s + 's ago';
-  return Math.round(s/60) + ' min ago';
+  // "4470 min ago" was on the Home card 2026-09-21: nobody reads that as 3 days
+  var m = Math.round(s/60), h = Math.round(s/3600), d = Math.round(s/86400);
+  if(m < 90) return m + ' min ago';
+  if(h < 36) return h + ' hours ago';
+  return d + ' days ago';
 }
 function modsMeta(){
   var el = document.getElementById('modsmeta');
