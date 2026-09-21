@@ -173,6 +173,28 @@ def run(t):
     t.ok(all(not os.path.exists(p) for p in fake.paths),
          "the temp audio files are cleaned up")
 
+    # ---- 4b: the unsure-detection fallback is DATA (A26-80) -------------
+    # An un-gated edit on 2026-09-18 hardcoded th, the language list and 0.75
+    # in listen() twice. Now it lives in stt.fallback: with it, an unsure
+    # detection (FakeInfo says "xx") gets a second pass in that language;
+    # without it, detection stays detection.
+    fb = json.loads(cfg_on.read_text(encoding="utf-8"))
+    fb["stt"]["fallback"] = {"language": "en", "when_not_in": ["th", "en"],
+                             "min_probability": 0.5}
+    cfg_fb = tmp / "voice_fb.json"
+    cfg_fb.write_text(json.dumps(fb, ensure_ascii=False), encoding="utf-8")
+    brain_fb = svc.Brain(cfg_fb, tmp / "qa.json")
+    fake_fb = FakeSTT()
+    brain_fb._stt = fake_fb
+    brain_fb.listen(b"x")
+    t.ok(len(fake_fb.kwargs) == 2 and fake_fb.kwargs[-1].get("language") == "en"
+         and fake_fb.kwargs[-1].get("initial_prompt") == "toilet robot",
+         "an unsure detection is retried in the store's fallback language",
+         repr([k.get("language") for k in fake_fb.kwargs]))
+    t.ok(len(fake.kwargs) == 2,
+         "with no fallback in the store there is no second pass",
+         "calls: %d" % len(fake.kwargs))
+
     fake2 = FakeSTT(texts=("", ""))
     brain._stt = fake2
     got, _err = brain.listen(b"x", hint="en")

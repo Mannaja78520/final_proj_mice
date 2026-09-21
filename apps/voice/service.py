@@ -636,6 +636,27 @@ class Brain:
         finally:
             self._stt_loading = False
 
+    def _fallback_transcribe(self, path, segs, info, resolved, scfg):
+        """A second pass in a set language when detection is unsure (A26-80).
+
+        DATA, not code: stt.fallback in config/voice.json - language,
+        when_not_in, min_probability. No fallback key, no second pass.
+        """
+        fb = scfg.get("fallback")
+        if resolved or not fb or not fb.get("language"):
+            return segs, info
+        lang = fb["language"]
+        unsure = (info.language not in (fb.get("when_not_in") or []) or
+                  getattr(info, "language_probability", 1.0) < fb.get("min_probability", 0.0))
+        if not unsure:
+            return segs, info
+        bias = ((scfg.get("languages") or {}).get(lang) or {}).get("bias")
+        return self._stt.transcribe(
+            path, language=lang, temperature=0, beam_size=1,
+            condition_on_previous_text=False, vad_filter=True,
+            vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
+            repetition_penalty=1.2, no_repeat_ngram_size=3, initial_prompt=bias)
+
     def listen(self, audio, hint=""):
         """Speech bytes -> ({text, language}, None) or (None, why-not).
 
@@ -676,6 +697,9 @@ class Brain:
                     repetition_penalty=1.2,
                     no_repeat_ngram_size=3,
                     initial_prompt=bias)
+
+                segments, info = self._fallback_transcribe(path, segments, info, resolved, scfg)
+
                 valid = []
                 for s in segments:
                     if getattr(s, "no_speech_prob", 0) > 0.6:
@@ -701,6 +725,7 @@ class Brain:
                         repetition_penalty=1.2,
                         no_repeat_ngram_size=3,
                         initial_prompt=bias)
+                    segments, info = self._fallback_transcribe(path, segments, info, resolved, scfg)
                     valid = []
                     for s in segments:
                         if getattr(s, "no_speech_prob", 0) > 0.6:

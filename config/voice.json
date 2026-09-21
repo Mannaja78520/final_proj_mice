@@ -1,99 +1,104 @@
 {
-  "service": "http://127.0.0.1:8767",
-  "faqThreshold": 0.75,
-  "faqAskAgain": 0,
-  "scenario": "Mall greeter",
-  "googleApiKey": "",
-  "stt": {
-    "enabled": true,
-    "model": "small",
-    "language": "auto",
-    "languages": {
-      "th": {
-        "bias": "หุ่นยนต์ น้อง ไมซ์ สวัสดี"
-      },
-      "en": {
-        "bias": "Mice robot hello"
-      },
-      "ja": {
-        "bias": "マイス ロボット こんにちは"
-      },
-      "zh": {
-        "bias": "机器人 你好"
-      }
-    }
+ "service": "http://127.0.0.1:8767",
+ "faqThreshold": 0.75,
+ "faqAskAgain": 0,
+ "scenario": "Mall greeter",
+ "googleApiKey": "",
+ "stt": {
+  "enabled": true,
+  "model": "small",
+  "language": "auto",
+  "languages": {
+   "th": {
+    "bias": "หุ่นยนต์ น้อง ไมซ์ สวัสดี"
+   },
+   "en": {
+    "bias": "Mice robot hello"
+   },
+   "ja": {
+    "bias": "マイス ロボット こんにちは"
+   },
+   "zh": {
+    "bias": "机器人 你好"
+   }
   },
-  "llm": {
-    "enabled": true,
-    "provider": "local",
-    "model": "Qwen/Qwen2.5-0.5B-Instruct",
-    "maxTokens": 32
+  "fallback": {
+   "language": "th",
+   "when_not_in": ["th", "en", "ja", "zh"],
+   "min_probability": 0.75
+  }
+ },
+ "llm": {
+  "enabled": true,
+  "provider": "local",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "maxTokens": 32
+ },
+ "answer": {
+  "politeParticle": "ครับ",
+  "politeParticles": [
+   "ครับ",
+   "คร้าบ",
+   "ค่ะ",
+   "คะ",
+   "ฮะ",
+   "จ้า",
+   "จ้ะ",
+   "จ๊ะ"
+  ],
+  "politePronoun": "ผม",
+  "politePronouns": [
+   "ผม",
+   "ฉัน",
+   "ดิฉัน",
+   "กระผม",
+   "ข้าพเจ้า"
+  ],
+  "maxTokensByLang": {
+   "th": 96,
+   "en": 48,
+   "ja": 64,
+   "zh": 64
   },
-  "answer": {
-    "politeParticle": "ครับ",
-    "politeParticles": [
-      "ครับ",
-      "คร้าบ",
-      "ค่ะ",
-      "คะ",
-      "ฮะ",
-      "จ้า",
-      "จ้ะ",
-      "จ๊ะ"
-    ],
-    "politePronoun": "ผม",
-    "politePronouns": [
-      "ผม",
-      "ฉัน",
-      "ดิฉัน",
-      "กระผม",
-      "ข้าพเจ้า"
-    ],
-    "maxTokensByLang": {
-      "th": 96,
-      "en": 48,
-      "ja": 64,
-      "zh": 64
-    },
-    "cannotAnswer": {
-      "th": "ขออภัยครับ ผมยังไม่เข้าใจคำถามนี้ ลองถามใหม่อีกครั้ง หรือสอบถามเจ้าหน้าที่ได้ครับ",
-      "en": "Sorry, I did not understand that. Please ask me again, or ask a member of staff.",
-      "ja": "申し訳ありません、聞き取れませんでした。もう一度お願いします。",
-      "zh": "抱歉，我没有听懂，请再问一次，或询问工作人员。"
-    },
-    "onlyThisLanguage": {
-      "th": "ตอบเป็นภาษาไทยเท่านั้น 1 ประโยคสั้นๆ ลงท้ายด้วยครับ",
-      "en": "Answer in English only, one short sentence.",
-      "ja": "日本語のみで、短い一文で答えてください。",
-      "zh": "只用中文回答，一句简短的话。"
-    }
+  "cannotAnswer": {
+   "th": "ขออภัยครับ ผมยังไม่เข้าใจคำถามนี้ ลองถามใหม่อีกครั้ง หรือสอบถามเจ้าหน้าที่ได้ครับ",
+   "en": "Sorry, I did not understand that. Please ask me again, or ask a member of staff.",
+   "ja": "申し訳ありません、聞き取れませんでした。もう一度お願いします。",
+   "zh": "抱歉，我没有听懂，请再问一次，或询问工作人员。"
   },
-  "tts": {
-    "enabled": true,
-    "language": "th",
-    "rate": "+0%",
-    "pitch": "+0Hz",
-    "voices": {
-      "th": "th-TH-PremwadeeNeural",
-      "en": "en-US-JennyNeural",
-      "ja": "ja-JP-NanamiNeural",
-      "zh": "zh-CN-XiaoxiaoNeural"
-    },
-    "oneVoice": "",
-    "mixedVoice": ""
+  "onlyThisLanguage": {
+   "th": "ตอบเป็นภาษาไทยเท่านั้น 1 ประโยคสั้นๆ ลงท้ายด้วยครับ",
+   "en": "Answer in English only, one short sentence.",
+   "ja": "日本語のみで、短い一文で答えてください。",
+   "zh": "只用中文回答，一句简短的话。"
+  }
+ },
+ "tts": {
+  "enabled": true,
+  "language": "th",
+  "rate": "+0%",
+  "pitch": "+0Hz",
+  "voices": {
+   "th": "th-TH-PremwadeeNeural",
+   "en": "en-US-JennyNeural",
+   "ja": "ja-JP-NanamiNeural",
+   "zh": "zh-CN-XiaoxiaoNeural"
   },
-  "face": {
-    "autoSeconds": 5,
-    "cameraLabel": "",
-    "rememberSeconds": 120
-  },
-  "scenarios": [
-    {
-      "name": "Mall greeter",
-      "prompt": "พนักงานต้อนรับในศูนย์การค้า สุภาพและยิ้มแย้ม",
-      "voice": "",
-      "rate": "",
-      "pitch": ""
-    }
-  ]
+  "oneVoice": "",
+  "mixedVoice": ""
+ },
+ "face": {
+  "autoSeconds": 5,
+  "cameraLabel": "",
+  "rememberSeconds": 15
+ },
+ "scenarios": [
+  {
+   "name": "Mall greeter",
+   "prompt": "พนักงานต้อนรับในศูนย์การค้า สุภาพและยิ้มแย้ม",
+   "voice": "",
+   "rate": "",
+   "pitch": ""
+  }
+ ]
 }
