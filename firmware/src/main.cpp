@@ -76,6 +76,10 @@ void setup() {
   pinMode(hw.pins.rs485De, OUTPUT);
   digitalWrite(hw.pins.rs485De, LOW);
 
+  // A TX ring buffer, so a reply is copied and loop() moves on. Without it one
+  // 1.2 KB INFO at 115200 held the servo loop for 108 ms (measured 2026-09-21,
+  // PERF? slow_part=usb) - and the hub polls INFO over the cable. Before begin().
+  Serial.setTxBufferSize(4096);
   Serial.begin(115200);
   delay(100);
   // Close whatever the ROM bootloader left half-printed: after a reset it

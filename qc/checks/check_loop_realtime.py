@@ -49,6 +49,14 @@ def run(t):
         i = b.find(call)
         t.ok(0 <= i < first_lock, "buildStatus reads %s before the lock" % call)
 
+    # ---- a USB reply does not hold the loop (A26-86) ----------------------
+    # One INFO over USB stalled loop() 108 ms on a real board: Serial had no
+    # TX buffer. The buffer must be set BEFORE Serial.begin() or it is ignored.
+    main = (fw / "src" / "main.cpp").read_text(encoding="utf-8")
+    t.ok(re.search(r"Serial\.setTxBufferSize\(\s*(\d{4,})\s*\);\s*Serial\.begin\(", main),
+         "USB serial has a TX buffer of at least 1 KB, set before begin()",
+         "without it every reply over the cable blocks the servo loop")
+
     # ---- the web server stays off loop()'s core ---------------------------
     t.ok(re.search(r"realtime_flags\s*=\s*-D CONFIG_ASYNC_TCP_RUNNING_CORE=0", ini),
          "the realtime flags pin the web server to core 0")
