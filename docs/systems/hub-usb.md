@@ -23,6 +23,7 @@ The hub's USB serial manager (one owner of every cable) and the port probe that 
 
 - [hub](hub.md)
 - [hub-flash](hub-flash.md)
+- [hub-modules](hub-modules.md)
 
 ## Checks that test it (22)
 

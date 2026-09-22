@@ -15,8 +15,9 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 | [hub-support](hub-support.md) | Self-update, the diagnostics text and problem reports. |
 | [hub-studio](hub-studio.md) | The hub's routes for Nong Studio's files, shared settings and the list of other hubs. |
 | [hub-auth](hub-auth.md) | Hub logins, sessions, which pages need a login, pairing two hubs. |
+| [hub-modules](hub-modules.md) | The one module list: every board once, with every route to it, and the fastest route chosen. |
 | [hub-net](hub-net.md) | Finding boards and other hubs on the network, mDNS names, QR codes, choosing the fastest route. |
-| [hub-media](hub-media.md) | Camera relay and audio streaming to boards. |
+| [hub-media](hub-media.md) | Camera relay, camera board pinouts, and audio streaming to boards. |
 | [hub-shows](hub-shows.md) | Saved shows: sequences played in series by name. |
 | [hub-web](hub-web.md) | The pages the hub serves: Home/Modules, help, login, and their patch snapshots. |
 | [shared-web](shared-web.md) | One stylesheet and theme set for every page (mice.css, themes). |

@@ -4,7 +4,7 @@ The hub program: one HTTP server (port 8642, plus 80 for the short name) that
 reaches every board by USB, RS485 or WiFi, flashes them and plays shows.
 `main_python/main.py` was split into `hub_*.py` files (A26-76, A26-93), each
 its own system with its own header: hub-usb, hub-flash, hub-show, hub-apps,
-hub-support, hub-studio. Change one of those and read only its header.
+hub-support (+ hub_update.py), hub-studio, hub-modules, hub-media (+ hub_cam.py). Change one of those and read only its header.
 
 ## Interface
 
@@ -75,6 +75,7 @@ hub-support, hub-studio. Change one of those and read only its header.
 - [hub-apps](hub-apps.md)
 - [hub-support](hub-support.md)
 - [hub-studio](hub-studio.md)
+- [hub-modules](hub-modules.md)
 
 ## Used by
 

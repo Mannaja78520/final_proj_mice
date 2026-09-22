@@ -31,6 +31,7 @@ route to a board reached more than one way.
 
 - [hub](hub.md)
 - [hub-usb](hub-usb.md)
+- [hub-modules](hub-modules.md)
 
 ## Checks that test it (3)
 
