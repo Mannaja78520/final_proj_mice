@@ -151,12 +151,19 @@
         <input type="number" id="maxDps" value="400" min="30" max="600" style="width:70px"
                onchange="speedChanged()"> °/s
       </div>
+      <div class="row"><label class="lbl" for="safeDpsInput">Peak speed limit</label>
+        <input type="number" id="safeDpsInput" value="60" min="5" max="1000" step="1"
+               style="width:70px" disabled> °/s
+        <button id="saveSafeDps" class="secondary" onclick="saveSafetySpeed()" disabled>Save to robot</button>
+      </div>
+      <p id="safeSpeedStat" class="mini" role="status">Connect to read the robot's active limit. A saved change needs a restart.</p>
       <div class="mini">time between keyframes = biggest joint change ÷ show speed.
         <b>Servo max</b> is the physical limit (MG90S ≈ 400 °/s): each keyframe
         has a <b>minimum time</b> = change ÷ max — you can always make a move
         slower, but never faster than the servos can really go, so the arm
-        always reaches the pose. The firmware enforces the same rule
-        (<code>max_dps</code>).</div>
+        always reaches the pose. The robot also enforces its peak speed limit.
+        Raising that limit makes moves faster and can cause harder impacts.
+        Do not raise it while a joint loses torque.</div>
     </div>
 
     <div class="card" data-stab="robot">

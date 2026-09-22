@@ -334,6 +334,50 @@ async function getStatus() { // full status JSON on whichever link is up
     return fetch("/api/robot/status?ip=" + encodeURIComponent(robotIp())).then(r => r.json());
   throw new Error("not connected");
 }
+async function saveSafetySpeed() {
+  const stat = $("safeSpeedStat");
+  const want = Number($("safeDpsInput").value);
+  if (!Number.isInteger(want) || want < 5 || want > boardSafeDpsMax) {
+    stat.textContent = `Enter a whole number from 5 to ${Math.floor(boardSafeDpsMax)} °/s.`;
+    notice(stat.textContent);
+    return;
+  }
+  try {
+    // The route or board may have changed since Connect. Check the live board
+    // again before saving a limit that will survive its next restart.
+    const s = await getStatus();
+    const m = s && s.module;
+    const speeds = m && m.max_dps;
+    const ceiling = Array.isArray(speeds) && speeds.length === NJ
+      ? Math.min(...speeds.map(Number)) : 0;
+    if (!s || s.type !== "nong" || !m || !(+m.safe_dps >= 5) || !(ceiling >= want))
+      throw new Error("This board cannot use that limit. Reconnect and check its settings.");
+    if (String(s.chip || s.id || "") !== boardSafeIdentity)
+      throw new Error("The connected board changed. Reconnect before saving.");
+    if (+m.safe_dps !== SAFE_DPS || ceiling !== boardSafeDpsMax) {
+      adoptBoardSafety(m);
+      throw new Error("Board settings changed. Review the active limit before saving.");
+    }
+    if (want === SAFE_DPS) {
+      stat.textContent = `Already active at ${SAFE_DPS} °/s. No board setting changed.`;
+      return;
+    }
+    const warning = `Save peak speed limit ${want} °/s to this board? ` +
+      `It takes effect only after you restart the board. ` +
+      (want > SAFE_DPS ? "Higher speed can cause harder impacts. " : "") +
+      (boardSafePeer ? `Linked board #${boardSafePeer} must be set to the same limit before synchronized playback. ` : "") +
+      "Check that every joint holds under load before running a show.";
+    if (!confirm(warning)) return;
+    const reply = await rawCmd(`CFG safe_dps ${want}`);
+    if (!/^OK safe_dps=/.test(reply)) throw new Error(reply || "board did not confirm the setting");
+    stat.textContent = `Saved ${want} °/s for next boot. Active limit is still ` +
+      `${SAFE_DPS} °/s. Restart the board, then reconnect Studio to confirm.` +
+      (boardSafePeer ? ` Set linked board #${boardSafePeer} to the same limit.` : "");
+  } catch (e) {
+    stat.textContent = "Safety speed not saved: " + (e.message || e);
+    notice(stat.textContent);
+  }
+}
 function linkBadge() { // shown in robotStat so you see every open channel
   const parts = [], bus = busId() ? "→RS485 #" + busId() : "";
   if (haveAuto()) parts.push("fastest route (hub) ✓");
@@ -412,8 +456,8 @@ async function connectRobot() {
       s = await getStatus();
     }
     checkLimitsMatch();                   // not awaited: connecting must not wait on it
-    const safe = s.module && +s.module.safe_dps;
-    if (safe > 0 && safe !== SAFE_DPS) { SAFE_DPS = safe; clampKeyTimes(); renderTimeline(); }
+    boardSafeIdentity = String(s.chip || s.id || "");
+    adoptBoardSafety(s.module);
     // If the module is playing a sequence on its OWN clock, say so here. It is
     // the moment the question "why is the robot moving by itself?" gets asked —
     // it happens after a hand-off, or when the board was left running from an
@@ -428,6 +472,10 @@ async function connectRobot() {
     refreshSd();
   } catch (e) {
     if (t === "usb" && !had) hubPort = "";   // never show a link that isn't there
+    boardSafeIdentity = "";
+    $("safeDpsInput").disabled = $("saveSafeDps").disabled = true;
+    $("safeSpeedStat").textContent = "Disconnected. Reconnect to read the active safety limit.";
+    notice($("safeSpeedStat").textContent);
     $("robotStat").textContent = "Could not reach the robot. Check it is powered "
       + "and on the same network or cable, then try again. " + (e.message || e);
     notice($("robotStat").textContent);

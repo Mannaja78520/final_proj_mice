@@ -14,6 +14,7 @@ and a project round-trip keeps its sequence chain (`seqNext`).
 It asserts on page state via marks and on what the hub itself reports
 (GET /api/play), not on what the UI says about itself.
 """
+import json
 import browser
 import fake_serial
 import qc as F
@@ -130,3 +131,85 @@ def run(t):
         ("chain-restored-true", "a project reloads with its sequence chain"),
     ):
         t.contains(marks, want, label)
+
+    _safety_speed(t, base)
+
+
+SAFETY_DRIVER = """
+function waitForSafety(){
+  if (typeof saveSafetySpeed !== "function" || !haveUsb() ||
+      document.getElementById("safeDpsInput").disabled)
+    return setTimeout(waitForSafety, 150);
+  testSafety().catch(qcFail);
+}
+async function testSafety(){
+  const input = document.getElementById("safeDpsInput");
+  const stat = document.getElementById("safeSpeedStat");
+  const p0 = Array(NJ).fill(90), p1 = Array(NJ).fill(120);
+  keys = [{pose:p0, t:80}, {pose:p1, t:0}, {pose:p0, t:7000}];
+  keys[1].t = autoTime(p0, p1, speedDps());
+  const oldTime = keys[1].t;
+  qcMark("active-" + SAFE_DPS + "-floor-" + oldTime);
+
+  input.value = "300";                     // board's slowest servo max is 200
+  await saveSafetySpeed();
+  qcMark("high-rejected-" + stat.textContent.includes("5 to 200"));
+  input.value = "120";
+  window.confirm = function(){ return false; };
+  await saveSafetySpeed();
+  qcMark("cancelled-" + (SAFE_DPS === 60));
+  window.confirm = function(){ return true; };
+  await saveSafetySpeed();
+  qcMark("saved-pending-" + (SAFE_DPS === 60 && keys[1].t === oldTime &&
+    stat.textContent.includes("Restart the board")));
+
+  // The next boot reports the new active limit. Auto times may shorten;
+  // hand-typed times must not be lost on this reconnect.
+  adoptBoardSafety({safe_dps:120, max_dps:Array(NJ).fill(200), link:true, peer:85});
+  qcMark("reboot-retimed-" + (SAFE_DPS === 120 && keys[1].t < oldTime &&
+    keys[2].t === 7000));
+  qcMark("done");
+}
+window.addEventListener("load", function(){ setTimeout(waitForSafety, 1200); });
+"""
+
+
+def _safety_speed(t, base):
+    # Give this fake the same INFO fields and CFG reply the real board has.
+    # The browser still sends through the hub; assert on fake_serial.wire.
+    fake_serial.reset()
+    board = fake_serial.NONG
+    old_info, old_line = board.info, board.line
+
+    def info():
+        s = json.loads(old_info())
+        s["module"].update(safe_dps=60, max_dps=[200] * 10, link=True, peer=85)
+        return json.dumps(s)
+
+    def line(cmd):
+        reply = old_line(cmd)
+        if cmd.startswith("CFG safe_dps "):
+            return "OK safe_dps=%s (reboot to apply)" % cmd.split()[-1]
+        return reply
+
+    board.info, board.line = info, line
+    try:
+        browser.page(SAFETY_DRIVER, query="%s/studio/_qcdriver.html?dev=usb%%3A%s"
+                     % (base, fake_serial.PORT), seconds=20)
+        marks = list(fake_serial.qc_marks)
+        sent = [c for _, c in fake_serial.wire if c.startswith("CFG safe_dps ")]
+        t.ok(not any(m.startswith("ERROR") for m in marks),
+             "safety control ran without throwing", marks)
+        for want, label in (
+            ("active-60-floor-786", "the connected board's 60 dps cap sets the floor"),
+            ("high-rejected-true", "values above the board's servo max are rejected"),
+            ("cancelled-true", "cancel leaves the active cap alone"),
+            ("saved-pending-true", "saving does not pretend the new cap is active"),
+            ("reboot-retimed-true", "reconnect shortens auto times but keeps hand-typed time"),
+        ):
+            t.contains(marks, want, label)
+        t.eq(sent, ["CFG safe_dps 120"],
+             "only the confirmed safety speed reaches the board")
+    finally:
+        board.info, board.line = old_info, old_line
+        browser.kill()

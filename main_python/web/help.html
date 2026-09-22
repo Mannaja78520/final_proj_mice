@@ -1391,7 +1391,13 @@
        the time follows, type a time and the override is dropped.</p>
     <p>Because each file sets its own speed at the start, a chain hands over cleanly — a
        fast sequence following a slow one runs at its own speed instead of inheriting the
-       previous one's.</p></div>
+       previous one's.</p>
+    <p><b>Peak speed limit</b> is a separate safety cap on the fastest instant of a
+       move. The robot may make a move longer than Show speed requests. Studio shows
+       the active limit after Connect. Save to robot stores a new limit for the next
+       restart; the current limit stays active until then. If boards are linked,
+       set the same limit on both before synchronized playback. Raising the limit
+       can cause harder impacts. Do not raise it while a joint loses torque.</p></div>
   <div class="f"><h3>Suspend a keyframe instead of deleting it<span class="tag t-new">new</span></h3>
     <p>The ● button on a keyframe chip suspends it: it stays in the timeline to edit, but is
        skipped when playing, exporting and uploading — so you can try the sequence without

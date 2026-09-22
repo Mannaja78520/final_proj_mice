@@ -51,6 +51,44 @@ function speedChanged() {
   recalcTimes();
   renderTimeline();
 }
+// INFO is the active board value. CFG only saves the NEXT boot's value, so do
+// not change SAFE_DPS when the operator presses Save.
+function adoptBoardSafety(module) {
+  const safe = Number(module && module.safe_dps);
+  const speeds = module && module.max_dps;
+  const max = Array.isArray(speeds) && speeds.length === NJ
+    ? Math.min(...speeds.map(Number)) : 0;
+  const input = $("safeDpsInput"), button = $("saveSafeDps");
+  if (!(safe >= 5) || !(max >= 5) || !Number.isFinite(max)) {
+    boardSafeDpsMax = 0;
+    boardSafePeer = 0;
+    input.disabled = button.disabled = true;
+    $("safeSpeedStat").textContent = "This board does not report its safety speed. No setting was changed.";
+    return;
+  }
+  // Only automatically timed moves shorten. A hand-typed time is the user's
+  // choice and must not be silently replaced after reconnecting to a board.
+  const wasAuto = keys.map((k, i) => i > 0 && k.t ===
+    autoTime(keys[i - 1].pose, k.pose, keyDps(i)));
+  const changed = safe !== SAFE_DPS;
+  SAFE_DPS = safe;
+  boardSafeDpsMax = max;
+  boardSafePeer = module.link ? Number(module.peer) || 0 : 0;
+  input.disabled = button.disabled = false;
+  input.min = 5;
+  input.max = Math.floor(max);
+  input.value = String(safe);
+  if (changed) {
+    for (let i = 1; i < keys.length; i++)
+      if (wasAuto[i]) keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
+    clampKeyTimes();
+    renderTimeline();
+  }
+  const flat = Math.floor(safe * 2 / Math.PI);
+  $("safeSpeedStat").textContent = `Active peak limit: ${safe} °/s. ` +
+    `For safety-limited moves, Show speed above about ${flat} °/s will not shorten them.` +
+    (boardSafePeer ? ` Linked board #${boardSafePeer} needs the same limit.` : "");
+}
 function recalcTimes() {   // keeps each keyframe's own speed override
   bumpKeys();
   for (let i = 1; i < keys.length; i++)

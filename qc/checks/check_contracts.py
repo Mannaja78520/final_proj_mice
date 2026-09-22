@@ -110,7 +110,7 @@ def run(t):
          "checking nothing at all")
     known = set(re.findall(r'cmd\s*==\s*"([A-Z][A-Z0-9?]*)"', nong_c))
     # commands handled by the shared router, not the nong module
-    router = {"INFO", "PING", "FILES", "PIN", "AUTH", "USER", "SET", "REBOOT",
+    router = {"INFO", "PING", "FILES", "PIN", "AUTH", "USER", "SET", "CFG", "REBOOT",
               "FBEGIN", "FDATA", "FEND", "FREAD", "FDEL", "MOVE", "PLAY"}
     for c in sorted(sends):
         t.ok(c in known or c in router,
