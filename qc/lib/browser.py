@@ -32,7 +32,20 @@ EDGE = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 # this RUN's process id, so two QC runs (two staging trees, verified at the
 # same time) cannot kill each other's browsers. kill() matches on the whole
 # tag, so a second run is invisible to the first.
-TAG = "MICEQCBROWSER%d" % os.getpid()
+# IT ENDS IN "END" ON PURPOSE. kill() matches the tag with `-like '*TAG*'`, and
+# without a terminator the tag of pid 123 is a substring of the tag of pid 1234:
+# one worker's kill() then killed ANOTHER worker's Edge mid-page. The page never
+# said "done", the check waited out its whole grace (~200 s) and failed with
+# nothing reported - the flake that hit a different browser check every full
+# gate (A26-94, found by Codex 2026-09-23). A pool spawns a fresh process per
+# check, so a gate holds hundreds of pids and a prefix pair is near certain.
+def tag_for(pid):
+    """This run's mark on its own browsers. One per process, and never a
+    substring of another process's mark."""
+    return "MICEQCBROWSER%dEND" % pid
+
+
+TAG = tag_for(os.getpid())
 # Browser profiles live in the system temp dir, NOT the repo: Edge keeps file
 # locks for a while after it is killed, so a profile written into qc/ survives
 # the cleanup and litters the project. Scratch belongs outside the source tree.
@@ -119,15 +132,26 @@ def _quiet_start():
 
 
 def _running():
-    """How many of OUR browsers are still alive (never the user's own)."""
-    r = subprocess.run(["powershell", "-NoProfile", "-Command",
-                        "@(Get-CimInstance Win32_Process -Filter \"Name='msedge.exe'\" | "
-                        "Where-Object { $_.CommandLine -like '*%s*' }).Count" % TAG],
-                       capture_output=True, text=True, timeout=60)
+    """How many of OUR browsers are still alive (never the user's own).
+
+    -1 means the question could not be answered. It used to answer 0 for that,
+    which reads as "all gone" and let the next page start into a machine still
+    full of browsers - a query that fails under load certifying the opposite of
+    what it saw (A26-94).
+    """
     try:
-        return int((r.stdout or "0").strip() or 0)
+        r = subprocess.run(["powershell", "-NoProfile", "-Command",
+                            "@(Get-CimInstance Win32_Process -Filter \"Name='msedge.exe'\" | "
+                            "Where-Object { $_.CommandLine -like '*%s*' }).Count" % TAG],
+                           capture_output=True, text=True, timeout=60)
+    except subprocess.SubprocessError:
+        return -1
+    if r.returncode != 0:
+        return -1
+    try:
+        return int((r.stdout or "").strip())
     except ValueError:
-        return 0
+        return -1
 
 
 def _wait_until_gone(timeout=20):
@@ -140,10 +164,16 @@ def _wait_until_gone(timeout=20):
     on its own.
     """
     end = time.time() + timeout
+    unknown = 0
     while time.time() < end:
-        if _running() == 0:
+        n = _running()
+        if n == 0:
             return True
+        if n < 0:
+            unknown += 1
         time.sleep(0.3)
+    print("QC SLOW: browsers still alive after %ds (%d unanswered queries)"
+          % (timeout, unknown), flush=True)
     return False
 
 

@@ -71,6 +71,36 @@ def run(t):
          "and a different port range",
          "both runs would start hubs at %s" % port)
 
+    # ---- and no tag is INSIDE another tag -----------------------------
+    # kill() matches with `-like '*TAG*'`. A bare pid made the tag of 123 a
+    # substring of the tag of 1234, so one worker's kill() took another
+    # worker's Edge down mid-page: the page never said "done", the check
+    # waited out its ~200 s grace and failed with nothing reported. That is
+    # the flake that hit a different browser check in every full gate on
+    # 2026-09-22 (A26-94). A pool makes a fresh process per check, so a gate
+    # holds hundreds of pids and a prefix pair is near certain.
+    for short, long in ((123, 1234), (5, 50), (2468, 24684)):
+        t.ok(browser.tag_for(short) not in browser.tag_for(long),
+             "the tag of pid %d is not inside the tag of pid %d" % (short, long),
+             "kill() would take that other worker's browser down: %r in %r"
+             % (browser.tag_for(short), browser.tag_for(long)))
+
+    # ---- an unanswered "are they gone?" is not a yes -------------------
+    # _running() answered 0 when the query failed, which reads as "all gone"
+    # and let the next page start into a machine still full of browsers.
+    import subprocess as _sp
+    real = _sp.run
+    try:
+        for code, out, why in ((1, "", "the query failed"),
+                               (0, "", "it answered nothing"),
+                               (0, "Access denied", "it answered something else")):
+            _sp.run = lambda *a, _c=code, _o=out, **k: _sp.CompletedProcess(
+                a[0] if a else [], _c, _o, "boom")
+            t.eq(browser._running(), -1,   # noqa: SLF001 - the value under test
+                 "'do not know', not 'none left', when %s" % why)
+    finally:
+        _sp.run = real
+
     # ---- promote can be pointed at another tree -----------------------
     import importlib.util
     spec = importlib.util.spec_from_file_location("qc_promote", F.CODE / "promote.py")

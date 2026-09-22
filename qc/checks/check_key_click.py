@@ -24,8 +24,25 @@ TITLE = "clicking a move sends that move's own time, not the drag time"
 SLOW = True
 
 DRIVER = """
-function report(s){ rawCmd("MOVE QCMARK " + s); }
-window.addEventListener("load", function(){ setTimeout(function(){
+// rawCmd lives in app.js; before it has loaded, the prelude's own mark is the
+// only way to speak. Without this an early error could not be reported at all.
+function report(s){
+  if (typeof rawCmd === "function") rawCmd("MOVE QCMARK " + s);
+  else qcMark(s);
+}
+// WAIT FOR THE APP, do not sleep 1500 ms and hope. Studio logs in first, and
+// on a loaded machine it is not ready in a fixed time: the driver threw, said
+// ERR and never said "done", so the harness sat out its whole 170 s grace and
+// the check failed in the gate while passing alone (A26-94, 2026-09-22).
+window.addEventListener("load", function(){ qcWaitFor(function(){
+    // ...and the CABLE, not only the code: a mark sent before the link is up
+    // is dropped, and the check then reports a missing measurement (the
+    // "want=" mark vanished exactly this way while CLICK and done arrived).
+    return typeof addKey === "function" && typeof selectKey === "function"
+           && document.getElementById("liveChk") && typeof rawCmd === "function"
+           && typeof haveUsb === "function" && haveUsb();
+  }, 20000).then(function(ready){
+  if (!ready) { report("ERR-the-app-never-finished-loading"); report("done"); return; }
   try{
     document.getElementById("liveChk").checked = true;   // live link on
 
@@ -47,8 +64,8 @@ window.addEventListener("load", function(){ setTimeout(function(){
       selectKey(2);                        // <- the click under test
       setTimeout(function(){ report("done"); }, 1200);
     }, 400);
-  }catch(e){ report("ERR-" + String(e).slice(0,60)); }
-}, 1500); });
+  }catch(e){ report("ERR-" + String(e).slice(0,60)); report("done"); }
+}); });
 """
 
 

@@ -268,12 +268,15 @@ def _one(path_str):
     buf = io.StringIO()
     mod, err = _load(path)
     if err:
-        return (path_str, "", [], 0.0, "", err)
+        return (path_str, "", [], 0.0, "", err, "")
     with contextlib.redirect_stdout(buf):
         case, secs, crash = F.run_check(mod)
+    # The captured text comes BACK now. It was thrown away, and with it every
+    # "QC SLOW" line the browser harness printed - the evidence for why a check
+    # that passes alone failed in the gate (A26-94).
     return (path_str, getattr(mod, "TITLE", path.stem),
             [(bool(g), l, d) for g, l, d in case.results],
-            secs, crash or "", "")
+            secs, crash or "", "", buf.getvalue())
 
 
 def main(argv):
@@ -422,6 +425,13 @@ def main(argv):
               % (G if not n_fail else R,
                  len([1 for g, _l, _d in case_results if g]), n_fail, secs, D))
 
+    def _said(results, crash, printed):
+        """What the check printed, but only when it went wrong.
+
+        A green check's notes are noise in a 300-line gate; a red one's are
+        the evidence (QC SLOW lines from the browser harness, A26-94)."""
+        return printed if printed and _red(results, crash) else ""
+
     retries = int(SPEED.get("browserRetriesAlone") or 0)
     flaky = []
 
@@ -442,12 +452,12 @@ def main(argv):
         with _cf.ProcessPoolExecutor(max_workers=1,
                                      max_tasks_per_child=1) as pool:
             for f, mod in items:
-                _path, _title, results, secs, crash, err = pool.submit(
-                    _one, str(f)).result()
+                (_path, _title, results, secs, crash, err,
+                 printed) = pool.submit(_one, str(f)).result()
                 if err:
                     broken.append((f.stem, err))
                 else:
-                    report(f, mod, results, secs, crash, "")
+                    report(f, mod, results, secs, crash, _said(results, crash, printed))
 
     solo = [(f, m) for f, m in wanted
             if f.stem in SOLO or getattr(m, "SOLO", False)]
@@ -516,31 +526,32 @@ def main(argv):
                 futs.append(pool.submit(_one, str(f)))
         try:
             for fut in _cf.as_completed(futs):
-                path_s, _title, results, secs, crash, err = fut.result()
+                path_s, _title, results, secs, crash, err, printed = fut.result()
                 f, mod = by_path[path_s]
                 if err:
                     broken.append((f.stem, err))
                     continue
                 if path_s in heavy_paths and retries and _red(results, crash):
-                    suspect.append((f, mod, results, secs, crash))
+                    suspect.append((f, mod, results, secs, crash, printed))
                     continue
-                report(f, mod, results, secs, crash, "")
+                report(f, mod, results, secs, crash, _said(results, crash, printed))
                 done_n += 1
                 if done_n % 10 == 0:
                     _plan("QC %d/%d checks" % (done_n, total_n))
         finally:
             for pool in pools:
                 pool.shutdown(wait=True)
-        for f, mod, results, secs, crash in suspect:
+        for f, mod, results, secs, crash, printed in suspect:
             again = [_alone(f) for _ in range(retries)]
             if all(not _red(r[2], r[4]) and not r[5] for r in again):
                 flaky.append(f.stem)
                 print("%sFLAKY%s %s failed in the parallel run, passed alone %d/%d"
                       % (R, D, f.stem, retries, retries))
-                _p, _t, r_res, r_secs, _c, _e = again[-1]
-                report(f, mod, r_res, r_secs, None, "")
+                _p, _t, r_res, r_secs, _c, _e, _pr = again[-1]
+                report(f, mod, r_res, r_secs, None, _said(r_res, None, printed))
             else:
-                report(f, mod, results, secs, crash, "")   # real: it blocks
+                # real: it blocks - with whatever the crowded run printed
+                report(f, mod, results, secs, crash, _said(results, crash, printed))
         run_isolated(solo)
         _plan("QC finished: %d passed, %d failed" % (total_pass, total_fail))
 

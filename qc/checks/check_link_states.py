@@ -149,8 +149,19 @@ def _ask_browser(base):
           "Start-Process -FilePath '%s' -ArgumentList $a -NoNewWindow -Wait "
           "-RedirectStandardOutput '%s'"
           % (browser.TAG, prof, base, probe.name, browser.EDGE, out))
+    # The folder has to EXIST before Start-Process redirects into it: it was
+    # created only by browser.page(), so a worker that ran this check first met
+    # "No such file or directory" and reported it as a browser failure (A26-94,
+    # 2026-09-22 gate).
+    browser.SCRATCH.mkdir(parents=True, exist_ok=True)
     try:
-        subprocess.run(["powershell", "-NoProfile", "-Command", ps], timeout=150)
+        r = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                           capture_output=True, text=True, timeout=150)
+        if not _P(out).is_file():
+            # Say WHY it did not start. Reading a file that was never written
+            # turned every launch failure into the same useless message.
+            return "(browser did not start: %s)" % (
+                (r.stderr or r.stdout or "no output").strip()[:200])
         dom = _P(out).read_text(encoding="utf-8", errors="replace")
         m = re.search(r"<title>([^<]*)</title>", dom)
         return m.group(1) if m else "(no answer)"
@@ -158,3 +169,5 @@ def _ask_browser(base):
         return "(browser failed: %s)" % e
     finally:
         probe.unlink(missing_ok=True)
+        browser.kill()          # never leave an Edge behind for the next check
+        _P(out).unlink(missing_ok=True)

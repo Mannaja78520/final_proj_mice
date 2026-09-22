@@ -35,7 +35,8 @@ def run(t):
     t.ok("all(not _red(r[2], r[4]) and not r[5] for r in again)" in src,
          "it passes only if EVERY run alone was green",
          "any() here would let one lucky run excuse a real bug")
-    t.ok("report(f, mod, results, secs, crash, \"\")   # real: it blocks" in src,
-         "a check that also fails alone reports its original failure")
+    t.ok("# real: it blocks" in src and
+         "report(f, mod, results, secs, crash, _said(results, crash, printed))" in src,
+         "a check that also fails alone reports its original failure, with what it printed")
     t.ok("sFLAKY%s" in src and "flaky.append(f.stem)" in src and "if flaky:" in src,
          "a retried check is printed FLAKY and listed at the end, never silent")

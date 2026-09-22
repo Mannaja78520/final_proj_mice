@@ -135,6 +135,7 @@ def run(t):
 
 def _load(url):
     """The page after its scripts have run, as the browser sees it."""
+    browser.SCRATCH.mkdir(parents=True, exist_ok=True)   # or the redirect has
     prof = str(browser.SCRATCH / ("profile_tools_%s" % browser._tag()))
     out = str(browser.SCRATCH / ("tools_dom_%s.html" % browser._tag()))
     ps = ("$a=@('--headless=new','--disable-gpu','--no-sandbox','--no-first-run',"
@@ -143,9 +144,11 @@ def _load(url):
           "Start-Process -FilePath '%s' -ArgumentList $a -NoNewWindow -Wait "
           "-RedirectStandardOutput '%s' -RedirectStandardError '%s.err'"
           % (browser.TAG, prof, url, browser.EDGE, out, out))
-    try:
+    try:                                                 # nowhere to land (A26-94)
         subprocess.run(["powershell", "-NoProfile", "-Command", ps], timeout=200)
         from pathlib import Path
         return Path(out).read_text(encoding="utf-8", errors="replace")
     except Exception:                                        # noqa: BLE001
         return ""
+    finally:
+        browser.kill()
