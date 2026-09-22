@@ -59,12 +59,21 @@ function measure(url, w, h){
       qcWaitFor(function(){
         var dd = f.contentDocument;
         return dd && dd.readyState === "complete" && dd.body && dd.body.scrollWidth > 0;
-      // 5 s, not 20: with 25 frames to measure inside one page budget, a long
-      // wait per frame spends the whole run and the page is killed before it
-      // reports - "measurements missing" in the gate of 2026-09-23. The wait
-      // is for a document that is a moment behind, not for a page that is
-      // never coming; measuring happens either way.
-      }, 5000).then(function(){
+      // 12 s, and it RETRIES the frame once. At 2560 and 3840 px a frame
+      // under a full gate was still not complete after 5 s, so the measurement
+      // read a null document and the check reported "could not be measured"
+      // (A26-94, 2026-09-23). The page window covers it: the budget check does
+      // that arithmetic.
+      }, 12000).then(function(ok){
+        if (!ok) {   // one more chance, from a fresh frame
+          f.src = url;
+          return qcWaitFor(function(){
+            var dd = f.contentDocument;
+            return dd && dd.readyState === "complete" && dd.body && dd.body.scrollWidth > 0;
+          }, 12000);
+        }
+        return true;
+      }).then(function(){
       // ...then a short settle for fonts and any boot script
       setTimeout(function(){
         var out = {url:url, w:w, over:-1, tallest:"", used:-1,
@@ -351,7 +360,7 @@ def run(t):
     # minimum size is its intrinsic 131px, so the track refused to shrink and
     # the joint number box sat 17px past the edge behind a scrollbar.
     fake_serial.reset()
-    browser.raw_page(PANEL, base, seconds=30)
+    browser.raw_page(PANEL, base, seconds=55)
     got = {}
     for m in fake_serial.qc_marks:
         if m.startswith("P "):
