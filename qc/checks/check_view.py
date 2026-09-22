@@ -20,7 +20,7 @@ DRIVER = """
 // Wait for the view helpers to exist, never a fixed sleep (A26-94).
 window.addEventListener("load", function(){ qcWaitFor(function(){
     return typeof setView === "function" && typeof activeCam === "function";
-  }, 20000).then(function(){ setTimeout(function(){
+  }, 8000).then(function(){ setTimeout(function(){
   try {
     var out = [];
     function probe(name){

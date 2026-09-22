@@ -36,7 +36,7 @@ window.addEventListener("load", function(){
   qcWaitFor(function(){
     return typeof rawCmd === "function" && typeof $ === "function"
         && $("usbPort");
-  }, 20000).then(function(){
+  }, 8000).then(function(){
   setTimeout(function(){
     try{
       // What Studio decided the cable and the peer are, after reading ?dev=

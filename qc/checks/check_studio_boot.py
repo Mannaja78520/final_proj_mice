@@ -29,7 +29,7 @@ if (location.search.indexOf("step2") < 0) {
   window.addEventListener("load", function(){ qcWaitFor(function(){
       return typeof robot !== "undefined" && robot && typeof RIG !== "undefined"
           && RIG.zero && typeof keys !== "undefined" && typeof pose !== "undefined";
-    }, 20000).then(function(){ setTimeout(function(){
+    }, 8000).then(function(){ setTimeout(function(){
     try {
       var vis = [];
       robot.traverse(function(o){

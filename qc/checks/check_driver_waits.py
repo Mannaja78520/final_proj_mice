@@ -12,7 +12,7 @@ The cure is one line per driver: wait for a CONDITION (`qcStudioReady()`,
 `qcWaitFor(...)`, or a poll of its own) and measure after it. Every driver did
 this by 2026-09-23; this keeps the next one honest.
 
-Drivers that only report marks and never read the page are listed in
+Drivers that wait in their own way are listed, with the reason, in
 qc/data/driver_waits.json - one entry, no code.
 """
 import json
@@ -30,11 +30,14 @@ WAITS = re.compile(r'qcStudioReady|qcWaitFor|function ready|'
 def run(t):
     data = json.loads((F.QC / "data" / "driver_waits.json")
                       .read_text(encoding="utf-8"))
-    allowed = set(data.get("marksOnly") or [])
+    allowed = set(data.get("waitsItsOwnWay") or {})
     drivers, bad = [], []
     for f in sorted((F.QC / "checks").glob("check_*.py")):
         src = f.read_text(encoding="utf-8", errors="replace")
-        if 'addEventListener("load"' not in src:
+        # Two shapes: a driver that runs on `load`, and one that measures a page
+        # inside an iframe from a bare timer. Both used to bet on a number.
+        if ('addEventListener("load"' not in src
+                and not re.search(r"^setTimeout\(", src, re.M)):
             continue
         drivers.append(f.stem)
         if f.stem in allowed or WAITS.search(src):
@@ -45,5 +48,9 @@ def run(t):
     t.ok(not bad, "every driver waits for something real before it measures",
          "these run on a timer and will fail under a full gate: %s" % ", ".join(bad))
     gone = sorted(allowed - set(drivers))
-    t.ok(not gone, "the marks-only list names checks that still exist",
+    t.ok(not gone, "the exception list names checks that still exist",
          "stale entries in qc/data/driver_waits.json: %s" % ", ".join(gone))
+    empty = sorted(k for k, v in (data.get("waitsItsOwnWay") or {}).items()
+                   if not str(v).strip())
+    t.ok(not empty, "and every exception says why it is one",
+         "no reason given for: %s" % ", ".join(empty))

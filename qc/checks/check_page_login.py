@@ -51,6 +51,14 @@ DRIVER = """
 <iframe id="f" src="/"></iframe>
 <script>
 function nap(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+// Wait for the frame to BE there, then settle as before (A26-94): a fixed
+// sleep measured an empty page under a full gate and reported nothing.
+qcWaitFor(function(){
+  var fr = document.getElementById("f");
+  return fr && fr.contentWindow && fr.contentDocument
+      && fr.contentDocument.readyState === "complete"
+      && fr.contentDocument.body && fr.contentDocument.body.children.length;
+}, 8000).then(function(){
 setTimeout(async function(){
   var out = [];
   try{
@@ -110,7 +118,7 @@ setTimeout(async function(){
     qcMark(out.join(" ").replace(/ /g, "~"));
   }catch(e){ qcMark("ERR~" + String(e.message || e).replace(/ /g, "~")); }
   qcMark("done");
-}, 1800);
+}, 1800); });
 </script>
 """
 

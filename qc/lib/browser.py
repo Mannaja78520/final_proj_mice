@@ -113,7 +113,7 @@ window.qcStudioReady = function(ms){
   return qcWaitFor(function(){
     return typeof rawCmd === "function" && typeof addKey === "function"
         && typeof haveUsb === "function" && haveUsb();
-  }, ms || 20000);
+  }, ms || 8000);   // budget: check_browser_budget
 };
 </script>
 """

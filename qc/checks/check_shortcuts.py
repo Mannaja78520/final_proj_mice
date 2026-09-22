@@ -43,6 +43,14 @@ function key(d, w, k, target){
   var ev = new w.KeyboardEvent('keydown', {key:k, bubbles:true, cancelable:true});
   (target || d.body).dispatchEvent(ev);
 }
+// Wait for the frame to BE there, then settle as before (A26-94): a fixed
+// sleep measured an empty page under a full gate and reported nothing.
+qcWaitFor(function(){
+  var fr = document.getElementById("f");
+  return fr && fr.contentWindow && fr.contentDocument
+      && fr.contentDocument.readyState === "complete"
+      && fr.contentDocument.body && fr.contentDocument.body.children.length;
+}, 8000).then(function(){
 setTimeout(function(){
   try{
     var w = document.getElementById('f').contentWindow;
@@ -100,7 +108,7 @@ setTimeout(function(){
     }
     done(out.join(" "));
   }catch(e){ done("ERR=" + String(e).slice(0,70)); }
-}, 4000);
+}, 4000); });
 </script>
 """
 
