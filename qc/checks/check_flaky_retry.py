@@ -40,3 +40,8 @@ def run(t):
          "a check that also fails alone reports its original failure, with what it printed")
     t.ok("sFLAKY%s" in src and "flaky.append(f.stem)" in src and "if flaky:" in src,
          "a retried check is printed FLAKY and listed at the end, never silent")
+    t.ok("for good, label, detail in results:\n                    if not good:" in src
+         and 'print("        in the crowd: %s%s"' in src
+         and "if printed:\n                    sys.stdout.write(printed)" in src,
+         "and it prints WHAT failed in the crowd, plus what the check printed",
+         "a name with no evidence means reproducing the race to learn anything")

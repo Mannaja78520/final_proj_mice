@@ -547,8 +547,21 @@ def main(argv):
                 flaky.append(f.stem)
                 print("%sFLAKY%s %s failed in the parallel run, passed alone %d/%d"
                       % (R, D, f.stem, retries, retries))
+                # WHAT it said in the crowd, not just that it said something.
+                # Without this a flaky check is a name and no evidence, and the
+                # next person has to reproduce a race to learn anything (A26-94).
+                for good, label, detail in results:
+                    if not good:
+                        print("        in the crowd: %s%s"
+                              % (label, (" - " + detail.replace(chr(10), " ")[:200])
+                                 if detail else ""))
+                if crash:
+                    print("        in the crowd it crashed: %s"
+                          % crash.strip().splitlines()[-1])
+                if printed:
+                    sys.stdout.write(printed)
                 _p, _t, r_res, r_secs, _c, _e, _pr = again[-1]
-                report(f, mod, r_res, r_secs, None, _said(r_res, None, printed))
+                report(f, mod, r_res, r_secs, None, "")
             else:
                 # real: it blocks - with whatever the crowded run printed
                 report(f, mod, results, secs, crash, _said(results, crash, printed))
