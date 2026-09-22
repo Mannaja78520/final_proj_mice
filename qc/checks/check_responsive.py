@@ -51,7 +51,21 @@ function measure(url, w, h){
     f.width = w; f.height = h; f.src = url;
     document.body.appendChild(f);
     f.onload = function(){
-      // give layout, fonts and any boot script a moment to settle
+      // WAIT FOR THE FRAME TO BE READABLE, do not bet 1400 ms on it. In a full
+      // gate on 2026-09-23 this read a null document - "/help at 320px could be
+      // measured - Cannot read properties of null" - and passed alone (A26-94).
+      // onload fires before the document inside is finished in a loaded
+      // browser, so the measurement met nothing and blamed the layout.
+      qcWaitFor(function(){
+        var dd = f.contentDocument;
+        return dd && dd.readyState === "complete" && dd.body && dd.body.scrollWidth > 0;
+      // 5 s, not 20: with 25 frames to measure inside one page budget, a long
+      // wait per frame spends the whole run and the page is killed before it
+      // reports - "measurements missing" in the gate of 2026-09-23. The wait
+      // is for a document that is a moment behind, not for a page that is
+      // never coming; measuring happens either way.
+      }, 5000).then(function(){
+      // ...then a short settle for fonts and any boot script
       setTimeout(function(){
         var out = {url:url, w:w, over:-1, tallest:"", used:-1,
                    small:-1, tiny:-1, tinyWhat:""};
@@ -130,7 +144,8 @@ function measure(url, w, h){
         }catch(e){ out.over = -2; out.tallest = String(e.message||e).slice(0,40); }
         f.remove();
         res(out);
-      }, 1400);
+      }, 400);
+      });
     };
   });
 }
