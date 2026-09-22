@@ -1613,7 +1613,7 @@ async function homeFromPose() { // robot home: saved here AND on the robot
   // Any link will do, exactly as "send rig" decides. liveLinked() was wrong
   // here: it also requires the live-follow tick, so with that off the button
   // saved in the browser and quietly sent the robot nothing.
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     $("robotStat").textContent = "robot home = " + shown +
       " — saved here. Connect the robot and press Send rig to give it these.";
     return;
@@ -2449,7 +2449,7 @@ function togglePlay() {
 // mid-show carried on moving — the thing that looked like two shows running
 // over each other, because it was.
 function liveLinked() {
-  return $("liveChk").checked && (haveUsb() || haveWifi());
+  return $("liveChk").checked && haveRobot();
 }
 // ---- who holds the clock -------------------------------------------------
 //
@@ -3057,7 +3057,7 @@ async function sendOffset(i, deg) {
   saveRig();
   renderOffsets();
   const st = $("trimStat");
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     if (st) st.textContent = JOINT_LABELS[i] + " offset " + clamped
       + "° — saved here. Connect the robot to move it.";
     return;
@@ -3075,7 +3075,7 @@ async function sendOffset(i, deg) {
 
 async function pullOffsets() {
   const st = $("trimStat");
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     if (st) st.textContent = "connect to the robot first (Robot link card)";
     notice(st.textContent);
     return;
@@ -3099,7 +3099,7 @@ async function clearOffsets() {
   saveRig();
   renderOffsets();
   const st = $("trimStat");
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     if (st) st.textContent = "every offset cleared here — the robot still has its own";
     return;
   }
@@ -3132,7 +3132,7 @@ function resetRig() {
 // send only the lines that differ — pushing again after a small edit is then a
 // couple of commands instead of fifty.
 async function pushLimits() {
-  if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first (Robot link card)"; notice($("limStat").textContent); return; }
+  if (!haveRobot()) { $("limStat").textContent = "connect to the robot first (Robot link card)"; notice($("limStat").textContent); return; }
   try {
     let have = null;
     $("limStat").textContent = "reading what the robot has…";
@@ -3212,7 +3212,7 @@ async function pushLimits() {
 }
 // read the module's current limits + gear back into the rig
 async function pullLimits() {
-  if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first"; notice($("limStat").textContent); return; }
+  if (!haveRobot()) { $("limStat").textContent = "connect to the robot first"; notice($("limStat").textContent); return; }
   try {
     const t = await rawCmd("LIMIT?");
     const j = JSON.parse(t);
@@ -3371,7 +3371,7 @@ async function stopShow() {
 let musicList = null;        // null = never read, [] = card has no tracks
 let musicNote = "";          // why the list is not usable, in plain words
 let musicBusy = false;
-function robotLinked() { return haveUsb() || haveWifi(); }
+function robotLinked() { return haveRobot(); }
 const musOpen = new Set();   // which keyframes have the picker open
 
 function keyCue(k, key) {
@@ -4357,8 +4357,24 @@ function serialCmd(c) {
 function usbDirect() { return !!(serialPort && serialPort.writable); }
 function haveUsb() { return usbDirect() || !!hubPort; }
 function haveWifi() { return !!robotIp(); }
+function haveAuto() { return !!window.HUB_AUTO; }
+function haveRobot() { return haveAuto() || haveUsb() || haveWifi(); }
 // one call for "send this over the cable", whichever USB mode is connected
 function cableCmd(c) { return usbDirect() ? serialCmd(c) : hubUsbCmd(c); }
+async function autoFetch(what, params, options) {
+  const q = new URLSearchParams(Object.assign({ dev: window.HUB_AUTO }, params || {}));
+  const r = await fetch(`/api/dev/${what}?${q}`, options);
+  if (!r.ok) {
+    const body = await r.text();
+    let msg = body;
+    try { msg = JSON.parse(body).error || body; } catch (e) { /* plain text error */ }
+    throw new Error(msg);
+  }
+  return r;
+}
+async function autoCmd(c) {
+  return (await (await autoFetch("cmd", { c })).text()).trim();
+}
 async function httpCmd(c) {
   // Same over WiFi: wifi:<ip>@peer reaches a module on that board's hotspot.
   const url = (window.HUB_PEER || window.HUB_VIA)
@@ -4368,6 +4384,7 @@ async function httpCmd(c) {
   return fetch(url).then(r => r.text());
 }
 async function rawCmd(c) { // reply text or throws
+  if (haveAuto()) return autoCmd(c);
   if (haveUsb()) return cableCmd(c);
   if (haveWifi()) return httpCmd(c);
   throw new Error("connect first — 🔍 Find modules (WiFi) or pick a USB port");
@@ -4379,6 +4396,7 @@ async function rawCmd(c) { // reply text or throws
 // points at the SAME board the commands go to — hence the same precedence as
 // rawCmd: cable first, WiFi otherwise.
 function moduleDev() {
+  if (haveAuto()) return window.HUB_AUTO;
   // The peer rides along. Without it this link opened the website of the
   // board on the CABLE while every command went to the module behind that
   // board's hotspot — two different robots, one screen, no warning.
@@ -4404,10 +4422,20 @@ function moduleDev() {
 window.addEventListener("DOMContentLoaded", function () {
   const port = document.getElementById("usbPort");
   const mode = document.getElementById("connSel");
-  if (port) port.addEventListener("change", () => clearPeer("you picked another cable"));
-  if (mode) mode.addEventListener("change", () => clearPeer("you changed the connection"));
+  const ip = document.getElementById("robotIp");
+  const bus = document.getElementById("busId");
+  if (port) port.addEventListener("change", () => clearHubTarget("you picked another cable"));
+  if (mode) mode.addEventListener("change", () => clearHubTarget("you changed the connection"));
+  if (ip) ip.addEventListener("input", () => clearHubTarget("you typed another WiFi address"));
+  if (bus) bus.addEventListener("input", () => clearHubTarget("you typed another bus id"));
 });
 
+function clearHubTarget(why) {
+  const hadAuto = window.HUB_AUTO;
+  clearPeer(why);
+  window.HUB_AUTO = "";
+  if (hadAuto && typeof log === "function") log("(using the route you picked: " + why + ")");
+}
 function clearPeer(why) {
   if (!window.HUB_PEER) return;
   window.HUB_PEER = "";
@@ -4448,6 +4476,7 @@ async function robotCmd(c) {
   }
 }
 async function getStatus() { // full status JSON on whichever link is up
+  if (haveAuto()) return (await autoFetch("status")).json();
   if (haveUsb()) {
     try { return JSON.parse(await cableCmd("INFO")); }
     catch (e) { return JSON.parse(await cableCmd("INFO")); } // boot noise: retry once
@@ -4458,6 +4487,7 @@ async function getStatus() { // full status JSON on whichever link is up
 }
 function linkBadge() { // shown in robotStat so you see every open channel
   const parts = [], bus = busId() ? "→RS485 #" + busId() : "";
+  if (haveAuto()) parts.push("fastest route (hub) ✓");
   if (usbDirect()) parts.push("USB direct" + bus + " ✓");
   else if (hubPort) parts.push("USB " + hubPort + bus + " (shared) ✓");
   if (haveWifi()) parts.push("WiFi " + robotIp());
@@ -4497,6 +4527,7 @@ async function scanModules() {
 }
 function pickFound(ip) {
   if (!ip) return;
+  clearHubTarget("you picked another WiFi module");
   $("connSel").value = "wifi";
   connModeChanged();
   $("robotIp").value = ip;
@@ -4654,6 +4685,13 @@ async function sdUploadSerial(fname, text) {
   if (!r.startsWith("OK")) throw new Error(r);
 }
 async function sdUpload(fname, text) {
+  if (haveAuto()) {
+    const body = (await (await autoFetch("upload", { dir: "/moves", name: fname }, {
+      method: "POST", body: new TextEncoder().encode(text),
+    })).text()).trim();
+    if (body.startsWith("ERR")) throw new Error(body);
+    return;
+  }
   if (haveWifi()) { // fastest for whole files; fall back to the cable
     try {
       const r = await fetch("/api/robot/upload", {
@@ -4681,6 +4719,8 @@ async function sdDownloadSerial(fname) {
   return new TextDecoder().decode(Uint8Array.from(all, c => c.charCodeAt(0)));
 }
 async function sdDownload(fname) {
+  if (haveAuto())
+    return (await autoFetch("download", { path: "/moves/" + fname })).text();
   if (haveWifi()) {
     try {
       return await fetch(`/api/robot/download?ip=${encodeURIComponent(robotIp())}` +
@@ -4691,6 +4731,11 @@ async function sdDownload(fname) {
   throw new Error("connect first (WiFi or USB)");
 }
 async function sdDelete(fname) {
+  if (haveAuto()) {
+    const body = (await (await autoFetch("delete", { path: "/moves/" + fname })).text()).trim();
+    if (body.startsWith("ERR")) throw new Error(body);
+    return;
+  }
   if (haveWifi()) {
     try {
       // READ the reply. fetch does not throw on 404 or 502, and the firmware
@@ -4720,7 +4765,9 @@ async function refreshSd() {
   box.textContent = "Reading the robot's card…";
   try {
     let files;
-    if (haveWifi()) {
+    if (haveAuto()) {
+      files = await (await autoFetch("files", { dir: "/moves" })).json();
+    } else if (haveWifi()) {
       files = await fetch(`/api/robot/files?ip=${encodeURIComponent(robotIp())}&dir=/moves`)
         .then(r => r.json());
     } else if (haveUsb()) {
@@ -4813,7 +4860,7 @@ async function uploadYaml() {
 // because a board on older firmware still needs it.
 function stopRobotSequence() {
   handedOff = false;
-  if (!haveUsb() && !haveWifi()) return;
+  if (!haveRobot()) return;
   try { robotCmd("MOVE STOP"); } catch (e) {}
 }
 
@@ -4835,7 +4882,7 @@ let handedOff = false;
 
 async function handOffToRobot() {
   if (handedOff || !playing) return;
-  if (!haveUsb() && !haveWifi()) return;     // nothing to hand off TO
+  if (!haveRobot()) return;                  // nothing to hand off TO
   // Hand off only what was ALREADY driving the arm. Two ways this used to move
   // a robot nobody asked to move:
   //   previewOnly — the crash gate said this movement collides and the user
@@ -4955,7 +5002,7 @@ async function zeroUnlock() {
 }
 function zeroLock() { $("zeroPanel").style.display = "none"; $("zeroLocked").style.display = ""; }
 async function robotZeroSet() {
-  if (!haveUsb() && !haveWifi()) { $("zStat2").textContent = "connect to the robot first"; notice($("zStat2").textContent); return; }
+  if (!haveRobot()) { $("zStat2").textContent = "connect to the robot first"; notice($("zStat2").textContent); return; }
   const r = await robotCmd("SETZERO");
   $("zStat2").textContent = r.startsWith("OK")
     ? "zero set — this pose is now the robot's home. Your start angles are unchanged."
@@ -4981,9 +5028,9 @@ function monitorChanged() {
     // timed out while the hub opened the port) it said "not connected" forever
     // although the cable worked (A26-42). So connect first, once.
     const start = () => { if ($("monChk").checked && !monTimer) monTimer = setInterval(monitorTick, 350); };
-    if (haveUsb() || haveWifi()) start();
+    if (haveRobot()) start();
     else Promise.resolve(connectRobot()).then(() => {
-      if (haveUsb() || haveWifi()) return start();
+      if (haveRobot()) return start();
       $("monChk").checked = false;
       $("robotStat").textContent = "monitor needs the robot connected — pick the cable or "
         + "WiFi above and press Connect, then tick monitor again.";
@@ -5062,7 +5109,7 @@ function freezeCheck(now) {
     gapMs: Math.round(gap), playing: typeof playing !== "undefined" && playing,
     live: !!($("liveChk") && $("liveChk").checked),
     monitor: !!($("monChk") && $("monChk").checked),
-    usb: haveUsb(), wifi: haveWifi(), keys: keys.length,
+    auto: haveAuto(), usb: haveUsb(), wifi: haveWifi(), keys: keys.length,
     gpu: { geometries: gi.memory && gi.memory.geometries, textures: gi.memory && gi.memory.textures,
            programs: gi.programs && gi.programs.length },
     heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null,
@@ -5406,6 +5453,7 @@ requestAnimationFrame((t) => { lastFrame = t; tick(t); });
 //   ?dev=wifi:<ip>        same, hub's dev syntax
 //   ?dev=usb:COM7[:<id>]  the cable, SHARED through the hub — the module
 //                         website can stay open on that same port
+//   ?dev=auto:<board>      ask the hub for the fastest route on every call
 {
   const qp = new URLSearchParams(location.search);
   const dev = qp.get("dev") || "";
@@ -5433,8 +5481,11 @@ requestAnimationFrame((t) => { lastFrame = t; tick(t); });
     if (slash > 0) { via = inner.slice(0, slash + 1); inner = inner.slice(slash + 1); }
   }
   window.HUB_VIA = via;            // every command puts it back on
+  window.HUB_AUTO = inner.indexOf("auto:") === 0 ? inner : "";
 
-  if (inner.indexOf("usb:") === 0) {
+  if (window.HUB_AUTO) {
+    connectRobot().then(startMonitor);
+  } else if (inner.indexOf("usb:") === 0) {
     const bits = inner.slice(4).split(":");
     $("connSel").value = "usb";
     if (bits[1]) $("busId").value = bits[1];

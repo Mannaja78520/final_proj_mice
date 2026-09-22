@@ -478,7 +478,10 @@ def main(argv):
         for group, width in ((para, jobs), (heavy, browser_jobs)):
             if not group:
                 continue
-            pool = _cf.ProcessPoolExecutor(max_workers=width)
+            # Hub threads outlive a check. Reusing a worker accumulates HTTP,
+            # scanner and route-probe services until browser checks time out.
+            pool = _cf.ProcessPoolExecutor(max_workers=width,
+                                           max_tasks_per_child=1)
             pools.append(pool)
             for f, m in group:
                 by_path[str(f)] = (f, m)

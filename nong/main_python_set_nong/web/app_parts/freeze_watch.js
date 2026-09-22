@@ -39,7 +39,7 @@ function freezeCheck(now) {
     gapMs: Math.round(gap), playing: typeof playing !== "undefined" && playing,
     live: !!($("liveChk") && $("liveChk").checked),
     monitor: !!($("monChk") && $("monChk").checked),
-    usb: haveUsb(), wifi: haveWifi(), keys: keys.length,
+    auto: haveAuto(), usb: haveUsb(), wifi: haveWifi(), keys: keys.length,
     gpu: { geometries: gi.memory && gi.memory.geometries, textures: gi.memory && gi.memory.textures,
            programs: gi.programs && gi.programs.length },
     heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null,

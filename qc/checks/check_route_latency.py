@@ -160,5 +160,5 @@ def _hub(t, main, route_latency):
     # ---- the page uses it -------------------------------------------------
     hub = (F.HUB / "web" / "hub.html").read_text(encoding="utf-8")
     t.ok("'auto:'+m.key" in hub, "Open module uses auto: when there is a choice")
-    t.ok("const sdev = auto ? m.best : dev" in hub,
-         "Studio gets the current best route, since it reads its dev itself")
+    t.ok("const sdev = auto ? 'auto:'+m.key : dev" in hub,
+         "Studio keeps auto:<board>, so an open page follows route changes")

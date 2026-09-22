@@ -25,6 +25,7 @@ requestAnimationFrame((t) => { lastFrame = t; tick(t); });
 //   ?dev=wifi:<ip>        same, hub's dev syntax
 //   ?dev=usb:COM7[:<id>]  the cable, SHARED through the hub — the module
 //                         website can stay open on that same port
+//   ?dev=auto:<board>      ask the hub for the fastest route on every call
 {
   const qp = new URLSearchParams(location.search);
   const dev = qp.get("dev") || "";
@@ -52,8 +53,11 @@ requestAnimationFrame((t) => { lastFrame = t; tick(t); });
     if (slash > 0) { via = inner.slice(0, slash + 1); inner = inner.slice(slash + 1); }
   }
   window.HUB_VIA = via;            // every command puts it back on
+  window.HUB_AUTO = inner.indexOf("auto:") === 0 ? inner : "";
 
-  if (inner.indexOf("usb:") === 0) {
+  if (window.HUB_AUTO) {
+    connectRobot().then(startMonitor);
+  } else if (inner.indexOf("usb:") === 0) {
     const bits = inner.slice(4).split(":");
     $("connSel").value = "usb";
     if (bits[1]) $("busId").value = bits[1];
@@ -330,4 +334,3 @@ function muDelete() {
     $("muPass").value = "";
   }
 }
-

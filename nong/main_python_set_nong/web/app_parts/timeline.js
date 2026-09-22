@@ -740,7 +740,7 @@ function togglePlay() {
 // mid-show carried on moving — the thing that looked like two shows running
 // over each other, because it was.
 function liveLinked() {
-  return $("liveChk").checked && (haveUsb() || haveWifi());
+  return $("liveChk").checked && haveRobot();
 }
 // ---- who holds the clock -------------------------------------------------
 //

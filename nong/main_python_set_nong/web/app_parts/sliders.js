@@ -163,7 +163,7 @@ async function homeFromPose() { // robot home: saved here AND on the robot
   // Any link will do, exactly as "send rig" decides. liveLinked() was wrong
   // here: it also requires the live-follow tick, so with that off the button
   // saved in the browser and quietly sent the robot nothing.
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     $("robotStat").textContent = "robot home = " + shown +
       " — saved here. Connect the robot and press Send rig to give it these.";
     return;

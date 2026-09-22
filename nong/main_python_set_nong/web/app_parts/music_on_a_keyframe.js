@@ -11,6 +11,7 @@
 let musicList = null;        // null = never read, [] = card has no tracks
 let musicNote = "";          // why the list is not usable, in plain words
 let musicBusy = false;
+function robotLinked() { return haveRobot(); }
 const musOpen = new Set();   // which keyframes have the picker open
 
 function keyCue(k, key) {
@@ -43,7 +44,9 @@ async function loadMusicList() {
   musicBusy = true;
   musicNote = "reading the robot's music folder…";
   try {
-    if (!liveLinked()) throw new Error("offline");
+    // Any link will do. liveLinked() also needs the live tick, so with it off the
+    // picker stayed locked and the volume with it (A26-49).
+    if (!robotLinked()) throw new Error("offline");
     const r = await fetch("/api/dev/files?dir=/music&dev="
                           + encodeURIComponent(moduleDev()));
     const list = await r.json();
@@ -165,8 +168,8 @@ function musicRow(k, i) {
   // the robot, and neither was worth walking to another page for.
   const play = document.createElement("button");
   play.type = "button"; play.className = "kmusbtn"; play.textContent = "▶";
-  play.disabled = !cur || !liveLinked();
-  play.title = !liveLinked() ? "connect the robot to hear it"
+  play.disabled = !cur || !robotLinked();
+  play.title = !robotLinked() ? "connect the robot to hear it"
              : cur ? "play " + cur + " on the robot now, once through"
                    : "choose a track first";
   play.onclick = async () => {
@@ -179,7 +182,7 @@ function musicRow(k, i) {
   };
   const stop = document.createElement("button");
   stop.type = "button"; stop.className = "kmusbtn"; stop.textContent = "■";
-  stop.disabled = !liveLinked();
+  stop.disabled = !robotLinked();
   stop.title = "stop the sound";
   stop.onclick = async () => {
     try { musicNote = await rawCmd("PLAY STOP"); } catch (e) { musicNote = String(e.message || e); }
@@ -187,8 +190,8 @@ function musicRow(k, i) {
   };
   const add = document.createElement("button");
   add.type = "button"; add.className = "kmusbtn"; add.textContent = "＋";
-  add.disabled = !liveLinked();
-  add.title = liveLinked() ? "put a track from this PC onto the robot's card"
+  add.disabled = !robotLinked();
+  add.title = robotLinked() ? "put a track from this PC onto the robot's card"
                            : "connect the robot to add a track";
   add.onclick = () => pickMusicFile(k);
   row.append(document.createTextNode("♪"), sel, vol, rep, play, stop, add);

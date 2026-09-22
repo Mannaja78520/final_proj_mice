@@ -346,7 +346,7 @@ async function sendOffset(i, deg) {
   saveRig();
   renderOffsets();
   const st = $("trimStat");
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     if (st) st.textContent = JOINT_LABELS[i] + " offset " + clamped
       + "° — saved here. Connect the robot to move it.";
     return;
@@ -364,7 +364,7 @@ async function sendOffset(i, deg) {
 
 async function pullOffsets() {
   const st = $("trimStat");
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     if (st) st.textContent = "connect to the robot first (Robot link card)";
     notice(st.textContent);
     return;
@@ -388,7 +388,7 @@ async function clearOffsets() {
   saveRig();
   renderOffsets();
   const st = $("trimStat");
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     if (st) st.textContent = "every offset cleared here — the robot still has its own";
     return;
   }
@@ -421,7 +421,7 @@ function resetRig() {
 // send only the lines that differ — pushing again after a small edit is then a
 // couple of commands instead of fifty.
 async function pushLimits() {
-  if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first (Robot link card)"; notice($("limStat").textContent); return; }
+  if (!haveRobot()) { $("limStat").textContent = "connect to the robot first (Robot link card)"; notice($("limStat").textContent); return; }
   try {
     let have = null;
     $("limStat").textContent = "reading what the robot has…";
@@ -501,7 +501,7 @@ async function pushLimits() {
 }
 // read the module's current limits + gear back into the rig
 async function pullLimits() {
-  if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first"; notice($("limStat").textContent); return; }
+  if (!haveRobot()) { $("limStat").textContent = "connect to the robot first"; notice($("limStat").textContent); return; }
   try {
     const t = await rawCmd("LIMIT?");
     const j = JSON.parse(t);

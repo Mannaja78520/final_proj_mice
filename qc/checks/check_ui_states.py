@@ -173,7 +173,7 @@ def run(t):
         t.contains(body, "sdUpload", "after sending it the sequence")
         t.contains(body, "playing = false",
                    "and the browser stops trying to be the clock")
-        t.ok("haveUsb" in body and "haveWifi" in body,
+        t.ok("haveRobot" in body,
              "only when there is actually a robot connected",
              "with no robot it would silently stop playing instead")
     # Assert the WIRING: a listener that exists but is switched off behind
