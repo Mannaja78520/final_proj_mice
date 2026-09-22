@@ -5595,3 +5595,893 @@ i will use other session how to let you now
 
 ### 2026-09-17 10:42
 Read docs/COORDINATION.md and the newest HANDOFF from claude:5a33 in docs/BRIDGE.md. Get a session name with python tools/plan.py session claude. Then continue the open tasks A0-24, A0-16 and A0-23 from docs/PLAN.html.
+
+### 2026-09-17 13:19
+<ide_opened_file>The user opened the file e:\final_proj\mice\code\firmware\config\esp32_hardware.h in the IDE. This may or may not be related to the current task.</ide_opened_file>
+use gemini flash 3.8 high when codex hit limit
+
+### 2026-09-17 13:24
+<ide_opened_file>The user opened the file e:\final_proj\mice\code\firmware\config\esp32_hardware.h in the IDE. This may or may not be related to the current task.</ide_opened_file>
+do you have another task now? ehhhh do you fix the wifi connect of nong i can't connect and control robot in nong studio now am in the lab you can do it now and i already plug rs485 to robot
+
+### 2026-09-17 13:25
+and the move check where the robot now first before move to other place to make sure no problem to hit something
+
+### 2026-09-17 14:00
+now t connect? i already fix rs485
+
+### 2026-09-17 14:04
+<ide_opened_file>The user opened the file e:\final_proj\mice\code\firmware\config\esp32_hardware.h in the IDE. This may or may not be related to the current task.</ide_opened_file>
+hub didn't see nong through wifi too not only in studio
+
+Robot linkShow technical details
+
++ WiFi
+Connect
+USB / RS485 (shared) goes through the hub, which owns the cable and shares it ΓÇö the module's own website (ΓÜÖ Open module) can be open on the same USB port at the same time, and it works from a phone or another laptop too. USB direct talks to the port straight from this browser (Chrome/Edge on this PC only) and takes the port for itself: nothing else can use that cable until you close this tab.
+≡ƒöì Find modules
+
+no modules found ΓÇö same WiFi? rescan
+MONITOR nong: no sequence running | idle
+ live (robot follows editor)
+ monitor (editor follows robot)
+Home
+Relax
+Attach
+Send pose
+ΓÜÖ Open module config
+pins ┬╖ WiFi ┬╖ users ┬╖ servo type ┬╖ SD files
+monitor mode animates the 3D model with the robot's real joint angles and shows which sequence is playing ΓÇö use it to watch a run from the SD card.
+no SD card? the robot still runs on live commands from here (poses, monitor) ΓÇö only saved sequences need the card.
+
+
+
+Pose
+Sequence
+Robot
+Setup
+Robot linkShow technical details
+
++ USB / RS485 (shared)
+
+COM12 ΓÇö USB-SERIAL CH340 (COM12)
+Γƒ│
+Connect
+USB / RS485 (shared) goes through the hub, which owns the cable and shares it ΓÇö the module's own website (ΓÜÖ Open module) can be open on the same USB port at the same time, and it works from a phone or another laptop too. USB direct talks to the port straight from this browser (Chrome/Edge on this PC only) and takes the port for itself: nothing else can use that cable until you close this tab.
+≡ƒöì Find modules
+
+no modules found ΓÇö same WiFi? rescan
+Could not reach the robot. Check it is powered and on the same network or cable, then try again. log in before doing that
+ live (robot follows editor)
+ monitor (editor follows robot)
+Home
+Relax
+Attach
+Send pose
+ΓÜÖ Open module config
+pins ┬╖ WiFi ┬╖ users ┬╖ servo type ┬╖ SD files
+monitor mode animates the 3D model with the robot's real joint angles and shows which sequence is playing ΓÇö use it to watch a run from the SD card.
+no SD card? the robot still runs on live commands from here (poses, monitor) ΓÇö only saved sequences need the card.
+
+
+
+make when login to hub and the log in to the module too not only hub have the block to login too
+
+### 2026-09-17 14:29
+<ide_selection>The user selected the lines 132 to 132 from e:\final_proj\mice\code\firmware\config\esp32_hardware_nong_module.h:
+NONG_I2S_DOUT_PIN
+
+This may or may not be related to the current task.</ide_selection>
+not gemini pro review make gemini flash 3.8 high review but now he hit limit both you can push it now because all other hit limit
+
+### 2026-09-17 14:29
+but other time i use hotspot all device connect hotspot can see the device everytime why this time not?
+
+### 2026-09-17 14:36
+but you can flash via rs485 why we cannot see the data via rs485 too?
+
+### 2026-09-17 14:52
+Could not reach the robot. Check it is powered and on the same network or cable, then try again. need port and c
+├ù
+Shape a pose
+Move a slider or drag a joint in the preview.
+
+L shoulder pitch
+
+83.1
+L shoulder roll
+
+135.9
+L elbow pitch
+
+88.5
+L elbow roll
+
+89.7
+R shoulder pitch
+
+90
+R shoulder roll
+
+142
+R elbow pitch
+
+95.5
+R elbow roll
+
+90
+Waist (turn L/R)
+
+92.5
+Shrug (rock: L up / R down)
+
+93
+Neutral pose
+Keep this as neutral
+Mirror LΓåöR
+Place a wrist precisely
+Choose a drawing plane
+Timeline
++ Add keyframe
+Update selected
+Duplicate
+Delete
+ΓùÇ move
+move Γû╢
+ΓÜá Check crash
+Γû╢ Play
+ loop
+my_move
+all.yaml
+≡ƒÆ╛ Save YAML
+Send to robot SD
+Γû╢ Run on robot
+ΓÅ╣ Stop robot
+ΓÇ£PlayΓÇ¥ previews here in the browser and pauses when this page is hidden. ΓÇ£Run on robotΓÇ¥ hands it to the module ΓÇö that one keeps going with this page closed.
+
+my_move.yaml
+Load for editing
+Γû╢ Play saved
+Time bar ΓÇö drag to any moment, then press Play
+ΓÅ╣ Back to start
+≡ƒöì -
+≡ƒöì +
+4.9s / 19.6s
+45679
+0.0s2.4s4.9s7.3s9.8s12s15s17s20s
+0 start pose
+start
+ΓùÅ
+90 90 89 90 90 90 96 90 90 107
+T
+117
+hold
+0
+min 80 msΓÖ¬
+1
+name this move
+ΓùÅ
+90 90 89 90 90 90 96 90 90 79
+T
+560
+hold
+1000
+min 140 ┬╖
+50
+┬░/sΓÖ¬
+2
+name this move
+ΓùÅ
+90 90 89 90 90 90 96 90 90 107
+T
+560
+hold
+1000
+min 140 ┬╖
+50
+┬░/sΓÖ¬
+3
+name this move
+ΓùÅ
+83 136 89 90 90 142 96 90 93 93
+T
+1040
+hold
+1000
+min 139 ┬╖
+50
+┬░/sΓÖ¬
+4
+name this move
+ΓùÅ
+35 132 155 25 151 85 25 155 93 93
+T
+1410
+hold
+1000
+min 177 ┬╖
+50
+┬░/sΓÖ¬
+5
+name this move
+ΓùÅ
+75 44 88 90 155 94 25 155 93 93
+T
+1760
+hold
+1000
+min 235 ┬╖
+50
+┬░/sΓÖ¬
+6
+name this move
+ΓùÅ
+25 136 140 25 83 34 89 90 93 93
+T
+1830
+hold
+1000
+min 244 ┬╖
+50
+┬░/sΓÖ¬
+7
+name this move
+ΓùÅ
+87 25 136 87 83 25 124 90 93 93
+T
+2214
+hold
+1000
+min 296 ┬╖
+50
+┬░/sΓÖ¬
+8
+name this move
+ΓùÅ
+8
+
+and the nong studio alway freeze and the  move not match in studio and real robot
+
+
+and make the robot it move to other psotion with the speed limit from it own pose now because it force speed to the position hit something
+
+
+
+
+and cannot control via rs485
+
+Could not reach the robot. Check it is powered and on the same network or cable, then try again. no reply from COM12
+├ù
+Robot linkShow technical details
+
++ USB / RS485 (shared)
+
+COM12 ΓÇö USB-SERIAL CH340 (COM12)
+Γƒ│
+Connect
+USB / RS485 (shared) goes through the hub, which owns the cable and shares it ΓÇö the module's own website (ΓÜÖ Open module) can be open on the same USB port at the same time, and it works from a phone or another laptop too. USB direct talks to the port straight from this browser (Chrome/Edge on this PC only) and takes the port for itself: nothing else can use that cable until you close this tab.
+≡ƒöì Find modules
+
+found: pick oneΓÇª
+Could not reach the robot. Check it is powered and on the same network or cable, then try again. no reply from COM12
+ live (robot follows editor)
+ monitor (editor follows robot)
+Home
+Relax
+Attach
+Send pose
+ΓÜÖ Open module config
+pins ┬╖ WiFi ┬╖ users ┬╖ servo type ┬╖ SD files
+monitor mode animates the 3D model with the robot's real joint angles and shows which sequence is playing ΓÇö use it to watch a run from the SD card.
+no SD card? the robot still runs on live commands from here (poses, monitor) ΓÇö only saved sequences need the card.
+Zero position ≡ƒöÆ
+User
+Pass
+Unlock
+locked ΓÇö the set-zero calibration needs the password
+
+
+
+but can control via wifi
+
+### 2026-09-17 14:53
+make can edit and delete the yaml too
+
+### 2026-09-17 15:43
+Studio freezing (A26-35): I still need to know what you were doing when it froze: playing, dragging, or live mode.
+
+
+everything like that and when not do like that  some time it freeze too
+
+where to set home position and make can set home and Neutral pose because home is when start Neutral pose is the Neutral in show. like start position in home when start robot.
+
+### 2026-09-17 16:19
+running in the web and the real robot now not match as the sequence.
+
+when go to final move and use loop it need to go to start move then it not sync in that time the web it faster than the real robot.
+
+
+in then run how to use it so do we have the this setting and then have another tab to mix a lot of sequence can make it link the sequence in serires  for can make the sequence for other thing like greeting then run the sequence byebye some thing like thant make can mix and match and all in OOP so it can change easy and less token and human can change it too
+
+### 2026-09-17 16:19
+/usage-credits
+
+### 2026-09-17 16:25
+not /usage-credits i ask wrong answer
+
+do you have other task? just ask not doing yet
+
+### 2026-09-17 16:26
+what thing i need to do now?
+
+### 2026-09-17 17:01
+how to set home position like start position?
+
+monitor: no reply (not connected)
+├ù
+
+but can connect and use via rs485
+
+
+and why zero position
+
+Zero position ≡ƒöÆ
+User
+admin
+Pass
+ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó
+Unlock
+That user name and password do not match. Check them and try again.
+
+
+cannot use admin123 make all module in c++ use super_admin / admin: admin123 too
+
+
+also make i can see the distance between the point that i need to know in robot too like the elbow and hand or elbow -> elbow when use some key to see hold that key or can click to open
+
+
+in shrug i use only 10 deg why in program it see rotage too far but in reallife it still 10 but i see it not match in program it not move only rotage the  point
+
+
+when web freeze it make not match with robot and when stop in web after freeze the robot it still move not stop because i can't stop the web is freeze
+
+### 2026-09-17 17:19
+Push the ready batch? It holds loop sync, robot home, the limits warning, YAML delete and freeze reports. The hub restarts for about 30 seconds.
+
+Yep
+
+The Shows tab (greeting ΓåÆ byebye): say yes or no to building it the way I described.
+make it too
+
+
+Build A26-42 to A26-46 now? I'd go in this order: stop-on-freeze and the zero lock login first because they're about safety, then monitor, shrug, and distances.
+
+i will use other session
+
+### 2026-09-17 17:39
+in the robot still cannot adjust the robot home pose and zero position give me the promt to let other session
+
+### 2026-09-17 17:41
+<ide_selection>The user selected the lines 132 to 132 from e:\final_proj\mice\code\firmware\config\esp32_hardware_nong_module.h:
+NONG_I2S_DOUT_PIN
+
+This may or may not be related to the current task.</ide_selection>
+Read CLAUDE.md, docs/COORDINATION.md and the newest docs/BRIDGE.md entries first.
+Run: python tools/plan.py session claude  -> set MICE_AGENT, then
+python tools/plan.py doing A26-47 A26-43
+
+TASK (user 2026-09-17, hardware on the bench: nong #67, RS485 adapter on COM12
+bus id 67, WiFi 192.168.137.109 on hotspot "manny", hub dist/MiceHub.exe on :8642):
+"in the robot still cannot adjust the robot home pose and zero position"
+
+1. ROBOT HOME POSE (where the arm goes at power-on and on HOME).
+   - Firmware: NongModule NEUTRAL command = the home pose (NEUTRAL <a1..a10>,
+     NEUTRAL <joint> <deg>, NEUTRAL?). Boot and HOME use neutral_.
+   - Studio (committed 9cba064): RIG.home, button "Keep this as robot home"
+     (sliders.js homeFromPose), Setup start deg column, Send/Read rig use home.
+   - The user says it still cannot be adjusted ON THE ROBOT. Find out where:
+     the module's own website (firmware/src/web/WebUI.h, served by the hub at
+     /mod?dev=...) likely has no home-pose control, and/or Studio's button does
+     not reach the board over RS485/WiFi. Test on the real board: send
+     NEUTRAL, then NEUTRAL?, reboot, and check the arm's start pose.
+   - Designer-first: a clickable way to set home from the current pose on
+     the module page, plain words, technical detail behind the switch.
+
+2. ZERO POSITION (A26-43, same area).
+   - Studio's Zero lock (robot_link.js zeroUnlock ~line 780) only compares with
+     localStorage nongZeroCred or manny/12345678, so admin/admin123 is refused.
+     Unlock with the real hub login (/api/login or an existing hub session)
+     instead of a browser-only password.
+   - User wants every board's C++ firmware to have super_admin/admin123 AND
+     admin/admin123: firmware/src/core/UserStore.cpp begin() seeds them only on
+     an EMPTY store. Old boards (like #67, which had only manny/12345678) must
+     get the missing ones added on boot. Never delete or rotate existing accounts.
+   - Check SETZERO end to end on the real board (it must keep neutral_, see
+     qc/checks/check_neutral.py) and that the zero panel works from Studio AND
+     the module page.
+
+RULES: work in your own tree (python promote.py --staging .staging-<session> --init),
+claim files in BRIDGE (python tools/bridge.py CLAIM ...). Every fix needs a QC check
+that you break and watch fail (tools/sabotage.py). Firmware: pio test -e native,
+pio run -e mice_nong. Ask the user before flashing #67 (OTA over WiFi works:
+POST /api/ota?ip=192.168.137.109&type=nong, logged in). The full gate is red
+only because of 3 checks that already fail in main (check_voice_source,
+check_faces_concurrency x2), and those are not yours. Ask the user before
+pushing past them. Update the plan at every step, and hand off with
+python tools/plan.py handoff <id> "<next step>" before stopping.
+
+### 2026-09-17 18:16
+and i cannot select music and cannot insert volume it the tab dissapear before select 
+
+you can flash after that
+
+### 2026-09-17 18:41
+let update it first  then do other task because i need to check everything first
+
+### 2026-09-17 19:03
+do it all i can use nong now
+
+### 2026-09-17 20:59
+resume work
+not can't use any hardware
+
+### 2026-09-17 21:10
+<ide_opened_file>The user opened the file e:\final_proj\mice\code\firmware\config\esp32_hardware_nong_module.h in the IDE. This may or may not be related to the current task.</ide_opened_file>
+everytime not use gemini pro to review use gemini 3.8 flash (High) to review gemini pro i think it not better enough and consume my token a lot.
+
+### 2026-09-17 22:10
+restart hub
+
+### 2026-09-18 00:20
+<ide_selection>The user selected the lines 144 to 144 from e:\final_proj\mice\code\firmware\config\esp32_hardware_nong_module.h:
+max98357a
+
+This may or may not be related to the current task.</ide_selection>
+hand off gemini now he hit limit
+this task this is the command to antigravity
+
+Add the "Open Reconize" button inside the Voice page?
+
+open the service detect the face and data to voice  to test it you can try open and see in cam in laptop am already 1 in the people in the face reg now you can know my name to test
+
+
+Add the "Open Reconize" button inside the Voice page?
+
+
+do like this
+
+### 2026-09-18 01:22
+try again i go to buy something wait for you lasttime
+
+### 2026-09-18 01:28
+do not save the picture of it because it took my rom just open and check who am i can you? or we need to go to the facereg it will do we just use it so we can't?
+
+### 2026-09-18 01:47
+why it not auto check and have to select which camera i use in voice because in facerecog it have cacah of camera and can use in different app in same time as i remember
+
+### 2026-09-18 02:19
+<ide_selection>The user selected the lines 33 to 33 from e:\final_proj\mice\code\firmware\config\esp32_hardware_nong_module.h:
+TianKongRC
+
+This may or may not be related to the current task.</ide_selection>
+in face regconize already make the program that we can use 1 camera for many task or program just read it and we can use that to check in our app so we can select cam to use in multiple purpose
+
+### 2026-09-18 02:31
+All of tonight's work (A26-58 to A26-63) is in the main tree and not committed yet, so it can be landed as one batch when you are happy with it.
+
+land all
+
+
+7 saved answers ┬╖ speech small loaded ┬╖ voice th-TH-PremwadeeNeural speaking (4 mapped) ┬╖ model loaded
+≡ƒæñ
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î
+Check who I am
+Check by itself
+
+FHD Camera (5986:1193)
+Open Reconize
+Load Model
+Unload Model
+Γƒ│
+no face in that picture - move into the light
+
+The picture is not kept ΓÇö nothing is written to the face app.
+
+Type a questionΓÇª
+
+Press to talk
+Ask
+Start conversation
+Sound
+
+Move
+Robot:
+
+(Per-answer)
+
+Multi-lang mode
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î asked:
+hi
+Rig / Mice:
+EN ┬╖ from saved answers ┬╖ instant
+Hello α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î, I am Mice robot. Welcome! How can I help you today?
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î asked:
+hi
+Rig / Mice:
+EN ┬╖ from saved answers ┬╖ instant
+Hello α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î, I am Mice robot. Welcome! How can I help you today?
+
+when i use multi lang it have this problem it name is thai and this model lang in en ot can't read thai so can we use only 1 voice but can adjust and can read all lang can we do like that?
+
+
+in face detect when don't have face why it still said phuthiphong and when see unknow or not seen just use as usaual not call name and then make as before if you already do like that how much time before go to unknow and if like that make can setting by my self in setting to setting the time out time
+
+### 2026-09-18 02:53
+which session still in use do what?
+
+can we make senario now in setting to make use one voice in senario and can run all lang then the verse in thai not read like that make it can run like thai sentense or in senario i will promt what senario and the voice it run sound like that also why we can't make 1 voice because when different people come in same event it have different country person so i need to serve it all when it use different tone voice  people will confuse the sound
+
+
+
+or i need to do other thing too please told me what i can do now?
+
+### 2026-09-18 02:54
+also make TTS (text to speech can read all lang in the same time why it can't)
+
+### 2026-09-18 02:59
+this is what i found 
+
+7 saved answers ┬╖ speech small loaded ┬╖ voice th-TH-PremwadeeNeural speaking (4 mapped) ┬╖ model loaded
+≡ƒæñ
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î
+Check who I am
+Check by itself
+
+FHD Camera (5986:1193)
+Open Reconize
+Load Model
+Unload Model
+Γƒ│
+Type a questionΓÇª
+
+Press to talk
+Ask
+Start conversation
+Sound
+
+Move
+Robot:
+
+(Per-answer)
+
+Multi-lang mode
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î asked:
+hi
+Rig / Mice:
+EN ┬╖ from saved answers ┬╖ instant
+Hello α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î, I am Mice robot. Welcome! How can I help you today?
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î asked:
+hi
+Rig / Mice:
+EN ┬╖ from saved answers ┬╖ instant
+Hello α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î, I am Mice robot. Welcome! How can I help you today?
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î asked:
+α╕¬α╕ºα╕▒α╕¬α╕öα╕╡
+Rig / Mice:
+TH ┬╖ from saved answers ┬╖ instant
+α╕¬α╕ºα╕▒α╕¬α╕öα╕╡α╕äα╕úα╕▒α╕Üα╕äα╕╕α╕ôα╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î α╕£α╕íα╕äα╕╖α╕¡α╕½α╕╕α╣êα╕Öα╕óα╕Öα╕òα╣î Mice α╕óα╕┤α╕Öα╕öα╕╡α╕òα╣ëα╕¡α╕Öα╕úα╕▒α╕Üα╕äα╕úα╕▒α╕Ü α╕íα╕╡α╕¡α╕░α╣äα╕úα╣âα╕½α╣ëα╕£α╕íα╕èα╣êα╕ºα╕óα╣äα╕½α╕íα╕äα╕úα╕▒α╕Ü
+α╕Öα╕┤α╕èα╕èα╕┤α╕íα╕▓ asked:
+α╕¬α╕ºα╕▒α╕¬α╕öα╕╡
+Rig / Mice:
+TH ┬╖ from saved answers ┬╖ instant
+α╕¬α╕ºα╕▒α╕¬α╕öα╕╡α╕äα╕úα╕▒α╕Üα╕äα╕╕α╕ôα╕Öα╕┤α╕èα╕èα╕┤α╕íα╕▓ α╕£α╕íα╕äα╕╖α╕¡α╕½α╕╕α╣êα╕Öα╕óα╕Öα╕òα╣î Mice α╕óα╕┤α╕Öα╕öα╕╡α╕òα╣ëα╕¡α╕Öα╕úα╕▒α╕Üα╕äα╕úα╕▒α╕Ü α╕íα╕╡α╕¡α╕░α╣äα╕úα╣âα╕½α╣ëα╕£α╕íα╕èα╣êα╕ºα╕óα╣äα╕½α╕íα╕äα╕úα╕▒α╕Ü
+Person asked:
+hi
+Rig / Mice:
+EN ┬╖ from saved answers ┬╖ instant
+Hello! I am Mice robot. Welcome! How can I help you today?
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î asked:
+hi
+Rig / Mice:
+EN ┬╖ from saved answers ┬╖ instant
+Hello α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î, I am Mice robot. Welcome! How can I help you today?
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î asked:
+α╕¬α╕ºα╕▒α╕¬α╕öα╕╡
+Rig / Mice:
+TH ┬╖ from saved answers ┬╖ instant
+α╕¬α╕ºα╕▒α╕¬α╕öα╕╡α╕äα╕úα╕▒α╕Üα╕äα╕╕α╕ôα╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î α╕£α╕íα╕äα╕╖α╕¡α╕½α╕╕α╣êα╕Öα╕óα╕Öα╕òα╣î Mice α╕óα╕┤α╕Öα╕öα╕╡α╕òα╣ëα╕¡α╕Öα╕úα╕▒α╕Üα╕äα╕úα╕▒α╕Ü α╕íα╕╡α╕¡α╕░α╣äα╕úα╣âα╕½α╣ëα╕£α╕íα╕èα╣êα╕ºα╕óα╣äα╕½α╕íα╕äα╕úα╕▒α╕Ü
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î asked:
+α╣äα╕«
+Rig / Mice:
+TH ┬╖ from local model
+α╕¬α╕ºα╕▒α╕¬α╕öα╕╡α╕äα╕úα╕▒α╕Üα╕äα╕╕α╕ôα╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î α╕ëα╕▒α╕Öα╕¬α╕▓α╕íα╕▓α╕úα╕ûα╕èα╣êα╕ºα╕óα╕¡α╕░α╣äα╕úα╕äα╣êα╕░?
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î asked:
+α╕üα╕┤α╕Öα╣äα╕ú
+Rig / Mice:
+TH ┬╖ from saved answers ┬╖ instant
+α╕äα╕╕α╕ôα╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣îα╕äα╕úα╕▒α╕Ü α╣éα╕úα╕çα╕¡α╕▓α╕½α╕▓α╕úα╣üα╕Ñα╕░α╕¿α╕╣α╕Öα╕óα╣îα╕¡α╕▓α╕½α╕▓α╕úα╕¡α╕óα╕╣α╣êα╕èα╕▒α╣ëα╕Ö 1 α╕äα╕úα╕▒α╕Ü α╕íα╕╡α╕¡α╕▓α╕½α╕▓α╕úα╣üα╕Ñα╕░α╣Çα╕äα╕úα╕╖α╣êα╕¡α╕çα╕öα╕╖α╣êα╕íα╕Üα╕úα╕┤α╕üα╕▓α╕úα╕äα╕úα╕▒α╕Ü
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î asked:
+α╕ùα╕╡α╣êα╕êα╕¡α╕ö
+Rig / Mice:
+TH ┬╖ from local model
+α╕äα╕╕α╕ôα╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣îα╕äα╕úα╕▒α╕Ü α╕ùα╕╡α╣êα╕êα╕¡α╕öα╕úα╕ûα╕¡α╕óα╕╣α╣êα╕öα╣ëα╕▓α╕Öα╕½α╕Ñα╕▒α╕çα╕¡α╕▓α╕äα╕▓α╕úα╕äα╕úα╕▒α╕Ü α╣Çα╕öα╕┤α╕Öα╕£α╣êα╕▓α╕Öα╕¢α╕úα╕░α╕òα╕╣α╕ùα╕▓α╕çα╕¡α╕¡α╕üα╕öα╣ëα╕▓α╕Öα╕éα╕ºα╕▓α╣äα╕öα╣ëα╣Çα╕Ñα╕óα╕äα╕úα╕▒α╕Ü
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î asked:
+α╣äα╕ºα╣äα╕ƒ
+Rig / Mice:
+TH ┬╖ from local model
+α╕¬α╕ºα╕▒α╕¬α╕öα╕╡α╕äα╕úα╕▒α╕Üα╕äα╕╕α╕ôα╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î α╕ëα╕▒α╕Öα╕¬α╕▓α╕íα╕▓α╕úα╕ûα╕èα╣êα╕ºα╕óα╕¡α╕░α╣äα╕úα╕äα╣êα╕░?
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î asked:
+α╣äα╕ºα╣äα╕ƒα╕úα╕½α╕▒α╕¬
+Rig / Mice:
+TH ┬╖ from local model
+α╕äα╕╕α╕ôα╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣îα╕äα╕úα╕▒α╕Ü α╕úα╕½α╕▒α╕¬α╣äα╕ºα╣äα╕ƒα╕äα╕╖α╕¡ 3587 α╕äα╕úα╕▒α╕Ü
+α╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣î asked:
+α╣äα╕íα╣êα╣âα╕èα╣ê α╣Çα╕ºα╣çα╕ºα╕äα╕▒α╣ëα╕íα╕½α╕úα╕¡
+Rig / Mice:
+TH ┬╖ from local model
+α╕äα╕╕α╕ôα╕₧α╕╕α╕Æα╕┤α╕₧α╕çα╕¿α╣îα╕äα╕úα╕▒α╕Ü α╕ûα╣ëα╕▓α╕äα╕╕α╕ôα╕òα╣ëα╕¡α╕çα╕üα╕▓α╕úα╕äα╕ºα╕▓α╕íα╕èα╣êα╕ºα╕óα╣Çα╕½α╕Ñα╕╖α╕¡α╣âα╕Öα╕üα╕▓α╕úα╕ùα╕│α╕çα╕▓α╕Öα╕½α╕úα╕╖α╕¡α╕ùα╕│
+
+
+
+it answer not in the answer that we already promt before so let test all this senario too when run check in voice some time it not translate to the correct lang
+
+### 2026-09-18 03:07
+sorry i press esc by misstake make esc can't press after this when press esc we will not interrupt
+
+### 2026-09-18 03:14
+make not interrupt no key and in global
+
+and this is the final before i close pc and move back to dorm only 2 min so stop everything then shutdown pc when go to dorm i will let you do the unfinish task untill morning because i will run you while am sleep so make the promt i will use it when am back to dorm
+
+### 2026-09-18 03:50
+Work all night by yourself, no questions. Read CLAUDE.md and docs/PLAN.html first, then docs/BRIDGE.md from the bottom for what session claude:09180022-caee did tonight (commits c13026e, 7662ddb, ddf22c1).
+
+Own your work: python tools/plan.py session claude, then mark every task doing when you pick it up and done when it lands, with --agent.
+
+Do these, in this order:
+
+1. The dead sessions left tasks half-finished with no handoff. Check each against the code, then either finish it or set it back to todo with a note saying what is really there:
+   claude:09171324-229c -> A26-31, A26-32, A26-33, A26-34, A26-40
+   claude:09171741-5585 -> A26-42, A26-45, A26-46
+   Older, no owner -> A26-5, A26-7, A26-8, A26-14, A21-12, A21-17
+2. Then take the first todo in id order and keep going. Skip anything marked [hw]: the boards are not on the bench.
+3. Voice answer quality (A26-68 left this open): the local model writes weak Thai - it mixes α╕äα╕úα╕▒α╕Ü and α╕äα╣êα╕░, cuts replies off, and sometimes answers in the wrong language on very short questions. Fix what can be fixed in the prompt and in the saved answers (apps/voice/qa_data.json), and add saved answers for the questions a visitor really asks. Never let the model invent a fact; that rule is already in all four prompts, keep it.
+
+Rules that are not negotiable:
+* every fix gets a QC check, and the check only counts once you have broken the fix with python tools/sabotage.py and watched it fail. Thai text in a sabotage must go in a UTF-8 spec FILE, not a heredoc - it arrives mangled;
+* python qc/run_qc.py --quick must be green before you commit;
+* commit in small batches with a real message; main holds other sessions' uncommitted work, so stage only the files you touched, never git add -A;
+* write what you did to docs/BRIDGE.md as you go, so the morning makes sense;
+* do not ask me anything - if a decision is genuinely new, pick the safer option, write it in the plan, and carry on.
+
+In the morning, leave one short summary at the top of your last message: what landed, what is still broken, and what needs me.
+
+### 2026-09-18 11:17
+<ide_opened_file>The user opened the file e:\final_proj\mice\code\firmware\config\esp32_hardware_nong_module.h in the IDE. This may or may not be related to the current task.</ide_opened_file>
+now have nong module via rs485 and wifi so you can test now
+
+### 2026-09-18 11:20
+sorry check rs485 again
+
+### 2026-09-18 11:55
+is now every task finish?
+
+### 2026-09-18 12:09
+i will do this task in other session give me the promt in different task put it to plan i will make it later in different session to reduce token
+
+A0-27b board-side roles/passwords in firmware ΓÇö needs a board flashed.
+
+do this
+
+the measure i will try use different degree and the middle of it later do other first
+
+and the gear of shrug is not good i will measure when i use different servo degree with full left and right and middle which degree middle is 90 and you make the calibrate for me then save to PDF i will use it to cal and use in my thesis book and the forward invert kinematric i will send the step file later is the full part and my real robot edit in nong studio too make it preset i will select to use later and i need to to calculate all of it for me then in anycubic slicer in mf3 it have slice for all pet-g to make this robot so calculate the gear and everything  i will have slicer present later i have all weight in that also i will add the insert nut and bolt in step file let calculate all of it when i finish and let you do it , also calculate the servo weight too i need it to use to make sure my servo it can handle all of weight and the maximum of the weight of the shirt that we can use thx.
+
+### 2026-09-18 13:17
+Do task A0-27b. Read CLAUDE.md and docs/PLAN.html first. Own it: python tools/plan.py session claude, then mark it doing with --agent and done when it lands.
+
+Already done, on the HUB side (A0-27, main_python/hub_auth.py + the Accounts card): default accounts super_admin/admin123 and admin/admin123 marked "please change"; each user changes its own user and password; super_admin changes anyone, adds and deletes users; a role choice (user / super_admin) when adding.
+
+What to build: the same thing in FIRMWARE, so a module's own website behaves like the hub. firmware/src/core/UserStore.h/.cpp today keeps PLAIN passwords in NVS as a JsonDocument shaped {"super_admin": "admin123"} with no role field. It needs a role per user, HASHED passwords in NVS, self rename and self password change, super_admin managing everyone, and the LAST super_admin protected from being deleted or demoted. firmware/src/core/WebPortal.cpp serves the module site: add the same Accounts controls, plain words on the surface, technical detail behind the .tech switch. Commands are DATA: firmware/config/commands.json already has USER and AUTH ΓÇö extend there, never hardcode a list.
+
+Caution, checked 2026-09-18: UserStore.cpp, UserStore.h, WebPortal.cpp and config/commands.json carry ~15 uncommitted lines from another session. Run git diff on them before editing and do not revert that work.
+
+Hardware: needs one board flashed. Bench rig is nong id 67 on COM12 (RS485 bus id 67) and WiFi. Stop the hub before flashing. Never open the COM port yourself ΓÇö the hub owns it and shares it through /api/usb/cmd ΓÇö and log in first, super_admin / admin123, where the JSON field is password, not pass.
+
+Verify: add a QC check and prove it by breaking the fix with python tools/sabotage.py ΓÇö a check that passes before and after guards nothing. Then python qc/run_qc.py --quick green, and pio run -e mice_nong. Commit only the files you touched; main holds other sessions' uncommitted work, so never git add -A.
+
+### 2026-09-18 13:18
+don't do it i will let gemini do this task
+
+### 2026-09-18 13:38
+24 saved answers ┬╖ speech loads when first needed ┬╖ voice th-TH-PremwadeeNeural speaking (4 mapped) ┬╖ model loaded
+≡ƒæñ
+No face
+Check who I am
+Check by itself
+
+FHD Camera (5986:1193)
+Open Reconize
+Load Model
+Unload Model
+Γƒ│
+the face app did not accept the saved login (<urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>)
+
+The picture is not kept ΓÇö nothing is written to the face app.
+
+
+
+and why it have terminal popup every time
+make it in background
+
+### 2026-09-18 14:15
+resume
+
+### 2026-09-18 14:40
+Wait for A0-27b to land and main to go green, then re-gate .staging-face-6591 and promote. Correct process, delay is theirs.
+
+### 2026-09-18 14:46
+give the promt i will let gemini do this task after this you will hit limit soon
+
+### 2026-09-18 14:56
+can you make endnote for me
+
+https://o365cmu-my.sharepoint.com/:w:/g/personal/nidchimma_b_cmu_ac_th/IQDCFR-2isvuQoTyKGWvY-vxARLPUhjvD_LGWyKDGVfNnq0?e=zOWvCO
+
+### 2026-09-18 14:59
+EndNote the program make in
+
+"C:\Users\manma\Downloads\AAAAAα╕òα╕╣α╣ëα╕íα╕½α╕▒α╕¬α╕êα╕úα╕úα╕óα╣î.docx"
+
+to import to other docx
+
+### 2026-09-18 15:02
+add all ref to endnote we have more than 100 but don't add to endnote yet
+
+ref from this
+"C:\Users\manma\Downloads\α╕òα╕╣α╣ëα╕íα╕½α╕▒α╕¬α╕êα╕úα╕úα╕óα╣î_v3_cmd_line.docx"
+
+make format APA7TH
+
+### 2026-09-21 13:05
+i have nong hardware now so can test everything with hardware
+
+### 2026-09-21 13:08
+before doing it can we make everything to sub-system and the main to each so when we change wee have point file to that file in md and we change in that and check only in that sub system and make oop everything is that reduce token use for all AI antigravity claude codex? and edit the exact file make no problem when add new file or system point it to md or make like c or c++ like have the header of each system and then each system use what inside is this help for test time QC time and everything too?
+
+### 2026-09-21 13:17
+hardware first
+
+### 2026-09-21 13:21
+i open it now and make sure the c++ module it have low looptime and can be realtime and not lag or restart every task and everytime with no problem too
+
+### 2026-09-21 13:31
+nong can see in hub
+
+### 2026-09-21 14:57
+in doing?
+
+### 2026-09-21 15:16
+Accounts on nong 67 work: the roles are correct, and a normal user cannot add accounts. I did not test removing the last super_admin. If the guard were broken, that test would delete the account for real. Do you want me to make a spare super_admin account first so I can test it safely?
+
+
+do it too
+
+
+In the main tree, apps/voice/service.py has an edit that nobody has claimed and that never went through the gate. It adds a fixed Thai fallback and fails the voice check. I did not touch it in the main tree, but it will block other promotes until someone fixes it.
+
+gemini do it
+
+
+
+
+A26-75, last super_admin guard: do you want me to make a spare super_admin account first so I can test it safely? I also need the nong on a USB cable to test that path; right now it only reaches the PC through RS485 and WiFi.
+
+do this also 
+when we connect rs485 and usb and wifi so use the less letency as possible
+
+### 2026-09-21 15:33
+do it
+
+### 2026-09-21 16:07
+can wifi make everything faster than this?
+then restructure
+
+
+Your modules
+1 module, reachable: 1 on the RS485 bus, 1 over WiFi (1 both by cable and over WiFi).
+Γå⌐ nong
+last opened 2026-09-18 13:35 (4470 min ago)
+Γÿå
+nong
+nong
+#67
+ΓÜÖ Open module
+direct
+Studio + monitor
+ΓÜí firmwareΓÇª
+
+
+
+A26-75: only the USB-cable test is left. I need the nong's ESP32 plugged in by USB for that.
+
+can not i close the box now i can't use it 
+
+A26-80, the voice file: waiting for Gemini.
+
+tell gemini to run
+
+### 2026-09-21 17:14
+Other things finished today:
+
+Voice fix (A26-80): Gemini wrote it, I applied it, and it is in the main tree. The fixed Thai fallback now comes from config/voice.json. The voice check is green again.
+"4470 min ago" on Home: now says "3 days ago" (A26-82).
+A26-75: set to blocked until the box is open again.
+Can WiFi be as fast as the cable? No, not on this setup. Measured on nong 67:
+
+Cable (RS485)	WiFi, as it works now	Radio round trip alone
+Time	6 ms	57 ms	18 ms average (4 min, 48 max)
+WiFi is slow mostly because the board closes the connection after every command, so each command pays for a new connection. A connection that stays open (a WebSocket that logs in on its first message) could bring WiFi down to about 15ΓÇô20 ms. That is still slower than the cable, so the hub would keep choosing the cable when both are connected. The board's WebSocket was made send-only on purpose on 2026-08-25, for security, so this change needs a design review before I build it. I logged it as task A26-81.
+
+Next: once phase 1 lands, I start phase 2: splitting main.py one piece at a time, starting with the USB layer. When main.py only wires the pieces together, a hub change will stop needing the full 8-minute gate.
+
+
+doit
+
+### 2026-09-21 19:03
+or i will conect via usb as dmmy for this module? now no esp connect via usb
+
+### 2026-09-21 19:05
+i already plug esp32 via usb
+
+### 2026-09-21 20:12
+can you try again
+
+### 2026-09-21 20:18
+can you try again
+
+### 2026-09-21 20:23
+sorry i press wrong button but i said you last tie to disable the esc why it interrupt again?
+
+### 2026-09-21 20:33
+Your modules
+2 modules, reachable: 1 on a USB cable, 1 on the RS485 bus, 2 over WiFi (2 both by cable and over WiFi).
+Γå⌐ nong
+last opened 2026-09-18 13:35 (3 days ago)
+Γÿå
+MOD-93B454
+nong
+#85
+ΓÜÖ Open module
+direct
+Studio + monitor
+ΓÜí firmwareΓÇª
+Γÿå
+nong
+nong
+#67
+ΓÜÖ Open module
+direct
+Studio + monitor
+ΓÜí firmwareΓÇª
+
+
+
+is nong is the same nong?
+
+it just different firmware you just flash why it say 3 day?
+it still list here?
+
+how about to make it show last open?
+
+### 2026-09-21 20:38
+do you test the time of each method to rank the connect or auto select root when other method is better
+
+### 2026-09-21 20:57
+yes
+and
+Studio + monitor opens on the fastest route at the moment you open it, and does not switch while open.
+
+why let fix it maybe i use this method a lot than other
+
+and now you are 99% weekly let handoff as fast as possible

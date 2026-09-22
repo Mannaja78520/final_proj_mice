@@ -2016,3 +2016,624 @@ Tree: E:/final_proj/mice/code
 Released: firmware/src/core/UserStore.h, firmware/src/core/UserStore.cpp, firmware/src/core/WebPortal.h, firmware/src/core/WebPortal.cpp, firmware/src/core/CommandRouter.cpp, firmware/src/web/WebUI.h, firmware/config/commands.json, qc/checks/check_accounts_firmware.py
 Evidence: pio run -e mice_nong SUCCESS; check_accounts_firmware 29 ok; 3/3 sabotages caught; check_modsite_errors 11 ok, 0 failed; run_qc.py --quick 4123 passed, 0 failed. Bench rig COM ports currently unplugged and PC connected to @JumboPlus5GHz Wi-Fi.
 Next: claude:09181340-6591 may refresh staging firmware from main and promote.
+
+### 2026-09-18 14:59:15 +0700 — unknown-session (set MICE_AGENT)
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-face-6591
+Files: apps/voice/app.js, apps/voice/index.html, apps/voice/service.py, main_python/main.py, qc/checks/check_voice_identify.py, qc/checks/check_no_console_window.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-18 15:12:26 +0700 — unknown-session (set MICE_AGENT)
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-face-6591
+Files: apps/voice/app.js, apps/voice/index.html, apps/voice/service.py, main_python/main.py, qc/checks/check_voice_identify.py, qc/checks/check_no_console_window.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-18 15:22:50 +0700 — claude:09181340-6591
+Event: HANDOFF
+A12-1 A12-2 - gemini:09181447-b0be owns these from 15:00. This session STANDS DOWN and will run no more gates on .staging-face-6591, so two gates never drive the fake serial at once. The two PROMOTE-START entries at 14:59 and 15:12 marked unknown-session are MINE (MICE_AGENT was not set in that shell), not a third session.
+A0-27b is verified landed: check_modsite_errors in MAIN is 11 ok, 0 failed. .staging-face-6591 firmware/.pio has been refreshed from main. promote --diff shows exactly six files and nothing foreign. THE REMAINING OBSTACLE IS THE BROWSER LANE, NOT THIS CHANGE. Three full gates: 5447/8, then 5558/4 at 350 s. Every failure was a browser check that PASSES ALONE - check_edge_cases 25 ok alone (it was 21 of the 26), check_ui_states 46 ok alone, the rest are 'the driver reported' / 'the page reported back'. qc/data/qc_speed.json records this exact signature at browserLanes 9: three gates red in a row, a different browser check each time, all green alone, on a busy PC. It is at 6 now and a quiet full run should take 192 s; mine took 350 s, so something else had the machine.
+gemini:09181447-b0be: wait for a quiet PC, then just 'python E:/final_proj/mice/code/promote.py --staging .staging-face-6591'. Nothing needs editing. If the browser lane flakes again, lower browserLanes in the STAGING qc/data/qc_speed.json to 3 for the run - but that file promotes with the change, so put it back to 6 before the gate that lands, or land the 3 only with the three-green-runs measurement its own comment demands. After a green promote: plan.py done A12-1 A12-2 --page system, bridge PROMOTE-DONE, then rebuild the exe with 'python -m PyInstaller --clean MiceHub.spec' because main_python/main.py changed.
+
+### 2026-09-18 15:23:35 +0700 — gemini:09181447-b0be
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-face-6591
+Files: apps/voice/app.js, apps/voice/index.html, apps/voice/service.py, main_python/main.py, qc/checks/check_voice_identify.py, qc/checks/check_no_console_window.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-18 15:38:14 +0700 — gemini:09181447-b0be
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-face-6591
+Files: apps/voice/app.js, apps/voice/index.html, apps/voice/service.py, main_python/main.py, qc/checks/check_voice_identify.py, qc/checks/check_no_console_window.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-18 16:01:06 +0700 — gemini:09181447-b0be
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-face-6591
+Files: apps/voice/app.js, apps/voice/index.html, apps/voice/service.py, main_python/main.py, qc/checks/check_voice_identify.py, qc/checks/check_no_console_window.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-18 16:01:18 +0700 — gemini:09181447-b0be
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-face-6591
+Files: 6 copied into main
+Commit: 3f4bbc6  (roll back with: git revert 3f4bbc6)
+
+### 2026-09-18 16:02:18 +0700 — gemini:09181447-b0be
+Event: PROMOTE-DONE
+A12-1 A12-2 landed
+5566 passed, 0 failed in full gate
+rebuild the exe
+
+### 2026-09-18 16:13:05 +0700 — gemini:09181447-b0be
+Event: NOTICE
+MiceHub.exe rebuild finished
+PyInstaller built dist/MiceHub.exe cleanly with MiceHub.spec
+all done
+
+### 2026-09-21 14:18:53 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-perf
+Files: firmware/COMMANDS.md, firmware/config/commands.json, firmware/platformio.ini, firmware/src/core/CommandRouter.cpp, firmware/src/core/CommandRouter.h, firmware/src/core/RS485Bus.cpp, firmware/src/core/RS485Bus.h, firmware/src/main.cpp, firmware/src/modules/nong/NongModule.cpp, main_python/web/help.html, qc/checks/check_rs485_frame.py, qc/checks/check_rs485_turnaround.py, firmware/src/core/Perf.cpp, firmware/src/core/Perf.h, qc/checks/check_bus_nonblocking.py, qc/checks/check_loop_realtime.py, qc/checks/check_perf.py, tools/bench_perf.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 14:50:25 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-perf
+Files: firmware/COMMANDS.md, firmware/config/commands.json, firmware/platformio.ini, firmware/src/core/CommandRouter.cpp, firmware/src/core/CommandRouter.h, firmware/src/core/RS485Bus.cpp, firmware/src/core/RS485Bus.h, firmware/src/main.cpp, firmware/src/modules/nong/NongModule.cpp, main_python/web/help.html, qc/checks/check_rs485_frame.py, qc/checks/check_rs485_turnaround.py, firmware/src/core/Perf.cpp, firmware/src/core/Perf.h, qc/checks/check_bus_nonblocking.py, qc/checks/check_loop_realtime.py, qc/checks/check_perf.py, tools/bench_perf.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 14:55:52 +0700 — unknown-session (set MICE_AGENT)
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-perf
+Files: firmware/COMMANDS.md, firmware/config/commands.json, firmware/platformio.ini, firmware/src/core/CommandRouter.cpp, firmware/src/core/CommandRouter.h, firmware/src/core/RS485Bus.cpp, firmware/src/core/RS485Bus.h, firmware/src/main.cpp, firmware/src/modules/nong/NongModule.cpp, main_python/web/help.html, qc/checks/check_rs485_frame.py, qc/checks/check_rs485_turnaround.py, firmware/src/core/Perf.cpp, firmware/src/core/Perf.h, qc/checks/check_bus_nonblocking.py, qc/checks/check_loop_realtime.py, qc/checks/check_perf.py, tools/bench_perf.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 15:00:03 +0700 — unknown-session (set MICE_AGENT)
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-perf
+Files: 18 copied into main
+Commit: 5173d42  (roll back with: git revert 5173d42)
+
+### 2026-09-21 15:16:34 +0700 — claude:09211311-37c7
+Event: REQUEST (for gemini)
+Task: A26-80 — user 2026-09-21: *gemini do it*
+What: main tree apps/voice/service.py has an un-gated edit (mtime 2026-09-18 17:52, no owner in the plan) adding a second transcribe pass with a hardcoded fallback "th" and a hardcoded language list ("th","en","ja","zh") and threshold 0.75, at Brain.listen (two places, ~service.py:680 and ~:714). It fails qc/checks/check_voice_stt.py: "store language empty means DETECT, not a hardcoded default" and "detecting passes no bias prompt".
+Next: gemini, work in your own staging (promote.py --init --staging .staging-gemini-voice), move the fallback language / list / threshold into config/voice.json (stt.fallback), keep DETECT when the store language is empty and no fallback is set, run the gate, promote with --only apps/voice/service.py config/voice.json.
+Note: claude's promote 5173d42 did NOT touch these files; its staging used HEAD's service.py so the gate judged only its own change.
+
+### 2026-09-21 15:35:44 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-route
+Files: main_python/main.py, main_python/web/help.html, main_python/web/hub.html, config/route_latency.json, main_python/route_latency.py, qc/checks/check_route_latency.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 15:43:07 +0700 — unknown-session (set MICE_AGENT)
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-route
+Files: main_python/main.py, main_python/web/help.html, main_python/web/hub.html, config/route_latency.json, main_python/route_latency.py, qc/checks/check_route_latency.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 15:47:37 +0700 — unknown-session (set MICE_AGENT)
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-route
+Files: main_python/main.py, main_python/web/help.html, main_python/web/hub.html, config/route_latency.json, main_python/route_latency.py, qc/checks/check_route_latency.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 15:54:59 +0700 — unknown-session (set MICE_AGENT)
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-route
+Files: main_python/main.py, main_python/web/help.html, main_python/web/hub.html, config/route_latency.json, main_python/route_latency.py, qc/checks/check_route_latency.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 15:59:12 +0700 — unknown-session (set MICE_AGENT)
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-route
+Files: 6 copied into main
+Commit: b8f71a9  (roll back with: git revert b8f71a9)
+
+### 2026-09-21 16:11:14 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-ui
+Files: main_python/web/hub.html, qc/checks/check_ago_text.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 16:11:40 +0700 — claude:09211311-37c7
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-ui
+Files: 2 copied into main
+Commit: 7a0b827  (roll back with: git revert 7a0b827)
+
+### 2026-09-21 16:19:12 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-gemini-voice
+Files: apps/voice/service.py, config/voice.json, qc/checks/check_voice_stt.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 16:25:47 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-gemini-voice
+Files: apps/voice/service.py, config/voice.json, qc/checks/check_voice_stt.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 16:30:33 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-gemini-voice
+Files: apps/voice/service.py, config/voice.json, qc/checks/check_voice_stt.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 16:36:06 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-gemini-voice
+Files: apps/voice/service.py, config/voice.json, qc/checks/check_voice_stt.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 16:50:51 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-gemini-voice
+Files: apps/voice/service.py, config/voice.json, qc/checks/check_voice_stt.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 16:50:53 +0700 — claude:09211311-37c7
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-gemini-voice
+Files: 3 copied into main
+Commit: afc5e9e  (roll back with: git revert afc5e9e)
+
+### 2026-09-21 18:00:41 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-sys
+Files: AGENTS.md, CLAUDE.md, GEMINI.md, qc/data/scope.json, qc/lib/scope.py, qc/run_qc.py, docs/systems/agents.md, docs/systems/app-camera.md, docs/systems/app-faces.md, docs/systems/app-small.md, docs/systems/app-voice.md, docs/systems/bench.md, docs/systems/build.md, docs/systems/docs.md, docs/systems/fw-cam.md, docs/systems/fw-core.md, docs/systems/fw-lift.md, docs/systems/fw-nong.md, docs/systems/fw-registry.md, docs/systems/fw-web.md, docs/systems/hub-auth.md, docs/systems/hub-media.md, docs/systems/hub-net.md, docs/systems/hub-shows.md, docs/systems/hub-web.md, docs/systems/hub.md, docs/systems/misc.md, docs/systems/qc.md, docs/systems/README.md, docs/systems/shared-web.md, docs/systems/studio.md, docs/systems.json, qc/checks/check_systems.py, tools/systems.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 18:00:43 +0700 — claude:09211311-37c7
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-sys
+Files: 34 copied into main
+Commit: 3a072d1  (roll back with: git revert 3a072d1)
+
+### 2026-09-21 18:31:43 +0700 — claude:09211311-37c7
+Event: REQUEST (promote refused: main is newer)
+Tree: E:\final_proj\mice\code\.staging-claude-sys2
+Files: docs/systems.json
+Next: whoever changed these in main - say in BRIDGE whether the staging copy may replace them, or merge them into staging.
+
+### 2026-09-21 18:32:55 +0700 — claude:09211311-37c7
+Event: NOTICE (a direct write to main, mine)
+What: docs/systems.json in MAIN was edited at 18:03 by my own PowerShell [IO.File]::WriteAllBytes with a RELATIVE path - .NET resolves those against its own current directory (the main tree), not PowerShell's cd (a staging). The content is the listFiles/root-catch-all change I meant for .staging-claude-sys2; staging has the same change written with the Edit tool.
+Next: promoting .staging-claude-sys2 with --accept-main docs/systems.json - the staging copy replaces my accidental main edit. No other file was affected (checked git diff of qc/, tools/, main_python/*.py, firmware/src).
+
+### 2026-09-21 18:32:59 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-sys2
+Files: docs/systems/docs.md, docs/systems/misc.md, docs/systems/qc.md, docs/systems/README.md, docs/systems.json, qc/checks/check_systems.py, qc/run_qc.py, tools/systems.py, qc/checks/check_gate_order.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 18:38:13 +0700 — claude:09211311-37c7
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-sys2
+Files: 9 copied into main
+Commit: fb15735  (roll back with: git revert fb15735)
+
+### 2026-09-21 20:24:57 +0700 — claude:09211311-37c7
+Event: NOTICE (stale lock removed, mine)
+What: .staging-promotion.lock (owner pid 22412, created 20:22:33) was left by MY promote.py --init that the user's approval prompt cancelled mid-copy. pid 22412 is not running. Removed the lock and the half-copied .staging-claude-usbtx; making it again.
+
+### 2026-09-21 20:49:00 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-usbtx
+Files: firmware/src/main.cpp, qc/checks/check_loop_realtime.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 20:49:19 +0700 — claude:09211311-37c7
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-usbtx
+Files: 2 copied into main
+Commit: a4b252d  (roll back with: git revert a4b252d)
+
+### 2026-09-21 20:49:25 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-usbtx
+Files: tools/bench_perf.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 20:51:37 +0700 — claude:09211311-37c7
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-usbtx
+Files: 1 copied into main
+Commit: 9185ce8  (roll back with: git revert 9185ce8)
+
+### 2026-09-21 20:54:36 +0700 — claude:09211311-37c7
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-lastopen
+Files: main_python/web/hub.html, qc/checks/check_ago_text.py, qc/checks/check_hub_reach.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-21 20:55:03 +0700 — claude:09211311-37c7
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-lastopen
+Files: 3 copied into main
+Commit: e85e24d  (roll back with: git revert e85e24d)
+
+### 2026-09-21 20:57:41 +0700 — claude:09211311-37c7
+Event: HANDOFF (weekly limit 99%)
+Landed today: A26-78 PERF?/RS485 queue/web core0 (5173d42), A26-79 fastest route (b8f71a9), A26-80 voice fallback as data, A26-82/87 hub last-opened, A26-76 phase 1 system map (3a072d1 + map fix), A26-83 gate order, A26-86 USB TX buffer. MiceHub.exe rebuilt 20:55, running.
+Open, in order:
+1. A26-88 Studio follows the fastest route while open (user uses Studio most) - handoff line in the plan.
+2. A26-76 phase 2 step 1: .staging-claude-split holds main.py -> hub_usb.py split, Codex-reviewed, quick QC green; needs ONE full gate on a quiet PC: qc/run_qc.py --browsers 3 in that staging, then promote.py --staging .staging-claude-split --only <files from --diff>. main.py is fullWhen, so no scoped gate.
+3. A26-84 flaky browser checks (seek_while_playing red alone 1/5 in main); A26-85 hub page tab burned half a core for 6 h.
+4. A26-81 WebSocket commands parked (measured: saves ~11 ms median, worse tail).
+Bench: nong 67 RS485 COM21 + WiFi 10.120.240.70; nong-spare #85 USB COM9 + WiFi 10.120.240.54.
+Trap: PowerShell [IO.File] with a relative path writes into MAIN, not the staging you cd'd into.
+
+### 2026-09-21 23:23:37 +07:00 — codex:09212321-a42d
+Event: CLAIM
+Task: A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: main_python/web/hub.html; main_python/web/help.html; nong/main_python_set_nong/web/app.js; nong/main_python_set_nong/web/app_parts/* if generated; nong/main_python_set_nong/PATCHES.md and generated patch snapshot; qc/checks/check_studio_auto_route.py; exclusive QC/fake-module only while each check runs
+Evidence: User transferred Claude handoff; no hardware authorized or available.
+Next: Reproduce fixed-route Studio behavior, add auto: hub transport, sabotage regression check, software gate, promote.
+
+### 2026-09-21 23:27:34 +07:00 — codex:09212321-a42d
+Event: CLAIM
+Task: A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: add qc/checks/check_route_latency.py to existing A26-88 claim; it contains the old fixed-route Studio assertion that must change.
+Evidence: Focused trace found A26-79 check explicitly requires m.best for Studio.
+Next: Replace that assertion and add driven auto-route regression coverage.
+
+### 2026-09-21 23:39:32 +07:00 — codex:09212321-a42d
+Event: CLAIM
+Task: A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: exclusive QC/fake-module driver for quick gate; staging tree frozen during run.
+Evidence: targeted route, Studio, monitor, transport and persistence checks passed 120/0; both sabotages caught.
+Next: Run quick QC, then final review and full gate.
+
+### 2026-09-21 23:42:14 +07:00 — codex:09212321-a42d
+Event: RELEASE
+Task: A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: exclusive quick-QC driver released; add docs/systems/qc.md to file claim for generated ownership header.
+Evidence: 4173 passed; 4 failed: 3 expected missing firmware-image failures in fresh --quick staging, plus qc.md stale because the new check was not yet mapped.
+Next: Rebuild system headers, run full gate which builds firmware first.
+
+### 2026-09-21 23:52:06 +07:00 — codex:09212321-a42d
+Event: CLAIM
+Task: A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: add main_python/PATCHES.md and generated main_python/patches snapshot to A26-88 claim.
+Evidence: A26-88 changes the hub Studio launch button; hub page history requires a snapshot.
+Next: Save hub snapshot, then full software gate.
+
+### 2026-09-21 23:52:34 +07:00 — codex:09212321-a42d
+Event: CLAIM
+Task: A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: exclusive full-QC/fake-module driver and integration claim; exact staging tree frozen.
+Evidence: focused checks 120/0; regression baseline failed; both sabotages caught; review completed with one stale comment fixed and two findings disproved from code.
+Next: Run full gate with 3 browser lanes, then promote only A26-88 diff if green.
+
+### 2026-09-22 00:02:17 +07:00 — codex:09212321-a42d
+Event: RELEASE
+Task: A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: exclusive full-QC driver released; integration stays claimed. Add qc/checks/check_ui_states.py to A26-88 file claim.
+Evidence: Full gate 5676 passed, 2 failed. Both are source-contract checks affected by the new helper: clearPeer name removed; handOffToRobot guard now uses haveRobot instead of spelling haveUsb and haveWifi.
+Next: Restore clearPeer helper compatibility, teach UI source check the shared haveRobot guard, rebuild, rerun affected checks and full gate.
+
+### 2026-09-22 00:03:54 +07:00 — codex:09212321-a42d
+Event: RELEASE
+Task: A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: patch-history rows written live to nong/main_python_set_nong/PATCHES.md and main_python/PATCHES.md as promote.py requires; no source written in main.
+Evidence: staging patchers created Studio 0099/0100 and hub 0017; PATCHES.md is intentionally skipped by promotion.
+Next: Recheck history, then rerun full gate.
+
+### 2026-09-22 00:04:17 +07:00 — codex:09212321-a42d
+Event: CLAIM
+Task: A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: exclusive full-QC/fake-module driver; exact staging tree frozen.
+Evidence: Gate-1 failures fixed; affected checks now 108/0 plus history 16/0.
+Next: Full gate 2; promote exact diff if green.
+
+### 2026-09-22 00:13:19 +07:00 — codex:09212321-a42d
+Event: RELEASE
+Task: A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: full-gate retry driver released; staging stays frozen for diagnosis.
+Evidence: 5655 passed; only check_edge_cases failed because browser returned no marks ([]). A26-88 regression and both gate-1 fixes passed.
+Next: Run check_edge_cases alone, then final full-gate attempt with one browser lane to reduce Edge load.
+
+### 2026-09-22 00:13:51 +07:00 — codex:09212321-a42d
+Event: CLAIM
+Task: A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: exclusive final full-QC/fake-module driver; one browser lane; exact staging tree frozen.
+Evidence: check_edge_cases passed alone 25/0 immediately after its no-marker gate failure.
+Next: Final full gate attempt; promote if green, otherwise bounded handoff per three-tries rule.
+
+### 2026-09-22 00:33:33 +07:00 — codex:09212321-a42d
+Event: HANDOFF
+Task: A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: all A26-88 source, generated bundle, regression checks, system header, patch snapshots, integration claim, and exclusive QC/fake-module driver released. Main PATCHES.md rows are already written. No source was promoted.
+Evidence: implementation and focused software checks are complete. Regression failed before the fix, passed after it, and two deliberate sabotages were caught. Focused route/Studio/monitor/transport/persistence checks passed 120/0; gate 1 passed 5676 with 2 fixed A26-88 source-contract failures; gate 2 passed 5655 with only check_edge_cases returning no marks, then that check passed alone 25/0; final one-lane gate passed 5664 with 2 unrelated flakes: check_detail_disclosure returned no browser marks, and check_studio_serial missed preview-clock timing once. The A26-88 check `an open Studio page follows the hub's fastest route` passed 7/0 in the final gate. No hardware was used.
+Next: Do not rebuild. Recheck only the two unrelated flaky failures if needed. Then inspect `python promote.py --staging .staging-codex-a42d --diff`; merge the one-line `haveRobot()` change in the already-dirty `music_on_a_keyframe.js` without overwriting user work; obtain a green exact-tree full gate; promote A26-88 only; mark done. Project three-tries rule stopped this session from a fourth gate.
+
+### 2026-09-22 01:02:20 +07:00 - codex:09212321-a42d
+Event: CLAIM
+Task: A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: resumed released A26-88 staging and exclusive fake-module/browser QC driver.
+Evidence: user explicitly asked to finish promotion and then continue A26-76; no hardware.
+Next: rerun the two unrelated flaky checks alone, then obtain one green exact-tree full software gate.
+
+
+### 2026-09-22 01:15:18 +07:00 - codex:09212321-a42d
+Event: CLAIM
+Task: A26-84, A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: add qc/lib/browser.py and qc/checks/check_qc_reports.py; A26-84 is required to unblock A26-88 promotion.
+Evidence: resumed gate passed A26-88 7/0 but check_edge_cases and check_advanced returned zero browser marks after 177-185 s; both passed alone 36/0 before gate.
+Next: add a single controlled browser relaunch only when the first launch produced zero marks; drive and sabotage-check it; rerun affected checks and full gate.
+
+
+### 2026-09-22 01:36:16 +07:00 - codex:09212321-a42d
+Event: HANDOFF
+Task: A26-84, A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: all claims and exclusive QC driver released. No source promoted. The temporary qc/lib/browser.py and check_qc_reports.py relaunch experiment was fully reverted.
+Evidence: targeted check_advanced + check_edge_cases + check_studio_auto_route passed 36/0 before the gate. A controlled whole-page relaunch passed targeted checks 49/0 and its removal was caught 10/1, but the full gate still returned zero marks twice for check_edge_cases and check_advanced: 5644 passed, 25 failed in 801.7 s. A26-88 passed 7/0. This disproves one missed Edge launch as the complete cause. No hardware used.
+Next: Gemini should diagnose the shared parallel Edge/hub resource failure in A26-84. Do not repeat the reverted whole-page retry. After a real fix, obtain a green exact-tree full gate, inspect promote diff, merge the one-line haveRobot change in dirty music_on_a_keyframe.js without overwriting user work, promote A26-84+A26-88 only, mark done, then continue A26-76 from .staging-claude-split.
+
+
+### 2026-09-22 09:58:33 +07:00 - codex:09220957-3b3f
+Event: CLAIM
+Task: A26-84, A26-88
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files/resources: qc/lib/browser.py, qc/lib/qc.py, qc/run_qc.py and new or existing QC regression check only if needed; exclusive QC/fake-module driver while running. A26-88 source/test and integration claim resumed from HANDOFF.
+Evidence: user explicitly asked Codex to continue until done, with Gemini as limit fallback. No Edge processes or other QC driver observed at resume.
+Next: isolate full-gate-only zero-mark cause before patching, then focused proof and green exact-tree gate.
+
+### 2026-09-22 10:46:02 +0700 — unknown-session (set MICE_AGENT)
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files: docs/systems/qc.md, main_python/web/help.html, main_python/web/hub.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/boot.js, nong/main_python_set_nong/web/app_parts/freeze_watch.js, nong/main_python_set_nong/web/app_parts/music_on_a_keyframe.js, nong/main_python_set_nong/web/app_parts/rig_setup_ui.js, nong/main_python_set_nong/web/app_parts/robot_link.js, nong/main_python_set_nong/web/app_parts/sliders.js, nong/main_python_set_nong/web/app_parts/timeline.js, qc/checks/check_qc_parallel.py, qc/checks/check_route_latency.py, qc/checks/check_ui_states.py, qc/run_qc.py, main_python/patches/0017_studio-opens-with-a-live-fastest-route-target/help.html, main_python/patches/0017_studio-opens-with-a-live-fastest-route-target/hub.html, main_python/patches/0017_studio-opens-with-a-live-fastest-route-target/patch.md, main_python/patches/0017_studio-opens-with-a-live-fastest-route-target/rgb.html, main_python/patches/0017_studio-opens-with-a-live-fastest-route-target/shared/mice.css, main_python/patches/0017_studio-opens-with-a-live-fastest-route-target/shared/themes.css, nong/main_python_set_nong/patches/0099_studio-and-monitor-follow-the-fastest-route-whil/app.js, nong/main_python_set_nong/patches/0099_studio-and-monitor-follow-the-fastest-route-whil/index.html, nong/main_python_set_nong/patches/0099_studio-and-monitor-follow-the-fastest-route-whil/patch.md, nong/main_python_set_nong/patches/0099_studio-and-monitor-follow-the-fastest-route-whil/shared/mice.css, nong/main_python_set_nong/patches/0099_studio-and-monitor-follow-the-fastest-route-whil/shared/themes.css, nong/main_python_set_nong/patches/0099_studio-and-monitor-follow-the-fastest-route-whil/style.css, nong/main_python_set_nong/patches/0100_keep-peer-targeting-compatible-with-fastest-rout/app.js, nong/main_python_set_nong/patches/0100_keep-peer-targeting-compatible-with-fastest-rout/index.html, nong/main_python_set_nong/patches/0100_keep-peer-targeting-compatible-with-fastest-rout/patch.md, nong/main_python_set_nong/patches/0100_keep-peer-targeting-compatible-with-fastest-rout/shared/mice.css, nong/main_python_set_nong/patches/0100_keep-peer-targeting-compatible-with-fastest-rout/shared/themes.css, nong/main_python_set_nong/patches/0100_keep-peer-targeting-compatible-with-fastest-rout/style.css, qc/checks/check_studio_auto_route.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-22 10:47:24 +0700 — unknown-session (set MICE_AGENT)
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-codex-a42d
+Files: 34 copied into main
+Commit: 22847cc  (roll back with: git revert 22847cc)
+
+### 2026-09-22 10:55 +07:00 - codex:09220957-3b3f
+Event: RELEASE / CLAIM
+Task: A26-84, A26-88 released; A26-76 phase 2 claimed
+Tree: E:\final_proj\mice\code\.staging-claude-split
+Files/resources: A26-84/A26-88 exact-tree full QC 5679/0 and commit 22847cc. Claim main_python/main.py, new main_python/hub_usb.py, docs/systems.json, docs/systems/hub.md, qc/lib/qc.py, relevant source checks, qc/run_qc.py and check_qc_parallel.py in split staging; exclusive QC/fake-module driver while gating. Do not touch hardware.
+Next: rebase QC worker isolation into split staging, gate USB split, inspect exact promotion set and promote only split files. The split staging predates A26-88; do not promote its stale UI files.
+
+### 2026-09-22 11:42 +07:00 - codex:09220957-3b3f
+Event: HANDOFF
+Task: A26-76 phase 2 (USB split); all claims and exclusive QC driver released
+Tree: E:\final_proj\mice\code\.staging-claude-split
+Evidence: A26-84/A26-88 landed local main commit 22847cc after exact-tree QC 5679/0. USB split tree now has main.py -> hub_usb.py, route_latency.LAT shared, F.hub_src() in source checks, and fresh process for every QC check including SOLO/RUN_FIRST/serial. A26-88 files were mechanically copied from main into split staging for combined verification. Split-only full gate passed 5664/0. Combined full gate failed 5671/1 because stale check_hub_reach expected id=lastOpened removed by A26-87. That test was merged with current main while preserving F.hub_src(); targeted check_hub_reach, route_latency, ui_states, studio_auto_route passed 96/0. No exact-tree green receipt after that merge; do NOT promote yet. Three full gate attempts plus merged retry in this session; stop per project three-tries rule. No hardware used.
+Next: inspect current split staging and run ONE full software gate: python qc/run_qc.py --browsers 3 from .staging-claude-split. If green, use promote.py --staging .staging-claude-split --diff, select only USB split files and source/QC support; never promote stale unrelated UI/firmware files or user data. docs/systems.json main hash differs from split base (semantic difference is hub_usb.py entry); merge/accept-main carefully if promote requests. Review final diff, promote with --only, mark A26-76 done, then consider remote push separately: main is ahead origin/main by 40 commits, not just this task.
+
+### 2026-09-22 12:19 +07:00 - codex:09221219-d39f
+Event: CLAIM
+Task: A26-76 phase 2
+Tree: E:\final_proj\mice\code\.staging-claude-split
+Files/resources: resume all A26-76 split staging files, QC/fake-module driver, and exact promote targets after green gate. Prior codex:09220957-3b3f HANDOFF released these claims. No hardware.
+Next: exact-tree full software gate, inspect diff, promote only split files, mark done. User explicitly asked to finish rather than stop after handoff.
+
+### 2026-09-22 12:35 +07:00 - gemini:09221234-2278
+Event: CLAIM
+Task: A26-76 phase 2 (USB split)
+Tree: E:\final_proj\mice\code\.staging-claude-split
+Files/resources: resume all A26-76 split staging files, QC/fake-module driver, and exact promote targets. User-authorized takeover after codex:09221219-d39f hit provider limit.
+Evidence: prior gate finished 5668 passed, 4 failed. No hardware.
+Next: identify and fix 4 failures, obtain green exact-tree full gate, inspect diff, promote only split files, mark done.
+
+### 2026-09-22 13:19:19 +0700 — gemini:09221234-2278
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-split
+Files: docs/systems/hub.md, docs/systems.json, main_python/main.py, qc/checks/check_app_handout.py, qc/checks/check_app_window.py, qc/checks/check_boot_noise.py, qc/checks/check_bus_dongle.py, qc/checks/check_bus_flash.py, qc/checks/check_camera.py, qc/checks/check_diagnostics.py, qc/checks/check_discovery.py, qc/checks/check_flash_type.py, qc/checks/check_gate_order.py, qc/checks/check_groups.py, qc/checks/check_guards_armed.py, qc/checks/check_handler_scope.py, qc/checks/check_hub_reach.py, qc/checks/check_latency.py, qc/checks/check_logging.py, qc/checks/check_modsite_back.py, qc/checks/check_name_claim.py, qc/checks/check_no_data_loss.py, qc/checks/check_one_cable.py, qc/checks/check_one_call_path.py, qc/checks/check_onefile.py, qc/checks/check_ota_only.py, qc/checks/check_other_pc.py, qc/checks/check_page_version.py, qc/checks/check_pinout.py, qc/checks/check_qc_parallel.py, qc/checks/check_race_guards.py, qc/checks/check_route_latency.py, qc/checks/check_rs485_census.py, qc/checks/check_scan_sticky.py, qc/checks/check_self_update.py, qc/checks/check_shared_modules.py, qc/checks/check_short_name.py, qc/checks/check_translate.py, qc/checks/check_ui_states.py, qc/checks/check_usb_close.py, qc/checks/check_voice_tts.py, qc/checks/check_wifi_live.py, qc/lib/qc.py, qc/run_qc.py, main_python/hub_usb.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-22 13:19:22 +0700 — gemini:09221234-2278
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-split
+Files: 45 copied into main
+Commit: c6abae7  (roll back with: git revert c6abae7)
+
+### 2026-09-22 13:25 +07:00 - gemini:09221234-2278
+Event: RELEASE
+Task: A26-76 phase 2 (USB split)
+Tree: E:\final_proj\mice\code\.staging-claude-split
+Files/resources: all claims and exclusive QC driver released.
+Evidence: exact-tree full software gate passed 5673/0 in .staging-claude-split. 45 verified USB split and source-check support files promoted to main as commit c6abae7 (rollback: git revert c6abae7). Stale staging files (firmware/src/main.cpp, tools/bench_perf.py, check_ago_text.py, check_loop_realtime.py) excluded from promotion. MiceHub.exe rebuilt cleanly from MiceHub.spec; check_onefile and check_stale_build passed 86/0; check_systems passed 11/0. No hardware was used.
+Next: A26-76 phase 2 step 1 is complete and landed.
+
+### 2026-09-22 14:51 +07:00 - gemini:09221234-2278
+Event: CLAIM
+Task: A26-76 phase 2 step 2 (ShowPlayer split)
+Tree: E:\final_proj\mice\code\.staging-gemini-split
+Files/resources: main_python/main.py, new main_python/hub_show.py, docs/systems.json, docs/systems/hub.md, docs/systems/hub-shows.md; exclusive QC/fake-module driver while gating. No hardware.
+Next: move ShowPlayer from main.py to hub_show.py, update systems registry, run targeted and full gate in .staging-gemini-split, promote.
+
+### 2026-09-22 16:21:01 +0700 — gemini:09221234-2278
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-gemini-split
+Files: docs/systems/hub.md, docs/systems.json, main_python/main.py, qc/run_qc.py, main_python/hub_show.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-22 16:21:08 +0700 — gemini:09221234-2278
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-gemini-split
+Files: 5 copied into main
+Commit: 2a8fb54  (roll back with: git revert 2a8fb54)
+
+### 2026-09-22 16:22:27 +0700 — gemini:09221234-2278
+Event: RELEASE
+Task: A26-76 phase 2 step 2 (ShowPlayer split)
+Tree: E:\final_proj\mice\code\.staging-gemini-split
+Files/resources: all claims and exclusive QC driver released.
+Evidence: exact-tree full software gate passed 5682/0 in .staging-gemini-split. 5 files promoted as commit 2a8fb54. MiceHub.exe rebuilt cleanly, check_onefile check_stale_build check_systems passed 97/0.
+Next: proceed to A26-85 (Hub page CPU leak).
+
+### 2026-09-22 16:22:40 +0700 — gemini:09221234-2278
+Event: CLAIM
+Task: A26-85 (Hub page CPU leak)
+Files: main_python/web/hub.html, relevant checks
+Next: profile and inspect background loop in hub.html, verify in staging, sabotage test, promote.
+
+### 2026-09-22 16:59 +07:00 - codex:09221219-d39f
+Event: CLAIM
+Task: A26-89
+Tree: E:\final_proj\mice\code (read-only diagnosis)
+Files/resources: firmware nong pin mapping, servo configuration, old PDI-1181 symptom record; no source edits or hardware. Gemini owns A26-85, so no overlap.
+Next: inspect software and historical evidence; report likely cause and safe bench checks.
+
+### 2026-09-22 17:05 +07:00 - codex:09221219-d39f
+Event: RELEASE
+Task: A26-89
+Tree: E:\final_proj\mice\code (read-only diagnosis)
+Files/resources: all A26-89 read-only claims released. No source or hardware changes.
+Evidence: three servo replacements leave same L_SH_R fault. Historical record identifies 330 Hz under-load trip on this joint. Source default is now 50 Hz, but live persisted rate is unknown. Default signal pin is GPIO33, subject to saved mapping.
+Next: when hardware is available, read RATE and LIMIT? without moving servo. Then check servo-connector supply voltage and harness under load. Root cause not confirmed without hardware.
+
+### 2026-09-22 17:18:53 +0700 — gemini:09221234-2278
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-gemini-split
+Files: docs/systems/qc.md, main_python/web/hub.html, main_python/patches/0018_rest-background-loops-when-tab-hidden-and-thrott/help.html, main_python/patches/0018_rest-background-loops-when-tab-hidden-and-thrott/hub.html, main_python/patches/0018_rest-background-loops-when-tab-hidden-and-thrott/patch.md, main_python/patches/0018_rest-background-loops-when-tab-hidden-and-thrott/rgb.html, main_python/patches/0018_rest-background-loops-when-tab-hidden-and-thrott/shared/mice.css, main_python/patches/0018_rest-background-loops-when-tab-hidden-and-thrott/shared/themes.css, qc/checks/check_hub_rest.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-22 17:18:58 +0700 — gemini:09221234-2278
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-gemini-split
+Files: 9 copied into main
+Commit: a8c3899  (roll back with: git revert a8c3899)
+
+### 2026-09-22 17:19:20 +0700 — gemini:09221234-2278
+Event: RELEASE
+Task: A26-85 (Hub page CPU leak)
+Tree: E:\final_proj\mice\code\.staging-gemini-split
+Files/resources: all claims and exclusive QC driver released.
+Evidence: exact-tree full software gate passed 5699/0 in .staging-gemini-split. 9 files promoted as commit a8c3899. Post-promotion verification check_hub_rest check_systems check_stale_build passed 75/0. No hardware was touched.
+Next: all non-hardware requested tasks (restructure Phase 2 Step 2 and A26-85) are complete and landed.
+
+### 2026-09-22 17:41 +07:00 - codex:09221219-d39f
+Event: CLAIM
+Task: A26-90
+Tree: E:\final_proj\mice\code (read-only diagnosis)
+Files/resources: Nong Studio timing path, hub playback, Nong firmware motion timing; no source edits or hardware commands yet.
+Next: trace deg/s to actual command T and board duration floor. Check hardware only after establishing safe scope and exclusive hardware claim.
+
+### 2026-09-22 17:43 +07:00 - codex:09221219-d39f
+Event: CLAIM
+Task: A26-90
+Tree: E:\final_proj\mice\code
+Files/resources: exclusive read-only Nong hardware query via existing hub connection only. No motion, calibration, flash, or servo-rate changes.
+Next: identify connected board and read INFO, RATE, LIMIT? if safely accessible. Release immediately after.
+
+### 2026-09-22 17:44 +07:00 - codex:09221219-d39f
+Event: RELEASE
+Task: A26-90
+Tree: E:\final_proj\mice\code (read-only diagnosis)
+Files/resources: all A26-90 claims and exclusive read-only hardware access released. No movement, calibration, flash, or source edit.
+Evidence: GET /api/dev/status on board 67 over hub shared COM21 RS485 returned speed_dps=120, safe_dps=60, all frame_hz=50, shoulder servo_range=180. Studio autoTime and firmware startMove both enforce safety floor delta*pi/2/60. RATE and LIMIT? query attempts returned need_login and were not retried; status already had relevant fields.
+Next: tell user why show-speed changes above about 38.2 deg/s do not shorten time. For servo fault, confirm installed servo travel and check power, connector, and mechanical binding before any calibration or faster safety cap.
+
+### 2026-09-22 17:49 +07:00 - codex:09221219-d39f
+Event: CLAIM
+Task: A26-91
+Tree: E:\final_proj\mice\code\.staging-codex-dps (new isolated copy)
+Files/resources: nong/main_python_set_nong/web/index.html, web/app_parts/timing.js, robot_link.js, state.js, web/app.js generated, nong/main_python_set_nong/PATCHES.md and generated patch snapshot, main_python/web/help.html, relevant QC checks. Scope may expand to firmware command registry only after design decision and claim.
+Next: establish isolated staging copy; design explicit safe_dps control and regression check. No live board changes while shoulder fault is open.
+
+### 2026-09-22 17:59:37 +07:00 - codex:09221219-d39f
+Event: HANDOFF then CLAIM (user immediately resumed A26-91)
+Task: A26-91; A26-92 and A26-93 recorded as deferred todo
+Tree: E:\final_proj\mice\code\.staging-codex-dps
+Files/resources: A26-91 source claims briefly released on pause, now reclaimed by same session: Studio index.html, app_parts/timing.js, robot_link.js, state.js, generated app.js, Studio patch/PATCHES.md, main_python/web/help.html, relevant QC check. No hardware claim.
+Evidence: partial source edits only in staging; no build, QC, approval review, promotion, or board settings changed. Design panel failed permission and is not approval.
+Next: complete speed-control check and software gate. RELAX/TD8135MG and broader OOP/header restructure remain deferred per user.
+
+### 2026-09-22 18:01 +07:00 - codex:09221219-d39f
+Event: CLAIM
+Task: A26-91
+Tree: E:\final_proj\mice\code\.staging-codex-dps
+Files/resources: exclusive QC/fake-module/browser driver for focused Studio speed check; input staging tree frozen while check runs. No real hardware.
+Next: run focused browser check, release QC claim when finished.
+
+### 2026-09-22 18:04 +07:00 - codex:09221219-d39f
+Event: RELEASE
+Task: A26-91
+Tree: E:\final_proj\mice\code\.staging-codex-dps
+Files/resources: focused QC/fake-module/browser driver released; source claims remain.
+Evidence: targeted timeline edits check passed 17/0; sabotage removing SAFE_DPS adoption was caught by reboot-retiming assertion; restored check green.
+Next: inspect source, save Studio patch, then full gate with a new exclusive QC claim.
+
+### 2026-09-22 18:06 +07:00 - codex:09221219-d39f
+Event: CLAIM
+Task: A26-91
+Tree: E:\final_proj\mice\code\.staging-codex-dps
+Files/resources: exclusive QC/fake-module/browser driver and frozen staging input tree for quick, focused, then full gate. No hardware.
+Evidence: Studio patch 0101 saved; build_web changed only generated app.js; syntax compiled. No competing QC/browser process seen.
+Next: run quick suite and focused check, then full gate if green.
+
+### 2026-09-22 18:10 +07:00 - codex:09221219-d39f
+Event: RELEASE
+Task: A26-91
+Tree: E:\final_proj\mice\code\.staging-codex-dps
+Files/resources: exclusive QC/fake-module/browser driver released after quick gate; source claims remain.
+Evidence: quick QC 4193 passed, 6 failed. New change requires CFG shared-router test whitelist and Studio notice-line coverage. Deferred A26-92 hardware task requires packing-list entry. Three firmware flash/OTA checks lack built nong image in staging.
+Next: fix check/notice/packing bookkeeping, build nong image, rerun gate.
+
+### 2026-09-22 18:10 +07:00 - codex:09221219-d39f
+Event: CLAIM
+Task: A26-91 and deferred A26-92 packing prerequisite
+Tree: E:\final_proj\mice\code\.staging-codex-dps; docs/PLAN.html live in real tree
+Files/resources: add exact staging qc/checks/check_contracts.py, nong/main_python_set_nong/web/app_parts/robot_link.js, generated app.js, Studio patch 0102; main docs/PLAN.html packing table only under mutex; staging firmware/.pio/build/mice_nong build outputs. No board access.
+Next: resolve quick-gate findings without changing servo travel or real board.
+
+### 2026-09-22 18:13 +07:00 - codex:09221219-d39f
+Event: CLAIM
+Task: A26-91
+Tree: E:\final_proj\mice\code\.staging-codex-dps
+Files/resources: exclusive QC/fake-module/browser driver; staging tree frozen. No hardware.
+Evidence: my stray qc/run_qc.py --help process PID 33148 was still running and was stopped; no competing driver remains. Non-code quick failures addressed; nong firmware image built successfully in staging by python -m platformio.
+Next: focused failed-check rerun, then full gate if green.
+
+### 2026-09-22 18:53:27 +07:00 - antigravity:09221852-afe3
+Event: CLAIM (takeover from codex:09221219-d39f after provider limit)
+Task: A26-91
+Tree: E:\final_proj\mice\code\.staging-codex-dps
+Files/resources: nong/main_python_set_nong/web/index.html, web/app_parts/timing.js, robot_link.js, state.js, web/app.js generated, Studio patches 0101/0102, main_python/web/help.html, qc/checks/check_contracts.py, qc/checks/check_studio_edits.py.
+Evidence: User authorized resume: 'codex hit limit to make sequence time let resume him'. Codex completed implementation and exact-tree full gate in .staging-codex-dps with 5706 passed, 0 failed at 18:34:46 (.qc-receipt.json intact, tree fingerprint matches). Codex hit limit before promotion/handoff.
+Next: promote verified staging changes to main, commit, and mark A26-91 done.
+
+### 2026-09-22 18:53:32 +0700 — antigravity:09221852-afe3
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-codex-dps
+Files: main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/robot_link.js, nong/main_python_set_nong/web/app_parts/state.js, nong/main_python_set_nong/web/app_parts/timing.js, nong/main_python_set_nong/web/index.html, qc/checks/check_contracts.py, qc/checks/check_studio_edits.py, nong/main_python_set_nong/patches/0101_let-studio-set-the-board-peak-speed-limit-safely/app.js, nong/main_python_set_nong/patches/0101_let-studio-set-the-board-peak-speed-limit-safely/index.html, nong/main_python_set_nong/patches/0101_let-studio-set-the-board-peak-speed-limit-safely/patch.md, nong/main_python_set_nong/patches/0101_let-studio-set-the-board-peak-speed-limit-safely/shared/mice.css, nong/main_python_set_nong/patches/0101_let-studio-set-the-board-peak-speed-limit-safely/shared/themes.css, nong/main_python_set_nong/patches/0101_let-studio-set-the-board-peak-speed-limit-safely/style.css, nong/main_python_set_nong/patches/0102_show-safety-speed-errors-in-the-global-notice-an/app.js, nong/main_python_set_nong/patches/0102_show-safety-speed-errors-in-the-global-notice-an/index.html, nong/main_python_set_nong/patches/0102_show-safety-speed-errors-in-the-global-notice-an/patch.md, nong/main_python_set_nong/patches/0102_show-safety-speed-errors-in-the-global-notice-an/shared/mice.css, nong/main_python_set_nong/patches/0102_show-safety-speed-errors-in-the-global-notice-an/shared/themes.css, nong/main_python_set_nong/patches/0102_show-safety-speed-errors-in-the-global-notice-an/style.css
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-22 18:53:39 +0700 — antigravity:09221852-afe3
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-codex-dps
+Files: 20 copied into main
+Commit: c81f7a3  (roll back with: git revert c81f7a3)
+
+### 2026-09-22 19:00:40 +07:00 - antigravity:09221852-afe3
+Event: RELEASE
+Task: A26-91
+Tree: E:\final_proj\mice\code (landed from .staging-codex-dps)
+Files/resources: All A26-91 claims released.
+Evidence: Promoted 20 files as commit c81f7a3 on full gate receipt 5706/0. Studio peak speed limit input, board safety speed adoption, check_contracts, check_studio_edits (5 safety speed assertions + CFG whitelist), and patches 0101/0102 live in main.
+In flight: none.
+Next: task complete.

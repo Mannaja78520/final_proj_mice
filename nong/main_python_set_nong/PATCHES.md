@@ -103,3 +103,5 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0096 | 2026-09-17 21:19 | Shrug preview turns by the real angle, not x3 (A26-45) |
 | 0097 | 2026-09-17 21:26 | A frozen Studio page stops the hub show; hidden or closed does not (A26-46) |
 | 0098 | 2026-09-18 04:20 | Shows tab: saved sequences played one after another by name, the hub runs the show (A26-40) |
+| 0099 | 2026-09-21 23:37 | Studio and monitor follow the fastest route while open |
+| 0100 | 2026-09-22 00:02 | Keep peer targeting compatible with fastest-route Studio |

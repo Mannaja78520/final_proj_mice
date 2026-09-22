@@ -1,0 +1,11 @@
+{
+  "id": "34750ac54ad7",
+  "time": "2026-09-18T11:37:33",
+  "text": "BENCHMON2 login={\"ok\":true} | haveUsb=true hubPort=none busId=67 | stat=[USB COM12→RS485 #67 (shared) ✓] nong (id 67, type nong), SD ok | INFO id=67 name=nong joints=90,150,90,90,90,30,90,90,90,90 | monitorTick=ok",
+  "page": "bench",
+  "module": "nong",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0"
+}
