@@ -84,7 +84,12 @@ window.qcMark=function(m, tries){
       // loop_return and modsite_back, all green alone).
       // 40 tries x 250 ms outlasts the census; a page that truly cannot talk
       // still fails the check, just later.
-      if (tries >= 40) return;
+      // KEEP TRYING UNTIL THE PAGE'S OWN WINDOW ENDS. 10 s was still not
+      // enough on 2026-09-23: check_loop_return reported nothing at all
+      // while the hub held the cable for a longer stretch. 400 x 250 ms
+      // is 100 s, inside the page window + grace, so a mark lands as soon
+      // as the cable frees and a page that truly cannot talk still fails.
+      if (tries >= 400) return;
       return new Promise(function(go){ setTimeout(go, 250); })
         .then(function(){ return window.qcMark(m, tries + 1); });
     });
@@ -326,6 +331,16 @@ def _wait_for_done(seconds, grace=150, start=None):
         # The page talked but never said done: the grace was wasted, not needed.
         print("QC SLOW: a page reported but never sent done - waited %.0fs "
               "for nothing" % (seconds + grace), flush=True)
+    else:
+        # NOTHING AT ALL. Two very different faults look the same from here -
+        # a browser that never ran the driver, and a driver whose marks were
+        # all refused while the hub held the cable - so say which is which
+        # instead of leaving "[]" for the next person to guess at (A26-94).
+        print("QC SILENT: the page reported nothing in %.0fs (%d browser(s) of "
+              "ours alive, %d bytes on the wire) - it either never ran or could "
+              "not reach the cable"
+              % (seconds + grace, max(0, _running()), len(fake_serial.wire)),
+              flush=True)
     return False
 
 
@@ -373,7 +388,12 @@ window.qcMark=function(m, tries){
       // loop_return and modsite_back, all green alone).
       // 40 tries x 250 ms outlasts the census; a page that truly cannot talk
       // still fails the check, just later.
-      if (tries >= 40) return;
+      // KEEP TRYING UNTIL THE PAGE'S OWN WINDOW ENDS. 10 s was still not
+      // enough on 2026-09-23: check_loop_return reported nothing at all
+      // while the hub held the cable for a longer stretch. 400 x 250 ms
+      // is 100 s, inside the page window + grace, so a mark lands as soon
+      // as the cable frees and a page that truly cannot talk still fails.
+      if (tries >= 400) return;
       return new Promise(function(go){ setTimeout(go, 250); })
         .then(function(){ return window.qcMark(m, tries + 1); });
     });

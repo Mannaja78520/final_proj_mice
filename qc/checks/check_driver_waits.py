@@ -65,8 +65,8 @@ def run(t):
                           lib, re.S)]
     t.ok(len(budgets) == 2, "both preludes retry a refused mark (%d found)" % len(budgets),
          "the studio page and the raw page each carry a copy")
-    t.ok(budgets and min(budgets) >= 6000,
-         "and they keep trying past the bus census (worst %d ms)"
+    t.ok(budgets and min(budgets) >= 60000,
+         "and they keep trying for most of the page window (worst %d ms)"
          % (min(budgets) if budgets else 0),
          "a mark refused while the hub holds the cable is a check that reports "
          "nothing at all")
