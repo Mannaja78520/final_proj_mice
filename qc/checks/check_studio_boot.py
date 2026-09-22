@@ -24,7 +24,12 @@ if (location.search.indexOf("step2") < 0) {
   }));
   location.search = "?step2";
 } else {
-  window.addEventListener("load", function(){ setTimeout(function(){
+  // Wait for the rig to EXIST. A fixed sleep read a half-built scene on a
+  // loaded machine and blamed the boot code (A26-94).
+  window.addEventListener("load", function(){ qcWaitFor(function(){
+      return typeof robot !== "undefined" && robot && typeof RIG !== "undefined"
+          && RIG.zero && typeof keys !== "undefined" && typeof pose !== "undefined";
+    }, 20000).then(function(){ setTimeout(function(){
     try {
       var vis = [];
       robot.traverse(function(o){
@@ -38,7 +43,7 @@ if (location.search.indexOf("step2") < 0) {
         "|ZEROLEN=" + RIG.zero.length +
         "|NAN=" + vis.length;
     } catch(e) { document.title = "ERR " + e.message; }
-  }, 900); });
+  }, 150); }); });
 }
 """ % (NEUTRAL,)
 

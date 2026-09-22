@@ -24,7 +24,8 @@ SLOW = True
 # four clearly different poses, a slow show, so every move is on the wire
 DRIVER = """
 function report(s){ rawCmd("MOVE QCMARK SEEK~" + s); }
-window.addEventListener("load", function(){ setTimeout(function(){
+// Wait for the app and the cable, never a fixed sleep (A26-94).
+window.addEventListener("load", function(){ qcStudioReady().then(function(){ setTimeout(function(){
   try{
     document.getElementById("liveChk").checked = true;
     keys = [];
@@ -51,7 +52,7 @@ window.addEventListener("load", function(){ setTimeout(function(){
       }, at + 300);
     }, 2500);
   }catch(e){ report("ERR-" + String(e).slice(0,60)); }
-}, 1500); });
+}, 150); }); });
 """
 
 

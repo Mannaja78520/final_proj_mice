@@ -38,7 +38,8 @@ BUNDLE = {
 
 DRIVER = """
 function report(s){ rawCmd("MOVE QCMARK " + s); }
-window.addEventListener("load", function(){ setTimeout(function(){
+// Wait for the app and the cable, never a fixed sleep (A26-94).
+window.addEventListener("load", function(){ qcStudioReady().then(function(){ setTimeout(function(){
   try{
     var out = [];
 
@@ -72,7 +73,7 @@ window.addEventListener("load", function(){ setTimeout(function(){
     report(out.join("~"));
   }catch(e){ report("ERR~" + String(e).slice(0,70)); }
   setTimeout(function(){ report("done"); }, 300);
-}, 1500); });
+}, 150); }); });
 """
 
 

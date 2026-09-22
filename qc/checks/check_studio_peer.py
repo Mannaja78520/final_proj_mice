@@ -30,7 +30,13 @@ SLOW = True
 PEER = "far-nong"
 
 DRIVER = """
+// Wait for Studio to have read ?dev= and built its controls, never a fixed
+// sleep: under a full gate 2500 ms was a bet, not a fact (A26-94).
 window.addEventListener("load", function(){
+  qcWaitFor(function(){
+    return typeof rawCmd === "function" && typeof $ === "function"
+        && $("usbPort");
+  }, 20000).then(function(){
   setTimeout(function(){
     try{
       // What Studio decided the cable and the peer are, after reading ?dev=
@@ -46,7 +52,7 @@ window.addEventListener("load", function(){
         qcMark("done");
       });
     }catch(e){ qcFail(e); }
-  }, 2500);
+  }, 150); });
 });
 """
 

@@ -25,7 +25,8 @@ DRIVER = """
 function report(s){ rawCmd("MOVE QCMARK YAML~" + s); }
 var asked = 0, answer = true;
 window.confirm = function(){ asked++; return answer; };
-window.addEventListener("load", function(){ setTimeout(async function(){
+// Wait for the app and the cable, never a fixed sleep (A26-94).
+window.addEventListener("load", function(){ qcStudioReady().then(function(){ setTimeout(async function(){
   try{
     keys = [];
     [90, 40, 140].forEach(function(v){ pose = pose.map(function(){ return v; }); addKey(); });
@@ -47,7 +48,7 @@ window.addEventListener("load", function(){ setTimeout(async function(){
     report("asked2=" + asked);
   }catch(e){ report("ERR-" + String(e).slice(0,60)); }
   setTimeout(function(){ report("done"); }, 300);
-}, 1500); });
+}, 150); }); });
 """ % {"name": NAME}
 
 

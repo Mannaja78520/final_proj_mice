@@ -26,7 +26,8 @@ SLOW = True
 
 DRIVER = """
 function report(s){ rawCmd("MOVE QCMARK " + s); }
-window.addEventListener("load", function(){ setTimeout(async function(){
+// Wait for the app and the cable, never a fixed sleep (A26-94).
+window.addEventListener("load", function(){ qcStudioReady().then(function(){ setTimeout(async function(){
   try{
     await fetch("/api/login", {method:"POST", body: JSON.stringify({user:"super_admin", password:"__PW__"})});
     var out = [];
@@ -70,7 +71,7 @@ window.addEventListener("load", function(){ setTimeout(async function(){
     report(out.join("~"));
   }catch(e){ report("ERR~" + String(e).slice(0,70)); }
   setTimeout(async function(){ report("done"); }, 300);
-}, 1500); });
+}, 150); }); });
 """
 
 

@@ -1,0 +1,4 @@
+{
+  "_why": "Browser drivers that only SEND marks and never read the page, so there is nothing for them to wait for. Everything else must wait for a condition before it measures - see check_driver_waits and A26-94.",
+  "marksOnly": ["check_qc_reports"]
+}

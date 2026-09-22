@@ -17,7 +17,10 @@ TITLE = "plane views are really flat (orthographic)"
 SLOW = True
 
 DRIVER = """
-window.addEventListener("load", function(){ setTimeout(function(){
+// Wait for the view helpers to exist, never a fixed sleep (A26-94).
+window.addEventListener("load", function(){ qcWaitFor(function(){
+    return typeof setView === "function" && typeof activeCam === "function";
+  }, 20000).then(function(){ setTimeout(function(){
   try {
     var out = [];
     function probe(name){
@@ -49,7 +52,7 @@ window.addEventListener("load", function(){ setTimeout(function(){
 
     document.title = "VIEWPROJ " + out.join(" ");
   } catch(e) { document.title = "VIEWPROJ ERR " + e.message; }
-}, 900); });
+}, 150); }); });
 """
 
 

@@ -102,6 +102,19 @@ window.qcWaitFor = function(cond, ms, step){
     })();
   });
 };
+// THE APP AND THE CABLE, before a driver touches either. Studio logs in, loads
+// app.js and then opens the link, and none of that happens in a fixed number
+// of milliseconds on a machine running sixteen checks. Drivers that slept
+// instead threw on a missing element, or sent a mark the link dropped, and the
+// check failed in the gate while passing alone (A26-94, 2026-09-22/23).
+// It resolves either way: a page that is never ready still gets measured, and
+// the check says what was missing instead of waiting out its whole grace.
+window.qcStudioReady = function(ms){
+  return qcWaitFor(function(){
+    return typeof rawCmd === "function" && typeof addKey === "function"
+        && typeof haveUsb === "function" && haveUsb();
+  }, ms || 20000);
+};
 </script>
 """
 

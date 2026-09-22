@@ -38,7 +38,13 @@ function report(s, then){
   }catch(e){ if (then) then(); }
 }
 function finish(s){ report(s, function(){ report("done"); }); }
-window.addEventListener("load", function(){ setTimeout(function(){
+// Wait for the module page to have drawn its tabs. This page carries no QC
+// prelude, so the poll is here: a fixed sleep measured an empty page under
+// load and reported tabs missing (A26-94).
+window.addEventListener("load", function(){ (function ready(n){
+  if (!document.querySelector("[data-tab]") && n < 200)
+    return setTimeout(function(){ ready(n + 1); }, 100);
+  setTimeout(function(){
   try{
     var out = [];
     function vis(sel){
@@ -107,7 +113,7 @@ window.addEventListener("load", function(){ setTimeout(function(){
       }catch(e){ finish("ERR " + e.message); }
     }, 1800);
   }catch(e){ finish("ERR " + e.message); }
-}, 900); });
+}, 900); })(0); });
 """
 
 
