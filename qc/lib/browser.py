@@ -76,8 +76,16 @@ window.qcMark=function(m, tries){
                encodeURIComponent("MOVE QCMARK " + m))
     .then(function(r){ if (!r || !r.ok) throw new Error("mark refused"); })
     .catch(function(){
-      if (tries >= 4) return;
-      return new Promise(function(go){ setTimeout(go, 150); })
+      // THE CABLE IS SHARED, AND THE HUB USES IT TOO. Its own port probe holds
+      // the fake port for up to 5.4 s (an RS485 census), and while it does,
+      // every mark is refused with "Access is denied". Four tries over 600 ms
+      // gave up inside that window, so the page reported NOTHING and the check
+      // said "[]" - which reads as a dead page (A26-94, 2026-09-23: identity,
+      // loop_return and modsite_back, all green alone).
+      // 40 tries x 250 ms outlasts the census; a page that truly cannot talk
+      // still fails the check, just later.
+      if (tries >= 40) return;
+      return new Promise(function(go){ setTimeout(go, 250); })
         .then(function(){ return window.qcMark(m, tries + 1); });
     });
 };
@@ -357,8 +365,16 @@ window.qcMark=function(m, tries){
                encodeURIComponent("MOVE QCMARK " + m))
     .then(function(r){ if (!r || !r.ok) throw new Error("mark refused"); })
     .catch(function(){
-      if (tries >= 4) return;                 // give up, and let the check fail
-      return new Promise(function(go){ setTimeout(go, 150); })
+      // THE CABLE IS SHARED, AND THE HUB USES IT TOO. Its own port probe holds
+      // the fake port for up to 5.4 s (an RS485 census), and while it does,
+      // every mark is refused with "Access is denied". Four tries over 600 ms
+      // gave up inside that window, so the page reported NOTHING and the check
+      // said "[]" - which reads as a dead page (A26-94, 2026-09-23: identity,
+      // loop_return and modsite_back, all green alone).
+      // 40 tries x 250 ms outlasts the census; a page that truly cannot talk
+      // still fails the check, just later.
+      if (tries >= 40) return;
+      return new Promise(function(go){ setTimeout(go, 250); })
         .then(function(){ return window.qcMark(m, tries + 1); });
     });
 };

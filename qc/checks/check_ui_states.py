@@ -281,7 +281,7 @@ def run(t):
         return
     fake_serial.reset()
     base, main = F.start_hub()
-    browser.raw_page(PAGE, base, seconds=22)
+    browser.raw_page(PAGE, base, seconds=30)
 
     marks = [m for m in fake_serial.qc_marks if m.startswith("UI ")]
     if not t.ok(marks, "the hub page reported back",
