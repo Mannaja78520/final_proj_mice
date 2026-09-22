@@ -394,5 +394,50 @@ window.REF = [
        "yaws the whole body; Shrug (joint 10) rolls the shoulder bar (see-saw, " +
        "not symmetric lift). Matches Nong Studio's FK for visual debugging.",
   from: "Forward kinematics by rotation matrices: Craig JJ. \"Introduction to Robotics: Mechanics and Control\" (4th ed.) Ch. 2 [1]; Murray RM et al. \"A Mathematical Introduction to Robotic Manipulation\" Ch. 3 [2]. Denavit-Hartenberg parameters for 4-DOF serial chain. Link lengths from CAD/measured on hardware 2026-08-19."
+},
+{
+  id: "measured-arm",
+  group: "Nong — the humanoid",
+  name: "The arm the robot really has (picked, not typed)",
+  where: [{file: "config/rig_presets.json", line: 14,
+           what: "the measured body: the numbers themselves"},
+          {file: "nong/main_python_set_nong/web/app_parts/rig_setup_ui.js", line: 201,
+           what: "the picker in Studio's rig panel"},
+          {file: "firmware/src/web/WebUI.h", line: 868,
+           what: "fkArm() on the board's own page, same numbers"}],
+  eq: "shoulder = (±88.0, 95, 0) mm from the torso centre
+" +
+      "upper arm = 128.70 mm, forearm = 167.64 mm
+" +
+      "reach = 128.70 + 167.64 = 296.34 mm from the shoulder",
+  why: "Measured off nong_assembly.STEP (A30-1/A30-2, analysis/nong_analysis.json), " +
+       "not scaled from a drawing. Before this the pages used round numbers - " +
+       "105/115/105 - which is an arm 60 mm shorter than the one on the bench, so " +
+       "every millimetre the module page reported was wrong. One list now feeds " +
+       "Studio (through /api/rigpresets) and the board page, and a second robot is " +
+       "one more entry in the file.",
+  from: "Geometry measured from the CAD assembly; the same file the mass and torque study used (model/21_09_2026_nangrum_full/analysis/METHODS.md).",
+  watch: "Change a link length here and the reach line must change with it - check_rig_presets adds them up and refuses a preset that disagrees with itself."
+},
+{
+  id: "ik-dls",
+  group: "Nong — the humanoid",
+  name: "Inverse kinematics: where to put four joints so the wrist lands there",
+  where: [{file: "nong/main_python_set_nong/web/app_parts/ik_4_dof_arm.js", line: 5,
+           what: "solveIK() — the whole solver"}],
+  eq: "J[i][c] = (p(θ + ε·e_c) - p(θ)) / ε   (numeric Jacobian, mm per degree)
+" +
+      "Δθ = Jᵀ (J Jᵀ + λ² I)⁻¹ e   (damped least squares, λ² = 4)
+" +
+      "e = target - wrist, clipped to 120 mm per step, 8 steps",
+  why: "Four joints, three numbers to hit: there is no single answer, so the " +
+       "solver asks for the SMALLEST joint movement that closes the gap. The " +
+       "damping λ² is what keeps it steady near a straight arm, where a plain " +
+       "least-squares step is divided by almost nothing and the arm flails. The " +
+       "Jacobian is measured by nudging each joint 0.6° and watching the wrist, " +
+       "so it needs no derivation per link and it is right for whatever arm the " +
+       "rig preset put in.",
+  from: "Damped least squares (Levenberg-Marquardt) for redundant manipulators: Wampler CW, \"Manipulator inverse kinematic solutions based on vector formulations and damped least-squares methods\", IEEE Trans. SMC 16(1), 1986; Buss SR, \"Introduction to Inverse Kinematics with Jacobian Transpose, Pseudoinverse and Damped Least Squares methods\", 2009.",
+  watch: "λ² is in mm²/deg² and the Jacobian here is order 10-40, so a big λ² stops the arm moving at all."
 }
 ];

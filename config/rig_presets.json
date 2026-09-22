@@ -1,0 +1,42 @@
+{
+  "_why": "BODIES Nong Studio can be set to, in one place. Asked 2026-09-18 (A26-72): the real robot's dimensions, from the STEP file, as a preset somebody picks - not numbers typed into a file. Add a robot by adding an entry; Studio's picker and the hub's /api/rigpresets both read this, so nothing has to be edited in code.",
+  "_fields": {
+    "id": "what Studio stores",
+    "label": "what a person reads in the picker",
+    "source": "where the numbers come from - a file, a measurement, or a guess",
+    "dims": "the same names Studio's rig uses (mm): shoulderX is HALF the distance between the shoulders, upperLen/foreLen are the arm links, torso* is the body box, shrugPivot is how far above the shoulder line the see-saw bearing sits",
+    "reach_mm": "upperLen + foreLen, written down so a wrong entry is obvious",
+    "note": "what the preset is for, and what is still a guess in it"
+  },
+
+  "presets": [
+    {
+      "id": "nong_step_2026_09",
+      "label": "Nong, measured from the STEP file (Sep 2026)",
+      "source": "model/21_09_2026_nangrum_full/nong_assembly.STEP, measured by A30-1/A30-2 into analysis/nong_analysis.json",
+      "dims": {
+        "shoulderX": 88, "shoulderY": 110,
+        "upperLenL": 128.7, "upperLenR": 128.7,
+        "foreLenL": 167.64, "foreLenR": 167.64,
+        "torsoW": 100, "torsoH": 250, "torsoD": 70,
+        "shrugPivot": 60
+      },
+      "reach_mm": 296.34,
+      "note": "Arm links and shoulder spacing are measured: shoulder joint 87.7 mm out from the body centre, upper arm 128.70 mm, forearm 167.64 mm, so the wrist reaches 296.34 mm from the shoulder. The torso box is still the drawn stand-in - the real torso is a slim spine with a shrug yoke, which no box describes - so torsoW/H/D and shrugPivot are unchanged from the built-in default."
+    },
+    {
+      "id": "studio_default",
+      "label": "Studio default (round numbers)",
+      "source": "the built-in DEFAULT_RIG in rig_data.js",
+      "dims": {
+        "shoulderX": 120, "shoulderY": 110,
+        "upperLenL": 110, "upperLenR": 110,
+        "foreLenL": 130, "foreLenR": 130,
+        "torsoW": 100, "torsoH": 250, "torsoD": 70,
+        "shrugPivot": 60
+      },
+      "reach_mm": 240,
+      "note": "Where every new project starts. Kept as a preset so going back is one click after trying another body."
+    }
+  ]
+}

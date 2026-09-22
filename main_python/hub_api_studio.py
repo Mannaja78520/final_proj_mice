@@ -102,6 +102,16 @@ class StudioRoutes:
             (_hub.MODELS / name).write_bytes(self.body())
             return self.send_json({"ok": True, "file": name})
 
+        if path == "/api/rigpresets":
+            # The BODIES Studio can be set to, from config/rig_presets.json
+            # (A26-72). One of them is measured from the real STEP file, so
+            # picking it is how somebody gets the robot's own arm lengths
+            # without typing a number anywhere.
+            if not _hub.registry:
+                return self.send_json({"ok": False, "presets": []})
+            return self.send_json({"ok": True,
+                                   "presets": _hub.registry.rig_presets()})
+
         if path == "/api/rigdefault" and method == "POST":
             # "Make this the factory default": the browser is the ONLY place the
             # live rig exists, so it posts it here to be written into the repo.

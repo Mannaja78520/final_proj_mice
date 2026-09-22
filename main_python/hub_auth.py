@@ -163,6 +163,9 @@ NEVER_GATED = {"/api/play/stop", "/api/stopall", "/api/play/beat",
 OPEN = {
     "/api/status", "/api/scan", "/api/ports", "/api/mine", "/api/allmods",
     "/api/scanusb", "/api/hubs", "/api/servos", "/api/apps", "/api/list",
+    # The list of BODIES Studio can be set to: a catalogue, same as the servo
+    # table beside it. Reading it moves nothing and changes nothing (A26-72).
+    "/api/rigpresets",
     "/api/modules", "/api/modules/all",
     "/api/load", "/api/loadseq", "/api/flash/images",
     # Watching a write on another PC reads that PC; it changes nothing

@@ -2952,6 +2952,26 @@ function renderRigUI() {
 
   const db = $("rigDims");
   db.innerHTML = "";
+  // THE WHOLE BODY IN ONE CLICK. Asked 2026-09-18 (A26-72): the real robot's
+  // measurements should be something you PICK, not numbers somebody types from
+  // a drawing. The list is data (config/rig_presets.json) fetched from the hub,
+  // so a second robot costs one entry and no code here.
+  const bodyRow = document.createElement("div"); bodyRow.className = "jrow";
+  const bl = document.createElement("span");
+  bl.className = "jname"; bl.textContent = "body";
+  const bsel = document.createElement("select");
+  bsel.innerHTML = "<option value=''>use a measured body…</option>" +
+    RIG_PRESETS.map(p => `<option value="${p.id}">${p.label}</option>`).join("");
+  bsel.title = "sets every size below from a real robot; each one says where "
+             + "its numbers come from";
+  bsel.onchange = () => { if (bsel.value) { applyRigPreset(bsel.value); bsel.value = ""; } };
+  const why = document.createElement("span");
+  why.className = "hint"; why.style.fontSize = "11px";
+  why.textContent = RIG_PRESETS.length
+    ? "reach " + RIG_PRESETS[0].reach_mm + " mm"
+    : "";
+  bodyRow.append(bl, bsel, why);
+  db.appendChild(bodyRow);
   Object.entries(DIM_LABELS).forEach(([k, label]) => {
     const row = document.createElement("div"); row.className = "jrow";
     const name = document.createElement("span"); name.className = "jname"; name.textContent = label;
@@ -2981,6 +3001,42 @@ let SERVO_TYPES = {
   generic180: { label: "generic 180", min: 500, max: 2500, dps: 300, range: 180, hz: 50 },
   generic270: { label: "generic 270", min: 500, max: 2500, dps: 300, range: 270, hz: 50 },
 };
+// BODIES this rig can be set to (A26-72). Data, fetched from the hub; the one
+// entry below is only a fallback for opening Studio with no hub, and it is the
+// measured robot because that is the one somebody is standing next to.
+let RIG_PRESETS = [
+  { id: "nong_step_2026_09",
+    label: "Nong, measured from the STEP file (Sep 2026)",
+    source: "nong_assembly.STEP",
+    dims: { shoulderX: 88, shoulderY: 110, upperLenL: 128.7, upperLenR: 128.7,
+            foreLenL: 167.64, foreLenR: 167.64,
+            torsoW: 100, torsoH: 250, torsoD: 70, shrugPivot: 60 },
+    reach_mm: 296.34,
+    note: "arm links and shoulder spacing measured; the torso box is still the "
+        + "drawn stand-in" },
+];
+async function loadRigPresets() {
+  try {
+    const r = await fetch("/api/rigpresets").then(r => r.json());
+    if (r && r.ok && Array.isArray(r.presets) && r.presets.length) {
+      RIG_PRESETS = r.presets;
+      if (typeof renderRigUI === "function") renderRigUI();
+    }
+  } catch (e) { /* no hub: the fallback above stands */ }
+}
+loadRigPresets();
+function applyRigPreset(id) {
+  const p = RIG_PRESETS.find(x => x.id === id);
+  if (!p || !p.dims) return;
+  // Only the sizes. Zeroes, limits, gears and offsets belong to the servos
+  // fitted to THIS robot, and a body preset must never quietly rewrite them.
+  Object.entries(p.dims).forEach(([k, v]) => {
+    if (k in RIG.dims) RIG.dims[k] = +v;
+  });
+  rigChanged(); renderRigUI(); buildRobot(); renderSliders();
+  if (typeof notice === "function")
+    notice(p.label + " — reach " + (p.reach_mm || "?") + " mm. " + (p.note || ""));
+}
 async function loadServoTypes() {
   try {
     const r = await fetch("/api/servos").then(r => r.json());

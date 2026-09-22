@@ -853,8 +853,11 @@ const JN=['L Shoulder Pitch','L Shoulder Roll','L Elbow Pitch','L Elbow Roll',
           'Waist (turn L/R)','Shrug (rock L up/R down)'];
 let lastNongM=null;
 function nongModeChanged(){if(lastNongM)renderNong(lastNongM);}
-// forward kinematics with the default geometry (shoulder +-105/95, upper 115,
-// fore 105 mm) - same frame as Nong Studio: origin = torso center, Y up
+// forward kinematics with the MEASURED geometry (A26-72): shoulder +-88/95,
+// upper arm 128.7, forearm 167.6 mm, read off nong_assembly.STEP by A30-1.
+// Same frame as Nong Studio: origin = torso center, Y up. The round numbers
+// that were here before (105/115/105) drew an arm the robot does not have,
+// so the mm this page reported were wrong by up to 60 mm at the wrist.
 function fkArm(j,side){
   const d2r=Math.PI/180,dir=[-1,side>0?1:-1,-1,side>0?1:-1];
   const a=j.map((v,i)=>(v-90)*dir[i]*d2r);
@@ -862,11 +865,11 @@ function fkArm(j,side){
   const rz=t=>[[Math.cos(t),-Math.sin(t),0],[Math.sin(t),Math.cos(t),0],[0,0,1]];
   const mul=(A,B)=>{const C=[[0,0,0],[0,0,0],[0,0,0]];for(let i=0;i<3;i++)for(let k=0;k<3;k++)for(let l=0;l<3;l++)C[i][k]+=A[i][l]*B[l][k];return C;};
   const ap=(M,v)=>[M[0][0]*v[0]+M[0][1]*v[1]+M[0][2]*v[2],M[1][0]*v[0]+M[1][1]*v[1]+M[1][2]*v[2],M[2][0]*v[0]+M[2][1]*v[1]+M[2][2]*v[2]];
-  const sh=[side*105,95,0];
+  const sh=[side*88,95,0];
   const Rs=mul(rx(a[0]),rz(a[1]));
-  const el=ap(Rs,[0,-115,0]).map((v,i)=>v+sh[i]);
+  const el=ap(Rs,[0,-128.7,0]).map((v,i)=>v+sh[i]);
   const Re=mul(Rs,mul(rx(a[2]),rz(a[3])));
-  const wr=ap(Re,[0,-105,0]).map((v,i)=>v+el[i]);
+  const wr=ap(Re,[0,-167.6,0]).map((v,i)=>v+el[i]);
   return {el,wr};
 }
 const fmt3=p=>'('+p.map(v=>Math.round(v)).join(', ')+')';

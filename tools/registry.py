@@ -128,6 +128,18 @@ def servos(path=None):
     return data.get("servos", data if isinstance(data, dict) else {})
 
 
+# ---------------------------------------------------------- rig presets
+# BODIES Studio can be set to (A26-72). The measured one comes from the real
+# STEP file, so picking it is how a person gets the real robot's arm lengths
+# without typing a number. See config/rig_presets.json.
+RIG_PRESETS_FILE = CODE / "config" / "rig_presets.json"
+
+
+def rig_presets(path=None):
+    data = load(path or RIG_PRESETS_FILE, {})
+    return data.get("presets", [])
+
+
 # -------------------------------------------------------------- commands
 # What each command IS, so the firmware's HELP, COMMANDS.md and the help page
 # can be checked against one declaration instead of drifting apart.
