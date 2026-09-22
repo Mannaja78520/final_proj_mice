@@ -120,11 +120,17 @@ def _check_texts(code):
 
 def checks_for(sid, code=CODE, reg=None, mine=None):
     """Checks whose source names a file of this system: its path, its file
-    name, or (for a distinctive name) the module it imports as."""
+    name, or (for a distinctive name) the module it imports as.
+
+    A system may also list `names` (routes, class names: a check that drives
+    /api/flash over HTTP never names hub_flash.py) and `checks` (globs of
+    check stems). Both are added to what the file names find (A26-93)."""
     reg = reg or load(code)
     if mine is None:
         mine = [f for f in files(code, reg) if owner(f, reg) == sid]
-    needles = set()
+    spec = next((s for s in reg["systems"] if s["id"] == sid), {})
+    needles = {n.lower() for n in spec.get("names") or []}
+    globs = [_glob(g) for g in spec.get("checks") or []]
     for f in mine:
         p = Path(f)
         needles.add(f.lower())
@@ -133,7 +139,8 @@ def checks_for(sid, code=CODE, reg=None, mine=None):
             if len(p.stem) >= 6 and p.suffix == ".py":
                 needles.add("import " + p.stem.lower())
     return [stem for stem, text in _check_texts(code)
-            if stem != "check_scope" and any(n in text for n in needles)]
+            if stem != "check_scope" and (any(n in text for n in needles)
+                                          or any(g.match(stem) for g in globs))]
 
 
 def owned(code=CODE, reg=None):
@@ -163,6 +170,10 @@ def verify(code=CODE):
         for d in s.get("depends") or []:
             if d not in ids:
                 bad.append("%s depends on %s, which is not a system" % (s["id"], d))
+        stems = [stem for stem, _t in _check_texts(code)]
+        for g in s.get("checks") or []:
+            if not any(_glob(g).match(st) for st in stems):
+                bad.append("%s lists checks %s, which matches no check" % (s["id"], g))
     mine, problems = owned(code, reg)
     bad += problems
     for s in reg["systems"]:

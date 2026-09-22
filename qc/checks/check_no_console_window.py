@@ -75,8 +75,7 @@ def run(t):
     # The old Reconize starter ran their start.bat, which opens two `cmd /k`
     # windows on purpose. Starting it now goes through partner_launch, which
     # is the same hidden starter the Open Reconize button already used.
-    main = (F.CODE / "main_python" / "main.py").read_text(encoding="utf-8",
-                                                          errors="replace")
+    main = F.hub_src()          # main.py and every hub_*.py it was split into
     # The names in STRINGS, not in comments: a comment saying which trap this
     # was is the point of the comment.
     texts = [n.value for n in ast.walk(ast.parse(main))

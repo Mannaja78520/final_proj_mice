@@ -6,7 +6,7 @@
   // Touch any of these and the FULL suite runs: every page or board uses them.
   // A path ending in / means everything under it.
   "fullWhen": [
-    "main_python/main.py", "main_python/hub_auth.py", "main_python/registry.py",
+    "main_python/main.py", "main_python/hub_usb.py", "main_python/hub_auth.py", "main_python/registry.py",
     "shared/web/", "qc/lib/", "qc/run_qc.py", "qc/data/scope.json",
     "promote.py", "tools/registry.py", "tools/build_web.py", "tools/gen_tables.py",
     "firmware/src/core/", "firmware/platformio.ini", "MiceHub.spec"

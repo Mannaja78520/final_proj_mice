@@ -98,7 +98,12 @@ def run(t):
         t.ok(stamps[1] - stamps[0] >= entry_t * 0.9,
              "the first move waits for the arm to reach keyframe 0",
              "gap %d ms, entry move T %d" % (stamps[1] - stamps[0], entry_t))
-    t.ok("entry-done-at-0" in marks,
+    # The page polls entryHold every 20 ms, so it can see the clock one frame
+    # (~16 ms) after release: entry-done-at-16/17 in two gates, 2026-09-22.
+    # Running ahead through the entry move would read hundreds of ms.
+    done = [int(m.rsplit("-", 1)[1]) for m in marks
+            if m.startswith("entry-done-at-") and m.rsplit("-", 1)[1].isdigit()]
+    t.ok(done and done[0] <= 50,
          "and the preview clock waited for it too, instead of running ahead",
          [m for m in marks if m.startswith("entry-done")])
     stamps = stamps[1:]

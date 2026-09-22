@@ -7,7 +7,13 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 
 | system | what it is |
 |---|---|
-| [hub](hub.md) | The hub program: HTTP server, routes, USB/RS485 access, flashing, show clock. Being split (A26-76 phase 2). |
+| [hub](hub.md) | The hub program: HTTP server, the device routes (dev, modules, USB proxy, pairing, robot proxy), startup. Split into hub-* systems (A26-76, A26-93). |
+| [hub-usb](hub-usb.md) | The hub's USB serial manager (one owner of every cable) and the port probe that finds which module is on which cable. |
+| [hub-flash](hub-flash.md) | Flashing a board: esptool over the cable, OTA over WiFi, chunks over the command channel, and images sent from another PC. |
+| [hub-show](hub-show.md) | The hub as the show clock: the show player, live audio to a speaker, saved shows by name, stop-all. |
+| [hub-apps](hub-apps.md) | The hub's routes for the app launcher, page access, partner programs and the voice helper. |
+| [hub-support](hub-support.md) | Self-update, the diagnostics text and problem reports. |
+| [hub-studio](hub-studio.md) | The hub's routes for Nong Studio's files, shared settings and the list of other hubs. |
 | [hub-auth](hub-auth.md) | Hub logins, sessions, which pages need a login, pairing two hubs. |
 | [hub-net](hub-net.md) | Finding boards and other hubs on the network, mDNS names, QR codes, choosing the fastest route. |
 | [hub-media](hub-media.md) | Camera relay and audio streaming to boards. |

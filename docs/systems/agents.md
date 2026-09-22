@@ -46,7 +46,7 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 
 - nothing
 
-## Checks that test it (18)
+## Checks that test it (19)
 
 - `check_branch`
 - `check_designer_first`
@@ -62,9 +62,10 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `check_plan_owner`
 - `check_plan_updates`
 - `check_promote_ask`
+- `check_read_rules`
 - `check_readme_routes`
 - `check_stale_build`
 - `check_systems`
 - `check_translate`
 
-Run them: `python qc/run_qc.py --no-build check_branch check_designer_first check_dev_tools check_history check_livedoc check_local_panel check_onefile check_packing_list check_panel check_plan_areas check_plan_live check_plan_owner check_plan_updates check_promote_ask check_readme_routes check_stale_build check_systems check_translate`
+Run them: `python qc/run_qc.py --no-build check_branch check_designer_first check_dev_tools check_history check_livedoc check_local_panel check_onefile check_packing_list check_panel check_plan_areas check_plan_live check_plan_owner check_plan_updates check_promote_ask check_read_rules check_readme_routes check_stale_build check_systems check_translate`

@@ -58,6 +58,29 @@ def run(t):
     t.eq(d("docs/PLAN.html", "promt.md")[0], "quick",
          "only the plan changed: the quick suite, never nothing")
 
+    # A26-93: code split out of main.py is tested over HTTP, and those checks
+    # never name the new file. The system's `names`/`checks` in systems.json
+    # find them; without that hub_flash.py selected nothing and ran --quick.
+    got = d("main_python/hub_flash.py")
+    t.ok(got[0] == "checks" and "check_flash" in got[1] and "check_ota" in got[1],
+         "a split hub file runs the checks its system names (flash -> check_flash, check_ota)",
+         got[:2])
+    got = d("main_python/hub_api_studio.py")
+    t.ok(got[0] == "checks" and any(c.startswith("check_studio") for c in got[1]),
+         "the Studio routes run the Studio checks", got[:2])
+    t.eq(d("main_python/hub_usb.py")[0], "full", "the USB layer under every cable runs the full suite")
+    import tempfile
+    from pathlib import Path
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "qc" / "data").mkdir(parents=True)
+        (Path(tmp) / "qc" / "data" / "scope.json").write_bytes(
+            (F.CODE / "qc" / "data" / "scope.json").read_bytes())
+        (Path(tmp) / "qc" / "checks").mkdir()
+        got = scope.decide(tmp, ["main_python/nobody_tests_me.py"])
+        t.ok(got[0] == "full", "code no check names runs the full suite, not --quick", got)
+        got = scope.decide(tmp, ["docs/notes_nobody_tests.md"])
+        t.ok(got[0] == "quick", "a note no check names stays on the quick floor", got)
+
     # promote.py --only scopes the gate to the landed files, not to whatever
     # else the shared staging carries (2026-09-17: a receipt file and a QC
     # leftover turned a 3-file land into a full gate).

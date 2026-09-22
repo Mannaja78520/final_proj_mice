@@ -8,6 +8,15 @@ that system's files; its header lists the checks to run. A new file or system:
 add it to `docs/systems.json`, then `python tools/systems.py build`.
 `check_systems` fails on a file nobody owns or a stale header.
 
+## How to read (tokens are paid; user 2026-09-22, A26-93)
+
+- `python tools/systems.py which <file>` -> read that ONE header first.
+- `rg` the name, then read 40-100 lines around the hit. Never a whole file
+  over 300 lines (main.py is ~38k tokens; one function is ~1k).
+- Never re-read a file already read or just edited.
+- Logs: print the failing line only (tail / grep), never the full run.
+- Moving code: write a script that moves exact lines; do not retype it.
+
 Read AGENTS.md, CLAUDE.md, docs/COORDINATION.md and the latest relevant
 docs/BRIDGE.md entries before editing. Use the named robot/system plan task.
 Follow shared claims, mutex, staging, QC and provider-limit takeover rules.

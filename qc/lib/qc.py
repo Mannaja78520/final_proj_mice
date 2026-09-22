@@ -80,9 +80,14 @@ def hub_src():
     main.py is being split into smaller files (A26-76). A check that reads
     the source for a pattern must still find it after the code moves, so it
     reads this instead of main.py alone.
+
+    Moved code reads main.py's names late as `_hub.<name>` (A26-93). The
+    prefix is dropped here, so a check looking for `flasher.running()` or
+    `with _reports_lock:` finds it wherever it now lives.
     """
     parts = [HUB / "main.py"] + sorted(HUB.glob("hub_*.py"))
-    return "\n".join(p.read_text(encoding="utf-8", errors="replace") for p in parts)
+    text = "\n".join(p.read_text(encoding="utf-8", errors="replace") for p in parts)
+    return text.replace("_hub.", "")
 
 
 

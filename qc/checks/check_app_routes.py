@@ -18,7 +18,7 @@ TITLE = "every hub route an app page calls still exists in the hub"
 
 
 def run(t):
-    main = (F.CODE / "main_python" / "main.py").read_text(encoding="utf-8")
+    main = F.hub_src()          # routes live in main.py and hub_api_*.py (A26-93)
     prefixes = re.findall(r'path\.startswith\(\s*"(/api/[A-Za-z0-9_/\-]+/)"', main)
     called = {}
     for f in sorted(list(F.CODE.glob("apps/*/index.html")) +

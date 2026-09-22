@@ -19,6 +19,7 @@ Saved shows: sequences played in series by name.
 ## Used by
 
 - [hub](hub.md)
+- [hub-show](hub-show.md)
 
 ## Checks that test it (0)
 

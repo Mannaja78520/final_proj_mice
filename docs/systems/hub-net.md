@@ -30,6 +30,7 @@ route to a board reached more than one way.
 ## Used by
 
 - [hub](hub.md)
+- [hub-usb](hub-usb.md)
 
 ## Checks that test it (3)
 

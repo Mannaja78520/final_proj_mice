@@ -422,6 +422,18 @@ def main(argv):
               % (G if not n_fail else R,
                  len([1 for g, _l, _d in case_results if g]), n_fail, secs, D))
 
+    retries = int(SPEED.get("browserRetriesAlone") or 0)
+    flaky = []
+
+    def _red(results, crash):
+        return bool(crash) or not results or any(not g for g, _l, _d in results)
+
+    def _alone(f):
+        """One more run of one check, in a fresh process, with nothing beside it."""
+        import concurrent.futures as _cf
+        with _cf.ProcessPoolExecutor(max_workers=1, max_tasks_per_child=1) as pool:
+            return pool.submit(_one, str(f)).result()
+
     def run_isolated(items):
         """Keep sequential checks sequential without retaining their hub threads."""
         if not items:
@@ -488,6 +500,8 @@ def main(argv):
         first = [(f, m) for f, m in solo if f.stem in RUN_FIRST]
         solo = [(f, m) for f, m in solo if f.stem not in RUN_FIRST]
         run_isolated(first)
+        heavy_paths = {str(f) for f, _m in heavy}
+        suspect = []        # browser checks that failed in the crowd: retried alone
         pools, futs, by_path = [], [], {}
         for group, width in ((para, jobs), (heavy, browser_jobs)):
             if not group:
@@ -507,6 +521,9 @@ def main(argv):
                 if err:
                     broken.append((f.stem, err))
                     continue
+                if path_s in heavy_paths and retries and _red(results, crash):
+                    suspect.append((f, mod, results, secs, crash))
+                    continue
                 report(f, mod, results, secs, crash, "")
                 done_n += 1
                 if done_n % 10 == 0:
@@ -514,6 +531,16 @@ def main(argv):
         finally:
             for pool in pools:
                 pool.shutdown(wait=True)
+        for f, mod, results, secs, crash in suspect:
+            again = [_alone(f) for _ in range(retries)]
+            if all(not _red(r[2], r[4]) and not r[5] for r in again):
+                flaky.append(f.stem)
+                print("%sFLAKY%s %s failed in the parallel run, passed alone %d/%d"
+                      % (R, D, f.stem, retries, retries))
+                _p, _t, r_res, r_secs, _c, _e = again[-1]
+                report(f, mod, r_res, r_secs, None, "")
+            else:
+                report(f, mod, results, secs, crash, "")   # real: it blocks
         run_isolated(solo)
         _plan("QC finished: %d passed, %d failed" % (total_pass, total_fail))
 
@@ -545,6 +572,10 @@ def main(argv):
     elif RECEIPT.exists() and full_run:
         RECEIPT.unlink()          # this tree is not green any more
 
+    if flaky:
+        # Counted as passed, never hidden: these are the checks to make steadier.
+        print("\n%sFLAKY (failed in the parallel run, green alone):%s %s"
+              % (R, D, ", ".join(flaky)))
     if failures:
         print("\nwhat regressed:")
         for x in failures:

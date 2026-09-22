@@ -22,6 +22,30 @@ SKIP_DIRS = {".git", ".pio", "__pycache__", "node_modules", ".vscode", ".claude"
 SKIP_EXT = {".pyc", ".pyo", ".tmp", ".exe", ".bin", ".elf", ".log", ".bak"}
 
 
+CODE_EXT = {".py", ".js", ".html", ".css", ".cpp", ".h", ".ino"}
+
+
+def _system_checks(code, paths, checks_dir=None):
+    """Checks that docs/systems.json ties to the systems these paths belong to."""
+    import sys
+    if not (Path(code) / "docs" / "systems.json").is_file():
+        return []                         # a tree with no map (check_scope's fakes)
+    tools = str(Path(code) / "tools")
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    import systems
+    reg = systems.load(code)
+    out = []
+    for sid in sorted({systems.owner(p, reg) for p in paths} - {None}):
+        spec = next(s for s in reg["systems"] if s["id"] == sid)
+        if spec.get("names") or spec.get("checks"):
+            out += systems.checks_for(sid, code, reg)
+    if checks_dir:                        # a test pointing at its own checks
+        have = {f.stem for f in Path(checks_dir).glob("check_*.py")}
+        out = [c for c in out if c in have]
+    return out
+
+
 def rules(code):
     import json
     raw = (Path(code) / "qc" / "data" / "scope.json").read_text(encoding="utf-8")
@@ -97,7 +121,17 @@ def decide(code, paths, checks_dir=None):
         text = f.read_text(encoding="utf-8", errors="replace").lower()
         if any(n in text for n in needles if not n.startswith("#self:")):
             picked.append(f.stem)
+    # ...plus the checks the file's system names in docs/systems.json (A26-93):
+    # a check that drives /api/flash over HTTP never names hub_flash.py.
+    for stem in _system_checks(code, paths, checks_dir):
+        if stem not in picked:
+            picked.append(stem)
     if not picked:
+        code_files = [p for p in paths if Path(p).suffix.lower() in CODE_EXT]
+        if code_files:
+            # Code that no check names is code nothing here would test: the
+            # quick floor would land it unread (Codex review 2026-09-22).
+            return ("full", "no check names %s" % ", ".join(code_files[:3]))
         return ("quick", "no check names %s" % ", ".join(sorted(paths)[:3]))
     # checks every scoped gate runs whatever changed: the system map must not
     # drift just because the change did not name it (Codex review 2026-09-21)
