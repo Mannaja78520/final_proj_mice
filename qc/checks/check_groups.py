@@ -109,7 +109,7 @@ def run(t):
 
     # The tab is useless if it cannot SEE which modules are already linked, so
     # both ways the hub identifies a module must carry the group through.
-    main_py = (F.HUB / "main.py").read_text(encoding="utf-8", errors="replace")
+    main_py = F.hub_src()
     m = re.search(r"def probe_module\(.*?return None", main_py, re.S)
     if t.ok(m, "the WiFi probe exists"):
         t.contains(m.group(0), '"group"',

@@ -39,7 +39,7 @@ TITLE = "one button copies a diagnostics bundle, and it carries no password"
 
 
 def run(t):
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     hub = (F.HUB / "web" / "hub.html").read_text(encoding="utf-8")
 
     fake_serial.reset()

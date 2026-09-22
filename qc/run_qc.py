@@ -421,6 +421,21 @@ def main(argv):
               % (G if not n_fail else R,
                  len([1 for g, _l, _d in case_results if g]), n_fail, secs, D))
 
+    def run_isolated(items):
+        """Keep sequential checks sequential without retaining their hub threads."""
+        if not items:
+            return
+        import concurrent.futures as _cf
+        with _cf.ProcessPoolExecutor(max_workers=1,
+                                     max_tasks_per_child=1) as pool:
+            for f, mod in items:
+                _path, _title, results, secs, crash, err = pool.submit(
+                    _one, str(f)).result()
+                if err:
+                    broken.append((f.stem, err))
+                else:
+                    report(f, mod, results, secs, crash, "")
+
     solo = [(f, m) for f, m in wanted
             if f.stem in SOLO or getattr(m, "SOLO", False)]
     rest = [(f, m) for f, m in wanted if (f, m) not in solo]
@@ -471,9 +486,7 @@ def main(argv):
         # second passed (A26-83, seen five times on 2026-09-21).
         first = [(f, m) for f, m in solo if f.stem in RUN_FIRST]
         solo = [(f, m) for f, m in solo if f.stem not in RUN_FIRST]
-        for f, mod in first:
-            case, secs, crash = F.run_check(mod)
-            report(f, mod, case.results, secs, crash, "")
+        run_isolated(first)
         pools, futs, by_path = [], [], {}
         for group, width in ((para, jobs), (heavy, browser_jobs)):
             if not group:
@@ -500,16 +513,12 @@ def main(argv):
         finally:
             for pool in pools:
                 pool.shutdown(wait=True)
-        for f, mod in solo:
-            case, secs, crash = F.run_check(mod)
-            report(f, mod, case.results, secs, crash, "")
+        run_isolated(solo)
         _plan("QC finished: %d passed, %d failed" % (total_pass, total_fail))
 
     else:
         # One at a time: --jobs 1, or a filter that left a single check.
-        for f, mod in wanted:
-            case, secs, crash = F.run_check(mod)
-            report(f, mod, case.results, secs, crash, "")
+        run_isolated(wanted)
 
     print("\n" + "=" * 62)
     for name, err in broken:

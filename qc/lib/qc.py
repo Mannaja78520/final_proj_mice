@@ -74,6 +74,18 @@ GENERATED = FIRMWARE / "generated"
 _generated_done = [False]
 
 
+def hub_src():
+    """The hub program's source as ONE text: main.py, then every hub_*.py.
+
+    main.py is being split into smaller files (A26-76). A check that reads
+    the source for a pattern must still find it after the code moves, so it
+    reads this instead of main.py alone.
+    """
+    parts = [HUB / "main.py"] + sorted(HUB.glob("hub_*.py"))
+    return "\n".join(p.read_text(encoding="utf-8", errors="replace") for p in parts)
+
+
+
 def generated(rel=""):
     """A generated firmware header (command table, servo table, module page).
 

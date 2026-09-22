@@ -108,7 +108,7 @@ def run(t):
     # normal 2 s budget cut it off mid-flight, and the page got a 502 while
     # the module was answering perfectly — seen on real hardware the moment
     # the first status was fetched.
-    src = (F.CODE / "main_python/main.py").read_text(encoding="utf-8", errors="replace")
+    src = F.hub_src()
     t.contains(src, "PEER_WAIT", "a forwarded command has its own time budget")
     m = __import__("re").search(r"PEER_WAIT\s*=\s*([\d.]+)", src)
     if t.ok(m, "which is a named constant"):

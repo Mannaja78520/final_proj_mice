@@ -46,7 +46,7 @@ def run(t):
          "no listed browser on this PC: the normal browser, never nothing", (how, fell))
 
     # the hub's own startup uses it, for a running hub AND a fresh one
-    src = (F.HUB / "main.py").read_text(encoding="utf-8", errors="replace")
+    src = F.hub_src()
     body = src[src.find("def main():"):]
     body = body[:body.find("\nif __name__")]
     t.ok(body.count("show(") >= 2 and "webbrowser.open(" not in body,

@@ -112,19 +112,19 @@ def run(t):
          "another board on the same port starts from zero")
 
     # ---- the hub stamps and resolves --------------------------------------
-    saved = main.LAT
+    saved = route_latency.LAT
     try:
         _hub(t, main, route_latency)
     finally:
-        main.LAT = saved
+        route_latency.LAT = saved
 
 
 def _hub(t, main, route_latency):
-    main.LAT = route_latency.Latency()
+    route_latency.LAT = route_latency.Latency()
     m = {"key": "chip/QC1", "wifi_mode": "sta", "routes": [
         {"kind": "wifi", "dev": "wifi:10.0.0.9", "ip": "10.0.0.9"},
         {"kind": "rs485", "dev": "usb:COM77:5", "port": "COM77", "bus": 5}]}
-    main.LAT.record("usb:COM77:5", 12)
+    route_latency.LAT.record("usb:COM77:5", 12)
     main._pick_route(m)                                       # noqa: SLF001
     t.eq(m.get("best"), "usb:COM77:5", "the board is stamped with its fastest route")
     t.ok(any(r.get("ms") == 12 for r in m["routes"]),
@@ -148,7 +148,7 @@ def _hub(t, main, route_latency):
         t.ok(port not in main._usb_touch,                     # noqa: SLF001
              "the probe does not mark the cable as in use",
              "it would keep open a port an outside tool is waiting for")
-        t.ok(main.LAT.ms("usb:" + port) is not None,
+        t.ok(route_latency.LAT.ms("usb:" + port) is not None,
              "a command over the cable records how long the wire took")
         main.usb_cmd(port, "PING", 0, wait=1.0)
         t.ok(port in main._usb_touch,                         # noqa: SLF001

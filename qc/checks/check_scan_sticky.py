@@ -193,7 +193,7 @@ def run(t):
         main.lan_ips = real_lans
         main.MODULES.forget()
 
-    src = (F.CODE / "main_python/main.py").read_text(encoding="utf-8", errors="replace")
+    src = F.hub_src()
     t.contains(src, "_probe_patiently", "the second pass exists in the hub")
     t.contains(src, "timeout=2.0", "and gives a known module real time to answer")
     t.contains(src, "_ips_from_usb",

@@ -263,7 +263,7 @@ def run(t):
     # running new firmware under its old type. Only a FAILED write ended
     # cleanly, which is why nobody noticed.
     import re as _re                                          # noqa: PLC0415
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     # The FLASH job's status, not the show player's — main.py has more than one
     # `def status(self)`, and taking the first one made this assert against the
     # wrong document entirely.

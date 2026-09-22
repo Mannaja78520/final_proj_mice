@@ -309,7 +309,7 @@ def run(t):
          "an <img src> bypasses the hub's transport shim")
     t.contains(shot, "r.text()",
                "a refusal is shown in the module's own words, not guessed at")
-    hub = (F.HUB / "main.py").read_text(encoding="utf-8", errors="replace")
+    hub = F.hub_src()
     t.contains(hub, 'what == "cam.jpg"',
                "the hub can fetch a frame for a module it is serving")
     dev_cam = hub[hub.find('what == "cam.jpg"'):]

@@ -95,7 +95,7 @@ def run(t):
             p.unlink()
 
     # ---- 4. the hub writes atomically, everywhere ------------------------
-    src = (F.HUB / "main.py").read_text(encoding="utf-8", errors="replace")
+    src = F.hub_src()
     t.contains(src, "def write_atomic(",
                "the hub has one place that writes a file safely")
     # The point of the helper is that nothing bypasses it. write_text on a user

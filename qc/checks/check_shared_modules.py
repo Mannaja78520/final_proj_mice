@@ -49,8 +49,7 @@ def get(url, timeout=8, headers=None):
 def run(t):
     fake_serial.reset()
     base, main = F.start_hub()
-    src = (F.CODE / "main_python/main.py").read_text(encoding="utf-8",
-                                                     errors="replace")
+    src = F.hub_src()
 
     # ---- the address format ---------------------------------------------
     ip, inner = main.split_hub_dev("hub:10.0.0.5/usb:COM7")

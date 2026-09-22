@@ -61,7 +61,7 @@ def run(t):
              "and if it fails it says what to do instead")
 
     # ---- the route exists, stops the clock first, and needs no login -
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     route = src[src.find('if path == "/api/stopall"'):]
     # cut at the NEXT section, not N chars into the answer line: the reply
     # grew ("slow") and the old slice ended before its own tail
@@ -136,9 +136,8 @@ def run(t):
                       .strip().replace(chr(10), " ")[-70:])
     t.eq(forgot, [],
          "every way of opening a module records it")
-    # ON EACH ROW, keyed by the board (A26-87): one separate "↩ nong" line
-    # could not say which of two nongs it meant, and it kept an address that
-    # went dead when the robot changed WiFi.
+    # ON EACH ROW, keyed by the board (A26-87): one separate last-opened line
+    # could not say which of two nongs it meant, and could keep a stale address.
     t.contains(page, "openedText(m)",
                "and each module's own row says when it was last opened")
     t.ok("all[key || dev] = Date.now()" in page and "m.key);" in page,

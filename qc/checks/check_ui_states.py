@@ -108,7 +108,7 @@ def run(t):
     # live pose streaming (~30 commands a second) it was most of the latency
     # and the arm visibly lagged the sliders. The blank-line reply marker makes
     # the wait unnecessary, so there must not be one.
-    hub_py = (F.HUB / "main.py").read_text(encoding="utf-8", errors="replace")
+    hub_py = F.hub_src()
     i = hub_py.find("def _drain_to_line_boundary(")
     if t.ok(i >= 0, "the pre-command drain exists"):
         j = hub_py.find(chr(10) + "def ", i + 1)     # up to the next top-level def

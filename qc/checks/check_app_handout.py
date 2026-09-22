@@ -35,7 +35,7 @@ TITLE = "the hub hands its app to another PC, and can update from one"
 
 
 def run(t):
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     hub = (F.HUB / "web" / "hub.html").read_text(encoding="utf-8")
 
     # ---- only offered when there IS one ------------------------------

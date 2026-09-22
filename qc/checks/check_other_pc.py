@@ -34,7 +34,7 @@ TITLE = "a module on another PC's cable can be commanded, from the hub and Studi
 def run(t):
     app = (F.CODE / "nong" / "main_python_set_nong" / "web" / "app.js").read_text(
         encoding="utf-8", errors="replace")
-    main = (F.HUB / "main.py").read_text(encoding="utf-8")
+    main = F.hub_src()
 
     # ---- the hub still forwards, and refuses a second hop ------------
     split = main[main.find("def split_hub_dev(dev):"):]

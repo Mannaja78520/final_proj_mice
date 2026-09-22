@@ -17,7 +17,7 @@ def run(t):
     src = (F.QC / "run_qc.py").read_text(encoding="utf-8")
     t.ok('RUN_FIRST = {"check_build_split"}' in src,
          "check_build_split is marked to run first")
-    first = src.find("for f, mod in first:")
+    first = src.find("run_isolated(first)")
     pools = src.find("pools, futs, by_path = [], [], {}")
     t.ok(0 < first < pools,
          "and it runs before the parallel pools start",

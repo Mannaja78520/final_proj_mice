@@ -70,7 +70,7 @@ def run(t):
     import sys
     sys.path.insert(0, str(F.HUB))
     import main  # noqa: PLC0415 - the module under test
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
 
     # ---- the real pattern knows boot output from an answer ----------
     t.ok(hasattr(main, "_BOOT_NOISE"),

@@ -123,7 +123,7 @@ def run(t):
     os.environ["MICE_VOICE_CONFIG"] = str(cfg)
 
     # -- static: the two halves of the voice address must agree ----------
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     i = src.find("def voice_service_url")
     t.ok(i >= 0 and ":8767" in src[i:i + 1200],
          "a portless voice address resolves to the helper's default port",

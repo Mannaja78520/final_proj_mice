@@ -113,7 +113,7 @@ def test_download(t, main):
 
 
 def test_flash_claim(t, main):
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     claim = src[src.find("def _claim"):]
     claim = claim[:claim.find("def status")]
     t.ok("self.thread = threading.Thread" in claim,
@@ -151,7 +151,7 @@ def test_one_hub(t):
     # Two hubs on one port used to fight for it silently - whichever bound
     # second served half the requests. Now the new one asks first and opens
     # the running one's page instead of fighting.
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     probe = src.find('http://127.0.0.1:%d/api/version" % PORT')
     bind = src.find("ThreadingHTTPServer((HOST, PORT), Handler)")
     t.ok(0 <= probe < bind,
@@ -165,7 +165,7 @@ def test_temp_cleanup(t):
     # a bad payload mid-download, and a refused flash slot after it. Each
     # refusal must remove the folder AND re-raise, or the venue PC collects
     # firmware folders and the sender hears silence.
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     fn = src[src.find("def start_received"):]
     fn = fn[:fn.find("\n    def ")]
     cleans = [m.start() for m in re.finditer(r"shutil\.rmtree\(d", fn)]

@@ -188,7 +188,7 @@ def run(t):
              json.dumps(mine, ensure_ascii=False)[:200])
 
         # -- both writers of one report file take the same lock ------------
-        src = (F.HUB / "main.py").read_text(encoding="utf-8")
+        src = F.hub_src()
         t.ok(src.count("with _reports_lock:") >= 2,
              "the translator and the status screen share one file lock",
              "both read-modify-write the same json; unlocked, whichever "

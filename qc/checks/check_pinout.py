@@ -191,7 +191,7 @@ def run(t):
         t.eq(asked, [],
              "and is never asked a camera question to find that out")
 
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     i = src.find("def pinout_for")
     body = src[i:i + 1800]
     t.contains(body, "board=",

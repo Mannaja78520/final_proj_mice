@@ -35,7 +35,7 @@ def run(t):
 
     t.ok(hasattr(main, "start_short_name"),
          "the hub can answer on the short name")
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     i = src.find("def start_short_name")
     # Wide enough to reach the bind past its explanation: the comment IS
     # the reason the listener backs off, so it will only grow.

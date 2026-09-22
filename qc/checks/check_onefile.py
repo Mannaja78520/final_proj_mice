@@ -63,7 +63,7 @@ def run(t):
         shutil.rmtree(box, ignore_errors=True)
 
     # ---- writable things never come out of the bundle ---------------
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     for name in ("AUTH_STORE", "KNOWN_HUBS"):
         i = src.find(name + " = ")
         line = src[i:src.find("\n", i + 40)]

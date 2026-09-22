@@ -30,7 +30,7 @@ TITLE = "one code path for talking to a module, three ways to address it"
 
 
 def run(t):
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
 
     # ---- there is one implementation --------------------------------
     t.contains(src, "def dev_route(self",

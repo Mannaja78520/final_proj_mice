@@ -124,7 +124,7 @@ def run(t):
 
     # ---- the two halves that make the address trustworthy -----------
     # The hub says who it is on every request it makes...
-    main_py = (F.HUB / "main.py").read_text(encoding="utf-8")
+    main_py = F.hub_src()
     t.contains(main_py, "X-Mice-Hub",
                "the hub identifies itself when it talks to a board")
     t.contains(main_py, "def hub_header",

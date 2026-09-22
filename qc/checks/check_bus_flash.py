@@ -49,7 +49,7 @@ LINE_CAP = 250
 
 def run(t):
     fw = F.FIRMWARE
-    hub = (F.HUB / "main.py").read_text(encoding="utf-8")
+    hub = F.hub_src()
     up = (fw / "src" / "core" / "BusUpdate.cpp").read_text(encoding="utf-8")
     router = (fw / "src" / "core" / "CommandRouter.cpp").read_text(encoding="utf-8")
 
