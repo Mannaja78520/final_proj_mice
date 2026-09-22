@@ -40,7 +40,8 @@ RECEIPT = CODE / ".qc-receipt.json"
 
 SKIP_PARTS = {".git", ".pio", "__pycache__", ".staging", "node_modules",
               ".vscode", ".claude", ".unsnooze", "dist", "build", "patches",
-              "patches_code", "generated", "tts_cache", "reports"}
+              "patches_code", "generated", "tts_cache", "reports",
+              "projects", "sequences", "shows"}
 
 
 def tree_fingerprint():
