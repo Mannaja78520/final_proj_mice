@@ -137,6 +137,21 @@ def run(t):
              "and stops at the first pass that crosses the target, not later",
              "%d ms over %d passes" % (total, len(ssteps) // 2))
 
+        # BOTH repeat modes are bounded. MAX_PASSES guarded only `seconds` at
+        # first, so a `times` of a million - one typo in a hand-edited
+        # shows/*.json - built a million passes and took the hub's memory with
+        # it. Codex found that reviewing the landed change, 2026-09-23.
+        try:
+            main.SHOWS.steps(main.SHOWS.clean(
+                dict(show, items=[{"seq": "qc_cont_one.yaml",
+                                   "repeat_mode": "times", "repeat": 100000}])),
+                main.seq_steps)
+            t.ok(False, "a `times` repeat beyond the limit is refused", "it was accepted")
+        except ValueError as e:
+            t.ok("cannot repeat" in str(e) and "qc_cont_one.yaml" in str(e),
+                 "a `times` repeat beyond the limit is refused, naming the sequence",
+                 str(e))
+
         # A sequence too short to fill the target refuses instead of building a
         # list of tens of thousands of steps that nothing can stop.
         try:

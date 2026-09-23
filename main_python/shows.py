@@ -24,6 +24,11 @@ elapsed time is still under the target, so 60 s of a 22 s sequence is three
 passes (66 s). A truncated pass would stop the arm wherever the clock ran out,
 which is not a pose anybody chose.
 
+Seconds counts the times the hub ASKS for, not the times the board reports. The
+board may lengthen a move (its own speed cap), so a 60 s item can run a little
+longer than 60 s. It can never run SHORT, which is the direction that would
+matter, and the hub cannot know the board's answer before it sends the move.
+
 The sequences are never copied or changed, so one greeting can sit in many
 shows. A person can edit the file by hand; Studio's Shows tab writes the same.
 The hub plays a show as one list of steps (ShowPlayer), so it runs over any
@@ -167,6 +172,14 @@ class Shows:
             if not got:
                 raise ValueError("step %d: %s has no poses" % (n, it["seq"]))
             speed = float(parsed.get("speed") or 0) or DEF_DPS
+            # MAX_PASSES guarded only the seconds branch at first, so a `times`
+            # of a million - one typo in a hand-edited shows/*.json - built a
+            # million passes and took the hub's memory with it. Found by Codex
+            # 2026-09-23 reviewing the landed change. Refused UP FRONT, before
+            # a single pass is built, because the point is not to build it.
+            if it["repeat_mode"] == "times" and it["repeat"] > MAX_PASSES:
+                raise ValueError("step %d: %s cannot repeat %d times (the most "
+                                 "is %d)" % (n, it["seq"], it["repeat"], MAX_PASSES))
             passes, elapsed = 0, 0
             while True:
                 pass_steps = [dict(s) for s in got]
