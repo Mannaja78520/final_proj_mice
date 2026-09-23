@@ -134,6 +134,9 @@ function renderRigUI() {
       if (max) inp.max = max;
       inp.onchange = () => {
         let v = +inp.value || RIG[key][i];
+        // the board keeps WHOLE teeth (GEAR parses with toInt: 4.5 became 4),
+        // so a fraction here would preview a ratio the robot never uses
+        if (key === "gearPinion" || key === "gearGear") v = Math.round(v);
         v = Math.max(min, max ? Math.min(max, v) : v);
         RIG[key][i] = v; inp.value = v;
         rigChanged(); renderRigUI();   // the travel warning may have changed
@@ -283,7 +286,7 @@ let RIG_PRESETS = [
     source: "nong_assembly.STEP",
     dims: { shoulderX: 88, shoulderY: 110, upperLenL: 128.7, upperLenR: 128.7,
             foreLenL: 167.64, foreLenR: 167.64,
-            torsoW: 100, torsoH: 250, torsoD: 70, shrugPivot: 60 },
+            torsoW: 100, torsoH: 250, torsoD: 70, shrugPivot: 68.1 },
     reach_mm: 296.34,
     note: "arm links and shoulder spacing measured; the torso box is still the "
         + "drawn stand-in" },
@@ -306,9 +309,50 @@ function applyRigPreset(id) {
   Object.entries(p.dims).forEach(([k, v]) => {
     if (k in RIG.dims) RIG.dims[k] = +v;
   });
+  // The servos measured with the body (A31-17: *load all from my step*) are
+  // offered, never assumed: they rewrite what the fitted servos need.
+  let servos = "";
+  if (p.servos && confirm(
+      "This body also knows its servos and gears from the STEP file:\n\n"
+      + presetServoSummary(p) + "\n\n"
+      + "OK — use them too\nCancel — keep the servo settings you have now"))
+    servos = applyPresetServos(p);
   rigChanged(); renderRigUI(); buildRobot(); renderSliders();
   if (typeof notice === "function")
-    notice(p.label + " — reach " + (p.reach_mm || "?") + " mm. " + (p.note || ""));
+    notice(p.label + " — reach " + (p.reach_mm || "?") + " mm. "
+      + (servos ? "Servos set: " + servos + ". Press “Send Studio's limits to the robot” to put them on the robot. " : "")
+      + (p.note || ""));
+}
+function presetServoSummary(p) {
+  return Object.entries(p.servos).map(([name, s]) => {
+    const t = SERVO_TYPES[s.servo];
+    return name + ": " + (t ? t.label : s.servo)
+      + (s.gear ? ", gear " + s.gear[0] + ":" + s.gear[1] : "")
+      + (s.min != null ? ", " + s.min + "–" + s.max + "°" : "");
+  }).join("\n");
+}
+// Keyed by joint NAME in the file, so a reordered joint list cannot shift a
+// gear onto the wrong servo. Returns which joints changed, for the notice.
+function applyPresetServos(p) {
+  try { localStorage.setItem("nong_rig_prev", JSON.stringify(RIG)); }
+  catch (e) { /* storage full: the change still happens, just without undo */ }
+  const done = [];
+  Object.entries(p.servos).forEach(([name, s]) => {
+    const i = JOINT_NAMES.indexOf(name);
+    if (i < 0) return;
+    const t = SERVO_TYPES[s.servo];
+    if (t) {
+      RIG.pulseMin[i] = t.min; RIG.pulseMax[i] = t.max;
+      RIG.servoMaxDps[i] = t.dps; RIG.servoRange[i] = t.range; RIG.frameHz[i] = t.hz;
+    }
+    if (Array.isArray(s.gear) && s.gear.length === 2) {
+      RIG.gearPinion[i] = Math.round(s.gear[0]); RIG.gearGear[i] = Math.round(s.gear[1]);
+    }
+    if (s.min != null && s.max != null) { RIG.min[i] = +s.min; RIG.max[i] = +s.max; }
+    done.push(name);
+  });
+  saveRig();
+  return done.join(", ");
 }
 async function loadServoTypes() {
   try {

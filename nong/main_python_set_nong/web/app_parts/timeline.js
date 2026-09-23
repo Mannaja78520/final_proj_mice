@@ -571,7 +571,7 @@ function keysSignature() {
 // warning reads, so "unsaved" means one thing across the app. Shows asks
 // before it replaces the time bar with a whole show (A31-3).
 function hasUnsavedKeys() {
-  try { return !!localStorage.getItem(DRAFT_KEY); } catch (err) { return false; }
+  return isDirty();          // project_save_load.js: differs from what is on disk
 }
 function bumpKeys() {
   // the timeline changed: a "yes, run it anyway" given for the old one does
@@ -601,7 +601,8 @@ function saveDraft() {
   clearTimeout(draftTimer);                 // coalesce a drag into one write
   draftTimer = setTimeout(() => {
     try {
-      if (keys.length <= 1) { localStorage.removeItem(DRAFT_KEY); return; }
+      // nothing to keep: too short, or identical to what is already on disk
+      if (keys.length <= 1 || !isDirty()) { localStorage.removeItem(DRAFT_KEY); return; }
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         at: Date.now(),
         name: ($("projName") && $("projName").value) || "",
@@ -648,11 +649,9 @@ function offerDraft() {
 }
 // Closing with unsaved keyframes asks first. The browser shows its own wording;
 // all a page can do is say that there IS something to lose.
+// Settings ▸ Saving can turn this off too; the draft still survives the close.
 window.addEventListener("beforeunload", (e) => {
-  if (keys.length <= 1) return;
-  let unsaved = false;
-  try { unsaved = !!localStorage.getItem(DRAFT_KEY); } catch (err) { unsaved = false; }
-  if (!unsaved) return;                     // saveProject() cleared it
+  if (!askUnsavedOn() || !isDirty()) return;
   e.preventDefault();
   e.returnValue = "";
 });

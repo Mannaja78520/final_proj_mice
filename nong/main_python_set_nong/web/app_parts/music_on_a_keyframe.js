@@ -281,11 +281,17 @@ function loadParsedSeq(p, sourceLabel) {
     (p.speed >= 5 ? ` at its own ${Math.round(p.speed)} °/s` : "") +
     (p.cues ? ` with ${p.cues} music/light step(s), which play with the show and are written back on export` : "") +
     (p.skipped ? ` (${p.skipped} step(s) this editor does not read — kept only in the original file)` : "") +
-    " — edit, then Export / Upload again";
+    " — edit, then Save";
+  // Just opened = matches the file. From the robot's SD it is not a file on
+  // this PC, so saving it here still asks before replacing one.
+  const local = sourceLabel.startsWith("sequences/")
+    ? sourceLabel.slice(10).replace(/\.yaml$/, "") : "";
+  markSaved(workSig(), local, p.skipped || 0);
 }
 async function editLocalSeq() {
   const f = $("seqList").value;
   if (!f) return;
+  if (!(await askUnsaved("open " + f))) return;
   // A missing file must say so: its 404 body parsed as YAML reported
   // "no pose steps found", which reads like an empty sequence, not a wrong one.
   const r = await fetch("/api/loadseq?name=" + encodeURIComponent(f));
@@ -298,6 +304,7 @@ async function editLocalSeq() {
   loadParsedSeq(parseSeqYaml(await r.text()), "sequences/" + f);
 }
 async function editSdSeq(fname) {
+  if (!(await askUnsaved("open " + fname + " from the robot"))) return;
   try {
     const text = await sdDownload(fname);
     loadParsedSeq(parseSeqYaml(text), "robot SD " + fname);
@@ -316,6 +323,7 @@ async function playSavedSeq(sourceLabel, getText) {
     notice(stat.textContent);
     return;
   }
+  if (!(await askUnsaved("play " + sourceLabel))) { stat.textContent = ""; return; }
   if (playing) togglePlay();          // swap timelines only while stopped
   const before = keys;
   loadParsedSeq(parseSeqYaml(text), sourceLabel);

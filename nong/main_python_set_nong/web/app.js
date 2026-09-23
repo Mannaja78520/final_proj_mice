@@ -415,7 +415,8 @@ function hasRigDefault() { return !!localStorage.getItem("nong_rig_default"); }
 // One bundle carries the lot: the working rig, your saved default, the mesh /
 // STL assignments, and the panel width. Sequences and projects are NOT in
 // here — those already live on the hub as files and travel with it.
-const SETTINGS_KEYS = ["nong_rig", "nong_rig_default", "nong_meshes", "nong_sidew"];
+const SETTINGS_KEYS = ["nong_rig", "nong_rig_default", "nong_meshes", "nong_sidew",
+                       "nong_ask_unsaved"];
 
 function collectSettings() {
   const b = { kind: "mice-studio-settings", version: 1, rig: RIG, keys: {} };
@@ -2557,7 +2558,7 @@ function keysSignature() {
 // warning reads, so "unsaved" means one thing across the app. Shows asks
 // before it replaces the time bar with a whole show (A31-3).
 function hasUnsavedKeys() {
-  try { return !!localStorage.getItem(DRAFT_KEY); } catch (err) { return false; }
+  return isDirty();          // project_save_load.js: differs from what is on disk
 }
 function bumpKeys() {
   // the timeline changed: a "yes, run it anyway" given for the old one does
@@ -2587,7 +2588,8 @@ function saveDraft() {
   clearTimeout(draftTimer);                 // coalesce a drag into one write
   draftTimer = setTimeout(() => {
     try {
-      if (keys.length <= 1) { localStorage.removeItem(DRAFT_KEY); return; }
+      // nothing to keep: too short, or identical to what is already on disk
+      if (keys.length <= 1 || !isDirty()) { localStorage.removeItem(DRAFT_KEY); return; }
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         at: Date.now(),
         name: ($("projName") && $("projName").value) || "",
@@ -2634,11 +2636,9 @@ function offerDraft() {
 }
 // Closing with unsaved keyframes asks first. The browser shows its own wording;
 // all a page can do is say that there IS something to lose.
+// Settings ▸ Saving can turn this off too; the draft still survives the close.
 window.addEventListener("beforeunload", (e) => {
-  if (keys.length <= 1) return;
-  let unsaved = false;
-  try { unsaved = !!localStorage.getItem(DRAFT_KEY); } catch (err) { unsaved = false; }
-  if (!unsaved) return;                     // saveProject() cleared it
+  if (!askUnsavedOn() || !isDirty()) return;
   e.preventDefault();
   e.returnValue = "";
 });
@@ -3129,18 +3129,22 @@ function nothingToWrite(where) {
     : "no keyframes yet";
   return true;
 }
-async function exportYaml() {
-  if (nothingToWrite("tlStat")) return;
+// opts.noAsk: saveAll() already asked. True when the file is on disk.
+async function exportYaml(opts) {
+  opts = opts || {};
+  if (nothingToWrite("tlStat")) return false;
+  const sig = workSig();                  // what THIS save writes, before any await
   const { name, yaml } = buildYaml();
   // SAVING OVER A FILE ASKS FIRST (user 2026-09-16: every save went to
   // my_move.yaml, because that is the name the box starts with).
   const have = [...$("seqList").options].map(o => o.value);
-  if (have.includes(name + ".yaml") &&
+  if (!opts.noAsk && have.includes(name + ".yaml") &&
       !confirm(name + ".yaml is already saved. Replace it?\n\n" +
                "Cancel, then type a new name in the sequence name box to keep both.")) {
     $("tlStat").textContent = "not saved — " + name + ".yaml was left as it was";
-    return;
+    return false;
   }
+  let ok = false;
   // Every failure path must SAY something: an unhandled rejection here left
   // the old status line standing, and a silent export reads as saved work.
   try {
@@ -3154,13 +3158,16 @@ async function exportYaml() {
     $("tlStat").textContent =
       `saved ${j.file} on this PC — voice answers and the other apps can use it now. ` +
       `Send to robot SD puts it on the board.`;
+    ok = true;
+    if (!opts.keepDraft) markSaved(sig, name, 0);
   } catch (e) {
     $("tlStat").textContent = "export failed — the hub is not answering, or "
       + "refused the name. Nothing was written. " + (e.message || e);
     notice($("tlStat").textContent);
   }
   await refreshSeqs();
-  $("seqList").value = name + ".yaml";   // the list shows what was just saved
+  if (ok) $("seqList").value = name + ".yaml";   // the list shows what was just saved
+  return ok;
 }
 // --- rig setup UI ---
 const DIM_LABELS = {
@@ -3298,6 +3305,9 @@ function renderRigUI() {
       if (max) inp.max = max;
       inp.onchange = () => {
         let v = +inp.value || RIG[key][i];
+        // the board keeps WHOLE teeth (GEAR parses with toInt: 4.5 became 4),
+        // so a fraction here would preview a ratio the robot never uses
+        if (key === "gearPinion" || key === "gearGear") v = Math.round(v);
         v = Math.max(min, max ? Math.min(max, v) : v);
         RIG[key][i] = v; inp.value = v;
         rigChanged(); renderRigUI();   // the travel warning may have changed
@@ -3447,7 +3457,7 @@ let RIG_PRESETS = [
     source: "nong_assembly.STEP",
     dims: { shoulderX: 88, shoulderY: 110, upperLenL: 128.7, upperLenR: 128.7,
             foreLenL: 167.64, foreLenR: 167.64,
-            torsoW: 100, torsoH: 250, torsoD: 70, shrugPivot: 60 },
+            torsoW: 100, torsoH: 250, torsoD: 70, shrugPivot: 68.1 },
     reach_mm: 296.34,
     note: "arm links and shoulder spacing measured; the torso box is still the "
         + "drawn stand-in" },
@@ -3470,9 +3480,50 @@ function applyRigPreset(id) {
   Object.entries(p.dims).forEach(([k, v]) => {
     if (k in RIG.dims) RIG.dims[k] = +v;
   });
+  // The servos measured with the body (A31-17: *load all from my step*) are
+  // offered, never assumed: they rewrite what the fitted servos need.
+  let servos = "";
+  if (p.servos && confirm(
+      "This body also knows its servos and gears from the STEP file:\n\n"
+      + presetServoSummary(p) + "\n\n"
+      + "OK — use them too\nCancel — keep the servo settings you have now"))
+    servos = applyPresetServos(p);
   rigChanged(); renderRigUI(); buildRobot(); renderSliders();
   if (typeof notice === "function")
-    notice(p.label + " — reach " + (p.reach_mm || "?") + " mm. " + (p.note || ""));
+    notice(p.label + " — reach " + (p.reach_mm || "?") + " mm. "
+      + (servos ? "Servos set: " + servos + ". Press “Send Studio's limits to the robot” to put them on the robot. " : "")
+      + (p.note || ""));
+}
+function presetServoSummary(p) {
+  return Object.entries(p.servos).map(([name, s]) => {
+    const t = SERVO_TYPES[s.servo];
+    return name + ": " + (t ? t.label : s.servo)
+      + (s.gear ? ", gear " + s.gear[0] + ":" + s.gear[1] : "")
+      + (s.min != null ? ", " + s.min + "–" + s.max + "°" : "");
+  }).join("\n");
+}
+// Keyed by joint NAME in the file, so a reordered joint list cannot shift a
+// gear onto the wrong servo. Returns which joints changed, for the notice.
+function applyPresetServos(p) {
+  try { localStorage.setItem("nong_rig_prev", JSON.stringify(RIG)); }
+  catch (e) { /* storage full: the change still happens, just without undo */ }
+  const done = [];
+  Object.entries(p.servos).forEach(([name, s]) => {
+    const i = JOINT_NAMES.indexOf(name);
+    if (i < 0) return;
+    const t = SERVO_TYPES[s.servo];
+    if (t) {
+      RIG.pulseMin[i] = t.min; RIG.pulseMax[i] = t.max;
+      RIG.servoMaxDps[i] = t.dps; RIG.servoRange[i] = t.range; RIG.frameHz[i] = t.hz;
+    }
+    if (Array.isArray(s.gear) && s.gear.length === 2) {
+      RIG.gearPinion[i] = Math.round(s.gear[0]); RIG.gearGear[i] = Math.round(s.gear[1]);
+    }
+    if (s.min != null && s.max != null) { RIG.min[i] = +s.min; RIG.max[i] = +s.max; }
+    done.push(name);
+  });
+  saveRig();
+  return done.join(", ");
 }
 async function loadServoTypes() {
   try {
@@ -4292,11 +4343,17 @@ function loadParsedSeq(p, sourceLabel) {
     (p.speed >= 5 ? ` at its own ${Math.round(p.speed)} °/s` : "") +
     (p.cues ? ` with ${p.cues} music/light step(s), which play with the show and are written back on export` : "") +
     (p.skipped ? ` (${p.skipped} step(s) this editor does not read — kept only in the original file)` : "") +
-    " — edit, then Export / Upload again";
+    " — edit, then Save";
+  // Just opened = matches the file. From the robot's SD it is not a file on
+  // this PC, so saving it here still asks before replacing one.
+  const local = sourceLabel.startsWith("sequences/")
+    ? sourceLabel.slice(10).replace(/\.yaml$/, "") : "";
+  markSaved(workSig(), local, p.skipped || 0);
 }
 async function editLocalSeq() {
   const f = $("seqList").value;
   if (!f) return;
+  if (!(await askUnsaved("open " + f))) return;
   // A missing file must say so: its 404 body parsed as YAML reported
   // "no pose steps found", which reads like an empty sequence, not a wrong one.
   const r = await fetch("/api/loadseq?name=" + encodeURIComponent(f));
@@ -4309,6 +4366,7 @@ async function editLocalSeq() {
   loadParsedSeq(parseSeqYaml(await r.text()), "sequences/" + f);
 }
 async function editSdSeq(fname) {
+  if (!(await askUnsaved("open " + fname + " from the robot"))) return;
   try {
     const text = await sdDownload(fname);
     loadParsedSeq(parseSeqYaml(text), "robot SD " + fname);
@@ -4327,6 +4385,7 @@ async function playSavedSeq(sourceLabel, getText) {
     notice(stat.textContent);
     return;
   }
+  if (!(await askUnsaved("play " + sourceLabel))) { stat.textContent = ""; return; }
   if (playing) togglePlay();          // swap timelines only while stopped
   const before = keys;
   loadParsedSeq(parseSeqYaml(text), sourceLabel);
@@ -4375,8 +4434,12 @@ async function refreshSeqs() {
   });
 }
 // --- project save/load ---
-async function saveProject() {
+// opts.keepDraft: saveAll() clears the draft itself, only once BOTH files are
+// on disk. Returns true when the project reached the disk.
+async function saveProject(opts) {
+  opts = opts || {};
   const name = ($("projName").value || "project").trim();
+  const sig = workSig();                  // what THIS save writes, before any await
   const project = {
     keys, speedDps: speedDps(), maxDps: maxDps(), loop: $("loopChk").checked,
     // The planning peak limit rides with the project: without it, reopening a
@@ -4400,24 +4463,29 @@ async function saveProject() {
     $("tlStat").textContent = "could not save — the hub is not answering. Your "
       + "work is still here, and is kept in this browser. " + (e.message || e);
     notice($("tlStat").textContent);
-    return;
+    return false;
   }
   if (!r || !r.ok) {
     $("tlStat").textContent = "could not save: " + ((r && r.error) || "unknown")
       + ". Your work is still here.";
     notice($("tlStat").textContent);
-    return;
+    return false;
   }
   // Safely on disk now, so the unsaved-work draft has done its job.
-  try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* nothing to do */ }
+  if (!opts.keepDraft) markSaved(sig, name);
   $("tlStat").textContent = r.replaced
     ? "saved over the existing " + r.file + " (the previous version is kept as "
       + r.file + ".bak)"
     : "project saved: " + r.file;
   refreshProjects();
+  return true;
 }
 async function loadProject(file) {
   if (!file) return;
+  if (!(await askUnsaved("open " + file))) {
+    if ($("projList")) $("projList").value = "";
+    return;
+  }
   // NOTHING is replaced until the whole file has been read and understood.
   //
   // Three ways this used to destroy work, all from assigning as it went:
@@ -4480,8 +4548,11 @@ async function loadProject(file) {
   clampKeyTimes();
   $("loopChk").checked = !!p.loop;
   $("robotIp").value = p.robotIp || "";
-  $("seqName").value = p.seqName || file.replace(/\.json$/, "");
-  $("projName").value = file.replace(/\.json$/, "");
+  // ONE name for both files (A31-18): the project and its YAML now save
+  // together, under the project's name.
+  const pname = file.replace(/\.json$/, "");
+  const oldSeq = (p.seqName || "").trim();
+  setWorkName(pname);
   // The chain rides with the project; an older project without one clears the
   // field rather than keeping a chain this project never had.
   $("seqNext").value = p.seqNext || "";
@@ -4505,13 +4576,159 @@ async function loadProject(file) {
     RIG = mergeRig(p.rig);
     saveRig();
   }
+  // What was opened, taken before the awaits below: an edit made while the
+  // models load is the person's new work, never "saved".
+  const openedSig = workSig();
   await refreshModels();
   renderRigUI();
   buildRobot(); // re-applies meshes + rig in one pass
   selKey = 0;
   if (keys.length) { pose = [...keys[0].pose]; }
   poseChanged(false); renderTimeline();
+  // Only a project whose YAML already had its own name owns NAME.yaml; for any
+  // other, Save still asks before replacing a NAME.yaml that is somebody else's.
+  markSaved(openedSig, oldSeq === pname ? pname : "", 0);
+  if (oldSeq && oldSeq !== pname)
+    $("tlStat").textContent = "opened " + file + ". It used to save its moves as "
+      + oldSeq + ".yaml; Save now writes " + pname + ".json and " + pname + ".yaml together.";
 }
+
+// ---- one Save, and a question before unsaved work is replaced (A31-18) ----
+//
+// User 2026-09-23: *why we not make it same thing* - the project (.json: the
+// editable work + rig) and the sequence (.yaml: what the robot plays) had two
+// buttons and two name boxes, so one was always behind the other. And opening
+// another file replaced the timeline without a word: *i loss it a lot of time*.
+// Now: one name, one Save that writes both, and every loader asks first.
+// Settings ▸ Saving switches the question off.
+let savedSig = null;       // workSig() of what is on disk; null until boot ends
+let savedName = "";        // the file the timeline came from or last went to
+let loadedSkipped = 0;     // steps that file holds which this editor cannot read
+function workSig() {
+  return keysSignature() + "|" + (($("loopChk") && $("loopChk").checked) ? 1 : 0)
+    + "|" + (($("seqNext") && $("seqNext").value) || "").trim();
+}
+// The page now matches a file on disk. markClean leaves an earlier session's
+// draft alone; only a real save or load (markSaved) retires it.
+function markClean(sig, name) {
+  savedSig = sig;
+  if (name != null) savedName = name;
+}
+function markSaved(sig, name, skipped) {
+  markClean(sig, name);
+  if (skipped != null) loadedSkipped = skipped;
+  // an edit made while the save was on the wire is still unsaved
+  try { if (workSig() === sig) localStorage.removeItem(DRAFT_KEY); }
+  catch (e) { /* nothing to do */ }
+}
+function isDirty() {
+  if (savedSig === null || !keys.length) return false;   // nothing to lose
+  return workSig() !== savedSig;
+}
+const ASK_UNSAVED_KEY = "nong_ask_unsaved";
+function askUnsavedOn() {
+  try { return localStorage.getItem(ASK_UNSAVED_KEY) !== "0"; }
+  catch (e) { return true; }
+}
+function setAskUnsaved(on) {
+  try { localStorage.setItem(ASK_UNSAVED_KEY, on ? "1" : "0"); }
+  catch (e) { /* kept for this visit only */ }
+}
+function cleanName(v) { return (v || "").trim().replace(/[^\w.-]+/g, "_"); }
+function setWorkName(v) {
+  const n = cleanName(v);
+  if ($("projName")) $("projName").value = n;
+  if ($("seqName")) $("seqName").value = n;
+}
+// The two name boxes are one name: typing in either changes both.
+["projName", "seqName"].forEach(id => {
+  const el = $(id);
+  if (el) el.addEventListener("input", () => {
+    const other = $(id === "projName" ? "seqName" : "projName");
+    if (other) other.value = el.value;
+  });
+});
+// Save = the project (.json) AND the robot's file (.yaml), under one name.
+// True only when everything that should be on disk is.
+async function saveAll() {
+  const name = cleanName($("seqName").value || $("projName").value || "my_move");
+  setWorkName(name);
+  const sig = workSig();
+  const writeYaml = playKeys().length > 0;
+  // Every question comes BEFORE the first write, so Cancel leaves both files
+  // exactly as they were.
+  const have = [...$("seqList").options].map(o => o.value);
+  if (writeYaml && name !== savedName && have.includes(name + ".yaml") &&
+      !confirm(name + ".yaml is already saved. Replace it?\n\n" +
+               "Cancel, then type a new name to keep both.")) {
+    $("tlStat").textContent = "not saved — " + name + ".yaml was left as it was";
+    return false;
+  }
+  if (writeYaml && name === savedName && loadedSkipped > 0 &&
+      !confirm(name + ".yaml has " + loadedSkipped + " step(s) this editor cannot "
+               + "read. Saving over it removes them.\n\nOK — save anyway\n"
+               + "Cancel — keep the file; type a new name to save a copy")) {
+    $("tlStat").textContent = "not saved — " + name + ".yaml was left as it was";
+    return false;
+  }
+  // The name cannot change between the two writes: typing while the first
+  // was on the wire sent the .yaml over a file nobody was asked about.
+  const boxes = ["projName", "seqName"].map($).filter(Boolean);
+  boxes.forEach(b => { b.readOnly = true; });
+  let ok = false;
+  try {
+    ok = (await saveProject({ keepDraft: true })) &&
+         (!writeYaml || (await exportYaml({ noAsk: true, keepDraft: true })));
+  } finally {
+    boxes.forEach(b => { b.readOnly = false; });
+  }
+  if (!ok) return false;
+  markSaved(sig, name, 0);
+  $("tlStat").textContent = "saved " + name + " — " + name + ".json (to edit later)"
+    + (writeYaml ? " and " + name + ".yaml (what the robot plays)"
+                 : ". No .yaml: every move is suspended, so there is nothing to play");
+  return true;
+}
+// Asks before something replaces the timeline. Resolves true to go ahead.
+function askUnsaved(what) {
+  if (!askUnsavedOn() || !isDirty()) return Promise.resolve(true);
+  return new Promise(resolve => {
+    let dlg = $("unsavedDlg");
+    if (!dlg) {
+      dlg = document.createElement("dialog");
+      dlg.id = "unsavedDlg"; dlg.className = "askdlg";
+      dlg.setAttribute("aria-labelledby", "unsavedTitle");
+      dlg.innerHTML = '<h2 id="unsavedTitle">Save your changes first?</h2>'
+        + '<p class="mini" id="unsavedText"></p>'
+        + '<div class="row"><button class="primary" id="unsavedSave">Save, then continue</button>'
+        + '<button class="danger" id="unsavedDrop">Don’t save</button>'
+        + '<button id="unsavedCancel">Cancel</button></div>'
+        + '<label class="mini"><input type="checkbox" id="unsavedOff"> '
+        + 'don’t ask again (Settings ▸ Saving turns it back on)</label>';
+      document.body.appendChild(dlg);
+    }
+    $("unsavedText").textContent = "The moves on the time bar have changes that are "
+      + "not saved" + (savedName ? " to " + savedName : "") + ". If you " + what
+      + " now, they are replaced.";
+    $("unsavedOff").checked = false;
+    const done = async (how) => {
+      if ($("unsavedOff").checked) { setAskUnsaved(false); syncAskUnsavedBox(); }
+      dlg.close();
+      resolve(how === "save" ? await saveAll() : how === "drop");
+    };
+    $("unsavedSave").onclick = () => done("save");
+    $("unsavedDrop").onclick = () => done("drop");
+    $("unsavedCancel").onclick = () => done("cancel");
+    dlg.oncancel = (e) => { e.preventDefault(); done("cancel"); };   // Escape
+    dlg.showModal();
+    $("unsavedCancel").focus();          // the safe answer is the default
+  });
+}
+function syncAskUnsavedBox() {
+  const box = $("askUnsavedChk");
+  if (box) box.checked = askUnsavedOn();
+}
+syncAskUnsavedBox();
 async function refreshProjects() {
   const r = await fetch("/api/list?kind=projects").then(r => r.json());
   const sel = $("projList");
@@ -6407,6 +6624,7 @@ initTimeDrag();
 // Boot is over: from here a change to the timeline is real work, so start
 // keeping a draft of it, and offer back anything a previous session lost.
 draftArmed = true;
+markClean(workSig(), "");   // the untouched start is not unsaved work
 offerDraft();
 resize();
 requestAnimationFrame((t) => { lastFrame = t; tick(t); });

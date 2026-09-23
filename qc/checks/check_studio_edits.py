@@ -96,7 +96,14 @@ async function run(){
     window.confirm = function(){ return false; };   // keep the rig on screen
     await saveProject();
     document.getElementById("seqNext").value = "";
-    await loadProject("qc_chain_proj.json");
+    // clearing the chain is an unsaved change, so opening asks (A31-18):
+    // answer "Don't save", the way a person throwing the edit away would
+    var ld = loadProject("qc_chain_proj.json");
+    await new Promise(function(r){ setTimeout(r, 300); });
+    var dlg = document.getElementById("unsavedDlg");
+    qcMark("asked-" + !!(dlg && dlg.open));
+    if (dlg && dlg.open) document.getElementById("unsavedDrop").click();
+    await ld;
     qcMark("chain-restored-" +
            (document.getElementById("seqNext").value === "part_two"));
     qcMark("done");
@@ -128,6 +135,7 @@ def run(t):
          "Pause ends the hub's show even with Live unticked"),
         ("monitor-hub-stopped-true",
          "switching to Monitor ends the hub's show too"),
+        ("asked-true", "opening a project over an unsaved edit asks first"),
         ("chain-restored-true", "a project reloads with its sequence chain"),
     ):
         t.contains(marks, want, label)

@@ -93,7 +93,7 @@
 
     {"id": "studio", "summary": "Nong Studio: pose editor, timeline, 3D monitor.",
      "files": ["nong/", "apps/studio/", "config/rig_presets.json",
-               "tools/make_urdf.py", "docs/urdf_nong.md"],
+               "tools/make_urdf.py", "tools/step_preset.py", "docs/urdf_nong.md"],
      "depends": ["shared-web"]},
 
     {"id": "app-voice", "summary": "Voice helper: speech in, answers, speech out.",

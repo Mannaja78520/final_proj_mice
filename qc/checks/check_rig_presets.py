@@ -85,6 +85,49 @@ def run(t):
              .split("\n}", 1)[0],
              "and it does not touch RIG.%s" % word,
              "a body preset must not rewrite what the fitted servos need")
+    # ---- A31-17: the servos come from the STEP too, but only when asked ----
+    # *load all from my step*. The shrug is a 4-bar; tools/step_preset.py
+    # measures it, and the old hand guess (1:4.5, sent to the board as 1:4
+    # because GEAR keeps whole teeth) was 1.9x the real ratio.
+    sv = measured.get("servos") or {}
+    t.ok(len(sv) == 10, "the measured body names a servo for all 10 joints",
+         sorted(sv))
+    whole = [n for n, s in sv.items()
+             if not all(isinstance(g, int) and g >= 1 for g in s.get("gear", [1, 1]))]
+    t.ok(not whole, "every gear is whole teeth, as the board stores it", whole)
+    link = measured.get("shrug_linkage") or {}
+    shr = sv.get("SHRUG", {})
+    g = shr.get("gear") or [1, 1]
+    t.ok(link.get("ratio") and abs(g[1] / g[0] - link["ratio"]) < 0.01,
+         "the SHRUG gear is the 4-bar's measured ratio (%s)" % link.get("ratio"),
+         "gear %s" % g)
+    rng = link.get("range_deg", 0)
+    t.ok(shr.get("min") == 90 - rng and shr.get("max") == 90 + rng,
+         "and its limits are the +-%s deg the linkage was measured over" % rng, shr)
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("step_preset", F.CODE / "tools" / "step_preset.py")
+        sp = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(sp)
+        fs = measured["from_step"]
+        folder = sp.ROOT / fs["dir"]
+        if (folder / fs["robot"]).is_file():
+            full = sp.parts(folder, fs["robot"])
+            up = [1.0 if i == fs.get("up_axis", 1) else 0.0 for i in range(3)]
+            again = sp.shrug(folder, fs["shrug"], full, up)
+            t.ok(abs(again["ratio"] - link.get("ratio", 0)) < 0.005,
+                 "re-measuring the STEP file gives the same ratio (%.3f)" % again["ratio"],
+                 "the preset says %s - run python tools/step_preset.py --write" % link.get("ratio"))
+    except Exception as e:  # noqa: BLE001 - the tool crashing is the finding
+        t.ok(False, "tools/step_preset.py reads the STEP file", repr(e)[:200])
+    body = app.split("function applyRigPreset", 1)[-1].split("\n}", 1)[0]
+    # the call must BE the statement the confirm guards, not merely come after it
+    t.ok(re.search(r"if \(p\.servos && confirm\((?:[^;]|\n)*?\)\)\s*\n\s*servos = "
+                   r"applyPresetServos\(p\);", body) is not None
+         and body.count("applyPresetServos(") == 1,
+         "picking the body only sets its servos after the person says yes",
+         "the servos rewrite what the fitted robot needs - never silently")
+
     # inside the fallback LIST, not the built-in default rig above it
     fallback = app.split("let RIG_PRESETS", 1)[-1].split("async function", 1)[0]
     m = re.search(r"upperLenL:\s*([\d.]+),\s*upperLenR:\s*([\d.]+)", fallback)

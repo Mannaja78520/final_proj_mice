@@ -22,7 +22,7 @@
   </details>
   <span style="flex:1"></span>
   <input id="projName" aria-label="Project name" placeholder="project name" value="my_move">
-  <button onclick="saveProject()">Save</button>
+  <button onclick="saveAll()" title="Saves the moves twice under this one name: NAME.json to edit later, and NAME.yaml, the file the robot plays.">💾 Save</button>
   <select id="projList" aria-label="Open a saved project" onchange="loadProject(this.value)"><option value="">Load…</option></select>
 </header><div id="main">
   <div id="viewport">
@@ -426,6 +426,17 @@
     </div>
 
     <div class="card" data-stab="setup">
+      <h2>Saving</h2>
+      <div class="mini">One Save writes both files under one name: the .yaml the robot
+        plays and the .json you edit later.</div>
+      <label class="row"><input type="checkbox" id="askUnsavedChk" checked
+             onchange="setAskUnsaved(this.checked)">
+        Ask before unsaved moves are replaced or the page is closed</label>
+      <div class="mini">Off: opening another file replaces the time bar without asking.
+        A copy is still kept in this browser and offered back next time.</div>
+    </div>
+
+    <div class="card" data-stab="setup">
       <h2>Move your setup to another PC</h2>
       <div class="mini">Everything Studio remembers &mdash; your rig, your saved default,
         the STL assignments &mdash; is kept in <b>this browser on this PC</b>. Use this to
@@ -495,7 +506,7 @@
     <input id="seqNext" placeholder="then run…" list="seqNextList" style="width:120px"
            title="chain: when this sequence finishes, the module starts this one. Leave empty to just stop. Build a show from short files instead of one long one.">
     <datalist id="seqNextList"></datalist>
-    <button class="primary" onclick="exportYaml()" title="Saves the timeline as a YAML file on this PC, under the sequence name. Voice and the other apps can play it.">💾 Save YAML</button>
+    <button class="primary" onclick="saveAll()" title="Saves under this one name: NAME.yaml, the file the robot, voice and the other apps play, and NAME.json to edit later.">💾 Save</button>
     <button onclick="uploadYaml()">Send to robot SD</button>
     <button onclick="robotRun()"
             title="Sends the sequence to the module and lets the MODULE play it on its own clock. This keeps running if you switch app, minimise the browser, or close this page entirely. It starts at the move you have clicked and carries on to the end - it never travels back to the first pose to begin.">▶ Run on robot</button>

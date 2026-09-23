@@ -217,7 +217,8 @@ function hasRigDefault() { return !!localStorage.getItem("nong_rig_default"); }
 // One bundle carries the lot: the working rig, your saved default, the mesh /
 // STL assignments, and the panel width. Sequences and projects are NOT in
 // here — those already live on the hub as files and travel with it.
-const SETTINGS_KEYS = ["nong_rig", "nong_rig_default", "nong_meshes", "nong_sidew"];
+const SETTINGS_KEYS = ["nong_rig", "nong_rig_default", "nong_meshes", "nong_sidew",
+                       "nong_ask_unsaved"];
 
 function collectSettings() {
   const b = { kind: "mice-studio-settings", version: 1, rig: RIG, keys: {} };

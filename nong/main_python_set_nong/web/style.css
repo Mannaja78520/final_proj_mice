@@ -398,3 +398,11 @@ header{flex-wrap:wrap;padding:var(--sp-3) var(--sp-4);gap:var(--sp-3)}
 .tl-head{gap:var(--sp-2)}
 #timelineEmpty{margin:var(--sp-2) 0}
 #viewCube{background:color-mix(in srgb,var(--card) 92%,transparent);border-radius:var(--r-md)}
+
+/* the unsaved-changes question (A31-18): a native <dialog>, so Escape and
+   focus trapping come from the browser */
+.askdlg{max-width:min(440px,calc(100vw - 2*var(--sp-4)));border:1px solid var(--line);
+  border-radius:var(--r-md);background:var(--card);color:var(--txt);padding:var(--sp-4)}
+.askdlg::backdrop{background:color-mix(in srgb,#000 55%,transparent)}
+.askdlg h2{margin:0 0 var(--sp-2)}
+.askdlg .row{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin:var(--sp-3) 0}
