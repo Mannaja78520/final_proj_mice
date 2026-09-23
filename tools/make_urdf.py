@@ -94,7 +94,7 @@ LINK_PART = {
 DEF_MESH = {part: part + ".stl" for part in LINK_PART.values()}
 
 
-def build(rig, meshes, mesh_dir="meshes"):
+def build(rig, meshes, mesh_dir="meshes", mesh_mm=True):
     rows = tree(rig)
     # In order, once each: waist_link and shrug_link are both the roots of the
     # tree AND the children of a row, and a URDF with a link declared twice is
@@ -113,14 +113,17 @@ def build(rig, meshes, mesh_dir="meshes"):
             missing.append(part)
         out.append('  <link name="%s">' % link)
         if mesh:
-            # The STL is written in METRES, like everything else here, and
-            # Studio multiplies the mesh scale by the length scale - so a mesh
-            # exported in millimetres needs scale 0.001 and NOT a second
-            # conversion somewhere else.
+            # THE MESH SCALE AND THE LENGTH SCALE MULTIPLY. Studio reads a
+            # <mesh scale> and then multiplies by its metres-to-millimetres
+            # number, so an STL exported in MILLIMETRES - which is what this
+            # project exports and what Studio's own Import expects - must
+            # declare 0.001 here, or it arrives a thousand times too big.
+            # Leaving the attribute out silently declared metres.
+            scale = ' scale="0.001 0.001 0.001"' if mesh_mm else ""
             out += ['    <visual>',
                     '      <origin xyz="0 0 0" rpy="0 0 0"/>',
-                    '      <geometry><mesh filename="%s/%s"/></geometry>'
-                    % (mesh_dir, mesh),
+                    '      <geometry><mesh filename="%s/%s"%s/></geometry>'
+                    % (mesh_dir, mesh, scale),
                     '    </visual>']
         out.append('  </link>')
     # the head hangs off the shoulder bar, and its offset is not in the rig
@@ -159,6 +162,10 @@ def main(argv=None):
                          "part uses <part>.stl if models/ holds it.")
     ap.add_argument("--mesh-dir", default="meshes",
                     help="the folder the URDF names before each mesh")
+    ap.add_argument("--mesh-metres", action="store_true",
+                    help="the STL files are in metres. Default is MILLIMETRES, "
+                         "which is what SolidWorks exports here and what "
+                         "Studio's own STL import expects.")
     a = ap.parse_args(argv)
     rig = json.loads(a.rig.read_text(encoding="utf-8"))
     if a.meshes:
@@ -166,7 +173,7 @@ def main(argv=None):
     else:
         have = {p.name.lower() for p in MODELS.glob("*") if p.is_file()}
         meshes = {k: v for k, v in DEF_MESH.items() if v.lower() in have}
-    text, missing = build(rig, meshes, a.mesh_dir)
+    text, missing = build(rig, meshes, a.mesh_dir, not a.mesh_metres)
     # write_bytes, never write_text: on Windows write_text turns every \n into
     # \r\n and the whole file changes line ending (CLAUDE.md, cost a gate).
     a.out.parent.mkdir(parents=True, exist_ok=True)

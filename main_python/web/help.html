@@ -1426,6 +1426,21 @@
        speed and are floored per joint by the slowest servo in that move — the same formula
        the firmware uses. Any keyframe's time can also be typed in directly, which is how you
        make one move slower than the rest.</p></div>
+  <div class="f"><h3>A time you typed is kept<span class="tag t-new">new</span></h3>
+    <p>Type a time on a move and it is <b>pinned</b> (📌). Editing that move's pose, editing
+       the move before it, or changing Show speed will <b>not</b> re-time it any more. Before
+       this, every small correction to a pose ran the automatic timer over the number you had
+       chosen, and you had to type it again — every time.</p>
+    <p>The only thing that may change a pinned time is the servos' own minimum, and it can
+       only make it <b>longer</b> — a move the arm cannot make in that time is not a choice
+       anybody can make.</p>
+    <p>Times that come from a <b>saved sequence file</b> are not pinned, so re-opening a
+       sequence and changing Show speed still re-times the whole thing, as it always has.
+       A pin is for a time you typed or pinned yourself. To hold one that came from a file,
+       press its 📌 once.</p>
+    <p>Two ways to hand the timing back to Studio: press the <b>📌</b> on that move's time
+       box, or type a <b>°/s</b> for it — asking for a speed is asking to be timed. A move
+       Studio is timing shows a 🕘 instead.</p></div>
   <div class="f"><h3>Speed per sequence, and per move<span class="tag t-new">new</span></h3>
     <p><b>Show speed</b> (°/s) is saved into the sequence file as its first step and restored
        when you re-edit it, so each sequence keeps its own pace. Change it and every keyframe

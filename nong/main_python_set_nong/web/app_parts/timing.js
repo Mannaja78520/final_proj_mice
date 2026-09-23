@@ -173,17 +173,37 @@ function adoptBoardSafety(module) {
     "them — raise this number and press Save to robot to go faster." +
     (boardSafePeer ? ` Linked board #${boardSafePeer} needs the same limit.` : "");
 }
-function recalcTimes() {   // keeps each keyframe's own speed override
+// A TIME TYPED BY HAND IS A DECISION, NOT A CACHE.
+//
+// User 2026-09-23: *when i already adjust to higer time and i change the move a
+// little bit make the time it have the most not recreate the time of the rig
+// because i need that move to that time when i change i change it everytime
+// make me headace*. Nudging a pose ran the automatic timer over the top of the
+// number they had set, so every small correction cost them the timing again.
+//
+// So a typed time is PINNED (`k.tset`). Nothing that re-times automatically may
+// touch it, and nothing may make it shorter. Only clampKeyTimes may raise it,
+// and only to the physical minimum - a move the servos cannot do in that time
+// is not a choice anybody can make.
+//
+// Two ways out, both deliberate: type a °/s on that move, or press the pin on
+// the time box. Both say "time this one for me again".
+function timePinned(i) { return !!(keys[i] && keys[i].tset); }
+function pinTime(i) { if (keys[i]) keys[i].tset = true; }
+function unpinTime(i) { if (keys[i]) delete keys[i].tset; }
+function recalcTimes() {   // keeps each keyframe's own speed override AND its pin
   bumpKeys();
   for (let i = 1; i < keys.length; i++)
-    keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
+    if (!timePinned(i))
+      keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
+  clampKeyTimes();         // a pinned time may still be raised to what is possible
 }
 // ONE keyframe's predecessor changed (delete / reorder): re-time only it.
 // recalcTimes() would silently overwrite every hand-typed time on the line,
 // and a typed time wins over the automatic one by design.
 function retimeAt(i) {
   bumpKeys();
-  if (i >= 1 && keys[i])
+  if (i >= 1 && keys[i] && !timePinned(i))
     keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
   clampKeyTimes();
 }

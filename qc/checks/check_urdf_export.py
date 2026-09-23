@@ -50,7 +50,8 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
     report("guessed=" + guessed +
            "~upperL=" + RIG.dims.upperLenL +
            "~torso=" + (meshCfg.torso.file || "") +
-           "~lupper=" + (meshCfg.L_upper.file || ""));
+           "~lupper=" + (meshCfg.L_upper.file || "") +
+           "~scale=" + meshCfg.L_upper.scale);
   }catch(e){ report("ERR-" + String(e).slice(0,70)); }
   setTimeout(function(){ report("done"); }, 300);
 }, 150); }); });
@@ -129,6 +130,10 @@ def run(t):
              "by hand - the generator writes the names the importer looks for")
         t.eq(v.get("torso"), "torso.stl", "and takes the torso's mesh from the file")
         t.eq(v.get("lupper"), "L_upper.stl", "and the left upper arm's")
+        t.eq(v.get("scale"), "1",
+             "an STL exported in millimetres ends up at scale 1 in Studio, not "
+             "1000 - the mesh scale and the metres-to-millimetres scale "
+             "MULTIPLY, and leaving the attribute out declared metres")
         t.eq(v.get("upperL"), "129",
              "THE ROUND TRIP: 129 mm written as 0.129 m comes back as 129 mm. "
              "A URDF a thousand times too big still parses perfectly, so this "

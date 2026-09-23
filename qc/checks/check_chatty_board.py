@@ -42,7 +42,14 @@ SLOW = True
 
 # Generous on purpose. The real wait is 1.2s of settling plus the 4s cap; this
 # only has to be shorter than "forever", and a busy parallel gate is slow.
-PATIENCE = 25.0
+#
+# 25s was not generous enough: the full gate (144 checks, 10 workers) blew it
+# on probe_usb_port and refused a promote, and the same check passed alone in
+# 32s immediately afterwards - measured twice on 2026-09-23. Raising it costs
+# nothing it was protecting, because the fault this check exists for is a probe
+# that NEVER returns: any finite deadline catches that, and no finite deadline
+# is safe against a loaded machine if it is set near the real duration.
+PATIENCE = 90.0
 
 
 def _with_deadline(fn, seconds):

@@ -13,9 +13,14 @@ function updateKey() {
   clearBadMarks();
   keys[selKey].pose = [...pose];
   bumpKeys();
-  if (selKey >= 1) keys[selKey].t = autoTime(keys[selKey - 1].pose, keys[selKey].pose, keyDps(selKey));
-  if (keys[selKey + 1]) keys[selKey + 1].t = autoTime(keys[selKey].pose, keys[selKey + 1].pose, keyDps(selKey + 1));
-  clampKeyTimes();
+  // A pinned time survives the edit. This line is where the headache was: a
+  // small correction to a pose re-ran the automatic timer over a number the
+  // operator had chosen, every single time (A31-12).
+  if (selKey >= 1 && !timePinned(selKey))
+    keys[selKey].t = autoTime(keys[selKey - 1].pose, keys[selKey].pose, keyDps(selKey));
+  if (keys[selKey + 1] && !timePinned(selKey + 1))
+    keys[selKey + 1].t = autoTime(keys[selKey].pose, keys[selKey + 1].pose, keyDps(selKey + 1));
+  clampKeyTimes();          // only the physical minimum may raise a pinned time
   renderTimeline();
 }
 function dupKey() {
@@ -286,11 +291,14 @@ function renderTimeline() {
     tIn.title = (i === 0 ? "entry time from wherever the robot is (ms)"
                          : "time from previous keyframe (ms)")
               + ` — minimum ${kmin} ms, set by ${lim ? lim.why : "the 80 ms floor"}`
-              + "; longer is always allowed";
+              + "; longer is always allowed. Typing one PINS it: editing the pose "
+              + "afterwards will not re-time this move.";
+    if (k.tset) tIn.classList.add("pinned");
     tIn.onchange = () => {
       const want = Math.round(+tIn.value || 0);
       k.t = Math.max(kmin, want);
       delete k.dps;
+      pinTime(i);             // typed BY HAND: nothing automatic may replace it
       bumpKeys();             // a typed time wins over a speed override
       if (want < kmin)
         $("tlStat").textContent = `time raised to ${kmin} ms — held by ${lim ? lim.why : "the 80 ms floor"}. ` +
@@ -320,7 +328,36 @@ function renderTimeline() {
     hIn.type = "number"; hIn.value = k.hold || 0; hIn.min = 0; hIn.step = 100;
     hIn.title = "hold this pose (ms) before the next move";
     hIn.onchange = () => { k.hold = Math.max(0, Math.round(+hIn.value || 0)); bumpKeys(); renderTimeline(); };
-    tr.append(document.createTextNode("T"), tIn, document.createTextNode("hold"), hIn);
+    tr.append(document.createTextNode("T"), tIn);
+    // The pin is a BUTTON, not a state you can only read: a time that is held
+    // and no way to let go of it is the same trap the other way round.
+    if (i > 0) {
+      const pin = document.createElement("button");
+      pin.className = "kpin" + (k.tset ? " on" : "");
+      pin.textContent = k.tset ? "📌" : "🕘";
+      pin.setAttribute("aria-pressed", k.tset ? "true" : "false");
+      pin.title = k.tset
+        ? "this time is yours and is kept when you edit the pose. Click to let "
+          + "Studio time this move again."
+        : "Studio times this move from the pose and the speed. Click to keep the "
+          + "time it has now, whatever you change afterwards.";
+      pin.onclick = (e) => {
+        e.stopPropagation();
+        if (k.tset) {
+          unpinTime(i);
+          retimeAt(i);
+          $("tlStat").textContent = `move ${i} is timed by Studio again: ${keys[i].t} ms.`;
+        } else {
+          pinTime(i);
+          $("tlStat").textContent = `move ${i} is held at ${k.t} ms — editing the `
+            + "pose will not change it. Only the servos' own minimum can raise it.";
+        }
+        bumpKeys();
+        renderTimeline();
+      };
+      tr.appendChild(pin);
+    }
+    tr.append(document.createTextNode("hold"), hIn);
     if (reNote) tr.appendChild(reNote);
     const mn = document.createElement("div");
     mn.className = "ktime";
@@ -334,13 +371,17 @@ function renderTimeline() {
       dIn.value = k.dps ? Math.round(k.dps) : "";
       dIn.placeholder = Math.round(speedDps());
       dIn.title = "this move's own speed (°/s). Empty = the sequence's " +
-                  Math.round(speedDps()) + " °/s. Setting it re-times this move; " +
-                  "typing a time above clears it again. This move cannot go under " +
+                  Math.round(speedDps()) + " °/s. Setting it re-times this move " +
+                  "and hands the timing back to Studio; typing a time above pins " +
+                  "it again. This move cannot go under " +
                   kmin + " ms: " + (lim ? lim.why : "the 80 ms floor") + ".";
       dIn.onchange = () => {
         const v = Math.round(+dIn.value || 0);
         const use = v >= 5 ? Math.min(v, slowestDps()) : speedDps();
         if (v >= 5) k.dps = use; else delete k.dps;
+        // Asking for a SPEED is asking to be timed. It is the other way out of
+        // a pinned time, and the symmetric opposite of typing a time.
+        unpinTime(i);
         const free = Math.max(MIN_MOVE_MS,
           Math.round(deltaDeg(keys[i - 1].pose, k.pose) / use * 1000));
         k.t = autoTime(keys[i - 1].pose, k.pose, use);
@@ -511,7 +552,7 @@ function keysSignature() {
   let s = keys.length + "|" + speedDps() + "|" + frontArmSide();
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
-    s += ";" + (k.name || "") + "," + (k.arm || "") + "," +
+    s += ";" + (k.name || "") + "," + (k.arm || "") + "," + (k.tset ? 1 : 0) + "," +
          (k.off ? 1 : 0) + "," + k.t + "," + (k.hold || 0) + "," +
          (k.dps || 0) + "," + k.pose + "," + (k.cues || []).join("|") + "," +
          (k.cuesAfter || []).join("|");

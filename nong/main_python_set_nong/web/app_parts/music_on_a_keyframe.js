@@ -224,6 +224,13 @@ function parseSeqYaml(text) {
       if ((nums.length === ARMJ || nums.length === NJ) && nums.every(n => !isNaN(n))) {
         while (nums.length < NJ) nums.push(90);
         const k = { pose: nums.map((v,i)=>clampJ(i,v)), t: m[2] ? +m[2] : 0, hold: 0 };
+        // A time from the FILE is deliberately NOT pinned. Pinning it was
+        // tried on 2026-09-23 and broke the thing every sequence relies on:
+        // changing Show speed re-times a loaded sequence, which is what makes
+        // a re-edit follow the new pace (check_sequences, "leaves its
+        // neighbours alone"). A pin is for a time THIS person typed or pinned
+        // in THIS session - that is what was asked for, and no more. Anyone
+        // who wants a loaded time held presses the pin on it, once.
         // a speed step before this pose that differs from the sequence speed is
         // that MOVE's own speed, so it survives a round trip through the file
         if (curSpeed && curSpeed !== out.speed) k.dps = curSpeed;

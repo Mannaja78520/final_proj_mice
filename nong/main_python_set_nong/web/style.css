@@ -227,6 +227,10 @@ input[type=checkbox]{accent-color:var(--acc)}
 /* which arm plays this move, and the mirror button beside it (A31-6) */
 .key .karm{font-size:11px;font-weight:400;max-width:118px;margin-left:4px}
 .key .kmir{font-size:12px;padding:2px 6px;margin-left:2px}
+/* a time the operator pinned: theirs, and kept through every pose edit (A31-12) */
+.key .kpin{font-size:11px;padding:2px 5px;margin-left:2px;line-height:1}
+.key .kpin.on{border-color:var(--acc)}
+.key .ktime input.pinned{border-color:var(--acc)}
 .key .kidx small{color:var(--mut);font-weight:400}
 /* The move number is the keyboard's way into a keyframe, so it is a button -
    but it must still read as the number it always was, not as a control bolted
