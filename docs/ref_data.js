@@ -467,10 +467,8 @@ window.REF = [
            what: "the picker in Studio's rig panel"},
           {file: "firmware/src/web/WebUI.h", line: 868,
            what: "fkArm() on the board's own page, same numbers"}],
-  eq: "shoulder = (±88.0, 95, 0) mm from the torso centre
-" +
-      "upper arm = 128.70 mm, forearm = 167.64 mm
-" +
+  eq: "shoulder = (±88.0, 95, 0) mm from the torso centre\n" +
+      "upper arm = 128.70 mm, forearm = 167.64 mm\n" +
       "reach = 128.70 + 167.64 = 296.34 mm from the shoulder",
   why: "Measured off nong_assembly.STEP (A30-1/A30-2, analysis/nong_analysis.json), " +
        "not scaled from a drawing. Before this the pages used round numbers - " +
@@ -487,10 +485,8 @@ window.REF = [
   name: "Inverse kinematics: where to put four joints so the wrist lands there",
   where: [{file: "nong/main_python_set_nong/web/app_parts/ik_4_dof_arm.js", line: 5,
            what: "solveIK() — the whole solver"}],
-  eq: "J[i][c] = (p(θ + ε·e_c) - p(θ)) / ε   (numeric Jacobian, mm per degree)
-" +
-      "Δθ = Jᵀ (J Jᵀ + λ² I)⁻¹ e   (damped least squares, λ² = 4)
-" +
+  eq: "J[i][c] = (p(θ + ε·e_c) - p(θ)) / ε   (numeric Jacobian, mm per degree)\n" +
+      "Δθ = Jᵀ (J Jᵀ + λ² I)⁻¹ e   (damped least squares, λ² = 4)\n" +
       "e = target - wrist, clipped to 120 mm per step, 8 steps",
   why: "Four joints, three numbers to hit: there is no single answer, so the " +
        "solver asks for the SMALLEST joint movement that closes the gap. The " +
@@ -501,5 +497,30 @@ window.REF = [
        "rig preset put in.",
   from: "Damped least squares (Levenberg-Marquardt) for redundant manipulators: Wampler CW, \"Manipulator inverse kinematic solutions based on vector formulations and damped least-squares methods\", IEEE Trans. SMC 16(1), 1986; Buss SR, \"Introduction to Inverse Kinematics with Jacobian Transpose, Pseudoinverse and Damped Least Squares methods\", 2009.",
   watch: "λ² is in mm²/deg² and the Jacobian here is order 10-40, so a big λ² stops the arm moving at all."
+},
+{
+  id: "shrug-fourbar",
+  group: "Nong — the humanoid",
+  name: "Shrug: how far the servo turns for each degree of shrug (4-bar linkage)",
+  where: [{file: "tools/step_preset.py", line: 174,
+           what: "horn_at() — the servo angle for a shrug angle"},
+          {file: "tools/step_preset.py", line: 240,
+           what: "the ratio as whole teeth (50:119)"},
+          {file: "config/rig_presets.json", line: 109,
+           what: "the SHRUG servo, gear and ±16° limits it wrote"}],
+  eq: "S = servo spline, A = horn pin, B = rocker pin, P = pivot (from the STEP hole axes)\n" +
+      "a = |SA| = 24.60, b = |AB| = 38.50, c = |PB| = 70.05, g = |PS| = 33.95 mm\n" +
+      "B(θ) = P + c·(cos(β₀+θ), sin(β₀+θ));  d = |B(θ) - S|\n" +
+      "φ(θ) = atan2(B - S) ± acos((a² + d² - b²) / (2·a·d))   (branch nearest the CAD pose)\n" +
+      "ratio = dφ/dθ at level = 2.38;  ±16° shrug = servo -38.1° / +38.7°\n" +
+      "coupler force at stall F = T / (a · sin γ),  γ = angle between horn and coupler",
+  why: "The shrug is not geared: one servo drives a horn, a coupler and the " +
+       "shoulder yoke, so the ratio is set by four lengths and changes a little " +
+       "across the travel. The old setting was a guess (1:4.5, which the board " +
+       "stored as 1:4 because GEAR keeps whole teeth); the CAD gives 2.38. The " +
+       "same geometry gives the SolidWorks load: 133-150 N along the coupler " +
+       "when the servo stalls, not the 246 N first used.",
+  from: "Loop-closure solution of a planar four-bar (circle-circle intersection): Norton RL, \"Design of Machinery\" (5th ed.) Ch. 4, position analysis of linkages; Uicker JJ, Pennock GR, Shigley JE, \"Theory of Machines and Mechanisms\" Ch. 4. Lengths measured from model/21_09_2026_nangrum_full/nong_assembly.STEP.",
+  watch: "Studio and the firmware treat the ratio as constant. Over ±16° the real linkage drifts 0.6° of servo (0.25° of shrug) from that line; past ±20° check the table in rig_presets.json before trusting it."
 }
 ];

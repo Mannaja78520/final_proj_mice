@@ -567,12 +567,6 @@ function keysSignature() {
   }
   return s;
 }
-// Is there timeline work only this browser has? The same draft the close
-// warning reads, so "unsaved" means one thing across the app. Shows asks
-// before it replaces the time bar with a whole show (A31-3).
-function hasUnsavedKeys() {
-  return isDirty();          // project_save_load.js: differs from what is on disk
-}
 function bumpKeys() {
   // the timeline changed: a "yes, run it anyway" given for the old one does
   // not carry over to this

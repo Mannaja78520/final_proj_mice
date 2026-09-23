@@ -2554,12 +2554,6 @@ function keysSignature() {
   }
   return s;
 }
-// Is there timeline work only this browser has? The same draft the close
-// warning reads, so "unsaved" means one thing across the app. Shows asks
-// before it replaces the time bar with a whole show (A31-3).
-function hasUnsavedKeys() {
-  return isDirty();          // project_save_load.js: differs from what is on disk
-}
 function bumpKeys() {
   // the timeline changed: a "yes, run it anyway" given for the old one does
   // not carry over to this
@@ -3950,8 +3944,8 @@ async function openShow() {
   $("showStat").textContent = "opened " + n + " (" + showDraft.items.length + " sequences).";
   // User 2026-09-23: *when click in show and we have the all sequence show all
   // of it in nong studio too in series*. Opening a show IS the click, so the
-  // whole chain goes on the time bar without asking - unless there are unsaved
-  // keyframes on it, which are somebody's work and are never overwritten.
+  // whole chain goes on the time bar - asking first only when the bar holds
+  // unsaved keyframes, which are somebody's work.
   await showOnTimeline(false, true);
 }
 // Every sequence of the show on ONE timeline, end to end, as the robot runs it.
@@ -3965,10 +3959,17 @@ async function showOnTimeline(quiet, onlyIfSafe) {
     if (!quiet) $("showStat").textContent = "add at least one sequence first.";
     return false;
   }
-  if (onlyIfSafe && keys.length > 1 && hasUnsavedKeys() && !showOnBar) {
-    $("showStat").textContent = "opened " + (s.name || "this show") +
-      " — the time bar still holds unsaved keyframes, so it was left alone. " +
-      "Press ⇣ Show on the time bar to replace them.";
+  // The same question every other loader asks (A31-18/A31-19). A quiet redraw
+  // (a pause typed in the show) never pops a dialog: with unsaved edits on
+  // the bar it just leaves them and says so.
+  if (quiet && isDirty()) {
+    $("showStat").textContent = "the time bar has edits that are not saved, so the "
+      + "show was not redrawn over them. Press ⇣ Show on the time bar to redraw it.";
+    return false;
+  }
+  if (!quiet && !(await askUnsaved("put " + (s.name || "this show") + " on the time bar"))) {
+    $("showStat").textContent = (onlyIfSafe ? "opened " + (s.name || "this show") + " — " : "")
+      + "the time bar was left as it was.";
     return false;
   }
   try {
@@ -4008,6 +4009,9 @@ async function showOnTimeline(quiet, onlyIfSafe) {
     bumpKeys();
     clearBadMarks();
     renderTimeline();
+    // drawn from saved files, so nothing on the bar is unsaved work yet; it is
+    // no file's own moves either, so saving it still asks before replacing one
+    markSaved(workSig(), "", 0);
     showOnBar = s.name || "(unsaved show)";
     const secs = (keys.reduce((a, k) => a + k.t + (k.hold || 0), 0) / 1000).toFixed(1);
     $("showStat").textContent = `${showOnBar} is on the time bar: ${marks.length} ` +

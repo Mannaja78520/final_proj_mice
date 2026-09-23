@@ -80,6 +80,22 @@ def run(t):
     t.ok("<link" not in html,
          "nor links a stylesheet it would not find from a USB stick")
 
+    # ---- the data file is JavaScript a browser will run ----------------
+    # Found 2026-09-23 (A31-19): two entries had a RAW newline inside a
+    # string - a Python heredoc turned "\n" into a line break - so the page
+    # threw on load and showed nothing, while the brace-counting below was
+    # happy. Only a real parse catches that.
+    import shutil
+    import subprocess
+    node = shutil.which("node")
+    if node:
+        r = subprocess.run([node, "-e", "global.window={};eval(require('fs')"
+                            ".readFileSync(process.argv[1],'utf8'));"
+                            "console.log(window.REF.length)", str(data)],
+                           capture_output=True, text=True, encoding="utf-8")
+        t.ok(r.returncode == 0, "docs/ref_data.js runs as JavaScript",
+             (r.stderr or "").strip().splitlines()[:3])
+
     # ---- the entries -------------------------------------------------
     es = entries(js)
     t.ok(len(es) >= 10, "the reference has real content", "%d entries" % len(es))

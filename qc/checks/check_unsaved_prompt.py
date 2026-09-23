@@ -62,6 +62,15 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
     report("off~dialog=" + dlgOpen()); await p; await wait(300);
     report("off~keys=" + keys.length);
     setAskUnsaved(true);
+    // A31-19: putting a show on the time bar asks the same question
+    pose = pose.map(function(){ return 80; }); addKey();
+    var before = keys.length;
+    showDraft = { name: "qc_uns_show", loop: false, items: [{ seq: "%(name)s.yaml", hold: 0 }] };
+    renderShow();
+    p = showOnTimeline(); await wait(300);
+    report("show~dialog=" + dlgOpen());
+    document.getElementById("unsavedCancel").click(); await p;
+    report("show~kept=" + (keys.length === before));
   }catch(e){ report("ERR-" + String(e).slice(0,60)); }
   setTimeout(function(){ report("done"); }, 300);
 }, 150); }); });
@@ -102,6 +111,8 @@ def run(t):
              "Don't save opens the file (3 moves), clean", marks)
         t.ok("off~dialog=false" in marks and "off~keys=3" in marks,
              "with the Settings switch off, the file opens without asking", marks)
+        t.ok("show~dialog=true" in marks and "show~kept=true" in marks,
+             "putting a show on the time bar asks too, and Cancel keeps the moves", marks)
     finally:
         for f in extras:
             f.unlink(missing_ok=True)
