@@ -156,8 +156,19 @@ class Shows:
             if not seq:
                 continue
             mode = str(it.get("repeat_mode") or "").strip().lower()
-            if mode not in REPEAT_MODES:
-                mode = ""
+            # A MODE THIS HUB DOES NOT KNOW IS A VERSION MISMATCH, NOT A TYPO.
+            # It was silently blanked to "play once", and on 2026-09-23 that
+            # cost the user their settings twice over: the Studio page (served
+            # from disk, so current) offered "run for exactly ... s" while the
+            # running MiceHub.exe was built before that mode existed, so every
+            # show answered "play once" - and SAVING the show wrote the blanked
+            # value back over the 42 s and 15 s they had typed. Say it instead.
+            if mode and mode not in REPEAT_MODES:
+                raise ValueError(
+                    "this hub does not understand the repeat mode %r. Its "
+                    "MiceHub.exe is older than the page that asked for it - "
+                    "rebuild it with: python -m PyInstaller --clean MiceHub.spec"
+                    % mode)
             try:
                 n = float(it.get("repeat") or 0)
             except (TypeError, ValueError):

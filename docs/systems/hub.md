@@ -81,7 +81,7 @@ hub-support (+ hub_update.py), hub-studio, hub-modules, hub-media (+ hub_cam.py)
 
 - nothing
 
-## Checks that test it (15)
+## Checks that test it (16)
 
 - `check_app_window`
 - `check_code_patches`
@@ -95,8 +95,9 @@ hub-support (+ hub_update.py), hub-studio, hub-modules, hub-media (+ hub_cam.py)
 - `check_partner_launch`
 - `check_partners`
 - `check_registries`
+- `check_show_continuous`
 - `check_stale_build`
 - `check_voice_identify`
 - `check_voice_reconize`
 
-Run them: `python qc/run_qc.py --no-build check_app_window check_code_patches check_faces_app check_faces_login check_faces_loopback check_faces_poll check_no_console_window check_no_data_loss check_onefile check_partner_launch check_partners check_registries check_stale_build check_voice_identify check_voice_reconize`
+Run them: `python qc/run_qc.py --no-build check_app_window check_code_patches check_faces_app check_faces_login check_faces_loopback check_faces_poll check_no_console_window check_no_data_loss check_onefile check_partner_launch check_partners check_registries check_show_continuous check_stale_build check_voice_identify check_voice_reconize`

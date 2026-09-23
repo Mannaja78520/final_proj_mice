@@ -226,6 +226,27 @@ def run(t):
             t.ok("too short" in str(e) and "qc_cont_one.yaml" in str(e),
                  "an impossible seconds target is refused, naming the sequence", str(e))
 
+        # ---- a mode this hub does not know is SAID, not silently dropped -----
+        # The worst bug of the day was silent: a MiceHub.exe built before
+        # `exact` existed blanked it to "play once", so a 42 s item ran 22 s,
+        # and saving the show wrote the blank back over what the operator had
+        # typed. A hub that is older than the page talking to it has to say so.
+        try:
+            main.SHOWS.clean({"items": [{"seq": "a.yaml",
+                                         "repeat_mode": "from_the_future",
+                                         "repeat": 9}]})
+            t.ok(False, "an unknown repeat mode is refused", "it was accepted")
+        except ValueError as e:
+            t.ok("does not understand" in str(e) and "MiceHub.spec" in str(e),
+                 "an unknown repeat mode is refused, and says the exe is stale",
+                 str(e))
+        for known in ("", "times", "seconds", "exact"):
+            got = main.SHOWS.clean({"items": [{"seq": "a.yaml",
+                                               "repeat_mode": known,
+                                               "repeat": 30}]})
+            t.eq(got["items"][0]["repeat_mode"], known if known else "",
+                 "the %r mode still round-trips" % (known or "play once"))
+
         # ---- half a setting is no setting ------------------------------------
         t.eq(main.SHOWS.clean({"items": [{"seq": "a.yaml", "repeat": 5}]})["items"][0],
              {"seq": "a.yaml", "hold": 0, "repeat_mode": "", "repeat": 0},
