@@ -109,9 +109,12 @@ function solveElbowIK(arm, target) {
 // place the wrist. Both targets together leave no slack in a 4-joint arm, so
 // the answer is the mirror and not merely a pose that reaches the same point.
 // check_arm_mirror measures the hands afterwards, in world space.
-function mirrorAcrossBody(p) {
+// Reflect a world point in one of the body's OWN planes. "lr" is the plane
+// between the two arms, "fb" is the one between front and back - and both are
+// taken in the body's frame, so a turned waist does not tilt the mirror.
+function mirrorAcrossBody(p, which) {
   const local = bodyGroup.worldToLocal(p.clone());
-  local.x = -local.x;
+  if (which === "fb") local.z = -local.z; else local.x = -local.x;
   return bodyGroup.localToWorld(local);
 }
 // Returns the mirrored pose, or null if there is no rig on screen to mirror
@@ -119,7 +122,7 @@ function mirrorAcrossBody(p) {
 // waist reflects about 90 (turning left becomes turning right) and the shrug
 // is unchanged, because it lifts both shoulders about the centre line and a
 // reflection leaves it alone.
-function mirrorPose(p) {
+function mirrorPose(p, which) {
   if (!bodyGroup || !wristBalls[0] || !wristBalls[1]) return null;
   const saved = pose.slice();
   try {
@@ -127,16 +130,23 @@ function mirrorPose(p) {
     applyPose();
     robot.updateMatrixWorld(true);
     const want = [0, 1].map(a => ({
-      elbow: mirrorAcrossBody(elbowBalls[a].getWorldPosition(new THREE.Vector3())),
-      wrist: mirrorAcrossBody(wristBalls[a].getWorldPosition(new THREE.Vector3())),
+      elbow: mirrorAcrossBody(elbowBalls[a].getWorldPosition(new THREE.Vector3()), which),
+      wrist: mirrorAcrossBody(wristBalls[a].getWorldPosition(new THREE.Vector3()), which),
     }));
     for (const a of [0, 1]) {
-      const t = want[1 - a];                 // each arm takes the OTHER's shape
+      // LEFT/RIGHT swaps the arms - the left arm takes the right's shape.
+      // FRONT/BACK does not: each arm stays on its own side of the body and
+      // only its reach turns round, which is what "the same gesture, facing
+      // the other way" means for a puppet.
+      const t = which === "fb" ? want[a] : want[1 - a];
       solveElbowIK(a, t.elbow);
       ccdChain(a === 0 ? [2, 3] : [6, 7], wristBalls[a], t.wrist, 24);
     }
     applyPose();
     const out = pose.slice();
+    // A reflection reverses a turn about the vertical, whichever plane it is
+    // in, so the waist flips about its own neutral either way. The shrug rocks
+    // about the centre line and a reflection leaves it alone.
     out[8] = clampJ(8, 180 - p[8]);
     out[9] = p[9];
     return out;

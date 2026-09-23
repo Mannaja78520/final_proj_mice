@@ -179,14 +179,17 @@ async function homeFromPose() { // robot home: saved here AND on the robot
       + (e.message || e);
   }
 }
-function mirrorLR() {
+// The Pose tab's two mirror buttons. mirrorLR is kept as the name the page has
+// always called, so nothing else has to change; mirrorFB is its front/back twin.
+function mirrorFB() { mirrorLR("fb"); }
+function mirrorLR(which) {
   // Swapping the two blocks of four joint numbers is what this did, and it was
   // not a mirror: the two arms do not carry the same `invert` flags, so the
   // hand came out 613 mm from where it belonged (measured 2026-09-23, A31-6).
   // mirrorPose() reflects the elbow and the hand in the body's own centre line
   // and solves the arms to reach them, and it is the ONE place that rule
   // lives - the timeline's ⇄ button calls the same function.
-  const m = mirrorPose(pose);
+  const m = mirrorPose(pose, which);
   if (!m) {
     $("tlStat").textContent = "the robot is not on screen yet, so there is "
       + "nothing to mirror. Nothing was changed.";
@@ -194,4 +197,7 @@ function mirrorLR() {
   }
   pose = m;
   poseChanged(false);
+  $("tlStat").textContent = which === "fb"
+    ? "mirrored front to back — each arm reaches the other way, on its own side"
+    : "mirrored left to right — each arm took the other's shape";
 }

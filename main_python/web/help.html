@@ -1412,8 +1412,19 @@
   <div class="f"><h3>Collision checking</h3>
     <p>Arms against torso, head and each other, sampled along the whole path — not just at
        keyframes. Offending keyframes turn red and Run/Upload are blocked until it is fixed.</p></div>
+  <div class="f"><h3>Two mirrors: left↔right and front↔back<span class="tag t-new">new</span></h3>
+    <p>A puppet has two mirrors, so there are two buttons — on the Pose tab, and on every
+       move in the timeline.</p>
+    <p><b>⇄ Mirror L↔R</b> swaps the arms: the left arm takes the right's shape and the
+       right takes the left's. <b>⇅ Mirror front↔back</b> does <i>not</i> swap them — each
+       arm stays on its own side and only its reach turns round, so a gesture aimed at the
+       audience now points behind. The waist turns to the other side either way; the shrug
+       is unchanged.</p>
+    <p>Both are taken in the <b>body's own frame</b>, so a turned waist cannot tilt the
+       mirror. Mirroring a move that is pinned to the front or back arm flips that pin too,
+       or the arm meant to be holding still would be the one that moved.</p></div>
   <div class="f"><h3>Mirror and neutral</h3>
-    <p>Mirror a pose left↔right, jump to the neutral pose, or save the current pose <em>as</em>
+    <p>Jump to the neutral pose, or save the current pose <em>as</em>
        the neutral. Mirror is a <b>real reflection</b>, not a swap of the joint numbers:
        the two arms are not built as exact opposites of each other, so copying the angles
        across put the hand 613&nbsp;mm from where it belonged. Studio reflects the elbow and
@@ -1468,6 +1479,13 @@
        or a particular joint's servo top speed — and says what to change. The
        <b>⚑</b> beside a move's minimum means that move is already as short as it is
        allowed to be.</p>
+    <p><b>Show speed lives inside the saved limit.</b> The box will not accept a number
+       above the flat point, because above it nothing gets faster — so raising the
+       <b>Peak speed limit</b> and pressing <b>Save to robot</b> is what lets Show speed go
+       higher. Measured on a real nong (board 67): at a saved limit of 120 the ceiling is
+       76 °/s; saved at 190 it is 121 °/s, and the same moves went from 130/196/327 ms to
+       82/124/206 ms — about a third quicker. A saved limit takes effect when the board
+       restarts.</p>
     <p>The <b>Peak speed limit</b> box is also editable with <b>no robot connected</b>. It
        is then simply the number Studio plans with, and it is saved with the project, so you
        can time a show away from the bench. <b>Save to robot</b> still needs a connection —

@@ -1333,9 +1333,12 @@ function solveElbowIK(arm, target) {
 // place the wrist. Both targets together leave no slack in a 4-joint arm, so
 // the answer is the mirror and not merely a pose that reaches the same point.
 // check_arm_mirror measures the hands afterwards, in world space.
-function mirrorAcrossBody(p) {
+// Reflect a world point in one of the body's OWN planes. "lr" is the plane
+// between the two arms, "fb" is the one between front and back - and both are
+// taken in the body's frame, so a turned waist does not tilt the mirror.
+function mirrorAcrossBody(p, which) {
   const local = bodyGroup.worldToLocal(p.clone());
-  local.x = -local.x;
+  if (which === "fb") local.z = -local.z; else local.x = -local.x;
   return bodyGroup.localToWorld(local);
 }
 // Returns the mirrored pose, or null if there is no rig on screen to mirror
@@ -1343,7 +1346,7 @@ function mirrorAcrossBody(p) {
 // waist reflects about 90 (turning left becomes turning right) and the shrug
 // is unchanged, because it lifts both shoulders about the centre line and a
 // reflection leaves it alone.
-function mirrorPose(p) {
+function mirrorPose(p, which) {
   if (!bodyGroup || !wristBalls[0] || !wristBalls[1]) return null;
   const saved = pose.slice();
   try {
@@ -1351,16 +1354,23 @@ function mirrorPose(p) {
     applyPose();
     robot.updateMatrixWorld(true);
     const want = [0, 1].map(a => ({
-      elbow: mirrorAcrossBody(elbowBalls[a].getWorldPosition(new THREE.Vector3())),
-      wrist: mirrorAcrossBody(wristBalls[a].getWorldPosition(new THREE.Vector3())),
+      elbow: mirrorAcrossBody(elbowBalls[a].getWorldPosition(new THREE.Vector3()), which),
+      wrist: mirrorAcrossBody(wristBalls[a].getWorldPosition(new THREE.Vector3()), which),
     }));
     for (const a of [0, 1]) {
-      const t = want[1 - a];                 // each arm takes the OTHER's shape
+      // LEFT/RIGHT swaps the arms - the left arm takes the right's shape.
+      // FRONT/BACK does not: each arm stays on its own side of the body and
+      // only its reach turns round, which is what "the same gesture, facing
+      // the other way" means for a puppet.
+      const t = which === "fb" ? want[a] : want[1 - a];
       solveElbowIK(a, t.elbow);
       ccdChain(a === 0 ? [2, 3] : [6, 7], wristBalls[a], t.wrist, 24);
     }
     applyPose();
     const out = pose.slice();
+    // A reflection reverses a turn about the vertical, whichever plane it is
+    // in, so the waist flips about its own neutral either way. The shrug rocks
+    // about the centre line and a reflection leaves it alone.
     out[8] = clampJ(8, 180 - p[8]);
     out[9] = p[9];
     return out;
@@ -1724,14 +1734,17 @@ async function homeFromPose() { // robot home: saved here AND on the robot
       + (e.message || e);
   }
 }
-function mirrorLR() {
+// The Pose tab's two mirror buttons. mirrorLR is kept as the name the page has
+// always called, so nothing else has to change; mirrorFB is its front/back twin.
+function mirrorFB() { mirrorLR("fb"); }
+function mirrorLR(which) {
   // Swapping the two blocks of four joint numbers is what this did, and it was
   // not a mirror: the two arms do not carry the same `invert` flags, so the
   // hand came out 613 mm from where it belonged (measured 2026-09-23, A31-6).
   // mirrorPose() reflects the elbow and the hand in the body's own centre line
   // and solves the arms to reach them, and it is the ONE place that rule
   // lives - the timeline's ⇄ button calls the same function.
-  const m = mirrorPose(pose);
+  const m = mirrorPose(pose, which);
   if (!m) {
     $("tlStat").textContent = "the robot is not on screen yet, so there is "
       + "nothing to mirror. Nothing was changed.";
@@ -1739,6 +1752,9 @@ function mirrorLR() {
   }
   pose = m;
   poseChanged(false);
+  $("tlStat").textContent = which === "fb"
+    ? "mirrored front to back — each arm reaches the other way, on its own side"
+    : "mirrored left to right — each arm took the other's shape";
 }
 // --- timing ---
 // Show speed sets the automatic time; servo max speed sets the PHYSICAL
@@ -1817,13 +1833,24 @@ function keyMin(i) { // physical minimum for keyframe i (0 = entry, unknown star
 }
 // A speed the servos cannot hold used to be replaced in the box with no word
 // said, so it read as *the number will not change*. Say what was kept and why.
+// The fastest Show speed that DOES anything. Above the peak limit's flat point
+// no move gets shorter, however large the number, so accepting a larger one is
+// the box lying (user 2026-09-23: *the show speed can adjust in the save dps*).
+// Raise the saved peak limit and this ceiling rises with it - measured on board
+// 67: safe_dps 120 -> 76 °/s, safe_dps 190 -> 121 °/s.
+function speedCeiling() { return Math.max(5, Math.min(slowestDps(), flatDps())); }
 function speedChanged() {
   const asked = speedDps();
   let said = "";
-  if (asked > slowestDps()) {
-    $("speedDps").value = slowestDps();
-    said = `Show speed kept at ${slowestDps()} °/s — the slowest servo on this ` +
-           `robot cannot go faster. Raise Servo max to allow more.`;
+  if (asked > speedCeiling()) {
+    const cap = speedCeiling();
+    $("speedDps").value = cap;
+    said = flatDps() <= slowestDps()
+      ? `Show speed kept at ${cap} °/s — above that, the robot's peak speed ` +
+        `limit of ${SAFE_DPS} °/s decides every move and nothing gets faster. ` +
+        "Raise Peak speed limit and Save to robot to go quicker."
+      : `Show speed kept at ${cap} °/s — the slowest servo on this robot ` +
+        "cannot go faster. Raise Servo max to allow more.";
   }
   recalcTimes();
   renderTimeline();
@@ -1868,11 +1895,15 @@ function safetyLimitChanged() {
   bumpKeys();
   clampKeyTimes();
   renderTimeline();
+  // Raising the limit raises what Show speed is allowed to be, so the two
+  // boxes stay honest about each other.
+  if (speedDps() > speedCeiling()) $("speedDps").value = speedCeiling();
+  renderTimeline();
   $("safeSpeedStat").textContent =
-    `Planning at ${want} °/s. Show speed above about ${flatDps()} °/s will not ` +
-    `shorten a safety-limited move.` +
-    (boardSafeDpsMax ? " Press Save to robot to make the robot use it too."
-                     : " Not saved to any robot — connect first, then Save to robot.");
+    `Planning at ${want} °/s, so Show speed can now go up to ${speedCeiling()} °/s. ` +
+    (boardSafeDpsMax ? "Press Save to robot to make the robot use it too — it "
+                       + "takes effect after the board restarts."
+                     : "Not saved to any robot — connect first, then Save to robot.");
 }
 // INFO is the active board value. CFG only saves the NEXT boot's value, so do
 // not change SAFE_DPS when the operator presses Save.
@@ -2224,15 +2255,23 @@ function renderTimeline() {
       // Mirror: the same gesture on the other arm. The rule lives in
       // mirrorPose() (ik_4_dof_arm.js) and the Pose tab's Mirror button calls
       // the same function, so the two can never drift apart.
-      const mir = document.createElement("button");
-      mir.className = "kmir";
-      mir.textContent = "⇄";
-      mir.title = "mirror: play this same pose with the arms swapped";
-      mir.onclick = (e) => {
-        e.stopPropagation();
-        mirrorKeyArms(i);
-      };
-      idx.appendChild(mir);
+      // TWO mirrors, because a puppet has two (user 2026-09-23). Left/right
+      // swaps the arms; front/back turns each arm's reach round and leaves it
+      // on its own side. Separate buttons, not a mode: a mode you have to
+      // remember is a button you press wrongly.
+      [["⇄", "lr", "mirror LEFT and RIGHT: the same shape on the other arm"],
+       ["⇅", "fb", "mirror FRONT and BACK: each arm reaches the other way and "
+                   + "stays on its own side"]].forEach(([glyph, which, tip]) => {
+        const mir = document.createElement("button");
+        mir.className = "kmir";
+        mir.textContent = glyph;
+        mir.title = tip;
+        mir.onclick = (e) => {
+          e.stopPropagation();
+          mirrorKeyArms(i, which);
+        };
+        idx.appendChild(mir);
+      });
     }
     const pv = document.createElement("div"); pv.className = "kpose";
     pv.textContent = k.pose.map(a => Math.round(a)).join(" ");
@@ -2680,10 +2719,10 @@ function anySuspended() { return keys.some(k => k.off); }
 // direction and its axis - and this file should not hold a second opinion
 // about them. A move pinned to one arm flips its pin too, or mirroring would
 // move the arm that is meant to be holding still.
-function mirrorKeyArms(i) {
+function mirrorKeyArms(i, which) {
   const k = keys[i];
   if (!k) return;
-  const m = mirrorPose(k.pose);
+  const m = mirrorPose(k.pose, which);
   if (!m) {
     $("tlStat").textContent = "this rig's two arms are not set up as mirror "
       + "images (their rotation axes differ in Setup > rig), so there is no "
@@ -2698,8 +2737,11 @@ function mirrorKeyArms(i) {
   clearBadMarks();
   if (i === selKey) { pose = [...k.pose]; poseChanged(false); renderSliders(); }
   renderTimeline();
-  $("tlStat").textContent = "move " + i + " mirrored — the same shape on the other arm"
-    + (k.arm ? ", now played by the " + k.arm + " arm" : "");
+  $("tlStat").textContent = which === "fb"
+    ? "move " + i + " mirrored front to back — each arm reaches the other way, "
+      + "and stays on its own side"
+    : "move " + i + " mirrored left to right — the same shape on the other arm"
+      + (k.arm ? ", now played by the " + k.arm + " arm" : "");
 }
 
 // ------- playback preview (cosine ease per segment — same as the firmware)

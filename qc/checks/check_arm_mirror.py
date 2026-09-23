@@ -89,6 +89,30 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
     var sameAsMirror = pose.join(",") === viaPose.join(",");
     var waistFlipped = Math.round(pose[8]) === 60;
 
+    // ---- FRONT/BACK is a different mirror, not the same one ------------
+    // Measured in the BODY's own frame, so a turned waist cannot tilt it.
+    // Each arm must stay on its own SIDE (x keeps its sign) and turn its
+    // reach round (z flips). Left/right is the other way about.
+    function local(b){
+      return bodyGroup.worldToLocal(b.getWorldPosition(new THREE.Vector3()));
+    }
+    var q = Array(NJ).fill(90);
+    q[0]=130; q[1]=120; q[2]=60; q[3]=105; q[8]=120;
+    pose = q.slice(); applyPose(); robot.updateMatrixWorld(true);
+    var l0 = local(wristBalls[0]), r0 = local(wristBalls[1]);
+    var fb = mirrorPose(q, "fb");
+    pose = fb.slice(); applyPose(); robot.updateMatrixWorld(true);
+    var l1 = local(wristBalls[0]), r1 = local(wristBalls[1]);
+    // same side: x keeps its sign and roughly its size
+    var stayedSide = (Math.sign(l1.x) === Math.sign(l0.x)) &&
+                     (Math.sign(r1.x) === Math.sign(r0.x));
+    // reach turned round: z is the negative of what it was
+    var zFlipL = Math.abs(l1.z + l0.z), zFlipR = Math.abs(r1.z + r0.z);
+    var xKeptL = Math.abs(l1.x - l0.x);
+    // and it is NOT the same answer the left/right mirror gives
+    var lr = mirrorPose(q, "lr");
+    var differs = fb.join(",") !== lr.join(",");
+
     report("frontTook=" + frontTook + "~backHeld=" + backHeld +
            "~keyIntact=" + keyIntact +
            "~flippedTook=" + flippedTook + "~flippedHeld=" + flippedHeld +
@@ -101,7 +125,10 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
            "~axL=" + RIG.axis.slice(0,4).join("_") + "~axR=" + RIG.axis.slice(4,8).join("_") +
            "~invL=" + RIG.invert.slice(0,4).join("_") + "~invR=" + RIG.invert.slice(4,8).join("_") +
            "~flippedPin=" + flippedPin + "~sameAsMirror=" + sameAsMirror +
-           "~waistFlipped=" + waistFlipped);
+           "~waistFlipped=" + waistFlipped +
+           "~stayedSide=" + stayedSide + "~zFlipL=" + zFlipL.toFixed(1) +
+           "~zFlipR=" + zFlipR.toFixed(1) + "~xKeptL=" + xKeptL.toFixed(1) +
+           "~differs=" + differs);
   }catch(e){ report("ERR-" + String(e).slice(0,70)); }
   setTimeout(function(){ report("done"); }, 300);
 }, 150); }); });
@@ -149,3 +176,21 @@ def run(t):
          "and the waist still turns to the other side",
          "reflecting about 90 is the rule mirrorLR always used and people have "
          "posed against it: %s" % v)
+
+    # ---- the SECOND mirror (user 2026-09-23: "mirror front back") ---------
+    t.ok(v.get("stayedSide") == "true",
+         "front/back mirroring leaves each arm on its own side",
+         "that is the whole difference from left/right: the gesture turns "
+         "round, the arms do not swap. %s" % v)
+    for key, label in (("zFlipL", "the left hand's reach turns front to back"),
+                       ("zFlipR", "and the right hand's does too")):
+        t.ok(float(v.get(key) or 999) < 12.0,
+             label + " (measured in the body's own frame)",
+             "%s mm away from the reflected position - a turned waist must not "
+             "tilt this mirror, which is why it is measured in the body frame "
+             "and not the world's: %s" % (v.get(key), v))
+    t.ok(float(v.get("xKeptL") or 999) < 12.0,
+         "and it does not drift sideways while doing it", v)
+    t.ok(v.get("differs") == "true",
+         "front/back and left/right really are two different mirrors",
+         "if they gave the same answer one of the two buttons would be a lie: %s" % v)

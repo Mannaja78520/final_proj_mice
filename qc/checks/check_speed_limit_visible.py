@@ -62,6 +62,20 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
     safetyLimitChanged();
     var fastT = keys[1].t;
     var savedMsg = document.getElementById("safeSpeedStat").textContent;
+    // ...and it must raise what Show speed is ALLOWED to be, or the operator
+    // can type a number the peak limit makes meaningless (user 2026-09-23:
+    // *the show speed can adjust in the save dps*). 200 x 2/pi = 127.
+    var ceil200 = speedCeiling();
+    document.getElementById("speedDps").value = "500";
+    speedChanged();
+    var kept200 = Math.round(speedDps());
+    box.value = "60";                       // 60 x 2/pi = 38
+    safetyLimitChanged();
+    document.getElementById("speedDps").value = "500";
+    speedChanged();
+    var kept60 = Math.round(speedDps());
+    box.value = "200";
+    safetyLimitChanged();
 
     // Back to 60, then type a per-move speed the peak limit cannot honour.
     box.value = "60";
@@ -86,7 +100,8 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
            "~servoWhy=" + (servoWhy.indexOf("Waist") >= 0) +
            "~offline=" + (savedMsg.indexOf("connect first") >= 0) +
            "~blockedSaid=" + (blockedMsg.indexOf("peak speed limit") >= 0) +
-           "~blockedT=" + blockedT);
+           "~blockedT=" + blockedT +
+           "~ceil200=" + ceil200 + "~kept200=" + kept200 + "~kept60=" + kept60);
   }catch(e){ report("ERR-" + String(e).slice(0,70)); }
   setTimeout(function(){ report("done"); }, 300);
 }, 150); }); });
@@ -126,3 +141,18 @@ def run(t):
          "a per-move deg/s that cannot shorten the move says why",
          "typing 200 deg/s where 38 is the ceiling used to change the box and "
          "nothing else: %s" % v)
+
+    # ---- Show speed lives INSIDE the saved limit (user 2026-09-23) --------
+    # Above the peak limit's flat point (limit x 2/pi) no move gets shorter,
+    # however large the number, so accepting a larger one is the box lying.
+    # Measured on board 67: safe_dps 120 -> 76 deg/s, safe_dps 190 -> 121.
+    k200, k60 = int(v.get("kept200") or 0), int(v.get("kept60") or 0)
+    t.ok(k200 == 127,
+         "at a 200 deg/s peak limit, Show speed is held at its flat point of 127",
+         "asked for 500, kept %s" % k200)
+    t.ok(k60 == 38,
+         "and at a 60 deg/s peak limit it is held at 38",
+         "asked for 500, kept %s" % k60)
+    t.ok(k200 > k60,
+         "so raising the saved limit really does let Show speed go higher",
+         "that is the whole point: the two boxes must agree with each other. %s" % v)

@@ -75,13 +75,24 @@ function keyMin(i) { // physical minimum for keyframe i (0 = entry, unknown star
 }
 // A speed the servos cannot hold used to be replaced in the box with no word
 // said, so it read as *the number will not change*. Say what was kept and why.
+// The fastest Show speed that DOES anything. Above the peak limit's flat point
+// no move gets shorter, however large the number, so accepting a larger one is
+// the box lying (user 2026-09-23: *the show speed can adjust in the save dps*).
+// Raise the saved peak limit and this ceiling rises with it - measured on board
+// 67: safe_dps 120 -> 76 °/s, safe_dps 190 -> 121 °/s.
+function speedCeiling() { return Math.max(5, Math.min(slowestDps(), flatDps())); }
 function speedChanged() {
   const asked = speedDps();
   let said = "";
-  if (asked > slowestDps()) {
-    $("speedDps").value = slowestDps();
-    said = `Show speed kept at ${slowestDps()} °/s — the slowest servo on this ` +
-           `robot cannot go faster. Raise Servo max to allow more.`;
+  if (asked > speedCeiling()) {
+    const cap = speedCeiling();
+    $("speedDps").value = cap;
+    said = flatDps() <= slowestDps()
+      ? `Show speed kept at ${cap} °/s — above that, the robot's peak speed ` +
+        `limit of ${SAFE_DPS} °/s decides every move and nothing gets faster. ` +
+        "Raise Peak speed limit and Save to robot to go quicker."
+      : `Show speed kept at ${cap} °/s — the slowest servo on this robot ` +
+        "cannot go faster. Raise Servo max to allow more.";
   }
   recalcTimes();
   renderTimeline();
@@ -126,11 +137,15 @@ function safetyLimitChanged() {
   bumpKeys();
   clampKeyTimes();
   renderTimeline();
+  // Raising the limit raises what Show speed is allowed to be, so the two
+  // boxes stay honest about each other.
+  if (speedDps() > speedCeiling()) $("speedDps").value = speedCeiling();
+  renderTimeline();
   $("safeSpeedStat").textContent =
-    `Planning at ${want} °/s. Show speed above about ${flatDps()} °/s will not ` +
-    `shorten a safety-limited move.` +
-    (boardSafeDpsMax ? " Press Save to robot to make the robot use it too."
-                     : " Not saved to any robot — connect first, then Save to robot.");
+    `Planning at ${want} °/s, so Show speed can now go up to ${speedCeiling()} °/s. ` +
+    (boardSafeDpsMax ? "Press Save to robot to make the robot use it too — it "
+                       + "takes effect after the board restarts."
+                     : "Not saved to any robot — connect first, then Save to robot.");
 }
 // INFO is the active board value. CFG only saves the NEXT boot's value, so do
 // not change SAFE_DPS when the operator presses Save.

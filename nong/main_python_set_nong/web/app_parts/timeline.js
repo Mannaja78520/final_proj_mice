@@ -269,15 +269,23 @@ function renderTimeline() {
       // Mirror: the same gesture on the other arm. The rule lives in
       // mirrorPose() (ik_4_dof_arm.js) and the Pose tab's Mirror button calls
       // the same function, so the two can never drift apart.
-      const mir = document.createElement("button");
-      mir.className = "kmir";
-      mir.textContent = "⇄";
-      mir.title = "mirror: play this same pose with the arms swapped";
-      mir.onclick = (e) => {
-        e.stopPropagation();
-        mirrorKeyArms(i);
-      };
-      idx.appendChild(mir);
+      // TWO mirrors, because a puppet has two (user 2026-09-23). Left/right
+      // swaps the arms; front/back turns each arm's reach round and leaves it
+      // on its own side. Separate buttons, not a mode: a mode you have to
+      // remember is a button you press wrongly.
+      [["⇄", "lr", "mirror LEFT and RIGHT: the same shape on the other arm"],
+       ["⇅", "fb", "mirror FRONT and BACK: each arm reaches the other way and "
+                   + "stays on its own side"]].forEach(([glyph, which, tip]) => {
+        const mir = document.createElement("button");
+        mir.className = "kmir";
+        mir.textContent = glyph;
+        mir.title = tip;
+        mir.onclick = (e) => {
+          e.stopPropagation();
+          mirrorKeyArms(i, which);
+        };
+        idx.appendChild(mir);
+      });
     }
     const pv = document.createElement("div"); pv.className = "kpose";
     pv.textContent = k.pose.map(a => Math.round(a)).join(" ");
@@ -725,10 +733,10 @@ function anySuspended() { return keys.some(k => k.off); }
 // direction and its axis - and this file should not hold a second opinion
 // about them. A move pinned to one arm flips its pin too, or mirroring would
 // move the arm that is meant to be holding still.
-function mirrorKeyArms(i) {
+function mirrorKeyArms(i, which) {
   const k = keys[i];
   if (!k) return;
-  const m = mirrorPose(k.pose);
+  const m = mirrorPose(k.pose, which);
   if (!m) {
     $("tlStat").textContent = "this rig's two arms are not set up as mirror "
       + "images (their rotation axes differ in Setup > rig), so there is no "
@@ -743,8 +751,11 @@ function mirrorKeyArms(i) {
   clearBadMarks();
   if (i === selKey) { pose = [...k.pose]; poseChanged(false); renderSliders(); }
   renderTimeline();
-  $("tlStat").textContent = "move " + i + " mirrored — the same shape on the other arm"
-    + (k.arm ? ", now played by the " + k.arm + " arm" : "");
+  $("tlStat").textContent = which === "fb"
+    ? "move " + i + " mirrored front to back — each arm reaches the other way, "
+      + "and stays on its own side"
+    : "move " + i + " mirrored left to right — the same shape on the other arm"
+      + (k.arm ? ", now played by the " + k.arm + " arm" : "");
 }
 
 // ------- playback preview (cosine ease per segment — same as the firmware)
