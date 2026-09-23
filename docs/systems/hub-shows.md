@@ -21,8 +21,8 @@ Saved shows: sequences played in series by name.
 - [hub](hub.md)
 - [hub-show](hub-show.md)
 
-## Checks that test it (0)
+## Checks that test it (1)
 
-- none name its files yet - add one
+- `check_show_continuous`
 
-
+Run them: `python qc/run_qc.py --no-build check_show_continuous`

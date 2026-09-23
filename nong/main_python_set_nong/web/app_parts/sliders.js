@@ -180,9 +180,18 @@ async function homeFromPose() { // robot home: saved here AND on the robot
   }
 }
 function mirrorLR() {
-  // swap the arms; flip the waist to the other side (reflect about 90); the
-  // shrug lifts both shoulders equally so it is unchanged.
-  pose = [pose[4], pose[5], pose[6], pose[7], pose[0], pose[1], pose[2], pose[3],
-          clampJ(8, 180 - pose[8]), pose[9]];
+  // Swapping the two blocks of four joint numbers is what this did, and it was
+  // not a mirror: the two arms do not carry the same `invert` flags, so the
+  // hand came out 613 mm from where it belonged (measured 2026-09-23, A31-6).
+  // mirrorPose() reflects the elbow and the hand in the body's own centre line
+  // and solves the arms to reach them, and it is the ONE place that rule
+  // lives - the timeline's ⇄ button calls the same function.
+  const m = mirrorPose(pose);
+  if (!m) {
+    $("tlStat").textContent = "the robot is not on screen yet, so there is "
+      + "nothing to mirror. Nothing was changed.";
+    return;
+  }
+  pose = m;
   poseChanged(false);
 }

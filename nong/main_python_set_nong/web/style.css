@@ -187,6 +187,11 @@ input[type=checkbox]{accent-color:var(--acc)}
   background:var(--sunk);cursor:pointer;flex:0 0 auto;position:relative;
 }
 .key.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+/* where one sequence of a show hands over to the next (A31-3). A margin and a
+   rule, not a colour: colour is already spoken for by selected and by bad. */
+.key.seqstart{margin-left:14px}
+.key.seqstart::before{content:"";position:absolute;left:-8px;top:2px;bottom:2px;
+  width:2px;background:var(--line);border-radius:1px}
 /* tinted FROM --err, so a change to the error colour carries here too */
 .key.bad{border-color:var(--err);box-shadow:0 0 0 1px var(--err);
          background:color-mix(in srgb,var(--err) 12%,var(--bg))}
@@ -219,6 +224,9 @@ input[type=checkbox]{accent-color:var(--acc)}
   background:var(--bg);color:var(--mut);border:1px solid var(--line);border-radius:var(--r-sm);padding:4px 10px;font-size:12px}
 #viewCube button.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc);font-weight:600}
 .key .kidx{font-weight:700;font-size:12px}
+/* which arm plays this move, and the mirror button beside it (A31-6) */
+.key .karm{font-size:11px;font-weight:400;max-width:118px;margin-left:4px}
+.key .kmir{font-size:12px;padding:2px 6px;margin-left:2px}
 .key .kidx small{color:var(--mut);font-weight:400}
 /* The move number is the keyboard's way into a keyframe, so it is a button -
    but it must still read as the number it always was, not as a control bolted

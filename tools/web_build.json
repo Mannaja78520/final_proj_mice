@@ -26,6 +26,7 @@
       "music_on_a_keyframe.js",
       "project_save_load.js",
       "stl_meshes.js",
+      "urdf_import.js",
       "robot_link.js",
       "freeze_watch.js",
       "distances.js",

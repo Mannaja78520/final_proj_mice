@@ -3,6 +3,7 @@
 // list of sequence NAMES saved by the hub in shows/*.json (main_python/shows.py);
 // the hub plays it as one run, so it works over WiFi or the cable.
 let showDraft = { name: "", loop: false, items: [] };
+let showOnBar = "";      // the show currently drawn on the time bar, "" = none
 
 async function refreshShows() {
   try {
@@ -36,16 +37,53 @@ function renderShow() {
     const name = document.createElement("span"); name.style.flex = "1"; name.textContent = it.seq;
     const hold = document.createElement("input");
     hold.type = "number"; hold.min = 0; hold.step = 100; hold.value = it.hold || 0; hold.style.width = "80px";
-    hold.title = "pause after this sequence, in ms";
-    hold.onchange = () => { it.hold = Math.max(0, +hold.value || 0); };
+    hold.title = "stand still for this long AFTER this sequence, in ms. 0 = run straight on into the next one.";
+    hold.onchange = () => { it.hold = Math.max(0, +hold.value || 0); showChanged(); };
+    // REPEAT, in the operator's two ways of saying it (user 2026-09-23: *loop
+    // for how many time like 60S or 30S or make it loop for 4 time 3 time*).
+    // The mode picks which unit the one number is in, so there is never a
+    // count and a duration both set and only one of them obeyed.
+    const mode = document.createElement("select");
+    mode.style.width = "110px";
+    mode.title = "play this sequence again: a number of times, or for a number of seconds";
+    [["", "play once"], ["times", "repeat × times"], ["seconds", "repeat for seconds"]]
+      .forEach(([v, label]) => {
+        const o = document.createElement("option"); o.value = v; o.textContent = label; mode.appendChild(o);
+      });
+    mode.value = it.repeat_mode || "";
+    const rep = document.createElement("input");
+    rep.type = "number"; rep.min = mode.value === "times" ? 2 : 1;
+    rep.step = mode.value === "times" ? 1 : 5;
+    rep.style.width = "70px";
+    rep.value = it.repeat || "";
+    rep.style.display = mode.value ? "" : "none";
+    rep.title = mode.value === "seconds"
+      ? "keep repeating until this many seconds have passed. A pass is never cut in half, so the last one finishes."
+      : "how many times this sequence plays in a row";
+    mode.onchange = () => {
+      it.repeat_mode = mode.value;
+      if (!mode.value) it.repeat = 0;
+      else if (!(it.repeat > 0)) it.repeat = mode.value === "times" ? 2 : 30;
+      renderShow(); showChanged();
+    };
+    rep.onchange = () => {
+      it.repeat = Math.max(mode.value === "times" ? 2 : 0.1, +rep.value || 0);
+      renderShow(); showChanged();
+    };
+    const unit = document.createElement("span"); unit.className = "mini";
+    unit.textContent = mode.value === "seconds" ? "s" : (mode.value === "times" ? "×" : "");
     const btn = (label, title, fn) => { const b = document.createElement("button"); b.textContent = label; b.title = title; b.onclick = fn; return b; };
-    row.append(n, name, document.createTextNode("pause"), hold,
-      btn("▲", "play earlier", () => moveShowItem(i, -1)),
-      btn("▼", "play later", () => moveShowItem(i, 1)),
-      btn("✕", "take out of this show", () => { showDraft.items.splice(i, 1); renderShow(); }));
+    row.append(n, name, mode, rep, unit, document.createTextNode("pause"), hold,
+      btn("▲", "play earlier", () => { moveShowItem(i, -1); showChanged(); }),
+      btn("▼", "play later", () => { moveShowItem(i, 1); showChanged(); }),
+      btn("✕", "take out of this show", () => { showDraft.items.splice(i, 1); renderShow(); showChanged(); }));
     box.appendChild(row);
   });
 }
+// The show on the time bar is redrawn whenever the show changes, but ONLY if
+// it is already on it: loading a show over keyframes somebody is editing,
+// because they typed a pause, would be the edit disappearing under them.
+function showChanged() { if (showOnBar) showOnTimeline(true); }
 function readShowForm() {
   showDraft.name = $("showName").value.trim();
   showDraft.loop = $("showLoop").checked;
@@ -72,6 +110,66 @@ async function openShow() {
   showDraft = r.show; showDraft.name = showDraft.name || n;
   renderShow();
   $("showStat").textContent = "opened " + n + " (" + showDraft.items.length + " sequences).";
+  // User 2026-09-23: *when click in show and we have the all sequence show all
+  // of it in nong studio too in series*. Opening a show IS the click, so the
+  // whole chain goes on the time bar without asking - unless there are unsaved
+  // keyframes on it, which are somebody's work and are never overwritten.
+  await showOnTimeline(false, true);
+}
+// Every sequence of the show on ONE timeline, end to end, as the robot runs it.
+// The steps come from the HUB (/api/show/steps), not from re-reading the yaml
+// here: the chaining rule and the repeats live in main_python/shows.py, and a
+// second copy in JavaScript would drift until the editor showed a run the
+// robot does not perform.
+async function showOnTimeline(quiet, onlyIfSafe) {
+  const s = readShowForm();
+  if (!s.items.length) {
+    if (!quiet) $("showStat").textContent = "add at least one sequence first.";
+    return false;
+  }
+  if (onlyIfSafe && keys.length > 1 && hasUnsavedKeys() && !showOnBar) {
+    $("showStat").textContent = "opened " + (s.name || "this show") +
+      " — the time bar still holds unsaved keyframes, so it was left alone. " +
+      "Press ⇣ Show on the time bar to replace them.";
+    return false;
+  }
+  try {
+    const j = await showPost("/api/show/steps", { show: s });
+    const steps = j.steps || [], marks = j.marks || [];
+    if (steps.length < 2) throw new Error("this show has fewer than two poses");
+    const startOf = {};
+    marks.forEach(m => {
+      // pass 1 of an item is where its NAME goes; later passes say which pass
+      startOf[m.step] = m.pass > 1
+        ? m.seq.replace(/\.yaml$/, "") + " ×" + m.pass
+        : m.seq.replace(/\.yaml$/, "");
+    });
+    keys = steps.map((st, i) => {
+      const k = { pose: st.pose.map(Number), t: Math.round(st.t || 0),
+                  hold: Math.round(st.hold || 0) };
+      if (startOf[i] !== undefined) { k.name = startOf[i]; k.seqStart = true; }
+      // the file's own cue lines ride along so a preview plays the same music
+      if (st.cues && st.cues.length) k.cues = st.cues.slice();
+      // the hub's wire name is cues_after; Studio's own field is cuesAfter
+      if (st.cues_after && st.cues_after.length) k.cuesAfter = st.cues_after.slice();
+      return k;
+    });
+    selKey = 0;
+    playT = 0;
+    bumpKeys();
+    clearBadMarks();
+    renderTimeline();
+    showOnBar = s.name || "(unsaved show)";
+    const secs = (keys.reduce((a, k) => a + k.t + (k.hold || 0), 0) / 1000).toFixed(1);
+    $("showStat").textContent = `${showOnBar} is on the time bar: ${marks.length} ` +
+      `sequence pass(es), ${keys.length} keyframes, ${secs}s. Saving a SEQUENCE ` +
+      "from here would save the whole show as one file.";
+    return true;
+  } catch (e) {
+    $("showStat").textContent = "could not draw the show: " + (e.message || e);
+    notice($("showStat").textContent);
+    return false;
+  }
 }
 async function showPost(path, body) {
   const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });

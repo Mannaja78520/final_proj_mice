@@ -112,9 +112,34 @@ class PlayRoutes:
                 return self.send_json({"ok": True, "show": _hub.SHOWS.load((q.get("name") or [""])[0])})
             except (ValueError, FileNotFoundError) as e:
                 return self.send_err(e, 404)
-        if path in ("/api/show/save", "/api/show/delete", "/api/show/play") and method == "POST":
+        # GET is "the saved show called X"; POST (below) is the draft being
+        # edited. Without the method test this branch also swallowed the POST
+        # and answered about a show with no name.
+        if path == "/api/show/steps" and method != "POST":
+            # THE SAME LIST THE ROBOT WILL RUN. Studio draws a show on its own
+            # timeline from this, rather than re-implementing the chaining and
+            # the repeats in JavaScript - two copies of that rule would drift,
+            # and then the editor would show a run the robot does not perform
+            # (A31-3). `marks` says where each pass starts, for the labels.
+            try:
+                marks = []
+                steps = _hub.SHOWS.steps(_hub.SHOWS.load((q.get("name") or [""])[0]),
+                                         _hub.seq_steps, marks)
+                return self.send_json({"ok": True, "steps": steps, "marks": marks})
+            except (ValueError, FileNotFoundError) as e:
+                return self.send_err(e, 404)
+        if path in ("/api/show/save", "/api/show/delete", "/api/show/play",
+                    "/api/show/steps") and method == "POST":
             try:
                 d = json.loads(self.body().decode() or "{}")
+                if path == "/api/show/steps":
+                    # the DRAFT being edited, not a saved file: the Shows tab
+                    # redraws the timeline as sequences are added and repeats
+                    # are typed, before anything is saved.
+                    marks = []
+                    steps = _hub.SHOWS.steps(_hub.SHOWS.clean(d.get("show") or {}),
+                                             _hub.seq_steps, marks)
+                    return self.send_json({"ok": True, "steps": steps, "marks": marks})
                 if path == "/api/show/save":
                     fname, existed = _hub.SHOWS.save(d.get("show") or {})
                     return self.send_json({"ok": True, "file": fname, "replaced": existed})

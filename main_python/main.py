@@ -297,7 +297,10 @@ MIME = {
     ".svg": "image/svg+xml",
     ".ico": "image/x-icon",
 }
-UPLOAD_EXT = (".stl", ".png", ".jpg", ".jpeg", ".bmp", ".gif")
+# .urdf joins the list for A31-7: Studio reads one to place every part instead
+# of each STL being nudged into position by hand. It is XML naming meshes, not
+# a mesh itself, so the STL files still have to be imported beside it.
+UPLOAD_EXT = (".stl", ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".urdf")
 SAFE_NAME = re.compile(r"^[A-Za-z0-9._ -]{1,80}$")
 
 
@@ -1108,7 +1111,11 @@ def seq_steps(text):
     if steps and pending:
         # cues after the last keyframe: they fire when the show ends
         steps[-1]["cues_after"] = pending
-    return {"name": name, "next": nxt, "loop": loop, "steps": steps}
+    # `speed` comes back out because a SHOW has to re-time the move into this
+    # sequence's first pose, and the only honest speed to do that at is the one
+    # the sequence itself was written for (shows.py, A31-1).
+    return {"name": name, "next": nxt, "loop": loop, "steps": steps,
+            "speed": seq_speed or cur_speed or 0.0}
 
 
 # The show player lives in hub_show.py (A26-76 phase 2, see docs/systems/hub.md).

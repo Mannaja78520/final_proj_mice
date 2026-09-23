@@ -217,6 +217,21 @@ const AXIS_LABEL = { x: "roll (X)", y: "pitch (Y)", z: "yaw (Z)" };
 // base rotation sense per joint (mirrors right arm); "inv" in the rig flips it
 const BASE_DIR = [-1, +1, -1, +1, -1, -1, -1, -1, +1, +1];
 
+// ---- the two arms, as the AUDIENCE sees them (A31-6) ---------------------
+// User 2026-09-23: a move picks which arm plays it, so the same move can be
+// mirrored. On stage nobody says "L_SH_P": they say the front arm, the one
+// nearer the audience. Which physical arm that is depends on how the nong is
+// turned, so it is a RIG setting and not a constant here.
+const ARM_JOINTS = { L: [0, 1, 2, 3], R: [4, 5, 6, 7] };
+function frontArmSide() { return RIG.frontArm === "R" ? "R" : "L"; }
+function backArmSide() { return frontArmSide() === "L" ? "R" : "L"; }
+// "front"/"back" -> the four joint numbers it owns. Anything else = both arms.
+function armJoints(which) {
+  if (which === "front") return ARM_JOINTS[frontArmSide()];
+  if (which === "back") return ARM_JOINTS[backArmSide()];
+  return null;
+}
+
 // The editable rig: body dimensions (mm, visual only — timing never depends
 // on them) + per-joint calibration. "zero" = the servo angle at which that
 // joint is straight (arm hanging along the body). If your real robot at
@@ -288,6 +303,11 @@ const DEFAULT_RIG = {
   // Scaled to the real spherical joints (~89 mm dia -> r ~42) and ~10 mm bars.
   jointR: [42, 40, 42, 40],
   barR:   [12, 10, 12, 10],
+  // WHICH ARM THE AUDIENCE SEES FIRST (A31-6). "L" or "R". A move can be
+  // pinned to the front or the back arm, and which physical arm that is
+  // depends on how the nong stands on stage - so it is set here once, not
+  // decided again in every sequence.
+  frontArm: "L",
 };
 function mergeRig(saved) {
   const r = { ...JSON.parse(JSON.stringify(DEFAULT_RIG)), ...saved,
@@ -323,6 +343,7 @@ function mergeRig(saved) {
   // The SHRUG 4-bar calibration. An empty list means "not measured", which is
   // the old symmetric behaviour — so every rig saved before this keeps looking
   // exactly as it did until you actually measure the linkage.
+  if (r.frontArm !== "R") r.frontArm = "L";   // any older rig, or a typo
   if (!Array.isArray(r.shrugCurve)) r.shrugCurve = [];
   r.shrugCurve = r.shrugCurve
     .filter(pt => pt && isFinite(+pt.j))
@@ -512,6 +533,7 @@ async function getSettingsFrom() {
   } catch (e) { setSettingsStat("could not get it: " + (e.message || e)); }
 }
 function jdir(i) { return BASE_DIR[i] * (RIG.invert[i] ? -1 : 1); }
+
 // clamp a servo angle to that joint's own [min,max] (the universal joint
 // can't reach 0..180) — used everywhere a joint angle is set
 function clampJ(i, v) {
@@ -640,6 +662,10 @@ const VIEWS = {
   bottom: { dir: [0, -1, 0], up: [0, 0, 1],  plane: "xz" },
   iso:    { dir: [0.6, 0.42, 0.68], up: [0, 1, 0], plane: "cam" },
 };
+// Which flat plane the view is locked to, "" while the view is free 3D.
+// Read by the drag code and by the status line, so one answer serves both.
+let viewPlane = "";
+function flatView() { return !!viewPlane; }
 function setView(name) {
   const v = VIEWS[name];
   if (!v) return;
@@ -655,6 +681,15 @@ function setView(name) {
   // a named plane view is flat (orthographic); iso/free keeps perspective
   useProjection(v.plane !== "cam");
   controls.update();
+  // A PLANE VIEW STAYS FLAT. Orbiting is the only way to leave the plane, and
+  // a plain left-drag orbits - so picking Front, taking hold of the arm and
+  // pulling quietly turned the flat view back into a 3D one, and the drag
+  // plane the person had chosen no longer matched what they were looking at
+  // (user 2026-09-23: *i see in 2d but the arm when am drag it in 3d so i
+  // cannot drag it in 2d anymore*). Pan and zoom stay; the 3D button is how
+  // you come back out.
+  viewPlane = v.plane === "cam" ? "" : v.plane;
+  controls.enableRotate = !viewPlane;
   // drive the drag plane + its dropdown to match the view
   if ($("dragPlane")) $("dragPlane").value = v.plane;
   document.querySelectorAll("#viewCube button").forEach(b =>
@@ -1115,7 +1150,10 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
 
   // The wrist/elbow IK balls need SHIFT held — otherwise a plain left-drag from
   // them orbits the camera (keeps orbiting and big arm moves from fighting).
-  if (e.shiftKey) {
+  // In a FLAT view there is nothing to orbit (setView turns rotation off), so
+  // Shift is not needed there: picking Front and pulling the hand is the whole
+  // gesture the 2D plane exists for.
+  if (e.shiftKey || flatView()) {
     const wristHit = ray.intersectObjects(wristBalls, false)[0];
     if (wristHit) {
       const arm = wristHit.object.userData.arm;
@@ -1276,6 +1314,60 @@ function solveElbowIK(arm, target) {
   for (let s = 1; s <= steps; s++) ccdChain(idx, eb, start.clone().lerp(target, s / steps), 4);
   ccdChain(idx, eb, target, 20);
   applyPose();
+}
+// ---- the same shape on the other arm (A31-6) ------------------------------
+// User 2026-09-23: a move picks which arm plays it, so the same move can be
+// mirrored.
+//
+// Mirroring is NOT swapping the two blocks of four joint numbers. That is what
+// it looked like, because the right arm is drawn as the left's mirror image -
+// but the two arms do not carry the same `invert` flags in the shipped rig
+// (L_EL_R is 0, R_EL_R is 1), so a copied elbow roll came out backwards and
+// the hand landed 613 mm from where it should have been. Deriving the angles
+// from zero/jdir/axis instead was worse: 528 mm, because that model ignores
+// the mounting tilts and where each arm's base actually sits.
+//
+// So mirroring is done where the truth is - in the geometry. Reflect both the
+// elbow and the wrist in the body's own x = 0 plane, then let the existing
+// solvers put each arm there: the shoulders place the elbow, the elbow joints
+// place the wrist. Both targets together leave no slack in a 4-joint arm, so
+// the answer is the mirror and not merely a pose that reaches the same point.
+// check_arm_mirror measures the hands afterwards, in world space.
+function mirrorAcrossBody(p) {
+  const local = bodyGroup.worldToLocal(p.clone());
+  local.x = -local.x;
+  return bodyGroup.localToWorld(local);
+}
+// Returns the mirrored pose, or null if there is no rig on screen to mirror
+// with. The two BODY joints keep the rule mirrorLR() has always used: the
+// waist reflects about 90 (turning left becomes turning right) and the shrug
+// is unchanged, because it lifts both shoulders about the centre line and a
+// reflection leaves it alone.
+function mirrorPose(p) {
+  if (!bodyGroup || !wristBalls[0] || !wristBalls[1]) return null;
+  const saved = pose.slice();
+  try {
+    pose = p.slice();
+    applyPose();
+    robot.updateMatrixWorld(true);
+    const want = [0, 1].map(a => ({
+      elbow: mirrorAcrossBody(elbowBalls[a].getWorldPosition(new THREE.Vector3())),
+      wrist: mirrorAcrossBody(wristBalls[a].getWorldPosition(new THREE.Vector3())),
+    }));
+    for (const a of [0, 1]) {
+      const t = want[1 - a];                 // each arm takes the OTHER's shape
+      solveElbowIK(a, t.elbow);
+      ccdChain(a === 0 ? [2, 3] : [6, 7], wristBalls[a], t.wrist, 24);
+    }
+    applyPose();
+    const out = pose.slice();
+    out[8] = clampJ(8, 180 - p[8]);
+    out[9] = p[9];
+    return out;
+  } finally {
+    pose = saved;
+    applyPose();
+  }
 }
 function solve3(A, b) { // gaussian elimination, 3x3
   const M = A.map((row, i) => [...row, b[i]]);
@@ -1633,10 +1725,19 @@ async function homeFromPose() { // robot home: saved here AND on the robot
   }
 }
 function mirrorLR() {
-  // swap the arms; flip the waist to the other side (reflect about 90); the
-  // shrug lifts both shoulders equally so it is unchanged.
-  pose = [pose[4], pose[5], pose[6], pose[7], pose[0], pose[1], pose[2], pose[3],
-          clampJ(8, 180 - pose[8]), pose[9]];
+  // Swapping the two blocks of four joint numbers is what this did, and it was
+  // not a mirror: the two arms do not carry the same `invert` flags, so the
+  // hand came out 613 mm from where it belonged (measured 2026-09-23, A31-6).
+  // mirrorPose() reflects the elbow and the hand in the body's own centre line
+  // and solves the arms to reach them, and it is the ONE place that rule
+  // lives - the timeline's ⇄ button calls the same function.
+  const m = mirrorPose(pose);
+  if (!m) {
+    $("tlStat").textContent = "the robot is not on screen yet, so there is "
+      + "nothing to mirror. Nothing was changed.";
+    return;
+  }
+  pose = m;
   poseChanged(false);
 }
 // --- timing ---
@@ -1662,15 +1763,42 @@ function deltaDeg(from, to) {
   for (let i = 0; i < NJ; i++) dmax = Math.max(dmax, Math.abs(to[i] - from[i]));
   return dmax;
 }
-function minTime(from, to) {
+// The floor AND the reason for it. Typing a faster °/s did nothing and said
+// nothing (user 2026-09-23: *when input the deg/s in sequence it not change
+// the time for me anymore*) because the peak limit had already won: with the
+// board's safe_dps at 60, pi/2 x delta / 60 floors every move at delta/38.2,
+// so any speed above about 38 °/s produces the identical time. The number was
+// never wrong; it was invisible. Every caller that shows a time to a person
+// asks for the reason too.
+function minTimeWhy(from, to) {
   // per joint (the slow WAIST servo counts too), the slowest joint wins
-  let need = 0;
-  for (let i = 0; i < NJ; i++)
-    need = Math.max(need, Math.abs(to[i] - from[i]) / jointMaxDps(i));
+  let servo = 0, slowest = 0;
+  for (let i = 0; i < NJ; i++) {
+    const need = Math.abs(to[i] - from[i]) / jointMaxDps(i);
+    if (need > servo) { servo = need; slowest = i; }
+  }
   // safety floor, same as firmware nongmath::safeDuration (ease peaks at pi/2 x average)
-  need = Math.max(need, deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, SAFE_DPS));
-  return Math.max(MIN_MOVE_MS, Math.ceil(need * 1000));
+  const peak = deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, SAFE_DPS);
+  const need = Math.max(servo, peak);
+  const ms = Math.max(MIN_MOVE_MS, Math.ceil(need * 1000));
+  let why = "the 80 ms shortest-move floor", fix = "";
+  if (need * 1000 > MIN_MOVE_MS) {
+    if (peak >= servo) {
+      why = `the robot's peak speed limit, ${SAFE_DPS} °/s`;
+      fix = `Above about ${flatDps()} °/s nothing gets faster. Raise ` +
+            `Peak speed limit (Timing) to shorten it.`;
+    } else {
+      why = `${JOINT_LABELS[slowest] || ("joint " + (slowest + 1))} at its ` +
+            `servo max, ${Math.round(jointMaxDps(slowest))} °/s`;
+      fix = "Raise Servo max, or that joint's servo °/s in Setup > rig.";
+    }
+  }
+  return { ms, why, fix };
 }
+function minTime(from, to) { return minTimeWhy(from, to).ms; }
+// The show speed above which the peak limit decides every safety-limited move.
+// pi/2 is the ease curve's peak-to-average ratio, the same one the firmware uses.
+function flatDps() { return Math.floor(SAFE_DPS * 2 / Math.PI); }
 // A move runs at the sequence's speed unless that keyframe overrides it, so one
 // gesture can be slower or snappier than the rest of the show without hand-
 // computing its time. Speed and time are two views of the SAME thing: set a
@@ -1687,10 +1815,64 @@ function autoTime(from, to, dps) {
 function keyMin(i) { // physical minimum for keyframe i (0 = entry, unknown start)
   return i > 0 && keys[i - 1] ? minTime(keys[i - 1].pose, keys[i].pose) : MIN_MOVE_MS;
 }
+// A speed the servos cannot hold used to be replaced in the box with no word
+// said, so it read as *the number will not change*. Say what was kept and why.
 function speedChanged() {
-  if (speedDps() > slowestDps()) $("speedDps").value = slowestDps();
+  const asked = speedDps();
+  let said = "";
+  if (asked > slowestDps()) {
+    $("speedDps").value = slowestDps();
+    said = `Show speed kept at ${slowestDps()} °/s — the slowest servo on this ` +
+           `robot cannot go faster. Raise Servo max to allow more.`;
+  }
   recalcTimes();
   renderTimeline();
+  $("tlStat").textContent = said || timingSummary();
+}
+// One sentence naming the limit that is actually deciding move times now, so
+// the answer to *why did my number change nothing* is on the screen and not
+// only in a tooltip.
+function timingSummary() {
+  let peak = 0, servo = 0, free = 0;
+  for (let i = 1; i < keys.length; i++) {
+    if (!keys[i - 1]) continue;
+    const w = minTimeWhy(keys[i - 1].pose, keys[i].pose);
+    const auto = Math.max(MIN_MOVE_MS,
+      Math.round(deltaDeg(keys[i - 1].pose, keys[i].pose) / keyDps(i) * 1000));
+    if (auto >= w.ms) free++;
+    else if (w.why.indexOf("peak") >= 0) peak++;
+    else servo++;
+  }
+  if (!peak && !servo) return `every move runs at the speed you set (${speedDps()} °/s)`;
+  const bits = [];
+  if (peak) bits.push(`${peak} held by the robot's peak speed limit (${SAFE_DPS} °/s — ` +
+                      `above about ${flatDps()} °/s nothing gets faster)`);
+  if (servo) bits.push(`${servo} held by a servo's own top speed`);
+  return `${free} move(s) run at your speed; ` + bits.join(", ") +
+         ". Change Peak speed limit or Servo max in Timing to shorten them.";
+}
+// The peak limit is the Studio's own planning number. It was locked until a
+// board was connected, so away from the robot there was no way to make any
+// move faster at all (user 2026-09-23: *max servo speed in show i cannot
+// adjust anymore*). Editing it re-times the automatic moves here; SAVING it to
+// the board is still a separate, connected-only step, because a Studio that
+// plans faster than the robot allows would be lying about the show.
+function safetyLimitChanged() {
+  const want = Math.round(+$("safeDpsInput").value || 0);
+  if (!(want >= 5)) { $("safeDpsInput").value = SAFE_DPS; return; }
+  const wasAuto = keys.map((k, i) => i > 0 && keys[i - 1] &&
+    k.t === autoTime(keys[i - 1].pose, k.pose, keyDps(i)));
+  SAFE_DPS = want;
+  for (let i = 1; i < keys.length; i++)
+    if (wasAuto[i]) keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
+  bumpKeys();
+  clampKeyTimes();
+  renderTimeline();
+  $("safeSpeedStat").textContent =
+    `Planning at ${want} °/s. Show speed above about ${flatDps()} °/s will not ` +
+    `shorten a safety-limited move.` +
+    (boardSafeDpsMax ? " Press Save to robot to make the robot use it too."
+                     : " Not saved to any robot — connect first, then Save to robot.");
 }
 // INFO is the active board value. CFG only saves the NEXT boot's value, so do
 // not change SAFE_DPS when the operator presses Save.
@@ -1703,8 +1885,11 @@ function adoptBoardSafety(module) {
   if (!(safe >= 5) || !(max >= 5) || !Number.isFinite(max)) {
     boardSafeDpsMax = 0;
     boardSafePeer = 0;
-    input.disabled = button.disabled = true;
-    $("safeSpeedStat").textContent = "This board does not report its safety speed. No setting was changed.";
+    input.disabled = false;         // still the Studio's own planning number
+    button.disabled = true;         // but there is nothing to save it to
+    $("safeSpeedStat").textContent = "This board does not report its safety speed, so " +
+      `nothing was changed on it. Studio still plans at ${SAFE_DPS} °/s — change it here ` +
+      "to make the editor's times shorter.";
     return;
   }
   // Only automatically timed moves shorten. A hand-typed time is the user's
@@ -1725,9 +1910,9 @@ function adoptBoardSafety(module) {
     clampKeyTimes();
     renderTimeline();
   }
-  const flat = Math.floor(safe * 2 / Math.PI);
   $("safeSpeedStat").textContent = `Active peak limit: ${safe} °/s. ` +
-    `For safety-limited moves, Show speed above about ${flat} °/s will not shorten them.` +
+    `For safety-limited moves, Show speed above about ${flatDps()} °/s will not shorten ` +
+    "them — raise this number and press Save to robot to go faster." +
     (boardSafePeer ? ` Linked board #${boardSafePeer} needs the same limit.` : "");
 }
 function recalcTimes() {   // keeps each keyframe's own speed override
@@ -1907,7 +2092,11 @@ function renderTimeline() {
   box.innerHTML = "";
   keys.forEach((k, i) => {
     const el = document.createElement("div");
-    el.className = "key" + (i === selKey ? " sel" : "") + (k.off ? " off" : "");
+    // seqStart: the first keyframe of one sequence inside a whole show on the
+    // bar. Without a line there, a 60-keyframe show is one undifferentiated
+    // wall and there is no way to see where "wave" ends and "bow" begins.
+    el.className = "key" + (i === selKey ? " sel" : "") + (k.off ? " off" : "")
+                 + (k.seqStart && i > 0 ? " seqstart" : "");
     el.onclick = (e) => {
       // Not from a control: selecting re-renders the chip, which closed the music
       // list the moment it opened (A26-49, a SELECT was not in the old list).
@@ -1979,22 +2168,68 @@ function renderTimeline() {
         : "all keyframes active";
     };
     idx.appendChild(sk);
+    // WHICH ARM PLAYS THIS MOVE (A31-6, user 2026-09-23). "both" is every
+    // keyframe ever made before this existed, so it stays the default and
+    // nothing already saved changes behaviour. Pinning a move to one arm
+    // leaves the other exactly where the move before it left it.
+    if (i > 0) {
+      const armSel = document.createElement("select");
+      armSel.className = "karm";
+      [["", "both arms"],
+       ["front", "front arm (" + frontArmSide() + ")"],
+       ["back", "back arm (" + backArmSide() + ")"]].forEach(([v, label]) => {
+        const o = document.createElement("option"); o.value = v; o.textContent = label;
+        armSel.appendChild(o);
+      });
+      armSel.value = k.arm || "";
+      armSel.title = "which arm does this move. The other one holds where the "
+                   + "move before left it. Which arm faces the audience is set "
+                   + "in Setup > rig.";
+      armSel.onclick = (e) => e.stopPropagation();
+      armSel.onchange = () => {
+        if (armSel.value) k.arm = armSel.value; else delete k.arm;
+        bumpKeys();
+        clearBadMarks();
+        renderTimeline();
+        $("tlStat").textContent = armSel.value
+          ? `move ${i} is played by the ${armSel.value} arm (${armSel.value === "front" ? frontArmSide() : backArmSide()}); the other arm holds still`
+          : `move ${i} moves both arms`;
+      };
+      idx.appendChild(armSel);
+      // Mirror: the same gesture on the other arm. The rule lives in
+      // mirrorPose() (ik_4_dof_arm.js) and the Pose tab's Mirror button calls
+      // the same function, so the two can never drift apart.
+      const mir = document.createElement("button");
+      mir.className = "kmir";
+      mir.textContent = "⇄";
+      mir.title = "mirror: play this same pose with the arms swapped";
+      mir.onclick = (e) => {
+        e.stopPropagation();
+        mirrorKeyArms(i);
+      };
+      idx.appendChild(mir);
+    }
     const pv = document.createElement("div"); pv.className = "kpose";
     pv.textContent = k.pose.map(a => Math.round(a)).join(" ");
-    const kmin = keyMin(i);
+    // The floor AND its reason, so a °/s that shortens nothing can say which
+    // limit is holding the move (user 2026-09-23). i === 0 has no predecessor.
+    const lim = i > 0 && keys[i - 1] ? minTimeWhy(keys[i - 1].pose, k.pose) : null;
+    const kmin = lim ? lim.ms : MIN_MOVE_MS;
     const tr = document.createElement("div"); tr.className = "ktime";
     const tIn = document.createElement("input");
     tIn.type = "number"; tIn.value = k.t; tIn.min = kmin; tIn.step = 50;
     tIn.title = (i === 0 ? "entry time from wherever the robot is (ms)"
                          : "time from previous keyframe (ms)")
-              + ` — minimum ${kmin} ms (servo max speed); longer is always allowed`;
+              + ` — minimum ${kmin} ms, set by ${lim ? lim.why : "the 80 ms floor"}`
+              + "; longer is always allowed";
     tIn.onchange = () => {
       const want = Math.round(+tIn.value || 0);
       k.t = Math.max(kmin, want);
       delete k.dps;
       bumpKeys();             // a typed time wins over a speed override
       if (want < kmin)
-        $("tlStat").textContent = `time raised to ${kmin} ms — the servos can't move that far faster (slowest joint on this move: ${slowestDps()} °/s)`;
+        $("tlStat").textContent = `time raised to ${kmin} ms — held by ${lim ? lim.why : "the 80 ms floor"}. ` +
+          (lim && lim.fix ? lim.fix : "");
       renderTimeline();
     };
     // A move that follows a SUSPENDED keyframe no longer starts where its
@@ -2035,16 +2270,39 @@ function renderTimeline() {
       dIn.placeholder = Math.round(speedDps());
       dIn.title = "this move's own speed (°/s). Empty = the sequence's " +
                   Math.round(speedDps()) + " °/s. Setting it re-times this move; " +
-                  "typing a time above clears it again.";
+                  "typing a time above clears it again. This move cannot go under " +
+                  kmin + " ms: " + (lim ? lim.why : "the 80 ms floor") + ".";
       dIn.onchange = () => {
         const v = Math.round(+dIn.value || 0);
-        if (v >= 5) { k.dps = Math.min(v, slowestDps()); k.t = autoTime(keys[i - 1].pose, k.pose, k.dps); }
-        else { delete k.dps; k.t = autoTime(keys[i - 1].pose, k.pose, speedDps()); }
+        const use = v >= 5 ? Math.min(v, slowestDps()) : speedDps();
+        if (v >= 5) k.dps = use; else delete k.dps;
+        const free = Math.max(MIN_MOVE_MS,
+          Math.round(deltaDeg(keys[i - 1].pose, k.pose) / use * 1000));
+        k.t = autoTime(keys[i - 1].pose, k.pose, use);
         bumpKeys();
         renderTimeline();
+        // Typing 200 where 38 is the ceiling used to change the box and nothing
+        // else. Name the limit instead of leaving the number looking ignored.
+        $("tlStat").textContent = (v >= 5 && v > use)
+          ? `${v} °/s kept at ${use} °/s — no servo on this robot goes faster.`
+          : (free < k.t
+              ? `move ${i} stays ${k.t} ms — held by ${lim ? lim.why : "the 80 ms floor"}. ` +
+                (lim && lim.fix ? lim.fix : "")
+              : `move ${i} now takes ${k.t} ms at ${Math.round(use)} °/s.`);
       };
-      mn.append(document.createTextNode("min " + kmin + " · "), dIn,
-                document.createTextNode("°/s"));
+      // A move whose time no speed can shorten says so on its own line, where
+      // the number is being typed — not only in a tooltip nobody hovers.
+      const held = lim && Math.max(MIN_MOVE_MS,
+        Math.round(deltaDeg(keys[i - 1].pose, k.pose) / keyDps(i) * 1000)) < lim.ms;
+      const minTxt = document.createElement("span");
+      minTxt.textContent = "min " + kmin + " · ";
+      if (held) {
+        minTxt.className = "statline";
+        minTxt.textContent = "min " + kmin + " ⚑ · ";
+        minTxt.title = "this move is already as short as it is allowed to be: " +
+                       lim.why + ". " + lim.fix;
+      }
+      mn.append(minTxt, dIn, document.createTextNode("°/s"));
     }
     // ♪ lives on the existing speed line rather than in a row of its own:
     // most moves never carry music, and a row per keyframe for a rare thing
@@ -2183,14 +2441,23 @@ function rewind() {
 // and the signature changes with it.
 let _pkCache = null;
 function keysSignature() {
-  let s = keys.length + "|" + speedDps();
+  // frontArm is in here because which arm "front" means changes every pinned
+  // move's pose, and a cache that missed that would draw the wrong run.
+  let s = keys.length + "|" + speedDps() + "|" + frontArmSide();
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
-    s += ";" + (k.name || "") + "," + (k.off ? 1 : 0) + "," + k.t + "," + (k.hold || 0) + "," +
+    s += ";" + (k.name || "") + "," + (k.arm || "") + "," +
+         (k.off ? 1 : 0) + "," + k.t + "," + (k.hold || 0) + "," +
          (k.dps || 0) + "," + k.pose + "," + (k.cues || []).join("|") + "," +
          (k.cuesAfter || []).join("|");
   }
   return s;
+}
+// Is there timeline work only this browser has? The same draft the close
+// warning reads, so "unsaved" means one thing across the app. Shows asks
+// before it replaces the time bar with a whole show (A31-3).
+function hasUnsavedKeys() {
+  try { return !!localStorage.getItem(DRAFT_KEY); } catch (err) { return false; }
 }
 function bumpKeys() {
   // the timeline changed: a "yes, run it anyway" given for the old one does
@@ -2295,6 +2562,22 @@ function buildPlayKeys() {
       return;
     }
     const prev = out.length ? out[out.length - 1] : null;
+    // A MOVE PINNED TO ONE ARM (A31-6). The other arm holds exactly where the
+    // previous played move left it, so "wave with the front arm" is one move
+    // and not a promise to keep re-typing eight numbers. Resolved HERE, where
+    // buildYaml and hubShowSteps both read, so the file, the preview and the
+    // robot can never disagree about what the far arm did. It is resolved
+    // BEFORE the re-timing below, because a move that only turns one arm
+    // covers less ground and must be timed for the ground it covers.
+    let posed = k.pose;
+    const own = armJoints(k.arm);
+    if (own && prev) {
+      posed = prev.pose.slice();
+      own.forEach(j => { posed[j] = k.pose[j]; });
+      // the body joints belong to nobody's arm and always follow the keyframe
+      posed[8] = k.pose[8];
+      posed[9] = k.pose[9];
+    }
     let t = k.t;
     if (prev && gap) {
       // This move is NOT the one its stored time was written for. With the
@@ -2312,11 +2595,11 @@ function buildPlayKeys() {
       // it needs the minimum, but max() held it at the old 400 ms and the arm
       // sat still for 400 ms going nowhere. Re-timing has to be able to
       // shorten a move as well as lengthen it.
-      t = autoTime(prev.pose, k.pose, k.dps || speedDps());
+      t = autoTime(prev.pose, posed, k.dps || speedDps());
     }
     // The name travels with the PLAYED move. buildYaml() writes from this
     // list, so a name left behind here never reaches the exported file.
-    out.push({ pose: k.pose, hold: k.hold || 0, src: i, dps: k.dps || 0, t,
+    out.push({ pose: posed, hold: k.hold || 0, src: i, dps: k.dps || 0, t,
                name: k.name || "",
                // cues travel with the PLAYED move, like the name above: both
                // buildYaml and hubShowSteps read this list, so a cue left
@@ -2331,6 +2614,32 @@ function buildPlayKeys() {
   return out;
 }
 function anySuspended() { return keys.some(k => k.off); }
+// The same gesture, arms swapped (A31-6). The rule lives in mirrorPose()
+// (rig_data.js) because it is made of rig numbers - each joint's zero, its
+// direction and its axis - and this file should not hold a second opinion
+// about them. A move pinned to one arm flips its pin too, or mirroring would
+// move the arm that is meant to be holding still.
+function mirrorKeyArms(i) {
+  const k = keys[i];
+  if (!k) return;
+  const m = mirrorPose(k.pose);
+  if (!m) {
+    $("tlStat").textContent = "this rig's two arms are not set up as mirror "
+      + "images (their rotation axes differ in Setup > rig), so there is no "
+      + "mirror to take. Nothing was changed.";
+    notice($("tlStat").textContent);
+    return;
+  }
+  k.pose = m;
+  if (k.arm === "front") k.arm = "back";
+  else if (k.arm === "back") k.arm = "front";
+  bumpKeys();
+  clearBadMarks();
+  if (i === selKey) { pose = [...k.pose]; poseChanged(false); renderSliders(); }
+  renderTimeline();
+  $("tlStat").textContent = "move " + i + " mirrored — the same shape on the other arm"
+    + (k.arm ? ", now played by the " + k.arm + " arm" : "");
+}
 
 // ------- playback preview (cosine ease per segment — same as the firmware)
 function poseAt(ms) {
@@ -2761,6 +3070,31 @@ const DIM_LABELS = {
 function renderRigUI() {
   const jb = $("rigJoints");
   jb.innerHTML = "";
+  // WHICH ARM THE AUDIENCE SEES FIRST (A31-6). One setting for the whole rig,
+  // above the joint table, because every move that says "front arm" means
+  // whichever arm this names - and it changes when the nong is turned round.
+  const fa = document.createElement("div"); fa.className = "row";
+  const fal = document.createElement("label");
+  fal.className = "lbl"; fal.htmlFor = "rigFrontArm";
+  fal.textContent = "Arm nearest the audience";
+  const fas = document.createElement("select");
+  fas.id = "rigFrontArm";
+  [["L", "the left arm is in front"], ["R", "the right arm is in front"]]
+    .forEach(([v, label]) => {
+      const o = document.createElement("option"); o.value = v; o.textContent = label;
+      fas.appendChild(o);
+    });
+  fas.value = frontArmSide();
+  fas.title = "left and right are the ROBOT's own left and right. This says "
+            + "which of them the audience sees first, so a move can be given to "
+            + "the front arm or the back arm by name.";
+  fas.onchange = () => {
+    RIG.frontArm = fas.value === "R" ? "R" : "L";
+    rigChanged();
+    renderTimeline();          // every pinned move now means the other arm
+  };
+  fa.append(fal, fas);
+  jb.appendChild(fa);
   // header
   const hdr = document.createElement("div"); hdr.className = "rigjrow";
   ["joint", "zero°", "start°", "min°", "max°", "axis", "inv"].forEach(t => {
@@ -3345,6 +3679,7 @@ async function pullLimits() {
 // list of sequence NAMES saved by the hub in shows/*.json (main_python/shows.py);
 // the hub plays it as one run, so it works over WiFi or the cable.
 let showDraft = { name: "", loop: false, items: [] };
+let showOnBar = "";      // the show currently drawn on the time bar, "" = none
 
 async function refreshShows() {
   try {
@@ -3378,16 +3713,53 @@ function renderShow() {
     const name = document.createElement("span"); name.style.flex = "1"; name.textContent = it.seq;
     const hold = document.createElement("input");
     hold.type = "number"; hold.min = 0; hold.step = 100; hold.value = it.hold || 0; hold.style.width = "80px";
-    hold.title = "pause after this sequence, in ms";
-    hold.onchange = () => { it.hold = Math.max(0, +hold.value || 0); };
+    hold.title = "stand still for this long AFTER this sequence, in ms. 0 = run straight on into the next one.";
+    hold.onchange = () => { it.hold = Math.max(0, +hold.value || 0); showChanged(); };
+    // REPEAT, in the operator's two ways of saying it (user 2026-09-23: *loop
+    // for how many time like 60S or 30S or make it loop for 4 time 3 time*).
+    // The mode picks which unit the one number is in, so there is never a
+    // count and a duration both set and only one of them obeyed.
+    const mode = document.createElement("select");
+    mode.style.width = "110px";
+    mode.title = "play this sequence again: a number of times, or for a number of seconds";
+    [["", "play once"], ["times", "repeat × times"], ["seconds", "repeat for seconds"]]
+      .forEach(([v, label]) => {
+        const o = document.createElement("option"); o.value = v; o.textContent = label; mode.appendChild(o);
+      });
+    mode.value = it.repeat_mode || "";
+    const rep = document.createElement("input");
+    rep.type = "number"; rep.min = mode.value === "times" ? 2 : 1;
+    rep.step = mode.value === "times" ? 1 : 5;
+    rep.style.width = "70px";
+    rep.value = it.repeat || "";
+    rep.style.display = mode.value ? "" : "none";
+    rep.title = mode.value === "seconds"
+      ? "keep repeating until this many seconds have passed. A pass is never cut in half, so the last one finishes."
+      : "how many times this sequence plays in a row";
+    mode.onchange = () => {
+      it.repeat_mode = mode.value;
+      if (!mode.value) it.repeat = 0;
+      else if (!(it.repeat > 0)) it.repeat = mode.value === "times" ? 2 : 30;
+      renderShow(); showChanged();
+    };
+    rep.onchange = () => {
+      it.repeat = Math.max(mode.value === "times" ? 2 : 0.1, +rep.value || 0);
+      renderShow(); showChanged();
+    };
+    const unit = document.createElement("span"); unit.className = "mini";
+    unit.textContent = mode.value === "seconds" ? "s" : (mode.value === "times" ? "×" : "");
     const btn = (label, title, fn) => { const b = document.createElement("button"); b.textContent = label; b.title = title; b.onclick = fn; return b; };
-    row.append(n, name, document.createTextNode("pause"), hold,
-      btn("▲", "play earlier", () => moveShowItem(i, -1)),
-      btn("▼", "play later", () => moveShowItem(i, 1)),
-      btn("✕", "take out of this show", () => { showDraft.items.splice(i, 1); renderShow(); }));
+    row.append(n, name, mode, rep, unit, document.createTextNode("pause"), hold,
+      btn("▲", "play earlier", () => { moveShowItem(i, -1); showChanged(); }),
+      btn("▼", "play later", () => { moveShowItem(i, 1); showChanged(); }),
+      btn("✕", "take out of this show", () => { showDraft.items.splice(i, 1); renderShow(); showChanged(); }));
     box.appendChild(row);
   });
 }
+// The show on the time bar is redrawn whenever the show changes, but ONLY if
+// it is already on it: loading a show over keyframes somebody is editing,
+// because they typed a pause, would be the edit disappearing under them.
+function showChanged() { if (showOnBar) showOnTimeline(true); }
 function readShowForm() {
   showDraft.name = $("showName").value.trim();
   showDraft.loop = $("showLoop").checked;
@@ -3414,6 +3786,66 @@ async function openShow() {
   showDraft = r.show; showDraft.name = showDraft.name || n;
   renderShow();
   $("showStat").textContent = "opened " + n + " (" + showDraft.items.length + " sequences).";
+  // User 2026-09-23: *when click in show and we have the all sequence show all
+  // of it in nong studio too in series*. Opening a show IS the click, so the
+  // whole chain goes on the time bar without asking - unless there are unsaved
+  // keyframes on it, which are somebody's work and are never overwritten.
+  await showOnTimeline(false, true);
+}
+// Every sequence of the show on ONE timeline, end to end, as the robot runs it.
+// The steps come from the HUB (/api/show/steps), not from re-reading the yaml
+// here: the chaining rule and the repeats live in main_python/shows.py, and a
+// second copy in JavaScript would drift until the editor showed a run the
+// robot does not perform.
+async function showOnTimeline(quiet, onlyIfSafe) {
+  const s = readShowForm();
+  if (!s.items.length) {
+    if (!quiet) $("showStat").textContent = "add at least one sequence first.";
+    return false;
+  }
+  if (onlyIfSafe && keys.length > 1 && hasUnsavedKeys() && !showOnBar) {
+    $("showStat").textContent = "opened " + (s.name || "this show") +
+      " — the time bar still holds unsaved keyframes, so it was left alone. " +
+      "Press ⇣ Show on the time bar to replace them.";
+    return false;
+  }
+  try {
+    const j = await showPost("/api/show/steps", { show: s });
+    const steps = j.steps || [], marks = j.marks || [];
+    if (steps.length < 2) throw new Error("this show has fewer than two poses");
+    const startOf = {};
+    marks.forEach(m => {
+      // pass 1 of an item is where its NAME goes; later passes say which pass
+      startOf[m.step] = m.pass > 1
+        ? m.seq.replace(/\.yaml$/, "") + " ×" + m.pass
+        : m.seq.replace(/\.yaml$/, "");
+    });
+    keys = steps.map((st, i) => {
+      const k = { pose: st.pose.map(Number), t: Math.round(st.t || 0),
+                  hold: Math.round(st.hold || 0) };
+      if (startOf[i] !== undefined) { k.name = startOf[i]; k.seqStart = true; }
+      // the file's own cue lines ride along so a preview plays the same music
+      if (st.cues && st.cues.length) k.cues = st.cues.slice();
+      // the hub's wire name is cues_after; Studio's own field is cuesAfter
+      if (st.cues_after && st.cues_after.length) k.cuesAfter = st.cues_after.slice();
+      return k;
+    });
+    selKey = 0;
+    playT = 0;
+    bumpKeys();
+    clearBadMarks();
+    renderTimeline();
+    showOnBar = s.name || "(unsaved show)";
+    const secs = (keys.reduce((a, k) => a + k.t + (k.hold || 0), 0) / 1000).toFixed(1);
+    $("showStat").textContent = `${showOnBar} is on the time bar: ${marks.length} ` +
+      `sequence pass(es), ${keys.length} keyframes, ${secs}s. Saving a SEQUENCE ` +
+      "from here would save the whole show as one file.";
+    return true;
+  } catch (e) {
+    $("showStat").textContent = "could not draw the show: " + (e.message || e);
+    notice($("showStat").textContent);
+    return false;
+  }
 }
 async function showPost(path, body) {
   const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -3818,6 +4250,10 @@ async function saveProject() {
   const name = ($("projName").value || "project").trim();
   const project = {
     keys, speedDps: speedDps(), maxDps: maxDps(), loop: $("loopChk").checked,
+    // The planning peak limit rides with the project: without it, reopening a
+    // project re-times every automatic move against a different 60 °/s default
+    // and the show quietly got slower (A31-4).
+    safeDps: SAFE_DPS,
     meshes: meshCfg, addons,
     robotIp: $("robotIp").value, seqName: $("seqName").value,
     // The chain is part of the show: a project saved with one and reopened
@@ -3905,6 +4341,13 @@ async function loadProject(file) {
   bumpKeys();
   $("speedDps").value = p.speedDps || 120;
   $("maxDps").value = p.maxDps || 400;
+  // A connected board's own limit still wins: adoptBoardSafety runs on connect
+  // and overwrites this. Saved projects only decide what Studio plans with
+  // while no robot is telling it otherwise.
+  if (p.safeDps >= 5 && !boardSafeDpsMax) {
+    SAFE_DPS = Math.round(p.safeDps);
+    $("safeDpsInput").value = String(SAFE_DPS);
+  }
   clampKeyTimes();
   $("loopChk").checked = !!p.loop;
   $("robotIp").value = p.robotIp || "";
@@ -4245,6 +4688,249 @@ async function refreshModels() {
   const r = await fetch("/api/list?kind=models").then(r => r.json());
   modelFiles = (r.files || []).filter(f => isStl(f) || isImg(f));
   renderModelsUI();
+}
+// --- URDF import ---
+//
+// User 2026-09-23: *we already have all step file when i drag it cannot be as
+// my aspect make can use urdf too*.
+//
+// A STEP file is a solid-modelling format. A browser cannot open one, and an
+// STL dragged in on its own carries no origin at all - so every part landed at
+// the middle of the robot and had to be rotated, offset and scaled by hand
+// until it looked right. That is what "cannot be as my aspect" was.
+//
+// A URDF carries exactly the numbers that were missing: where each part sits,
+// which way it is turned, how big it is, and which part hangs off which. So
+// importing one fills the boxes in instead of leaving them to be guessed.
+//
+// WHAT IS SETTABLE, BECAUSE NO TWO EXPORTS AGREE:
+//   * units. URDF is metres; Studio is millimetres. SolidWorks' sw2urdf writes
+//     its STL meshes in metres too, so the default is x1000 for both.
+//   * which way is up. URDF/ROS is Z-up X-forward; this editor is Y-up
+//     Z-forward. The default mapping is that one, and it can be changed
+//     without editing code - a CAD export that was built Y-up already would
+//     otherwise arrive lying on its side with no way to say so.
+//   * which link is which part. An export names links after SolidWorks
+//     components, so the names are guessed and then shown for correction.
+// None of it is hidden: the import says what it matched, what it could not,
+// and what it changed.
+
+const URDF_DEF = { mm: 1000, up: "z" };
+let urdfDoc = null;         // the parsed file, kept so a re-map costs no re-read
+let urdfMap = {};           // link name -> Studio part ("" = not used)
+let urdfName = "";
+
+// Guesses a Studio part from a link name. DATA, not code: the next naming
+// habit is one more row here and nothing else.
+const URDF_GUESS = [
+  [/(^|[_\- ])(l|left)([_\- ]|$).*(upper|shoulder|humerus)/i, "L_upper"],
+  [/(^|[_\- ])(r|right)([_\- ]|$).*(upper|shoulder|humerus)/i, "R_upper"],
+  [/(^|[_\- ])(l|left)([_\- ]|$).*(fore|lower|elbow|radius)/i, "L_fore"],
+  [/(^|[_\- ])(r|right)([_\- ]|$).*(fore|lower|elbow|radius)/i, "R_fore"],
+  [/head|skull|face/i, "head"],
+  [/torso|body|chest|trunk|base/i, "torso"],
+];
+function urdfGuessPart(link) {
+  for (const [re, part] of URDF_GUESS) if (re.test(link)) return part;
+  return "";
+}
+
+function urdfNums(el, attr, fallback) {
+  const raw = el && el.getAttribute(attr);
+  if (!raw) return fallback.slice();
+  const n = raw.trim().split(/\s+/).map(Number);
+  return n.length === 3 && n.every(Number.isFinite) ? n : fallback.slice();
+}
+
+// URDF axes -> this editor's axes. ROS is Z-up X-forward; three.js here is
+// Y-up Z-forward, so (x, y, z) becomes (y, z, x) - a cyclic swap, which keeps
+// the handedness and therefore keeps every rotation turning the same way.
+function urdfToStudioXYZ(v, up) {
+  return up === "y" ? [v[0], v[1], v[2]] : [v[1], v[2], v[0]];
+}
+// The same swap for roll-pitch-yaw. URDF fixed-axis rpy is Rz(yaw)*Ry(pitch)*
+// Rx(roll), which is THREE's Euler order "ZYX" with the SAME three numbers -
+// so the only thing to do is move each number onto the axis it now turns
+// about, and hand the result back in degrees, which is what meshCfg holds.
+function urdfToStudioRPY(rpy, up) {
+  const s = urdfToStudioXYZ(rpy, up);
+  return s.map(r => Math.round(THREE.MathUtils.radToDeg(r) * 10) / 10);
+}
+
+// The one visual of a link, as {file, rot, off, scale}, or null when the link
+// has no mesh (a URDF has plenty: bearings, frames, fasteners).
+function urdfVisual(link, opt) {
+  const vis = link.querySelector("visual");
+  const mesh = vis && vis.querySelector("geometry mesh");
+  if (!mesh) return null;
+  const file = (mesh.getAttribute("filename") || "").split(/[\\/]/).pop();
+  if (!file) return null;
+  const org = vis.querySelector("origin");
+  const off = urdfToStudioXYZ(urdfNums(org, "xyz", [0, 0, 0]), opt.up)
+    .map(v => Math.round(v * opt.mm * 10) / 10);
+  const rot = urdfToStudioRPY(urdfNums(org, "rpy", [0, 0, 0]), opt.up);
+  // <mesh scale> is a per-axis scale; this editor has one number, so a mesh
+  // scaled differently per axis is reported rather than silently flattened.
+  const ms = urdfNums(mesh, "scale", [1, 1, 1]);
+  const even = Math.abs(ms[0] - ms[1]) < 1e-9 && Math.abs(ms[1] - ms[2]) < 1e-9;
+  return { file, off, rot, scale: ms[0] * opt.mm, even };
+}
+
+// Parse, and say what is in it. Never touches the rig: reading a file and
+// changing the robot are two different decisions, and one button that does
+// both cannot be undone halfway.
+function urdfParse(text) {
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  if (doc.querySelector("parsererror"))
+    throw new Error("this file is not valid XML, so it cannot be a URDF");
+  const robot = doc.querySelector("robot");
+  if (!robot) throw new Error("no <robot> in this file - is it a URDF?");
+  const links = [...doc.querySelectorAll("robot > link")];
+  if (!links.length) throw new Error("this URDF has no links in it");
+  return { doc, robot, links,
+           joints: [...doc.querySelectorAll("robot > joint")] };
+}
+
+// The distance between two joint origins, in mm - the real length of the bar
+// between them. This is the number that makes an imported robot the right SIZE
+// instead of merely the right shape.
+function urdfJointLengths(parsed, opt) {
+  const byChild = {};
+  parsed.joints.forEach(j => {
+    const child = j.querySelector("child");
+    const parent = j.querySelector("parent");
+    if (!child || !parent) return;
+    byChild[child.getAttribute("link")] = {
+      parent: parent.getAttribute("link"),
+      xyz: urdfNums(j.querySelector("origin"), "xyz", [0, 0, 0]),
+    };
+  });
+  const out = {};
+  Object.keys(byChild).forEach(childLink => {
+    const part = urdfMap[childLink];
+    if (!part) return;
+    const v = byChild[childLink].xyz;
+    out[part] = Math.round(Math.hypot(v[0], v[1], v[2]) * opt.mm * 10) / 10;
+  });
+  return out;
+}
+
+// ---- the screen -----------------------------------------------------------
+async function importUrdf() {
+  const f = $("urdfFile").files[0];
+  if (!f) {
+    $("urdfStat").textContent = "choose a .urdf file first. Its .stl meshes " +
+      "must be imported too (Models > Import), or the parts have nothing to draw.";
+    return;
+  }
+  try {
+    const parsed = urdfParse(await f.text());
+    urdfDoc = parsed;
+    urdfName = f.name;
+    urdfMap = {};
+    parsed.links.forEach(l => {
+      const name = l.getAttribute("name") || "";
+      urdfMap[name] = urdfGuessPart(name);
+    });
+    renderUrdfUI();
+    const matched = Object.values(urdfMap).filter(Boolean).length;
+    $("urdfStat").textContent = `${f.name}: ${parsed.links.length} links, ` +
+      `${parsed.joints.length} joints. ${matched} matched to a body part by ` +
+      "name — check them below, then press Use this URDF.";
+  } catch (e) {
+    $("urdfStat").textContent = "could not read it: " + (e.message || e);
+    notice($("urdfStat").textContent);
+  }
+}
+function urdfOptions() {
+  return { mm: +$("urdfMm").value || URDF_DEF.mm,
+           up: $("urdfUp").value || URDF_DEF.up };
+}
+function renderUrdfUI() {
+  const box = $("urdfLinks");
+  if (!box) return;
+  box.innerHTML = "";
+  if (!urdfDoc) {
+    box.innerHTML = "<div class='mini'>No URDF loaded yet.</div>";
+    return;
+  }
+  const opt = urdfOptions();
+  urdfDoc.links.forEach(l => {
+    const name = l.getAttribute("name") || "";
+    const vis = urdfVisual(l, opt);
+    const row = document.createElement("div"); row.className = "row";
+    const nm = document.createElement("span");
+    nm.style.flex = "1"; nm.textContent = name;
+    nm.title = vis ? "mesh: " + vis.file : "this link has no mesh to draw";
+    const sel = document.createElement("select");
+    sel.innerHTML = "<option value=''>(not used)</option>";
+    MESH_PARTS.forEach(p => {
+      const o = document.createElement("option"); o.value = o.textContent = p;
+      if (urdfMap[name] === p) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.disabled = !vis;
+    sel.onchange = () => { urdfMap[name] = sel.value; };
+    const note = document.createElement("span");
+    note.className = "mini";
+    note.textContent = vis ? (vis.even ? vis.file : vis.file + " ⚠ uneven scale")
+                           : "no mesh";
+    row.append(nm, sel, note);
+    box.appendChild(row);
+  });
+}
+// Apply it. Separate from reading the file on purpose: this is the step that
+// changes what is on screen, and it says exactly what it changed.
+function useUrdf() {
+  if (!urdfDoc) { $("urdfStat").textContent = "load a .urdf file first."; return; }
+  const opt = urdfOptions();
+  const done = [], missing = [], uneven = [];
+  urdfDoc.links.forEach(l => {
+    const name = l.getAttribute("name") || "";
+    const part = urdfMap[name];
+    if (!part) return;
+    const vis = urdfVisual(l, opt);
+    if (!vis) return;
+    if (!vis.even) uneven.push(vis.file);
+    // The mesh file has to be in models/ already: a URDF names its meshes, it
+    // does not carry them. Say which ones are absent instead of drawing
+    // nothing and letting it read as a broken import.
+    if (!modelFiles.some(f => f.toLowerCase() === vis.file.toLowerCase()))
+      missing.push(vis.file);
+    meshCfg[part] = { ...defMeshCfg(part), file: vis.file,
+                      rot: vis.rot, off: vis.off, scale: vis.scale,
+                      color: meshCfg[part].color };
+    done.push(part);
+  });
+  if (!done.length) {
+    $("urdfStat").textContent = "nothing was changed: no link is matched to a " +
+      "body part yet. Pick a part beside a link above.";
+    return;
+  }
+  // The joint origins are the real bar lengths. They are offered, not forced:
+  // a rig that somebody measured by hand must not be overwritten by a CAD file
+  // without being asked.
+  const lens = urdfJointLengths(urdfDoc, opt);
+  const dimOf = { L_upper: "upperLenL", R_upper: "upperLenR",
+                  L_fore: "foreLenL", R_fore: "foreLenR" };
+  const offer = Object.keys(lens).filter(p => dimOf[p] && lens[p] > 1);
+  let sized = 0;
+  if (offer.length && confirm(
+      "Also set the arm lengths from this URDF?\n\n" +
+      offer.map(p => "  " + dimOf[p] + ": " + RIG.dims[dimOf[p]] + " → " + lens[p] + " mm").join("\n") +
+      "\n\nOK sets them. Cancel keeps the lengths you have.")) {
+    offer.forEach(p => { RIG.dims[dimOf[p]] = lens[p]; sized++; });
+  }
+  saveMeshes();
+  if (sized) rigChanged(); else buildRobot();
+  renderModelsUI();
+  $("urdfStat").textContent =
+    `${urdfName}: placed ${done.length} part(s) — ${done.join(", ")}` +
+    (sized ? `, and set ${sized} arm length(s)` : "") + ". " +
+    (missing.length ? `Import these meshes too (Models > Import): ${missing.join(", ")}. ` : "") +
+    (uneven.length ? `${uneven.join(", ")} is scaled differently on each axis; ` +
+                     "this editor has one scale, so the first was used. " : "") +
+    "Nothing else in the rig was touched.";
 }
 // --- robot link ---
 // Transports, one command language (see firmware COMMANDS.md):

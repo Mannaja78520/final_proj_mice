@@ -135,8 +135,11 @@
         </select>
       </div>
       <div class="mini">or use the <b>view buttons</b> at the top-right of the 3D
-        view (Front / Top / Left…): the camera snaps straight at that plane and
-        Shift+dragging a joint moves it flat in that plane — like Fusion/SolidWorks.</div>
+        view (Front / Top / Left…): the camera snaps straight at that plane, and
+        <b>stays</b> there — you cannot orbit out of a flat view by accident, and
+        dragging a hand moves it flat in that plane with no Shift held.
+        Press <b>3D</b> to turn the view loose again; there, dragging a hand needs
+        Shift, because a plain drag orbits. Like Fusion/SolidWorks.</div>
     </details>
 
     <div class="card" data-stab="sequence">
@@ -153,16 +156,22 @@
       </div>
       <div class="row"><label class="lbl" for="safeDpsInput">Peak speed limit</label>
         <input type="number" id="safeDpsInput" value="60" min="5" max="1000" step="1"
-               style="width:70px" disabled> °/s
+               style="width:70px" onchange="safetyLimitChanged()"
+               title="the fastest a joint is allowed to move at the peak of an ease. This is what usually stops a move getting shorter: above about two thirds of this number, raising Show speed changes nothing. Editing it re-times the moves here; Save to robot makes the robot use it too."> °/s
         <button id="saveSafeDps" class="secondary" onclick="saveSafetySpeed()" disabled>Save to robot</button>
       </div>
-      <p id="safeSpeedStat" class="mini" role="status">Connect to read the robot's active limit. A saved change needs a restart.</p>
+      <p id="safeSpeedStat" class="mini" role="status">Studio plans at 60 °/s. Connect to read the robot's own limit. A saved change needs a restart.</p>
       <div class="mini">time between keyframes = biggest joint change ÷ show speed.
-        <b>Servo max</b> is the physical limit (MG90S ≈ 400 °/s): each keyframe
-        has a <b>minimum time</b> = change ÷ max — you can always make a move
-        slower, but never faster than the servos can really go, so the arm
-        always reaches the pose. The robot also enforces its peak speed limit.
-        Raising that limit makes moves faster and can cause harder impacts.
+        Three things can make a move longer than that, and the move's own line
+        says which one did it:
+        <b>Servo max</b>, the physical limit (MG90S ≈ 400 °/s);
+        <b>Peak speed limit</b>, the safety cap — a move eases in and out, so
+        its peak is about 1.6× its average and the cap bites at roughly ⅔ of
+        this number (at 60 °/s, Show speed above ~38 °/s changes nothing);
+        and the 80 ms shortest-move floor.
+        You can always make a move slower, never faster than the servos can
+        really go, so the arm always reaches the pose.
+        Raising the peak limit makes moves faster and can cause harder impacts.
         Do not raise it while a joint loses torque.</div>
     </div>
 
@@ -296,10 +305,12 @@
       <div id="showItems"></div>
       <div class="row">
         <button onclick="saveShow()">💾 Save show</button>
+        <button onclick="showOnTimeline()"
+                title="put every sequence of this show on the time bar below, end to end, exactly as the robot will run it — then you can scrub, preview and see where each one starts">⇣ Show on the time bar</button>
         <button class="primary" onclick="playShow()">▶ Run on robot</button>
         <button onclick="stopShow()">⏹ Stop</button>
       </div>
-      <div class="statline" id="showStat">Pick sequences in the order they should play. Pause is the wait after that sequence, in ms.</div>
+      <div class="statline" id="showStat">Pick sequences in the order they should play. One sequence runs straight into the next — set <b>pause</b> only where you want the robot to stand still. <b>Repeat</b> plays a sequence again: a number of times, or for a number of seconds.</div>
     </div>
     </div><!-- /tabMove -->
 
@@ -324,6 +335,41 @@
         body part — they follow that part's movement and never replace it.</div>
       <div id="addonList"></div>
       <div class="row"><button onclick="addAddon()">+ Add piece</button></div>
+    </div>
+
+    <!-- URDF import (A31-7, user 2026-09-23): an STL alone carries no origin,
+         so every part had to be rotated and offset by hand until it looked
+         right. A URDF carries those numbers. Logic in app_parts/urdf_import.js. -->
+    <div class="card" data-stab="setup">
+      <h2>Build it from a URDF <span class="mini">(instead of placing every STL by hand)</span></h2>
+      <div class="mini">A <b>STEP</b> file cannot be opened in a browser, and an
+        <b>STL</b> on its own does not say where the part belongs — which is why
+        a dragged-in part lands in the middle and has to be nudged into place.
+        A <b>URDF</b> carries the position, the turn, the size and which part
+        hangs off which, so importing one fills those boxes in for you.
+        <br>From SolidWorks: use the <b>sw2urdf</b> add-in (Tools ▸ Export as
+        URDF). It writes a <b>.urdf</b> file and a <b>meshes</b> folder — import
+        the STL meshes above first, then the .urdf here.</div>
+      <div class="row">
+        <input type="file" id="urdfFile" accept=".urdf,.xml" style="flex:1">
+        <button onclick="importUrdf()">Read URDF</button>
+      </div>
+      <div class="row">
+        <label class="lbl" for="urdfMm">Sizes are in</label>
+        <select id="urdfMm" onchange="renderUrdfUI()">
+          <option value="1000">metres (normal for URDF)</option>
+          <option value="1">millimetres already</option>
+          <option value="10">centimetres</option>
+        </select>
+        <label class="lbl" for="urdfUp">Up is</label>
+        <select id="urdfUp" onchange="renderUrdfUI()">
+          <option value="z">Z (normal for URDF / ROS)</option>
+          <option value="y">Y (already like this editor)</option>
+        </select>
+      </div>
+      <div id="urdfLinks"><div class="mini">No URDF loaded yet.</div></div>
+      <div class="row"><button class="primary" onclick="useUrdf()">Use this URDF</button></div>
+      <div class="statline" id="urdfStat">Reading a URDF changes nothing on its own — it shows what it found, you check the parts, then press Use this URDF.</div>
     </div>
 
     <div class="card" data-stab="setup">

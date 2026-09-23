@@ -21,15 +21,42 @@ function deltaDeg(from, to) {
   for (let i = 0; i < NJ; i++) dmax = Math.max(dmax, Math.abs(to[i] - from[i]));
   return dmax;
 }
-function minTime(from, to) {
+// The floor AND the reason for it. Typing a faster °/s did nothing and said
+// nothing (user 2026-09-23: *when input the deg/s in sequence it not change
+// the time for me anymore*) because the peak limit had already won: with the
+// board's safe_dps at 60, pi/2 x delta / 60 floors every move at delta/38.2,
+// so any speed above about 38 °/s produces the identical time. The number was
+// never wrong; it was invisible. Every caller that shows a time to a person
+// asks for the reason too.
+function minTimeWhy(from, to) {
   // per joint (the slow WAIST servo counts too), the slowest joint wins
-  let need = 0;
-  for (let i = 0; i < NJ; i++)
-    need = Math.max(need, Math.abs(to[i] - from[i]) / jointMaxDps(i));
+  let servo = 0, slowest = 0;
+  for (let i = 0; i < NJ; i++) {
+    const need = Math.abs(to[i] - from[i]) / jointMaxDps(i);
+    if (need > servo) { servo = need; slowest = i; }
+  }
   // safety floor, same as firmware nongmath::safeDuration (ease peaks at pi/2 x average)
-  need = Math.max(need, deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, SAFE_DPS));
-  return Math.max(MIN_MOVE_MS, Math.ceil(need * 1000));
+  const peak = deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, SAFE_DPS);
+  const need = Math.max(servo, peak);
+  const ms = Math.max(MIN_MOVE_MS, Math.ceil(need * 1000));
+  let why = "the 80 ms shortest-move floor", fix = "";
+  if (need * 1000 > MIN_MOVE_MS) {
+    if (peak >= servo) {
+      why = `the robot's peak speed limit, ${SAFE_DPS} °/s`;
+      fix = `Above about ${flatDps()} °/s nothing gets faster. Raise ` +
+            `Peak speed limit (Timing) to shorten it.`;
+    } else {
+      why = `${JOINT_LABELS[slowest] || ("joint " + (slowest + 1))} at its ` +
+            `servo max, ${Math.round(jointMaxDps(slowest))} °/s`;
+      fix = "Raise Servo max, or that joint's servo °/s in Setup > rig.";
+    }
+  }
+  return { ms, why, fix };
 }
+function minTime(from, to) { return minTimeWhy(from, to).ms; }
+// The show speed above which the peak limit decides every safety-limited move.
+// pi/2 is the ease curve's peak-to-average ratio, the same one the firmware uses.
+function flatDps() { return Math.floor(SAFE_DPS * 2 / Math.PI); }
 // A move runs at the sequence's speed unless that keyframe overrides it, so one
 // gesture can be slower or snappier than the rest of the show without hand-
 // computing its time. Speed and time are two views of the SAME thing: set a
@@ -46,10 +73,64 @@ function autoTime(from, to, dps) {
 function keyMin(i) { // physical minimum for keyframe i (0 = entry, unknown start)
   return i > 0 && keys[i - 1] ? minTime(keys[i - 1].pose, keys[i].pose) : MIN_MOVE_MS;
 }
+// A speed the servos cannot hold used to be replaced in the box with no word
+// said, so it read as *the number will not change*. Say what was kept and why.
 function speedChanged() {
-  if (speedDps() > slowestDps()) $("speedDps").value = slowestDps();
+  const asked = speedDps();
+  let said = "";
+  if (asked > slowestDps()) {
+    $("speedDps").value = slowestDps();
+    said = `Show speed kept at ${slowestDps()} °/s — the slowest servo on this ` +
+           `robot cannot go faster. Raise Servo max to allow more.`;
+  }
   recalcTimes();
   renderTimeline();
+  $("tlStat").textContent = said || timingSummary();
+}
+// One sentence naming the limit that is actually deciding move times now, so
+// the answer to *why did my number change nothing* is on the screen and not
+// only in a tooltip.
+function timingSummary() {
+  let peak = 0, servo = 0, free = 0;
+  for (let i = 1; i < keys.length; i++) {
+    if (!keys[i - 1]) continue;
+    const w = minTimeWhy(keys[i - 1].pose, keys[i].pose);
+    const auto = Math.max(MIN_MOVE_MS,
+      Math.round(deltaDeg(keys[i - 1].pose, keys[i].pose) / keyDps(i) * 1000));
+    if (auto >= w.ms) free++;
+    else if (w.why.indexOf("peak") >= 0) peak++;
+    else servo++;
+  }
+  if (!peak && !servo) return `every move runs at the speed you set (${speedDps()} °/s)`;
+  const bits = [];
+  if (peak) bits.push(`${peak} held by the robot's peak speed limit (${SAFE_DPS} °/s — ` +
+                      `above about ${flatDps()} °/s nothing gets faster)`);
+  if (servo) bits.push(`${servo} held by a servo's own top speed`);
+  return `${free} move(s) run at your speed; ` + bits.join(", ") +
+         ". Change Peak speed limit or Servo max in Timing to shorten them.";
+}
+// The peak limit is the Studio's own planning number. It was locked until a
+// board was connected, so away from the robot there was no way to make any
+// move faster at all (user 2026-09-23: *max servo speed in show i cannot
+// adjust anymore*). Editing it re-times the automatic moves here; SAVING it to
+// the board is still a separate, connected-only step, because a Studio that
+// plans faster than the robot allows would be lying about the show.
+function safetyLimitChanged() {
+  const want = Math.round(+$("safeDpsInput").value || 0);
+  if (!(want >= 5)) { $("safeDpsInput").value = SAFE_DPS; return; }
+  const wasAuto = keys.map((k, i) => i > 0 && keys[i - 1] &&
+    k.t === autoTime(keys[i - 1].pose, k.pose, keyDps(i)));
+  SAFE_DPS = want;
+  for (let i = 1; i < keys.length; i++)
+    if (wasAuto[i]) keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
+  bumpKeys();
+  clampKeyTimes();
+  renderTimeline();
+  $("safeSpeedStat").textContent =
+    `Planning at ${want} °/s. Show speed above about ${flatDps()} °/s will not ` +
+    `shorten a safety-limited move.` +
+    (boardSafeDpsMax ? " Press Save to robot to make the robot use it too."
+                     : " Not saved to any robot — connect first, then Save to robot.");
 }
 // INFO is the active board value. CFG only saves the NEXT boot's value, so do
 // not change SAFE_DPS when the operator presses Save.
@@ -62,8 +143,11 @@ function adoptBoardSafety(module) {
   if (!(safe >= 5) || !(max >= 5) || !Number.isFinite(max)) {
     boardSafeDpsMax = 0;
     boardSafePeer = 0;
-    input.disabled = button.disabled = true;
-    $("safeSpeedStat").textContent = "This board does not report its safety speed. No setting was changed.";
+    input.disabled = false;         // still the Studio's own planning number
+    button.disabled = true;         // but there is nothing to save it to
+    $("safeSpeedStat").textContent = "This board does not report its safety speed, so " +
+      `nothing was changed on it. Studio still plans at ${SAFE_DPS} °/s — change it here ` +
+      "to make the editor's times shorter.";
     return;
   }
   // Only automatically timed moves shorten. A hand-typed time is the user's
@@ -84,9 +168,9 @@ function adoptBoardSafety(module) {
     clampKeyTimes();
     renderTimeline();
   }
-  const flat = Math.floor(safe * 2 / Math.PI);
   $("safeSpeedStat").textContent = `Active peak limit: ${safe} °/s. ` +
-    `For safety-limited moves, Show speed above about ${flat} °/s will not shorten them.` +
+    `For safety-limited moves, Show speed above about ${flatDps()} °/s will not shorten ` +
+    "them — raise this number and press Save to robot to go faster." +
     (boardSafePeer ? ` Linked board #${boardSafePeer} needs the same limit.` : "");
 }
 function recalcTimes() {   // keeps each keyframe's own speed override

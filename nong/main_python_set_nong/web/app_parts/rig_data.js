@@ -19,6 +19,21 @@ const AXIS_LABEL = { x: "roll (X)", y: "pitch (Y)", z: "yaw (Z)" };
 // base rotation sense per joint (mirrors right arm); "inv" in the rig flips it
 const BASE_DIR = [-1, +1, -1, +1, -1, -1, -1, -1, +1, +1];
 
+// ---- the two arms, as the AUDIENCE sees them (A31-6) ---------------------
+// User 2026-09-23: a move picks which arm plays it, so the same move can be
+// mirrored. On stage nobody says "L_SH_P": they say the front arm, the one
+// nearer the audience. Which physical arm that is depends on how the nong is
+// turned, so it is a RIG setting and not a constant here.
+const ARM_JOINTS = { L: [0, 1, 2, 3], R: [4, 5, 6, 7] };
+function frontArmSide() { return RIG.frontArm === "R" ? "R" : "L"; }
+function backArmSide() { return frontArmSide() === "L" ? "R" : "L"; }
+// "front"/"back" -> the four joint numbers it owns. Anything else = both arms.
+function armJoints(which) {
+  if (which === "front") return ARM_JOINTS[frontArmSide()];
+  if (which === "back") return ARM_JOINTS[backArmSide()];
+  return null;
+}
+
 // The editable rig: body dimensions (mm, visual only — timing never depends
 // on them) + per-joint calibration. "zero" = the servo angle at which that
 // joint is straight (arm hanging along the body). If your real robot at
@@ -90,6 +105,11 @@ const DEFAULT_RIG = {
   // Scaled to the real spherical joints (~89 mm dia -> r ~42) and ~10 mm bars.
   jointR: [42, 40, 42, 40],
   barR:   [12, 10, 12, 10],
+  // WHICH ARM THE AUDIENCE SEES FIRST (A31-6). "L" or "R". A move can be
+  // pinned to the front or the back arm, and which physical arm that is
+  // depends on how the nong stands on stage - so it is set here once, not
+  // decided again in every sequence.
+  frontArm: "L",
 };
 function mergeRig(saved) {
   const r = { ...JSON.parse(JSON.stringify(DEFAULT_RIG)), ...saved,
@@ -125,6 +145,7 @@ function mergeRig(saved) {
   // The SHRUG 4-bar calibration. An empty list means "not measured", which is
   // the old symmetric behaviour — so every rig saved before this keeps looking
   // exactly as it did until you actually measure the linkage.
+  if (r.frontArm !== "R") r.frontArm = "L";   // any older rig, or a typo
   if (!Array.isArray(r.shrugCurve)) r.shrugCurve = [];
   r.shrugCurve = r.shrugCurve
     .filter(pt => pt && isFinite(+pt.j))
@@ -314,6 +335,7 @@ async function getSettingsFrom() {
   } catch (e) { setSettingsStat("could not get it: " + (e.message || e)); }
 }
 function jdir(i) { return BASE_DIR[i] * (RIG.invert[i] ? -1 : 1); }
+
 // clamp a servo angle to that joint's own [min,max] (the universal joint
 // can't reach 0..180) — used everywhere a joint angle is set
 function clampJ(i, v) {

@@ -9,6 +9,31 @@ const DIM_LABELS = {
 function renderRigUI() {
   const jb = $("rigJoints");
   jb.innerHTML = "";
+  // WHICH ARM THE AUDIENCE SEES FIRST (A31-6). One setting for the whole rig,
+  // above the joint table, because every move that says "front arm" means
+  // whichever arm this names - and it changes when the nong is turned round.
+  const fa = document.createElement("div"); fa.className = "row";
+  const fal = document.createElement("label");
+  fal.className = "lbl"; fal.htmlFor = "rigFrontArm";
+  fal.textContent = "Arm nearest the audience";
+  const fas = document.createElement("select");
+  fas.id = "rigFrontArm";
+  [["L", "the left arm is in front"], ["R", "the right arm is in front"]]
+    .forEach(([v, label]) => {
+      const o = document.createElement("option"); o.value = v; o.textContent = label;
+      fas.appendChild(o);
+    });
+  fas.value = frontArmSide();
+  fas.title = "left and right are the ROBOT's own left and right. This says "
+            + "which of them the audience sees first, so a move can be given to "
+            + "the front arm or the back arm by name.";
+  fas.onchange = () => {
+    RIG.frontArm = fas.value === "R" ? "R" : "L";
+    rigChanged();
+    renderTimeline();          // every pinned move now means the other arm
+  };
+  fa.append(fal, fas);
+  jb.appendChild(fa);
   // header
   const hdr = document.createElement("div"); hdr.className = "rigjrow";
   ["joint", "zero°", "start°", "min°", "max°", "axis", "inv"].forEach(t => {

@@ -93,14 +93,71 @@ window.REF = [
   where: [{file: "firmware/src/modules/nong/NongMath.h", line: 100,
            what: "safeDuration()"},
           {file: "nong/main_python_set_nong/web/app_parts/timing.js", line: 30,
-           what: "minTime() — Nong Studio applies the same floor"}],
-  eq: "t = biggest joint change &times; &pi;/2 &divide; safe_dps,  floor 80 ms",
+           what: "minTimeWhy() — Nong Studio applies the same floor, and says so"}],
+  eq: "t = biggest joint change &times; &pi;/2 &divide; safe_dps,  floor 80 ms\n" +
+      "flat above safe_dps &times; 2/&pi; &asymp; 38 &deg;/s at the default 60",
   why: "The cosine ease is fastest in the middle, at &pi;/2 times the average " +
        "speed, so this is the shortest time in which no joint ever passes " +
        "safe_dps. Measured from where the arm really is. Added 2026-09-17 after " +
        "the arm hit something on a fast jump; default 60 &deg;/s, CFG safe_dps.",
   from: "Derivative of 0.5 - 0.5 cos(&pi;t) peaks at &pi;/2 per unit time (calculus of the raised cosine ease above).",
-  watch: "Firmware and Studio must use the same safe_dps; Studio reads it from INFO on connect."
+  watch: "Firmware and Studio must use the same safe_dps; Studio reads it from INFO on connect. " +
+         "This floor is why typing a faster &deg;/s changed nothing above about 38 &deg;/s (A31-4/5): " +
+         "the arithmetic was right and silent. Studio now names the binding limit on the move."
+},
+{
+  id: "show-link-time",
+  group: "Nong — the humanoid",
+  name: "The move from one sequence into the next, in a show",
+  where: [{file: "main_python/shows.py", line: 36,
+           what: "link_time() — how long the hand-over takes"}],
+  eq: "t = biggest joint change &divide; that sequence's own &deg;/s,  floor 80 ms",
+  why: "Every sequence's first step is its start pose, timed for travel from " +
+       "wherever the robot happened to be - yakyai.yaml carries T 3273. Chained " +
+       "into a show the arm is already standing on the previous sequence's last " +
+       "pose, so that 3.3 s was the arm holding nearly still: a stop in " +
+       "everything but name (user 2026-09-23). Re-timing it from the REAL " +
+       "previous pose makes identical poses hand over in the 80 ms floor, and " +
+       "only a pause somebody typed makes the robot wait.",
+  watch: "Asking for the SHORT time is safe because the board lengthens T by its own " +
+         "cap and answers `OK pose T=<ms>ms`, and ShowPlayer._took waits for what the " +
+         "board said, not for what was asked."
+},
+{
+  id: "urdf-axes",
+  group: "Nong — the humanoid",
+  name: "URDF metres and Z-up into Studio's millimetres and Y-up",
+  where: [{file: "nong/main_python_set_nong/web/app_parts/urdf_import.js", line: 62,
+           what: "urdfToStudioXYZ() and urdfToStudioRPY()"}],
+  eq: "(x, y, z)<sub>URDF</sub> &rarr; (y, z, x)<sub>Studio</sub>,  &times;1000 mm/m\n" +
+      "rpy: R = R<sub>z</sub>(yaw)&middot;R<sub>y</sub>(pitch)&middot;R<sub>x</sub>(roll), " +
+      "the same three numbers on the swapped axes, in degrees",
+  why: "URDF/ROS is Z-up X-forward; this editor is Y-up Z-forward. The cyclic " +
+       "swap is a rotation, not a reflection, so it keeps the handedness and " +
+       "every joint keeps turning the same way - a mapping that flipped one " +
+       "axis instead would mirror the whole robot silently.",
+  from: "URDF spec: <origin xyz rpy>, fixed-axis (extrinsic) roll-pitch-yaw in radians, lengths in metres.",
+  watch: "The mesh scale and the length scale MULTIPLY. sw2urdf writes STL in metres " +
+         "and a <mesh scale> of 0.001, so 0.001 &times; 1000 = 1, not 1000."
+},
+{
+  id: "arm-mirror",
+  group: "Nong — the humanoid",
+  name: "The same gesture on the other arm",
+  where: [{file: "nong/main_python_set_nong/web/app_parts/ik_4_dof_arm.js", line: 122,
+           what: "mirrorPose() — reflect the targets, then solve"}],
+  eq: "elbow&prime;, wrist&prime; = reflect in the body's x = 0 plane; " +
+      "shoulders place the elbow, elbow joints place the wrist",
+  why: "Mirroring is NOT swapping the two blocks of four joint numbers. That " +
+       "put the hand 613 mm out, because the two arms do not carry the same " +
+       "invert flags (L_EL_R 0, R_EL_R 1). Deriving the angles from " +
+       "zero/jdir/axis was worse at 528 mm, because that ignores the mounting " +
+       "tilts and where each arm's base sits. Reflecting the two POINTS and " +
+       "letting the existing solvers reach them uses the geometry itself, and " +
+       "two targets leave no slack in a 4-joint arm.",
+  watch: "check_arm_mirror measures both hands in world space. WAIST and SHRUG are " +
+         "carried through untouched - what a mirror should do to a body joint cannot " +
+         "be measured the way the hands can."
 },
 {
   id: "show-time",

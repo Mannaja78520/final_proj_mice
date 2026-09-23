@@ -3,6 +3,10 @@ async function saveProject() {
   const name = ($("projName").value || "project").trim();
   const project = {
     keys, speedDps: speedDps(), maxDps: maxDps(), loop: $("loopChk").checked,
+    // The planning peak limit rides with the project: without it, reopening a
+    // project re-times every automatic move against a different 60 °/s default
+    // and the show quietly got slower (A31-4).
+    safeDps: SAFE_DPS,
     meshes: meshCfg, addons,
     robotIp: $("robotIp").value, seqName: $("seqName").value,
     // The chain is part of the show: a project saved with one and reopened
@@ -90,6 +94,13 @@ async function loadProject(file) {
   bumpKeys();
   $("speedDps").value = p.speedDps || 120;
   $("maxDps").value = p.maxDps || 400;
+  // A connected board's own limit still wins: adoptBoardSafety runs on connect
+  // and overwrites this. Saved projects only decide what Studio plans with
+  // while no robot is telling it otherwise.
+  if (p.safeDps >= 5 && !boardSafeDpsMax) {
+    SAFE_DPS = Math.round(p.safeDps);
+    $("safeDpsInput").value = String(SAFE_DPS);
+  }
   clampKeyTimes();
   $("loopChk").checked = !!p.loop;
   $("robotIp").value = p.robotIp || "";

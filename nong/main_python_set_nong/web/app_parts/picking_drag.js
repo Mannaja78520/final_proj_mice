@@ -51,7 +51,10 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
 
   // The wrist/elbow IK balls need SHIFT held — otherwise a plain left-drag from
   // them orbits the camera (keeps orbiting and big arm moves from fighting).
-  if (e.shiftKey) {
+  // In a FLAT view there is nothing to orbit (setView turns rotation off), so
+  // Shift is not needed there: picking Front and pulling the hand is the whole
+  // gesture the 2D plane exists for.
+  if (e.shiftKey || flatView()) {
     const wristHit = ray.intersectObjects(wristBalls, false)[0];
     if (wristHit) {
       const arm = wristHit.object.userData.arm;

@@ -1355,6 +1355,41 @@
        show moves it to <code>shows/.deleted</code> rather than erasing it, and never
        touches its sequences. A show naming a sequence that is gone refuses to start and
        says which step is wrong, instead of playing half of itself.</p></div>
+  <div class="f"><h3>A show runs straight through, and can repeat a sequence<span class="tag t-new">new</span></h3>
+    <p>One sequence now runs <b>straight into the next</b>, with no gap. There used to be
+       one, and it looked like the robot had stopped: every sequence begins with its start
+       pose, timed for travel from wherever the robot happened to be — <code>yakyai.yaml</code>
+       asks for 3273&nbsp;ms — so in a chain the arm stood almost still for three seconds
+       between sequences. That first move is now timed from where the arm really is, at
+       that sequence's own speed, so two sequences that end and start on the same pose hand
+       over instantly. <b>The only thing that makes the robot wait is a pause you typed.</b></p>
+    <p><b>Repeat</b> beside each sequence plays it again, in whichever way you think about
+       it: <b>repeat × times</b> (3 times, 4 times) or <b>repeat for seconds</b>
+       (30&nbsp;s, 60&nbsp;s). Seconds never cuts a pass in half — it starts another whole
+       pass while the time is still under the target, so 60&nbsp;s of a 22&nbsp;s sequence
+       is three passes. A sequence far too short to fill the target is refused, by name,
+       instead of building a list nothing can stop.</p></div>
+  <div class="f"><h3>See a whole show on the time bar<span class="tag t-new">new</span></h3>
+    <p>Open a show, or press <b>⇣ Show on the time bar</b>, and every sequence of it lands
+       on the one timeline, end to end, with a line and a name where each one begins — a
+       repeated pass says which pass it is (<code>wave ×2</code>). You can then scrub
+       through the whole show, preview it and see exactly where the hand-overs are.</p>
+    <p>The steps come from the hub, not from Studio re-reading the files: it is the same
+       list the robot will run, so the editor cannot show a show the robot does not
+       perform. If the time bar is holding unsaved keyframes, opening a show leaves them
+       alone and says so — press the button when you really mean to replace them.</p></div>
+  <div class="f"><h3>A move can be given to the front or the back arm<span class="tag t-new">new</span></h3>
+    <p>Each move on the timeline has a small picker: <b>both arms</b>, <b>front arm</b> or
+       <b>back arm</b> — front meaning the one nearest the audience. Give a move to one arm
+       and the other holds exactly where the move before it left it, so "wave with the near
+       arm" is one move instead of eight numbers re-typed. Which physical arm is in front is
+       set once, in <b>Setup ▸ Rig setup ▸ Arm nearest the audience</b>; turn the nong round
+       and every pinned move follows, with nothing re-typed.</p>
+    <p>The <b>⇄</b> button beside it plays the same shape on the other arm. It is a real
+       mirror, not a swap of the numbers: the two arms are not built as exact opposites of
+       each other, so copying the angles across put the hand 613&nbsp;mm from where it
+       belonged. Studio reflects the elbow and the hand in the body's own centre line and
+       solves the arm to reach them.</p></div>
   <div class="f"><h3>Sliders, gizmos and inverse kinematics</h3>
     <p>A slider per joint, clamped to that joint's own limits. Drag the 🟢 wrist ball for
        4-DOF whole-arm IK, or the 🟠 elbow ball for shoulder-only IK. Gimbal rings follow
@@ -1364,7 +1399,14 @@
        edges stay parallel and nothing looks bigger for being nearer, so Shift+dragging a
        joint in that plane matches exactly what is on screen. The iso/free view keeps
        perspective, where depth is the point. Switching between them never moves the
-       camera.</p></div>
+       camera.</p>
+    <p><b>A flat view now stays flat.</b> It did not before: a plain drag orbits the camera,
+       so taking hold of the arm quietly turned Front back into a 3D view while the button
+       still said Front, and the plane you had chosen no longer matched what you were
+       looking at. In a plane view the camera cannot be orbited at all — pan and zoom still
+       work — and because nothing orbits there, <b>dragging a hand needs no Shift held</b>.
+       Press <b>3D</b> to turn the view loose again; there, dragging a hand still needs
+       Shift, because a plain drag orbits.</p></div>
   <div class="f"><h3>Live XYZ readout</h3>
     <p>Joint positions in millimetres, origin at the torso centre.</p></div>
   <div class="f"><h3>Collision checking</h3>
@@ -1372,7 +1414,11 @@
        keyframes. Offending keyframes turn red and Run/Upload are blocked until it is fixed.</p></div>
   <div class="f"><h3>Mirror and neutral</h3>
     <p>Mirror a pose left↔right, jump to the neutral pose, or save the current pose <em>as</em>
-       the neutral.</p></div>
+       the neutral. Mirror is a <b>real reflection</b>, not a swap of the joint numbers:
+       the two arms are not built as exact opposites of each other, so copying the angles
+       across put the hand 613&nbsp;mm from where it belonged. Studio reflects the elbow and
+       the hand in the body's centre line and solves each arm to reach them; the waist turns
+       to the other side and the shrug is unchanged.</p></div>
 
   <div class="grp2">Timeline</div>
   <div class="f"><h3>Keyframes with time and hold</h3>
@@ -1397,7 +1443,20 @@
        the active limit after Connect. Save to robot stores a new limit for the next
        restart; the current limit stays active until then. If boards are linked,
        set the same limit on both before synchronized playback. Raising the limit
-       can cause harder impacts. Do not raise it while a joint loses torque.</p></div>
+       can cause harder impacts. Do not raise it while a joint loses torque.</p>
+    <p><b>Why a faster °/s sometimes changes nothing, and how to see it.</b> A move eases
+       in and out, so its fastest instant is about 1.6× its average — which means the peak
+       limit starts deciding the time at roughly <b>two thirds</b> of itself. At the shipped
+       60&nbsp;°/s that is about 38&nbsp;°/s: above it, raising Show speed or a move's own
+       °/s produced exactly the same time, silently. The arithmetic was right; it just never
+       said so. Now every move's line names the limit that is holding it — the peak limit,
+       or a particular joint's servo top speed — and says what to change. The
+       <b>⚑</b> beside a move's minimum means that move is already as short as it is
+       allowed to be.</p>
+    <p>The <b>Peak speed limit</b> box is also editable with <b>no robot connected</b>. It
+       is then simply the number Studio plans with, and it is saved with the project, so you
+       can time a show away from the bench. <b>Save to robot</b> still needs a connection —
+       Studio planning faster than the robot allows would be a show it cannot perform.</p></div>
   <div class="f"><h3>Suspend a keyframe instead of deleting it<span class="tag t-new">new</span></h3>
     <p>The ● button on a keyframe chip suspends it: it stays in the timeline to edit, but is
        skipped when playing, exporting and uploading — so you can try the sequence without
@@ -1464,6 +1523,24 @@
     <p>Import STL exports per body part, each with its own rotation, offset, scale and
        colour. Part size automatically sets the rig's lengths. Texture images can be imported
        and assigned.</p></div>
+  <div class="f"><h3>Build the body from a URDF<span class="tag t-new">new</span></h3>
+    <p>A <b>STEP</b> file cannot be opened in a browser at all, and an <b>STL</b> carries no
+       origin — which is why a part dragged in lands at the middle of the robot and has to be
+       rotated, offset and scaled by hand until it looks right. A <b>URDF</b> carries exactly
+       those missing numbers: where each part sits, which way it is turned, how big it is and
+       which part hangs off which.</p>
+    <p>From SolidWorks, use the <b>sw2urdf</b> add-in (Tools ▸ Export as URDF). Import the
+       <code>meshes/*.STL</code> it writes, then pick the <code>.urdf</code> in
+       <b>Setup ▸ Build it from a URDF</b>. Studio lists every link with the body part it
+       guessed from the name, which you can correct. <b>Reading the file changes nothing</b>
+       — pressing <b>Use this URDF</b> is what places the parts, and it offers to set the arm
+       lengths from the joint origins rather than overwriting measurements you made by hand.
+       A mesh the URDF names but <code>models/</code> does not hold is reported by name.</p>
+    <p>Two settings, because no two exports agree: <b>Sizes are in</b> (URDF is metres,
+       Studio is millimetres) and <b>Up is</b> (URDF/ROS is Z-up, this editor is Y-up). If
+       the robot arrives lying on its side, change the second; if it is a thousand times too
+       big, change the first. The joint table for the nong is written out in
+       <code>docs/urdf_nong.md</code>.</p></div>
   <div class="f"><h3>Clothes and add-ons</h3>
     <p>Extra meshes attached to any part, for costume pieces and props.</p></div>
 
