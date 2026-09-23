@@ -258,7 +258,12 @@ class Shows:
                                      got[0]["pose"], speed, marks)
                 pending = None
             began_at, began_step = total_ms(out), len(out)
-            passes, elapsed = 0, 0
+            # The show's clock starts ON its first pose, as Studio's time bar
+            # does. The first entry move comes from wherever the robot stands,
+            # so it counts toward no item's seconds - counted, a 52 s item drew
+            # as 48.7 s beside yakyai's 3.3 s entry (user 2026-09-23, A31-16).
+            entry = got[0].get("t", 0) if not out else 0
+            passes, elapsed = 0, -entry
             while True:
                 pass_steps = [dict(s) for s in got]
                 # THE GAP THAT LOOKED LIKE A STOP. Every sequence's first step
@@ -279,15 +284,20 @@ class Shows:
                 # hand-over land exactly on the deadline instead of overrunning
                 # it: the arm leaves wherever the cut left it and arrives at
                 # this sequence's start pose right on time (A31-14).
-                if owed and passes == 0:
+                handover = bool(owed and passes == 0)
+                if handover:
                     pass_steps[0]["t"] = max(MIN_T, owed)
                     owed = 0
                 if marks is not None:
+                    # `handover`: this step's move is paid from the CUT item's
+                    # budget, so Studio draws it as the end of that item and the
+                    # next name lands on the deadline (user 2026-09-23, A31-16).
                     marks.append({"at": total_ms(out), "step": len(out),
                                   "seq": it["seq"], "item": n,
                                   "pass": passes + 1,
                                   "of": it["repeat"] if it["repeat_mode"] == "times" else 0,
-                                  "mode": it["repeat_mode"]})
+                                  "mode": it["repeat_mode"],
+                                  "handover": handover})
                 out += pass_steps
                 passes += 1
                 elapsed += total_ms(pass_steps)
@@ -314,7 +324,8 @@ class Shows:
             # the operator typed.
             out[-1]["hold"] = out[-1].get("hold", 0) + it["hold"]
             if it["repeat_mode"] == "exact":
-                pending = (began_step, began_at, int(round(it["repeat"] * 1000)))
+                pending = (began_step, began_at,
+                           int(round(it["repeat"] * 1000)) + entry)
         # The LAST item was `exact`: there is no next sequence to spend the
         # rest of its budget travelling into, so it is held instead. The show
         # is still exactly as long as it was asked to be.

@@ -3924,16 +3924,27 @@ async function showOnTimeline(quiet, onlyIfSafe) {
     const j = await showPost("/api/show/steps", { show: s });
     const steps = j.steps || [], marks = j.marks || [];
     if (steps.length < 2) throw new Error("this show has fewer than two poses");
-    const startOf = {};
+    const startOf = {}, travel = {}, taken = new Set(marks.map(m => m.step));
+    let prev = "";
     marks.forEach(m => {
       // pass 1 of an item is where its NAME goes; later passes say which pass
-      startOf[m.step] = m.pass > 1
+      const name = m.pass > 1
         ? m.seq.replace(/\.yaml$/, "") + " ×" + m.pass
         : m.seq.replace(/\.yaml$/, "");
+      // After an "exactly N s" item the move into this pose is paid from THAT
+      // item's seconds. Drawn under the new name, the new sequence seemed to
+      // start early (user 2026-09-23, 42 s item). The move stays with the cut
+      // item; the new name goes on the next pose, which starts on the deadline.
+      if (m.handover && m.step + 1 < steps.length && !taken.has(m.step + 1)) {
+        travel[m.step] = prev + " → " + name;
+        startOf[m.step + 1] = name;
+      } else startOf[m.step] = name;
+      prev = m.seq.replace(/\.yaml$/, "");
     });
     keys = steps.map((st, i) => {
       const k = { pose: st.pose.map(Number), t: Math.round(st.t || 0),
                   hold: Math.round(st.hold || 0) };
+      if (travel[i] !== undefined) k.name = travel[i];
       if (startOf[i] !== undefined) { k.name = startOf[i]; k.seqStart = true; }
       // the file's own cue lines ride along so a preview plays the same music
       if (st.cues && st.cues.length) k.cues = st.cues.slice();

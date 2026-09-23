@@ -71,6 +71,15 @@ window.addEventListener('load', async function(){
     // travelling from 21 - one degree, so it must be the 80 ms floor.
     await qcMark('bar-handover-' + keys[2].t);
     await qcMark('bar-label-' + (keys[2].name || ''));
+    // A31-16: after an exactly-2 s item the next NAME starts on the deadline,
+    // and the move into its first pose is drawn as the cut item's hand-over.
+    showDraft.items[0].repeat_mode = 'exact';
+    showDraft.items[0].repeat = 2;
+    renderShow();
+    await showOnTimeline(true);
+    const two = keys.findIndex(k => k.seqStart && k.name === 'qc_cont_two');
+    await qcMark('exact-two-at-' + (two < 0 ? 'none' : keyStartMs(two)));
+    await qcMark('exact-travel-' + (two > 0 ? keys[two - 1].name || '' : ''));
   } catch (e) { await qcFail(e); }
   await qcMark('done');
 });
@@ -129,7 +138,8 @@ def run(t):
         secs = dict(show, items=[{"seq": "qc_cont_one.yaml",
                                   "repeat_mode": "seconds", "repeat": 10}])
         ssteps = main.SHOWS.steps(main.SHOWS.clean(secs), main.seq_steps)
-        total = sum(s["t"] + s.get("hold", 0) for s in ssteps)
+        # the clock starts ON the first pose: the entry move counts for nothing
+        total = sum(s["t"] + s.get("hold", 0) for s in ssteps) - ssteps[0]["t"]
         t.ok(len(ssteps) % 2 == 0 and total >= 10000,
              "repeat for 10 s plays whole passes until 10 s have gone by",
              "%d passes, %d ms" % (len(ssteps) // 2, total))
@@ -172,20 +182,24 @@ def run(t):
             two = [m for m in marks if m["seq"] == "qc_cont_two.yaml"]
             if not t.ok(two, "the second sequence still starts (%s)" % note, marks):
                 continue
-            arrive = two[0]["at"] + steps[two[0]["step"]]["t"]
+            # measured from the FIRST POSE, where Studio's time bar starts
+            arrive = two[0]["at"] + steps[two[0]["step"]]["t"] - steps[0]["t"]
             t.ok(abs(arrive - budget * 1000) <= 1,
                  "a %gs budget lands the next sequence on the deadline (%s)"
                  % (budget, note),
                  "it arrives at %d ms, wanted %d. The move into the next pose "
                  "has to fit INSIDE the budget, not follow it."
                  % (arrive, int(budget * 1000)))
+            t.ok(two[0].get("handover") is True,
+                 "the move into it is flagged as the cut item's hand-over (%s)" % note,
+                 two[0])
 
         # the LAST item has nowhere to travel to, so the show is held to length
         last = main.SHOWS.steps(main.SHOWS.clean(
             dict(show, items=[{"seq": "qc_cont_one.yaml",
                                "repeat_mode": "exact", "repeat": 1.5}])),
             main.seq_steps)
-        t.eq(sum(s["t"] + s.get("hold", 0) for s in last), 1500,
+        t.eq(sum(s["t"] + s.get("hold", 0) for s in last) - last[0]["t"], 1500,
              "an exact item at the END of a show makes the show exactly that long")
 
         # `seconds` must NOT have become `exact` - they differ on the last pass
@@ -193,7 +207,7 @@ def run(t):
             dict(show, items=[{"seq": "qc_cont_one.yaml",
                                "repeat_mode": "seconds", "repeat": 2.0}])),
             main.seq_steps)
-        t.ok(sum(s["t"] + s.get("hold", 0) for s in secs2) > 2000,
+        t.ok(sum(s["t"] + s.get("hold", 0) for s in secs2) - secs2[0]["t"] > 2000,
              "`repeat for seconds` still finishes its last pass and runs over",
              "the two modes differ only there, and collapsing them would take "
              "away the one that never cuts: %d ms"
@@ -284,6 +298,8 @@ def run(t):
              "the hub hands Studio the same steps the robot ran")
         t.eq([m["seq"] for m in got["marks"]], ["qc_cont_one.yaml", "qc_cont_two.yaml"],
              "with a mark saying where each sequence starts")
+        t.eq([m["handover"] for m in got["marks"]], [False, False],
+             "and no hand-over flag where nothing was cut")
 
         if not browser.available():
             t.give_up("headless Edge unavailable - the hub half above still ran")
@@ -302,6 +318,11 @@ def run(t):
                    "not perform")
         t.contains(m, "bar-label-qc_cont_one ×2",
                    "and a repeated pass says which pass it is")
+        t.contains(m, "exact-two-at-2000",
+                   "after an exactly-2 s item the next sequence's name starts at "
+                   "2.0 s on the bar - the move into it belongs to the cut item")
+        t.contains(m, "exact-travel-qc_cont_one → qc_cont_two",
+                   "and that move is labelled as the hand-over between the two")
     finally:
         for p in made + [folder / "qc_cont.json"]:
             try:
