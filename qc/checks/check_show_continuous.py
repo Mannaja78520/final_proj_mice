@@ -137,6 +137,68 @@ def run(t):
              "and stops at the first pass that crosses the target, not later",
              "%d ms over %d passes" % (total, len(ssteps) // 2))
 
+        # ---- run for EXACTLY N seconds, cutting to keep the timetable ------
+        # User 2026-09-23: *make the show can select that sequence run only for
+        # ...... sec ... maybe cut the sequence and move to the pose of new
+        # sequence on time then show on time like that with seamless viewer
+        # will not notice it*.
+        #
+        # The assertion that matters is not "the item was cut" - it is WHEN THE
+        # NEXT SEQUENCE ARRIVES at its own first pose. The arm leaves early, so
+        # it is already travelling during the time the cut freed, and lands on
+        # the deadline. Asserting on the departure instead would pass while the
+        # show ran late, which is exactly what the first version did.
+        one_ms = 3000 + 200          # hwtest one.yaml: entry 3000 + 200
+        # 3.0 is the nasty one: the first move ends EXACTLY on the deadline, so
+        # a cut that does not reserve the hand-over leaves nothing to travel
+        # with, the entry falls back to the 80 ms floor, and the show runs 80 ms
+        # late. Without this case the reservation can be deleted and every other
+        # budget still passes - which is what happened on the first sabotage run.
+        # 3.25 is the nastiest: without the reservation the cut keeps one step
+        # too many, only 50 ms of budget is left, the entry falls back to the
+        # 80 ms floor and the show runs 30 ms late. Every other budget still
+        # passes in that state - which is exactly what the first sabotage run
+        # showed, twice.
+        for budget, note in ((2.0, "shorter than the sequence"),
+                             (3.0, "ending exactly on a keyframe"),
+                             (3.25, "falling just short of a hand-over"),
+                             (0.4, "shorter than even its first move"),
+                             (9.0, "longer, so it repeats and then cuts")):
+            ex = dict(show, items=[{"seq": "qc_cont_one.yaml",
+                                    "repeat_mode": "exact", "repeat": budget},
+                                   {"seq": "qc_cont_two.yaml"}])
+            marks = []
+            steps = main.SHOWS.steps(main.SHOWS.clean(ex), main.seq_steps, marks)
+            two = [m for m in marks if m["seq"] == "qc_cont_two.yaml"]
+            if not t.ok(two, "the second sequence still starts (%s)" % note, marks):
+                continue
+            arrive = two[0]["at"] + steps[two[0]["step"]]["t"]
+            t.ok(abs(arrive - budget * 1000) <= 1,
+                 "a %gs budget lands the next sequence on the deadline (%s)"
+                 % (budget, note),
+                 "it arrives at %d ms, wanted %d. The move into the next pose "
+                 "has to fit INSIDE the budget, not follow it."
+                 % (arrive, int(budget * 1000)))
+
+        # the LAST item has nowhere to travel to, so the show is held to length
+        last = main.SHOWS.steps(main.SHOWS.clean(
+            dict(show, items=[{"seq": "qc_cont_one.yaml",
+                               "repeat_mode": "exact", "repeat": 1.5}])),
+            main.seq_steps)
+        t.eq(sum(s["t"] + s.get("hold", 0) for s in last), 1500,
+             "an exact item at the END of a show makes the show exactly that long")
+
+        # `seconds` must NOT have become `exact` - they differ on the last pass
+        secs2 = main.SHOWS.steps(main.SHOWS.clean(
+            dict(show, items=[{"seq": "qc_cont_one.yaml",
+                               "repeat_mode": "seconds", "repeat": 2.0}])),
+            main.seq_steps)
+        t.ok(sum(s["t"] + s.get("hold", 0) for s in secs2) > 2000,
+             "`repeat for seconds` still finishes its last pass and runs over",
+             "the two modes differ only there, and collapsing them would take "
+             "away the one that never cuts: %d ms"
+             % sum(s["t"] + s.get("hold", 0) for s in secs2))
+
         # BOTH repeat modes are bounded. MAX_PASSES guarded only `seconds` at
         # first, so a `times` of a million - one typo in a hand-edited
         # shows/*.json - built a million passes and took the hub's memory with

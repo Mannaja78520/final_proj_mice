@@ -3825,24 +3825,32 @@ function renderShow() {
     const mode = document.createElement("select");
     mode.style.width = "110px";
     mode.title = "play this sequence again: a number of times, or for a number of seconds";
-    [["", "play once"], ["times", "repeat × times"], ["seconds", "repeat for seconds"]]
+    [["", "play once"], ["times", "repeat × times"],
+     ["seconds", "repeat for seconds"], ["exact", "run for exactly … s"]]
       .forEach(([v, label]) => {
         const o = document.createElement("option"); o.value = v; o.textContent = label; mode.appendChild(o);
       });
     mode.value = it.repeat_mode || "";
     const rep = document.createElement("input");
-    rep.type = "number"; rep.min = mode.value === "times" ? 2 : 1;
-    rep.step = mode.value === "times" ? 1 : 5;
+    rep.type = "number";
+    rep.min = mode.value === "times" ? 2 : (mode.value === "exact" ? 0.1 : 1);
+    rep.step = mode.value === "seconds" ? 5 : 1;
     rep.style.width = "70px";
     rep.value = it.repeat || "";
     rep.style.display = mode.value ? "" : "none";
     rep.title = mode.value === "seconds"
-      ? "keep repeating until this many seconds have passed. A pass is never cut in half, so the last one finishes."
-      : "how many times this sequence plays in a row";
+      ? "keep repeating until this many seconds have passed. A pass is never cut in half, so the last one finishes and the item runs a little over."
+      : mode.value === "exact"
+        ? "this sequence gets exactly this many seconds and no more. It is cut "
+          + "wherever it has got to, and the move into the next sequence's first "
+          + "pose is timed to arrive right on the deadline — so the show keeps to "
+          + "its timetable and the join is not visible."
+        : "how many times this sequence plays in a row";
     mode.onchange = () => {
       it.repeat_mode = mode.value;
       if (!mode.value) it.repeat = 0;
       else if (!(it.repeat > 0)) it.repeat = mode.value === "times" ? 2 : 30;
+      if (mode.value === "exact" && it.repeat < 0.1) it.repeat = 30;
       renderShow(); showChanged();
     };
     rep.onchange = () => {
@@ -3850,7 +3858,7 @@ function renderShow() {
       renderShow(); showChanged();
     };
     const unit = document.createElement("span"); unit.className = "mini";
-    unit.textContent = mode.value === "seconds" ? "s" : (mode.value === "times" ? "×" : "");
+    unit.textContent = mode.value === "times" ? "×" : (mode.value ? "s" : "");
     const btn = (label, title, fn) => { const b = document.createElement("button"); b.textContent = label; b.title = title; b.onclick = fn; return b; };
     row.append(n, name, mode, rep, unit, document.createTextNode("pause"), hold,
       btn("▲", "play earlier", () => { moveShowItem(i, -1); showChanged(); }),

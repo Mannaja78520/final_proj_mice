@@ -1369,6 +1369,22 @@
        pass while the time is still under the target, so 60&nbsp;s of a 22&nbsp;s sequence
        is three passes. A sequence far too short to fill the target is refused, by name,
        instead of building a list nothing can stop.</p></div>
+  <div class="f"><h3>Run a sequence for exactly so many seconds<span class="tag t-new">new</span></h3>
+    <p>The third repeat setting, <b>run for exactly … s</b>, is for a show on a
+       <b>timetable</b> — music, a slot in a programme, anything the robot has to stay in
+       step with. The sequence gets exactly that long and no more. If it would run over it
+       is <b>cut</b> wherever it has got to; if it is shorter it repeats to fill, and the
+       last pass is cut too.</p>
+    <p>The cut is not a stop. Whatever time the cut frees is spent <b>travelling into the
+       next sequence's first pose</b>, so the arm leaves early, is already on its way during
+       the freed time, and <b>arrives exactly on the deadline</b>. The next sequence starts
+       on time and there is no join to see.</p>
+    <p>The cut always lands on a keyframe, never inside a move — stopping half way through
+       one would leave the arm at a position nobody chose. A pause you set on the item
+       counts inside its budget rather than pushing the deadline out, and an item at the
+       <b>end</b> of a show holds its last pose to length, since there is nowhere to travel
+       to. <b>Repeat for seconds</b> is the gentler cousin: it never cuts, so it runs a
+       little over.</p></div>
   <div class="f"><h3>See a whole show on the time bar<span class="tag t-new">new</span></h3>
     <p>Open a show, or press <b>⇣ Show on the time bar</b>, and every sequence of it lands
        on the one timeline, end to end, with a line and a name where each one begins — a

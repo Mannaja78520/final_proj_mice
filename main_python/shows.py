@@ -16,8 +16,17 @@ Per item:
                   (user 2026-09-23: *no stop before go to other sequence if not
                   insert pause number*).
     repeat_mode   "" play once - "times" play `repeat` times - "seconds" keep
-                  playing whole passes until `repeat` seconds have elapsed.
+                  playing whole passes until `repeat` seconds have elapsed -
+                  "exact" fill `repeat` seconds the same way and then CUT to
+                  them, so the item takes exactly that long.
     repeat        the number that goes with the mode.
+
+"seconds" and "exact" differ only in the last pass. "seconds" lets it finish and
+so runs over; "exact" cuts at the last keyframe that fits and hands what is left
+of the budget to the move into the NEXT sequence's start pose, so the arm is
+already travelling there during the time the cut freed and arrives on the
+deadline. That is what keeps a show on a timetable without the audience seeing a
+join (asked 2026-09-23).
 
 Seconds mode never cuts a pass in half: it starts another pass while the item's
 elapsed time is still under the target, so 60 s of a 22 s sequence is three
@@ -40,7 +49,7 @@ import time
 from pathlib import Path
 
 NAME = re.compile(r"^[A-Za-z0-9_\-][A-Za-z0-9 _.\-]{0,79}$")
-REPEAT_MODES = ("", "times", "seconds")
+REPEAT_MODES = ("", "times", "seconds", "exact")
 DEF_DPS = 60.0       # the same fallback seq_steps uses for a file with no speed
 MIN_T = 80           # ms, the floor the firmware, Studio and ShowPlayer share
 # A 60 s target against a sequence that parses to almost nothing would expand
@@ -51,6 +60,52 @@ MAX_PASSES = 500
 
 def total_ms(steps):
     return sum(int(s.get("t", 0)) + int(s.get("hold", 0)) for s in steps)
+
+
+def cut_to_budget(out, first, began_at, budget, next_pose, speed, marks=None):
+    """Cut one item down to `budget` ms and say what is left of it.
+
+    Asked 2026-09-23: *make the show can select that sequence run only for
+    ...... sec ... maybe cut the sequence and move to the pose of new sequence
+    on time then show on time like that with seamless viewer will not notice
+    it*. A show on a timetable cannot wait for a sequence to finish, so the
+    sequence is cut wherever it has got to.
+
+    The cut is at a KEYFRAME, never inside a move: the hub's clock sends whole
+    poses, and stopping half way through one would leave the arm at a position
+    nobody chose - the same reason `seconds` mode never cuts. What makes it
+    seamless is the returned remainder: the caller spends it on the move into
+    the NEXT sequence's start pose, so the arm is already travelling there
+    during the time the cut freed, and arrives exactly on the deadline.
+
+    Returns the leftover ms. Keeps at least one step, because an item that
+    contributes nothing at all is a sequence the operator cannot see.
+    """
+    end = began_at + budget
+    running, keep = began_at, first
+    for i in range(first, len(out)):
+        step_end = running + out[i]["t"] + out[i].get("hold", 0)
+        # RESERVE THE HAND-OVER. The next sequence has to START on time, not
+        # merely be sent for at the deadline, so the move into its first pose
+        # has to fit inside the budget too. Cutting without this was the first
+        # version and it ran 333 ms late on every item (measured 2026-09-23).
+        hand = link_time(out[i]["pose"], next_pose, speed) if next_pose else 0
+        if step_end + hand > end and i > first:
+            break
+        running = step_end
+        keep = i
+    del out[keep + 1:]
+    if marks is not None:
+        marks[:] = [m for m in marks if m["step"] <= keep]
+    # A single step longer than the whole budget still has to fit: shorten it
+    # rather than overrun the timetable on the very first move.
+    hand = link_time(out[keep]["pose"], next_pose, speed) if next_pose else 0
+    if running + hand > end and keep == first:
+        s = out[keep]
+        s["hold"] = 0                       # the pause goes before the move does
+        s["t"] = max(MIN_T, min(s["t"], budget - hand))
+        running = began_at + s["t"]
+    return max(0, end - running)
 
 
 def link_time(prev, nxt, dps):
@@ -113,9 +168,10 @@ class Shows:
             # player can never read it three ways.
             if mode == "times":
                 n = int(round(n))
-            elif mode == "seconds":
+            elif mode in ("seconds", "exact"):
                 n = round(float(n), 3)
-            if (mode == "times" and n < 2) or (mode == "seconds" and n <= 0):
+            if ((mode == "times" and n < 2)
+                    or (mode in ("seconds", "exact") and n <= 0)):
                 mode = ""
             if not mode:
                 n = 0
@@ -160,6 +216,8 @@ class Shows:
         if not show["items"]:
             raise ValueError("this show has no sequences in it yet")
         out = []
+        owed = 0          # budget a cut item left for the next hand-over
+        pending = None    # an `exact` item waiting to be cut (see below)
         for n, it in enumerate(show["items"], 1):
             f = self.sequences / it["seq"]
             if "/" in it["seq"] or "\\" in it["seq"] or not f.is_file():
@@ -180,6 +238,15 @@ class Shows:
             if it["repeat_mode"] == "times" and it["repeat"] > MAX_PASSES:
                 raise ValueError("step %d: %s cannot repeat %d times (the most "
                                  "is %d)" % (n, it["seq"], it["repeat"], MAX_PASSES))
+            # THE CUT WAITS FOR THIS MOMENT. An `exact` item cannot be cut
+            # until the pose it is handing over TO is known, because the move
+            # into that pose has to fit inside its budget. So the previous item
+            # is cut here, now that this sequence's first pose is in hand.
+            if pending:
+                owed = cut_to_budget(out, pending[0], pending[1], pending[2],
+                                     got[0]["pose"], speed, marks)
+                pending = None
+            began_at, began_step = total_ms(out), len(out)
             passes, elapsed = 0, 0
             while True:
                 pass_steps = [dict(s) for s in got]
@@ -196,6 +263,14 @@ class Shows:
                 if out:
                     pass_steps[0]["t"] = link_time(out[-1]["pose"],
                                                    pass_steps[0]["pose"], speed)
+                # A previous item was CUT to its budget and owes the rest of
+                # that budget to this move. Spending it here is what makes the
+                # hand-over land exactly on the deadline instead of overrunning
+                # it: the arm leaves wherever the cut left it and arrives at
+                # this sequence's start pose right on time (A31-14).
+                if owed and passes == 0:
+                    pass_steps[0]["t"] = max(MIN_T, owed)
+                    owed = 0
                 if marks is not None:
                     marks.append({"at": total_ms(out), "step": len(out),
                                   "seq": it["seq"], "item": n,
@@ -208,10 +283,11 @@ class Shows:
                 if it["repeat_mode"] == "times":
                     if passes >= it["repeat"]:
                         break
-                elif it["repeat_mode"] == "seconds":
+                elif it["repeat_mode"] in ("seconds", "exact"):
                     # START another whole pass while the target is not reached
-                    # yet; never cut one short. A pass stopped mid-move leaves
-                    # the arm at a pose nobody chose.
+                    # yet. `seconds` never cuts one short and so overshoots;
+                    # `exact` fills the same way and is then CUT to the budget
+                    # below, which is the difference between the two.
                     if elapsed >= it["repeat"] * 1000:
                         break
                     if passes >= MAX_PASSES:
@@ -221,5 +297,20 @@ class Shows:
                             % (n, it["seq"], it["repeat"], MAX_PASSES))
                 else:
                     break
-            out[-1]["hold"] = out[-1].get("hold", 0) + it["hold"]   # pause after it
+            # The pause goes on BEFORE the cut, so an `exact` item's pause is
+            # inside its budget like everything else rather than pushing the
+            # deadline out. Dropping it instead would silently ignore a number
+            # the operator typed.
+            out[-1]["hold"] = out[-1].get("hold", 0) + it["hold"]
+            if it["repeat_mode"] == "exact":
+                pending = (began_step, began_at, int(round(it["repeat"] * 1000)))
+        # The LAST item was `exact`: there is no next sequence to spend the
+        # rest of its budget travelling into, so it is held instead. The show
+        # is still exactly as long as it was asked to be.
+        if pending:
+            owed = cut_to_budget(out, pending[0], pending[1], pending[2],
+                                 None, DEF_DPS, marks)
+        if owed:
+            out[-1]["hold"] = out[-1].get("hold", 0) + owed
+            owed = 0
         return out
