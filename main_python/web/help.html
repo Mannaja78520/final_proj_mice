@@ -1540,7 +1540,14 @@
        Studio is millimetres) and <b>Up is</b> (URDF/ROS is Z-up, this editor is Y-up). If
        the robot arrives lying on its side, change the second; if it is a thousand times too
        big, change the first. The joint table for the nong is written out in
-       <code>docs/urdf_nong.md</code>.</p></div>
+       <code>docs/urdf_nong.md</code>.</p>
+    <p><b>You may not need SolidWorks for the URDF itself.</b> Every number the add-in would
+       ask for — the joint tree, the origins, the axes, the limits — is already measured in
+       the rig. <code>python tools/make_urdf.py</code> writes the whole file from it in one
+       command, and rewrites it whenever the rig changes. Export one STL per body part, name
+       them <code>torso.stl</code>, <code>head.stl</code>, <code>L_upper.stl</code>,
+       <code>L_fore.stl</code>, <code>R_upper.stl</code>, <code>R_fore.stl</code> in
+       <code>models/</code>, and that is the whole job.</p></div>
   <div class="f"><h3>Clothes and add-ons</h3>
     <p>Extra meshes attached to any part, for costume pieces and props.</p></div>
 

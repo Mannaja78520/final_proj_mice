@@ -128,7 +128,9 @@ window.REF = [
   group: "Nong — the humanoid",
   name: "URDF metres and Z-up into Studio's millimetres and Y-up",
   where: [{file: "nong/main_python_set_nong/web/app_parts/urdf_import.js", line: 62,
-           what: "urdfToStudioXYZ() and urdfToStudioRPY()"}],
+           what: "urdfToStudioXYZ() and urdfToStudioRPY() — reading one in"},
+          {file: "tools/make_urdf.py", line: 36,
+           what: "urdf_xyz() and STUDIO_AXIS_TO_URDF — writing one out"}],
   eq: "(x, y, z)<sub>URDF</sub> &rarr; (y, z, x)<sub>Studio</sub>,  &times;1000 mm/m\n" +
       "rpy: R = R<sub>z</sub>(yaw)&middot;R<sub>y</sub>(pitch)&middot;R<sub>x</sub>(roll), " +
       "the same three numbers on the swapped axes, in degrees",
@@ -138,7 +140,10 @@ window.REF = [
        "axis instead would mirror the whole robot silently.",
   from: "URDF spec: <origin xyz rpy>, fixed-axis (extrinsic) roll-pitch-yaw in radians, lengths in metres.",
   watch: "The mesh scale and the length scale MULTIPLY. sw2urdf writes STL in metres " +
-         "and a <mesh scale> of 0.001, so 0.001 &times; 1000 = 1, not 1000."
+         "and a <mesh scale> of 0.001, so 0.001 &times; 1000 = 1, not 1000. " +
+         "The two directions are written twice, so check_urdf_export asserts the ROUND " +
+         "TRIP: 129 mm out as 0.129 m comes back 129 mm. A URDF a thousand times too big " +
+         "still parses perfectly, so nothing else would notice."
 },
 {
   id: "arm-mirror",

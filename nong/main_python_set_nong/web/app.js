@@ -4791,26 +4791,29 @@ function urdfParse(text) {
            joints: [...doc.querySelectorAll("robot > joint")] };
 }
 
-// The distance between two joint origins, in mm - the real length of the bar
-// between them. This is the number that makes an imported robot the right SIZE
-// instead of merely the right shape.
+// How long each mapped part's bar is, in mm. This is the number that makes an
+// imported robot the right SIZE and not merely the right shape.
+//
+// A joint's origin is measured in its PARENT link's frame, so the length of a
+// bar is the origin of the joint LEAVING it - the elbow's origin is the upper
+// arm's length. Reading the joint that ARRIVES at a link instead gives the
+// offset of the bar before it, which for this robot is the shoulder's own
+// (0, 0, 0) - every arm then measured zero.
+//
+// Zero-length joints are skipped on purpose: a shoulder and an elbow are each
+// two servos stacked at one origin, so half the joints in this tree carry no
+// distance at all. A leaf link has no outgoing joint and so has no length
+// here; its mesh is the only thing that says how long it is.
 function urdfJointLengths(parsed, opt) {
-  const byChild = {};
-  parsed.joints.forEach(j => {
-    const child = j.querySelector("child");
-    const parent = j.querySelector("parent");
-    if (!child || !parent) return;
-    byChild[child.getAttribute("link")] = {
-      parent: parent.getAttribute("link"),
-      xyz: urdfNums(j.querySelector("origin"), "xyz", [0, 0, 0]),
-    };
-  });
   const out = {};
-  Object.keys(byChild).forEach(childLink => {
-    const part = urdfMap[childLink];
-    if (!part) return;
-    const v = byChild[childLink].xyz;
-    out[part] = Math.round(Math.hypot(v[0], v[1], v[2]) * opt.mm * 10) / 10;
+  parsed.joints.forEach(j => {
+    const parent = j.querySelector("parent");
+    if (!parent) return;
+    const part = urdfMap[parent.getAttribute("link")];
+    if (!part || out[part]) return;
+    const v = urdfNums(j.querySelector("origin"), "xyz", [0, 0, 0]);
+    const len = Math.round(Math.hypot(v[0], v[1], v[2]) * opt.mm * 10) / 10;
+    if (len > 0) out[part] = len;
   });
   return out;
 }

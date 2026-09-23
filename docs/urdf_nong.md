@@ -6,10 +6,31 @@ that picks this up. Asked by the user on 2026-09-23: *first of all you open my
 solidwork and make the geomatry for me too and then export to urdf i already
 have that addin*, and *make show urdf look like in nong studio too*.
 
-Nothing here has been run yet. Another session (`claude:09230033-96eb`) had
-SolidWorks open on these same files for the structural studies, and two
-sessions holding one assembly is how work gets lost — so this is the table
-first, the export second.
+Another session (`claude:09230033-96eb`) had SolidWorks open on these same files
+for the structural studies, and two sessions holding one assembly is how work
+gets lost — so this is the table first, the export second.
+
+**You may not need SolidWorks at all.** Every number sw2urdf would ask for is
+already measured, in `nong/main_python_set_nong/rig_default.json`, which came
+from `nong_assembly.STEP`. So:
+
+```
+python tools/make_urdf.py
+```
+
+writes the whole file — tree, origins, axes, limits — straight from the rig, in
+one command, and re-writes it whenever the rig changes. What it *cannot* write
+is the meshes: a URDF names them, it does not carry them. Export one STL per
+body part from SolidWorks (six files) and either drop them in
+`nong/main_python_set_nong/models/` as `torso.stl`, `head.stl`, `L_upper.stl`,
+`L_fore.stl`, `R_upper.stl`, `R_fore.stl`, or name them with `--meshes`. A part
+with no mesh is written as a link with no `<visual>`, which Studio lists and
+skips rather than drawing an empty body.
+
+Use the full sw2urdf wizard below instead when you want the meshes and the
+joint frames to come from the CAD itself rather than from the measured rig —
+they should agree, and if they do not, the CAD is right and the rig needs
+re-measuring.
 
 ---
 

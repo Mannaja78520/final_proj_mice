@@ -54,6 +54,15 @@ URDF = """<?xml version="1.0"?>
   <joint name="l_shoulder" type="revolute">
     <parent link="torso_link"/>
     <child link="left_upper_arm"/>
+    <origin xyz="0 0.09 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+  <!-- the ELBOW's origin is the upper arm's length: a joint origin is measured
+       in its parent link's frame, so the bar's length rides on the joint
+       LEAVING it, never the one arriving. -->
+  <joint name="l_elbow" type="revolute">
+    <parent link="left_upper_arm"/>
+    <child link="nothing_to_draw"/>
     <origin xyz="0.05 0 0.12" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
   </joint>
@@ -141,9 +150,12 @@ def run(t):
              "a mesh already scaled to 0.001 in the URDF ends up at 1, not 1000 "
              "- the two conversions multiply, and missing that makes a robot a "
              "thousand times too big")
-        # joint origin 0.05 0 0.12 m -> 130 mm
-        t.eq(v.get("upperL"), "130",
-             "the distance between two joint origins becomes the arm's real length")
+        # the ELBOW's origin, 0.05 0 0.12 m -> 130 mm, is the upper arm's length
+        t.ok(v.get("upperL") == "130",
+             "the origin of the joint LEAVING a link becomes that bar's length",
+             "reading the joint that ARRIVES instead gives the offset of the bar "
+             "before it - on this robot the shoulder's own (0,0,0), so every arm "
+             "measured zero. got %s" % v.get("upperL"))
         t.ok(v.get("missing") == "true",
              "a mesh the URDF names but models/ does not hold is reported by name",
              "otherwise the part is simply not drawn, which reads as a broken "
