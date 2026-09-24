@@ -152,6 +152,12 @@
    "answer_en": "Hello! I am Mice robot. Welcome! How can I help you today?",
    "answer_ja": "こんにちは！マイスロボットです。いらっしゃいませ！何かお手伝いしましょうか？",
    "answer_zh": "您好！我是Mice机器人。欢迎光临！请问有什么我可以帮您的吗？",
+   "moves": [
+    {
+     "module": "nong",
+     "move": "hello.yaml"
+    }
+   ],
    "move": "hello.yaml",
    "module": "nong"
   },
