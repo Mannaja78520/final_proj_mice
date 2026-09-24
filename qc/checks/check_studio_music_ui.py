@@ -42,6 +42,8 @@ async function step(){
     document.getElementById("liveChk").checked = true;
     liveChanged();
     addKey(); addKey();                 // two keyframes: a show to export
+    // Live OFF while picking: the list must open on any link (A26-49).
+    document.getElementById("liveChk").checked = false;
     renderTimeline();
     const mus = document.querySelector(".key .kmus");
     if (!mus) { qcFail(new Error("no music button on a keyframe")); return; }
@@ -50,6 +52,13 @@ async function step(){
     const sel = document.querySelector(".key .kmustrack");
     if (!sel) { qcFail(new Error("the picker did not open")); return; }
     qcMark("opts=" + Array.prototype.map.call(sel.options, o => o.value).join(","));
+    // A REAL click on the list, the way a person opens it. It used to select
+    // the move, re-render the chip and throw the open list away (A26-49).
+    qcMark("seldisabled=" + sel.disabled);
+    sel.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    await wait(300);
+    qcMark("selkept=" + document.body.contains(sel));
+    document.getElementById("liveChk").checked = true;   // the show part below plays live
     sel.value = "song.mp3"; sel.onchange();
     const vol = document.querySelector(".key .kmusvol");
     vol.value = "65"; vol.onchange();
@@ -113,6 +122,10 @@ def run(t):
         t.eq(sorted(offered), ["clap.wav", "song.mp3"],
              "it offers what is really in the robot's /music folder, and only that")
 
+    t.contains(marks, "seldisabled=false",
+               "the track list opens with live follow OFF")
+    t.contains(marks, "selkept=true",
+               "clicking the track list does not rebuild it away under the mouse")
     t.contains(marks, "yaml-has-track", "the chosen track is written into the show")
     t.contains(marks, "yaml-has-vol", "and so is the level set beside it")
     t.contains(marks, "removed-clean",
@@ -149,7 +162,7 @@ def run(t):
     # ---- offline: the list cannot be read, what is set is still kept ----
     js = (F.CODE / "nong/main_python_set_nong/web/app.js").read_text(
         encoding="utf-8", errors="replace")
-    t.contains(js, "if (!liveLinked()) throw new Error",
+    t.contains(js, "if (!robotLinked()) throw new Error",
                "no robot means no track list, rather than an empty one")
     fn = js[js.find("function musicRow("):]
     fn = fn[:fn.find("\nfunction ")]

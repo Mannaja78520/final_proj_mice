@@ -148,6 +148,8 @@ def run(t):
     cpp = (F.FIRMWARE / "src" / "core" / "UserStore.cpp").read_text(encoding="utf-8")
     m = _re.search(r'shippedPassword\(\)\s*\{\s*return\s*"([^"]+)"', h)
     seeds = set(_re.findall(r'users_\["[^"]+"\]\s*=\s*"([^"]+)"', cpp))
+    # A26-43: the seeds may use shippedPassword() itself - one source, same value.
+    seeds |= {m.group(1)} if m and "= shippedPassword()" in cpp else set()
     t.ok(m and seeds == {m.group(1)} and m.group(1) == hub_auth.DEFAULT_PASSWORD,
          "boards seed and check the same default password as the hub",
          (m.group(1) if m else None, seeds, hub_auth.DEFAULT_PASSWORD))

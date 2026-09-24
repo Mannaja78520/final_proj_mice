@@ -416,8 +416,11 @@ class _Nong:
                         continue
                     self.neutral[i] = float(tok)
                 return "OK neutral set for all 10 joints"
+            if len(parts) == 2 and parts[1].upper() == "HERE":
+                self.neutral = [float(round(a)) for a in self.joints]
+                return "OK neutral = " + " ".join(str(int(a)) for a in self.neutral)
             if len(parts) < 3:
-                return "ERR usage: NEUTRAL <1-10|name|ALL> <deg>"
+                return "ERR usage: NEUTRAL <1-10|name|ALL> <deg> | HERE"
             d = float(parts[2])
             if parts[1].upper() == "ALL":
                 self.neutral = [d] * 10

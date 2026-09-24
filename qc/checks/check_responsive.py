@@ -227,7 +227,20 @@ def run(t):
         t.give_up("headless Edge not found — install Edge or run --quick")
     fake_serial.reset()
     base, main = F.start_hub()
+    # A real Studio freeze report is one long unbroken JSON word: it pushed /o/
+    # to 737px on a 360px phone (2026-09-24). Seed one so the card is measured full.
+    rep_dir = main.HERE / "reports"
+    rep_dir.mkdir(exist_ok=True)
+    seeded = rep_dir / "qc_responsive_long.json"
+    seeded.write_bytes(json.dumps({"id": "qclong", "time": "2026-09-24T00:00:00Z",
+        "status": "open", "text": "STUDIO FREEZE " + json.dumps({"gapMs": 1, "k": "x" * 300})}).encode())
+    try:
+        _measure(t, base)
+    finally:
+        seeded.unlink(missing_ok=True)       # QC leaves no reports behind
 
+
+def _measure(t, base):
     # /rgb.html is here because it was NOT, for a long time. It is served by
     # the hub and used at a venue on a phone, and it was in none of the three
     # page lists — no responsive check, no throws check, no token check — so it
