@@ -209,6 +209,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/checks/check_studio_distances.py`
 - `qc/checks/check_studio_edits.py`
 - `qc/checks/check_studio_escape.py`
+- `qc/checks/check_studio_fold.py`
 - `qc/checks/check_studio_freeze_watch.py`
 - `qc/checks/check_studio_leak.py`
 - `qc/checks/check_studio_limit_mismatch.py`
@@ -259,7 +260,6 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/checks/check_wifi_resilience.py`
 - `qc/checks/check_wifi_ssid.py`
 - `qc/checks/check_yaml_save_load.py`
-- `qc/checks/check_zero_lock.py`
 - `qc/data/designer_words.json`
 - `qc/data/driver_waits.json`
 - `qc/data/handover_sabotage.json`
@@ -388,6 +388,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `check_studio_boot`
 - `check_studio_distances`
 - `check_studio_edits`
+- `check_studio_fold`
 - `check_studio_freeze_watch`
 - `check_studio_leak`
 - `check_studio_limit_mismatch`
@@ -422,6 +423,5 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `check_wifi_live`
 - `check_wifi_ssid`
 - `check_yaml_save_load`
-- `check_zero_lock`
 
 Run them: `python qc/run_qc.py --no-build check_advanced check_app_handout check_arm_mirror check_bench_nongpins check_board_auth check_boot_noise check_branch check_browser_budget check_bus_dongle check_bus_group check_cam_viewers check_chatty_board check_code_patches check_connection check_crash_gate check_design_system check_designer_first check_dev_tools check_diagnostics check_docs check_driver_waits check_edge_cases check_firmware_build check_flaky_retry check_flash check_flash_confirm check_flash_remote check_flash_type check_flat_view_drag check_freeze_stop check_gate_order check_history check_home_pose_board check_hub_auth check_hub_clock check_hub_nav check_hub_pair check_hub_reach check_identity check_joint_select`

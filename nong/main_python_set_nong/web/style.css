@@ -392,6 +392,16 @@ header{flex-wrap:wrap;padding:var(--sp-3) var(--sp-4);gap:var(--sp-3)}
 .pose-help .hint{display:block;max-width:80ch;margin:var(--sp-2) 0}
 #side .card{padding:var(--sp-4)}
 #side .card.disclosure{padding:var(--sp-2) var(--sp-3)}
+/* A31-24: a card folds to its title, looking like the Pose tab's <details> */
+#side .card.foldable>h2{cursor:pointer;min-height:38px;align-content:center}
+#side .card.foldable>h2::before{content:"▾";display:inline-block;color:var(--mut);
+  margin-right:var(--sp-2);transition:transform .15s}
+#side .card.folded>h2::before{transform:rotate(-90deg)}
+#side .card.foldable>h2:hover{color:var(--acc)}
+#side .card.folded{padding:var(--sp-2) var(--sp-3)}
+#side .card.folded>h2{margin:0}
+#side .card.folded>:not(h2){display:none!important}
+@media (pointer:coarse){#side .card.foldable>h2{min-height:44px}}
 #side h2{font-size:15px}
 .jrow{margin:var(--sp-2) 0}
 #timeline{padding:var(--sp-3) var(--sp-4)}
@@ -400,8 +410,9 @@ header{flex-wrap:wrap;padding:var(--sp-3) var(--sp-4);gap:var(--sp-3)}
 #viewCube{background:color-mix(in srgb,var(--card) 92%,transparent);border-radius:var(--r-md)}
 
 /* the unsaved-changes question (A31-18): a native <dialog>, so Escape and
-   focus trapping come from the browser */
-.askdlg{max-width:min(440px,calc(100vw - 2*var(--sp-4)));border:1px solid var(--line);
+   focus trapping come from the browser. margin:auto undoes mice.css's
+   *{margin:0}, which pinned the dialog to the top-left corner. */
+.askdlg{margin:auto;max-width:min(440px,calc(100vw - 2*var(--sp-4)));border:1px solid var(--line);
   border-radius:var(--r-md);background:var(--card);color:var(--txt);padding:var(--sp-4)}
 .askdlg::backdrop{background:color-mix(in srgb,#000 55%,transparent)}
 .askdlg h2{margin:0 0 var(--sp-2)}

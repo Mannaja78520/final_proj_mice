@@ -196,6 +196,49 @@ function initSideDrag() {
     localStorage.setItem("nong_sidew", parseInt(side.style.width) || 320);
   });
 }
+// --- fold a side card to its title (A31-24) ---
+// User 2026-09-24: *all card in the top right which tab is more than 1 card or
+// hard to scroll down to setup can hide it like the POSE tab*. In a tab with
+// two or more cards, the h2 folds its card. Setup starts folded (a list of
+// titles); other tabs keep their first card open. The choice is kept per browser.
+const FOLD_KEY = "nong_folded";
+function initCardFold() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(FOLD_KEY)) || {}; } catch (e) {}
+  const byTab = {};
+  document.querySelectorAll("#side div.card[data-stab]").forEach(c => {
+    (byTab[c.dataset.stab] = byTab[c.dataset.stab] || []).push(c);
+  });
+  Object.entries(byTab).forEach(([tab, cards]) => {
+    if (cards.length < 2) return;
+    cards.forEach((card, i) => {
+      const h = card.querySelector(":scope > h2");
+      if (!h) return;
+      const key = tab + ":" + h.firstChild.textContent.trim();
+      card.classList.add("foldable");
+      h.tabIndex = 0;
+      h.setAttribute("role", "button");
+      const set = (folded, remember) => {
+        card.classList.toggle("folded", folded);
+        h.setAttribute("aria-expanded", String(!folded));
+        if (!remember) return;
+        saved[key] = folded;
+        try { localStorage.setItem(FOLD_KEY, JSON.stringify(saved)); } catch (e) {}
+      };
+      set(key in saved ? saved[key] : (tab === "setup" || i > 0), false);
+      const toggle = (e) => {
+        // a switch inside the title (Robot link's technical-details box) is not a fold
+        if (e.target.closest("label, input, button, select, a")) return;
+        set(!card.classList.contains("folded"), true);
+      };
+      h.addEventListener("click", toggle);
+      h.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(e); }
+      });
+    });
+  });
+}
+initCardFold();
 // --- rig data ---
 // 10 logical joints: 8 arm (2 arms x universal shoulder+elbow) then the two
 // BODY joints — WAIST (yaws the whole upper body left/right) and SHRUG (lifts
@@ -4706,17 +4749,15 @@ function askUnsaved(what) {
         + '<p class="mini" id="unsavedText"></p>'
         + '<div class="row"><button class="primary" id="unsavedSave">Save, then continue</button>'
         + '<button class="danger" id="unsavedDrop">Don’t save</button>'
-        + '<button id="unsavedCancel">Cancel</button></div>'
-        + '<label class="mini"><input type="checkbox" id="unsavedOff"> '
-        + 'don’t ask again (Settings ▸ Saving turns it back on)</label>';
+        + '<button id="unsavedCancel">Cancel</button></div>';
+      // No "don't ask again" box here (user 2026-09-24): the switch lives
+      // only in Settings ▸ Saving.
       document.body.appendChild(dlg);
     }
     $("unsavedText").textContent = "The moves on the time bar have changes that are "
       + "not saved" + (savedName ? " to " + savedName : "") + ". If you " + what
       + " now, they are replaced.";
-    $("unsavedOff").checked = false;
     const done = async (how) => {
-      if ($("unsavedOff").checked) { setAskUnsaved(false); syncAskUnsavedBox(); }
       dlg.close();
       resolve(how === "save" ? await saveAll() : how === "drop");
     };

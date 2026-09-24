@@ -15,6 +15,9 @@ a project save left the YAML behind. Holds:
   * opening a file while dirty shows the dialog, and Cancel keeps every move;
   * "Don't save" opens the file;
   * with the Settings switch off, the file opens without a dialog.
+  * A31-23 (2026-09-24): the dialog is centred - mice.css's *{margin:0} had
+    removed the <dialog>'s margin:auto and pinned it top-left - and it has no
+    don't-ask-again box; the user turns the question off in Settings only.
 """
 import json
 
@@ -51,6 +54,9 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
     document.getElementById("seqList").value = "%(name)s.yaml";
     var p = editLocalSeq(); await wait(300);
     report("dialog=" + dlgOpen());
+    var d = document.getElementById("unsavedDlg"), r = d.getBoundingClientRect();
+    report("centred=" + (Math.abs(r.left - (document.documentElement.clientWidth - r.right)) < 4)
+      + "~box=" + !!d.querySelector("input[type=checkbox]"));
     document.getElementById("unsavedCancel").click(); await p;
     report("cancel~keys=" + keys.length + "~dialog=" + dlgOpen());
     p = editLocalSeq(); await wait(300);
@@ -105,6 +111,9 @@ def run(t):
                  "and the .json holds the same 3 moves")
         t.ok("edited~dirty=true~keys=4" in marks, "one more keyframe is unsaved work", marks)
         t.ok("dialog=true" in marks, "opening a file while unsaved asks first", marks)
+        t.ok("centred=true~box=false" in marks,
+             "the question sits in the middle of the screen, with no don't-ask-again "
+             "box (A31-23: the switch is only in Settings)", marks)
         t.ok("cancel~keys=4~dialog=false" in marks,
              "Cancel closes the question and keeps all 4 moves", marks)
         t.ok("drop~keys=3~dirty=false" in marks,

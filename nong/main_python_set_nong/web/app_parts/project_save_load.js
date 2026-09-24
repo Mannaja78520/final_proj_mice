@@ -267,17 +267,15 @@ function askUnsaved(what) {
         + '<p class="mini" id="unsavedText"></p>'
         + '<div class="row"><button class="primary" id="unsavedSave">Save, then continue</button>'
         + '<button class="danger" id="unsavedDrop">Don’t save</button>'
-        + '<button id="unsavedCancel">Cancel</button></div>'
-        + '<label class="mini"><input type="checkbox" id="unsavedOff"> '
-        + 'don’t ask again (Settings ▸ Saving turns it back on)</label>';
+        + '<button id="unsavedCancel">Cancel</button></div>';
+      // No "don't ask again" box here (user 2026-09-24): the switch lives
+      // only in Settings ▸ Saving.
       document.body.appendChild(dlg);
     }
     $("unsavedText").textContent = "The moves on the time bar have changes that are "
       + "not saved" + (savedName ? " to " + savedName : "") + ". If you " + what
       + " now, they are replaced.";
-    $("unsavedOff").checked = false;
     const done = async (how) => {
-      if ($("unsavedOff").checked) { setAskUnsaved(false); syncAskUnsavedBox(); }
       dlg.close();
       resolve(how === "save" ? await saveAll() : how === "drop");
     };

@@ -8,6 +8,7 @@
     "parts": [
       "00_header.js",
       "notices.js",
+      "card_fold.js",
       "rig_data.js",
       "state.js",
       "scene.js",
