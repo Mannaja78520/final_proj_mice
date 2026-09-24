@@ -6786,3 +6786,76 @@ the save change in nong studio make it to middle of screen not on the left side 
  donΓÇÖt ask again (Settings Γû╕ Saving turns it back on)
 
 make user find and setting by them self
+
+### 2026-09-24 10:35
+and where are setting in nong studio
+
+and in nong studio all card in the top right which tab is more than 1 card or hard to scroll down to setup can hide it like the POSE tab
+
+### 2026-09-24 10:36
+<pasted_content id="a769">
+Manage usage on claude.ai
+WhatΓÇÖs contributing to your limits usage?
+Day
+Week
+Approximate, based on local sessions on this machine ΓÇö does not include other devices or claude.ai
+Last 24h ┬╖ these are independent characteristics of your usage, not a breakdown
+91% of your usage was at >150k context
+Longer sessions are more expensive even when cached. /compact mid-task, /clear when switching to new tasks.
+Skills
+% of usage
+/webapp-design
+4%
+</pasted_content id="a769">
+
+how to reduce contex and make it reduce token use?
+it make my weekly hit limit soo fasr
+
+### 2026-09-24 10:39
+save to new analysis all data please and solidword N to me i will sim by my self
+
+### 2026-09-24 10:42
+then can we make default to sonnet while QC not Opus?
+and if can reduce token let do it.
+
+### 2026-09-24 10:54
+are you running? make running if not
+
+### 2026-09-24 10:54
+are you running? make running if not
+
+### 2026-09-24 10:54
+are you sure run solid work sim for me please
+
+### 2026-09-24 10:54
+are you sure?
+
+### 2026-09-24 12:27
+but the part it not rigit long part some point it have more load than other point and include servo and everything in elbow did we already include that?
+
+### 2026-09-24 12:30
+but the part it not rigit long part some point it have more load than other point and include servo and everything in elbow did we already include that?
+
+are you sure about that?
+
+### 2026-09-24 12:31
+sorry wrong session did this please if help
+
+Biggest saving, still true: move off the [1m] model and run /clear between tasks. Those two changes matter more than everything I edited.
+
+Should I copy the new CLAUDE.md into .staging and run the quick suite through qc-runner once the current gate finishes? That would test the new file and the agent together.
+
+### 2026-09-24 12:31
+do it
+
+### 2026-09-24 12:34
+okay do you already write how many N i will sim and give this sim picture to my  thesis too because it no picture to see make it worse
+
+### 2026-09-24 12:35
+finish?
+
+### 2026-09-24 12:38
+do it why esc still can use i told you to disable it everytime why it still have for global
+
+### 2026-09-24 12:44
+give me the real number to test by my self too
