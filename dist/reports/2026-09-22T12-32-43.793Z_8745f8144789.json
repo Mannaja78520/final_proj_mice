@@ -1,0 +1,11 @@
+{
+  "id": "8745f8144789",
+  "time": "2026-09-22T12:32:43.793Z",
+  "text": "STUDIO FREEZE {\"gapMs\":1825,\"playing\":false,\"live\":true,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":3,\"gpu\":{\"geometries\":20,\"textures\":0,\"programs\":3},\"heapMB\":17,\"longTasks\":[{\"ms\":1826,\"at\":481220}],\"slowCalls\":[{\"u\":\"/api/load?name=tangVongSungLeft.json\",\"ms\":3,\"at\":481216}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0"
+}

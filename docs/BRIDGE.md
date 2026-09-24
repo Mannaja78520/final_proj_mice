@@ -2637,3 +2637,406 @@ Files/resources: All A26-91 claims released.
 Evidence: Promoted 20 files as commit c81f7a3 on full gate receipt 5706/0. Studio peak speed limit input, board safety speed adoption, check_contracts, check_studio_edits (5 safety speed assertions + CFG whitelist), and patches 0101/0102 live in main.
 In flight: none.
 Next: task complete.
+
+### 2026-09-22 22:43:20 +0700 — unknown-session (set MICE_AGENT)
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-split3
+Files: docs/systems/hub-media.md, docs/systems/hub-net.md, docs/systems/hub-shows.md, docs/systems/hub.md, docs/systems/README.md, docs/systems.json, main_python/main.py, qc/checks/check_app_routes.py, qc/checks/check_no_console_window.py, qc/checks/check_scope.py, qc/data/scope.json, qc/lib/qc.py, qc/lib/scope.py, tools/systems.py, docs/systems/hub-apps.md, docs/systems/hub-flash.md, docs/systems/hub-show.md, docs/systems/hub-studio.md, docs/systems/hub-support.md, docs/systems/hub-usb.md, main_python/hub_api_apps.py, main_python/hub_api_flash.py, main_python/hub_api_play.py, main_python/hub_api_studio.py, main_python/hub_api_support.py, main_python/hub_flash.py, main_python/hub_probe.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-22 22:54:29 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-split3
+Files: AGENTS.md, docs/systems/agents.md, docs/systems/hub-media.md, docs/systems/hub-net.md, docs/systems/hub-shows.md, docs/systems/hub.md, docs/systems/qc.md, docs/systems/README.md, docs/systems.json, GEMINI.md, main_python/main.py, qc/checks/check_app_routes.py, qc/checks/check_no_console_window.py, qc/checks/check_scope.py, qc/data/scope.json, qc/lib/qc.py, qc/lib/scope.py, tools/ai_brief.txt, tools/systems.py, docs/systems/hub-apps.md, docs/systems/hub-flash.md, docs/systems/hub-show.md, docs/systems/hub-studio.md, docs/systems/hub-support.md, docs/systems/hub-usb.md, main_python/hub_api_apps.py, main_python/hub_api_flash.py, main_python/hub_api_play.py, main_python/hub_api_studio.py, main_python/hub_api_support.py, main_python/hub_flash.py, main_python/hub_probe.py, qc/checks/check_read_rules.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-22 23:49:06 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-split3
+Files: AGENTS.md, docs/systems/agents.md, docs/systems/hub-media.md, docs/systems/hub-net.md, docs/systems/hub-shows.md, docs/systems/hub.md, docs/systems/qc.md, docs/systems/README.md, docs/systems.json, GEMINI.md, main_python/main.py, qc/checks/check_app_routes.py, qc/checks/check_no_console_window.py, qc/checks/check_scope.py, qc/data/qc_speed.json, qc/data/scope.json, qc/lib/qc.py, qc/lib/scope.py, qc/run_qc.py, tools/ai_brief.txt, tools/systems.py, docs/systems/hub-apps.md, docs/systems/hub-flash.md, docs/systems/hub-show.md, docs/systems/hub-studio.md, docs/systems/hub-support.md, docs/systems/hub-usb.md, main_python/hub_api_apps.py, main_python/hub_api_flash.py, main_python/hub_api_play.py, main_python/hub_api_studio.py, main_python/hub_api_support.py, main_python/hub_flash.py, main_python/hub_probe.py, qc/checks/check_flaky_retry.py, qc/checks/check_read_rules.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 00:01:47 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-split3
+Files: AGENTS.md, docs/systems/agents.md, docs/systems/hub-media.md, docs/systems/hub-net.md, docs/systems/hub-shows.md, docs/systems/hub.md, docs/systems/qc.md, docs/systems/README.md, docs/systems.json, GEMINI.md, main_python/main.py, qc/checks/check_app_routes.py, qc/checks/check_no_console_window.py, qc/checks/check_scope.py, qc/checks/check_studio_playback.py, qc/data/qc_speed.json, qc/data/scope.json, qc/lib/qc.py, qc/lib/scope.py, qc/run_qc.py, tools/ai_brief.txt, tools/systems.py, docs/systems/hub-apps.md, docs/systems/hub-flash.md, docs/systems/hub-show.md, docs/systems/hub-studio.md, docs/systems/hub-support.md, docs/systems/hub-usb.md, main_python/hub_api_apps.py, main_python/hub_api_flash.py, main_python/hub_api_play.py, main_python/hub_api_studio.py, main_python/hub_api_support.py, main_python/hub_flash.py, main_python/hub_probe.py, qc/checks/check_flaky_retry.py, qc/checks/check_read_rules.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 00:09:22 +0700 — claude:09222224-cc70
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-split3
+Files: 37 copied into main
+Commit: a3e5e4a  (roll back with: git revert a3e5e4a)
+
+### 2026-09-23 00:25:30 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-split4
+Files: docs/systems/hub-media.md, docs/systems/hub-net.md, docs/systems/hub-support.md, docs/systems/hub-usb.md, docs/systems/hub.md, docs/systems/README.md, docs/systems.json, main_python/main.py, docs/systems/hub-modules.md, main_python/hub_cam.py, main_python/hub_modules.py, main_python/hub_update.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 00:36:34 +0700 — claude:09222224-cc70
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-split4
+Files: 12 copied into main
+Commit: eb9ff05  (roll back with: git revert eb9ff05)
+
+### 2026-09-23 02:11:50 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: qc/checks/check_flaky_retry.py, qc/checks/check_key_click.py, qc/checks/check_link_states.py, qc/checks/check_parallel_runs.py, qc/checks/check_tools_list.py, qc/lib/browser.py, qc/run_qc.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 02:20:13 +0700 — claude:09222224-cc70
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: 7 copied into main
+Commit: 4eeec22  (roll back with: git revert 4eeec22)
+
+### 2026-09-23 02:33:26 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: qc/checks/check_flaky_retry.py, qc/run_qc.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 02:41:15 +0700 — claude:09222224-cc70
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: 2 copied into main
+Commit: 12012ef  (roll back with: git revert 12012ef)
+
+### 2026-09-23 02:44:17 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: qc/checks/check_responsive.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 03:01:57 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: qc/checks/check_responsive.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 03:02:50 +0700 — claude:09222224-cc70
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: 1 copied into main
+Commit: 3002b28  (roll back with: git revert 3002b28)
+
+### 2026-09-23 03:16:21 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: qc/checks/check_crash_gate.py, qc/checks/check_modsite_tabs.py, qc/checks/check_move_names.py, qc/checks/check_seek_while_playing.py, qc/checks/check_settings_transfer.py, qc/checks/check_shrug_curve.py, qc/checks/check_studio_boot.py, qc/checks/check_studio_leak.py, qc/checks/check_studio_peer.py, qc/checks/check_timeline_drag.py, qc/checks/check_view.py, qc/checks/check_yaml_save_load.py, qc/lib/browser.py, qc/checks/check_driver_waits.py, qc/data/driver_waits.json
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 03:23:45 +0700 — unknown-session (set MICE_AGENT)
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: docs/systems/qc.md, qc/checks/check_crash_gate.py, qc/checks/check_modsite_tabs.py, qc/checks/check_move_names.py, qc/checks/check_seek_while_playing.py, qc/checks/check_settings_transfer.py, qc/checks/check_shrug_curve.py, qc/checks/check_studio_boot.py, qc/checks/check_studio_leak.py, qc/checks/check_studio_peer.py, qc/checks/check_timeline_drag.py, qc/checks/check_view.py, qc/checks/check_yaml_save_load.py, qc/lib/browser.py, qc/checks/check_driver_waits.py, qc/data/driver_waits.json
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 03:31:10 +0700 — unknown-session (set MICE_AGENT)
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: 16 copied into main
+Commit: 7341f54  (roll back with: git revert 7341f54)
+
+### 2026-09-23 03:40:46 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: qc/checks/check_advanced.py, qc/checks/check_driver_waits.py, qc/checks/check_flash_remote.py, qc/checks/check_flash_type.py, qc/checks/check_home_pose_board.py, qc/checks/check_identity.py, qc/checks/check_modsite_errors.py, qc/checks/check_modsite_joints.py, qc/checks/check_page_login.py, qc/checks/check_shortcuts.py, qc/checks/check_themes.py, qc/checks/check_ui_states.py, qc/checks/check_wifi_ssid.py, qc/data/driver_waits.json
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 03:51:10 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: qc/checks/check_advanced.py, qc/checks/check_driver_waits.py, qc/checks/check_flash_remote.py, qc/checks/check_flash_type.py, qc/checks/check_home_pose_board.py, qc/checks/check_identity.py, qc/checks/check_modsite_errors.py, qc/checks/check_modsite_joints.py, qc/checks/check_page_login.py, qc/checks/check_shortcuts.py, qc/checks/check_studio_boot.py, qc/checks/check_studio_peer.py, qc/checks/check_themes.py, qc/checks/check_ui_states.py, qc/checks/check_view.py, qc/checks/check_wifi_ssid.py, qc/data/driver_waits.json, qc/lib/browser.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 04:00:31 +0700 — claude:09222224-cc70
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: 18 copied into main
+Commit: fdb55d0  (roll back with: git revert fdb55d0)
+
+### 2026-09-23 04:04:00 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: qc/checks/check_driver_waits.py, qc/checks/check_ui_states.py, qc/lib/browser.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 04:09:54 +0700 — claude:09222224-cc70
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: 3 copied into main
+Commit: eec72bf  (roll back with: git revert eec72bf)
+
+### 2026-09-23 04:21:38 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: qc/checks/check_driver_waits.py, qc/lib/browser.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 04:29:03 +0700 — claude:09222224-cc70
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: 2 copied into main
+Commit: 48193dc  (roll back with: git revert 48193dc)
+
+### 2026-09-23 04:32:27 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: qc/checks/check_responsive.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 04:33:25 +0700 — claude:09222224-cc70
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-flaky
+Files: 1 copied into main
+Commit: 102123c  (roll back with: git revert 102123c)
+
+### 2026-09-23 04:43:14 +0700 — claude:09222224-cc70
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-rig
+Files: docs/ref_data.js, docs/systems/hub-auth.md, docs/systems/qc.md, docs/systems/studio.md, docs/systems.json, firmware/generated/web/ModuleUI.h, firmware/src/web/WebUI.h, main_python/hub_api_studio.py, main_python/hub_auth.py, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/rig_setup_ui.js, tools/registry.py, config/rig_presets.json, qc/checks/check_rig_presets.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 04:51:21 +0700 — claude:09222224-cc70
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-rig
+Files: 14 copied into main
+Commit: a52e48e  (roll back with: git revert a52e48e)
+
+### 2026-09-23 06:50:00 +0700 — claude:09230638-ea8c
+Event: CLAIM
+Task: A31-1..A31-9 (Nong Studio shows: continuous playback, loop modes, show-on-timeline, speed regressions, front/back arm, URDF, 2D drag)
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: nong/main_python_set_nong/web/ (app.js, index.html, style.css, app_parts/*), main_python/shows.py, main_python/hub_show.py, main_python/hub_api_play.py, main_python/main.py (seq_steps only), qc/checks/check_shows.py + new checks, qc/data/, docs/ref_data.js, docs/systems.json, docs/systems/studio.md
+Next: do not edit these in main until PROMOTE-DONE. model/ is NOT claimed - claude:09230033-96eb has SolidWorks.
+
+### 2026-09-23 08:50:07 +0700 — claude:09230638-ea8c
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: docs/ref_data.js, docs/systems/hub-show.md, docs/systems/hub-shows.md, docs/systems/qc.md, docs/systems/studio.md, main_python/hub_api_play.py, main_python/main.py, main_python/shows.py, main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/ik_4_dof_arm.js, nong/main_python_set_nong/web/app_parts/picking_drag.js, nong/main_python_set_nong/web/app_parts/project_save_load.js, nong/main_python_set_nong/web/app_parts/rig_data.js, nong/main_python_set_nong/web/app_parts/rig_setup_ui.js, nong/main_python_set_nong/web/app_parts/scene.js, nong/main_python_set_nong/web/app_parts/shows.js, nong/main_python_set_nong/web/app_parts/sliders.js, nong/main_python_set_nong/web/app_parts/timeline.js, nong/main_python_set_nong/web/app_parts/timing.js, nong/main_python_set_nong/web/index.html, nong/main_python_set_nong/web/style.css, tools/web_build.json, docs/urdf_nong.md, nong/main_python_set_nong/web/app_parts/urdf_import.js, qc/checks/check_arm_mirror.py, qc/checks/check_flat_view_drag.py, qc/checks/check_show_continuous.py, qc/checks/check_speed_limit_visible.py, qc/checks/check_urdf_import.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 08:58:32 +0700 — claude:09230638-ea8c
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: 30 copied into main
+Commit: b5a97cf  (roll back with: git revert b5a97cf)
+
+### 2026-09-23 09:10:33 +0700 — claude:09230638-ea8c
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: docs/ref_data.js, docs/systems/qc.md, docs/systems/studio.md, docs/systems.json, docs/urdf_nong.md, main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/urdf_import.js, qc/checks/check_urdf_import.py, qc/checks/check_urdf_export.py, tools/make_urdf.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 09:17:57 +0700 — claude:09230638-ea8c
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: 11 copied into main
+Commit: 29a37ba  (roll back with: git revert 29a37ba)
+
+### 2026-09-23 09:18:25 +0700 — claude:09230638-ea8c
+Event: NOTICE
+A31-1..A31-9 landed in two promotes: b5a97cf (30 files, full gate 5879/0) and 29a37ba (11 files, 5904/0). Nong Studio shows, timing limits, front/back arm, flat-view drag, URDF import + generator.
+What is true now: shows chain with no gap and repeat by times or seconds (main_python/shows.py, new /api/show/steps); Studio names the limit holding a move and the peak limit is editable offline; a keyframe can be pinned to the front or back arm (RIG.frontArm) and mirrored geometrically; a plane view cannot be orbited out of and drags without Shift; .urdf can be imported and tools/make_urdf.py writes one from rig_default.json.
+Next: A31-8 is handed off - it needs one STL per body part exported from nong_assembly.SLDASM into nong/main_python_set_nong/models/, which needs SolidWorks free (held by claude:09230033-96eb). Two pre-existing bugs were fixed on the way and are worth knowing: mirrorLR() swapped joint numbers, which is NOT a mirror on this robot (613 mm error, the two arms carry different invert flags); and the URDF importer read a bar length from the joint ARRIVING at a link, which on this tree is always (0,0,0).
+
+### 2026-09-23 09:24:13 +0700 — claude:09230638-ea8c
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: main_python/shows.py, qc/checks/check_show_continuous.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 09:33:23 +0700 — claude:09230638-ea8c
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: 2 copied into main
+Commit: 0f41bd0  (roll back with: git revert 0f41bd0)
+
+### 2026-09-23 09:33:45 +0700 — claude:09230638-ea8c
+Event: NOTICE
+Round 3 landed 0f41bd0 (gate 5905/0): shows.py refuses a times repeat above MAX_PASSES up front. Found by Codex reviewing the landed change.
+What is true now: both repeat modes are bounded and each has its own named check in check_show_continuous. The Gemini ai_panel produced NO review in two runs - every model answers 'a tool required the command permission that headless mode cannot prompt for' and the head reviewer prints the same line as its verdict, which reads as 'no problems found'. Codex worked and found the bug the panel missed.
+Next: A31-11 is the panel. Do not change the user's agy permission settings without asking. Use codex.exe exec --skip-git-repo-check -s read-only for reviews meanwhile. A31-10: MiceHub.exe is stale and PyInstaller cannot replace it while the hub is running.
+
+### 2026-09-23T11:56:07.4697089+07:00 - codex:09231155-a88d
+Event: CLAIM
+Task: robot A30-7
+Tree: E:/final_proj/mice/model/21_09_2026_nangrum_full/analysis
+Files/resources: new editable_word/ directory only; read source report and data. No SolidWorks hardware/UI claim.
+Evidence: user explicitly asks Codex to continue stopped Claude after limit. Preserve original report.
+Next: inspect graphs and build editable Word copy.
+
+### 2026-09-23T11:59:58.8719545+07:00 - codex:09231155-a88d
+Event: CLAIM
+Task: robot A30-7
+Files/resources: editable_word/ includes BOTH output documents, helper scripts, review and render files. Read-only input Downloads/*_v3_2026-09-23.docx. No original overwritten.
+Evidence: user confirmed both documents and authorized corrections; subagent audit_report has read-only review with review.md output here.
+
+### 2026-09-23 13:58:57 +0700 — claude:09230638-ea8c
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: docs/systems/qc.md, main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/music_on_a_keyframe.js, nong/main_python_set_nong/web/app_parts/timeline.js, nong/main_python_set_nong/web/app_parts/timing.js, nong/main_python_set_nong/web/style.css, qc/checks/check_urdf_export.py, tools/make_urdf.py, qc/checks/check_time_pin.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 14:07:13 +0700 — claude:09230638-ea8c
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: docs/systems/qc.md, main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/music_on_a_keyframe.js, nong/main_python_set_nong/web/app_parts/timeline.js, nong/main_python_set_nong/web/app_parts/timing.js, nong/main_python_set_nong/web/style.css, qc/checks/check_urdf_export.py, tools/make_urdf.py, qc/checks/check_time_pin.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 14:17:13 +0700 — claude:09230638-ea8c
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: docs/systems/qc.md, main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/music_on_a_keyframe.js, nong/main_python_set_nong/web/app_parts/timeline.js, nong/main_python_set_nong/web/app_parts/timing.js, nong/main_python_set_nong/web/style.css, qc/checks/check_urdf_export.py, tools/make_urdf.py, qc/checks/check_time_pin.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 14:26:55 +0700 — claude:09230638-ea8c
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: docs/systems/qc.md, main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/music_on_a_keyframe.js, nong/main_python_set_nong/web/app_parts/timeline.js, nong/main_python_set_nong/web/app_parts/timing.js, nong/main_python_set_nong/web/style.css, qc/checks/check_chatty_board.py, qc/checks/check_urdf_export.py, tools/make_urdf.py, qc/checks/check_time_pin.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 14:33:15 +0700 — claude:09230638-ea8c
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: 11 copied into main
+Commit: 08a92d8  (roll back with: git revert 08a92d8)
+
+### 2026-09-23 14:36:00 +0700 — claude:09230638-ea8c
+Event: NOTICE
+A31-12 landed 08a92d8 (gate 5918/0): a move time typed by hand is pinned and survives pose edits, Show speed and reordering. Six body-part STLs exported from SolidWorks by script into nong/main_python_set_nong/models/, and nong.urdf generated from the measured rig naming all six.
+What is true now: MiceHub.exe rebuilt (13:40) and the hub was stopped to do it. models/ holds torso/head/L_upper/R_upper/L_fore/R_fore .stl (27.6 MB) plus nong.urdf. check_chatty_board PATIENCE raised 25s -> 90s after the full gate blew it twice while the same check passed alone in 32s. Pinning times loaded from a YAML was tried and REVERTED - it broke check_sequences, and the user asked about times they adjusted, not about files.
+Next: A31-8 is handed off - the sw2urdf .NET API IS drivable from a script (probe in the session scratchpad) but CreateRobotFromActiveModel throws out-of-process, and reading the joint pivots from the mates is blocked on MateEntity2.ReferenceComponent being null for most entities. Do not write a URDF from unverified pivots.
+
+### 2026-09-23 14:46:11 +0700 — claude:09230638-ea8c
+Event: NOTICE
+HARDWARE ON THE BENCH 2026-09-23 ~16:00: nong id 67, chip B4BFE91C5A74, RS485 on COM12, linked to peer 85, fw 1.0.0, SD ok. Hub running on port 8642.
+MEASURED, both firsts against real hardware: (1) a chained show hands over in 80 ms - the board answered OK pose T=80ms and the wall gap was 0.101 s, where the authored entry T was 2500 ms. A31-1 had only ever been proved against a fake. (2) t = delta x pi/2 / safe_dps with an 80 ms floor is EXACTLY what the firmware does - 5/10/15/25 deg gave 80/130/196/327 ms against predictions of 80/131/197/328. THIS BOARD REPORTS safe_dps 120, not the 60 in the plan, so its flat point is 76.4 deg/s and not 38. Arm returned to its neutral; test sequences removed.
+Next while the board is here: raising safe_dps to prove a move really gets faster needs a CFG write plus a reboot - a persistent safety setting on the user's robot, so ASK first. Also still open and hardware-only: A26-92 RELAX not releasing the TD8135MG (user said not yet), A26-71 shrug gear, and the servo_range 180 vs documented PDI 270 question from A26-90 - this board still reports 180 for all eight arm joints.
+
+### 2026-09-23 15:02:21 +0700 — claude:09230638-ea8c
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/ik_4_dof_arm.js, nong/main_python_set_nong/web/app_parts/sliders.js, nong/main_python_set_nong/web/app_parts/timeline.js, nong/main_python_set_nong/web/app_parts/timing.js, nong/main_python_set_nong/web/index.html, qc/checks/check_arm_mirror.py, qc/checks/check_speed_limit_visible.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 15:09:20 +0700 — claude:09230638-ea8c
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: 9 copied into main
+Commit: b78989e  (roll back with: git revert b78989e)
+
+### 2026-09-23 15:09:33 +0700 — claude:09230638-ea8c
+Event: NOTICE
+Round 5 landed b78989e (gate 5926/0, one FLAKY retried green): two mirror buttons (left-right and front-back) and Show speed capped at the saved peak limit's flat point.
+What is true now: board 67 runs at safe_dps 190 (was 120), measured 37 percent faster on the same moves. Studio's Show speed ceiling follows the saved limit: 120 -> 76 deg/s, 190 -> 121. mirrorPose takes lr or fb; fb keeps each arm on its own side.
+Next: A31-8 URDF pivots still handed off. The user reported left-right mirroring as broken - it was not, it was already exact to within 2 mm on hands and elbows; the real gap was the missing front-back button. Measure before believing a UI bug report.
+
+### 2026-09-23 15:28:12 +0700 — claude:09230638-ea8c
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: main_python/shows.py, main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/shows.js, qc/checks/check_show_continuous.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 15:34:43 +0700 — claude:09230638-ea8c
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: 5 copied into main
+Commit: 34b3841  (roll back with: git revert 34b3841)
+
+### 2026-09-23 15:34:57 +0700 — claude:09230638-ea8c
+Event: NOTICE
+Round 6 landed 34b3841 (gate 5938/0): show items can run for EXACTLY N seconds, cut to keep a timetable.
+What is true now: repeat_mode 'exact' cuts an item at the last keyframe that fits and spends the leftover budget travelling into the next sequence's first pose, so it arrives on the deadline. 'seconds' unchanged (never cuts, runs over). A31-8 URDF geometry is now the USER's - they are doing the SolidWorks mates and wizard pass themselves.
+Next: nothing in flight. Board 67 is on COM12 at safe_dps 190. The second board (85) is configured as a link peer but is not on the bus.
+
+### 2026-09-23 18:17:35 +0700 — claude:09230638-ea8c
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: docs/systems/hub.md, main_python/shows.py, qc/checks/check_show_continuous.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 18:24:14 +0700 — claude:09230638-ea8c
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-show
+Files: 3 copied into main
+Commit: 40a2ee3  (roll back with: git revert 40a2ee3)
+
+### 2026-09-23 18:25:56 +0700 — claude:09230638-ea8c
+Event: NOTICE
+Round 7 landed 40a2ee3 (gate 5943/0) and MiceHub.exe rebuilt 18:24.
+What is true now: a show item with an unknown repeat_mode is REFUSED with the rebuild command, not silently blanked. The user hit exactly that: Studio pages come from disk and were current, the exe was 4 hours old, so 'exact' became play-once AND saving overwrote their 42 s and 15 s with zeros. LhongMarePing.json restored and verified - the show now builds to 60.9 s with the hand-over arriving at 42000 ms exactly.
+Next: nothing in flight. REMEMBER any main_python change needs python -m PyInstaller --clean MiceHub.spec before the running hub has it - the web pages will look updated while the engine is not.
+
+### 2026-09-23 22:21:59 +07:00 — claude:09232219-1294
+Event: CLAIM
+Task: A31-17 A31-18
+Tree: E:/final_proj/mice/code/.staging-claude-preset
+Files: config/rig_presets.json, nong/main_python_set_nong/web/app_parts/rig_setup_ui.js, nong/main_python_set_nong/web/app_parts/project_save_load.js, nong/main_python_set_nong/web/app_parts/yaml_export.js, nong/main_python_set_nong/web/app.js (rebuilt), nong/main_python_set_nong/web/index.html, main_python/web/help.html, qc/checks/check_rig_presets.py, qc/checks/check_unsaved_prompt.py (new), tools/step_preset.py (new)
+Next: A31-17 STEP preset carries servos + shrug 4-bar (1:2.38, +-16 deg); A31-18 one save for YAML+JSON and an unsaved-changes prompt with a Settings off switch. Will not run QC while another session's gate runs.
+### 2026-09-23 22:26:27 +0700 — claude:09232207-8a4a
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-handover
+Files: main_python/shows.py, main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/shows.js, qc/checks/check_show_continuous.py, nong/main_python_set_nong/patches/0104_exact-show-item-hand-over-drawn-with-the-cut-ite/app.js, nong/main_python_set_nong/patches/0104_exact-show-item-hand-over-drawn-with-the-cut-ite/index.html, nong/main_python_set_nong/patches/0104_exact-show-item-hand-over-drawn-with-the-cut-ite/patch.md, nong/main_python_set_nong/patches/0104_exact-show-item-hand-over-drawn-with-the-cut-ite/shared/mice.css, nong/main_python_set_nong/patches/0104_exact-show-item-hand-over-drawn-with-the-cut-ite/shared/themes.css, nong/main_python_set_nong/patches/0104_exact-show-item-hand-over-drawn-with-the-cut-ite/style.css
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 22:35:10 +0700 — claude:09232207-8a4a
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-handover
+Files: 11 copied into main
+Commit: 77b1d72  (roll back with: git revert 77b1d72)
+
+### 2026-09-23 23:15:58 +0700 — claude:09232219-1294
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-preset
+Files: config/rig_presets.json, docs/systems/qc.md, docs/systems/studio.md, docs/systems.json, main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/boot.js, nong/main_python_set_nong/web/app_parts/music_on_a_keyframe.js, nong/main_python_set_nong/web/app_parts/project_save_load.js, nong/main_python_set_nong/web/app_parts/rig_data.js, nong/main_python_set_nong/web/app_parts/rig_setup_ui.js, nong/main_python_set_nong/web/app_parts/timeline.js, nong/main_python_set_nong/web/app_parts/yaml_export.js, nong/main_python_set_nong/web/index.html, nong/main_python_set_nong/web/style.css, qc/checks/check_rig_presets.py, qc/checks/check_studio_edits.py, main_python/patches/0019_help-one-save-unsaved-question-step-body-servos/help.html, main_python/patches/0019_help-one-save-unsaved-question-step-body-servos/hub.html, main_python/patches/0019_help-one-save-unsaved-question-step-body-servos/patch.md, main_python/patches/0019_help-one-save-unsaved-question-step-body-servos/rgb.html, main_python/patches/0019_help-one-save-unsaved-question-step-body-servos/shared/mice.css, main_python/patches/0019_help-one-save-unsaved-question-step-body-servos/shared/themes.css, nong/main_python_set_nong/patches/0105_a31-17-a31-18-one-save-writes-json-yaml-under-on/app.js, nong/main_python_set_nong/patches/0105_a31-17-a31-18-one-save-writes-json-yaml-under-on/index.html, nong/main_python_set_nong/patches/0105_a31-17-a31-18-one-save-writes-json-yaml-under-on/patch.md, nong/main_python_set_nong/patches/0105_a31-17-a31-18-one-save-writes-json-yaml-under-on/shared/mice.css, nong/main_python_set_nong/patches/0105_a31-17-a31-18-one-save-writes-json-yaml-under-on/shared/themes.css, nong/main_python_set_nong/patches/0105_a31-17-a31-18-one-save-writes-json-yaml-under-on/style.css, qc/checks/check_unsaved_prompt.py, tools/step_preset.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 23:22:25 +0700 — claude:09232219-1294
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-preset
+Files: config/rig_presets.json, docs/systems/qc.md, docs/systems/studio.md, docs/systems.json, main_python/web/help.html, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/boot.js, nong/main_python_set_nong/web/app_parts/music_on_a_keyframe.js, nong/main_python_set_nong/web/app_parts/project_save_load.js, nong/main_python_set_nong/web/app_parts/rig_data.js, nong/main_python_set_nong/web/app_parts/rig_setup_ui.js, nong/main_python_set_nong/web/app_parts/timeline.js, nong/main_python_set_nong/web/app_parts/yaml_export.js, nong/main_python_set_nong/web/index.html, nong/main_python_set_nong/web/style.css, qc/checks/check_rig_presets.py, qc/checks/check_studio_edits.py, main_python/patches/0019_help-one-save-unsaved-question-step-body-servos/help.html, main_python/patches/0019_help-one-save-unsaved-question-step-body-servos/hub.html, main_python/patches/0019_help-one-save-unsaved-question-step-body-servos/patch.md, main_python/patches/0019_help-one-save-unsaved-question-step-body-servos/rgb.html, main_python/patches/0019_help-one-save-unsaved-question-step-body-servos/shared/mice.css, main_python/patches/0019_help-one-save-unsaved-question-step-body-servos/shared/themes.css, nong/main_python_set_nong/patches/0105_a31-17-a31-18-one-save-writes-json-yaml-under-on/app.js, nong/main_python_set_nong/patches/0105_a31-17-a31-18-one-save-writes-json-yaml-under-on/index.html, nong/main_python_set_nong/patches/0105_a31-17-a31-18-one-save-writes-json-yaml-under-on/patch.md, nong/main_python_set_nong/patches/0105_a31-17-a31-18-one-save-writes-json-yaml-under-on/shared/mice.css, nong/main_python_set_nong/patches/0105_a31-17-a31-18-one-save-writes-json-yaml-under-on/shared/themes.css, nong/main_python_set_nong/patches/0105_a31-17-a31-18-one-save-writes-json-yaml-under-on/style.css, qc/checks/check_unsaved_prompt.py, tools/step_preset.py
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 23:31:28 +0700 — claude:09232219-1294
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-preset
+Files: 31 copied into main
+Commit: 319e068  (roll back with: git revert 319e068)
+
+### 2026-09-23 23:31:47 +07:00 — claude:09232219-1294
+Event: RELEASE
+Task: A31-17 A31-18
+Tree: E:/final_proj/mice/code/.staging-claude-preset
+Evidence: promote 319e068, full gate 5969/0 (2 FLAKY passed alone: check_identity, check_keyboard_only). Sabotages: check_unsaved_prompt 3/3, check_rig_presets 3/3.
+Open: shows.js showOnTimeline keeps its own unsaved guard (owner of shows.js may switch it to askUnsaved). docs/ref_data.js 4-bar entry waits for Antigravity's release. Firmware GEAR/JCFG parse teeth with toInt - Studio now rounds; any saved rig with a fractional gear (user rig SHRUG 1:4.5) was running 1:4 on the board.
+Release: all files claimed at the A31-17/A31-18 CLAIM above.
+### 2026-09-23 23:42:03 +07:00 — claude:09232219-1294
+Event: CLAIM
+Task: A31-19
+Tree: E:/final_proj/mice/code/.staging-claude-preset
+Files: nong/main_python_set_nong/web/app_parts/shows.js, nong/main_python_set_nong/web/app.js (rebuilt), docs/ref_data.js, qc/checks/check_unsaved_prompt.py
+Authority: user 2026-09-23 *do it all no one do that* - takes over the shows.js guard (A31-16 landed and is done) and the reference entry (the Antigravity reservation in COORDINATION.md is released by the user for this entry).
+Next: showOnTimeline asks through askUnsaved; ref entry for the shrug 4-bar (tools/step_preset.py).
+### 2026-09-23 23:45:59 +0700 — claude:09232219-1294
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-claude-preset
+Files: docs/ref_data.js, nong/main_python_set_nong/web/app.js, nong/main_python_set_nong/web/app_parts/shows.js, nong/main_python_set_nong/web/app_parts/timeline.js, qc/checks/check_ref.py, qc/checks/check_unsaved_prompt.py, nong/main_python_set_nong/patches/0106_a31-19-putting-a-show-on-the-time-bar-asks-the-s/app.js, nong/main_python_set_nong/patches/0106_a31-19-putting-a-show-on-the-time-bar-asks-the-s/index.html, nong/main_python_set_nong/patches/0106_a31-19-putting-a-show-on-the-time-bar-asks-the-s/patch.md, nong/main_python_set_nong/patches/0106_a31-19-putting-a-show-on-the-time-bar-asks-the-s/shared/mice.css, nong/main_python_set_nong/patches/0106_a31-19-putting-a-show-on-the-time-bar-asks-the-s/shared/themes.css, nong/main_python_set_nong/patches/0106_a31-19-putting-a-show-on-the-time-bar-asks-the-s/style.css
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-09-23 23:52:41 +0700 — claude:09232219-1294
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-claude-preset
+Files: 12 copied into main
+Commit: 088e0e2  (roll back with: git revert 088e0e2)
+
+### 2026-09-23 23:53:03 +07:00 — claude:09232219-1294
+Event: RELEASE
+Task: A31-19
+Tree: E:/final_proj/mice/code/.staging-claude-preset
+Evidence: promote 088e0e2, full gate 5985/0 (FLAKY passed alone: check_link_states, check_ui_states). Sabotages caught: shows guard (check_unsaved_prompt), raw newline in ref_data (check_ref).
+NOTICE: docs/ref_data.js in main had raw line breaks inside two entries (measured-arm, ik-dls) - the reference page threw on load and showed nothing while check_ref passed. Cause: a Python heredoc turned the escape into a real line break. check_ref now runs the file with node. Lesson: write JS strings with the Edit tool.
+Release: shows.js, ref_data.js, check_ref.py, check_unsaved_prompt.py.

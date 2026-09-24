@@ -105,3 +105,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0098 | 2026-09-18 04:20 | Shows tab: saved sequences played one after another by name, the hub runs the show (A26-40) |
 | 0099 | 2026-09-21 23:37 | Studio and monitor follow the fastest route while open |
 | 0100 | 2026-09-22 00:02 | Keep peer targeting compatible with fastest-route Studio |
+| 0103 | 2026-09-23 08:59 | shows run with no gap between sequences and can repeat by times or seconds; a whole show loads onto the time bar; the timing limit that holds a move is named and the peak limit is editable offline; a move can be given to the front or back arm and mirrored properly; a flat view stays flat and drags without Shift; URDF import |

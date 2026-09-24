@@ -1,0 +1,42 @@
+{
+ "name": "LhongMarePing",
+ "loop": false,
+ "items": [
+  {
+   "seq": "yakyai.yaml",
+   "hold": 0,
+   "repeat_mode": "exact",
+   "repeat": 52.0
+  },
+  {
+   "seq": "tangVongSungLeft.yaml",
+   "hold": 0,
+   "repeat_mode": "",
+   "repeat": 0
+  },
+  {
+   "seq": "NONO.yaml",
+   "hold": 0,
+   "repeat_mode": "exact",
+   "repeat": 8.1
+  },
+  {
+   "seq": "VongSungKhwa.yaml",
+   "hold": 0,
+   "repeat_mode": "",
+   "repeat": 0
+  },
+  {
+   "seq": "NookYung.yaml",
+   "hold": 0,
+   "repeat_mode": "",
+   "repeat": 0
+  },
+  {
+   "seq": "SeiyngSung.yaml",
+   "hold": 0,
+   "repeat_mode": "",
+   "repeat": 0
+  }
+ ]
+}
