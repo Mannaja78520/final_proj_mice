@@ -49,10 +49,18 @@ def share_once(modules=None, cmd=None):
     """
     modules = modules if modules is not None else _hub.modules_here()
     cmd = cmd or _hub.dev_cmd
+    # The scan already knows each board's group. Only a group of two or more
+    # has anything to share, so a lone board is never asked anything - a
+    # quiet site sends nothing at all.
+    live = [m for m in modules if m.get("best") and not m.get("stale")]
+    count = {}
+    for m in live:
+        g = m.get("group") or ""
+        count[g] = count.get(g, 0) + 1
     boards = []
-    for m in modules:
+    for m in live:
         dev = m.get("best")
-        if not dev or m.get("stale"):
+        if "group" in m and (not m["group"] or count[m["group"]] < 2):
             continue
         try:
             group, pw = parse_group(cmd(dev, "GROUP"))

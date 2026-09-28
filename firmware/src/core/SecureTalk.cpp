@@ -3,7 +3,7 @@
 #include "core/AudioStream.h"
 #include "core/Log.h"
 
-#if MICE_HAS_AUDIO
+#if MICE_HAS_AUDIO && defined(MICE_TALK)
 
 #include "core/UserStore.h"
 #include "web/CastJs.h"
@@ -235,12 +235,12 @@ String SecureTalk::status() {
          + (audioFd >= 0 ? " talking" : "") + " heap=" + String(ESP.getFreeHeap());
 }
 
-#else   // no speaker in this build: same API, honest answers
+#else   // not in this build (MICE_TALK, platformio.ini): same API, honest answers
 
-bool SecureTalk::start(String& why) { why = "this build has no speaker support"; return false; }
+bool SecureTalk::start(String& why) { why = "this board type has no secure talk page yet"; return false; }
 void SecureTalk::stop() {}
 bool SecureTalk::running() { return false; }
 void SecureTalk::loop() {}
-String SecureTalk::status() { return "TALK off (no speaker in this build)"; }
+String SecureTalk::status() { return "TALK off (not in this build)"; }
 
-#endif  // MICE_HAS_AUDIO
+#endif  // MICE_HAS_AUDIO && MICE_TALK

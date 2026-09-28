@@ -80,3 +80,14 @@ def run(t):
     router = (fw / "src/core/CommandRouter.cpp").read_text(encoding="utf-8", errors="replace")
     for c in ("APPASS", "PEERPASS"):
         t.contains(router, 'cmd == "%s"' % c, "the board answers %s" % c)
+
+    # ---- a board with no group-mate is never asked anything ---------------
+    # The Network tab check caught a bare GROUP question reaching a lone board
+    # (2026-09-28): harmless, but traffic on a bus that has none to spare.
+    asked = []
+    def quiet(dev, c):
+        asked.append(c)
+        return "ERR"
+    hub_appass.share_once([{"key": "a", "best": "usb:COM1", "group": "show"},
+                           {"key": "b", "best": "usb:COM2", "group": ""}], quiet)
+    t.eq(asked, [], "a lone board in a group, and an ungrouped one, get no questions")
