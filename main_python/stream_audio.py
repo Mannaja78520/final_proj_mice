@@ -33,6 +33,12 @@ CHUNK_MS = 20
 DEF_PORT = 4210
 DEF_RATE = 22050
 QUEUE_SECONDS = 1.0
+# How far behind the clock the sender may fall before it gives up catching
+# up. The board primes at half of its 200 ms ring, so there is ~100 ms of room
+# on top: a catch-up burst bigger than that is dropped on the board and heard
+# as a crack. It was 0.5 s, which let a late browser chunk trigger a 500 ms
+# burst into 100 ms of room (2026-09-28).
+CATCHUP_S = 0.04
 
 
 class Sender:
@@ -155,8 +161,9 @@ class Sender:
                 nap = due - time.time()
                 if nap > 0:
                     flag.wait(nap)
-                elif nap < -0.5:
-                    t0 = time.time() - n * (CHUNK_MS / 1000.0)   # re-base, don't sprint
+                elif nap < -CATCHUP_S:
+                    # re-base, don't sprint: late audio plays late, not crushed
+                    t0 = time.time() - n * (CHUNK_MS / 1000.0) - CATCHUP_S
         except Exception as e:                       # noqa: BLE001
             with self.lock:
                 self.error = str(e)
@@ -164,13 +171,56 @@ class Sender:
             sock.close()
 
 
-def wav_pcm(path, want_rate=DEF_RATE):
-    """A wav file -> 16-bit mono PCM at want_rate.
+def resample(a, rate, want_rate):
+    """16-bit mono samples (array 'h') from rate to want_rate.
 
-    Deliberately plain: stereo is averaged, and the rate is changed by picking
-    the nearest sample. `audioop` would do it better and is gone in Python
-    3.13, so the hub does not depend on it.
+    It used to pick the nearest sample. Going down from 44.1 kHz that folds
+    every tone above 11 kHz back into the audible band - cymbals and 's'
+    sounds come out as harsh fizz - and going up it is a staircase. Now: each
+    output sample is the AVERAGE of the input it covers when going down (a
+    box low-pass, enough to stop the folding), and a straight line between
+    neighbours when going up. Pure Python, because audioop is gone in 3.13
+    and the exe does not carry numpy.
     """
+    import array
+    n = len(a)
+    if not n or rate == want_rate:
+        return a
+    m = int(n * want_rate / rate)
+    out = array.array("h", [0]) * m
+    r = rate / want_rate
+    if r > 1:                                  # down: average the window
+        # Twice: a box over a box is a triangle, about twice the rejection
+        # of one box (a 15 kHz tone at 44.1 -> 22.05 kHz: -6 dB with one
+        # pass, -12 dB with two). Prefix sums keep both O(1) per sample.
+        k = max(1, int(round(r)))
+        pre = [0] * (n + 1)
+        acc = 0
+        for i in range(n):
+            acc += a[i]
+            pre[i + 1] = acc
+        a = [(pre[min(n, i + k)] - pre[i]) // (min(n, i + k) - i) for i in range(n)]
+        pre = [0] * (n + 1)
+        acc = 0
+        for i in range(n):
+            acc += a[i]
+            pre[i + 1] = acc
+        for j in range(m):
+            lo = int(j * r)
+            hi = min(n, max(lo + 1, int((j + 1) * r)))
+            out[j] = (pre[hi] - pre[lo]) // (hi - lo)
+    else:                                      # up: linear between neighbours
+        for j in range(m):
+            x = j * r
+            i = int(x)
+            fr = x - i
+            b = a[i + 1] if i + 1 < n else a[i]
+            out[j] = int(a[i] + (b - a[i]) * fr)
+    return out
+
+
+def wav_pcm(path, want_rate=DEF_RATE):
+    """A wav file -> 16-bit mono PCM at want_rate. Stereo is averaged."""
     with wave.open(str(path), "rb") as w:
         if w.getsampwidth() != 2:
             raise ValueError("only 16-bit wav files, this one is %d-bit"
@@ -185,9 +235,4 @@ def wav_pcm(path, want_rate=DEF_RATE):
         for i in range(len(mono)):
             mono[i] = sum(a[i * ch:(i + 1) * ch]) // ch
         a = mono
-    if rate != want_rate:                       # nearest-sample resample
-        out = array.array("h", [0]) * int(len(a) * want_rate / rate)
-        for i in range(len(out)):
-            out[i] = a[min(len(a) - 1, int(i * rate / want_rate))]
-        a = out
-    return a.tobytes()
+    return resample(a, rate, want_rate).tobytes()

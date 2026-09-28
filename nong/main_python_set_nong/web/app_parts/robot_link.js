@@ -321,12 +321,19 @@ function clearHubTarget(why) {
   const hadAuto = window.HUB_AUTO;
   clearPeer(why);
   window.HUB_AUTO = "";
-  if (hadAuto && typeof log === "function") log("(using the route you picked: " + why + ")");
+  if (hadAuto) routeNote("using the route you picked: " + why);
 }
 function clearPeer(why) {
   if (!window.HUB_PEER) return;
   window.HUB_PEER = "";
-  if (typeof log === "function") log("(no longer aiming at a peer module: " + why + ")");
+  routeNote("no longer aiming at the module behind the other one: " + why);
+}
+// Studio has no `log()`: these notes were written for one that never existed,
+// so the typeof guard kept them silent. The Robot card's line is where every
+// other route message goes; routine, so it is not a notice().
+function routeNote(text) {
+  const st = $("robotStat");
+  if (st) st.textContent = "(" + text + ")";
 }
 function openModule() {
   if (!currentUser) {
@@ -501,11 +508,20 @@ async function connectLink() {
     let s;
     try { s = await getStatus(); }
     catch (e) {
+      // WIFI PICKED, CABLE GONE. The cable wins while it is open, so a robot
+      // unplugged and carried elsewhere kept every Connect on the dead port
+      // (user 2026-09-28: WiFi picked, nong found at 10.139.24.70, error was
+      // "could not open port 'COM21'"). Drop the cable and ask over WiFi.
+      if (t === "wifi" && hubPort && haveWifi()) {
+        hubPort = "";
+        s = await getStatus();
+      } else {
       // silent cable: maybe an RS485 adapter, or the remembered bus id is now
       // another board - ask the hub who is behind it
       const tried = busId();
       if (t !== "usb" || !(await findBusId(hubPort)) || busId() === tried) throw e;
       s = await getStatus();
+      }
     }
     if (t === "usb") rememberBusId(hubPort);
     checkLimitsMatch();                   // not awaited: connecting must not wait on it

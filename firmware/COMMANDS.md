@@ -321,6 +321,15 @@ interchangeably.
 | `GROUP` | `GROUP "mice-show" appass=3f9a1c0b7e2d4a55` | which installation this module belongs to, and the hotspot password that follows from it |
 | `GROUP <name>` | `OK group "mice-show" appass=...` | join a group. Applied immediately — the module's hotspot password changes with it |
 | `GROUP CLEAR` | `OK ungrouped (shared fallback password)` | leave the group; back to the compiled-in fallback password |
+| `APPASS` | `APPASS default appass=12345678` | this module's own WiFi (hotspot) password and where it comes from: `set` by the owner, `group`, or the `default` 12345678 |
+| `APPASS <password>` | `OK appass=...` | choose the hotspot password (8-63 characters, no spaces). Wins over the group one; the hotspot comes back up with it at once |
+| `APPASS CLEAR` | `OK appass=...` | forget the chosen password; back to the group one, or 12345678 when ungrouped |
+| `TALK` / `TALK?` | `TALK on https://192.168.4.1/talk heap=61234` | the secure talk page: is it up, where, and memory free |
+| `TALK ON` | `OK TALK on https://192.168.4.1/talk ...` | raise the secure page a phone needs for its microphone. It costs RAM, so it is on demand, and goes off by itself after 10 quiet minutes. The first time, the board makes its own certificate (the phone warns once) |
+| `TALK OFF` | `OK talk off` | take it down |
+| `PEERPASS` | `PEERPASS nong,lift-2` | the group-mates whose hotspot password this module holds (names only) |
+| `PEERPASS <wifi> <password>` | `OK peer nong` | remember a group-mate's hotspot password. The hub sends these by itself to every module in a group, so a module can still link to one whose owner changed its password |
+| `PEERPASS CLEAR` | `OK peers forgotten` | forget them all |
 | `PEERS` | `[{"id":85,"name":"lift-test",...},...]` | the other modules this one can see. Same list as `/api/peers` |
 | `REACH <ip\|name\|id> <command>` | whatever that module answered | run a command on **another** module through this one. Refused while this module is moving — it blocks up to 800 ms and would stall a joint |
 | `WIFI` | `WIFI mode=on state=online ssid="manny" ip=192.168.137.42 rssi=-51 ap="nong" apip=192.168.4.1 apclients=1` | where the radio is right now, in one line |
@@ -426,6 +435,7 @@ of flash. Lift builds only; a nong has no strip.
 | `AMP?` | `{"id":"tpa3118","mode":"analog",…}` | the amp this board is set to, with its wiring line |
 | `STREAM ON [port] [rate]` | `OK stream on udp 4210 22050 Hz mono` | live audio from the PC: the board plays what arrives on that UDP port |
 | `STREAM OFF` | `OK stream off` | |
+| `STREAM TEST` | `OK test tone 440 Hz 3 s through the stream path` | a tone made on the board, played through the same ring and feed as live sound; stops by itself |
 | `STREAM?` | `{"on":true,"fill":22,"underruns":0,"max_gap_ms":9,…}` | is it playing, and is it breaking up |
 
 ### Live audio from the PC — `STREAM`
@@ -447,6 +457,9 @@ an SD decode holds the SPI mutex. A late packet is dropped instead.
 | `packets` / `dropped` | datagrams taken / thrown away because the buffer was full |
 | `underruns` | times it ran dry; it then holds silence until half full again |
 | `max_gap_ms` | longest gap between two feeds - the starvation number |
+| `via` | `udp` (from the hub) or `ws` (a browser on `/ws/audio`, e.g. a phone on the robot's WiFi) |
+| `lrc` | what the LRC pin really carries, read back from the chip: `lrc` is right, `mclk` means the library's MCLK took the pin |
+| `trims` / `pads` | samples skipped / repeated to follow the sender's clock (one in 256 at most) |
 
 Measured on a real nong (id 67, MAX98357A, WiFi, ten servos and RS485 running,
 2026-09-07): 250 datagrams, 0 dropped, `max_gap_ms` **9** against a 200 ms
@@ -454,6 +467,18 @@ buffer.
 
 Starting a stream stops a file that is playing, and `PLAY` stops the stream:
 one output, one owner.
+
+**It cracked, and SD playback did not (fixed 2026-09-28).** The audio library
+installs I2S with MCLK on GPIO0, which is the nong's LRC pin. `PLAY` re-pinned
+after the driver came up; `STREAM ON` never did, so every stream played with a
+broken word clock. `AudioStream::start` now runs the same re-pin, and `lrc` in
+`STREAM?` shows the result on the board.
+
+**From a phone, no hub: `/ws/audio`.** A browser cannot send UDP, so the board
+also takes the same PCM over a WebSocket: text `START <rate>`, then binary
+frames of 16-bit little-endian mono, closing the socket stops it. The
+handshake is gated like `STREAM ON` (a logged-in session). The ring is 400 ms
+here, because TCP delivers in bursts after a WiFi hiccup instead of dropping.
 
 ### Which amplifier is wired — `AMP`
 

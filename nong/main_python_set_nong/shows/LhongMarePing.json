@@ -69,8 +69,8 @@
  "join_dps": 0,
  "join_ms": 0,
  "music": "track-0927-2036.mp3",
- "music_vol": -1,
+ "music_vol": 100,
  "music_loop": false,
- "music_end": "",
- "music_secs": 0
+ "music_end": "after",
+ "music_secs": 3.0
 }
