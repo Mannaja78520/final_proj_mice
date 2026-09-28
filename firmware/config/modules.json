@@ -46,6 +46,13 @@
       "class": "CamModule",
       "header": "modules/cam/CamModule.h",
       "board": "esp32cam"
+    },
+    "dummy": {
+      "label": "Nong dummy",
+      "blurb": "hand-posed copy of the nong: a pot on every joint instead of a servo, read by Nong Studio",
+      "class": "DummyModule",
+      "header": "modules/dummy/DummyModule.h",
+      "board": "nodemcu-32s"
     }
   }
 }

@@ -249,6 +249,52 @@
         from here (poses, monitor) — only saved sequences need the card.</div>
     </div>
 
+    <div class="card" data-stab="robot" id="dummyCard">
+      <h2>Dummy (hand-posed copy)</h2>
+      <div class="mini">a copy of the robot with a knob on every joint instead of a motor.
+        Bend it by hand and Studio or the real robot copies the pose. It has its own link,
+        usually the robot's RS485 cable with a different bus id.</div>
+      <div class="row">
+        <select id="dummySrc" onchange="dummySrcChanged()"
+                title="where the dummy is: on a USB / RS485 cable through the hub, on WiFi, or simulated on this page (no dummy needed)">
+          <option value="usb">USB / RS485 (shared)</option>
+          <option value="wifi">WiFi</option>
+          <option value="sim">Simulated (sliders here)</option>
+        </select>
+        <select id="dummyPort" style="flex:1" title="the cable the dummy is on — usually the same RS485 cable as the robot">
+          <option value="">pick the USB port…</option>
+        </select>
+        <button id="dummyRescan" onclick="dummyLoadPorts()" title="rescan the PC's USB ports">⟳</button>
+        <span class="tech" id="dummyBusWrap" style="width:76px">
+          <input id="dummyBus" type="number" min="1" max="247" placeholder="bus id"
+                 title="the dummy's RS485 address (its module id). Leave empty when the cable goes straight into the dummy's own USB." style="width:100%">
+        </span>
+        <span class="tech" id="dummyIpWrap" style="flex:1;display:none">
+          <input id="dummyIp" placeholder="dummy IP or name.local" style="width:100%">
+        </span>
+        <button onclick="dummyConnect()">Connect</button>
+      </div>
+      <div id="dummySimBox" style="display:none">
+        <div class="mini">simulated dummy: these sliders stand in for the knobs.</div>
+        <div id="dummySimRows"></div>
+      </div>
+      <div class="row">
+        <span class="lbl">Follow</span>
+        <select id="dummyFollow" onchange="dummyFollowChanged()" style="flex:1"
+                title="Studio follows: the 3D model copies the dummy. Robot follows: the real robot copies it too, inside the robot's own limits and speed.">
+          <option value="off">off</option>
+          <option value="studio">Studio follows the dummy</option>
+          <option value="robot">Studio + real robot follow the dummy</option>
+        </select>
+      </div>
+      <div class="row">
+        <button class="primary" onclick="dummyToNewKey()" title="read the dummy now and add its pose to the end of the sequence">+ Dummy pose as new move</button>
+        <button onclick="dummyToSelectedKey()" title="replace the selected move's pose with the dummy's pose now">Use dummy pose for selected move</button>
+        <button onclick="robotToSelectedKey()" title="send the real robot to the move selected in the timeline, at that move's speed">Robot → selected move</button>
+      </div>
+      <div class="statline" id="dummyStat" aria-live="polite">not connected — pick where the dummy is, then Connect (or pick Simulated)</div>
+    </div>
+
     <div class="card" data-stab="robot">
       <h2>Zero position 🔒</h2>
       <div id="zeroLocked">

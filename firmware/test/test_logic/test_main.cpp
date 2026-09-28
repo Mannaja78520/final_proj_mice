@@ -8,6 +8,7 @@
 //   pio test -e native
 #include <unity.h>
 #include "modules/nong/NongMath.h"
+#include "modules/dummy/DummyMath.h"
 #include "core/WifiArgs.h"
 #include "core/WifiLink.h"
 #include "core/Log.h"
@@ -365,6 +366,36 @@ void test_the_ssid_list_is_one_line(void) {
 void setUp(void) {}
 void tearDown(void) {}
 
+// ---- the dummy: pot reading -> joint angle -----------------------------
+// A reading at zero is 90 deg; a full span of counts is `span` degrees.
+void test_dummy_pot_at_zero_is_ninety() {
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 90.0f,
+        dummymath::potToDeg(2048, 2048, 270, 1, 0, 180, 4095));
+    // 4095/270 counts per degree: 30 degrees up is 455 counts
+    TEST_ASSERT_FLOAT_WITHIN(0.05f, 120.0f,
+        dummymath::potToDeg(2048 + 455, 2048, 270, 1, 0, 180, 4095));
+}
+// A pot mounted backwards turns the same reading the other way.
+void test_dummy_dir_flips_the_angle() {
+    TEST_ASSERT_FLOAT_WITHIN(0.05f, 60.0f,
+        dummymath::potToDeg(2048 + 455, 2048, 270, -1, 0, 180, 4095));
+}
+// The robot's limits hold: a dummy bent past them reports the limit.
+void test_dummy_clamps_to_the_limits() {
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 150.0f,
+        dummymath::potToDeg(4095, 2048, 270, 1, 30, 150, 4095));
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 30.0f,
+        dummymath::potToDeg(0, 2048, 270, 1, 30, 150, 4095));
+}
+// DZERO round trip: after zeroing at deg, the same reading means deg.
+void test_dummy_zero_round_trips() {
+    for (int dir = -1; dir <= 1; dir += 2) {
+        const float z = dummymath::zeroFor(1500, 72.5f, 300, dir, 4095);
+        TEST_ASSERT_FLOAT_WITHIN(0.01f, 72.5f,
+            dummymath::potToDeg(1500, z, 300, dir, 0, 180, 4095));
+    }
+}
+
 int main(int, char **) {
     UNITY_BEGIN();
     RUN_TEST(test_home_is_mid_travel_on_any_servo);
@@ -398,5 +429,9 @@ int main(int, char **) {
     RUN_TEST(test_a_log_line_can_never_look_like_two);
     RUN_TEST(test_an_over_long_line_is_cut_visibly);
     RUN_TEST(test_the_ssid_list_is_one_line);
+    RUN_TEST(test_dummy_pot_at_zero_is_ninety);
+    RUN_TEST(test_dummy_dir_flips_the_angle);
+    RUN_TEST(test_dummy_clamps_to_the_limits);
+    RUN_TEST(test_dummy_zero_round_trips);
     return UNITY_END();
 }

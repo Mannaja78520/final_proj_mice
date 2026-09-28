@@ -139,6 +139,15 @@
 
     // ---------------- cam ----------------
     { "name": "SNAP",    "scope": "cam",  "args": "[<file>]",                           "help": "take a picture; with a name it is saved to /photos on the card" },
-    { "name": "CAM",     "scope": "cam",  "args": "[SIZE <name>|QUALITY <10-63>|FLASH ON|OFF|VFLIP 0|1|HMIRROR 0|1]", "query": false, "help": "what the sensor is set to, and change it" }
+    { "name": "CAM",     "scope": "cam",  "args": "[SIZE <name>|QUALITY <10-63>|FLASH ON|OFF|VFLIP 0|1|HMIRROR 0|1]", "query": false, "help": "what the sensor is set to, and change it" },
+
+    // ---------------- dummy (hand-posed nong, pots instead of servos) ----------------
+    { "name": "POSE?",   "scope": "dummy", "args": "",                  "query": true,  "help": "the 10 joint angles the dummy is posed in; '-' = no pot on that joint" },
+    { "name": "POT?",    "scope": "dummy", "args": "",                  "query": true,  "help": "the raw pot readings 0-4095, -1 = no pot" },
+    { "name": "DCAL",    "scope": "dummy", "args": "<1-10|name|ALL> <CH|ZERO|SPAN|DIR|MIN|MAX> <value>|CLEAR", "help": "one calibration field of a joint's pot; CLEAR goes back to defaults" },
+    { "name": "DCAL?",   "scope": "dummy", "args": "",                  "query": true,  "help": "every joint's pot calibration and the mux pins, as JSON" },
+    { "name": "DZERO",   "scope": "dummy", "args": "<1-10|name|ALL> [deg]",              "help": "the dummy is held at <deg> (default 90) right now: work out the zero from it" },
+    { "name": "DMUX",    "scope": "dummy", "args": "<sig> <s0> <s1> <s2> <s3>|OFF",      "help": "which pins the analog multiplexer is on, or OFF for one ADC pin per joint" },
+    { "name": "DMUX?",   "scope": "dummy", "args": "",                  "query": true,  "help": "the multiplexer pins as JSON" }
   ]
 }
