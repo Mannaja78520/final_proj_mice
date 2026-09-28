@@ -719,7 +719,16 @@ function audioStatus(m){
 async function castSecurePage(){
   const t=await cmd('TALK ON');
   if(!/^OK/.test(t)){ castSay1(refusal(t)||('the robot could not open it: '+t)); return; }
-  location.href='https://'+location.hostname+'/talk';
+  // The first time, the board makes its certificate first (a second or two),
+  // so wait for it to say "on" instead of opening a page that is not there yet.
+  castSay1('opening the secure page...');
+  for(let i=0;i<20;i++){
+    const s=await cmd('TALK?');
+    if(/ on https/.test(s)){ location.href='https://'+location.hostname+'/talk'; return; }
+    if(/failed/.test(s)){ castSay1('the robot could not open it: '+s.replace(/^TALK /,'')); return; }
+    await new Promise(r=>setTimeout(r,750));
+  }
+  castSay1('the secure page did not come up - try again');
 }
 // What the board itself says about the live sound, in words rather than
 // counters: a designer needs to know it is arriving and whether it is breaking

@@ -248,3 +248,7 @@ def run(t):
     keys = [f.name for f in (F.FIRMWARE / "src").rglob("*")
             if f.is_file() and "PRIVATE KEY" in f.read_text(encoding="utf-8", errors="replace")]
     t.eq(keys, [], "no private key is in the source: each board makes its own")
+    # The first TALK ON on the real nong rebooted it (2026-09-28): the
+    # certificate code needs more stack than the 8 KB loop task has.
+    t.contains(st, 'xTaskCreate(startTask, "talk", TASK_STACK',
+               "the certificate and TLS start run in their own task, with room")

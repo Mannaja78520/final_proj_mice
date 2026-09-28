@@ -172,13 +172,45 @@ static void onClose(httpd_handle_t, int fd) {
     close(fd);
 }
 
+// THE FIRST TALK ON REBOOTED THE BOARD (real nong, 2026-09-28): no reply on
+// RS485 and more heap free afterwards. mbedtls_x509write_crt_pem alone puts a
+// 4 KB buffer on the stack, plus the ECDSA signature, and the command ran on
+// the 8 KB loop task - a stack overflow. So the heavy part (certificate and
+// TLS server) runs in its own task with room, and TALK ON answers at once;
+// TALK? then says "starting", "on" or why it failed.
+static volatile bool starting = false;
+static String failWhy;
+
+static bool startNow(String& why);
+
+static void startTask(void*) {
+    String why;
+    if (!startNow(why)) {
+        failWhy = why;
+        LOGF(sys, "talk: %s", why.c_str());
+    }
+    starting = false;
+    vTaskDelete(nullptr);
+}
+
 bool SecureTalk::start(String& why) {
-    if (srv) return true;
+    if (srv || starting) return true;
     if (!AudioStream::instance()) { why = "no speaker on this board"; return false; }
     if (ESP.getFreeHeap() < MIN_HEAP) {
         why = "not enough memory for the secure page (" + String(ESP.getFreeHeap()) + " bytes free)";
         return false;
     }
+    failWhy = "";
+    starting = true;
+    if (xTaskCreate(startTask, "talk", TASK_STACK, nullptr, 1, nullptr) != pdPASS) {
+        starting = false;
+        why = "no memory to start it";
+        return false;
+    }
+    return true;
+}
+
+static bool startNow(String& why) {
     if (!makeCert(why)) { why = "could not make the certificate: " + why; return false; }
 
     httpd_ssl_config_t cfg = HTTPD_SSL_CONFIG_DEFAULT();
@@ -231,7 +263,10 @@ void SecureTalk::loop() {
 String SecureTalk::status() {
     String ip = WiFi.getMode() & WIFI_MODE_STA && WiFi.status() == WL_CONNECTED
               ? WiFi.localIP().toString() : WiFi.softAPIP().toString();
-    return String("TALK ") + (srv ? "on https://" + ip + "/talk" : String("off"))
+    String state = srv ? "on https://" + ip + "/talk"
+                 : starting ? String("starting")
+                 : failWhy.length() ? "off (failed: " + failWhy + ")" : String("off");
+    return String("TALK ") + state
          + (audioFd >= 0 ? " talking" : "") + " heap=" + String(ESP.getFreeHeap());
 }
 

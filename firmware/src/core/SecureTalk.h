@@ -21,6 +21,7 @@ class SecureTalk {
 public:
     static const uint32_t IDLE_MS = 10UL * 60UL * 1000UL;
     static const uint32_t MIN_HEAP = 60000;   // below this, refuse rather than crash
+    static const uint32_t TASK_STACK = 16384; // certificate + TLS start; see start()
 
     static bool start(String& why);   // TALK ON
     static void stop();               // TALK OFF
