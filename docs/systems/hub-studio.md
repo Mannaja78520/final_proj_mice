@@ -20,7 +20,7 @@ The hub's routes for Nong Studio's files, shared settings and the list of other 
 
 - [hub](hub.md)
 
-## Checks that test it (32)
+## Checks that test it (33)
 
 - `check_hub_api`
 - `check_hub_auth`
@@ -31,6 +31,7 @@ The hub's routes for Nong Studio's files, shared settings and the list of other 
 - `check_show_music`
 - `check_studio_auto_route`
 - `check_studio_boot`
+- `check_studio_bug_sweep`
 - `check_studio_cost`
 - `check_studio_distances`
 - `check_studio_edits`
@@ -55,4 +56,4 @@ The hub's routes for Nong Studio's files, shared settings and the list of other 
 - `check_voice_settings`
 - `check_voice_source`
 
-Run them: `python qc/run_qc.py --no-build check_hub_api check_hub_auth check_no_data_loss check_persistence check_seq_delete check_settings_transfer check_show_music check_studio_auto_route check_studio_boot check_studio_cost check_studio_distances check_studio_edits check_studio_escape check_studio_fold check_studio_freeze_watch check_studio_leak check_studio_limit_mismatch check_studio_live check_studio_login_resume check_studio_modlink check_studio_music check_studio_music_ui check_studio_notice check_studio_peer check_studio_playback check_studio_resume check_studio_rs485_dongle check_studio_tabs check_voice_identify check_voice_move check_voice_settings check_voice_source`
+Run them: `python qc/run_qc.py --no-build check_hub_api check_hub_auth check_no_data_loss check_persistence check_seq_delete check_settings_transfer check_show_music check_studio_auto_route check_studio_boot check_studio_bug_sweep check_studio_cost check_studio_distances check_studio_edits check_studio_escape check_studio_fold check_studio_freeze_watch check_studio_leak check_studio_limit_mismatch check_studio_live check_studio_login_resume check_studio_modlink check_studio_music check_studio_music_ui check_studio_notice check_studio_peer check_studio_playback check_studio_resume check_studio_rs485_dongle check_studio_tabs check_voice_identify check_voice_move check_voice_settings check_voice_source`

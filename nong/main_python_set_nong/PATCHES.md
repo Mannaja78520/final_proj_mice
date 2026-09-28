@@ -106,3 +106,13 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0099 | 2026-09-21 23:37 | Studio and monitor follow the fastest route while open |
 | 0100 | 2026-09-22 00:02 | Keep peer targeting compatible with fastest-route Studio |
 | 0103 | 2026-09-23 08:59 | shows run with no gap between sequences and can repeat by times or seconds; a whole show loads onto the time bar; the timing limit that holds a move is named and the peak limit is editable offline; a move can be given to the front or back arm and mirrored properly; a flat view stays flat and drags without Shift; URDF import |
+| 0107 | 2026-09-24 13:22 | A31-23/A31-24: save-changes question centred, no don't-ask-again box (switch is in Setup > Saving); cards in Sequence, Robot and Setup fold to their title like the Pose tab's |
+| 0108 | 2026-09-27 17:29 | RS485 adapter connect: Studio remembers the bus id per port, no blind INFO retry, one Connect at a time, 15 s fetch timeout |
+| 0109 | 2026-09-27 18:06 | Shows: one clock with the robot, gentler joins between sequences, show music |
+| 0110 | 2026-09-27 18:46 | Shows: music stop time, per-sequence speed in a show |
+| 0111 | 2026-09-27 19:19 | Shows: add the show's music from this PC |
+| 0112 | 2026-09-27 19:23 | Shows: From PC says why when the robot is not connected; music row wraps |
+| 0113 | 2026-09-27 20:03 | Music upload: say to log in again after a hub restart; ask before a big track over the cable |
+| 0114 | 2026-09-27 20:11 | Music upload: sent by the hub in the background with a percent wheel and cancel |
+| 0115 | 2026-09-27 20:29 | Music upload: rename non-English track names; hub reads the body before refusing |
+| 0116 | 2026-09-28 03:31 | bug sweep: project rig before clamp, no NaN times, pinned time kept on peak-limit change, duplicate drops cues, YAML move names reload, serial commands one at a time, Run/hand-off check the robot's answer, WiFi download checks status |

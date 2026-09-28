@@ -37,8 +37,11 @@ New file or system: add it to `docs/systems.json`, then `python tools/systems.py
 
 ## Token budget (user 2026-09-24)
 
-* QC, gates, promote, land and `pio run` go to the `qc-runner` agent (Sonnet).
-  Its reply is ≤10 lines, so the long output never enters the main session.
+* Full QC, gates, promote and land go to the `qc-runner` agent (Sonnet): the
+  long output stays out of the main session. It only reports; it never fixes.
+* Quick suite and single checks run in the main session with `2>&1 | tail -8`.
+  An agent run costs ~57k tokens of fixed overhead (measured 2026-09-24).
+* A qc-runner verdict ("real bug", "flake") is a lead. Opus checks it before fixing.
 * One task, or one batch landed together, per session. Then the user runs
   `/clear`; the plan and handoff notes carry the state.
 * Search before reading, read line ranges, never re-read what is in context.

@@ -26,7 +26,11 @@ function updateKey() {
 function dupKey() {
   if (!keys[selKey]) return;
   clearBadMarks();
-  keys.splice(selKey + 1, 0, JSON.parse(JSON.stringify(keys[selKey])));
+  const copy = JSON.parse(JSON.stringify(keys[selKey]));
+  // The copy is a pose, not a second music cue: keeping the cues restarted
+  // the source's track (or stopped it) a second time at the copy.
+  delete copy.cues; delete copy.cuesAfter;
+  keys.splice(selKey + 1, 0, copy);
   bumpKeys();
   selKey++;
   // The copy keeps its source's time, which makes it a HOLD of that length:
@@ -957,6 +961,7 @@ async function hubPlay(fromMs) {
         dev: moduleDev(), steps, loop: $("loopChk").checked,
         name: ($("seqName").value || "sequence").trim(), from_ms: Math.round(fromMs || 0),
         watch: !document.hidden,        // stop the arm if this page freezes (A26-46)
+        music_stop_ms: showBarMusicStop(),   // a show's track may outlive its moves
       }),
     }).then(r => r.json());
     if (r.error) throw new Error(r.error);

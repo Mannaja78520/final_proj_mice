@@ -10,6 +10,8 @@ import threading
 import time
 import urllib.request
 
+from shows import clean_limits
+
 NOT_MINE = object()   # no route here matched: api() carries on
 _hub = None           # the main module, set by bind()
 
@@ -30,7 +32,8 @@ class PlayRoutes:
                 d = json.loads(self.body().decode())
                 return self.send_json(_hub.show.start(
                     d["dev"], d["steps"], d.get("loop"), d.get("name", ""),
-                    d.get("from_ms", 0), bool(d.get("watch"))))
+                    d.get("from_ms", 0), bool(d.get("watch")),
+                    d.get("music_stop_ms")))
             except Exception as e:            # noqa: BLE001
                 return self.send_err(e)
         if path == "/api/play":
@@ -95,9 +98,18 @@ class PlayRoutes:
                 with wave.open(io.BytesIO(wav_bytes)) as w:
                     pcm = w.readframes(w.getnframes())
                     rate = w.getframerate()
-                kind, addr, _, _ = _hub.parse_dev(dev)
+                kind, addr, _, _ = _hub.parse_dev(str(dev or ""))
+                # The same two rules /api/stream/start keeps: audio goes over
+                # WiFi only (a usb: address made "COM7" the UDP target), and a
+                # board that refused STREAM ON is not sent a stream at all.
+                if kind != "wifi":
+                    return self.send_err(
+                        "live audio goes over WiFi - open this module over "
+                        "WiFi, or give its address", 501)
                 ip = addr.split(":")[0]
-                _hub.dev_cmd(dev, "STREAM ON %d %d" % (_hub.stream_audio.DEF_PORT, rate))
+                said = _hub.dev_cmd(dev, "STREAM ON %d %d" % (_hub.stream_audio.DEF_PORT, rate))
+                if not str(said).startswith("OK"):
+                    return self.send_err("the board refused the stream: %s" % said)
                 _hub.streamer.start(ip, _hub.stream_audio.DEF_PORT, rate, "voice")
                 threading.Thread(target=_hub.streamer.feed_all, args=(pcm,), daemon=True).start()
                 return self.send_json({"ok": True})
@@ -138,8 +150,11 @@ class PlayRoutes:
                     # are typed, before anything is saved.
                     marks = []
                     steps = _hub.SHOWS.steps(_hub.SHOWS.clean(d.get("show") or {}),
-                                             _hub.seq_steps, marks)
-                    return self.send_json({"ok": True, "steps": steps, "marks": marks})
+                                             _hub.seq_steps, marks,
+                                             clean_limits(d.get("limits")))
+                    return self.send_json({"ok": True, "steps": steps, "marks": marks,
+                                           "music_stop_ms": _hub.SHOWS.music_stop_ms(
+                                               d.get("show") or {}, steps)})
                 if path == "/api/show/save":
                     fname, existed = _hub.SHOWS.save(d.get("show") or {})
                     return self.send_json({"ok": True, "file": fname, "replaced": existed})
@@ -147,9 +162,13 @@ class PlayRoutes:
                     return self.send_json({"ok": True, "kept": _hub.SHOWS.delete(d.get("name"))})
                 sh = _hub.SHOWS.load(d.get("name")) if d.get("name") and not d.get("show") \
                     else _hub.SHOWS.clean(d.get("show"))
-                steps = _hub.SHOWS.steps(sh, _hub.seq_steps)
-                return self.send_json(_hub.show.start(d["dev"], steps, sh["loop"],
-                                                 sh["name"] or "show"))
+                # Studio's speed limits, so the robot runs the very times the
+                # time bar drew (shows.move_floor, user 2026-09-27)
+                steps = _hub.SHOWS.steps(sh, _hub.seq_steps,
+                                         limits=clean_limits(d.get("limits")))
+                return self.send_json(_hub.show.start(
+                    d["dev"], steps, sh["loop"], sh["name"] or "show",
+                    music_stop_ms=_hub.SHOWS.music_stop_ms(sh, steps)))
             except (ValueError, FileNotFoundError, KeyError) as e:
                 return self.send_err(e)
 

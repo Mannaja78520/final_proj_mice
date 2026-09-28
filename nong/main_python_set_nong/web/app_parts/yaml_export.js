@@ -115,6 +115,7 @@ async function exportYaml(opts) {
     notice($("tlStat").textContent);
   }
   await refreshSeqs();
+  if (ok) seqsChanged();   // the Shows list and other tabs too, not just this list
   if (ok) $("seqList").value = name + ".yaml";   // the list shows what was just saved
   return ok;
 }

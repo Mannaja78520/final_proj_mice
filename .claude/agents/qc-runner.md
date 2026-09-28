@@ -23,6 +23,12 @@ Rules:
   "busy: <that line>" and stop. Two QC-driven processes at once corrupt each other.
 - Never run `promote.py --init`. Never edit `.staging` or the main tree.
 - Long runs: use a long timeout (up to 600000 ms) or run_in_background.
+- Keep your own context small: always pipe through `2>&1 | tail -15`. On FAIL,
+  run once more with `2>&1 | grep -E "FAIL|Error|failed" | head -20`. Never
+  read the whole output.
+- On FAIL, rerun only the failing checks alone (`run_qc.py <name-part>`) to tell
+  a real bug from load. Report both results.
+- You never fix anything. The caller decides and fixes.
 
 Reply in at most 10 lines:
 

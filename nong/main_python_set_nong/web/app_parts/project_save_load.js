@@ -81,13 +81,6 @@ async function loadProject(file) {
     if (st) st.textContent = file + " has no keyframes in it, so nothing was loaded.";
     return;
   }
-  // Repair the poses BEFORE they reach anything: pad short ones to NJ, drop
-  // non-numbers, and clamp to each joint's real travel.
-  const loaded = p.keys.filter(k => k && Array.isArray(k.pose)).map(k => {
-    const q = k.pose.slice(0, NJ).map(Number);
-    while (q.length < NJ) q.push(90);    // pre-WAIST/SHRUG project: neutral
-    return { ...k, pose: q.map((v, i) => clampJ(i, Number.isFinite(v) ? v : 90)) };
-  });
   // A project carries the rig it was built with. That is worth having, but it
   // is not worth losing today's tuning to — so ask, and default to keeping
   // what is on screen.
@@ -99,6 +92,29 @@ async function loadProject(file) {
       + "OK  — use the project's setup\n"
       + "Cancel — keep the setup you have now (recommended)");
   }
+  // The rig is swapped BEFORE the poses are clamped: clamping first cut every
+  // pose to the OLD rig's limits, so taking a project's wider rig still
+  // opened a project whose moves had been silently shortened.
+  if (p.rig && takeRig) {
+    // Keep one step back. The rig is the most expensive thing in this editor
+    // to rebuild, so replacing it always leaves a copy to return to.
+    try { localStorage.setItem("nong_rig_prev", JSON.stringify(RIG)); }
+    catch (e) { /* storage full: the swap still happens, just without undo */ }
+    RIG = mergeRig(p.rig);
+    saveRig();
+  }
+  // Repair the poses BEFORE they reach anything: pad short ones to NJ, drop
+  // non-numbers, and clamp to each joint's real travel. A missing or broken
+  // time or hold becomes 0 (clampKeyTimes raises it to the floor), never NaN,
+  // which would reach the robot as "T NaN".
+  const loaded = p.keys.filter(k => k && Array.isArray(k.pose)).map(k => {
+    const q = k.pose.slice(0, NJ).map(Number);
+    while (q.length < NJ) q.push(90);    // pre-WAIST/SHRUG project: neutral
+    const t = Number(k.t), hold = Number(k.hold);
+    return { ...k, pose: q.map((v, i) => clampJ(i, Number.isFinite(v) ? v : 90)),
+             t: Number.isFinite(t) ? Math.max(0, Math.round(t)) : 0,
+             hold: Number.isFinite(hold) ? Math.max(0, Math.round(hold)) : 0 };
+  });
   keys = loaded;
   bumpKeys();
   $("speedDps").value = p.speedDps || 120;
@@ -133,14 +149,6 @@ async function loadProject(file) {
   }
   addons = p.addons || addons;
   saveMeshes();
-  if (p.rig && takeRig) {
-    // Keep one step back. The rig is the most expensive thing in this editor
-    // to rebuild, so replacing it always leaves a copy to return to.
-    try { localStorage.setItem("nong_rig_prev", JSON.stringify(RIG)); }
-    catch (e) { /* storage full: the swap still happens, just without undo */ }
-    RIG = mergeRig(p.rig);
-    saveRig();
-  }
   // What was opened, taken before the awaits below: an edit made while the
   // models load is the person's new work, never "saved".
   const openedSig = workSig();

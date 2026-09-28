@@ -417,3 +417,11 @@ header{flex-wrap:wrap;padding:var(--sp-3) var(--sp-4);gap:var(--sp-3)}
 .askdlg::backdrop{background:color-mix(in srgb,#000 55%,transparent)}
 .askdlg h2{margin:0 0 var(--sp-2)}
 .askdlg .row{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin:var(--sp-3) 0}
+/* the upload wheel: a ring filled to --p percent, the number in its middle */
+.updlg{text-align:center}
+.upwheel{--p:0;width:96px;height:96px;margin:var(--sp-3) auto;border-radius:50%;
+  display:grid;place-items:center;
+  background:conic-gradient(var(--acc) calc(var(--p) * 1%),var(--sunk) 0)}
+.upwheel span{width:76px;height:76px;border-radius:50%;background:var(--card);
+  display:grid;place-items:center;font-size:18px;font-weight:600}
+.updlg .row{justify-content:center}

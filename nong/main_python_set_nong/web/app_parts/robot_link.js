@@ -97,16 +97,32 @@ async function checkLimitsMatch() {
 // A USB-RS485 adapter has no board of its own: the nong answers only when
 // addressed by its bus id. The id box is technical detail (hidden), so fill it
 // from the hub's cable probe (user 2026-09-17: "no reply from COM12").
+// The hub's cached answer first (instant while the cable is in use), the full
+// bus census (~4.3 s on COM21, 2026-09-27) only when that knows no nong.
 async function findBusId(port) {
-  try {
-    const r = await fetch("/api/scanusb?full=1&port=" + encodeURIComponent(port)).then(r => r.json());
-    const u = (r.usb || [])[0] || {};
-    if (u.module) return false;                              // a board on this cable itself
-    const nongs = (u.rs485 || []).filter(m => m.type === "nong");
-    if (!nongs.length) return false;
-    $("busId").value = nongs[0].id;
-    return true;
-  } catch (e) { return false; }                              // no hub probe: id stays as typed
+  for (const full of [0, 1]) {
+    try {
+      const r = await fetch(`/api/scanusb?full=${full}&port=` + encodeURIComponent(port)).then(r => r.json());
+      const u = (r.usb || [])[0] || {};
+      if (u.module) return false;                            // a board on this cable itself
+      const nongs = (u.rs485 || []).filter(m => m.type === "nong");
+      if (!nongs.length) continue;
+      $("busId").value = nongs[0].id;
+      return true;
+    } catch (e) { return false; }                            // no hub probe: id stays as typed
+  }
+  return false;
+}
+// The last bus id that answered on each port. Without it every page load
+// started with the empty id: two unaddressed INFOs that an RS485 adapter can
+// never answer, then the census - ~9 s before Connect worked (2026-09-27).
+const BUS_KEY = "nongBusId:";
+function rememberBusId(port) {
+  try { if (port) localStorage.setItem(BUS_KEY + port, String(busId() || "")); } catch (e) {}
+}
+function recallBusId(port) {
+  if (busId() || !port) return;
+  try { const v = localStorage.getItem(BUS_KEY + port); if (v) $("busId").value = v; } catch (e) {}
 }
 async function hubUsbCmd(c) {
   if (!hubPort && !(window.HUB_PEER || window.HUB_VIA))
@@ -123,7 +139,11 @@ async function hubUsbCmd(c) {
       `&c=${encodeURIComponent(c)}`
     : `/api/usb/cmd?port=${encodeURIComponent(hubPort)}` +
       `&id=${busId()}&c=${encodeURIComponent(c)}`;
-  const r = await fetch(url);
+  // Never wait forever: a request stuck behind a busy cable held one of the
+  // browser's six connections to the hub, and six of them froze every other
+  // fetch on the page.
+  const r = await fetch(url, window.AbortSignal && AbortSignal.timeout
+    ? { signal: AbortSignal.timeout(15000) } : {});
   const t = await r.text();
   if (!r.ok) {
     let msg = t;
@@ -179,7 +199,17 @@ async function serialReadLoop() {
   $("robotStat").textContent = "USB disconnected";
   notice($("robotStat").textContent);
 }
+// ONE command on the wire at a time. Two overlapping calls used to throw
+// "WritableStream is locked" on the second getWriter(), leaving its waiter in
+// the queue to swallow the FIRST command's reply - every later reply then
+// went to the wrong caller. Replies carry no id, so order is the only match.
+let serialChain = Promise.resolve();
 function serialCmd(c) {
+  const run = serialChain.then(() => serialCmdNow(c));
+  serialChain = run.catch(() => {});
+  return run;
+}
+function serialCmdNow(c) {
   return new Promise((res, rej) => {
     if (!serialPort || !serialPort.writable) return rej(new Error("USB not connected"));
     const id = busId();
@@ -194,8 +224,16 @@ function serialCmd(c) {
       if (k >= 0) { serialWaiters.splice(k, 1); rej(new Error("timeout (bus id right?)")); }
     }, 2500);
     const framed = id ? "#" + id + " " + c : c;      // RS485 frame when addressed
-    const writer = serialPort.writable.getWriter();
-    writer.write(new TextEncoder().encode(framed + "\n")).finally(() => writer.releaseLock());
+    const drop = (e) => {
+      const k = serialWaiters.indexOf(w);
+      if (k >= 0) serialWaiters.splice(k, 1);
+      rej(e);
+    };
+    try {
+      const writer = serialPort.writable.getWriter();
+      writer.write(new TextEncoder().encode(framed + "\n"))
+        .catch(drop).finally(() => writer.releaseLock());
+    } catch (e) { drop(e); }
   });
 }
 
@@ -328,7 +366,12 @@ async function getStatus() { // full status JSON on whichever link is up
   if (haveAuto()) return (await autoFetch("status")).json();
   if (haveUsb()) {
     try { return JSON.parse(await cableCmd("INFO")); }
-    catch (e) { return JSON.parse(await cableCmd("INFO")); } // boot noise: retry once
+    catch (e) {
+      // Ask again only when the board restarted mid-answer. "No reply" does
+      // not get better by asking: it cost 2 s more per Connect on an adapter.
+      if (!/restart|JSON|Unexpected/i.test(e.message || "")) throw e;
+      return JSON.parse(await cableCmd("INFO"));
+    }
   }
   if (haveWifi())
     return fetch("/api/robot/status?ip=" + encodeURIComponent(robotIp())).then(r => r.json());
@@ -426,6 +469,7 @@ function pickFound(ip) {
   $("robotIp").value = ip;
   connectRobot();
 }
+let connecting = false;   // one Connect at a time: repeated presses stacked probes on one cable
 async function connectRobot() {
   if (!currentUser) {
     showTab("robot"); // This will actually show the login card since they aren't logged in
@@ -438,6 +482,11 @@ async function connectRobot() {
     }
     return pendingConnect.promise;
   }
+  if (connecting) return;
+  connecting = true;
+  try { await connectLink(); } finally { connecting = false; }
+}
+async function connectLink() {
   const t = transport(), had = hubPort;
   try {
     if (t === "usb") {
@@ -445,16 +494,20 @@ async function connectRobot() {
       hubPort = $("usbPort").value;
       if (!hubPort) throw new Error("pick the USB port the module is plugged into " +
         "(⟳ to rescan)");
+      recallBusId(hubPort);
     } else if (t === "serial" && !usbDirect()) {
       await serialConnect();
     }
     let s;
     try { s = await getStatus(); }
     catch (e) {
-      // silent cable with no bus id: maybe an RS485 adapter - ask the hub who is behind it
-      if (t !== "usb" || busId() || !(await findBusId(hubPort))) throw e;
+      // silent cable: maybe an RS485 adapter, or the remembered bus id is now
+      // another board - ask the hub who is behind it
+      const tried = busId();
+      if (t !== "usb" || !(await findBusId(hubPort)) || busId() === tried) throw e;
       s = await getStatus();
     }
+    if (t === "usb") rememberBusId(hubPort);
     checkLimitsMatch();                   // not awaited: connecting must not wait on it
     boardSafeIdentity = String(s.chip || s.id || "");
     adoptBoardSafety(s.module);
@@ -620,8 +673,12 @@ async function sdDownload(fname) {
     return (await autoFetch("download", { path: "/moves/" + fname })).text();
   if (haveWifi()) {
     try {
-      return await fetch(`/api/robot/download?ip=${encodeURIComponent(robotIp())}` +
-                         `&path=${encodeURIComponent("/moves/" + fname)}`).then(r => r.text());
+      // A 404/502 body is not a sequence: read as YAML it said "no pose steps".
+      const r = await fetch(`/api/robot/download?ip=${encodeURIComponent(robotIp())}` +
+                            `&path=${encodeURIComponent("/moves/" + fname)}`);
+      const text = await r.text();
+      if (!r.ok) throw new Error(text.trim() || ("the robot answered " + r.status));
+      return text;
     } catch (e) { if (!haveUsb()) throw e; }
   }
   if (haveUsb()) return sdDownloadSerial(fname);
@@ -805,7 +862,9 @@ async function handOffToRobot() {
     const { name, yaml } = buildYaml(playT);
     const file = (part ? name + ".part" : name) + ".yaml";
     await sdUpload(file, yaml);              // falls back to module memory with no SD
-    await robotCmd("MOVE " + file);
+    // A refused MOVE must not stop the preview and claim the module has it.
+    const said = await robotCmd("MOVE " + file);
+    if (!said.startsWith("OK")) throw new Error(said || "the module did not start it");
     // stop being the clock: the module owns the show now
     playing = false;
     keepAwake(false);
@@ -862,7 +921,14 @@ async function robotRun() {
       + (e && e.message ? e.message : e);
     return;
   }
-  await robotCmd("MOVE " + file);
+  const said = await robotCmd("MOVE " + file);
+  // robotCmd answers "" on a failure; the card said "running" anyway.
+  if (!said.startsWith("OK")) {
+    if (st) st.textContent = file + " was sent, but the robot did not start it — "
+      + (said || $("robotStat").textContent || "no answer");
+    notice(st ? st.textContent : "the robot did not start " + file);
+    return;
+  }
   if (st) st.textContent = part
     ? "the robot is running from the move you picked, to the end — it does not "
       + "go back to the start. The whole show is still saved as " + name + ".yaml."

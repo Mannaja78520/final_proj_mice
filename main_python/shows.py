@@ -20,6 +20,8 @@ Per item:
                   "exact" fill `repeat` seconds the same way and then CUT to
                   them, so the item takes exactly that long.
     repeat        the number that goes with the mode.
+    speed_pct     how fast this sequence runs in this show, % of its saved
+                  timing: 50 = half speed, 200 = twice as fast. Default 100.
 
 "seconds" and "exact" differ only in the last pass. "seconds" lets it finish and
 so runs over; "exact" cuts at the last keyframe that fits and hands what is left
@@ -38,31 +40,54 @@ board may lengthen a move (its own speed cap), so a 60 s item can run a little
 longer than 60 s. It can never run SHORT, which is the direction that would
 matter, and the hub cannot know the board's answer before it sends the move.
 
+Per show (asked 2026-09-27):
+    join_dps      the fastest the arm may travel on a JOIN - the move from one
+                  sequence's last pose into the next one's first pose, or back
+                  to the start of a repeat. 0 = the next sequence's own speed.
+    join_ms       the shortest a join may take, in ms. 0 = no minimum. A join
+                  between two identical poses stays at the 80 ms floor, so a
+                  show that already runs straight on does not gain a pause.
+    music         a track on the robot's card (/music) that starts with the
+                  show. While a show has one, the sequences' own play/vol cues
+                  are left out, or the first of them would cut the show's
+                  track off. music_vol 0-100 (-1 = leave the level alone) and
+                  music_loop (start the track again when it ends).
+    music_end     "" the track stops with the last move; "after" it plays
+                  music_secs more after the show ends; "total" it plays
+                  music_secs in all, from the first pose.
+
 The sequences are never copied or changed, so one greeting can sit in many
 shows. A person can edit the file by hand; Studio's Shows tab writes the same.
 The hub plays a show as one list of steps (ShowPlayer), so it runs over any
 link and the robot's own speed cap times the move from one sequence into the next.
 """
 import json
+import math
 import re
 import time
 from pathlib import Path
 
 NAME = re.compile(r"^[A-Za-z0-9_\-][A-Za-z0-9 _.\-]{0,79}$")
 REPEAT_MODES = ("", "times", "seconds", "exact")
+MIN_PCT, MAX_PCT = 10, 400        # speed_pct range, % of the saved timing
+MUSIC_ENDS = ("after", "total")   # how the show's track ends; "" = with the show
 DEF_DPS = 60.0       # the same fallback seq_steps uses for a file with no speed
 MIN_T = 80           # ms, the floor the firmware, Studio and ShowPlayer share
 # A 60 s target against a sequence that parses to almost nothing would expand
 # into tens of thousands of steps and take the hub down with it. Refuse, and
 # say which sequence, rather than building a list nobody can stop.
 MAX_PASSES = 500
+# A join smaller than this is "the same pose": join_ms is not added to it, so
+# two sequences that end and start on one pose still run straight on.
+JOIN_STILL = 0.5     # degrees
 
 
 def total_ms(steps):
     return sum(int(s.get("t", 0)) + int(s.get("hold", 0)) for s in steps)
 
 
-def cut_to_budget(out, first, began_at, budget, next_pose, speed, marks=None):
+def cut_to_budget(out, first, began_at, budget, next_pose, speed, marks=None,
+                  limits=None, join=None):
     """Cut one item down to `budget` ms and say what is left of it.
 
     Asked 2026-09-23: *make the show can select that sequence run only for
@@ -89,7 +114,8 @@ def cut_to_budget(out, first, began_at, budget, next_pose, speed, marks=None):
         # merely be sent for at the deadline, so the move into its first pose
         # has to fit inside the budget too. Cutting without this was the first
         # version and it ran 333 ms late on every item (measured 2026-09-23).
-        hand = link_time(out[i]["pose"], next_pose, speed) if next_pose else 0
+        hand = (link_time(out[i]["pose"], next_pose, speed, limits, join)
+                if next_pose else 0)
         if step_end + hand > end and i > first:
             break
         running = step_end
@@ -99,7 +125,8 @@ def cut_to_budget(out, first, began_at, budget, next_pose, speed, marks=None):
         marks[:] = [m for m in marks if m["step"] <= keep]
     # A single step longer than the whole budget still has to fit: shorten it
     # rather than overrun the timetable on the very first move.
-    hand = link_time(out[keep]["pose"], next_pose, speed) if next_pose else 0
+    hand = (link_time(out[keep]["pose"], next_pose, speed, limits, join)
+            if next_pose else 0)
     if running + hand > end and keep == first:
         s = out[keep]
         s["hold"] = 0                       # the pause goes before the move does
@@ -108,15 +135,66 @@ def cut_to_budget(out, first, began_at, budget, next_pose, speed, marks=None):
     return max(0, end - running)
 
 
-def link_time(prev, nxt, dps):
+def move_floor(prev, nxt, limits):
+    """The shortest time the BOARD will accept for this move, in ms.
+
+    NongModule::minDuration: each joint's change over that joint's max deg/s,
+    and the safety floor, biggest change x pi/2 over safe_dps (the cosine ease
+    peaks at pi/2 x its average speed). Asked for less, the board lengthens the
+    move and ShowPlayer waits for it - so the show ran seconds longer than the
+    time bar said (user 2026-09-27: bar 49 s, robot there at 52 s). `limits`
+    is what Studio plans with: {"safe_dps": n, "max_dps": [10 numbers]}.
+    Rounded UP, so the board keeps the asked time instead of adding to it.
+    """
+    if not limits:
+        return MIN_T
+    maxd = limits.get("max_dps") or []
+    need, delta = 0.0, 0.0
+    for i, (a, b) in enumerate(zip(prev, nxt)):
+        d = abs(a - b)
+        delta = max(delta, d)
+        if i < len(maxd) and float(maxd[i] or 0) > 1:
+            need = max(need, d / float(maxd[i]))
+    safe = float(limits.get("safe_dps") or 0)
+    if safe > 1:
+        need = max(need, delta * (math.pi / 2) / safe)
+    return max(MIN_T, int(math.ceil(need * 1000)))
+
+
+def clean_limits(d):
+    """What a page sent as `limits`, as numbers - or None when it sent none."""
+    if not isinstance(d, dict):
+        return None
+    try:
+        maxd = [float(v or 0) for v in (d.get("max_dps") or [])][:10]
+        return {"safe_dps": float(d.get("safe_dps") or 0), "max_dps": maxd}
+    except (TypeError, ValueError):
+        raise ValueError("limits: safe_dps and max_dps must be numbers")
+
+
+def link_time(prev, nxt, dps, limits=None, join=None):
     """How long the move from one sequence's end into the next one's start takes.
 
     The same rule the firmware and Studio use: biggest joint change over the
     sequence's own speed, with the shared 80 ms floor. Identical poses give the
     floor, so two sequences that end and start on the same pose run straight on.
+    `join` is the show's own limit on these moves ({"dps", "ms"}, 0 = off): a
+    join at the next sequence's speed looked like a snap (user 2026-09-27).
+    Never shorter than the board allows (move_floor).
     """
     delta = max((abs(a - b) for a, b in zip(prev, nxt)), default=0.0)
-    return max(MIN_T, int(delta / max(1.0, float(dps)) * 1000))
+    join = join or {}
+    if float(join.get("dps") or 0) > 0:
+        dps = min(float(dps), float(join["dps"]))
+    t = max(MIN_T, int(delta / max(1.0, float(dps)) * 1000))
+    if delta >= JOIN_STILL:
+        t = max(t, int(join.get("ms") or 0))
+    return max(t, move_floor(prev, nxt, limits))
+
+
+def _music_cue(line):
+    """A sequence's own sound cue - left out while the show has its own track."""
+    return str(line).split(":", 1)[0].strip().lower() in ("play", "vol")
 
 
 def _file(name):
@@ -186,10 +264,41 @@ class Shows:
                 mode = ""
             if not mode:
                 n = 0
+            # speed_pct: this sequence faster or slower IN THIS SHOW only, as a
+            # percentage of its saved timing (user 2026-09-27). The file is
+            # not touched; pauses keep their length; the board's floor still
+            # wins, so a "faster" the servos cannot do is not promised.
+            try:
+                pct = float(it.get("speed_pct") or 100)
+            except (TypeError, ValueError):
+                pct = 100.0
             items.append({"seq": seq, "hold": max(0, int(it.get("hold") or 0)),
-                          "repeat_mode": mode, "repeat": n})
-        return {"name": str((show or {}).get("name") or "").strip(),
-                "loop": bool((show or {}).get("loop")), "items": items}
+                          "repeat_mode": mode, "repeat": n,
+                          "speed_pct": int(round(max(MIN_PCT, min(MAX_PCT, pct))))})
+        show = show or {}
+
+        def num(key, lo, hi, default=0.0):
+            try:
+                v = float(show[key]) if show.get(key) not in (None, "") else default
+            except (TypeError, ValueError):
+                v = default
+            return max(lo, min(hi, v))
+        music = str(show.get("music") or "").strip()
+        # a track is a file in the card's /music folder, never a path elsewhere
+        if any(c in music for c in "/\\:"):
+            raise ValueError("the show's music must be a track name, not a path")
+        end = str(show.get("music_end") or "").strip().lower()
+        return {"name": str(show.get("name") or "").strip(),
+                "loop": bool(show.get("loop")), "items": items,
+                "join_dps": round(num("join_dps", 0, 2000), 1),
+                "join_ms": int(num("join_ms", 0, 60000)),
+                "music": music,
+                "music_vol": int(num("music_vol", -1, 100, -1)) if music else -1,
+                "music_loop": bool(show.get("music_loop")) and bool(music),
+                # "" stop with the last move, "after" N s more, "total" N s in all
+                "music_end": end if music and end in MUSIC_ENDS else "",
+                "music_secs": round(num("music_secs", 0, 3600), 1)
+                if music and end in MUSIC_ENDS else 0}
 
     def save(self, show):
         show = self.clean(show)
@@ -213,7 +322,7 @@ class Shows:
         f.replace(dest)
         return ".deleted/" + dest.name
 
-    def steps(self, show, parse, marks=None):
+    def steps(self, show, parse, marks=None, limits=None):
         """All the sequences' steps, in order. parse(text) is main.seq_steps.
 
         A missing or broken sequence stops the whole show with its name: playing
@@ -222,8 +331,13 @@ class Shows:
         `marks`, when a list is passed in, is filled with one row per pass -
         {at, step, seq, pass, of} - so Studio can draw the same chain on its own
         timeline and name each piece (A31-3). The player ignores it.
+
+        `limits` is the board's speed limits as Studio plans with them (see
+        move_floor). Given, every move is asked for at least the time the board
+        will take, so the time bar, Studio's preview and the robot keep one clock.
         """
         show = self.clean(show)
+        join = {"dps": show["join_dps"], "ms": show["join_ms"]}
         if not show["items"]:
             raise ValueError("this show has no sequences in it yet")
         out = []
@@ -240,7 +354,8 @@ class Shows:
             got = parsed["steps"]
             if not got:
                 raise ValueError("step %d: %s has no poses" % (n, it["seq"]))
-            speed = float(parsed.get("speed") or 0) or DEF_DPS
+            pct = it["speed_pct"] / 100.0
+            speed = (float(parsed.get("speed") or 0) or DEF_DPS) * pct
             # MAX_PASSES guarded only the seconds branch at first, so a `times`
             # of a million - one typo in a hand-edited shows/*.json - built a
             # million passes and took the hub's memory with it. Found by Codex
@@ -255,7 +370,7 @@ class Shows:
             # is cut here, now that this sequence's first pose is in hand.
             if pending:
                 owed = cut_to_budget(out, pending[0], pending[1], pending[2],
-                                     got[0]["pose"], speed, marks)
+                                     got[0]["pose"], speed, marks, limits, join)
                 pending = None
             began_at, began_step = total_ms(out), len(out)
             # The show's clock starts ON its first pose, as Studio's time bar
@@ -266,6 +381,9 @@ class Shows:
             passes, elapsed = 0, -entry
             while True:
                 pass_steps = [dict(s) for s in got]
+                if pct != 1.0:
+                    for st in pass_steps[1:]:
+                        st["t"] = max(MIN_T, int(round(st["t"] / pct)))
                 # THE GAP THAT LOOKED LIKE A STOP. Every sequence's first step
                 # is its start pose, timed for travel from wherever the robot
                 # happened to be - yakyai carries T 3273. Chained, the arm is
@@ -278,7 +396,8 @@ class Shows:
                 # the short time is always safe.
                 if out:
                     pass_steps[0]["t"] = link_time(out[-1]["pose"],
-                                                   pass_steps[0]["pose"], speed)
+                                                   pass_steps[0]["pose"], speed,
+                                                   limits, join)
                 # A previous item was CUT to its budget and owes the rest of
                 # that budget to this move. Spending it here is what makes the
                 # hand-over land exactly on the deadline instead of overrunning
@@ -286,8 +405,14 @@ class Shows:
                 # this sequence's start pose right on time (A31-14).
                 handover = bool(owed and passes == 0)
                 if handover:
-                    pass_steps[0]["t"] = max(MIN_T, owed)
+                    pass_steps[0]["t"] = max(MIN_T, owed, move_floor(
+                        out[-1]["pose"], pass_steps[0]["pose"], limits))
                     owed = 0
+                # Inside the sequence too: a file saved under a faster limit
+                # than the board has now is lengthened by the board, unseen.
+                for j in range(1, len(pass_steps)):
+                    pass_steps[j]["t"] = max(pass_steps[j]["t"], move_floor(
+                        pass_steps[j - 1]["pose"], pass_steps[j]["pose"], limits))
                 if marks is not None:
                     # `handover`: this step's move is paid from the CUT item's
                     # budget, so Studio draws it as the end of that item and the
@@ -331,8 +456,42 @@ class Shows:
         # is still exactly as long as it was asked to be.
         if pending:
             owed = cut_to_budget(out, pending[0], pending[1], pending[2],
-                                 None, DEF_DPS, marks)
+                                 None, DEF_DPS, marks, limits, join)
         if owed:
             out[-1]["hold"] = out[-1].get("hold", 0) + owed
             owed = 0
+        if show["music"]:
+            for st in out:
+                for key in ("cues", "cues_after"):
+                    if st.get(key):
+                        st[key] = [c for c in st[key] if not _music_cue(c)]
+            head = ["vol: %d" % show["music_vol"]] if show["music_vol"] >= 0 else []
+            head.append("play: " + show["music"] + (" LOOP" if show["music_loop"] else ""))
+            out[0]["cues"] = head + list(out[0].get("cues") or [])
+            # the track ends with the show, not whenever the file runs out -
+            # unless the show says how long it plays (music_stop_ms, a timer)
+            if not show["music_end"]:
+                out[-1]["cues_after"] = list(out[-1].get("cues_after") or []) + ["play: STOP"]
         return out
+
+    @staticmethod
+    def music_stop_ms(show, steps):
+        """When the show's track is stopped, in ms on the show's clock (0 = its
+        first pose, as on Studio's time bar) - or None when it stops with the
+        last move (the cue) or there is no track.
+
+        User 2026-09-27: *if the show ends, let the music run N more seconds, or
+        run the music N seconds in all*. "after" = the show's length + N s;
+        "total" = N s from the first pose, which may be before the show ends.
+        """
+        show = Shows.clean(show)
+        if not show["music"] or not show["music_end"]:
+            return None
+        if show["loop"] and show["music_end"] == "after":
+            return None      # a looping show never ends: the track runs until Stop
+        n = int(round(show["music_secs"] * 1000))
+        if show["music_end"] == "total":
+            return n
+        clock = (steps[0].get("hold", 0) if steps else 0) + sum(
+            int(s.get("t", 0)) + int(s.get("hold", 0)) for s in steps[1:])
+        return clock + n

@@ -36,6 +36,7 @@ function showTab(which) {
   if (which === "move") which = "pose";          // the old name
   if (!STAB_BTN[which]) which = "pose";
   sideTab = which;
+  if (which === "shows" && typeof refreshShows === "function") refreshShows();   // saved elsewhere since
   
   let renderWhich = which;
   if (!currentUser && (which === "robot" || which === "setup")) {

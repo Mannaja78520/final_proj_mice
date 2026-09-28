@@ -6859,3 +6859,145 @@ do it why esc still can use i told you to disable it everytime why it still have
 
 ### 2026-09-24 12:44
 give me the real number to test by my self too
+
+### 2026-09-24 13:16
+load it not in the front side and top plane it in the plane that hold the load isn't it?
+
+### 2026-09-24 13:18
+test it if it help use it and sonnet qc if it find the bug did sonet cost more if sonnet fix and fix the wrong one?
+
+### 2026-09-24 13:18
+???
+
+### 2026-09-24 13:20
+nong studio distance how about distance from shoulder
+
+### 2026-09-24 13:31
+every part list it here i will see it easy than see in file or make file it easy to read than this
+
+### 2026-09-24 14:19
+why in hole not use normal why use direction?
+
+### 2026-09-24 14:24
+in thesis i need to use stress or displacement
+
+### 2026-09-24 14:27
+Compare it with the material's allowed stress to get the safety factor: SF = ╧ây ├╖ ╧â. Use 47 MPa for a one-time servo stall and 14 MPa for loads held a whole show.
+
+what is this is i need to set it everytime in meterial?
+
+### 2026-09-24 14:31
+like this?
+
+### 2026-09-24 14:37
+this is 2.08N is it right? or wrong it show like that?
+
+### 2026-09-24 14:48
+i need to use all 3 stress displacement strain?
+
+### 2026-09-24 14:55
+so in one part i need to sim 3 time right?
+
+### 2026-09-24 14:59
+i need to study in assembly or not some part because my hole is for install brass inset and bearing?
+
+### 2026-09-24 15:00
+i need to make connecttion use bolt to hold but i can use only fix or it not problem?
+
+### 2026-09-24 15:01
+and where the part contact to the other part is fix too or not it connect by bolt
+
+### 2026-09-24 15:21
+like this?
+
+### 2026-09-24 15:23
+okay i will sim all and then you fix it later
+
+### 2026-09-24 15:30
+why i put the force to 2 pin left right is this 2 pin connect to the it own base to hang everything not all 3 small hole and 1 big hole did am right?
+
+### 2026-09-24 15:47
+upper_arm_old_design
+
+how about this is this hold it own weight and all elbow below why it get less N then in the elbow?
+
+### 2026-09-24 15:52
+list all test again how it hold and everything i will sim
+
+### 2026-09-24 15:56
+did i can use Torque not force?
+it don't hold all my part?
+
+### 2026-09-24 16:18
+why some have gravity some don't havee gravity?
+
+### 2026-09-24 16:19
+need all have gravity
+
+### 2026-09-24 16:21
+give me all and where plane apply gravity for all
+
+### 2026-09-25 02:30
+i already finish to sim it all check and save and use it to the thesis and change it to new result
+
+### 2026-09-25 04:15
+shoulder_connect_base_part / arm held out
+
+already save
+
+<pasted_content id="a52f">
+Study	Problem	Fix
+shoulder_connect_base_part / arm held out	no results saved	Run, then save the part
+connect_base_part_elbow_straight / arm held out
+</pasted_content id="a52f">
+
+I'am already use 0.84 and torque -0.034
+
+
+connect_base_part_elbow_straight / servo stall
+
+already use torque
+
+
+nong_body_middle_bar_v2 / shrug stuck
+
+already do like that
+
+
+nong_shoulder_assembly / arms held out
+fix it
+
+everything fix
+
+### 2026-09-25 04:23
+swing_bar_bar / push
+
+it blucking it have only 1 study out
+
+### 2026-09-25 09:23
+are you sure?
+
+### 2026-09-25 10:07
+okay you add it and do it for me i don't know where to apply it to this 3 thing add new study
+
+### 2026-09-25 10:41
+everything use true scale?
+
+### 2026-09-25 12:08
+where is the change only chapter 3?
+
+### 2026-09-25 12:13
+i just ask no change where we do the sim?
+only in chapter 3 or not?
+
+### 2026-09-27 01:56
+<wake reason="mention" current-time="2026-09-26T18:56:01Z">
+  <project id="chan_01R7BbYxaTb3Yv9YS3gQaaA3" type="project">
+    <message trigger="true" from="human" trust="principal" author-id="user_019omLJjqZvV8mGXWaZtRNFL" id="cmsg_01R7BbYxaTb3Yv9YS3gQaaA3HHRGFe43JDRWah575cRYxo" sent-at="2026-09-26T18:48:03Z" mention="true">make use the new sim to make like this one but make can edit all graph in word everything make editable in docx in clude the lagend
+
+&#34;E:\final_proj\mice\model\21_09_2026_nangrum_full\analysis\nong_structure_section_TH_v2.docx&#34;
+
+use new step file to run too everything about command and last task what they do are in code folder</message>
+  </project>
+</wake>
+

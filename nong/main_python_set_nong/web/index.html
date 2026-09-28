@@ -299,6 +299,29 @@
         <span class="lbl">Name</span><input id="showName" placeholder="welcome" style="flex:1">
         <label><input type="checkbox" id="showLoop"> loop</label>
       </div>
+      <div class="row" title="the move from the end of one sequence to the start of the next (and back to the start of a repeat). Leave empty to use the next sequence's own speed.">
+        <span class="lbl">Between</span>
+        <input id="showJoinDps" type="number" min="0" step="5" placeholder="auto" style="width:72px" onchange="showSettingChanged()"
+               aria-label="fastest speed between sequences, degrees per second"> °/s at most,
+        <input id="showJoinS" type="number" min="0" step="0.1" placeholder="0" style="width:64px" onchange="showSettingChanged()"
+               aria-label="shortest time between sequences, seconds"> s at least
+      </div>
+      <div class="row" style="flex-wrap:wrap" title="a track on the robot's card that plays from the start of the show to its end. While one is set, the sequences' own music is left out.">
+        <span class="lbl">Music</span>
+        <select id="showMusic" style="flex:1 1 140px;min-width:120px" onchange="showSettingChanged()" aria-label="music for this show"><option value="">no music</option></select>
+        <input id="showMusicVol" type="number" min="0" max="100" step="5" placeholder="vol" style="width:60px" onchange="showSettingChanged()" aria-label="music volume, 0 to 100">
+        <label><input type="checkbox" id="showMusicLoop" onchange="showSettingChanged()"> repeat</label>
+        <button type="button" onclick="addShowMusicFromPc()" title="put a track from this computer onto the robot's card and use it for this show">＋ From PC</button>
+      </div>
+      <div class="row" id="showMusicEndRow" title="when the show's music stops">
+        <span class="lbl">Music stops</span>
+        <select id="showMusicEnd" onchange="showSettingChanged()" aria-label="when the show's music stops">
+          <option value="">with the last move</option>
+          <option value="after">… s after the show ends</option>
+          <option value="total">after … s in all</option>
+        </select>
+        <input id="showMusicSecs" type="number" min="0" step="1" style="width:64px" onchange="showSettingChanged()" aria-label="music seconds"> s
+      </div>
       <div class="row">
         <select id="showAddSeq" style="flex:1" title="a saved sequence to add at the end"><option value="">Add a saved sequence…</option></select>
         <button onclick="addShowItem()">+ Add</button>

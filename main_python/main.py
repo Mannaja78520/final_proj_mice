@@ -945,7 +945,52 @@ def dev_delete(dev, path):
     return dev_cmd(dev, "FDEL " + name)
 
 
-def dev_upload(dev, dirp, name, data: bytes):
+# ONE BACKGROUND UPLOAD AT A TIME. Over a cable a file goes 120 bytes per
+# command, so a 4 MB song is ~35,000 commands and a long wait. User
+# 2026-09-27: *use the time to send, but show a wheel with how many percent,
+# and say nothing else can be done*. So the hub sends it on its own thread and
+# Studio polls /api/upload/progress; one HTTP request held open for the whole
+# transfer would die long before the song arrived.
+UPLOAD = {"running": False, "name": "", "sent": 0, "total": 0,
+          "result": "", "error": "", "started": 0.0, "cancel": False}
+UPLOAD_LOCK = threading.Lock()
+
+
+def upload_start(dev, dirp, name, data: bytes):
+    """Start dev_upload on a thread. Refuses while one is still running."""
+    with UPLOAD_LOCK:
+        if UPLOAD["running"]:
+            raise ValueError("%s is still being sent - wait for it, or cancel it"
+                             % UPLOAD["name"])
+        UPLOAD.update(running=True, name=name, sent=0, total=len(data),
+                      result="", error="", started=time.time(), cancel=False)
+
+    def run():
+        try:
+            r = dev_upload(dev, dirp, name, data, job=UPLOAD)
+            with UPLOAD_LOCK:
+                if r.startswith("OK"):
+                    UPLOAD.update(result=r, sent=len(data))
+                else:
+                    UPLOAD["error"] = r
+        except Exception as e:              # noqa: BLE001
+            with UPLOAD_LOCK:
+                UPLOAD["error"] = str(e)
+        finally:
+            with UPLOAD_LOCK:
+                UPLOAD["running"] = False
+    threading.Thread(target=run, daemon=True).start()
+    return upload_status()
+
+
+def upload_status():
+    with UPLOAD_LOCK:
+        return {k: v for k, v in UPLOAD.items() if k != "cancel"}
+
+
+def dev_upload(dev, dirp, name, data: bytes, job=None):
+    """`job`, when given, is UPLOAD: its `sent` counts up as chunks go, and
+    setting its `cancel` stops the transfer and removes the half-written file."""
     kind, addr, bus, peer = parse_dev(dev)
     if kind == "wifi" and not peer:
         boundary = "----micehub%d" % int(time.time())
@@ -963,6 +1008,14 @@ def dev_upload(dev, dirp, name, data: bytes):
     if not r.startswith("OK"):
         return r
     for i in range(0, len(data), 120):
+        if job is not None:
+            job["sent"] = i
+            if job.get("cancel"):
+                # close it and take the half-written file back off the card, so
+                # a cut-off song is never left there to be picked and played
+                dev_cmd(dev, "FEND")
+                dev_cmd(dev, "FDEL " + path)
+                return "ERR cancelled - nothing was kept on the card"
         r = dev_cmd(dev, "FDATA " + base64.b64encode(data[i:i + 120]).decode())
         if not r.startswith("OK"):
             return r
@@ -1716,9 +1769,16 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
                 return self.send_bytes(dev_delete(dev, (q.get("path") or [""])[0]).encode(),
                                        "text/plain; charset=utf-8")
             if what == "upload" and method == "POST":
-                return self.send_bytes(dev_upload(dev, (q.get("dir") or ["/moves"])[0],
-                                                  safe_name((q.get("name") or ["f"])[0]),
-                                                  self.body()).encode(),
+                # THE BODY FIRST, then the name. Refusing a bad name before
+                # reading a 4 MB body made Windows abort the connection, so a
+                # Thai file name reached the page as "Failed to fetch" instead
+                # of "bad name" (user 2026-09-27).
+                data = self.body()
+                name = safe_name((q.get("name") or ["f"])[0])
+                dirp = (q.get("dir") or ["/moves"])[0]
+                if (q.get("background") or [""])[0] == "1":
+                    return self.send_json(upload_start(dev, dirp, name, data))
+                return self.send_bytes(dev_upload(dev, dirp, name, data).encode(),
                                        "text/plain; charset=utf-8")
             return self.send_err("unknown dev endpoint " + what, 404)
         except Exception as e:  # noqa: BLE001
@@ -2050,6 +2110,13 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
         # identical over every transport.
         if path.startswith("/api/dev/"):
             return self.dev_route(method, path[len("/api/dev/"):], q)
+        # the background upload: how far it has got, and stopping it
+        if path == "/api/upload/progress":
+            return self.send_json(upload_status())
+        if path == "/api/upload/cancel" and method == "POST":
+            with UPLOAD_LOCK:
+                UPLOAD["cancel"] = True
+            return self.send_json(upload_status())
 
         if path == "/api/servos":
             # The ONE servo table, shared with the firmware (which compiles it

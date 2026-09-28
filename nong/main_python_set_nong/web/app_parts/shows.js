@@ -2,8 +2,25 @@
 // User 2026-09-17: mix and match sequences (greeting, then byebye). A show is a
 // list of sequence NAMES saved by the hub in shows/*.json (main_python/shows.py);
 // the hub plays it as one run, so it works over WiFi or the cable.
-let showDraft = { name: "", loop: false, items: [] };
+// join_dps/join_ms: how fast the move BETWEEN sequences may be (0 = off);
+// music: the show's own track on the robot's card (user 2026-09-27).
+function blankShow() {
+  return { name: "", loop: false, items: [], join_dps: 0, join_ms: 0,
+           music: "", music_vol: -1, music_loop: false, music_end: "", music_secs: 0 };
+}
+let showDraft = blankShow();
 let showOnBar = "";      // the show currently drawn on the time bar, "" = none
+let showBar = { keys: null, musicStopMs: null };
+function showBarMusicStop() { return showBar.keys === keys ? showBar.musicStopMs : null; }
+// The robot's speed limits as THIS page plans with them. The hub times every
+// move of the show to at least what the board will take (shows.move_floor),
+// so the time bar, the preview and the robot run on one clock - without them
+// the board stretched the joins and a 49 s mark was reached at 52 s.
+function showLimits() {
+  const max = [];
+  for (let i = 0; i < NJ; i++) max.push(jointMaxDps(i));
+  return { safe_dps: SAFE_DPS, max_dps: max };
+}
 
 async function refreshShows() {
   try {
@@ -15,17 +32,92 @@ async function refreshShows() {
     sel.innerHTML = "<option value=''>Open saved show…</option>";
     (s.shows || []).forEach(n => { const o = document.createElement("option"); o.value = o.textContent = n; sel.appendChild(o); });
     if (showDraft.name && (s.shows || []).includes(showDraft.name)) sel.value = showDraft.name;
+    const keep = add.value;   // a refresh must not drop what was being picked
     add.innerHTML = "<option value=''>Add a saved sequence…</option>";
     (q.files || []).filter(f => f.endsWith(".yaml")).forEach(f => {
       const o = document.createElement("option"); o.value = o.textContent = f; add.appendChild(o);
     });
+    if (keep && (q.files || []).includes(keep)) add.value = keep;
   } catch (e) { /* Studio opened without the hub: nothing to list */ }
+}
+// User 2026-09-27: a sequence saved in Studio did not show in the Show list
+// until the page was reloaded. seqsChanged() is called after every save or
+// delete (the caller has already refreshed the Timeline list, and set its
+// pick): it refreshes the Shows list and tells other Studio tabs in this
+// browser. Other PCs and phones pick the change up when their tab comes back
+// into view or the Shows tab is opened.
+const seqChan = ("BroadcastChannel" in window) ? new BroadcastChannel("mice-seqs") : null;
+function seqsChanged() {
+  refreshShows();
+  if (seqChan) seqChan.postMessage("changed");
+}
+if (seqChan) seqChan.onmessage = () => { refreshSeqs().catch(() => {}); refreshShows(); };
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshShows(); });
+window.addEventListener("focus", () => refreshShows());
+// The track list is the robot's own /music folder (music_on_a_keyframe.js),
+// so only files really on the card are offered; a set track is kept even
+// while the robot is not connected.
+function renderShowMusic() {
+  const sel = $("showMusic");
+  if (!sel) return;
+  const cur = showDraft.music || "";
+  const names = musicList ? musicList.slice() : [];
+  if (cur && names.indexOf(cur) < 0) names.push(cur);
+  sel.innerHTML = "";
+  [["", "no music"]].concat(names.map(n => [n, n])).forEach(([v, label]) => {
+    const o = document.createElement("option"); o.value = v; o.textContent = label; sel.appendChild(o);
+  });
+  sel.value = cur;
+  sel.title = musicList ? "a track on the robot's card, played from the start of the show to its end"
+                        : (musicNote || "connect the robot to choose a track");
+  $("showMusicVol").value = showDraft.music_vol >= 0 ? showDraft.music_vol : "";
+  $("showMusicVol").disabled = !cur;
+  $("showMusicLoop").checked = !!showDraft.music_loop;
+  $("showMusicLoop").disabled = !cur;
+  // how long the track plays: with the moves, N s after, or N s in all
+  $("showMusicEndRow").style.display = cur ? "" : "none";
+  $("showMusicEnd").value = showDraft.music_end || "";
+  $("showMusicSecs").value = showDraft.music_end ? showDraft.music_secs : "";
+  $("showMusicSecs").style.display = showDraft.music_end ? "" : "none";
+  if (!musicList && robotLinked()) loadMusicList().then(() => { if (musicList) renderShowMusic(); });
+}
+// A track from THIS PC becomes the show's music (user 2026-09-27: *in show
+// make can add music from pc*). It goes onto the robot's card the same way a
+// keyframe's track does (uploadMusicFile), then is picked here.
+function addShowMusicFromPc() {
+  if (!robotLinked()) {
+    // said in a popup too: the status line sits far below this button, so
+    // the click looked like it did nothing (user 2026-09-27)
+    $("showStat").textContent = "Connect the robot first (Robot tab) — the track " +
+      "goes onto the robot's card, so it needs the robot.";
+    notice($("showStat").textContent);
+    return;
+  }
+  const pick = (name, whyNot, renamed) => {
+    if (!name) { $("showStat").textContent = whyNot; notice(whyNot); return; }
+    showDraft.music = name;
+    renderShowMusic();
+    showChanged();
+    $("showStat").textContent = name + " is on the robot's card and is now this " +
+      "show's music" + (renamed || "") + ". Save the show to keep it.";
+  };
+  pick.busy = msg => { $("showStat").textContent = msg; };   // a long upload is visible
+  pickMusicFile(null, pick);
+  $("showStat").textContent = "choose a track (.mp3 or .wav) on this computer…";
+}
+function showSettingChanged() {
+  readShowForm();
+  renderShowMusic();
+  showChanged();
 }
 function renderShow() {
   const box = $("showItems");
   if (!box) return;
   $("showName").value = showDraft.name;
   $("showLoop").checked = showDraft.loop;
+  $("showJoinDps").value = showDraft.join_dps > 0 ? showDraft.join_dps : "";
+  $("showJoinS").value = showDraft.join_ms > 0 ? showDraft.join_ms / 1000 : "";
+  renderShowMusic();
   box.innerHTML = "";
   if (!showDraft.items.length) {
     box.innerHTML = "<div class='mini'>No sequences yet — add one above.</div>";
@@ -81,7 +173,22 @@ function renderShow() {
     const unit = document.createElement("span"); unit.className = "mini";
     unit.textContent = mode.value === "times" ? "×" : (mode.value ? "s" : "");
     const btn = (label, title, fn) => { const b = document.createElement("button"); b.textContent = label; b.title = title; b.onclick = fn; return b; };
-    row.append(n, name, mode, rep, unit, document.createTextNode("pause"), hold,
+    // Speed in THIS show only, % of the sequence's saved timing (user
+    // 2026-09-27). The time bar is redrawn from the hub, so it follows.
+    const spd = document.createElement("input");
+    spd.type = "number"; spd.min = 10; spd.max = 400; spd.step = 10;
+    spd.style.width = "64px";
+    spd.value = it.speed_pct || 100;
+    spd.setAttribute("aria-label", "speed of " + it.seq + " in this show, percent");
+    spd.title = "how fast this sequence runs in this show: 100 = as saved, 50 = half " +
+      "speed, 200 = twice as fast. Pauses keep their length, and a move is never " +
+      "faster than the robot allows.";
+    spd.onchange = () => {
+      it.speed_pct = Math.max(10, Math.min(400, Math.round(+spd.value || 100)));
+      spd.value = it.speed_pct; showChanged();
+    };
+    row.append(n, name, mode, rep, unit, document.createTextNode("speed"), spd,
+      document.createTextNode("%"), document.createTextNode("pause"), hold,
       btn("▲", "play earlier", () => { moveShowItem(i, -1); showChanged(); }),
       btn("▼", "play later", () => { moveShowItem(i, 1); showChanged(); }),
       btn("✕", "take out of this show", () => { showDraft.items.splice(i, 1); renderShow(); showChanged(); }));
@@ -95,9 +202,22 @@ function showChanged() { if (showOnBar) showOnTimeline(true); }
 function readShowForm() {
   showDraft.name = $("showName").value.trim();
   showDraft.loop = $("showLoop").checked;
+  showDraft.join_dps = Math.max(0, +$("showJoinDps").value || 0);
+  showDraft.join_ms = Math.max(0, Math.round((+$("showJoinS").value || 0) * 1000));
+  showDraft.music = $("showMusic").value;
+  const v = $("showMusicVol").value;
+  showDraft.music_vol = showDraft.music && v !== ""
+    ? Math.max(0, Math.min(100, Math.round(+v || 0))) : -1;
+  showDraft.music_loop = !!showDraft.music && $("showMusicLoop").checked;
+  showDraft.music_end = showDraft.music ? $("showMusicEnd").value : "";
+  let secs = Math.max(0, +$("showMusicSecs").value || 0);
+  // a mode just picked starts from a number that does something
+  if (showDraft.music_end && $("showMusicSecs").value === "")
+    secs = showDraft.music_end === "total" ? 60 : 5;
+  showDraft.music_secs = showDraft.music_end ? secs : 0;
   return showDraft;
 }
-function newShow() { showDraft = { name: "", loop: false, items: [] }; renderShow(); $("showStat").textContent = "new show — add sequences, then Save."; }
+function newShow() { showDraft = blankShow(); renderShow(); $("showStat").textContent = "new show — add sequences, then Save."; }
 function addShowItem() {
   const f = $("showAddSeq").value;
   if (!f) { $("showStat").textContent = "pick a saved sequence to add first."; return; }
@@ -115,7 +235,7 @@ async function openShow() {
   if (!n) return;
   const r = await fetch("/api/show?name=" + encodeURIComponent(n)).then(r => r.json());
   if (!r.ok) { $("showStat").textContent = "cannot open " + n + ": " + (r.error || "not found"); notice($("showStat").textContent); return; }
-  showDraft = r.show; showDraft.name = showDraft.name || n;
+  showDraft = Object.assign(blankShow(), r.show); showDraft.name = showDraft.name || n;
   renderShow();
   $("showStat").textContent = "opened " + n + " (" + showDraft.items.length + " sequences).";
   // User 2026-09-23: *when click in show and we have the all sequence show all
@@ -149,7 +269,7 @@ async function showOnTimeline(quiet, onlyIfSafe) {
     return false;
   }
   try {
-    const j = await showPost("/api/show/steps", { show: s });
+    const j = await showPost("/api/show/steps", { show: s, limits: showLimits() });
     const steps = j.steps || [], marks = j.marks || [];
     if (steps.length < 2) throw new Error("this show has fewer than two poses");
     const startOf = {}, travel = {}, taken = new Set(marks.map(m => m.step));
@@ -180,6 +300,9 @@ async function showOnTimeline(quiet, onlyIfSafe) {
       if (st.cues_after && st.cues_after.length) k.cuesAfter = st.cues_after.slice();
       return k;
     });
+    // when the show's track stops, for ▶ on the time bar too - tied to THIS
+    // key list, so a sequence loaded over the bar later does not inherit it
+    showBar = { keys, musicStopMs: j.music_stop_ms == null ? null : j.music_stop_ms };
     selKey = 0;
     playT = 0;
     bumpKeys();
@@ -231,7 +354,7 @@ async function playShow() {
   if (!dev) { $("showStat").textContent = "connect to the robot first (Robot tab)."; notice($("showStat").textContent); return; }
   if (!s.items.length) { $("showStat").textContent = "add at least one sequence first."; return; }
   try {
-    await showPost("/api/show/play", { dev, show: s });
+    await showPost("/api/show/play", { dev, show: s, limits: showLimits() });
     $("showStat").textContent = "the hub is running " + (s.name || "this show") +
       " — it keeps going with this page closed. ⏹ Stop ends it.";
   } catch (e) { $("showStat").textContent = "did not start: " + (e.message || e); notice($("showStat").textContent); }

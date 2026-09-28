@@ -18,6 +18,7 @@ class ShowPlayer:
     # (A26-46). Longer than a slow STL load, shorter than a walk to the robot.
     BEAT_TIMEOUT = 4.0
     MIN_T = 80           # ms, the same floor the firmware and Studio use
+    CATCH_UP_S = 0.25    # later than this, a move does not rush to catch up
 
     def __init__(self, cmd_fn=None, parse_fn=None, cues_fn=None):
         self._cmd_fn = cmd_fn
@@ -44,6 +45,10 @@ class ShowPlayer:
         self.entering = False
         self.watched = False     # a visible Studio page is beating for this show
         self.last_beat = 0.0
+        # The show's track may outlive the moves (Shows: music_end, user
+        # 2026-09-27): a timer stops it at music_stop_ms on the show's clock.
+        self.music_stop_ms = None
+        self._music_timer = None
 
     def _get_cmd(self):
         if self._cmd_fn is not None:
@@ -92,7 +97,8 @@ class ShowPlayer:
             self.last_beat = time.monotonic()
         return {"ok": True, "running": self.running(), "watched": self.watched}
 
-    def start(self, dev, steps, loop=False, name="", from_ms=0, watch=False):
+    def start(self, dev, steps, loop=False, name="", from_ms=0, watch=False,
+              music_stop_ms=None):
         """Take over this device and play. Any previous run is stopped first."""
         parse_fn = self._get_parse()
         parse_fn(dev)                       # raises on a malformed device
@@ -120,6 +126,8 @@ class ShowPlayer:
             self.stop()
             with self.lock:
                 self.dev, self.steps, self.loop, self.name = dev, steps, bool(loop), name
+                self.music_stop_ms = (None if music_stop_ms is None
+                                      else max(0, int(music_stop_ms)))
                 self.total_ms = self.total(steps)
                 self.at_ms = max(0, min(int(from_ms), self.total_ms))
                 self.step, self.last, self.error = -1, "", ""
@@ -142,6 +150,15 @@ class ShowPlayer:
     def stop(self, freeze=True, why=""):
         """Stop playing. `freeze` also tells the module to hold where it is."""
         th = self.thread
+        timer, self._music_timer = self._music_timer, None
+        if timer and timer.is_alive():
+            # the moves are over but the track was still playing on its
+            # timer: Stop means quiet now, not when the timer comes round
+            timer.cancel()
+            try:
+                self._say("PLAY STOP")
+            except Exception:               # noqa: BLE001
+                pass
         if th and th.is_alive():
             self.stop_flag.set()
             th.join(timeout=3.0)
@@ -172,6 +189,16 @@ class ShowPlayer:
         return self.status()
 
     # ---- the clock itself ----
+    def _music_off(self, flag):
+        """The show's track has played as long as the show asked (music_end)."""
+        if flag is not self.stop_flag:
+            return                          # a newer run owns the speaker now
+        try:
+            self._say("PLAY STOP")
+        except Exception as e:              # noqa: BLE001
+            with self.lock:
+                self.error = "music stop: %s" % e
+
     def _say(self, c):
         cmd = self._get_cmd()
         r = cmd(self.dev, c)
@@ -240,7 +267,6 @@ class ShowPlayer:
             if flag.is_set():
                 return False
             self._mark(0, at)
-            self._cues(self.steps[0])
             try:
                 t = self._took(self._say(self._pose_cmd(self.steps[0]["pose"], t)), t)
                 if not self._sleep(flag, t / 1000.0):
@@ -248,6 +274,14 @@ class ShowPlayer:
             finally:
                 with self.lock:
                     self.entering = False
+            # THE SHOW STARTS ON ITS FIRST POSE, music and all. The first pose's
+            # cues used to go out BEFORE the walk there, so the song was already
+            # seconds in when the moves began (user 2026-09-27: *move to the
+            # start pose first, then start everything at the same time*). Time
+            # 0 on Studio's bar is the arm standing on that pose - so is this.
+            self._cues(self.steps[0])
+            # and a wait on that first pose is on the bar too: stand it out
+            hold_left = clock - at
         else:
             for i in range(1, len(self.steps)):
                 seg = self.steps[i]["t"]
@@ -267,6 +301,22 @@ class ShowPlayer:
 
         if hold_left and not self._sleep(flag, hold_left / 1000.0):
             return False
+        # ONE CLOCK FOR THE WHOLE RUN. Each move used to sleep its T AFTER the
+        # board had answered, so every command's round trip (and each cue's)
+        # was added on top and never paid back - a long show drifted seconds
+        # behind the time bar (user 2026-09-27: bar 49 s, robot there at 52 s).
+        # Now each move leaves on a deadline counted from the start. A move
+        # the board lengthens still pushes the deadline out: the arm has to
+        # arrive before the next pose goes.
+        due = time.monotonic()
+        if self.music_stop_ms is not None and self._music_timer is None:
+            # started ONCE per run, on the show's clock where this pass begins
+            pos = at + hold_left             # where the show's clock stands now
+            t = threading.Timer(max(0, self.music_stop_ms - pos) / 1000.0,
+                                self._music_off, args=(flag,))
+            t.daemon = True
+            self._music_timer = t
+            t.start()
         for i in range(start_i, len(self.steps)):
             s = self.steps[i]
             # A resumed move gets the time it has LEFT, not the whole time, or
@@ -277,11 +327,18 @@ class ShowPlayer:
                 return False
             self._mark(i, self._elapsed_to(i))
             self._cues(s)
-            left = self._took(self._say(self._pose_cmd(s["pose"], left)), left)
-            if not self._sleep(flag, left / 1000.0):
+            # A real stall (a retried command, a slow cable) is not caught up
+            # by rushing the next moves: past this much late, the clock
+            # restarts from now. Small round trips are still paid back.
+            if time.monotonic() - due > self.CATCH_UP_S:
+                due = time.monotonic()
+            took = self._took(self._say(self._pose_cmd(s["pose"], left)), left)
+            due += took / 1000.0
+            if not self._sleep(flag, due - time.monotonic()):
                 return False
             if s["hold"]:
-                if not self._sleep(flag, s["hold"] / 1000.0):
+                due += s["hold"] / 1000.0
+                if not self._sleep(flag, due - time.monotonic()):
                     return False
         self._mark(len(self.steps) - 1, self.total_ms)
         for c in self.steps[-1].get("cues_after") or []:

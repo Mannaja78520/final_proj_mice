@@ -129,17 +129,18 @@ function timingSummary() {
 function safetyLimitChanged() {
   const want = Math.round(+$("safeDpsInput").value || 0);
   if (!(want >= 5)) { $("safeDpsInput").value = SAFE_DPS; return; }
-  const wasAuto = keys.map((k, i) => i > 0 && keys[i - 1] &&
+  // A pinned time is never re-timed, even when it happens to equal the auto one.
+  const wasAuto = keys.map((k, i) => i > 0 && keys[i - 1] && !timePinned(i) &&
     k.t === autoTime(keys[i - 1].pose, k.pose, keyDps(i)));
   SAFE_DPS = want;
+  // Raising the limit raises what Show speed is allowed to be, so the two
+  // boxes stay honest about each other. Capped BEFORE re-timing, or the moves
+  // were timed at a speed the box no longer shows.
+  if (speedDps() > speedCeiling()) $("speedDps").value = speedCeiling();
   for (let i = 1; i < keys.length; i++)
     if (wasAuto[i]) keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
   bumpKeys();
   clampKeyTimes();
-  renderTimeline();
-  // Raising the limit raises what Show speed is allowed to be, so the two
-  // boxes stay honest about each other.
-  if (speedDps() > speedCeiling()) $("speedDps").value = speedCeiling();
   renderTimeline();
   $("safeSpeedStat").textContent =
     `Planning at ${want} °/s, so Show speed can now go up to ${speedCeiling()} °/s. ` +
@@ -167,7 +168,7 @@ function adoptBoardSafety(module) {
   }
   // Only automatically timed moves shorten. A hand-typed time is the user's
   // choice and must not be silently replaced after reconnecting to a board.
-  const wasAuto = keys.map((k, i) => i > 0 && k.t ===
+  const wasAuto = keys.map((k, i) => i > 0 && !timePinned(i) && k.t ===
     autoTime(keys[i - 1].pose, k.pose, keyDps(i)));
   const changed = safe !== SAFE_DPS;
   SAFE_DPS = safe;

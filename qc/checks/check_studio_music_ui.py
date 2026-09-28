@@ -21,7 +21,9 @@ be read with no robot, and what the file already says must still be shown and
 still be exported - a show edited on a laptop with no robot on it must not
 come back silent.
 """
+import json
 import re
+import time
 
 import browser
 import fake_serial
@@ -83,9 +85,50 @@ async function step(){
            ? "list-has-new-track" : "list-missed-new-track");
     qcMark(keyCue(keys[0], "play") === "qc_added.wav"
            ? "added-track-chosen" : "added-track-not-chosen");
+    // the same upload, from the Shows tab: the track becomes the SHOW's music
+    // (user 2026-09-27: *in show make can add music from pc*)
+    const f2 = new File([new Uint8Array([82,73,70,70,5,6,7,8])], "qc_show.wav",
+                        {type: "audio/wav"});
+    const keyBefore = keyCue(keys[0], "play");
+    await uploadMusicFile(null, f2, (name, why) => {
+      if (name) { showDraft.music = name; renderShowMusic(); }
+    });
+    qcMark(showDraft.music === "qc_show.wav" && $("showMusic").value === "qc_show.wav"
+           ? "show-track-chosen" : "show-track-not-chosen");
+    qcMark(keyCue(keys[0], "play") === keyBefore
+           ? "show-upload-left-keys" : "show-upload-touched-keys");
     setKeyCue(keys[0], "play", "song.mp3");   // back to the track under test
     setKeyCue(keys[0], "vol", "65");
     renderTimeline();
+
+    // a song over the cable: the HUB sends it in the background and the page
+    // shows a wheel with the percent until it is done (user 2026-09-27)
+    let why = "", got = "", sawWheel = false;
+    const peek = setInterval(() => { const d = $("uploadDlg"); if (d && d.open) sawWheel = true; }, 50);
+    await uploadMusicFile(null, new File([new Uint8Array(6000)], "qc_big.mp3"),
+                          (n, w) => { got = n; why = w || ""; });
+    clearInterval(peek);
+    qcMark(got === "qc_big.mp3" && sawWheel && !$("uploadDlg").open
+           ? "bg-upload-ok" : "bg-upload-bad-" + (got || why).replace(/[^A-Za-z]+/g, "_").slice(0, 40));
+    // a Thai file name: the card only takes English letters in a name, so it
+    // is renamed and the new name is said (user 2026-09-27)
+    got = ""; let note = "";
+    await uploadMusicFile(null, new File([new Uint8Array([1,2,3,4])], "ฟอน.wav"),
+                          (n, w, r) => { got = n; note = r || ""; });
+    qcMark(/^track-[0-9]{4}-[0-9]{4}[.]wav$/.test(got) && note.indexOf("English") >= 0
+           ? "thai-renamed" : "thai-not-renamed-" + (got || "none"));
+    // logged out by a hub restart: the reason, not "Failed to fetch". The
+    // hub's answer is stubbed - really logging out would also silence qcMark,
+    // which reports over the same gated command route.
+    const realFetch = window.fetch, realUser = currentUser;
+    window.fetch = (u, o) => String(u).indexOf("/api/whoami") >= 0
+      ? Promise.resolve(new Response('{"authed": false}')) : realFetch(u, o);
+    why = "";
+    await uploadMusicFile(null, new File([new Uint8Array([1,2,3])], "qc_out.wav"),
+                          (n, w) => { why = w || ""; });
+    window.fetch = realFetch;
+    currentUser = realUser;
+    qcMark(why.indexOf("log in again") >= 0 ? "logged-out-said" : "logged-out-silent");
 
     // and the show itself: the hub plays it, the cue reaches the module
     await rawCmd("MOVE QCMARK UI");
@@ -102,6 +145,35 @@ async function step(){
 }
 window.addEventListener("load", function(){ setTimeout(step, 1200); });
 """
+
+
+def test_cancel(t, base):
+    """Cancel stops the transfer and takes the half-written file off the card."""
+    fake_serial.reset()
+    F.login(base)
+    # a refused name with a big body still gets its REASON back: answering
+    # before reading 4 MB made Windows drop the connection ("Failed to fetch")
+    bad = "dev=usb%3A" + fake_serial.PORT + "&dir=/music&background=1&name=%E0%B8%9F.mp3"
+    try:
+        code, body = F.post(base + "/api/dev/upload?" + bad, b"x" * 4200407)[:2]
+        t.ok("bad name" in body, "a refused 4 MB upload says why", (code, body))
+    except Exception as e:                  # noqa: BLE001
+        t.ok(False, "a refused 4 MB upload says why", repr(e))
+    q = "dev=usb%3A" + fake_serial.PORT + "&dir=/music&name=qc_cut.mp3&background=1"
+    st = json.loads(F.post(base + "/api/dev/upload?" + q, b"x" * 600000)[1])
+    t.ok(st.get("running") is True, "a background upload starts and says so", st)
+    time.sleep(0.3)
+    F.post(base + "/api/upload/cancel")
+    end = time.time() + 10
+    while time.time() < end:
+        st = json.loads(F.get(base + "/api/upload/progress")[1])
+        if not st.get("running"):
+            break
+        time.sleep(0.1)
+    t.ok("cancelled" in (st.get("error") or ""), "cancel stops it", st)
+    wire = [c for _, c in fake_serial.wire]
+    t.ok(any(c.startswith("FDEL") and "qc_cut.mp3" in c for c in wire),
+         "and the half-sent file is removed from the card", wire[-3:])
 
 
 def run(t):
@@ -136,6 +208,20 @@ def run(t):
                "offers it straight away, without a reload")
     t.contains(marks, "added-track-chosen",
                "and the move you added it from is set to it")
+    t.contains(marks, "show-track-chosen",
+               "a track sent from the PC in the Shows tab becomes the show's music")
+    t.contains(marks, "show-upload-left-keys",
+               "and it leaves the keyframes' own music alone")
+    t.contains(marks, "bg-upload-ok",
+               "a track is sent by the hub in the background, with the wheel "
+               "open until it is on the card")
+    wire_all = [c for _, c in fake_serial.wire]
+    t.ok(sum(c.startswith("FDATA") for c in wire_all) >= 50,
+         "all of it went over the cable, 120 bytes a command",
+         len(wire_all))
+    t.contains(marks, "logged-out-said",
+               "logged out (a restarted hub), adding a track says to log in again "
+               "- a 4.2 MB refusal used to read only 'Failed to fetch'")
 
     wire = [c for _, c in fake_serial.wire]
     # ▶ must send its own PLAY, between the two markers - the show sends one
@@ -172,3 +258,8 @@ def run(t):
     t.ok(re.search(r"sel\.disabled\s*=\s*!musicList\s*&&\s*!cur", fn),
          "and the picker only locks when there is nothing to show at all",
          "locking it while a track IS set would hide the show's own music")
+
+    t.contains(marks, "thai-renamed",
+               "a track with a Thai name is renamed to one the card takes, and "
+               "the new name is said")
+    test_cancel(t, base)   # last: it resets the fake wire the checks above read

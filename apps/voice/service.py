@@ -31,6 +31,7 @@ import uuid
 from difflib import SequenceMatcher
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+import urllib.request
 from urllib.parse import parse_qs, urlparse
 
 # Windows defaults stdout to cp1252, which cannot encode Thai or the UI's

@@ -286,6 +286,18 @@ def _usb_cmd_once(port, cmd, bus_id=0, wait=2.0, client=True):
     up = cmd.strip().upper()
     if any(up.startswith(k) for k in _IDENTITY_CHANGING):
         _usb_ident.pop(port, None)   # re-probe rather than repeat a stale answer
+    # AN RS485 ADAPTER HAS NOTHING TO ANSWER AN UNADDRESSED COMMAND WITH. The
+    # probe already knows (no board on the cable, modules behind it), so say so
+    # at once instead of holding the port lock for the full wait. Measured
+    # 2026-09-27 on COM21 (CH340 dongle, nong #67): Studio sent INFO with no
+    # bus id again and again, each one froze the cable 2 s and every #67
+    # command queued behind it - the "slow, then the page hangs" report.
+    ident = _usb_ident.get(port) if not bus_id else None
+    if ident and not ident.get("module") and ident.get("rs485"):
+        ids = ", ".join(str(m.get("id")) for m in ident["rs485"])
+        raise TimeoutError("no reply from %s: it is an RS485 adapter with no "
+                           "board of its own - the module behind it is bus id %s"
+                           % (port, ids))
     ent = _usb_get(port)
     with ent["lock"]:
         if client:

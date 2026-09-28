@@ -1413,6 +1413,47 @@
        reads 42.0 s on the ruler. The seconds are counted from the show's <b>first pose</b>,
        the same place the time bar starts; the robot's walk to that first pose, from
        wherever it was standing, comes before the clock and belongs to no sequence.</p></div>
+  <div class="f"><h3>The time bar and the robot keep the same time<span class="tag t-new">fixed</span></h3>
+    <p>A show could reach a point on the robot a few seconds later than the time bar said
+       (49&nbsp;s on the bar, 52&nbsp;s on the robot). Two things added up: the hub waited
+       for each move <b>after</b> the robot had answered, so the cable's answer time was
+       added to every move; and a move between sequences could be asked for faster than the
+       robot allows, so the robot quietly took longer. Now the hub keeps one clock for the
+       whole show, and every move is planned at no less than the time the robot will
+       really take — with the robot's own speed limits, the ones in <b>Timing</b>.</p></div>
+  <div class="f"><h3>A gentler move between sequences<span class="tag t-new">new</span></h3>
+    <p>When one sequence ends in a different pose from where the next one starts, the robot
+       travels between them. In the Shows tab, <b>Between</b> sets how that move looks:
+       a top speed in °/s, a shortest time in seconds, or both. Leave them empty and the
+       move uses the next sequence's own speed, as before. Two sequences that end and start
+       on the same pose still run straight on. The time bar includes this move, so
+       everything after it moves along to match.</p></div>
+  <div class="f"><h3>Music for a whole show<span class="tag t-new">new</span></h3>
+    <p>A show can have its own <b>Music</b>: a track on the robot's card, with a volume and
+       a <b>repeat</b> tick. It starts on the show's first pose — the robot walks to that pose first, then the
+       music and the moves start together — and stops when the show
+       ends or you press Stop. While a show has its own track, the music saved inside its
+       sequences is left out, so nothing cuts the show's track off. Choose <i>no music</i>
+       to keep each sequence's own music. <b>＋ From PC</b> puts a track from your computer
+       onto the robot's card and makes it the show's music in one step. Over the cable
+       a file travels in small pieces, so a whole song takes a long time. While it is
+       sent, a wheel shows how many percent have arrived and about how long is left, and
+       nothing else can be done; <b>Cancel sending</b> stops it and takes the half-sent
+       file back off the card. The robot's card only takes English letters, numbers,
+       space, dot, <code>_</code> and <code>-</code> in a track name, so a Thai name is
+       renamed (to <code>track-</code> and the date if nothing is left) and Studio tells
+       you the new name. The faster ways are the robot's WiFi or copying the song
+       onto the SD card's <code>/music</code> folder. If the hub was restarted you must log in again first,
+       and Studio now says so instead of <i>Failed to fetch</i>.</p>
+    <p><b>Music stops</b> says how long the track plays: <i>with the last move</i>, a
+       number of seconds <i>after the show ends</i>, or a number of seconds <i>in all</i>
+       from the show's first pose — which can be before the moves end. Stop always
+       silences it at once. A looping show never ends, so its track plays until Stop.</p></div>
+  <div class="f"><h3>A sequence faster or slower in one show<span class="tag t-new">new</span></h3>
+    <p>Each sequence in a show has a <b>speed</b> in percent: 100 plays it as saved, 50 at
+       half speed, 200 twice as fast. It changes that show only, never the sequence file.
+       Pauses keep their length, and no move goes faster than the robot allows, so a very
+       high number may not shorten every move. The time bar follows the new speed.</p></div>
   <div class="f"><h3>See a whole show on the time bar<span class="tag t-new">new</span></h3>
     <p>Open a show, or press <b>⇣ Show on the time bar</b>, and every sequence of it lands
        on the one timeline, end to end, with a line and a name where each one begins — a

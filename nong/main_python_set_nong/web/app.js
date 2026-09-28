@@ -61,6 +61,7 @@ function showTab(which) {
   if (which === "move") which = "pose";          // the old name
   if (!STAB_BTN[which]) which = "pose";
   sideTab = which;
+  if (which === "shows" && typeof refreshShows === "function") refreshShows();   // saved elsewhere since
   
   let renderWhich = which;
   if (!currentUser && (which === "robot" || which === "setup")) {
@@ -1931,17 +1932,18 @@ function timingSummary() {
 function safetyLimitChanged() {
   const want = Math.round(+$("safeDpsInput").value || 0);
   if (!(want >= 5)) { $("safeDpsInput").value = SAFE_DPS; return; }
-  const wasAuto = keys.map((k, i) => i > 0 && keys[i - 1] &&
+  // A pinned time is never re-timed, even when it happens to equal the auto one.
+  const wasAuto = keys.map((k, i) => i > 0 && keys[i - 1] && !timePinned(i) &&
     k.t === autoTime(keys[i - 1].pose, k.pose, keyDps(i)));
   SAFE_DPS = want;
+  // Raising the limit raises what Show speed is allowed to be, so the two
+  // boxes stay honest about each other. Capped BEFORE re-timing, or the moves
+  // were timed at a speed the box no longer shows.
+  if (speedDps() > speedCeiling()) $("speedDps").value = speedCeiling();
   for (let i = 1; i < keys.length; i++)
     if (wasAuto[i]) keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
   bumpKeys();
   clampKeyTimes();
-  renderTimeline();
-  // Raising the limit raises what Show speed is allowed to be, so the two
-  // boxes stay honest about each other.
-  if (speedDps() > speedCeiling()) $("speedDps").value = speedCeiling();
   renderTimeline();
   $("safeSpeedStat").textContent =
     `Planning at ${want} °/s, so Show speed can now go up to ${speedCeiling()} °/s. ` +
@@ -1969,7 +1971,7 @@ function adoptBoardSafety(module) {
   }
   // Only automatically timed moves shorten. A hand-typed time is the user's
   // choice and must not be silently replaced after reconnecting to a board.
-  const wasAuto = keys.map((k, i) => i > 0 && k.t ===
+  const wasAuto = keys.map((k, i) => i > 0 && !timePinned(i) && k.t ===
     autoTime(keys[i - 1].pose, k.pose, keyDps(i)));
   const changed = safe !== SAFE_DPS;
   SAFE_DPS = safe;
@@ -2056,7 +2058,11 @@ function updateKey() {
 function dupKey() {
   if (!keys[selKey]) return;
   clearBadMarks();
-  keys.splice(selKey + 1, 0, JSON.parse(JSON.stringify(keys[selKey])));
+  const copy = JSON.parse(JSON.stringify(keys[selKey]));
+  // The copy is a pose, not a second music cue: keeping the cues restarted
+  // the source's track (or stopped it) a second time at the copy.
+  delete copy.cues; delete copy.cuesAfter;
+  keys.splice(selKey + 1, 0, copy);
   bumpKeys();
   selKey++;
   // The copy keeps its source's time, which makes it a HOLD of that length:
@@ -2987,6 +2993,7 @@ async function hubPlay(fromMs) {
         dev: moduleDev(), steps, loop: $("loopChk").checked,
         name: ($("seqName").value || "sequence").trim(), from_ms: Math.round(fromMs || 0),
         watch: !document.hidden,        // stop the arm if this page freezes (A26-46)
+        music_stop_ms: showBarMusicStop(),   // a show's track may outlive its moves
       }),
     }).then(r => r.json());
     if (r.error) throw new Error(r.error);
@@ -3203,6 +3210,7 @@ async function exportYaml(opts) {
     notice($("tlStat").textContent);
   }
   await refreshSeqs();
+  if (ok) seqsChanged();   // the Shows list and other tabs too, not just this list
   if (ok) $("seqList").value = name + ".yaml";   // the list shows what was just saved
   return ok;
 }
@@ -3869,8 +3877,25 @@ async function pullLimits() {
 // User 2026-09-17: mix and match sequences (greeting, then byebye). A show is a
 // list of sequence NAMES saved by the hub in shows/*.json (main_python/shows.py);
 // the hub plays it as one run, so it works over WiFi or the cable.
-let showDraft = { name: "", loop: false, items: [] };
+// join_dps/join_ms: how fast the move BETWEEN sequences may be (0 = off);
+// music: the show's own track on the robot's card (user 2026-09-27).
+function blankShow() {
+  return { name: "", loop: false, items: [], join_dps: 0, join_ms: 0,
+           music: "", music_vol: -1, music_loop: false, music_end: "", music_secs: 0 };
+}
+let showDraft = blankShow();
 let showOnBar = "";      // the show currently drawn on the time bar, "" = none
+let showBar = { keys: null, musicStopMs: null };
+function showBarMusicStop() { return showBar.keys === keys ? showBar.musicStopMs : null; }
+// The robot's speed limits as THIS page plans with them. The hub times every
+// move of the show to at least what the board will take (shows.move_floor),
+// so the time bar, the preview and the robot run on one clock - without them
+// the board stretched the joins and a 49 s mark was reached at 52 s.
+function showLimits() {
+  const max = [];
+  for (let i = 0; i < NJ; i++) max.push(jointMaxDps(i));
+  return { safe_dps: SAFE_DPS, max_dps: max };
+}
 
 async function refreshShows() {
   try {
@@ -3882,17 +3907,92 @@ async function refreshShows() {
     sel.innerHTML = "<option value=''>Open saved show…</option>";
     (s.shows || []).forEach(n => { const o = document.createElement("option"); o.value = o.textContent = n; sel.appendChild(o); });
     if (showDraft.name && (s.shows || []).includes(showDraft.name)) sel.value = showDraft.name;
+    const keep = add.value;   // a refresh must not drop what was being picked
     add.innerHTML = "<option value=''>Add a saved sequence…</option>";
     (q.files || []).filter(f => f.endsWith(".yaml")).forEach(f => {
       const o = document.createElement("option"); o.value = o.textContent = f; add.appendChild(o);
     });
+    if (keep && (q.files || []).includes(keep)) add.value = keep;
   } catch (e) { /* Studio opened without the hub: nothing to list */ }
+}
+// User 2026-09-27: a sequence saved in Studio did not show in the Show list
+// until the page was reloaded. seqsChanged() is called after every save or
+// delete (the caller has already refreshed the Timeline list, and set its
+// pick): it refreshes the Shows list and tells other Studio tabs in this
+// browser. Other PCs and phones pick the change up when their tab comes back
+// into view or the Shows tab is opened.
+const seqChan = ("BroadcastChannel" in window) ? new BroadcastChannel("mice-seqs") : null;
+function seqsChanged() {
+  refreshShows();
+  if (seqChan) seqChan.postMessage("changed");
+}
+if (seqChan) seqChan.onmessage = () => { refreshSeqs().catch(() => {}); refreshShows(); };
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshShows(); });
+window.addEventListener("focus", () => refreshShows());
+// The track list is the robot's own /music folder (music_on_a_keyframe.js),
+// so only files really on the card are offered; a set track is kept even
+// while the robot is not connected.
+function renderShowMusic() {
+  const sel = $("showMusic");
+  if (!sel) return;
+  const cur = showDraft.music || "";
+  const names = musicList ? musicList.slice() : [];
+  if (cur && names.indexOf(cur) < 0) names.push(cur);
+  sel.innerHTML = "";
+  [["", "no music"]].concat(names.map(n => [n, n])).forEach(([v, label]) => {
+    const o = document.createElement("option"); o.value = v; o.textContent = label; sel.appendChild(o);
+  });
+  sel.value = cur;
+  sel.title = musicList ? "a track on the robot's card, played from the start of the show to its end"
+                        : (musicNote || "connect the robot to choose a track");
+  $("showMusicVol").value = showDraft.music_vol >= 0 ? showDraft.music_vol : "";
+  $("showMusicVol").disabled = !cur;
+  $("showMusicLoop").checked = !!showDraft.music_loop;
+  $("showMusicLoop").disabled = !cur;
+  // how long the track plays: with the moves, N s after, or N s in all
+  $("showMusicEndRow").style.display = cur ? "" : "none";
+  $("showMusicEnd").value = showDraft.music_end || "";
+  $("showMusicSecs").value = showDraft.music_end ? showDraft.music_secs : "";
+  $("showMusicSecs").style.display = showDraft.music_end ? "" : "none";
+  if (!musicList && robotLinked()) loadMusicList().then(() => { if (musicList) renderShowMusic(); });
+}
+// A track from THIS PC becomes the show's music (user 2026-09-27: *in show
+// make can add music from pc*). It goes onto the robot's card the same way a
+// keyframe's track does (uploadMusicFile), then is picked here.
+function addShowMusicFromPc() {
+  if (!robotLinked()) {
+    // said in a popup too: the status line sits far below this button, so
+    // the click looked like it did nothing (user 2026-09-27)
+    $("showStat").textContent = "Connect the robot first (Robot tab) — the track " +
+      "goes onto the robot's card, so it needs the robot.";
+    notice($("showStat").textContent);
+    return;
+  }
+  const pick = (name, whyNot, renamed) => {
+    if (!name) { $("showStat").textContent = whyNot; notice(whyNot); return; }
+    showDraft.music = name;
+    renderShowMusic();
+    showChanged();
+    $("showStat").textContent = name + " is on the robot's card and is now this " +
+      "show's music" + (renamed || "") + ". Save the show to keep it.";
+  };
+  pick.busy = msg => { $("showStat").textContent = msg; };   // a long upload is visible
+  pickMusicFile(null, pick);
+  $("showStat").textContent = "choose a track (.mp3 or .wav) on this computer…";
+}
+function showSettingChanged() {
+  readShowForm();
+  renderShowMusic();
+  showChanged();
 }
 function renderShow() {
   const box = $("showItems");
   if (!box) return;
   $("showName").value = showDraft.name;
   $("showLoop").checked = showDraft.loop;
+  $("showJoinDps").value = showDraft.join_dps > 0 ? showDraft.join_dps : "";
+  $("showJoinS").value = showDraft.join_ms > 0 ? showDraft.join_ms / 1000 : "";
+  renderShowMusic();
   box.innerHTML = "";
   if (!showDraft.items.length) {
     box.innerHTML = "<div class='mini'>No sequences yet — add one above.</div>";
@@ -3948,7 +4048,22 @@ function renderShow() {
     const unit = document.createElement("span"); unit.className = "mini";
     unit.textContent = mode.value === "times" ? "×" : (mode.value ? "s" : "");
     const btn = (label, title, fn) => { const b = document.createElement("button"); b.textContent = label; b.title = title; b.onclick = fn; return b; };
-    row.append(n, name, mode, rep, unit, document.createTextNode("pause"), hold,
+    // Speed in THIS show only, % of the sequence's saved timing (user
+    // 2026-09-27). The time bar is redrawn from the hub, so it follows.
+    const spd = document.createElement("input");
+    spd.type = "number"; spd.min = 10; spd.max = 400; spd.step = 10;
+    spd.style.width = "64px";
+    spd.value = it.speed_pct || 100;
+    spd.setAttribute("aria-label", "speed of " + it.seq + " in this show, percent");
+    spd.title = "how fast this sequence runs in this show: 100 = as saved, 50 = half " +
+      "speed, 200 = twice as fast. Pauses keep their length, and a move is never " +
+      "faster than the robot allows.";
+    spd.onchange = () => {
+      it.speed_pct = Math.max(10, Math.min(400, Math.round(+spd.value || 100)));
+      spd.value = it.speed_pct; showChanged();
+    };
+    row.append(n, name, mode, rep, unit, document.createTextNode("speed"), spd,
+      document.createTextNode("%"), document.createTextNode("pause"), hold,
       btn("▲", "play earlier", () => { moveShowItem(i, -1); showChanged(); }),
       btn("▼", "play later", () => { moveShowItem(i, 1); showChanged(); }),
       btn("✕", "take out of this show", () => { showDraft.items.splice(i, 1); renderShow(); showChanged(); }));
@@ -3962,9 +4077,22 @@ function showChanged() { if (showOnBar) showOnTimeline(true); }
 function readShowForm() {
   showDraft.name = $("showName").value.trim();
   showDraft.loop = $("showLoop").checked;
+  showDraft.join_dps = Math.max(0, +$("showJoinDps").value || 0);
+  showDraft.join_ms = Math.max(0, Math.round((+$("showJoinS").value || 0) * 1000));
+  showDraft.music = $("showMusic").value;
+  const v = $("showMusicVol").value;
+  showDraft.music_vol = showDraft.music && v !== ""
+    ? Math.max(0, Math.min(100, Math.round(+v || 0))) : -1;
+  showDraft.music_loop = !!showDraft.music && $("showMusicLoop").checked;
+  showDraft.music_end = showDraft.music ? $("showMusicEnd").value : "";
+  let secs = Math.max(0, +$("showMusicSecs").value || 0);
+  // a mode just picked starts from a number that does something
+  if (showDraft.music_end && $("showMusicSecs").value === "")
+    secs = showDraft.music_end === "total" ? 60 : 5;
+  showDraft.music_secs = showDraft.music_end ? secs : 0;
   return showDraft;
 }
-function newShow() { showDraft = { name: "", loop: false, items: [] }; renderShow(); $("showStat").textContent = "new show — add sequences, then Save."; }
+function newShow() { showDraft = blankShow(); renderShow(); $("showStat").textContent = "new show — add sequences, then Save."; }
 function addShowItem() {
   const f = $("showAddSeq").value;
   if (!f) { $("showStat").textContent = "pick a saved sequence to add first."; return; }
@@ -3982,7 +4110,7 @@ async function openShow() {
   if (!n) return;
   const r = await fetch("/api/show?name=" + encodeURIComponent(n)).then(r => r.json());
   if (!r.ok) { $("showStat").textContent = "cannot open " + n + ": " + (r.error || "not found"); notice($("showStat").textContent); return; }
-  showDraft = r.show; showDraft.name = showDraft.name || n;
+  showDraft = Object.assign(blankShow(), r.show); showDraft.name = showDraft.name || n;
   renderShow();
   $("showStat").textContent = "opened " + n + " (" + showDraft.items.length + " sequences).";
   // User 2026-09-23: *when click in show and we have the all sequence show all
@@ -4016,7 +4144,7 @@ async function showOnTimeline(quiet, onlyIfSafe) {
     return false;
   }
   try {
-    const j = await showPost("/api/show/steps", { show: s });
+    const j = await showPost("/api/show/steps", { show: s, limits: showLimits() });
     const steps = j.steps || [], marks = j.marks || [];
     if (steps.length < 2) throw new Error("this show has fewer than two poses");
     const startOf = {}, travel = {}, taken = new Set(marks.map(m => m.step));
@@ -4047,6 +4175,9 @@ async function showOnTimeline(quiet, onlyIfSafe) {
       if (st.cues_after && st.cues_after.length) k.cuesAfter = st.cues_after.slice();
       return k;
     });
+    // when the show's track stops, for ▶ on the time bar too - tied to THIS
+    // key list, so a sequence loaded over the bar later does not inherit it
+    showBar = { keys, musicStopMs: j.music_stop_ms == null ? null : j.music_stop_ms };
     selKey = 0;
     playT = 0;
     bumpKeys();
@@ -4098,7 +4229,7 @@ async function playShow() {
   if (!dev) { $("showStat").textContent = "connect to the robot first (Robot tab)."; notice($("showStat").textContent); return; }
   if (!s.items.length) { $("showStat").textContent = "add at least one sequence first."; return; }
   try {
-    await showPost("/api/show/play", { dev, show: s });
+    await showPost("/api/show/play", { dev, show: s, limits: showLimits() });
     $("showStat").textContent = "the hub is running " + (s.name || "this show") +
       " — it keeps going with this page closed. ⏹ Stop ends it.";
   } catch (e) { $("showStat").textContent = "did not start: " + (e.message || e); notice($("showStat").textContent); }
@@ -4176,44 +4307,142 @@ async function loadMusicList() {
 // goes as raw bytes through the hub, which already knows how to reach this
 // module over WiFi or down a cable. A browser holding the cable itself
 // (Web Serial) has no hub path, and says so rather than failing quietly.
-async function pickMusicFile(k) {
+// `pick(name, whyNot)` chooses the track once it is on the card; by default it
+// goes on keyframe k. A failed upload calls it with no name and the reason. The Shows tab passes its own, so a show's track comes the same way.
+async function pickMusicFile(k, pick) {
   const inp = document.createElement("input");
   inp.type = "file";
   inp.accept = ".mp3,.wav,audio/mpeg,audio/wav";
   inp.onchange = () => {
     const f = inp.files && inp.files[0];
-    if (f) uploadMusicFile(k, f);
+    if (f) uploadMusicFile(k, f, pick);
   };
   inp.click();
 }
 // The upload itself, given a file: separate from the dialog because a file
 // picker cannot be opened by a script, and an upload path no check can reach
 // is an upload path nothing guards.
-async function uploadMusicFile(k, f) {
+// The robot's card takes a track name of English letters, digits, space, dot,
+// _ and - only (the hub's SAFE_NAME, and the firmware's command line). A Thai
+// name was refused, so it is renamed here and the new name is said out loud
+// (user 2026-09-27, ฟอนลองแมปง.mp3). What is left of the name is kept; a name
+// with nothing left becomes track-<month><day>-<hour><minute>.
+function robotTrackName(name) {
+  const ok = /^[A-Za-z0-9._ -]{1,80}$/;
+  if (ok.test(name) && name[0] !== ".") return name;
+  const dot = name.lastIndexOf(".");
+  const ext = dot > 0 ? name.slice(dot).replace(/[^A-Za-z0-9.]/g, "") : "";
+  let base = (dot > 0 ? name.slice(0, dot) : name).replace(/[^A-Za-z0-9._ -]+/g, "")
+    .replace(/^[ ._-]+|[ .]+$/g, "");
+  if (!/[A-Za-z0-9]/.test(base)) {
+    const d = new Date(), two = n => String(n).padStart(2, "0");
+    base = "track-" + two(d.getMonth() + 1) + two(d.getDate()) + "-" + two(d.getHours()) + two(d.getMinutes());
+  }
+  return (base.slice(0, 80 - ext.length) + ext);
+}
+async function uploadMusicFile(k, f, pick) {
   if (usbDirect()) {
     musicNote = "this browser is holding the cable itself, so the hub cannot "
               + "send the file. Connect through the hub, or add the track on "
               + "the module website: Files ▸ /music.";
+    if (pick) pick("", musicNote);
     renderTimeline();
     return;
   }
+  const stop = why => { musicNote = why; if (pick) pick("", why); renderTimeline(); };
+  // LOGGED OUT BY A HUB RESTART. Sessions live in the hub's memory, so a
+  // restarted hub refuses the upload - and a refused body over 4 MB is not
+  // read (DRAIN_LIMIT), so the browser only saw "Failed to fetch" instead of
+  // the reason (user 2026-09-27, a 4.2 MB mp3). Ask first, say it plainly.
+  try {
+    const w = await fetch("/api/whoami").then(r => r.json());
+    if (!w.authed) {
+      currentUser = null;              // the page still thought it was logged in
+      showTab("robot");                // which opens the login card
+      return stop("log in again first — the hub was restarted or your login ran "
+        + "out. Log in on the card that just opened, then add the track again.");
+    }
+  } catch (e) { /* no answer: let the upload itself say what is wrong */ }
+  const name = robotTrackName(f.name);
+  const renamed = name !== f.name ? " (saved on the robot as " + name + " — its card "
+    + "only takes English letters and numbers in a name)" : "";
   musicNote = "sending " + f.name + " to the robot…";
+  if (pick && pick.busy) pick.busy(musicNote);
   renderTimeline();
   try {
-    const r = await fetch("/api/dev/upload?dir=/music&name="
-                          + encodeURIComponent(f.name) + "&dev="
+    // The HUB sends it, on its own thread (background=1), and this page
+    // watches /api/upload/progress. Over a cable a song is tens of thousands
+    // of 120-byte commands; one request held open that long does not survive.
+    const r = await fetch("/api/dev/upload?background=1&dir=/music&name="
+                          + encodeURIComponent(name) + "&dev="
                           + encodeURIComponent(moduleDev()),
                           { method: "POST", body: await f.arrayBuffer() });
-    const said = (await r.text()).trim();
-    if (!said.startsWith("OK")) throw new Error(said);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.error || j.ok === false)
+      throw new Error(j.need_login ? "log in first" : (j.error || "HTTP " + r.status));
+    const end = await watchUpload(name);
+    if (end.error) throw new Error(end.error);
     musicList = null;                   // the card has one more file on it now
     await loadMusicList();
-    setKeyCue(k, "play", f.name);
-    musicNote = f.name + " is on the robot's card — press ▶ to hear it";
+    if (pick) pick(name, "", renamed); else setKeyCue(k, "play", name);
+    musicNote = name + " is on the robot's card — press ▶ to hear it" + renamed;
   } catch (e) {
     musicNote = "the track did not reach the robot: " + (e.message || e);
+    if (pick) pick("", musicNote);
   }
   renderTimeline();
+}
+// The wheel. A modal <dialog> over the whole page (user 2026-09-27: *show the
+// wheel, how many percent, and say nothing else can be done - only send*):
+// the robot's line is busy with the file, so anything clicked meanwhile would
+// only queue behind it. Cancel is the one way out; the hub then removes the
+// half-written file so a cut-off song is never left on the card.
+function watchUpload(name) {
+  let dlg = $("uploadDlg");
+  if (!dlg) {
+    dlg = document.createElement("dialog");
+    dlg.id = "uploadDlg"; dlg.className = "askdlg updlg";
+    dlg.setAttribute("aria-labelledby", "uploadTitle");
+    dlg.innerHTML = '<h2 id="uploadTitle">Sending music to the robot</h2>'
+      + '<div class="upwheel" id="uploadWheel" role="progressbar" aria-valuemin="0" '
+      + 'aria-valuemax="100"><span id="uploadPct">0%</span></div>'
+      + '<p class="mini" id="uploadText"></p>'
+      + '<p class="mini">Please wait. Nothing else can be done until it is sent — '
+      + 'the robot is busy taking the file.</p>'
+      + '<div class="row"><button id="uploadCancel">Cancel sending</button></div>';
+    document.body.appendChild(dlg);
+  }
+  const mb = n => (n / 1048576).toFixed(1) + " MB";
+  return new Promise(resolve => {
+    let done = false;
+    const finish = s => { if (done) return; done = true; clearInterval(t); dlg.close(); resolve(s); };
+    $("uploadCancel").disabled = false;
+    $("uploadCancel").onclick = () => {
+      $("uploadCancel").disabled = true;
+      $("uploadText").textContent = "cancelling — taking the half-sent file back off the card…";
+      fetch("/api/upload/cancel", { method: "POST" }).catch(() => {});
+    };
+    dlg.oncancel = e => e.preventDefault();          // Escape does not hide it
+    const tick = async () => {
+      let s;
+      try { s = await fetch("/api/upload/progress").then(r => r.json()); }
+      catch (e) { return; }                          // one missed poll is not an error
+      const pct = s.total ? Math.floor(100 * s.sent / s.total) : 0;
+      $("uploadWheel").style.setProperty("--p", pct);
+      $("uploadWheel").setAttribute("aria-valuenow", pct);
+      $("uploadPct").textContent = pct + "%";
+      // time left from the speed so far - only once there is a speed to go on
+      const secs = (Date.now() / 1000) - (s.started || 0);
+      const left = s.sent > 0 && secs > 2 ? (s.total - s.sent) / (s.sent / secs) : 0;
+      if (!$("uploadCancel").disabled)
+        $("uploadText").textContent = name + " — " + mb(s.sent) + " of " + mb(s.total)
+          + (left ? ", about " + (left >= 90 ? Math.round(left / 60) + " min" : Math.round(left) + " s") + " left" : "");
+      if (!s.running) finish(s);
+    };
+    const t = setInterval(tick, 500);
+    dlg.showModal();
+    tick();
+  });
 }
 
 // The picker for one keyframe: a track and a level, or plain words about why
@@ -4320,7 +4549,13 @@ function parseSeqYaml(text) {
   // own words and handed back to the file and to the hub, so a show edited
   // here keeps its music instead of losing it on the way through (A24-22).
   let pend = [];
+  // buildYaml writes a move's name as an indented comment line above it. It
+  // was thrown away with every other comment, so reopening a saved YAML lost
+  // every move name. File-level comments (column 0) are not names.
+  let pendName = "";
   for (const raw of text.split(/\r?\n/)) {
+    const nm = raw.match(/^\s+#\s*(.*?)\s*$/);
+    if (nm) { pendName = nm[1]; continue; }
     const line = raw.replace(/#.*$/, "").trimEnd();
     let m;
     if ((m = line.match(/^name:\s*(.+)$/))) out.name = m[1].trim();
@@ -4344,6 +4579,8 @@ function parseSeqYaml(text) {
         // that MOVE's own speed, so it survives a round trip through the file
         if (curSpeed && curSpeed !== out.speed) k.dps = curSpeed;
         if (pend.length) { k.cues = pend; out.cues += pend.length; pend = []; }
+        if (pendName) k.name = pendName;
+        pendName = "";
         out.keys.push(k);
       } else out.skipped++;
     } else if ((m = line.match(/^\s*-\s*wait:\s*(\d+)/))) {
@@ -4467,6 +4704,7 @@ async function deleteLocalSeq() {
     if (!r.ok || !j.ok) throw new Error(j.need_login ? "log in first" : (j.error || "HTTP " + r.status));
     $("tlStat").textContent = f + " deleted (kept in sequences/.deleted).";
     await refreshSeqs();
+    seqsChanged();
   } catch (e) {
     $("tlStat").textContent = "could not delete " + f + ": " + (e.message || e);
     notice($("tlStat").textContent);
@@ -4563,13 +4801,6 @@ async function loadProject(file) {
     if (st) st.textContent = file + " has no keyframes in it, so nothing was loaded.";
     return;
   }
-  // Repair the poses BEFORE they reach anything: pad short ones to NJ, drop
-  // non-numbers, and clamp to each joint's real travel.
-  const loaded = p.keys.filter(k => k && Array.isArray(k.pose)).map(k => {
-    const q = k.pose.slice(0, NJ).map(Number);
-    while (q.length < NJ) q.push(90);    // pre-WAIST/SHRUG project: neutral
-    return { ...k, pose: q.map((v, i) => clampJ(i, Number.isFinite(v) ? v : 90)) };
-  });
   // A project carries the rig it was built with. That is worth having, but it
   // is not worth losing today's tuning to — so ask, and default to keeping
   // what is on screen.
@@ -4581,6 +4812,29 @@ async function loadProject(file) {
       + "OK  — use the project's setup\n"
       + "Cancel — keep the setup you have now (recommended)");
   }
+  // The rig is swapped BEFORE the poses are clamped: clamping first cut every
+  // pose to the OLD rig's limits, so taking a project's wider rig still
+  // opened a project whose moves had been silently shortened.
+  if (p.rig && takeRig) {
+    // Keep one step back. The rig is the most expensive thing in this editor
+    // to rebuild, so replacing it always leaves a copy to return to.
+    try { localStorage.setItem("nong_rig_prev", JSON.stringify(RIG)); }
+    catch (e) { /* storage full: the swap still happens, just without undo */ }
+    RIG = mergeRig(p.rig);
+    saveRig();
+  }
+  // Repair the poses BEFORE they reach anything: pad short ones to NJ, drop
+  // non-numbers, and clamp to each joint's real travel. A missing or broken
+  // time or hold becomes 0 (clampKeyTimes raises it to the floor), never NaN,
+  // which would reach the robot as "T NaN".
+  const loaded = p.keys.filter(k => k && Array.isArray(k.pose)).map(k => {
+    const q = k.pose.slice(0, NJ).map(Number);
+    while (q.length < NJ) q.push(90);    // pre-WAIST/SHRUG project: neutral
+    const t = Number(k.t), hold = Number(k.hold);
+    return { ...k, pose: q.map((v, i) => clampJ(i, Number.isFinite(v) ? v : 90)),
+             t: Number.isFinite(t) ? Math.max(0, Math.round(t)) : 0,
+             hold: Number.isFinite(hold) ? Math.max(0, Math.round(hold)) : 0 };
+  });
   keys = loaded;
   bumpKeys();
   $("speedDps").value = p.speedDps || 120;
@@ -4615,14 +4869,6 @@ async function loadProject(file) {
   }
   addons = p.addons || addons;
   saveMeshes();
-  if (p.rig && takeRig) {
-    // Keep one step back. The rig is the most expensive thing in this editor
-    // to rebuild, so replacing it always leaves a copy to return to.
-    try { localStorage.setItem("nong_rig_prev", JSON.stringify(RIG)); }
-    catch (e) { /* storage full: the swap still happens, just without undo */ }
-    RIG = mergeRig(p.rig);
-    saveRig();
-  }
   // What was opened, taken before the awaits below: an edit made while the
   // models load is the person's new work, never "saved".
   const openedSig = workSig();
@@ -5425,16 +5671,32 @@ async function checkLimitsMatch() {
 // A USB-RS485 adapter has no board of its own: the nong answers only when
 // addressed by its bus id. The id box is technical detail (hidden), so fill it
 // from the hub's cable probe (user 2026-09-17: "no reply from COM12").
+// The hub's cached answer first (instant while the cable is in use), the full
+// bus census (~4.3 s on COM21, 2026-09-27) only when that knows no nong.
 async function findBusId(port) {
-  try {
-    const r = await fetch("/api/scanusb?full=1&port=" + encodeURIComponent(port)).then(r => r.json());
-    const u = (r.usb || [])[0] || {};
-    if (u.module) return false;                              // a board on this cable itself
-    const nongs = (u.rs485 || []).filter(m => m.type === "nong");
-    if (!nongs.length) return false;
-    $("busId").value = nongs[0].id;
-    return true;
-  } catch (e) { return false; }                              // no hub probe: id stays as typed
+  for (const full of [0, 1]) {
+    try {
+      const r = await fetch(`/api/scanusb?full=${full}&port=` + encodeURIComponent(port)).then(r => r.json());
+      const u = (r.usb || [])[0] || {};
+      if (u.module) return false;                            // a board on this cable itself
+      const nongs = (u.rs485 || []).filter(m => m.type === "nong");
+      if (!nongs.length) continue;
+      $("busId").value = nongs[0].id;
+      return true;
+    } catch (e) { return false; }                            // no hub probe: id stays as typed
+  }
+  return false;
+}
+// The last bus id that answered on each port. Without it every page load
+// started with the empty id: two unaddressed INFOs that an RS485 adapter can
+// never answer, then the census - ~9 s before Connect worked (2026-09-27).
+const BUS_KEY = "nongBusId:";
+function rememberBusId(port) {
+  try { if (port) localStorage.setItem(BUS_KEY + port, String(busId() || "")); } catch (e) {}
+}
+function recallBusId(port) {
+  if (busId() || !port) return;
+  try { const v = localStorage.getItem(BUS_KEY + port); if (v) $("busId").value = v; } catch (e) {}
 }
 async function hubUsbCmd(c) {
   if (!hubPort && !(window.HUB_PEER || window.HUB_VIA))
@@ -5451,7 +5713,11 @@ async function hubUsbCmd(c) {
       `&c=${encodeURIComponent(c)}`
     : `/api/usb/cmd?port=${encodeURIComponent(hubPort)}` +
       `&id=${busId()}&c=${encodeURIComponent(c)}`;
-  const r = await fetch(url);
+  // Never wait forever: a request stuck behind a busy cable held one of the
+  // browser's six connections to the hub, and six of them froze every other
+  // fetch on the page.
+  const r = await fetch(url, window.AbortSignal && AbortSignal.timeout
+    ? { signal: AbortSignal.timeout(15000) } : {});
   const t = await r.text();
   if (!r.ok) {
     let msg = t;
@@ -5507,7 +5773,17 @@ async function serialReadLoop() {
   $("robotStat").textContent = "USB disconnected";
   notice($("robotStat").textContent);
 }
+// ONE command on the wire at a time. Two overlapping calls used to throw
+// "WritableStream is locked" on the second getWriter(), leaving its waiter in
+// the queue to swallow the FIRST command's reply - every later reply then
+// went to the wrong caller. Replies carry no id, so order is the only match.
+let serialChain = Promise.resolve();
 function serialCmd(c) {
+  const run = serialChain.then(() => serialCmdNow(c));
+  serialChain = run.catch(() => {});
+  return run;
+}
+function serialCmdNow(c) {
   return new Promise((res, rej) => {
     if (!serialPort || !serialPort.writable) return rej(new Error("USB not connected"));
     const id = busId();
@@ -5522,8 +5798,16 @@ function serialCmd(c) {
       if (k >= 0) { serialWaiters.splice(k, 1); rej(new Error("timeout (bus id right?)")); }
     }, 2500);
     const framed = id ? "#" + id + " " + c : c;      // RS485 frame when addressed
-    const writer = serialPort.writable.getWriter();
-    writer.write(new TextEncoder().encode(framed + "\n")).finally(() => writer.releaseLock());
+    const drop = (e) => {
+      const k = serialWaiters.indexOf(w);
+      if (k >= 0) serialWaiters.splice(k, 1);
+      rej(e);
+    };
+    try {
+      const writer = serialPort.writable.getWriter();
+      writer.write(new TextEncoder().encode(framed + "\n"))
+        .catch(drop).finally(() => writer.releaseLock());
+    } catch (e) { drop(e); }
   });
 }
 
@@ -5656,7 +5940,12 @@ async function getStatus() { // full status JSON on whichever link is up
   if (haveAuto()) return (await autoFetch("status")).json();
   if (haveUsb()) {
     try { return JSON.parse(await cableCmd("INFO")); }
-    catch (e) { return JSON.parse(await cableCmd("INFO")); } // boot noise: retry once
+    catch (e) {
+      // Ask again only when the board restarted mid-answer. "No reply" does
+      // not get better by asking: it cost 2 s more per Connect on an adapter.
+      if (!/restart|JSON|Unexpected/i.test(e.message || "")) throw e;
+      return JSON.parse(await cableCmd("INFO"));
+    }
   }
   if (haveWifi())
     return fetch("/api/robot/status?ip=" + encodeURIComponent(robotIp())).then(r => r.json());
@@ -5754,6 +6043,7 @@ function pickFound(ip) {
   $("robotIp").value = ip;
   connectRobot();
 }
+let connecting = false;   // one Connect at a time: repeated presses stacked probes on one cable
 async function connectRobot() {
   if (!currentUser) {
     showTab("robot"); // This will actually show the login card since they aren't logged in
@@ -5766,6 +6056,11 @@ async function connectRobot() {
     }
     return pendingConnect.promise;
   }
+  if (connecting) return;
+  connecting = true;
+  try { await connectLink(); } finally { connecting = false; }
+}
+async function connectLink() {
   const t = transport(), had = hubPort;
   try {
     if (t === "usb") {
@@ -5773,16 +6068,20 @@ async function connectRobot() {
       hubPort = $("usbPort").value;
       if (!hubPort) throw new Error("pick the USB port the module is plugged into " +
         "(⟳ to rescan)");
+      recallBusId(hubPort);
     } else if (t === "serial" && !usbDirect()) {
       await serialConnect();
     }
     let s;
     try { s = await getStatus(); }
     catch (e) {
-      // silent cable with no bus id: maybe an RS485 adapter - ask the hub who is behind it
-      if (t !== "usb" || busId() || !(await findBusId(hubPort))) throw e;
+      // silent cable: maybe an RS485 adapter, or the remembered bus id is now
+      // another board - ask the hub who is behind it
+      const tried = busId();
+      if (t !== "usb" || !(await findBusId(hubPort)) || busId() === tried) throw e;
       s = await getStatus();
     }
+    if (t === "usb") rememberBusId(hubPort);
     checkLimitsMatch();                   // not awaited: connecting must not wait on it
     boardSafeIdentity = String(s.chip || s.id || "");
     adoptBoardSafety(s.module);
@@ -5948,8 +6247,12 @@ async function sdDownload(fname) {
     return (await autoFetch("download", { path: "/moves/" + fname })).text();
   if (haveWifi()) {
     try {
-      return await fetch(`/api/robot/download?ip=${encodeURIComponent(robotIp())}` +
-                         `&path=${encodeURIComponent("/moves/" + fname)}`).then(r => r.text());
+      // A 404/502 body is not a sequence: read as YAML it said "no pose steps".
+      const r = await fetch(`/api/robot/download?ip=${encodeURIComponent(robotIp())}` +
+                            `&path=${encodeURIComponent("/moves/" + fname)}`);
+      const text = await r.text();
+      if (!r.ok) throw new Error(text.trim() || ("the robot answered " + r.status));
+      return text;
     } catch (e) { if (!haveUsb()) throw e; }
   }
   if (haveUsb()) return sdDownloadSerial(fname);
@@ -6133,7 +6436,9 @@ async function handOffToRobot() {
     const { name, yaml } = buildYaml(playT);
     const file = (part ? name + ".part" : name) + ".yaml";
     await sdUpload(file, yaml);              // falls back to module memory with no SD
-    await robotCmd("MOVE " + file);
+    // A refused MOVE must not stop the preview and claim the module has it.
+    const said = await robotCmd("MOVE " + file);
+    if (!said.startsWith("OK")) throw new Error(said || "the module did not start it");
     // stop being the clock: the module owns the show now
     playing = false;
     keepAwake(false);
@@ -6190,7 +6495,14 @@ async function robotRun() {
       + (e && e.message ? e.message : e);
     return;
   }
-  await robotCmd("MOVE " + file);
+  const said = await robotCmd("MOVE " + file);
+  // robotCmd answers "" on a failure; the card said "running" anyway.
+  if (!said.startsWith("OK")) {
+    if (st) st.textContent = file + " was sent, but the robot did not start it — "
+      + (said || $("robotStat").textContent || "no answer");
+    notice(st ? st.textContent : "the robot did not start " + file);
+    return;
+  }
   if (st) st.textContent = part
     ? "the robot is running from the move you picked, to the end — it does not "
       + "go back to the start. The whole show is still saved as " + name + ".yaml."

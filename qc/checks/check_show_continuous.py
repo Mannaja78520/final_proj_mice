@@ -263,7 +263,8 @@ def run(t):
 
         # ---- half a setting is no setting ------------------------------------
         t.eq(main.SHOWS.clean({"items": [{"seq": "a.yaml", "repeat": 5}]})["items"][0],
-             {"seq": "a.yaml", "hold": 0, "repeat_mode": "", "repeat": 0},
+             {"seq": "a.yaml", "hold": 0, "repeat_mode": "", "repeat": 0,
+              "speed_pct": 100},
              "a repeat number with no mode plays once, rather than half-repeating")
         t.eq(main.SHOWS.clean({"items": [{"seq": "a.yaml", "repeat_mode": "times",
                                           "repeat": 1}]})["items"][0]["repeat_mode"], "",
