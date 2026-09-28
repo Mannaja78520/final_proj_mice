@@ -656,6 +656,27 @@
        password, which proves nothing about who owns the board.</p>
     <p>Set it in the hub's <b>Network</b> tab &mdash; tick the modules that belong together and
        name the group &mdash; or with <code>GROUP &lt;name&gt;</code> on any channel.</p></div>
+  <div class="f"><h3>A module's own WiFi password, and changing it<span class="tag t-new">new</span></h3>
+    <p>Every module raises its own WiFi, named after the module. To get in the first time the
+       password is <b>12345678</b> (a module in a group uses the group's password instead). Then
+       open <b>http://192.168.4.1/</b> and log in.</p>
+    <p>Choose your own with <code>APPASS &lt;password&gt;</code> (8 to 63 characters, no spaces);
+       <code>APPASS CLEAR</code> goes back to the default. <code>APPASS</code> alone says which
+       one is in use.</p>
+    <p>Modules in one group still find each other after an owner changes a password: the hub
+       talks to every module, so every two minutes it reads each one's password and hands it to
+       its group-mates (<code>PEERPASS &lt;wifi&gt; &lt;password&gt;</code>,
+       <code>PEERPASS CLEAR</code> forgets them). A module in no group is never given any.</p></div>
+  <div class="f"><h3>Talking from a phone: sound straight to the robot<span class="tag t-new">new</span></h3>
+    <p>Join the robot's own WiFi, open <b>http://192.168.4.1/</b>, log in, and in the speaker card
+       tick <b>song</b> (pick a file on the phone), <b>microphone</b>, or both, then press
+       <b>Send sound to the robot</b>. Each switch works while it plays, so the song keeps going
+       while the microphone comes and goes. No hub and no PC are needed.</p>
+    <p>A phone browser only gives the microphone to a secure page, and the robot's page is not
+       one. On Android Chrome open <code>chrome://flags</code>, find <i>Insecure origins treated
+       as secure</i>, add <code>http://192.168.4.1</code> and relaunch. A song file works without
+       this. A browser cannot hear other apps on the phone, so music from another app cannot be
+       sent; pick the song file instead.</p></div>
   <div class="f"><h3>A cold start with no WiFi used to strand every module<span class="tag t-new">fixed</span></h3>
     <p>A neighbour was only recognised by a name the module had <i>already seen</i>, and a module
        that just booted has seen nobody. So with the venue network down, every module sat on its

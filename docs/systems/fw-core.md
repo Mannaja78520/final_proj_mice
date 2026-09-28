@@ -99,7 +99,7 @@ WiFi and the board's web portal, SD, OTA, and `PERF?`.
 - [fw-cam](fw-cam.md)
 - [bench](bench.md)
 
-## Checks that test it (63)
+## Checks that test it (64)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -141,6 +141,7 @@ WiFi and the board's web portal, SD, OTA, and `PERF?`.
 - `check_offset`
 - `check_one_player`
 - `check_ota`
+- `check_peerpass`
 - `check_perf`
 - `check_ping_queue`
 - `check_pinout`

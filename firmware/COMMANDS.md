@@ -321,6 +321,12 @@ interchangeably.
 | `GROUP` | `GROUP "mice-show" appass=3f9a1c0b7e2d4a55` | which installation this module belongs to, and the hotspot password that follows from it |
 | `GROUP <name>` | `OK group "mice-show" appass=...` | join a group. Applied immediately — the module's hotspot password changes with it |
 | `GROUP CLEAR` | `OK ungrouped (shared fallback password)` | leave the group; back to the compiled-in fallback password |
+| `APPASS` | `APPASS default appass=12345678` | this module's own WiFi (hotspot) password and where it comes from: `set` by the owner, `group`, or the `default` 12345678 |
+| `APPASS <password>` | `OK appass=...` | choose the hotspot password (8-63 characters, no spaces). Wins over the group one; the hotspot comes back up with it at once |
+| `APPASS CLEAR` | `OK appass=...` | forget the chosen password; back to the group one, or 12345678 when ungrouped |
+| `PEERPASS` | `PEERPASS nong,lift-2` | the group-mates whose hotspot password this module holds (names only) |
+| `PEERPASS <wifi> <password>` | `OK peer nong` | remember a group-mate's hotspot password. The hub sends these by itself to every module in a group, so a module can still link to one whose owner changed its password |
+| `PEERPASS CLEAR` | `OK peers forgotten` | forget them all |
 | `PEERS` | `[{"id":85,"name":"lift-test",...},...]` | the other modules this one can see. Same list as `/api/peers` |
 | `REACH <ip\|name\|id> <command>` | whatever that module answered | run a command on **another** module through this one. Refused while this module is moving — it blocks up to 800 ms and would stall a joint |
 | `WIFI` | `WIFI mode=on state=online ssid="manny" ip=192.168.137.42 rssi=-51 ap="nong" apip=192.168.4.1 apclients=1` | where the radio is right now, in one line |

@@ -52,7 +52,7 @@ void AudioPlayer::begin(SDStore* sd) {
 
     out_ = i2s;
     setVolume(vol_);
-    stream_.begin(out_);
+    stream_.begin(out_, [this]() { applyPins(); });
 }
 
 // The library CANNOT say "leave this pin alone": AudioOutputI2S keeps its pin
@@ -115,7 +115,9 @@ bool AudioPlayer::play(const String& path, bool loop) {
 }
 
 void AudioPlayer::loop() {
-    if (stream_.running()) { stream_.loop(); return; }
+    if (stream_.wsPending()) stop();   // a phone asked: the SD track yields
+    stream_.loop();                     // cheap while off; applies ws requests
+    if (stream_.running()) return;
     if (!gen_) return;
     // try-lock: this runs while the caller holds the router mutex, so blocking
     // here on a long web file transfer would stall motion/limit updates too.

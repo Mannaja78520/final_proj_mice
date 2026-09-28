@@ -46,6 +46,8 @@
     { "name": "HELP",   "scope": "core", "args": "[<command>]",         "query": true,  "help": "list commands, or explain one" },
     { "name": "SET",    "scope": "core", "args": "ID|NAME|TYPE|WIFI …",                 "help": "identity, module type and radio mode" },
     { "name": "GROUP",  "scope": "core", "args": "[<name>|CLEAR]",                     "help": "which installation this module belongs to; modules only link within a group" },
+    { "name": "APPASS", "scope": "core", "args": "[<password>|CLEAR]",                 "help": "this module's own WiFi password; CLEAR goes back to the group one, or 12345678" },
+    { "name": "PEERPASS", "scope": "core", "args": "[<wifi name> <password>|CLEAR]",   "help": "group-mates' WiFi passwords, handed over by the hub so modules can link" },
     { "name": "PEERS",  "scope": "core", "args": "",                    "query": true,  "help": "the other modules this one can see, as JSON" },
     { "name": "REACH",  "scope": "core", "args": "<ip|name|id> <command>",               "help": "run a command on another module through this one and return its reply" },
     { "name": "WIFI",   "scope": "core", "args": "[ON|OFF|AP|RETRY|SCAN|CLEAR]", "query": false, "help": "radio state, and change it live — never needs a reboot" },

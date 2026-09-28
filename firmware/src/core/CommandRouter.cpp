@@ -161,6 +161,41 @@ String CommandRouter::handleLocked(const String& line) {
                           : String("OK ungrouped (shared fallback password)");
     }
 
+    // APPASS — this module's own WiFi password (user 2026-09-28: a default
+    // to get in the first time, then the owner can change it).
+    //   APPASS            -> which password is in use and where it comes from
+    //   APPASS <8-63>     -> set it, the WiFi comes back up with it at once
+    //   APPASS CLEAR      -> back to the group one, or 12345678 ungrouped
+    if (cmd == "APPASS") {
+        if (argc == 1) {
+            const char* from = id_->apPassOverride().length() ? "set"
+                             : (id_->group().length() ? "group" : "default");
+            return String("APPASS ") + from + " appass=" + id_->apPassword();
+        }
+        String p = Util::joinFrom(argv, argc, 1);
+        String up = p;
+        up.toUpperCase();
+        if (up == "CLEAR") p = "";
+        if (!id_->setApPass(p)) return "ERR 8-63 characters, no spaces";
+        if (WebPortal::instance()) WebPortal::instance()->wifiCommand(id_->wifiMode());
+        return "OK appass=" + id_->apPassword();
+    }
+
+    // PEERPASS — the hub hands each module its group-mates' WiFi passwords,
+    // because a module cannot know a password its neighbour's owner chose.
+    //   PEERPASS                 -> the names it holds (never the passwords)
+    //   PEERPASS <wifi> <pass>   -> remember one
+    //   PEERPASS CLEAR           -> forget them all
+    if (cmd == "PEERPASS") {
+        if (argc == 1) return "PEERPASS " + id_->peerNames();
+        String a = argv[1];
+        a.toUpperCase();
+        if (argc == 2 && a == "CLEAR") { id_->clearPeerPass(); return "OK peers forgotten"; }
+        if (argc != 3) return "ERR usage: PEERPASS <wifi name> <password> | CLEAR";
+        return id_->setPeerPass(argv[1], argv[2]) ? "OK peer " + argv[1]
+                                                  : "ERR bad name or password (8-63, no spaces)";
+    }
+
     // WIFI — see it and change it live. SET WIFI still works and does the
     // same thing; this is the short form you actually type on a bench.
     if (cmd == "WIFI") {

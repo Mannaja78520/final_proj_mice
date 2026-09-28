@@ -2,6 +2,8 @@
 #include "core/AudioPlayer.h"        // for MICE_HAS_AUDIO, one definition
 #include "core/Log.h"
 
+AudioStream* AudioStream::inst_ = nullptr;
+
 #if MICE_HAS_AUDIO
 
 #include <AudioOutput.h>
@@ -12,19 +14,25 @@
 // split across two WiFi frames on this side.
 static const int READ_SAMPLES = 512;
 
-void AudioStream::begin(AudioOutput* out) { out_ = out; }
+void AudioStream::begin(AudioOutput* out, std::function<void()> repin) {
+    out_ = out;
+    repin_ = repin;
+    if (out_) inst_ = this;
+}
 
-bool AudioStream::start(uint16_t port, uint32_t rate, String& why) {
+bool AudioStream::start(uint16_t port, uint32_t rate, String& why, bool ws) {
     if (!out_) { why = "no speaker wired on this board"; return false; }
     if (rate < 8000 || rate > 48000) { why = "rate must be 8000-48000"; return false; }
     stop();
 
-    cap_ = (rate * BUF_MS) / 1000;
+    // The ring is allocated BEFORE on_ goes true and freed AFTER it goes
+    // false: the WebSocket task only writes while on_ is set.
+    cap_ = (rate * (ws ? WS_BUF_MS : BUF_MS)) / 1000;
     buf_ = (int16_t*)malloc(cap_ * sizeof(int16_t));
     if (!buf_) { cap_ = 0; why = "not enough memory for the buffer"; return false; }
 
-    udp_ = new WiFiUDP();
-    if (!udp_->begin(port)) {
+    if (!ws) udp_ = new WiFiUDP();
+    if (udp_ && !udp_->begin(port)) {
         delete udp_; udp_ = nullptr;
         free(buf_); buf_ = nullptr; cap_ = 0;
         why = "could not listen on port " + String(port);
@@ -36,28 +44,62 @@ bool AudioStream::start(uint16_t port, uint32_t rate, String& why) {
     out_->SetBitsPerSample(16);
     out_->SetChannels(2);
     out_->begin();
+    if (repin_) repin_();   // begin() just put MCLK on GPIO0 - take it back
 
-    port_ = port; rate_ = rate;
+    port_ = port; rate_ = rate; ws_ = ws;
     head_ = tail_ = 0;
-    on_ = true; priming_ = true;
-    maxGap_ = under_ = packets_ = dropped_ = 0;
+    oddHave_ = false;
+    priming_ = true;
+    maxGap_ = under_ = packets_ = dropped_ = trims_ = pads_ = fed_ = 0;
     lastFeed_ = millis();
-    LOGF(audio, "stream on: udp %u, %u Hz, %u ms buffer", port, rate, BUF_MS);
+    on_ = true;
+    LOGF(audio, "stream on: %s %u, %u Hz, %u ms buffer", ws ? "websocket" : "udp",
+         port, rate, ws ? WS_BUF_MS : BUF_MS);
     return true;
 }
 
 void AudioStream::stop() {
+    const bool was = on_;
+    on_ = false;
+    if (was && ws_) delay(2);   // a push() already past its on_ check ends first
     if (udp_) { udp_->stop(); delete udp_; udp_ = nullptr; }
     if (buf_) { free(buf_); buf_ = nullptr; }
-    if (on_ && out_) out_->stop();
+    if (was && out_) out_->stop();
     cap_ = head_ = tail_ = 0;
-    on_ = false;
+    ws_ = false;
 }
 
 uint8_t AudioStream::fillPct() const {
     if (!cap_) return 0;
-    uint32_t have = (head_ - tail_) % cap_;
+    uint32_t have = (head_ + cap_ - tail_) % cap_;
     return (uint8_t)((have * 100) / cap_);
+}
+
+void AudioStream::put(int16_t v) {
+    uint32_t next = (head_ + 1) % cap_;
+    if (next == tail_) { dropped_++; return; }   // full: this one is lost
+    buf_[head_] = v;
+    head_ = next;
+}
+
+void AudioStream::wsOpen(uint32_t rate) {
+    if (!out_) return;
+    wsWant_ = rate ? rate : DEF_RATE;
+}
+
+void AudioStream::wsClose() { wsStop_ = true; }
+
+void AudioStream::push(const uint8_t* data, size_t len) {
+    if (!on_ || !ws_ || !buf_) return;
+    packets_++;
+    size_t i = 0;
+    if (oddHave_ && len) {                       // finish a sample split by TCP
+        put((int16_t)(oddByte_ | (data[0] << 8)));
+        oddHave_ = false;
+        i = 1;
+    }
+    for (; i + 1 < len; i += 2) put((int16_t)(data[i] | (data[i + 1] << 8)));
+    if (i < len) { oddByte_ = data[i]; oddHave_ = true; }
 }
 
 void AudioStream::fill() {
@@ -73,12 +115,7 @@ void AudioStream::fill() {
             int got = udp_->read((uint8_t*)tmp, want);
             if (got <= 0) break;
             n -= got;
-            for (int i = 0; i < got / 2; i++) {
-                uint32_t next = (head_ + 1) % cap_;
-                if (next == tail_) { dropped_++; return; }   // full: drop the rest
-                buf_[head_] = tmp[i];
-                head_ = next;
-            }
+            for (int i = 0; i < got / 2; i++) put(tmp[i]);
         }
     }
 }
@@ -103,22 +140,50 @@ void AudioStream::feed() {
     if (gap > maxGap_) maxGap_ = gap;      // the number the design is judged on
     lastFeed_ = now;
 
+    // CLOCK DRIFT. The sender clock (PC or phone) and this board's I2S
+    // clock never agree exactly, so over minutes the ring creeps full (then
+    // whole packets are dropped - a crack) or empty (an underrun - a gap).
+    // One sample in 256 skipped or repeated is 0.4 %, far below hearing, and
+    // holds the ring near half full for as long as the stream runs.
+    const uint32_t hi = cap_ * 3 / 4, lo = cap_ / 4;
     while (have) {
         int16_t s[2] = { buf_[tail_], buf_[tail_] };   // mono into both channels
         if (!out_->ConsumeSample(s)) break;            // DMA full: next loop
+        fed_++;
+        if ((fed_ & 255) == 0 && have > hi && have > 1) {
+            tail_ = (tail_ + 1) % cap_;                // skip one: catch up
+            have--;
+            trims_++;
+        } else if ((fed_ & 255) == 0 && have < lo) {
+            pads_++;                                   // play it twice: wait
+            continue;
+        }
         tail_ = (tail_ + 1) % cap_;
         have--;
     }
 }
 
 void AudioStream::loop() {
+    // WebSocket requests arrive on the network task; the driver is only ever
+    // touched here, on the module loop.
+    if (wsStop_) {
+        wsStop_ = false;
+        if (on_ && ws_) { stop(); LOGF(audio, "stream off: websocket closed"); }
+    }
+    if (wsWant_) {
+        uint32_t r = wsWant_;
+        wsWant_ = 0;
+        String why;
+        if (!start(0, r, why, true)) LOGF(audio, "websocket stream refused: %s", why.c_str());
+    }
     if (!on_) return;
-    fill();
+    if (udp_) fill();
     feed();
 }
 
 String AudioStream::statusJson() const {
     return String("{\"on\":") + (on_ ? "true" : "false")
+         + ",\"via\":\"" + (ws_ ? "ws" : "udp") + "\""
          + ",\"port\":" + String(port_)
          + ",\"rate\":" + String(rate_)
          + ",\"buf_ms\":" + String(BUF_MS)
@@ -126,16 +191,22 @@ String AudioStream::statusJson() const {
          + ",\"packets\":" + String(packets_)
          + ",\"dropped\":" + String(dropped_)
          + ",\"underruns\":" + String(under_)
+         + ",\"trims\":" + String(trims_)
+         + ",\"pads\":" + String(pads_)
          + ",\"max_gap_ms\":" + String(maxGap_) + "}";
 }
 
 #else   // no decoder library in this build: same API, honest answers
 
-void AudioStream::begin(AudioOutput*) {}
+void AudioStream::begin(AudioOutput*, std::function<void()>) {}
 void AudioStream::loop() {}
+void AudioStream::wsOpen(uint32_t) {}
+void AudioStream::wsClose() {}
+void AudioStream::push(const uint8_t*, size_t) {}
+void AudioStream::put(int16_t) {}
 void AudioStream::stop() {}
 uint8_t AudioStream::fillPct() const { return 0; }
-bool AudioStream::start(uint16_t, uint32_t, String& why) {
+bool AudioStream::start(uint16_t, uint32_t, String& why, bool) {
     why = "this build has no speaker support";
     return false;
 }

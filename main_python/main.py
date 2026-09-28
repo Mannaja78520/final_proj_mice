@@ -1301,6 +1301,10 @@ from hub_modules import (  # noqa: E402
 )
 hub_modules.bind(sys.modules[__name__])
 
+# Group-mates' WiFi passwords, handed from board to board by the hub (2026-09-28).
+import hub_appass  # noqa: E402
+hub_appass.bind(sys.modules[__name__])
+
 
 # Read by hub_cam.py; asset() lives here, so the path is worked out here.
 CAM_BOARDS_JSON = asset("firmware", "config", "cam_boards.json")
@@ -2614,6 +2618,7 @@ def main():
     threading.Thread(target=scan_modules, daemon=True).start()
     threading.Thread(target=_usb_reaper, daemon=True).start()  # idle port release
     threading.Thread(target=route_probe_loop, daemon=True).start()  # A26-79
+    threading.Thread(target=hub_appass.loop, daemon=True).start()  # PEERPASS
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
