@@ -22,8 +22,9 @@ The hub as the show clock: the show player, live audio to a speaker, saved shows
 
 - [hub](hub.md)
 
-## Checks that test it (19)
+## Checks that test it (20)
 
+- `check_cast_mix`
 - `check_freeze_stop`
 - `check_hub_auth`
 - `check_hub_clock`
@@ -44,4 +45,4 @@ The hub as the show clock: the show player, live audio to a speaker, saved shows
 - `check_voice_move`
 - `check_voice_multi`
 
-Run them: `python qc/run_qc.py --no-build check_freeze_stop check_hub_auth check_hub_clock check_hub_reach check_key_clock check_loop_return check_race_guards check_self_update check_show_clock check_show_continuous check_show_music check_shows check_stream_audio check_studio_cost check_studio_edits check_studio_music check_studio_playback check_voice_move check_voice_multi`
+Run them: `python qc/run_qc.py --no-build check_cast_mix check_freeze_stop check_hub_auth check_hub_clock check_hub_reach check_key_clock check_loop_return check_race_guards check_self_update check_show_clock check_show_continuous check_show_music check_shows check_stream_audio check_studio_cost check_studio_edits check_studio_music check_studio_playback check_voice_move check_voice_multi`

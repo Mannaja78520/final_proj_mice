@@ -100,7 +100,15 @@ def _usb_get(port):
             # out of the noise, which works because a reply is identified by
             # the blank line in front of it, and at worst it is found on the
             # next scan instead of this one.
-            quiet = time.time() + 1.2
+            # A BARE RS485 ADAPTER HAS NO BOARD TO RESET. When the last census
+            # found no module on the cable itself, only modules on the bus
+            # behind it, there is no boot chatter to wait for. Measured on the
+            # real nong 2026-09-28 (CH340 COM21, bus id 67): the port is
+            # released after 10 s idle, and every re-open paid 1.2 s, so the
+            # first move after a pause started 1.2 s late.
+            known = _usb_ident.get(port) or {}
+            settle = 0.0 if (not known.get("module") and known.get("rs485")) else 1.2
+            quiet = time.time() + settle
             hard = time.time() + 4.0
             while time.time() < quiet and time.time() < hard:
                 if ser.in_waiting:
