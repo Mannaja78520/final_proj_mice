@@ -49,7 +49,10 @@ public:
     void wsClose();
     void push(const uint8_t* data, size_t len);   // raw 16-bit LE mono PCM
 
-    // STREAM ON [port] [rate] | STREAM OFF | STREAM?
+    // STREAM ON [port] [rate] | STREAM OFF | STREAM? | STREAM TEST
+    // TEST plays 3 s of a 440 Hz tone through the SAME ring and feed as a
+    // live stream, made on the board: it proves the speaker path and gives
+    // real underrun / gap numbers with no network in the way.
     void streamCmd(String argv[], int argc, String& reply);
     bool running() const { return on_; }
     void stop();
@@ -95,5 +98,8 @@ private:
     volatile uint32_t wsWant_ = 0;
     volatile bool wsStop_ = false;
     bool oddHave_ = false;             // a frame split mid-sample
+    uint32_t toneLeft_ = 0;            // STREAM TEST samples still to make
+    bool toneRun_ = false;             // a test is playing; ends by itself
+    float tonePhase_ = 0;
     uint8_t oddByte_ = 0;
 };

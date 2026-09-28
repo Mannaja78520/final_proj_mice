@@ -97,7 +97,7 @@
     { "name": "RGB",    "scope": "lift", "args": "<r> <g> <b>|BRIGHT <n>|EFFECT <name>", "steps": [{"key": "rgb"}, {"key": "effect", "sub": "EFFECT"}, {"key": "bright", "sub": "BRIGHT"}], "help": "LED strip colour, brightness or effect" },
     { "name": "PLAY",   "scope": "lift", "args": "<file> [LOOP]|STOP",                  "steps": [{"key": "play"}], "help": "play mp3/wav from /music (LOOP repeats it), or stop" },
     { "name": "VOL",    "scope": "lift", "args": "<0-100>",                             "steps": [{"key": "vol"}], "help": "audio volume" },
-    { "name": "STREAM", "scope": "lift", "args": "ON [port] [rate]|OFF",      "help": "play live audio sent from the PC over UDP (A24-32)" },
+    { "name": "STREAM", "scope": "lift", "args": "ON [port] [rate]|OFF|TEST", "help": "play live audio sent from the PC over UDP (A24-32); TEST plays a 3 s tone through the same path" },
     { "name": "STREAM?", "scope": "lift", "args": "",                     "query": true,  "help": "is live audio playing, and is it breaking up" },
     { "name": "AMP",    "scope": "lift", "args": "<id>|VALID",                          "help": "choose amplifier kind from config/amps.json (reboot to apply)" },
     { "name": "AMP?",   "scope": "lift", "args": "",                     "query": true,  "help": "current amplifier and wiring hint" },
@@ -107,7 +107,7 @@
     // command may be declared once per type that wires the hardware.
     { "name": "PLAY",    "scope": "nong", "args": "<file> [LOOP]|STOP",                  "steps": [{"key": "play"}], "help": "play mp3/wav from /music (LOOP repeats it), or stop" },
     { "name": "VOL",     "scope": "nong", "args": "<0-100>",                             "steps": [{"key": "vol"}], "help": "audio volume" },
-    { "name": "STREAM", "scope": "nong", "args": "ON [port] [rate]|OFF",      "help": "play live audio sent from the PC over UDP (A24-32)" },
+    { "name": "STREAM", "scope": "nong", "args": "ON [port] [rate]|OFF|TEST", "help": "play live audio sent from the PC over UDP (A24-32); TEST plays a 3 s tone through the same path" },
     { "name": "STREAM?", "scope": "nong", "args": "",                     "query": true,  "help": "is live audio playing, and is it breaking up" },
     { "name": "AMP",     "scope": "nong", "args": "<id>|VALID",                          "help": "choose amplifier kind from config/amps.json (reboot to apply)" },
     { "name": "AMP?",    "scope": "nong", "args": "",                     "query": true,  "help": "current amplifier and wiring hint" },

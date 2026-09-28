@@ -432,6 +432,7 @@ of flash. Lift builds only; a nong has no strip.
 | `AMP?` | `{"id":"tpa3118","mode":"analog",…}` | the amp this board is set to, with its wiring line |
 | `STREAM ON [port] [rate]` | `OK stream on udp 4210 22050 Hz mono` | live audio from the PC: the board plays what arrives on that UDP port |
 | `STREAM OFF` | `OK stream off` | |
+| `STREAM TEST` | `OK test tone 440 Hz 3 s through the stream path` | a tone made on the board, played through the same ring and feed as live sound; stops by itself |
 | `STREAM?` | `{"on":true,"fill":22,"underruns":0,"max_gap_ms":9,…}` | is it playing, and is it breaking up |
 
 ### Live audio from the PC — `STREAM`
@@ -453,6 +454,9 @@ an SD decode holds the SPI mutex. A late packet is dropped instead.
 | `packets` / `dropped` | datagrams taken / thrown away because the buffer was full |
 | `underruns` | times it ran dry; it then holds silence until half full again |
 | `max_gap_ms` | longest gap between two feeds - the starvation number |
+| `via` | `udp` (from the hub) or `ws` (a browser on `/ws/audio`, e.g. a phone on the robot's WiFi) |
+| `lrc` | what the LRC pin really carries, read back from the chip: `lrc` is right, `mclk` means the library's MCLK took the pin |
+| `trims` / `pads` | samples skipped / repeated to follow the sender's clock (one in 256 at most) |
 
 Measured on a real nong (id 67, MAX98357A, WiFi, ten servos and RS485 running,
 2026-09-07): 250 datagrams, 0 dropped, `max_gap_ms` **9** against a 200 ms
@@ -460,6 +464,18 @@ buffer.
 
 Starting a stream stops a file that is playing, and `PLAY` stops the stream:
 one output, one owner.
+
+**It cracked, and SD playback did not (fixed 2026-09-28).** The audio library
+installs I2S with MCLK on GPIO0, which is the nong's LRC pin. `PLAY` re-pinned
+after the driver came up; `STREAM ON` never did, so every stream played with a
+broken word clock. `AudioStream::start` now runs the same re-pin, and `lrc` in
+`STREAM?` shows the result on the board.
+
+**From a phone, no hub: `/ws/audio`.** A browser cannot send UDP, so the board
+also takes the same PCM over a WebSocket: text `START <rate>`, then binary
+frames of 16-bit little-endian mono, closing the socket stops it. The
+handshake is gated like `STREAM ON` (a logged-in session). The ring is 400 ms
+here, because TCP delivers in bursts after a WiFi hiccup instead of dropping.
 
 ### Which amplifier is wired — `AMP`
 

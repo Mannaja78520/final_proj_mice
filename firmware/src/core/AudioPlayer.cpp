@@ -275,6 +275,6 @@ void AudioPlayer::ampCmd(String argv[], int argc, String& reply) {
 void AudioPlayer::streamCmd(String argv[], int argc, String& reply) {
     String a = argc > 1 ? argv[1] : "";
     a.toUpperCase();
-    if (a == "ON") stop();
+    if (a == "ON" || a == "TEST") stop();
     stream_.streamCmd(argv, argc, reply);
 }

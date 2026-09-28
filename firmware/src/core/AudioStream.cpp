@@ -8,6 +8,21 @@ AudioStream* AudioStream::inst_ = nullptr;
 
 #include <AudioOutput.h>
 #include <WiFiUdp.h>
+#include "core/HwConfig.h"
+#include <soc/gpio_sig_map.h>
+#include <soc/gpio_struct.h>
+#include <soc/io_mux_reg.h>
+
+// What the LRC pin REALLY carries, read back from the chip: "lrc" when the
+// I2S word clock reaches it, "mclk" when the library's MCLK took GPIO0 over
+// (the cracking, 2026-09-28). The fix is proven on the board, not assumed.
+static const char* lrcWire() {
+    int pin = hw.pins.i2sLrc;
+    if (pin < 0 || pin > 33) return "none";
+    if (pin == 0 && ((READ_PERI_REG(PERIPHS_IO_MUX_GPIO0_U) >> MCU_SEL_S) & MCU_SEL_V)
+                        == FUNC_GPIO0_CLK_OUT1) return "mclk";
+    return GPIO.func_out_sel_cfg[pin].func_sel == I2S0O_WS_OUT_IDX ? "lrc" : "other";
+}
 
 // One UDP read at a time. 512 samples (1 KB) is under the 1460-byte payload a
 // sender can put in one datagram without fragmenting, so a packet is never
@@ -67,6 +82,8 @@ void AudioStream::stop() {
     if (was && out_) out_->stop();
     cap_ = head_ = tail_ = 0;
     ws_ = false;
+    toneLeft_ = 0;
+    toneRun_ = false;
 }
 
 uint8_t AudioStream::fillPct() const {
@@ -178,12 +195,29 @@ void AudioStream::loop() {
     }
     if (!on_) return;
     if (udp_) fill();
+    if (toneLeft_) {
+        // keep the ring about half full, like a well-behaved sender
+        while (toneLeft_ && fillPct() < 50) {
+            put((int16_t)(8000.0f * sinf(tonePhase_)));
+            tonePhase_ += 2.0f * (float)M_PI * 440.0f / (float)rate_;
+            if (tonePhase_ > 2.0f * (float)M_PI) tonePhase_ -= 2.0f * (float)M_PI;
+            toneLeft_--;
+        }
+        if (!toneLeft_) priming_ = false;   // play out the tail, no re-prime
+    }
+    if (toneRun_ && !toneLeft_ && head_ == tail_) {
+        toneRun_ = false;
+        LOGF(audio, "test tone done: %s", statusJson().c_str());
+        stop();
+        return;
+    }
     feed();
 }
 
 String AudioStream::statusJson() const {
     return String("{\"on\":") + (on_ ? "true" : "false")
          + ",\"via\":\"" + (ws_ ? "ws" : "udp") + "\""
+         + ",\"lrc\":\"" + (on_ ? lrcWire() : "off") + "\""
          + ",\"port\":" + String(port_)
          + ",\"rate\":" + String(rate_)
          + ",\"buf_ms\":" + String(BUF_MS)
@@ -230,7 +264,16 @@ void AudioStream::streamCmd(String argv[], int argc, String& reply) {
         reply = "OK stream off";
         return;
     }
-    if (a != "ON") { reply = "ERR usage: STREAM ON [port] [rate] | OFF | ?"; return; }
+    if (a == "TEST") {
+        String why;
+        if (!start(0, DEF_RATE, why, true)) { reply = "ERR " + why; return; }
+        toneLeft_ = DEF_RATE * 3;
+        toneRun_ = true;
+        tonePhase_ = 0;
+        reply = "OK test tone 440 Hz 3 s through the stream path";
+        return;
+    }
+    if (a != "ON") { reply = "ERR usage: STREAM ON [port] [rate] | OFF | TEST | ?"; return; }
     uint16_t port = argc > 2 ? (uint16_t)argv[2].toInt() : DEF_PORT;
     uint32_t rate = argc > 3 ? (uint32_t)argv[3].toInt() : DEF_RATE;
     String why;
