@@ -109,7 +109,8 @@ def dump_dom(url, prof, out, budget_ms, timeout=200, err=True):
     if err:
         ps += " -RedirectStandardError '%s.err'" % out
     return subprocess.run(["powershell", "-NoProfile", "-Command", ps],
-                          capture_output=True, text=True, timeout=timeout)
+                          capture_output=True, text=True, errors="replace",
+                          timeout=timeout)
 
 
 def _ours_linux():

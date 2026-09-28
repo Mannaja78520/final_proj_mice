@@ -96,6 +96,10 @@ def run(t):
     # gate refusing kept it out of the working tree. Back it up and put it back.
     rig_file = F.STUDIO / "rig_default.json"
     saved_rig = rig_file.read_bytes() if rig_file.is_file() else None
+    # The save keeps the previous rig as .bak, which is the user's file too:
+    # left changed, it also changed the tree QC fingerprints (receipt refused).
+    bak_file = rig_file.with_name(rig_file.name + ".bak")
+    saved_bak = bak_file.read_bytes() if bak_file.is_file() else None
     try:
         rig = {"min": [25] * 10, "max": [155] * 10, "gearPinion": [14] * 10}
         s, b = _post(base, "/api/rigdefault", {"rig": rig})
@@ -104,14 +108,18 @@ def run(t):
         t.contains(b, "NONG_RIG_DEFAULT", "and is served to a fresh browser")
         t.contains(b, '"gearPinion"', "carrying the tuned values")
     finally:
-        if saved_rig is not None:
-            rig_file.write_bytes(saved_rig)
-        elif rig_file.is_file():
-            rig_file.unlink()
+        for path, data in ((rig_file, saved_rig), (bak_file, saved_bak)):
+            if data is not None:
+                path.write_bytes(data)
+            elif path.is_file():
+                path.unlink()
     # and the real one is back, untouched
     if saved_rig is not None:
         t.eq(rig_file.read_bytes(), saved_rig,
              "the real tuned rig is restored, not left overwritten")
+    t.ok((bak_file.read_bytes() if bak_file.is_file() else None) == saved_bak,
+         "and so is its backup, so QC leaves the tree it checked",
+         "rig_default.json.bak was left as the rig this check replaced")
 
     # ---- names that must be refused -----------------------------------
     # A save endpoint that accepts a path is a way out of the folder.
