@@ -29,6 +29,7 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 | [fw-core](fw-core.md) | Firmware shared by every board: identity, commands, RS485, WiFi/web portal, SD, OTA, PERF?. |
 | [fw-web](fw-web.md) | The board's own website (WebUI.h). |
 | [fw-nong](fw-nong.md) | The nong (humanoid) module: servos, joints, poses. |
+| [fw-dummy](fw-dummy.md) | The dummy module: a hand-posed copy of the nong, a pot on every joint, answers POSE?. |
 | [fw-lift](fw-lift.md) | The lift module: motor, encoder, limits, RGB, speaker. |
 | [fw-cam](fw-cam.md) | The camera module (ESP32-CAM). |
 | [fw-registry](fw-registry.md) | Registries: commands, modules, servos, amps, cameras, pins - and the generators that turn them into firmware tables. |

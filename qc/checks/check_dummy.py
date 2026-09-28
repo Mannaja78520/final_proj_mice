@@ -33,6 +33,7 @@ function report(s){ return rawCmd("MOVE QCMARK " + s); }
 function wait(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
 window.addEventListener("load", function(){ setTimeout(async function(){
   try{
+    if (!await qcStudioReady()) throw new Error("studio not ready");
     // the dummy on the robot's cable, as bus id 68
     var sel = document.getElementById("dummyPort");
     var o = document.createElement("option"); o.value = o.textContent = "%(port)s";
@@ -40,6 +41,8 @@ window.addEventListener("load", function(){ setTimeout(async function(){
     document.getElementById("dummySrc").value = "usb"; dummySrcChanged();
     document.getElementById("dummyBus").value = "%(bus)s";
 
+    pose[7] = clampJ(7, 45);                              // R_EL_R has no pot: must stay put
+    await report("keep=" + fmtA(pose[7]));
     keys = []; addKey();                                  // move 0: the start pose
     await dummyToNewKey();                                // move 1 from the dummy
     await report("new=" + keys[keys.length - 1].pose.map(fmtA).join(","));
@@ -104,6 +107,8 @@ def run(t):
     d.raw[2] = fake_serial.dummy_raw_for(120)       # L_EL_P bent to 120
     d.raw[9] = 4095                                  # SHRUG far past the robot's limit
     d.cal["ch"][7] = -1                              # R_EL_R has no pot
+    d.cal["max"][9] = 180                            # the dummy's own limit is wider:
+                                                     # only Studio's clamp can hold it
     zero = round(2048 - 30 * 4095 / 270)             # joint 1 reads 30 deg higher
 
     base, main = F.start_hub()
@@ -137,11 +142,15 @@ def run(t):
             continue
         v = [float(x) for x in got.split(",")]
         t.ok(abs(v[2] - 120) < 0.6, "%s: L_EL_P is the dummy's 120 (%s)" % (key, v[2]))
-        # The dummy clamps to its own copy of the limits and Studio to the
-        # model's: either way it lands at a limit, never at the 4095 reading.
+        # The dummy reads 180 (its own limit); only Studio's clamp to the
+        # robot's limit keeps it from asking for an angle the robot refuses.
         t.ok(v[9] <= lim + 0.01 and v[9] < 130,
              "%s: SHRUG bent past the limit holds inside the robot's limit %s (%s)" % (key, lim, v[9]),
              "a dummy bent too far would ask the robot for an angle it refuses")
+        keep = _mark(marks, "keep")
+        t.ok(keep and abs(v[7] - float(keep)) < 0.11,
+             "%s: R_EL_R with no pot stays where it was (%s)" % (key, v[7]),
+             "was %s - a '-' in POSE? must leave the joint alone" % keep)
     t.eq(_mark(marks, "sim"), "55", "the simulated dummy's pose becomes a move")
 
     # ---- robot follows the dummy ---------------------------------------------

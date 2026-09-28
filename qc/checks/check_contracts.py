@@ -44,9 +44,13 @@ def run(t):
 
     # ---- joint ORDER is the wire format: a swap silently moves the
     # wrong limb, and no test of either side alone would see it -------
-    # declared `static const char* JOINT_NAMES[NongModule::N] = {`
+    # declared `static const char* JOINT_NAMES[NongModule::N] = {`, or read
+    # from NONG_JOINT_NAMES in the hardware header, shared with the dummy
+    hw_nong = (F.FIRMWARE / "config/esp32_hardware_nong_module.h").read_text(
+        encoding="utf-8", errors="replace")
     names = re.search(r"JOINT_NAMES\[[^\]]*\]\s*=\s*\{(.*?)\}", nong_c, re.S) or \
-        re.search(r"JOINT_NAMES\[[^\]]*\]\s*=\s*\{(.*?)\}", nong_h, re.S)
+        re.search(r"JOINT_NAMES\[[^\]]*\]\s*=\s*\{(.*?)\}", nong_h, re.S) or \
+        re.search(r"#define\s+NONG_JOINT_NAMES\s+\{(.*?)\}", hw_nong, re.S)
     if t.ok(names, "firmware has JOINT_NAMES"):
         got = re.findall(r'"([A-Z_]+)"', names.group(1))
         t.eq(got, JOINT_ORDER, "firmware joint order")

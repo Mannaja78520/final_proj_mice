@@ -10,6 +10,7 @@ Holds:
   * clicking a title opens it, and the choice is remembered in the browser;
   * clicking the technical-details box inside Robot link's title does not fold.
 """
+import re
 import browser
 import fake_serial
 import qc as F
@@ -64,7 +65,9 @@ def run(t):
     t.ok("savingBody=false" in marks, "a folded card hides its body", marks)
     t.ok("opened=true~body=true~kept=true" in marks,
          "clicking the title opens it, and the browser remembers it", marks)
-    t.ok("robot=OF" in marks, "Robot link starts open, Zero position folded", marks)
+    # one open card first, then every other Robot card (Zero position, Dummy...) folded
+    t.ok(any(re.fullmatch(r"robot=OF+", m) for m in marks),
+         "Robot link starts open, Zero position folded", marks)
     t.ok("advClick~robotOpen=true" in marks,
          "the technical-details box in Robot link's title does not fold the card", marks)
     t.ok("pose=0" in marks, "the Pose tab keeps its own <details>, no second fold", marks)

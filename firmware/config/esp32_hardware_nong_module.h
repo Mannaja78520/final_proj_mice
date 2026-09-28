@@ -26,7 +26,9 @@
     // The joint names, in joint order. One list for every board that speaks
     // in these joints: the robot (NongModule) and the hand-posed copy of it
     // (DummyModule) must answer POSE? in the same order with the same names.
-    #define NONG_JOINT_NAMES {"L_SH_P", "L_SH_R", "L_EL_P", "L_EL_R",                               "R_SH_P", "R_SH_R", "R_EL_P", "R_EL_R",                               "WAIST",  "SHRUG"}
+    #define NONG_JOINT_NAMES {"L_SH_P", "L_SH_R", "L_EL_P", "L_EL_R", \
+                              "R_SH_P", "R_SH_R", "R_EL_P", "R_EL_R", \
+                              "WAIST",  "SHRUG"}
 
     // ===== Per-joint servo + gear =====
     // Each joint can use a DIFFERENT servo and a different reduction, so the

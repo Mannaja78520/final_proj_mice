@@ -127,6 +127,10 @@
      "files": ["firmware/src/modules/nong/"],
      "depends": ["fw-core"]},
 
+    {"id": "fw-dummy", "summary": "The dummy module: a hand-posed copy of the nong, a pot on every joint, answers POSE?.",
+     "files": ["firmware/src/modules/dummy/"],
+     "depends": ["fw-core", "fw-nong"]},
+
     {"id": "fw-lift", "summary": "The lift module: motor, encoder, limits, RGB, speaker.",
      "files": ["firmware/src/modules/lift/"],
      "depends": ["fw-core"]},

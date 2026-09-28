@@ -28,6 +28,10 @@ import tempfile
 QC = Path(__file__).resolve().parent.parent
 CODE = QC.parent
 EDGE = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+# Off Windows (a cloud session with no PC): Chromium, launched directly.
+WINDOWS = os.name == "nt"
+if not WINDOWS:
+    EDGE = os.environ.get("MICE_QC_CHROME", "/opt/pw-browsers/chromium")
 # Marks our processes so we never kill the user's own browser — and carries
 # this RUN's process id, so two QC runs (two staging trees, verified at the
 # same time) cannot kill each other's browsers. kill() matches on the whole
@@ -54,6 +58,41 @@ SCRATCH = Path(tempfile.gettempdir()) / "mice_qc"
 
 def available():
     return Path(EDGE).is_file()
+
+
+def _launch(url, prof):
+    """Start one tagged headless browser on url; Start-Process on Windows."""
+    if not WINDOWS:
+        # software WebGL: with --disable-gpu Studio's 3D view throws on load
+        subprocess.Popen([EDGE, "--headless=new", "--use-angle=swiftshader",
+                          "--enable-unsafe-swiftshader", "--no-sandbox",
+                          "--no-first-run", "--disable-extensions", "--" + TAG,
+                          "--user-data-dir=" + prof, url],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+        return
+    subprocess.run(["powershell", "-NoProfile", "-Command",
+                    "Start-Process -FilePath '%s' -ArgumentList "
+                    "'--headless=new','--disable-gpu','--no-sandbox',"
+                    "'--no-first-run','--disable-extensions','--%s',"
+                    "'--user-data-dir=%s','%s' -NoNewWindow"
+                    % (EDGE, TAG, prof, url)], timeout=60)
+
+
+def _ours_linux():
+    """Pids of our tagged browsers, or None when ps could not answer."""
+    r = subprocess.run(["ps", "-eo", "pid=,args="], capture_output=True, text=True,
+                       timeout=60)
+    if r.returncode != 0 or not (r.stdout or "").strip():
+        return None
+    pids = []
+    for ln in r.stdout.splitlines():
+        pid, _, args = ln.strip().partition(" ")
+        if not pid.isdigit():
+            return None                      # not ps output at all
+        if "--" + TAG in args:
+            pids.append(int(pid))
+    return pids
 
 
 # The driver stub every page gets: silence modal dialogs, and give the check a
@@ -165,6 +204,12 @@ def _running():
     full of browsers - a query that fails under load certifying the opposite of
     what it saw (A26-94).
     """
+    if not WINDOWS:
+        try:
+            pids = _ours_linux()
+        except (subprocess.SubprocessError, OSError):
+            return -1
+        return -1 if pids is None else len(pids)
     try:
         r = subprocess.run(["powershell", "-NoProfile", "-Command",
                             "@(Get-CimInstance Win32_Process -Filter \"Name='msedge.exe'\" | "
@@ -279,12 +324,7 @@ def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True,
     import fake_serial
     _before = len(fake_serial.qc_marks)      # before the browser can say anything
     try:
-        subprocess.run(["powershell", "-NoProfile", "-Command",
-                        "Start-Process -FilePath '%s' -ArgumentList "
-                        "'--headless=new','--disable-gpu','--no-sandbox',"
-                        "'--no-first-run','--disable-extensions','--%s',"
-                        "'--user-data-dir=%s','%s' -NoNewWindow"
-                        % (EDGE, TAG, prof, query)], timeout=60)
+        _launch(query, prof)
         _wait_for_done(seconds, start=_before)
     finally:
         drv.unlink(missing_ok=True)
@@ -427,12 +467,7 @@ window.qcWaitFor = function(cond, ms, step){
     import fake_serial
     _before = len(fake_serial.qc_marks)      # before the browser can say anything
     try:
-        subprocess.run(["powershell", "-NoProfile", "-Command",
-                        "Start-Process -FilePath '%s' -ArgumentList "
-                        "'--headless=new','--disable-gpu','--no-sandbox',"
-                        "'--no-first-run','--disable-extensions','--%s',"
-                        "'--user-data-dir=%s','%s/studio/%s' -NoNewWindow"
-                        % (EDGE, TAG, prof, base, name)], timeout=60)
+        _launch("%s/studio/%s" % (base, name), prof)
         # Wait for the page to SAY it is finished, exactly like page() does.
         # A fixed sleep is a race: with several browser checks in one run the
         # machine is loaded, Edge starts slowly, and the page gets killed
@@ -449,6 +484,17 @@ window.qcWaitFor = function(cond, ms, step){
 
 def kill():
     """Kill only the Edge processes QC started (matched by our tag)."""
+    if not WINDOWS:
+        import signal
+        try:
+            for pid in _ours_linux() or []:
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except OSError:
+                    pass
+        except (subprocess.SubprocessError, OSError):
+            pass
+        return
     subprocess.run(["powershell", "-NoProfile", "-Command",
                     "Get-CimInstance Win32_Process -Filter \"Name='msedge.exe'\" | "
                     "Where-Object { $_.CommandLine -like '*%s*' } | "
