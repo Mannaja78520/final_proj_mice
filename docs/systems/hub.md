@@ -27,8 +27,10 @@ hub-support (+ hub_update.py), hub-studio, hub-modules, hub-media (+ hub_cam.py)
 ## Moving code out of main.py (the one trap)
 
 - A moved file reads main.py's names LATE, as `_hub.<name>`, after
-  `bind(sys.modules[__name__])`. Never `from main import`: the exe runs main
-  as `__main__`, so that loads a second copy. Never copy a value at import:
+  `bind(sys.modules[__name__])`. Never `import main` or `from main import`:
+  the exe runs main as `__main__`, so that loads a second copy. hub_show.py
+  did, and every first show played on a player Studio could not see or stop
+  (2026-09-28; check_one_hub holds it). Never copy a value at import:
   QC swaps `main.dev_cmd`, `main.FIRMWARE_DIR`, `main.scan_modules`... and a
   copy would keep the real one.
 - Stdlib modules are imported directly; everything main.py defines is `_hub.`.

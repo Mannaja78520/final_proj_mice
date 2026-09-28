@@ -3,10 +3,22 @@
 Moved out of main.py on 2026-09-22 (A26-76 phase 2, see docs/systems/hub.md).
 One player per hub. Takes over the target device, respects pauses and beats,
 and silences music on panic stops. main.py imports these names back.
+
+Names that live in main.py are read late through _hub, like every hub_*
+helper, so a check that swaps main.dev_cmd reaches the clock too. Never
+`import main` here: run as a script the hub is __main__, and that import
+loaded a SECOND hub whose idle player /api/play then read (check_one_hub).
 """
 import re
 import threading
 import time
+
+_hub = None           # the main module, set by bind()
+
+
+def bind(hub):
+    global _hub
+    _hub = hub
 
 
 class ShowPlayer:
@@ -53,20 +65,17 @@ class ShowPlayer:
     def _get_cmd(self):
         if self._cmd_fn is not None:
             return self._cmd_fn
-        import main
-        return main.dev_cmd
+        return _hub.dev_cmd
 
     def _get_parse(self):
         if self._parse_fn is not None:
             return self._parse_fn
-        import main
-        return main.parse_dev
+        return _hub.parse_dev
 
     def _get_cues(self):
         if self._cues_fn is not None:
             return self._cues_fn
-        import main
-        return main.cue_lines
+        return _hub.cue_lines
 
     # ---- what a caller sees ----
     def status(self):

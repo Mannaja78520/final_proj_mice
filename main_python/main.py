@@ -36,6 +36,14 @@ import urllib.parse
 import urllib.error
 import urllib.request
 
+# ONE HUB PER PROCESS. Run as a script (python main.py, MiceHub.exe) this file
+# is __main__, and a later `import main` loaded it AGAIN: a second hub with its
+# own show player, every hub_* helper rebound to it. The first show then played
+# on a player /api/play could not see, beat or stop (2026-09-28, check_one_hub).
+# Under its own name as well, that import returns THIS hub.
+if __name__ == "__main__":
+    sys.modules.setdefault("main", sys.modules[__name__])
+
 import discovery
 import mdns
 import qr
@@ -1172,7 +1180,9 @@ def seq_steps(text):
 
 
 # The show player lives in hub_show.py (A26-76 phase 2, see docs/systems/hub.md).
+import hub_show  # noqa: E402
 from hub_show import ShowPlayer  # noqa: E402
+hub_show.bind(sys.modules[__name__])
 
 
 show = ShowPlayer()
