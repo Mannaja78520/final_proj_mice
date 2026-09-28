@@ -1871,6 +1871,12 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
             if f.is_file():
                 return self.send_bytes(f.read_bytes(), "text/javascript; charset=utf-8")
             return self.send_err("mice.js is missing", 404)
+        # The sound engine the module page loads (song + PC sound + mic).
+        if path == "/cast.js":
+            f = SHARED_WEB / "cast.js"
+            if f.is_file():
+                return self.send_bytes(f.read_bytes(), "text/javascript; charset=utf-8")
+            return self.send_err("cast.js is missing", 404)
 
         if path == "/mice.css":
             # One design system for every surface. This route must stay ABOVE

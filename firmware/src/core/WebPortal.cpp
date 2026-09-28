@@ -15,6 +15,7 @@
 #include "core/SequencePlayer.h"
 #include "core/BuildTypes.h"
 #include "core/AudioStream.h"
+#include "core/SecureTalk.h"
 #if MICE_HAS_CAM
 #include "modules/cam/CamModule.h"
 #endif
@@ -42,6 +43,7 @@ CamModule* WebPortal::camModule() {
 // so the page links one stylesheet whether it is reached over WiFi or USB.
 #include "web/MiceCss.h"
 #include "web/MiceJs.h"
+#include "web/CastJs.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ESPmDNS.h>
@@ -741,6 +743,14 @@ void WebPortal::setupRoutes() {
         req->send(r);
     });
 
+    // The sound engine (shared/web/cast.js) - same file the hub serves.
+    server_.on("/cast.js", HTTP_GET, [](AsyncWebServerRequest* req) {
+        AsyncWebServerResponse* r =
+            req->beginResponse_P(200, "text/javascript", CAST_JS);
+        r->addHeader("Cache-Control", "max-age=86400");
+        req->send(r);
+    });
+
     // ---- logging in --------------------------------------------------
     // The accounts already existed (UserStore, the USER command); until now
     // nothing on the HTTP side ever asked. The page had a login card that only
@@ -1194,6 +1204,7 @@ void WebPortal::loop() {
         lastPush_ = now;
         ws_.cleanupClients();
         wsAudio_.cleanupClients();
+        SecureTalk::loop();   // the secure talk page shuts itself when idle
         if (ws_.count()) ws_.textAll(statusJson());
     }
 

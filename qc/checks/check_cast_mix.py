@@ -32,6 +32,7 @@ DRIVER = """
 <style>html,body{margin:0}iframe{width:900px;height:700px;border:0}</style>
 <iframe id="hub" src="%s"></iframe>
 <iframe id="direct" src="%s"></iframe>
+<iframe id="talk" src="%s"></iframe>
 <script>
 function done(s){ qcMark("CM " + s); qcMark("done"); }
 function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
@@ -70,7 +71,7 @@ function ready(id){
   return f && f.contentWindow && f.contentDocument && f.contentDocument.readyState === "complete"
       && typeof f.contentWindow.castToggle === "function";
 }
-qcWaitFor(function(){ return ready("hub") && ready("direct"); }, 15000).then(async function(){
+qcWaitFor(function(){ return ready("hub") && ready("direct") && ready("talk"); }, 15000).then(async function(){
   var out = [];
   try{
     // ---------------- through the hub ----------------
@@ -145,6 +146,28 @@ qcWaitFor(function(){ return ready("hub") && ready("direct"); }, 15000).then(asy
     out.push("wssrc=" + Object.keys(x.castSrc).sort().join("+"));
     x.castStop("qc");
     out.push("wsstop=" + (sent.indexOf("STOP") >= 0 ? "yes" : "no"));
+
+    // ---------------- the board's secure talk page ----------------
+    var y = document.getElementById("talk").contentWindow, g = y.document;
+    var said = [], sock = null;
+    y.WebSocket = function(u){
+      sock = this; var me = this; this.readyState = 1; this.bufferedAmount = 0;
+      setTimeout(function(){ if (me.onopen) me.onopen(); }, 20);
+    };
+    y.WebSocket.prototype.send = function(m){ said.push(m); };
+    y.WebSocket.prototype.close = function(){};
+    y.navigator.mediaDevices.getUserMedia = async function(){ return tone(y, 440, 0.5); };
+    g.getElementById("tPass").value = "secret12";
+    await y.castToggle();
+    await sleep(900);
+    var texts = said.filter(function(m){ return typeof m === "string"; });
+    out.push("talkfirst=" + (texts[0] || "none").replace(/ /g, "_"));
+    out.push("talksecond=" + (texts[1] || "none").replace(/ /g, "_"));
+    out.push("talkchunks=" + said.filter(function(m){ return typeof m !== "string"; }).length);
+    // the board refuses the login: the page must say so and stop
+    if (sock && sock.onmessage) sock.onmessage({data: "ERR wrong user or password"});
+    out.push("talkrefused=" + (!y.castOn && /wrong user/.test(g.getElementById("castStat").textContent)
+                               ? "said" : "silent"));
   }catch(err){ out.push("ERR=" + String(err).replace(/[^A-Za-z0-9=]+/g, "_").slice(0, 60)); }
   done(out.join(" "));
 });
@@ -159,8 +182,19 @@ def run(t):
     base, _main = F.start_hub()
     hub = "/mod?dev=usb%3A" + urllib.parse.quote(fake_serial.PORT)
     direct = "/mod"
-    browser.raw_page(DRIVER % (hub, direct), base, seconds=40,
-                     flags=("--autoplay-policy=no-user-gesture-required",))
+    # The talk page is only ever served by the board (over https). Here it is
+    # lifted out of its header and served from the Studio folder, so /cast.js
+    # and /mice.css resolve to the hub's copies - the same files.
+    head = (F.FIRMWARE / "src/web/TalkUI.h").read_text(encoding="utf-8")
+    html = head[head.index('R"rawliteral(') + 13:head.index(')rawliteral"')]
+    web = F.CODE / "nong" / "main_python_set_nong" / "web"
+    talk = web / ("_qctalk_%s.html" % browser._tag())
+    talk.write_text(html, encoding="utf-8")
+    try:
+        browser.raw_page(DRIVER % (hub, direct, "/studio/" + talk.name), base, seconds=40,
+                         flags=("--autoplay-policy=no-user-gesture-required",))
+    finally:
+        talk.unlink(missing_ok=True)
 
     got = {}
     for m in fake_serial.qc_marks:
@@ -194,3 +228,23 @@ def run(t):
     t.ok(int(got.get("wspeak", 0)) > 8000, "and the sound is really in the frames (peak %s)"
          % got.get("wspeak"))
     t.eq(got.get("wsstop"), "yes", "Stop tells the board")
+
+    t.eq(got.get("talkfirst"), "LOGIN_admin_secret12",
+         "the secure talk page signs in on the socket first (it has no cookie there)")
+    t.eq(got.get("talksecond"), "START_22050", "then asks for the speaker")
+    t.ok(int(got.get("talkchunks", 0)) >= 3,
+         "and sends the microphone (%s chunks)" % got.get("talkchunks"))
+    t.eq(got.get("talkrefused"), "said",
+         "a refused login stops it and says why, instead of sending into nothing")
+
+    # ---- the board half of the talk page (read from source) ----------------
+    st = (F.FIRMWARE / "src/core/SecureTalk.cpp").read_text(encoding="utf-8")
+    t.contains(st, 'if (fd != audioFd) wsSay(req, "ERR log in first");',
+               "the board opens its speaker to a signed-in socket only")
+    t.contains(st, "} else if (f.type == HTTPD_WS_TYPE_BINARY && fd == audioFd && st) {",
+               "and takes sound only from that socket")
+    t.contains(st, "if (ESP.getFreeHeap() < MIN_HEAP) {",
+               "it refuses to start when memory is short, rather than crash the robot")
+    keys = [f.name for f in (F.FIRMWARE / "src").rglob("*")
+            if f.is_file() and "PRIVATE KEY" in f.read_text(encoding="utf-8", errors="replace")]
+    t.eq(keys, [], "no private key is in the source: each board makes its own")

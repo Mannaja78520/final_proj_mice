@@ -7,6 +7,7 @@
 #include "core/SequencePlayer.h"
 #include "core/Util.h"
 #include "core/WebPortal.h"
+#include "core/SecureTalk.h"
 #include "core/WifiArgs.h"
 #include "modules/Module.h"
 #include "modules/ModuleFactory.h"
@@ -179,6 +180,21 @@ String CommandRouter::handleLocked(const String& line) {
         if (!id_->setApPass(p)) return "ERR 8-63 characters, no spaces";
         if (WebPortal::instance()) WebPortal::instance()->wifiCommand(id_->wifiMode());
         return "OK appass=" + id_->apPassword();
+    }
+
+    // TALK — the secure page a phone needs for its microphone (SecureTalk).
+    //   TALK | TALK?   -> on or off, its address, free memory
+    //   TALK ON        -> raise it (on demand: TLS costs RAM)
+    //   TALK OFF       -> take it down
+    if (cmd == "TALK" || cmd == "TALK?") {
+        String a = argc > 1 ? argv[1] : "";
+        a.toUpperCase();
+        if (a == "ON") {
+            String why;
+            return SecureTalk::start(why) ? "OK " + SecureTalk::status() : "ERR " + why;
+        }
+        if (a == "OFF") { SecureTalk::stop(); return "OK talk off"; }
+        return SecureTalk::status();
     }
 
     // PEERPASS — the hub hands each module its group-mates' WiFi passwords,

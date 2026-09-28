@@ -125,11 +125,13 @@ def run(t):
     # through the robot uses the microphone, which needs no picker at all.
     # The user asked why a whole screen had to be shared, 2026-09-07.
     page = (fw / "src/web/WebUI.h").read_text(encoding="utf-8", errors="replace")
-    t.contains(page, "getUserMedia({audio:",
+    # the sound engine moved to shared/web/cast.js (one file, three pages)
+    eng = (F.CODE / "shared/web/cast.js").read_text(encoding="utf-8", errors="replace")
+    t.contains(eng, "getUserMedia({audio:",
                "the microphone is its own source, with no screen picker")
-    t.contains(page, "castStream.getVideoTracks().forEach(t=>t.stop())",
+    t.contains(eng, "castStream.getVideoTracks().forEach(t=>t.stop())",
                "and the shared picture is stopped the moment it arrives")
-    fn = page[page.find("async function castSource("):]
+    fn = eng[eng.find("async function castSource("):]
     fn = fn[fn.find("getDisplayMedia("):]
     fn = fn[:fn.find("}catch(e){")]
     t.ok(0 <= fn.find("getVideoTracks") < fn.find("createMediaStreamSource"),
@@ -143,12 +145,12 @@ def run(t):
     # for 44100. A number in a comment that nobody can check rots, and this one
     # is the number a person uses to decide whether a gap matters (A26-8), so
     # it is computed from the code rather than trusted.
-    rate = re.search(r"castRate\s*=\s*(\d+)", page)
-    buf = re.search(r"createScriptProcessor\((\d+)", page)
+    rate = re.search(r"castRate\s*=\s*(\d+)", eng)
+    buf = re.search(r"createScriptProcessor\((\d+)", eng)
     if t.ok(rate and buf, "the page says its sample rate and its buffer size",
             "castRate / createScriptProcessor not found in WebUI.h"):
         want = round(1000 * int(buf.group(1)) / int(rate.group(1)))
-        t.contains(page, "the next one is %d ms away" % want,
+        t.contains(eng, "the next one is %d ms away" % want,
                    "and the comment quotes that same chunk time (%d ms)" % want)
 
     # ---- the cracking: MCLK on the LRC pin (2026-09-28) ------------------
@@ -221,7 +223,7 @@ def run(t):
                "a phone on the robot's WiFi streams to /ws/audio, behind the STREAM gate")
     for box in ("cast_song", "cast_pc", "cast_mic"):
         t.contains(page, 'id="%s"' % box, "the page has its own switch for %s" % box)
-    t.contains(page, "castMix.connect(lp); lp.connect(lim); lim.connect(castNode);",
+    t.contains(eng, "castMix.connect(lp); lp.connect(lim); lim.connect(castNode);",
                "the mix goes through a limiter before it is sent, so two loud "
                "sources summed cannot clip and crack")
 

@@ -675,7 +675,14 @@
     <p>A phone browser only gives the microphone to a secure page, and the robot's page is not
        one. On Android Chrome open <code>chrome://flags</code>, find <i>Insecure origins treated
        as secure</i>, add <code>http://192.168.4.1</code> and relaunch. A song file works without
-       this. A browser cannot hear other apps on the phone, so music from another app cannot be
+       this.</p>
+    <p>Or, on any phone: tick <b>microphone</b> on the robot's page and press <b>Microphone
+       page</b>. The robot opens its own secure page (<code>TALK ON</code>) at
+       <b>https://192.168.4.1/talk</b>. The phone warns once about the certificate, because the
+       robot made it itself; choose to continue. Type the robot's login there and press
+       <b>Send</b>. The secure page costs the robot memory, so it closes after 10 quiet minutes
+       (<code>TALK OFF</code> closes it at once).</p>
+    <p>A browser cannot hear other apps on the phone, so music playing in another app cannot be
        sent; pick the song file instead.</p></div>
   <div class="f"><h3>A cold start with no WiFi used to strand every module<span class="tag t-new">fixed</span></h3>
     <p>A neighbour was only recognised by a name the module had <i>already seen</i>, and a module

@@ -324,6 +324,9 @@ interchangeably.
 | `APPASS` | `APPASS default appass=12345678` | this module's own WiFi (hotspot) password and where it comes from: `set` by the owner, `group`, or the `default` 12345678 |
 | `APPASS <password>` | `OK appass=...` | choose the hotspot password (8-63 characters, no spaces). Wins over the group one; the hotspot comes back up with it at once |
 | `APPASS CLEAR` | `OK appass=...` | forget the chosen password; back to the group one, or 12345678 when ungrouped |
+| `TALK` / `TALK?` | `TALK on https://192.168.4.1/talk heap=61234` | the secure talk page: is it up, where, and memory free |
+| `TALK ON` | `OK TALK on https://192.168.4.1/talk ...` | raise the secure page a phone needs for its microphone. It costs RAM, so it is on demand, and goes off by itself after 10 quiet minutes. The first time, the board makes its own certificate (the phone warns once) |
+| `TALK OFF` | `OK talk off` | take it down |
 | `PEERPASS` | `PEERPASS nong,lift-2` | the group-mates whose hotspot password this module holds (names only) |
 | `PEERPASS <wifi> <password>` | `OK peer nong` | remember a group-mate's hotspot password. The hub sends these by itself to every module in a group, so a module can still link to one whose owner changed its password |
 | `PEERPASS CLEAR` | `OK peers forgotten` | forget them all |
