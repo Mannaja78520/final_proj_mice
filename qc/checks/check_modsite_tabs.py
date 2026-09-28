@@ -52,6 +52,15 @@ window.addEventListener("load", function(){ (function ready(n){
       if (!e) return "missing";
       return getComputedStyle(e).display === "none" ? "hidden" : "shown";
     }
+    // Setup cards gated by module type (the dummy's pot calibration is hidden
+    // on a nong) must not decide the login answer: 'shown' if ANY is shown.
+    function visAny(sel){
+      var all = document.querySelectorAll(sel);
+      if (!all.length) return "missing";
+      for (var i = 0; i < all.length; i++)
+        if (getComputedStyle(all[i]).display !== "none") return "shown";
+      return "hidden";
+    }
     function countShown(tab){
       var n = 0;
       document.querySelectorAll('[data-tab="' + tab + '"]').forEach(function(e){
@@ -83,15 +92,15 @@ window.addEventListener("load", function(){ (function ready(n){
     // the Setup tab, still logged OUT: the login card shows, the config does not
     showTab("setup");
     out.push("loginVisible:" + vis("#loginCard"));
-    out.push("settingsLockedOut:" + vis(".card.setupCard"));
+    out.push("settingsLockedOut:" + visAny(".card.setupCard"));
 
     // pretend the login succeeded — the SAME rule must now reveal them
     auth = { user: "qc", pass: "x" };
     applyTabs();
-    out.push("settingsAfterLogin:" + vis(".card.setupCard"));
+    out.push("settingsAfterLogin:" + visAny(".card.setupCard"));
     // ...and they must still be hidden on another tab
     showTab("control");
-    out.push("settingsOnOtherTab:" + vis(".card.setupCard"));
+    out.push("settingsOnOtherTab:" + visAny(".card.setupCard"));
 
     // files tab carries the SD card and console
     showTab("files");
