@@ -97,7 +97,7 @@ def run(t):
 
     # ---- both types that wire a speaker can be asked and told
     for name in ("nong", "lift"):
-        src = (fw / ("src/modules/%s/%sModule.cpp" % (name, name))
+        src = (fw / ("src/modules/%s/%sModule.cpp" % (name, name.capitalize()))
                ).read_text(encoding="utf-8", errors="replace")
         t.contains(src, "audio_.ampCmd", "%s routes AMP to the shared parser" % name)
         t.contains(src, 'AMP?', "%s answers AMP? too" % name)

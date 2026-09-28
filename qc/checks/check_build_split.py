@@ -15,7 +15,6 @@ the page says at runtime.
 
 Slow: it compiles. Skipped by --quick, run before flashing.
 """
-import os
 import re
 import subprocess
 import sys
@@ -28,7 +27,7 @@ AREA = "firmware"
 TITLE = "each module type builds its own binary, without the others"
 SLOW = True
 
-PIO = Path(os.environ.get("USERPROFILE", "")) / ".platformio/penv/Scripts/pio.exe"
+PIO = F.PIO
 
 # env -> (module types it carries, markup that must NOT be in it)
 #

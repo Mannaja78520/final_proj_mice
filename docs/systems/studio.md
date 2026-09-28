@@ -64,7 +64,7 @@ Nong Studio: the pose editor, timeline and live 3D monitor.
 
 - nothing
 
-## Checks that test it (18)
+## Checks that test it (19)
 
 - `check_build_web`
 - `check_design_system`
@@ -81,8 +81,9 @@ Nong Studio: the pose editor, timeline and live 3D monitor.
 - `check_rig_presets`
 - `check_studio_distances`
 - `check_studio_music_ui`
+- `check_studio_wifi_after_cable`
 - `check_ui_states`
 - `check_urdf_export`
 - `check_zero_lock`
 
-Run them: `python qc/run_qc.py --no-build check_build_web check_design_system check_dev_tools check_help_links check_history check_monitor_link check_no_data_loss check_no_rainbow check_packing_list check_persistence check_plan_live check_promote_ask check_rig_presets check_studio_distances check_studio_music_ui check_ui_states check_urdf_export check_zero_lock`
+Run them: `python qc/run_qc.py --no-build check_build_web check_design_system check_dev_tools check_help_links check_history check_monitor_link check_no_data_loss check_no_rainbow check_packing_list check_persistence check_plan_live check_promote_ask check_rig_presets check_studio_distances check_studio_music_ui check_studio_wifi_after_cable check_ui_states check_urdf_export check_zero_lock`

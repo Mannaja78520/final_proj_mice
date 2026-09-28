@@ -70,6 +70,11 @@ STUDIO = CODE / "nong" / "main_python_set_nong"
 STUDIO_WEB = STUDIO / "web"
 FIRMWARE = CODE / "firmware"
 GENERATED = FIRMWARE / "generated"
+# PlatformIO lives in its own venv on the PC; off Windows (the cloud) it is on PATH.
+PIO = Path(os.environ.get("USERPROFILE", "")) / ".platformio/penv/Scripts/pio.exe"
+if not PIO.is_file():
+    import shutil
+    PIO = Path(shutil.which("pio") or PIO)
 
 _generated_done = [False]
 

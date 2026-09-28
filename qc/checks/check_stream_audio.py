@@ -114,7 +114,7 @@ def run(t):
     t.eq(sorted(scopes), ["lift", "nong"],
          "STREAM is declared for both types that wire a speaker")
     for name in ("nong", "lift"):
-        src = (fw / ("src/modules/%s/%sModule.cpp" % (name, name))
+        src = (fw / ("src/modules/%s/%sModule.cpp" % (name, name.capitalize()))
                ).read_text(encoding="utf-8", errors="replace")
         t.contains(src, 'cmd == "STREAM"', "%s routes STREAM" % name)
 
