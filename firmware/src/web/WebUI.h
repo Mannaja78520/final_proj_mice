@@ -39,6 +39,7 @@ static const char WEB_UI_HTML[] PROGMEM = R"rawliteral(<!doctype html>
      same URL when this page is reached over USB — one link, either transport. -->
 <link rel="stylesheet" href="/mice.css">
 <script src="/mice.js"></script>
+<script src="/cast.js"></script>
 <style>
 /* Only what is the MODULE WEBSITE's own. Tokens, the reset, cards, buttons,
    inputs, badges, the quiet caption and the shared floor come from mice.css. */
@@ -379,17 +380,30 @@ header{padding:var(--sp-3) 0;gap:var(--sp-3)}
     </div>
     <div class="statline" id="nowPlaying">stopped</div>
 
-    <!-- Live sound from the PC (A24-32/A24-34). Gemini Pro put it here rather
+    <!-- Live sound to the robot (A24-32/A24-34). Gemini Pro put it here rather
          than on the hub home: the thing it needs is a robot, and this is the
-         page you are on when you have one. It only works through the hub -
-         the browser sends the sound to the hub, which sends it to the board -
-         so on a board opened by its own address it says so instead of failing. -->
+         page you are on when you have one. Three sources, each with its own
+         switch, mixed into one stream; through the hub it goes PC to hub to
+         board, on the board's own address (a phone on the robot's WiFi) it
+         goes straight to the board. -->
     <div class="row" style="margin-top:8px">
-      <button class="primary" id="castBtn" onclick="castToggle()">&#127911; Play this PC sound</button>
-      <button id="castMicBtn" onclick="castMic()">&#127908; Talk through the robot</button>
+      <label><input type="checkbox" id="cast_song" onchange="castSource('song',this.checked)"> &#127925; song</label>
+      <input type="file" id="castFile" accept="audio/*" style="flex:1;min-width:0"
+             onchange="if(this.files[0]){$('cast_song').checked=true; if(castOn){castSource('song',false).then(()=>castSource('song',true));}}">
+    </div>
+    <div class="row">
+      <label id="castPcRow"><input type="checkbox" id="cast_pc" onchange="castSource('pc',this.checked)"> &#128187; this PC sound</label>
+      <label><input type="checkbox" id="cast_mic" onchange="castSource('mic',this.checked)"> &#127908; microphone</label>
+    </div>
+    <div class="row">
+      <button class="primary" id="castBtn" onclick="castToggle()">&#127911; Send sound to the robot</button>
       <span class="lbl" id="castLevel" style="min-width:64px"></span>
     </div>
-    <div class="statline" id="castStat">the robot can play whatever this PC is playing</div>
+    <div class="row" id="castSecure" style="display:none">
+      <button onclick="castSecurePage()">&#127908; Microphone page</button>
+      <span class="lbl">opens the robot's secure page, where a phone allows the microphone</span>
+    </div>
+    <div class="statline" id="castStat" aria-live="polite">pick what the robot should play - a song, this PC sound, the microphone, or several at once</div>
   </div>
 
 
@@ -695,111 +709,26 @@ function audioStatus(m){
   if(document.activeElement.id!=='vol')$('vol').value=m.audio.vol;
   if(document.activeElement.id!=='volNum')$('volNum').value=m.audio.vol;
 }
-// ---- live sound from this PC (A24-32) ------------------------------------
-// The browser captures what the PC is playing, downsamples it to the rate the
-// board plays at, and posts it to the HUB, which paces it out as UDP. The
-// board never decodes anything and never touches its SD card, so this works
-// even on a board whose card is out.
-//
-// The hub routes are called on location.origin on purpose: the shim that makes
-// this page work through the hub rewrites every '/api/' string into '/api/dev/',
-// which is right for board commands and wrong for these.
-var castOn=false,castCtx=null,castStream=null,castNode=null,castRate=22050,castMisses=0,castWhat='';
-function castDev(){ return new URLSearchParams(location.search).get('dev')||''; }
-// Two sources, one pipe. THE PICKER CANNOT BE AVOIDED for the PC's own sound:
-// Chrome and Edge on Windows only hand over system audio together with a screen
-// or a tab, and getDisplayMedia with audio alone is refused (user asked why,
-// 2026-09-07). The microphone has no such rule, which is why talking through
-// the robot is its own button and asks for nothing but the microphone.
-async function castToggle(){ return castStart('pc'); }
-async function castMic(){ return castStart('mic'); }
-async function castStart(how){
-  if(castOn){ castStop('stopped - the robot is quiet again'); return; }
-  if(!castDev()){
-    $('castStat').textContent='this one needs the hub: open this module from the '
-      +'hub page and the button works. The sound goes PC to hub to robot.';
-    return;
+// ---- live sound to the robot: the engine is shared/web/cast.js ------------
+// (loaded in <head>, served from flash like mice.js, and by the secure talk
+// page too). Only what belongs to THIS page lives here.
+// The microphone on a phone needs a secure page. The board raises one on
+// request (TALK ON: it costs memory, so it is not up all the time) and the
+// phone goes there - it warns about the certificate once, because the board
+// made it itself; that is expected.
+async function castSecurePage(){
+  const t=await cmd('TALK ON');
+  if(!/^OK/.test(t)){ castSay1(refusal(t)||('the robot could not open it: '+t)); return; }
+  // The first time, the board makes its certificate first (a second or two),
+  // so wait for it to say "on" instead of opening a page that is not there yet.
+  castSay1('opening the secure page...');
+  for(let i=0;i<20;i++){
+    const s=await cmd('TALK?');
+    if(/ on https/.test(s)){ location.href='https://'+location.hostname+'/talk'; return; }
+    if(/failed/.test(s)){ castSay1('the robot could not open it: '+s.replace(/^TALK /,'')); return; }
+    await new Promise(r=>setTimeout(r,750));
   }
-  try{
-    castStream = how==='mic'
-      ? await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,
-                                                          noiseSuppression:true}})
-      : await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
-  }catch(e){
-    $('castStat').textContent = how==='mic'
-      ? 'the browser did not give the microphone. Press it again and choose Allow.'
-      : 'the browser did not share the sound. Press the button again, pick a '
-        +'screen or a tab, and tick SHARE AUDIO in that window.';
-    return;
-  }
-  // The picture is not wanted and never was: stop the video track at once, so
-  // nothing is captured beyond the sound and the browser's sharing bar goes.
-  castStream.getVideoTracks().forEach(t=>t.stop());
-  if(!castStream.getAudioTracks().length){
-    castStop(how==='mic' ? 'that microphone gave no sound'
-                         : 'no sound in what was shared - start again and tick SHARE AUDIO in the picker');
-    return;
-  }
-  castWhat = how==='mic' ? 'your microphone' : 'this PC sound';
-  var said={};
-  try{
-    const r=await fetch(location.origin+'/api/stream/start',{method:'POST',
-      body:JSON.stringify({dev:castDev(),rate:castRate,name:castWhat})});
-    said=await r.json();
-    if(!r.ok||!said.ok) throw new Error(said.error||('the hub answered '+r.status));
-  }catch(e){
-    castStop(refusal(JSON.stringify(said))||('could not start it: '+(e.message||e)));
-    return;
-  }
-  castCtx=new AudioContext({sampleRate:castRate});
-  const src=castCtx.createMediaStreamSource(castStream);
-  castNode=castCtx.createScriptProcessor(2048,1,1);
-  castNode.onaudioprocess=e=>{
-    const f=e.inputBuffer.getChannelData(0);
-    const pcm=new Int16Array(f.length);
-    let peak=0;
-    for(let i=0;i<f.length;i++){
-      const v=Math.max(-1,Math.min(1,f[i]));
-      if(v>peak)peak=v;
-      pcm[i]=v*32767;
-    }
-    $('castLevel').textContent='|'.repeat(Math.round(peak*8));
-    // A dropped chunk is not worth a message - the next one is 93 ms away
-    // (2048 samples at castRate 22050; the old comment said 46, which is the
-    // figure for 44100 and was never true here) -
-    // but a pipe that has stopped taking anything IS, or the page sits there
-    // showing a moving level bar while the robot is silent.
-    fetch(location.origin+'/api/stream/feed',{method:'POST',body:pcm.buffer})
-      .then(r=>{ castMisses = r.ok ? 0 : castMisses+1;
-                 if(castMisses===10) $('castStat').textContent=
-                   'the hub stopped taking the sound - press Stop and start it again'; })
-      .catch(()=>{ if(++castMisses===10) $('castStat').textContent=
-                   'the hub is not answering - press Stop and start it again'; });
-  };
-  src.connect(castNode); castNode.connect(castCtx.destination);
-  // the browser's own stop-sharing button must end it too, or the page says it
-  // is playing while nothing is being sent
-  castStream.getAudioTracks()[0].onended=()=>castStop('sharing ended - the robot is quiet again');
-  castOn=true;
-  $(how==='mic'?'castMicBtn':'castBtn').textContent='Stop';
-  $('castStat').textContent='the robot is playing '+castWhat;
-}
-function castStop(why){
-  castOn=false;
-  // Teardown: an already-closed piece is not worth a line on screen, but it
-  // goes in the technical log rather than nowhere - an empty catch is how the
-  // four bugs check_modsite_errors was written for got in.
-  try{ if(castNode)castNode.disconnect(); }catch(e){ log('! cast: '+e); }
-  try{ if(castCtx)castCtx.close(); }catch(e){ log('! cast: '+e); }
-  try{ if(castStream)castStream.getTracks().forEach(t=>t.stop()); }catch(e){ log('! cast: '+e); }
-  castNode=castCtx=castStream=null;
-  fetch(location.origin+'/api/stream/stop',{method:'POST'})
-    .catch(()=>{ $('castStat').textContent='stopped here, but the hub did not '
-      +'confirm it. If the robot is still playing, press Stop again.'; });
-  $('castBtn').innerHTML='&#127911; Play this PC sound';
-  $('castMicBtn').innerHTML='&#127908; Talk through the robot';
-  $('castLevel').textContent='';
-  if(why)$('castStat').textContent=why;
+  castSay1('the secure page did not come up - try again');
 }
 // What the board itself says about the live sound, in words rather than
 // counters: a designer needs to know it is arriving and whether it is breaking
@@ -809,9 +738,8 @@ function castHealth(a){
   const s=a.stream;
   if(!s.on)return;
   const bad=(s.underruns||0);
-  $('castStat').textContent = bad>2
-    ? 'the sound is breaking up - the WiFi is struggling (' + bad + ' gaps so far)'
-    : 'the robot is playing '+castWhat;
+  if(bad>2) $('castStat').textContent=
+    'the sound is breaking up - the WiFi is struggling (' + bad + ' gaps so far)';
 }
 async function playSel(){
   const v=$('musicSel').value;

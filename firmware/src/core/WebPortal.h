@@ -113,6 +113,11 @@ private:
     RS485Bus* rs485_ = nullptr;
     AsyncWebServer server_{80};
     AsyncWebSocket ws_{"/ws"};
+    // Live sound straight from a phone or laptop browser, no hub in between:
+    // a browser cannot send UDP, so this socket carries the same raw PCM the
+    // hub sends over UDP. One sender at a time; the newest one wins.
+    AsyncWebSocket wsAudio_{"/ws/audio"};
+    uint32_t audioClient_ = 0;
     PeerDiscovery peers_;
 
     // why an OTA upload was refused or failed, so the reply says something

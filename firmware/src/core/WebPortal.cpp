@@ -14,6 +14,8 @@
 #include "core/WifiLink.h"
 #include "core/SequencePlayer.h"
 #include "core/BuildTypes.h"
+#include "core/AudioStream.h"
+#include "core/SecureTalk.h"
 #if MICE_HAS_CAM
 #include "modules/cam/CamModule.h"
 #endif
@@ -41,6 +43,7 @@ CamModule* WebPortal::camModule() {
 // so the page links one stylesheet whether it is reached over WiFi or USB.
 #include "web/MiceCss.h"
 #include "web/MiceJs.h"
+#include "web/CastJs.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ESPmDNS.h>
@@ -256,7 +259,10 @@ void WebPortal::checkLink(int n) {
             LOGF(wifi, "\"%s\" is weak (%d dBm) — going through \"%s\" (%d dBm)",
                  homeSsid_.c_str(), mainRssi, bestName.c_str(), bestRssi);
             staSsid_ = bestName;
-            staPass_ = id_->apPassword();   // only a group-mate will let us in
+            // a password the hub handed over for THAT module first (its owner
+            // may have changed it), else our own - a group-mate's default
+            staPass_ = id_->peerPass(bestName);
+            if (!staPass_.length()) staPass_ = id_->apPassword();
             onRelay_ = true;
             relayName_ = bestName;
             // remember an UNKNOWN one we are about to try, so that if it does
@@ -679,6 +685,42 @@ void WebPortal::setupRoutes() {
     });
     server_.addHandler(&ws_);
 
+    // /ws/audio - text "START <rate>" opens the speaker, binary frames are
+    // 16-bit little-endian mono PCM at that rate, closing the socket is STOP.
+    // The gate sits on the HANDSHAKE (the filter sees the request and its
+    // cookie), the same rule as STREAM ON: making the robot talk needs a
+    // login, and an unknown socket never reaches the speaker.
+    wsAudio_.setFilter([this](AsyncWebServerRequest* req) {
+        return allowedCommand(req, "STREAM ON");
+    });
+    wsAudio_.onEvent([this](AsyncWebSocket*, AsyncWebSocketClient* client, AwsEventType type,
+                            void* arg, uint8_t* data, size_t len) {
+        AudioStream* st = AudioStream::instance();
+        if (type == WS_EVT_DISCONNECT) {
+            if (client->id() == audioClient_ && st) st->wsClose();
+            if (client->id() == audioClient_) audioClient_ = 0;
+            return;
+        }
+        if (type != WS_EVT_DATA || !st) return;
+        AwsFrameInfo* info = (AwsFrameInfo*)arg;
+        if (info->opcode == WS_TEXT && info->index == 0 && info->final) {
+            String t;
+            for (size_t i = 0; i < len && i < 24; i++) t += (char)data[i];
+            if (t.startsWith("START")) {
+                audioClient_ = client->id();          // newest sender wins
+                st->wsOpen((uint32_t)t.substring(5).toInt());
+                client->text("OK");
+            } else if (t.startsWith("STOP") && client->id() == audioClient_) {
+                st->wsClose();
+            }
+            return;
+        }
+        // Binary, possibly split across several events by TCP: push takes
+        // the bytes in order and carries a half sample over the seam.
+        if (client->id() == audioClient_) st->push(data, len);
+    });
+    server_.addHandler(&wsAudio_);
+
     server_.on("/", HTTP_GET, [](AsyncWebServerRequest* req) {
         req->send_P(200, "text/html", WEB_UI_HTML);
     });
@@ -697,6 +739,14 @@ void WebPortal::setupRoutes() {
         // behaves the same whether it came over WiFi or through a cable.
         AsyncWebServerResponse* r =
             req->beginResponse_P(200, "text/javascript", MICE_JS);
+        r->addHeader("Cache-Control", "max-age=86400");
+        req->send(r);
+    });
+
+    // The sound engine (shared/web/cast.js) - same file the hub serves.
+    server_.on("/cast.js", HTTP_GET, [](AsyncWebServerRequest* req) {
+        AsyncWebServerResponse* r =
+            req->beginResponse_P(200, "text/javascript", CAST_JS);
         r->addHeader("Cache-Control", "max-age=86400");
         req->send(r);
     });
@@ -1153,6 +1203,8 @@ void WebPortal::loop() {
     if (serverStarted_ && now - lastPush_ >= 500) {
         lastPush_ = now;
         ws_.cleanupClients();
+        wsAudio_.cleanupClients();
+        SecureTalk::loop();   // the secure talk page shuts itself when idle
         if (ws_.count()) ws_.textAll(statusJson());
     }
 

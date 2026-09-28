@@ -62,7 +62,7 @@
      "depends": []},
 
     {"id": "hub-modules", "summary": "The one module list: every board once, with every route to it, and the fastest route chosen.",
-     "files": ["main_python/hub_modules.py"],
+     "files": ["main_python/hub_modules.py", "main_python/hub_appass.py"],
      "names": ["modules_here", "modules_everywhere", "remote_modules", "/api/modules", "/api/allmods",
                "/api/mine", "board_key", "resolve_auto", "auto:"],
      "depends": ["hub-net", "hub-usb"]},

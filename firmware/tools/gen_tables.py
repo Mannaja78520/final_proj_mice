@@ -83,6 +83,7 @@ MICE_CSS = CODE / "shared" / "web" / "mice.css"
 THEMES_CSS = CODE / "shared" / "web" / "themes.css"
 # The one shared script (theme handling), compiled in the same way.
 MICE_JS = CODE / "shared" / "web" / "mice.js"
+CAST_JS = CODE / "shared" / "web" / "cast.js"
 DEFAULT_OUT = FIRMWARE / "generated"
 
 
@@ -753,6 +754,18 @@ def gen_micecss(out):
              + js + ')rawliteral";' + chr(10))
     write_if_changed(out_path(out, "web/MiceJs.h"), jtext,
                      "%.1f KB shared script" % (len(js.encode("utf-8")) / 1024.0))
+
+    # The sound engine (song + PC sound + microphone, mixed), shared by the
+    # board page, the hub's copy of it and the board's secure talk page.
+    cj = CAST_JS.read_text(encoding="utf-8") if CAST_JS.is_file() else ""
+    if ")rawliteral" in cj:
+        raise SystemExit("cast.js contains )rawliteral, which cannot be embedded")
+    ctext = (BANNER % ("../" + CAST_JS.name)
+             + '#pragma once' + chr(10) + '#include <Arduino.h>' + chr(10) + chr(10)
+             + 'static const char CAST_JS[] PROGMEM = R"rawliteral('
+             + cj + ')rawliteral";' + chr(10))
+    write_if_changed(out_path(out, "web/CastJs.h"), ctext,
+                     "%.1f KB sound engine" % (len(cj.encode("utf-8")) / 1024.0))
 
 
 # ------------------------------------------------- the module types in C++

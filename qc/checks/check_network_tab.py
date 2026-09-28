@@ -148,4 +148,4 @@ def run(t):
     # inside the installation.
     t.ok(len(sent) == 1,
          "and ONLY the module that was ticked was linked",
-         "%d modules were told to join, but one was selected" % len(sent))
+         "%d modules were told to join, but one was selected: %r" % (len(sent), sent))
