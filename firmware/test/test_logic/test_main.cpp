@@ -12,6 +12,7 @@
 #include "core/WifiArgs.h"
 #include "core/WifiLink.h"
 #include "core/Log.h"
+#include "core/Id3.h"
 #include <algorithm>
 #include <cstdarg>
 #include <cstring>
@@ -396,6 +397,37 @@ void test_dummy_zero_round_trips() {
     }
 }
 
+// ---------------------------------------------------------------- ID3 tags
+// The cover picture sits in this tag. Its length is read, never its bytes:
+// walking it byte by byte froze the robot at a show's first song.
+void test_id3_size_is_four_seven_bit_bytes() {
+    // 0x02 0x01 = 2*128 + 1 = 257 bytes after the 10-byte header
+    const uint8_t h[10] = {'I', 'D', '3', 3, 0, 0, 0x00, 0x00, 0x02, 0x01};
+    TEST_ASSERT_EQUAL_UINT32(10 + 257, id3::tagBytes(h));
+    // a 600 KB cover: every one of the four bytes carries 7 bits
+    const uint32_t big = 600000;
+    const uint8_t c[10] = {'I', 'D', '3', 4, 0, 0, (uint8_t)((big >> 21) & 0x7F),
+                           (uint8_t)((big >> 14) & 0x7F), (uint8_t)((big >> 7) & 0x7F),
+                           (uint8_t)(big & 0x7F)};
+    TEST_ASSERT_EQUAL_UINT32(10 + big, id3::tagBytes(c));
+}
+// ID3v2.4 may close the tag with a 10-byte footer, flagged in the header.
+void test_id3_v4_footer_is_skipped_too() {
+    const uint8_t h[10] = {'I', 'D', '3', 4, 0, 0x10, 0, 0, 0x01, 0x00};
+    TEST_ASSERT_EQUAL_UINT32(10 + 128 + 10, id3::tagBytes(h));
+    const uint8_t v3[10] = {'I', 'D', '3', 3, 0, 0x10, 0, 0, 0x01, 0x00};
+    TEST_ASSERT_EQUAL_UINT32(10 + 128, id3::tagBytes(v3));   // no footer before v2.4
+}
+// Audio that starts at byte 0 is not skipped: 0 means "no tag, play from here".
+void test_not_a_tag_skips_nothing() {
+    const uint8_t mp3[10] = {0xFF, 0xFB, 0x90, 0x64, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_UINT32(0, id3::tagBytes(mp3));
+    const uint8_t badSize[10] = {'I', 'D', '3', 3, 0, 0, 0, 0, 0x80, 0};
+    TEST_ASSERT_EQUAL_UINT32(0, id3::tagBytes(badSize));      // not syncsafe
+    const uint8_t v5[10] = {'I', 'D', '3', 5, 0, 0, 0, 0, 0, 1};
+    TEST_ASSERT_EQUAL_UINT32(0, id3::tagBytes(v5));           // unknown version
+}
+
 int main(int, char **) {
     UNITY_BEGIN();
     RUN_TEST(test_home_is_mid_travel_on_any_servo);
@@ -433,5 +465,8 @@ int main(int, char **) {
     RUN_TEST(test_dummy_dir_flips_the_angle);
     RUN_TEST(test_dummy_clamps_to_the_limits);
     RUN_TEST(test_dummy_zero_round_trips);
+    RUN_TEST(test_id3_size_is_four_seven_bit_bytes);
+    RUN_TEST(test_id3_v4_footer_is_skipped_too);
+    RUN_TEST(test_not_a_tag_skips_nothing);
     return UNITY_END();
 }

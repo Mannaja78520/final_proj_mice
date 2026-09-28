@@ -343,6 +343,28 @@ window.REF = [
          "LRC 25 / DOUT 22, which on a full nong are servos 4, 3 and 6."
 },
 {
+  id: "id3-tag-size",
+  group: "Sound",
+  name: "Skipping a song's tag (title, cover picture) in one jump",
+  where: [{file: "firmware/src/core/Id3.h", line: 16,
+           what: "tagBytes() - how long the tag is"},
+          {file: "firmware/src/core/AudioPlayer.cpp", line: 103,
+           what: "skipTags_() - seeks past it before the MP3 decoder starts"}],
+  eq: "size = b<sub>6</sub>&times;2<sup>21</sup> + b<sub>7</sub>&times;2<sup>14</sup> + " +
+      "b<sub>8</sub>&times;2<sup>7</sup> + b<sub>9</sub>\n" +
+      "skip = 10 + size (+ 10 when a v2.4 footer is flagged)",
+  why: "The size is syncsafe: four bytes of 7 bits each, so no byte of it can " +
+       "look like the start of an MP3 frame. Reading the length and seeking " +
+       "costs one SD read. Reading the tag itself - where the cover picture " +
+       "lives, often hundreds of KB - one byte at a time on the module loop " +
+       "left the robot deaf for seconds as a show's song started (2026-09-28).",
+  from: "ID3 tag version 2.4.0 - Main Structure, id3.org/id3v2.4.0-structure: " +
+        "section 3.1 (the header) and 6.2 (syncsafe integers). ESP8266Audio's " +
+        "AudioFileSourceID3 is the byte-by-byte reader this replaces.",
+  watch: "A size that runs past the end of the file is a damaged tag: the player " +
+         "starts from byte 0 and the decoder resyncs, rather than seeking into nothing."
+},
+{
   id: "servo-presets",
   group: "Hardware, as data",
   name: "Servo presets",

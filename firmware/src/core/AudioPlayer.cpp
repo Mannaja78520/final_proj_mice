@@ -8,12 +8,12 @@
 #if MICE_HAS_AUDIO
 
 #include <AudioFileSourceSD.h>
-#include <AudioFileSourceID3.h>
 #include <AudioGeneratorMP3.h>
 #include <AudioGeneratorWAV.h>
 #include <AudioOutputI2S.h>
 #include <AudioOutputI2SNoDAC.h>
 #include <driver/i2s.h>   // applyPins() below talks to the driver directly
+#include "core/Id3.h"
 
 void AudioPlayer::begin(SDStore* sd) {
     sd_ = sd;
@@ -87,15 +87,30 @@ bool AudioPlayer::openTrack_(const String& path) {
         gen_ = new AudioGeneratorWAV();
         ok = gen_->begin(file_, out_);
     } else {
-        id3_ = new AudioFileSourceID3(file_); // skips ID3 tags at file start
+        skipTags_();                          // past the cover art in one seek
         gen_ = new AudioGeneratorMP3();
-        ok = gen_->begin(id3_, out_);
+        ok = gen_->begin(file_, out_);
     }
     if (!ok) {
         cleanup(); // under the lock: closes the still-open SD file
         return false;
     }
     return true;
+}
+
+// Seek past the ID3v2 tag(s) at the front; core/Id3.h says why not read them.
+// A size past the end is a damaged tag: start at 0 and let the decoder resync.
+void AudioPlayer::skipTags_() {
+    uint32_t at = 0;
+    uint8_t h[10];
+    for (int n = 0; n < 4; n++) {             // tags may be stacked, rarely
+        if (!file_->seek(at, SEEK_SET) || file_->read(h, 10) != 10) break;
+        const uint32_t len = id3::tagBytes(h);
+        if (!len) break;
+        at += len;
+    }
+    if (at >= file_->getSize()) at = 0;
+    file_->seek(at, SEEK_SET);
 }
 
 bool AudioPlayer::play(const String& path, bool loop) {
@@ -157,16 +172,15 @@ void AudioPlayer::stop() {
 }
 
 void AudioPlayer::cleanup() {
-    // ANY of the three, not just the generator. openTrack_ calls this after
+    // EITHER of the two, not just the generator. openTrack_ calls this after
     // allocating file_ and before allocating gen_, so a file that will not open
     // used to leak its AudioFileSourceSD — and left the SD handle open with it.
     // One leak per failed PLAY on a board with 300 KB of heap. Found by the
     // model panel 2026-09-10; it predates the repeat feature, which reaches the
     // same branch on a failed lap.
-    if (!gen_ && !id3_ && !file_) return;
+    if (!gen_ && !file_) return;
     sd_->lock();   // deleting the source closes the SD file: SPI traffic
     delete gen_;  gen_ = nullptr;
-    delete id3_;  id3_ = nullptr;
     delete file_; file_ = nullptr;
     current_ = "";
     sd_->unlock();
