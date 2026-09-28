@@ -85,6 +85,33 @@ def _launch(url, prof, flags=()):
                    timeout=60)
 
 
+def dump_dom(url, prof, out, budget_ms, timeout=200, err=True):
+    """Load url headless, run `budget_ms` of virtual time, write the DOM to out.
+
+    For a page that goes idle; one that keeps fetching never finishes (see
+    the module docstring). Returns the finished process, output captured, so a
+    caller can say why nothing was written.
+    """
+    SCRATCH.mkdir(parents=True, exist_ok=True)   # the redirect needs its folder
+    if not WINDOWS:
+        with open(out, "wb") as so, open(out + ".err" if err else os.devnull, "wb") as se:
+            return subprocess.run(
+                [EDGE, "--headless=new", "--use-angle=swiftshader",
+                 "--enable-unsafe-swiftshader", "--no-sandbox", "--no-first-run",
+                 "--disable-extensions", "--" + TAG, "--user-data-dir=" + prof,
+                 "--virtual-time-budget=%d" % budget_ms, "--dump-dom", url],
+                stdout=so, stderr=se, timeout=timeout, start_new_session=True)
+    ps = ("$a=@('--headless=new','--disable-gpu','--no-sandbox','--no-first-run',"
+          "'--disable-extensions','--%s','--user-data-dir=%s',"
+          "'--virtual-time-budget=%d','--dump-dom','%s'); "
+          "Start-Process -FilePath '%s' -ArgumentList $a -NoNewWindow -Wait "
+          "-RedirectStandardOutput '%s'" % (TAG, prof, budget_ms, url, EDGE, out))
+    if err:
+        ps += " -RedirectStandardError '%s.err'" % out
+    return subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                          capture_output=True, text=True, timeout=timeout)
+
+
 def _ours_linux():
     """Pids of our tagged browsers, or None when ps could not answer."""
     r = subprocess.run(["ps", "-eo", "pid=,args="], capture_output=True, text=True,

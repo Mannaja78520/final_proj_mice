@@ -86,7 +86,6 @@ def _load_title(base):
     drv.write_text((web / "index.html").read_text(encoding="utf-8")
                    + browser.PRELUDE + "<script>\n" + DRIVER + "\n</script>",
                    encoding="utf-8")
-    import subprocess
     import time
     from pathlib import Path
     browser.SCRATCH.mkdir(parents=True, exist_ok=True)   # scratch, not the repo
@@ -95,13 +94,7 @@ def _load_title(base):
     try:
         # this page goes idle (no live/monitor polling), so --dump-dom can
         # actually finish and the title is readable
-        ps = ("$a=@('--headless=new','--disable-gpu','--no-sandbox','--no-first-run',"
-              "'--disable-extensions','--%s','--user-data-dir=%s',"
-              "'--virtual-time-budget=15000','--dump-dom','%s/studio/%s'); "
-              "Start-Process -FilePath '%s' -ArgumentList $a -NoNewWindow -Wait "
-              "-RedirectStandardOutput '%s' -RedirectStandardError '%s.err'"
-              % (browser.TAG, prof, base, drv.name, browser.EDGE, out, out))
-        subprocess.run(["powershell", "-NoProfile", "-Command", ps], timeout=200)
+        browser.dump_dom("%s/studio/%s" % (base, drv.name), prof, out, 15000)
         dom = Path(out).read_text(encoding="utf-8", errors="replace")
     except Exception:
         dom = ""

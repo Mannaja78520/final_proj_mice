@@ -130,7 +130,6 @@ def run(t):
 
 def _ask_browser(base):
     """Load a tiny page that asks miceLink one question, and read its title."""
-    import subprocess
     from pathlib import Path as _P
     import browser
     web = F.CODE / STUDIO
@@ -143,20 +142,14 @@ def _ask_browser(base):
         encoding="utf-8")
     out = str(browser.SCRATCH / ("linkprobe_%s.html" % browser._tag()))
     prof = str(browser.SCRATCH / ("profile_link_%s" % browser._tag()))
-    ps = ("$a=@('--headless=new','--disable-gpu','--no-sandbox','--no-first-run',"
-          "'--disable-extensions','--%s','--user-data-dir=%s',"
-          "'--virtual-time-budget=6000','--dump-dom','%s/studio/%s'); "
-          "Start-Process -FilePath '%s' -ArgumentList $a -NoNewWindow -Wait "
-          "-RedirectStandardOutput '%s'"
-          % (browser.TAG, prof, base, probe.name, browser.EDGE, out))
     # The folder has to EXIST before Start-Process redirects into it: it was
     # created only by browser.page(), so a worker that ran this check first met
     # "No such file or directory" and reported it as a browser failure (A26-94,
     # 2026-09-22 gate).
     browser.SCRATCH.mkdir(parents=True, exist_ok=True)
     try:
-        r = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
-                           capture_output=True, text=True, timeout=150)
+        r = browser.dump_dom("%s/studio/%s" % (base, probe.name), prof, out, 6000,
+                             timeout=150, err=False)
         if not _P(out).is_file():
             # Say WHY it did not start. Reading a file that was never written
             # turned every launch failure into the same useless message.

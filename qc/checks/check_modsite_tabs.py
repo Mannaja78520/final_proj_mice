@@ -8,7 +8,6 @@ eventually appears to someone who has not logged in.
 
 Driven in a real browser through the hub, which serves the board's own page.
 """
-import subprocess
 from pathlib import Path
 
 import browser
@@ -199,15 +198,8 @@ def _drive(base):
     browser.SCRATCH.mkdir(parents=True, exist_ok=True)
     prof = str(browser.SCRATCH / ("profile_mod_%d" % int(time.time() * 1000)))
     try:
-        subprocess.run(["powershell", "-NoProfile", "-Command",
-                        "Start-Process -FilePath '%s' -ArgumentList "
-                        "'--headless=new','--disable-gpu','--no-sandbox',"
-                        "'--no-first-run','--disable-extensions','--%s',"
-                        "'--user-data-dir=%s',"
-                        "'%s/studio/%s?dev=usb%%3A%s' -NoNewWindow"
-                        % (browser.EDGE, browser.TAG, prof, base, drv.name,
-                           fake_serial.PORT)],
-                       timeout=60)
+        browser._launch("%s/studio/%s?dev=usb%%3A%s"          # noqa: SLF001
+                        % (base, drv.name, fake_serial.PORT), prof)
         # Wait for the page to report, not for the clock. A flat sleep is a
         # bet on how fast the machine is today: under the full suite this one
         # expired mid-run and failed a promote for a page that was working.
