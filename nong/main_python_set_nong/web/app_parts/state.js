@@ -46,3 +46,9 @@ function saveMeshes() {
 let modelFiles = []; // .stl files available in models/
 
 const MIN_MOVE_MS = 80;                  // same floor as the firmware
+// Safety cap on PEAK joint speed, firmware NONG_SAFE_DPS; the board's own
+// value (INFO safe_dps) replaces it on connect so both sides time moves alike.
+let SAFE_DPS = 60;
+let boardSafeDpsMax = 0;    // from INFO max_dps; 0 means this board cannot be configured here
+let boardSafePeer = 0;      // linked board needs the same cap for synchronized moves
+let boardSafeIdentity = ""; // never save a persistent setting to a different board

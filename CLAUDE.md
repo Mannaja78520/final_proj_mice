@@ -1,467 +1,133 @@
 # Mice — read this before doing anything
 
-## There is an active plan. Follow it.
+Short on purpose (user 2026-09-24: weekly limit hit fast; this file is sent on
+every turn). The long version with every incident story: `git show b89e7fa:CLAUDE.md`.
+Detailed agent procedure: `docs/COORDINATION.md` — read it only when coordinating
+or handing off.
 
-**`docs/PLAN.html`** is the working document for the current refactor. Open it
-first, every session. It holds:
+## Find the subsystem first
 
-* the resume rules (below, in full),
-* the **STATE block** — ~40 tasks with `id: status <when> — note`. This is the
-  **only** place progress is recorded, and the Progress card at the top of the
-  page is rendered from it. Two rules, because the user has to be able to SEE
-  that work is happening:
-  * **update the plan at every step, not at milestones.** The user asked for
-    this directly, 2026-08-18: the page said *nothing in progress* while work
-    was happening, so it could not be told from stalled. It is one command:
+`python tools/systems.py which <file>`, then read that ONE header in
+`docs/systems/`. Stay in that system's files; the header lists its checks.
+New file or system: add it to `docs/systems.json`, then `python tools/systems.py build`.
 
-        python tools/plan.py doing A2-1 A3-1     picked it up
-        python tools/plan.py qc A2-1             built, waiting on the gate
-        python tools/plan.py done A2-1           landed
-        python tools/plan.py running full QC     what is in flight now
-        python tools/plan.py running --clear     nothing in flight
-        python tools/plan.py show                what the page says
+## The plan: docs/PLAN.html
 
-    Run it when you START something, when it goes to the gate, when it lands,
-    and whenever a long job begins or ends. It stamps the clock itself, so the
-    timestamps cannot drift the way hand-written ones did;
-  * mark a task `doing` **when you pick it up**, not only `done` when it lands;
-  * stamp the line you touch with the date and time (`2026-08-18 10:44`),
-    **read from the machine, never guessed** — `date "+%Y-%m-%d %H:%M"` when you
-    pick a task up, and the `when:` line in the patch snapshot you just saved
-    when it lands. Stamps written from memory drifted by up to five hours here,
-    and two of them were in the future, which makes the whole page untrustworthy;
-* **Anything the user asks for goes into the STATE block the moment it is
-  asked, in their own words, before the work starts.** Asked 2026-08-22 after
-  having to ask several times: *make sure you will update the plan.html
-  everytime too i need to told you everytime*. If the user ever has to ask
-  whether the plan was updated, the rule was broken.
-* **decisions already taken** — do not re-open them and do not ask the user
-  again. They are settled and the reasons are written down.
-* **verified facts** — assumptions from the original brief that the code
-  disproved. Do not rebuild things that do not exist.
+* The STATE block is the only progress record. Update it at every step:
 
-Work the tasks in `id` order unless the user says otherwise. Do not ask which
-task to do next — read the STATE block and take the first `todo`.
+      python tools/plan.py session claude      once; then --agent or MICE_AGENT
+      python tools/plan.py add <id> "<text>"   check the id is free first
+      python tools/plan.py doing <id>          picked up
+      python tools/plan.py qc <id>             waiting on the gate
+      python tools/plan.py done <id>           landed
+      python tools/plan.py running <text> | --clear
+      python tools/plan.py handoff <id> "<next step>"   before a limit or stop
 
-**Keep going by yourself.** The user said so directly, 2026-08-18: they should
-not have to say "next" between tasks. Finish one, promote it, mark it, take the
-next `todo`, and carry on. Skip anything marked `[hw]` — it needs a real board —
-and come back to those when the user says the hardware is on the bench.
+* Anything the user asks for goes into the STATE block the moment it is
+  asked, in their own words, before the work starts.
+* Timestamps come from the clock (plan.py stamps them). Never write one by hand.
+* Decisions log and verified facts in the plan are settled. Do not re-ask.
+* Work tasks in id order. Take the first `todo`; do not ask what next. Keep
+  going without the user saying "next". Skip `[hw]` tasks unless boards are on
+  the bench — then hardware tasks go FIRST, and write measurements into the plan.
+* Stop only for: a new decision the plan does not cover (ask once, with a
+  recommendation, then log it), risk to hardware or saved work, or the user.
+* Three failed tries: set the task back to `todo` with a note on the suspected
+  wrong theory, take the next one.
 
-Stop only for: a genuinely new decision the plan does not cover (ask once, with
-a recommendation), something that would damage hardware or lose saved work, or
-the user interrupting. Running out of easy work is NOT a reason to stop: there
-are usually thirty tasks a PC can finish.
+## Token budget (user 2026-09-24)
 
-**More than one thing in progress at a time.** The user asked for this,
-2026-08-18: *we can use multi AI to run in progress more than 1 progress, and
-then review and edit if wrong, to save time*. So:
+* Full QC, gates, promote and land go to the `qc-runner` agent (Sonnet): the
+  long output stays out of the main session. It only reports; it never fixes.
+* Quick suite and single checks run in the main session with `2>&1 | tail -8`.
+  An agent run costs ~57k tokens of fixed overhead (measured 2026-09-24).
+* A qc-runner verdict ("real bug", "flake") is a lead. Opus checks it before fixing.
+* One task, or one batch landed together, per session. Then the user runs
+  `/clear`; the plan and handoff notes carry the state.
+* Search before reading, read line ranges, never re-read what is in context.
 
-* several tasks may be `doing` at once — the Progress card handles it and says
-  which ones;
-* fan the SLOW parts out in parallel and in the background: model reviews, the
-  design of a screen, a long QC run;
-* but keep EDITS to `.staging` serialised, one task at a time, unless the tasks
-  touch files that do not overlap. Two parallel edits to one file is a lost
-  edit, and this session has already lost work to a stray path;
-* promote tasks together when they landed together — one QC gate for the batch;
-* and do not run anything HEAVY while a gate is running, even when it touches
-  nothing the gate reads. Measured 2026-08-20: a gate failed with
-  `ConnectionAbortedError: WinError 10053` in `check_flash_remote`, which POSTs
-  a 1.3 MB image between two hub instances — while an ollama model had the GPU
-  at 96% and a 9 GB model download had the network. The same check passed alone
-  in 11.9 s immediately afterwards. That is the THIRD load-induced false
-  failure in one day (`check_flash_confirm`, `check_responsive`, this one), and
-  each cost a full 7-minute gate to learn nothing. A red gate that is really
-  the machine being busy is worse than a slow one: it sends the next half hour
-  into code that was never wrong;
-* **Writing a file from Python on Windows rewrites every line ending.**
-  `Path.write_text()` translates `\n` to `\r\n`, so a one-line edit turns the
-  whole file CRLF while the rest of the repo stays LF. Cost a gate on
-  2026-08-20: `shared/web/mice.css` came back with 317 CRLF endings, the hub
-  served the raw bytes and QC read the file with universal newlines, so
-  `check_design_system` reported the board and the hub serving different
-  stylesheets — 316 bytes apart, one per line. Nothing was wrong with the CSS.
-  Use `write_bytes`, or `open(..., newline="")`, or the Edit tool, which does
-  not translate;
-* and do not EDIT `.staging` while a gate is running. `promote.py` copies what
-  is on disk when it finishes, not what was there when it started, so a file
-  edited mid-run can be promoted without any check having read that version;
-* but NEVER run two things that drive the fake module at once. `run_qc.py`,
-  `promote.py` and any throwaway measurement script all report through the same
-  fake serial port and the same `qc_marks` list. Running a measurement during a
-  promote made `check_responsive` fail with *measurements missing* — its 25
-  rows had been displaced by the other script's marks, and its `done` had been
-  eaten. That looked exactly like a flake and was not one. One QC-driven
-  process at a time; model calls and reading are safe to overlap.
+## Parallel work
 
-**Every model call starts with `tools/ai_brief.txt`.** The user pays for their
-output too, 2026-08-18: *make gemini use less token like claude, we have caveman,
-maybe we use too much*. So prepend that file to every `agy` prompt and give a
-hard line budget:
+* Several tasks may be `doing` at once. Model reviews and design questions can
+  run in the background.
+* Edits to `.staging` stay serial unless the files do not overlap.
+* Only ONE QC-driven process at a time (`run_qc.py`, `promote.py`, measurement
+  scripts share the fake serial port and `qc_marks`). Check `plan.py show` for
+  `RUNNING:` first.
+* Nothing heavy (GPU model, big download) while a gate runs: load-induced false
+  failures cost a 7-minute gate each.
+* Do not edit `.staging` while a gate runs: promote copies what is on disk at the end.
+* Python on Windows: `write_text()` turns LF into CRLF. Use `write_bytes`,
+  `open(..., newline="")` or the Edit tool.
 
-    agy -p "$(cat tools/ai_brief.txt)
-    <the actual question>
-    Answer in at most 25 lines." --mode plan --model <id>
+## Other models
 
-**Design work goes to Gemini Pro, and waits for it.** The user's instruction,
-2026-08-19: *when gemini pro hit limit you can check when it will back... don't
-stuck with flash model it not good enough and your model make the web not good
-like gemini*. So for anything a person LOOKS at — a screen, a palette, a
-layout — the model is Pro. If Pro is rate-limited or times out, shorten the
-prompt and try again, or come back to it later; do NOT fall back to Flash and
-do not design it yourself. Flash stays for trivial lookups and for review
-questions where the answer is a fact, not a judgement.
+* Codex helps first; Gemini and others are fallback (docs/COORDINATION.md).
+* Gemini: always `--model gemini-3.8-flash-high` (user 2026-09-17: no Pro).
+* Every `agy` prompt starts with `tools/ai_brief.txt` and a line budget:
+  `agy -p "$(cat tools/ai_brief.txt) <question> Answer in at most 25 lines." --mode plan --model <id>`
+* `agy` prompt: no `"` character (truncates silently). Pass `--add-dir` for
+  `.staging` or it reviews the promoted tree. Ask for FIND/REPLACE, not whole files.
+  `agy models` lists exact ids.
+* Design questions (screens, data shapes, protocols): ask the panel before
+  writing and again after QC is green:
+  `python tools/ai_panel.py --ask "<q>" --dir <path> --out <report.md>`
+* Every model finding is a shortlist, not a fact. Verify against the code.
+* On a failure, ask another model whether the theory is wrong before grinding.
 
-The same session showed why: three areas were finished without asking Pro
-anything, and the user's verdict on the result was *why i think it not change
-do different*. It was true — the work was structure, and nothing looked any
-better for it.
+## Rules that already cost real work
 
-**Gemini 3.1 Pro is the default model.** Checked 2026-08-19: with the brief
-above it read a file and answered in two lines in 1m39s. It failed earlier in
-this project only on LONG prompts — a 40-line review with six questions timed
-out — so the rule is the model stays Pro and the PROMPT stays short:
+1. The code is the source of truth — not the plan, a comment, or the user's description.
+2. Work in `code/.staging`. Promote with `python E:/final_proj/mice/code/promote.py`
+   (runs full QC, copies back only when green). Always the absolute path.
+3. NEVER run `promote.py --init` while staging holds unpromoted work.
+4. Every fix needs a QC check, proven by breaking the fix:
+   `python tools/sabotage.py --check <name> --spec -` (always restores the file).
+   `t.ok(cond, label, detail)` takes a detail; `t.eq` and `t.contains` do NOT.
+5. Assert on what reached the module (`fake_serial.wire`), not on what the UI says.
+6. `MiceHub.exe`, `promt.md`, `docs/PLAN.html` are in `promote.py` SKIP_FILES. Keep them there.
+7. Finish with `python tools/land.py --done <ids>`: quick suite, gate, promote, plan.
 
-    --model gemini-3.1-pro-high     default, for anything that matters
-    --model gemini-3.7-flash-high   when Pro times out, or for a trivial lookup
+## Code style
 
-If Pro times out, do not retry it with the same prompt: cut the question down
-or split it, then retry. A prompt that times out on Pro is usually a prompt
-that was asking for four things at once.
-
-Keep the QUESTION short too — name the files and the exact claim, do not paste
-code the model can read itself. `--mode plan` makes some models (GPT-OSS) write
-a plan artifact instead of answering, so say *answer directly, no plan* when
-using them. Gemini 3.1 Pro times out on long review prompts: keep it narrow or
-use a Flash model.
-
-**Ask the panel BEFORE acting, not only after.** The user's instruction,
-2026-08-19: *use multiple AI to help brainstorm before taking any action*. So
-for anything with a design in it — a new screen, a data shape, a protocol, a
-decision the plan does not already settle — put the question to the panel
-first, read what comes back, and only then write. It costs one command and it
-is cheaper than building the wrong thing well.
-
-    python tools/ai_panel.py --ask "<the question>" --dir <file-or-folder> --out <report.md>
-
-**FIVE voices, twice per piece of work.** The user's instruction, 2026-08-19:
-*use all to brain strome before code and after finish QC too need to make
-sure*. So the panel runs at BOTH ends - once on the design before anything is
-written, and once on the finished thing after QC is green, before it is
-promoted. The panel is five models from three makers (Gemini Pro, Opus, Sonnet,
-Gemini Flash, GPT-OSS) with Gemini Pro as head reviewer.
-
-Two failures that cost real reviews, both silent until 2026-08-19:
-
-* **GPT-OSS had been contributing NOTHING for days.** It errors when an answer
-  shape is enforced with a JSON schema, and the report printed `(nothing)`
-  beside its name - which reads as *found no problems* and actually meant
-  *never ran*. A model that cannot answer as data is now asked again in plain
-  prose, and a failure is printed as **FAILED**, never as an empty list.
-* **The head reviewer can fail too**, and when it did the whole verdict was
-  lost. Another model now judges in its place. The user's rule: *if run of
-  token of each use the rest* - one model running out costs one opinion, never
-  the review.
-
-`check_panel` holds all of that, so it cannot rot back.
-
-That tool is the standing answer to *do not trust one AI*: it asks several
-models the same question in parallel, then hands their answers to a HEAD
-reviewer that says which findings are real, which are wrong, and which cannot
-be judged from the files. Its own docstring carries the rule that matters —
-**the verdict is a shortlist, not a fact.** Every finding is still checked
-against the code before anything changes, because this project has had a model
-be confidently wrong twice in one day.
-
-It earned itself on its first run: it found `--ty-lift` byte-identical to
-`--ok` in all three themes — a lift board's row edged in the colour that means
-*fine* — and a theme name hardcoded in the switcher that would have broken the
-one promise the theme file makes. Neither was caught by me or by the model that
-designed the palette.
-
-**Review every part with several models before promoting it.** Not only when
-something fails — the user asked for this as the normal way of working,
-2026-08-18: *use multi AI with review each part, we can do like that to make it
-more reliable*. Send the SAME question, naming the real files and the exact
-claim the change makes, to two or three models at once, in the background, and
-ask what is NOT true. Then verify every finding against the code before acting:
-a model that is confidently wrong costs more than one that says nothing.
-
-Gemini designs the visible surfaces, Claude builds and verifies the logic, and
-now several models review the result. That is three different failure modes
-having to line up before something wrong gets through.
-
-**When something fails, ask other models before grinding.** The user's
-instruction, 2026-08-18: *use gemini with many model and claude with many model
-to check why fail, did theory wrong or not*. A failure usually means the theory
-is wrong, and a second model spots that faster than a third attempt does.
-
-    agy models                      what is available today, WITH the exact ids
-
-Two things that cost a review each on 2026-08-19, both silent:
-
-* **`agy` needs `--add-dir`, or it reviews the wrong tree.** Left alone it
-  takes the main tree as its workspace and skips dot-directories, so a question
-  about unpromoted work is answered about the last PROMOTED version, with
-  nothing saying so. It CAN read `.staging` when the directory is named -
-  measured 2026-08-19 by asking for a value four minutes old that existed only
-  there. `tools/ai_panel.py` does this for you. Pasting the file into the
-  prompt is not a way out: a prompt may contain no `"` character, and CSS and
-  JS are full of them.
-* **The model ids are not what this file used to say.** They are
-  `claude-opus-4-6-thinking` and `claude-sonnet-4-6`, not `claude-opus-4.6`.
-  A wrong id fails with a list of the right ones, so run `agy models` when in
-  doubt.
-    agy -p '<question>' --mode plan --model gemini-3.1-pro-high
-    agy -p '<question>' --mode plan --model gpt-oss-120b-medium
-
-Available through `agy`: Gemini 3.7/3.6/3.5 Flash (high/medium/low), Gemini 3.1
-Pro (high/low), Claude Sonnet 4.6, Claude Opus 4.6, GPT-OSS 120B. Ask two or
-three of them the SAME question, with the file contents and the exact failure,
-and ask what would make the assumption false. Remember the prompt may contain
-no `"` character. Never take any answer on trust — check it against the code,
-the way A0-7 turned out (three models could not have saved that one; reading
-`RS485Bus::send` did).
-
-**Three tries, then park it.** If a task will not go green, fix and retry — but
-after three attempts, set it back to `todo` with a note saying what failed and
-what you now suspect, take the next task, and come back to it later. The user's
-reason, 2026-08-18: *maybe your theory wrong* — and they are usually right.
-A0-7 is the example: it was parked as an RS485 version of the A0-6 logging bug,
-and reading the code showed the premise was simply false. Grinding on a wrong
-theory costs more than moving on and returning with fresh eyes.
-
-### When to ask, and when not to
-
-**Do NOT ask again about anything already settled.** If it is in the plan's
-decisions log, the STATE block, or the verified-facts table, it is decided.
-Re-asking wastes the user's time and they have said so directly. Examples of
-settled things: restructure aggressively, area by area · QR **and** mDNS, not
-one · login required before acting · remote flash sends the image over the
-network and confirms, naming the PC · Gemini designs, Claude verifies · keep
-both pinout images, chosen by condition · do not merge `SPEED`/`TIME`/`STOP`/
-`HOME` across nong and lift.
-
-**DO ask when something is genuinely new** — a choice the plan does not cover,
-where two readings would produce materially different work, or where proceeding
-on a guess could damage hardware or lose the user's saved work. Ask once, give a
-recommendation, and write the answer into the plan's decisions log so the next
-session does not ask it again.
-
-The test is simple: *have we decided this already?* If yes, act. If no, and it
-matters, ask.
-
-## Hardware first, while the boards are there
-
-**HARDWARE FIRST, WHILE THE BOARDS ARE THERE.** The user's instruction,
-2026-08-19: *make the esp32 hardware firmware first, i can use only while in
-lab*. The boards are borrowed time; a PC is not. So when hardware is on the
-bench, the order changes:
-
-* anything that needs a board, a bus, a servo or a camera goes FIRST, even if
-  it is later in the plan's id order;
-* PC-only work (screens, themes, checks, docs) waits, because it can be done
-  any evening;
-* while a board is in hand, MEASURE things that a fake cannot show, and write
-  the measurement into the plan — the numbers are the part that cannot be
-  recovered later.
-
-That rule has already paid for itself: one hour with a real bus found that the
-hub could not see any module with an id above 40, which 2122 passing checks
-against a fake had never suggested.
-
-## The rules that have already cost real work
-
-1. **The code is the source of truth**, not the plan, not a comment, not a
-   README, and not the user's description. Verify before changing. Five
-   assumptions in the original brief turned out to be false.
-2. **Work in `code/.staging`, never the main tree.** Promote with
-   `python promote.py`, which runs the full QC suite and copies back only if it
-   is green.
-3. **NEVER run `promote.py --init` while staging holds unpromoted work.** It
-   refreshes staging *from* main and deletes it. This destroyed a finished
-   feature once already.
-4. **Every fix needs a QC check, and the check only counts once you have broken
-   the fix and watched it fail.** The assertion helpers take a FIXED number of
-   arguments and adding a detail string to the wrong one crashes the check
-   rather than failing it: `t.ok(cond, label, detail)` takes a detail,
-   `t.eq(got, want, label)` and `t.contains(hay, needle, label)` do NOT.
-   Reach for `t.ok` whenever there is something useful to say about a failure. A check that passes before and after guards
-   nothing. This has already caught a weak assertion of mine that would have
-   shipped as "verified".
-5. **Assert on what reached the module** (`fake_serial.wire`), never on what the
-   UI says about itself. The UI is always right about itself while the arm sits
-   somewhere else.
-6. **Files the running system writes to are not source** and must never travel
-   with it: `MiceHub.exe`, `promt.md`, `docs/PLAN.html` are in
-   `promote.py`'s `SKIP_FILES`. Do not remove them from it.
-7. **Talking to Gemini via `agy`: the prompt must contain no `"` character** —
-   it truncates there silently and still returns confident nonsense. Ask for
-   FIND/REPLACE blocks, never whole files (whole files time out).
-
-## Comments: keep the WHY, cut the story
-
-Asked for 2026-08-20, to reduce output on every change. Comments here are the
-biggest thing written, and many retell a whole incident where two lines carry
-the lesson.
-
-**Keep:** the measurement and its date, the reason a line is the way it is,
-what breaking it would cost, and the trap that is not visible in the code.
-**Cut:** narrating what the code plainly says, retelling a bug already recorded
-in a check's docstring, and repeating a rule stated elsewhere in this file.
-
-**Cap: about 6 lines for a block, 1 for a line comment.** Longer only where a
-real bug was paid for and the detail is what stops it returning. One fact, one
-line — not one fact, one paragraph.
-
-The QC check docstring is where a long story belongs: it is read when the check
-fails, which is exactly when the story matters.
-
-Replies to the user: short by default. Full length only for warnings,
-destructive steps, step-by-step sequences, and answers to *why*.
-
-## Nothing hardcoded — the user's standing rule
-
-Asked for directly, 2026-08-18, and it applies to Claude AND to Gemini: write
-things so they can be changed later without editing code.
-
-* **A list belongs in DATA, not in a source file.** This project already works
-  that way — a module type, a servo, a command or a web app is one entry in a
-  registry and everything else is generated from it (`check_registries` proves
-  it). Anything new follows the same shape.
-* **One source, not a copy.** If a fact is needed in two places, one of them
-  reads it from the other. `shared/web/mice.css`, `core/PortWrite.h` and the
-  generated firmware tables are all the same idea.
-* **Per module, per file, per concern.** A new thing should be a new file or a
-  new entry, not a new branch inside something long. Where a class makes that
-  clearer, use a class; where a small file does, use a small file.
-* **Shallow beats clever.** The user asked for *not too many technical depth*:
-  no layers that exist only to be layers, no indirection that has to be traced
-  through four files to answer what does this do. Plain, obvious, commented.
-* The test: **can someone add the next one without opening this file?** If not,
-  the list is in the wrong place.
+* Comments keep the WHY: measurement + date, the reason, the hidden trap.
+  About 6 lines per block, 1 per line comment. Long stories go in the QC
+  check docstring.
+* Nothing hardcoded: a list lives in DATA (registries), one source not copies,
+  a new thing is a new file or entry. Test: can someone add the next one
+  without opening this file?
+* Shallow beats clever. No layers that exist only to be layers.
+* Every formula has an entry in `docs/ref_data.js` (`check_ref` enforces it).
+* Replies to the user: short, except warnings, destructive steps, and "why".
 
 ## Every screen is for a designer, not a programmer
 
-Asked 2026-08-22: *all of the website in this project are designer use not
-programmer... if find the web which it hard to use make it simple*. On every
-page the hub serves:
+On every page the hub serves: anything settable is clickable; plain words on
+the surface; technical detail (addresses, ids, ports, errors, status codes)
+behind the technical switch; simple on top, complete underneath (Home /
+Modules). `check_designer_first` holds it; banned words are in
+`qc/data/designer_words.json`.
 
-* anything settable is clickable — a value somebody has to edit in a file or
-  type into a URL bar is a bug;
-* plain words on the surface; technical detail (addresses, ids, ports,
-  exception text, status codes) hides behind the technical switch;
-* simple on top and complete underneath — the Home / Modules split is the
-  pattern.
+Gemini designs visible surfaces; Claude builds and verifies logic.
 
-`check_designer_first` holds this. The banned-word list lives in DATA
-(`qc/data/designer_words.json`) — the next word costs no code.
-
-## Division of labour, agreed with the user
-
-**Gemini designs the visible surfaces. Claude builds and verifies the logic.**
-Evidence: Gemini's design output was better; it also proposed three CSS changes
-that broke the rules they aimed at, and Claude caught two bugs Gemini's own fixes
-introduced. Neither is trusted alone — see the multi-model rule in the plan.
-
-## The repeated cycles are commands — use them, do not retype them
-
-Asked for 2026-08-20: *any system or file involving repetitive tasks, convert
-them into executable scripts to minimize token usage as much as possible*. Two
-cycles were being written out by hand every time, and both are now one command:
-
-    python tools/sabotage.py --check page_version --spec - <<'JSON'
-    [{"file": "main_python/main.py", "find": "...", "replace": "",
-      "why": "what breaking this would mean"}]
-    JSON
-
-    python tools/land.py --done A17-3        quick suite, gate, promote, plan
-
-`sabotage.py` breaks the fix, runs the check, and **always** puts the file back
-— including when the check crashes, which a hand-written cycle does not. A
-sabotage whose text is not found is an ERROR, never a pass: patching nothing and
-watching the check pass reads as *the check is weak* when the truth is *the
-sabotage missed*. It earned itself on its first run by catching a weak assertion
-of mine — `check_page_version` asserted that the words `myVer === null` appeared,
-which survived breaking the line they were on.
-
-`land.py` runs the quick suite first (thirty seconds to learn what the gate takes
-five minutes to say), prints the one line worth reading out of three hundred, and
-marks tasks done **only** when the gate was green AND it really promoted.
-
-`check_dev_tools` holds both, so they cannot rot.
-
-## Verification, every time
+## Verification
 
 ```
 python qc/run_qc.py --quick        while iterating (~10 s)
 pio run -e mice_nong -e mice_cam -e mice_lift -e mice_blank
-python qc/run_qc.py                full, drives a real browser (~8 min)
-python E:/final_proj/mice/code/promote.py     ALWAYS by absolute path
+python qc/run_qc.py                full, real browser (~8 min)
+python E:/final_proj/mice/code/promote.py
 ```
 
-`promote.py` and `run_qc.py` take the tree from their OWN location, so an
-absolute path always works — a bare `python promote.py` depends on the shell's
-current directory, and that has silently drifted three times in this project:
-once it edited the REAL tree instead of staging, and twice a promote simply did
-not run because the shell was still inside `firmware/`.
+Rebuild the exe when `main_python/` or `config/` changed:
+`python -m PyInstaller --clean MiceHub.spec` — always the spec. A bare script
+build ships an exe with no pages and overwrites the spec.
 
-Rebuild the exe when `main.py` changed:
-`python -m PyInstaller --clean MiceHub.spec` — **the spec, never a bare
-`--onefile` command.** The old line here named the script directly, which does
-two damaging things: it builds an exe with no web pages and no registries (it
-starts, prints `registries unavailable: No module named 'registry'` and answers
-500 on every page), and PyInstaller REWRITES `MiceHub.spec` with a generated
-stub, destroying the curated one. Both happened on 2026-08-21; the spec had to
-be restored with `git checkout -- MiceHub.spec`.
+## Cautions
 
-## Two standing cautions
-
-* **Almost nothing is tested on real hardware.** Every check runs against fakes,
-  with two exceptions, both on 2026-08-19 with a nong (id 85) on COM9: A1-1 the
-  board's auth gate and A1-2 the shipped password. Those were driven against the
-  real board over WiFi, before and after. Everything else is fakes — say so
-  plainly rather than reporting a feature as working.
-* **`MiceHub.exe` goes stale** whenever `main.py` changes. The user may be
-  running yesterday's code without realising.
-
-## The architecture is written down — do not re-derive it
-
-`docs/architecture/` holds `README.md`, `firmware.md`, `hub.md`, `web.md`, each
-with `file:line` evidence, produced from three full explorations. Read those
-before exploring from scratch; a cold session does not need to repeat the work.
-
-## Every equation is written down too — keep it that way
-
-`docs/ref.html` answers *which equation or outside reference does this part
-use*, one entry per formula, each naming the real file and line. Asked for
-2026-08-28: *alway update this ref too if we add something new or edit it*.
-
-**So: change a formula, add an entry.** The entries are DATA in
-`docs/ref_data.js`, so it costs one entry and no page code. `check_ref` holds
-the bargain — it fails when an entry names a file that does not exist, when a
-field is missing, and when a function in `NongMath.h` has no entry at all. It
-is a test rather than a promise because a reference nobody updates is worse
-than none: it is believed.
-
-## Sub-project rules still apply
-
-`firmware/CLAUDE.md` and `nong/main_python_set_nong/CLAUDE.md` carry rules for
-those folders (COMMANDS.md must stay in sync, patch after every web change,
-document every feature in `help.html`). They are not replaced by this file.
-
-## Session limits: current routing rule
-
-Follow docs/COORDINATION.md, including its provider-limit and resume procedure.
-User 2026-09-14: Codex helps first; Gemini/other providers are fallback when
-Codex is limited or unavailable. This supersedes older fixed role/panel routing
-above. Preserve verification and record exact task/tree/evidence in BRIDGE.
-
-## Plan ownership, every agent and session (user 2026-09-16)
-
-Every task goes into the plan the moment it is asked, owned by
-provider:session (`python tools/plan.py session <provider>`, then
-`--agent` or MICE_AGENT). Never a provider alone. Before a limit or stop,
-`python tools/plan.py handoff <id> "<next step>"` so any agent can continue.
-Full rule: docs/COORDINATION.md, *Every task is in the plan*.
+* Almost nothing is tested on real hardware. Only A1-1 and A1-2 (nong id 85,
+  2026-08-19). Say "tested against fakes" plainly.
+* `MiceHub.exe` goes stale whenever hub code changes.
+* Architecture is in `docs/architecture/` (with file:line evidence). Read it
+  before exploring from scratch.
+* `firmware/CLAUDE.md` and `nong/main_python_set_nong/CLAUDE.md` still apply.

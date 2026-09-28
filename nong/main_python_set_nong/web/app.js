@@ -20,7 +20,7 @@ const $ = (id) => document.getElementById(id);
 // shown by it, so NOTHING moved in the DOM — every id, handler and QC driver
 // works exactly as before, and only what is on screen at once changed.
 // "move" is still accepted so any older link or habit keeps working.
-const STAB_BTN = { pose: "tabBtnMove", sequence: "tabBtnSeq",
+const STAB_BTN = { pose: "tabBtnMove", sequence: "tabBtnSeq", shows: "tabBtnShows",
                    robot: "tabBtnRobot", setup: "tabBtnSetup" };
 let sideTab = "pose";
 // --- notices ---
@@ -61,6 +61,7 @@ function showTab(which) {
   if (which === "move") which = "pose";          // the old name
   if (!STAB_BTN[which]) which = "pose";
   sideTab = which;
+  if (which === "shows" && typeof refreshShows === "function") refreshShows();   // saved elsewhere since
   
   let renderWhich = which;
   if (!currentUser && (which === "robot" || which === "setup")) {
@@ -196,6 +197,49 @@ function initSideDrag() {
     localStorage.setItem("nong_sidew", parseInt(side.style.width) || 320);
   });
 }
+// --- fold a side card to its title (A31-24) ---
+// User 2026-09-24: *all card in the top right which tab is more than 1 card or
+// hard to scroll down to setup can hide it like the POSE tab*. In a tab with
+// two or more cards, the h2 folds its card. Setup starts folded (a list of
+// titles); other tabs keep their first card open. The choice is kept per browser.
+const FOLD_KEY = "nong_folded";
+function initCardFold() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(FOLD_KEY)) || {}; } catch (e) {}
+  const byTab = {};
+  document.querySelectorAll("#side div.card[data-stab]").forEach(c => {
+    (byTab[c.dataset.stab] = byTab[c.dataset.stab] || []).push(c);
+  });
+  Object.entries(byTab).forEach(([tab, cards]) => {
+    if (cards.length < 2) return;
+    cards.forEach((card, i) => {
+      const h = card.querySelector(":scope > h2");
+      if (!h) return;
+      const key = tab + ":" + h.firstChild.textContent.trim();
+      card.classList.add("foldable");
+      h.tabIndex = 0;
+      h.setAttribute("role", "button");
+      const set = (folded, remember) => {
+        card.classList.toggle("folded", folded);
+        h.setAttribute("aria-expanded", String(!folded));
+        if (!remember) return;
+        saved[key] = folded;
+        try { localStorage.setItem(FOLD_KEY, JSON.stringify(saved)); } catch (e) {}
+      };
+      set(key in saved ? saved[key] : (tab === "setup" || i > 0), false);
+      const toggle = (e) => {
+        // a switch inside the title (Robot link's technical-details box) is not a fold
+        if (e.target.closest("label, input, button, select, a")) return;
+        set(!card.classList.contains("folded"), true);
+      };
+      h.addEventListener("click", toggle);
+      h.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(e); }
+      });
+    });
+  });
+}
+initCardFold();
 // --- rig data ---
 // 10 logical joints: 8 arm (2 arms x universal shoulder+elbow) then the two
 // BODY joints — WAIST (yaws the whole upper body left/right) and SHRUG (lifts
@@ -216,6 +260,21 @@ const DEFAULT_AXIS = ["x", "z", "x", "z", "x", "z", "x", "z", "y", "x"];
 const AXIS_LABEL = { x: "roll (X)", y: "pitch (Y)", z: "yaw (Z)" };
 // base rotation sense per joint (mirrors right arm); "inv" in the rig flips it
 const BASE_DIR = [-1, +1, -1, +1, -1, -1, -1, -1, +1, +1];
+
+// ---- the two arms, as the AUDIENCE sees them (A31-6) ---------------------
+// User 2026-09-23: a move picks which arm plays it, so the same move can be
+// mirrored. On stage nobody says "L_SH_P": they say the front arm, the one
+// nearer the audience. Which physical arm that is depends on how the nong is
+// turned, so it is a RIG setting and not a constant here.
+const ARM_JOINTS = { L: [0, 1, 2, 3], R: [4, 5, 6, 7] };
+function frontArmSide() { return RIG.frontArm === "R" ? "R" : "L"; }
+function backArmSide() { return frontArmSide() === "L" ? "R" : "L"; }
+// "front"/"back" -> the four joint numbers it owns. Anything else = both arms.
+function armJoints(which) {
+  if (which === "front") return ARM_JOINTS[frontArmSide()];
+  if (which === "back") return ARM_JOINTS[backArmSide()];
+  return null;
+}
 
 // The editable rig: body dimensions (mm, visual only — timing never depends
 // on them) + per-joint calibration. "zero" = the servo angle at which that
@@ -240,7 +299,10 @@ const DEFAULT_RIG = {
   zero: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
   axis: [...DEFAULT_AXIS],        // rotation axis per joint (roll/pitch/yaw)
   invert: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  neutral: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90], // editable "Neutral pose"
+  neutral: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90], // the show's "Neutral pose" (Studio only)
+  // Robot HOME: where the board goes on power-up and on Home (its NEUTRAL
+  // command). Split from neutral on user request 2026-09-17.
+  home: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
   // Mounting correction per joint, in JOINT degrees — a servo horn refitted a
   // tooth out. The BOARD stores it in servo degrees as `trim`; the conversion is
   // its job, so nothing here has to know a gear ratio.
@@ -285,6 +347,11 @@ const DEFAULT_RIG = {
   // Scaled to the real spherical joints (~89 mm dia -> r ~42) and ~10 mm bars.
   jointR: [42, 40, 42, 40],
   barR:   [12, 10, 12, 10],
+  // WHICH ARM THE AUDIENCE SEES FIRST (A31-6). "L" or "R". A move can be
+  // pinned to the front or the back arm, and which physical arm that is
+  // depends on how the nong stands on stage - so it is set here once, not
+  // decided again in every sequence.
+  frontArm: "L",
 };
 function mergeRig(saved) {
   const r = { ...JSON.parse(JSON.stringify(DEFAULT_RIG)), ...saved,
@@ -312,12 +379,15 @@ function mergeRig(saved) {
   // undefined, applyPose computes NaN for the WAIST/SHRUG body rotation, and
   // the whole robot (torso+head+arms all live under bodyGroup) renders at NaN
   // = invisible. Any per-joint array read by applyPose/buildRobot belongs here.
-  ["zero", "min", "max", "axis", "invert", "neutral", "offset",
+  // A rig saved before the split used neutral for both; keep that robot's home.
+  if (!Array.isArray(r.home) && Array.isArray(r.neutral)) r.home = [...r.neutral];
+  ["zero", "min", "max", "axis", "invert", "neutral", "home", "offset",
    "gearPinion", "gearGear", "pulseMin", "pulseMax", "servoMaxDps", "servoRange",
    "frameHz"].forEach(fixLen);
   // The SHRUG 4-bar calibration. An empty list means "not measured", which is
   // the old symmetric behaviour — so every rig saved before this keeps looking
   // exactly as it did until you actually measure the linkage.
+  if (r.frontArm !== "R") r.frontArm = "L";   // any older rig, or a typo
   if (!Array.isArray(r.shrugCurve)) r.shrugCurve = [];
   r.shrugCurve = r.shrugCurve
     .filter(pt => pt && isFinite(+pt.j))
@@ -389,7 +459,8 @@ function hasRigDefault() { return !!localStorage.getItem("nong_rig_default"); }
 // One bundle carries the lot: the working rig, your saved default, the mesh /
 // STL assignments, and the panel width. Sequences and projects are NOT in
 // here — those already live on the hub as files and travel with it.
-const SETTINGS_KEYS = ["nong_rig", "nong_rig_default", "nong_meshes", "nong_sidew"];
+const SETTINGS_KEYS = ["nong_rig", "nong_rig_default", "nong_meshes", "nong_sidew",
+                       "nong_ask_unsaved"];
 
 function collectSettings() {
   const b = { kind: "mice-studio-settings", version: 1, rig: RIG, keys: {} };
@@ -507,6 +578,7 @@ async function getSettingsFrom() {
   } catch (e) { setSettingsStat("could not get it: " + (e.message || e)); }
 }
 function jdir(i) { return BASE_DIR[i] * (RIG.invert[i] ? -1 : 1); }
+
 // clamp a servo angle to that joint's own [min,max] (the universal joint
 // can't reach 0..180) — used everywhere a joint angle is set
 function clampJ(i, v) {
@@ -568,6 +640,12 @@ function saveMeshes() {
 let modelFiles = []; // .stl files available in models/
 
 const MIN_MOVE_MS = 80;                  // same floor as the firmware
+// Safety cap on PEAK joint speed, firmware NONG_SAFE_DPS; the board's own
+// value (INFO safe_dps) replaces it on connect so both sides time moves alike.
+let SAFE_DPS = 60;
+let boardSafeDpsMax = 0;    // from INFO max_dps; 0 means this board cannot be configured here
+let boardSafePeer = 0;      // linked board needs the same cap for synchronized moves
+let boardSafeIdentity = ""; // never save a persistent setting to a different board
 // --- scene ---
 const viewport = $("viewport");
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -629,6 +707,10 @@ const VIEWS = {
   bottom: { dir: [0, -1, 0], up: [0, 0, 1],  plane: "xz" },
   iso:    { dir: [0.6, 0.42, 0.68], up: [0, 1, 0], plane: "cam" },
 };
+// Which flat plane the view is locked to, "" while the view is free 3D.
+// Read by the drag code and by the status line, so one answer serves both.
+let viewPlane = "";
+function flatView() { return !!viewPlane; }
 function setView(name) {
   const v = VIEWS[name];
   if (!v) return;
@@ -644,6 +726,15 @@ function setView(name) {
   // a named plane view is flat (orthographic); iso/free keeps perspective
   useProjection(v.plane !== "cam");
   controls.update();
+  // A PLANE VIEW STAYS FLAT. Orbiting is the only way to leave the plane, and
+  // a plain left-drag orbits - so picking Front, taking hold of the arm and
+  // pulling quietly turned the flat view back into a 3D one, and the drag
+  // plane the person had chosen no longer matched what they were looking at
+  // (user 2026-09-23: *i see in 2d but the arm when am drag it in 3d so i
+  // cannot drag it in 2d anymore*). Pan and zoom stay; the 3D button is how
+  // you come back out.
+  viewPlane = v.plane === "cam" ? "" : v.plane;
+  controls.enableRotate = !viewPlane;
   // drive the drag plane + its dropdown to match the view
   if ($("dragPlane")) $("dragPlane").value = v.plane;
   document.querySelectorAll("#viewCube button").forEach(b =>
@@ -916,10 +1007,12 @@ function applyPose() {
     } else {
       // Uncalibrated: the original symmetric see-saw, unchanged. SHRUG is a
       // ROLL about the front-back axis (Z) — one shoulder rises while the
-      // other drops. Exaggerated x3 so the small (~6°) move reads.
+      // other drops.
       if (shrugAnchors.L) shrugAnchors.L.position.y = shrugBaseY;
       if (shrugAnchors.R) shrugAnchors.R.position.y = shrugBaseY;
-      shoulderMount.rotation.set(0, 0, THREE.MathUtils.degToRad(jointDelta(9) * 3));
+      // At the TRUE angle: it was drawn x3 so a small move would read, and 10
+      // deg on the robot showed as 30 (user 2026-09-17, A26-45).
+      shoulderMount.rotation.set(0, 0, THREE.MathUtils.degToRad(jointDelta(9)));
     }
   }
 }
@@ -1102,7 +1195,10 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
 
   // The wrist/elbow IK balls need SHIFT held — otherwise a plain left-drag from
   // them orbits the camera (keeps orbiting and big arm moves from fighting).
-  if (e.shiftKey) {
+  // In a FLAT view there is nothing to orbit (setView turns rotation off), so
+  // Shift is not needed there: picking Front and pulling the hand is the whole
+  // gesture the 2D plane exists for.
+  if (e.shiftKey || flatView()) {
     const wristHit = ray.intersectObjects(wristBalls, false)[0];
     if (wristHit) {
       const arm = wristHit.object.userData.arm;
@@ -1263,6 +1359,70 @@ function solveElbowIK(arm, target) {
   for (let s = 1; s <= steps; s++) ccdChain(idx, eb, start.clone().lerp(target, s / steps), 4);
   ccdChain(idx, eb, target, 20);
   applyPose();
+}
+// ---- the same shape on the other arm (A31-6) ------------------------------
+// User 2026-09-23: a move picks which arm plays it, so the same move can be
+// mirrored.
+//
+// Mirroring is NOT swapping the two blocks of four joint numbers. That is what
+// it looked like, because the right arm is drawn as the left's mirror image -
+// but the two arms do not carry the same `invert` flags in the shipped rig
+// (L_EL_R is 0, R_EL_R is 1), so a copied elbow roll came out backwards and
+// the hand landed 613 mm from where it should have been. Deriving the angles
+// from zero/jdir/axis instead was worse: 528 mm, because that model ignores
+// the mounting tilts and where each arm's base actually sits.
+//
+// So mirroring is done where the truth is - in the geometry. Reflect both the
+// elbow and the wrist in the body's own x = 0 plane, then let the existing
+// solvers put each arm there: the shoulders place the elbow, the elbow joints
+// place the wrist. Both targets together leave no slack in a 4-joint arm, so
+// the answer is the mirror and not merely a pose that reaches the same point.
+// check_arm_mirror measures the hands afterwards, in world space.
+// Reflect a world point in one of the body's OWN planes. "lr" is the plane
+// between the two arms, "fb" is the one between front and back - and both are
+// taken in the body's frame, so a turned waist does not tilt the mirror.
+function mirrorAcrossBody(p, which) {
+  const local = bodyGroup.worldToLocal(p.clone());
+  if (which === "fb") local.z = -local.z; else local.x = -local.x;
+  return bodyGroup.localToWorld(local);
+}
+// Returns the mirrored pose, or null if there is no rig on screen to mirror
+// with. The two BODY joints keep the rule mirrorLR() has always used: the
+// waist reflects about 90 (turning left becomes turning right) and the shrug
+// is unchanged, because it lifts both shoulders about the centre line and a
+// reflection leaves it alone.
+function mirrorPose(p, which) {
+  if (!bodyGroup || !wristBalls[0] || !wristBalls[1]) return null;
+  const saved = pose.slice();
+  try {
+    pose = p.slice();
+    applyPose();
+    robot.updateMatrixWorld(true);
+    const want = [0, 1].map(a => ({
+      elbow: mirrorAcrossBody(elbowBalls[a].getWorldPosition(new THREE.Vector3()), which),
+      wrist: mirrorAcrossBody(wristBalls[a].getWorldPosition(new THREE.Vector3()), which),
+    }));
+    for (const a of [0, 1]) {
+      // LEFT/RIGHT swaps the arms - the left arm takes the right's shape.
+      // FRONT/BACK does not: each arm stays on its own side of the body and
+      // only its reach turns round, which is what "the same gesture, facing
+      // the other way" means for a puppet.
+      const t = which === "fb" ? want[a] : want[1 - a];
+      solveElbowIK(a, t.elbow);
+      ccdChain(a === 0 ? [2, 3] : [6, 7], wristBalls[a], t.wrist, 24);
+    }
+    applyPose();
+    const out = pose.slice();
+    // A reflection reverses a turn about the vertical, whichever plane it is
+    // in, so the waist flips about its own neutral either way. The shrug rocks
+    // about the centre line and a reflection leaves it alone.
+    out[8] = clampJ(8, 180 - p[8]);
+    out[9] = p[9];
+    return out;
+  } finally {
+    pose = saved;
+    applyPose();
+  }
 }
 function solve3(A, b) { // gaussian elimination, 3x3
   const M = A.map((row, i) => [...row, b[i]]);
@@ -1584,39 +1744,62 @@ function poseChanged(throttled, liveMs) {
 }
 
 function setNeutral() { pose = [...RIG.neutral]; poseChanged(false); }
-async function neutralFromPose() { // the start pose: saved here AND on the robot
+// Neutral is the SHOW's rest pose and stays in Studio; robot home is separate
+// (user 2026-09-17: home = start position of the robot, neutral = the show's).
+function neutralFromPose() {
   RIG.neutral = [...pose];
   saveRig();
+  $("tlStat").textContent = "show neutral = " + RIG.neutral.map(Math.round).join(" ") +
+    " — kept in Studio. The robot's start position is set with Keep this as robot home.";
+}
+async function homeFromPose() { // robot home: saved here AND on the robot
+  RIG.home = [...pose];
+  saveRig();
   renderRigUI();                      // the start° column shows the new numbers
-  const shown = RIG.neutral.map(Math.round).join(" ");
+  const shown = RIG.home.map(Math.round).join(" ");
   // Sent as ONE whole-pose line, not ten. Until 2026-09-10 this only ever saved
   // in the browser, so the editor and the robot disagreed about where home was
   // and nothing on the page said so.
   // Any link will do, exactly as "send rig" decides. liveLinked() was wrong
   // here: it also requires the live-follow tick, so with that off the button
   // saved in the browser and quietly sent the robot nothing.
-  if (!haveUsb() && !haveWifi()) {
-    $("tlStat").textContent = "start pose = " + shown +
+  if (!haveRobot()) {
+    $("robotStat").textContent = "robot home = " + shown +
       " — saved here. Connect the robot and press Send rig to give it these.";
     return;
   }
   try {
-    const r = await rawCmd("NEUTRAL " + RIG.neutral.map(fmtA).join(" "));
-    $("tlStat").textContent = /^ERR/i.test(r || "")
-      ? "the robot did not take the start pose: " + r
-      : "start pose = " + shown + " — the robot will start here from now on. "
+    const r = await rawCmd("NEUTRAL " + RIG.home.map(fmtA).join(" "));
+    $("robotStat").textContent = /^ERR/i.test(r || "")
+      ? "the robot did not take the home pose: " + r
+      : "robot home = " + shown + " — the robot will start here from now on. "
         + "Press Home to move there.";
   } catch (e) {
-    $("tlStat").textContent = "saved here, but it did not reach the robot: "
+    $("robotStat").textContent = "home saved here, but it did not reach the robot: "
       + (e.message || e);
   }
 }
-function mirrorLR() {
-  // swap the arms; flip the waist to the other side (reflect about 90); the
-  // shrug lifts both shoulders equally so it is unchanged.
-  pose = [pose[4], pose[5], pose[6], pose[7], pose[0], pose[1], pose[2], pose[3],
-          clampJ(8, 180 - pose[8]), pose[9]];
+// The Pose tab's two mirror buttons. mirrorLR is kept as the name the page has
+// always called, so nothing else has to change; mirrorFB is its front/back twin.
+function mirrorFB() { mirrorLR("fb"); }
+function mirrorLR(which) {
+  // Swapping the two blocks of four joint numbers is what this did, and it was
+  // not a mirror: the two arms do not carry the same `invert` flags, so the
+  // hand came out 613 mm from where it belonged (measured 2026-09-23, A31-6).
+  // mirrorPose() reflects the elbow and the hand in the body's own centre line
+  // and solves the arms to reach them, and it is the ONE place that rule
+  // lives - the timeline's ⇄ button calls the same function.
+  const m = mirrorPose(pose, which);
+  if (!m) {
+    $("tlStat").textContent = "the robot is not on screen yet, so there is "
+      + "nothing to mirror. Nothing was changed.";
+    return;
+  }
+  pose = m;
   poseChanged(false);
+  $("tlStat").textContent = which === "fb"
+    ? "mirrored front to back — each arm reaches the other way, on its own side"
+    : "mirrored left to right — each arm took the other's shape";
 }
 // --- timing ---
 // Show speed sets the automatic time; servo max speed sets the PHYSICAL
@@ -1641,13 +1824,42 @@ function deltaDeg(from, to) {
   for (let i = 0; i < NJ; i++) dmax = Math.max(dmax, Math.abs(to[i] - from[i]));
   return dmax;
 }
-function minTime(from, to) {
+// The floor AND the reason for it. Typing a faster °/s did nothing and said
+// nothing (user 2026-09-23: *when input the deg/s in sequence it not change
+// the time for me anymore*) because the peak limit had already won: with the
+// board's safe_dps at 60, pi/2 x delta / 60 floors every move at delta/38.2,
+// so any speed above about 38 °/s produces the identical time. The number was
+// never wrong; it was invisible. Every caller that shows a time to a person
+// asks for the reason too.
+function minTimeWhy(from, to) {
   // per joint (the slow WAIST servo counts too), the slowest joint wins
-  let need = 0;
-  for (let i = 0; i < NJ; i++)
-    need = Math.max(need, Math.abs(to[i] - from[i]) / jointMaxDps(i));
-  return Math.max(MIN_MOVE_MS, Math.ceil(need * 1000));
+  let servo = 0, slowest = 0;
+  for (let i = 0; i < NJ; i++) {
+    const need = Math.abs(to[i] - from[i]) / jointMaxDps(i);
+    if (need > servo) { servo = need; slowest = i; }
+  }
+  // safety floor, same as firmware nongmath::safeDuration (ease peaks at pi/2 x average)
+  const peak = deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, SAFE_DPS);
+  const need = Math.max(servo, peak);
+  const ms = Math.max(MIN_MOVE_MS, Math.ceil(need * 1000));
+  let why = "the 80 ms shortest-move floor", fix = "";
+  if (need * 1000 > MIN_MOVE_MS) {
+    if (peak >= servo) {
+      why = `the robot's peak speed limit, ${SAFE_DPS} °/s`;
+      fix = `Above about ${flatDps()} °/s nothing gets faster. Raise ` +
+            `Peak speed limit (Timing) to shorten it.`;
+    } else {
+      why = `${JOINT_LABELS[slowest] || ("joint " + (slowest + 1))} at its ` +
+            `servo max, ${Math.round(jointMaxDps(slowest))} °/s`;
+      fix = "Raise Servo max, or that joint's servo °/s in Setup > rig.";
+    }
+  }
+  return { ms, why, fix };
 }
+function minTime(from, to) { return minTimeWhy(from, to).ms; }
+// The show speed above which the peak limit decides every safety-limited move.
+// pi/2 is the ease curve's peak-to-average ratio, the same one the firmware uses.
+function flatDps() { return Math.floor(SAFE_DPS * 2 / Math.PI); }
 // A move runs at the sequence's speed unless that keyframe overrides it, so one
 // gesture can be slower or snappier than the rest of the show without hand-
 // computing its time. Speed and time are two views of the SAME thing: set a
@@ -1664,22 +1876,153 @@ function autoTime(from, to, dps) {
 function keyMin(i) { // physical minimum for keyframe i (0 = entry, unknown start)
   return i > 0 && keys[i - 1] ? minTime(keys[i - 1].pose, keys[i].pose) : MIN_MOVE_MS;
 }
+// A speed the servos cannot hold used to be replaced in the box with no word
+// said, so it read as *the number will not change*. Say what was kept and why.
+// The fastest Show speed that DOES anything. Above the peak limit's flat point
+// no move gets shorter, however large the number, so accepting a larger one is
+// the box lying (user 2026-09-23: *the show speed can adjust in the save dps*).
+// Raise the saved peak limit and this ceiling rises with it - measured on board
+// 67: safe_dps 120 -> 76 °/s, safe_dps 190 -> 121 °/s.
+function speedCeiling() { return Math.max(5, Math.min(slowestDps(), flatDps())); }
 function speedChanged() {
-  if (speedDps() > slowestDps()) $("speedDps").value = slowestDps();
+  const asked = speedDps();
+  let said = "";
+  if (asked > speedCeiling()) {
+    const cap = speedCeiling();
+    $("speedDps").value = cap;
+    said = flatDps() <= slowestDps()
+      ? `Show speed kept at ${cap} °/s — above that, the robot's peak speed ` +
+        `limit of ${SAFE_DPS} °/s decides every move and nothing gets faster. ` +
+        "Raise Peak speed limit and Save to robot to go quicker."
+      : `Show speed kept at ${cap} °/s — the slowest servo on this robot ` +
+        "cannot go faster. Raise Servo max to allow more.";
+  }
   recalcTimes();
   renderTimeline();
+  $("tlStat").textContent = said || timingSummary();
 }
-function recalcTimes() {   // keeps each keyframe's own speed override
+// One sentence naming the limit that is actually deciding move times now, so
+// the answer to *why did my number change nothing* is on the screen and not
+// only in a tooltip.
+function timingSummary() {
+  let peak = 0, servo = 0, free = 0;
+  for (let i = 1; i < keys.length; i++) {
+    if (!keys[i - 1]) continue;
+    const w = minTimeWhy(keys[i - 1].pose, keys[i].pose);
+    const auto = Math.max(MIN_MOVE_MS,
+      Math.round(deltaDeg(keys[i - 1].pose, keys[i].pose) / keyDps(i) * 1000));
+    if (auto >= w.ms) free++;
+    else if (w.why.indexOf("peak") >= 0) peak++;
+    else servo++;
+  }
+  if (!peak && !servo) return `every move runs at the speed you set (${speedDps()} °/s)`;
+  const bits = [];
+  if (peak) bits.push(`${peak} held by the robot's peak speed limit (${SAFE_DPS} °/s — ` +
+                      `above about ${flatDps()} °/s nothing gets faster)`);
+  if (servo) bits.push(`${servo} held by a servo's own top speed`);
+  return `${free} move(s) run at your speed; ` + bits.join(", ") +
+         ". Change Peak speed limit or Servo max in Timing to shorten them.";
+}
+// The peak limit is the Studio's own planning number. It was locked until a
+// board was connected, so away from the robot there was no way to make any
+// move faster at all (user 2026-09-23: *max servo speed in show i cannot
+// adjust anymore*). Editing it re-times the automatic moves here; SAVING it to
+// the board is still a separate, connected-only step, because a Studio that
+// plans faster than the robot allows would be lying about the show.
+function safetyLimitChanged() {
+  const want = Math.round(+$("safeDpsInput").value || 0);
+  if (!(want >= 5)) { $("safeDpsInput").value = SAFE_DPS; return; }
+  // A pinned time is never re-timed, even when it happens to equal the auto one.
+  const wasAuto = keys.map((k, i) => i > 0 && keys[i - 1] && !timePinned(i) &&
+    k.t === autoTime(keys[i - 1].pose, k.pose, keyDps(i)));
+  SAFE_DPS = want;
+  // Raising the limit raises what Show speed is allowed to be, so the two
+  // boxes stay honest about each other. Capped BEFORE re-timing, or the moves
+  // were timed at a speed the box no longer shows.
+  if (speedDps() > speedCeiling()) $("speedDps").value = speedCeiling();
+  for (let i = 1; i < keys.length; i++)
+    if (wasAuto[i]) keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
+  bumpKeys();
+  clampKeyTimes();
+  renderTimeline();
+  $("safeSpeedStat").textContent =
+    `Planning at ${want} °/s, so Show speed can now go up to ${speedCeiling()} °/s. ` +
+    (boardSafeDpsMax ? "Press Save to robot to make the robot use it too — it "
+                       + "takes effect after the board restarts."
+                     : "Not saved to any robot — connect first, then Save to robot.");
+}
+// INFO is the active board value. CFG only saves the NEXT boot's value, so do
+// not change SAFE_DPS when the operator presses Save.
+function adoptBoardSafety(module) {
+  const safe = Number(module && module.safe_dps);
+  const speeds = module && module.max_dps;
+  const max = Array.isArray(speeds) && speeds.length === NJ
+    ? Math.min(...speeds.map(Number)) : 0;
+  const input = $("safeDpsInput"), button = $("saveSafeDps");
+  if (!(safe >= 5) || !(max >= 5) || !Number.isFinite(max)) {
+    boardSafeDpsMax = 0;
+    boardSafePeer = 0;
+    input.disabled = false;         // still the Studio's own planning number
+    button.disabled = true;         // but there is nothing to save it to
+    $("safeSpeedStat").textContent = "This board does not report its safety speed, so " +
+      `nothing was changed on it. Studio still plans at ${SAFE_DPS} °/s — change it here ` +
+      "to make the editor's times shorter.";
+    return;
+  }
+  // Only automatically timed moves shorten. A hand-typed time is the user's
+  // choice and must not be silently replaced after reconnecting to a board.
+  const wasAuto = keys.map((k, i) => i > 0 && !timePinned(i) && k.t ===
+    autoTime(keys[i - 1].pose, k.pose, keyDps(i)));
+  const changed = safe !== SAFE_DPS;
+  SAFE_DPS = safe;
+  boardSafeDpsMax = max;
+  boardSafePeer = module.link ? Number(module.peer) || 0 : 0;
+  input.disabled = button.disabled = false;
+  input.min = 5;
+  input.max = Math.floor(max);
+  input.value = String(safe);
+  if (changed) {
+    for (let i = 1; i < keys.length; i++)
+      if (wasAuto[i]) keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
+    clampKeyTimes();
+    renderTimeline();
+  }
+  $("safeSpeedStat").textContent = `Active peak limit: ${safe} °/s. ` +
+    `For safety-limited moves, Show speed above about ${flatDps()} °/s will not shorten ` +
+    "them — raise this number and press Save to robot to go faster." +
+    (boardSafePeer ? ` Linked board #${boardSafePeer} needs the same limit.` : "");
+}
+// A TIME TYPED BY HAND IS A DECISION, NOT A CACHE.
+//
+// User 2026-09-23: *when i already adjust to higer time and i change the move a
+// little bit make the time it have the most not recreate the time of the rig
+// because i need that move to that time when i change i change it everytime
+// make me headace*. Nudging a pose ran the automatic timer over the top of the
+// number they had set, so every small correction cost them the timing again.
+//
+// So a typed time is PINNED (`k.tset`). Nothing that re-times automatically may
+// touch it, and nothing may make it shorter. Only clampKeyTimes may raise it,
+// and only to the physical minimum - a move the servos cannot do in that time
+// is not a choice anybody can make.
+//
+// Two ways out, both deliberate: type a °/s on that move, or press the pin on
+// the time box. Both say "time this one for me again".
+function timePinned(i) { return !!(keys[i] && keys[i].tset); }
+function pinTime(i) { if (keys[i]) keys[i].tset = true; }
+function unpinTime(i) { if (keys[i]) delete keys[i].tset; }
+function recalcTimes() {   // keeps each keyframe's own speed override AND its pin
   bumpKeys();
   for (let i = 1; i < keys.length; i++)
-    keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
+    if (!timePinned(i))
+      keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
+  clampKeyTimes();         // a pinned time may still be raised to what is possible
 }
 // ONE keyframe's predecessor changed (delete / reorder): re-time only it.
 // recalcTimes() would silently overwrite every hand-typed time on the line,
 // and a typed time wins over the automatic one by design.
 function retimeAt(i) {
   bumpKeys();
-  if (i >= 1 && keys[i])
+  if (i >= 1 && keys[i] && !timePinned(i))
     keys[i].t = autoTime(keys[i - 1].pose, keys[i].pose, keyDps(i));
   clampKeyTimes();
 }
@@ -1702,15 +2045,24 @@ function updateKey() {
   clearBadMarks();
   keys[selKey].pose = [...pose];
   bumpKeys();
-  if (selKey >= 1) keys[selKey].t = autoTime(keys[selKey - 1].pose, keys[selKey].pose, keyDps(selKey));
-  if (keys[selKey + 1]) keys[selKey + 1].t = autoTime(keys[selKey].pose, keys[selKey + 1].pose, keyDps(selKey + 1));
-  clampKeyTimes();
+  // A pinned time survives the edit. This line is where the headache was: a
+  // small correction to a pose re-ran the automatic timer over a number the
+  // operator had chosen, every single time (A31-12).
+  if (selKey >= 1 && !timePinned(selKey))
+    keys[selKey].t = autoTime(keys[selKey - 1].pose, keys[selKey].pose, keyDps(selKey));
+  if (keys[selKey + 1] && !timePinned(selKey + 1))
+    keys[selKey + 1].t = autoTime(keys[selKey].pose, keys[selKey + 1].pose, keyDps(selKey + 1));
+  clampKeyTimes();          // only the physical minimum may raise a pinned time
   renderTimeline();
 }
 function dupKey() {
   if (!keys[selKey]) return;
   clearBadMarks();
-  keys.splice(selKey + 1, 0, JSON.parse(JSON.stringify(keys[selKey])));
+  const copy = JSON.parse(JSON.stringify(keys[selKey]));
+  // The copy is a pose, not a second music cue: keeping the cues restarted
+  // the source's track (or stopped it) a second time at the copy.
+  delete copy.cues; delete copy.cuesAfter;
+  keys.splice(selKey + 1, 0, copy);
   bumpKeys();
   selKey++;
   // The copy keeps its source's time, which makes it a HOLD of that length:
@@ -1829,7 +2181,16 @@ function totalMs() {
   let t = 0;
   for (let i = 1; i < K.length; i++) t += K[i].t + (K[i].hold || 0);
   t += K.length ? (K[0].hold || 0) : 0;
-  return t;
+  return t + loopReturnMs();
+}
+// LOOP WRAP (user 2026-09-17): the arm has to travel from the last pose back to
+// the first, which takes real time under the safety cap. The preview used to
+// jump there at once and ran ahead of the robot. With loop on, that travel is a
+// segment of its own: index K.length, pose K[0]. Never written to the file.
+function loopReturnMs() {
+  const K = playKeys();
+  if (!$("loopChk") || !$("loopChk").checked || K.length < 2) return 0;
+  return autoTime(K[K.length - 1].pose, K[0].pose, speedDps());
 }
 function renderTimeline() {
   const box = $("keys");
@@ -1837,9 +2198,15 @@ function renderTimeline() {
   box.innerHTML = "";
   keys.forEach((k, i) => {
     const el = document.createElement("div");
-    el.className = "key" + (i === selKey ? " sel" : "") + (k.off ? " off" : "");
+    // seqStart: the first keyframe of one sequence inside a whole show on the
+    // bar. Without a line there, a 60-keyframe show is one undifferentiated
+    // wall and there is no way to see where "wave" ends and "bow" begins.
+    el.className = "key" + (i === selKey ? " sel" : "") + (k.off ? " off" : "")
+                 + (k.seqStart && i > 0 ? " seqstart" : "");
     el.onclick = (e) => {
-      if (e.target.tagName !== "INPUT" && e.target.tagName !== "BUTTON") selectKey(i);
+      // Not from a control: selecting re-renders the chip, which closed the music
+      // list the moment it opened (A26-49, a SELECT was not in the old list).
+      if (!e.target.closest("input,button,select,label,textarea")) selectKey(i);
     };
     // Clicking anywhere on the chip selects it, which is worth keeping for a
     // mouse - so the chip names the control that does the same job for the
@@ -1907,22 +2274,79 @@ function renderTimeline() {
         : "all keyframes active";
     };
     idx.appendChild(sk);
+    // WHICH ARM PLAYS THIS MOVE (A31-6, user 2026-09-23). "both" is every
+    // keyframe ever made before this existed, so it stays the default and
+    // nothing already saved changes behaviour. Pinning a move to one arm
+    // leaves the other exactly where the move before it left it.
+    if (i > 0) {
+      const armSel = document.createElement("select");
+      armSel.className = "karm";
+      [["", "both arms"],
+       ["front", "front arm (" + frontArmSide() + ")"],
+       ["back", "back arm (" + backArmSide() + ")"]].forEach(([v, label]) => {
+        const o = document.createElement("option"); o.value = v; o.textContent = label;
+        armSel.appendChild(o);
+      });
+      armSel.value = k.arm || "";
+      armSel.title = "which arm does this move. The other one holds where the "
+                   + "move before left it. Which arm faces the audience is set "
+                   + "in Setup > rig.";
+      armSel.onclick = (e) => e.stopPropagation();
+      armSel.onchange = () => {
+        if (armSel.value) k.arm = armSel.value; else delete k.arm;
+        bumpKeys();
+        clearBadMarks();
+        renderTimeline();
+        $("tlStat").textContent = armSel.value
+          ? `move ${i} is played by the ${armSel.value} arm (${armSel.value === "front" ? frontArmSide() : backArmSide()}); the other arm holds still`
+          : `move ${i} moves both arms`;
+      };
+      idx.appendChild(armSel);
+      // Mirror: the same gesture on the other arm. The rule lives in
+      // mirrorPose() (ik_4_dof_arm.js) and the Pose tab's Mirror button calls
+      // the same function, so the two can never drift apart.
+      // TWO mirrors, because a puppet has two (user 2026-09-23). Left/right
+      // swaps the arms; front/back turns each arm's reach round and leaves it
+      // on its own side. Separate buttons, not a mode: a mode you have to
+      // remember is a button you press wrongly.
+      [["⇄", "lr", "mirror LEFT and RIGHT: the same shape on the other arm"],
+       ["⇅", "fb", "mirror FRONT and BACK: each arm reaches the other way and "
+                   + "stays on its own side"]].forEach(([glyph, which, tip]) => {
+        const mir = document.createElement("button");
+        mir.className = "kmir";
+        mir.textContent = glyph;
+        mir.title = tip;
+        mir.onclick = (e) => {
+          e.stopPropagation();
+          mirrorKeyArms(i, which);
+        };
+        idx.appendChild(mir);
+      });
+    }
     const pv = document.createElement("div"); pv.className = "kpose";
     pv.textContent = k.pose.map(a => Math.round(a)).join(" ");
-    const kmin = keyMin(i);
+    // The floor AND its reason, so a °/s that shortens nothing can say which
+    // limit is holding the move (user 2026-09-23). i === 0 has no predecessor.
+    const lim = i > 0 && keys[i - 1] ? minTimeWhy(keys[i - 1].pose, k.pose) : null;
+    const kmin = lim ? lim.ms : MIN_MOVE_MS;
     const tr = document.createElement("div"); tr.className = "ktime";
     const tIn = document.createElement("input");
     tIn.type = "number"; tIn.value = k.t; tIn.min = kmin; tIn.step = 50;
     tIn.title = (i === 0 ? "entry time from wherever the robot is (ms)"
                          : "time from previous keyframe (ms)")
-              + ` — minimum ${kmin} ms (servo max speed); longer is always allowed`;
+              + ` — minimum ${kmin} ms, set by ${lim ? lim.why : "the 80 ms floor"}`
+              + "; longer is always allowed. Typing one PINS it: editing the pose "
+              + "afterwards will not re-time this move.";
+    if (k.tset) tIn.classList.add("pinned");
     tIn.onchange = () => {
       const want = Math.round(+tIn.value || 0);
       k.t = Math.max(kmin, want);
       delete k.dps;
+      pinTime(i);             // typed BY HAND: nothing automatic may replace it
       bumpKeys();             // a typed time wins over a speed override
       if (want < kmin)
-        $("tlStat").textContent = `time raised to ${kmin} ms — the servos can't move that far faster (slowest joint on this move: ${slowestDps()} °/s)`;
+        $("tlStat").textContent = `time raised to ${kmin} ms — held by ${lim ? lim.why : "the 80 ms floor"}. ` +
+          (lim && lim.fix ? lim.fix : "");
       renderTimeline();
     };
     // A move that follows a SUSPENDED keyframe no longer starts where its
@@ -1948,7 +2372,36 @@ function renderTimeline() {
     hIn.type = "number"; hIn.value = k.hold || 0; hIn.min = 0; hIn.step = 100;
     hIn.title = "hold this pose (ms) before the next move";
     hIn.onchange = () => { k.hold = Math.max(0, Math.round(+hIn.value || 0)); bumpKeys(); renderTimeline(); };
-    tr.append(document.createTextNode("T"), tIn, document.createTextNode("hold"), hIn);
+    tr.append(document.createTextNode("T"), tIn);
+    // The pin is a BUTTON, not a state you can only read: a time that is held
+    // and no way to let go of it is the same trap the other way round.
+    if (i > 0) {
+      const pin = document.createElement("button");
+      pin.className = "kpin" + (k.tset ? " on" : "");
+      pin.textContent = k.tset ? "📌" : "🕘";
+      pin.setAttribute("aria-pressed", k.tset ? "true" : "false");
+      pin.title = k.tset
+        ? "this time is yours and is kept when you edit the pose. Click to let "
+          + "Studio time this move again."
+        : "Studio times this move from the pose and the speed. Click to keep the "
+          + "time it has now, whatever you change afterwards.";
+      pin.onclick = (e) => {
+        e.stopPropagation();
+        if (k.tset) {
+          unpinTime(i);
+          retimeAt(i);
+          $("tlStat").textContent = `move ${i} is timed by Studio again: ${keys[i].t} ms.`;
+        } else {
+          pinTime(i);
+          $("tlStat").textContent = `move ${i} is held at ${k.t} ms — editing the `
+            + "pose will not change it. Only the servos' own minimum can raise it.";
+        }
+        bumpKeys();
+        renderTimeline();
+      };
+      tr.appendChild(pin);
+    }
+    tr.append(document.createTextNode("hold"), hIn);
     if (reNote) tr.appendChild(reNote);
     const mn = document.createElement("div");
     mn.className = "ktime";
@@ -1962,17 +2415,44 @@ function renderTimeline() {
       dIn.value = k.dps ? Math.round(k.dps) : "";
       dIn.placeholder = Math.round(speedDps());
       dIn.title = "this move's own speed (°/s). Empty = the sequence's " +
-                  Math.round(speedDps()) + " °/s. Setting it re-times this move; " +
-                  "typing a time above clears it again.";
+                  Math.round(speedDps()) + " °/s. Setting it re-times this move " +
+                  "and hands the timing back to Studio; typing a time above pins " +
+                  "it again. This move cannot go under " +
+                  kmin + " ms: " + (lim ? lim.why : "the 80 ms floor") + ".";
       dIn.onchange = () => {
         const v = Math.round(+dIn.value || 0);
-        if (v >= 5) { k.dps = Math.min(v, slowestDps()); k.t = autoTime(keys[i - 1].pose, k.pose, k.dps); }
-        else { delete k.dps; k.t = autoTime(keys[i - 1].pose, k.pose, speedDps()); }
+        const use = v >= 5 ? Math.min(v, slowestDps()) : speedDps();
+        if (v >= 5) k.dps = use; else delete k.dps;
+        // Asking for a SPEED is asking to be timed. It is the other way out of
+        // a pinned time, and the symmetric opposite of typing a time.
+        unpinTime(i);
+        const free = Math.max(MIN_MOVE_MS,
+          Math.round(deltaDeg(keys[i - 1].pose, k.pose) / use * 1000));
+        k.t = autoTime(keys[i - 1].pose, k.pose, use);
         bumpKeys();
         renderTimeline();
+        // Typing 200 where 38 is the ceiling used to change the box and nothing
+        // else. Name the limit instead of leaving the number looking ignored.
+        $("tlStat").textContent = (v >= 5 && v > use)
+          ? `${v} °/s kept at ${use} °/s — no servo on this robot goes faster.`
+          : (free < k.t
+              ? `move ${i} stays ${k.t} ms — held by ${lim ? lim.why : "the 80 ms floor"}. ` +
+                (lim && lim.fix ? lim.fix : "")
+              : `move ${i} now takes ${k.t} ms at ${Math.round(use)} °/s.`);
       };
-      mn.append(document.createTextNode("min " + kmin + " · "), dIn,
-                document.createTextNode("°/s"));
+      // A move whose time no speed can shorten says so on its own line, where
+      // the number is being typed — not only in a tooltip nobody hovers.
+      const held = lim && Math.max(MIN_MOVE_MS,
+        Math.round(deltaDeg(keys[i - 1].pose, k.pose) / keyDps(i) * 1000)) < lim.ms;
+      const minTxt = document.createElement("span");
+      minTxt.textContent = "min " + kmin + " · ";
+      if (held) {
+        minTxt.className = "statline";
+        minTxt.textContent = "min " + kmin + " ⚑ · ";
+        minTxt.title = "this move is already as short as it is allowed to be: " +
+                       lim.why + ". " + lim.fix;
+      }
+      mn.append(minTxt, dIn, document.createTextNode("°/s"));
     }
     // ♪ lives on the existing speed line rather than in a row of its own:
     // most moves never carry music, and a row per keyframe for a rare thing
@@ -2111,10 +2591,13 @@ function rewind() {
 // and the signature changes with it.
 let _pkCache = null;
 function keysSignature() {
-  let s = keys.length + "|" + speedDps();
+  // frontArm is in here because which arm "front" means changes every pinned
+  // move's pose, and a cache that missed that would draw the wrong run.
+  let s = keys.length + "|" + speedDps() + "|" + frontArmSide();
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
-    s += ";" + (k.name || "") + "," + (k.off ? 1 : 0) + "," + k.t + "," + (k.hold || 0) + "," +
+    s += ";" + (k.name || "") + "," + (k.arm || "") + "," + (k.tset ? 1 : 0) + "," +
+         (k.off ? 1 : 0) + "," + k.t + "," + (k.hold || 0) + "," +
          (k.dps || 0) + "," + k.pose + "," + (k.cues || []).join("|") + "," +
          (k.cuesAfter || []).join("|");
   }
@@ -2148,7 +2631,8 @@ function saveDraft() {
   clearTimeout(draftTimer);                 // coalesce a drag into one write
   draftTimer = setTimeout(() => {
     try {
-      if (keys.length <= 1) { localStorage.removeItem(DRAFT_KEY); return; }
+      // nothing to keep: too short, or identical to what is already on disk
+      if (keys.length <= 1 || !isDirty()) { localStorage.removeItem(DRAFT_KEY); return; }
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         at: Date.now(),
         name: ($("projName") && $("projName").value) || "",
@@ -2195,11 +2679,9 @@ function offerDraft() {
 }
 // Closing with unsaved keyframes asks first. The browser shows its own wording;
 // all a page can do is say that there IS something to lose.
+// Settings ▸ Saving can turn this off too; the draft still survives the close.
 window.addEventListener("beforeunload", (e) => {
-  if (keys.length <= 1) return;
-  let unsaved = false;
-  try { unsaved = !!localStorage.getItem(DRAFT_KEY); } catch (err) { unsaved = false; }
-  if (!unsaved) return;                     // saveProject() cleared it
+  if (!askUnsavedOn() || !isDirty()) return;
   e.preventDefault();
   e.returnValue = "";
 });
@@ -2223,6 +2705,22 @@ function buildPlayKeys() {
       return;
     }
     const prev = out.length ? out[out.length - 1] : null;
+    // A MOVE PINNED TO ONE ARM (A31-6). The other arm holds exactly where the
+    // previous played move left it, so "wave with the front arm" is one move
+    // and not a promise to keep re-typing eight numbers. Resolved HERE, where
+    // buildYaml and hubShowSteps both read, so the file, the preview and the
+    // robot can never disagree about what the far arm did. It is resolved
+    // BEFORE the re-timing below, because a move that only turns one arm
+    // covers less ground and must be timed for the ground it covers.
+    let posed = k.pose;
+    const own = armJoints(k.arm);
+    if (own && prev) {
+      posed = prev.pose.slice();
+      own.forEach(j => { posed[j] = k.pose[j]; });
+      // the body joints belong to nobody's arm and always follow the keyframe
+      posed[8] = k.pose[8];
+      posed[9] = k.pose[9];
+    }
     let t = k.t;
     if (prev && gap) {
       // This move is NOT the one its stored time was written for. With the
@@ -2240,11 +2738,11 @@ function buildPlayKeys() {
       // it needs the minimum, but max() held it at the old 400 ms and the arm
       // sat still for 400 ms going nowhere. Re-timing has to be able to
       // shorten a move as well as lengthen it.
-      t = autoTime(prev.pose, k.pose, k.dps || speedDps());
+      t = autoTime(prev.pose, posed, k.dps || speedDps());
     }
     // The name travels with the PLAYED move. buildYaml() writes from this
     // list, so a name left behind here never reaches the exported file.
-    out.push({ pose: k.pose, hold: k.hold || 0, src: i, dps: k.dps || 0, t,
+    out.push({ pose: posed, hold: k.hold || 0, src: i, dps: k.dps || 0, t,
                name: k.name || "",
                // cues travel with the PLAYED move, like the name above: both
                // buildYaml and hubShowSteps read this list, so a cue left
@@ -2259,6 +2757,35 @@ function buildPlayKeys() {
   return out;
 }
 function anySuspended() { return keys.some(k => k.off); }
+// The same gesture, arms swapped (A31-6). The rule lives in mirrorPose()
+// (rig_data.js) because it is made of rig numbers - each joint's zero, its
+// direction and its axis - and this file should not hold a second opinion
+// about them. A move pinned to one arm flips its pin too, or mirroring would
+// move the arm that is meant to be holding still.
+function mirrorKeyArms(i, which) {
+  const k = keys[i];
+  if (!k) return;
+  const m = mirrorPose(k.pose, which);
+  if (!m) {
+    $("tlStat").textContent = "this rig's two arms are not set up as mirror "
+      + "images (their rotation axes differ in Setup > rig), so there is no "
+      + "mirror to take. Nothing was changed.";
+    notice($("tlStat").textContent);
+    return;
+  }
+  k.pose = m;
+  if (k.arm === "front") k.arm = "back";
+  else if (k.arm === "back") k.arm = "front";
+  bumpKeys();
+  clearBadMarks();
+  if (i === selKey) { pose = [...k.pose]; poseChanged(false); renderSliders(); }
+  renderTimeline();
+  $("tlStat").textContent = which === "fb"
+    ? "move " + i + " mirrored front to back — each arm reaches the other way, "
+      + "and stays on its own side"
+    : "move " + i + " mirrored left to right — the same shape on the other arm"
+      + (k.arm ? ", now played by the " + k.arm + " arm" : "");
+}
 
 // ------- playback preview (cosine ease per segment — same as the firmware)
 function poseAt(ms) {
@@ -2275,7 +2802,12 @@ function poseAt(ms) {
     t += seg + (K[i].hold || 0);
     if (ms < t) return [...K[i].pose];
   }
-  return [...K[K.length - 1].pose];
+  const ret = loopReturnMs(), last = K[K.length - 1].pose;
+  if (ret && ms < t + ret) {
+    const f = 0.5 - 0.5 * Math.cos(Math.PI * (ms - t) / ret);
+    return last.map((a, j) => a + (K[0].pose[j] - a) * f);
+  }
+  return [...(ret ? K[0].pose : last)];
 }
 // Which MOVE is running at ms, or -1 when nothing is moving. The phases mirror
 // poseAt() exactly: hold at keyframe 0, move into 1, hold at 1, move into 2 …
@@ -2293,6 +2825,7 @@ function segmentAt(ms) {
     t += K[i].t + (K[i].hold || 0);
     if (ms < t) return -1;                     // holding on keyframe i
   }
+  if (K.length && ms < t + loopReturnMs()) return K.length;   // loop: back to the start
   return -1;
 }
 // ---- keeping playback alive when the tab is not in front -------------
@@ -2360,6 +2893,7 @@ function togglePlay() {
   $("playBtn").textContent = playing ? "❚❚ Pause" : "▶ Play";
   lastFrame = performance.now();
   lastPlayMs = 0;                 // fresh clock, so a pause never leaps forward
+  entryHold = false;
   keepAwake(playing);             // keep the tab off the throttling list
   lastLiveSeg = -1;
   if (playing && playT >= totalMs()) playT = 0;
@@ -2382,7 +2916,14 @@ function togglePlay() {
   // which is the whole reason it exists. This preview keeps drawing, and sends
   // nothing (playTick skips its live sends while hubDriven()).
   if (previewOnly) return;          // refused at the crash gate: draw only
-  if (hubDriven()) { hubPlay(playT); return; }
+  if (hubDriven()) {
+    // From the start the hub first TRAVELS to keyframe 0 (as long as the board
+    // needs); the show clock starts after. Hold the preview until then, or it
+    // runs ahead of the arm by the whole entry move (A26-50).
+    if (playT === 0) { entryHold = true; hubPlay(0).then(ok => ok ? waitEntry() : (entryHold = false)); }
+    else hubPlay(playT);
+    return;
+  }
   // A segment is the move INTO a keyframe, so segmentAt() starts at 1 and
   // keyframe 0 is never one of them. Put the robot on it first, or its first
   // move starts from wherever it happens to be standing instead of from the
@@ -2404,7 +2945,7 @@ function togglePlay() {
 // mid-show carried on moving — the thing that looked like two shows running
 // over each other, because it was.
 function liveLinked() {
-  return $("liveChk").checked && (haveUsb() || haveWifi());
+  return $("liveChk").checked && haveRobot();
 }
 // ---- who holds the clock -------------------------------------------------
 //
@@ -2428,7 +2969,7 @@ function hubDriven() {
 function hubShowSteps() {
   const K = playKeys();
   if (K.length < 2) return null;
-  return K.map((k, i) => ({
+  const steps = K.map((k, i) => ({
     pose: k.pose.map(v => +fmtA(v)),
     t: i === 0 ? minTime(pose, K[0].pose) : k.t,
     hold: k.hold || 0,
@@ -2437,6 +2978,10 @@ function hubShowSteps() {
     cues: k.cues || [],
     cues_after: k.cuesAfter || [],
   }));
+  // loop: the travel back to the start is a step of its own, timed like the preview
+  const ret = loopReturnMs();
+  if (ret) steps.push({ pose: steps[0].pose.slice(), t: ret, hold: 0, cues: [], cues_after: [] });
+  return steps;
 }
 async function hubPlay(fromMs) {
   const steps = hubShowSteps();
@@ -2447,6 +2992,8 @@ async function hubPlay(fromMs) {
       body: JSON.stringify({
         dev: moduleDev(), steps, loop: $("loopChk").checked,
         name: ($("seqName").value || "sequence").trim(), from_ms: Math.round(fromMs || 0),
+        watch: !document.hidden,        // stop the arm if this page freezes (A26-46)
+        music_stop_ms: showBarMusicStop(),   // a show's track may outlive its moves
       }),
     }).then(r => r.json());
     if (r.error) throw new Error(r.error);
@@ -2462,6 +3009,34 @@ async function hubPlay(fromMs) {
     return false;
   }
 }
+let entryHold = false;       // true while the hub travels to keyframe 0
+async function waitEntry() {
+  while (entryHold && playing) {
+    try {
+      const st = await fetch("/api/play").then(r => r.json());
+      if (!st.running || !st.entering) break;
+    } catch (e) { break; }             // no answer: let the preview run
+    await new Promise(r => setTimeout(r, 120));
+  }
+  entryHold = false;
+  lastPlayMs = 0;                      // start the clock now, not at Play
+}
+// Heartbeat for a hub-played show: a FROZEN page cannot beat, so the hub stops
+// the arm; a page that is hidden or closed says so first, and the show carries
+// on by itself as it always has (A26-46).
+setInterval(() => {
+  if (playing && !document.hidden && hubDriven())
+    fetch("/api/play/beat", { method: "POST", body: "{}" }).catch(() => {});
+}, 1000);
+function hubLeaving() {
+  try { navigator.sendBeacon("/api/play/beat", JSON.stringify({ leaving: true })); } catch (e) { /* no beacon: the timeout decides */ }
+}
+document.addEventListener("visibilitychange", () => {
+  if (!playing || !hubDriven()) return;
+  if (document.hidden) hubLeaving();
+  else fetch("/api/play/beat", { method: "POST", body: "{}" }).catch(() => {});
+});
+window.addEventListener("pagehide", () => { if (playing && hubDriven()) hubLeaving(); });
 function hubStop() {
   return fetch("/api/play/stop", { method: "POST" }).catch(() => {});
 }
@@ -2486,6 +3061,8 @@ function segRemaining(ms) {
     t += K[i].t + (K[i].hold || 0);
     if (ms < t) return 0;                      // in a hold, nothing is running
   }
+  const ret = loopReturnMs();
+  if (ret && ms < t + ret) return Math.max(1, Math.round(t + ret - ms));
   return 0;
 }
 function scrubTo(v) {
@@ -2596,18 +3173,22 @@ function nothingToWrite(where) {
     : "no keyframes yet";
   return true;
 }
-async function exportYaml() {
-  if (nothingToWrite("tlStat")) return;
+// opts.noAsk: saveAll() already asked. True when the file is on disk.
+async function exportYaml(opts) {
+  opts = opts || {};
+  if (nothingToWrite("tlStat")) return false;
+  const sig = workSig();                  // what THIS save writes, before any await
   const { name, yaml } = buildYaml();
   // SAVING OVER A FILE ASKS FIRST (user 2026-09-16: every save went to
   // my_move.yaml, because that is the name the box starts with).
   const have = [...$("seqList").options].map(o => o.value);
-  if (have.includes(name + ".yaml") &&
+  if (!opts.noAsk && have.includes(name + ".yaml") &&
       !confirm(name + ".yaml is already saved. Replace it?\n\n" +
                "Cancel, then type a new name in the sequence name box to keep both.")) {
     $("tlStat").textContent = "not saved — " + name + ".yaml was left as it was";
-    return;
+    return false;
   }
+  let ok = false;
   // Every failure path must SAY something: an unhandled rejection here left
   // the old status line standing, and a silent export reads as saved work.
   try {
@@ -2621,13 +3202,17 @@ async function exportYaml() {
     $("tlStat").textContent =
       `saved ${j.file} on this PC — voice answers and the other apps can use it now. ` +
       `Send to robot SD puts it on the board.`;
+    ok = true;
+    if (!opts.keepDraft) markSaved(sig, name, 0);
   } catch (e) {
     $("tlStat").textContent = "export failed — the hub is not answering, or "
       + "refused the name. Nothing was written. " + (e.message || e);
     notice($("tlStat").textContent);
   }
   await refreshSeqs();
-  $("seqList").value = name + ".yaml";   // the list shows what was just saved
+  if (ok) seqsChanged();   // the Shows list and other tabs too, not just this list
+  if (ok) $("seqList").value = name + ".yaml";   // the list shows what was just saved
+  return ok;
 }
 // --- rig setup UI ---
 const DIM_LABELS = {
@@ -2640,6 +3225,31 @@ const DIM_LABELS = {
 function renderRigUI() {
   const jb = $("rigJoints");
   jb.innerHTML = "";
+  // WHICH ARM THE AUDIENCE SEES FIRST (A31-6). One setting for the whole rig,
+  // above the joint table, because every move that says "front arm" means
+  // whichever arm this names - and it changes when the nong is turned round.
+  const fa = document.createElement("div"); fa.className = "row";
+  const fal = document.createElement("label");
+  fal.className = "lbl"; fal.htmlFor = "rigFrontArm";
+  fal.textContent = "Arm nearest the audience";
+  const fas = document.createElement("select");
+  fas.id = "rigFrontArm";
+  [["L", "the left arm is in front"], ["R", "the right arm is in front"]]
+    .forEach(([v, label]) => {
+      const o = document.createElement("option"); o.value = v; o.textContent = label;
+      fas.appendChild(o);
+    });
+  fas.value = frontArmSide();
+  fas.title = "left and right are the ROBOT's own left and right. This says "
+            + "which of them the audience sees first, so a move can be given to "
+            + "the front arm or the back arm by name.";
+  fas.onchange = () => {
+    RIG.frontArm = fas.value === "R" ? "R" : "L";
+    rigChanged();
+    renderTimeline();          // every pinned move now means the other arm
+  };
+  fa.append(fal, fas);
+  jb.appendChild(fa);
   // header
   const hdr = document.createElement("div"); hdr.className = "rigjrow";
   ["joint", "zero°", "start°", "min°", "max°", "axis", "inv"].forEach(t => {
@@ -2660,13 +3270,13 @@ function renderRigUI() {
     // a typed number goes straight past the min/max attributes, and this one is
     // written to the board and used on every boot.
     const neu = document.createElement("input");
-    neu.type = "number"; neu.min = 0; neu.max = 180; neu.value = RIG.neutral[i];
-    neu.title = "where this joint goes when the robot starts, and when you "
-              + "press Neutral or Home";
+    neu.type = "number"; neu.min = 0; neu.max = 180; neu.value = RIG.home[i];
+    neu.title = "robot home: where this joint goes when the robot starts, and "
+              + "when you press Home";
     neu.onchange = () => {
-      RIG.neutral[i] = Math.max(RIG.min[i], Math.min(RIG.max[i],
-                                clampDeg(+neu.value || 0)));
-      neu.value = RIG.neutral[i];          // show what was actually accepted
+      RIG.home[i] = Math.max(RIG.min[i], Math.min(RIG.max[i],
+                             clampDeg(+neu.value || 0)));
+      neu.value = RIG.home[i];             // show what was actually accepted
       rigChanged();
     };
     const lo = document.createElement("input");
@@ -2740,6 +3350,9 @@ function renderRigUI() {
       if (max) inp.max = max;
       inp.onchange = () => {
         let v = +inp.value || RIG[key][i];
+        // the board keeps WHOLE teeth (GEAR parses with toInt: 4.5 became 4),
+        // so a fraction here would preview a ratio the robot never uses
+        if (key === "gearPinion" || key === "gearGear") v = Math.round(v);
         v = Math.max(min, max ? Math.min(max, v) : v);
         RIG[key][i] = v; inp.value = v;
         rigChanged(); renderRigUI();   // the travel warning may have changed
@@ -2831,6 +3444,26 @@ function renderRigUI() {
 
   const db = $("rigDims");
   db.innerHTML = "";
+  // THE WHOLE BODY IN ONE CLICK. Asked 2026-09-18 (A26-72): the real robot's
+  // measurements should be something you PICK, not numbers somebody types from
+  // a drawing. The list is data (config/rig_presets.json) fetched from the hub,
+  // so a second robot costs one entry and no code here.
+  const bodyRow = document.createElement("div"); bodyRow.className = "jrow";
+  const bl = document.createElement("span");
+  bl.className = "jname"; bl.textContent = "body";
+  const bsel = document.createElement("select");
+  bsel.innerHTML = "<option value=''>use a measured body…</option>" +
+    RIG_PRESETS.map(p => `<option value="${p.id}">${p.label}</option>`).join("");
+  bsel.title = "sets every size below from a real robot; each one says where "
+             + "its numbers come from";
+  bsel.onchange = () => { if (bsel.value) { applyRigPreset(bsel.value); bsel.value = ""; } };
+  const why = document.createElement("span");
+  why.className = "hint"; why.style.fontSize = "11px";
+  why.textContent = RIG_PRESETS.length
+    ? "reach " + RIG_PRESETS[0].reach_mm + " mm"
+    : "";
+  bodyRow.append(bl, bsel, why);
+  db.appendChild(bodyRow);
   Object.entries(DIM_LABELS).forEach(([k, label]) => {
     const row = document.createElement("div"); row.className = "jrow";
     const name = document.createElement("span"); name.className = "jname"; name.textContent = label;
@@ -2860,6 +3493,83 @@ let SERVO_TYPES = {
   generic180: { label: "generic 180", min: 500, max: 2500, dps: 300, range: 180, hz: 50 },
   generic270: { label: "generic 270", min: 500, max: 2500, dps: 300, range: 270, hz: 50 },
 };
+// BODIES this rig can be set to (A26-72). Data, fetched from the hub; the one
+// entry below is only a fallback for opening Studio with no hub, and it is the
+// measured robot because that is the one somebody is standing next to.
+let RIG_PRESETS = [
+  { id: "nong_step_2026_09",
+    label: "Nong, measured from the STEP file (Sep 2026)",
+    source: "nong_assembly.STEP",
+    dims: { shoulderX: 88, shoulderY: 110, upperLenL: 128.7, upperLenR: 128.7,
+            foreLenL: 167.64, foreLenR: 167.64,
+            torsoW: 100, torsoH: 250, torsoD: 70, shrugPivot: 68.1 },
+    reach_mm: 296.34,
+    note: "arm links and shoulder spacing measured; the torso box is still the "
+        + "drawn stand-in" },
+];
+async function loadRigPresets() {
+  try {
+    const r = await fetch("/api/rigpresets").then(r => r.json());
+    if (r && r.ok && Array.isArray(r.presets) && r.presets.length) {
+      RIG_PRESETS = r.presets;
+      if (typeof renderRigUI === "function") renderRigUI();
+    }
+  } catch (e) { /* no hub: the fallback above stands */ }
+}
+loadRigPresets();
+function applyRigPreset(id) {
+  const p = RIG_PRESETS.find(x => x.id === id);
+  if (!p || !p.dims) return;
+  // Only the sizes. Zeroes, limits, gears and offsets belong to the servos
+  // fitted to THIS robot, and a body preset must never quietly rewrite them.
+  Object.entries(p.dims).forEach(([k, v]) => {
+    if (k in RIG.dims) RIG.dims[k] = +v;
+  });
+  // The servos measured with the body (A31-17: *load all from my step*) are
+  // offered, never assumed: they rewrite what the fitted servos need.
+  let servos = "";
+  if (p.servos && confirm(
+      "This body also knows its servos and gears from the STEP file:\n\n"
+      + presetServoSummary(p) + "\n\n"
+      + "OK — use them too\nCancel — keep the servo settings you have now"))
+    servos = applyPresetServos(p);
+  rigChanged(); renderRigUI(); buildRobot(); renderSliders();
+  if (typeof notice === "function")
+    notice(p.label + " — reach " + (p.reach_mm || "?") + " mm. "
+      + (servos ? "Servos set: " + servos + ". Press “Send Studio's limits to the robot” to put them on the robot. " : "")
+      + (p.note || ""));
+}
+function presetServoSummary(p) {
+  return Object.entries(p.servos).map(([name, s]) => {
+    const t = SERVO_TYPES[s.servo];
+    return name + ": " + (t ? t.label : s.servo)
+      + (s.gear ? ", gear " + s.gear[0] + ":" + s.gear[1] : "")
+      + (s.min != null ? ", " + s.min + "–" + s.max + "°" : "");
+  }).join("\n");
+}
+// Keyed by joint NAME in the file, so a reordered joint list cannot shift a
+// gear onto the wrong servo. Returns which joints changed, for the notice.
+function applyPresetServos(p) {
+  try { localStorage.setItem("nong_rig_prev", JSON.stringify(RIG)); }
+  catch (e) { /* storage full: the change still happens, just without undo */ }
+  const done = [];
+  Object.entries(p.servos).forEach(([name, s]) => {
+    const i = JOINT_NAMES.indexOf(name);
+    if (i < 0) return;
+    const t = SERVO_TYPES[s.servo];
+    if (t) {
+      RIG.pulseMin[i] = t.min; RIG.pulseMax[i] = t.max;
+      RIG.servoMaxDps[i] = t.dps; RIG.servoRange[i] = t.range; RIG.frameHz[i] = t.hz;
+    }
+    if (Array.isArray(s.gear) && s.gear.length === 2) {
+      RIG.gearPinion[i] = Math.round(s.gear[0]); RIG.gearGear[i] = Math.round(s.gear[1]);
+    }
+    if (s.min != null && s.max != null) { RIG.min[i] = +s.min; RIG.max[i] = +s.max; }
+    done.push(name);
+  });
+  saveRig();
+  return done.join(", ");
+}
 async function loadServoTypes() {
   try {
     const r = await fetch("/api/servos").then(r => r.json());
@@ -2977,7 +3687,7 @@ async function sendOffset(i, deg) {
   saveRig();
   renderOffsets();
   const st = $("trimStat");
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     if (st) st.textContent = JOINT_LABELS[i] + " offset " + clamped
       + "° — saved here. Connect the robot to move it.";
     return;
@@ -2995,7 +3705,7 @@ async function sendOffset(i, deg) {
 
 async function pullOffsets() {
   const st = $("trimStat");
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     if (st) st.textContent = "connect to the robot first (Robot link card)";
     notice(st.textContent);
     return;
@@ -3019,7 +3729,7 @@ async function clearOffsets() {
   saveRig();
   renderOffsets();
   const st = $("trimStat");
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     if (st) st.textContent = "every offset cleared here — the robot still has its own";
     return;
   }
@@ -3052,7 +3762,7 @@ function resetRig() {
 // send only the lines that differ — pushing again after a small edit is then a
 // couple of commands instead of fifty.
 async function pushLimits() {
-  if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first (Robot link card)"; notice($("limStat").textContent); return; }
+  if (!haveRobot()) { $("limStat").textContent = "connect to the robot first (Robot link card)"; notice($("limStat").textContent); return; }
   try {
     let have = null;
     $("limStat").textContent = "reading what the robot has…";
@@ -3073,7 +3783,7 @@ async function pushLimits() {
       const pmin = RIG.pulseMin[i], pmax = RIG.pulseMax[i];
       const dps = Math.round(RIG.servoMaxDps[i]);
       const rng = Math.round(RIG.servoRange[i]), hz = Math.round(RIG.frameHz[i]);
-      const neu = Math.round(RIG.neutral[i]);
+      const neu = Math.round(RIG.home[i]);          // the board's NEUTRAL = robot home
       const off = Math.round(RIG.offset[i] * 2) / 2;   // half a degree, as the buttons step
       const parts = [];
       if (!(same("min", i, mn) && same("max", i, mx)))
@@ -3132,7 +3842,7 @@ async function pushLimits() {
 }
 // read the module's current limits + gear back into the rig
 async function pullLimits() {
-  if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first"; notice($("limStat").textContent); return; }
+  if (!haveRobot()) { $("limStat").textContent = "connect to the robot first"; notice($("limStat").textContent); return; }
   try {
     const t = await rawCmd("LIMIT?");
     const j = JSON.parse(t);
@@ -3153,7 +3863,7 @@ async function pullLimits() {
     pull(j.max_dps, "servoMaxDps");
     pull(j.servo_range, "servoRange");
     pull(j.frame_hz, "frameHz");
-    pull(j.neutral, "neutral");
+    pull(j.neutral, "home");
     pull(j.offset, "offset");
     saveRig(); renderRigUI(); buildRobot(); renderSliders();
     $("limStat").textContent =
@@ -3163,6 +3873,371 @@ async function pullLimits() {
 // --- edit existing sequences ---
 // Parse a /moves YAML (the format this editor exports and the firmware plays)
 // back into timeline keyframes, so any saved sequence can be re-edited.
+// --- shows: saved sequences in series ---
+// User 2026-09-17: mix and match sequences (greeting, then byebye). A show is a
+// list of sequence NAMES saved by the hub in shows/*.json (main_python/shows.py);
+// the hub plays it as one run, so it works over WiFi or the cable.
+// join_dps/join_ms: how fast the move BETWEEN sequences may be (0 = off);
+// music: the show's own track on the robot's card (user 2026-09-27).
+function blankShow() {
+  return { name: "", loop: false, items: [], join_dps: 0, join_ms: 0,
+           music: "", music_vol: -1, music_loop: false, music_end: "", music_secs: 0 };
+}
+let showDraft = blankShow();
+let showOnBar = "";      // the show currently drawn on the time bar, "" = none
+let showBar = { keys: null, musicStopMs: null };
+function showBarMusicStop() { return showBar.keys === keys ? showBar.musicStopMs : null; }
+// The robot's speed limits as THIS page plans with them. The hub times every
+// move of the show to at least what the board will take (shows.move_floor),
+// so the time bar, the preview and the robot run on one clock - without them
+// the board stretched the joins and a 49 s mark was reached at 52 s.
+function showLimits() {
+  const max = [];
+  for (let i = 0; i < NJ; i++) max.push(jointMaxDps(i));
+  return { safe_dps: SAFE_DPS, max_dps: max };
+}
+
+async function refreshShows() {
+  try {
+    const [s, q] = await Promise.all([
+      fetch("/api/shows").then(r => r.json()),
+      fetch("/api/list?kind=sequences").then(r => r.json())]);
+    const sel = $("showList"), add = $("showAddSeq");
+    if (!sel || !add) return;
+    sel.innerHTML = "<option value=''>Open saved show…</option>";
+    (s.shows || []).forEach(n => { const o = document.createElement("option"); o.value = o.textContent = n; sel.appendChild(o); });
+    if (showDraft.name && (s.shows || []).includes(showDraft.name)) sel.value = showDraft.name;
+    const keep = add.value;   // a refresh must not drop what was being picked
+    add.innerHTML = "<option value=''>Add a saved sequence…</option>";
+    (q.files || []).filter(f => f.endsWith(".yaml")).forEach(f => {
+      const o = document.createElement("option"); o.value = o.textContent = f; add.appendChild(o);
+    });
+    if (keep && (q.files || []).includes(keep)) add.value = keep;
+  } catch (e) { /* Studio opened without the hub: nothing to list */ }
+}
+// User 2026-09-27: a sequence saved in Studio did not show in the Show list
+// until the page was reloaded. seqsChanged() is called after every save or
+// delete (the caller has already refreshed the Timeline list, and set its
+// pick): it refreshes the Shows list and tells other Studio tabs in this
+// browser. Other PCs and phones pick the change up when their tab comes back
+// into view or the Shows tab is opened.
+const seqChan = ("BroadcastChannel" in window) ? new BroadcastChannel("mice-seqs") : null;
+function seqsChanged() {
+  refreshShows();
+  if (seqChan) seqChan.postMessage("changed");
+}
+if (seqChan) seqChan.onmessage = () => { refreshSeqs().catch(() => {}); refreshShows(); };
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshShows(); });
+window.addEventListener("focus", () => refreshShows());
+// The track list is the robot's own /music folder (music_on_a_keyframe.js),
+// so only files really on the card are offered; a set track is kept even
+// while the robot is not connected.
+function renderShowMusic() {
+  const sel = $("showMusic");
+  if (!sel) return;
+  const cur = showDraft.music || "";
+  const names = musicList ? musicList.slice() : [];
+  if (cur && names.indexOf(cur) < 0) names.push(cur);
+  sel.innerHTML = "";
+  [["", "no music"]].concat(names.map(n => [n, n])).forEach(([v, label]) => {
+    const o = document.createElement("option"); o.value = v; o.textContent = label; sel.appendChild(o);
+  });
+  sel.value = cur;
+  sel.title = musicList ? "a track on the robot's card, played from the start of the show to its end"
+                        : (musicNote || "connect the robot to choose a track");
+  $("showMusicVol").value = showDraft.music_vol >= 0 ? showDraft.music_vol : "";
+  $("showMusicVol").disabled = !cur;
+  $("showMusicLoop").checked = !!showDraft.music_loop;
+  $("showMusicLoop").disabled = !cur;
+  // how long the track plays: with the moves, N s after, or N s in all
+  $("showMusicEndRow").style.display = cur ? "" : "none";
+  $("showMusicEnd").value = showDraft.music_end || "";
+  $("showMusicSecs").value = showDraft.music_end ? showDraft.music_secs : "";
+  $("showMusicSecs").style.display = showDraft.music_end ? "" : "none";
+  if (!musicList && robotLinked()) loadMusicList().then(() => { if (musicList) renderShowMusic(); });
+}
+// A track from THIS PC becomes the show's music (user 2026-09-27: *in show
+// make can add music from pc*). It goes onto the robot's card the same way a
+// keyframe's track does (uploadMusicFile), then is picked here.
+function addShowMusicFromPc() {
+  if (!robotLinked()) {
+    // said in a popup too: the status line sits far below this button, so
+    // the click looked like it did nothing (user 2026-09-27)
+    $("showStat").textContent = "Connect the robot first (Robot tab) — the track " +
+      "goes onto the robot's card, so it needs the robot.";
+    notice($("showStat").textContent);
+    return;
+  }
+  const pick = (name, whyNot, renamed) => {
+    if (!name) { $("showStat").textContent = whyNot; notice(whyNot); return; }
+    showDraft.music = name;
+    renderShowMusic();
+    showChanged();
+    $("showStat").textContent = name + " is on the robot's card and is now this " +
+      "show's music" + (renamed || "") + ". Save the show to keep it.";
+  };
+  pick.busy = msg => { $("showStat").textContent = msg; };   // a long upload is visible
+  pickMusicFile(null, pick);
+  $("showStat").textContent = "choose a track (.mp3 or .wav) on this computer…";
+}
+function showSettingChanged() {
+  readShowForm();
+  renderShowMusic();
+  showChanged();
+}
+function renderShow() {
+  const box = $("showItems");
+  if (!box) return;
+  $("showName").value = showDraft.name;
+  $("showLoop").checked = showDraft.loop;
+  $("showJoinDps").value = showDraft.join_dps > 0 ? showDraft.join_dps : "";
+  $("showJoinS").value = showDraft.join_ms > 0 ? showDraft.join_ms / 1000 : "";
+  renderShowMusic();
+  box.innerHTML = "";
+  if (!showDraft.items.length) {
+    box.innerHTML = "<div class='mini'>No sequences yet — add one above.</div>";
+    return;
+  }
+  showDraft.items.forEach((it, i) => {
+    const row = document.createElement("div"); row.className = "row";
+    const n = document.createElement("span"); n.className = "lbl"; n.textContent = (i + 1) + ".";
+    const name = document.createElement("span"); name.style.flex = "1"; name.textContent = it.seq;
+    const hold = document.createElement("input");
+    hold.type = "number"; hold.min = 0; hold.step = 100; hold.value = it.hold || 0; hold.style.width = "80px";
+    hold.title = "stand still for this long AFTER this sequence, in ms. 0 = run straight on into the next one.";
+    hold.onchange = () => { it.hold = Math.max(0, +hold.value || 0); showChanged(); };
+    // REPEAT, in the operator's two ways of saying it (user 2026-09-23: *loop
+    // for how many time like 60S or 30S or make it loop for 4 time 3 time*).
+    // The mode picks which unit the one number is in, so there is never a
+    // count and a duration both set and only one of them obeyed.
+    const mode = document.createElement("select");
+    mode.style.width = "110px";
+    mode.title = "play this sequence again: a number of times, or for a number of seconds";
+    [["", "play once"], ["times", "repeat × times"],
+     ["seconds", "repeat for seconds"], ["exact", "run for exactly … s"]]
+      .forEach(([v, label]) => {
+        const o = document.createElement("option"); o.value = v; o.textContent = label; mode.appendChild(o);
+      });
+    mode.value = it.repeat_mode || "";
+    const rep = document.createElement("input");
+    rep.type = "number";
+    rep.min = mode.value === "times" ? 2 : (mode.value === "exact" ? 0.1 : 1);
+    rep.step = mode.value === "seconds" ? 5 : 1;
+    rep.style.width = "70px";
+    rep.value = it.repeat || "";
+    rep.style.display = mode.value ? "" : "none";
+    rep.title = mode.value === "seconds"
+      ? "keep repeating until this many seconds have passed. A pass is never cut in half, so the last one finishes and the item runs a little over."
+      : mode.value === "exact"
+        ? "this sequence gets exactly this many seconds and no more. It is cut "
+          + "wherever it has got to, and the move into the next sequence's first "
+          + "pose is timed to arrive right on the deadline — so the show keeps to "
+          + "its timetable and the join is not visible."
+        : "how many times this sequence plays in a row";
+    mode.onchange = () => {
+      it.repeat_mode = mode.value;
+      if (!mode.value) it.repeat = 0;
+      else if (!(it.repeat > 0)) it.repeat = mode.value === "times" ? 2 : 30;
+      if (mode.value === "exact" && it.repeat < 0.1) it.repeat = 30;
+      renderShow(); showChanged();
+    };
+    rep.onchange = () => {
+      it.repeat = Math.max(mode.value === "times" ? 2 : 0.1, +rep.value || 0);
+      renderShow(); showChanged();
+    };
+    const unit = document.createElement("span"); unit.className = "mini";
+    unit.textContent = mode.value === "times" ? "×" : (mode.value ? "s" : "");
+    const btn = (label, title, fn) => { const b = document.createElement("button"); b.textContent = label; b.title = title; b.onclick = fn; return b; };
+    // Speed in THIS show only, % of the sequence's saved timing (user
+    // 2026-09-27). The time bar is redrawn from the hub, so it follows.
+    const spd = document.createElement("input");
+    spd.type = "number"; spd.min = 10; spd.max = 400; spd.step = 10;
+    spd.style.width = "64px";
+    spd.value = it.speed_pct || 100;
+    spd.setAttribute("aria-label", "speed of " + it.seq + " in this show, percent");
+    spd.title = "how fast this sequence runs in this show: 100 = as saved, 50 = half " +
+      "speed, 200 = twice as fast. Pauses keep their length, and a move is never " +
+      "faster than the robot allows.";
+    spd.onchange = () => {
+      it.speed_pct = Math.max(10, Math.min(400, Math.round(+spd.value || 100)));
+      spd.value = it.speed_pct; showChanged();
+    };
+    row.append(n, name, mode, rep, unit, document.createTextNode("speed"), spd,
+      document.createTextNode("%"), document.createTextNode("pause"), hold,
+      btn("▲", "play earlier", () => { moveShowItem(i, -1); showChanged(); }),
+      btn("▼", "play later", () => { moveShowItem(i, 1); showChanged(); }),
+      btn("✕", "take out of this show", () => { showDraft.items.splice(i, 1); renderShow(); showChanged(); }));
+    box.appendChild(row);
+  });
+}
+// The show on the time bar is redrawn whenever the show changes, but ONLY if
+// it is already on it: loading a show over keyframes somebody is editing,
+// because they typed a pause, would be the edit disappearing under them.
+function showChanged() { if (showOnBar) showOnTimeline(true); }
+function readShowForm() {
+  showDraft.name = $("showName").value.trim();
+  showDraft.loop = $("showLoop").checked;
+  showDraft.join_dps = Math.max(0, +$("showJoinDps").value || 0);
+  showDraft.join_ms = Math.max(0, Math.round((+$("showJoinS").value || 0) * 1000));
+  showDraft.music = $("showMusic").value;
+  const v = $("showMusicVol").value;
+  showDraft.music_vol = showDraft.music && v !== ""
+    ? Math.max(0, Math.min(100, Math.round(+v || 0))) : -1;
+  showDraft.music_loop = !!showDraft.music && $("showMusicLoop").checked;
+  showDraft.music_end = showDraft.music ? $("showMusicEnd").value : "";
+  let secs = Math.max(0, +$("showMusicSecs").value || 0);
+  // a mode just picked starts from a number that does something
+  if (showDraft.music_end && $("showMusicSecs").value === "")
+    secs = showDraft.music_end === "total" ? 60 : 5;
+  showDraft.music_secs = showDraft.music_end ? secs : 0;
+  return showDraft;
+}
+function newShow() { showDraft = blankShow(); renderShow(); $("showStat").textContent = "new show — add sequences, then Save."; }
+function addShowItem() {
+  const f = $("showAddSeq").value;
+  if (!f) { $("showStat").textContent = "pick a saved sequence to add first."; return; }
+  showDraft.items.push({ seq: f, hold: 0 });
+  renderShow();
+}
+function moveShowItem(i, d) {
+  const j = i + d, it = showDraft.items;
+  if (j < 0 || j >= it.length) return;
+  [it[i], it[j]] = [it[j], it[i]];
+  renderShow();
+}
+async function openShow() {
+  const n = $("showList").value;
+  if (!n) return;
+  const r = await fetch("/api/show?name=" + encodeURIComponent(n)).then(r => r.json());
+  if (!r.ok) { $("showStat").textContent = "cannot open " + n + ": " + (r.error || "not found"); notice($("showStat").textContent); return; }
+  showDraft = Object.assign(blankShow(), r.show); showDraft.name = showDraft.name || n;
+  renderShow();
+  $("showStat").textContent = "opened " + n + " (" + showDraft.items.length + " sequences).";
+  // User 2026-09-23: *when click in show and we have the all sequence show all
+  // of it in nong studio too in series*. Opening a show IS the click, so the
+  // whole chain goes on the time bar - asking first only when the bar holds
+  // unsaved keyframes, which are somebody's work.
+  await showOnTimeline(false, true);
+}
+// Every sequence of the show on ONE timeline, end to end, as the robot runs it.
+// The steps come from the HUB (/api/show/steps), not from re-reading the yaml
+// here: the chaining rule and the repeats live in main_python/shows.py, and a
+// second copy in JavaScript would drift until the editor showed a run the
+// robot does not perform.
+async function showOnTimeline(quiet, onlyIfSafe) {
+  const s = readShowForm();
+  if (!s.items.length) {
+    if (!quiet) $("showStat").textContent = "add at least one sequence first.";
+    return false;
+  }
+  // The same question every other loader asks (A31-18/A31-19). A quiet redraw
+  // (a pause typed in the show) never pops a dialog: with unsaved edits on
+  // the bar it just leaves them and says so.
+  if (quiet && isDirty()) {
+    $("showStat").textContent = "the time bar has edits that are not saved, so the "
+      + "show was not redrawn over them. Press ⇣ Show on the time bar to redraw it.";
+    return false;
+  }
+  if (!quiet && !(await askUnsaved("put " + (s.name || "this show") + " on the time bar"))) {
+    $("showStat").textContent = (onlyIfSafe ? "opened " + (s.name || "this show") + " — " : "")
+      + "the time bar was left as it was.";
+    return false;
+  }
+  try {
+    const j = await showPost("/api/show/steps", { show: s, limits: showLimits() });
+    const steps = j.steps || [], marks = j.marks || [];
+    if (steps.length < 2) throw new Error("this show has fewer than two poses");
+    const startOf = {}, travel = {}, taken = new Set(marks.map(m => m.step));
+    let prev = "";
+    marks.forEach(m => {
+      // pass 1 of an item is where its NAME goes; later passes say which pass
+      const name = m.pass > 1
+        ? m.seq.replace(/\.yaml$/, "") + " ×" + m.pass
+        : m.seq.replace(/\.yaml$/, "");
+      // After an "exactly N s" item the move into this pose is paid from THAT
+      // item's seconds. Drawn under the new name, the new sequence seemed to
+      // start early (user 2026-09-23, 42 s item). The move stays with the cut
+      // item; the new name goes on the next pose, which starts on the deadline.
+      if (m.handover && m.step + 1 < steps.length && !taken.has(m.step + 1)) {
+        travel[m.step] = prev + " → " + name;
+        startOf[m.step + 1] = name;
+      } else startOf[m.step] = name;
+      prev = m.seq.replace(/\.yaml$/, "");
+    });
+    keys = steps.map((st, i) => {
+      const k = { pose: st.pose.map(Number), t: Math.round(st.t || 0),
+                  hold: Math.round(st.hold || 0) };
+      if (travel[i] !== undefined) k.name = travel[i];
+      if (startOf[i] !== undefined) { k.name = startOf[i]; k.seqStart = true; }
+      // the file's own cue lines ride along so a preview plays the same music
+      if (st.cues && st.cues.length) k.cues = st.cues.slice();
+      // the hub's wire name is cues_after; Studio's own field is cuesAfter
+      if (st.cues_after && st.cues_after.length) k.cuesAfter = st.cues_after.slice();
+      return k;
+    });
+    // when the show's track stops, for ▶ on the time bar too - tied to THIS
+    // key list, so a sequence loaded over the bar later does not inherit it
+    showBar = { keys, musicStopMs: j.music_stop_ms == null ? null : j.music_stop_ms };
+    selKey = 0;
+    playT = 0;
+    bumpKeys();
+    clearBadMarks();
+    renderTimeline();
+    // drawn from saved files, so nothing on the bar is unsaved work yet; it is
+    // no file's own moves either, so saving it still asks before replacing one
+    markSaved(workSig(), "", 0);
+    showOnBar = s.name || "(unsaved show)";
+    const secs = (keys.reduce((a, k) => a + k.t + (k.hold || 0), 0) / 1000).toFixed(1);
+    $("showStat").textContent = `${showOnBar} is on the time bar: ${marks.length} ` +
+      `sequence pass(es), ${keys.length} keyframes, ${secs}s. Saving a SEQUENCE ` +
+      "from here would save the whole show as one file.";
+    return true;
+  } catch (e) {
+    $("showStat").textContent = "could not draw the show: " + (e.message || e);
+    notice($("showStat").textContent);
+    return false;
+  }
+}
+async function showPost(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.ok === false || j.error) throw new Error(j.need_login ? "log in first" : (j.error || "HTTP " + r.status));
+  return j;
+}
+async function saveShow() {
+  const s = readShowForm();
+  if (!s.name) { $("showStat").textContent = "give the show a name first."; return; }
+  try {
+    const j = await showPost("/api/show/save", { show: s });
+    $("showStat").textContent = (j.replaced ? "saved over " : "saved ") + s.name + ".";
+    refreshShows();
+  } catch (e) { $("showStat").textContent = "not saved: " + (e.message || e); notice($("showStat").textContent); }
+}
+async function deleteShow() {
+  const n = $("showList").value || readShowForm().name;
+  if (!n) { $("showStat").textContent = "open a show to delete first."; return; }
+  if (!confirm("Delete the show " + n + "?\n\nIt is moved to shows/.deleted, not erased. Its sequences stay.")) return;
+  try {
+    await showPost("/api/show/delete", { name: n });
+    newShow(); refreshShows();
+    $("showStat").textContent = n + " deleted (kept in shows/.deleted).";
+  } catch (e) { $("showStat").textContent = "not deleted: " + (e.message || e); notice($("showStat").textContent); }
+}
+async function playShow() {
+  const s = readShowForm();
+  const dev = moduleDev();
+  if (!dev) { $("showStat").textContent = "connect to the robot first (Robot tab)."; notice($("showStat").textContent); return; }
+  if (!s.items.length) { $("showStat").textContent = "add at least one sequence first."; return; }
+  try {
+    await showPost("/api/show/play", { dev, show: s, limits: showLimits() });
+    $("showStat").textContent = "the hub is running " + (s.name || "this show") +
+      " — it keeps going with this page closed. ⏹ Stop ends it.";
+  } catch (e) { $("showStat").textContent = "did not start: " + (e.message || e); notice($("showStat").textContent); }
+}
+async function stopShow() {
+  try { await fetch("/api/play/stop", { method: "POST" }); $("showStat").textContent = "stopped."; }
+  catch (e) { $("showStat").textContent = "the hub did not answer the stop."; }
+}
 // --- music on a keyframe ---
 //
 // A move's music is a cue the FILE already carries: `play: song.mp3` before
@@ -3176,6 +4251,7 @@ async function pullLimits() {
 let musicList = null;        // null = never read, [] = card has no tracks
 let musicNote = "";          // why the list is not usable, in plain words
 let musicBusy = false;
+function robotLinked() { return haveRobot(); }
 const musOpen = new Set();   // which keyframes have the picker open
 
 function keyCue(k, key) {
@@ -3208,7 +4284,9 @@ async function loadMusicList() {
   musicBusy = true;
   musicNote = "reading the robot's music folder…";
   try {
-    if (!liveLinked()) throw new Error("offline");
+    // Any link will do. liveLinked() also needs the live tick, so with it off the
+    // picker stayed locked and the volume with it (A26-49).
+    if (!robotLinked()) throw new Error("offline");
     const r = await fetch("/api/dev/files?dir=/music&dev="
                           + encodeURIComponent(moduleDev()));
     const list = await r.json();
@@ -3229,44 +4307,142 @@ async function loadMusicList() {
 // goes as raw bytes through the hub, which already knows how to reach this
 // module over WiFi or down a cable. A browser holding the cable itself
 // (Web Serial) has no hub path, and says so rather than failing quietly.
-async function pickMusicFile(k) {
+// `pick(name, whyNot)` chooses the track once it is on the card; by default it
+// goes on keyframe k. A failed upload calls it with no name and the reason. The Shows tab passes its own, so a show's track comes the same way.
+async function pickMusicFile(k, pick) {
   const inp = document.createElement("input");
   inp.type = "file";
   inp.accept = ".mp3,.wav,audio/mpeg,audio/wav";
   inp.onchange = () => {
     const f = inp.files && inp.files[0];
-    if (f) uploadMusicFile(k, f);
+    if (f) uploadMusicFile(k, f, pick);
   };
   inp.click();
 }
 // The upload itself, given a file: separate from the dialog because a file
 // picker cannot be opened by a script, and an upload path no check can reach
 // is an upload path nothing guards.
-async function uploadMusicFile(k, f) {
+// The robot's card takes a track name of English letters, digits, space, dot,
+// _ and - only (the hub's SAFE_NAME, and the firmware's command line). A Thai
+// name was refused, so it is renamed here and the new name is said out loud
+// (user 2026-09-27, ฟอนลองแมปง.mp3). What is left of the name is kept; a name
+// with nothing left becomes track-<month><day>-<hour><minute>.
+function robotTrackName(name) {
+  const ok = /^[A-Za-z0-9._ -]{1,80}$/;
+  if (ok.test(name) && name[0] !== ".") return name;
+  const dot = name.lastIndexOf(".");
+  const ext = dot > 0 ? name.slice(dot).replace(/[^A-Za-z0-9.]/g, "") : "";
+  let base = (dot > 0 ? name.slice(0, dot) : name).replace(/[^A-Za-z0-9._ -]+/g, "")
+    .replace(/^[ ._-]+|[ .]+$/g, "");
+  if (!/[A-Za-z0-9]/.test(base)) {
+    const d = new Date(), two = n => String(n).padStart(2, "0");
+    base = "track-" + two(d.getMonth() + 1) + two(d.getDate()) + "-" + two(d.getHours()) + two(d.getMinutes());
+  }
+  return (base.slice(0, 80 - ext.length) + ext);
+}
+async function uploadMusicFile(k, f, pick) {
   if (usbDirect()) {
     musicNote = "this browser is holding the cable itself, so the hub cannot "
               + "send the file. Connect through the hub, or add the track on "
               + "the module website: Files ▸ /music.";
+    if (pick) pick("", musicNote);
     renderTimeline();
     return;
   }
+  const stop = why => { musicNote = why; if (pick) pick("", why); renderTimeline(); };
+  // LOGGED OUT BY A HUB RESTART. Sessions live in the hub's memory, so a
+  // restarted hub refuses the upload - and a refused body over 4 MB is not
+  // read (DRAIN_LIMIT), so the browser only saw "Failed to fetch" instead of
+  // the reason (user 2026-09-27, a 4.2 MB mp3). Ask first, say it plainly.
+  try {
+    const w = await fetch("/api/whoami").then(r => r.json());
+    if (!w.authed) {
+      currentUser = null;              // the page still thought it was logged in
+      showTab("robot");                // which opens the login card
+      return stop("log in again first — the hub was restarted or your login ran "
+        + "out. Log in on the card that just opened, then add the track again.");
+    }
+  } catch (e) { /* no answer: let the upload itself say what is wrong */ }
+  const name = robotTrackName(f.name);
+  const renamed = name !== f.name ? " (saved on the robot as " + name + " — its card "
+    + "only takes English letters and numbers in a name)" : "";
   musicNote = "sending " + f.name + " to the robot…";
+  if (pick && pick.busy) pick.busy(musicNote);
   renderTimeline();
   try {
-    const r = await fetch("/api/dev/upload?dir=/music&name="
-                          + encodeURIComponent(f.name) + "&dev="
+    // The HUB sends it, on its own thread (background=1), and this page
+    // watches /api/upload/progress. Over a cable a song is tens of thousands
+    // of 120-byte commands; one request held open that long does not survive.
+    const r = await fetch("/api/dev/upload?background=1&dir=/music&name="
+                          + encodeURIComponent(name) + "&dev="
                           + encodeURIComponent(moduleDev()),
                           { method: "POST", body: await f.arrayBuffer() });
-    const said = (await r.text()).trim();
-    if (!said.startsWith("OK")) throw new Error(said);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.error || j.ok === false)
+      throw new Error(j.need_login ? "log in first" : (j.error || "HTTP " + r.status));
+    const end = await watchUpload(name);
+    if (end.error) throw new Error(end.error);
     musicList = null;                   // the card has one more file on it now
     await loadMusicList();
-    setKeyCue(k, "play", f.name);
-    musicNote = f.name + " is on the robot's card — press ▶ to hear it";
+    if (pick) pick(name, "", renamed); else setKeyCue(k, "play", name);
+    musicNote = name + " is on the robot's card — press ▶ to hear it" + renamed;
   } catch (e) {
     musicNote = "the track did not reach the robot: " + (e.message || e);
+    if (pick) pick("", musicNote);
   }
   renderTimeline();
+}
+// The wheel. A modal <dialog> over the whole page (user 2026-09-27: *show the
+// wheel, how many percent, and say nothing else can be done - only send*):
+// the robot's line is busy with the file, so anything clicked meanwhile would
+// only queue behind it. Cancel is the one way out; the hub then removes the
+// half-written file so a cut-off song is never left on the card.
+function watchUpload(name) {
+  let dlg = $("uploadDlg");
+  if (!dlg) {
+    dlg = document.createElement("dialog");
+    dlg.id = "uploadDlg"; dlg.className = "askdlg updlg";
+    dlg.setAttribute("aria-labelledby", "uploadTitle");
+    dlg.innerHTML = '<h2 id="uploadTitle">Sending music to the robot</h2>'
+      + '<div class="upwheel" id="uploadWheel" role="progressbar" aria-valuemin="0" '
+      + 'aria-valuemax="100"><span id="uploadPct">0%</span></div>'
+      + '<p class="mini" id="uploadText"></p>'
+      + '<p class="mini">Please wait. Nothing else can be done until it is sent — '
+      + 'the robot is busy taking the file.</p>'
+      + '<div class="row"><button id="uploadCancel">Cancel sending</button></div>';
+    document.body.appendChild(dlg);
+  }
+  const mb = n => (n / 1048576).toFixed(1) + " MB";
+  return new Promise(resolve => {
+    let done = false;
+    const finish = s => { if (done) return; done = true; clearInterval(t); dlg.close(); resolve(s); };
+    $("uploadCancel").disabled = false;
+    $("uploadCancel").onclick = () => {
+      $("uploadCancel").disabled = true;
+      $("uploadText").textContent = "cancelling — taking the half-sent file back off the card…";
+      fetch("/api/upload/cancel", { method: "POST" }).catch(() => {});
+    };
+    dlg.oncancel = e => e.preventDefault();          // Escape does not hide it
+    const tick = async () => {
+      let s;
+      try { s = await fetch("/api/upload/progress").then(r => r.json()); }
+      catch (e) { return; }                          // one missed poll is not an error
+      const pct = s.total ? Math.floor(100 * s.sent / s.total) : 0;
+      $("uploadWheel").style.setProperty("--p", pct);
+      $("uploadWheel").setAttribute("aria-valuenow", pct);
+      $("uploadPct").textContent = pct + "%";
+      // time left from the speed so far - only once there is a speed to go on
+      const secs = (Date.now() / 1000) - (s.started || 0);
+      const left = s.sent > 0 && secs > 2 ? (s.total - s.sent) / (s.sent / secs) : 0;
+      if (!$("uploadCancel").disabled)
+        $("uploadText").textContent = name + " — " + mb(s.sent) + " of " + mb(s.total)
+          + (left ? ", about " + (left >= 90 ? Math.round(left / 60) + " min" : Math.round(left) + " s") + " left" : "");
+      if (!s.running) finish(s);
+    };
+    const t = setInterval(tick, 500);
+    dlg.showModal();
+    tick();
+  });
 }
 
 // The picker for one keyframe: a track and a level, or plain words about why
@@ -3330,8 +4506,8 @@ function musicRow(k, i) {
   // the robot, and neither was worth walking to another page for.
   const play = document.createElement("button");
   play.type = "button"; play.className = "kmusbtn"; play.textContent = "▶";
-  play.disabled = !cur || !liveLinked();
-  play.title = !liveLinked() ? "connect the robot to hear it"
+  play.disabled = !cur || !robotLinked();
+  play.title = !robotLinked() ? "connect the robot to hear it"
              : cur ? "play " + cur + " on the robot now, once through"
                    : "choose a track first";
   play.onclick = async () => {
@@ -3344,7 +4520,7 @@ function musicRow(k, i) {
   };
   const stop = document.createElement("button");
   stop.type = "button"; stop.className = "kmusbtn"; stop.textContent = "■";
-  stop.disabled = !liveLinked();
+  stop.disabled = !robotLinked();
   stop.title = "stop the sound";
   stop.onclick = async () => {
     try { musicNote = await rawCmd("PLAY STOP"); } catch (e) { musicNote = String(e.message || e); }
@@ -3352,8 +4528,8 @@ function musicRow(k, i) {
   };
   const add = document.createElement("button");
   add.type = "button"; add.className = "kmusbtn"; add.textContent = "＋";
-  add.disabled = !liveLinked();
-  add.title = liveLinked() ? "put a track from this PC onto the robot's card"
+  add.disabled = !robotLinked();
+  add.title = robotLinked() ? "put a track from this PC onto the robot's card"
                            : "connect the robot to add a track";
   add.onclick = () => pickMusicFile(k);
   row.append(document.createTextNode("♪"), sel, vol, rep, play, stop, add);
@@ -3373,7 +4549,13 @@ function parseSeqYaml(text) {
   // own words and handed back to the file and to the hub, so a show edited
   // here keeps its music instead of losing it on the way through (A24-22).
   let pend = [];
+  // buildYaml writes a move's name as an indented comment line above it. It
+  // was thrown away with every other comment, so reopening a saved YAML lost
+  // every move name. File-level comments (column 0) are not names.
+  let pendName = "";
   for (const raw of text.split(/\r?\n/)) {
+    const nm = raw.match(/^\s+#\s*(.*?)\s*$/);
+    if (nm) { pendName = nm[1]; continue; }
     const line = raw.replace(/#.*$/, "").trimEnd();
     let m;
     if ((m = line.match(/^name:\s*(.+)$/))) out.name = m[1].trim();
@@ -3386,10 +4568,19 @@ function parseSeqYaml(text) {
       if ((nums.length === ARMJ || nums.length === NJ) && nums.every(n => !isNaN(n))) {
         while (nums.length < NJ) nums.push(90);
         const k = { pose: nums.map((v,i)=>clampJ(i,v)), t: m[2] ? +m[2] : 0, hold: 0 };
+        // A time from the FILE is deliberately NOT pinned. Pinning it was
+        // tried on 2026-09-23 and broke the thing every sequence relies on:
+        // changing Show speed re-times a loaded sequence, which is what makes
+        // a re-edit follow the new pace (check_sequences, "leaves its
+        // neighbours alone"). A pin is for a time THIS person typed or pinned
+        // in THIS session - that is what was asked for, and no more. Anyone
+        // who wants a loaded time held presses the pin on it, once.
         // a speed step before this pose that differs from the sequence speed is
         // that MOVE's own speed, so it survives a round trip through the file
         if (curSpeed && curSpeed !== out.speed) k.dps = curSpeed;
         if (pend.length) { k.cues = pend; out.cues += pend.length; pend = []; }
+        if (pendName) k.name = pendName;
+        pendName = "";
         out.keys.push(k);
       } else out.skipped++;
     } else if ((m = line.match(/^\s*-\s*wait:\s*(\d+)/))) {
@@ -3436,11 +4627,17 @@ function loadParsedSeq(p, sourceLabel) {
     (p.speed >= 5 ? ` at its own ${Math.round(p.speed)} °/s` : "") +
     (p.cues ? ` with ${p.cues} music/light step(s), which play with the show and are written back on export` : "") +
     (p.skipped ? ` (${p.skipped} step(s) this editor does not read — kept only in the original file)` : "") +
-    " — edit, then Export / Upload again";
+    " — edit, then Save";
+  // Just opened = matches the file. From the robot's SD it is not a file on
+  // this PC, so saving it here still asks before replacing one.
+  const local = sourceLabel.startsWith("sequences/")
+    ? sourceLabel.slice(10).replace(/\.yaml$/, "") : "";
+  markSaved(workSig(), local, p.skipped || 0);
 }
 async function editLocalSeq() {
   const f = $("seqList").value;
   if (!f) return;
+  if (!(await askUnsaved("open " + f))) return;
   // A missing file must say so: its 404 body parsed as YAML reported
   // "no pose steps found", which reads like an empty sequence, not a wrong one.
   const r = await fetch("/api/loadseq?name=" + encodeURIComponent(f));
@@ -3453,6 +4650,7 @@ async function editLocalSeq() {
   loadParsedSeq(parseSeqYaml(await r.text()), "sequences/" + f);
 }
 async function editSdSeq(fname) {
+  if (!(await askUnsaved("open " + fname + " from the robot"))) return;
   try {
     const text = await sdDownload(fname);
     loadParsedSeq(parseSeqYaml(text), "robot SD " + fname);
@@ -3471,6 +4669,7 @@ async function playSavedSeq(sourceLabel, getText) {
     notice(stat.textContent);
     return;
   }
+  if (!(await askUnsaved("play " + sourceLabel))) { stat.textContent = ""; return; }
   if (playing) togglePlay();          // swap timelines only while stopped
   const before = keys;
   loadParsedSeq(parseSeqYaml(text), sourceLabel);
@@ -3492,6 +4691,25 @@ async function playLocalSeq() {
 async function playSdSeq(fname) {
   await playSavedSeq("robot SD " + fname, () => sdDownload(fname));
 }
+// Delete a saved YAML (user 2026-09-17). The hub moves it to
+// sequences/.deleted/, so a mis-click can still be undone by hand.
+async function deleteLocalSeq() {
+  const f = $("seqList").value;
+  if (!f) { $("tlStat").textContent = "pick a saved YAML in the list first."; return; }
+  if (!confirm("Delete " + f + "?\n\nIt is moved to sequences/.deleted on this PC, not erased.")) return;
+  try {
+    const r = await fetch("/api/seqdelete", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: f }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) throw new Error(j.need_login ? "log in first" : (j.error || "HTTP " + r.status));
+    $("tlStat").textContent = f + " deleted (kept in sequences/.deleted).";
+    await refreshSeqs();
+    seqsChanged();
+  } catch (e) {
+    $("tlStat").textContent = "could not delete " + f + ": " + (e.message || e);
+    notice($("tlStat").textContent);
+  }
+}
 async function refreshSeqs() {
   const r = await fetch("/api/list?kind=sequences").then(r => r.json());
   const sel = $("seqList");
@@ -3501,10 +4719,18 @@ async function refreshSeqs() {
   });
 }
 // --- project save/load ---
-async function saveProject() {
+// opts.keepDraft: saveAll() clears the draft itself, only once BOTH files are
+// on disk. Returns true when the project reached the disk.
+async function saveProject(opts) {
+  opts = opts || {};
   const name = ($("projName").value || "project").trim();
+  const sig = workSig();                  // what THIS save writes, before any await
   const project = {
     keys, speedDps: speedDps(), maxDps: maxDps(), loop: $("loopChk").checked,
+    // The planning peak limit rides with the project: without it, reopening a
+    // project re-times every automatic move against a different 60 °/s default
+    // and the show quietly got slower (A31-4).
+    safeDps: SAFE_DPS,
     meshes: meshCfg, addons,
     robotIp: $("robotIp").value, seqName: $("seqName").value,
     // The chain is part of the show: a project saved with one and reopened
@@ -3522,24 +4748,29 @@ async function saveProject() {
     $("tlStat").textContent = "could not save — the hub is not answering. Your "
       + "work is still here, and is kept in this browser. " + (e.message || e);
     notice($("tlStat").textContent);
-    return;
+    return false;
   }
   if (!r || !r.ok) {
     $("tlStat").textContent = "could not save: " + ((r && r.error) || "unknown")
       + ". Your work is still here.";
     notice($("tlStat").textContent);
-    return;
+    return false;
   }
   // Safely on disk now, so the unsaved-work draft has done its job.
-  try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* nothing to do */ }
+  if (!opts.keepDraft) markSaved(sig, name);
   $("tlStat").textContent = r.replaced
     ? "saved over the existing " + r.file + " (the previous version is kept as "
       + r.file + ".bak)"
     : "project saved: " + r.file;
   refreshProjects();
+  return true;
 }
 async function loadProject(file) {
   if (!file) return;
+  if (!(await askUnsaved("open " + file))) {
+    if ($("projList")) $("projList").value = "";
+    return;
+  }
   // NOTHING is replaced until the whole file has been read and understood.
   //
   // Three ways this used to destroy work, all from assigning as it went:
@@ -3570,13 +4801,6 @@ async function loadProject(file) {
     if (st) st.textContent = file + " has no keyframes in it, so nothing was loaded.";
     return;
   }
-  // Repair the poses BEFORE they reach anything: pad short ones to NJ, drop
-  // non-numbers, and clamp to each joint's real travel.
-  const loaded = p.keys.filter(k => k && Array.isArray(k.pose)).map(k => {
-    const q = k.pose.slice(0, NJ).map(Number);
-    while (q.length < NJ) q.push(90);    // pre-WAIST/SHRUG project: neutral
-    return { ...k, pose: q.map((v, i) => clampJ(i, Number.isFinite(v) ? v : 90)) };
-  });
   // A project carries the rig it was built with. That is worth having, but it
   // is not worth losing today's tuning to — so ask, and default to keeping
   // what is on screen.
@@ -3588,15 +4812,48 @@ async function loadProject(file) {
       + "OK  — use the project's setup\n"
       + "Cancel — keep the setup you have now (recommended)");
   }
+  // The rig is swapped BEFORE the poses are clamped: clamping first cut every
+  // pose to the OLD rig's limits, so taking a project's wider rig still
+  // opened a project whose moves had been silently shortened.
+  if (p.rig && takeRig) {
+    // Keep one step back. The rig is the most expensive thing in this editor
+    // to rebuild, so replacing it always leaves a copy to return to.
+    try { localStorage.setItem("nong_rig_prev", JSON.stringify(RIG)); }
+    catch (e) { /* storage full: the swap still happens, just without undo */ }
+    RIG = mergeRig(p.rig);
+    saveRig();
+  }
+  // Repair the poses BEFORE they reach anything: pad short ones to NJ, drop
+  // non-numbers, and clamp to each joint's real travel. A missing or broken
+  // time or hold becomes 0 (clampKeyTimes raises it to the floor), never NaN,
+  // which would reach the robot as "T NaN".
+  const loaded = p.keys.filter(k => k && Array.isArray(k.pose)).map(k => {
+    const q = k.pose.slice(0, NJ).map(Number);
+    while (q.length < NJ) q.push(90);    // pre-WAIST/SHRUG project: neutral
+    const t = Number(k.t), hold = Number(k.hold);
+    return { ...k, pose: q.map((v, i) => clampJ(i, Number.isFinite(v) ? v : 90)),
+             t: Number.isFinite(t) ? Math.max(0, Math.round(t)) : 0,
+             hold: Number.isFinite(hold) ? Math.max(0, Math.round(hold)) : 0 };
+  });
   keys = loaded;
   bumpKeys();
   $("speedDps").value = p.speedDps || 120;
   $("maxDps").value = p.maxDps || 400;
+  // A connected board's own limit still wins: adoptBoardSafety runs on connect
+  // and overwrites this. Saved projects only decide what Studio plans with
+  // while no robot is telling it otherwise.
+  if (p.safeDps >= 5 && !boardSafeDpsMax) {
+    SAFE_DPS = Math.round(p.safeDps);
+    $("safeDpsInput").value = String(SAFE_DPS);
+  }
   clampKeyTimes();
   $("loopChk").checked = !!p.loop;
   $("robotIp").value = p.robotIp || "";
-  $("seqName").value = p.seqName || file.replace(/\.json$/, "");
-  $("projName").value = file.replace(/\.json$/, "");
+  // ONE name for both files (A31-18): the project and its YAML now save
+  // together, under the project's name.
+  const pname = file.replace(/\.json$/, "");
+  const oldSeq = (p.seqName || "").trim();
+  setWorkName(pname);
   // The chain rides with the project; an older project without one clears the
   // field rather than keeping a chain this project never had.
   $("seqNext").value = p.seqNext || "";
@@ -3612,21 +4869,157 @@ async function loadProject(file) {
   }
   addons = p.addons || addons;
   saveMeshes();
-  if (p.rig && takeRig) {
-    // Keep one step back. The rig is the most expensive thing in this editor
-    // to rebuild, so replacing it always leaves a copy to return to.
-    try { localStorage.setItem("nong_rig_prev", JSON.stringify(RIG)); }
-    catch (e) { /* storage full: the swap still happens, just without undo */ }
-    RIG = mergeRig(p.rig);
-    saveRig();
-  }
+  // What was opened, taken before the awaits below: an edit made while the
+  // models load is the person's new work, never "saved".
+  const openedSig = workSig();
   await refreshModels();
   renderRigUI();
   buildRobot(); // re-applies meshes + rig in one pass
   selKey = 0;
   if (keys.length) { pose = [...keys[0].pose]; }
   poseChanged(false); renderTimeline();
+  // Only a project whose YAML already had its own name owns NAME.yaml; for any
+  // other, Save still asks before replacing a NAME.yaml that is somebody else's.
+  markSaved(openedSig, oldSeq === pname ? pname : "", 0);
+  if (oldSeq && oldSeq !== pname)
+    $("tlStat").textContent = "opened " + file + ". It used to save its moves as "
+      + oldSeq + ".yaml; Save now writes " + pname + ".json and " + pname + ".yaml together.";
 }
+
+// ---- one Save, and a question before unsaved work is replaced (A31-18) ----
+//
+// User 2026-09-23: *why we not make it same thing* - the project (.json: the
+// editable work + rig) and the sequence (.yaml: what the robot plays) had two
+// buttons and two name boxes, so one was always behind the other. And opening
+// another file replaced the timeline without a word: *i loss it a lot of time*.
+// Now: one name, one Save that writes both, and every loader asks first.
+// Settings ▸ Saving switches the question off.
+let savedSig = null;       // workSig() of what is on disk; null until boot ends
+let savedName = "";        // the file the timeline came from or last went to
+let loadedSkipped = 0;     // steps that file holds which this editor cannot read
+function workSig() {
+  return keysSignature() + "|" + (($("loopChk") && $("loopChk").checked) ? 1 : 0)
+    + "|" + (($("seqNext") && $("seqNext").value) || "").trim();
+}
+// The page now matches a file on disk. markClean leaves an earlier session's
+// draft alone; only a real save or load (markSaved) retires it.
+function markClean(sig, name) {
+  savedSig = sig;
+  if (name != null) savedName = name;
+}
+function markSaved(sig, name, skipped) {
+  markClean(sig, name);
+  if (skipped != null) loadedSkipped = skipped;
+  // an edit made while the save was on the wire is still unsaved
+  try { if (workSig() === sig) localStorage.removeItem(DRAFT_KEY); }
+  catch (e) { /* nothing to do */ }
+}
+function isDirty() {
+  if (savedSig === null || !keys.length) return false;   // nothing to lose
+  return workSig() !== savedSig;
+}
+const ASK_UNSAVED_KEY = "nong_ask_unsaved";
+function askUnsavedOn() {
+  try { return localStorage.getItem(ASK_UNSAVED_KEY) !== "0"; }
+  catch (e) { return true; }
+}
+function setAskUnsaved(on) {
+  try { localStorage.setItem(ASK_UNSAVED_KEY, on ? "1" : "0"); }
+  catch (e) { /* kept for this visit only */ }
+}
+function cleanName(v) { return (v || "").trim().replace(/[^\w.-]+/g, "_"); }
+function setWorkName(v) {
+  const n = cleanName(v);
+  if ($("projName")) $("projName").value = n;
+  if ($("seqName")) $("seqName").value = n;
+}
+// The two name boxes are one name: typing in either changes both.
+["projName", "seqName"].forEach(id => {
+  const el = $(id);
+  if (el) el.addEventListener("input", () => {
+    const other = $(id === "projName" ? "seqName" : "projName");
+    if (other) other.value = el.value;
+  });
+});
+// Save = the project (.json) AND the robot's file (.yaml), under one name.
+// True only when everything that should be on disk is.
+async function saveAll() {
+  const name = cleanName($("seqName").value || $("projName").value || "my_move");
+  setWorkName(name);
+  const sig = workSig();
+  const writeYaml = playKeys().length > 0;
+  // Every question comes BEFORE the first write, so Cancel leaves both files
+  // exactly as they were.
+  const have = [...$("seqList").options].map(o => o.value);
+  if (writeYaml && name !== savedName && have.includes(name + ".yaml") &&
+      !confirm(name + ".yaml is already saved. Replace it?\n\n" +
+               "Cancel, then type a new name to keep both.")) {
+    $("tlStat").textContent = "not saved — " + name + ".yaml was left as it was";
+    return false;
+  }
+  if (writeYaml && name === savedName && loadedSkipped > 0 &&
+      !confirm(name + ".yaml has " + loadedSkipped + " step(s) this editor cannot "
+               + "read. Saving over it removes them.\n\nOK — save anyway\n"
+               + "Cancel — keep the file; type a new name to save a copy")) {
+    $("tlStat").textContent = "not saved — " + name + ".yaml was left as it was";
+    return false;
+  }
+  // The name cannot change between the two writes: typing while the first
+  // was on the wire sent the .yaml over a file nobody was asked about.
+  const boxes = ["projName", "seqName"].map($).filter(Boolean);
+  boxes.forEach(b => { b.readOnly = true; });
+  let ok = false;
+  try {
+    ok = (await saveProject({ keepDraft: true })) &&
+         (!writeYaml || (await exportYaml({ noAsk: true, keepDraft: true })));
+  } finally {
+    boxes.forEach(b => { b.readOnly = false; });
+  }
+  if (!ok) return false;
+  markSaved(sig, name, 0);
+  $("tlStat").textContent = "saved " + name + " — " + name + ".json (to edit later)"
+    + (writeYaml ? " and " + name + ".yaml (what the robot plays)"
+                 : ". No .yaml: every move is suspended, so there is nothing to play");
+  return true;
+}
+// Asks before something replaces the timeline. Resolves true to go ahead.
+function askUnsaved(what) {
+  if (!askUnsavedOn() || !isDirty()) return Promise.resolve(true);
+  return new Promise(resolve => {
+    let dlg = $("unsavedDlg");
+    if (!dlg) {
+      dlg = document.createElement("dialog");
+      dlg.id = "unsavedDlg"; dlg.className = "askdlg";
+      dlg.setAttribute("aria-labelledby", "unsavedTitle");
+      dlg.innerHTML = '<h2 id="unsavedTitle">Save your changes first?</h2>'
+        + '<p class="mini" id="unsavedText"></p>'
+        + '<div class="row"><button class="primary" id="unsavedSave">Save, then continue</button>'
+        + '<button class="danger" id="unsavedDrop">Don’t save</button>'
+        + '<button id="unsavedCancel">Cancel</button></div>';
+      // No "don't ask again" box here (user 2026-09-24): the switch lives
+      // only in Settings ▸ Saving.
+      document.body.appendChild(dlg);
+    }
+    $("unsavedText").textContent = "The moves on the time bar have changes that are "
+      + "not saved" + (savedName ? " to " + savedName : "") + ". If you " + what
+      + " now, they are replaced.";
+    const done = async (how) => {
+      dlg.close();
+      resolve(how === "save" ? await saveAll() : how === "drop");
+    };
+    $("unsavedSave").onclick = () => done("save");
+    $("unsavedDrop").onclick = () => done("drop");
+    $("unsavedCancel").onclick = () => done("cancel");
+    dlg.oncancel = (e) => { e.preventDefault(); done("cancel"); };   // Escape
+    dlg.showModal();
+    $("unsavedCancel").focus();          // the safe answer is the default
+  });
+}
+function syncAskUnsavedBox() {
+  const box = $("askUnsavedChk");
+  if (box) box.checked = askUnsavedOn();
+}
+syncAskUnsavedBox();
 async function refreshProjects() {
   const r = await fetch("/api/list?kind=projects").then(r => r.json());
   const sel = $("projList");
@@ -3933,6 +5326,252 @@ async function refreshModels() {
   modelFiles = (r.files || []).filter(f => isStl(f) || isImg(f));
   renderModelsUI();
 }
+// --- URDF import ---
+//
+// User 2026-09-23: *we already have all step file when i drag it cannot be as
+// my aspect make can use urdf too*.
+//
+// A STEP file is a solid-modelling format. A browser cannot open one, and an
+// STL dragged in on its own carries no origin at all - so every part landed at
+// the middle of the robot and had to be rotated, offset and scaled by hand
+// until it looked right. That is what "cannot be as my aspect" was.
+//
+// A URDF carries exactly the numbers that were missing: where each part sits,
+// which way it is turned, how big it is, and which part hangs off which. So
+// importing one fills the boxes in instead of leaving them to be guessed.
+//
+// WHAT IS SETTABLE, BECAUSE NO TWO EXPORTS AGREE:
+//   * units. URDF is metres; Studio is millimetres. SolidWorks' sw2urdf writes
+//     its STL meshes in metres too, so the default is x1000 for both.
+//   * which way is up. URDF/ROS is Z-up X-forward; this editor is Y-up
+//     Z-forward. The default mapping is that one, and it can be changed
+//     without editing code - a CAD export that was built Y-up already would
+//     otherwise arrive lying on its side with no way to say so.
+//   * which link is which part. An export names links after SolidWorks
+//     components, so the names are guessed and then shown for correction.
+// None of it is hidden: the import says what it matched, what it could not,
+// and what it changed.
+
+const URDF_DEF = { mm: 1000, up: "z" };
+let urdfDoc = null;         // the parsed file, kept so a re-map costs no re-read
+let urdfMap = {};           // link name -> Studio part ("" = not used)
+let urdfName = "";
+
+// Guesses a Studio part from a link name. DATA, not code: the next naming
+// habit is one more row here and nothing else.
+const URDF_GUESS = [
+  [/(^|[_\- ])(l|left)([_\- ]|$).*(upper|shoulder|humerus)/i, "L_upper"],
+  [/(^|[_\- ])(r|right)([_\- ]|$).*(upper|shoulder|humerus)/i, "R_upper"],
+  [/(^|[_\- ])(l|left)([_\- ]|$).*(fore|lower|elbow|radius)/i, "L_fore"],
+  [/(^|[_\- ])(r|right)([_\- ]|$).*(fore|lower|elbow|radius)/i, "R_fore"],
+  [/head|skull|face/i, "head"],
+  [/torso|body|chest|trunk|base/i, "torso"],
+];
+function urdfGuessPart(link) {
+  for (const [re, part] of URDF_GUESS) if (re.test(link)) return part;
+  return "";
+}
+
+function urdfNums(el, attr, fallback) {
+  const raw = el && el.getAttribute(attr);
+  if (!raw) return fallback.slice();
+  const n = raw.trim().split(/\s+/).map(Number);
+  return n.length === 3 && n.every(Number.isFinite) ? n : fallback.slice();
+}
+
+// URDF axes -> this editor's axes. ROS is Z-up X-forward; three.js here is
+// Y-up Z-forward, so (x, y, z) becomes (y, z, x) - a cyclic swap, which keeps
+// the handedness and therefore keeps every rotation turning the same way.
+function urdfToStudioXYZ(v, up) {
+  return up === "y" ? [v[0], v[1], v[2]] : [v[1], v[2], v[0]];
+}
+// The same swap for roll-pitch-yaw. URDF fixed-axis rpy is Rz(yaw)*Ry(pitch)*
+// Rx(roll), which is THREE's Euler order "ZYX" with the SAME three numbers -
+// so the only thing to do is move each number onto the axis it now turns
+// about, and hand the result back in degrees, which is what meshCfg holds.
+function urdfToStudioRPY(rpy, up) {
+  const s = urdfToStudioXYZ(rpy, up);
+  return s.map(r => Math.round(THREE.MathUtils.radToDeg(r) * 10) / 10);
+}
+
+// The one visual of a link, as {file, rot, off, scale}, or null when the link
+// has no mesh (a URDF has plenty: bearings, frames, fasteners).
+function urdfVisual(link, opt) {
+  const vis = link.querySelector("visual");
+  const mesh = vis && vis.querySelector("geometry mesh");
+  if (!mesh) return null;
+  const file = (mesh.getAttribute("filename") || "").split(/[\\/]/).pop();
+  if (!file) return null;
+  const org = vis.querySelector("origin");
+  const off = urdfToStudioXYZ(urdfNums(org, "xyz", [0, 0, 0]), opt.up)
+    .map(v => Math.round(v * opt.mm * 10) / 10);
+  const rot = urdfToStudioRPY(urdfNums(org, "rpy", [0, 0, 0]), opt.up);
+  // <mesh scale> is a per-axis scale; this editor has one number, so a mesh
+  // scaled differently per axis is reported rather than silently flattened.
+  const ms = urdfNums(mesh, "scale", [1, 1, 1]);
+  const even = Math.abs(ms[0] - ms[1]) < 1e-9 && Math.abs(ms[1] - ms[2]) < 1e-9;
+  return { file, off, rot, scale: ms[0] * opt.mm, even };
+}
+
+// Parse, and say what is in it. Never touches the rig: reading a file and
+// changing the robot are two different decisions, and one button that does
+// both cannot be undone halfway.
+function urdfParse(text) {
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  if (doc.querySelector("parsererror"))
+    throw new Error("this file is not valid XML, so it cannot be a URDF");
+  const robot = doc.querySelector("robot");
+  if (!robot) throw new Error("no <robot> in this file - is it a URDF?");
+  const links = [...doc.querySelectorAll("robot > link")];
+  if (!links.length) throw new Error("this URDF has no links in it");
+  return { doc, robot, links,
+           joints: [...doc.querySelectorAll("robot > joint")] };
+}
+
+// How long each mapped part's bar is, in mm. This is the number that makes an
+// imported robot the right SIZE and not merely the right shape.
+//
+// A joint's origin is measured in its PARENT link's frame, so the length of a
+// bar is the origin of the joint LEAVING it - the elbow's origin is the upper
+// arm's length. Reading the joint that ARRIVES at a link instead gives the
+// offset of the bar before it, which for this robot is the shoulder's own
+// (0, 0, 0) - every arm then measured zero.
+//
+// Zero-length joints are skipped on purpose: a shoulder and an elbow are each
+// two servos stacked at one origin, so half the joints in this tree carry no
+// distance at all. A leaf link has no outgoing joint and so has no length
+// here; its mesh is the only thing that says how long it is.
+function urdfJointLengths(parsed, opt) {
+  const out = {};
+  parsed.joints.forEach(j => {
+    const parent = j.querySelector("parent");
+    if (!parent) return;
+    const part = urdfMap[parent.getAttribute("link")];
+    if (!part || out[part]) return;
+    const v = urdfNums(j.querySelector("origin"), "xyz", [0, 0, 0]);
+    const len = Math.round(Math.hypot(v[0], v[1], v[2]) * opt.mm * 10) / 10;
+    if (len > 0) out[part] = len;
+  });
+  return out;
+}
+
+// ---- the screen -----------------------------------------------------------
+async function importUrdf() {
+  const f = $("urdfFile").files[0];
+  if (!f) {
+    $("urdfStat").textContent = "choose a .urdf file first. Its .stl meshes " +
+      "must be imported too (Models > Import), or the parts have nothing to draw.";
+    return;
+  }
+  try {
+    const parsed = urdfParse(await f.text());
+    urdfDoc = parsed;
+    urdfName = f.name;
+    urdfMap = {};
+    parsed.links.forEach(l => {
+      const name = l.getAttribute("name") || "";
+      urdfMap[name] = urdfGuessPart(name);
+    });
+    renderUrdfUI();
+    const matched = Object.values(urdfMap).filter(Boolean).length;
+    $("urdfStat").textContent = `${f.name}: ${parsed.links.length} links, ` +
+      `${parsed.joints.length} joints. ${matched} matched to a body part by ` +
+      "name — check them below, then press Use this URDF.";
+  } catch (e) {
+    $("urdfStat").textContent = "could not read it: " + (e.message || e);
+    notice($("urdfStat").textContent);
+  }
+}
+function urdfOptions() {
+  return { mm: +$("urdfMm").value || URDF_DEF.mm,
+           up: $("urdfUp").value || URDF_DEF.up };
+}
+function renderUrdfUI() {
+  const box = $("urdfLinks");
+  if (!box) return;
+  box.innerHTML = "";
+  if (!urdfDoc) {
+    box.innerHTML = "<div class='mini'>No URDF loaded yet.</div>";
+    return;
+  }
+  const opt = urdfOptions();
+  urdfDoc.links.forEach(l => {
+    const name = l.getAttribute("name") || "";
+    const vis = urdfVisual(l, opt);
+    const row = document.createElement("div"); row.className = "row";
+    const nm = document.createElement("span");
+    nm.style.flex = "1"; nm.textContent = name;
+    nm.title = vis ? "mesh: " + vis.file : "this link has no mesh to draw";
+    const sel = document.createElement("select");
+    sel.innerHTML = "<option value=''>(not used)</option>";
+    MESH_PARTS.forEach(p => {
+      const o = document.createElement("option"); o.value = o.textContent = p;
+      if (urdfMap[name] === p) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.disabled = !vis;
+    sel.onchange = () => { urdfMap[name] = sel.value; };
+    const note = document.createElement("span");
+    note.className = "mini";
+    note.textContent = vis ? (vis.even ? vis.file : vis.file + " ⚠ uneven scale")
+                           : "no mesh";
+    row.append(nm, sel, note);
+    box.appendChild(row);
+  });
+}
+// Apply it. Separate from reading the file on purpose: this is the step that
+// changes what is on screen, and it says exactly what it changed.
+function useUrdf() {
+  if (!urdfDoc) { $("urdfStat").textContent = "load a .urdf file first."; return; }
+  const opt = urdfOptions();
+  const done = [], missing = [], uneven = [];
+  urdfDoc.links.forEach(l => {
+    const name = l.getAttribute("name") || "";
+    const part = urdfMap[name];
+    if (!part) return;
+    const vis = urdfVisual(l, opt);
+    if (!vis) return;
+    if (!vis.even) uneven.push(vis.file);
+    // The mesh file has to be in models/ already: a URDF names its meshes, it
+    // does not carry them. Say which ones are absent instead of drawing
+    // nothing and letting it read as a broken import.
+    if (!modelFiles.some(f => f.toLowerCase() === vis.file.toLowerCase()))
+      missing.push(vis.file);
+    meshCfg[part] = { ...defMeshCfg(part), file: vis.file,
+                      rot: vis.rot, off: vis.off, scale: vis.scale,
+                      color: meshCfg[part].color };
+    done.push(part);
+  });
+  if (!done.length) {
+    $("urdfStat").textContent = "nothing was changed: no link is matched to a " +
+      "body part yet. Pick a part beside a link above.";
+    return;
+  }
+  // The joint origins are the real bar lengths. They are offered, not forced:
+  // a rig that somebody measured by hand must not be overwritten by a CAD file
+  // without being asked.
+  const lens = urdfJointLengths(urdfDoc, opt);
+  const dimOf = { L_upper: "upperLenL", R_upper: "upperLenR",
+                  L_fore: "foreLenL", R_fore: "foreLenR" };
+  const offer = Object.keys(lens).filter(p => dimOf[p] && lens[p] > 1);
+  let sized = 0;
+  if (offer.length && confirm(
+      "Also set the arm lengths from this URDF?\n\n" +
+      offer.map(p => "  " + dimOf[p] + ": " + RIG.dims[dimOf[p]] + " → " + lens[p] + " mm").join("\n") +
+      "\n\nOK sets them. Cancel keeps the lengths you have.")) {
+    offer.forEach(p => { RIG.dims[dimOf[p]] = lens[p]; sized++; });
+  }
+  saveMeshes();
+  if (sized) rigChanged(); else buildRobot();
+  renderModelsUI();
+  $("urdfStat").textContent =
+    `${urdfName}: placed ${done.length} part(s) — ${done.join(", ")}` +
+    (sized ? `, and set ${sized} arm length(s)` : "") + ". " +
+    (missing.length ? `Import these meshes too (Models > Import): ${missing.join(", ")}. ` : "") +
+    (uneven.length ? `${uneven.join(", ")} is scaled differently on each axis; ` +
+                     "this editor has one scale, so the first was used. " : "") +
+    "Nothing else in the rig was touched.";
+}
 // --- robot link ---
 // Transports, one command language (see firmware COMMANDS.md):
 //   wifi   — HTTP through the local python proxy (/api/robot/*)
@@ -4007,7 +5646,61 @@ function usbPortChanged() {   // picking another port drops the old link
   if (hubPort && hubPort !== $("usbPort").value) hubPort = "";
   $("robotStat").textContent = linkBadge();
 }
+// Studio and the robot must agree on joint limits, or a pose drawn at 25 deg
+// is clamped to 30 on the arm and the two no longer match (user 2026-09-17).
+// Says so on connect and offers both ways to fix it; which is right is the user's call.
+async function checkLimitsMatch() {
+  const box = $("limMismatch");
+  if (!box) return;
+  try {
+    const j = JSON.parse(await rawCmd("LIMIT?"));
+    const diff = [];
+    for (let i = 0; i < NJ; i++) {
+      const rmin = Array.isArray(j.min) ? Math.round(+j.min[i]) : null;
+      const rmax = Array.isArray(j.max) ? Math.round(+j.max[i]) : null;
+      if (rmin === null || rmax === null || isNaN(rmin) || isNaN(rmax)) continue;
+      if (rmin !== Math.round(RIG.min[i]) || rmax !== Math.round(RIG.max[i]))
+        diff.push(`${JOINT_LABELS[i]}: Studio ${Math.round(RIG.min[i])}–${Math.round(RIG.max[i])}°, robot ${rmin}–${rmax}°`);
+    }
+    box.hidden = !diff.length;
+    $("limMismatchText").textContent = diff.length
+      ? "Studio and the robot allow different joint angles, so the arm will not match the preview. " + diff.join(" · ")
+      : "";
+  } catch (e) { box.hidden = true; }            // an old board without LIMIT?: say nothing
+}
+// A USB-RS485 adapter has no board of its own: the nong answers only when
+// addressed by its bus id. The id box is technical detail (hidden), so fill it
+// from the hub's cable probe (user 2026-09-17: "no reply from COM12").
+// The hub's cached answer first (instant while the cable is in use), the full
+// bus census (~4.3 s on COM21, 2026-09-27) only when that knows no nong.
+async function findBusId(port) {
+  for (const full of [0, 1]) {
+    try {
+      const r = await fetch(`/api/scanusb?full=${full}&port=` + encodeURIComponent(port)).then(r => r.json());
+      const u = (r.usb || [])[0] || {};
+      if (u.module) return false;                            // a board on this cable itself
+      const nongs = (u.rs485 || []).filter(m => m.type === "nong");
+      if (!nongs.length) continue;
+      $("busId").value = nongs[0].id;
+      return true;
+    } catch (e) { return false; }                            // no hub probe: id stays as typed
+  }
+  return false;
+}
+// The last bus id that answered on each port. Without it every page load
+// started with the empty id: two unaddressed INFOs that an RS485 adapter can
+// never answer, then the census - ~9 s before Connect worked (2026-09-27).
+const BUS_KEY = "nongBusId:";
+function rememberBusId(port) {
+  try { if (port) localStorage.setItem(BUS_KEY + port, String(busId() || "")); } catch (e) {}
+}
+function recallBusId(port) {
+  if (busId() || !port) return;
+  try { const v = localStorage.getItem(BUS_KEY + port); if (v) $("busId").value = v; } catch (e) {}
+}
 async function hubUsbCmd(c) {
+  if (!hubPort && !(window.HUB_PEER || window.HUB_VIA))
+    throw new Error("the USB link is closed - press Connect again");
   // With a peer, the command has to go to the module behind the plugged-in
   // one's hotspot, and only the unified endpoint understands that: the hub
   // turns dev=usb:COM7@far-nong into REACH far-nong <command> down the cable.
@@ -4020,7 +5713,11 @@ async function hubUsbCmd(c) {
       `&c=${encodeURIComponent(c)}`
     : `/api/usb/cmd?port=${encodeURIComponent(hubPort)}` +
       `&id=${busId()}&c=${encodeURIComponent(c)}`;
-  const r = await fetch(url);
+  // Never wait forever: a request stuck behind a busy cable held one of the
+  // browser's six connections to the hub, and six of them froze every other
+  // fetch on the page.
+  const r = await fetch(url, window.AbortSignal && AbortSignal.timeout
+    ? { signal: AbortSignal.timeout(15000) } : {});
   const t = await r.text();
   if (!r.ok) {
     let msg = t;
@@ -4076,7 +5773,17 @@ async function serialReadLoop() {
   $("robotStat").textContent = "USB disconnected";
   notice($("robotStat").textContent);
 }
+// ONE command on the wire at a time. Two overlapping calls used to throw
+// "WritableStream is locked" on the second getWriter(), leaving its waiter in
+// the queue to swallow the FIRST command's reply - every later reply then
+// went to the wrong caller. Replies carry no id, so order is the only match.
+let serialChain = Promise.resolve();
 function serialCmd(c) {
+  const run = serialChain.then(() => serialCmdNow(c));
+  serialChain = run.catch(() => {});
+  return run;
+}
+function serialCmdNow(c) {
   return new Promise((res, rej) => {
     if (!serialPort || !serialPort.writable) return rej(new Error("USB not connected"));
     const id = busId();
@@ -4091,8 +5798,16 @@ function serialCmd(c) {
       if (k >= 0) { serialWaiters.splice(k, 1); rej(new Error("timeout (bus id right?)")); }
     }, 2500);
     const framed = id ? "#" + id + " " + c : c;      // RS485 frame when addressed
-    const writer = serialPort.writable.getWriter();
-    writer.write(new TextEncoder().encode(framed + "\n")).finally(() => writer.releaseLock());
+    const drop = (e) => {
+      const k = serialWaiters.indexOf(w);
+      if (k >= 0) serialWaiters.splice(k, 1);
+      rej(e);
+    };
+    try {
+      const writer = serialPort.writable.getWriter();
+      writer.write(new TextEncoder().encode(framed + "\n"))
+        .catch(drop).finally(() => writer.releaseLock());
+    } catch (e) { drop(e); }
   });
 }
 
@@ -4103,8 +5818,24 @@ function serialCmd(c) {
 function usbDirect() { return !!(serialPort && serialPort.writable); }
 function haveUsb() { return usbDirect() || !!hubPort; }
 function haveWifi() { return !!robotIp(); }
+function haveAuto() { return !!window.HUB_AUTO; }
+function haveRobot() { return haveAuto() || haveUsb() || haveWifi(); }
 // one call for "send this over the cable", whichever USB mode is connected
 function cableCmd(c) { return usbDirect() ? serialCmd(c) : hubUsbCmd(c); }
+async function autoFetch(what, params, options) {
+  const q = new URLSearchParams(Object.assign({ dev: window.HUB_AUTO }, params || {}));
+  const r = await fetch(`/api/dev/${what}?${q}`, options);
+  if (!r.ok) {
+    const body = await r.text();
+    let msg = body;
+    try { msg = JSON.parse(body).error || body; } catch (e) { /* plain text error */ }
+    throw new Error(msg);
+  }
+  return r;
+}
+async function autoCmd(c) {
+  return (await (await autoFetch("cmd", { c })).text()).trim();
+}
 async function httpCmd(c) {
   // Same over WiFi: wifi:<ip>@peer reaches a module on that board's hotspot.
   const url = (window.HUB_PEER || window.HUB_VIA)
@@ -4114,6 +5845,7 @@ async function httpCmd(c) {
   return fetch(url).then(r => r.text());
 }
 async function rawCmd(c) { // reply text or throws
+  if (haveAuto()) return autoCmd(c);
   if (haveUsb()) return cableCmd(c);
   if (haveWifi()) return httpCmd(c);
   throw new Error("connect first — 🔍 Find modules (WiFi) or pick a USB port");
@@ -4125,6 +5857,7 @@ async function rawCmd(c) { // reply text or throws
 // points at the SAME board the commands go to — hence the same precedence as
 // rawCmd: cable first, WiFi otherwise.
 function moduleDev() {
+  if (haveAuto()) return window.HUB_AUTO;
   // The peer rides along. Without it this link opened the website of the
   // board on the CABLE while every command went to the module behind that
   // board's hotspot — two different robots, one screen, no warning.
@@ -4150,14 +5883,31 @@ function moduleDev() {
 window.addEventListener("DOMContentLoaded", function () {
   const port = document.getElementById("usbPort");
   const mode = document.getElementById("connSel");
-  if (port) port.addEventListener("change", () => clearPeer("you picked another cable"));
-  if (mode) mode.addEventListener("change", () => clearPeer("you changed the connection"));
+  const ip = document.getElementById("robotIp");
+  const bus = document.getElementById("busId");
+  if (port) port.addEventListener("change", () => clearHubTarget("you picked another cable"));
+  if (mode) mode.addEventListener("change", () => clearHubTarget("you changed the connection"));
+  if (ip) ip.addEventListener("input", () => clearHubTarget("you typed another WiFi address"));
+  if (bus) bus.addEventListener("input", () => clearHubTarget("you typed another bus id"));
 });
 
+function clearHubTarget(why) {
+  const hadAuto = window.HUB_AUTO;
+  clearPeer(why);
+  window.HUB_AUTO = "";
+  if (hadAuto) routeNote("using the route you picked: " + why);
+}
 function clearPeer(why) {
   if (!window.HUB_PEER) return;
   window.HUB_PEER = "";
-  if (typeof log === "function") log("(no longer aiming at a peer module: " + why + ")");
+  routeNote("no longer aiming at the module behind the other one: " + why);
+}
+// Studio has no `log()`: these notes were written for one that never existed,
+// so the typeof guard kept them silent. The Robot card's line is where every
+// other route message goes; routine, so it is not a notice().
+function routeNote(text) {
+  const st = $("robotStat");
+  if (st) st.textContent = "(" + text + ")";
 }
 function openModule() {
   if (!currentUser) {
@@ -4194,16 +5944,67 @@ async function robotCmd(c) {
   }
 }
 async function getStatus() { // full status JSON on whichever link is up
+  if (haveAuto()) return (await autoFetch("status")).json();
   if (haveUsb()) {
     try { return JSON.parse(await cableCmd("INFO")); }
-    catch (e) { return JSON.parse(await cableCmd("INFO")); } // boot noise: retry once
+    catch (e) {
+      // Ask again only when the board restarted mid-answer. "No reply" does
+      // not get better by asking: it cost 2 s more per Connect on an adapter.
+      if (!/restart|JSON|Unexpected/i.test(e.message || "")) throw e;
+      return JSON.parse(await cableCmd("INFO"));
+    }
   }
   if (haveWifi())
     return fetch("/api/robot/status?ip=" + encodeURIComponent(robotIp())).then(r => r.json());
   throw new Error("not connected");
 }
+async function saveSafetySpeed() {
+  const stat = $("safeSpeedStat");
+  const want = Number($("safeDpsInput").value);
+  if (!Number.isInteger(want) || want < 5 || want > boardSafeDpsMax) {
+    stat.textContent = `Enter a whole number from 5 to ${Math.floor(boardSafeDpsMax)} °/s.`;
+    notice(stat.textContent);
+    return;
+  }
+  try {
+    // The route or board may have changed since Connect. Check the live board
+    // again before saving a limit that will survive its next restart.
+    const s = await getStatus();
+    const m = s && s.module;
+    const speeds = m && m.max_dps;
+    const ceiling = Array.isArray(speeds) && speeds.length === NJ
+      ? Math.min(...speeds.map(Number)) : 0;
+    if (!s || s.type !== "nong" || !m || !(+m.safe_dps >= 5) || !(ceiling >= want))
+      throw new Error("This board cannot use that limit. Reconnect and check its settings.");
+    if (String(s.chip || s.id || "") !== boardSafeIdentity)
+      throw new Error("The connected board changed. Reconnect before saving.");
+    if (+m.safe_dps !== SAFE_DPS || ceiling !== boardSafeDpsMax) {
+      adoptBoardSafety(m);
+      throw new Error("Board settings changed. Review the active limit before saving.");
+    }
+    if (want === SAFE_DPS) {
+      stat.textContent = `Already active at ${SAFE_DPS} °/s. No board setting changed.`;
+      return;
+    }
+    const warning = `Save peak speed limit ${want} °/s to this board? ` +
+      `It takes effect only after you restart the board. ` +
+      (want > SAFE_DPS ? "Higher speed can cause harder impacts. " : "") +
+      (boardSafePeer ? `Linked board #${boardSafePeer} must be set to the same limit before synchronized playback. ` : "") +
+      "Check that every joint holds under load before running a show.";
+    if (!confirm(warning)) return;
+    const reply = await rawCmd(`CFG safe_dps ${want}`);
+    if (!/^OK safe_dps=/.test(reply)) throw new Error(reply || "board did not confirm the setting");
+    stat.textContent = `Saved ${want} °/s for next boot. Active limit is still ` +
+      `${SAFE_DPS} °/s. Restart the board, then reconnect Studio to confirm.` +
+      (boardSafePeer ? ` Set linked board #${boardSafePeer} to the same limit.` : "");
+  } catch (e) {
+    stat.textContent = "Safety speed not saved: " + (e.message || e);
+    notice(stat.textContent);
+  }
+}
 function linkBadge() { // shown in robotStat so you see every open channel
   const parts = [], bus = busId() ? "→RS485 #" + busId() : "";
+  if (haveAuto()) parts.push("fastest route (hub) ✓");
   if (usbDirect()) parts.push("USB direct" + bus + " ✓");
   else if (hubPort) parts.push("USB " + hubPort + bus + " (shared) ✓");
   if (haveWifi()) parts.push("WiFi " + robotIp());
@@ -4243,11 +6044,13 @@ async function scanModules() {
 }
 function pickFound(ip) {
   if (!ip) return;
+  clearHubTarget("you picked another WiFi module");
   $("connSel").value = "wifi";
   connModeChanged();
   $("robotIp").value = ip;
   connectRobot();
 }
+let connecting = false;   // one Connect at a time: repeated presses stacked probes on one cable
 async function connectRobot() {
   if (!currentUser) {
     showTab("robot"); // This will actually show the login card since they aren't logged in
@@ -4260,6 +6063,11 @@ async function connectRobot() {
     }
     return pendingConnect.promise;
   }
+  if (connecting) return;
+  connecting = true;
+  try { await connectLink(); } finally { connecting = false; }
+}
+async function connectLink() {
   const t = transport(), had = hubPort;
   try {
     if (t === "usb") {
@@ -4267,10 +6075,32 @@ async function connectRobot() {
       hubPort = $("usbPort").value;
       if (!hubPort) throw new Error("pick the USB port the module is plugged into " +
         "(⟳ to rescan)");
+      recallBusId(hubPort);
     } else if (t === "serial" && !usbDirect()) {
       await serialConnect();
     }
-    const s = await getStatus();
+    let s;
+    try { s = await getStatus(); }
+    catch (e) {
+      // WIFI PICKED, CABLE GONE. The cable wins while it is open, so a robot
+      // unplugged and carried elsewhere kept every Connect on the dead port
+      // (user 2026-09-28: WiFi picked, nong found at 10.139.24.70, error was
+      // "could not open port 'COM21'"). Drop the cable and ask over WiFi.
+      if (t === "wifi" && hubPort && haveWifi()) {
+        hubPort = "";
+        s = await getStatus();
+      } else {
+      // silent cable: maybe an RS485 adapter, or the remembered bus id is now
+      // another board - ask the hub who is behind it
+      const tried = busId();
+      if (t !== "usb" || !(await findBusId(hubPort)) || busId() === tried) throw e;
+      s = await getStatus();
+      }
+    }
+    if (t === "usb") rememberBusId(hubPort);
+    checkLimitsMatch();                   // not awaited: connecting must not wait on it
+    boardSafeIdentity = String(s.chip || s.id || "");
+    adoptBoardSafety(s.module);
     // If the module is playing a sequence on its OWN clock, say so here. It is
     // the moment the question "why is the robot moving by itself?" gets asked —
     // it happens after a hand-off, or when the board was left running from an
@@ -4285,6 +6115,10 @@ async function connectRobot() {
     refreshSd();
   } catch (e) {
     if (t === "usb" && !had) hubPort = "";   // never show a link that isn't there
+    boardSafeIdentity = "";
+    $("safeDpsInput").disabled = $("saveSafeDps").disabled = true;
+    $("safeSpeedStat").textContent = "Disconnected. Reconnect to read the active safety limit.";
+    notice($("safeSpeedStat").textContent);
     $("robotStat").textContent = "Could not reach the robot. Check it is powered "
       + "and on the same network or cable, then try again. " + (e.message || e);
     notice($("robotStat").textContent);
@@ -4391,6 +6225,13 @@ async function sdUploadSerial(fname, text) {
   if (!r.startsWith("OK")) throw new Error(r);
 }
 async function sdUpload(fname, text) {
+  if (haveAuto()) {
+    const body = (await (await autoFetch("upload", { dir: "/moves", name: fname }, {
+      method: "POST", body: new TextEncoder().encode(text),
+    })).text()).trim();
+    if (body.startsWith("ERR")) throw new Error(body);
+    return;
+  }
   if (haveWifi()) { // fastest for whole files; fall back to the cable
     try {
       const r = await fetch("/api/robot/upload", {
@@ -4418,16 +6259,27 @@ async function sdDownloadSerial(fname) {
   return new TextDecoder().decode(Uint8Array.from(all, c => c.charCodeAt(0)));
 }
 async function sdDownload(fname) {
+  if (haveAuto())
+    return (await autoFetch("download", { path: "/moves/" + fname })).text();
   if (haveWifi()) {
     try {
-      return await fetch(`/api/robot/download?ip=${encodeURIComponent(robotIp())}` +
-                         `&path=${encodeURIComponent("/moves/" + fname)}`).then(r => r.text());
+      // A 404/502 body is not a sequence: read as YAML it said "no pose steps".
+      const r = await fetch(`/api/robot/download?ip=${encodeURIComponent(robotIp())}` +
+                            `&path=${encodeURIComponent("/moves/" + fname)}`);
+      const text = await r.text();
+      if (!r.ok) throw new Error(text.trim() || ("the robot answered " + r.status));
+      return text;
     } catch (e) { if (!haveUsb()) throw e; }
   }
   if (haveUsb()) return sdDownloadSerial(fname);
   throw new Error("connect first (WiFi or USB)");
 }
 async function sdDelete(fname) {
+  if (haveAuto()) {
+    const body = (await (await autoFetch("delete", { path: "/moves/" + fname })).text()).trim();
+    if (body.startsWith("ERR")) throw new Error(body);
+    return;
+  }
   if (haveWifi()) {
     try {
       // READ the reply. fetch does not throw on 404 or 502, and the firmware
@@ -4457,7 +6309,9 @@ async function refreshSd() {
   box.textContent = "Reading the robot's card…";
   try {
     let files;
-    if (haveWifi()) {
+    if (haveAuto()) {
+      files = await (await autoFetch("files", { dir: "/moves" })).json();
+    } else if (haveWifi()) {
       files = await fetch(`/api/robot/files?ip=${encodeURIComponent(robotIp())}&dir=/moves`)
         .then(r => r.json());
     } else if (haveUsb()) {
@@ -4550,7 +6404,7 @@ async function uploadYaml() {
 // because a board on older firmware still needs it.
 function stopRobotSequence() {
   handedOff = false;
-  if (!haveUsb() && !haveWifi()) return;
+  if (!haveRobot()) return;
   try { robotCmd("MOVE STOP"); } catch (e) {}
 }
 
@@ -4572,7 +6426,7 @@ let handedOff = false;
 
 async function handOffToRobot() {
   if (handedOff || !playing) return;
-  if (!haveUsb() && !haveWifi()) return;     // nothing to hand off TO
+  if (!haveRobot()) return;                  // nothing to hand off TO
   // Hand off only what was ALREADY driving the arm. Two ways this used to move
   // a robot nobody asked to move:
   //   previewOnly — the crash gate said this movement collides and the user
@@ -4598,7 +6452,9 @@ async function handOffToRobot() {
     const { name, yaml } = buildYaml(playT);
     const file = (part ? name + ".part" : name) + ".yaml";
     await sdUpload(file, yaml);              // falls back to module memory with no SD
-    await robotCmd("MOVE " + file);
+    // A refused MOVE must not stop the preview and claim the module has it.
+    const said = await robotCmd("MOVE " + file);
+    if (!said.startsWith("OK")) throw new Error(said || "the module did not start it");
     // stop being the clock: the module owns the show now
     playing = false;
     keepAwake(false);
@@ -4655,39 +6511,51 @@ async function robotRun() {
       + (e && e.message ? e.message : e);
     return;
   }
-  await robotCmd("MOVE " + file);
+  const said = await robotCmd("MOVE " + file);
+  // robotCmd answers "" on a failure; the card said "running" anyway.
+  if (!said.startsWith("OK")) {
+    if (st) st.textContent = file + " was sent, but the robot did not start it — "
+      + (said || $("robotStat").textContent || "no answer");
+    notice(st ? st.textContent : "the robot did not start " + file);
+    return;
+  }
   if (st) st.textContent = part
     ? "the robot is running from the move you picked, to the end — it does not "
       + "go back to the start. The whole show is still saved as " + name + ".yaml."
     : "the robot is running " + file + " on its own.";
 }
 
-// ---- zero-position calibration (password-gated; default manny/12345678) ----
-function zeroCred() { try { return JSON.parse(localStorage.getItem("nongZeroCred")) || null; } catch (e) { return null; } }
-function zeroCredOr() { return zeroCred() || { user: "manny", pass: "12345678" }; }
-function zeroUnlock() {
-  const c = zeroCredOr();
-  if ($("zUser").value === c.user && $("zPass").value === c.pass) {
+// ---- zero-position calibration (locked behind the HUB login) ----
+// Checked by the hub, not against a password kept in this browser: that one
+// (manny/12345678) refused admin/admin123 while the hub accepted it (A26-43).
+async function zeroUnlock() {
+  const u = $("zUser").value.trim(), p = $("zPass").value;
+  let ok = false, why = "";
+  try {
+    const r = await fetch("/api/login", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: u, password: p }) });
+    const j = await r.json().catch(() => ({}));
+    ok = r.ok && !!j.ok;
+    if (j.locked_for > 0) why = `Too many tries. Wait ${j.locked_for} seconds.`;
+  } catch (e) {
+    const acc = getAccounts();                 // no hub: Studio's own accounts
+    ok = !!(acc[u] && acc[u] === p);
+  }
+  $("zPass").value = "";
+  if (ok) {
     $("zeroLocked").style.display = "none";
     $("zeroPanel").style.display = "";
-    $("zPass").value = "";
+    $("zStat").textContent = "";
   } else {
-    // Say what to do, and never imply the reader is at fault. Which of the two
-    // is wrong is deliberately not revealed.
-    $("zStat").textContent = "That user name and password do not match. "
-      + "Check them and try again.";
+    // Which of the two is wrong is deliberately not revealed.
+    $("zStat").textContent = why || "That user name and password do not match. "
+      + "Use your hub login and try again.";
   }
 }
 function zeroLock() { $("zeroPanel").style.display = "none"; $("zeroLocked").style.display = ""; }
-function zeroChangeCred() {
-  const u = $("zNewUser").value.trim(), p = $("zNewPass").value;
-  if (!u || !p) { $("zStat2").textContent = "enter a new user and password"; return; }
-  localStorage.setItem("nongZeroCred", JSON.stringify({ user: u, pass: p }));
-  $("zNewUser").value = ""; $("zNewPass").value = "";
-  $("zStat2").textContent = "login changed (this browser)";
-}
 async function robotZeroSet() {
-  if (!haveUsb() && !haveWifi()) { $("zStat2").textContent = "connect to the robot first"; notice($("zStat2").textContent); return; }
+  if (!haveRobot()) { $("zStat2").textContent = "connect to the robot first"; notice($("zStat2").textContent); return; }
   const r = await robotCmd("SETZERO");
   $("zStat2").textContent = r.startsWith("OK")
     ? "zero set — this pose is now the robot's home. Your start angles are unchanged."
@@ -4708,13 +6576,29 @@ function monitorChanged() {
     // the HUB's clock, and switching this page to watching must end it.
     hubStop();
     playing = false; $("playBtn").textContent = "▶ Play";
-    monTimer = setInterval(monitorTick, 350);
     $("robotStat").textContent = "monitoring…";
+    // Watching needs a link. Ticked before Connect (or after a first try that
+    // timed out while the hub opened the port) it said "not connected" forever
+    // although the cable worked (A26-42). So connect first, once.
+    const start = () => { if ($("monChk").checked && !monTimer) monTimer = setInterval(monitorTick, 350); };
+    if (haveRobot()) start();
+    else Promise.resolve(connectRobot()).then(() => {
+      if (haveRobot()) return start();
+      $("monChk").checked = false;
+      $("robotStat").textContent = "monitor needs the robot connected — pick the cable or "
+        + "WiFi above and press Connect, then tick monitor again.";
+      notice($("robotStat").textContent);
+    });
   } else {
     clearInterval(monTimer); monTimer = null;
   }
 }
+let monBusy = false;
 async function monitorTick() {
+  // One status request at a time. Over RS485 a reply can take longer than the
+  // 350 ms tick, and piling requests onto one shared cable made them fail.
+  if (monBusy) return;
+  monBusy = true;
   try {
     const s = await getStatus();
     const m = s.module || {};
@@ -4733,8 +6617,359 @@ async function monitorTick() {
   } catch (e) {
     $("robotStat").textContent = "monitor: no reply (" + (e.message || e) + ")";
     notice($("robotStat").textContent);
+  } finally {
+    monBusy = false;
   }
 }
+// --- dummy link ---
+// The dummy is a hand-posed copy of the robot: the same 10 joints, a pot on
+// each instead of a servo (firmware type "dummy", COMMANDS.md). It is its OWN
+// module with its own link, separate from the robot's: usually the same RS485
+// dongle with a different bus id, but it can be on another cable or on WiFi.
+// It answers POSE? exactly like the robot, so its pose drops straight into
+// `pose` and every path that already works for a pose (keyframes, live send)
+// works for it unchanged.
+// "Simulated" is a dummy made of sliders on this page, so every mode can be
+// tried with no dummy built yet. It answers through the same parser as a real
+// one, so what it proves about the rest of the page is real.
+let dummySim = null;          // simulated pot angles, or null when not simulating
+let dummyFollowOn = false;    // the follow loop is running
+let dummyLast = null;         // the last pose read, for "did it move"
+
+function dummySource() { return $("dummySrc").value; }
+function dummyBus() { const v = $("dummyBus").value.trim(); return v ? parseInt(v, 10) : 0; }
+
+function dummySrcChanged(boot) {
+  const s = dummySource();
+  $("dummyPort").style.display = s === "usb" ? "" : "none";
+  $("dummyRescan").style.display = s === "usb" ? "" : "none";
+  $("dummyBusWrap").style.display = s === "usb" ? "" : "none";
+  $("dummyIpWrap").style.display = s === "wifi" ? "" : "none";
+  $("dummySimBox").style.display = s === "sim" ? "" : "none";
+  // Not on page load: the port list is asked for when someone uses this card.
+  if (s === "usb" && !boot && !$("dummyPort").dataset.loaded) dummyLoadPorts();
+  if (s === "sim") dummyBuildSim();
+}
+
+async function dummyLoadPorts() {
+  const sel = $("dummyPort");
+  try {
+    const r = await fetch("/api/ports").then(r => r.json());
+    const ps = (r.ports || []).filter(p => !p.bt);
+    sel.innerHTML = "<option value=''>pick the USB port…</option>";
+    ps.forEach(p => {
+      const o = document.createElement("option");
+      o.value = p.port;
+      o.textContent = p.port + (p.who ? " — " + p.who : (p.desc ? " — " + p.desc : ""));
+      sel.appendChild(o);
+    });
+    // The dummy usually hangs on the robot's own RS485 dongle: offer that one.
+    const robotPort = $("usbPort") ? $("usbPort").value : "";
+    if (robotPort && ps.some(p => p.port === robotPort)) sel.value = robotPort;
+    else if (ps.length === 1) sel.value = ps[0].port;
+    sel.dataset.loaded = "1";
+  } catch (e) {
+    sel.innerHTML = "<option value=''>the port list needs the hub</option>";
+  }
+}
+
+// One command to the dummy, on its own link. Reply text, or throws.
+async function dummyCmd(c) {
+  const s = dummySource();
+  if (s === "sim") {
+    if (c.toUpperCase() !== "POSE?") return "OK";
+    return dummySim.map(v => (v === null ? "-" : fmtA(v))).join(" ");
+  }
+  let url;
+  if (s === "usb") {
+    const port = $("dummyPort").value;
+    if (!port) throw new Error("pick the USB port the dummy is on");
+    url = `/api/usb/cmd?port=${encodeURIComponent(port)}&id=${dummyBus()}&c=${encodeURIComponent(c)}`;
+  } else {
+    const ip = $("dummyIp").value.trim();
+    if (!ip) throw new Error("type the dummy's address");
+    url = `/api/robot/cmd?ip=${encodeURIComponent(ip)}&c=${encodeURIComponent(c)}`;
+  }
+  const r = await fetch(url);
+  const t = (await r.text()).trim();
+  if (!r.ok) {
+    let msg = t;
+    try { msg = JSON.parse(t).error || t; } catch (e) { /* plain text */ }
+    throw new Error(msg);
+  }
+  return t;
+}
+
+// "90.0 45.5 - ..." -> [90, 45.5, null, ...]. '-' is a joint with no pot: it
+// is left where it is, the same rule the robot's POSE applies to '-'.
+function parseDummyPose(text) {
+  const tok = String(text || "").trim().split(/\s+/);
+  if (tok.length < ARMJ || tok.some(t => t !== "-" && !isFinite(parseFloat(t))))
+    throw new Error("the dummy did not answer with a pose (" + String(text).slice(0, 40) + ")");
+  return Array.from({ length: NJ }, (_, i) =>
+    (tok[i] === undefined || tok[i] === "-") ? null : parseFloat(tok[i]));
+}
+
+async function dummyRead() {
+  const vals = parseDummyPose(await dummyCmd("POSE?"));
+  dummyLast = vals;
+  return vals;
+}
+
+// Put the dummy's pose into the editor. The robot model's limits apply, so a
+// dummy bent further than the robot may go shows (and sends) the limit.
+function dummyApply(vals) {
+  pose = pose.map((cur, i) => (vals[i] === null ? cur : clampJ(i, vals[i])));
+  applyPose(); renderSliders();
+}
+
+async function dummyConnect() {
+  try {
+    const v = await dummyRead();
+    const n = v.filter(x => x !== null).length;
+    $("dummyStat").textContent = "dummy answers ✓ — " + n + " of " + NJ + " joints have a pot";
+  } catch (e) {
+    $("dummyStat").textContent = "no answer from the dummy: " + (e.message || e);
+    notice($("dummyStat").textContent);
+  }
+}
+
+// ---- follow: Studio (and optionally the robot) copies the dummy ------------
+// One read in flight at a time, like sendPoseLive: the loop paces itself to
+// the link, and a slow bus cannot pile up requests.
+function dummyFollowChanged() {
+  const mode = $("dummyFollow").value;
+  if (mode !== "off") {
+    if (mode === "robot" && !(haveUsb() || haveWifi())) {
+      $("dummyStat").textContent = "connect the robot first (Robot link above), then pick this again";
+      notice($("dummyStat").textContent);
+      $("dummyFollow").value = "studio";
+    }
+    // Two things steering the editor at once would fight: stop the monitor
+    // (editor follows robot) and any playback.
+    if ($("monChk").checked) { $("monChk").checked = false; monitorChanged(); }
+    if (playing) togglePlay();
+    if (!dummyFollowOn) { dummyFollowOn = true; dummyFollowTick(); }
+  } else {
+    dummyFollowOn = false;
+  }
+}
+async function dummyFollowTick() {
+  if (!dummyFollowOn) return;
+  const mode = $("dummyFollow").value;
+  try {
+    const prev = dummyLast;
+    const v = await dummyRead();
+    const moved = !prev || v.some((x, i) => (x === null) !== (prev[i] === null) ||
+                                       (x !== null && Math.abs(x - prev[i]) >= 0.2));
+    if (moved && dummyFollowOn) {
+      dummyApply(v);
+      // The robot gets the pose through the same live path a slider drag
+      // uses: its timing comes from the link, and the robot's own LIMIT and
+      // max_dps still decide how far and how fast it really goes.
+      if (mode === "robot") sendPoseLive();
+    }
+    $("dummyStat").textContent = (mode === "robot" ? "robot + Studio follow" : "Studio follows") +
+      " the dummy";
+  } catch (e) {
+    $("dummyStat").textContent = "dummy: no answer (" + (e.message || e) + ") — still trying";
+  }
+  if (dummyFollowOn) setTimeout(dummyFollowTick, 80);
+}
+
+// ---- the dummy and the sequence -------------------------------------------
+async function dummyToNewKey() {
+  try { dummyApply(await dummyRead()); addKey(); $("dummyStat").textContent = "dummy pose saved as move " + selKey; }
+  catch (e) { $("dummyStat").textContent = "" + (e.message || e); }
+}
+async function dummyToSelectedKey() {
+  if (!keys[selKey]) { $("dummyStat").textContent = "select a move in the timeline first"; return; }
+  try { dummyApply(await dummyRead()); updateKey(); $("dummyStat").textContent = "move " + selKey + " now holds the dummy pose"; }
+  catch (e) { $("dummyStat").textContent = "" + (e.message || e); }
+}
+// Send the REAL robot to the selected move, at that move's own speed.
+function robotToSelectedKey() {
+  const k = keys[selKey];
+  if (!k) { $("dummyStat").textContent = "select a move in the timeline first"; return; }
+  if (!(haveUsb() || haveWifi())) { $("dummyStat").textContent = "connect the robot first (Robot link above)"; return; }
+  if ($("dummyFollow").value !== "off") { $("dummyFollow").value = "off"; dummyFollowChanged(); }
+  const from = pose.slice();
+  const tgt = k.pose.map((v, i) => clampJ(i, v));
+  const ms = Math.max(keyTravelMs(selKey), autoTime(from, tgt, keyDps(selKey)), MIN_MOVE_MS);
+  selectKey(selKey);           // the model goes there too; with live on it also sends
+  if (!$("liveChk").checked) robotCmd("POSE " + tgt.map(fmtA).join(" ") + " T " + Math.round(ms));
+  $("dummyStat").textContent = "robot moving to move " + selKey;
+}
+
+// ---- simulated dummy: sliders standing in for the pots ---------------------
+function dummyBuildSim() {
+  const box = $("dummySimRows");
+  if (!dummySim) dummySim = pose.slice();
+  if (box.dataset.built) return;
+  box.dataset.built = "1";
+  for (let i = 0; i < NJ; i++) {
+    const r = document.createElement("div"); r.className = "row";
+    const l = document.createElement("span"); l.className = "lbl"; l.textContent = JOINT_LABELS[i];
+    const s = document.createElement("input"); s.type = "range"; s.min = 0; s.max = 180; s.step = 0.5;
+    s.value = dummySim[i]; s.style.flex = "1"; s.id = "dsim" + i;
+    const v = document.createElement("span"); v.className = "mini"; v.style.minWidth = "40px";
+    v.textContent = fmtA(dummySim[i]) + "°";
+    s.oninput = () => { dummySim[i] = parseFloat(s.value); v.textContent = fmtA(dummySim[i]) + "°"; };
+    r.append(l, s, v); box.appendChild(r);
+  }
+}
+
+window.addEventListener("DOMContentLoaded", function () {
+  if (!document.getElementById("dummySrc")) return;
+  dummySrcChanged(true);
+  $("dummyPort").addEventListener("focus", () => {
+    if (!$("dummyPort").dataset.loaded) dummyLoadPorts();
+  });
+});
+// --- freeze watch ---
+// User 2026-09-17: the whole Studio page freezes, while playing, dragging, in
+// live mode, and sometimes doing nothing. It did not reproduce headless (0 long
+// tasks, fake robot), so the page records it where it happens: a frame gap over
+// FREEZE_MS while the tab is visible sends one report to the hub (/api/report)
+// with what was running and the slowest recent hub calls.
+const FREEZE_MS = 1500;
+const _fw = { last: 0, hiddenSince: 0, sentAt: -1e9, calls: [], longs: [] };
+(function () {
+  const realFetch = window.fetch.bind(window);
+  window.fetch = function (url, opts) {            // remember how long hub calls take
+    const t0 = performance.now(), u = String(url && url.url || url).slice(0, 90);
+    const done = () => {
+      _fw.calls.push({ u, ms: Math.round(performance.now() - t0), at: Math.round(t0) });
+      if (_fw.calls.length > 40) _fw.calls.shift();
+    };
+    const p = realFetch(url, opts);
+    p.then(done, done);
+    return p;
+  };
+  try {
+    new PerformanceObserver(l => l.getEntries().forEach(e => {
+      _fw.longs.push({ ms: Math.round(e.duration), at: Math.round(e.startTime) });
+      if (_fw.longs.length > 20) _fw.longs.shift();
+    })).observe({ entryTypes: ["longtask"] });
+  } catch (e) { /* older browser: frame gaps still count */ }
+  document.addEventListener("visibilitychange", () => {
+    _fw.hiddenSince = document.hidden ? performance.now() : 0;
+    _fw.last = 0;                                  // a hidden tab is not a freeze
+  });
+})();
+function freezeCheck(now) {
+  const gap = _fw.last ? now - _fw.last : 0;
+  _fw.last = now;
+  if (gap < FREEZE_MS || document.hidden || now - _fw.sentAt < 30000) return;
+  _fw.sentAt = now;
+  const gi = (renderer && renderer.info) || {};
+  const state = {
+    gapMs: Math.round(gap), playing: typeof playing !== "undefined" && playing,
+    live: !!($("liveChk") && $("liveChk").checked),
+    monitor: !!($("monChk") && $("monChk").checked),
+    auto: haveAuto(), usb: haveUsb(), wifi: haveWifi(), keys: keys.length,
+    gpu: { geometries: gi.memory && gi.memory.geometries, textures: gi.memory && gi.memory.textures,
+           programs: gi.programs && gi.programs.length },
+    heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : null,
+    longTasks: _fw.longs.filter(x => x.at > now - gap - 2000),
+    slowCalls: _fw.calls.filter(c => c.ms > 300 || c.at > now - gap - 2000).slice(-15),
+  };
+  fetch("/api/report", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: "STUDIO FREEZE " + JSON.stringify(state), page: "studio",
+                           time: new Date().toISOString(), attachDiag: false }) }).catch(() => {});
+}
+// --- distances in the 3D view (A26-44) ---
+//
+// User 2026-09-17: *see the distance between the point that i need to know in
+// robot ... elbow and hand or elbow -> elbow ... hold that key or can click*.
+// Click Distances (or hold D) to see dashed lines with the length in mm. The
+// pairs are DATA in distances.json: a new pair is an entry there, not code.
+let distPairs = null;        // null = not read yet, [] = none listed
+let distOn = false;          // switched on by the button
+let distHeld = false;        // on while D is held
+let distLines = [];
+const distLayer = document.createElement("div");
+distLayer.id = "distLayer";
+distLayer.hidden = true;
+viewport.appendChild(distLayer);
+
+function distPoint(name) {   // world position of a named point, or null
+  const m = /^([LR])_(elbow|hand)$/.exec(name || "");
+  if (!m) return null;
+  const arm = m[1] === "L" ? 0 : 1;   // arm 0 is the robot's left (+X), see buildArm
+  const ball = (m[2] === "elbow" ? elbowBalls : wristBalls)[arm];
+  return ball ? ball.getWorldPosition(new THREE.Vector3()) : null;
+}
+async function distLoad() {
+  if (distPairs) return;
+  try {
+    const j = await fetch("distances.json").then(r => r.json());
+    distPairs = (j.pairs || []).filter(p => p && p.from && p.to);
+  } catch (e) {
+    distPairs = [];
+    distLayer.dataset.note = "the list of distances (distances.json) could not be read";
+  }
+}
+function distShown() { return distOn || distHeld; }
+function distSet(on) {
+  distOn = on;
+  const b = $("distBtn");
+  if (b) { b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); }
+  distLoad().then(distDraw);
+}
+function distClear() {
+  distLines.forEach(l => { scene.remove(l); l.geometry.dispose(); l.material.dispose(); });
+  distLines = [];
+  distLayer.textContent = "";
+}
+// Called every frame from tick(); does nothing while switched off.
+function distDraw() {
+  if (!distShown() || !distPairs) {
+    if (distLines.length || !distLayer.hidden) { distClear(); distLayer.hidden = true; }
+    return;
+  }
+  distClear();
+  distLayer.hidden = false;
+  scene.updateMatrixWorld();
+  const cam = activeCam(), rect = renderer.domElement.getBoundingClientRect();
+  const color = getComputedStyle(document.documentElement).getPropertyValue("--acc").trim() || "#4ea1ff";
+  let drawn = 0;
+  distPairs.forEach(p => {
+    const a = distPoint(p.from), b = distPoint(p.to);
+    if (!a || !b) return;
+    const g = new THREE.BufferGeometry().setFromPoints([a, b]);
+    const line = new THREE.Line(g, new THREE.LineDashedMaterial(
+      { color: new THREE.Color(color), dashSize: 8, gapSize: 6, depthTest: false }));
+    line.computeLineDistances();
+    line.renderOrder = 30;
+    scene.add(line);
+    distLines.push(line);
+    const mid = a.clone().add(b).multiplyScalar(0.5).project(cam);
+    if (mid.z > 1) return;                      // behind the camera
+    const tag = document.createElement("span");
+    tag.className = "distTag";
+    tag.textContent = Math.round(a.distanceTo(b)) + " mm";
+    tag.title = p.label || (p.from + " to " + p.to);
+    tag.style.left = ((mid.x + 1) / 2 * rect.width) + "px";
+    tag.style.top = ((1 - mid.y) / 2 * rect.height) + "px";
+    distLayer.appendChild(tag);
+    drawn++;
+  });
+  if (!drawn) {
+    const n = document.createElement("span");
+    n.className = "distNote";
+    n.textContent = distLayer.dataset.note || "no distances to show — the robot model is not built yet";
+    distLayer.appendChild(n);
+  }
+}
+window.addEventListener("keydown", (e) => {
+  if (e.key !== "d" && e.key !== "D") return;
+  const t = e.target;
+  if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;  // typing a "d"
+  if (!distHeld) { distHeld = true; distLoad().then(distDraw); }
+});
+window.addEventListener("keyup", (e) => { if (e.key === "d" || e.key === "D") distHeld = false; });
+window.addEventListener("blur", () => { distHeld = false; });
 // --- main loop ---
 function resize() {
   const w = viewport.clientWidth, h = viewport.clientHeight;
@@ -4785,6 +7020,7 @@ let _drawing = false;          // true only inside the animation frame
 let _lastScrub = -1, _lastTime = "";
 function playTick() {
   if (!playing) { lastPlayMs = 0; return; }
+  if (entryHold) { lastPlayMs = 0; return; }   // the arm is still travelling to keyframe 0
   const now = performance.now();
   if (!lastPlayMs) { lastPlayMs = now; return; }
   // Clamp the step. A hidden tab has its timers throttled (to about once a
@@ -4844,19 +7080,23 @@ function playTick() {
       // same numbers the YAML holds); after a pause, only what is left
       const K = playKeys();
       const rem = segRemaining(playT);
-      const tt = K[seg].t - rem <= 50 ? K[seg].t : rem;
-      liveSend("POSE " + K[seg].pose.map(fmtA).join(" ") + " T " + tt);
+      // seg === K.length is the loop's travel back to the start pose
+      const to = seg === K.length ? { pose: K[0].pose, t: loopReturnMs() } : K[seg];
+      const tt = to.t - rem <= 50 ? to.t : rem;
+      liveSend("POSE " + to.pose.map(fmtA).join(" ") + " T " + tt);
     }
   }
 }
 
 function tick(now) {
   requestAnimationFrame(tick);
-  _drawing = true;          // this pass may paint; the interval's may not
+  freezeCheck(now);
+  _drawing = true;         // this pass may paint; the interval's may not
   playTick();               // no-op when the interval already advanced it
   _drawing = false;
   lastFrame = now;
   controls.update();
+  distDraw();              // distances follow the pose and the camera (A26-44)
   renderer.render(scene, activeCam());
 }
 
@@ -4954,6 +7194,7 @@ renderTimeline();
 poseChanged(false);     // also primes the live collision banner
 refreshProjects();
 refreshSeqs();
+refreshShows(); renderShow();
 refreshModels();
 connModeChanged();
 initSideDrag();
@@ -4961,6 +7202,7 @@ initTimeDrag();
 // Boot is over: from here a change to the timeline is real work, so start
 // keeping a draft of it, and offer back anything a previous session lost.
 draftArmed = true;
+markClean(workSig(), "");   // the untouched start is not unsaved work
 offerDraft();
 resize();
 requestAnimationFrame((t) => { lastFrame = t; tick(t); });
@@ -4970,6 +7212,7 @@ requestAnimationFrame((t) => { lastFrame = t; tick(t); });
 //   ?dev=wifi:<ip>        same, hub's dev syntax
 //   ?dev=usb:COM7[:<id>]  the cable, SHARED through the hub — the module
 //                         website can stay open on that same port
+//   ?dev=auto:<board>      ask the hub for the fastest route on every call
 {
   const qp = new URLSearchParams(location.search);
   const dev = qp.get("dev") || "";
@@ -4997,8 +7240,11 @@ requestAnimationFrame((t) => { lastFrame = t; tick(t); });
     if (slash > 0) { via = inner.slice(0, slash + 1); inner = inner.slice(slash + 1); }
   }
   window.HUB_VIA = via;            // every command puts it back on
+  window.HUB_AUTO = inner.indexOf("auto:") === 0 ? inner : "";
 
-  if (inner.indexOf("usb:") === 0) {
+  if (window.HUB_AUTO) {
+    connectRobot().then(startMonitor);
+  } else if (inner.indexOf("usb:") === 0) {
     const bits = inner.slice(4).split(":");
     $("connSel").value = "usb";
     if (bits[1]) $("busId").value = bits[1];
@@ -5180,26 +7426,54 @@ function getAccounts() {
 function saveAccounts(acc) {
   localStorage.setItem('nongAccounts', JSON.stringify(acc));
 }
-function appLogin() {
-  const u = $("loginUser").value.trim();
-  const p = $("loginPass").value;
-  const acc = getAccounts();
-  if (acc[u] && acc[u] === p) {
-    currentUser = u;
-    $("loginPass").value = "";
-    $("loginStat").textContent = "";
-    showTab(sideTab);
-    localStorage.setItem("nongZeroCred", JSON.stringify({ user: u, pass: p }));
-    window.dispatchEvent(new Event('resize'));
-    if (pendingConnect) {
-      const pending = pendingConnect;
-      pendingConnect = null;
-      connectRobot().then(pending.resolve, pending.reject);
-    }
-  } else {
-    $("loginStat").textContent = "Invalid username or password.";
+// The login is the HUB's login (user 2026-09-17). Studio used to check a
+// local-only account list, so it opened while the hub still answered every
+// robot command with "log in before doing that". Local accounts are used only
+// when there is no hub at all (Studio opened from a file).
+function loggedIn(u) {
+  currentUser = u;
+  $("loginStat").textContent = "";
+  showTab(sideTab);
+  window.dispatchEvent(new Event('resize'));
+  if (pendingConnect) {
+    const pending = pendingConnect;
+    pendingConnect = null;
+    connectRobot().then(pending.resolve, pending.reject);
   }
 }
+async function appLogin() {
+  const u = $("loginUser").value.trim();
+  const p = $("loginPass").value;
+  let ok = false, why = "";
+  try {
+    const r = await fetch("/api/login", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: u, password: p }) });
+    const j = await r.json().catch(() => ({}));
+    ok = r.ok && !!j.ok;
+    why = j.locked_for > 0 ? `Too many tries. Wait ${j.locked_for} seconds.` : "";
+  } catch (e) {
+    const acc = getAccounts();                 // no hub: local accounts only
+    ok = !!(acc[u] && acc[u] === p);
+  }
+  if (ok) {
+    $("loginPass").value = "";
+    localStorage.removeItem("nongZeroCred");   // old copy of a password; the zero lock asks the hub now
+    loggedIn(u);
+  } else {
+    $("loginStat").textContent = why || "Wrong username or password.";
+  }
+}
+// Logged in on the hub page (or another tab)? Then Studio is logged in too.
+async function syncHubLogin() {
+  if (currentUser) return;
+  try {
+    const j = await fetch("/api/whoami").then(r => r.json());
+    if (j.authed && !currentUser) loggedIn(j.user || "user");
+  } catch (e) { /* no hub: the login card stays */ }
+}
+window.addEventListener("load", syncHubLogin);
+window.addEventListener("focus", syncHubLogin);
 function populateUserList() {
   const list = $("muList");
   if (!list) return;

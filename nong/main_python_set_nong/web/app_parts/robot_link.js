@@ -72,7 +72,61 @@ function usbPortChanged() {   // picking another port drops the old link
   if (hubPort && hubPort !== $("usbPort").value) hubPort = "";
   $("robotStat").textContent = linkBadge();
 }
+// Studio and the robot must agree on joint limits, or a pose drawn at 25 deg
+// is clamped to 30 on the arm and the two no longer match (user 2026-09-17).
+// Says so on connect and offers both ways to fix it; which is right is the user's call.
+async function checkLimitsMatch() {
+  const box = $("limMismatch");
+  if (!box) return;
+  try {
+    const j = JSON.parse(await rawCmd("LIMIT?"));
+    const diff = [];
+    for (let i = 0; i < NJ; i++) {
+      const rmin = Array.isArray(j.min) ? Math.round(+j.min[i]) : null;
+      const rmax = Array.isArray(j.max) ? Math.round(+j.max[i]) : null;
+      if (rmin === null || rmax === null || isNaN(rmin) || isNaN(rmax)) continue;
+      if (rmin !== Math.round(RIG.min[i]) || rmax !== Math.round(RIG.max[i]))
+        diff.push(`${JOINT_LABELS[i]}: Studio ${Math.round(RIG.min[i])}–${Math.round(RIG.max[i])}°, robot ${rmin}–${rmax}°`);
+    }
+    box.hidden = !diff.length;
+    $("limMismatchText").textContent = diff.length
+      ? "Studio and the robot allow different joint angles, so the arm will not match the preview. " + diff.join(" · ")
+      : "";
+  } catch (e) { box.hidden = true; }            // an old board without LIMIT?: say nothing
+}
+// A USB-RS485 adapter has no board of its own: the nong answers only when
+// addressed by its bus id. The id box is technical detail (hidden), so fill it
+// from the hub's cable probe (user 2026-09-17: "no reply from COM12").
+// The hub's cached answer first (instant while the cable is in use), the full
+// bus census (~4.3 s on COM21, 2026-09-27) only when that knows no nong.
+async function findBusId(port) {
+  for (const full of [0, 1]) {
+    try {
+      const r = await fetch(`/api/scanusb?full=${full}&port=` + encodeURIComponent(port)).then(r => r.json());
+      const u = (r.usb || [])[0] || {};
+      if (u.module) return false;                            // a board on this cable itself
+      const nongs = (u.rs485 || []).filter(m => m.type === "nong");
+      if (!nongs.length) continue;
+      $("busId").value = nongs[0].id;
+      return true;
+    } catch (e) { return false; }                            // no hub probe: id stays as typed
+  }
+  return false;
+}
+// The last bus id that answered on each port. Without it every page load
+// started with the empty id: two unaddressed INFOs that an RS485 adapter can
+// never answer, then the census - ~9 s before Connect worked (2026-09-27).
+const BUS_KEY = "nongBusId:";
+function rememberBusId(port) {
+  try { if (port) localStorage.setItem(BUS_KEY + port, String(busId() || "")); } catch (e) {}
+}
+function recallBusId(port) {
+  if (busId() || !port) return;
+  try { const v = localStorage.getItem(BUS_KEY + port); if (v) $("busId").value = v; } catch (e) {}
+}
 async function hubUsbCmd(c) {
+  if (!hubPort && !(window.HUB_PEER || window.HUB_VIA))
+    throw new Error("the USB link is closed - press Connect again");
   // With a peer, the command has to go to the module behind the plugged-in
   // one's hotspot, and only the unified endpoint understands that: the hub
   // turns dev=usb:COM7@far-nong into REACH far-nong <command> down the cable.
@@ -85,7 +139,11 @@ async function hubUsbCmd(c) {
       `&c=${encodeURIComponent(c)}`
     : `/api/usb/cmd?port=${encodeURIComponent(hubPort)}` +
       `&id=${busId()}&c=${encodeURIComponent(c)}`;
-  const r = await fetch(url);
+  // Never wait forever: a request stuck behind a busy cable held one of the
+  // browser's six connections to the hub, and six of them froze every other
+  // fetch on the page.
+  const r = await fetch(url, window.AbortSignal && AbortSignal.timeout
+    ? { signal: AbortSignal.timeout(15000) } : {});
   const t = await r.text();
   if (!r.ok) {
     let msg = t;
@@ -141,7 +199,17 @@ async function serialReadLoop() {
   $("robotStat").textContent = "USB disconnected";
   notice($("robotStat").textContent);
 }
+// ONE command on the wire at a time. Two overlapping calls used to throw
+// "WritableStream is locked" on the second getWriter(), leaving its waiter in
+// the queue to swallow the FIRST command's reply - every later reply then
+// went to the wrong caller. Replies carry no id, so order is the only match.
+let serialChain = Promise.resolve();
 function serialCmd(c) {
+  const run = serialChain.then(() => serialCmdNow(c));
+  serialChain = run.catch(() => {});
+  return run;
+}
+function serialCmdNow(c) {
   return new Promise((res, rej) => {
     if (!serialPort || !serialPort.writable) return rej(new Error("USB not connected"));
     const id = busId();
@@ -156,8 +224,16 @@ function serialCmd(c) {
       if (k >= 0) { serialWaiters.splice(k, 1); rej(new Error("timeout (bus id right?)")); }
     }, 2500);
     const framed = id ? "#" + id + " " + c : c;      // RS485 frame when addressed
-    const writer = serialPort.writable.getWriter();
-    writer.write(new TextEncoder().encode(framed + "\n")).finally(() => writer.releaseLock());
+    const drop = (e) => {
+      const k = serialWaiters.indexOf(w);
+      if (k >= 0) serialWaiters.splice(k, 1);
+      rej(e);
+    };
+    try {
+      const writer = serialPort.writable.getWriter();
+      writer.write(new TextEncoder().encode(framed + "\n"))
+        .catch(drop).finally(() => writer.releaseLock());
+    } catch (e) { drop(e); }
   });
 }
 
@@ -168,8 +244,24 @@ function serialCmd(c) {
 function usbDirect() { return !!(serialPort && serialPort.writable); }
 function haveUsb() { return usbDirect() || !!hubPort; }
 function haveWifi() { return !!robotIp(); }
+function haveAuto() { return !!window.HUB_AUTO; }
+function haveRobot() { return haveAuto() || haveUsb() || haveWifi(); }
 // one call for "send this over the cable", whichever USB mode is connected
 function cableCmd(c) { return usbDirect() ? serialCmd(c) : hubUsbCmd(c); }
+async function autoFetch(what, params, options) {
+  const q = new URLSearchParams(Object.assign({ dev: window.HUB_AUTO }, params || {}));
+  const r = await fetch(`/api/dev/${what}?${q}`, options);
+  if (!r.ok) {
+    const body = await r.text();
+    let msg = body;
+    try { msg = JSON.parse(body).error || body; } catch (e) { /* plain text error */ }
+    throw new Error(msg);
+  }
+  return r;
+}
+async function autoCmd(c) {
+  return (await (await autoFetch("cmd", { c })).text()).trim();
+}
 async function httpCmd(c) {
   // Same over WiFi: wifi:<ip>@peer reaches a module on that board's hotspot.
   const url = (window.HUB_PEER || window.HUB_VIA)
@@ -179,6 +271,7 @@ async function httpCmd(c) {
   return fetch(url).then(r => r.text());
 }
 async function rawCmd(c) { // reply text or throws
+  if (haveAuto()) return autoCmd(c);
   if (haveUsb()) return cableCmd(c);
   if (haveWifi()) return httpCmd(c);
   throw new Error("connect first — 🔍 Find modules (WiFi) or pick a USB port");
@@ -190,6 +283,7 @@ async function rawCmd(c) { // reply text or throws
 // points at the SAME board the commands go to — hence the same precedence as
 // rawCmd: cable first, WiFi otherwise.
 function moduleDev() {
+  if (haveAuto()) return window.HUB_AUTO;
   // The peer rides along. Without it this link opened the website of the
   // board on the CABLE while every command went to the module behind that
   // board's hotspot — two different robots, one screen, no warning.
@@ -215,14 +309,31 @@ function moduleDev() {
 window.addEventListener("DOMContentLoaded", function () {
   const port = document.getElementById("usbPort");
   const mode = document.getElementById("connSel");
-  if (port) port.addEventListener("change", () => clearPeer("you picked another cable"));
-  if (mode) mode.addEventListener("change", () => clearPeer("you changed the connection"));
+  const ip = document.getElementById("robotIp");
+  const bus = document.getElementById("busId");
+  if (port) port.addEventListener("change", () => clearHubTarget("you picked another cable"));
+  if (mode) mode.addEventListener("change", () => clearHubTarget("you changed the connection"));
+  if (ip) ip.addEventListener("input", () => clearHubTarget("you typed another WiFi address"));
+  if (bus) bus.addEventListener("input", () => clearHubTarget("you typed another bus id"));
 });
 
+function clearHubTarget(why) {
+  const hadAuto = window.HUB_AUTO;
+  clearPeer(why);
+  window.HUB_AUTO = "";
+  if (hadAuto) routeNote("using the route you picked: " + why);
+}
 function clearPeer(why) {
   if (!window.HUB_PEER) return;
   window.HUB_PEER = "";
-  if (typeof log === "function") log("(no longer aiming at a peer module: " + why + ")");
+  routeNote("no longer aiming at the module behind the other one: " + why);
+}
+// Studio has no `log()`: these notes were written for one that never existed,
+// so the typeof guard kept them silent. The Robot card's line is where every
+// other route message goes; routine, so it is not a notice().
+function routeNote(text) {
+  const st = $("robotStat");
+  if (st) st.textContent = "(" + text + ")";
 }
 function openModule() {
   if (!currentUser) {
@@ -259,16 +370,67 @@ async function robotCmd(c) {
   }
 }
 async function getStatus() { // full status JSON on whichever link is up
+  if (haveAuto()) return (await autoFetch("status")).json();
   if (haveUsb()) {
     try { return JSON.parse(await cableCmd("INFO")); }
-    catch (e) { return JSON.parse(await cableCmd("INFO")); } // boot noise: retry once
+    catch (e) {
+      // Ask again only when the board restarted mid-answer. "No reply" does
+      // not get better by asking: it cost 2 s more per Connect on an adapter.
+      if (!/restart|JSON|Unexpected/i.test(e.message || "")) throw e;
+      return JSON.parse(await cableCmd("INFO"));
+    }
   }
   if (haveWifi())
     return fetch("/api/robot/status?ip=" + encodeURIComponent(robotIp())).then(r => r.json());
   throw new Error("not connected");
 }
+async function saveSafetySpeed() {
+  const stat = $("safeSpeedStat");
+  const want = Number($("safeDpsInput").value);
+  if (!Number.isInteger(want) || want < 5 || want > boardSafeDpsMax) {
+    stat.textContent = `Enter a whole number from 5 to ${Math.floor(boardSafeDpsMax)} °/s.`;
+    notice(stat.textContent);
+    return;
+  }
+  try {
+    // The route or board may have changed since Connect. Check the live board
+    // again before saving a limit that will survive its next restart.
+    const s = await getStatus();
+    const m = s && s.module;
+    const speeds = m && m.max_dps;
+    const ceiling = Array.isArray(speeds) && speeds.length === NJ
+      ? Math.min(...speeds.map(Number)) : 0;
+    if (!s || s.type !== "nong" || !m || !(+m.safe_dps >= 5) || !(ceiling >= want))
+      throw new Error("This board cannot use that limit. Reconnect and check its settings.");
+    if (String(s.chip || s.id || "") !== boardSafeIdentity)
+      throw new Error("The connected board changed. Reconnect before saving.");
+    if (+m.safe_dps !== SAFE_DPS || ceiling !== boardSafeDpsMax) {
+      adoptBoardSafety(m);
+      throw new Error("Board settings changed. Review the active limit before saving.");
+    }
+    if (want === SAFE_DPS) {
+      stat.textContent = `Already active at ${SAFE_DPS} °/s. No board setting changed.`;
+      return;
+    }
+    const warning = `Save peak speed limit ${want} °/s to this board? ` +
+      `It takes effect only after you restart the board. ` +
+      (want > SAFE_DPS ? "Higher speed can cause harder impacts. " : "") +
+      (boardSafePeer ? `Linked board #${boardSafePeer} must be set to the same limit before synchronized playback. ` : "") +
+      "Check that every joint holds under load before running a show.";
+    if (!confirm(warning)) return;
+    const reply = await rawCmd(`CFG safe_dps ${want}`);
+    if (!/^OK safe_dps=/.test(reply)) throw new Error(reply || "board did not confirm the setting");
+    stat.textContent = `Saved ${want} °/s for next boot. Active limit is still ` +
+      `${SAFE_DPS} °/s. Restart the board, then reconnect Studio to confirm.` +
+      (boardSafePeer ? ` Set linked board #${boardSafePeer} to the same limit.` : "");
+  } catch (e) {
+    stat.textContent = "Safety speed not saved: " + (e.message || e);
+    notice(stat.textContent);
+  }
+}
 function linkBadge() { // shown in robotStat so you see every open channel
   const parts = [], bus = busId() ? "→RS485 #" + busId() : "";
+  if (haveAuto()) parts.push("fastest route (hub) ✓");
   if (usbDirect()) parts.push("USB direct" + bus + " ✓");
   else if (hubPort) parts.push("USB " + hubPort + bus + " (shared) ✓");
   if (haveWifi()) parts.push("WiFi " + robotIp());
@@ -308,11 +470,13 @@ async function scanModules() {
 }
 function pickFound(ip) {
   if (!ip) return;
+  clearHubTarget("you picked another WiFi module");
   $("connSel").value = "wifi";
   connModeChanged();
   $("robotIp").value = ip;
   connectRobot();
 }
+let connecting = false;   // one Connect at a time: repeated presses stacked probes on one cable
 async function connectRobot() {
   if (!currentUser) {
     showTab("robot"); // This will actually show the login card since they aren't logged in
@@ -325,6 +489,11 @@ async function connectRobot() {
     }
     return pendingConnect.promise;
   }
+  if (connecting) return;
+  connecting = true;
+  try { await connectLink(); } finally { connecting = false; }
+}
+async function connectLink() {
   const t = transport(), had = hubPort;
   try {
     if (t === "usb") {
@@ -332,10 +501,32 @@ async function connectRobot() {
       hubPort = $("usbPort").value;
       if (!hubPort) throw new Error("pick the USB port the module is plugged into " +
         "(⟳ to rescan)");
+      recallBusId(hubPort);
     } else if (t === "serial" && !usbDirect()) {
       await serialConnect();
     }
-    const s = await getStatus();
+    let s;
+    try { s = await getStatus(); }
+    catch (e) {
+      // WIFI PICKED, CABLE GONE. The cable wins while it is open, so a robot
+      // unplugged and carried elsewhere kept every Connect on the dead port
+      // (user 2026-09-28: WiFi picked, nong found at 10.139.24.70, error was
+      // "could not open port 'COM21'"). Drop the cable and ask over WiFi.
+      if (t === "wifi" && hubPort && haveWifi()) {
+        hubPort = "";
+        s = await getStatus();
+      } else {
+      // silent cable: maybe an RS485 adapter, or the remembered bus id is now
+      // another board - ask the hub who is behind it
+      const tried = busId();
+      if (t !== "usb" || !(await findBusId(hubPort)) || busId() === tried) throw e;
+      s = await getStatus();
+      }
+    }
+    if (t === "usb") rememberBusId(hubPort);
+    checkLimitsMatch();                   // not awaited: connecting must not wait on it
+    boardSafeIdentity = String(s.chip || s.id || "");
+    adoptBoardSafety(s.module);
     // If the module is playing a sequence on its OWN clock, say so here. It is
     // the moment the question "why is the robot moving by itself?" gets asked —
     // it happens after a hand-off, or when the board was left running from an
@@ -350,6 +541,10 @@ async function connectRobot() {
     refreshSd();
   } catch (e) {
     if (t === "usb" && !had) hubPort = "";   // never show a link that isn't there
+    boardSafeIdentity = "";
+    $("safeDpsInput").disabled = $("saveSafeDps").disabled = true;
+    $("safeSpeedStat").textContent = "Disconnected. Reconnect to read the active safety limit.";
+    notice($("safeSpeedStat").textContent);
     $("robotStat").textContent = "Could not reach the robot. Check it is powered "
       + "and on the same network or cable, then try again. " + (e.message || e);
     notice($("robotStat").textContent);
@@ -456,6 +651,13 @@ async function sdUploadSerial(fname, text) {
   if (!r.startsWith("OK")) throw new Error(r);
 }
 async function sdUpload(fname, text) {
+  if (haveAuto()) {
+    const body = (await (await autoFetch("upload", { dir: "/moves", name: fname }, {
+      method: "POST", body: new TextEncoder().encode(text),
+    })).text()).trim();
+    if (body.startsWith("ERR")) throw new Error(body);
+    return;
+  }
   if (haveWifi()) { // fastest for whole files; fall back to the cable
     try {
       const r = await fetch("/api/robot/upload", {
@@ -483,16 +685,27 @@ async function sdDownloadSerial(fname) {
   return new TextDecoder().decode(Uint8Array.from(all, c => c.charCodeAt(0)));
 }
 async function sdDownload(fname) {
+  if (haveAuto())
+    return (await autoFetch("download", { path: "/moves/" + fname })).text();
   if (haveWifi()) {
     try {
-      return await fetch(`/api/robot/download?ip=${encodeURIComponent(robotIp())}` +
-                         `&path=${encodeURIComponent("/moves/" + fname)}`).then(r => r.text());
+      // A 404/502 body is not a sequence: read as YAML it said "no pose steps".
+      const r = await fetch(`/api/robot/download?ip=${encodeURIComponent(robotIp())}` +
+                            `&path=${encodeURIComponent("/moves/" + fname)}`);
+      const text = await r.text();
+      if (!r.ok) throw new Error(text.trim() || ("the robot answered " + r.status));
+      return text;
     } catch (e) { if (!haveUsb()) throw e; }
   }
   if (haveUsb()) return sdDownloadSerial(fname);
   throw new Error("connect first (WiFi or USB)");
 }
 async function sdDelete(fname) {
+  if (haveAuto()) {
+    const body = (await (await autoFetch("delete", { path: "/moves/" + fname })).text()).trim();
+    if (body.startsWith("ERR")) throw new Error(body);
+    return;
+  }
   if (haveWifi()) {
     try {
       // READ the reply. fetch does not throw on 404 or 502, and the firmware
@@ -522,7 +735,9 @@ async function refreshSd() {
   box.textContent = "Reading the robot's card…";
   try {
     let files;
-    if (haveWifi()) {
+    if (haveAuto()) {
+      files = await (await autoFetch("files", { dir: "/moves" })).json();
+    } else if (haveWifi()) {
       files = await fetch(`/api/robot/files?ip=${encodeURIComponent(robotIp())}&dir=/moves`)
         .then(r => r.json());
     } else if (haveUsb()) {
@@ -615,7 +830,7 @@ async function uploadYaml() {
 // because a board on older firmware still needs it.
 function stopRobotSequence() {
   handedOff = false;
-  if (!haveUsb() && !haveWifi()) return;
+  if (!haveRobot()) return;
   try { robotCmd("MOVE STOP"); } catch (e) {}
 }
 
@@ -637,7 +852,7 @@ let handedOff = false;
 
 async function handOffToRobot() {
   if (handedOff || !playing) return;
-  if (!haveUsb() && !haveWifi()) return;     // nothing to hand off TO
+  if (!haveRobot()) return;                  // nothing to hand off TO
   // Hand off only what was ALREADY driving the arm. Two ways this used to move
   // a robot nobody asked to move:
   //   previewOnly — the crash gate said this movement collides and the user
@@ -663,7 +878,9 @@ async function handOffToRobot() {
     const { name, yaml } = buildYaml(playT);
     const file = (part ? name + ".part" : name) + ".yaml";
     await sdUpload(file, yaml);              // falls back to module memory with no SD
-    await robotCmd("MOVE " + file);
+    // A refused MOVE must not stop the preview and claim the module has it.
+    const said = await robotCmd("MOVE " + file);
+    if (!said.startsWith("OK")) throw new Error(said || "the module did not start it");
     // stop being the clock: the module owns the show now
     playing = false;
     keepAwake(false);
@@ -720,39 +937,51 @@ async function robotRun() {
       + (e && e.message ? e.message : e);
     return;
   }
-  await robotCmd("MOVE " + file);
+  const said = await robotCmd("MOVE " + file);
+  // robotCmd answers "" on a failure; the card said "running" anyway.
+  if (!said.startsWith("OK")) {
+    if (st) st.textContent = file + " was sent, but the robot did not start it — "
+      + (said || $("robotStat").textContent || "no answer");
+    notice(st ? st.textContent : "the robot did not start " + file);
+    return;
+  }
   if (st) st.textContent = part
     ? "the robot is running from the move you picked, to the end — it does not "
       + "go back to the start. The whole show is still saved as " + name + ".yaml."
     : "the robot is running " + file + " on its own.";
 }
 
-// ---- zero-position calibration (password-gated; default manny/12345678) ----
-function zeroCred() { try { return JSON.parse(localStorage.getItem("nongZeroCred")) || null; } catch (e) { return null; } }
-function zeroCredOr() { return zeroCred() || { user: "manny", pass: "12345678" }; }
-function zeroUnlock() {
-  const c = zeroCredOr();
-  if ($("zUser").value === c.user && $("zPass").value === c.pass) {
+// ---- zero-position calibration (locked behind the HUB login) ----
+// Checked by the hub, not against a password kept in this browser: that one
+// (manny/12345678) refused admin/admin123 while the hub accepted it (A26-43).
+async function zeroUnlock() {
+  const u = $("zUser").value.trim(), p = $("zPass").value;
+  let ok = false, why = "";
+  try {
+    const r = await fetch("/api/login", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user: u, password: p }) });
+    const j = await r.json().catch(() => ({}));
+    ok = r.ok && !!j.ok;
+    if (j.locked_for > 0) why = `Too many tries. Wait ${j.locked_for} seconds.`;
+  } catch (e) {
+    const acc = getAccounts();                 // no hub: Studio's own accounts
+    ok = !!(acc[u] && acc[u] === p);
+  }
+  $("zPass").value = "";
+  if (ok) {
     $("zeroLocked").style.display = "none";
     $("zeroPanel").style.display = "";
-    $("zPass").value = "";
+    $("zStat").textContent = "";
   } else {
-    // Say what to do, and never imply the reader is at fault. Which of the two
-    // is wrong is deliberately not revealed.
-    $("zStat").textContent = "That user name and password do not match. "
-      + "Check them and try again.";
+    // Which of the two is wrong is deliberately not revealed.
+    $("zStat").textContent = why || "That user name and password do not match. "
+      + "Use your hub login and try again.";
   }
 }
 function zeroLock() { $("zeroPanel").style.display = "none"; $("zeroLocked").style.display = ""; }
-function zeroChangeCred() {
-  const u = $("zNewUser").value.trim(), p = $("zNewPass").value;
-  if (!u || !p) { $("zStat2").textContent = "enter a new user and password"; return; }
-  localStorage.setItem("nongZeroCred", JSON.stringify({ user: u, pass: p }));
-  $("zNewUser").value = ""; $("zNewPass").value = "";
-  $("zStat2").textContent = "login changed (this browser)";
-}
 async function robotZeroSet() {
-  if (!haveUsb() && !haveWifi()) { $("zStat2").textContent = "connect to the robot first"; notice($("zStat2").textContent); return; }
+  if (!haveRobot()) { $("zStat2").textContent = "connect to the robot first"; notice($("zStat2").textContent); return; }
   const r = await robotCmd("SETZERO");
   $("zStat2").textContent = r.startsWith("OK")
     ? "zero set — this pose is now the robot's home. Your start angles are unchanged."
@@ -773,13 +1002,29 @@ function monitorChanged() {
     // the HUB's clock, and switching this page to watching must end it.
     hubStop();
     playing = false; $("playBtn").textContent = "▶ Play";
-    monTimer = setInterval(monitorTick, 350);
     $("robotStat").textContent = "monitoring…";
+    // Watching needs a link. Ticked before Connect (or after a first try that
+    // timed out while the hub opened the port) it said "not connected" forever
+    // although the cable worked (A26-42). So connect first, once.
+    const start = () => { if ($("monChk").checked && !monTimer) monTimer = setInterval(monitorTick, 350); };
+    if (haveRobot()) start();
+    else Promise.resolve(connectRobot()).then(() => {
+      if (haveRobot()) return start();
+      $("monChk").checked = false;
+      $("robotStat").textContent = "monitor needs the robot connected — pick the cable or "
+        + "WiFi above and press Connect, then tick monitor again.";
+      notice($("robotStat").textContent);
+    });
   } else {
     clearInterval(monTimer); monTimer = null;
   }
 }
+let monBusy = false;
 async function monitorTick() {
+  // One status request at a time. Over RS485 a reply can take longer than the
+  // 350 ms tick, and piling requests onto one shared cable made them fail.
+  if (monBusy) return;
+  monBusy = true;
   try {
     const s = await getStatus();
     const m = s.module || {};
@@ -798,5 +1043,7 @@ async function monitorTick() {
   } catch (e) {
     $("robotStat").textContent = "monitor: no reply (" + (e.message || e) + ")";
     notice($("robotStat").textContent);
+  } finally {
+    monBusy = false;
   }
 }

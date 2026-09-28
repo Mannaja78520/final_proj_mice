@@ -8,11 +8,9 @@ the real logic.
 Slow (a clean build is ~70 s), so it is skipped by --quick. Run it before
 flashing anything.
 """
-import os
 import re
 import subprocess
 import time
-from pathlib import Path
 
 import qc as F
 
@@ -20,8 +18,7 @@ AREA = "firmware"
 TITLE = "firmware builds, and its logic is correct"
 SLOW = True
 
-# pio is not on PATH — it lives in PlatformIO's own venv
-PIO = Path(os.environ.get("USERPROFILE", "")) / ".platformio/penv/Scripts/pio.exe"
+PIO = F.PIO
 # The build a real board runs. Since the per-type split there is one env per
 # module type; this is the one on the bench. check_build_split.py builds the
 # others and proves each carries only its own type.

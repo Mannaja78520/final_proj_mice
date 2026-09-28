@@ -8,6 +8,7 @@
     "parts": [
       "00_header.js",
       "notices.js",
+      "card_fold.js",
       "rig_data.js",
       "state.js",
       "scene.js",
@@ -22,10 +23,15 @@
       "yaml_export.js",
       "rig_setup_ui.js",
       "edit_existing_sequences.js",
+      "shows.js",
       "music_on_a_keyframe.js",
       "project_save_load.js",
       "stl_meshes.js",
+      "urdf_import.js",
       "robot_link.js",
+      "dummy_link.js",
+      "freeze_watch.js",
+      "distances.js",
       "main_loop.js",
       "boot.js"
     ]

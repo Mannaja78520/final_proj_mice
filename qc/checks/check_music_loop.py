@@ -46,7 +46,10 @@ SPACED = "/music/two words.mp3"
 
 DRIVER = """
 function step(){
+    
+
   try{
+
     if (typeof addKey !== "function" || typeof cueLoop !== "function")
       return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);
@@ -145,9 +148,13 @@ def run(t):
     # object and left the SD handle open, once per failed PLAY.
     cl = src[src.index("void AudioPlayer::cleanup()"):]
     cl = cl[:cl.index("\n}") + 2]
-    t.ok("!gen_ && !id3_ && !file_" in cl.replace("  ", " "),
+    # it may return early only when NOTHING is held: file_ exists before gen_
+    guard = re.search(r"if\s*\(([^)]*)\)\s*return;", cl)
+    cond = sorted(guard.group(1).replace(" ", "").split("&&")) if guard else []
+    t.ok(cond == ["!file_", "!gen_"],
          "cleanup() frees a half-built track, not only a running one",
-         "`if (!gen_) return;` leaks file_ on every failed open")
+         "`if (!gen_) return;` leaks file_ on every failed open; guard is %r"
+         % (guard.group(0) if guard else None))
 
     # the lap restarts under the lock loop() already holds
     lp = src[src.index("void AudioPlayer::loop()"):]

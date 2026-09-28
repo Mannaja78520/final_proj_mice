@@ -4,6 +4,7 @@
 #include "core/Identity.h"
 #include "core/HwConfig.h"
 #include <config.h>
+#include <driver/uart.h>
 
 void RS485Bus::begin(Identity* id, CommandRouter* router) {
     id_ = id;
@@ -11,8 +12,53 @@ void RS485Bus::begin(Identity* id, CommandRouter* router) {
     sendMtx_ = xSemaphoreCreateMutex(); // web (async task) and loop both send
     pinMode(hw.pins.rs485De, OUTPUT);
     digitalWrite(hw.pins.rs485De, LOW); // listen
+    // A TX ring buffer, so print() copies and returns instead of waiting for
+    // FIFO room line by line. Must be set before begin().
+    Serial2.setTxBufferSize(2048);
     Serial2.begin(RS485_BAUD, SERIAL_8N1, hw.pins.rs485Rx, hw.pins.rs485Tx);
     buf_.reserve(64);
+    // Lines leave in the order they were queued, one writer, same timing as
+    // before - only the WAITING moved off loop(). Same priority as loop(), so
+    // even a wait that spins cannot starve the servo frames.
+    txq_ = xQueueCreate(16, sizeof(String*));
+    if (txq_ && xTaskCreatePinnedToCore(txTask, "rs485tx", 3072, this, 1, nullptr, 1) != pdPASS) {
+        vQueueDelete(txq_);   // a queue nobody empties would drop every frame
+        txq_ = nullptr;       // send() falls back to the blocking way
+        LOGF(sys, "RS485 sender task did not start - replies will block loop()");
+    }
+}
+
+// Before a reboot: let queued replies (an FWEND's OK) actually leave.
+void RS485Bus::drain(uint32_t maxMs) {
+    uint32_t t0 = millis();
+    while (txq_ && (uxQueueMessagesWaiting(txq_) || sending_) && millis() - t0 < maxMs)
+        delay(2);
+}
+
+void RS485Bus::txTask(void* self) {
+    RS485Bus* bus = static_cast<RS485Bus*>(self);
+    for (;;) {
+        String* line = nullptr;
+        if (xQueueReceive(bus->txq_, &line, portMAX_DELAY) == pdTRUE && line) {
+            bus->sending_ = true;
+            bus->sendNow(*line);
+            delete line;
+            bus->sending_ = false;
+        }
+    }
+}
+
+void RS485Bus::send(const String& line) {
+    if (!txq_) { sendNow(line); return; }   // no task: the old, blocking way
+    String* copy = new String(line);
+    // A full queue is 16 lines behind already; wait a little, never forever.
+    if (xQueueSend(txq_, &copy, pdMS_TO_TICKS(500)) != pdTRUE) {
+        delete copy;
+        if (!warnedFull_) {
+            warnedFull_ = true;
+            LOGF(sys, "RS485 send queue full - a line was dropped");
+        }
+    }
 }
 
 void RS485Bus::loop() {
@@ -119,7 +165,7 @@ static const uint32_t RS485_BYTE_US = (10UL * 1000000UL) / RS485_BAUD;
 static const uint32_t RS485_SETUP_US = RS485_BYTE_US / 2 + 5;
 static const uint32_t RS485_HOLD_US = RS485_BYTE_US * 2;
 
-void RS485Bus::send(const String& line) {
+void RS485Bus::sendNow(const String& line) {
     if (sendMtx_) {
         xSemaphoreTake(sendMtx_, portMAX_DELAY);
     } else if (!warnedNoMtx_) {
@@ -130,8 +176,11 @@ void RS485Bus::send(const String& line) {
     delayMicroseconds(RS485_SETUP_US);
     Serial2.print(line);
     Serial2.print('\n');
-    Serial2.flush(); // the FIFO is empty here - the shift register is not
-    // AND THEN WAIT FOR THE SHIFT REGISTER. flush() empties the FIFO; the
+    // NOT Serial2.flush(): in core 2.0.17 that is a busy spin on tx-idle, and
+    // measured 2026-09-21 it held the CPU for a whole 1.3 KB reply (116 ms).
+    // uart_wait_tx_done sleeps on the TX-done interrupt instead.
+    uart_wait_tx_done(UART_NUM_2, portMAX_DELAY);
+    // AND THEN WAIT FOR THE SHIFT REGISTER. The FIFO being empty is not the
     // byte already being clocked out lives beyond it, and dropping the
     // driver enable while it is still going cuts that character in half.
     // The receiver sees a framing error, which arrives as 0x00 - a NUL

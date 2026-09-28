@@ -94,6 +94,16 @@ inline uint32_t durationFor(const float from[], const float to[], int n,
     return ms > minMoveMs ? ms : minMoveMs;
 }
 
+// The SAFETY floor: the cosine ease peaks at pi/2 x the average speed, so a
+// move whose biggest joint change is D needs D * pi/2 / safeDps seconds for no
+// joint to pass safeDps at any instant. Measured FROM the arm's real pose.
+inline uint32_t safeDuration(const float from[], const float to[], int n,
+                             float safeDps, uint32_t minMoveMs) {
+    const float sp = safeDps > 1.0f ? safeDps : 1.0f;
+    const uint32_t ms = (uint32_t)(maxDelta(from, to, n) * (NONG_PI * 0.5f) / sp * 1000.0f);
+    return ms > minMoveMs ? ms : minMoveMs;
+}
+
 // ---- cosine ease, the shape of every move -----------------------------
 inline float ease(float t) {
     if (t <= 0.0f) return 0.0f;

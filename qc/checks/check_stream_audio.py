@@ -25,6 +25,7 @@ What this holds, against a real socket rather than a mock:
   * starting a stream is gated like every other command that makes the rig do
     something, and STOPPING it is not - silence must never need a password.
 """
+import re
 import socket
 import sys
 import threading
@@ -113,7 +114,7 @@ def run(t):
     t.eq(sorted(scopes), ["lift", "nong"],
          "STREAM is declared for both types that wire a speaker")
     for name in ("nong", "lift"):
-        src = (fw / ("src/modules/%s/%sModule.cpp" % (name, name))
+        src = (fw / ("src/modules/%s/%sModule.cpp" % (name, name.capitalize()))
                ).read_text(encoding="utf-8", errors="replace")
         t.contains(src, 'cmd == "STREAM"', "%s routes STREAM" % name)
 
@@ -124,17 +125,107 @@ def run(t):
     # through the robot uses the microphone, which needs no picker at all.
     # The user asked why a whole screen had to be shared, 2026-09-07.
     page = (fw / "src/web/WebUI.h").read_text(encoding="utf-8", errors="replace")
-    t.contains(page, "getUserMedia({audio:",
+    # the sound engine moved to shared/web/cast.js (one file, three pages)
+    eng = (F.CODE / "shared/web/cast.js").read_text(encoding="utf-8", errors="replace")
+    t.contains(eng, "getUserMedia({audio:",
                "the microphone is its own source, with no screen picker")
-    t.contains(page, "castStream.getVideoTracks().forEach(t=>t.stop())",
+    t.contains(eng, "castStream.getVideoTracks().forEach(t=>t.stop())",
                "and the shared picture is stopped the moment it arrives")
-    fn = page[page.find("async function castStart("):]
-    fn = fn[:fn.find("function castStop(")]
-    t.ok(fn.find("getVideoTracks") < fn.find("createMediaStreamSource")
-         or "createMediaStreamSource" not in fn,
+    fn = eng[eng.find("async function castSource("):]
+    fn = fn[fn.find("getDisplayMedia("):]
+    fn = fn[:fn.find("}catch(e){")]
+    t.ok(0 <= fn.find("getVideoTracks") < fn.find("createMediaStreamSource"),
          "the video goes before any audio is wired up",
          "leaving it running keeps the browser's sharing bar and the capture "
          "alive for a picture nobody wanted")
+
+    # ---- the chunk time in the comment is the real one -------------------
+    # A24-32's comment said a dropped chunk costs 46 ms. It never did: the
+    # graph is 2048 samples at castRate 22050, which is 93. 46 is the figure
+    # for 44100. A number in a comment that nobody can check rots, and this one
+    # is the number a person uses to decide whether a gap matters (A26-8), so
+    # it is computed from the code rather than trusted.
+    rate = re.search(r"castRate\s*=\s*(\d+)", eng)
+    buf = re.search(r"createScriptProcessor\((\d+)", eng)
+    if t.ok(rate and buf, "the page says its sample rate and its buffer size",
+            "castRate / createScriptProcessor not found in WebUI.h"):
+        want = round(1000 * int(buf.group(1)) / int(rate.group(1)))
+        t.contains(eng, "the next one is %d ms away" % want,
+                   "and the comment quotes that same chunk time (%d ms)" % want)
+
+    # ---- the cracking: MCLK on the LRC pin (2026-09-28) ------------------
+    # SD playback was clean and live sound cracked on the real nong. The
+    # library installs I2S with MCLK on GPIO0, and GPIO0 is the nong's LRC
+    # pin; play() re-pinned after begin(), AudioStream::start never did, so
+    # every stream ran with a broken word clock.
+    st = cpp[cpp.find("bool AudioStream::start("):]
+    st = st[:st.find("\n}\n")]
+    t.ok(0 <= st.find("out_->begin()") < st.find("repin_()"),
+         "the stream re-pins I2S right after the driver is installed",
+         "without it MCLK sits on GPIO0 = LRC on a nong and the sound cracks")
+    ap = (fw / "src/core/AudioPlayer.cpp").read_text(encoding="utf-8", errors="replace")
+    t.contains(ap, "applyPins(); });", "and the player hands it the same re-pin SD playback uses")
+
+    # ---- the burst after a late chunk ------------------------------------
+    # A late browser chunk used to be followed by up to 0.5 s sent at once
+    # into the ~100 ms the board has spare - dropped there, heard as a crack.
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("127.0.0.1", 0))
+    sock.settimeout(0.05)
+    port = sock.getsockname()[1]
+    s = stream_audio.Sender()
+    s.start("127.0.0.1", port, 22050, "qc-burst")
+    one = bytes(s.chunk_bytes())
+    s.feed(one)
+    time.sleep(0.4)                          # the source is late by 400 ms
+    s.feed(one * 15)                         # then 300 ms arrives at once
+    arrive = []
+    end = time.time() + 1.0
+    while time.time() < end:
+        try:
+            sock.recvfrom(4096)
+            arrive.append(time.time())
+        except socket.timeout:
+            pass
+    s.stop()
+    sock.close()
+    late = arrive[1:]
+    burst = [x for x in late if late and x - late[0] < 0.03]
+    # The room is the board's, read from its header: it primes at half the
+    # ring, so half of BUF_MS is what a burst may fill before it is dropped.
+    hdr = (fw / "src/core/AudioStream.h").read_text(encoding="utf-8", errors="replace")
+    spare = int(re.search(r"BUF_MS = (\d+);", hdr).group(1)) // 2
+    room = spare // stream_audio.CHUNK_MS + 1
+    t.ok(len(late) >= 14 and len(burst) <= room,
+         "after a late chunk the sender catches up in at most the board's spare "
+         "%d ms (%d of %d chunks inside 30 ms, room for %d)"
+         % (spare, len(burst), len(late), room),
+         "a burst bigger than the board's spare room is dropped on the board")
+
+    # ---- a file is resampled, not sample-picked --------------------------
+    import array
+    import math
+    def peak(freq):
+        a = array.array("h", [int(10000 * math.sin(2 * math.pi * freq * i / 44100))
+                              for i in range(22050)])
+        o = stream_audio.resample(a, 44100, 22050)
+        return max(abs(x) for x in o[200:-200])
+    hi, lo = peak(15000), peak(1000)
+    t.ok(hi < 3500 and lo > 9000,
+         "going down to 22 kHz a 15 kHz tone is filtered (%d of 10000 left) "
+         "and a 1 kHz tone is kept (%d)" % (hi, lo),
+         "nearest-sample picking folds treble back as harsh fizz")
+
+    # ---- the phone road and the mix ---------------------------------------
+    wp = (fw / "src/core/WebPortal.cpp").read_text(encoding="utf-8", errors="replace")
+    t.contains(wp, 'wsAudio_.setFilter([this](AsyncWebServerRequest* req) {\n'
+                   '        return allowedCommand(req, "STREAM ON");',
+               "a phone on the robot's WiFi streams to /ws/audio, behind the STREAM gate")
+    for box in ("cast_song", "cast_pc", "cast_mic"):
+        t.contains(page, 'id="%s"' % box, "the page has its own switch for %s" % box)
+    t.contains(eng, "castMix.connect(lp); lp.connect(lim); lim.connect(castNode);",
+               "the mix goes through a limiter before it is sent, so two loud "
+               "sources summed cannot clip and crack")
 
     # ---- the gate -----------------------------------------------------
     t.ok(hub_auth.gated("/api/stream/start", "POST"),

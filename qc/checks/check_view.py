@@ -5,7 +5,6 @@ perspective the camera pointed at the plane while near parts still rendered
 bigger and parallel edges converged, so dragging in a plane did not match what
 was on screen. This asserts the projection itself, not just the camera angle.
 """
-import subprocess
 from pathlib import Path
 
 import browser
@@ -17,7 +16,10 @@ TITLE = "plane views are really flat (orthographic)"
 SLOW = True
 
 DRIVER = """
-window.addEventListener("load", function(){ setTimeout(function(){
+// Wait for the view helpers to exist, never a fixed sleep (A26-94).
+window.addEventListener("load", function(){ qcWaitFor(function(){
+    return typeof setView === "function" && typeof activeCam === "function";
+  }, 8000).then(function(){ setTimeout(function(){
   try {
     var out = [];
     function probe(name){
@@ -49,7 +51,7 @@ window.addEventListener("load", function(){ setTimeout(function(){
 
     document.title = "VIEWPROJ " + out.join(" ");
   } catch(e) { document.title = "VIEWPROJ ERR " + e.message; }
-}, 900); });
+}, 150); }); });
 """
 
 
@@ -82,16 +84,9 @@ def _title(base):
                    encoding="utf-8")
     browser.SCRATCH.mkdir(parents=True, exist_ok=True)
     out = str(browser.SCRATCH / "view_dom.html")
-    import time
     prof = str(browser.SCRATCH / ("profile_view_%s" % browser._tag()))
     try:
-        ps = ("$a=@('--headless=new','--disable-gpu','--no-sandbox','--no-first-run',"
-              "'--disable-extensions','--%s','--user-data-dir=%s',"
-              "'--virtual-time-budget=15000','--dump-dom','%s/studio/%s'); "
-              "Start-Process -FilePath '%s' -ArgumentList $a -NoNewWindow -Wait "
-              "-RedirectStandardOutput '%s' -RedirectStandardError '%s.err'"
-              % (browser.TAG, prof, base, drv.name, browser.EDGE, out, out))
-        subprocess.run(["powershell", "-NoProfile", "-Command", ps], timeout=200)
+        browser.dump_dom("%s/studio/%s" % (base, drv.name), prof, out, 15000)
         dom = Path(out).read_text(encoding="utf-8", errors="replace")
     except Exception:
         dom = ""

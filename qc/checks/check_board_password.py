@@ -27,7 +27,7 @@ AREA = "auth"
 TITLE = "the board keeps its password to itself, and demands a real one"
 SLOW = False
 
-SHIPPED = "12345678"
+SHIPPED = "admin123"
 
 
 def run(t):
@@ -73,6 +73,28 @@ def run(t):
     # Setup must NOT open while the board is unsecured: that is the whole point.
     login_fn = page[page.find("async function doLogin"):]
     login_fn = login_fn[:login_fn.find("function doLogout")]
-    t.ok(re.search(r"mustChange\s*\)\s*\{", login_fn),
-         "and logging in does not open Setup while the password is unchanged",
-         "a board nobody has secured is the same as a board with no login")
+    # User 2026-09-17 changed the rule: the defaults are on EVERY board, so the
+    # shipped password is a warning, not a lock. Re-added on each boot, a lock
+    # on "any account" would have kept Setup closed forever.
+    t.ok("mustChangeBox').style.display = mustChange ?" in login_fn
+         and not re.search(r"if\s*\(\s*mustChange\s*\)\s*\{[^}]*return;", login_fn),
+         "logging in on the default password opens Setup AND shows the warning",
+         "a lock here never opens: the default accounts come back on every boot")
+    login_api = portal[portal.find('"/api/login"'):]
+    login_api = login_api[:login_api.find("server_.on(", 10)]
+    t.ok("pass == UserStore::shippedPassword()" in login_api,
+         "the warning is about the account that logged in",
+         "firstPassword() is true on every board now (defaults re-added), so it "
+         "would warn a user who already changed their own password")
+
+    # ---- every board has both default logins (A26-43) -------------------
+    beg = store_c[store_c.find("void UserStore::begin"):]
+    beg = beg[:beg.find("\n}") + 2]
+    t.ok('"super_admin"' in beg and '"admin"' in beg,
+         "begin() knows both default accounts")
+    t.ok("size() == 0" not in beg and "is<const char*>()" in beg,
+         "and adds each one that is MISSING, not only on an empty store",
+         "board #67 had only manny/12345678, so admin/admin123 never worked there")
+    t.ok("users_.clear()" not in beg.replace("if (!users_.is<JsonObject>()) users_.clear();", ""),
+         "an existing account is never wiped to make room",
+         "never delete or rotate the user's accounts")

@@ -63,6 +63,10 @@ GATED = {
     # files are written or destroyed ON A BOARD
     "/api/robot/upload", "/api/robot/delete",
     "/api/dev/upload", "/api/dev/delete",
+    # a saved show on this PC is removed (moved aside, but gone from the list)
+    "/api/seqdelete", "/api/show/delete",
+    # a show of several sequences starts moving the robot
+    "/api/show/play",
     "/api/settings/peer",
     # Which OTHER hubs this one talks to. Not a reading route: an
     # address added here is probed, trusted enough to list, and offered
@@ -147,7 +151,7 @@ GATED_POST = {
 #                   robot, replace firmware, or delete anything off an SD card.
 #
 # Listed rather than merely absent, so nobody "tidies" it into GATED later.
-NEVER_GATED = {"/api/play/stop", "/api/stopall",
+NEVER_GATED = {"/api/play/stop", "/api/stopall", "/api/play/beat",
                # and silence: a robot talking over a room must be
                # stoppable by whoever is standing next to it, for the
                # same reason a moving one must be.
@@ -159,6 +163,9 @@ NEVER_GATED = {"/api/play/stop", "/api/stopall",
 OPEN = {
     "/api/status", "/api/scan", "/api/ports", "/api/mine", "/api/allmods",
     "/api/scanusb", "/api/hubs", "/api/servos", "/api/apps", "/api/list",
+    # The list of BODIES Studio can be set to: a catalogue, same as the servo
+    # table beside it. Reading it moves nothing and changes nothing (A26-72).
+    "/api/rigpresets",
     "/api/modules", "/api/modules/all",
     "/api/load", "/api/loadseq", "/api/flash/images",
     # Watching a write on another PC reads that PC; it changes nothing

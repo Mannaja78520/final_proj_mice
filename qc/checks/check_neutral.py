@@ -41,8 +41,11 @@ WANT = [95, 85, 100, 80, 96, 84, 101, 79, 92, 88]
 
 DRIVER = """
 function step(){
+    
+
   try{
-    if (typeof pushLimits !== "function" || typeof neutralFromPose !== "function")
+
+    if (typeof pushLimits !== "function" || typeof homeFromPose !== "function")
       return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);
     var WANT = %s;
@@ -63,8 +66,8 @@ function step(){
     var box = document.querySelectorAll("#rigJoints .rigjrow")[1].children[2];
     box.value = 900;                    // far outside: a typed number bypasses max=
     box.onchange();
-    qcMark("Bclamped=" + RIG.neutral[0]);
-    for (var i = 0; i < NJ; i++) RIG.neutral[i] = WANT[i];
+    qcMark("Bclamped=" + RIG.home[0]);
+    for (var i = 0; i < NJ; i++) RIG.home[i] = WANT[i];
 
     // ---- C: send the rig — the start angles must reach the board
     qcMark("start");
@@ -77,16 +80,23 @@ function step(){
       qcMark("Cboard=" + String(r).replace(/[^0-9,.\\[\\]]/g, ""));
 
       // ---- D: read it back off the board into the rig
-      for (var i = 0; i < NJ; i++) RIG.neutral[i] = 1;   // wipe, so a pull must fill it
+      for (var i = 0; i < NJ; i++) RIG.home[i] = 1;   // wipe, so a pull must fill it
       pullLimits().then(function(){
-        qcMark("Dpulled=" + RIG.neutral.join(","));
+        qcMark("Dpulled=" + RIG.home.join(","));
 
         // ---- E: "Keep this as neutral" sends the pose as ONE line
         pose = pose.map(function(v, i){ return 70 + i; });
         rawCmd("MOVE QCMARK KEEP").then(function(){
-          neutralFromPose().then(function(){
-            qcMark("Ekept=" + RIG.neutral.join(","));
-            qcMark("done");
+          homeFromPose().then(function(){
+            qcMark("Ekept=" + RIG.home.join(","));
+            // ---- F: the SHOW neutral stays in Studio (user 2026-09-17)
+            pose = pose.map(function(v, i){ return 100 + i; });
+            rawCmd("MOVE QCMARK SHOWNEU").then(function(){
+              neutralFromPose();
+              qcMark("Fneutral=" + RIG.neutral.join(","));
+              qcMark("Fhome=" + RIG.home.join(","));
+              rawCmd("MOVE QCMARK SHOWEND").then(function(){ qcMark("done"); });
+            });
           });
         });
       });
@@ -215,7 +225,7 @@ def run(t):
     # ---- Keep this as neutral: one line, and the board agrees ------------
     kept = _mark(marks, "Ekept") or ""
     t.eq(kept, ",".join(str(70 + i) for i in range(10)),
-         "Keep this as neutral takes the pose on screen")
+         "Keep this as robot home takes the pose on screen")
     try:
         i = len(wire) - 1 - wire[::-1].index("MOVE QCMARK KEEP")
     except ValueError:
@@ -230,3 +240,16 @@ def run(t):
     t.eq([int(float(v)) for v in fake_serial.NONG.neutral],
          [70 + i for i in range(10)],
          "so the board's start pose is what the editor last saved")
+
+    # ---- F: Keep this as neutral is the SHOW's, and leaves the robot alone --
+    t.eq(_mark(marks, "Fneutral"), ",".join(str(100 + i) for i in range(10)),
+         "Keep this as neutral takes the pose on screen as the show neutral")
+    t.eq(_mark(marks, "Fhome"), ",".join(str(70 + i) for i in range(10)),
+         "and does not change the robot home")
+    try:
+        a = wire.index("MOVE QCMARK SHOWNEU")
+        b = wire.index("MOVE QCMARK SHOWEND")
+        t.ok(not [c for c in wire[a:b] if c.upper().startswith("NEUTRAL")],
+             "and sends nothing to the robot", wire[a:b])
+    except ValueError:
+        t.ok(False, "the show-neutral markers reached the module", wire[-6:])

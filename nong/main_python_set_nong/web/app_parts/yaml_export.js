@@ -78,18 +78,22 @@ function nothingToWrite(where) {
     : "no keyframes yet";
   return true;
 }
-async function exportYaml() {
-  if (nothingToWrite("tlStat")) return;
+// opts.noAsk: saveAll() already asked. True when the file is on disk.
+async function exportYaml(opts) {
+  opts = opts || {};
+  if (nothingToWrite("tlStat")) return false;
+  const sig = workSig();                  // what THIS save writes, before any await
   const { name, yaml } = buildYaml();
   // SAVING OVER A FILE ASKS FIRST (user 2026-09-16: every save went to
   // my_move.yaml, because that is the name the box starts with).
   const have = [...$("seqList").options].map(o => o.value);
-  if (have.includes(name + ".yaml") &&
+  if (!opts.noAsk && have.includes(name + ".yaml") &&
       !confirm(name + ".yaml is already saved. Replace it?\n\n" +
                "Cancel, then type a new name in the sequence name box to keep both.")) {
     $("tlStat").textContent = "not saved — " + name + ".yaml was left as it was";
-    return;
+    return false;
   }
+  let ok = false;
   // Every failure path must SAY something: an unhandled rejection here left
   // the old status line standing, and a silent export reads as saved work.
   try {
@@ -103,11 +107,15 @@ async function exportYaml() {
     $("tlStat").textContent =
       `saved ${j.file} on this PC — voice answers and the other apps can use it now. ` +
       `Send to robot SD puts it on the board.`;
+    ok = true;
+    if (!opts.keepDraft) markSaved(sig, name, 0);
   } catch (e) {
     $("tlStat").textContent = "export failed — the hub is not answering, or "
       + "refused the name. Nothing was written. " + (e.message || e);
     notice($("tlStat").textContent);
   }
   await refreshSeqs();
-  $("seqList").value = name + ".yaml";   // the list shows what was just saved
+  if (ok) seqsChanged();   // the Shows list and other tabs too, not just this list
+  if (ok) $("seqList").value = name + ".yaml";   // the list shows what was just saved
+  return ok;
 }

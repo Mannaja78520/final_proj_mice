@@ -1,0 +1,7 @@
+{
+  "_why": "Browser drivers that do not need the usual wait, and WHY. Everything else must wait for a condition before it measures - see check_driver_waits and A26-94. Adding a name here is a decision somebody can read; leaving one stale is a failure.",
+  "waitsItsOwnWay": {
+    "check_qc_reports": "only sends marks; it never reads the page",
+    "check_no_undefined_names": "loads each page itself, judges it per frame, and reloads the ones that came back busy"
+  }
+}

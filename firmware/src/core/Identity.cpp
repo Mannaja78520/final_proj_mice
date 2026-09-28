@@ -30,6 +30,66 @@ void Identity::begin() {
     wpass_ = prefs_.getString("wpass", "");
     wmode_ = prefs_.getString("wmode", "on");
     group_ = prefs_.getString("group", "");
+    appass_ = prefs_.getString("appass", "");
+}
+
+bool Identity::setApPass(const String& p) {
+    if (p.length() && (p.length() < 8 || p.length() > 63 || p.indexOf(' ') >= 0)) return false;
+    appass_ = p;
+    prefs_.putString("appass", appass_);
+    return true;
+}
+
+// Stored as "ssid\tpass\n" lines in one NVS string: a handful of entries,
+// read only when a module goes looking for a neighbour.
+String Identity::peerPass(const String& ssid) {
+    String all = prefs_.getString("peerpw", "");
+    int at = 0;
+    while (at < (int)all.length()) {
+        int nl = all.indexOf('\n', at);
+        if (nl < 0) nl = all.length();
+        String line = all.substring(at, nl);
+        int tab = line.indexOf('\t');
+        if (tab > 0 && line.substring(0, tab) == ssid) return line.substring(tab + 1);
+        at = nl + 1;
+    }
+    return "";
+}
+
+bool Identity::setPeerPass(const String& ssid, const String& pass) {
+    if (!ssid.length() || ssid.length() > 32 || ssid.indexOf('\t') >= 0 || ssid.indexOf('\n') >= 0)
+        return false;
+    if (pass.length() < 8 || pass.length() > 63 || pass.indexOf(' ') >= 0) return false;
+    String all = prefs_.getString("peerpw", ""), keep;
+    int at = 0, n = 0;
+    while (at < (int)all.length()) {
+        int nl = all.indexOf('\n', at);
+        if (nl < 0) nl = all.length();
+        String line = all.substring(at, nl);
+        int tab = line.indexOf('\t');
+        if (tab > 0 && line.substring(0, tab) != ssid) { keep += line + "\n"; n++; }
+        at = nl + 1;
+    }
+    // full: drop the OLDEST entry (the first line) to make room for the new
+    if (n >= PEER_MAX) keep = keep.substring(keep.indexOf('\n') + 1);
+    keep += ssid + "\t" + pass + "\n";
+    prefs_.putString("peerpw", keep);
+    return true;
+}
+
+void Identity::clearPeerPass() { prefs_.remove("peerpw"); }
+
+String Identity::peerNames() {
+    String all = prefs_.getString("peerpw", ""), out;
+    int at = 0;
+    while (at < (int)all.length()) {
+        int nl = all.indexOf('\n', at);
+        if (nl < 0) nl = all.length();
+        int tab = all.indexOf('\t', at);
+        if (tab > at && tab < nl) out += (out.length() ? "," : "") + all.substring(at, tab);
+        at = nl + 1;
+    }
+    return out;
 }
 
 void Identity::setId(uint8_t id) {
@@ -94,6 +154,7 @@ void Identity::setGroup(const String& g) {
 // problem. Ungrouped boards keep the compiled-in fallback so nothing changes
 // for a board that has never been set up.
 String Identity::apPassword() const {
+    if (appass_.length()) return appass_;      // the owner's choice wins
     if (!group_.length()) return String(AP_FALLBACK_PASS);
     uint8_t out[32];
     mbedtls_md_context_t ctx;

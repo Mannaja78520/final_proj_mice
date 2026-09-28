@@ -51,6 +51,26 @@ agent can hand off ... for the hit limit one*. tools/plan.py enforces it:
   writing a REQUEST naming it. Answer that REQUEST in BRIDGE, or merge main's
   version into staging, then promote again. Nong Studio projects/ never
   promote - they are user data.
+- MAIN STAYS CLEAN (user decision 2026-09-17, A0-24). No agent writes source
+  in main directly. One task, one branch, one copy:
+
+      python tools/branch.py start A0-24     (main must be clean)
+      python tools/branch.py save  A0-24     commit the copy to task/A0-24-<session>
+      python tools/branch.py check A0-24     conflicts with main, before landing
+      python tools/branch.py land  A0-24     QC gate, then one merge commit on main
+      python tools/branch.py live            commit plan, logs and Studio saves
+
+  The plan, BRIDGE, prompt logs and user saves are still written live in
+  main; `live` commits them. Roll a land back with `git revert -m 1 <sha>`.
+- Each session may keep its OWN tree: `python promote.py --staging
+  .staging-<session> --init`. --init records what main held per file
+  (.staging-base.json); a promote refuses any file main changed since then,
+  by content hash. After merging main's version: `--accept-main PATH`.
+  --init refresh never overwrites a file the tree edited.
+- `python tools/watch_main.py` (background, one per machine) writes a
+  MAIN-WRITE entry to BRIDGE within seconds of any direct write to main, and
+  names every staging tree holding its own edit of that file (COLLISION).
+  Writes a promote made are not reported. Read MAIN-WRITE before promoting.
 - A mistake that touched shared files is written to BRIDGE as a NOTICE: what
   happened, what was fixed, what is true now, and the lesson. The next agent
   must not have to rediscover it.
@@ -221,8 +241,9 @@ panels in CLAUDE.md. Preserve required checks and independent review.
   result path, actual error and reset time if reported. A timeout is not proof
   of a quota limit. Retry only after changing a diagnosed cause or narrowing
   the question; no repeated blind requests. Announce any fallback.
-- If Codex cannot continue, use an available Gemini reviewer through the
-  existing ai_panel.py/agy workflow. Discover current model IDs; do not invent
+- If Codex cannot continue, the fallback is Gemini 3.8 Flash High (user
+  2026-09-17): agy -p ... --mode plan --model gemini-3.8-flash-high, with
+  tools/ai_brief.txt prepended. Discover current model IDs; do not invent
   them. A failed or empty review is never approval. If every provider is
   unavailable, preserve work and leave the next diagnostic step in BRIDGE.
 

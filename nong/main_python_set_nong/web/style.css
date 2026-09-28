@@ -187,6 +187,11 @@ input[type=checkbox]{accent-color:var(--acc)}
   background:var(--sunk);cursor:pointer;flex:0 0 auto;position:relative;
 }
 .key.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+/* where one sequence of a show hands over to the next (A31-3). A margin and a
+   rule, not a colour: colour is already spoken for by selected and by bad. */
+.key.seqstart{margin-left:14px}
+.key.seqstart::before{content:"";position:absolute;left:-8px;top:2px;bottom:2px;
+  width:2px;background:var(--line);border-radius:1px}
 /* tinted FROM --err, so a change to the error colour carries here too */
 .key.bad{border-color:var(--err);box-shadow:0 0 0 1px var(--err);
          background:color-mix(in srgb,var(--err) 12%,var(--bg))}
@@ -210,8 +215,22 @@ input[type=checkbox]{accent-color:var(--acc)}
   border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;min-width:48px;
 }
 #viewCube button:hover{border-color:var(--acc)}
+/* distances overlay (A26-44): labels sit over the 3D view, never catch the mouse */
+#distLayer{position:absolute;inset:0;pointer-events:none;z-index:4}
+#distLayer .distTag{position:absolute;transform:translate(-50%,-50%);
+  background:var(--bg);color:var(--txt);border:1px solid var(--acc);
+  border-radius:var(--r-sm);padding:1px 6px;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#distLayer .distNote{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
+  background:var(--bg);color:var(--mut);border:1px solid var(--line);border-radius:var(--r-sm);padding:4px 10px;font-size:12px}
 #viewCube button.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc);font-weight:600}
 .key .kidx{font-weight:700;font-size:12px}
+/* which arm plays this move, and the mirror button beside it (A31-6) */
+.key .karm{font-size:11px;font-weight:400;max-width:118px;margin-left:4px}
+.key .kmir{font-size:12px;padding:2px 6px;margin-left:2px}
+/* a time the operator pinned: theirs, and kept through every pose edit (A31-12) */
+.key .kpin{font-size:11px;padding:2px 5px;margin-left:2px;line-height:1}
+.key .kpin.on{border-color:var(--acc)}
+.key .ktime input.pinned{border-color:var(--acc)}
 .key .kidx small{color:var(--mut);font-weight:400}
 /* The move number is the keyboard's way into a keyframe, so it is a button -
    but it must still read as the number it always was, not as a control bolted
@@ -373,9 +392,36 @@ header{flex-wrap:wrap;padding:var(--sp-3) var(--sp-4);gap:var(--sp-3)}
 .pose-help .hint{display:block;max-width:80ch;margin:var(--sp-2) 0}
 #side .card{padding:var(--sp-4)}
 #side .card.disclosure{padding:var(--sp-2) var(--sp-3)}
+/* A31-24: a card folds to its title, looking like the Pose tab's <details> */
+#side .card.foldable>h2{cursor:pointer;min-height:38px;align-content:center}
+#side .card.foldable>h2::before{content:"▾";display:inline-block;color:var(--mut);
+  margin-right:var(--sp-2);transition:transform .15s}
+#side .card.folded>h2::before{transform:rotate(-90deg)}
+#side .card.foldable>h2:hover{color:var(--acc)}
+#side .card.folded{padding:var(--sp-2) var(--sp-3)}
+#side .card.folded>h2{margin:0}
+#side .card.folded>:not(h2){display:none!important}
+@media (pointer:coarse){#side .card.foldable>h2{min-height:44px}}
 #side h2{font-size:15px}
 .jrow{margin:var(--sp-2) 0}
 #timeline{padding:var(--sp-3) var(--sp-4)}
 .tl-head{gap:var(--sp-2)}
 #timelineEmpty{margin:var(--sp-2) 0}
 #viewCube{background:color-mix(in srgb,var(--card) 92%,transparent);border-radius:var(--r-md)}
+
+/* the unsaved-changes question (A31-18): a native <dialog>, so Escape and
+   focus trapping come from the browser. margin:auto undoes mice.css's
+   *{margin:0}, which pinned the dialog to the top-left corner. */
+.askdlg{margin:auto;max-width:min(440px,calc(100vw - 2*var(--sp-4)));border:1px solid var(--line);
+  border-radius:var(--r-md);background:var(--card);color:var(--txt);padding:var(--sp-4)}
+.askdlg::backdrop{background:color-mix(in srgb,#000 55%,transparent)}
+.askdlg h2{margin:0 0 var(--sp-2)}
+.askdlg .row{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin:var(--sp-3) 0}
+/* the upload wheel: a ring filled to --p percent, the number in its middle */
+.updlg{text-align:center}
+.upwheel{--p:0;width:96px;height:96px;margin:var(--sp-3) auto;border-radius:50%;
+  display:grid;place-items:center;
+  background:conic-gradient(var(--acc) calc(var(--p) * 1%),var(--sunk) 0)}
+.upwheel span{width:76px;height:76px;border-radius:50%;background:var(--card);
+  display:grid;place-items:center;font-size:18px;font-weight:600}
+.updlg .row{justify-content:center}

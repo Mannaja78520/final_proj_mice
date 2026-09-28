@@ -51,7 +51,30 @@ function measure(url, w, h){
     f.width = w; f.height = h; f.src = url;
     document.body.appendChild(f);
     f.onload = function(){
-      // give layout, fonts and any boot script a moment to settle
+      // WAIT FOR THE FRAME TO BE READABLE, do not bet 1400 ms on it. In a full
+      // gate on 2026-09-23 this read a null document - "/help at 320px could be
+      // measured - Cannot read properties of null" - and passed alone (A26-94).
+      // onload fires before the document inside is finished in a loaded
+      // browser, so the measurement met nothing and blamed the layout.
+      qcWaitFor(function(){
+        var dd = f.contentDocument;
+        return dd && dd.readyState === "complete" && dd.body && dd.body.scrollWidth > 0;
+      // 12 s, and it RETRIES the frame once. At 2560 and 3840 px a frame
+      // under a full gate was still not complete after 5 s, so the measurement
+      // read a null document and the check reported "could not be measured"
+      // (A26-94, 2026-09-23). The page window covers it: the budget check does
+      // that arithmetic.
+      }, 12000).then(function(ok){
+        if (!ok) {   // one more chance, from a fresh frame
+          f.src = url;
+          return qcWaitFor(function(){
+            var dd = f.contentDocument;
+            return dd && dd.readyState === "complete" && dd.body && dd.body.scrollWidth > 0;
+          }, 12000);
+        }
+        return true;
+      }).then(function(){
+      // ...then a short settle for fonts and any boot script
       setTimeout(function(){
         var out = {url:url, w:w, over:-1, tallest:"", used:-1,
                    small:-1, tiny:-1, tinyWhat:""};
@@ -130,7 +153,8 @@ function measure(url, w, h){
         }catch(e){ out.over = -2; out.tallest = String(e.message||e).slice(0,40); }
         f.remove();
         res(out);
-      }, 1400);
+      }, 400);
+      });
     };
   });
 }
@@ -203,7 +227,20 @@ def run(t):
         t.give_up("headless Edge not found — install Edge or run --quick")
     fake_serial.reset()
     base, main = F.start_hub()
+    # A real Studio freeze report is one long unbroken JSON word: it pushed /o/
+    # to 737px on a 360px phone (2026-09-24). Seed one so the card is measured full.
+    rep_dir = main.HERE / "reports"
+    rep_dir.mkdir(exist_ok=True)
+    seeded = rep_dir / "qc_responsive_long.json"
+    seeded.write_bytes(json.dumps({"id": "qclong", "time": "2026-09-24T00:00:00Z",
+        "status": "open", "text": "STUDIO FREEZE " + json.dumps({"gapMs": 1, "k": "x" * 300})}).encode())
+    try:
+        _measure(t, base)
+    finally:
+        seeded.unlink(missing_ok=True)       # QC leaves no reports behind
 
+
+def _measure(t, base):
     # /rgb.html is here because it was NOT, for a long time. It is served by
     # the hub and used at a venue on a phone, and it was in none of the three
     # page lists — no responsive check, no throws check, no token check — so it
@@ -336,7 +373,7 @@ def run(t):
     # minimum size is its intrinsic 131px, so the track refused to shrink and
     # the joint number box sat 17px past the edge behind a scrollbar.
     fake_serial.reset()
-    browser.raw_page(PANEL, base, seconds=30)
+    browser.raw_page(PANEL, base, seconds=55)
     got = {}
     for m in fake_serial.qc_marks:
         if m.startswith("P "):

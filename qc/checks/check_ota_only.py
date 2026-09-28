@@ -69,7 +69,7 @@ def run(t):
         shutil.rmtree(tmp, ignore_errors=True)
 
     # ---- the two are kept apart on purpose --------------------------
-    src_py = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src_py = F.hub_src()
     i = src_py.find("def start_ota")
     body = src_py[i:i + 1400]
     code = "".join(l for l in body.splitlines(True) if not l.strip().startswith("#"))

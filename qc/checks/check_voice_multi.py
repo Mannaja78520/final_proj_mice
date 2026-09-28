@@ -160,8 +160,7 @@ def run(t):
             proc.terminate()
 
         # ---- 4: the page glue exists -------------------------------------
-        page = (F.CODE / "apps" / "voice" / "index.html").read_text(
-            encoding="utf-8", errors="replace")
+        page = (F.CODE / "apps" / "voice" / "index.html").read_text(encoding="utf-8", errors="replace") + (F.CODE / "apps" / "voice" / "app.js").read_text(encoding="utf-8", errors="replace") + (F.CODE / "apps" / "voice" / "app.js").read_text(encoding="utf-8", errors="replace")
         t.contains(page, "/api/modules/all",
                    "the page looks robots up by list, not by hardcoded dev")
         t.contains(page,

@@ -41,6 +41,8 @@ def run(t):
 
     main.probe_module = fake_probe
     main.lan_ip = lambda: SUBNET + ".4"
+    real_lans = main.lan_ips
+    main.lan_ips = lambda: [SUBNET + ".4"]     # not this machine's real adapters
     # And the addresses learned from CABLES, which are otherwise whatever this
     # machine happens to have plugged in. scan_modules passes them as
     # `also_ask`, so a real board on a real port - or the fake one, depending on
@@ -116,6 +118,7 @@ def run(t):
              "a module gone for good is still being chased every scan")
     finally:
         main.probe_module, main.lan_ip = real_probe, real_lan
+        main.lan_ips = real_lans
         main._ips_from_usb = real_usb          # noqa: SLF001
         main.MODULES.forget()
 
@@ -134,6 +137,7 @@ def run(t):
 
     main.probe_module = fake_probe2
     main.lan_ip = lambda: SUBNET + ".4"
+    main.lan_ips = lambda: [SUBNET + ".4"]
     main.MODULES.forget()
     main._usb_ident.clear()
     try:
@@ -150,12 +154,46 @@ def run(t):
              "but plugging it in once is enough to find it on WiFi",
              "a module the hub can reach is still missing from the list")
         t.eq(len([m for m in mods if m["id"] == 67]), 1, "listed exactly once")
+
+        # Bench 2026-09-17: the board sat BEHIND the cable on RS485, so its ip
+        # came only in the rs485 list, never in "module".
+        main._usb_ident.clear()
+        main.MODULES.forget()
+        main._usb_ident["COM12"] = {"module": None, "rs485": [
+            {"id": 67, "name": "offnet", "type": "nong", "ip": OFFNET}]}
+        mods = main.scan_modules(force=True)
+        t.ok(any(m["id"] == 67 for m in mods),
+             "a board seen only over RS485 behind a cable is found on WiFi",
+             "the rs485 list of a cable probe was not asked: %r" % (mods,))
     finally:
         main.probe_module, main.lan_ip = real_probe2, real_lan2
+        main.lan_ips = real_lans
         main.MODULES.forget()
         main._usb_ident.clear()
 
-    src = (F.CODE / "main_python/main.py").read_text(encoding="utf-8", errors="replace")
+    # ---- PC on venue WiFi AND running its hotspot -------------------------
+    # Bench 2026-09-17: lan_ip() was 10.56.15.8, nong sat on the hotspot
+    # 192.168.137.109, and the sweep walked only the first /24.
+    HOT = "192.168.137.109"
+    real_probe3, real_lan3 = main.probe_module, main.lan_ip
+    main.probe_module = lambda ip, timeout=0.6: (
+        {"ip": ip, "id": 67, "name": "nong", "type": "nong", "sd": False}
+        if ip == HOT else None)
+    main.lan_ip = lambda: SUBNET + ".4"
+    main.lan_ips = lambda: [SUBNET + ".4", "192.168.137.1"]
+    main._usb_ident.clear()
+    main.MODULES.forget()
+    try:
+        mods = main.scan_modules(force=True)
+        t.ok(any(m.get("ip") == HOT for m in mods),
+             "a board on the PC's second network (its hotspot) is found by the sweep",
+             "only the first /24 was swept: %r" % (mods,))
+    finally:
+        main.probe_module, main.lan_ip = real_probe3, real_lan3
+        main.lan_ips = real_lans
+        main.MODULES.forget()
+
+    src = F.hub_src()
     t.contains(src, "_probe_patiently", "the second pass exists in the hub")
     t.contains(src, "timeout=2.0", "and gives a known module real time to answer")
     t.contains(src, "_ips_from_usb",

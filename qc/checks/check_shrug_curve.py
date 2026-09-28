@@ -30,7 +30,8 @@ SLOW = True
 
 DRIVER = """
 function report(s){ rawCmd("MOVE QCMARK " + s); }
-window.addEventListener("load", function(){ setTimeout(function(){
+// Wait for the app and the cable, never a fixed sleep (A26-94).
+window.addEventListener("load", function(){ qcStudioReady().then(function(){ setTimeout(function(){
   try{
     var out = [];
 
@@ -49,6 +50,10 @@ window.addEventListener("load", function(){ setTimeout(function(){
     RIG.shrugCurve = [];
     pose[9] = HI; applyPose();
     out.push("uncal_rot=" + (Math.abs(shoulderMount.rotation.z) > 1e-6 ? "rocks" : "flat"));
+    // A26-45: the bar turns by the joint's REAL angle, not x3 of it
+    var want = THREE.MathUtils.degToRad(jointDelta(9));
+    out.push("uncal_true=" + (Math.abs(shoulderMount.rotation.z - want) < 1e-9 ? "yes"
+             : (shoulderMount.rotation.z / want).toFixed(2)));
     out.push("uncal_same=" + (shrugAnchors.L.position.y === shrugAnchors.R.position.y
                               ? "yes" : "no"));
 
@@ -92,7 +97,7 @@ window.addEventListener("load", function(){ setTimeout(function(){
     report(out.join("~"));
   }catch(e){ report("ERR~" + String(e).slice(0,60)); }
   setTimeout(function(){ report("done"); }, 300);
-}, 1500); });
+}, 150); }); });
 """
 
 
@@ -120,6 +125,9 @@ def run(t):
     # nothing changes for a rig that has not been measured
     t.eq(got.get("uncal_rot"), "rocks",
          "with no measurements the preview still rocks the shoulder bar")
+    t.eq(got.get("uncal_true"), "yes",
+         "and it turns by the real joint angle, not three times it (A26-45: "
+         "10 deg on the robot looked like 30 in Studio)")
     t.eq(got.get("uncal_same"), "yes",
          "and both shoulders sit at the same height, exactly as before")
 

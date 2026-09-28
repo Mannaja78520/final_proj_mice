@@ -77,7 +77,7 @@ def run(t):
     # A ONE-FILE BUILD must not appear to change just by restarting: PyInstaller
     # unpacks to a new temp folder each launch, so every mtime is new. Frozen
     # builds therefore use size and path only.
-    src_v = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src_v = F.hub_src()
     i = src_v.find("def web_version")
     body_v = src_v[i:src_v.find(chr(10) + "def ", i)]
     t.contains(body_v, "if not frozen:",
@@ -102,7 +102,7 @@ def run(t):
 
     # A cache, because every open tab asks. Without it a laptop with three tabs
     # open stats a megabyte of Studio several times a minute forever.
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     i = src.find("def web_version")
     t.contains(src[i:src.find(chr(10) + "def ", i)], "ttl",
                "the answer is cached for a moment, since every tab asks")

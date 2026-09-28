@@ -68,7 +68,7 @@ def run(t):
             holder.sock.close()
 
     # ---- and the hub acts on the answer -----------------------------
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     i = src.find("    own_name = ")
     block = src[i:i + 1600]
     code = "".join(l for l in block.splitlines(True) if not l.strip().startswith("#"))

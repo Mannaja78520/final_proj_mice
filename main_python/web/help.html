@@ -240,7 +240,12 @@
     <p><code>CFG &lt;key&gt; &lt;value&gt;</code> stores settings in NVS and overrides
        <code>module.yaml</code>: <code>encoder leds speed speed_mms stages stage_mm
        mm_per_rev counts_per_rev max_rpm counts_per_stage volume speed_dps max_dps
-       link</code>.</p></div>
+       safe_dps link</code>.</p></div>
+  <div class="f"><h3>The arm never moves faster than its safety speed<span class="tag t-new">new</span></h3>
+    <p>Every move of the nong, from Studio, a show or a command, is slowed so no joint passes
+       <b>60&deg;/s</b> at its fastest point. It is measured from where the arm really is, so a jump to
+       a far pose takes longer instead of slamming. Change it with <code>CFG safe_dps &lt;5-1000&gt;</code>
+       and a reboot. Studio reads the robot's value when it connects and times moves the same way.</p></div>
   <div class="f"><h3>Name &amp; bus address</h3>
     <p><code>SET NAME</code> also renames the WiFi hostname, the <code>.local</code>
        address and the AP hotspot. <code>SET ID 1–247</code> sets the RS485 address.</p></div>
@@ -269,6 +274,13 @@
        answer <i>"reboot to apply"</i>, so correcting a mistyped network name meant
        power-cycling a module and leaving the arm wherever it stopped. The scan is
        asynchronous, so none of this can stall a joint mid-move.</p></div>
+  <div class="f"><h3>The fastest way in is picked for you<span class="tag t-new">new</span></h3>
+    <p>When a robot is plugged in, on the RS485 cable and on WiFi all at once, the hub times
+       each way and sends commands down the quickest one. Measured on a nong: the RS485
+       cable answered in about 6&nbsp;ms, WiFi in about 60&nbsp;ms. <b>⚙ Open module</b>
+       and <b>Studio + monitor</b> keep choosing while open, so if the cable is pulled they carry on over WiFi.
+       The Modules tab marks the way in use as <i>fastest, in use</i>; the timings are
+       behind the technical switch. The settings are in <code>config/route_latency.json</code>.</p></div>
   <div class="f"><h3>Every module shares its WiFi<span class="tag t-new">new</span></h3>
     <p>A module in <code>ON</code> mode hosts its own hotspot <b>all the time</b>, including
        while it is connected to the show network. So a module parked out of router range can
@@ -323,11 +335,34 @@
     <p>QC checks the time that actually reached the module, not the editor's opinion of it
        &mdash; the editor's opinion was exactly what was wrong.</p></div>
   <div class="f"><h3>Save and open YAML moves<span class="tag t-new">new</span></h3>
-    <p>Type a name in the <b>sequence name</b> box and press <b>💾 Save YAML</b>: the moves are
-       saved on this PC under that name, where Voice and the other apps can play them. If a file
-       with that name is already saved, Studio asks before replacing it.</p>
+    <p>Type a name and press <b>💾 Save</b>. There is one name and one Save: it writes
+       <b>NAME.yaml</b>, the file the robot, Voice and the other apps play, and <b>NAME.json</b>,
+       the project you open later to keep editing. The name box at the top and the one by the
+       time bar are the same name. If a different file with that name is already saved, Studio
+       asks before replacing it.</p>
     <p>To edit a saved one, pick it in <b>Open saved YAML…</b>: its moves open in the timeline
-       straight away, and saving writes back to the same file.</p></div>
+       straight away, and saving writes back to the same file.</p>
+    <p><b>Nothing is replaced without asking.</b> If the time bar has changes that are not
+       saved and you open another file, Studio asks: <b>Save, then continue</b>,
+       <b>Don't save</b>, or <b>Cancel</b>. To stop the question, untick it in
+       <b>Setup ▸ Saving</b>. A copy of unsaved moves is still kept in this browser and
+       offered back the next time Studio opens.</p>
+    <p><b>Long tabs fold.</b> In <b>Sequence</b>, <b>Robot</b> and <b>Setup</b>, click a card's
+       title to hide or show it, like the extra cards in <b>Pose</b>. <b>Setup</b> opens as a short
+       list of titles; Studio remembers which cards you left open.</p></div>
+  <div class="f"><h3>The real robot's body and servos, from the STEP file<span class="tag t-new">new</span></h3>
+    <p>In <b>Setup ▸ rig</b>, pick <b>use a measured body…</b> ▸ <b>Nong, measured from the STEP
+       file</b>. The sizes change at once. Studio then shows the servos and gears the STEP file
+       says the robot has and asks before using them, because they replace your own settings.
+       The shrug is a 4-bar linkage: its servo turns 2.38° for each 1° of shrug, and ±16° of
+       shrug needs about ±38° of servo. Press <b>Send Studio's limits to the robot</b> to put
+       them on the robot.</p>
+    <details class="tech"><summary>Technical</summary>
+      <p>The numbers live in <code>config/rig_presets.json</code>. After the CAD changes, run
+         <code>python tools/step_preset.py --write</code>: it reads the STEP assembly, finds each
+         pin from the part's hole axes, and works out the linkage again. Gears are whole teeth
+         (50:119) because the board keeps whole numbers: a ratio typed as 1:4.5 reached the
+         robot as 1:4.</p></details></div>
   <div class="f"><h3>Make the timeline taller or shorter<span class="tag t-new">new</span></h3>
     <p>Drag the thin line above the timeline up or down. The timeline keeps that size next time
        and scrolls inside itself when it holds more than fits. With the line selected, the arrow
@@ -621,6 +656,34 @@
        password, which proves nothing about who owns the board.</p>
     <p>Set it in the hub's <b>Network</b> tab &mdash; tick the modules that belong together and
        name the group &mdash; or with <code>GROUP &lt;name&gt;</code> on any channel.</p></div>
+  <div class="f"><h3>A module's own WiFi password, and changing it<span class="tag t-new">new</span></h3>
+    <p>Every module raises its own WiFi, named after the module. To get in the first time the
+       password is <b>12345678</b> (a module in a group uses the group's password instead). Then
+       open <b>http://192.168.4.1/</b> and log in.</p>
+    <p>Choose your own with <code>APPASS &lt;password&gt;</code> (8 to 63 characters, no spaces);
+       <code>APPASS CLEAR</code> goes back to the default. <code>APPASS</code> alone says which
+       one is in use.</p>
+    <p>Modules in one group still find each other after an owner changes a password: the hub
+       talks to every module, so every two minutes it reads each one's password and hands it to
+       its group-mates (<code>PEERPASS &lt;wifi&gt; &lt;password&gt;</code>,
+       <code>PEERPASS CLEAR</code> forgets them). A module in no group is never given any.</p></div>
+  <div class="f"><h3>Talking from a phone: sound straight to the robot<span class="tag t-new">new</span></h3>
+    <p>Join the robot's own WiFi, open <b>http://192.168.4.1/</b>, log in, and in the speaker card
+       tick <b>song</b> (pick a file on the phone), <b>microphone</b>, or both, then press
+       <b>Send sound to the robot</b>. Each switch works while it plays, so the song keeps going
+       while the microphone comes and goes. No hub and no PC are needed.</p>
+    <p>A phone browser only gives the microphone to a secure page, and the robot's page is not
+       one. On Android Chrome open <code>chrome://flags</code>, find <i>Insecure origins treated
+       as secure</i>, add <code>http://192.168.4.1</code> and relaunch. A song file works without
+       this.</p>
+    <p>Or, on any phone: tick <b>microphone</b> on the robot's page and press <b>Microphone
+       page</b>. The robot opens its own secure page (<code>TALK ON</code>) at
+       <b>https://192.168.4.1/talk</b>. The phone warns once about the certificate, because the
+       robot made it itself; choose to continue. Type the robot's login there and press
+       <b>Send</b>. The secure page costs the robot memory, so it closes after 10 quiet minutes
+       (<code>TALK OFF</code> closes it at once).</p>
+    <p>A browser cannot hear other apps on the phone, so music playing in another app cannot be
+       sent; pick the song file instead.</p></div>
   <div class="f"><h3>A cold start with no WiFi used to strand every module<span class="tag t-new">fixed</span></h3>
     <p>A neighbour was only recognised by a name the module had <i>already seen</i>, and a module
        that just booted has seen nobody. So with the venue network down, every module sat on its
@@ -698,7 +761,9 @@
        every other module behind it.</p></div>
   <div class="f"><h3>Accounts stored on the board</h3>
     <p>The website's Setup gate is backed by real accounts in NVS (default
-       <code>manny / 12345678</code>). <code>AUTH</code>, plus
+       <code>super_admin / admin123</code> and <code>admin / admin123</code>, added on start-up to any board that
+       lacks them; existing accounts are kept). A default password shows a <i>please change</i> note but does not
+       lock Setup. <code>AUTH</code>, plus
        <code>USER LIST|ADD|DEL|PASS</code> — user operations require valid credentials.
        The raw command channel stays open for scripts and RS485.</p></div>
 
@@ -877,6 +942,11 @@
        dropped the moment the sharing starts. If you only want to <b>talk</b>
        through the robot, press <b>🎤 Talk through the robot</b> instead — that
        uses the microphone and asks for no screen at all.</p>
+    <p><b>Does sharing a screen make it slower?</b> No. The picture is never
+       sent and never encoded — the video is stopped before the sound is wired
+       up at all, so the robot hears exactly what it would hear from a
+       sound-only share. What crosses the network is one small block of sound
+       about every 93 ms, nothing else.</p>
     <p><b>Giving a move a track.</b> In Nong Studio every keyframe carries a
        <b>♪</b> button beside its speed. Press it and choose a track — the list
        is read from the robot's own <code>/music</code> folder, so it only ever
@@ -1057,6 +1127,58 @@
     <p>Log in, then press <b>My account</b> in the login box. Type your current password and a new
        one (8 characters or more), or a new username. While an account still uses admin123, the
        login box says so on every page.</p></div>
+  <div class="f"><h3>One login for the hub, Nong Studio and the robots<span class="tag t-new">new</span></h3>
+    <p>Log in once, on the hub page or in Nong Studio, and both are logged in. When a robot on WiFi
+       asks for its own login, the hub first tries the account you logged in with, then the
+       logins robots ship with (listed in <b>config/board_logins.json</b>). A robot with none of
+       those accounts says so, and still works over its USB or RS485 cable.</p></div>
+  <div class="f"><h3>Robot home and show neutral are two different poses<span class="tag t-new">new</span></h3>
+    <p><b>Home</b> is where the robot goes when it powers on and when you press Home. Set it in Nong Studio's
+       Robot card with <b>Keep this as robot home</b>, in the Setup table's start° column, or on the robot's own page
+       (<b>⚙ Open module</b>): jog the arm, then <b>Keep where the arm is now as home</b>, or type the start angles
+       and press <b>Save these start angles</b>. <b>Neutral</b> is the
+       rest pose of a show and stays in Studio: <b>Keep this as neutral</b> never changes the robot.</p></div>
+  <div class="f"><h3>A frozen Studio page stops the robot<span class="tag t-new">new</span></h3>
+    <p>When the hub plays a show from Nong Studio and the Studio page freezes, the hub stops the show and the robot
+       within a few seconds, and says why. Hiding the tab or closing Studio on purpose still lets the show carry on by
+       itself. <span class="tech">Studio beats <code>POST /api/play/beat</code> every second while on screen; a watched
+       show silent for 4 s is stopped (<code>ShowPlayer.BEAT_TIMEOUT</code>).</span></p></div>
+  <div class="f"><h3>See distances on the robot in Studio<span class="tag t-new">new</span></h3>
+    <p>Press <b>📏 Distances</b> under the view buttons in Nong Studio's 3D view, or hold the <b>D</b> key, to see
+       dashed lines with the length in mm: each elbow to its hand, elbow to elbow and hand to hand. They follow the
+       pose as you move it. <span class="tech">The pairs are listed in
+       <code>nong/main_python_set_nong/web/distances.json</code>; add a pair there to measure something else.</span></p></div>
+  <div class="f"><h3>Open one app on its own<span class="tag t-new">new</span></h3>
+    <p>Each app (Nong Studio, Voice, Faces, Camera…) can open in its own window without going through the hub page.
+       Double-click its shortcut in the <b>Apps</b> folder next to <b>MiceHub.exe</b>. If the hub is not running yet,
+       the shortcut starts it too; if it is, the same hub is used, so the robot cables are still shared.
+       <span class="tech">Shortcut = <code>MiceHub.exe --open &lt;app id&gt;</code>. Make the shortcuts again after adding an
+       app: <code>python tools/make_app_shortcuts.py</code> (add <code>--desktop</code> for the Desktop). The browser used
+       for the window is listed in <code>config/app_window.json</code>.</span></p></div>
+  <div class="f"><h3>A move's music list stays open<span class="tag t-new">new</span></h3>
+    <p>Press <b>♪</b> on a move to choose a track and its volume. The list now works whenever the robot is
+       connected, with or without <b>live</b>, and clicking it no longer closes it before you can choose.</p></div>
+  <div class="f"><h3>The Zero position lock uses your hub login<span class="tag t-new">new</span></h3>
+    <p>In Nong Studio the <b>Zero position</b> card opens with the same user name and password as the hub
+       (for example <code>admin / admin123</code>). The old browser-only password is gone. On the robot's own
+       page the zero card is under Setup, after logging in.</p></div>
+  <div class="f"><h3>Studio says when its joint limits differ from the robot's<span class="tag t-new">new</span></h3>
+    <p>When Studio connects it compares its joint limits with the robot's. If they differ, the arm would stop short
+       of the preview, so Studio says which joints and offers <b>Use the robot's limits</b> or
+       <b>Send Studio's limits to the robot</b>.</p></div>
+  <div class="f"><h3>A looping show goes back to its start at the robot's pace<span class="tag t-new">new</span></h3>
+    <p>With <b>loop</b> on, the end of the show is followed by the move back to the first pose, timed like any
+       other move, so the preview and the real arm stay together round after round. The hub also waits as long as
+       the robot says a move really takes.</p></div>
+  <div class="f"><h3>Delete a saved YAML<span class="tag t-new">new</span></h3>
+    <p>Pick it in the saved list and press <b>🗑 Delete</b>. It is moved to <b>sequences/.deleted</b> on this PC,
+       so a mistake can be put back. To edit one, press <b>Load for editing</b>, change it, and <b>💾 Save</b>.</p></div>
+  <div class="f"><h3>A frozen Studio page reports itself<span class="tag t-new">new</span></h3>
+    <p>If the Studio page stops for more than 1.5 seconds, it sends the hub a short report of what was running
+       (playing, live, monitor, slow robot calls). It appears with the other reports on the hub.</p></div>
+  <div class="f"><h3>A USB-RS485 adapter needs no bus id typed<span class="tag t-new">new</span></h3>
+    <p>In Nong Studio pick <b>+ USB / RS485 (shared)</b>, choose the port and press Connect. If nothing
+       answers on the cable itself, Studio asks the hub which robot is on the bus behind it and uses that one.</p></div>
   <div class="f"><h3>super_admin looks after everyone<span class="tag t-new">new</span></h3>
     <p>Only super_admin can add or remove accounts, rename anyone, and set a new password for
        anyone (✎ and 🔑 beside each name on the hub's Accounts card). The last super_admin can
@@ -1144,6 +1266,36 @@
        listening runs on this PC too. Which languages it hears — and the words
        each language gets wrong often — live in <code>config/voice.json</code>;
        adding a language is one entry there.</p></div>
+  <div class="f"><h3>It can greet you by name<span class="tag t-new">new</span></h3>
+    <p>Beside the answer box there is a face badge and two buttons.
+       <b>Check who I am</b> uses the camera of the device the page is open on:
+       it takes one picture, asks the face app who it is, and shows the name.
+       <b>The picture is not kept</b> — nothing is written to the face app's
+       history and no image lands on the disk. The name is remembered for two
+       minutes, so the next answers greet that person by name in Thai,
+       English, Japanese or Chinese.</p>
+    <p>Next to it, <b>Check by itself</b> keeps looking every few seconds, so
+       nobody has to press anything — still keeping no pictures. It stops
+       while the tab is hidden, and it lets the camera go the moment it is
+       switched off. How often it looks is <code>face.autoSeconds</code> in
+       <code>config/voice.json</code>.</p>
+    <p>The list beside the switch holds two kinds of camera.
+       <b>Cameras the face app watches</b> are the stations it already runs —
+       its kiosk, a CCTV camera, a phone, or a PC watching several cameras at
+       once. Picking one of those opens <i>no</i> camera here: the face app is
+       already looking through that lens, and Voice simply reads what it sees.
+       That is how one camera serves both programs at the same time. Under
+       <b>This device</b> are the cameras of the machine the page is open on,
+       for when no station is running.</p>
+    <p>It starts on the camera the face app saved as its own default, so
+       choosing there chooses here too; picking another is remembered in this
+       browser only, the same way the face app's kiosk remembers its own.</p>
+    <p><b>Open Reconize</b> opens the face app's own camera page instead, in a
+       new tab, and starts the face app first if it is not running. That way
+       keeps a record of every sighting, which is what an event needs; the
+       button above is for a quick hello. Where the face app lives is one
+       entry in <code>config/partners.json</code> — a second face app is an
+       entry there, not new code.</p></div>
   <div class="f"><h3>Saved answers first<span class="tag t-new">new</span></h3>
     <p>A question close to a saved one is answered instantly from
        <code>apps/voice/qa_data.json</code> — the same trick as the original
@@ -1192,6 +1344,24 @@
        wrong</b> adds words the listening mishears — one box, one Add, no
        training. Ids and thresholds sit last behind the
        <b>Show technical details</b> switch.</p>
+    <p><b>How it speaks Thai</b><span class="tag t-new">new</span> — the small
+       model that answers when nothing is saved used to write uneven Thai: it
+       ended one sentence <b>ครับ</b> and the next <b>ค่ะ</b>, called itself
+       <b>ผม</b> then <b>ฉัน</b>, stopped in the middle of a word, and now and
+       then answered a Thai question in English. This card fixes the first two
+       by choosing one of each and changing anything else it writes, gives Thai
+       more room to finish a sentence (Thai costs two to four times more room
+       than English, which is why the setting that suited English cut Thai
+       short), and sets what the rig says when it has nothing to say.</p>
+    <p>Three things happen to every answer before it is spoken: an answer that
+       is still unfinished is cut back to its last whole sentence, an answer in
+       the wrong language is asked for again and then given up on, and an answer
+       whose only Thai is the polite ending is treated as no answer at all. In
+       every one of those cases the rig says it does not know and points at a
+       member of staff. That is on purpose: <b>it never invents a password, a
+       price, a time, a floor, a place or an event.</b> The most reliable way to
+       improve what it says is not this card — it is adding the answer under
+       <b>Answers</b>, because a saved answer always wins.</p>
     <p>Saving needs the same login as everything that can change the rig.
        A change reaches the running helper at once — nothing to restart,
        no file to edit by hand.</p></div>
@@ -1214,15 +1384,137 @@
        three.js is vendored — no CDN at runtime.</p>
   </div>
 
+  <div class="f"><h3>The dummy: pose the robot by hand<span class="tag t-new">new</span></h3>
+    <p>The <b>dummy</b> is a second module type (<code>mice_dummy</code>): a copy of the nong with the
+       same 10 joints and a potentiometer on each instead of a servo. It sits on the same RS485
+       bus with its own bus id (or its own USB / WiFi). In Studio's <b>Robot</b> tab, the
+       <b>Dummy</b> card connects to it and offers: <b>Studio follows the dummy</b>,
+       <b>Studio + real robot follow the dummy</b> (the robot's own limits and speed still apply),
+       <b>+ Dummy pose as new move</b>, <b>Use dummy pose for selected move</b> and
+       <b>Robot &rarr; selected move</b>. Pick <b>Simulated</b> to try all of it with sliders and
+       no dummy built. Pot pins, direction, travel, limits and zero are set on the dummy's own
+       module page (Setup &rarr; Dummy calibration). Tested against the QC fake only.</p></div>
+
+
   <div class="grp2">Posing</div>
-  <div class="f"><h3>Four tabs, grouped by what you are doing<span class="tag t-new">new</span></h3>
+  <div class="f"><h3>Five tabs, grouped by what you are doing<span class="tag t-new">new</span></h3>
     <p><b>Pose</b> (joints, XYZ, view) · <b>Sequence</b> (timing, the robot SD card) ·
+       <b>Shows</b> (several sequences in a row) ·
        <b>Robot</b> (link, module config, zero calibration) · <b>Setup</b> (rig, model,
        clothes). The old Movement/Setup split put the robot link, the SD card and the zero
        calibration all under Movement, so posing meant scrolling past things you touch once.</p>
     <p>Nothing moved in the page itself — only what is on screen at once — so every saved
        project, link and shortcut behaves as before. QC fails if a card ever ends up on no
        tab, which would hide a feature completely.</p></div>
+  <div class="f"><h3>Shows — several sequences in a row<span class="tag t-new">new</span></h3>
+    <p>A <b>show</b> is a list of saved sequences played one after another: greeting, then
+       a wave, then byebye. Open the <b>Shows</b> tab, add saved sequences in the order you
+       want them, set a pause after any of them in milliseconds, name the show and press
+       <b>Save show</b>. <b>▶ Run on robot</b> hands the whole thing to the hub, so it keeps
+       going with the page closed; <b>⏹ Stop</b> ends it from anywhere.</p>
+    <p>A show only stores the sequence <i>names</i>, never a copy — so one greeting can sit
+       in ten shows, and editing the greeting changes all ten. Shows are small files in
+       <code>nong/main_python_set_nong/shows/</code> you can also write by hand. Deleting a
+       show moves it to <code>shows/.deleted</code> rather than erasing it, and never
+       touches its sequences. A show naming a sequence that is gone refuses to start and
+       says which step is wrong, instead of playing half of itself.</p></div>
+  <div class="f"><h3>A show runs straight through, and can repeat a sequence<span class="tag t-new">new</span></h3>
+    <p>One sequence now runs <b>straight into the next</b>, with no gap. There used to be
+       one, and it looked like the robot had stopped: every sequence begins with its start
+       pose, timed for travel from wherever the robot happened to be — <code>yakyai.yaml</code>
+       asks for 3273&nbsp;ms — so in a chain the arm stood almost still for three seconds
+       between sequences. That first move is now timed from where the arm really is, at
+       that sequence's own speed, so two sequences that end and start on the same pose hand
+       over instantly. <b>The only thing that makes the robot wait is a pause you typed.</b></p>
+    <p><b>Repeat</b> beside each sequence plays it again, in whichever way you think about
+       it: <b>repeat × times</b> (3 times, 4 times) or <b>repeat for seconds</b>
+       (30&nbsp;s, 60&nbsp;s). Seconds never cuts a pass in half — it starts another whole
+       pass while the time is still under the target, so 60&nbsp;s of a 22&nbsp;s sequence
+       is three passes. A sequence far too short to fill the target is refused, by name,
+       instead of building a list nothing can stop.</p></div>
+  <div class="f"><h3>Run a sequence for exactly so many seconds<span class="tag t-new">new</span></h3>
+    <p>The third repeat setting, <b>run for exactly … s</b>, is for a show on a
+       <b>timetable</b> — music, a slot in a programme, anything the robot has to stay in
+       step with. The sequence gets exactly that long and no more. If it would run over it
+       is <b>cut</b> wherever it has got to; if it is shorter it repeats to fill, and the
+       last pass is cut too.</p>
+    <p>The cut is not a stop. Whatever time the cut frees is spent <b>travelling into the
+       next sequence's first pose</b>, so the arm leaves early, is already on its way during
+       the freed time, and <b>arrives exactly on the deadline</b>. The next sequence starts
+       on time and there is no join to see.</p>
+    <p>The cut always lands on a keyframe, never inside a move — stopping half way through
+       one would leave the arm at a position nobody chose. A pause you set on the item
+       counts inside its budget rather than pushing the deadline out, and an item at the
+       <b>end</b> of a show holds its last pose to length, since there is nowhere to travel
+       to. <b>Repeat for seconds</b> is the gentler cousin: it never cuts, so it runs a
+       little over.</p>
+    <p>On the time bar that travel is drawn as the <b>end of the cut sequence</b>, labelled
+       <i>one → two</i>, and the next sequence's name starts right on the deadline — 42 s
+       reads 42.0 s on the ruler. The seconds are counted from the show's <b>first pose</b>,
+       the same place the time bar starts; the robot's walk to that first pose, from
+       wherever it was standing, comes before the clock and belongs to no sequence.</p></div>
+  <div class="f"><h3>The time bar and the robot keep the same time<span class="tag t-new">fixed</span></h3>
+    <p>A show could reach a point on the robot a few seconds later than the time bar said
+       (49&nbsp;s on the bar, 52&nbsp;s on the robot). Two things added up: the hub waited
+       for each move <b>after</b> the robot had answered, so the cable's answer time was
+       added to every move; and a move between sequences could be asked for faster than the
+       robot allows, so the robot quietly took longer. Now the hub keeps one clock for the
+       whole show, and every move is planned at no less than the time the robot will
+       really take — with the robot's own speed limits, the ones in <b>Timing</b>.</p></div>
+  <div class="f"><h3>A gentler move between sequences<span class="tag t-new">new</span></h3>
+    <p>When one sequence ends in a different pose from where the next one starts, the robot
+       travels between them. In the Shows tab, <b>Between</b> sets how that move looks:
+       a top speed in °/s, a shortest time in seconds, or both. Leave them empty and the
+       move uses the next sequence's own speed, as before. Two sequences that end and start
+       on the same pose still run straight on. The time bar includes this move, so
+       everything after it moves along to match.</p></div>
+  <div class="f"><h3>Music for a whole show<span class="tag t-new">new</span></h3>
+    <p>A show can have its own <b>Music</b>: a track on the robot's card, with a volume and
+       a <b>repeat</b> tick. It starts on the show's first pose — the robot walks to that pose first, then the
+       music and the moves start together — and stops when the show
+       ends or you press Stop. While a show has its own track, the music saved inside its
+       sequences is left out, so nothing cuts the show's track off. Choose <i>no music</i>
+       to keep each sequence's own music. <b>＋ From PC</b> puts a track from your computer
+       onto the robot's card and makes it the show's music in one step. Over the cable
+       a file travels in small pieces, so a whole song takes a long time. While it is
+       sent, a wheel shows how many percent have arrived and about how long is left, and
+       nothing else can be done; <b>Cancel sending</b> stops it and takes the half-sent
+       file back off the card. The robot's card only takes English letters, numbers,
+       space, dot, <code>_</code> and <code>-</code> in a track name, so a Thai name is
+       renamed (to <code>track-</code> and the date if nothing is left) and Studio tells
+       you the new name. The faster ways are the robot's WiFi or copying the song
+       onto the SD card's <code>/music</code> folder. If the hub was restarted you must log in again first,
+       and Studio now says so instead of <i>Failed to fetch</i>.</p>
+    <p><b>Music stops</b> says how long the track plays: <i>with the last move</i>, a
+       number of seconds <i>after the show ends</i>, or a number of seconds <i>in all</i>
+       from the show's first pose — which can be before the moves end. Stop always
+       silences it at once. A looping show never ends, so its track plays until Stop.</p></div>
+  <div class="f"><h3>A sequence faster or slower in one show<span class="tag t-new">new</span></h3>
+    <p>Each sequence in a show has a <b>speed</b> in percent: 100 plays it as saved, 50 at
+       half speed, 200 twice as fast. It changes that show only, never the sequence file.
+       Pauses keep their length, and no move goes faster than the robot allows, so a very
+       high number may not shorten every move. The time bar follows the new speed.</p></div>
+  <div class="f"><h3>See a whole show on the time bar<span class="tag t-new">new</span></h3>
+    <p>Open a show, or press <b>⇣ Show on the time bar</b>, and every sequence of it lands
+       on the one timeline, end to end, with a line and a name where each one begins — a
+       repeated pass says which pass it is (<code>wave ×2</code>). You can then scrub
+       through the whole show, preview it and see exactly where the hand-overs are.</p>
+    <p>The steps come from the hub, not from Studio re-reading the files: it is the same
+       list the robot will run, so the editor cannot show a show the robot does not
+       perform. If the time bar is holding unsaved keyframes, opening a show leaves them
+       alone and says so — press the button when you really mean to replace them.</p></div>
+  <div class="f"><h3>A move can be given to the front or the back arm<span class="tag t-new">new</span></h3>
+    <p>Each move on the timeline has a small picker: <b>both arms</b>, <b>front arm</b> or
+       <b>back arm</b> — front meaning the one nearest the audience. Give a move to one arm
+       and the other holds exactly where the move before it left it, so "wave with the near
+       arm" is one move instead of eight numbers re-typed. Which physical arm is in front is
+       set once, in <b>Setup ▸ Rig setup ▸ Arm nearest the audience</b>; turn the nong round
+       and every pinned move follows, with nothing re-typed.</p>
+    <p>The <b>⇄</b> button beside it plays the same shape on the other arm. It is a real
+       mirror, not a swap of the numbers: the two arms are not built as exact opposites of
+       each other, so copying the angles across put the hand 613&nbsp;mm from where it
+       belonged. Studio reflects the elbow and the hand in the body's own centre line and
+       solves the arm to reach them.</p></div>
   <div class="f"><h3>Sliders, gizmos and inverse kinematics</h3>
     <p>A slider per joint, clamped to that joint's own limits. Drag the 🟢 wrist ball for
        4-DOF whole-arm IK, or the 🟠 elbow ball for shoulder-only IK. Gimbal rings follow
@@ -1232,15 +1524,37 @@
        edges stay parallel and nothing looks bigger for being nearer, so Shift+dragging a
        joint in that plane matches exactly what is on screen. The iso/free view keeps
        perspective, where depth is the point. Switching between them never moves the
-       camera.</p></div>
+       camera.</p>
+    <p><b>A flat view now stays flat.</b> It did not before: a plain drag orbits the camera,
+       so taking hold of the arm quietly turned Front back into a 3D view while the button
+       still said Front, and the plane you had chosen no longer matched what you were
+       looking at. In a plane view the camera cannot be orbited at all — pan and zoom still
+       work — and because nothing orbits there, <b>dragging a hand needs no Shift held</b>.
+       Press <b>3D</b> to turn the view loose again; there, dragging a hand still needs
+       Shift, because a plain drag orbits.</p></div>
   <div class="f"><h3>Live XYZ readout</h3>
     <p>Joint positions in millimetres, origin at the torso centre.</p></div>
   <div class="f"><h3>Collision checking</h3>
     <p>Arms against torso, head and each other, sampled along the whole path — not just at
        keyframes. Offending keyframes turn red and Run/Upload are blocked until it is fixed.</p></div>
+  <div class="f"><h3>Two mirrors: left↔right and front↔back<span class="tag t-new">new</span></h3>
+    <p>A puppet has two mirrors, so there are two buttons — on the Pose tab, and on every
+       move in the timeline.</p>
+    <p><b>⇄ Mirror L↔R</b> swaps the arms: the left arm takes the right's shape and the
+       right takes the left's. <b>⇅ Mirror front↔back</b> does <i>not</i> swap them — each
+       arm stays on its own side and only its reach turns round, so a gesture aimed at the
+       audience now points behind. The waist turns to the other side either way; the shrug
+       is unchanged.</p>
+    <p>Both are taken in the <b>body's own frame</b>, so a turned waist cannot tilt the
+       mirror. Mirroring a move that is pinned to the front or back arm flips that pin too,
+       or the arm meant to be holding still would be the one that moved.</p></div>
   <div class="f"><h3>Mirror and neutral</h3>
-    <p>Mirror a pose left↔right, jump to the neutral pose, or save the current pose <em>as</em>
-       the neutral.</p></div>
+    <p>Jump to the neutral pose, or save the current pose <em>as</em>
+       the neutral. Mirror is a <b>real reflection</b>, not a swap of the joint numbers:
+       the two arms are not built as exact opposites of each other, so copying the angles
+       across put the hand 613&nbsp;mm from where it belonged. Studio reflects the elbow and
+       the hand in the body's centre line and solves each arm to reach them; the waist turns
+       to the other side and the shrug is unchanged.</p></div>
 
   <div class="grp2">Timeline</div>
   <div class="f"><h3>Keyframes with time and hold</h3>
@@ -1248,6 +1562,21 @@
        speed and are floored per joint by the slowest servo in that move — the same formula
        the firmware uses. Any keyframe's time can also be typed in directly, which is how you
        make one move slower than the rest.</p></div>
+  <div class="f"><h3>A time you typed is kept<span class="tag t-new">new</span></h3>
+    <p>Type a time on a move and it is <b>pinned</b> (📌). Editing that move's pose, editing
+       the move before it, or changing Show speed will <b>not</b> re-time it any more. Before
+       this, every small correction to a pose ran the automatic timer over the number you had
+       chosen, and you had to type it again — every time.</p>
+    <p>The only thing that may change a pinned time is the servos' own minimum, and it can
+       only make it <b>longer</b> — a move the arm cannot make in that time is not a choice
+       anybody can make.</p>
+    <p>Times that come from a <b>saved sequence file</b> are not pinned, so re-opening a
+       sequence and changing Show speed still re-times the whole thing, as it always has.
+       A pin is for a time you typed or pinned yourself. To hold one that came from a file,
+       press its 📌 once.</p>
+    <p>Two ways to hand the timing back to Studio: press the <b>📌</b> on that move's time
+       box, or type a <b>°/s</b> for it — asking for a speed is asking to be timed. A move
+       Studio is timing shows a 🕘 instead.</p></div>
   <div class="f"><h3>Speed per sequence, and per move<span class="tag t-new">new</span></h3>
     <p><b>Show speed</b> (°/s) is saved into the sequence file as its first step and restored
        when you re-edit it, so each sequence keeps its own pace. Change it and every keyframe
@@ -1259,7 +1588,33 @@
        the time follows, type a time and the override is dropped.</p>
     <p>Because each file sets its own speed at the start, a chain hands over cleanly — a
        fast sequence following a slow one runs at its own speed instead of inheriting the
-       previous one's.</p></div>
+       previous one's.</p>
+    <p><b>Peak speed limit</b> is a separate safety cap on the fastest instant of a
+       move. The robot may make a move longer than Show speed requests. Studio shows
+       the active limit after Connect. Save to robot stores a new limit for the next
+       restart; the current limit stays active until then. If boards are linked,
+       set the same limit on both before synchronized playback. Raising the limit
+       can cause harder impacts. Do not raise it while a joint loses torque.</p>
+    <p><b>Why a faster °/s sometimes changes nothing, and how to see it.</b> A move eases
+       in and out, so its fastest instant is about 1.6× its average — which means the peak
+       limit starts deciding the time at roughly <b>two thirds</b> of itself. At the shipped
+       60&nbsp;°/s that is about 38&nbsp;°/s: above it, raising Show speed or a move's own
+       °/s produced exactly the same time, silently. The arithmetic was right; it just never
+       said so. Now every move's line names the limit that is holding it — the peak limit,
+       or a particular joint's servo top speed — and says what to change. The
+       <b>⚑</b> beside a move's minimum means that move is already as short as it is
+       allowed to be.</p>
+    <p><b>Show speed lives inside the saved limit.</b> The box will not accept a number
+       above the flat point, because above it nothing gets faster — so raising the
+       <b>Peak speed limit</b> and pressing <b>Save to robot</b> is what lets Show speed go
+       higher. Measured on a real nong (board 67): at a saved limit of 120 the ceiling is
+       76 °/s; saved at 190 it is 121 °/s, and the same moves went from 130/196/327 ms to
+       82/124/206 ms — about a third quicker. A saved limit takes effect when the board
+       restarts.</p>
+    <p>The <b>Peak speed limit</b> box is also editable with <b>no robot connected</b>. It
+       is then simply the number Studio plans with, and it is saved with the project, so you
+       can time a show away from the bench. <b>Save to robot</b> still needs a connection —
+       Studio planning faster than the robot allows would be a show it cannot perform.</p></div>
   <div class="f"><h3>Suspend a keyframe instead of deleting it<span class="tag t-new">new</span></h3>
     <p>The ● button on a keyframe chip suspends it: it stays in the timeline to edit, but is
        skipped when playing, exporting and uploading — so you can try the sequence without
@@ -1326,6 +1681,31 @@
     <p>Import STL exports per body part, each with its own rotation, offset, scale and
        colour. Part size automatically sets the rig's lengths. Texture images can be imported
        and assigned.</p></div>
+  <div class="f"><h3>Build the body from a URDF<span class="tag t-new">new</span></h3>
+    <p>A <b>STEP</b> file cannot be opened in a browser at all, and an <b>STL</b> carries no
+       origin — which is why a part dragged in lands at the middle of the robot and has to be
+       rotated, offset and scaled by hand until it looks right. A <b>URDF</b> carries exactly
+       those missing numbers: where each part sits, which way it is turned, how big it is and
+       which part hangs off which.</p>
+    <p>From SolidWorks, use the <b>sw2urdf</b> add-in (Tools ▸ Export as URDF). Import the
+       <code>meshes/*.STL</code> it writes, then pick the <code>.urdf</code> in
+       <b>Setup ▸ Build it from a URDF</b>. Studio lists every link with the body part it
+       guessed from the name, which you can correct. <b>Reading the file changes nothing</b>
+       — pressing <b>Use this URDF</b> is what places the parts, and it offers to set the arm
+       lengths from the joint origins rather than overwriting measurements you made by hand.
+       A mesh the URDF names but <code>models/</code> does not hold is reported by name.</p>
+    <p>Two settings, because no two exports agree: <b>Sizes are in</b> (URDF is metres,
+       Studio is millimetres) and <b>Up is</b> (URDF/ROS is Z-up, this editor is Y-up). If
+       the robot arrives lying on its side, change the second; if it is a thousand times too
+       big, change the first. The joint table for the nong is written out in
+       <code>docs/urdf_nong.md</code>.</p>
+    <p><b>You may not need SolidWorks for the URDF itself.</b> Every number the add-in would
+       ask for — the joint tree, the origins, the axes, the limits — is already measured in
+       the rig. <code>python tools/make_urdf.py</code> writes the whole file from it in one
+       command, and rewrites it whenever the rig changes. Export one STL per body part, name
+       them <code>torso.stl</code>, <code>head.stl</code>, <code>L_upper.stl</code>,
+       <code>L_fore.stl</code>, <code>R_upper.stl</code>, <code>R_fore.stl</code> in
+       <code>models/</code>, and that is the whole job.</p></div>
   <div class="f"><h3>Clothes and add-ons</h3>
     <p>Extra meshes attached to any part, for costume pieces and props.</p></div>
 
@@ -1688,6 +2068,7 @@
     <tr><td>AUTH | USER LIST|ADD|DEL|PASS</td><td class="wrap2">Setup-page accounts, stored on the board</td></tr>
     <tr><td>REBOOT</td><td class="wrap2">Restarts about a second later</td></tr>
     <tr><td>FWBEGIN | FWDATA | FWEND | FWABORT | FWSTAT</td><td class="wrap2"><b>New firmware over any channel, including RS485.</b> The other two ways both need something a bus does not have: <code>esptool</code> reaches the ESP32's boot loader by pulling <b>EN</b> and <b>IO0</b> with the cable's DTR and RTS lines, and <code>POST /api/ota</code> talks to the board's own web server. A two-wire bus has neither, so instead the board writes its own spare slot from ordinary commands and the link underneath stops mattering. Each chunk carries its number <i>and</i> its length — a line cut short is still valid base64, so without the length a short chunk decodes silently and the image ends up wrong. Out-of-order and short chunks are both refused without advancing, so the sender just repeats one. The image is checked against its md5 at <code>FWEND</code>, while the board is still running firmware that works, and only a good one causes the reboot; <code>FWABORT</code> leaves it on what it had. It is slow — minutes, not seconds — which is the price of having no reset line. Started for you by the hub's <b>Firmware</b> tab</td></tr>
+    <tr><td>PERF?</td><td class="wrap2"><b>Is the board keeping up?</b> How long its main loop takes, the widest gap between two servo updates while moving (20&nbsp;ms is on time), what held it up longest, free memory, and how many times it has restarted since it was switched on, with the reason for the last one. <code>CRASH</code>, <code>WATCHDOG</code> or <code>BROWNOUT</code> there means something is wrong. Each ask starts a fresh count. <code>python tools/bench_perf.py &lt;port or address&gt;</code> runs every task on a real board and reads this around each one</td></tr>
   </tbody></table></div>
 
   <div class="grp2">Lift only</div>
@@ -1720,6 +2101,14 @@
   <div class="scroll"><table><thead><tr><th>Command</th><th class="wrap2">Does</th></tr></thead><tbody>
     <tr><td>SNAP</td><td class="wrap2">Take a picture; with a name it is saved to <code>/photos</code> on the card</td></tr>
     <tr><td>CAM</td><td class="wrap2">What the sensor is set to, and change it: <code>SIZE</code>, <code>QUALITY</code>, <code>FLASH ON|OFF</code>, <code>VFLIP</code>, <code>HMIRROR</code></td></tr>
+  </tbody></table></div>
+  <div class="grp2">Dummy only (the hand-posed copy of the nong)</div>
+  <div class="scroll"><table><thead><tr><th>Command</th><th class="wrap2">Does</th></tr></thead><tbody>
+    <tr><td>POSE?</td><td class="wrap2">The 10 joint angles the dummy is held in, same order and format as the robot; <code>-</code> = no pot on that joint</td></tr>
+    <tr><td>POT?</td><td class="wrap2">The raw pot readings, 0-4095; <code>-1</code> = no pot</td></tr>
+    <tr><td>DCAL | DCAL?</td><td class="wrap2">One joint's pot calibration: <code>CH</code> (mux channel), <code>ZERO</code> (reading at 90&deg;), <code>SPAN</code> (pot travel), <code>DIR</code>, <code>MIN</code>, <code>MAX</code>; <code>CLEAR</code> for defaults; <code>DCAL?</code> reads it all</td></tr>
+    <tr><td>DZERO</td><td class="wrap2">Hold the dummy in a known pose (default 90&deg;) and each joint works out its own zero</td></tr>
+    <tr><td>DMUX | DMUX?</td><td class="wrap2">Which pins the 16-channel analog switch (CD74HC4067) is on, or <code>OFF</code> for one ADC pin per joint</td></tr>
   </tbody></table></div>
 </section>
 

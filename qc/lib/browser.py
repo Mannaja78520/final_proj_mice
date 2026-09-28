@@ -28,11 +28,28 @@ import tempfile
 QC = Path(__file__).resolve().parent.parent
 CODE = QC.parent
 EDGE = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+# Off Windows (a cloud session with no PC): Chromium, launched directly.
+WINDOWS = os.name == "nt"
+if not WINDOWS:
+    EDGE = os.environ.get("MICE_QC_CHROME", "/opt/pw-browsers/chromium")
 # Marks our processes so we never kill the user's own browser — and carries
 # this RUN's process id, so two QC runs (two staging trees, verified at the
 # same time) cannot kill each other's browsers. kill() matches on the whole
 # tag, so a second run is invisible to the first.
-TAG = "MICEQCBROWSER%d" % os.getpid()
+# IT ENDS IN "END" ON PURPOSE. kill() matches the tag with `-like '*TAG*'`, and
+# without a terminator the tag of pid 123 is a substring of the tag of pid 1234:
+# one worker's kill() then killed ANOTHER worker's Edge mid-page. The page never
+# said "done", the check waited out its whole grace (~200 s) and failed with
+# nothing reported - the flake that hit a different browser check every full
+# gate (A26-94, found by Codex 2026-09-23). A pool spawns a fresh process per
+# check, so a gate holds hundreds of pids and a prefix pair is near certain.
+def tag_for(pid):
+    """This run's mark on its own browsers. One per process, and never a
+    substring of another process's mark."""
+    return "MICEQCBROWSER%dEND" % pid
+
+
+TAG = tag_for(os.getpid())
 # Browser profiles live in the system temp dir, NOT the repo: Edge keeps file
 # locks for a while after it is killed, so a profile written into qc/ survives
 # the cleanup and litters the project. Scratch belongs outside the source tree.
@@ -41,6 +58,75 @@ SCRATCH = Path(tempfile.gettempdir()) / "mice_qc"
 
 def available():
     return Path(EDGE).is_file()
+
+
+def _launch(url, prof, flags=()):
+    """Start one tagged headless browser on url; Start-Process on Windows.
+
+    `flags` are extra switches for one check only - e.g. a sound check needs
+    --autoplay-policy=no-user-gesture-required, because a browser under test
+    has no user to tap, and without a tap an AudioContext never runs.
+    """
+    if not WINDOWS:
+        # software WebGL: with --disable-gpu Studio's 3D view throws on load
+        subprocess.Popen([EDGE, "--headless=new", "--use-angle=swiftshader",
+                          "--enable-unsafe-swiftshader", "--no-sandbox",
+                          "--no-first-run", "--disable-extensions", "--" + TAG]
+                         + list(flags) + ["--user-data-dir=" + prof, url],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+        return
+    subprocess.run(["powershell", "-NoProfile", "-Command",
+                    "Start-Process -FilePath '%s' -ArgumentList "
+                    "'--headless=new','--disable-gpu','--no-sandbox',"
+                    "'--no-first-run','--disable-extensions','--%s',%s"
+                    "'--user-data-dir=%s','%s' -NoNewWindow"
+                    % (EDGE, TAG, "".join("'%s'," % f for f in flags), prof, url)],
+                   timeout=60)
+
+
+def dump_dom(url, prof, out, budget_ms, timeout=200, err=True):
+    """Load url headless, run `budget_ms` of virtual time, write the DOM to out.
+
+    For a page that goes idle; one that keeps fetching never finishes (see
+    the module docstring). Returns the finished process, output captured, so a
+    caller can say why nothing was written.
+    """
+    SCRATCH.mkdir(parents=True, exist_ok=True)   # the redirect needs its folder
+    if not WINDOWS:
+        with open(out, "wb") as so, open(out + ".err" if err else os.devnull, "wb") as se:
+            return subprocess.run(
+                [EDGE, "--headless=new", "--use-angle=swiftshader",
+                 "--enable-unsafe-swiftshader", "--no-sandbox", "--no-first-run",
+                 "--disable-extensions", "--" + TAG, "--user-data-dir=" + prof,
+                 "--virtual-time-budget=%d" % budget_ms, "--dump-dom", url],
+                stdout=so, stderr=se, timeout=timeout, start_new_session=True)
+    ps = ("$a=@('--headless=new','--disable-gpu','--no-sandbox','--no-first-run',"
+          "'--disable-extensions','--%s','--user-data-dir=%s',"
+          "'--virtual-time-budget=%d','--dump-dom','%s'); "
+          "Start-Process -FilePath '%s' -ArgumentList $a -NoNewWindow -Wait "
+          "-RedirectStandardOutput '%s'" % (TAG, prof, budget_ms, url, EDGE, out))
+    if err:
+        ps += " -RedirectStandardError '%s.err'" % out
+    return subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                          capture_output=True, text=True, errors="replace",
+                          timeout=timeout)
+
+
+def _ours_linux():
+    """Pids of our tagged browsers, or None when ps could not answer."""
+    r = subprocess.run(["ps", "-eo", "pid=,args="], capture_output=True, text=True,
+                       timeout=60)
+    if r.returncode != 0 or not (r.stdout or "").strip():
+        return None
+    pids = []
+    for ln in r.stdout.splitlines():
+        pid, _, args = ln.strip().partition(" ")
+        if not pid.isdigit():
+            return None                      # not ps output at all
+        if "--" + TAG in args:
+            pids.append(int(pid))
+    return pids
 
 
 # The driver stub every page gets: silence modal dialogs, and give the check a
@@ -63,8 +149,21 @@ window.qcMark=function(m, tries){
                encodeURIComponent("MOVE QCMARK " + m))
     .then(function(r){ if (!r || !r.ok) throw new Error("mark refused"); })
     .catch(function(){
-      if (tries >= 4) return;
-      return new Promise(function(go){ setTimeout(go, 150); })
+      // THE CABLE IS SHARED, AND THE HUB USES IT TOO. Its own port probe holds
+      // the fake port for up to 5.4 s (an RS485 census), and while it does,
+      // every mark is refused with "Access is denied". Four tries over 600 ms
+      // gave up inside that window, so the page reported NOTHING and the check
+      // said "[]" - which reads as a dead page (A26-94, 2026-09-23: identity,
+      // loop_return and modsite_back, all green alone).
+      // 40 tries x 250 ms outlasts the census; a page that truly cannot talk
+      // still fails the check, just later.
+      // KEEP TRYING UNTIL THE PAGE'S OWN WINDOW ENDS. 10 s was still not
+      // enough on 2026-09-23: check_loop_return reported nothing at all
+      // while the hub held the cable for a longer stretch. 400 x 250 ms
+      // is 100 s, inside the page window + grace, so a mark lands as soon
+      // as the cable frees and a page that truly cannot talk still fails.
+      if (tries >= 400) return;
+      return new Promise(function(go){ setTimeout(go, 250); })
         .then(function(){ return window.qcMark(m, tries + 1); });
     });
 };
@@ -88,6 +187,19 @@ window.qcWaitFor = function(cond, ms, step){
       setTimeout(poll, step);
     })();
   });
+};
+// THE APP AND THE CABLE, before a driver touches either. Studio logs in, loads
+// app.js and then opens the link, and none of that happens in a fixed number
+// of milliseconds on a machine running sixteen checks. Drivers that slept
+// instead threw on a missing element, or sent a mark the link dropped, and the
+// check failed in the gate while passing alone (A26-94, 2026-09-22/23).
+// It resolves either way: a page that is never ready still gets measured, and
+// the check says what was missing instead of waiting out its whole grace.
+window.qcStudioReady = function(ms){
+  return qcWaitFor(function(){
+    return typeof rawCmd === "function" && typeof addKey === "function"
+        && typeof haveUsb === "function" && haveUsb();
+  }, ms || 8000);   // budget: check_browser_budget
 };
 </script>
 """
@@ -119,15 +231,32 @@ def _quiet_start():
 
 
 def _running():
-    """How many of OUR browsers are still alive (never the user's own)."""
-    r = subprocess.run(["powershell", "-NoProfile", "-Command",
-                        "@(Get-CimInstance Win32_Process -Filter \"Name='msedge.exe'\" | "
-                        "Where-Object { $_.CommandLine -like '*%s*' }).Count" % TAG],
-                       capture_output=True, text=True, timeout=60)
+    """How many of OUR browsers are still alive (never the user's own).
+
+    -1 means the question could not be answered. It used to answer 0 for that,
+    which reads as "all gone" and let the next page start into a machine still
+    full of browsers - a query that fails under load certifying the opposite of
+    what it saw (A26-94).
+    """
+    if not WINDOWS:
+        try:
+            pids = _ours_linux()
+        except (subprocess.SubprocessError, OSError):
+            return -1
+        return -1 if pids is None else len(pids)
     try:
-        return int((r.stdout or "0").strip() or 0)
+        r = subprocess.run(["powershell", "-NoProfile", "-Command",
+                            "@(Get-CimInstance Win32_Process -Filter \"Name='msedge.exe'\" | "
+                            "Where-Object { $_.CommandLine -like '*%s*' }).Count" % TAG],
+                           capture_output=True, text=True, timeout=60)
+    except subprocess.SubprocessError:
+        return -1
+    if r.returncode != 0:
+        return -1
+    try:
+        return int((r.stdout or "").strip())
     except ValueError:
-        return 0
+        return -1
 
 
 def _wait_until_gone(timeout=20):
@@ -140,10 +269,16 @@ def _wait_until_gone(timeout=20):
     on its own.
     """
     end = time.time() + timeout
+    unknown = 0
     while time.time() < end:
-        if _running() == 0:
+        n = _running()
+        if n == 0:
             return True
+        if n < 0:
+            unknown += 1
         time.sleep(0.3)
+    print("QC SLOW: browsers still alive after %ds (%d unanswered queries)"
+          % (timeout, unknown), flush=True)
     return False
 
 
@@ -187,16 +322,18 @@ def _tag():
 
 def _studio_login_js():
     """Use Studio's real login once after its blocking app script has loaded."""
+    import qc as _F
     return '''<script>
 if (typeof appLogin === "function") {
   document.getElementById("loginUser").value = "super_admin";
-  document.getElementById("loginPass").value = "admin123";
+  document.getElementById("loginPass").value = "%s";
   appLogin();
 }
-</script>'''
+</script>''' % _F.HUB_PASSWORD
 
 
-def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True):
+def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True,
+         hub_login=True):
     """Serve the real Studio index.html + a driver script, load it, wait, kill.
 
     The temp page lives in the studio web folder so every relative asset
@@ -212,7 +349,7 @@ def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True):
     # other's test, and the URL is corrected here rather than in ten checks.
     query = query.replace("_qcdriver.html", drv.name)
     login = _studio_login_js() if studio_login else ""
-    drv.write_text(_login_js() + src + PRELUDE + login + "<script>\n" + driver_js + "\n</script>",
+    drv.write_text((_login_js() if hub_login else "") + src + PRELUDE + login + "<script>\n" + driver_js + "\n</script>",
                    encoding="utf-8")
     SCRATCH.mkdir(parents=True, exist_ok=True)
     # parenthesised: "/" and "%" share precedence, so without them python
@@ -221,12 +358,7 @@ def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True):
     import fake_serial
     _before = len(fake_serial.qc_marks)      # before the browser can say anything
     try:
-        subprocess.run(["powershell", "-NoProfile", "-Command",
-                        "Start-Process -FilePath '%s' -ArgumentList "
-                        "'--headless=new','--disable-gpu','--no-sandbox',"
-                        "'--no-first-run','--disable-extensions','--%s',"
-                        "'--user-data-dir=%s','%s' -NoNewWindow"
-                        % (EDGE, TAG, prof, query)], timeout=60)
+        _launch(query, prof)
         _wait_for_done(seconds, start=_before)
     finally:
         drv.unlink(missing_ok=True)
@@ -273,6 +405,16 @@ def _wait_for_done(seconds, grace=150, start=None):
         # The page talked but never said done: the grace was wasted, not needed.
         print("QC SLOW: a page reported but never sent done - waited %.0fs "
               "for nothing" % (seconds + grace), flush=True)
+    else:
+        # NOTHING AT ALL. Two very different faults look the same from here -
+        # a browser that never ran the driver, and a driver whose marks were
+        # all refused while the hub held the cable - so say which is which
+        # instead of leaving "[]" for the next person to guess at (A26-94).
+        print("QC SILENT: the page reported nothing in %.0fs (%d browser(s) of "
+              "ours alive, %d bytes on the wire) - it either never ran or could "
+              "not reach the cable"
+              % (seconds + grace, max(0, _running()), len(fake_serial.wire)),
+              flush=True)
     return False
 
 
@@ -280,7 +422,7 @@ def is_done(mark):
     return mark == "done" or mark.endswith("~done")
 
 
-def raw_page(html, base, seconds=20, name=None):
+def raw_page(html, base, seconds=20, name=None, flags=()):
     """Serve an arbitrary page from the studio web folder and load it.
 
     Used by checks that drive OTHER pages (in iframes) rather than the studio
@@ -312,8 +454,21 @@ window.qcMark=function(m, tries){
                encodeURIComponent("MOVE QCMARK " + m))
     .then(function(r){ if (!r || !r.ok) throw new Error("mark refused"); })
     .catch(function(){
-      if (tries >= 4) return;                 // give up, and let the check fail
-      return new Promise(function(go){ setTimeout(go, 150); })
+      // THE CABLE IS SHARED, AND THE HUB USES IT TOO. Its own port probe holds
+      // the fake port for up to 5.4 s (an RS485 census), and while it does,
+      // every mark is refused with "Access is denied". Four tries over 600 ms
+      // gave up inside that window, so the page reported NOTHING and the check
+      // said "[]" - which reads as a dead page (A26-94, 2026-09-23: identity,
+      // loop_return and modsite_back, all green alone).
+      // 40 tries x 250 ms outlasts the census; a page that truly cannot talk
+      // still fails the check, just later.
+      // KEEP TRYING UNTIL THE PAGE'S OWN WINDOW ENDS. 10 s was still not
+      // enough on 2026-09-23: check_loop_return reported nothing at all
+      // while the hub held the cable for a longer stretch. 400 x 250 ms
+      // is 100 s, inside the page window + grace, so a mark lands as soon
+      // as the cable frees and a page that truly cannot talk still fails.
+      if (tries >= 400) return;
+      return new Promise(function(go){ setTimeout(go, 250); })
         .then(function(){ return window.qcMark(m, tries + 1); });
     });
 };
@@ -346,12 +501,7 @@ window.qcWaitFor = function(cond, ms, step){
     import fake_serial
     _before = len(fake_serial.qc_marks)      # before the browser can say anything
     try:
-        subprocess.run(["powershell", "-NoProfile", "-Command",
-                        "Start-Process -FilePath '%s' -ArgumentList "
-                        "'--headless=new','--disable-gpu','--no-sandbox',"
-                        "'--no-first-run','--disable-extensions','--%s',"
-                        "'--user-data-dir=%s','%s/studio/%s' -NoNewWindow"
-                        % (EDGE, TAG, prof, base, name)], timeout=60)
+        _launch("%s/studio/%s" % (base, name), prof, flags)
         # Wait for the page to SAY it is finished, exactly like page() does.
         # A fixed sleep is a race: with several browser checks in one run the
         # machine is loaded, Edge starts slowly, and the page gets killed
@@ -368,6 +518,17 @@ window.qcWaitFor = function(cond, ms, step){
 
 def kill():
     """Kill only the Edge processes QC started (matched by our tag)."""
+    if not WINDOWS:
+        import signal
+        try:
+            for pid in _ours_linux() or []:
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except OSError:
+                    pass
+        except (subprocess.SubprocessError, OSError):
+            pass
+        return
     subprocess.run(["powershell", "-NoProfile", "-Command",
                     "Get-CimInstance Win32_Process -Filter \"Name='msedge.exe'\" | "
                     "Where-Object { $_.CommandLine -like '*%s*' } | "

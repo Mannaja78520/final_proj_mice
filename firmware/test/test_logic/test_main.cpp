@@ -8,9 +8,11 @@
 //   pio test -e native
 #include <unity.h>
 #include "modules/nong/NongMath.h"
+#include "modules/dummy/DummyMath.h"
 #include "core/WifiArgs.h"
 #include "core/WifiLink.h"
 #include "core/Log.h"
+#include "core/Id3.h"
 #include <algorithm>
 #include <cstdarg>
 #include <cstring>
@@ -103,6 +105,26 @@ void test_bad_speed_is_survivable(void) {
     TEST_ASSERT_TRUE(durationFor(from, to, 1, 0.0f, MIN_MS) >= MIN_MS);
     float dps[1] = {0};
     TEST_ASSERT_TRUE(minDuration(from, to, dps, 1, MIN_MS) >= MIN_MS);
+}
+
+// Safety cap (2026-09-17): no joint's PEAK speed on the cosine ease may pass
+// safeDps. A 90 deg jump at 60 deg/s needs 90 * pi/2 / 60 = 2.356 s.
+void test_safe_duration_caps_peak_speed(void) {
+    float from[2] = {90, 90};
+    float to[2]   = {90, 180};
+    const uint32_t ms = safeDuration(from, to, 2, 60.0f, MIN_MS);
+    TEST_ASSERT_UINT32_WITHIN(2, 2356, ms);
+    // sample the eased path: the fastest step never beats 60 deg/s (+1% slack)
+    float peak = 0, prev = 90;
+    for (int k = 1; k <= 1000; k++) {
+        float t = (float)k / 1000.0f;
+        float x = 90 + 90 * ease(t);
+        float v = (x - prev) / ((float)ms / 1000.0f / 1000.0f);
+        if (v > peak) peak = v;
+        prev = x;
+    }
+    TEST_ASSERT_TRUE(peak <= 60.6f);
+    TEST_ASSERT_TRUE(safeDuration(from, to, 2, 0.0f, MIN_MS) >= MIN_MS);
 }
 
 // ---------------------------------------------------------------- easing
@@ -345,6 +367,67 @@ void test_the_ssid_list_is_one_line(void) {
 void setUp(void) {}
 void tearDown(void) {}
 
+// ---- the dummy: pot reading -> joint angle -----------------------------
+// A reading at zero is 90 deg; a full span of counts is `span` degrees.
+void test_dummy_pot_at_zero_is_ninety() {
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 90.0f,
+        dummymath::potToDeg(2048, 2048, 270, 1, 0, 180, 4095));
+    // 4095/270 counts per degree: 30 degrees up is 455 counts
+    TEST_ASSERT_FLOAT_WITHIN(0.05f, 120.0f,
+        dummymath::potToDeg(2048 + 455, 2048, 270, 1, 0, 180, 4095));
+}
+// A pot mounted backwards turns the same reading the other way.
+void test_dummy_dir_flips_the_angle() {
+    TEST_ASSERT_FLOAT_WITHIN(0.05f, 60.0f,
+        dummymath::potToDeg(2048 + 455, 2048, 270, -1, 0, 180, 4095));
+}
+// The robot's limits hold: a dummy bent past them reports the limit.
+void test_dummy_clamps_to_the_limits() {
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 150.0f,
+        dummymath::potToDeg(4095, 2048, 270, 1, 30, 150, 4095));
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 30.0f,
+        dummymath::potToDeg(0, 2048, 270, 1, 30, 150, 4095));
+}
+// DZERO round trip: after zeroing at deg, the same reading means deg.
+void test_dummy_zero_round_trips() {
+    for (int dir = -1; dir <= 1; dir += 2) {
+        const float z = dummymath::zeroFor(1500, 72.5f, 300, dir, 4095);
+        TEST_ASSERT_FLOAT_WITHIN(0.01f, 72.5f,
+            dummymath::potToDeg(1500, z, 300, dir, 0, 180, 4095));
+    }
+}
+
+// ---------------------------------------------------------------- ID3 tags
+// The cover picture sits in this tag. Its length is read, never its bytes:
+// walking it byte by byte froze the robot at a show's first song.
+void test_id3_size_is_four_seven_bit_bytes() {
+    // 0x02 0x01 = 2*128 + 1 = 257 bytes after the 10-byte header
+    const uint8_t h[10] = {'I', 'D', '3', 3, 0, 0, 0x00, 0x00, 0x02, 0x01};
+    TEST_ASSERT_EQUAL_UINT32(10 + 257, id3::tagBytes(h));
+    // a 600 KB cover: every one of the four bytes carries 7 bits
+    const uint32_t big = 600000;
+    const uint8_t c[10] = {'I', 'D', '3', 4, 0, 0, (uint8_t)((big >> 21) & 0x7F),
+                           (uint8_t)((big >> 14) & 0x7F), (uint8_t)((big >> 7) & 0x7F),
+                           (uint8_t)(big & 0x7F)};
+    TEST_ASSERT_EQUAL_UINT32(10 + big, id3::tagBytes(c));
+}
+// ID3v2.4 may close the tag with a 10-byte footer, flagged in the header.
+void test_id3_v4_footer_is_skipped_too() {
+    const uint8_t h[10] = {'I', 'D', '3', 4, 0, 0x10, 0, 0, 0x01, 0x00};
+    TEST_ASSERT_EQUAL_UINT32(10 + 128 + 10, id3::tagBytes(h));
+    const uint8_t v3[10] = {'I', 'D', '3', 3, 0, 0x10, 0, 0, 0x01, 0x00};
+    TEST_ASSERT_EQUAL_UINT32(10 + 128, id3::tagBytes(v3));   // no footer before v2.4
+}
+// Audio that starts at byte 0 is not skipped: 0 means "no tag, play from here".
+void test_not_a_tag_skips_nothing() {
+    const uint8_t mp3[10] = {0xFF, 0xFB, 0x90, 0x64, 0, 0, 0, 0, 0, 0};
+    TEST_ASSERT_EQUAL_UINT32(0, id3::tagBytes(mp3));
+    const uint8_t badSize[10] = {'I', 'D', '3', 3, 0, 0, 0, 0, 0x80, 0};
+    TEST_ASSERT_EQUAL_UINT32(0, id3::tagBytes(badSize));      // not syncsafe
+    const uint8_t v5[10] = {'I', 'D', '3', 5, 0, 0, 0, 0, 0, 1};
+    TEST_ASSERT_EQUAL_UINT32(0, id3::tagBytes(v5));           // unknown version
+}
+
 int main(int, char **) {
     UNITY_BEGIN();
     RUN_TEST(test_home_is_mid_travel_on_any_servo);
@@ -356,6 +439,7 @@ int main(int, char **) {
     RUN_TEST(test_time_never_below_the_minimum);
     RUN_TEST(test_duration_scales_with_speed);
     RUN_TEST(test_bad_speed_is_survivable);
+    RUN_TEST(test_safe_duration_caps_peak_speed);
     RUN_TEST(test_ease_is_smooth_and_bounded);
     RUN_TEST(test_quoted_ssid_keeps_its_spaces);
     RUN_TEST(test_quoted_password_loses_its_quotes);
@@ -377,5 +461,12 @@ int main(int, char **) {
     RUN_TEST(test_a_log_line_can_never_look_like_two);
     RUN_TEST(test_an_over_long_line_is_cut_visibly);
     RUN_TEST(test_the_ssid_list_is_one_line);
+    RUN_TEST(test_dummy_pot_at_zero_is_ninety);
+    RUN_TEST(test_dummy_dir_flips_the_angle);
+    RUN_TEST(test_dummy_clamps_to_the_limits);
+    RUN_TEST(test_dummy_zero_round_trips);
+    RUN_TEST(test_id3_size_is_four_seven_bit_bytes);
+    RUN_TEST(test_id3_v4_footer_is_skipped_too);
+    RUN_TEST(test_not_a_tag_skips_nothing);
     return UNITY_END();
 }

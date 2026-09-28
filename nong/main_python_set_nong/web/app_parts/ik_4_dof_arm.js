@@ -91,6 +91,70 @@ function solveElbowIK(arm, target) {
   ccdChain(idx, eb, target, 20);
   applyPose();
 }
+// ---- the same shape on the other arm (A31-6) ------------------------------
+// User 2026-09-23: a move picks which arm plays it, so the same move can be
+// mirrored.
+//
+// Mirroring is NOT swapping the two blocks of four joint numbers. That is what
+// it looked like, because the right arm is drawn as the left's mirror image -
+// but the two arms do not carry the same `invert` flags in the shipped rig
+// (L_EL_R is 0, R_EL_R is 1), so a copied elbow roll came out backwards and
+// the hand landed 613 mm from where it should have been. Deriving the angles
+// from zero/jdir/axis instead was worse: 528 mm, because that model ignores
+// the mounting tilts and where each arm's base actually sits.
+//
+// So mirroring is done where the truth is - in the geometry. Reflect both the
+// elbow and the wrist in the body's own x = 0 plane, then let the existing
+// solvers put each arm there: the shoulders place the elbow, the elbow joints
+// place the wrist. Both targets together leave no slack in a 4-joint arm, so
+// the answer is the mirror and not merely a pose that reaches the same point.
+// check_arm_mirror measures the hands afterwards, in world space.
+// Reflect a world point in one of the body's OWN planes. "lr" is the plane
+// between the two arms, "fb" is the one between front and back - and both are
+// taken in the body's frame, so a turned waist does not tilt the mirror.
+function mirrorAcrossBody(p, which) {
+  const local = bodyGroup.worldToLocal(p.clone());
+  if (which === "fb") local.z = -local.z; else local.x = -local.x;
+  return bodyGroup.localToWorld(local);
+}
+// Returns the mirrored pose, or null if there is no rig on screen to mirror
+// with. The two BODY joints keep the rule mirrorLR() has always used: the
+// waist reflects about 90 (turning left becomes turning right) and the shrug
+// is unchanged, because it lifts both shoulders about the centre line and a
+// reflection leaves it alone.
+function mirrorPose(p, which) {
+  if (!bodyGroup || !wristBalls[0] || !wristBalls[1]) return null;
+  const saved = pose.slice();
+  try {
+    pose = p.slice();
+    applyPose();
+    robot.updateMatrixWorld(true);
+    const want = [0, 1].map(a => ({
+      elbow: mirrorAcrossBody(elbowBalls[a].getWorldPosition(new THREE.Vector3()), which),
+      wrist: mirrorAcrossBody(wristBalls[a].getWorldPosition(new THREE.Vector3()), which),
+    }));
+    for (const a of [0, 1]) {
+      // LEFT/RIGHT swaps the arms - the left arm takes the right's shape.
+      // FRONT/BACK does not: each arm stays on its own side of the body and
+      // only its reach turns round, which is what "the same gesture, facing
+      // the other way" means for a puppet.
+      const t = which === "fb" ? want[a] : want[1 - a];
+      solveElbowIK(a, t.elbow);
+      ccdChain(a === 0 ? [2, 3] : [6, 7], wristBalls[a], t.wrist, 24);
+    }
+    applyPose();
+    const out = pose.slice();
+    // A reflection reverses a turn about the vertical, whichever plane it is
+    // in, so the waist flips about its own neutral either way. The shrug rocks
+    // about the centre line and a reflection leaves it alone.
+    out[8] = clampJ(8, 180 - p[8]);
+    out[9] = p[9];
+    return out;
+  } finally {
+    pose = saved;
+    applyPose();
+  }
+}
 function solve3(A, b) { // gaussian elimination, 3x3
   const M = A.map((row, i) => [...row, b[i]]);
   for (let c = 0; c < 3; c++) {

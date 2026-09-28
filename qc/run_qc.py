@@ -40,7 +40,8 @@ RECEIPT = CODE / ".qc-receipt.json"
 
 SKIP_PARTS = {".git", ".pio", "__pycache__", ".staging", "node_modules",
               ".vscode", ".claude", ".unsnooze", "dist", "build", "patches",
-              "patches_code", "generated", "tts_cache", "reports"}
+              "patches_code", "generated", "tts_cache", "reports",
+              "projects", "sequences", "shows"}
 
 
 def tree_fingerprint():
@@ -213,7 +214,30 @@ SOLO = {
     # subprocess was starved past its connect window.
     "check_voice_stt",
     "check_voice_tts",
+    # Two hubs POST a 1.3 MB image to each other, then a browser page has 30 s
+    # to report. Failed 3 full gates in a row on 2026-09-17, green alone each
+    # time (40 s) - the same starved-margin signature as above.
+    "check_flash_remote",
+    # It lists every file in the tree to prove each has one subsystem, and
+    # other checks create and delete files while they run: the first full
+    # gate 2026-09-21 saw studio's header "out of date" for a file that
+    # existed only for a moment. Alone, it sees the tree as it really is.
+    "check_systems",
+    # A browser drives Studio's crash preview on timers. Red in two full gates
+    # in a row 2026-09-21 ("the crash-gate driver reported"), green alone in
+    # 8 s each time - the starved-margin signature again.
+    "check_crash_gate",
+    # Both drive the hub page through a flash on browser timers. Between them
+    # red in five full gates on 2026-09-21 ("the hub page reported back") and
+    # green alone and together (65 s) every time.
+    "check_flash_type",
+    "check_flash_confirm",
 }
+
+
+# SOLO checks that must finish before anything else starts: others read what
+# they produce. See the note where they run.
+RUN_FIRST = {"check_build_split"}
 
 
 def _plan(msg):
@@ -244,12 +268,15 @@ def _one(path_str):
     buf = io.StringIO()
     mod, err = _load(path)
     if err:
-        return (path_str, "", [], 0.0, "", err)
+        return (path_str, "", [], 0.0, "", err, "")
     with contextlib.redirect_stdout(buf):
         case, secs, crash = F.run_check(mod)
+    # The captured text comes BACK now. It was thrown away, and with it every
+    # "QC SLOW" line the browser harness printed - the evidence for why a check
+    # that passes alone failed in the gate (A26-94).
     return (path_str, getattr(mod, "TITLE", path.stem),
             [(bool(g), l, d) for g, l, d in case.results],
-            secs, crash or "", "")
+            secs, crash or "", "", buf.getvalue())
 
 
 def main(argv):
@@ -398,6 +425,40 @@ def main(argv):
               % (G if not n_fail else R,
                  len([1 for g, _l, _d in case_results if g]), n_fail, secs, D))
 
+    def _said(results, crash, printed):
+        """What the check printed, but only when it went wrong.
+
+        A green check's notes are noise in a 300-line gate; a red one's are
+        the evidence (QC SLOW lines from the browser harness, A26-94)."""
+        return printed if printed and _red(results, crash) else ""
+
+    retries = int(SPEED.get("browserRetriesAlone") or 0)
+    flaky = []
+
+    def _red(results, crash):
+        return bool(crash) or not results or any(not g for g, _l, _d in results)
+
+    def _alone(f):
+        """One more run of one check, in a fresh process, with nothing beside it."""
+        import concurrent.futures as _cf
+        with _cf.ProcessPoolExecutor(max_workers=1, max_tasks_per_child=1) as pool:
+            return pool.submit(_one, str(f)).result()
+
+    def run_isolated(items):
+        """Keep sequential checks sequential without retaining their hub threads."""
+        if not items:
+            return
+        import concurrent.futures as _cf
+        with _cf.ProcessPoolExecutor(max_workers=1,
+                                     max_tasks_per_child=1) as pool:
+            for f, mod in items:
+                (_path, _title, results, secs, crash, err,
+                 printed) = pool.submit(_one, str(f)).result()
+                if err:
+                    broken.append((f.stem, err))
+                else:
+                    report(f, mod, results, secs, crash, _said(results, crash, printed))
+
     solo = [(f, m) for f, m in wanted
             if f.stem in SOLO or getattr(m, "SOLO", False)]
     rest = [(f, m) for f, m in wanted if (f, m) not in solo]
@@ -441,39 +502,75 @@ def main(argv):
         # BOTH LANES AT ONCE. They ran one after the other, so the browser lane
         # idled through the whole plain phase - measured 2026-09-17 with the
         # CPU at 2% during a gate: the suite was waiting, not working.
+        # The firmware build goes FIRST, alone. check_flash, check_ota and
+        # check_ota_only read the images it leaves in firmware/.pio/build, and
+        # on a fresh staging tree there are none until it has run - so the
+        # first gate on every new staging went red on those three and the
+        # second passed (A26-83, seen five times on 2026-09-21).
+        first = [(f, m) for f, m in solo if f.stem in RUN_FIRST]
+        solo = [(f, m) for f, m in solo if f.stem not in RUN_FIRST]
+        run_isolated(first)
+        heavy_paths = {str(f) for f, _m in heavy}
+        suspect = []        # browser checks that failed in the crowd: retried alone
         pools, futs, by_path = [], [], {}
         for group, width in ((para, jobs), (heavy, browser_jobs)):
             if not group:
                 continue
-            pool = _cf.ProcessPoolExecutor(max_workers=width)
+            # Hub threads outlive a check. Reusing a worker accumulates HTTP,
+            # scanner and route-probe services until browser checks time out.
+            pool = _cf.ProcessPoolExecutor(max_workers=width,
+                                           max_tasks_per_child=1)
             pools.append(pool)
             for f, m in group:
                 by_path[str(f)] = (f, m)
                 futs.append(pool.submit(_one, str(f)))
         try:
             for fut in _cf.as_completed(futs):
-                path_s, _title, results, secs, crash, err = fut.result()
+                path_s, _title, results, secs, crash, err, printed = fut.result()
                 f, mod = by_path[path_s]
                 if err:
                     broken.append((f.stem, err))
                     continue
-                report(f, mod, results, secs, crash, "")
+                if path_s in heavy_paths and retries and _red(results, crash):
+                    suspect.append((f, mod, results, secs, crash, printed))
+                    continue
+                report(f, mod, results, secs, crash, _said(results, crash, printed))
                 done_n += 1
                 if done_n % 10 == 0:
                     _plan("QC %d/%d checks" % (done_n, total_n))
         finally:
             for pool in pools:
                 pool.shutdown(wait=True)
-        for f, mod in solo:
-            case, secs, crash = F.run_check(mod)
-            report(f, mod, case.results, secs, crash, "")
+        for f, mod, results, secs, crash, printed in suspect:
+            again = [_alone(f) for _ in range(retries)]
+            if all(not _red(r[2], r[4]) and not r[5] for r in again):
+                flaky.append(f.stem)
+                print("%sFLAKY%s %s failed in the parallel run, passed alone %d/%d"
+                      % (R, D, f.stem, retries, retries))
+                # WHAT it said in the crowd, not just that it said something.
+                # Without this a flaky check is a name and no evidence, and the
+                # next person has to reproduce a race to learn anything (A26-94).
+                for good, label, detail in results:
+                    if not good:
+                        print("        in the crowd: %s%s"
+                              % (label, (" - " + detail.replace(chr(10), " ")[:200])
+                                 if detail else ""))
+                if crash:
+                    print("        in the crowd it crashed: %s"
+                          % crash.strip().splitlines()[-1])
+                if printed:
+                    sys.stdout.write(printed)
+                _p, _t, r_res, r_secs, _c, _e, _pr = again[-1]
+                report(f, mod, r_res, r_secs, None, "")
+            else:
+                # real: it blocks - with whatever the crowded run printed
+                report(f, mod, results, secs, crash, _said(results, crash, printed))
+        run_isolated(solo)
         _plan("QC finished: %d passed, %d failed" % (total_pass, total_fail))
 
     else:
         # One at a time: --jobs 1, or a filter that left a single check.
-        for f, mod in wanted:
-            case, secs, crash = F.run_check(mod)
-            report(f, mod, case.results, secs, crash, "")
+        run_isolated(wanted)
 
     print("\n" + "=" * 62)
     for name, err in broken:
@@ -499,6 +596,10 @@ def main(argv):
     elif RECEIPT.exists() and full_run:
         RECEIPT.unlink()          # this tree is not green any more
 
+    if flaky:
+        # Counted as passed, never hidden: these are the checks to make steadier.
+        print("\n%sFLAKY (failed in the parallel run, green alone):%s %s"
+              % (R, D, ", ".join(flaky)))
     if failures:
         print("\nwhat regressed:")
         for x in failures:

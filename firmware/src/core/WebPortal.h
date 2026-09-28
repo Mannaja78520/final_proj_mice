@@ -97,17 +97,27 @@ private:
     // with four phones is already more than this has ever needed, and the
     // oldest is reused rather than refusing a login.
     static const int SESSIONS = 4;
-    struct Session { char token[25] = {0}; uint32_t seen = 0; };
+    struct Session {
+        char token[25] = {0};
+        char user[21] = {0};
+        uint32_t seen = 0;
+    };
     Session sessions_[SESSIONS];
     bool allowed(AsyncWebServerRequest* req);          // has a live session
     bool allowedCommand(AsyncWebServerRequest* req, const String& cmd);
-    String newSession();
+    String newSession(const String& user = "");
+    String sessionUser(AsyncWebServerRequest* req);
     void endSession(AsyncWebServerRequest* req);
     static String cookieToken(AsyncWebServerRequest* req);
     SDStore* sd_ = nullptr;
     RS485Bus* rs485_ = nullptr;
     AsyncWebServer server_{80};
     AsyncWebSocket ws_{"/ws"};
+    // Live sound straight from a phone or laptop browser, no hub in between:
+    // a browser cannot send UDP, so this socket carries the same raw PCM the
+    // hub sends over UDP. One sender at a time; the newest one wins.
+    AsyncWebSocket wsAudio_{"/ws/audio"};
+    uint32_t audioClient_ = 0;
     PeerDiscovery peers_;
 
     // why an OTA upload was refused or failed, so the reply says something

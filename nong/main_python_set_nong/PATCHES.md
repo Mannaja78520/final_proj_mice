@@ -88,3 +88,32 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0081 | 2026-09-08 22:23 | A25 landed: rainbow guarded, shortcuts tab named |
 | 0082 | 2026-09-10 14:50 | Time bar in its own row, music can repeat, per-joint start pose |
 | 0083 | 2026-09-10 16:57 | Per-joint servo offset: nudge one joint without re-zeroing the rest |
+| 0084 | 2026-09-16 23:42 | Clicking a move during Play travels from where the arm is at show speed and carries on; time-bar jumps move at show speed (A0-18 safety) |
+| 0085 | 2026-09-17 03:14 | Save YAML under its own name with a replace warning; picking a saved YAML opens it in the timeline (A0-20) |
+| 0086 | 2026-09-17 03:19 | Timeline panel drags taller or shorter, keeps its height, arrow keys and double-click reset (A0-17) |
+| 0087 | 2026-09-17 14:20 | Studio login is the hub login: wrong password refused by the hub, a hub session logs Studio in (A26-32) |
+| 0088 | 2026-09-17 15:03 | Safety speed cap in move timing (SAFE_DPS from the robot) and RS485 adapter bus id found by itself (A26-31, A26-33) |
+| 0089 | 2026-09-17 16:16 | Robot home separate from show neutral, joint-limit mismatch warning, delete saved YAML, freeze report (A26-35..38) |
+| 0090 | 2026-09-17 16:22 | Loop travels back to the start as a timed move; hub waits the board's real move time (A26-41) |
+| 0091 | 2026-09-17 18:00 | Zero position lock uses the hub login (A26-43); removed browser-only change-login |
+| 0092 | 2026-09-17 18:23 | Music picker stays open when clicked and works without live follow (A26-49) |
+| 0093 | 2026-09-17 19:16 | Studio preview waits for the arm to reach keyframe 0 before its clock starts (A26-50) |
+| 0094 | 2026-09-17 21:11 | Distances in mm between elbows and hands: click Distances or hold D (A26-44) |
+| 0095 | 2026-09-17 21:16 | Monitor connects by itself and polls one at a time over RS485 (A26-42) |
+| 0096 | 2026-09-17 21:19 | Shrug preview turns by the real angle, not x3 (A26-45) |
+| 0097 | 2026-09-17 21:26 | A frozen Studio page stops the hub show; hidden or closed does not (A26-46) |
+| 0098 | 2026-09-18 04:20 | Shows tab: saved sequences played one after another by name, the hub runs the show (A26-40) |
+| 0099 | 2026-09-21 23:37 | Studio and monitor follow the fastest route while open |
+| 0100 | 2026-09-22 00:02 | Keep peer targeting compatible with fastest-route Studio |
+| 0103 | 2026-09-23 08:59 | shows run with no gap between sequences and can repeat by times or seconds; a whole show loads onto the time bar; the timing limit that holds a move is named and the peak limit is editable offline; a move can be given to the front or back arm and mirrored properly; a flat view stays flat and drags without Shift; URDF import |
+| 0107 | 2026-09-24 13:22 | A31-23/A31-24: save-changes question centred, no don't-ask-again box (switch is in Setup > Saving); cards in Sequence, Robot and Setup fold to their title like the Pose tab's |
+| 0108 | 2026-09-27 17:29 | RS485 adapter connect: Studio remembers the bus id per port, no blind INFO retry, one Connect at a time, 15 s fetch timeout |
+| 0109 | 2026-09-27 18:06 | Shows: one clock with the robot, gentler joins between sequences, show music |
+| 0110 | 2026-09-27 18:46 | Shows: music stop time, per-sequence speed in a show |
+| 0111 | 2026-09-27 19:19 | Shows: add the show's music from this PC |
+| 0112 | 2026-09-27 19:23 | Shows: From PC says why when the robot is not connected; music row wraps |
+| 0113 | 2026-09-27 20:03 | Music upload: say to log in again after a hub restart; ask before a big track over the cable |
+| 0114 | 2026-09-27 20:11 | Music upload: sent by the hub in the background with a percent wheel and cancel |
+| 0115 | 2026-09-27 20:29 | Music upload: rename non-English track names; hub reads the body before refusing |
+| 0116 | 2026-09-28 03:31 | bug sweep: project rig before clamp, no NaN times, pinned time kept on peak-limit change, duplicate drops cues, YAML move names reload, serial commands one at a time, Run/hand-off check the robot's answer, WiFi download checks status |
+| 0117 | 2026-09-28 03:55 | Dummy card in the Robot tab: the hand-posed dummy poses Studio and the robot |

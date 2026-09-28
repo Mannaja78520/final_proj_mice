@@ -1,5 +1,22 @@
 # Mice coding instructions
 
+## Find the subsystem first (A26-76, user 2026-09-21)
+
+Before reading code: `python tools/systems.py which <file>` (or open
+`docs/systems/README.md`) and read that ONE header in `docs/systems/`. Stay in
+that system's files; its header lists the checks to run. A new file or system:
+add it to `docs/systems.json`, then `python tools/systems.py build`.
+`check_systems` fails on a file nobody owns or a stale header.
+
+## How to read (tokens are paid; user 2026-09-22, A26-93)
+
+- `python tools/systems.py which <file>` -> read that ONE header first.
+- `rg` the name, then read 40-100 lines around the hit. Never a whole file
+  over 300 lines (main.py is ~38k tokens; one function is ~1k).
+- Never re-read a file already read or just edited.
+- Logs: print the failing line only (tail / grep), never the full run.
+- Moving code: write a script that moves exact lines; do not retype it.
+
 For simultaneous Codex, Antigravity and Claude sessions, read
 `docs/COORDINATION.md` and the newest `docs/BRIDGE.md` entries before editing.
 Claim files before writing; serialize bridge/plan updates with the shared

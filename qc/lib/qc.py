@@ -70,8 +70,30 @@ STUDIO = CODE / "nong" / "main_python_set_nong"
 STUDIO_WEB = STUDIO / "web"
 FIRMWARE = CODE / "firmware"
 GENERATED = FIRMWARE / "generated"
+# PlatformIO lives in its own venv on the PC; off Windows (the cloud) it is on PATH.
+PIO = Path(os.environ.get("USERPROFILE", "")) / ".platformio/penv/Scripts/pio.exe"
+if not PIO.is_file():
+    import shutil
+    PIO = Path(shutil.which("pio") or PIO)
 
 _generated_done = [False]
+
+
+def hub_src():
+    """The hub program's source as ONE text: main.py, then every hub_*.py.
+
+    main.py is being split into smaller files (A26-76). A check that reads
+    the source for a pattern must still find it after the code moves, so it
+    reads this instead of main.py alone.
+
+    Moved code reads main.py's names late as `_hub.<name>` (A26-93). The
+    prefix is dropped here, so a check looking for `flasher.running()` or
+    `with _reports_lock:` finds it wherever it now lives.
+    """
+    parts = [HUB / "main.py"] + sorted(HUB.glob("hub_*.py"))
+    text = "\n".join(p.read_text(encoding="utf-8", errors="replace") for p in parts)
+    return text.replace("_hub.", "")
+
 
 
 def generated(rel=""):

@@ -1,0 +1,126 @@
+<?xml version="1.0"?>
+<robot name="nong">
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/torso.stl" scale="0.001 0.001 0.001"/></geometry>
+    </visual>
+  </link>
+  <link name="head_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/head.stl" scale="0.001 0.001 0.001"/></geometry>
+    </visual>
+  </link>
+  <link name="waist_link">
+  </link>
+  <link name="shrug_link">
+  </link>
+  <link name="L_sh_mid">
+  </link>
+  <link name="L_upper_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/L_upper.stl" scale="0.001 0.001 0.001"/></geometry>
+    </visual>
+  </link>
+  <link name="L_el_mid">
+  </link>
+  <link name="L_fore_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/L_fore.stl" scale="0.001 0.001 0.001"/></geometry>
+    </visual>
+  </link>
+  <link name="R_sh_mid">
+  </link>
+  <link name="R_upper_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/R_upper.stl" scale="0.001 0.001 0.001"/></geometry>
+    </visual>
+  </link>
+  <link name="R_el_mid">
+  </link>
+  <link name="R_fore_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="meshes/R_fore.stl" scale="0.001 0.001 0.001"/></geometry>
+    </visual>
+  </link>
+  <joint name="head" type="fixed">
+    <parent link="shrug_link"/>
+    <child link="head_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="waist" type="revolute">
+    <parent link="base_link"/>
+    <child link="waist_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.0472" upper="1.0472" effort="33.4" velocity="3.491"/>
+  </joint>
+  <joint name="shrug" type="revolute">
+    <parent link="waist_link"/>
+    <child link="shrug_link"/>
+    <origin xyz="0 0 0.18" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.1745" upper="0.1745" effort="33.4" velocity="3.491"/>
+  </joint>
+  <joint name="L_SH_P" type="revolute">
+    <parent link="shrug_link"/>
+    <child link="L_sh_mid"/>
+    <origin xyz="0 0.18 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0.4363" upper="2.7053" effort="3.6" velocity="6.545"/>
+  </joint>
+  <joint name="L_SH_R" type="revolute">
+    <parent link="L_sh_mid"/>
+    <child link="L_upper_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0.4363" upper="2.7053" effort="3.6" velocity="6.545"/>
+  </joint>
+  <joint name="L_EL_P" type="revolute">
+    <parent link="L_upper_link"/>
+    <child link="L_el_mid"/>
+    <origin xyz="0 0 -0.129" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0.4363" upper="2.7053" effort="0.31" velocity="6.981"/>
+  </joint>
+  <joint name="L_EL_R" type="revolute">
+    <parent link="L_el_mid"/>
+    <child link="L_fore_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0.4363" upper="2.7053" effort="0.31" velocity="6.981"/>
+  </joint>
+  <joint name="R_SH_P" type="revolute">
+    <parent link="shrug_link"/>
+    <child link="R_sh_mid"/>
+    <origin xyz="0 -0.18 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0.4363" upper="2.7053" effort="3.6" velocity="6.545"/>
+  </joint>
+  <joint name="R_SH_R" type="revolute">
+    <parent link="R_sh_mid"/>
+    <child link="R_upper_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0.4363" upper="2.7053" effort="3.6" velocity="6.545"/>
+  </joint>
+  <joint name="R_EL_P" type="revolute">
+    <parent link="R_upper_link"/>
+    <child link="R_el_mid"/>
+    <origin xyz="0 0 -0.129" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0.4363" upper="2.7053" effort="0.31" velocity="6.981"/>
+  </joint>
+  <joint name="R_EL_R" type="revolute">
+    <parent link="R_el_mid"/>
+    <child link="R_fore_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0.4363" upper="2.7053" effort="0.31" velocity="6.981"/>
+  </joint>
+</robot>

@@ -1,0 +1,13 @@
+{
+  // How `MiceHub.exe --open <app>` shows ONE app in its own window (A26-6).
+  // The first browser in the list that exists on this PC is used, with `args`
+  // ({url} is the app's address). None found: the normal default browser.
+  // %NAME% is an environment variable, so the same file fits every PC.
+  "browsers": [
+    "%ProgramFiles(x86)%\\Microsoft\\Edge\\Application\\msedge.exe",
+    "%ProgramFiles%\\Microsoft\\Edge\\Application\\msedge.exe",
+    "%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe",
+    "%LocalAppData%\\Google\\Chrome\\Application\\chrome.exe"
+  ],
+  "args": ["--app={url}"]
+}

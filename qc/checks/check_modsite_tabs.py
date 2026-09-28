@@ -8,7 +8,6 @@ eventually appears to someone who has not logged in.
 
 Driven in a real browser through the hub, which serves the board's own page.
 """
-import subprocess
 from pathlib import Path
 
 import browser
@@ -38,13 +37,28 @@ function report(s, then){
   }catch(e){ if (then) then(); }
 }
 function finish(s){ report(s, function(){ report("done"); }); }
-window.addEventListener("load", function(){ setTimeout(function(){
+// Wait for the module page to have drawn its tabs. This page carries no QC
+// prelude, so the poll is here: a fixed sleep measured an empty page under
+// load and reported tabs missing (A26-94).
+window.addEventListener("load", function(){ (function ready(n){
+  if (!document.querySelector("[data-tab]") && n < 200)
+    return setTimeout(function(){ ready(n + 1); }, 100);
+  setTimeout(function(){
   try{
     var out = [];
     function vis(sel){
       var e = document.querySelector(sel);
       if (!e) return "missing";
       return getComputedStyle(e).display === "none" ? "hidden" : "shown";
+    }
+    // Setup cards gated by module type (the dummy's pot calibration is hidden
+    // on a nong) must not decide the login answer: 'shown' if ANY is shown.
+    function visAny(sel){
+      var all = document.querySelectorAll(sel);
+      if (!all.length) return "missing";
+      for (var i = 0; i < all.length; i++)
+        if (getComputedStyle(all[i]).display !== "none") return "shown";
+      return "hidden";
     }
     function countShown(tab){
       var n = 0;
@@ -77,15 +91,15 @@ window.addEventListener("load", function(){ setTimeout(function(){
     // the Setup tab, still logged OUT: the login card shows, the config does not
     showTab("setup");
     out.push("loginVisible:" + vis("#loginCard"));
-    out.push("settingsLockedOut:" + vis(".card.setupCard"));
+    out.push("settingsLockedOut:" + visAny(".card.setupCard"));
 
     // pretend the login succeeded — the SAME rule must now reveal them
     auth = { user: "qc", pass: "x" };
     applyTabs();
-    out.push("settingsAfterLogin:" + vis(".card.setupCard"));
+    out.push("settingsAfterLogin:" + visAny(".card.setupCard"));
     // ...and they must still be hidden on another tab
     showTab("control");
-    out.push("settingsOnOtherTab:" + vis(".card.setupCard"));
+    out.push("settingsOnOtherTab:" + visAny(".card.setupCard"));
 
     // files tab carries the SD card and console
     showTab("files");
@@ -107,7 +121,7 @@ window.addEventListener("load", function(){ setTimeout(function(){
       }catch(e){ finish("ERR " + e.message); }
     }, 1800);
   }catch(e){ finish("ERR " + e.message); }
-}, 900); });
+}, 900); })(0); });
 """
 
 
@@ -184,15 +198,8 @@ def _drive(base):
     browser.SCRATCH.mkdir(parents=True, exist_ok=True)
     prof = str(browser.SCRATCH / ("profile_mod_%d" % int(time.time() * 1000)))
     try:
-        subprocess.run(["powershell", "-NoProfile", "-Command",
-                        "Start-Process -FilePath '%s' -ArgumentList "
-                        "'--headless=new','--disable-gpu','--no-sandbox',"
-                        "'--no-first-run','--disable-extensions','--%s',"
-                        "'--user-data-dir=%s',"
-                        "'%s/studio/%s?dev=usb%%3A%s' -NoNewWindow"
-                        % (browser.EDGE, browser.TAG, prof, base, drv.name,
-                           fake_serial.PORT)],
-                       timeout=60)
+        browser._launch("%s/studio/%s?dev=usb%%3A%s"          # noqa: SLF001
+                        % (base, drv.name, fake_serial.PORT), prof)
         # Wait for the page to report, not for the clock. A flat sleep is a
         # bet on how fast the machine is today: under the full suite this one
         # expired mid-run and failed a promote for a page that was working.

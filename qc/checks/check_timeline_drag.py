@@ -21,7 +21,8 @@ SLOW = True
 
 DRIVER = """
 function report(s){ rawCmd("MOVE QCMARK TDRAG~" + s); }
-window.addEventListener("load", function(){ setTimeout(async function(){
+// Wait for the app and the cable, never a fixed sleep (A26-94).
+window.addEventListener("load", function(){ qcStudioReady().then(function(){ setTimeout(async function(){
   try{
     localStorage.removeItem("nong_timeh");
     var tl = document.getElementById("timeline"), h = document.getElementById("timeDrag");
@@ -56,7 +57,7 @@ window.addEventListener("load", function(){ setTimeout(async function(){
            "~keyUp=" + keyUp + "~saved=" + saved + "~scroll=" + scroll + "~reset=" + reset);
   }catch(e){ report("ERR-" + String(e).slice(0,60)); }
   setTimeout(function(){ report("done"); }, 300);
-}, 1500); });
+}, 150); }); });
 """
 
 

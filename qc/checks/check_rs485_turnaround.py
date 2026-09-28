@@ -45,9 +45,10 @@ def run(t):
              "leaves room for the driver's own turn-off time")
 
     # ---- and the send path really uses them -------------------------
-    send = src[src.find("void RS485Bus::send("):]
+    send = src[src.find("void RS485Bus::sendNow("):]
     send = send[:send.find("\n}") + 2]
-    t.contains(send, "Serial2.flush()",
+    # uart_wait_tx_done, not Serial2.flush(): the latter spins (check_bus_nonblocking)
+    t.contains(send, "uart_wait_tx_done(",
                "the FIFO is drained before the line is released")
     t.contains(send, "delayMicroseconds(RS485_HOLD_US)",
                "and then the shift register is waited for")
@@ -57,7 +58,7 @@ def run(t):
          "found %s" % re.findall(r"delayMicroseconds\([^)]*\)", send))
 
     # The order is the whole point: enable, send, drain, WAIT, disable.
-    i_flush = send.find("Serial2.flush()")
+    i_flush = send.find("uart_wait_tx_done(")
     i_hold = send.find("delayMicroseconds(RS485_HOLD_US)")
     i_low = send.find("rs485De, LOW")
     t.ok(0 < i_flush < i_hold < i_low,

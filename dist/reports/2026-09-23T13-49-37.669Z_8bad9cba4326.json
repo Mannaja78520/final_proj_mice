@@ -1,0 +1,11 @@
+{
+  "id": "8bad9cba4326",
+  "time": "2026-09-23T13:49:37.669Z",
+  "text": "STUDIO FREEZE {\"gapMs\":2146,\"playing\":false,\"live\":true,\"monitor\":false,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":9,\"gpu\":{\"geometries\":20,\"textures\":0,\"programs\":3},\"heapMB\":7,\"longTasks\":[{\"ms\":2153,\"at\":906346}],\"slowCalls\":[{\"u\":\"/api/usb/cmd?port=COM12&id=67&c=POSE%20108.9%2025%20115.8%2089.9%2086.2%20155%2071.4%2089.\",\"ms\":3227,\"at\":819647},{\"u\":\"/api/usb/cmd?port=COM12&id=67&c=POSE%2090%20140%2090%2090%2090%2040%2090%2090%2090%2090.5%\",\"ms\":2484,\"at\":837320},{\"u\":\"/api/usb/cmd?port=COM12&id=67&c=POSE%2090%20140%2090%2090%2090%2040%2090%2090%2090%2090.5%\",\"ms\":2009,\"at\":839810},{\"u\":\"/api/usb/cmd?port=COM12&id=67&c=POSE%2090.6%2094.2%2088.6%2090%2095.3%2077.3%2088.5%2090.1\",\"ms\":3268,\"at\":863696},{\"u\":\"/api/usb/cmd?port=COM12&id=67&c=POSE%20108.9%2025%20115.8%2089.9%2086.2%20155%2071.4%2089.\",\"ms\":2004,\"at\":866965},{\"u\":\"/api/usb/cmd?port=COM12&id=67&c=POSE%2090.6%2094.2%2088.6%2090%2095.3%2077.3%2088.5%2090.1\",\"ms\":3228,\"at\":901182},{\"u\":\"/api/usb/cmd?port=COM12&id=67&c=POSE%20108.9%2025%20115.8%2089.9%2086.2%20155%2071.4%2089.\",\"ms\":4091,\"at\":904410}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0"
+}

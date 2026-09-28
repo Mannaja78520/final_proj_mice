@@ -21,7 +21,6 @@
 
 class AudioGenerator;
 class AudioFileSourceSD;
-class AudioFileSourceID3;
 class AudioOutput;
 class AudioOutputI2S;
 class AudioOutputI2SNoDAC;
@@ -69,7 +68,6 @@ private:
     SDStore* sd_ = nullptr;
     AudioGenerator* gen_ = nullptr;
     AudioFileSourceSD* file_ = nullptr;
-    AudioFileSourceID3* id3_ = nullptr;
     AudioOutput* out_ = nullptr;  // base class; actual type chosen in begin()
     bool dacMode_ = false;        // built-in DAC: its pins cannot be moved
     // The repeat is remembered HERE and not in current_, which cleanup() clears
@@ -83,5 +81,6 @@ private:
     // happens inside the lock loop() took, and taking it again there would mean
     // a blocking lock in the one function that deliberately only try-locks.
     bool openTrack_(const String& path);
+    void skipTags_();             // seek past ID3 tags: never read them
 #endif
 };

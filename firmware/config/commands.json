@@ -46,6 +46,10 @@
     { "name": "HELP",   "scope": "core", "args": "[<command>]",         "query": true,  "help": "list commands, or explain one" },
     { "name": "SET",    "scope": "core", "args": "ID|NAME|TYPE|WIFI …",                 "help": "identity, module type and radio mode" },
     { "name": "GROUP",  "scope": "core", "args": "[<name>|CLEAR]",                     "help": "which installation this module belongs to; modules only link within a group" },
+    { "name": "APPASS", "scope": "core", "args": "[<password>|CLEAR]",                 "help": "this module's own WiFi password; CLEAR goes back to the group one, or 12345678" },
+    { "name": "TALK",   "scope": "core", "args": "[ON|OFF]",                            "help": "the secure page (https /talk) where a phone may use its microphone; on demand" },
+    { "name": "TALK?",  "scope": "core", "args": "",                    "query": true,  "help": "is the secure talk page up, and how much memory is free" },
+    { "name": "PEERPASS", "scope": "core", "args": "[<wifi name> <password>|CLEAR]",   "help": "group-mates' WiFi passwords, handed over by the hub so modules can link" },
     { "name": "PEERS",  "scope": "core", "args": "",                    "query": true,  "help": "the other modules this one can see, as JSON" },
     { "name": "REACH",  "scope": "core", "args": "<ip|name|id> <command>",               "help": "run a command on another module through this one and return its reply" },
     { "name": "WIFI",   "scope": "core", "args": "[ON|OFF|AP|RETRY|SCAN|CLEAR]", "query": false, "help": "radio state, and change it live — never needs a reboot" },
@@ -62,7 +66,7 @@
     { "name": "FDEL",   "scope": "core", "args": "<file>",                              "help": "delete an SD file" },
     { "name": "MOVE",   "scope": "core", "args": "<file>|STOP",                         "help": "run a /moves sequence from the card, or stop it" },
     { "name": "AUTH",   "scope": "core", "args": "<user> <pass>",                       "help": "check a Setup-page login" },
-    { "name": "USER",   "scope": "core", "args": "LIST|ADD|DEL|PASS …",                 "help": "accounts stored on the board" },
+    { "name": "USER",   "scope": "core", "args": "LIST|ADD|DEL|PASS|RENAME …",          "help": "accounts stored on the board: LIST, ADD, DEL, PASS, RENAME; roles super_admin and user" },
     { "name": "OTA",    "scope": "core", "args": "",                    "query": true,  "help": "update-over-WiFi state: which slot runs, which one an update would go to, and how much room it has" },
     { "name": "REBOOT", "scope": "core", "args": "",                                    "help": "restart about a second later" },
 
@@ -77,6 +81,7 @@
     { "name": "FWEND",   "scope": "core", "args": "",                                   "help": "check the whole image against its md5, then reboot into it" },
     { "name": "FWABORT", "scope": "core", "args": "",                                   "help": "abandon an update and keep running the firmware already there" },
     { "name": "FWSTAT",  "scope": "core", "args": "",                   "query": true,  "help": "how far an update has got, so a sender that lost its place can ask" },
+    { "name": "PERF?",   "scope": "core", "args": "",                   "query": true,  "help": "is the board keeping up: loop time, servo frame gap, free memory, resets since power-on and why the last one happened" },
 
     // ---------------- lift ----------------
     { "name": "UP",     "scope": "lift", "args": "",                                    "motion": true, "steps": [{"key": "up", "wait": true}], "help": "run up until the limit switch or STOP" },
@@ -94,7 +99,7 @@
     { "name": "RGB",    "scope": "lift", "args": "<r> <g> <b>|BRIGHT <n>|EFFECT <name>", "steps": [{"key": "rgb"}, {"key": "effect", "sub": "EFFECT"}, {"key": "bright", "sub": "BRIGHT"}], "help": "LED strip colour, brightness or effect" },
     { "name": "PLAY",   "scope": "lift", "args": "<file> [LOOP]|STOP",                  "steps": [{"key": "play"}], "help": "play mp3/wav from /music (LOOP repeats it), or stop" },
     { "name": "VOL",    "scope": "lift", "args": "<0-100>",                             "steps": [{"key": "vol"}], "help": "audio volume" },
-    { "name": "STREAM", "scope": "lift", "args": "ON [port] [rate]|OFF",      "help": "play live audio sent from the PC over UDP (A24-32)" },
+    { "name": "STREAM", "scope": "lift", "args": "ON [port] [rate]|OFF|TEST", "help": "play live audio sent from the PC over UDP (A24-32); TEST plays a 3 s tone through the same path" },
     { "name": "STREAM?", "scope": "lift", "args": "",                     "query": true,  "help": "is live audio playing, and is it breaking up" },
     { "name": "AMP",    "scope": "lift", "args": "<id>|VALID",                          "help": "choose amplifier kind from config/amps.json (reboot to apply)" },
     { "name": "AMP?",   "scope": "lift", "args": "",                     "query": true,  "help": "current amplifier and wiring hint" },
@@ -104,7 +109,7 @@
     // command may be declared once per type that wires the hardware.
     { "name": "PLAY",    "scope": "nong", "args": "<file> [LOOP]|STOP",                  "steps": [{"key": "play"}], "help": "play mp3/wav from /music (LOOP repeats it), or stop" },
     { "name": "VOL",     "scope": "nong", "args": "<0-100>",                             "steps": [{"key": "vol"}], "help": "audio volume" },
-    { "name": "STREAM", "scope": "nong", "args": "ON [port] [rate]|OFF",      "help": "play live audio sent from the PC over UDP (A24-32)" },
+    { "name": "STREAM", "scope": "nong", "args": "ON [port] [rate]|OFF|TEST", "help": "play live audio sent from the PC over UDP (A24-32); TEST plays a 3 s tone through the same path" },
     { "name": "STREAM?", "scope": "nong", "args": "",                     "query": true,  "help": "is live audio playing, and is it breaking up" },
     { "name": "AMP",     "scope": "nong", "args": "<id>|VALID",                          "help": "choose amplifier kind from config/amps.json (reboot to apply)" },
     { "name": "AMP?",    "scope": "nong", "args": "",                     "query": true,  "help": "current amplifier and wiring hint" },
@@ -122,7 +127,7 @@
     { "name": "TIME",    "scope": "nong", "args": "[<a1..a10>]",        "query": true,  "help": "alias of TIME?" },
     { "name": "TIME?",   "scope": "nong", "args": "[<a1..a10>]",        "query": true,  "help": "estimated and minimum duration of a move" },
     { "name": "SETZERO", "scope": "nong", "args": "",                                   "motion": true, "help": "call the current pose home; trim absorbs it so nothing moves" },
-    { "name": "NEUTRAL", "scope": "nong", "args": "[<1-10|name|ALL> <deg>]|<a1..a10>",   "steps": [{"key": "neutral"}], "help": "the angle each joint goes to on boot and on HOME; no args reports every joint" },
+    { "name": "NEUTRAL", "scope": "nong", "args": "[<1-10|name|ALL> <deg>]|<a1..a10>|HERE",   "steps": [{"key": "neutral"}], "help": "the angle each joint goes to on boot and on HOME; HERE keeps where the arm is now; no args reports every joint" },
     { "name": "NEUTRAL?", "scope": "nong", "args": "",                  "query": true,  "help": "the start angle of every joint" },
     { "name": "OFFSET",  "scope": "nong", "args": "[<1-10|name|ALL> <deg>]",          "motion": true, "steps": [{"key": "offset"}], "help": "nudge one joint a few degrees, for a servo horn fitted a tooth out" },
     { "name": "OFFSET?", "scope": "nong", "args": "",                   "query": true,  "help": "how far each joint is being corrected" },
@@ -138,6 +143,15 @@
 
     // ---------------- cam ----------------
     { "name": "SNAP",    "scope": "cam",  "args": "[<file>]",                           "help": "take a picture; with a name it is saved to /photos on the card" },
-    { "name": "CAM",     "scope": "cam",  "args": "[SIZE <name>|QUALITY <10-63>|FLASH ON|OFF|VFLIP 0|1|HMIRROR 0|1]", "query": false, "help": "what the sensor is set to, and change it" }
+    { "name": "CAM",     "scope": "cam",  "args": "[SIZE <name>|QUALITY <10-63>|FLASH ON|OFF|VFLIP 0|1|HMIRROR 0|1]", "query": false, "help": "what the sensor is set to, and change it" },
+
+    // ---------------- dummy (hand-posed nong, pots instead of servos) ----------------
+    { "name": "POSE?",   "scope": "dummy", "args": "",                  "query": true,  "help": "the 10 joint angles the dummy is posed in; '-' = no pot on that joint" },
+    { "name": "POT?",    "scope": "dummy", "args": "",                  "query": true,  "help": "the raw pot readings 0-4095, -1 = no pot" },
+    { "name": "DCAL",    "scope": "dummy", "args": "<1-10|name|ALL> <CH|ZERO|SPAN|DIR|MIN|MAX> <value>|CLEAR", "help": "one calibration field of a joint's pot; CLEAR goes back to defaults" },
+    { "name": "DCAL?",   "scope": "dummy", "args": "",                  "query": true,  "help": "every joint's pot calibration and the mux pins, as JSON" },
+    { "name": "DZERO",   "scope": "dummy", "args": "<1-10|name|ALL> [deg]",              "help": "the dummy is held at <deg> (default 90) right now: work out the zero from it" },
+    { "name": "DMUX",    "scope": "dummy", "args": "<sig> <s0> <s1> <s2> <s3>|OFF",      "help": "which pins the analog multiplexer is on, or OFF for one ADC pin per joint" },
+    { "name": "DMUX?",   "scope": "dummy", "args": "",                  "query": true,  "help": "the multiplexer pins as JSON" }
   ]
 }

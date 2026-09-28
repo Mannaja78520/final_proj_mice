@@ -44,9 +44,13 @@ def run(t):
 
     # ---- joint ORDER is the wire format: a swap silently moves the
     # wrong limb, and no test of either side alone would see it -------
-    # declared `static const char* JOINT_NAMES[NongModule::N] = {`
+    # declared `static const char* JOINT_NAMES[NongModule::N] = {`, or read
+    # from NONG_JOINT_NAMES in the hardware header, shared with the dummy
+    hw_nong = (F.FIRMWARE / "config/esp32_hardware_nong_module.h").read_text(
+        encoding="utf-8", errors="replace")
     names = re.search(r"JOINT_NAMES\[[^\]]*\]\s*=\s*\{(.*?)\}", nong_c, re.S) or \
-        re.search(r"JOINT_NAMES\[[^\]]*\]\s*=\s*\{(.*?)\}", nong_h, re.S)
+        re.search(r"JOINT_NAMES\[[^\]]*\]\s*=\s*\{(.*?)\}", nong_h, re.S) or \
+        re.search(r"#define\s+NONG_JOINT_NAMES\s+\{(.*?)\}", hw_nong, re.S)
     if t.ok(names, "firmware has JOINT_NAMES"):
         got = re.findall(r'"([A-Z_]+)"', names.group(1))
         t.eq(got, JOINT_ORDER, "firmware joint order")
@@ -62,6 +66,23 @@ def run(t):
     js_min = re.search(r"MIN_MOVE_MS\s*=\s*(\d+)", app)
     if fw_min and js_min:
         t.eq(js_min.group(1), fw_min.group(1), "same minimum move time both sides")
+    # the SAFETY speed cap (2026-09-17, the arm hit something): same default both
+    # sides, and both floors really use it
+    hw = (F.FIRMWARE / "config/esp32_hardware_nong_module.h").read_text(
+        encoding="utf-8", errors="replace")
+    fw_safe = re.search(r"#define\s+NONG_SAFE_DPS\s+([\d.]+)", hw)
+    js_safe = re.search(r"\bSAFE_DPS\s*=\s*([\d.]+)", app)
+    if t.ok(fw_safe and js_safe, "both sides define the safety speed cap",
+            "firmware %r, studio %r" % (fw_safe, js_safe)):
+        t.eq(float(js_safe.group(1)), float(fw_safe.group(1)),
+             "same safety speed cap both sides")
+    floor = re.search(r"NongModule::minDuration\([^)]*\)[^{]*\{(.*?)\n\}", nong_c, re.S)
+    body = floor.group(1) if floor else ""
+    t.ok("safeDuration(cur_" in body and re.search(r"return\s+max\(\s*phys\s*,\s*safe\s*\)", body),
+         "firmware move floor uses the safety cap",
+         "NongModule::minDuration no longer returns the larger of physical and safe: %r" % body)
+    t.ok(re.search(r"function minTime[\s\S]{0,400}SAFE_DPS", app),
+         "studio move floor uses the safety cap", "minTime() ignores SAFE_DPS")
 
     # ---- every command Studio sends must exist in the firmware ------
     # Studio calling something the firmware does not implement fails
@@ -93,7 +114,7 @@ def run(t):
          "checking nothing at all")
     known = set(re.findall(r'cmd\s*==\s*"([A-Z][A-Z0-9?]*)"', nong_c))
     # commands handled by the shared router, not the nong module
-    router = {"INFO", "PING", "FILES", "PIN", "AUTH", "USER", "SET", "REBOOT",
+    router = {"INFO", "PING", "FILES", "PIN", "AUTH", "USER", "SET", "CFG", "REBOOT",
               "FBEGIN", "FDATA", "FEND", "FREAD", "FDEL", "MOVE", "PLAY"}
     for c in sorted(sends):
         t.ok(c in known or c in router,

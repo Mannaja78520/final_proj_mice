@@ -37,6 +37,11 @@ def run(t):
 
     t.contains(src, "ProcessPoolExecutor",
                "checks run in separate processes, not threads")
+    t.contains(src, "max_tasks_per_child=1",
+               "each check gets a fresh worker so hub services cannot accumulate")
+    for lane in ("first", "solo", "wanted"):
+        t.contains(src, "run_isolated(%s)" % lane,
+                   "%s checks also release hub threads after each check" % lane)
     t.ok("--serial" in src and "--jobs" in src,
          "and it can be forced back to one at a time",
          "a parallel-only runner cannot be used to prove that a failure is "

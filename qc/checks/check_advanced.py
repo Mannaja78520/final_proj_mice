@@ -41,6 +41,14 @@ function shown(el){
   var st = getComputedStyle(el);
   return st.display !== 'none' && st.visibility !== 'hidden' && el.offsetWidth > 0;
 }
+// Wait for the frame to BE there, then settle as before (A26-94): a fixed
+// sleep measured an empty page under a full gate and reported nothing.
+qcWaitFor(function(){
+  var fr = document.getElementById("f");
+  return fr && fr.contentWindow && fr.contentDocument
+      && fr.contentDocument.readyState === "complete"
+      && fr.contentDocument.body && fr.contentDocument.body.children.length;
+}, 8000).then(function(){
 setTimeout(async function(){
   try{
     var w = document.getElementById('f').contentWindow;
@@ -94,7 +102,7 @@ setTimeout(async function(){
                            && d.getElementById('advOn').checked ? "yes" : "no"));
     done(out.join(" "));
   } catch (e) { done("ERR=" + String(e).replace(/[^A-Za-z0-9=]+/g, "_").slice(0,50)); }
-}, 4000);
+}, 4000); });
 </script>
 """
 

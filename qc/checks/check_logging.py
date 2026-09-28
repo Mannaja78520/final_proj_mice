@@ -100,7 +100,7 @@ def run(t):
     # ---- and the format still matches what the HUB parses --------------
     # main.py:_LOG_LINE is how a log line is told from a JSON reply. If the
     # helper stopped emitting a bracket tag, the hub would read logs as replies.
-    hub = (F.HUB / "main.py").read_text(encoding="utf-8", errors="replace")
+    hub = F.hub_src()
     pat = re.search(r"_LOG_LINE = re\.compile\(r\"([^\"]+)\"\)", hub)
     if t.ok(pat, "the hub's log-line rule was found"):
         rule = re.compile(pat.group(1))

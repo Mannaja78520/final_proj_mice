@@ -5,17 +5,28 @@
 
 // Login accounts for the module's Setup page, stored in the ESP32's own
 // memory (NVS) so they persist and work from any device — no SD card needed.
-// Seeded with super_admin/admin123 and admin/admin123 on first boot. Any logged-in
+// super_admin/admin123 and admin/admin123 are added on every boot where they are
+// missing (an old board keeps its own accounts too). Any logged-in
 // user can add more users. Passwords must not contain spaces (the command
 // tokenizer splits on them).
 class UserStore {
 public:
+    static constexpr const char* ROLE_SUPER = "super_admin";
+    static constexpr const char* ROLE_USER = "user";
+
     void begin();
     bool verify(const String& user, const String& pass);
-    bool add(const String& user, const String& pass);   // false if exists / invalid
-    bool remove(const String& user);                     // false if last / not found
+    bool add(const String& user, const String& pass, const String& role = "user"); // false if exists / invalid
+    bool remove(const String& user);                     // false if last / not found / last super_admin
+    bool rename(const String& oldName, const String& newName);
     bool setPass(const String& user, const String& pass);
-    String listJson();                                   // ["manny","bob"]
+    String listJson(const String& caller = "");          // [{"name":"...","role":"...","mustChange":...}]
+    String namesJson();                                  // ["admin","super_admin"]
+
+    String role(const String& user);
+    bool isSuper(const String& user);
+    int countSupers();
+    bool mustChange(const String& user);
 
     // True while ANY account still has the password the firmware ships with.
     //
@@ -30,7 +41,7 @@ public:
 
 private:
     Preferences prefs_;
-    JsonDocument users_;   // { "super_admin": "admin123", ... }
+    JsonDocument users_;   // { "super_admin": {"role": "super_admin", "salt": "...", "hash": "..."}, ... }
     void save();
     static bool validName(const String& s);
     static bool validPass(const String& s);

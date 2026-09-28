@@ -5,13 +5,10 @@
 #include "core/SDStore.h"
 #include "core/Util.h"
 #include "core/HwConfig.h"
+#include "core/Perf.h"
 #include <Preferences.h>
 
-static const char* JOINT_NAMES[NongModule::N] = {
-    "L_SH_P", "L_SH_R", "L_EL_P", "L_EL_R",
-    "R_SH_P", "R_SH_R", "R_EL_P", "R_EL_R",
-    "WAIST",  "SHRUG",
-};
+static const char* JOINT_NAMES[NongModule::N] = NONG_JOINT_NAMES;
 
 void NongModule::applySettings(JsonVariant s) {
     if (s.isNull()) return;
@@ -48,6 +45,7 @@ void NongModule::applySettings(JsonVariant s) {
     arrOrScalarI("frame_hz", frameHz_);         // 50 normal, 330 for PDI-1181MG
 
     speedDps_ = s["speed_dps"] | speedDps_;
+    safeDps_  = s["safe_dps"] | safeDps_;
     link_     = (s["link"] | (link_ ? 1 : 0)) != 0;
     peer_     = s["peer"] | peer_;
     if (peer_ < 0 || peer_ > 247) peer_ = 0;
@@ -63,6 +61,8 @@ void NongModule::applySettings(JsonVariant s) {
     }
     if (speedDps_ < 5) speedDps_ = 5;
     if (speedDps_ > slowestMaxDps()) speedDps_ = slowestMaxDps();
+    if (!(safeDps_ >= 5)) safeDps_ = 5;               // NaN too
+    if (safeDps_ > slowestMaxDps()) safeDps_ = slowestMaxDps();
     reclamp();
 }
 
@@ -269,7 +269,9 @@ uint32_t NongModule::durationFor(const float tgt[N]) const {
 // physical floor: no servo can move faster than ITS OWN max_dps, so the move
 // must be at least as long as the slowest joint needs for its own travel
 uint32_t NongModule::minDuration(const float tgt[N]) const {
-    return nongmath::minDuration(cur_, tgt, maxDps_, N, NONG_MIN_MOVE_MS);
+    uint32_t phys = nongmath::minDuration(cur_, tgt, maxDps_, N, NONG_MIN_MOVE_MS);
+    uint32_t safe = nongmath::safeDuration(cur_, tgt, N, safeDps_, NONG_MIN_MOVE_MS);
+    return max(phys, safe);
 }
 
 void NongModule::startMove(const float tgt[N], uint32_t ms) {
@@ -322,6 +324,8 @@ void NongModule::loop() {
     if (moving_) {
         uint32_t now = millis();
         if (now - lastTick_ >= 20) { // 50 Hz servo update
+            // the first frame of a move follows an idle gap, not a late frame
+            if (now - moveStart_ >= 20) perf::frame(now - lastTick_);
             lastTick_ = now;
             float t = (float)(now - moveStart_) / (float)moveDur_;
             if (t >= 1.0f) { t = 1.0f; moving_ = false; }
@@ -438,7 +442,21 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
             reply = "OK neutral set for all 10 joints (press Home to go there)";
             return true;
         }
-        if (argc < 3) { reply = "ERR usage: NEUTRAL <1-10|name|ALL> <deg>"; return true; }
+        if (argc == 2 && argv[1].equalsIgnoreCase("HERE")) {
+            // Where the arm IS becomes home: jog it on the module page, press one
+            // button. The partner gets the numbers, not HERE - its own pose may lag.
+            String line;
+            for (int i = 0; i < N; i++) {
+                neutral_[i] = clampJoint(i, cur_[i]);
+                line += " " + String(neutral_[i], 0);
+            }
+            reclamp();
+            saveCalSoon();
+            forward("NEUTRAL" + line);
+            reply = "OK neutral =" + line + " (the arm starts here from now on)";
+            return true;
+        }
+        if (argc < 3) { reply = "ERR usage: NEUTRAL <1-10|name|ALL> <deg> | HERE"; return true; }
         const JointSel sel = selectJoints(argv[1]);
         if (!sel.ok) { reply = jointSelHelp(); return true; }
         const float d = argv[2].toFloat();
@@ -943,6 +961,7 @@ void NongModule::status(JsonObject o) {
     o["moving"] = moving_;
     o["attached"] = attached_;
     o["speed_dps"] = speedDps_;
+    o["safe_dps"] = safeDps_;
     o["link"] = link_;
     o["peer"] = peer_;
     // sequence progress for monitor mode: remaining ms of the current move

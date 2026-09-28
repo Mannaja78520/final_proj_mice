@@ -1,0 +1,11 @@
+{
+  "id": "05ced7252a70",
+  "time": "2026-09-22T12:12:38.074Z",
+  "text": "STUDIO FREEZE {\"gapMs\":1629,\"playing\":false,\"live\":false,\"monitor\":true,\"auto\":false,\"usb\":true,\"wifi\":false,\"keys\":6,\"gpu\":{\"geometries\":20,\"textures\":0,\"programs\":3},\"heapMB\":9,\"longTasks\":[{\"ms\":1634,\"at\":19179}],\"slowCalls\":[{\"u\":\"/api/usb/cmd?port=COM21&id=67&c=INFO\",\"ms\":121,\"at\":17435},{\"u\":\"/api/usb/cmd?port=COM21&id=67&c=INFO\",\"ms\":121,\"at\":17784},{\"u\":\"/api/usb/cmd?port=COM21&id=67&c=INFO\",\"ms\":131,\"at\":18135},{\"u\":\"/api/usb/cmd?port=COM21&id=67&c=INFO\",\"ms\":122,\"at\":18485},{\"u\":\"/api/usb/cmd?port=COM21&id=67&c=INFO\",\"ms\":123,\"at\":18835},{\"u\":\"/api/load?name=yakyai.json\",\"ms\":6,\"at\":19172}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0"
+}

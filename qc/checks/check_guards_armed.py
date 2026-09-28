@@ -38,7 +38,7 @@ def run(t):
     portal = (fw / "WebPortal.cpp").read_text(encoding="utf-8", errors="replace")
     bus = (fw / "BusUpdate.cpp").read_text(encoding="utf-8", errors="replace")
     guard = (fw / "BrownoutGuard.cpp").read_text(encoding="utf-8", errors="replace")
-    main = (F.HUB / "main.py").read_text(encoding="utf-8")
+    main = F.hub_src()
     auth = (F.HUB / "hub_auth.py").read_text(encoding="utf-8")
 
     # ---- the OTA login is checked where the WRITING happens ----------

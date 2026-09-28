@@ -76,7 +76,7 @@ def run(t):
          "rule has been lost and every port probe pays for it")
 
     # ---- the two halves, in the source ------------------------------
-    main_py = (F.HUB / "main.py").read_text(encoding="utf-8")
+    main_py = F.hub_src()
     i = main_py.find("ser.write(b" + chr(34) + "#* PING")
     # Wide enough to reach the call past its comment: the comment IS the
     # explanation of the bug, so it will only get longer.

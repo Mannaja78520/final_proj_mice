@@ -1,0 +1,11 @@
+{
+  "id": "edaca44625a8",
+  "time": "2026-09-17T11:01:18.814Z",
+  "text": "STUDIO FREEZE {\"gapMs\":1587,\"playing\":false,\"live\":true,\"monitor\":false,\"usb\":true,\"wifi\":false,\"keys\":10,\"gpu\":{\"geometries\":20,\"textures\":0,\"programs\":3},\"heapMB\":6,\"longTasks\":[{\"ms\":1592,\"at\":1417983}],\"slowCalls\":[{\"u\":\"/api/usb/cmd?port=COM12&id=67&c=POSE%2090%2090%2088.5%2090%2090%2090%2095.5%2090%20150%208\",\"ms\":1239,\"at\":1330405},{\"u\":\"/api/usb/cmd?port=COM12&id=67&c=FREAD%20bench-check.yaml%200%20120\",\"ms\":1255,\"at\":1360415},{\"u\":\"/api/usb/cmd?port=COM12&id=67&c=POSE%2090%2090%2090%2090%2090%2090%2090%2090%2090%2090%20T\",\"ms\":1239,\"at\":1399009},{\"u\":\"/api/load?name=all_move.json.bak\",\"ms\":13,\"at\":1417969},{\"u\":\"/api/list?kind=models\",\"ms\":4,\"at\":1419574}]}",
+  "page": "studio",
+  "module": "",
+  "build": "",
+  "attachDiag": false,
+  "client": "127.0.0.1",
+  "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0"
+}

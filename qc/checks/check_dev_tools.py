@@ -215,7 +215,11 @@ def run(t):
             (box / d / "run_qc.py").write_bytes(stub.encode("utf-8"))
         (box / ".staging" / "f.txt").write_bytes(b"staged\n")
         (box / "f.txt").write_bytes(b"old\n")
-        state = ('<!doctype html><html><body><pre id="state"><code>STATE\n'
+        # what --init records: staging started from main's "old" (A0-16 base)
+        import hashlib, json
+        (box / ".staging" / ".staging-base.json").write_bytes(json.dumps(
+            {"f.txt": hashlib.sha256(b"old\n").hexdigest()}).encode("utf-8"))
+        state =('<!doctype html><html><body><pre id="state"><code>STATE\n'
                  'SBX-1: doing\nSBX-2: doing\nEND</code></pre></body></html>')
         (box / "PLAN.html").write_bytes(state.encode("utf-8"))
         env = dict(os.environ, MICE_PLAN=str(box / "PLAN.html"))

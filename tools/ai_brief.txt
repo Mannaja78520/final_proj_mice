@@ -36,3 +36,10 @@ file. If a fact is needed twice, one place reads it from the other. A new thing
 should cost one new entry or one new file, never a new branch inside something
 long. Prefer plain and obvious over clever: no layer that exists only to be a
 layer. Say which file a person edits to add the next one.
+
+HOW TO READ (tokens are paid):
+- python tools/systems.py which <file> -> read that ONE header first.
+- rg the name, then read 40-100 lines around the hit. Never a whole file over 300 lines.
+- Never re-read a file already read or just edited.
+- Logs: print the failing line only (tail / grep), never the full run.
+- Moving code: write a script that moves exact lines; do not retype it.

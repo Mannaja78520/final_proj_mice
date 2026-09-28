@@ -49,6 +49,14 @@ PAGE = """
 <iframe id="f" src="/"></iframe>
 <script>
 function done(s){ qcMark("UI " + s); qcMark("done"); }
+// Wait for the frame to BE there, then settle as before (A26-94): a fixed
+// sleep measured an empty page under a full gate and reported nothing.
+qcWaitFor(function(){
+  var fr = document.getElementById("f");
+  return fr && fr.contentWindow && fr.contentDocument
+      && fr.contentDocument.readyState === "complete"
+      && fr.contentDocument.body && fr.contentDocument.body.children.length;
+}, 8000).then(function(){
 setTimeout(function(){
   try{
     var w = document.getElementById('f').contentWindow;
@@ -79,7 +87,7 @@ setTimeout(function(){
       done(out.join(" "));
     }, 2500);
   } catch (e) { done("ERR=" + String(e).slice(0,60)); }
-}, 6000);
+}, 6000); });
 </script>
 """
 
@@ -108,7 +116,7 @@ def run(t):
     # live pose streaming (~30 commands a second) it was most of the latency
     # and the arm visibly lagged the sliders. The blank-line reply marker makes
     # the wait unnecessary, so there must not be one.
-    hub_py = (F.HUB / "main.py").read_text(encoding="utf-8", errors="replace")
+    hub_py = F.hub_src()
     i = hub_py.find("def _drain_to_line_boundary(")
     if t.ok(i >= 0, "the pre-command drain exists"):
         j = hub_py.find(chr(10) + "def ", i + 1)     # up to the next top-level def
@@ -173,7 +181,7 @@ def run(t):
         t.contains(body, "sdUpload", "after sending it the sequence")
         t.contains(body, "playing = false",
                    "and the browser stops trying to be the clock")
-        t.ok("haveUsb" in body and "haveWifi" in body,
+        t.ok("haveRobot" in body,
              "only when there is actually a robot connected",
              "with no robot it would silently stop playing instead")
     # Assert the WIRING: a listener that exists but is switched off behind
@@ -208,10 +216,26 @@ def run(t):
     # Assert the LISTENER, not one spelling of it: this used to match the exact
     # text `document.hidden) handOffToRobot()`, so adding an early return to the
     # same branch failed a check about behaviour that had not changed.
-    vis = code[code.find('addEventListener("visibilitychange"'):]
-    vis = vis[:vis.find("\n});")]
-    t.contains(vis, "document.hidden", "and the hidden page really is what triggers it")
-    t.contains(vis, "handOffToRobot()", "which is when the module is given the show")
+    #
+    # And not the FIRST listener either. There are three of them now - the
+    # freeze watch, the hub beat (A26-46) and this one - and this read whichever
+    # the build happened to put first. A26-46's beat listener landed ahead of it
+    # in app_parts order, so the check failed on a page where handOffToRobot was
+    # sitting right there, untouched, in the listener that owns it (2026-09-18).
+    # So: SOME listener must do this, which is what the product promises.
+    parts, at = [], code.find('addEventListener("visibilitychange"')
+    while at >= 0:
+        end = code.find("\n});", at)
+        parts.append(code[at:end if end > at else at + 900])
+        at = code.find('addEventListener("visibilitychange"', at + 10)
+    t.ok(any("document.hidden" in v for v in parts),
+         "and the hidden page really is what triggers it",
+         "%d visibilitychange listener(s), none of them reading document.hidden"
+         % len(parts))
+    t.ok(any("document.hidden" in v and "handOffToRobot()" in v for v in parts),
+         "which is when the module is given the show",
+         "%d visibilitychange listener(s) and not one of them hands the show "
+         "over when the page is hidden" % len(parts))
     # ...except when the HUB is the clock, because then nothing needs rescuing:
     # the hub is a native process and this page going away does not touch it.
     # Handing the show to the module as well would be two clocks again.
@@ -257,7 +281,7 @@ def run(t):
         return
     fake_serial.reset()
     base, main = F.start_hub()
-    browser.raw_page(PAGE, base, seconds=22)
+    browser.raw_page(PAGE, base, seconds=30)
 
     marks = [m for m in fake_serial.qc_marks if m.startswith("UI ")]
     if not t.ok(marks, "the hub page reported back",

@@ -321,6 +321,15 @@ interchangeably.
 | `GROUP` | `GROUP "mice-show" appass=3f9a1c0b7e2d4a55` | which installation this module belongs to, and the hotspot password that follows from it |
 | `GROUP <name>` | `OK group "mice-show" appass=...` | join a group. Applied immediately — the module's hotspot password changes with it |
 | `GROUP CLEAR` | `OK ungrouped (shared fallback password)` | leave the group; back to the compiled-in fallback password |
+| `APPASS` | `APPASS default appass=12345678` | this module's own WiFi (hotspot) password and where it comes from: `set` by the owner, `group`, or the `default` 12345678 |
+| `APPASS <password>` | `OK appass=...` | choose the hotspot password (8-63 characters, no spaces). Wins over the group one; the hotspot comes back up with it at once |
+| `APPASS CLEAR` | `OK appass=...` | forget the chosen password; back to the group one, or 12345678 when ungrouped |
+| `TALK` / `TALK?` | `TALK on https://192.168.4.1/talk heap=61234` | the secure talk page: is it up, where, and memory free |
+| `TALK ON` | `OK TALK on https://192.168.4.1/talk ...` | raise the secure page a phone needs for its microphone. It costs RAM, so it is on demand, and goes off by itself after 10 quiet minutes. The first time, the board makes its own certificate (the phone warns once) |
+| `TALK OFF` | `OK talk off` | take it down |
+| `PEERPASS` | `PEERPASS nong,lift-2` | the group-mates whose hotspot password this module holds (names only) |
+| `PEERPASS <wifi> <password>` | `OK peer nong` | remember a group-mate's hotspot password. The hub sends these by itself to every module in a group, so a module can still link to one whose owner changed its password |
+| `PEERPASS CLEAR` | `OK peers forgotten` | forget them all |
 | `PEERS` | `[{"id":85,"name":"lift-test",...},...]` | the other modules this one can see. Same list as `/api/peers` |
 | `REACH <ip\|name\|id> <command>` | whatever that module answered | run a command on **another** module through this one. Refused while this module is moving — it blocks up to 800 ms and would stall a joint |
 | `WIFI` | `WIFI mode=on state=online ssid="manny" ip=192.168.137.42 rssi=-51 ap="nong" apip=192.168.4.1 apclients=1` | where the radio is right now, in one line |
@@ -328,7 +337,7 @@ interchangeably.
 | `WIFI CLEAR` | `OK forgot the stored network, now using "manny" from the firmware` | forget credentials set on this board and fall back to the one compiled into `config/conf_network.h`. The way back after pointing a module at a bench hotspot |
 | `WIFI RETRY` | `OK retrying "manny" now` | try the stored network again without waiting for the 60 s clock |
 | `WIFI SCAN` | `OK 4 network(s): "manny"(-48dBm) ...` | which 2.4GHz networks this board can actually see. Asynchronous — ask again a moment later for the result |
-| `CFG <key> <value>` | `OK ... (reboot to apply)` | keys: `encoder leds speed speed_mms stages stage_mm mm_per_rev counts_per_rev max_rpm counts_per_stage volume speed_dps max_dps link` — works without SD card, overrides module.yaml |
+| `CFG <key> <value>` | `OK ... (reboot to apply)` | keys: `encoder leds speed speed_mms stages stage_mm mm_per_rev counts_per_rev max_rpm counts_per_stage volume speed_dps max_dps safe_dps link` — works without SD card, overrides module.yaml |
 | `CFG CLEAR [key]` | `OK cleared ...` | remove one / all stored settings |
 | `PIN?` | `{"motor_a":{"gpio":33,...},...}` | current hardware pin map (JSON) |
 | `PINS` / `PINS?` | same as `PIN?` | aliases, so either spelling works |
@@ -350,6 +359,7 @@ interchangeably.
 | `FWEND` | `OK FWEND restarting` | check the whole image against its md5, then reboot into it |
 | `FWABORT` | `OK update abandoned …` | stop, and keep running the firmware already there |
 | `FWSTAT` | `FWSTAT 4500/1294617 next=30` | how far an update has got |
+| `PERF?` | `PERF loop_avg_us=1010 loop_max_us=4200 work_max_us=300 passes=990 frames=50 frame_max_ms=21 heap=150000 heap_min=120000 heap_big=90000 stack_free=5000 window_ms=1000 up_s=600 boots=1 reset=poweron` | is the board keeping up. Loop, frame and stack figures cover the time since the last `PERF?`; `heap_min` is since boot; `boots` counts resets since power-on (above 1 = it restarted); `reset` is why the last one happened (`CRASH`, `WATCHDOG`, `BROWNOUT` mean trouble) |
 | `AUTH <user> <pass>` | `OK <user>` / `ERR bad login` | check Setup-page login (accounts stored in NVS) |
 | `USER LIST <user> <pass>` | `["manny",...]` | list accounts (caller must be valid) |
 | `USER ADD <user> <pass> <new> <newpass>` | `OK added ...` | add an account (any logged-in user can) |
@@ -425,6 +435,7 @@ of flash. Lift builds only; a nong has no strip.
 | `AMP?` | `{"id":"tpa3118","mode":"analog",…}` | the amp this board is set to, with its wiring line |
 | `STREAM ON [port] [rate]` | `OK stream on udp 4210 22050 Hz mono` | live audio from the PC: the board plays what arrives on that UDP port |
 | `STREAM OFF` | `OK stream off` | |
+| `STREAM TEST` | `OK test tone 440 Hz 3 s through the stream path` | a tone made on the board, played through the same ring and feed as live sound; stops by itself |
 | `STREAM?` | `{"on":true,"fill":22,"underruns":0,"max_gap_ms":9,…}` | is it playing, and is it breaking up |
 
 ### Live audio from the PC — `STREAM`
@@ -446,6 +457,9 @@ an SD decode holds the SPI mutex. A late packet is dropped instead.
 | `packets` / `dropped` | datagrams taken / thrown away because the buffer was full |
 | `underruns` | times it ran dry; it then holds silence until half full again |
 | `max_gap_ms` | longest gap between two feeds - the starvation number |
+| `via` | `udp` (from the hub) or `ws` (a browser on `/ws/audio`, e.g. a phone on the robot's WiFi) |
+| `lrc` | what the LRC pin really carries, read back from the chip: `lrc` is right, `mclk` means the library's MCLK took the pin |
+| `trims` / `pads` | samples skipped / repeated to follow the sender's clock (one in 256 at most) |
 
 Measured on a real nong (id 67, MAX98357A, WiFi, ten servos and RS485 running,
 2026-09-07): 250 datagrams, 0 dropped, `max_gap_ms` **9** against a 200 ms
@@ -453,6 +467,18 @@ buffer.
 
 Starting a stream stops a file that is playing, and `PLAY` stops the stream:
 one output, one owner.
+
+**It cracked, and SD playback did not (fixed 2026-09-28).** The audio library
+installs I2S with MCLK on GPIO0, which is the nong's LRC pin. `PLAY` re-pinned
+after the driver came up; `STREAM ON` never did, so every stream played with a
+broken word clock. `AudioStream::start` now runs the same re-pin, and `lrc` in
+`STREAM?` shows the result on the board.
+
+**From a phone, no hub: `/ws/audio`.** A browser cannot send UDP, so the board
+also takes the same PCM over a WebSocket: text `START <rate>`, then binary
+frames of 16-bit little-endian mono, closing the socket stops it. The
+handshake is gated like `STREAM ON` (a logged-in session). The ring is 400 ms
+here, because TCP delivers in bursts after a WiFi hiccup instead of dropping.
 
 ### Which amplifier is wired — `AMP`
 
@@ -541,6 +567,13 @@ would start from a pose that was never reached. Longer times are always
 allowed. The reply reports the effective `T`; the editor enforces the same
 floor while authoring.
 
+**Every move is also held under a safety speed, `safe_dps`** (default 60 deg/s,
+`CFG safe_dps <5-1000>` + reboot, reported in `INFO` as `safe_dps`). It is
+measured from where the arm IS now, not from the pose the editor thinks it is
+in, and it caps the PEAK speed of the cosine ease: `T >= largest delta × π/2 ÷
+safe_dps`. An explicit `T` never goes past it. Added 2026-09-17 after the arm
+hit something on a fast jump.
+
 | Command | Reply | Notes |
 |---|---|---|
 | `POSE <a1..a10> [T <ms>]` | `OK pose T=800ms` | all 10 joints; `-` keeps a joint; a shorter list (e.g. an old 8-joint pose) leaves the rest untouched; no `T` = duration from speed; `T` below the physical minimum is raised |
@@ -549,6 +582,7 @@ floor while authoring.
 | `HOME [T <ms>]` / `ZERO` | `OK home T=1000ms` | move to the `neutral` pose — the angles `NEUTRAL` sets, not a flat 90 |
 | `NEUTRAL [<1-10\|name\|ALL> <deg>]` | `OK neutral L_SH_P = 95 deg (press Home to go there)` | the angle each joint goes to **on boot** and on `HOME`. Per joint, clamped to that joint's limits, saved to NVS + `/data/nong_cal.yaml`. Does **not** move the arm |
 | `NEUTRAL <a1..a10>` | `OK neutral set for all 10 joints` | the whole start pose in one line; `-` keeps a joint |
+| `NEUTRAL HERE` | `OK neutral = 90 150 90 ... (the arm starts here from now on)` | where the arm is **now** becomes the start pose; the module page's *Keep where the arm is now* button. Does not move the arm; the 2-ESP partner is sent the numbers |
 | `NEUTRAL?` | `NEUTRAL L_SH_P=95 L_SH_R=85 ...` | the start angle of every joint |
 | `OFFSET [<1-10\|name\|ALL> <deg>]` | `OK offset L_EL_P = 3.0 deg on the arm` | correct ONE joint that was assembled a few degrees out - a servo horn only refits in whole teeth. The value is in **joint** degrees (what you see on the arm); the board scales it into the servo-degree `trim` by that joint's own gear, so the same number moves every joint the same visible amount. Range -30..30. **The arm moves** - that is how you aim it. No args reports every joint. Saved to NVS + `/data/nong_cal.yaml` |
 | `OFFSET?` | `OFFSET L_SH_P=0.0 L_EL_P=3.0 ...` | how far each joint is being corrected, in joint degrees |
@@ -639,6 +673,7 @@ frame_hz:     [50,50,50,50,50,50,50,50,50,50]  # SERVO frame rate (Hz): DEFAULT
 speed_dps: 120                                # deg/s when a POSE has no T
 max_dps: [375,375,400,400,375,375,400,400,200,400] # per-joint speed limit (floor
                                               # for move times); WAIST is slower
+safe_dps: 60                                  # safety cap on peak joint speed, every move
 link: 0                                       # 1 on the LEADER only (2-ESP humanoid, below)
 peer: 0                                       # partner module id (0 = broadcast to all)
 ```
@@ -668,6 +703,38 @@ arm. All boards run the **same firmware** (upload once):
 
 Every board tracks all 10 logical angles (even joints it doesn't drive), so
 `POSE?`/status on the leader always shows the whole humanoid.
+
+## Commands — dummy module (hand-posed nong)
+
+A copy of the nong with the **same 10 joints in the same order**, and a
+potentiometer on each joint instead of a servo. It moves nothing: a person
+bends it and it reports angles. It answers `POSE?` exactly like the robot, so
+Nong Studio reads it with the same code, and a pose read from the dummy can be
+sent to the robot unchanged (the robot still applies its own `LIMIT` and
+`max_dps`). It sits on the same RS485 bus with its **own bus id**, and has USB
+and WiFi like every module.
+
+Wiring (defaults, all changeable): one CD74HC4067 16-channel analog mux, SIG on
+GPIO36, S0-S3 on 25 26 27 14, joint *n* on mux channel *n-1*. With `DMUX OFF`
+each joint's `CH` is its own ADC1 pin (32-39; at most six joints, because ADC2
+does not work while WiFi is on).
+
+Angle = `90 + dir × (raw − zero) × span ÷ 4095`, clamped to `min`..`max`.
+
+| Command | Reply | Notes |
+|---|---|---|
+| `POSE?` | `90.0 45.0 - ...` | the 10 joint angles the dummy is held in; `-` = no pot on that joint (the robot's `POSE` reads `-` as "leave it") |
+| `POT?` | `2048 1830 -1 ...` | raw readings 0-4095, smoothed; `-1` = no pot |
+| `DCAL <1-10\|name\|ALL> <field> <value>` | `OK L_EL_P ZERO=2100` | one field of a joint's pot: `CH` (mux channel 0-15, or ADC pin with no mux, `-1` = none), `ZERO` (reading at 90°), `SPAN` (pot travel in degrees across the whole range, default 270), `DIR` (`1` or `-1`), `MIN` / `MAX` (joint limits, default = the robot's) |
+| `DCAL CLEAR` | `OK dummy calibration back to defaults` | forget every field |
+| `DCAL?` | `{"ch":[..],"zero":[..],"span":[..],"dir":[..],"min":[..],"max":[..],"mux":{"sig":36,"sel":[25,26,27,14]}}` | everything above, as JSON |
+| `DZERO <1-10\|name\|ALL> [deg]` | `OK zeroed 10 joint(s) at 90.0` | hold the dummy at `deg` (default 90) and each joint works out its own `ZERO` from where it is now |
+| `DMUX <sig> <s0> <s1> <s2> <s3>` / `DMUX OFF` | `OK mux on 36` | the multiplexer pins; applies at once, no reboot |
+| `DMUX?` | `{"sig":36,"sel":[25,26,27,14]}` | the multiplexer pins |
+
+Calibration lives in the board's own memory (NVS), so it survives a reboot
+with no SD card. The status JSON (`INFO`, the website) carries `module.joints`
+(angles, `null` = no pot), `module.raw` and `module.cal`.
 
 ## Commands — cam module (ESP32-CAM)
 

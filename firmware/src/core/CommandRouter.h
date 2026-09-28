@@ -53,6 +53,9 @@ public:
     void buildStatus(JsonDocument& doc);
 
     void requestReboot(uint32_t delayMs = 800);
+    // Runs just before the restart: main.cpp sets it to drain the RS485 queue,
+    // so a queued reply (FWEND's OK) is not cut off by the reboot.
+    void (*beforeReboot)() = nullptr;
 
     // for callers that read identity/module state outside handle()/buildStatus()
     void lock();
@@ -71,6 +74,10 @@ private:
     SequencePlayer* seq_ = nullptr;
     ConfigStore* cfg_ = nullptr;
     SemaphoreHandle_t mtx_ = nullptr;
+    // who holds the lock and for how long, for PERF? (outermost lock only)
+    uint8_t depth_ = 0;
+    uint32_t heldAt_ = 0;
+    char what_[16] = "";
     uint32_t rebootAt_ = 0;
     // Firmware arriving as commands, so the channel does not matter.
     BusUpdate fw_;

@@ -14,6 +14,8 @@
 #include "core/WifiLink.h"
 #include "core/SequencePlayer.h"
 #include "core/BuildTypes.h"
+#include "core/AudioStream.h"
+#include "core/SecureTalk.h"
 #if MICE_HAS_CAM
 #include "modules/cam/CamModule.h"
 #endif
@@ -41,6 +43,7 @@ CamModule* WebPortal::camModule() {
 // so the page links one stylesheet whether it is reached over WiFi or USB.
 #include "web/MiceCss.h"
 #include "web/MiceJs.h"
+#include "web/CastJs.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ESPmDNS.h>
@@ -256,7 +259,10 @@ void WebPortal::checkLink(int n) {
             LOGF(wifi, "\"%s\" is weak (%d dBm) — going through \"%s\" (%d dBm)",
                  homeSsid_.c_str(), mainRssi, bestName.c_str(), bestRssi);
             staSsid_ = bestName;
-            staPass_ = id_->apPassword();   // only a group-mate will let us in
+            // a password the hub handed over for THAT module first (its owner
+            // may have changed it), else our own - a group-mate's default
+            staPass_ = id_->peerPass(bestName);
+            if (!staPass_.length()) staPass_ = id_->apPassword();
             onRelay_ = true;
             relayName_ = bestName;
             // remember an UNKNOWN one we are about to try, so that if it does
@@ -623,7 +629,7 @@ bool WebPortal::allowedCommand(AsyncWebServerRequest* req, const String& cmd) {
     return allowed(req);
 }
 
-String WebPortal::newSession() {
+String WebPortal::newSession(const String& user) {
     char tok[25];
     for (int i = 0; i < 24; i++) {
         const char* pool = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -636,8 +642,22 @@ String WebPortal::newSession() {
     for (int i = 1; i < SESSIONS; i++)
         if (sessions_[i].seen < sessions_[slot].seen) slot = i;
     memcpy(sessions_[slot].token, tok, sizeof(tok));
+    memset(sessions_[slot].user, 0, sizeof(sessions_[slot].user));
+    strncpy(sessions_[slot].user, user.c_str(), sizeof(sessions_[slot].user) - 1);
     sessions_[slot].seen = millis();
     return String(tok);
+}
+
+String WebPortal::sessionUser(AsyncWebServerRequest* req) {
+    const String tok = cookieToken(req);
+    if (tok.length() < 8) return "";
+    const uint32_t now = millis();
+    for (int i = 0; i < SESSIONS; i++) {
+        if (!sessions_[i].token[0]) continue;
+        if (now - sessions_[i].seen > SESSION_IDLE_MS) { sessions_[i].token[0] = 0; continue; }
+        if (tok == sessions_[i].token) { return String(sessions_[i].user); }
+    }
+    return "";
 }
 
 void WebPortal::endSession(AsyncWebServerRequest* req) {
@@ -665,6 +685,42 @@ void WebPortal::setupRoutes() {
     });
     server_.addHandler(&ws_);
 
+    // /ws/audio - text "START <rate>" opens the speaker, binary frames are
+    // 16-bit little-endian mono PCM at that rate, closing the socket is STOP.
+    // The gate sits on the HANDSHAKE (the filter sees the request and its
+    // cookie), the same rule as STREAM ON: making the robot talk needs a
+    // login, and an unknown socket never reaches the speaker.
+    wsAudio_.setFilter([this](AsyncWebServerRequest* req) {
+        return allowedCommand(req, "STREAM ON");
+    });
+    wsAudio_.onEvent([this](AsyncWebSocket*, AsyncWebSocketClient* client, AwsEventType type,
+                            void* arg, uint8_t* data, size_t len) {
+        AudioStream* st = AudioStream::instance();
+        if (type == WS_EVT_DISCONNECT) {
+            if (client->id() == audioClient_ && st) st->wsClose();
+            if (client->id() == audioClient_) audioClient_ = 0;
+            return;
+        }
+        if (type != WS_EVT_DATA || !st) return;
+        AwsFrameInfo* info = (AwsFrameInfo*)arg;
+        if (info->opcode == WS_TEXT && info->index == 0 && info->final) {
+            String t;
+            for (size_t i = 0; i < len && i < 24; i++) t += (char)data[i];
+            if (t.startsWith("START")) {
+                audioClient_ = client->id();          // newest sender wins
+                st->wsOpen((uint32_t)t.substring(5).toInt());
+                client->text("OK");
+            } else if (t.startsWith("STOP") && client->id() == audioClient_) {
+                st->wsClose();
+            }
+            return;
+        }
+        // Binary, possibly split across several events by TCP: push takes
+        // the bytes in order and carries a half sample over the seam.
+        if (client->id() == audioClient_) st->push(data, len);
+    });
+    server_.addHandler(&wsAudio_);
+
     server_.on("/", HTTP_GET, [](AsyncWebServerRequest* req) {
         req->send_P(200, "text/html", WEB_UI_HTML);
     });
@@ -687,6 +743,14 @@ void WebPortal::setupRoutes() {
         req->send(r);
     });
 
+    // The sound engine (shared/web/cast.js) - same file the hub serves.
+    server_.on("/cast.js", HTTP_GET, [](AsyncWebServerRequest* req) {
+        AsyncWebServerResponse* r =
+            req->beginResponse_P(200, "text/javascript", CAST_JS);
+        r->addHeader("Cache-Control", "max-age=86400");
+        req->send(r);
+    });
+
     // ---- logging in --------------------------------------------------
     // The accounts already existed (UserStore, the USER command); until now
     // nothing on the HTTP side ever asked. The page had a login card that only
@@ -704,15 +768,16 @@ void WebPortal::setupRoutes() {
             LOGF(sys, "login refused for \"%s\"", user.c_str());
             return;
         }
-        // mustChange: this board is still carrying the password it shipped
-        // with, which every other board in the room also has. The page keeps
-        // Setup locked until it is changed.
+        // mustChange: THIS account is still on the shipped password. A warning,
+        // not a lock (user 2026-09-17): the default logins are re-added on every
+        // boot, so "any account" would be true forever and Setup never opened.
         AsyncWebServerResponse* res = req->beginResponse(
             200, "application/json",
             String("{\"ok\":true,\"mustChange\":") +
-            (users.firstPassword() ? "true" : "false") + "}");
+            (pass == UserStore::shippedPassword() ? "true" : "false") +
+            ",\"user\":\"" + user + "\",\"role\":\"" + users.role(user) + "\"}");
         res->addHeader("Set-Cookie",
-                       "mice_board=" + newSession() + "; Path=/; HttpOnly; SameSite=Lax");
+                       "mice_board=" + newSession(user) + "; Path=/; HttpOnly; SameSite=Lax");
         req->send(res);
         LOGF(sys, "login ok for \"%s\"", user.c_str());
     });
@@ -728,9 +793,15 @@ void WebPortal::setupRoutes() {
     // Whether this browser may change anything. The page asks so it can grey
     // out what will be refused, instead of offering a button that fails.
     server_.on("/api/whoami", HTTP_GET, [this](AsyncWebServerRequest* req) {
+        bool auth = allowed(req);
+        String u = sessionUser(req);
+        String r = auth ? users.role(u) : "";
+        bool mc = auth ? users.mustChange(u) : users.firstPassword();
         req->send(200, "application/json",
-                  String("{\"authed\":") + (allowed(req) ? "true" : "false") +
-                  ",\"mustChange\":" + (users.firstPassword() ? "true" : "false") + "}");
+                  String("{\"authed\":") + (auth ? "true" : "false") +
+                  ",\"user\":\"" + u + "\"" +
+                  ",\"role\":\"" + r + "\"" +
+                  ",\"mustChange\":" + (mc ? "true" : "false") + "}");
     });
 
     server_.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest* req) {
@@ -1132,6 +1203,8 @@ void WebPortal::loop() {
     if (serverStarted_ && now - lastPush_ >= 500) {
         lastPush_ = now;
         ws_.cleanupClients();
+        wsAudio_.cleanupClients();
+        SecureTalk::loop();   // the secure talk page shuts itself when idle
         if (ws_.count()) ws_.textAll(statusJson());
     }
 

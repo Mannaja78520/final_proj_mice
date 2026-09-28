@@ -31,7 +31,7 @@ sys.path.insert(0, str(F.HUB))
 def run(t):
     import discovery
 
-    src = (F.HUB / "main.py").read_text(encoding="utf-8", errors="replace")
+    src = F.hub_src()
     src = re.sub(r"#.*", "", src)
 
     # ---- the loop is not written twice --------------------------------

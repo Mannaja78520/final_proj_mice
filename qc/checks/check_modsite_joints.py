@@ -31,6 +31,14 @@ PAGE = """
 <script>
 function done(s){ qcMark("JOINTS " + s); qcMark("done"); }
 var errs = 0;
+// Wait for the frame to BE there, then settle as before (A26-94): a fixed
+// sleep measured an empty page under a full gate and reported nothing.
+qcWaitFor(function(){
+  var fr = document.getElementById("f");
+  return fr && fr.contentWindow && fr.contentDocument
+      && fr.contentDocument.readyState === "complete"
+      && fr.contentDocument.body && fr.contentDocument.body.children.length;
+}, 8000).then(function(){
 setTimeout(function(){
   try{
     var fr = document.getElementById('f');
@@ -53,7 +61,7 @@ setTimeout(function(){
       done(out.join(" "));
     }, 6000);
   } catch (e) { done("ERR=" + String(e).slice(0,60)); }
-}, 3000);
+}, 3000); });
 </script>
 """
 

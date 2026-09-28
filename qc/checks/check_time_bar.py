@@ -72,7 +72,10 @@ function report(tag, doc, win){
 }
 
 function step(){
+    
+
   try{
+
     if (typeof addKey !== "function" || !document.getElementById("scrub"))
       return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);

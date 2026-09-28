@@ -13,15 +13,24 @@ function updateKey() {
   clearBadMarks();
   keys[selKey].pose = [...pose];
   bumpKeys();
-  if (selKey >= 1) keys[selKey].t = autoTime(keys[selKey - 1].pose, keys[selKey].pose, keyDps(selKey));
-  if (keys[selKey + 1]) keys[selKey + 1].t = autoTime(keys[selKey].pose, keys[selKey + 1].pose, keyDps(selKey + 1));
-  clampKeyTimes();
+  // A pinned time survives the edit. This line is where the headache was: a
+  // small correction to a pose re-ran the automatic timer over a number the
+  // operator had chosen, every single time (A31-12).
+  if (selKey >= 1 && !timePinned(selKey))
+    keys[selKey].t = autoTime(keys[selKey - 1].pose, keys[selKey].pose, keyDps(selKey));
+  if (keys[selKey + 1] && !timePinned(selKey + 1))
+    keys[selKey + 1].t = autoTime(keys[selKey].pose, keys[selKey + 1].pose, keyDps(selKey + 1));
+  clampKeyTimes();          // only the physical minimum may raise a pinned time
   renderTimeline();
 }
 function dupKey() {
   if (!keys[selKey]) return;
   clearBadMarks();
-  keys.splice(selKey + 1, 0, JSON.parse(JSON.stringify(keys[selKey])));
+  const copy = JSON.parse(JSON.stringify(keys[selKey]));
+  // The copy is a pose, not a second music cue: keeping the cues restarted
+  // the source's track (or stopped it) a second time at the copy.
+  delete copy.cues; delete copy.cuesAfter;
+  keys.splice(selKey + 1, 0, copy);
   bumpKeys();
   selKey++;
   // The copy keeps its source's time, which makes it a HOLD of that length:
@@ -140,7 +149,16 @@ function totalMs() {
   let t = 0;
   for (let i = 1; i < K.length; i++) t += K[i].t + (K[i].hold || 0);
   t += K.length ? (K[0].hold || 0) : 0;
-  return t;
+  return t + loopReturnMs();
+}
+// LOOP WRAP (user 2026-09-17): the arm has to travel from the last pose back to
+// the first, which takes real time under the safety cap. The preview used to
+// jump there at once and ran ahead of the robot. With loop on, that travel is a
+// segment of its own: index K.length, pose K[0]. Never written to the file.
+function loopReturnMs() {
+  const K = playKeys();
+  if (!$("loopChk") || !$("loopChk").checked || K.length < 2) return 0;
+  return autoTime(K[K.length - 1].pose, K[0].pose, speedDps());
 }
 function renderTimeline() {
   const box = $("keys");
@@ -148,9 +166,15 @@ function renderTimeline() {
   box.innerHTML = "";
   keys.forEach((k, i) => {
     const el = document.createElement("div");
-    el.className = "key" + (i === selKey ? " sel" : "") + (k.off ? " off" : "");
+    // seqStart: the first keyframe of one sequence inside a whole show on the
+    // bar. Without a line there, a 60-keyframe show is one undifferentiated
+    // wall and there is no way to see where "wave" ends and "bow" begins.
+    el.className = "key" + (i === selKey ? " sel" : "") + (k.off ? " off" : "")
+                 + (k.seqStart && i > 0 ? " seqstart" : "");
     el.onclick = (e) => {
-      if (e.target.tagName !== "INPUT" && e.target.tagName !== "BUTTON") selectKey(i);
+      // Not from a control: selecting re-renders the chip, which closed the music
+      // list the moment it opened (A26-49, a SELECT was not in the old list).
+      if (!e.target.closest("input,button,select,label,textarea")) selectKey(i);
     };
     // Clicking anywhere on the chip selects it, which is worth keeping for a
     // mouse - so the chip names the control that does the same job for the
@@ -218,22 +242,79 @@ function renderTimeline() {
         : "all keyframes active";
     };
     idx.appendChild(sk);
+    // WHICH ARM PLAYS THIS MOVE (A31-6, user 2026-09-23). "both" is every
+    // keyframe ever made before this existed, so it stays the default and
+    // nothing already saved changes behaviour. Pinning a move to one arm
+    // leaves the other exactly where the move before it left it.
+    if (i > 0) {
+      const armSel = document.createElement("select");
+      armSel.className = "karm";
+      [["", "both arms"],
+       ["front", "front arm (" + frontArmSide() + ")"],
+       ["back", "back arm (" + backArmSide() + ")"]].forEach(([v, label]) => {
+        const o = document.createElement("option"); o.value = v; o.textContent = label;
+        armSel.appendChild(o);
+      });
+      armSel.value = k.arm || "";
+      armSel.title = "which arm does this move. The other one holds where the "
+                   + "move before left it. Which arm faces the audience is set "
+                   + "in Setup > rig.";
+      armSel.onclick = (e) => e.stopPropagation();
+      armSel.onchange = () => {
+        if (armSel.value) k.arm = armSel.value; else delete k.arm;
+        bumpKeys();
+        clearBadMarks();
+        renderTimeline();
+        $("tlStat").textContent = armSel.value
+          ? `move ${i} is played by the ${armSel.value} arm (${armSel.value === "front" ? frontArmSide() : backArmSide()}); the other arm holds still`
+          : `move ${i} moves both arms`;
+      };
+      idx.appendChild(armSel);
+      // Mirror: the same gesture on the other arm. The rule lives in
+      // mirrorPose() (ik_4_dof_arm.js) and the Pose tab's Mirror button calls
+      // the same function, so the two can never drift apart.
+      // TWO mirrors, because a puppet has two (user 2026-09-23). Left/right
+      // swaps the arms; front/back turns each arm's reach round and leaves it
+      // on its own side. Separate buttons, not a mode: a mode you have to
+      // remember is a button you press wrongly.
+      [["⇄", "lr", "mirror LEFT and RIGHT: the same shape on the other arm"],
+       ["⇅", "fb", "mirror FRONT and BACK: each arm reaches the other way and "
+                   + "stays on its own side"]].forEach(([glyph, which, tip]) => {
+        const mir = document.createElement("button");
+        mir.className = "kmir";
+        mir.textContent = glyph;
+        mir.title = tip;
+        mir.onclick = (e) => {
+          e.stopPropagation();
+          mirrorKeyArms(i, which);
+        };
+        idx.appendChild(mir);
+      });
+    }
     const pv = document.createElement("div"); pv.className = "kpose";
     pv.textContent = k.pose.map(a => Math.round(a)).join(" ");
-    const kmin = keyMin(i);
+    // The floor AND its reason, so a °/s that shortens nothing can say which
+    // limit is holding the move (user 2026-09-23). i === 0 has no predecessor.
+    const lim = i > 0 && keys[i - 1] ? minTimeWhy(keys[i - 1].pose, k.pose) : null;
+    const kmin = lim ? lim.ms : MIN_MOVE_MS;
     const tr = document.createElement("div"); tr.className = "ktime";
     const tIn = document.createElement("input");
     tIn.type = "number"; tIn.value = k.t; tIn.min = kmin; tIn.step = 50;
     tIn.title = (i === 0 ? "entry time from wherever the robot is (ms)"
                          : "time from previous keyframe (ms)")
-              + ` — minimum ${kmin} ms (servo max speed); longer is always allowed`;
+              + ` — minimum ${kmin} ms, set by ${lim ? lim.why : "the 80 ms floor"}`
+              + "; longer is always allowed. Typing one PINS it: editing the pose "
+              + "afterwards will not re-time this move.";
+    if (k.tset) tIn.classList.add("pinned");
     tIn.onchange = () => {
       const want = Math.round(+tIn.value || 0);
       k.t = Math.max(kmin, want);
       delete k.dps;
+      pinTime(i);             // typed BY HAND: nothing automatic may replace it
       bumpKeys();             // a typed time wins over a speed override
       if (want < kmin)
-        $("tlStat").textContent = `time raised to ${kmin} ms — the servos can't move that far faster (slowest joint on this move: ${slowestDps()} °/s)`;
+        $("tlStat").textContent = `time raised to ${kmin} ms — held by ${lim ? lim.why : "the 80 ms floor"}. ` +
+          (lim && lim.fix ? lim.fix : "");
       renderTimeline();
     };
     // A move that follows a SUSPENDED keyframe no longer starts where its
@@ -259,7 +340,36 @@ function renderTimeline() {
     hIn.type = "number"; hIn.value = k.hold || 0; hIn.min = 0; hIn.step = 100;
     hIn.title = "hold this pose (ms) before the next move";
     hIn.onchange = () => { k.hold = Math.max(0, Math.round(+hIn.value || 0)); bumpKeys(); renderTimeline(); };
-    tr.append(document.createTextNode("T"), tIn, document.createTextNode("hold"), hIn);
+    tr.append(document.createTextNode("T"), tIn);
+    // The pin is a BUTTON, not a state you can only read: a time that is held
+    // and no way to let go of it is the same trap the other way round.
+    if (i > 0) {
+      const pin = document.createElement("button");
+      pin.className = "kpin" + (k.tset ? " on" : "");
+      pin.textContent = k.tset ? "📌" : "🕘";
+      pin.setAttribute("aria-pressed", k.tset ? "true" : "false");
+      pin.title = k.tset
+        ? "this time is yours and is kept when you edit the pose. Click to let "
+          + "Studio time this move again."
+        : "Studio times this move from the pose and the speed. Click to keep the "
+          + "time it has now, whatever you change afterwards.";
+      pin.onclick = (e) => {
+        e.stopPropagation();
+        if (k.tset) {
+          unpinTime(i);
+          retimeAt(i);
+          $("tlStat").textContent = `move ${i} is timed by Studio again: ${keys[i].t} ms.`;
+        } else {
+          pinTime(i);
+          $("tlStat").textContent = `move ${i} is held at ${k.t} ms — editing the `
+            + "pose will not change it. Only the servos' own minimum can raise it.";
+        }
+        bumpKeys();
+        renderTimeline();
+      };
+      tr.appendChild(pin);
+    }
+    tr.append(document.createTextNode("hold"), hIn);
     if (reNote) tr.appendChild(reNote);
     const mn = document.createElement("div");
     mn.className = "ktime";
@@ -273,17 +383,44 @@ function renderTimeline() {
       dIn.value = k.dps ? Math.round(k.dps) : "";
       dIn.placeholder = Math.round(speedDps());
       dIn.title = "this move's own speed (°/s). Empty = the sequence's " +
-                  Math.round(speedDps()) + " °/s. Setting it re-times this move; " +
-                  "typing a time above clears it again.";
+                  Math.round(speedDps()) + " °/s. Setting it re-times this move " +
+                  "and hands the timing back to Studio; typing a time above pins " +
+                  "it again. This move cannot go under " +
+                  kmin + " ms: " + (lim ? lim.why : "the 80 ms floor") + ".";
       dIn.onchange = () => {
         const v = Math.round(+dIn.value || 0);
-        if (v >= 5) { k.dps = Math.min(v, slowestDps()); k.t = autoTime(keys[i - 1].pose, k.pose, k.dps); }
-        else { delete k.dps; k.t = autoTime(keys[i - 1].pose, k.pose, speedDps()); }
+        const use = v >= 5 ? Math.min(v, slowestDps()) : speedDps();
+        if (v >= 5) k.dps = use; else delete k.dps;
+        // Asking for a SPEED is asking to be timed. It is the other way out of
+        // a pinned time, and the symmetric opposite of typing a time.
+        unpinTime(i);
+        const free = Math.max(MIN_MOVE_MS,
+          Math.round(deltaDeg(keys[i - 1].pose, k.pose) / use * 1000));
+        k.t = autoTime(keys[i - 1].pose, k.pose, use);
         bumpKeys();
         renderTimeline();
+        // Typing 200 where 38 is the ceiling used to change the box and nothing
+        // else. Name the limit instead of leaving the number looking ignored.
+        $("tlStat").textContent = (v >= 5 && v > use)
+          ? `${v} °/s kept at ${use} °/s — no servo on this robot goes faster.`
+          : (free < k.t
+              ? `move ${i} stays ${k.t} ms — held by ${lim ? lim.why : "the 80 ms floor"}. ` +
+                (lim && lim.fix ? lim.fix : "")
+              : `move ${i} now takes ${k.t} ms at ${Math.round(use)} °/s.`);
       };
-      mn.append(document.createTextNode("min " + kmin + " · "), dIn,
-                document.createTextNode("°/s"));
+      // A move whose time no speed can shorten says so on its own line, where
+      // the number is being typed — not only in a tooltip nobody hovers.
+      const held = lim && Math.max(MIN_MOVE_MS,
+        Math.round(deltaDeg(keys[i - 1].pose, k.pose) / keyDps(i) * 1000)) < lim.ms;
+      const minTxt = document.createElement("span");
+      minTxt.textContent = "min " + kmin + " · ";
+      if (held) {
+        minTxt.className = "statline";
+        minTxt.textContent = "min " + kmin + " ⚑ · ";
+        minTxt.title = "this move is already as short as it is allowed to be: " +
+                       lim.why + ". " + lim.fix;
+      }
+      mn.append(minTxt, dIn, document.createTextNode("°/s"));
     }
     // ♪ lives on the existing speed line rather than in a row of its own:
     // most moves never carry music, and a row per keyframe for a rare thing
@@ -422,10 +559,13 @@ function rewind() {
 // and the signature changes with it.
 let _pkCache = null;
 function keysSignature() {
-  let s = keys.length + "|" + speedDps();
+  // frontArm is in here because which arm "front" means changes every pinned
+  // move's pose, and a cache that missed that would draw the wrong run.
+  let s = keys.length + "|" + speedDps() + "|" + frontArmSide();
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
-    s += ";" + (k.name || "") + "," + (k.off ? 1 : 0) + "," + k.t + "," + (k.hold || 0) + "," +
+    s += ";" + (k.name || "") + "," + (k.arm || "") + "," + (k.tset ? 1 : 0) + "," +
+         (k.off ? 1 : 0) + "," + k.t + "," + (k.hold || 0) + "," +
          (k.dps || 0) + "," + k.pose + "," + (k.cues || []).join("|") + "," +
          (k.cuesAfter || []).join("|");
   }
@@ -459,7 +599,8 @@ function saveDraft() {
   clearTimeout(draftTimer);                 // coalesce a drag into one write
   draftTimer = setTimeout(() => {
     try {
-      if (keys.length <= 1) { localStorage.removeItem(DRAFT_KEY); return; }
+      // nothing to keep: too short, or identical to what is already on disk
+      if (keys.length <= 1 || !isDirty()) { localStorage.removeItem(DRAFT_KEY); return; }
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         at: Date.now(),
         name: ($("projName") && $("projName").value) || "",
@@ -506,11 +647,9 @@ function offerDraft() {
 }
 // Closing with unsaved keyframes asks first. The browser shows its own wording;
 // all a page can do is say that there IS something to lose.
+// Settings ▸ Saving can turn this off too; the draft still survives the close.
 window.addEventListener("beforeunload", (e) => {
-  if (keys.length <= 1) return;
-  let unsaved = false;
-  try { unsaved = !!localStorage.getItem(DRAFT_KEY); } catch (err) { unsaved = false; }
-  if (!unsaved) return;                     // saveProject() cleared it
+  if (!askUnsavedOn() || !isDirty()) return;
   e.preventDefault();
   e.returnValue = "";
 });
@@ -534,6 +673,22 @@ function buildPlayKeys() {
       return;
     }
     const prev = out.length ? out[out.length - 1] : null;
+    // A MOVE PINNED TO ONE ARM (A31-6). The other arm holds exactly where the
+    // previous played move left it, so "wave with the front arm" is one move
+    // and not a promise to keep re-typing eight numbers. Resolved HERE, where
+    // buildYaml and hubShowSteps both read, so the file, the preview and the
+    // robot can never disagree about what the far arm did. It is resolved
+    // BEFORE the re-timing below, because a move that only turns one arm
+    // covers less ground and must be timed for the ground it covers.
+    let posed = k.pose;
+    const own = armJoints(k.arm);
+    if (own && prev) {
+      posed = prev.pose.slice();
+      own.forEach(j => { posed[j] = k.pose[j]; });
+      // the body joints belong to nobody's arm and always follow the keyframe
+      posed[8] = k.pose[8];
+      posed[9] = k.pose[9];
+    }
     let t = k.t;
     if (prev && gap) {
       // This move is NOT the one its stored time was written for. With the
@@ -551,11 +706,11 @@ function buildPlayKeys() {
       // it needs the minimum, but max() held it at the old 400 ms and the arm
       // sat still for 400 ms going nowhere. Re-timing has to be able to
       // shorten a move as well as lengthen it.
-      t = autoTime(prev.pose, k.pose, k.dps || speedDps());
+      t = autoTime(prev.pose, posed, k.dps || speedDps());
     }
     // The name travels with the PLAYED move. buildYaml() writes from this
     // list, so a name left behind here never reaches the exported file.
-    out.push({ pose: k.pose, hold: k.hold || 0, src: i, dps: k.dps || 0, t,
+    out.push({ pose: posed, hold: k.hold || 0, src: i, dps: k.dps || 0, t,
                name: k.name || "",
                // cues travel with the PLAYED move, like the name above: both
                // buildYaml and hubShowSteps read this list, so a cue left
@@ -570,6 +725,35 @@ function buildPlayKeys() {
   return out;
 }
 function anySuspended() { return keys.some(k => k.off); }
+// The same gesture, arms swapped (A31-6). The rule lives in mirrorPose()
+// (rig_data.js) because it is made of rig numbers - each joint's zero, its
+// direction and its axis - and this file should not hold a second opinion
+// about them. A move pinned to one arm flips its pin too, or mirroring would
+// move the arm that is meant to be holding still.
+function mirrorKeyArms(i, which) {
+  const k = keys[i];
+  if (!k) return;
+  const m = mirrorPose(k.pose, which);
+  if (!m) {
+    $("tlStat").textContent = "this rig's two arms are not set up as mirror "
+      + "images (their rotation axes differ in Setup > rig), so there is no "
+      + "mirror to take. Nothing was changed.";
+    notice($("tlStat").textContent);
+    return;
+  }
+  k.pose = m;
+  if (k.arm === "front") k.arm = "back";
+  else if (k.arm === "back") k.arm = "front";
+  bumpKeys();
+  clearBadMarks();
+  if (i === selKey) { pose = [...k.pose]; poseChanged(false); renderSliders(); }
+  renderTimeline();
+  $("tlStat").textContent = which === "fb"
+    ? "move " + i + " mirrored front to back — each arm reaches the other way, "
+      + "and stays on its own side"
+    : "move " + i + " mirrored left to right — the same shape on the other arm"
+      + (k.arm ? ", now played by the " + k.arm + " arm" : "");
+}
 
 // ------- playback preview (cosine ease per segment — same as the firmware)
 function poseAt(ms) {
@@ -586,7 +770,12 @@ function poseAt(ms) {
     t += seg + (K[i].hold || 0);
     if (ms < t) return [...K[i].pose];
   }
-  return [...K[K.length - 1].pose];
+  const ret = loopReturnMs(), last = K[K.length - 1].pose;
+  if (ret && ms < t + ret) {
+    const f = 0.5 - 0.5 * Math.cos(Math.PI * (ms - t) / ret);
+    return last.map((a, j) => a + (K[0].pose[j] - a) * f);
+  }
+  return [...(ret ? K[0].pose : last)];
 }
 // Which MOVE is running at ms, or -1 when nothing is moving. The phases mirror
 // poseAt() exactly: hold at keyframe 0, move into 1, hold at 1, move into 2 …
@@ -604,6 +793,7 @@ function segmentAt(ms) {
     t += K[i].t + (K[i].hold || 0);
     if (ms < t) return -1;                     // holding on keyframe i
   }
+  if (K.length && ms < t + loopReturnMs()) return K.length;   // loop: back to the start
   return -1;
 }
 // ---- keeping playback alive when the tab is not in front -------------
@@ -671,6 +861,7 @@ function togglePlay() {
   $("playBtn").textContent = playing ? "❚❚ Pause" : "▶ Play";
   lastFrame = performance.now();
   lastPlayMs = 0;                 // fresh clock, so a pause never leaps forward
+  entryHold = false;
   keepAwake(playing);             // keep the tab off the throttling list
   lastLiveSeg = -1;
   if (playing && playT >= totalMs()) playT = 0;
@@ -693,7 +884,14 @@ function togglePlay() {
   // which is the whole reason it exists. This preview keeps drawing, and sends
   // nothing (playTick skips its live sends while hubDriven()).
   if (previewOnly) return;          // refused at the crash gate: draw only
-  if (hubDriven()) { hubPlay(playT); return; }
+  if (hubDriven()) {
+    // From the start the hub first TRAVELS to keyframe 0 (as long as the board
+    // needs); the show clock starts after. Hold the preview until then, or it
+    // runs ahead of the arm by the whole entry move (A26-50).
+    if (playT === 0) { entryHold = true; hubPlay(0).then(ok => ok ? waitEntry() : (entryHold = false)); }
+    else hubPlay(playT);
+    return;
+  }
   // A segment is the move INTO a keyframe, so segmentAt() starts at 1 and
   // keyframe 0 is never one of them. Put the robot on it first, or its first
   // move starts from wherever it happens to be standing instead of from the
@@ -715,7 +913,7 @@ function togglePlay() {
 // mid-show carried on moving — the thing that looked like two shows running
 // over each other, because it was.
 function liveLinked() {
-  return $("liveChk").checked && (haveUsb() || haveWifi());
+  return $("liveChk").checked && haveRobot();
 }
 // ---- who holds the clock -------------------------------------------------
 //
@@ -739,7 +937,7 @@ function hubDriven() {
 function hubShowSteps() {
   const K = playKeys();
   if (K.length < 2) return null;
-  return K.map((k, i) => ({
+  const steps = K.map((k, i) => ({
     pose: k.pose.map(v => +fmtA(v)),
     t: i === 0 ? minTime(pose, K[0].pose) : k.t,
     hold: k.hold || 0,
@@ -748,6 +946,10 @@ function hubShowSteps() {
     cues: k.cues || [],
     cues_after: k.cuesAfter || [],
   }));
+  // loop: the travel back to the start is a step of its own, timed like the preview
+  const ret = loopReturnMs();
+  if (ret) steps.push({ pose: steps[0].pose.slice(), t: ret, hold: 0, cues: [], cues_after: [] });
+  return steps;
 }
 async function hubPlay(fromMs) {
   const steps = hubShowSteps();
@@ -758,6 +960,8 @@ async function hubPlay(fromMs) {
       body: JSON.stringify({
         dev: moduleDev(), steps, loop: $("loopChk").checked,
         name: ($("seqName").value || "sequence").trim(), from_ms: Math.round(fromMs || 0),
+        watch: !document.hidden,        // stop the arm if this page freezes (A26-46)
+        music_stop_ms: showBarMusicStop(),   // a show's track may outlive its moves
       }),
     }).then(r => r.json());
     if (r.error) throw new Error(r.error);
@@ -773,6 +977,34 @@ async function hubPlay(fromMs) {
     return false;
   }
 }
+let entryHold = false;       // true while the hub travels to keyframe 0
+async function waitEntry() {
+  while (entryHold && playing) {
+    try {
+      const st = await fetch("/api/play").then(r => r.json());
+      if (!st.running || !st.entering) break;
+    } catch (e) { break; }             // no answer: let the preview run
+    await new Promise(r => setTimeout(r, 120));
+  }
+  entryHold = false;
+  lastPlayMs = 0;                      // start the clock now, not at Play
+}
+// Heartbeat for a hub-played show: a FROZEN page cannot beat, so the hub stops
+// the arm; a page that is hidden or closed says so first, and the show carries
+// on by itself as it always has (A26-46).
+setInterval(() => {
+  if (playing && !document.hidden && hubDriven())
+    fetch("/api/play/beat", { method: "POST", body: "{}" }).catch(() => {});
+}, 1000);
+function hubLeaving() {
+  try { navigator.sendBeacon("/api/play/beat", JSON.stringify({ leaving: true })); } catch (e) { /* no beacon: the timeout decides */ }
+}
+document.addEventListener("visibilitychange", () => {
+  if (!playing || !hubDriven()) return;
+  if (document.hidden) hubLeaving();
+  else fetch("/api/play/beat", { method: "POST", body: "{}" }).catch(() => {});
+});
+window.addEventListener("pagehide", () => { if (playing && hubDriven()) hubLeaving(); });
 function hubStop() {
   return fetch("/api/play/stop", { method: "POST" }).catch(() => {});
 }
@@ -797,6 +1029,8 @@ function segRemaining(ms) {
     t += K[i].t + (K[i].hold || 0);
     if (ms < t) return 0;                      // in a hold, nothing is running
   }
+  const ret = loopReturnMs();
+  if (ret && ms < t + ret) return Math.max(1, Math.round(t + ret - ms));
   return 0;
 }
 function scrubTo(v) {

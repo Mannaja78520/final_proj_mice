@@ -33,7 +33,10 @@ SEED = ("name: qcmus\nloop: false\nsteps:\n"
 
 DRIVER = """
 function step(){
+    
+
   try{
+
     if (!document.getElementById("liveChk")) return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);
     document.getElementById("loopChk").checked = false;
@@ -99,6 +102,12 @@ def run(t):
     t.ok(played, "the track the file names reached the module", after[:6])
     t.contains(after, "VOL 70", "and so did the volume it asked for")
     if played:
-        t.ok(played[0] < poses[0],
-             "the music started with the show, not after its first move",
+        # The walk to the start pose (poses[0]) is before the show's clock
+        # (user 2026-09-27: *move to the start pose first, then start
+        # everything at the same time*), so the music starts once the arm is
+        # there: after that walk, before the show's first real move.
+        nxt = poses[1] if len(poses) > 1 else len(after)
+        t.ok(poses[0] < played[0] < nxt,
+             "the music starts when the arm reaches the start pose, with the "
+             "show's first move - not during the walk there, not after",
              after[:6])

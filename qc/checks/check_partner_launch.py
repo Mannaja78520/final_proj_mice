@@ -118,8 +118,13 @@ def run(t):
     finally:
         proc = PL._procs.pop((pid, parts[0][1] if parts else ""), None)
         if proc is not None:
-            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)],
-                           capture_output=True)
+            if sys.platform == "win32":
+                subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                               capture_output=True)
+            else:                         # no taskkill: the shell's child, then it
+                subprocess.run(["pkill", "-KILL", "-P", str(proc.pid)],
+                               capture_output=True)
+                proc.kill()
             proc.wait(10)
         PL._memo_path(pid).unlink(missing_ok=True)
 

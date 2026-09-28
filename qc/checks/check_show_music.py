@@ -94,8 +94,13 @@ def run(t):
          "and the motion step in the file never reached it", wire)
     poses = [i for i, c in enumerate(wire) if c.startswith("POSE ")]
     if t.ok(poses, "the show still drove the arm", wire[-4:]) and got_play:
-        t.ok(wire.index("PLAY song.mp3") < poses[0],
-             "the music starts BEFORE the move it belongs to, not after it",
+        # The FIRST pose is the exception (user 2026-09-27: *move to the start
+        # pose first, then start everything at the same time*): the walk to it
+        # is before the show's clock, so its music starts once the arm is there
+        # - after that walk, before the first real move of the show.
+        t.ok(poses[0] < wire.index("PLAY song.mp3") < poses[1],
+             "the first pose's music starts when the arm reaches that pose, "
+             "together with the show's first move",
              wire[:6])
         t.ok("PLAY STOP" in wire and wire.index("PLAY STOP") > poses[-1],
              "and the trailing cue fires after the last move", wire[-4:])

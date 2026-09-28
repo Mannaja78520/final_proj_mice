@@ -1,0 +1,76 @@
+{
+ "name": "LhongMarePing",
+ "loop": false,
+ "items": [
+  {
+   "seq": "yakyai.yaml",
+   "hold": 0,
+   "repeat_mode": "exact",
+   "repeat": 48.1,
+   "speed_pct": 100
+  },
+  {
+   "seq": "tangVongSungLeft.yaml",
+   "hold": 0,
+   "repeat_mode": "",
+   "repeat": 0,
+   "speed_pct": 100
+  },
+  {
+   "seq": "NONO.yaml",
+   "hold": 0,
+   "repeat_mode": "exact",
+   "repeat": 8.1,
+   "speed_pct": 100
+  },
+  {
+   "seq": "VongSungKhwa.yaml",
+   "hold": 0,
+   "repeat_mode": "",
+   "repeat": 0,
+   "speed_pct": 100
+  },
+  {
+   "seq": "NookYung.yaml",
+   "hold": 0,
+   "repeat_mode": "",
+   "repeat": 0,
+   "speed_pct": 100
+  },
+  {
+   "seq": "SeiyngSung.yaml",
+   "hold": 0,
+   "repeat_mode": "exact",
+   "repeat": 10.5,
+   "speed_pct": 100
+  },
+  {
+   "seq": "Kooo.yaml",
+   "hold": 0,
+   "repeat_mode": "",
+   "repeat": 0,
+   "speed_pct": 100
+  },
+  {
+   "seq": "VongSungKhwa.yaml",
+   "hold": 0,
+   "repeat_mode": "",
+   "repeat": 0,
+   "speed_pct": 100
+  },
+  {
+   "seq": "WonderWomen.yaml",
+   "hold": 0,
+   "repeat_mode": "",
+   "repeat": 0,
+   "speed_pct": 100
+  }
+ ],
+ "join_dps": 0,
+ "join_ms": 0,
+ "music": "track-0927-2036.mp3",
+ "music_vol": 100,
+ "music_loop": false,
+ "music_end": "after",
+ "music_secs": 3.0
+}

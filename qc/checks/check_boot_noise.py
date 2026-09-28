@@ -70,7 +70,7 @@ def run(t):
     import sys
     sys.path.insert(0, str(F.HUB))
     import main  # noqa: PLC0415 - the module under test
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
 
     # ---- the real pattern knows boot output from an answer ----------
     t.ok(hasattr(main, "_BOOT_NOISE"),
@@ -207,7 +207,9 @@ def run(t):
     op = op[:op.find("except", 1)]
     t.contains(op, "in_waiting",
                "a freshly opened port is drained before anything is asked")
-    m = re.search(r"quiet = time[.]time[(][)] [+] ([0-9.]+)", op)
+    # a board's wait; a bare RS485 adapter skips it (check_adapter_reopen_fast)
+    m = (re.search(r"settle = .* else ([0-9.]+)", op)
+         or re.search(r"quiet = time[.]time[(][)] [+] ([0-9.]+)", op))
     if t.ok(m, "the drain waits for a real moment"):
         t.ok(float(m.group(1)) >= 0.5,
              "long enough for a boot log to arrive (%ss)" % m.group(1),

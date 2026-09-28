@@ -11,6 +11,7 @@
 let musicList = null;        // null = never read, [] = card has no tracks
 let musicNote = "";          // why the list is not usable, in plain words
 let musicBusy = false;
+function robotLinked() { return haveRobot(); }
 const musOpen = new Set();   // which keyframes have the picker open
 
 function keyCue(k, key) {
@@ -43,7 +44,9 @@ async function loadMusicList() {
   musicBusy = true;
   musicNote = "reading the robot's music folder…";
   try {
-    if (!liveLinked()) throw new Error("offline");
+    // Any link will do. liveLinked() also needs the live tick, so with it off the
+    // picker stayed locked and the volume with it (A26-49).
+    if (!robotLinked()) throw new Error("offline");
     const r = await fetch("/api/dev/files?dir=/music&dev="
                           + encodeURIComponent(moduleDev()));
     const list = await r.json();
@@ -64,44 +67,142 @@ async function loadMusicList() {
 // goes as raw bytes through the hub, which already knows how to reach this
 // module over WiFi or down a cable. A browser holding the cable itself
 // (Web Serial) has no hub path, and says so rather than failing quietly.
-async function pickMusicFile(k) {
+// `pick(name, whyNot)` chooses the track once it is on the card; by default it
+// goes on keyframe k. A failed upload calls it with no name and the reason. The Shows tab passes its own, so a show's track comes the same way.
+async function pickMusicFile(k, pick) {
   const inp = document.createElement("input");
   inp.type = "file";
   inp.accept = ".mp3,.wav,audio/mpeg,audio/wav";
   inp.onchange = () => {
     const f = inp.files && inp.files[0];
-    if (f) uploadMusicFile(k, f);
+    if (f) uploadMusicFile(k, f, pick);
   };
   inp.click();
 }
 // The upload itself, given a file: separate from the dialog because a file
 // picker cannot be opened by a script, and an upload path no check can reach
 // is an upload path nothing guards.
-async function uploadMusicFile(k, f) {
+// The robot's card takes a track name of English letters, digits, space, dot,
+// _ and - only (the hub's SAFE_NAME, and the firmware's command line). A Thai
+// name was refused, so it is renamed here and the new name is said out loud
+// (user 2026-09-27, ฟอนลองแมปง.mp3). What is left of the name is kept; a name
+// with nothing left becomes track-<month><day>-<hour><minute>.
+function robotTrackName(name) {
+  const ok = /^[A-Za-z0-9._ -]{1,80}$/;
+  if (ok.test(name) && name[0] !== ".") return name;
+  const dot = name.lastIndexOf(".");
+  const ext = dot > 0 ? name.slice(dot).replace(/[^A-Za-z0-9.]/g, "") : "";
+  let base = (dot > 0 ? name.slice(0, dot) : name).replace(/[^A-Za-z0-9._ -]+/g, "")
+    .replace(/^[ ._-]+|[ .]+$/g, "");
+  if (!/[A-Za-z0-9]/.test(base)) {
+    const d = new Date(), two = n => String(n).padStart(2, "0");
+    base = "track-" + two(d.getMonth() + 1) + two(d.getDate()) + "-" + two(d.getHours()) + two(d.getMinutes());
+  }
+  return (base.slice(0, 80 - ext.length) + ext);
+}
+async function uploadMusicFile(k, f, pick) {
   if (usbDirect()) {
     musicNote = "this browser is holding the cable itself, so the hub cannot "
               + "send the file. Connect through the hub, or add the track on "
               + "the module website: Files ▸ /music.";
+    if (pick) pick("", musicNote);
     renderTimeline();
     return;
   }
+  const stop = why => { musicNote = why; if (pick) pick("", why); renderTimeline(); };
+  // LOGGED OUT BY A HUB RESTART. Sessions live in the hub's memory, so a
+  // restarted hub refuses the upload - and a refused body over 4 MB is not
+  // read (DRAIN_LIMIT), so the browser only saw "Failed to fetch" instead of
+  // the reason (user 2026-09-27, a 4.2 MB mp3). Ask first, say it plainly.
+  try {
+    const w = await fetch("/api/whoami").then(r => r.json());
+    if (!w.authed) {
+      currentUser = null;              // the page still thought it was logged in
+      showTab("robot");                // which opens the login card
+      return stop("log in again first — the hub was restarted or your login ran "
+        + "out. Log in on the card that just opened, then add the track again.");
+    }
+  } catch (e) { /* no answer: let the upload itself say what is wrong */ }
+  const name = robotTrackName(f.name);
+  const renamed = name !== f.name ? " (saved on the robot as " + name + " — its card "
+    + "only takes English letters and numbers in a name)" : "";
   musicNote = "sending " + f.name + " to the robot…";
+  if (pick && pick.busy) pick.busy(musicNote);
   renderTimeline();
   try {
-    const r = await fetch("/api/dev/upload?dir=/music&name="
-                          + encodeURIComponent(f.name) + "&dev="
+    // The HUB sends it, on its own thread (background=1), and this page
+    // watches /api/upload/progress. Over a cable a song is tens of thousands
+    // of 120-byte commands; one request held open that long does not survive.
+    const r = await fetch("/api/dev/upload?background=1&dir=/music&name="
+                          + encodeURIComponent(name) + "&dev="
                           + encodeURIComponent(moduleDev()),
                           { method: "POST", body: await f.arrayBuffer() });
-    const said = (await r.text()).trim();
-    if (!said.startsWith("OK")) throw new Error(said);
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.error || j.ok === false)
+      throw new Error(j.need_login ? "log in first" : (j.error || "HTTP " + r.status));
+    const end = await watchUpload(name);
+    if (end.error) throw new Error(end.error);
     musicList = null;                   // the card has one more file on it now
     await loadMusicList();
-    setKeyCue(k, "play", f.name);
-    musicNote = f.name + " is on the robot's card — press ▶ to hear it";
+    if (pick) pick(name, "", renamed); else setKeyCue(k, "play", name);
+    musicNote = name + " is on the robot's card — press ▶ to hear it" + renamed;
   } catch (e) {
     musicNote = "the track did not reach the robot: " + (e.message || e);
+    if (pick) pick("", musicNote);
   }
   renderTimeline();
+}
+// The wheel. A modal <dialog> over the whole page (user 2026-09-27: *show the
+// wheel, how many percent, and say nothing else can be done - only send*):
+// the robot's line is busy with the file, so anything clicked meanwhile would
+// only queue behind it. Cancel is the one way out; the hub then removes the
+// half-written file so a cut-off song is never left on the card.
+function watchUpload(name) {
+  let dlg = $("uploadDlg");
+  if (!dlg) {
+    dlg = document.createElement("dialog");
+    dlg.id = "uploadDlg"; dlg.className = "askdlg updlg";
+    dlg.setAttribute("aria-labelledby", "uploadTitle");
+    dlg.innerHTML = '<h2 id="uploadTitle">Sending music to the robot</h2>'
+      + '<div class="upwheel" id="uploadWheel" role="progressbar" aria-valuemin="0" '
+      + 'aria-valuemax="100"><span id="uploadPct">0%</span></div>'
+      + '<p class="mini" id="uploadText"></p>'
+      + '<p class="mini">Please wait. Nothing else can be done until it is sent — '
+      + 'the robot is busy taking the file.</p>'
+      + '<div class="row"><button id="uploadCancel">Cancel sending</button></div>';
+    document.body.appendChild(dlg);
+  }
+  const mb = n => (n / 1048576).toFixed(1) + " MB";
+  return new Promise(resolve => {
+    let done = false;
+    const finish = s => { if (done) return; done = true; clearInterval(t); dlg.close(); resolve(s); };
+    $("uploadCancel").disabled = false;
+    $("uploadCancel").onclick = () => {
+      $("uploadCancel").disabled = true;
+      $("uploadText").textContent = "cancelling — taking the half-sent file back off the card…";
+      fetch("/api/upload/cancel", { method: "POST" }).catch(() => {});
+    };
+    dlg.oncancel = e => e.preventDefault();          // Escape does not hide it
+    const tick = async () => {
+      let s;
+      try { s = await fetch("/api/upload/progress").then(r => r.json()); }
+      catch (e) { return; }                          // one missed poll is not an error
+      const pct = s.total ? Math.floor(100 * s.sent / s.total) : 0;
+      $("uploadWheel").style.setProperty("--p", pct);
+      $("uploadWheel").setAttribute("aria-valuenow", pct);
+      $("uploadPct").textContent = pct + "%";
+      // time left from the speed so far - only once there is a speed to go on
+      const secs = (Date.now() / 1000) - (s.started || 0);
+      const left = s.sent > 0 && secs > 2 ? (s.total - s.sent) / (s.sent / secs) : 0;
+      if (!$("uploadCancel").disabled)
+        $("uploadText").textContent = name + " — " + mb(s.sent) + " of " + mb(s.total)
+          + (left ? ", about " + (left >= 90 ? Math.round(left / 60) + " min" : Math.round(left) + " s") + " left" : "");
+      if (!s.running) finish(s);
+    };
+    const t = setInterval(tick, 500);
+    dlg.showModal();
+    tick();
+  });
 }
 
 // The picker for one keyframe: a track and a level, or plain words about why
@@ -165,8 +266,8 @@ function musicRow(k, i) {
   // the robot, and neither was worth walking to another page for.
   const play = document.createElement("button");
   play.type = "button"; play.className = "kmusbtn"; play.textContent = "▶";
-  play.disabled = !cur || !liveLinked();
-  play.title = !liveLinked() ? "connect the robot to hear it"
+  play.disabled = !cur || !robotLinked();
+  play.title = !robotLinked() ? "connect the robot to hear it"
              : cur ? "play " + cur + " on the robot now, once through"
                    : "choose a track first";
   play.onclick = async () => {
@@ -179,7 +280,7 @@ function musicRow(k, i) {
   };
   const stop = document.createElement("button");
   stop.type = "button"; stop.className = "kmusbtn"; stop.textContent = "■";
-  stop.disabled = !liveLinked();
+  stop.disabled = !robotLinked();
   stop.title = "stop the sound";
   stop.onclick = async () => {
     try { musicNote = await rawCmd("PLAY STOP"); } catch (e) { musicNote = String(e.message || e); }
@@ -187,8 +288,8 @@ function musicRow(k, i) {
   };
   const add = document.createElement("button");
   add.type = "button"; add.className = "kmusbtn"; add.textContent = "＋";
-  add.disabled = !liveLinked();
-  add.title = liveLinked() ? "put a track from this PC onto the robot's card"
+  add.disabled = !robotLinked();
+  add.title = robotLinked() ? "put a track from this PC onto the robot's card"
                            : "connect the robot to add a track";
   add.onclick = () => pickMusicFile(k);
   row.append(document.createTextNode("♪"), sel, vol, rep, play, stop, add);
@@ -208,7 +309,13 @@ function parseSeqYaml(text) {
   // own words and handed back to the file and to the hub, so a show edited
   // here keeps its music instead of losing it on the way through (A24-22).
   let pend = [];
+  // buildYaml writes a move's name as an indented comment line above it. It
+  // was thrown away with every other comment, so reopening a saved YAML lost
+  // every move name. File-level comments (column 0) are not names.
+  let pendName = "";
   for (const raw of text.split(/\r?\n/)) {
+    const nm = raw.match(/^\s+#\s*(.*?)\s*$/);
+    if (nm) { pendName = nm[1]; continue; }
     const line = raw.replace(/#.*$/, "").trimEnd();
     let m;
     if ((m = line.match(/^name:\s*(.+)$/))) out.name = m[1].trim();
@@ -221,10 +328,19 @@ function parseSeqYaml(text) {
       if ((nums.length === ARMJ || nums.length === NJ) && nums.every(n => !isNaN(n))) {
         while (nums.length < NJ) nums.push(90);
         const k = { pose: nums.map((v,i)=>clampJ(i,v)), t: m[2] ? +m[2] : 0, hold: 0 };
+        // A time from the FILE is deliberately NOT pinned. Pinning it was
+        // tried on 2026-09-23 and broke the thing every sequence relies on:
+        // changing Show speed re-times a loaded sequence, which is what makes
+        // a re-edit follow the new pace (check_sequences, "leaves its
+        // neighbours alone"). A pin is for a time THIS person typed or pinned
+        // in THIS session - that is what was asked for, and no more. Anyone
+        // who wants a loaded time held presses the pin on it, once.
         // a speed step before this pose that differs from the sequence speed is
         // that MOVE's own speed, so it survives a round trip through the file
         if (curSpeed && curSpeed !== out.speed) k.dps = curSpeed;
         if (pend.length) { k.cues = pend; out.cues += pend.length; pend = []; }
+        if (pendName) k.name = pendName;
+        pendName = "";
         out.keys.push(k);
       } else out.skipped++;
     } else if ((m = line.match(/^\s*-\s*wait:\s*(\d+)/))) {
@@ -271,11 +387,17 @@ function loadParsedSeq(p, sourceLabel) {
     (p.speed >= 5 ? ` at its own ${Math.round(p.speed)} °/s` : "") +
     (p.cues ? ` with ${p.cues} music/light step(s), which play with the show and are written back on export` : "") +
     (p.skipped ? ` (${p.skipped} step(s) this editor does not read — kept only in the original file)` : "") +
-    " — edit, then Export / Upload again";
+    " — edit, then Save";
+  // Just opened = matches the file. From the robot's SD it is not a file on
+  // this PC, so saving it here still asks before replacing one.
+  const local = sourceLabel.startsWith("sequences/")
+    ? sourceLabel.slice(10).replace(/\.yaml$/, "") : "";
+  markSaved(workSig(), local, p.skipped || 0);
 }
 async function editLocalSeq() {
   const f = $("seqList").value;
   if (!f) return;
+  if (!(await askUnsaved("open " + f))) return;
   // A missing file must say so: its 404 body parsed as YAML reported
   // "no pose steps found", which reads like an empty sequence, not a wrong one.
   const r = await fetch("/api/loadseq?name=" + encodeURIComponent(f));
@@ -288,6 +410,7 @@ async function editLocalSeq() {
   loadParsedSeq(parseSeqYaml(await r.text()), "sequences/" + f);
 }
 async function editSdSeq(fname) {
+  if (!(await askUnsaved("open " + fname + " from the robot"))) return;
   try {
     const text = await sdDownload(fname);
     loadParsedSeq(parseSeqYaml(text), "robot SD " + fname);
@@ -306,6 +429,7 @@ async function playSavedSeq(sourceLabel, getText) {
     notice(stat.textContent);
     return;
   }
+  if (!(await askUnsaved("play " + sourceLabel))) { stat.textContent = ""; return; }
   if (playing) togglePlay();          // swap timelines only while stopped
   const before = keys;
   loadParsedSeq(parseSeqYaml(text), sourceLabel);
@@ -326,6 +450,25 @@ async function playLocalSeq() {
 }
 async function playSdSeq(fname) {
   await playSavedSeq("robot SD " + fname, () => sdDownload(fname));
+}
+// Delete a saved YAML (user 2026-09-17). The hub moves it to
+// sequences/.deleted/, so a mis-click can still be undone by hand.
+async function deleteLocalSeq() {
+  const f = $("seqList").value;
+  if (!f) { $("tlStat").textContent = "pick a saved YAML in the list first."; return; }
+  if (!confirm("Delete " + f + "?\n\nIt is moved to sequences/.deleted on this PC, not erased.")) return;
+  try {
+    const r = await fetch("/api/seqdelete", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: f }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) throw new Error(j.need_login ? "log in first" : (j.error || "HTTP " + r.status));
+    $("tlStat").textContent = f + " deleted (kept in sequences/.deleted).";
+    await refreshSeqs();
+    seqsChanged();
+  } catch (e) {
+    $("tlStat").textContent = "could not delete " + f + ": " + (e.message || e);
+    notice($("tlStat").textContent);
+  }
 }
 async function refreshSeqs() {
   const r = await fetch("/api/list?kind=sequences").then(r => r.json());

@@ -2,7 +2,7 @@
 """Ask several models the same question, then have one judge the answers.
 
     python tools/ai_panel.py --dir shared/web --ask "what is wrong with themes.css"
-    python tools/ai_panel.py --dir . --ask "..." --models gemini-3.1-pro-high,claude-opus-4-6-thinking
+    python tools/ai_panel.py --dir . --ask "..." --models gemini-3.8-flash-high,gemini-3.7-flash-high
     python tools/ai_panel.py --list                       which models exist today
 
 WHY
@@ -115,8 +115,9 @@ BRIEF = ROOT / "tools" / "ai_brief.txt"
 # Agent tool. Both halves still run - see the plan and CLAUDE.md - and the rule
 # that matters is unchanged: every finding is a shortlist to check against the
 # code, never a fact.
-PANEL = ["gemini-3.1-pro-high", "gemini-3.7-flash-high"]
-HEAD = "gemini-3.1-pro-high"
+# No Pro (user 2026-09-17): *not better enough and consume my token a lot*.
+PANEL = ["gemini-3.8-flash-high", "gemini-3.7-flash-high"]
+HEAD = "gemini-3.8-flash-high"
 
 # The SHAPE of an answer, enforced by agy rather than asked for in words.
 # Measured 2026-08-19 on the same question with the same terse brief:

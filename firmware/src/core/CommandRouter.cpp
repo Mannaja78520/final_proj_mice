@@ -7,11 +7,13 @@
 #include "core/SequencePlayer.h"
 #include "core/Util.h"
 #include "core/WebPortal.h"
+#include "core/SecureTalk.h"
 #include "core/WifiArgs.h"
 #include "modules/Module.h"
 #include "modules/ModuleFactory.h"
 #include "core/HwConfig.h"
 #include "core/UserStore.h"
+#include "core/Perf.h"
 #include <WiFi.h>
 #include <config.h>
 #include <mbedtls/base64.h>
@@ -31,10 +33,31 @@ void CommandRouter::begin(Identity* id, Module* module, SDStore* sd, SequencePla
     mtx_ = xSemaphoreCreateRecursiveMutex();
 }
 
-void CommandRouter::lock()   { xSemaphoreTakeRecursive(mtx_, portMAX_DELAY); }
-void CommandRouter::unlock() { xSemaphoreGiveRecursive(mtx_); }
+void CommandRouter::lock() {
+    xSemaphoreTakeRecursive(mtx_, portMAX_DELAY);
+    if (depth_++ == 0) { heldAt_ = micros(); strcpy(what_, "other"); }
+}
+void CommandRouter::unlock() {
+    // a long hold here is a servo frame waiting - PERF? names the holder
+    if (--depth_ == 0) perf::held(micros() - heldAt_, what_);
+    xSemaphoreGiveRecursive(mtx_);
+}
+
+// Read-only commands that touch nothing the router lock guards: the SD card has
+// its own lock, PERF? its own counters. Taking the router lock for them made a
+// FILES listing hold every servo frame for 20 ms (nong 67, 2026-09-21).
+// /api/files already ran without it. Add a command here ONLY if it reads no
+// module, identity or sequence state.
+static bool needsNoLock(const String& line) {
+    String argv[2];
+    Util::tokenize(line, argv, 2);
+    String c = argv[0];
+    c.toUpperCase();
+    return c == "FILES" || c == "FREAD" || c == "PERF?";
+}
 
 String CommandRouter::handle(const String& line) {
+    if (needsNoLock(line)) return handleLocked(line);
     lock();
     // Anything that moves the robot takes the robot: the board stops playing
     // its own sequence rather than running two clocks into the same servos.
@@ -90,6 +113,8 @@ String CommandRouter::handleLocked(const String& line) {
     int argc = Util::tokenize(line, argv, 16);
     if (argc < 0) return "ERR too many words (max 16)";
     if (argc == 0) return "ERR empty";
+    if (xSemaphoreGetMutexHolder(mtx_) == xTaskGetCurrentTaskHandle())
+        strlcpy(what_, argv[0].c_str(), sizeof(what_));   // only the holder names it
     String cmd = argv[0];
     cmd.toUpperCase();
 
@@ -135,6 +160,56 @@ String CommandRouter::handleLocked(const String& line) {
         if (WebPortal::instance()) WebPortal::instance()->wifiCommand(id_->wifiMode());
         return g.length() ? "OK group \"" + g + "\" appass=" + id_->apPassword()
                           : String("OK ungrouped (shared fallback password)");
+    }
+
+    // APPASS — this module's own WiFi password (user 2026-09-28: a default
+    // to get in the first time, then the owner can change it).
+    //   APPASS            -> which password is in use and where it comes from
+    //   APPASS <8-63>     -> set it, the WiFi comes back up with it at once
+    //   APPASS CLEAR      -> back to the group one, or 12345678 ungrouped
+    if (cmd == "APPASS") {
+        if (argc == 1) {
+            const char* from = id_->apPassOverride().length() ? "set"
+                             : (id_->group().length() ? "group" : "default");
+            return String("APPASS ") + from + " appass=" + id_->apPassword();
+        }
+        String p = Util::joinFrom(argv, argc, 1);
+        String up = p;
+        up.toUpperCase();
+        if (up == "CLEAR") p = "";
+        if (!id_->setApPass(p)) return "ERR 8-63 characters, no spaces";
+        if (WebPortal::instance()) WebPortal::instance()->wifiCommand(id_->wifiMode());
+        return "OK appass=" + id_->apPassword();
+    }
+
+    // TALK — the secure page a phone needs for its microphone (SecureTalk).
+    //   TALK | TALK?   -> on or off, its address, free memory
+    //   TALK ON        -> raise it (on demand: TLS costs RAM)
+    //   TALK OFF       -> take it down
+    if (cmd == "TALK" || cmd == "TALK?") {
+        String a = argc > 1 ? argv[1] : "";
+        a.toUpperCase();
+        if (a == "ON") {
+            String why;
+            return SecureTalk::start(why) ? "OK " + SecureTalk::status() : "ERR " + why;
+        }
+        if (a == "OFF") { SecureTalk::stop(); return "OK talk off"; }
+        return SecureTalk::status();
+    }
+
+    // PEERPASS — the hub hands each module its group-mates' WiFi passwords,
+    // because a module cannot know a password its neighbour's owner chose.
+    //   PEERPASS                 -> the names it holds (never the passwords)
+    //   PEERPASS <wifi> <pass>   -> remember one
+    //   PEERPASS CLEAR           -> forget them all
+    if (cmd == "PEERPASS") {
+        if (argc == 1) return "PEERPASS " + id_->peerNames();
+        String a = argv[1];
+        a.toUpperCase();
+        if (argc == 2 && a == "CLEAR") { id_->clearPeerPass(); return "OK peers forgotten"; }
+        if (argc != 3) return "ERR usage: PEERPASS <wifi name> <password> | CLEAR";
+        return id_->setPeerPass(argv[1], argv[2]) ? "OK peer " + argv[1]
+                                                  : "ERR bad name or password (8-63, no spaces)";
     }
 
     // WIFI — see it and change it live. SET WIFI still works and does the
@@ -258,37 +333,64 @@ String CommandRouter::handleLocked(const String& line) {
     }
 
     // ---- login accounts for the Setup page (stored in NVS) ----
-    //   AUTH <user> <pass>                 -> OK <user> | ERR bad login
-    //   USER LIST <user> <pass>            -> ["manny",...]
-    //   USER ADD  <user> <pass> <new> <newpass>
+    //   AUTH <user> <pass>                 -> OK <user> [role] | ERR bad login
+    //   USER LIST <user> <pass>            -> [{"name":...,"role":...,"mustChange":...}]
+    //   USER ADD  <user> <pass> <new> <newpass> [role]
     //   USER DEL  <user> <pass> <target>
-    //   USER PASS <user> <pass> <newpass>  -> change your own password
+    //   USER PASS <user> <pass> <newpass> [target]  -> change your own password (or super_admin changes target)
+    //   USER RENAME <user> <pass> <newname> [target]-> rename self (or super_admin renames target)
     if (cmd == "AUTH") {
         if (argc < 3) return "ERR usage: AUTH <user> <pass>";
-        return users.verify(argv[1], argv[2]) ? "OK " + argv[1] : "ERR bad login";
+        if (!users.verify(argv[1], argv[2])) return "ERR bad login";
+        return "OK " + argv[1] + " " + users.role(argv[1]);
     }
     if (cmd == "USER") {
-        if (argc < 2) return "ERR usage: USER LIST|ADD|DEL|PASS <user> <pass> ...";
+        if (argc < 2) return "ERR usage: USER LIST|ADD|DEL|PASS|RENAME <user> <pass> ...";
         String sub = argv[1];
         sub.toUpperCase();
         // every USER op requires a valid caller (argv[2]=user, argv[3]=pass)
         if (argc < 4 || !users.verify(argv[2], argv[3])) return "ERR auth";
-        if (sub == "LIST") return users.listJson();
+        String caller = argv[2];
+        bool callerIsSuper = users.isSuper(caller);
+
+        if (sub == "LIST") return users.listJson(caller);
         if (sub == "ADD") {
-            if (argc < 6) return "ERR usage: USER ADD <user> <pass> <new> <newpass>";
-            return users.add(argv[4], argv[5]) ? "OK added " + argv[4]
-                                               : "ERR exists or bad name/pass (no spaces)";
+            if (!callerIsSuper) return "ERR only super_admin can add accounts";
+            if (argc < 6) return "ERR usage: USER ADD <user> <pass> <new> <newpass> [role]";
+            String role = (argc >= 7) ? argv[6] : "user";
+            return users.add(argv[4], argv[5], role) ? "OK added " + argv[4]
+                                                     : "ERR exists or bad name/pass (no spaces)";
         }
         if (sub == "DEL") {
+            if (!callerIsSuper) return "ERR only super_admin can remove accounts";
             if (argc < 5) return "ERR usage: USER DEL <user> <pass> <target>";
-            return users.remove(argv[4]) ? "OK removed " + argv[4]
-                                         : "ERR not found or last user";
+            String target = argv[4];
+            if (users.isSuper(target) && users.countSupers() <= 1) {
+                return "ERR cannot remove the last super_admin";
+            }
+            return users.remove(target) ? "OK removed " + target
+                                        : "ERR not found or last user";
         }
         if (sub == "PASS") {
-            if (argc < 5) return "ERR usage: USER PASS <user> <pass> <newpass>";
-            return users.setPass(argv[2], argv[4]) ? "OK password changed" : "ERR bad password";
+            if (argc < 5) return "ERR usage: USER PASS <user> <pass> <newpass> [target]";
+            String newpass = argv[4];
+            String target = (argc >= 6) ? argv[5] : caller;
+            if (target != caller && !callerIsSuper) {
+                return "ERR only super_admin can change someone else's password";
+            }
+            return users.setPass(target, newpass) ? "OK password changed" : "ERR bad password";
         }
-        return "ERR USER LIST|ADD|DEL|PASS";
+        if (sub == "RENAME") {
+            if (argc < 5) return "ERR usage: USER RENAME <user> <pass> <newname> [target]";
+            String newname = argv[4];
+            String target = (argc >= 6) ? argv[5] : caller;
+            if (target != caller && !callerIsSuper) {
+                return "ERR only super_admin can rename someone else's account";
+            }
+            return users.rename(target, newname) ? "OK renamed " + target + " to " + newname
+                                                 : "ERR exists or bad name";
+        }
+        return "ERR USER LIST|ADD|DEL|PASS|RENAME";
     }
 
     // ---- hardware pin map (stored in NVS, set from the web; reboot to apply)
@@ -514,6 +616,7 @@ String CommandRouter::handleLocked(const String& line) {
     }
     if (cmd == "FWABORT") return fw_.abort();
     if (cmd == "FWSTAT") return fw_.stat();
+    if (cmd == "PERF?") return perf::report();
 
     if (cmd == "REBOOT") {
         requestReboot();
@@ -526,7 +629,15 @@ String CommandRouter::handleLocked(const String& line) {
 }
 
 void CommandRouter::buildStatus(JsonDocument& doc) {
+    // The radio's own state needs no router lock: read it first, so the
+    // WiFi driver calls do not hold up the servo frames waiting on the lock.
+    bool sta = WiFi.status() == WL_CONNECTED;
+    bool ap = WiFi.getMode() & WIFI_MODE_AP;
+    String ip = sta ? WiFi.localIP().toString() : (ap ? WiFi.softAPIP().toString() : "");
+    String ssid = sta ? WiFi.SSID() : "";
+    int rssi = sta ? WiFi.RSSI() : 0;
     lock();
+    strcpy(what_, "status");
     doc["id"] = id_->id();
     // Which physical board this is, so a hub that meets it twice - down a
     // cable and over WiFi - knows it is meeting one board.
@@ -554,13 +665,11 @@ void CommandRouter::buildStatus(JsonDocument& doc) {
     // wifi info here (not only on the web) so INFO over USB/RS485 tells an
     // app where to find the module's website/HTTP API
     JsonObject wifi = doc["wifi"].to<JsonObject>();
-    bool sta = WiFi.status() == WL_CONNECTED;
-    bool ap = WiFi.getMode() & WIFI_MODE_AP;
     wifi["mode"] = sta ? "sta" : (ap ? "ap" : "off");
     wifi["wmode"] = id_->wifiMode();   // configured mode: on | ap | off (default on)
-    wifi["ip"] = sta ? WiFi.localIP().toString() : (ap ? WiFi.softAPIP().toString() : "");
-    wifi["ssid"] = sta ? WiFi.SSID() : "";
-    wifi["rssi"] = sta ? WiFi.RSSI() : 0;
+    wifi["ip"] = ip;
+    wifi["ssid"] = ssid;
+    wifi["rssi"] = rssi;
     wifi["host"] = id_->hostname();
     module_->status(doc["module"].to<JsonObject>());
     unlock();
@@ -573,12 +682,14 @@ void CommandRouter::requestReboot(uint32_t delayMs) {
 
 void CommandRouter::loop() {
     lock();
+    strcpy(what_, "loop");
     module_->loop();
     seq_->loop();
     unlock();
 
     if (rebootAt_ && (int32_t)(millis() - rebootAt_) >= 0) {
         LOGF(sys, "rebooting...");
+        if (beforeReboot) beforeReboot();
         delay(50);
         ESP.restart();
     }

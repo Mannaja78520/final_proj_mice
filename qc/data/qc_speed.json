@@ -15,5 +15,12 @@
   // failure (too many browsers). 9 went red three gates in a row the same
   // night, a different browser check each time, all green alone, while the
   // PC was busy (gates 298 s, not 174 s). 6 keeps the margin.
-  "browserLanes": 6
+  "browserLanes": 6,
+
+  // A browser check that fails in the parallel run is run ALONE this many
+  // times. All green = counted passed but printed FLAKY; any red = the
+  // original failure stands and blocks. User decision 2026-09-22 (A26-93):
+  // four full gates that night, main included, each red on a different
+  // browser check that passed alone. 0 turns the rule off.
+  "browserRetriesAlone": 2
 }

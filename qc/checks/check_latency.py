@@ -84,7 +84,7 @@ def run(t):
     t.contains(web, '"/api/cam.stream"', "the board serves an MJPEG stream")
     t.contains(web, "camStreaming_",
                "one viewer at a time — a second would hold one of four connections")
-    hub = (F.HUB / "main.py").read_text(encoding="utf-8", errors="replace")
+    hub = F.hub_src()
     t.contains(hub, 'what == "cam.stream"', "and the hub can pipe it through")
 
     # ---- 5. the hub lets a browser KEEP its connection --------------

@@ -50,5 +50,6 @@
     #include "esp32_hardware_cam_module.h"
     #endif
     #include "esp32_hardware_nong_module.h"
+    #include "esp32_hardware_dummy_module.h"
 
 #endif

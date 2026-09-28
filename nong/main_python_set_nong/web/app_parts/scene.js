@@ -59,6 +59,10 @@ const VIEWS = {
   bottom: { dir: [0, -1, 0], up: [0, 0, 1],  plane: "xz" },
   iso:    { dir: [0.6, 0.42, 0.68], up: [0, 1, 0], plane: "cam" },
 };
+// Which flat plane the view is locked to, "" while the view is free 3D.
+// Read by the drag code and by the status line, so one answer serves both.
+let viewPlane = "";
+function flatView() { return !!viewPlane; }
 function setView(name) {
   const v = VIEWS[name];
   if (!v) return;
@@ -74,6 +78,15 @@ function setView(name) {
   // a named plane view is flat (orthographic); iso/free keeps perspective
   useProjection(v.plane !== "cam");
   controls.update();
+  // A PLANE VIEW STAYS FLAT. Orbiting is the only way to leave the plane, and
+  // a plain left-drag orbits - so picking Front, taking hold of the arm and
+  // pulling quietly turned the flat view back into a 3D one, and the drag
+  // plane the person had chosen no longer matched what they were looking at
+  // (user 2026-09-23: *i see in 2d but the arm when am drag it in 3d so i
+  // cannot drag it in 2d anymore*). Pan and zoom stay; the 3D button is how
+  // you come back out.
+  viewPlane = v.plane === "cam" ? "" : v.plane;
+  controls.enableRotate = !viewPlane;
   // drive the drag plane + its dropdown to match the view
   if ($("dragPlane")) $("dragPlane").value = v.plane;
   document.querySelectorAll("#viewCube button").forEach(b =>

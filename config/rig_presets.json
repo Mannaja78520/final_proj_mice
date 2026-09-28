@@ -1,0 +1,229 @@
+{
+  "_why": "BODIES Nong Studio can be set to, in one place. Asked 2026-09-18 (A26-72): the real robot's dimensions, from the STEP file, as a preset somebody picks - not numbers typed into a file. Add a robot by adding an entry; Studio's picker and the hub's /api/rigpresets both read this, so nothing has to be edited in code.",
+  "_fields": {
+    "from_step": "which STEP files and parts tools/step_preset.py measures - run it with --write after the CAD changes",
+    "servos": "per joint: servo type (firmware/config/servos.json), gear [pinion, gear] in whole teeth, and optional joint limits. Studio asks before applying these",
+    "shrug_linkage": "written by tools/step_preset.py: the 4-bar lengths and the servo angle for each shrug angle",
+    "id": "what Studio stores",
+    "label": "what a person reads in the picker",
+    "source": "where the numbers come from - a file, a measurement, or a guess",
+    "dims": "the same names Studio's rig uses (mm): shoulderX is HALF the distance between the shoulders, upperLen/foreLen are the arm links, torso* is the body box, shrugPivot is how far above the shoulder line the see-saw bearing sits",
+    "reach_mm": "upperLen + foreLen, written down so a wrong entry is obvious",
+    "note": "what the preset is for, and what is still a guess in it"
+  },
+  "presets": [
+    {
+      "id": "nong_step_2026_09",
+      "label": "Nong, measured from the STEP file (Sep 2026)",
+      "source": "model/21_09_2026_nangrum_full/nong_assembly.STEP, measured by A30-1/A30-2 into analysis/nong_analysis.json",
+      "dims": {
+        "shoulderX": 88,
+        "shoulderY": 110,
+        "upperLenL": 128.7,
+        "upperLenR": 128.7,
+        "foreLenL": 167.64,
+        "foreLenR": 167.64,
+        "torsoW": 100,
+        "torsoH": 250,
+        "torsoD": 70,
+        "shrugPivot": 68.1
+      },
+      "reach_mm": 296.34,
+      "from_step": {
+        "dir": "model/21_09_2026_nangrum_full",
+        "robot": "nong_assembly.STEP",
+        "analysis": "model/21_09_2026_nangrum_full/analysis/nong_analysis.json",
+        "up_axis": 1,
+        "shrug": {
+          "pivot": "608zz.step.STEP",
+          "servo_horn": "swing_bar_servo.STEP",
+          "coupler": "swing_bar_bar.STEP",
+          "rocker": "nong_shoulder_assembly.STEP",
+          "range_deg": 16
+        }
+      },
+      "servos": {
+        "L_SH_P": {
+          "servo": "pdi1181mg",
+          "gear": [
+            14,
+            19
+          ]
+        },
+        "L_SH_R": {
+          "servo": "pdi1181mg",
+          "gear": [
+            14,
+            19
+          ]
+        },
+        "L_EL_P": {
+          "servo": "mg90s",
+          "gear": [
+            12,
+            13
+          ]
+        },
+        "L_EL_R": {
+          "servo": "mg90s",
+          "gear": [
+            12,
+            13
+          ]
+        },
+        "R_SH_P": {
+          "servo": "pdi1181mg",
+          "gear": [
+            14,
+            19
+          ]
+        },
+        "R_SH_R": {
+          "servo": "pdi1181mg",
+          "gear": [
+            14,
+            19
+          ]
+        },
+        "R_EL_P": {
+          "servo": "mg90s",
+          "gear": [
+            12,
+            13
+          ]
+        },
+        "R_EL_R": {
+          "servo": "mg90s",
+          "gear": [
+            12,
+            13
+          ]
+        },
+        "WAIST": {
+          "servo": "tiankong35",
+          "gear": [
+            1,
+            1
+          ]
+        },
+        "SHRUG": {
+          "servo": "tiankong35",
+          "gear": [
+            50,
+            119
+          ],
+          "min": 74,
+          "max": 106
+        }
+      },
+      "note": "Arm links and shoulder spacing are measured: shoulder joint 87.7 mm out from the body centre, upper arm 128.70 mm, forearm 167.64 mm, so the wrist reaches 296.34 mm from the shoulder. The shrug is measured too (tools/step_preset.py): a 4-bar, TD-8135MG servo, servo turns 2.38 deg per shrug deg, +-16 deg shrug = servo -38.1/+38.7 deg, see-saw bearing 68.1 mm above the shoulders. The torso box (torsoW/H/D) is still the drawn stand-in - the real torso is a slim spine, which no box describes.",
+      "shrug_linkage": {
+        "ground_mm": 33.95,
+        "horn_mm": 24.6,
+        "coupler_mm": 38.5,
+        "rocker_mm": 70.06,
+        "cad_pose_tilt_deg": 2.15,
+        "ratio": 2.38,
+        "range_deg": 16,
+        "servo_deg_at_limits": [
+          -38.05,
+          38.7
+        ],
+        "table_shrug_to_servo": [
+          [
+            -16,
+            -38.05
+          ],
+          [
+            -14,
+            -33.32
+          ],
+          [
+            -12,
+            -28.58
+          ],
+          [
+            -10,
+            -23.82
+          ],
+          [
+            -8,
+            -19.06
+          ],
+          [
+            -6,
+            -14.29
+          ],
+          [
+            -4,
+            -9.52
+          ],
+          [
+            -2,
+            -4.76
+          ],
+          [
+            0,
+            0.0
+          ],
+          [
+            2,
+            4.76
+          ],
+          [
+            4,
+            9.53
+          ],
+          [
+            6,
+            14.3
+          ],
+          [
+            8,
+            19.09
+          ],
+          [
+            10,
+            23.91
+          ],
+          [
+            12,
+            28.77
+          ],
+          [
+            14,
+            33.69
+          ],
+          [
+            16,
+            38.7
+          ]
+        ],
+        "pivot_top_frame": [
+          1416.97,
+          883.91,
+          1284.06
+        ]
+      }
+    },
+    {
+      "id": "studio_default",
+      "label": "Studio default (round numbers)",
+      "source": "the built-in DEFAULT_RIG in rig_data.js",
+      "dims": {
+        "shoulderX": 120,
+        "shoulderY": 110,
+        "upperLenL": 110,
+        "upperLenR": 110,
+        "foreLenL": 130,
+        "foreLenR": 130,
+        "torsoW": 100,
+        "torsoH": 250,
+        "torsoD": 70,
+        "shrugPivot": 60
+      },
+      "reach_mm": 240,
+      "note": "Where every new project starts. Kept as a preset so going back is one click after trying another body."
+    }
+  ]
+}

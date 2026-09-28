@@ -39,6 +39,7 @@ static const char WEB_UI_HTML[] PROGMEM = R"rawliteral(<!doctype html>
      same URL when this page is reached over USB — one link, either transport. -->
 <link rel="stylesheet" href="/mice.css">
 <script src="/mice.js"></script>
+<script src="/cast.js"></script>
 <style>
 /* Only what is the MODULE WEBSITE's own. Tokens, the reset, cards, buttons,
    inputs, badges, the quiet caption and the shared floor come from mice.css. */
@@ -170,10 +171,9 @@ header{padding:var(--sp-3) 0;gap:var(--sp-3)}
          same as a board with no login at all. -->
     <div id="mustChangeBox" class="banner err" style="display:none">
       <div>
-        <b>You are logged in. This board still has the password it came with.</b>
-        Every board that has not been changed has the same one, so anyone who
-        has seen another board can open this one. Choose a new password to
-        unlock Setup.
+        <b>You are logged in. This account still has the default password.</b>
+        Every board has the same one, so anyone who has seen another board can
+        open this one. Setup is open; please choose a new password.
         <div class="row">
           <span class="lbl">New</span>
           <input id="mcPass" type="password" autocomplete="new-password" style="width:170px">
@@ -185,22 +185,29 @@ header{padding:var(--sp-3) 0;gap:var(--sp-3)}
 
     <div id="usersBox" style="display:none">
       <div class="row">
-        <span class="statline">logged in as <b id="liWho">-</b> — the Setup cards below are now editable.</span>
+        <span class="statline">logged in as <b id="liWho">-</b> <span id="liRole" class="badge"></span> — the Setup cards below are now editable.</span>
         <button onclick="doLogout()">Log out</button>
       </div>
-      <div class="row"><span class="lbl">Accounts</span><span id="userList" class="statline">-</span></div>
-      <div class="row">
+      <div class="row"><span class="lbl">Accounts</span><div id="userList" class="statline" style="display:flex;flex-wrap:wrap;gap:4px">-</div></div>
+      <div class="row" id="addUserRow">
         <span class="lbl">Add user</span>
         <input id="nuUser" placeholder="username" style="width:120px">
-        <input id="nuPass" placeholder="password (no spaces)" style="width:150px">
+        <input id="nuPass" type="password" placeholder="password" style="width:130px">
+        <select id="nuRole" title="what the new person may do">
+          <option value="user">user</option>
+          <option value="super_admin">super_admin</option>
+        </select>
         <button onclick="addUser()">Add</button>
       </div>
       <div class="row">
-        <span class="lbl">My password</span>
-        <input id="pwNew" placeholder="new password" style="width:150px">
-        <button onclick="changeMyPass()">Change</button>
+        <span class="lbl">My account</span>
+        <input id="rnUser" placeholder="new username" style="width:120px">
+        <button onclick="renameMyUser()">Rename</button>
+        <input id="pwNew" type="password" placeholder="new password" style="width:130px">
+        <button onclick="changeMyPass()">Change password</button>
         <span class="statline" id="userStat"></span>
       </div>
+      <div class="mini tech" style="margin-top:4px">Accounts stored hashed (SHA-256 + salt) in NVS. The last super_admin cannot be removed or demoted.</div>
     </div>
   </div>
 
@@ -269,12 +276,26 @@ header{padding:var(--sp-3) 0;gap:var(--sp-3)}
     <div id="jointRows"></div>
     <div class="statline" id="jxyz" style="white-space:pre-wrap"></div>
     <div class="row">
-      <button onclick="cmd('HOME')">Neutral</button>
+      <button onclick="cmd('HOME')">Go home</button>
       <button onclick="cmd('ATTACH')">Attach (power on)</button>
       <button class="danger" onclick="cmd('RELAX')" title="cut servo power (detach) - the arms go limp">&#9211; Stop (power off)</button>
       <span class="lbl">Speed &deg;/s</span>
       <input type="number" id="ndps" min="5" max="600" style="width:80px" onchange="cmd('SPEED '+this.value)">
       <span class="statline" id="nongStat"></span>
+    </div>
+    <div id="homeCard" style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px">
+      <h2>Start pose (robot home)</h2>
+      <div class="statline">where the arm goes when it powers on and when you press
+        <b>Go home</b>. Setting it does not move the arm.</div>
+      <div class="row">
+        <button class="primary" id="homeHereBtn" onclick="homeHere()">Keep where the arm is now as home</button>
+        <button onclick="cmd('HOME')">Go home</button>
+      </div>
+      <div class="row" id="homeRows"></div>
+      <div class="row">
+        <button id="homeSaveBtn" onclick="homeSave()">Save these start angles</button>
+        <span class="statline" id="homeStat">reading the start pose…</span>
+      </div>
     </div>
     <div class="row">
       <span class="lbl">2-ESP pair</span>
@@ -287,11 +308,13 @@ header{padding:var(--sp-3) 0;gap:var(--sp-3)}
 
     <div class="setupCard" style="display:none;border-top:1px solid var(--line);margin-top:12px;padding-top:10px">
       <h2>Zero position</h2>
-      <div class="statline">jog the arms straight with the sliders (Attach on), then
-        press <b>Set zero</b> — this pose becomes home = 90&deg; (the arm won't move).</div>
+      <div class="statline">for fixing a servo horn that sits crooked: jog the arm to
+        where it <b>should</b> be for its start pose (Attach on), then press
+        <b>Set zero</b>. The arm won't move, and the start angles above stay the same.</div>
       <div class="row">
-        <button class="primary" onclick="cmd('SETZERO')">&#9678; Set zero (current = home)</button>
+        <button class="primary" onclick="zeroSet()">&#9678; Set zero here</button>
         <button onclick="cmd('ZERO')">&#8962; Move to zero</button>
+        <span class="statline" id="zeroStat"></span>
       </div>
     </div>
 
@@ -357,19 +380,69 @@ header{padding:var(--sp-3) 0;gap:var(--sp-3)}
     </div>
     <div class="statline" id="nowPlaying">stopped</div>
 
-    <!-- Live sound from the PC (A24-32/A24-34). Gemini Pro put it here rather
+    <!-- Live sound to the robot (A24-32/A24-34). Gemini Pro put it here rather
          than on the hub home: the thing it needs is a robot, and this is the
-         page you are on when you have one. It only works through the hub -
-         the browser sends the sound to the hub, which sends it to the board -
-         so on a board opened by its own address it says so instead of failing. -->
+         page you are on when you have one. Three sources, each with its own
+         switch, mixed into one stream; through the hub it goes PC to hub to
+         board, on the board's own address (a phone on the robot's WiFi) it
+         goes straight to the board. -->
     <div class="row" style="margin-top:8px">
-      <button class="primary" id="castBtn" onclick="castToggle()">&#127911; Play this PC sound</button>
-      <button id="castMicBtn" onclick="castMic()">&#127908; Talk through the robot</button>
+      <label><input type="checkbox" id="cast_song" onchange="castSource('song',this.checked)"> &#127925; song</label>
+      <input type="file" id="castFile" accept="audio/*" style="flex:1;min-width:0"
+             onchange="if(this.files[0]){$('cast_song').checked=true; if(castOn){castSource('song',false).then(()=>castSource('song',true));}}">
+    </div>
+    <div class="row">
+      <label id="castPcRow"><input type="checkbox" id="cast_pc" onchange="castSource('pc',this.checked)"> &#128187; this PC sound</label>
+      <label><input type="checkbox" id="cast_mic" onchange="castSource('mic',this.checked)"> &#127908; microphone</label>
+    </div>
+    <div class="row">
+      <button class="primary" id="castBtn" onclick="castToggle()">&#127911; Send sound to the robot</button>
       <span class="lbl" id="castLevel" style="min-width:64px"></span>
     </div>
-    <div class="statline" id="castStat">the robot can play whatever this PC is playing</div>
+    <div class="row" id="castSecure" style="display:none">
+      <button onclick="castSecurePage()">&#127908; Microphone page</button>
+      <span class="lbl">opens the robot's secure page, where a phone allows the microphone</span>
+    </div>
+    <div class="statline" id="castStat" aria-live="polite">pick what the robot should play - a song, this PC sound, the microphone, or several at once</div>
   </div>
 
+
+<!--#type dummy-->
+  <div class="card" data-tab="control" id="dummyCard" style="grid-column:1/-1">
+    <h2>Dummy pose</h2>
+    <div class="statline">bend the dummy by hand: each joint shows the angle it would send to the robot.
+      Nong Studio reads these to pose the 3D model or the real robot.</div>
+    <div id="dummyRows"></div>
+    <div class="statline" id="dummyStat"></div>
+  </div>
+  <div class="card setupCard" data-tab="setup" id="dummyCal" style="grid-column:1/-1;display:none">
+    <h2>Dummy calibration</h2>
+    <div class="statline">hold the dummy in the robot's start pose and press <b>Start pose here</b>
+      (or one joint's <b>90&deg; here</b>). <b>Turn</b> flips a pot fitted the other way round;
+      <b>Travel</b> is how many degrees the pot turns end to end; <b>Min</b>/<b>Max</b> keep
+      the angle inside what the robot allows.</div>
+    <div class="row">
+      <button class="primary" onclick="dummyZeroAll()">&#9678; Start pose here (all joints)</button>
+      <span class="lbl" style="min-width:0">at</span>
+      <input type="number" id="dzAll" value="90" min="0" max="180" style="width:70px"> &deg;
+      <button onclick="dummyCmd('DCAL CLEAR')">Back to defaults</button>
+    </div>
+    <div id="dummyCalRows"></div>
+    <h2 style="margin-top:12px">Wiring</h2>
+    <div class="statline">ten pots share one 16-channel analog switch (CD74HC4067): its signal pin
+      and its four select pins. <b>Pot #</b> above is the switch channel. Without the switch,
+      <b>Pot #</b> is the pot's own pin (32-39) and at most six joints fit.</div>
+    <div class="row">
+      <span class="lbl" style="min-width:0">signal</span><input type="number" id="dmSig" style="width:64px">
+      <span class="lbl" style="min-width:0">select</span>
+      <input type="number" id="dmS0" style="width:56px"><input type="number" id="dmS1" style="width:56px">
+      <input type="number" id="dmS2" style="width:56px"><input type="number" id="dmS3" style="width:56px">
+      <button onclick="dummyMuxSave()">Save wiring</button>
+      <button onclick="dummyCmd('DMUX OFF')">No switch</button>
+    </div>
+    <div class="statline" id="dummyCalStat"></div>
+  </div>
+<!--#end-->
 
 <!--#type cam-->
   <div class="card" data-tab="control" id="camCard" style="grid-column:1/-1">
@@ -588,6 +661,8 @@ function render(){
   showCard('rgbCard',has('rgb'));
   showCard('audCard',has('audio'));
   showCard('camCard',has('camera'));
+  showCard('dummyCard',has('pots'));
+  showCard('dummyCal',has('pots'));
   applyTabs();          // one pass, after the capabilities are known
   if(st.wifi){
     $('hwifi').textContent=st.wifi.mode==='ap'?'AP '+st.wifi.ip:(st.wifi.mode==='sta'?st.wifi.ip+' ('+st.wifi.rssi+'dBm)':'off');
@@ -610,6 +685,7 @@ function render(){
   if(typeof audioStatus==='function')audioStatus(m);
   if(typeof nongStatus==='function')nongStatus(m,has);
   if(typeof camStatus==='function')camStatus(m);
+  if(typeof dummyStatus==='function')dummyStatus(m,has);
   if(st.seq)$('seqStat').textContent=st.seq.running?('running '+st.seq.file):'idle';
   if(st.types&&!$('setType').options.length)
     st.types.forEach(t=>{const o=document.createElement('option');o.textContent=t;$('setType').appendChild(o);});
@@ -633,109 +709,26 @@ function audioStatus(m){
   if(document.activeElement.id!=='vol')$('vol').value=m.audio.vol;
   if(document.activeElement.id!=='volNum')$('volNum').value=m.audio.vol;
 }
-// ---- live sound from this PC (A24-32) ------------------------------------
-// The browser captures what the PC is playing, downsamples it to the rate the
-// board plays at, and posts it to the HUB, which paces it out as UDP. The
-// board never decodes anything and never touches its SD card, so this works
-// even on a board whose card is out.
-//
-// The hub routes are called on location.origin on purpose: the shim that makes
-// this page work through the hub rewrites every '/api/' string into '/api/dev/',
-// which is right for board commands and wrong for these.
-var castOn=false,castCtx=null,castStream=null,castNode=null,castRate=22050,castMisses=0,castWhat='';
-function castDev(){ return new URLSearchParams(location.search).get('dev')||''; }
-// Two sources, one pipe. THE PICKER CANNOT BE AVOIDED for the PC's own sound:
-// Chrome and Edge on Windows only hand over system audio together with a screen
-// or a tab, and getDisplayMedia with audio alone is refused (user asked why,
-// 2026-09-07). The microphone has no such rule, which is why talking through
-// the robot is its own button and asks for nothing but the microphone.
-async function castToggle(){ return castStart('pc'); }
-async function castMic(){ return castStart('mic'); }
-async function castStart(how){
-  if(castOn){ castStop('stopped - the robot is quiet again'); return; }
-  if(!castDev()){
-    $('castStat').textContent='this one needs the hub: open this module from the '
-      +'hub page and the button works. The sound goes PC to hub to robot.';
-    return;
+// ---- live sound to the robot: the engine is shared/web/cast.js ------------
+// (loaded in <head>, served from flash like mice.js, and by the secure talk
+// page too). Only what belongs to THIS page lives here.
+// The microphone on a phone needs a secure page. The board raises one on
+// request (TALK ON: it costs memory, so it is not up all the time) and the
+// phone goes there - it warns about the certificate once, because the board
+// made it itself; that is expected.
+async function castSecurePage(){
+  const t=await cmd('TALK ON');
+  if(!/^OK/.test(t)){ castSay1(refusal(t)||('the robot could not open it: '+t)); return; }
+  // The first time, the board makes its certificate first (a second or two),
+  // so wait for it to say "on" instead of opening a page that is not there yet.
+  castSay1('opening the secure page...');
+  for(let i=0;i<20;i++){
+    const s=await cmd('TALK?');
+    if(/ on https/.test(s)){ location.href='https://'+location.hostname+'/talk'; return; }
+    if(/failed/.test(s)){ castSay1('the robot could not open it: '+s.replace(/^TALK /,'')); return; }
+    await new Promise(r=>setTimeout(r,750));
   }
-  try{
-    castStream = how==='mic'
-      ? await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,
-                                                          noiseSuppression:true}})
-      : await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
-  }catch(e){
-    $('castStat').textContent = how==='mic'
-      ? 'the browser did not give the microphone. Press it again and choose Allow.'
-      : 'the browser did not share the sound. Press the button again, pick a '
-        +'screen or a tab, and tick SHARE AUDIO in that window.';
-    return;
-  }
-  // The picture is not wanted and never was: stop the video track at once, so
-  // nothing is captured beyond the sound and the browser's sharing bar goes.
-  castStream.getVideoTracks().forEach(t=>t.stop());
-  if(!castStream.getAudioTracks().length){
-    castStop(how==='mic' ? 'that microphone gave no sound'
-                         : 'no sound in what was shared - start again and tick SHARE AUDIO in the picker');
-    return;
-  }
-  castWhat = how==='mic' ? 'your microphone' : 'this PC sound';
-  var said={};
-  try{
-    const r=await fetch(location.origin+'/api/stream/start',{method:'POST',
-      body:JSON.stringify({dev:castDev(),rate:castRate,name:castWhat})});
-    said=await r.json();
-    if(!r.ok||!said.ok) throw new Error(said.error||('the hub answered '+r.status));
-  }catch(e){
-    castStop(refusal(JSON.stringify(said))||('could not start it: '+(e.message||e)));
-    return;
-  }
-  castCtx=new AudioContext({sampleRate:castRate});
-  const src=castCtx.createMediaStreamSource(castStream);
-  castNode=castCtx.createScriptProcessor(2048,1,1);
-  castNode.onaudioprocess=e=>{
-    const f=e.inputBuffer.getChannelData(0);
-    const pcm=new Int16Array(f.length);
-    let peak=0;
-    for(let i=0;i<f.length;i++){
-      const v=Math.max(-1,Math.min(1,f[i]));
-      if(v>peak)peak=v;
-      pcm[i]=v*32767;
-    }
-    $('castLevel').textContent='|'.repeat(Math.round(peak*8));
-    // A dropped chunk is not worth a message - the next one is 46 ms away -
-    // but a pipe that has stopped taking anything IS, or the page sits there
-    // showing a moving level bar while the robot is silent.
-    fetch(location.origin+'/api/stream/feed',{method:'POST',body:pcm.buffer})
-      .then(r=>{ castMisses = r.ok ? 0 : castMisses+1;
-                 if(castMisses===10) $('castStat').textContent=
-                   'the hub stopped taking the sound - press Stop and start it again'; })
-      .catch(()=>{ if(++castMisses===10) $('castStat').textContent=
-                   'the hub is not answering - press Stop and start it again'; });
-  };
-  src.connect(castNode); castNode.connect(castCtx.destination);
-  // the browser's own stop-sharing button must end it too, or the page says it
-  // is playing while nothing is being sent
-  castStream.getAudioTracks()[0].onended=()=>castStop('sharing ended - the robot is quiet again');
-  castOn=true;
-  $(how==='mic'?'castMicBtn':'castBtn').textContent='Stop';
-  $('castStat').textContent='the robot is playing '+castWhat;
-}
-function castStop(why){
-  castOn=false;
-  // Teardown: an already-closed piece is not worth a line on screen, but it
-  // goes in the technical log rather than nowhere - an empty catch is how the
-  // four bugs check_modsite_errors was written for got in.
-  try{ if(castNode)castNode.disconnect(); }catch(e){ log('! cast: '+e); }
-  try{ if(castCtx)castCtx.close(); }catch(e){ log('! cast: '+e); }
-  try{ if(castStream)castStream.getTracks().forEach(t=>t.stop()); }catch(e){ log('! cast: '+e); }
-  castNode=castCtx=castStream=null;
-  fetch(location.origin+'/api/stream/stop',{method:'POST'})
-    .catch(()=>{ $('castStat').textContent='stopped here, but the hub did not '
-      +'confirm it. If the robot is still playing, press Stop again.'; });
-  $('castBtn').innerHTML='&#127911; Play this PC sound';
-  $('castMicBtn').innerHTML='&#127908; Talk through the robot';
-  $('castLevel').textContent='';
-  if(why)$('castStat').textContent=why;
+  castSay1('the secure page did not come up - try again');
 }
 // What the board itself says about the live sound, in words rather than
 // counters: a designer needs to know it is arriving and whether it is breaking
@@ -745,9 +738,8 @@ function castHealth(a){
   const s=a.stream;
   if(!s.on)return;
   const bad=(s.underruns||0);
-  $('castStat').textContent = bad>2
-    ? 'the sound is breaking up - the WiFi is struggling (' + bad + ' gaps so far)'
-    : 'the robot is playing '+castWhat;
+  if(bad>2) $('castStat').textContent=
+    'the sound is breaking up - the WiFi is struggling (' + bad + ' gaps so far)';
 }
 async function playSel(){
   const v=$('musicSel').value;
@@ -801,6 +793,12 @@ function sendRgb(){
   cmd('RGB '+parseInt(h.substr(1,2),16)+' '+parseInt(h.substr(3,2),16)+' '+parseInt(h.substr(5,2),16));
 }
 //#end
+// The nong's 10 joints, in joint order: 8 arm (2 per universal joint) + WAIST
+// (body yaw) + SHRUG. Shared, because the robot (nong) and its hand-posed copy
+// (dummy) name the same joints the same way. See NongModule.h.
+const JN=['L Shoulder Pitch','L Shoulder Roll','L Elbow Pitch','L Elbow Roll',
+          'R Shoulder Pitch','R Shoulder Roll','R Elbow Pitch','R Elbow Roll',
+          'Waist (turn L/R)','Shrug (rock L up/R down)'];
 //#type nong
 // ---- nong: joints, kinematics readout, servo setup -------------------------
 function nongStatus(m,has){
@@ -822,15 +820,13 @@ function nongStatus(m,has){
       $('svRate').value=(j==='ALL')?hz[0]:hz[+j-1];
   }
 }
-// nong humanoid: 10 logical joints — 8 arm (2 per universal joint) + WAIST
-// (body yaw, left/right) + SHRUG (both shoulders up/down). See NongModule.h.
-const JN=['L Shoulder Pitch','L Shoulder Roll','L Elbow Pitch','L Elbow Roll',
-          'R Shoulder Pitch','R Shoulder Roll','R Elbow Pitch','R Elbow Roll',
-          'Waist (turn L/R)','Shrug (rock L up/R down)'];
 let lastNongM=null;
 function nongModeChanged(){if(lastNongM)renderNong(lastNongM);}
-// forward kinematics with the default geometry (shoulder +-105/95, upper 115,
-// fore 105 mm) - same frame as Nong Studio: origin = torso center, Y up
+// forward kinematics with the MEASURED geometry (A26-72): shoulder +-88/95,
+// upper arm 128.7, forearm 167.6 mm, read off nong_assembly.STEP by A30-1.
+// Same frame as Nong Studio: origin = torso center, Y up. The round numbers
+// that were here before (105/115/105) drew an arm the robot does not have,
+// so the mm this page reported were wrong by up to 60 mm at the wrist.
 function fkArm(j,side){
   const d2r=Math.PI/180,dir=[-1,side>0?1:-1,-1,side>0?1:-1];
   const a=j.map((v,i)=>(v-90)*dir[i]*d2r);
@@ -838,11 +834,11 @@ function fkArm(j,side){
   const rz=t=>[[Math.cos(t),-Math.sin(t),0],[Math.sin(t),Math.cos(t),0],[0,0,1]];
   const mul=(A,B)=>{const C=[[0,0,0],[0,0,0],[0,0,0]];for(let i=0;i<3;i++)for(let k=0;k<3;k++)for(let l=0;l<3;l++)C[i][k]+=A[i][l]*B[l][k];return C;};
   const ap=(M,v)=>[M[0][0]*v[0]+M[0][1]*v[1]+M[0][2]*v[2],M[1][0]*v[0]+M[1][1]*v[1]+M[1][2]*v[2],M[2][0]*v[0]+M[2][1]*v[1]+M[2][2]*v[2]];
-  const sh=[side*105,95,0];
+  const sh=[side*88,95,0];
   const Rs=mul(rx(a[0]),rz(a[1]));
-  const el=ap(Rs,[0,-115,0]).map((v,i)=>v+sh[i]);
+  const el=ap(Rs,[0,-128.7,0]).map((v,i)=>v+sh[i]);
   const Re=mul(Rs,mul(rx(a[2]),rz(a[3])));
-  const wr=ap(Re,[0,-105,0]).map((v,i)=>v+el[i]);
+  const wr=ap(Re,[0,-167.6,0]).map((v,i)=>v+el[i]);
   return {el,wr};
 }
 const fmt3=p=>'('+p.map(v=>Math.round(v)).join(', ')+')';
@@ -867,6 +863,7 @@ function renderNong(m){
       r.appendChild(l);r.appendChild(s);r.appendChild(v);r.appendChild(now);
       box.appendChild(r);
     });
+    homeBuild(m); homeLoad();
   }
   m.joints.forEach((a,i)=>{
     const off=(m.pins&&m.pins[i]<0)||mode!=='slider';
@@ -894,6 +891,46 @@ function renderNong(m){
   if(document.activeElement.id!=='ndps')$('ndps').value=Math.round(m.speed_dps);
   if(document.activeElement.id!=='npeer'&&m.peer!==undefined&&!$('npeer').dataset.touched)
     {$('npeer').value=m.peer;$('nlink').checked=!!m.link;}
+}
+// ---- start pose (NEUTRAL): where the arm goes on power-on and on HOME ----
+function homeBuild(m){
+  const box=$('homeRows'); box.textContent='';
+  JN.forEach((n,i)=>{
+    const l=document.createElement('label');l.className='lbl';l.style.minWidth='0';
+    l.textContent=n+' ';
+    const v=document.createElement('input');v.type='number';v.id='hv'+i;v.style.width='64px';
+    if(m.min&&m.max){v.min=m.min[i];v.max=m.max[i];}
+    l.appendChild(v);box.appendChild(l);
+  });
+}
+function homeFill(a){ a.forEach((d,i)=>{ if($('hv'+i)) $('hv'+i).value=Math.round(d); }); }
+// LIMIT? not NEUTRAL?: it is JSON on the board and the hub's fake alike.
+async function homeLoad(){
+  const r=await cmd('LIMIT?'); let j=null;
+  try{ j=JSON.parse(r); }catch(e){ j=null; }   // not JSON: an ERR, said below
+  if(j&&j.neutral){ homeFill(j.neutral); $('homeStat').textContent=''; return; }
+  $('homeStat').textContent=refusal(r)||'could not read the start pose from the board.';
+}
+async function homeHere(){
+  const r=await cmd('NEUTRAL HERE');
+  if(!r.startsWith('OK')){ $('homeStat').textContent=refusal(r)||'the board did not take it.'; return; }
+  const nums=(r.split('=')[1]||'').match(/-?\d+(\.\d+)?/g)||[];
+  if(nums.length>=10) homeFill(nums.slice(0,10).map(Number)); else await homeLoad();
+  $('homeStat').textContent='saved — the arm starts here from now on.';
+}
+async function homeSave(){
+  const vals=JN.map((n,i)=>$('hv'+i).value.trim());
+  if(vals.some(v=>v===''||isNaN(+v))){ $('homeStat').textContent='fill in every start angle first.'; return; }
+  const r=await cmd('NEUTRAL '+vals.join(' '));
+  if(!r.startsWith('OK')){ $('homeStat').textContent=refusal(r)||'the board did not take it.'; return; }
+  await homeLoad();   // the board clamps to each joint's limits: show what it kept
+  $('homeStat').textContent='saved — press Go home to move there.';
+}
+async function zeroSet(){
+  const r=await cmd('SETZERO');
+  $('zeroStat').textContent=r.startsWith('OK')
+    ? 'zero set — the arm did not move, and the start angles are unchanged.'
+    : (refusal(r)||'the board did not take it.');
 }
 async function savePair(){
   $('npeer').dataset.touched=1;
@@ -924,6 +961,85 @@ function svReply(r){ // show the reply for a few seconds, then resume the readou
 async function setServo(){ svReply(await cmd('SERVO '+$('svJoint').value+' '+$('svType').value)); }
 async function setRange(){ svReply(await cmd('RANGE '+$('svJoint').value+' '+($('svRange').value||180))); }
 async function setRate(){ svReply(await cmd('RATE '+$('svJoint').value+' '+($('svRate').value||50))); }
+//#end
+//#type dummy
+// ---- dummy: a hand-posed nong, one pot per joint ----------------------------
+// Rows are built once, on the first status that carries readings; after that
+// only the numbers change, and a box you are typing in is never overwritten.
+async function dummyCmd(c){
+  const r=await cmd(c);
+  if($('dummyCalStat'))$('dummyCalStat').textContent=refusal(r)||r;
+  return r;
+}
+function dummyZeroAll(){ dummyCmd('DZERO ALL '+($('dzAll').value||90)); }
+function dummyMuxSave(){
+  const v=['dmSig','dmS0','dmS1','dmS2','dmS3'].map(id=>$(id).value||-1);
+  dummyCmd('DMUX '+v.join(' '));
+}
+// [status key, DCAL field, label, box width]
+const DCAL_FIELDS=[['ch','CH','Pot #',56],['dir','DIR','Turn',0],['span','SPAN','Travel',64],
+                   ['min','MIN','Min',56],['max','MAX','Max',56],['zero','ZERO','Zero',70]];
+function buildDummy(){
+  const rows=$('dummyRows');
+  if(rows&&!rows.dataset.built){
+    rows.dataset.built=1;
+    JN.forEach((n,i)=>{
+      const r=document.createElement('div');r.className='row';
+      r.innerHTML='<span class="lbl" style="min-width:130px"></span>'+
+        '<input type="range" min="0" max="180" disabled style="flex:1" id="dB'+i+'">'+
+        '<b id="dA'+i+'" style="min-width:64px;text-align:right"></b>';
+      r.firstChild.textContent=n; rows.appendChild(r);
+    });
+  }
+  const cal=$('dummyCalRows');
+  if(cal&&!cal.dataset.built){
+    cal.dataset.built=1;
+    JN.forEach((n,i)=>{
+      const r=document.createElement('div');r.className='row';
+      const l=document.createElement('span');l.className='lbl';l.style.minWidth='130px';
+      l.textContent=n;r.appendChild(l);
+      const raw=document.createElement('span');raw.className='statline';raw.id='dR'+i;
+      raw.style.minWidth='48px';raw.title='the pot reading now, 0-4095';r.appendChild(raw);
+      DCAL_FIELDS.forEach(([key,f,label,w])=>{
+        const t=document.createElement('span');t.className='lbl';t.style.minWidth='0';
+        t.textContent=label;r.appendChild(t);
+        let e;
+        if(key==='dir'){
+          e=document.createElement('select');
+          e.innerHTML='<option value="1">normal</option><option value="-1">reversed</option>';
+        }else{e=document.createElement('input');e.type='number';e.style.width=w+'px';}
+        e.id='dc_'+key+i;
+        e.onchange=()=>dummyCmd('DCAL '+(i+1)+' '+f+' '+e.value);
+        r.appendChild(e);
+      });
+      const b=document.createElement('button');b.textContent='90\u00b0 here';
+      b.onclick=()=>dummyCmd('DZERO '+(i+1)+' 90');r.appendChild(b);
+      cal.appendChild(r);
+    });
+  }
+}
+function dummyStatus(m,has){
+  if(!has('pots')||!Array.isArray(m.raw))return;
+  buildDummy();
+  const js=m.joints||[], c=m.cal||{};
+  let wired=0;
+  m.raw.forEach((r,i)=>{
+    const a=js[i], on=a!==null&&a!==undefined;
+    if(on)wired++;
+    if($('dA'+i))$('dA'+i).textContent=on?a.toFixed(1)+'\u00b0':'no pot';
+    if($('dB'+i)&&on)$('dB'+i).value=a;
+    if($('dR'+i))$('dR'+i).textContent=r<0?'\u2014':String(r);
+    DCAL_FIELDS.forEach(([key])=>{
+      const e=$('dc_'+key+i);
+      if(e&&document.activeElement!==e&&Array.isArray(c[key]))e.value=c[key][i];
+    });
+  });
+  if($('dummyStat'))$('dummyStat').textContent=wired+' of '+m.raw.length+' joints have a pot';
+  const mux=c.mux||{};
+  [['dmSig',mux.sig]].concat((mux.sel||[]).map((v,k)=>['dmS'+k,v])).forEach(([id,v])=>{
+    const e=$(id); if(e&&document.activeElement!==e&&v!==undefined)e.value=v;
+  });
+}
 //#end
 //#type cam
 // ---- camera: one frame at a time -------------------------------------------
@@ -1317,9 +1433,12 @@ async function doLogin(){
       $('liStat').textContent = refusal(r) || 'wrong user or password';
       return;
     }
-    auth={user:u,pass:p};
+    const rParts = r.trim().split(/\s+/);
+    const rRole = rParts[2] || (u === 'super_admin' ? 'super_admin' : 'user');
+    auth={user:u,pass:p,role:rRole};
     $('loginForm').style.display='none';$('usersBox').style.display='';
     $('liWho').textContent=u;$('liPass').value='';
+    const lr=$('liRole'); if(lr) lr.textContent=auth.role==='super_admin'?'super_admin':'user';
     applyTabs();$('setupBtn').textContent='⚙ Setup (open)';
     loadUsers();loadPins();
     return;
@@ -1330,6 +1449,7 @@ async function doLogin(){
   // verifies the same accounts server-side and answers a wrong name exactly
   // like a wrong password.
   let s;
+  let loginData = {};
   try{
     s=await fetch('/api/login',{method:'POST',
       headers:{'Content-Type':'application/x-www-form-urlencoded'},
@@ -1338,23 +1458,22 @@ async function doLogin(){
     // Swallowing this left mustChange false, so a board still carrying the
     // shipped password quietly stopped asking anyone to change it - being
     // asked once too often is recoverable; not being asked is not.
-    try{ mustChange = (await s.json()).mustChange === true; }
+    try{
+      loginData = await s.json();
+      mustChange = loginData.mustChange === true; // mustChange = (await s.json()).mustChange === true
+    }
     catch(e){ mustChange = true; }
   }catch(e){ $('liStat').textContent='could not reach the board to log in'; return; }
   if(!s.ok){ $('liStat').textContent='wrong user or password'; return; }
-  auth={user:u,pass:p};
+  auth={user:u,pass:p,role:loginData.role||(u==='super_admin'?'super_admin':'user')};
   $('liWho').textContent=u;$('liPass').value='';
-  if(mustChange){
-    // This board has never had a password chosen. Do not open Setup: ask for
-    // one first. SAY THE LOGIN WORKED though - a red box and no other word
-    // read as a refused login, and people went off to hunt a password that
-    // was right all along (2026-09-07).
-    $('loginForm').style.display='none';
-    $('mustChangeBox').style.display='';
-    $('liStat').textContent='logged in as '+u+' — one more step: choose a '
-      +'password for this board, then Setup opens.';
-    return;
-  }
+  const lr2=$('liRole'); if(lr2) lr2.textContent=auth.role==='super_admin'?'super_admin':'user';
+  // Still on the default password: open Setup AND ask, never lock (user
+  // 2026-09-17: the defaults are for every board, "please change" is a note).
+  // Say the login worked - a red box alone read as a refusal (2026-09-07).
+  $('mustChangeBox').style.display = mustChange ? '' : 'none';
+  $('liStat').textContent = mustChange ? 'logged in as '+u+' — this is the '
+    +'default password; please change it below when you can.' : '';
   $('loginForm').style.display='none';$('usersBox').style.display='';
   applyTabs();
   $('setupBtn').textContent='⚙ Setup (open)';
@@ -1384,22 +1503,78 @@ async function loadUsers(){
   const r=await cmd('USER LIST '+auth.user+' '+auth.pass);
   const box=$('userList');box.innerHTML='';
   let list;try{list=JSON.parse(r.trim());}catch(e){box.textContent=r;return;}
-  list.forEach(u=>{
+  const boss = auth.role === 'super_admin';
+  const addRow = $('addUserRow'); if(addRow) addRow.style.display = boss ? '' : 'none';
+  const lr=$('liRole'); if(lr) lr.textContent=boss?'super_admin':'user';
+  list.forEach(x=>{
+    const u = (typeof x === 'object' && x.name) ? x.name : x;
+    const role = (typeof x === 'object') ? x.role : (u === 'super_admin' ? 'super_admin' : 'user');
+    const isMust = (typeof x === 'object') ? !!x.mustChange : false;
+
     const chip=document.createElement('span');chip.className='peer';chip.style.margin='2px';
-    chip.textContent=u+(u===auth.user?' (you)':'');
-    if(u!==auth.user&&list.length>1){
-      const x=document.createElement('a');x.textContent=' ✕';x.style.cursor='pointer';x.style.color='var(--err)';
-      x.onclick=()=>delUser(u);chip.appendChild(x);
+    chip.textContent=u + (role === 'super_admin' ? ' · super_admin' : '') +
+                        (isMust ? ' · default password' : '') +
+                        (u === auth.user ? ' (you)' : '');
+
+    if (boss && u !== auth.user) {
+      const rn = document.createElement('button');
+      rn.className = 'icon'; rn.textContent = '✏'; rn.title = 'rename ' + u;
+      rn.style.marginLeft = '4px';
+      rn.onclick = async ()=>{
+        const nu = prompt('New username for ' + u);
+        if (nu && nu.trim()) {
+          const res = await cmd('USER RENAME ' + auth.user + ' ' + auth.pass + ' ' + nu.trim() + ' ' + u);
+          $('userStat').textContent = res;
+          loadUsers();
+        }
+      };
+      chip.appendChild(rn);
+
+      const pw = document.createElement('button');
+      pw.className = 'icon'; pw.textContent = '🔑'; pw.title = 'set password for ' + u;
+      pw.style.marginLeft = '4px';
+      pw.onclick = async ()=>{
+        const np = prompt('New password for ' + u + ' (8-32 chars, no spaces)');
+        if (np && np.length >= 8) {
+          const res = await cmd('USER PASS ' + auth.user + ' ' + auth.pass + ' ' + np + ' ' + u);
+          $('userStat').textContent = res;
+          loadUsers();
+        }
+      };
+      chip.appendChild(pw);
+    }
+
+    if (boss && list.length > 1 && !(role === 'super_admin' && list.filter(a => (a.role||'user')==='super_admin').length <= 1)) {
+      const x=document.createElement('a');x.textContent=' ✕';x.style.cursor='pointer';x.style.color='var(--err)';x.style.marginLeft='4px';
+      x.title='delete ' + u;
+      x.onclick=()=>delUser(u);
+      chip.appendChild(x);
     }
     box.appendChild(chip);
   });
 }
 async function addUser(){
   if(!auth)return;
-  const u=$('nuUser').value.trim(),p=$('nuPass').value;
+  const u=$('nuUser').value.trim(),p=$('nuPass').value,role=($('nuRole')?$('nuRole').value:'user');
   if(!u||!p){$('userStat').textContent='enter a username and password';return;}
-  const r=await cmd('USER ADD '+auth.user+' '+auth.pass+' '+u+' '+p);
+  if(p.length < 8){$('userStat').textContent='at least 8 characters';return;}
+  const r=await cmd('USER ADD '+auth.user+' '+auth.pass+' '+u+' '+p+' '+role);
   $('userStat').textContent=r;$('nuUser').value='';$('nuPass').value='';loadUsers();
+}
+async function renameMyUser(){
+  if(!auth)return;
+  const nu=$('rnUser').value.trim();
+  if(!nu){$('userStat').textContent='enter a new username';return;}
+  const r=await cmd('USER RENAME '+auth.user+' '+auth.pass+' '+nu);
+  if(r.startsWith('OK')){
+    auth.user = nu;
+    $('liWho').textContent = nu;
+    $('rnUser').value = '';
+    $('userStat').textContent = 'username changed to ' + nu;
+    loadUsers();
+  } else {
+    $('userStat').textContent = refusal(r) || r;
+  }
 }
 async function changeMyPass(){
   if(!auth)return;

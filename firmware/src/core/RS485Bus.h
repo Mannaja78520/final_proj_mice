@@ -27,7 +27,11 @@ class RS485Bus {
 public:
     void begin(Identity* id, CommandRouter* router);
     void loop();
-    void send(const String& line); // thread-safe (send mutex)
+    // Thread-safe, and it does NOT wait for the wire: the line is queued and a
+    // task of its own clocks it out. Measured 2026-09-21: a 1.3 KB INFO reply
+    // sent inline held loop() - and every servo frame - for 116 ms.
+    void send(const String& line);
+    void drain(uint32_t maxMs);   // wait for queued lines to leave (before a reboot)
 
     // "#<id> CMD" / "#* CMD" from USB or the web console. Returns the
     // immediate reply; remote replies arrive later via onBusLine.
@@ -51,6 +55,11 @@ private:
     std::function<void(const String&)> busLine_;
     SemaphoreHandle_t sendMtx_ = nullptr;
     bool warnedNoMtx_ = false;   // say it once if the lock is missing
+    QueueHandle_t txq_ = nullptr;   // String* lines waiting for the wire
+    bool warnedFull_ = false;
+    volatile bool sending_ = false;   // a line was taken off the queue and is going out
 
     void handleLine(String line);
+    void sendNow(const String& line);   // the wire itself; blocks until sent
+    static void txTask(void* self);
 };

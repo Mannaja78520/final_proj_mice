@@ -50,6 +50,21 @@ public:
     // with nothing to distribute by hand.
     String apPassword() const;
 
+    // A password the owner chose for this module's own WiFi (APPASS). It
+    // wins over the group-derived one; empty = not set. 8-63 characters,
+    // WPA2's own limits.
+    const String& apPassOverride() const { return appass_; }
+    bool setApPass(const String& p);
+
+    // Passwords of OTHER modules' WiFi, handed over by the hub (PEERPASS),
+    // so a module can still lean on a group-mate whose owner changed its
+    // password. Keyed by that module's WiFi name. At most PEER_MAX kept.
+    static const int PEER_MAX = 8;
+    String peerPass(const String& ssid);
+    bool setPeerPass(const String& ssid, const String& pass);
+    void clearPeerPass();
+    String peerNames();                  // "a,b,c" - names only, never the passwords
+
     void setId(uint8_t id);
     void setName(const String& n);
     void setType(const String& t);      // takes effect after reboot
@@ -63,5 +78,5 @@ private:
     Preferences prefs_;
     uint8_t id_ = 1;
     String name_, type_;
-    String wssid_, wpass_, wmode_, group_;
+    String wssid_, wpass_, wmode_, group_, appass_;
 };

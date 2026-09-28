@@ -130,7 +130,6 @@ def run(t):
 
 def _ask_browser(base):
     """Load a tiny page that asks miceLink one question, and read its title."""
-    import subprocess
     from pathlib import Path as _P
     import browser
     web = F.CODE / STUDIO
@@ -143,14 +142,19 @@ def _ask_browser(base):
         encoding="utf-8")
     out = str(browser.SCRATCH / ("linkprobe_%s.html" % browser._tag()))
     prof = str(browser.SCRATCH / ("profile_link_%s" % browser._tag()))
-    ps = ("$a=@('--headless=new','--disable-gpu','--no-sandbox','--no-first-run',"
-          "'--disable-extensions','--%s','--user-data-dir=%s',"
-          "'--virtual-time-budget=6000','--dump-dom','%s/studio/%s'); "
-          "Start-Process -FilePath '%s' -ArgumentList $a -NoNewWindow -Wait "
-          "-RedirectStandardOutput '%s'"
-          % (browser.TAG, prof, base, probe.name, browser.EDGE, out))
+    # The folder has to EXIST before Start-Process redirects into it: it was
+    # created only by browser.page(), so a worker that ran this check first met
+    # "No such file or directory" and reported it as a browser failure (A26-94,
+    # 2026-09-22 gate).
+    browser.SCRATCH.mkdir(parents=True, exist_ok=True)
     try:
-        subprocess.run(["powershell", "-NoProfile", "-Command", ps], timeout=150)
+        r = browser.dump_dom("%s/studio/%s" % (base, probe.name), prof, out, 6000,
+                             timeout=150, err=False)
+        if not _P(out).is_file():
+            # Say WHY it did not start. Reading a file that was never written
+            # turned every launch failure into the same useless message.
+            return "(browser did not start: %s)" % (
+                (r.stderr or r.stdout or "no output").strip()[:200])
         dom = _P(out).read_text(encoding="utf-8", errors="replace")
         m = re.search(r"<title>([^<]*)</title>", dom)
         return m.group(1) if m else "(no answer)"
@@ -158,3 +162,5 @@ def _ask_browser(base):
         return "(browser failed: %s)" % e
     finally:
         probe.unlink(missing_ok=True)
+        browser.kill()          # never leave an Edge behind for the next check
+        _P(out).unlink(missing_ok=True)

@@ -18,7 +18,6 @@ showed nothing.
 """
 import json
 import re
-import subprocess
 import urllib.request
 
 import browser
@@ -135,17 +134,14 @@ def run(t):
 
 def _load(url):
     """The page after its scripts have run, as the browser sees it."""
+    browser.SCRATCH.mkdir(parents=True, exist_ok=True)   # or the redirect has
     prof = str(browser.SCRATCH / ("profile_tools_%s" % browser._tag()))
     out = str(browser.SCRATCH / ("tools_dom_%s.html" % browser._tag()))
-    ps = ("$a=@('--headless=new','--disable-gpu','--no-sandbox','--no-first-run',"
-          "'--disable-extensions','--%s','--user-data-dir=%s',"
-          "'--virtual-time-budget=9000','--dump-dom','%s'); "
-          "Start-Process -FilePath '%s' -ArgumentList $a -NoNewWindow -Wait "
-          "-RedirectStandardOutput '%s' -RedirectStandardError '%s.err'"
-          % (browser.TAG, prof, url, browser.EDGE, out, out))
-    try:
-        subprocess.run(["powershell", "-NoProfile", "-Command", ps], timeout=200)
+    try:                                                 # nowhere to land (A26-94)
+        browser.dump_dom(url, prof, out, 9000)
         from pathlib import Path
         return Path(out).read_text(encoding="utf-8", errors="replace")
     except Exception:                                        # noqa: BLE001
         return ""
+    finally:
+        browser.kill()

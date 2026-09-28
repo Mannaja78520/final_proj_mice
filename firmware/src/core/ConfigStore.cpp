@@ -26,6 +26,7 @@ static const KeyMap MAP[] = {
     // nong: physical servo limit, and the floor for every move time. A big
     // value here does not make the arm faster, it removes the protection.
     {"max_dps", "maxdps", 1, 1000},
+    {"safe_dps", "safedps", 5, 1000},      // nong: safety cap on peak joint speed, every move
     {"link", "link", 0, 1},                // nong: 1 = leader, repeat poses on RS485
     {"peer", "peer", 0, 247},              // nong: partner module id (0 = broadcast)
 };

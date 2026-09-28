@@ -26,7 +26,7 @@ NAMES = ("json", "uuid", "re", "os", "time", "base64", "socket", "hashlib",
 
 
 def run(t):
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     lines = src.splitlines()
     bad = []
     for i, line in enumerate(lines):

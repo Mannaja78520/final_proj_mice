@@ -103,7 +103,7 @@ def run(t):
     t.ok(main.usb_free(port), "once it is free, usb_free says so")
 
     # The flasher must WAIT for that, not sleep and hope.
-    src_f = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src_f = F.hub_src()
     run = src_f[src_f.find("def _run(self, cmd, im)"):]
     run = run[:run.find("write_flash")]
     t.contains(run, "usb_free(port)",
@@ -112,7 +112,7 @@ def run(t):
                "and says so plainly rather than flashing anyway")
 
     # ---- and the reason stays written down ---------------------------
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     fn = src[src.find("def usb_close"):]
     fn = fn[:fn.find("\ndef ", 5)]
     t.contains(fn, "setdefault",

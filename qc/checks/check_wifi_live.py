@@ -7,7 +7,7 @@ Two bugs, both found on real hardware with two ESP32s on the bench:
    printing `[wifi] disconnected, reason=201 (AP not found: ... 5GHz-only ...)`
    the head was thrown away and the tail — `Hz-only network ...)` — survived
    with no `[tag]` on it, so the log filter did not recognise it and it was
-   returned as the reply. `SET WIFI "manny" qwertyui` literally answered
+   returned as the reply. `SET WIFI "admin" qwertyui` literally answered
    "Hz-only network - ESP32 is 2.4GHz only)". Any command could be hit; only
    the timing decided which.
 
@@ -83,7 +83,7 @@ def run(t):
         t.ok(True, "six commands in a row survive a stream of log-line tails")
 
     # ---- 2. no reboot to change the radio ------------------------------
-    hub = (F.CODE / "main_python/main.py").read_text(encoding="utf-8", errors="replace")
+    hub = F.hub_src()
     t.contains(hub, "_drain_to_line_boundary",
                "the hub drains to a line boundary instead of cutting blind")
     t.ok(not re.search(r"^\s+ser\.reset_input_buffer\(\)", hub, re.M) or

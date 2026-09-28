@@ -23,6 +23,13 @@
     // humanoid — see the "link"/"peer" settings in NongModule.h).
     #define NONG_SERVO_PINS        {32, 33, 25, 26, 21, 22, 27, 14, 13, 15}
 
+    // The joint names, in joint order. One list for every board that speaks
+    // in these joints: the robot (NongModule) and the hand-posed copy of it
+    // (DummyModule) must answer POSE? in the same order with the same names.
+    #define NONG_JOINT_NAMES {"L_SH_P", "L_SH_R", "L_EL_P", "L_EL_R", \
+                              "R_SH_P", "R_SH_R", "R_EL_P", "R_EL_R", \
+                              "WAIST",  "SHRUG"}
+
     // ===== Per-joint servo + gear =====
     // Each joint can use a DIFFERENT servo and a different reduction, so the
     // pulse range, speed and gear are arrays in joint order:
@@ -84,6 +91,9 @@
                                           // under load). A commanded T shorter than
                                           // largest-delta/max_dps is raised to it, so
                                           // the real arm always reaches the pose.
+    #define NONG_SAFE_DPS          60.0f  // SAFETY cap: no joint's PEAK speed goes past this,
+                                          // whatever T a move asks for (user 2026-09-17,
+                                          // arm hit something). CFG safe_dps to change.
     #define NONG_MIN_MOVE_MS       80     // shortest interpolated move
     #define NONG_DEFAULT_NEUTRAL   90.0f  // neutral angle for every joint
     // Per-servo travel limits (deg). The universal joint cannot reach the

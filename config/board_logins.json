@@ -1,0 +1,8 @@
+{
+  "_why": "Logins the hub tries on a board that asks for one over WiFi, in order, AFTER the account the person used to log in to the hub. These are the logins boards ship with (firmware/src/core/UserStore.cpp), not secrets. Boards reset before 2026-09 still have manny/12345678.",
+  "logins": [
+    {"user": "admin", "password": "admin123"},
+    {"user": "super_admin", "password": "admin123"},
+    {"user": "manny", "password": "12345678"}
+  ]
+}

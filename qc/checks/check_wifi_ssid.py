@@ -42,6 +42,14 @@ PAGE = """
 <iframe id="f" src="%s"></iframe>
 <script>
 function done(s){ qcMark("WS " + s); qcMark("done"); }
+// Wait for the frame to BE there, then settle as before (A26-94): a fixed
+// sleep measured an empty page under a full gate and reported nothing.
+qcWaitFor(function(){
+  var fr = document.getElementById("f");
+  return fr && fr.contentWindow && fr.contentDocument
+      && fr.contentDocument.readyState === "complete"
+      && fr.contentDocument.body && fr.contentDocument.body.children.length;
+}, 8000).then(function(){
 setTimeout(function(){
   try{
     var w = document.getElementById('f').contentWindow;
@@ -67,7 +75,7 @@ setTimeout(function(){
       done("cmd=" + encodeURIComponent(line) + " ph=" + encodeURIComponent(ph));
     }, 1200);
   } catch (e) { done("ERR=" + String(e).slice(0,60)); }
-}, 4500);
+}, 4500); });
 </script>
 """
 

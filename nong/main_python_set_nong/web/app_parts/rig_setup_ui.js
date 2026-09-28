@@ -9,6 +9,31 @@ const DIM_LABELS = {
 function renderRigUI() {
   const jb = $("rigJoints");
   jb.innerHTML = "";
+  // WHICH ARM THE AUDIENCE SEES FIRST (A31-6). One setting for the whole rig,
+  // above the joint table, because every move that says "front arm" means
+  // whichever arm this names - and it changes when the nong is turned round.
+  const fa = document.createElement("div"); fa.className = "row";
+  const fal = document.createElement("label");
+  fal.className = "lbl"; fal.htmlFor = "rigFrontArm";
+  fal.textContent = "Arm nearest the audience";
+  const fas = document.createElement("select");
+  fas.id = "rigFrontArm";
+  [["L", "the left arm is in front"], ["R", "the right arm is in front"]]
+    .forEach(([v, label]) => {
+      const o = document.createElement("option"); o.value = v; o.textContent = label;
+      fas.appendChild(o);
+    });
+  fas.value = frontArmSide();
+  fas.title = "left and right are the ROBOT's own left and right. This says "
+            + "which of them the audience sees first, so a move can be given to "
+            + "the front arm or the back arm by name.";
+  fas.onchange = () => {
+    RIG.frontArm = fas.value === "R" ? "R" : "L";
+    rigChanged();
+    renderTimeline();          // every pinned move now means the other arm
+  };
+  fa.append(fal, fas);
+  jb.appendChild(fa);
   // header
   const hdr = document.createElement("div"); hdr.className = "rigjrow";
   ["joint", "zero°", "start°", "min°", "max°", "axis", "inv"].forEach(t => {
@@ -29,13 +54,13 @@ function renderRigUI() {
     // a typed number goes straight past the min/max attributes, and this one is
     // written to the board and used on every boot.
     const neu = document.createElement("input");
-    neu.type = "number"; neu.min = 0; neu.max = 180; neu.value = RIG.neutral[i];
-    neu.title = "where this joint goes when the robot starts, and when you "
-              + "press Neutral or Home";
+    neu.type = "number"; neu.min = 0; neu.max = 180; neu.value = RIG.home[i];
+    neu.title = "robot home: where this joint goes when the robot starts, and "
+              + "when you press Home";
     neu.onchange = () => {
-      RIG.neutral[i] = Math.max(RIG.min[i], Math.min(RIG.max[i],
-                                clampDeg(+neu.value || 0)));
-      neu.value = RIG.neutral[i];          // show what was actually accepted
+      RIG.home[i] = Math.max(RIG.min[i], Math.min(RIG.max[i],
+                             clampDeg(+neu.value || 0)));
+      neu.value = RIG.home[i];             // show what was actually accepted
       rigChanged();
     };
     const lo = document.createElement("input");
@@ -109,6 +134,9 @@ function renderRigUI() {
       if (max) inp.max = max;
       inp.onchange = () => {
         let v = +inp.value || RIG[key][i];
+        // the board keeps WHOLE teeth (GEAR parses with toInt: 4.5 became 4),
+        // so a fraction here would preview a ratio the robot never uses
+        if (key === "gearPinion" || key === "gearGear") v = Math.round(v);
         v = Math.max(min, max ? Math.min(max, v) : v);
         RIG[key][i] = v; inp.value = v;
         rigChanged(); renderRigUI();   // the travel warning may have changed
@@ -200,6 +228,26 @@ function renderRigUI() {
 
   const db = $("rigDims");
   db.innerHTML = "";
+  // THE WHOLE BODY IN ONE CLICK. Asked 2026-09-18 (A26-72): the real robot's
+  // measurements should be something you PICK, not numbers somebody types from
+  // a drawing. The list is data (config/rig_presets.json) fetched from the hub,
+  // so a second robot costs one entry and no code here.
+  const bodyRow = document.createElement("div"); bodyRow.className = "jrow";
+  const bl = document.createElement("span");
+  bl.className = "jname"; bl.textContent = "body";
+  const bsel = document.createElement("select");
+  bsel.innerHTML = "<option value=''>use a measured body…</option>" +
+    RIG_PRESETS.map(p => `<option value="${p.id}">${p.label}</option>`).join("");
+  bsel.title = "sets every size below from a real robot; each one says where "
+             + "its numbers come from";
+  bsel.onchange = () => { if (bsel.value) { applyRigPreset(bsel.value); bsel.value = ""; } };
+  const why = document.createElement("span");
+  why.className = "hint"; why.style.fontSize = "11px";
+  why.textContent = RIG_PRESETS.length
+    ? "reach " + RIG_PRESETS[0].reach_mm + " mm"
+    : "";
+  bodyRow.append(bl, bsel, why);
+  db.appendChild(bodyRow);
   Object.entries(DIM_LABELS).forEach(([k, label]) => {
     const row = document.createElement("div"); row.className = "jrow";
     const name = document.createElement("span"); name.className = "jname"; name.textContent = label;
@@ -229,6 +277,83 @@ let SERVO_TYPES = {
   generic180: { label: "generic 180", min: 500, max: 2500, dps: 300, range: 180, hz: 50 },
   generic270: { label: "generic 270", min: 500, max: 2500, dps: 300, range: 270, hz: 50 },
 };
+// BODIES this rig can be set to (A26-72). Data, fetched from the hub; the one
+// entry below is only a fallback for opening Studio with no hub, and it is the
+// measured robot because that is the one somebody is standing next to.
+let RIG_PRESETS = [
+  { id: "nong_step_2026_09",
+    label: "Nong, measured from the STEP file (Sep 2026)",
+    source: "nong_assembly.STEP",
+    dims: { shoulderX: 88, shoulderY: 110, upperLenL: 128.7, upperLenR: 128.7,
+            foreLenL: 167.64, foreLenR: 167.64,
+            torsoW: 100, torsoH: 250, torsoD: 70, shrugPivot: 68.1 },
+    reach_mm: 296.34,
+    note: "arm links and shoulder spacing measured; the torso box is still the "
+        + "drawn stand-in" },
+];
+async function loadRigPresets() {
+  try {
+    const r = await fetch("/api/rigpresets").then(r => r.json());
+    if (r && r.ok && Array.isArray(r.presets) && r.presets.length) {
+      RIG_PRESETS = r.presets;
+      if (typeof renderRigUI === "function") renderRigUI();
+    }
+  } catch (e) { /* no hub: the fallback above stands */ }
+}
+loadRigPresets();
+function applyRigPreset(id) {
+  const p = RIG_PRESETS.find(x => x.id === id);
+  if (!p || !p.dims) return;
+  // Only the sizes. Zeroes, limits, gears and offsets belong to the servos
+  // fitted to THIS robot, and a body preset must never quietly rewrite them.
+  Object.entries(p.dims).forEach(([k, v]) => {
+    if (k in RIG.dims) RIG.dims[k] = +v;
+  });
+  // The servos measured with the body (A31-17: *load all from my step*) are
+  // offered, never assumed: they rewrite what the fitted servos need.
+  let servos = "";
+  if (p.servos && confirm(
+      "This body also knows its servos and gears from the STEP file:\n\n"
+      + presetServoSummary(p) + "\n\n"
+      + "OK — use them too\nCancel — keep the servo settings you have now"))
+    servos = applyPresetServos(p);
+  rigChanged(); renderRigUI(); buildRobot(); renderSliders();
+  if (typeof notice === "function")
+    notice(p.label + " — reach " + (p.reach_mm || "?") + " mm. "
+      + (servos ? "Servos set: " + servos + ". Press “Send Studio's limits to the robot” to put them on the robot. " : "")
+      + (p.note || ""));
+}
+function presetServoSummary(p) {
+  return Object.entries(p.servos).map(([name, s]) => {
+    const t = SERVO_TYPES[s.servo];
+    return name + ": " + (t ? t.label : s.servo)
+      + (s.gear ? ", gear " + s.gear[0] + ":" + s.gear[1] : "")
+      + (s.min != null ? ", " + s.min + "–" + s.max + "°" : "");
+  }).join("\n");
+}
+// Keyed by joint NAME in the file, so a reordered joint list cannot shift a
+// gear onto the wrong servo. Returns which joints changed, for the notice.
+function applyPresetServos(p) {
+  try { localStorage.setItem("nong_rig_prev", JSON.stringify(RIG)); }
+  catch (e) { /* storage full: the change still happens, just without undo */ }
+  const done = [];
+  Object.entries(p.servos).forEach(([name, s]) => {
+    const i = JOINT_NAMES.indexOf(name);
+    if (i < 0) return;
+    const t = SERVO_TYPES[s.servo];
+    if (t) {
+      RIG.pulseMin[i] = t.min; RIG.pulseMax[i] = t.max;
+      RIG.servoMaxDps[i] = t.dps; RIG.servoRange[i] = t.range; RIG.frameHz[i] = t.hz;
+    }
+    if (Array.isArray(s.gear) && s.gear.length === 2) {
+      RIG.gearPinion[i] = Math.round(s.gear[0]); RIG.gearGear[i] = Math.round(s.gear[1]);
+    }
+    if (s.min != null && s.max != null) { RIG.min[i] = +s.min; RIG.max[i] = +s.max; }
+    done.push(name);
+  });
+  saveRig();
+  return done.join(", ");
+}
 async function loadServoTypes() {
   try {
     const r = await fetch("/api/servos").then(r => r.json());
@@ -346,7 +471,7 @@ async function sendOffset(i, deg) {
   saveRig();
   renderOffsets();
   const st = $("trimStat");
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     if (st) st.textContent = JOINT_LABELS[i] + " offset " + clamped
       + "° — saved here. Connect the robot to move it.";
     return;
@@ -364,7 +489,7 @@ async function sendOffset(i, deg) {
 
 async function pullOffsets() {
   const st = $("trimStat");
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     if (st) st.textContent = "connect to the robot first (Robot link card)";
     notice(st.textContent);
     return;
@@ -388,7 +513,7 @@ async function clearOffsets() {
   saveRig();
   renderOffsets();
   const st = $("trimStat");
-  if (!haveUsb() && !haveWifi()) {
+  if (!haveRobot()) {
     if (st) st.textContent = "every offset cleared here — the robot still has its own";
     return;
   }
@@ -421,7 +546,7 @@ function resetRig() {
 // send only the lines that differ — pushing again after a small edit is then a
 // couple of commands instead of fifty.
 async function pushLimits() {
-  if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first (Robot link card)"; notice($("limStat").textContent); return; }
+  if (!haveRobot()) { $("limStat").textContent = "connect to the robot first (Robot link card)"; notice($("limStat").textContent); return; }
   try {
     let have = null;
     $("limStat").textContent = "reading what the robot has…";
@@ -442,7 +567,7 @@ async function pushLimits() {
       const pmin = RIG.pulseMin[i], pmax = RIG.pulseMax[i];
       const dps = Math.round(RIG.servoMaxDps[i]);
       const rng = Math.round(RIG.servoRange[i]), hz = Math.round(RIG.frameHz[i]);
-      const neu = Math.round(RIG.neutral[i]);
+      const neu = Math.round(RIG.home[i]);          // the board's NEUTRAL = robot home
       const off = Math.round(RIG.offset[i] * 2) / 2;   // half a degree, as the buttons step
       const parts = [];
       if (!(same("min", i, mn) && same("max", i, mx)))
@@ -501,7 +626,7 @@ async function pushLimits() {
 }
 // read the module's current limits + gear back into the rig
 async function pullLimits() {
-  if (!haveUsb() && !haveWifi()) { $("limStat").textContent = "connect to the robot first"; notice($("limStat").textContent); return; }
+  if (!haveRobot()) { $("limStat").textContent = "connect to the robot first"; notice($("limStat").textContent); return; }
   try {
     const t = await rawCmd("LIMIT?");
     const j = JSON.parse(t);
@@ -522,7 +647,7 @@ async function pullLimits() {
     pull(j.max_dps, "servoMaxDps");
     pull(j.servo_range, "servoRange");
     pull(j.frame_hz, "frameHz");
-    pull(j.neutral, "neutral");
+    pull(j.neutral, "home");
     pull(j.offset, "offset");
     saveRig(); renderRigUI(); buildRobot(); renderSliders();
     $("limStat").textContent =

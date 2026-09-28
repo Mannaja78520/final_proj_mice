@@ -38,7 +38,15 @@ PAGE_ROWS = """
 <iframe id="f" src="/"></iframe>
 <script>
 function done(s){ qcMark("ID " + s); qcMark("done"); }
-setTimeout(async function(){
+// WAIT FOR THE HOME PAGE INSIDE THE FRAME. A fixed 4 s bet was lost in a
+// full gate on 2026-09-23: the driver reported nothing at all and the
+// check said "the module screen reported back - []" (A26-94).
+qcWaitFor(function(){
+  var fr = document.getElementById("f");
+  return fr && fr.contentWindow && typeof fr.contentWindow.scan === "function"
+      && fr.contentDocument && fr.contentDocument.querySelector("#mods");
+}, 8000).then(async function(ready){
+  if (!ready) return done("missing=the home page never finished loading");
   try{
     var w = document.getElementById('f').contentWindow;
     var d = document.getElementById('f').contentDocument;
@@ -71,7 +79,7 @@ setTimeout(async function(){
           "via=" + (via ? via.textContent.replace(/[^A-Za-z0-9]+/g, "_") : "none"),
           "says=" + text.slice(0, 90)].join(" "));
   } catch (e) { done("ERR=" + String(e).replace(/[^A-Za-z0-9=]+/g, "_").slice(0,50)); }
-}, 4000);
+});
 </script>
 """
 

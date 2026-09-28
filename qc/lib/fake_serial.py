@@ -125,6 +125,8 @@ def reset():
     NONG.far_held = ""
     FAR.joints = [90.0] * 10
     FAR.ram, FAR.ram_open, FAR.held, FAR.playing = "", False, "", False
+    del dummy_wire[:]
+    DUMMY.reset()
 
 
 def poses():
@@ -416,8 +418,11 @@ class _Nong:
                         continue
                     self.neutral[i] = float(tok)
                 return "OK neutral set for all 10 joints"
+            if len(parts) == 2 and parts[1].upper() == "HERE":
+                self.neutral = [float(round(a)) for a in self.joints]
+                return "OK neutral = " + " ".join(str(int(a)) for a in self.neutral)
             if len(parts) < 3:
-                return "ERR usage: NEUTRAL <1-10|name|ALL> <deg>"
+                return "ERR usage: NEUTRAL <1-10|name|ALL> <deg> | HERE"
             d = float(parts[2])
             if parts[1].upper() == "ALL":
                 self.neutral = [d] * 10
@@ -470,6 +475,109 @@ NONG = _Nong()
 # A SECOND module, on the far side of NONG's own hotspot. The PC has no route
 # to it at all - everything it is told arrives via `REACH` through NONG.
 FAR = _Nong(far_wire, FAR_CHIP, 67, "nong-far")
+
+
+# ---- the dummy: a hand-posed nong with a pot on every joint -------------
+# On the same bus as the robot, with its own id - the way it is wired on the
+# bench (one RS485 dongle, robot 67, dummy beside it). A check bends it by
+# setting DUMMY.raw, exactly as a hand turning the pots would.
+DUMMY_ID = 68
+DUMMY_CHIP = "A0B1C2D3E4F7"
+DUMMY_ADC_MAX = 4095.0
+# The robot's own default limits (NONG_MIN_DEF / NONG_MAX_DEF), which is what
+# a fresh dummy clamps to - READ from the header, never typed here twice.
+
+
+def _nong_limits():
+    import re as _re
+    from pathlib import Path as _P
+    hdr = _P(__file__).resolve().parents[2] / "firmware" / "config" / "esp32_hardware_nong_module.h"
+    txt = hdr.read_text(encoding="utf-8", errors="replace")
+
+    def arr(name):
+        m = _re.search(r"#define\s+%s\s+\{([^}]*)\}" % name, txt)
+        return [float(v) for v in m.group(1).split(",")]
+    return arr("NONG_MIN_DEF"), arr("NONG_MAX_DEF")
+
+
+def dummy_deg(raw, zero, span, direction, lo, hi):
+    """dummymath::potToDeg, the same formula (docs/ref_data.js: dummy_pot)."""
+    d = 90.0 + (-1 if direction < 0 else 1) * (raw - zero) * span / DUMMY_ADC_MAX
+    return lo if d < lo else (hi if d > hi else d)
+
+
+def dummy_raw_for(deg, zero=2048.0, span=270.0, direction=1):
+    """The pot reading that means `deg` - for a check that wants a pose."""
+    return zero + (-1 if direction < 0 else 1) * (deg - 90.0) * DUMMY_ADC_MAX / span
+
+
+class _Dummy:
+    """DummyModule's line protocol: POSE?, POT?, DCAL, DCAL?, DZERO, INFO."""
+
+    def __init__(self):
+        self.log = dummy_wire
+        self.reset()
+
+    def reset(self):
+        lo, hi = _nong_limits()
+        self.raw = [2048.0] * 10          # every pot in the middle = 90 deg
+        self.cal = {"ch": list(range(10)), "zero": [2048.0] * 10,
+                    "span": [270.0] * 10, "dir": [1] * 10,
+                    "min": lo, "max": hi}
+
+    def _wired(self, i):
+        return self.cal["ch"][i] >= 0 and self.raw[i] >= 0
+
+    def degs(self):
+        c = self.cal
+        return [round(dummy_deg(self.raw[i], c["zero"][i], c["span"][i], c["dir"][i],
+                                c["min"][i], c["max"][i]), 1) if self._wired(i) else None
+                for i in range(10)]
+
+    def line(self, cmd):
+        c = cmd.strip()
+        self.log.append(c)
+        tok = c.split()
+        head = tok[0].upper() if tok else ""
+        if head == "INFO":
+            return json.dumps({
+                "id": DUMMY_ID, "name": "dummy-test", "type": "dummy", "sd": False,
+                "chip": DUMMY_CHIP, "fw": FW_VERSION, "group": "", "hub": "",
+                "wifi": {"ip": "", "mode": "off"}, "caps": ["pots"],
+                "seq": {"running": False, "file": ""},
+                "module": {"joints": self.degs(), "raw": [round(r) for r in self.raw],
+                           "cal": self.cal}})
+        if head == "PING":
+            return "PONG %d dummy-test dummy" % DUMMY_ID
+        if head == "POSE?":
+            return " ".join("-" if d is None else "%.1f" % d for d in self.degs())
+        if head == "POT?":
+            return " ".join(str(round(r)) if r >= 0 else "-1" for r in self.raw)
+        if head == "DCAL?":
+            return json.dumps(self.cal)
+        if head == "DCAL" and len(tok) >= 4:
+            key = {"CH": "ch", "ZERO": "zero", "SPAN": "span", "DIR": "dir",
+                   "MIN": "min", "MAX": "max"}.get(tok[2].upper())
+            if not key:
+                return "ERR field CH ZERO SPAN DIR MIN MAX"
+            js = range(10) if tok[1].upper() == "ALL" else [NONG._joint_index(tok[1])]
+            if None in js:
+                return "ERR joint 1-10, name, or ALL"
+            for j in js:
+                self.cal[key][j] = float(tok[3]) if key not in ("ch", "dir") else int(tok[3])
+            return "OK %s %s=%s" % (tok[1], tok[2].upper(), tok[3])
+        if head == "DZERO" and len(tok) >= 2:
+            deg = float(tok[2]) if len(tok) >= 3 else 90.0
+            js = range(10) if tok[1].upper() == "ALL" else [NONG._joint_index(tok[1])]
+            for j in js:
+                d = -1 if self.cal["dir"][j] < 0 else 1
+                self.cal["zero"][j] = self.raw[j] - d * (deg - 90.0) * DUMMY_ADC_MAX / self.cal["span"][j]
+            return "OK zeroed %d joint(s) at %.1f" % (len(list(js)), deg)
+        return "ERR unknown cmd"
+
+
+dummy_wire = []                 # what the dummy was asked, for checks to read
+DUMMY = _Dummy()
 
 
 class Serial:
@@ -541,7 +649,8 @@ class Serial:
                     # Addressed frames reach the board they name. Answering
                     # every id as the near board made a bus child report the
                     # near board's chip, which merged two boards into one.
-                    who = FAR if bid == str(BUS_SLOW_ID) else NONG
+                    who = (FAR if bid == str(BUS_SLOW_ID) else
+                           DUMMY if bid == str(DUMMY_ID) else NONG)
                     r = who.line(rest)
                     if bid == "*":
                         # A BROADCAST IS NOT INSTANT, and pretending it was is

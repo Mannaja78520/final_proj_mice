@@ -34,7 +34,7 @@ def run(t):
              "the player lives in core, not inside one module")
 
     for name in ("nong", "lift"):
-        src = (fw / ("src/modules/%s/%sModule.cpp" % (name, name))
+        src = (fw / ("src/modules/%s/%sModule.cpp" % (name, name.capitalize()))
                ).read_text(encoding="utf-8", errors="replace")
         for verb in ("PLAY", "VOL"):
             t.contains(src, 'cmd == "%s"' % verb, "%s handles %s" % (name, verb))

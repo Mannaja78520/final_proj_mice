@@ -339,8 +339,8 @@
       '  <button class="mlOff" type="button">Log out</button>' +
       '  <button class="mlMine" type="button">My account</button>' +
       '</div>' +
-      '<div class="mlWarn warn" hidden>This account still uses the default password ' +
-      '(admin123). Please change it: press My account.</div>' +
+      '<div class="mlWarn warn" hidden>This account still uses the default password. ' +
+      'Please change it.</div>' +
       '<div class="mlAcct row" hidden>' +
       '  <input class="mlOld" type="password" placeholder="current password" autocomplete="current-password">' +
       '  <input class="mlNew" type="password" placeholder="new password (8 or more)" autocomplete="new-password">' +

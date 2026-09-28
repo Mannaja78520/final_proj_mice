@@ -22,7 +22,7 @@
   </details>
   <span style="flex:1"></span>
   <input id="projName" aria-label="Project name" placeholder="project name" value="my_move">
-  <button onclick="saveProject()">Save</button>
+  <button onclick="saveAll()" title="Saves the moves twice under this one name: NAME.json to edit later, and NAME.yaml, the file the robot plays.">💾 Save</button>
   <select id="projList" aria-label="Open a saved project" onchange="loadProject(this.value)"><option value="">Load…</option></select>
 </header><div id="main">
   <div id="viewport">
@@ -39,6 +39,10 @@
         <button data-view="bottom" onclick="setView('bottom')">Bottom</button>
         <button data-view="iso" class="on" onclick="setView('iso')">3D</button>
       </div>
+      <div class="vcRow">
+        <button id="distBtn" aria-pressed="false" onclick="distSet(!distOn)"
+                title="show distances in mm: elbow to hand, elbow to elbow, hand to hand. Hold D to see them only while held.">📏 Distances</button>
+      </div>
     </div>
   </div>
 
@@ -52,6 +56,7 @@
            changes. -->
       <button class="tab on" id="tabBtnMove" onclick="showTab('pose')">Pose</button>
       <button class="tab" id="tabBtnSeq" onclick="showTab('sequence')">Sequence</button>
+      <button class="tab" id="tabBtnShows" onclick="showTab('shows')">Shows</button>
       <button class="tab" id="tabBtnRobot" onclick="showTab('robot')">Robot</button>
       <button class="tab" id="tabBtnSetup" onclick="showTab('setup')">Setup</button>
     </div>
@@ -91,8 +96,9 @@
       <div id="sliders"></div>
       <div class="row">
         <button onclick="setNeutral()">Neutral pose</button>
-        <button onclick="neutralFromPose()" title="save the current pose as the neutral pose (kept in the rig)">Keep this as neutral</button>
-        <button onclick="mirrorLR()">Mirror L↔R</button>
+        <button onclick="neutralFromPose()" title="save the current pose as the show's neutral pose (kept in Studio, the robot is not changed)">Keep this as neutral</button>
+        <button onclick="mirrorLR()" title="the same shape on the other arm: the left arm takes the right's pose and the right takes the left's">⇄ Mirror L↔R</button>
+        <button onclick="mirrorFB()" title="the same shape facing the other way: each arm reaches front-to-back instead, and stays on its own side">⇅ Mirror front↔back</button>
       </div>
     </div>
 
@@ -130,8 +136,11 @@
         </select>
       </div>
       <div class="mini">or use the <b>view buttons</b> at the top-right of the 3D
-        view (Front / Top / Left…): the camera snaps straight at that plane and
-        Shift+dragging a joint moves it flat in that plane — like Fusion/SolidWorks.</div>
+        view (Front / Top / Left…): the camera snaps straight at that plane, and
+        <b>stays</b> there — you cannot orbit out of a flat view by accident, and
+        dragging a hand moves it flat in that plane with no Shift held.
+        Press <b>3D</b> to turn the view loose again; there, dragging a hand needs
+        Shift, because a plain drag orbits. Like Fusion/SolidWorks.</div>
     </details>
 
     <div class="card" data-stab="sequence">
@@ -146,12 +155,25 @@
         <input type="number" id="maxDps" value="400" min="30" max="600" style="width:70px"
                onchange="speedChanged()"> °/s
       </div>
+      <div class="row"><label class="lbl" for="safeDpsInput">Peak speed limit</label>
+        <input type="number" id="safeDpsInput" value="60" min="5" max="1000" step="1"
+               style="width:70px" onchange="safetyLimitChanged()"
+               title="the fastest a joint is allowed to move at the peak of an ease. This is what usually stops a move getting shorter: above about two thirds of this number, raising Show speed changes nothing. Editing it re-times the moves here; Save to robot makes the robot use it too."> °/s
+        <button id="saveSafeDps" class="secondary" onclick="saveSafetySpeed()" disabled>Save to robot</button>
+      </div>
+      <p id="safeSpeedStat" class="mini" role="status">Studio plans at 60 °/s. Connect to read the robot's own limit. A saved change needs a restart.</p>
       <div class="mini">time between keyframes = biggest joint change ÷ show speed.
-        <b>Servo max</b> is the physical limit (MG90S ≈ 400 °/s): each keyframe
-        has a <b>minimum time</b> = change ÷ max — you can always make a move
-        slower, but never faster than the servos can really go, so the arm
-        always reaches the pose. The firmware enforces the same rule
-        (<code>max_dps</code>).</div>
+        Three things can make a move longer than that, and the move's own line
+        says which one did it:
+        <b>Servo max</b>, the physical limit (MG90S ≈ 400 °/s);
+        <b>Peak speed limit</b>, the safety cap — a move eases in and out, so
+        its peak is about 1.6× its average and the cap bites at roughly ⅔ of
+        this number (at 60 °/s, Show speed above ~38 °/s changes nothing);
+        and the 80 ms shortest-move floor.
+        You can always make a move slower, never faster than the servos can
+        really go, so the arm always reaches the pose.
+        Raising the peak limit makes moves faster and can cause harder impacts.
+        Do not raise it while a joint loses torque.</div>
     </div>
 
     <div class="card" data-stab="robot">
@@ -197,12 +219,20 @@
         </select>
       </div>
       <div class="statline" id="robotStat">not connected</div>
+      <div class="warn" id="limMismatch" hidden>
+        <span id="limMismatchText"></span>
+        <div class="row">
+          <button onclick="pullLimits().then(checkLimitsMatch)">Use the robot's limits</button>
+          <button onclick="pushLimits().then(checkLimitsMatch)">Send Studio's limits to the robot</button>
+        </div>
+      </div>
       <div class="row">
         <label><input type="checkbox" id="liveChk" onchange="liveChanged()"> live (robot follows editor)</label>
         <label><input type="checkbox" id="monChk" onchange="monitorChanged()"> <b>monitor</b> (editor follows robot)</label>
       </div>
       <div class="row">
-        <button onclick="robotCmd('HOME')">Home</button>
+        <button onclick="robotCmd('HOME')" title="move the robot to its home (start) position">Home</button>
+        <button onclick="homeFromPose()" title="make the pose on screen the robot's home: where it goes when it starts and when you press Home">Keep this as robot home</button>
         <button onclick="robotCmd('RELAX')">Relax</button>
         <button onclick="robotCmd('ATTACH')">Attach</button>
         <button onclick="sendPose()">Send pose</button>
@@ -219,6 +249,52 @@
         from here (poses, monitor) — only saved sequences need the card.</div>
     </div>
 
+    <div class="card" data-stab="robot" id="dummyCard">
+      <h2>Dummy (hand-posed copy)</h2>
+      <div class="mini">a copy of the robot with a knob on every joint instead of a motor.
+        Bend it by hand and Studio or the real robot copies the pose. It has its own link,
+        usually the robot's RS485 cable with a different bus id.</div>
+      <div class="row">
+        <select id="dummySrc" onchange="dummySrcChanged()"
+                title="where the dummy is: on a USB / RS485 cable through the hub, on WiFi, or simulated on this page (no dummy needed)">
+          <option value="usb">USB / RS485 (shared)</option>
+          <option value="wifi">WiFi</option>
+          <option value="sim">Simulated (sliders here)</option>
+        </select>
+        <select id="dummyPort" style="flex:1" title="the cable the dummy is on — usually the same RS485 cable as the robot">
+          <option value="">pick the USB port…</option>
+        </select>
+        <button id="dummyRescan" onclick="dummyLoadPorts()" title="rescan the PC's USB ports">⟳</button>
+        <span class="tech" id="dummyBusWrap" style="width:76px">
+          <input id="dummyBus" type="number" min="1" max="247" placeholder="bus id"
+                 title="the dummy's RS485 address (its module id). Leave empty when the cable goes straight into the dummy's own USB." style="width:100%">
+        </span>
+        <span class="tech" id="dummyIpWrap" style="flex:1;display:none">
+          <input id="dummyIp" placeholder="dummy IP or name.local" style="width:100%">
+        </span>
+        <button onclick="dummyConnect()">Connect</button>
+      </div>
+      <div id="dummySimBox" style="display:none">
+        <div class="mini">simulated dummy: these sliders stand in for the knobs.</div>
+        <div id="dummySimRows"></div>
+      </div>
+      <div class="row">
+        <span class="lbl">Follow</span>
+        <select id="dummyFollow" onchange="dummyFollowChanged()" style="flex:1"
+                title="Studio follows: the 3D model copies the dummy. Robot follows: the real robot copies it too, inside the robot's own limits and speed.">
+          <option value="off">off</option>
+          <option value="studio">Studio follows the dummy</option>
+          <option value="robot">Studio + real robot follow the dummy</option>
+        </select>
+      </div>
+      <div class="row">
+        <button class="primary" onclick="dummyToNewKey()" title="read the dummy now and add its pose to the end of the sequence">+ Dummy pose as new move</button>
+        <button onclick="dummyToSelectedKey()" title="replace the selected move's pose with the dummy's pose now">Use dummy pose for selected move</button>
+        <button onclick="robotToSelectedKey()" title="send the real robot to the move selected in the timeline, at that move's speed">Robot → selected move</button>
+      </div>
+      <div class="statline" id="dummyStat" aria-live="polite">not connected — pick where the dummy is, then Connect (or pick Simulated)</div>
+    </div>
+
     <div class="card" data-stab="robot">
       <h2>Zero position 🔒</h2>
       <div id="zeroLocked">
@@ -229,7 +305,7 @@
           <span class="lbl">Pass</span><input id="zPass" type="password" style="flex:1" autocomplete="current-password">
           <button class="primary" onclick="zeroUnlock()">Unlock</button>
         </div>
-        <div class="statline" id="zStat">locked — the set-zero calibration needs the password</div>
+        <div class="statline" id="zStat">locked — log in with your hub user name and password</div>
       </div>
       <div id="zeroPanel" style="display:none">
         <div class="mini">jog the arms straight with the sliders (Attach first), then
@@ -240,11 +316,6 @@
           <button class="primary" onclick="robotZeroSet()">◎ Set zero (current = home)</button>
           <button onclick="robotCmd('ZERO')">⌂ Move to zero</button>
           <button onclick="zeroLock()">Lock</button>
-        </div>
-        <div class="row">
-          <span class="lbl">New user</span><input id="zNewUser" style="width:100px">
-          <span class="lbl">New pass</span><input id="zNewPass" style="width:100px">
-          <button onclick="zeroChangeCred()">Change login</button>
         </div>
         <div class="statline" id="zStat2"></div>
       </div>
@@ -258,6 +329,58 @@
       </div>
       <div id="sdList" class="mini">connect first, then press List</div>
       <div class="statline" id="sdStat"></div>
+    </div>
+
+    <!-- SHOWS (user 2026-09-17): saved sequences played one after another, e.g.
+         greeting then byebye. The show only lists sequence names (shows/*.json),
+         so one sequence can be in many shows. Logic in app_parts/shows.js. -->
+    <div class="card" data-stab="shows">
+      <h2>Shows — sequences in a row</h2>
+      <div class="row">
+        <select id="showList" onchange="openShow()" title="open a saved show"><option value="">Open saved show…</option></select>
+        <button onclick="newShow()">New</button>
+        <button onclick="deleteShow()" title="delete the open show (moved to shows/.deleted, not erased)">🗑 Delete</button>
+      </div>
+      <div class="row">
+        <span class="lbl">Name</span><input id="showName" placeholder="welcome" style="flex:1">
+        <label><input type="checkbox" id="showLoop"> loop</label>
+      </div>
+      <div class="row" title="the move from the end of one sequence to the start of the next (and back to the start of a repeat). Leave empty to use the next sequence's own speed.">
+        <span class="lbl">Between</span>
+        <input id="showJoinDps" type="number" min="0" step="5" placeholder="auto" style="width:72px" onchange="showSettingChanged()"
+               aria-label="fastest speed between sequences, degrees per second"> °/s at most,
+        <input id="showJoinS" type="number" min="0" step="0.1" placeholder="0" style="width:64px" onchange="showSettingChanged()"
+               aria-label="shortest time between sequences, seconds"> s at least
+      </div>
+      <div class="row" style="flex-wrap:wrap" title="a track on the robot's card that plays from the start of the show to its end. While one is set, the sequences' own music is left out.">
+        <span class="lbl">Music</span>
+        <select id="showMusic" style="flex:1 1 140px;min-width:120px" onchange="showSettingChanged()" aria-label="music for this show"><option value="">no music</option></select>
+        <input id="showMusicVol" type="number" min="0" max="100" step="5" placeholder="vol" style="width:60px" onchange="showSettingChanged()" aria-label="music volume, 0 to 100">
+        <label><input type="checkbox" id="showMusicLoop" onchange="showSettingChanged()"> repeat</label>
+        <button type="button" onclick="addShowMusicFromPc()" title="put a track from this computer onto the robot's card and use it for this show">＋ From PC</button>
+      </div>
+      <div class="row" id="showMusicEndRow" title="when the show's music stops">
+        <span class="lbl">Music stops</span>
+        <select id="showMusicEnd" onchange="showSettingChanged()" aria-label="when the show's music stops">
+          <option value="">with the last move</option>
+          <option value="after">… s after the show ends</option>
+          <option value="total">after … s in all</option>
+        </select>
+        <input id="showMusicSecs" type="number" min="0" step="1" style="width:64px" onchange="showSettingChanged()" aria-label="music seconds"> s
+      </div>
+      <div class="row">
+        <select id="showAddSeq" style="flex:1" title="a saved sequence to add at the end"><option value="">Add a saved sequence…</option></select>
+        <button onclick="addShowItem()">+ Add</button>
+      </div>
+      <div id="showItems"></div>
+      <div class="row">
+        <button onclick="saveShow()">💾 Save show</button>
+        <button onclick="showOnTimeline()"
+                title="put every sequence of this show on the time bar below, end to end, exactly as the robot will run it — then you can scrub, preview and see where each one starts">⇣ Show on the time bar</button>
+        <button class="primary" onclick="playShow()">▶ Run on robot</button>
+        <button onclick="stopShow()">⏹ Stop</button>
+      </div>
+      <div class="statline" id="showStat">Pick sequences in the order they should play. One sequence runs straight into the next — set <b>pause</b> only where you want the robot to stand still. <b>Repeat</b> plays a sequence again: a number of times, or for a number of seconds.</div>
     </div>
     </div><!-- /tabMove -->
 
@@ -282,6 +405,41 @@
         body part — they follow that part's movement and never replace it.</div>
       <div id="addonList"></div>
       <div class="row"><button onclick="addAddon()">+ Add piece</button></div>
+    </div>
+
+    <!-- URDF import (A31-7, user 2026-09-23): an STL alone carries no origin,
+         so every part had to be rotated and offset by hand until it looked
+         right. A URDF carries those numbers. Logic in app_parts/urdf_import.js. -->
+    <div class="card" data-stab="setup">
+      <h2>Build it from a URDF <span class="mini">(instead of placing every STL by hand)</span></h2>
+      <div class="mini">A <b>STEP</b> file cannot be opened in a browser, and an
+        <b>STL</b> on its own does not say where the part belongs — which is why
+        a dragged-in part lands in the middle and has to be nudged into place.
+        A <b>URDF</b> carries the position, the turn, the size and which part
+        hangs off which, so importing one fills those boxes in for you.
+        <br>From SolidWorks: use the <b>sw2urdf</b> add-in (Tools ▸ Export as
+        URDF). It writes a <b>.urdf</b> file and a <b>meshes</b> folder — import
+        the STL meshes above first, then the .urdf here.</div>
+      <div class="row">
+        <input type="file" id="urdfFile" accept=".urdf,.xml" style="flex:1">
+        <button onclick="importUrdf()">Read URDF</button>
+      </div>
+      <div class="row">
+        <label class="lbl" for="urdfMm">Sizes are in</label>
+        <select id="urdfMm" onchange="renderUrdfUI()">
+          <option value="1000">metres (normal for URDF)</option>
+          <option value="1">millimetres already</option>
+          <option value="10">centimetres</option>
+        </select>
+        <label class="lbl" for="urdfUp">Up is</label>
+        <select id="urdfUp" onchange="renderUrdfUI()">
+          <option value="z">Z (normal for URDF / ROS)</option>
+          <option value="y">Y (already like this editor)</option>
+        </select>
+      </div>
+      <div id="urdfLinks"><div class="mini">No URDF loaded yet.</div></div>
+      <div class="row"><button class="primary" onclick="useUrdf()">Use this URDF</button></div>
+      <div class="statline" id="urdfStat">Reading a URDF changes nothing on its own — it shows what it found, you check the parts, then press Use this URDF.</div>
     </div>
 
     <div class="card" data-stab="setup">
@@ -334,6 +492,17 @@
         <button onclick="clearOffsets()" title="Set every joint's offset back to zero, on this page and on the robot">Clear all</button>
       </div>
       <div class="statline" id="trimStat"></div>
+    </div>
+
+    <div class="card" data-stab="setup">
+      <h2>Saving</h2>
+      <div class="mini">One Save writes both files under one name: the .yaml the robot
+        plays and the .json you edit later.</div>
+      <label class="row"><input type="checkbox" id="askUnsavedChk" checked
+             onchange="setAskUnsaved(this.checked)">
+        Ask before unsaved moves are replaced or the page is closed</label>
+      <div class="mini">Off: opening another file replaces the time bar without asking.
+        A copy is still kept in this browser and offered back next time.</div>
     </div>
 
     <div class="card" data-stab="setup">
@@ -406,7 +575,7 @@
     <input id="seqNext" placeholder="then run…" list="seqNextList" style="width:120px"
            title="chain: when this sequence finishes, the module starts this one. Leave empty to just stop. Build a show from short files instead of one long one.">
     <datalist id="seqNextList"></datalist>
-    <button class="primary" onclick="exportYaml()" title="Saves the timeline as a YAML file on this PC, under the sequence name. Voice and the other apps can play it.">💾 Save YAML</button>
+    <button class="primary" onclick="saveAll()" title="Saves under this one name: NAME.yaml, the file the robot, voice and the other apps play, and NAME.json to edit later.">💾 Save</button>
     <button onclick="uploadYaml()">Send to robot SD</button>
     <button onclick="robotRun()"
             title="Sends the sequence to the module and lets the MODULE play it on its own clock. This keeps running if you switch app, minimise the browser, or close this page entirely. It starts at the move you have clicked and carries on to the end - it never travels back to the first pose to begin.">▶ Run on robot</button>
@@ -418,6 +587,8 @@
     <button onclick="editLocalSeq()">Load for editing</button>
     <button onclick="playLocalSeq()"
             title="Loads this saved sequence into the timeline and starts playing it right away — same as Edit, then Play.">▶ Play saved</button>
+    <button onclick="deleteLocalSeq()"
+            title="Delete the picked saved YAML from this PC. It is moved to sequences/.deleted, not erased.">🗑 Delete</button>
   </div>
   <div id="timebar">
     <div class="tb-top">

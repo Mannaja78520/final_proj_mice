@@ -22,9 +22,15 @@ SLOW = True
 
 DRIVER = """
 function step(){
+    
+
   try{
+
     if (typeof playKeys !== "function") return setTimeout(step, 200);
     if (!haveUsb()) return setTimeout(step, 300);
+    // speed vs physical floor is the point here, not the 60 deg/s safety cap
+    // (check_contracts), which would make both timings equal
+    SAFE_DPS = 1000;
     qcMark("connected");
 
     // four keyframes with distinct first-joint values

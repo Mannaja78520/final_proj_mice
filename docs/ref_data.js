@@ -87,6 +87,84 @@ window.REF = [
          "MIN_MOVE_MS = 80 on both sides."
 },
 {
+  id: "safe-speed",
+  group: "Nong — the humanoid",
+  name: "The safety speed cap on every move",
+  where: [{file: "firmware/src/modules/nong/NongMath.h", line: 100,
+           what: "safeDuration()"},
+          {file: "nong/main_python_set_nong/web/app_parts/timing.js", line: 30,
+           what: "minTimeWhy() — Nong Studio applies the same floor, and says so"}],
+  eq: "t = biggest joint change &times; &pi;/2 &divide; safe_dps,  floor 80 ms\n" +
+      "flat above safe_dps &times; 2/&pi; &asymp; 38 &deg;/s at the default 60",
+  why: "The cosine ease is fastest in the middle, at &pi;/2 times the average " +
+       "speed, so this is the shortest time in which no joint ever passes " +
+       "safe_dps. Measured from where the arm really is. Added 2026-09-17 after " +
+       "the arm hit something on a fast jump; default 60 &deg;/s, CFG safe_dps.",
+  from: "Derivative of 0.5 - 0.5 cos(&pi;t) peaks at &pi;/2 per unit time (calculus of the raised cosine ease above).",
+  watch: "Firmware and Studio must use the same safe_dps; Studio reads it from INFO on connect. " +
+         "This floor is why typing a faster &deg;/s changed nothing above about 38 &deg;/s (A31-4/5): " +
+         "the arithmetic was right and silent. Studio now names the binding limit on the move."
+},
+{
+  id: "show-link-time",
+  group: "Nong — the humanoid",
+  name: "The move from one sequence into the next, in a show",
+  where: [{file: "main_python/shows.py", line: 36,
+           what: "link_time() — how long the hand-over takes"}],
+  eq: "t = biggest joint change &divide; that sequence's own &deg;/s,  floor 80 ms",
+  why: "Every sequence's first step is its start pose, timed for travel from " +
+       "wherever the robot happened to be - yakyai.yaml carries T 3273. Chained " +
+       "into a show the arm is already standing on the previous sequence's last " +
+       "pose, so that 3.3 s was the arm holding nearly still: a stop in " +
+       "everything but name (user 2026-09-23). Re-timing it from the REAL " +
+       "previous pose makes identical poses hand over in the 80 ms floor, and " +
+       "only a pause somebody typed makes the robot wait.",
+  watch: "Asking for the SHORT time is safe because the board lengthens T by its own " +
+         "cap and answers `OK pose T=<ms>ms`, and ShowPlayer._took waits for what the " +
+         "board said, not for what was asked."
+},
+{
+  id: "urdf-axes",
+  group: "Nong — the humanoid",
+  name: "URDF metres and Z-up into Studio's millimetres and Y-up",
+  where: [{file: "nong/main_python_set_nong/web/app_parts/urdf_import.js", line: 62,
+           what: "urdfToStudioXYZ() and urdfToStudioRPY() — reading one in"},
+          {file: "tools/make_urdf.py", line: 36,
+           what: "urdf_xyz() and STUDIO_AXIS_TO_URDF — writing one out"}],
+  eq: "(x, y, z)<sub>URDF</sub> &rarr; (y, z, x)<sub>Studio</sub>,  &times;1000 mm/m\n" +
+      "rpy: R = R<sub>z</sub>(yaw)&middot;R<sub>y</sub>(pitch)&middot;R<sub>x</sub>(roll), " +
+      "the same three numbers on the swapped axes, in degrees",
+  why: "URDF/ROS is Z-up X-forward; this editor is Y-up Z-forward. The cyclic " +
+       "swap is a rotation, not a reflection, so it keeps the handedness and " +
+       "every joint keeps turning the same way - a mapping that flipped one " +
+       "axis instead would mirror the whole robot silently.",
+  from: "URDF spec: <origin xyz rpy>, fixed-axis (extrinsic) roll-pitch-yaw in radians, lengths in metres.",
+  watch: "The mesh scale and the length scale MULTIPLY. sw2urdf writes STL in metres " +
+         "and a <mesh scale> of 0.001, so 0.001 &times; 1000 = 1, not 1000. " +
+         "The two directions are written twice, so check_urdf_export asserts the ROUND " +
+         "TRIP: 129 mm out as 0.129 m comes back 129 mm. A URDF a thousand times too big " +
+         "still parses perfectly, so nothing else would notice."
+},
+{
+  id: "arm-mirror",
+  group: "Nong — the humanoid",
+  name: "The same gesture on the other arm",
+  where: [{file: "nong/main_python_set_nong/web/app_parts/ik_4_dof_arm.js", line: 122,
+           what: "mirrorPose() — reflect the targets, then solve"}],
+  eq: "elbow&prime;, wrist&prime; = reflect in the body's x = 0 plane; " +
+      "shoulders place the elbow, elbow joints place the wrist",
+  why: "Mirroring is NOT swapping the two blocks of four joint numbers. That " +
+       "put the hand 613 mm out, because the two arms do not carry the same " +
+       "invert flags (L_EL_R 0, R_EL_R 1). Deriving the angles from " +
+       "zero/jdir/axis was worse at 528 mm, because that ignores the mounting " +
+       "tilts and where each arm's base sits. Reflecting the two POINTS and " +
+       "letting the existing solvers reach them uses the geometry itself, and " +
+       "two targets leave no slack in a 4-joint arm.",
+  watch: "check_arm_mirror measures both hands in world space. WAIST and SHRUG are " +
+         "carried through untouched - what a mirror should do to a body joint cannot " +
+         "be measured the way the hands can."
+},
+{
   id: "show-time",
   group: "Nong — the humanoid",
   name: "How long a move takes at show speed",
@@ -265,6 +343,28 @@ window.REF = [
          "LRC 25 / DOUT 22, which on a full nong are servos 4, 3 and 6."
 },
 {
+  id: "id3-tag-size",
+  group: "Sound",
+  name: "Skipping a song's tag (title, cover picture) in one jump",
+  where: [{file: "firmware/src/core/Id3.h", line: 16,
+           what: "tagBytes() - how long the tag is"},
+          {file: "firmware/src/core/AudioPlayer.cpp", line: 103,
+           what: "skipTags_() - seeks past it before the MP3 decoder starts"}],
+  eq: "size = b<sub>6</sub>&times;2<sup>21</sup> + b<sub>7</sub>&times;2<sup>14</sup> + " +
+      "b<sub>8</sub>&times;2<sup>7</sup> + b<sub>9</sub>\n" +
+      "skip = 10 + size (+ 10 when a v2.4 footer is flagged)",
+  why: "The size is syncsafe: four bytes of 7 bits each, so no byte of it can " +
+       "look like the start of an MP3 frame. Reading the length and seeking " +
+       "costs one SD read. Reading the tag itself - where the cover picture " +
+       "lives, often hundreds of KB - one byte at a time on the module loop " +
+       "left the robot deaf for seconds as a show's song started (2026-09-28).",
+  from: "ID3 tag version 2.4.0 - Main Structure, id3.org/id3v2.4.0-structure: " +
+        "section 3.1 (the header) and 6.2 (syncsafe integers). ESP8266Audio's " +
+        "AudioFileSourceID3 is the byte-by-byte reader this replaces.",
+  watch: "A size that runs past the end of the file is a damaged tag: the player " +
+         "starts from byte 0 and the decoder resyncs, rather than seeking into nothing."
+},
+{
   id: "servo-presets",
   group: "Hardware, as data",
   name: "Servo presets",
@@ -378,5 +478,71 @@ window.REF = [
        "yaws the whole body; Shrug (joint 10) rolls the shoulder bar (see-saw, " +
        "not symmetric lift). Matches Nong Studio's FK for visual debugging.",
   from: "Forward kinematics by rotation matrices: Craig JJ. \"Introduction to Robotics: Mechanics and Control\" (4th ed.) Ch. 2 [1]; Murray RM et al. \"A Mathematical Introduction to Robotic Manipulation\" Ch. 3 [2]. Denavit-Hartenberg parameters for 4-DOF serial chain. Link lengths from CAD/measured on hardware 2026-08-19."
+},
+{
+  id: "measured-arm",
+  group: "Nong — the humanoid",
+  name: "The arm the robot really has (picked, not typed)",
+  where: [{file: "config/rig_presets.json", line: 14,
+           what: "the measured body: the numbers themselves"},
+          {file: "nong/main_python_set_nong/web/app_parts/rig_setup_ui.js", line: 201,
+           what: "the picker in Studio's rig panel"},
+          {file: "firmware/src/web/WebUI.h", line: 868,
+           what: "fkArm() on the board's own page, same numbers"}],
+  eq: "shoulder = (±88.0, 95, 0) mm from the torso centre\n" +
+      "upper arm = 128.70 mm, forearm = 167.64 mm\n" +
+      "reach = 128.70 + 167.64 = 296.34 mm from the shoulder",
+  why: "Measured off nong_assembly.STEP (A30-1/A30-2, analysis/nong_analysis.json), " +
+       "not scaled from a drawing. Before this the pages used round numbers - " +
+       "105/115/105 - which is an arm 60 mm shorter than the one on the bench, so " +
+       "every millimetre the module page reported was wrong. One list now feeds " +
+       "Studio (through /api/rigpresets) and the board page, and a second robot is " +
+       "one more entry in the file.",
+  from: "Geometry measured from the CAD assembly; the same file the mass and torque study used (model/21_09_2026_nangrum_full/analysis/METHODS.md).",
+  watch: "Change a link length here and the reach line must change with it - check_rig_presets adds them up and refuses a preset that disagrees with itself."
+},
+{
+  id: "ik-dls",
+  group: "Nong — the humanoid",
+  name: "Inverse kinematics: where to put four joints so the wrist lands there",
+  where: [{file: "nong/main_python_set_nong/web/app_parts/ik_4_dof_arm.js", line: 5,
+           what: "solveIK() — the whole solver"}],
+  eq: "J[i][c] = (p(θ + ε·e_c) - p(θ)) / ε   (numeric Jacobian, mm per degree)\n" +
+      "Δθ = Jᵀ (J Jᵀ + λ² I)⁻¹ e   (damped least squares, λ² = 4)\n" +
+      "e = target - wrist, clipped to 120 mm per step, 8 steps",
+  why: "Four joints, three numbers to hit: there is no single answer, so the " +
+       "solver asks for the SMALLEST joint movement that closes the gap. The " +
+       "damping λ² is what keeps it steady near a straight arm, where a plain " +
+       "least-squares step is divided by almost nothing and the arm flails. The " +
+       "Jacobian is measured by nudging each joint 0.6° and watching the wrist, " +
+       "so it needs no derivation per link and it is right for whatever arm the " +
+       "rig preset put in.",
+  from: "Damped least squares (Levenberg-Marquardt) for redundant manipulators: Wampler CW, \"Manipulator inverse kinematic solutions based on vector formulations and damped least-squares methods\", IEEE Trans. SMC 16(1), 1986; Buss SR, \"Introduction to Inverse Kinematics with Jacobian Transpose, Pseudoinverse and Damped Least Squares methods\", 2009.",
+  watch: "λ² is in mm²/deg² and the Jacobian here is order 10-40, so a big λ² stops the arm moving at all."
+},
+{
+  id: "shrug-fourbar",
+  group: "Nong — the humanoid",
+  name: "Shrug: how far the servo turns for each degree of shrug (4-bar linkage)",
+  where: [{file: "tools/step_preset.py", line: 174,
+           what: "horn_at() — the servo angle for a shrug angle"},
+          {file: "tools/step_preset.py", line: 240,
+           what: "the ratio as whole teeth (50:119)"},
+          {file: "config/rig_presets.json", line: 109,
+           what: "the SHRUG servo, gear and ±16° limits it wrote"}],
+  eq: "S = servo spline, A = horn pin, B = rocker pin, P = pivot (from the STEP hole axes)\n" +
+      "a = |SA| = 24.60, b = |AB| = 38.50, c = |PB| = 70.05, g = |PS| = 33.95 mm\n" +
+      "B(θ) = P + c·(cos(β₀+θ), sin(β₀+θ));  d = |B(θ) - S|\n" +
+      "φ(θ) = atan2(B - S) ± acos((a² + d² - b²) / (2·a·d))   (branch nearest the CAD pose)\n" +
+      "ratio = dφ/dθ at level = 2.38;  ±16° shrug = servo -38.1° / +38.7°\n" +
+      "coupler force at stall F = T / (a · sin γ),  γ = angle between horn and coupler",
+  why: "The shrug is not geared: one servo drives a horn, a coupler and the " +
+       "shoulder yoke, so the ratio is set by four lengths and changes a little " +
+       "across the travel. The old setting was a guess (1:4.5, which the board " +
+       "stored as 1:4 because GEAR keeps whole teeth); the CAD gives 2.38. The " +
+       "same geometry gives the SolidWorks load: 133-150 N along the coupler " +
+       "when the servo stalls, not the 246 N first used.",
+  from: "Loop-closure solution of a planar four-bar (circle-circle intersection): Norton RL, \"Design of Machinery\" (5th ed.) Ch. 4, position analysis of linkages; Uicker JJ, Pennock GR, Shigley JE, \"Theory of Machines and Mechanisms\" Ch. 4. Lengths measured from model/21_09_2026_nangrum_full/nong_assembly.STEP.",
+  watch: "Studio and the firmware treat the ratio as constant. Over ±16° the real linkage drifts 0.6° of servo (0.25° of shrug) from that line; past ±20° check the table in rig_presets.json before trusting it."
 }
 ];

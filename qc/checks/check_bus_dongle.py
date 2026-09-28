@@ -126,7 +126,7 @@ def run(t):
          "one's, which is worse than no answer. Got: %s" % got[:70])
 
     # ---- the reason is written down where it will be read ------------
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     fn = src[src.find("def _usb_cmd_once"):]
     fn = fn[:fn.find("\n# ---------------- unified device access")]
     t.contains(fn, "dongle",

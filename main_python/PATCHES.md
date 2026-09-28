@@ -18,3 +18,6 @@ Every change to the hub pages is saved here as a numbered patch. Old patches are
 | 0012 | 2026-08-19 10:26 | Help documents the way back to the hub from a board page |
 | 0013 | 2026-08-19 12:59 | Colour themes: one file holds every colour, the picker discovers them, dark stays default |
 | 0014 | 2026-08-19 13:37 | The hub finds a module on the RS485 bus however high its id is |
+| 0015 | 2026-09-21 16:11 | Home: last opened says hours/days, not thousands of minutes (A26-82) |
+| 0016 | 2026-09-21 20:55 | Home/Modules: last opened on each board's own row, keyed by chip (A26-87) |
+| 0017 | 2026-09-21 23:52 | Studio opens with a live fastest-route target |

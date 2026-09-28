@@ -205,6 +205,7 @@ private:
     String fieldText(int f, int joint) const;
 
     float speedDps_ = NONG_DEFAULT_SPEED_DPS;  // show speed (all joints)
+    float safeDps_  = NONG_SAFE_DPS;           // safety cap on peak joint speed, any move
     bool link_ = false;              // leader: repeat pose cmds on RS485
     int peer_ = 0;                   // partner module id (0 = broadcast to all)
 

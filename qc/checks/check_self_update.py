@@ -31,7 +31,7 @@ TITLE = "the hub can update itself, and refuses while it is busy"
 
 
 def run(t):
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     hub = (F.HUB / "web" / "hub.html").read_text(encoding="utf-8")
     auth = (F.HUB / "hub_auth.py").read_text(encoding="utf-8")
 

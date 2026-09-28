@@ -41,6 +41,14 @@ PAGE_WRITE = """
 <iframe id="f" src="/"></iframe>
 <script>
 function done(s){ qcMark("FW " + s); qcMark("done"); }
+// Wait for the frame to BE there, then settle as before (A26-94): a fixed
+// sleep measured an empty page under a full gate and reported nothing.
+qcWaitFor(function(){
+  var fr = document.getElementById("f");
+  return fr && fr.contentWindow && fr.contentDocument
+      && fr.contentDocument.readyState === "complete"
+      && fr.contentDocument.body && fr.contentDocument.body.children.length;
+}, 8000).then(function(){
 setTimeout(function(){
   try{
     var w = document.getElementById('f').contentWindow;
@@ -111,7 +119,7 @@ setTimeout(function(){
            ].join(" "));
     }, 12000);
   } catch (e) { done("ERR=" + String(e).slice(0,60)); }
-}, 5000);
+}, 5000); });
 </script>
 """
 
@@ -134,6 +142,14 @@ PAGE = """
 <iframe id="f" src="/"></iframe>
 <script>
 function done(s){ qcMark("FT " + s); qcMark("done"); }
+// Wait for the frame to BE there, then settle as before (A26-94): a fixed
+// sleep measured an empty page under a full gate and reported nothing.
+qcWaitFor(function(){
+  var fr = document.getElementById("f");
+  return fr && fr.contentWindow && fr.contentDocument
+      && fr.contentDocument.readyState === "complete"
+      && fr.contentDocument.body && fr.contentDocument.body.children.length;
+}, 8000).then(function(){
 setTimeout(function(){
   try{
     var w = document.getElementById('f').contentWindow;
@@ -220,7 +236,7 @@ setTimeout(function(){
     }, 14000);
     }
   } catch (e) { done("ERR=" + String(e).slice(0,60)); }
-}, 5000);
+}, 5000); });
 </script>
 """
 
@@ -263,7 +279,7 @@ def run(t):
     # running new firmware under its old type. Only a FAILED write ended
     # cleanly, which is why nobody noticed.
     import re as _re                                          # noqa: PLC0415
-    src = (F.HUB / "main.py").read_text(encoding="utf-8")
+    src = F.hub_src()
     # The FLASH job's status, not the show player's — main.py has more than one
     # `def status(self)`, and taking the first one made this assert against the
     # wrong document entirely.

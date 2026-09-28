@@ -48,6 +48,7 @@ let _drawing = false;          // true only inside the animation frame
 let _lastScrub = -1, _lastTime = "";
 function playTick() {
   if (!playing) { lastPlayMs = 0; return; }
+  if (entryHold) { lastPlayMs = 0; return; }   // the arm is still travelling to keyframe 0
   const now = performance.now();
   if (!lastPlayMs) { lastPlayMs = now; return; }
   // Clamp the step. A hidden tab has its timers throttled (to about once a
@@ -107,19 +108,23 @@ function playTick() {
       // same numbers the YAML holds); after a pause, only what is left
       const K = playKeys();
       const rem = segRemaining(playT);
-      const tt = K[seg].t - rem <= 50 ? K[seg].t : rem;
-      liveSend("POSE " + K[seg].pose.map(fmtA).join(" ") + " T " + tt);
+      // seg === K.length is the loop's travel back to the start pose
+      const to = seg === K.length ? { pose: K[0].pose, t: loopReturnMs() } : K[seg];
+      const tt = to.t - rem <= 50 ? to.t : rem;
+      liveSend("POSE " + to.pose.map(fmtA).join(" ") + " T " + tt);
     }
   }
 }
 
 function tick(now) {
   requestAnimationFrame(tick);
-  _drawing = true;          // this pass may paint; the interval's may not
+  freezeCheck(now);
+  _drawing = true;         // this pass may paint; the interval's may not
   playTick();               // no-op when the interval already advanced it
   _drawing = false;
   lastFrame = now;
   controls.update();
+  distDraw();              // distances follow the pose and the camera (A26-44)
   renderer.render(scene, activeCam());
 }
 

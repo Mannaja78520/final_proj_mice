@@ -40,12 +40,12 @@ def run(t):
 
     # every type that wires a speaker turns silence() into a real stop
     for name in ("nong", "lift"):
-        hdr = (fw / ("src/modules/%s/%sModule.h" % (name, name))
+        hdr = (fw / ("src/modules/%s/%sModule.h" % (name, name.capitalize()))
                ).read_text(encoding="utf-8", errors="replace")
         t.contains(hdr, "void silence() override { audio_.stop(); }",
                    "%s's silence() really stops its player" % name)
 
-        src = (fw / ("src/modules/%s/%sModule.cpp" % (name, name))
+        src = (fw / ("src/modules/%s/%sModule.cpp" % (name, name.capitalize()))
                ).read_text(encoding="utf-8", errors="replace")
         stop = src.split('cmd == "STOP"')
         t.ok(len(stop) > 1, "%s handles STOP" % name)
