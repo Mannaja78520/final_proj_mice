@@ -116,3 +116,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0114 | 2026-09-27 20:11 | Music upload: sent by the hub in the background with a percent wheel and cancel |
 | 0115 | 2026-09-27 20:29 | Music upload: rename non-English track names; hub reads the body before refusing |
 | 0116 | 2026-09-28 03:31 | bug sweep: project rig before clamp, no NaN times, pinned time kept on peak-limit change, duplicate drops cues, YAML move names reload, serial commands one at a time, Run/hand-off check the robot's answer, WiFi download checks status |
+| 0117 | 2026-09-28 03:55 | Dummy card in the Robot tab: the hand-posed dummy poses Studio and the robot |

@@ -679,6 +679,38 @@ arm. All boards run the **same firmware** (upload once):
 Every board tracks all 10 logical angles (even joints it doesn't drive), so
 `POSE?`/status on the leader always shows the whole humanoid.
 
+## Commands — dummy module (hand-posed nong)
+
+A copy of the nong with the **same 10 joints in the same order**, and a
+potentiometer on each joint instead of a servo. It moves nothing: a person
+bends it and it reports angles. It answers `POSE?` exactly like the robot, so
+Nong Studio reads it with the same code, and a pose read from the dummy can be
+sent to the robot unchanged (the robot still applies its own `LIMIT` and
+`max_dps`). It sits on the same RS485 bus with its **own bus id**, and has USB
+and WiFi like every module.
+
+Wiring (defaults, all changeable): one CD74HC4067 16-channel analog mux, SIG on
+GPIO36, S0-S3 on 25 26 27 14, joint *n* on mux channel *n-1*. With `DMUX OFF`
+each joint's `CH` is its own ADC1 pin (32-39; at most six joints, because ADC2
+does not work while WiFi is on).
+
+Angle = `90 + dir × (raw − zero) × span ÷ 4095`, clamped to `min`..`max`.
+
+| Command | Reply | Notes |
+|---|---|---|
+| `POSE?` | `90.0 45.0 - ...` | the 10 joint angles the dummy is held in; `-` = no pot on that joint (the robot's `POSE` reads `-` as "leave it") |
+| `POT?` | `2048 1830 -1 ...` | raw readings 0-4095, smoothed; `-1` = no pot |
+| `DCAL <1-10\|name\|ALL> <field> <value>` | `OK L_EL_P ZERO=2100` | one field of a joint's pot: `CH` (mux channel 0-15, or ADC pin with no mux, `-1` = none), `ZERO` (reading at 90°), `SPAN` (pot travel in degrees across the whole range, default 270), `DIR` (`1` or `-1`), `MIN` / `MAX` (joint limits, default = the robot's) |
+| `DCAL CLEAR` | `OK dummy calibration back to defaults` | forget every field |
+| `DCAL?` | `{"ch":[..],"zero":[..],"span":[..],"dir":[..],"min":[..],"max":[..],"mux":{"sig":36,"sel":[25,26,27,14]}}` | everything above, as JSON |
+| `DZERO <1-10\|name\|ALL> [deg]` | `OK zeroed 10 joint(s) at 90.0` | hold the dummy at `deg` (default 90) and each joint works out its own `ZERO` from where it is now |
+| `DMUX <sig> <s0> <s1> <s2> <s3>` / `DMUX OFF` | `OK mux on 36` | the multiplexer pins; applies at once, no reboot |
+| `DMUX?` | `{"sig":36,"sel":[25,26,27,14]}` | the multiplexer pins |
+
+Calibration lives in the board's own memory (NVS), so it survives a reboot
+with no SD card. The status JSON (`INFO`, the website) carries `module.joints`
+(angles, `null` = no pot), `module.raw` and `module.cal`.
+
 ## Commands — cam module (ESP32-CAM)
 
 An AI-Thinker ESP32-CAM running the same firmware core as every other module:

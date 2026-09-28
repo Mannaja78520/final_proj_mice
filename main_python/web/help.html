@@ -1356,6 +1356,18 @@
        three.js is vendored — no CDN at runtime.</p>
   </div>
 
+  <div class="f"><h3>The dummy: pose the robot by hand<span class="tag t-new">new</span></h3>
+    <p>The <b>dummy</b> is a second module type (<code>mice_dummy</code>): a copy of the nong with the
+       same 10 joints and a potentiometer on each instead of a servo. It sits on the same RS485
+       bus with its own bus id (or its own USB / WiFi). In Studio's <b>Robot</b> tab, the
+       <b>Dummy</b> card connects to it and offers: <b>Studio follows the dummy</b>,
+       <b>Studio + real robot follow the dummy</b> (the robot's own limits and speed still apply),
+       <b>+ Dummy pose as new move</b>, <b>Use dummy pose for selected move</b> and
+       <b>Robot &rarr; selected move</b>. Pick <b>Simulated</b> to try all of it with sliders and
+       no dummy built. Pot pins, direction, travel, limits and zero are set on the dummy's own
+       module page (Setup &rarr; Dummy calibration). Tested against the QC fake only.</p></div>
+
+
   <div class="grp2">Posing</div>
   <div class="f"><h3>Five tabs, grouped by what you are doing<span class="tag t-new">new</span></h3>
     <p><b>Pose</b> (joints, XYZ, view) · <b>Sequence</b> (timing, the robot SD card) ·
@@ -2061,6 +2073,14 @@
   <div class="scroll"><table><thead><tr><th>Command</th><th class="wrap2">Does</th></tr></thead><tbody>
     <tr><td>SNAP</td><td class="wrap2">Take a picture; with a name it is saved to <code>/photos</code> on the card</td></tr>
     <tr><td>CAM</td><td class="wrap2">What the sensor is set to, and change it: <code>SIZE</code>, <code>QUALITY</code>, <code>FLASH ON|OFF</code>, <code>VFLIP</code>, <code>HMIRROR</code></td></tr>
+  </tbody></table></div>
+  <div class="grp2">Dummy only (the hand-posed copy of the nong)</div>
+  <div class="scroll"><table><thead><tr><th>Command</th><th class="wrap2">Does</th></tr></thead><tbody>
+    <tr><td>POSE?</td><td class="wrap2">The 10 joint angles the dummy is held in, same order and format as the robot; <code>-</code> = no pot on that joint</td></tr>
+    <tr><td>POT?</td><td class="wrap2">The raw pot readings, 0-4095; <code>-1</code> = no pot</td></tr>
+    <tr><td>DCAL | DCAL?</td><td class="wrap2">One joint's pot calibration: <code>CH</code> (mux channel), <code>ZERO</code> (reading at 90&deg;), <code>SPAN</code> (pot travel), <code>DIR</code>, <code>MIN</code>, <code>MAX</code>; <code>CLEAR</code> for defaults; <code>DCAL?</code> reads it all</td></tr>
+    <tr><td>DZERO</td><td class="wrap2">Hold the dummy in a known pose (default 90&deg;) and each joint works out its own zero</td></tr>
+    <tr><td>DMUX | DMUX?</td><td class="wrap2">Which pins the 16-channel analog switch (CD74HC4067) is on, or <code>OFF</code> for one ADC pin per joint</td></tr>
   </tbody></table></div>
 </section>
 

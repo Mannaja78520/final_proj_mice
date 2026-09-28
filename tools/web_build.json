@@ -29,6 +29,7 @@
       "stl_meshes.js",
       "urdf_import.js",
       "robot_link.js",
+      "dummy_link.js",
       "freeze_watch.js",
       "distances.js",
       "main_loop.js",

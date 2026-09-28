@@ -8,11 +8,7 @@
 #include "core/Perf.h"
 #include <Preferences.h>
 
-static const char* JOINT_NAMES[NongModule::N] = {
-    "L_SH_P", "L_SH_R", "L_EL_P", "L_EL_R",
-    "R_SH_P", "R_SH_R", "R_EL_P", "R_EL_R",
-    "WAIST",  "SHRUG",
-};
+static const char* JOINT_NAMES[NongModule::N] = NONG_JOINT_NAMES;
 
 void NongModule::applySettings(JsonVariant s) {
     if (s.isNull()) return;

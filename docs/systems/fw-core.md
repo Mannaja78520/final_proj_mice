@@ -94,6 +94,7 @@ WiFi and the board's web portal, SD, OTA, and `PERF?`.
 
 - [fw-web](fw-web.md)
 - [fw-nong](fw-nong.md)
+- [fw-dummy](fw-dummy.md)
 - [fw-lift](fw-lift.md)
 - [fw-cam](fw-cam.md)
 - [bench](bench.md)

@@ -28,7 +28,7 @@ The nong (humanoid): 10 joints (8 arm + WAIST + SHRUG), poses, speed, limits.
 
 ## Used by
 
-- nothing
+- [fw-dummy](fw-dummy.md)
 
 ## Checks that test it (16)
 

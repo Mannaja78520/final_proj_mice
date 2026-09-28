@@ -393,6 +393,43 @@ header{padding:var(--sp-3) 0;gap:var(--sp-3)}
   </div>
 
 
+<!--#type dummy-->
+  <div class="card" data-tab="control" id="dummyCard" style="grid-column:1/-1">
+    <h2>Dummy pose</h2>
+    <div class="statline">bend the dummy by hand: each joint shows the angle it would send to the robot.
+      Nong Studio reads these to pose the 3D model or the real robot.</div>
+    <div id="dummyRows"></div>
+    <div class="statline" id="dummyStat"></div>
+  </div>
+  <div class="card setupCard" data-tab="setup" id="dummyCal" style="grid-column:1/-1;display:none">
+    <h2>Dummy calibration</h2>
+    <div class="statline">hold the dummy in the robot's start pose and press <b>Start pose here</b>
+      (or one joint's <b>90&deg; here</b>). <b>Turn</b> flips a pot fitted the other way round;
+      <b>Travel</b> is how many degrees the pot turns end to end; <b>Min</b>/<b>Max</b> keep
+      the angle inside what the robot allows.</div>
+    <div class="row">
+      <button class="primary" onclick="dummyZeroAll()">&#9678; Start pose here (all joints)</button>
+      <span class="lbl" style="min-width:0">at</span>
+      <input type="number" id="dzAll" value="90" min="0" max="180" style="width:70px"> &deg;
+      <button onclick="dummyCmd('DCAL CLEAR')">Back to defaults</button>
+    </div>
+    <div id="dummyCalRows"></div>
+    <h2 style="margin-top:12px">Wiring</h2>
+    <div class="statline">ten pots share one 16-channel analog switch (CD74HC4067): its signal pin
+      and its four select pins. <b>Pot #</b> above is the switch channel. Without the switch,
+      <b>Pot #</b> is the pot's own pin (32-39) and at most six joints fit.</div>
+    <div class="row">
+      <span class="lbl" style="min-width:0">signal</span><input type="number" id="dmSig" style="width:64px">
+      <span class="lbl" style="min-width:0">select</span>
+      <input type="number" id="dmS0" style="width:56px"><input type="number" id="dmS1" style="width:56px">
+      <input type="number" id="dmS2" style="width:56px"><input type="number" id="dmS3" style="width:56px">
+      <button onclick="dummyMuxSave()">Save wiring</button>
+      <button onclick="dummyCmd('DMUX OFF')">No switch</button>
+    </div>
+    <div class="statline" id="dummyCalStat"></div>
+  </div>
+<!--#end-->
+
 <!--#type cam-->
   <div class="card" data-tab="control" id="camCard" style="grid-column:1/-1">
     <h2>Camera</h2>
@@ -610,6 +647,8 @@ function render(){
   showCard('rgbCard',has('rgb'));
   showCard('audCard',has('audio'));
   showCard('camCard',has('camera'));
+  showCard('dummyCard',has('pots'));
+  showCard('dummyCal',has('pots'));
   applyTabs();          // one pass, after the capabilities are known
   if(st.wifi){
     $('hwifi').textContent=st.wifi.mode==='ap'?'AP '+st.wifi.ip:(st.wifi.mode==='sta'?st.wifi.ip+' ('+st.wifi.rssi+'dBm)':'off');
@@ -632,6 +671,7 @@ function render(){
   if(typeof audioStatus==='function')audioStatus(m);
   if(typeof nongStatus==='function')nongStatus(m,has);
   if(typeof camStatus==='function')camStatus(m);
+  if(typeof dummyStatus==='function')dummyStatus(m,has);
   if(st.seq)$('seqStat').textContent=st.seq.running?('running '+st.seq.file):'idle';
   if(st.types&&!$('setType').options.length)
     st.types.forEach(t=>{const o=document.createElement('option');o.textContent=t;$('setType').appendChild(o);});
@@ -825,6 +865,12 @@ function sendRgb(){
   cmd('RGB '+parseInt(h.substr(1,2),16)+' '+parseInt(h.substr(3,2),16)+' '+parseInt(h.substr(5,2),16));
 }
 //#end
+// The nong's 10 joints, in joint order: 8 arm (2 per universal joint) + WAIST
+// (body yaw) + SHRUG. Shared, because the robot (nong) and its hand-posed copy
+// (dummy) name the same joints the same way. See NongModule.h.
+const JN=['L Shoulder Pitch','L Shoulder Roll','L Elbow Pitch','L Elbow Roll',
+          'R Shoulder Pitch','R Shoulder Roll','R Elbow Pitch','R Elbow Roll',
+          'Waist (turn L/R)','Shrug (rock L up/R down)'];
 //#type nong
 // ---- nong: joints, kinematics readout, servo setup -------------------------
 function nongStatus(m,has){
@@ -846,11 +892,6 @@ function nongStatus(m,has){
       $('svRate').value=(j==='ALL')?hz[0]:hz[+j-1];
   }
 }
-// nong humanoid: 10 logical joints — 8 arm (2 per universal joint) + WAIST
-// (body yaw, left/right) + SHRUG (both shoulders up/down). See NongModule.h.
-const JN=['L Shoulder Pitch','L Shoulder Roll','L Elbow Pitch','L Elbow Roll',
-          'R Shoulder Pitch','R Shoulder Roll','R Elbow Pitch','R Elbow Roll',
-          'Waist (turn L/R)','Shrug (rock L up/R down)'];
 let lastNongM=null;
 function nongModeChanged(){if(lastNongM)renderNong(lastNongM);}
 // forward kinematics with the MEASURED geometry (A26-72): shoulder +-88/95,
@@ -992,6 +1033,85 @@ function svReply(r){ // show the reply for a few seconds, then resume the readou
 async function setServo(){ svReply(await cmd('SERVO '+$('svJoint').value+' '+$('svType').value)); }
 async function setRange(){ svReply(await cmd('RANGE '+$('svJoint').value+' '+($('svRange').value||180))); }
 async function setRate(){ svReply(await cmd('RATE '+$('svJoint').value+' '+($('svRate').value||50))); }
+//#end
+//#type dummy
+// ---- dummy: a hand-posed nong, one pot per joint ----------------------------
+// Rows are built once, on the first status that carries readings; after that
+// only the numbers change, and a box you are typing in is never overwritten.
+async function dummyCmd(c){
+  const r=await cmd(c);
+  if($('dummyCalStat'))$('dummyCalStat').textContent=refusal(r)||r;
+  return r;
+}
+function dummyZeroAll(){ dummyCmd('DZERO ALL '+($('dzAll').value||90)); }
+function dummyMuxSave(){
+  const v=['dmSig','dmS0','dmS1','dmS2','dmS3'].map(id=>$(id).value||-1);
+  dummyCmd('DMUX '+v.join(' '));
+}
+// [status key, DCAL field, label, box width]
+const DCAL_FIELDS=[['ch','CH','Pot #',56],['dir','DIR','Turn',0],['span','SPAN','Travel',64],
+                   ['min','MIN','Min',56],['max','MAX','Max',56],['zero','ZERO','Zero',70]];
+function buildDummy(){
+  const rows=$('dummyRows');
+  if(rows&&!rows.dataset.built){
+    rows.dataset.built=1;
+    JN.forEach((n,i)=>{
+      const r=document.createElement('div');r.className='row';
+      r.innerHTML='<span class="lbl" style="min-width:130px"></span>'+
+        '<input type="range" min="0" max="180" disabled style="flex:1" id="dB'+i+'">'+
+        '<b id="dA'+i+'" style="min-width:64px;text-align:right"></b>';
+      r.firstChild.textContent=n; rows.appendChild(r);
+    });
+  }
+  const cal=$('dummyCalRows');
+  if(cal&&!cal.dataset.built){
+    cal.dataset.built=1;
+    JN.forEach((n,i)=>{
+      const r=document.createElement('div');r.className='row';
+      const l=document.createElement('span');l.className='lbl';l.style.minWidth='130px';
+      l.textContent=n;r.appendChild(l);
+      const raw=document.createElement('span');raw.className='statline';raw.id='dR'+i;
+      raw.style.minWidth='48px';raw.title='the pot reading now, 0-4095';r.appendChild(raw);
+      DCAL_FIELDS.forEach(([key,f,label,w])=>{
+        const t=document.createElement('span');t.className='lbl';t.style.minWidth='0';
+        t.textContent=label;r.appendChild(t);
+        let e;
+        if(key==='dir'){
+          e=document.createElement('select');
+          e.innerHTML='<option value="1">normal</option><option value="-1">reversed</option>';
+        }else{e=document.createElement('input');e.type='number';e.style.width=w+'px';}
+        e.id='dc_'+key+i;
+        e.onchange=()=>dummyCmd('DCAL '+(i+1)+' '+f+' '+e.value);
+        r.appendChild(e);
+      });
+      const b=document.createElement('button');b.textContent='90\u00b0 here';
+      b.onclick=()=>dummyCmd('DZERO '+(i+1)+' 90');r.appendChild(b);
+      cal.appendChild(r);
+    });
+  }
+}
+function dummyStatus(m,has){
+  if(!has('pots')||!Array.isArray(m.raw))return;
+  buildDummy();
+  const js=m.joints||[], c=m.cal||{};
+  let wired=0;
+  m.raw.forEach((r,i)=>{
+    const a=js[i], on=a!==null&&a!==undefined;
+    if(on)wired++;
+    if($('dA'+i))$('dA'+i).textContent=on?a.toFixed(1)+'\u00b0':'no pot';
+    if($('dB'+i)&&on)$('dB'+i).value=a;
+    if($('dR'+i))$('dR'+i).textContent=r<0?'\u2014':String(r);
+    DCAL_FIELDS.forEach(([key])=>{
+      const e=$('dc_'+key+i);
+      if(e&&document.activeElement!==e&&Array.isArray(c[key]))e.value=c[key][i];
+    });
+  });
+  if($('dummyStat'))$('dummyStat').textContent=wired+' of '+m.raw.length+' joints have a pot';
+  const mux=c.mux||{};
+  [['dmSig',mux.sig]].concat((mux.sel||[]).map((v,k)=>['dmS'+k,v])).forEach(([id,v])=>{
+    const e=$(id); if(e&&document.activeElement!==e&&v!==undefined)e.value=v;
+  });
+}
 //#end
 //#type cam
 // ---- camera: one frame at a time -------------------------------------------
