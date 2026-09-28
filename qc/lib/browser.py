@@ -60,23 +60,29 @@ def available():
     return Path(EDGE).is_file()
 
 
-def _launch(url, prof):
-    """Start one tagged headless browser on url; Start-Process on Windows."""
+def _launch(url, prof, flags=()):
+    """Start one tagged headless browser on url; Start-Process on Windows.
+
+    `flags` are extra switches for one check only - e.g. a sound check needs
+    --autoplay-policy=no-user-gesture-required, because a browser under test
+    has no user to tap, and without a tap an AudioContext never runs.
+    """
     if not WINDOWS:
         # software WebGL: with --disable-gpu Studio's 3D view throws on load
         subprocess.Popen([EDGE, "--headless=new", "--use-angle=swiftshader",
                           "--enable-unsafe-swiftshader", "--no-sandbox",
-                          "--no-first-run", "--disable-extensions", "--" + TAG,
-                          "--user-data-dir=" + prof, url],
+                          "--no-first-run", "--disable-extensions", "--" + TAG]
+                         + list(flags) + ["--user-data-dir=" + prof, url],
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          start_new_session=True)
         return
     subprocess.run(["powershell", "-NoProfile", "-Command",
                     "Start-Process -FilePath '%s' -ArgumentList "
                     "'--headless=new','--disable-gpu','--no-sandbox',"
-                    "'--no-first-run','--disable-extensions','--%s',"
+                    "'--no-first-run','--disable-extensions','--%s',%s"
                     "'--user-data-dir=%s','%s' -NoNewWindow"
-                    % (EDGE, TAG, prof, url)], timeout=60)
+                    % (EDGE, TAG, "".join("'%s'," % f for f in flags), prof, url)],
+                   timeout=60)
 
 
 def _ours_linux():
@@ -388,7 +394,7 @@ def is_done(mark):
     return mark == "done" or mark.endswith("~done")
 
 
-def raw_page(html, base, seconds=20, name=None):
+def raw_page(html, base, seconds=20, name=None, flags=()):
     """Serve an arbitrary page from the studio web folder and load it.
 
     Used by checks that drive OTHER pages (in iframes) rather than the studio
@@ -467,7 +473,7 @@ window.qcWaitFor = function(cond, ms, step){
     import fake_serial
     _before = len(fake_serial.qc_marks)      # before the browser can say anything
     try:
-        _launch("%s/studio/%s" % (base, name), prof)
+        _launch("%s/studio/%s" % (base, name), prof, flags)
         # Wait for the page to SAY it is finished, exactly like page() does.
         # A fixed sleep is a race: with several browser checks in one run the
         # machine is loaded, Edge starts slowly, and the page gets killed
