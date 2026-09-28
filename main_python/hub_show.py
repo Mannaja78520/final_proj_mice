@@ -31,6 +31,11 @@ class ShowPlayer:
     BEAT_TIMEOUT = 4.0
     MIN_T = 80           # ms, the same floor the firmware and Studio use
     CATCH_UP_S = 0.25    # later than this, a move does not rush to catch up
+    # A pose with no reply is a hiccup, not the end: the next one goes out on
+    # its time and the arm catches up (the board caps a move that is too fast).
+    # One lost reply used to end the show with its song still playing (real
+    # nong, 2026-09-28). This many in a row is a robot that is gone.
+    MAX_MISSES = 3
 
     def __init__(self, cmd_fn=None, parse_fn=None, cues_fn=None):
         self._cmd_fn = cmd_fn
@@ -61,6 +66,7 @@ class ShowPlayer:
         # 2026-09-27): a timer stops it at music_stop_ms on the show's clock.
         self.music_stop_ms = None
         self._music_timer = None
+        self._misses = 0         # poses in a row with no reply, this run
 
     def _get_cmd(self):
         if self._cmd_fn is not None:
@@ -248,6 +254,7 @@ class ShowPlayer:
 
     def _run(self, flag):
         try:
+            self._misses = 0
             # Take the robot: a module playing its own sequence would otherwise
             # be a second clock. Newer firmware also does this by itself when
             # the first POSE arrives; saying it explicitly keeps older boards
@@ -263,6 +270,35 @@ class ShowPlayer:
         except Exception as e:              # noqa: BLE001
             with self.lock:
                 self.error = str(e)
+            self._quiet_after_failure(flag)
+
+    def _move(self, flag, pose, t):
+        """Send one pose; a missing reply is counted, not fatal (MAX_MISSES)."""
+        try:
+            reply = self._say(self._pose_cmd(pose, t))
+        except OSError as e:                # no reply, or the cable/WiFi went away
+            if flag is not self.stop_flag:
+                raise                       # an abandoned run: let it end
+            self._misses += 1
+            if self._misses >= self.MAX_MISSES:
+                raise
+            with self.lock:
+                self.error = "%s - the show carried on" % e
+            return ""
+        self._misses = 0
+        return reply
+
+    def _quiet_after_failure(self, flag):
+        """A show that died must not leave its song playing over a still arm."""
+        if flag is not self.stop_flag or flag.is_set() or not self._had_music():
+            return                          # a newer run, or stop(), owns the speaker
+        timer, self._music_timer = self._music_timer, None
+        if timer:
+            timer.cancel()
+        try:
+            self._say("PLAY STOP")
+        except Exception:                   # noqa: BLE001 - best effort
+            pass
 
     def _play_once(self, flag):
         """One pass through the steps, from self.at_ms. False = stopped."""
@@ -277,7 +313,7 @@ class ShowPlayer:
                 return False
             self._mark(0, at)
             try:
-                t = self._took(self._say(self._pose_cmd(self.steps[0]["pose"], t)), t)
+                t = self._took(self._move(flag, self.steps[0]["pose"], t), t)
                 if not self._sleep(flag, t / 1000.0):
                     return False
             finally:
@@ -341,7 +377,7 @@ class ShowPlayer:
             # restarts from now. Small round trips are still paid back.
             if time.monotonic() - due > self.CATCH_UP_S:
                 due = time.monotonic()
-            took = self._took(self._say(self._pose_cmd(s["pose"], left)), left)
+            took = self._took(self._move(flag, s["pose"], left), left)
             due += took / 1000.0
             if not self._sleep(flag, due - time.monotonic()):
                 return False
