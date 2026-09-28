@@ -23,6 +23,7 @@ too big still parses perfectly.
 """
 import importlib.util
 import json
+import math
 import re
 
 import browser
@@ -58,6 +59,19 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
 """
 
 
+def _origin(text, joint):
+    """One joint's origin xyz, in metres, or None."""
+    part = text.split('<joint name="%s"' % joint)
+    m = len(part) > 1 and re.search(r'<origin xyz="([^"]+)"',
+                                     part[1].split("</joint>")[0])
+    return tuple(float(v) for v in m.group(1).split()) if m else None
+
+
+def _near(got, want, tol=1e-6):
+    return bool(got) and len(got) == len(want) and all(
+        abs(g - w) <= tol for g, w in zip(got, want))
+
+
 def _make_urdf():
     spec = importlib.util.spec_from_file_location(
         "make_urdf", str(F.CODE / "tools" / "make_urdf.py"))
@@ -89,19 +103,31 @@ def run(t):
     t.eq(text.count("<joint"), 11,
          "ten driven joints and one fixed head - a shoulder and an elbow are "
          "each TWO servos, so each is two revolute joints at one origin")
-    # upperLenL is 129 mm and hangs DOWN, which is -Z in URDF's Z-up frame
-    t.contains(text, 'xyz="0 0 -0.129"',
-               "the elbow sits one upper-arm below the shoulder, in metres, hanging down")
-    # shoulderX 180 mm to each side, which is +/-Y in URDF's X-forward frame
-    t.contains(text, 'xyz="0 0.18 0"', "the left shoulder is 180 mm to one side")
-    t.contains(text, 'xyz="0 -0.18 0"', "and the right shoulder the same the other way")
+    # The numbers come from the rig itself: Studio's "make this the default"
+    # rewrites it (shoulderX went 180 -> 91.5 mm on 2026-09-28), and a check
+    # that pins the old rig fails on a correct file.
+    d = rig["dims"]
+    up, sx = d["upperLenL"], d["shoulderX"]
+    piv = d.get("shrugPivot", 0) or 0
+    # the upper arm hangs DOWN, which is -Z in URDF's Z-up frame
+    t.ok(_near(_origin(text, "L_EL_P"), (0, 0, -up / 1000.0)),
+         "the elbow sits one upper-arm (%g mm) below the shoulder, in metres, "
+         "hanging down" % up, _origin(text, "L_EL_P"))
+    # shoulderX to each side, which is +/-Y in URDF's X-forward frame
+    t.ok(_near(_origin(text, "L_SH_P"), (0, sx / 1000.0, -piv / 1000.0)),
+         "the left shoulder is %g mm to one side" % sx, _origin(text, "L_SH_P"))
+    t.ok(_near(_origin(text, "R_SH_P"), (0, -sx / 1000.0, -piv / 1000.0)),
+         "and the right shoulder the same the other way", _origin(text, "R_SH_P"))
     # the waist turns about the vertical: Studio 'y' is URDF 'z'
     waist = text.split('<joint name="waist"')[1].split("</joint>")[0]
     t.contains(waist, '<axis xyz="0 0 1"/>',
                "the waist turns about the vertical - Studio's y axis is URDF's z")
-    # min 30, max 150, zero 90 -> +/- 1.0472 rad
-    t.contains(waist, 'lower="-1.0472" upper="1.0472"',
-               "and its limits are the rig's 30-150 deg, in radians from its own zero")
+    # e.g. min 30, max 150, zero 90 -> +/- 1.0472 rad
+    lim = re.search(r'lower="([-\d.]+)" upper="([-\d.]+)"', waist)
+    lo, hi = (math.radians(rig[k][8] - rig["zero"][8]) for k in ("min", "max"))
+    t.ok(lim and _near((float(lim.group(1)), float(lim.group(2))), (lo, hi), 1e-4),
+         "and its limits are the rig's %g-%g deg, in radians from its own zero"
+         % (rig["min"][8], rig["max"][8]), lim and lim.group(0))
 
     # ---- the round trip, in a real browser ---------------------------------
     if not browser.available():
@@ -134,10 +160,15 @@ def run(t):
              "an STL exported in millimetres ends up at scale 1 in Studio, not "
              "1000 - the mesh scale and the metres-to-millimetres scale "
              "MULTIPLY, and leaving the attribute out declared metres")
-        t.eq(v.get("upperL"), "129",
-             "THE ROUND TRIP: 129 mm written as 0.129 m comes back as 129 mm. "
+        try:
+            back = float(v.get("upperL"))
+        except (TypeError, ValueError):
+            back = None
+        t.ok(back is not None and abs(back - up) < 0.01,
+             "THE ROUND TRIP: %g mm written as %g m comes back as %g mm. "
              "A URDF a thousand times too big still parses perfectly, so this "
-             "is the only assertion that would notice")
+             "is the only assertion that would notice" % (up, up / 1000.0, up),
+             "Studio read back %r" % v.get("upperL"))
     finally:
         for p in made:
             try:
