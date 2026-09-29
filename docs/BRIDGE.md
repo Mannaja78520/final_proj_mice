@@ -3115,3 +3115,12 @@ Event: PROMOTE-DONE
 Tree: E:\final_proj\mice\code\.staging-claude-savedlg
 Files: 330 copied into main
 Commit: f09e987  (roll back with: git revert f09e987)
+
+### 2026-09-29 20:43:01 +0700 — claude:09291004-8074
+Event: HANDOFF
+Task: A26-100 (cloud half of the user's 2026-09-29 'do it now every task that not finish'), with A24-41, A26-7, A31-11 (code half), A26-17.
+Tree: cloud clone, branch claude/main-plan-open-tasks-um87a9 (PR #2 into claude/nong-wifi-link-7bvjs0). Nothing on the PC was touched.
+Files/resources: firmware/config/amps.json, firmware/config/esp32_hardware_lift_module.h, firmware/src/core/RS485Bus.cpp, firmware/src/web/WebUI.h, firmware/tools/gen_tables.py, firmware/COMMANDS.md, firmware/README.md, main_python/main.py, main_python/route_latency.py, config/route_latency.json, main_python/web/help.html, tools/ai_panel.py, qc/checks/check_amp_kind.py, check_amp_wiring.py, check_route_latency.py, check_panel.py, check_bus_flash.py, docs/systems/*.md, docs/PLAN.html.
+Evidence: full QC 6340/0 in the cloud (check_play_saved, check_page_login, check_pair_page failed only in the parallel run, green alone 2/2); 34 of 34 sabotages caught; pio mice_nong, mice_lift, mice_cam, mice_blank SUCCESS. Same-provider review (two Claude subagents; Codex and agy are not reachable from the cloud), every finding fixed. Tested against fakes only.
+Next: a PC session pulls the branch after PR #2 is merged into the lab branch, runs python -m PyInstaller --clean --noconfirm MiceHub.spec, flashes the lift and any board that bridges the bus for the PC (RS485 line limit now 4096), and runs the A7-8 bench (PCM5102A into TPA3118 into the 12 V speaker). Waiting on the user: A31-11 agy permission, A26-81 build or close, A13-7 subnet or tie-break.
+Released: every claim of claude:09291004-8074. Nothing in flight.

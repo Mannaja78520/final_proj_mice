@@ -30,6 +30,13 @@
   //    mono     force one channel (a single speaker, or a mono amp)
   //    wiring   the plain sentence printed under the dropdown. No jargon:
   //             this is the line a designer follows with the part in hand.
+  //    to       where each wired pin goes, one line per pin, printed under
+  //             that pin's GPIO box. It must name exactly the pins in `pins`:
+  //             with two boards in hand (a DAC and an amp) this is what says
+  //             which one the wire goes to.
+  //
+  //  No double quote or backslash in any text: the board builds the JSON for
+  //  AMP VALID by joining these strings, so one quote breaks the whole picker.
   //
   //  A nong board has ONLY GPIO 0, 2 and 12 free after 10 servos, the SD card
   //  (5/18/19/23) and RS485 (4/16/17) — and 25/26 are servos 3 and 4, so the
@@ -42,7 +49,8 @@
       "mode": "analog",
       "pins": ["i2s_dout"],
       "mono": true,
-      "wiring": "Only the DOUT pin is wired. DOUT through a 1k resistor to the amp's L input, and a 100nF capacitor from that same point to GND. Amp GND to board GND. The amp needs its own 12V-24V supply, not the board's 5V. Leave BCLK and LRC unconnected."
+      "wiring": "Only the DOUT pin is wired. DOUT through a 1k resistor to the amp's L input, and a 100nF capacitor from that same point to GND. Amp GND to board GND. The amp needs its own 12V-24V supply, not the board's 5V. Leave BCLK and LRC unconnected.",
+      "to": { "i2s_dout": "a 1k resistor, then the TPA3118 board's L input" }
     },
 
     "tpa3110": {
@@ -50,7 +58,8 @@
       "mode": "analog",
       "pins": ["i2s_dout"],
       "mono": true,
-      "wiring": "Only the DOUT pin is wired. DOUT through a 1k resistor to the amp's input, and a 100nF capacitor from that same point to GND. Amp GND to board GND. Leave BCLK and LRC unconnected."
+      "wiring": "Only the DOUT pin is wired. DOUT through a 1k resistor to the amp's input, and a 100nF capacitor from that same point to GND. Amp GND to board GND. Leave BCLK and LRC unconnected.",
+      "to": { "i2s_dout": "a 1k resistor, then the amp's input" }
     },
 
     "max98357a": {
@@ -58,7 +67,10 @@
       "mode": "i2s",
       "pins": ["i2s_bclk", "i2s_lrc", "i2s_dout"],
       "mono": true,
-      "wiring": "Three wires straight to the amp board: BCLK to BCLK, LRC to LRC, DOUT to DIN. Amp GND to board GND, amp VIN to 5V."
+      "wiring": "Three wires straight to the amp board: BCLK to BCLK, LRC to LRC, DOUT to DIN. Amp GND to board GND, amp VIN to 5V.",
+      "to": { "i2s_bclk": "the MAX98357A board, pin BCLK",
+              "i2s_lrc":  "the MAX98357A board, pin LRC",
+              "i2s_dout": "the MAX98357A board, pin DIN" }
     },
 
     "pcm5102a": {
@@ -66,7 +78,21 @@
       "mode": "i2s",
       "pins": ["i2s_bclk", "i2s_lrc", "i2s_dout"],
       "mono": false,
-      "wiring": "BCLK to BCK, LRC to LCK, DOUT to DIN on the PCM5102A board, then its LOUT/ROUT to the analog amp's input. Best sound of the three, one extra board."
+      "wiring": "BCLK to BCK, LRC to LCK, DOUT to DIN on the PCM5102A board, then its LOUT/ROUT to the analog amp's input. Best sound of the three, one extra board.",
+      "to": { "i2s_bclk": "the PCM5102A board, pin BCK",
+              "i2s_lrc":  "the PCM5102A board, pin LCK",
+              "i2s_dout": "the PCM5102A board, pin DIN" }
+    },
+
+    "pcm5102a_tpa3118": {
+      "label": "PCM5102A sound board into a TPA3118 amp (12V speaker)",
+      "mode": "i2s",
+      "pins": ["i2s_bclk", "i2s_lrc", "i2s_dout"],
+      "mono": true,
+      "wiring": "Two boards in a chain: this board, then the PCM5102A sound board, then the TPA3118 amp, then the 12V speaker. The three wires all go to the PCM5102A: BCLK to BCK, LRC to LCK, DOUT to DIN. PCM5102A VIN to 3V3 and GND to GND; its SCK pin to GND and XSMT to 3V3, if the board has those pins. Then the PCM5102A's LOUT to the TPA3118's audio input and its AGND to that input's ground. The TPA3118 runs from its own 12V supply, not the board's 5V, and its output goes to the speaker.",
+      "to": { "i2s_bclk": "the PCM5102A board, pin BCK",
+              "i2s_lrc":  "the PCM5102A board, pin LCK",
+              "i2s_dout": "the PCM5102A board, pin DIN" }
     },
 
     "builtin_dac": {
@@ -74,7 +100,8 @@
       "mode": "dac",
       "pins": [],
       "mono": true,
-      "wiring": "GPIO25 through a 1uF capacitor to the amp's input, amp GND to board GND. The chip fixes these two pins, so they cannot be changed here - and on a full nong they already drive servos 3 and 4."
+      "wiring": "GPIO25 through a 1uF capacitor to the amp's input, amp GND to board GND. The chip fixes these two pins, so they cannot be changed here - and on a full nong they already drive servos 3 and 4.",
+      "to": {}
     },
 
     "none": {
@@ -82,7 +109,8 @@
       "mode": "none",
       "pins": [],
       "mono": false,
-      "wiring": "Nothing is wired. The speaker card stays hidden and PLAY answers that no speaker is wired."
+      "wiring": "Nothing is wired. The speaker card stays hidden and PLAY answers that no speaker is wired.",
+      "to": {}
     }
   }
 }

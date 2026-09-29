@@ -197,9 +197,11 @@ Examples:
 #* PING                -> @1 PONG 1 ... then @3 PONG 3 ... (staggered)
 ```
 
-A line longer than **250 characters is discarded** as garbage (a missed
-terminator looks exactly like a very long line). That limit is what sets the
-firmware-update chunk size — see below.
+A line longer than **4096 characters is discarded** on the bus (2048 on USB)
+as garbage: a missed terminator looks exactly like a very long line. A reply has
+to fit that to cross a board bridging the bus (`AMP VALID` is about 2850).
+Firmware-update chunks stay under the 250 characters this limit
+used to be — see below.
 
 ### Flashing new firmware, on any of the three channels
 
@@ -235,7 +237,7 @@ while the board is still running firmware that works; only a good image causes
 the reboot. `FWABORT` at any point leaves the board on what it already had.
 
 Chunks are ≤150 bytes because base64 costs a third and `#<id> FWDATA <seq> `
-has to fit in the 250-character line above. That makes an update slow — minutes,
+has to stay under 250 characters (the old line limit, kept). That makes an update slow — minutes,
 not seconds — which is the price of not having a reset line.
 
 The hub drives all of this for you: `POST /api/flash/bus?dev=<dev>&type=<type>`,
@@ -418,8 +420,14 @@ web UI shows only the endpoint stage buttons. `SPEED <v> MS` still works
 | `PLAY <file> [LOOP]` | `OK playing /music/a.mp3` / `OK looping /music/a.mp3` | mp3/wav from SD; `PLAY a.mp3` looks in `/music`. `LOOP` repeats the track until `PLAY STOP`, `MOVE STOP`, or the show ends. `LOOP` is taken off the END, so a file name may still contain spaces. The lap is not seamless: the file is reopened, so there is a brief gap |
 | `PLAY STOP` | `OK audio stopped` | |
 | `VOL <0-100>` | `OK vol=70` | runtime only; persist with `CFG volume` |
-| `AMP <id>` | `OK amp=tpa3118 (reboot to apply)` | which amplifier is wired; ids come from `config/amps.json` |
+| `AMP <id>` | `OK amp=pcm5102a_tpa3118 (reboot to apply)` | which amplifier is wired; ids come from `config/amps.json` |
 | `AMP VALID` | `[{"id":"tpa3118",…}]` | every amp this firmware knows, for the Amplifier picker |
+| `AMP?` | `{"id":"pcm5102a_tpa3118","mode":"i2s",…,"to":{"i2s_bclk":"the PCM5102A board, pin BCK",…}}` | the amp this board is set to, with its wiring line and where each wire goes (`to`) |
+| `STREAM ON [port] [rate]` | `OK stream on udp 4210 22050 Hz mono` | live audio from the PC: the board plays what arrives on that UDP port |
+| `STREAM OFF` | `OK stream off` | |
+| `STREAM TEST` | `OK test tone 440 Hz 3 s through the stream path` | a tone made on the board, played through the same ring and feed as live sound; stops by itself |
+| `STREAM?` | `{"on":true,"fill":22,"underruns":0,"max_gap_ms":9,…}` | is it playing, and is it breaking up |
+
 ### The light strip's data pin — `PIN rgb_data`
 
 Every pin is set from the board's page and kept in NVS. The strip's was the one
@@ -431,12 +439,6 @@ there would never blink.
 
 Adding a pin to the list is one line in that file and costs a few hundred bytes
 of flash. Lift builds only; a nong has no strip.
-
-| `AMP?` | `{"id":"tpa3118","mode":"analog",…}` | the amp this board is set to, with its wiring line |
-| `STREAM ON [port] [rate]` | `OK stream on udp 4210 22050 Hz mono` | live audio from the PC: the board plays what arrives on that UDP port |
-| `STREAM OFF` | `OK stream off` | |
-| `STREAM TEST` | `OK test tone 440 Hz 3 s through the stream path` | a tone made on the board, played through the same ring and feed as live sound; stops by itself |
-| `STREAM?` | `{"on":true,"fill":22,"underruns":0,"max_gap_ms":9,…}` | is it playing, and is it breaking up |
 
 ### Live audio from the PC — `STREAM`
 

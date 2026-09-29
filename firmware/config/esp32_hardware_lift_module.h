@@ -22,10 +22,11 @@
     #define I2S_LRC_PIN  14
     #define I2S_DOUT_PIN 2
     // Which amplifier a fresh lift assumes — one id from config/amps.json.
-    // The user's part, said 2026-08-27: a TPA3118 — an ANALOG amp, so one wire
-    // from DOUT (GPIO2) through the RC filter amps.json describes. Each board
-    // overrides this from its Hardware-pins page (NVS), no reflash.
-    #define LIFT_AUDIO_AMP_DEFAULT "tpa3118"
+    // The user's real chain, said 2026-09-08 (A24-41): I2S into a PCM5102A
+    // DAC, its line out into a TPA3118 30W amp, then the 12V speaker. The chip
+    // only ever sees the DAC, so this is the i2s entry that names both boards.
+    // Each board overrides it from its Hardware-pins page (NVS), no reflash.
+    #define LIFT_AUDIO_AMP_DEFAULT "pcm5102a_tpa3118"
 
     //define your robot' specs here
     #define MOTOR_RPM 100.0f                                            // motor's max RPM

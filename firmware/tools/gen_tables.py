@@ -92,7 +92,9 @@ def c_str(s):
 
 
 def ident_ok(name):
-    return bool(re.match(r"^[a-z][a-z0-9_]*$", name))
+    # fullmatch, not ^...$: "$" also matches before a trailing newline, and an
+    # id carrying one breaks the C table it is written into
+    return bool(re.fullmatch(r"[a-z][a-z0-9_]*", name))
 
 
 def load_modules():
@@ -285,9 +287,25 @@ def gen_amps(out, types):
     for key, a in amps.items():
         if not ident_ok(key):
             raise SystemExit("amp id %r must be lower-case letters/digits/_" % key)
-        for field in ("label", "mode", "pins", "mono", "wiring"):
+        for field in ("label", "mode", "pins", "mono", "wiring", "to"):
             if field not in a:
                 raise SystemExit("amp %r is missing %r" % (key, field))
+        if not isinstance(a["to"], dict) or not all(
+                isinstance(v, str) and v.strip() for v in a["to"].values()):
+            raise SystemExit("amp %r: 'to' maps each wired pin to where its "
+                             "wire goes, e.g. {\"i2s_dout\": \"the amp's input\"}" % key)
+        # The board joins these into AMP VALID's JSON as they are, so a quote
+        # or a backslash would break the whole Amplifier picker, not one line.
+        texts = [a["label"], a["wiring"]] + list(a["to"].values())
+        for text in texts:
+            if any(ch in text for ch in '"\\') or any(ord(ch) < 32 for ch in text):
+                raise SystemExit("amp %r: no double quote, backslash or control "
+                                 "character in its text: %r" % (key, text))
+        # One destination per wired pin, so the page can say where each wire goes.
+        if sorted(a["to"]) != sorted(a["pins"]):
+            raise SystemExit("amp %r: 'to' must name exactly the pins it wires "
+                             "(%s), not %s" % (key, ", ".join(a["pins"]) or "none",
+                                               ", ".join(sorted(a["to"])) or "none"))
         if a["mode"] not in AMP_MODES:
             raise SystemExit("amp %r: mode %r is not one of %s"
                              % (key, a["mode"], ", ".join(AMP_MODES)))
@@ -301,12 +319,13 @@ def gen_amps(out, types):
         if a["mode"] == "analog" and a["pins"] != ["i2s_dout"]:
             raise SystemExit("amp %r is analog: it carries audio on i2s_dout "
                              "alone" % key)
-        rows.append("    { %-14s %-42s %-10s %-6s %5s, %s }," % (
+        to = json.dumps({k: a["to"][k] for k in a["pins"]}, separators=(",", ":"))
+        rows.append("    { %-14s %-42s %-10s %-6s %5s, %s,\n      %s }," % (
             c_str(key) + ",", c_str(a["label"]) + ",",
             c_str(a["mode"]) + ",",
             c_str(",".join(a["pins"])) + ",",
             "true" if a["mono"] else "false",
-            c_str(a["wiring"])))
+            c_str(a["wiring"]), c_str(to)))
 
     text = BANNER % AMPS_JSON.name + """
 #pragma once
@@ -322,6 +341,7 @@ struct AmpKind {
     const char* pins;     // comma separated audio pin keys actually wired
     bool        mono;
     const char* wiring;   // the plain sentence the website prints
+    const char* to;       // JSON object: pin key -> where that wire goes
 };
 
 static const AmpKind AMP_KINDS[] = {
@@ -357,7 +377,8 @@ inline String ampJson(const AmpKind& a) {
     s += "\\",\\"pins\\":\\"";  s += a.pins;
     s += "\\",\\"mono\\":";     s += a.mono ? "true" : "false";
     s += ",\\"wiring\\":\\"";   s += a.wiring;
-    return s + "\\"}";
+    s += "\\",\\"to\\":";       s += a.to;
+    return s + "}";
 }
 
 // The whole list as JSON, for the Amplifier dropdown on the board's page.
