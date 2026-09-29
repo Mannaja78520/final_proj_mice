@@ -1805,6 +1805,9 @@ function ampById(id){return ampList.filter(a=>a.id===id)[0]||null;}
 function ampPinKeys(){const a=ampById(ampPick);
   if(!a)return null;
   return a.pins?a.pins.split(','):[];}
+// where one audio wire goes (amps.json "to"): with a DAC and an amp in hand,
+// this is what says which of the two boards the wire belongs on
+function ampWireTo(k){const a=ampById(ampPick);return (a&&a.to&&a.to[k])||'';}
 async function loadAmp(){
   try{
     const [vt,ct]=await Promise.all([cmd('AMP VALID'),cmd('AMP?')]);
@@ -1934,7 +1937,11 @@ function renderPinGroups(){
       });
       sel.value=v.gpio;
       sel.onchange=paintPinDupes;
-      cell.appendChild(sel);wrap.appendChild(cell);
+      cell.appendChild(sel);
+      const to=(grp==='audio')?ampWireTo(k):'';
+      if(to){const w=document.createElement('span');w.className='wireto';
+        w.style.maxWidth='170px';w.textContent='goes to '+to;cell.appendChild(w);}
+      wrap.appendChild(cell);
     });
     box.appendChild(wrap);
   });

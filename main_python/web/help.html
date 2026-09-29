@@ -806,8 +806,11 @@
        Add <code>LOOP</code> — <code>PLAY song.mp3 LOOP</code> — and the track keeps
        repeating until you stop it or the show ends.
        Pick which amplifier is wired under <b>Setup → Hardware pins</b>: the
-       page shows the wiring for the one you choose and only the pins it uses.
-       A lift ships set to a TPA3118, which needs one wire. Getting this wrong
+       page shows the wiring for the one you choose, only the pins it uses, and
+       under each pin which board its wire goes to.
+       A lift ships set to its real chain: a PCM5102A sound board feeding a
+       TPA3118 amp and the 12V speaker. All three wires go to the PCM5102A, and
+       the TPA3118 runs from its own 12V supply. Getting this wrong
        is the usual cause of loud noise instead of sound, because an amp with a
        line input cannot read the digital kind of signal.
        (<code>AMP</code> sets it from the command line, <code>AMP?</code> says
