@@ -33,9 +33,11 @@
      "checks": ["check_flash*", "check_ota*"],
      "depends": ["hub-usb"]},
 
-    {"id": "hub-show", "summary": "The hub as the show clock: the show player, live audio to a speaker, saved shows by name, stop-all.",
-     "files": ["main_python/hub_show.py", "main_python/hub_api_play.py"],
-     "names": ["/api/play", "/api/stream", "/api/show", "/api/stopall", "showplayer", "show.running"],
+    {"id": "hub-show", "summary": "The hub as the show clock: the show player, live audio to a speaker, the rig's one speaking queue and its speakers, saved shows by name, stop-all.",
+     "files": ["main_python/hub_show.py", "main_python/hub_api_play.py",
+               "main_python/hub_speak.py", "main_python/hub_api_speak.py", "config/speakers.json"],
+     "names": ["/api/play", "/api/stream", "/api/show", "/api/stopall", "showplayer", "show.running",
+               "/api/speak", "/api/speakers", "hub_speak", "SPEECH"],
      "depends": ["hub-shows", "hub-media"]},
 
     {"id": "hub-apps", "summary": "The hub's routes for the app launcher, page access, partner programs and the voice helper.",

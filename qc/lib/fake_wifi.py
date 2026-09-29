@@ -99,7 +99,7 @@ class _Module:
             "chip": CHIP,
             "types": ["lift", "nong", "blank"],
             "caps": ["pins", "sequences", "users", "rs485", "sd",
-                     "joints", "servos", "calibration"],
+                     "joints", "servos", "calibration", "audio"],
             "seq": {"running": False, "file": ""},
             "wifi": {"mode": "sta", "wmode": "on", "ip": "127.0.0.1",
                      "ssid": "qc", "rssi": -50},

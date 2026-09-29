@@ -156,6 +156,8 @@ def probe_usb_port(port, full=False):
                                          # cable and on WiFi cannot be told to
                                          # be one board - see modules_here.
                                          "chip": st.get("chip", ""),
+                                         # "audio" = a speaker (A4-3)
+                                         "caps": st.get("caps") or [],
                                          **_wifi_of(st)}
                         break
                     except ValueError:
@@ -212,6 +214,8 @@ def probe_usb_port(port, full=False):
                             # so it is exactly a board the hub can meet twice.
                             if st.get("chip"):
                                 seen[mid]["chip"] = st["chip"]
+                            if st.get("caps"):
+                                seen[mid]["caps"] = st["caps"]
                             # ...AND ITS GROUP (A3-5). The Network tab and
                             # /api/allmods have always read this field for bus
                             # boards; nothing ever filled it, so a module
@@ -241,6 +245,7 @@ def probe_usb_port(port, full=False):
                                              "type": st.get("type"),
                                              "group": st.get("group", ""),
                                              "chip": st.get("chip", ""),
+                                             "caps": st.get("caps") or [],
                                              **_wifi_of(st)}
                         except ValueError:
                             pass

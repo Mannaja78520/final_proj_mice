@@ -68,6 +68,11 @@ NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
 # turns this one sentence into a Start button, so the words name the fix.
 FACE_APP_OFF = "the face app is not running yet - start it and look again"
 
+# What the page says when the face app would STORE the frame. The page stops
+# looking on this sentence, so it names the two ways that still work.
+FACE_APP_KEEPS = ("the face app would keep this picture, so it was not sent - "
+                  "pick a camera the face app watches, or use Open Reconize")
+
 _tmp_seq = itertools.count()                        # one temp name per writer
 THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 SPECIAL_RE = re.compile(r"<\|[^|]+\|>")             # <|im_end|> and friends
@@ -1550,14 +1555,50 @@ class Brain:
         Their port moves with an update of theirs, and a second copy of the
         address in this file is how the two would disagree.
         """
+        return str(self._reconize_entry().get("api") or "").rstrip("/")
+
+    def _reconize_entry(self):
+        """Reconize's whole entry in config/partners.json, {} when unreadable."""
         try:
             # MICE_PARTNERS is what the hub honours too, and it is what lets a
             # check point this at a fake face app instead of the real one.
             path = os.environ.get("MICE_PARTNERS") or (CODE / "config" / "partners.json")
-            got = registry.load(path)
-            return str((got.get("reconize") or {}).get("api") or "").rstrip("/")
+            return registry.load(path).get("reconize") or {}
         except Exception:                               # noqa: BLE001
-            return ""
+            return {}
+
+    def look_allowed(self):
+        """Whether the face app PROMISES to keep nothing of one frame.
+
+        Their upload stores the frame, a history row and an attendance row.
+        `persist=false` was a local patch to their code, never theirs, and
+        resetting their folder to their own version removed it (2026-09-29).
+        FastAPI ignores a query it does not know, so sending the flag proves
+        nothing: only their own /openapi.json listing it counts. Returns
+        (True|False|None, why, detail); None = could not ask (app off).
+        """
+        import urllib.error
+        import urllib.request
+        api = self._reconize_api()
+        look = self._reconize_entry().get("look") or {}
+        name = str(look.get("dontKeep") or "").partition("=")[0]
+        if not api or not look.get("path") or not name or not look.get("spec"):
+            return False, "config/partners.json does not say how to ask the face app about one picture", ""
+        try:
+            with urllib.request.urlopen(api + look["spec"], timeout=5) as r:
+                doc = json.loads(r.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:             # it answered: no description
+            return False, FACE_APP_KEEPS, "%s answered %s" % (look["spec"], e.code)
+        except OSError as e:
+            return None, FACE_APP_OFF, str(e)
+        except ValueError as e:                         # not JSON: cannot tell, so no
+            return False, FACE_APP_KEEPS, "%s is not readable: %s" % (look["spec"], e)
+        op = ((doc.get("paths") or {}).get(look["path"]) or {}).get("post") or {}
+        if any(isinstance(p, dict) and p.get("name") == name and p.get("in") == "query"
+               for p in (op.get("parameters") or [])):
+            return True, "", ""
+        return False, FACE_APP_KEEPS, "POST %s has no %s option (%s)" % (
+            look["path"], name, look["spec"])
 
     def _faces_login_path(self):
         """Where the saved face-app login lives.
@@ -1624,8 +1665,10 @@ class Brain:
                         where = "the face app" if label else ""
             except Exception:                           # noqa: BLE001
                 pass                                    # no default is fine - the browser picks
+        ok, why, detail = self.look_allowed()
         return {"label": label, "from": where, "stations": self.face_stations(),
-                "seconds": float(face.get("autoSeconds") or 5)}
+                "seconds": float(face.get("autoSeconds") or 5),
+                "look": {"ok": ok, "why": why, "detail": detail}}
 
     def face_stations(self):
         """The cameras the face app is ALREADY watching.
@@ -1664,11 +1707,11 @@ class Brain:
         """Asks Reconize who is in ONE frame, and saves NOTHING.
 
         User 2026-09-18: *do not save the picture of it because it took my
-        rom*. Their /api/recognition/upload writes the frame, a history row
-        and an attendance row in a background task; ?persist=false skips all
-        three (their recognition.py), so the name comes back and the disk is
-        untouched. The name is cached here exactly like a face seen through
-        their camera, so the next answer greets the person by name.
+        rom*. Their upload writes the frame, a history row and an attendance
+        row, so the frame goes only to a face app that promises to keep none
+        of it (look_allowed); otherwise nothing is sent and the page is told
+        why. The name is cached here exactly like a face seen through their
+        camera, so the next answer greets the person by name.
         """
         import urllib.error
         import urllib.request
@@ -1687,13 +1730,18 @@ class Brain:
             return "", FACE_APP_OFF, str(e)
         if not tok:
             return "", "no saved login for the face app - see main_python/faces_login.json", ""
+        ok, why, detail = self.look_allowed()
+        if not ok:
+            return "", why, detail
+        look = self._reconize_entry()["look"]
         b = uuid.uuid4().hex
         body = b"".join([
-            ('--%s\r\nContent-Disposition: form-data; name="photo"; '
-             'filename="frame.jpg"\r\nContent-Type: image/jpeg\r\n\r\n' % b).encode(),
+            ('--%s\r\nContent-Disposition: form-data; name="%s"; '
+             'filename="frame.jpg"\r\nContent-Type: image/jpeg\r\n\r\n'
+             % (b, look.get("field") or "photo")).encode(),
             jpeg, ("\r\n--%s--\r\n" % b).encode()])
         req = urllib.request.Request(
-            api + "/api/recognition/upload?persist=false", data=body,
+            api + look["path"] + "?" + look["dontKeep"], data=body,
             headers={"Authorization": "Bearer " + tok,
                      "Content-Type": "multipart/form-data; boundary=" + b})
         try:
@@ -1779,9 +1827,9 @@ class Brain:
     def seen_seconds(self):
         """How long a face from this page's own camera counts as present.
 
-        It has to be a memory of its own: persist=false leaves no history
-        row, so the next poll finds nothing and the name would vanish two
-        seconds later. It is a SETTING because the right length depends on
+        It has to be a memory of its own: a look keeps nothing, so there is
+        no history row, the next poll finds nothing and the name would vanish
+        two seconds later. It is a SETTING because the right length depends on
         the room - user 2026-09-18, after the badge kept naming somebody who
         had walked away: *make can setting by my self in setting to setting
         the time out time*.
@@ -1819,6 +1867,82 @@ class Brain:
         return self._cached_person
 
 
+def plain_wav(data, rate=0):
+    """Any sound the voice made -> a 16-bit WAV the hub can stream. -> (wav, why)
+
+    The neural voices answer MP3 (cached under a .wav name - the cache key
+    stays), which a browser plays and a robot's speaker cannot (A4-4). A
+    16-bit WAV passes as it is; anything else is decoded by PyAV, which
+    faster-whisper already installs, to mono at `rate` (0 = its own rate).
+    """
+    import io
+    import wave
+    if data[:4] == b"RIFF":
+        try:
+            with wave.open(io.BytesIO(data)) as w:
+                if w.getsampwidth() == 2:
+                    return data, None
+        except (wave.Error, EOFError):
+            pass
+    try:
+        import av
+    except ImportError:
+        return None, ("this PC cannot turn the neural voice into sound for a "
+                      "robot - the av package is missing (faster-whisper brings it)")
+    pcm = bytearray()
+    try:
+        with av.open(io.BytesIO(data)) as box:
+            st = box.streams.audio[0]
+            out_rate = int(rate or st.rate or 24000)
+            rs = av.AudioResampler(format="s16", layout="mono", rate=out_rate)
+            for frame in box.decode(st):
+                for f in rs.resample(frame):
+                    pcm += bytes(f.planes[0])[:f.samples * 2]
+            for f in rs.resample(None):                 # what the resampler held
+                pcm += bytes(f.planes[0])[:f.samples * 2]
+    except Exception as e:                          # noqa: BLE001
+        return None, "the voice's sound could not be read (%s)" % e
+    if not pcm:
+        return None, "the voice made no sound"
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(out_rate)
+        w.writeframes(bytes(pcm))
+    return buf.getvalue(), None
+
+
+def web_page_refused(headers):
+    """Why a request must be refused, or '' for a program on this PC.
+
+    The helper has no password, so it answers programs only (the hub's proxy
+    and speech queue, the face watcher). A website open on this PC reached it
+    too: POST /config could pick a model that runs its own code (2026-09-29).
+    Every browser request carries Origin or Sec-Fetch-*; a DNS-rebinding page
+    names its own host in Host, never an IP.
+    """
+    import ipaddress
+    from urllib.parse import urlsplit
+    if headers.get("Origin") or any(k.lower().startswith("sec-fetch-")
+                                    for k in headers.keys()):
+        return "a web page cannot use the voice helper - go through the hub"
+    host = (headers.get("Host") or "").strip()
+    if not host:
+        return ""
+    try:
+        name = urlsplit("//" + host).hostname or ""
+    except ValueError:
+        return "the voice helper answers only by IP address or localhost"
+    if name.lower() == "localhost":
+        return ""
+    try:
+        ipaddress.ip_address(name)
+        return ""
+    except ValueError:
+        return "the voice helper answers only by IP address or localhost"
+
+
 class VoiceHandler(BaseHTTPRequestHandler):
     brain = None                                    # set in main()
 
@@ -1833,7 +1957,20 @@ class VoiceHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def refuse_web(self):
+        """True when the request was refused (and answered)."""
+        why = web_page_refused(self.headers)
+        if not why:
+            return False
+        n = int(self.headers.get("Content-Length") or 0)
+        if 0 < n <= 1024 * 1024:
+            self.rfile.read(n)          # read first, or Windows resets the socket
+        self._json({"ok": False, "error": why}, 403)
+        return True
+
     def do_GET(self):                               # noqa: N802
+        if self.refuse_web():
+            return
         path = urlparse(self.path).path
         self.brain.maybe_reload()
         if path == "/health":
@@ -1909,6 +2046,8 @@ class VoiceHandler(BaseHTTPRequestHandler):
         return self._json({"ok": True})
 
     def do_POST(self):                              # noqa: N802
+        if self.refuse_web():
+            return
         path = urlparse(self.path).path
         self.brain.maybe_reload()
         if path == "/config":
@@ -2038,8 +2177,10 @@ class VoiceHandler(BaseHTTPRequestHandler):
         if why_not:
             # canStart is what turns the sentence into a button: only a face app
             # that is SILENT can be started, and a wrong password never can.
+            # wouldKeep stops the page looking: every next frame would be refused too.
             return self._json({"ok": False, "error": why_not, "detail": detail,
-                               "canStart": why_not == FACE_APP_OFF})
+                               "canStart": why_not == FACE_APP_OFF,
+                               "wouldKeep": why_not == FACE_APP_KEEPS})
         return self._json({"ok": True, "person": person})
 
     def do_transcribe(self):
@@ -2094,6 +2235,16 @@ class VoiceHandler(BaseHTTPRequestHandler):
                                         % (e.__class__.__name__, e)}, 500)
         if why_not:
             return self._json({"ok": False, "error": why_not})
+        if req.get("format") == "wav":
+            # The hub's speaking queue: a robot's speaker plays 16-bit PCM
+            # only, and so does the PC player (A4-4).
+            try:
+                rate = int(req.get("rate") or 0)
+            except (TypeError, ValueError):
+                rate = 0
+            wav, why_not = plain_wav(wav, rate)
+            if why_not:
+                return self._json({"ok": False, "error": why_not})
         self.send_response(200)
         ctype = "audio/wav" if wav.startswith(b"RIFF") else "audio/mpeg"
         self.send_header("Content-Type", ctype)
