@@ -68,6 +68,11 @@ NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
 # turns this one sentence into a Start button, so the words name the fix.
 FACE_APP_OFF = "the face app is not running yet - start it and look again"
 
+# What the page says when the face app would STORE the frame. The page stops
+# looking on this sentence, so it names the two ways that still work.
+FACE_APP_KEEPS = ("the face app would keep this picture, so it was not sent - "
+                  "pick a camera the face app watches, or use Open Reconize")
+
 _tmp_seq = itertools.count()                        # one temp name per writer
 THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 SPECIAL_RE = re.compile(r"<\|[^|]+\|>")             # <|im_end|> and friends
@@ -1550,14 +1555,50 @@ class Brain:
         Their port moves with an update of theirs, and a second copy of the
         address in this file is how the two would disagree.
         """
+        return str(self._reconize_entry().get("api") or "").rstrip("/")
+
+    def _reconize_entry(self):
+        """Reconize's whole entry in config/partners.json, {} when unreadable."""
         try:
             # MICE_PARTNERS is what the hub honours too, and it is what lets a
             # check point this at a fake face app instead of the real one.
             path = os.environ.get("MICE_PARTNERS") or (CODE / "config" / "partners.json")
-            got = registry.load(path)
-            return str((got.get("reconize") or {}).get("api") or "").rstrip("/")
+            return registry.load(path).get("reconize") or {}
         except Exception:                               # noqa: BLE001
-            return ""
+            return {}
+
+    def look_allowed(self):
+        """Whether the face app PROMISES to keep nothing of one frame.
+
+        Their upload stores the frame, a history row and an attendance row.
+        `persist=false` was a local patch to their code, never theirs, and
+        resetting their folder to their own version removed it (2026-09-29).
+        FastAPI ignores a query it does not know, so sending the flag proves
+        nothing: only their own /openapi.json listing it counts. Returns
+        (True|False|None, why, detail); None = could not ask (app off).
+        """
+        import urllib.error
+        import urllib.request
+        api = self._reconize_api()
+        look = self._reconize_entry().get("look") or {}
+        name = str(look.get("dontKeep") or "").partition("=")[0]
+        if not api or not look.get("path") or not name or not look.get("spec"):
+            return False, "config/partners.json does not say how to ask the face app about one picture", ""
+        try:
+            with urllib.request.urlopen(api + look["spec"], timeout=5) as r:
+                doc = json.loads(r.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:             # it answered: no description
+            return False, FACE_APP_KEEPS, "%s answered %s" % (look["spec"], e.code)
+        except OSError as e:
+            return None, FACE_APP_OFF, str(e)
+        except ValueError as e:                         # not JSON: cannot tell, so no
+            return False, FACE_APP_KEEPS, "%s is not readable: %s" % (look["spec"], e)
+        op = ((doc.get("paths") or {}).get(look["path"]) or {}).get("post") or {}
+        if any(isinstance(p, dict) and p.get("name") == name and p.get("in") == "query"
+               for p in (op.get("parameters") or [])):
+            return True, "", ""
+        return False, FACE_APP_KEEPS, "POST %s has no %s option (%s)" % (
+            look["path"], name, look["spec"])
 
     def _faces_login_path(self):
         """Where the saved face-app login lives.
@@ -1624,8 +1665,10 @@ class Brain:
                         where = "the face app" if label else ""
             except Exception:                           # noqa: BLE001
                 pass                                    # no default is fine - the browser picks
+        ok, why, detail = self.look_allowed()
         return {"label": label, "from": where, "stations": self.face_stations(),
-                "seconds": float(face.get("autoSeconds") or 5)}
+                "seconds": float(face.get("autoSeconds") or 5),
+                "look": {"ok": ok, "why": why, "detail": detail}}
 
     def face_stations(self):
         """The cameras the face app is ALREADY watching.
@@ -1664,11 +1707,11 @@ class Brain:
         """Asks Reconize who is in ONE frame, and saves NOTHING.
 
         User 2026-09-18: *do not save the picture of it because it took my
-        rom*. Their /api/recognition/upload writes the frame, a history row
-        and an attendance row in a background task; ?persist=false skips all
-        three (their recognition.py), so the name comes back and the disk is
-        untouched. The name is cached here exactly like a face seen through
-        their camera, so the next answer greets the person by name.
+        rom*. Their upload writes the frame, a history row and an attendance
+        row, so the frame goes only to a face app that promises to keep none
+        of it (look_allowed); otherwise nothing is sent and the page is told
+        why. The name is cached here exactly like a face seen through their
+        camera, so the next answer greets the person by name.
         """
         import urllib.error
         import urllib.request
@@ -1687,13 +1730,18 @@ class Brain:
             return "", FACE_APP_OFF, str(e)
         if not tok:
             return "", "no saved login for the face app - see main_python/faces_login.json", ""
+        ok, why, detail = self.look_allowed()
+        if not ok:
+            return "", why, detail
+        look = self._reconize_entry()["look"]
         b = uuid.uuid4().hex
         body = b"".join([
-            ('--%s\r\nContent-Disposition: form-data; name="photo"; '
-             'filename="frame.jpg"\r\nContent-Type: image/jpeg\r\n\r\n' % b).encode(),
+            ('--%s\r\nContent-Disposition: form-data; name="%s"; '
+             'filename="frame.jpg"\r\nContent-Type: image/jpeg\r\n\r\n'
+             % (b, look.get("field") or "photo")).encode(),
             jpeg, ("\r\n--%s--\r\n" % b).encode()])
         req = urllib.request.Request(
-            api + "/api/recognition/upload?persist=false", data=body,
+            api + look["path"] + "?" + look["dontKeep"], data=body,
             headers={"Authorization": "Bearer " + tok,
                      "Content-Type": "multipart/form-data; boundary=" + b})
         try:
@@ -1779,9 +1827,9 @@ class Brain:
     def seen_seconds(self):
         """How long a face from this page's own camera counts as present.
 
-        It has to be a memory of its own: persist=false leaves no history
-        row, so the next poll finds nothing and the name would vanish two
-        seconds later. It is a SETTING because the right length depends on
+        It has to be a memory of its own: a look keeps nothing, so there is
+        no history row, the next poll finds nothing and the name would vanish
+        two seconds later. It is a SETTING because the right length depends on
         the room - user 2026-09-18, after the badge kept naming somebody who
         had walked away: *make can setting by my self in setting to setting
         the time out time*.
@@ -2038,8 +2086,10 @@ class VoiceHandler(BaseHTTPRequestHandler):
         if why_not:
             # canStart is what turns the sentence into a button: only a face app
             # that is SILENT can be started, and a wrong password never can.
+            # wouldKeep stops the page looking: every next frame would be refused too.
             return self._json({"ok": False, "error": why_not, "detail": detail,
-                               "canStart": why_not == FACE_APP_OFF})
+                               "canStart": why_not == FACE_APP_OFF,
+                               "wouldKeep": why_not == FACE_APP_KEEPS})
         return self._json({"ok": True, "person": person})
 
     def do_transcribe(self):

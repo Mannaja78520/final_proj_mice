@@ -80,6 +80,7 @@ class VoiceApp {
     this.camSeconds = 5;                  // config/voice.json face.autoSeconds
     this.camStations = [];                // cameras the face app already watches
     this.camStation = "";                 // the one being read, if any
+    this.lookRefused = null;              // {why, detail}: the face app would keep a frame
   }
 
 
@@ -117,10 +118,11 @@ class VoiceApp {
   }
 
   // ---- the camera on THIS device -----------------------------------------
-  // One frame at a time, sent to /api/voice/identify, which asks the face app
-  // with persist=false: no picture is kept anywhere (user 2026-09-18: *do not
-  // save the picture of it because it took my rom*). The camera is let go in
-  // every exit - a page that leaves the light on looks like it is recording.
+  // One frame at a time, sent to /api/voice/identify, which passes it on only
+  // to a face app that promises to keep none of it (user 2026-09-18: *do not
+  // save the picture of it because it took my rom*); otherwise nothing is sent
+  // and the page stops looking. The camera is let go in every exit - a page
+  // that leaves the light on looks like it is recording.
   //
   // Which camera is NOT a new setting: the face app already stores an
   // app-wide default as the device LABEL, and this page asks the helper for
@@ -245,6 +247,7 @@ class VoiceApp {
     } catch (e) {
       r = {ok: false, error: "the voice helper stopped answering"};
     }
+    if (r.wouldKeep) this.refuseLooks(r.error, r.detail);
     if (r.ok && r.person) {
       this.updateFace(r.person);
       if (line) this.sayCam("");
@@ -256,6 +259,16 @@ class VoiceApp {
                   r.detail, r.canStart);
     }
     return r;
+  }
+
+  // The face app would store every frame, so no frame is taken at all: the
+  // looping stops and the camera is let go until the page is opened again.
+  refuseLooks(why, detail){
+    this.lookRefused = {why: why || "the face app would keep the picture", detail: detail || ""};
+    if (this.camLoop) { clearInterval(this.camLoop); this.camLoop = null; }
+    const auto = this.$("autoFace");
+    if (auto) auto.checked = false;
+    this.closeCam();
   }
 
   // The one line under the camera. Plain words on the surface; the address or
@@ -321,6 +334,8 @@ class VoiceApp {
                  : "that camera has not seen anyone it knows in the last two minutes");
         return;
       }
+      if (this.lookRefused)                   // it would only be kept - do not open
+        return this.sayCam(this.lookRefused.why, this.lookRefused.detail);
       const fresh = !this.camStream;
       await this.openCam();
       if (line) line.textContent = "Look at the camera…";
@@ -351,6 +366,10 @@ class VoiceApp {
     try { localStorage.setItem(this.CAM_KEY + "_auto", on ? "1" : ""); } catch(e) {}
     if (this.camLoop) { clearInterval(this.camLoop); this.camLoop = null; }
     if (!on) return this.closeCam();
+    if (this.lookRefused) {
+      this.$("autoFace").checked = false;
+      return this.sayCam(this.lookRefused.why, this.lookRefused.detail);
+    }
     try {
       await this.openCam();
     } catch (e) {
@@ -377,6 +396,7 @@ class VoiceApp {
       this.camDefaultLabel = r.label || "";
       this.camSeconds = r.seconds || 5;
       this.camStations = r.stations || [];
+      if (r.look && r.look.ok === false) this.refuseLooks(r.look.why, r.look.detail);
       const picked = this.camPicked();
       this.camStation = picked.startsWith("station:") ? picked.slice(8) : "";
       const box = this.$("autoFace");
