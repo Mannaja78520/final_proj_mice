@@ -10,7 +10,10 @@ because breaking it produces a wrong choice nobody would see:
 
   * only SMALL replies are scored - a big reply is slow on RS485 because of
     its size, not because the route is slow;
-  * a route that fails is dropped at once, with no hysteresis;
+  * a route that fails is dropped at once, with no hysteresis, and is not
+    tried again while another route is untried (A26-7: WiFi leads the
+    fallback order, so a board that left WiFi was sent to the dead address
+    on every call while its cable sat untimed);
   * a faster route must win by a margin for several NEW samples before the
     choice moves - the hub asks on every command, and three calls in 30 ms
     prove nothing, so WiFi jitter cannot flip the choice back and forth;
@@ -20,6 +23,7 @@ because breaking it produces a wrong choice nobody would see:
   * `auto:<board>` is resolved on every call, so a page opened on it follows
     the board when the best route changes.
 """
+import json
 import sys
 import threading
 import time
@@ -102,6 +106,27 @@ def run(t):
     t.eq(L2.choose("k2", [a, b]), a,
          "a failed route is dropped even when nothing else is measured yet")
 
+    # A26-7: a route that just failed is not the fallback while another is
+    # untried - WiFi leads the order, and the cable may never have been timed.
+    L4 = route_latency.Latency()
+    L4.record(a, 60)
+    L4.choose("k4", [a, b])                # WiFi in use, the cable untimed
+    L4.fail(a)
+    t.eq(L4.choose("k4", [a, b]), b,
+         "a route that just failed is not tried again while another is untried")
+    L4.fail(b)
+    t.eq(L4.choose("k5", [a, b]), a,
+         "with every route failed lately, the usual order stands")
+    L4.record(b, 80, reply_len=5000)       # b answers again, with a big reply
+    t.eq(L4.choose("k6", [a, b]), b,
+         "a route that answers again, whatever the size, is back in the order")
+    L4.cfg["failHoldSec"] = 0
+    t.eq(L4.choose("k7", [a, b]), a,
+         "and a failure is held only for failHoldSec")
+    cfg = json.loads((F.CODE / "config" / "route_latency.json").read_text(encoding="utf-8"))
+    t.ok(cfg.get("failHoldSec") == route_latency.DEFAULTS["failHoldSec"],
+         "the hold is a tunable in config/route_latency.json", cfg)
+
     L.record("usb:COM1", 5, reply_len=5000)
     t.ok(L.ms("usb:COM1") is None, "a big reply is not scored as a slow route")
 
@@ -157,8 +182,63 @@ def _hub(t, main, route_latency):
         main._usb_open.pop(port, None)                        # noqa: SLF001
         main._usb_touch.pop(port, None)                       # noqa: SLF001
 
+    _dead_wifi(t, main, route_latency)
+
     # ---- the page uses it -------------------------------------------------
     hub = (F.HUB / "web" / "hub.html").read_text(encoding="utf-8")
     t.ok("'auto:'+m.key" in hub, "Open module uses auto: when there is a choice")
     t.ok("const sdev = auto ? 'auto:'+m.key : dev" in hub,
          "Studio keeps auto:<board>, so an open page follows route changes")
+
+
+def _dead_wifi(t, main, route_latency):
+    """A26-7 on the wire: the board left WiFi, the hub's record still lists the
+    address (no sweep has marked it stale) and the cable was never timed."""
+    route_latency.LAT = route_latency.Latency()
+    port, ip = "COM_QC_LAT2", "10.0.0.99"
+    m = {"key": "chip/QC3", "wifi_mode": "sta", "routes": [
+        {"kind": "wifi", "dev": "wifi:" + ip, "ip": ip},
+        {"kind": "usb", "dev": "usb:" + port, "port": port}]}
+    main._pick_route(m)                                       # noqa: SLF001
+    t.eq(m.get("best"), "wifi:" + ip, "an untimed board starts on WiFi, the usual order")
+    # Only this thread's traffic counts: a hub another check started in this
+    # process runs its latency probe, which PINGs these same routes.
+    me = threading.get_ident()
+
+    class Cable(Answering):
+        got = b""
+
+        def write(self, b):
+            if threading.get_ident() == me:
+                self.got += b
+            return super().write(b)
+
+    cable = Cable()
+    main._usb_open[port] = {"ser": cable, "lock": threading.Lock(),  # noqa: SLF001
+                            "last": time.time()}
+    tried = []
+
+    def gone(addr, path, timeout=None):
+        if threading.get_ident() == me:
+            tried.append(addr)
+        raise OSError("timed out")        # what a vanished address gives
+
+    real = main.Handler.__dict__["robot_get"]
+    main.Handler.robot_get = staticmethod(gone)
+    try:
+        for _ in range(3):
+            try:
+                reply = main.dev_cmd("auto:chip/QC3", "PING", wait=1.0)
+            except Exception as e:                            # noqa: BLE001
+                reply = "raised: %s" % e
+        t.ok(tried == [ip],
+             "the dead WiFi address is tried once, not on every call",
+             "tried %s" % tried)
+        t.ok(cable.got.count(b"PING") == 2 and "PONG" in reply,
+             "the next commands reach the cable", "cable got %r, last reply %r"
+             % (cable.got, reply))
+    finally:
+        main.Handler.robot_get = real
+        main._usb_open.pop(port, None)                        # noqa: SLF001
+        main._usb_touch.pop(port, None)                       # noqa: SLF001
+        main._route_table.pop("chip/QC3", None)               # noqa: SLF001

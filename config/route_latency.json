@@ -6,5 +6,6 @@
   "smoothing": 0.3,
   "switchMarginMs": 5,
   "switchMarginPct": 20,
-  "switchAfterSamples": 3
+  "switchAfterSamples": 3,
+  "failHoldSec": 30
 }

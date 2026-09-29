@@ -9,6 +9,9 @@ route to a board reached more than one way.
   `config/route_latency.json`. Only SMALL replies are scored (a big reply is slow
   on RS485 because of its size). A faster route must win by a margin with
   several samples behind it; a failed route is dropped at once.
+- A route that failed stays behind an untried one until it answers or
+  `failHoldSec` passes. Without that, WiFi (first in the fallback order) was
+  retried on every call while the cable sat untimed (A26-7).
 - `auto:<board key>` is resolved inside `split_hub_dev` on EVERY call.
 - The probe PINGs only ports already open, as `client=False`, never during a show.
 - Measured 2026-09-21, nong 67: RS485 6 ms, WiFi (PC hotspot) 58-95 ms.

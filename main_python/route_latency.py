@@ -12,9 +12,10 @@ How (Codex review 2026-09-21 shaped every rule here):
     slow link;
   * a probe fills the gaps (main.py route_probe_loop), gently: only ports
     that are already open, never marked as client use;
-  * a failure drops the route at once; a better route has to win by a margin
-    with several samples behind it before the choice moves, so WiFi jitter
-    cannot flap it;
+  * a failure drops the route at once, and it stays behind an untried route
+    until it answers again or failHoldSec passes; a better route has to win
+    by a margin with several samples behind it before the choice moves, so
+    WiFi jitter cannot flap it;
   * samples are tied to the board seen on that route, so a COM port or an IP
     reused by another board does not inherit an old score.
 Tunables live in config/route_latency.json.
@@ -25,7 +26,7 @@ import time
 
 DEFAULTS = {"probeEverySec": 10, "sampleTtlSec": 30, "smallReplyBytes": 200,
             "smoothing": 0.3, "switchMarginMs": 5, "switchMarginPct": 20,
-            "switchAfterSamples": 3}
+            "switchAfterSamples": 3, "failHoldSec": 30}
 
 
 class Latency:
@@ -42,10 +43,15 @@ class Latency:
         self._ms = {}        # dev -> (smoothed ms, time of last sample)
         self._owner = {}     # dev -> board key last seen on it
         self._chosen = {}    # board key -> dev
+        self._failed = {}    # dev -> time it last failed, until it answers
 
     # ---- samples ---------------------------------------------------------
     def record(self, dev, ms, reply_len=0):
-        if not dev or reply_len > self.cfg["smallReplyBytes"]:
+        if not dev:
+            return
+        with self._lock:
+            self._failed.pop(dev, None)     # it answered, whatever the size
+        if reply_len > self.cfg["smallReplyBytes"]:
             return
         a = self.cfg["smoothing"]
         with self._lock:
@@ -63,6 +69,7 @@ class Latency:
         """A route that just failed is out until it answers again."""
         with self._lock:
             self._ms.pop(dev, None)
+            self._failed[dev] = time.time()
             for key, d in list(self._chosen.items()):
                 if d == dev:
                     del self._chosen[key]       # no hysteresis after a failure
@@ -91,8 +98,9 @@ class Latency:
     def choose(self, key, devs):
         """The route to use for board `key` among live `devs` (in fallback order).
 
-        Unmeasured routes keep the old order; a measured faster route has to
-        beat the current one by the margin, with switchAfterSamples behind it.
+        Unmeasured routes keep the old order, less any that failed within
+        failHoldSec; a measured faster route has to beat the current one by
+        the margin, with switchAfterSamples behind it.
         """
         if not devs:
             return None
@@ -103,7 +111,12 @@ class Latency:
             cur = None
         measured = [(self.ms(d), d) for d in devs if self.ms(d) is not None]
         if not measured:
-            pick = cur or devs[0]
+            # A26-7: WiFi leads this order, so a board that left WiFi was sent
+            # to the dead address on every call while its cable sat untimed.
+            with self._lock:
+                held = [d for d in devs if time.time() - self._failed.get(d, 0)
+                        < c["failHoldSec"]]
+            pick = cur or ([d for d in devs if d not in held] or devs)[0]
         else:
             best_ms, best = min(measured)
             cur_ms = self.ms(cur) if cur else None

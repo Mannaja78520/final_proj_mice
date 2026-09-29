@@ -278,7 +278,8 @@
     <p>When a robot is plugged in, on the RS485 cable and on WiFi all at once, the hub times
        each way and sends commands down the quickest one. Measured on a nong: the RS485
        cable answered in about 6&nbsp;ms, WiFi in about 60&nbsp;ms. <b>⚙ Open module</b>
-       and <b>Studio + monitor</b> keep choosing while open, so if the cable is pulled they carry on over WiFi.
+       and <b>Studio + monitor</b> keep choosing while open, so if the cable is pulled they carry on over WiFi,
+       and if the robot drops off WiFi they go back to the cable after one command that got no answer.
        The Modules tab marks the way in use as <i>fastest, in use</i>; the timings are
        behind the technical switch. The settings are in <code>config/route_latency.json</code>.</p></div>
   <div class="f"><h3>Every module shares its WiFi<span class="tag t-new">new</span></h3>
