@@ -162,9 +162,14 @@ def clean(text):
 # The rule this file already carries is that a failure prints FAILED and never
 # an empty list. This is the same rule one step earlier: a failure must not be
 # able to disguise itself as content.
+# A31-11, 2026-09-23: agy refused a tool call it could not ask about ("a tool
+# required the command permission that headless mode cannot prompt for, so it
+# was auto-denied"). Every model and the head answered that line, and the head's
+# "verdict" was that line - two runs, ~120k tokens, read as a review.
 _TOOL_FAILURE = re.compile(
     r"quota reached|Authentication required|authentication (failed|timed out)"
-    r"|Please upgrade your subscription|rate.?limit|Error: ",
+    r"|Please upgrade your subscription|rate.?limit|Error: "
+    r"|headless mode cannot prompt",
     re.I)
 
 
@@ -172,8 +177,11 @@ def tool_failed(text):
     """The reason this model said nothing usable, or "" if it really answered."""
     for line in (text or "").splitlines():
         line = line.strip()
-        if line and _TOOL_FAILURE.search(line):
-            return line[:160]
+        m = _TOOL_FAILURE.search(line) if line else None
+        if m:
+            # around the match: the line may be a findings list as JSON, where
+            # the complaint sits well past the first 160 characters
+            return line[max(0, m.start() - 60):m.start() + 100]
     return ""
 
 

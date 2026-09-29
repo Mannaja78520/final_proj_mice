@@ -20,10 +20,62 @@ So three properties are held here:
 And the token brief goes to every one of them, the user's other standing rule:
 they pay for the panel's output too.
 """
+import json
+import re
+import subprocess
+import tempfile
+import types
+from pathlib import Path
+
 import qc as F
 
 AREA = "tools"
 TITLE = "the review panel has five voices, and says when one of them failed"
+
+# A31-11, 2026-09-23: what agy answered for every model, the head included,
+# when a tool call needed a permission its headless mode cannot ask for.
+REFUSED = ("a tool required the command permission that headless mode cannot "
+           "prompt for, so it was auto-denied")
+
+
+def _refused_tool_is_no_review(t, ai_panel):
+    """Run a whole panel whose every model hits the refusal, and read the report.
+
+    The two runs on 2026-09-23 printed REFUSED as the head's verdict and exited
+    0, so it read as a review that found one thing. agy stands in here; nothing
+    else in the run is faked.
+    """
+    t.ok(ai_panel.tool_failed(REFUSED),
+         "a tool call agy refused in headless mode is recognised as a failure")
+    answers = {
+        # as a finding in the enforced shape ...
+        "json": json.dumps({"status": "OK", "usage": {"total_tokens": 7},
+                            "structured_output": {"findings": [
+                                {"file": "", "what": REFUSED, "severity": "real"}]}}),
+        # ... and as the plain line the prose retry reads
+        "prose": REFUSED}
+    real = ai_panel.subprocess
+    for shape, out in answers.items():
+        def fake_run(cmd, **kw):
+            return subprocess.CompletedProcess(cmd, 0, stdout=out, stderr="")
+        ai_panel.subprocess = types.SimpleNamespace(
+            run=fake_run, TimeoutExpired=subprocess.TimeoutExpired)
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                report = Path(tmp) / "panel.md"
+                got = ai_panel.run("is anything wrong", [], models=["m-a", "m-b"],
+                                   head="m-a", out=str(report))
+                text = report.read_text(encoding="utf-8")
+        finally:
+            ai_panel.subprocess = real
+        head = text[text.find("## The head reviewer"):text.find("## What each model said")]
+        t.ok("NO REVIEW HAPPENED" in text,
+             "a panel refused by agy (%s) says no review happened" % shape, text[:300])
+        shown = re.findall(r"^ - \*\*(real|maybe|fine|unchecked)\*\*", head, re.M)
+        t.ok("FAILED" in head and not shown,
+             "and the head's verdict says FAILED, not the refusal as a finding (%s)"
+             % shape, head[:300])
+        t.eq(got, "", "and the command exits non-zero (%s)" % shape)
 
 
 def run(t):
@@ -110,6 +162,7 @@ def run(t):
          "while a real finding is NOT mistaken for one",
          "over-matching here would throw away genuine review comments, which "
          "is the opposite failure and just as silent")
+    _refused_tool_is_no_review(t, ai_panel)
     i = src.find("return {\"model\": model,")
     t.contains(src[max(0, i - 400):i], "tool_failed(raw)",
                "and every answer is checked before it is believed")
