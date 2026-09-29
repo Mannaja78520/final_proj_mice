@@ -789,8 +789,15 @@ class VoiceApp {
   this.convHistory = [];
 
   while (this.convActive) {
+    await this.rigQuiet(signal);
+    if (!this.convActive || this.convSession !== mySession + 1) break;
+    const heardFrom = Date.now();
     const blob = await this.convListenOnce();
     if (!blob || !this.convActive || this.convSession !== mySession + 1) break;
+    if (await this.rigSpokeWithin(Date.now() - heardFrom + 500)) {
+      this.say("the robot was talking - listening again");
+      continue;
+    }
 
     // 1. Transcribe
     this.$("wait").textContent = "listening…";
@@ -1073,6 +1080,35 @@ class VoiceApp {
     this.$("wait").textContent = "The sound could not play.";
     this.$("speakingNow").hidden = true;
   }
+}
+
+// What the rig's ONE speaking queue is doing (hub_speak.py, A4-4): a greeting
+// or this page's own answer through a robot plays there, not in this browser,
+// so the page cannot hear it end. null = unknown (not logged in, older hub).
+  async rigSpeech(){
+  try {
+    const r = await fetch("/api/speak", {cache: "no-store"});
+    return r.ok ? await r.json() : null;
+  } catch (e) { return null; }
+}
+
+// Before listening again: wait while the rig is talking, or the microphone
+// takes the rig's own words as the next question. Gives up after maxMs.
+  async rigQuiet(signal, maxMs = 30000){
+  const until = Date.now() + maxMs;
+  while (Date.now() < until && !(signal && signal.aborted)) {
+    const st = await this.rigSpeech();
+    if (!st || !st.speaking) return;
+    this.$("wait").textContent = "waiting for the robot to finish…";
+    await new Promise(r => setTimeout(r, 300));
+  }
+}
+
+// After a recording: did the rig talk while it ran? Then it holds the rig's
+// voice, not the visitor's, and is thrown away.
+  async rigSpokeWithin(ms){
+  const st = await this.rigSpeech();
+  return !!st && (st.speaking || (st.quietFor !== null && st.quietFor * 1000 < ms));
 }
 
 // Like this.speak(), but resolves only when playback finishes (onended).

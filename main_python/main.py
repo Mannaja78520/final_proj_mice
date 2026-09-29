@@ -551,7 +551,9 @@ def probe_module(ip: str, timeout=0.6):
                     # Bench 2026-08-26: dropping the chip keyed one board as
                     # two - cable route under its MAC, WiFi route under
                     # id+type - so the page drew a row per way in.
-                    "chip": st.get("chip", "")}
+                    "chip": st.get("chip", ""),
+                    # what the board can do: "audio" makes it a speaker (A4-3)
+                    "caps": st.get("caps") or []}
     except Exception:
         pass
     return None
@@ -1190,6 +1192,10 @@ show = ShowPlayer()
 # board would interleave datagrams into noise.
 streamer = stream_audio.Sender()
 
+# The rig's voice: speakers and ONE speaking queue (hub_speak.py, A4-3..A4-5).
+import hub_speak  # noqa: E402
+hub_speak.bind(sys.modules[__name__])
+
 # Which commands mean "somebody else is moving this robot now".
 #
 # Read from the SAME registry the firmware compiles its table from
@@ -1439,10 +1445,12 @@ import hub_api_play  # noqa: E402
 hub_api_play.bind(sys.modules[__name__])
 import hub_api_studio  # noqa: E402
 hub_api_studio.bind(sys.modules[__name__])
+import hub_api_speak  # noqa: E402
+hub_api_speak.bind(sys.modules[__name__])
 
 
 # ---------------------------------------------------------------- handler
-class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, BaseHTTPRequestHandler):
+class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, BaseHTTPRequestHandler):
     # HTTP/1.1, so a browser can KEEP ITS CONNECTION.
     #
     # BaseHTTPRequestHandler defaults to HTTP/1.0, which means every response
@@ -1815,7 +1823,9 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
                         "/api/users", "/api/users/add", "/api/users/remove",
                         "/api/users/rename", "/api/users/password"):
                 return self.auth_route(method, path)
-            if hub_auth.gated(path, method) and not self.logged_in():
+            if hub_auth.gated(path, method) and not self.logged_in() \
+                    and not (hub_auth.local_ok(path, method)
+                             and self.from_program_here()):
                 self.drain()
                 return self.send_bytes(
                     json.dumps({"ok": False, "need_login": True,
@@ -1983,6 +1993,50 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
 
     def logged_in_user(self) -> str:
         return auth().user_of(auth().token_of(self.headers.get("Cookie", "")))
+
+    def from_program_here(self) -> bool:
+        """A PROGRAM on this PC, not a web page (hub_auth.LOCAL_OK).
+
+        is_self alone is not enough: a page open in this PC's browser comes
+        from 127.0.0.1 too. So JSON only (a cross-site form or <img> cannot
+        send it without a preflight, and this hub answers none), and no
+        Origin or Sec-Fetch header - every browser request carries one, a
+        DNS-rebinding page included, and urllib/requests send neither.
+        """
+        if not is_self(self.client_address[0]):
+            return False
+        ctype = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        if ctype != "application/json":
+            return False
+        return not self.headers.get("Origin") and not any(
+            k.lower().startswith("sec-fetch-") for k in self.headers.keys())
+
+    def origin_is_hub(self) -> bool:
+        """No Origin (a program), or one naming THIS hub - never a website.
+
+        Compared as an IP literal or one of our own names, never by prefix:
+        is_self("127.evil.example") would say yes, and a DNS-rebinding page is
+        same-origin with its own host, not with ours.
+        """
+        o = self.headers.get("Origin")
+        if not o:
+            return True
+        u = urllib.parse.urlsplit(o)
+        host = (u.hostname or "").lower()
+        try:
+            port = u.port or 80
+        except ValueError:
+            return False
+        if port != self.server.server_address[1]:
+            return False
+        ns = NAME_SERVER[0]
+        if host in ("localhost", MDNS_NAME) or (ns and host == str(ns.name).lower()):
+            return True
+        try:
+            ip = ipaddress.ip_address(host)
+        except ValueError:
+            return False
+        return ip.is_loopback or str(ip) in lan_ips()
 
     def auth_route(self, method: str, path: str):
         a = auth()
@@ -2315,6 +2369,10 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
                                        "image/svg+xml; charset=utf-8")
             except ValueError as e:               # too long to encode
                 return self.send_err(e)
+
+        r = self.api_speak(method, path, q)   # hub_api_speak.py
+        if r is not hub_api_speak.NOT_MINE:
+            return r
 
         r = self.api_play(method, path, q)   # hub_api_play.py
         if r is not hub_api_play.NOT_MINE:

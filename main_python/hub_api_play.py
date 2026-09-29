@@ -8,7 +8,6 @@ main.<name> reaches this code too.
 import json
 import threading
 import time
-import urllib.request
 
 from shows import clean_limits
 
@@ -39,8 +38,8 @@ class PlayRoutes:
         if path == "/api/play":
             return self.send_json(_hub.show.status())
         # ---- live audio to a module's speaker (A24-32) ----
-        # POST /api/stream/start  {dev|ip, port, rate, file}
-        # POST /api/stream/feed   raw 16-bit mono PCM, from the browser capture
+        # POST /api/stream/start  {dev|ip, port, rate, file} -> {session, ...}
+        # POST /api/stream/feed?session=  raw 16-bit mono PCM, from the browser
         # POST /api/stream/stop   |  GET /api/stream  where it is up to
         if path == "/api/stream/start" and method == "POST":
             try:
@@ -56,65 +55,78 @@ class PlayRoutes:
                     ip = addr.split(":")[0]
                 port = int(d.get("port") or _hub.stream_audio.DEF_PORT)
                 rate = int(d.get("rate") or _hub.stream_audio.DEF_RATE)
+                to = dev or ("wifi:" + ip)
+                said = []
+
                 # The BOARD is told first: it must be listening before the
                 # first datagram, or the start of the sound is simply gone.
-                said = _hub.dev_cmd(dev or ("wifi:" + ip),
-                               "STREAM ON %d %d" % (port, rate))
-                if not said.startswith("OK"):
-                    return self.send_err("the board refused the stream: " + said)
-                st = _hub.streamer.start(ip, port, rate, str(d.get("name") or "live"))
+                def on():
+                    said.append(_hub.dev_cmd(to, "STREAM ON %d %d" % (port, rate)))
+                    return said[-1]
+
+                # A person pressing start takes over (take=True): whatever
+                # else was playing, the rig's own speech included, stops.
+                st, why = _hub.streamer.claim(
+                    ip, port, rate, str(d.get("name") or "live"), on,
+                    lambda: _hub.dev_cmd(to, "STREAM OFF"), take=True)
+                if not st:
+                    return self.send_err("the board refused the stream: " + why)
                 if d.get("file"):
                     pcm = _hub.stream_audio.wav_pcm(_hub.SEQUENCES.parent / "music"
                                                / _hub.safe_name(str(d["file"])), rate)
-                    threading.Thread(target=_hub.streamer.feed_all, args=(pcm,),
+                    threading.Thread(target=_hub.streamer.feed_all,
+                                     args=(pcm, 60.0, st["session"]),
                                      daemon=True).start()
-                return self.send_json({"ok": True, "board": said, **st})
+                return self.send_json({"ok": True, "board": said[-1] if said else "",
+                                       **st})
             except Exception as e:            # noqa: BLE001
                 return self.send_err(e)
         if path == "/api/stream/feed" and method == "POST":
-            took = _hub.streamer.feed(self.body())
+            took = _hub.streamer.feed(self.body(), (q.get("session") or [""])[0])
+            if took < 0:
+                # Another sound took the speaker over: say so, so the page
+                # stops sending instead of feeding someone else's stream.
+                return self.send_json({"ok": False, "stale": True,
+                                       "error": "another sound took the speaker over"}, 409)
             return self.send_json({"ok": True, "took": took,
                                    "queued": _hub.streamer.q.qsize()})
         if path == "/api/stream/stop" and method == "POST":
-            st = _hub.streamer.stop()
-            try:
-                if st.get("ip"):
-                    _hub.dev_cmd("wifi:" + st["ip"], "STREAM OFF")
-            except Exception as e:            # noqa: BLE001
-                st["error"] = str(e)
-            return self.send_json({"ok": True, **st})
+            session = (q.get("session") or [""])[0]
+            if session:
+                # A page ending ITS sound: only if it still plays, so a page
+                # that was taken over never silences what took over.
+                mine = _hub.streamer.release(session)
+                return self.send_json({"ok": True, "stopped": mine,
+                                       **_hub.streamer.status()})
+            # No session: quiet means quiet, the rig's queued speech too (A4-5).
+            boards = _hub.hub_speak.off_all(_hub.hub_speak.SPEECH.silence(), wait=3.0)
+            return self.send_json({"ok": True, "silenced": boards,
+                                   **_hub.streamer.status()})
         if path == "/api/stream":
             return self.send_json({"ok": True, **_hub.streamer.status()})
 
         if path == "/api/stream/voice" and method == "POST":
+            # The Voice page's answer, spoken through a robot. It joins the one
+            # speaking queue (hub_speak.py) instead of streaming on its own, so
+            # it waits for a greeting to finish rather than talking over it -
+            # and it lost the voice helper address it used to hardcode.
             try:
-                data = json.loads(self.body().decode())
-                text = data.get("text")
-                dev = data.get("dev")
-                req = urllib.request.Request("http://127.0.0.1:8767/say", data=json.dumps({"text": text, "lang": ""}).encode(), headers={"Content-Type": "application/json"})
-                with urllib.request.urlopen(req, timeout=10) as r:
-                    wav_bytes = r.read()
-                import io, wave
-                with wave.open(io.BytesIO(wav_bytes)) as w:
-                    pcm = w.readframes(w.getnframes())
-                    rate = w.getframerate()
-                kind, addr, _, _ = _hub.parse_dev(str(dev or ""))
-                # The same two rules /api/stream/start keeps: audio goes over
-                # WiFi only (a usb: address made "COM7" the UDP target), and a
-                # board that refused STREAM ON is not sent a stream at all.
-                if kind != "wifi":
-                    return self.send_err(
-                        "live audio goes over WiFi - open this module over "
-                        "WiFi, or give its address", 501)
-                ip = addr.split(":")[0]
-                said = _hub.dev_cmd(dev, "STREAM ON %d %d" % (_hub.stream_audio.DEF_PORT, rate))
-                if not str(said).startswith("OK"):
-                    return self.send_err("the board refused the stream: %s" % said)
-                _hub.streamer.start(ip, _hub.stream_audio.DEF_PORT, rate, "voice")
-                threading.Thread(target=_hub.streamer.feed_all, args=(pcm,), daemon=True).start()
-                return self.send_json({"ok": True})
-            except Exception as e:
-                return self.send_err(str(e))
+                d = json.loads(self.body().decode() or "{}")
+            except ValueError:
+                return self.send_err("that request was not readable")
+            dev = str(d.get("dev") or "")
+            name = ""
+            for m in _hub.modules_here():
+                if any(r.get("dev") == dev for r in m.get("routes") or []):
+                    name = m.get("name") or ""
+                    break
+            if not name:
+                return self.send_err("no robot answers at %s right now" % dev, 404)
+            got = _hub.hub_speak.SPEECH.submit(
+                {"text": d.get("text"), "to": name, "voice": d.get("voice"),
+                 "lang": d.get("lang"), "whenBusy": "queue"},
+                who=self.logged_in_user() or "the Voice page")
+            return self.send_json(got, 200 if got.get("ok") else 400)
 
         # ---- shows: saved sequences in series (shows.py) ----
         if path == "/api/shows":
@@ -199,6 +211,10 @@ class PlayRoutes:
                 _hub.show.stop(freeze=False, why="somebody pressed stop")
             except Exception:                              # noqa: BLE001
                 pass
+            # Then quiet: the speaking queue emptied and every board the hub
+            # streamed to told STREAM OFF, in parallel with the MOVE STOPs -
+            # MOVE STOP silences a song but not a live stream (A4-5).
+            silenced = _hub.hub_speak.off_all(_hub.hub_speak.SPEECH.silence())
             mods = [m for m in _hub.modules_here() if m.get("routes")]
 
             # ONE THREAD PER BOARD, ALL AT ONCE. Stopping them in a row meant
@@ -238,6 +254,7 @@ class PlayRoutes:
                     if ("#%s %s" % (m.get("id"), m.get("name") or "")).strip()
                     not in said]
             return self.send_json({"ok": not failed, "stopped": stopped,
-                                   "failed": failed, "slow": slow})
+                                   "failed": failed, "slow": slow,
+                                   "silenced": silenced})
 
         return NOT_MINE

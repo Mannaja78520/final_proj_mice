@@ -1867,6 +1867,82 @@ class Brain:
         return self._cached_person
 
 
+def plain_wav(data, rate=0):
+    """Any sound the voice made -> a 16-bit WAV the hub can stream. -> (wav, why)
+
+    The neural voices answer MP3 (cached under a .wav name - the cache key
+    stays), which a browser plays and a robot's speaker cannot (A4-4). A
+    16-bit WAV passes as it is; anything else is decoded by PyAV, which
+    faster-whisper already installs, to mono at `rate` (0 = its own rate).
+    """
+    import io
+    import wave
+    if data[:4] == b"RIFF":
+        try:
+            with wave.open(io.BytesIO(data)) as w:
+                if w.getsampwidth() == 2:
+                    return data, None
+        except (wave.Error, EOFError):
+            pass
+    try:
+        import av
+    except ImportError:
+        return None, ("this PC cannot turn the neural voice into sound for a "
+                      "robot - the av package is missing (faster-whisper brings it)")
+    pcm = bytearray()
+    try:
+        with av.open(io.BytesIO(data)) as box:
+            st = box.streams.audio[0]
+            out_rate = int(rate or st.rate or 24000)
+            rs = av.AudioResampler(format="s16", layout="mono", rate=out_rate)
+            for frame in box.decode(st):
+                for f in rs.resample(frame):
+                    pcm += bytes(f.planes[0])[:f.samples * 2]
+            for f in rs.resample(None):                 # what the resampler held
+                pcm += bytes(f.planes[0])[:f.samples * 2]
+    except Exception as e:                          # noqa: BLE001
+        return None, "the voice's sound could not be read (%s)" % e
+    if not pcm:
+        return None, "the voice made no sound"
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(out_rate)
+        w.writeframes(bytes(pcm))
+    return buf.getvalue(), None
+
+
+def web_page_refused(headers):
+    """Why a request must be refused, or '' for a program on this PC.
+
+    The helper has no password, so it answers programs only (the hub's proxy
+    and speech queue, the face watcher). A website open on this PC reached it
+    too: POST /config could pick a model that runs its own code (2026-09-29).
+    Every browser request carries Origin or Sec-Fetch-*; a DNS-rebinding page
+    names its own host in Host, never an IP.
+    """
+    import ipaddress
+    from urllib.parse import urlsplit
+    if headers.get("Origin") or any(k.lower().startswith("sec-fetch-")
+                                    for k in headers.keys()):
+        return "a web page cannot use the voice helper - go through the hub"
+    host = (headers.get("Host") or "").strip()
+    if not host:
+        return ""
+    try:
+        name = urlsplit("//" + host).hostname or ""
+    except ValueError:
+        return "the voice helper answers only by IP address or localhost"
+    if name.lower() == "localhost":
+        return ""
+    try:
+        ipaddress.ip_address(name)
+        return ""
+    except ValueError:
+        return "the voice helper answers only by IP address or localhost"
+
+
 class VoiceHandler(BaseHTTPRequestHandler):
     brain = None                                    # set in main()
 
@@ -1881,7 +1957,20 @@ class VoiceHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def refuse_web(self):
+        """True when the request was refused (and answered)."""
+        why = web_page_refused(self.headers)
+        if not why:
+            return False
+        n = int(self.headers.get("Content-Length") or 0)
+        if 0 < n <= 1024 * 1024:
+            self.rfile.read(n)          # read first, or Windows resets the socket
+        self._json({"ok": False, "error": why}, 403)
+        return True
+
     def do_GET(self):                               # noqa: N802
+        if self.refuse_web():
+            return
         path = urlparse(self.path).path
         self.brain.maybe_reload()
         if path == "/health":
@@ -1957,6 +2046,8 @@ class VoiceHandler(BaseHTTPRequestHandler):
         return self._json({"ok": True})
 
     def do_POST(self):                              # noqa: N802
+        if self.refuse_web():
+            return
         path = urlparse(self.path).path
         self.brain.maybe_reload()
         if path == "/config":
@@ -2144,6 +2235,16 @@ class VoiceHandler(BaseHTTPRequestHandler):
                                         % (e.__class__.__name__, e)}, 500)
         if why_not:
             return self._json({"ok": False, "error": why_not})
+        if req.get("format") == "wav":
+            # The hub's speaking queue: a robot's speaker plays 16-bit PCM
+            # only, and so does the PC player (A4-4).
+            try:
+                rate = int(req.get("rate") or 0)
+            except (TypeError, ValueError):
+                rate = 0
+            wav, why_not = plain_wav(wav, rate)
+            if why_not:
+                return self._json({"ok": False, "error": why_not})
         self.send_response(200)
         ctype = "audio/wav" if wav.startswith(b"RIFF") else "audio/mpeg"
         self.send_header("Content-Type", ctype)

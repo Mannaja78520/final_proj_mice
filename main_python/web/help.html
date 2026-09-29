@@ -1266,6 +1266,41 @@
        listening runs on this PC too. Which languages it hears — and the words
        each language gets wrong often — live in <code>config/voice.json</code>;
        adding a language is one entry there.</p></div>
+  <div class="f"><h3>The rig speaks one thing at a time<span class="tag t-new">new</span></h3>
+    <p>Everything the rig says goes through <b>one queue</b> on the hub: a
+       greeting, an answer from this page spoken through a robot, a message
+       from another program on this PC. So two of them never talk over each
+       other. Something that arrives while the rig is talking either
+       <b>waits its turn</b> or is <b>skipped</b> — whoever asked chooses — and
+       a greeting that waited too long is dropped, because the person has
+       walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p>
+    <p><b>Where it speaks.</b> Speakers are found by themselves: every robot
+       with a speaker that the hub reaches over WiFi, and this PC's own
+       speakers. A robot reached only by cable is listed with that reason, and
+       a robot whose board has no amplifier wired says so after its first try
+       — plug one in and it is asked again. Which one is the default, and
+       which voice each uses, is <code>config/speakers.json</code>; the hub
+       writes it when somebody picks on a screen.</p>
+    <p><b>Live sound wins.</b> Somebody sending sound to a robot (<i>Send
+       sound to the robot</i> on its page) takes the speaker; greetings wait
+       until it has been quiet for two seconds. If the rig's own speech takes a
+       speaker back, the sending page stops and says so instead of sending
+       into nothing.</p>
+    <p><b>Stop All silences it all</b> — what is being said, everything
+       waiting, and live sound — with no login, like every other stop.</p>
+    <p>In conversation mode this page waits for the robot to finish before it
+       listens again, and throws away anything it heard while the robot was
+       talking, so it never answers its own voice.</p>
+    <p class="tech">For a program on this PC: <code>POST /api/speak</code> with
+       JSON <code>{text, to, voice, lang, whenBusy: "queue"|"skip", take,
+       move, module, maxAgeSeconds}</code> needs no login when it comes from
+       this PC with <code>Content-Type: application/json</code> and no browser
+       headers; from the network, or from a web page, it needs one.
+       <code>GET /api/speak</code> shows what is said and what waits (login),
+       <code>GET /api/speakers</code> lists the speakers,
+       <code>POST /api/speak/stop</code> is quiet now. The voice helper itself
+       answers programs only: a web page, or any address that is not an IP or
+       <code>localhost</code>, is refused.</p></div>
   <div class="f"><h3>It can greet you by name<span class="tag t-new">new</span></h3>
     <p>Beside the answer box there is a face badge and two buttons.
        <b>Check who I am</b> uses the camera of the device the page is open on:

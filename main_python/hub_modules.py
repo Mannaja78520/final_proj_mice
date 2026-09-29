@@ -160,7 +160,7 @@ def modules_here(force=False):
         # the person who just renamed it cannot tell which board they are
         # looking at. A late answer may still ADD a field nothing else knows.
         fresh = not mod.get("stale")
-        for field in ("name", "type", "group", "fw", "ip", "id", "chip"):
+        for field in ("name", "type", "group", "fw", "ip", "id", "chip", "caps"):
             if mod.get(field) in (None, "", []):
                 continue
             if not fresh and seen.get(field) not in (None, "", []):
@@ -280,7 +280,7 @@ def modules_everywhere(force=False):
         # A board this PC can reach directly is still the same board when the
         # laptop next door can reach it too - so the far route is ADDED, never
         # a second row. Never overwrite something with nothing.
-        for field in ("name", "type", "group", "fw", "ip", "id", "chip"):
+        for field in ("name", "type", "group", "fw", "ip", "id", "chip", "caps"):
             if m.get(field) not in (None, "", []) and not seen.get(field):
                 seen[field] = m[field]
         if route not in seen["routes"]:
