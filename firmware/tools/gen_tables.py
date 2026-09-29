@@ -92,7 +92,9 @@ def c_str(s):
 
 
 def ident_ok(name):
-    return bool(re.match(r"^[a-z][a-z0-9_]*$", name))
+    # fullmatch, not ^...$: "$" also matches before a trailing newline, and an
+    # id carrying one breaks the C table it is written into
+    return bool(re.fullmatch(r"[a-z][a-z0-9_]*", name))
 
 
 def load_modules():
@@ -288,7 +290,8 @@ def gen_amps(out, types):
         for field in ("label", "mode", "pins", "mono", "wiring", "to"):
             if field not in a:
                 raise SystemExit("amp %r is missing %r" % (key, field))
-        if not isinstance(a["to"], dict):
+        if not isinstance(a["to"], dict) or not all(
+                isinstance(v, str) and v.strip() for v in a["to"].values()):
             raise SystemExit("amp %r: 'to' maps each wired pin to where its "
                              "wire goes, e.g. {\"i2s_dout\": \"the amp's input\"}" % key)
         # The board joins these into AMP VALID's JSON as they are, so a quote

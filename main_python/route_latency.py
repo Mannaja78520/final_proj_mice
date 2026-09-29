@@ -92,15 +92,17 @@ class Latency:
         with self._lock:
             if self._owner.get(dev) not in (None, key):
                 self._ms.pop(dev, None)
+                self._failed.pop(dev, None)
             self._owner[dev] = key
 
     # ---- choice ----------------------------------------------------------
     def choose(self, key, devs):
         """The route to use for board `key` among live `devs` (in fallback order).
 
-        Unmeasured routes keep the old order, less any that failed within
-        failHoldSec; a measured faster route has to beat the current one by
-        the margin, with switchAfterSamples behind it.
+        Unmeasured routes keep the old order, except that a route which
+        failed within failHoldSec goes behind the rest, the one that failed
+        longest ago first; a measured faster route has to beat the current one
+        by the margin, with switchAfterSamples behind it.
         """
         if not devs:
             return None
@@ -113,10 +115,16 @@ class Latency:
         if not measured:
             # A26-7: WiFi leads this order, so a board that left WiFi was sent
             # to the dead address on every call while its cable sat untimed.
+            # Oldest failure first, so one cable timeout cannot put the dead
+            # WiFi back in front; a failed `cur` yields for the same reason.
+            now = time.time()
             with self._lock:
-                held = [d for d in devs if time.time() - self._failed.get(d, 0)
-                        < c["failHoldSec"]]
-            pick = cur or ([d for d in devs if d not in held] or devs)[0]
+                held = {d: t for d, t in self._failed.items()
+                        if now - t < c["failHoldSec"]}
+            order = sorted(devs, key=lambda d: held.get(d, 0))    # stable
+            if cur is None or held.get(cur, 0) > held.get(order[0], 0):
+                cur = order[0]
+            pick = cur
         else:
             best_ms, best = min(measured)
             cur_ms = self.ms(cur) if cur else None

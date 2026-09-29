@@ -238,7 +238,7 @@ def run(t):
     dc = dc[:dc.find("\ndef ", 1)]
     t.contains(dc, "usb_cmd",
                "which reaches a cable and the bus behind it")
-    t.contains(dc, "robot_get",
+    t.contains(dc, "wifi_get",
                "and WiFi, so one sender covers all three")
 
     # ---- documented, because the next person will ask the same thing --

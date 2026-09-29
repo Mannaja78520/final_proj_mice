@@ -20,6 +20,8 @@ So three properties are held here:
 And the token brief goes to every one of them, the user's other standing rule:
 they pay for the panel's output too.
 """
+import contextlib
+import io
 import json
 import re
 import subprocess
@@ -36,6 +38,74 @@ TITLE = "the review panel has five voices, and says when one of them failed"
 # when a tool call needed a permission its headless mode cannot ask for.
 REFUSED = ("a tool required the command permission that headless mode cannot "
            "prompt for, so it was auto-denied")
+
+
+def _stand_in(ai_panel, answer):
+    """agy replaced by `answer(cmd) -> stdout`; returns what to put back."""
+    real = ai_panel.subprocess
+
+    def fake_run(cmd, **kw):
+        return subprocess.CompletedProcess(cmd, 0, stdout=answer(cmd), stderr="")
+    ai_panel.subprocess = types.SimpleNamespace(
+        run=fake_run, TimeoutExpired=subprocess.TimeoutExpired)
+    return real
+
+
+def _as_data(*whats):
+    """An answer in the enforced shape, one finding per text."""
+    return json.dumps({"status": "OK", "usage": {"total_tokens": 7},
+                       "structured_output": {"findings": [
+                           {"file": "tools/ai_panel.py", "line": 1, "what": w,
+                            "severity": "maybe"} for w in whats]}})
+
+
+REAL_ONE = "main.py:812 the retry loop can spin forever on a dead port"
+
+
+def _quoting_is_not_failing(t, ai_panel):
+    """A review OF this file quotes the refusal. Review 2026-09-29: judged as one
+    line, that one quote threw the model's whole answer away."""
+    quoting = "the pattern for '%s' also matches a real finding" % REFUSED
+    real = _stand_in(ai_panel, lambda cmd: _as_data(quoting, REAL_ONE))
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            report = Path(tmp) / "panel.md"
+            got = ai_panel.run("is anything wrong", [], models=["m-a", "m-b"],
+                               head="m-a", out=str(report))
+            text = report.read_text(encoding="utf-8")
+    finally:
+        ai_panel.subprocess = real
+    t.ok("FAILED" not in text and "retry loop can spin forever" in text,
+         "a real review that quotes the refusal keeps all its findings", text[:400])
+    t.ok(got != "", "and counts as a review")
+
+
+def _console_says_failed(t, ai_panel):
+    """The panel answers, every judge is refused. Review 2026-09-29: without
+    --out the console printed the refusal as the verdict, and the report named
+    only the first judge."""
+    def answer(cmd):
+        judging = any("head reviewer" in str(x) for x in cmd)
+        return _as_data(REFUSED) if judging else _as_data(REAL_ONE)
+    real = _stand_in(ai_panel, answer)
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            ai_panel.run("is anything wrong", [], models=["m-a", "m-b"], head="m-a")
+        with tempfile.TemporaryDirectory() as tmp:
+            report = Path(tmp) / "panel.md"
+            with contextlib.redirect_stdout(io.StringIO()):
+                ai_panel.run("is anything wrong", [], models=["m-a", "m-b"],
+                             head="m-a", out=str(report))
+            text = report.read_text(encoding="utf-8")
+    finally:
+        ai_panel.subprocess = real
+    last = ([ln for ln in buf.getvalue().splitlines() if ln.strip()] or [""])[-1]
+    t.ok(last.startswith(" - **FAILED**"),
+         "without --out the console says the head FAILED, not the refusal as a verdict",
+         last[:200])
+    t.contains(text, "## The head reviewer (m-a, then m-b)",
+               "and the report names every model that was asked to judge")
 
 
 def _refused_tool_is_no_review(t, ai_panel):
@@ -163,6 +233,14 @@ def run(t):
          "over-matching here would throw away genuine review comments, which "
          "is the opposite failure and just as silent")
     _refused_tool_is_no_review(t, ai_panel)
+    _quoting_is_not_failing(t, ai_panel)
+    _console_says_failed(t, ai_panel)
+    t.ok(not ai_panel.tool_failed(
+            "line 88: the permission check is skipped when the hub runs headless"),
+         "a finding about a permission or headless mode is not an outage",
+         "widening the pattern to those words would throw real findings away")
+    t.ok(ai_panel.tool_failed("The command permission was auto-denied."),
+         "while the refusal reworded is still a failure")
     i = src.find("return {\"model\": model,")
     t.contains(src[max(0, i - 400):i], "tool_failed(raw)",
                "and every answer is checked before it is believed")

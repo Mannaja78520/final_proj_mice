@@ -34,7 +34,18 @@ names both boards. The board builds AMP VALID's JSON by joining strings, so the
 generated table is COMPILED and RUN here (g++ with a String stand-in) and its
 answer parsed: a stray quote or a dropped field would otherwise empty the
 Amplifier picker with nothing on screen to say why.
+
+Found by a review, 2026-09-29: with each wire's destination AMP VALID grew from
+1680 to 2850 bytes, and a board bridging RS485 throws away any bus line longer
+than its reader holds (RS485Bus.cpp, then 2048). A lift behind such a board lost
+its whole Amplifier card. The reader now holds 4096, and AMP VALID is measured
+against whatever number is there, so the next amp that pushes it over fails
+here instead of on a bench. The generator's refusals are driven too: a guard no
+check feeds bad text to can be deleted without anything noticing.
 """
+import contextlib
+import copy
+import io
 import json
 import re
 import shutil
@@ -85,7 +96,15 @@ def run(t):
         t.contains(tbl, '"%s"' % key, "AmpTable.h carries %s" % key)
         t.contains(tbl, a["wiring"][:40], "AmpTable.h carries %s's wiring line" % key)
     t.contains(tbl, "inline String ampJson", "one amp can be answered as JSON (AMP?)")
-    _board_answer(t, amps)
+    _fits_the_bus(t, amps, _board_answer(t, amps))
+    _generator_refuses(t, amps)
+
+    # ---- an amp a board has saved wins over the new default (A24-41)
+    hwc = (fw / "src/core/HwConfig.cpp").read_text(encoding="utf-8", errors="replace")
+    i, j = hwc.find('if (prefs_.isKey("amp"))'), hwc.find("amp = LIFT_AUDIO_AMP_DEFAULT")
+    t.ok(0 < i < j and "amp = prefs_.getString(\"amp\")" in hwc[i:j],
+         "a board that saved its amp keeps it; the default is only for one that never did",
+         "a reflash would otherwise move every lift onto the new chain")
 
     # ---- each type must default to an amp it can actually drive
     for kind, hdr_name in (("NONG", "esp32_hardware_nong_module.h"),
@@ -187,12 +206,15 @@ int main() { std::printf("%s\n", ampListJson().c_str()); return 0; }
 
 
 def _board_answer(t, amps):
-    """Run the generated table and read AMP VALID exactly as the page will."""
+    """Run the generated table and read AMP VALID exactly as the page will.
+
+    Returns the reply, or None where no host compiler exists (the Windows gate
+    usually has none - see check_firmware_build)."""
     cxx = shutil.which("g++") or shutil.which("clang++")
     if not cxx:
         print("      \033[33mNOTE: no host C++ compiler, so AMP VALID's JSON was "
               "not run here\033[0m")
-        return
+        return None
     with tempfile.TemporaryDirectory() as tmp:
         (Path(tmp) / "Arduino.h").write_text(STUB, encoding="utf-8")
         (Path(tmp) / "main.cpp").write_text(MAIN, encoding="utf-8")
@@ -202,14 +224,14 @@ def _board_answer(t, amps):
                            capture_output=True, text=True, timeout=120)
         if not t.ok(r.returncode == 0, "the generated amp table compiles",
                     (r.stderr or r.stdout)[-300:]):
-            return
+            return None
         out = subprocess.run([exe], capture_output=True, text=True, timeout=30).stdout
     try:
         board = json.loads(out)
     except ValueError as e:
         t.ok(False, "AMP VALID is valid JSON, so the Amplifier picker can read it",
              "%s: %s" % (e, out[:200]))
-        return
+        return None
     t.ok(True, "AMP VALID is valid JSON, so the Amplifier picker can read it")
     t.eq([b.get("id") for b in board], list(amps), "AMP VALID lists every amp, in order")
     for b in board:
@@ -218,3 +240,77 @@ def _board_answer(t, amps):
                 "pins": ",".join(a.get("pins", [])), "mono": a.get("mono"),
                 "wiring": a.get("wiring"), "to": a.get("to")}
         t.eq(b, want, "the board answers %s exactly as amps.json says" % b.get("id"))
+    return out.strip()
+
+
+def _amp_valid(amps):
+    """AMP VALID built the way ampListJson builds it, for a PC with no compiler.
+    _fits_the_bus proves it matches the board byte for byte where one exists."""
+    rows = []
+    for k, a in amps.items():
+        to = json.dumps({p: a["to"][p] for p in a["pins"]}, separators=(",", ":"))
+        rows.append('{"id":"%s","label":"%s","mode":"%s","pins":"%s","mono":%s,'
+                    '"wiring":"%s","to":%s}'
+                    % (k, a["label"], a["mode"], ",".join(a["pins"]),
+                       "true" if a["mono"] else "false", a["wiring"], to))
+    return "[" + ",".join(rows) + "]"
+
+
+def _fits_the_bus(t, amps, board):
+    """AMP VALID fits one RS485 line, so it can cross a board bridging the bus."""
+    line = _amp_valid(amps)
+    if board is not None:
+        t.eq(line, board, "the check's copy of AMP VALID is the board's, byte for byte")
+    bus = (F.FIRMWARE / "src/core/RS485Bus.cpp").read_text(encoding="utf-8", errors="replace")
+    m = re.search(r"buf_\.length\(\)\s*>\s*(\d+)", bus)
+    if not t.ok(m, "the bus reader's line limit can be read"):
+        return
+    framed = len("@247 " + line)          # the reply as it crosses: @<id> <reply>
+    t.ok(framed <= int(m.group(1)),
+         "AMP VALID fits one bus line (%d of %s characters), so a lift behind "
+         "another board keeps its Amplifier card" % (framed, m.group(1)),
+         "a bridging board wipes a longer line; raise the limit in RS485Bus.cpp "
+         "or shorten the amp texts")
+
+
+def _generator_refuses(t, amps):
+    """gen_tables refuses amp text that would break AMP VALID or the C table."""
+    sys.path.insert(0, str(F.FIRMWARE / "tools"))
+    import gen_tables  # noqa: PLC0415 - the generator under test
+    first = next(iter(amps))
+    pin = amps[first]["pins"][0]
+    bad = [("a double quote in the wiring", {"wiring": 'the "L" input'}),
+           ("a backslash in the label", {"label": "amp \\ board"}),
+           ("a line break in the wiring", {"wiring": "one\ntwo"}),
+           ("a double quote where a wire goes", {"to": {pin: 'the "L" input'}}),
+           ("a destination that is not text", {"to": {pin: {"board": "amp"}}}),
+           ("a destination for a pin it does not wire", {"to": {pin: "amp", "sd_cs": "x"}})]
+    real = gen_tables.AMPS_JSON
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "amps.json"
+            gen_tables.AMPS_JSON = src
+            cases = [("nothing wrong", {"amps": amps})]
+            for why, change in bad:
+                one = copy.deepcopy(amps)
+                one[first].update(change)
+                cases.append((why, {"amps": one}))
+            cases.append(("an amp id with a line break in it",
+                          {"amps": {first + "\n": amps[first]}}))
+            for why, data in cases:
+                src.write_text(json.dumps(data), encoding="utf-8")
+                refused, crash = False, ""
+                try:
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        gen_tables.gen_amps(Path(tmp) / "out", [])
+                except SystemExit:
+                    refused = True
+                except Exception as e:                        # noqa: BLE001
+                    crash = "it crashed instead: %r" % e      # not a refusal
+                if data["amps"] is amps:
+                    t.ok(not refused and not crash, "the generator takes the real amps.json",
+                         crash or "or every refusal below proves nothing")
+                else:
+                    t.ok(refused, "the generator refuses %s" % why, crash)
+    finally:
+        gen_tables.AMPS_JSON = real

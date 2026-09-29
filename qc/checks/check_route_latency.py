@@ -114,15 +114,34 @@ def run(t):
     L4.fail(a)
     t.eq(L4.choose("k4", [a, b]), b,
          "a route that just failed is not tried again while another is untried")
+    time.sleep(0.05)                       # Windows' clock ticks every ~16 ms
     L4.fail(b)
     t.eq(L4.choose("k5", [a, b]), a,
-         "with every route failed lately, the usual order stands")
+         "with every route failed lately, the one that failed longest ago is tried")
+    time.sleep(0.05)
+    L4.fail(a)                             # the dead WiFi fails again
+    t.eq(L4.choose("k5", [a, b]), b,
+         "and one cable timeout does not keep sending calls to the dead WiFi")
     L4.record(b, 80, reply_len=5000)       # b answers again, with a big reply
     t.eq(L4.choose("k6", [a, b]), b,
          "a route that answers again, whatever the size, is back in the order")
     L4.cfg["failHoldSec"] = 0
     t.eq(L4.choose("k7", [a, b]), a,
          "and a failure is held only for failHoldSec")
+
+    # A failed route that is still `cur` - a choose() racing fail() writes it
+    # back - yields to one that has not failed, and a new board on an address
+    # does not inherit the old one's failure.
+    L5 = route_latency.Latency()
+    L5.choose("k8", [a, b])
+    L5.fail(a)
+    L5._chosen["k8"] = a                   # noqa: SLF001 - the racing write
+    t.eq(L5.choose("k8", [a, b]), b, "a route that just failed does not win by being current")
+    L5.bind(a, "board-A")
+    L5.fail(a)
+    L5.bind(a, "board-B")
+    t.eq(L5.choose("k9", [a, b]), a,
+         "another board on the same address does not inherit its failure")
     cfg = json.loads((F.CODE / "config" / "route_latency.json").read_text(encoding="utf-8"))
     t.ok(cfg.get("failHoldSec") == route_latency.DEFAULTS["failHoldSec"],
          "the hold is a tunable in config/route_latency.json", cfg)
@@ -237,6 +256,23 @@ def _dead_wifi(t, main, route_latency):
         t.ok(cable.got.count(b"PING") == 2 and "PONG" in reply,
              "the next commands reach the cable", "cable got %r, last reply %r"
              % (cable.got, reply))
+
+        # The page's own status poll is a call too (review 2026-09-29): /mod
+        # polls /api/dev/status every 900 ms, and an idle page sends nothing else.
+        route_latency.LAT = route_latency.Latency()
+        main._pick_route(m)                                   # noqa: SLF001
+        del tried[:]
+        cable.got = b""
+        for _ in range(3):
+            try:
+                main.dev_status("auto:chip/QC3")
+            except Exception:                                 # noqa: BLE001
+                pass
+        t.ok(tried == [ip],
+             "the page's status poll tries the dead WiFi address once, not every time",
+             "tried %s" % tried)
+        t.ok(cable.got.count(b"INFO") == 2,
+             "and then reads the board over the cable", "cable got %r" % cable.got)
     finally:
         main.Handler.robot_get = real
         main._usb_open.pop(port, None)                        # noqa: SLF001

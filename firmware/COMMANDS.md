@@ -197,9 +197,11 @@ Examples:
 #* PING                -> @1 PONG 1 ... then @3 PONG 3 ... (staggered)
 ```
 
-A line longer than **250 characters is discarded** as garbage (a missed
-terminator looks exactly like a very long line). That limit is what sets the
-firmware-update chunk size — see below.
+A line longer than **4096 characters is discarded** on the bus (2048 on USB)
+as garbage: a missed terminator looks exactly like a very long line. A reply has
+to fit that to cross a board bridging the bus (`AMP VALID` is about 2850).
+Firmware-update chunks stay under the 250 characters this limit
+used to be — see below.
 
 ### Flashing new firmware, on any of the three channels
 
@@ -235,7 +237,7 @@ while the board is still running firmware that works; only a good image causes
 the reboot. `FWABORT` at any point leaves the board on what it already had.
 
 Chunks are ≤150 bytes because base64 costs a third and `#<id> FWDATA <seq> `
-has to fit in the 250-character line above. That makes an update slow — minutes,
+has to stay under 250 characters (the old line limit, kept). That makes an update slow — minutes,
 not seconds — which is the price of not having a reset line.
 
 The hub drives all of this for you: `POST /api/flash/bus?dev=<dev>&type=<type>`,

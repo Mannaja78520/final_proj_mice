@@ -12,8 +12,11 @@ This drives the real module page (served the way the hub serves it for a cable,
 AMP? stood in - built from amps.json the way the firmware builds them, which
 check_amp_kind proves by running the generated table. Then it picks every amp in
 turn and reads the DOM: only that amp's pins are shown, each with the line
-amps.json gives it, the wiring sentence is on screen, and a fresh lift opens on
-the chain. check_amp_kind holds the data; this holds what a person sees.
+amps.json gives it, the wiring sentence is on screen, and the page opens on the
+amp the board reports. That a fresh lift REPORTS the chain is check_amp_kind's
+(the header default, and HwConfig using it only when no amp was saved) - here
+AMP? is the check's own stand-in. check_amp_kind holds the data; this holds
+what a person sees.
 """
 import json
 import re
@@ -123,7 +126,7 @@ def run(t):
                 "it never ran: %r" % (fake_serial.qc_marks[-3:],)):
         return
     t.contains(marks, "opened=%s" % cur,
-               "a fresh lift opens the pins page on its own chain (%s)" % cur)
+               "the pins page opens on the amp the board reports (%s)" % cur)
     rows = {}
     for m in marks:
         if m.startswith("{"):
