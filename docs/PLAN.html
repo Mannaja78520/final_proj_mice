@@ -597,7 +597,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: nothing right now
+# RUNNING: QC finished: 110 passed, 0 failed, started 2026-09-29 03:04
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1530,6 +1530,7 @@ A26-96: done  2026-09-29 00:58  agent=claude:pcsync  — show stops by itself ab
 A26-97: done   2026-09-29 05:50  agent=claude:09290117-84bf  — User 2026-09-28 (at the dorm, no hardware): when re limit do everything but no docx; use the cloud credit to run what can run in the cloud. Coordinator: ONE integration branch so the lab needs one pull, one hub rebuild, one firmware flash; run the cloud QC and fix what breaks DONE in the cloud: one branch claude/nong-wifi-link-7bvjs0 = main + nong-real-robot + phone-audio (TALK ON fix kept) + pc-sync-0928, PR #1 into main. Full QC in the cloud 6219 passed, 0 failed; the 6 PowerShell-only browser checks now run off Windows. Lab steps: project files lab/lab_steps_2026-09-28.md
 A26-98: done   2026-09-29 05:50  agent=claude:09290117-84bf  — Find why COM21 said 'no reply from bus id 67' right after starting Show LhongMarePing on the real nong (2026-09-28), and fix it Likely cause, from the code (not measured): the MP3 player read the song's ID3 tag (cover art) one SD read per byte on the loop that answers RS485, so the next POSE timed out and one timeout ended the hub show with the song still playing. Fixed: core/Id3.h + AudioPlayer::skipTags_ (check_id3_skip), hub ShowPlayer MAX_MISSES=3 then PLAY STOP (check_show_misses). Confirm with PERF? at the lab: A26-99
 A26-99: todo  2026-09-29 01:17  hw=nong + RS485 adapter + hub PC  agent=claude:09290117-84bf  — At the lab: pull claude/nong-wifi-link-7bvjs0, rebuild MiceHub, flash nong, then play LhongMarePing and read PERF? right after the song starts
+A26-100: doing 2026-09-29 10:04  agent=claude:09291004-8074  — User 2026-09-29: do it now every task that not finish / no need to concern the token now your weekly token will reset soon so can run everything now. CLOUD HALF (thread Open tasks in the main plan, branch claude/main-plan-open-tasks-um87a9 off claude/nong-wifi-link-7bvjs0): every open task here that needs no board and no thesis/docx. Read 2026-09-29 10:0x: A26-5/6/7/8/14 and A21-12 are already done on this branch (only main still shows them open). Left for a PC with no board: A24-41 software half (DAC-into-amp chain entry, lift default, Hardware-pins wiring words), A31-11 (panel report says FAILED, not a verdict), A26-17 (Unsnooze removed at the user's request - close it). The robot half (A26-99) belongs to the PC thread Lab update on the PC.
 
 END</code></pre>
 </details>
