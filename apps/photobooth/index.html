@@ -13,16 +13,15 @@
     Show technical details</label>
 </div>
 
-<!-- No hub login here: Photobooth has its own admin password.
-     The hub only opens Photobooth; it never starts or stops it (user 2026-10-04). -->
+<!-- No hub login here: Photobooth has its own admin password. -->
 
 <div class="card">
-  <h2>Open Photobooth</h2>
-  <p class="mini">Photobooth runs on its own. Start it with its own start script first,
-    then open it here.</p>
+  <h2>Open the booth</h2>
+  <p class="mini">Photobooth runs beside Mice on this PC. The first start also opens a
+    browser tab that becomes the booth screen.</p>
   <div class="row" style="margin-bottom:var(--sp-3)">
-    <button class="primary" id="boothBtn" onclick="window.open(links.open, '_blank')">Open booth screen ↗</button>
-    <button id="adminBtn" onclick="window.open(links.admin, '_blank')">Open admin ↗</button>
+    <button class="primary" id="boothBtn" onclick="go('open')">Open booth screen ↗</button>
+    <button id="adminBtn" onclick="go('admin')">Open admin ↗</button>
     <button id="checkBtn" onclick="probe()">Check again</button>
     <span class="statline" id="stat" role="status" aria-live="polite">checking…</span>
   </div>
@@ -34,6 +33,7 @@ const PARTNER = "photobooth";
 // Fallback until /api/partners answers; config/partners.json is the source.
 let links = {open: "http://127.0.0.1:8121/booth", admin: "http://127.0.0.1:8121/admin",
              api: "http://127.0.0.1:8121"};
+let busy = false;
 
 function say(msg, tech) {
   const el = document.getElementById("stat");
@@ -46,6 +46,12 @@ function say(msg, tech) {
   }
 }
 
+function setBusy(on) {
+  busy = on;
+  for (const id of ["boothBtn", "adminBtn", "checkBtn"])
+    document.getElementById(id).disabled = on;
+}
+
 async function load() {
   try {
     const all = await fetch("/api/partners", {cache: "no-store"}).then(r => r.json());
@@ -53,19 +59,59 @@ async function load() {
       links = Object.assign(links, all.partners[PARTNER]);
   } catch (e) { /* hub not ready: keep the fallback */ }
   document.getElementById("where").textContent =
-    "booth " + links.open + " · admin " + links.admin;
+    "booth " + links.open + " · admin " + links.admin + " · folder " + (links.folder || "C:/Photobooth/Main/app");
   probe();
 }
 
 // Their backend sends no CORS headers, so an opaque answer only means
 // "something listens" - enough to tell running from stopped.
+async function up() {
+  try {
+    await fetch(links.api + "/api/health", {mode: "no-cors", cache: "no-store"});
+    return true;
+  } catch (e) { return false; }
+}
+
 async function probe() {
   say("checking…");
-  let ok = true;
-  try { await fetch(links.api + "/api/health", {mode: "no-cors", cache: "no-store"}); }
-  catch (e) { ok = false; }
-  say(ok ? "Photobooth is running." : "Photobooth is not running. Start it with its own start script.",
+  const ok = await up();
+  say(ok ? "Photobooth is running." : "Photobooth is stopped. Press a button to start it.",
       "checked " + new Date().toLocaleTimeString());
+  return ok;
+}
+
+// Starts Main through the hub when it is silent, waits, then opens the page.
+// The tab opens first so the browser does not block it as a popup.
+async function go(which) {
+  if (busy) return;
+  const url = links[which];
+  const tab = window.open("about:blank", "_blank");
+  if (await up()) { tab ? (tab.location = url) : window.open(url, "_blank"); return probe(); }
+  setBusy(true);
+  const until = Date.now() + 120000;
+  try {
+    while (true) {
+      let got;
+      try {
+        got = await fetch("/api/partners/start?id=" + PARTNER,
+                          {method: "POST", cache: "no-store"}).then(r => r.json());
+      } catch (e) { throw ["Cannot reach the hub — is it still running?", String(e.message || e)]; }
+      if (got.need_login) throw ["Photobooth can only be started from the PC that runs Mice, or after signing in on the hub page."];
+      if (!got.ok) throw [got.error || "Photobooth could not be started.", [].concat(got.log || []).join(" ")];
+      if (got.ready) break;
+      say("Starting Photobooth… this takes about twenty seconds", "log " + [].concat(got.log || []).join(" "));
+      if (Date.now() > until) throw ["Photobooth is taking too long to start.", [].concat(got.log || []).join(" ")];
+      await new Promise(res => setTimeout(res, 2000));
+    }
+    if (tab) tab.location = url; else window.open(url, "_blank");
+    say("Photobooth is running.");
+  } catch (err) {
+    if (tab) tab.close();
+    const [words, detail] = Array.isArray(err) ? err : ["Photobooth could not be started.", String(err)];
+    say(words + " Press the button to try again.", detail);
+  } finally {
+    setBusy(false);
+  }
 }
 
 load();
