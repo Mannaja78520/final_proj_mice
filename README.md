@@ -183,7 +183,7 @@ All system components and partner applications run simultaneously on dedicated, 
 | **Voice AI Service** | `8767` | Speech-to-text, neural TTS voice synthesis, Q&A | `python apps/voice/service.py` (or via Hub button) |
 | **All-Jao Games** | `8080` | Interactive mini-games (Claw, Matching, Quiz, Wheel) | `python -m http.server 8080` (or via Hub button) |
 | **Reconize** (Face App) | `5173` / `8000` | Facial recognition, visitor log & camera events | `start.bat` in `Face_Regonize` |
-| **Photobooth** | `8121` / `8123` | Event photo booth: frames, stickers, QR code to take photos home | `scripts\run-main.ps1` in `C:\Photobooth\Main\app` (or via Hub button) |
+| **Photobooth** | `8121` / `8123` | Event photo booth: frames, stickers, QR code to take photos home | `scripts\run-main.ps1` in `C:\Photobooth\Main\app` (Hub tile only opens it) |
 
 ---
 
@@ -234,13 +234,12 @@ From the Hub dashboard, click the **👋 Reconize** tile, then run `start.bat` i
 - API: **`http://127.0.0.1:8000/`**
 
 #### 5. Start Photobooth (Ports 8121 & 8123)
-From the Hub dashboard, click the **📸 Photobooth** tile, then click **"Open booth screen"** or **"Open admin"**.
-The hub starts the installed Main copy (`C:\Photobooth\Main`, never the Dummy dev copy) if it is not running.
-The first start also opens a browser tab that pairs itself as the booth screen.
-Alternatively, start it manually in PowerShell:
+The hub does not start Photobooth. Start it with its own script in PowerShell:
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File C:\Photobooth\Main\app\scripts\run-main.ps1
 ```
+The first start opens a browser tab that pairs itself as the booth screen.
+Then, from the Hub dashboard, click the **📸 Photobooth** tile, then click **"Open booth screen"** or **"Open admin"**.
 - Booth (guests): **`http://127.0.0.1:8121/booth`**
 - Admin (organizers): **`http://127.0.0.1:8121/admin`**
 - Guests' phones download photos on port `8123` (same Wi-Fi only).
