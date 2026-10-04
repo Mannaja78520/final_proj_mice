@@ -32,6 +32,34 @@
     ]
   },
 
+  // Asked 2026-10-04: *add photo booth so it can open in the hub too*.
+  // MAIN install (C:\Photobooth\Main, their README), never the Dummy dev copy.
+  // Their own start script does every safety check (database revision, busy
+  // ports, already running) and opens the browser to pair it as the booth
+  // screen, so we run that script and never their backend directly.
+  // Their backend sends X-Frame-Options: DENY (backend/src/photobooth/main.py:126),
+  // so the hub opens it in a new tab - it cannot sit inside a hub page.
+  "photobooth": {
+    "name": "Photobooth",
+    "open": "http://127.0.0.1:8121/booth",
+    "admin": "http://127.0.0.1:8121/admin",
+    "api": "http://127.0.0.1:8121",
+    "health": "/api/health",
+    "folder": "C:/Photobooth/Main/app",
+    "refuseFolders": ["dummy"],
+    "launch": [
+      { "name": "booth", "cwd": "",
+        "run": ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
+                "-File", "scripts\\run-main.ps1"],
+        "check": "http://127.0.0.1:8121/api/health" }
+    ],
+    "login": { "kind": "none", "path": "" },
+    "events": [
+      { "kind": "status", "path": "/api/health", "reports": ["booth_state"],
+        "hasCamera": false, "map": {} }
+    ]
+  },
+
   "reconize": {
     "name": "Reconize",
     "open": "http://localhost:5173",          // their React front end (::1 only)
