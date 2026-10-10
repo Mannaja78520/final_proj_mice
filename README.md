@@ -183,6 +183,7 @@ All system components and partner applications run simultaneously on dedicated, 
 | **Voice AI Service** | `8767` | Speech-to-text, neural TTS voice synthesis, Q&A | `python apps/voice/service.py` (or via Hub button) |
 | **All-Jao Games** | `8080` | Interactive mini-games (Claw, Matching, Quiz, Wheel) | `python -m http.server 8080` (or via Hub button) |
 | **Reconize** (Face App) | `5173` / `8000` | Facial recognition, visitor log & camera events | `start.bat` in `Face_Regonize` |
+| **Photobooth** | `8121` / `8123` | Event photo booth: frames, stickers, QR code to take photos home | `scripts\run-main.ps1` in `C:\Photobooth\Main\app` (or via Hub button) |
 
 ---
 
@@ -232,6 +233,20 @@ From the Hub dashboard, click the **👋 Reconize** tile, then run `start.bat` i
 - Web UI: **`http://127.0.0.1:5173/`**
 - API: **`http://127.0.0.1:8000/`**
 
+#### 5. Start Photobooth (Ports 8121 & 8123)
+From the Hub dashboard, click the **📸 Photobooth** tile, then click **"Open booth screen"** or **"Open admin"**.
+The hub starts the installed Main copy (`C:\Photobooth\Main`, never the Dummy dev copy) if it is not running.
+The first start also opens a browser tab that pairs itself as the booth screen.
+Alternatively, start it manually in PowerShell:
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Photobooth\Main\app\scripts\run-main.ps1
+```
+- Booth (guests): **`http://127.0.0.1:8121/booth`**
+- Admin (organizers): **`http://127.0.0.1:8121/admin`**
+- Guests' phones download photos on port `8123` (same Wi-Fi only).
+- Photobooth blocks being shown inside another page, so the hub opens it in a new tab.
+- Where it lives is set in `config/partners.json` (entry `photobooth`).
+
 ---
 
 ### Step 3: Verification & QC Testing
@@ -249,5 +264,5 @@ python qc/run_qc.py
 
 `.pio/` (PlatformIO build output and downloaded libraries, ~230 MB) and other
 build trees are ignored — `pio run` regenerates them. The CAD models live
-outside this folder, in `../model/`. Partner app sources (`All-Jao-Games` and
-`Face_Regonize`) are maintained in their respective author repositories.
+outside this folder, in `../model/`. Partner app sources (`All-Jao-Games`, `Face_Regonize`
+and `Photobooth`) are maintained in their respective author repositories.
