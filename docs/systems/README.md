@@ -25,7 +25,7 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 | [app-voice](app-voice.md) | Voice helper: speech in, answers, speech out. |
 | [app-faces](app-faces.md) | Face recognition app. |
 | [app-camera](app-camera.md) | Camera viewer app. |
-| [app-small](app-small.md) | Small apps: help, All-Jao. |
+| [app-small](app-small.md) | Small apps: help, All-Jao, Photobooth. |
 | [fw-core](fw-core.md) | Firmware shared by every board: identity, commands, RS485, WiFi/web portal, SD, OTA, PERF?. |
 | [fw-web](fw-web.md) | The board's own website (WebUI.h). |
 | [fw-nong](fw-nong.md) | The nong (humanoid) module: servos, joints, poses. |

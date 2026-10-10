@@ -1472,6 +1472,10 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
     protocol_version = "HTTP/1.1"
     def send_bytes(self, data: bytes, ctype="application/json", code=200,
                    headers=()):
+        # Keep-alive trap: a POST body nobody read stays on the socket and is
+        # parsed as the NEXT request's first line (400 on the call after it).
+        if self.command == "POST":
+            self.drain()
         self.send_response(code)
         for k, v in headers:
             self.send_header(k, v)
@@ -1485,6 +1489,8 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
         """Send the browser somewhere else. 302, not 301: a permanent redirect
         is cached by the browser forever, and a wrong one can only be undone by
         the user clearing their history."""
+        if self.command == "POST":
+            self.drain()
         self.send_response(code)
         self.send_header("Location", where)
         self.send_header("Content-Length", "0")
@@ -1564,6 +1570,7 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
         n = max(0, int(self.headers.get("Content-Length") or 0))
         if limit and n > limit:
             self._body_read = True
+            self.close_connection = True   # unread bytes must not become the next request
             raise ValueError("that is too big to accept (%d MB, limit %d MB)"
                              % (n // 1048576, limit // 1048576))
         self._body_read = True
@@ -1609,12 +1616,14 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
         sys.stderr.write("[web] " + fmt % args + "\n")
 
     def do_GET(self):
+        self._body_read = False   # one handler serves every request on a kept-alive socket
         try:
             self.route("GET")
         except Exception as e:  # noqa: BLE001
             self.send_err(e, 500)
 
     def do_POST(self):
+        self._body_read = False   # else the last request's read skips this one's drain
         try:
             self.route("POST")
         except Exception as e:  # noqa: BLE001

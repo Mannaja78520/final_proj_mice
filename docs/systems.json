@@ -108,8 +108,8 @@
      "files": ["apps/camera/"],
      "depends": ["shared-web"]},
 
-    {"id": "app-small", "summary": "Small apps: help, All-Jao.",
-     "files": ["apps/help/", "apps/all-jao/"],
+    {"id": "app-small", "summary": "Small apps: help, All-Jao, Photobooth.",
+     "files": ["apps/help/", "apps/all-jao/", "apps/photobooth/"],
      "depends": ["shared-web"]},
 
     {"id": "fw-core", "summary": "Firmware shared by every board: identity, commands, RS485, WiFi/web portal, SD, OTA, PERF?.",
