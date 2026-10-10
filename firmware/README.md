@@ -172,7 +172,7 @@ exist), e.g. `CFG leds 60`, `CFG counts_per_stage 3800`, `CFG CLEAR`.
 | RS485 (UART2) | RX 16, TX 17, DE+/RE 4 |
 | microSD (VSPI) | CS 5, SCK 18, MISO 19, MOSI 23 |
 | WS2812B strip | 13 |
-| I2S amp (MAX98357A) | BCLK 27, LRC 14, DIN 2 |
+| Lift speaker: PCM5102A sound board into a TPA3118 amp (other amps: `config/amps.json`) | BCLK 27 to BCK, LRC 14 to LCK, DOUT 2 to DIN, all three on the PCM5102A |
 
 A nong board uses ONLY the servo pins, the SD card and RS485/WiFi — no
 encoder, RGB or speaker. The servo pins reuse lift-only pins (a board is one

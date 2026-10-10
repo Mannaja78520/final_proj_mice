@@ -31,7 +31,7 @@ DRIVER = """
 <style>html,body{margin:0}#f{width:1100px;height:900px;border:0}</style>
 <iframe id="f" src="%s"></iframe>
 <script>
-function done(s){ qcMark("ER " + s); qcMark("done"); }
+async function done(s){ await qcMark("ER " + s); qcMark("done"); }   // report lands before "done"
 // Wait for the frame to BE there, then settle as before (A26-94): a fixed
 // sleep measured an empty page under a full gate and reported nothing.
 qcWaitFor(function(){

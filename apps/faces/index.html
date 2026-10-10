@@ -21,12 +21,13 @@
      the frame below read as one product. Colours are the "indigo" theme (named Reconize) in
      shared/web/themes.css; the shape below is theirs (Face_Regonize/frontend,
      components/ui.tsx and Layout.tsx: 12px cards, 8px controls, a bold title
-     with a grey line under it, a 72rem column). Not saved as the user's
-     theme: every other page keeps the one they picked. -->
+     with a grey line under it, a 72rem column). Their radii and weights are
+     every page's since A10-3 (mice.css); what is left here is this page's
+     own layout. Not saved as the user's theme: every other page keeps the
+     one they picked. -->
 <script>document.documentElement.setAttribute("data-theme", "indigo");</script>
 <style>
-body{--r-sm:8px;--r-md:12px;--r-lg:12px;
-     max-width:72rem;margin:0 auto;padding:var(--sp-6) var(--sp-4)}
+body{max-width:72rem;margin:0 auto;padding:var(--sp-6) var(--sp-4)}
 .head{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;
       background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
       padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-6)}
@@ -37,7 +38,7 @@ body{--r-sm:8px;--r-md:12px;--r-lg:12px;
 .card h2+p.mini{margin-bottom:var(--sp-4)}
 .card h3{font-size:15px;font-weight:650;margin:var(--sp-6) 0 var(--sp-2);
          padding-top:var(--sp-4);border-top:1px solid var(--line)}
-button{font-weight:500;padding:var(--sp-2) var(--sp-4)}
+button{padding:var(--sp-2) var(--sp-4)}
 button.secondary{background:var(--btn);color:var(--txt)}
 input,select{background:var(--card)}
 /* Their Badge: a soft pill in the state colour, with the words inside. */

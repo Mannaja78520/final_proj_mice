@@ -42,11 +42,33 @@
    Nothing else was touched. */
 
 
-/* ---- Midnight — the default, and it stays the default -------------------
-   Dark is not a preference here. A bright screen spills light into the show
-   area, and the operator is usually standing next to a lit set in a dark
-   room. */
+/* ---- Reconize — the default: the face app's own look (A10) --------------
+   Their palette, read from Face_Regonize/frontend/src/index.css and the
+   Tailwind greys their components use, so our Reconize page and their app in
+   the frame below it read as one product. Measured: text 16.6:1, muted
+   4.5:1 (their gray-500, kept exact), accent 5.9:1, warning 4.7:1 (their amber-700, the
+   colour their own warning badges use: amber-600 is 3.0:1 here).
+   THE DEFAULT SINCE 2026-10-10 (user: the whole app should match their app,
+   A10-3 on the system plan). FIRST in the file because the picker's default
+   is the first block. */
 :root,
+:root[data-theme="indigo"]{
+  --theme-name:"Reconize";
+  --theme-note:"light, indigo. The face app's own colours";
+
+  --bg:#f6f7fb; --card:#ffffff; --sunk:#f9fafb; --line:#e5e7eb;
+  --txt:#111827; --mut:#6b7280;
+  --acc:#4f46e5; --on-acc:#ffffff; --btn:#ffffff;
+  --ok:#16a34a; --warn:#b45309; --err:#dc2626;
+  --ty-nong:#a16207; --ty-lift:#0284c7; --ty-cam:#7c3aed; --ty-other:#6b7280;
+
+  color-scheme:light;
+}
+
+/* ---- Midnight — the dark one, for the show ------------------------------
+   The default until 2026-10-10. Kept for a dark hall: a bright screen spills
+   light into the show area, and the operator is usually standing next to a
+   lit set in a dark room. One click in the picker, and the choice is kept. */
 :root[data-theme="midnight"]{
   --theme-name:"Midnight";
   --theme-note:"the dark one. Stays the default: a bright screen spills light into the show area";
@@ -100,25 +122,6 @@
   --acc:#0b5ed7; --on-acc:#ffffff; --btn:#e2e6ea;
   --ok:#198754; --warn:#d97706; --err:#dc3545;
   --ty-nong:#b8860b; --ty-lift:#1f6feb; --ty-cam:#6f42c1; --ty-other:#5a6268;
-
-  color-scheme:light;
-}
-
-/* ---- Reconize — the face app's own look (A10) ---------------------------
-   Their palette, read from Face_Regonize/frontend/src/index.css and the
-   Tailwind greys their components use, so our Reconize page and their app in
-   the frame below it read as one product. Measured: text 16.6:1, muted
-   4.5:1 (their gray-500, kept exact), accent 5.9:1, warning 4.7:1 (their amber-700, the
-   colour their own warning badges use: amber-600 is 3.0:1 here). */
-:root[data-theme="indigo"]{
-  --theme-name:"Reconize";
-  --theme-note:"light, indigo. The face app's own colours";
-
-  --bg:#f6f7fb; --card:#ffffff; --sunk:#f9fafb; --line:#e5e7eb;
-  --txt:#111827; --mut:#6b7280;
-  --acc:#4f46e5; --on-acc:#ffffff; --btn:#ffffff;
-  --ok:#16a34a; --warn:#b45309; --err:#dc2626;
-  --ty-nong:#a16207; --ty-lift:#0284c7; --ty-cam:#7c3aed; --ty-other:#6b7280;
 
   color-scheme:light;
 }

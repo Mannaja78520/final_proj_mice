@@ -81,7 +81,7 @@ class SupportRoutes:
                     self._body_read = True
                     return self.send_json({"ok": False,
                                            "error": "that report is too big"})
-                raw = self.rfile.read(length).decode("utf-8") if length else "{}"
+                raw = self.body().decode("utf-8") or "{}"
                 data = json.loads(raw)
             except Exception:
                 return self.send_json({"ok": False, "error": "bad json"})
@@ -167,8 +167,7 @@ class SupportRoutes:
             # No login — the point is a designer can close it from the screen.
             import json as _json
             try:
-                length = int(self.headers.get("Content-Length", 0))
-                raw = self.rfile.read(length).decode("utf-8") if length else "{}"
+                raw = self.body(1048576).decode("utf-8") or "{}"
                 data = _json.loads(raw)
             except Exception:
                 return self.send_json({"ok": False, "error": "bad json"})

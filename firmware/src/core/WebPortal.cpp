@@ -223,6 +223,10 @@ void WebPortal::checkLink(int n) {
         if (ssid == appliedHost_) continue;       // our own AP
         if (!ssid.length()) continue;
 
+        // one-way joins only: a name that sorts before ours could be the very
+        // board leaning on our hotspot (A13-7, wifilink::mayJoin)
+        if (!wifilink::mayJoin(WiFi.softAPSSID().c_str(), ssid.c_str())) continue;
+
         PeerDiscovery::Peer p;
         bool known = peers_.find(ssid, p);
 

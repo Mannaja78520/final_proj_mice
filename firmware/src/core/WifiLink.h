@@ -97,4 +97,15 @@ struct PeerPick {
     }
 };
 
+// Which group-mate's hotspot we may join at all (A13-7). No board sets its
+// own hotspot address, so every hotspot is 192.168.4.1/24; two lonely
+// group-mates used to each join the OTHER's, a ring with no way out. Rule: a
+// module only joins a hotspot whose name sorts AFTER its own, so joins all
+// point one way and no ring can form; the last name hosts. Equal names never
+// join. Kept the shared 192.168.4.1 people are told to open (user 2026-10-10).
+inline bool mayJoin(const char* self, const char* other) {
+    if (!self || !other) return false;
+    return std::string(other) > std::string(self);
+}
+
 }  // namespace wifilink
