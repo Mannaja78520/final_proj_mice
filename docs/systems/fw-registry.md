@@ -45,7 +45,7 @@ Registries: commands, modules, servos, amps, cameras, pins - and the generators 
 - [hub](hub.md)
 - [fw-core](fw-core.md)
 
-## Checks that test it (38)
+## Checks that test it (39)
 
 - `check_accounts_firmware`
 - `check_amp_kind`
@@ -62,6 +62,7 @@ Registries: commands, modules, servos, amps, cameras, pins - and the generators 
 - `check_faces_app`
 - `check_faces_login`
 - `check_faces_poll`
+- `check_friend_api`
 - `check_groups`
 - `check_help_links`
 - `check_one_player`
@@ -86,4 +87,4 @@ Registries: commands, modules, servos, amps, cameras, pins - and the generators 
 - `check_voice_identify`
 - `check_wifi_live`
 
-Run them: `python qc/run_qc.py --no-build check_accounts_firmware check_amp_kind check_amp_wiring check_app_window check_audio_nong check_board_auth check_bus_flash check_cam_controls check_cam_panel check_camera check_contracts check_docs check_faces_app check_faces_login check_faces_poll check_groups check_help_links check_one_player check_onefile check_ota check_page_login check_partner_launch check_partners check_peerpass check_perf check_pinout check_reach check_registries check_relax check_rgb_pin check_seq_steps check_sequences check_show_music check_shrug_range check_stream_audio check_voice_bench check_voice_identify check_wifi_live`
+Run them: `python qc/run_qc.py --no-build check_accounts_firmware check_amp_kind check_amp_wiring check_app_window check_audio_nong check_board_auth check_bus_flash check_cam_controls check_cam_panel check_camera check_contracts check_docs check_faces_app check_faces_login check_faces_poll check_friend_api check_groups check_help_links check_one_player check_onefile check_ota check_page_login check_partner_launch check_partners check_peerpass check_perf check_pinout check_reach check_registries check_relax check_rgb_pin check_seq_steps check_sequences check_show_music check_shrug_range check_stream_audio check_voice_bench check_voice_identify check_wifi_live`

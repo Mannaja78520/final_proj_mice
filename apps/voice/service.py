@@ -81,6 +81,9 @@ EMOJI_RE = re.compile(r"[\U0001F000-\U0001FAFF\u2600-\u27BF\u2300-\u23FF\u2B50\u
 
 sys.path.insert(0, str(CODE / "tools"))
 import registry                                      # noqa: E402
+# What we asked the face app for, in one place (A13): /api/look, present.
+sys.path.insert(0, str(CODE / "apps" / "faces"))
+import friend_api                                    # noqa: E402
 
 
 def detect_lang(text):
@@ -299,7 +302,20 @@ def short_person_name(person):
     return parts[0] if parts else p
 
 
-def format_multi_person(person, lang="th"):
+def call_name(p):
+    """What to call one person from the face app: the name they asked to be
+    called (call_as, brief 3.5 item 1) when it sends one, else the first word."""
+    return str(p.get("callAs") or "").strip() or short_person_name(p.get("who") or "")
+
+
+def join_names(names):
+    names = [n for n in names if n]
+    if not names:
+        return ""
+    return " และ ".join(names[:2]) if len(names) <= 2 else "%s, %s และทุกท่าน" % (names[0], names[1])
+
+
+def format_multi_person(person, lang="th", address=("คุณ",)):
     """Format single or multiple detected persons gracefully."""
     p_str = str(person).strip()
     if not p_str:
@@ -331,7 +347,9 @@ def format_multi_person(person, lang="th"):
         else:
             return f"{short_names[0]}、{short_names[1]}和大家"
     else:  # th
-        th_names = [n if n.startswith("คุณ") else f"คุณ{n}" for n in short_names]
+        # A name that already carries its form of address (call_as "พี่บอส")
+        # is not given a second one: config/voice.json face.addressWords.
+        th_names = [n if n.startswith(tuple(address)) else f"คุณ{n}" for n in short_names]
         if len(th_names) == 1:
             return th_names[0]
         elif len(th_names) == 2:
@@ -340,7 +358,7 @@ def format_multi_person(person, lang="th"):
             return f"{th_names[0]}, {th_names[1]} และทุกท่าน"
 
 
-def personalize_answer(answer, person, lang="th"):
+def personalize_answer(answer, person, lang="th", address=("คุณ",)):
     """Personalize an answer with the recognized person(s) naturally."""
     if not person or not answer or not str(answer).strip():
         return answer
@@ -352,7 +370,7 @@ def personalize_answer(answer, person, lang="th"):
     if any(s.lower() in ans.lower() for s in s_names if s):
         return answer
 
-    addressed = format_multi_person(person, lang=l)
+    addressed = format_multi_person(person, lang=l, address=address)
     if not addressed:
         return answer
 
@@ -1198,7 +1216,8 @@ class Brain:
                 g_ans, g_err = self._ask_google_studio(history, lang=lang, scenario=scenario, person=person)
                 if g_ans:
                     if person:
-                        g_ans = personalize_answer(g_ans, person, lang=lang)
+                        g_ans = personalize_answer(g_ans, person, lang=lang,
+                                                   address=self.address_words())
                     return g_ans, None
                 if not self.cfg.get("llm", {}).get("enabled"):
                     return None, g_err
@@ -1340,7 +1359,8 @@ class Brain:
             if not reply:
                 return self.cannot_answer(lang), None
             if person:
-                reply = personalize_answer(reply, person, lang=lang)
+                reply = personalize_answer(reply, person, lang=lang,
+                                           address=self.address_words())
             return reply, None
 
     # ---- the three guards, as small pieces that can be tested alone --------
@@ -1520,6 +1540,13 @@ class Brain:
         where = str((self.cfg.get("face") or {}).get("watcher")
                     or os.environ.get("MICE_FACES_STATE")
                     or "http://127.0.0.1:8769/state")
+        # Who is in front of that camera NOW (A13-3): the watcher picks the
+        # best source - our camera's look, their present, else their feed -
+        # nearest first, with the name each person asked to be called. An
+        # older watcher has no /present, and this carries on as before.
+        got = self._watcher_present(where, camera, 120)
+        if got is not None:
+            return join_names([call_name(p) for p in got.get("people") or []])
         try:
             req = urllib.request.Request(where)
             with urllib.request.urlopen(req, timeout=1.0) as r:
@@ -1548,6 +1575,18 @@ class Brain:
         except Exception:
             pass
         return ""
+
+    def _watcher_present(self, where, camera="", seconds=120):
+        """The watcher's /present answer, or None when it has none."""
+        from urllib.parse import quote
+        url = "%s/present?camera=%s&seconds=%s" % (
+            where.rsplit("/state", 1)[0], quote(str(camera or "")), float(seconds))
+        try:
+            with urllib.request.urlopen(url, timeout=1.5) as r:
+                got = json.loads(r.read().decode("utf-8"))
+        except Exception:                                    # noqa: BLE001
+            return None
+        return got if got.get("ok") and isinstance(got.get("people"), list) else None
 
     def presence_gate(self):
         """(take the question?, why). System A7-1, PRESENCE MODE.
@@ -1607,6 +1646,11 @@ class Brain:
         """
         import urllib.error
         import urllib.request
+        # Their POST /api/look keeps nothing by design (A13-4), so it is
+        # enough that their app lists it; identify() reads the promise again
+        # on every answer.
+        if friend_api.offers(self._reconize_entry(), "look")[0]:
+            return True, "", "POST /api/look"
         api = self._reconize_api()
         look = self._reconize_entry().get("look") or {}
         name = str(look.get("dontKeep") or "").partition("=")[0]
@@ -1714,14 +1758,14 @@ class Brain:
         try:
             api = self._reconize_api()
             tok = self._reconize_login()
-            if not api or not tok:
-                return out
-            req = urllib.request.Request(api + "/api/node/status",
-                                         headers={"Authorization": "Bearer " + tok})
-            with urllib.request.urlopen(req, timeout=3) as r:
-                got = json.loads(r.read().decode("utf-8"))
+            got = {}
+            if api and tok:
+                req = urllib.request.Request(api + "/api/node/status",
+                                             headers={"Authorization": "Bearer " + tok})
+                with urllib.request.urlopen(req, timeout=3) as r:
+                    got = json.loads(r.read().decode("utf-8"))
         except Exception:                                   # noqa: BLE001
-            return out
+            got = {}
         for n in (got.get("nodes") or []):
             nid = str(n.get("node_id") or "")
             if not nid:
@@ -1729,6 +1773,14 @@ class Brain:
             out.append({"id": nid,
                         "name": str(n.get("camera_label") or n.get("name") or nid),
                         "online": bool(n.get("online"))})
+        # The rig's own cameras the watcher asks through their /api/look
+        # (A13-2, config/faces.json look) - pickable like any of theirs.
+        where = str((self.cfg.get("face") or {}).get("watcher")
+                    or os.environ.get("MICE_FACES_STATE") or "http://127.0.0.1:8769/state")
+        ids = {o["id"] for o in out}
+        for cam in (self._watcher_present(where, "", 10) or {}).get("cameras") or []:
+            if cam not in ids:
+                out.append({"id": cam, "name": cam, "online": True})
         return out
 
     def identify(self, jpeg):
@@ -1758,6 +1810,18 @@ class Brain:
             return "", FACE_APP_OFF, str(e)
         if not tok:
             return "", "no saved login for the face app - see main_python/faces_login.json", ""
+        # Their POST /api/look first (A13-4): built to keep nothing, and says
+        # so on every answer ("kept": false), which friend_api checks.
+        entry = self._reconize_entry()
+        if friend_api.offers(entry, "look")[0]:
+            state, faces, detail = friend_api.look(entry, tok, jpeg, "voice-page", timeout=30)
+            if state == "kept":
+                return "", FACE_APP_KEEPS, detail
+            if state == "off":
+                return "", FACE_APP_OFF, detail
+            if state != "ok":
+                return "", "the face app refused to look at that picture", "%s: %s" % (state, detail)
+            return self._remember_look([call_name(f) for f in faces if f["known"]], len(faces))
         ok, why, detail = self.look_allowed()
         if not ok:
             return "", why, detail
@@ -1786,16 +1850,21 @@ class Brain:
             who = short_person_name((m.get("name") or m.get("first_name") or "").strip())
             if who and who not in names:
                 names.append(who)
+        return self._remember_look(names, got.get("faces_total") or got.get("faces") or 0)
+
+    def _remember_look(self, names, faces):
+        """(person, why-not, detail) from one look's names, remembered like a
+        face seen through their camera."""
+        names = list(dict.fromkeys(n for n in names if n))
         if not names:
             # Nobody there, or nobody known: drop the name NOW rather than
             # letting the remembered one ride on. The badge said a name while
             # the same look reported an empty frame (user 2026-09-18: *when
             # don't have face why it still said phuthiphong*).
             self.forget_person()
-            faces = got.get("faces_total") or got.get("faces") or 0
             return "", ("nobody the face app knows was in that picture"
                         if faces else "no face in that picture - move into the light"), ""
-        person = " และ ".join(names[:2]) if len(names) <= 2 else "%s, %s และทุกท่าน" % (names[0], names[1])
+        person = join_names(names)
         self._seen_person = person
         self._seen_at = time.time()
         return person, "", ""
@@ -1851,6 +1920,12 @@ class Brain:
         except Exception:
             pass
         return ""
+
+    def address_words(self):
+        """Words a Thai name may already start with, so no คุณ is added in
+        front (config/voice.json face.addressWords)."""
+        got = (self.cfg.get("face") or {}).get("addressWords")
+        return tuple(w for w in got if w) if isinstance(got, list) and got else ("คุณ",)
 
     def seen_seconds(self):
         """How long a face from this page's own camera counts as present.
@@ -2152,7 +2227,8 @@ class VoiceHandler(BaseHTTPRequestHandler):
             if hit:
                 faq_ans = hit.get("answer") or ""
                 if person:
-                    faq_ans = personalize_answer(faq_ans, person, lang=hit.get("lang") or eff_lang)
+                    faq_ans = personalize_answer(faq_ans, person, lang=hit.get("lang") or eff_lang,
+                                                 address=self.brain.address_words())
                 out = {"ok": True, "answer": faq_ans,
                        "source": "faq", "score": score,
                        "lang": hit.get("lang") or eff_lang}

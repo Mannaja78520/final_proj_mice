@@ -61,8 +61,11 @@ class CamRelay:
         with cls._all_lock:
             return {a: r.viewers for a, r in cls._all.items() if r.viewers}
 
-    def __init__(self, addr):
+    def __init__(self, addr, path="/api/cam.stream"):
         self.addr = addr
+        # The face watcher reads the HUB's relay of a board (A13-2), not the
+        # board: the board takes one stream, and the hub already holds it.
+        self.path = path
         self.cond = threading.Condition()
         self.frame = b""
         self.seq = 0                  # counts frames, so a viewer knows what is new
@@ -129,7 +132,7 @@ class CamRelay:
     def _read_stream(self):
         up = http.client.HTTPConnection(self.addr, timeout=STALL)
         try:
-            up.request("GET", "/api/cam.stream")
+            up.request("GET", self.path)
             r = up.getresponse()
             if r.status != 200:
                 raise RuntimeError(

@@ -79,6 +79,32 @@
     // that worked was a local patch, removed with their reset on 2026-09-29.
     "look": { "path": "/api/recognition/upload", "field": "photo",
               "dontKeep": "persist=false", "spec": "/openapi.json" },
+
+    // WHAT WE ASKED THEM TO BUILD (brief "API ที่ขอจาก Face_Regonize",
+    // 2026-10-09, system A13). Not in their version yet. Each route is used
+    // only once THEIR /openapi.json lists it; until then everything works as
+    // before. Names are the brief's PROPOSAL, so when theirs lands the fix is
+    // an edit here - apps/faces/friend_api.py is the only reader.
+    "asks": {
+      "spec": "/openapi.json",
+      // One JPEG in, who is where back, NOTHING stored (brief section 3).
+      "look": { "path": "/api/look", "method": "post", "field": "photo",
+                "form": { "source": "{camera}", "want": "faces" },
+                "maxBytes": 2097152,
+                "faces": "faces", "kept": "kept", "image": "image", "took": "took_ms",
+                // What each refusal means to us. 429 = still on the last frame.
+                "codes": { "400": "badImage", "401": "login", "413": "tooBig",
+                           "429": "busy", "503": "loading" } },
+      // Who is in front of one of THEIR cameras now (brief 3.5 item 4).
+      "present": { "path": "/api/node/{node_id}/present", "method": "get",
+                   "query": "seconds={seconds}", "people": "people",
+                   "facesNow": "faces_now", "unknownNow": "unknown_now" },
+      // One person, in any of the answers above, the feed and history.
+      "person": { "who": "name", "first": "first_name", "id": "participant_id",
+                  "status": "status", "matched": "matched", "callAs": "call_as",
+                  "title": "title", "lang": "language", "box": "box",
+                  "score": "confidence", "lastSeen": "last_seen" }
+    },
     // MAIN, never the Dummy copy (user 2026-09-16: *run only main not
     // dummy*). The hub refuses a folder whose path holds a word listed here.
     "folder": "E:/final_proj/mice/Face_Regonize",
@@ -143,7 +169,12 @@
         "reports": ["known"],
         "hasCamera": true,
         "map": { "who": "name", "id": "participant_id", "camera": "node_id",
-                 "when": "at", "repeat": "checkin" }
+                 "when": "at", "repeat": "checkin",
+                 // Asked for (brief 3.5 items 1-3), read only when present: a
+                 // stranger event {"status": "unknown", "faces": 1} and the
+                 // name a person likes to be called.
+                 "status": "status", "faces": "faces", "callAs": "call_as",
+                 "title": "title", "lang": "language" }
       },
       {
         // api/history.py:13 mounts /api/history. Newest first, page defaults
@@ -160,7 +191,10 @@
         "reports": ["known", "unknown"],
         "hasCamera": false,
         "map": { "who": "name", "id": "participant_id",
-                 "when": "detected_at", "status": "status", "row": "id" },
+                 "when": "detected_at", "status": "status", "row": "id",
+                 // Asked for (brief item 4): when their rows carry node_id,
+                 // add "camera": "node_id" here AND turn hasCamera true.
+                 "callAs": "call_as" },
 
         // detected_at is stamped when the row is BUILT, not when it commits
         // (models/models.py:64, default_factory=datetime.now). An older
