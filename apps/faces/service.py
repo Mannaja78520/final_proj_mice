@@ -149,6 +149,9 @@ class State:
         # Set by main(): who to greet and with which words (rules.py, A5).
         self.greeter = None
         self.upgraded = None
+        # What their payloads really carried, per source (A9-2): it TELLS,
+        # it never changes what the watcher does.
+        self.contract = {}
 
     def greet(self, event):
         """Hand one new arrival to the greeter, off this thread: the hub call
@@ -340,6 +343,21 @@ class State:
                 return s
         return None
 
+    def observe(self, kind, wanted, raw):
+        """Record which of the fields we read were missing from one of their
+        payloads (A9-2). Checked on what they really SENT, because their
+        OpenAPI page does not describe a websocket or a row's contents. A
+        changed name shows up here the first time it arrives - not as a rig
+        that quietly stops greeting. Only reports; never changes behaviour."""
+        got = set(raw) if isinstance(raw, dict) else set()
+        missing = sorted(f for f in set(wanted) if f and f not in got)
+        with self._events_lock:
+            c = self.contract.setdefault(kind, {"seen": 0, "missing": [], "at": ""})
+            c["seen"] += 1
+            c["missing"] = missing
+            c["at"] = datetime.now().isoformat(timespec="seconds")
+        return missing
+
     def from_ws(self, src, raw):
         """One of their live frames, in our shape.
 
@@ -347,6 +365,8 @@ class State:
         when their payload changes, that is one line in config/partners.json.
         """
         m = src.get("map") or {}
+        self.observe("ws", [m.get(k) or d for k, d in (("who", "name"), ("id", "participant_id"),
+                     ("when", "at"), ("camera", "node_id"))], raw)
         who = raw.get(m.get("who") or "name") or ""
         return {
             "who": who,
@@ -460,6 +480,7 @@ class State:
                 break
             older_than_window = False
             for row in rows:
+                self.observe("poll", [k_when, k_row, k_who, k_id, k_status], row)
                 when = _when(row.get(k_when))
                 if floor and when and when < floor:
                     # Newest first, so everything below this is older too.
@@ -525,6 +546,7 @@ class State:
             try:
                 with urllib.request.urlopen(req, timeout=5) as r:
                     got = json.loads(r.read().decode("utf-8"))
+                self.observe("count", [cfg.get("field") or "detected_today"], got)
                 n = got.get(cfg.get("field") or "detected_today")
                 if isinstance(n, (int, float)) and not isinstance(n, bool):
                     out = {"today": int(n), "from": "theirs",
@@ -654,6 +676,7 @@ class State:
             "greetings": list(self.greeter.recent) if self.greeter else [],
             "count": getattr(self, "_count", (0, None))[1],
             "rulesError": self.greeter.error if self.greeter else "",
+            "contract": {k: dict(v) for k, v in self.contract.items()},
             "pollError": self.poll_error,
             "error": self.partners_error or self.last_error or "",
         }

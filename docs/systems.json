@@ -17,7 +17,7 @@
   "systems": [
     {"id": "hub", "summary": "The hub program: HTTP server, the device routes (dev, modules, USB proxy, pairing, robot proxy), startup. Split into hub-* systems (A26-76, A26-93).",
      "files": ["main_python/main.py", "main_python/app_window.py", "main_python/build_stamp.py",
-               "main_python/partner_launch.py", "main_python/run_hub.*", "main_python/README.md",
+               "main_python/partner_launch.py", "main_python/partner_version.py", "main_python/run_hub.*", "main_python/README.md",
                "MiceHub.spec", "requirements.txt", "config/app_window.json", "config/partners.json"],
      "depends": ["hub-auth", "hub-net", "hub-media", "hub-shows", "fw-registry", "hub-usb",
                  "hub-flash", "hub-show", "hub-apps", "hub-support", "hub-studio", "hub-modules"]},

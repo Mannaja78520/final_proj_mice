@@ -143,9 +143,9 @@ A6-3: qc     2026-10-10 12:23  agent=claude:10101203-1925  — POST /api/faces/a
 A7-1: qc     2026-10-10 12:26  agent=claude:10101203-1925  — presence mode: opt-in, gates only ASKING QUESTIONS, fails OPEN, and off for sources with no camera watcher GET /presence; Voice presence_gate on /ask only, opt-in (voice.json presence.on), fails open; check_faces_presence 13/0, 6 sabotages caught
 A8-1: qc     2026-10-10 12:35  agent=claude:10101203-1925  — the rules editor screen at /app/faces/: every word editable, saved through the watcher, no restart editor card on /app/faces/, saved via hub /api/faces/rules (login on POST) to the watcher, the one writer; check_faces_rules, 4/4 sabotages caught; tested against fakes
 A8-2: qc     2026-10-10 12:35  agent=claude:10101203-1925  — help section for the editor screen, like every other screen has
-A9-1: todo   — read .git/HEAD through refs/heads/main AND packed-refs, plus VERSION. Never run git in their folder
-A9-2: todo   — contract check on OBSERVED payloads; OpenAPI only for the structure it really describes
-A9-3: todo   — it TELLS us and never changes behaviour on its own
+A9-1: qc     2026-10-10 12:39  agent=claude:10101203-1925  — read .git/HEAD through refs/heads/main AND packed-refs, plus VERSION. Never run git in their folder main_python/partner_version.py reads HEAD, branch file, packed-refs, VERSION; partners.json testedWith f27a9d5; GET /api/partners/version (open); OpenAPI used for HTTP paths only; watcher records missing fields per source on real payloads (/state contract); screen only tells; check_partner_version 13/0, 4 sabotages caught; tested against fakes
+A9-2: qc     2026-10-10 12:39  agent=claude:10101203-1925  — contract check on OBSERVED payloads; OpenAPI only for the structure it really describes
+A9-3: qc     2026-10-10 12:39  agent=claude:10101203-1925  — it TELLS us and never changes behaviour on its own
 A10-1: todo  — read their front end for what reads well; screenshots of ours beside theirs at 360 / 768 / 1440
 A10-2: todo  — the ideas become tokens and components in shared/web/mice.css. No React, no build step
 A10-3: todo  — the pages adopt them: hub, module, Studio, help, and the new screen

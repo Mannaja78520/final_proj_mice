@@ -81,6 +81,16 @@ class AppRoutes:
             # and there is nothing secret in an address.
             return self.send_json(_hub.read_partners())
 
+        if path == "/api/partners/version":
+            # Which version of theirs is installed, read from files in their
+            # folder - never by running git there (A9). Only tells.
+            pid = (q.get("id") or [""])[0]
+            entry = (_hub.read_partners().get("partners") or {}).get(pid)
+            if not entry:
+                return self.send_json({"ok": False,
+                                       "error": "config/partners.json has no entry called %r" % pid})
+            return self.send_json(_hub.partner_version.report(entry))
+
         if path == "/api/partners/start":
             # Starts a configured outside program on THIS PC. No hub login
             # from this PC itself (user 2026-09-17: Reconize and Jao have

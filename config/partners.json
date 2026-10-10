@@ -82,6 +82,10 @@
     // MAIN, never the Dummy copy (user 2026-09-16: *run only main not
     // dummy*). The hub refuses a folder whose path holds a word listed here.
     "folder": "E:/final_proj/mice/Face_Regonize",
+    // The commit of theirs Mice was last checked against: the folder was put
+    // back on it on 2026-09-29 (thread "Fix Face_Regonize git pull"). A newer
+    // one is only REPORTED on the Reconize screen (A9) - nothing turns off.
+    "testedWith": ["f27a9d5"],
     "refuseFolders": ["dummy"],
 
     // Their dev server listens on this PC only; this opens it to phones on the

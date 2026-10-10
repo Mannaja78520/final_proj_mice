@@ -118,6 +118,7 @@ import cam_relay                                           # noqa: E402
 import hub_auth                                            # noqa: E402
 import hub_pair                                            # noqa: E402
 import partner_launch                                      # noqa: E402
+import partner_version                                     # noqa: E402
 import route_latency                                       # noqa: E402
 import shows as shows_mod                                  # noqa: E402
 import stream_audio                                        # noqa: E402

@@ -35,7 +35,7 @@ Face recognition app.
 
 - nothing
 
-## Checks that test it (7)
+## Checks that test it (8)
 
 - `check_faces_app`
 - `check_faces_count`
@@ -44,5 +44,6 @@ Face recognition app.
 - `check_faces_presence`
 - `check_faces_rules`
 - `check_faces_ws`
+- `check_partner_version`
 
-Run them: `python qc/run_qc.py --no-build check_faces_app check_faces_count check_faces_greet check_faces_loopback check_faces_presence check_faces_rules check_faces_ws`
+Run them: `python qc/run_qc.py --no-build check_faces_app check_faces_count check_faces_greet check_faces_loopback check_faces_presence check_faces_rules check_faces_ws check_partner_version`

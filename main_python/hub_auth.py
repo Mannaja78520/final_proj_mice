@@ -208,6 +208,8 @@ OPEN = {
     # report. Addresses only - the logins are not in that file and never will
     # be - and the tile has to draw itself before anybody has signed in.
     "/api/partners",
+    # Which version of theirs is installed: read from files, changes nothing.
+    "/api/partners/version",
     # Opening an outside app from this PC needs no hub login (they have their
     # own). AppRoutes.start_refused still asks a caller on the network, or a
     # website open on this PC, to log in - and takes POST only.

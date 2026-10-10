@@ -42,6 +42,8 @@
     <span class="statline" id="stat" role="status" aria-live="polite">checking…</span>
   </div>
   <div class="statline tech mini" id="where"></div>
+  <!-- Which version of theirs is installed (A9). It only tells. -->
+  <p class="mini" id="verLine"></p>
   <!-- Reconize itself, inside this page, once it answers. -->
   <div id="frameCard" style="margin-top:var(--sp-3)" hidden>
     <iframe id="reconFrame" title="Reconize" src="about:blank"
@@ -54,6 +56,7 @@
   <div class="row" style="align-items:baseline">
     <span class="statline" id="wStat" role="status" aria-live="polite">checking…</span>
   </div>
+  <p class="mini" id="wContract" hidden></p>
   <div id="wSrcs" class="tech" style="margin-top:var(--sp-4); display:none">
     <p class="mini">What each source can report:</p>
     <ul class="mini" id="wSrcList" style="list-style:inside; margin-top:var(--sp-2)"></ul>
@@ -145,6 +148,26 @@ async function load(){
   ensureRunning().catch(err =>
     say(...(Array.isArray(err) ? err : ["Reconize could not be started.", String(err)])));
   pollWatcher();
+  showVersion();
+}
+
+async function showVersion(){
+  const line = document.getElementById("verLine");
+  let v;
+  try{
+    v = await fetch("/api/partners/version?id=" + PARTNER, {cache: "no-store"}).then(r => r.json());
+  }catch(e){ return; }
+  if (!v.ok) return;
+  line.textContent = v.words;
+  line.className = "mini " + (v.same ? "" : "warn");
+  const t = [v.commit ? "commit " + v.commit.slice(0, 10) : v.why,
+             v.branch ? "branch " + v.branch : "detached",
+             v.version ? "version " + v.version : "",
+             "tested with " + (v.tested.join(", ") || "none written down"),
+             v.spec.checked ? (v.spec.missing.length ? "not listed: " + v.spec.missing.join(", ")
+                                                     : "every address still listed")
+                            : "their address list could not be read"];
+  line.appendChild(el("span", {className: "tech mini", text: " " + t.filter(Boolean).join(" · ")}));
 }
 
 function say(msg, tech){
@@ -245,6 +268,18 @@ async function pollWatcher() {
     
     el.textContent = state.watching ? "Yes - the rig sees who arrives." : "Not yet - the rig is not seeing anybody arrive.";
     el.className = state.watching ? "statline ok" : "statline warn";
+
+    // What their payloads really carried (A9-2). Only tells; nothing turns off.
+    const ct = document.getElementById("wContract");
+    const bad = Object.entries(state.contract || {}).filter(([, c]) => (c.missing || []).length);
+    ct.hidden = !bad.length;
+    if (bad.length){
+      ct.textContent = "Reconize changed how it reports people, so some details the rig " +
+                       "reads are missing. Greetings may stop until config/partners.json is updated.";
+      ct.className = "mini warn";
+      ct.appendChild(document.createElement("span")).className = "tech mini";
+      ct.lastChild.textContent = " " + bad.map(([k, c]) => k + ": " + c.missing.join(", ")).join(" · ");
+    }
 
     if (state.sources && state.sources.length > 0) {
       srcs.style.display = "block";
