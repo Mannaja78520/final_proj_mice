@@ -37,7 +37,7 @@ PAGE_ROWS = """
 <style>html,body{margin:0}#f{width:1100px;height:900px;border:0}</style>
 <iframe id="f" src="/"></iframe>
 <script>
-function done(s){ qcMark("ID " + s); qcMark("done"); }
+async function done(s){ await qcMark("ID " + s); qcMark("done"); }   // report lands before "done"
 // WAIT FOR THE HOME PAGE INSIDE THE FRAME. A fixed 4 s bet was lost in a
 // full gate on 2026-09-23: the driver reported nothing at all and the
 // check said "the module screen reported back - []" (A26-94).

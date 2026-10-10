@@ -24,6 +24,10 @@ WiFi and the board's web portal, SD, OTA, and `PERF?`.
   writer of Serial2. It waits with `uart_wait_tx_done` - `Serial2.flush()` is a
   busy spin in core 2.0.17 (116 ms stall measured) - then holds DE for
   `RS485_HOLD_US` (the NUL-byte corruption of 2026-08-20).
+- A board drops any bus line longer than its reader holds (`buf_` in
+  `RS485Bus.cpp`, 4096), so a reply longer than that never crosses a board
+  bridging the bus. 2048 cut AMP VALID (2850 bytes, A24-41); check_amp_kind
+  measures it against whatever number is there.
 - Build every env: `pio run -e mice_nong -e mice_cam -e mice_lift -e mice_blank`.
   FastLED is pinned to 3.10.3: 3.10.5 pushed the lift past its OTA slot.
 
@@ -105,11 +109,12 @@ WiFi and the board's web portal, SD, OTA, and `PERF?`.
 - [fw-cam](fw-cam.md)
 - [bench](bench.md)
 
-## Checks that test it (66)
+## Checks that test it (67)
 
 - `check_accounts`
 - `check_accounts_firmware`
 - `check_amp_kind`
+- `check_amp_wiring`
 - `check_audio_nong`
 - `check_board_auth`
 - `check_board_password`
@@ -174,4 +179,4 @@ WiFi and the board's web portal, SD, OTA, and `PERF?`.
 - `check_wifi_resilience`
 - `check_wifi_ssid`
 
-Run them: `python qc/run_qc.py --no-build check_accounts check_accounts_firmware check_amp_kind check_audio_nong check_board_auth check_board_password check_boot_noise check_brownout_guard check_build_split check_bus_flash check_bus_nonblocking check_calibration check_cam_controls check_camera check_cast_mix check_contracts check_design_system check_dev_tools check_docs check_firmware_build check_flash check_groups check_guards_armed check_history check_hub_api check_hub_users check_id3_skip check_joint_fields check_joint_select check_latency check_line_protocol check_link_pick check_link_states check_logging check_loop_realtime check_modsite_back check_music_loop check_no_data_loss check_nong_dupes check_offset`
+Run them: `python qc/run_qc.py --no-build check_accounts check_accounts_firmware check_amp_kind check_amp_wiring check_audio_nong check_board_auth check_board_password check_boot_noise check_brownout_guard check_build_split check_bus_flash check_bus_nonblocking check_calibration check_cam_controls check_camera check_cast_mix check_contracts check_design_system check_dev_tools check_docs check_firmware_build check_flash check_groups check_guards_armed check_history check_hub_api check_hub_users check_id3_skip check_joint_fields check_joint_select check_latency check_line_protocol check_link_pick check_link_states check_logging check_loop_realtime check_modsite_back check_music_loop check_no_data_loss check_nong_dupes`

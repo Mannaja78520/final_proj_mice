@@ -92,7 +92,9 @@ def c_str(s):
 
 
 def ident_ok(name):
-    return bool(re.match(r"^[a-z][a-z0-9_]*$", name))
+    # fullmatch, not ^...$: "$" also matches before a trailing newline, and an
+    # id carrying one breaks the C table it is written into
+    return bool(re.fullmatch(r"[a-z][a-z0-9_]*", name))
 
 
 def load_modules():
@@ -285,9 +287,25 @@ def gen_amps(out, types):
     for key, a in amps.items():
         if not ident_ok(key):
             raise SystemExit("amp id %r must be lower-case letters/digits/_" % key)
-        for field in ("label", "mode", "pins", "mono", "wiring"):
+        for field in ("label", "mode", "pins", "mono", "wiring", "to"):
             if field not in a:
                 raise SystemExit("amp %r is missing %r" % (key, field))
+        if not isinstance(a["to"], dict) or not all(
+                isinstance(v, str) and v.strip() for v in a["to"].values()):
+            raise SystemExit("amp %r: 'to' maps each wired pin to where its "
+                             "wire goes, e.g. {\"i2s_dout\": \"the amp's input\"}" % key)
+        # The board joins these into AMP VALID's JSON as they are, so a quote
+        # or a backslash would break the whole Amplifier picker, not one line.
+        texts = [a["label"], a["wiring"]] + list(a["to"].values())
+        for text in texts:
+            if any(ch in text for ch in '"\\') or any(ord(ch) < 32 for ch in text):
+                raise SystemExit("amp %r: no double quote, backslash or control "
+                                 "character in its text: %r" % (key, text))
+        # One destination per wired pin, so the page can say where each wire goes.
+        if sorted(a["to"]) != sorted(a["pins"]):
+            raise SystemExit("amp %r: 'to' must name exactly the pins it wires "
+                             "(%s), not %s" % (key, ", ".join(a["pins"]) or "none",
+                                               ", ".join(sorted(a["to"])) or "none"))
         if a["mode"] not in AMP_MODES:
             raise SystemExit("amp %r: mode %r is not one of %s"
                              % (key, a["mode"], ", ".join(AMP_MODES)))
@@ -301,12 +319,13 @@ def gen_amps(out, types):
         if a["mode"] == "analog" and a["pins"] != ["i2s_dout"]:
             raise SystemExit("amp %r is analog: it carries audio on i2s_dout "
                              "alone" % key)
-        rows.append("    { %-14s %-42s %-10s %-6s %5s, %s }," % (
+        to = json.dumps({k: a["to"][k] for k in a["pins"]}, separators=(",", ":"))
+        rows.append("    { %-14s %-42s %-10s %-6s %5s, %s,\n      %s }," % (
             c_str(key) + ",", c_str(a["label"]) + ",",
             c_str(a["mode"]) + ",",
             c_str(",".join(a["pins"])) + ",",
             "true" if a["mono"] else "false",
-            c_str(a["wiring"])))
+            c_str(a["wiring"]), c_str(to)))
 
     text = BANNER % AMPS_JSON.name + """
 #pragma once
@@ -322,6 +341,7 @@ struct AmpKind {
     const char* pins;     // comma separated audio pin keys actually wired
     bool        mono;
     const char* wiring;   // the plain sentence the website prints
+    const char* to;       // JSON object: pin key -> where that wire goes
 };
 
 static const AmpKind AMP_KINDS[] = {
@@ -357,7 +377,8 @@ inline String ampJson(const AmpKind& a) {
     s += "\\",\\"pins\\":\\"";  s += a.pins;
     s += "\\",\\"mono\\":";     s += a.mono ? "true" : "false";
     s += ",\\"wiring\\":\\"";   s += a.wiring;
-    return s + "\\"}";
+    s += "\\",\\"to\\":";       s += a.to;
+    return s + "}";
 }
 
 // The whole list as JSON, for the Amplifier dropdown on the board's page.
@@ -717,6 +738,14 @@ def gen_webui(out, types):
     return size
 
 
+# WebPortal.cpp and SecureTalk.cpp both include these pages. As `static`,
+# each file kept its own copy: two 26 KB stylesheets and two 14 KB sound
+# engines in flash (nm, mice_nong, 2026-10-10), which pushed the image past
+# check_ota's 85% slot margin. A weak extern definition is merged by the
+# linker into one copy, and needs no separate .cpp to hold it.
+WEB_ASSET = '#ifndef WEB_ASSET\n#define WEB_ASSET __attribute__((weak))\n#endif\n'
+
+
 def gen_micecss(out):
     """The shared stylesheet, as a PROGMEM string the board can serve.
 
@@ -736,8 +765,8 @@ def gen_micecss(out):
     if ")rawliteral" in css:            # would close the C++ raw string early
         raise SystemExit("the stylesheet contains )rawliteral, which cannot be embedded")
     text = (BANNER % ("../" + MICE_CSS.name)
-            + '#pragma once\n#include <Arduino.h>\n\n'
-              'static const char MICE_CSS[] PROGMEM = R"rawliteral('
+            + '#pragma once\n#include <Arduino.h>\n' + WEB_ASSET + '\n'
+              'extern const char MICE_CSS[] WEB_ASSET PROGMEM = R"rawliteral('
             + css + ')rawliteral";\n')
     write_if_changed(out_path(out, "web/MiceCss.h"), text,
                      "%.1f KB stylesheet" % (len(css.encode("utf-8")) / 1024.0))
@@ -749,8 +778,8 @@ def gen_micecss(out):
     if ")rawliteral" in js:
         raise SystemExit("mice.js contains )rawliteral, which cannot be embedded")
     jtext = (BANNER % ("../" + MICE_JS.name)
-             + '#pragma once' + chr(10) + '#include <Arduino.h>' + chr(10) + chr(10)
-             + 'static const char MICE_JS[] PROGMEM = R"rawliteral('
+             + '#pragma once' + chr(10) + '#include <Arduino.h>' + chr(10) + WEB_ASSET + chr(10)
+             + 'extern const char MICE_JS[] WEB_ASSET PROGMEM = R"rawliteral('
              + js + ')rawliteral";' + chr(10))
     write_if_changed(out_path(out, "web/MiceJs.h"), jtext,
                      "%.1f KB shared script" % (len(js.encode("utf-8")) / 1024.0))
@@ -761,8 +790,8 @@ def gen_micecss(out):
     if ")rawliteral" in cj:
         raise SystemExit("cast.js contains )rawliteral, which cannot be embedded")
     ctext = (BANNER % ("../" + CAST_JS.name)
-             + '#pragma once' + chr(10) + '#include <Arduino.h>' + chr(10) + chr(10)
-             + 'static const char CAST_JS[] PROGMEM = R"rawliteral('
+             + '#pragma once' + chr(10) + '#include <Arduino.h>' + chr(10) + WEB_ASSET + chr(10)
+             + 'extern const char CAST_JS[] WEB_ASSET PROGMEM = R"rawliteral('
              + cj + ')rawliteral";' + chr(10))
     write_if_changed(out_path(out, "web/CastJs.h"), ctext,
                      "%.1f KB sound engine" % (len(cj.encode("utf-8")) / 1024.0))

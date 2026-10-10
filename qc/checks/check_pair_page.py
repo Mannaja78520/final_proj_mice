@@ -29,7 +29,8 @@ PAGE = """
 <style>html,body{margin:0}#f{width:1100px;height:900px;border:0}</style>
 <iframe id="f"></iframe>
 <script>
-function done(s){ qcMark("PAIR " + s); qcMark("done"); }
+// the report first: fired together, "done" could land first and end the page
+async function done(s){ await qcMark("PAIR " + s); qcMark("done"); }
 var fr, d;
 async function openNetwork(){
   await new Promise(function(res){ fr.onload = res; fr.src = "/"; });

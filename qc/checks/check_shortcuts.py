@@ -38,7 +38,7 @@ PAGE = """
 <style>html,body{margin:0}#f{width:1100px;height:900px;border:0}</style>
 <iframe id="f" src="/"></iframe>
 <script>
-function done(s){ qcMark("KB " + s); qcMark("done"); }
+async function done(s){ await qcMark("KB " + s); qcMark("done"); }   // report lands before "done"
 function key(d, w, k, target){
   var ev = new w.KeyboardEvent('keydown', {key:k, bubbles:true, cancelable:true});
   (target || d.body).dispatchEvent(ev);

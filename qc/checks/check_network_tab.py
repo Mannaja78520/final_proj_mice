@@ -26,7 +26,7 @@ PAGE = """
 <style>html,body{margin:0}#f{width:1100px;height:900px;border:0}</style>
 <iframe id="f" src="/"></iframe>
 <script>
-function done(s){ qcMark("NET " + s); qcMark("done"); }
+async function done(s){ await qcMark("NET " + s); qcMark("done"); }   // report lands before "done"
 window.addEventListener("load", async function(){
   try{
     var d = document.getElementById('f').contentDocument;

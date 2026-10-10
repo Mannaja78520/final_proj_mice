@@ -162,9 +162,15 @@ def clean(text):
 # The rule this file already carries is that a failure prints FAILED and never
 # an empty list. This is the same rule one step earlier: a failure must not be
 # able to disguise itself as content.
+# A31-11, 2026-09-23: agy refused a tool call it could not ask about ("a tool
+# required the command permission that headless mode cannot prompt for, so it
+# was auto-denied"). Every model and the head answered that line, and the head's
+# "verdict" was that line - two runs, ~120k tokens, read as a review. The model
+# writes that line itself, so it can be reworded: auto-denied is the tell.
 _TOOL_FAILURE = re.compile(
     r"quota reached|Authentication required|authentication (failed|timed out)"
-    r"|Please upgrade your subscription|rate.?limit|Error: ",
+    r"|Please upgrade your subscription|rate.?limit|Error: "
+    r"|headless mode cannot prompt|auto-denied",
     re.I)
 
 
@@ -172,8 +178,11 @@ def tool_failed(text):
     """The reason this model said nothing usable, or "" if it really answered."""
     for line in (text or "").splitlines():
         line = line.strip()
-        if line and _TOOL_FAILURE.search(line):
-            return line[:160]
+        m = _TOOL_FAILURE.search(line) if line else None
+        if m:
+            # around the match: the line may be a findings list as JSON, where
+            # the complaint sits well past the first 160 characters
+            return line[max(0, m.start() - 60):m.start() + 100]
     return ""
 
 
@@ -195,6 +204,7 @@ def ask(model, prompt, add_dirs, timeout=600, schema=True, retry=True):
     cmd += ["-p", clean(prompt), "--mode", "plan", "--model", model]
     t0 = time.time()
     findings, raw, used, error = [], "", {}, ""
+    structured = False          # findings came back as data, not prose
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
                            encoding="utf-8", errors="replace")
@@ -224,6 +234,7 @@ def ask(model, prompt, add_dirs, timeout=600, schema=True, retry=True):
                 else:
                     findings = out_obj.get("findings") or []
                     raw = json.dumps(findings)
+                    structured = True
             except ValueError:
                 pass                    # not JSON: keep whatever came back
     except subprocess.TimeoutExpired:
@@ -237,7 +248,17 @@ def ask(model, prompt, add_dirs, timeout=600, schema=True, retry=True):
     # however many lines of it there are. Without this the prose fallback turns
     # an expired login into eight confident-looking findings and the run reports
     # a successful review — see tool_failed().
-    broke = tool_failed(raw)
+    #
+    # Findings are judged ONE AT A TIME (review 2026-09-29): judged as one line,
+    # a single real finding that quoted an outage message - any review of this
+    # file - threw the model's whole answer away. Only a list that is all
+    # outage is a failure. Prose keeps the any-line rule: an outage prints
+    # several lines, and only one of them names the trouble.
+    if structured:
+        each = [tool_failed(json.dumps(f)) for f in findings]
+        broke = each[0] if each and all(each) else ""
+    else:
+        broke = tool_failed(raw)
     if broke:
         findings, error = [], broke
     return {"model": model, "secs": round(time.time() - t0, 1),
@@ -371,12 +392,14 @@ def run(question, paths, models=None, head=None, out=None):
     # the head comes back empty AND broken, the next model on the panel reads
     # them instead, and the report says who ended up judging.
     verdict = ask(head, judge, where)
+    judges = [head]             # everyone asked to judge, for the report
     if not verdict["findings"] and verdict.get("error"):
         for spare in models:
             if spare == head:
                 continue
             print("   %s could not judge (%s) - asking %s"
                   % (head, verdict["error"], spare))
+            judges.append(spare)
             verdict = ask(spare, judge, where)
             if verdict["findings"]:
                 head = spare
@@ -413,7 +436,7 @@ def run(question, paths, models=None, head=None, out=None):
               # failure this file was written to stop, and it was still live
               # here on 2026-08-20: five broken models, and a verdict that
               # said "(nothing)".
-              "## The head reviewer (%s)" % head, ""] + said(verdict)
+              "## The head reviewer (%s)" % ", then ".join(judges), ""] + said(verdict)
     report += ["", "## What each model said", ""]
     for a in answers:
         report += ["### %s  _(%.1fs, %s tokens)_"
@@ -462,7 +485,9 @@ def run(question, paths, models=None, head=None, out=None):
         Path(out).write_text(text, encoding="utf-8", newline="")
         print("\nwrote", out)
     else:
-        print("\n" + verdict["text"])
+        # the head's lines as the report has them: its raw text IS the outage
+        # when the head failed, and printed bare it read as the verdict
+        print("\n" + "\n".join(said(verdict)))
     return "" if dead else text
 
 

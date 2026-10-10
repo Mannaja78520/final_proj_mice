@@ -48,7 +48,7 @@ PAGE = """
 <style>html,body{margin:0}#f{width:1100px;height:900px;border:0}</style>
 <iframe id="f" src="/"></iframe>
 <script>
-function done(s){ qcMark("UI " + s); qcMark("done"); }
+async function done(s){ await qcMark("UI " + s); qcMark("done"); }   // report lands before "done"
 // Wait for the frame to BE there, then settle as before (A26-94): a fixed
 // sleep measured an empty page under a full gate and reported nothing.
 qcWaitFor(function(){
@@ -301,7 +301,8 @@ def run(t):
         return
     fake_serial.reset()
     base, main = F.start_hub()
-    browser.raw_page(PAGE, base, seconds=30)
+    # 8 s + 20 s of waits plus startup (check_browser_budget): 30 s was too short
+    browser.raw_page(PAGE, base, seconds=40)
 
     marks = [m for m in fake_serial.qc_marks if m.startswith("UI ")]
     if not t.ok(marks, "the hub page reported back",

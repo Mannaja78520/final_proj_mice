@@ -31,7 +31,7 @@ DRIVER = """
 <style>html,body{margin:0}#f{width:1100px;height:900px;border:0}</style>
 <iframe id="f" src="/"></iframe>
 <script>
-function done(s){ qcMark("AD " + s); qcMark("done"); }
+async function done(s){ await qcMark("AD " + s); qcMark("done"); }   // report lands before "done"
 // Is this element ACTUALLY on screen? getComputedStyle, not a class name: the
 // question is what a person sees, and a rule that is written but overridden
 // looks exactly like a rule that works if you only read the markup.

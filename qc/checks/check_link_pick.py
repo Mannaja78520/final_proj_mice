@@ -27,3 +27,15 @@ def run(t):
                "the choice comes out of the helper")
     t.ok("if (known && !bestKnown)" not in src,
          "the old order-dependent inline tie-break is gone")
+
+    # A13-7: two lonely group-mates each joined the other's 192.168.4.1
+    # hotspot. Every candidate passes the one-way name rule before anything
+    # else, and the rule itself is the tested wifilink::mayJoin.
+    t.contains(link, "wifilink::mayJoin(WiFi.softAPSSID().c_str(), ssid.c_str())",
+               "a hotspot named before ours is never a candidate")
+    hdr = (F.FIRMWARE / "src" / "core" / "WifiLink.h").read_text(encoding="utf-8")
+    body = hdr[hdr.find("inline bool mayJoin("):]
+    body = body[:body.find("\n}")]
+    t.ok("std::string(other) > std::string(self)" in body,
+         "joins only point to a name that sorts after ours",
+         "with >= or <, two group-mates can each join the other again")
