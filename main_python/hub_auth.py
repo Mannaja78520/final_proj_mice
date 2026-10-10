@@ -215,6 +215,8 @@ OPEN = {
     # website open on this PC, to log in - and takes POST only.
     "/api/all-jao/start", "/api/reconize/start",
     "/api/partners/start",
+    # Reconize and our face watcher together, by the same rule (A11-1).
+    "/api/faces/start",
     # A report is a complaint, not a command: it changes nothing on any
     # board, and complaining must never need a password (A21-6).
     "/api/report",

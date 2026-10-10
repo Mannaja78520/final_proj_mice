@@ -57,6 +57,10 @@
     <span class="statline" id="wStat" role="status" aria-live="polite">checking…</span>
   </div>
   <p class="mini" id="wContract" hidden></p>
+  <!-- One press starts both Reconize and the rig's watcher (A11-1). -->
+  <div class="row" id="wStartRow" hidden>
+    <button class="primary" id="wStart" onclick="startBoth()">Start following Reconize</button>
+  </div>
   <div id="wSrcs" class="tech" style="margin-top:var(--sp-4); display:none">
     <p class="mini">What each source can report:</p>
     <ul class="mini" id="wSrcList" style="list-style:inside; margin-top:var(--sp-2)"></ul>
@@ -149,6 +153,26 @@ async function load(){
     say(...(Array.isArray(err) ? err : ["Reconize could not be started.", String(err)])));
   pollWatcher();
   showVersion();
+}
+
+async function startBoth(){
+  const btn = document.getElementById("wStart");
+  const st = document.getElementById("wStat");
+  btn.disabled = true;
+  st.textContent = "starting Reconize and the rig's watcher…";
+  try{
+    const got = await fetch("/api/faces/start", {method: "POST", cache: "no-store"}).then(r => r.json());
+    if (got.need_login) st.textContent = "Starting it needs the PC that runs Mice, or signing in on the hub page first.";
+    else if (got.watcherError) st.textContent = got.watcherError;
+    else if (got.reconize && !got.reconize.ok)
+      st.textContent = "The rig's watcher is running, but Reconize did not start: " + (got.reconize.error || "no reason given");
+    else st.textContent = "Started. Reconize can take about fifteen seconds before it sees anybody.";
+    if (got.detail) st.appendChild(el("span", {className: "tech mini", text: " " + got.detail}));
+  }catch(e){
+    st.textContent = "cannot reach the hub — is it still running?";
+  }finally{
+    btn.disabled = false;
+  }
 }
 
 async function showVersion(){
@@ -268,6 +292,7 @@ async function pollWatcher() {
     
     el.textContent = state.watching ? "Yes - the rig sees who arrives." : "Not yet - the rig is not seeing anybody arrive.";
     el.className = state.watching ? "statline ok" : "statline warn";
+    document.getElementById("wStartRow").hidden = true;
 
     // What their payloads really carried (A9-2). Only tells; nothing turns off.
     const ct = document.getElementById("wContract");
@@ -297,6 +322,7 @@ async function pollWatcher() {
   } catch (e) {
     el.textContent = "The face helper is not running on this PC, so the rig cannot follow Reconize yet.";
     el.className = "statline err";
+    document.getElementById("wStartRow").hidden = false;
     srcs.style.display = "none";
   }
   setTimeout(pollWatcher, 3000);
