@@ -540,6 +540,29 @@ class State:
         self._count = (now, out)
         return out
 
+    def presence(self, camera="", seconds=60.0):
+        """Is somebody standing in front of a camera right now? (A7-1)
+
+        `known` says whether this app CAN tell at all: with no source that
+        reports a camera, nobody can be seen standing anywhere, so the answer
+        is "cannot tell" and the asker must carry on as if somebody is there
+        (presence fails OPEN - a broken camera never silences the rig)."""
+        if not any(s.get("hasCamera") for s in (self.partner().get("events") or [])):
+            return {"known": False, "present": None,
+                    "why": "this app has no camera that says who is standing where"}
+        now = datetime.now()
+        with self._events_lock:
+            for e in self.people:
+                if not e.get("hasCamera") or (camera and e.get("camera") != camera):
+                    continue
+                when = _when(e.get("when"))
+                if when and abs((now - when).total_seconds()) <= seconds:
+                    return {"known": True, "present": True,
+                            "why": "somebody was seen at %s" % e.get("camera")}
+        return {"known": True, "present": False,
+                "why": "nobody was seen at %s in the last %d s"
+                       % (camera or "any camera", seconds)}
+
     def health(self):
         p = self.partner()
         return {
@@ -616,8 +639,17 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(self.state.health())
         if path == "/state":
             return self._json(self.state.snapshot())
+        if path == "/presence":
+            from urllib.parse import parse_qs
+            q = parse_qs(urlparse(self.path).query)
+            try:
+                secs = float((q.get("seconds") or ["60"])[0])
+            except ValueError:
+                secs = 60.0
+            return self._json(dict({"ok": True}, **self.state.presence(
+                (q.get("camera") or [""])[0], secs)))
         return self._json({"ok": False, "error": "no such address: %s" % path,
-                           "try": ["/health", "/state"]}, 404)
+                           "try": ["/health", "/state", "/presence"]}, 404)
 
     def do_POST(self):                                       # noqa: N802
         """A6-3: another Python program on this PC needs ONE address and ONE

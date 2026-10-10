@@ -1549,6 +1549,34 @@ class Brain:
             pass
         return ""
 
+    def presence_gate(self):
+        """(take the question?, why). System A7-1, PRESENCE MODE.
+
+        Opt-in (config voice.json presence.on). It gates ONLY taking a
+        question - never the nong's own sequences, a show or a command. And it
+        FAILS OPEN: if the face watcher is down, or its app has no camera that
+        can tell who stands where, the question is taken. A broken camera
+        must never be what makes the rig deaf."""
+        import urllib.request
+        from urllib.parse import quote
+        cfg = self.cfg.get("presence") or {}
+        if not cfg.get("on"):
+            return True, ""
+        where = str((self.cfg.get("face") or {}).get("watcher")
+                    or os.environ.get("MICE_FACES_STATE")
+                    or "http://127.0.0.1:8769/state")
+        base = where.rsplit("/state", 1)[0]
+        url = "%s/presence?seconds=%s&camera=%s" % (
+            base, float(cfg.get("seconds") or 60), quote(str(cfg.get("camera") or "")))
+        try:
+            with urllib.request.urlopen(url, timeout=1.0) as r:
+                got = json.loads(r.read().decode("utf-8"))
+        except Exception:                                    # noqa: BLE001
+            return True, "the face watcher is not answering, so questions stay open"
+        if got.get("known") and got.get("present") is False:
+            return False, "nobody is standing in front of the camera, so the question was not taken"
+        return True, got.get("why") or ""
+
     def _reconize_api(self):
         """Where Reconize answers, from config/partners.json - the one list.
 
@@ -2093,6 +2121,9 @@ class VoiceHandler(BaseHTTPRequestHandler):
             req = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
         except ValueError:
             return self._json({"ok": False, "error": "that request was not readable"}, 400)
+        take, why = self.brain.presence_gate()
+        if not take:
+            return self._json({"ok": False, "nobodyHere": True, "error": why}, 409)
         text = (req.get("text") or "").strip()
         history = req.get("history") or []
         req_lang = (req.get("lang") or "").strip()
