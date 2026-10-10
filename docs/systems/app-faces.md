@@ -31,11 +31,12 @@ Face recognition app.
 
 - nothing
 
-## Checks that test it (4)
+## Checks that test it (5)
 
 - `check_faces_app`
+- `check_faces_count`
 - `check_faces_greet`
 - `check_faces_loopback`
 - `check_faces_ws`
 
-Run them: `python qc/run_qc.py --no-build check_faces_app check_faces_greet check_faces_loopback check_faces_ws`
+Run them: `python qc/run_qc.py --no-build check_faces_app check_faces_count check_faces_greet check_faces_loopback check_faces_ws`

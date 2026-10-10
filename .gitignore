@@ -88,5 +88,6 @@ b.txt
 dist/thesis_references_bundle/
 dist/*.zip
 dist/*.json
-
-
+# which face-count milestones fired today (apps/faces/rules.py Milestones)
+main_python/faces_fired.json
+main_python/faces_fired.tmp

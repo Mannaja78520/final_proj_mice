@@ -45,7 +45,7 @@ def load(path=None):
         return {}, "%s is missing, so nobody is greeted" % path.name
     except Exception as e:                                   # noqa: BLE001
         return {}, "%s could not be read (%s), so nobody is greeted" % (path.name, e)
-    why = check(got)
+    why = check(got) or milestones_check(got.get("milestones") or [])
     return (got if not why else {}), why
 
 
@@ -229,3 +229,71 @@ class Greeter:
         with self.lock:
             self.recent = ([entry] + self.recent)[:50]
         return entry
+
+
+# ---------------------------------------------------------------- milestones
+# A6-2. "100 people arrived, celebrate" (user). Which milestones already fired
+# today lives in its OWN file with ONE writer (Milestones), never in
+# rules.json: the screen saves rules.json, and a save carrying an old fired
+# list would make the rig celebrate the same hundred twice.
+
+def milestones_check(items):
+    if not isinstance(items, list):
+        return "milestones is a list"
+    for m in items:
+        try:
+            if int(m.get("at")) < 1:
+                return "a milestone is a number of people, 1 or more"
+        except (TypeError, ValueError, AttributeError):
+            return "each milestone needs `at`, a number of people"
+        if not (m.get("text") or m.get("move")):
+            return "the milestone at %s says nothing and moves nothing" % m.get("at")
+        why = _unknown_blank(m.get("text"), "the milestone at %s" % m.get("at"))
+        if why or "{name}" in (m.get("text") or ""):
+            return why or "a milestone is about a crowd, so it has no {name}"
+    return ""
+
+
+class Milestones:
+    """Fires each milestone once per day, and remembers that across restarts."""
+
+    def __init__(self, path, post):
+        self.path = Path(path)
+        self.post = post
+        self.lock = threading.Lock()
+
+    def _read(self, today):
+        try:
+            got = json.loads(self.path.read_text(encoding="utf-8"))
+        except Exception:                                    # noqa: BLE001
+            got = {}
+        # Their count starts again at midnight, so the fired list does too.
+        return got if got.get("date") == today else {"date": today, "fired": []}
+
+    def tick(self, count, rules, today=None):
+        """Fire what this count has reached. Returns [(at, state, why)]."""
+        today = today or datetime.now().date().isoformat()
+        items = (rules or {}).get("milestones") or []
+        if not (rules or {}).get("greet") or count is None or milestones_check(items):
+            return []
+        out = []
+        with self.lock:
+            done = self._read(today)
+            for m in sorted(items, key=lambda m: int(m["at"])):
+                at = int(m["at"])
+                if at > count or at in done["fired"]:
+                    continue
+                state, why = self.post({
+                    "text": _fill(m.get("text"), (rules or {}).get("title") or "", ""),
+                    "move": m.get("move") or "", "module": m.get("module") or "",
+                    "to": m.get("to") or (rules or {}).get("to") or "",
+                    # A celebration waits its turn; it is not dropped like a hello.
+                    "whenBusy": "queue"})
+                out.append((at, state, why))
+                if state == "queued":
+                    done["fired"].append(at)
+                    tmp = self.path.with_suffix(".tmp")
+                    tmp.write_text(json.dumps(done), encoding="utf-8")
+                    tmp.replace(self.path)
+        return out
+

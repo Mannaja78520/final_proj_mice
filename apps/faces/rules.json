@@ -29,6 +29,10 @@
   "_wording": "known: first hello today. already: greeted earlier today. unknown: the face app did not recognise them, so {name} is never filled in. {title} and {name} are the only blanks.",
   "cameras": {},
   "_cameras": "Each camera of the face app, by its id: {\"door-1\": {\"role\": \"entry\", \"wording\": {\"known\": \"...\"}, \"move\": \"wave\", \"module\": \"nong\", \"to\": \"\"}}. role is entry (hello), exit (goodbye) or watch (count only).",
+  "milestones": [
+    { "at": 100, "text": "ยินดีด้วยครับ วันนี้มีแขกครบหนึ่งร้อยคนแล้ว", "move": "", "module": "" }
+  ],
+  "_milestones": "Said once a day when the count of people today reaches `at` (user: 100 people arrived, celebrate). The count is the face app's own: distinct recognised people since midnight. move and module make a robot play a saved move with it.",
   "unlistedCamera": "watch",
   "_unlistedCamera": "What a camera nobody has set up does. watch means it only counts, so a new camera never starts talking on its own."
 }

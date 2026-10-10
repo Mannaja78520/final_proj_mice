@@ -64,6 +64,10 @@ LOOPBACK = ("127.0.0.1", "localhost", "::1")
 # promotion (promote.py SKIP_FILES) and out of the exe.
 LOGIN_FILE = "main_python/faces_login.json"
 
+# Which milestones fired today (A6-2). Written by the watcher alone, beside
+# the login and for the same reason: out of the served tree and out of git.
+FIRED_FILE = "main_python/faces_fired.json"
+
 # Ask for a new token this long before the old one dies, so a greeting is
 # never the thing that discovers the session expired.
 RENEW_MARGIN = 300
@@ -500,6 +504,42 @@ class State:
                 self.people = (fresh + self.people)[:200]
         return fresh, why
 
+    # ---- how many people today (A6-1) ---------------------------------
+
+    def count_today(self):
+        """{today, from, means}. THEIR count is the truth: distinct recognised
+        people since midnight (their api/reports.py:25). Ours - distinct known
+        people this watcher saw today - is the fallback, and says so, because
+        it forgets on a restart and misses anyone seen before it started."""
+        now = time.time()
+        cached = getattr(self, "_count", None)
+        if cached and now - cached[0] < 10:
+            return cached[1]
+        cfg = self.partner().get("count") or {}
+        out = None
+        token, _why = self.token_now() if cfg else ("", "")
+        if cfg and token:
+            url = (self.partner().get("api") or "").rstrip("/") + cfg.get("path", "")
+            req = urllib.request.Request(url, headers={"Authorization": "Bearer " + token})
+            try:
+                with urllib.request.urlopen(req, timeout=5) as r:
+                    got = json.loads(r.read().decode("utf-8"))
+                n = got.get(cfg.get("field") or "detected_today")
+                if isinstance(n, (int, float)) and not isinstance(n, bool):
+                    out = {"today": int(n), "from": "theirs",
+                           "means": cfg.get("means") or ""}
+            except Exception:                                # noqa: BLE001
+                out = None
+        if out is None:
+            today = datetime.now().date()
+            with self._events_lock:
+                ids = {e.get("id") or e.get("who") for e in self.people
+                       if e.get("known") and (_when(e.get("when")) or datetime.now()).date() == today}
+            out = {"today": len(ids), "from": "ours",
+                   "means": "distinct recognised people this watcher saw today"}
+        self._count = (now, out)
+        return out
+
     def health(self):
         p = self.partner()
         return {
@@ -551,6 +591,7 @@ class State:
             "since": self.checkpoint.isoformat() if self.checkpoint else "",
             # What the rig said, or why it kept quiet, newest first (A5).
             "greetings": list(self.greeter.recent) if self.greeter else [],
+            "count": getattr(self, "_count", (0, None))[1],
             "rulesError": self.greeter.error if self.greeter else "",
             "pollError": self.poll_error,
             "error": self.partners_error or self.last_error or "",
@@ -577,6 +618,43 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(self.state.snapshot())
         return self._json({"ok": False, "error": "no such address: %s" % path,
                            "try": ["/health", "/state"]}, 404)
+
+    def do_POST(self):                                       # noqa: N802
+        """A6-3: another Python program on this PC needs ONE address and ONE
+        verb. POST /count reads how many people today; POST /act makes the rig
+        say or do something, through the hub's one speaking queue.
+
+        Loopback already keeps the venue WiFi out. What is left is a web page
+        open on this PC: it may not send JSON here without asking first, and
+        nothing here answers that asking, so it is refused by the browser; a
+        request that names a website as its origin is refused here too."""
+        path = urlparse(self.path).path
+        origin = self.headers.get("Origin") or ""
+        ctype = (self.headers.get("Content-Type") or "").split(";")[0].strip()
+        if origin or ctype != "application/json":
+            return self._json({"ok": False, "error": "only a program on this PC, "
+                               "sending JSON, may ask this"}, 403)
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+            d = json.loads(self.rfile.read(n).decode("utf-8") or "{}") if n else {}
+        except (ValueError, UnicodeDecodeError):
+            return self._json({"ok": False, "error": "that request was not readable"}, 400)
+        if path == "/count":
+            return self._json(dict({"ok": True}, **self.state.count_today()))
+        if path == "/act":
+            if not isinstance(d, dict) or not (str(d.get("say") or "").strip() or d.get("move")):
+                return self._json({"ok": False, "error": "send say (words) or move "
+                                   "(a saved move), and optionally module and to"}, 400)
+            g = self.state.greeter
+            if g is None:
+                return self._json({"ok": False, "error": "the watcher is not set up to speak"}, 503)
+            state, why = g.post({"text": str(d.get("say") or ""), "move": str(d.get("move") or ""),
+                                 "module": str(d.get("module") or ""), "to": str(d.get("to") or ""),
+                                 "whenBusy": "skip" if d.get("whenBusy") == "skip" else "queue"})
+            return self._json({"ok": state == "queued", "state": state, "why": why},
+                              200 if state in ("queued", "skipped") else 502)
+        return self._json({"ok": False, "error": "no such address: %s" % path,
+                           "try": ["/count", "/act"]}, 404)
 
     def log_message(self, *a):
         """Quiet by default: this is polled, and a line per poll buries the
@@ -615,6 +693,8 @@ def main(argv=None):
 
     state = State(a.partner)
     state.greeter = rules.Greeter(hub=(cfg or {}).get("hub") or "http://127.0.0.1:8642")
+    fired = Path(os.environ.get("MICE_FACES_FIRED") or (CODE / FIRED_FILE))
+    milestones = rules.Milestones(fired, state.greeter.post)
     Handler.state = state
     if state.partners_error:
         print("[faces] %s" % state.partners_error)
@@ -636,6 +716,7 @@ def main(argv=None):
                 fresh, _why = state.poll_once()
                 for event in fresh:
                     state.greet(event)
+                milestones.tick(state.count_today()["today"], rules.load()[0])
                 state.watching = not state.poll_error
             except Exception as e:                           # noqa: BLE001
                 state.poll_error = "the poll stopped with %s" % e
@@ -699,7 +780,8 @@ def main(argv=None):
     threading.Thread(target=live_feed, daemon=True).start()
 
     httpd = ThreadingHTTPServer((host, port), Handler)
-    print("[faces] answering on http://%s:%d  (/health, /state)" % (host, port))
+    print("[faces] answering on http://%s:%d  (/health, /state; POST /count, /act)"
+          % (host, port))
     print("[faces] reading their history every %ss; greeting is %s"
           % (a.interval, "on" if (rules.load()[0] or {}).get("greet") else "off"))
     print("[faces] Ctrl+C to stop")
