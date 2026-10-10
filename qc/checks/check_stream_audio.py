@@ -202,6 +202,34 @@ def run(t):
          % (spare, len(burst), len(late), room),
          "a burst bigger than the board's spare room is dropped on the board")
 
+    # ---- two starters at once leave ONE sender (A4-4) -------------------
+    # Measured 2026-09-29 before the lock: 20 racing starts left 8 orphan
+    # senders, the survivors draining one queue at twice real time.
+    s = stream_audio.Sender()
+    gate = threading.Barrier(20)
+
+    def racer():
+        gate.wait()
+        s.start("127.0.0.1", 9, 22050, "race")
+    ths = [threading.Thread(target=racer) for _ in range(20)]
+    for th in ths:
+        th.start()
+    for th in ths:
+        th.join(15)
+    mine = "mice-audio-sender-%x" % id(s)
+    alive = [th for th in threading.enumerate() if th.name == mine and th.is_alive()]
+    s.stop()
+    t.eq(len(alive), 1, "twenty starts at once leave one sender, not a crowd")
+
+    # ---- a feeder from the last stream never reaches the next -------------
+    s = stream_audio.Sender()
+    old = s.start("127.0.0.1", 9, 22050, "one")["session"]
+    s.start("127.0.0.1", 9, 22050, "two")
+    t.eq(s.feed(bytes(s.chunk_bytes() * 3), old), -1,
+         "a feed naming an older session is refused")
+    t.eq(s.q.qsize(), 0, "and none of it lands in the new stream's queue")
+    s.stop()
+
     # ---- a file is resampled, not sample-picked --------------------------
     import array
     import math

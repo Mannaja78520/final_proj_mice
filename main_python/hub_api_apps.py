@@ -23,6 +23,24 @@ def bind(hub):
 
 
 class AppRoutes:
+    def start_refused(self, method):
+        """None when this caller may start a program on this PC, else the answer.
+
+        POST only, so an <img> on any website cannot start one. With no login,
+        only the hub's own page or a program at this PC: a website open in
+        this PC's browser comes from 127.0.0.1 too (2026-09-29).
+        """
+        if method != "POST":
+            return self.send_err("starting a program needs POST", 405)
+        if self.logged_in() or (_hub.is_self(self.client_address[0])
+                                and self.origin_is_hub()):
+            return None
+        self.drain()
+        return self.send_bytes(json.dumps(
+            {"ok": False, "need_login": True,
+             "error": "log in first, or open this on the PC itself"}).encode(),
+            _hub.MIME[".json"], 401)
+
     def api_apps(self, method, path, q):
         if path == "/api/apps":
             # what the hub page offers to open — rendered from the registry, so
@@ -63,15 +81,23 @@ class AppRoutes:
             # and there is nothing secret in an address.
             return self.send_json(_hub.read_partners())
 
+        if path == "/api/partners/version":
+            # Which version of theirs is installed, read from files in their
+            # folder - never by running git there (A9). Only tells.
+            pid = (q.get("id") or [""])[0]
+            entry = (_hub.read_partners().get("partners") or {}).get(pid)
+            if not entry:
+                return self.send_json({"ok": False,
+                                       "error": "config/partners.json has no entry called %r" % pid})
+            return self.send_json(_hub.partner_version.report(entry))
+
         if path == "/api/partners/start":
             # Starts a configured outside program on THIS PC. No hub login
             # from this PC itself (user 2026-09-17: Reconize and Jao have
             # their own logins); from the network it still needs one.
-            if not self.logged_in() and not _hub.is_self(self.client_address[0]):
-                return self.send_bytes(json.dumps(
-                    {"ok": False, "need_login": True,
-                     "error": "log in first, or open this on the PC itself"}).encode(),
-                    _hub.MIME[".json"], 401)
+            refused = self.start_refused(method)
+            if refused is not None:
+                return refused
             pid = (q.get("id") or [""])[0]
             got = _hub.read_partners()
             entry = (got.get("partners") or {}).get(pid)
@@ -139,7 +165,10 @@ class AppRoutes:
                     pass
             return self.send_json({"ok": True, "message": "voice service stopped"})
 
-        if path == "/api/all-jao/start" and method in ("GET", "POST"):
+        if path == "/api/all-jao/start":
+            refused = self.start_refused(method)
+            if refused is not None:
+                return refused
             try:
                 with urllib.request.urlopen("http://127.0.0.1:8080/", timeout=0.6) as r:
                     if r.getcode() in (200, 301, 302, 304):
@@ -170,7 +199,10 @@ class AppRoutes:
             except Exception as e:
                 return self.send_err("could not start games server: %s" % e, 500)
 
-        if (path == "/api/reconize/start" or path == "/api/partner/reconize/start") and method in ("GET", "POST"):
+        if path in ("/api/reconize/start", "/api/partner/reconize/start"):
+            refused = self.start_refused(method)
+            if refused is not None:
+                return refused
             # The same starter /api/partners/start uses, so Reconize comes up
             # HIDDEN and its folder and port are read from
             # config/partners.json. It used to run their start.bat, which opens

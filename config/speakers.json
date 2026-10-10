@@ -1,0 +1,13 @@
+{
+  "_why": "Where the rig speaks (A4-3). Robots with a speaker are FOUND, never listed here: a board that reports the audio capability is a speaker. This file only says which one is the default and which voice each uses. The hub rewrites it when somebody picks on the Voice or Faces screen. Plain JSON on purpose: the hub writes it back, and a comment would not survive that.",
+  "default": "pc",
+  "rate": 22050,
+  "_rate": "Samples per second sent to a robot's speaker - the rate the board plays at.",
+  "queueMax": 8,
+  "_queueMax": "How many things may wait to be said. More than this and the newest is skipped, said in plain words.",
+  "maxAgeSeconds": 30,
+  "_maxAgeSeconds": "A greeting older than this when its turn comes is not said at all - the person has walked on.",
+  "speakers": {
+    "pc": { "name": "This PC's speakers", "kind": "pc", "voice": "" }
+  }
+}

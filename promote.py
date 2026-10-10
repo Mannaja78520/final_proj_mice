@@ -129,6 +129,8 @@ SKIP_FILES = {"MiceHub.exe", "promt.md", "PLAN.html", "plan_state.js",
               # a test login over the real one, and a copy in a working
               # tree is a second place for a password to leak from.
               "faces_login.json",
+              # which milestones fired today: this machine's, like the login
+              "faces_fired.json",
               ".qc-receipt.json",   # proof about ONE tree; meaningless in another
               # The patch LOGS. Every patcher appends to the copy in the real
               # tree, so a staging copy is stale the moment a snapshot is taken

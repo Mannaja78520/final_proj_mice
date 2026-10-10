@@ -21,13 +21,12 @@ later steps land - the ability to make the rig move and speak. Anything that
 could reach this port could do both without a password. Remote callers come
 through the hub, where the login gate already is.
 
-WHAT IT DOES TODAY
+WHAT IT DOES
 
-Nothing moves. It answers /health and /state and says plainly that it is not
-watching anybody yet. Logging in, reading their history and the live feed are
-the next steps (system A3-2 onward in docs/system_integral.html). Shipping the
-skeleton first means there is somewhere honest to look before there is anything
-to look at.
+It logs in to the face app, reads its live feed and its history, and answers
+/health and /state. Each new arrival goes to rules.py, which decides whether
+the rig greets them and with which words (system A5). Greeting stays off until
+somebody turns it on in rules.json from the Reconize screen.
 """
 import argparse
 import base64
@@ -47,6 +46,7 @@ from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wsclient                                          # noqa: E402
+import rules                                             # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 # The tree this copy belongs to. A working copy runs its own copy of this file
@@ -63,6 +63,10 @@ LOOPBACK = ("127.0.0.1", "localhost", "::1")
 # This sits beside hub_auth.json instead: out of the served tree, out of
 # promotion (promote.py SKIP_FILES) and out of the exe.
 LOGIN_FILE = "main_python/faces_login.json"
+
+# Which milestones fired today (A6-2). Written by the watcher alone, beside
+# the login and for the same reason: out of the served tree and out of git.
+FIRED_FILE = "main_python/faces_fired.json"
 
 # Ask for a new token this long before the old one dies, so a greeting is
 # never the thing that discovers the session expired.
@@ -122,6 +126,7 @@ class State:
     def __init__(self, partner):
         self._events_lock = threading.RLock()
         self._auth_lock = threading.RLock()
+        self._rules_lock = threading.Lock()
         self.partner_id = partner
         self.partners, self.partners_error = load("config/partners.json")
         self.watching = False
@@ -141,6 +146,19 @@ class State:
         self.polls = 0
         self.live = False
         self.live_error = ""
+        # Set by main(): who to greet and with which words (rules.py, A5).
+        self.greeter = None
+        self.upgraded = None
+        # What their payloads really carried, per source (A9-2): it TELLS,
+        # it never changes what the watcher does.
+        self.contract = {}
+
+    def greet(self, event):
+        """Hand one new arrival to the greeter, off this thread: the hub call
+        can take seconds and the live feed must keep reading meanwhile."""
+        if self.greeter is not None and event is not None:
+            threading.Thread(target=self.greeter.consider, args=(dict(event),),
+                             daemon=True).start()
 
     def partner(self):
         entry = (self.partners or {}).get(self.partner_id) or {}
@@ -307,6 +325,9 @@ class State:
                 old["event"]["camera"] = event.get("camera")
                 old["event"]["hasCamera"] = True
                 old["event"]["source"] = event.get("source")
+                # The first copy was only counted (no camera), so this one is
+                # the arrival a greeting can be placed at. _note hands it on.
+                self.upgraded = old["event"]
             return None, True
 
         self.recent[key] = {"when": now, "event": event}
@@ -322,6 +343,21 @@ class State:
                 return s
         return None
 
+    def observe(self, kind, wanted, raw):
+        """Record which of the fields we read were missing from one of their
+        payloads (A9-2). Checked on what they really SENT, because their
+        OpenAPI page does not describe a websocket or a row's contents. A
+        changed name shows up here the first time it arrives - not as a rig
+        that quietly stops greeting. Only reports; never changes behaviour."""
+        got = set(raw) if isinstance(raw, dict) else set()
+        missing = sorted(f for f in set(wanted) if f and f not in got)
+        with self._events_lock:
+            c = self.contract.setdefault(kind, {"seen": 0, "missing": [], "at": ""})
+            c["seen"] += 1
+            c["missing"] = missing
+            c["at"] = datetime.now().isoformat(timespec="seconds")
+        return missing
+
     def from_ws(self, src, raw):
         """One of their live frames, in our shape.
 
@@ -329,6 +365,8 @@ class State:
         when their payload changes, that is one line in config/partners.json.
         """
         m = src.get("map") or {}
+        self.observe("ws", [m.get(k) or d for k, d in (("who", "name"), ("id", "participant_id"),
+                     ("when", "at"), ("camera", "node_id"))], raw)
         who = raw.get(m.get("who") or "name") or ""
         return {
             "who": who,
@@ -351,11 +389,14 @@ class State:
             return self._note(event)
 
     def _note(self, event):
-        """One arrival from any source, through the same door as the poll."""
+        """One arrival from any source, through the same door as the poll.
+        Returns the event to consider greeting, or None."""
+        self.upgraded = None
         kept, dup = self.accept(event)
         if kept is not None and not dup:
             self.people = ([kept] + self.people)[:200]
-        return kept
+            return kept
+        return self.upgraded
 
     # ---- reading their history ---------------------------------------
 
@@ -439,6 +480,7 @@ class State:
                 break
             older_than_window = False
             for row in rows:
+                self.observe("poll", [k_when, k_row, k_who, k_id, k_status], row)
                 when = _when(row.get(k_when))
                 if floor and when and when < floor:
                     # Newest first, so everything below this is older too.
@@ -483,6 +525,108 @@ class State:
             with self._events_lock:
                 self.people = (fresh + self.people)[:200]
         return fresh, why
+
+    # ---- how many people today (A6-1) ---------------------------------
+
+    def count_today(self):
+        """{today, from, means}. THEIR count is the truth: distinct recognised
+        people since midnight (their api/reports.py:25). Ours - distinct known
+        people this watcher saw today - is the fallback, and says so, because
+        it forgets on a restart and misses anyone seen before it started."""
+        now = time.time()
+        cached = getattr(self, "_count", None)
+        if cached and now - cached[0] < 10:
+            return cached[1]
+        cfg = self.partner().get("count") or {}
+        out = None
+        token, _why = self.token_now() if cfg else ("", "")
+        if cfg and token:
+            url = (self.partner().get("api") or "").rstrip("/") + cfg.get("path", "")
+            req = urllib.request.Request(url, headers={"Authorization": "Bearer " + token})
+            try:
+                with urllib.request.urlopen(req, timeout=5) as r:
+                    got = json.loads(r.read().decode("utf-8"))
+                self.observe("count", [cfg.get("field") or "detected_today"], got)
+                n = got.get(cfg.get("field") or "detected_today")
+                if isinstance(n, (int, float)) and not isinstance(n, bool):
+                    out = {"today": int(n), "from": "theirs",
+                           "means": cfg.get("means") or ""}
+            except Exception:                                # noqa: BLE001
+                out = None
+        if out is None:
+            today = datetime.now().date()
+            with self._events_lock:
+                ids = {e.get("id") or e.get("who") for e in self.people
+                       if e.get("known") and (_when(e.get("when")) or datetime.now()).date() == today}
+            out = {"today": len(ids), "from": "ours",
+                   "means": "distinct recognised people this watcher saw today"}
+        self._count = (now, out)
+        return out
+
+    # ---- the rules editor's two halves (A8-1) ---------------------------
+
+    def rules_view(self):
+        """What the screen edits, plus what it needs to offer a choice: the
+        cameras this app has actually reported, so a new door is one click."""
+        got, why = rules.load()
+        if why:
+            try:        # show what is there, so the screen can mend it
+                got = json.loads(rules.rules_file().read_text(encoding="utf-8"))
+            except Exception:                                # noqa: BLE001
+                got = {}
+        with self._events_lock:
+            seen = sorted({e.get("camera") for e in self.people if e.get("hasCamera")})
+            # Titles are set per person by their code, but the screen shows names.
+            who = {e.get("id"): e.get("who") for e in self.people
+                   if e.get("known") and e.get("id")}
+        return {"ok": True, "rules": got, "error": why, "camerasSeen": seen,
+                "peopleSeen": [{"id": k, "who": v} for k, v in sorted(who.items())],
+                "count": getattr(self, "_count", (0, None))[1]}
+
+    def save_rules(self, new):
+        """(ok, why). The watcher is the ONE writer of rules.json: checked
+        first, written whole (temp file, then replace) so a reader never sees
+        half a file, and read again on the next arrival - no restart."""
+        if not isinstance(new, dict):
+            return False, "send the rules as {\"rules\": {...}}"
+        why = rules.check(new) or rules.milestones_check(new.get("milestones") or [])
+        if why:
+            return False, why
+        with self._rules_lock:
+            where = rules.rules_file()
+            tmp = where.with_suffix(".tmp")
+            tmp.write_text(json.dumps(new, ensure_ascii=False, indent=2) + "\n",
+                           encoding="utf-8")
+            tmp.replace(where)
+        return True, ""
+
+    def presence(self, camera="", seconds=60.0):
+        """Is somebody standing in front of a camera right now? (A7-1)
+
+        `known` says whether this app CAN tell at all: with no source that
+        reports a camera, nobody can be seen standing anywhere, so the answer
+        is "cannot tell" and the asker must carry on as if somebody is there
+        (presence fails OPEN - a broken camera never silences the rig)."""
+        # Not self.partner(): its re-probe of their app can take over a second,
+        # longer than the voice helper waits (1 s), so every tenth second the
+        # gate failed open - seen on the PC with Reconize running, 2026-10-10.
+        # `events` comes from config/partners.json, not from that probe.
+        p = getattr(self, "_live", None) or (self.partners or {}).get(self.partner_id) or {}
+        if not any(s.get("hasCamera") for s in (p.get("events") or [])):
+            return {"known": False, "present": None,
+                    "why": "this app has no camera that says who is standing where"}
+        now = datetime.now()
+        with self._events_lock:
+            for e in self.people:
+                if not e.get("hasCamera") or (camera and e.get("camera") != camera):
+                    continue
+                when = _when(e.get("when"))
+                if when and abs((now - when).total_seconds()) <= seconds:
+                    return {"known": True, "present": True,
+                            "why": "somebody was seen at %s" % e.get("camera")}
+        return {"known": True, "present": False,
+                "why": "nobody was seen at %s in the last %d s"
+                       % (camera or "any camera", seconds)}
 
     def health(self):
         p = self.partner()
@@ -533,6 +677,11 @@ class State:
             "live": self.live,
             "liveError": self.live_error,
             "since": self.checkpoint.isoformat() if self.checkpoint else "",
+            # What the rig said, or why it kept quiet, newest first (A5).
+            "greetings": list(self.greeter.recent) if self.greeter else [],
+            "count": getattr(self, "_count", (0, None))[1],
+            "rulesError": self.greeter.error if self.greeter else "",
+            "contract": {k: dict(v) for k, v in self.contract.items()},
             "pollError": self.poll_error,
             "error": self.partners_error or self.last_error or "",
         }
@@ -556,8 +705,61 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(self.state.health())
         if path == "/state":
             return self._json(self.state.snapshot())
+        if path == "/rules":
+            return self._json(self.state.rules_view())
+        if path == "/presence":
+            from urllib.parse import parse_qs
+            q = parse_qs(urlparse(self.path).query)
+            try:
+                secs = float((q.get("seconds") or ["60"])[0])
+            except ValueError:
+                secs = 60.0
+            return self._json(dict({"ok": True}, **self.state.presence(
+                (q.get("camera") or [""])[0], secs)))
         return self._json({"ok": False, "error": "no such address: %s" % path,
-                           "try": ["/health", "/state"]}, 404)
+                           "try": ["/health", "/state", "/presence", "/rules"]}, 404)
+
+    def do_POST(self):                                       # noqa: N802
+        """A6-3: another Python program on this PC needs ONE address and ONE
+        verb. POST /count reads how many people today; POST /act makes the rig
+        say or do something, through the hub's one speaking queue.
+
+        Loopback already keeps the venue WiFi out. What is left is a web page
+        open on this PC: it may not send JSON here without asking first, and
+        nothing here answers that asking, so it is refused by the browser; a
+        request that names a website as its origin is refused here too."""
+        path = urlparse(self.path).path
+        origin = self.headers.get("Origin") or ""
+        ctype = (self.headers.get("Content-Type") or "").split(";")[0].strip()
+        if origin or ctype != "application/json":
+            return self._json({"ok": False, "error": "only a program on this PC, "
+                               "sending JSON, may ask this"}, 403)
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+            d = json.loads(self.rfile.read(n).decode("utf-8") or "{}") if n else {}
+        except (ValueError, UnicodeDecodeError):
+            return self._json({"ok": False, "error": "that request was not readable"}, 400)
+        if path == "/count":
+            return self._json(dict({"ok": True}, **self.state.count_today()))
+        if path == "/rules":
+            ok, why = self.state.save_rules((d or {}).get("rules") if isinstance(d, dict) else None)
+            if not ok:
+                return self._json({"ok": False, "error": why}, 400)
+            return self._json(self.state.rules_view())
+        if path == "/act":
+            if not isinstance(d, dict) or not (str(d.get("say") or "").strip() or d.get("move")):
+                return self._json({"ok": False, "error": "send say (words) or move "
+                                   "(a saved move), and optionally module and to"}, 400)
+            g = self.state.greeter
+            if g is None:
+                return self._json({"ok": False, "error": "the watcher is not set up to speak"}, 503)
+            state, why = g.post({"text": str(d.get("say") or ""), "move": str(d.get("move") or ""),
+                                 "module": str(d.get("module") or ""), "to": str(d.get("to") or ""),
+                                 "whenBusy": "skip" if d.get("whenBusy") == "skip" else "queue"})
+            return self._json({"ok": state == "queued", "state": state, "why": why},
+                              200 if state in ("queued", "skipped") else 502)
+        return self._json({"ok": False, "error": "no such address: %s" % path,
+                           "try": ["/count", "/act", "/rules"]}, 404)
 
     def log_message(self, *a):
         """Quiet by default: this is polled, and a line per poll buries the
@@ -595,6 +797,9 @@ def main(argv=None):
         return 2
 
     state = State(a.partner)
+    state.greeter = rules.Greeter(hub=(cfg or {}).get("hub") or "http://127.0.0.1:8642")
+    fired = Path(os.environ.get("MICE_FACES_FIRED") or (CODE / FIRED_FILE))
+    milestones = rules.Milestones(fired, state.greeter.post)
     Handler.state = state
     if state.partners_error:
         print("[faces] %s" % state.partners_error)
@@ -613,7 +818,10 @@ def main(argv=None):
     def watch():
         while True:
             try:
-                state.poll_once()
+                fresh, _why = state.poll_once()
+                for event in fresh:
+                    state.greet(event)
+                milestones.tick(state.count_today()["today"], rules.load()[0])
                 state.watching = not state.poll_error
             except Exception as e:                           # noqa: BLE001
                 state.poll_error = "the poll stopped with %s" % e
@@ -651,7 +859,7 @@ def main(argv=None):
                     if time.monotonic() - connected_at >= 30:
                         wait = 1.0
                     if msg:
-                        state.note(state.from_ws(src, msg))
+                        state.greet(state.note(state.from_ws(src, msg)))
             except wsclient.FeedClosed as e:
                 # THEIR REFUSAL IS NOT A NETWORK PROBLEM. A token the feed
                 # will not take comes back as close 4401, or as a 403 on the
@@ -677,9 +885,10 @@ def main(argv=None):
     threading.Thread(target=live_feed, daemon=True).start()
 
     httpd = ThreadingHTTPServer((host, port), Handler)
-    print("[faces] answering on http://%s:%d  (/health, /state)" % (host, port))
-    print("[faces] reading their history every %ss - nothing moves yet"
-          % a.interval)
+    print("[faces] answering on http://%s:%d  (/health, /state; POST /count, /act)"
+          % (host, port))
+    print("[faces] reading their history every %ss; greeting is %s"
+          % (a.interval, "on" if (rules.load()[0] or {}).get("greet") else "off"))
     print("[faces] Ctrl+C to stop")
     try:
         httpd.serve_forever()

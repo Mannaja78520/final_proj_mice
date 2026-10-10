@@ -232,6 +232,10 @@ class _Nong:
             # catch: CommandRouter::buildStatus is the contract.
             "fw": FW_VERSION, "group": self.group,
             "wifi": {"ip": "", "mode": "off"},
+            # what CommandRouter::buildStatus + NongModule report: "audio"
+            # is what makes a board a speaker (hub_speak.py)
+            "caps": ["pins", "sequences", "users", "rs485", "sd",
+                     "joints", "servos", "calibration", "audio"],
             # same shape as the real board: seq is top level, and says whether
             # the module is playing something on its OWN clock right now
             "seq": {"running": self.playing, "file": self.playing_file},

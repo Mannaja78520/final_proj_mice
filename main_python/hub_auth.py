@@ -82,6 +82,10 @@ GATED = {
     # whole exchange. /api/pair/link makes this hub take another hub's
     # accounts, which decides who can drive the robots here.
     "/api/pair/start", "/api/pair/stop", "/api/pair/status", "/api/pair/link",
+    # The rig SPEAKS (A4-4), and reading the queue shows what it is about to
+    # say - greetings carry people's names. A program on this PC may still
+    # ask it to speak without a login: see LOCAL_OK.
+    "/api/speak",
 }
 
 # Proved by something OTHER than a session. There is exactly one, and it is
@@ -99,6 +103,14 @@ GATED_POST = {
     # is as much "make the rig do something" as starting a show. Reading where
     # it is up to stays open, like every other status.
     "/api/stream/start", "/api/stream/feed",
+    # Speech through a robot, the same thing by another door. It was in no
+    # set at all, so any web page could make a robot say anything (2026-09-29).
+    "/api/stream/voice",
+    # Which speaker is the default, and which voice each uses (A4-3).
+    "/api/speakers",
+    # What the rig says to people the face app sees (A8-1): reading is open,
+    # saving changes what a robot says aloud to a guest - admin only.
+    "/api/faces/rules",
     "/api/flash",         # GET reports progress, POST starts a reflash
     # Voice endpoints: asked 2026-09-14 to require login first before doing anything
     "/api/voice/start",
@@ -155,8 +167,20 @@ NEVER_GATED = {"/api/play/stop", "/api/stopall", "/api/play/beat",
                # and silence: a robot talking over a room must be
                # stoppable by whoever is standing next to it, for the
                # same reason a moving one must be.
-               "/api/stream/stop",
+               "/api/stream/stop", "/api/speak/stop",
                "/api/save", "/api/export", "/api/model/upload", "/api/rigdefault"}
+
+# Gated from the network, but open to a PROGRAM ON THIS PC with no login
+# (A6-3, user: *a foreign Python program needs one address and one verb*).
+# POST only, and main.Handler.from_program_here decides what counts: this PC,
+# JSON, and none of the headers every browser sends - so a web page open on
+# this PC is refused like any stranger, a DNS-rebinding one included.
+LOCAL_OK = {"/api/speak"}
+
+
+def local_ok(path: str, method: str) -> bool:
+    return method == "POST" and path in LOCAL_OK
+
 
 # Read-only siblings that must NOT be gated, listed so the intent is explicit
 # rather than implied by absence. The QC check asserts against this.
@@ -184,10 +208,15 @@ OPEN = {
     # report. Addresses only - the logins are not in that file and never will
     # be - and the tile has to draw itself before anybody has signed in.
     "/api/partners",
-    "/api/all-jao/start", "/api/reconize/start",
+    # Which version of theirs is installed: read from files, changes nothing.
+    "/api/partners/version",
     # Opening an outside app from this PC needs no hub login (they have their
-    # own); main.py still asks a caller on the network to log in.
+    # own). AppRoutes.start_refused still asks a caller on the network, or a
+    # website open on this PC, to log in - and takes POST only.
+    "/api/all-jao/start", "/api/reconize/start",
     "/api/partners/start",
+    # Reconize and our face watcher together, by the same rule (A11-1).
+    "/api/faces/start",
     # A report is a complaint, not a command: it changes nothing on any
     # board, and complaining must never need a password (A21-6).
     "/api/report",

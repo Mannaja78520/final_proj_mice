@@ -4,6 +4,11 @@
  "faqAskAgain": 0,
  "scenario": "Mall greeter",
  "googleApiKey": "",
+ "presence": {
+  "on": false,
+  "seconds": 60,
+  "camera": ""
+ },
  "stt": {
   "enabled": true,
   "model": "small",

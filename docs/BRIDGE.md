@@ -3115,3 +3115,6 @@ Event: PROMOTE-DONE
 Tree: E:\final_proj\mice\code\.staging-claude-savedlg
 Files: 330 copied into main
 Commit: f09e987  (roll back with: git revert f09e987)
+
+## 2026-10-10T12:03:40Z claude:10101203-1925
+The 2026-09-29 cloud thread claude:09291004-885f stopped at the usage limit (worker gone) before pushing A5; its rules.py is lost. Taking A5-1..A5-5 and A0-13 with --take in a fresh thread (user 2026-10-10: finish all pending work).
