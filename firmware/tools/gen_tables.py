@@ -738,6 +738,14 @@ def gen_webui(out, types):
     return size
 
 
+# WebPortal.cpp and SecureTalk.cpp both include these pages. As `static`,
+# each file kept its own copy: two 26 KB stylesheets and two 14 KB sound
+# engines in flash (nm, mice_nong, 2026-10-10), which pushed the image past
+# check_ota's 85% slot margin. A weak extern definition is merged by the
+# linker into one copy, and needs no separate .cpp to hold it.
+WEB_ASSET = '#ifndef WEB_ASSET\n#define WEB_ASSET __attribute__((weak))\n#endif\n'
+
+
 def gen_micecss(out):
     """The shared stylesheet, as a PROGMEM string the board can serve.
 
@@ -757,8 +765,8 @@ def gen_micecss(out):
     if ")rawliteral" in css:            # would close the C++ raw string early
         raise SystemExit("the stylesheet contains )rawliteral, which cannot be embedded")
     text = (BANNER % ("../" + MICE_CSS.name)
-            + '#pragma once\n#include <Arduino.h>\n\n'
-              'static const char MICE_CSS[] PROGMEM = R"rawliteral('
+            + '#pragma once\n#include <Arduino.h>\n' + WEB_ASSET + '\n'
+              'extern const char MICE_CSS[] WEB_ASSET PROGMEM = R"rawliteral('
             + css + ')rawliteral";\n')
     write_if_changed(out_path(out, "web/MiceCss.h"), text,
                      "%.1f KB stylesheet" % (len(css.encode("utf-8")) / 1024.0))
@@ -770,8 +778,8 @@ def gen_micecss(out):
     if ")rawliteral" in js:
         raise SystemExit("mice.js contains )rawliteral, which cannot be embedded")
     jtext = (BANNER % ("../" + MICE_JS.name)
-             + '#pragma once' + chr(10) + '#include <Arduino.h>' + chr(10) + chr(10)
-             + 'static const char MICE_JS[] PROGMEM = R"rawliteral('
+             + '#pragma once' + chr(10) + '#include <Arduino.h>' + chr(10) + WEB_ASSET + chr(10)
+             + 'extern const char MICE_JS[] WEB_ASSET PROGMEM = R"rawliteral('
              + js + ')rawliteral";' + chr(10))
     write_if_changed(out_path(out, "web/MiceJs.h"), jtext,
                      "%.1f KB shared script" % (len(js.encode("utf-8")) / 1024.0))
@@ -782,8 +790,8 @@ def gen_micecss(out):
     if ")rawliteral" in cj:
         raise SystemExit("cast.js contains )rawliteral, which cannot be embedded")
     ctext = (BANNER % ("../" + CAST_JS.name)
-             + '#pragma once' + chr(10) + '#include <Arduino.h>' + chr(10) + chr(10)
-             + 'static const char CAST_JS[] PROGMEM = R"rawliteral('
+             + '#pragma once' + chr(10) + '#include <Arduino.h>' + chr(10) + WEB_ASSET + chr(10)
+             + 'extern const char CAST_JS[] WEB_ASSET PROGMEM = R"rawliteral('
              + cj + ')rawliteral";' + chr(10))
     write_if_changed(out_path(out, "web/CastJs.h"), ctext,
                      "%.1f KB sound engine" % (len(cj.encode("utf-8")) / 1024.0))
