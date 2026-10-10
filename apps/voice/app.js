@@ -62,7 +62,7 @@ class VoiceApp {
     } else {
       nameEl.textContent = "No face";
       badge.style.borderColor = "var(--line, #ddd)";
-      badge.style.color = "var(--dim, #888)";
+      badge.style.color = "var(--mut)";
       badge.title = "No recent face recognized (within 120s)";
     }
   }
@@ -1489,7 +1489,7 @@ static MODEL_WORDS = [["base", "Fast"], ["small", "Balanced"],
         if (m.move || m.module) {
           const badge = document.createElement("span");
           badge.className = "badge";
-          badge.style.cssText = "font-size:11px;padding:2px 6px;border-radius:4px;background:var(--dim-bg,#eee);color:var(--text);border:1px solid var(--line,#ddd)";
+          badge.style.cssText = "font-size:11px;padding:2px 6px;border-radius:var(--r-sm);background:var(--sunk);color:var(--txt);border:1px solid var(--line)";
           badge.textContent = "🤖 " + (m.module || "any robot") + ": " + (m.move || "(no move)");
           d.appendChild(badge);
         }

@@ -35,7 +35,7 @@ body{margin:0;padding:var(--sp-4);background:var(--bg);color:var(--txt);
 code{background:var(--sunk);padding:1px 5px;border-radius:4px;
      font-size:13px;word-break:break-all}
 
-.bubble-user{align-self:flex-end;background:var(--acc);color:#fff;padding:10px 14px;border-radius:16px 16px 4px 16px;max-width:88%;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
+.bubble-user{align-self:flex-end;background:var(--acc);color:var(--on-acc);padding:10px 14px;border-radius:16px 16px 4px 16px;max-width:88%;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
 .bubble-user .role{font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;opacity:0.85;margin-bottom:3px}
 .bubble-user .text{font-size:15px;line-height:1.45}
 .bubble-ai{align-self:flex-start;background:var(--sunk);color:var(--txt);border:1px solid var(--line);padding:12px 16px;border-radius:16px 16px 16px 4px;max-width:88%;word-break:break-word}
@@ -112,7 +112,7 @@ class VoiceApp {
     } else {
       nameEl.textContent = "No face";
       badge.style.borderColor = "var(--line, #ddd)";
-      badge.style.color = "var(--dim, #888)";
+      badge.style.color = "var(--mut)";
       badge.title = "No recent face recognized (within 120s)";
     }
   }
@@ -1539,7 +1539,7 @@ static MODEL_WORDS = [["base", "Fast"], ["small", "Balanced"],
         if (m.move || m.module) {
           const badge = document.createElement("span");
           badge.className = "badge";
-          badge.style.cssText = "font-size:11px;padding:2px 6px;border-radius:4px;background:var(--dim-bg,#eee);color:var(--text);border:1px solid var(--line,#ddd)";
+          badge.style.cssText = "font-size:11px;padding:2px 6px;border-radius:var(--r-sm);background:var(--sunk);color:var(--txt);border:1px solid var(--line)";
           badge.textContent = "🤖 " + (m.module || "any robot") + ": " + (m.move || "(no move)");
           d.appendChild(badge);
         }
@@ -2388,7 +2388,7 @@ if (document.readyState === "loading") {
       <button onclick="load()" title="Refresh status">⟳ Try again</button>
       <span class="mini" id="downStat" aria-live="polite"></span>
     </div>
-    <p class="mini" style="margin-top:var(--sp-2);color:var(--dim,#888)">
+    <p class="mini" style="margin-top:var(--sp-2);color:var(--mut)">
       Or start manually: <code>python apps\voice\service.py</code>
     </p>
   </div>
@@ -2397,7 +2397,7 @@ if (document.readyState === "loading") {
     <div class="row" style="justify-content:space-between;align-items:center">
       <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
         <span class="mini" id="parts"></span>
-        <span id="faceBadge" class="mini badge" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;background:var(--dim-bg,#f3f4f6);border:1px solid var(--line,#ddd)" title="Detected person from Face Recognition">👤 <span id="faceName">Searching face…</span></span>
+        <span id="faceBadge" class="mini badge" style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--r-pill);background:var(--sunk);border:1px solid var(--line)" title="Detected person from Face Recognition">👤 <span id="faceName">Searching face…</span></span>
         <button class="secondary mini" id="btnWhoAmI" onclick="whoAmI()" style="padding:2px 8px;font-size:12px" title="Look once with this camera. The picture is not kept.">Check who I am</button>
         <label class="mini" style="display:flex;gap:4px;align-items:center;cursor:pointer" title="Keep looking every few seconds. Nothing is saved, and it stops when this tab is hidden."><input type="checkbox" id="autoFace" onchange="toggleAutoFace()"> Check by itself</label>
         <select id="camPick" class="mini" hidden onchange="pickCamera()" title="Which camera to look with" style="padding:2px 4px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--card);color:var(--txt);max-width:180px"></select>
@@ -2405,15 +2405,15 @@ if (document.readyState === "loading") {
       </div>
       <div class="row" style="gap:6px;align-items:center">
         <button class="secondary mini" id="btnLoadModel" onclick="loadModel()">Load Model</button>
-        <button class="secondary mini" id="btnUnloadModel" onclick="unloadModel()" style="color:var(--err,#e84d4d);border-color:var(--err,#e84d4d)">Unload Model</button>
+        <button class="secondary mini" id="btnUnloadModel" onclick="unloadModel()" style="color:var(--err);border-color:var(--err)">Unload Model</button>
         <button onclick="load()" title="Refresh status">⟳</button>
       </div>
     </div>
     <div id="camBox" hidden style="margin-top:var(--sp-2)">
       <video id="camVid" playsinline muted autoplay
              style="width:240px;max-width:100%;border-radius:var(--r-md);border:1px solid var(--line)"></video>
-      <p class="mini" id="camSay" style="color:var(--dim,#888)">Look at the camera…</p>
-      <p class="mini" style="color:var(--dim,#888)">The picture is not kept — nothing is written to the face app.</p>
+      <p class="mini" id="camSay" style="color:var(--mut)">Look at the camera…</p>
+      <p class="mini" style="color:var(--mut)">The picture is not kept — nothing is written to the face app.</p>
     </div>
     <textarea id="q" placeholder="Type a question…"></textarea>
     <div class="row" style="flex-wrap:wrap;gap:var(--sp-2);align-items:center">
@@ -2537,7 +2537,7 @@ if (document.readyState === "loading") {
         <span class="mini" style="flex:1">One voice for every language</span>
         <select id="oneVoice" onchange="pickOneVoice()" style="flex:2 1 170px"></select>
       </div>
-      <p class="mini" style="margin-top:var(--sp-1);color:var(--dim,#888)">
+      <p class="mini" style="margin-top:var(--sp-1);color:var(--mut)">
         Pick one of these and the rig always speaks with it, in any language —
         the answer can hold a Thai name inside an English sentence and it is
         still read properly. Leave it on <b>a voice per language</b> to use the

@@ -40,10 +40,11 @@ TITLE = "one camera can be watched by several people at once"
 # is 22s inside a 26s run, and it starved check_ota's 1.3 MB loopback POST
 # until it timed out - a red suite that was really contention, twice over.
 SLOW = True
+SLOW_S = 0.3         # the slow viewer's pause after each frame
 
 
-def _watch(base, dev, frames, out, key, slow=0.0):
-    """Read `frames` JPEG parts from the hub's live view. -> into out[key]."""
+def _watch(base, dev, frames, out, key, slow=0.0, stop=None):
+    """Read `frames` JPEG parts (or until `stop` is set) -> into out[key]."""
     import urllib.request
     got, seen, at = [], b"", []
     started = time.time()
@@ -51,7 +52,7 @@ def _watch(base, dev, frames, out, key, slow=0.0):
     try:
         with urllib.request.urlopen(url, timeout=25) as r:
             out[key + "_type"] = r.headers.get("Content-Type", "")
-            while len(got) < frames:
+            while len(got) < frames and not (stop and stop.is_set()):
                 # read1: take what has arrived rather than waiting for a
                 # full buffer, which is what a browser does with an <img>.
                 chunk = r.read1(512)
@@ -88,7 +89,13 @@ def run(t):
     base, main = F.start_hub()
     wifi = fake_wifi.start()
     fake_wifi.MODULE.reset()
-    fake_wifi.MODULE.stream_frames = 80      # long enough for both viewers
+    # THE STREAM MUST OUTLAST THE CHECK. It was 80 frames, and under a busy
+    # parallel gate the relay rightly skips frames for a late viewer, so the
+    # hold viewer used up more than 60 of them, the board stream ENDED, the
+    # relay reconnected and "opened ONCE" read 2 (reproduced 2026-10-10 with
+    # three CPU threads beside the check). The relay closes it when the last
+    # viewer leaves, so a stream that never runs out costs nothing.
+    fake_wifi.MODULE.stream_frames = 100000
     dev = "wifi:" + wifi
 
     # ---- the fake really refuses a second watcher ---------------------
@@ -100,8 +107,10 @@ def run(t):
     # arrive; once the relay stopped batching, this viewer finished and let go
     # before the test below ran, and the camera accepted the direct connection
     # exactly as it should have.
-    hold = {}
-    first = threading.Thread(target=_watch, args=(base, dev, 60, hold, "hold"),
+    # Held by an event, not a frame count: a count is a guess at timing.
+    hold, probed = {}, threading.Event()
+    first = threading.Thread(target=_watch,
+                             args=(base, dev, 10 ** 6, hold, "hold", 0.0, probed),
                              daemon=True)
     first.start()
     time.sleep(0.6)
@@ -117,12 +126,15 @@ def run(t):
     t.ok(direct_refused,
          "the camera itself still allows only one watcher",
          "if the fake accepts two, two viewers prove nothing about the relay")
+    probed.set()
     first.join(timeout=30)
 
     # ---- two viewers through the hub, at the same time ----------------
     a, b = {}, {}
     ta = threading.Thread(target=_watch, args=(base, dev, 5, a, "f"), daemon=True)
-    tb = threading.Thread(target=_watch, args=(base, dev, 5, b, "f", 0.08),
+    # 0.3 s, six camera frames. It was 0.08 against a camera sending every
+    # 50 ms: a 30 ms margin that a loaded gate ate (72 vs 82 ms measured).
+    tb = threading.Thread(target=_watch, args=(base, dev, 5, b, "f", SLOW_S),
                           daemon=True)
     ta.start()
     time.sleep(0.3)                          # the second arrives mid-stream
@@ -149,6 +161,20 @@ def run(t):
          "and the board was opened ONCE for all three viewers (%d)"
          % fake_wifi.MODULE.streams_opened,
          "one connection is what makes the second viewer possible at all")
+
+    # ---- a reload keeps the board --------------------------------------
+    # Everyone has left; a browser reload comes back within IDLE_CLOSE. The
+    # relay used to drop the board the instant the count hit zero and then
+    # wait with nothing held, so this read 2 every time.
+    time.sleep(0.5)
+    again = {}
+    _watch(base, dev, 2, again, "f")
+    t.ok(len(again.get("f") or []) >= 2
+         and fake_wifi.MODULE.streams_opened == 1,
+         "a viewer who reloads gets the same board connection (%d opened)"
+         % fake_wifi.MODULE.streams_opened,
+         "the reload grace must hold the board, not just the thread: %s"
+         % again.get("f_err", ""))
 
     # ---- the slow one did not hold the quick one up --------------------
     # PACE, NOT COUNT. Both viewers stop at the same target, so comparing how
