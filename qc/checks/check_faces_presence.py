@@ -61,6 +61,10 @@ def run(t):
 
     # ---- the gate inside the voice helper --------------------------------
     st = S.State("reconize")
+    # Their app answering slowly must not slow the answer: the re-probe of
+    # where Reconize runs took >1 s on the PC and the gate failed open.
+    slow = st.partner
+    st.partner = lambda: (time.sleep(1.5), slow())[1]
     S.Handler.state = st
     srv = ThreadingHTTPServer(("127.0.0.1", 0), S.Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -79,7 +83,7 @@ def run(t):
     st._live = dict(st.partner(), events=[{"kind": "poll", "hasCamera": False}])
     st._live_at = 10 ** 12
     t.ok(gate(on)[0], "an app that cannot see who stands where: taken (fails open)")
-    st._live_at = 0
+    del st._live                                  # back to the app with a camera
 
     # ---- the real helper refuses one /ask and still says things ----------
     tmp = Path(tempfile.mkdtemp(prefix="mice_presence_"))

@@ -140,8 +140,27 @@ def _free_port():
     collide. A collision here does not fail loudly: one worker's hub answers
     another worker's request, and the check quietly tests the wrong tree.
     Asking the OS removes the guess entirely.
+
+    BUT NOT FROM THE OS'S OWN POOL (2026-10-10). bind(0) hands out the next
+    number of the dynamic range (49152+), the same pool every QC Edge draws
+    its own listening port from - and Chromium binds with exclusive use, so
+    the hub then died on WinError 10013, a few times per gate on the PC. A
+    random number below that pool, checked on the address the hub really
+    binds (0.0.0.0, no reuse flag, so a port somebody listens on is refused),
+    is never handed to anyone else by the OS.
     """
+    import random
     import socket
+    for _ in range(40):
+        port = random.randint(20000, 45000)
+        s = socket.socket()
+        try:
+            s.bind(("0.0.0.0", port))
+            return port
+        except OSError:
+            continue                 # in use, or in a reserved range: next
+        finally:
+            s.close()
     s = socket.socket()
     try:
         s.bind(("127.0.0.1", 0))

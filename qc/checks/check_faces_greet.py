@@ -65,7 +65,10 @@ def run(t):
                                      already="Back again {title}{name}",
                                      unknown="Hello {title}")
     mem = lambda: {"people": {}, "cameras": {}, "today": {}}   # noqa: E731
-    now = time.time()
+    # Noon today, not the clock: "31 minutes later, the same day" crossed
+    # midnight when the gate ran at 23:54 on 2026-10-10 and greeted Ann as new.
+    now = time.mktime(time.strptime(time.strftime("%Y-%m-%d") + " 12:00",
+                                    "%Y-%m-%d %H:%M"))
 
     g, said = R.decide(ev("Ann", "P1"), rules, mem(), now)
     t.ok(g and g["text"] == "Hello K. Ann", "a known person is greeted by name, "

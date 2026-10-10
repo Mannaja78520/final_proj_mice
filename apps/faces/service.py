@@ -607,7 +607,12 @@ class State:
         reports a camera, nobody can be seen standing anywhere, so the answer
         is "cannot tell" and the asker must carry on as if somebody is there
         (presence fails OPEN - a broken camera never silences the rig)."""
-        if not any(s.get("hasCamera") for s in (self.partner().get("events") or [])):
+        # Not self.partner(): its re-probe of their app can take over a second,
+        # longer than the voice helper waits (1 s), so every tenth second the
+        # gate failed open - seen on the PC with Reconize running, 2026-10-10.
+        # `events` comes from config/partners.json, not from that probe.
+        p = getattr(self, "_live", None) or (self.partners or {}).get(self.partner_id) or {}
+        if not any(s.get("hasCamera") for s in (p.get("events") or [])):
             return {"known": False, "present": None,
                     "why": "this app has no camera that says who is standing where"}
         now = datetime.now()
