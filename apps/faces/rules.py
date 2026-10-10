@@ -37,6 +37,18 @@ def rules_file():
     so QC never rewrites the words somebody chose."""
     return Path(os.environ.get("MICE_FACES_RULES") or HERE / "rules.json")
 
+def address_words():
+    """Words a name the face app sends may already start with (call_as
+    "พี่บอส"), so {title} is not put in front of it as well. ONE list, the
+    Voice helper's: config/voice.json face.addressWords."""
+    path = Path(os.environ.get("MICE_VOICE_CONFIG") or HERE.parent.parent / "config" / "voice.json")
+    try:
+        got = (json.loads(path.read_text(encoding="utf-8")).get("face") or {}).get("addressWords")
+    except Exception:                                        # noqa: BLE001
+        got = None
+    return tuple(w for w in got if w) if isinstance(got, list) and got else ("คุณ",)
+
+
 ROLES = ("entry", "exit", "watch")
 KINDS = ("known", "already", "unknown")
 BLANKS = ("{title}", "{name}")
@@ -153,9 +165,17 @@ def decide(event, rules, memory, now=None):
     if not text:
         return None, "there are no %s words for %s at camera %s" % (kind, role, camera)
     title = rules.get("title") or ""
+    name = event.get("who") if known else ""
     if known:
-        title = ((rules.get("people") or {}).get(key) or {}).get("title") or title
-    greeting = {"text": _fill(text, title, event.get("who") if known else ""),
+        own_title = ((rules.get("people") or {}).get(key) or {}).get("title")
+        title = own_title or title
+        # The name they asked to be called (their call_as, A13-5). When it
+        # already carries its form of address, no second one goes in front.
+        if event.get("callAs"):
+            name = event["callAs"]
+            if not own_title and name.startswith(address_words()):
+                title = ""
+    greeting = {"text": _fill(text, title, name),
                 "to": cam.get("to") or rules.get("to") or "",
                 "move": cam.get("move") or "", "module": cam.get("module") or "",
                 "whenBusy": rules.get("whenBusy") or "skip"}

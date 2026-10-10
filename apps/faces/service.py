@@ -47,6 +47,7 @@ from urllib.parse import urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wsclient                                          # noqa: E402
 import rules                                             # noqa: E402
+import friend_api                                        # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 # The tree this copy belongs to. A working copy runs its own copy of this file
@@ -152,6 +153,16 @@ class State:
         # What their payloads really carried, per source (A9-2): it TELLS,
         # it never changes what the watcher does.
         self.contract = {}
+        # Who is in front of each camera NOW (A13): camera -> {at, faces,
+        # source, last}. Filled by our own cameras' looks and by their
+        # stranger events. `look` is config/faces.json look; `lookers` are
+        # the cameras being asked (look.py), for the screen.
+        self.scenes = {}
+        self.look = {}
+        self.lookers = []
+        # A report a source was not known for, seen arriving (their feed
+        # starts sending strangers): shown, so the screen stops promising less.
+        self.seen_reports = set()
 
     def greet(self, event):
         """Hand one new arrival to the greeter, off this thread: the hub call
@@ -174,6 +185,12 @@ class State:
             except Exception:                                # noqa: BLE001
                 self._live = entry
         return getattr(self, "_live", None) or entry
+
+    def entry(self):
+        """Their registry entry WITHOUT the re-probe partner() may do (over a
+        second on the PC): what the routes asked for are called by."""
+        return (getattr(self, "_live", None) or (self.partners or {}).get(self.partner_id)
+                or {})
 
     # ---- logging in to the outside app -------------------------------
 
@@ -365,16 +382,33 @@ class State:
         when their payload changes, that is one line in config/partners.json.
         """
         m = src.get("map") or {}
-        self.observe("ws", [m.get(k) or d for k, d in (("who", "name"), ("id", "participant_id"),
-                     ("when", "at"), ("camera", "node_id"))], raw)
         who = raw.get(m.get("who") or "name") or ""
+        # Their feed publishes ONLY matched faces today (api/nodes.py:331 and
+        # api/recognition.py:130), so a frame with no status is known. The
+        # brief asks for {"status": "unknown", "faces": 1} too (3.5 item 3):
+        # that one is a stranger, never given the name that rode along.
+        status = str(raw.get(m.get("status") or "status") or "matched")
+        known = status == (friend_api.asks(self.entry(), "person").get("matched") or "matched")
+        # A stranger has no name or id to be missing.
+        self.observe("ws", [m.get(k) or d for k, d in (("who", "name"), ("id", "participant_id"),
+                     ("when", "at"), ("camera", "node_id")) if known or k in ("when", "camera")],
+                     raw)
+        if not known:
+            with self._events_lock:
+                self.seen_reports.add(("ws", "unknown"))
+        try:
+            faces = min(20, max(1, int(raw.get(m.get("faces") or "faces") or 1)))
+        except (TypeError, ValueError):
+            faces = 1
         return {
-            "who": who,
-            "id": raw.get(m.get("id") or "participant_id") or "",
-            # Their feed publishes ONLY matched faces (api/nodes.py:331 and
-            # api/recognition.py:130), so anything arriving here is known.
-            "known": True,
-            "status": "matched",
+            "who": who if known else "",
+            "id": (raw.get(m.get("id") or "participant_id") or "") if known else "",
+            "known": known,
+            "status": status,
+            "faces": faces,
+            "callAs": str(raw.get(m.get("callAs") or "call_as") or "") if known else "",
+            "title": str(raw.get(m.get("title") or "title") or "") if known else "",
+            "lang": str(raw.get(m.get("lang") or "language") or ""),
             "when": str(raw.get(m.get("when") or "at") or ""),
             "camera": str(raw.get(m.get("camera") or "node_id") or ""),
             # accept() decides this: a camera field can hold a label that is
@@ -383,6 +417,99 @@ class State:
             "repeat": raw.get(m.get("repeat") or "checkin") or "",
             "source": "ws",
         }
+
+    def arrive_ws(self, src, raw):
+        """One live frame -> the arrivals to consider greeting. A stranger
+        event goes through sighting(), so somebody standing there while
+        their feed repeats them every frame is one arrival, not dozens."""
+        ev = self.from_ws(src, raw)
+        if ev["known"]:
+            return [e for e in [self.note(ev)] if e]
+        stranger = friend_api.person(self.entry(), {})
+        return self.sighting(ev["camera"], [stranger] * ev["faces"], "ws", ev["when"])
+
+    def sighting(self, camera, faces, source, when=""):
+        """Who one camera sees in one frame -> the NEW arrivals among them.
+
+        Kept per camera as the scene /present answers from. A face counts as
+        arriving when it was not in this camera's picture for `holdSeconds`:
+        a known face by its id, strangers by how many there are - a second
+        stranger stepping in beside the first is a second arrival, so two
+        strangers are never folded into one (check_faces_dedupe)."""
+        now = time.time()
+        hold = float(self.look.get("holdSeconds") or 10)
+        stamp = when or datetime.now().isoformat(timespec="seconds")
+        fresh, n = [], 0
+        with self._events_lock:
+            sc = self.scenes.setdefault(camera, {"last": {}})
+            for f in faces:
+                if f.get("known"):
+                    key = "id:" + (f.get("id") or f.get("who") or "")
+                else:
+                    key, n = "unknown#%d" % n, n + 1
+                if now - sc["last"].get(key, -1e12) > hold:
+                    fresh.append(f)
+                sc["last"][key] = now
+            sc["last"] = {k: v for k, v in sc["last"].items() if now - v <= hold * 6}
+            sc.update(at=now, when=stamp, faces=[dict(f) for f in faces], source=source)
+        out = []
+        for f in fresh:
+            ev = {"who": f.get("who") or "", "id": f.get("id") or "",
+                  "known": bool(f.get("known")), "status": f.get("status") or "",
+                  "when": stamp, "camera": camera, "hasCamera": False, "source": source,
+                  "callAs": f.get("callAs") or "", "title": f.get("title") or "",
+                  "lang": f.get("lang") or "", "box": f.get("box")}
+            kept = self.note(ev)
+            if kept:
+                out.append(kept)
+        return out
+
+    def present(self, camera="", seconds=10.0, theirs=True):
+        """Who is in front of `camera` now (A13-3), from the best source:
+
+        1. our own camera's latest look (look.py) - a picture, so it is NOW;
+        2. their GET /api/node/{id}/present, once their app offers it;
+        3. today's behaviour: who their feed reported there lately.
+        `people` is the known ones, nearest first; strangers are only counted.
+        """
+        now = time.time()
+        stale = min(float(seconds), float(self.look.get("staleSeconds") or 5))
+        ours = sorted(lk.camera for lk in self.lookers)
+        out = {"camera": camera, "cameras": ours, "from": "", "facesNow": 0,
+               "unknownNow": 0, "people": []}
+        with self._events_lock:
+            scenes = {c: dict(sc) for c, sc in self.scenes.items()
+                      if (not camera or c == camera) and now - sc.get("at", 0) <= stale}
+        looks = [sc for sc in scenes.values() if sc.get("source") == "look"]
+        if looks or camera in ours:
+            faces = [f for sc in looks for f in sc.get("faces") or []]
+            known = [f for f in faces if f.get("known")]
+            return dict(out, **{"from": "look", "facesNow": len(faces),
+                                "unknownNow": len(faces) - len(known),
+                                "people": friend_api.nearest_first(known)})
+        entry = self.entry()
+        if theirs and camera and friend_api.offers(entry, "present", timeout=1.0)[0]:
+            token, _why = self.token_now()
+            got, _why = friend_api.present(entry, token, camera, seconds) if token else (None, "")
+            if got:
+                return dict(out, **{"from": "theirs"}, **got)
+        cut = datetime.now() - timedelta(seconds=float(seconds))
+        seen, people = set(), []
+        with self._events_lock:
+            for e in self.people:
+                when = _when(e.get("when"))
+                key = e.get("id") or e.get("who")
+                # Any camera at all counts only when no camera was asked for -
+                # what Voice has always read (a history row says no door).
+                if (e.get("known") and key not in seen and when and when >= cut
+                        and (e.get("hasCamera") and e.get("camera") == camera or not camera)):
+                    seen.add(key)
+                    people.append({k: e.get(k) for k in ("who", "id", "known", "callAs",
+                                                         "title", "lang", "box")})
+        strangers = sum(1 for sc in scenes.values() for f in sc.get("faces") or []
+                        if not f.get("known"))
+        return dict(out, **{"from": "feed", "facesNow": len(people) + strangers,
+                            "unknownNow": strangers, "people": people})
 
     def note(self, event):
         with self._events_lock:
@@ -469,6 +596,11 @@ class State:
         k_who = mapping.get("who") or "name"
         k_id = mapping.get("id") or "participant_id"
         k_status = mapping.get("status") or "status"
+        # Their rows carry no camera today. Once they do (brief item 4), the
+        # registry's hasCamera turns this on; a row older than the merge
+        # window is a catch-up and is still only counted.
+        k_camera = mapping.get("camera") if src.get("hasCamera") else ""
+        recent = float(self.partner().get("dedupeSeconds") or 20)
         lag = float(src.get("lagSeconds") or 120)
         floor = (self.checkpoint - timedelta(seconds=lag)
                  if self.checkpoint else None)
@@ -501,8 +633,12 @@ class State:
                     # api/history.py:71-84 and has no node_id in it, so this
                     # can be counted and must never be read as somebody
                     # standing at a particular door.
-                    "camera": "",
+                    "camera": (str(row.get(k_camera) or "") if k_camera and when and
+                               abs((datetime.now() - when).total_seconds()) <= recent
+                               else ""),
                     "hasCamera": False,
+                    "callAs": str(row.get(mapping.get("callAs") or "call_as") or "")
+                    if who else "",
                     "source": "poll",
                 }
                 kept, _dup = self.accept(event)
@@ -611,8 +747,15 @@ class State:
         # longer than the voice helper waits (1 s), so every tenth second the
         # gate failed open - seen on the PC with Reconize running, 2026-10-10.
         # `events` comes from config/partners.json, not from that probe.
-        p = getattr(self, "_live", None) or (self.partners or {}).get(self.partner_id) or {}
-        if not any(s.get("hasCamera") for s in (p.get("events") or [])):
+        p = self.entry()
+        # Our own cameras' looks are pictures of NOW (A13-2): one of them
+        # answers for itself, and any of them can say somebody is there.
+        got = self.present(camera, seconds, theirs=False) if self.lookers else {}
+        if got.get("from") == "look" and (got["facesNow"] or camera):
+            return {"known": True, "present": bool(got["facesNow"]),
+                    "why": "%s in front of %s now" % (
+                        "somebody is" if got["facesNow"] else "nobody is", camera or "a camera")}
+        if not self.lookers and not any(s.get("hasCamera") for s in (p.get("events") or [])):
             return {"known": False, "present": None,
                     "why": "this app has no camera that says who is standing where"}
         now = datetime.now()
@@ -668,10 +811,14 @@ class State:
             # promise the rig sees strangers when the only live source is
             # known-faces-only.
             "sources": [
-                {"kind": s.get("kind"), "reports": s.get("reports") or [],
+                {"kind": s.get("kind"),
+                 "reports": sorted(set(s.get("reports") or []) | {
+                     r for k, r in self.seen_reports if k == s.get("kind")}),
                  "hasCamera": bool(s.get("hasCamera"))}
                 for s in (p.get("events") or [])
             ],
+            # Our own cameras asked through their /api/look (A13-2).
+            "look": [dict(lk.status) for lk in self.lookers],
             "people": [dict(event) for event in self.people],
             "polls": self.polls,
             "live": self.live,
@@ -716,8 +863,18 @@ class Handler(BaseHTTPRequestHandler):
                 secs = 60.0
             return self._json(dict({"ok": True}, **self.state.presence(
                 (q.get("camera") or [""])[0], secs)))
+        if path == "/present":
+            from urllib.parse import parse_qs
+            q = parse_qs(urlparse(self.path).query)
+            try:
+                secs = float((q.get("seconds") or ["10"])[0])
+            except ValueError:
+                secs = 10.0
+            return self._json(dict({"ok": True}, **self.state.present(
+                (q.get("camera") or [""])[0], secs)))
         return self._json({"ok": False, "error": "no such address: %s" % path,
-                           "try": ["/health", "/state", "/presence", "/rules"]}, 404)
+                           "try": ["/health", "/state", "/presence", "/present",
+                                   "/rules"]}, 404)
 
     def do_POST(self):                                       # noqa: N802
         """A6-3: another Python program on this PC needs ONE address and ONE
@@ -801,6 +958,14 @@ def main(argv=None):
     fired = Path(os.environ.get("MICE_FACES_FIRED") or (CODE / FIRED_FILE))
     milestones = rules.Milestones(fired, state.greeter.post)
     Handler.state = state
+    # Our own cameras, each asked of their /api/look once it exists (A13-2).
+    state.look = (cfg or {}).get("look") or {}
+    import look
+    for cam in state.look.get("cameras") or []:
+        if cam.get("name") and cam.get("dev"):
+            state.lookers.append(look.Looker(
+                state, cam["name"], look.hub_frames(state.greeter.hub, cam["dev"]),
+                per_second=state.look.get("perSecond") or 4).start())
     if state.partners_error:
         print("[faces] %s" % state.partners_error)
     elif not state.partner():
@@ -859,7 +1024,8 @@ def main(argv=None):
                     if time.monotonic() - connected_at >= 30:
                         wait = 1.0
                     if msg:
-                        state.greet(state.note(state.from_ws(src, msg)))
+                        for event in state.arrive_ws(src, msg):
+                            state.greet(event)
             except wsclient.FeedClosed as e:
                 # THEIR REFUSAL IS NOT A NETWORK PROBLEM. A token the feed
                 # will not take comes back as close 4401, or as a 403 on the

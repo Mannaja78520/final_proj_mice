@@ -93,6 +93,7 @@
   "mixedVoice": ""
  },
  "face": {
+  "addressWords": ["คุณ", "พี่", "น้อง", "อาจารย์", "ครู", "ดร."],
   "autoSeconds": 5,
   "cameraLabel": "",
   "rememberSeconds": 15

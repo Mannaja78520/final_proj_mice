@@ -15,5 +15,18 @@
   // Where the watcher asks the rig to speak (POST /api/speak). A program on
   // this PC may ask with no login (main_python/hub_auth.py LOCAL_OK), and only
   // that, so the hub must be on this PC too.
-  "hub": "http://127.0.0.1:8642"
+  "hub": "http://127.0.0.1:8642",
+
+  // THE RIG'S OWN CAMERAS, asked who is standing there (A13-2, apps/faces/look.py).
+  // Each is read through the hub's live view and sent to the face app's
+  // POST /api/look - only once their app lists it; until then nothing is sent.
+  // One camera: {"name": "nong-cam-1", "dev": "wifi:192.168.4.2"}. dev is how
+  // the hub reaches the board; name is what rules.json and the Voice page call it.
+  // Nong never turns toward anyone (user 2026-10-09): this only says who is there.
+  "look": {
+    "cameras": [],
+    "perSecond": 4,       // the brief's ceiling, one request in flight per camera
+    "holdSeconds": 10,    // gone this long and back = arriving again
+    "staleSeconds": 5     // a look older than this is not "now"
+  }
 }
