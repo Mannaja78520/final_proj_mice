@@ -1209,14 +1209,44 @@
     <span class="where">code/apps/faces · served at /app/faces/</span>
     <h2>👋 Reconize — the app that knows who is here</h2>
     <p>Reconize is a separate program that watches cameras and recognises people.
-       It runs beside Mice on the same PC. This page is how you open it, and in
-       time it is how the rig follows it.</p>
+       It runs beside Mice on the same PC. This page is how you open it and how
+       you choose what the rig says when it sees somebody.</p>
   </div>
 
   <h3>What works today</h3>
-  <p>One button, <b>Open Reconize</b>, and a line telling you whether Reconize is
-     running. Nothing here moves a robot yet. That is on purpose: the button
-     ships before anything that can make an arm swing.</p>
+  <p><b>Open Reconize</b> starts it if it is not running and shows it in the page.
+     <b>Is the rig following it?</b> says whether the rig is seeing people arrive.
+     When it is not, <b>Start following Reconize</b> starts Reconize and the rig's
+     own face helper together, in one press. Under the open button a line says
+     whether the installed Reconize is the version Mice was tested with; a newer
+     one is only pointed out, and everything keeps working as before.</p>
+  <p><b>What the rig says</b> is where you choose the words. Nothing is said until
+     you tick <b>Greet people the face app sees</b> and press <b>Save</b>. Saving asks
+     you to sign in on the hub page first, because it changes what a robot says
+     to a guest. The next person who arrives already gets the new words; nothing
+     needs restarting.</p>
+  <ul>
+    <li><b>The words.</b> One line for each case: somebody's first visit today,
+        somebody who already came today, and somebody it does not know. Write
+        <b>{title}</b> where the polite word goes and <b>{name}</b> where the name
+        goes. Somebody it does not know is never called by a name, so only
+        {title} works in that line, and the page refuses to save otherwise.</li>
+    <li><b>Cameras.</b> Each camera that has seen somebody appears by itself. Pick
+        whether it <i>says hello</i>, <i>says goodbye</i> or <i>only counts</i>, which
+        speaker says it, and a saved move a robot plays with it. A camera you
+        never set up only counts, so a new camera never starts talking on its own.
+        Open <i>Its own words</i> to give one camera different words.</li>
+    <li><b>Once per person.</b> The same person is greeted at most once in the
+        minutes you choose, whichever camera sees them. Somebody it does not know
+        is greeted at most once per camera in the seconds you choose.</li>
+    <li><b>If the rig is busy.</b> <i>skip this hello</i> drops it while the rig is
+        talking or playing a show; <i>wait its turn</i> says it afterwards. A
+        greeting never stops a show.</li>
+    <li><b>Celebrations.</b> Said once a day when that many people have come
+        today, by Reconize's own count. Each can play a move too.</li>
+    <li><b>Titles.</b> Give a particular person their own polite word, such as
+        อาจารย์, instead of the usual one.</li>
+  </ul>
   <p>If it says Reconize is not answering, start it with <b>start.bat</b> in its
      own folder and wait about fifteen seconds — it loads a face model before it
      answers anything, so <i>not answering</i> and <i>not started</i> look the
@@ -1244,12 +1274,13 @@
      it is running would block its own writing. Everything goes through its
      web address, the same way any other program would talk to it.</p>
 
-  <h3>What is coming, in order</h3>
-  <p>Reading who was recognised · greeting somebody by name with a move ·
-     choosing which speaker says it and in which voice · rules you can edit here,
-     with different words per camera · counting arrivals and firing a
-     celebration at a number you choose · a mode where the rig only takes
-     questions while somebody is standing in front of it.</p>
+  <h3>Only answer when somebody is there</h3>
+  <p>The Voice screen can be set to take questions only while somebody stands in
+     front of a camera (in config/voice.json, <b>presence</b>, off at first). If
+     Reconize is not running, or has no camera that can tell, questions are taken
+     as usual: a broken camera never makes the rig deaf.</p>
+  <p>All of this is tested against stand-ins for Reconize and the robot, not yet
+     with the real cameras at the lab.</p>
   <p>Each of those arrives as its own small change, and the plan for all of it is
      <b>docs/system_integral.html</b>, beside this project's own plan.</p>
 </section>
@@ -1270,6 +1301,41 @@
        listening runs on this PC too. Which languages it hears — and the words
        each language gets wrong often — live in <code>config/voice.json</code>;
        adding a language is one entry there.</p></div>
+  <div class="f"><h3>The rig speaks one thing at a time<span class="tag t-new">new</span></h3>
+    <p>Everything the rig says goes through <b>one queue</b> on the hub: a
+       greeting, an answer from this page spoken through a robot, a message
+       from another program on this PC. So two of them never talk over each
+       other. Something that arrives while the rig is talking either
+       <b>waits its turn</b> or is <b>skipped</b> — whoever asked chooses — and
+       a greeting that waited too long is dropped, because the person has
+       walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p>
+    <p><b>Where it speaks.</b> Speakers are found by themselves: every robot
+       with a speaker that the hub reaches over WiFi, and this PC's own
+       speakers. A robot reached only by cable is listed with that reason, and
+       a robot whose board has no amplifier wired says so after its first try
+       — plug one in and it is asked again. Which one is the default, and
+       which voice each uses, is <code>config/speakers.json</code>; the hub
+       writes it when somebody picks on a screen.</p>
+    <p><b>Live sound wins.</b> Somebody sending sound to a robot (<i>Send
+       sound to the robot</i> on its page) takes the speaker; greetings wait
+       until it has been quiet for two seconds. If the rig's own speech takes a
+       speaker back, the sending page stops and says so instead of sending
+       into nothing.</p>
+    <p><b>Stop All silences it all</b> — what is being said, everything
+       waiting, and live sound — with no login, like every other stop.</p>
+    <p>In conversation mode this page waits for the robot to finish before it
+       listens again, and throws away anything it heard while the robot was
+       talking, so it never answers its own voice.</p>
+    <p class="tech">For a program on this PC: <code>POST /api/speak</code> with
+       JSON <code>{text, to, voice, lang, whenBusy: "queue"|"skip", take,
+       move, module, maxAgeSeconds}</code> needs no login when it comes from
+       this PC with <code>Content-Type: application/json</code> and no browser
+       headers; from the network, or from a web page, it needs one.
+       <code>GET /api/speak</code> shows what is said and what waits (login),
+       <code>GET /api/speakers</code> lists the speakers,
+       <code>POST /api/speak/stop</code> is quiet now. The voice helper itself
+       answers programs only: a web page, or any address that is not an IP or
+       <code>localhost</code>, is refused.</p></div>
   <div class="f"><h3>It can greet you by name<span class="tag t-new">new</span></h3>
     <p>Beside the answer box there is a face badge and two buttons.
        <b>Check who I am</b> uses the camera of the device the page is open on:
@@ -1278,6 +1344,13 @@
        history and no image lands on the disk. The name is remembered for two
        minutes, so the next answers greet that person by name in Thai,
        English, Japanese or Chinese.</p>
+    <p>That promise has to come from the face app itself. Before sending
+       anything the page asks the face app whether it can look without
+       keeping; a face app that cannot (the current Reconize cannot) is sent
+       <b>no picture at all</b>, and the line under the camera says so and
+       the looking stops. Recognition then still works through a camera the
+       face app watches, or through <b>Open Reconize</b>. When the face app
+       learns to look without keeping, this button works again by itself.</p>
     <p>Next to it, <b>Check by itself</b> keeps looking every few seconds, so
        nobody has to press anything — still keeping no pictures. It stops
        while the tab is hidden, and it lets the camera go the moment it is

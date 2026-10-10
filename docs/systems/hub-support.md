@@ -21,15 +21,16 @@ Self-update, the diagnostics text and problem reports.
 
 - [hub](hub.md)
 
-## Checks that test it (8)
+## Checks that test it (9)
 
 - `check_app_handout`
 - `check_diagnostics`
 - `check_handler_scope`
+- `check_partner_version`
 - `check_post_keepalive`
 - `check_report_button`
 - `check_self_update`
 - `check_stale_build`
 - `check_translate`
 
-Run them: `python qc/run_qc.py --no-build check_app_handout check_diagnostics check_handler_scope check_post_keepalive check_report_button check_self_update check_stale_build check_translate`
+Run them: `python qc/run_qc.py --no-build check_app_handout check_diagnostics check_handler_scope check_partner_version check_post_keepalive check_report_button check_self_update check_stale_build check_translate`

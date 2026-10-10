@@ -169,6 +169,13 @@ def run(t):
          "sends the next half hour into code that was never wrong")
     t.contains(start, "could not listen on any port",
                "and says so plainly when no port can be had at all")
+    # The OS's dynamic pool (49152+) is where every QC Edge takes its own
+    # port, with exclusive use: a hub port from there died on WinError 10013
+    # a few times per gate on the PC (2026-10-10).
+    got = [F._free_port() for _ in range(20)]
+    t.ok(all(p < 49152 for p in got),
+         "QC ports come from below the OS's own pool, where Edge never binds",
+         got)
 
     # ---- and a port that must stay EMPTY is held, not merely offered ----
     # The opposite need: some checks want an address where nothing answers, to

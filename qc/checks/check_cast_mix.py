@@ -8,7 +8,9 @@ browser with made-up sources in place of the microphone and the shared screen
 (a browser under test has neither), and reads what actually left the page:
 
   * through the hub: /api/stream/start, then 16-bit PCM chunks to
-    /api/stream/feed, and /api/stream/stop at the end;
+    /api/stream/feed, and /api/stream/stop at the end - each naming the
+    session the hub handed out (A4-4), so a page whose speaker was taken
+    over by other sound stops itself and never silences what took over;
   * on the board's own address: a WebSocket to /ws/audio that says
     `START 22050` first and then carries the same PCM;
   * two loud sources summed must not clip: the mix goes through a limiter,
@@ -76,13 +78,18 @@ qcWaitFor(function(){ return ready("hub") && ready("direct") && ready("talk"); }
   try{
     // ---------------- through the hub ----------------
     var w = document.getElementById("hub").contentWindow, d = w.document;
-    var feeds = [], calls = [];
+    var feeds = [], calls = [], stale = false;
     var real = w.fetch;
     w.fetch = function(u, o){
       u = String(u);
       if (u.indexOf("/api/stream/") >= 0) {
         calls.push(u.replace(/^.*\\/api\\/stream\\//, ""));
-        if (u.indexOf("/feed") >= 0) feeds.push(o.body);
+        if (u.indexOf("/start") >= 0)
+          return Promise.resolve(new w.Response('{"ok":true,"session":"qcsess"}', {status: 200}));
+        if (u.indexOf("/feed") >= 0) {
+          feeds.push(o.body);
+          if (stale) return Promise.resolve(new w.Response('{"ok":false,"stale":true}', {status: 409}));
+        }
         return Promise.resolve(new w.Response('{"ok":true}', {status: 200}));
       }
       return real.apply(w, arguments);
@@ -115,9 +122,23 @@ qcWaitFor(function(){ return ready("hub") && ready("direct") && ready("talk"); }
     await sleep(800);
     out.push("after=" + Object.keys(w.castSrc).join("+"));
     out.push("stillsending=" + (stats(feeds).peak > 1000 ? "yes" : "no"));
+    out.push("feedsession=" + (calls.some(function(c){ return c === "feed?session=qcsess"; })
+                               && !calls.some(function(c){ return c === "feed"; }) ? "yes" : "no"));
     w.castStop("qc");
     await sleep(200);
-    out.push("hubstop=" + (calls.indexOf("stop") >= 0 ? "yes" : "no"));
+    out.push("hubstop=" + (calls.indexOf("stop?session=qcsess") >= 0 ? "yes"
+                           : encodeURIComponent(calls.slice(-2).join(","))));
+
+    // other sound takes the speaker over: the hub answers 409 to the feeds
+    calls.length = 0;
+    d.getElementById("cast_mic").checked = true;
+    await w.castToggle();
+    await sleep(500);
+    stale = true;
+    await sleep(900);
+    out.push("takenover=" + (!w.castOn && /taken over/.test(d.getElementById("castStat").textContent)
+                             ? "said" : "silent"));
+    out.push("takenstop=" + (calls.some(function(c){ return c.indexOf("stop") === 0; }) ? "yes" : "no"));
 
     // ---------------- straight to the board ----------------
     var x = document.getElementById("direct").contentWindow, e = x.document;
@@ -219,7 +240,12 @@ def run(t):
          "0.9 + 0.9 of full scale used to wrap round and crack; the limiter holds it")
     t.eq(got.get("after"), "pc", "switching the microphone off takes only the microphone out")
     t.eq(got.get("stillsending"), "yes", "and the PC sound keeps playing")
-    t.eq(got.get("hubstop"), "yes", "Stop tells the hub")
+    t.eq(got.get("feedsession"), "yes", "every chunk names the session the hub handed out")
+    t.eq(got.get("hubstop"), "yes", "Stop tells the hub which sound to stop - this page's own")
+    t.eq(got.get("takenover"), "said",
+         "when other sound takes the speaker over, the page stops itself and says so")
+    t.eq(got.get("takenstop"), "no",
+         "and does not tell the hub to stop - that would silence what took over")
 
     t.eq(got.get("wsurl"), "ok", "on the board's own address it opens /ws/audio on the board")
     t.eq(got.get("wsfirst"), "START_22050", "and says the rate before any sound")

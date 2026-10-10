@@ -23,6 +23,9 @@
 var castOn=false,castCtx=null,castNode=null,castMix=null,castRate=22050,castMisses=0;
 var castStream=null,castMicStream=null,castSong=null,castWs=null,castSrc={};
 var castResamp={pos:0,last:0};
+// The hub's name for THIS page's stream (A4-4). Feeds carry it, so a sound
+// that took the speaker over is never fed or stopped by this page.
+var castSession='';
 function castEl(id){ return document.getElementById(id); }
 function castSay1(t){ const e=castEl('castStat'); if(e) e.textContent=t; }
 function castLog(m){ if(typeof log==='function') log(m); else console.log(m); }
@@ -85,6 +88,7 @@ async function castOpen(){
     said=await r.json().catch(()=>({}));
     if(!r.ok||!said.ok) throw new Error(castRefusal(JSON.stringify(said))||
       ('could not start it: '+(said.error||('the hub answered '+r.status))));
+    castSession=said.session||'';
     return;
   }
   await new Promise((ok,fail)=>{
@@ -208,8 +212,12 @@ function castSend(f){
       'the WiFi to the robot is too slow - move closer, or switch a source off'); return; }
     castMisses=0; castWs.send(pcm.buffer); return;
   }
-  fetch(location.origin+'/api/stream/feed',{method:'POST',body:pcm.buffer})
-    .then(r=>{ castMisses = r.ok ? 0 : castMisses+1;
+  const mine=castSession;
+  fetch(location.origin+'/api/stream/feed'+(mine?'?session='+mine:''),{method:'POST',body:pcm.buffer})
+    .then(r=>{ if(r.status===409&&castOn&&castSession===mine){
+                 castStop('the robot\'s speaker was taken over by other sound - press it again to take it back',true);
+                 return; }
+               castMisses = r.ok ? 0 : castMisses+1;
                if(castMisses===10) castSay1(
                  'the hub stopped taking the sound - press Stop and start it again'); })
     .catch(()=>{ if(++castMisses===10) castSay1(
@@ -229,7 +237,9 @@ function castResample(f,from){
   castResamp.pos=p-f.length; castResamp.last=f[f.length-1];
   return out;
 }
-function castStop(why){
+// taken: the hub gave the speaker to another sound, so there is nothing of
+// ours left to stop - telling it to stop would silence THAT sound.
+function castStop(why,taken){
   castOn=false;
   // Teardown: an already-closed piece is not worth a line on screen, but it
   // goes in the technical log rather than nowhere - an empty catch is how the
@@ -245,11 +255,12 @@ function castStop(why){
   if(castWs){
     const w=castWs; castWs=null;
     try{ w.send('STOP'); w.close(); }catch(e){ castLog('! cast: '+e); }
-  }else if(castDev()){
-    fetch(location.origin+'/api/stream/stop',{method:'POST'})
+  }else if(castDev()&&!taken){
+    fetch(location.origin+'/api/stream/stop'+(castSession?'?session='+castSession:''),{method:'POST'})
       .catch(()=>{ castSay1('stopped here, but the hub did not '
         +'confirm it. If the robot is still playing, press Stop again.'); });
   }
+  castSession='';
   const b=castEl('castBtn'); if(b) b.innerHTML='&#127911; Send sound to the robot';
   const lv=castEl('castLevel'); if(lv) lv.textContent='';
   if(why) castSay1(why);

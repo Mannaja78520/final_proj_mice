@@ -104,6 +104,25 @@
   color-scheme:light;
 }
 
+/* ---- Reconize — the face app's own look (A10) ---------------------------
+   Their palette, read from Face_Regonize/frontend/src/index.css and the
+   Tailwind greys their components use, so our Reconize page and their app in
+   the frame below it read as one product. Measured: text 16.6:1, muted
+   4.5:1 (their gray-500, kept exact), accent 5.9:1, warning 4.7:1 (their amber-700, the
+   colour their own warning badges use: amber-600 is 3.0:1 here). */
+:root[data-theme="indigo"]{
+  --theme-name:"Reconize";
+  --theme-note:"light, indigo. The face app's own colours";
+
+  --bg:#f6f7fb; --card:#ffffff; --sunk:#f9fafb; --line:#e5e7eb;
+  --txt:#111827; --mut:#6b7280;
+  --acc:#4f46e5; --on-acc:#ffffff; --btn:#ffffff;
+  --ok:#16a34a; --warn:#b45309; --err:#dc2626;
+  --ty-nong:#a16207; --ty-lift:#0284c7; --ty-cam:#7c3aed; --ty-other:#6b7280;
+
+  color-scheme:light;
+}
+
 /* Soft tints, DERIVED from the colour they belong to rather than picked by
    hand, so changing a colour above moves its background with it — in every
    theme, without any theme having to list them. */

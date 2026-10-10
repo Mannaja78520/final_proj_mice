@@ -71,9 +71,21 @@
     "api": "http://127.0.0.1:8000",           // their FastAPI
     "camera": "/recognition",                 // their live webcam page; Voice opens it
     "health": "/api/health",                  // main.py:182, needs no login
+
+    // Voice's "Check who I am" sends ONE frame to `path`, which stores the
+    // frame, a history row and an attendance row. So it is sent only when
+    // `spec` (FastAPI's default self-description, not read from their code)
+    // lists the `dontKeep` option there. Their own version has none: the one
+    // that worked was a local patch, removed with their reset on 2026-09-29.
+    "look": { "path": "/api/recognition/upload", "field": "photo",
+              "dontKeep": "persist=false", "spec": "/openapi.json" },
     // MAIN, never the Dummy copy (user 2026-09-16: *run only main not
     // dummy*). The hub refuses a folder whose path holds a word listed here.
     "folder": "E:/final_proj/mice/Face_Regonize",
+    // The commit of theirs Mice was last checked against: the folder was put
+    // back on it on 2026-09-29 (thread "Fix Face_Regonize git pull"). A newer
+    // one is only REPORTED on the Reconize screen (A9) - nothing turns off.
+    "testedWith": ["f27a9d5"],
     "refuseFolders": ["dummy"],
 
     // Their dev server listens on this PC only; this opens it to phones on the

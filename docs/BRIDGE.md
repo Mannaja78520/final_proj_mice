@@ -3124,3 +3124,6 @@ Files/resources: firmware/config/amps.json, firmware/config/esp32_hardware_lift_
 Evidence: full QC 6340/0 in the cloud (check_play_saved, check_page_login, check_pair_page failed only in the parallel run, green alone 2/2); 34 of 34 sabotages caught; pio mice_nong, mice_lift, mice_cam, mice_blank SUCCESS. Same-provider review (two Claude subagents; Codex and agy are not reachable from the cloud), every finding fixed. Tested against fakes only.
 Next: a PC session pulls the branch after PR #2 is merged into the lab branch, runs python -m PyInstaller --clean --noconfirm MiceHub.spec, flashes the lift and any board that bridges the bus for the PC (RS485 line limit now 4096), and runs the A7-8 bench (PCM5102A into TPA3118 into the 12 V speaker). Waiting on the user: A31-11 agy permission, A26-81 build or close, A13-7 subnet or tie-break.
 Released: every claim of claude:09291004-8074. Nothing in flight.
+
+## 2026-10-10T12:03:40Z claude:10101203-1925
+The 2026-09-29 cloud thread claude:09291004-885f stopped at the usage limit (worker gone) before pushing A5; its rules.py is lost. Taking A5-1..A5-5 and A0-13 with --take in a fresh thread (user 2026-10-10: finish all pending work).

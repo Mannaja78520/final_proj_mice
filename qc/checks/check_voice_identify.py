@@ -1,25 +1,33 @@
 """Check who I am - one frame, a name back, and NOTHING written.
 
 A26-61 (user 2026-09-18): *do not save the picture of it because it took my
-rom just open and check who am i can you?* Reconize's own camera page stores
-every frame it scans, plus a history row and an attendance row, which is what
+rom just open and check who am i can you?* Reconize's upload stores every
+frame it scans, plus a history row and an attendance row, which is what
 filled the disk. So the Voice page takes ONE frame from the device it is open
-on and asks the face app with `?persist=false`, which their recognition.py
-reads: no stored image, no rows, no events entry.
+on and asks the face app with `?persist=false`: no stored image, no rows.
+
+That flag was a LOCAL PATCH to their code, never theirs. Their folder was
+reset to their own version on 2026-09-29 and the patch went with it - and
+FastAPI ignores a query it does not know, so the flag kept being sent while
+every frame was kept again. So the frame now goes only to a face app whose own
+/openapi.json lists the option (config/partners.json `look`), and otherwise
+NOTHING reaches it: the page says why and stops looking. This check never
+reads their code: the promise is asked of the running app, like the real one.
 
 The whole path is driven here against a FAKE face app: the real helper
 process, the real HTTP route, the real multipart body. The fake records what
-arrived, so the two things that can silently rot are assertions:
+arrived, so the things that can silently rot are assertions:
 
-  * the query really says persist=false - drop it and every check writes a
-    frame to their disk again, which is the bug this task exists to stop;
+  * no frame reaches a face app that does not promise to keep nothing - the
+    one this task exists for, asserted on what arrived at the fake;
+  * the query really says persist=false when it does promise;
   * the name is REMEMBERED for two minutes. With nothing persisted there is
     no history row to read back, so the first version lost the name two
     seconds later, when the next poll of /face found an empty history.
 
-Measured 2026-09-18 against the real Reconize: one enrolled photo through
-/api/voice/identify returned the person, the answer greeted them by name, and
-Reconize's history stayed at 0 rows with no file written under storage/.
+Measured 2026-09-18 against the real Reconize, with the patch: one enrolled
+photo through /api/voice/identify returned the person and Reconize's history
+stayed at 0 rows with no file written under storage/.
 """
 import json
 import os
@@ -36,7 +44,24 @@ import qc as F
 AREA = "tools"
 TITLE = "the Voice page can ask who you are without keeping the picture"
 
-SEEN = {"paths": [], "auth": ""}
+SEEN = {"paths": [], "auth": "", "promise": "yes"}
+
+
+def _look():
+    """The real `look` entry: the fake answers exactly what the data names."""
+    sys.path.insert(0, str(F.CODE / "tools"))
+    import registry
+    return registry.load(F.CODE / "config" / "partners.json")["reconize"]["look"]
+
+
+def _spec(promise):
+    """Their /openapi.json, with or without the keep-nothing option."""
+    look = _look()
+    params = [{"name": "camera", "in": "query", "schema": {"type": "string"}}]
+    if promise == "yes":
+        params.append({"name": look["dontKeep"].partition("=")[0], "in": "query",
+                       "required": False, "schema": {"type": "boolean", "default": True}})
+    return {"openapi": "3.1.0", "paths": {look["path"]: {"post": {"parameters": params}}}}
 
 
 class _FakeFaceApp(BaseHTTPRequestHandler):
@@ -47,6 +72,13 @@ class _FakeFaceApp(BaseHTTPRequestHandler):
 
     def do_GET(self):                                   # noqa: N802
         SEEN["paths"].append(self.path)
+        if self.path == _look()["spec"]:
+            if SEEN["promise"] == "none":              # an app that does not describe itself
+                self.send_response(404)
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
+            return self._send(_spec(SEEN["promise"]))
         if self.path.startswith("/api/settings"):
             return self._send({"camera_label": "HD Webcam (5986:211b)"})
         if self.path.startswith("/api/node/status"):
@@ -91,8 +123,8 @@ def _helper(tmp, face_port):
     partners = tmp / "partners.json"
     partners.write_text(json.dumps({"reconize": {
         "name": "Reconize", "open": "http://localhost:5173",
-        "api": "http://127.0.0.1:%d" % face_port, "camera": "/recognition"}}),
-        encoding="utf-8")
+        "api": "http://127.0.0.1:%d" % face_port, "camera": "/recognition",
+        "look": _look()}}), encoding="utf-8")
     # A THROWAWAY login, not the real one: the real faces_login.json holds a
     # password and never leaves the real tree (promote.py SKIP_FILES), so this
     # whole check used to stop at its first line when run from .staging - and
@@ -145,10 +177,14 @@ def run(t):
                         "answer was %r" % got)
         t.ok(got.get("ok") and got.get("person") == "Manny",
              "the name comes back from one frame", "answer was %r" % got)
-        asked = [p for p in SEEN["paths"] if "recognition" in p]
+        asked = [p for p in SEEN["paths"] if _look()["path"] in p]
         t.ok(bool(asked) and "persist=false" in asked[-1],
              "the face app is told to keep nothing",
              "it was asked for %r" % (asked[-1] if asked else None))
+        spec_at = SEEN["paths"].index(_look()["spec"]) if _look()["spec"] in SEEN["paths"] else -1
+        t.ok(0 <= spec_at < SEEN["paths"].index(asked[-1]) if asked else False,
+             "it asks whether the face app keeps nothing before sending the frame",
+             "paths were %r" % SEEN["paths"][-6:])
         t.eq(SEEN.get("auth", ""), "Bearer tok-123",
              "it logs in to the face app first")
         t.ok(SEEN.get("bytes", 0) > len(b"\xff\xd8not-really-a-jpeg"),
@@ -181,7 +217,7 @@ def run(t):
         t.eq(json.loads(body).get("person"), "Hall",
              "another camera answers with its own people, not the first one's")
         _forgetting(t, base)
-        _their_side(t)
+        _no_promise(t, base)
         _the_button(t)
         _the_camera_logic(t)
         _face_app_off(t, base, srv)         # shuts the fake face app down
@@ -221,6 +257,41 @@ def _forgetting(t, base):
              "the name is forgotten after the time the user set")
     finally:
         SEEN["quiet"] = False
+
+
+def _no_promise(t, base):
+    """A face app that would KEEP the frame is sent no frame at all.
+
+    Asserted on what reached the fake, not on what the helper says: their
+    upload stores the frame, a history row and an attendance row, and the
+    user's words were *do not save the picture*. Two ways to lack the
+    promise - an app that describes itself without the option (their own
+    version, 2026-09-29) and one that does not describe itself at all.
+    """
+    try:
+        for promise, how in (("no", "whose description has no keep-nothing option"),
+                             ("none", "that does not describe itself")):
+            SEEN["promise"] = promise
+            before = len([p for p in SEEN["paths"] if _look()["path"] in p])
+            st, body = _post(base + "/identify", b"\xff\xd8a-face")
+            got = json.loads(body)
+            sent = len([p for p in SEEN["paths"] if _look()["path"] in p]) - before
+            t.ok(sent == 0, "no frame reaches a face app %s" % how,
+                 "%d upload(s) arrived; answer was %r" % (sent, got))
+            t.ok(got.get("ok") is False and got.get("wouldKeep") is True
+                 and "would keep" in (got.get("error") or ""),
+                 "the page is told in plain words, and told to stop looking (%s)" % promise,
+                 "answer was %r" % got)
+            t.ok("/openapi.json" not in (got.get("error") or ""),
+                 "the technical reason stays out of the plain sentence",
+                 "error was %r" % got.get("error"))
+        st, body = F.get(base + "/camera")
+        look = json.loads(body).get("look") or {}
+        t.ok(look.get("ok") is False and "would keep" in (look.get("why") or ""),
+             "the page learns it before opening any camera",
+             "camera answer said look=%r" % look)
+    finally:
+        SEEN["promise"] = "yes"
 
 
 def _face_app_off(t, base, srv):
@@ -325,6 +396,7 @@ _HARNESS = r"""
 import fs from "fs";
 const js = fs.readFileSync(%s, "utf8");
 const calls = {identify: 0, opened: [], stopped: 0};
+const mode = {keep: false};                   // the face app would keep frames
 const el = (id) => ({id, style: {}, hidden: true, textContent: "", checked: false,
   innerHTML: "", value: "", srcObject: null, videoWidth: 640, videoHeight: 480,
   classList: {toggle() {}, add() {}, remove() {}, contains: () => false},
@@ -352,7 +424,9 @@ Object.defineProperty(globalThis, "navigator", {configurable: true, writable: tr
                                  return {getTracks: () => [track]}; }}}});
 globalThis.fetch = async (u) => {
   if (u.endsWith("/api/voice/identify")) { calls.identify++;
-    return {json: async () => ({ok: true, person: "Manny"})}; }
+    return {json: async () => (mode.keep
+      ? {ok: false, wouldKeep: true, error: "the face app would keep this picture"}
+      : {ok: true, person: "Manny"})}; }
   if (u.endsWith("/api/voice/camera"))
     return {json: async () => ({ok: true, label: "HD Webcam (5986:211b)", seconds: 2})};
   return {json: async () => ({ok: true, config: {tts: {}, stt: {}, llm: {}}, faqs: [],
@@ -372,8 +446,18 @@ const second = calls.identify;
 els.autoFace.checked = false;
 await app.toggleAutoFace();
 await new Promise(r => setTimeout(r, 2600));
-console.log(JSON.stringify({opened: calls.opened[0], first, second,
-                            after_off: calls.identify, stopped: calls.stopped}));
+const after_off = calls.identify, stopped = calls.stopped;
+mode.keep = true;                             // now every frame would be stored
+els.autoFace.checked = true;
+await app.toggleAutoFace();
+const refused_at = calls.identify;
+await new Promise(r => setTimeout(r, 2600));
+const opened_before = calls.opened.length;
+await app.whoAmI();
+console.log(JSON.stringify({opened: calls.opened[0], first, second, after_off, stopped,
+  refused_at, after_refused: calls.identify, box_after: els.autoFace.checked,
+  stopped_after: calls.stopped, opened_by_button: calls.opened.length - opened_before,
+  line: els.camSay.textContent}));
 process.exit(0);
 """
 
@@ -409,26 +493,17 @@ def _the_camera_logic(t):
     t.eq(got["after_off"], got["second"], "switching it off stops the looking")
     t.ok(got["stopped"] >= 1, "switching it off releases the camera",
          "no track was stopped")
-
-
-def _their_side(t):
-    """Reconize is another program, and persist=false only works while THEIR
-    code still reads it. An update of theirs that drops the flag would make
-    the Voice page quietly fill the disk again, so the one line that matters
-    is checked where it lives - and skipped when the folder is not here."""
-    import re
-    sys.path.insert(0, str(F.CODE / "tools"))
-    import registry
-    got = registry.load(F.CODE / "config" / "partners.json")
-    folder = str((got.get("reconize") or {}).get("folder") or "")
-    f = Path(folder) / "backend" / "app" / "api" / "recognition.py" if folder else None
-    if not f or not f.is_file():
-        return                                          # their code is not on this PC
-    src = f.read_text(encoding="utf-8", errors="replace")
-    t.ok(re.search(r"persist:\s*bool\s*=\s*True", src) is not None
-         and re.search(r"if persist:\s*\n\s*background_tasks\.add_task", src) is not None,
-         "the face app still honours persist=false",
-         "their recognition.py no longer guards the persist background task")
+    # A face app that would keep the frame: one refused look, then nothing.
+    t.ok(got["refused_at"] == got["after_off"] + 1 and got["after_refused"] == got["refused_at"],
+         "a refused look stops Check by itself",
+         "looks went %r, then %r after waiting" % (got["refused_at"], got["after_refused"]))
+    t.ok(got["box_after"] is False and got["stopped_after"] > got["stopped"],
+         "and switches it off and lets the camera go",
+         "switch %r, tracks stopped %r then %r" % (got["box_after"], got["stopped"],
+                                                   got["stopped_after"]))
+    t.ok(got["opened_by_button"] == 0 and "would keep" in got["line"],
+         "Check who I am then says why without opening the camera",
+         "camera opened %r time(s); line said %r" % (got["opened_by_button"], got["line"]))
 
 
 def _post(url, data):

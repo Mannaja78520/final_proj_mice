@@ -36,16 +36,19 @@ model), speech out.
 
 - nothing
 
-## Checks that test it (17)
+## Checks that test it (20)
 
 - `check_build_web`
 - `check_faces_loopback`
+- `check_faces_presence`
 - `check_login_anywhere`
 - `check_no_console_window`
+- `check_speak`
 - `check_translate`
 - `check_voice`
 - `check_voice_answers`
 - `check_voice_bench`
+- `check_voice_guard`
 - `check_voice_identify`
 - `check_voice_move`
 - `check_voice_multi`
@@ -56,4 +59,4 @@ model), speech out.
 - `check_voice_stt`
 - `check_voice_tts`
 
-Run them: `python qc/run_qc.py --no-build check_build_web check_faces_loopback check_login_anywhere check_no_console_window check_translate check_voice check_voice_answers check_voice_bench check_voice_identify check_voice_move check_voice_multi check_voice_one_voice check_voice_reconize check_voice_settings check_voice_source check_voice_stt check_voice_tts`
+Run them: `python qc/run_qc.py --no-build check_build_web check_faces_loopback check_faces_presence check_login_anywhere check_no_console_window check_speak check_translate check_voice check_voice_answers check_voice_bench check_voice_guard check_voice_identify check_voice_move check_voice_multi check_voice_one_voice check_voice_reconize check_voice_settings check_voice_source check_voice_stt check_voice_tts`

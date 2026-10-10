@@ -17,16 +17,54 @@
   login, and a partner entry holds addresses only.
 -->
 
+<!-- A10: THIS PAGE WEARS RECONIZE'S OWN LOOK, so our page and their app in
+     the frame below read as one product. Colours are the "indigo" theme (named Reconize) in
+     shared/web/themes.css; the shape below is theirs (Face_Regonize/frontend,
+     components/ui.tsx and Layout.tsx: 12px cards, 8px controls, a bold title
+     with a grey line under it, a 72rem column). Not saved as the user's
+     theme: every other page keeps the one they picked. -->
+<script>document.documentElement.setAttribute("data-theme", "indigo");</script>
+<style>
+body{--r-sm:8px;--r-md:12px;--r-lg:12px;
+     max-width:72rem;margin:0 auto;padding:var(--sp-6) var(--sp-4)}
+.head{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;
+      background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
+      padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-6)}
+.brand{display:flex;flex-direction:column;line-height:1.3;margin-right:auto}
+.brand h1{font-size:18px;font-weight:700;color:var(--acc);letter-spacing:0}
+.card{padding:20px;margin-bottom:var(--sp-6)}
+.card h2{font-size:18px;font-weight:700;margin-bottom:var(--sp-1)}
+.card h2+p.mini{margin-bottom:var(--sp-4)}
+.card h3{font-size:15px;font-weight:650;margin:var(--sp-6) 0 var(--sp-2);
+         padding-top:var(--sp-4);border-top:1px solid var(--line)}
+button{font-weight:500;padding:var(--sp-2) var(--sp-4)}
+button.secondary{background:var(--btn);color:var(--txt)}
+input,select{background:var(--card)}
+/* Their Badge: a soft pill in the state colour, with the words inside. */
+.statline.ok,.statline.warn,.statline.err{display:inline-block;font-weight:500;
+  border-radius:var(--r-pill);padding:var(--sp-1) var(--sp-3)}
+.statline.ok{color:var(--ok);background:var(--ok-soft)}
+.statline.warn{color:var(--warn);background:var(--warn-soft)}
+.statline.err{color:var(--err);background:var(--err-soft)}
+p.warn{color:var(--warn)}
+#rWords>p.mini{margin-top:var(--sp-3);font-weight:600;color:var(--txt)}
+#rCams>.row,#rMiles>.row,#rPeople>.row{padding:var(--sp-2) 0;
+  border-bottom:1px solid var(--line)}
+@media (max-width:430px){body{padding:var(--sp-3)}}
+</style>
+
 <!-- The same head every app page has (Cameras, Voice): Hub button, title,
      status, technical switch. Asked 2026-09-17: *why UI it not the same as
-     other? make it like other.* -->
+     other? make it like other.* Laid out as Reconize's own brand block. -->
 <div class="head">
-  <button class="secondary" onclick="location.href='/'">🏠 Hub</button>
-  <h1>👁 Reconize</h1>
-  <span class="mini">the face app that knows who is here</span>
-  <label class="mini" style="display:inline-flex;gap:var(--sp-2);align-items:center;margin-left:auto">
+  <div class="brand">
+    <h1>👁 Reconize</h1>
+    <span class="mini">the face app that knows who is here</span>
+  </div>
+  <label class="mini" style="display:inline-flex;gap:var(--sp-2);align-items:center">
     <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
     Show technical details</label>
+  <button class="secondary" onclick="location.href='/'">🏠 Hub</button>
 </div>
 <!-- No hub login here (user 2026-09-17): Reconize has its own login, and
      opening it from this PC needs none. The hub still asks a caller on the
@@ -42,6 +80,8 @@
     <span class="statline" id="stat" role="status" aria-live="polite">checking…</span>
   </div>
   <div class="statline tech mini" id="where"></div>
+  <!-- Which version of theirs is installed (A9). It only tells. -->
+  <p class="mini" id="verLine"></p>
   <!-- Reconize itself, inside this page, once it answers. -->
   <div id="frameCard" style="margin-top:var(--sp-3)" hidden>
     <iframe id="reconFrame" title="Reconize" src="about:blank"
@@ -54,9 +94,64 @@
   <div class="row" style="align-items:baseline">
     <span class="statline" id="wStat" role="status" aria-live="polite">checking…</span>
   </div>
+  <p class="mini" id="wContract" hidden></p>
+  <!-- One press starts both Reconize and the rig's watcher (A11-1). -->
+  <div class="row" id="wStartRow" hidden>
+    <button class="primary" id="wStart" onclick="startBoth()">Start following Reconize</button>
+  </div>
   <div id="wSrcs" class="tech" style="margin-top:var(--sp-4); display:none">
     <p class="mini">What each source can report:</p>
     <ul class="mini" id="wSrcList" style="list-style:inside; margin-top:var(--sp-2)"></ul>
+  </div>
+</div>
+
+
+<!-- What the rig says (A8-1). Every word the greeter uses is here, saved by
+     the watcher (the one writer of apps/faces/rules.json) through the hub,
+     where the login is. The watcher reads the file on the next arrival, so a
+     save needs no restart. Keys starting with _ are the file's own notes: the
+     page sends them back untouched so they survive the save. -->
+<div class="card" id="rulesCard">
+  <h2>What the rig says</h2>
+  <p class="mini">When the face app sees somebody at a camera you set up, the rig says
+    hello (or goodbye). Nothing is said until you turn it on.</p>
+  <div class="row"><span class="statline" id="rStat" role="status" aria-live="polite">loading…</span></div>
+  <div id="rBody" hidden>
+    <div class="row"><label><input type="checkbox" id="rGreet"> Greet people the face app sees</label></div>
+    <div class="row">
+      <label>Polite word before a name <input id="rTitle" size="8"></label>
+      <label>Speaker <select id="rTo"></select></label>
+      <label>If the rig is already talking or playing
+        <select id="rBusy"><option value="skip">skip this hello</option>
+                           <option value="queue">wait its turn</option></select></label>
+    </div>
+    <div class="row">
+      <label>Greet the same person at most once every <input id="rCool" type="number" min="0" style="width:5em"> minutes</label>
+      <label>Somebody it does not know: once per camera every <input id="rStrange" type="number" min="0" style="width:5em"> seconds</label>
+    </div>
+    <p class="mini">In the words, <b>{title}</b> becomes the polite word and <b>{name}</b> the
+      person's name. Somebody it does not know has no name, so only {title} works there.</p>
+    <div id="rWords"></div>
+    <h3>Cameras</h3>
+    <div id="rCams"></div>
+    <div class="row">
+      <button onclick="addCam()">Add a camera by name</button>
+      <label>A camera nobody set up
+        <select id="rUnlisted"></select></label>
+    </div>
+    <h3>Celebrations</h3>
+    <p class="mini">Said once a day when this many people have come today
+      (<span id="rCount">today's count not known yet</span>).</p>
+    <div id="rMiles"></div>
+    <div class="row"><button onclick="addMile()">Add a celebration</button></div>
+    <h3>Titles for particular people</h3>
+    <div id="rPeople"></div>
+    <div class="row"><select id="rPersonPick"></select>
+      <button onclick="addPerson()">Give this person a title</button></div>
+    <div class="row" style="margin-top:var(--sp-4)">
+      <button class="primary" onclick="saveRules()">Save</button>
+      <button onclick="loadRules()">Undo my changes</button>
+    </div>
   </div>
 </div>
 
@@ -95,6 +190,46 @@ async function load(){
   ensureRunning().catch(err =>
     say(...(Array.isArray(err) ? err : ["Reconize could not be started.", String(err)])));
   pollWatcher();
+  showVersion();
+}
+
+async function startBoth(){
+  const btn = document.getElementById("wStart");
+  const st = document.getElementById("wStat");
+  btn.disabled = true;
+  st.textContent = "starting Reconize and the rig's watcher…";
+  try{
+    const got = await fetch("/api/faces/start", {method: "POST", cache: "no-store"}).then(r => r.json());
+    if (got.need_login) st.textContent = "Starting it needs the PC that runs Mice, or signing in on the hub page first.";
+    else if (got.watcherError) st.textContent = got.watcherError;
+    else if (got.reconize && !got.reconize.ok)
+      st.textContent = "The rig's watcher is running, but Reconize did not start: " + (got.reconize.error || "no reason given");
+    else st.textContent = "Started. Reconize can take about fifteen seconds before it sees anybody.";
+    if (got.detail) st.appendChild(el("span", {className: "tech mini", text: " " + got.detail}));
+  }catch(e){
+    st.textContent = "cannot reach the hub — is it still running?";
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+async function showVersion(){
+  const line = document.getElementById("verLine");
+  let v;
+  try{
+    v = await fetch("/api/partners/version?id=" + PARTNER, {cache: "no-store"}).then(r => r.json());
+  }catch(e){ return; }
+  if (!v.ok) return;
+  line.textContent = v.words;
+  line.className = "mini " + (v.same ? "" : "warn");
+  const t = [v.commit ? "commit " + v.commit.slice(0, 10) : v.why,
+             v.branch ? "branch " + v.branch : "detached",
+             v.version ? "version " + v.version : "",
+             "tested with " + (v.tested.join(", ") || "none written down"),
+             v.spec.checked ? (v.spec.missing.length ? "not listed: " + v.spec.missing.join(", ")
+                                                     : "every address still listed")
+                            : "their address list could not be read"];
+  line.appendChild(el("span", {className: "tech mini", text: " " + t.filter(Boolean).join(" · ")}));
 }
 
 function say(msg, tech){
@@ -195,6 +330,19 @@ async function pollWatcher() {
     
     el.textContent = state.watching ? "Yes - the rig sees who arrives." : "Not yet - the rig is not seeing anybody arrive.";
     el.className = state.watching ? "statline ok" : "statline warn";
+    document.getElementById("wStartRow").hidden = true;
+
+    // What their payloads really carried (A9-2). Only tells; nothing turns off.
+    const ct = document.getElementById("wContract");
+    const bad = Object.entries(state.contract || {}).filter(([, c]) => (c.missing || []).length);
+    ct.hidden = !bad.length;
+    if (bad.length){
+      ct.textContent = "Reconize changed how it reports people, so some details the rig " +
+                       "reads are missing. Greetings may stop until config/partners.json is updated.";
+      ct.className = "mini warn";
+      ct.appendChild(document.createElement("span")).className = "tech mini";
+      ct.lastChild.textContent = " " + bad.map(([k, c]) => k + ": " + c.missing.join(", ")).join(" · ");
+    }
 
     if (state.sources && state.sources.length > 0) {
       srcs.style.display = "block";
@@ -212,10 +360,209 @@ async function pollWatcher() {
   } catch (e) {
     el.textContent = "The face helper is not running on this PC, so the rig cannot follow Reconize yet.";
     el.className = "statline err";
+    document.getElementById("wStartRow").hidden = false;
     srcs.style.display = "none";
   }
   setTimeout(pollWatcher, 3000);
 }
 
 load();
+
+// ---- what the rig says (A8-1) -------------------------------------------
+const ROLE_WORDS = {entry: "says hello", exit: "says goodbye", watch: "only counts"};
+const KIND_WORDS = {known: "first time today", already: "already came today",
+                    unknown: "somebody it does not know"};
+const WHEN_WORDS = {entry: "When they arrive", exit: "When they leave"};
+let R = null, lists = {speakers: [], moves: [], robots: []}, seenPeople = [];
+
+function el(tag, attrs, kids){
+  const e = document.createElement(tag);
+  for (const k in (attrs || {})){
+    if (k === "text") e.textContent = attrs[k];
+    else if (k === "on") for (const ev in attrs.on) e.addEventListener(ev, attrs.on[ev]);
+    else e[k] = attrs[k];
+  }
+  (kids || []).forEach(c => c && e.appendChild(c));
+  return e;
+}
+function rSay(msg, cls, tech){
+  const s = document.getElementById("rStat");
+  s.textContent = msg;
+  s.className = "statline " + (cls || "");
+  if (tech) s.appendChild(el("span", {className: "tech mini", text: " " + tech}));
+}
+// A picker that writes straight back into the rules object it edits.
+function pick(options, value, set, blank){
+  const sel = el("select", {on: {change: () => set(sel.value)}});
+  if (blank !== undefined) sel.appendChild(el("option", {value: "", text: blank}));
+  options.forEach(([v, words]) => sel.appendChild(el("option", {value: v, text: words})));
+  if (value && !options.some(([v]) => v === value))
+    sel.appendChild(el("option", {value: value, text: value + " (not found now)"}));
+  sel.value = value || "";
+  return sel;
+}
+function textBox(value, set, size){
+  const i = el("input", {value: value || "", size: size || 40});
+  i.addEventListener("input", () => set(i.value));
+  return i;
+}
+function moveAndRobot(obj){
+  return [el("label", {text: "Move "}, [pick(lists.moves, obj.move, v => obj.move = v, "none")]),
+          el("label", {text: " on "}, [pick(lists.robots, obj.module, v => obj.module = v, "no robot")])];
+}
+
+async function loadLists(){
+  const get = u => fetch(u, {cache: "no-store"}).then(r => r.json()).catch(() => ({}));
+  const [sp, mv, md] = await Promise.all([get("/api/speakers"),
+      get("/api/list?kind=sequences"), get("/api/modules")]);
+  lists.speakers = (sp.speakers || []).map(s => [s.id, s.name + (s.ready ? "" : " (not ready)")]);
+  lists.moves = (mv.files || []).map(f => [f, f.replace(/\.ya?ml$/i, "")]);
+  lists.robots = [...new Set((md.modules || []).map(m => m.name).filter(Boolean))].map(n => [n, n]);
+}
+
+async function loadRules(){
+  rSay("loading…");
+  let got;
+  try{
+    await loadLists();
+    got = await fetch("/api/faces/rules", {cache: "no-store"}).then(r => r.json());
+  }catch(e){
+    return rSay("cannot reach the hub — is it still running?", "err", String(e.message || e));
+  }
+  if (!got.ok) return rSay(got.error || "the greeting words could not be read.", "err", got.detail);
+  R = got.rules || {};
+  seenPeople = got.peopleSeen || [];
+  document.getElementById("rCount").textContent = got.count && got.count.today !== undefined
+      ? "today so far: " + got.count.today : "today's count not known yet";
+  drawRules((got.camerasSeen || []));
+  rSay(got.error ? "The saved words have a problem — fix it and save: " + got.error
+                 : "These are the words the rig uses now.", got.error ? "warn" : "ok");
+}
+
+function drawRules(camsSeen){
+  document.getElementById("rBody").hidden = false;
+  const bind = (id, key, num) => {
+    const i = document.getElementById(id);
+    if (i.type === "checkbox"){ i.checked = !!R[key]; i.onchange = () => R[key] = i.checked; }
+    else { i.value = R[key] === undefined ? "" : R[key];
+           i.oninput = i.onchange = () => R[key] = num ? Number(i.value) : i.value; }
+  };
+  bind("rGreet", "greet"); bind("rTitle", "title"); bind("rBusy", "whenBusy");
+  bind("rCool", "cooldownMinutes", true); bind("rStrange", "strangerCooldownSeconds", true);
+  const to = document.getElementById("rTo");
+  to.replaceWith(Object.assign(pick(lists.speakers, R.to, v => R.to = v, "the usual speaker"), {id: "rTo"}));
+  const un = document.getElementById("rUnlisted");
+  un.replaceWith(Object.assign(pick(Object.entries(ROLE_WORDS), R.unlistedCamera || "watch",
+                                    v => R.unlistedCamera = v), {id: "rUnlisted"}));
+
+  // The common words: arrive / leave x the three kinds of person.
+  R.wording = R.wording || {};
+  const words = document.getElementById("rWords");
+  words.innerHTML = "";
+  for (const when of ["entry", "exit"]){
+    const w = R.wording[when] = R.wording[when] || {};
+    words.appendChild(el("p", {className: "mini", text: WHEN_WORDS[when]}));
+    for (const kind in KIND_WORDS)
+      words.appendChild(el("div", {className: "row"}, [el("label", {text: KIND_WORDS[kind] + " "},
+          [textBox(w[kind], v => w[kind] = v)])]));
+  }
+
+  // Cameras: the ones set up, plus any the face app has reported - one click.
+  R.cameras = R.cameras || {};
+  const cams = document.getElementById("rCams");
+  cams.innerHTML = "";
+  const names = [...new Set([...Object.keys(R.cameras), ...camsSeen])].sort();
+  if (!names.length) cams.appendChild(el("p", {className: "mini",
+      text: "No camera has reported anybody yet. When one does, it shows here."}));
+  names.forEach(name => {
+    const set = R.cameras[name];
+    const c = set || {role: R.unlistedCamera || "watch"};
+    const ensure = () => (R.cameras[name] = c);
+    const row = el("div", {className: "row"}, [
+      el("b", {text: name + " "}),
+      pick(Object.entries(ROLE_WORDS), c.role || "watch", v => { ensure().role = v; }),
+      el("label", {text: " Speaker "}, [pick(lists.speakers, c.to, v => ensure().to = v, "the usual one")]),
+      ...moveAndRobot(new Proxy(c, {set: (o, k, v) => { o[k] = v; ensure(); return true; }})),
+      set ? null : el("span", {className: "mini", text: " (new: not set up yet)"}),
+    ]);
+    const own = c.wording || {};
+    const more = el("details", {}, [el("summary", {className: "mini",
+        text: "Its own words (empty uses the words above)"})]);
+    for (const kind in KIND_WORDS)
+      more.appendChild(el("div", {className: "row"}, [el("label", {text: KIND_WORDS[kind] + " "},
+          [textBox(own[kind], v => { ensure().wording = c.wording = Object.assign(c.wording || {}, {[kind]: v});
+                                     if (!v) delete c.wording[kind]; })])]));
+    row.appendChild(more);
+    cams.appendChild(row);
+  });
+
+  // Celebrations.
+  R.milestones = R.milestones || [];
+  const miles = document.getElementById("rMiles");
+  miles.innerHTML = "";
+  R.milestones.forEach((m, i) => {
+    const at = el("input", {type: "number", min: 1, value: m.at, style: "width:5em"});
+    at.oninput = () => m.at = Number(at.value);
+    miles.appendChild(el("div", {className: "row"}, [
+      el("label", {text: "At "}, [at]), el("span", {text: " people: "}),
+      textBox(m.text, v => m.text = v, 36), ...moveAndRobot(m),
+      el("button", {text: "Remove", on: {click: () => { R.milestones.splice(i, 1); drawRules(camsSeen); }}}),
+    ]));
+  });
+
+  // Titles for particular people, shown by name; their code is technical.
+  R.people = R.people || {};
+  const ppl = document.getElementById("rPeople");
+  ppl.innerHTML = "";
+  const nameOf = id => (seenPeople.find(p => p.id === id) || {}).who;
+  Object.keys(R.people).forEach(id => {
+    const p = R.people[id];
+    ppl.appendChild(el("div", {className: "row"}, [
+      el("span", {text: (nameOf(id) || "a person seen before") + " "}),
+      el("span", {className: "tech mini", text: id + " "}),
+      textBox(p.title, v => p.title = v, 12),
+      el("button", {text: "Remove", on: {click: () => { delete R.people[id]; drawRules(camsSeen); }}}),
+    ]));
+  });
+  const pp = document.getElementById("rPersonPick");
+  pp.innerHTML = "";
+  const free = seenPeople.filter(p => !(p.id in R.people));
+  pp.appendChild(el("option", {value: "", text: free.length ? "somebody seen today…"
+                                                  : "nobody it knows has been seen yet"}));
+  free.forEach(p => pp.appendChild(el("option", {value: p.id, text: p.who || p.id})));
+  window._camsSeen = camsSeen;
+}
+function addCam(){
+  const name = (prompt("The camera's name, exactly as the face app calls it") || "").trim();
+  if (!name || !R) return;
+  R.cameras[name] = R.cameras[name] || {role: "entry"};
+  drawRules(window._camsSeen || []);
+}
+function addMile(){
+  if (!R) return;
+  R.milestones.push({at: 100, text: "", move: "", module: ""});
+  drawRules(window._camsSeen || []);
+}
+function addPerson(){
+  const id = document.getElementById("rPersonPick").value;
+  if (!id || !R) return;
+  R.people[id] = {title: R.title || ""};
+  drawRules(window._camsSeen || []);
+}
+async function saveRules(){
+  if (!R) return;
+  rSay("saving…");
+  let got;
+  try{
+    got = await fetch("/api/faces/rules", {method: "POST", headers: {"Content-Type": "application/json"},
+                      body: JSON.stringify({rules: R})}).then(r => r.json());
+  }catch(e){
+    return rSay("cannot reach the hub — is it still running?", "err", String(e.message || e));
+  }
+  if (got.need_login) return rSay("Sign in on the hub page first: changing what the rig says to guests needs it.", "warn");
+  if (!got.ok) return rSay("Not saved: " + (got.error || "the face helper refused it."), "err", got.detail);
+  R = got.rules || R;
+  rSay("Saved. The next person the rig sees gets these words.", "ok");
+}
+loadRules();
 </script>
