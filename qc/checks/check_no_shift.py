@@ -33,7 +33,7 @@ PAGE = """
 <style>html,body{margin:0}#f{width:900px;height:800px;border:0}</style>
 <iframe id="f" src="/"></iframe>
 <script>
-function done(s){ qcMark("SHIFT " + s); qcMark("done"); }
+async function done(s){ await qcMark("SHIFT " + s); qcMark("done"); }   // report lands before "done"
 window.addEventListener("load", async function(){
   var out = [];
   try{

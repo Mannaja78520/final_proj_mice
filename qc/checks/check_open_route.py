@@ -29,7 +29,7 @@ PAGE = """
 <style>html,body{margin:0}#f{width:900px;height:700px;border:0}</style>
 <iframe id="f" src="/"></iframe>
 <script>
-function done(s){ qcMark("ROUTE " + s); qcMark("done"); }
+async function done(s){ await qcMark("ROUTE " + s); qcMark("done"); }   // report lands before "done"
 window.addEventListener("load", async function(){
   var out = [];
   var fr = document.getElementById("f");

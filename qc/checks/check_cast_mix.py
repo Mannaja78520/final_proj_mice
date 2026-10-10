@@ -34,7 +34,7 @@ DRIVER = """
 <iframe id="direct" src="%s"></iframe>
 <iframe id="talk" src="%s"></iframe>
 <script>
-function done(s){ qcMark("CM " + s); qcMark("done"); }
+async function done(s){ await qcMark("CM " + s); qcMark("done"); }   // report lands before "done"
 function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
 // a made-up source: a sine at `amp` of full scale, as a MediaStream
 function tone(w, freq, amp){

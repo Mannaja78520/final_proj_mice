@@ -40,7 +40,7 @@ PAGE = """
 <iframe id="f" src="/mod?dev=usb%3ACOM99"></iframe>
 <script>
 var AMPS = __AMPS__, PINS = __PINS__, VALID = __VALID__, CUR = "__CUR__";
-function done(s){ qcMark("AMPWIRE " + s); qcMark("done"); }
+async function done(s){ await qcMark("AMPWIRE " + s); qcMark("done"); }   // report lands before "done"
 qcWaitFor(function(){
   var fr = document.getElementById("f");
   return fr && fr.contentWindow && fr.contentDocument
