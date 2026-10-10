@@ -21,13 +21,12 @@ later steps land - the ability to make the rig move and speak. Anything that
 could reach this port could do both without a password. Remote callers come
 through the hub, where the login gate already is.
 
-WHAT IT DOES TODAY
+WHAT IT DOES
 
-Nothing moves. It answers /health and /state and says plainly that it is not
-watching anybody yet. Logging in, reading their history and the live feed are
-the next steps (system A3-2 onward in docs/system_integral.html). Shipping the
-skeleton first means there is somewhere honest to look before there is anything
-to look at.
+It logs in to the face app, reads its live feed and its history, and answers
+/health and /state. Each new arrival goes to rules.py, which decides whether
+the rig greets them and with which words (system A5). Greeting stays off until
+somebody turns it on in rules.json from the Reconize screen.
 """
 import argparse
 import base64
@@ -47,6 +46,7 @@ from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wsclient                                          # noqa: E402
+import rules                                             # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 # The tree this copy belongs to. A working copy runs its own copy of this file
@@ -141,6 +141,16 @@ class State:
         self.polls = 0
         self.live = False
         self.live_error = ""
+        # Set by main(): who to greet and with which words (rules.py, A5).
+        self.greeter = None
+        self.upgraded = None
+
+    def greet(self, event):
+        """Hand one new arrival to the greeter, off this thread: the hub call
+        can take seconds and the live feed must keep reading meanwhile."""
+        if self.greeter is not None and event is not None:
+            threading.Thread(target=self.greeter.consider, args=(dict(event),),
+                             daemon=True).start()
 
     def partner(self):
         entry = (self.partners or {}).get(self.partner_id) or {}
@@ -307,6 +317,9 @@ class State:
                 old["event"]["camera"] = event.get("camera")
                 old["event"]["hasCamera"] = True
                 old["event"]["source"] = event.get("source")
+                # The first copy was only counted (no camera), so this one is
+                # the arrival a greeting can be placed at. _note hands it on.
+                self.upgraded = old["event"]
             return None, True
 
         self.recent[key] = {"when": now, "event": event}
@@ -351,11 +364,14 @@ class State:
             return self._note(event)
 
     def _note(self, event):
-        """One arrival from any source, through the same door as the poll."""
+        """One arrival from any source, through the same door as the poll.
+        Returns the event to consider greeting, or None."""
+        self.upgraded = None
         kept, dup = self.accept(event)
         if kept is not None and not dup:
             self.people = ([kept] + self.people)[:200]
-        return kept
+            return kept
+        return self.upgraded
 
     # ---- reading their history ---------------------------------------
 
@@ -533,6 +549,9 @@ class State:
             "live": self.live,
             "liveError": self.live_error,
             "since": self.checkpoint.isoformat() if self.checkpoint else "",
+            # What the rig said, or why it kept quiet, newest first (A5).
+            "greetings": list(self.greeter.recent) if self.greeter else [],
+            "rulesError": self.greeter.error if self.greeter else "",
             "pollError": self.poll_error,
             "error": self.partners_error or self.last_error or "",
         }
@@ -595,6 +614,7 @@ def main(argv=None):
         return 2
 
     state = State(a.partner)
+    state.greeter = rules.Greeter(hub=(cfg or {}).get("hub") or "http://127.0.0.1:8642")
     Handler.state = state
     if state.partners_error:
         print("[faces] %s" % state.partners_error)
@@ -613,7 +633,9 @@ def main(argv=None):
     def watch():
         while True:
             try:
-                state.poll_once()
+                fresh, _why = state.poll_once()
+                for event in fresh:
+                    state.greet(event)
                 state.watching = not state.poll_error
             except Exception as e:                           # noqa: BLE001
                 state.poll_error = "the poll stopped with %s" % e
@@ -651,7 +673,7 @@ def main(argv=None):
                     if time.monotonic() - connected_at >= 30:
                         wait = 1.0
                     if msg:
-                        state.note(state.from_ws(src, msg))
+                        state.greet(state.note(state.from_ws(src, msg)))
             except wsclient.FeedClosed as e:
                 # THEIR REFUSAL IS NOT A NETWORK PROBLEM. A token the feed
                 # will not take comes back as close 4401, or as a 403 on the
@@ -678,8 +700,8 @@ def main(argv=None):
 
     httpd = ThreadingHTTPServer((host, port), Handler)
     print("[faces] answering on http://%s:%d  (/health, /state)" % (host, port))
-    print("[faces] reading their history every %ss - nothing moves yet"
-          % a.interval)
+    print("[faces] reading their history every %ss; greeting is %s"
+          % (a.interval, "on" if (rules.load()[0] or {}).get("greet") else "off"))
     print("[faces] Ctrl+C to stop")
     try:
         httpd.serve_forever()

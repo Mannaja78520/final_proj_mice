@@ -270,7 +270,9 @@ def run(t):
     again = state.note(state.from_ws(src, {
         "node_id": "door-in", "participant_id": "P9", "name": "Bea",
         "checkin": "already", "at": "2026-09-10T10:00:01"}))
-    t.eq(again, None,
-         "the same person a second later is not a second arrival")
+    t.ok(again is kept and len(state.people) == 1,
+         "the same person a second later is not a second arrival",
+         "the copy naming a real door improves the first one in place and is "
+         "handed on only so the greeter can place it (A5)")
     t.eq(kept["camera"], "door-in",
          "and the copy that knew a real door improved the one we kept")

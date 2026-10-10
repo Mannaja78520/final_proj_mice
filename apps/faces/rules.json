@@ -1,0 +1,34 @@
+{
+  "_why": "What the rig says when the face app sees somebody (system A5). Every word here is edited on the Reconize screen and saved by the watcher, so this is plain JSON: a comment would not survive the save. The watcher reads it again on every arrival, so a change needs no restart.",
+  "greet": false,
+  "_greet": "Off until somebody turns it on from the screen. Nothing moved or spoke before this file existed, so turning that on is a choice, not an update.",
+  "cooldownMinutes": 30,
+  "_cooldownMinutes": "One person is greeted at most once in this long, however many cameras see them.",
+  "strangerCooldownSeconds": 60,
+  "_strangerCooldownSeconds": "A stranger has no identity, so the wait is per camera instead: one hello per camera in this long.",
+  "whenBusy": "skip",
+  "_whenBusy": "skip: if the rig is already talking or playing a show, this greeting is dropped. queue: it waits its turn. The hub decides, in one step, so two greetings can never both think the rig is free.",
+  "to": "",
+  "_to": "Which speaker says it. Empty means the default speaker picked on the Voice screen.",
+  "title": "คุณ",
+  "_title": "The polite word used before a name when a person has no title of their own, and the ONLY word a stranger is called - never a guessed name (user 2026-09-18: use the common word, like Mr. or Ms.).",
+  "people": {},
+  "_people": "Titles for particular people, by their participant id: {\"P001\": {\"title\": \"อาจารย์\"}}.",
+  "wording": {
+    "entry": {
+      "known": "สวัสดีครับ {title}{name}",
+      "already": "ยินดีต้อนรับกลับครับ {title}{name}",
+      "unknown": "สวัสดีครับ {title}"
+    },
+    "exit": {
+      "known": "ขอบคุณที่มานะครับ {title}{name}",
+      "already": "ขอบคุณที่มานะครับ {title}{name}",
+      "unknown": "ขอบคุณที่มานะครับ"
+    }
+  },
+  "_wording": "known: first hello today. already: greeted earlier today. unknown: the face app did not recognise them, so {name} is never filled in. {title} and {name} are the only blanks.",
+  "cameras": {},
+  "_cameras": "Each camera of the face app, by its id: {\"door-1\": {\"role\": \"entry\", \"wording\": {\"known\": \"...\"}, \"move\": \"wave\", \"module\": \"nong\", \"to\": \"\"}}. role is entry (hello), exit (goodbye) or watch (count only).",
+  "unlistedCamera": "watch",
+  "_unlistedCamera": "What a camera nobody has set up does. watch means it only counts, so a new camera never starts talking on its own."
+}

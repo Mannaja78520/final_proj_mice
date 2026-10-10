@@ -10,5 +10,10 @@
   // login for an outside app and can drive the robot through the hub, so
   // anything that could reach its port could move the rig without a password.
   // Remote callers come through the hub, where the login gate is.
-  "service": "http://127.0.0.1:8769"
+  "service": "http://127.0.0.1:8769",
+
+  // Where the watcher asks the rig to speak (POST /api/speak). A program on
+  // this PC may ask with no login (main_python/hub_auth.py LOCAL_OK), and only
+  // that, so the hub must be on this PC too.
+  "hub": "http://127.0.0.1:8642"
 }
