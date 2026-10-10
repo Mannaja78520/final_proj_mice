@@ -75,6 +75,7 @@ class CamRelay:
         with self.cond:
             self.viewers += 1
             self.error = ""
+            self.cond.notify_all()        # wake a puller holding on for a reload
             if self.thread is None or not self.thread.is_alive():
                 self.thread = threading.Thread(target=self._pull, daemon=True)
                 self.thread.start()
@@ -135,10 +136,20 @@ class CamRelay:
                     r.read().decode(errors="replace")[:150] or
                     ("the camera answered %d" % r.status))
             buf = b""
+            idle_since = None
             while True:
+                # THE RELOAD GRACE HOLDS THE BOARD, not just the thread. This
+                # returned the moment the last viewer left, so _pull's wait
+                # below held a closed connection and every reload reconnected;
+                # under a loaded QC gate a viewer joining a beat late did too
+                # (check_cam_viewers read "opened 2", 2026-10-10).
                 with self.cond:
-                    if not self.viewers:
-                        return                        # nobody left; free the board
+                    if self.viewers:
+                        idle_since = None
+                    elif idle_since is None:
+                        idle_since = time.time()
+                    elif time.time() - idle_since > IDLE_CLOSE:
+                        return                        # nobody came back; free the board
                 # READ1, NOT READ. `read(n)` waits until it has all n bytes,
                 # so frames arrived in batches and every viewer saw the live
                 # view lurch: measured 1.68 s per frame against a fake sending
