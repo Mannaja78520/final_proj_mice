@@ -57,13 +57,33 @@ qcWaitFor(function(){
       && fr.contentDocument.readyState === "complete"
       && fr.contentDocument.body && fr.contentDocument.body.children.length;
 }, 8000).then(function(){
+// ...and for the list to BE there. A fixed 6 s was shorter than a cold hub's
+// first answer (~4-6 s measured 2026-10-10), so alone this broke the network
+// before anything was found: no list to keep, nothing marked stale. In a full
+// gate a warm hub answered in time, which is why it only failed alone.
+var fd = function(){ return document.getElementById('f').contentWindow.document; };
+return qcWaitFor(function(){
+  return fd().querySelectorAll('#mods .mod').length > 0;
+}, 20000);
+}).then(function(){
 setTimeout(function(){
   try{
     var w = document.getElementById('f').contentWindow;
     var d = w.document;
     var out = [];
     // it found something first, so there IS a last-good list to preserve
-    out.push("rowsbefore=" + d.querySelectorAll('#mods .row, #mods > div').length);
+    out.push("rowsbefore=" + d.querySelectorAll('#mods .mod').length);
+
+    // A SLOW SCAN STILL IN FLIGHT when the network drops: its answer lands
+    // 1.5 s later, after the failure below. It used to repaint the list over
+    // the failure banner, which is how this check went red alone (2026-10-10).
+    var real = w.fetch;
+    w.fetch = function(u){
+      if (String(u).indexOf('/api/modules') !== 0) return real.apply(w, arguments);
+      return new Promise(function(ok){ setTimeout(function(){
+        ok(real.call(w, '/api/modules')); }, 1500); });
+    };
+    w.scan(true);
 
     // now break the hub the way a dropped network breaks it
     w.fetch = function(u){
@@ -87,7 +107,7 @@ setTimeout(function(){
       done(out.join(" "));
     }, 2500);
   } catch (e) { done("ERR=" + String(e).slice(0,60)); }
-}, 6000); });
+}, 500); });
 </script>
 """
 
@@ -292,6 +312,10 @@ def run(t):
         t.ok(False, "the page ran without throwing", got["ERR"])
         return
 
+    t.ok(int(got.get("rowsbefore", "0") or 0) > 0,
+         "the list was found before the network broke",
+         "with nothing found first there is no list to keep, and the rest "
+         "of this measures nothing")
     t.ok(got.get("blank") == "no",
          "a failed scan does NOT blank the module list",
          "the panel went empty the moment the network dropped")

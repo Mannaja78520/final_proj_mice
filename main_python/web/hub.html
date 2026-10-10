@@ -1552,6 +1552,11 @@ async function scan(force){
     // could draw the board plugged into this very machine - seconds of empty
     // screen for a fact the hub already had.
     const r=await fetch('/api/modules'+(force?'?force=1':'')).then(r=>r.json());
+    // A SLOWER, OLDER scan must not paint over a newer one. A cold hub takes
+    // ~4-6 s to answer, so a Rescan that failed meanwhile showed its "Could
+    // not reach" banner and the late answer wiped it (check_ui_states, red
+    // when run alone, 2026-10-10).
+    if(gen !== scanGen) return;
     window.MODS = r.modules || [];
     repaintMods();
     if(!(r.modules||[]).length)
