@@ -29,7 +29,7 @@ PAGE = """
 <style>html,body{margin:0}#f{width:1200px;height:900px;border:0}</style>
 <iframe id="f" src="/mod?dev=usb%3ACOM99"></iframe>
 <script>
-function done(s){ qcMark("JOINTS " + s); qcMark("done"); }
+async function done(s){ await qcMark("JOINTS " + s); qcMark("done"); }   // report lands before "done"
 var errs = 0;
 // Wait for the frame to BE there, then settle as before (A26-94): a fixed
 // sleep measured an empty page under a full gate and reported nothing.

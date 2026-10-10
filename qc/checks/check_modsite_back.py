@@ -33,7 +33,7 @@ DRIVER = """
 <style>html,body{margin:0}#f{width:1100px;height:900px;border:0}</style>
 <iframe id="f" src="%s"></iframe>
 <script>
-function done(s){ qcMark("BK " + s); qcMark("done"); }
+async function done(s){ await qcMark("BK " + s); qcMark("done"); }   // report lands before "done"
 setTimeout(async function(){
   try{
     var w = document.getElementById('f').contentWindow;

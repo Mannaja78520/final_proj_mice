@@ -843,20 +843,31 @@ def dev_cmd(dev, c, wait=None):
         # — for exactly the same journey: over the link, through the module,
         # onto its hotspot, and back. Found by a model review 2026-08-20 and
         # confirmed by reading both branches.
-        t0 = time.perf_counter()
-        try:
-            out = Handler.robot_get(
-                addr, "/api/cmd?c=" + urllib.parse.quote(_via(c, peer)),
-                timeout=wait or (PEER_WAIT if peer else None)).decode(errors="replace")
-        except Exception:
-            if not peer:
-                route_latency.LAT.fail("wifi:" + addr)
-            raise
-        if not peer:     # a forwarded command times two hops, not this route
-            route_latency.LAT.record("wifi:" + addr, (time.perf_counter() - t0) * 1000.0, len(out))
-        return out
+        return wifi_get(addr, "/api/cmd?c=" + urllib.parse.quote(_via(c, peer)),
+                        timeout=wait or (PEER_WAIT if peer else None),
+                        timed=not peer).decode(errors="replace")
     return usb_cmd(addr, _via(c, peer), bus,
                    wait=wait or (PEER_WAIT if peer else 2.0))
+
+
+def wifi_get(addr, path, timeout=None, timed=True):
+    """A GET to a board over WiFi that also tells route_latency how it went.
+
+    Every WiFi call made for a `dev` comes here, not only commands: the module
+    page polls status every 900 ms, and while that went straight to robot_get
+    a page on auto:<board> kept polling a dead address (A26-7 review,
+    2026-09-29). timed=False for a forwarded call, which is two hops.
+    """
+    t0 = time.perf_counter()
+    try:
+        body = Handler.robot_get(addr, path, timeout=timeout)
+    except Exception:
+        if timed:
+            route_latency.LAT.fail("wifi:" + addr)
+        raise
+    if timed:
+        route_latency.LAT.record("wifi:" + addr, (time.perf_counter() - t0) * 1000.0, len(body))
+    return body
 
 
 def pinout_for(dev):
@@ -910,7 +921,7 @@ def dev_status(dev):
         # every page would show the wrong robot
         return dev_cmd(dev, "INFO").encode()
     if kind == "wifi":
-        return Handler.robot_get(addr, "/api/status")
+        return wifi_get(addr, "/api/status")
     return usb_cmd(addr, "INFO", bus).encode()
 
 
@@ -919,14 +930,14 @@ def dev_files(dev, d):
     if peer:
         return dev_cmd(dev, "FILES " + d).encode()
     if kind == "wifi":
-        return Handler.robot_get(addr, "/api/files?dir=" + urllib.parse.quote(d))
+        return wifi_get(addr, "/api/files?dir=" + urllib.parse.quote(d))
     return usb_cmd(addr, "FILES " + d, bus).encode()
 
 
 def dev_download(dev, path):
     kind, addr, bus, peer = parse_dev(dev)
     if kind == "wifi" and not peer:
-        return Handler.robot_get(addr, "/api/download?path=" + urllib.parse.quote(path))
+        return wifi_get(addr, "/api/download?path=" + urllib.parse.quote(path))
     # USB: FREAD loop (base64 chunks)
     import base64
     name = path.rsplit("/", 1)[-1]
@@ -951,7 +962,7 @@ def dev_download(dev, path):
 def dev_delete(dev, path):
     kind, addr, bus, peer = parse_dev(dev)
     if kind == "wifi" and not peer:
-        return Handler.robot_get(addr, "/api/delete?path=" + urllib.parse.quote(path)).decode(errors="replace")
+        return wifi_get(addr, "/api/delete?path=" + urllib.parse.quote(path)).decode(errors="replace")
     name = path.rsplit("/", 1)[-1]
     return dev_cmd(dev, "FDEL " + name)
 
@@ -1472,6 +1483,10 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
     protocol_version = "HTTP/1.1"
     def send_bytes(self, data: bytes, ctype="application/json", code=200,
                    headers=()):
+        # Keep-alive trap: a POST body nobody read stays on the socket and is
+        # parsed as the NEXT request's first line (400 on the call after it).
+        if self.command == "POST":
+            self.drain()
         self.send_response(code)
         for k, v in headers:
             self.send_header(k, v)
@@ -1485,6 +1500,8 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
         """Send the browser somewhere else. 302, not 301: a permanent redirect
         is cached by the browser forever, and a wrong one can only be undone by
         the user clearing their history."""
+        if self.command == "POST":
+            self.drain()
         self.send_response(code)
         self.send_header("Location", where)
         self.send_header("Content-Length", "0")
@@ -1564,6 +1581,7 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
         n = max(0, int(self.headers.get("Content-Length") or 0))
         if limit and n > limit:
             self._body_read = True
+            self.close_connection = True   # unread bytes must not become the next request
             raise ValueError("that is too big to accept (%d MB, limit %d MB)"
                              % (n // 1048576, limit // 1048576))
         self._body_read = True
@@ -1609,12 +1627,14 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
         sys.stderr.write("[web] " + fmt % args + "\n")
 
     def do_GET(self):
+        self._body_read = False   # one handler serves every request on a kept-alive socket
         try:
             self.route("GET")
         except Exception as e:  # noqa: BLE001
             self.send_err(e, 500)
 
     def do_POST(self):
+        self._body_read = False   # else the last request's read skips this one's drain
         try:
             self.route("POST")
         except Exception as e:  # noqa: BLE001
@@ -1720,7 +1740,7 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
             if what == "peers":
                 kind, addr, bus, peer = parse_dev(dev)
                 if kind == "wifi" and not peer:
-                    return self.send_bytes(Handler.robot_get(addr, "/api/peers"),
+                    return self.send_bytes(wifi_get(addr, "/api/peers"),
                                            "application/json")
                 # Over a cable this is the whole point: with no venue WiFi
                 # the other modules sit on THIS module's own hotspot, and
@@ -1786,7 +1806,7 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
                         "a picture cannot come down the USB/RS485 cable — "
                         "open this module over WiFi to see the camera", 501)
                 return self.send_bytes(
-                    Handler.robot_get(addr, "/api/cam.jpg"), "image/jpeg")
+                    wifi_get(addr, "/api/cam.jpg"), "image/jpeg")
             if what == "download":
                 return self.send_bytes(dev_download(dev, (q.get("path") or [""])[0]),
                                        "application/octet-stream")

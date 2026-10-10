@@ -234,6 +234,19 @@ void test_it_returns_when_the_network_is_properly_back(void) {
 
 // A met module's hotspot password comes from the group, so we can actually get
 // in; a stronger stranger may simply refuse us. Signal does not outrank known.
+// A13-7: two lonely group-mates each joined the OTHER's hotspot. Exactly one
+// of any two names may join, and joins only run one way, so no ring.
+void test_only_one_of_two_group_mates_joins(void) {
+    TEST_ASSERT_TRUE(mayJoin("lift-test", "nong"));
+    TEST_ASSERT_FALSE(mayJoin("nong", "lift-test"));
+    TEST_ASSERT_FALSE(mayJoin("nong", "nong"));        // same name: nobody joins
+    TEST_ASSERT_FALSE(mayJoin(nullptr, "nong"));
+    // a chain of three: a->b, b->c, never c->a
+    TEST_ASSERT_TRUE(mayJoin("a", "b"));
+    TEST_ASSERT_TRUE(mayJoin("b", "c"));
+    TEST_ASSERT_FALSE(mayJoin("c", "a"));
+}
+
 void test_a_known_module_beats_a_stronger_guess(void) {
     PeerPick p;
     p.feed(false, -40, "Stranger");
@@ -468,5 +481,6 @@ int main(int, char **) {
     RUN_TEST(test_id3_size_is_four_seven_bit_bytes);
     RUN_TEST(test_id3_v4_footer_is_skipped_too);
     RUN_TEST(test_not_a_tag_skips_nothing);
+    RUN_TEST(test_only_one_of_two_group_mates_joins);
     return UNITY_END();
 }

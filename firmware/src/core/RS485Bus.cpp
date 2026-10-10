@@ -69,9 +69,11 @@ void RS485Bus::loop() {
             buf_ = "";
         } else if (c != '\r') {
             // 250 ate every FILES listing that crossed a bridge - the head
-            // was wiped and only a tail arrived. 2048 still bounds runaway
-            // noise with no terminator, but leaves room for real replies.
-            if (buf_.length() > 2048) buf_ = "";
+            // was wiped and only a tail arrived. 4096 still bounds runaway
+            // noise with no terminator, but leaves room for real replies:
+            // 2048 cut AMP VALID (2850 bytes since A24-41) on a bridge, and
+            // check_amp_kind keeps that reply inside this number.
+            if (buf_.length() > 4096) buf_ = "";
             buf_ += c;
         }
     }
