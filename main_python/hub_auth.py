@@ -108,6 +108,9 @@ GATED_POST = {
     "/api/stream/voice",
     # Which speaker is the default, and which voice each uses (A4-3).
     "/api/speakers",
+    # What the rig says to people the face app sees (A8-1): reading is open,
+    # saving changes what a robot says aloud to a guest - admin only.
+    "/api/faces/rules",
     "/api/flash",         # GET reports progress, POST starts a reflash
     # Voice endpoints: asked 2026-09-14 to require login first before doing anything
     "/api/voice/start",

@@ -19,6 +19,7 @@ THE FOUR PROMISES, each one a check in qc/checks/check_faces_greet.py:
   camera, so a history row is counted and nothing else (A5-5).
 """
 import json
+import os
 import re
 import threading
 import time
@@ -29,7 +30,12 @@ from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-RULES = HERE / "rules.json"
+
+
+def rules_file():
+    """rules.json beside this file; MICE_FACES_RULES points a check at a copy,
+    so QC never rewrites the words somebody chose."""
+    return Path(os.environ.get("MICE_FACES_RULES") or HERE / "rules.json")
 
 ROLES = ("entry", "exit", "watch")
 KINDS = ("known", "already", "unknown")
@@ -38,7 +44,7 @@ BLANKS = ("{title}", "{name}")
 
 def load(path=None):
     """(rules, why). A broken file greets nobody and says why."""
-    path = Path(path or RULES)
+    path = Path(path or rules_file())
     try:
         got = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:

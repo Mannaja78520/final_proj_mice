@@ -1447,10 +1447,12 @@ import hub_api_studio  # noqa: E402
 hub_api_studio.bind(sys.modules[__name__])
 import hub_api_speak  # noqa: E402
 hub_api_speak.bind(sys.modules[__name__])
+import hub_api_faces  # noqa: E402
+hub_api_faces.bind(sys.modules[__name__])
 
 
 # ---------------------------------------------------------------- handler
-class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, BaseHTTPRequestHandler):
+class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, BaseHTTPRequestHandler):
     # HTTP/1.1, so a browser can KEEP ITS CONNECTION.
     #
     # BaseHTTPRequestHandler defaults to HTTP/1.0, which means every response
@@ -2372,6 +2374,10 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
 
         r = self.api_speak(method, path, q)   # hub_api_speak.py
         if r is not hub_api_speak.NOT_MINE:
+            return r
+
+        r = self.api_faces(method, path, q)   # hub_api_faces.py
+        if r is not hub_api_faces.NOT_MINE:
             return r
 
         r = self.api_play(method, path, q)   # hub_api_play.py

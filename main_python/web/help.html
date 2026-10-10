@@ -1205,14 +1205,40 @@
     <span class="where">code/apps/faces · served at /app/faces/</span>
     <h2>👋 Reconize — the app that knows who is here</h2>
     <p>Reconize is a separate program that watches cameras and recognises people.
-       It runs beside Mice on the same PC. This page is how you open it, and in
-       time it is how the rig follows it.</p>
+       It runs beside Mice on the same PC. This page is how you open it and how
+       you choose what the rig says when it sees somebody.</p>
   </div>
 
   <h3>What works today</h3>
-  <p>One button, <b>Open Reconize</b>, and a line telling you whether Reconize is
-     running. Nothing here moves a robot yet. That is on purpose: the button
-     ships before anything that can make an arm swing.</p>
+  <p><b>Open Reconize</b> starts it if it is not running and shows it in the page.
+     <b>Is the rig following it?</b> says whether the rig is seeing people arrive.</p>
+  <p><b>What the rig says</b> is where you choose the words. Nothing is said until
+     you tick <b>Greet people the face app sees</b> and press <b>Save</b>. Saving asks
+     you to sign in on the hub page first, because it changes what a robot says
+     to a guest. The next person who arrives already gets the new words; nothing
+     needs restarting.</p>
+  <ul>
+    <li><b>The words.</b> One line for each case: somebody's first visit today,
+        somebody who already came today, and somebody it does not know. Write
+        <b>{title}</b> where the polite word goes and <b>{name}</b> where the name
+        goes. Somebody it does not know is never called by a name, so only
+        {title} works in that line, and the page refuses to save otherwise.</li>
+    <li><b>Cameras.</b> Each camera that has seen somebody appears by itself. Pick
+        whether it <i>says hello</i>, <i>says goodbye</i> or <i>only counts</i>, which
+        speaker says it, and a saved move a robot plays with it. A camera you
+        never set up only counts, so a new camera never starts talking on its own.
+        Open <i>Its own words</i> to give one camera different words.</li>
+    <li><b>Once per person.</b> The same person is greeted at most once in the
+        minutes you choose, whichever camera sees them. Somebody it does not know
+        is greeted at most once per camera in the seconds you choose.</li>
+    <li><b>If the rig is busy.</b> <i>skip this hello</i> drops it while the rig is
+        talking or playing a show; <i>wait its turn</i> says it afterwards. A
+        greeting never stops a show.</li>
+    <li><b>Celebrations.</b> Said once a day when that many people have come
+        today, by Reconize's own count. Each can play a move too.</li>
+    <li><b>Titles.</b> Give a particular person their own polite word, such as
+        อาจารย์, instead of the usual one.</li>
+  </ul>
   <p>If it says Reconize is not answering, start it with <b>start.bat</b> in its
      own folder and wait about fifteen seconds — it loads a face model before it
      answers anything, so <i>not answering</i> and <i>not started</i> look the
@@ -1240,12 +1266,13 @@
      it is running would block its own writing. Everything goes through its
      web address, the same way any other program would talk to it.</p>
 
-  <h3>What is coming, in order</h3>
-  <p>Reading who was recognised · greeting somebody by name with a move ·
-     choosing which speaker says it and in which voice · rules you can edit here,
-     with different words per camera · counting arrivals and firing a
-     celebration at a number you choose · a mode where the rig only takes
-     questions while somebody is standing in front of it.</p>
+  <h3>Only answer when somebody is there</h3>
+  <p>The Voice screen can be set to take questions only while somebody stands in
+     front of a camera (in config/voice.json, <b>presence</b>, off at first). If
+     Reconize is not running, or has no camera that can tell, questions are taken
+     as usual: a broken camera never makes the rig deaf.</p>
+  <p>All of this is tested against stand-ins for Reconize and the robot, not yet
+     with the real cameras at the lab.</p>
   <p>Each of those arrives as its own small change, and the plan for all of it is
      <b>docs/system_integral.html</b>, beside this project's own plan.</p>
 </section>

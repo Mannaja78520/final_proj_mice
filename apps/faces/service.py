@@ -126,6 +126,7 @@ class State:
     def __init__(self, partner):
         self._events_lock = threading.RLock()
         self._auth_lock = threading.RLock()
+        self._rules_lock = threading.Lock()
         self.partner_id = partner
         self.partners, self.partners_error = load("config/partners.json")
         self.watching = False
@@ -540,6 +541,43 @@ class State:
         self._count = (now, out)
         return out
 
+    # ---- the rules editor's two halves (A8-1) ---------------------------
+
+    def rules_view(self):
+        """What the screen edits, plus what it needs to offer a choice: the
+        cameras this app has actually reported, so a new door is one click."""
+        got, why = rules.load()
+        if why:
+            try:        # show what is there, so the screen can mend it
+                got = json.loads(rules.rules_file().read_text(encoding="utf-8"))
+            except Exception:                                # noqa: BLE001
+                got = {}
+        with self._events_lock:
+            seen = sorted({e.get("camera") for e in self.people if e.get("hasCamera")})
+            # Titles are set per person by their code, but the screen shows names.
+            who = {e.get("id"): e.get("who") for e in self.people
+                   if e.get("known") and e.get("id")}
+        return {"ok": True, "rules": got, "error": why, "camerasSeen": seen,
+                "peopleSeen": [{"id": k, "who": v} for k, v in sorted(who.items())],
+                "count": getattr(self, "_count", (0, None))[1]}
+
+    def save_rules(self, new):
+        """(ok, why). The watcher is the ONE writer of rules.json: checked
+        first, written whole (temp file, then replace) so a reader never sees
+        half a file, and read again on the next arrival - no restart."""
+        if not isinstance(new, dict):
+            return False, "send the rules as {\"rules\": {...}}"
+        why = rules.check(new) or rules.milestones_check(new.get("milestones") or [])
+        if why:
+            return False, why
+        with self._rules_lock:
+            where = rules.rules_file()
+            tmp = where.with_suffix(".tmp")
+            tmp.write_text(json.dumps(new, ensure_ascii=False, indent=2) + "\n",
+                           encoding="utf-8")
+            tmp.replace(where)
+        return True, ""
+
     def presence(self, camera="", seconds=60.0):
         """Is somebody standing in front of a camera right now? (A7-1)
 
@@ -639,6 +677,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(self.state.health())
         if path == "/state":
             return self._json(self.state.snapshot())
+        if path == "/rules":
+            return self._json(self.state.rules_view())
         if path == "/presence":
             from urllib.parse import parse_qs
             q = parse_qs(urlparse(self.path).query)
@@ -649,7 +689,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(dict({"ok": True}, **self.state.presence(
                 (q.get("camera") or [""])[0], secs)))
         return self._json({"ok": False, "error": "no such address: %s" % path,
-                           "try": ["/health", "/state", "/presence"]}, 404)
+                           "try": ["/health", "/state", "/presence", "/rules"]}, 404)
 
     def do_POST(self):                                       # noqa: N802
         """A6-3: another Python program on this PC needs ONE address and ONE
@@ -673,6 +713,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"ok": False, "error": "that request was not readable"}, 400)
         if path == "/count":
             return self._json(dict({"ok": True}, **self.state.count_today()))
+        if path == "/rules":
+            ok, why = self.state.save_rules((d or {}).get("rules") if isinstance(d, dict) else None)
+            if not ok:
+                return self._json({"ok": False, "error": why}, 400)
+            return self._json(self.state.rules_view())
         if path == "/act":
             if not isinstance(d, dict) or not (str(d.get("say") or "").strip() or d.get("move")):
                 return self._json({"ok": False, "error": "send say (words) or move "
@@ -686,7 +731,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"ok": state == "queued", "state": state, "why": why},
                               200 if state in ("queued", "skipped") else 502)
         return self._json({"ok": False, "error": "no such address: %s" % path,
-                           "try": ["/count", "/act"]}, 404)
+                           "try": ["/count", "/act", "/rules"]}, 404)
 
     def log_message(self, *a):
         """Quiet by default: this is polled, and a line per poll buries the

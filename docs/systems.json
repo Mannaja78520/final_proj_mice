@@ -103,7 +103,7 @@
      "depends": []},
 
     {"id": "app-faces", "summary": "Face recognition app.",
-     "files": ["apps/faces/", "config/faces.json"],
+     "files": ["apps/faces/", "config/faces.json", "main_python/hub_api_faces.py"],
      "depends": []},
 
     {"id": "app-camera", "summary": "Camera viewer app.",
