@@ -32,6 +32,7 @@ bool SequencePlayer::startText(const String& yaml, String& err) {
     loopSeq_ = (*doc_)["loop"] | false;
     idx_ = 0;
     waitUntil_ = millis();
+    due_ = waitUntil_;
     waitBusy_ = false;
     file_ = "(memory)";
     chain_ = 0;
@@ -64,6 +65,7 @@ bool SequencePlayer::startAt(const String& path, String& err, int depth) {
     loopSeq_ = (*doc_)["loop"] | false;
     idx_ = 0;
     waitUntil_ = millis(); // must be a recent reading for the signed-diff gate
+    due_ = waitUntil_;
     waitBusy_ = false;
     file_ = path;
     chain_ = depth;
@@ -97,6 +99,7 @@ void SequencePlayer::loop() {
         Module* m = router_->module();
         if (m && m->busy()) return;   // a board with no module is never busy
         waitBusy_ = false;
+        due_ = millis();           // an untimed step: the clock starts again here
     }
     JsonArray steps = (*doc_)["steps"].as<JsonArray>();
     if (idx_ >= steps.size()) {
@@ -115,6 +118,13 @@ void SequencePlayer::loop() {
         }
     }
     execStep(steps[idx_++]);
+}
+
+// A real stall (an SD read, a slow WiFi request holding the router lock) is not
+// paid back by rushing the moves after it: past CATCH_UP_MS late the clock
+// starts again from now. The ordinary few ms of each loop pass are paid back.
+void SequencePlayer::catchUp() {
+    if ((int32_t)(millis() - due_) > (int32_t)CATCH_UP_MS) due_ = millis();
 }
 
 void SequencePlayer::execStep(JsonVariant step) {
@@ -144,7 +154,8 @@ void SequencePlayer::execStep(JsonVariant step) {
         if (key == "wait") {
             long w = v.as<long>();
             if (w < 0) w = 0;   // negative would wrap to ~49 days and stall
-            waitUntil_ = millis() + (uint32_t)w;
+            due_ += (uint32_t)w;          // on the show's clock, not from now
+            waitUntil_ = due_;
             continue;
         }
         if (key == "cmd") {
@@ -163,8 +174,26 @@ void SequencePlayer::execStep(JsonVariant step) {
                  key.c_str());
             continue;
         }
-        router_->handleFromSequence(val.length() ? String(s->cmd) + " " + val
-                                                 : String(s->cmd));
-        if (s->wait) waitBusy_ = true;
+        if (s->wait) catchUp();
+        String reply = router_->handleFromSequence(val.length() ? String(s->cmd) + " " + val
+                                                                : String(s->cmd));
+        if (!s->wait) continue;
+        // ONE CLOCK FOR THE WHOLE FILE, as the hub's ShowPlayer keeps. Waiting
+        // for busy() to clear started each move one 20 ms frame late, and the
+        // lateness added up: a 90.5 s show ran 91.6 s on nong 67 and the song
+        // drifted ahead of the arm (user 2026-10-12). A move that says how
+        // long it takes (`OK pose T=<ms>ms`, the board's own lengthened time)
+        // now ends on a deadline counted from the start, and the next step
+        // leaves on that deadline. Anything else still waits for busy().
+        // the LAST " T=": a joint reply names the joint first, and "WAIST=90"
+        // has a T= of its own
+        int at = reply.startsWith("OK") ? reply.lastIndexOf(" T=") : -1;
+        long took = at >= 0 ? reply.substring(at + 3).toInt() : 0;
+        if (took > 0) {
+            due_ += (uint32_t)took;
+            waitUntil_ = due_;
+        } else {
+            waitBusy_ = true;
+        }
     }
 }

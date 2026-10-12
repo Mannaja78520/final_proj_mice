@@ -112,6 +112,14 @@ def run(t):
         t.ok(at > 0 and lines[at - 1] == "- wait: 1100" and lines[at + 1] == "- wait: 300",
              "a stop inside a pause splits the wait at the right ms", lines)
         t.ok(lines.count("- play: STOP") == 1, "and it is said once", lines)
+        # The song starts when the arm STANDS on the first pose, as ShowPlayer
+        # starts it - not before the walk there. Written first, it ran 3.3 s
+        # ahead of every move on nong 67 (user 2026-10-12).
+        poses = [i for i, ln in enumerate(lines) if ln.startswith("- pose:")]
+        play = lines.index("- play: song.mp3") if "- play: song.mp3" in lines else -1
+        t.ok(poses and poses[0] < play < poses[1],
+             "the song starts after the walk onto the first pose, before the next move",
+             lines[:12])
         after = dict(SHOW, music="song.mp3", music_end="after", music_secs=2)
         _, b = F.post(base + "/api/show/yaml", json.dumps({"show": after}).encode())
         tail = [ln.strip() for ln in json.loads(b)["yaml"].splitlines()][-2:]

@@ -73,7 +73,10 @@ private:
     size_t idx_ = 0;
     String file_;
     uint32_t waitUntil_ = 0;
+    uint32_t due_ = 0;   // when the last timed step ENDS on the file's clock
     bool waitBusy_ = false;
+    static const uint32_t CATCH_UP_MS = 250;
+    void catchUp();
     int chain_ = 0;      // how many files deep this run already is
     String ramYaml_;     // the in-memory sequence, when there is no card
     String ramName_;     // the name it arrived under, for MOVE to check
