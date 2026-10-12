@@ -102,7 +102,14 @@ class ShowPlayer:
 
     @staticmethod
     def total(steps):
-        return sum(int(s.get("t", 0)) + int(s.get("hold", 0)) for s in steps)
+        # On the show's clock, which starts ON the first pose (see _play_once):
+        # the walk there (steps[0].t) is not on it. Counted, total_ms ran 3.3 s
+        # past where at_ms ends, and at_ms jumped there on the last step
+        # (LhongMarePing on nong 67, 2026-10-12: 93.2 s said, 90.0 s played).
+        if not steps:
+            return 0
+        return int(steps[0].get("hold", 0)) + sum(
+            int(s.get("t", 0)) + int(s.get("hold", 0)) for s in steps[1:])
 
     def beat(self, leaving=False):
         """Studio is alive (leaving=False), or is going away ON PURPOSE - hidden

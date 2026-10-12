@@ -58,7 +58,9 @@ def run(t):
     # ---- 1. it plays, and the module gets real moves ----------------
     st = _play(base)
     t.ok(st.get("running") is True, "the hub starts playing", st)
-    t.eq(st.get("total_ms"), 600, "it knows how long the show is")
+    # 480, not 600: the 120 ms walk to the first pose is not on the show's
+    # clock, which is where at_ms counts from (nong 67, 2026-10-12)
+    t.eq(st.get("total_ms"), 480, "it knows how long the show is")
     t.ok(_wait_idle(base), "and it finishes on its own")
 
     sent = [c for _, c in fake_serial.wire]
