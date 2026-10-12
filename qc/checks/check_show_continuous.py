@@ -65,6 +65,10 @@ window.addEventListener('load', async function(){
     await showOnTimeline();
     await qcMark('stat-' + document.getElementById('showStat').textContent.slice(0, 60).replace(/[^A-Za-z0-9]+/g, '_'));
     await qcMark('bar-keys-' + keys.length);
+    // the length the tab SAYS is the bar's own length (keyframe 0's t is the
+    // walk to the show, not on it - 93.2 s said for 90.0 s run, 2026-10-12)
+    const said = (document.getElementById('showStat').textContent.match(/([0-9.]+)s[.]/) || [])[1];
+    await qcMark('stat-secs-' + (said === (totalMs() / 1000).toFixed(1) ? 'same' : said + '-vs-' + totalMs()));
     await qcMark('bar-named-' + keys.filter(k => k.seqStart).length);
     await qcMark('bar-first-' + Math.round(keys[0].pose[0]));
     // the hand-over keyframe: pass 2 of qc_cont_one starts on pose 20 again,
@@ -311,6 +315,9 @@ def run(t):
         t.contains(m, "bar-keys-8",
                    "three passes of one sequence and one of the other land on the "
                    "time bar as eight keyframes")
+        t.contains(m, "stat-secs-same",
+                   "the show length the tab states is the time bar's length, without "
+                   "the walk to the first pose")
         t.contains(m, "bar-named-4",
                    "each pass is marked where it begins, so a long show can be read")
         t.contains(m, "bar-handover-80",

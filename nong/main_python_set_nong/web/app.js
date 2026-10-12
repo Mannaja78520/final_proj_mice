@@ -4187,7 +4187,9 @@ async function showOnTimeline(quiet, onlyIfSafe) {
     // no file's own moves either, so saving it still asks before replacing one
     markSaved(workSig(), "", 0);
     showOnBar = s.name || "(unsaved show)";
-    const secs = (keys.reduce((a, k) => a + k.t + (k.hold || 0), 0) / 1000).toFixed(1);
+    // the bar's own length: keyframe 0's t is the walk TO the show, not on it
+    // (said 93.2 s for a 90.0 s run on nong 67, 2026-10-12)
+    const secs = (totalMs() / 1000).toFixed(1);
     $("showStat").textContent = `${showOnBar} is on the time bar: ${marks.length} ` +
       `sequence pass(es), ${keys.length} keyframes, ${secs}s. Saving a SEQUENCE ` +
       "from here would save the whole show as one file.";
