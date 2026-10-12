@@ -60,6 +60,11 @@ The sequences are never copied or changed, so one greeting can sit in many
 shows. A person can edit the file by hand; Studio's Shows tab writes the same.
 The hub plays a show as one list of steps (ShowPlayer), so it runs over any
 link and the robot's own speed cap times the move from one sequence into the next.
+
+A show can also go ONTO the robot (user 2026-10-12: *in shows is there upload
+to the robot? now only run and save to the PC*). robot_yaml() writes the same
+step list as one sequence file for the card's /moves folder, so the module
+plays the show on its own clock with no hub and no PC at all.
 """
 import json
 import math
@@ -73,6 +78,11 @@ MIN_PCT, MAX_PCT = 10, 400        # speed_pct range, % of the saved timing
 MUSIC_ENDS = ("after", "total")   # how the show's track ends; "" = with the show
 DEF_DPS = 60.0       # the same fallback seq_steps uses for a file with no speed
 MIN_T = 80           # ms, the floor the firmware, Studio and ShowPlayer share
+# The board parses a whole sequence file into RAM before it plays it
+# (SequencePlayer::startAt). nong 67 had heap=154 KB, largest block 106 KB
+# (PERF?, 2026-10-12); the parsed document is about twice the file. 32 KB of
+# yaml leaves room for the web server and the audio buffers.
+ROBOT_FILE_MAX = 32 * 1024
 # A 60 s target against a sequence that parses to almost nothing would expand
 # into tens of thousands of steps and take the hub down with it. Refuse, and
 # say which sequence, rather than building a list nobody can stop.
@@ -495,3 +505,60 @@ class Shows:
         clock = (steps[0].get("hold", 0) if steps else 0) + sum(
             int(s.get("t", 0)) + int(s.get("hold", 0)) for s in steps[1:])
         return clock + n
+
+    @staticmethod
+    def robot_yaml(show, steps):
+        """The show as ONE sequence file for the robot's card -> (file, text).
+
+        Written the way Studio's buildYaml writes a sequence (pose with an
+        explicit T, wait, cues as their own steps), so the board's player runs
+        what the hub's player runs. The hub stops the track on a timer
+        (music_stop_ms); a file has no timer, so `play: STOP` goes in at that
+        point of the clock - inside a pause it splits the wait, inside a move
+        it lands when the move ends (the board waits for a pose to arrive).
+        """
+        show = Shows.clean(show)
+        if not steps:
+            raise ValueError("this show has no poses to send")
+        base = re.sub(r"[^\w.-]+", "_", show["name"] or "show").strip("_") or "show"
+        fname = base + ".show.yaml"
+        lines = ["# made by MiceHub from the show %s - edit the show, not this file"
+                 % (show["name"] or base),
+                 "# pose: the joint angles in Studio's order, T = ms for the move",
+                 "name: " + base,
+                 "loop: " + ("true" if show["loop"] else "false"),
+                 "steps:"]
+        stop_at = Shows.music_stop_ms(show, steps)
+        clock = 0                       # 0 = the first pose arrives, as on the time bar
+
+        def stop_due(at):
+            return stop_at is not None and at >= stop_at
+
+        for i, st in enumerate(steps):
+            lines += ["  - " + c for c in st.get("cues") or []]
+            pose = " ".join(("%.1f" % float(v)).rstrip("0").rstrip(".") for v in st["pose"])
+            lines.append('  - pose: "%s T %d"' % (pose, int(st.get("t", 0))))
+            if i:
+                clock += int(st.get("t", 0))
+            hold = int(st.get("hold", 0))
+            if stop_due(clock + hold):
+                first = max(0, min(hold, stop_at - clock))
+                if first:
+                    lines.append("  - wait: %d" % first)
+                lines.append("  - play: STOP")
+                stop_at, hold, clock = None, hold - first, clock + first
+            if hold:
+                lines.append("  - wait: %d" % hold)
+                clock += hold
+            lines += ["  - " + c for c in st.get("cues_after") or []]
+        if stop_at is not None:         # "after": the track outlives the last move
+            if stop_at > clock:
+                lines.append("  - wait: %d" % (stop_at - clock))
+            lines.append("  - play: STOP")
+        text = "\n".join(lines) + "\n"
+        if len(text.encode("utf-8")) > ROBOT_FILE_MAX:
+            raise ValueError(
+                "this show is too long for the robot's memory (%d KB, the most is "
+                "%d KB). Split it into shorter shows, or run it from the hub."
+                % (len(text.encode("utf-8")) // 1024, ROBOT_FILE_MAX // 1024))
+        return fname, text

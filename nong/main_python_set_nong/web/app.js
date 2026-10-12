@@ -4236,6 +4236,23 @@ async function playShow() {
       " — it keeps going with this page closed. ⏹ Stop ends it.";
   } catch (e) { $("showStat").textContent = "did not start: " + (e.message || e); notice($("showStat").textContent); }
 }
+// The show ONTO the robot's card (user 2026-10-12: *in shows is there upload to
+// the robot? now only run and save to the PC*). The hub writes the file from the
+// same step list ▶ Run plays (shows.robot_yaml); sdUpload sends it over whatever
+// link is up. The robot then plays it alone, with the hub and this PC off.
+async function sendShowToRobot() {
+  const s = readShowForm();
+  if (!haveRobot()) { $("showStat").textContent = "connect to the robot first (Robot tab)."; notice($("showStat").textContent); return; }
+  if (!s.items.length) { $("showStat").textContent = "add at least one sequence first."; return; }
+  try {
+    $("showStat").textContent = "sending " + (s.name || "this show") + " to the robot…";
+    const j = await showPost("/api/show/yaml", { show: s, limits: showLimits() });
+    await sdUpload(j.file, j.yaml);
+    $("showStat").textContent = j.file + " is on the robot's card. The robot can play it " +
+      "by itself now: pick it in the robot's list (Robot tab, or the robot's own page).";
+    refreshSd();
+  } catch (e) { $("showStat").textContent = "not sent: " + (e.message || e); notice($("showStat").textContent); }
+}
 async function stopShow() {
   try { await fetch("/api/play/stop", { method: "POST" }); $("showStat").textContent = "stopped."; }
   catch (e) { $("showStat").textContent = "the hub did not answer the stop."; }

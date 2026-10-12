@@ -1489,6 +1489,12 @@
        want them, set a pause after any of them in milliseconds, name the show and press
        <b>Save show</b>. <b>▶ Run on robot</b> hands the whole thing to the hub, so it keeps
        going with the page closed; <b>⏹ Stop</b> ends it from anywhere.</p>
+    <p><b>⇪ Send to robot</b> puts the show on the robot's own card as one file,
+       <code>&lt;show name&gt;.show.yaml</code>. The robot can then play it by itself, with
+       the hub and the computer switched off: pick it in the robot's list of sequences
+       (Robot tab, or the robot's own page). It is the same run as ▶ Run on robot — the
+       same moves, pauses and music. A very long show may not fit in the robot's memory;
+       you are told before anything is sent. Change the show, then send it again.</p>
     <p>A show only stores the sequence <i>names</i>, never a copy — so one greeting can sit
        in ten shows, and editing the greeting changes all ten. Shows are small files in
        <code>nong/main_python_set_nong/shows/</code> you can also write by hand. Deleting a
