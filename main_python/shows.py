@@ -535,9 +535,16 @@ class Shows:
             return stop_at is not None and at >= stop_at
 
         for i, st in enumerate(steps):
-            lines += ["  - " + c for c in st.get("cues") or []]
+            # The FIRST pose's cues go AFTER the walk onto it, as ShowPlayer
+            # fires them: time 0 is the arm standing on that pose. Written in
+            # front, the song started during the 3.3 s entry and every move
+            # landed that late against the music (nong 67, 2026-10-12).
+            if i:
+                lines += ["  - " + c for c in st.get("cues") or []]
             pose = " ".join(("%.1f" % float(v)).rstrip("0").rstrip(".") for v in st["pose"])
             lines.append('  - pose: "%s T %d"' % (pose, int(st.get("t", 0))))
+            if not i:
+                lines += ["  - " + c for c in st.get("cues") or []]
             if i:
                 clock += int(st.get("t", 0))
             hold = int(st.get("hold", 0))

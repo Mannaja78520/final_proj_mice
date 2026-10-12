@@ -109,7 +109,7 @@ WiFi and the board's web portal, SD, OTA, and `PERF?`.
 - [fw-cam](fw-cam.md)
 - [bench](bench.md)
 
-## Checks that test it (67)
+## Checks that test it (68)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -167,6 +167,7 @@ WiFi and the board's web portal, SD, OTA, and `PERF?`.
 - `check_rs485_frame`
 - `check_rs485_turnaround`
 - `check_sendrig`
+- `check_seq_clock`
 - `check_seq_steps`
 - `check_sequences`
 - `check_shrug_range`
