@@ -153,9 +153,20 @@ class PlayRoutes:
             except (ValueError, FileNotFoundError) as e:
                 return self.send_err(e, 404)
         if path in ("/api/show/save", "/api/show/delete", "/api/show/play",
-                    "/api/show/steps") and method == "POST":
+                    "/api/show/steps", "/api/show/yaml") and method == "POST":
             try:
                 d = json.loads(self.body().decode() or "{}")
+                if path == "/api/show/yaml":
+                    # The show as one file for the robot's card (Studio's
+                    # "Send to robot"). Only the TEXT is made here; Studio
+                    # sends it with sdUpload, the one path that already knows
+                    # WiFi, cable, bus and peer - and the robot's own login.
+                    sh = _hub.SHOWS.clean(d.get("show") or {})
+                    steps = _hub.SHOWS.steps(sh, _hub.seq_steps,
+                                             limits=clean_limits(d.get("limits")))
+                    fname, text = _hub.SHOWS.robot_yaml(sh, steps)
+                    return self.send_json({"ok": True, "file": fname, "yaml": text,
+                                           "steps": len(steps)})
                 if path == "/api/show/steps":
                     # the DRAFT being edited, not a saved file: the Shows tab
                     # redraws the timeline as sequences are added and repeats
