@@ -20,7 +20,7 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 | [hub-media](hub-media.md) | Camera relay, camera board pinouts, and audio streaming to boards. |
 | [hub-shows](hub-shows.md) | Saved shows: sequences played in series by name. |
 | [hub-web](hub-web.md) | The pages the hub serves: Home/Modules, help, login, and their patch snapshots. |
-| [shared-web](shared-web.md) | One stylesheet and theme set for every page (mice.css, themes). |
+| [shared-web](shared-web.md) | One stylesheet and theme set for every page (mice.css, themes), and the page parts every hub page is built from (mice-ui.js; guide docs/web_style.md). |
 | [studio](studio.md) | Nong Studio: pose editor, timeline, 3D monitor. |
 | [app-voice](app-voice.md) | Voice helper: speech in, answers, speech out. |
 | [app-faces](app-faces.md) | Face recognition app. |

@@ -4,6 +4,7 @@
 <title>Voice — Mice</title>
 <link rel="stylesheet" href="/mice.css">
 <script src="/mice.js"></script>
+<script src="/mice-ui.js"></script>
 <!--
   THE VOICE APP. Asked 2026-08-22: someone asks the rig a question and it
   answers. This page is the front; the answering itself happens in a separate
@@ -15,12 +16,6 @@
   a saved one never waits for the model at all.
 -->
 <style>
-body{margin:0;padding:var(--sp-4);background:var(--bg);color:var(--txt);
-     font-family:var(--sans)}
-.wrap{max-width:640px;margin:0 auto}
-.head{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;
-      margin-bottom:var(--sp-4)}
-.head h1{font-size:20px;margin:0}
 .card{border:1px solid var(--line);border-radius:var(--r-md);
       background:var(--card);padding:var(--sp-4);margin-bottom:var(--sp-4)}
 .card p{margin:0 0 var(--sp-2)}
@@ -2369,13 +2364,15 @@ if (document.readyState === "loading") {
 }
 </script>
 
+<body class="page">
 <div class="wrap">
-  <div class="head">
-    <button class="secondary" onclick="location.href='/'">Hub</button>
+  <!-- The head every page has: Mice.TopBar (mice-ui.js) adds "← Hub" first and
+       the technical switch last. -->
+  <header class="topbar">
     <h1>Voice</h1>
     <span class="mini" id="stat" aria-live="polite">checking the voice helper…</span>
     <button onclick="load()" hidden id="retry">⟳ Try again</button>
-  </div>
+  </header>
 
   <!-- The helper is not running: the words name what to start, because that
        IS the fix. Nothing here pretends the rig is listening. -->
@@ -2388,8 +2385,8 @@ if (document.readyState === "loading") {
       <button onclick="load()" title="Refresh status">⟳ Try again</button>
       <span class="mini" id="downStat" aria-live="polite"></span>
     </div>
-    <p class="mini" style="margin-top:var(--sp-2);color:var(--mut)">
-      Or start manually: <code>python apps\voice\service.py</code>
+    <p class="mini tech" style="margin-top:var(--sp-2)">
+      Or start it by hand: <code>python apps\voice\service.py</code>
     </p>
   </div>
 

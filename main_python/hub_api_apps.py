@@ -91,6 +91,22 @@ class AppRoutes:
                                        "error": "config/partners.json has no entry called %r" % pid})
             return self.send_json(_hub.partner_version.report(entry))
 
+        if path == "/api/partners/health":
+            # Is it up, asked BY THE HUB (A41-2). The app pages used to probe
+            # 127.0.0.1 from the browser, which on a phone opened from the
+            # hub's QR is the phone itself: always "not running". Read-only
+            # and open, like /api/partners.
+            pid = (q.get("id") or [""])[0]
+            got = _hub.read_partners()
+            entry = (got.get("partners") or {}).get(pid)
+            if not entry:
+                return self.send_json({"ok": False, "error": got.get("error") or
+                                       "config/partners.json has no entry called %r" % pid})
+            # read_partners() already moved api/open to where it answered last.
+            url = (entry.get("api") or entry.get("open") or "").rstrip("/") + (entry.get("health") or "/")
+            return self.send_json({"ok": True, "up": _hub.partner_launch.answers(url, 1.0),
+                                   "checked": url})
+
         if path == "/api/partners/start":
             # Starts a configured outside program on THIS PC. No hub login
             # from this PC itself (user 2026-09-17: Reconize and Jao have
@@ -184,7 +200,9 @@ class AppRoutes:
                 if cand.is_dir():
                     all_jao_dir = cand
             if not all_jao_dir.is_dir():
-                return self.send_err("All-Jao-Games folder not found at %s" % all_jao_dir, 404)
+                self.drain()
+                return self.send_json({"ok": False, "error": "All-Jao Games is not installed on this PC.",
+                                       "detail": "folder %s not found" % all_jao_dir}, 404)
             try:
                 flags = 0
                 if os.name == "nt":

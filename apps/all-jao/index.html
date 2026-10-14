@@ -5,13 +5,16 @@
 <link rel="stylesheet" href="/mice.css">
 <script src="/mice.js"></script>
 
-<h1>🎮 All-Jao Games</h1>
-<div class="mini" style="margin-bottom:var(--sp-4)">
-  <a href="/">👈 hub</a> · mini-games suite: claw machine, matching, quiz, and wheel of fortune
-  <label style="display:inline-flex;gap:var(--sp-2);align-items:center;float:right">
-    <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
-    Show technical details</label>
-</div>
+<script src="/mice-ui.js"></script>
+<body class="page">
+
+<!-- The head every page has (Mice.TopBar: "← Hub" first, the technical
+     switch last). -->
+<header class="topbar">
+  <h1>🎮 All-Jao Games</h1>
+  <span class="statline" id="stat">checking…</span>
+  <span class="sub">mini-games suite: claw machine, matching, quiz, and wheel of fortune</span>
+</header>
 
 <!-- No hub login here (user 2026-09-17): the games have their own login. -->
 
@@ -19,15 +22,13 @@
   <h2>Play Games</h2>
   <p class="mini" id="whatIs">All-Jao Games runs beside Mice on this PC. The server starts automatically when opening this page.</p>
   <div class="row" style="margin-bottom:var(--sp-3)">
-    <button class="primary" id="openBtn" onclick="openApp()">Open in New Tab ↗</button>
-    <button id="startBtn" onclick="startServer(true)">▶ Restart Server</button>
-    <button id="checkBtn" onclick="probe()">Check Status</button>
-    <span class="statline" id="stat" role="status" aria-live="polite">checking…</span>
+    <button class="primary" id="openBtn" onclick="games.open('open', this)">Open in a new tab ↗</button>
+    <button id="checkBtn" onclick="look()">Check again</button>
   </div>
   <div class="statline tech mini" id="where"></div>
 
   <!-- Embedded Live Game Iframe -->
-  <div id="gameFrameContainer" style="margin-top:var(--sp-3); display:none">
+  <div id="gameFrameContainer" style="margin-top:var(--sp-3)" hidden>
     <iframe id="gameFrame" src="about:blank" style="width:100%; height:78vh; border:1px solid var(--line); border-radius:var(--r-md); background:var(--sunk)"></iframe>
   </div>
 </div>
@@ -55,101 +56,34 @@
 </div>
 
 <script>
-const PARTNER = "all-jao";
-let links = {
-  open: "http://127.0.0.1:8080",
-  api: "http://127.0.0.1:8080",
-  health: "/"
-};
-let autoStartAttempted = false;
-let probeTimer = null;
+// Mice.Partner (shared/web/mice-ui.js) does the asking and starting. Their
+// games are a plain folder served by `python -m http.server`, started by the
+// hub's own /api/all-jao/start. Opening this page is asking to play: start it
+// when it is silent, then show it below.
+const games = new Mice.Partner("all-jao", {status: new Mice.Status("stat"),
+                                           startPath: "/api/all-jao/start", startWait: 15000});
 
-async function load() {
-  try {
-    const all = await fetch("/api/partners", {cache: "no-store"}).then(r => r.json());
-    if (all.ok && all.partners && all.partners[PARTNER]) {
-      links = all.partners[PARTNER];
-    }
-  } catch (e) {
-    // Hub not ready yet, keep default
-  }
-  const w = document.getElementById("where");
-  w.textContent = "app " + links.open + " · external folder: " + (links.folder || "All-Jao-Games");
-  probe(true);
-}
-
-function say(msg, tech) {
-  const el = document.getElementById("stat");
-  el.textContent = msg;
-  if (tech) {
-    const t = document.createElement("span");
-    t.className = "tech mini";
-    t.textContent = " " + tech;
-    el.appendChild(t);
-  }
-}
-
-function openApp() {
-  if (!links || !links.open) return say("Address not ready");
-  window.open(links.open, "_blank");
-}
-
-function showFrame() {
-  const frameContainer = document.getElementById("gameFrameContainer");
+function showFrame(where) {
   const frame = document.getElementById("gameFrame");
-  if (frame.src === "about:blank" || !frame.src) {
-    frame.src = links.open;
-  }
-  frameContainer.style.display = "block";
+  if (!frame.src || frame.src === "about:blank") frame.src = where;
+  document.getElementById("gameFrameContainer").hidden = false;
 }
 
-async function probe(autoLaunchIfDown = false) {
-  clearTimeout(probeTimer);
-  say("checking…");
+async function look() {
+  if (await games.check()) return showFrame(games.url("open"));
   try {
-    await fetch(links.open, {method: "HEAD", mode: "no-cors", cache: "no-store"});
-    say("All-Jao Games is running.", "port 8080");
-    showFrame();
-    return true;
-  } catch (e) {
-    if (autoLaunchIfDown && !autoStartAttempted) {
-      autoStartAttempted = true;
-      say("Starting All-Jao Games server automatically…");
-      startServer();
-      return false;
-    }
-    say("Server starting or not answering on " + links.open, String(e.message || e));
-  }
-  return false;
-}
-
-async function startServer() {
-  const btn = document.getElementById("startBtn");
-  btn.disabled = true;
-  say("Launching game server in background…");
-  try {
-    const r = await fetch("/api/all-jao/start", {method: "POST", headers: {"Content-Type": "application/json"}}).then(res => res.json());
-    if (r.ok) {
-      say(r.already_running ? "Game server is already running." : "Launched! Connecting to games…");
-      let attempts = 0;
-      function pollUntilReady() {
-        attempts++;
-        probe(false).then(running => {
-          if (!running && attempts < 10) {
-            probeTimer = setTimeout(pollUntilReady, 1000);
-          }
-        });
-      }
-      probeTimer = setTimeout(pollUntilReady, 1000);
-    } else {
-      say("Failed to launch: " + (r.error || "unknown error"));
-    }
-  } catch (e) {
-    say("Failed to contact Hub API: " + e.message);
-  } finally {
-    setTimeout(() => { btn.disabled = false; }, 2000);
+    showFrame(await games.ensure());
+    games.status.ready("All-Jao Games is running.");
+  } catch (err) {
+    const [words, detail] = Array.isArray(err) ? err : ["All-Jao Games could not be started.", String(err)];
+    games.status.error(words, detail);
   }
 }
 
-load();
+games.load().then(links => {
+  if (!links) return;
+  document.getElementById("where").textContent =
+    "app " + games.url("open") + " · folder " + (links.folder || "All-Jao-Games");
+  look();
+});
 </script>

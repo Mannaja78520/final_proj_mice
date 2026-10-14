@@ -14,15 +14,14 @@
   and feeds every viewer from it (main_python/cam_relay.py).
 -->
 <link rel="stylesheet" href="style.css">
-<div class="head">
-  <button class="secondary" onclick="location.href='/'">🏠 Hub</button>
+<body class="page">
+<!-- The head every page has: Mice.TopBar (mice-ui.js) adds "← Hub" first and
+     the technical switch last. -->
+<header class="topbar">
   <h1>📷 Cameras</h1>
   <button onclick="load(true)">⟳ Look again</button>
   <span class="mini" id="stat" aria-live="polite">looking…</span>
-  <label class="mini" style="display:inline-flex;gap:var(--sp-2);align-items:center;margin-left:auto">
-    <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
-    Show technical details</label>
-</div>
+</header>
 <!-- One login, every page (A25-5). -->
 <div class="card" id="loginHere" style="margin-bottom:var(--sp-4)"></div>
 <div class="grid" id="cams"></div>
@@ -32,4 +31,5 @@
 </div>
 
 <script src="/mice.js"></script>
+<script src="/mice-ui.js"></script>
 <script src="app.js"></script>

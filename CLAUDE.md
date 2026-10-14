@@ -97,6 +97,7 @@ New file or system: add it to `docs/systems.json`, then `python tools/systems.py
   a new thing is a new file or entry. Test: can someone add the next one
   without opening this file?
 * Shallow beats clever. No layers that exist only to be layers.
+* Web pages: read `docs/web_style.md` first; build from `shared/web/mice-ui.js` parts.
 * Every formula has an entry in `docs/ref_data.js` (`check_ref` enforces it).
 * Replies to the user: short, except warnings, destructive steps, and "why".
 

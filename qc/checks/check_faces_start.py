@@ -60,7 +60,7 @@ def run(t):
         t.ok(got.get("watcher") == "running" and faces._started.get("proc") is first,
              "a second press finds it running and starts no second watcher", body[:200])
         code, page = F.get(base + "/app/faces/")
-        t.contains(page, 'fetch("/api/faces/start", {method: "POST"',
+        t.contains(page, 'Mice.Api.post("/api/faces/start")',
                    "the Reconize screen has the button")
     finally:
         proc = faces._started.pop("proc", None)

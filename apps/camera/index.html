@@ -14,11 +14,6 @@
   and feeds every viewer from it (main_python/cam_relay.py).
 -->
 <style>
-body{margin:0;padding:var(--sp-4);background:var(--bg);color:var(--txt);
-     font-family:var(--sans)}
-.head{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;
-      margin-bottom:var(--sp-4)}
-.head h1{font-size:20px;margin:0}
 .grid{display:grid;gap:var(--sp-4);
       grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}
 /* The picture keeps its box whether or not a frame has arrived, so the page
@@ -27,15 +22,14 @@ body{margin:0;padding:var(--sp-4);background:var(--bg);color:var(--txt);
       border:1px solid var(--line);border-radius:var(--r-md);display:block}
 .cam h2{font-size:15px;margin:0 0 var(--sp-2)}
 </style>
-<div class="head">
-  <button class="secondary" onclick="location.href='/'">🏠 Hub</button>
+<body class="page">
+<!-- The head every page has: Mice.TopBar (mice-ui.js) adds "← Hub" first and
+     the technical switch last. -->
+<header class="topbar">
   <h1>📷 Cameras</h1>
   <button onclick="load(true)">⟳ Look again</button>
   <span class="mini" id="stat" aria-live="polite">looking…</span>
-  <label class="mini" style="display:inline-flex;gap:var(--sp-2);align-items:center;margin-left:auto">
-    <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
-    Show technical details</label>
-</div>
+</header>
 <!-- One login, every page (A25-5). -->
 <div class="card" id="loginHere" style="margin-bottom:var(--sp-4)"></div>
 <div class="grid" id="cams"></div>
@@ -45,6 +39,7 @@ body{margin:0;padding:var(--sp-4);background:var(--bg);color:var(--txt);
 </div>
 
 <script src="/mice.js"></script>
+<script src="/mice-ui.js"></script>
 <script>
 "use strict";
 

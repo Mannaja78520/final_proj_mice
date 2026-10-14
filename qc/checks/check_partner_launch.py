@@ -153,5 +153,10 @@ def run(t):
 
     path = next(a["path"] for a in registry.apps() if a["id"] == "faces")
     code, page = F.get(base + path)
-    t.contains(page, 'fetch("/api/partners/start?id="',
+    # Since A41-2 the starting is Mice.Partner's (shared/web/mice-ui.js):
+    # the page opens through it, and the class posts the hub's start.
+    t.contains(page, "recon.open('open'",
                "Open Reconize asks the hub to start Reconize")
+    ui = (F.CODE / "shared/web/mice-ui.js").read_text(encoding="utf-8")
+    t.contains(ui, '"/api/partners/start?id="',
+               "through the shared class, which posts the hub's start")

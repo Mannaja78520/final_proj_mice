@@ -75,7 +75,9 @@ def run(t):
     t.contains(body, "Open Reconize", "with the one button this step is about")
     # The same head as every other app page (user 2026-09-17: *why UI it not
     # the same as other? make it like other*).
-    t.ok('<div class="head">' in body and "🏠 Hub</button>" in body,
+    # Since A41-2 that head is ONE shared part, not a copy per page:
+    # <header class="topbar"> filled by Mice.TopBar (check_page_frame).
+    t.ok('<header class="topbar">' in body and 'src="/mice-ui.js"' in body,
          "and the same head as the other app pages: Hub button, title, switch",
          "the page had its own h1 and a text link back to the hub")
 
@@ -86,8 +88,13 @@ def run(t):
     # The FETCH, not the words. Asserting on "/api/partners" alone passed with
     # the fetch replaced by a hardcoded object, because the phrase still sat in
     # this page's own comment - caught by sabotage, 2026-09-10.
-    t.contains(body, 'fetch("/api/partners"',
+    # Since A41-2 the asking is Mice.Partner's (shared/web/mice-ui.js), so
+    # the page must build one for Reconize and the class must really fetch.
+    t.contains(body, 'new Mice.Partner(PARTNER',
                "the page asks the hub where Reconize lives")
+    ui = (F.CODE / "shared/web/mice-ui.js").read_text(encoding="utf-8")
+    t.contains(ui, 'Api.get("/api/partners")',
+               "through the shared class, which really fetches the list")
     t.ok("127.0.0.1" not in body,
          "and no address is written into the page itself",
          "an address here is a second copy of config/partners.json: moving "

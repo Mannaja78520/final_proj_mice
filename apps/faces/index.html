@@ -4,6 +4,7 @@
 <title>Reconize — Mice</title>
 <link rel="stylesheet" href="/mice.css">
 <script src="/mice.js"></script>
+<script src="/mice-ui.js"></script>
 <!--
   THE FACE APP, from our side. This page opens Reconize, says whether it is
   running, and polls the watcher to report if the rig is watching.
@@ -27,12 +28,7 @@
      one they picked. -->
 <script>document.documentElement.setAttribute("data-theme", "indigo");</script>
 <style>
-body{max-width:72rem;margin:0 auto;padding:var(--sp-6) var(--sp-4)}
-.head{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap;
-      background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
-      padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-6)}
-.brand{display:flex;flex-direction:column;line-height:1.3;margin-right:auto}
-.brand h1{font-size:18px;font-weight:700;color:var(--acc);letter-spacing:0}
+.topbar h1{color:var(--acc)}
 .card{padding:20px;margin-bottom:var(--sp-6)}
 .card h2{font-size:18px;font-weight:700;margin-bottom:var(--sp-1)}
 .card h2+p.mini{margin-bottom:var(--sp-4)}
@@ -51,22 +47,16 @@ p.warn{color:var(--warn)}
 #rWords>p.mini{margin-top:var(--sp-3);font-weight:600;color:var(--txt)}
 #rCams>.row,#rMiles>.row,#rPeople>.row{padding:var(--sp-2) 0;
   border-bottom:1px solid var(--line)}
-@media (max-width:430px){body{padding:var(--sp-3)}}
 </style>
 
-<!-- The same head every app page has (Cameras, Voice): Hub button, title,
-     status, technical switch. Asked 2026-09-17: *why UI it not the same as
-     other? make it like other.* Laid out as Reconize's own brand block. -->
-<div class="head">
-  <div class="brand">
-    <h1>👁 Reconize</h1>
-    <span class="mini">the face app that knows who is here</span>
-  </div>
-  <label class="mini" style="display:inline-flex;gap:var(--sp-2);align-items:center">
-    <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
-    Show technical details</label>
-  <button class="secondary" onclick="location.href='/'">🏠 Hub</button>
-</div>
+<!-- The same head every page has (user 2026-09-17: *why UI it not the same
+     as other? make it like other*): Mice.TopBar puts "← Hub" first and the
+     technical switch last. -->
+<body class="page">
+<header class="topbar">
+  <h1>👁 Reconize</h1>
+  <span class="sub">the face app that knows who is here</span>
+</header>
 <!-- No hub login here (user 2026-09-17): Reconize has its own login, and
      opening it from this PC needs none. The hub still asks a caller on the
      network, in main.py. -->
@@ -76,8 +66,8 @@ p.warn{color:var(--warn)}
   <p class="mini" id="whatIs">Reconize runs beside Mice on this PC. It watches the
     cameras and knows who is who; the rig follows it.</p>
   <div class="row">
-    <button class="primary" id="openBtn" onclick="openApp()">Open Reconize</button>
-    <button id="checkBtn" onclick="probe()">Check it is running</button>
+    <button class="primary" id="openBtn" onclick="recon.open('open', this).then(w => w && showFrame(w))">Open Reconize</button>
+    <button id="checkBtn" onclick="recon.check()">Check it is running</button>
     <span class="statline" id="stat" role="status" aria-live="polite">checking…</span>
   </div>
   <div class="statline tech mini" id="where"></div>
@@ -100,7 +90,7 @@ p.warn{color:var(--warn)}
   <div class="row" id="wStartRow" hidden>
     <button class="primary" id="wStart" onclick="startBoth()">Start following Reconize</button>
   </div>
-  <div id="wSrcs" class="tech" style="margin-top:var(--sp-4); display:none">
+  <div id="wSrcs" class="tech" style="margin-top:var(--sp-4)" hidden>
     <p class="mini">What each source can report:</p>
     <ul class="mini" id="wSrcList" style="list-style:inside; margin-top:var(--sp-2)"></ul>
   </div>
@@ -157,39 +147,20 @@ p.warn{color:var(--warn)}
 </div>
 
 <script>
-// WHICH outside program this tile is for. One name, so a second tile is a copy
-// of this file with a different name in it and no new code anywhere.
+// WHICH outside program this page is for. Asking, starting and opening it is
+// Mice.Partner (shared/web/mice-ui.js) - the same class as Photobooth and
+// All-Jao - and the addresses come from config/partners.json through the hub.
 const PARTNER = "reconize";
-let links = null;
+const recon = new Mice.Partner(PARTNER, {status: new Mice.Status("stat"), name: "Reconize"});
 
-// The addresses come from config/partners.json through /api/partners - the ONE
-// list, shared with the watcher and everything else that talks to an outside
-// app. This page used to keep its own links.json beside it; two lists disagree
-// the first time one of them is edited.
 async function load(){
-  let all;
-  try{
-    all = await fetch("/api/partners", {cache: "no-store"}).then(r => r.json());
-  }catch(e){
-    say("cannot ask the hub where Reconize lives — is the hub still running?");
-    return;
-  }
-  if (!all.ok){
-    say("the list of outside apps could not be read.",
-        all.error || "config/partners.json");
-    return;
-  }
-  links = (all.partners || {})[PARTNER];
-  if (!links){
-    say("config/partners.json has no entry called " + PARTNER +
-        " — add one and this button works, with no code change.");
-    return;
-  }
-  const w = document.getElementById("where");
-  w.textContent = "app " + links.open + " · api " + links.api;
+  const links = await recon.load();
+  if (!links) return;
+  document.getElementById("where").textContent =
+    "app " + recon.url("open") + " · api " + recon.url("api");
   // Opening the page is asking for Reconize: start it if it is silent.
-  ensureRunning().catch(err =>
-    say(...(Array.isArray(err) ? err : ["Reconize could not be started.", String(err)])));
+  recon.ensure().then(where => { recon.status.ready("Reconize is running.", where); showFrame(where); })
+    .catch(err => recon.status.error(...(Array.isArray(err) ? err : ["Reconize could not be started.", String(err)])));
   pollWatcher();
   showVersion();
 }
@@ -199,28 +170,23 @@ async function startBoth(){
   const st = document.getElementById("wStat");
   btn.disabled = true;
   st.textContent = "starting Reconize and the rig's watcher…";
-  try{
-    const got = await fetch("/api/faces/start", {method: "POST", cache: "no-store"}).then(r => r.json());
-    if (got.need_login) st.textContent = "Starting it needs the PC that runs Mice, or signing in on the hub page first.";
-    else if (got.watcherError) st.textContent = got.watcherError;
-    else if (got.reconize && !got.reconize.ok)
-      st.textContent = "The rig's watcher is running, but Reconize did not start: " + (got.reconize.error || "no reason given");
-    else st.textContent = "Started. Reconize can take about fifteen seconds before it sees anybody.";
-    if (got.detail) st.appendChild(el("span", {className: "tech mini", text: " " + got.detail}));
-  }catch(e){
-    st.textContent = "cannot reach the hub — is it still running?";
-  }finally{
-    btn.disabled = false;
-  }
+  const a = await Mice.Api.post("/api/faces/start");
+  const got = a.data;
+  if (a.needLogin) st.textContent = "Starting it needs the PC that runs Mice, or signing in on the hub page first.";
+  else if (a.status === 0) st.textContent = a.says;
+  else if (got.watcherError) st.textContent = got.watcherError;
+  else if (got.reconize && !got.reconize.ok)
+    st.textContent = "The rig's watcher is running, but Reconize did not start: " + (got.reconize.error || "no reason given");
+  else st.textContent = "Started. Reconize can take about fifteen seconds before it sees anybody.";
+  if (got.detail) st.appendChild(el("span", {className: "tech mini", text: " " + got.detail}));
+  btn.disabled = false;
 }
 
 async function showVersion(){
   const line = document.getElementById("verLine");
-  let v;
-  try{
-    v = await fetch("/api/partners/version?id=" + PARTNER, {cache: "no-store"}).then(r => r.json());
-  }catch(e){ return; }
-  if (!v.ok) return;
+  const a = await Mice.Api.get("/api/partners/version?id=" + PARTNER);
+  if (!a.ok) return;
+  const v = a.data;
   line.textContent = v.words;
   line.className = "mini " + (v.same ? "" : "warn");
   const t = [v.commit ? "commit " + v.commit.slice(0, 10) : v.why,
@@ -233,102 +199,21 @@ async function showVersion(){
   line.appendChild(el("span", {className: "tech mini", text: " " + t.filter(Boolean).join(" · ")}));
 }
 
-function say(msg, tech){
-  const el = document.getElementById("stat");
-  el.textContent = msg;
-  if (tech){
-    const t = document.createElement("span");
-    t.className = "tech mini";
-    t.textContent = " " + tech;
-    el.appendChild(t);
-  }
-}
-
-// Starts Reconize (Main, never Dummy) through the hub when it is silent and
-// waits until it answers. Returns where it answered; throws [words, detail].
-let starting = null;
-function ensureRunning(){
-  if (!starting) starting = startLoop().finally(() => { starting = null; });
-  return starting;
-}
-async function startLoop(){
-    const until = Date.now() + 120000;     // a cold face model can be slow
-    let got;
-    while (true){
-      try{
-        const r = await fetch("/api/partners/start?id=" + PARTNER,
-                              {method: "POST", cache: "no-store"});
-        got = await r.json();
-      }catch(e){
-        throw ["cannot reach the hub — is it still running?", String(e.message || e)];
-      }
-      if (got.need_login) throw ["Reconize can only be started from the PC that runs Mice, or after signing in on the hub page."];
-      if (!got.ok) throw [got.error || "Reconize could not be started.", [].concat(got.log || []).join(" ")];
-      if (got.ready) break;
-      say("starting Reconize… (" + got.starting.join(", ") + ") — this takes about fifteen seconds",
-          "log " + [].concat(got.log || []).join(" "));
-      if (Date.now() > until) throw ["Reconize is taking too long to start.", [].concat(got.log || []).join(" ")];
-      await new Promise(res => setTimeout(res, 2000));
-    }
-    // Where it really answered this time - their port can change with an update.
-    const where = got.open || links.open;
-    say("Reconize is running.", where);
-    showFrame(where);
-    return where;
-}
-
 function showFrame(where){
   const frame = document.getElementById("reconFrame");
   if (frame.src === "about:blank") frame.src = where;
   document.getElementById("frameCard").hidden = false;
 }
 
-// The tab is opened NOW, inside the click: a tab opened after a wait is
-// blocked as a pop-up.
-async function openApp(){
-  if (!links) return say("the addresses have not loaded yet — try again in a moment");
-  const btn = document.getElementById("openBtn");
-  btn.disabled = true;
-  const tab = window.open("about:blank", "_blank");
-  try{
-    const where = await ensureRunning();
-    if (tab && !tab.closed) tab.location.href = where;
-    else window.open(where, "_blank");
-  }catch(err){
-    if (tab && !tab.closed) tab.close();
-    say(...(Array.isArray(err) ? err : ["Reconize could not be started.", String(err)]));
-  }finally{
-    btn.disabled = false;
-  }
-}
-
-// Its /api/health needs no login (their main.py:182). A browser can reach it
-// directly, so this page does not need the hub for the one thing it does today.
-async function probe(){
-  if (!links) return;
-  say("checking…");
-  try{
-    const r = await fetch(links.api + links.health, {cache: "no-store"});
-    say(r.ok ? "Reconize is running." : "Reconize answered, but not happily.",
-        "HTTP " + r.status);
-  }catch(e){
-    // A cold start loads a face model first - about fifteen seconds - so "not
-    // answering" is not the same as "not started".
-    say("Reconize is not running. Press Open Reconize and it starts by itself.",
-        String(e.message || e));
-  }
-}
-
+// What the rig's watcher sees, asked THROUGH THE HUB (A41-2): the watcher
+// binds to loopback, so a page on a phone could never reach it directly.
 async function pollWatcher() {
   const el = document.getElementById("wStat");
   const srcs = document.getElementById("wSrcs");
   const list = document.getElementById("wSrcList");
-  try {
-    // The watcher binds to loopback only.
-    const r = await fetch("http://localhost:8769/state", {cache: "no-store"});
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const state = await r.json();
-    
+  const a = await Mice.Api.get("/api/faces/state");
+  if (a.ok) {
+    const state = a.data;
     el.textContent = state.watching ? "Yes - the rig sees who arrives." : "Not yet - the rig is not seeing anybody arrive.";
     el.className = state.watching ? "statline ok" : "statline warn";
     document.getElementById("wStartRow").hidden = true;
@@ -345,24 +230,21 @@ async function pollWatcher() {
       ct.lastChild.textContent = " " + bad.map(([k, c]) => k + ": " + c.missing.join(", ")).join(" · ");
     }
 
-    if (state.sources && state.sources.length > 0) {
-      srcs.style.display = "block";
-      list.innerHTML = "";
-      for (const s of state.sources) {
-        const li = document.createElement("li");
-        const cam = s.hasCamera ? "📷 has camera" : "no camera";
-        const rep = s.reports && s.reports.length ? s.reports.join(", ") : "nothing";
-        li.textContent = `${s.kind}: ${cam}, reports ${rep}`;
-        list.appendChild(li);
-      }
-    } else {
-      srcs.style.display = "none";
+    srcs.hidden = !(state.sources && state.sources.length);
+    list.innerHTML = "";
+    for (const s of state.sources || []) {
+      const li = document.createElement("li");
+      const cam = s.hasCamera ? "📷 has camera" : "no camera";
+      const rep = s.reports && s.reports.length ? s.reports.join(", ") : "nothing";
+      li.textContent = `${s.kind}: ${cam}, reports ${rep}`;
+      list.appendChild(li);
     }
-  } catch (e) {
-    el.textContent = "The face helper is not running on this PC, so the rig cannot follow Reconize yet.";
+  } else {
+    el.textContent = a.status === 0 ? a.says
+      : "The face helper is not running on this PC, so the rig cannot follow Reconize yet.";
     el.className = "statline err";
     document.getElementById("wStartRow").hidden = false;
-    srcs.style.display = "none";
+    srcs.hidden = true;
   }
   setTimeout(pollWatcher, 3000);
 }
