@@ -109,14 +109,20 @@ def run(t):
             browser.raw_page("""
 <iframe id="f" src="/app/photobooth/" style="width:390px;height:700px"></iframe>
 <script>
-setTimeout(async function(){
-  var d = document.getElementById("f").contentDocument;
+window.addEventListener("load", async function(){
+  // Wait for the page's own answer, not a number of seconds.
+  var doc = function(){ return document.getElementById("f").contentDocument; };
+  await qcWaitFor(function(){
+    var s = doc().getElementById("stat");
+    return s && !/checking/.test(s.textContent) && doc().querySelector(".topbar-home");
+  }, 15000);
+  var d = doc();
   var home = d.querySelector("header.topbar .topbar-home");
   await qcMark("HOME " + (home ? home.getAttribute("href") : "none"));
   await qcMark("ADV " + d.querySelectorAll("#advOn").length);
   await qcMark("STAT " + (d.getElementById("stat").firstChild || {}).textContent);
   qcMark("done");
-}, 4000);
+});
 </script>""", base, seconds=25)
             marks = fake_serial.qc_marks
             t.ok("HOME /" in marks, "the page's head starts with the way back to the hub", marks)
