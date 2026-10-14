@@ -26,6 +26,7 @@
       "shows.js",
       "music_on_a_keyframe.js",
       "project_save_load.js",
+      "save_state.js",
       "stl_meshes.js",
       "urdf_import.js",
       "robot_link.js",

@@ -1,0 +1,166 @@
+    <div class="card" data-stab="setup">
+      <h2>Model (STL + texture)</h2>
+      <div class="mini">Export STL from SolidWorks (mm) into <b>models/</b> and press ⟳,
+        or pick a file here and press Import (also accepts <b>PNG/JPG textures</b> —
+        draw a face or pattern in any paint program and import it). Assign a
+        shape and/or a texture per body part — the STL's <b>real size sets the
+        rig lengths automatically</b>, and the yellow joint balls + bones stay
+        visible so you always see the joints. If the STL origin doesn't match,
+        use the <b>rot / off / scale</b> boxes under the part.</div>
+      <div class="row">
+        <input type="file" id="stlFile" accept=".stl,.png,.jpg,.jpeg,.bmp,.gif" style="flex:1">
+        <button onclick="importStl()">Import</button>
+        <button onclick="refreshModels()">⟳</button>
+      </div>
+      <div id="meshAssign"></div>
+      <h2 style="margin-top:10px">Clothes / add-ons</h2>
+      <div class="mini">extra STL pieces (shirt, hat, decorations) layered over any
+        body part — they follow that part's movement and never replace it.</div>
+      <div id="addonList"></div>
+      <div class="row"><button onclick="addAddon()">+ Add piece</button></div>
+    </div>
+
+    <!-- URDF import (A31-7, user 2026-09-23): an STL alone carries no origin,
+         so every part had to be rotated and offset by hand until it looked
+         right. A URDF carries those numbers. Logic in app_parts/urdf_import.js. -->
+    <div class="card" data-stab="setup">
+      <h2>Build it from a URDF <span class="mini">(instead of placing every STL by hand)</span></h2>
+      <div class="mini">A <b>STEP</b> file cannot be opened in a browser, and an
+        <b>STL</b> on its own does not say where the part belongs — which is why
+        a dragged-in part lands in the middle and has to be nudged into place.
+        A <b>URDF</b> carries the position, the turn, the size and which part
+        hangs off which, so importing one fills those boxes in for you.
+        <br>From SolidWorks: use the <b>sw2urdf</b> add-in (Tools ▸ Export as
+        URDF). It writes a <b>.urdf</b> file and a <b>meshes</b> folder — import
+        the STL meshes above first, then the .urdf here.</div>
+      <div class="row">
+        <input type="file" id="urdfFile" accept=".urdf,.xml" style="flex:1">
+        <button onclick="importUrdf()">Read URDF</button>
+      </div>
+      <div class="row">
+        <label class="lbl" for="urdfMm">Sizes are in</label>
+        <select id="urdfMm" onchange="renderUrdfUI()">
+          <option value="1000">metres (normal for URDF)</option>
+          <option value="1">millimetres already</option>
+          <option value="10">centimetres</option>
+        </select>
+        <label class="lbl" for="urdfUp">Up is</label>
+        <select id="urdfUp" onchange="renderUrdfUI()">
+          <option value="z">Z (normal for URDF / ROS)</option>
+          <option value="y">Y (already like this editor)</option>
+        </select>
+      </div>
+      <div id="urdfLinks"><div class="mini">No URDF loaded yet.</div></div>
+      <div class="row"><button class="primary" onclick="useUrdf()">Use this URDF</button></div>
+      <div class="statline" id="urdfStat">Reading a URDF changes nothing on its own — it shows what it found, you check the parts, then press Use this URDF.</div>
+    </div>
+
+    <div class="card" data-stab="setup">
+      <h2>Rig setup <span class="mini">(match the 3D model to your robot)</span></h2>
+      <div class="mini"><b>zero°</b> = the joint angle where that joint is
+        drawn <i>straight</i> (arm along the body). It is just a reference — the
+        normal value is <b>90</b> (the neutral pose), and you do <u>not</u> need
+        0 or 180. Only change it if at 90° your real arm is not straight: move
+        the model's sliders to match the real robot, then type those angles as
+        the zeros. <b>axis</b> = roll/pitch/yaw (which way it turns);
+        <b>inv</b> flips the direction.</div>
+      <div class="mini"><b>min/max</b> = each joint's real travel in JOINT
+        degrees — a universal joint can't reach 0–180 (default 30–150); the
+        servo still runs 0–180 via the <b>gear</b> (12:13). Dragging respects
+        these. These match the module and can be pushed to it.</div>
+      <div id="rigJoints"></div>
+      <div id="rigDims"></div>
+      <div class="mini" style="margin-top:8px"><b>Shrug linkage (4-bar).</b> One servo
+        lifts both shoulders, but a 4-bar does not lift them by the same amount, and the
+        ratio changes across the travel — so the preview cannot just rock a bar. Measure
+        it once: set SHRUG to a few angles and note how far each shoulder actually rose,
+        in mm, up positive. Leave the box empty and the preview keeps the old symmetric
+        rock.</div>
+      <div id="shrugCurve"></div>
+      <div class="row">
+        <button class="primary" onclick="saveRigDefault()" title="Lock the current tuned rig in as your default, so Reset returns to this and it's kept safe">★ Save current as default</button>
+        <button onclick="shipRigDefault()" title="Write this rig into the project itself, so EVERY browser starts on it — not just this one. Use once the rig matches the real robot.">★★ Make this the factory default</button>
+        <button onclick="resetRig()" title="Return to your saved default (or the factory rig if you haven't saved one)">Reset to default</button>
+      </div>
+      <div class="row">
+        <button onclick="pullLimits()">⬇ Read from robot</button>
+        <button class="primary" onclick="pushLimits()">⬆ Send limits + gear to robot</button>
+      </div>
+      <div class="statline" id="limStat"></div>
+    </div>
+
+    <div class="card" data-stab="setup">
+      <h2>Servo offset — one joint at a time</h2>
+      <div class="mini">A servo horn only fits back on in whole teeth, so a joint is
+        often a few degrees out even when everything else is right. Nudge the joint
+        here until it looks straight: <b>−</b> and <b>+</b> move it by 0.5°, or type
+        a number. <b>0</b> clears that joint.</div>
+      <div class="mini" style="margin-top:4px">The arm moves as you press, and the
+        robot remembers this by itself. It only shifts where that joint sits — every
+        pose and sequence you have saved keeps working.
+        <b>Set zero</b>, on the Robot tab, does all ten at once instead.</div>
+      <div id="trimUI"></div>
+      <div class="row">
+        <button onclick="pullOffsets()" title="Read the offsets the robot is using now">⬇ Read from robot</button>
+        <button onclick="clearOffsets()" title="Set every joint's offset back to zero, on this page and on the robot">Clear all</button>
+      </div>
+      <div class="statline" id="trimStat"></div>
+    </div>
+
+    <div class="card" data-stab="setup">
+      <h2>Saving</h2>
+      <div class="mini">One Save writes both files under one name: the .yaml the robot
+        plays and the .json you edit later.</div>
+      <label class="row"><input type="checkbox" id="askUnsavedChk" checked
+             onchange="setAskUnsaved(this.checked)">
+        Ask before unsaved moves are replaced or the page is closed</label>
+      <div class="mini">Off: opening another file replaces the time bar without asking.
+        A copy is still kept in this browser and offered back next time.</div>
+    </div>
+
+    <div class="card" data-stab="setup">
+      <h2>Move your setup to another PC</h2>
+      <div class="mini">Everything Studio remembers &mdash; your rig, your saved default,
+        the STL assignments &mdash; is kept in <b>this browser on this PC</b>. Use this to
+        carry it to another machine. Sequences and projects are not included: those are
+        files on the hub and travel with it.</div>
+
+      <div class="row" style="margin-top:8px">
+        <button onclick="exportSettings()" title="Download everything as one file you can copy to the other PC">⬇ Export to a file</button>
+        <label class="btnlike" title="Load a settings file exported from another PC">⬆ Import a file
+          <input id="setFile" type="file" accept="application/json,.json"
+                 onchange="importSettingsFile(this)" style="display:none">
+        </label>
+      </div>
+
+      <div class="mini" style="margin-top:10px"><b>Or straight over the network.</b>
+        On the PC that HAS the setup press Share. On this PC press Find PCs, pick it, press Get.</div>
+      <div class="row">
+        <button onclick="shareSettings()" title="Put this PC's settings on its hub so another PC can fetch them">📤 Share from this PC</button>
+        <button onclick="findHubs()" title="Look for other PCs running the hub on this network">🔍 Find PCs</button>
+      </div>
+      <div class="row">
+        <select id="hubList" style="flex:1;min-width:0"><option value="">press Find PCs</option></select>
+        <input id="hubHost" placeholder="or type an address" style="width:150px"
+               title="the other PC's IP or name, if the search cannot see it">
+        <button class="primary" onclick="getSettingsFrom()">⬇ Get</button>
+      </div>
+      <div class="statline" id="setStat" aria-live="polite"></div>
+    </div>
+
+    <div class="card" data-stab="setup" id="userManageCard" style="display:none;">
+      <h2>Manage Logins (Super Admin)</h2>
+      <div class="mini">Add, edit, or remove users. (Leave password blank to keep current, or to remove if modifying).</div>
+      <div class="row">
+        <select id="muList" onchange="muSelect()"><option value="">New User...</option></select>
+      </div>
+      <div class="row">
+        <span class="lbl">Username</span><input id="muUser" style="width:120px">
+        <span class="lbl">Password</span><input id="muPass" style="width:120px" type="password">
+      </div>
+      <div class="row">
+        <button class="primary" onclick="muSave()">Save User</button>
+        <button onclick="muDelete()">Delete User</button>
+      </div>
+      <div class="statline" id="muStat"></div>
+    </div>

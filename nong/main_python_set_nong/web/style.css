@@ -16,10 +16,15 @@ h2{font-size:13px}
 .hint,.mini{font-size:12px}
 /* .mini is also used inside an h2, where it must not inherit the label styling */
 .mini{font-weight:400;text-transform:none;letter-spacing:0}
-header{
-  display:flex;align-items:center;gap:8px;padding:8px 12px;
+/* The shared head (.topbar, mice.css) as a strip across the top: Studio is
+   a full-window tool, so no gap under it and its own smaller title. */
+header.topbar{
+  margin:0;padding:8px 12px;flex:0 0 auto;
   border-bottom:1px solid var(--line);background:var(--card);
 }
+header.topbar h1{font-size:18px}
+header.topbar .statline{margin:0}
+.topbar-gap{flex:1}
 #main{flex:1;display:flex;min-height:0}
 #viewport{flex:1;position:relative;min-width:0}
 #viewport canvas{display:block}
@@ -42,6 +47,10 @@ header{
 /* Studio's tabs are the shared ones: #sideTabs carries `tabs equal` in
    index.html and everything else comes from mice.css. */
 #sideTabs{margin-bottom:2px}
+/* A tab is never narrower than its word: at the 320px panel "Sequence" was
+   cut to "Sequen" (audit 2026-10-14). Too many for the row, they wrap. */
+#sideTabs{flex-wrap:wrap}
+#sideTabs .tab{flex:1 0 auto;font-size:13px}
 #tabMove,#tabSetup{display:flex;flex-direction:column;gap:10px}
 /* the side panel IS --card, so a card inside it steps back to the page colour */
 .card{background:var(--bg)}
@@ -134,8 +143,13 @@ input[type=checkbox]{accent-color:var(--acc)}
     background: linear-gradient(to bottom, transparent 11px, var(--line) 11px, var(--line) 13px, transparent 13px);
   }
 }
+/* Until the handle above it is dragged, the timeline takes at most this much
+   and scrolls inside: at 1280x800 it took ~500px and left the 3D view ~200
+   (audit 2026-10-14). A dragged height lifts the cap (initTimeDrag). */
 #timeline {
   overflow-y: auto;
+  flex: 0 0 auto;
+  max-height: 38vh;
 }
 
 #timeline{border-top:1px solid var(--line);background:var(--card);padding:8px 12px}
@@ -158,6 +172,9 @@ input[type=checkbox]{accent-color:var(--acc)}
 .tb-blk{position:absolute;top:0;bottom:0;background:var(--card);
         border-right:1px solid var(--line);font-size:11px;color:var(--mut);
         overflow:hidden;white-space:nowrap;padding:0 3px;line-height:26px}
+/* the one-line note on an empty bar starts clear of the playhead, which sat
+   on its first letter */
+.tb-blk.note{padding-left:var(--sp-4)}
 .tb-blk.hold{background:var(--sunk);opacity:.55}
 .tb-blk.sel{outline:1px solid var(--acc);outline-offset:-1px}
 .tb-blk.off{opacity:.25}
@@ -222,6 +239,9 @@ input[type=checkbox]{accent-color:var(--acc)}
   border-radius:var(--r-sm);padding:1px 6px;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
 #distLayer .distNote{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
   background:var(--bg);color:var(--mut);border:1px solid var(--line);border-radius:var(--r-sm);padding:4px 10px;font-size:12px}
+/* On a phone the view buttons covered half the 3D view (audit 2026-10-14):
+   there they fold behind one button (scene.js viewCubeOpen). */
+#viewCube .vc-toggle{display:none}
 #viewCube button.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc);font-weight:600}
 .key .kidx{font-weight:700;font-size:12px}
 /* which arm plays this move, and the mirror button beside it (A31-6) */
@@ -304,8 +324,9 @@ input[type=checkbox]{accent-color:var(--acc)}
      instead of the flex column being pinned to exactly 100% height */
   html,body{height:auto;min-height:100%}
   body{overflow:auto}
-  header{flex-wrap:wrap;gap:6px;padding:8px 10px}
-  h1{font-size:16px;margin-right:6px}
+  header.topbar{gap:6px;padding:8px 10px}
+  header.topbar h1{font-size:16px;margin-right:6px}
+  .topbar-gap{display:none}
   #main{flex-direction:column;min-height:0}
   /* the viewport keeps a usable, thumb-friendly height instead of collapsing */
   #viewport{flex:0 0 auto;height:52vh;min-height:260px;width:100%}
@@ -323,10 +344,12 @@ input[type=checkbox]{accent-color:var(--acc)}
   .tl-head{gap:5px}
   .tb-clock{margin-left:0}
   .sep{display:none}
-  #timeline{padding:8px 10px}
+  #timeline{padding:8px 10px;max-height:none}   /* the page scrolls instead */
   /* the view cube overlaps the model on a small canvas — shrink and tuck it */
   #viewCube{top:6px;right:6px;padding:4px;gap:3px}
   #viewCube button{min-width:38px;padding:4px 6px;font-size:11px}
+  #viewCube .vc-toggle{display:block}
+  #viewCube:not(.open) .vcRow{display:none}
 }
 
 /* ---- very narrow phones: one input per line where a grid would crush ---- */
@@ -386,7 +409,7 @@ input[type=checkbox]{accent-color:var(--acc)}
 @media (pointer:coarse){.kname{min-height:24px;font-size:12px}}
 
 /* Short guidance in the header leaves the canvas room to breathe. */
-header{flex-wrap:wrap;padding:var(--sp-3) var(--sp-4);gap:var(--sp-3)}
+header.topbar{padding:var(--sp-3) var(--sp-4);gap:var(--sp-3)}
 .pose-help{position:relative;padding:0 var(--sp-3);font-size:13px}
 .pose-help[open]{flex-basis:100%}
 .pose-help .hint{display:block;max-width:80ch;margin:var(--sp-2) 0}
@@ -406,6 +429,13 @@ header{flex-wrap:wrap;padding:var(--sp-3) var(--sp-4);gap:var(--sp-3)}
 .jrow{margin:var(--sp-2) 0}
 #timeline{padding:var(--sp-3) var(--sp-4)}
 .tl-head{gap:var(--sp-2)}
+/* The timeline's buttons are a toolbar, not a form: compact, so the row stays
+   one line at 1280 px and the 3D view keeps the height (A41-4). A finger
+   still gets the full size from the pointer:coarse rule. */
+@media (pointer:fine){
+  #timeline button{padding:5px 10px;min-height:0;font-size:13px}
+  #timeline .sep{margin:0 2px}
+}
 #timelineEmpty{margin:var(--sp-2) 0}
 #viewCube{background:color-mix(in srgb,var(--card) 92%,transparent);border-radius:var(--r-md)}
 

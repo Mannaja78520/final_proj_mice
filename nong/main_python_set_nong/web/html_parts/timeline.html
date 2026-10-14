@@ -1,0 +1,45 @@
+<div id="timeline">
+  <!-- One row of what you do to the timeline (A41-4). It was four rows at
+       1280x800 and left the 3D view ~200 px tall: the name box and Save are
+       the head's, the saved-file list and the chain sit in the Sequence tab. -->
+  <div class="tl-head">
+    <h2>Timeline</h2>
+    <button class="primary" onclick="addKey()">+ Add keyframe</button>
+    <button onclick="updateKey()">Update selected</button>
+    <button onclick="dupKey()">Duplicate</button>
+    <button onclick="delKey()">Delete</button>
+    <button onclick="moveKey(-1)" title="move the selected keyframe one place earlier" aria-label="move earlier">◀</button>
+    <button onclick="moveKey(1)" title="move the selected keyframe one place later" aria-label="move later">▶</button>
+    <span class="sep"></span>
+    <button onclick="checkCollisions(true)">⚠ Check crash</button>
+    <button class="primary" id="playBtn" onclick="togglePlay()"
+            title="Previews here in the browser, and pauses while this page is hidden. Run on robot hands it to the module instead.">▶ Play</button>
+    <label><input type="checkbox" id="loopChk"> loop</label>
+    <span class="sep"></span>
+    <button onclick="uploadYaml()" title="Put these moves on the robot's own card, under the name at the top.">Send to robot SD</button>
+    <button onclick="robotRun()"
+            title="Sends the sequence to the module and lets the MODULE play it on its own clock. This keeps running if you switch app, minimise the browser, or close this page entirely. It starts at the move you have clicked and carries on to the end - it never travels back to the first pose to begin.">▶ Run on robot</button>
+    <button onclick="robotCmd('MOVE STOP')">⏹ Stop robot</button>
+  </div>
+  <div id="timebar">
+    <div class="tb-top">
+      <span class="tb-label">Time bar — drag to any moment, then press Play</span>
+      <button class="tb-btn" onclick="rewind()"
+              title="Jump the whole show back to the very beginning.">⏹ Back to start</button>
+      <button class="tb-btn" onclick="zoomTimeline(0.5)" title="Zoom out timeline">🔍 -</button>
+      <button class="tb-btn" onclick="zoomTimeline(2)" title="Zoom in timeline">🔍 +</button>
+      <span id="tlTime" class="tb-clock">0.0s / 0.0s</span>
+    </div>
+    <div class="tb-scroll" style="overflow-x: auto; padding-bottom: 8px;">
+      <div class="tb-track" id="tbTrack" style="width: 100%; min-width: 100%;">
+        <div id="tbBlocks" class="tb-blocks" aria-hidden="true"></div>
+        <input type="range" id="scrub" min="0" max="1000" value="0" step="1"
+               aria-label="time in the show" oninput="scrubTo(this.value)" style="width: 100%;">
+      </div>
+      <div id="tbRuler" class="tb-ruler" aria-hidden="true" style="width: 100%; min-width: 100%;"></div>
+    </div>
+  </div>
+  <div id="keys"></div>
+  <div id="timelineEmpty" class="empty-state" hidden><b>Your first pose starts here.</b>Shape the robot, then press + Add keyframe. Add another pose to make a movement.</div>
+  <div class="statline" id="tlStat">keyframe 0 is the <b>start pose</b> — select it any time to re-edit, then press “Update selected”.</div>
+</div>

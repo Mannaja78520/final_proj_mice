@@ -1,0 +1,17 @@
+<!-- The shared head (A41-4): Mice.TopBar puts "← Hub" first and the technical
+     switch last. ONE name box and ONE Save for the whole page: the timeline
+     used to carry a second name box and a second Save (audit 2026-10-14). -->
+<header class="topbar">
+  <h1>Nong Studio</h1>
+  <span class="statline" id="stat">checking…</span>
+  <details class="pose-help disclosure" id="poseHelp">
+    <summary>How to pose</summary>
+    <p class="hint">Choose a joint, then drag its ring or use the sliders. Add a keyframe to keep a pose.</p>
+    <span class="hint">Click a joint to show its rings · drag a ring to turn that servo · <b>Shift+drag</b> 🟢 wrist / 🟠 elbow = move arm (IK) · left-drag = orbit · wheel = zoom · right-drag = pan</span>
+  </details>
+  <span class="topbar-gap"></span>
+  <input id="projName" aria-label="Name of these moves" placeholder="name" value="my_move"
+         title="One name for both files: NAME.json to edit later, NAME.yaml, the file the robot plays.">
+  <button class="primary" onclick="saveAll()" title="Saves the moves twice under this one name: NAME.json to edit later, and NAME.yaml, the file the robot plays.">💾 Save</button>
+  <select id="projList" aria-label="Open saved moves" onchange="loadProject(this.value)"><option value="">Load…</option></select>
+</header>

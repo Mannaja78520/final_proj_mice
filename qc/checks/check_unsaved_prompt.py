@@ -44,7 +44,8 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
     [90, 40, 140].forEach(function(v){ pose = pose.map(function(){ return v; }); addKey(); });
     document.getElementById("projName").value = "%(name)s";
     document.getElementById("projName").dispatchEvent(new Event("input"));
-    report("synced=" + document.getElementById("seqName").value);
+    // ONE name box on the page (A41-4): the timeline's copy is gone
+    report("nameboxes=" + document.querySelectorAll("#projName,#seqName").length);
     await refreshSeqs();
     var ok = await saveAll();
     report("saved=" + ok + "~asked=" + asked + "~dirty=" + isDirty());
@@ -100,7 +101,7 @@ def run(t):
         bad = [m for m in marks if m.startswith("ERR-")]
         if not t.ok(marks and not bad, "the driver ran without throwing", marks[-3:]):
             return
-        t.ok("synced=%s" % NAME in marks, "the two name boxes are one name", marks)
+        t.ok("nameboxes=1" in marks, "one name box for the project and its YAML", marks)
         t.ok("saved=true~asked=0~dirty=false" in marks,
              "Save writes a new name without a question and leaves the page clean", marks)
         t.ok(seq.is_file() and proj.is_file(),

@@ -57,14 +57,35 @@ Home is `main_python/web/home/`, never `hub.html` (that file is BUILT):
 
 A new area is a new part file plus one line (template or `web_build.json`).
 
+## Studio is cut the same way (A41-4)
+
+`nong/main_python_set_nong/web/`, never `index.html` or `app.js` (both BUILT):
+
+* `index.template.html` — the map: one `<!-- part: x.html -->` line per area.
+* `html_parts/<area>.html` — header, view (3D + view buttons), login, pose,
+  sequence, robot, shows, setup, timeline. A side-panel card belongs to the
+  part of the tab it shows on (`data-stab`).
+* `app_parts/*.js` — the script, one job per file, in `web_build.json`'s
+  `studio.parts` order (they share one script).
+* `style.css` — Studio's own; it stays a file (Studio is a full-window tool,
+  `body.app`, not the `body.page` column).
+* Studio has ONE name box and ONE Save, both in the head. The timeline row is
+  only what you do to the timeline; the saved-file list and "Then run" live
+  in the Sequence tab. A new timeline button is a toolbar button: it must not
+  make the row wrap at 1280 px (`check_studio_layout` measures the 3D view).
+* Its head status line (`save_state.js`) says saved / not saved; save, load
+  and timing detail still go to the timeline's own line, failures to
+  `notice()` (seen on every tab).
+
 ## The parts
 
 * **`Mice.Api.get(path)` / `.post(path, body)`** — every call to the hub. Never
   throws; returns `{ok, data, status, needLogin, says, tech}`. `says` is for the
   person, `tech` for the technical switch. No bare `fetch`, no empty `catch`.
   Default timeout 8 s; pass `{timeout: ms}` for a slow one. (Home's login,
-  accounts and pairing use it; its scans and flashing still call `fetch`,
-  which mocks in QC replace - move them when you next change them.)
+  accounts and pairing use it, and Studio's project save, load and list; the
+  rest of both still call `fetch`, which mocks in QC replace - move a call
+  when you next change it.)
 * **`new Mice.Status("stat")`** — one status line, five states:
   `.loading() .empty() .error() .stale() .warn() .ready()`, each `(words, tech)`.
   `.from(answer, "saved")` words an Api answer.
@@ -93,6 +114,6 @@ A new area is a new part file plus one line (template or `web_build.json`).
 | Camera, Voice | `apps/<id>/index.template.html` + `app.js` + `style.css`, built by `tools/build_web.py` | yes |
 | Reconize, Photobooth, All-Jao | `apps/<id>/index.html` | yes |
 | Home | `main_python/web/home/` (template + `parts/`) → `hub.html`, built by `tools/build_web.py` | yes (A41-3) |
-| Studio | `nong/main_python_set_nong/web/` (`app_parts/*.js` → `app.js`) | stage 3 |
+| Studio | `nong/main_python_set_nong/web/` (`index.template.html` + `html_parts/` → `index.html`, `app_parts/*.js` → `app.js`) | yes (A41-4) |
 | Board site, RGB | `firmware/src/web/WebUI.h`, `main_python/web/rgb.html` | stage 4 |
 | Help | `main_python/web/help.html` | stage 5 |

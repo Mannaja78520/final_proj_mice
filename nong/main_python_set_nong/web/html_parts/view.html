@@ -1,0 +1,22 @@
+  <div id="viewport">
+    <div id="collideWarn">⚠ joints collide — the robot would crash</div>
+    <div id="viewCube" title="click a view to look straight at that plane and drag joints in it (like Fusion/SolidWorks)">
+      <button id="viewCubeBtn" class="vc-toggle" aria-expanded="false" onclick="viewCubeOpen()"
+              title="show the view buttons: Top, Front, 3D…">Views ▾</button>
+      <div class="vcRow"><button data-view="top" onclick="setView('top')">Top</button></div>
+      <div class="vcRow">
+        <button data-view="left" onclick="setView('left')">Left</button>
+        <button data-view="front" onclick="setView('front')">Front</button>
+        <button data-view="right" onclick="setView('right')">Right</button>
+        <button data-view="back" onclick="setView('back')">Back</button>
+      </div>
+      <div class="vcRow">
+        <button data-view="bottom" onclick="setView('bottom')">Bottom</button>
+        <button data-view="iso" class="on" onclick="setView('iso')">3D</button>
+      </div>
+      <div class="vcRow">
+        <button id="distBtn" aria-pressed="false" onclick="distSet(!distOn)"
+                title="show distances in mm: elbow to hand, elbow to elbow, hand to hand. Hold D to see them only while held.">📏 Distances</button>
+      </div>
+    </div>
+  </div>

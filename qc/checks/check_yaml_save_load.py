@@ -30,17 +30,17 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
   try{
     keys = [];
     [90, 40, 140].forEach(function(v){ pose = pose.map(function(){ return v; }); addKey(); });
-    document.getElementById("seqName").value = "%(name)s";
+    document.getElementById("projName").value = "%(name)s";
     await refreshSeqs();
     await exportYaml();                                   // a new name: no question
     report("asked1=" + asked);
     // open it again from the list, the way a person picks it
-    keys = []; document.getElementById("seqName").value = "my_move";
+    keys = []; document.getElementById("projName").value = "my_move";
     var sel = document.getElementById("seqList");
     sel.value = "%(name)s.yaml";
     sel.dispatchEvent(new Event("change"));
     await new Promise(function(r){ setTimeout(r, 1500); });
-    report("keys=" + keys.length + "~name=" + document.getElementById("seqName").value);
+    report("keys=" + keys.length + "~name=" + document.getElementById("projName").value);
     // saving over it asks, and Cancel writes nothing
     answer = false; asked = 0;
     keys.pop();

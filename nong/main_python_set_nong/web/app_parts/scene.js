@@ -91,6 +91,17 @@ function setView(name) {
   if ($("dragPlane")) $("dragPlane").value = v.plane;
   document.querySelectorAll("#viewCube button").forEach(b =>
     b.classList.toggle("on", b.dataset.view === name));
+  viewCubeOpen(false);
+}
+// On a phone the view buttons covered half the 3D view (audit 2026-10-14), so
+// there they fold behind one button and fold again once a view is picked.
+// style.css shows that button only on a narrow screen; elsewhere this is moot.
+function viewCubeOpen(open) {
+  const cube = $("viewCube"), btn = $("viewCubeBtn");
+  if (!cube) return;
+  if (open === undefined) open = !cube.classList.contains("open");
+  cube.classList.toggle("open", open);
+  if (btn) btn.setAttribute("aria-expanded", String(open));
 }
 // the sidebar drag-plane dropdown -> move the camera to a matching view
 function viewForPlane(plane) {
