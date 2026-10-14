@@ -74,7 +74,7 @@ function step(){
     liveChanged();
     // ---- phase 1: Run, after clicking the third pose -------------------
     build([30, 60, 120, 150], 900);
-    document.getElementById("seqName").value = "qcrun";
+    document.getElementById("projName").value = "qcrun";
     qcMark("keys-" + keys.length);
     selectKey(2);                       // the pose 120 keyframe
     qcMark("parked-" + Math.round(playT));
@@ -94,7 +94,7 @@ function step(){
           setTimeout(function(){
             handedOff = false;
             build([30, 60, 150], 80);   // the timeline asks for the 80ms floor
-            document.getElementById("seqName").value = "qclunge";
+            document.getElementById("projName").value = "qclunge";
             playT = keyStartMs(2);      // park WITHOUT clicking: pose stays put
             pose = pose.map(function(){ return 30; });
             qcMark("far-" + Math.round(playT));

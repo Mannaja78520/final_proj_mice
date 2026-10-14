@@ -479,7 +479,7 @@ function renderTimeBar() {
   const K = playKeys(), total = totalMs();
   if (!total || K.length < 2) {
     const empty = document.createElement("div");
-    empty.className = "tb-blk";
+    empty.className = "tb-blk note";
     empty.style.left = "0"; empty.style.width = "100%";
     empty.textContent = K.length < 2 ? "add a second pose to make a movement"
                                      : "these poses are all the same";
@@ -604,7 +604,6 @@ function saveDraft() {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         at: Date.now(),
         name: ($("projName") && $("projName").value) || "",
-        seq: ($("seqName") && $("seqName").value) || "",
         keys: keys,
       }));
     } catch (e) {
@@ -629,8 +628,8 @@ function offerDraft() {
     yes.textContent = "Restore it";
     yes.onclick = () => {
       keys = d.keys;
-      if (d.name && $("projName")) $("projName").value = d.name;
-      if (d.seq && $("seqName")) $("seqName").value = d.seq;
+      // an older draft kept the name twice (name + seq): either one will do
+      if ((d.name || d.seq) && $("projName")) $("projName").value = d.name || d.seq;
       selKey = 0;
       if (keys.length) pose = [...keys[0].pose];
       bumpKeys(); poseChanged(false); renderTimeline(); renderSliders();
@@ -959,7 +958,7 @@ async function hubPlay(fromMs) {
       method: "POST",
       body: JSON.stringify({
         dev: moduleDev(), steps, loop: $("loopChk").checked,
-        name: ($("seqName").value || "sequence").trim(), from_ms: Math.round(fromMs || 0),
+        name: ($("projName").value || "sequence").trim(), from_ms: Math.round(fromMs || 0),
         watch: !document.hidden,        // stop the arm if this page freezes (A26-46)
         music_stop_ms: showBarMusicStop(),   // a show's track may outlive its moves
       }),

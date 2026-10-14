@@ -1,0 +1,142 @@
+    <div class="card" data-stab="robot">
+      <h2>Robot link</h2>
+      <div class="row">
+        <select id="connSel" onchange="connModeChanged()"
+                title="what the Connect button adds — WiFi and USB can BOTH be connected at the same time; commands take the cable when open, WiFi otherwise, file transfer prefers WiFi">
+          <option value="wifi">+ WiFi</option>
+          <option value="usb">+ USB / RS485 (shared)</option>
+          <option value="serial">+ USB direct (Web Serial, exclusive)</option>
+        </select>
+        <!-- typed addresses are technical detail: behind the switch (A21-2).
+             The wrappers carry the hide - app.js flips display on the inputs
+             themselves, and an inline style would defeat a class on them. -->
+        <span class="tech" style="flex:1">
+          <input id="robotIp" placeholder="module IP or name.local" style="width:100%">
+        </span>
+        <select id="usbPort" onchange="usbPortChanged()" style="flex:1;display:none"
+                title="which cable the module is plugged into. The hub owns the port and shares it, so the module website can stay open on this SAME port at the same time.">
+          <option value="">pick the USB port…</option>
+        </select>
+        <button id="usbRescan" onclick="loadPorts()" style="display:none"
+                title="rescan the PC's USB serial ports">⟳</button>
+        <span class="tech" style="width:76px">
+          <input id="busId" type="number" min="1" max="247" placeholder="bus id"
+                 title="RS485 address: leave empty when the cable goes straight into the nong module's USB. Set the module id when using a USB-RS485 dongle, or to reach the nong through ANOTHER module's USB port (commands are sent as #id ... on the bus)."
+                 style="width:100%">
+        </span>
+        <button id="connBtn" onclick="connectRobot()">Connect</button>
+      </div>
+      <div class="mini"><b>USB / RS485 (shared)</b> goes through the hub, which owns
+        the cable and shares it — the module's own website (⚙ Open module) can be
+        open on the <b>same USB port at the same time</b>, and it works from a
+        phone or another laptop too. <b>USB direct</b> talks to the port straight
+        from this browser (Chrome/Edge on this PC only) and <b>takes the port for
+        itself</b>: nothing else can use that cable until you close this tab.</div>
+      <div class="row">
+        <button onclick="scanModules()">🔍 Find modules</button>
+        <select id="foundSel" style="flex:1" onchange="pickFound(this.value)">
+          <option value="">press Find — no typing needed</option>
+        </select>
+      </div>
+      <div class="statline" id="robotStat">not connected</div>
+      <div class="warn" id="limMismatch" hidden>
+        <span id="limMismatchText"></span>
+        <div class="row">
+          <button onclick="pullLimits().then(checkLimitsMatch)">Use the robot's limits</button>
+          <button onclick="pushLimits().then(checkLimitsMatch)">Send Studio's limits to the robot</button>
+        </div>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="liveChk" onchange="liveChanged()"> live (robot follows editor)</label>
+        <label><input type="checkbox" id="monChk" onchange="monitorChanged()"> <b>monitor</b> (editor follows robot)</label>
+      </div>
+      <div class="row">
+        <button onclick="robotCmd('HOME')" title="move the robot to its home (start) position">Home</button>
+        <button onclick="homeFromPose()" title="make the pose on screen the robot's home: where it goes when it starts and when you press Home">Keep this as robot home</button>
+        <button onclick="robotCmd('RELAX')">Relax</button>
+        <button onclick="robotCmd('ATTACH')">Attach</button>
+        <button onclick="sendPose()">Send pose</button>
+      </div>
+      <div class="row">
+        <button id="modBtn" onclick="openModule()"
+                title="the connected module's own website — hardware pins, WiFi, users, servo type, SD files. Opens in a new tab; over shared USB it can stay open alongside this editor.">⚙ Open module config</button>
+        <span class="mini">pins · WiFi · users · servo type · SD files</span>
+      </div>
+      <div class="mini">monitor mode animates the 3D model with the robot's real
+        joint angles and shows which sequence is playing — use it to watch a
+        run from the SD card.</div>
+      <div class="mini">no SD card? the robot still runs on <b>live</b> commands
+        from here (poses, monitor) — only saved sequences need the card.</div>
+    </div>
+
+    <div class="card" data-stab="robot" id="dummyCard">
+      <h2>Dummy (hand-posed copy)</h2>
+      <div class="mini">a copy of the robot with a knob on every joint instead of a motor.
+        Bend it by hand and Studio or the real robot copies the pose. It has its own link,
+        usually the robot's RS485 cable with a different bus id.</div>
+      <div class="row">
+        <select id="dummySrc" onchange="dummySrcChanged()"
+                title="where the dummy is: on a USB / RS485 cable through the hub, on WiFi, or simulated on this page (no dummy needed)">
+          <option value="usb">USB / RS485 (shared)</option>
+          <option value="wifi">WiFi</option>
+          <option value="sim">Simulated (sliders here)</option>
+        </select>
+        <select id="dummyPort" style="flex:1" title="the cable the dummy is on — usually the same RS485 cable as the robot">
+          <option value="">pick the USB port…</option>
+        </select>
+        <button id="dummyRescan" onclick="dummyLoadPorts()" title="rescan the PC's USB ports">⟳</button>
+        <span class="tech" id="dummyBusWrap" style="width:76px">
+          <input id="dummyBus" type="number" min="1" max="247" placeholder="bus id"
+                 title="the dummy's RS485 address (its module id). Leave empty when the cable goes straight into the dummy's own USB." style="width:100%">
+        </span>
+        <span class="tech" id="dummyIpWrap" style="flex:1;display:none">
+          <input id="dummyIp" placeholder="dummy IP or name.local" style="width:100%">
+        </span>
+        <button onclick="dummyConnect()">Connect</button>
+      </div>
+      <div id="dummySimBox" style="display:none">
+        <div class="mini">simulated dummy: these sliders stand in for the knobs.</div>
+        <div id="dummySimRows"></div>
+      </div>
+      <div class="row">
+        <span class="lbl">Follow</span>
+        <select id="dummyFollow" onchange="dummyFollowChanged()" style="flex:1"
+                title="Studio follows: the 3D model copies the dummy. Robot follows: the real robot copies it too, inside the robot's own limits and speed.">
+          <option value="off">off</option>
+          <option value="studio">Studio follows the dummy</option>
+          <option value="robot">Studio + real robot follow the dummy</option>
+        </select>
+      </div>
+      <div class="row">
+        <button class="primary" onclick="dummyToNewKey()" title="read the dummy now and add its pose to the end of the sequence">+ Dummy pose as new move</button>
+        <button onclick="dummyToSelectedKey()" title="replace the selected move's pose with the dummy's pose now">Use dummy pose for selected move</button>
+        <button onclick="robotToSelectedKey()" title="send the real robot to the move selected in the timeline, at that move's speed">Robot → selected move</button>
+      </div>
+      <div class="statline" id="dummyStat" aria-live="polite">not connected — pick where the dummy is, then Connect (or pick Simulated)</div>
+    </div>
+
+    <div class="card" data-stab="robot">
+      <h2>Zero position 🔒</h2>
+      <div id="zeroLocked">
+        <div class="row">
+          <span class="lbl">User</span><input id="zUser" style="flex:1" autocomplete="username">
+        </div>
+        <div class="row">
+          <span class="lbl">Pass</span><input id="zPass" type="password" style="flex:1" autocomplete="current-password">
+          <button class="primary" onclick="zeroUnlock()">Unlock</button>
+        </div>
+        <div class="statline" id="zStat">locked — log in with your hub user name and password</div>
+      </div>
+      <div id="zeroPanel" style="display:none">
+        <div class="mini">jog the arms straight with the sliders (Attach first), then
+          press <b>Set zero</b> — that pose becomes the robot's home, and the
+          <b>start°</b> angles you chose above are left alone. The arm won't move:
+          the offset is absorbed instead. Then <b>Move to zero</b> returns there.</div>
+        <div class="row">
+          <button class="primary" onclick="robotZeroSet()">◎ Set zero (current = home)</button>
+          <button onclick="robotCmd('ZERO')">⌂ Move to zero</button>
+          <button onclick="zeroLock()">Lock</button>
+        </div>
+        <div class="statline" id="zStat2"></div>
+      </div>
+    </div>

@@ -19,6 +19,22 @@ def _inside(root, name):
     return path
 
 
+def _place(html, parts, label, extra=()):
+    """Put each `<!-- part: x.html -->` line's file from `parts` in its place.
+    Every .html/.js in `parts` is used exactly once (the placed ones plus
+    `extra`), so a part nobody placed cannot silently fall out of the page."""
+    have = {p.name for p in parts.iterdir() if p.suffix in ('.html', '.js')}
+    placed = re.findall(r'^<!-- part: ([\w.-]+\.html) -->$', html, re.M)
+    used = placed + list(extra)
+    if len(used) != len(set(used)) or set(used) != have:
+        raise ValueError(label + ': part mismatch; missing=' + str(sorted(set(used) - have))
+                         + ', unused=' + str(sorted(have - set(used)))
+                         + ', twice=' + str(sorted(n for n in set(used) if used.count(n) > 1)))
+    for name in placed:
+        html = html.replace('<!-- part: %s -->\n' % name, _read(_inside(parts, name)))
+    return html
+
+
 def _page(tree, spec):
     """A page cut into parts (Home, A41-3): the template places each
     `<!-- part: x.html -->`, style.css is inlined, and the listed .js parts,
@@ -26,17 +42,8 @@ def _page(tree, spec):
     so a part nobody listed cannot silently fall out of the page."""
     page = _inside(tree, spec['path'])
     parts = page / 'parts'
-    html = _read(page / 'index.template.html')
-    have = {p.name for p in parts.iterdir() if p.suffix in ('.html', '.js')}
-    placed = re.findall(r'^<!-- part: ([\w.-]+\.html) -->$', html, re.M)
     js = spec['js']
-    used = placed + js
-    if len(used) != len(set(used)) or set(used) != have:
-        raise ValueError(spec['path'] + ': part mismatch; missing=' + str(sorted(set(used) - have))
-                         + ', unused=' + str(sorted(have - set(used)))
-                         + ', twice=' + str(sorted(n for n in set(used) if used.count(n) > 1)))
-    for name in placed:
-        html = html.replace('<!-- part: %s -->\n' % name, _read(_inside(parts, name)))
+    html = _place(_read(page / 'index.template.html'), parts, spec['path'], js)
     source = '\n'.join(_read(_inside(parts, name)).rstrip('\n') + '\n' for name in js)
     for tag, text, wrap in (
             ('<link rel="stylesheet" href="style.css">', _read(page / 'style.css').strip(),
@@ -76,6 +83,11 @@ def build(tree):
                          + ', unlisted=' + str(sorted(actual - set(parts))))
     source = '\n'.join(_read(_inside(app / 'app_parts', name)).rstrip() for name in parts) + '\n'
     outputs[app / 'app.js'] = source
+    # Studio's page is cut the same way (A41-4): index.template.html is the
+    # map, html_parts/ one area each; app.js and style.css stay files of
+    # their own, which save_patch.py snapshots and the hub serves.
+    outputs[app / 'index.html'] = _place(_read(app / 'index.template.html'),
+                                         app / 'html_parts', studio['path'])
     scripts.append((str(app / 'app.js'), source))
     for spec in manifest.get('pages', []):
         out, html, js = _page(tree, spec)

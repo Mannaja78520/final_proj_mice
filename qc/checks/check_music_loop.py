@@ -57,7 +57,7 @@ function step(){
     keys = [];
     pose = pose.map(function(){ return 60; });  addKey();
     pose = pose.map(function(){ return 120; }); addKey();
-    $("seqName").value = "looptest";
+    $("projName").value = "looptest";
 
     // ---- A: a track with repeat ticked reaches the YAML as one cue line
     setCueTrack(keys[1], "%s", true);

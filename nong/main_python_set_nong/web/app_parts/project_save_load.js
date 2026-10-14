@@ -12,30 +12,24 @@ async function saveProject(opts) {
     // and the show quietly got slower (A31-4).
     safeDps: SAFE_DPS,
     meshes: meshCfg, addons,
-    robotIp: $("robotIp").value, seqName: $("seqName").value,
+    robotIp: $("robotIp").value, seqName: $("projName").value,   // kept: older Studios read it
     // The chain is part of the show: a project saved with one and reopened
     // without it exported a different sequence than the one saved.
     seqNext: ($("seqNext").value || "").trim(),
     rig: RIG,
   };
-  let r;
-  try {
-    r = await fetch("/api/save", {
-      method: "POST", body: JSON.stringify({ name, project }),
-    }).then(r => r.json());
-  } catch (e) {
-    // The draft is NOT cleared here: the work is still only in this browser.
-    $("tlStat").textContent = "could not save — the hub is not answering. Your "
-      + "work is still here, and is kept in this browser. " + (e.message || e);
+  // The draft is NOT cleared on a failure: the work is still only in this
+  // browser. Mice.Api never throws, and words both "no answer" and "said no".
+  const a = await Mice.Api.post("/api/save", { name, project });
+  if (!a.ok) {
+    $("tlStat").textContent = (a.status
+      ? "could not save: " + a.says + ". Your work is still here."
+      : "could not save — the hub is not answering. Your work is still here, "
+        + "and is kept in this browser.");
     notice($("tlStat").textContent);
     return false;
   }
-  if (!r || !r.ok) {
-    $("tlStat").textContent = "could not save: " + ((r && r.error) || "unknown")
-      + ". Your work is still here.";
-    notice($("tlStat").textContent);
-    return false;
-  }
+  const r = a.data;
   // Safely on disk now, so the unsaved-work draft has done its job.
   if (!opts.keepDraft) markSaved(sig, name);
   $("tlStat").textContent = r.replaced
@@ -65,17 +59,14 @@ async function loadProject(file) {
   //   * the project's rig replaced the live rig outright. Hours of tuning
   //     (zero, tilt, dims, jointR, neutral, invert, shrugCurve exist nowhere
   //     else) vanished with no prompt and no undo.
-  let p;
-  try {
-    const r = await fetch("/api/load?name=" + encodeURIComponent(file));
-    p = await r.json();
-    if (!r.ok || p.ok === false) throw new Error(p.error || ("could not read " + file));
-  } catch (e) {
+  const a = await Mice.Api.get("/api/load?name=" + encodeURIComponent(file));
+  if (!a.ok) {
     const st = $("tlStat");
-    if (st) st.textContent = "could not load " + file + " — " + (e.message || e)
+    if (st) st.textContent = "could not load " + file + " — " + a.says
       + ". Nothing on screen was changed.";
     return;                              // the timeline stays exactly as it was
   }
+  const p = a.data;
   if (!Array.isArray(p.keys)) {
     const st = $("tlStat");
     if (st) st.textContent = file + " has no keyframes in it, so nothing was loaded.";
@@ -211,20 +202,11 @@ function cleanName(v) { return (v || "").trim().replace(/[^\w.-]+/g, "_"); }
 function setWorkName(v) {
   const n = cleanName(v);
   if ($("projName")) $("projName").value = n;
-  if ($("seqName")) $("seqName").value = n;
 }
-// The two name boxes are one name: typing in either changes both.
-["projName", "seqName"].forEach(id => {
-  const el = $(id);
-  if (el) el.addEventListener("input", () => {
-    const other = $(id === "projName" ? "seqName" : "projName");
-    if (other) other.value = el.value;
-  });
-});
 // Save = the project (.json) AND the robot's file (.yaml), under one name.
 // True only when everything that should be on disk is.
 async function saveAll() {
-  const name = cleanName($("seqName").value || $("projName").value || "my_move");
+  const name = cleanName($("projName").value || "my_move");
   setWorkName(name);
   const sig = workSig();
   const writeYaml = playKeys().length > 0;
@@ -246,7 +228,7 @@ async function saveAll() {
   }
   // The name cannot change between the two writes: typing while the first
   // was on the wire sent the .yaml over a file nobody was asked about.
-  const boxes = ["projName", "seqName"].map($).filter(Boolean);
+  const boxes = [$("projName")].filter(Boolean);
   boxes.forEach(b => { b.readOnly = true; });
   let ok = false;
   try {
@@ -301,7 +283,9 @@ function syncAskUnsavedBox() {
 }
 syncAskUnsavedBox();
 async function refreshProjects() {
-  const r = await fetch("/api/list?kind=projects").then(r => r.json());
+  const a = await Mice.Api.get("/api/list?kind=projects");
+  if (!a.ok) return;                     // keep the list it already shows
+  const r = a.data;
   const sel = $("projList");
   sel.innerHTML = "<option value=''>Load…</option>";
   (r.files || []).forEach(f => {

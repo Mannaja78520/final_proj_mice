@@ -40,7 +40,7 @@ function step(){
       addKey();
     });
     keys.forEach(function(k,i){ if(i){ k.t = 600; } });
-    document.getElementById("seqName").value = "qc_seq";
+    document.getElementById("projName").value = "qc_seq";
     qcMark("A-" + playKeys().map(function(k){ return Math.round(k.pose[0]); }).join("_"));
     qcMark("AT-" + totalMs());
 

@@ -29,6 +29,11 @@ def run(t):
         (app / 'app.js').write_bytes(b'const example = 1;')
         (studio / 'app_parts/state.js').write_bytes(b'let ready = true;')
         (studio / 'app_parts/boot.js').write_bytes(b'if (!ready) throw new Error();')
+        # Studio's page is a map plus html_parts/ (A41-4)
+        (studio / 'html_parts').mkdir()
+        (studio / 'index.template.html').write_bytes(
+            b'<body>\n<!-- part: head.html -->\n<script src="app.js"></script>\n')
+        (studio / 'html_parts/head.html').write_bytes(b'<header>studio</header>\n')
         builder.build(root)
         output = app / 'index.html'
         template = (app / 'index.template.html').read_bytes()
@@ -65,6 +70,19 @@ def run(t):
         t.ok(rejected, 'unlisted source cannot silently disappear from bundle')
         (studio / 'app_parts/extra.js').unlink()
         (studio / 'app_parts/boot.js').write_bytes(b'if (!ready) throw new Error();')
+        builder.build(root)
+        page = (studio / 'index.html').read_text()
+        t.ok('<header>studio</header>' in page and '<!-- part:' not in page
+             and '<script src="app.js"></script>' in page,
+             "Studio's html part lands in its page, app.js stays a file", page)
+        (studio / 'html_parts/lost.html').write_bytes(b'<p>lost</p>\n')
+        try:
+            builder.build(root)
+            rejected = False
+        except ValueError:
+            rejected = True
+        t.ok(rejected, "a Studio html part the map never places fails the build")
+        (studio / 'html_parts/lost.html').unlink()
         _pages(t, builder, root)
 
 

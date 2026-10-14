@@ -1,4 +1,9 @@
 <!doctype html>
+<!-- Nong Studio's MAP (A41-4). index.html is BUILT from this file and
+     html_parts/ by tools/build_web.py: edit a part, never index.html.
+     One part per area: header, view (3D + view buttons), login, pose,
+     sequence, robot, shows, setup, timeline. A new part is a new file plus
+     one line here. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -12,22 +17,29 @@
      deliberately leaves this alone - scaling a 3D canvas and its drag
      maths is a different question, and Studio is used at a desk. -->
 <body class="app">
-<header>
-  <button class="secondary" onclick="location.href='/'">🏠 Hub</button>
+<!-- The shared head (A41-4): Mice.TopBar puts "← Hub" first and the technical
+     switch last. ONE name box and ONE Save for the whole page: the timeline
+     used to carry a second name box and a second Save (audit 2026-10-14). -->
+<header class="topbar">
   <h1>Nong Studio</h1>
+  <span class="statline" id="stat">checking…</span>
   <details class="pose-help disclosure" id="poseHelp">
     <summary>How to pose</summary>
     <p class="hint">Choose a joint, then drag its ring or use the sliders. Add a keyframe to keep a pose.</p>
     <span class="hint">Click a joint to show its rings · drag a ring to turn that servo · <b>Shift+drag</b> 🟢 wrist / 🟠 elbow = move arm (IK) · left-drag = orbit · wheel = zoom · right-drag = pan</span>
   </details>
-  <span style="flex:1"></span>
-  <input id="projName" aria-label="Project name" placeholder="project name" value="my_move">
-  <button onclick="saveAll()" title="Saves the moves twice under this one name: NAME.json to edit later, and NAME.yaml, the file the robot plays.">💾 Save</button>
-  <select id="projList" aria-label="Open a saved project" onchange="loadProject(this.value)"><option value="">Load…</option></select>
-</header><div id="main">
+  <span class="topbar-gap"></span>
+  <input id="projName" aria-label="Name of these moves" placeholder="name" value="my_move"
+         title="One name for both files: NAME.json to edit later, NAME.yaml, the file the robot plays.">
+  <button class="primary" onclick="saveAll()" title="Saves the moves twice under this one name: NAME.json to edit later, and NAME.yaml, the file the robot plays.">💾 Save</button>
+  <select id="projList" aria-label="Open saved moves" onchange="loadProject(this.value)"><option value="">Load…</option></select>
+</header>
+<div id="main">
   <div id="viewport">
     <div id="collideWarn">⚠ joints collide — the robot would crash</div>
     <div id="viewCube" title="click a view to look straight at that plane and drag joints in it (like Fusion/SolidWorks)">
+      <button id="viewCubeBtn" class="vc-toggle" aria-expanded="false" onclick="viewCubeOpen()"
+              title="show the view buttons: Top, Front, 3D…">Views ▾</button>
       <div class="vcRow"><button data-view="top" onclick="setView('top')">Top</button></div>
       <div class="vcRow">
         <button data-view="left" onclick="setView('left')">Left</button>
@@ -143,6 +155,29 @@
         Shift, because a plain drag orbits. Like Fusion/SolidWorks.</div>
     </details>
 
+    <!-- Saved moves on this PC, and what plays next. They lived in the timeline
+         row, which then wrapped to four lines (A41-4). -->
+    <div class="card" data-stab="sequence">
+      <h2>Saved moves on this PC</h2>
+      <div class="row">
+        <select id="seqList" onchange="editLocalSeq()" style="flex:1" title="Pick a saved YAML: its moves open in the timeline, ready to edit."><option value="">Open saved YAML…</option></select>
+      </div>
+      <div class="row">
+        <button onclick="editLocalSeq()">Load for editing</button>
+        <button onclick="playLocalSeq()"
+                title="Loads this saved sequence into the timeline and starts playing it right away — same as Edit, then Play.">▶ Play saved</button>
+        <button onclick="deleteLocalSeq()"
+                title="Delete the picked saved YAML from this PC. It is moved to sequences/.deleted, not erased.">🗑 Delete</button>
+      </div>
+      <div class="row"><label class="lbl" for="seqNext">Then run</label>
+        <input id="seqNext" placeholder="nothing — just stop" list="seqNextList" style="flex:1"
+               title="chain: when this sequence finishes, the module starts this one. Leave empty to just stop. Build a show from short files instead of one long one.">
+        <datalist id="seqNextList"></datalist>
+      </div>
+      <p class="mini">“Play” previews here in the browser and pauses when this page is hidden.
+        “Run on robot” hands it to the module — that one keeps going with this page closed.</p>
+    </div>
+
     <div class="card" data-stab="sequence">
       <h2>Timing</h2>
       <div class="row"><span class="lbl">Show speed</span>
@@ -176,10 +211,18 @@
         Do not raise it while a joint loses torque.</div>
     </div>
 
+    <div class="card" data-stab="sequence">
+      <h2>Robot SD card — /moves</h2>
+      <div class="row">
+        <button onclick="refreshSd()">⟳ List sequences</button>
+        <button class="primary" onclick="uploadYaml()">Upload current</button>
+      </div>
+      <div id="sdList" class="mini">connect first, then press List</div>
+      <div class="statline" id="sdStat"></div>
+    </div>
+
     <div class="card" data-stab="robot">
-      <h2>Robot link <label class="mini" style="display:inline-flex;gap:var(--sp-2);align-items:center;float:right;font-weight:400">
-        <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
-        Show technical details</label></h2>
+      <h2>Robot link</h2>
       <div class="row">
         <select id="connSel" onchange="connModeChanged()"
                 title="what the Connect button adds — WiFi and USB can BOTH be connected at the same time; commands take the cable when open, WiFi otherwise, file transfer prefers WiFi">
@@ -321,15 +364,6 @@
       </div>
     </div>
 
-    <div class="card" data-stab="sequence">
-      <h2>Robot SD card — /moves</h2>
-      <div class="row">
-        <button onclick="refreshSd()">⟳ List sequences</button>
-        <button class="primary" onclick="uploadYaml()">Upload current</button>
-      </div>
-      <div id="sdList" class="mini">connect first, then press List</div>
-      <div class="statline" id="sdStat"></div>
-    </div>
 
     <!-- SHOWS (user 2026-09-17): saved sequences played one after another, e.g.
          greeting then byebye. The show only lists sequence names (shows/*.json),
@@ -560,37 +594,27 @@
 
 <div id="timeDrag" title="drag to make the timeline taller or shorter"></div>
 <div id="timeline">
+  <!-- One row of what you do to the timeline (A41-4). It was four rows at
+       1280x800 and left the 3D view ~200 px tall: the name box and Save are
+       the head's, the saved-file list and the chain sit in the Sequence tab. -->
   <div class="tl-head">
     <h2>Timeline</h2>
     <button class="primary" onclick="addKey()">+ Add keyframe</button>
     <button onclick="updateKey()">Update selected</button>
     <button onclick="dupKey()">Duplicate</button>
     <button onclick="delKey()">Delete</button>
-    <button onclick="moveKey(-1)">◀ move</button>
-    <button onclick="moveKey(1)">move ▶</button>
+    <button onclick="moveKey(-1)" title="move the selected keyframe one place earlier" aria-label="move earlier">◀</button>
+    <button onclick="moveKey(1)" title="move the selected keyframe one place later" aria-label="move later">▶</button>
     <span class="sep"></span>
     <button onclick="checkCollisions(true)">⚠ Check crash</button>
-    <button class="primary" id="playBtn" onclick="togglePlay()">▶ Play</button>
+    <button class="primary" id="playBtn" onclick="togglePlay()"
+            title="Previews here in the browser, and pauses while this page is hidden. Run on robot hands it to the module instead.">▶ Play</button>
     <label><input type="checkbox" id="loopChk"> loop</label>
     <span class="sep"></span>
-    <input id="seqName" placeholder="sequence name" value="my_move" style="width:130px">
-    <input id="seqNext" placeholder="then run…" list="seqNextList" style="width:120px"
-           title="chain: when this sequence finishes, the module starts this one. Leave empty to just stop. Build a show from short files instead of one long one.">
-    <datalist id="seqNextList"></datalist>
-    <button class="primary" onclick="saveAll()" title="Saves under this one name: NAME.yaml, the file the robot, voice and the other apps play, and NAME.json to edit later.">💾 Save</button>
-    <button onclick="uploadYaml()">Send to robot SD</button>
+    <button onclick="uploadYaml()" title="Put these moves on the robot's own card, under the name at the top.">Send to robot SD</button>
     <button onclick="robotRun()"
             title="Sends the sequence to the module and lets the MODULE play it on its own clock. This keeps running if you switch app, minimise the browser, or close this page entirely. It starts at the move you have clicked and carries on to the end - it never travels back to the first pose to begin.">▶ Run on robot</button>
     <button onclick="robotCmd('MOVE STOP')">⏹ Stop robot</button>
-    <span class="hint" id="playHint">“Play” previews here in the browser and pauses when this page is hidden.
-      “Run on robot” hands it to the module — that one keeps going with this page closed.</span>
-    <span class="sep"></span>
-    <select id="seqList" onchange="editLocalSeq()" title="Pick a saved YAML: its moves open in the timeline, ready to edit."><option value="">Open saved YAML…</option></select>
-    <button onclick="editLocalSeq()">Load for editing</button>
-    <button onclick="playLocalSeq()"
-            title="Loads this saved sequence into the timeline and starts playing it right away — same as Edit, then Play.">▶ Play saved</button>
-    <button onclick="deleteLocalSeq()"
-            title="Delete the picked saved YAML from this PC. It is moved to sequences/.deleted, not erased.">🗑 Delete</button>
   </div>
   <div id="timebar">
     <div class="tb-top">
@@ -628,6 +652,7 @@
    style="position:fixed;right:12px;bottom:12px;z-index:20"
    title="Help about Nong Studio">Help &#8599;</a>
 <script src="/mice.js"></script>
+<script src="/mice-ui.js"></script>
 <script src="/rig_default.js"></script>
 <script src="app.js"></script>
 </body>

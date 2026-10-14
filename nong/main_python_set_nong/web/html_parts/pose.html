@@ -1,0 +1,52 @@
+    <div class="card" data-stab="pose">
+      <h2>Shape a pose</h2>
+      <p class="mini">Move a slider or drag a joint in the preview.</p>
+      <div id="sliders"></div>
+      <div class="row">
+        <button onclick="setNeutral()">Neutral pose</button>
+        <button onclick="neutralFromPose()" title="save the current pose as the show's neutral pose (kept in Studio, the robot is not changed)">Keep this as neutral</button>
+        <button onclick="mirrorLR()" title="the same shape on the other arm: the left arm takes the right's pose and the right takes the left's">⇄ Mirror L↔R</button>
+        <button onclick="mirrorFB()" title="the same shape facing the other way: each arm reaches front-to-back instead, and stays on its own side">⇅ Mirror front↔back</button>
+      </div>
+    </div>
+
+    <details class="card disclosure" data-stab="pose" id="precisePose">
+      <summary>Place a wrist precisely</summary>
+      <div id="jointXyz" class="mini" style="white-space:pre;font-family:ui-monospace,monospace"></div>
+      <div class="tblock"><div class="tlabel">move LEFT wrist to:</div>
+        <div class="trow">
+          <label class="tcell"><input type="number" id="tgtLx" step="5">x</label>
+          <label class="tcell"><input type="number" id="tgtLy" step="5">y</label>
+          <label class="tcell"><input type="number" id="tgtLz" step="5">z</label>
+          <button onclick="gotoXyz(0)">Go</button>
+        </div>
+      </div>
+      <div class="tblock"><div class="tlabel">move RIGHT wrist to:</div>
+        <div class="trow">
+          <label class="tcell"><input type="number" id="tgtRx" step="5">x</label>
+          <label class="tcell"><input type="number" id="tgtRy" step="5">y</label>
+          <label class="tcell"><input type="number" id="tgtRz" step="5">z</label>
+          <button onclick="gotoXyz(1)">Go</button>
+        </div>
+      </div>
+      <div class="mini">type a position and press Go — the arm follows (IK); then
+        “+ Add keyframe” puts it into the sequence.</div>
+    </details>
+
+    <details class="card disclosure" data-stab="pose" id="posePlane">
+      <summary>Choose a drawing plane</summary>
+      <div class="row">
+        <select id="dragPlane" style="flex:1" onchange="viewForPlane(this.value)">
+          <option value="cam">screen (free 3D)</option>
+          <option value="xy">front — XY (left/right + up/down)</option>
+          <option value="yz">side — YZ (forward + up/down)</option>
+          <option value="xz">top — XZ (left/right + forward)</option>
+        </select>
+      </div>
+      <div class="mini">or use the <b>view buttons</b> at the top-right of the 3D
+        view (Front / Top / Left…): the camera snaps straight at that plane, and
+        <b>stays</b> there — you cannot orbit out of a flat view by accident, and
+        dragging a hand moves it flat in that plane with no Shift held.
+        Press <b>3D</b> to turn the view loose again; there, dragging a hand needs
+        Shift, because a plain drag orbits. Like Fusion/SolidWorks.</div>
+    </details>

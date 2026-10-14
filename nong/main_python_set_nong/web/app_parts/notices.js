@@ -76,6 +76,8 @@ function initTimeDrag() {
   handle.setAttribute("aria-label", "Resize the timeline");
   handle.setAttribute("tabindex", "0");
   const setHeight = (h, remember) => {
+    // a chosen height lifts style.css's default cap; a reset brings it back
+    tl.style.maxHeight = h === null ? "" : "none";
     if (h === null) { tl.style.height = ""; localStorage.removeItem("nong_timeh"); }
     else tl.style.height = Math.min(maxH(), Math.max(MINH, Math.round(h))) + "px";
     handle.setAttribute("aria-valuenow", parseInt(tl.style.height) || 0);

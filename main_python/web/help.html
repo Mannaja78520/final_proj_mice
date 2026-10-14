@@ -338,10 +338,10 @@
   <div class="f"><h3>Save and open YAML moves<span class="tag t-new">new</span></h3>
     <p>Type a name and press <b>💾 Save</b>. There is one name and one Save: it writes
        <b>NAME.yaml</b>, the file the robot, Voice and the other apps play, and <b>NAME.json</b>,
-       the project you open later to keep editing. The name box at the top and the one by the
-       time bar are the same name. If a different file with that name is already saved, Studio
-       asks before replacing it.</p>
-    <p>To edit a saved one, pick it in <b>Open saved YAML…</b>: its moves open in the timeline
+       the project you open later to keep editing. The name box and Save are at the top of the
+       page, and the line beside the title says whether what you see is saved. If a different
+       file with that name is already saved, Studio asks before replacing it.</p>
+    <p>To edit a saved one, open the <b>Sequence</b> tab and pick it in <b>Open saved YAML…</b>: its moves open in the timeline
        straight away, and saving writes back to the same file.</p>
     <p><b>Nothing is replaced without asking.</b> If the time bar has changes that are not
        saved and you open another file, Studio asks: <b>Save, then continue</b>,
@@ -1072,7 +1072,8 @@
   <div class="f"><h3>Works on any screen<span class="tag t-new">new</span></h3>
     <p>The hub, the module website, Nong Studio and this page all lay out for phones,
        tablets and large monitors, with bigger touch targets on a touchscreen. Studio
-       stacks the 3D view above its panel below 860px instead of squeezing both.</p></div>
+       stacks the 3D view above its panel below 860px instead of squeezing both, and on a
+       phone its view buttons (Top, Front, 3D…) fold behind one <b>Views ▾</b> button.</p></div>
 </section>
 
 <!-- ===================== STUDIO ===================== -->
@@ -1801,16 +1802,16 @@
     <p>The card holds as many <code>/moves/*.yaml</code> as fit. The Robot SD card panel
        lists them all with <b>▶ Run</b>, <b>▶ Preview</b>, <b>✎ Edit</b> and delete on each,
        over WiFi, USB or RS485 — and the module's own website has the same list in its
-       Sequences card. Name each export in the sequence-name box to keep them separate.</p></div>
+       Sequences card. Give each one its own name in the name box at the top to keep them separate.</p></div>
   <div class="f"><h3>Play a saved sequence without editing it<span class="tag t-new">new</span></h3>
-    <p><b>▶ Play saved</b> (next to “Load for editing”) loads the sequence you picked and
+    <p><b>▶ Play saved</b> (Sequence tab, next to “Load for editing”) loads the sequence you picked and
        starts playing it right away, exactly as if you had loaded it and pressed Play — so
        it follows whichever clock applies: through the hub the show keeps running even with
        this page closed; over USB it plays from here.</p>
     <p><b>▶ Preview</b> on a Robot SD card row does the same for a file still only on the
        card, while <b>▶ Run</b> hands it to the robot itself.</p></div>
   <div class="f"><h3>Chain one sequence into the next<span class="tag t-new">new</span></h3>
-    <p>The <b>then run…</b> box writes <code>next:</code> into the file, so when it finishes
+    <p>The <b>Then run</b> box (Sequence tab) writes <code>next:</code> into the file, so when it finishes
        the module starts that one by itself — a show built from short files that can each be
        run and edited on their own. The box offers the sequences already on the card.</p>
     <p>It applies only when a sequence actually ends, so <code>loop</code> wins over it.

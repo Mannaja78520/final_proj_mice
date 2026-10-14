@@ -378,7 +378,7 @@ function loadParsedSeq(p, sourceLabel) {
   clampKeyTimes();
   $("loopChk").checked = p.loop;
   $("seqNext").value = p.next || "";   // keep the chain when re-editing
-  if (p.name) { $("seqName").value = p.name; $("projName").value = p.name; }
+  if (p.name) $("projName").value = p.name;
   selKey = 0;
   pose = [...keys[0].pose];
   poseChanged(false);
