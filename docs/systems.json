@@ -89,7 +89,7 @@
                "main_python/save_hub_patch.py", "main_python/nong.ico"],
      "depends": ["shared-web"]},
 
-    {"id": "shared-web", "summary": "One stylesheet and theme set for every page (mice.css, themes).",
+    {"id": "shared-web", "summary": "One stylesheet and theme set for every page (mice.css, themes), and the page parts every hub page is built from (mice-ui.js; guide docs/web_style.md).",
      "files": ["shared/"],
      "depends": []},
 

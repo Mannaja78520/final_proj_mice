@@ -208,6 +208,29 @@ input[type=color]{padding:2px;width:56px;height:40px}
 .state-load,.state-empty{color:var(--mut)}
 .state-err{color:var(--err)}
 .state-stale{color:var(--warn)}
+.state-ok{color:var(--ok)}
+.state-warn{color:var(--warn)}
+
+/* THE HEAD OF EVERY PAGE (A41-2, 2026-10-14). Five app pages had five heads:
+   the way back to the hub was "🏠 Hub" on the left, "Hub" on the left, a
+   "👈 hub" link and "🏠 Hub" on the right. Now <header class="topbar"> and
+   Mice.TopBar (mice-ui.js) put "← Hub" first and the technical switch last;
+   the page writes only its title, status and own buttons in between. */
+/* The page frame for the hub's pages: one column, the hub's own width, so
+   moving between Home and an app no longer changes how wide the page is
+   (measured 2026-10-14: 930, 640, 1120 px and edge-to-edge). Studio and the
+   board site keep their own frame. */
+body.page{max-width:980px;margin:0 auto;padding:var(--sp-6) var(--sp-4)}
+@media (max-width:430px){body.page{padding:var(--sp-3)}}
+.topbar{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2) var(--sp-3);
+        margin-bottom:var(--sp-6)}
+.topbar h1{font-size:22px;margin:0}
+.topbar .sub{color:var(--mut);font-size:13px;flex-basis:100%;order:9}
+.topbar-home{display:inline-flex;align-items:center;min-height:34px;
+             padding:0 var(--sp-3);border:1px solid var(--line);border-radius:var(--r-sm);
+             background:var(--btn);color:var(--txt);text-decoration:none;font-size:14px}
+.topbar-home:hover{border-color:var(--acc);background:var(--acc-soft)}
+.topbar-adv{display:inline-flex;gap:var(--sp-2);align-items:center;margin-left:auto}
 /* A row for something that missed its last check. Dimmed and edged in the
    warning colour, never hidden: it was really there a moment ago, and on a
    venue WiFi that drops it usually still is. The row keeps its controls -

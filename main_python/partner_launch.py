@@ -130,7 +130,9 @@ def start(pid, entry):
         return {"ok": False, "error": "%s points at a %s copy - only the main "
                 "one may be started. Fix folder in config/partners.json." % (name, bad)}
     if not folder.is_dir():
-        return {"ok": False, "error": "the folder %s is not on this PC" % folder}
+        # Words on the surface, the path behind the technical switch (A41-2).
+        return {"ok": False, "error": "%s is not installed on this PC." % name,
+                "detail": "folder %s not found (config/partners.json)" % folder}
     parts, source = parts_of(entry)
     if not parts:
         return {"ok": False, "error": "no way to start %s: %s has no start "

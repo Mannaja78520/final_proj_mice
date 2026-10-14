@@ -597,7 +597,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: QC finished: 4950 passed, 3 failed, started 2026-10-12 19:11
+# RUNNING: QC finished: 6709 passed, 0 failed, started 2026-10-14 18:12
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1538,6 +1538,13 @@ A26-101: done   2026-10-10 17:26  agent=claude:10101653-b69e  — User 2026-10-1
 A40-1: todo  2026-10-12 18:02  agent=claude:ncld  — User 2026-10-12: why can a module not be opened at module_name.local any more, only through the hub? Sometimes I want to open just the module without the hub.
 A40-2: todo   2026-10-12 18:19  agent=open  — User 2026-10-12: in Shows, is there upload to the robot? Now there is only Run and save to the PC. HANDOFF from claude:ncld 2026-10-12 18:19: Shows tab ⇪ Send to robot (shows.robot_yaml + /api/show/yaml). Real LhongMarePing.show.yaml uploaded to nong 67 via nong.local and read back byte-identical; not yet played on the arm. Needs merge, then MiceHub.exe rebuild.
 A40-3: qc     2026-10-12 19:11  agent=claude:ncld  — User 2026-10-12: the last play, the sound did not match the moves; the moves ended late so the sound ended late after them, not as I set.
+# A41  Web pages: one look, built from shared parts
+A41-1: doing  2026-10-14 17:40  agent=claude:u36i  — user 2026-10-14: web pages on main are buggy and each goes its own way, hard to read and use; make everything simpler and consistent, OOP so later edits are easy and cost fewer tokens; can we borrow another site's look
+A41-2: done   2026-10-14 18:12  agent=claude:u36i  — web stage 1: shared page parts (mice-ui.js: Api, TopBar, Status, Partner) + docs/web_style.md; app pages Faces/Photobooth/All-Jao/Camera/Voice use one header; partner status checked through the hub (works from a phone); no programmer commands on the Faces surface PR #12: app pages on one head via shared/web/mice-ui.js; full QC 6709 pass in cloud; tested against fakes only
+A41-3: todo  2026-10-14 18:04  agent=claude:u36i  — web stage 2: Home (hub.html) - split its inline JS into parts, shared head, one login card not two, tabs that do not wrap
+A41-4: todo  2026-10-14 18:04  agent=claude:u36i  — web stage 3: Studio - 3D view big enough at 1280x800, side tabs not cut, view buttons not over the 3D view on a phone, one name/Save
+A41-5: todo  2026-10-14 18:04  agent=claude:u36i  — web stage 4: board site (WebUI.h) and RGB - shared head, one ?dev= address, no 401 reads when logged out; watch mice_nong flash size
+A41-6: todo  2026-10-14 18:04  agent=claude:u36i  — web stage 5: Help - shared head, grouped by task, PLAN.html no sideways scroll on a phone
 
 END</code></pre>
 </details>

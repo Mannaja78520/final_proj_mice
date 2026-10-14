@@ -40,10 +40,10 @@ def watcher():
     return str((cfg or {}).get("service") or "http://127.0.0.1:8769").rstrip("/")
 
 
-def ask(method, body=None):
+def ask(method, body=None, what="/rules"):
     """(answer, http code). The hub is a program on this PC to the watcher:
     JSON, and no Origin, which is exactly what the watcher lets in."""
-    req = urllib.request.Request(watcher() + "/rules", method=method,
+    req = urllib.request.Request(watcher() + what, method=method,
                                  data=json.dumps(body).encode("utf-8") if body is not None else None,
                                  headers={"Content-Type": "application/json"})
     try:
@@ -56,9 +56,11 @@ def ask(method, body=None):
             return {"ok": False, "error": "the face helper refused (%s)" % e.code}, 502
     except Exception as e:                                   # noqa: BLE001
         return {"ok": False, "watcherDown": True,
+                # The command is for the technical switch, not the surface
+                # (A41-2): the page's button starts it for a designer.
                 "error": "the face helper is not running on this PC, so the rules "
-                         "cannot be read or saved. Start it: python apps/faces/service.py",
-                "detail": str(e)}, 503
+                         "cannot be read or saved. Press Start following Reconize.",
+                "detail": "python apps/faces/service.py · %s" % e}, 503
 
 
 def watcher_up(timeout=0.8):
@@ -121,6 +123,11 @@ class FacesRoutes:
             return self.send_json({"ok": ours and bool(theirs.get("ok")),
                                    "watcher": state, "watcherError": why, "detail": detail,
                                    "reconize": theirs})
+        if path == "/api/faces/state":
+            # What the watcher sees, asked by the hub (A41-2). The page used to
+            # fetch localhost:8769 itself, which from a phone is the phone.
+            got, code = ask("GET", what="/state")
+            return self.send_json(got, code)
         if path != "/api/faces/rules":
             return NOT_MINE
         if method == "POST":

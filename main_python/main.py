@@ -1906,20 +1906,17 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
             return self.send_redirect(
                 "/mod?" + urllib.parse.urlencode(
                     {"dev": dev, "name": (q.get("name") or [""])[0]}))
-        # The one shared script: which theme the page is wearing. Served here
-        # and compiled into the board's flash, exactly like the stylesheet, so
-        # every surface gets the same behaviour from one file.
-        if path == "/mice.js":
-            f = SHARED_WEB / "mice.js"
-            if f.is_file():
-                return self.send_bytes(f.read_bytes(), "text/javascript; charset=utf-8")
-            return self.send_err("mice.js is missing", 404)
-        # The sound engine the module page loads (song + PC sound + mic).
-        if path == "/cast.js":
-            f = SHARED_WEB / "cast.js"
-            if f.is_file():
-                return self.send_bytes(f.read_bytes(), "text/javascript; charset=utf-8")
-            return self.send_err("cast.js is missing", 404)
+        # The shared scripts in shared/web, one route for all of them:
+        # mice.js (theme, login, technical switch - also compiled into the
+        # board's flash), cast.js (the module page's sound engine) and
+        # mice-ui.js (the parts every hub page is built from, A41-2). A new
+        # shared script is a new file there and no code here. Only a bare
+        # /<name>.js that EXISTS there: anything else falls through to Studio,
+        # whose /app.js is served below.
+        if (path.count("/") == 1 and path.endswith(".js")
+                and (SHARED_WEB / path[1:]).is_file()):
+            return self.send_bytes((SHARED_WEB / path[1:]).read_bytes(),
+                                   "text/javascript; charset=utf-8")
 
         if path == "/mice.css":
             # One design system for every surface. This route must stay ABOVE
