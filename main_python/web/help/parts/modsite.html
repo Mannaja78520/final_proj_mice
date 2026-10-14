@@ -1,0 +1,31 @@
+<!-- ===================== MODULE SITE ===================== -->
+<section id="modsite">
+  <div class="shead">
+    <span class="where tech">served by the board — and by the hub over USB/RS485</span>
+    <h2>Module website</h2>
+    <p>One site per module, identical over every transport. The hub serves the board's own
+       HTML with a transport shim, so a board with no WiFi shows the same page over a cable.</p>
+  </div>
+  <div class="f"><h3>Three tabs, not one long page<span class="tag t-new">new</span></h3>
+    <p><b>Control</b> (the module's own controls), <b>Sequences &amp; files</b> (run a sequence,
+       the SD card, the console) and <b>Setup</b> (login, settings, pins, calibration). Thirteen
+       cards in one column meant scrolling past the arm controls to reach the SD card.</p>
+    <p>The Setup cards still stay hidden until you log in — one rule decides both which tab a
+       card is on and whether you may see it, so the two can never disagree.</p></div>
+  <div class="f"><h3>Controls match the real board</h3>
+    <p>Control cards render from the board's actual type — a nong board shows only nong
+       controls, a lift only lift. No login needed to drive the robot.</p></div>
+  <div class="f"><h3>Cards</h3>
+    <p>Modules on network · Lift · RGB Strip · Speaker · Nong Arms · Zero position ·
+       Camera · Servo type · Sequences · Hardware pins · SD Files · Settings · Console.</p></div>
+  <div class="f"><h3>Setup gate</h3>
+    <p>A login hides the configuration cards — Settings, Hardware pins, Zero calibration,
+       Servo type. Once in, you can add users, delete them and change your password.</p></div>
+  <div class="f"><h3>Pin picker with a pinout drawing</h3>
+    <p>GPIO dropdowns per function, with sub-tabs per module type inside the card and a ●
+       marking the board's real type. The hub injects an ESP32 pinout SVG served from the
+       PC, keeping it off the board's flash.</p></div>
+  <div class="f"><h3>Sequences &amp; files</h3>
+    <p>List <code>/moves</code>, run any sequence, upload, download and delete SD files —
+       over WiFi, USB or RS485 alike.</p></div>
+</section>

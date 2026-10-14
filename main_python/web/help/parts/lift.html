@@ -1,0 +1,38 @@
+<!-- ===================== LIFT ===================== -->
+<section id="lift">
+  <div class="shead">
+    <span class="where tech">SET TYPE lift</span>
+    <h2>Lift module</h2>
+    <p>A rack-and-pinion lift with staged positions, an LED strip and a speaker.</p>
+  </div>
+  <div class="f"><h3>Staged travel with real distances</h3>
+    <p><code>GOTO &lt;stage&gt;</code> auto-homes first if the position is unknown.
+       <code>UP</code>/<code>DOWN</code> run to a limit switch, <code>HOME</code> seeks the
+       bottom and zeroes the encoder, <code>STAGE?</code> reports where it is.</p></div>
+  <div class="f"><h3>Speed in real units, not PWM</h3>
+    <p><code>SPEED 0.2 MS</code> takes m/s (or <code>MMS</code> for mm/s) and maps it to PWM
+       from the actual mechanics — module-2 rack with a 25-tooth pinion gives 157.08 mm per
+       revolution. <code>TIME?</code> estimates any move live.</p></div>
+  <div class="f"><h3>Works without an encoder<span class="tag t-opt">optional</span></h3>
+    <p><code>CFG encoder 0</code> and the lift runs limit-switch to limit-switch: endpoint
+       stages only, open-loop speed mapping, and the web UI hides what no longer applies.</p></div>
+  <div class="f"><h3>RGB strip</h3>
+    <p><code>RGB r g b</code>, <code>RGB BRIGHT</code>, and effects
+       <code>solid rainbow chase breathe off</code>. A dedicated hub page adds a mode that
+       follows the PC speaker.</p></div>
+  <div class="f"><h3>Speaker</h3>
+    <p><code>PLAY &lt;file&gt;</code> plays mp3/wav from <code>/music</code>,
+       <code>PLAY STOP</code> ends it, <code>VOL 0–100</code> sets level.
+       Add <code>LOOP</code> — <code>PLAY song.mp3 LOOP</code> — and the track keeps
+       repeating until you stop it or the show ends.
+       Pick which amplifier is wired under <b>Setup → Hardware pins</b>: the
+       page shows the wiring for the one you choose, only the pins it uses, and
+       under each pin which board its wire goes to.
+       A lift ships set to its real chain: a PCM5102A sound board feeding a
+       TPA3118 amp and the 12V speaker. All three wires go to the PCM5102A, and
+       the TPA3118 runs from its own 12V supply. Getting this wrong
+       is the usual cause of loud noise instead of sound, because an amp with a
+       line input cannot read the digital kind of signal.
+       (<code>AMP</code> sets it from the command line, <code>AMP?</code> says
+       what is set.)</p></div>
+</section>

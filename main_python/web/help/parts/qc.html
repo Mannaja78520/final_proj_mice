@@ -1,0 +1,68 @@
+<!-- ===================== QC ===================== -->
+<section id="qc">
+  <div class="shead">
+    <span class="where tech">code/qc · python qc/run_qc.py</span>
+    <h2>QC suite</h2>
+    <p>100 assertions that re-check the whole system after any change. Every one of them is
+       a bug that actually shipped once. Stdlib plus the installed Edge — no installs.</p>
+  </div>
+  <div class="f"><h3>Two speeds</h3>
+    <p><code>--quick</code> skips the browser and runs in about 3 seconds while you work;
+       the full run drives the real web app in headless Edge in about a minute.
+       <code>--list</code> shows coverage, a word filters to one area.</p></div>
+  <div class="f"><h3>It extends itself</h3>
+    <p>The runner discovers <code>checks/check_*.py</code>, so covering something new is one
+       new file — no registry to keep in sync.</p></div>
+  <div class="f"><h3>What it guards</h3>
+    <p><b>connection</b> — cable sharing, one handle, replug recovery, busy-cable message,
+       RS485 framing, command latency.
+       <b>contracts</b> — firmware↔Studio joint count and order, the move-time floor, every
+       command Studio sends existing.
+       <b>hub</b> — pages, device API, the log-line vs JSON parsing rule.
+       <b>studio</b> — boot pose, saved-rig migration, fast drag, play/hold/pause/resume.
+       <b>responsive</b> — every page measured in a real browser at phone, tablet and
+       desktop widths, failing if anything scrolls sideways.
+       <b>firmware</b> — the real PlatformIO build must compile and still fit the chip,
+       every module type's build must compile and must NOT contain another type's page
+       (checked by searching the binary itself), plus native tests that run the
+       gear/travel maths and the move-time floor on the PC with no board.
+       <b>view</b> — the standard views really are orthographic, and the camera being
+       dragged is the one being rendered.
+       <b>calibration</b> · <b>sequences</b> · <b>edge cases</b> — tuning survives a power
+       cycle, suspend/chain/speed behave, and the awkward states do not throw.
+       <b>modsite</b> — the module site's tabs show one group at a time and the login gate
+       still hides every config card until you are in.
+       <b>wifi</b> — a bad or absent network cannot stall the servo loop: the connect path
+       stays a polled state machine with timeouts, and nothing in it blocks.
+       <b>transports</b> — the same command, an SD transfer and a pin-config round trip on
+       USB/UART, RS485, direct Web Serial and WiFi, so a link cannot break unnoticed.
+       <b>persistence</b> — every save path returns exactly what went in: projects keep their
+       rig and tilts, sequences survive byte for byte, and names with a path are refused.
+       <b>sendrig</b> — sending the rig stays one command per joint, and the values arrive intact.
+       <b>unattended</b> — the robot plays a sequence on its own with no SD card, so the
+       browser can be closed.
+       <b>protocol</b> — every command answers with exactly ONE line; a multi-line reply
+       poisons whatever command follows it.
+       <b>registries</b> — adding a web app, servo or command costs one file; the check
+       adds a throwaway app every run and proves it appears and serves with no code change.
+       <b>tooling</b> - the promotion pipeline<br>\n<b>docs</b> — this page, which fails QC if a command, module type or QC area is
+       added without describing it here.
+       <b>design</b> — one design system in one file: no page may declare its own tokens or
+       copy a colour that is already one, every page must really link it, and the board's
+       compiled-in copy must match the shared file exactly.
+       <b>logging</b> — every firmware log line goes through one helper and reaches the port
+       as a single write, so a log raised on another task can never be glued onto the end of
+       a command reply.
+       <b>auth</b> — a caller with no session is refused by every route that changes
+       something (including the GETs that move servos), can still read everything, and can
+       always STOP a moving robot; the password is stored hashed and guessing gets locked out.
+       <b>qc</b> — the suite checks itself: a browser check reports its result over the fake
+       serial port, and a dropped report is retried, so a check can never fail for a reason
+       that is not the code under test.</p></div>
+  <div class="f"><h3>A fake robot, so nothing needs hardware</h3>
+    <p>A stand-in serial module with one <em>exclusive</em> port — a second open fails exactly
+       like Windows, which is what proves the hub shares a handle. It can also play dead to
+       reproduce a replugged board, and records every command with the time it arrived.</p></div>
+  <div class="note"><b>The rule that makes a check worth writing:</b> break the fix and watch
+    the check fail. A check that passes both before and after guards nothing.</div>
+</section>

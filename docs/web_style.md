@@ -77,6 +77,21 @@ A new area is a new part file plus one line (template or `web_build.json`).
   and timing detail still go to the timeline's own line, failures to
   `notice()` (seen on every tab).
 
+## Help is cut the same way (A41-6)
+
+`main_python/web/help/`, never `help.html` (BUILT, listed in `web_build.json`):
+
+* `index.template.html` — the shared head, the sidebar and the ORDER of the
+  sections: by what the reader is doing (use it, build and set up, when
+  something is wrong), not by where the code runs.
+* `parts/<section>.html` — one `<section id=...>` each; `parts/search.js` the
+  search box and the sidebar highlight; `style.css` the document type scale
+  (Help is a document, so it keeps its own wider two-column frame, not
+  `body.page`).
+* A new section is a part file, one `<!-- part: -->` line, one sidebar link
+  and one link in `bytask.html` (`check_help_links` fails an orphan).
+* Code paths in a section's `.where` label carry `tech`.
+
 ## The board's own site (A41-5)
 
 `firmware/src/web/WebUI.h` is served from the board's flash, and also whole by
@@ -124,7 +139,8 @@ every status push.
   codes go in `tech` or a `.tech` element (`check_designer_first`).
 * The browser never asks `127.0.0.1` / `localhost` itself — on a phone that is
   the phone. Ask the hub (`check_page_frame`).
-* Every page fits 360–1920 px with no sideways scroll (`check_responsive`).
+* Every page fits 360–1920 px with no sideways scroll (`check_responsive`;
+  the plan is held at phone widths only).
 * No raw colours; tokens only (`check_design_system`, `check_css_tokens`).
 
 ## Pages and where they stand (the stage plan in docs/PLAN.html, A41)
@@ -137,4 +153,5 @@ every status push.
 | Studio | `nong/main_python_set_nong/web/` (`index.template.html` + `html_parts/` → `index.html`, `app_parts/*.js` → `app.js`) | yes (A41-4) |
 | Board site | `firmware/src/web/WebUI.h` (master; `gen_tables.py` cuts one per module type) | yes, written out (A41-5) |
 | Light strip (RGB) | `main_python/web/rgb.html` | yes (A41-5) |
-| Help | `main_python/web/help.html` | stage 5 |
+| Help | `main_python/web/help/` (template + `parts/`) → `help.html`, built by `tools/build_web.py` | yes (A41-6) |
+| Plan | `docs/PLAN.html` (hand-written top, STATE from `tools/plan.py`) | no: a reference document; a wide table goes in `<div class="wrap">` |

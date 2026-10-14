@@ -16,10 +16,10 @@ Two halves, and the second is the one with teeth:
     the top of the page and nobody can tell it from a link that was never
     contextual. That is exactly how this would rot back.
 
-The by-task index at the top exists because the page is grouped by where each
-feature RUNS, which is right once you know the system and useless on the first
-day. Somebody arriving has a task, not a component - so every section must be
-reachable that way too, or it is a section nobody new will ever find.
+The by-task index at the top exists because somebody arriving has a task, not
+a component - so every section must be reachable that way, or it is a section
+nobody new will ever find. Since A41-6 the page itself follows the same order
+(use it, build it, reference) and is built from main_python/web/help/.
 """
 import re
 

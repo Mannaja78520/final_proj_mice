@@ -64,6 +64,13 @@
         "settings.js",
         "start.js"
       ]
+    },
+    {
+      "path": "main_python/web/help",
+      "out": "main_python/web/help.html",
+      "js": [
+        "search.js"
+      ]
     }
   ]
 }

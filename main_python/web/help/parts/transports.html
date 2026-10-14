@@ -1,0 +1,14 @@
+<!-- ===================== TRANSPORTS ===================== -->
+<section id="transports">
+  <div class="shead">
+    <span class="where">reference</span>
+    <h2>Transports — the same features on every link</h2>
+    <p>Text commands and SD file transfer work identically on all three. The difference is
+       reach and speed, never capability.</p>
+  </div>
+  <div class="scroll"><table><thead><tr><th>Link</th><th class="wrap2">Reaches</th><th class="wrap2">Notes</th></tr></thead><tbody>
+    <tr><td>WiFi</td><td class="wrap2">Any module on the network, from any device</td><td class="wrap2">Website + HTTP API. Fastest for whole-file transfer. Falls back to its own hotspot.</td></tr>
+    <tr><td>USB</td><td class="wrap2">The board on the cable</td><td class="wrap2">115200 baud. No network needed. Shared by the hub, so several pages can use one cable.</td></tr>
+    <tr><td>RS485</td><td class="wrap2">Every module on the bus</td><td class="wrap2">Framed <code>#id …</code> / <code>@id …</code>. Works through a dongle or through another module's USB port.</td></tr>
+  </tbody></table></div>
+</section>

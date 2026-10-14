@@ -382,7 +382,7 @@ exist.</p>
    in. Nothing here is a guess about what exists — every row names the task that
    cannot be finished without it.</p>
 
-<table class="hw">
+<div class="wrap"><table class="hw">
 <tr><th>Part</th><th>How many</th><th>Without it, these cannot be done</th></tr>
 
 <tr class="need2"><td><b>ESP32 boards</b></td>
@@ -497,13 +497,13 @@ exist.</p>
     <td>one per board</td>
     <td>Everything. A charge-only cable is the most common cause of <i>the board
         did not answer</i>, and it looks identical.</td></tr>
-</table>
+</table></div>
 
 <p class="mini"><b>If you bring only one thing:</b> a second board. It unlocks the
    half of A3-5 that needs no wiring, and it gives A3-8 a real client. <b>If you
    bring two:</b> add the SD card — three separate tasks stop at it.</p>
 
-<table class="hw">
+<div class="wrap"><table class="hw">
 <tr><th>Task</th><th>Boards</th><th>Also needed</th><th>What it would prove</th></tr>
 
 <tr class="need2"><td><b>A3-5</b> group over RS485 and hotspot peers</td>
@@ -548,7 +548,7 @@ exist.</p>
     <td>The half that runs on the chip: that the board remembers the hub which
         spoke to it and forgets it after five minutes. The page behaviour is
         already driven on a PC; this is the part a PC cannot execute.</td></tr>
-</table>
+</table></div>
 
 <p class="mini"><b>Short answer:</b> bring <b>two boards</b> and, if you can, a pair
    of RS485 transceivers with two wires between them. Two boards alone already
@@ -597,7 +597,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: nothing right now
+# RUNNING: QC finished: 6783 passed, 0 failed, started 2026-10-14 22:39
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1539,12 +1539,12 @@ A40-1: todo  2026-10-12 18:02  agent=claude:ncld  — User 2026-10-12: why can a
 A40-2: todo   2026-10-12 18:19  agent=open  — User 2026-10-12: in Shows, is there upload to the robot? Now there is only Run and save to the PC. HANDOFF from claude:ncld 2026-10-12 18:19: Shows tab ⇪ Send to robot (shows.robot_yaml + /api/show/yaml). Real LhongMarePing.show.yaml uploaded to nong 67 via nong.local and read back byte-identical; not yet played on the arm. Needs merge, then MiceHub.exe rebuild.
 A40-3: qc     2026-10-12 19:11  agent=claude:ncld  — User 2026-10-12: the last play, the sound did not match the moves; the moves ended late so the sound ended late after them, not as I set.
 # A41  Web pages: one look, built from shared parts
-A41-1: doing  2026-10-14 17:40  agent=claude:u36i  — user 2026-10-14: web pages on main are buggy and each goes its own way, hard to read and use; make everything simpler and consistent, OOP so later edits are easy and cost fewer tokens; can we borrow another site's look
+A41-1: done   2026-10-14 22:40  agent=claude:10142212-6db1  — user 2026-10-14: web pages on main are buggy and each goes its own way, hard to read and use; make everything simpler and consistent, OOP so later edits are easy and cost fewer tokens; can we borrow another site's look all 5 stages merged (PR #12-#16); audit bugs 1-8 closed (7: LIMIT? free logged out, CAM LIST says who to log in to)
 A41-2: done   2026-10-14 18:12  agent=claude:u36i  — web stage 1: shared page parts (mice-ui.js: Api, TopBar, Status, Partner) + docs/web_style.md; app pages Faces/Photobooth/All-Jao/Camera/Voice use one header; partner status checked through the hub (works from a phone); no programmer commands on the Faces surface PR #12: app pages on one head via shared/web/mice-ui.js; full QC 6709 pass in cloud; tested against fakes only
 A41-3: done   2026-10-14 18:45  agent=claude:peg8  — web stage 2: Home (hub.html) - split its inline JS into parts, shared head, one login card not two, tabs that do not wrap PR #13: Home cut into parts (main_python/web/home/ built into hub.html), shared head, one login place, tabs on one line; full QC 6730 pass in cloud; tested against fakes only
 A41-4: done   2026-10-14 21:42  agent=claude:10141851-cbf1  — web stage 3: Studio - 3D view big enough at 1280x800, side tabs not cut, view buttons not over the 3D view on a phone, one name/Save PR #14: Studio on the shared head (TopBar, Status, Api), page cut into html_parts/, one name and Save, 3D view 417px at 1280x800 (was ~200), side tabs not cut, phone view buttons fold behind Views; full QC 6747 pass in cloud (2 load races on a rerun, green alone); tested against fakes only
 A41-5: done   2026-10-14 22:09  agent=claude:10142144-3ce4  — web stage 4: board site (WebUI.h) and RGB - shared head, one ?dev= address, no 401 reads when logged out; watch mice_nong flash size PR #15: board site + light strip on the shared head, rgb.html on ?dev=, logged-out LIMIT? free through the hub (query in commands.json), camera settings say who to log in to; nong page 185 B smaller; check_board_frame; full QC 6767 pass, 1 load race green alone; tested against fakes only
-A41-6: todo  2026-10-14 18:04  agent=claude:u36i  — web stage 5: Help - shared head, grouped by task, PLAN.html no sideways scroll on a phone
+A41-6: done   2026-10-14 22:40  agent=claude:10142212-6db1  — web stage 5: Help - shared head, grouped by task, PLAN.html no sideways scroll on a phone PR #16: Help cut into main_python/web/help/ parts built into help.html, shared head, sections in task order, overview card describes pages after A41-2..5; PLAN.html hardware tables in .wrap (no sideways scroll at 360/390, audit bug 8); full QC 6783 pass in cloud (studio_layout flake green alone); tested against fakes only
 
 END</code></pre>
 </details>
