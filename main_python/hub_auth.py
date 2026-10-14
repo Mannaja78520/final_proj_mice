@@ -182,6 +182,25 @@ def local_ok(path: str, method: str) -> bool:
     return method == "POST" and path in LOCAL_OK
 
 
+# A READ on a command route is free, as it is on the board itself
+# (WebPortal::allowedCommand): commands.json marks it `"query": true`. Gated,
+# the module page opened through the hub asked LIMIT? logged out, got a 401 and
+# left the start pose blank with no reason (web audit 2026-10-14, A41-5).
+# `safety` (STOP) stays gated here: through the hub it also stops a show.
+CMD_ROUTES = {"/api/usb/cmd", "/api/robot/cmd", "/api/dev/cmd"}
+
+
+def free_read(path: str, cmd: str, commands) -> bool:
+    """Is this one command line a read that commands.json calls a query?"""
+    c = (cmd or "").strip()
+    # One line, one verb: a newline would smuggle a second command past this.
+    if path not in CMD_ROUTES or not c or any(ch in c for ch in "\r\n\0"):
+        return False
+    verb = c.split(None, 1)[0].upper()
+    return any(str(x.get("name", "")).upper() == verb and x.get("query") is True
+               for x in commands or [])
+
+
 # Read-only siblings that must NOT be gated, listed so the intent is explicit
 # rather than implied by absence. The QC check asserts against this.
 OPEN = {

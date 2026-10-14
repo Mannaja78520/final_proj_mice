@@ -134,6 +134,25 @@ def run(t):
         code, _ = _bare(base + path)
         t.eq(code, 200, "no session: %s still reads" % path)
 
+    # ---- a READ command is free, as on the board itself (A41-5) --------
+    # The module page through the hub asked LIMIT? logged out, got 401 and
+    # left the start pose blank. commands.json's `query` decides, the same
+    # data the board's own gate uses. Asserted on the wire.
+    dev = "/api/dev/cmd?dev=" + urllib.parse.quote("usb:" + fake_serial.PORT) + "&c="
+    fake_serial.reset()
+    code, body = _bare(base + dev + urllib.parse.quote("LIMIT?"))
+    t.ok(code == 200 and "need_login" not in body,
+         "no session: a query (LIMIT?) reaches the module", "%d %s" % (code, body[:120]))
+    sent = [c.upper() for _, c in fake_serial.wire]
+    t.ok(any(c.startswith("LIMIT?") for c in sent),
+         "and it was the module that answered it", sent[-5:])
+    for c in ("LIMIT?\nPOSE 90 90 90 90 90 90 90 90 90 90", "CAM LIST", "STOP"):
+        code, body = _bare(base + dev + urllib.parse.quote(c))
+        t.eq(code, 401, "no session: %r is still refused" % c)
+    sent = " ".join(c for _, c in fake_serial.wire).upper()
+    t.ok("POSE" not in sent,
+         "a query with a second line hidden in it moves nothing", sent[-120:])
+
     # ---- stopping is never gated -------------------------------------
     code, _ = _bare(base + "/api/play/stop")
     t.eq(code, 200,

@@ -44,7 +44,6 @@ static const char WEB_UI_HTML[] PROGMEM = R"rawliteral(<!doctype html>
 /* Only what is the MODULE WEBSITE's own. Tokens, the reset, cards, buttons,
    inputs, badges, the quiet caption and the shared floor come from mice.css. */
 body{padding:14px;max-width:1100px;margin:0 auto}
-header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
 .grid{grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:14px}
 /* The look comes from mice.css now. .mtab stays as a NAME — scripts and QC
    select on it — but it no longer describes a second kind of tab. */
@@ -87,46 +86,41 @@ a.peer:hover{border-color:var(--acc)}
   pre,#console{font-size:11px}
 }
 @media (max-width:430px){body{padding:9px}}
-header{padding:var(--sp-3) 0;gap:var(--sp-3)}
-#hname{flex:1 1 180px}
-#hnow{margin:var(--sp-3) 0 var(--sp-4)}
-.module-options{display:flex;justify-content:flex-end}
+.topbar{margin-bottom:var(--sp-4)}
+.topbar .sub .badge{margin:2px 4px 0 0}
 #modTabs{padding:var(--sp-2);background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg)}
 #modTabs .tab:not(.on){background:transparent;border-color:transparent}
 </style>
 </head>
 <body>
-<header>
+<!-- THE SAME HEAD AS EVERY HUB PAGE (A41-5): the way back first, the name, what
+     it is doing, its own button, the technical switch last; the badges on the
+     line under. mice-ui.js is not loaded (not in flash), so it is written out. -->
+<header class="topbar">
+  <!-- Hidden until it is known to be right - see showHubLink. -->
+  <a id="hubBack" class="topbar-home" href="/" hidden>&#8592; Hub</a>
   <h1 id="hname">module</h1>
+  <!-- What it is doing, and how you are reached to it. Both in words, because
+       someone standing next to an arm needs to know whether it is about to move
+       before they reach into it, and because unplugging a cable means something
+       different from losing WiFi. -->
+  <span id="hnow" class="statline" aria-live="polite">asking the board what it is…</span>
+  <button id="setupBtn" onclick="setupToggle()">Setup / Login</button>
+  <label class="topbar-adv mini"><input type="checkbox" id="advOn"
+    onchange="miceAdv.set(this.checked)"> Show technical details</label>
+  <span class="sub">
   <span class="badge tech">ID <b id="hid">-</b></span>
   <span class="badge">type <b id="htype">-</b></span>
-  <!-- Which installation this board belongs to. The hub has a whole screen
-       about grouping and the board itself never said which group it was in. -->
+  <!-- Which installation this board belongs to. -->
   <span class="badge" id="hgroupwrap" hidden>group <b id="hgroup">-</b></span>
-  <!-- The first question anyone asks about a board behaving oddly. It was
-       only reachable by sending INFO on a console. -->
+  <!-- The first question anyone asks about a board behaving oddly. -->
   <span class="badge tech">fw <b id="hfw">-</b></span>
-  <!-- the address and signal are technical detail now - how you are reached
-       stays on the surface in words in #hnow (A21-2) -->
+  <!-- how you are reached stays on the surface in words in #hnow (A21-2) -->
   <span class="badge tech">wifi <b id="hwifi">-</b></span>
   <span class="badge">Storage <b id="hsd">-</b></span>
   <span class="badge"><span class="dot" id="wsdot"></span>live</span>
-  <span style="flex:1"></span>
-  <!-- The way back. Hidden until it is known to be right - see showHubLink. -->
-  <a id="hubBack" class="tab" href="/" hidden>&#8592; back to the hub</a>
-  <button id="setupBtn" onclick="setupToggle()">Setup / Login</button>
+  </span>
 </header>
-<div class="module-options">    <label style="display:flex;gap:var(--sp-2);align-items:center;font-size:12.5px;
-                  color:var(--mut);cursor:pointer;margin-bottom:var(--sp-2)">
-      <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
-      Show technical details</label>
-</div>
-
-<!-- What it is doing, and how you are reached to it. Both in words, because
-     someone standing next to an arm needs to know whether it is about to move
-     before they reach into it, and because unplugging a cable means something
-     different from losing WiFi. -->
-<div id="hnow" class="statline" aria-live="polite">asking the board what it is…</div>
 <!-- THE NUMBERS ON THIS PAGE MAY BE OLD. The board pushes its status twice a
      second; when that stops, everything on screen keeps its last value and
      goes on looking live. For a page that shows where an arm IS, that is the
@@ -566,8 +560,8 @@ function log(t){const l=$('log');l.textContent+=t+'\n';l.scrollTop=l.scrollHeigh
 function refusal(t){
   if(!t) return 'the board did not answer. Check it is powered and on the network.';
   if(t.indexOf('need_login')>=0 || t.indexOf('log in before doing that')>=0)
-    return 'the hub has not let you in yet — log in on the hub page (← back to '
-         + 'the hub), then come back. Or open this board on its own address and '
+    return 'the hub has not let you in yet — log in on the hub page (← Hub, '
+         + 'top left), then come back. Or open this board on its own address and '
          + 'log in here.';
   if(t.indexOf('log in first')>=0)
     return 'this board is locked — open Setup & wiring ▸ Setup login and log in, '
@@ -1116,6 +1110,10 @@ const CAM_GROUPS=[['basic','Picture'],['exposure','Exposure'],
                   ['colour','Colour'],['advanced','Advanced']];
 let camCtl={};                       // name -> the line the board sent
 let camAsked=false;                  // the panel is read once, when it can be
+let camLocked=false;                 // refused for want of a login
+function camRetry(){ if(camLocked){ camLocked=false; camAsked=false; } }
+document.addEventListener('mice-login',camRetry);   // logged in on this page
+addEventListener('focus',camRetry);                  // ...or on the hub, in another tab
 
 function camParse(text){
   const out={};
@@ -1219,10 +1217,11 @@ async function camLoad(){
   const box=$('camSetBox'); if(!box) return;
   try{
     const txt=await cmd('CAM LIST');
-    if(!txt || txt.indexOf('ERR')===0){
-      $('camSetStat').textContent=txt||'no answer';
-      return;
-    }
+    // CAM also CHANGES settings, so reading them needs a login. Logged out the
+    // panel stayed empty with no reason (audit 2026-10-14): say who to log in
+    // to, and ask again after a login - not on every status push.
+    const why=refusal(txt);
+    if(why){ $('camSetStat').textContent=why; camLocked=true; return; }
     camCtl=camParse(txt);
     camDraw();
     $('camSetStat').textContent='';
@@ -1411,7 +1410,7 @@ function viaHub(){ return !!new URLSearchParams(location.search).get('dev'); }
 function showHubLink(st){
   const a=$('hubBack');
   if(!a) return;
-  if(viaHub()){ a.href='/'; a.textContent='← back to the hub'; a.hidden=false; return; }
+  if(viaHub()){ a.href='/'; a.textContent='← Hub'; a.hidden=false; return; }
   const hub=(st&&st.hub)||'';
   if(!hub){ a.hidden=true; return; }
   a.href='http://'+hub+'/';
@@ -1440,7 +1439,7 @@ async function doLogin(){
     $('liWho').textContent=u;$('liPass').value='';
     const lr=$('liRole'); if(lr) lr.textContent=auth.role==='super_admin'?'super_admin':'user';
     applyTabs();$('setupBtn').textContent='⚙ Setup (open)';
-    loadUsers();loadPins();
+    loadUsers();loadPins();document.dispatchEvent(new Event('mice-login'));
     return;
   }
   // Direct: ONE call to the board's own gate. The old flow first ran the AUTH
@@ -1479,6 +1478,7 @@ async function doLogin(){
   $('setupBtn').textContent='⚙ Setup (open)';
   loadUsers();
   loadPins(); // build the pin pickers now that the card is visible
+  document.dispatchEvent(new Event('mice-login'));   // a card waiting on a login asks again
 }
 function doLogout(){
   // End the session on the BOARD too, not just in this tab. A logout that

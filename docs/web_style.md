@@ -77,6 +77,26 @@ A new area is a new part file plus one line (template or `web_build.json`).
   and timing detail still go to the timeline's own line, failures to
   `notice()` (seen on every tab).
 
+## The board's own site (A41-5)
+
+`firmware/src/web/WebUI.h` is served from the board's flash, and also whole by
+the hub at `/mod?dev=...`. mice-ui.js does not fit in flash, so its head is
+the same markup written out: `<header class="topbar">`, then `#hubBack`
+(`class="topbar-home"`, "← Hub", hidden until showHubLink knows where the hub
+is), the name, `#hnow` (what it is doing, in words), its own button, the
+`topbar-adv` switch last, and the badges in a `.sub` line under it. Keep it
+small: every byte is in mice_nong's OTA slot. Its own frame (wider grid of
+cards) stays; it is not `body.page`.
+
+A page about one module names it with ONE address: `?dev=wifi:<ip>` or
+`?dev=usb:<port>[:<bus id>]`, and sends commands to `/api/dev/cmd?dev=`
+(the light strip page `rgb.html` too; its old `?ip=` / `?port=&id=` still
+open). A read the person may do logged out must not come back 401: a
+command `"query": true` in `firmware/config/commands.json` is free through the
+hub as on the board (`hub_auth.free_read`). Anything else refused is said in
+words (`refusal()` on the board site) and asked again after a login, not on
+every status push.
+
 ## The parts
 
 * **`Mice.Api.get(path)` / `.post(path, body)`** — every call to the hub. Never
@@ -115,5 +135,6 @@ A new area is a new part file plus one line (template or `web_build.json`).
 | Reconize, Photobooth, All-Jao | `apps/<id>/index.html` | yes |
 | Home | `main_python/web/home/` (template + `parts/`) → `hub.html`, built by `tools/build_web.py` | yes (A41-3) |
 | Studio | `nong/main_python_set_nong/web/` (`index.template.html` + `html_parts/` → `index.html`, `app_parts/*.js` → `app.js`) | yes (A41-4) |
-| Board site, RGB | `firmware/src/web/WebUI.h`, `main_python/web/rgb.html` | stage 4 |
+| Board site | `firmware/src/web/WebUI.h` (master; `gen_tables.py` cuts one per module type) | yes, written out (A41-5) |
+| Light strip (RGB) | `main_python/web/rgb.html` | yes (A41-5) |
 | Help | `main_python/web/help.html` | stage 5 |

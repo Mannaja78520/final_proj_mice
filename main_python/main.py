@@ -1213,6 +1213,14 @@ hub_speak.bind(sys.modules[__name__])
 # Read from the SAME registry the firmware compiles its table from
 # (firmware/config/commands.json, `"motion": true`), so the hub cannot disagree
 # with the board about what counts as taking over.
+def _commands():
+    """commands.json's list, or [] when it cannot be read (nothing is free then)."""
+    try:
+        return registry.commands() if registry else []
+    except Exception:                        # noqa: BLE001
+        return []
+
+
 def motion_commands():
     if registry is None:
         return set()
@@ -1848,7 +1856,9 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
                 return self.auth_route(method, path)
             if hub_auth.gated(path, method) and not self.logged_in() \
                     and not (hub_auth.local_ok(path, method)
-                             and self.from_program_here()):
+                             and self.from_program_here()) \
+                    and not (path in hub_auth.CMD_ROUTES and hub_auth.free_read(
+                        path, (q.get("c") or [""])[0], _commands())):
                 self.drain()
                 return self.send_bytes(
                     json.dumps({"ok": False, "need_login": True,

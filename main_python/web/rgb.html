@@ -6,15 +6,14 @@
 <title>Mice — light strip</title>
 <link rel="stylesheet" href="/mice.css">
 <script src="/mice.js"></script>
+<script src="/mice-ui.js"></script>
 <style>
 /* Only what is this page's own. Tokens, the reset, cards, buttons, inputs, the
    quiet caption and the five state colours all come from /mice.css above. */
 body{
   line-height:1.5;                /* a small dense page, not a document */
-  padding:var(--sp-4);max-width:760px;margin:0 auto;
   overflow-x:hidden;              /* the page itself never scrolls sideways */
 }
-h1{font-size:20px;margin-bottom:var(--sp-1)}
 .card{margin:var(--sp-3) 0}
 /* a mode that is currently running — state, so it is --ok and it also says so */
 button.on{background:var(--ok);border-color:var(--ok);
@@ -37,18 +36,19 @@ input[type=range]{min-width:120px}
    centred-column page, instead of this one having its own. */
 
 @media (max-width:420px){
-  body{padding:var(--sp-3)}
   .lbl{min-width:100%}            /* label above the control, not beside it */
   .row>button{flex:1 1 auto}
 }
 </style>
 </head>
-<body>
-<h1>Light strip — <span id="who">module</span><span id="whoTech" class="tech mini"></span></h1>
-<div class="mini" style="margin-bottom:var(--sp-2)"><a href="/">← hub</a> · works over WiFi or the USB cable, whichever this page was opened with
-  <label style="display:inline-flex;gap:var(--sp-2);align-items:center;float:right">
-    <input type="checkbox" id="advOn" onchange="miceAdv.set(this.checked)">
-    Show technical details</label></div>
+<body class="page">
+<!-- The shared head (A41-5): Mice.TopBar adds "← Hub" first and the technical
+     switch last. Its own "← hub" link and switch used to sit in a caption. -->
+<header class="topbar">
+  <h1>💡 Light strip — <span id="who">module</span></h1>
+  <span class="sub">works over WiFi or the USB cable, whichever this page was opened with
+    <span id="whoTech" class="tech"></span></span>
+</header>
 <!-- One login, every page (A25-5). The session is one cookie on one origin,
      so this and the hub are the same session in both directions. -->
 <div class="card" id="loginHere" style="margin-bottom:var(--sp-4)"></div>
@@ -122,11 +122,13 @@ input[type=range]{min-width:120px}
 <script>
 const $=id=>document.getElementById(id);
 const qp=new URLSearchParams(location.search);
-const IP=qp.get('ip')||'', PORT=qp.get('port')||'', BUS=qp.get('id')||'';
+// ONE address, the module page's own: ?dev=wifi:<ip> | usb:<port>[:<bus id>]
+// (A41-5). ?ip= / ?port=&id= was this page's alone; old links still work.
+const DEV=qp.get('dev')||(qp.get('ip')?'wifi:'+qp.get('ip')
+  :(qp.get('port')?'usb:'+qp.get('port')+(qp.get('id')?':'+qp.get('id'):''):''));
 $('who').textContent=qp.get('name')||'module';
-// the address is technical detail: on the surface only when it IS the name
-const wt=[]; if(IP)wt.push(IP); if(PORT)wt.push('port '+PORT); if(BUS)wt.push('bus #'+BUS);
-$('whoTech').textContent=wt.length?' — '+wt.join(' · '):'';
+// the address is technical detail: behind the switch
+$('whoTech').textContent=DEV?' — '+DEV:'';
 
 let lastSend=0;
 // A failed command used to return '' and look exactly like a success, so a
@@ -152,8 +154,7 @@ async function cmd(c,throttled,target="manStat"){
   }
   pending=null;
   lastSend=now;
-  const url=IP?('/api/robot/cmd?ip='+encodeURIComponent(IP)+'&c='+encodeURIComponent(c))
-             :('/api/usb/cmd?port='+encodeURIComponent(PORT)+(BUS?('&id='+BUS):'')+'&c='+encodeURIComponent(c));
+  const url='/api/dev/cmd?dev='+encodeURIComponent(DEV)+'&c='+encodeURIComponent(c);
   try{
     const r=await fetch(url);
     const t=await r.text();

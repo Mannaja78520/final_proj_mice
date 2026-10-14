@@ -1898,9 +1898,9 @@ function modRow(m,extra,port,busId,peer,far,opts){
     const rb=document.createElement('button');
     rb.textContent='💡 RGB';
     rb.title='RGB modes: manual / effects / SD sequence / follow the PC speaker';
-    const target=(m.wifi_mode==='sta'&&m.ip)?('ip='+encodeURIComponent(m.ip))
-      :('port='+encodeURIComponent(port)+(busId?('&id='+busId):''));
-    rb.onclick=()=>window.open('/rgb.html?'+target+'&name='+encodeURIComponent(m.name||''),'_blank');
+    // the same ?dev= address the module page takes (A41-5)
+    const dev=(m.wifi_mode==='sta'&&m.ip)?('wifi:'+m.ip):('usb:'+port+(busId?(':'+busId):''));
+    rb.onclick=()=>window.open('/rgb.html?dev='+encodeURIComponent(dev)+'&name='+encodeURIComponent(m.name||''),'_blank');
     d.appendChild(rb);
   }
   // ...and, underneath, every way this board can be reached. One line each, so
