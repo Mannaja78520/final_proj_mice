@@ -10,6 +10,7 @@ be removed.
 Driven through a throwaway Auth store and the real hub routes (a second login
 is its own cookie), never the PC's own accounts.
 """
+import re
 import http.cookiejar
 import json
 import tempfile
@@ -122,7 +123,7 @@ def run(t):
     boss.call("/api/users/remove", {"user": "qc_user_d"})
     boss.call("/api/users/remove", {"user": "qc_boss2"})
     hub_page = (F.CODE / "main_python" / "web" / "hub.html").read_text(encoding="utf-8")
-    t.ok('id="uRole"' in hub_page and "role:$('uRole').value" in hub_page,
+    t.ok('id="uRole"' in hub_page and re.search(r"role:\s*\$\('uRole'\)\.value", hub_page),
          "the Accounts card lets super_admin choose the role when adding")
 
     # renamed, super_admin keeps its powers through the routes too

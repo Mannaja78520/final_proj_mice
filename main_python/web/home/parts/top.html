@@ -31,23 +31,36 @@
      disabling it during transmission; that is right for an ordinary button and
      wrong for this one, because if the first press did not land the operator
      has to be able to press again. It shows progress instead. -->
-<div class="stopbar">
+<!-- The shared head (Mice.TopBar, A41-3): the same frame as every other
+     page, with the technical switch added last by mice-ui.js. Home IS the
+     hub, so no way back (data-home="none"). Shortcuts and Help sit here, not
+     in the tab row: neither swaps a card in place, and as the 8th and 9th
+     "tabs" they wrapped the row onto a second line at 1280 px (2026-10-14). -->
+<header class="topbar" data-home="none">
   <h1>Mice Control Hub</h1>
-  <div class="stopbar-actions">
+  <span class="home-acts">
     <button class="danger" id="stopAll" onclick="stopEverything()"
             title="Stop the show and every board this hub can reach">⏹ STOP</button>
     <button class="secondary" id="reportBtn" onclick="openReport()"
             title="Report a problem — no login needed">🐛 Report</button>
-  </div>
-</div>
+    <!-- The way in for somebody who will never press "?" - which is everybody
+         who does not already know the shortcuts exist. A keyboard feature
+         whose only entry point is a keystroke is a feature for the person who
+         wrote it. Designed by Gemini Pro, 2026-08-20. -->
+    <button class="secondary" id="keysOpen" title="Keyboard shortcuts"
+            onclick="toggleKeys(true)" aria-haspopup="dialog">⌨ Shortcuts</button>
+    <!-- Help LEAVES the page, so it is a link and looks like one. -->
+    <a class="tab tab-link" id="helpLink" href="/help">Help ↗</a>
+  </span>
+  <span class="sub">A little space for your whole rig. Open a module to move it,
+    or start a sequence in Nong Studio. Your modules appear here when they connect.</span>
+</header>
 <div class="banner err" id="stopSaid" hidden role="alert" aria-live="assertive"></div>
-<div class="sub page-intro">A little space for your whole rig. Open a module to move it,
-or start a sequence in Nong Studio. Your modules appear here when they connect.</div>
 
 <!-- Log in before doing. Reading the module list needs nothing, so this is a
      card on the page rather than a wall in front of it: someone checking
      whether a board is alive should never meet a password box. -->
-<div class="card" id="loginCard" hidden>
+<div class="card" id="loginCard" data-login-here hidden>
   <h2>🔒 Log in to control</h2>
   <div class="mini" id="loginWhy">Looking is free. Moving a robot, flashing a
     board or deleting a file needs the hub password.</div>

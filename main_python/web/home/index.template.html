@@ -1,4 +1,6 @@
 <!doctype html>
+<!-- BUILT by tools/build_web.py from main_python/web/home/ - edit the parts
+     there, never hub.html. How: docs/web_style.md -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -6,16 +8,17 @@
 <title>Mice Control Hub</title>
 <link rel="stylesheet" href="/mice.css">
 <script src="/mice.js"></script>
+<script src="/mice-ui.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="page">
 <!-- part: top.html -->
 
 <!-- part: dialogs.html -->
 
-<!-- Seven destinations. Help LEAVES the page, so it is a link and looks like
-     one: a tab that navigates away is a tab that loses your place without
-     warning. Everything else shows and hides cards by data-tab, so no element
+<!-- Seven destinations, on ONE line (A41-3: nine wrapped to two lines at
+     1280 px and four on a phone; a phone now scrolls the row sideways).
+     Everything else shows and hides cards by data-tab, so no element
      moves in the DOM and every id the rest of the page relies on stays put. -->
 <div class="tabs" id="tabs">
   <!-- HOME FIRST, TOOLS SECOND. Tools was the fifth tab and hard to reach, so
@@ -31,13 +34,6 @@
   <button class="tab" data-go="network" onclick="showTab('network')">Network</button>
   <button class="tab" data-go="settings" onclick="showTab('settings')">Settings</button>
   <button class="tab" data-go="complaints" onclick="showTab('complaints')">📋 Complaints</button>
-  <!-- The way in for somebody who will never press "?" - which is everybody
-       who does not already know the shortcuts exist. A keyboard feature whose
-       only entry point is a keystroke is a feature for the person who wrote
-       it. Designed by Gemini Pro, 2026-08-20. -->
-  <button class="tab keys-tab" id="keysOpen" title="Keyboard shortcuts"
-          onclick="toggleKeys(true)" aria-haspopup="dialog">⌨ Shortcuts</button>
-  <a class="tab tab-link" href="/help">Help ↗</a>
 </div>
 
 <div class="grid">

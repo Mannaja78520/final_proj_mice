@@ -63,3 +63,40 @@ def run(t):
         except ValueError:
             rejected = True
         t.ok(rejected, 'unlisted source cannot silently disappear from bundle')
+        (studio / 'app_parts/extra.js').unlink()
+        (studio / 'app_parts/boot.js').write_bytes(b'if (!ready) throw new Error();')
+        _pages(t, builder, root)
+
+
+def _pages(t, builder, root):
+    """A page cut into parts (Home, A41-3): every part placed once, in order."""
+    home = root / 'home'
+    (home / 'parts').mkdir(parents=True)
+    manifest = json.loads((root / 'tools/web_build.json').read_text())
+    manifest['pages'] = [{'path': 'home', 'out': 'out.html', 'js': ['a.js', 'b.js']}]
+    (root / 'tools/web_build.json').write_text(json.dumps(manifest))
+    (home / 'index.template.html').write_bytes(
+        b'<link rel="stylesheet" href="style.css">\n<!-- part: top.html -->\n'
+        b'<script src="app.js"></script>\n')
+    (home / 'style.css').write_bytes(b'b{color:red}')
+    (home / 'parts/top.html').write_bytes(b'<h1>top</h1>\n')
+    (home / 'parts/a.js').write_bytes(b'var first = 1;\n')
+    (home / 'parts/b.js').write_bytes(b'var second = first + 1;\n')
+    builder.build(root)
+    out = (root / 'out.html').read_text()
+    t.ok('<h1>top</h1>' in out and '<!-- part:' not in out,
+         'a page part lands where the template places it', out)
+    t.ok(out.find('var first') < out.find('var second') and 'b{color:red}' in out,
+         'script parts join in the listed order, the stylesheet inlined', out)
+
+    def refused():
+        try:
+            builder.build(root)
+            return False
+        except ValueError:
+            return True
+    (home / 'parts/stray.js').write_bytes(b'var lost = 1;\n')
+    t.ok(refused(), 'a script part nobody listed fails the build')
+    (home / 'parts/stray.js').unlink()
+    (home / 'parts/side.html').write_bytes(b'<p>side</p>\n')
+    t.ok(refused(), 'an html part the template never places fails the build')

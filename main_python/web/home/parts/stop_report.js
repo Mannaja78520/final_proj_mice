@@ -82,12 +82,3 @@ async function submitReport(){
     }
   }
 }
-
-function helpFor(name){
-  var a = document.querySelector('#tabs a.tab-link');
-  if(!a) return;
-  var sec = HELP_SECTION[name];
-  a.href = sec ? ('/help#' + sec) : '/help';
-  a.title = sec ? ('Help about ' + name) : 'Help';
-}
-

@@ -82,6 +82,13 @@ setTimeout(async function(){
     out.push("boxSameTab:" + (box && box.getAttribute('data-tab') ===
                               flash.getAttribute('data-tab') ? "yes" : "no"));
     out.push("boxHasWay:" + (box && box.querySelector('button') ? "yes" : "no"));
+    // ONE login place (A41-3). Home has its own login card, so a gated card
+    // there gets a one-line pointer to it, not a second login card; and the
+    // tools on Home are not gated at all - they used to be, under the card.
+    out.push("homeBoxes:" + d.querySelectorAll('.mg-gate[data-tab="home"]').length);
+    out.push("boxSlim:" + (box && box.classList.contains('mg-slim') ? "yes" : "no"));
+    var ht = d.getElementById('homeTools');
+    out.push("homeToolsStay:" + (ht && !ht.closest('.mg-off') ? "yes" : "no"));
 
     // ...now sign in, on this page, and the cards come back.
     d.getElementById('loginPass').value = "%s";
@@ -257,6 +264,12 @@ def run(t):
     t.eq(saw.get("boxSameTab"), "yes",
          "the box stands on the card's own tab, not on every tab")
     t.eq(saw.get("boxHasWay"), "yes", "and it offers the way in, not just a no")
+    t.eq(saw.get("homeBoxes"), "0",
+         "the Home tab shows no sign-in box under the login card (one login place)")
+    t.eq(saw.get("boxSlim"), "yes",
+         "on Home a gated card is one line pointing at the login card, not a second one")
+    t.eq(saw.get("homeToolsStay"), "yes",
+         "and the tools on Home stay usable with nobody signed in, as on the Tools tab")
     t.eq(saw.get("boxGone"), "yes", "signing in on that page removes the box")
     t.eq(saw.get("flashBack"), "yes", "and gives the card back")
     t.eq(saw.get("probeGated"), "yes", "the gate really hides a marked card")

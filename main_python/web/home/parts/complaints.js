@@ -150,4 +150,4 @@ function closeReport(){
     if(btns) btns.remove();
   }
 }
-
+onTab('complaints', loadComplaints);

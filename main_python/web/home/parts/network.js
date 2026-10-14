@@ -245,3 +245,28 @@ function unlinkSel(){
   applyGroup('');
 }
 
+// The address beside the QR. Read from the hub rather than from
+// location.href: someone often opens the hub as 127.0.0.1, and 127.0.0.1 is
+// the one address on the network that will not work from a phone.
+async function paintQr(){
+  try{
+    const j = await fetch('/api/mine').then(x => x.json());
+    const url = j.url || (location.protocol + '//' + location.host + '/');
+    $('qrUrl').textContent = url;
+    $('qrName').textContent = j.host ? ('this PC is ' + j.host) : '';
+    $('qrNameRow').hidden = !j.name_url;
+    if (j.name_url) $('qrNameUrl').textContent = j.name_url;
+    $('qrWhyNoName').hidden = !!j.name_url;
+    if (!j.name_url)
+      $('qrWhyNoName').textContent =
+        'The name mice.local is not being answered on this PC' +
+        (j.name_why ? ' — ' + j.name_why : '') + '. The address above works.';
+    // Re-fetch the picture whenever the address could have changed - a laptop
+    // that moves between a venue WiFi and its own hotspot gets a new IP, and a
+    // QR of the old one sends the phone nowhere.
+    $('qrImg').src = '/api/qr?t=' + Date.now();
+  }catch(e){ $('qrUrl').textContent = 'the hub did not say what its address is'; }
+}
+onTab('network', loadNet);
+onTab('network', function(){ loadHubs(false); });
+onTab('network', paintQr);

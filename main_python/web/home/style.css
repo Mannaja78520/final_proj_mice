@@ -1,8 +1,5 @@
 /* Only what is the HUB's own. Tokens, the reset, cards, buttons, inputs, the
    quiet caption and the five states all come from /mice.css above. */
-body{padding:var(--sp-6);max-width:980px;margin:0 auto}
-h1{font-size:24px;margin-bottom:var(--sp-1)}
-.sub{color:var(--mut);margin-bottom:18px}
 
 /* a module row: name / type / address / what you can do with it */
 .mod{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-2) var(--sp-3);margin:var(--sp-2) 0;background:var(--sunk)}
@@ -52,9 +49,6 @@ h1{font-size:24px;margin-bottom:var(--sp-1)}
   background:none;border:1px solid transparent;padding:var(--sp-2)}
 .keyrow:hover{border-color:var(--line);background:var(--sunk)}
 .keyrow .badge{min-width:56px;justify-content:center;display:inline-flex}
-/* A keyboard shortcut is meaningless without a keyboard, so the way IN stays
-   (the list is a menu on a phone) but it does not claim prime space. */
-.keys-tab{font-size:16px;line-height:1}
 @media (pointer:coarse){.keyrow{min-height:44px;align-items:center}}
 .flash-meta{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-1) var(--sp-3);
   background:var(--sunk);padding:var(--sp-2) var(--sp-3);
@@ -83,11 +77,16 @@ h1{font-size:24px;margin-bottom:var(--sp-1)}
 .report-busy{display:none;color:var(--mut);font-size:14px}
 .report-busy.show{display:block}
 
-/* stopbar actions - STOP and Report side by side */
-.stopbar-actions{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+/* The head's own buttons, kept together at the right: STOP first, where a
+   hand finds it, and full width on a phone so it cannot be missed. */
+.home-acts{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;margin-left:auto}
+.home-acts button{white-space:nowrap}
+#stopAll{font-weight:700;letter-spacing:.02em}
+@media (pointer:coarse){ #stopAll{min-height:44px;padding:0 var(--sp-4)} }
+.home-acts ~ .topbar-adv{margin-left:0}
 @media (max-width:430px){
-  .stopbar-actions{flex-direction:column;align-items:stretch}
-  .stopbar-actions button{width:100%}
+  .home-acts{margin-left:0;flex-basis:100%}
+  .home-acts #stopAll{flex-basis:100%}
 }
 
 /* ---------------------------------------------------------- responsive
@@ -151,5 +150,9 @@ h1{font-size:24px;margin-bottom:var(--sp-1)}
 .tool-tile .ip{grid-column:1/-1;white-space:normal;overflow:visible;line-height:1.5;min-height:3em}
 .tool-tile button{text-align:left}
 .tool-tile .tab-link{font-size:12px;padding:var(--sp-2);border:0}
-#tabs{padding:var(--sp-2);background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg);margin:var(--sp-4) 0 var(--sp-6)}
+#tabs{padding:var(--sp-2);background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg);margin:var(--sp-4) 0 var(--sp-6);
+  flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}
+/* ONE line of tabs (A41-3). Seven fit at 1280 px; a phone slides the row
+   sideways rather than stacking it four lines deep above the content. */
+#tabs .tab{flex:0 0 auto}
 #tabs .tab:not(.on){background:transparent;border-color:transparent}

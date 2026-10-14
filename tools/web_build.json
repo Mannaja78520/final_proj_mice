@@ -60,7 +60,8 @@
         "accounts.js",
         "pairing.js",
         "firmware.js",
-        "settings.js"
+        "settings.js",
+        "start.js"
       ]
     }
   ]

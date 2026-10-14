@@ -110,4 +110,4 @@ function paintHome(){
 
 // Which firmware this PC can actually flash — the same question the Firmware
 // tab is for, answered with the endpoint the module rows already use.
-
+onTab('home', paintHome);

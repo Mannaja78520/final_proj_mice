@@ -37,13 +37,34 @@ pages goes in `mice.css`; a one-off stays in its page.
 
 `body.page` is the frame (one column, the hub's width). `Mice.TopBar` mounts by
 itself: it puts **← Hub** first and **Show technical details** last. Write only
-what is the page's own between them.
+what is the page's own between them. `data-home="none"` drops the way back
+(Home itself).
+
+## A big page is cut into parts (Home)
+
+Home is `main_python/web/home/`, never `hub.html` (that file is BUILT):
+
+* `index.template.html` — the map: head, the tab row, and one
+  `<!-- part: x.html -->` line per area.
+* `parts/<area>.html` + `parts/<area>.js` — one area each (home, tools,
+  modules, firmware, network, settings, complaints; top = the head and login
+  card; dialogs; login, accounts, pairing...). Read only the area you change.
+* `style.css` — what is Home's own.
+* The `.js` parts run in the order listed in `tools/web_build.json` — they share
+  one script, so a function in one part is visible to all.
+* A tab draws itself with `onTab('<tab>', fn)` next to `fn`, in its own part.
+* Then `python tools/build_web.py`. A part not placed or listed fails the build.
+
+A new area is a new part file plus one line (template or `web_build.json`).
 
 ## The parts
 
 * **`Mice.Api.get(path)` / `.post(path, body)`** — every call to the hub. Never
   throws; returns `{ok, data, status, needLogin, says, tech}`. `says` is for the
   person, `tech` for the technical switch. No bare `fetch`, no empty `catch`.
+  Default timeout 8 s; pass `{timeout: ms}` for a slow one. (Home's login,
+  accounts and pairing use it; its scans and flashing still call `fetch`,
+  which mocks in QC replace - move them when you next change them.)
 * **`new Mice.Status("stat")`** — one status line, five states:
   `.loading() .empty() .error() .stale() .warn() .ready()`, each `(words, tech)`.
   `.from(answer, "saved")` words an Api answer.
@@ -55,6 +76,9 @@ what is the page's own between them.
 
 ## Rules the checks hold
 
+* One login place per screen. A page with its own login form marks it
+  `data-login-here`; a gated card (`data-needs-login`) then shows one line
+  pointing at it instead of a second login card (`check_page_login`).
 * Plain words on the surface. Addresses, ports, paths, commands, ids and status
   codes go in `tech` or a `.tech` element (`check_designer_first`).
 * The browser never asks `127.0.0.1` / `localhost` itself — on a phone that is
@@ -68,7 +92,7 @@ what is the page's own between them.
 |---|---|---|
 | Camera, Voice | `apps/<id>/index.template.html` + `app.js` + `style.css`, built by `tools/build_web.py` | yes |
 | Reconize, Photobooth, All-Jao | `apps/<id>/index.html` | yes |
-| Home | `main_python/web/hub.html` | stage 2 |
+| Home | `main_python/web/home/` (template + `parts/`) → `hub.html`, built by `tools/build_web.py` | yes (A41-3) |
 | Studio | `nong/main_python_set_nong/web/` (`app_parts/*.js` → `app.js`) | stage 3 |
 | Board site, RGB | `firmware/src/web/WebUI.h`, `main_python/web/rgb.html` | stage 4 |
 | Help | `main_python/web/help.html` | stage 5 |

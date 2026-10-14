@@ -20,13 +20,11 @@ async function pairPaint(){
   // that variable hid the card from someone who was logged in — and only from
   // them, since a stranger sees the same nothing. Asking the gated route
   // answers both questions at once: may I pair, and is a code already live.
-  try{
-    const r = await fetch('/api/pair/status').then(x => x.json());
-    const may = r.ok !== false && !r.need_login;
-    $('pairBox').hidden = !may;
-    if (!may) return;
-    if (r.showing) pairCountdown(r.code, r.seconds); else pairReset();
-  }catch(e){ $('pairBox').hidden = true; }
+  const a = await Mice.Api.get('/api/pair/status');
+  const may = a.ok && !a.needLogin;
+  $('pairBox').hidden = !may;
+  if (!may) return;
+  if (a.data.showing) pairCountdown(a.data.code, a.data.seconds); else pairReset();
 }
 
 function pairCountdown(code, secs){
@@ -44,15 +42,13 @@ function pairCountdown(code, secs){
 }
 
 async function pairShow(){
-  try{
-    const r = await fetch('/api/pair/start', {method:'POST'}).then(x => x.json());
-    if (!r.ok) return pairFailed(r.error || 'the hub refused');
-    pairCountdown(r.code, r.seconds);
-  }catch(e){ pairFailed('the hub did not answer'); }
+  const a = await Mice.Api.post('/api/pair/start');
+  if (!a.ok) return pairFailed(a.says);
+  pairCountdown(a.data.code, a.data.seconds);
 }
 
 async function pairStop(){
-  try{ await fetch('/api/pair/stop', {method:'POST'}); }catch(e){}
+  await Mice.Api.post('/api/pair/stop');
   pairReset();
 }
 
@@ -71,15 +67,13 @@ async function pairLink(replace){
   // person answering it typed them a moment ago and must not type them twice.
   const addr = $('pairAddr').value.trim(), code = $('pairInput').value.trim();
   $('pairStat').textContent = 'pairing…';
-  try{
-    const r = await fetch('/api/pair/link', {method:'POST',
-      body: JSON.stringify({ip: addr, code: code, replace: !!replace})})
-      .then(x => x.json());
-    $('pairStat').textContent = '';
-    if (r.ok === false) return pairFailed(r.error || 'refused');
-    if ((r.clashed || []).length) return pairClash(r);
-    pairDone(r);
-  }catch(e){ pairFailed('the hub did not answer'); }
+  // The hub asks the OTHER PC, which can be slow on a venue WiFi.
+  const a = await Mice.Api.post('/api/pair/link',
+                                {ip: addr, code: code, replace: !!replace}, {timeout: 30000});
+  $('pairStat').textContent = '';
+  if (!a.ok) return pairFailed(a.says);
+  if ((a.data.clashed || []).length) return pairClash(a.data);
+  pairDone(a.data);
 }
 
 function pairClash(r){
@@ -103,4 +97,4 @@ function pairDone(r){
   pairFace('pairDone');
   loadUsers();
 }
-
+onTab('network', pairPaint);

@@ -25,13 +25,13 @@ function setAuthed(v){
   if (window.miceGate) miceGate.apply(authed);
 }
 
+// Calls to the hub go through Mice.Api (shared/web/mice-ui.js): it never
+// throws, so there is no empty catch, and its `says` is already in words.
 async function refreshAuth(){
-  try{
-    const r = await fetch('/api/whoami');
-    const j = await r.json();
-    setAuthed(j.authed);
-    if (j.locked_for > 0) showLock(j.locked_for);
-  }catch(e){ /* the hub is unreachable; the page's own error state covers it */ }
+  const a = await Mice.Api.get('/api/whoami');
+  if (!a.ok) return;          // unreachable: the module list says so already
+  setAuthed(a.data.authed);
+  if (a.data.locked_for > 0) showLock(a.data.locked_for);
 }
 
 function showLock(secs){
@@ -54,35 +54,29 @@ async function doLogin(ev){
   $('loginBusy').hidden = false;
   $('loginBtn').disabled = true;
   $('loginErr').hidden = true;
-  try{
-    // The user field is optional: a hub upgraded from the single-password
-    // version has one account, and leaving it blank logs into that one.
-    const who = $('loginUser') ? $('loginUser').value.trim() : '';
-    const r = await fetch('/api/login', {method:'POST',
-      body: JSON.stringify({user: who, password: pass})});
-    const j = await r.json();
-    if (j.ok){
-      $('loginPass').value = '';
-      setAuthed(true);
-      scan(true);                       // the page can do more now — show it
-      pairPaint();                      // ...including pairing this PC
-    } else if (j.locked_for > 0){
-      showLock(j.locked_for);
-    } else {
-      $('loginErr').hidden = false;
-      $('loginErr').textContent = '⚠ ' + (j.error || 'that did not work');
-    }
-  }catch(e){
+  // The user field is optional: a hub upgraded from the single-password
+  // version has one account, and leaving it blank logs into that one.
+  const who = $('loginUser') ? $('loginUser').value.trim() : '';
+  const a = await Mice.Api.post('/api/login', {user: who, password: pass},
+                                {timeout: 20000});
+  $('loginBusy').hidden = true;
+  $('loginBtn').disabled = false;
+  if (a.ok){
+    $('loginPass').value = '';
+    setAuthed(true);
+    scan(true);                       // the page can do more now — show it
+    pairPaint();                      // ...including pairing this PC
+  } else if (a.data.locked_for > 0){
+    showLock(a.data.locked_for);
+  } else {
     $('loginErr').hidden = false;
-    $('loginErr').textContent = '⚠ could not reach the hub — ' + e.message;
-  }finally{
-    $('loginBusy').hidden = true;
-    $('loginBtn').disabled = false;
+    // A refusal carries the hub's own reason; no answer at all says so.
+    $('loginErr').textContent = '⚠ ' + (a.status ? (a.data.error || 'that did not work') : a.says);
   }
 }
 
 async function doLogout(){
-  try{ await fetch('/api/logout', {method:'POST'}); }catch(e){}
+  await Mice.Api.post('/api/logout');
   setAuthed(false);
   $('pairBox').hidden = true;           // its every button would now 401
 }

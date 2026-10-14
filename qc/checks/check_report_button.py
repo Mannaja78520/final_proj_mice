@@ -22,10 +22,10 @@ def run(t):
     auth = (F.HUB / "hub_auth.py").read_text(encoding="utf-8")
 
     # ---- reachable from every tab --------------------------------------
-    stop = hub[hub.find('class="stopbar"'):]
-    stop = stop[:stop.find("</div>")]
+    stop = hub[hub.find('<header class="topbar"'):]
+    stop = stop[:stop.find("</header>")]
     t.contains(stop, 'id="reportBtn"',
-               "the Report button sits in the stop bar, above every tab")
+               "the Report button sits in the page's head, beside STOP, above every tab")
     t.contains(stop, "openReport()", "and is wired to open the modal")
 
     # ---- no password between a person and complaining -------------------

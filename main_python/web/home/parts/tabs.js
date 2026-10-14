@@ -1,6 +1,14 @@
 // ---- tabs -------------------------------------------------------------
 // Only the visibility changes; nothing is moved or re-created, so the module
 // list, USB list and tools keep working exactly as before.
+//
+// What a tab draws when it opens is registered by the part that owns it -
+// `onTab('firmware', paintFirmware)` sits next to paintFirmware - so a new
+// tab is a new part and never an edit here. (It was a wrapper that replaced
+// showTab at the end of the script, A41-3.)
+var TAB_OPEN = {};
+function onTab(name, fn){ (TAB_OPEN[name] = TAB_OPEN[name] || []).push(fn); }
+
 function showTab(name){
   document.querySelectorAll('[data-tab]').forEach(function(el){
     el.style.display = (el.getAttribute('data-tab')===name) ? '' : 'none';
@@ -10,8 +18,7 @@ function showTab(name){
   });
   try{ localStorage.setItem('hubTab', name); }catch(e){}
   helpFor(name);
-  if(name==='network'){ loadNet(); loadHubs(false); }
-  if(name==='complaints'){ loadComplaints(); }
+  (TAB_OPEN[name] || []).forEach(function(fn){ fn(); });
 }
 
 // HELP ABOUT WHAT YOU ARE LOOKING AT. The help page has had a section anchor
@@ -32,6 +39,14 @@ var HELP_SECTION = {
   settings:   'hub',
   complaints: 'hub'
 };
+function helpFor(name){
+  var a = document.getElementById('helpLink');
+  if(!a) return;
+  var sec = HELP_SECTION[name];
+  a.href = sec ? ('/help#' + sec) : '/help';
+  a.title = sec ? ('Help about ' + name) : 'Help';
+}
+
 // Filter the rows already on the page. Matching happens on what a person
 // would type: the name, the number, the type - not the internal address.
 function filterMods(){
