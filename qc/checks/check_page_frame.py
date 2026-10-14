@@ -22,6 +22,15 @@ This holds:
     stops - asked of a real server, not of a page's words;
   * in a real browser, the Photobooth page shows the shared head and says the
     program is running when the HUB found it running.
+
+Home joined in stage 2 (A41-3). It was one 164 KB file, so any change meant
+reading all of it; it is now main_python/web/home/ (a short template and one
+part per tab) built into hub.html by tools/build_web.py. Its nine-item tab row
+wrapped onto a second line at 1280 px and four on a phone, with Shortcuts in
+a bigger type than the rest. This also holds, in a real browser at 1280 and
+390 px: Home wears the same head (STOP in it, one technical switch, no way
+back because it IS the hub), and its tabs sit on one line with no sideways
+scroll of the page.
 """
 import json
 import os
@@ -79,6 +88,17 @@ def run(t):
              "on a phone that is the phone itself, so the page says "
              "'not running' about a program that is running on the PC")
 
+    # ---- Home: the same head, built from parts (A41-3) ------------------
+    hub = (F.HUB / "web" / "hub.html").read_text(encoding="utf-8", errors="replace")
+    t.ok('src="/mice-ui.js"' in hub, "Home loads the shared page parts")
+    t.ok('<header class="topbar" data-home="none">' in hub,
+         "Home wears the shared head, with no way back (it IS the hub)")
+    t.ok("BUILT by tools/build_web.py" in hub and "<!-- part:" not in hub,
+         "hub.html is built from main_python/web/home/, every part placed",
+         "edit the parts, then python tools/build_web.py")
+    t.ok("function setAdvanced" not in hub,
+         "Home keeps no technical switch of its own (miceAdv is the one)")
+
     # ---- the hub answers whether it is up ------------------------------
     srv = ThreadingHTTPServer(("127.0.0.1", 0), _Health)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -130,6 +150,7 @@ window.addEventListener("load", async function(){
             stat = next((m for m in marks if m.startswith("STAT ")), "")
             t.ok(stat.startswith("STAT Photobooth is running"),
                  "and says it is running, because the hub found it", stat)
+            _home(t, base)
         else:
             t.ok(True, "browser part skipped: no headless browser here")
 
@@ -146,3 +167,39 @@ window.addEventListener("load", async function(){
         else:
             os.environ["MICE_PARTNERS"] = old_env
 
+
+def _home(t, base):
+    """Home at a PC width and a phone width: the head, and one row of tabs."""
+    fake_serial.reset()
+    browser.raw_page("""
+<iframe id="pc" src="/" style="width:1280px;height:800px;border:0"></iframe>
+<iframe id="ph" src="/" style="width:390px;height:800px;border:0"></iframe>
+<script>
+window.addEventListener("load", async function(){
+  for (const id of ["pc", "ph"]) {
+    var doc = function(){ return document.getElementById(id).contentDocument; };
+    await qcWaitFor(function(){
+      var d = doc();
+      return d && d.querySelector("#tabs .tab") && d.querySelector(".topbar-adv");
+    }, 15000);
+    var d = doc();
+    var tops = {};
+    d.querySelectorAll("#tabs .tab").forEach(function(b){ tops[b.offsetTop] = 1; });
+    var head = d.querySelector("header.topbar");
+    await qcMark(id + " rows=" + Object.keys(tops).length
+      + " adv=" + d.querySelectorAll("#advOn").length
+      + " stop=" + (head && head.querySelector("#stopAll") ? "head" : "elsewhere")
+      + " back=" + (head && head.querySelector(".topbar-home") ? "yes" : "no")
+      + " wide=" + (d.documentElement.scrollWidth > d.documentElement.clientWidth ? "yes" : "no"));
+  }
+  qcMark("done");
+});
+</script>""", base, seconds=30)
+    marks = fake_serial.qc_marks
+    for id_, width in (("pc", "1280"), ("ph", "390")):
+        got = next((m for m in marks if m.startswith(id_ + " ")), "")
+        t.ok("rows=1 " in got, "Home's tabs sit on ONE line at %s px" % width, got or marks)
+        t.ok("adv=1 " in got, "with exactly one technical switch (%s px)" % width, got)
+        t.ok("stop=head " in got, "STOP is in the page's head (%s px)" % width, got)
+        t.ok("back=no " in got, "and there is no way 'back' from the hub itself", got)
+        t.ok(got.endswith("wide=no"), "the page never scrolls sideways at %s px" % width, got)

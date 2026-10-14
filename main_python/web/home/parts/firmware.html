@@ -1,0 +1,47 @@
+  <!-- FIRMWARE. Its own screen, because replacing a board's firmware is a
+       different job from finding out what is connected — different moment,
+       often a different person, and the only one of the two that cannot be
+       undone. The `pio run` build command lives here too, off the first
+       screen where it used to greet everyone. -->
+  <div class="card" data-tab="firmware" data-needs-login="flash" style="grid-column:1/-1">
+    <h2>⚡ Firmware</h2>
+
+    <!-- Without esptool nothing here can work, so that is said first and
+         everything else is hidden rather than offered and then refused. -->
+    <div class="banner err" id="fwNoTool" hidden></div>
+    <div class="banner warn" id="fwNoBuild" hidden></div>
+
+    <div id="fwReady" hidden>
+      <div class="mini">Pick the firmware, then the board to write it to.
+        <b>Overwriting firmware cannot be undone</b> — the board keeps its id,
+        name, WiFi and pins, but the program is replaced.</div>
+      <div id="fwList"></div>
+    </div>
+    <div class="mini" id="fwStat" aria-live="polite">checking what this PC has built…</div>
+  </div>
+
+  <!-- Built once, cloned per row: the shape of a row lives in the HTML where
+       it can be read, not in a string inside the script. -->
+  <template id="tplFwImage">
+    <div class="fwbox">
+      <div class="row" style="margin-top:0">
+        <span class="ty"></span>
+        <b class="fwtype"></b>
+        <span class="mini fwmeta"></span>
+      </div>
+      <div class="mini fwmissing" hidden></div>
+      <div class="fwtargets"></div>
+    </div>
+  </template>
+
+  <template id="tplFwTarget">
+    <div class="mod">
+      <span class="nm"></span>
+      <span class="ip"></span>
+      <button class="danger fwgo"></button>
+      <div class="pbar fwbar" hidden><i></i></div>
+      <!-- aria-live: a board being overwritten must be audible, not only
+           visible. The bar moves; this says what is happening. -->
+      <span class="mini fwsay" aria-live="polite"></span>
+    </div>
+  </template>

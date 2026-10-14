@@ -1,4 +1,6 @@
 <!doctype html>
+<!-- BUILT by tools/build_web.py from main_python/web/home/ - edit the parts
+     there, never hub.html. How: docs/web_style.md -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -6,12 +8,10 @@
 <title>Mice Control Hub</title>
 <link rel="stylesheet" href="/mice.css">
 <script src="/mice.js"></script>
+<script src="/mice-ui.js"></script>
 <style>
 /* Only what is the HUB's own. Tokens, the reset, cards, buttons, inputs, the
    quiet caption and the five states all come from /mice.css above. */
-body{padding:var(--sp-6);max-width:980px;margin:0 auto}
-h1{font-size:24px;margin-bottom:var(--sp-1)}
-.sub{color:var(--mut);margin-bottom:18px}
 
 /* a module row: name / type / address / what you can do with it */
 .mod{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-2) var(--sp-3);margin:var(--sp-2) 0;background:var(--sunk)}
@@ -61,9 +61,6 @@ h1{font-size:24px;margin-bottom:var(--sp-1)}
   background:none;border:1px solid transparent;padding:var(--sp-2)}
 .keyrow:hover{border-color:var(--line);background:var(--sunk)}
 .keyrow .badge{min-width:56px;justify-content:center;display:inline-flex}
-/* A keyboard shortcut is meaningless without a keyboard, so the way IN stays
-   (the list is a menu on a phone) but it does not claim prime space. */
-.keys-tab{font-size:16px;line-height:1}
 @media (pointer:coarse){.keyrow{min-height:44px;align-items:center}}
 .flash-meta{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-1) var(--sp-3);
   background:var(--sunk);padding:var(--sp-2) var(--sp-3);
@@ -92,11 +89,16 @@ h1{font-size:24px;margin-bottom:var(--sp-1)}
 .report-busy{display:none;color:var(--mut);font-size:14px}
 .report-busy.show{display:block}
 
-/* stopbar actions - STOP and Report side by side */
-.stopbar-actions{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap}
+/* The head's own buttons, kept together at the right: STOP first, where a
+   hand finds it, and full width on a phone so it cannot be missed. */
+.home-acts{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;margin-left:auto}
+.home-acts button{white-space:nowrap}
+#stopAll{font-weight:700;letter-spacing:.02em}
+@media (pointer:coarse){ #stopAll{min-height:44px;padding:0 var(--sp-4)} }
+.home-acts ~ .topbar-adv{margin-left:0}
 @media (max-width:430px){
-  .stopbar-actions{flex-direction:column;align-items:stretch}
-  .stopbar-actions button{width:100%}
+  .home-acts{margin-left:0;flex-basis:100%}
+  .home-acts #stopAll{flex-basis:100%}
 }
 
 /* ---------------------------------------------------------- responsive
@@ -160,11 +162,15 @@ h1{font-size:24px;margin-bottom:var(--sp-1)}
 .tool-tile .ip{grid-column:1/-1;white-space:normal;overflow:visible;line-height:1.5;min-height:3em}
 .tool-tile button{text-align:left}
 .tool-tile .tab-link{font-size:12px;padding:var(--sp-2);border:0}
-#tabs{padding:var(--sp-2);background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg);margin:var(--sp-4) 0 var(--sp-6)}
+#tabs{padding:var(--sp-2);background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg);margin:var(--sp-4) 0 var(--sp-6);
+  flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}
+/* ONE line of tabs (A41-3). Seven fit at 1280 px; a phone slides the row
+   sideways rather than stacking it four lines deep above the content. */
+#tabs .tab{flex:0 0 auto}
 #tabs .tab:not(.on){background:transparent;border-color:transparent}
 </style>
 </head>
-<body>
+<body class="page">
 <!-- The page you are reading may be older than the hub serving it. Asked
      2026-08-20: *in web why i need to refresh by my self to see the change*.
      The DATA here refreshes itself; the page itself was fetched once, when the
@@ -198,23 +204,36 @@ h1{font-size:24px;margin-bottom:var(--sp-1)}
      disabling it during transmission; that is right for an ordinary button and
      wrong for this one, because if the first press did not land the operator
      has to be able to press again. It shows progress instead. -->
-<div class="stopbar">
+<!-- The shared head (Mice.TopBar, A41-3): the same frame as every other
+     page, with the technical switch added last by mice-ui.js. Home IS the
+     hub, so no way back (data-home="none"). Shortcuts and Help sit here, not
+     in the tab row: neither swaps a card in place, and as the 8th and 9th
+     "tabs" they wrapped the row onto a second line at 1280 px (2026-10-14). -->
+<header class="topbar" data-home="none">
   <h1>Mice Control Hub</h1>
-  <div class="stopbar-actions">
+  <span class="home-acts">
     <button class="danger" id="stopAll" onclick="stopEverything()"
             title="Stop the show and every board this hub can reach">⏹ STOP</button>
     <button class="secondary" id="reportBtn" onclick="openReport()"
             title="Report a problem — no login needed">🐛 Report</button>
-  </div>
-</div>
+    <!-- The way in for somebody who will never press "?" - which is everybody
+         who does not already know the shortcuts exist. A keyboard feature
+         whose only entry point is a keystroke is a feature for the person who
+         wrote it. Designed by Gemini Pro, 2026-08-20. -->
+    <button class="secondary" id="keysOpen" title="Keyboard shortcuts"
+            onclick="toggleKeys(true)" aria-haspopup="dialog">⌨ Shortcuts</button>
+    <!-- Help LEAVES the page, so it is a link and looks like one. -->
+    <a class="tab tab-link" id="helpLink" href="/help">Help ↗</a>
+  </span>
+  <span class="sub">A little space for your whole rig. Open a module to move it,
+    or start a sequence in Nong Studio. Your modules appear here when they connect.</span>
+</header>
 <div class="banner err" id="stopSaid" hidden role="alert" aria-live="assertive"></div>
-<div class="sub page-intro">A little space for your whole rig. Open a module to move it,
-or start a sequence in Nong Studio. Your modules appear here when they connect.</div>
 
 <!-- Log in before doing. Reading the module list needs nothing, so this is a
      card on the page rather than a wall in front of it: someone checking
      whether a board is alive should never meet a password box. -->
-<div class="card" id="loginCard" hidden>
+<div class="card" id="loginCard" data-login-here hidden>
   <h2>🔒 Log in to control</h2>
   <div class="mini" id="loginWhy">Looking is free. Moving a robot, flashing a
     board or deleting a file needs the hub password.</div>
@@ -334,9 +353,9 @@ or start a sequence in Nong Studio. Your modules appear here when they connect.<
   </div>
 </div>
 
-<!-- Seven destinations. Help LEAVES the page, so it is a link and looks like
-     one: a tab that navigates away is a tab that loses your place without
-     warning. Everything else shows and hides cards by data-tab, so no element
+<!-- Seven destinations, on ONE line (A41-3: nine wrapped to two lines at
+     1280 px and four on a phone; a phone now scrolls the row sideways).
+     Everything else shows and hides cards by data-tab, so no element
      moves in the DOM and every id the rest of the page relies on stays put. -->
 <div class="tabs" id="tabs">
   <!-- HOME FIRST, TOOLS SECOND. Tools was the fifth tab and hard to reach, so
@@ -352,13 +371,6 @@ or start a sequence in Nong Studio. Your modules appear here when they connect.<
   <button class="tab" data-go="network" onclick="showTab('network')">Network</button>
   <button class="tab" data-go="settings" onclick="showTab('settings')">Settings</button>
   <button class="tab" data-go="complaints" onclick="showTab('complaints')">📋 Complaints</button>
-  <!-- The way in for somebody who will never press "?" - which is everybody
-       who does not already know the shortcuts exist. A keyboard feature whose
-       only entry point is a keystroke is a feature for the person who wrote
-       it. Designed by Gemini Pro, 2026-08-20. -->
-  <button class="tab keys-tab" id="keysOpen" title="Keyboard shortcuts"
-          onclick="toggleKeys(true)" aria-haspopup="dialog">⌨ Shortcuts</button>
-  <a class="tab tab-link" href="/help">Help ↗</a>
 </div>
 
 <div class="grid">
@@ -371,8 +383,11 @@ or start a sequence in Nong Studio. Your modules appear here when they connect.<
        tab move: opening Studio took a tab, a scroll and a click, and Studio is
        what most visits are for. The rows are drawn by the same function that
        fills the Tools tab, from the same registry, so the two lists cannot
-       drift apart. No login: none of this reaches a robot. -->
-  <div class="card" data-tab="home" data-needs-login="control" style="grid-column:1/-1">
+       drift apart. No login: none of this reaches a robot, and the user's rule
+       is that tools work with nobody signed in (2026-09-09). It carried a
+       login gate anyway, so the Home tab showed "Sign in to use this" under
+       the login card - two login boxes on one screen (audit, 2026-10-14). -->
+  <div class="card" data-tab="home" style="grid-column:1/-1">
     <h2>Make something move</h2>
     <div class="mini">These work whether or not a robot is here — build a
       sequence now, send it to a module later.</div>
@@ -530,16 +545,11 @@ or start a sequence in Nong Studio. Your modules appear here when they connect.<
       <code>shared/web/themes.css</code> — it appears here by itself.</div>
 
     <h2 style="margin-top:var(--sp-6)">🔧 How much to show</h2>
-    <div class="row">
-      <label for="advOn" style="display:flex;gap:var(--sp-2);align-items:center">
-        <input type="checkbox" id="advOn" onchange="setAdvanced(this.checked)">
-        Show technical details</label>
-    </div>
-    <div class="mini">Addresses, cable ports and signal strengths — what you need
+    <div class="mini">The <b>Show technical details</b> switch at the top of the
+      page: addresses, cable ports and signal strengths — what you need
       the moment something is wrong, and noise the rest of the time. Names, types
       and module numbers are always shown.</div>
   </div>
-
 
   <div class="card" data-tab="modules" style="grid-column:1/-1">
     <!-- Called "Modules found over WiFi" until 2026-08-22, which stopped being
@@ -575,6 +585,23 @@ or start a sequence in Nong Studio. Your modules appear here when they connect.<
       exactly like your own, and that PC passes the commands down its own
       cable. This is just which machines are sharing.</div>
     <div id="shared" class="mini" aria-live="polite">Looking for other PCs…</div>
+  </div>
+
+  <div class="card" data-tab="modules" style="grid-column:1/-1">
+    <h2>🔌 Modules plugged in by cable
+      <span style="float:right">
+        <label class="mini"><input type="checkbox" id="autoUsb" onchange="autoUsbChanged()"> auto-check</label>
+        <button onclick="scanUsb()">🔍 Probe now</button>
+      </span>
+    </h2>
+    <div id="usbmods" class="mini" aria-live="polite">…</div>
+    <div class="mini">each port shows its result the moment IT answers — real
+      USB-UART ports take ~2 s; Bluetooth phantom ports are recognized by their
+      device type and skipped without opening them. A probed module shows who it
+      is + every RS485 module behind it. “auto-check” re-probes every 12 s while
+      this page is visible — it costs almost nothing (the PC just waits on the
+      port), but the port is briefly busy, so turn it off while connecting
+      Nong Studio over USB.</div>
   </div>
 
   <!-- Getting a PHONE here is a network question, so it lives on the network
@@ -713,28 +740,20 @@ or start a sequence in Nong Studio. Your modules appear here when they connect.<
     <div id="complaintsList" class="mini">loading…</div>
   </div>
 
-  <div class="card" data-tab="modules" style="grid-column:1/-1">
-    <h2>🔌 Modules plugged in by cable
-      <span style="float:right">
-        <label class="mini"><input type="checkbox" id="autoUsb" onchange="autoUsbChanged()"> auto-check</label>
-        <button onclick="scanUsb()">🔍 Probe now</button>
-      </span>
-    </h2>
-    <div id="usbmods" class="mini" aria-live="polite">…</div>
-    <div class="mini">each port shows its result the moment IT answers — real
-      USB-UART ports take ~2 s; Bluetooth phantom ports are recognized by their
-      device type and skipped without opening them. A probed module shows who it
-      is + every RS485 module behind it. “auto-check” re-probes every 12 s while
-      this page is visible — it costs almost nothing (the PC just waits on the
-      port), but the port is briefly busy, so turn it off while connecting
-      Nong Studio over USB.</div>
-  </div>
 </div>
 
 <script>
 // ---- tabs -------------------------------------------------------------
 // Only the visibility changes; nothing is moved or re-created, so the module
 // list, USB list and tools keep working exactly as before.
+//
+// What a tab draws when it opens is registered by the part that owns it -
+// `onTab('firmware', paintFirmware)` sits next to paintFirmware - so a new
+// tab is a new part and never an edit here. (It was a wrapper that replaced
+// showTab at the end of the script, A41-3.)
+var TAB_OPEN = {};
+function onTab(name, fn){ (TAB_OPEN[name] = TAB_OPEN[name] || []).push(fn); }
+
 function showTab(name){
   document.querySelectorAll('[data-tab]').forEach(function(el){
     el.style.display = (el.getAttribute('data-tab')===name) ? '' : 'none';
@@ -744,8 +763,7 @@ function showTab(name){
   });
   try{ localStorage.setItem('hubTab', name); }catch(e){}
   helpFor(name);
-  if(name==='network'){ loadNet(); loadHubs(false); }
-  if(name==='complaints'){ loadComplaints(); }
+  (TAB_OPEN[name] || []).forEach(function(fn){ fn(); });
 }
 
 // HELP ABOUT WHAT YOU ARE LOOKING AT. The help page has had a section anchor
@@ -766,6 +784,14 @@ var HELP_SECTION = {
   settings:   'hub',
   complaints: 'hub'
 };
+function helpFor(name){
+  var a = document.getElementById('helpLink');
+  if(!a) return;
+  var sec = HELP_SECTION[name];
+  a.href = sec ? ('/help#' + sec) : '/help';
+  a.title = sec ? ('Help about ' + name) : 'Help';
+}
+
 // Filter the rows already on the page. Matching happens on what a person
 // would type: the name, the number, the type - not the internal address.
 function filterMods(){
@@ -964,14 +990,6 @@ async function submitReport(){
   }
 }
 
-function helpFor(name){
-  var a = document.querySelector('#tabs a.tab-link');
-  if(!a) return;
-  var sec = HELP_SECTION[name];
-  a.href = sec ? ('/help#' + sec) : '/help';
-  a.title = sec ? ('Help about ' + name) : 'Help';
-}
-
 // ---- complaints screen --------------------------------------------------
 // Loads /api/reports, renders newest first. One line per report, click for full.
 // Shows English translation (text_en) in the list, original + translation in detail.
@@ -1124,6 +1142,7 @@ function closeReport(){
     if(btns) btns.remove();
   }
 }
+onTab('complaints', loadComplaints);
 
 // ---- network & linking -------------------------------------------------
 // Every module the hub can reach, however it is reached, with the group it
@@ -1372,6 +1391,32 @@ function unlinkSel(){
   applyGroup('');
 }
 
+// The address beside the QR. Read from the hub rather than from
+// location.href: someone often opens the hub as 127.0.0.1, and 127.0.0.1 is
+// the one address on the network that will not work from a phone.
+async function paintQr(){
+  try{
+    const j = await fetch('/api/mine').then(x => x.json());
+    const url = j.url || (location.protocol + '//' + location.host + '/');
+    $('qrUrl').textContent = url;
+    $('qrName').textContent = j.host ? ('this PC is ' + j.host) : '';
+    $('qrNameRow').hidden = !j.name_url;
+    if (j.name_url) $('qrNameUrl').textContent = j.name_url;
+    $('qrWhyNoName').hidden = !!j.name_url;
+    if (!j.name_url)
+      $('qrWhyNoName').textContent =
+        'The name mice.local is not being answered on this PC' +
+        (j.name_why ? ' — ' + j.name_why : '') + '. The address above works.';
+    // Re-fetch the picture whenever the address could have changed - a laptop
+    // that moves between a venue WiFi and its own hotspot gets a new IP, and a
+    // QR of the old one sends the phone nowhere.
+    $('qrImg').src = '/api/qr?t=' + Date.now();
+  }catch(e){ $('qrUrl').textContent = 'the hub did not say what its address is'; }
+}
+onTab('network', loadNet);
+onTab('network', function(){ loadHubs(false); });
+onTab('network', paintQr);
+
 function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
@@ -1459,36 +1504,6 @@ async function loadApps(){
 }
 loadApps();
 
-// When the module list was last actually confirmed, so a stale list can say so
-// instead of quietly presenting old modules as if they were still there.
-var modsAt = 0, modsHtml = '';
-// A wall-clock stamp: 2026-08-22 00:41. Written out rather than left to
-// toLocaleString, which prints a different order on every machine - and this
-// is read beside timestamps the hub and the plan write in exactly this shape.
-function stamp(ms){
-  if(!ms) return '';
-  var d = new Date(ms), p = function(n){ return (n < 10 ? '0' : '') + n; };
-  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
-       + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
-}
-function agoText(ms){
-  if(!ms) return '';
-  var s = Math.round((Date.now()-ms)/1000);
-  if(s < 5) return 'just now';
-  if(s < 90) return s + 's ago';
-  // "4470 min ago" was on the Home card 2026-09-21: nobody reads that as 3 days
-  var m = Math.round(s/60), h = Math.round(s/3600), d = Math.round(s/86400);
-  if(m < 90) return m + ' min ago';
-  if(h < 36) return h + ' hours ago';
-  return d + ' days ago';
-}
-function modsMeta(){
-  if(document.hidden) return;
-  var el = document.getElementById('modsmeta');
-  if(el) el.textContent = modsAt ? ('checked ' + agoText(modsAt)) : '';
-}
-setInterval(modsMeta, 5000);
-
 // ---- is this page still the one the hub is serving? ------------------
 // The version is whatever /api/version said when the tab loaded. If it ever
 // differs, the files behind this page changed and what you are looking at is
@@ -1534,6 +1549,36 @@ async function checkVer(){
 }
 setInterval(checkVer, 20000);
 checkVer();
+
+// When the module list was last actually confirmed, so a stale list can say so
+// instead of quietly presenting old modules as if they were still there.
+var modsAt = 0, modsHtml = '';
+// A wall-clock stamp: 2026-08-22 00:41. Written out rather than left to
+// toLocaleString, which prints a different order on every machine - and this
+// is read beside timestamps the hub and the plan write in exactly this shape.
+function stamp(ms){
+  if(!ms) return '';
+  var d = new Date(ms), p = function(n){ return (n < 10 ? '0' : '') + n; };
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+       + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function agoText(ms){
+  if(!ms) return '';
+  var s = Math.round((Date.now()-ms)/1000);
+  if(s < 5) return 'just now';
+  if(s < 90) return s + 's ago';
+  // "4470 min ago" was on the Home card 2026-09-21: nobody reads that as 3 days
+  var m = Math.round(s/60), h = Math.round(s/3600), d = Math.round(s/86400);
+  if(m < 90) return m + ' min ago';
+  if(h < 36) return h + ' hours ago';
+  return d + ' days ago';
+}
+function modsMeta(){
+  if(document.hidden) return;
+  var el = document.getElementById('modsmeta');
+  if(el) el.textContent = modsAt ? ('checked ' + agoText(modsAt)) : '';
+}
+setInterval(modsMeta, 5000);
 
 // Which scan is the current one. The wider sweep below finishes seconds after
 // the local list, so a sweep started before a newer scan - or before a scan
@@ -1876,6 +1921,7 @@ function modRow(m,extra,port,busId,peer,far,opts){
 }
 // streaming probe: one request PER port, each slot fills in the moment its
 // port answers — fast ports never wait for slow ones, order stays stable
+
 let usbBusy=false;
 function renderUsbResult(slot,u){
   slot.innerHTML='';
@@ -2167,6 +2213,7 @@ async function scanUsb(){
 // A port that a page is already driving (module site / Nong Studio over the
 // shared USB link) is NOT re-probed — the hub answers from the identity it
 // already has, so the probe never stutters their commands.
+
 // A write in progress must not be interrupted by the page's own rescans: the
 // rows redraw, the progress bar is torn out, and the screen looks idle while a
 // board is being overwritten. Removing the old per-row flash path (A2-2) took
@@ -2227,13 +2274,13 @@ function setAuthed(v){
   if (window.miceGate) miceGate.apply(authed);
 }
 
+// Calls to the hub go through Mice.Api (shared/web/mice-ui.js): it never
+// throws, so there is no empty catch, and its `says` is already in words.
 async function refreshAuth(){
-  try{
-    const r = await fetch('/api/whoami');
-    const j = await r.json();
-    setAuthed(j.authed);
-    if (j.locked_for > 0) showLock(j.locked_for);
-  }catch(e){ /* the hub is unreachable; the page's own error state covers it */ }
+  const a = await Mice.Api.get('/api/whoami');
+  if (!a.ok) return;          // unreachable: the module list says so already
+  setAuthed(a.data.authed);
+  if (a.data.locked_for > 0) showLock(a.data.locked_for);
 }
 
 function showLock(secs){
@@ -2256,35 +2303,29 @@ async function doLogin(ev){
   $('loginBusy').hidden = false;
   $('loginBtn').disabled = true;
   $('loginErr').hidden = true;
-  try{
-    // The user field is optional: a hub upgraded from the single-password
-    // version has one account, and leaving it blank logs into that one.
-    const who = $('loginUser') ? $('loginUser').value.trim() : '';
-    const r = await fetch('/api/login', {method:'POST',
-      body: JSON.stringify({user: who, password: pass})});
-    const j = await r.json();
-    if (j.ok){
-      $('loginPass').value = '';
-      setAuthed(true);
-      scan(true);                       // the page can do more now — show it
-      pairPaint();                      // ...including pairing this PC
-    } else if (j.locked_for > 0){
-      showLock(j.locked_for);
-    } else {
-      $('loginErr').hidden = false;
-      $('loginErr').textContent = '⚠ ' + (j.error || 'that did not work');
-    }
-  }catch(e){
+  // The user field is optional: a hub upgraded from the single-password
+  // version has one account, and leaving it blank logs into that one.
+  const who = $('loginUser') ? $('loginUser').value.trim() : '';
+  const a = await Mice.Api.post('/api/login', {user: who, password: pass},
+                                {timeout: 20000});
+  $('loginBusy').hidden = true;
+  $('loginBtn').disabled = false;
+  if (a.ok){
+    $('loginPass').value = '';
+    setAuthed(true);
+    scan(true);                       // the page can do more now — show it
+    pairPaint();                      // ...including pairing this PC
+  } else if (a.data.locked_for > 0){
+    showLock(a.data.locked_for);
+  } else {
     $('loginErr').hidden = false;
-    $('loginErr').textContent = '⚠ could not reach the hub — ' + e.message;
-  }finally{
-    $('loginBusy').hidden = true;
-    $('loginBtn').disabled = false;
+    // A refusal carries the hub's own reason; no answer at all says so.
+    $('loginErr').textContent = '⚠ ' + (a.status ? (a.data.error || 'that did not work') : a.says);
   }
 }
 
 async function doLogout(){
-  try{ await fetch('/api/logout', {method:'POST'}); }catch(e){}
+  await Mice.Api.post('/api/logout');
   setAuthed(false);
   $('pairBox').hidden = true;           // its every button would now 401
 }
@@ -2459,6 +2500,57 @@ function closeAnyOpen(){
   return did;
 }
 
+// Show or hide the list, drawing it FROM THE SAME ARRAY the handler uses.
+// Built each time it opens rather than once at load: it costs nothing for
+// three rows, and it means a shortcut added to SHORTCUTS can never be missing
+// from the list because the list was rendered before it existed.
+function toggleKeys(show){
+  const m = $('keysModal');
+  if (!m) return;
+  if (show){
+    const list = $('keysList');
+    list.innerHTML = '';
+    SHORTCUTS.forEach(s => {
+      const b = document.createElement('button');
+      b.className = 'row keyrow';
+      b.innerHTML = '<span class="badge"><b>' + esc(s.show) + '</b></span>' +
+                    '<span>' + esc(s.what) + '</span>';
+      b.onclick = () => {
+        // CLOSE FIRST, then act. `/` focuses the search box, and focusing
+        // something behind a dialog that is still covering it does nothing a
+        // person can see - they would tap it, watch nothing happen, and stop
+        // trusting the list.
+        toggleKeys(false);
+        s.run();
+      };
+      list.appendChild(b);
+    });
+  }
+  m.hidden = !show;
+  if (show) $('keysClose').focus();
+  else if ($('keysOpen')) $('keysOpen').focus();
+}
+if ($('keysClose')) $('keysClose').onclick = () => toggleKeys(false);
+
+document.addEventListener('keydown', e => {
+  // NEVER STEAL A KEY FROM SOMEONE TYPING. `/` and `?` are ordinary characters
+  // in a module name, a WiFi password or a search box, and a shortcut that
+  // eats them turns every text field into a trap. Escape is the exception:
+  // leaving a field is exactly what it is for.
+  const el = e.target;
+  const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' ||
+                        el.tagName === 'SELECT' || el.isContentEditable);
+  if (typing && e.key !== 'Escape'){ return; }
+  if (e.ctrlKey || e.altKey || e.metaKey) return;   // leave browser keys alone
+  const hit = SHORTCUTS.filter(s => s.key === e.key)[0];
+  if (!hit) return;
+  // Escape inside a field means "leave the field", and the browser does not do
+  // that by itself. Blur first, then let the shortcut run.
+  if (typing && e.key === 'Escape'){ el.blur(); }
+  e.preventDefault();
+  hit.run();
+});
+
 // ---- handing the app to the PC reading this page ----------------------
 // Only offered when this hub HAS one: a hub run from source has no exe, and a
 // download link that 404s is worse than no link.
@@ -2565,57 +2657,6 @@ async function copyDiag(){
     say.textContent = 'Ready to copy by hand:';
   }
 }
-
-// Show or hide the list, drawing it FROM THE SAME ARRAY the handler uses.
-// Built each time it opens rather than once at load: it costs nothing for
-// three rows, and it means a shortcut added to SHORTCUTS can never be missing
-// from the list because the list was rendered before it existed.
-function toggleKeys(show){
-  const m = $('keysModal');
-  if (!m) return;
-  if (show){
-    const list = $('keysList');
-    list.innerHTML = '';
-    SHORTCUTS.forEach(s => {
-      const b = document.createElement('button');
-      b.className = 'row keyrow';
-      b.innerHTML = '<span class="badge"><b>' + esc(s.show) + '</b></span>' +
-                    '<span>' + esc(s.what) + '</span>';
-      b.onclick = () => {
-        // CLOSE FIRST, then act. `/` focuses the search box, and focusing
-        // something behind a dialog that is still covering it does nothing a
-        // person can see - they would tap it, watch nothing happen, and stop
-        // trusting the list.
-        toggleKeys(false);
-        s.run();
-      };
-      list.appendChild(b);
-    });
-  }
-  m.hidden = !show;
-  if (show) $('keysClose').focus();
-  else if ($('keysOpen')) $('keysOpen').focus();
-}
-if ($('keysClose')) $('keysClose').onclick = () => toggleKeys(false);
-
-document.addEventListener('keydown', e => {
-  // NEVER STEAL A KEY FROM SOMEONE TYPING. `/` and `?` are ordinary characters
-  // in a module name, a WiFi password or a search box, and a shortcut that
-  // eats them turns every text field into a trap. Escape is the exception:
-  // leaving a field is exactly what it is for.
-  const el = e.target;
-  const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' ||
-                        el.tagName === 'SELECT' || el.isContentEditable);
-  if (typing && e.key !== 'Escape'){ return; }
-  if (e.ctrlKey || e.altKey || e.metaKey) return;   // leave browser keys alone
-  const hit = SHORTCUTS.filter(s => s.key === e.key)[0];
-  if (!hit) return;
-  // Escape inside a field means "leave the field", and the browser does not do
-  // that by itself. Blur first, then let the shortcut run.
-  if (typing && e.key === 'Escape'){ el.blur(); }
-  e.preventDefault();
-  hit.run();
-});
 
 // ---- Home, Firmware, Settings ---------------------------------------
 // Home does not fetch anything of its own. It reads what the scans already
@@ -2729,6 +2770,7 @@ function paintHome(){
 
 // Which firmware this PC can actually flash — the same question the Firmware
 // tab is for, answered with the endpoint the module rows already use.
+onTab('home', paintHome);
 
 // ---- accounts --------------------------------------------------------
 // Only ever shows NAMES: the hub never sends a hash anywhere.
@@ -2736,81 +2778,77 @@ async function loadUsers(){
   const box = $('userBox');
   if (!authed) { box.hidden = true; return; }
   box.hidden = false;
-  try{
-    const r = await fetch('/api/users').then(x => x.json());
-    const list = $('userList');
-    list.innerHTML = '';
-    const byName = {};
-    (r.accounts || []).forEach(function(x){ byName[x.name] = x; });
-    const boss = window.miceLogin && miceLogin.role() === 'super_admin';
-    (r.users || []).forEach(function(u){
-      const chip = document.createElement('span');
-      chip.className = 'port';
-      const info = byName[u] || {};
-      // role and "still on the default password", in words
-      chip.textContent = u + (info.role === 'super_admin' ? ' · super_admin' : '') +
-                         (info.mustChange ? ' · default password' : '');
-      if (boss) {
-        const rn = document.createElement('button');
-        rn.className = 'icon'; rn.textContent = '✎'; rn.title = 'rename ' + u;
-        rn.onclick = function(){ userAction('/api/users/rename', u,
-          {'new': (prompt('New username for ' + u) || '').trim()}); };
-        chip.appendChild(rn);
-        const pw = document.createElement('button');
-        pw.className = 'icon'; pw.textContent = '🔑'; pw.title = 'set a new password for ' + u;
-        pw.onclick = function(){ const np = prompt('New password for ' + u + ' (8 or more)');
-          if (np) userAction('/api/users/password', u, {password: np}); };
-        chip.appendChild(pw);
-      }
-      // The last account has no remove button at all, rather than one that
-      // fails: offering an action that cannot work is its own bug.
-      if ((r.users || []).length > 1) {
-        // A control that ACTS is a button, not a link, and its danger comes
-        // from the shared sheet rather than an inline style nobody updates.
-        const x = document.createElement('button');
-        x.className = 'danger icon';
-        x.textContent = '✕';
-        x.title = 'remove ' + u;
-        x.onclick = function(){ removeUser(u); };
-        chip.appendChild(x);
-      }
-      list.appendChild(chip);
-    });
-    if (!(r.users || []).length) list.textContent = 'no accounts yet';
-  }catch(e){ $('userList').textContent = 'could not read the accounts'; }
+  const a = await Mice.Api.get('/api/users');
+  const list = $('userList');
+  if (!a.ok) { list.textContent = 'could not read the accounts: ' + a.says; return; }
+  const r = a.data;
+  list.innerHTML = '';
+  const byName = {};
+  (r.accounts || []).forEach(function(x){ byName[x.name] = x; });
+  const boss = window.miceLogin && miceLogin.role() === 'super_admin';
+  (r.users || []).forEach(function(u){
+    const chip = document.createElement('span');
+    chip.className = 'port';
+    const info = byName[u] || {};
+    // role and "still on the default password", in words
+    chip.textContent = u + (info.role === 'super_admin' ? ' · super_admin' : '') +
+                       (info.mustChange ? ' · default password' : '');
+    if (boss) {
+      const rn = document.createElement('button');
+      rn.className = 'icon'; rn.textContent = '✎'; rn.title = 'rename ' + u;
+      rn.onclick = function(){ userAction('/api/users/rename', u,
+        {'new': (prompt('New username for ' + u) || '').trim()}); };
+      chip.appendChild(rn);
+      const pw = document.createElement('button');
+      pw.className = 'icon'; pw.textContent = '🔑'; pw.title = 'set a new password for ' + u;
+      pw.onclick = function(){ const np = prompt('New password for ' + u + ' (8 or more)');
+        if (np) userAction('/api/users/password', u, {password: np}); };
+      chip.appendChild(pw);
+    }
+    // The last account has no remove button at all, rather than one that
+    // fails: offering an action that cannot work is its own bug.
+    if ((r.users || []).length > 1) {
+      // A control that ACTS is a button, not a link, and its danger comes
+      // from the shared sheet rather than an inline style nobody updates.
+      const x = document.createElement('button');
+      x.className = 'danger icon';
+      x.textContent = '✕';
+      x.title = 'remove ' + u;
+      x.onclick = function(){ removeUser(u); };
+      chip.appendChild(x);
+    }
+    list.appendChild(chip);
+  });
+  if (!(r.users || []).length) list.textContent = 'no accounts yet';
 }
+
+// One status line for every account action: the hub's reason on the surface,
+// the technical part behind the switch (Mice.Status).
+let _uStat = null;
+function uSay(){ return _uStat || (_uStat = new Mice.Status('uStat')); }
 
 async function addUser(){
   const name = $('uName').value.trim(), pass = $('uPass').value;
-  $('uStat').textContent = 'adding…';
-  try{
-    const r = await fetch('/api/users/add', {method:'POST',
-      body: JSON.stringify({user:name, password:pass, role:$('uRole').value})}).then(x => x.json());
-    // The hub's reason says what to fix, so show it rather than a generic no.
-    $('uStat').textContent = r.ok ? '' : (r.error || 'refused');
-    if (r.ok) { $('uName').value = ''; $('uPass').value = ''; loadUsers(); }
-  }catch(e){ $('uStat').textContent = 'the hub did not answer'; }
+  uSay().loading('adding…');
+  const a = await Mice.Api.post('/api/users/add',
+                                {user: name, password: pass, role: $('uRole').value});
+  // The hub's reason says what to fix, so show it rather than a generic no.
+  if (!a.ok) return uSay().error(a.says, a.tech);
+  uSay().ready('');
+  $('uName').value = ''; $('uPass').value = ''; loadUsers();
 }
 
 // super_admin edits someone's name or password; the hub says why if not
 async function userAction(path, name, body){
   if (body['new'] === '') return;
-  try{
-    const r = await fetch(path, {method:'POST',
-      body: JSON.stringify(Object.assign({user:name}, body))}).then(x => x.json());
-    $('uStat').textContent = r.ok ? 'saved' : (r.error || 'refused');
-    loadUsers();
-  }catch(e){ $('uStat').textContent = 'the hub did not answer'; }
+  uSay().from(await Mice.Api.post(path, Object.assign({user: name}, body)), 'saved');
+  loadUsers();
 }
 
 async function removeUser(name){
   if (!confirm('Remove ' + name + '? They are logged out straight away.')) return;
-  try{
-    const r = await fetch('/api/users/remove', {method:'POST',
-      body: JSON.stringify({user:name})}).then(x => x.json());
-    $('uStat').textContent = r.ok ? '' : (r.error || 'refused');
-    loadUsers();
-  }catch(e){ $('uStat').textContent = 'the hub did not answer'; }
+  uSay().from(await Mice.Api.post('/api/users/remove', {user: name}), '');
+  loadUsers();
 }
 
 // ---- pairing: one login on every PC (A14-1) --------------------------
@@ -2835,13 +2873,11 @@ async function pairPaint(){
   // that variable hid the card from someone who was logged in — and only from
   // them, since a stranger sees the same nothing. Asking the gated route
   // answers both questions at once: may I pair, and is a code already live.
-  try{
-    const r = await fetch('/api/pair/status').then(x => x.json());
-    const may = r.ok !== false && !r.need_login;
-    $('pairBox').hidden = !may;
-    if (!may) return;
-    if (r.showing) pairCountdown(r.code, r.seconds); else pairReset();
-  }catch(e){ $('pairBox').hidden = true; }
+  const a = await Mice.Api.get('/api/pair/status');
+  const may = a.ok && !a.needLogin;
+  $('pairBox').hidden = !may;
+  if (!may) return;
+  if (a.data.showing) pairCountdown(a.data.code, a.data.seconds); else pairReset();
 }
 
 function pairCountdown(code, secs){
@@ -2859,15 +2895,13 @@ function pairCountdown(code, secs){
 }
 
 async function pairShow(){
-  try{
-    const r = await fetch('/api/pair/start', {method:'POST'}).then(x => x.json());
-    if (!r.ok) return pairFailed(r.error || 'the hub refused');
-    pairCountdown(r.code, r.seconds);
-  }catch(e){ pairFailed('the hub did not answer'); }
+  const a = await Mice.Api.post('/api/pair/start');
+  if (!a.ok) return pairFailed(a.says);
+  pairCountdown(a.data.code, a.data.seconds);
 }
 
 async function pairStop(){
-  try{ await fetch('/api/pair/stop', {method:'POST'}); }catch(e){}
+  await Mice.Api.post('/api/pair/stop');
   pairReset();
 }
 
@@ -2886,15 +2920,13 @@ async function pairLink(replace){
   // person answering it typed them a moment ago and must not type them twice.
   const addr = $('pairAddr').value.trim(), code = $('pairInput').value.trim();
   $('pairStat').textContent = 'pairing…';
-  try{
-    const r = await fetch('/api/pair/link', {method:'POST',
-      body: JSON.stringify({ip: addr, code: code, replace: !!replace})})
-      .then(x => x.json());
-    $('pairStat').textContent = '';
-    if (r.ok === false) return pairFailed(r.error || 'refused');
-    if ((r.clashed || []).length) return pairClash(r);
-    pairDone(r);
-  }catch(e){ pairFailed('the hub did not answer'); }
+  // The hub asks the OTHER PC, which can be slow on a venue WiFi.
+  const a = await Mice.Api.post('/api/pair/link',
+                                {ip: addr, code: code, replace: !!replace}, {timeout: 30000});
+  $('pairStat').textContent = '';
+  if (!a.ok) return pairFailed(a.says);
+  if ((a.data.clashed || []).length) return pairClash(a.data);
+  pairDone(a.data);
 }
 
 function pairClash(r){
@@ -2918,6 +2950,7 @@ function pairDone(r){
   pairFace('pairDone');
   loadUsers();
 }
+onTab('network', pairPaint);
 
 // ---- the Firmware section -------------------------------------------
 // Everything here is built from two answers: what this PC has BUILT
@@ -2996,51 +3029,6 @@ async function fwBoards(){
     });
   }catch(e){ /* no other hubs is not an error */ }
   return [...out.values()];
-}
-
-// The address beside the QR. Read from the hub rather than from
-// location.href: someone often opens the hub as 127.0.0.1, and 127.0.0.1 is
-// the one address on the network that will not work from a phone.
-// Technical detail: one class, one switch, remembered per browser. Applied
-// before anything paints, so an address never flashes up and vanishes.
-// The picker fills itself from the stylesheet - see shared/web/mice.js. The
-// page does not know which themes exist, and must not: that is the whole point
-// of keeping them in one file.
-document.addEventListener('DOMContentLoaded', function(){
-  if (window.miceTheme) miceTheme.picker(document.getElementById('themePick'));
-});
-
-function setAdvanced(on){
-  document.body.classList.toggle('adv', !!on);
-  try{ localStorage.setItem('hub_adv', on ? '1' : '0'); }catch(e){ /* private mode */ }
-  const box = document.getElementById('advOn');
-  if (box) box.checked = !!on;
-}
-(function(){
-  let on = false;
-  try{ on = localStorage.getItem('hub_adv') === '1'; }catch(e){ /* private mode */ }
-  if (document.body) setAdvanced(on);
-  else document.addEventListener('DOMContentLoaded', function(){ setAdvanced(on); });
-})();
-
-async function paintQr(){
-  try{
-    const j = await fetch('/api/mine').then(x => x.json());
-    const url = j.url || (location.protocol + '//' + location.host + '/');
-    $('qrUrl').textContent = url;
-    $('qrName').textContent = j.host ? ('this PC is ' + j.host) : '';
-    $('qrNameRow').hidden = !j.name_url;
-    if (j.name_url) $('qrNameUrl').textContent = j.name_url;
-    $('qrWhyNoName').hidden = !!j.name_url;
-    if (!j.name_url)
-      $('qrWhyNoName').textContent =
-        'The name mice.local is not being answered on this PC' +
-        (j.name_why ? ' — ' + j.name_why : '') + '. The address above works.';
-    // Re-fetch the picture whenever the address could have changed - a laptop
-    // that moves between a venue WiFi and its own hotspot gets a new IP, and a
-    // QR of the old one sends the phone nowhere.
-    $('qrImg').src = '/api/qr?t=' + Date.now();
-  }catch(e){ $('qrUrl').textContent = 'the hub did not say what its address is'; }
 }
 
 async function paintFirmware(){
@@ -3324,6 +3312,15 @@ function fwWatch(bar, say, go, want, from){
     }
   }, 700);
 }
+onTab('firmware', paintFirmware);
+
+// The picker fills itself from the stylesheet - see shared/web/mice.js. The
+// page does not know which themes exist, and must not: that is the whole point
+// of keeping them in one file. The technical switch is the shared one in the
+// head (miceAdv + Mice.TopBar), the same on every page.
+document.addEventListener('DOMContentLoaded', function(){
+  if (window.miceTheme) miceTheme.picker(document.getElementById('themePick'));
+});
 
 function paintSettings(){
   loadUsers();
@@ -3333,27 +3330,16 @@ function paintSettings(){
        + 'everything, but changing anything needs the hub password.');
 }
 
-// Repaint whenever a tab is opened, and whenever a scan lands.
-(function(){
-  var was = window.showTab;
-  window.showTab = function(name){
-    was(name);
-    if (name === 'home') paintHome();
-    if (name === 'firmware') paintFirmware();
-    if (name === 'network') { paintQr(); pairPaint(); }
-    if (name === 'settings') paintSettings();
-  };
-})();
+onTab('settings', paintSettings);
+
+// ---- last: what runs once every part is in --------------------------
+// Home repaints on its own timer while it is the tab on screen.
 setInterval(function(){
   if (document.hidden) return;
   var home = document.querySelector('[data-tab="home"]');
   if (home && home.style.display !== 'none') paintHome();
 }, 10000);
 
-// The page chose its tab near the top of this script, BEFORE the wrapper above
-// existed — so the panel it opened was never painted. Open it again now that
-// the wrapper is in place. Cheap, and it means a first load and a tab click
-// go through exactly the same path.
 // Rest background timers when hidden; wake up and refresh immediately on visible.
 document.addEventListener('visibilitychange', function(){
   if (!document.hidden){
@@ -3369,6 +3355,10 @@ document.addEventListener('visibilitychange', function(){
   }
 });
 
+// The page chose its tab in boot_scans.js, BEFORE the later parts had said
+// what their tabs draw - so the panel it opened was never painted. Open it
+// again now that every part is in. Cheap, and it means a first load and a
+// tab click go through exactly the same path.
 showTab((function(){ try{ return localStorage.getItem('hubTab') || 'home'; }
                      catch(e){ return 'home'; } })());
 </script>

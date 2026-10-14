@@ -313,15 +313,6 @@ body.page{max-width:980px;margin:0 auto;padding:var(--sp-6) var(--sp-4)}
   body:not(.app){zoom:2.4}
 }
 
-/* The title line, with the one control that must be reachable from every
-   screen sitting at the end of it. Not a floating button: a thing that hovers
-   over content gets moved, hidden behind a dialog, or scrolled under on a
-   phone, and this is the control that may not be any of those. */
-.stopbar{display:flex;align-items:center;gap:var(--sp-3);flex-wrap:wrap}
-.stopbar h1{margin:0;flex:1}
-.stopbar button{white-space:nowrap;font-weight:700;letter-spacing:.02em}
-@media (pointer:coarse){ .stopbar button{min-height:44px;padding:0 var(--sp-4)} }
-
 /* Report modal — a simple box anyone can use, on every tab, no login.
    Styled here so it works on the hub, the module site, Studio and help. */
 .report-modal{position:fixed;inset:0;z-index:100;display:flex;
@@ -364,6 +355,9 @@ body.page{max-width:980px;margin:0 auto;padding:var(--sp-6) var(--sp-4)}
   border:1px dashed var(--line);border-radius:var(--r-md)}
 .mg-gate b{color:var(--txt);font-weight:600}
 .mg-gate p{color:var(--mut);margin:0;max-width:46ch;font-size:14px}
+/* One line instead, where the page already shows its own login form above. */
+.mg-gate.mg-slim{flex-direction:row;flex-wrap:wrap;justify-content:space-between;
+  text-align:left;padding:var(--sp-3) var(--sp-4)}
 /* Hidden because nobody is signed in - kept apart from the `hidden` attribute
    on purpose. A card may already be hidden for its own reason (the pairing
    card waits for another PC to appear), and writing `hidden` here would show

@@ -1,0 +1,90 @@
+  <!-- SETTINGS: what the hub is, and who you are on it. Small, but real. -->
+  <div class="card" data-tab="settings" data-needs-login="settings" style="grid-column:1/-1">
+    <h2>⚙ Settings</h2>
+    <div class="mini" id="setWho">…</div>
+    <div class="row">
+      <button id="logoutBtn" onclick="doLogout()" hidden>Log out</button>
+      <!-- The first thing anyone is asked for when they report a problem.
+           Placed here by Gemini Pro, 2026-08-20. -->
+      <button id="diagBtn" onclick="copyDiag()">📋 Copy diagnostics</button>
+      <button id="updBtn" onclick="checkUpdate()">⭳ Check for an update</button>
+      <!-- For the PC that just opened this page over WiFi. A browser cannot
+           reach that machine's serial ports at ANY address, so the only way it
+           drives its own cables is to run this. Asked 2026-08-21. -->
+      <a class="tab tab-link" id="getApp" href="/api/app" download="MiceHub.exe"
+         hidden>⬇ Get the hub for this PC</a>
+      <a class="tab tab-link" href="/help">Features &amp; help ↗</a>
+    </div>
+    <span class="mini" id="diagSay" aria-live="polite"></span>
+    <!-- The plain half of the bundle, always shown once collected: what is
+         connected and what needs attention, with no ids or ports on it
+         (A21-5). The technical rest sits behind the page-wide switch below.
+         Gemini Pro, 2026-08-24: ride that switch rather than adding a second
+         toggle to this card. -->
+    <div id="diagPlain" class="mini" hidden
+         style="white-space:pre-wrap;margin-top:var(--sp-2)"></div>
+    <div id="diagTechWrap" class="tech" hidden>
+      <hr>
+      <div class="mini">Everything below is for support - the same text the
+        Copy button sends.</div>
+      <pre id="diagTechText" style="white-space:pre-wrap;font-family:var(--mono);
+           font-size:12px;max-height:280px;overflow:auto"></pre>
+    </div>
+    <div class="mini" id="updSay" aria-live="polite"></div>
+    <!-- NOT an edge case: navigator.clipboard exists only in a SECURE context
+         - https, or localhost. This hub is plain http on a LAN address, so on
+         a phone at 192.168.x.x there is no clipboard at all and this textarea
+         is the ONLY way to get the text. It is therefore built to be used, not
+         apologised for: the text is already selected and ready to copy. -->
+    <div id="diagFall" hidden>
+      <div class="mini">Your browser will not let a page write to the
+        clipboard here (that needs https, or opening the hub on the PC
+        itself). The text is selected — copy it by hand.</div>
+      <textarea id="diagText" rows="12" readonly
+                style="width:100%;font-family:var(--mono);font-size:12px"></textarea>
+    </div>
+    <!-- Accounts. The module has had these for years; the hub had ONE password
+         that everybody shared and nobody could be removed from. Same rules as
+         the board so the two do not disagree: 1-20 characters for a name,
+         8-32 for a password, and the LAST account can never be removed. -->
+    <div id="userBox" hidden>
+      <h2 style="margin-top:var(--sp-4)">Who can use this hub</h2>
+      <div id="userList" class="mini" aria-live="polite">…</div>
+      <div class="row">
+        <input id="uName" placeholder="new user name" autocomplete="off" style="flex:1 1 130px">
+        <input id="uPass" type="password" placeholder="their password"
+               autocomplete="new-password" style="flex:1 1 150px">
+        <select id="uRole" aria-label="what the new person may do"
+                title="super_admin can add, rename and remove people">
+          <option value="user">user</option>
+          <option value="super_admin">super_admin</option>
+        </select>
+        <button onclick="addUser()">Add</button>
+        <span class="mini" id="uStat"></span>
+      </div>
+      <div class="mini">A password is 8 to 32 characters with no spaces. Removing
+        someone logs them out immediately. The last account cannot be removed —
+        a hub nobody can log into has to be fixed by deleting its password file
+        on the PC.</div>
+    </div>
+
+    <div class="mini">The first password is generated on the PC that runs the hub
+      and written next to it, so it cannot be lost. It is never shown on a page.</div>
+  </div>
+
+  <!-- HOW MUCH TO SHOW. An address serves nothing while everything works, and
+       it sat on every row in the same grey as the name. One switch, one class
+       in the shared sheet, remembered per browser. -->
+  <div class="card" data-tab="settings">
+    <h2>🎨 Colour</h2>
+    <div class="row" id="themePick"></div>
+    <div class="mini">Dark stays the default: a bright screen spills light into
+      the show area. Adding another theme is one block in
+      <code>shared/web/themes.css</code> — it appears here by itself.</div>
+
+    <h2 style="margin-top:var(--sp-6)">🔧 How much to show</h2>
+    <div class="mini">The <b>Show technical details</b> switch at the top of the
+      page: addresses, cable ports and signal strengths — what you need
+      the moment something is wrong, and noise the rest of the time. Names, types
+      and module numbers are always shown.</div>
+  </div>

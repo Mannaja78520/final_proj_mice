@@ -1,0 +1,119 @@
+  <!-- Getting a PHONE here is a network question, so it lives on the network
+       screen. The address is printed too, because a QR is useless to someone
+       reading this over a remote desktop - and the name is printed because it
+       is the one that survives the hub moving to another laptop. -->
+  <div class="card" data-tab="network">
+    <h2>📱 Open this on a phone</h2>
+    <div class="row" style="align-items:flex-start">
+      <img id="qrImg" src="/api/qr" alt="QR code for this hub's address"
+           width="180" height="180"
+           style="background:#fff;border-radius:var(--r-sm);flex:0 0 auto">
+      <div>
+        <div class="mini">Point a phone camera at it. Both have to be on the
+          same WiFi.</div>
+        <div style="margin-top:var(--sp-2)"><code id="qrUrl">…</code></div>
+        <!-- The NAME, when it is actually working. Printing mice.local while
+             nothing answers it sends people down a hole, so the hub says
+             whether its responder got the port and this only shows it then. -->
+        <div style="margin-top:var(--sp-1)" id="qrNameRow" hidden>
+          or by name: <code id="qrNameUrl"></code></div>
+        <div class="mini" id="qrWhyNoName" hidden></div>
+        <div class="mini" id="qrName" style="margin-top:var(--sp-1)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OTHER PCs. A sweep only ever covers this PC's own /24, and the case
+       that matters is a DIFFERENT one - measured 2026-08-19, two laptops on one
+       venue WiFi at 10.126.226.x and 10.123.98.x that could reach each other
+       perfectly and could never find each other. So an address is typed once
+       and remembered, and from then on the other hub is a LINK with its own
+       name on it: nothing to remember, nothing to type again. -->
+  <div class="card" data-tab="network" style="grid-column:1/-1">
+    <h2>🖥 Other PCs running the hub
+      <button onclick="loadHubs(true)" style="float:right">🔍 Search this network</button>
+    </h2>
+    <div class="mini">Each PC shares the boards on its own cables. Searching
+      finds the ones on this network; a PC on a different network has to be
+      named once, below.</div>
+    <div id="hubList" class="spin" aria-live="polite" style="margin-top:var(--sp-3)">looking…</div>
+    <div class="row" style="margin-top:var(--sp-3)">
+      <input id="hubAdd" placeholder="10.123.98.148" style="max-width:220px"
+             onkeydown="if(event.key==='Enter')addHub()">
+      <button onclick="addHub()">Add that PC</button>
+      <span class="mini" id="hubStat"></span>
+    </div>
+  </div>
+
+  <!-- ONE LOGIN ON EVERY PC (A14-1). Sits beside the list of other PCs
+       because it answers the question that list raises: I can see that hub,
+       why does it not know me. Hidden until logged in — every route behind
+       these buttons is gated, and offering a control that will 401 is worse
+       than not offering it. -->
+  <div class="card" data-tab="network" id="pairBox" data-needs-login="pair" hidden style="grid-column:1/-1">
+    <h2>🔗 One login on every PC</h2>
+    <div class="mini">Each PC keeps its own accounts, so a name that works here
+      is a stranger there. Pair them once — the way a TV is paired — and the
+      same name and password work on both. No internet, and nothing to do
+      again afterwards.</div>
+
+    <div class="row" id="pairIdle">
+      <button class="primary" onclick="pairShow()">Show a code for another PC</button>
+      <button onclick="pairAskCode()">I have a code from another PC</button>
+    </div>
+
+    <div id="pairShowing" hidden>
+      <div id="pairCode" style="font-family:var(--mono);font-size:30px;
+           letter-spacing:.15em;margin:var(--sp-3) 0">…</div>
+      <div class="row">
+        <span class="mini" id="pairLeft" aria-live="polite"></span>
+        <button onclick="pairStop()">Stop showing it</button>
+      </div>
+      <div class="mini">On the other PC: <b>Network → One login on every PC →
+        I have a code</b>, then this PC's address and these characters.</div>
+    </div>
+
+    <div id="pairEnter" hidden>
+      <div class="row">
+        <input id="pairAddr" placeholder="10.123.98.148" style="max-width:200px"
+               autocomplete="off" onkeydown="if(event.key==='Enter')pairLink(false)">
+        <input id="pairInput" placeholder="ABCD-EFGH" autocomplete="off"
+               style="max-width:170px;font-family:var(--mono)"
+               onkeydown="if(event.key==='Enter')pairLink(false)">
+        <button class="primary" onclick="pairLink(false)">Pair</button>
+        <button onclick="pairReset()">Cancel</button>
+        <span class="mini" id="pairStat" aria-live="polite"></span>
+      </div>
+      <div class="mini">The address is the PC showing the code — the same one
+        the list above uses. Upper or lower case, dash or no dash.</div>
+    </div>
+
+    <!-- The clash is the NORMAL case, not an error: every hub starts with the
+         same generated account name. -->
+    <div id="pairClash" hidden>
+      <div class="banner warn" role="alert" id="pairClashWhy"></div>
+      <div class="row">
+        <button class="primary" onclick="pairReset()">Keep mine</button>
+        <button class="danger" onclick="pairLink(true)">Replace with theirs</button>
+      </div>
+    </div>
+
+    <div class="banner ok" id="pairDone" hidden role="status"></div>
+    <div id="pairErrBox" hidden>
+      <div class="banner err" id="pairErr" role="alert"></div>
+      <div class="row"><button onclick="pairReset()">Try again</button></div>
+    </div>
+  </div>
+
+  <div class="card" data-tab="network" style="grid-column:1/-1">
+    <h2>🤝 Which modules work together
+      <button onclick="loadNet()" style="float:right">⟳ Refresh</button>
+    </h2>
+    <div class="mini">Modules only link to modules in the <b>same group</b>. A group is
+      your installation — put your modules in one and they find each other by
+      themselves, even with no venue WiFi. Another company's modules standing in
+      the same room cannot join yours, and yours cannot join theirs, because a
+      module's own hotspot password is derived from its group name.</div>
+    <div id="netlist" class="spin" aria-live="polite" style="margin-top:12px">Looking for modules…</div>
+    <div id="netact" style="margin-top:12px"></div>
+  </div>

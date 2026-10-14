@@ -43,8 +43,9 @@ window.addEventListener("load", async function(){
     var tabs = [].slice.call(d.querySelectorAll('#tabs [data-go]'));
     await say("gos", tabs.map(function(b){ return b.getAttribute('data-go'); }).join(","));
 
-    // Help must be a real link that leaves the page.
-    var help = [].slice.call(d.querySelectorAll('#tabs a')).filter(function(a){
+    // Help must be a real link that leaves the page. It sits in the page's
+    // head since A41-3 (as the 9th "tab" it wrapped the row), so look there too.
+    var help = [].slice.call(d.querySelectorAll('#tabs a, header.topbar a')).filter(function(a){
       return /help/i.test(a.textContent); })[0];
     await say("helplink", help ? help.getAttribute('href') : "none");
     await say("helptag", help ? help.tagName : "none");

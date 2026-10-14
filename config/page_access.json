@@ -39,6 +39,8 @@
   "words": {
     "title": "Sign in to use this",
     "body": "Tools and module pages work without signing in. Everything else asks first.",
+    // the one-line form, on a page whose own login form is already above it
+    "here": "Log in at the top of this page to use this.",
     "button": "Sign in"
   }
 }

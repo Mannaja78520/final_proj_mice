@@ -1,0 +1,96 @@
+<!-- Flashing is not undoable from here, it takes about a minute, and the board
+     may be in someone else's hands across the room. Several PCs on this network
+     run this same hub, so the panel names the PC as well as the board: being on
+     the wrong browser tab is the easy mistake to make at a live event. -->
+<div class="flash-modal" id="flashModal" role="dialog" aria-modal="true"
+     aria-labelledby="fcTitle" hidden>
+  <div class="card flash-panel">
+    <h2 id="fcTitle">⚡ Flash firmware</h2>
+
+    <div id="fcAsk">
+      <div class="flash-meta" id="fcMeta"></div>
+      <div class="banner warn" id="fcChange" hidden></div>
+      <div class="mini" id="fcCost"></div>
+      <!-- Only when the board is on ANOTHER PC's cable: that machine has its
+           own accounts, and this one is not allowed to overwrite a board there
+           without a person who may. Nothing typed here is stored. -->
+      <div id="fcLogin" hidden>
+        <div class="mini" id="fcLoginWhy"></div>
+        <div class="row">
+          <input id="fcUser" placeholder="user on that PC" autocomplete="off">
+          <input id="fcPass" type="password" placeholder="password"
+                 autocomplete="off">
+        </div>
+      </div>
+      <div class="flash-actions">
+        <!-- The SAFE choice is the prominent one and sits where a thumb lands.
+             The destructive one is reachable, not convenient. -->
+        <button class="primary" id="fcCancel">Cancel — keep what it runs now</button>
+        <button class="danger" id="fcGo">⚡ Overwrite the firmware</button>
+      </div>
+    </div>
+
+    <div id="fcWorking" hidden>
+      <div class="mini" id="fcStage">starting…</div>
+      <div class="pbar"><i id="fcBar"></i></div>
+      <div class="mini" style="color:var(--warn)">⚠ do not unplug the board or close this page</div>
+    </div>
+
+    <div id="fcOk" hidden>
+      <div class="banner ok" id="fcOkMsg">✓ done</div>
+      <div class="flash-actions"><button class="primary" id="fcClose">Close</button></div>
+    </div>
+
+    <div id="fcErr" hidden>
+      <div class="banner err" id="fcErrMsg"></div>
+      <div class="flash-actions">
+        <button class="primary" id="fcErrClose">Cancel</button>
+        <button class="danger" id="fcRetry">⟳ Try again</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- The shortcut list. Reuses the flash modal's overlay and card so there is
+     one dialog shape on this page rather than two that drift apart.
+     Its rows are BUTTONS, not text: on a phone there is no keyboard, so the
+     same list that documents the shortcuts is also the way to run them. That
+     was Gemini Pro's idea, 2026-08-20, and it is the difference between a
+     panel that is useless on a phone and one that is a menu. -->
+<div class="flash-modal" id="keysModal" role="dialog" aria-modal="true"
+     aria-labelledby="keysTitle" hidden>
+  <div class="card flash-panel">
+    <h2 id="keysTitle">⌨ Keyboard shortcuts</h2>
+    <div class="mini">Tap one to run it — the keys need a keyboard, these do not.</div>
+    <div id="keysList"></div>
+    <div class="flash-actions">
+      <button class="primary" id="keysClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Report modal — anyone can press Report on any tab, no login needed.
+     Stores one file per report beside the hub's machine-local files.
+     Never promoted — it belongs to the machine, not the source. -->
+<div class="report-modal" id="reportModal" role="dialog" aria-modal="true"
+     aria-labelledby="reportTitle" hidden>
+  <div class="report-panel">
+    <h2 id="reportTitle">🐛 Report a problem</h2>
+    <div class="mini">What were you doing? What went wrong? Write in any language.</div>
+    <textarea id="reportText" placeholder="I was trying to… and then…"
+              aria-label="Describe the problem"></textarea>
+    <div class="checkbox-row">
+      <input type="checkbox" id="reportAttachDiag" checked>
+      <label for="reportAttachDiag">Attach system summary (what is connected, firmware versions, no passwords)</label>
+    </div>
+    <div class="report-busy" id="reportBusy">Sending…</div>
+    <!-- What went wrong, INSIDE the box the person is looking at. The failure
+         used to be written to #stopSaid, which lives on the screen behind
+         this one (panel finding, verified 2026-09-08). -->
+    <div class="statline" id="reportSaid" role="status" aria-live="polite"></div>
+    <div class="report-actions">
+      <button class="primary" id="reportSend" onclick="submitReport()">Send report</button>
+      <button class="secondary" onclick="closeReport()">Cancel</button>
+    </div>
+  </div>
+</div>

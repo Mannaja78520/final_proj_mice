@@ -23,11 +23,12 @@ Web asset and Studio builds.
 
 - nothing
 
-## Checks that test it (4)
+## Checks that test it (5)
 
 - `check_branch`
 - `check_build_web`
+- `check_page_frame`
 - `check_promote_pipeline`
 - `check_voice_reconize`
 
-Run them: `python qc/run_qc.py --no-build check_branch check_build_web check_promote_pipeline check_voice_reconize`
+Run them: `python qc/run_qc.py --no-build check_branch check_build_web check_page_frame check_promote_pipeline check_voice_reconize`

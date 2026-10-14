@@ -53,7 +53,7 @@ setTimeout(async function(){
   try{
     var w = document.getElementById('f').contentWindow;
     var d = document.getElementById('f').contentDocument;
-    if (typeof w.setAdvanced !== 'function') return done("missing=setAdvanced");
+    if (!w.miceAdv) return done("missing=miceAdv");
     var reply = function(o){
       return Promise.resolve({ json: function(){ return Promise.resolve(o); } });
     };
@@ -73,7 +73,7 @@ setTimeout(async function(){
     var tab = d.querySelector('#tabs [data-go="modules"]');
     if (tab) tab.click();
     await new Promise(function(r){ setTimeout(r, 400); });
-    w.setAdvanced(false);
+    w.miceAdv.set(false);
     await w.scan(true);
     var row = d.querySelector('#mods .mod');
     if (!row) return done("row=none");
@@ -93,7 +93,7 @@ setTimeout(async function(){
     out.push("off_id=" + (row.innerText.indexOf('#7') >= 0 ? "shown" : "hidden"));
     out.push("off_ip=" + (row.innerText.indexOf('10.0.0.9') >= 0 ? "shown" : "hidden"));
 
-    w.setAdvanced(true);
+    w.miceAdv.set(true);
     out.push("on_tech=" + (shown(row.querySelector('.tech')) ? "shown" : "hidden"));
     out.push("on_ip=" + (row.innerText.indexOf('10.0.0.9') >= 0 ? "shown" : "hidden"));
     out.push("saved=" + (w.localStorage.getItem('hub_adv') || "none"));
@@ -136,7 +136,7 @@ def run(t):
     t.eq(got.get("saved"), "1",
          "and the choice is remembered, because a preference that resets is "
          "worse than none")
-    t.eq(got.get("box"), "there", "the switch is on the settings screen")
+    t.eq(got.get("box"), "there", "the switch is in the head of the page, as on every page")
     t.eq(got.get("checked"), "yes", "and it shows the state it is in")
 
     # One rule, in the shared sheet, so a new page cannot invent its own.

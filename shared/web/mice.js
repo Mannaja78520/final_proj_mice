@@ -437,6 +437,24 @@
       box.setAttribute("data-tab", el.getAttribute("data-tab"));
     if (el.getAttribute("style")) box.setAttribute("style", el.getAttribute("style"));
     var b = document.createElement("b");
+    // A page with its own login form (the hub's Home) marks it data-login-here:
+    // the box is then one line pointing at that form, not a second login card
+    // on the same screen (two of them, audit 2026-10-14).
+    var here = document.querySelector("[data-login-here]");
+    if (here) {
+      box.className += " mg-slim";
+      b.textContent = w.here || "Log in at the top of this page to use this.";
+      var to = document.createElement("button");
+      to.type = "button";
+      to.textContent = w.button || "Sign in";
+      to.onclick = function () {
+        here.scrollIntoView({block: "nearest"});
+        var f = here.querySelector("input");
+        if (f) f.focus();
+      };
+      box.appendChild(b); box.appendChild(to);
+      return box;
+    }
     b.textContent = w.title || "Sign in to use this";
     var p = document.createElement("p");
     p.textContent = w.body ||

@@ -1,0 +1,158 @@
+/* Only what is the HUB's own. Tokens, the reset, cards, buttons, inputs, the
+   quiet caption and the five states all come from /mice.css above. */
+
+/* a module row: name / type / address / what you can do with it */
+.mod{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-2) var(--sp-3);margin:var(--sp-2) 0;background:var(--sunk)}
+.mod .nm{font-weight:700}
+/* Every way this board can be reached, under the row rather than beside it:
+   a board on a cable, on the WiFi and on the laptop next door has three, and
+   three more items on one line pushes the buttons off a phone. */
+.mod .via{flex-basis:100%;font-size:12px;color:var(--mut);margin-top:2px}
+.ty{font-size:12px;color:var(--on-acc);background:var(--ty-other);border-radius:var(--r-md);padding:1px var(--sp-2);font-weight:600}
+/* Module-type badges use the --ty-* tokens, which are decoration — which board
+   is which — not state, so --ok/--warn/--err stay reserved for "this is fine /
+   careful / this failed". The badge also carries the type as TEXT, so the
+   colour is never the only signal. */
+.ty.nong{background:var(--ty-nong)}
+.ty.lift{background:var(--ty-lift)}
+.ty.cam{background:var(--ty-cam)}
+/* ONE LINE, ALWAYS. A module that misses a sweep gains "· last answered 12s
+   ago" in this span, and as a flex child that wraps its text the row grew
+   taller and shoved every row below it down the page. Asked for 2026-08-21:
+   *it add the line and make below shift down ... it make user headace*.
+   min-width:0 is what lets a flex child shrink below its content at all;
+   without it overflow:hidden does nothing here. The tail that gets clipped is
+   the technical detail, which is last on purpose and already has its own
+   show/hide switch — the name, the id and the stale note are never the part
+   that disappears. */
+.mod .ip{color:var(--mut);font-size:13px;flex:1;min-width:0;
+         white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* The stale note keeps its own space and never shrinks: it is the one part of
+   the row a person must be able to read when the rig is misbehaving. */
+.mod .state-stale{flex:0 0 auto;white-space:nowrap;font-size:13px}
+.port{display:inline-block;background:var(--btn);border:1px solid var(--line);border-radius:var(--r-pill);padding:var(--sp-1) var(--sp-3);margin:var(--sp-1);font-size:13px}
+.spin{color:var(--mut)}
+.login-input{flex:1 1 180px;min-width:0}
+/* A destination that LEAVES this page. Dashed, muted and carrying an arrow, so
+   it does not read as one more tab that swaps a card in place. */
+.tab-link{text-decoration:none;border-style:dashed;color:var(--mut);
+  display:inline-flex;align-items:center}
+.tab-link:hover{color:var(--acc);border-color:var(--acc)}
+.flash-modal{position:fixed;inset:0;z-index:100;display:flex;
+  align-items:center;justify-content:center;padding:var(--sp-3);
+  background:color-mix(in srgb,var(--bg) 80%,transparent)}
+.flash-panel{width:100%;max-width:400px;display:flex;flex-direction:column;gap:var(--sp-3)}
+/* The shortcut list. A row is a real button so it can be tapped on a phone,
+   but it must not look like a form of six primary actions - so it is flat
+   until pointed at, and the KEY carries the emphasis, not the row. */
+.keyrow{width:100%;justify-content:flex-start;text-align:left;
+  background:none;border:1px solid transparent;padding:var(--sp-2)}
+.keyrow:hover{border-color:var(--line);background:var(--sunk)}
+.keyrow .badge{min-width:56px;justify-content:center;display:inline-flex}
+@media (pointer:coarse){.keyrow{min-height:44px;align-items:center}}
+.flash-meta{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-1) var(--sp-3);
+  background:var(--sunk);padding:var(--sp-2) var(--sp-3);
+  border-radius:var(--r-sm);font-size:13px;align-items:baseline}
+.flash-meta .lbl{min-width:0;white-space:nowrap}
+.flash-actions{display:flex;flex-direction:column;gap:var(--sp-2);margin-top:var(--sp-2)}
+.flash-actions button{width:100%;min-height:44px}
+
+/* Report modal — a simple box anyone can use to complain. */
+.report-modal{position:fixed;inset:0;z-index:100;display:flex;
+  align-items:center;justify-content:center;padding:var(--sp-3);
+  background:color-mix(in srgb,var(--bg) 80%,transparent)}
+.report-panel{width:100%;max-width:480px;display:flex;flex-direction:column;gap:var(--sp-3);
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:var(--sp-4)}
+.report-panel h2{margin:0}
+.report-panel textarea{width:100%;min-height:100px;padding:var(--sp-2);
+  background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-md);
+  color:var(--txt);font:inherit;resize:vertical}
+.report-panel textarea:focus{outline:2px solid var(--acc);outline-offset:2px}
+.report-panel .checkbox-row{display:flex;align-items:center;gap:var(--sp-2);
+  font-size:14px;color:var(--mut)}
+.report-panel .checkbox-row input{width:18px;height:18px}
+.report-actions{display:flex;flex-direction:column;gap:var(--sp-2);margin-top:var(--sp-2)}
+.report-actions button{width:100%;min-height:44px}
+.report-busy{display:none;color:var(--mut);font-size:14px}
+.report-busy.show{display:block}
+
+/* The head's own buttons, kept together at the right: STOP first, where a
+   hand finds it, and full width on a phone so it cannot be missed. */
+.home-acts{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;margin-left:auto}
+.home-acts button{white-space:nowrap}
+#stopAll{font-weight:700;letter-spacing:.02em}
+@media (pointer:coarse){ #stopAll{min-height:44px;padding:0 var(--sp-4)} }
+.home-acts ~ .topbar-adv{margin-left:0}
+@media (max-width:430px){
+  .home-acts{margin-left:0;flex-basis:100%}
+  .home-acts #stopAll{flex-basis:100%}
+}
+
+/* ---------------------------------------------------------- responsive
+   The hub is opened from phones on the same WiFi as often as from the PC, so
+   it has to work at 360px as well as on a shop monitor. */
+@media (min-width:1500px){            /* big screen: stop the line getting long */
+  body{max-width:1400px;margin:0 auto}
+}
+@media (max-width:720px){
+  body{padding:var(--sp-3)}
+  h1{font-size:20px}
+  .card{padding:var(--sp-3)}
+  /* a module row is name / type / address / buttons — stack it so nothing is
+     squeezed to a few characters, and let the buttons span the width */
+  .mod{flex-wrap:wrap;gap:6px}
+  .mod .nm{width:100%}
+  .mod button{flex:1 1 auto}
+  h2 button{float:none!important;display:block;margin-top:var(--sp-2);width:100%}
+}
+@media (max-width:430px){
+  body{padding:9px}
+  .mod .ip{font-size:11px;word-break:break-word}
+}
+
+/* Tabs. The cards do not move in the DOM — they are shown or hidden by their
+   data-tab, so every element id the rest of the page (and QC) relies on stays
+   exactly where it was. */
+/* The tab itself now comes from mice.css — the hub was the only one of the
+   three apps with an OUTLINE active tab, which is why it looked like a
+   different product from the module site and Studio that it opens. */
+.netrow{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;
+        padding:var(--sp-2) var(--sp-3);border:1px solid var(--line);border-radius:var(--r-md);margin-bottom:var(--sp-2)}
+.netrow .who{font-weight:600}
+.netrow .grp{font-family:var(--mono);font-size:12px;opacity:.85}
+.netrow.sel{border-color:var(--acc);background:var(--acc-soft)}
+.netrow input[type=checkbox]{width:18px;height:18px}
+@media (pointer:coarse){.netrow{padding:var(--sp-3)}}
+
+/* One firmware image and everything it can be written to. */
+.fwbox{background:var(--sunk);border:1px solid var(--line);
+  border-radius:var(--r-md);padding:var(--sp-3);margin:var(--sp-2) 0}
+.fwtargets{display:flex;flex-direction:column;gap:var(--sp-1);margin-top:var(--sp-2)}
+.fwbar{flex:0 0 90px}
+/* Not built: present, explained, and plainly not usable — greying it out
+   without saying why is how someone concludes the feature is broken. */
+.fwunbuilt{opacity:.75;border-style:dashed}
+
+/* flashing a board over its own cable */
+.flash{display:flex;align-items:center;gap:var(--sp-2);flex-wrap:wrap;
+  margin:var(--sp-1) 0 var(--sp-2) var(--sp-6)}
+.flash select{background:var(--btn);padding:5px var(--sp-2);font-size:13px}
+.pbar{flex:1;min-width:120px;height:6px;background:var(--sunk);
+  border:1px solid var(--line);border-radius:var(--r-pill);overflow:hidden}
+.pbar i{display:block;height:100%;width:0;background:var(--acc);transition:width 150ms}
+@media (max-width:430px){.flash{margin-left:0}.flash select{flex:1 1 100%}}
+@media (pointer:coarse){.flash select{padding:9px 10px}}
+/* A tool is a destination: its description gets room and its action stays quiet. */
+.js-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:var(--sp-3);margin-top:var(--sp-4)}
+.mod.tool-tile{display:grid;grid-template-columns:1fr auto;border-left:1px solid var(--line);padding:var(--sp-4);margin:0;gap:var(--sp-2)}
+.tool-tile .nm{grid-column:1/-1}
+.tool-tile .ip{grid-column:1/-1;white-space:normal;overflow:visible;line-height:1.5;min-height:3em}
+.tool-tile button{text-align:left}
+.tool-tile .tab-link{font-size:12px;padding:var(--sp-2);border:0}
+#tabs{padding:var(--sp-2);background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg);margin:var(--sp-4) 0 var(--sp-6);
+  flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}
+/* ONE line of tabs (A41-3). Seven fit at 1280 px; a phone slides the row
+   sideways rather than stacking it four lines deep above the content. */
+#tabs .tab{flex:0 0 auto}
+#tabs .tab:not(.on){background:transparent;border-color:transparent}
