@@ -34,9 +34,18 @@ function frame(w, h, then){
   var f = document.createElement("iframe");
   f.width = w; f.height = h; f.style.border = "0"; f.src = "/studio/";
   document.body.appendChild(f);
-  f.onload = function(){ setTimeout(function(){
-    try { then(f.contentDocument, f.contentWindow); } catch(e){ qcFail(e); }
-  }, 2200); };
+  // measure once Studio has booted: its head says saved / not saved (not
+  // "checking…" / "opening…") and the 3D canvas has a size
+  f.onload = function(){
+    var doc = f.contentDocument, win = f.contentWindow;
+    qcWaitFor(function(){
+      var st = doc.getElementById("stat"), c = doc.querySelector("#viewport canvas");
+      return typeof win.addKey === "function" && st && /state-(ok|warn|empty)/.test(st.className)
+          && c && c.getBoundingClientRect().height > 0;
+    }, 20000).then(function(){
+      try { then(doc, win); } catch(e){ qcFail(e); }
+    });
+  };
 }
 function box(doc, sel){
   var el = doc.querySelector(sel);
@@ -64,10 +73,11 @@ function laptop(doc, win){
   // the head's status line follows the work: two new poses are not saved
   // `pose` is a top-level let: in the page's scope, not on its window
   win.eval("[40, 140].forEach(function(v){ pose = pose.map(function(){ return v; }); addKey(); })");
-  setTimeout(function(){
+  qcWaitFor(function(){ return doc.getElementById("stat").textContent.indexOf("not saved") === 0; },
+            5000).then(function(){
     qcMark("Astat=" + doc.getElementById("stat").textContent);
     frame(390, 844, phone);
-  }, 1600);
+  });
 }
 function phone(doc, win){
   var vp = box(doc, "#viewport");
@@ -78,7 +88,7 @@ function phone(doc, win){
   qcMark("Bpicked=" + JSON.stringify(box(doc, "#viewCube")));
   qcMark("done");
 }
-window.addEventListener("load", function(){ setTimeout(function(){ frame(1280, 800, laptop); }, 800); });
+window.addEventListener("load", function(){ frame(1280, 800, laptop); });
 """
 
 
