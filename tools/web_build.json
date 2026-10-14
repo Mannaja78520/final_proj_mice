@@ -35,5 +35,33 @@
       "main_loop.js",
       "boot.js"
     ]
-  }
+  },
+  "pages": [
+    {
+      "path": "main_python/web/home",
+      "out": "main_python/web/hub.html",
+      "js": [
+        "tabs.js",
+        "pinned.js",
+        "stop_report.js",
+        "complaints.js",
+        "network.js",
+        "tools.js",
+        "page_version.js",
+        "modules.js",
+        "usb.js",
+        "shared_pcs.js",
+        "boot_scans.js",
+        "login.js",
+        "flash_confirm.js",
+        "shortcuts.js",
+        "hub_upkeep.js",
+        "home.js",
+        "accounts.js",
+        "pairing.js",
+        "firmware.js",
+        "settings.js"
+      ]
+    }
+  ]
 }

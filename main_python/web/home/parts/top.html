@@ -1,0 +1,71 @@
+<!-- The page you are reading may be older than the hub serving it. Asked
+     2026-08-20: *in web why i need to refresh by my self to see the change*.
+     The DATA here refreshes itself; the page itself was fetched once, when the
+     tab opened, so a change to the interface is invisible until a reload.
+     It never reloads on its own: somebody may be dragging a joint or halfway
+     through typing a WiFi password, and losing that to a surprise refresh is
+     worse than seeing an old screen for a minute. So it says so, and waits. -->
+<div class="banner info" id="newVer" hidden role="status" aria-live="polite">
+  <span>The hub has been updated. This page is the older version.</span>
+  <button class="primary" onclick="location.reload()">Reload</button>
+  <button onclick="dismissVer()">Not now</button>
+</div>
+<!-- And the PROGRAM can be older than the page. MiceHub.exe is built from this
+     source tree and goes out of date the moment main.py changes; on 2026-08-21
+     a hub built the day before was serving happily with four fixes missing and
+     the only clue was a password that did not match.
+     No dismiss button on purpose: reloading fixes an old page, and nothing the
+     browser can do fixes an old program. It stays until the exe is rebuilt.
+     Shown only where it can be acted on - a hub with no source tree beside it
+     cannot know, and says nothing rather than guessing. -->
+<div class="banner warn" id="staleExe" hidden role="alert">
+  <span id="staleExeWhy"></span>
+  <span class="mono" id="staleExeFix"></span>
+</div>
+<!-- STOP, FROM ANYWHERE. There was no stop control on this page at all: the
+     only one was inside Nong Studio, on another screen, behind a tab. Somebody
+     standing next to a moving arm does not navigate.
+     It sits with the title so it is on every tab, it never asks - a stop that
+     needs confirming arrives after the thing you were trying to prevent - and
+     it is NOT disabled while it works. Gemini Pro designed this and proposed
+     disabling it during transmission; that is right for an ordinary button and
+     wrong for this one, because if the first press did not land the operator
+     has to be able to press again. It shows progress instead. -->
+<div class="stopbar">
+  <h1>Mice Control Hub</h1>
+  <div class="stopbar-actions">
+    <button class="danger" id="stopAll" onclick="stopEverything()"
+            title="Stop the show and every board this hub can reach">⏹ STOP</button>
+    <button class="secondary" id="reportBtn" onclick="openReport()"
+            title="Report a problem — no login needed">🐛 Report</button>
+  </div>
+</div>
+<div class="banner err" id="stopSaid" hidden role="alert" aria-live="assertive"></div>
+<div class="sub page-intro">A little space for your whole rig. Open a module to move it,
+or start a sequence in Nong Studio. Your modules appear here when they connect.</div>
+
+<!-- Log in before doing. Reading the module list needs nothing, so this is a
+     card on the page rather than a wall in front of it: someone checking
+     whether a board is alive should never meet a password box. -->
+<div class="card" id="loginCard" hidden>
+  <h2>🔒 Log in to control</h2>
+  <div class="mini" id="loginWhy">Looking is free. Moving a robot, flashing a
+    board or deleting a file needs the hub password.</div>
+
+  <div class="banner info" id="loginFirstRun" role="status" hidden>
+    🔑 First run — the hub printed a password in the window it is running in,
+    on the PC itself. It is not shown here and never travels over the network.
+  </div>
+  <div class="banner err" id="loginErr" role="alert" hidden></div>
+  <div class="banner warn" id="loginLock" role="alert" hidden></div>
+
+  <form class="row" id="loginForm" autocomplete="off" onsubmit="return doLogin(event)">
+    <input id="loginUser" class="login-input" autocomplete="off"
+           placeholder="username" aria-label="Hub user">
+    <input id="loginPass" class="login-input" type="password"
+           autocomplete="new-password" placeholder="password"
+           aria-label="hub password" required>
+    <button type="submit" class="primary" id="loginBtn">Log in</button>
+    <span class="mini" id="loginBusy" role="status" hidden>checking…</span>
+  </form>
+</div>

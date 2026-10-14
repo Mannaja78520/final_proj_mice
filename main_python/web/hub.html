@@ -540,7 +540,6 @@ or start a sequence in Nong Studio. Your modules appear here when they connect.<
       and module numbers are always shown.</div>
   </div>
 
-
   <div class="card" data-tab="modules" style="grid-column:1/-1">
     <!-- Called "Modules found over WiFi" until 2026-08-22, which stopped being
          true when the list started carrying every way in: a board on a cable,
@@ -575,6 +574,23 @@ or start a sequence in Nong Studio. Your modules appear here when they connect.<
       exactly like your own, and that PC passes the commands down its own
       cable. This is just which machines are sharing.</div>
     <div id="shared" class="mini" aria-live="polite">Looking for other PCs…</div>
+  </div>
+
+  <div class="card" data-tab="modules" style="grid-column:1/-1">
+    <h2>🔌 Modules plugged in by cable
+      <span style="float:right">
+        <label class="mini"><input type="checkbox" id="autoUsb" onchange="autoUsbChanged()"> auto-check</label>
+        <button onclick="scanUsb()">🔍 Probe now</button>
+      </span>
+    </h2>
+    <div id="usbmods" class="mini" aria-live="polite">…</div>
+    <div class="mini">each port shows its result the moment IT answers — real
+      USB-UART ports take ~2 s; Bluetooth phantom ports are recognized by their
+      device type and skipped without opening them. A probed module shows who it
+      is + every RS485 module behind it. “auto-check” re-probes every 12 s while
+      this page is visible — it costs almost nothing (the PC just waits on the
+      port), but the port is briefly busy, so turn it off while connecting
+      Nong Studio over USB.</div>
   </div>
 
   <!-- Getting a PHONE here is a network question, so it lives on the network
@@ -713,22 +729,6 @@ or start a sequence in Nong Studio. Your modules appear here when they connect.<
     <div id="complaintsList" class="mini">loading…</div>
   </div>
 
-  <div class="card" data-tab="modules" style="grid-column:1/-1">
-    <h2>🔌 Modules plugged in by cable
-      <span style="float:right">
-        <label class="mini"><input type="checkbox" id="autoUsb" onchange="autoUsbChanged()"> auto-check</label>
-        <button onclick="scanUsb()">🔍 Probe now</button>
-      </span>
-    </h2>
-    <div id="usbmods" class="mini" aria-live="polite">…</div>
-    <div class="mini">each port shows its result the moment IT answers — real
-      USB-UART ports take ~2 s; Bluetooth phantom ports are recognized by their
-      device type and skipped without opening them. A probed module shows who it
-      is + every RS485 module behind it. “auto-check” re-probes every 12 s while
-      this page is visible — it costs almost nothing (the PC just waits on the
-      port), but the port is briefly busy, so turn it off while connecting
-      Nong Studio over USB.</div>
-  </div>
 </div>
 
 <script>
@@ -1459,36 +1459,6 @@ async function loadApps(){
 }
 loadApps();
 
-// When the module list was last actually confirmed, so a stale list can say so
-// instead of quietly presenting old modules as if they were still there.
-var modsAt = 0, modsHtml = '';
-// A wall-clock stamp: 2026-08-22 00:41. Written out rather than left to
-// toLocaleString, which prints a different order on every machine - and this
-// is read beside timestamps the hub and the plan write in exactly this shape.
-function stamp(ms){
-  if(!ms) return '';
-  var d = new Date(ms), p = function(n){ return (n < 10 ? '0' : '') + n; };
-  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
-       + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
-}
-function agoText(ms){
-  if(!ms) return '';
-  var s = Math.round((Date.now()-ms)/1000);
-  if(s < 5) return 'just now';
-  if(s < 90) return s + 's ago';
-  // "4470 min ago" was on the Home card 2026-09-21: nobody reads that as 3 days
-  var m = Math.round(s/60), h = Math.round(s/3600), d = Math.round(s/86400);
-  if(m < 90) return m + ' min ago';
-  if(h < 36) return h + ' hours ago';
-  return d + ' days ago';
-}
-function modsMeta(){
-  if(document.hidden) return;
-  var el = document.getElementById('modsmeta');
-  if(el) el.textContent = modsAt ? ('checked ' + agoText(modsAt)) : '';
-}
-setInterval(modsMeta, 5000);
-
 // ---- is this page still the one the hub is serving? ------------------
 // The version is whatever /api/version said when the tab loaded. If it ever
 // differs, the files behind this page changed and what you are looking at is
@@ -1534,6 +1504,36 @@ async function checkVer(){
 }
 setInterval(checkVer, 20000);
 checkVer();
+
+// When the module list was last actually confirmed, so a stale list can say so
+// instead of quietly presenting old modules as if they were still there.
+var modsAt = 0, modsHtml = '';
+// A wall-clock stamp: 2026-08-22 00:41. Written out rather than left to
+// toLocaleString, which prints a different order on every machine - and this
+// is read beside timestamps the hub and the plan write in exactly this shape.
+function stamp(ms){
+  if(!ms) return '';
+  var d = new Date(ms), p = function(n){ return (n < 10 ? '0' : '') + n; };
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+       + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function agoText(ms){
+  if(!ms) return '';
+  var s = Math.round((Date.now()-ms)/1000);
+  if(s < 5) return 'just now';
+  if(s < 90) return s + 's ago';
+  // "4470 min ago" was on the Home card 2026-09-21: nobody reads that as 3 days
+  var m = Math.round(s/60), h = Math.round(s/3600), d = Math.round(s/86400);
+  if(m < 90) return m + ' min ago';
+  if(h < 36) return h + ' hours ago';
+  return d + ' days ago';
+}
+function modsMeta(){
+  if(document.hidden) return;
+  var el = document.getElementById('modsmeta');
+  if(el) el.textContent = modsAt ? ('checked ' + agoText(modsAt)) : '';
+}
+setInterval(modsMeta, 5000);
 
 // Which scan is the current one. The wider sweep below finishes seconds after
 // the local list, so a sweep started before a newer scan - or before a scan
@@ -1876,6 +1876,7 @@ function modRow(m,extra,port,busId,peer,far,opts){
 }
 // streaming probe: one request PER port, each slot fills in the moment its
 // port answers — fast ports never wait for slow ones, order stays stable
+
 let usbBusy=false;
 function renderUsbResult(slot,u){
   slot.innerHTML='';
@@ -2167,6 +2168,7 @@ async function scanUsb(){
 // A port that a page is already driving (module site / Nong Studio over the
 // shared USB link) is NOT re-probed — the hub answers from the identity it
 // already has, so the probe never stutters their commands.
+
 // A write in progress must not be interrupted by the page's own rescans: the
 // rows redraw, the progress bar is torn out, and the screen looks idle while a
 // board is being overwritten. Removing the old per-row flash path (A2-2) took
@@ -2459,6 +2461,57 @@ function closeAnyOpen(){
   return did;
 }
 
+// Show or hide the list, drawing it FROM THE SAME ARRAY the handler uses.
+// Built each time it opens rather than once at load: it costs nothing for
+// three rows, and it means a shortcut added to SHORTCUTS can never be missing
+// from the list because the list was rendered before it existed.
+function toggleKeys(show){
+  const m = $('keysModal');
+  if (!m) return;
+  if (show){
+    const list = $('keysList');
+    list.innerHTML = '';
+    SHORTCUTS.forEach(s => {
+      const b = document.createElement('button');
+      b.className = 'row keyrow';
+      b.innerHTML = '<span class="badge"><b>' + esc(s.show) + '</b></span>' +
+                    '<span>' + esc(s.what) + '</span>';
+      b.onclick = () => {
+        // CLOSE FIRST, then act. `/` focuses the search box, and focusing
+        // something behind a dialog that is still covering it does nothing a
+        // person can see - they would tap it, watch nothing happen, and stop
+        // trusting the list.
+        toggleKeys(false);
+        s.run();
+      };
+      list.appendChild(b);
+    });
+  }
+  m.hidden = !show;
+  if (show) $('keysClose').focus();
+  else if ($('keysOpen')) $('keysOpen').focus();
+}
+if ($('keysClose')) $('keysClose').onclick = () => toggleKeys(false);
+
+document.addEventListener('keydown', e => {
+  // NEVER STEAL A KEY FROM SOMEONE TYPING. `/` and `?` are ordinary characters
+  // in a module name, a WiFi password or a search box, and a shortcut that
+  // eats them turns every text field into a trap. Escape is the exception:
+  // leaving a field is exactly what it is for.
+  const el = e.target;
+  const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' ||
+                        el.tagName === 'SELECT' || el.isContentEditable);
+  if (typing && e.key !== 'Escape'){ return; }
+  if (e.ctrlKey || e.altKey || e.metaKey) return;   // leave browser keys alone
+  const hit = SHORTCUTS.filter(s => s.key === e.key)[0];
+  if (!hit) return;
+  // Escape inside a field means "leave the field", and the browser does not do
+  // that by itself. Blur first, then let the shortcut run.
+  if (typing && e.key === 'Escape'){ el.blur(); }
+  e.preventDefault();
+  hit.run();
+});
+
 // ---- handing the app to the PC reading this page ----------------------
 // Only offered when this hub HAS one: a hub run from source has no exe, and a
 // download link that 404s is worse than no link.
@@ -2565,57 +2618,6 @@ async function copyDiag(){
     say.textContent = 'Ready to copy by hand:';
   }
 }
-
-// Show or hide the list, drawing it FROM THE SAME ARRAY the handler uses.
-// Built each time it opens rather than once at load: it costs nothing for
-// three rows, and it means a shortcut added to SHORTCUTS can never be missing
-// from the list because the list was rendered before it existed.
-function toggleKeys(show){
-  const m = $('keysModal');
-  if (!m) return;
-  if (show){
-    const list = $('keysList');
-    list.innerHTML = '';
-    SHORTCUTS.forEach(s => {
-      const b = document.createElement('button');
-      b.className = 'row keyrow';
-      b.innerHTML = '<span class="badge"><b>' + esc(s.show) + '</b></span>' +
-                    '<span>' + esc(s.what) + '</span>';
-      b.onclick = () => {
-        // CLOSE FIRST, then act. `/` focuses the search box, and focusing
-        // something behind a dialog that is still covering it does nothing a
-        // person can see - they would tap it, watch nothing happen, and stop
-        // trusting the list.
-        toggleKeys(false);
-        s.run();
-      };
-      list.appendChild(b);
-    });
-  }
-  m.hidden = !show;
-  if (show) $('keysClose').focus();
-  else if ($('keysOpen')) $('keysOpen').focus();
-}
-if ($('keysClose')) $('keysClose').onclick = () => toggleKeys(false);
-
-document.addEventListener('keydown', e => {
-  // NEVER STEAL A KEY FROM SOMEONE TYPING. `/` and `?` are ordinary characters
-  // in a module name, a WiFi password or a search box, and a shortcut that
-  // eats them turns every text field into a trap. Escape is the exception:
-  // leaving a field is exactly what it is for.
-  const el = e.target;
-  const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' ||
-                        el.tagName === 'SELECT' || el.isContentEditable);
-  if (typing && e.key !== 'Escape'){ return; }
-  if (e.ctrlKey || e.altKey || e.metaKey) return;   // leave browser keys alone
-  const hit = SHORTCUTS.filter(s => s.key === e.key)[0];
-  if (!hit) return;
-  // Escape inside a field means "leave the field", and the browser does not do
-  // that by itself. Blur first, then let the shortcut run.
-  if (typing && e.key === 'Escape'){ el.blur(); }
-  e.preventDefault();
-  hit.run();
-});
 
 // ---- Home, Firmware, Settings ---------------------------------------
 // Home does not fetch anything of its own. It reads what the scans already

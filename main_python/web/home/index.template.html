@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mice Control Hub</title>
+<link rel="stylesheet" href="/mice.css">
+<script src="/mice.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- part: top.html -->
+
+<!-- part: dialogs.html -->
+
+<!-- Seven destinations. Help LEAVES the page, so it is a link and looks like
+     one: a tab that navigates away is a tab that loses your place without
+     warning. Everything else shows and hides cards by data-tab, so no element
+     moves in the DOM and every id the rest of the page relies on stays put. -->
+<div class="tabs" id="tabs">
+  <!-- HOME FIRST, TOOLS SECOND. Tools was the fifth tab and hard to reach, so
+       it moved to the front on 2026-08-21 - and that put the tab the page
+       opens on in second place, which the user corrected the next morning:
+       *make home tab become first before tool*. The leftmost tab and the tab
+       you land on should be the same one. Tools keeps the place right beside
+       it, which is what "easy to go to the tool" needed. -->
+  <button class="tab on" data-go="home" onclick="showTab('home')">Home</button>
+  <button class="tab" data-go="tools" onclick="showTab('tools')">🧰 Tools</button>
+  <button class="tab" data-go="modules" onclick="showTab('modules')">Modules</button>
+  <button class="tab" data-go="firmware" onclick="showTab('firmware')">Firmware</button>
+  <button class="tab" data-go="network" onclick="showTab('network')">Network</button>
+  <button class="tab" data-go="settings" onclick="showTab('settings')">Settings</button>
+  <button class="tab" data-go="complaints" onclick="showTab('complaints')">📋 Complaints</button>
+  <!-- The way in for somebody who will never press "?" - which is everybody
+       who does not already know the shortcuts exist. A keyboard feature whose
+       only entry point is a keystroke is a feature for the person who wrote
+       it. Designed by Gemini Pro, 2026-08-20. -->
+  <button class="tab keys-tab" id="keysOpen" title="Keyboard shortcuts"
+          onclick="toggleKeys(true)" aria-haspopup="dialog">⌨ Shortcuts</button>
+  <a class="tab tab-link" href="/help">Help ↗</a>
+</div>
+
+<div class="grid">
+
+<!-- part: home.html -->
+
+<!-- part: firmware.html -->
+
+<!-- part: settings.html -->
+
+<!-- part: modules.html -->
+
+<!-- part: network.html -->
+
+<!-- part: tools.html -->
+
+<!-- part: complaints.html -->
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+  <!-- HOME: what someone walking up to the hub needs first — is anything
+       there, how is it reached, and is anything wrong. Built from the scans
+       the page already runs, so it costs no extra request and cannot
+       disagree with the Modules tab. -->
+  <!-- The tools, on the first screen. Asked for 2026-08-21 together with the
+       tab move: opening Studio took a tab, a scroll and a click, and Studio is
+       what most visits are for. The rows are drawn by the same function that
+       fills the Tools tab, from the same registry, so the two lists cannot
+       drift apart. No login: none of this reaches a robot. -->
+  <div class="card" data-tab="home" data-needs-login="control" style="grid-column:1/-1">
+    <h2>Make something move</h2>
+    <div class="mini">These work whether or not a robot is here — build a
+      sequence now, send it to a module later.</div>
+    <div class="js-tools" id="homeTools">loading…</div>
+  </div>
+
+  <div class="card" data-tab="home" style="grid-column:1/-1">
+    <h2>Your modules</h2>
+    <div id="homeSum" class="mini" aria-live="polite">counting what is connected…</div>
+    <!-- The last board opened, one click away. Coming back to the same robot is
+         the commonest thing anybody does here, and it took a tab, a scroll and
+         a click. Per browser, because it is a convenience for this person at
+         this machine, not a fact about the rig. -->
+    <!-- THE MODULES THEMSELVES, not a count of them. Asked for 2026-08-21:
+         *the home it look noting show ... show only connected each module and
+         connect from what it hard to use*. It was one sentence ("4 modules — 2
+         reachable on a cable") and a button, which is a summary of a screen
+         somebody then had to go and find. These are the same rows the Modules
+         tab draws, from the same list, so the two can never disagree. -->
+    <div id="homeMods" aria-live="polite"></div>
+    <div id="homeWrong"></div>
+    <div class="row" id="homeGo"></div>
+  </div>

@@ -1,0 +1,52 @@
+  <div class="card" data-tab="modules" style="grid-column:1/-1">
+    <!-- Called "Modules found over WiFi" until 2026-08-22, which stopped being
+         true when the list started carrying every way in: a board on a cable,
+         on the bus behind another board, or on the laptop next door is in here
+         too, once each. -->
+    <h2>📡 Every module — one row each
+      <button onclick="scan(true)" style="float:right">⟳ Rescan</button></h2>
+    <div class="mini">However it is reached: a USB cable, the RS485 bus, WiFi,
+      or another PC running this hub. Each line underneath a module says which.</div>
+    <div id="modsmeta" class="mini" aria-live="polite"></div>
+    <!-- FIND ONE BY TYPING. A bench with four boards fits on a screen; an
+         installation with twenty does not, and scrolling a list looking for a
+         name is how the wrong robot gets opened. It filters what is already
+         there - no request, no waiting - and says how many it hid, because a
+         list that silently shrank is worse than a long one. -->
+    <input id="modFind" type="search" placeholder="Find a module — name, id or type"
+           autocomplete="off" oninput="filterMods()" style="width:100%;margin:8px 0">
+    <div id="modFindNone" class="mini" hidden></div>
+    <div id="mods" class="spin" aria-live="polite">Looking for modules — on the
+      cables, over WiFi, and on any other PC running this hub…</div>
+  </div>
+
+  <!-- Modules held on ANOTHER PC's cable. At a venue this is the normal case:
+       one laptop by the arm, one at the desk, and the arm reachable only from
+       whichever machine holds the cable. -->
+  <div class="card" data-tab="modules" style="grid-column:1/-1">
+    <h2>💻 The other PCs sharing modules
+      <button onclick="loadShared(true)" style="float:right">⟳ Look again</button>
+    </h2>
+    <div class="mini">Their modules are already in the list above, once each,
+      with the PC that holds them named underneath — you use them from here
+      exactly like your own, and that PC passes the commands down its own
+      cable. This is just which machines are sharing.</div>
+    <div id="shared" class="mini" aria-live="polite">Looking for other PCs…</div>
+  </div>
+
+  <div class="card" data-tab="modules" style="grid-column:1/-1">
+    <h2>🔌 Modules plugged in by cable
+      <span style="float:right">
+        <label class="mini"><input type="checkbox" id="autoUsb" onchange="autoUsbChanged()"> auto-check</label>
+        <button onclick="scanUsb()">🔍 Probe now</button>
+      </span>
+    </h2>
+    <div id="usbmods" class="mini" aria-live="polite">…</div>
+    <div class="mini">each port shows its result the moment IT answers — real
+      USB-UART ports take ~2 s; Bluetooth phantom ports are recognized by their
+      device type and skipped without opening them. A probed module shows who it
+      is + every RS485 module behind it. “auto-check” re-probes every 12 s while
+      this page is visible — it costs almost nothing (the PC just waits on the
+      port), but the port is briefly busy, so turn it off while connecting
+      Nong Studio over USB.</div>
+  </div>

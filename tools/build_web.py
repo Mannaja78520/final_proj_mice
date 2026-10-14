@@ -1,6 +1,7 @@
 """Build web assets from checked, ordered sources without modifying templates."""
 import argparse
 import json
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -16,6 +17,35 @@ def _inside(root, name):
     if not path.is_relative_to(root.resolve()):
         raise ValueError('Build path leaves its tree: ' + name)
     return path
+
+
+def _page(tree, spec):
+    """A page cut into parts (Home, A41-3): the template places each
+    `<!-- part: x.html -->`, style.css is inlined, and the listed .js parts,
+    in order, become its one script. Every file in parts/ is used exactly once,
+    so a part nobody listed cannot silently fall out of the page."""
+    page = _inside(tree, spec['path'])
+    parts = page / 'parts'
+    html = _read(page / 'index.template.html')
+    have = {p.name for p in parts.iterdir() if p.suffix in ('.html', '.js')}
+    placed = re.findall(r'^<!-- part: ([\w.-]+\.html) -->$', html, re.M)
+    js = spec['js']
+    used = placed + js
+    if len(used) != len(set(used)) or set(used) != have:
+        raise ValueError(spec['path'] + ': part mismatch; missing=' + str(sorted(set(used) - have))
+                         + ', unused=' + str(sorted(have - set(used)))
+                         + ', twice=' + str(sorted(n for n in set(used) if used.count(n) > 1)))
+    for name in placed:
+        html = html.replace('<!-- part: %s -->\n' % name, _read(_inside(parts, name)))
+    source = '\n'.join(_read(_inside(parts, name)).rstrip('\n') + '\n' for name in js)
+    for tag, text, wrap in (
+            ('<link rel="stylesheet" href="style.css">', _read(page / 'style.css').strip(),
+             '<style>\n%s\n</style>'),
+            ('<script src="app.js"></script>', source.rstrip('\n'), '<script>\n%s\n</script>')):
+        if html.count(tag) != 1:
+            raise ValueError(spec['path'] + '/index.template.html: expected exactly one ' + tag)
+        html = html.replace(tag, wrap % text)
+    return _inside(tree, spec['out']), html, source
 
 
 def build(tree):
@@ -47,6 +77,10 @@ def build(tree):
     source = '\n'.join(_read(_inside(app / 'app_parts', name)).rstrip() for name in parts) + '\n'
     outputs[app / 'app.js'] = source
     scripts.append((str(app / 'app.js'), source))
+    for spec in manifest.get('pages', []):
+        out, html, js = _page(tree, spec)
+        outputs[out] = html
+        scripts.append((str(out), js))
     node = shutil.which('node')
     if node:
         for name, source in scripts:
