@@ -31,6 +31,10 @@ a bigger type than the rest. This also holds, in a real browser at 1280 and
 390 px: Home wears the same head (STOP in it, one technical switch, no way
 back because it IS the hub), and its tabs sit on one line with no sideways
 scroll of the page.
+
+Help joined in stage 5 (A41-6): its way back and its technical switch lived at
+the top of its sidebar, which on a phone is a list that scrolls away. It is
+now main_python/web/help/ built into help.html, on the same head.
 """
 import json
 import os
@@ -99,6 +103,17 @@ def run(t):
     t.ok("function setAdvanced" not in hub,
          "Home keeps no technical switch of its own (miceAdv is the one)")
 
+    # ---- Help: the same head, built from parts (A41-6) ------------------
+    hlp = (F.HUB / "web" / "help.html").read_text(encoding="utf-8", errors="replace")
+    t.ok('src="/mice-ui.js"' in hlp and '<header class="topbar">' in hlp,
+         "Help loads the shared page parts and wears the shared head")
+    t.ok('class="back"' not in hlp and 'id="advOn"' not in hlp,
+         "Help keeps no way back or technical switch of its own in its sidebar",
+         "a phone scrolled both away with the rest of the list")
+    t.ok("BUILT by tools/build_web.py" in hlp and "<!-- part:" not in hlp,
+         "help.html is built from main_python/web/help/, every part placed",
+         "edit the parts, then python tools/build_web.py")
+
     # ---- the hub answers whether it is up ------------------------------
     srv = ThreadingHTTPServer(("127.0.0.1", 0), _Health)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -151,6 +166,7 @@ window.addEventListener("load", async function(){
             t.ok(stat.startswith("STAT Photobooth is running"),
                  "and says it is running, because the hub found it", stat)
             _home(t, base)
+            _help(t, base)
         else:
             t.ok(True, "browser part skipped: no headless browser here")
 
@@ -203,3 +219,27 @@ window.addEventListener("load", async function(){
         t.ok("stop=head " in got, "STOP is in the page's head (%s px)" % width, got)
         t.ok("back=no " in got, "and there is no way 'back' from the hub itself", got)
         t.ok(got.endswith("wide=no"), "the page never scrolls sideways at %s px" % width, got)
+
+
+def _help(t, base):
+    """Help on a phone: the shared head is on screen, not lost in the sidebar."""
+    fake_serial.reset()
+    browser.raw_page("""
+<iframe id="f" src="/help" style="width:390px;height:800px;border:0"></iframe>
+<script>
+window.addEventListener("load", async function(){
+  var doc = function(){ return document.getElementById("f").contentDocument; };
+  await qcWaitFor(function(){
+    var d = doc(); return d && d.querySelector("header.topbar .topbar-adv"); }, 15000);
+  var d = doc(), head = d.querySelector("header.topbar"), home = head && head.querySelector(".topbar-home");
+  await qcMark("help back=" + (home ? home.getAttribute("href") : "none")
+    + " adv=" + d.querySelectorAll("#advOn").length
+    + " top=" + (home ? Math.round(home.getBoundingClientRect().top) : -1));
+  qcMark("done");
+});
+</script>""", base, seconds=25)
+    got = next((m for m in fake_serial.qc_marks if m.startswith("help ")), "")
+    t.ok("back=/ " in got, "Help's head starts with the way back to the hub", got or fake_serial.qc_marks)
+    t.ok(" adv=1 " in got, "with exactly one technical switch", got)
+    top = int(got.rsplit("top=", 1)[-1]) if "top=" in got else -1
+    t.ok(0 <= top < 100, "and the way back is at the top of a phone screen (%d px)" % top, got)

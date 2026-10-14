@@ -1,0 +1,166 @@
+<section id="voice">
+  <div class="shead">
+    <span class="where tech">code/apps/voice · served at /app/voice/</span>
+    <h2>🎤 Voice</h2>
+  </div>
+  <div class="f"><h3>Ask the rig a question</h3>
+    <p>The Voice app in the Tools list: type a question, the rig answers. The
+       answers come from a helper program that runs on this PC next to the
+       hub (the hub itself never carries an AI — it only passes the question
+       along and the answer back).</p></div>
+  <div class="f"><h3>Speak instead of typing<span class="tag t-new">new</span></h3>
+    <p>The Voice page has a <b>Press to talk</b> button: press it, speak, press
+       again to stop, and your words appear in the box ready to send. The
+       listening runs on this PC too. Which languages it hears — and the words
+       each language gets wrong often — live in <code>config/voice.json</code>;
+       adding a language is one entry there.</p></div>
+  <div class="f"><h3>The rig speaks one thing at a time<span class="tag t-new">new</span></h3>
+    <p>Everything the rig says goes through <b>one queue</b> on the hub: a
+       greeting, an answer from this page spoken through a robot, a message
+       from another program on this PC. So two of them never talk over each
+       other. Something that arrives while the rig is talking either
+       <b>waits its turn</b> or is <b>skipped</b> — whoever asked chooses — and
+       a greeting that waited too long is dropped, because the person has
+       walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p>
+    <p><b>Where it speaks.</b> Speakers are found by themselves: every robot
+       with a speaker that the hub reaches over WiFi, and this PC's own
+       speakers. A robot reached only by cable is listed with that reason, and
+       a robot whose board has no amplifier wired says so after its first try
+       — plug one in and it is asked again. Which one is the default, and
+       which voice each uses, is <code>config/speakers.json</code>; the hub
+       writes it when somebody picks on a screen.</p>
+    <p><b>Live sound wins.</b> Somebody sending sound to a robot (<i>Send
+       sound to the robot</i> on its page) takes the speaker; greetings wait
+       until it has been quiet for two seconds. If the rig's own speech takes a
+       speaker back, the sending page stops and says so instead of sending
+       into nothing.</p>
+    <p><b>Stop All silences it all</b> — what is being said, everything
+       waiting, and live sound — with no login, like every other stop.</p>
+    <p>In conversation mode this page waits for the robot to finish before it
+       listens again, and throws away anything it heard while the robot was
+       talking, so it never answers its own voice.</p>
+    <p class="tech">For a program on this PC: <code>POST /api/speak</code> with
+       JSON <code>{text, to, voice, lang, whenBusy: "queue"|"skip", take,
+       move, module, maxAgeSeconds}</code> needs no login when it comes from
+       this PC with <code>Content-Type: application/json</code> and no browser
+       headers; from the network, or from a web page, it needs one.
+       <code>GET /api/speak</code> shows what is said and what waits (login),
+       <code>GET /api/speakers</code> lists the speakers,
+       <code>POST /api/speak/stop</code> is quiet now. The voice helper itself
+       answers programs only: a web page, or any address that is not an IP or
+       <code>localhost</code>, is refused.</p></div>
+  <div class="f"><h3>It can greet you by name<span class="tag t-new">new</span></h3>
+    <p>Beside the answer box there is a face badge and two buttons.
+       <b>Check who I am</b> uses the camera of the device the page is open on:
+       it takes one picture, asks the face app who it is, and shows the name.
+       <b>The picture is not kept</b> — nothing is written to the face app's
+       history and no image lands on the disk. The name is remembered for two
+       minutes, so the next answers greet that person by name in Thai,
+       English, Japanese or Chinese.</p>
+    <p>That promise has to come from the face app itself. Before sending
+       anything the page asks the face app whether it can look without
+       keeping; a face app that cannot (the current Reconize cannot) is sent
+       <b>no picture at all</b>, and the line under the camera says so and
+       the looking stops. Recognition then still works through a camera the
+       face app watches, or through <b>Open Reconize</b>. When the face app
+       learns to look without keeping, this button works again by itself.</p>
+    <p>Next to it, <b>Check by itself</b> keeps looking every few seconds, so
+       nobody has to press anything — still keeping no pictures. It stops
+       while the tab is hidden, and it lets the camera go the moment it is
+       switched off. How often it looks is <code>face.autoSeconds</code> in
+       <code>config/voice.json</code>.</p>
+    <p>The list beside the switch holds two kinds of camera.
+       <b>Cameras the face app watches</b> are the stations it already runs —
+       its kiosk, a CCTV camera, a phone, or a PC watching several cameras at
+       once. Picking one of those opens <i>no</i> camera here: the face app is
+       already looking through that lens, and Voice simply reads what it sees.
+       That is how one camera serves both programs at the same time. Under
+       <b>This device</b> are the cameras of the machine the page is open on,
+       for when no station is running.</p>
+    <p>It starts on the camera the face app saved as its own default, so
+       choosing there chooses here too; picking another is remembered in this
+       browser only, the same way the face app's kiosk remembers its own.</p>
+    <p><b>Open Reconize</b> opens the face app's own camera page instead, in a
+       new tab, and starts the face app first if it is not running. That way
+       keeps a record of every sighting, which is what an event needs; the
+       button above is for a quick hello. Where the face app lives is one
+       entry in <code>config/partners.json</code> — a second face app is an
+       entry there, not new code.</p></div>
+  <div class="f"><h3>Saved answers first<span class="tag t-new">new</span></h3>
+    <p>A question close to a saved one is answered instantly from
+       <code>apps/voice/qa_data.json</code> — the same trick as the original
+       prototype, and the part that works with no AI at all. Add or change an
+       answer by editing that file; the helper reads it fresh every time, so
+       there is nothing to restart.</p>
+    <p>If a question is only <b>somewhat</b> close to a saved one, the rig does
+       not guess — it asks the visitor to say it again. A confident wrong
+       answer is worse than asking twice.</p>
+    <p>A saved answer can also carry a <b>move</b>: give the entry a
+       <code>move</code> (a saved sequence file) and a <code>module</code>
+       (which robot plays it — its <b>name</b> as the modules screen shows it),
+       and the robot performs that sequence when the answer is given. The name
+       is looked up at play time, so the robot can be plugged into any PC
+       without editing anything; if no robot of that name is connected, the
+       page says so plainly. While that robot is already moving, another ask is
+       answered in words — it never queues and never cuts the running move.
+       A <b>Stop the move</b> button stays beside it until the sequence
+       ends.</p></div>
+  <div class="f"><h3>One brain, many PCs<span class="tag t-new">new</span></h3>
+    <p>The answering helper normally listens to this PC only. To make one PC
+       the brain for every hub at the venue, write that PC's address in
+       <code>service</code> in <code>config/voice.json</code> there (instead of
+       127.0.0.1) and point every other hub's own <code>config/voice.json</code>
+       at it. Sharing is opt-in by editing, never automatic — and the tradeoff
+       is written next to the setting: the helper itself has no password, so
+       anything on the venue WiFi could then ask it or make it speak. Moving a
+       robot stays safe: that still needs a login at whichever hub you use.</p></div>
+  <div class="f"><h3>Out loud<span class="tag t-new">new</span></h3>
+    <p>The rig can also <b>speak</b> its answer, using this PC's own voice —
+       no internet needed. Turn it on with the <b>Sound</b> switch on the
+       Voice page; the choice is remembered. Which language uses which voice
+       is one line each under <code>tts</code> in
+       <code>config/voice.json</code>, and answers are prepared ahead of time
+       so a saved answer sounds instantly.</p></div>
+  <div class="f"><h3>Teach it new answers<span class="tag t-new">new</span></h3>
+    <p>The <b>⚙ Settings</b> button on the Voice page opens everything a
+       designer changes, in plain words:</p>
+    <p><b>Answers</b> — add what people ask (one way of asking per line) and
+       what the rig replies, then press it aloud with <b>▶</b> to hear it
+       before a visitor does. Picking a saved sequence and a robot by name
+       turns the answer into a move; both are dropdowns, nothing typed.
+       <b>Voice and language</b> switches speaking and listening on and off,
+       tries the voice out loud, and shows the listening model as
+       fast / balanced / most accurate instead of its id. <b>Words it gets
+       wrong</b> adds words the listening mishears — one box, one Add, no
+       training. Ids and thresholds sit last behind the
+       <b>Show technical details</b> switch.</p>
+    <p><b>How it speaks Thai</b><span class="tag t-new">new</span> — the small
+       model that answers when nothing is saved used to write uneven Thai: it
+       ended one sentence <b>ครับ</b> and the next <b>ค่ะ</b>, called itself
+       <b>ผม</b> then <b>ฉัน</b>, stopped in the middle of a word, and now and
+       then answered a Thai question in English. This card fixes the first two
+       by choosing one of each and changing anything else it writes, gives Thai
+       more room to finish a sentence (Thai costs two to four times more room
+       than English, which is why the setting that suited English cut Thai
+       short), and sets what the rig says when it has nothing to say.</p>
+    <p>Three things happen to every answer before it is spoken: an answer that
+       is still unfinished is cut back to its last whole sentence, an answer in
+       the wrong language is asked for again and then given up on, and an answer
+       whose only Thai is the polite ending is treated as no answer at all. In
+       every one of those cases the rig says it does not know and points at a
+       member of staff. That is on purpose: <b>it never invents a password, a
+       price, a time, a floor, a place or an event.</b> The most reliable way to
+       improve what it says is not this card — it is adding the answer under
+       <b>Answers</b>, because a saved answer always wins.</p>
+    <p>Saving needs the same login as everything that can change the rig.
+       A change reaches the running helper at once — nothing to restart,
+       no file to edit by hand.</p></div>
+  <div class="f"><h3>Starting the helper</h3>
+    <p>If the page says the voice helper is not running, start it from the
+       <b>code</b> folder:</p>
+    <p><code>python apps\voice\service.py</code></p>
+    <p>Everything about it lives in <code>config/voice.json</code>: where it
+       answers, how close a question must be to count as saved, and which
+       model and voice to use. Asking is behind the same login gate as every
+       other command that can move the rig.</p></div>
+</section>

@@ -319,6 +319,21 @@ def _measure(t, base):
                  "if the narrow width is deliberate, the container it sits in "
                  "should still fill the screen" % (used, w))
 
+    # ---- the plan, on a phone only ----------------------------------
+    # PLAN.html scrolled 27 px sideways at 390 px (web audit 2026-10-14, bug 8):
+    # its two hardware tables sat outside a .wrap scroll box. It is a document
+    # read on a phone, not a venue screen, so only the sideways scroll is held.
+    # -2 is the driver's "could not measure"; a scrollbar makes it about -15.
+    fake_serial.reset()
+    plan = [[360, 780], [390, 844]]
+    browser.raw_page(DRIVER % (json.dumps(["/docs/PLAN.html"]), json.dumps(plan), 2),
+                     base, seconds=40)
+    rows = [m[2:].split("|") for m in fake_serial.qc_marks if m.startswith("R|")]
+    t.eq(len(rows), len(plan), "the plan was measured at both phone widths")
+    for row in rows:
+        t.ok(int(row[2]) != -2 and int(row[2]) <= 2, "no sideways scrolling — the plan at %spx" % row[1],
+             "%spx wider than the screen; widest element: %s" % (row[2], row[3] or "?"))
+
     # ---- what a desktop browser cannot answer -----------------------
     # Touch targets are a media query away, and this browser never matches it.
     # So the rules are held to the stylesheet: every control kind a finger has

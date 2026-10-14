@@ -1,0 +1,150 @@
+<!-- ===================== NONG ===================== -->
+<section id="nong">
+  <div class="shead">
+    <span class="where tech">SET TYPE nong</span>
+    <h2>Nong module — humanoid upper body</h2>
+    <p>Two arms and a body: 10 logical joints driven by 10 servos, from one ESP32.
+       Every angle is a <b>joint degree</b> — the physical joint — so poses stay valid
+       no matter what servo or gear is fitted.</p>
+  </div>
+
+  <div class="grp2">Joints</div>
+  <div class="scroll"><table><thead><tr><th>#</th><th>Name</th><th class="wrap2">What it moves</th></tr></thead><tbody>
+    <tr><td>1&nbsp;/&nbsp;2</td><td>L_SH_P / L_SH_R</td><td class="wrap2">Left shoulder — pitch and roll (a universal joint, 2 servos)</td></tr>
+    <tr><td>3&nbsp;/&nbsp;4</td><td>L_EL_P / L_EL_R</td><td class="wrap2">Left elbow — pitch and roll</td></tr>
+    <tr><td>5&nbsp;/&nbsp;6</td><td>R_SH_P / R_SH_R</td><td class="wrap2">Right shoulder — pitch and roll</td></tr>
+    <tr><td>7&nbsp;/&nbsp;8</td><td>R_EL_P / R_EL_R</td><td class="wrap2">Right elbow — pitch and roll</td></tr>
+    <tr><td>9</td><td>WAIST</td><td class="wrap2">Yaws the whole upper body so nong can look to the side</td></tr>
+    <tr><td>10</td><td>SHRUG</td><td class="wrap2">Rocks the shoulder bar — one shoulder up, the other down. 26° total (90 ±13°), through the 4-bar linkage</td></tr>
+  </tbody></table></div>
+
+  <div class="grp2">Motion</div>
+  <div class="f"><h3>Whole-body and single-joint moves</h3>
+    <p><code>POSE</code> takes all 10 angles, <code>-</code> keeps a joint where it is, and an
+       old 8-value pose still loads. <code>JOINT WAIST 60</code> moves one joint by name.</p></div>
+  <div class="f"><h3>Smooth interpolation with an honest time floor</h3>
+    <p>Every move eases in and out over a duration <code>T</code>. A <code>T</code> shorter
+       than the servos can physically achieve is <b>raised</b>, per joint, so the
+       interpolation never "finishes" before the real arm arrives. The editor enforces the
+       identical formula while authoring.</p></div>
+  <div class="f"><h3>Hold, freeze and go limp</h3>
+    <p><code>STOP</code> freezes mid-move at the pose reached, and silences the speaker — stopping a show means quiet as well as still. <code>RELAX</code> unpowers
+       the servos so you can pose the arms by hand; <code>ATTACH</code> powers them again
+       holding the current pose. <code>HOME</code> returns to the neutral pose.</p></div>
+
+  <div class="grp2">Calibration — all per joint, all live, all persistent</div>
+  <div class="f"><h3>Set zero by hand</h3>
+    <p><code>SETZERO</code> declares wherever the arms are now to be home. Trim absorbs the
+       offset, so the arm does <em>not</em> move when you run it. It leaves your chosen
+       start angles alone.</p></div>
+  <div class="f"><h3>Servo offset — nudge one joint that sits a few degrees out</h3>
+    <p>A servo horn only fits back on in whole teeth &mdash; about 14&deg; of shaft &mdash; so a
+       joint often lands a few degrees off even when everything else is right. In Nong
+       Studio's <b>Setup</b> tab, the <b>Servo offset</b> card gives every joint a
+       <b>&minus;</b>, a number and a <b>+</b>. Press until the arm looks straight; each
+       press is half a degree, and the arm moves as you press. <b>0</b> clears one joint,
+       <b>Clear all</b> clears the lot.</p>
+    <p>The number is degrees <b>on the arm</b>, so the same value shifts every joint by the
+       same visible amount whatever its gearing. The robot keeps it in its own memory, and
+       your saved poses and sequences all keep working &mdash; an offset only changes where
+       that one joint sits, not what any pose means. Range is &minus;30 to 30: past that a
+       joint is assembled wrong, and a bigger offset would only drive the servo into its
+       own end stop.</p>
+    <p>The command is <code>OFFSET</code> &mdash; <code>OFFSET L_EL_P 3</code> for one joint,
+       <code>OFFSET ALL 0</code> to clear every one. <code>OFFSET?</code> reports them.
+       <b>Set zero</b> on the Robot tab is the all-at-once version: it takes the pose the
+       robot is standing in and calls that home.</p></div>
+  <div class="f"><h3>Where each joint starts — your own angle, not always 90°</h3>
+    <p>Every joint has its own <b>start angle</b>: where it goes when the robot is
+       switched on, and where <code>HOME</code> and the <b>Neutral pose</b> button send it.
+       Set it in Nong Studio's <b>Setup</b> tab, in the <b>start°</b> box beside each joint,
+       then press <b>Send rig to robot</b>. Or shape the robot by hand and press
+       <b>Keep this as neutral</b>, which sends all ten at once.</p>
+    <p>The command is <code>NEUTRAL</code> — one joint
+       (<code>NEUTRAL WAIST 60</code>), all of them (<code>NEUTRAL ALL 90</code>), or the
+       whole pose in one line. <code>NEUTRAL?</code> reads back what the robot is set to.
+       Setting it does not move the arm; press <b>Home</b> when you want it to go there.
+       The robot keeps these in its own memory, so they survive being unplugged.</p></div>
+  <div class="f"><h3>Per-joint servo, gear, pulse, travel and frame rate</h3>
+    <p><code>GEAR</code> (pinion:gear), <code>PULSE</code> (µs range + max °/s),
+       <code>RANGE</code> (servo travel 180/270°), <code>RATE</code> (frame rate Hz),
+       <code>LIMIT</code> (joint travel). Nothing is hard-coded for the whole arm — a 270°
+       shoulder next to a 180° elbow is fine.</p>
+    <p>Presets via <code>SERVO &lt;joint|ALL&gt; &lt;type&gt;</code>:
+       <code>mg90s</code>, <code>pdi1181mg</code>, <code>tiankong35</code>,
+       <code>generic180</code>, <code>generic270</code>.</p></div>
+  <div class="note"><b>servo travel ≠ joint limits.</b>
+    <code>servo_range</code> is how far the <em>servo</em> turns — a property of the part you
+    bought. <code>joint_min</code>/<code>joint_max</code> is how far the <em>joint</em> may
+    turn — a property of your mechanism. Poses are always joint degrees, so fitting a 270°
+    servo is a one-number change and every saved sequence keeps working.</div>
+  <div class="f"><h3>Calibration survives a power cycle — with or without an SD card<span class="tag t-new">fixed</span></h3>
+    <p>Every change is saved <b>twice</b>: to the chip's own memory <b>always</b>, and to
+       <code>/data/nong_cal.yaml</code> as a readable copy when a card is fitted. So a board
+       with no card keeps its gear, limits, pulses, travel, rate and zero instead of coming
+       back on the factory defaults every time you unplug it.</p>
+    <p>At boot the card file is applied first and the chip copy second, so the chip copy
+       wins — it is written by every calibration command whether or not a card is present.
+       <code>CAL</code> reports which copies exist; <code>CAL CLEAR</code> forgets both and a
+       reboot returns to the defaults.</p></div>
+
+  <div class="grp2">Scaling out</div>
+  <div class="f"><h3>Speaker<span class="tag t-new">new</span></h3>
+    <p>The nong gets a speaker the same way the lift does: <code>PLAY &lt;file&gt;</code>
+       plays mp3/wav from <code>/music</code>, <code>PLAY STOP</code> ends it,
+       <code>VOL 0–100</code> sets level. Choose the amplifier and set its pins
+       under <b>Setup → Hardware pins</b>. A nong ships set to a MAX98357A,
+       which uses the only three pins a ten-servo nong has left: 12, 0 and 2.
+       If the board will not start with the speaker plugged in, add a 10k
+       resistor from pin 0 to 3V3, or choose an amplifier that needs one wire.</p>
+    <p><b>Music in a show.</b> Put the track on the robot's card first: open the
+       module, go to <b>Files</b>, choose the <code>/music</code> folder and
+       upload the mp3 or wav. Then a saved show can name it — a
+       <code>play:</code> step in the file starts it, <code>vol:</code> sets the
+       level — and the music plays whether the show is run by the robot itself
+       or <b>from this PC</b>, in Nong Studio or from the hub. Editing a show
+       here keeps its music, stopping the show stops the music, and a track
+       that started before the point you resumed from is not restarted.</p>
+    <p><b>The light strip's pin.</b> It used to be fixed when the firmware
+       was built — the one pin on the board you could not choose. Now the
+       Hardware-pins page offers it under <b>Light strip</b>, like every other
+       pin, from a short list the firmware was built to drive. If the pin you
+       want is not offered, it can be added to
+       <code>firmware/config/rgb_pins.json</code> and the board reflashed.</p>
+    <p><b>Playing this PC's sound on the robot.</b> Open the module from the
+       hub, find the <b>Speaker</b> card and press <b>Play this PC's sound</b>.
+       The browser asks which screen or tab to share — tick <b>share audio</b>
+       in that window — and from then on whatever this PC plays comes out of
+       the robot, live, until you press <b>Stop</b>. It needs no SD card: the
+       sound is sent as it plays (<code>STREAM ON</code>, <code>STREAM OFF</code>
+       and <code>STREAM?</code> underneath), so a robot with its card out can
+       still talk. If the sound starts breaking up the card says so — that is
+       the WiFi struggling, not the robot.</p>
+    <p><b>Why it asks to share a screen.</b> Windows only lets a browser take
+       the PC's sound together with a screen or a tab — there is no sound-only
+       choice, in any browser. Nothing but the sound is sent: the picture is
+       dropped the moment the sharing starts. If you only want to <b>talk</b>
+       through the robot, press <b>🎤 Talk through the robot</b> instead — that
+       uses the microphone and asks for no screen at all.</p>
+    <p><b>Does sharing a screen make it slower?</b> No. The picture is never
+       sent and never encoded — the video is stopped before the sound is wired
+       up at all, so the robot hears exactly what it would hear from a
+       sound-only share. What crosses the network is one small block of sound
+       about every 93 ms, nothing else.</p>
+    <p><b>Giving a move a track.</b> In Nong Studio every keyframe carries a
+       <b>♪</b> button beside its speed. Press it and choose a track — the list
+       is read from the robot's own <code>/music</code> folder, so it only ever
+       offers files that are really on the card — then set the volume beside
+       it. <b>No music</b> takes the track off again, volume and all. With no
+       robot connected the list cannot be read, so the picker keeps and shows
+       what the file already says instead of emptying it.</p>
+    <p>The same picker carries <b>▶</b> to hear the track on the robot right
+       away, <b>■</b> to stop it, and <b>＋</b> to send a track from this PC
+       onto the robot's card without leaving the editor.</p></div>
+  <div class="f"><h3>Split the humanoid across two boards</h3>
+    <p>Set <code>servo_pins</code> so each board drives only its own joints
+       (<code>-1</code> for the rest). The leader gets <code>link 1</code> +
+       <code>peer &lt;id&gt;</code> and repeats every move to its partner over RS485
+       <b>with the resolved duration</b>, so both move as one robot. Every board tracks all
+       10 angles, so status on the leader always shows the whole humanoid.</p></div>
+</section>

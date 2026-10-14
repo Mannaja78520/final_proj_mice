@@ -1,0 +1,74 @@
+<!-- ===================== HUB ===================== -->
+<section id="hub">
+  <div class="shead">
+    <span class="where tech">code/main_python · MiceHub.exe · port 8642</span>
+    <h2>Mice Hub — the PC app</h2>
+    <p>The first page you open. Finds every module by itself and links to each one's
+       website and to Nong Studio. Stdlib Python only; ships as a single exe.</p>
+  </div>
+  <div class="f"><h3>Finds modules on its own</h3>
+    <p>Parallel scan of the whole local subnet, plus every COM port on the PC. Bluetooth
+       phantom ports are recognised from the device type and skipped instead of being
+       probed — they hang for ~40 s if opened.</p></div>
+  <div class="f"><h3>Streaming USB probe</h3>
+    <p>One request per port, so each slot fills the moment that port answers and fast ports
+       never wait for slow ones. Identifies the module plugged in directly <em>and</em>
+       every module on the RS485 bus behind it.</p></div>
+  <div class="f"><h3>One cable, many pages<span class="tag t-new">fixed</span></h3>
+    <p>The hub owns each COM port and shares it, so the module website and Nong Studio can
+       drive one cable at the same time instead of colliding with "serial already in use".
+       Commands are atomic on the wire, so replies never interleave.</p></div>
+  <div class="f"><h3>Recovers from a replugged board<span class="tag t-new">fixed</span></h3>
+    <p>After a board is unplugged or reset, Windows leaves the handle looking open and every
+       write fails. The hub detects the stale handle, drops it and reopens — no restart.</p></div>
+  <div class="f"><h3>Serves the module site over any transport</h3>
+    <p><code>/mod?dev=wifi:&lt;ip&gt;</code> or <code>usb:&lt;port&gt;[:&lt;id&gt;]</code>.
+       A unified device API routes commands, status, file listing, upload, download and
+       delete to HTTP or serial as needed.</p></div>
+  <div class="f"><h3>Hosts Nong Studio</h3>
+    <p>Studio lives at <code>/studio/</code>, with "Studio + monitor" opening it already
+       connected to a discovered nong. Also serves the RGB page and the pinout reference.</p></div>
+  <div class="f"><h3>Adding a tool costs one folder<span class="tag t-new">new</span></h3>
+    <p>Every web app is a folder in <code>code/apps/</code> with an <code>app.json</code>
+       naming it. The hub lists it on the main page and serves it at
+       <code>/app/&lt;name&gt;/</code> — no route to add, no button to hand-write. Nong Studio
+       and this help page are registry entries pointing at where they already live, so no
+       link changed.</p>
+    <p>The manifests are JSON that allows <code>//</code> comments and trailing commas, so
+       they are comfortable to edit by hand.</p></div>
+  <div class="f"><h3>Sending the rig is 5x fewer commands<span class="tag t-new">new</span></h3>
+    <p><b>Send rig to robot</b> used to push five commands per joint — fifty round trips, about
+       1.6 s. The new <code>JCFG</code> command carries a joint's whole setup in one line, so it
+       is ten. Only joints that actually differ are sent at all, and a board older than
+       <code>JCFG</code> automatically gets the individual commands instead.</p></div>
+  <div class="f"><h3>The board says what it can do<span class="tag t-new">new</span></h3>
+    <p>Each module reports its <b>capabilities</b> in its status — <code>motion</code>,
+       <code>rgb</code>, <code>audio</code>, <code>joints</code>, <code>servos</code>,
+       <code>sd</code>, <code>rs485</code> and so on — and the module website shows each card
+       by capability rather than by module type. A new module type therefore shows the right
+       controls without the site being taught about it. A board running older firmware sends
+       no capabilities and still renders correctly.</p></div>
+  <div class="f"><h3>Commands declared once<span class="tag t-new">new</span></h3>
+    <p><code>firmware/config/commands.json</code> declares every command — which module type
+       it belongs to, its arguments and a one-line explanation. The board compiles it into a
+       table for its own <code>HELP</code>, and QC checks it <b>both ways</b>: a declared
+       command must have a handler, and a handler must be declared. It found two commands
+       (<code>PINS</code>, <code>PINS?</code>) that had existed undocumented.</p></div>
+  <div class="f"><h3>One servo table, shared by everything<span class="tag t-new">new</span></h3>
+    <p><code>firmware/config/servos.json</code> describes every servo preset once. The
+       firmware compiles it into a header at <b>build</b> time — the chip parses nothing and
+       pays nothing — and Nong Studio fetches the same file for its dropdown. They used to be
+       two hand-kept copies that could drift apart with nothing to notice; QC now fails if
+       they ever disagree.</p></div>
+  <div class="f"><h3>Reachable from other devices</h3>
+    <p>Binds all interfaces, so phones and laptops on the same WiFi can open the hub and
+       every module page through it.</p></div>
+  <div class="f"><h3>This help page, offline<span class="tag t-new">new</span></h3>
+    <p>Served from the PC at <code>/help</code> — no internet, no account. Linked from
+       Tools on the hub's main page, and searchable with the filter at the top.</p></div>
+  <div class="f"><h3>Works on any screen<span class="tag t-new">new</span></h3>
+    <p>The hub, the module website, Nong Studio and this page all lay out for phones,
+       tablets and large monitors, with bigger touch targets on a touchscreen. Studio
+       stacks the 3D view above its panel below 860px instead of squeezing both, and on a
+       phone its view buttons (Top, Front, 3D…) fold behind one <b>Views ▾</b> button.</p></div>
+</section>

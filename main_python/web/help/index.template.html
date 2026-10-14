@@ -1,0 +1,108 @@
+<!doctype html>
+<!-- BUILT by tools/build_web.py from main_python/web/help/ - edit the parts
+     there, never help.html. How: docs/web_style.md -->
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Help — Mice</title>
+<link rel="stylesheet" href="/mice.css">
+<script src="/mice.js"></script>
+<script src="/mice-ui.js"></script>
+<link rel="stylesheet" href="style.css">
+</head><body>
+
+<!-- The head every page has (A41-6): Mice.TopBar puts "← Hub" first and the
+     technical switch last. Help used to keep both inside its sidebar, where a
+     phone scrolled them away with the rest of the list. -->
+<header class="topbar">
+  <h1>📖 Help</h1>
+  <span class="sub">A friendly guide to your robot rig</span>
+</header>
+
+<div class="wrap">
+<!-- GROUPED BY WHAT YOU ARE DOING (A41-6), not by where the code runs: the
+     day-to-day screens first, building a board second, reference last.
+     A new section is a part file, one line below and one link here. -->
+<nav>
+  <a href="#bytask">Start with a task</a>
+  <div class="grp">Use it</div>
+  <a href="#hub">Mice Hub</a>
+  <a href="#modsite">A module's own page</a>
+  <a href="#studio">Nong Studio</a>
+  <a href="#camera">Cameras</a>
+  <a href="#voice">Voice</a>
+  <a href="#faces">Reconize</a>
+  <a href="#all-jao">All-Jao Games</a>
+  <a href="#accounts">Accounts</a>
+  <div class="grp">Build and set up</div>
+  <a href="#firmware">Board setup</a>
+  <a href="#lift">Lift module</a>
+  <a href="#nong">Nong module</a>
+  <div class="grp">When something is wrong</div>
+  <a href="#qc">QC suite</a>
+  <a href="#transports">Transports</a>
+  <a href="#commands">Command language</a>
+  <a href="#files">Files &amp; formats</a>
+</nav>
+
+<main>
+<header class="top">
+  <h2>A little help with your rig</h2>
+  <p>Start with what you want to do. Find your modules, shape a movement,
+     or bring a show to life. The complete reference is here when you need it.</p>
+  <div class="stats tech">
+    <div class="stat"><b>3</b><span>module types</span></div>
+    <div class="stat"><b>10</b><span>nong joints</span></div>
+    <div class="stat"><b>3</b><span>transports</span></div>
+    <div class="stat"><b>2</b><span>web apps + editor</span></div>
+    <div class="stat"><b>every</b><span>change is QC-checked</span></div>
+  </div>
+  <input id="q" type="search" aria-label="Search this guide" placeholder="Find help — try &quot;pose&quot;, &quot;music&quot; or &quot;connect&quot;" autocomplete="off">
+  <!-- The empty state names the one action that fixes it, and gives real
+       examples from this page rather than only telling the reader to retry. -->
+  <div id="none">Nothing on this page matches that word. Try a shorter one, or
+    a word the robot itself uses — for example <b>servo</b>, <b>pose</b>,
+    <b>WiFi</b>, <b>SD</b> or <b>flash</b>.</div>
+</header>
+
+<!-- part: bytask.html -->
+
+<!-- part: hub.html -->
+
+<!-- part: modsite.html -->
+
+<!-- part: studio.html -->
+
+<!-- part: camera.html -->
+
+<!-- part: voice.html -->
+
+<!-- part: faces.html -->
+
+<!-- part: all-jao.html -->
+
+<!-- part: accounts.html -->
+
+<!-- part: firmware.html -->
+
+<!-- part: lift.html -->
+
+<!-- part: nong.html -->
+
+<!-- part: qc.html -->
+
+<!-- part: transports.html -->
+
+<!-- part: commands.html -->
+
+<!-- part: files.html -->
+
+<footer>
+  Sources: <code>firmware/COMMANDS.md</code>, <code>firmware/src/web/WebUI.h</code>,
+  <code>main_python/main.py</code>, <code>nong/main_python_set_nong/</code>,
+  <code>qc/</code>. COMMANDS.md is authoritative for the command language.
+</footer>
+</main>
+</div>
+
+<script src="app.js"></script>
+</body></html>

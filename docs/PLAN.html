@@ -382,7 +382,7 @@ exist.</p>
    in. Nothing here is a guess about what exists — every row names the task that
    cannot be finished without it.</p>
 
-<table class="hw">
+<div class="wrap"><table class="hw">
 <tr><th>Part</th><th>How many</th><th>Without it, these cannot be done</th></tr>
 
 <tr class="need2"><td><b>ESP32 boards</b></td>
@@ -497,13 +497,13 @@ exist.</p>
     <td>one per board</td>
     <td>Everything. A charge-only cable is the most common cause of <i>the board
         did not answer</i>, and it looks identical.</td></tr>
-</table>
+</table></div>
 
 <p class="mini"><b>If you bring only one thing:</b> a second board. It unlocks the
    half of A3-5 that needs no wiring, and it gives A3-8 a real client. <b>If you
    bring two:</b> add the SD card — three separate tasks stop at it.</p>
 
-<table class="hw">
+<div class="wrap"><table class="hw">
 <tr><th>Task</th><th>Boards</th><th>Also needed</th><th>What it would prove</th></tr>
 
 <tr class="need2"><td><b>A3-5</b> group over RS485 and hotspot peers</td>
@@ -548,7 +548,7 @@ exist.</p>
     <td>The half that runs on the chip: that the board remembers the hub which
         spoke to it and forgets it after five minutes. The page behaviour is
         already driven on a PC; this is the part a PC cannot execute.</td></tr>
-</table>
+</table></div>
 
 <p class="mini"><b>Short answer:</b> bring <b>two boards</b> and, if you can, a pair
    of RS485 transceivers with two wires between them. Two boards alone already
@@ -597,7 +597,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: nothing right now
+# RUNNING: QC finished: 6783 passed, 0 failed, started 2026-10-14 22:39
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1544,7 +1544,7 @@ A41-2: done   2026-10-14 18:12  agent=claude:u36i  — web stage 1: shared page 
 A41-3: done   2026-10-14 18:45  agent=claude:peg8  — web stage 2: Home (hub.html) - split its inline JS into parts, shared head, one login card not two, tabs that do not wrap PR #13: Home cut into parts (main_python/web/home/ built into hub.html), shared head, one login place, tabs on one line; full QC 6730 pass in cloud; tested against fakes only
 A41-4: done   2026-10-14 21:42  agent=claude:10141851-cbf1  — web stage 3: Studio - 3D view big enough at 1280x800, side tabs not cut, view buttons not over the 3D view on a phone, one name/Save PR #14: Studio on the shared head (TopBar, Status, Api), page cut into html_parts/, one name and Save, 3D view 417px at 1280x800 (was ~200), side tabs not cut, phone view buttons fold behind Views; full QC 6747 pass in cloud (2 load races on a rerun, green alone); tested against fakes only
 A41-5: done   2026-10-14 22:09  agent=claude:10142144-3ce4  — web stage 4: board site (WebUI.h) and RGB - shared head, one ?dev= address, no 401 reads when logged out; watch mice_nong flash size PR #15: board site + light strip on the shared head, rgb.html on ?dev=, logged-out LIMIT? free through the hub (query in commands.json), camera settings say who to log in to; nong page 185 B smaller; check_board_frame; full QC 6767 pass, 1 load race green alone; tested against fakes only
-A41-6: todo  2026-10-14 18:04  agent=claude:u36i  — web stage 5: Help - shared head, grouped by task, PLAN.html no sideways scroll on a phone
+A41-6: doing  2026-10-14 22:14  agent=claude:10142212-6db1  — web stage 5: Help - shared head, grouped by task, PLAN.html no sideways scroll on a phone
 
 END</code></pre>
 </details>
