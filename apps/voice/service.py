@@ -2139,7 +2139,10 @@ class Brain:
         if hasattr(self, "_cached_person_at") and (now - self._cached_person_at < 2.0):
             return getattr(self, "_cached_person", "")
         person = self._query_faces_service()
-        if not person:
+        # Their history only when the watcher did NOT answer: its "nobody
+        # known" is the answer. Asking anyway cost 2.47 s per look at an
+        # unknown face on the PC (2026-10-15, real camera).
+        if not person and not getattr(self, "_watcher_ok", False):
             person = self._query_reconize_direct()
         self._cached_person = person or ""
         self._cached_person_at = now
