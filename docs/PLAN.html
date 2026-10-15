@@ -597,7 +597,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: QC finished: 4993 passed, 0 failed, started 2026-10-15 08:34
+# RUNNING: QC finished: 417 passed, 0 failed, started 2026-10-15 08:48
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1549,7 +1549,9 @@ A41-6: done   2026-10-14 22:40  agent=claude:10142212-6db1  — web stage 5: Hel
 A42-1: done   2026-10-15 07:39  agent=claude:10150701-6bf9  — Voice page (user 2026-10-15): check voice, many bugs; make every setting simpler; answers like Excel; Edit should edit in place, not scroll to a form at the bottom; voice settings and the spoken sound are not good PR #17: answers as an editable sheet, settings as tabs, helper picks the voice, edge-tts --rate=-10% fix, stand-in voice never cached, camera picker always shown; full QC 6794 pass in cloud (3 load flakes green alone); tested against fakes only
 A42-2: done   2026-10-15 08:17  agent=claude:10150701-6bf9  — Voice page (user 2026-10-15): voice ไม่โชว์กล้องให้ดูด้วยหรอ - show the chosen camera live on the voice page PR #18: Show the camera (this device; rig board via hub stream; face-app camera points to Open Reconize); check_voice_view; tested against fakes only
 A42-3: done   2026-10-15 08:17  agent=claude:10150701-6bf9  — Voice page (user 2026-10-15): ทำถามแบบแยกภาษาด้วย; เสียงไม่ธรรมชาติ; แต่ละเสียงก็อาจจะไม่ใช่เสียงของภาษานั้นๆ - questions per language column, find why the voice is flat (PC: edge-tts 7.2.8 refused 403, every line fell back to Windows), native voice per language PR #18: questions per language column; native voice per language (mixed lines no longer borrow German Seraphina; Windows backup only a voice of that language); page names the backup voice; PC edge-tts 7.2.8 gets 403, needs pip install -U edge-tts>=7.3.1 on the PC; full QC 6814 pass + 1 login flake green alone; fakes only
-A42-4: doing  2026-10-15 08:27  agent=claude:10150701-6bf9  — Voice page (user 2026-10-15): ทำไมใน voice เช็คช้ามากว่าเป็นใครแต่ใน app มันเช็คไวมากเลยนะ - make who-is-there on Voice as fast as the face app
+A42-4: qc     2026-10-15 08:49  agent=claude:10150701-6bf9  — Voice page (user 2026-10-15): ทำไมใน voice เช็คช้ามากว่าเป็นใครแต่ใน app มันเช็คไวมากเลยนะ - make who-is-there on Voice as fast as the face app
+A42-5: qc     2026-10-15 08:49  agent=claude:10150701-6bf9  — ทำให้เลือกได้ว่าจะใช้หน้าหรือไม่ใช้ได้ (Voice: Use faces switch)
+A42-6: qc     2026-10-15 08:49  agent=claude:10150701-6bf9  — git ใหม่ของ face reg และ photo booth มาแล้ว git pull เลยแล้วใช้ api นั้น (wire Face_Regonize 657f396 API)
 
 END</code></pre>
 </details>

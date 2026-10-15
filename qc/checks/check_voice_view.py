@@ -207,9 +207,36 @@ def _slow_road(t):
          "with it up, the live answer is used and called fast", repr(got))
 
 
+def _faces_off(t):
+    """Use faces off (user 2026-10-15: *let me choose to use faces or not*):
+    nothing is asked of the watcher or the face app, presence mode lets every
+    question through, and the page is told there is no camera to restore."""
+    import importlib.util
+    import sys
+    path = F.CODE / "apps" / "voice" / "service.py"
+    spec = importlib.util.spec_from_file_location("voice_off_check", path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["voice_off_check"] = mod
+    spec.loader.exec_module(mod)
+    b = mod.Brain.__new__(mod.Brain)
+    b.cfg = {"face": {"on": False}, "presence": {"on": True}}
+    asked = []
+    b._query_faces_service = lambda *a, **k: asked.append("watcher") or "Manny"
+    b._query_reconize_direct = lambda *a, **k: asked.append("history") or "Manny"
+    b._reconize_api = lambda *a, **k: asked.append("face app") or ""
+    t.ok(b.get_detected_person() == "" and b.get_detected_person(camera="door") == "",
+         "faces off: no name is looked up", repr(asked))
+    t.eq(b.presence_gate(), (True, ""), "faces off: presence mode takes every question")
+    t.ok(b.camera_choice().get("on") is False and not asked,
+         "faces off: nothing is asked of the watcher or the face app", repr(asked))
+    b.cfg = {"face": {}}
+    t.ok(b.get_detected_person() == "Manny", "a store with no switch keeps faces on")
+
+
 def run(t):
     _stations(t)
     _slow_road(t)
+    _faces_off(t)
     _the_page(t)
     page = (F.CODE / "apps" / "voice" / "index.html").read_text(encoding="utf-8")
     t.ok('id="camShow"' in page and 'id="camImg"' in page and "window.toggleView" in page,

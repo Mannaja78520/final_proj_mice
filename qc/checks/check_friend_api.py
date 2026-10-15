@@ -210,6 +210,11 @@ def _present(t, S, login):
         t.eq([p["who"] for p in got["people"]], ["Boss Somchai", "Far Person"],
              "nearest face first, whatever order they sent")
         t.eq((got["facesNow"], got["unknownNow"]), (2, 1), "their counts come through")
+        # Their window is 1..30 s (657f396): Voice asks for 120 and gets 30.
+        st.present("kiosk-1", 120)
+        asked = [c for c in fake.calls if c[1] == "/api/node/kiosk-1/present"]
+        t.eq(asked[-1][2].get("seconds"), ["30"],
+             "a longer window is cut to theirs, not sent to be refused")
     finally:
         fake.stop()
 
@@ -234,6 +239,19 @@ def _feed(t, S, R, login):
              "the screen stops saying the feed cannot see strangers", reports)
         missing = st.contract.get("ws", {}).get("missing")
         t.eq(missing, [], "a stranger is not reported as their names changing")
+        # Their presence message (include=presence, 657f396): strangers in
+        # `unknown`, no time, and 0 when they leave.
+        t.ok("include=presence" in src["path"], "the feed is asked for strangers too", src["path"])
+        came = st.arrive_ws(src, {"type": "presence", "node_id": "door-2", "status": "unknown",
+                                  "faces": 3, "unknown": 1})
+        t.eq(len(came), 1, "a presence message counts its strangers, not every face")
+        t.eq(st.present("door-2", 10)["unknownNow"], 1, "and the stranger stands there")
+        gone = st.arrive_ws(src, {"type": "presence", "node_id": "door-2", "status": "unknown",
+                                  "faces": 0, "unknown": 0})
+        t.ok(gone == [] and st.present("door-2", 10)["unknownNow"] == 0,
+             "a 0 is the stranger leaving, never one more", (gone, st.present("door-2", 10)))
+        t.eq(st.contract.get("ws", {}).get("missing"), [],
+             "a presence message with no time is not their names changing")
         known = st.arrive_ws(src, {"node_id": "door-1", "participant_id": "P7",
                                    "name": "Boss Somchai", "at": at, "call_as": "พี่บอส"})
         t.eq([e["callAs"] for e in known], ["พี่บอส"], "a known face keeps its call_as")

@@ -97,7 +97,7 @@
                            "429": "busy", "503": "loading" } },
       // Who is in front of one of THEIR cameras now (brief 3.5 item 4).
       "present": { "path": "/api/node/{node_id}/present", "method": "get",
-                   "query": "seconds={seconds}", "people": "people",
+                   "query": "seconds={seconds}", "maxSeconds": 30, "people": "people",
                    "facesNow": "faces_now", "unknownNow": "unknown_now" },
       // One person, in any of the answers above, the feed and history.
       "person": { "who": "name", "first": "first_name", "id": "participant_id",
@@ -161,7 +161,10 @@
         // prefix. The body is exactly the six fields mapped below
         // (api/nodes.py:332-338).
         "kind": "ws",
-        "path": "/api/node/events-feed?token={token}",
+        // include=presence (657f396): strangers arriving and leaving too,
+        // as {"type": "presence", node_id, status "unknown", faces, unknown}.
+        // An older version ignores the extra word.
+        "path": "/api/node/events-feed?token={token}&include=presence",
 
         // KNOWN FACES ONLY. Both publishers guard it: api/nodes.py:331 sends
         // only when status == matched, and api/recognition.py:130 only when
@@ -173,7 +176,8 @@
                  // Asked for (brief 3.5 items 1-3), read only when present: a
                  // stranger event {"status": "unknown", "faces": 1} and the
                  // name a person likes to be called.
-                 "status": "status", "faces": "faces", "callAs": "call_as",
+                 "status": "status", "faces": "faces", "unknown": "unknown",
+                 "callAs": "call_as",
                  "title": "title", "lang": "language" }
       },
       {

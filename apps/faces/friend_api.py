@@ -163,7 +163,11 @@ def present(entry, token, node, seconds=10, timeout=3.0):
     """
     a = asks(entry, "present")
     path = a["path"].replace("{node_id}", urllib.request.quote(str(node), safe=""))
-    q = str(a.get("query") or "").replace("{seconds}", str(int(seconds)))
+    # Their window is 1..30 s (657f396); a longer one asked of us is cut,
+    # not sent to be refused.
+    top = int(a.get("maxSeconds") or 0)
+    seconds = max(1, min(int(seconds), top)) if top else int(seconds)
+    q = str(a.get("query") or "").replace("{seconds}", str(seconds))
     req = urllib.request.Request(_api(entry) + path + ("?" + q if q else ""),
                                  headers={"Authorization": "Bearer " + token})
     try:

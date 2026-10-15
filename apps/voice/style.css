@@ -84,3 +84,6 @@ code{background:var(--sunk);padding:1px 5px;border-radius:4px;
 body.adv .not-adv{display:none}
 #voiceWarn{margin:var(--sp-2) 0 0}
 #voiceWarn[hidden]{display:none}
+/* The face controls sit in the row as if unwrapped; Use faces off hides them. */
+#faceTools{display:contents}
+#faceTools[hidden]{display:none}

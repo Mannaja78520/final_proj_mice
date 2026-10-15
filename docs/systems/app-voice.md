@@ -24,6 +24,8 @@ model), speech out.
 - Who is there comes from the face watcher's live feed. Watcher down = their
   history, 2.5 s a look (PC, 2026-10-15): `/face` says `watcher:false` and the
   page POSTs `/api/faces/start?only=watcher` once (A42-4).
+- `face.on` false (the page's Use faces) = no lookup, presence fails open,
+  /camera and /identify refuse; missing = on (`check_voice_view`).
 - Show the camera (A42-2): this device = getUserMedia shown only; a rig
   camera = `/api/dev/cam.stream?dev=` from faces.json `look.cameras`; it stops
   with the switch and a hidden tab, and never posts a frame (`check_voice_view`).

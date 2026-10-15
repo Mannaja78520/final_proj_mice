@@ -52,7 +52,7 @@ class VoiceApp {
 
   // One look at a time: a slow answer must not pile up behind the timer.
   async pollFace(){
-    if (this.facePolling) return;
+    if (this.facePolling || !this.facesOn()) return;
     this.facePolling = true;
     try {
       // With a station picked, ask who THAT camera sees - the face app is
@@ -61,6 +61,7 @@ class VoiceApp {
       const q = this.camStation ? "?camera=" + encodeURIComponent(this.camStation) : "";
       const r = await fetch("/api/voice/face" + q).then(res => res.json()).catch(() => null);
       if (r && r.ok) {
+        if (r.off) return this.showFaces(false);  // switched off elsewhere
         this.updateFace(r.person || "");
         if (r.watcher === false) this.startWatcher();
       }
@@ -68,6 +69,47 @@ class VoiceApp {
     } finally {
       this.facePolling = false;
     }
+  }
+
+  // Use faces (user 2026-10-15: *let me choose to use faces or not*). Off:
+  // no camera, no name, no watcher, nothing waited on - the helper answers
+  // the plain way. Saved at once as face.on, alone (the helper merges it).
+  facesOn(){
+    const box = this.$("faceOn");
+    return !box || box.checked !== false;
+  }
+
+  showFaces(on){
+    const box = this.$("faceOn");
+    if (box) box.checked = on;
+    const tools = this.$("faceTools");
+    if (tools) tools.hidden = !on;
+    if (on) return;
+    if (this.camLoop) { clearInterval(this.camLoop); this.camLoop = null; }
+    ["autoFace", "camShow"].forEach(id => { const b = this.$(id); if (b) b.checked = false; });
+    this.stopImg();
+    this.closeCam();
+    this.updateFace("");
+  }
+
+  async toggleFaces(){
+    const on = this.facesOn();
+    this.showFaces(on);
+    if (this.cfg) (this.cfg.face = this.cfg.face || {}).on = on;
+    let r = null;
+    try {
+      r = await fetch("/api/voice/config", {method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({config: {face: {on}}})});
+    } catch (e) { r = null; }
+    if (r && r.ok) {
+      this.say(on ? "Faces on: people it knows are greeted by name."
+                  : "Faces off: no camera and no names — answers come at once.");
+      if (on) { this.loadCamera(); this.pollFace(); }
+      return;
+    }
+    this.say(r && r.status === 401 ? "Turning faces on or off needs a login — log in at the top."
+                                   : "That did not save — try again.", "warn");
   }
 
   // Why Voice was slow (user 2026-10-15 *voice checks who it is very slowly,
@@ -244,7 +286,7 @@ class VoiceApp {
     const img = this.$("camImg");
     if (!img) return;
     img.onerror = null;
-    img.removeAttribute("src");
+    if (typeof img.removeAttribute === "function") img.removeAttribute("src");
     img.hidden = true;
   }
 
@@ -453,6 +495,7 @@ class VoiceApp {
     try {
       const r = await fetch("/api/voice/camera").then(res => res.json());
       if (!r || !r.ok) return;
+      if (r.on === false) return this.showFaces(false);   // no camera restored
       this.camDefaultLabel = r.label || "";
       this.camSeconds = r.seconds || 5;
       this.camStations = r.stations || [];
@@ -2371,6 +2414,7 @@ static SAMPLES = {
 // *make can setting by my self in setting to setting the time out time*.
   fillFaces(){
   const f = this.cfg.face || {};
+  this.showFaces(f.on !== false);
   this.$("faceForget").value = f.rememberSeconds ?? 120;
   this.$("faceEvery").value = f.autoSeconds ?? 5;
 }
@@ -2380,6 +2424,7 @@ static SAMPLES = {
     return Number.isFinite(v) ? v : fallback;
   };
   const f = this.cfg.face = this.cfg.face || {};
+  f.on = this.facesOn();
   f.rememberSeconds = num("faceForget", f.rememberSeconds ?? 120);
   f.autoSeconds = num("faceEvery", f.autoSeconds ?? 5);
   this.camSeconds = f.autoSeconds;
@@ -2518,6 +2563,7 @@ window.whoAmI = (...args) => window.voiceApp.whoAmI(...args);
 window.pickCamera = (...args) => window.voiceApp.pickCamera(...args);
 window.toggleAutoFace = (...args) => window.voiceApp.toggleAutoFace(...args);
 window.toggleView = (...args) => window.voiceApp.toggleView(...args);
+window.toggleFaces = (...args) => window.voiceApp.toggleFaces(...args);
 window.convRecord = (...args) => window.voiceApp.convRecord(...args);
 window.convRms = (...args) => window.voiceApp.convRms(...args);
 if (document.readyState === "loading") {
