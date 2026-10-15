@@ -1771,6 +1771,13 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
                     relay, why = cam_relay.pc_relay(hub_api_faces.pc_camera(), dev[3:])
                     if relay is None:
                         return self.send_err(why, 503)
+                    # Busy a moment ago: say so, start nothing. A clear 503
+                    # rather than an empty 200, which the page could not read.
+                    left = relay.cooling()
+                    if left > 0:
+                        return self.send_bytes(
+                            json.dumps({"ok": False, "busy": True, "error": relay.why()}).encode(),
+                            code=503, headers=[("Retry-After", str(int(left) + 1))])
                 else:
                     kind, addr, bus, peer = parse_dev(dev)
                     if kind != "wifi" or peer:
@@ -1784,6 +1791,16 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
                     # buffer and take() reclaims the frame already on loan.
                     relay = cam_relay.CamRelay.get(addr)
                 relay.join()
+                seen, jpeg = 0, b""
+                if dev.startswith("pc:"):
+                    # The first picture before the 200: a webcam that gives
+                    # none answers 503 with the reason, not an empty stream.
+                    seen, jpeg = relay.next_frame(0)
+                    if jpeg is None:
+                        relay.leave()
+                        return self.send_bytes(
+                            json.dumps({"ok": False, "busy": True, "error": relay.why()}).encode(),
+                            code=503, headers=[("Retry-After", str(int(relay.retry_wait()) + 1))])
                 self.send_response(200)
                 self.send_header("Content-Type",
                                  "multipart/x-mixed-replace; boundary=mice")
@@ -1794,16 +1811,17 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
                 self.send_header("Connection", "close")
                 self.close_connection = True
                 self.end_headers()
-                seen = 0
                 try:
                     while True:
-                        seen, jpeg = relay.next_frame(seen)
+                        if not jpeg:
+                            seen, jpeg = relay.next_frame(seen)
                         if jpeg is None:
                             break        # the camera went quiet; end honestly
                         self.wfile.write(
                             b"\r\n--mice\r\nContent-Type: image/jpeg\r\n"
                             b"Content-Length: " + str(len(jpeg)).encode() +
                             b"\r\n\r\n" + jpeg)
+                        jpeg = b""
                 except Exception:            # noqa: BLE001 - the browser
                     pass                      # closed the tab; that is normal
                 finally:

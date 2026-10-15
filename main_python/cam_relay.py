@@ -32,6 +32,7 @@ THE TWO FAILURES IT IS BUILT AROUND
   picture that has quietly stopped being now.
 """
 import http.client
+import json
 import os
 import re
 import subprocess
@@ -75,6 +76,7 @@ class CamRelay:
         self.viewers = 0
         self.error = ""
         self.thread = None
+        self.hold = 0.0               # the far end's Retry-After, in seconds
 
     # ---------------------------------------------------------- viewers
     def join(self):
@@ -138,9 +140,19 @@ class CamRelay:
             up.request("GET", self.path)
             r = up.getresponse()
             if r.status != 200:
-                raise RuntimeError(
-                    r.read().decode(errors="replace")[:150] or
-                    ("the camera answered %d" % r.status))
+                # The hub's busy webcam says how long to wait; asking sooner
+                # only gets the same 503 (the face watcher reads it this way).
+                try:
+                    self.hold = min(30.0, float(r.getheader("Retry-After") or 0))
+                except ValueError:
+                    self.hold = 0.0
+                body = r.read().decode(errors="replace")
+                try:
+                    body = json.loads(body).get("error") or body
+                except (ValueError, AttributeError):
+                    pass
+                raise RuntimeError(body[:150] or ("the camera answered %d" % r.status))
+            self.hold = 0.0
             buf = b""
             idle_since = None
             while True:
@@ -200,7 +212,7 @@ class CamRelay:
 
     def retry_wait(self):
         """Seconds before trying the camera again after a failure."""
-        return 1.0
+        return max(1.0, self.hold)
 
     def _publish(self, jpeg):
         with self.cond:
@@ -217,9 +229,17 @@ class CamRelay:
 # board, and every page watches the hub. Nobody watching = the reader ends =
 # the webcam is free again for any other app.
 
+_found = {}           # list command -> (when, names): listing is an ffmpeg launch too
+
+
 def pc_devices(cfg):
     """This PC's webcams, by name, from the `list` command in
-    config/faces.json pcCamera. Virtual ones (cfg `skip`) last."""
+    config/faces.json pcCamera. Virtual ones (cfg `skip`) last. Kept a
+    minute: each viewer of "pc:" asked again, one more ffmpeg each time."""
+    key = repr(cfg.get("list"))
+    when, names = _found.get(key, (0.0, []))
+    if names and time.time() - when < 60:
+        return list(names)
     try:
         r = subprocess.run(cfg.get("list") or [], capture_output=True, timeout=10,
                            creationflags=NO_WINDOW)
@@ -228,7 +248,9 @@ def pc_devices(cfg):
         return []
     names = list(dict.fromkeys(re.findall(r'"([^"]+)" \(video\)', text)))
     skip = [w.lower() for w in cfg.get("skip") or []]
-    return sorted(names, key=lambda n: any(w in n.lower() for w in skip))
+    names = sorted(names, key=lambda n: any(w in n.lower() for w in skip))
+    _found[key] = (time.time(), names)
+    return list(names)
 
 
 def pc_relay(cfg, name=""):
@@ -267,6 +289,18 @@ class PcCamRelay(CamRelay):
         # A webcam another app holds stays busy until that app lets go: one
         # try a second relaunched ffmpeg over and over (PC, 2026-10-15).
         return min(10.0, 2.0 ** self.fails)
+
+    def cooling(self):
+        """Seconds until the webcam may be tried again (0 = now). The hub
+        answers 503 meanwhile instead of starting a reader: a page coming
+        back every 7 s launched ffmpeg every 3 s (PC, 2026-10-15)."""
+        if not self.fails or self.viewers:
+            return 0.0
+        return max(0.0, self.failed_at + self.retry_wait() - time.time())
+
+    def why(self):
+        """The reader's last failure in plain words, without the class name."""
+        return self.error.split(": ", 1)[-1] if self.error else PC_CAMERA_BUSY
 
     def _read_stream(self):
         # A page that keeps coming back must not relaunch it faster either.
