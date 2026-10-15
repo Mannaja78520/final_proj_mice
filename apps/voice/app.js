@@ -266,6 +266,7 @@ class VoiceApp {
     this.stopImg();
     try {
       await this.openCam();
+      if (vid) vid.hidden = false;             // already open for Check by itself
       this.sayCam("");
     } catch (e) {
       if (box) box.hidden = false;
@@ -278,7 +279,11 @@ class VoiceApp {
   // this device's camera too, unless Check by itself still needs it.
   hideView(){
     this.stopImg();
-    if (this.autoFaceOn() && this.camStream) return;
+    if (this.autoFaceOn() && this.camStream) {   // still looking, just not shown
+      const vid = this.$("camVid");
+      if (vid) vid.hidden = true;
+      return;
+    }
     this.closeCam();
   }
 
@@ -310,8 +315,11 @@ class VoiceApp {
     const video = want ? {deviceId: {exact: want}} : {width: 640, height: 480};
     this.camStream = await navigator.mediaDevices.getUserMedia({video});
     const vid = this.$("camVid");
+    // The picture shows only with Show the camera ticked (user 2026-10-15:
+    // *unticked, why does it still show?*). Check by itself still reads it
+    // hidden; the box stays for the line under it.
     this.$("camBox").hidden = false;
-    vid.hidden = false;
+    vid.hidden = !this.viewOn();
     vid.srcObject = this.camStream;
     await vid.play();
     await this.fillCameras();                  // labels exist now permission does

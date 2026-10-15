@@ -78,7 +78,8 @@ const el = (id) => { const e = {id, style: {}, hidden: true, textContent: "", ch
   appendChild() {}, prepend() {}, remove() {}, focus() {}, blur() {},
   setAttribute(k, v) { this.attrs[k] = v; }, removeAttribute(k) { delete this.attrs[k]; },
   scrollIntoView() {}, querySelector: () => null, querySelectorAll: () => [],
-  play: async () => {}, pause() {}, addEventListener() {}};
+  play: async () => {}, pause() {}, addEventListener() {},
+  getContext: () => ({drawImage() {}}), toBlob(cb) { cb("frame"); }};
   Object.defineProperty(e, "src", {get() { return this.attrs.src || ""; },
                                    set(v) { this.attrs.src = String(v); }});
   return e; };
@@ -146,6 +147,22 @@ els.camShow.checked = false;
 await window.toggleView();
 out.off_src = els.camImg.src; out.off_box = els.camBox.hidden;
 out.identify = calls.identify;
+// 6: Check by itself with the view off - the camera reads, the picture stays hidden
+els.camPick.value = "";
+window.pickCamera();
+await wait(20);
+els.autoFace.checked = true;
+await window.toggleAutoFace();
+out.auto_open = !!app.camStream; out.auto_vid_hidden = els.camVid.hidden;
+els.camShow.checked = true;
+await window.toggleView();
+out.auto_shown = !els.camVid.hidden;
+const kept = calls.stopped;
+els.camShow.checked = false;
+await window.toggleView();
+out.auto_hidden_again = els.camVid.hidden; out.auto_kept = calls.stopped === kept && !!app.camStream;
+els.autoFace.checked = false;
+await window.toggleAutoFace();
 console.log(JSON.stringify(out));
 process.exit(0);
 """
@@ -180,6 +197,11 @@ def _the_page(t):
     t.ok(g["off_src"] == "" and g["off_box"],
          "switching the view off ends the board's stream", repr(g))
     t.eq(g["identify"], 0, "showing the picture sends no picture anywhere")
+    # User 2026-10-15: *Show the camera unticked, why does it still show?*
+    t.ok(g["auto_open"] and g["auto_vid_hidden"],
+         "Check by itself reads the camera without showing it", repr(g))
+    t.ok(g["auto_shown"] and g["auto_hidden_again"] and g["auto_kept"],
+         "Show the camera shows and hides it while Check by itself keeps reading", repr(g))
 
 
 def _slow_road(t):
