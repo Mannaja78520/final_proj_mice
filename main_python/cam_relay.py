@@ -32,6 +32,9 @@ THE TWO FAILURES IT IS BUILT AROUND
   picture that has quietly stopped being now.
 """
 import http.client
+import re
+import subprocess
+import sys
 import threading
 import time
 
@@ -47,11 +50,11 @@ class CamRelay:
     _all_lock = threading.Lock()
 
     @classmethod
-    def get(cls, addr):
+    def get(cls, addr, **how):
         with cls._all_lock:
             relay = cls._all.get(addr)
             if relay is None:
-                relay = cls(addr)
+                relay = cls(addr, **how)
                 cls._all[addr] = relay
             return relay
 
@@ -201,3 +204,106 @@ class CamRelay:
             self.seq += 1
             self.error = ""
             self.cond.notify_all()
+
+
+# ---------------------------------------------------------------- this PC
+# User 2026-10-15: *every camera usable by the other apps too*. Windows lets
+# ONE program hold a webcam: with the Voice tab holding it, the face app's
+# frames came back black (PC, real camera). So the hub opens it once, like a
+# board, and every page watches the hub. Nobody watching = the reader ends =
+# the webcam is free again for any other app.
+
+def pc_devices(cfg):
+    """This PC's webcams, by name, from the `list` command in
+    config/faces.json pcCamera. Virtual ones (cfg `skip`) last."""
+    try:
+        r = subprocess.run(cfg.get("list") or [], capture_output=True, timeout=10,
+                           **_quiet())
+        text = (r.stdout + r.stderr).decode("utf-8", "replace")
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return []
+    names = list(dict.fromkeys(re.findall(r'"([^"]+)" \(video\)', text)))
+    skip = [w.lower() for w in cfg.get("skip") or []]
+    return sorted(names, key=lambda n: any(w in n.lower() for w in skip))
+
+
+def pc_relay(cfg, name=""):
+    """(relay, why-not) for this PC's webcam `name` ("" = the first real one)."""
+    if not cfg.get("run"):
+        return None, "config/faces.json has no pcCamera.run to read this PC's camera with"
+    if not name:
+        found = pc_devices(cfg)
+        if not found:
+            return None, "no camera was found on this PC"
+        name = found[0]
+    run = [str(a).replace("{device}", name) for a in cfg["run"]]
+    return PcCamRelay.get("pc:" + name, run=run), ""
+
+
+def _quiet():
+    """No console window flashing up on Windows for each read."""
+    return {"creationflags": 0x08000000} if sys.platform == "win32" else {}
+
+
+class PcCamRelay(CamRelay):
+    """This PC's webcam, read by one program (`run`, ffmpeg on the PC) that
+    writes JPEG after JPEG. Viewers are handled exactly as for a board."""
+
+    def __init__(self, addr, run=None):
+        super().__init__(addr)
+        self.run = list(run or [])
+        self.got_at = 0.0
+
+    def _read_stream(self):
+        proc = subprocess.Popen(self.run, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                stderr=subprocess.DEVNULL, **_quiet())
+        self.got_at = time.time()
+        # A camera that stops sending leaves the read waiting forever, and
+        # nothing else would end the reader: this ends it after STALL.
+        stop = threading.Event()
+
+        def watchdog():
+            while not stop.wait(1.0):
+                if time.time() - self.got_at > STALL:
+                    proc.kill()
+                    return
+        threading.Thread(target=watchdog, daemon=True).start()
+        try:
+            buf = b""
+            idle_since = None
+            while True:
+                with self.cond:                # the same reload grace as a board
+                    if self.viewers:
+                        idle_since = None
+                    elif idle_since is None:
+                        idle_since = time.time()
+                    elif time.time() - idle_since > IDLE_CLOSE:
+                        return                 # nobody watching: let the webcam go
+                chunk = proc.stdout.read1(65536)
+                if not chunk:
+                    raise RuntimeError("this PC's camera stopped sending - is another "
+                                       "app using it, or is it unplugged?")
+                buf += chunk
+                buf = self._take_jpegs(buf)
+                if len(buf) > 4 * 1024 * 1024:
+                    raise RuntimeError("the PC camera sent a picture that never ended")
+        finally:
+            stop.set()
+            proc.kill()
+            try:
+                proc.wait(5)
+            except subprocess.TimeoutExpired:
+                pass
+
+    def _take_jpegs(self, buf):
+        """Publish every whole JPEG (FFD8 ... FFD9) in `buf`; return the rest."""
+        while True:
+            start = buf.find(b"\xff\xd8")
+            if start < 0:
+                return b""
+            end = buf.find(b"\xff\xd9", start + 2)
+            if end < 0:
+                return buf[start:]
+            self.got_at = time.time()
+            self._publish(buf[start:end + 2])
+            buf = buf[end + 2:]

@@ -152,8 +152,14 @@ class VoiceApp {
   // app-wide default as the device LABEL, and this page asks the helper for
   // it (/api/voice/camera). A choice made here is this browser's own
   // override, kept in localStorage, which is how their kiosk does it too.
+  // Nothing picked yet: the PC camera the hub shares (config/faces.json
+  // "pc:"), so this page never takes the webcam from the face app.
   camPicked(){
-    try { return localStorage.getItem(this.CAM_KEY) || ""; } catch(e) { return ""; }
+    let v = "";
+    try { v = localStorage.getItem(this.CAM_KEY) || ""; } catch(e) {}
+    if (v) return v;
+    const pc = (this.camStations || []).find(s => String(s.dev || "").startsWith("pc:"));
+    return pc ? "station:" + pc.id : "";
   }
 
   async fillCameras(){

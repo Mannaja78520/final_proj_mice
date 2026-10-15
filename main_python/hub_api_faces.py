@@ -41,6 +41,15 @@ def watcher():
     return str((cfg or {}).get("service") or "http://127.0.0.1:8769").rstrip("/")
 
 
+def pc_camera():
+    """config/faces.json pcCamera: how this PC's webcam is read (cam_relay)."""
+    path = Path(os.environ.get("MICE_FACES_CONFIG") or _hub.asset("config", "faces.json"))
+    try:
+        return (_hub.registry.load(path) or {}).get("pcCamera") or {}
+    except Exception:                                        # noqa: BLE001
+        return {}
+
+
 def ask(method, body=None, what="/rules"):
     """(answer, http code). The hub is a program on this PC to the watcher:
     JSON, and no Origin, which is exactly what the watcher lets in."""
