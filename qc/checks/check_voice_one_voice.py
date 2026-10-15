@@ -57,6 +57,7 @@ def run(t):
                "the status says one voice is doing all of it")
 
     _mixed_line(t, _brain)
+    _native(t, _brain)
     _scenarios(t, _brain)
 
     page = (F.CODE / "apps" / "voice" / "index.html").read_text(
@@ -94,6 +95,39 @@ def _mixed_line(t, make):
          "a line in one language still uses that language's own voice")
     t.eq(b.resolve_voice("", text="Hello and welcome")[1], "en-US-JennyNeural",
          "and an English-only line is not moved off its voice either")
+
+
+def _native(t, make):
+    """Each language is read by a voice OF that language.
+
+    User 2026-10-15: *each language may not be spoken by that language's
+    voice*. A mixed line used to borrow the FIRST multilingual voice the
+    speech service listed - German Seraphina sorts first - so a Thai answer
+    holding the word "WiFi" was read with a German accent. Now a mixed line
+    keeps a voice of its own language: a multilingual one of that language
+    if there is one, else the language's own voice.
+    """
+    listed = [{"ShortName": "de-DE-SeraphinaMultilingualNeural", "Locale": "de-DE"},
+              {"ShortName": "en-US-AvaMultilingualNeural", "Locale": "en-US"}]
+    cfg = {"tts": {"enabled": True, "language": "th",
+                   "voices": {"th": "th-TH-PremwadeeNeural", "en": "en-US-JennyNeural"}}}
+    b = make(json.loads(json.dumps(cfg)))
+    b._edge_list = listed                               # no network
+    t.eq(b.resolve_voice("th", text="รหัส WiFi คือ 12345678")[1], "th-TH-PremwadeeNeural",
+         "a Thai answer with an English word is read by the Thai voice")
+    t.eq(b.resolve_voice("", text="Hello พุฒิพงศ์, welcome to Mice")[1],
+         "en-US-AvaMultilingualNeural",
+         "an English line with a Thai name: an English voice that reads both")
+    named = json.loads(json.dumps(cfg))
+    named["tts"]["mixedVoice"] = "de-DE-SeraphinaMultilingualNeural"
+    b = make(named)
+    b._edge_list = listed
+    t.eq(b.resolve_voice("th", text="รหัส WiFi คือ 12345678")[1], "th-TH-PremwadeeNeural",
+         "a named mixed voice of another language does not read Thai")
+    ps = (F.CODE / "apps" / "voice" / "tts.ps1").read_text(encoding="utf-8")
+    t.ok("no Windows voice for language" in ps and '-like "$Lang*"' in ps,
+         "the PC's backup voice is also of the line's language, or none",
+         "tts.ps1 lets Windows' default voice read any language")
 
 
 def _scenarios(t, make):

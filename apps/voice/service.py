@@ -274,6 +274,28 @@ def unquote_whole(text):
     return t
 
 
+def main_lang(text):
+    """The language most of a line is written in, by letters ("" if none).
+
+    detect_lang says "th" for ANY Thai letter, so an English welcome with one
+    Thai name was counted Thai. For choosing who READS a mixed line, the bulk
+    of it decides (A42-2).
+    """
+    count = {}
+    for ch in text or "":
+        got = scripts_in(ch)
+        for k in got:
+            count[k] = count.get(k, 0) + 1
+    return max(count, key=count.get) if count else ""
+
+
+def voice_lang(name):
+    """"th-TH-PremwadeeNeural" -> "th"; "" for a name with no language in it
+    (a Windows voice such as "Pattara")."""
+    m = re.match(r"^([a-z]{2,3})-[A-Za-z]{2,4}-", str(name or ""))
+    return m.group(1) if m else ""
+
+
 def scripts_in(text):
     """Which writing systems one line really holds, e.g. {"th", "en"}.
 
@@ -796,7 +818,7 @@ class Brain:
         # from the map can only read its own half, so borrow a voice that
         # reads everything for this line rather than dropping words.
         if len(scripts_in(text)) > 1:
-            mixed = self.mixed_voice()
+            mixed = self.mixed_voice((lang or "").strip() or main_lang(text))
             if mixed:
                 return mixed, mixed
         voices = tcfg.get("voices") or {}
@@ -843,20 +865,30 @@ class Brain:
                         "pitch": str(s.get("pitch") or "").strip()}
         return {"name": "", "prompt": want, "voice": "", "rate": "", "pitch": ""}
 
-    def mixed_voice(self):
-        """The voice used for a line that holds more than one language.
+    def mixed_voice(self, lang=""):
+        """The voice for a line that holds more than one language, or "".
 
-        `tts.mixedVoice` names it; left empty, the first voice the speech
-        service itself reports as multilingual is used, so this works on a
-        fresh install with nothing configured and no name written in here.
-        Empty (and offline) means the old behaviour: the detected language's
-        own voice, reading its own half.
+        A NATIVE voice of the line's own language (user 2026-10-15: *each
+        language may not be spoken by that language's voice*). The old
+        pick - the first multilingual voice the service listed, whatever its
+        language - read a Thai answer holding the word "WiFi" with a foreign
+        accent. So: `tts.mixedVoice` if it is of this language, else the
+        language's own voice if it reads everything, else a multilingual voice
+        of this language. "" = the language's own voice reads the line.
         """
-        named = str((self.cfg.get("tts") or {}).get("mixedVoice") or "").strip()
-        if named:
+        tcfg = self.cfg.get("tts") or {}
+        named = str(tcfg.get("mixedVoice") or "").strip()
+        if named and (not lang or voice_lang(named) in ("", lang)):
             return named
-        got = self.speaking_voices()
-        return got[0]["name"] if got else ""
+        if not lang:
+            return ""
+        own = str((tcfg.get("voices") or {}).get(lang) or "")
+        if "Multilingual" in own:
+            return own
+        for v in self.speaking_voices():
+            if voice_lang(v["name"]) == lang:
+                return v["name"]
+        return ""
 
     def _edge_voices(self):
         """The speech service's own voice list, raw. Cached: it is a network
@@ -923,6 +955,25 @@ class Brain:
         n = len(tcfg.get("voices") or {})
         return "%s speaking (%d mapped)" % (ident, n)
 
+    def voice_heard(self):
+        """Which voice really spoke the last line, in words (A42-2).
+
+        User 2026-10-15, after the rebuild: *the voice is not natural at all*.
+        When the online neural voice fails, the PC's own flat voice stands in
+        - silently, so a missing package or a dropped connection sounded
+        like "the voices are bad". The page now says which one it was, and
+        why. {"natural": None} = nothing spoken yet.
+        """
+        if not self._edge_installed():
+            return {"natural": False, "why": "the natural voice is not installed on this PC",
+                    "tech": "%s -m pip install edge-tts" % sys.executable}
+        return dict(getattr(self, "_heard", None) or {"natural": None})
+
+    @staticmethod
+    def _edge_installed():
+        import importlib.util
+        return importlib.util.find_spec("edge_tts") is not None
+
     def _cache_path(self, ident, text, rate=None, pitch=None):
         if rate is None:
             rate = str(self.cfg.get("tts", {}).get("rate") or "").strip()
@@ -987,6 +1038,8 @@ class Brain:
         path = self._cache_path(ident, text, rate=rate, pitch=pitch)
         got = self._cached(path, voice)
         if got:
+            if not got.startswith(b"RIFF"):
+                self._heard = {"natural": True}
             return got, None
         with self._tts_lock:        # one PowerShell at a time; the waiter
             got = self._cached(path, voice)   # may find the file already built
@@ -1010,6 +1063,7 @@ class Brain:
                         cmd.append("--rate=" + rate)
                     if pitch:
                         cmd.append("--pitch=" + pitch)
+                    err = ""
                     for attempt in range(2):
                         try:
                             r = subprocess.run(cmd, capture_output=True, timeout=15,
@@ -1017,14 +1071,19 @@ class Brain:
                             if r.returncode == 0 and len(r.stdout) >= 100:
                                 wav = r.stdout
                                 break
-                        except Exception:
-                            pass
+                            err = (r.stderr or b"").decode("utf-8", "replace").strip()
+                        except Exception as e:              # noqa: BLE001
+                            err = "%s: %s" % (e.__class__.__name__, e)
+                    self._heard = ({"natural": True} if wav is not None else
+                                   {"natural": False, "tech": err[-300:],
+                                    "why": "the natural voice did not answer - is this PC online?"})
                 if wav is None:
                     local_voice = voice if "Neural" not in voice else ""
                     r = subprocess.run(
                         ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
                          "-File", str(CODE / "apps" / "voice" / "tts.ps1"),
-                         "-Text", text, "-Lang", lang, "-Voice", local_voice],
+                         "-Text", text, "-Lang", lang or voice_lang(voice),
+                         "-Voice", local_voice],
                         capture_output=True, timeout=60, creationflags=NO_WINDOW)
                     wav = r.stdout
                     if r.returncode != 0 or len(wav) < 44 or not wav.startswith(b"RIFF"):
@@ -1595,6 +1654,7 @@ class Brain:
             "faqFile": self.faq_path.name,
             "parts": {"faq": faq, "llm": self.llm_status(),
                       "stt": self.stt_status(), "tts": self.tts_status()},
+            "voice": self.voice_heard(),
         }
 
     def _query_faces_service(self, camera=""):
@@ -1853,7 +1913,31 @@ class Brain:
         for cam in (self._watcher_present(where, "", 10) or {}).get("cameras") or []:
             if cam not in ids:
                 out.append({"id": cam, "name": cam, "online": True})
+                ids.add(cam)
+        # A rig camera's `dev` is how the page SHOWS it (A42-2, user
+        # 2026-10-15 *voice does not show the camera*): the hub's live view of
+        # that board. Listed even while the watcher is off - seeing the
+        # picture does not need it. Their stations have no address we can
+        # show; the page points at their own app for those.
+        for cam in self._rig_cameras():
+            hit = next((o for o in out if o["id"] == cam["name"]), None)
+            if hit is None:
+                out.append({"id": cam["name"], "name": cam["name"], "online": False})
+                hit = out[-1]
+            hit["dev"] = cam["dev"]
         return out
+
+    @staticmethod
+    def _rig_cameras():
+        """config/faces.json look.cameras, read per call (MICE_FACES_CONFIG
+        points a check at a copy, as the hub's own reader does)."""
+        path = os.environ.get("MICE_FACES_CONFIG") or (CODE / "config" / "faces.json")
+        try:
+            cams = (registry.load(path).get("look") or {}).get("cameras") or []
+        except Exception:                                   # noqa: BLE001
+            return []                                       # no file: no rig camera
+        return [{"name": str(c["name"]), "dev": str(c["dev"])}
+                for c in cams if isinstance(c, dict) and c.get("name") and c.get("dev")]
 
     def identify(self, jpeg):
         """Asks Reconize who is in ONE frame, and saves NOTHING.

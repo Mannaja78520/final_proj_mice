@@ -71,6 +71,11 @@ def run(t):
             return SimpleNamespace(returncode=0, stdout=MP3, stderr=b"")
         return SimpleNamespace(returncode=0, stdout=WAV, stderr=b"")
     mod.subprocess = SimpleNamespace(run=fake_run, TimeoutExpired=TimeoutError)
+    b._edge_installed = lambda: True        # this machine's own install is not the test
+
+    # 0: nothing spoken yet - the page has nothing to warn about
+    t.ok(b.voice_heard().get("natural") in (None, False),
+         "before any line, the helper does not claim a voice spoke", repr(b.voice_heard()))
 
     # 1: slower and lower still reach the good voice
     got, why = b.say("ช้าลงหน่อย", "th")
@@ -88,10 +93,17 @@ def run(t):
     kept = b._cache_path("th-TH-PremwadeeNeural", "วันนี้ฝนตก", rate=rate, pitch=pitch)
     t.ok(not kept.exists(), "...and nothing is kept under the good voice's name",
          "the backup's wav was cached at %s" % kept.name)
+    # A42-2: the stand-in is NAMED, with what the speech service said, so
+    # "the voice is not natural" is not a mystery (user 2026-10-15).
+    heard = b.voice_heard()
+    t.ok(heard.get("natural") is False and "offline" in heard.get("tech", ""),
+         "the helper says the backup voice spoke, and why", repr(heard))
     online["up"] = True
     got, _ = b.say("วันนี้ฝนตก", "th")
     t.ok(got == MP3, "and once the good voice is back, that line is spoken by it",
          "the backup's sound was kept and replayed")
+    t.ok(b.voice_heard().get("natural") is True,
+         "...and the warning goes with it", repr(b.voice_heard()))
 
     # 3: a stand-in left in the cache by an older helper is rebuilt
     rate, pitch = b.steps()
@@ -103,6 +115,13 @@ def run(t):
          "the old backup wav was played")
     got2, _ = b.say("เก่า", "th")
     t.ok(got2 == MP3 and old.read_bytes() == MP3, "and the good one is what is kept now")
+
+    # 5: the natural voice missing from this PC is said before anything is spoken
+    b._edge_installed = lambda: False
+    heard = b.voice_heard()
+    t.ok(heard.get("natural") is False and "not installed" in heard.get("why", "")
+         and "pip install edge-tts" in heard.get("tech", ""),
+         "a PC without the natural voice is told so, with the fix behind the switch", repr(heard))
 
     # 4: Try it - a speed heard before saving; a shape it cannot read is dropped
     n = len(calls)

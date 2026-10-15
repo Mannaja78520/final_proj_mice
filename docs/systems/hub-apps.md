@@ -20,7 +20,7 @@ The hub's routes for the app launcher, page access, partner programs and the voi
 
 - [hub](hub.md)
 
-## Checks that test it (23)
+## Checks that test it (24)
 
 - `check_app_routes`
 - `check_docs`
@@ -45,5 +45,6 @@ The hub's routes for the app launcher, page access, partner programs and the voi
 - `check_voice_stt`
 - `check_voice_talkover`
 - `check_voice_tts`
+- `check_voice_view`
 
-Run them: `python qc/run_qc.py --no-build check_app_routes check_docs check_faces_app check_hub_auth check_local_program check_login_anywhere check_no_console_window check_page_frame check_page_login check_partner_launch check_partner_version check_partners check_registries check_tools_list check_voice check_voice_identify check_voice_move check_voice_one_voice check_voice_reconize check_voice_settings check_voice_stt check_voice_talkover check_voice_tts`
+Run them: `python qc/run_qc.py --no-build check_app_routes check_docs check_faces_app check_hub_auth check_local_program check_login_anywhere check_no_console_window check_page_frame check_page_login check_partner_launch check_partner_version check_partners check_registries check_tools_list check_voice check_voice_identify check_voice_move check_voice_one_voice check_voice_reconize check_voice_settings check_voice_stt check_voice_talkover check_voice_tts check_voice_view`

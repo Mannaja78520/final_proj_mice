@@ -2,6 +2,10 @@
 
 A42-1: the answers sheet saves what is typed in a cell; an answer never names
 its voice (the helper picks it); Try plays the speed on screen.
+A42-2 (user 2026-10-15 *questions split by language too*): each language
+column holds its own ways of asking, and they are saved back as the ONE
+`questions` list every reader matches against. The page says when the PC's
+flat backup voice spoke instead of the natural one.
 """
 from pathlib import Path
 import subprocess
@@ -32,7 +36,7 @@ const context = {console, Blob, AbortController, Uint8Array, setTimeout(){}, cle
  return {ok:true,status:200,json:async()=>
  url.endsWith('/health')?{ok:true,parts:{stt:'ready'}}:
  url.endsWith('/config')?{ok:true,config:{tts:{},stt:{}}}:
- url.endsWith('/faq')?{ok:true,faqs:[{questions:['hello'],answer:'hi'}]}:
+ url.endsWith('/faq')?{ok:true,faqs:[{questions:['hello','สวัสดี'],answer:'hi'}]}:
  url.includes('/api/list')?{files:['wave']}:
  url.endsWith('/modules/all')?{modules:[{name:'Nong'}]}:
  {ok:true,answer:'hi',source:'faq'}};}};
@@ -52,13 +56,21 @@ vm.runInContext(fs.readFileSync(process.argv[1],'utf8'),context);
  assert.equal(app.faqs[0].answer,'hi');
  // A42-1: the answers are a sheet - each cell is typed into where it stands.
  assert.equal(app.sheet.length,1);
- assert.equal(app.sheet[0].ask.value,'hello');
+ assert.equal(app.sheet[0].asks.en.value,'hello');
+ assert.equal(app.sheet[0].asks.th.value,'สวัสดี');
+ assert.equal(app.sheet[0].asks.ja.value,'');
+ const ja=app.sheet[0].asks.ja; ja.value='こんにちは'; ja.on.input();
  const en=app.sheet[0].says.en; en.value='hi there'; en.on.input();
  assert.equal(nodes.get('ansSave').disabled,false);
  await context.saveAnswers();
  const saved=JSON.parse(calls.filter(([u,o])=>u.endsWith('/faq')&&o.method==='POST').pop()[1].body).faqs[0];
  assert.equal(saved.answer,'hi'); assert.equal(saved.answer_en,'hi there');
- assert.equal(JSON.stringify(saved.questions),'["hello"]');
+ assert.equal(JSON.stringify(saved.questions),'["สวัสดี","hello","こんにちは"]');
+ // The flat stand-in voice is named, and the line goes once the good one speaks.
+ app.showVoice({natural:false, why:'the natural voice is not installed on this PC', tech:'pip'});
+ assert.equal(nodes.get('voiceWarn').hidden,false);
+ assert.ok(nodes.get('voiceWarn').textContent.includes('backup voice'));
+ app.showVoice({natural:true}); assert.equal(nodes.get('voiceWarn').hidden,true);
  context.document.getElementById('q').value='hello'; await context.ask();
  const request=JSON.parse(calls.find(([u])=>u.endsWith('/ask'))[1].body);
  assert.deepEqual(request,{text:'hello',history:[]});

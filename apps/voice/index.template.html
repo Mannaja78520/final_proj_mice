@@ -63,6 +63,7 @@
         <button class="mini" onclick="load()" title="Check again">⟳</button>
       </span>
     </div>
+    <p class="banner warn" id="voiceWarn" role="status" hidden></p>
 
     <!-- Who is in front of the rig. The camera is a choice in plain sight
          (user 2026-10-15): this device's cameras, or one the face app
@@ -71,12 +72,14 @@
       <span id="faceBadge" class="chip" title="Who the face app sees">👤 <span id="faceName">looking…</span></span>
       <label class="mini pick">Camera
         <select id="camPick" onchange="pickCamera()" title="Which camera to look with"></select></label>
+      <label class="mini pick" title="See what this camera sees, live. Nothing is sent or kept, and it stops when this tab is hidden."><input type="checkbox" id="camShow" onchange="toggleView()"> 📷 Show the camera</label>
       <button class="secondary mini" id="btnWhoAmI" onclick="whoAmI()" title="Look once with this camera. The picture is not kept.">Check who I am</button>
       <label class="mini pick" title="Keep looking every few seconds. Nothing is saved, and it stops when this tab is hidden."><input type="checkbox" id="autoFace" onchange="toggleAutoFace()"> Check by itself</label>
       <button class="secondary mini" id="btnOpenReconize" onclick="openReconize()" title="Open the face app in a new tab">Open Reconize</button>
     </div>
     <div id="camBox" hidden>
       <video id="camVid" playsinline muted autoplay></video>
+      <img id="camImg" alt="What the rig's camera sees" hidden>
       <p class="mini" id="camSay">Look at the camera…</p>
       <p class="mini">The picture is not kept — nothing is written to the face app.</p>
     </div>
@@ -138,9 +141,10 @@
         <button id="ansUndo" onclick="undoAnswers()" disabled>Undo changes</button>
         <span class="mini" id="ansStat" aria-live="polite"></span>
       </div>
-      <p class="mini">Click a cell to change it. <b>Ways of asking</b>: one per line,
-         any language. A language left empty is translated for you when you
-         save. ▶ plays that cell.</p>
+      <p class="mini">Click a cell to change it. Each language has its own
+         column: on top, <b>how people ask it</b> (one per line); under it,
+         <b>what the rig says</b>. A reply left empty is translated for you
+         when you save. ▶ plays that reply.</p>
       <p class="mini" id="ansEmpty" hidden>No answers yet. Add what people ask,
          and what the rig replies.</p>
       <div class="sheet-wrap">
@@ -159,9 +163,10 @@
         <select id="oneVoice" onchange="pickOneVoice()"></select>
         <button onclick="tryVoice()">▶ Try</button>
       </div>
-      <p class="mini">A voice that <b>speaks every language</b> is best: a Thai name
-         inside an English answer is still read properly, and every visitor
-         hears the same character.</p>
+      <p class="mini">Best: <b>each language its own native voice</b>, so Thai
+         is read by a Thai voice and Japanese by a Japanese one. One voice for
+         every language keeps one character, but it speaks the other
+         languages with an accent.</p>
       <p class="mini" id="voiceNote" hidden></p>
       <div id="langVoices"></div>
       <div class="field">
