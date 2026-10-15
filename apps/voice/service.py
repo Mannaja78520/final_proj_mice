@@ -1677,6 +1677,10 @@ class Brain:
         # nearest first, with the name each person asked to be called. An
         # older watcher has no /present, and this carries on as before.
         got = self._watcher_present(where, camera, 120)
+        # Whether the fast road answered (A42-4): with the watcher down, every
+        # look fell to their history - 2.5 s a call on the PC, 2026-10-15 -
+        # and the page starts the watcher when it hears this is False.
+        self._watcher_ok = got is not None
         if got is not None:
             return join_names([call_name(p) for p in got.get("people") or []])
         try:
@@ -2245,7 +2249,8 @@ class VoiceHandler(BaseHTTPRequestHandler):
         if path == "/face":
             want = parse_qs(urlparse(self.path).query).get("camera", [""])[0]
             return self._json({"ok": True,
-                               "person": self.brain.get_detected_person(camera=want)})
+                               "person": self.brain.get_detected_person(camera=want),
+                               "watcher": bool(getattr(self.brain, "_watcher_ok", False))})
         if path == "/camera":
             return self._json(dict({"ok": True}, **self.brain.camera_choice()))
         if path == "/voices":

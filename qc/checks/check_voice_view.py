@@ -182,8 +182,34 @@ def _the_page(t):
     t.eq(g["identify"], 0, "showing the picture sends no picture anywhere")
 
 
+def _slow_road(t):
+    """A42-4, user 2026-10-15: *Voice checks who it is very slowly, the face
+    app does it fast*. Measured on the PC: the face watcher was not running,
+    so every look read the face app's history (2.5 s a call). The helper now
+    says which road answered, and the page starts the watcher on hearing it
+    (check_voice_source holds the page, check_faces_start the hub)."""
+    import importlib.util
+    import sys
+    path = F.CODE / "apps" / "voice" / "service.py"
+    spec = importlib.util.spec_from_file_location("voice_road_check", path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["voice_road_check"] = mod
+    spec.loader.exec_module(mod)
+    b = mod.Brain.__new__(mod.Brain)
+    b.cfg = {"face": {"watcher": "http://127.0.0.1:9/state"}}
+    b._watcher_present = lambda *a, **k: None          # the watcher is down
+    b._query_faces_service()
+    t.ok(getattr(b, "_watcher_ok", None) is False,
+         "with the face watcher down, the helper says the slow road answered")
+    b._watcher_present = lambda *a, **k: {"ok": True, "people": [{"who": "Manny"}]}
+    got = b._query_faces_service()
+    t.ok(b._watcher_ok is True and "Manny" in got,
+         "with it up, the live answer is used and called fast", repr(got))
+
+
 def run(t):
     _stations(t)
+    _slow_road(t)
     _the_page(t)
     page = (F.CODE / "apps" / "voice" / "index.html").read_text(encoding="utf-8")
     t.ok('id="camShow"' in page and 'id="camImg"' in page and "window.toggleView" in page,

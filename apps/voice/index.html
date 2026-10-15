@@ -161,7 +161,10 @@ class VoiceApp {
   // Any language, or the one every question is held to (the Language box).
   get autoDetect(){ return !this.askLang; }
 
+  // One look at a time: a slow answer must not pile up behind the timer.
   async pollFace(){
+    if (this.facePolling) return;
+    this.facePolling = true;
     try {
       // With a station picked, ask who THAT camera sees - the face app is
       // already watching it, so Voice reads the result instead of opening
@@ -170,8 +173,30 @@ class VoiceApp {
       const r = await fetch("/api/voice/face" + q).then(res => res.json()).catch(() => null);
       if (r && r.ok) {
         this.updateFace(r.person || "");
+        if (r.watcher === false) this.startWatcher();
       }
-    } catch(e) {}
+    } catch(e) {
+    } finally {
+      this.facePolling = false;
+    }
+  }
+
+  // Why Voice was slow (user 2026-10-15 *voice checks who it is very slowly,
+  // the app does it fast*): with our face watcher not running, each look
+  // read the face app's history - 2.5 s a call - instead of its live feed.
+  // So the page starts the watcher itself (only ours, never the face app),
+  // once per page, and names then arrive as fast as the face app sees them.
+  async startWatcher(){
+    if (this.watcherAsked) return;
+    this.watcherAsked = true;
+    let r = null;
+    try {
+      r = await fetch("/api/faces/start?only=watcher", {method: "POST", cache: "no-store"})
+            .then(res => res.json());
+    } catch (e) { r = null; }
+    if (r && r.ok) return this.say("Names now come straight from the face app's live camera.");
+    this.say("Names may show slowly: the face watcher could not be started.", "warn",
+             (r && (r.watcherError || r.error || r.detail)) || "no answer");
   }
 
   updateFace(person){
@@ -474,8 +499,14 @@ class VoiceApp {
                  : "that camera has not seen anyone it knows in the last two minutes");
         return;
       }
-      if (this.lookRefused)                   // it would only be kept - do not open
+      if (this.lookRefused) {                 // it would only be kept - do not open
+        // Ask what the face app's OWN camera sees instead: that answer is
+        // live with the watcher up, and sends no picture (A42-4).
+        await this.pollFace();
+        if (this.currentPerson) return this.say("Hello " + this.currentPerson);
+        this.say(this.lookRefused.why, "warn", this.lookRefused.detail);
         return this.sayCam(this.lookRefused.why, this.lookRefused.detail);
+      }
       const fresh = !this.camStream;
       await this.openCam();
       if (line) line.textContent = "Look at the camera…";
@@ -2557,7 +2588,9 @@ static SAMPLES = {
     this.load();
     this.pollFace();
     if (!this._faceInterval) {
-      this._faceInterval = setInterval(() => this.pollFace(), 2500);
+      // Every second while the page is seen: with the watcher up an answer
+      // is a local read, and a slower timer was half of the delay (A42-4).
+      this._faceInterval = setInterval(() => { if (!document.hidden) this.pollFace(); }, 1000);
     }
     this.loadCamera();
   }
