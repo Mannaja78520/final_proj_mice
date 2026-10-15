@@ -264,7 +264,18 @@ class VoiceApp {
       }
       this.sayCam("");
       if (!img) return;
-      img.onerror = () => this.sayCam("the picture from this camera did not arrive — is its board on the WiFi?", s.dev);
+      // The PC's own webcam fails for one reason in practice: another app
+      // or browser tab holds it (PC, 2026-10-15). A board: the WiFi.
+      const pc = String(s.dev).startsWith("pc:"), station = this.camStation;
+      img.onerror = () => {
+        this.sayCam(pc
+          ? "this PC's camera is in use by another app — close the other app or tab using it, and the picture starts by itself"
+          : "the picture from this camera did not arrive — is its board on the WiFi?", s.dev);
+        // Try again while it is still wanted; the hub spaces its own tries.
+        if (pc) setTimeout(() => {
+          if (this.viewOn() && this.camStation === station && !document.hidden) this.showView();
+        }, 10000);
+      };
       img.hidden = false;
       img.src = "/api/dev/cam.stream?dev=" + encodeURIComponent(s.dev);
       return;
