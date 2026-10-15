@@ -130,7 +130,7 @@ class CamRelay:
                     self.cond.notify_all()
                 # Do not hammer a board that is down; a viewer still waiting
                 # will be told, and a new one starts this loop again.
-                time.sleep(1.0)
+                time.sleep(self.retry_wait())
 
     def _read_stream(self):
         up = http.client.HTTPConnection(self.addr, timeout=STALL)
@@ -198,6 +198,10 @@ class CamRelay:
             self._publish(buf[start:start + length])
             buf = buf[start + length:]
 
+    def retry_wait(self):
+        """Seconds before trying the camera again after a failure."""
+        return 1.0
+
     def _publish(self, jpeg):
         with self.cond:
             self.frame = jpeg
@@ -240,6 +244,10 @@ def pc_relay(cfg, name=""):
     return PcCamRelay.get("pc:" + name, run=run), ""
 
 
+# What a viewer is told when the webcam gives nothing. On Windows that is
+# almost always another app (a browser tab) holding it.
+PC_CAMERA_BUSY = "this PC's camera is in use by another app, or unplugged"
+
 # No console window flashing up on Windows for each read (check_no_console_window).
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
 
@@ -252,11 +260,23 @@ class PcCamRelay(CamRelay):
         super().__init__(addr)
         self.run = list(run or [])
         self.got_at = 0.0
+        self.fails = 0                 # starts in a row that gave no picture
+        self.failed_at = 0.0
+
+    def retry_wait(self):
+        # A webcam another app holds stays busy until that app lets go: one
+        # try a second relaunched ffmpeg over and over (PC, 2026-10-15).
+        return min(10.0, 2.0 ** self.fails)
 
     def _read_stream(self):
+        # A page that keeps coming back must not relaunch it faster either.
+        wait = self.failed_at + self.retry_wait() - time.time() if self.fails else 0
+        if wait > 0:
+            time.sleep(wait)
         proc = subprocess.Popen(self.run, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                                 stderr=subprocess.DEVNULL, creationflags=NO_WINDOW)
         self.got_at = time.time()
+        self.fails += 1                # until a picture arrives
         # A camera that stops sending leaves the read waiting forever, and
         # nothing else would end the reader: this ends it after STALL.
         stop = threading.Event()
@@ -280,13 +300,14 @@ class PcCamRelay(CamRelay):
                         return                 # nobody watching: let the webcam go
                 chunk = proc.stdout.read1(65536)
                 if not chunk:
-                    raise RuntimeError("this PC's camera stopped sending - is another "
-                                       "app using it, or is it unplugged?")
+                    raise RuntimeError(PC_CAMERA_BUSY)
                 buf += chunk
                 buf = self._take_jpegs(buf)
                 if len(buf) > 4 * 1024 * 1024:
                     raise RuntimeError("the PC camera sent a picture that never ended")
         finally:
+            if self.fails:
+                self.failed_at = time.time()
             stop.set()
             proc.kill()
             try:
@@ -304,5 +325,6 @@ class PcCamRelay(CamRelay):
             if end < 0:
                 return buf[start:]
             self.got_at = time.time()
+            self.fails = 0
             self._publish(buf[start:end + 2])
             buf = buf[end + 2:]

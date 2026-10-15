@@ -42,6 +42,8 @@ if sys.argv[2] == "list":
     sys.exit(1)
 with open(log, "a") as f:
     f.write("open %s\n" % sys.argv[3])
+if sys.argv[3] == "BUSY":                 # another app holds it: no picture, gone
+    sys.exit(1)
 n = 0
 out = sys.stdout.buffer
 while True:
@@ -130,5 +132,19 @@ def run(t):
         opens = log.read_text().splitlines()
         t.ok(len(out2.get("c") or []) == 2 and len(opens) == 2,
              "and the next viewer opens it again", (out2.get("c_err"), opens))
+
+        # ---- a webcam another app holds (PC, 2026-10-15) --------------
+        # ffmpeg ends at once with no picture. One try a second relaunched
+        # it over and over; now the tries spread out and say why.
+        busy, _ = relay_mod.pc_relay(main.hub_api_faces.pc_camera(), "BUSY")
+        busy.join()
+        time.sleep(7)
+        tries = [ln for ln in log.read_text().splitlines() if ln == "open BUSY"]
+        t.ok(1 <= len(tries) <= 4,
+             "a busy webcam is tried less and less often, not every second",
+             "%d tries in 7 s" % len(tries))
+        t.ok("in use by another app" in busy.error,
+             "and the reason given is another app holding it", busy.error)
+        busy.leave()
     finally:
         os.environ.pop("MICE_FACES_CONFIG", None)

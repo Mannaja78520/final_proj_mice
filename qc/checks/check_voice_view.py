@@ -168,6 +168,14 @@ delete store[app.CAM_KEY];
 out.no_pc_default = app.camPicked();
 app.camStations.push({id: "PC camera", name: "PC camera", online: true, dev: "pc:"});
 out.pc_default = app.camPicked();
+// 8: the PC camera's picture does not come: another app holds the webcam
+els.camPick.value = "station:PC camera";
+window.pickCamera();
+els.camShow.checked = true;
+await window.toggleView();
+out.pc_src = els.camImg.src;
+els.camImg.onerror();
+out.pc_say = els.camSay.textContent;
 console.log(JSON.stringify(out));
 process.exit(0);
 """
@@ -204,6 +212,8 @@ def _the_page(t):
     t.eq(g["identify"], 0, "showing the picture sends no picture anywhere")
     t.ok(g["pc_default"] == "station:PC camera" and g["no_pc_default"] == "",
          "with nothing picked, Voice watches the PC camera the hub shares", repr(g))
+    t.ok(g["pc_src"] == "/api/dev/cam.stream?dev=pc%3A" and "in use by another app" in g["pc_say"],
+         "the PC camera is shown through the hub, and a busy one is said plainly", repr(g))
     # User 2026-10-15: *Show the camera unticked, why does it still show?*
     t.ok(g["auto_open"] and g["auto_vid_hidden"],
          "Check by itself reads the camera without showing it", repr(g))
