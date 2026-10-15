@@ -14,7 +14,11 @@ started and writes JPEGs cut at odd places:
   * "pc:" with no name takes the real camera, never a virtual one listed first
     (the PC lists two phone/screen cameras that show black);
   * the Voice page uses the shared camera when nothing else was picked, so it
-    never takes the webcam itself.
+    never takes the webcam itself;
+  * a webcam another app holds: viewers coming back every few seconds started
+    ffmpeg every 3 s and got an empty 200 (PC, 2026-10-15). Now the tries stay
+    spaced across viewers, the camera list is asked once, and the answer is a
+    503 with Retry-After and the reason, which the face watcher honours.
 """
 import json
 import os
@@ -22,6 +26,7 @@ import sys
 import tempfile
 import threading
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -35,6 +40,8 @@ FAKE = r'''
 import sys, time
 log = sys.argv[1]
 if sys.argv[2] == "list":
+    with open(log, "a") as f:
+        f.write("list\n")
     sys.stderr.write('[in#0 @ 0x1] "manny (Windows Virtual Camera)" (video)\n'
                      '[in#0 @ 0x1] "FHD Camera" (video)\n'
                      '[in#0 @ 0x1]   Alternative name "@device_pnp_x"\n'
@@ -108,7 +115,7 @@ def run(t):
         b.start()
         a.join(25)
         b.join(25)
-        opens = log.read_text().splitlines() if log.is_file() else []
+        opens = _opens(log)
         t.ok(len(out.get("a") or []) == 8 and len(out.get("b") or []) == 8,
              "two pages watch this PC's camera at once", {k: (len(v) if isinstance(v, list) else v)
                                                           for k, v in out.items()})
@@ -129,22 +136,57 @@ def run(t):
              relay and relay.thread)
         out2 = {}
         _read(url, 2, out2, "c")
-        opens = log.read_text().splitlines()
+        opens = _opens(log)
         t.ok(len(out2.get("c") or []) == 2 and len(opens) == 2,
              "and the next viewer opens it again", (out2.get("c_err"), opens))
+        lists = log.read_text().splitlines().count("list")
+        t.ok(lists == 1, "the list of cameras is asked for once, not by every viewer",
+             "listing is an ffmpeg start too: %d for 4 asks (PC, 2026-10-15)" % lists)
 
         # ---- a webcam another app holds (PC, 2026-10-15) --------------
-        # ffmpeg ends at once with no picture. One try a second relaunched
-        # it over and over; now the tries spread out and say why.
-        busy, _ = relay_mod.pc_relay(main.hub_api_faces.pc_camera(), "BUSY")
-        busy.join()
-        time.sleep(7)
-        tries = [ln for ln in log.read_text().splitlines() if ln == "open BUSY"]
+        # ffmpeg ends at once with no picture. A viewer coming back every few
+        # seconds relaunched it each time, and got an EMPTY 200 the page could
+        # not read. Now: spaced tries, and a 503 that says why, fast.
+        busy_url = base + "/api/dev/cam.stream?dev=pc:BUSY"
+        answers = []
+        end = time.time() + 8
+        while time.time() < end:
+            t0 = time.time()
+            try:
+                with urllib.request.urlopen(busy_url, timeout=15) as r:
+                    answers.append((r.status, r.read(64), "", time.time() - t0))
+            except urllib.error.HTTPError as e:
+                answers.append((e.code, e.read(), e.headers.get("Retry-After") or "",
+                                time.time() - t0))
+            time.sleep(0.3)
+        tries = [ln for ln in _opens(log) if ln == "open BUSY"]
         t.ok(1 <= len(tries) <= 4,
-             "a busy webcam is tried less and less often, not every second",
-             "%d tries in 7 s" % len(tries))
-        t.ok("in use by another app" in busy.error,
-             "and the reason given is another app holding it", busy.error)
-        busy.leave()
+             "a busy webcam is tried less and less often, however often viewers come back",
+             "%d tries in 8 s for %d viewers" % (len(tries), len(answers)))
+        t.ok(answers and all(a[0] == 503 and a[2] for a in answers),
+             "every busy answer is a 503 with Retry-After, never an empty picture",
+             [(a[0], a[2]) for a in answers])
+        t.ok(all(b"in use by another app" in a[1] for a in answers),
+             "that says another app holds the camera", [a[1][:80] for a in answers[:3]])
+        t.ok(len(answers) >= 10,
+             "and answers at once while waiting, rather than holding the viewer",
+             "%d answers in 8 s: %s" % (len(answers), [round(a[3], 1) for a in answers]))
+
+        # The face watcher reads the hub with a plain relay: it waits as told
+        # and reports the reason in words, not the JSON it came in.
+        reader = relay_mod.CamRelay(base.split("//", 1)[1], "/api/dev/cam.stream?dev=pc:BUSY")
+        why = ""
+        try:
+            reader._read_stream()
+        except RuntimeError as e:
+            why = str(e)
+        t.ok(why.startswith("this PC's camera") and reader.retry_wait() > 1,
+             "a reader of the hub waits as long as it is told, and reads the reason",
+             (why, reader.retry_wait()))
     finally:
         os.environ.pop("MICE_FACES_CONFIG", None)
+
+
+def _opens(log):
+    return [ln for ln in (log.read_text().splitlines() if log.is_file() else [])
+            if ln.startswith("open ")]
