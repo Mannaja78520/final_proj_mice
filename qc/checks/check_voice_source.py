@@ -1,4 +1,8 @@
-"""Voice class parses and preserves startup, settings and request contracts without hardware."""
+"""Voice class parses and preserves startup, settings and request contracts without hardware.
+
+A42-1: the answers sheet saves what is typed in a cell; an answer never names
+its voice (the helper picks it); Try plays the speed on screen.
+"""
 from pathlib import Path
 import subprocess
 
@@ -11,7 +15,8 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const nodes = new Map(), events = {}, calls = [];
 function node() { return {value:'', checked:false, hidden:true, textContent:'', children:[],
- style:{}, classList:{toggle(){}}, addEventListener(){}, focus(){}, remove(){},
+ style:{}, dataset:{}, classList:{toggle(){},remove(){},add(){}}, focus(){}, remove(){},
+ addEventListener(n,f){(this.on=this.on||{})[n]=f;},
  appendChild(v){this.children.push(v);}, prepend(){}, querySelector(){return node();}}; }
 let mounts = 0;
 const context = {console, Blob, AbortController, Uint8Array, setTimeout(){}, clearTimeout(){},
@@ -20,7 +25,11 @@ const context = {console, Blob, AbortController, Uint8Array, setTimeout(){}, cle
  createElement:node, createTextNode:node, querySelector(){return null;},
  addEventListener(name,fn){events[name]=fn;}},
  miceLogin:{mount(){mounts++;},required(s){return s;}},
- fetch:async (url, options={}) => {calls.push([url, options]);return {ok:true,status:200,json:async()=>
+ fetch:async (url, options={}) => {calls.push([url, options]);
+ // Finding every robot took 10 s (2026-10-15) and the settings stayed empty
+ // until it came back: here it never comes back, and the settings must fill.
+ if(url.endsWith('/modules/all')) return new Promise(()=>{});
+ return {ok:true,status:200,json:async()=>
  url.endsWith('/health')?{ok:true,parts:{stt:'ready'}}:
  url.endsWith('/config')?{ok:true,config:{tts:{},stt:{}}}:
  url.endsWith('/faq')?{ok:true,faqs:[{questions:['hello'],answer:'hi'}]}:
@@ -37,15 +46,27 @@ vm.runInContext(fs.readFileSync(process.argv[1],'utf8'),context);
  await new Promise(resolve=>setImmediate(resolve));
  assert.equal(mounts,1);
  assert.equal(calls.filter(([u])=>u.endsWith('/health')).length,1);
+ // The camera picker is there even with no camera in this browser (A42-1).
+ assert.ok(nodes.get('camPick').children.length>=1);
  await context.loadStores();
  assert.equal(app.faqs[0].answer,'hi');
- context.openForm(0);
- assert.equal(nodes.get('aQ').value,'hello');
- await context.postFaqs();
- assert.equal(JSON.parse(calls.find(([u,o])=>u.endsWith('/faq')&&o.method==='POST')[1].body).faqs[0].answer,'hi');
+ // A42-1: the answers are a sheet - each cell is typed into where it stands.
+ assert.equal(app.sheet.length,1);
+ assert.equal(app.sheet[0].ask.value,'hello');
+ const en=app.sheet[0].says.en; en.value='hi there'; en.on.input();
+ assert.equal(nodes.get('ansSave').disabled,false);
+ await context.saveAnswers();
+ const saved=JSON.parse(calls.filter(([u,o])=>u.endsWith('/faq')&&o.method==='POST').pop()[1].body).faqs[0];
+ assert.equal(saved.answer,'hi'); assert.equal(saved.answer_en,'hi there');
+ assert.equal(JSON.stringify(saved.questions),'["hello"]');
  context.document.getElementById('q').value='hello'; await context.ask();
  const request=JSON.parse(calls.find(([u])=>u.endsWith('/ask'))[1].body);
  assert.deepEqual(request,{text:'hello',history:[]});
+ // The helper picks the voice: an answer never names one (A42-1), or the
+ // scenario's and the one-for-every-language voice are skipped.
+ await new Promise(resolve=>setImmediate(resolve));
+ const said=calls.filter(([u])=>u.endsWith('/say')).map(([,o])=>JSON.parse(o.body));
+ assert.ok(said.length>=1); assert.ok(said.every(b=>!('voice' in b)), JSON.stringify(said));
  assert.equal(app.convHistory.length,2);
  app.convActive=true; const session=app.convSession; context.stopConv();
  assert.equal(app.convActive,false); assert.equal(app.convSession,session+1);
@@ -55,9 +76,10 @@ vm.runInContext(fs.readFileSync(process.argv[1],'utf8'),context);
  await context.convRecord({}, {}, {}, 10);
  assert.equal(app.rec,pushRecorder); assert.equal(recorder.state,'inactive');
  assert.equal(context.convRms(),false);
- nodes.get('ttsLang').value='en'; let spoken;
+ // Try plays what is ON SCREEN, before saving: its speed rides along.
+ nodes.get('mainLang').value='en'; nodes.get('ttsRate').value='-10%'; let spoken;
  app.speak=(...args)=>{spoken=args;}; context.tryVoice();
- assert.deepEqual(spoken,['Hello, I am the Mice robot','en']);
+ assert.equal(JSON.stringify(spoken),JSON.stringify(['Hello, I am the Mice robot','en',{speed:'-10%',pitch:'+0Hz'}]));
  console.log('voice source regression passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
 """
@@ -68,7 +90,10 @@ def check(source=None):
 
 def run(t):
     result = check()
-    t.ok(result.returncode == 0, TITLE, result.stdout + result.stderr)
+    # The pass line too: a script stuck on a promise that never settles ends
+    # with exit 0 and nothing said.
+    t.ok(result.returncode == 0 and "regression passed" in result.stdout, TITLE,
+         result.stdout + result.stderr or "the script stopped before its last line")
 
 if __name__ == "__main__":
     import sys

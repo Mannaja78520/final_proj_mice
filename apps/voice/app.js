@@ -18,7 +18,9 @@ class VoiceApp {
     this.robots = [];
     this.pollTimer = null;
     this.initialized = false;
-    this.autoDetect = true;
+    this.askLang = "";                    // "" = any language; else the one held to
+    this.sheet = [];                      // the answers sheet: [{item, dirty}]
+    this.voicesByLang = {};               // every voice per language, from the helper
     this.moveEnabled = true;
     this.globalRobot = "";
     this.currentPerson = "";
@@ -34,7 +36,19 @@ class VoiceApp {
   }
 
 
-  say(msg){ this.$("stat").textContent = msg; }
+  // The head's one status line (Mice.Status, mice-ui.js); plain text where the
+  // shared parts are not loaded (a check runs this class in node).
+  say(msg, kind = "ready", tech = ""){
+    const M = globalThis.Mice;
+    if (M && M.Status) {
+      this.status = this.status || new M.Status("stat");
+      return (this.status[kind] || this.status.ready).call(this.status, msg, tech);
+    }
+    this.$("stat").textContent = msg;
+  }
+
+  // Any language, or the one every question is held to (the Language box).
+  get autoDetect(){ return !this.askLang; }
 
   async pollFace(){
     try {
@@ -54,17 +68,10 @@ class VoiceApp {
     const badge = this.$("faceBadge");
     const nameEl = this.$("faceName");
     if (!badge || !nameEl) return;
-    if (this.currentPerson) {
-      nameEl.textContent = this.currentPerson;
-      badge.style.borderColor = "var(--ok, #10b981)";
-      badge.style.color = "var(--ok, #10b981)";
-      badge.title = "Recognized person: " + this.currentPerson;
-    } else {
-      nameEl.textContent = "No face";
-      badge.style.borderColor = "var(--line, #ddd)";
-      badge.style.color = "var(--mut)";
-      badge.title = "No recent face recognized (within 120s)";
-    }
+    badge.classList.toggle("on", !!this.currentPerson);
+    nameEl.textContent = this.currentPerson || "nobody I know";
+    badge.title = this.currentPerson ? "The face app sees " + this.currentPerson
+                                     : "Nobody the face app knows was seen lately";
   }
 
   // ---- the camera on THIS device -----------------------------------------
@@ -87,9 +94,14 @@ class VoiceApp {
     // globalThis, not a bare navigator: this class is also loaded outside a
     // browser by a check, where a bare navigator throws on sight.
     const media = globalThis.navigator && globalThis.navigator.mediaDevices;
-    if (!sel || !media) return;
-    const cams = (await navigator.mediaDevices.enumerateDevices())
-                   .filter(d => d.kind === "videoinput");
+    if (!sel) return;
+    // The picker is ALWAYS there (user 2026-10-15). A phone on plain http
+    // has no camera of its own to offer, but the face app's cameras still are.
+    let cams = [];
+    try {
+      if (media && media.enumerateDevices)
+        cams = (await media.enumerateDevices()).filter(d => d.kind === "videoinput");
+    } catch (e) { cams = []; }
     const want = this.camPicked();
     sel.innerHTML = "";
     const add = (value, text, into) => {
@@ -118,8 +130,10 @@ class VoiceApp {
       // Labels stay blank until the camera has been allowed once.
       cams.forEach((d, i) => add(d.deviceId, d.label || ("Camera " + (i + 1)), g));
       sel.appendChild(g);
+    } else if (!media || !media.getUserMedia) {
+      const o = add("", "(this browser can use a camera only on the PC itself)");
+      o.disabled = true;
     }
-    sel.hidden = false;
   }
 
   pickCamera(){
@@ -409,20 +423,11 @@ class VoiceApp {
     return "th";
   }
 
-  syncLanguageUI(lang){
-    if (!lang || !this.autoDetect) return;
-    const ttsLang = this.$("ttsLang");
-    if (ttsLang && ttsLang.value !== lang) {
-      ttsLang.value = lang;
-      if (typeof this.fillVoices === "function") this.fillVoices();
-    }
-  }
-
   async load(){
   this.$("retry").hidden = true;
   this.$("down").hidden = true;
   this.$("ready").hidden = true;
-  this.say("checking the voice helper…");
+  this.say("checking the voice helper…", "loading");
   let r;
   try {
     r = await fetch("/api/voice/health").then(r => r.json());
@@ -430,8 +435,9 @@ class VoiceApp {
   if (!r.ok) return this.down(this.human(r.error));
   this.$("down").hidden = true;
   this.$("ready").hidden = false;
-  this.$("setRow").hidden = false;          // settings exist only while helper runs
+  this.$("settings").hidden = false;        // settings exist only while helper runs
   if (this.cfg === null) this.loadStores();
+  this.fillCameras();
   const p = r.parts || {};
   this.updateParts(p);
 
@@ -453,16 +459,24 @@ class VoiceApp {
   const sttOk = p.stt && p.stt !== "off in config/voice.json"
                 && !p.stt.startsWith("could not");
   this.$("convStart").hidden = !sttOk;
-  this.say("ready");
+  this.say("ready — ask a question");
 }
 
   updateParts(p){
   window._parts = p;
   const partsEl = this.$("parts");
   if (partsEl) {
-    partsEl.textContent = (p.faq || "?") + " · speech " + (p.stt || "?")
-                       + " · voice " + (p.tts || "?")
-                       + " · model " + (p.llm || "?");
+    // Plain words on the surface; the helper's own lines behind the switch.
+    const word = s => !s ? "?" : /^off/.test(s) ? "off" : /loading/.test(s) ? "loading…"
+                     : /could not|no voice/.test(s) ? "has a problem"
+                     : /loaded|speaking/.test(s) ? "ready" : "waits for the first question";
+    partsEl.textContent = (p.faq || "?") + " · listening " + word(p.stt)
+                        + " · speaking " + word(p.tts) + " · AI " + word(p.llm);
+    const t = document.createElement("span");
+    t.className = "tech";
+    t.textContent = " (listening: " + (p.stt || "?") + "; speaking: " + (p.tts || "?")
+                  + "; AI: " + (p.llm || "?") + ")";
+    partsEl.appendChild(t);
   }
   const btnLoad = this.$("btnLoadModel");
   const btnUnload = this.$("btnUnloadModel");
@@ -475,17 +489,17 @@ class VoiceApp {
       btnLoad.disabled = true;
       btnLoad.textContent = "Loading…";
       btnUnload.disabled = true;
-      btnUnload.textContent = "Unload Model";
+      btnUnload.textContent = "Unload the AI";
     } else if (isLoaded) {
-      btnLoad.disabled = false;
-      btnLoad.textContent = "Load Model";
+      btnLoad.disabled = true;
+      btnLoad.textContent = "AI loaded";
       btnUnload.disabled = false;
-      btnUnload.textContent = "Unload Model";
+      btnUnload.textContent = "Unload the AI";
     } else {
       btnLoad.disabled = false;
-      btnLoad.textContent = "Load Model";
+      btnLoad.textContent = "Load the AI";
       btnUnload.disabled = true;
-      btnUnload.textContent = "Unload Model";
+      btnUnload.textContent = "Unload the AI";
     }
   }
 }
@@ -574,7 +588,7 @@ class VoiceApp {
 }
 
   down(why){
-  this.say("the voice helper is off");
+  this.say("the voice helper is off", "warn");
   this.$("down").hidden = false;
   this.$("retry").hidden = false;
   if (!this.$("down").querySelector(".why")) {
@@ -659,11 +673,11 @@ class VoiceApp {
     this.ch = [];
     this.rec.ondataavailable = e => this.ch.push(e.data);
     this.rec.onstop = async () => {
-      this.$("talk").textContent = "Press to talk";
+      this.$("talk").textContent = "🎙 Press to talk";
       this.$("wait").textContent = "sending…";
       s.getTracks().forEach(t => t.stop());
       try {
-        const langParam = this.autoDetect ? "auto" : (this.$("ttsLang")?.value || "th");
+        const langParam = this.autoDetect ? "auto" : this.askLang;
         const r = await fetch("/api/voice/transcribe?lang=" + encodeURIComponent(langParam), {
           method: "POST",
           body: new Blob(this.ch)
@@ -677,7 +691,7 @@ class VoiceApp {
       } catch(e) { this.$("wait").textContent = "The voice helper stopped answering."; }
     };
     this.rec.start();
-    this.$("talk").textContent = "Stop recording";
+    this.$("talk").textContent = "■ Stop recording";
     this.$("wait").textContent = "listening…";
   } catch(e) { this.$("wait").textContent = "No microphone."; }
 }
@@ -803,7 +817,7 @@ class VoiceApp {
     this.$("wait").textContent = "listening…";
     let r;
     try {
-      const langParam = this.autoDetect ? "auto" : (this.$("ttsLang")?.value || "th");
+      const langParam = this.autoDetect ? "auto" : this.askLang;
       r = await fetch("/api/voice/transcribe?lang=" + encodeURIComponent(langParam), {
               method:"POST", body:blob, signal}).then(r=>r.json());
     } catch(e) {
@@ -822,7 +836,6 @@ class VoiceApp {
     const detectedLang = (r.language && ["th", "en", "ja", "zh"].includes(r.language))
       ? r.language
       : this.detectLang(text);
-    if (this.autoDetect) this.syncLanguageUI(detectedLang);
 
     // 2. Show the question
     this.$("q").value = text;
@@ -841,7 +854,7 @@ class VoiceApp {
       }
       if (!this.autoDetect) {
         payload.autoDetect = false;
-        payload.lang = this.$("ttsLang")?.value || this.cfg?.tts?.language || "th";
+        payload.lang = this.askLang;
       } else if (detectedLang) {
         payload.lang = detectedLang;
       }
@@ -872,7 +885,6 @@ class VoiceApp {
     this.$("answer").textContent = a.answer;
     const langFlags = {th: "TH", en: "EN", ja: "JA", zh: "ZH"};
     const flag = langFlags[a.lang || ""] || "";
-    if (this.autoDetect && a.lang) this.syncLanguageUI(a.lang);
     this.$("source").textContent = (a.source === "faq"
       ? "from the saved answers · instant"
       : "from the local model") + (flag ? " · " + flag : "");
@@ -896,7 +908,7 @@ class VoiceApp {
       tasks.push(this.doMove(a));
     }
     if (this.$("sound").checked) {
-      const convSpeakLang = this.autoDetect ? (a.lang || detectedLang) : (this.$("ttsLang")?.value || "th");
+      const convSpeakLang = this.autoDetect ? (a.lang || detectedLang) : this.askLang;
       tasks.push(this.speakAndWait(a.answer, convSpeakLang, signal));
     }
     if (tasks.length) await Promise.all(tasks);
@@ -953,7 +965,6 @@ class VoiceApp {
   const text = this.$("q").value.trim();
   if (!text) { this.$("q").focus(); return; }
   const detectedLang = explicitLang || this.detectLang(text);
-  if (this.autoDetect) this.syncLanguageUI(detectedLang);
   this.$("answerCard").hidden = false;
   const uBubble = this.addMessageToLog("user", text);
   this.scrollConv(uBubble);
@@ -971,7 +982,7 @@ class VoiceApp {
     }
     if (!this.autoDetect) {
       payload.autoDetect = false;
-      payload.lang = this.$("ttsLang")?.value || this.cfg?.tts?.language || "th";
+      payload.lang = this.askLang;
     } else if (explicitLang) {
       payload.lang = explicitLang;
     }
@@ -995,7 +1006,6 @@ class VoiceApp {
       this.$("answer").textContent = r.answer;
       const langFlags = {th: "TH", en: "EN", ja: "JA", zh: "ZH"};
       const flag = langFlags[r.lang || ""] || "";
-      if (this.autoDetect && r.lang) this.syncLanguageUI(r.lang);
       this.$("source").textContent = (r.source === "faq"
         ? "from the saved answers · instant"
         : "from the local model") + (flag ? " · " + flag : "");
@@ -1027,7 +1037,7 @@ class VoiceApp {
         tasks.push(this.doMove(r));
       }
       if (this.$("sound").checked) {
-        const speakLang = this.autoDetect ? (r.lang || explicitLang || detectedLang) : (this.$("ttsLang")?.value || "th");
+        const speakLang = this.autoDetect ? (r.lang || explicitLang || detectedLang) : this.askLang;
         tasks.push(this.speak(r.answer, speakLang));
       }
       if (tasks.length) await Promise.all(tasks);
@@ -1043,25 +1053,27 @@ class VoiceApp {
   this.$("wait").textContent = "";
 }
 
-// The rig speaks the answer out loud with this PC's own voice (A20-9) -
-// no internet. The helper returns sound bytes; the checkbox remembers
-// itself, because a visitor who muted it once should not have to again.
-  async speak(text, lang, voice = ""){
+// The rig speaks the answer out loud (A20-9). The helper returns sound
+// bytes; the checkbox remembers itself, because a visitor who muted it once
+// should not have to again.
+// THE HELPER PICKS THE VOICE (A42-1): the page used to send the language's
+// own voice with every answer, which skipped the scenario's voice, the
+// one-voice-for-everything and the voice for a two-language line. Only Try
+// sends `try_` = {voice, speed, pitch}: a choice heard before it is saved.
+  async speak(text, lang, try_ = null){
   this.$("wait").textContent = "saying…";
   this.$("speakingText").textContent = text;
   this.$("speakingNow").hidden = false;
-  if (!voice && lang && this.cfg && this.cfg.tts && this.cfg.tts.voices) {
-    voice = this.cfg.tts.voices[lang] || "";
-  }
   try {
     const r = await fetch("/api/voice/say", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({text: text, lang: lang || "", voice: voice || ""}),
+      body: JSON.stringify(Object.assign({text: text, lang: lang || ""}, try_ || {})),
     });
     if (!r.ok) { this.$("wait").textContent = (await r.json()).error; this.$("speakingNow").hidden = true; return; }
-    const player = new Audio(URL.createObjectURL(await r.blob()));
-    player.onended = () => { this.$("wait").textContent = ""; this.$("speakingNow").hidden = true; };
+    const url = URL.createObjectURL(await r.blob());
+    const player = new Audio(url);
+    player.onended = () => { URL.revokeObjectURL(url); this.$("wait").textContent = ""; this.$("speakingNow").hidden = true; };
     try {
       await player.play();
     } catch(e) {
@@ -1125,9 +1137,6 @@ class VoiceApp {
     lang = langOrSignal || "";
     signal = maybeSignal || null;
   }
-  if (!voice && lang && this.cfg && this.cfg.tts && this.cfg.tts.voices) {
-    voice = this.cfg.tts.voices[lang] || "";
-  }
   this.$("wait").textContent = "saying…";
   this.$("speakingText").textContent = text;
   this.$("speakingNow").hidden = false;
@@ -1135,7 +1144,8 @@ class VoiceApp {
     const r = await fetch("/api/voice/say", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({text: text, lang: lang || "", voice: voice || ""}),
+      body: JSON.stringify(voice ? {text: text, lang: lang || "", voice: voice}
+                                 : {text: text, lang: lang || ""}),
       signal,
     });
     if (signal && signal.aborted) { this.$("speakingNow").hidden = true; return; }
@@ -1322,70 +1332,85 @@ class VoiceApp {
   this.mvClear();
 }
 
-// ---- Settings (A20-12). The stores live on the brain PC; this page reads
-// them through the hub and saves through the same gated doors as everything
-// else that can change the rig. The helper picks edits up with no restart.
+// ---- Settings (A20-12; tabs and the answers sheet A42-1). The stores live
+// on the brain PC; this page reads them through the hub and saves through the
+// same gated doors as everything else that can change the rig. The helper
+// picks edits up with no restart.
 
 static MODEL_WORDS = [["base", "Fast"], ["small", "Balanced"],
                      ["medium", "Most accurate"]];
 
-  setAdvanced(on){
-  document.body.classList.toggle("adv", !!on);
-  try { localStorage.setItem("hub_adv", on ? "1" : "0"); } catch(e) {}
-  this.$("advOn").checked = !!on;
+// The languages an answer is written in: [language, the key it is saved
+// under]. The store's own shape - service.py reads qa_data.json the same way.
+static ANSWER_KEYS = [["th", "answer"], ["en", "answer_en"],
+                      ["ja", "answer_ja"], ["zh", "answer_zh"]];
+
+// A language in its own words ("th" -> "ไทย"), from the browser, so a fifth
+// language needs no table of names here.
+static langName(code){
+  try { return new Intl.DisplayNames([code], {type: "language"}).of(code) || code; }
+  catch (e) { return code; }
 }
-  toggleSet(){
-  const s = this.$("settings");
-  s.hidden = !s.hidden;
-  if (!s.hidden && this.cfg === null) this.loadStores();
+
+  // Every language the store speaks: its voice map first, then the answers'.
+  langs(){
+  const out = Object.keys(((this.cfg || {}).tts || {}).voices || {});
+  VoiceApp.ANSWER_KEYS.forEach(([l]) => { if (!out.includes(l)) out.push(l); });
+  return out;
+}
+
+  showTab(name){
+  const all = sel => (document.querySelectorAll ? [...document.querySelectorAll(sel)] : []);
+  all("#setTabs .tab").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
+  all("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== name; });
+  try { localStorage.setItem("voice_tab", name); } catch(e) {}
 }
 
   async loadStores(){
-  const [c, f] = await Promise.all([
+  const [c, f, ls] = await Promise.all([
     fetch("/api/voice/config").then(x => x.json()).catch(() => null),
     fetch("/api/voice/faq").then(x => x.json()).catch(() => null),
+    fetch("/api/list?kind=sequences").then(x => x.json()).catch(() => null),
   ]);
   if (!c || !c.ok) return;                 // the down-card already explains
   this.cfg = c.config;
   this.faqs = (f && f.ok && Array.isArray(f.faqs)) ? f.faqs : [];
-  const [ls, ms] = await Promise.all([
-    fetch("/api/list?kind=sequences").then(x => x.json()).catch(() => null),
-    fetch("/api/modules/all").then(x => x.json()).catch(() => null),
-  ]);
   this.seqs = (ls && ls.files) || [];
+  this.fillAnswers(); this.fillVoice(); this.fillWords(); this.fillScenario(); this.fillThai(); this.fillFaces(); this.fillAdvanced();
+  this.fillAskLangs();
+  // Finding every robot on every PC took 10 s the first time (measured
+  // 2026-10-15) and EVERY settings box stayed empty until it came back - the
+  // page looked broken. The boxes fill now; the robot lists catch up.
+  this.loadRobots();
+}
+
+  async loadRobots(){
+  const ms = await fetch("/api/modules/all").then(x => x.json()).catch(() => null);
   this.robots = (((ms || {}).modules) || []).map(m => m.name).filter(Boolean);
   const grSel = this.$("globalRobot");
   if (grSel) {
     const cur = this.globalRobot || grSel.value || "";
     grSel.textContent = "";
-    const optPer = document.createElement("option");
-    optPer.value = "";
-    optPer.textContent = "(Per-answer)";
-    grSel.appendChild(optPer);
-    const optAll = document.createElement("option");
-    optAll.value = "__all__";
-    optAll.textContent = "All robots";
-    grSel.appendChild(optAll);
-    this.robots.forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      grSel.appendChild(opt);
-    });
-    if (cur && cur !== "__all__" && !this.robots.includes(cur)) {
-      const opt = document.createElement("option");
-      opt.value = cur;
-      opt.textContent = "(missing) " + cur;
-      grSel.appendChild(opt);
-    }
+    const opt = (v, t) => {
+      const o = document.createElement("option");
+      o.value = v; o.textContent = t;
+      grSel.appendChild(o);
+    };
+    opt("", "the answer's own");
+    opt("__all__", "all robots");
+    this.robots.forEach(name => opt(name, name));
+    if (cur && cur !== "__all__" && !this.robots.includes(cur)) opt(cur, "(missing) " + cur);
     grSel.value = cur;
   }
-  this.fillAnswers(); this.fillVoice(); this.fillWords(); this.fillScenario(); this.fillThai(); this.fillFaces(); this.fillAdvanced();
+  // The sheet's robot boxes, in place: redrawing would drop a cell being typed in.
+  this.sheet.forEach(row => (row.mvs || []).forEach(m =>
+    this.fillPick(m.r, "(no robot)", this.robots, m.r.value)));
 }
 
+  // Every save writes the whole store, so each tab's Save keeps the others.
   async postConfig(statId){
-  this.$(statId).textContent = "";
-  this.collectWords(); this.collectVoice(); this.collectScenario(); this.collectThai(); this.collectFaces(); this.collectAdvanced();  // every save writes the whole store
+  this.$(statId).textContent = "saving…";
+  this.collectWords(); this.collectVoice(); this.collectScenario(); this.collectThai(); this.collectFaces(); this.collectAdvanced();
   let r;
   try {
     r = await fetch("/api/voice/config", {method: "POST",
@@ -1396,8 +1421,7 @@ static MODEL_WORDS = [["base", "Fast"], ["small", "Balanced"],
   }
   if (r.status === 401) {
     this.$(statId).textContent = miceLogin.required(
-      "Saving needs a login — the box at the top of this page. Log in there, "
-      + "then press Save again.");
+      "Saving needs a login — log in at the top of this page, then press Save again.");
     return false;
   }
   if (!r.ok) {
@@ -1406,134 +1430,147 @@ static MODEL_WORDS = [["base", "Fast"], ["small", "Balanced"],
     return false;
   }
   this.$(statId).textContent = "Saved.";
+  this.fillAskLangs();
+  const h = await fetch("/api/voice/health").then(x => x.json()).catch(() => null);
+  if (h && h.parts) this.updateParts(h.parts);
   return true;
 }
 
-  async postFaqs(){
-  this.$("wait").textContent = "";
+  // Saves the answers. Its word goes beside the Save button; the edits on
+  // screen are kept whatever happens, so nothing typed is lost to a refusal.
+  async postFaqs(faqs = this.faqs){
+  const stat = this.$("ansStat");
   let r;
   try {
     r = await fetch("/api/voice/faq", {method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({faqs: this.faqs})});
+      body: JSON.stringify({faqs})});
   } catch(e) {
-    this.$("wait").textContent = "The voice helper is not answering."; return false;
+    stat.textContent = "The voice helper is not answering — nothing was saved."; return false;
   }
   if (r.status === 401) {
-    this.$("wait").textContent = miceLogin.required(
-      "Saving needs a login — the box at the top of this page. Log in there, "
-      + "then press Save again.");
+    stat.textContent = miceLogin.required(
+      "Saving needs a login — log in at the top of this page, then press Save again.");
     return false;
   }
   if (!r.ok) {
-    this.$("wait").textContent = ((await r.json().catch(() => ({}))).error)
-                          || "That did not save — try again.";
+    stat.textContent = ((await r.json().catch(() => ({}))).error)
+                       || "That did not save — try again.";
     return false;
   }
   return true;
 }
 
-// ---- Answers ----------------------------------------------------------
+// ---- Answers: a sheet (A42-1) ------------------------------------------
+// User 2026-10-15: *like Excel would be easier; pressing Edit scrolled to
+// the bottom and I could not tell where to change it*. Every cell is a box
+// typed into where it stands; changed rows are marked; ONE Save sends them
+// all. Undo puts back what is saved.
   fillAnswers(){
-  const box = this.$("ansList");
-  box.textContent = "";
-  this.$("ansEmpty").hidden = this.faqs.length > 0;
-  this.faqs.forEach((item, i) => {
-    const row = document.createElement("div");
-    row.className = "row";
-    row.style.cssText = "justify-content:space-between;align-items:flex-start;"
-                      + "border-top:1px solid var(--line);padding:var(--sp-2) 0;gap:8px";
-    const label = document.createElement("span");
-    label.style.cssText = "flex:1;min-width:0";
-    const q0 = (item.questions || [])[0] || "(no question)";
-    label.innerHTML = "<b></b><div class='mini multilang-answers' style='margin-top:4px;display:flex;flex-direction:column;gap:2px'></div>";
-    label.querySelector("b").textContent = q0
-        + (item.questions && item.questions.length > 1
-           ? "  +" + (item.questions.length - 1) : "");
-    const sub = label.querySelector(".multilang-answers");
-    
-    // Show answer for each language
-    const aTh = item.answer || "";
-    const aEn = item.answer_en || "";
-    const aJa = item.answer_ja || "";
-    const aZh = item.answer_zh || "";
-    
-    if (aTh) {
-      const d = document.createElement("div");
-      d.textContent = "TH: " + aTh;
-      sub.appendChild(d);
-    }
-    if (aEn) {
-      const d = document.createElement("div");
-      d.textContent = "EN: " + aEn;
-      sub.appendChild(d);
-    }
-    if (aJa) {
-      const d = document.createElement("div");
-      d.textContent = "JA: " + aJa;
-      sub.appendChild(d);
-    }
-    if (aZh) {
-      const d = document.createElement("div");
-      d.textContent = "ZH: " + aZh;
-      sub.appendChild(d);
-    }
-    const movesToShow = (Array.isArray(item.moves) && item.moves.length > 0)
-      ? item.moves
-      : (item.move ? [{module: item.module, move: item.move}] : []);
+  this.removedRows = 0;
+  this.sheet = (this.faqs || []).map(item => ({item: JSON.parse(JSON.stringify(item)), dirty: false}));
+  this.drawSheet();
+}
 
-    if (movesToShow.length > 0) {
-      const d = document.createElement("div");
-      d.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;align-items:center";
-      movesToShow.forEach(m => {
-        if (m.move || m.module) {
-          const badge = document.createElement("span");
-          badge.className = "badge";
-          badge.style.cssText = "font-size:11px;padding:2px 6px;border-radius:var(--r-sm);background:var(--sunk);color:var(--txt);border:1px solid var(--line)";
-          badge.textContent = "🤖 " + (m.module || "any robot") + ": " + (m.move || "(no move)");
-          d.appendChild(badge);
-        }
-      });
-      sub.appendChild(d);
-    }
+  drawSheet(){
+  const head = this.$("ansHead"), body = this.$("ansRows");
+  head.textContent = "";
+  const th = t => { const e = document.createElement("th"); e.textContent = t; head.appendChild(e); };
+  ["#", "Ways of asking"].forEach(th);
+  VoiceApp.ANSWER_KEYS.forEach(([l]) => th(VoiceApp.langName(l)));
+  ["Robot move", ""].forEach(th);
+  body.textContent = "";
+  this.sheet.forEach((row, i) => body.appendChild(this.sheetRow(row, i)));
+  this.$("ansEmpty").hidden = this.sheet.length > 0;
+  this.findAnswers();
+  this.markDirty();
+}
 
-    const btns = document.createElement("span");
-    btns.className = "row";
-    btns.style.cssText = "gap:4px;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto";
-    
-    // Per-language preview buttons
-    const playLang = (text, lang) => {
-      this.hear(text, lang);
-    };
-    [
-      ["Play TH", () => playLang(item.answer, "th")],
-      ["Play EN", () => playLang(item.answer_en || item.answer, "en")],
-      ["Play JA", () => playLang(item.answer_ja || item.answer, "ja")],
-      ["Play ZH", () => playLang(item.answer_zh || item.answer, "zh")],
-    ].forEach(([t, fn]) => {
-      const b = document.createElement("button");
-      b.textContent = t;
-      b.style.cssText = "padding:2px 6px;font-size:11px";
-      b.onclick = fn;
-      btns.appendChild(b);
-    });
-    
-    const editBtn = document.createElement("button");
-    editBtn.textContent = "Edit";
-    editBtn.style.cssText = "padding:2px 8px;font-size:12px";
-    editBtn.onclick = () => this.openForm(i);
-    btns.appendChild(editBtn);
+  // One answer as one row of boxes.
+  sheetRow(row, i){
+  const tr = document.createElement("tr");
+  row.tr = tr;
+  const td = () => { const c = document.createElement("td"); tr.appendChild(c); return c; };
+  const changed = () => { row.dirty = true; tr.classList.remove("bad"); this.markDirty(); };
+  const button = (text, title, fn) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = text; b.title = title; b.onclick = fn;
+    return b;
+  };
+  td().textContent = String(i + 1);
 
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "✕";
-    delBtn.style.cssText = "padding:2px 8px;font-size:12px";
-    delBtn.onclick = () => this.delAnswer(i);
-    btns.appendChild(delBtn);
+  row.ask = this.cell((row.item.questions || []).join("\n"), "how people ask it", v => {
+    row.item.questions = v.split("\n").map(s => s.trim()).filter(Boolean); changed(); });
+  td().appendChild(row.ask);
 
-    row.appendChild(label);
-    row.appendChild(btns);
-    box.appendChild(row);
+  row.says = {};
+  VoiceApp.ANSWER_KEYS.forEach(([lang, key]) => {
+    const c = td();
+    const box = this.cell(row.item[key], key === "answer" ? "what it says" : "",
+                          v => { row.item[key] = v.trim(); changed(); });
+    row.says[lang] = box;
+    const bar = document.createElement("div");
+    bar.className = "cellbar";
+    bar.appendChild(button("▶", "Hear it", () => this.hear(box.value.trim(), lang)));
+    c.appendChild(box);
+    c.appendChild(bar);
   });
+
+  // Moves: a robot and one of its saved sequences, as many pairs as wanted.
+  const mc = td();
+  mc.className = "moves";
+  row.mvs = [];
+  const list = document.createElement("div");
+  const syncMoves = () => {
+    row.item.moves = row.mvs.filter(m => !m.gone)
+                     .map(m => ({module: m.r.value, move: m.s.value}))
+                     .filter(m => m.module || m.move);
+    changed();
+  };
+  const addMove = (m) => {
+    const d = document.createElement("div");
+    d.className = "mv";
+    const r = document.createElement("select");
+    this.fillPick(r, "(no robot)", this.robots, m.module || "");
+    const s = document.createElement("select");
+    this.fillPick(s, "(no move)", this.seqs, m.move || "");
+    const one = {r, s, gone: false};
+    r.onchange = s.onchange = syncMoves;
+    d.appendChild(r); d.appendChild(s);
+    d.appendChild(button("✕", "Take this move off", () => { one.gone = true; d.remove(); syncMoves(); }));
+    list.appendChild(d);
+    row.mvs.push(one);
+  };
+  this.answerMoves(row.item).forEach(addMove);
+  mc.appendChild(list);
+  mc.appendChild(button("＋ move", "Add a robot move", () => addMove({})));
+
+  const ac = td();
+  const acts = document.createElement("div");
+  acts.className = "acts";
+  acts.appendChild(button("🌐 Translate", "Fill the empty languages, and add the ways of asking in each language",
+                          () => this.translateRow(row, true)));
+  acts.appendChild(button("✕ Delete", "Delete this answer (Undo changes brings it back until you save)",
+                          () => this.deleteRow(row)));
+  ac.appendChild(acts);
+  return tr;
+}
+
+  // A cell: a box that grows with what is typed, like a spreadsheet row.
+  cell(value, hint, onInput){
+  const ta = document.createElement("textarea");
+  ta.rows = 1;
+  ta.value = value || "";
+  ta.placeholder = hint || "";
+  ta.addEventListener("input", () => { this.grow(ta); onInput(ta.value); });
+  setTimeout(() => this.grow(ta), 0);
+  return ta;
+}
+
+  grow(ta){
+  if (!ta.style || typeof ta.scrollHeight !== "number") return;
+  ta.style.height = "auto";
+  ta.style.height = ta.scrollHeight + "px";
 }
 
   fillPick(select, none_, items, chosen){
@@ -1557,252 +1594,173 @@ static MODEL_WORDS = [["base", "Fast"], ["small", "Balanced"],
   select.value = chosen || "";
 }
 
-  addMoveRow(module = "", move = "") {
-    const container = this.$("extraMoves");
-    if (!container) return;
-    const row = document.createElement("div");
-    row.className = "row move-row";
-    row.style.cssText = "gap:6px;align-items:center;margin-top:4px";
-
-    const rSel = document.createElement("select");
-    rSel.className = "move-robot-sel";
-    rSel.style.cssText = "flex:1 1 130px";
-    this.fillPick(rSel, "(no robot)", this.robots, module);
-
-    const mSel = document.createElement("select");
-    mSel.className = "move-seq-sel";
-    mSel.style.cssText = "flex:1 1 150px";
-    this.fillPick(mSel, "(no move)", this.seqs, move);
-
-    const delBtn = document.createElement("button");
-    delBtn.type = "button";
-    delBtn.className = "mini";
-    delBtn.textContent = "✕";
-    delBtn.style.cssText = "padding:2px 8px;font-size:12px";
-    delBtn.onclick = () => row.remove();
-
-    row.appendChild(rSel);
-    row.appendChild(mSel);
-    row.appendChild(delBtn);
-    container.appendChild(row);
-  }
-
-  openForm(i){
-  this.editAt = i;
-  const item = (i >= 0 && this.faqs[i]) ? this.faqs[i] : null;
-  const moves = (item && Array.isArray(item.moves) && item.moves.length > 0)
-    ? item.moves
-    : (item && (item.move || item.module) ? [{module: item.module, move: item.move}] : []);
-
-  const firstMove = moves[0] || {module: "", move: ""};
-  this.fillPick(this.$("aMove"), "(no move)", this.seqs, firstMove.move || "");
-  this.fillPick(this.$("aRobot"), "(no robot)", this.robots, firstMove.module || "");
-
-  const extraContainer = this.$("extraMoves");
-  if (extraContainer) {
-    extraContainer.textContent = "";
-    for (let k = 1; k < moves.length; k++) {
-      this.addMoveRow(moves[k].module, moves[k].move);
-    }
-  }
-
-  this.$("aQ").value = !item ? "" : (item.questions || []).join("\n");
-  this.$("aA").value = !item ? "" : (item.answer || "");
-  if (this.$("aAEn")) this.$("aAEn").value = !item ? "" : (item.answer_en || "");
-  if (this.$("aAJa")) this.$("aAJa").value = !item ? "" : (item.answer_ja || "");
-  if (this.$("aAZh")) this.$("aAZh").value = !item ? "" : (item.answer_zh || "");
-  if (this.$("transStat")) this.$("transStat").textContent = "";
-  this.$("aForm").hidden = false;
+  answerMoves(item){
+  if (Array.isArray(item.moves) && item.moves.length) return item.moves;
+  return (item.move || item.module) ? [{module: item.module || "", move: item.move || ""}] : [];
 }
 
-  closeForm(){ this.$("aForm").hidden = true; }
+  markDirty(){
+  const n = this.sheet.filter(r => r.dirty).length + (this.removedRows || 0);
+  this.sheet.forEach(r => r.tr && r.tr.classList.toggle("dirty", r.dirty));
+  const save = this.$("ansSave"), undo = this.$("ansUndo");
+  save.disabled = undo.disabled = !n;
+  save.textContent = n ? "Save answers (" + n + " changed)" : "Save answers";
+  return n;
+}
 
-  async autoTranslateAnswers(){
-    const stat = this.$("transStat");
-    if (stat) stat.textContent = "translating…";
-    const aTh = this.$("aA") ? this.$("aA").value.trim() : "";
-    const aEn = this.$("aAEn") ? this.$("aAEn").value.trim() : "";
-    const aJa = this.$("aAJa") ? this.$("aAJa").value.trim() : "";
-    const aZh = this.$("aAZh") ? this.$("aAZh").value.trim() : "";
-    const srcText = aTh || aEn || aJa || aZh;
-    const qLines = (this.$("aQ").value || "").split("\n").map(s => s.trim()).filter(Boolean);
-
-    if (!srcText && qLines.length === 0) {
-      if (stat) stat.textContent = "Type an answer or question first.";
-      return;
-    }
-
-    try {
-      let anyOk = false;
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 15000);
-
-      if (srcText) {
-        try {
-          const res = await fetch("/api/voice/translate", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({text: srcText, all: true}),
-            signal: ctrl.signal
-          }).then(r => r.json());
-          if (res && res.ok && res.translations) {
-            anyOk = true;
-            const t = res.translations;
-            if (this.$("aA") && (!this.$("aA").value.trim() || srcText === aTh)) this.$("aA").value = t.th || aTh;
-            if (this.$("aAEn") && (!this.$("aAEn").value.trim() || srcText === aEn)) this.$("aAEn").value = t.en || aEn;
-            if (this.$("aAJa") && (!this.$("aAJa").value.trim() || srcText === aJa)) this.$("aAJa").value = t.ja || aJa;
-            if (this.$("aAZh") && (!this.$("aAZh").value.trim() || srcText === aZh)) this.$("aAZh").value = t.zh || aZh;
-          }
-        } catch(e) {}
-      }
-
-      // Translate all question lines in one batch
-      if (qLines.length > 0) {
-        try {
-          const res = await fetch("/api/voice/translate", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({texts: qLines, all: true}),
-            signal: ctrl.signal
-          }).then(r => r.json());
-          if (res && res.ok && Array.isArray(res.results)) {
-            anyOk = true;
-            const allQ = new Set(qLines);
-            res.results.forEach(qt => {
-              if (qt) {
-                [qt.th, qt.en, qt.ja, qt.zh].forEach(q => {
-                  if (q && q.trim()) allQ.add(q.trim());
-                });
-              }
-            });
-            this.$("aQ").value = [...allQ].join("\n");
-          } else {
-            const allQ = new Set(qLines);
-            await Promise.all(qLines.map(async line => {
-              try {
-                const qRes = await fetch("/api/voice/translate", {
-                  method: "POST",
-                  headers: {"Content-Type": "application/json"},
-                  body: JSON.stringify({text: line, all: true}),
-                  signal: ctrl.signal
-                }).then(r => r.json());
-                if (qRes && qRes.ok && qRes.translations) {
-                  anyOk = true;
-                  const qt = qRes.translations;
-                  [qt.th, qt.en, qt.ja, qt.zh].forEach(q => {
-                    if (q && q.trim()) allQ.add(q.trim());
-                  });
-                }
-              } catch(e) {}
-            }));
-            this.$("aQ").value = [...allQ].join("\n");
-          }
-        } catch(e) {}
-      }
-      clearTimeout(timer);
-
-      if (stat) {
-        stat.textContent = anyOk ? "Translated to 4 languages!" : "Translation completed.";
-      }
-    } catch(e) {
-      if (stat) stat.textContent = "Translation finished.";
-    }
-  }
-
-  async saveAnswer(){
-  const qs = this.$("aQ").value.split("\n").map(s => s.trim()).filter(Boolean);
-  let aTh = this.$("aA") ? this.$("aA").value.trim() : "";
-  let aEn = this.$("aAEn") ? this.$("aAEn").value.trim() : "";
-  let aJa = this.$("aAJa") ? this.$("aAJa").value.trim() : "";
-  let aZh = this.$("aAZh") ? this.$("aAZh").value.trim() : "";
-  const primary = aTh || aEn || aJa || aZh;
-  if (!qs.length || !primary) {
-    this.$("wait").textContent = "An answer needs at least one way of asking, "
-                          + "and what to reply."; return;
-  }
-  // Auto-translate any missing language fields before saving
-  if (!aTh || !aEn || !aJa || !aZh) {
-    this.$("wait").textContent = "translating answers to other languages…";
-    try {
-      const res = await fetch("/api/voice/translate", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({text: primary, all: true})
-      }).then(r => r.json());
-      if (res.ok && res.translations) {
-        const t = res.translations;
-        if (!aTh) aTh = t.th || primary;
-        if (!aEn) aEn = t.en || primary;
-        if (!aJa) aJa = t.ja || primary;
-        if (!aZh) aZh = t.zh || primary;
-      }
-    } catch(e) {}
-  }
-  const moves = [];
-  const r0 = this.$("aRobot") ? this.$("aRobot").value : "";
-  const m0 = this.$("aMove") ? this.$("aMove").value : "";
-  if (r0 || m0) {
-    moves.push({module: r0, move: m0});
-  }
-  const extraRows = this.$("extraMoves") ? this.$("extraMoves").querySelectorAll(".move-row") : [];
-  extraRows.forEach(row => {
-    const r = row.querySelector(".move-robot-sel")?.value || "";
-    const m = row.querySelector(".move-seq-sel")?.value || "";
-    if (r || m) {
-      moves.push({module: r, move: m});
-    }
+  findAnswers(){
+  const want = (this.$("ansFind").value || "").trim().toLowerCase();
+  this.sheet.forEach(row => {
+    if (!row.tr) return;
+    const text = [(row.item.questions || []).join(" ")]
+      .concat(VoiceApp.ANSWER_KEYS.map(([, k]) => row.item[k] || "")).join(" ").toLowerCase();
+    row.tr.hidden = !!want && !row.dirty && !text.includes(want);
   });
-
-  const entry = {
-    questions: qs,
-    answer: aTh || primary,
-    answer_en: aEn || primary,
-    answer_ja: aJa || primary,
-    answer_zh: aZh || primary,
-  };
-  if (moves.length > 0) {
-    entry.moves = moves;
-    if (moves[0].move) entry.move = moves[0].move;
-    if (moves[0].module) entry.module = moves[0].module;
-  }
-  if (this.editAt < 0) this.faqs.push(entry); else this.faqs[this.editAt] = entry;
-  if (await this.postFaqs()) {
-    this.closeForm();
-    this.fillAnswers();
-    this.$("wait").textContent = "Answer saved across all languages.";
-  } else {
-    this.fillAnswers(); // redraw what really saved
-  }
 }
 
-  async delAnswer(i){
-  this.faqs.splice(i, 1);
-  if (await this.postFaqs()) this.fillAnswers();
+  // A new row goes on TOP, where it can be seen, with its first box ready.
+  addAnswerRow(){
+  this.$("ansFind").value = "";
+  this.sheet.unshift({item: {questions: [], answer: ""}, dirty: true});
+  this.drawSheet();
+  const first = this.sheet[0].ask;
+  if (first) { first.focus(); if (first.scrollIntoView) first.scrollIntoView({block: "center"}); }
+}
+
+  deleteRow(row){
+  this.sheet = this.sheet.filter(r => r !== row);
+  if (!row.fresh) this.removedRows = (this.removedRows || 0) + 1;
+  this.drawSheet();
+  this.$("ansStat").textContent = "Deleted — press Save answers to keep it that way, or Undo changes.";
+}
+
+  undoAnswers(){
+  this.fillAnswers();
+  this.$("ansStat").textContent = "Back to what is saved.";
+}
+
+  // Fills a row's empty languages from the first one written. With `questions`
+  // (the row's 🌐 button) the ways of asking gain each language too.
+  async translateRow(row, questions){
+  const stat = this.$("ansStat");
+  const src = VoiceApp.ANSWER_KEYS.map(([, k]) => (row.item[k] || "").trim()).find(Boolean);
+  const qs = row.item.questions || [];
+  if (!src && !qs.length) { stat.textContent = "Type a way of asking or a reply first."; return false; }
+  if (questions) stat.textContent = "translating…";
+  const post = body => fetch("/api/voice/translate", {method: "POST",
+    headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)})
+    .then(r => r.json()).catch(() => null);
+  let ok = false;
+  if (src) {
+    const res = await post({text: src, all: true});
+    if (res && res.ok && res.translations) {
+      ok = true;
+      VoiceApp.ANSWER_KEYS.forEach(([lang, key]) => {
+        const t = (res.translations[lang] || "").trim();
+        if (t && !(row.item[key] || "").trim()) {
+          row.item[key] = t;
+          if (row.says && row.says[lang]) { row.says[lang].value = t; this.grow(row.says[lang]); }
+        }
+      });
+    }
+  }
+  if (questions && qs.length) {
+    const res = await post({texts: qs, all: true});
+    if (res && res.ok && Array.isArray(res.results)) {
+      ok = true;
+      const all = new Set(qs);
+      res.results.forEach(t => t && Object.values(t).forEach(q => { if (q && String(q).trim()) all.add(String(q).trim()); }));
+      row.item.questions = [...all];
+      if (row.ask) { row.ask.value = row.item.questions.join("\n"); this.grow(row.ask); }
+    }
+  }
+  row.dirty = true;
+  this.markDirty();
+  if (questions) stat.textContent = ok ? "Translated — check it, then Save answers."
+                                       : "Translation did not answer (this PC may be offline). Type them in, or save as is.";
+  return ok;
+}
+
+  // What is saved: the moves as a list, and the first one also in the old
+  // single move/module fields that older readers still use.
+  cleanItem(item){
+  const out = Object.assign({}, item);
+  out.questions = (item.questions || []).map(s => String(s).trim()).filter(Boolean);
+  VoiceApp.ANSWER_KEYS.forEach(([, k]) => {
+    const v = String(item[k] || "").trim();
+    if (v) out[k] = v; else delete out[k];
+  });
+  const moves = this.answerMoves(item).filter(m => m.module || m.move);
+  delete out.moves; delete out.move; delete out.module;
+  if (moves.length) {
+    out.moves = moves;
+    if (moves[0].move) out.move = moves[0].move;
+    if (moves[0].module) out.module = moves[0].module;
+  }
+  return out;
+}
+
+  async saveAnswers(){
+  const stat = this.$("ansStat");
+  const blank = it => !(it.questions || []).length
+                      && !VoiceApp.ANSWER_KEYS.some(([, k]) => (it[k] || "").trim());
+  const before = this.sheet.length;
+  this.sheet = this.sheet.filter(r => !blank(r.item));   // an untouched new row is no answer
+  if (this.sheet.length !== before) this.drawSheet();
+  const bad = this.sheet.filter(r => !(r.item.questions || []).length
+                                     || !VoiceApp.ANSWER_KEYS.some(([, k]) => (r.item[k] || "").trim()));
+  if (bad.length) {
+    bad.forEach(r => { r.tr.classList.add("bad"); r.tr.hidden = false; });
+    stat.textContent = "Row " + (this.sheet.indexOf(bad[0]) + 1)
+                     + " needs a way of asking and a reply. Nothing was saved yet.";
+    if (bad[0].ask) bad[0].ask.focus();
+    return false;
+  }
+  const btn = this.$("ansSave");
+  btn.disabled = true;
+  // An empty language is translated before saving, so the rig has it ready
+  // (the helper would translate it at the first question, and make someone wait).
+  const todo = this.sheet.filter(r => r.dirty && VoiceApp.ANSWER_KEYS.some(([, k]) => !(r.item[k] || "").trim()));
+  for (let i = 0; i < todo.length; i++) {
+    stat.textContent = "translating " + (i + 1) + " of " + todo.length + "…";
+    await this.translateRow(todo[i], false);
+  }
+  stat.textContent = "saving…";
+  const faqs = this.sheet.map(r => this.cleanItem(r.item));
+  if (!(await this.postFaqs(faqs))) { this.markDirty(); return false; }
+  this.faqs = faqs;
+  this.fillAnswers();
+  stat.textContent = "Saved — " + faqs.length + " answers.";
+  return true;
 }
 
   async hear(text, lang = ""){
   if (text) await this.speak(text, lang);
 }
 
-  toggleAutoDetect(on){
-    this.autoDetect = !!on;
-    const b = this.$("autoDetectBeta");
-    if (b) b.checked = this.autoDetect;
-    const l = this.$("autoDetectLang");
-    if (l) l.checked = this.autoDetect;
-    try { localStorage.setItem("voice_auto_detect", this.autoDetect ? "1" : "0"); } catch(e) {}
-  }
+  // The Language box above the question: any, or one every question is held to.
+  fillAskLangs(){
+  const sel = this.$("askLang");
+  if (!sel || !this.cfg) return;
+  sel.textContent = "";
+  const add = (v, t) => {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = t;
+    sel.appendChild(o);
+  };
+  add("", "any (it can tell)");
+  const langs = this.langs();
+  langs.forEach(l => add(l, "only " + VoiceApp.langName(l)));
+  if (this.askLang && !langs.includes(this.askLang)) add(this.askLang, this.askLang);
+  sel.value = this.askLang;
+}
 
-  toggleTestMode(on){
-    this.toggleAutoDetect(on);
-  }
+  pickAskLang(){
+  this.askLang = this.$("askLang").value || "";
+  try { localStorage.setItem("voice_ask_lang", this.askLang); } catch(e) {}
+}
 
-  runTestPrompt(text, lang){
-    this.$("q").value = text;
-    this.ask(lang);
-  }
-
-// ---- Voice and language ----------------------------------------------
+// ---- Voice: how it sounds -------------------------------------------
 static SAMPLES = {
   th: "สวัสดีครับ ผมคือหุ่นยนต์น้อง Mice",
   en: "Hello, I am the Mice robot",
@@ -1814,25 +1772,24 @@ static SAMPLES = {
   const t = this.cfg.tts || {}, s = this.cfg.stt || {};
   this.$("speakOn").checked = t.enabled !== false;
   this.$("listenOn").checked = s.enabled !== false;
-  const langs = Object.keys(t.voices || {});
-  ["th", "en", "ja", "zh"].forEach(l => { if (!langs.includes(l)) langs.push(l); });
-  this.$("ttsLang").textContent = "";
-  const langLabels = {th: "ไทย (th)", en: "English (en)", ja: "日本語 (ja)", zh: "中文 (zh)"};
+  const ml = this.$("mainLang");
+  ml.textContent = "";
+  const langs = this.langs();
   langs.forEach(l => {
     const o = document.createElement("option");
-    o.value = l; o.textContent = langLabels[l] || l;
-    this.$("ttsLang").appendChild(o);
+    o.value = l; o.textContent = VoiceApp.langName(l);
+    ml.appendChild(o);
   });
-  this.$("ttsLang").value = t.language || langs[0] || "th";
-  this.fillVoices();
+  ml.value = t.language || langs[0] || "";
+  this.fillSteps(this.$("ttsRate"), "rate", t.rate);
+  this.fillSteps(this.$("ttsPitch"), "pitch", t.pitch);
   this.fillOneVoice();
   const row = this.$("modelRow");
   row.textContent = "";
   let known = false;
-  VoiceApp.MODEL_WORDS.forEach(([id, word]) => {
+  const radio = (id, word) => {
     const l = document.createElement("label");
-    l.className = "mini";
-    l.style.cssText = "display:flex;gap:6px;align-items:center";
+    l.className = "mini pick";
     const r = document.createElement("input");
     r.type = "radio"; r.name = "sttModel"; r.value = id;
     r.checked = s.model === id;
@@ -1840,45 +1797,51 @@ static SAMPLES = {
     l.appendChild(r);
     l.appendChild(document.createTextNode(word));
     row.appendChild(l);
-  });
-  if (!known && s.model) {          // a model the words do not cover: say so
-    const l = document.createElement("label");
-    l.className = "mini"; l.style.cssText = "display:flex;gap:6px;align-items:center";
-    const r = document.createElement("input");
-    r.type = "radio"; r.name = "sttModel"; r.value = s.model; r.checked = true;
-    l.appendChild(r);
-    l.appendChild(document.createTextNode(s.model));
-    row.appendChild(l);
-  }
-}
-
-  fillVoices(){
-  const lang = this.$("ttsLang").value;
-  const V = (this.cfg.tts && this.cfg.tts.voices) || {};   // a store may not name tts yet
-  const names = new Set();
-  if (V[lang]) names.add(V[lang]);
-  const presets = {
-    th: ["th-TH-PremwadeeNeural", "th-TH-NiwatNeural"],
-    en: ["en-US-JennyNeural", "en-US-GuyNeural"],
-    ja: ["ja-JP-NanamiNeural", "ja-JP-KeitaNeural"],
-    zh: ["zh-CN-XiaoxiaoNeural", "zh-CN-YunxiNeural"]
   };
-  (presets[lang] || []).forEach(v => names.add(v));
-  for (const l of Object.keys(V)) {
-    if (V[l]) names.add(V[l]);
+  VoiceApp.MODEL_WORDS.forEach(([id, word]) => radio(id, word));
+  if (!known && s.model) radio(s.model, s.model);   // a model the words do not cover: say so
+}
+
+  // Speed and pitch as words with the step beside them, in the speech
+  // service's own shapes ("+10%", "-5Hz"). A saved value off the list stays
+  // visible rather than being quietly reset. `first` is the "same as" choice.
+  fillSteps(sel, kind, chosen, first){
+  if (!sel) return;
+  sel.textContent = "";
+  const add = (v, txt) => {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = txt;
+    sel.appendChild(o);
+    return o;
+  };
+  if (first) add("", first);
+  const rate = kind === "rate";
+  const unit = rate ? "%" : "Hz", step = rate ? 10 : 5, far = rate ? 40 : 20;
+  const words = rate ? ["slower", "faster"] : ["lower", "higher"];
+  const have = [];
+  for (let v = -far; v <= far; v += step) {
+    const val = (v < 0 ? "" : "+") + v + unit;
+    have.push(val);
+    add(val, v === 0 ? "normal" : (Math.abs(v) > far / 2 ? "much " : "a bit ")
+             + words[v < 0 ? 0 : 1] + " (" + val + ")");
   }
-  this.fillPick(this.$("ttsVoice"), "(Windows chooses)", [...names].filter(Boolean),
-           V[lang] || (presets[lang] && presets[lang][0]) || "");
+  const want = String(chosen || "").trim();
+  if (want && !have.includes(want)) add(want, want);
+  sel.value = want || (first ? "" : "+0" + unit);
 }
 
-  tryVoice(){
-  // The point is to hear the voice AS PICKED, so the picked language rides
-  // along; an answer's own this.speak() stays on the venue's default language.
-  this.speak(VoiceApp.SAMPLES[this.$("ttsLang").value] || "Hello", this.$("ttsLang").value);
+  // "th-TH-PremwadeeNeural" -> "Premwadee", for a voice the list does not hold.
+  voiceShort(name){
+  return String(name).replace(/^[a-z]{2,3}-[A-Z]{2,4}-/, "").replace(/Neural$/, "") || name;
 }
 
-  // The voices that can speak every language come from the helper, which
-  // asks the speech service itself - no list of names lives in this page.
+  voiceWords(v){
+  const g = {Female: "woman", Male: "man"}[v.gender] || v.gender || "";
+  return (v.says || v.name) + (g ? " · " + g : "");
+}
+
+  // The voices come from the helper, which asks the speech service itself -
+  // no list of names lives in this page.
   async fillOneVoice(){
   const sel = this.$("oneVoice");
   if (!sel) return;
@@ -1887,39 +1850,105 @@ static SAMPLES = {
     try {
       const r = await fetch("/api/voice/voices").then(res => res.json());
       this.allVoices = (r && r.ok && r.voices) ? r.voices : [];
+      this.voicesByLang = (r && r.ok && r.byLang) || {};
     } catch(e) { this.allVoices = []; }
   }
   sel.textContent = "";
   const add = (value, text) => {
     const o = document.createElement("option");
     o.value = value; o.textContent = text;
-    if (value === want) o.selected = true;
     sel.appendChild(o);
+    return o;
   };
-  add("", "a voice per language (above)");
-  this.allVoices.forEach(v => add(v.name, v.says || v.name));
+  add("", "a different voice for each language (below)");
+  this.allVoices.forEach(v => add(v.name, this.voiceWords(v) + " · speaks every language"));
   if (want && !this.allVoices.some(v => v.name === want)) add(want, want);
   if (!this.allVoices.length) {
     // Offline, or the speech service refused: say so rather than showing
     // an empty box that looks broken.
-    add("", "no shared voices found — the PC may be offline");
+    add("-", "(no voice list — this PC may be offline; the saved voices still speak)").disabled = true;
   }
+  sel.value = want;
+  this.fillLangVoices();
+  this.voicesReady = true;                  // collectVoice may read the boxes now
+  this.pickOneVoice();
+  this.fillScenarioVoices();
+}
+
+  // One row per language: its own voice, used when no one voice is chosen.
+  fillLangVoices(){
+  const box = this.$("langVoices");
+  if (!box) return;
+  box.textContent = "";
+  const V = (this.cfg.tts && this.cfg.tts.voices) || {};
+  this.langVoice = {};
+  this.langs().forEach(lang => {
+    const f = document.createElement("div");
+    f.className = "field";
+    const lab = document.createElement("span");
+    lab.textContent = VoiceApp.langName(lang);
+    const sel = document.createElement("select");
+    const list = this.voicesByLang[lang] || [];
+    this.fillPick(sel, "(this PC's own voice)", list.map(v => v.name), V[lang] || "");
+    [...(sel.options || [])].forEach(o => {
+      const v = list.find(x => x.name === o.value);
+      // No list (offline): the saved voice is not "missing", just unlisted.
+      if (v || (!list.length && o.value)) o.textContent = v ? this.voiceWords(v) : this.voiceShort(o.value);
+    });
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = "▶ Try";
+    b.onclick = () => this.tryVoice(lang, sel.value || "");
+    f.appendChild(lab); f.appendChild(sel); f.appendChild(b);
+    box.appendChild(f);
+    this.langVoice[lang] = {sel, f, b};
+  });
 }
 
   pickOneVoice(){
   const sel = this.$("oneVoice");
   const on = !!(sel && sel.value);
-  ["ttsLang", "ttsVoice"].forEach(id => { if (this.$(id)) this.$(id).disabled = on; });
+  Object.values(this.langVoice || {}).forEach(({sel: s, f, b}) => {
+    s.disabled = b.disabled = on;
+    f.classList.toggle("off", on);
+  });
+  // A scenario with a voice of its own wins over this tab: say so here, or
+  // a change on this tab seems to do nothing.
+  const note = this.$("voiceNote");
+  const sc = this.scenarioList().find(x => (x.name || "") === (this.cfg.scenario || ""));
+  if (note) {
+    note.hidden = !(sc && sc.voice);
+    note.textContent = sc && sc.voice
+      ? "The scenario “" + sc.name + "” has a voice of its own, so that one speaks. Change it on Personality." : "";
+  }
+}
+
+  // Try plays the voice AS CHOSEN on screen, before anything is saved: its
+  // language's sample at this tab's speed and pitch.
+  tryVoice(lang = "", voice = ""){
+  lang = lang || (this.$("mainLang") && this.$("mainLang").value) || "th";
+  const one = this.$("oneVoice") ? this.$("oneVoice").value : "";
+  const own = ((this.langVoice || {})[lang] || {}).sel;
+  voice = voice || one || (own ? own.value : "");
+  const t = {speed: this.$("ttsRate").value || "+0%", pitch: this.$("ttsPitch").value || "+0Hz"};
+  if (voice && voice !== "-") t.voice = voice;
+  this.speak(VoiceApp.SAMPLES[lang] || VoiceApp.SAMPLES.en, lang, t);
 }
 
   collectVoice(){
-  this.cfg.tts = this.cfg.tts || {};
-  this.cfg.tts.enabled = this.$("speakOn").checked;
-  this.cfg.tts.language = this.$("ttsLang").value;
-  this.cfg.tts.voices = this.cfg.tts.voices || {};
-  this.cfg.tts.voices[this.cfg.tts.language] = this.$("ttsVoice").value;
-  // Empty means the per-language map above. Anything else speaks everything.
-  this.cfg.tts.oneVoice = this.$("oneVoice") ? this.$("oneVoice").value : "";
+  const t = this.cfg.tts = this.cfg.tts || {};
+  t.enabled = this.$("speakOn").checked;
+  const ml = this.$("mainLang").value;
+  if (ml) t.language = ml;
+  t.rate = this.$("ttsRate").value || "+0%";
+  t.pitch = this.$("ttsPitch").value || "+0Hz";
+  // Only once the voice boxes are drawn: an empty box read before the list
+  // arrived would wipe the saved voices.
+  if (this.voicesReady) {
+    t.voices = t.voices || {};
+    Object.entries(this.langVoice || {}).forEach(([l, {sel}]) => { t.voices[l] = sel.value; });
+    // Empty means the per-language voices. Anything else speaks everything.
+    t.oneVoice = this.$("oneVoice").value === "-" ? "" : this.$("oneVoice").value;
+  }
   this.cfg.stt = this.cfg.stt || {};
   this.cfg.stt.enabled = this.$("listenOn").checked;
   const pick = document.querySelector('input[name="sttModel"]:checked');
@@ -1933,41 +1962,34 @@ static SAMPLES = {
   this.biasInputs = {};
   if (!this.cfg.stt) this.cfg.stt = {};
   if (!this.cfg.stt.languages) this.cfg.stt.languages = {};
-  ["th", "en", "ja", "zh"].forEach(lang => {
-    if (!this.cfg.stt.languages[lang]) this.cfg.stt.languages[lang] = {bias: ""};
-  });
-  const langs = ["th", "en", "ja", "zh"];
+  const langs = this.langs();
   Object.keys(this.cfg.stt.languages).forEach(l => { if (!langs.includes(l)) langs.push(l); });
-  const langLabels = {th: "ไทย", en: "EN", ja: "JA", zh: "ZH"};
   langs.forEach(lang => {
+    if (!this.cfg.stt.languages[lang]) this.cfg.stt.languages[lang] = {bias: ""};
     const wrap = document.createElement("div");
-    wrap.className = "row";
-    wrap.style.cssText = "align-items:flex-start;margin-bottom:var(--sp-2)";
+    wrap.className = "field";
     const name = document.createElement("span");
-    name.className = "mini";
-    name.style.cssText = "flex:0 0 44px;padding-top:6px;font-weight:600";
-    name.textContent = langLabels[lang] || lang;
+    name.textContent = VoiceApp.langName(lang);
     const chips = document.createElement("div");
-    chips.style.cssText = "flex:1;display:flex;gap:4px;flex-wrap:wrap";
+    chips.className = "row";
     const draw = () => {
       chips.textContent = "";
-      const words = ((this.cfg.stt.languages[lang] && this.cfg.stt.languages[lang].bias) || "").split(/\s+/)
-                      .filter(Boolean);
+      const words = (this.cfg.stt.languages[lang].bias || "").split(/\s+/).filter(Boolean);
       if (!words.length) {
         const m = document.createElement("span");
         m.className = "mini";
-        m.textContent = lang === "th"
-          ? "ยังไม่มีคำที่ต้องช่วย" : "no corrections yet";
+        m.textContent = "none yet";
         chips.appendChild(m);
       }
       words.forEach(w => {
         const c = document.createElement("button");
         c.type = "button";
+        c.className = "mini";
+        c.title = "Take this word off";
         c.textContent = w + " ✕";
         c.onclick = () => {
-          const left = ((this.cfg.stt.languages[lang] && this.cfg.stt.languages[lang].bias) || "").split(/\s+/)
-                         .filter(x => x && x !== w);
-          this.cfg.stt.languages[lang].bias = left.join(" ");
+          this.cfg.stt.languages[lang].bias = (this.cfg.stt.languages[lang].bias || "")
+            .split(/\s+/).filter(x => x && x !== w).join(" ");
           draw();
         };
         chips.appendChild(c);
@@ -1976,20 +1998,15 @@ static SAMPLES = {
     draw();
     const input = document.createElement("input");
     this.biasInputs[lang] = input;
-    input.placeholder = lang === "th" ? "คำที่ฟังผิดบ่อย" : "word misheard";
-    input.style.cssText = "flex:1 1 110px;min-width:100px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--sunk);color:var(--txt);padding:6px;font:inherit";
+    input.placeholder = "add a word";
     const add = document.createElement("button");
     add.type = "button";
     add.textContent = "Add";
     add.onclick = () => {
       const w = String(input.value || "").trim();
       if (!w) return;
-      if (!this.cfg.stt.languages[lang]) this.cfg.stt.languages[lang] = {bias: ""};
-      const have = (this.cfg.stt.languages[lang].bias || "").split(/\s+/)
-                     .filter(Boolean);
-      w.split(/\s+/).forEach(part => {
-        if (part && !have.includes(part)) have.push(part);
-      });
+      const have = (this.cfg.stt.languages[lang].bias || "").split(/\s+/).filter(Boolean);
+      w.split(/\s+/).forEach(part => { if (part && !have.includes(part)) have.push(part); });
       this.cfg.stt.languages[lang].bias = have.join(" ");
       input.value = "";
       draw();
@@ -2003,25 +2020,20 @@ static SAMPLES = {
   });
 }
 
+  // A word typed but not yet Added still counts when Save is pressed.
   collectWords(){
-    if (!this.cfg.stt || !this.cfg.stt.languages || !this.biasInputs) return;
-    Object.keys(this.biasInputs).forEach(lang => {
-      const inp = this.biasInputs[lang];
-      if (inp && inp.value) {
-        const val = String(inp.value).trim();
-        if (val) {
-          if (!this.cfg.stt.languages[lang]) this.cfg.stt.languages[lang] = {bias: ""};
-          const have = (this.cfg.stt.languages[lang].bias || "").split(/\s+/).filter(Boolean);
-          val.split(/\s+/).forEach(w => {
-            if (w && !have.includes(w)) have.push(w);
-          });
-          this.cfg.stt.languages[lang].bias = have.join(" ");
-          inp.value = "";
-        }
-      }
-    });
-    if (typeof this.fillWords === "function") this.fillWords();
-  }
+  if (!this.cfg.stt || !this.cfg.stt.languages || !this.biasInputs) return;
+  let any = false;
+  Object.keys(this.biasInputs).forEach(lang => {
+    const val = String(this.biasInputs[lang].value || "").trim();
+    if (!val) return;
+    const have = (this.cfg.stt.languages[lang].bias || "").split(/\s+/).filter(Boolean);
+    val.split(/\s+/).forEach(w => { if (w && !have.includes(w)) have.push(w); });
+    this.cfg.stt.languages[lang].bias = have.join(" ");
+    any = true;
+  });
+  if (any) this.fillWords();
+}
 
 // ---- Scenario ---------------------------------------------------------
 // What the rig is being, and how it sounds while being it. A scenario is one
@@ -2029,15 +2041,18 @@ static SAMPLES = {
 // cfg.scenario still works and is shown as "(just these words)", so a store
 // written before scenarios existed opens unchanged.
   scenarioList(){
-  return Array.isArray(this.cfg.scenarios) ? this.cfg.scenarios : [];
+  return Array.isArray((this.cfg || {}).scenarios) ? this.cfg.scenarios : [];
 }
 
-  async fillScenario(){
+  scenarioNow(){
+  const want = (this.cfg.scenario || "").trim();
+  return this.scenarioList().find(s => (s.name || "").trim() === want && want) || null;
+}
+
+  fillScenario(){
   const sel = this.$("scenPick");
   if (!sel) return;
-  const want = (this.cfg.scenario || "").trim();
-  const list = this.scenarioList();
-  const named = list.find(s => (s.name || "").trim() === want && want);
+  const named = this.scenarioNow();
   sel.textContent = "";
   const add = (v, txt) => {
     const o = document.createElement("option");
@@ -2045,34 +2060,45 @@ static SAMPLES = {
     sel.appendChild(o);
   };
   add("", "(just these words)");
-  list.forEach(s => add(s.name || "", s.name || "(no name)"));
+  this.scenarioList().forEach(s => add(s.name || "", s.name || "(no name)"));
   sel.value = named ? named.name : "";
-  const use = named || {prompt: want, voice: "", rate: "", pitch: ""};
-  this.$("scenPrompt").value = use.prompt || "";
-  this.$("scenRate").value = use.rate || "";
-  this.$("scenPitch").value = use.pitch || "";
-  await this.fillOneVoice();                 // shares the voice list
+  this.showScenario(named || {prompt: (this.cfg.scenario || "").trim()});
+}
+
+  showScenario(s){
+  this.$("scenPrompt").value = s.prompt || "";
+  this.fillSteps(this.$("scenRate"), "rate", s.rate, "same as the Voice tab");
+  this.fillSteps(this.$("scenPitch"), "pitch", s.pitch, "same as the Voice tab");
+  this.scenVoiceWant = s.voice || "";
+  this.fillScenarioVoices();
+}
+
+  // Every voice offered, one voice for every language first; "same as the
+  // Voice tab" keeps that tab's choice.
+  fillScenarioVoices(){
   const vs = this.$("scenVoice");
+  if (!vs) return;
+  const want = this.scenVoiceWant || "";
   vs.textContent = "";
-  const addV = (v, txt) => {
+  const add = (v, txt, into) => {
     const o = document.createElement("option");
     o.value = v; o.textContent = txt;
-    if (v === (use.voice || "")) o.selected = true;
-    vs.appendChild(o);
+    (into || vs).appendChild(o);
   };
-  addV("", "the voice settings above");
-  (this.allVoices || []).forEach(v => addV(v.name, v.says || v.name));
-  if (use.voice && !(this.allVoices || []).some(v => v.name === use.voice))
-    addV(use.voice, use.voice);
+  add("", "same as the Voice tab");
+  const names = [];
+  (this.allVoices || []).forEach(v => { names.push(v.name); add(v.name, this.voiceWords(v) + " · speaks every language"); });
+  Object.entries(this.voicesByLang || {}).forEach(([l, list]) => list.forEach(v => {
+    if (!names.includes(v.name)) { names.push(v.name); add(v.name, this.voiceWords(v)); }
+  }));
+  if (want && !names.includes(want)) add(want, want);
+  vs.value = want;
 }
 
   pickScenario(){
   const name = this.$("scenPick").value;
   const s = this.scenarioList().find(x => (x.name || "") === name);
-  this.$("scenPrompt").value = s ? (s.prompt || "") : "";
-  this.$("scenRate").value = s ? (s.rate || "") : "";
-  this.$("scenPitch").value = s ? (s.pitch || "") : "";
-  this.$("scenVoice").value = s ? (s.voice || "") : "";
+  this.showScenario(s || {prompt: ""});
 }
 
   addScenario(){
@@ -2082,10 +2108,23 @@ static SAMPLES = {
   if (!this.cfg.scenarios.some(s => (s.name || "") === name))
     this.cfg.scenarios.push({name, prompt: this.$("scenPrompt").value.trim(),
                              voice: this.$("scenVoice").value,
-                             rate: this.$("scenRate").value.trim(),
-                             pitch: this.$("scenPitch").value.trim()});
+                             rate: this.$("scenRate").value,
+                             pitch: this.$("scenPitch").value});
   this.cfg.scenario = name;
   this.fillScenario();
+  this.$("sStat").textContent = "Added — press Save personality to keep it.";
+}
+
+  // Plays the scenario as it would sound: its own voice, speed and pitch, or
+  // the Voice tab's where it says "same".
+  tryScenario(){
+  const lang = (this.$("mainLang") && this.$("mainLang").value) || "th";
+  const own = ((this.langVoice || {})[lang] || {}).sel;
+  const voice = this.$("scenVoice").value || this.$("oneVoice").value || (own ? own.value : "");
+  const t = {speed: this.$("scenRate").value || this.$("ttsRate").value || "+0%",
+             pitch: this.$("scenPitch").value || this.$("ttsPitch").value || "+0Hz"};
+  if (voice && voice !== "-") t.voice = voice;
+  this.speak(VoiceApp.SAMPLES[lang] || VoiceApp.SAMPLES.en, lang, t);
 }
 
   collectScenario(){
@@ -2094,8 +2133,8 @@ static SAMPLES = {
   const name = sel.value;
   const body = {prompt: this.$("scenPrompt").value.trim(),
                 voice: this.$("scenVoice").value,
-                rate: this.$("scenRate").value.trim(),
-                pitch: this.$("scenPitch").value.trim()};
+                rate: this.$("scenRate").value,
+                pitch: this.$("scenPitch").value};
   if (!name) {                                // no scenario: the words alone
     this.cfg.scenario = body.prompt;
     return;
@@ -2105,6 +2144,7 @@ static SAMPLES = {
   if (at < 0) this.cfg.scenarios.push(Object.assign({name}, body));
   else this.cfg.scenarios[at] = Object.assign({}, this.cfg.scenarios[at], body);
   this.cfg.scenario = name;
+  this.pickOneVoice();                        // the Voice tab's note follows
 }
 
 // ---- How it speaks Thai ------------------------------------------------
@@ -2119,7 +2159,7 @@ static SAMPLES = {
   const pick = (id, list, chosen) => {
     const sel = this.$(id);
     if (!sel) return;
-    sel.innerHTML = "";
+    sel.textContent = "";
     (list || []).forEach(p => {
       const o = document.createElement("option");
       o.value = o.textContent = p;
@@ -2194,7 +2234,6 @@ static SAMPLES = {
   this.cfg.faqThreshold = num("faqTh", this.cfg.faqThreshold ?? 0.75);
   this.cfg.faqAskAgain = num("askAgain", this.cfg.faqAskAgain ?? 0.65);
   this.cfg.llm = this.cfg.llm || {};
-  this.cfg.llm.enabled = true;
   this.cfg.llm.model = this.$("llmModel").value.trim() || this.cfg.llm.model || "Qwen/Qwen3.5-4B";
   this.cfg.llm.maxTokens = num("llmMax", this.cfg.llm.maxTokens || 512);
 }
@@ -2205,106 +2244,89 @@ static SAMPLES = {
   init(){
     if (this.initialized) return;
     this.initialized = true;
-try { this.$("sound").checked = localStorage.sound === "true"; } catch(e) {}
-this.$("sound").addEventListener("change",
-                            () => { try { localStorage.sound = this.$("sound").checked; } catch(e) {} });
+    const keep = (key, fallback) => {
+      try { const v = localStorage.getItem(key); return v === null ? fallback : v; }
+      catch(e) { return fallback; }
+    };
+    const save = (key, v) => { try { localStorage.setItem(key, v); } catch(e) {} };
 
-try { this.setAdvanced(localStorage.getItem("hub_adv") === "1"); }
-catch(e) { this.setAdvanced(false); }
+    // Sound here is ON unless this browser switched it off: off by default,
+    // a first visitor heard nothing and took the voice for broken.
+    this.$("sound").checked = keep("sound", "true") === "true";
+    this.$("sound").addEventListener("change", () => save("sound", String(this.$("sound").checked)));
 
-try {
-  const me = localStorage.getItem("voice_move_enabled");
-  this.moveEnabled = (me !== null) ? (me === "1") : true;
-  if (this.$("moveOn")) this.$("moveOn").checked = this.moveEnabled;
-} catch(e) {}
-this.$("moveOn")?.addEventListener("change", () => {
-  this.moveEnabled = !!(this.$("moveOn") && this.$("moveOn").checked);
-  try { localStorage.setItem("voice_move_enabled", this.moveEnabled ? "1" : "0"); } catch(e) {}
-});
+    this.moveEnabled = keep("voice_move_enabled", "1") === "1";
+    this.$("moveOn").checked = this.moveEnabled;
+    this.$("moveOn").addEventListener("change", () => {
+      this.moveEnabled = !!this.$("moveOn").checked;
+      save("voice_move_enabled", this.moveEnabled ? "1" : "0");
+    });
 
-try {
-  this.globalRobot = localStorage.getItem("voice_global_robot") || "";
-  if (this.$("globalRobot")) this.$("globalRobot").value = this.globalRobot;
-} catch(e) {}
-this.$("globalRobot")?.addEventListener("change", () => {
-  this.globalRobot = this.$("globalRobot") ? this.$("globalRobot").value : "";
-  try { localStorage.setItem("voice_global_robot", this.globalRobot); } catch(e) {}
-});
+    this.globalRobot = keep("voice_global_robot", "");
+    this.$("globalRobot").value = this.globalRobot;
+    this.$("globalRobot").addEventListener("change", () => {
+      this.globalRobot = this.$("globalRobot").value;
+      save("voice_global_robot", this.globalRobot);
+    });
 
-try {
-  const ad = localStorage.getItem("voice_auto_detect");
-  this.autoDetect = (ad !== null) ? (ad === "1") : true;
-  if (this.$("autoDetectBeta")) this.$("autoDetectBeta").checked = this.autoDetect;
-  if (this.$("autoDetectLang")) this.$("autoDetectLang").checked = this.autoDetect;
-} catch(e) {}
+    this.askLang = keep("voice_ask_lang", "");
 
-// Hides everything except the login box when not logged in, enforcing
-// the "login first before do everything" rule for the voice app.
-document.addEventListener("mice-auth", e => {
-  const authed = e.detail && e.detail.authed;
-  ["down", "ready", "answerCard", "setRow", "settings"].forEach(id => {
-    const el = this.$(id);
-    if (el && el.classList) el.classList.toggle("mg-off", !authed);
-  });
-});
+    // The open tab is remembered; Advanced is not, since it hides with the
+    // technical switch and would leave an empty settings area.
+    const tab = keep("voice_tab", "answers");
+    this.showTab(tab === "adv" ? "answers" : tab);
 
-miceLogin.mount(this.$("loginHere"));
-this.load();
-this.pollFace();
-if (!this._faceInterval) {
-  this._faceInterval = setInterval(() => this.pollFace(), 2500);
-}
-this.loadCamera();
+    // Unsaved answers are not lost to a closed tab.
+    if (typeof window.addEventListener === "function")
+      window.addEventListener("beforeunload", e => {
+        if (this.sheet.some(r => r.dirty) || this.removedRows) { e.preventDefault(); e.returnValue = ""; }
+      });
+
+    // Logged out, only the login box shows ("login first before do
+    // everything" for the voice app).
+    document.addEventListener("mice-auth", e => {
+      const authed = e.detail && e.detail.authed;
+      ["down", "ready", "answerCard", "settings"].forEach(id => {
+        const el = this.$(id);
+        if (el && el.classList) el.classList.toggle("mg-off", !authed);
+      });
+    });
+
+    miceLogin.mount(this.$("loginHere"));
+    this.load();
+    this.pollFace();
+    if (!this._faceInterval) {
+      this._faceInterval = setInterval(() => this.pollFace(), 2500);
+    }
+    this.loadCamera();
   }
 
 }
 window.voiceApp = new VoiceApp();
-window.say = (...args) => window.voiceApp.say(...args);
+// The page's buttons call these by name (onclick="...").
 window.load = (...args) => window.voiceApp.load(...args);
-window.down = (...args) => window.voiceApp.down(...args);
-window.human = (...args) => window.voiceApp.human(...args);
 window.talk = (...args) => window.voiceApp.talk(...args);
-window.convRms = (...args) => window.voiceApp.convRms(...args);
-window.convRecord = (...args) => window.voiceApp.convRecord(...args);
-window.convListenOnce = (...args) => window.voiceApp.convListenOnce(...args);
 window.startConv = (...args) => window.voiceApp.startConv(...args);
 window.stopConv = (...args) => window.voiceApp.stopConv(...args);
 window.ask = (...args) => window.voiceApp.ask(...args);
 window.speak = (...args) => window.voiceApp.speak(...args);
 window.speakAndWait = (...args) => window.voiceApp.speakAndWait(...args);
-window.mvClear = (...args) => window.voiceApp.mvClear(...args);
-window.findRobot = (...args) => window.voiceApp.findRobot(...args);
 window.doMove = (...args) => window.voiceApp.doMove(...args);
-window.setAdvanced = (...args) => window.voiceApp.setAdvanced(...args);
-window.toggleSet = (...args) => window.voiceApp.toggleSet(...args);
 window.loadStores = (...args) => window.voiceApp.loadStores(...args);
 window.postConfig = (...args) => window.voiceApp.postConfig(...args);
 window.postFaqs = (...args) => window.voiceApp.postFaqs(...args);
 window.fillAnswers = (...args) => window.voiceApp.fillAnswers(...args);
-window.fillPick = (...args) => window.voiceApp.fillPick(...args);
-window.addMoveRow = (...args) => window.voiceApp.addMoveRow(...args);
-window.openForm = (...args) => window.voiceApp.openForm(...args);
-window.closeForm = (...args) => window.voiceApp.closeForm(...args);
-window.autoTranslateAnswers = (...args) => window.voiceApp.autoTranslateAnswers(...args);
-window.saveAnswer = (...args) => window.voiceApp.saveAnswer(...args);
-window.delAnswer = (...args) => window.voiceApp.delAnswer(...args);
-window.hear = (...args) => window.voiceApp.hear(...args);
-window.toggleAutoDetect = (...args) => window.voiceApp.toggleAutoDetect(...args);
-window.toggleTestMode = (...args) => window.voiceApp.toggleTestMode(...args);
-window.runTestPrompt = (...args) => window.voiceApp.runTestPrompt(...args);
-window.fillVoice = (...args) => window.voiceApp.fillVoice(...args);
-window.fillVoices = (...args) => window.voiceApp.fillVoices(...args);
+window.showTab = (...args) => window.voiceApp.showTab(...args);
+window.findAnswers = (...args) => window.voiceApp.findAnswers(...args);
+window.addAnswerRow = (...args) => window.voiceApp.addAnswerRow(...args);
+window.saveAnswers = (...args) => window.voiceApp.saveAnswers(...args);
+window.undoAnswers = (...args) => window.voiceApp.undoAnswers(...args);
+window.pickAskLang = (...args) => window.voiceApp.pickAskLang(...args);
+window.tryVoice = (...args) => window.voiceApp.tryVoice(...args);
 window.pickOneVoice = (...args) => window.voiceApp.pickOneVoice(...args);
 window.pickScenario = (...args) => window.voiceApp.pickScenario(...args);
 window.addScenario = (...args) => window.voiceApp.addScenario(...args);
-window.fillScenario = (...args) => window.voiceApp.fillScenario(...args);
-window.fillOneVoice = (...args) => window.voiceApp.fillOneVoice(...args);
-window.tryVoice = (...args) => window.voiceApp.tryVoice(...args);
-window.collectVoice = (...args) => window.voiceApp.collectVoice(...args);
-window.fillWords = (...args) => window.voiceApp.fillWords(...args);
-window.collectWords = (...args) => window.voiceApp.collectWords(...args);
-window.fillAdvanced = (...args) => window.voiceApp.fillAdvanced(...args);
-window.collectAdvanced = (...args) => window.voiceApp.collectAdvanced(...args);
+window.tryScenario = (...args) => window.voiceApp.tryScenario(...args);
 window.loadModel = (...args) => window.voiceApp.loadModel(...args);
 window.unloadModel = (...args) => window.voiceApp.unloadModel(...args);
 window.startVoiceService = (...args) => window.voiceApp.startVoiceService(...args);
@@ -2312,6 +2334,8 @@ window.openReconize = (...args) => window.voiceApp.openReconize(...args);
 window.whoAmI = (...args) => window.voiceApp.whoAmI(...args);
 window.pickCamera = (...args) => window.voiceApp.pickCamera(...args);
 window.toggleAutoFace = (...args) => window.voiceApp.toggleAutoFace(...args);
+window.convRecord = (...args) => window.voiceApp.convRecord(...args);
+window.convRms = (...args) => window.voiceApp.convRms(...args);
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => window.voiceApp.init(), {once: true});
 } else {

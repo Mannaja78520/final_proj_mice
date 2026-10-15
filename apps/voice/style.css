@@ -1,18 +1,33 @@
 .card{border:1px solid var(--line);border-radius:var(--r-md);
       background:var(--card);padding:var(--sp-4);margin-bottom:var(--sp-4)}
 .card p{margin:0 0 var(--sp-2)}
-#q{width:100%;box-sizing:border-box;min-height:72px;resize:vertical;
+.card > .row + .row, .card > .row + p, .card > p + .row{margin-top:var(--sp-2)}
+#loginHere:empty{display:none}
+textarea,#q{width:100%;box-sizing:border-box;resize:vertical;
    border:1px solid var(--line);border-radius:var(--r-md);
-   background:var(--sunk);color:var(--txt);padding:var(--sp-2);
-   font:inherit;margin-bottom:var(--sp-2)}
+   background:var(--sunk);color:var(--txt);padding:var(--sp-2);font:inherit}
+#q{min-height:72px;margin:var(--sp-2) 0}
 .row{display:flex;gap:var(--sp-2);align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.pick{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+.pick select{max-width:190px}
+.who{margin-top:var(--sp-2)}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;font-size:13px;
+      border-radius:999px;background:var(--sunk);border:1px solid var(--line);color:var(--mut)}
+.chip.on{border-color:var(--ok);color:var(--ok)}
+#camBox{margin-top:var(--sp-2)}
+#camVid{width:240px;max-width:100%;border-radius:var(--r-md);border:1px solid var(--line)}
 .ans{white-space:pre-wrap;font-size:16px;line-height:1.5}
 .badge{display:inline-block;padding:1px var(--sp-2);border-radius:999px;
        border:1px solid var(--line);font-size:12px;color:var(--mut)}
 code{background:var(--sunk);padding:1px 5px;border-radius:4px;
      font-size:13px;word-break:break-all}
 
-.bubble-user{align-self:flex-end;background:var(--acc);color:var(--on-acc);padding:10px 14px;border-radius:16px 16px 4px 16px;max-width:88%;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,0.15)}
+/* The conversation */
+#convLog{max-height:420px;overflow-y:auto;margin-bottom:var(--sp-2);
+         display:flex;flex-direction:column;gap:var(--sp-2)}
+#fallbackAnswer{border-top:1px solid var(--line);padding-top:var(--sp-3)}
+.bubble-user{align-self:flex-end;background:var(--acc);color:var(--on-acc);padding:10px 14px;border-radius:16px 16px 4px 16px;max-width:88%;word-break:break-word}
 .bubble-user .role{font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;opacity:0.85;margin-bottom:3px}
 .bubble-user .text{font-size:15px;line-height:1.45}
 .bubble-ai{align-self:flex-start;background:var(--sunk);color:var(--txt);border:1px solid var(--line);padding:12px 16px;border-radius:16px 16px 16px 4px;max-width:88%;word-break:break-word}
@@ -23,3 +38,44 @@ code{background:var(--sunk);padding:1px 5px;border-radius:4px;
 #speakingNow .label{font-size:12px;font-weight:700;color:var(--acc);display:flex;align-items:center;gap:6px}
 #speakingText{margin:6px 0 0 0;font-weight:500;color:var(--txt);font-size:15px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
 
+/* Settings: tabs, one topic each (A42-1) */
+#settings h2{font-size:18px;margin:var(--sp-4) 0 0}
+#settings h3{font-size:15px;margin:var(--sp-4) 0 var(--sp-1)}
+/* .tech shows with the technical switch (display:revert), which would also
+   undo [hidden] on a pane that is not the open tab. */
+[data-pane][hidden]{display:none !important}
+.field{display:flex;flex-wrap:wrap;gap:var(--sp-2);align-items:center;margin:var(--sp-2) 0}
+.field > span{color:var(--mut);font-size:13px}
+.field > span:first-child{flex:0 0 190px}
+@media (max-width:600px){ .field > span:first-child{flex-basis:100%} }
+.field > select,.field > input{flex:1 1 160px;min-width:0}
+.field > span + select{flex:1 1 120px}
+#langVoices .field.off{opacity:.45}
+
+/* The answers sheet: cells typed into where they stand. Wide content scrolls
+   inside its own box, never the page. */
+.sheet-wrap{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:var(--r-md);margin-top:var(--sp-2)}
+.sheet{border-collapse:collapse;width:100%;min-width:1040px;font-size:14px;table-layout:fixed}
+.sheet th:first-child{width:30px}
+.sheet th:nth-child(2){width:20%}
+.sheet th:nth-last-child(2){width:150px}
+.sheet th:last-child{width:104px}
+.sheet th{position:sticky;top:0;z-index:1;background:var(--sunk);text-align:left;font-weight:600;
+          font-size:12px;color:var(--mut);padding:6px 8px;border-bottom:1px solid var(--line)}
+.sheet td{vertical-align:top;padding:4px;border-bottom:1px solid var(--line);border-left:1px solid var(--line)}
+.sheet td:first-child{border-left:0;width:28px;text-align:right;color:var(--mut);font-size:12px;padding-top:10px}
+.sheet textarea{min-height:38px;border-color:transparent;background:transparent;padding:6px;
+                font-size:14px;line-height:1.4;resize:none;max-height:8.6em;overflow:auto}
+/* A long cell shows its first lines until it is clicked, so 24 answers
+   stay a sheet you can scan, not ten screens of poem. */
+.sheet textarea:focus{max-height:none}
+.sheet textarea:hover{border-color:var(--line)}
+.sheet textarea:focus{border-color:var(--acc);background:var(--card);outline:none}
+.sheet tr.dirty td:first-child{box-shadow:inset 3px 0 var(--acc);color:var(--acc)}
+.sheet tr.bad td{background:color-mix(in srgb,var(--err) 8%,transparent)}
+.sheet .cellbar{display:flex;justify-content:flex-end}
+.sheet .cellbar button,.sheet .acts button{padding:1px 7px;font-size:12px;min-height:0}
+.sheet .moves select{width:100%;font-size:12px;margin-bottom:3px}
+.sheet .mv{border-bottom:1px dashed var(--line);padding-bottom:3px;margin-bottom:3px}
+.sheet .acts{display:flex;flex-direction:column;gap:4px;align-items:stretch}
+body.adv .not-adv{display:none}

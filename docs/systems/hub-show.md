@@ -27,7 +27,7 @@ The hub as the show clock: the show player, live audio to a speaker, saved shows
 
 - [hub](hub.md)
 
-## Checks that test it (32)
+## Checks that test it (33)
 
 - `check_cast_mix`
 - `check_faces_greet`
@@ -58,8 +58,9 @@ The hub as the show clock: the show player, live audio to a speaker, saved shows
 - `check_voice_move`
 - `check_voice_multi`
 - `check_voice_one_voice`
+- `check_voice_sound`
 - `check_voice_stt`
 - `check_voice_talkover`
 - `check_voice_tts`
 
-Run them: `python qc/run_qc.py --no-build check_cast_mix check_faces_greet check_freeze_stop check_hub_auth check_hub_clock check_hub_reach check_key_clock check_local_program check_loop_return check_one_hub check_race_guards check_self_update check_seq_clock check_show_clock check_show_continuous check_show_misses check_show_music check_show_to_robot check_shows check_speak check_stream_audio check_studio_cost check_studio_edits check_studio_music check_studio_playback check_voice_bench check_voice_move check_voice_multi check_voice_one_voice check_voice_stt check_voice_talkover check_voice_tts`
+Run them: `python qc/run_qc.py --no-build check_cast_mix check_faces_greet check_freeze_stop check_hub_auth check_hub_clock check_hub_reach check_key_clock check_local_program check_loop_return check_one_hub check_race_guards check_self_update check_seq_clock check_show_clock check_show_continuous check_show_misses check_show_music check_show_to_robot check_shows check_speak check_stream_audio check_studio_cost check_studio_edits check_studio_music check_studio_playback check_voice_bench check_voice_move check_voice_multi check_voice_one_voice check_voice_sound check_voice_stt check_voice_talkover check_voice_tts`
