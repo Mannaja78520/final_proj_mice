@@ -205,6 +205,17 @@ def _slow_road(t):
     got = b._query_faces_service()
     t.ok(b._watcher_ok is True and "Manny" in got,
          "with it up, the live answer is used and called fast", repr(got))
+    # An unknown face (PC, 2026-10-15): the watcher says nobody known, and
+    # that is the answer - their 2.5 s history must not be asked as well.
+    asked = []
+    b._query_reconize_direct = lambda: asked.append("history") or "Old Name"
+    b._watcher_present = lambda *a, **k: {"ok": True, "people": []}
+    t.ok(b.get_detected_person() == "" and not asked,
+         "an unknown face with the watcher up skips their slow history", repr(asked))
+    b._cached_person_at = 0
+    b._watcher_present = lambda *a, **k: None
+    t.ok(b.get_detected_person() == "Old Name" and asked == ["history"],
+         "with the watcher down, their history is still the fallback", repr(asked))
 
 
 def _faces_off(t):

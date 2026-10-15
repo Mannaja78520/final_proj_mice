@@ -33,8 +33,14 @@ from urllib.parse import urlsplit
 
 # RFC 6455 section 1.3: the server proves it spoke WebSocket by hashing the
 # key we send with this, so a plain HTTP server answering 200 cannot be
-# mistaken for a feed.
-GUID = "258EAFA5-E914-47DA-95CA-5AB0DC85B39A"
+# mistaken for a feed. It was mistyped until 2026-10-15, and the QC fake
+# shared the typo, so no real feed ever connected (their uvicorn, on the PC).
+GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+
+
+def accept_key(key):
+    """The Sec-WebSocket-Accept a real server answers for our key."""
+    return base64.b64encode(hashlib.sha1((key + GUID).encode("ascii")).digest()).decode("ascii")
 
 OP_TEXT, OP_BINARY, OP_CLOSE, OP_PING, OP_PONG = 0x1, 0x2, 0x8, 0x9, 0xA
 
@@ -97,8 +103,7 @@ class Feed:
             # before upgrading, so this is where a wrong login shows up.
             raise FeedClosed("the feed did not upgrade: %s" % line.strip())
 
-        want = base64.b64encode(
-            hashlib.sha1((key + GUID).encode("ascii")).digest()).decode("ascii")
+        want = accept_key(key)
         got = ""
         for ln in head.decode("latin-1").split("\r\n"):
             if ln.lower().startswith("sec-websocket-accept:"):

@@ -14,6 +14,8 @@ THE RULES THE BRIEF SET, each held here:
 * one request per camera at a time, at most `perSecond` - the next frame is
   taken only after the answer;
 * 429 drops the frame, 503 waits for their model, 401 logs in again;
+  a 429 that keeps coming backs off (their model was busy for over a
+  minute on the PC, 2026-10-15 - asking 4 times a second only added load);
 * an answer that does not say "kept": false STOPS this camera for good -
   their disk filling with frames is what this whole route exists to prevent.
 Until their /openapi.json lists /api/look, nothing is sent at all.
@@ -59,6 +61,7 @@ class Looker:
         self.gap = 1.0 / max(0.1, float(per_second or 4))
         self.idle = idle
         self.stopped = False
+        self.busy = 0                         # 429s in a row
         self.status = {"camera": camera, "state": "starting", "why": "",
                        "sent": 0, "at": ""}
 
@@ -104,7 +107,13 @@ class Looker:
             self._say("no login", "the face app refused the login - logging in again")
             return seq, 1.0
         if got == "busy":                     # still on the last one: drop this frame
-            return seq, self.gap
+            self.busy += 1
+            if self.busy < 3:
+                return seq, self.gap
+            self._say("busy", "the face app is busy with other work (%d frames refused)"
+                      % self.busy)
+            return seq, min(5.0, self.gap * 2 ** (self.busy - 2))
+        self.busy = 0
         self._say(got, detail)
         return seq, 2.0 if got in ("loading", "off") else self.gap
 

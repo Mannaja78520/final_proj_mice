@@ -73,6 +73,16 @@ FACE_APP_OFF = "the face app is not running yet - start it and look again"
 FACE_APP_KEEPS = ("the face app would keep this picture, so it was not sent - "
                   "pick a camera the face app watches, or use Open Reconize")
 
+# Their /api/look refusals, in plain words (asks.look.codes names them). A
+# 429 lasted over a minute on the PC, 2026-10-15: their model was busy with
+# other work, and "refused" sent the user looking for a fault of ours.
+FACE_APP_SAYS = {
+    "busy": "the face app is busy with other work - it will look again in a moment",
+    "loading": "the face app is still loading its face model - wait a moment",
+    "tooBig": "that picture is too big for the face app",
+    "badImage": "the face app could not read that picture - try again",
+}
+
 _tmp_seq = itertools.count()                        # one temp name per writer
 THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 SPECIAL_RE = re.compile(r"<\|[^|]+\|>")             # <|im_end|> and friends
@@ -1991,7 +2001,8 @@ class Brain:
             if state == "off":
                 return "", FACE_APP_OFF, detail
             if state != "ok":
-                return "", "the face app refused to look at that picture", "%s: %s" % (state, detail)
+                return "", FACE_APP_SAYS.get(state, "the face app refused to look at that picture"), \
+                    "%s: %s" % (state, detail)
             return self._remember_look([call_name(f) for f in faces if f["known"]], len(faces))
         ok, why, detail = self.look_allowed()
         if not ok:
@@ -2139,7 +2150,10 @@ class Brain:
         if hasattr(self, "_cached_person_at") and (now - self._cached_person_at < 2.0):
             return getattr(self, "_cached_person", "")
         person = self._query_faces_service()
-        if not person:
+        # Their history only when the watcher did NOT answer: its "nobody
+        # known" is the answer. Asking anyway cost 2.47 s per look at an
+        # unknown face on the PC (2026-10-15, real camera).
+        if not person and not getattr(self, "_watcher_ok", False):
             person = self._query_reconize_direct()
         self._cached_person = person or ""
         self._cached_person_at = now

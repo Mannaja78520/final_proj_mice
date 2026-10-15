@@ -168,6 +168,10 @@ def _look(t, S, L, login):
         _s, wait = lk.step(seen)
         t.ok(len(fake.looks()) == n + 1 and wait <= 0.25,
              "429 drops that frame and carries on", wait)
+        waits = [lk.step(seen)[1] for _ in range(6)]
+        t.ok(waits[-1] >= 4 and lk.status["state"] == "busy",
+             "a 429 that keeps coming backs off and says the face app is busy",
+             (waits, lk.status))
         fake.look_code = 503
         _s, wait = lk.step(seen)
         t.ok(wait >= 2, "503 waits for their model", wait)
@@ -410,6 +414,16 @@ def _voice(t, S, L, tmp, login):
         t.ok(got.get("ok") is False and got.get("wouldKeep"),
              "an answer that kept the picture gives no name and stops the page", got)
         fake.kept = False
+
+        # Their model busy with other work (PC, 2026-10-15): a plain
+        # sentence on the page, not "refused".
+        fake.look_code = 429
+        code, body = _post(base + "/identify", JPEG)
+        got = json.loads(body or "{}")
+        t.ok(got.get("ok") is False and "busy" in (got.get("error") or "")
+             and not got.get("wouldKeep"),
+             "a busy face app is said in plain words, and the page keeps looking", got)
+        fake.look_code = 200
 
         lk.step(0)
         code, body = F.get(base + "/face?camera=nong-cam-1")
