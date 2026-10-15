@@ -78,6 +78,9 @@ THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 SPECIAL_RE = re.compile(r"<\|[^|]+\|>")             # <|im_end|> and friends
 MARKUP_RE = re.compile(r"[*#_`]")                   # spoken text wears no markdown
 EMOJI_RE = re.compile(r"[\U0001F000-\U0001FAFF\u2600-\u27BF\u2300-\u23FF\u2B50\u200D\uFE0F]")
+# The only speed and pitch shapes the speech service reads: "+10%", "-5Hz".
+RATE_RE = re.compile(r"^[+-]\d{1,3}%$")
+PITCH_RE = re.compile(r"^[+-]\d{1,3}Hz$")
 
 sys.path.insert(0, str(CODE / "tools"))
 import registry                                      # noqa: E402
@@ -855,30 +858,57 @@ class Brain:
         got = self.speaking_voices()
         return got[0]["name"] if got else ""
 
-    def speaking_voices(self):
-        """Every voice that can speak ALL languages, from the voice service
-        itself - so the list in the settings screen is never a list typed
-        into this file. Cached: it is a network call and it never changes
-        during a run.
-        """
-        got = getattr(self, "_voice_list", None)
+    def _edge_voices(self):
+        """The speech service's own voice list, raw. Cached: it is a network
+        call and it never changes during a run. Offline gives [] and the
+        saved names still speak."""
+        got = getattr(self, "_edge_list", None)
         if got is not None:
             return got
-        out = []
         try:
             import asyncio
             import edge_tts
-            for v in asyncio.run(edge_tts.list_voices()):
-                name = str(v.get("ShortName") or "")
-                # Microsoft's own name for the voices that are not tied to
-                # one language. There is no other flag in their list.
-                if "Multilingual" in name:
-                    out.append({"name": name,
-                                "says": str(v.get("FriendlyName") or name),
-                                "gender": str(v.get("Gender") or "")})
+            got = list(asyncio.run(edge_tts.list_voices()))
         except Exception:                               # noqa: BLE001
-            out = []                                    # offline: the map still works
-        self._voice_list = out
+            got = []                                    # offline: the map still works
+        self._edge_list = got
+        return got
+
+    @staticmethod
+    def _voice_row(v):
+        """One voice in words a designer reads: "Premwadee - Thai (Thailand)"."""
+        name = str(v.get("ShortName") or "")
+        says = str(v.get("FriendlyName") or name)
+        says = re.sub(r"^Microsoft\s+|\s+Online\s+\(Natural\)|(?<=\w)Multilingual\b",
+                      "", says).strip()
+        return {"name": name, "says": says or name,
+                "gender": str(v.get("Gender") or ""),
+                "locale": str(v.get("Locale") or "")}
+
+    def speaking_voices(self):
+        """Every voice that can speak ALL languages, from the voice service
+        itself - so the list in the settings screen is never a list typed
+        into this file.
+        """
+        # Microsoft's own name for the voices that are not tied to one
+        # language. There is no other flag in their list.
+        return [self._voice_row(v) for v in self._edge_voices()
+                if "Multilingual" in str(v.get("ShortName") or "")]
+
+    def voices_by_lang(self):
+        """{lang: [voice, ...]} for every language the store maps (A42-1).
+
+        The page offered two names per language, typed into it; Thai alone
+        has three. The languages are the store's tts.voices keys, so a fifth
+        language is an entry there and no code.
+        """
+        langs = list(((self.cfg.get("tts") or {}).get("voices") or {}).keys())
+        out = {l: [] for l in langs}
+        for v in self._edge_voices():
+            loc = str(v.get("Locale") or "")
+            for l in langs:
+                if loc.split("-")[0].lower() == l.lower():
+                    out[l].append(self._voice_row(v))
         return out
 
     def tts_status(self):
@@ -903,8 +933,42 @@ class Brain:
                           .encode("utf-8")).hexdigest()
         return CODE / "apps" / "voice" / "tts_cache" / (key + ".wav")
 
-    def say(self, text, lang="", voice=""):
-        """Text -> wav bytes, or (None, why-not) in plain words."""
+    def steps(self, rate=None, pitch=None):
+        """(speed, pitch) a line is spoken at: given, else the scenario's,
+        else the store's. A step the speech service cannot read fails the
+        WHOLE line and the PC's flat backup voice speaks instead, so it is
+        dropped and the voice kept."""
+        tcfg = self.cfg.get("tts", {})
+        act = self.active_scenario()
+        if rate is None:
+            rate = act.get("rate") or str(tcfg.get("rate") or "").strip()
+        if pitch is None:
+            pitch = act.get("pitch") or str(tcfg.get("pitch") or "").strip()
+        return (rate if RATE_RE.match(rate or "") else "",
+                pitch if PITCH_RE.match(pitch or "") else "")
+
+    @staticmethod
+    def _cached(path, voice):
+        """The saved sound for this line, or None.
+
+        A neural voice answers mp3; a RIFF file under its name is the PC's
+        backup voice kept by an older helper during an outage, and is built
+        again rather than played flat for ever (A42-1).
+        """
+        try:
+            got = path.read_bytes()
+        except OSError:
+            return None
+        if "Neural" in (voice or "") and got.startswith(b"RIFF"):
+            return None
+        return got
+
+    def say(self, text, lang="", voice="", rate=None, pitch=None):
+        """Text -> wav bytes, or (None, why-not) in plain words.
+
+        rate / pitch given (the page's "Try it", A42-1) win over the store,
+        so a speed can be heard before it is saved.
+        """
         tcfg = self.cfg.get("tts", {})
         if not tcfg.get("enabled"):
             return None, "speaking is switched off in config/voice.json"
@@ -919,19 +983,15 @@ class Brain:
                 return None, voice
         # A scenario may set its own speed and pitch - a poem read at shop
         # speed is the complaint this answers.
-        act = self.active_scenario()
-        rate = act.get("rate") or str(tcfg.get("rate") or "").strip()
-        pitch = act.get("pitch") or str(tcfg.get("pitch") or "").strip()
+        rate, pitch = self.steps(rate, pitch)
         path = self._cache_path(ident, text, rate=rate, pitch=pitch)
-        try:
-            return path.read_bytes(), None
-        except OSError:
-            pass
+        got = self._cached(path, voice)
+        if got:
+            return got, None
         with self._tts_lock:        # one PowerShell at a time; the waiter
-            try:                    # may find the file already built
-                return path.read_bytes(), None
-            except OSError:
-                pass
+            got = self._cached(path, voice)   # may find the file already built
+            if got:
+                return got, None
             path.parent.mkdir(exist_ok=True)
             wav = None
             try:
@@ -940,11 +1000,16 @@ class Brain:
                     clean_text = re.sub(r'\r', '', text).strip()
                     clean_text = re.sub(r'[ \t]+', ' ', clean_text)
                     clean_text = re.sub(r'\n\s*\n+', '\n', clean_text)
-                    cmd = [sys.executable, "-m", "edge_tts", "--voice", voice, "--text", clean_text]
+                    # "--rate=-10%", never "--rate", "-10%": argparse reads a
+                    # lone "-10%" as an unknown option, so every SLOWER speed
+                    # failed and the flat backup voice spoke (A42-1). The
+                    # text the same way: an answer may start with "-".
+                    cmd = [sys.executable, "-m", "edge_tts", "--voice=" + voice,
+                           "--text=" + clean_text]
                     if rate:
-                        cmd.extend(["--rate", rate])
+                        cmd.append("--rate=" + rate)
                     if pitch:
-                        cmd.extend(["--pitch", pitch])
+                        cmd.append("--pitch=" + pitch)
                     for attempt in range(2):
                         try:
                             r = subprocess.run(cmd, capture_output=True, timeout=15,
@@ -965,6 +1030,12 @@ class Brain:
                     if r.returncode != 0 or len(wav) < 44 or not wav.startswith(b"RIFF"):
                         why = r.stderr.decode("utf-8", "replace").strip()
                         return None, ("the voice could not speak that (%s)" % why[-200:])
+                    if "Neural" in voice:
+                        # The backup voice stood in for one that did not
+                        # answer (offline, slow): play it, but never keep it
+                        # under the good voice's name, or that answer sounds
+                        # flat for ever after one bad minute (A42-1).
+                        return wav, None
             except (OSError, subprocess.TimeoutExpired) as e:
                 return None, ("the voice could not run (%s: %s)"
                               % (e.__class__.__name__, e))
@@ -997,7 +1068,8 @@ class Brain:
                     ident, _name = self.resolve_voice(lang_code, text=ans)
                     if ident:
                         self.say(ans, lang=lang_code)
-                        keep.add(self._cache_path(ident, ans).stem)
+                        rate, pitch = self.steps()
+                        keep.add(self._cache_path(ident, ans, rate=rate, pitch=pitch).stem)
         cache = CODE / "apps" / "voice" / "tts_cache"
         if not cache.is_dir():
             return
@@ -2094,7 +2166,10 @@ class VoiceHandler(BaseHTTPRequestHandler):
             return self._json(dict({"ok": True}, **self.brain.camera_choice()))
         if path == "/voices":
             try:
-                return self._json({"ok": True, "voices": self.brain.speaking_voices()})
+                # voices: the ones that speak everything; byLang: every voice
+                # of each language the store maps (A42-1).
+                return self._json({"ok": True, "voices": self.brain.speaking_voices(),
+                                   "byLang": self.brain.voices_by_lang()})
             except Exception as e:                      # noqa: BLE001
                 return self._json({"ok": False, "error": "the voice list could not be "
                                                          "read: %s" % e}, 500)
@@ -2335,7 +2410,12 @@ class VoiceHandler(BaseHTTPRequestHandler):
                                "there was nothing to speak"}, 400)
         try:
             voice_name = str(req.get("voice") or "").strip()
-            wav, why_not = self.brain.say(text, req.get("lang") or "", voice=voice_name)
+            # "speed" / "pitch": the page's Try it, heard before saving.
+            # Not "rate" - that is the robot speaker's sample rate below.
+            wav, why_not = self.brain.say(
+                text, req.get("lang") or "", voice=voice_name,
+                rate=(str(req["speed"]) if req.get("speed") is not None else None),
+                pitch=(str(req["pitch"]) if req.get("pitch") is not None else None))
         except Exception as e:                      # noqa: BLE001
             return self._json({"ok": False,
                                "error": "speaking failed: %s: %s"

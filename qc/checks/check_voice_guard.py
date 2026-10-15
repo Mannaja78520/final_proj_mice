@@ -111,7 +111,7 @@ def run(t):
         def health(self):
             return {"ok": True}
 
-        def say(self, text, lang="", voice=""):
+        def say(self, text, lang="", voice="", rate=None, pitch=None):
             return sound["bytes"], None
 
         def write_store(self, path, data):

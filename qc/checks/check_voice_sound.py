@@ -1,0 +1,116 @@
+"""The good voice is the one that speaks, and a bad minute is not kept.
+
+A42-1, user 2026-10-15: *the voice settings and the voice that comes out
+are not that good*. Three causes, none of them the voice itself:
+
+  1. **A slower speed killed the good voice.** The helper ran
+     `edge_tts --rate -10%`; argparse reads a lone "-10%" as an unknown
+     option ("argument --rate: expected one argument", reproduced
+     2026-10-15), so every slower speed or lower pitch failed and the PC's
+     flat backup voice spoke instead. Now `--rate=-10%`.
+  2. **One outage was kept for ever.** When the online voice did not answer,
+     the backup voice's wav was cached under the GOOD voice's name, and every
+     later visitor heard that saved answer flat. Now the stand-in plays once
+     and is not kept, and such a file left by an older helper is rebuilt.
+  3. **The page chose the voice.** Every answer sent the language's own
+     voice, which skipped the scenario's voice and the one voice for every
+     language (check_voice_source holds the page side).
+
+Runs the real Brain.say with the two programs it calls faked: no network,
+no PowerShell, a throwaway cache folder.
+"""
+import importlib.util
+import sys
+import tempfile
+import threading
+from pathlib import Path
+from types import SimpleNamespace
+
+import qc as F
+
+AREA = "tools"
+TITLE = "the chosen voice speaks at any speed, and a stand-in voice is never cached"
+
+MP3 = b"\xff\xf3" + b"good-voice" * 20         # what the online voice answers
+WAV = b"RIFF" + b"\0" * 40 + b"backup" * 10     # what the PC's backup voice answers
+
+
+def _brain(tmp, cfg):
+    path = F.CODE / "apps" / "voice" / "service.py"
+    spec = importlib.util.spec_from_file_location("voice_sound_check", path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["voice_sound_check"] = mod
+    spec.loader.exec_module(mod)
+    mod.CODE = tmp                                   # the cache lands in tmp
+    (tmp / "apps" / "voice").mkdir(parents=True, exist_ok=True)
+    b = mod.Brain.__new__(mod.Brain)                 # no files, no threads
+    b.cfg = cfg
+    b._tts_lock = threading.Lock()
+    return mod, b
+
+
+def run(t):
+    tmp = Path(tempfile.mkdtemp(prefix="mice_sound_qc_"))
+    cfg = {"tts": {"enabled": True, "language": "th", "rate": "-10%", "pitch": "-5Hz",
+                   "voices": {"th": "th-TH-PremwadeeNeural"}}}
+    mod, b = _brain(tmp, cfg)
+    calls = []
+    online = {"up": True}
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        if "edge_tts" in cmd:
+            # argparse's own rule: a value that starts with "-" must be
+            # joined with "=", or the option has no value and it exits 2.
+            for i, a in enumerate(cmd):
+                if a in ("--rate", "--pitch", "--text", "--voice") and (
+                        i + 1 >= len(cmd) or cmd[i + 1].startswith("-")):
+                    return SimpleNamespace(returncode=2, stdout=b"", stderr=b"expected one argument")
+            if not online["up"]:
+                return SimpleNamespace(returncode=1, stdout=b"", stderr=b"offline")
+            return SimpleNamespace(returncode=0, stdout=MP3, stderr=b"")
+        return SimpleNamespace(returncode=0, stdout=WAV, stderr=b"")
+    mod.subprocess = SimpleNamespace(run=fake_run, TimeoutExpired=TimeoutError)
+
+    # 1: slower and lower still reach the good voice
+    got, why = b.say("ช้าลงหน่อย", "th")
+    t.ok(got == MP3, "a slower speed and a lower pitch are spoken by the chosen voice",
+         "the backup voice spoke (%s): %r" % (why, calls[-1]))
+    edge = [c for c in calls if "edge_tts" in c][0]
+    t.ok("--rate=-10%" in edge and "--pitch=-5Hz" in edge,
+         "the speed and pitch reach the speech service joined with '='", repr(edge))
+
+    # 2: a stand-in voice plays, but is not kept under the good voice's name
+    online["up"] = False
+    got, _ = b.say("วันนี้ฝนตก", "th")
+    t.ok(got == WAV, "offline, the PC's own voice still answers", repr(got[:8]))
+    rate, pitch = b.steps()
+    kept = b._cache_path("th-TH-PremwadeeNeural", "วันนี้ฝนตก", rate=rate, pitch=pitch)
+    t.ok(not kept.exists(), "...and nothing is kept under the good voice's name",
+         "the backup's wav was cached at %s" % kept.name)
+    online["up"] = True
+    got, _ = b.say("วันนี้ฝนตก", "th")
+    t.ok(got == MP3, "and once the good voice is back, that line is spoken by it",
+         "the backup's sound was kept and replayed")
+
+    # 3: a stand-in left in the cache by an older helper is rebuilt
+    rate, pitch = b.steps()
+    old = b._cache_path("th-TH-PremwadeeNeural", "เก่า", rate=rate, pitch=pitch)
+    old.parent.mkdir(parents=True, exist_ok=True)
+    old.write_bytes(WAV)
+    got, _ = b.say("เก่า", "th")
+    t.ok(got == MP3, "a flat file kept by an older helper is built again",
+         "the old backup wav was played")
+    got2, _ = b.say("เก่า", "th")
+    t.ok(got2 == MP3 and old.read_bytes() == MP3, "and the good one is what is kept now")
+
+    # 4: Try it - a speed heard before saving; a shape it cannot read is dropped
+    n = len(calls)
+    b.say("ลองเสียง", "th", voice="th-TH-NiwatNeural", rate="+20%", pitch="+0Hz")
+    t.ok(any("--rate=+20%" in c for c in calls[n:] if "edge_tts" in c),
+         "Try sends the speed on screen, not the saved one", repr(calls[n:]))
+    n = len(calls)
+    got, _ = b.say("ลองเสียงสอง", "th", rate="fast", pitch="loud")
+    edge = [c for c in calls[n:] if "edge_tts" in c]
+    t.ok(got == MP3 and edge and not any(a.startswith(("--rate", "--pitch")) for a in edge[0]),
+         "a speed it cannot read is dropped and the voice kept", repr(edge))
