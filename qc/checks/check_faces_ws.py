@@ -45,7 +45,9 @@ AREA = "hub"
 TITLE = "the live feed is read safely, and a refused login is told apart"
 SOLO = True                       # binds a port for the fake feed
 
-GUID = "258EAFA5-E914-47DA-95CA-5AB0DC85B39A"
+# RFC 6455 section 1.3, typed from the RFC, never copied from wsclient: the
+# two once shared a typo and no real feed could connect (PC, 2026-10-15).
+GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 
 def _mod(name):
@@ -141,6 +143,12 @@ class Fake(threading.Thread):
 
 def run(t):
     ws = _mod("wsclient")
+
+    # ---- the handshake a REAL server answers -------------------------
+    # RFC 6455 section 1.3's own worked example. The fake below can share a
+    # typo with the client; the RFC cannot.
+    t.eq(ws.accept_key("dGhlIHNhbXBsZSBub25jZQ=="), "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=",
+         "the client expects the accept a real WebSocket server sends")
 
     # ---- a real event, read whole ------------------------------------
     body = json.dumps({"node_id": "door-in", "participant_id": "P7",
