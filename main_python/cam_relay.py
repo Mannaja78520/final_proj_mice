@@ -32,9 +32,9 @@ THE TWO FAILURES IT IS BUILT AROUND
   picture that has quietly stopped being now.
 """
 import http.client
+import os
 import re
 import subprocess
-import sys
 import threading
 import time
 
@@ -218,7 +218,7 @@ def pc_devices(cfg):
     config/faces.json pcCamera. Virtual ones (cfg `skip`) last."""
     try:
         r = subprocess.run(cfg.get("list") or [], capture_output=True, timeout=10,
-                           **_quiet())
+                           creationflags=NO_WINDOW)
         text = (r.stdout + r.stderr).decode("utf-8", "replace")
     except (OSError, subprocess.SubprocessError, ValueError):
         return []
@@ -240,9 +240,8 @@ def pc_relay(cfg, name=""):
     return PcCamRelay.get("pc:" + name, run=run), ""
 
 
-def _quiet():
-    """No console window flashing up on Windows for each read."""
-    return {"creationflags": 0x08000000} if sys.platform == "win32" else {}
+# No console window flashing up on Windows for each read (check_no_console_window).
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
 
 
 class PcCamRelay(CamRelay):
@@ -256,7 +255,7 @@ class PcCamRelay(CamRelay):
 
     def _read_stream(self):
         proc = subprocess.Popen(self.run, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                                stderr=subprocess.DEVNULL, **_quiet())
+                                stderr=subprocess.DEVNULL, creationflags=NO_WINDOW)
         self.got_at = time.time()
         # A camera that stops sending leaves the read waiting forever, and
         # nothing else would end the reader: this ends it after STALL.
