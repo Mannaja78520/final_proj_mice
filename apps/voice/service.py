@@ -274,6 +274,13 @@ def unquote_whole(text):
     return t
 
 
+def faces_on(cfg):
+    """Face recognition used at all (user 2026-10-15: *let me choose to use
+    faces or not*). Off = no look, no name, no wait; missing = on. A function
+    of the store, so a check's stand-in Brain needs no method for it."""
+    return ((cfg or {}).get("face") or {}).get("on", True) is not False
+
+
 def main_lang(text):
     """The language most of a line is written in, by letters ("" if none).
 
@@ -1677,6 +1684,10 @@ class Brain:
         # nearest first, with the name each person asked to be called. An
         # older watcher has no /present, and this carries on as before.
         got = self._watcher_present(where, camera, 120)
+        # Whether the fast road answered (A42-4): with the watcher down, every
+        # look fell to their history - 2.5 s a call on the PC, 2026-10-15 -
+        # and the page starts the watcher when it hears this is False.
+        self._watcher_ok = got is not None
         if got is not None:
             return join_names([call_name(p) for p in got.get("people") or []])
         try:
@@ -1731,8 +1742,8 @@ class Brain:
         import urllib.request
         from urllib.parse import quote
         cfg = self.cfg.get("presence") or {}
-        if not cfg.get("on"):
-            return True, ""
+        if not cfg.get("on") or not faces_on(self.cfg):
+            return True, ""                       # faces off = nobody is checked
         where = str((self.cfg.get("face") or {}).get("watcher")
                     or os.environ.get("MICE_FACES_STATE")
                     or "http://127.0.0.1:8769/state")
@@ -1855,6 +1866,10 @@ class Brain:
         """
         import urllib.request
         face = self.cfg.get("face") or {}
+        if not self.faces_on():                   # nothing to look with, nobody asked
+            return {"on": False, "label": "", "from": "", "stations": [],
+                    "seconds": float(face.get("autoSeconds") or 5),
+                    "look": {"ok": False, "why": "face recognition is switched off", "detail": ""}}
         label = str(face.get("cameraLabel") or "")
         where = "voice.json" if label else ""
         if not label:
@@ -1870,7 +1885,7 @@ class Brain:
             except Exception:                           # noqa: BLE001
                 pass                                    # no default is fine - the browser picks
         ok, why, detail = self.look_allowed()
-        return {"label": label, "from": where, "stations": self.face_stations(),
+        return {"on": self.faces_on(), "label": label, "from": where, "stations": self.face_stations(),
                 "seconds": float(face.get("autoSeconds") or 5),
                 "look": {"ok": ok, "why": why, "detail": detail}}
 
@@ -2105,9 +2120,14 @@ class Brain:
         self._cached_person = ""
         self._cached_person_at = time.time()
 
+    def faces_on(self):
+        return faces_on(self.cfg)
+
     def get_detected_person(self, req_person=None, camera=""):
         if req_person and str(req_person).strip():
             return str(req_person).strip()
+        if not faces_on(self.cfg):
+            return ""
         if camera:
             # One station only, and never the frame this page took itself:
             # asking for a camera means "who does THAT camera see".
@@ -2245,7 +2265,9 @@ class VoiceHandler(BaseHTTPRequestHandler):
         if path == "/face":
             want = parse_qs(urlparse(self.path).query).get("camera", [""])[0]
             return self._json({"ok": True,
-                               "person": self.brain.get_detected_person(camera=want)})
+                               "person": self.brain.get_detected_person(camera=want),
+                               "off": not self.brain.faces_on(),
+                               "watcher": bool(getattr(self.brain, "_watcher_ok", False))})
         if path == "/camera":
             return self._json(dict({"ok": True}, **self.brain.camera_choice()))
         if path == "/voices":
@@ -2432,6 +2454,9 @@ class VoiceHandler(BaseHTTPRequestHandler):
             return self._json({"ok": False, "error":
                                "that picture is too big to look at"}, 400)
         jpeg = self.rfile.read(length) if length else b""
+        if not self.brain.faces_on():             # read first: no reset
+            return self._json({"ok": False, "error":
+                               "face recognition is switched off on the Voice page"})
         if not jpeg:
             return self._json({"ok": False, "error":
                                "no picture arrived - is the camera on?"}, 400)

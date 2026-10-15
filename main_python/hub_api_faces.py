@@ -3,6 +3,7 @@
     GET  /api/faces/rules     the words, cameras and milestones, as the watcher has them
     POST /api/faces/rules     {rules}: save them (login - hub_auth GATED_POST)
     POST /api/faces/start     start Reconize (their start file) AND our watcher (A11-1)
+                              ?only=watcher: just ours (Voice, A42-4)
 
 The watcher (apps/faces/service.py) listens on this PC only and is the ONE
 writer of apps/faces/rules.json: it checks the rules before it writes, and it
@@ -115,6 +116,13 @@ class FacesRoutes:
             refused = self.start_refused(method)
             if refused is not None:
                 return refused
+            if (q.get("only") or [""])[0] == "watcher":
+                # Voice only needs OUR watcher to read their live feed
+                # (A42-4); it must not start the face app nobody asked for.
+                state, why, detail = start_watcher()
+                return self.send_json({"ok": state in ("running", "started", "starting"),
+                                       "watcher": state, "watcherError": why,
+                                       "detail": detail})
             entry = (_hub.read_partners().get("partners") or {}).get("reconize") or {}
             theirs = (_hub.partner_launch.start("reconize", entry) if entry else
                       {"ok": False, "error": "config/partners.json has no entry called reconize"})

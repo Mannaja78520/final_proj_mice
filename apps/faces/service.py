@@ -389,15 +389,21 @@ class State:
         # that one is a stranger, never given the name that rode along.
         status = str(raw.get(m.get("status") or "status") or "matched")
         known = status == (friend_api.asks(self.entry(), "person").get("matched") or "matched")
-        # A stranger has no name or id to be missing.
+        # A stranger has no name or id to be missing - and their presence
+        # message (include=presence, 657f396) carries no time either.
         self.observe("ws", [m.get(k) or d for k, d in (("who", "name"), ("id", "participant_id"),
-                     ("when", "at"), ("camera", "node_id")) if known or k in ("when", "camera")],
+                     ("when", "at"), ("camera", "node_id")) if known or k == "camera"],
                      raw)
         if not known:
             with self._events_lock:
                 self.seen_reports.add(("ws", "unknown"))
+        # Their presence message counts strangers in `unknown` and says 0 when
+        # they walk away: 0 is "gone", never one more stranger (657f396).
+        n = raw.get(m.get("unknown") or "unknown")
+        if n is None:
+            n = raw.get(m.get("faces") or "faces")
         try:
-            faces = min(20, max(1, int(raw.get(m.get("faces") or "faces") or 1)))
+            faces = 1 if n is None or n == "" else min(20, max(0, int(n)))
         except (TypeError, ValueError):
             faces = 1
         return {

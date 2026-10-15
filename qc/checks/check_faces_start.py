@@ -59,6 +59,19 @@ def run(t):
         got = json.loads(body or "{}")
         t.ok(got.get("watcher") == "running" and faces._started.get("proc") is first,
              "a second press finds it running and starts no second watcher", body[:200])
+        # Voice asks for OUR watcher only (A42-4): their app is not started
+        # by a page that only wanted names to arrive faster.
+        asked = []
+        real_start = main.partner_launch.start
+        main.partner_launch.start = lambda *a, **k: asked.append(a) or {"ok": True}
+        try:
+            code, body = F.post(base + "/api/faces/start?only=watcher", timeout=40)
+        finally:
+            main.partner_launch.start = real_start
+        got = json.loads(body or "{}")
+        t.ok(got.get("ok") and got.get("watcher") == "running" and "reconize" not in got
+             and not asked, "Voice's press reaches only the watcher, never the face app",
+             (body[:200], asked))
         code, page = F.get(base + "/app/faces/")
         t.contains(page, 'Mice.Api.post("/api/faces/start")',
                    "the Reconize screen has the button")

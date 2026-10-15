@@ -182,8 +182,61 @@ def _the_page(t):
     t.eq(g["identify"], 0, "showing the picture sends no picture anywhere")
 
 
+def _slow_road(t):
+    """A42-4, user 2026-10-15: *Voice checks who it is very slowly, the face
+    app does it fast*. Measured on the PC: the face watcher was not running,
+    so every look read the face app's history (2.5 s a call). The helper now
+    says which road answered, and the page starts the watcher on hearing it
+    (check_voice_source holds the page, check_faces_start the hub)."""
+    import importlib.util
+    import sys
+    path = F.CODE / "apps" / "voice" / "service.py"
+    spec = importlib.util.spec_from_file_location("voice_road_check", path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["voice_road_check"] = mod
+    spec.loader.exec_module(mod)
+    b = mod.Brain.__new__(mod.Brain)
+    b.cfg = {"face": {"watcher": "http://127.0.0.1:9/state"}}
+    b._watcher_present = lambda *a, **k: None          # the watcher is down
+    b._query_faces_service()
+    t.ok(getattr(b, "_watcher_ok", None) is False,
+         "with the face watcher down, the helper says the slow road answered")
+    b._watcher_present = lambda *a, **k: {"ok": True, "people": [{"who": "Manny"}]}
+    got = b._query_faces_service()
+    t.ok(b._watcher_ok is True and "Manny" in got,
+         "with it up, the live answer is used and called fast", repr(got))
+
+
+def _faces_off(t):
+    """Use faces off (user 2026-10-15: *let me choose to use faces or not*):
+    nothing is asked of the watcher or the face app, presence mode lets every
+    question through, and the page is told there is no camera to restore."""
+    import importlib.util
+    import sys
+    path = F.CODE / "apps" / "voice" / "service.py"
+    spec = importlib.util.spec_from_file_location("voice_off_check", path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["voice_off_check"] = mod
+    spec.loader.exec_module(mod)
+    b = mod.Brain.__new__(mod.Brain)
+    b.cfg = {"face": {"on": False}, "presence": {"on": True}}
+    asked = []
+    b._query_faces_service = lambda *a, **k: asked.append("watcher") or "Manny"
+    b._query_reconize_direct = lambda *a, **k: asked.append("history") or "Manny"
+    b._reconize_api = lambda *a, **k: asked.append("face app") or ""
+    t.ok(b.get_detected_person() == "" and b.get_detected_person(camera="door") == "",
+         "faces off: no name is looked up", repr(asked))
+    t.eq(b.presence_gate(), (True, ""), "faces off: presence mode takes every question")
+    t.ok(b.camera_choice().get("on") is False and not asked,
+         "faces off: nothing is asked of the watcher or the face app", repr(asked))
+    b.cfg = {"face": {}}
+    t.ok(b.get_detected_person() == "Manny", "a store with no switch keeps faces on")
+
+
 def run(t):
     _stations(t)
+    _slow_road(t)
+    _faces_off(t)
     _the_page(t)
     page = (F.CODE / "apps" / "voice" / "index.html").read_text(encoding="utf-8")
     t.ok('id="camShow"' in page and 'id="camImg"' in page and "window.toggleView" in page,

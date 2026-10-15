@@ -5,7 +5,9 @@ its voice (the helper picks it); Try plays the speed on screen.
 A42-2 (user 2026-10-15 *questions split by language too*): each language
 column holds its own ways of asking, and they are saved back as the ONE
 `questions` list every reader matches against. The page says when the PC's
-flat backup voice spoke instead of the natural one.
+flat backup voice spoke instead of the natural one. A42-4: a look that came
+the slow way (no face watcher) starts the watcher, once; Use faces off saves
+face.on alone and stops looking.
 """
 from pathlib import Path
 import subprocess
@@ -36,6 +38,8 @@ const context = {console, Blob, AbortController, Uint8Array, setTimeout(){}, cle
  return {ok:true,status:200,json:async()=>
  url.endsWith('/health')?{ok:true,parts:{stt:'ready'}}:
  url.endsWith('/config')?{ok:true,config:{tts:{},stt:{}}}:
+ url.includes('/api/voice/face')?{ok:true,person:'',watcher:false}:
+ url.includes('/api/faces/start')?{ok:true,watcher:'started'}:
  url.endsWith('/faq')?{ok:true,faqs:[{questions:['hello','สวัสดี'],answer:'hi'}]}:
  url.includes('/api/list')?{files:['wave']}:
  url.endsWith('/modules/all')?{modules:[{name:'Nong'}]}:
@@ -52,6 +56,21 @@ vm.runInContext(fs.readFileSync(process.argv[1],'utf8'),context);
  assert.equal(calls.filter(([u])=>u.endsWith('/health')).length,1);
  // The camera picker is there even with no camera in this browser (A42-1).
  assert.ok(nodes.get('camPick').children.length>=1);
+ // A42-4: with the face watcher down, names came from the face app's
+ // history (2.5 s a look); the page starts OUR watcher, once, POST only.
+ nodes.get('faceOn').checked=true;            // the page ships it ticked
+ await app.pollFace(); await app.pollFace();
+ const starts=calls.filter(([u])=>u.includes('/api/faces/start'));
+ assert.equal(starts.length,1); assert.equal(starts[0][0],'/api/faces/start?only=watcher');
+ assert.equal(starts[0][1].method,'POST');
+ // Use faces off (user 2026-10-15): saved alone as face.on, and no look follows.
+ const before=calls.length; nodes.get('faceOn').checked=false; await context.toggleFaces();
+ const sent=calls.slice(before).filter(([u,o])=>u.endsWith('/config')&&o.method==='POST');
+ assert.equal(sent.length,1); assert.equal(sent[0][1].body,'{"config":{"face":{"on":false}}}');
+ assert.equal(nodes.get('faceTools').hidden,true);
+ const looks=calls.length; await app.pollFace();
+ assert.equal(calls.slice(looks).filter(([u])=>u.includes('/api/voice/face')).length,0);
+ nodes.get('faceOn').checked=true; app.showFaces(true);
  await context.loadStores();
  assert.equal(app.faqs[0].answer,'hi');
  // A42-1: the answers are a sheet - each cell is typed into where it stands.

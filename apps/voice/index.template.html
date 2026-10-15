@@ -69,6 +69,8 @@
          (user 2026-10-15): this device's cameras, or one the face app
          already watches. -->
     <div class="row who">
+      <label class="mini pick" title="Off: no camera and no names — every answer comes at once, the plain way."><input type="checkbox" id="faceOn" checked onchange="toggleFaces()"> 👤 Use faces</label>
+      <span id="faceTools">
       <span id="faceBadge" class="chip" title="Who the face app sees">👤 <span id="faceName">looking…</span></span>
       <label class="mini pick">Camera
         <select id="camPick" onchange="pickCamera()" title="Which camera to look with"></select></label>
@@ -76,6 +78,7 @@
       <button class="secondary mini" id="btnWhoAmI" onclick="whoAmI()" title="Look once with this camera. The picture is not kept.">Check who I am</button>
       <label class="mini pick" title="Keep looking every few seconds. Nothing is saved, and it stops when this tab is hidden."><input type="checkbox" id="autoFace" onchange="toggleAutoFace()"> Check by itself</label>
       <button class="secondary mini" id="btnOpenReconize" onclick="openReconize()" title="Open the face app in a new tab">Open Reconize</button>
+      </span>
     </div>
     <div id="camBox" hidden>
       <video id="camVid" playsinline muted autoplay></video>
