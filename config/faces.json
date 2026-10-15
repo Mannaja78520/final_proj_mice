@@ -23,10 +23,27 @@
   // One camera: {"name": "nong-cam-1", "dev": "wifi:192.168.4.2"}. dev is how
   // the hub reaches the board; name is what rules.json and the Voice page call it.
   // Nong never turns toward anyone (user 2026-10-09): this only says who is there.
+  // "pc:" is THIS PC's webcam, opened once by the hub and shared (user
+  // 2026-10-15: *every camera usable by other apps too*); "pc:FHD Camera"
+  // names one, "pc:" takes the first real one. While anybody watches it,
+  // no other program can open it - Windows allows one holder.
   "look": {
-    "cameras": [],
+    "cameras": [{"name": "PC camera", "dev": "pc:"}],
     "perSecond": 4,       // the brief's ceiling, one request in flight per camera
     "holdSeconds": 10,    // gone this long and back = arriving again
     "staleSeconds": 5     // a look older than this is not "now"
+  },
+
+  // HOW THE HUB READS THIS PC'S WEBCAM (main_python/cam_relay.py PcCamRelay).
+  // ffmpeg, because the hub is plain Python and ffmpeg is on the PC (winget,
+  // 9.0.2, checked 2026-10-15). dshow is Windows; another OS swaps these two
+  // lines. 640 wide at 10 a second: enough to know a face, light on the CPU.
+  "pcCamera": {
+    "run": ["ffmpeg", "-hide_banner", "-loglevel", "error", "-f", "dshow",
+            "-i", "video={device}", "-vf", "scale=640:-2,fps=10",
+            "-f", "image2pipe", "-vcodec", "mjpeg", "-q:v", "6", "-"],
+    "list": ["ffmpeg", "-hide_banner", "-list_devices", "true", "-f", "dshow", "-i", "dummy"],
+    // Phone and screen-share cameras that show black (measured on the PC).
+    "skip": ["Virtual Camera"]
   }
 }

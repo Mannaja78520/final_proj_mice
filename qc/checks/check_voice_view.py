@@ -163,6 +163,11 @@ await window.toggleView();
 out.auto_hidden_again = els.camVid.hidden; out.auto_kept = calls.stopped === kept && !!app.camStream;
 els.autoFace.checked = false;
 await window.toggleAutoFace();
+// 7: nothing picked, and the hub shares this PC's camera - use that one
+delete store[app.CAM_KEY];
+out.no_pc_default = app.camPicked();
+app.camStations.push({id: "PC camera", name: "PC camera", online: true, dev: "pc:"});
+out.pc_default = app.camPicked();
 console.log(JSON.stringify(out));
 process.exit(0);
 """
@@ -197,6 +202,8 @@ def _the_page(t):
     t.ok(g["off_src"] == "" and g["off_box"],
          "switching the view off ends the board's stream", repr(g))
     t.eq(g["identify"], 0, "showing the picture sends no picture anywhere")
+    t.ok(g["pc_default"] == "station:PC camera" and g["no_pc_default"] == "",
+         "with nothing picked, Voice watches the PC camera the hub shares", repr(g))
     # User 2026-10-15: *Show the camera unticked, why does it still show?*
     t.ok(g["auto_open"] and g["auto_vid_hidden"],
          "Check by itself reads the camera without showing it", repr(g))

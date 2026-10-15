@@ -1765,17 +1765,24 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
                 # through the fetch shim, so the page addresses this URL
                 # itself; the hub copies the module's multipart body to the
                 # browser until one of them goes away.
-                kind, addr, bus, peer = parse_dev(dev)
-                if kind != "wifi" or peer:
-                    return self.send_err(
-                        "a live view cannot come down the USB/RS485 cable — "
-                        "open this module over WiFi", 501)
-                # THROUGH THE RELAY, so the board is watched once however many
-                # people are looking. Piping each browser straight to the
-                # board meant the second viewer opened a second stream and was
-                # refused - correctly, because the board has one frame buffer
-                # and take() reclaims the frame already on loan.
-                relay = cam_relay.CamRelay.get(addr)
+                if dev.startswith("pc:"):
+                    # This PC's own webcam, opened once here and shared, so
+                    # Voice and the face app are not fighting over it.
+                    relay, why = cam_relay.pc_relay(hub_api_faces.pc_camera(), dev[3:])
+                    if relay is None:
+                        return self.send_err(why, 503)
+                else:
+                    kind, addr, bus, peer = parse_dev(dev)
+                    if kind != "wifi" or peer:
+                        return self.send_err(
+                            "a live view cannot come down the USB/RS485 cable — "
+                            "open this module over WiFi", 501)
+                    # THROUGH THE RELAY, so the board is watched once however
+                    # many people are looking. Piping each browser straight to
+                    # the board meant the second viewer opened a second stream
+                    # and was refused - correctly: the board has one frame
+                    # buffer and take() reclaims the frame already on loan.
+                    relay = cam_relay.CamRelay.get(addr)
                 relay.join()
                 self.send_response(200)
                 self.send_header("Content-Type",
