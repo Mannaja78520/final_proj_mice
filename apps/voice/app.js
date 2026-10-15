@@ -151,13 +151,76 @@ class VoiceApp {
       this.say("Reading " + ((s && s.name) || this.camStation) +
                " — the face app is watching it, so no camera is opened here.");
       this.pollFace();
+      if (this.viewOn()) this.showView();
       return;
     }
     if (auto) auto.disabled = false;
-    if (this.camStream) {                      // swap the camera under a watch
-      this.closeCam();
-      if (auto && auto.checked) this.openCam().catch(() => {});
+    this.stopImg();
+    const was = !!this.camStream;              // swap the camera under a watch
+    if (was) this.closeCam();
+    if (was && auto && auto.checked) this.openCam().catch(() => {});
+    else if (this.viewOn()) this.showView();
+  }
+
+  // The live picture (A42-2, user 2026-10-15 *voice does not show the
+  // camera*). This device: its own camera, shown here and sent nowhere. A
+  // rig camera: the hub's live view of that board, the stream the watcher
+  // reads. A face-app station has no address we can show: the line says
+  // where its picture is. Hidden tab = nothing streams.
+  viewOn(){
+    const box = this.$("camShow");
+    return !!(box && box.checked);
+  }
+
+  async toggleView(){
+    const on = this.viewOn();
+    try { localStorage.setItem(this.CAM_KEY + "_show", on ? "1" : ""); } catch(e) {}
+    return on ? this.showView() : this.hideView();
+  }
+
+  async showView(){
+    if (!this.viewOn() || document.hidden) return;
+    const vid = this.$("camVid"), img = this.$("camImg"), box = this.$("camBox");
+    if (this.camStation) {
+      const s = this.camStations.find(x => x.id === this.camStation) || {};
+      if (vid) vid.hidden = true;
+      if (box) box.hidden = false;
+      if (!s.dev) {
+        this.stopImg();
+        return this.sayCam("This camera belongs to the face app, so its picture shows there — use Open Reconize.");
+      }
+      this.sayCam("");
+      if (!img) return;
+      img.onerror = () => this.sayCam("the picture from this camera did not arrive — is its board on the WiFi?", s.dev);
+      img.hidden = false;
+      img.src = "/api/dev/cam.stream?dev=" + encodeURIComponent(s.dev);
+      return;
     }
+    this.stopImg();
+    try {
+      await this.openCam();
+      this.sayCam("");
+    } catch (e) {
+      if (box) box.hidden = false;
+      if (vid) vid.hidden = true;              // an empty frame reads as "broken"
+      this.sayCam("the camera could not be shown: " + (e.message || e));
+    }
+  }
+
+  // Off: the board's stream ends (no src = the hub lets the board go) and
+  // this device's camera too, unless Check by itself still needs it.
+  hideView(){
+    this.stopImg();
+    if (this.autoFaceOn() && this.camStream) return;
+    this.closeCam();
+  }
+
+  stopImg(){
+    const img = this.$("camImg");
+    if (!img) return;
+    img.onerror = null;
+    img.removeAttribute("src");
+    img.hidden = true;
   }
 
   // Opens the chosen camera, or the one the face app names, or any camera.
@@ -181,6 +244,7 @@ class VoiceApp {
     this.camStream = await navigator.mediaDevices.getUserMedia({video});
     const vid = this.$("camVid");
     this.$("camBox").hidden = false;
+    vid.hidden = false;
     vid.srcObject = this.camStream;
     await vid.play();
     await this.fillCameras();                  // labels exist now permission does
@@ -232,7 +296,8 @@ class VoiceApp {
     if (this.camLoop) { clearInterval(this.camLoop); this.camLoop = null; }
     const auto = this.$("autoFace");
     if (auto) auto.checked = false;
-    this.closeCam();
+    // A picture only SHOWN here goes nowhere, so a view asked for stays.
+    if (!this.viewOn()) this.closeCam();
   }
 
   // The one line under the camera. Plain words on the surface; the address or
@@ -312,7 +377,7 @@ class VoiceApp {
     } catch (e) {
       if (line) line.textContent = "the camera could not be used: " + (e.message || e);
     } finally {
-      if (!this.autoFaceOn()) this.closeCam();
+      if (!this.autoFaceOn() && !this.viewOn()) this.closeCam();
       if (btn) btn.disabled = false;
     }
   }
@@ -329,7 +394,7 @@ class VoiceApp {
     const on = this.autoFaceOn();
     try { localStorage.setItem(this.CAM_KEY + "_auto", on ? "1" : ""); } catch(e) {}
     if (this.camLoop) { clearInterval(this.camLoop); this.camLoop = null; }
-    if (!on) return this.closeCam();
+    if (!on) return this.viewOn() ? this.showView() : this.closeCam();
     if (this.lookRefused) {
       this.$("autoFace").checked = false;
       return this.sayCam(this.lookRefused.why, this.lookRefused.detail);
@@ -368,6 +433,10 @@ class VoiceApp {
       let want = "";
       try { want = localStorage.getItem(this.CAM_KEY + "_auto") || ""; } catch(e) {}
       if (box && want && !box.checked) { box.checked = true; this.toggleAutoFace(); }
+      let show = "";
+      try { show = localStorage.getItem(this.CAM_KEY + "_show") || ""; } catch(e) {}
+      const view = this.$("camShow");
+      if (view && show && !view.checked) { view.checked = true; this.showView(); }
       this.fillCameras();
     } catch (e) {}
   }
@@ -2282,6 +2351,15 @@ static SAMPLES = {
         if (this.sheet.some(r => r.dirty) || this.removedRows) { e.preventDefault(); e.returnValue = ""; }
       });
 
+    // A shown camera stops with the tab hidden and comes back with it: a
+    // board streaming to a tab nobody sees holds the hub's one relay open.
+    document.addEventListener("visibilitychange", () => {
+      if (!this.viewOn()) return;
+      if (!document.hidden) return this.showView();
+      this.stopImg();
+      if (!this.autoFaceOn()) this.closeCam();
+    });
+
     // Logged out, only the login box shows ("login first before do
     // everything" for the voice app).
     document.addEventListener("mice-auth", e => {
@@ -2334,6 +2412,7 @@ window.openReconize = (...args) => window.voiceApp.openReconize(...args);
 window.whoAmI = (...args) => window.voiceApp.whoAmI(...args);
 window.pickCamera = (...args) => window.voiceApp.pickCamera(...args);
 window.toggleAutoFace = (...args) => window.voiceApp.toggleAutoFace(...args);
+window.toggleView = (...args) => window.voiceApp.toggleView(...args);
 window.convRecord = (...args) => window.voiceApp.convRecord(...args);
 window.convRms = (...args) => window.voiceApp.convRms(...args);
 if (document.readyState === "loading") {

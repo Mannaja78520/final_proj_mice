@@ -1853,7 +1853,31 @@ class Brain:
         for cam in (self._watcher_present(where, "", 10) or {}).get("cameras") or []:
             if cam not in ids:
                 out.append({"id": cam, "name": cam, "online": True})
+                ids.add(cam)
+        # A rig camera's `dev` is how the page SHOWS it (A42-2, user
+        # 2026-10-15 *voice does not show the camera*): the hub's live view of
+        # that board. Listed even while the watcher is off - seeing the
+        # picture does not need it. Their stations have no address we can
+        # show; the page points at their own app for those.
+        for cam in self._rig_cameras():
+            hit = next((o for o in out if o["id"] == cam["name"]), None)
+            if hit is None:
+                out.append({"id": cam["name"], "name": cam["name"], "online": False})
+                hit = out[-1]
+            hit["dev"] = cam["dev"]
         return out
+
+    @staticmethod
+    def _rig_cameras():
+        """config/faces.json look.cameras, read per call (MICE_FACES_CONFIG
+        points a check at a copy, as the hub's own reader does)."""
+        path = os.environ.get("MICE_FACES_CONFIG") or (CODE / "config" / "faces.json")
+        try:
+            cams = (registry.load(path).get("look") or {}).get("cameras") or []
+        except Exception:                                   # noqa: BLE001
+            return []                                       # no file: no rig camera
+        return [{"name": str(c["name"]), "dev": str(c["dev"])}
+                for c in cams if isinstance(c, dict) and c.get("name") and c.get("dev")]
 
     def identify(self, jpeg):
         """Asks Reconize who is in ONE frame, and saves NOTHING.

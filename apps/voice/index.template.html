@@ -71,12 +71,14 @@
       <span id="faceBadge" class="chip" title="Who the face app sees">👤 <span id="faceName">looking…</span></span>
       <label class="mini pick">Camera
         <select id="camPick" onchange="pickCamera()" title="Which camera to look with"></select></label>
+      <label class="mini pick" title="See what this camera sees, live. Nothing is sent or kept, and it stops when this tab is hidden."><input type="checkbox" id="camShow" onchange="toggleView()"> 📷 Show the camera</label>
       <button class="secondary mini" id="btnWhoAmI" onclick="whoAmI()" title="Look once with this camera. The picture is not kept.">Check who I am</button>
       <label class="mini pick" title="Keep looking every few seconds. Nothing is saved, and it stops when this tab is hidden."><input type="checkbox" id="autoFace" onchange="toggleAutoFace()"> Check by itself</label>
       <button class="secondary mini" id="btnOpenReconize" onclick="openReconize()" title="Open the face app in a new tab">Open Reconize</button>
     </div>
     <div id="camBox" hidden>
       <video id="camVid" playsinline muted autoplay></video>
+      <img id="camImg" alt="What the rig's camera sees" hidden>
       <p class="mini" id="camSay">Look at the camera…</p>
       <p class="mini">The picture is not kept — nothing is written to the face app.</p>
     </div>
