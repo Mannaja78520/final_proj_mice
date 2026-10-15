@@ -597,7 +597,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: QC finished: 4982 passed, 0 failed, started 2026-10-15 07:53
+# RUNNING: QC finished: 4990 passed, 0 failed, started 2026-10-15 08:08
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1548,6 +1548,7 @@ A41-6: done   2026-10-14 22:40  agent=claude:10142212-6db1  — web stage 5: Hel
 # A42  Voice page: answers as a sheet, simpler settings, the chosen voice speaks
 A42-1: done   2026-10-15 07:39  agent=claude:10150701-6bf9  — Voice page (user 2026-10-15): check voice, many bugs; make every setting simpler; answers like Excel; Edit should edit in place, not scroll to a form at the bottom; voice settings and the spoken sound are not good PR #17: answers as an editable sheet, settings as tabs, helper picks the voice, edge-tts --rate=-10% fix, stand-in voice never cached, camera picker always shown; full QC 6794 pass in cloud (3 load flakes green alone); tested against fakes only
 A42-2: doing  2026-10-15 07:49  agent=claude:10150701-6bf9  — Voice page (user 2026-10-15): voice ไม่โชว์กล้องให้ดูด้วยหรอ - show the chosen camera live on the voice page
+A42-3: doing  2026-10-15 08:05  agent=claude:10150701-6bf9  — Voice page (user 2026-10-15): ทำถามแบบแยกภาษาด้วย; เสียงไม่ธรรมชาติ; แต่ละเสียงก็อาจจะไม่ใช่เสียงของภาษานั้นๆ - questions per language column, find why the voice is flat (PC: edge-tts 7.2.8 refused 403, every line fell back to Windows), native voice per language
 
 END</code></pre>
 </details>

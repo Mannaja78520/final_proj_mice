@@ -27,6 +27,19 @@ if ($Voice) {
         # If Lang is short like "th", use the exact voice Language like "th-TH" to please SSML
         elseif ($installed.Language.StartsWith($Lang)) { $Lang = $installed.Language }
     }
+} elseif ($Lang) {
+    # A NATIVE voice or none (A42-2, user 2026-10-15: *each language may not
+    # be that language's voice*): with no voice named, Windows' default read
+    # Japanese and Chinese with a Thai or English voice. No voice installed
+    # for the language = fail here, and the page says why.
+    $native = [Windows.Media.SpeechSynthesis.SpeechSynthesizer]::AllVoices |
+              Where-Object { $_.Language -like "$Lang*" } | Select-Object -First 1
+    if (!$native) {
+        [Console]::Error.WriteLine("this PC has no Windows voice for language $Lang")
+        exit 3
+    }
+    $Voice = $native.DisplayName
+    $Lang = $native.Language
 }
 $xmlLang = if ($Lang) { $Lang } else { $s.Voice.Language }
 $EscapedText = $Text.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;').Replace("'", '&apos;')

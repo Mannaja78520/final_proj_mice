@@ -58,7 +58,6 @@ code{background:var(--sunk);padding:1px 5px;border-radius:4px;
 .sheet-wrap{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:var(--r-md);margin-top:var(--sp-2)}
 .sheet{border-collapse:collapse;width:100%;min-width:1040px;font-size:14px;table-layout:fixed}
 .sheet th:first-child{width:30px}
-.sheet th:nth-child(2){width:20%}
 .sheet th:nth-last-child(2){width:150px}
 .sheet th:last-child{width:104px}
 .sheet th{position:sticky;top:0;z-index:1;background:var(--sunk);text-align:left;font-weight:600;
@@ -74,9 +73,14 @@ code{background:var(--sunk);padding:1px 5px;border-radius:4px;
 .sheet textarea:focus{border-color:var(--acc);background:var(--card);outline:none}
 .sheet tr.dirty td:first-child{box-shadow:inset 3px 0 var(--acc);color:var(--acc)}
 .sheet tr.bad td{background:color-mix(in srgb,var(--err) 8%,transparent)}
+/* How people ask it, above what it says, in each language's column. */
+.sheet textarea.ask{font-size:13px;color:var(--mut);border-bottom:1px dashed var(--line);border-radius:0}
+.sheet textarea.ask:focus{color:inherit}
 .sheet .cellbar{display:flex;justify-content:flex-end}
 .sheet .cellbar button,.sheet .acts button{padding:1px 7px;font-size:12px;min-height:0}
 .sheet .moves select{width:100%;font-size:12px;margin-bottom:3px}
 .sheet .mv{border-bottom:1px dashed var(--line);padding-bottom:3px;margin-bottom:3px}
 .sheet .acts{display:flex;flex-direction:column;gap:4px;align-items:stretch}
 body.adv .not-adv{display:none}
+#voiceWarn{margin:var(--sp-2) 0 0}
+#voiceWarn[hidden]{display:none}

@@ -509,6 +509,7 @@ class VoiceApp {
   this.fillCameras();
   const p = r.parts || {};
   this.updateParts(p);
+  this.showVoice(r.voice);
 
   // If LLM is configured but not yet loaded, auto-trigger background preload
   if (p.llm && p.llm.includes("first needed") && p.llm !== "off in config/voice.json") {
@@ -529,6 +530,30 @@ class VoiceApp {
                 && !p.stt.startsWith("could not");
   this.$("convStart").hidden = !sttOk;
   this.say("ready — ask a question");
+}
+
+  // The line that says the PC's flat voice is speaking instead of the
+  // natural one, and why. Hidden while the natural voice speaks.
+  showVoice(v){
+  const line = this.$("voiceWarn");
+  if (!line) return;
+  if (!v || v.natural !== false) { line.hidden = true; return; }
+  line.hidden = false;
+  line.textContent = "⚠ Speaking with this PC's backup voice, which sounds flat: "
+                   + (v.why || "the natural voice did not answer") + ".";
+  if (v.tech) {
+    const t = document.createElement("span");
+    t.className = "tech";
+    t.textContent = " (" + v.tech + ")";
+    line.appendChild(t);
+  }
+}
+
+  async checkVoice(){
+  try {
+    const r = await fetch("/api/voice/health").then(res => res.json());
+    this.showVoice(r && r.voice);
+  } catch (e) {}
 }
 
   updateParts(p){
@@ -1140,6 +1165,11 @@ class VoiceApp {
       body: JSON.stringify(Object.assign({text: text, lang: lang || ""}, try_ || {})),
     });
     if (!r.ok) { this.$("wait").textContent = (await r.json()).error; this.$("speakingNow").hidden = true; return; }
+    // MP3 = the natural voice spoke; a WAV = the PC's flat stand-in, and
+    // the helper says why (A42-2).
+    const kind = (r.headers && r.headers.get && r.headers.get("Content-Type")) || "";
+    if (kind.includes("mpeg")) this.showVoice({natural: true});
+    else if (kind.includes("wav")) this.checkVoice();
     const url = URL.createObjectURL(await r.blob());
     const player = new Audio(url);
     player.onended = () => { URL.revokeObjectURL(url); this.$("wait").textContent = ""; this.$("speakingNow").hidden = true; };
@@ -1414,6 +1444,22 @@ static MODEL_WORDS = [["base", "Fast"], ["small", "Balanced"],
 static ANSWER_KEYS = [["th", "answer"], ["en", "answer_en"],
                       ["ja", "answer_ja"], ["zh", "answer_zh"]];
 
+// Which language column a way of asking belongs in, by its letters - the
+// helper's own detect_lang (service.py), so the page and the matcher agree.
+// The store keeps ONE `questions` list (every reader matches against all of
+// it); the sheet only splits it per language (A42-2, user 2026-10-15).
+static askLang(text){
+  let kana = false, han = false, latin = false;
+  for (const ch of String(text || "")) {
+    const cp = ch.codePointAt(0);
+    if (cp >= 0x0E00 && cp <= 0x0E7F) return "th";
+    if (cp >= 0x3040 && cp <= 0x30FF) kana = true;
+    else if (cp >= 0x4E00 && cp <= 0x9FFF) han = true;
+    else if (/[A-Za-z]/.test(ch)) latin = true;
+  }
+  return kana ? "ja" : han ? "zh" : latin ? "en" : "th";
+}
+
 // A language in its own words ("th" -> "ไทย"), from the browser, so a fifth
 // language needs no table of names here.
 static langName(code){
@@ -1545,7 +1591,7 @@ static langName(code){
   const head = this.$("ansHead"), body = this.$("ansRows");
   head.textContent = "";
   const th = t => { const e = document.createElement("th"); e.textContent = t; head.appendChild(e); };
-  ["#", "Ways of asking"].forEach(th);
+  ["#"].forEach(th);
   VoiceApp.ANSWER_KEYS.forEach(([l]) => th(VoiceApp.langName(l)));
   ["Robot move", ""].forEach(th);
   body.textContent = "";
@@ -1568,14 +1614,24 @@ static langName(code){
   };
   td().textContent = String(i + 1);
 
-  row.ask = this.cell((row.item.questions || []).join("\n"), "how people ask it", v => {
-    row.item.questions = v.split("\n").map(s => s.trim()).filter(Boolean); changed(); });
-  td().appendChild(row.ask);
-
+  // Each language is one column: how people ask it on top, what the rig
+  // says under it. The asks are ONE list in the store, joined back here.
+  row.asks = {};
   row.says = {};
+  const joinAsks = () => {
+    row.item.questions = VoiceApp.ANSWER_KEYS
+      .flatMap(([l]) => row.asks[l].value.split("\n"))
+      .map(s => s.trim()).filter(Boolean);
+    changed();
+  };
   VoiceApp.ANSWER_KEYS.forEach(([lang, key]) => {
     const c = td();
-    const box = this.cell(row.item[key], key === "answer" ? "what it says" : "",
+    const ask = this.cell(this.asksIn(row.item.questions, lang).join("\n"),
+                          "people ask… (one per line)", joinAsks);
+    ask.classList.add("ask");
+    row.asks[lang] = ask;
+    c.appendChild(ask);
+    const box = this.cell(row.item[key], "it says…",
                           v => { row.item[key] = v.trim(); changed(); });
     row.says[lang] = box;
     const bar = document.createElement("div");
@@ -1626,6 +1682,18 @@ static langName(code){
 }
 
   // A cell: a box that grows with what is typed, like a spreadsheet row.
+  asksIn(questions, lang){
+  return (questions || []).filter(q => VoiceApp.askLang(q) === lang);
+}
+
+  // The box to type in first: the first language with a way of asking, else
+  // the first language.
+  firstAsk(row){
+  if (!row || !row.asks) return null;
+  const ls = VoiceApp.ANSWER_KEYS.map(([l]) => l);
+  return row.asks[ls.find(l => row.asks[l].value.trim()) || ls[0]];
+}
+
   cell(value, hint, onInput){
   const ta = document.createElement("textarea");
   ta.rows = 1;
@@ -1692,7 +1760,7 @@ static langName(code){
   this.$("ansFind").value = "";
   this.sheet.unshift({item: {questions: [], answer: ""}, dirty: true});
   this.drawSheet();
-  const first = this.sheet[0].ask;
+  const first = this.firstAsk(this.sheet[0]);
   if (first) { first.focus(); if (first.scrollIntoView) first.scrollIntoView({block: "center"}); }
 }
 
@@ -1740,7 +1808,10 @@ static langName(code){
       const all = new Set(qs);
       res.results.forEach(t => t && Object.values(t).forEach(q => { if (q && String(q).trim()) all.add(String(q).trim()); }));
       row.item.questions = [...all];
-      if (row.ask) { row.ask.value = row.item.questions.join("\n"); this.grow(row.ask); }
+      if (row.asks) VoiceApp.ANSWER_KEYS.forEach(([l]) => {
+        row.asks[l].value = this.asksIn(row.item.questions, l).join("\n");
+        this.grow(row.asks[l]);
+      });
     }
   }
   row.dirty = true;
@@ -1782,7 +1853,8 @@ static langName(code){
     bad.forEach(r => { r.tr.classList.add("bad"); r.tr.hidden = false; });
     stat.textContent = "Row " + (this.sheet.indexOf(bad[0]) + 1)
                      + " needs a way of asking and a reply. Nothing was saved yet.";
-    if (bad[0].ask) bad[0].ask.focus();
+    const ask = this.firstAsk(bad[0]);
+    if (ask) ask.focus();
     return false;
   }
   const btn = this.$("ansSave");
@@ -1929,8 +2001,8 @@ static SAMPLES = {
     sel.appendChild(o);
     return o;
   };
-  add("", "a different voice for each language (below)");
-  this.allVoices.forEach(v => add(v.name, this.voiceWords(v) + " · speaks every language"));
+  add("", "each language its own native voice (below) — recommended");
+  this.allVoices.forEach(v => add(v.name, this.voiceWords(v) + " · one voice for every language (an accent in the others)"));
   if (want && !this.allVoices.some(v => v.name === want)) add(want, want);
   if (!this.allVoices.length) {
     // Offline, or the speech service refused: say so rather than showing
