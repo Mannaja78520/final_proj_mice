@@ -1450,7 +1450,7 @@ def shared_css():
         f = SHARED_WEB / name
         if f.is_file():
             parts.append(b"/* ---- " + name.encode() + b" ---- */" + nl)
-            parts.append(f.read_bytes())
+            parts.append(f.read_text(encoding="utf-8").encode("utf-8"))
             parts.append(nl)
     return b"".join(parts)
 

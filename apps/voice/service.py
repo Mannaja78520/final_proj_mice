@@ -848,7 +848,7 @@ class Brain:
                 said += "; last heard by " + self._stt_last
             if getattr(self, "_stt_own_err", None):
                 said += "; own model could not load: " + "; ".join(
-                    "%s: %s" % item for item in self._stt_own_err.items())
+                    "%s: %s" % item for item in self._stt_own_err.copy().items())
             return said
         if self._stt_loading:
             return "loading in background…"
@@ -921,6 +921,13 @@ class Brain:
             return self.active_scenario().get("language") or fb["language"]
         return lang
 
+    def _decode(self, lang):
+        """Whisper's anti-repeat settings for this language (local.hear in
+        voice_providers.json). Thai gets none: they cost it 28% vs 2.3%."""
+        hear = self.service("local")["jobs"].get("hear") or {}
+        own = (hear.get("decodeByLanguage") or {}).get(lang)
+        return dict(own if own is not None else hear.get("decode") or {})
+
     def _fallback_transcribe(self, path, segs, info, resolved, scfg):
         """A second pass in a set language when detection is unsure (A26-80).
 
@@ -941,7 +948,7 @@ class Brain:
             path, language=lang, temperature=0, beam_size=int(scfg.get("beam") or 1),
             condition_on_previous_text=False, vad_filter=True,
             vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
-            repetition_penalty=1.2, no_repeat_ngram_size=3, initial_prompt=bias)
+            initial_prompt=bias, **self._decode(lang))
 
     def listen(self, audio, hint=""):
         """Speech bytes -> ({text, language}, None) or (None, why-not).
@@ -999,9 +1006,7 @@ class Brain:
             condition_on_previous_text=False,
             vad_filter=True,
             vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
-            repetition_penalty=1.2,
-            no_repeat_ngram_size=3,
-            initial_prompt=bias)
+            initial_prompt=bias, **self._decode(lang))
         first_info = info
         segments, info = self._fallback_transcribe(path, segments, info, lang, scfg)
         if info is not first_info:
