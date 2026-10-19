@@ -124,6 +124,7 @@ function poseChanged(throttled, liveMs) {
     colTimer = now;
     $("collideWarn").style.display = collisionAt(pose) ? "block" : "none";
     renderXyz();
+    renderHands();
   }
   // No time throttle here: sendPoseLive() keeps one command in flight and
   // always carries the newest pose, so it paces itself to the link AND cannot
@@ -200,4 +201,53 @@ function mirrorLR(which) {
   $("tlStat").textContent = which === "fb"
     ? "mirrored front to back — each arm reaches the other way, on its own side"
     : "mirrored left to right — each arm took the other's shape";
+}
+
+// ---- palm or back of the hand on top (A44-1) --------------------------------
+// User 2026-10-19: hand-like parts are fixed to the arms, and which side the
+// audience sees on top changes how a pose feels. One row per hand: what is on
+// top now, and a button for each side. The hand stays where it is.
+const FACING_TEXT = { palm: "palm on top", back: "back of the hand on top",
+                      side: "on its edge" };
+function renderHands() {
+  const box = $("handsBox");
+  if (!box || palmMarks.length < HANDS.length) return;
+  if (!box.childElementCount) {
+    HANDS.forEach((h, i) => {
+      const row = document.createElement("div"); row.className = "row";
+      const lbl = document.createElement("span"); lbl.className = "lbl";
+      lbl.textContent = h.label;
+      const up = document.createElement("button");
+      up.textContent = "✋ Palm up";
+      up.title = "turn the arm so the PALM of the " + h.label.toLowerCase()
+               + " faces up; the hand stays where it is";
+      up.onclick = () => turnPalm(i, 1);
+      const back = document.createElement("button");
+      back.textContent = "🤚 Back up";
+      back.title = "turn the arm so the BACK of the " + h.label.toLowerCase()
+                 + " faces up; the hand stays where it is";
+      back.onclick = () => turnPalm(i, -1);
+      const now = document.createElement("span");
+      now.className = "mini"; now.id = "handNow" + i;
+      row.append(lbl, up, back, now);
+      box.appendChild(row);
+    });
+  }
+  HANDS.forEach((h, i) => {
+    const el = $("handNow" + i);
+    if (el) el.textContent = "now: " + FACING_TEXT[palmWord(palmUpness(i))];
+  });
+}
+function turnPalm(arm, want) {
+  const r = facePalm(pose, arm, want);
+  if (!r) return;
+  pose = r.pose;
+  poseChanged(false);
+  const h = HANDS[arm].label.toLowerCase();
+  $("tlStat").textContent = r.upness > 0.5
+    ? h + ": " + (want > 0 ? "the palm" : "the back of the hand") + " is on top now, "
+      + "and the hand is where it was. Press Update selected to keep it in the move."
+    : h + ": this is as far round as the joints let it turn with the hand here. "
+      + "Move the hand a little and try again.";
+  if (r.upness <= 0.5) notice($("tlStat").textContent);
 }

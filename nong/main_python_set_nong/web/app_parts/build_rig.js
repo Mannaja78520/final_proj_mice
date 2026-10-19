@@ -11,6 +11,8 @@ let jointGroups = [];   // THREE.Group per logical joint (rotation applied here)
 let pickMeshes = [];    // meshes that select a pair on click
 let wristBalls = [];    // wrist IK handle per arm (moves all 4 joints)
 let elbowBalls = [];    // elbow IK handle per arm (moves the 2 shoulder joints)
+let palmMarks = [];     // the drawn hand per arm; its local +Z is the palm (A44-1)
+const palmCache = new Map(); // "arm|pose" -> palm upness; emptied on every rebuild
 let linkHolders = {};   // name -> group whose first child is the visual (STL-replaceable)
 let pairRingParents = [];
 
@@ -105,6 +107,23 @@ function buildArm(side) {           // side: +1 = robot left (+X), -1 = right
   wrist.renderOrder = 20;
   elR.add(wrist);
   wristBalls.push(wrist);
+
+  // The hand, drawn so the audience's view can be judged here (A44-1): skin
+  // on the palm, grey on the back. Turned about the bar by RIG.palmTurn to sit
+  // like the real one; its local +Z is the palm normal facePalm() works with.
+  const hand = new THREE.Group();
+  hand.position.set(0, -foreLen, 0);
+  hand.rotation.y = THREE.MathUtils.degToRad(RIG.palmTurn[side > 0 ? 0 : 1] || 0);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(34, 46, 5),
+                              new THREE.MeshStandardMaterial({ color: 0x7d8590 }));
+  back.position.y = -30;
+  const palm = new THREE.Mesh(new THREE.PlaneGeometry(30, 42),
+                              new THREE.MeshStandardMaterial({ color: 0xf2b8a0 }));
+  palm.position.set(0, -30, 2.6);
+  back.userData.skel = palm.userData.skel = true;    // never hidden under an STL
+  hand.add(back, palm);
+  elR.add(hand);
+  palmMarks.push(hand);
   return { anchor, shP, elAnchor, elP };
 }
 
@@ -146,7 +165,8 @@ function buildRobot() {
   shoulderMount = new THREE.Group();
   shoulderMount.position.set(0, d.shoulderY + (d.shrugPivot || 0), 0);
   bodyGroup.add(shoulderMount);
-  jointGroups = []; pickMeshes = []; wristBalls = []; elbowBalls = []; linkHolders = {};
+  jointGroups = []; pickMeshes = []; wristBalls = []; elbowBalls = []; palmMarks = []; linkHolders = {};
+  palmCache.clear();
 
   // torso + head (visuals replaceable by STL)
   const torsoMesh = new THREE.Mesh(new THREE.BoxGeometry(d.torsoW, d.torsoH, d.torsoD), partMat("torso"));
