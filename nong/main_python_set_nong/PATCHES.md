@@ -123,3 +123,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0056 | 2026-10-19 11:55 | Moves from a video: MediaPipe skeleton to arm moves (A44-4) |
 | 0057 | 2026-10-19 12:34 | Moves from a video: say when a hand cannot show the asked side |
 | 0058 | 2026-10-19 15:42 | Moves from a video: force hand side, stay with the music, keep / leave out / replace each move |
+| 0059 | 2026-10-19 16:45 | Moves from a video: forced hand side kept on part-way moves (Stay with the music); misses counted on the final pose (A44-7) |
