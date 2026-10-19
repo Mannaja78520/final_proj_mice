@@ -4355,10 +4355,23 @@ async function playShow() {
   const dev = moduleDev();
   if (!dev) { $("showStat").textContent = "connect to the robot first (Robot tab)."; notice($("showStat").textContent); return; }
   if (!s.items.length) { $("showStat").textContent = "add at least one sequence first."; return; }
+  // The hub plays a show step by step, so nothing of it is on the robot unless
+  // it is written there first (A44-2): the same file Save to robot writes.
+  let kept = "";
+  if (keepRunOn() && haveRobot()) {
+    $("showStat").textContent = "keeping a copy of " + (s.name || "this show") + " on the robot…";
+    try {
+      const j = await showPost("/api/show/yaml", { show: s, limits: showLimits() });
+      kept = await keepLastRun(j.yaml, j.file);
+    } catch (e) { kept = "the copy as " + LAST_RUN_FILE + " was not kept: " + (e.message || e); }
+  }
   try {
     await showPost("/api/show/play", { dev, show: s, limits: showLimits() });
     $("showStat").textContent = "the hub is running " + (s.name || "this show") +
-      " — it keeps going with this page closed. ⏹ Stop ends it.";
+      " — it keeps going with this page closed. ⏹ Stop ends it." +
+      (kept ? " Note: " + kept : keepRunOn() && haveRobot()
+        ? " A copy is on the robot as " + LAST_RUN_FILE + ", to play from its own page." : "");
+    if (kept) notice(kept);
   } catch (e) { $("showStat").textContent = "did not start: " + (e.message || e); notice($("showStat").textContent); }
 }
 // The show ONTO the robot's card (user 2026-10-12: *in shows is there upload to
@@ -4373,8 +4386,8 @@ async function sendShowToRobot() {
     $("showStat").textContent = "sending " + (s.name || "this show") + " to the robot…";
     const j = await showPost("/api/show/yaml", { show: s, limits: showLimits() });
     await sdUpload(j.file, j.yaml);
-    $("showStat").textContent = j.file + " is on the robot's card. The robot can play it " +
-      "by itself now: pick it in the robot's list (Robot tab, or the robot's own page).";
+    $("showStat").textContent = j.file + " is saved on the robot. The robot can play it " +
+      "by itself now: pick it in the robot's list (Sequence tab, or the robot's own page).";
     refreshSd();
   } catch (e) { $("showStat").textContent = "not sent: " + (e.message || e); notice($("showStat").textContent); }
 }
@@ -4837,6 +4850,30 @@ async function playSdSeq(fname) {
 }
 // Delete a saved YAML (user 2026-09-17). The hub moves it to
 // sequences/.deleted/, so a mis-click can still be undone by hand.
+// The picked PC file onto the robot, as it is (A44-3, user 2026-10-19: make
+// sending or updating moves on the nong easy). No timeline is opened, so
+// nothing unsaved is at risk; the same name on the robot is replaced.
+async function putLocalSeqOnRobot() {
+  const f = $("seqList").value;
+  if (!f) { $("tlStat").textContent = "pick a saved YAML in the list first."; return; }
+  if (!haveRobot()) {
+    $("tlStat").textContent = "connect to the robot first (Robot tab).";
+    notice($("tlStat").textContent);
+    return;
+  }
+  try {
+    const r = await fetch("/api/loadseq?name=" + encodeURIComponent(f));
+    if (!r.ok) throw new Error("cannot read sequences/" + f + " (the hub answered " + r.status + ")");
+    $("tlStat").textContent = "saving " + f + " on the robot…";
+    await sdUpload(f, await r.text());
+    $("tlStat").textContent = f + " is saved on the robot. It can play it by itself now, "
+      + "from the robot's list here or on its own page.";
+    refreshSd();
+  } catch (e) {
+    $("tlStat").textContent = f + " was not saved on the robot: " + (e.message || e);
+    notice($("tlStat").textContent);
+  }
+}
 async function deleteLocalSeq() {
   const f = $("seqList").value;
   if (!f) { $("tlStat").textContent = "pick a saved YAML in the list first."; return; }
@@ -6537,7 +6574,7 @@ async function uploadYaml() {
   try {
     await sdUpload(name + ".yaml", yaml);
     $("sdStat").textContent =
-      `uploaded ${name}.yaml to /moves — press its ▶ Run button (or pick it on the module website)`;
+      `saved ${name}.yaml on the robot — press its ▶ Run button here, or pick it on the robot's own page`;
     refreshSd();
   } catch (e) { $("sdStat").textContent = "upload failed: " + (e.message || e); notice($("sdStat").textContent); }
 }
@@ -6635,6 +6672,29 @@ document.addEventListener("visibilitychange", function () {
   }).catch(() => {});
 });
 
+// ---- every Run leaves a copy on the robot (A44-2) --------------------------
+// User 2026-10-19: keep what was sent to run on the robot, so it can be played
+// again from the robot's own page with no hub and no Studio. last.yaml is
+// always the last thing run; the robot's page offers it first. Settings turns
+// it off (a second upload costs time on a slow cable).
+const LAST_RUN_FILE = "last.yaml";
+const KEEP_RUN_KEY = "nong_keep_last_run";
+function keepRunOn() {
+  try { return localStorage.getItem(KEEP_RUN_KEY) !== "0"; }
+  catch (e) { return true; }
+}
+function setKeepRun(on) {
+  try { localStorage.setItem(KEEP_RUN_KEY, on ? "1" : "0"); }
+  catch (e) { /* kept for this visit only */ }
+}
+// Returns "" when kept (or not wanted), else why not: a copy that failed must
+// not stop the run, but it must be said.
+async function keepLastRun(yaml, file) {
+  if (!keepRunOn() || file === LAST_RUN_FILE) return "";
+  try { await sdUpload(LAST_RUN_FILE, yaml); return ""; }
+  catch (e) { return "the copy as " + LAST_RUN_FILE + " was not kept: " + (e.message || e); }
+}
+
 // Send the sequence, THEN play it. This used to send only `MOVE <name>.yaml`,
 // so the module ran whatever copy of that name was already on its SD card while
 // the crash check had just approved the timeline on screen. Edit a pose to fix
@@ -6662,6 +6722,7 @@ async function robotRun() {
       + (e && e.message ? e.message : e);
     return;
   }
+  const kept = await keepLastRun(yaml, file);
   const said = await robotCmd("MOVE " + file);
   // robotCmd answers "" on a failure; the card said "running" anyway.
   if (!said.startsWith("OK")) {
@@ -6670,10 +6731,12 @@ async function robotRun() {
     notice(st ? st.textContent : "the robot did not start " + file);
     return;
   }
-  if (st) st.textContent = part
+  if (st) st.textContent = (part
     ? "the robot is running from the move you picked, to the end — it does not "
       + "go back to the start. The whole show is still saved as " + name + ".yaml."
-    : "the robot is running " + file + " on its own.";
+    : "the robot is running " + file + " on its own.")
+    + (kept ? " Note: " + kept : keepRunOn() ? " A copy is kept on it as " + LAST_RUN_FILE + "." : "");
+  if (kept) notice(kept);
 }
 
 // ---- zero-position calibration (locked behind the HUB login) ----
@@ -6772,6 +6835,94 @@ async function monitorTick() {
     monBusy = false;
   }
 }
+// --- the robot's own settings, from Setup (A44-3) ---
+// User 2026-10-19: the robot's device settings should be set from Studio's
+// settings too. Each row is a setting the firmware already has, written with
+// the commands it already understands, and saved ON the robot (CFG keeps it
+// over a restart). A new setting is one entry here, nothing else.
+//   read  where it sits in the robot's status (INFO / /api/status)
+//   send  the commands that set it now and keep it
+//   ask   a question first, for a change with side effects
+const ROBOT_SETTINGS = [
+  { id: "name", label: "Name", type: "text", hint: "letters, digits and -",
+    ok: v => /^[A-Za-z0-9-]{1,24}$/.test(v),
+    read: s => s.name,
+    send: v => ["SET NAME " + v],
+    ask: v => "Rename the robot to " + v + "?\n\nIts WiFi name and its address ("
+              + v + ".local) change too, so connect again afterwards." },
+  { id: "speed", label: "Speed when a pose has no time", type: "number",
+    unit: "°/s", min: 5, max: 600,
+    read: s => s.module && s.module.speed_dps,
+    send: v => ["SPEED " + v, "CFG speed_dps " + v] },
+  { id: "volume", label: "Volume", type: "number", unit: "0 to 100", min: 0, max: 100,
+    read: s => s.module && s.module.audio && s.module.audio.vol,
+    send: v => ["VOL " + v, "CFG volume " + v] },
+];
+function renderRobotSettings() {
+  const box = $("robotSettings");
+  if (!box || box.childElementCount) return;
+  ROBOT_SETTINGS.forEach(def => {
+    const row = document.createElement("div"); row.className = "row";
+    const lbl = document.createElement("label"); lbl.className = "lbl";
+    lbl.htmlFor = "rs_" + def.id; lbl.textContent = def.label;
+    const inp = document.createElement("input");
+    inp.id = "rs_" + def.id; inp.type = def.type;
+    if (def.type === "number") { inp.min = def.min; inp.max = def.max; inp.style.width = "80px"; }
+    else inp.style.flex = "1";
+    inp.placeholder = def.hint || "";
+    const unit = document.createElement("span"); unit.className = "mini";
+    unit.textContent = def.unit || "";
+    const save = document.createElement("button");
+    save.textContent = "Save to robot";
+    save.onclick = () => saveRobotSetting(def);
+    row.append(lbl, inp, unit, save);
+    box.appendChild(row);
+  });
+  const keep = $("keepRunChk");
+  if (keep) keep.checked = keepRunOn();
+}
+async function readRobotSettings() {
+  const stat = $("robotSetStat");
+  try {
+    const s = await getStatus();
+    ROBOT_SETTINGS.forEach(def => {
+      const v = def.read(s || {});
+      if (v !== undefined && v !== null) $("rs_" + def.id).value = v;
+    });
+    stat.textContent = "These are the robot's settings now. Change one and press its Save to robot.";
+  } catch (e) {
+    stat.textContent = "Could not read the robot. Connect it on the Robot tab first.";
+    notice(stat.textContent);
+  }
+}
+async function saveRobotSetting(def) {
+  const stat = $("robotSetStat");
+  const raw = $("rs_" + def.id).value.trim();
+  const v = def.type === "number" ? Number(raw) : raw;
+  const fine = def.type === "number"
+    ? raw !== "" && Number.isFinite(v) && v >= def.min && v <= def.max
+    : def.ok(v);
+  if (!fine) {
+    stat.textContent = def.label + ": " + (def.type === "number"
+      ? "type a number from " + def.min + " to " + def.max + "."
+      : "use " + def.hint + " only.");
+    notice(stat.textContent);
+    return;
+  }
+  if (def.ask && !confirm(def.ask(v))) return;
+  try {
+    for (const c of def.send(v)) {
+      const r = await rawCmd(c);
+      if (!/^OK/i.test(r || "")) throw new Error(r || "no answer");
+    }
+    stat.textContent = def.label + " is " + v + (def.unit ? " " + def.unit : "")
+      + " on the robot now, and it keeps it after a restart.";
+  } catch (e) {
+    stat.textContent = def.label + " was not saved on the robot: " + (e.message || e);
+    notice(stat.textContent);
+  }
+}
+renderRobotSettings();
 // --- dummy link ---
 // The dummy is a hand-posed copy of the robot: the same 10 joints, a pot on
 // each instead of a servo (firmware type "dummy", COMMANDS.md). It is its OWN

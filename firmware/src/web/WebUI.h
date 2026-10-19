@@ -476,7 +476,7 @@ a.peer:hover{border-color:var(--acc)}
 <!--#end-->
 
   <div class="card" data-tab="files">
-    <h2>Play a saved show</h2>
+    <h2>Play a saved show <span class="statline">(last.yaml = the last one run)</span></h2>
     <div class="row">
       <select id="moveSel" style="flex:1"></select>
       <button class="primary" onclick="runSel()">Run</button>
@@ -1617,6 +1617,7 @@ async function loadList(dir,sel){
   try{const r=await fetch('/api/files?dir='+dir);const fs=await r.json();
     s.innerHTML='';
     fs.forEach(f=>{const o=document.createElement('option');o.value=dir+'/'+f.n;o.textContent=f.n;s.appendChild(o);});
+    if(fs.some(f=>f.n=='last.yaml'))s.value=dir+'/last.yaml';
     if(!fs.length){const o=document.createElement('option');o.disabled=true;
       o.textContent='nothing in '+dir;s.appendChild(o);}
   }catch(e){

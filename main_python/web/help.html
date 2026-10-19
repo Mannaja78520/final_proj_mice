@@ -356,7 +356,7 @@
        want them, set a pause after any of them in milliseconds, name the show and press
        <b>Save show</b>. <b>▶ Run on robot</b> hands the whole thing to the hub, so it keeps
        going with the page closed; <b>⏹ Stop</b> ends it from anywhere.</p>
-    <p><b>⇪ Send to robot</b> puts the show on the robot's own card as one file,
+    <p><b>⇪ Save to robot</b> puts the show on the robot's own card as one file,
        <code>&lt;show name&gt;.show.yaml</code>. The robot can then play it by itself, with
        the hub and the computer switched off: pick it in the robot's list of sequences
        (Robot tab, or the robot's own page). It is the same run as ▶ Run on robot — the
@@ -588,9 +588,28 @@
        each segment with its exact duration. A hold is a real pause <em>between</em> the
        moves. Pause sends <code>STOP</code> to freeze the arm where it is, and resuming asks
        only for the time still left in the segment.</p></div>
+  <div class="f"><h3>Every Run is kept on the robot as last.yaml<span class="tag t-new">new</span></h3>
+    <p><b>▶ Run on robot</b>, on the time bar or on a show, also saves what it runs on the
+       robot as <code>last.yaml</code>. The robot's own page offers it first under <b>Play a
+       saved show</b>, so the last thing you ran can be played again with no hub and no
+       computer. A show Run keeps the same file <b>⇪ Save to robot</b> writes. If the copy
+       fails, the run still starts and the notice line says so.</p>
+    <p>Turn it off in <b>Setup ▸ This robot ▸ Keep a copy on the robot every time I press
+       Run</b>; then Run sends only the sequence itself, which is quicker over a slow cable.</p>
+    <p>Three ways to put moves on the robot: <b>⇪ Save to robot</b> on the time bar (what is
+       on screen), <b>⇪ Save to robot</b> in <b>Saved moves on this PC</b> (a saved file, as
+       it is, without opening it), and <b>⇪ Save to robot</b> on the Shows tab.</p></div>
+  <div class="f"><h3>This robot's settings, from Studio<span class="tag t-new">new</span></h3>
+    <p><b>Setup ▸ This robot</b> sets the robot's own settings: its <b>name</b> (its WiFi
+       name and <code>name.local</code> address change with it, so connect again after), the
+       <b>speed when a pose has no time</b>, and the <b>volume</b>. Press <b>⬇ Read from
+       robot</b> to see what it uses now; each <b>Save to robot</b> sets it at once and keeps
+       it after a restart. Joint limits, gear and offsets are in <b>Rig setup</b>, the peak
+       speed limit is on the Sequence tab, and <b>Open the robot's own page</b> has the rest
+       (WiFi, pins, logins).</p></div>
   <div class="f"><h3>Let the robot run the show on its own<span class="tag t-new">new</span></h3>
     <p>A browser stops its animation clock in a hidden tab, so a sequence driven <b>live</b>
-       from Studio freezes when you switch to another tab or app. Press <b>Send to robot</b>
+       from Studio freezes when you switch to another tab or app. Press <b>⇪ Save to robot</b>
        then <b>Run on robot</b> instead: the module plays it from its own clock and you can
        close the browser entirely.</p>
     <p>This used to need an SD card. Now a board without one keeps the sequence in memory

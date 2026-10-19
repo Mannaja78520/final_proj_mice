@@ -168,6 +168,8 @@
         <button onclick="editLocalSeq()">Load for editing</button>
         <button onclick="playLocalSeq()"
                 title="Loads this saved sequence into the timeline and starts playing it right away — same as Edit, then Play.">▶ Play saved</button>
+        <button onclick="putLocalSeqOnRobot()"
+                title="Save the picked YAML on the robot as it is, without opening it. A file of the same name on the robot is replaced.">⇪ Save to robot</button>
         <button onclick="deleteLocalSeq()"
                 title="Delete the picked saved YAML from this PC. It is moved to sequences/.deleted, not erased.">🗑 Delete</button>
       </div>
@@ -217,7 +219,7 @@
       <h2>Robot SD card — /moves</h2>
       <div class="row">
         <button onclick="refreshSd()">⟳ List sequences</button>
-        <button class="primary" onclick="uploadYaml()">Upload current</button>
+        <button class="primary" onclick="uploadYaml()" title="Save the moves on the time bar on the robot, under the name at the top.">⇪ Save current to robot</button>
       </div>
       <div id="sdList" class="mini">connect first, then press List</div>
       <div class="statline" id="sdStat"></div>
@@ -414,7 +416,7 @@
         <button onclick="showOnTimeline()"
                 title="put every sequence of this show on the time bar below, end to end, exactly as the robot will run it — then you can scrub, preview and see where each one starts">⇣ Show on the time bar</button>
         <button onclick="sendShowToRobot()"
-                title="put this show on the robot's own card, so the robot can play it by itself — no hub, no computer. It shows up in the robot's list of sequences.">⇪ Send to robot</button>
+                title="put this show on the robot's own card, so the robot can play it by itself — no hub, no computer. It shows up in the robot's list of sequences.">⇪ Save to robot</button>
         <button class="primary" onclick="playShow()">▶ Run on robot</button>
         <button onclick="stopShow()">⏹ Stop</button>
       </div>
@@ -543,6 +545,25 @@
         A copy is still kept in this browser and offered back next time.</div>
     </div>
 
+    <!-- A44-3: the robot's own settings, saved ON the robot. Rows come from
+         ROBOT_SETTINGS in app_parts/robot_settings.js. -->
+    <div class="card" data-stab="setup">
+      <h2>This robot <span class="mini">(saved on the robot itself)</span></h2>
+      <label class="row"><input type="checkbox" id="keepRunChk" checked
+             onchange="setKeepRun(this.checked)">
+        Keep a copy on the robot every time I press Run</label>
+      <div class="mini">It is kept as <b>last.yaml</b>, the first choice on the robot's own
+        page, so the robot can play it again with no hub and no computer.
+        Off: Run sends only the sequence itself (quicker over a slow cable).</div>
+      <div id="robotSettings"></div>
+      <div class="row">
+        <button onclick="readRobotSettings()">⬇ Read from robot</button>
+        <button onclick="openModule()" title="the robot's own page: its saved files with Run and Stop, WiFi, pins and logins">Open the robot's own page</button>
+      </div>
+      <div class="statline" id="robotSetStat">Connect to the robot, then press Read from robot.
+        Joint limits, gear and offsets are in Rig setup above; the peak speed limit is on the Sequence tab.</div>
+    </div>
+
     <div class="card" data-stab="setup">
       <h2>Move your setup to another PC</h2>
       <div class="mini">Everything Studio remembers &mdash; your rig, your saved default,
@@ -613,7 +634,7 @@
             title="Previews here in the browser, and pauses while this page is hidden. Run on robot hands it to the module instead.">▶ Play</button>
     <label><input type="checkbox" id="loopChk"> loop</label>
     <span class="sep"></span>
-    <button onclick="uploadYaml()" title="Put these moves on the robot's own card, under the name at the top.">Send to robot SD</button>
+    <button onclick="uploadYaml()" title="Save these moves on the robot, under the name at the top, so it can play them by itself.">⇪ Save to robot</button>
     <button onclick="robotRun()"
             title="Sends the sequence to the module and lets the MODULE play it on its own clock. This keeps running if you switch app, minimise the browser, or close this page entirely. It starts at the move you have clicked and carries on to the end - it never travels back to the first pose to begin.">▶ Run on robot</button>
     <button onclick="robotCmd('MOVE STOP')">⏹ Stop robot</button>
