@@ -255,6 +255,19 @@ def read_partners():
     return {"ok": True, "partners": cfg}
 
 
+def resume_partners():
+    """partner_launch.resume for every outside program, once at start."""
+    for pid, entry in (read_partners().get("partners") or {}).items():
+        if isinstance(entry, dict):
+            try:
+                got = partner_launch.resume(pid, entry)
+                if got:
+                    print("  started %s's %s again (it stopped with the last hub)"
+                          % (entry.get("name") or pid, ", ".join(got.get("starting") or [])))
+            except Exception as e:                          # noqa: BLE001
+                print("  could not start %s again: %s" % (pid, e))
+
+
 _reports_lock = threading.Lock()   # one read-modify-write of a report at a time
 
 
@@ -2752,6 +2765,10 @@ def main():
     threading.Thread(target=_usb_reaper, daemon=True).start()  # idle port release
     threading.Thread(target=route_probe_loop, daemon=True).start()  # A26-79
     threading.Thread(target=hub_appass.loop, daemon=True).start()  # PEERPASS
+    # Their page died with the last hub (it is our child); bring it back.
+    # The real hub only: a QC hub must never start the friend's programs.
+    if PORT == 8642 and not os.environ.get("MICE_HUB_AUTH"):
+        threading.Thread(target=resume_partners, daemon=True).start()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
