@@ -597,7 +597,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: QC finished: 51 passed, 0 failed, started 2026-10-19 21:29
+# RUNNING: QC finished: 7038 passed, 0 failed, started 2026-10-19 21:41
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1570,7 +1570,7 @@ A44-7: done   2026-10-19 16:56  agent=claude:video-52bb  — Coordinator relay 2
 A44-8: doing  2026-10-19 17:18  agent=claude:videopage  — User 2026-10-19: ขอมี app อีก app ... rig model จาก video และ สามารถดูการทำงานของ model และการเคลื่อนไหวของคนและหุ่นได้และสามารถใช้ source online ได้เช่นส่งลิ้ง youtube ... เห็นคนพร้อมเพลง ... save config จากตัวนี้มาใช้ใน nong studio ... หรือรวมใน nong studio แต่สามารถกดไป tab หน้าแบบนั้นได้ / ขอในส่วนลิ้งอื่นๆด้วยที่ไม่ใช่ youtube อาจจะเป็น google drive. Plan: Video tab in Studio, hub fetches links (yt-dlp, Drive, Dropbox, direct), video sound to robot music, choices saved in the project.
 # A45  Voice: pick who hears, answers and speaks (online or this PC), Thai-trained hearing
 A45-1: done   2026-10-19 20:56  agent=claude:10191644-1dd8  — Voice (user 2026-10-19): test voice for bugs; use Google AI Studio / Gemini by voice and other providers' APIs; find free APIs; keep a local backup; check speech-to-text (still mishears) and text-to-speech (still slow on the PC). Follow-ups: provider switchable per situation, any cloud or local; local: a separate model per job; Thai main, other languages too, main language chosen per event (scenario).
-A45-2: todo   2026-10-19 21:15  agent=open  — Voice fixes from PC test 2026-10-19: silent WAV counts as spoken; health hides which hearing model is used; Edge 0.9-1.9 s per line HANDOFF from claude:10191644-1dd8 2026-10-19 21:15: Code for fixes 1+2 is in (providers.silent, stt_status/_stt_last). Left: QC checks for both with sabotage, Edge hedge (2nd request at 1.5 s or on fast NoAudioReceived; first byte is ~90% of the time, so streaming saves little), quick QC, merge.
+A45-2: done   2026-10-19 21:41  agent=claude:10191644-1dd8  — Voice fixes from PC test 2026-10-19: silent WAV counts as spoken; health hides which hearing model is used; Edge 0.9-1.9 s per line HANDOFF from claude:10191644-1dd8 2026-10-19 21:15: Code for fixes 1+2 is in (providers.silent, stt_status/_stt_last). Left: QC checks for both with sabotage, Edge hedge (2nd request at 1.5 s or on fast NoAudioReceived; first byte is ~90% of the time, so streaming saves little), quick QC, merge.
 
 END</code></pre>
 </details>
