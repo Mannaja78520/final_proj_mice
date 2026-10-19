@@ -748,21 +748,29 @@ function turnKeyPalm(i, arm, want) {
 }
 
 // ------- playback preview (cosine ease per segment — same as the firmware)
-function poseAt(ms) {
-  const K = playKeys();
-  if (!K.length) return pose;
+// The pose `ms` into the moves K: { pose }, or past the last one { pose, end }
+// with end = when it ended. Shared with the video page (A44-8), which plays
+// its made moves beside the video without putting them on the time bar.
+function easeKeys(K, ms) {
   let t = K[0].hold || 0;
-  if (ms <= t) return [...K[0].pose];
+  if (ms <= t) return { pose: [...K[0].pose] };
   for (let i = 1; i < K.length; i++) {
     const seg = K[i].t;
     if (ms < t + seg) {
       const f = 0.5 - 0.5 * Math.cos(Math.PI * (ms - t) / seg);
-      return K[i - 1].pose.map((a, j) => a + (K[i].pose[j] - a) * f);
+      return { pose: K[i - 1].pose.map((a, j) => a + (K[i].pose[j] - a) * f) };
     }
     t += seg + (K[i].hold || 0);
-    if (ms < t) return [...K[i].pose];
+    if (ms < t) return { pose: [...K[i].pose] };
   }
-  const ret = loopReturnMs(), last = K[K.length - 1].pose;
+  return { pose: [...K[K.length - 1].pose], end: t };
+}
+function poseAt(ms) {
+  const K = playKeys();
+  if (!K.length) return pose;
+  const e = easeKeys(K, ms);
+  if (e.end == null) return e.pose;
+  const t = e.end, ret = loopReturnMs(), last = K[K.length - 1].pose;
   if (ret && ms < t + ret) {
     const f = 0.5 - 0.5 * Math.cos(Math.PI * (ms - t) / ret);
     return last.map((a, j) => a + (K[0].pose[j] - a) * f);

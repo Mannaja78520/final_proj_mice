@@ -1,0 +1,58 @@
+    <!-- The Video page's choices (A44-4, A44-8: app_parts/pose_from_video.js and
+         video_page.js). The person's video and its skeleton are on the stage
+         beside the 3D view (view.html); choices are filled from VID_DETAIL /
+         VID_HAND. -->
+    <div class="card" data-stab="video" id="vidCard">
+      <h2>Moves from a video</h2>
+      <p class="mini">A video of one person: Studio follows their arms and makes moves
+        that copy them as closely as the robot’s joints allow, and shows the person
+        and the robot side by side.</p>
+      <div class="row"><label class="lbl" for="vidFile">A file</label>
+        <input type="file" id="vidFile" accept="video/*" style="flex:1;min-width:0"
+               onchange="vidPick(this.files[0])">
+      </div>
+      <div class="row"><label class="lbl" for="vidLink">Or a link</label>
+        <input type="url" id="vidLink" style="flex:1;min-width:0"
+               placeholder="YouTube, Google Drive, any video link"
+               onkeydown="if (event.key === 'Enter') vidFetch()">
+        <button id="vidFetchBtn" onclick="vidFetch()"
+                title="This PC fetches the video from the link, then Studio reads it like a file.">Fetch</button>
+      </div>
+      <div class="row"><label class="lbl" for="vidDetail">Follow</label>
+        <select id="vidDetail" style="flex:1" onchange="vidRemake('pick')"
+                title="Every move eases to a stop. More moves follow the video more closely; fewer moves flow more smoothly."></select>
+      </div>
+      <div class="row"><label><input type="checkbox" id="vidMirror" onchange="vidRemake('fit')">
+        Move like a mirror</label>
+        <span class="mini">the robot’s left copies the person’s right</span></div>
+      <div class="row"><label><input type="checkbox" id="vidMusic" checked onchange="vidRemake()">
+        Stay with the music</label>
+        <span class="mini">every move ends on its moment in the video; one the robot is too slow for goes as far as it can</span></div>
+      <details class="disclosure">
+        <summary>More choices</summary>
+        <div class="row"><label class="lbl" id="vidHandLbl0" for="vidHand0">Left hand</label>
+          <select id="vidHand0" style="flex:1" onchange="vidRemake()"></select></div>
+        <div class="row"><label class="lbl" id="vidHandLbl1" for="vidHand1">Right hand</label>
+          <select id="vidHand1" style="flex:1" onchange="vidRemake()"></select></div>
+        <div class="row"><label><input type="checkbox" id="vidWaist" onchange="vidRemake('fit')">
+          Turn the waist when the person turns</label></div>
+        <div class="row"><label class="lbl" for="vidFrom">Use from</label>
+          <input type="number" id="vidFrom" value="0" min="0" step="0.5" style="width:70px"> s
+          <label for="vidTo">to</label>
+          <input type="number" id="vidTo" value="0" min="0" step="0.5" style="width:70px"> s</div>
+      </details>
+      <div class="row">
+        <button class="primary" id="vidGo" onclick="vidMake()" disabled>▶ Make moves</button>
+      </div>
+      <div id="vidList" class="vidlist"></div>
+      <div class="row" id="vidUseBox" hidden>
+        <button onclick="vidUse('replace')" title="The moves from the video take the place of the time bar. Asks first if it has unsaved changes.">Use as new moves</button>
+        <button onclick="vidUse('append')" title="The moves from the video are added after the last move on the time bar.">Add after the last move</button>
+      </div>
+      <div class="row" id="vidSoundBox" hidden>
+        <button id="vidSoundBtn" onclick="vidSound()"
+                title="The video's sound, from the part the moves were made from, goes onto the robot's card as the music of the first move.">♪ Put the video’s sound on the robot</button>
+      </div>
+      <div class="statline" id="vidStat" role="status">Needs the internet the first time it reads a video.</div>
+      <div class="mini tech" id="vidTech"></div>
+    </div>

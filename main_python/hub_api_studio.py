@@ -10,8 +10,18 @@ import socket
 import time
 import urllib.request
 
+import hub_video
+
 NOT_MINE = object()   # no route here matched: api() carries on
 _hub = None           # the main module, set by bind()
+LINKS = None          # hub_video.Links, made on first use (QC swaps it)
+
+
+def links():
+    global LINKS
+    if LINKS is None:
+        LINKS = hub_video.Links(_hub.asset("config", "video_links.json"))
+    return LINKS
 
 
 def bind(hub):
@@ -179,4 +189,56 @@ class StudioRoutes:
                                    "hubs": _hub.scan_hubs(
                                        (q.get("force") or ["0"])[0] == "1")})
 
+        r = self.api_video(method, path, q)
+        if r is not NOT_MINE:
+            return r
+        return NOT_MINE
+
+    def api_video(self, method, path, q):
+        """Moves from a video (A44-8): a link fetched onto this PC, a picked
+        file kept for its sound, and both served with Range so the page can
+        seek. Fetching and keeping are gated (hub_auth): they write to this
+        PC and reach the internet on someone's say-so. Reading is by an id
+        nobody can guess, handed out only to whoever started the fetch."""
+        if path == "/api/video/fetch" and method == "POST":
+            d = json.loads(self.body().decode() or "{}")
+            if d.get("cancel"):
+                return self.send_json({"ok": links().cancel(str(d["cancel"]))})
+            jid, why = links().start(str(d.get("url") or ""))
+            if not jid:
+                return self.send_err(why)
+            return self.send_json({"ok": True, "id": jid, **links().status(jid)})
+        if path == "/api/video/fetch":
+            st = links().status((q.get("id") or [""])[0])
+            if st is None:
+                return self.send_err("no such video here (the hub was restarted?)", 404)
+            return self.send_json({"ok": True, **st})
+        if path == "/api/video/put" and method == "POST":
+            try:
+                n = max(0, int(self.headers.get("Content-Length") or 0))
+                self._body_read = True
+                jid = links().put(self.rfile.read, n, (q.get("name") or [""])[0])
+            except ValueError as e:
+                self.close_connection = True   # the unread body must not become a request
+                return self.send_err(e, 413)
+            return self.send_json({"ok": True, "id": jid})
+        if path == "/api/video/sound" and method == "POST":
+            d = json.loads(self.body().decode() or "{}")
+            try:
+                start, end = float(d.get("from") or 0), float(d.get("to") or 0)
+            except (TypeError, ValueError):
+                return self.send_err("from and to are seconds")
+            f, why = links().sound(str(d.get("id") or ""), start, end)
+            if not f:
+                return self.send_err(why)
+            return self.send_json({"ok": True, "size": f.stat().st_size})
+        if path == "/api/video/file":
+            kind = (q.get("kind") or [""])[0]
+            f = links().path_of((q.get("id") or [""])[0], kind)
+            if not f:
+                return self.send_err("no such video here (the hub was restarted?)", 404)
+            if self.command == "POST":
+                self.drain()
+            return hub_video.send_file(
+                self, f, hub_video.TYPES.get(f.suffix.lower(), "application/octet-stream"))
         return NOT_MINE

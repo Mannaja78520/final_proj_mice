@@ -17,6 +17,8 @@ async function saveProject(opts) {
     // without it exported a different sequence than the one saved.
     seqNext: ($("seqNext").value || "").trim(),
     rig: RIG,
+    // The video the moves were made from, and how (A44-8); null if none.
+    video: vidSettings(),
   };
   // The draft is NOT cleared on a failure: the work is still only in this
   // browser. Mice.Api never throws, and words both "no answer" and "said no".
@@ -128,6 +130,7 @@ async function loadProject(file) {
   // The chain rides with the project; an older project without one clears the
   // field rather than keeping a chain this project never had.
   $("seqNext").value = p.seqNext || "";
+  vidApplySettings(p.video);
   if (p.meshes) {
     MESH_PARTS.forEach(part => {
       const v = p.meshes[part];

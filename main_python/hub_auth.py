@@ -86,6 +86,9 @@ GATED = {
     # say - greetings carry people's names. A program on this PC may still
     # ask it to speak without a login: see LOCAL_OK.
     "/api/speak",
+    # Moves from a video (A44-8): a video kept on this PC, and its sound made
+    # with ffmpeg - files written here on someone's say-so.
+    "/api/video/put", "/api/video/sound",
 }
 
 # Proved by something OTHER than a session. There is exactly one, and it is
@@ -126,6 +129,9 @@ GATED_POST = {
     # list; replacing the hub is the most destructive thing it can be asked to
     # do, and it is on a network several people share.
     "/api/selfupdate",   # GET says what version is offered; POST replaces the program itself.
+    # A video fetched from a link onto this PC (A44-8): POST reaches the
+    # internet and writes here, GET only says how far it has got.
+    "/api/video/fetch",
 }
 
 # NEVER gated, deliberately, however much they change:

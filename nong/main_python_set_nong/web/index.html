@@ -2,7 +2,7 @@
 <!-- Nong Studio's MAP (A41-4). index.html is BUILT from this file and
      html_parts/ by tools/build_web.py: edit a part, never index.html.
      One part per area: header, view (3D + view buttons), login, pose,
-     sequence, robot, shows, setup, timeline. A new part is a new file plus
+     sequence, video, robot, shows, setup, timeline. A new part is a new file plus
      one line here. -->
 <html lang="en">
 <head>
@@ -35,6 +35,23 @@
   <select id="projList" aria-label="Open saved moves" onchange="loadProject(this.value)"><option value="">Load…</option></select>
 </header>
 <div id="main">
+  <!-- The Video tab's stage (A44-8): the person, their music and the skeleton
+       found on them, beside the 3D robot. Shown only while that tab is open
+       (body.vidpage); app_parts/video_page.js keeps the two in step. -->
+  <div id="vidStage">
+    <div class="vidbox">
+      <video id="vidPlayer" hidden playsinline controls></video>
+      <canvas id="vidOverlay" aria-hidden="true"></canvas>
+      <p class="vidempty" id="vidEmpty">Pick a video or paste a link on the right.</p>
+    </div>
+    <div class="row vidplay">
+      <button class="primary" id="vidPlayBtn" onclick="vidPlayBoth()" disabled
+              title="Plays the video with its sound, and the robot beside it does the moves made from it.">▶ Play person and robot</button>
+      <label><input type="checkbox" id="vidSkel" checked onchange="vidLastMs = -1">
+        Skeleton</label>
+      <span class="mini" id="vidClock"></span>
+    </div>
+  </div>
   <div id="viewport">
     <div id="collideWarn">⚠ joints collide — the robot would crash</div>
     <div id="viewCube" title="click a view to look straight at that plane and drag joints in it (like Fusion/SolidWorks)">
@@ -68,6 +85,7 @@
            changes. -->
       <button class="tab on" id="tabBtnMove" onclick="showTab('pose')">Pose</button>
       <button class="tab" id="tabBtnSeq" onclick="showTab('sequence')">Sequence</button>
+      <button class="tab" id="tabBtnVideo" onclick="showTab('video')">Video</button>
       <button class="tab" id="tabBtnShows" onclick="showTab('shows')">Shows</button>
       <button class="tab" id="tabBtnRobot" onclick="showTab('robot')">Robot</button>
       <button class="tab" id="tabBtnSetup" onclick="showTab('setup')">Setup</button>
@@ -225,20 +243,34 @@
       <div class="statline" id="sdStat"></div>
     </div>
 
-    <!-- A44-4: moves from a video of a person (app_parts/pose_from_video.js).
-         Choices are filled from VID_DETAIL / VID_HAND there. -->
-    <div class="card" data-stab="sequence" id="vidCard">
+    <!-- Moves from a video has its own page now (A44-8): the Video tab. This
+         card is where people found it before. -->
+    <div class="card" data-stab="sequence" id="vidPointer">
       <h2>Moves from a video</h2>
-      <p class="mini">Pick a video of one person. Studio follows their arms and makes
-        moves that copy them as closely as the robot’s joints allow. The video stays
-        on this PC.</p>
-      <div class="row">
+      <p class="mini">Make moves from a video of a person, or from a YouTube or Google
+        Drive link, and watch the person and the robot side by side.</p>
+      <div class="row"><button onclick="showTab('video')">Open the Video page</button></div>
+    </div>
+
+    <!-- The Video page's choices (A44-4, A44-8: app_parts/pose_from_video.js and
+         video_page.js). The person's video and its skeleton are on the stage
+         beside the 3D view (view.html); choices are filled from VID_DETAIL /
+         VID_HAND. -->
+    <div class="card" data-stab="video" id="vidCard">
+      <h2>Moves from a video</h2>
+      <p class="mini">A video of one person: Studio follows their arms and makes moves
+        that copy them as closely as the robot’s joints allow, and shows the person
+        and the robot side by side.</p>
+      <div class="row"><label class="lbl" for="vidFile">A file</label>
         <input type="file" id="vidFile" accept="video/*" style="flex:1;min-width:0"
-               aria-label="Video of a person" onchange="vidPick(this.files[0])">
+               onchange="vidPick(this.files[0])">
       </div>
-      <div class="vidbox">
-        <video id="vidPlayer" hidden muted playsinline controls></video>
-        <canvas id="vidOverlay" aria-hidden="true"></canvas>
+      <div class="row"><label class="lbl" for="vidLink">Or a link</label>
+        <input type="url" id="vidLink" style="flex:1;min-width:0"
+               placeholder="YouTube, Google Drive, any video link"
+               onkeydown="if (event.key === 'Enter') vidFetch()">
+        <button id="vidFetchBtn" onclick="vidFetch()"
+                title="This PC fetches the video from the link, then Studio reads it like a file.">Fetch</button>
       </div>
       <div class="row"><label class="lbl" for="vidDetail">Follow</label>
         <select id="vidDetail" style="flex:1" onchange="vidRemake('pick')"
@@ -270,6 +302,10 @@
       <div class="row" id="vidUseBox" hidden>
         <button onclick="vidUse('replace')" title="The moves from the video take the place of the time bar. Asks first if it has unsaved changes.">Use as new moves</button>
         <button onclick="vidUse('append')" title="The moves from the video are added after the last move on the time bar.">Add after the last move</button>
+      </div>
+      <div class="row" id="vidSoundBox" hidden>
+        <button id="vidSoundBtn" onclick="vidSound()"
+                title="The video's sound, from the part the moves were made from, goes onto the robot's card as the music of the first move.">♪ Put the video’s sound on the robot</button>
       </div>
       <div class="statline" id="vidStat" role="status">Needs the internet the first time it reads a video.</div>
       <div class="mini tech" id="vidTech"></div>
