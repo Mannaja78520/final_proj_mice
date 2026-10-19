@@ -7,7 +7,9 @@ are not that good*. Three causes, none of them the voice itself:
      `edge_tts --rate -10%`; argparse reads a lone "-10%" as an unknown
      option ("argument --rate: expected one argument", reproduced
      2026-10-15), so every slower speed or lower pitch failed and the PC's
-     flat backup voice spoke instead. Now `--rate=-10%`.
+     flat backup voice spoke instead. Then `--rate=-10%`; since A45-1 the
+     voice runs inside the helper (a new Python per line was slow) and the
+     speed goes as an argument, which is what this checks now.
   2. **One outage was kept for ever.** When the online voice did not answer,
      the backup voice's wav was cached under the GOOD voice's name, and every
      later visitor heard that saved answer flat. Now the stand-in plays once
@@ -16,8 +18,8 @@ are not that good*. Three causes, none of them the voice itself:
      voice, which skipped the scenario's voice and the one voice for every
      language (check_voice_source holds the page side).
 
-Runs the real Brain.say with the two programs it calls faked: no network,
-no PowerShell, a throwaway cache folder.
+Runs the real Brain.say with the speech service and PowerShell faked: no
+network, no PowerShell, a throwaway cache folder.
 """
 import importlib.util
 import sys
@@ -50,6 +52,17 @@ def _brain(tmp, cfg):
 
 
 def run(t):
+    was = sys.modules.get("edge_tts")
+    try:
+        _run(t)
+    finally:
+        if was is None:
+            sys.modules.pop("edge_tts", None)
+        else:
+            sys.modules["edge_tts"] = was
+
+
+def _run(t):
     tmp = Path(tempfile.mkdtemp(prefix="mice_sound_qc_"))
     cfg = {"tts": {"enabled": True, "language": "th", "rate": "-10%", "pitch": "-5Hz",
                    "voices": {"th": "th-TH-PremwadeeNeural"}}}
@@ -57,18 +70,20 @@ def run(t):
     calls = []
     online = {"up": True}
 
+    class Communicate:
+        """edge_tts.Communicate, as far as Brain._edge_speak uses it."""
+        def __init__(self, text, voice, **kw):
+            calls.append(["edge_tts", voice, text] + ["--%s=%s" % kv for kv in sorted(kw.items())])
+
+        async def stream(self):
+            if not online["up"]:
+                raise OSError("offline")
+            yield {"type": "audio", "data": MP3}
+
+    sys.modules["edge_tts"] = SimpleNamespace(Communicate=Communicate)
+
     def fake_run(cmd, **kw):
         calls.append(cmd)
-        if "edge_tts" in cmd:
-            # argparse's own rule: a value that starts with "-" must be
-            # joined with "=", or the option has no value and it exits 2.
-            for i, a in enumerate(cmd):
-                if a in ("--rate", "--pitch", "--text", "--voice") and (
-                        i + 1 >= len(cmd) or cmd[i + 1].startswith("-")):
-                    return SimpleNamespace(returncode=2, stdout=b"", stderr=b"expected one argument")
-            if not online["up"]:
-                return SimpleNamespace(returncode=1, stdout=b"", stderr=b"offline")
-            return SimpleNamespace(returncode=0, stdout=MP3, stderr=b"")
         return SimpleNamespace(returncode=0, stdout=WAV, stderr=b"")
     mod.subprocess = SimpleNamespace(run=fake_run, TimeoutExpired=TimeoutError)
     b._edge_installed = lambda: True        # this machine's own install is not the test

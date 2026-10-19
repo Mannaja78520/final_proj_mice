@@ -1,0 +1,93 @@
+{
+  // WHO CAN DO EACH VOICE JOB (A45-1, user 2026-10-19: Gemini by voice, other
+  // services too, a local backup, and "pick to fit the situation").
+  //
+  // Three jobs. config/voice.json `use` holds, per job, an ORDERED list of the
+  // ids below: the first one that works does the job, the next is the backup.
+  //   hear   speech -> words        think  a question no saved answer fits
+  //   speak  words -> sound
+  //
+  // One entry per service:
+  //   says   its name on the Voice page          kind   which wire it speaks
+  //          (providers.py WIRES; "local" and "edge" live in service.py)
+  //   key    {env: [...], get: where to get one free} - absent = no key needed
+  //   free   what the free tier gives, in plain words (checked 2026-10-19 -
+  //          they change: the page links to `get` for today's numbers)
+  //   jobs   job -> its settings (model, voice, ...). A job not listed is one
+  //          this service cannot do. config/voice.json `providers.<id>.<job>`
+  //          overrides any of them on one PC without touching this file.
+  //   prebuild  false = never used to pre-speak every saved answer at start-up
+  //          (a small daily allowance would be gone before the first visitor)
+  //
+  // A new service that speaks one of the known wires is one entry here.
+  "jobs": {
+    "hear":  {"says": "Hearing", "about": "turns what people say into words"},
+    "think": {"says": "Answering", "about": "answers a question no saved answer fits"},
+    "speak": {"says": "Speaking", "about": "reads the answer out loud"}
+  },
+  "default": {"hear": ["local"], "think": ["local"], "speak": ["edge", "local"]},
+  // A service that failed on the network or ran out of its allowance is
+  // skipped this many seconds, so the backup answers at once meanwhile.
+  "restSeconds": 60,
+  "providers": {
+    "local": {
+      "says": "This PC (no internet)", "kind": "local",
+      "free": "Free and offline. Hearing and answering use this PC's graphics card; speaking uses the Windows voice, which sounds flat.",
+      // byLanguage: a language with its own trained hearing model, used once
+      // the language is known (picked on the page, or a quick look). Thai:
+      // Thonburian Whisper, 2.3% letters wrong vs 28% for "small" with room
+      // noise (30 clips, 2026-10-19). It downloads once (about 1.5 GB).
+      "jobs": {"hear": {"byLanguage": {"th": "Thaweewat/whisper-th-medium-ct2"}}, "think": {}, "speak": {}}
+    },
+    "edge": {
+      "says": "Microsoft Edge voices", "kind": "edge",
+      "free": "Free, no key, natural Thai voices. Needs internet; Microsoft can slow it down without notice.",
+      "jobs": {"speak": {}}
+    },
+    "gemini": {
+      "says": "Google Gemini (AI Studio)", "kind": "gemini",
+      "base": "https://generativelanguage.googleapis.com/v1beta",
+      "key": {"env": ["GEMINI_API_KEY", "GOOGLE_API_KEY"], "get": "https://aistudio.google.com/apikey"},
+      "free": "Free with a Google account, no card: roughly 10 requests a minute and about 1,500 a day per model. Free-tier prompts may be used by Google to improve its products.",
+      "prebuild": false,
+      "jobs": {
+        "hear":  {"model": "gemini-3.8-flash", "thinking": "minimal",
+                  "prompt": "Write down exactly what is said, word for word, in the language it is spoken in. Reply with those words only, no notes. If nobody speaks, reply with nothing."},
+        "think": {"model": "gemini-3.8-flash", "thinking": "minimal", "maxTokens": 512},
+        "speak": {"model": "gemini-3.8-flash-tts", "voice": "Kore"}
+      }
+    },
+    "groq": {
+      "says": "Groq", "kind": "openai",
+      "base": "https://api.groq.com/openai/v1",
+      "key": {"env": ["GROQ_API_KEY"], "get": "https://console.groq.com/keys"},
+      "free": "Free, no card: Whisper large-v3 hearing, about 20 requests a minute and 2,000 a day (8 hours of sound). Very fast.",
+      "jobs": {
+        "hear":  {"model": "whisper-large-v3-turbo"},
+        "think": {"model": "llama-3.3-70b-versatile", "maxTokens": 512}
+      }
+    },
+    "typhoon": {
+      "says": "Typhoon (Thai AI by SCB 10X)", "kind": "openai",
+      "base": "https://api.opentyphoon.ai/v1",
+      "key": {"env": ["TYPHOON_API_KEY"], "get": "https://playground.opentyphoon.ai/api-key"},
+      "free": "Free for light use: Thai-first answering (200 a minute) and Thai hearing (100 a minute).",
+      "jobs": {
+        "hear":  {"model": "typhoon-asr-realtime", "wav": true},
+        "think": {"model": "typhoon-v2.5-30b-a3b-instruct", "maxTokens": 512}
+      }
+    },
+    "azure": {
+      "says": "Microsoft Azure Speech", "kind": "azure", "region": "southeastasia",
+      "key": {"env": ["AZURE_SPEECH_KEY"], "get": "https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices"},
+      "free": "Free tier (F0): 500,000 characters of speech a month, the same natural voices as Edge but on a supported line. Needs an Azure account; pick region Southeast Asia.",
+      "jobs": {"speak": {}}
+    },
+    "ollama": {
+      "says": "Ollama on this PC", "kind": "openai",
+      "base": "http://127.0.0.1:11434/v1",
+      "free": "Free and offline: answers with a model you pulled into Ollama (empty model = the first one it has).",
+      "jobs": {"think": {"model": "", "maxTokens": 256}}
+    }
+  }
+}

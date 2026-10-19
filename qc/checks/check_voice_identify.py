@@ -367,6 +367,11 @@ def _the_button(t):
     t.ok('this.updateFace("")' in look,
          "a look that found nobody clears the badge, not just the line under it",
          "lookOnce leaves the old name on the badge")
+    svc_src = (F.CODE / "apps" / "voice" / "service.py").read_text(encoding="utf-8")
+    t.ok('if (!r.noLook) this.updateFace("")' in look
+         and '"noLook": why_not in FACE_APP_SAYS.values()' in svc_src,
+         "a face app too busy to look keeps the name on the badge (it blinked on every 429)",
+         "a busy refusal still clears the badge")
     p = js.find("  async pollFace(){")
     poll = js[p:js.find("\n  updateFace(", p)] if p >= 0 else ""
     t.ok("camera=" in poll and "this.camStation" in poll,

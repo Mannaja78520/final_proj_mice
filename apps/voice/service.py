@@ -97,6 +97,15 @@ import registry                                      # noqa: E402
 # What we asked the face app for, in one place (A13): /api/look, present.
 sys.path.insert(0, str(CODE / "apps" / "faces"))
 import friend_api                                    # noqa: E402
+# Who can do each job besides this PC (A45-1): the wire shapes and the keys.
+sys.path.insert(0, str(CODE / "apps" / "voice"))
+import providers                                     # noqa: E402
+
+
+def drop_repeats(text):
+    """A word or phrase said over and over is the listener stuck, not the visitor."""
+    text = re.sub(r'(\b\S+)(?:\s+\1\b)+', r'\1', (text or "").strip())
+    return re.sub(r'(.{3,25}?)\1{2,}', r'\1', text).strip()
 
 
 def detect_lang(text):
@@ -460,6 +469,8 @@ def personalize_answer(answer, person, lang="th", address=("คุณ",)):
 class Brain:
     """What answers. The FAQ is always there; the model arrives lazily."""
 
+    _made = threading.local()       # the sound file say() last used, per thread
+
     def __init__(self, cfg_path, faq_path=None):
         self.cfg_path = Path(cfg_path)
         self.cfg = registry.load(self.cfg_path)
@@ -530,6 +541,159 @@ class Brain:
         with open(tmp, "w", encoding="utf-8", newline="\n") as f:
             f.write(body + "\n")
         os.replace(tmp, path)
+
+    # --- which service does each job (A45-1) ---------------------------------
+    def services(self):
+        """config/voice_providers.json, re-read when it changes on disk."""
+        try:
+            m = providers.REGISTRY.stat().st_mtime
+        except OSError:
+            return {"jobs": {}, "default": {}, "providers": {}}
+        got = getattr(self, "_reg", None)
+        if not got or got[0] != m:
+            got = (m, registry.load(providers.REGISTRY))
+            self._reg = got
+        return got[1]
+
+    def service(self, pid):
+        """One service's entry, with this PC's overrides (voice.json
+        `providers.<id>`) folded into its jobs - a model name changed on one
+        PC without editing the shared file."""
+        prov = dict((self.services().get("providers") or {}).get(pid) or {})
+        mine = (self.cfg.get("providers") or {}).get(pid) or {}
+        jobs = {}
+        for job, base in (prov.get("jobs") or {}).items():
+            jobs[job] = dict(base, **(mine.get(job) or {}))
+        prov["jobs"] = jobs
+        for k in ("base", "region"):
+            if mine.get(k):
+                prov[k] = mine[k]
+        return prov
+
+    def chain(self, job):
+        """The ids that may do `job`, in the order this PC chose.
+
+        `use.<job>` in voice.json; missing = the registry's default. Before
+        A45-1 the only switch was llm.provider "google_studio" (or a Google
+        key with the local model off), so that still means Gemini first.
+        """
+        use = (self.cfg.get("use") or {}).get(job)
+        if not use and job == "think":
+            l = self.cfg.get("llm") or {}
+            if l.get("provider") == "google_studio" or (
+                    str(self.cfg.get("googleApiKey") or "").strip() and not l.get("enabled")):
+                use = ["gemini", "local"]
+        if not use:
+            use = (self.services().get("default") or {}).get(job) or ["local"]
+        known = self.services().get("providers") or {}
+        out = []
+        for pid in use if isinstance(use, list) else [use]:
+            if pid in known and job in (known[pid].get("jobs") or {}) and pid not in out:
+                out.append(pid)
+        return out
+
+    def key_for(self, pid):
+        """The key for `pid`: the key file, the environment, or the one an
+        older voice.json held (A45-1 moves it out on the next save)."""
+        got = providers.key_for(pid, self.service(pid))
+        if not got and pid == "gemini":
+            got = str(self.cfg.get("googleApiKey") or "").strip()
+        return got
+
+    def run_job(self, job, one):
+        """Try each service in the chain until one does the job.
+
+        `one(pid, prov)` -> (result, why-not). A service with no key is passed
+        over without a call; one that failed on the network or ran out of its
+        allowance rests `restSeconds`, so each next visitor does not wait out
+        the same timeout before the backup answers. What answered, and how
+        long it took, is kept for /health - the page shows it.
+        """
+        rest = getattr(self, "_rest", None)
+        if rest is None:
+            rest = self._rest = {}
+        pause = float(self.services().get("restSeconds") or 60)
+        tried = []
+        for pid in self.chain(job):
+            prov = self.service(pid)
+            if providers.needs_key(prov) and not self.key_for(pid):
+                tried.append({"by": pid, "why": "no key saved"})
+                continue
+            if time.time() - rest.get(pid, 0) < pause:
+                tried.append({"by": pid, "why": "resting after it failed"})
+                continue
+            t0 = time.time()
+            try:
+                got, why = one(pid, prov)
+            except providers.Refused as e:
+                got, why = None, str(e)
+                if "429" in why:
+                    rest[pid] = time.time()
+            except (OSError, ValueError, KeyError, IndexError, TypeError) as e:
+                got, why = None, "%s: %s" % (e.__class__.__name__, e)
+                if prov.get("kind") != "local":
+                    rest[pid] = time.time()       # offline, timed out, unreadable
+            if got is not None:
+                self._did(job, {"by": pid, "says": prov.get("says") or pid,
+                                "ms": int((time.time() - t0) * 1000), "tried": tried})
+                return got, None
+            tried.append({"by": pid, "why": why or "it did not answer"})
+        self._did(job, {"by": "", "tried": tried})
+        if not tried:
+            return None, "nothing is chosen to do this - pick one on the Voice page"
+        return None, "; ".join("%s: %s" % (t["by"], t["why"]) for t in tried)
+
+    def _did(self, job, what):
+        if getattr(self, "_jobs", None) is None:
+            self._jobs = {}
+        self._jobs[job] = dict(what, at=time.time())
+
+    def services_view(self):
+        """What the Voice page draws: every service, what it can do, whether
+        a key is saved (never the key), and each job's chain and last answer."""
+        reg = self.services()
+        out = {}
+        for pid in (reg.get("providers") or {}):
+            prov = self.service(pid)
+            out[pid] = {"says": prov.get("says") or pid, "free": prov.get("free") or "",
+                        "jobs": {j: (v.get("model") or "") for j, v in prov["jobs"].items()},
+                        "needsKey": providers.needs_key(prov),
+                        "hasKey": bool(self.key_for(pid)) if providers.needs_key(prov) else True,
+                        "getKey": (prov.get("key") or {}).get("get") or ""}
+        return {"jobs": reg.get("jobs") or {}, "providers": out,
+                "use": {j: self.chain(j) for j in (reg.get("jobs") or {})},
+                "last": getattr(self, "_jobs", None) or {}}
+
+    def save_keys(self, given):
+        """{id: key or ""} -> the key file. "" removes one. Unknown ids refused."""
+        known = self.services().get("providers") or {}
+        keys = providers.read_keys()
+        for pid, key in (given or {}).items():
+            if pid not in known or not providers.needs_key(known[pid]):
+                return "there is no service called %r that takes a key" % pid
+            key = str(key or "").strip()
+            if key:
+                keys[pid] = key
+            else:
+                keys.pop(pid, None)
+            (getattr(self, "_rest", None) or {}).pop(pid, None)   # a new key is tried at once
+        providers.write_keys(keys)
+        return ""
+
+    def move_old_key(self):
+        """A Google key typed into voice.json before A45-1 moves to the key
+        file. voice.json is read by anyone on the WiFi (GET /config) and the
+        repo is public, so it must not stay there."""
+        old = str(self.cfg.get("googleApiKey") or "").strip()
+        if not old:
+            return
+        keys = providers.read_keys()
+        keys.setdefault("gemini", old)
+        providers.write_keys(keys)
+        fresh = dict(self.cfg)
+        fresh.pop("googleApiKey", None)
+        self.write_store(self.cfg_path, fresh)
+        self.cfg = fresh
 
     def faqs(self):
         # Re-read every time: a designer editing answers must not need a
@@ -687,20 +851,54 @@ class Brain:
             return
         self._stt_loading = True
         try:
-            from faster_whisper import WhisperModel
             mid = scfg.get("model", "small")
-            try:
-                self._stt = WhisperModel(mid, device="cuda", compute_type="float16")
-            except Exception:
-                try:
-                    self._stt = WhisperModel(mid, device="auto", compute_type="auto")
-                except Exception:
-                    self._stt = WhisperModel(mid, device="cpu", compute_type="int8")
+            self._stt = self._whisper_model(mid)
             self._stt_loaded_model = mid
         except Exception as e:                              # noqa: BLE001
             self._stt_err = "%s: %s" % (e.__class__.__name__, e)
         finally:
             self._stt_loading = False
+
+    @staticmethod
+    def _whisper_model(mid):
+        """A whisper model on the graphics card if it can, else the CPU."""
+        from faster_whisper import WhisperModel
+        try:
+            return WhisperModel(mid, device="cuda", compute_type="float16")
+        except Exception:
+            try:
+                return WhisperModel(mid, device="auto", compute_type="auto")
+            except Exception:
+                return WhisperModel(mid, device="cpu", compute_type="int8")
+
+    def _own_model(self, lang):
+        """The model trained for this one language, loaded once, or None.
+
+        Measured 2026-10-19 on 30 Thai clips with room noise added: whisper
+        "small" got 28% of the letters wrong, the Thai-trained Thonburian
+        medium 2.3%. It hears Thai only, so it takes over only once the
+        language is known (`local.hear.byLanguage` in voice_providers.json).
+        """
+        mid = (self.service("local")["jobs"].get("hear") or {}).get("byLanguage", {}).get(lang)
+        if not mid:
+            return None
+        got = getattr(self, "_stt_own", None)
+        if got is None:
+            got = self._stt_own = {}
+        if mid not in got:
+            got[mid] = self._whisper_model(mid)
+        return got[mid]
+
+    def _detect(self, path, scfg):
+        """The language spoken, by the general model's quick look. Unsure =
+        the main language (scenario's, else stt.fallback's)."""
+        from faster_whisper import decode_audio
+        lang, prob, _all = self._stt.detect_language(decode_audio(path))
+        fb = scfg.get("fallback") or {}
+        if fb.get("language") and (lang not in (fb.get("when_not_in") or [lang])
+                                   or prob < fb.get("min_probability", 0.0)):
+            return self.active_scenario().get("language") or fb["language"]
+        return lang
 
     def _fallback_transcribe(self, path, segs, info, resolved, scfg):
         """A second pass in a set language when detection is unsure (A26-80).
@@ -711,14 +909,15 @@ class Brain:
         fb = scfg.get("fallback")
         if resolved or not fb or not fb.get("language"):
             return segs, info
-        lang = fb["language"]
+        # A scenario's own main language wins: the same rig at a global event.
+        lang = self.active_scenario().get("language") or fb["language"]
         unsure = (info.language not in (fb.get("when_not_in") or []) or
                   getattr(info, "language_probability", 1.0) < fb.get("min_probability", 0.0))
         if not unsure:
             return segs, info
         bias = ((scfg.get("languages") or {}).get(lang) or {}).get("bias")
         return self._stt.transcribe(
-            path, language=lang, temperature=0, beam_size=1,
+            path, language=lang, temperature=0, beam_size=int(scfg.get("beam") or 1),
             condition_on_previous_text=False, vad_filter=True,
             vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
             repetition_penalty=1.2, no_repeat_ngram_size=3, initial_prompt=bias)
@@ -727,81 +926,88 @@ class Brain:
         """Speech bytes -> ({text, language}, None) or (None, why-not).
 
         The language is the request's hint, else the store's stt.language,
-        else DETECTED per utterance - never a hardcoded code here. Bias words
-        apply only when the language is already known: detecting it first
-        just to pick a prompt would double every wait.
+        else DETECTED per utterance - never a hardcoded code here. Who listens
+        is the `hear` chain (A45-1): this PC's whisper, or a service.
         """
+        scfg = self.cfg.get("stt", {})
+        # A switched-off listener must not be outrun by its own cache.
+        if not scfg.get("enabled"):
+            return None, "listening is switched off in config/voice.json"
+        hint_s = (hint or "").strip().lower()
+        if hint_s in ("auto", "detect", "none"):
+            resolved = None
+        elif hint_s:
+            resolved = hint_s
+        else:
+            cfg_lang = (scfg.get("language") or "").strip().lower()
+            resolved = None if cfg_lang in ("auto", "detect", "none", "") else cfg_lang
+
+        def one(pid, prov):
+            if prov.get("kind") == "local":
+                return self._listen_local(audio, resolved, scfg)
+            wire = providers.WIRES.get(prov.get("kind"), {}).get("hear")
+            if not wire:
+                return None, "it cannot listen"
+            text, why = wire(prov, self.key_for(pid), prov["jobs"]["hear"], audio,
+                             resolved or "", timeout=20)
+            if text is None:
+                return None, why
+            text = drop_repeats(text)
+            return {"text": text, "language": resolved or (detect_lang(text) if text else "")}, None
+        return self.run_job("hear", one)
+
+    def _whisper(self, path, lang, scfg):
+        """One whisper pass (and the unsure-language second pass). A language
+        with its own trained model is heard by that model (A45-1)."""
+        model = self._stt
+        if (self.service("local")["jobs"].get("hear") or {}).get("byLanguage"):
+            try:
+                if not lang:
+                    lang = self._detect(path, scfg)
+                model = self._own_model(lang) or self._stt
+            except Exception:                           # noqa: BLE001
+                model = self._stt          # no quick look, or no own model: as before
+        bias = ((scfg.get("languages") or {}).get(lang) or {}).get("bias") if lang else None
+        segments, info = model.transcribe(
+            path, language=lang or None,
+            temperature=0,
+            beam_size=int(scfg.get("beam") or 1),
+            condition_on_previous_text=False,
+            vad_filter=True,
+            vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
+            repetition_penalty=1.2,
+            no_repeat_ngram_size=3,
+            initial_prompt=bias)
+        segments, info = self._fallback_transcribe(path, segments, info, lang, scfg)
+        valid = [s.text for s in segments if getattr(s, "no_speech_prob", 0) <= 0.6]
+        return drop_repeats("".join(valid)), info
+
+    def _listen_local(self, audio, resolved, scfg):
+        """This PC's whisper. Bias words apply only when the language is
+        already known: detecting it first just to pick a prompt would double
+        every wait."""
         with self._lock:
-            scfg = self.cfg.get("stt", {})
-            # A switched-off listener must not be outrun by its own cache.
-            if not scfg.get("enabled"):
-                return None, "listening is switched off in config/voice.json"
             self._load_stt()
             if not self._stt:
                 return None, ("speech-in is not available (%s)"
                               % self.stt_status())
-            hint_s = (hint or "").strip().lower()
-            if hint_s in ("auto", "detect", "none"):
-                resolved = None
-            elif hint_s:
-                resolved = hint_s
-            else:
-                cfg_lang = (scfg.get("language") or "").strip().lower()
-                resolved = None if cfg_lang in ("auto", "detect", "none", "") else cfg_lang
-            bias = ((scfg.get("languages") or {}).get(resolved) or {}).get("bias") if resolved else None
             with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tf:
                 tf.write(audio)
                 path = tf.name
             try:
-                segments, info = self._stt.transcribe(
-                    path, language=resolved or None,
-                    temperature=0,
-                    beam_size=1,
-                    condition_on_previous_text=False,
-                    vad_filter=True,
-                    vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
-                    repetition_penalty=1.2,
-                    no_repeat_ngram_size=3,
-                    initial_prompt=bias)
-
-                segments, info = self._fallback_transcribe(path, segments, info, resolved, scfg)
-
-                valid = []
-                for s in segments:
-                    if getattr(s, "no_speech_prob", 0) > 0.6:
-                        continue
-                    valid.append(s.text)
-                text = "".join(valid).strip()
-                text = re.sub(r'(\b\S+)(?:\s+\1\b)+', r'\1', text)
-                text = re.sub(r'(.{3,25}?)\1{2,}', r'\1', text).strip()
-            except Exception as e:
-                err_s = str(e).lower()
-                if "cublas" in err_s or "cuda" in err_s or "not found" in err_s or "driver" in err_s:
+                try:
+                    text, info = self._whisper(path, resolved, scfg)
+                except Exception as e:
+                    err_s = str(e).lower()
+                    if not ("cublas" in err_s or "cuda" in err_s
+                            or "not found" in err_s or "driver" in err_s):
+                        raise
+                    # The graphics card's libraries are missing: the CPU hears.
                     from faster_whisper import WhisperModel
                     mid = scfg.get("model", "small")
                     self._stt = WhisperModel(mid, device="cpu", compute_type="int8")
                     self._stt_loaded_model = mid
-                    segments, info = self._stt.transcribe(
-                        path, language=resolved or None,
-                        temperature=0,
-                        beam_size=1,
-                        condition_on_previous_text=False,
-                        vad_filter=True,
-                        vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
-                        repetition_penalty=1.2,
-                        no_repeat_ngram_size=3,
-                        initial_prompt=bias)
-                    segments, info = self._fallback_transcribe(path, segments, info, resolved, scfg)
-                    valid = []
-                    for s in segments:
-                        if getattr(s, "no_speech_prob", 0) > 0.6:
-                            continue
-                        valid.append(s.text)
-                    text = "".join(valid).strip()
-                    text = re.sub(r'(\b\S+)(?:\s+\1\b)+', r'\1', text)
-                    text = re.sub(r'(.{3,25}?)\1{2,}', r'\1', text).strip()
-                else:
-                    raise
+                    text, info = self._whisper(path, resolved, scfg)
             finally:
                 os.unlink(path)
             return {"text": text, "language": info.language}, None
@@ -845,7 +1051,7 @@ class Brain:
             if detected in voices:
                 lang = detected
         if not lang:
-            lang = (tcfg.get("language") or "").strip()
+            lang = self.main_language()
         if lang not in voices:
             return None, ("no voice named for language %r - add one under "
                           "tts in config/voice.json" % (lang or "?"))
@@ -879,8 +1085,16 @@ class Brain:
                 return {"name": want, "prompt": str(s.get("prompt") or "").strip(),
                         "voice": str(s.get("voice") or "").strip(),
                         "rate": str(s.get("rate") or "").strip(),
-                        "pitch": str(s.get("pitch") or "").strip()}
-        return {"name": "", "prompt": want, "voice": "", "rate": "", "pitch": ""}
+                        "pitch": str(s.get("pitch") or "").strip(),
+                        "language": str(s.get("language") or "").strip()}
+        return {"name": "", "prompt": want, "voice": "", "rate": "", "pitch": "",
+                "language": ""}
+
+    def main_language(self):
+        """The language to fall back on: the scenario's own (a global event
+        leans English, user 2026-10-19), else the Voice tab's, else Thai."""
+        return (self.active_scenario().get("language")
+                or str((self.cfg.get("tts") or {}).get("language") or "").strip() or "th")
 
     def mixed_voice(self, lang=""):
         """The voice for a line that holds more than one language, or "".
@@ -981,7 +1195,7 @@ class Brain:
         like "the voices are bad". The page now says which one it was, and
         why. {"natural": None} = nothing spoken yet.
         """
-        if not self._edge_installed():
+        if "edge" in self.chain("speak") and not self._edge_installed():
             return {"natural": False, "why": "the natural voice is not installed on this PC",
                     "tech": "%s -m pip install edge-tts" % sys.executable}
         return dict(getattr(self, "_heard", None) or {"natural": None})
@@ -1031,11 +1245,15 @@ class Brain:
             return None
         return got
 
-    def say(self, text, lang="", voice="", rate=None, pitch=None):
-        """Text -> wav bytes, or (None, why-not) in plain words.
+    def say(self, text, lang="", voice="", rate=None, pitch=None, prebuild=False):
+        """Text -> sound bytes, or (None, why-not) in plain words.
 
         rate / pitch given (the page's "Try it", A42-1) win over the store,
-        so a speed can be heard before it is saved.
+        so a speed can be heard before it is saved. Who speaks is the `speak`
+        chain (A45-1); each service's sound is cached under its own name, so
+        a backup's line is never played as if the chosen voice said it.
+        `prebuild` = the start-up sweep of saved answers, which skips services
+        with a small daily allowance.
         """
         tcfg = self.cfg.get("tts", {})
         if not tcfg.get("enabled"):
@@ -1044,81 +1262,139 @@ class Brain:
         if not text:
             return None, "there was nothing to speak"
         if voice:
-            ident = voice
+            ident, named = voice, voice
         else:
-            ident, voice = self.resolve_voice(lang, text=text)
+            ident, named = self.resolve_voice(lang, text=text)
             if not ident:
-                return None, voice
+                return None, named
         # A scenario may set its own speed and pitch - a poem read at shop
         # speed is the complaint this answers.
         rate, pitch = self.steps(rate, pitch)
-        path = self._cache_path(ident, text, rate=rate, pitch=pitch)
-        got = self._cached(path, voice)
-        if got:
-            if not got.startswith(b"RIFF"):
+        natural = "Neural" in (named or "")
+
+        def one(pid, prov):
+            kind = prov.get("kind")
+            if prebuild and prov.get("prebuild") is False:
+                return None, "not used to pre-speak saved answers"
+            if kind == "local":
+                # The PC's own voice: the named one if it is a Windows voice.
+                mine = "" if natural else named
+                own = ident if not natural else "<windows %s>" % (lang or voice_lang(named))
+                return self._spoken(own, text, rate, pitch,
+                                    lambda: self._windows_speak(text, lang or voice_lang(named), mine))
+            if kind in ("edge", "azure"):
+                if not natural:
+                    return None, "the chosen voice is not one of its voices"
+                if kind == "edge":
+                    return self._spoken(named, text, rate, pitch,
+                                        lambda: self._edge_speak(named, text, rate, pitch))
+                return self._spoken("azure:" + named, text, rate, pitch,
+                                    lambda: providers.azure_speak(
+                                        prov, self.key_for(pid), prov["jobs"]["speak"], text,
+                                        lang, named, timeout=10, rate=rate, pitch=pitch))
+            wire = providers.WIRES.get(kind, {}).get("speak")
+            if not wire:
+                return None, "it cannot speak"
+            job = prov["jobs"]["speak"]
+            # Its own voices, not Microsoft's names; speed and pitch do not apply.
+            return self._spoken("%s:%s:%s" % (pid, job.get("model"), job.get("voice")),
+                                text, "", "",
+                                lambda: wire(prov, self.key_for(pid), job, text,
+                                             lang or main_lang(text), "", timeout=20))
+        got, why = self.run_job("speak", one)
+        did = (getattr(self, "_jobs", None) or {}).get("speak") or {}
+        if got is not None and not prebuild:
+            if did.get("by") != "local":
                 self._heard = {"natural": True}
+            elif did.get("tried"):
+                # The backup stood in, silently - the page names it (A42-2).
+                self._heard = {"natural": False,
+                               "why": "the natural voice did not answer - is this PC online?",
+                               "tech": "; ".join("%s: %s" % (t["by"], t["why"])
+                                                 for t in did["tried"])[-300:]}
+            else:
+                self._heard = {"natural": False, "why": "this PC's own voice is chosen"}
+        return got, why
+
+    def _spoken(self, ident, text, rate, pitch, make):
+        """The cached sound for this line in this voice, else make() it and
+        keep it. One maker at a time: the waiter may find it already built."""
+        path = self._cache_path(ident, text, rate=rate, pitch=pitch)
+        self._made.path = path               # what the saved-answer sweep keeps
+        got = self._cached(path, ident)
+        if got:
             return got, None
-        with self._tts_lock:        # one PowerShell at a time; the waiter
-            got = self._cached(path, voice)   # may find the file already built
+        with self._tts_lock:
+            got = self._cached(path, ident)
             if got:
                 return got, None
+            data, why = make()
+            if not data:
+                return None, why
             path.parent.mkdir(exist_ok=True)
-            wav = None
+            tmpf = path.with_suffix(".part%d" % next(_tmp_seq))
+            tmpf.write_bytes(data)
+            os.replace(tmpf, path)   # atomic - a reader never sees half a file
+            return data, None
+
+    def _edge_speak(self, voice, text, rate, pitch):
+        """Microsoft's natural voice, IN this process.
+
+        It used to start `python -m edge_tts` for every new line: a second
+        Python plus its imports, 0.4 s on the cloud box and more on Windows
+        (measured 2026-10-19), before the service was even asked. Speed and
+        pitch go as arguments, so the old "--rate -10%" trap (A42-1) cannot
+        come back. A fast failure is tried once more; a slow one is not, so
+        the backup speaks sooner.
+        """
+        try:
+            import asyncio
+            import edge_tts
+        except ImportError:
+            return None, "the natural voice is not installed on this PC"
+        clean = re.sub(r"[ \t]+", " ", re.sub(r"\r", "", text))
+        clean = re.sub(r"\n\s*\n+", "\n", clean).strip()
+        kw = {}
+        if rate:
+            kw["rate"] = rate
+        if pitch:
+            kw["pitch"] = pitch
+
+        async def go():
+            out = bytearray()
+            async for ch in edge_tts.Communicate(clean, voice, **kw).stream():
+                if ch.get("type") == "audio":
+                    out += ch.get("data") or b""
+            return bytes(out)
+        err = ""
+        for _attempt in range(2):
+            t0 = time.time()
             try:
-                if "Neural" in voice:
-                    # Strictly preserve the selected neural voice - never switch gender or identity
-                    clean_text = re.sub(r'\r', '', text).strip()
-                    clean_text = re.sub(r'[ \t]+', ' ', clean_text)
-                    clean_text = re.sub(r'\n\s*\n+', '\n', clean_text)
-                    # "--rate=-10%", never "--rate", "-10%": argparse reads a
-                    # lone "-10%" as an unknown option, so every SLOWER speed
-                    # failed and the flat backup voice spoke (A42-1). The
-                    # text the same way: an answer may start with "-".
-                    cmd = [sys.executable, "-m", "edge_tts", "--voice=" + voice,
-                           "--text=" + clean_text]
-                    if rate:
-                        cmd.append("--rate=" + rate)
-                    if pitch:
-                        cmd.append("--pitch=" + pitch)
-                    err = ""
-                    for attempt in range(2):
-                        try:
-                            r = subprocess.run(cmd, capture_output=True, timeout=15,
-                                               creationflags=NO_WINDOW)
-                            if r.returncode == 0 and len(r.stdout) >= 100:
-                                wav = r.stdout
-                                break
-                            err = (r.stderr or b"").decode("utf-8", "replace").strip()
-                        except Exception as e:              # noqa: BLE001
-                            err = "%s: %s" % (e.__class__.__name__, e)
-                    self._heard = ({"natural": True} if wav is not None else
-                                   {"natural": False, "tech": err[-300:],
-                                    "why": "the natural voice did not answer - is this PC online?"})
-                if wav is None:
-                    local_voice = voice if "Neural" not in voice else ""
-                    r = subprocess.run(
-                        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
-                         "-File", str(CODE / "apps" / "voice" / "tts.ps1"),
-                         "-Text", text, "-Lang", lang or voice_lang(voice),
-                         "-Voice", local_voice],
-                        capture_output=True, timeout=60, creationflags=NO_WINDOW)
-                    wav = r.stdout
-                    if r.returncode != 0 or len(wav) < 44 or not wav.startswith(b"RIFF"):
-                        why = r.stderr.decode("utf-8", "replace").strip()
-                        return None, ("the voice could not speak that (%s)" % why[-200:])
-                    if "Neural" in voice:
-                        # The backup voice stood in for one that did not
-                        # answer (offline, slow): play it, but never keep it
-                        # under the good voice's name, or that answer sounds
-                        # flat for ever after one bad minute (A42-1).
-                        return wav, None
-            except (OSError, subprocess.TimeoutExpired) as e:
-                return None, ("the voice could not run (%s: %s)"
-                              % (e.__class__.__name__, e))
-            tmpf = path.with_suffix(".part")
-            tmpf.write_bytes(wav)
-            os.replace(tmpf, path)   # atomic - a reader never sees half a wav
-            return wav, None
+                got = asyncio.run(asyncio.wait_for(go(), 10))
+                if len(got) >= 100:
+                    return got, None
+                err = "no sound came back"
+            except Exception as e:                      # noqa: BLE001
+                err = "%s: %s" % (e.__class__.__name__, e)
+            if time.time() - t0 > 2:
+                break
+        return None, err
+
+    def _windows_speak(self, text, lang, voice):
+        """The PC's own voice through tts.ps1: no internet, but flat."""
+        try:
+            r = subprocess.run(
+                ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
+                 "-File", str(CODE / "apps" / "voice" / "tts.ps1"),
+                 "-Text", text, "-Lang", lang, "-Voice", voice],
+                capture_output=True, timeout=60, creationflags=NO_WINDOW)
+        except (OSError, subprocess.TimeoutExpired) as e:
+            return None, "the voice could not run (%s: %s)" % (e.__class__.__name__, e)
+        wav = r.stdout
+        if r.returncode != 0 or len(wav) < 44 or not wav.startswith(b"RIFF"):
+            why = (r.stderr or b"").decode("utf-8", "replace").strip()
+            return None, "the voice could not speak that (%s)" % why[-200:]
+        return wav, None
 
     def sync_faq_audio(self):
         """Pre-build every saved answer across all 4 languages, then prune what is stale.
@@ -1143,9 +1419,13 @@ class Brain:
                 if ans:
                     ident, _name = self.resolve_voice(lang_code, text=ans)
                     if ident:
-                        self.say(ans, lang=lang_code)
+                        self._made.path = None
+                        self.say(ans, lang=lang_code, prebuild=True)
                         rate, pitch = self.steps()
                         keep.add(self._cache_path(ident, ans, rate=rate, pitch=pitch).stem)
+                        made = getattr(self._made, "path", None)
+                        if made:
+                            keep.add(made.stem)     # a backup's or a service's own file
         cache = CODE / "apps" / "voice" / "tts_cache"
         if not cache.is_dir():
             return
@@ -1224,6 +1504,14 @@ class Brain:
             if force or self.cfg.get("stt", {}).get("enabled"):
                 if not self._stt:
                     self._load_stt()
+                # A language's own hearing model too: its first load is a
+                # download, which must not land on a visitor's first question.
+                own = (self.service("local")["jobs"].get("hear") or {}).get("byLanguage") or {}
+                for lang in own:
+                    try:
+                        self._own_model(lang)
+                    except Exception as e:              # noqa: BLE001
+                        self._stt_own_err = "%s: %s" % (e.__class__.__name__, e)
 
         self._preload_thread = threading.Thread(target=_worker, daemon=True)
         self._preload_thread.start()
@@ -1234,6 +1522,7 @@ class Brain:
         with self._lock:
             self._llm = None
             self._stt = None
+            self._stt_own = {}
             self._llm_err = None
             self._stt_err = None
             self._llm_loading = False
@@ -1300,195 +1589,170 @@ class Brain:
                            % self.llm_status())
         return True, ""
 
-    def _ask_google_studio(self, history, lang="th", scenario="", faq_lines=None, person=""):
-        api_key = (self.cfg.get("googleApiKey") or
-                   os.environ.get("GEMINI_API_KEY") or
-                   os.environ.get("GOOGLE_API_KEY") or "").strip()
-        if not api_key:
-            return None, "Google AI Studio API key not configured (set googleApiKey in config/voice.json)"
-        model = self.cfg.get("googleModel") or "gemini-2.0-flash"
-        faq_sec = ("\nRelevant FAQ:\n" + "\n".join(faq_lines) + "\n") if faq_lines else ""
-        system = ("You are the Mice robot assistant. Answer in language code: %s. "
-                  "Keep answers strictly to 1 concise sentence. Direct, plain-spoken, absolutely NO emojis.\n"
-                  % (lang or "th"))
-        if scenario:
-            system += ("Scenario / Persona: %s\n" % scenario)
+    def generate(self, history, lang="", person=""):
+        """The answer, or (None, why-not) in plain words.
+
+        Who answers is the `think` chain (A45-1): this PC's model, or a
+        service. Every one gets the same instructions - the saved answers
+        nearest the question, the scenario, the name - and every reply passes
+        the same guards; one in the wrong language goes to the next in line.
+        The Google path before A45-1 skipped the saved answers entirely.
+        """
+        # A name in `scenario` resolves to that scenario's prompt; plain
+        # text is still its own prompt (active_scenario).
+        scenario = self.active_scenario().get("prompt") or ""
+        system, limit, is_verse = self._think_prompt(history, lang, person, scenario)
+
+        def one(pid, prov):
+            if prov.get("kind") == "local":
+                return self._generate_local(system, history, limit, is_verse, lang)
+            wire = providers.WIRES.get(prov.get("kind"), {}).get("think")
+            if not wire:
+                return None, "it cannot answer"
+            reply, why = wire(prov, self.key_for(pid), prov["jobs"]["think"], system,
+                              history, limit, timeout=20)
+            if not reply:
+                return None, why
+            reply = self.tidy_answer(self.clean(reply), lang, verse=is_verse)
+            if not reply:
+                return None, "its answer was empty"
+            if not is_verse and not answers_in(reply, lang, self.particles()):
+                return None, "it answered in another language"
+            return reply, None
+        reply, why_not = self.run_job("think", one)
+        if not reply:
+            return None, why_not
+        if person:
+            reply = personalize_answer(reply, person, lang=lang,
+                                       address=self.address_words())
+        return reply, None
+
+    def _think_prompt(self, history, lang, person, scenario):
+        """(system prompt, room for the reply, is it a verse) for a question."""
+        # The saved questions ride along, so a near-miss can still be
+        # answered from them - the prototype's trick that made it useful
+        # on a laptop.
+        # Only keep top-2 nearest FAQ items to keep prompt short and fast
+        last_q = ""
+        for m in reversed(history):
+            if m.get("role") == "user":
+                last_q = m.get("content", "").strip().lower()
+                break
+        norm_last_q = re.sub(r'^(ช่วยบอกหน่อย|รบกวนถามหน่อย|อยากทราบว่า|อยากรู้ว่า|ขอถามหน่อย|สอบถามหน่อย|ช่วยแนะนำหน่อย|please tell me |can you tell me |could you tell me )', '', last_q)
+        norm_last_q = re.sub(r'(ครับ|ค่ะ|คะ|หน่อยครับ|หน่อยค่ะ|หน่อย|จ้า|จ๊ะ| please)[.!?]*$', '', norm_last_q).strip()
+
+        scored = []
+        for item in self.faqs():
+            s = 0.0
+            for cand in item.get("questions", []):
+                qc = cand.strip().lower()
+                s1 = SequenceMatcher(None, last_q, qc).ratio() if last_q else 0.0
+                s2 = SequenceMatcher(None, norm_last_q, qc).ratio() if norm_last_q else 0.0
+                sc = max(s1, s2)
+                if len(qc) >= 6 and last_q:
+                    if qc in last_q or (norm_last_q and qc in norm_last_q):
+                        sub_score = 0.80 + 0.15 * min(1.0, len(qc) / max(len(last_q), 1))
+                        sc = max(sc, sub_score)
+                    elif (last_q in qc and len(last_q) >= 8) or (norm_last_q and norm_last_q in qc and len(norm_last_q) >= 8):
+                        sub_score = 0.75 + 0.15 * min(1.0, max(len(last_q), len(norm_last_q)) / max(len(qc), 1))
+                        sc = max(sc, sub_score)
+                if sc > s:
+                    s = sc
+            if s >= 0.35:
+                scored.append((s, item))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        top_items = [it for _, it in scored[:2]] if scored else []
+
+        faq_lines = []
+        for i, item in enumerate(top_items, 1):
+            qs = item.get("questions", [])
+            q = ""
+            for candidate in qs:
+                if detect_lang(candidate) == lang:
+                    q = candidate
+                    break
+            if not q and qs:
+                q = qs[0]
+            ans = ""
+            if lang == "en":
+                ans = item.get("answer_en") or item.get("answer")
+            elif lang == "ja":
+                ans = item.get("answer_ja") or item.get("answer")
+            elif lang == "zh":
+                ans = item.get("answer_zh") or item.get("answer")
+            else:
+                ans = item.get("answer")
+            faq_lines.append("%d. %s\n   %s" % (i, q, ans))
+
+        scenario_hint = ("\nScenario / Persona: %s\n" % scenario) if scenario else ""
+        person_hint = ""
         if person:
             s_name = short_person_name(person)
             if lang == "en":
-                system += f"\nThe user speaking to you has been recognized as '{s_name}'. Address them politely by their name (e.g. 'Hello {s_name}, ...').\n"
+                person_hint = f"\nThe user speaking to you has been recognized as '{s_name}'. Address them politely by their name (e.g. 'Hello {s_name}, ...').\n"
             elif lang == "ja":
-                system += f"\n利用者の名前は「{s_name}」です。お名前（{s_name}さん）を呼んで回答してください。\n"
+                person_hint = f"\n利用者の名前は「{s_name}」です。お名前（{s_name}さん）を呼んで回答してください。\n"
             elif lang == "zh":
-                system += f"\n向你提问的用户已被识别为「{s_name}」。请礼貌地称呼其名字回答。\n"
+                person_hint = f"\n向你提问的用户已被识别为「{s_name}」。请礼貌地称呼其名字回答。\n"
             else:
                 thai_title = s_name if s_name.startswith("คุณ") else f"คุณ{s_name}"
-                system += f"\nผู้ใช้ที่กำลังคุยกับคุณได้รับการระบุชื่อคือ '{thai_title}' จงกล่าวทักทายหรือเรียกชื่อ{thai_title}อย่างสุภาพในคำตอบด้วย\n"
-        if faq_sec:
-            system += faq_sec + "Always follow the created FAQ answers as closely as possible."
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-        contents = []
-        for m in history:
-            role = "user" if m.get("role") == "user" else "model"
-            contents.append({"role": role, "parts": [{"text": m.get("content", "")}]})
-        payload = {
-            "system_instruction": {"parts": [{"text": system}]},
-            "contents": contents,
-            "generationConfig": {
-                "maxOutputTokens": 48,
-                "temperature": 0.2
-            }
-        }
-        try:
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"}
-            )
-            with urllib.request.urlopen(req, timeout=8) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                ans = data["candidates"][0]["content"]["parts"][0]["text"]
-                return self.clean(ans), None
-        except Exception as e:
-            return None, "Google AI Studio error (%s: %s)" % (e.__class__.__name__, e)
+                person_hint = f"\nผู้ใช้ที่กำลังคุยกับคุณได้รับการระบุชื่อคือ '{thai_title}' จงกล่าวทักทายหรือเรียกชื่อ{thai_title}อย่างสุภาพในคำตอบด้วย\n"
+        is_verse = bool(re.search(r'(กลอน|บทกลอน|กาพย์|โคลง|ฉันท์|กวี|คำประพันธ์|verse|poem|poetry|rhyme)', last_q, re.I) or
+                        (scenario and re.search(r'(กลอน|บทกลอน|กาพย์|โคลง|ฉันท์|กวี|verse|poem|poetry)', scenario, re.I)))
 
-    def generate(self, history, lang="", person=""):
-        """The model's answer, or (None, why-not) in plain words."""
+        if lang == "en":
+            system = ("You are the Mice robot assistant. "
+                      "Style: Caveman — direct, plain-spoken, concise. Zero filler words. Absolutely NO emojis. Maximum 1 short sentence.\n"
+                      + scenario_hint
+                      + person_hint
+                      + ("\nRelevant FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
+                      + "Always follow the created FAQ answers as closely as possible, never deviate off-topic. If question matches or relates to FAQ, answer from it. Otherwise answer directly in 1 short sentence as the Mice robot. NEVER invent a password, price, time, floor, place or EVENT that is not in the FAQ above - say you do not know, and to ask a member of staff.")
+        elif lang == "ja":
+            system = ("あなたはMiceロボットです。\n"
+                      "スタイル：簡潔、直接的、絵文字なし。最大1文で短く答えてください。\n"
+                      + scenario_hint
+                      + person_hint
+                      + ("\n関連FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
+                      + "作成されたFAQ回答にできる限り忠実に従い、脱線しないでください。FAQに関連していればそれに従い、それ以外はMiceロボットとして1文で簡潔に答えてください。FAQにないパスワード・料金・時間・場所・イベントを作り出さないでください。分からない場合は分からないと答えてください。")
+        elif lang == "zh":
+            system = ("你是Mice机器人助手。\n"
+                      "风格：简明扼要、直接清晰、绝不使用表情符号。最多1句简短回答。\n"
+                      + scenario_hint
+                      + person_hint
+                      + ("\n相关FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
+                      + "请尽可能紧密依据所给的FAQ答案回答，切勿偏离主题。如果问题与FAQ相关则按FAQ回答，否则作为Mice机器人用1句简短回答。不要编造FAQ中没有的密码、价格、时间、地点或活动；不知道就说不知道，请询问工作人员。")
+        elif is_verse and lang == "th":
+            system = ("คุณคือหุ่นยนต์ Mice เมื่อผู้ใช้ขอให้อ่านหรือท่องบทกลอน จงท่องบทกลอนภาษาไทยที่ไพเราะ 1 บท (4 วรรค) แบ่งบรรทัดละวรรค ห้ามปฏิเสธ ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
+                      + scenario_hint
+                      + person_hint)
+        else:
+            # ONE PARTICLE, said before anything else. The model ended one
+            # sentence ครับ and the next ค่ะ, which in Thai reads as two
+            # different people. one_particle() fixes what gets through, but
+            # asking for it costs nothing and gives the model the character
+            # to write in (user 2026-09-18).
+            keep = (self.answer_cfg().get("politeParticle") or "ครับ")
+            me = (self.answer_cfg().get("politePronoun") or "ผม")
+            system = ("คุณคือหุ่นยนต์ Mice ให้ข้อมูลบริการและสถานที่ จงตอบเป็นภาษาไทยเท่านั้น สั้นๆ ตรงประเด็น 1 ประโยคจบในตัว ห้ามตอบเป็นภาษาอังกฤษหรือภาษาอื่น ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
+                      + ("ลงท้ายประโยคด้วยคำว่า '%s' เสมอ ห้ามใช้คำลงท้ายอื่น เช่น ค่ะ คะ จ้า และเรียกตัวเองว่า '%s' เสมอ ห้ามใช้ ฉัน หรือ ดิฉัน เพราะคุณเป็นหุ่นยนต์ตัวเดียวและต้องพูดด้วยน้ำเสียงเดียวกันทุกประโยค\n" % (keep, me))
+                      + scenario_hint
+                      + person_hint
+                      + ("\nFAQ ที่เกี่ยวข้อง:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
+                      + "จงตอบโดยยึดตามข้อมูลคำตอบที่สร้างไว้ (FAQ) ให้ใกล้เคียงที่สุดเสมอ หากคำถามเกี่ยวข้องกับ FAQ ให้ตอบตามนั้น หากไม่ตรงให้ตอบสั้นๆ ในฐานะหุ่นยนต์ Mice 1 ประโยคเป็นภาษาไทย ห้ามแต่งรหัสผ่าน ราคา เวลา ชั้น สถานที่ หรือกิจกรรม/ข่าวที่ไม่มีใน FAQ ถ้าไม่รู้ให้บอกว่าไม่ทราบและให้สอบถามเจ้าหน้าที่")
+        # ROOM TO FINISH A SENTENCE, per language. 32 tokens was chosen for
+        # speed and is fine for English; Thai costs two to four tokens per
+        # word, so the same budget stopped Thai answers in the middle of a
+        # word (user 2026-09-18: *it cuts replies off*). The budget is DATA
+        # so it can be tuned per language without touching this file.
+        limit = 96 if is_verse else self.token_budget(lang)
+        return system, limit, is_verse
+
+    def _generate_local(self, system, history, limit, is_verse, lang):
+        """This PC's model, with its one wrong-language retry."""
         with self._lock:
-            # A name in `scenario` resolves to that scenario's prompt; plain
-            # text is still its own prompt (active_scenario).
-            scenario = self.active_scenario().get("prompt") or ""
-            use_google = (self.cfg.get("llm", {}).get("provider") == "google_studio" or
-                          (self.cfg.get("googleApiKey") and not self.cfg.get("llm", {}).get("enabled")))
-            if use_google:
-                g_ans, g_err = self._ask_google_studio(history, lang=lang, scenario=scenario, person=person)
-                if g_ans:
-                    if person:
-                        g_ans = personalize_answer(g_ans, person, lang=lang,
-                                                   address=self.address_words())
-                    return g_ans, None
-                if not self.cfg.get("llm", {}).get("enabled"):
-                    return None, g_err
-
             ok, why_not = self._ensure_llm()
             if not ok:
                 return None, why_not
-            # The saved questions ride along, so a near-miss can still be
-            # answered from them - the prototype's trick that made it useful
-            # on a laptop.
-            # Only keep top-2 nearest FAQ items to keep prompt short and fast
-            last_q = ""
-            for m in reversed(history):
-                if m.get("role") == "user":
-                    last_q = m.get("content", "").strip().lower()
-                    break
-            norm_last_q = re.sub(r'^(ช่วยบอกหน่อย|รบกวนถามหน่อย|อยากทราบว่า|อยากรู้ว่า|ขอถามหน่อย|สอบถามหน่อย|ช่วยแนะนำหน่อย|please tell me |can you tell me |could you tell me )', '', last_q)
-            norm_last_q = re.sub(r'(ครับ|ค่ะ|คะ|หน่อยครับ|หน่อยค่ะ|หน่อย|จ้า|จ๊ะ| please)[.!?]*$', '', norm_last_q).strip()
-
-            scored = []
-            for item in self.faqs():
-                s = 0.0
-                for cand in item.get("questions", []):
-                    qc = cand.strip().lower()
-                    s1 = SequenceMatcher(None, last_q, qc).ratio() if last_q else 0.0
-                    s2 = SequenceMatcher(None, norm_last_q, qc).ratio() if norm_last_q else 0.0
-                    sc = max(s1, s2)
-                    if len(qc) >= 6 and last_q:
-                        if qc in last_q or (norm_last_q and qc in norm_last_q):
-                            sub_score = 0.80 + 0.15 * min(1.0, len(qc) / max(len(last_q), 1))
-                            sc = max(sc, sub_score)
-                        elif (last_q in qc and len(last_q) >= 8) or (norm_last_q and norm_last_q in qc and len(norm_last_q) >= 8):
-                            sub_score = 0.75 + 0.15 * min(1.0, max(len(last_q), len(norm_last_q)) / max(len(qc), 1))
-                            sc = max(sc, sub_score)
-                    if sc > s:
-                        s = sc
-                if s >= 0.35:
-                    scored.append((s, item))
-            scored.sort(key=lambda x: x[0], reverse=True)
-            top_items = [it for _, it in scored[:2]] if scored else []
-
-            faq_lines = []
-            for i, item in enumerate(top_items, 1):
-                qs = item.get("questions", [])
-                q = ""
-                for candidate in qs:
-                    if detect_lang(candidate) == lang:
-                        q = candidate
-                        break
-                if not q and qs:
-                    q = qs[0]
-                ans = ""
-                if lang == "en":
-                    ans = item.get("answer_en") or item.get("answer")
-                elif lang == "ja":
-                    ans = item.get("answer_ja") or item.get("answer")
-                elif lang == "zh":
-                    ans = item.get("answer_zh") or item.get("answer")
-                else:
-                    ans = item.get("answer")
-                faq_lines.append("%d. %s\n   %s" % (i, q, ans))
-
-            scenario_hint = ("\nScenario / Persona: %s\n" % scenario) if scenario else ""
-            person_hint = ""
-            if person:
-                s_name = short_person_name(person)
-                if lang == "en":
-                    person_hint = f"\nThe user speaking to you has been recognized as '{s_name}'. Address them politely by their name (e.g. 'Hello {s_name}, ...').\n"
-                elif lang == "ja":
-                    person_hint = f"\n利用者の名前は「{s_name}」です。お名前（{s_name}さん）を呼んで回答してください。\n"
-                elif lang == "zh":
-                    person_hint = f"\n向你提问的用户已被识别为「{s_name}」。请礼貌地称呼其名字回答。\n"
-                else:
-                    thai_title = s_name if s_name.startswith("คุณ") else f"คุณ{s_name}"
-                    person_hint = f"\nผู้ใช้ที่กำลังคุยกับคุณได้รับการระบุชื่อคือ '{thai_title}' จงกล่าวทักทายหรือเรียกชื่อ{thai_title}อย่างสุภาพในคำตอบด้วย\n"
-            is_verse = bool(re.search(r'(กลอน|บทกลอน|กาพย์|โคลง|ฉันท์|กวี|คำประพันธ์|verse|poem|poetry|rhyme)', last_q, re.I) or
-                            (scenario and re.search(r'(กลอน|บทกลอน|กาพย์|โคลง|ฉันท์|กวี|verse|poem|poetry)', scenario, re.I)))
-
-            if lang == "en":
-                system = ("You are the Mice robot assistant. "
-                          "Style: Caveman — direct, plain-spoken, concise. Zero filler words. Absolutely NO emojis. Maximum 1 short sentence.\n"
-                          + scenario_hint
-                          + person_hint
-                          + ("\nRelevant FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                          + "Always follow the created FAQ answers as closely as possible, never deviate off-topic. If question matches or relates to FAQ, answer from it. Otherwise answer directly in 1 short sentence as the Mice robot. NEVER invent a password, price, time, floor, place or EVENT that is not in the FAQ above - say you do not know, and to ask a member of staff.")
-            elif lang == "ja":
-                system = ("あなたはMiceロボットです。\n"
-                          "スタイル：簡潔、直接的、絵文字なし。最大1文で短く答えてください。\n"
-                          + scenario_hint
-                          + person_hint
-                          + ("\n関連FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                          + "作成されたFAQ回答にできる限り忠実に従い、脱線しないでください。FAQに関連していればそれに従い、それ以外はMiceロボットとして1文で簡潔に答えてください。FAQにないパスワード・料金・時間・場所・イベントを作り出さないでください。分からない場合は分からないと答えてください。")
-            elif lang == "zh":
-                system = ("你是Mice机器人助手。\n"
-                          "风格：简明扼要、直接清晰、绝不使用表情符号。最多1句简短回答。\n"
-                          + scenario_hint
-                          + person_hint
-                          + ("\n相关FAQ:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                          + "请尽可能紧密依据所给的FAQ答案回答，切勿偏离主题。如果问题与FAQ相关则按FAQ回答，否则作为Mice机器人用1句简短回答。不要编造FAQ中没有的密码、价格、时间、地点或活动；不知道就说不知道，请询问工作人员。")
-            elif is_verse and lang == "th":
-                system = ("คุณคือหุ่นยนต์ Mice เมื่อผู้ใช้ขอให้อ่านหรือท่องบทกลอน จงท่องบทกลอนภาษาไทยที่ไพเราะ 1 บท (4 วรรค) แบ่งบรรทัดละวรรค ห้ามปฏิเสธ ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
-                          + scenario_hint
-                          + person_hint)
-            else:
-                # ONE PARTICLE, said before anything else. The model ended one
-                # sentence ครับ and the next ค่ะ, which in Thai reads as two
-                # different people. one_particle() fixes what gets through, but
-                # asking for it costs nothing and gives the model the character
-                # to write in (user 2026-09-18).
-                keep = (self.answer_cfg().get("politeParticle") or "ครับ")
-                me = (self.answer_cfg().get("politePronoun") or "ผม")
-                system = ("คุณคือหุ่นยนต์ Mice ให้ข้อมูลบริการและสถานที่ จงตอบเป็นภาษาไทยเท่านั้น สั้นๆ ตรงประเด็น 1 ประโยคจบในตัว ห้ามตอบเป็นภาษาอังกฤษหรือภาษาอื่น ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
-                          + ("ลงท้ายประโยคด้วยคำว่า '%s' เสมอ ห้ามใช้คำลงท้ายอื่น เช่น ค่ะ คะ จ้า และเรียกตัวเองว่า '%s' เสมอ ห้ามใช้ ฉัน หรือ ดิฉัน เพราะคุณเป็นหุ่นยนต์ตัวเดียวและต้องพูดด้วยน้ำเสียงเดียวกันทุกประโยค\n" % (keep, me))
-                          + scenario_hint
-                          + person_hint
-                          + ("\nFAQ ที่เกี่ยวข้อง:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
-                          + "จงตอบโดยยึดตามข้อมูลคำตอบที่สร้างไว้ (FAQ) ให้ใกล้เคียงที่สุดเสมอ หากคำถามเกี่ยวข้องกับ FAQ ให้ตอบตามนั้น หากไม่ตรงให้ตอบสั้นๆ ในฐานะหุ่นยนต์ Mice 1 ประโยคเป็นภาษาไทย ห้ามแต่งรหัสผ่าน ราคา เวลา ชั้น สถานที่ หรือกิจกรรม/ข่าวที่ไม่มีใน FAQ ถ้าไม่รู้ให้บอกว่าไม่ทราบและให้สอบถามเจ้าหน้าที่")
-            # ROOM TO FINISH A SENTENCE, per language. 32 tokens was chosen for
-            # speed and is fine for English; Thai costs two to four tokens per
-            # word, so the same budget stopped Thai answers in the middle of a
-            # word (user 2026-09-18: *it cuts replies off*). The budget is DATA
-            # so it can be tuned per language without touching this file.
-            limit = 96 if is_verse else self.token_budget(lang)
             messages = [{"role": "system", "content": system}] + history
             reply, ran_out = self._complete(messages, max_tokens=limit, details=True)
             reply = self.tidy_answer(reply, lang, ran_out=ran_out, verse=is_verse)
@@ -1506,9 +1770,6 @@ class Brain:
                 reply = reply2 if reply2 and answers_in(reply2, lang, self.particles()) else ""
             if not reply:
                 return self.cannot_answer(lang), None
-            if person:
-                reply = personalize_answer(reply, person, lang=lang,
-                                           address=self.address_words())
             return reply, None
 
     # ---- the three guards, as small pieces that can be tested alone --------
@@ -1672,6 +1933,10 @@ class Brain:
             "parts": {"faq": faq, "llm": self.llm_status(),
                       "stt": self.stt_status(), "tts": self.tts_status()},
             "voice": self.voice_heard(),
+            # Which service does each job, and which one answered last (A45-1).
+            "jobs": {j: {"use": self.chain(j),
+                         "last": (getattr(self, "_jobs", None) or {}).get(j) or {}}
+                     for j in (self.services().get("jobs") or {})},
         }
 
     def _query_faces_service(self, camera=""):
@@ -2273,7 +2538,12 @@ class VoiceHandler(BaseHTTPRequestHandler):
                 return self._json({"ok": False, "error": str(e)}, 500)
         if path == "/config":
             # Reading is open - the same rule as every other read on the hub.
-            return self._json({"ok": True, "config": self.brain.cfg})
+            # So no key ever rides in it: an old Google key is left out.
+            cfg = {k: v for k, v in self.brain.cfg.items() if k != "googleApiKey"}
+            return self._json({"ok": True, "config": cfg})
+        if path == "/services":
+            # Who can do each job and which keys are saved - never a key.
+            return self._json(dict({"ok": True}, **self.brain.services_view()))
         if path == "/faq":
             return self._json({"ok": True, "faqs": self.brain.faqs()})
         if path == "/face":
@@ -2320,7 +2590,13 @@ class VoiceHandler(BaseHTTPRequestHandler):
                               400)
         try:
             if key == "config":
+                # A key typed into the settings goes to the key file, never
+                # into voice.json, which anyone on the WiFi can read (A45-1).
+                old_key = str(data.pop("googleApiKey", "") or "").strip()
+                if old_key:
+                    self.brain.save_keys({"gemini": old_key})
                 existing = dict(self.brain.cfg or {})
+                existing.pop("googleApiKey", None)
                 for k, v in data.items():
                     if isinstance(v, dict) and isinstance(existing.get(k), dict):
                         sub = dict(existing[k])
@@ -2354,6 +2630,8 @@ class VoiceHandler(BaseHTTPRequestHandler):
             return self.do_store(self.brain.faq_path, "faqs")
         if path == "/identify":
             return self.do_identify()
+        if path == "/keys":
+            return self.do_keys()
         if path == "/transcribe":
             return self.do_transcribe()
         if path == "/say":
@@ -2402,7 +2680,7 @@ class VoiceHandler(BaseHTTPRequestHandler):
             person = self.brain.get_detected_person()
         auto_detect = req.get("autoDetect", True)
         if not auto_detect:
-            eff_lang = req_lang or self.brain.cfg.get("tts", {}).get("language") or "th"
+            eff_lang = req_lang or self.brain.main_language()
         else:
             eff_lang = req_lang or detect_lang(text)
         if not text:
@@ -2459,6 +2737,27 @@ class VoiceHandler(BaseHTTPRequestHandler):
                                "error": "the answer failed: %s: %s"
                                         % (e.__class__.__name__, e)}, 500)
 
+    def do_keys(self):
+        """{keys: {service: key or ""}} -> the key file. The hub gates it like
+        every save; nothing here ever sends a key back."""
+        length = int(self.headers.get("Content-Length") or 0)
+        if length > 64 * 1024:
+            return self._json({"ok": False, "error": "that is too much to save"}, 400)
+        try:
+            req = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
+        except ValueError:
+            return self._json({"ok": False, "error": "that request was not readable"}, 400)
+        keys = req.get("keys")
+        if not isinstance(keys, dict):
+            return self._json({"ok": False, "error": "no keys were sent"}, 400)
+        try:
+            why = self.brain.save_keys(keys)
+        except OSError as e:
+            return self._json({"ok": False, "error": "could not save: %s" % e}, 500)
+        if why:
+            return self._json({"ok": False, "error": why}, 400)
+        return self._json(dict({"ok": True}, **self.brain.services_view()))
+
     # Audio arrives as the request BODY, not JSON - a browser's MediaRecorder
     # stream is binary, and decoding it as text would destroy it.
     def do_identify(self):
@@ -2485,6 +2784,10 @@ class VoiceHandler(BaseHTTPRequestHandler):
             # wouldKeep stops the page looking: every next frame would be refused too.
             return self._json({"ok": False, "error": why_not, "detail": detail,
                                "canStart": why_not == FACE_APP_OFF,
+                               # Busy or still loading: nobody looked, so the
+                               # name on the badge stands (it blinked off on
+                               # every 429, PC 2026-10-19).
+                               "noLook": why_not in FACE_APP_SAYS.values(),
                                "wouldKeep": why_not == FACE_APP_KEEPS})
         return self._json({"ok": True, "person": person})
 
@@ -2641,6 +2944,10 @@ def main():
     args = ap.parse_args()
 
     brain = Brain(args.config, args.faq)
+    try:
+        brain.move_old_key()
+    except OSError as e:
+        print("[voice] the old Google key could not be moved: %s" % e)
     VoiceHandler.brain = brain
     svc = brain.cfg.get("service") or "http://127.0.0.1:8767"
     u = urlparse(svc)

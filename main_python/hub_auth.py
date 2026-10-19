@@ -125,6 +125,10 @@ GATED_POST = {
     # what the rig answers and how it listens - gated like /api/settings.
     "/api/voice/config",
     "/api/voice/faq",
+    # A45-1: the keys to outside services, written only (never read back),
+    # and dropping the loaded models out from under whoever is talking.
+    "/api/voice/keys",
+    "/api/voice/unload",
     # Reading which build is available is as harmless as reading the module
     # list; replacing the hub is the most destructive thing it can be asked to
     # do, and it is on a network several people share.

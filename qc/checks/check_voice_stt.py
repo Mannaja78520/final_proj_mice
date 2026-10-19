@@ -109,6 +109,8 @@ def run(t):
                     "th": {"bias": "ห้องน้ำ หุ่นยนต์"},
                     "en": {"bias": "toilet robot"}}},
         "llm": {"enabled": False}, "tts": {"enabled": False},
+        # No language's own model here: one would download for real (4c tests it).
+        "providers": {"local": {"hear": {"byLanguage": {}}}},
     }, ensure_ascii=False), encoding="utf-8")
     os.environ["MICE_VOICE_CONFIG"] = str(cfg)
 
@@ -191,6 +193,44 @@ def run(t):
          and fake_fb.kwargs[-1].get("initial_prompt") == "toilet robot",
          "an unsure detection is retried in the store's fallback language",
          repr([k.get("language") for k in fake_fb.kwargs]))
+    # A45-1: an event's own main language wins (user 2026-10-19: global events)
+    brain_fb.cfg["scenarios"] = [{"name": "Expo", "prompt": "x", "language": "ja"}]
+    brain_fb.cfg["scenario"] = "Expo"
+    brain_fb.listen(b"x")
+    t.ok(fake_fb.kwargs[-1].get("language") == "ja",
+         "...in the scenario's own main language when it has one",
+         repr([k.get("language") for k in fake_fb.kwargs]))
+    # ---- 4c: a language with its own trained model (A45-1) --------------
+    # Thai through whisper "small" got 28% of the letters wrong with room
+    # noise, the Thai-trained model 2.3% (2026-10-19). It hears Thai only,
+    # so the general model's quick look picks it, and only for Thai.
+    class Looker(FakeSTT):
+        said = ("th", 0.9, [])
+
+        def detect_language(self, audio):
+            return self.said
+    gen, thai = Looker(texts=("general",)), FakeSTT(texts=("ไทย",))
+    brain_fb.cfg["providers"] = {"local": {"hear": {"byLanguage": {"th": "thai-model"}}}}
+    brain_fb.cfg["scenario"] = ""
+    brain_fb._stt, brain_fb._stt_own = gen, {"thai-model": thai}
+    svc_decode = sys.modules["faster_whisper"] if "faster_whisper" in sys.modules else None
+    sys.modules["faster_whisper"] = SimpleNamespace(decode_audio=lambda p: b"")
+    try:
+        got_th, _ = brain_fb.listen(b"x")
+        Looker.said = ("en", 0.95, [])
+        got_en, _ = brain_fb.listen(b"x")
+        got_hint, _ = brain_fb.listen(b"x", hint="th")
+    finally:
+        if svc_decode is None:
+            sys.modules.pop("faster_whisper", None)
+        else:
+            sys.modules["faster_whisper"] = svc_decode
+    t.ok(got_th and got_th["text"] == "ไทย" and thai.kwargs[0].get("language") == "th",
+         "Thai, by a quick look, goes to the Thai-trained model", repr((got_th, thai.kwargs[:1])))
+    t.ok(got_en and got_en["text"] == "general",
+         "...and English stays with the general model", repr(got_en))
+    t.ok(got_hint and got_hint["text"] == "ไทย" and len(thai.kwargs) == 2,
+         "Thai asked for by the page goes there too", repr(got_hint))
     t.ok(len(fake.kwargs) == 2,
          "with no fallback in the store there is no second pass",
          "calls: %d" % len(fake.kwargs))
