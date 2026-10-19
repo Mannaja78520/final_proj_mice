@@ -139,6 +139,11 @@ def run(t):
         opens = _opens(log)
         t.ok(len(out2.get("c") or []) == 2 and len(opens) == 2,
              "and the next viewer opens it again", (out2.get("c_err"), opens))
+        # The relay still held the first session's last picture: it went out
+        # first, as "now" - an old face to the face app (2026-10-19).
+        t.ok((out2.get("c") or [b""])[0][2:10] == b"frame-1 ",
+             "and gets a new picture first, never the last one from before",
+             (out2.get("c") or [b""])[0][:16])
         lists = log.read_text().splitlines().count("list")
         t.ok(lists == 1, "the list of cameras is asked for once, not by every viewer",
              "listing is an ffmpeg start too: %d for 4 asks (PC, 2026-10-15)" % lists)
