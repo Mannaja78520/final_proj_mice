@@ -115,6 +115,23 @@ def pcm_wav(pcm, rate=24000):
             + b"data" + struct.pack("<I", len(pcm)) + pcm)
 
 
+def silent(sound):
+    """True when the bytes hold no sound to hear: a WAV whose data chunk is
+    under 50 ms, or any other file under 100 bytes."""
+    if sound[:4] != b"RIFF" or sound[8:12] != b"WAVE":
+        return len(sound) < 100
+    at, per_s = 12, 0
+    while at + 8 <= len(sound):
+        tag, size = sound[at:at + 4], struct.unpack("<I", sound[at + 4:at + 8])[0]
+        if tag == b"fmt " and size >= 16:
+            per_s = struct.unpack("<I", sound[at + 16:at + 20])[0]   # bytes a second
+        if tag == b"data":
+            have = min(size, len(sound) - at - 8)
+            return have < max(per_s // 20, 1)
+        at += 8 + size + (size & 1)
+    return True
+
+
 def audio_type(audio):
     """The browser's recording format, from its first bytes."""
     if audio[:4] == b"RIFF":

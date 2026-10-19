@@ -836,7 +836,19 @@ class Brain:
         if not scfg.get("enabled"):
             return "off in config/voice.json"
         if self._stt:
-            return "%s loaded" % scfg.get("model", "small")
+            # Every model in memory and the one that heard last: "small
+            # loaded" while the Thai model did the hearing hid the switch
+            # (PC test 2026-10-19).
+            own = getattr(self, "_stt_own", None) or {}
+            mine = (self.service("local")["jobs"].get("hear") or {}).get("byLanguage") or {}
+            names = [self._stt_loaded_model or scfg.get("model", "small")]
+            names += ["%s for %s" % (mid, lang) for lang, mid in mine.items() if mid in own]
+            said = ", ".join(names) + " loaded"
+            if getattr(self, "_stt_last", None):
+                said += "; last heard by " + self._stt_last
+            if getattr(self, "_stt_own_err", None):
+                said += "; own model could not load: " + self._stt_own_err
+            return said
         if self._stt_loading:
             return "loading in background…"
         if self._stt_err:
@@ -959,14 +971,18 @@ class Brain:
     def _whisper(self, path, lang, scfg):
         """One whisper pass (and the unsure-language second pass). A language
         with its own trained model is heard by that model (A45-1)."""
-        model = self._stt
-        if (self.service("local")["jobs"].get("hear") or {}).get("byLanguage"):
+        model, used = self._stt, self._stt_loaded_model or scfg.get("model", "small")
+        mine = (self.service("local")["jobs"].get("hear") or {}).get("byLanguage")
+        if mine:
             try:
                 if not lang:
                     lang = self._detect(path, scfg)
-                model = self._own_model(lang) or self._stt
+                own = self._own_model(lang)
+                if own:
+                    model, used = own, mine[lang]
             except Exception:                           # noqa: BLE001
-                model = self._stt          # no quick look, or no own model: as before
+                pass               # no quick look, or no own model: as before
+        self._stt_last = used
         bias = ((scfg.get("languages") or {}).get(lang) or {}).get("bias") if lang else None
         segments, info = model.transcribe(
             path, language=lang or None,
@@ -1243,6 +1259,8 @@ class Brain:
             return None
         if "Neural" in (voice or "") and got.startswith(b"RIFF"):
             return None
+        if providers.silent(got):
+            return None        # an empty sound kept by an older helper: build again
         return got
 
     def say(self, text, lang="", voice="", rate=None, pitch=None, prebuild=False):
@@ -1331,6 +1349,11 @@ class Brain:
             data, why = make()
             if not data:
                 return None, why
+            if providers.silent(data):
+                # A header and no sound (the Windows voice on the PC test,
+                # 2026-10-19: 46 bytes, sent as "spoken"). Silence is a
+                # failure, so the next speaker in line gets the line.
+                return None, "it gave back an empty sound (%d bytes)" % len(data)
             path.parent.mkdir(exist_ok=True)
             tmpf = path.with_suffix(".part%d" % next(_tmp_seq))
             tmpf.write_bytes(data)
@@ -1523,6 +1546,7 @@ class Brain:
             self._llm = None
             self._stt = None
             self._stt_own = {}
+            self._stt_last = self._stt_own_err = None
             self._llm_err = None
             self._stt_err = None
             self._llm_loading = False
