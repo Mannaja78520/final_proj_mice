@@ -179,15 +179,19 @@ def road_look(st, jpeg):
     token, why = st.token_now()
     if not token:
         return {"state": "no login", "detail": why}
+    # seconds = until the answer, busy waits included (what a person waits);
+    # last = the answering try alone. Only the last was reported (PC, 2026-10-19).
+    first = time.time()
     for n in range(TRIES):
         began = time.time()
         state, faces, detail = friend_api.look(st.entry(), token, jpeg, CAMERA, timeout=30)
-        took = time.time() - began
+        last = time.time() - began
         if not _busy(state):
             break
         time.sleep(min(4.0, 0.5 * 2 ** n))
-    return {"state": state, "detail": detail, "seconds": took, "tries": n + 1,
-            "faces": len(faces), "names": [f["who"] for f in faces if f["known"]]}
+    return {"state": state, "detail": detail, "seconds": time.time() - first, "last": last,
+            "tries": n + 1, "faces": len(faces),
+            "names": [f["who"] for f in faces if f["known"]]}
 
 
 def road_watcher(st, looker, voice, jpeg):
@@ -211,17 +215,20 @@ def road_watcher(st, looker, voice, jpeg):
 
 
 def road_identify(base, path, jpeg):
+    first = time.time()
     for n in range(TRIES):
         began = time.time()
         got = _post_jpeg(base + path, jpeg)
+        last = time.time() - began
         if "busy" not in str(got.get("error") or "") and \
                 "loading" not in str(got.get("error") or ""):
             break
         time.sleep(min(4.0, 0.5 * 2 ** n))
-    took = time.time() - began
+    took = time.time() - first
     # Who Voice says is there NOW: a name from the photo before must be gone.
     after = _get_json(base + path.replace("/identify", "/face"))
-    return {"answer": got, "seconds": took, "tries": n + 1, "after": after.get("person") or ""}
+    return {"answer": got, "seconds": took, "last": last, "tries": n + 1,
+            "after": after.get("person") or ""}
 
 
 def _get_json(url, timeout=10):
@@ -432,7 +439,8 @@ def report(result, out=print):
             if road == "look" and x.get("detail"):
                 extra = " (their model %s)" % x["detail"]
             if x.get("tries", 1) > 1:
-                extra += " after %d busy tries" % (x["tries"] - 1)
+                extra += " - %d busy answers first%s" % (
+                    x["tries"] - 1, ", answering try %.2f s" % x["last"] if "last" in x else "")
             out("%-24s %-8s %-8s %-6s %-28s %s" % (
                 r["photo"][:24] if first else "", r["kind"] if first else "", road,
                 "PASS" if x["passed"] else "FAIL", str(x["found"])[:28],

@@ -83,6 +83,24 @@ def run(t):
         got, why = tool.fetch_stranger(folder)
     finally:
         srv.shutdown()
+    # A busy answer is waited out and tried again; the time reported is until
+    # the answer, waits included - only the last try was (PC, 2026-10-19).
+    answers = iter([("busy", [], ""), ("busy", [], ""), ("ok", [], "80 ms")])
+
+    class Token:
+        def token_now(self):
+            return "tok", ""
+
+        def entry(self):
+            return {}
+    real_look = tool.friend_api.look
+    tool.friend_api.look = lambda *a, **k: next(answers)
+    try:
+        got_look = tool.road_look(Token(), b"\xff\xd8")
+    finally:
+        tool.friend_api.look = real_look
+    t.ok(got_look["tries"] == 3 and got_look["seconds"] >= 1.4 and got_look["last"] < 0.5,
+         "busy answers are waited out, and the time says how long that took", got_look)
     t.ok(got is None and "did not send a picture" in why
          and not (folder / "unknown_generated.jpg").exists(),
          "a web page is never kept as the stranger's photo", (got, why))

@@ -26,6 +26,7 @@ import threading
 import urllib.error
 import urllib.request
 from pathlib import Path
+from urllib.parse import urlsplit
 
 _lock = threading.Lock()
 _procs = {}          # (partner id, command) -> Popen
@@ -108,16 +109,33 @@ def _printed_url(log):
 
 
 def live(pid, entry):
-    """The entry with `open`/`api` replaced by where it really answered last."""
+    """The entry with `open`/`api` replaced by where it really answered last.
+
+    The configured api wins while it answers. Their page (Vite) PROXIES
+    /api to the backend, so it answers health with JSON too, and being started
+    last it became the api: /api/look 2.2 s instead of 0.1 s, empty bodies and
+    no live feed through the proxy (PC, 2026-10-19). So a printed address on
+    the page's own port is the page, and another one is the api only when the
+    configured one is silent (their port moved)."""
     got = dict(entry)
     urls = _memo(pid).get("urls") or {}
+    if not urls:
+        return got
     health = entry.get("health") or "/api/health"
+    api = str(entry.get("api") or "").rstrip("/")
+    api_ok = bool(api) and answers(api + health, 0.5, 300, True)
+    page_port = urlsplit(str(entry.get("open") or "")).port
+    if page_port == urlsplit(api).port:
+        page_port = -1                       # one server for both (All-Jao)
     for url in urls.values():
+        url = url.rstrip("/")
         # Vite answers ANY path with its page (200, html), so only JSON on the
         # health path means API - measured 2026-09-16.
-        key = ("api" if answers(url.rstrip("/") + health, 0.5, 300, True)
-               else "open")
-        got[key] = url.rstrip("/")
+        if urlsplit(url).port != page_port and answers(url + health, 0.5, 300, True):
+            if not api_ok:
+                got["api"] = url
+        elif answers(url, 0.5):             # a part that stopped is nobody's page
+            got["open"] = url
     return got
 
 

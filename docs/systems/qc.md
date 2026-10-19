@@ -171,6 +171,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/checks/check_panel.py`
 - `qc/checks/check_parallel_runs.py`
 - `qc/checks/check_partner_launch.py`
+- `qc/checks/check_partner_live.py`
 - `qc/checks/check_partner_version.py`
 - `qc/checks/check_partners.py`
 - `qc/checks/check_pc_camera.py`
