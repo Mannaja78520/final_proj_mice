@@ -139,6 +139,27 @@ def live(pid, entry):
     return got
 
 
+def resume(pid, entry):
+    """Start again a part a hub started and that died with that hub.
+
+    Their page is the hub's child, so a hub restart took it down while their
+    backend (started by their own .bat) kept running: the app half up, no
+    page (PC, 2026-10-19). Only when some part still answers - a closed app
+    stays closed - and only parts a hub started. -> start()'s answer or None."""
+    memo = _memo(pid)
+    ours = set(memo.get("started") or [])
+    parts, _source = parts_of(entry)
+    if not ours or not parts:
+        return None
+    urls = memo.get("urls") or {}
+    hints = [p.get("check") or "" for p in entry.get("launch") or []]
+    alive = {cmd: answers(urls.get(cmd) or (hints[i] if i < len(hints) else ""))
+             for i, (_cwd, cmd) in enumerate(parts)}
+    if not any(alive.values()) or all(alive.get(c, True) for c in ours):
+        return None
+    return start(pid, entry)
+
+
 def start(pid, entry):
     """Start whatever part is silent. Returns {ok, up, starting, ready, open, ...}."""
     name = entry.get("name") or pid
@@ -197,6 +218,8 @@ def start(pid, entry):
                         "error": "could not start the %s part of %s (%s)" % (label, name, e)}
             starting.append(label)
             logs.append(str(log))
+            # What THIS hub started, so a later hub can bring it back (resume).
+            memo["started"] = sorted(set(memo.get("started") or []) | {cmd})
         memo["urls"] = urls
         try:
             _memo_path(pid).write_text(json.dumps(memo), encoding="utf-8")
