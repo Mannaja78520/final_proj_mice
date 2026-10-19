@@ -87,23 +87,11 @@ function vidFill() {        // the choices are built from the lists above
   });
 }
 
+// A picked file goes on the stage like a fetched link (video_page.js).
 function vidPick(file) {
   vidFill();
   if (!file) return;
-  const v = $("vidPlayer");
-  if (v.src) URL.revokeObjectURL(v.src);
-  v.src = URL.createObjectURL(file);
-  v.hidden = false;
-  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null;
-  vidList();
-  $("vidUseBox").hidden = true;
-  $("vidGo").disabled = false;
-  v.onloadedmetadata = () => {
-    $("vidTo").value = v.duration.toFixed(1);
-    $("vidFrom").value = "0";
-    vidSay("Ready: " + v.duration.toFixed(1) + " s of video. Press Make moves.");
-  };
-  v.onerror = () => vidSay("This browser cannot play that video. Try an MP4 or WEBM file.", true);
+  vidSetSrc(URL.createObjectURL(file), { kind: "file", name: file.name, file });
 }
 
 // Seek through the video and find the person in each frame. Seeking, not
@@ -128,29 +116,40 @@ async function vidRead() {
     await new Promise(res => { v.onseeked = res; v.currentTime = Math.min(t, v.duration - 0.001); });
     // timestamps must only grow, also on a second read of the same video
     const r = lib.detectForVideo(v, performance.now());
-    const w = r.worldLandmarks && r.worldLandmarks[0];
-    frames.push({ t: t - from, w: w ? w.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility })) : null });
-    vidDraw(r.landmarks && r.landmarks[0]);
+    const w = r.worldLandmarks && r.worldLandmarks[0], s = r.landmarks && r.landmarks[0];
+    // p: the same points on the picture, so the skeleton plays along later
+    frames.push({ t: t - from, w: w ? w.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility })) : null,
+                  p: s ? s.map(p => ({ x: p.x, y: p.y, v: p.visibility })) : null });
+    vidDraw(frames[frames.length - 1].p);
     vidSay("Reading the video: " + Math.round(100 * (t - from) / Math.max(0.1, to - from)) + "%");
   }
   return frames;
 }
 // The skeleton over the video, so it is plain whether the person was found.
+// Points are fractions of the PICTURE, which the player letterboxes inside its
+// box: they are placed on the picture, not on the box.
+const VID_BONES = [[11, 12], [11, 23], [12, 24], [23, 24],
+                   [11, 13], [13, 15], [12, 14], [14, 16]];
 function vidDraw(pts) {
   const v = $("vidPlayer"), c = $("vidOverlay");
   c.width = v.clientWidth; c.height = v.clientHeight;
+  c.style.left = v.offsetLeft + "px"; c.style.top = v.offsetTop + "px";
   const g = c.getContext("2d");
   g.clearRect(0, 0, c.width, c.height);
-  if (!pts) return;
+  if (!pts || !v.videoWidth) return;
+  const k = Math.min(c.width / v.videoWidth, c.height / v.videoHeight);
+  const w = v.videoWidth * k, h = v.videoHeight * k, ox = (c.width - w) / 2, oy = (c.height - h) / 2;
   const css = getComputedStyle(document.documentElement);
-  g.strokeStyle = css.getPropertyValue("--acc").trim() || "currentColor";
+  g.strokeStyle = g.fillStyle = css.getPropertyValue("--acc").trim() || "currentColor";
   g.lineWidth = 3;
-  const P = i => [pts[i].x * c.width, pts[i].y * c.height];
-  const lines = [[11, 12]];
-  for (const s of [0, 1]) lines.push([VID_PTS.sh[s], VID_PTS.el[s]], [VID_PTS.el[s], VID_PTS.wr[s]]);
+  const P = i => [ox + pts[i].x * w, oy + pts[i].y * h];
+  const seen = i => pts[i] && (pts[i].v == null || pts[i].v >= VID_SEEN);
   g.beginPath();
-  for (const [a, b] of lines) { g.moveTo(...P(a)); g.lineTo(...P(b)); }
+  for (const [a, b] of VID_BONES) if (seen(a) && seen(b)) { g.moveTo(...P(a)); g.lineTo(...P(b)); }
   g.stroke();
+  for (const i of [11, 12, 13, 14, 15, 16]) if (seen(i)) {
+    g.beginPath(); g.arc(...P(i), 4, 0, 2 * Math.PI); g.fill();
+  }
 }
 
 // ---- skeleton -> the robot's two bone directions per arm --------------------
@@ -299,8 +298,10 @@ function vidPoseAt(fit, ms) {    // the fitted pose nearest a moment of the vide
 // One side of a hand on top even where the hand must move for it: from
 // facePalm's best shape, the least hand travel that shows that side. Returns
 // facePalm's shape: { pose, upness } (+1 palm up, -1 back up).
-function vidForceHand(p, arm, want) {
-  const r = facePalm(p, arm, want);
+// near: start from p itself, not facePalm's shape - the smallest nudge, for a
+// move that has only so much time (facePalm may pick a far shape).
+function vidForceHand(p, arm, want, near) {
+  const r = near ? { pose: p, upness: palmUpnessOf(p, arm) } : facePalm(p, arm, want);
   if (!r || want * r.upness > 0.5) return r;
   const idx = arm === 0 ? [0, 1, 2, 3] : [4, 5, 6, 7];
   const saved = pose;
@@ -344,42 +345,78 @@ function vidReachIn(from, to, ms) {
   }
   return at(lo);
 }
+// The asked hand side on a pose: { pose, miss: [L, R] } (miss = that hand
+// still not showing it). upness is +1 palm up, -1 back up, whichever was asked.
+// near: for a part-way move - a hand already showing it stays put, else it
+// gets the smallest nudge; facePalm goes for the MOST upness, which can be a
+// big jump the time left cannot pay for.
+function vidSide(p, pk, opts, near) {
+  const miss = [false, false];
+  for (const a of [0, 1]) if (opts.hand[a]) {
+    const force = opts.force[a] || pk.use === "force";
+    const r = near ? vidForceHand(p, a, opts.hand[a], true)
+      : force ? vidForceHand(p, a, opts.hand[a]) : facePalm(p, a, opts.hand[a]);
+    if (r) p = r.pose.map(v => Math.round(v * 10) / 10);
+    // A near-straight arm cannot roll its hand (the elbow sits on the
+    // turning line); it stayed on its edge with nothing said (browser test
+    // 2026-10-19).
+    if (!r || opts.hand[a] * r.upness <= 0.5) miss[a] = true;
+  }
+  return { pose: p, miss };
+}
+// Part of the way in `ms` AND a forced hand side kept. A plain part-way pose
+// is a joint blend, and a blend of two back-up shapes can pass the hand's edge
+// (PC 2026-10-19: back forced, music on, upness up to +0.10 with no miss
+// said). So the side goes on each try and the furthest try in time wins; at
+// worst the robot stays where it is for that beat, still showing the side.
+function vidReachSide(from, to, ms, pk, opts) {
+  const forced = [0, 1].filter(a => opts.hand[a] && (opts.force[a] || pk.use === "force"));
+  const fits = (s) => minTime(from, s.pose) <= ms && forced.every(a => !s.miss[a]);
+  const plain = vidReachIn(from, to, ms), near = vidSide(plain, pk, opts, true);
+  if (fits(near)) return near;
+  const at = (f) => from.map((a, j) => a + (to[j] - a) * f);
+  const still = vidSide(from, pk, opts, true);
+  let lo = 0, hi = 1, best = fits(still) ? still : null;
+  for (let k = 0; k < 8; k++) {
+    const m = (lo + hi) / 2, s = vidSide(at(m), pk, opts, true);
+    if (fits(s)) { lo = m; best = s; } else hi = m;
+  }
+  // The last move already lost the side: keep the beat and say so.
+  return best || { pose: plain, miss: [0, 1].map(a => !!opts.hand[a]
+    && opts.hand[a] * palmUpnessOf(plain, a) <= 0.5) };
+}
 // 3. The moves, from the picks and the choices.
 function vidBuild(fit, picks, opts) {
   const out = [], handMiss = [0, 0];
-  let kept = 0, partial = 0, last = 0;
+  let kept = 0, partial = 0, last = 0, start = 0;
   for (const pk of picks) {
     pk.missHand = [false, false];
     if (pk.use === "drop") continue;
-    let p = pk.use === "moment" ? vidPoseAt(fit, pk.at) : fit.poses[pk.i];
-    for (const a of [0, 1]) if (opts.hand[a]) {
-      const force = opts.force[a] || pk.use === "force";
-      const r = force ? vidForceHand(p, a, opts.hand[a]) : facePalm(p, a, opts.hand[a]);
-      if (r) p = r.pose.map(v => Math.round(v * 10) / 10);
-      // A near-straight arm cannot roll its hand (the elbow sits on the
-      // turning line); it stayed on its edge with nothing said (browser test
-      // 2026-10-19). upness is +1 palm up, -1 back up, whichever was asked.
-      if (!r || opts.hand[a] * r.upness <= 0.5) { handMiss[a]++; pk.missHand[a] = true; }
-    }
+    let s = vidSide(pk.use === "moment" ? vidPoseAt(fit, pk.at) : fit.poses[pk.i], pk, opts);
     kept++;
     const t = fit.times[pk.i];       // its place on the video's clock
     const prev = out[out.length - 1];
-    if (!prev) { out.push({ pose: p, t: 1000, hold: 0 }); last = t; continue; }
     const gap = t - last;
     last = t;
+    if (!prev) { out.push({ pose: s.pose, t: 1000, hold: 0 }); start = t; }
     // the same pose again is a pause on the last move, not a move of no length
-    if (deltaDeg(prev.pose, p) < 1) { prev.hold += gap; continue; }
-    if (opts.music) {
-      const q = vidReachIn(prev.pose, p, gap);
-      if (q !== p) partial++;
-      p = q;
+    else if (deltaDeg(prev.pose, s.pose) < 1) prev.hold += gap;
+    else {
+      if (opts.music && minTime(prev.pose, s.pose) > gap) {
+        s = vidReachSide(prev.pose, s.pose, gap, pk, opts);
+        partial++;
+      }
+      // Pinned, so Show speed does not re-time the video's rhythm. Without
+      // "stay with the music" a move too fast for the servos is slowed instead.
+      if (deltaDeg(prev.pose, s.pose) < 1) prev.hold += gap;
+      else out.push({ pose: s.pose, t: Math.round(gap), hold: 0, tset: true });
     }
-    // Pinned, so Show speed does not re-time the video's rhythm. Without
-    // "stay with the music" a move too fast for the servos is slowed instead.
-    out.push({ pose: p, t: Math.round(gap), hold: 0, tset: true });
+    // counted on the pose that went on the bar, after any part-way cut
+    for (const a of [0, 1]) if (s.miss[a]) { handMiss[a]++; pk.missHand[a] = true; }
   }
   out.forEach(k => { k.hold = Math.round(k.hold); });
-  return { keys: out, videoMs: fit.videoMs, handMiss, kept, partial };
+  // start: the first kept move's moment, where these moves meet the video
+  return { keys: out, videoMs: fit.videoMs, handMiss, kept, partial, start };
 }
 // frames -> timeline keys in one go. No video needed, so QC hands it a skeleton.
 // opts: { tol, mirror, waist, hand: [want L, R] (0 = as in the video),
@@ -523,6 +560,7 @@ async function vidUse(how) {
   clearBadMarks();
   clampKeyTimes();
   selKey = how === "replace" ? 0 : keys.length - add.length;
+  vidOnBar(selKey);
   pose = [...keys[selKey].pose];
   poseChanged(false);
   renderTimeline();

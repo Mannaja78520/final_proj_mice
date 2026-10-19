@@ -60,6 +60,7 @@ function showTab(which) {
     const b = $(STAB_BTN[k]);
     if (b) b.classList.toggle("on", k === which);
   });
+  if (typeof vidPage === "function") vidPage(which === "video");   // the Video page's stage
 }
 
 // THE TIMELINE HANDLE DRAGS TOO (user 2026-09-16: *timeline below has the

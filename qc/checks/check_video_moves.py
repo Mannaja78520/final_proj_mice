@@ -164,6 +164,45 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     function span(r){ return r.keys.slice(1).reduce(function(s, k){ return s + Math.max(k.t, minTime(r.keys[r.keys.indexOf(k) - 1].pose, k.pose)) + k.hold; }, r.keys[0].hold); }
     var mu = movesFromFrames(f10, opt({tol: 4, music: true})), st10 = movesFromFrames(f10, opt({tol: 4, music: false}));
     o.musicSlow = slow(mu); o.musicPartial = mu.partial; o.musicSpan = span(mu); o.music0Span = span(st10); o.fastVideo = mu.videoMs;
+    // 10b. music cuts a move short: the forced side must hold on the cut pose,
+    // and the miss count must match the poses on the bar (PC 2026-10-19)
+    // On a clip where every forced move shows the back by itself, but a plain
+    // joint blend toward one does not (found by trying swaps; the PC's
+    // jumping jacks were one).
+    var BF = opt({tol: 4, music: true, hand: [-1, -1], force: [true, true]}), hard = null;
+    var tFind = performance.now();
+    for (var n = 0; n < 40 && !hard; n++) {
+      var P1 = randomPose(), Q1 = randomPose(), fr = [];
+      for (var i = 0; i <= 12; i++) { var s1 = shapeOf(i % 4 < 2 ? P1 : Q1); fr.push({t: i / 10, w: person(s1[0], s1[1], 0)}); }
+      var hf = vidFitFrames(fr, BF), prv = null, at0 = 0, cut = false, bad = false;
+      vidPicksFor(hf, 4).forEach(function(pk){
+        if (bad) return;
+        var sd = vidSide(hf.poses[pk.i], pk, BF), sp = sd.pose;
+        bad = sd.miss[0] || sd.miss[1];
+        if (prv && !cut) {
+          var q = vidReachIn(prv, sp, hf.times[pk.i] - at0);
+          cut = q !== sp && (palmUpnessOf(q, 0) > -0.5 || palmUpnessOf(q, 1) > -0.5);
+        }
+        prv = sp; at0 = hf.times[pk.i];
+      });
+      if (cut && !bad) hard = fr;
+      o.hardTries = n + 1;
+    }
+    o.hard = !!hard;
+    o.findMs = Math.round(performance.now() - tFind); t0 += o.findMs;   // the test's own search is not fitting
+    var t10 = performance.now();
+    var bf = movesFromFrames(hard || f10, BF);
+    o.cutMs = (performance.now() - t10).toFixed(0); o.cutPartial = bf.partial; o.cutSlow = slow(bf);
+    o.cutBad = [0, 1].map(function(a){ return bf.keys.filter(function(k){ return -palmUpnessOf(k.pose, a) <= 0.5; }).length; }).join("/");
+    o.cutMiss = bf.handMiss.join("/");
+    o.cutWorst = Math.max.apply(null, bf.keys.map(function(k){ return Math.max(palmUpnessOf(k.pose, 0), palmUpnessOf(k.pose, 1)); })).toFixed(2);
+    // the left palm up, back forced, 0.1 s to turn it: whatever comes back,
+    // what it says about the hand must be what the pose shows
+    o.honest = "no reach";
+    if (hp) { var up = facePalm(hp, 0, 1).pose, lies = 0, FB = opt({hand: [-1, 0], force: [true, false], music: true});
+      for (var n = 0; n < 5; n++) { var rs = vidReachSide(up, randomPose(), 100, {use: "keep"}, FB);
+        if (rs.miss[0] !== (-palmUpnessOf(rs.pose, 0) <= 0.5)) lies++; }
+      o.honest = lies + " of 5 wrong"; }
     // 11. leave a move out, fill another with a different moment: later moves keep their time
     var fit = vidFitFrames(f6, BASE), picks = vidPicksFor(fit, 4);
     var whole = vidBuild(fit, picks, opt({})).keys.length;
@@ -243,6 +282,15 @@ def run(t):
          "so the moves end with the video (%s ms of %s)" % (v["musicSpan"], v["fastVideo"]), v)
     t.ok(int(v["music0Span"]) > int(v["fastVideo"]) + 200,
          "without it the same moves run longer than the video (%s ms)" % v["music0Span"], v)
+    t.ok(v["honest"] == "0 of 5 wrong", "a move that cannot keep the side in its time says so (%s)" % v["honest"], v)
+    t.ok(v["hard"] == "true", "found a clip where a plain part-way move loses the hand side "
+         "(%s tries)" % v["hardTries"], v)
+    t.ok(int(v["cutPartial"]) > 0 and v["cutSlow"] == "0",
+         "back forced with the music on: moves still go part of the way to keep time "
+         "(%s part-way)" % v["cutPartial"], v)
+    t.ok(v["cutBad"] == "0/0" and v["cutMiss"] == "0/0",
+         "and every move on the bar shows the back on top, both hands (not on top L/R: "
+         "%s, said %s, worst upness %s, %s ms)" % (v["cutBad"], v["cutMiss"], v["cutWorst"], v["cutMs"]), v)
     t.ok(v["dropped"] == "1", "a move left out is gone from the moves", v)
     t.ok(v["slotKept"] == "true", "and the move after it still lands on its own moment", v)
     t.ok(v["momentPose"] == "true", "a move filled from another moment takes that moment's pose", v)

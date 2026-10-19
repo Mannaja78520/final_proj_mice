@@ -333,7 +333,7 @@ if (typeof appLogin === "function") {
 
 
 def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True,
-         hub_login=True):
+         hub_login=True, flags=()):
     """Serve the real Studio index.html + a driver script, load it, wait, kill.
 
     The temp page lives in the studio web folder so every relative asset
@@ -358,7 +358,7 @@ def page(driver_js, query="", seconds=20, studio_web=None, studio_login=True,
     import fake_serial
     _before = len(fake_serial.qc_marks)      # before the browser can say anything
     try:
-        _launch(query, prof)
+        _launch(query, prof, flags)
         _wait_for_done(seconds, start=_before)
     finally:
         drv.unlink(missing_ok=True)

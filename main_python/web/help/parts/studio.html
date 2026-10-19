@@ -133,7 +133,26 @@
        perform. If the time bar is holding unsaved keyframes, opening a show leaves them
        alone and says so — press the button when you really mean to replace them.</p></div>
   <div class="f"><h3>Moves from a video of a person<span class="tag t-new">new</span></h3>
-    <p><b>Sequence tab ▸ Moves from a video.</b> Pick a video of one person, press
+    <p><b>The Video tab.</b> Its own page: the person's video with its sound and the
+       skeleton found on them, beside the 3D robot seen from the front (on a phone, one
+       above the other). Pick a video of one person, or paste a link and press
+       <b>Fetch</b>: YouTube, Google Drive, Dropbox, Facebook, TikTok, Vimeo and other
+       video sites, or a link straight to a video file. This PC fetches it (a browser
+       cannot read the picture of a video another site plays) and Studio reads it like
+       a file. A Drive or Dropbox file must be shared with “Anyone with the link”; a
+       private video or one that needs a login cannot be fetched, and Studio says so.
+       Video sites need <code>yt-dlp</code> on the PC (<code>pip install -U
+       "yt-dlp[default]"</code>; Studio names it when it is missing). Then press</p>
+    <p><b>▶ Play person and robot</b> plays the video with its sound while the robot
+       does the moves made from it, in step; dragging the video's time does the same.
+       It is a preview: the real robot moves only when the moves are on the time bar.
+       After <b>Use as new moves</b>, <b>♪ Put the video's sound on the robot</b>
+       cuts the sound of the part the moves were made from (ffmpeg on the PC) and puts
+       it on the robot's card as the first video move's music, so the show plays with
+       the song. The video, the link and every choice are saved with the project, so
+       opening it again brings them back (press Fetch, or pick the file, to see the
+       video again).</p>
+    <p>Pick a video of one person, press
        <b>▶ Make moves</b>, and Studio follows their arms frame by frame and makes moves
        that copy them as closely as the robot's joints allow. The found skeleton is drawn
        over the video, and the 3D robot can play the result at once. Then
@@ -160,14 +179,16 @@
     <p><b>Stay with the music</b> (on at first): every move ends on its own moment in the
        video, so a show built on the video's song stays in time. A move the robot is too
        slow for goes as far toward the pose as it can in that time instead of making
-       everything after it late.</p>
+       everything after it late. The hand side you picked still holds on that
+       part-way pose.</p>
     <p><b>Choose what to keep.</b> After Make moves, each move has a row: click its time to
        see that moment of the video and the robot's pose for it, then <b>Keep</b>,
        <b>Keep, hand side forced</b>, <b>Use another moment…</b> (type the second of the
        video whose pose should fill this move) or <b>Leave out</b>. Every move keeps its
        place in time, so leaving one out or filling it from elsewhere never shifts the rest
        off the beat.</p>
-    <p>The video is read in this browser and never leaves the PC. The body finder
+    <p>The video is read in this browser and never leaves the PC; fetched videos are kept
+       in the PC's temp folder (the newest few only). The body finder
        (MediaPipe Pose, from Google) is fetched from the internet the first time; the
        browser keeps it after that. Tested with a still photo and made-up skeletons, not
        yet on the real robot.</p></div>

@@ -330,6 +330,8 @@ input[type=checkbox]{accent-color:var(--acc)}
   #main{flex-direction:column;min-height:0}
   /* the viewport keeps a usable, thumb-friendly height instead of collapsing */
   #viewport{flex:0 0 auto;height:52vh;min-height:260px;width:100%}
+  body.vidpage #vidStage{flex:0 0 auto;height:44vh;min-height:220px;border-right:none;
+    border-bottom:1px solid var(--line)}
   #sideDrag{display:none}          /* nothing left to drag between */
   #side{
     width:100%;max-width:none;border-left:none;
@@ -456,9 +458,18 @@ header.topbar{padding:var(--sp-3) var(--sp-4);gap:var(--sp-3)}
   display:grid;place-items:center;font-size:18px;font-weight:600}
 .updlg .row{justify-content:center}
 /* A44-4: the video with the found skeleton drawn over it */
-.vidbox{position:relative;margin:6px 0}
-.vidbox video{display:block;width:100%;max-height:240px;background:var(--bg)}
-.vidbox canvas{position:absolute;inset:0;pointer-events:none}
+/* The Video page (A44-8): the person beside the 3D robot, on that tab only. */
+#vidStage{display:none}
+body.vidpage #vidStage{flex:1;min-width:0;display:flex;flex-direction:column;
+  border-right:1px solid var(--line);background:var(--bg);padding:var(--sp-2)}
+.vidbox{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+.vidbox video{display:block;width:100%;height:100%;object-fit:contain;background:var(--bg)}
+.vidbox canvas{position:absolute;left:0;top:0;pointer-events:none}
+.vidempty{color:var(--mut);text-align:center;margin:0;padding:var(--sp-4)}
+/* the 3D view is half as wide there: its view buttons fold as on a phone */
+body.vidpage #viewCube .vc-toggle{display:block}
+body.vidpage #viewCube:not(.open) .vcRow{display:none}
+.vidplay{flex-wrap:wrap}
 .vidlist{max-height:260px;overflow-y:auto}
 .vidrow{flex-wrap:wrap;margin:3px 0}
 .vidrow select{flex:1;min-width:0}

@@ -32,6 +32,7 @@
       "robot_link.js",
       "robot_settings.js",
       "pose_from_video.js",
+      "video_page.js",
       "dummy_link.js",
       "freeze_watch.js",
       "distances.js",
