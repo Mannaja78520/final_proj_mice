@@ -13,6 +13,9 @@ Tested against fakes only: on the real face app see the tool's --photos run.
 import importlib.util
 import os
 import tempfile
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 import qc as F
 
@@ -54,3 +57,32 @@ def run(t):
         t.eq(sent.count(path.read_bytes()), 3,
              "the %s photo's own bytes reached the face app once per road" % kind)
     t.ok(result["passed"], "the tool says PASS", "\n".join(lines))
+    # The PC run printed nothing about their feed, and nobody could tell
+    # silent from not listened to (2026-10-19). It always says which.
+    t.ok(any(ln.startswith("their live feed: not listened to") for ln in lines),
+         "the report always says what their live feed did", "\n".join(lines))
+
+    # --fetch-unknown saved their new HTML front page as unknown_generated.jpg
+    # (PC, 2026-10-19). Only a JPEG may become a photo; an old HTML one goes.
+    class Page(BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def do_GET(self):                                    # noqa: N802
+            body = b"<!DOCTYPE html><html><img src=x></html>"
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), Page)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    tool.STRANGER_URL = "http://127.0.0.1:%d/" % srv.server_port
+    folder = Path(tempfile.mkdtemp(prefix="mice_stranger_"))
+    (folder / "unknown_generated.jpg").write_bytes(b"<html>saved by an older run</html>")
+    try:
+        got, why = tool.fetch_stranger(folder)
+    finally:
+        srv.shutdown()
+    t.ok(got is None and "did not send a picture" in why
+         and not (folder / "unknown_generated.jpg").exists(),
+         "a web page is never kept as the stranger's photo", (got, why))

@@ -43,7 +43,9 @@ CODE = Path(__file__).resolve().parent.parent
 DRAWN = CODE / "qc" / "data" / "face_photos"
 CAMERA = "photo-test"
 HUB = "http://127.0.0.1:8642"
-STRANGER_URL = "https://thispersondoesnotexist.com/"   # generated, nobody real
+# Generated, nobody real. Their front page became an HTML page around the
+# picture (PC, 2026-10-19: the "photo" saved was HTML), so ask for the picture.
+STRANGER_URL = "https://thispersondoesnotexist.com/random-person.jpeg"
 KINDS = ("known", "unknown", "noface")
 # A busy answer is the rig's own webcam taking their model's turn (the PC's
 # watcher sends it up to 4 a second): wait and ask again, and say how often.
@@ -100,15 +102,20 @@ def as_jpeg(path, limit):
 def fetch_stranger(folder):
     """A generated face nobody enrolled: their site draws a new one each time."""
     dest = Path(folder) / "unknown_generated.jpg"
-    if dest.is_file():
+    if dest.is_file() and dest.read_bytes()[:2] == b"\xff\xd8":
         return dest, ""
     try:
         req = urllib.request.Request(STRANGER_URL, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=30) as r:
-            dest.write_bytes(r.read())
-        return dest, ""
+            got = r.read()
     except (OSError, ValueError) as e:
         return None, "could not fetch a generated stranger (%s)" % e
+    # Only a JPEG is a photo: a page saved under a .jpg name tests nothing.
+    if got[:2] != b"\xff\xd8":
+        dest.unlink(missing_ok=True)          # an earlier run's HTML must not be sent
+        return None, "%s did not send a picture (%r...)" % (STRANGER_URL, got[:40])
+    dest.write_bytes(got)
+    return dest, ""
 
 
 def photo_list(folder, fetch_unknown=False):
@@ -288,27 +295,32 @@ def start_voice(tmp, watcher, env):
 
 
 def listen_feed(st, heard, stop):
-    """Count what their live feed (WS events-feed) says while photos are looked
-    at: /api/look keeps nothing, so it should say nothing about them."""
+    """What their live feed (WS events-feed) says while photos are looked at.
+
+    /api/look keeps nothing, so it should say nothing about them; their feed
+    also sends only when there is an event, no heartbeat. So 0 messages on a
+    connected feed is the expected answer, and the report says it was connected."""
+    heard["listened"] = True
     src = st.ws_source()
-    token, _why = st.token_now()
+    token, why = st.token_now()
     if not (src and token):
-        heard.append({"error": "no live feed to listen to"})
+        heard["error"] = why or "their app has no live feed in config/partners.json"
         return
     try:
         feed = S.wsclient.connect(S.wsclient.ws_url(st.partner().get("api") or "",
                                                     src.get("path") or "", token))
     except Exception as e:                                   # noqa: BLE001
-        heard.append({"error": "the live feed did not connect (%s)" % e})
+        heard["error"] = "it did not connect (%s)" % e
         return
+    heard["connected"] = True
     try:
         for msg in feed.messages(idle_timeout=1):
             if stop.is_set():
                 return
             if msg:
-                heard.append(msg)
+                heard["messages"].append(msg)
     except Exception as e:                                   # noqa: BLE001
-        heard.append({"error": "the live feed dropped (%s)" % e})
+        heard["error"] = "it dropped (%s)" % e
     finally:
         feed.close()
 
@@ -354,7 +366,7 @@ def fake_rig(tmp):
 
 # ------------------------------------------------------------------ run
 def run(photos, st, env, tmp, hub=None, feed=False):
-    """Every photo down every road. -> {"rows": [...], "feed": [...], "passed": bool}"""
+    """Every photo down every road. -> {"rows": [...], "feed": {listened, connected, messages, error}, "passed": bool}"""
     friend_api._specs.clear()
     st.look = {"holdSeconds": 10, "staleSeconds": 5}
     st.partner()
@@ -362,7 +374,8 @@ def run(photos, st, env, tmp, hub=None, feed=False):
     st.lookers.append(looker)
     srv, watcher = start_watcher(st)
     proc, voice = start_voice(tmp, watcher, env)
-    heard, stop = [], threading.Event()
+    heard = {"listened": False, "connected": False, "messages": [], "error": ""}
+    stop = threading.Event()
     if feed:
         threading.Thread(target=listen_feed, args=(st, heard, stop), daemon=True).start()
         time.sleep(1.0)
@@ -429,11 +442,19 @@ def report(result, out=print):
     for road, ts in times.items():
         out("%-8s %d looks: fastest %.2f s, middle %.2f s, slowest %.2f s"
             % (road, len(ts), min(ts), statistics.median(ts), max(ts)))
-    if result.get("feed"):
-        msgs = [m for m in result["feed"] if "error" not in m]
-        errs = [m["error"] for m in result["feed"] if "error" in m]
-        out("their live feed: %d message(s) while the photos were looked at%s"
-            % (len(msgs), (" - " + "; ".join(errs)) if errs else ""))
+    feed = result.get("feed") or {}
+    msgs = feed.get("messages") or []
+    if not feed.get("listened"):
+        out("their live feed: not listened to (--fake has none, or --no-feed)")
+    elif not feed.get("connected"):
+        out("their live feed: not heard - %s" % feed.get("error"))
+    else:
+        out("their live feed: connected, %d message(s) while the photos were looked at%s"
+            % (len(msgs), " (expected: /api/look keeps nothing)" if not msgs else ":"))
+        for m in msgs[:5]:
+            out("  " + json.dumps(m, ensure_ascii=False)[:150])
+        if feed.get("error"):
+            out("  then %s" % feed["error"])
     out("RESULT: %s" % ("PASS" if result["passed"] else "FAIL"))
 
 
