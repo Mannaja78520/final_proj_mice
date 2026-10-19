@@ -544,5 +544,34 @@ window.REF = [
        "when the servo stalls, not the 246 N first used.",
   from: "Loop-closure solution of a planar four-bar (circle-circle intersection): Norton RL, \"Design of Machinery\" (5th ed.) Ch. 4, position analysis of linkages; Uicker JJ, Pennock GR, Shigley JE, \"Theory of Machines and Mechanisms\" Ch. 4. Lengths measured from model/21_09_2026_nangrum_full/nong_assembly.STEP.",
   watch: "Studio and the firmware treat the ratio as constant. Over ±16° the real linkage drifts 0.6° of servo (0.25° of shrug) from that line; past ±20° check the table in rig_presets.json before trusting it."
+},
+{
+  id: "video-retarget",
+  group: "Nong — the humanoid",
+  name: "Moves from a video: a person's arm directions on the robot's arm lengths",
+  where: [{file: "nong/main_python_set_nong/web/app_parts/pose_from_video.js", line: 147,
+           what: "vidBodyFrame() — the person's frame from the shoulder line, bones in it"},
+          {file: "nong/main_python_set_nong/web/app_parts/pose_from_video.js", line: 214,
+           what: "vidFitArm() — elbow and hand targets, placed by the rig's solvers"},
+          {file: "nong/main_python_set_nong/web/app_parts/pose_from_video.js", line: 231,
+           what: "vidThin() — which frames become moves"}],
+  eq: "MediaPipe world point p = (x, y, z) m  →  c = (x, −y, −z)   (y up, z toward the camera)\n" +
+      "left = norm(horizontal(c_Lsh − c_Rsh)),  up = (0, 1, 0),  front = left × up\n" +
+      "bone in the body frame: b = norm(d·left, d·up, d·front),  d = c_elbow − c_shoulder (or wrist − elbow)\n" +
+      "elbow* = S + b_upper · |E − S|,   hand* = elbow* + b_fore · |H − E|   (robot body frame)\n" +
+      "shoulder joints → elbow*, elbow joints → hand*   (coordinate descent, joint limits held)\n" +
+      "keep frame i if max_j |q_j(i) − lerp(q_j(a), q_j(b), (t_i − t_a)/(t_b − t_a))| > tol   (Douglas-Peucker)",
+  why: "Only directions are copied, never positions: a person and the robot have different " +
+       "proportions, so a direction on the robot's own lengths is the shape that reads the " +
+       "same to an audience. Two targets fix all four joints of an arm, so the elbow follows " +
+       "the person's elbow too. The frame turns with the person's shoulder line, so a dancer " +
+       "filmed at an angle still drives the arms as if facing the robot's front. Every move " +
+       "eases to a stop on the robot, so only the turning points are kept as moves.",
+  from: "Pose landmarks: Bazarevsky V et al., \"BlazePose: On-device Real-time Body Pose " +
+        "tracking\", CVPR Workshop 2020 (MediaPipe Pose Landmarker, 33 points, world " +
+        "coordinates in metres). Ramer U, \"An iterative procedure for the polygonal " +
+        "approximation of plane curves\", 1972; Douglas DH, Peucker TK, Cartographica 10(2), 1973.",
+  watch: "MediaPipe's depth (z) is the weakest number, so arms pointing straight at the camera " +
+         "are the least sure. The person's left is the robot's left unless Move like a mirror is on."
 }
 ];
