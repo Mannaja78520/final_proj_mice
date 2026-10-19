@@ -24,22 +24,24 @@ def bind(hub):
 
 class AppRoutes:
     def start_refused(self, method):
-        """None when this caller may start a program on this PC, else the answer.
+        """None when allowed, True after a refusal has already been sent.
 
         POST only, so an <img> on any website cannot start one. With no login,
         only the hub's own page or a program at this PC: a website open in
         this PC's browser comes from 127.0.0.1 too (2026-09-29).
         """
         if method != "POST":
-            return self.send_err("starting a program needs POST", 405)
+            self.send_err("starting a program needs POST", 405)
+            return True
         if self.logged_in() or (_hub.is_self(self.client_address[0])
                                 and self.origin_is_hub()):
             return None
         self.drain()
-        return self.send_bytes(json.dumps(
+        self.send_bytes(json.dumps(
             {"ok": False, "need_login": True,
              "error": "log in first, or open this on the PC itself"}).encode(),
             _hub.MIME[".json"], 401)
+        return True
 
     def api_apps(self, method, path, q):
         if path == "/api/apps":

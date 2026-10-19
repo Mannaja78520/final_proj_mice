@@ -252,6 +252,9 @@ def run(t):
 
     # A transient download error must disappear after a successful preload.
     brain_fb._stt_own = {}
+    brain_fb._stt = gen
+    brain_fb._stt_loaded_model = "small"
+    brain_fb._cfg_mtime = brain_fb.cfg_path.stat().st_mtime
     def fail_model(mid):
         raise OSError("temporary download failure")
     brain_fb._whisper_model = fail_model
@@ -263,6 +266,15 @@ def run(t):
     brain_fb._preload_thread.join(5)
     t.ok("could not load" not in brain_fb.stt_status() and brain_fb._stt_own.get("thai-model") is thai,
          "a successful preload retry clears that model's failure", brain_fb.stt_status())
+
+    class ChangingErrors(dict):
+        def items(self):
+            for item in super().items():
+                yield item
+                self["other-model"] = "failed while status was read"
+    brain_fb._stt_own_err = ChangingErrors({"unloaded-model": "download failed"})
+    t.contains(brain_fb.stt_status(), "download failed", "health snapshots errors while preload updates them")
+    brain_fb._stt_own_err = {}
 
     fake2 = FakeSTT(texts=("", ""))
     brain._stt = fake2
