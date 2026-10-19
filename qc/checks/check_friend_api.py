@@ -172,6 +172,13 @@ def _look(t, S, L, login):
         t.ok(waits[-1] >= 4 and lk.status["state"] == "busy",
              "a 429 that keeps coming backs off and says the face app is busy",
              (waits, lk.status))
+        fake.look_code = 200
+        lk.step(seen)
+        fake.look_code = 429
+        _s, wait = lk.step(seen)
+        t.ok(wait <= 0.25 and lk.status["state"] == "looking",
+             "a good look ends the busy spell: the next odd 429 is one dropped frame",
+             (wait, lk.status))
         fake.look_code = 503
         _s, wait = lk.step(seen)
         t.ok(wait >= 2, "503 waits for their model", wait)
