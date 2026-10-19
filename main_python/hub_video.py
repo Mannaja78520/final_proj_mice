@@ -91,7 +91,8 @@ class Links:
         if not j:
             return None
         out = {k: j[k] for k in ("state", "pct", "title", "error", "tech", "how")}
-        out["size"] = Path(j["file"]).stat().st_size if j["state"] == "done" else 0
+        f = Path(j["file"]) if j["state"] == "done" else None
+        out["size"] = f.stat().st_size if f and f.is_file() else 0
         return out
 
     def cancel(self, jid):
@@ -118,7 +119,9 @@ class Links:
         keep = int(self.cfg.get("keep") or 6)
         old = sorted((f for f in self.dir.iterdir() if f.is_file()),
                      key=lambda f: f.stat().st_mtime, reverse=True)
-        busy = {Path(j["file"]).name for j in self.jobs.values() if j["file"]}
+        # only a fetch still running is spared; a done one is fetched again if asked
+        busy = {Path(j["file"]).name for j in self.jobs.values()
+                if j["file"] and j["state"] == "working"}
         for f in old[keep * 2:]:          # a video and its sound count as one
             if f.name not in busy:
                 try:

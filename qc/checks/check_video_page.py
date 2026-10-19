@@ -244,6 +244,15 @@ def _hub_half(t, base, local, links, clip, cfg_path, tmp):
     st = _wait(links, j)
     t.ok(asked == [j] and st["how"] == "yt-dlp", "a link that answers with a page goes to yt-dlp", st)
     links.run_ytdlp = links._run_ytdlp
+    if links.ytdlp():
+        # the real yt-dlp on a page that carries a video (its generic reader)
+        (tmp / "web" / "show.html").write_text(
+            '<html><head><title>Dance</title></head><body><video src="clip.webm"></video></body></html>')
+        st = _wait(links, links.start(local + "show.html")[0], 120)
+        t.ok(st["state"] == "done" and st["size"] == len(clip) and st["title"].startswith("Dance"),
+             "yt-dlp on this PC fetches the video a page carries", st)
+    else:
+        print("   (no yt-dlp on this PC: its real run is not tried)")
     none = hub_video.Links(cfg_path, tmp / "cache")
     none.cfg["ytdlp"]["run"] = [["no-such-yt-dlp-qc"]]
     st = _wait(none, none.start(local + "page.html")[0])
