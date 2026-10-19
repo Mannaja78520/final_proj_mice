@@ -241,19 +241,22 @@
         <canvas id="vidOverlay" aria-hidden="true"></canvas>
       </div>
       <div class="row"><label class="lbl" for="vidDetail">Follow</label>
-        <select id="vidDetail" style="flex:1" onchange="vidRemake()"
+        <select id="vidDetail" style="flex:1" onchange="vidRemake('pick')"
                 title="Every move eases to a stop. More moves follow the video more closely; fewer moves flow more smoothly."></select>
       </div>
-      <div class="row"><label><input type="checkbox" id="vidMirror" onchange="vidRemake()">
+      <div class="row"><label><input type="checkbox" id="vidMirror" onchange="vidRemake('fit')">
         Move like a mirror</label>
         <span class="mini">the robot’s left copies the person’s right</span></div>
+      <div class="row"><label><input type="checkbox" id="vidMusic" checked onchange="vidRemake()">
+        Stay with the music</label>
+        <span class="mini">every move ends on its moment in the video; one the robot is too slow for goes as far as it can</span></div>
       <details class="disclosure">
         <summary>More choices</summary>
         <div class="row"><label class="lbl" id="vidHandLbl0" for="vidHand0">Left hand</label>
           <select id="vidHand0" style="flex:1" onchange="vidRemake()"></select></div>
         <div class="row"><label class="lbl" id="vidHandLbl1" for="vidHand1">Right hand</label>
           <select id="vidHand1" style="flex:1" onchange="vidRemake()"></select></div>
-        <div class="row"><label><input type="checkbox" id="vidWaist" onchange="vidRemake()">
+        <div class="row"><label><input type="checkbox" id="vidWaist" onchange="vidRemake('fit')">
           Turn the waist when the person turns</label></div>
         <div class="row"><label class="lbl" for="vidFrom">Use from</label>
           <input type="number" id="vidFrom" value="0" min="0" step="0.5" style="width:70px"> s
@@ -263,6 +266,7 @@
       <div class="row">
         <button class="primary" id="vidGo" onclick="vidMake()" disabled>▶ Make moves</button>
       </div>
+      <div id="vidList" class="vidlist"></div>
       <div class="row" id="vidUseBox" hidden>
         <button onclick="vidUse('replace')" title="The moves from the video take the place of the time bar. Asks first if it has unsaved changes.">Use as new moves</button>
         <button onclick="vidUse('append')" title="The moves from the video are added after the last move on the time bar.">Add after the last move</button>

@@ -22,12 +22,24 @@ const VID_DETAIL = [
   { id: "normal", label: "Normal", tol: 8 },
   { id: "close", label: "Close — more moves", tol: 4 },
 ];
+// "always" (A44-6, user 2026-10-19): show that side even where the hand has to
+// move for it, as close to the person's pose as the joints allow.
 const VID_HAND = [
   { id: "video", label: "as in the video" },
   { id: "palm", label: "palm on top", want: 1 },
   { id: "back", label: "back of the hand on top", want: -1 },
+  { id: "palm-force", label: "palm on top, always (the hand may move)", want: 1, force: true },
+  { id: "back-force", label: "back on top, always (the hand may move)", want: -1, force: true },
+];
+// What each made move can become before it goes on the time bar (A44-6).
+const VID_USE = [
+  { id: "keep", label: "Keep" },
+  { id: "force", label: "Keep, hand side forced" },
+  { id: "moment", label: "Use another moment…" },
+  { id: "drop", label: "Leave out" },
 ];
 let vidLib = null, vidFrames = null, vidMade = null, vidStop = false, vidBusy = false;
+let vidFit = null, vidPicks = null;   // fitted frames, and the moves made from them
 
 // The person's skeleton finder. Loaded the first time it is used; the model
 // file is then kept in the browser's own store, as its server lets a cache
@@ -57,8 +69,10 @@ function vidSay(text, bad) {
 }
 function vidOpts() {
   const det = VID_DETAIL.find(d => d.id === $("vidDetail").value) || VID_DETAIL[1];
-  const hand = [0, 1].map(a => (VID_HAND.find(h => h.id === $("vidHand" + a).value) || {}).want || 0);
-  return { tol: det.tol, mirror: $("vidMirror").checked, waist: $("vidWaist").checked, hand };
+  const h = [0, 1].map(a => VID_HAND.find(x => x.id === $("vidHand" + a).value) || {});
+  return { tol: det.tol, mirror: $("vidMirror").checked, waist: $("vidWaist").checked,
+           hand: h.map(x => x.want || 0), force: h.map(x => !!x.force),
+           music: $("vidMusic").checked };
 }
 function vidFill() {        // the choices are built from the lists above
   const fill = (sel, list, pick) => {
@@ -80,7 +94,8 @@ function vidPick(file) {
   if (v.src) URL.revokeObjectURL(v.src);
   v.src = URL.createObjectURL(file);
   v.hidden = false;
-  vidFrames = null; vidMade = null;
+  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null;
+  vidList();
   $("vidUseBox").hidden = true;
   $("vidGo").disabled = false;
   v.onloadedmetadata = () => {
@@ -246,9 +261,9 @@ function vidThin(times, poses, tol) {
   }
   return [...keep].sort((x, y) => x - y);
 }
-// frames -> timeline keys. No video needed, so QC can hand it a skeleton.
-// opts: { tol, mirror, waist, hand: [want L, want R] } (want 0 = as in the video).
-function movesFromFrames(frames, opts) {
+// ---- frames -> moves, in three steps (A44-6) --------------------------------
+// 1. Fit every frame: the slow part, done again only when Mirror or Waist change.
+function vidFitFrames(frames, opts) {
   const bones = vidBones(frames, opts.mirror);
   if (!bones.some(b => b.arms[0] || b.arms[1])) return null;
   const saved = pose;
@@ -268,38 +283,182 @@ function movesFromFrames(frames, opts) {
     });
   } finally { pose = saved; applyPose(); }
   const times = bones.map(b => b.t * 1000);
-  const idx = vidThin(times, poses, opts.tol);
-  const out = [], handMiss = [0, 0];
-  idx.forEach((i, n) => {
-    let p = poses[i];
-    for (const a of [0, 1]) if (opts.hand[a]) {
-      const r = facePalm(p, a, opts.hand[a]);
-      if (r) p = r.pose.map(v => Math.round(v * 10) / 10);
-      // A near-straight arm cannot roll its hand at all (the elbow sits on the
-      // turning line); the hand stayed on its edge with nothing said (browser
-      // test 2026-10-19, arms out). Count it so the person is told.
-      if (!r || r.upness <= 0.5) handMiss[a]++;
+  return { times, poses, mirror: opts.mirror, waist: opts.waist,
+           videoMs: Math.round(times[times.length - 1] || 0) };
+}
+// 2. Which frames become moves. Each can then be kept, left out, or filled
+// with another moment of the video - its place on the video's clock stays.
+function vidPicksFor(fit, tol) {
+  return vidThin(fit.times, fit.poses, tol).map(i => ({ i, use: "keep", at: fit.times[i] }));
+}
+function vidPoseAt(fit, ms) {    // the fitted pose nearest a moment of the video
+  let best = 0;
+  fit.times.forEach((t, i) => { if (Math.abs(t - ms) < Math.abs(fit.times[best] - ms)) best = i; });
+  return fit.poses[best];
+}
+// One side of a hand on top even where the hand must move for it: from
+// facePalm's best shape, the least hand travel that shows that side. Returns
+// facePalm's shape: { pose, upness } (+1 palm up, -1 back up).
+function vidForceHand(p, arm, want) {
+  const r = facePalm(p, arm, want);
+  if (!r || want * r.upness > 0.5) return r;
+  const idx = arm === 0 ? [0, 1, 2, 3] : [4, 5, 6, 7];
+  const saved = pose;
+  try {
+    pose = p.slice(); applyPose(); robot.updateMatrixWorld(true);
+    const h0 = wristBalls[arm].getWorldPosition(new THREE.Vector3());
+    // 1 mm of hand travel against the side shown: not showing it costs as much
+    // as moving the hand two metres, so the side always wins when it can.
+    const cost = () => {
+      applyPose(); robot.updateMatrixWorld(true);
+      return wristBalls[arm].getWorldPosition(new THREE.Vector3()).distanceTo(h0)
+           + 2000 * Math.max(0, 0.6 - want * palmUpness(arm));
+    };
+    pose = r.pose.slice();
+    let best = cost();
+    for (let round = 0; round < 40; round++) {
+      let better = false;
+      for (const j of idx) for (const step of [20, 8, 3, 1]) for (const dir of [1, -1]) {
+        const old = pose[j], nv = clampJ(j, old + dir * step);
+        if (nv === old) continue;
+        pose[j] = nv;
+        const c = cost();
+        if (c < best - 0.01) { best = c; better = true; } else pose[j] = old;
+      }
+      if (!better) break;
     }
+    applyPose();
+    return { pose: pose.slice(), upness: palmUpness(arm) };
+  } finally { pose = saved; applyPose(); }
+}
+// The furthest a move gets toward `to` in `ms`: all the way if the servos can,
+// else part of the way - so it still ends on its beat and the show stays with
+// the music (user 2026-10-19).
+function vidReachIn(from, to, ms) {
+  if (minTime(from, to) <= ms) return to;
+  const at = (f) => from.map((a, j) => a + (to[j] - a) * f);
+  let lo = 0, hi = 1;
+  for (let k = 0; k < 14; k++) {
+    const m = (lo + hi) / 2;
+    if (minTime(from, at(m)) <= ms) lo = m; else hi = m;
+  }
+  return at(lo);
+}
+// 3. The moves, from the picks and the choices.
+function vidBuild(fit, picks, opts) {
+  const out = [], handMiss = [0, 0];
+  let kept = 0, partial = 0, last = 0;
+  for (const pk of picks) {
+    pk.missHand = [false, false];
+    if (pk.use === "drop") continue;
+    let p = pk.use === "moment" ? vidPoseAt(fit, pk.at) : fit.poses[pk.i];
+    for (const a of [0, 1]) if (opts.hand[a]) {
+      const force = opts.force[a] || pk.use === "force";
+      const r = force ? vidForceHand(p, a, opts.hand[a]) : facePalm(p, a, opts.hand[a]);
+      if (r) p = r.pose.map(v => Math.round(v * 10) / 10);
+      // A near-straight arm cannot roll its hand (the elbow sits on the
+      // turning line); it stayed on its edge with nothing said (browser test
+      // 2026-10-19). upness is +1 palm up, -1 back up, whichever was asked.
+      if (!r || opts.hand[a] * r.upness <= 0.5) { handMiss[a]++; pk.missHand[a] = true; }
+    }
+    kept++;
+    const t = fit.times[pk.i];       // its place on the video's clock
     const prev = out[out.length - 1];
-    const gap = n ? times[i] - times[idx[n - 1]] : 0;
+    if (!prev) { out.push({ pose: p, t: 1000, hold: 0 }); last = t; continue; }
+    const gap = t - last;
+    last = t;
     // the same pose again is a pause on the last move, not a move of no length
-    if (prev && deltaDeg(prev.pose, p) < 1) { prev.hold = (prev.hold || 0) + gap; return; }
-    // The video's own rhythm, pinned so Show speed does not re-time it. A move
-    // faster than the servos can go is still raised to what they can do.
-    out.push(n ? { pose: p, t: Math.round(gap), hold: 0, tset: true } : { pose: p, t: 1000, hold: 0 });
-  });
-  out.forEach(k => { k.hold = Math.round(k.hold || 0); });
-  return { keys: out, videoMs: Math.round(times[times.length - 1] || 0), handMiss, kept: idx.length };
+    if (deltaDeg(prev.pose, p) < 1) { prev.hold += gap; continue; }
+    if (opts.music) {
+      const q = vidReachIn(prev.pose, p, gap);
+      if (q !== p) partial++;
+      p = q;
+    }
+    // Pinned, so Show speed does not re-time the video's rhythm. Without
+    // "stay with the music" a move too fast for the servos is slowed instead.
+    out.push({ pose: p, t: Math.round(gap), hold: 0, tset: true });
+  }
+  out.forEach(k => { k.hold = Math.round(k.hold); });
+  return { keys: out, videoMs: fit.videoMs, handMiss, kept, partial };
+}
+// frames -> timeline keys in one go. No video needed, so QC hands it a skeleton.
+// opts: { tol, mirror, waist, hand: [want L, R] (0 = as in the video),
+//         force: [L, R], music }
+function movesFromFrames(frames, opts) {
+  const fit = vidFitFrames(frames, opts);
+  if (!fit) return null;
+  const o = { force: [false, false], music: false, ...opts };
+  return vidBuild(fit, vidPicksFor(fit, o.tol), o);
 }
 
-// What a palm / back choice could not do, in words; empty when it all worked.
+// What the choices could not do, in words; empty when everything worked.
 function vidHandNote(made) {
   const opts = vidOpts();
   return [0, 1].filter(a => opts.hand[a] && made.handMiss[a]).map(a =>
     " The " + HANDS[a].label.toLowerCase() + " could not show its "
     + (opts.hand[a] > 0 ? "palm" : "back") + " on top in " + made.handMiss[a] + " of "
-    + made.kept + " moves: the arm is almost straight there, so the hand can only "
-    + "show its edge. Bend that arm a little in those moves and pick the side again.").join("");
+    + made.kept + " moves" + (opts.force[a]
+      ? ": the joints cannot turn it that far even with the hand moved."
+      : ": the arm is almost straight there. Pick “always” for that hand, or "
+        + "“Keep, hand side forced” on those moves below, and the hand moves "
+        + "just enough to show it.")).join("");
+}
+function vidSummary() {
+  const m = vidMade, opts = vidOpts();
+  return m.keys.length + " moves from " + (m.videoMs / 1000).toFixed(1) + " s of video."
+    + (opts.music && m.partial
+      ? " To stay with the music, " + m.partial + " of them go only part of the way: "
+        + "the person moved faster than the robot can."
+      : "")
+    + vidHandNote(m) + " Choose what to keep below, then put them on the time bar:";
+}
+// One row per made move: its moment (click to see it), what it becomes, and
+// what could not be done for it.
+function vidList() {
+  const box = $("vidList");
+  box.innerHTML = "";
+  if (!vidPicks) return;
+  const opts = vidOpts(), anyHand = opts.hand.some(Boolean);
+  vidPicks.forEach((pk, n) => {
+    const row = document.createElement("div");
+    row.className = "row vidrow";
+    const see = document.createElement("button");
+    see.type = "button";
+    see.textContent = (n + 1) + " · " + (vidFit.times[pk.i] / 1000).toFixed(1) + " s";
+    see.title = "see this moment of the video and the robot's pose for it";
+    see.onclick = () => vidSee(pk);
+    const sel = document.createElement("select");
+    sel.setAttribute("aria-label", "move " + (n + 1));
+    VID_USE.filter(u => u.id !== "force" || anyHand)
+      .forEach(u => sel.add(new Option(u.label, u.id, false, u.id === pk.use)));
+    const at = document.createElement("input");
+    at.type = "number"; at.step = "0.1"; at.min = "0";
+    at.value = (pk.at / 1000).toFixed(1);
+    at.hidden = pk.use !== "moment";
+    at.title = "the moment of the video (s) whose pose fills this move; it keeps its own place in time";
+    at.setAttribute("aria-label", "moment for move " + (n + 1));
+    sel.onchange = () => { pk.use = sel.value; at.hidden = pk.use !== "moment"; vidRebuild(); };
+    at.onchange = () => { pk.at = Math.max(0, +at.value || 0) * 1000; vidRebuild(); vidSee(pk); };
+    row.append(see, sel, at);
+    const miss = HANDS.filter((h, a) => pk.missHand && pk.missHand[a]).map(h => h.side);
+    if (miss.length) {
+      const w = document.createElement("span");
+      w.className = "mini";
+      w.textContent = miss.join(" ") + " hand on its edge";
+      row.appendChild(w);
+    }
+    box.appendChild(row);
+  });
+}
+function vidSee(pk) {
+  const v = $("vidPlayer");
+  const ms = pk.use === "moment" ? pk.at : vidFit.times[pk.i];
+  if (v.src && isFinite(v.duration)) {
+    v.pause();
+    v.currentTime = Math.min(v.duration, (+$("vidFrom").value || 0) + ms / 1000);
+  }
+  pose = vidPoseAt(vidFit, ms).slice();
+  poseChanged(false);
 }
 async function vidMake() {
   if (vidBusy) { vidStop = true; return; }
@@ -317,7 +476,7 @@ async function vidMake() {
     vidFrames = frames;
     vidSay("Fitting the robot's arms…");
     await new Promise(r => setTimeout(r, 30));      // let the line paint first
-    vidMade = movesFromFrames(frames, vidOpts());
+    vidRemake("fit");
     if (!vidMade || vidMade.keys.length < 2) {
       vidSay("The arms were not seen clearly enough to make moves. Try a video "
              + "where the arms are in the picture and not hidden.", true);
@@ -325,21 +484,29 @@ async function vidMake() {
       return;
     }
     const seen = frames.filter(f => f.w).length;
-    vidSay(vidMade.keys.length + " moves made from " + (vidMade.videoMs / 1000).toFixed(1)
-           + " s of video (the person was found in " + Math.round(100 * seen / frames.length)
-           + "% of it)." + vidHandNote(vidMade) + " Put them on the time bar:");
-    $("vidUseBox").hidden = false;
+    vidSay("The person was found in " + Math.round(100 * seen / frames.length)
+           + "% of the video. " + vidSummary());
   } finally {
     vidBusy = false;
     $("vidGo").textContent = "▶ Make moves";
   }
 }
-// The choices changed after reading: make the moves again from the same frames.
-function vidRemake() {
-  if (!vidFrames || vidBusy) return;
-  vidMade = movesFromFrames(vidFrames, vidOpts());
-  if (vidMade) vidSay(vidMade.keys.length + " moves with these choices." + vidHandNote(vidMade)
-                     + " Put them on the time bar:");
+// A choice changed: redo only what it touches. "fit" (Mirror, Waist) fits the
+// frames again, "pick" (Follow) chooses the moves again and resets each move's
+// own choice, anything else (hands, music, a move's row) just rebuilds.
+function vidRemake(step) {
+  if (!vidFrames || (vidBusy && step !== "fit")) return;
+  const opts = vidOpts();
+  if (step === "fit" || !vidFit) vidFit = vidFitFrames(vidFrames, opts);
+  if (!vidFit) { vidMade = null; vidPicks = null; vidList(); return; }
+  if (step === "fit" || step === "pick" || !vidPicks) vidPicks = vidPicksFor(vidFit, opts.tol);
+  vidRebuild();
+}
+function vidRebuild() {
+  vidMade = vidBuild(vidFit, vidPicks, vidOpts());
+  vidList();
+  $("vidUseBox").hidden = !(vidMade && vidMade.keys.length >= 2);
+  vidSay(vidSummary());
 }
 async function vidUse(how) {
   if (!vidMade) return;
@@ -364,6 +531,7 @@ async function vidUse(how) {
     + (robotMs > vidMade.videoMs * 1.15
       ? "The robot needs " + (robotMs / 1000).toFixed(1) + " s for " + (vidMade.videoMs / 1000).toFixed(1)
         + " s of video: the person moved faster than its servos and speed limit allow. "
+        + "Tick “Stay with the music” to keep the video's timing instead. "
       : "")
     + "Press Play to watch, edit any move, then Save or Save to robot.";
   vidSay($("tlStat").textContent);

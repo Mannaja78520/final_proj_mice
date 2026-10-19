@@ -63,6 +63,7 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
       turnPalm(0, -1);
       var sent = pose.map(fmtA).join(" ");
       var shown = (document.getElementById("handNow0") || {}).textContent || "";
+      var said = /is on top now/.test(document.getElementById("tlStat").textContent);
       setTimeout(function(){
         document.getElementById("liveChk").checked = false;
         // the timeline: pick "palm up" on a move, and the PLAYED move turns
@@ -84,7 +85,7 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
                "~movedUp=" + hUp.distanceTo(h0).toFixed(1) +
                "~movedBack=" + hBack.distanceTo(h0).toFixed(1) +
                "~rightKept=" + rightKept + "~sent=" + sent.replace(/ /g, "_") +
-               "~shown=" + shown.replace(/[ ~]/g, "_") +
+               "~shown=" + shown.replace(/[ ~]/g, "_") + "~said=" + said +
                "~playedUp=" + playedUp.toFixed(2) + "~picked=" + picked +
                "~before=" + before.toFixed(2) + "~after=" + after.toFixed(2));
         setTimeout(function(){ report("done"); }, 300);
@@ -119,6 +120,9 @@ def run(t):
              "the hand is the thing being placed; only the arm's shape may change: %s" % v)
     t.ok(v["rightKept"] == "true", "the other arm is not touched", v)
     t.ok(v["shown"].startswith("now:_back"), "the Pose tab says the back is on top", v)
+    # facePalm's upness is +1 palm up, -1 back up: a back that DID turn was
+    # announced as "as far round as the joints let it" (found 2026-10-19)
+    t.ok(v["said"] == "true", "and the line under it says it worked, not that it could not", v)
 
     # what reached the module after the button, not what the page thinks
     wire = [c for _, c in fake_serial.wire]
