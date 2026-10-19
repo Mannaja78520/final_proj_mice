@@ -51,7 +51,10 @@
   `.claude/settings.json`). Don't edit or reorder it except when asked.
 - Run with `python main.py` (stdlib only — keep it free of pip dependencies).
   The UI is `web/` (three.js r147 UMD builds vendored in `web/vendor/`, no
-  CDN at runtime). After changes, verify the server starts and `/`,
+  CDN at runtime). One exception, A44-4: *Moves from a video* loads MediaPipe
+  Pose from the internet on first use (WASM + a 9 MB model file: not committed
+  to this public repo); the browser keeps the model, the rest of Studio never
+  needs it. After changes, verify the server starts and `/`,
   `/api/list`, `/api/export` respond.
 - Data folders (created on first run, contents are user data — don't wipe):
   `projects/` (editor projects, JSON), `sequences/` (exported YAML — the user

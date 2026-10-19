@@ -453,6 +453,33 @@
        list the robot will run, so the editor cannot show a show the robot does not
        perform. If the time bar is holding unsaved keyframes, opening a show leaves them
        alone and says so — press the button when you really mean to replace them.</p></div>
+  <div class="f"><h3>Moves from a video of a person<span class="tag t-new">new</span></h3>
+    <p><b>Sequence tab ▸ Moves from a video.</b> Pick a video of one person, press
+       <b>▶ Make moves</b>, and Studio follows their arms frame by frame and makes moves
+       that copy them as closely as the robot's joints allow. The found skeleton is drawn
+       over the video, and the 3D robot can play the result at once. Then
+       <b>Use as new moves</b> (replaces the time bar, asking first if it has unsaved
+       changes) or <b>Add after the last move</b>. They are ordinary moves: edit any of
+       them, then Save or Save to robot.</p>
+    <p><b>How close.</b> The person's upper arm and forearm directions are put on the
+       robot's own arm lengths, and the same solver as the drag handles places the elbow
+       and the hand there. A shape past a joint limit lands on the nearest one the robot
+       can make. Only the arms (and, if asked, the waist) are copied; the robot has no
+       legs or head to follow.</p>
+    <p><b>Follow</b> picks how many moves: every move eases to a stop, as on the robot,
+       so <b>Close</b> follows the video more tightly but stops and starts more, and
+       <b>Smooth</b> keeps only the turning points. The moves keep the video's own timing;
+       a move faster than the servos and the peak speed limit allow is slowed to what they
+       can do, and Studio says how much longer the whole thing became.</p>
+    <p><b>Move like a mirror</b>: the robot's left copies the person's right, as a
+       reflection does. <b>More choices</b>: palm or back of each hand on top (as below;
+       "as in the video" keeps the person's elbow), turning the waist when the person
+       turns, and which part of the video to use.</p>
+    <p>The video is read in this browser and never leaves the PC. The body finder
+       (MediaPipe Pose, from Google) is fetched from the internet the first time; the
+       browser keeps it after that. Tested with a still photo and made-up skeletons, not
+       yet on the real robot.</p></div>
+
   <div class="f"><h3>Palm or back of the hand on top, per hand<span class="tag t-new">new</span></h3>
     <p>A hand-like part sits on each forearm, and whether the audience sees its
        <b>palm</b> or its <b>back</b> on top changes how a move and the end pose feel. The

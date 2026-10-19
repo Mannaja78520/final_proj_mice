@@ -455,3 +455,7 @@ header.topbar{padding:var(--sp-3) var(--sp-4);gap:var(--sp-3)}
 .upwheel span{width:76px;height:76px;border-radius:50%;background:var(--card);
   display:grid;place-items:center;font-size:18px;font-weight:600}
 .updlg .row{justify-content:center}
+/* A44-4: the video with the found skeleton drawn over it */
+.vidbox{position:relative;margin:6px 0}
+.vidbox video{display:block;width:100%;max-height:240px;background:var(--bg)}
+.vidbox canvas{position:absolute;inset:0;pointer-events:none}

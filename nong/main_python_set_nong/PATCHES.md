@@ -120,3 +120,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0056 | 2026-10-14 21:26 | web step 3 (A41-4): shared head, one name and Save, 3D view room, side tabs, phone view buttons, html cut into parts |
 | 0056 | 2026-10-19 10:54 | palm or back of each hand on top (A44-1), replaces front/back arm |
 | 0057 | 2026-10-19 11:13 | every Run kept on the robot as last.yaml, Save to robot buttons, This robot settings (A44-2, A44-3) |
+| 0056 | 2026-10-19 11:55 | Moves from a video: MediaPipe skeleton to arm moves (A44-4) |
