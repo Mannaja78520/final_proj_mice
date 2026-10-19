@@ -1378,8 +1378,11 @@ class Brain:
         Python plus its imports, 0.4 s on the cloud box and more on Windows
         (measured 2026-10-19), before the service was even asked. Speed and
         pitch go as arguments, so the old "--rate -10%" trap (A42-1) cannot
-        come back. A fast failure is tried once more; a slow one is not, so
-        the backup speaks sooner.
+        come back.
+        Measured 2026-10-19: the first sound arrives in 0.25-0.75 s and is
+        most of the wait, but some lines took 4-6 s, and NoAudioReceived
+        came after 2.5 s. So a second request starts at 1.5 s, or as soon as
+        the first fails, and whichever brings sound first wins.
         """
         try:
             import asyncio
@@ -1399,20 +1402,30 @@ class Brain:
             async for ch in edge_tts.Communicate(clean, voice, **kw).stream():
                 if ch.get("type") == "audio":
                     out += ch.get("data") or b""
+            if len(out) < 100:
+                raise ValueError("no sound came back")
             return bytes(out)
-        err = ""
-        for _attempt in range(2):
-            t0 = time.time()
-            try:
-                got = asyncio.run(asyncio.wait_for(go(), 10))
-                if len(got) >= 100:
-                    return got, None
-                err = "no sound came back"
-            except Exception as e:                      # noqa: BLE001
-                err = "%s: %s" % (e.__class__.__name__, e)
-            if time.time() - t0 > 2:
-                break
-        return None, err
+
+        async def first_of_two():
+            runs, spare, err = {asyncio.ensure_future(go())}, True, None
+            while runs or spare:
+                done, runs = await asyncio.wait(
+                    runs, timeout=1.5 if spare else None,
+                    return_when=asyncio.FIRST_COMPLETED)
+                for d in done:
+                    if not d.exception():
+                        for r in runs:
+                            r.cancel()
+                        return d.result()
+                    err = d.exception()
+                if spare:                   # slow, or failed: one more try
+                    runs.add(asyncio.ensure_future(go()))
+                    spare = False
+            raise err
+        try:
+            return asyncio.run(asyncio.wait_for(first_of_two(), 10)), None
+        except Exception as e:                          # noqa: BLE001
+            return None, "%s: %s" % (e.__class__.__name__, e)
 
     def _windows_speak(self, text, lang, voice):
         """The PC's own voice through tts.ps1: no internet, but flat."""
