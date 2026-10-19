@@ -55,6 +55,7 @@ def run(t):
     was = sys.modules.get("edge_tts")
     try:
         _run(t)
+        _edge_race(t)
     finally:
         if was is None:
             sys.modules.pop("edge_tts", None)
@@ -148,3 +149,50 @@ def _run(t):
     edge = [c for c in calls[n:] if "edge_tts" in c]
     t.ok(got == MP3 and edge and not any(a.startswith(("--rate", "--pitch")) for a in edge[0]),
          "a speed it cannot read is dropped and the voice kept", repr(edge))
+
+
+def _edge_race(t):
+    """A stalled first request cannot hold up the spare or the next provider."""
+    import asyncio
+    import time
+    tmp = Path(tempfile.mkdtemp(prefix="mice_edge_qc_"))
+    mod, b = _brain(tmp, {"providers": {"edge": {"speak": {
+        "hedgeSeconds": 0.03, "timeoutSeconds": 0.18}}}})
+    calls, closed = [], []
+    mode = ["stall"]
+
+    class Communicate:
+        def __init__(self, *a, **k):
+            self.index = len(calls)
+            calls.append(self.index)
+
+        async def stream(self):
+            try:
+                if mode[0] == "dead" or (mode[0] == "stall" and self.index == 0):
+                    await asyncio.sleep(1)
+                if mode[0] == "fail" and self.index == 0:
+                    raise OSError("NoAudioReceived")
+                if mode[0] == "partial" and self.index == 0:
+                    yield {"type": "audio", "data": MP3[:10]}
+                    raise OSError("broken stream")
+                yield {"type": "audio", "data": MP3}
+            finally:
+                closed.append(self.index)
+
+    sys.modules["edge_tts"] = SimpleNamespace(Communicate=Communicate)
+    for case in ("fast", "stall", "fail", "partial", "dead"):
+        mode[0] = case
+        calls.clear()
+        closed.clear()
+        start = time.monotonic()
+        got, why = b._edge_speak("th-TH-PremwadeeNeural", "hello", "", "")
+        elapsed = time.monotonic() - start
+        t.eq(len(calls), 1 if case == "fast" else 2, case + ": at most one spare")
+        t.ok(sorted(closed) == calls, case + ": every stream is closed", repr(closed))
+        if case == "dead":
+            t.ok(got is None and "timed out" in str(why) and elapsed < 0.7,
+                 "two stalled streams stop at the shared deadline", repr((elapsed, why)))
+        else:
+            t.ok(got == MP3 and why is None and elapsed < 0.4,
+                 case + ": the first complete sound wins without waiting for the stalled request",
+                 repr((elapsed, why)))

@@ -100,6 +100,7 @@
 
     {"id": "app-voice", "summary": "Voice helper: speech in, answers, speech out.",
      "files": ["apps/voice/", "config/voice.json", "config/voice_providers.json", "llm/"],
+     "checks": ["check_voice*"],
      "depends": []},
 
     {"id": "app-faces", "summary": "Face recognition app.",

@@ -172,6 +172,24 @@ def run(t):
         t.ok(again == got and len(SAID) == n, "the second time it is played from the cache")
         t.ok(b.voice_heard().get("natural") is True, "an online voice counts as natural")
 
+        # A45-2: empty WAVs from the PC must not stop the provider chain.
+        b.cfg["use"]["speak"] = ["local", "edge"]
+        b._rest.clear()
+        b._windows_speak = lambda *a: (prov.pcm_wav(b""), None)
+        sound = b"\xff\xf3" + b"speech" * 200
+        spoke = []
+        b._edge_speak = lambda *a: (spoke.append("edge") or sound, None)
+        got, why = b.say("empty local backup", "th")
+        t.ok(got == sound and spoke == ["edge"] and b.services_view()["last"]["speak"]["by"] == "edge",
+             "an empty local WAV fails and the next provider speaks", repr(why))
+        cache = b._cache_path("old-cache", "empty")
+        cache.write_bytes(prov.pcm_wav(b""))
+        t.eq(b._cached(cache, "old-cache"), None, "an old empty WAV is not a cache hit")
+        t.ok(prov.silent(prov.pcm_wav(b"")) and prov.silent(prov.pcm_wav(b"\0" * 2))
+             and prov.silent(prov.pcm_wav(b"\1\0" * 2400)[:24])
+             and not prov.silent(prov.pcm_wav(b"\1\0" * 2400)),
+             "empty and sampleless WAVs fail, real audio passes")
+
         # a scenario leans on its own language (user 2026-10-19: a global event)
         b.cfg["tts"]["voices"]["en"] = "en-US-JennyNeural"
         b.cfg["scenarios"] = [{"name": "Global expo", "prompt": "x", "language": "en"}]
@@ -184,8 +202,17 @@ def run(t):
         # the hub gates the key save like every save
         sys.path.insert(0, str(F.CODE / "main_python"))
         import hub_auth
-        t.ok(hub_auth.gated("/api/voice/keys", "POST") and hub_auth.gated("/api/voice/unload", "POST"),
-             "saving a key, and dropping the loaded models, need a login")
+        for route in ("keys", "identify", "unload", "preload"):
+            t.ok(hub_auth.gated("/api/voice/" + route, "POST"),
+                 route + " needs a login")
+        base, _ = F.start_hub()
+        saved_cookie = F._cookie[0]
+        F.logout_qc()
+        for route in ("identify", "unload", "preload"):
+            status, body = F.post(base + "/api/voice/" + route, b"{}")
+            t.ok(status == 401 and json.loads(body).get("need_login"),
+                 route + " is refused through the real hub without login", repr((status, body)))
+        F._cookie[0] = saved_cookie
     finally:
         srv.shutdown()
         os.environ.pop("MICE_VOICE_KEYS", None)

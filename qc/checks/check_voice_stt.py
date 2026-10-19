@@ -197,6 +197,7 @@ def run(t):
     brain_fb.cfg["scenarios"] = [{"name": "Expo", "prompt": "x", "language": "ja"}]
     brain_fb.cfg["scenario"] = "Expo"
     brain_fb.listen(b"x")
+    t.contains(brain_fb.stt_status(), "last heard by small", "the fallback pass reports the general model")
     t.ok(fake_fb.kwargs[-1].get("language") == "ja",
          "...in the scenario's own main language when it has one",
          repr([k.get("language") for k in fake_fb.kwargs]))
@@ -217,8 +218,12 @@ def run(t):
     sys.modules["faster_whisper"] = SimpleNamespace(decode_audio=lambda p: b"")
     try:
         got_th, _ = brain_fb.listen(b"x")
+        t.contains(brain_fb.stt_status(), "thai-model for th loaded", "health names the loaded Thai model")
+        t.contains(brain_fb.stt_status(), "last heard by thai-model", "health names the model that heard Thai")
         Looker.said = ("en", 0.95, [])
         got_en, _ = brain_fb.listen(b"x")
+        t.ok("last heard by thai-model" not in brain_fb.stt_status(),
+             "an English clip updates the last hearing model")
         got_hint, _ = brain_fb.listen(b"x", hint="th")
     finally:
         if svc_decode is None:
@@ -234,6 +239,20 @@ def run(t):
     t.ok(len(fake.kwargs) == 2,
          "with no fallback in the store there is no second pass",
          "calls: %d" % len(fake.kwargs))
+
+    # A transient download error must disappear after a successful preload.
+    brain_fb._stt_own = {}
+    def fail_model(mid):
+        raise OSError("temporary download failure")
+    brain_fb._whisper_model = fail_model
+    brain_fb.preload()
+    brain_fb._preload_thread.join(5)
+    t.contains(brain_fb.stt_status(), "temporary download failure", "preload reports a model failure")
+    brain_fb._whisper_model = lambda mid: thai
+    brain_fb.preload()
+    brain_fb._preload_thread.join(5)
+    t.ok("could not load" not in brain_fb.stt_status() and brain_fb._stt_own.get("thai-model") is thai,
+         "a successful preload retry clears that model's failure", brain_fb.stt_status())
 
     fake2 = FakeSTT(texts=("", ""))
     brain._stt = fake2

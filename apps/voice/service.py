@@ -847,7 +847,8 @@ class Brain:
             if getattr(self, "_stt_last", None):
                 said += "; last heard by " + self._stt_last
             if getattr(self, "_stt_own_err", None):
-                said += "; own model could not load: " + self._stt_own_err
+                said += "; own model could not load: " + "; ".join(
+                    "%s: %s" % item for item in self._stt_own_err.items())
             return said
         if self._stt_loading:
             return "loading in background…"
@@ -897,8 +898,16 @@ class Brain:
         got = getattr(self, "_stt_own", None)
         if got is None:
             got = self._stt_own = {}
+        errors = getattr(self, "_stt_own_err", None)
+        if errors is None:
+            errors = self._stt_own_err = {}
         if mid not in got:
-            got[mid] = self._whisper_model(mid)
+            try:
+                got[mid] = self._whisper_model(mid)
+            except Exception as e:                      # noqa: BLE001
+                errors[mid] = "%s: %s" % (e.__class__.__name__, e)
+                raise
+        errors.pop(mid, None)
         return got[mid]
 
     def _detect(self, path, scfg):
@@ -982,7 +991,6 @@ class Brain:
                     model, used = own, mine[lang]
             except Exception:                           # noqa: BLE001
                 pass               # no quick look, or no own model: as before
-        self._stt_last = used
         bias = ((scfg.get("languages") or {}).get(lang) or {}).get("bias") if lang else None
         segments, info = model.transcribe(
             path, language=lang or None,
@@ -994,8 +1002,12 @@ class Brain:
             repetition_penalty=1.2,
             no_repeat_ngram_size=3,
             initial_prompt=bias)
+        first_info = info
         segments, info = self._fallback_transcribe(path, segments, info, lang, scfg)
+        if info is not first_info:
+            used = self._stt_loaded_model or scfg.get("model", "small")
         valid = [s.text for s in segments if getattr(s, "no_speech_prob", 0) <= 0.6]
+        self._stt_last = used
         return drop_repeats("".join(valid)), info
 
     def _listen_local(self, audio, resolved, scfg):
@@ -1367,8 +1379,8 @@ class Brain:
         Python plus its imports, 0.4 s on the cloud box and more on Windows
         (measured 2026-10-19), before the service was even asked. Speed and
         pitch go as arguments, so the old "--rate -10%" trap (A42-1) cannot
-        come back. A fast failure is tried once more; a slow one is not, so
-        the backup speaks sooner.
+        come back. A bounded spare request shortens stalls before audio
+        arrives; both timings are provider settings.
         """
         try:
             import asyncio
@@ -1389,19 +1401,48 @@ class Brain:
                 if ch.get("type") == "audio":
                     out += ch.get("data") or b""
             return bytes(out)
-        err = ""
-        for _attempt in range(2):
-            t0 = time.time()
+        job = self.service("edge")["jobs"]["speak"]
+        hedge = max(0.001, float(job["hedgeSeconds"]))
+        timeout = max(hedge, float(job["timeoutSeconds"]))
+
+        async def race():
+            # Some Edge requests stall before their first byte. Start at most
+            # one spare after the configured wait, or immediately on failure.
+            # Only a complete, nonempty response wins; always close the loser.
+            pending = {asyncio.create_task(go())}
+            tasks = set(pending)
+            loop = asyncio.get_running_loop()
+            started = loop.time()
+            spare = False
+            err = "no sound came back"
             try:
-                got = asyncio.run(asyncio.wait_for(go(), 10))
-                if len(got) >= 100:
-                    return got, None
-                err = "no sound came back"
-            except Exception as e:                      # noqa: BLE001
-                err = "%s: %s" % (e.__class__.__name__, e)
-            if time.time() - t0 > 2:
-                break
-        return None, err
+                while pending:
+                    left = timeout - (loop.time() - started)
+                    if left <= 0:
+                        return None, "the natural voice timed out"
+                    wait = left if spare else min(left, max(0, hedge - (loop.time() - started)))
+                    done, pending = await asyncio.wait(pending, timeout=wait,
+                                                       return_when=asyncio.FIRST_COMPLETED)
+                    for task in done:
+                        try:
+                            got = task.result()
+                            if not providers.silent(got):
+                                return got, None
+                        except Exception as e:                      # noqa: BLE001
+                            err = "%s: %s" % (e.__class__.__name__, e)
+                    if not spare:
+                        task = asyncio.create_task(go())
+                        pending.add(task)
+                        tasks.add(task)
+                        spare = True
+                return None, err
+            finally:
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                await asyncio.gather(*tasks, return_exceptions=True)
+
+        return asyncio.run(race())
 
     def _windows_speak(self, text, lang, voice):
         """The PC's own voice through tts.ps1: no internet, but flat."""
@@ -1533,8 +1574,8 @@ class Brain:
                 for lang in own:
                     try:
                         self._own_model(lang)
-                    except Exception as e:              # noqa: BLE001
-                        self._stt_own_err = "%s: %s" % (e.__class__.__name__, e)
+                    except Exception:                   # noqa: BLE001
+                        pass              # _own_model keeps each model's error until retry succeeds
 
         self._preload_thread = threading.Thread(target=_worker, daemon=True)
         self._preload_thread.start()
@@ -1546,7 +1587,8 @@ class Brain:
             self._llm = None
             self._stt = None
             self._stt_own = {}
-            self._stt_last = self._stt_own_err = None
+            self._stt_last = None
+            self._stt_own_err = {}
             self._llm_err = None
             self._stt_err = None
             self._llm_loading = False
