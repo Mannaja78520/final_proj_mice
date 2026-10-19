@@ -836,7 +836,19 @@ class Brain:
         if not scfg.get("enabled"):
             return "off in config/voice.json"
         if self._stt:
-            return "%s loaded" % scfg.get("model", "small")
+            # Every model in memory and the one that heard last: "small
+            # loaded" while the Thai model did the hearing hid the switch
+            # (PC test 2026-10-19).
+            own = getattr(self, "_stt_own", None) or {}
+            mine = (self.service("local")["jobs"].get("hear") or {}).get("byLanguage") or {}
+            names = [self._stt_loaded_model or scfg.get("model", "small")]
+            names += ["%s for %s" % (mid, lang) for lang, mid in mine.items() if mid in own]
+            said = ", ".join(names) + " loaded"
+            if getattr(self, "_stt_last", None):
+                said += "; last heard by " + self._stt_last
+            if getattr(self, "_stt_own_err", None):
+                said += "; own model could not load: " + self._stt_own_err
+            return said
         if self._stt_loading:
             return "loading in background…"
         if self._stt_err:
@@ -861,7 +873,12 @@ class Brain:
 
     @staticmethod
     def _whisper_model(mid):
-        """A whisper model on the graphics card if it can, else the CPU."""
+        """A whisper model on the graphics card if it can, else the CPU.
+
+        Trap (PC 2026-10-19): device="cuda" in a bare python fails at the
+        first clip with "cublas64_12.dll is not found"; in this helper it
+        works because torch is imported first and loads those DLLs.
+        """
         from faster_whisper import WhisperModel
         try:
             return WhisperModel(mid, device="cuda", compute_type="float16")
@@ -900,6 +917,13 @@ class Brain:
             return self.active_scenario().get("language") or fb["language"]
         return lang
 
+    def _decode(self, lang):
+        """Whisper's anti-repeat settings for this language (local.hear in
+        voice_providers.json). Thai gets none: they cost it 28% vs 2.3%."""
+        hear = self.service("local")["jobs"].get("hear") or {}
+        own = (hear.get("decodeByLanguage") or {}).get(lang)
+        return dict(own if own is not None else hear.get("decode") or {})
+
     def _fallback_transcribe(self, path, segs, info, resolved, scfg):
         """A second pass in a set language when detection is unsure (A26-80).
 
@@ -920,7 +944,7 @@ class Brain:
             path, language=lang, temperature=0, beam_size=int(scfg.get("beam") or 1),
             condition_on_previous_text=False, vad_filter=True,
             vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
-            repetition_penalty=1.2, no_repeat_ngram_size=3, initial_prompt=bias)
+            initial_prompt=bias, **self._decode(lang))
 
     def listen(self, audio, hint=""):
         """Speech bytes -> ({text, language}, None) or (None, why-not).
@@ -959,14 +983,18 @@ class Brain:
     def _whisper(self, path, lang, scfg):
         """One whisper pass (and the unsure-language second pass). A language
         with its own trained model is heard by that model (A45-1)."""
-        model = self._stt
-        if (self.service("local")["jobs"].get("hear") or {}).get("byLanguage"):
+        model, used = self._stt, self._stt_loaded_model or scfg.get("model", "small")
+        mine = (self.service("local")["jobs"].get("hear") or {}).get("byLanguage")
+        if mine:
             try:
                 if not lang:
                     lang = self._detect(path, scfg)
-                model = self._own_model(lang) or self._stt
+                own = self._own_model(lang)
+                if own:
+                    model, used = own, mine[lang]
             except Exception:                           # noqa: BLE001
-                model = self._stt          # no quick look, or no own model: as before
+                pass               # no quick look, or no own model: as before
+        self._stt_last = used
         bias = ((scfg.get("languages") or {}).get(lang) or {}).get("bias") if lang else None
         segments, info = model.transcribe(
             path, language=lang or None,
@@ -975,9 +1003,8 @@ class Brain:
             condition_on_previous_text=False,
             vad_filter=True,
             vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
-            repetition_penalty=1.2,
-            no_repeat_ngram_size=3,
-            initial_prompt=bias)
+            initial_prompt=bias,
+            **self._decode(lang))
         segments, info = self._fallback_transcribe(path, segments, info, lang, scfg)
         valid = [s.text for s in segments if getattr(s, "no_speech_prob", 0) <= 0.6]
         return drop_repeats("".join(valid)), info
@@ -1243,6 +1270,8 @@ class Brain:
             return None
         if "Neural" in (voice or "") and got.startswith(b"RIFF"):
             return None
+        if providers.silent(got):
+            return None        # an empty sound kept by an older helper: build again
         return got
 
     def say(self, text, lang="", voice="", rate=None, pitch=None, prebuild=False):
@@ -1331,6 +1360,11 @@ class Brain:
             data, why = make()
             if not data:
                 return None, why
+            if providers.silent(data):
+                # A header and no sound (the Windows voice on the PC test,
+                # 2026-10-19: 46 bytes, sent as "spoken"). Silence is a
+                # failure, so the next speaker in line gets the line.
+                return None, "it gave back an empty sound (%d bytes)" % len(data)
             path.parent.mkdir(exist_ok=True)
             tmpf = path.with_suffix(".part%d" % next(_tmp_seq))
             tmpf.write_bytes(data)
@@ -1344,8 +1378,11 @@ class Brain:
         Python plus its imports, 0.4 s on the cloud box and more on Windows
         (measured 2026-10-19), before the service was even asked. Speed and
         pitch go as arguments, so the old "--rate -10%" trap (A42-1) cannot
-        come back. A fast failure is tried once more; a slow one is not, so
-        the backup speaks sooner.
+        come back.
+        Measured 2026-10-19: the first sound arrives in 0.25-0.75 s and is
+        most of the wait, but some lines took 4-6 s, and NoAudioReceived
+        came after 2.5 s. So a second request starts at 1.5 s, or as soon as
+        the first fails, and whichever brings sound first wins.
         """
         try:
             import asyncio
@@ -1365,20 +1402,30 @@ class Brain:
             async for ch in edge_tts.Communicate(clean, voice, **kw).stream():
                 if ch.get("type") == "audio":
                     out += ch.get("data") or b""
+            if len(out) < 100:
+                raise ValueError("no sound came back")
             return bytes(out)
-        err = ""
-        for _attempt in range(2):
-            t0 = time.time()
-            try:
-                got = asyncio.run(asyncio.wait_for(go(), 10))
-                if len(got) >= 100:
-                    return got, None
-                err = "no sound came back"
-            except Exception as e:                      # noqa: BLE001
-                err = "%s: %s" % (e.__class__.__name__, e)
-            if time.time() - t0 > 2:
-                break
-        return None, err
+
+        async def first_of_two():
+            runs, spare, err = {asyncio.ensure_future(go())}, True, None
+            while runs or spare:
+                done, runs = await asyncio.wait(
+                    runs, timeout=1.5 if spare else None,
+                    return_when=asyncio.FIRST_COMPLETED)
+                for d in done:
+                    if not d.exception():
+                        for r in runs:
+                            r.cancel()
+                        return d.result()
+                    err = d.exception()
+                if spare:                   # slow, or failed: one more try
+                    runs.add(asyncio.ensure_future(go()))
+                    spare = False
+            raise err
+        try:
+            return asyncio.run(asyncio.wait_for(first_of_two(), 10)), None
+        except Exception as e:                          # noqa: BLE001
+            return None, "%s: %s" % (e.__class__.__name__, e)
 
     def _windows_speak(self, text, lang, voice):
         """The PC's own voice through tts.ps1: no internet, but flat."""
@@ -1523,6 +1570,7 @@ class Brain:
             self._llm = None
             self._stt = None
             self._stt_own = {}
+            self._stt_last = self._stt_own_err = None
             self._llm_err = None
             self._stt_err = None
             self._llm_loading = False

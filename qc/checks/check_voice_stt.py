@@ -164,6 +164,10 @@ def run(t):
     t.ok(k.get("condition_on_previous_text") is False,
          "each utterance stands alone (condition_on_previous_text=False)")
     t.eq(k.get("language"), "th", "the request hint wins")
+    # Thai has no spaces: the anti-repeat settings took the PC's Thai test
+    # from 2.3% to 28% letters wrong (8 clips, 2026-10-19).
+    t.ok("repetition_penalty" not in k and "no_repeat_ngram_size" not in k,
+         "Thai is decoded without the anti-repeat settings", repr(k))
     t.eq(k.get("initial_prompt"), "ห้องน้ำ หุ่นยนต์",
          "...and gets that language's bias words from the store")
 
@@ -229,6 +233,12 @@ def run(t):
          "Thai, by a quick look, goes to the Thai-trained model", repr((got_th, thai.kwargs[:1])))
     t.ok(got_en and got_en["text"] == "general",
          "...and English stays with the general model", repr(got_en))
+    t.ok(gen.kwargs[-1].get("no_repeat_ngram_size") == 3
+         and "no_repeat_ngram_size" not in thai.kwargs[0],
+         "...keeping its anti-repeat settings, which Thai does not get",
+         repr((gen.kwargs[-1], thai.kwargs[0])))
+    t.ok("thai-model for th" in brain_fb.stt_status() and "last heard by thai-model" in brain_fb.stt_status(),
+         "the status names the Thai model and that it heard last", brain_fb.stt_status())
     t.ok(got_hint and got_hint["text"] == "ไทย" and len(thai.kwargs) == 2,
          "Thai asked for by the page goes there too", repr(got_hint))
     t.ok(len(fake.kwargs) == 2,
