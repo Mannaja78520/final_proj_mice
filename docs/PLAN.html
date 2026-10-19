@@ -597,7 +597,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: QC finished: 5073 passed, 0 failed, started 2026-10-19 15:45
+# RUNNING: nothing right now
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1566,6 +1566,7 @@ A44-3: doing  2026-10-19 11:08  agent=claude:studio-xe27  — User 2026-10-19: �
 A44-4: done   2026-10-19 12:15  agent=claude:video-52bb  — User 2026-10-19: ถ้าสามารถทำท่าทางของหุ่นได้ผ่าน motion ของ video ด้วย เอา skeleton ของคนมาใส่แล้วทำท่าทางของหุ่นให้ใกล้เคียงที่สุด (ทำเป็นท่าใน timeline ของ Studio, เคารพหน้ามือ/หลังมือแต่ละข้าง) Full QC 6932 passed (3 parallel flakes green alone). PR #29. Tested with fake skeletons and one real photo through MediaPipe; not on the real robot.
 A44-5: done   2026-10-19 12:37  agent=claude:video-52bb  — User 2026-10-19: เทสใน browser จริงเลย (ท่าจากวิดีโอ + หน้ามือหลังมือ); พบ: มือที่แขนเหยียดตรงพลิกไม่ได้แต่ไม่บอก Cloud Chromium + real MediaPipe: still photo and a tilting clip (7 moves, arms antiphase) right; PC thread jumping-jacks 43 moves OK. Fixed: a hand that cannot turn (near-straight arm) now says so. Quick QC 5066 passed.
 A44-6: done   2026-10-19 15:47  agent=claude:video-52bb  — User 2026-10-19: ทำให้บอกแล้วถ้า force ทำก็ให้ไปใกล้ท่านั้นให้ได้มากที่สุดทำให้สามารถตามเพลงได้แล้วเลือกได้ว่าท่าไหนไม่เอาแล้วเอาท่าไหนมาแทนได้ Hand side 'always' (least hand travel), Stay with the music (partial moves end on their beat), per-move Keep/force/another moment/Leave out. Also fixed: facePalm upness is raw, so a turned back read as a failure (Pose, timeline, video). Quick QC 5073 + Studio browser checks 390 passed; real Chromium+MediaPipe run OK.
+A44-7: done   2026-10-19 16:56  agent=claude:video-52bb  — Coordinator relay 2026-10-19 (PC test): Stay with the music undoes the forced hand side and the miss count doesn't see it - re-apply the side after the part-way cut, count misses on the final pose
 
 END</code></pre>
 </details>
