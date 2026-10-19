@@ -14,6 +14,7 @@ them rather than on what our code says it sent.
 """
 import json
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
@@ -40,6 +41,10 @@ class FakeFriend:
         self.calls = []                 # (method, path, detail)
         self.look_code = 200            # anything else: answered with that code
         self.kept = False               # what /api/look says it kept
+        # photo bytes -> faces, for a test that sends real pictures
+        # (tools/face_photo_test.py); None = look_faces for every frame.
+        self.answer = None
+        self.delay = 0.0                # seconds their model takes per look
         # The brief's own example answer: the nearest face known, one stranger.
         self.look_faces = [
             {"box": [0.05, 0.30, 0.12, 0.44], "face_score": 0.77, "status": "unknown"},
@@ -120,8 +125,12 @@ class FakeFriend:
                         return self._send({"detail": "refused"}, fake.look_code)
                     if not form.get("photo"):
                         return self._send({"detail": "no photo"}, 400)
-                    return self._send({"image": {"w": 640, "h": 480}, "took_ms": 84,
-                                       "kept": fake.kept, "faces": fake.look_faces})
+                    if fake.delay:
+                        time.sleep(fake.delay)
+                    faces = fake.answer(form["photo"]) if fake.answer else fake.look_faces
+                    return self._send({"image": {"w": 640, "h": 480},
+                                       "took_ms": int(fake.delay * 1000) or 84,
+                                       "kept": fake.kept, "faces": faces})
                 fake.calls.append(("POST", u.path, {"bytes": len(body)}))
                 return self._send({"detail": "Not Found"}, 404)
 

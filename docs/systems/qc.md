@@ -73,6 +73,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/checks/check_driver_waits.py`
 - `qc/checks/check_dummy.py`
 - `qc/checks/check_edge_cases.py`
+- `qc/checks/check_face_photos.py`
 - `qc/checks/check_faces_app.py`
 - `qc/checks/check_faces_concurrency.py`
 - `qc/checks/check_faces_count.py`

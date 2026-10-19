@@ -77,10 +77,17 @@ class CamRelay:
         self.error = ""
         self.thread = None
         self.hold = 0.0               # the far end's Retry-After, in seconds
+        self.since = 0                # frames up to this one predate the viewers
 
     # ---------------------------------------------------------- viewers
     def join(self):
         with self.cond:
+            if not self.viewers:
+                # The last picture was taken while nobody watched, maybe
+                # minutes ago: the first viewer back waits for a new one. It
+                # was handed out as "now" - an old face to the face app, and
+                # a 200 with it before a busy webcam's 503 (2026-10-19).
+                self.since = self.seq
             self.viewers += 1
             self.error = ""
             self.cond.notify_all()        # wake a puller holding on for a reload
@@ -102,7 +109,7 @@ class CamRelay:
         """
         end = time.time() + timeout
         with self.cond:
-            while self.seq <= seen and not self.error:
+            while self.seq <= max(seen, self.since) and not self.error:
                 left = end - time.time()
                 if left <= 0:
                     return seen, None

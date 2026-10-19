@@ -92,6 +92,11 @@ class Looker:
         began = time.time()
         got, faces, detail = friend_api.look(entry, token, jpeg, self.camera)
         self.status["sent"] += 1
+        if got != "busy":
+            # Any other answer ends a busy run. Only the refusals reset it
+            # once, so busy spells piled up across good looks: an odd 429 an
+            # hour later waited 5 s and said "busy" (2026-10-19).
+            self.busy = 0
         if got == "ok":
             self.state.sighting(self.camera, faces, "look")
             self._say("looking", "%d face(s), %s" % (len(faces), detail))
@@ -113,7 +118,6 @@ class Looker:
             self._say("busy", "the face app is busy with other work (%d frames refused)"
                       % self.busy)
             return seq, min(5.0, self.gap * 2 ** (self.busy - 2))
-        self.busy = 0
         self._say(got, detail)
         return seq, 2.0 if got in ("loading", "off") else self.gap
 
