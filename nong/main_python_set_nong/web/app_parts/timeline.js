@@ -740,11 +740,11 @@ function turnKeyPalm(i, arm, want) {
   if (i === selKey) { pose = [...k.pose]; poseChanged(false); renderSliders(); }
   renderTimeline();
   const h = HANDS[arm].label.toLowerCase();
-  $("tlStat").textContent = r.upness > 0.5
+  $("tlStat").textContent = want * r.upness > 0.5
     ? "move " + i + ": " + h + " shows its " + (want > 0 ? "palm" : "back") + " on top now"
     : "move " + i + ": the joints cannot turn the " + h + " that far with the hand "
       + "where it is; this is the closest. Move the hand a little and try again.";
-  if (r.upness <= 0.5) notice($("tlStat").textContent);
+  if (want * r.upness <= 0.5) notice($("tlStat").textContent);
 }
 
 // ------- playback preview (cosine ease per segment — same as the firmware)

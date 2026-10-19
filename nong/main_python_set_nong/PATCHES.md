@@ -122,3 +122,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0057 | 2026-10-19 11:13 | every Run kept on the robot as last.yaml, Save to robot buttons, This robot settings (A44-2, A44-3) |
 | 0056 | 2026-10-19 11:55 | Moves from a video: MediaPipe skeleton to arm moves (A44-4) |
 | 0057 | 2026-10-19 12:34 | Moves from a video: say when a hand cannot show the asked side |
+| 0058 | 2026-10-19 15:42 | Moves from a video: force hand side, stay with the music, keep / leave out / replace each move |

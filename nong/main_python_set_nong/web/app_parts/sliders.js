@@ -244,10 +244,10 @@ function turnPalm(arm, want) {
   pose = r.pose;
   poseChanged(false);
   const h = HANDS[arm].label.toLowerCase();
-  $("tlStat").textContent = r.upness > 0.5
+  $("tlStat").textContent = want * r.upness > 0.5
     ? h + ": " + (want > 0 ? "the palm" : "the back of the hand") + " is on top now, "
       + "and the hand is where it was. Press Update selected to keep it in the move."
     : h + ": this is as far round as the joints let it turn with the hand here. "
       + "Move the hand a little and try again.";
-  if (r.upness <= 0.5) notice($("tlStat").textContent);
+  if (want * r.upness <= 0.5) notice($("tlStat").textContent);
 }

@@ -58,7 +58,7 @@ function person(L, R, yaw, seeL){
 function still(L, R, yaw, n){ var f = []; for (var i = 0; i < (n || 6); i++) f.push({t: i / 10, w: person(L, R, yaw || 0)}); return f; }
 var OUT = [[1,0,0],[1,0,0]], FWD = [[0,0,1],[0,0,1]], DOWN = [[0,-1,0],[0,-1,0]];
 var ROUT = [[-1,0,0],[-1,0,0]];
-var BASE = {tol: 8, mirror: false, waist: false, hand: [0, 0]};
+var BASE = {tol: 8, mirror: false, waist: false, hand: [0, 0], force: [false, false], music: false};
 function opt(o){ var r = {}; for (var k in BASE) r[k] = BASE[k]; for (var k in o) r[k] = o[k]; return r; }
 // angle (deg) between where a robot bone points and where it should, body frame
 function bones(p, arm){
@@ -141,13 +141,40 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
       o.palmUp = palmUpnessOf(last(movesFromFrames(still(hs[0], hs[1]), opt({hand: [1, 0]}))), 0).toFixed(2);
       o.backUp = palmUpnessOf(last(movesFromFrames(still(hs[0], hs[1]), opt({hand: [-1, 0]}))), 0).toFixed(2);
       o.goodNote = vidHandNote(movesFromFrames(still(hs[0], hs[1]), opt({hand: [1, 0]}))).length;
+      // a back that DID turn is not a miss (upness is -1 for the back on top)
+      o.backMiss = movesFromFrames(still(hs[0], hs[1]), opt({hand: [-1, 0]})).handMiss[0];
     } else { o.palmUp = "none"; o.backUp = "none"; }
     // a straight arm cannot roll its hand: the made moves must say so, not stay silent
     document.getElementById("vidHand0").value = "palm";
     var st = movesFromFrames(still(OUT, DOWN), opt({hand: [1, 0]}));
     o.straightMiss = st.handMiss[0];
     o.straightNote = /left hand could not show its palm/.test(vidHandNote(st));
+    // 9. forced: the same straight arm shows its palm, the hand moving as little as it can
+    var fo = movesFromFrames(still(OUT, DOWN), opt({hand: [1, 0], force: [true, false]}));
+    o.forceUp = palmUpnessOf(last(fo), 0).toFixed(2); o.forceMiss = fo.handMiss[0];
+    o.forceMoved = (function(){ var keep = pose;
+      function H(p){ pose = p.slice(); applyPose(); robot.updateMatrixWorld(true);
+        return wristBalls[0].getWorldPosition(new THREE.Vector3()); }
+      var d = H(last(st)).distanceTo(H(last(fo))); pose = keep; applyPose(); return d; })().toFixed(0);
     document.getElementById("vidHand0").value = "video";
+    // 10. a person faster than the servos: B and A swapped every 0.2 s
+    var f10 = [], P = randomPose(), Q = randomPose();
+    for (var i = 0; i <= 20; i++) { var sh10 = shapeOf(i % 4 < 2 ? P : Q); f10.push({t: i / 10, w: person(sh10[0], sh10[1], 0)}); }
+    function slow(r){ return r.keys.slice(1).filter(function(k, j){ return minTime(r.keys[j].pose, k.pose) > k.t + 1; }).length; }
+    function span(r){ return r.keys.slice(1).reduce(function(s, k){ return s + Math.max(k.t, minTime(r.keys[r.keys.indexOf(k) - 1].pose, k.pose)) + k.hold; }, r.keys[0].hold); }
+    var mu = movesFromFrames(f10, opt({tol: 4, music: true})), st10 = movesFromFrames(f10, opt({tol: 4, music: false}));
+    o.musicSlow = slow(mu); o.musicPartial = mu.partial; o.musicSpan = span(mu); o.music0Span = span(st10); o.fastVideo = mu.videoMs;
+    // 11. leave a move out, fill another with a different moment: later moves keep their time
+    var fit = vidFitFrames(f6, BASE), picks = vidPicksFor(fit, 4);
+    var whole = vidBuild(fit, picks, opt({})).keys.length;
+    picks[1].use = "drop"; picks[2].use = "moment"; picks[2].at = fit.times[picks[2].i + 3] || fit.times[fit.times.length - 2];
+    var cut = vidBuild(fit, picks, opt({}));
+    o.dropped = whole - cut.keys.length;
+    var clock = cut.keys.slice(1, 2).reduce(function(s, k){ return s + k.t; }, cut.keys[0].hold);
+    o.slotKept = Math.abs(clock - fit.times[picks[2].i]) < 2;
+    o.momentPose = cut.keys[1].pose.join(" ") === vidPoseAt(fit, picks[2].at).join(" ");
+    vidFrames = f6; vidFit = fit; vidPicks = picks; vidList();
+    o.rows = document.querySelectorAll("#vidList .vidrow").length; o.picks = picks.length;
     o.ms = Math.round(performance.now() - t0);
     // 8. onto the time bar, and into the file the robot plays
     vidMade = cl;
@@ -204,6 +231,22 @@ def run(t):
         t.ok(float(v["palmUp"]) > 0.5, "palm on top is applied to the made moves", v)
         t.ok(float(v["backUp"]) < -0.5, "and back of the hand on top too", v)
         t.ok(v["goodNote"] == "0", "a hand that did turn adds no warning", v)
+    if v["palmUp"] != "none":
+        t.ok(v["backMiss"] == "0", "a back that did turn is not counted as a hand that could not", v)
+    t.ok(float(v["forceUp"]) > 0.5 and v["forceMiss"] == "0",
+         "palm on top, always: the straight arm shows its palm after all", v)
+    t.ok(0 < int(v["forceMoved"]) < 200, "with the hand moved only as far as needed (%s mm)" % v["forceMoved"], v)
+    t.ok(v["musicSlow"] == "0" and int(v["musicPartial"]) > 0,
+         "Stay with the music: no move needs longer than its moment in the video; "
+         "the too-fast ones go part of the way", v)
+    t.ok(abs(int(v["musicSpan"]) - int(v["fastVideo"])) <= 50,
+         "so the moves end with the video (%s ms of %s)" % (v["musicSpan"], v["fastVideo"]), v)
+    t.ok(int(v["music0Span"]) > int(v["fastVideo"]) + 200,
+         "without it the same moves run longer than the video (%s ms)" % v["music0Span"], v)
+    t.ok(v["dropped"] == "1", "a move left out is gone from the moves", v)
+    t.ok(v["slotKept"] == "true", "and the move after it still lands on its own moment", v)
+    t.ok(v["momentPose"] == "true", "a move filled from another moment takes that moment's pose", v)
+    t.ok(v["rows"] == v["picks"], "the list shows one row per made move", v)
     t.ok(int(v["straightMiss"]) > 0 and v["straightNote"] == "true",
          "a straight arm that cannot show the palm is said in words, not left silent", v)
 
