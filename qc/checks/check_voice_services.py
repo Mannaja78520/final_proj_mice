@@ -172,6 +172,16 @@ def run(t):
         t.ok(again == got and len(SAID) == n, "the second time it is played from the cache")
         t.ok(b.voice_heard().get("natural") is True, "an online voice counts as natural")
 
+        # a header with no sound is a failure (PC 2026-10-19: Windows gave 46 bytes
+        # as "spoken" while Edge was down), so the next speaker gets the line
+        b.cfg["use"]["speak"] = ["local", "edge"]
+        b._windows_speak = lambda *a: (prov.pcm_wav(b""), None)
+        b._edge_speak = lambda *a: (b"ID3" + b"\x01" * 500, None)
+        got, why = b.say("ที่จอดรถอยู่ด้านหลังครับ", "th")
+        t.ok(got and got[:3] == b"ID3" and b.services_view()["last"]["speak"]["by"] == "edge",
+             "an empty sound is not spoken: the next in line speaks",
+             repr(((got or b"")[:8], why, b.services_view()["last"].get("speak"))))
+
         # a scenario leans on its own language (user 2026-10-19: a global event)
         b.cfg["tts"]["voices"]["en"] = "en-US-JennyNeural"
         b.cfg["scenarios"] = [{"name": "Global expo", "prompt": "x", "language": "en"}]

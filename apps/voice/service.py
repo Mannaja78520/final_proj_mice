@@ -873,7 +873,12 @@ class Brain:
 
     @staticmethod
     def _whisper_model(mid):
-        """A whisper model on the graphics card if it can, else the CPU."""
+        """A whisper model on the graphics card if it can, else the CPU.
+
+        Trap (PC 2026-10-19): device="cuda" in a bare python fails at the
+        first clip with "cublas64_12.dll is not found"; in this helper it
+        works because torch is imported first and loads those DLLs.
+        """
         from faster_whisper import WhisperModel
         try:
             return WhisperModel(mid, device="cuda", compute_type="float16")
@@ -912,6 +917,13 @@ class Brain:
             return self.active_scenario().get("language") or fb["language"]
         return lang
 
+    def _decode(self, lang):
+        """Whisper's anti-repeat settings for this language (local.hear in
+        voice_providers.json). Thai gets none: they cost it 28% vs 2.3%."""
+        hear = self.service("local")["jobs"].get("hear") or {}
+        own = (hear.get("decodeByLanguage") or {}).get(lang)
+        return dict(own if own is not None else hear.get("decode") or {})
+
     def _fallback_transcribe(self, path, segs, info, resolved, scfg):
         """A second pass in a set language when detection is unsure (A26-80).
 
@@ -932,7 +944,7 @@ class Brain:
             path, language=lang, temperature=0, beam_size=int(scfg.get("beam") or 1),
             condition_on_previous_text=False, vad_filter=True,
             vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
-            repetition_penalty=1.2, no_repeat_ngram_size=3, initial_prompt=bias)
+            initial_prompt=bias, **self._decode(lang))
 
     def listen(self, audio, hint=""):
         """Speech bytes -> ({text, language}, None) or (None, why-not).
@@ -991,9 +1003,8 @@ class Brain:
             condition_on_previous_text=False,
             vad_filter=True,
             vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
-            repetition_penalty=1.2,
-            no_repeat_ngram_size=3,
-            initial_prompt=bias)
+            initial_prompt=bias,
+            **self._decode(lang))
         segments, info = self._fallback_transcribe(path, segments, info, lang, scfg)
         valid = [s.text for s in segments if getattr(s, "no_speech_prob", 0) <= 0.6]
         return drop_repeats("".join(valid)), info
