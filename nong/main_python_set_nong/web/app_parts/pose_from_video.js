@@ -87,23 +87,11 @@ function vidFill() {        // the choices are built from the lists above
   });
 }
 
+// A picked file goes on the stage like a fetched link (video_page.js).
 function vidPick(file) {
   vidFill();
   if (!file) return;
-  const v = $("vidPlayer");
-  if (v.src) URL.revokeObjectURL(v.src);
-  v.src = URL.createObjectURL(file);
-  v.hidden = false;
-  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null;
-  vidList();
-  $("vidUseBox").hidden = true;
-  $("vidGo").disabled = false;
-  v.onloadedmetadata = () => {
-    $("vidTo").value = v.duration.toFixed(1);
-    $("vidFrom").value = "0";
-    vidSay("Ready: " + v.duration.toFixed(1) + " s of video. Press Make moves.");
-  };
-  v.onerror = () => vidSay("This browser cannot play that video. Try an MP4 or WEBM file.", true);
+  vidSetSrc(URL.createObjectURL(file), { kind: "file", name: file.name, file });
 }
 
 // Seek through the video and find the person in each frame. Seeking, not
@@ -128,29 +116,40 @@ async function vidRead() {
     await new Promise(res => { v.onseeked = res; v.currentTime = Math.min(t, v.duration - 0.001); });
     // timestamps must only grow, also on a second read of the same video
     const r = lib.detectForVideo(v, performance.now());
-    const w = r.worldLandmarks && r.worldLandmarks[0];
-    frames.push({ t: t - from, w: w ? w.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility })) : null });
-    vidDraw(r.landmarks && r.landmarks[0]);
+    const w = r.worldLandmarks && r.worldLandmarks[0], s = r.landmarks && r.landmarks[0];
+    // p: the same points on the picture, so the skeleton plays along later
+    frames.push({ t: t - from, w: w ? w.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility })) : null,
+                  p: s ? s.map(p => ({ x: p.x, y: p.y, v: p.visibility })) : null });
+    vidDraw(frames[frames.length - 1].p);
     vidSay("Reading the video: " + Math.round(100 * (t - from) / Math.max(0.1, to - from)) + "%");
   }
   return frames;
 }
 // The skeleton over the video, so it is plain whether the person was found.
+// Points are fractions of the PICTURE, which the player letterboxes inside its
+// box: they are placed on the picture, not on the box.
+const VID_BONES = [[11, 12], [11, 23], [12, 24], [23, 24],
+                   [11, 13], [13, 15], [12, 14], [14, 16]];
 function vidDraw(pts) {
   const v = $("vidPlayer"), c = $("vidOverlay");
   c.width = v.clientWidth; c.height = v.clientHeight;
+  c.style.left = v.offsetLeft + "px"; c.style.top = v.offsetTop + "px";
   const g = c.getContext("2d");
   g.clearRect(0, 0, c.width, c.height);
-  if (!pts) return;
+  if (!pts || !v.videoWidth) return;
+  const k = Math.min(c.width / v.videoWidth, c.height / v.videoHeight);
+  const w = v.videoWidth * k, h = v.videoHeight * k, ox = (c.width - w) / 2, oy = (c.height - h) / 2;
   const css = getComputedStyle(document.documentElement);
-  g.strokeStyle = css.getPropertyValue("--acc").trim() || "currentColor";
+  g.strokeStyle = g.fillStyle = css.getPropertyValue("--acc").trim() || "currentColor";
   g.lineWidth = 3;
-  const P = i => [pts[i].x * c.width, pts[i].y * c.height];
-  const lines = [[11, 12]];
-  for (const s of [0, 1]) lines.push([VID_PTS.sh[s], VID_PTS.el[s]], [VID_PTS.el[s], VID_PTS.wr[s]]);
+  const P = i => [ox + pts[i].x * w, oy + pts[i].y * h];
+  const seen = i => pts[i] && (pts[i].v == null || pts[i].v >= VID_SEEN);
   g.beginPath();
-  for (const [a, b] of lines) { g.moveTo(...P(a)); g.lineTo(...P(b)); }
+  for (const [a, b] of VID_BONES) if (seen(a) && seen(b)) { g.moveTo(...P(a)); g.lineTo(...P(b)); }
   g.stroke();
+  for (const i of [11, 12, 13, 14, 15, 16]) if (seen(i)) {
+    g.beginPath(); g.arc(...P(i), 4, 0, 2 * Math.PI); g.fill();
+  }
 }
 
 // ---- skeleton -> the robot's two bone directions per arm --------------------
@@ -389,7 +388,7 @@ function vidReachSide(from, to, ms, pk, opts) {
 // 3. The moves, from the picks and the choices.
 function vidBuild(fit, picks, opts) {
   const out = [], handMiss = [0, 0];
-  let kept = 0, partial = 0, last = 0;
+  let kept = 0, partial = 0, last = 0, start = 0;
   for (const pk of picks) {
     pk.missHand = [false, false];
     if (pk.use === "drop") continue;
@@ -399,7 +398,7 @@ function vidBuild(fit, picks, opts) {
     const prev = out[out.length - 1];
     const gap = t - last;
     last = t;
-    if (!prev) out.push({ pose: s.pose, t: 1000, hold: 0 });
+    if (!prev) { out.push({ pose: s.pose, t: 1000, hold: 0 }); start = t; }
     // the same pose again is a pause on the last move, not a move of no length
     else if (deltaDeg(prev.pose, s.pose) < 1) prev.hold += gap;
     else {
@@ -416,7 +415,8 @@ function vidBuild(fit, picks, opts) {
     for (const a of [0, 1]) if (s.miss[a]) { handMiss[a]++; pk.missHand[a] = true; }
   }
   out.forEach(k => { k.hold = Math.round(k.hold); });
-  return { keys: out, videoMs: fit.videoMs, handMiss, kept, partial };
+  // start: the first kept move's moment, where these moves meet the video
+  return { keys: out, videoMs: fit.videoMs, handMiss, kept, partial, start };
 }
 // frames -> timeline keys in one go. No video needed, so QC hands it a skeleton.
 // opts: { tol, mirror, waist, hand: [want L, R] (0 = as in the video),
@@ -560,6 +560,7 @@ async function vidUse(how) {
   clearBadMarks();
   clampKeyTimes();
   selKey = how === "replace" ? 0 : keys.length - add.length;
+  vidOnBar(selKey);
   pose = [...keys[selKey].pose];
   poseChanged(false);
   renderTimeline();

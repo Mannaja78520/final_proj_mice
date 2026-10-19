@@ -1,0 +1,38 @@
+{
+  "_why": "Moves from a video, from a LINK (A44-8, user 2026-10-19: a YouTube link, Google Drive and other links). The browser cannot read the picture of a video another site plays, so the hub fetches it onto this PC (main_python/hub_video.py) and Studio reads it from the hub. For the user's own use. A new share site is one entry in shares; a new error in words is one entry in say.",
+  "maxMB": 800,
+  "keep": 6,
+  "height": 720,
+  "minutes": 15,
+  "shares": [
+    {"id": "drive", "label": "Google Drive",
+     "match": "drive\\.google\\.com/(?:file/d/|open\\?(?:.*&)?id=|uc\\?(?:.*&)?id=)([\\w-]{10,})",
+     "direct": "https://drive.usercontent.google.com/download?id=\\1&export=download&confirm=t",
+     "html": "Google Drive did not hand over the video. Open its Share settings, set it to “Anyone with the link”, and try again."},
+    {"id": "dropbox", "label": "Dropbox",
+     "match": "^(https://(?:www\\.)?dropbox\\.com/.*?[?&])dl=0(.*)$",
+     "direct": "\\1dl=1\\2",
+     "html": "Dropbox did not hand over the video. Make the link one that anyone can open, and try again."}
+  ],
+  "ytdlp": {
+    "_why": "yt-dlp reads YouTube, Facebook, TikTok, Vimeo, Instagram, X and about a thousand other sites. Run as its own program, not imported: MiceHub.exe cannot import a package installed later. The first one that answers --version is used.",
+    "run": [["yt-dlp"], ["{python}", "-m", "yt_dlp"], ["python", "-m", "yt_dlp"], ["py", "-m", "yt_dlp"]],
+    "install": "pip install -U \"yt-dlp[default]\"",
+    "_why2": "YouTube's player needs a JavaScript runtime to solve its challenge (yt-dlp 2025+, checked 2026-10-19): deno is yt-dlp's default, node is added when this PC has it (the face app's page already needs node), and the solver script may be fetched.",
+    "jsRuntimes": ["node"],
+    "args": ["--remote-components", "ejs:github"],
+    "merge": "bv*[height<={h}][ext=mp4]+ba[ext=m4a]/b[height<={h}][ext=mp4]/bv*[height<={h}]+ba/b[height<={h}]/b",
+    "single": "b[height<={h}][ext=mp4]/b[ext=mp4]/b[height<={h}]/b"
+  },
+  "ffmpeg": ["ffmpeg"],
+  "say": [
+    {"has": ["not a bot"], "say": "The site is asking this PC to prove it is not a robot. Try again later, or download the video yourself and pick the file."},
+    {"has": ["unable to download video data: http error 403", "requested format is not available"], "say": "The site would not send the video to this PC. Update the link reader on the PC (pip install -U \"yt-dlp[default]\") and try again, or download the video yourself and pick the file."},
+    {"has": ["private video", "logged-in", "logged in", "sign in", "log in", "login", "members-only", "members only", "cookies", "401", "403"], "say": "This video needs a login or is private, so it cannot be read from a link. Download it yourself and pick the file."},
+    {"has": ["video unavailable", "has been removed", "not available in your country", "404", "not found"], "say": "This video is not there any more, or is not shown in this country."},
+    {"has": ["unsupported url", "no video formats", "no video could be found"], "say": "There is no video at this link that Studio can read. Use the link to the video itself: its own page, or the file."},
+    {"has": ["429", "too many requests"], "say": "The site is refusing for now (too many tries). Wait a few minutes and try again."},
+    {"has": ["larger than max-filesize", "file is larger than", "too big"], "say": "This video is too big to fetch. Use a shorter one, or cut it and pick the file."},
+    {"has": ["getaddrinfo", "name or service not known", "timed out", "network is unreachable", "connection refused", "urlopen error"], "say": "This PC could not reach the site. Check the internet connection and try again."}
+  ]
+}

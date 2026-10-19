@@ -20,7 +20,7 @@ const $ = (id) => document.getElementById(id);
 // shown by it, so NOTHING moved in the DOM — every id, handler and QC driver
 // works exactly as before, and only what is on screen at once changed.
 // "move" is still accepted so any older link or habit keeps working.
-const STAB_BTN = { pose: "tabBtnMove", sequence: "tabBtnSeq", shows: "tabBtnShows",
+const STAB_BTN = { pose: "tabBtnMove", sequence: "tabBtnSeq", video: "tabBtnVideo", shows: "tabBtnShows",
                    robot: "tabBtnRobot", setup: "tabBtnSetup" };
 let sideTab = "pose";
 // --- notices ---
@@ -85,6 +85,7 @@ function showTab(which) {
     const b = $(STAB_BTN[k]);
     if (b) b.classList.toggle("on", k === which);
   });
+  if (typeof vidPage === "function") vidPage(which === "video");   // the Video page's stage
 }
 
 // THE TIMELINE HANDLE DRAGS TOO (user 2026-09-16: *timeline below has the
@@ -2916,21 +2917,29 @@ function turnKeyPalm(i, arm, want) {
 }
 
 // ------- playback preview (cosine ease per segment — same as the firmware)
-function poseAt(ms) {
-  const K = playKeys();
-  if (!K.length) return pose;
+// The pose `ms` into the moves K: { pose }, or past the last one { pose, end }
+// with end = when it ended. Shared with the video page (A44-8), which plays
+// its made moves beside the video without putting them on the time bar.
+function easeKeys(K, ms) {
   let t = K[0].hold || 0;
-  if (ms <= t) return [...K[0].pose];
+  if (ms <= t) return { pose: [...K[0].pose] };
   for (let i = 1; i < K.length; i++) {
     const seg = K[i].t;
     if (ms < t + seg) {
       const f = 0.5 - 0.5 * Math.cos(Math.PI * (ms - t) / seg);
-      return K[i - 1].pose.map((a, j) => a + (K[i].pose[j] - a) * f);
+      return { pose: K[i - 1].pose.map((a, j) => a + (K[i].pose[j] - a) * f) };
     }
     t += seg + (K[i].hold || 0);
-    if (ms < t) return [...K[i].pose];
+    if (ms < t) return { pose: [...K[i].pose] };
   }
-  const ret = loopReturnMs(), last = K[K.length - 1].pose;
+  return { pose: [...K[K.length - 1].pose], end: t };
+}
+function poseAt(ms) {
+  const K = playKeys();
+  if (!K.length) return pose;
+  const e = easeKeys(K, ms);
+  if (e.end == null) return e.pose;
+  const t = e.end, ret = loopReturnMs(), last = K[K.length - 1].pose;
   if (ret && ms < t + ret) {
     const f = 0.5 - 0.5 * Math.cos(Math.PI * (ms - t) / ret);
     return last.map((a, j) => a + (K[0].pose[j] - a) * f);
@@ -4918,6 +4927,8 @@ async function saveProject(opts) {
     // without it exported a different sequence than the one saved.
     seqNext: ($("seqNext").value || "").trim(),
     rig: RIG,
+    // The video the moves were made from, and how (A44-8); null if none.
+    video: vidSettings(),
   };
   // The draft is NOT cleared on a failure: the work is still only in this
   // browser. Mice.Api never throws, and words both "no answer" and "said no".
@@ -5029,6 +5040,7 @@ async function loadProject(file) {
   // The chain rides with the project; an older project without one clears the
   // field rather than keeping a chain this project never had.
   $("seqNext").value = p.seqNext || "";
+  vidApplySettings(p.video);
   if (p.meshes) {
     MESH_PARTS.forEach(part => {
       const v = p.meshes[part];
@@ -7012,23 +7024,11 @@ function vidFill() {        // the choices are built from the lists above
   });
 }
 
+// A picked file goes on the stage like a fetched link (video_page.js).
 function vidPick(file) {
   vidFill();
   if (!file) return;
-  const v = $("vidPlayer");
-  if (v.src) URL.revokeObjectURL(v.src);
-  v.src = URL.createObjectURL(file);
-  v.hidden = false;
-  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null;
-  vidList();
-  $("vidUseBox").hidden = true;
-  $("vidGo").disabled = false;
-  v.onloadedmetadata = () => {
-    $("vidTo").value = v.duration.toFixed(1);
-    $("vidFrom").value = "0";
-    vidSay("Ready: " + v.duration.toFixed(1) + " s of video. Press Make moves.");
-  };
-  v.onerror = () => vidSay("This browser cannot play that video. Try an MP4 or WEBM file.", true);
+  vidSetSrc(URL.createObjectURL(file), { kind: "file", name: file.name, file });
 }
 
 // Seek through the video and find the person in each frame. Seeking, not
@@ -7053,29 +7053,40 @@ async function vidRead() {
     await new Promise(res => { v.onseeked = res; v.currentTime = Math.min(t, v.duration - 0.001); });
     // timestamps must only grow, also on a second read of the same video
     const r = lib.detectForVideo(v, performance.now());
-    const w = r.worldLandmarks && r.worldLandmarks[0];
-    frames.push({ t: t - from, w: w ? w.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility })) : null });
-    vidDraw(r.landmarks && r.landmarks[0]);
+    const w = r.worldLandmarks && r.worldLandmarks[0], s = r.landmarks && r.landmarks[0];
+    // p: the same points on the picture, so the skeleton plays along later
+    frames.push({ t: t - from, w: w ? w.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility })) : null,
+                  p: s ? s.map(p => ({ x: p.x, y: p.y, v: p.visibility })) : null });
+    vidDraw(frames[frames.length - 1].p);
     vidSay("Reading the video: " + Math.round(100 * (t - from) / Math.max(0.1, to - from)) + "%");
   }
   return frames;
 }
 // The skeleton over the video, so it is plain whether the person was found.
+// Points are fractions of the PICTURE, which the player letterboxes inside its
+// box: they are placed on the picture, not on the box.
+const VID_BONES = [[11, 12], [11, 23], [12, 24], [23, 24],
+                   [11, 13], [13, 15], [12, 14], [14, 16]];
 function vidDraw(pts) {
   const v = $("vidPlayer"), c = $("vidOverlay");
   c.width = v.clientWidth; c.height = v.clientHeight;
+  c.style.left = v.offsetLeft + "px"; c.style.top = v.offsetTop + "px";
   const g = c.getContext("2d");
   g.clearRect(0, 0, c.width, c.height);
-  if (!pts) return;
+  if (!pts || !v.videoWidth) return;
+  const k = Math.min(c.width / v.videoWidth, c.height / v.videoHeight);
+  const w = v.videoWidth * k, h = v.videoHeight * k, ox = (c.width - w) / 2, oy = (c.height - h) / 2;
   const css = getComputedStyle(document.documentElement);
-  g.strokeStyle = css.getPropertyValue("--acc").trim() || "currentColor";
+  g.strokeStyle = g.fillStyle = css.getPropertyValue("--acc").trim() || "currentColor";
   g.lineWidth = 3;
-  const P = i => [pts[i].x * c.width, pts[i].y * c.height];
-  const lines = [[11, 12]];
-  for (const s of [0, 1]) lines.push([VID_PTS.sh[s], VID_PTS.el[s]], [VID_PTS.el[s], VID_PTS.wr[s]]);
+  const P = i => [ox + pts[i].x * w, oy + pts[i].y * h];
+  const seen = i => pts[i] && (pts[i].v == null || pts[i].v >= VID_SEEN);
   g.beginPath();
-  for (const [a, b] of lines) { g.moveTo(...P(a)); g.lineTo(...P(b)); }
+  for (const [a, b] of VID_BONES) if (seen(a) && seen(b)) { g.moveTo(...P(a)); g.lineTo(...P(b)); }
   g.stroke();
+  for (const i of [11, 12, 13, 14, 15, 16]) if (seen(i)) {
+    g.beginPath(); g.arc(...P(i), 4, 0, 2 * Math.PI); g.fill();
+  }
 }
 
 // ---- skeleton -> the robot's two bone directions per arm --------------------
@@ -7314,7 +7325,7 @@ function vidReachSide(from, to, ms, pk, opts) {
 // 3. The moves, from the picks and the choices.
 function vidBuild(fit, picks, opts) {
   const out = [], handMiss = [0, 0];
-  let kept = 0, partial = 0, last = 0;
+  let kept = 0, partial = 0, last = 0, start = 0;
   for (const pk of picks) {
     pk.missHand = [false, false];
     if (pk.use === "drop") continue;
@@ -7324,7 +7335,7 @@ function vidBuild(fit, picks, opts) {
     const prev = out[out.length - 1];
     const gap = t - last;
     last = t;
-    if (!prev) out.push({ pose: s.pose, t: 1000, hold: 0 });
+    if (!prev) { out.push({ pose: s.pose, t: 1000, hold: 0 }); start = t; }
     // the same pose again is a pause on the last move, not a move of no length
     else if (deltaDeg(prev.pose, s.pose) < 1) prev.hold += gap;
     else {
@@ -7341,7 +7352,8 @@ function vidBuild(fit, picks, opts) {
     for (const a of [0, 1]) if (s.miss[a]) { handMiss[a]++; pk.missHand[a] = true; }
   }
   out.forEach(k => { k.hold = Math.round(k.hold); });
-  return { keys: out, videoMs: fit.videoMs, handMiss, kept, partial };
+  // start: the first kept move's moment, where these moves meet the video
+  return { keys: out, videoMs: fit.videoMs, handMiss, kept, partial, start };
 }
 // frames -> timeline keys in one go. No video needed, so QC hands it a skeleton.
 // opts: { tol, mirror, waist, hand: [want L, R] (0 = as in the video),
@@ -7485,6 +7497,7 @@ async function vidUse(how) {
   clearBadMarks();
   clampKeyTimes();
   selKey = how === "replace" ? 0 : keys.length - add.length;
+  vidOnBar(selKey);
   pose = [...keys[selKey].pose];
   poseChanged(false);
   renderTimeline();
@@ -7499,6 +7512,238 @@ async function vidUse(how) {
   vidSay($("tlStat").textContent);
 }
 vidFill();
+// --- the Video page (A44-8) ---
+// User 2026-10-19: a page of its own for moves from a video - the person with
+// their music, the skeleton found on them and the robot moving beside them,
+// in step - that takes YouTube, Google Drive and other links too, and whose
+// moves and choices are Studio's own (the same time bar, the same saved file).
+// It is the Video tab: while it is open the person shares the screen with the
+// 3D view. The robot beside the video is a PREVIEW: nothing is sent to a board
+// until the moves are on the time bar and played from there.
+// Links are fetched by the hub (main_python/hub_video.py): a browser cannot
+// read the picture of a video another site plays.
+let vidSrc = null;          // what is on the stage: { kind: "file"|"link", name, url, id, file }
+let vidFetchId = null, vidLinkBusy = false;
+let vidHeld = null;         // the editor's pose, given back when the page closes
+let vidView = "iso";        // the 3D view it had, given back too
+let vidLastMs = -1, vidOn = false, vidFirstKey = -1;
+let vidSaved = null;        // the video choices the open project was saved with
+const VID_LOGIN = "Log in first (the Robot tab has the login): a link is fetched onto this PC.";
+
+function vidPage(on) {
+  if (on === vidOn) return;
+  vidOn = on;
+  document.body.classList.toggle("vidpage", on);
+  const v = $("vidPlayer");
+  if (on) {
+    vidFill();
+    vidHeld = pose.slice();
+    vidLastMs = -1;
+    // From the front the robot faces you as the person faces the camera, so
+    // the two read the same way round.
+    const cur = document.querySelector("#viewCube [data-view].on");
+    vidView = cur ? cur.dataset.view : "iso";
+    setView("front");
+    requestAnimationFrame(vidTick);
+    return;
+  }
+  if (v && !v.paused) v.pause();
+  // The page drew the video's poses on the editor's robot; give it back.
+  if (vidHeld) { pose = vidHeld; applyPose(); renderSliders(); }
+  vidHeld = null;
+  setView(vidView);
+}
+
+// A video for the stage, from a file or a fetched link.
+function vidSetSrc(url, src) {
+  const v = $("vidPlayer");
+  if (v.src && v.src.startsWith("blob:")) URL.revokeObjectURL(v.src);
+  vidSrc = src;
+  v.src = url;
+  v.hidden = false;
+  $("vidEmpty").hidden = true;
+  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null;
+  vidList();
+  vidDraw(null);
+  $("vidUseBox").hidden = true;
+  $("vidSoundBox").hidden = true;
+  $("vidGo").disabled = false;
+  $("vidPlayBtn").disabled = false;
+  $("vidTech").textContent = "";
+  vidLastMs = -1;
+  v.onloadedmetadata = () => {
+    // a reopened project's part of the video is kept; a new video uses all of it
+    const keep = vidSaved && vidSaved.src && src.url && vidSaved.src.url === src.url;
+    $("vidFrom").value = keep ? String(vidSaved.from || 0) : "0";
+    $("vidTo").value = keep && vidSaved.to ? String(vidSaved.to) : v.duration.toFixed(1);
+    vidSay("Ready: " + v.duration.toFixed(1) + " s of video. Press Make moves.");
+  };
+  v.onerror = () => vidSay("This browser cannot play that video. Try an MP4 or WEBM file.", true);
+  v.onended = v.onpause = () => { $("vidPlayBtn").textContent = "▶ Play person and robot"; };
+  v.onplay = () => { $("vidPlayBtn").textContent = "❚❚ Pause"; };
+}
+
+// A link: the hub fetches it onto this PC and says how far it has got.
+async function vidFetch() {
+  if (vidLinkBusy) {                      // the button is Stop while it fetches
+    if (vidFetchId) await Mice.Api.post("/api/video/fetch", { cancel: vidFetchId });
+    return;
+  }
+  const url = $("vidLink").value.trim();
+  if (!/^https?:\/\/\S+$/i.test(url)) {
+    vidSay("Paste a whole link, starting with https://", true);
+    return;
+  }
+  vidLinkBusy = true;
+  $("vidFetchBtn").textContent = "■ Stop";
+  $("vidTech").textContent = "";
+  try {
+    vidSay("Asking this PC to fetch the video…");
+    let a = await Mice.Api.post("/api/video/fetch", { url });
+    if (!a.ok) {
+      vidSay(a.needLogin ? VID_LOGIN : "The link could not be fetched: " + a.says, true);
+      $("vidTech").textContent = a.tech || "";
+      return;
+    }
+    vidFetchId = a.data.id;
+    let st = a.data;
+    while (st.state === "working") {
+      vidSay("Fetching the video onto this PC" + (st.how ? " (" + st.how + ")" : "")
+             + ": " + (st.pct || 0) + "%" + (st.title ? " · " + st.title : ""));
+      await new Promise(r => setTimeout(r, 700));
+      a = await Mice.Api.get("/api/video/fetch?id=" + encodeURIComponent(vidFetchId));
+      if (!a.ok) { vidSay(a.says, true); return; }
+      st = a.data;
+    }
+    if (st.state !== "done") {
+      vidSay(st.error || "The link could not be fetched.", st.error !== "Stopped.");
+      $("vidTech").textContent = st.tech || "";
+      return;
+    }
+    vidSetSrc("/api/video/file?id=" + encodeURIComponent(vidFetchId),
+              { kind: "link", url, id: vidFetchId, name: st.title || "video" });
+  } finally {
+    vidLinkBusy = false;
+    $("vidFetchBtn").textContent = "Fetch";
+  }
+}
+
+// ---- the person and the robot, in step ------------------------------------
+function vidPlayBoth() {
+  const v = $("vidPlayer");
+  if (!v.src) return;
+  if (!v.paused) { v.pause(); return; }
+  const from = +$("vidFrom").value || 0, to = +$("vidTo").value || v.duration;
+  if (v.currentTime < from || v.currentTime >= to - 0.05) v.currentTime = from;
+  v.muted = false;
+  v.play().catch(e => vidSay("The video would not play: " + (e.message || e), true));
+}
+// Every frame while the page is open: the robot takes the made moves' pose at
+// the video's moment and the skeleton its frame, whether the video plays or
+// is dragged along. Nothing changes while the video stands still, so a click
+// on a move's row (vidSee) is not overwritten.
+function vidTick() {
+  if (!vidOn) return;
+  requestAnimationFrame(vidTick);
+  const v = $("vidPlayer");
+  if (!v.src || !isFinite(v.duration) || vidBusy || playing) return;
+  const from = +$("vidFrom").value || 0, to = +$("vidTo").value || v.duration;
+  if (!v.paused && v.currentTime >= to) v.pause();
+  const ms = Math.round((v.currentTime - from) * 1000);
+  if (ms === vidLastMs) return;
+  vidLastMs = ms;
+  vidShowAt(ms);
+}
+function vidShowAt(ms) {
+  if (vidFrames && vidFrames.length) {
+    const f = vidFrames[Math.max(0, Math.min(vidFrames.length - 1, Math.round(ms * VID_FPS / 1000)))];
+    vidDraw($("vidSkel").checked && ms >= 0 ? f.p : null);
+  }
+  if (vidMade && vidMade.keys.length && ms >= 0) {
+    pose = easeKeys(vidMade.keys, Math.max(0, ms - vidMade.start)).pose;
+    applyPose();
+  }
+  $("vidClock").textContent = ms >= 0 ? (ms / 1000).toFixed(1) + " s" : "";
+}
+
+// ---- after "Use as new moves": the moves are Studio's own ------------------
+function vidOnBar(first) {
+  vidFirstKey = first;
+  vidHeld = null;                 // the time bar's pose is the editor's now
+  $("vidSoundBox").hidden = !vidSrc;
+}
+// The video's sound as the music of the first video move: the hub cuts the
+// same part the moves were made from (ffmpeg) and it goes onto the robot's
+// card the way any track does (uploadMusicFile). A picked file is copied to
+// the hub first; a link is already there.
+async function vidSound() {
+  const k = keys[vidFirstKey];
+  if (!vidSrc || !k) return;
+  if (!haveRobot()) {
+    vidSay("Connect the robot first (Robot tab): the music goes onto its card.", true);
+    return;
+  }
+  const btn = $("vidSoundBtn");
+  btn.disabled = true;
+  try {
+    if (!vidSrc.id && vidSrc.file) {
+      vidSay("Copying the video to this PC's hub for its sound…");
+      const r = await fetch("/api/video/put?name=" + encodeURIComponent(vidSrc.name),
+                            { method: "POST", body: vidSrc.file }).catch(() => null);
+      const j = r ? await r.json().catch(() => ({})) : {};
+      if (!r || !j.ok) {
+        vidSay(j.need_login ? VID_LOGIN : "The video could not be copied: "
+               + (j.error || "the hub is not answering"), true);
+        return;
+      }
+      vidSrc.id = j.id;
+    }
+    vidSay("Taking the sound out of the video…");
+    const from = (+$("vidFrom").value || 0) + (vidMade ? vidMade.start / 1000 : 0);
+    const a = await Mice.Api.post("/api/video/sound",
+                                  { id: vidSrc.id, from, to: +$("vidTo").value || 0 });
+    if (!a.ok) { vidSay(a.needLogin ? VID_LOGIN : a.says, true); return; }
+    const r = await fetch("/api/video/file?kind=sound&id=" + encodeURIComponent(vidSrc.id));
+    if (!r.ok) { vidSay("The sound was made but could not be read back.", true); return; }
+    const name = robotTrackName((vidSrc.name || "video").replace(/\.[^.]*$/, "").slice(0, 40) + ".mp3");
+    await uploadMusicFile(k, new File([await r.blob()], name, { type: "audio/mpeg" }), Object.assign(
+      (track, why, renamed) => {
+        if (!track) { vidSay("The sound did not reach the robot: " + why, true); return; }
+        setCueTrack(k, track, false);
+        renderTimeline();
+        vidSay("♪ " + track + " is on the robot's card and plays with the first video move"
+               + (renamed || "") + ". Save to keep it.");
+      }, { busy: (t) => vidSay(t) }));
+  } finally { btn.disabled = false; }
+}
+
+// ---- the choices ride in the project file -----------------------------------
+// Saved with the moves, so a reopened project knows its video and how its
+// moves were made; the video itself is not saved (a link is fetched again).
+function vidSettings() {
+  if (!vidSrc) return vidSaved;
+  return { src: { kind: vidSrc.kind, name: vidSrc.name, url: vidSrc.url || "" },
+           detail: $("vidDetail").value, mirror: $("vidMirror").checked,
+           music: $("vidMusic").checked, waist: $("vidWaist").checked,
+           hand: [$("vidHand0").value, $("vidHand1").value],
+           from: +$("vidFrom").value || 0, to: +$("vidTo").value || 0 };
+}
+function vidApplySettings(s) {
+  vidSaved = s && typeof s === "object" ? s : null;
+  if (!vidSaved) return;
+  vidFill();
+  const pick = (sel, id) => { if (sel && [...sel.options].some(o => o.value === id)) sel.value = id; };
+  pick($("vidDetail"), s.detail);
+  (s.hand || []).forEach((h, a) => pick($("vidHand" + a), h));
+  $("vidMirror").checked = !!s.mirror;
+  $("vidMusic").checked = s.music !== false;
+  $("vidWaist").checked = !!s.waist;
+  $("vidFrom").value = String(s.from || 0);
+  if (s.to) $("vidTo").value = String(s.to);
+  if (s.src && s.src.url) $("vidLink").value = s.src.url;
+  if (s.src) vidSay("These moves were made from " + (s.src.url ? "a link: press Fetch to see it again."
+    : "the file " + s.src.name + ": pick it again to see it."));
+}
 // --- dummy link ---
 // The dummy is a hand-posed copy of the robot: the same 10 joints, a pot on
 // each instead of a servo (firmware type "dummy", COMMANDS.md). It is its OWN
