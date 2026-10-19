@@ -19,20 +19,15 @@ const AXIS_LABEL = { x: "roll (X)", y: "pitch (Y)", z: "yaw (Z)" };
 // base rotation sense per joint (mirrors right arm); "inv" in the rig flips it
 const BASE_DIR = [-1, +1, -1, +1, -1, -1, -1, -1, +1, +1];
 
-// ---- the two arms, as the AUDIENCE sees them (A31-6) ---------------------
-// User 2026-09-23: a move picks which arm plays it, so the same move can be
-// mirrored. On stage nobody says "L_SH_P": they say the front arm, the one
-// nearer the audience. Which physical arm that is depends on how the nong is
-// turned, so it is a RIG setting and not a constant here.
-const ARM_JOINTS = { L: [0, 1, 2, 3], R: [4, 5, 6, 7] };
-function frontArmSide() { return RIG.frontArm === "R" ? "R" : "L"; }
-function backArmSide() { return frontArmSide() === "L" ? "R" : "L"; }
-// "front"/"back" -> the four joint numbers it owns. Anything else = both arms.
-function armJoints(which) {
-  if (which === "front") return ARM_JOINTS[frontArmSide()];
-  if (which === "back") return ARM_JOINTS[backArmSide()];
-  return null;
-}
+// ---- which side of each hand faces up (A44-1) ------------------------------
+// User 2026-10-19: a hand-like part is fixed to each forearm, and whether the
+// audience sees the PALM or the BACK of it on top changes how a move feels.
+// The arm has no wrist roll, so the facing comes from the whole arm's shape:
+// the same hand position can be reached with the forearm rolled one way or the
+// other. RIG.palmTurn says where the palm sits around each forearm (0 = the
+// forearm's own +Z); the 3D view draws it and facePalm() solves for it.
+// This replaces A31-6's "front arm / back arm", which the user did not want.
+const HANDS = [{ side: "L", label: "Left hand" }, { side: "R", label: "Right hand" }];
 
 // The editable rig: body dimensions (mm, visual only — timing never depends
 // on them) + per-joint calibration. "zero" = the servo angle at which that
@@ -105,11 +100,9 @@ const DEFAULT_RIG = {
   // Scaled to the real spherical joints (~89 mm dia -> r ~42) and ~10 mm bars.
   jointR: [42, 40, 42, 40],
   barR:   [12, 10, 12, 10],
-  // WHICH ARM THE AUDIENCE SEES FIRST (A31-6). "L" or "R". A move can be
-  // pinned to the front or the back arm, and which physical arm that is
-  // depends on how the nong stands on stage - so it is set here once, not
-  // decided again in every sequence.
-  frontArm: "L",
+  // Where the palm sits around each forearm, degrees about the bar [L, R].
+  // Set in Setup by turning the drawn hand until it matches the real one.
+  palmTurn: [0, 0],
 };
 function mergeRig(saved) {
   const r = { ...JSON.parse(JSON.stringify(DEFAULT_RIG)), ...saved,
@@ -145,7 +138,11 @@ function mergeRig(saved) {
   // The SHRUG 4-bar calibration. An empty list means "not measured", which is
   // the old symmetric behaviour — so every rig saved before this keeps looking
   // exactly as it did until you actually measure the linkage.
-  if (r.frontArm !== "R") r.frontArm = "L";   // any older rig, or a typo
+  delete r.frontArm;                          // A31-6, replaced by palmTurn
+  r.palmTurn = [0, 1].map(i => {
+    const v = Array.isArray(r.palmTurn) ? +r.palmTurn[i] : 0;
+    return isFinite(v) ? ((v % 360) + 360) % 360 : 0;
+  });
   if (!Array.isArray(r.shrugCurve)) r.shrugCurve = [];
   r.shrugCurve = r.shrugCurve
     .filter(pt => pt && isFinite(+pt.j))

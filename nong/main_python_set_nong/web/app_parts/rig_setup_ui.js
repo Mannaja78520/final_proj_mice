@@ -9,31 +9,28 @@ const DIM_LABELS = {
 function renderRigUI() {
   const jb = $("rigJoints");
   jb.innerHTML = "";
-  // WHICH ARM THE AUDIENCE SEES FIRST (A31-6). One setting for the whole rig,
-  // above the joint table, because every move that says "front arm" means
-  // whichever arm this names - and it changes when the nong is turned round.
-  const fa = document.createElement("div"); fa.className = "row";
-  const fal = document.createElement("label");
-  fal.className = "lbl"; fal.htmlFor = "rigFrontArm";
-  fal.textContent = "Arm nearest the audience";
-  const fas = document.createElement("select");
-  fas.id = "rigFrontArm";
-  [["L", "the left arm is in front"], ["R", "the right arm is in front"]]
-    .forEach(([v, label]) => {
-      const o = document.createElement("option"); o.value = v; o.textContent = label;
-      fas.appendChild(o);
-    });
-  fas.value = frontArmSide();
-  fas.title = "left and right are the ROBOT's own left and right. This says "
-            + "which of them the audience sees first, so a move can be given to "
-            + "the front arm or the back arm by name.";
-  fas.onchange = () => {
-    RIG.frontArm = fas.value === "R" ? "R" : "L";
-    rigChanged();
-    renderTimeline();          // every pinned move now means the other arm
-  };
-  fa.append(fal, fas);
-  jb.appendChild(fa);
+  // WHERE EACH PALM SITS (A44-1). The hand part can be fixed to the forearm
+  // any way round; turn the drawn hand until its skin side matches the real
+  // palm. Every "palm up / back up" in Pose and the timeline works from this.
+  HANDS.forEach((h, i) => {
+    const row = document.createElement("div"); row.className = "row";
+    const lbl = document.createElement("span"); lbl.className = "lbl";
+    lbl.textContent = h.label + " palm";
+    const turn = document.createElement("button");
+    turn.textContent = "↻ Turn the drawn hand";
+    turn.title = "the skin-coloured side of the drawn hand is its palm. Turn it "
+               + "until it faces the same way as the real hand's palm.";
+    const at = document.createElement("span"); at.className = "mini";
+    at.textContent = RIG.palmTurn[i] + "°";
+    turn.onclick = () => {
+      RIG.palmTurn[i] = (RIG.palmTurn[i] + 90) % 360;
+      at.textContent = RIG.palmTurn[i] + "°";
+      rigChanged();
+      renderTimeline();          // what is on top of each move may have changed
+    };
+    row.append(lbl, turn, at);
+    jb.appendChild(row);
+  });
   // header
   const hdr = document.createElement("div"); hdr.className = "rigjrow";
   ["joint", "zero°", "start°", "min°", "max°", "axis", "inv"].forEach(t => {

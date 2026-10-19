@@ -242,34 +242,28 @@ function renderTimeline() {
         : "all keyframes active";
     };
     idx.appendChild(sk);
-    // WHICH ARM PLAYS THIS MOVE (A31-6, user 2026-09-23). "both" is every
-    // keyframe ever made before this existed, so it stays the default and
-    // nothing already saved changes behaviour. Pinning a move to one arm
-    // leaves the other exactly where the move before it left it.
-    if (i > 0) {
-      const armSel = document.createElement("select");
-      armSel.className = "karm";
-      [["", "both arms"],
-       ["front", "front arm (" + frontArmSide() + ")"],
-       ["back", "back arm (" + backArmSide() + ")"]].forEach(([v, label]) => {
+    // PALM OR BACK ON TOP, per hand (A44-1, user 2026-10-19). Read from the
+    // move's own pose, never stored beside it, so it cannot go stale when the
+    // pose is edited. Choosing turns that arm round with the hand kept in place.
+    HANDS.forEach((h, arm) => {
+      const now = palmWord(palmUpnessOf(k.pose, arm));
+      const sel = document.createElement("select");
+      sel.className = "kpalm";
+      [["palm", h.side + " ✋ palm up"], ["back", h.side + " 🤚 back up"],
+       ["side", h.side + " on edge"]].forEach(([v, label]) => {
         const o = document.createElement("option"); o.value = v; o.textContent = label;
-        armSel.appendChild(o);
+        o.disabled = v === "side";       // a result, not something to ask for
+        sel.appendChild(o);
       });
-      armSel.value = k.arm || "";
-      armSel.title = "which arm does this move. The other one holds where the "
-                   + "move before left it. Which arm faces the audience is set "
-                   + "in Setup > rig.";
-      armSel.onclick = (e) => e.stopPropagation();
-      armSel.onchange = () => {
-        if (armSel.value) k.arm = armSel.value; else delete k.arm;
-        bumpKeys();
-        clearBadMarks();
-        renderTimeline();
-        $("tlStat").textContent = armSel.value
-          ? `move ${i} is played by the ${armSel.value} arm (${armSel.value === "front" ? frontArmSide() : backArmSide()}); the other arm holds still`
-          : `move ${i} moves both arms`;
-      };
-      idx.appendChild(armSel);
+      sel.value = now;
+      sel.title = "which side of the " + h.label.toLowerCase() + " the audience "
+                + "sees on top in this move. Pick the other and the arm turns "
+                + "round; the hand stays where it is.";
+      sel.onclick = (e) => e.stopPropagation();
+      sel.onchange = () => turnKeyPalm(i, arm, sel.value === "palm" ? 1 : -1);
+      idx.appendChild(sel);
+    });
+    if (i > 0) {
       // Mirror: the same gesture on the other arm. The rule lives in
       // mirrorPose() (ik_4_dof_arm.js) and the Pose tab's Mirror button calls
       // the same function, so the two can never drift apart.
@@ -559,12 +553,10 @@ function rewind() {
 // and the signature changes with it.
 let _pkCache = null;
 function keysSignature() {
-  // frontArm is in here because which arm "front" means changes every pinned
-  // move's pose, and a cache that missed that would draw the wrong run.
-  let s = keys.length + "|" + speedDps() + "|" + frontArmSide();
+  let s = keys.length + "|" + speedDps();
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
-    s += ";" + (k.name || "") + "," + (k.arm || "") + "," + (k.tset ? 1 : 0) + "," +
+    s += ";" + (k.name || "") + "," + (k.tset ? 1 : 0) + "," +
          (k.off ? 1 : 0) + "," + k.t + "," + (k.hold || 0) + "," +
          (k.dps || 0) + "," + k.pose + "," + (k.cues || []).join("|") + "," +
          (k.cuesAfter || []).join("|");
@@ -672,22 +664,7 @@ function buildPlayKeys() {
       return;
     }
     const prev = out.length ? out[out.length - 1] : null;
-    // A MOVE PINNED TO ONE ARM (A31-6). The other arm holds exactly where the
-    // previous played move left it, so "wave with the front arm" is one move
-    // and not a promise to keep re-typing eight numbers. Resolved HERE, where
-    // buildYaml and hubShowSteps both read, so the file, the preview and the
-    // robot can never disagree about what the far arm did. It is resolved
-    // BEFORE the re-timing below, because a move that only turns one arm
-    // covers less ground and must be timed for the ground it covers.
-    let posed = k.pose;
-    const own = armJoints(k.arm);
-    if (own && prev) {
-      posed = prev.pose.slice();
-      own.forEach(j => { posed[j] = k.pose[j]; });
-      // the body joints belong to nobody's arm and always follow the keyframe
-      posed[8] = k.pose[8];
-      posed[9] = k.pose[9];
-    }
+    const posed = k.pose;
     let t = k.t;
     if (prev && gap) {
       // This move is NOT the one its stored time was written for. With the
@@ -727,8 +704,7 @@ function anySuspended() { return keys.some(k => k.off); }
 // The same gesture, arms swapped (A31-6). The rule lives in mirrorPose()
 // (rig_data.js) because it is made of rig numbers - each joint's zero, its
 // direction and its axis - and this file should not hold a second opinion
-// about them. A move pinned to one arm flips its pin too, or mirroring would
-// move the arm that is meant to be holding still.
+// about them.
 function mirrorKeyArms(i, which) {
   const k = keys[i];
   if (!k) return;
@@ -741,8 +717,6 @@ function mirrorKeyArms(i, which) {
     return;
   }
   k.pose = m;
-  if (k.arm === "front") k.arm = "back";
-  else if (k.arm === "back") k.arm = "front";
   bumpKeys();
   clearBadMarks();
   if (i === selKey) { pose = [...k.pose]; poseChanged(false); renderSliders(); }
@@ -750,8 +724,27 @@ function mirrorKeyArms(i, which) {
   $("tlStat").textContent = which === "fb"
     ? "move " + i + " mirrored front to back — each arm reaches the other way, "
       + "and stays on its own side"
-    : "move " + i + " mirrored left to right — the same shape on the other arm"
-      + (k.arm ? ", now played by the " + k.arm + " arm" : "");
+    : "move " + i + " mirrored left to right — the same shape on the other arm";
+}
+// The timeline's palm picker (A44-1): the same facePalm() the Pose tab uses,
+// on this move's pose. Timing is left alone, like a mirror: the hand does not
+// move, so the move covers about the same ground.
+function turnKeyPalm(i, arm, want) {
+  const k = keys[i];
+  if (!k) return;
+  const r = facePalm(k.pose, arm, want);
+  if (!r) return;
+  k.pose = r.pose;
+  bumpKeys();
+  clearBadMarks();
+  if (i === selKey) { pose = [...k.pose]; poseChanged(false); renderSliders(); }
+  renderTimeline();
+  const h = HANDS[arm].label.toLowerCase();
+  $("tlStat").textContent = r.upness > 0.5
+    ? "move " + i + ": " + h + " shows its " + (want > 0 ? "palm" : "back") + " on top now"
+    : "move " + i + ": the joints cannot turn the " + h + " that far with the hand "
+      + "where it is; this is the closest. Move the hand a little and try again.";
+  if (r.upness <= 0.5) notice($("tlStat").textContent);
 }
 
 // ------- playback preview (cosine ease per segment — same as the firmware)

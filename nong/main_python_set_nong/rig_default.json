@@ -255,6 +255,9 @@
   13,
   11
  ],
- "frontArm": "L",
+ "palmTurn": [
+  0,
+  0
+ ],
  "shrugCurve": []
 }

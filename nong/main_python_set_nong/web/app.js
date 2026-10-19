@@ -263,20 +263,15 @@ const AXIS_LABEL = { x: "roll (X)", y: "pitch (Y)", z: "yaw (Z)" };
 // base rotation sense per joint (mirrors right arm); "inv" in the rig flips it
 const BASE_DIR = [-1, +1, -1, +1, -1, -1, -1, -1, +1, +1];
 
-// ---- the two arms, as the AUDIENCE sees them (A31-6) ---------------------
-// User 2026-09-23: a move picks which arm plays it, so the same move can be
-// mirrored. On stage nobody says "L_SH_P": they say the front arm, the one
-// nearer the audience. Which physical arm that is depends on how the nong is
-// turned, so it is a RIG setting and not a constant here.
-const ARM_JOINTS = { L: [0, 1, 2, 3], R: [4, 5, 6, 7] };
-function frontArmSide() { return RIG.frontArm === "R" ? "R" : "L"; }
-function backArmSide() { return frontArmSide() === "L" ? "R" : "L"; }
-// "front"/"back" -> the four joint numbers it owns. Anything else = both arms.
-function armJoints(which) {
-  if (which === "front") return ARM_JOINTS[frontArmSide()];
-  if (which === "back") return ARM_JOINTS[backArmSide()];
-  return null;
-}
+// ---- which side of each hand faces up (A44-1) ------------------------------
+// User 2026-10-19: a hand-like part is fixed to each forearm, and whether the
+// audience sees the PALM or the BACK of it on top changes how a move feels.
+// The arm has no wrist roll, so the facing comes from the whole arm's shape:
+// the same hand position can be reached with the forearm rolled one way or the
+// other. RIG.palmTurn says where the palm sits around each forearm (0 = the
+// forearm's own +Z); the 3D view draws it and facePalm() solves for it.
+// This replaces A31-6's "front arm / back arm", which the user did not want.
+const HANDS = [{ side: "L", label: "Left hand" }, { side: "R", label: "Right hand" }];
 
 // The editable rig: body dimensions (mm, visual only — timing never depends
 // on them) + per-joint calibration. "zero" = the servo angle at which that
@@ -349,11 +344,9 @@ const DEFAULT_RIG = {
   // Scaled to the real spherical joints (~89 mm dia -> r ~42) and ~10 mm bars.
   jointR: [42, 40, 42, 40],
   barR:   [12, 10, 12, 10],
-  // WHICH ARM THE AUDIENCE SEES FIRST (A31-6). "L" or "R". A move can be
-  // pinned to the front or the back arm, and which physical arm that is
-  // depends on how the nong stands on stage - so it is set here once, not
-  // decided again in every sequence.
-  frontArm: "L",
+  // Where the palm sits around each forearm, degrees about the bar [L, R].
+  // Set in Setup by turning the drawn hand until it matches the real one.
+  palmTurn: [0, 0],
 };
 function mergeRig(saved) {
   const r = { ...JSON.parse(JSON.stringify(DEFAULT_RIG)), ...saved,
@@ -389,7 +382,11 @@ function mergeRig(saved) {
   // The SHRUG 4-bar calibration. An empty list means "not measured", which is
   // the old symmetric behaviour — so every rig saved before this keeps looking
   // exactly as it did until you actually measure the linkage.
-  if (r.frontArm !== "R") r.frontArm = "L";   // any older rig, or a typo
+  delete r.frontArm;                          // A31-6, replaced by palmTurn
+  r.palmTurn = [0, 1].map(i => {
+    const v = Array.isArray(r.palmTurn) ? +r.palmTurn[i] : 0;
+    return isFinite(v) ? ((v % 360) + 360) % 360 : 0;
+  });
   if (!Array.isArray(r.shrugCurve)) r.shrugCurve = [];
   r.shrugCurve = r.shrugCurve
     .filter(pt => pt && isFinite(+pt.j))
@@ -806,6 +803,8 @@ let jointGroups = [];   // THREE.Group per logical joint (rotation applied here)
 let pickMeshes = [];    // meshes that select a pair on click
 let wristBalls = [];    // wrist IK handle per arm (moves all 4 joints)
 let elbowBalls = [];    // elbow IK handle per arm (moves the 2 shoulder joints)
+let palmMarks = [];     // the drawn hand per arm; its local +Z is the palm (A44-1)
+const palmCache = new Map(); // "arm|pose" -> palm upness; emptied on every rebuild
 let linkHolders = {};   // name -> group whose first child is the visual (STL-replaceable)
 let pairRingParents = [];
 
@@ -900,6 +899,23 @@ function buildArm(side) {           // side: +1 = robot left (+X), -1 = right
   wrist.renderOrder = 20;
   elR.add(wrist);
   wristBalls.push(wrist);
+
+  // The hand, drawn so the audience's view can be judged here (A44-1): skin
+  // on the palm, grey on the back. Turned about the bar by RIG.palmTurn to sit
+  // like the real one; its local +Z is the palm normal facePalm() works with.
+  const hand = new THREE.Group();
+  hand.position.set(0, -foreLen, 0);
+  hand.rotation.y = THREE.MathUtils.degToRad(RIG.palmTurn[side > 0 ? 0 : 1] || 0);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(34, 46, 5),
+                              new THREE.MeshStandardMaterial({ color: 0x7d8590 }));
+  back.position.y = -30;
+  const palm = new THREE.Mesh(new THREE.PlaneGeometry(30, 42),
+                              new THREE.MeshStandardMaterial({ color: 0xf2b8a0 }));
+  palm.position.set(0, -30, 2.6);
+  back.userData.skel = palm.userData.skel = true;    // never hidden under an STL
+  hand.add(back, palm);
+  elR.add(hand);
+  palmMarks.push(hand);
   return { anchor, shP, elAnchor, elP };
 }
 
@@ -941,7 +957,8 @@ function buildRobot() {
   shoulderMount = new THREE.Group();
   shoulderMount.position.set(0, d.shoulderY + (d.shrugPivot || 0), 0);
   bodyGroup.add(shoulderMount);
-  jointGroups = []; pickMeshes = []; wristBalls = []; elbowBalls = []; linkHolders = {};
+  jointGroups = []; pickMeshes = []; wristBalls = []; elbowBalls = []; palmMarks = []; linkHolders = {};
+  palmCache.clear();
 
   // torso + head (visuals replaceable by STL)
   const torsoMesh = new THREE.Mesh(new THREE.BoxGeometry(d.torsoW, d.torsoH, d.torsoD), partMat("torso"));
@@ -1437,6 +1454,62 @@ function mirrorPose(p, which) {
     applyPose();
   }
 }
+// ---- which side of the hand faces up (A44-1) ------------------------------
+// The arm has four joints and a hand position needs three, so one freedom is
+// left over: the elbow can swing round the shoulder-to-hand line and the hand
+// stays put. Swinging it rolls the forearm, and with it the hand. facePalm()
+// walks that swing both ways and keeps the shape whose palm (or back) points
+// most nearly up, with the hand where it was. Joint limits still hold, so on
+// some reaches the best it can do is "on edge"; the caller says so.
+// How much the palm faces up right now: +1 straight up, -1 the back is up.
+function palmUpness(arm) {
+  robot.updateMatrixWorld(true);
+  const q = palmMarks[arm].getWorldQuaternion(new THREE.Quaternion());
+  return new THREE.Vector3(0, 0, 1).applyQuaternion(q).y;
+}
+// The same, for any pose; the pose on screen is left as it was. Cached, as
+// the timeline asks it for every move on every redraw.
+function palmUpnessOf(p, arm) {
+  if (!palmMarks[arm]) return 0;
+  const key = arm + "|" + p.join(",");
+  if (palmCache.has(key)) return palmCache.get(key);
+  const saved = pose;
+  try { pose = p.slice(); applyPose(); palmCache.set(key, palmUpness(arm)); }
+  finally { pose = saved; applyPose(); }
+  return palmCache.get(key);
+}
+// "palm", "back" or "side": what the audience sees on top of that hand.
+function palmWord(v) { return v > 0.5 ? "palm" : v < -0.5 ? "back" : "side"; }
+// want +1 = palm up, -1 = back up. Returns { pose, upness } or null with no rig.
+function facePalm(p, arm, want) {
+  if (!palmMarks[arm] || !wristBalls[arm]) return null;
+  const sh = arm === 0 ? [0, 1] : [4, 5], el = arm === 0 ? [2, 3] : [6, 7];
+  const W = (o) => o.getWorldPosition(new THREE.Vector3());
+  const saved = pose;
+  try {
+    pose = p.slice(); applyPose(); robot.updateMatrixWorld(true);
+    const S = W(jointGroups[sh[0]]), hand = W(wristBalls[arm]);
+    const elbow0 = W(elbowBalls[arm]);
+    const axis = hand.clone().sub(S).normalize();
+    let best = { score: want * palmUpness(arm), pose: p.slice() };
+    for (const dir of [1, -1]) {
+      pose = p.slice();
+      for (let deg = 5; deg <= 180; deg += 5) {
+        const e = elbow0.clone().sub(S).applyAxisAngle(axis, dir * deg * Math.PI / 180).add(S);
+        ccdChain(sh, elbowBalls[arm], e, 8);
+        const miss = ccdChain(el, wristBalls[arm], hand, 12);
+        applyPose();             // ccdChain leaves its last rejected try drawn
+        if (miss > 4) continue;  // the hand moved: that shape is not an answer
+        const sc = want * palmUpness(arm);
+        if (sc > best.score + 1e-3) best = { score: sc, pose: pose.slice() };
+      }
+    }
+    return { pose: best.pose, upness: want * best.score };
+  } finally {
+    pose = saved;
+    applyPose();
+  }
+}
 function solve3(A, b) { // gaussian elimination, 3x3
   const M = A.map((row, i) => [...row, b[i]]);
   for (let c = 0; c < 3; c++) {
@@ -1737,6 +1810,7 @@ function poseChanged(throttled, liveMs) {
     colTimer = now;
     $("collideWarn").style.display = collisionAt(pose) ? "block" : "none";
     renderXyz();
+    renderHands();
   }
   // No time throttle here: sendPoseLive() keeps one command in flight and
   // always carries the newest pose, so it paces itself to the link AND cannot
@@ -1813,6 +1887,55 @@ function mirrorLR(which) {
   $("tlStat").textContent = which === "fb"
     ? "mirrored front to back — each arm reaches the other way, on its own side"
     : "mirrored left to right — each arm took the other's shape";
+}
+
+// ---- palm or back of the hand on top (A44-1) --------------------------------
+// User 2026-10-19: hand-like parts are fixed to the arms, and which side the
+// audience sees on top changes how a pose feels. One row per hand: what is on
+// top now, and a button for each side. The hand stays where it is.
+const FACING_TEXT = { palm: "palm on top", back: "back of the hand on top",
+                      side: "on its edge" };
+function renderHands() {
+  const box = $("handsBox");
+  if (!box || palmMarks.length < HANDS.length) return;
+  if (!box.childElementCount) {
+    HANDS.forEach((h, i) => {
+      const row = document.createElement("div"); row.className = "row";
+      const lbl = document.createElement("span"); lbl.className = "lbl";
+      lbl.textContent = h.label;
+      const up = document.createElement("button");
+      up.textContent = "✋ Palm up";
+      up.title = "turn the arm so the PALM of the " + h.label.toLowerCase()
+               + " faces up; the hand stays where it is";
+      up.onclick = () => turnPalm(i, 1);
+      const back = document.createElement("button");
+      back.textContent = "🤚 Back up";
+      back.title = "turn the arm so the BACK of the " + h.label.toLowerCase()
+                 + " faces up; the hand stays where it is";
+      back.onclick = () => turnPalm(i, -1);
+      const now = document.createElement("span");
+      now.className = "mini"; now.id = "handNow" + i;
+      row.append(lbl, up, back, now);
+      box.appendChild(row);
+    });
+  }
+  HANDS.forEach((h, i) => {
+    const el = $("handNow" + i);
+    if (el) el.textContent = "now: " + FACING_TEXT[palmWord(palmUpness(i))];
+  });
+}
+function turnPalm(arm, want) {
+  const r = facePalm(pose, arm, want);
+  if (!r) return;
+  pose = r.pose;
+  poseChanged(false);
+  const h = HANDS[arm].label.toLowerCase();
+  $("tlStat").textContent = r.upness > 0.5
+    ? h + ": " + (want > 0 ? "the palm" : "the back of the hand") + " is on top now, "
+      + "and the hand is where it was. Press Update selected to keep it in the move."
+    : h + ": this is as far round as the joints let it turn with the hand here. "
+      + "Move the hand a little and try again.";
+  if (r.upness <= 0.5) notice($("tlStat").textContent);
 }
 // --- timing ---
 // Show speed sets the automatic time; servo max speed sets the PHYSICAL
@@ -2287,34 +2410,28 @@ function renderTimeline() {
         : "all keyframes active";
     };
     idx.appendChild(sk);
-    // WHICH ARM PLAYS THIS MOVE (A31-6, user 2026-09-23). "both" is every
-    // keyframe ever made before this existed, so it stays the default and
-    // nothing already saved changes behaviour. Pinning a move to one arm
-    // leaves the other exactly where the move before it left it.
-    if (i > 0) {
-      const armSel = document.createElement("select");
-      armSel.className = "karm";
-      [["", "both arms"],
-       ["front", "front arm (" + frontArmSide() + ")"],
-       ["back", "back arm (" + backArmSide() + ")"]].forEach(([v, label]) => {
+    // PALM OR BACK ON TOP, per hand (A44-1, user 2026-10-19). Read from the
+    // move's own pose, never stored beside it, so it cannot go stale when the
+    // pose is edited. Choosing turns that arm round with the hand kept in place.
+    HANDS.forEach((h, arm) => {
+      const now = palmWord(palmUpnessOf(k.pose, arm));
+      const sel = document.createElement("select");
+      sel.className = "kpalm";
+      [["palm", h.side + " ✋ palm up"], ["back", h.side + " 🤚 back up"],
+       ["side", h.side + " on edge"]].forEach(([v, label]) => {
         const o = document.createElement("option"); o.value = v; o.textContent = label;
-        armSel.appendChild(o);
+        o.disabled = v === "side";       // a result, not something to ask for
+        sel.appendChild(o);
       });
-      armSel.value = k.arm || "";
-      armSel.title = "which arm does this move. The other one holds where the "
-                   + "move before left it. Which arm faces the audience is set "
-                   + "in Setup > rig.";
-      armSel.onclick = (e) => e.stopPropagation();
-      armSel.onchange = () => {
-        if (armSel.value) k.arm = armSel.value; else delete k.arm;
-        bumpKeys();
-        clearBadMarks();
-        renderTimeline();
-        $("tlStat").textContent = armSel.value
-          ? `move ${i} is played by the ${armSel.value} arm (${armSel.value === "front" ? frontArmSide() : backArmSide()}); the other arm holds still`
-          : `move ${i} moves both arms`;
-      };
-      idx.appendChild(armSel);
+      sel.value = now;
+      sel.title = "which side of the " + h.label.toLowerCase() + " the audience "
+                + "sees on top in this move. Pick the other and the arm turns "
+                + "round; the hand stays where it is.";
+      sel.onclick = (e) => e.stopPropagation();
+      sel.onchange = () => turnKeyPalm(i, arm, sel.value === "palm" ? 1 : -1);
+      idx.appendChild(sel);
+    });
+    if (i > 0) {
       // Mirror: the same gesture on the other arm. The rule lives in
       // mirrorPose() (ik_4_dof_arm.js) and the Pose tab's Mirror button calls
       // the same function, so the two can never drift apart.
@@ -2604,12 +2721,10 @@ function rewind() {
 // and the signature changes with it.
 let _pkCache = null;
 function keysSignature() {
-  // frontArm is in here because which arm "front" means changes every pinned
-  // move's pose, and a cache that missed that would draw the wrong run.
-  let s = keys.length + "|" + speedDps() + "|" + frontArmSide();
+  let s = keys.length + "|" + speedDps();
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
-    s += ";" + (k.name || "") + "," + (k.arm || "") + "," + (k.tset ? 1 : 0) + "," +
+    s += ";" + (k.name || "") + "," + (k.tset ? 1 : 0) + "," +
          (k.off ? 1 : 0) + "," + k.t + "," + (k.hold || 0) + "," +
          (k.dps || 0) + "," + k.pose + "," + (k.cues || []).join("|") + "," +
          (k.cuesAfter || []).join("|");
@@ -2717,22 +2832,7 @@ function buildPlayKeys() {
       return;
     }
     const prev = out.length ? out[out.length - 1] : null;
-    // A MOVE PINNED TO ONE ARM (A31-6). The other arm holds exactly where the
-    // previous played move left it, so "wave with the front arm" is one move
-    // and not a promise to keep re-typing eight numbers. Resolved HERE, where
-    // buildYaml and hubShowSteps both read, so the file, the preview and the
-    // robot can never disagree about what the far arm did. It is resolved
-    // BEFORE the re-timing below, because a move that only turns one arm
-    // covers less ground and must be timed for the ground it covers.
-    let posed = k.pose;
-    const own = armJoints(k.arm);
-    if (own && prev) {
-      posed = prev.pose.slice();
-      own.forEach(j => { posed[j] = k.pose[j]; });
-      // the body joints belong to nobody's arm and always follow the keyframe
-      posed[8] = k.pose[8];
-      posed[9] = k.pose[9];
-    }
+    const posed = k.pose;
     let t = k.t;
     if (prev && gap) {
       // This move is NOT the one its stored time was written for. With the
@@ -2772,8 +2872,7 @@ function anySuspended() { return keys.some(k => k.off); }
 // The same gesture, arms swapped (A31-6). The rule lives in mirrorPose()
 // (rig_data.js) because it is made of rig numbers - each joint's zero, its
 // direction and its axis - and this file should not hold a second opinion
-// about them. A move pinned to one arm flips its pin too, or mirroring would
-// move the arm that is meant to be holding still.
+// about them.
 function mirrorKeyArms(i, which) {
   const k = keys[i];
   if (!k) return;
@@ -2786,8 +2885,6 @@ function mirrorKeyArms(i, which) {
     return;
   }
   k.pose = m;
-  if (k.arm === "front") k.arm = "back";
-  else if (k.arm === "back") k.arm = "front";
   bumpKeys();
   clearBadMarks();
   if (i === selKey) { pose = [...k.pose]; poseChanged(false); renderSliders(); }
@@ -2795,8 +2892,27 @@ function mirrorKeyArms(i, which) {
   $("tlStat").textContent = which === "fb"
     ? "move " + i + " mirrored front to back — each arm reaches the other way, "
       + "and stays on its own side"
-    : "move " + i + " mirrored left to right — the same shape on the other arm"
-      + (k.arm ? ", now played by the " + k.arm + " arm" : "");
+    : "move " + i + " mirrored left to right — the same shape on the other arm";
+}
+// The timeline's palm picker (A44-1): the same facePalm() the Pose tab uses,
+// on this move's pose. Timing is left alone, like a mirror: the hand does not
+// move, so the move covers about the same ground.
+function turnKeyPalm(i, arm, want) {
+  const k = keys[i];
+  if (!k) return;
+  const r = facePalm(k.pose, arm, want);
+  if (!r) return;
+  k.pose = r.pose;
+  bumpKeys();
+  clearBadMarks();
+  if (i === selKey) { pose = [...k.pose]; poseChanged(false); renderSliders(); }
+  renderTimeline();
+  const h = HANDS[arm].label.toLowerCase();
+  $("tlStat").textContent = r.upness > 0.5
+    ? "move " + i + ": " + h + " shows its " + (want > 0 ? "palm" : "back") + " on top now"
+    : "move " + i + ": the joints cannot turn the " + h + " that far with the hand "
+      + "where it is; this is the closest. Move the hand a little and try again.";
+  if (r.upness <= 0.5) notice($("tlStat").textContent);
 }
 
 // ------- playback preview (cosine ease per segment — same as the firmware)
@@ -3237,31 +3353,28 @@ const DIM_LABELS = {
 function renderRigUI() {
   const jb = $("rigJoints");
   jb.innerHTML = "";
-  // WHICH ARM THE AUDIENCE SEES FIRST (A31-6). One setting for the whole rig,
-  // above the joint table, because every move that says "front arm" means
-  // whichever arm this names - and it changes when the nong is turned round.
-  const fa = document.createElement("div"); fa.className = "row";
-  const fal = document.createElement("label");
-  fal.className = "lbl"; fal.htmlFor = "rigFrontArm";
-  fal.textContent = "Arm nearest the audience";
-  const fas = document.createElement("select");
-  fas.id = "rigFrontArm";
-  [["L", "the left arm is in front"], ["R", "the right arm is in front"]]
-    .forEach(([v, label]) => {
-      const o = document.createElement("option"); o.value = v; o.textContent = label;
-      fas.appendChild(o);
-    });
-  fas.value = frontArmSide();
-  fas.title = "left and right are the ROBOT's own left and right. This says "
-            + "which of them the audience sees first, so a move can be given to "
-            + "the front arm or the back arm by name.";
-  fas.onchange = () => {
-    RIG.frontArm = fas.value === "R" ? "R" : "L";
-    rigChanged();
-    renderTimeline();          // every pinned move now means the other arm
-  };
-  fa.append(fal, fas);
-  jb.appendChild(fa);
+  // WHERE EACH PALM SITS (A44-1). The hand part can be fixed to the forearm
+  // any way round; turn the drawn hand until its skin side matches the real
+  // palm. Every "palm up / back up" in Pose and the timeline works from this.
+  HANDS.forEach((h, i) => {
+    const row = document.createElement("div"); row.className = "row";
+    const lbl = document.createElement("span"); lbl.className = "lbl";
+    lbl.textContent = h.label + " palm";
+    const turn = document.createElement("button");
+    turn.textContent = "↻ Turn the drawn hand";
+    turn.title = "the skin-coloured side of the drawn hand is its palm. Turn it "
+               + "until it faces the same way as the real hand's palm.";
+    const at = document.createElement("span"); at.className = "mini";
+    at.textContent = RIG.palmTurn[i] + "°";
+    turn.onclick = () => {
+      RIG.palmTurn[i] = (RIG.palmTurn[i] + 90) % 360;
+      at.textContent = RIG.palmTurn[i] + "°";
+      rigChanged();
+      renderTimeline();          // what is on top of each move may have changed
+    };
+    row.append(lbl, turn, at);
+    jb.appendChild(row);
+  });
   // header
   const hdr = document.createElement("div"); hdr.className = "rigjrow";
   ["joint", "zero°", "start°", "min°", "max°", "axis", "inv"].forEach(t => {

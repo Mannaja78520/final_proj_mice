@@ -155,6 +155,62 @@ function mirrorPose(p, which) {
     applyPose();
   }
 }
+// ---- which side of the hand faces up (A44-1) ------------------------------
+// The arm has four joints and a hand position needs three, so one freedom is
+// left over: the elbow can swing round the shoulder-to-hand line and the hand
+// stays put. Swinging it rolls the forearm, and with it the hand. facePalm()
+// walks that swing both ways and keeps the shape whose palm (or back) points
+// most nearly up, with the hand where it was. Joint limits still hold, so on
+// some reaches the best it can do is "on edge"; the caller says so.
+// How much the palm faces up right now: +1 straight up, -1 the back is up.
+function palmUpness(arm) {
+  robot.updateMatrixWorld(true);
+  const q = palmMarks[arm].getWorldQuaternion(new THREE.Quaternion());
+  return new THREE.Vector3(0, 0, 1).applyQuaternion(q).y;
+}
+// The same, for any pose; the pose on screen is left as it was. Cached, as
+// the timeline asks it for every move on every redraw.
+function palmUpnessOf(p, arm) {
+  if (!palmMarks[arm]) return 0;
+  const key = arm + "|" + p.join(",");
+  if (palmCache.has(key)) return palmCache.get(key);
+  const saved = pose;
+  try { pose = p.slice(); applyPose(); palmCache.set(key, palmUpness(arm)); }
+  finally { pose = saved; applyPose(); }
+  return palmCache.get(key);
+}
+// "palm", "back" or "side": what the audience sees on top of that hand.
+function palmWord(v) { return v > 0.5 ? "palm" : v < -0.5 ? "back" : "side"; }
+// want +1 = palm up, -1 = back up. Returns { pose, upness } or null with no rig.
+function facePalm(p, arm, want) {
+  if (!palmMarks[arm] || !wristBalls[arm]) return null;
+  const sh = arm === 0 ? [0, 1] : [4, 5], el = arm === 0 ? [2, 3] : [6, 7];
+  const W = (o) => o.getWorldPosition(new THREE.Vector3());
+  const saved = pose;
+  try {
+    pose = p.slice(); applyPose(); robot.updateMatrixWorld(true);
+    const S = W(jointGroups[sh[0]]), hand = W(wristBalls[arm]);
+    const elbow0 = W(elbowBalls[arm]);
+    const axis = hand.clone().sub(S).normalize();
+    let best = { score: want * palmUpness(arm), pose: p.slice() };
+    for (const dir of [1, -1]) {
+      pose = p.slice();
+      for (let deg = 5; deg <= 180; deg += 5) {
+        const e = elbow0.clone().sub(S).applyAxisAngle(axis, dir * deg * Math.PI / 180).add(S);
+        ccdChain(sh, elbowBalls[arm], e, 8);
+        const miss = ccdChain(el, wristBalls[arm], hand, 12);
+        applyPose();             // ccdChain leaves its last rejected try drawn
+        if (miss > 4) continue;  // the hand moved: that shape is not an answer
+        const sc = want * palmUpness(arm);
+        if (sc > best.score + 1e-3) best = { score: sc, pose: pose.slice() };
+      }
+    }
+    return { pose: best.pose, upness: want * best.score };
+  } finally {
+    pose = saved;
+    applyPose();
+  }
+}
 function solve3(A, b) { // gaussian elimination, 3x3
   const M = A.map((row, i) => [...row, b[i]]);
   for (let c = 0; c < 3; c++) {
