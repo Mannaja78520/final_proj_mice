@@ -453,6 +453,30 @@ async function playSdSeq(fname) {
 }
 // Delete a saved YAML (user 2026-09-17). The hub moves it to
 // sequences/.deleted/, so a mis-click can still be undone by hand.
+// The picked PC file onto the robot, as it is (A44-3, user 2026-10-19: make
+// sending or updating moves on the nong easy). No timeline is opened, so
+// nothing unsaved is at risk; the same name on the robot is replaced.
+async function putLocalSeqOnRobot() {
+  const f = $("seqList").value;
+  if (!f) { $("tlStat").textContent = "pick a saved YAML in the list first."; return; }
+  if (!haveRobot()) {
+    $("tlStat").textContent = "connect to the robot first (Robot tab).";
+    notice($("tlStat").textContent);
+    return;
+  }
+  try {
+    const r = await fetch("/api/loadseq?name=" + encodeURIComponent(f));
+    if (!r.ok) throw new Error("cannot read sequences/" + f + " (the hub answered " + r.status + ")");
+    $("tlStat").textContent = "saving " + f + " on the robot…";
+    await sdUpload(f, await r.text());
+    $("tlStat").textContent = f + " is saved on the robot. It can play it by itself now, "
+      + "from the robot's list here or on its own page.";
+    refreshSd();
+  } catch (e) {
+    $("tlStat").textContent = f + " was not saved on the robot: " + (e.message || e);
+    notice($("tlStat").textContent);
+  }
+}
 async function deleteLocalSeq() {
   const f = $("seqList").value;
   if (!f) { $("tlStat").textContent = "pick a saved YAML in the list first."; return; }

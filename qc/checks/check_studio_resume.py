@@ -158,7 +158,9 @@ def run(t):
     t.contains(marks, "parked-900",
                "clicking a keyframe parks the clock at its own time")
 
-    files = uploads()
+    # Run also keeps a copy as last.yaml (A44-2); that copy is
+    # check_keep_run's business, the files run here are the others.
+    files = [f for f in uploads() if f[0] != "last.yaml"]
     t.ok(len(files) >= 3, "all three runs sent the module a file",
          [n for n, _ in files])
     if len(files) < 3:

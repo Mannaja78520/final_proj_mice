@@ -118,6 +118,25 @@
         A copy is still kept in this browser and offered back next time.</div>
     </div>
 
+    <!-- A44-3: the robot's own settings, saved ON the robot. Rows come from
+         ROBOT_SETTINGS in app_parts/robot_settings.js. -->
+    <div class="card" data-stab="setup">
+      <h2>This robot <span class="mini">(saved on the robot itself)</span></h2>
+      <label class="row"><input type="checkbox" id="keepRunChk" checked
+             onchange="setKeepRun(this.checked)">
+        Keep a copy on the robot every time I press Run</label>
+      <div class="mini">It is kept as <b>last.yaml</b>, the first choice on the robot's own
+        page, so the robot can play it again with no hub and no computer.
+        Off: Run sends only the sequence itself (quicker over a slow cable).</div>
+      <div id="robotSettings"></div>
+      <div class="row">
+        <button onclick="readRobotSettings()">⬇ Read from robot</button>
+        <button onclick="openModule()" title="the robot's own page: its saved files with Run and Stop, WiFi, pins and logins">Open the robot's own page</button>
+      </div>
+      <div class="statline" id="robotSetStat">Connect to the robot, then press Read from robot.
+        Joint limits, gear and offsets are in Rig setup above; the peak speed limit is on the Sequence tab.</div>
+    </div>
+
     <div class="card" data-stab="setup">
       <h2>Move your setup to another PC</h2>
       <div class="mini">Everything Studio remembers &mdash; your rig, your saved default,

@@ -9,6 +9,8 @@
         <button onclick="editLocalSeq()">Load for editing</button>
         <button onclick="playLocalSeq()"
                 title="Loads this saved sequence into the timeline and starts playing it right away — same as Edit, then Play.">▶ Play saved</button>
+        <button onclick="putLocalSeqOnRobot()"
+                title="Save the picked YAML on the robot as it is, without opening it. A file of the same name on the robot is replaced.">⇪ Save to robot</button>
         <button onclick="deleteLocalSeq()"
                 title="Delete the picked saved YAML from this PC. It is moved to sequences/.deleted, not erased.">🗑 Delete</button>
       </div>
@@ -58,7 +60,7 @@
       <h2>Robot SD card — /moves</h2>
       <div class="row">
         <button onclick="refreshSd()">⟳ List sequences</button>
-        <button class="primary" onclick="uploadYaml()">Upload current</button>
+        <button class="primary" onclick="uploadYaml()" title="Save the moves on the time bar on the robot, under the name at the top.">⇪ Save current to robot</button>
       </div>
       <div id="sdList" class="mini">connect first, then press List</div>
       <div class="statline" id="sdStat"></div>

@@ -355,10 +355,23 @@ async function playShow() {
   const dev = moduleDev();
   if (!dev) { $("showStat").textContent = "connect to the robot first (Robot tab)."; notice($("showStat").textContent); return; }
   if (!s.items.length) { $("showStat").textContent = "add at least one sequence first."; return; }
+  // The hub plays a show step by step, so nothing of it is on the robot unless
+  // it is written there first (A44-2): the same file Save to robot writes.
+  let kept = "";
+  if (keepRunOn() && haveRobot()) {
+    $("showStat").textContent = "keeping a copy of " + (s.name || "this show") + " on the robot…";
+    try {
+      const j = await showPost("/api/show/yaml", { show: s, limits: showLimits() });
+      kept = await keepLastRun(j.yaml, j.file);
+    } catch (e) { kept = "the copy as " + LAST_RUN_FILE + " was not kept: " + (e.message || e); }
+  }
   try {
     await showPost("/api/show/play", { dev, show: s, limits: showLimits() });
     $("showStat").textContent = "the hub is running " + (s.name || "this show") +
-      " — it keeps going with this page closed. ⏹ Stop ends it.";
+      " — it keeps going with this page closed. ⏹ Stop ends it." +
+      (kept ? " Note: " + kept : keepRunOn() && haveRobot()
+        ? " A copy is on the robot as " + LAST_RUN_FILE + ", to play from its own page." : "");
+    if (kept) notice(kept);
   } catch (e) { $("showStat").textContent = "did not start: " + (e.message || e); notice($("showStat").textContent); }
 }
 // The show ONTO the robot's card (user 2026-10-12: *in shows is there upload to
@@ -373,8 +386,8 @@ async function sendShowToRobot() {
     $("showStat").textContent = "sending " + (s.name || "this show") + " to the robot…";
     const j = await showPost("/api/show/yaml", { show: s, limits: showLimits() });
     await sdUpload(j.file, j.yaml);
-    $("showStat").textContent = j.file + " is on the robot's card. The robot can play it " +
-      "by itself now: pick it in the robot's list (Robot tab, or the robot's own page).";
+    $("showStat").textContent = j.file + " is saved on the robot. The robot can play it " +
+      "by itself now: pick it in the robot's list (Sequence tab, or the robot's own page).";
     refreshSd();
   } catch (e) { $("showStat").textContent = "not sent: " + (e.message || e); notice($("showStat").textContent); }
 }

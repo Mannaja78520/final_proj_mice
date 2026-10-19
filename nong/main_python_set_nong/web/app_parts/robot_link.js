@@ -812,7 +812,7 @@ async function uploadYaml() {
   try {
     await sdUpload(name + ".yaml", yaml);
     $("sdStat").textContent =
-      `uploaded ${name}.yaml to /moves — press its ▶ Run button (or pick it on the module website)`;
+      `saved ${name}.yaml on the robot — press its ▶ Run button here, or pick it on the robot's own page`;
     refreshSd();
   } catch (e) { $("sdStat").textContent = "upload failed: " + (e.message || e); notice($("sdStat").textContent); }
 }
@@ -910,6 +910,29 @@ document.addEventListener("visibilitychange", function () {
   }).catch(() => {});
 });
 
+// ---- every Run leaves a copy on the robot (A44-2) --------------------------
+// User 2026-10-19: keep what was sent to run on the robot, so it can be played
+// again from the robot's own page with no hub and no Studio. last.yaml is
+// always the last thing run; the robot's page offers it first. Settings turns
+// it off (a second upload costs time on a slow cable).
+const LAST_RUN_FILE = "last.yaml";
+const KEEP_RUN_KEY = "nong_keep_last_run";
+function keepRunOn() {
+  try { return localStorage.getItem(KEEP_RUN_KEY) !== "0"; }
+  catch (e) { return true; }
+}
+function setKeepRun(on) {
+  try { localStorage.setItem(KEEP_RUN_KEY, on ? "1" : "0"); }
+  catch (e) { /* kept for this visit only */ }
+}
+// Returns "" when kept (or not wanted), else why not: a copy that failed must
+// not stop the run, but it must be said.
+async function keepLastRun(yaml, file) {
+  if (!keepRunOn() || file === LAST_RUN_FILE) return "";
+  try { await sdUpload(LAST_RUN_FILE, yaml); return ""; }
+  catch (e) { return "the copy as " + LAST_RUN_FILE + " was not kept: " + (e.message || e); }
+}
+
 // Send the sequence, THEN play it. This used to send only `MOVE <name>.yaml`,
 // so the module ran whatever copy of that name was already on its SD card while
 // the crash check had just approved the timeline on screen. Edit a pose to fix
@@ -937,6 +960,7 @@ async function robotRun() {
       + (e && e.message ? e.message : e);
     return;
   }
+  const kept = await keepLastRun(yaml, file);
   const said = await robotCmd("MOVE " + file);
   // robotCmd answers "" on a failure; the card said "running" anyway.
   if (!said.startsWith("OK")) {
@@ -945,10 +969,12 @@ async function robotRun() {
     notice(st ? st.textContent : "the robot did not start " + file);
     return;
   }
-  if (st) st.textContent = part
+  if (st) st.textContent = (part
     ? "the robot is running from the move you picked, to the end — it does not "
       + "go back to the start. The whole show is still saved as " + name + ".yaml."
-    : "the robot is running " + file + " on its own.";
+    : "the robot is running " + file + " on its own.")
+    + (kept ? " Note: " + kept : keepRunOn() ? " A copy is kept on it as " + LAST_RUN_FILE + "." : "");
+  if (kept) notice(kept);
 }
 
 // ---- zero-position calibration (locked behind the HUB login) ----
