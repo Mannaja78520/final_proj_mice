@@ -140,7 +140,14 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
       var hs = shapeOf(hp);
       o.palmUp = palmUpnessOf(last(movesFromFrames(still(hs[0], hs[1]), opt({hand: [1, 0]}))), 0).toFixed(2);
       o.backUp = palmUpnessOf(last(movesFromFrames(still(hs[0], hs[1]), opt({hand: [-1, 0]}))), 0).toFixed(2);
+      o.goodNote = vidHandNote(movesFromFrames(still(hs[0], hs[1]), opt({hand: [1, 0]}))).length;
     } else { o.palmUp = "none"; o.backUp = "none"; }
+    // a straight arm cannot roll its hand: the made moves must say so, not stay silent
+    document.getElementById("vidHand0").value = "palm";
+    var st = movesFromFrames(still(OUT, DOWN), opt({hand: [1, 0]}));
+    o.straightMiss = st.handMiss[0];
+    o.straightNote = /left hand could not show its palm/.test(vidHandNote(st));
+    document.getElementById("vidHand0").value = "video";
     o.ms = Math.round(performance.now() - t0);
     // 8. onto the time bar, and into the file the robot plays
     vidMade = cl;
@@ -196,6 +203,9 @@ def run(t):
     if t.ok(v["palmUp"] != "none", "the rig has a reach where the left hand turns both ways", v):
         t.ok(float(v["palmUp"]) > 0.5, "palm on top is applied to the made moves", v)
         t.ok(float(v["backUp"]) < -0.5, "and back of the hand on top too", v)
+        t.ok(v["goodNote"] == "0", "a hand that did turn adds no warning", v)
+    t.ok(int(v["straightMiss"]) > 0 and v["straightNote"] == "true",
+         "a straight arm that cannot show the palm is said in words, not left silent", v)
 
     t.ok(int(v["onBar"]) == int(v["made"]), "Use as new moves puts every one on the time bar", v)
     t.ok(int(v["yamlPoses"]) == int(v["made"]),

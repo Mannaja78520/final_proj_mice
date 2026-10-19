@@ -269,12 +269,16 @@ function movesFromFrames(frames, opts) {
   } finally { pose = saved; applyPose(); }
   const times = bones.map(b => b.t * 1000);
   const idx = vidThin(times, poses, opts.tol);
-  const out = [];
+  const out = [], handMiss = [0, 0];
   idx.forEach((i, n) => {
     let p = poses[i];
     for (const a of [0, 1]) if (opts.hand[a]) {
       const r = facePalm(p, a, opts.hand[a]);
       if (r) p = r.pose.map(v => Math.round(v * 10) / 10);
+      // A near-straight arm cannot roll its hand at all (the elbow sits on the
+      // turning line); the hand stayed on its edge with nothing said (browser
+      // test 2026-10-19, arms out). Count it so the person is told.
+      if (!r || r.upness <= 0.5) handMiss[a]++;
     }
     const prev = out[out.length - 1];
     const gap = n ? times[i] - times[idx[n - 1]] : 0;
@@ -285,9 +289,18 @@ function movesFromFrames(frames, opts) {
     out.push(n ? { pose: p, t: Math.round(gap), hold: 0, tset: true } : { pose: p, t: 1000, hold: 0 });
   });
   out.forEach(k => { k.hold = Math.round(k.hold || 0); });
-  return { keys: out, videoMs: Math.round(times[times.length - 1] || 0) };
+  return { keys: out, videoMs: Math.round(times[times.length - 1] || 0), handMiss, kept: idx.length };
 }
 
+// What a palm / back choice could not do, in words; empty when it all worked.
+function vidHandNote(made) {
+  const opts = vidOpts();
+  return [0, 1].filter(a => opts.hand[a] && made.handMiss[a]).map(a =>
+    " The " + HANDS[a].label.toLowerCase() + " could not show its "
+    + (opts.hand[a] > 0 ? "palm" : "back") + " on top in " + made.handMiss[a] + " of "
+    + made.kept + " moves: the arm is almost straight there, so the hand can only "
+    + "show its edge. Bend that arm a little in those moves and pick the side again.").join("");
+}
 async function vidMake() {
   if (vidBusy) { vidStop = true; return; }
   vidBusy = true; vidStop = false;
@@ -314,7 +327,7 @@ async function vidMake() {
     const seen = frames.filter(f => f.w).length;
     vidSay(vidMade.keys.length + " moves made from " + (vidMade.videoMs / 1000).toFixed(1)
            + " s of video (the person was found in " + Math.round(100 * seen / frames.length)
-           + "% of it). Put them on the time bar:");
+           + "% of it)." + vidHandNote(vidMade) + " Put them on the time bar:");
     $("vidUseBox").hidden = false;
   } finally {
     vidBusy = false;
@@ -325,7 +338,8 @@ async function vidMake() {
 function vidRemake() {
   if (!vidFrames || vidBusy) return;
   vidMade = movesFromFrames(vidFrames, vidOpts());
-  if (vidMade) vidSay(vidMade.keys.length + " moves with these choices. Put them on the time bar:");
+  if (vidMade) vidSay(vidMade.keys.length + " moves with these choices." + vidHandNote(vidMade)
+                     + " Put them on the time bar:");
 }
 async function vidUse(how) {
   if (!vidMade) return;

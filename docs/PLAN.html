@@ -597,7 +597,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: nothing right now
+# RUNNING: QC finished: 369 passed, 0 failed, started 2026-10-19 12:38
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1564,6 +1564,7 @@ A44-1: done   2026-10-19 11:07  agent=claude:studio-xe27  — User 2026-10-19: �
 A44-2: doing  2026-10-19 11:08  agent=claude:studio-xe27  — User 2026-10-19: สิ่งที่สั่งให้รันทำเป็น last.yaml หรือไฟล์อะไรก็ตามที่ส่งให้หุ่นรัน เก็บไว้ด้วย เผื่อรันแค่หุ่นโดยไม่ผ่าน hub หรือ studio ผ่าน web ของมันเอง; shows มีปุ่มโหลดเก็บไว้ในหุ่นง่ายๆ ไม่ก็ตอนกด run ให้เซฟในเครื่อง ตั้งค่าได้ใน setting Run (timeline and show) also writes last.yaml on the robot, Setup checkbox turns it off; robot page offers last.yaml first (+112 B, mice_nong 82.8%); Save to robot labels. check_keep_run 14 ok, 7 sabotages caught. Full QC 6884 pass; check_studio_resume updated for the copy; check_key_click flakes on main too. Tested against fakes only.
 A44-3: doing  2026-10-19 11:08  agent=claude:studio-xe27  — User 2026-10-19: ตั้งค่าที่เกี่ยวกับตัวเครื่องให้ตั้งได้ใน setting ของ nong studio ปรับแต่งได้หลากหลายและง่ายกว่านี้; ส่งหรือ update ท่าเข้า nong module ง่ายๆ Setup > This robot: name, speed when a pose has no time, volume (ROBOT_SETTINGS in robot_settings.js), Read from robot, open the robot's page; Save to robot on a saved PC file. Covered by check_keep_run.
 A44-4: done   2026-10-19 12:15  agent=claude:video-52bb  — User 2026-10-19: ถ้าสามารถทำท่าทางของหุ่นได้ผ่าน motion ของ video ด้วย เอา skeleton ของคนมาใส่แล้วทำท่าทางของหุ่นให้ใกล้เคียงที่สุด (ทำเป็นท่าใน timeline ของ Studio, เคารพหน้ามือ/หลังมือแต่ละข้าง) Full QC 6932 passed (3 parallel flakes green alone). PR #29. Tested with fake skeletons and one real photo through MediaPipe; not on the real robot.
+A44-5: done   2026-10-19 12:37  agent=claude:video-52bb  — User 2026-10-19: เทสใน browser จริงเลย (ท่าจากวิดีโอ + หน้ามือหลังมือ); พบ: มือที่แขนเหยียดตรงพลิกไม่ได้แต่ไม่บอก Cloud Chromium + real MediaPipe: still photo and a tilting clip (7 moves, arms antiphase) right; PC thread jumping-jacks 43 moves OK. Fixed: a hand that cannot turn (near-straight arm) now says so. Quick QC 5066 passed.
 
 END</code></pre>
 </details>
