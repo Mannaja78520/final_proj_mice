@@ -33,7 +33,11 @@
     "local": {
       "says": "This PC (no internet)", "kind": "local",
       "free": "Free and offline. Hearing and answering use this PC's graphics card; speaking uses the Windows voice, which sounds flat.",
-      "jobs": {"hear": {}, "think": {}, "speak": {}}
+      // byLanguage: a language with its own trained hearing model, used once
+      // the language is known (picked on the page, or a quick look). Thai:
+      // Thonburian Whisper, 2.3% letters wrong vs 28% for "small" with room
+      // noise (30 clips, 2026-10-19). It downloads once (about 1.5 GB).
+      "jobs": {"hear": {"byLanguage": {"th": "Thaweewat/whisper-th-medium-ct2"}}, "think": {}, "speak": {}}
     },
     "edge": {
       "says": "Microsoft Edge voices", "kind": "edge",

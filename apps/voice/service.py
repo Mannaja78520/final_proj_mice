@@ -851,20 +851,54 @@ class Brain:
             return
         self._stt_loading = True
         try:
-            from faster_whisper import WhisperModel
             mid = scfg.get("model", "small")
-            try:
-                self._stt = WhisperModel(mid, device="cuda", compute_type="float16")
-            except Exception:
-                try:
-                    self._stt = WhisperModel(mid, device="auto", compute_type="auto")
-                except Exception:
-                    self._stt = WhisperModel(mid, device="cpu", compute_type="int8")
+            self._stt = self._whisper_model(mid)
             self._stt_loaded_model = mid
         except Exception as e:                              # noqa: BLE001
             self._stt_err = "%s: %s" % (e.__class__.__name__, e)
         finally:
             self._stt_loading = False
+
+    @staticmethod
+    def _whisper_model(mid):
+        """A whisper model on the graphics card if it can, else the CPU."""
+        from faster_whisper import WhisperModel
+        try:
+            return WhisperModel(mid, device="cuda", compute_type="float16")
+        except Exception:
+            try:
+                return WhisperModel(mid, device="auto", compute_type="auto")
+            except Exception:
+                return WhisperModel(mid, device="cpu", compute_type="int8")
+
+    def _own_model(self, lang):
+        """The model trained for this one language, loaded once, or None.
+
+        Measured 2026-10-19 on 30 Thai clips with room noise added: whisper
+        "small" got 28% of the letters wrong, the Thai-trained Thonburian
+        medium 2.3%. It hears Thai only, so it takes over only once the
+        language is known (`local.hear.byLanguage` in voice_providers.json).
+        """
+        mid = (self.service("local")["jobs"].get("hear") or {}).get("byLanguage", {}).get(lang)
+        if not mid:
+            return None
+        got = getattr(self, "_stt_own", None)
+        if got is None:
+            got = self._stt_own = {}
+        if mid not in got:
+            got[mid] = self._whisper_model(mid)
+        return got[mid]
+
+    def _detect(self, path, scfg):
+        """The language spoken, by the general model's quick look. Unsure =
+        the main language (scenario's, else stt.fallback's)."""
+        from faster_whisper import decode_audio
+        lang, prob, _all = self._stt.detect_language(decode_audio(path))
+        fb = scfg.get("fallback") or {}
+        if fb.get("language") and (lang not in (fb.get("when_not_in") or [lang])
+                                   or prob < fb.get("min_probability", 0.0)):
+            return self.active_scenario().get("language") or fb["language"]
+        return lang
 
     def _fallback_transcribe(self, path, segs, info, resolved, scfg):
         """A second pass in a set language when detection is unsure (A26-80).
@@ -923,9 +957,18 @@ class Brain:
         return self.run_job("hear", one)
 
     def _whisper(self, path, lang, scfg):
-        """One whisper pass (and the unsure-language second pass)."""
+        """One whisper pass (and the unsure-language second pass). A language
+        with its own trained model is heard by that model (A45-1)."""
+        model = self._stt
+        if (self.service("local")["jobs"].get("hear") or {}).get("byLanguage"):
+            try:
+                if not lang:
+                    lang = self._detect(path, scfg)
+                model = self._own_model(lang) or self._stt
+            except Exception:                           # noqa: BLE001
+                model = self._stt          # no quick look, or no own model: as before
         bias = ((scfg.get("languages") or {}).get(lang) or {}).get("bias") if lang else None
-        segments, info = self._stt.transcribe(
+        segments, info = model.transcribe(
             path, language=lang or None,
             temperature=0,
             beam_size=int(scfg.get("beam") or 1),
@@ -1461,6 +1504,14 @@ class Brain:
             if force or self.cfg.get("stt", {}).get("enabled"):
                 if not self._stt:
                     self._load_stt()
+                # A language's own hearing model too: its first load is a
+                # download, which must not land on a visitor's first question.
+                own = (self.service("local")["jobs"].get("hear") or {}).get("byLanguage") or {}
+                for lang in own:
+                    try:
+                        self._own_model(lang)
+                    except Exception as e:              # noqa: BLE001
+                        self._stt_own_err = "%s: %s" % (e.__class__.__name__, e)
 
         self._preload_thread = threading.Thread(target=_worker, daemon=True)
         self._preload_thread.start()
@@ -1471,6 +1522,7 @@ class Brain:
         with self._lock:
             self._llm = None
             self._stt = None
+            self._stt_own = {}
             self._llm_err = None
             self._stt_err = None
             self._llm_loading = False
