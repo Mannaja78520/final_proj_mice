@@ -374,7 +374,8 @@ class VoiceApp {
     } else {
       // The badge must agree with the look that just happened: it used to
       // keep showing the last name while this line said the frame was empty.
-      this.updateFace("");
+      // A face app too busy to look saw nothing either way: the name stays.
+      if (!r.noLook) this.updateFace("");
       this.sayCam(r.error || "nobody I know is in front of the camera",
                   r.detail, r.canStart);
     }
@@ -1592,6 +1593,7 @@ static langName(code){
   this.seqs = (ls && ls.files) || [];
   this.fillAnswers(); this.fillVoice(); this.fillWords(); this.fillScenario(); this.fillThai(); this.fillFaces(); this.fillAdvanced();
   this.fillAskLangs();
+  this.loadServices();
   // Finding every robot on every PC took 10 s the first time (measured
   // 2026-10-15) and EVERY settings box stayed empty until it came back - the
   // page looked broken. The boxes fill now; the robot lists catch up.
@@ -1625,6 +1627,7 @@ static langName(code){
   async postConfig(statId){
   this.$(statId).textContent = "saving…";
   this.collectWords(); this.collectVoice(); this.collectScenario(); this.collectThai(); this.collectFaces(); this.collectAdvanced();
+  this.collectServices();
   let r;
   try {
     r = await fetch("/api/voice/config", {method: "POST",
@@ -1645,6 +1648,7 @@ static langName(code){
   }
   this.$(statId).textContent = "Saved.";
   this.fillAskLangs();
+  this.loadServices();
   const h = await fetch("/api/voice/health").then(x => x.json()).catch(() => null);
   if (h && h.parts) this.updateParts(h.parts);
   return true;
@@ -2179,6 +2183,10 @@ static SAMPLES = {
   t.enabled = this.$("speakOn").checked;
   const ml = this.$("mainLang").value;
   if (ml) t.language = ml;
+  // The main language is also what the listener falls back to when it
+  // cannot tell what was said (user 2026-10-19: Thai first, changeable).
+  const fb = ((this.cfg.stt || {}).fallback);
+  if (ml && fb) fb.language = ml;
   t.rate = this.$("ttsRate").value || "+0%";
   t.pitch = this.$("ttsPitch").value || "+0Hz";
   // Only once the voice boxes are drawn: an empty box read before the list
@@ -2307,6 +2315,17 @@ static SAMPLES = {
 
   showScenario(s){
   this.$("scenPrompt").value = s.prompt || "";
+  const sl = this.$("scenLang");
+  if (sl) {
+    sl.textContent = "";
+    [["", "same as the Voice tab"]].concat(this.langs().map(l => [l, VoiceApp.langName(l)]))
+      .forEach(([v, txt]) => {
+        const o = document.createElement("option");
+        o.value = v; o.textContent = txt;
+        sl.appendChild(o);
+      });
+    sl.value = s.language || "";
+  }
   this.fillSteps(this.$("scenRate"), "rate", s.rate, "same as the Voice tab");
   this.fillSteps(this.$("scenPitch"), "pitch", s.pitch, "same as the Voice tab");
   this.scenVoiceWant = s.voice || "";
@@ -2349,7 +2368,8 @@ static SAMPLES = {
     this.cfg.scenarios.push({name, prompt: this.$("scenPrompt").value.trim(),
                              voice: this.$("scenVoice").value,
                              rate: this.$("scenRate").value,
-                             pitch: this.$("scenPitch").value});
+                             pitch: this.$("scenPitch").value,
+                             language: (this.$("scenLang") || {}).value || ""});
   this.cfg.scenario = name;
   this.fillScenario();
   this.$("sStat").textContent = "Added — press Save personality to keep it.";
@@ -2358,7 +2378,8 @@ static SAMPLES = {
   // Plays the scenario as it would sound: its own voice, speed and pitch, or
   // the Voice tab's where it says "same".
   tryScenario(){
-  const lang = (this.$("mainLang") && this.$("mainLang").value) || "th";
+  const lang = (this.$("scenLang") && this.$("scenLang").value)
+    || (this.$("mainLang") && this.$("mainLang").value) || "th";
   const own = ((this.langVoice || {})[lang] || {}).sel;
   const voice = this.$("scenVoice").value || this.$("oneVoice").value || (own ? own.value : "");
   const t = {speed: this.$("scenRate").value || this.$("ttsRate").value || "+0%",
@@ -2374,7 +2395,8 @@ static SAMPLES = {
   const body = {prompt: this.$("scenPrompt").value.trim(),
                 voice: this.$("scenVoice").value,
                 rate: this.$("scenRate").value,
-                pitch: this.$("scenPitch").value};
+                pitch: this.$("scenPitch").value,
+                language: (this.$("scenLang") || {}).value || ""};
   if (!name) {                                // no scenario: the words alone
     this.cfg.scenario = body.prompt;
     return;
@@ -2453,6 +2475,129 @@ static SAMPLES = {
   f.rememberSeconds = num("faceForget", f.rememberSeconds ?? 120);
   f.autoSeconds = num("faceEvery", f.autoSeconds ?? 5);
   this.camSeconds = f.autoSeconds;
+}
+
+// ---- Who does it (A45-1) ---------------------------------------------
+// Each job (hearing, answering, speaking) picks a first choice and a backup
+// from /api/voice/services, which names every service, what it can do and
+// whether its key is saved - never the key itself.
+  async loadServices(){
+  const got = await fetch("/api/voice/services").then(x => x.json()).catch(() => null);
+  if (!got || !got.ok) return;
+  this.svc = got;
+  this.fillServices();
+}
+  fillServices(){
+  const g = this.svc;
+  const box = this.$("svcJobs");
+  if (!g || !g.providers || !box) return;
+  box.textContent = "";
+  this.svcPick = {};
+  Object.entries(g.jobs || {}).forEach(([job, j]) => {
+    const can = Object.entries(g.providers).filter(([, p]) => job in (p.jobs || {}));
+    const use = (g.use || {})[job] || [];
+    const row = document.createElement("div");
+    row.className = "field";
+    const name = document.createElement("span");
+    name.textContent = j.says;
+    name.title = j.about || "";
+    row.appendChild(name);
+    const pick = (chosen, none) => {
+      const sel = document.createElement("select");
+      if (none) {
+        const o = document.createElement("option");
+        o.value = ""; o.textContent = none;
+        sel.appendChild(o);
+      }
+      can.forEach(([id, p]) => {
+        const o = document.createElement("option");
+        o.value = id;
+        o.textContent = p.says + (p.hasKey ? "" : " (no key yet)");
+        sel.appendChild(o);
+      });
+      sel.value = chosen || "";
+      return sel;
+    };
+    const first = pick(use[0]);
+    const backup = pick(use[1], "no backup");
+    const or = document.createElement("span");
+    or.className = "mini";
+    or.textContent = "if it fails";
+    row.appendChild(first); row.appendChild(or); row.appendChild(backup);
+    box.appendChild(row);
+    const last = ((g.last || {})[job]) || {};
+    if (last.by) {
+      const p = document.createElement("p");
+      p.className = "mini";
+      p.textContent = "Last time: " + (last.says || last.by) + ", "
+        + (last.ms / 1000).toFixed(1) + " s"
+        + ((last.tried || []).length ? " (" + last.tried.map(t => t.by).join(", ") + " did not)" : "");
+      box.appendChild(p);
+    }
+    this.svcPick[job] = [first, backup];
+  });
+  const keys = this.$("svcKeys");
+  keys.textContent = "";
+  Object.entries(g.providers).filter(([, p]) => p.needsKey).forEach(([id, p]) => {
+    const card = document.createElement("div");
+    card.className = "field";
+    const name = document.createElement("span");
+    name.textContent = p.says + (p.hasKey ? " ✓" : "");
+    card.appendChild(name);
+    const box2 = document.createElement("input");
+    box2.type = "password"; box2.autocomplete = "off";
+    box2.placeholder = p.hasKey ? "a key is saved - type to replace it" : "paste its key";
+    card.appendChild(box2);
+    const save = document.createElement("button");
+    save.textContent = "Save key";
+    save.onclick = () => this.saveKey(id, box2.value, box2);
+    card.appendChild(save);
+    if (p.hasKey) {
+      const drop = document.createElement("button");
+      drop.textContent = "Remove";
+      drop.onclick = () => this.saveKey(id, "", box2);
+      card.appendChild(drop);
+    }
+    if (p.getKey) {
+      const a = document.createElement("a");
+      a.href = p.getKey; a.target = "_blank"; a.rel = "noopener";
+      a.textContent = "Get a free key";
+      card.appendChild(a);
+    }
+    keys.appendChild(card);
+    const free = document.createElement("p");
+    free.className = "mini";
+    free.textContent = p.free;
+    keys.appendChild(free);
+  });
+}
+  collectServices(){
+  if (!this.svcPick) return;
+  this.cfg.use = this.cfg.use || {};
+  Object.entries(this.svcPick).forEach(([job, [first, backup]]) => {
+    const list = [first.value];
+    if (backup.value && backup.value !== first.value) list.push(backup.value);
+    this.cfg.use[job] = list.filter(Boolean);
+  });
+}
+  async saveKey(id, key, box){
+  const stat = this.$("keyStat");
+  if (key !== "" && !key.trim()) { stat.textContent = "Paste the key first."; return; }
+  stat.textContent = "saving…";
+  const r = await fetch("/api/voice/keys", {method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({keys: {[id]: key.trim()}})}).catch(() => null);
+  if (!r) { stat.textContent = "The voice helper is not answering."; return; }
+  if (r.status === 401) {
+    stat.textContent = miceLogin.required("Saving a key needs a login — log in at the top of this page.");
+    return;
+  }
+  const got = await r.json().catch(() => ({}));
+  if (!r.ok || !got.ok) { stat.textContent = got.error || "That did not save — try again."; return; }
+  if (box) box.value = "";
+  this.svc = Object.assign({ok: true}, got);
+  this.fillServices();
+  stat.textContent = key ? "Key saved." : "Key removed.";
 }
 
 // ---- Advanced ---------------------------------------------------------
@@ -2570,6 +2715,7 @@ window.postConfig = (...args) => window.voiceApp.postConfig(...args);
 window.postFaqs = (...args) => window.voiceApp.postFaqs(...args);
 window.fillAnswers = (...args) => window.voiceApp.fillAnswers(...args);
 window.showTab = (...args) => window.voiceApp.showTab(...args);
+window.saveKey = (...args) => window.voiceApp.saveKey(...args);
 window.findAnswers = (...args) => window.voiceApp.findAnswers(...args);
 window.addAnswerRow = (...args) => window.voiceApp.addAnswerRow(...args);
 window.saveAnswers = (...args) => window.voiceApp.saveAnswers(...args);

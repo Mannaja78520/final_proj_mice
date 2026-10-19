@@ -127,6 +127,7 @@
       <button class="tab on" data-tab="answers" onclick="showTab('answers')">Answers</button>
       <button class="tab" data-tab="voice" onclick="showTab('voice')">Voice</button>
       <button class="tab" data-tab="listen" onclick="showTab('listen')">Listening</button>
+      <button class="tab" data-tab="services" onclick="showTab('services')">Who does it</button>
       <button class="tab" data-tab="who" onclick="showTab('who')">Personality</button>
       <button class="tab" data-tab="faces" onclick="showTab('faces')">Faces</button>
       <button class="tab tech" data-tab="adv" onclick="showTab('adv')">Advanced</button>
@@ -179,8 +180,9 @@
       <div class="field">
         <span>Main language</span><select id="mainLang"></select>
       </div>
-      <p class="mini">Used when it cannot tell which language was spoken, and
-         when the Language box above the question says so.</p>
+      <p class="mini">Used when it cannot tell which language was spoken (for
+         hearing and speaking), and when the Language box above the question
+         says so.</p>
       <div class="row">
         <button class="primary" onclick="postConfig('vStat')">Save voice</button>
         <span class="mini" id="vStat" aria-live="polite"></span>
@@ -201,6 +203,28 @@
       </div>
     </div>
 
+    <!-- WHO DOES IT (A45-1, user 2026-10-19): each job - hearing, answering,
+         speaking - picks this PC or an online service, with a backup for
+         when the first one fails. The list of services is
+         config/voice_providers.json; keys are saved on this PC only and
+         never shown again. -->
+    <div class="card" data-pane="services" hidden>
+      <p class="mini">Each job can be done by this PC or by an online service.
+         If the first choice fails (no internet, no key, its free use is
+         used up), the backup does it at once.</p>
+      <div id="svcJobs"></div>
+      <div class="row">
+        <button class="primary" onclick="postConfig('svcStat')">Save choices</button>
+        <span class="mini" id="svcStat" aria-live="polite"></span>
+      </div>
+      <h3>Keys</h3>
+      <p class="mini">A service that needs a key does nothing until one is
+         saved here. Keys stay on this PC: they are never shown again and
+         never leave it except to that service.</p>
+      <div id="svcKeys"></div>
+      <span class="mini" id="keyStat" aria-live="polite"></span>
+    </div>
+
     <!-- PERSONALITY: who it is being. -->
     <div class="card" data-pane="who" hidden>
       <div class="field">
@@ -212,6 +236,12 @@
         placeholder="A polite shopping-mall greeter. Short, warm answers."></textarea>
       <p class="mini">The words above tell the rig who it is being. A scenario
          may also sound its own way; "same as Voice" keeps the Voice tab.</p>
+      <div class="field">
+        <span>Its main language</span><select id="scenLang"></select>
+      </div>
+      <p class="mini">The language it leans on when it cannot tell what was
+         spoken - English for an international event, Thai at home. Every
+         language still works.</p>
       <div class="field">
         <span>Its voice</span><select id="scenVoice"></select>
       </div>

@@ -3,7 +3,6 @@
  "faqThreshold": 0.75,
  "faqAskAgain": 0,
  "scenario": "Mall greeter",
- "googleApiKey": "",
  "presence": {
   "on": false,
   "seconds": 60,

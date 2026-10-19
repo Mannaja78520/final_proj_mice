@@ -261,7 +261,7 @@ def run(t):
     real_say = brain.say
     built = []
 
-    def fake_say(text, lang=""):
+    def fake_say(text, lang="", prebuild=False):
         i, _v = brain.resolve_voice(lang)
         p = brain._cache_path(i, text)
         p.write_bytes(b"RIFFfake")

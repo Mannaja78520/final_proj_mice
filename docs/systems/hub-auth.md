@@ -23,7 +23,7 @@ Hub logins, sessions, which pages need a login, pairing two hubs.
 
 - [hub](hub.md)
 
-## Checks that test it (16)
+## Checks that test it (17)
 
 - `check_accounts`
 - `check_board_login_sync`
@@ -41,5 +41,6 @@ Hub logins, sessions, which pages need a login, pairing two hubs.
 - `check_self_update`
 - `check_stale_build`
 - `check_stream_audio`
+- `check_voice_services`
 
-Run them: `python qc/run_qc.py --no-build check_accounts check_board_login_sync check_guards_armed check_hub_auth check_hub_pair check_hub_reach check_hub_users check_no_data_loss check_one_hub check_onefile check_page_login check_report_button check_rig_presets check_self_update check_stale_build check_stream_audio`
+Run them: `python qc/run_qc.py --no-build check_accounts check_board_login_sync check_guards_armed check_hub_auth check_hub_pair check_hub_reach check_hub_users check_no_data_loss check_one_hub check_onefile check_page_login check_report_button check_rig_presets check_self_update check_stale_build check_stream_audio check_voice_services`

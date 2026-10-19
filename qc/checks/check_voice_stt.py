@@ -191,6 +191,13 @@ def run(t):
          and fake_fb.kwargs[-1].get("initial_prompt") == "toilet robot",
          "an unsure detection is retried in the store's fallback language",
          repr([k.get("language") for k in fake_fb.kwargs]))
+    # A45-1: an event's own main language wins (user 2026-10-19: global events)
+    brain_fb.cfg["scenarios"] = [{"name": "Expo", "prompt": "x", "language": "ja"}]
+    brain_fb.cfg["scenario"] = "Expo"
+    brain_fb.listen(b"x")
+    t.ok(fake_fb.kwargs[-1].get("language") == "ja",
+         "...in the scenario's own main language when it has one",
+         repr([k.get("language") for k in fake_fb.kwargs]))
     t.ok(len(fake.kwargs) == 2,
          "with no fallback in the store there is no second pass",
          "calls: %d" % len(fake.kwargs))
