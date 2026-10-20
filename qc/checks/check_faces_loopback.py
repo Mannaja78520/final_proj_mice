@@ -103,11 +103,10 @@ def run(t):
                  "the live feed is not claimed to see strangers",
                  "their feed publishes only matched faces, so a rig that "
                  "believed otherwise would wait for a stranger who never comes")
-            t.ok(poll.get("hasCamera") is False,
-                 "and the history is not claimed to carry a camera",
-                 "history rows have no node_id at all, so a greeting placed "
-                 "at a door from a history row is a guess about where "
-                 "somebody is standing")
+            t.ok(poll.get("hasCamera") is True,
+                 "and the updated history declares node provenance",
+                 "current Reconize history exposes node_id; individual null or stale "
+                 "rows must still be rejected as presence by the consumer")
             t.eq(state.get("people"), [],
                  "and nobody is reported, because nothing is read yet")
     finally:

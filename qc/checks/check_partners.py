@@ -76,11 +76,15 @@ def run(t):
                      "a map naming a field the payload does not carry is a "
                      "promise the source cannot keep: %s" % src.get("map"))
             if src.get("kind") == "poll":
-                t.ok(src.get("lagSeconds"),
-                     "%s declares how far behind its cursor it re-reads" % where,
-                     "their detected_at is stamped before the row commits "
-                     "(models/models.py:64), so a cursor at the newest time "
-                     "seen drops rows that land late - and drops the person")
+                cursor = src.get("cursor")
+                if cursor:
+                    t.ok(all(cursor.get(k) for k in ("path", "latest", "next", "seq"))
+                         and "{after_seq}" in cursor["path"],
+                         "%s declares the committed-sequence contract" % where, cursor)
+                else:
+                    t.ok(src.get("lagSeconds"),
+                         "%s legacy poll declares its timestamp overlap" % where,
+                         "without sequence numbers, late commits need a lookback window")
 
         # ---- and never a login -----------------------------------------
         flat = json.dumps(p).lower()

@@ -70,6 +70,7 @@ def run(t):
         "faqAskAgain": SCORE_NEAR - 0.02,
         "stt": {"enabled": False}, "llm": {"enabled": False},
         "tts": {"enabled": False},
+        "face": {"on": False},   # FAQ fixture must never query the live person's name
     }), encoding="utf-8")
     os.environ["MICE_VOICE_CONFIG"] = str(cfg)
 

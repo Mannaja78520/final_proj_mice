@@ -295,15 +295,21 @@ def _history(t, S, login):
              "detected_at": (now - timedelta(seconds=60)).isoformat(), "node_id": "door-1"}]
     try:
         st = _state(S, fake, login)
+        for s in st.partners["reconize"]["events"]:
+            if s["kind"] == "poll":
+                s.pop("cursor", None)              # explicit legacy partner
+                s["hasCamera"] = False
+                s["map"].pop("camera", None)
         st._fetch = lambda src, tok, page: (rows if page == 1 else [], "")
         st.token, st.token_dies = "tok", time.time() + 3600
         fresh, _ = st.poll_once()
         t.ok(fresh and not any(e["camera"] for e in fresh),
-             "today a history row names no camera, even if one rode along", fresh)
+             "a legacy source without camera mapping claims no camera", fresh)
         st = _state(S, fake, login)
         for s in st.partners["reconize"]["events"]:
             if s["kind"] == "poll":
-                s["hasCamera"] = True              # the switch, when it lands
+                s.pop("cursor", None)              # retain legacy mapping coverage
+                s["hasCamera"] = True
                 s["map"]["camera"] = "node_id"
         st._fetch = lambda src, tok, page: (rows if page == 1 else [], "")
         st.token, st.token_dies = "tok", time.time() + 3600
