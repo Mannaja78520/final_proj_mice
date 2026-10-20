@@ -903,57 +903,66 @@ class VoiceApp {
 
 // Silence detection: reads time-domain samples from the analyser, centers
 // them (silence is ~128, not 0), and returns true when rms is below 1%.
-  convRms(){
-  if (!this.convAnalyser) return false;
-  const buf = new Uint8Array(this.convAnalyser.frequencyBinCount);
-  this.convAnalyser.getByteTimeDomainData(buf);
+  convRms(analyser = this.convAnalyser){
+  if (!analyser) return true;
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteTimeDomainData(buf);
   let sum = 0;
-  for (let i = 0; i < buf.length; i++) {
-    const c = (buf[i] / 128.0) - 1.0;   // center to [-1, 1]
-    sum += c * c;
-  }
-  const rms = Math.sqrt(sum / buf.length);
-  return rms < 0.01;
+  for (const sample of buf) sum += ((sample / 128) - 1) ** 2;
+  return Math.sqrt(sum / buf.length) < 0.01;
 }
 
-// Records for up to durationMs, or until sustained silence after speech
-// begins. Cleanup of stream + AudioContext is local so Stop mid-recording
-// never throws.
-  async convRecord(stream, ctx, analyser, durationMs){
+// The safety cap starts with speech, not with the microphone opening.
+  async convRecord(stream, ctx, analyser, durationMs = 30000){
   const rec = new MediaRecorder(stream);
   const chunks = [];
-  const mySession = this.convSession;
-  rec.ondataavailable = e => chunks.push(e.data);
-  let resolve;
-  const p = new Promise(r => { resolve = r; });
-  rec.onstop = () => resolve(new Blob(chunks));
-  rec.start();
-
-  let sawSpeech = false;
-  let silenceMs = 0;
-  const tick = () => {
-    if (!this.convActive || this.convSession !== mySession) {
-      if (rec.state === "recording") rec.stop();
-      return;
-    }
-    if (this.convActive && rec.state === "recording") {
-      if (this.convRms()) {
-        if (sawSpeech) silenceMs += 200;
-        if (silenceMs >= 1000 || silenceMs >= durationMs) {
-          rec.stop(); return;
-        }
-      } else {
-        sawSpeech = true;
-        silenceMs = 0;
-      }
-      setTimeout(tick, 200);
-    }
+  const session = this.convSession;
+  let firstSpeech = null, lastSpeech = null, timer, settled = false;
+  const opened = performance.now();
+  let resolve, reject;
+  const result = new Promise((ok, fail) => { resolve = ok; reject = fail; });
+  const capture = {cancel: () => finish(true)};
+  this.convCapture = capture;
+  const tracks = stream.getTracks();
+  const ended = () => finish(true);
+  const clean = () => {
+    clearTimeout(timer);
+    tracks.forEach(track => track.removeEventListener?.("ended", ended));
+    if (this.convCapture === capture) this.convCapture = null;
   };
-  setTimeout(() => {
+  let discarded = false;
+  const finish = (discard = false) => {
+    discarded ||= discard;
+    clearTimeout(timer);
     if (rec.state === "recording") rec.stop();
-  }, durationMs);
+  };
+  rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  rec.onstop = () => {
+    if (settled) return;
+    settled = true; clean();
+    resolve(new Blob(discarded || firstSpeech === null ? [] : chunks));
+  };
+  rec.onerror = e => {
+    if (settled) return;
+    settled = true; clean();
+    reject(e.error || new Error("Microphone recording stopped."));
+  };
+  tracks.forEach(track => track.addEventListener?.("ended", ended, {once: true}));
+  try { rec.start(); } catch (e) { clean(); throw e; }
+  const tick = () => {
+    if (settled || rec.state !== "recording") return;
+    if (!this.convActive || this.convSession !== session) return finish(true);
+    const now = performance.now();
+    if (!this.convRms(analyser)) {
+      if (firstSpeech === null) firstSpeech = now;
+      lastSpeech = now;
+    }
+    if (firstSpeech === null ? now - opened >= 10000
+        : now - firstSpeech >= durationMs || now - lastSpeech >= 1500) return finish();
+    timer = setTimeout(tick, 100);
+  };
   tick();
-  return p;
+  return result;
 }
 
   async convListenOnce(){
@@ -963,25 +972,21 @@ class VoiceApp {
     stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
     });
-    if (this.convSession !== mySession || !this.convActive) {
-      stream.getTracks().forEach(t => t.stop()); return null;
-    }
+    if (this.convSession !== mySession || !this.convActive) return null;
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     analyser = ctx.createAnalyser();
     analyser.fftSize = 512;
     source = ctx.createMediaStreamSource(stream);
     source.connect(analyser);
-    this.convAnalyser = analyser;     // silence detection reads from here
-
-    const blob = await this.convRecord(stream, ctx, analyser, 8000);
+    this.convAnalyser = analyser;
+    const blob = await this.convRecord(stream, ctx, analyser);
     if (this.convSession !== mySession || !this.convActive) return null;
     return blob;
   } finally {
-    // Always clean up mic + audio graph, even if Stop was hit mid-await
-    this.convAnalyser = null;
+    if (this.convAnalyser === analyser) this.convAnalyser = null;
     if (stream) stream.getTracks().forEach(t => t.stop());
     if (source) source.disconnect();
-    if (ctx) ctx.close();
+    if (ctx) await ctx.close();
   }
 }
 
@@ -1000,13 +1005,15 @@ class VoiceApp {
   this.say("conversation on — speak");
   this.convHistory = [];
 
+  try {
   while (this.convActive) {
     await this.rigQuiet(signal);
     if (!this.convActive || this.convSession !== mySession + 1) break;
     const heardFrom = Date.now();
     const blob = await this.convListenOnce();
     if (!blob || !this.convActive || this.convSession !== mySession + 1) break;
-    if (await this.rigSpokeWithin(Date.now() - heardFrom + 500)) {
+    if (!blob.size) continue;
+    if (await this.rigSpokeWithin(Date.now() - heardFrom + 500, signal)) {
       this.say("the robot was talking - listening again");
       continue;
     }
@@ -1094,8 +1101,9 @@ class VoiceApp {
       const aBot = a.module || (a.moves && a.moves[0] && a.moves[0].module);
       if (aBot) {
         this.findRobot(aBot).then(bot => {
-          if (bot && bot.dev) {
+          if (bot && bot.dev && !signal.aborted && this.convSession === mySession + 1) {
             fetch("/api/stream/voice", {
+              signal,
               method: "POST",
               headers: {"Content-Type": "application/json"},
               body: JSON.stringify({text: a.answer, dev: bot.dev})
@@ -1103,7 +1111,7 @@ class VoiceApp {
           }
         }).catch(() => {});
       }
-      tasks.push(this.doMove(a));
+      tasks.push(this.doMove(a, signal));
     }
     if (this.$("sound").checked) {
       const convSpeakLang = this.autoDetect ? (a.lang || detectedLang) : this.askLang;
@@ -1136,17 +1144,23 @@ class VoiceApp {
     if (this.convActive) this.say("conversation — keep talking");
   }
 
-  // Session ended: restore UI (only if this session is still current)
+  } catch (e) {
+    if (!signal.aborted) this.say("The microphone stopped. Check its permission and try again.");
+  } finally {
+  // A retired loop must not change the next session.
   if (this.convSession !== mySession + 1) return;
+  this.convActive = false;
   const p = window._parts || {};
   const sttOk = p.stt && p.stt !== "off in config/voice.json"
                 && !p.stt.startsWith("could not");
   this.$("convStart").hidden = !sttOk;
   this.$("convStop").hidden = true;
   this.$("talk").hidden = false;
+  }
 }
 
   stopConv(){
+  this.convCapture?.cancel();
   this.convActive = false;
   this.convSession++;                       // invalidate any in-flight loop
   if (this.convAbort) { this.convAbort.abort(); this.convAbort = null; }
@@ -1300,29 +1314,36 @@ class VoiceApp {
 // What the rig's ONE speaking queue is doing (hub_speak.py, A4-4): a greeting
 // or this page's own answer through a robot plays there, not in this browser,
 // so the page cannot hear it end. null = unknown (not logged in, older hub).
-  async rigSpeech(){
+  async rigSpeech(signal, timeoutMs = 1200){
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  if (signal?.aborted) return null;
+  signal?.addEventListener("abort", abort, {once: true});
+  const timer = setTimeout(abort, timeoutMs);
   try {
-    const r = await fetch("/api/speak", {cache: "no-store"});
+    const r = await fetch("/api/speak", {cache: "no-store", signal: controller.signal});
     return r.ok ? await r.json() : null;
   } catch (e) { return null; }
+  finally { clearTimeout(timer); signal?.removeEventListener("abort", abort); }
 }
 
-// Before listening again: wait while the rig is talking, or the microphone
-// takes the rig's own words as the next question. Gives up after maxMs.
   async rigQuiet(signal, maxMs = 30000){
   const until = Date.now() + maxMs;
-  while (Date.now() < until && !(signal && signal.aborted)) {
-    const st = await this.rigSpeech();
+  while (Date.now() < until && !signal?.aborted) {
+    const st = await this.rigSpeech(signal, Math.min(1200, until - Date.now()));
     if (!st || !st.speaking) return;
     this.$("wait").textContent = "waiting for the robot to finish…";
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(resolve => {
+      const done = () => { clearTimeout(timer); signal?.removeEventListener("abort", done); resolve(); };
+      const timer = setTimeout(done, 300);
+      signal?.addEventListener("abort", done, {once: true});
+      if (signal?.aborted) done();
+    });
   }
 }
 
-// After a recording: did the rig talk while it ran? Then it holds the rig's
-// voice, not the visitor's, and is thrown away.
-  async rigSpokeWithin(ms){
-  const st = await this.rigSpeech();
+  async rigSpokeWithin(ms, signal){
+  const st = await this.rigSpeech(signal);
   return !!st && (st.speaking || (st.quietFor !== null && st.quietFor * 1000 < ms));
 }
 
@@ -1330,50 +1351,138 @@ class VoiceApp {
 // Used in the conversation loop so we don't listen again until the
 // answer has fully played - prevents the assistant's voice being
 // captured as a new question.
+  deviceVoice(text, lang, explicitVoice){
+  const t = this.cfg?.tts || {};
+  const chain = this.svc?.use?.speak || this.cfg?.use?.speak || [];
+  const scenario = this.scenarioList().find(s => s.name === this.cfg?.scenario);
+  if (t.fastDeviceVoice === false || t.enabled === false || explicitVoice || t.oneVoice || t.mixedVoice
+      || scenario?.voice || scenario?.rate || scenario?.pitch || (t.pitch && !["+0Hz", "0Hz"].includes(t.pitch))
+      || !chain.includes("local") || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return null;
+  const scripts = {th: /[\p{Script=Thai}\p{Script=Latin}]/u, en: /\p{Script=Latin}/u,
+                   ja: /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Latin}]/u,
+                   zh: /[\p{Script=Han}\p{Script=Latin}]/u};
+  if (!scripts[lang] || [...text].some(c => /\p{L}/u.test(c) && !scripts[lang].test(c))) return null;
+  return speechSynthesis.getVoices().find(v => v.localService && v.lang.toLowerCase().split("-")[0] === lang) || null;
+}
+
   async speakAndWait(text, langOrSignal, maybeSignal, maybeVoice){
-  let lang = "";
-  let signal = null;
-  let voice = maybeVoice || "";
-  if (langOrSignal && typeof langOrSignal === "object" && "aborted" in langOrSignal) {
-    signal = langOrSignal;
-  } else {
-    lang = langOrSignal || "";
-    signal = maybeSignal || null;
-  }
+  const legacy = langOrSignal && typeof langOrSignal === "object" && "aborted" in langOrSignal;
+  const lang = legacy ? this.detectLang(text) : (langOrSignal || this.detectLang(text));
+  const signal = legacy ? langOrSignal : maybeSignal;
+  if (signal?.aborted) return;
+  const owner = {};
+  this.replyOwner?.cancel();
+  this.replyOwner = owner;
+  const request = new AbortController();
+  let player, url, utterance, timer, watchdog, requestTimer, finished = false;
+  const own = () => this.replyOwner === owner;
+  const cancelNative = () => {
+    if (utterance && this.nativeReply === utterance) {
+      this.nativeReply = null;
+      speechSynthesis.cancel();
+    }
+  };
+  let resolveAbort;
+  const aborted = new Promise(resolve => { resolveAbort = resolve; });
+  owner.cancel = () => {
+    request.abort(); player?.pause(); cancelNative();
+    resolveAbort({kind: "abort"});
+  };
+  signal?.addEventListener("abort", owner.cancel, {once: true});
   this.$("wait").textContent = "saying…";
   this.$("speakingText").textContent = text;
   this.$("speakingNow").hidden = false;
-  try {
-    const r = await fetch("/api/voice/say", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(voice ? {text: text, lang: lang || "", voice: voice}
-                                 : {text: text, lang: lang || ""}),
-      signal,
-    });
-    if (signal && signal.aborted) { this.$("speakingNow").hidden = true; return; }
-    if (!r.ok) { this.$("wait").textContent = (await r.json()).error; this.$("speakingNow").hidden = true; return; }
-    const blob = await r.blob();
-    if (signal && signal.aborted) { this.$("speakingNow").hidden = true; return; }
-    const url = URL.createObjectURL(blob);
-    const player = new Audio(url);
-    await new Promise((resolve, reject) => {
-      const on_abort = () => {
-        player.pause(); player.onended = null; player.onerror = null;
-        URL.revokeObjectURL(url); this.$("speakingNow").hidden = true; reject(new Error("aborted"));
-      };
-      if (signal) signal.addEventListener("abort", on_abort, {once: true});
-      player.onended = () => { if (signal) signal.removeEventListener("abort", on_abort); URL.revokeObjectURL(url); this.$("speakingNow").hidden = true; resolve(); };
-      player.onerror = () => { if (signal) signal.removeEventListener("abort", on_abort); URL.revokeObjectURL(url); this.$("speakingNow").hidden = true; reject(); };
-      player.play().catch(() => {
-        if (signal) signal.removeEventListener("abort", on_abort);
-        URL.revokeObjectURL(url); this.$("speakingNow").hidden = true; reject(new Error("play rejected"));
+  // Prime a browser whose voice list arrives after the first lookup.
+  window.speechSynthesis?.getVoices();
+  const remote = (async () => {
+    requestTimer = setTimeout(() => request.abort(), 15000);
+    try {
+      const r = await fetch("/api/voice/say", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(maybeVoice ? {text, lang, voice: maybeVoice} : {text, lang}),
+        signal: request.signal,
       });
+      const kind = r.headers?.get?.("Content-Type") || "";
+      if (!r.ok || kind.includes("json")) throw new Error("The voice could not answer.");
+      const blob = await r.blob();
+      if (!blob.size) throw new Error("The voice returned no sound.");
+      return {kind: "audio", blob};
+    } catch (error) { return {kind: "error", error}; }
+    finally { clearTimeout(requestTimer); }
+  })();
+  const native = new Promise(resolve => {
+    timer = setTimeout(() => {
+      const voice = this.deviceVoice(text, lang, maybeVoice);
+      if (!voice || !own() || signal?.aborted || speechSynthesis.speaking || speechSynthesis.pending) {
+        resolve({kind: "nativeUnavailable"}); return;
+      }
+      utterance = new SpeechSynthesisUtterance(text);
+      utterance.voice = voice; utterance.lang = voice.lang;
+      const rate = Number.parseFloat(this.cfg?.tts?.rate || "0");
+      utterance.rate = Math.max(0.1, Math.min(3, 1 + (Number.isFinite(rate) ? rate : 0) / 100));
+      this.nativeReply = utterance;
+      let started = false, end;
+      const done = new Promise(r => { end = r; });
+      utterance.onstart = () => {
+        if (!own() || signal?.aborted || finished) return cancelNative();
+        started = true; clearTimeout(watchdog);
+        watchdog = setTimeout(() => { cancelNative(); end({ok: false}); },
+          Math.max(15000, Math.min(120000, text.length * 180 / utterance.rate + 5000)));
+        resolve({kind: "native", done});
+      };
+      utterance.onend = () => { end({ok: true}); };
+      utterance.onerror = () => {
+        end({ok: false});
+        if (!started) resolve({kind: "nativeError"});
+      };
+      watchdog = setTimeout(() => { cancelNative(); resolve({kind: "nativeError"}); }, 2000);
+      try { speechSynthesis.speak(utterance); }
+      catch (e) { cancelNative(); resolve({kind: "nativeError"}); }
+    }, 650);
+  });
+  try {
+    let winner = await Promise.race([remote, native, aborted]);
+    if (winner.kind === "error") {
+      const backup = await Promise.race([native, aborted]);
+      if (backup.kind !== "native" && backup.kind !== "abort") throw winner.error;
+      winner = backup;
+    }
+    if (["nativeError", "nativeUnavailable"].includes(winner.kind)) winner = await Promise.race([remote, aborted]);
+    if (winner.kind === "abort" || !own() || signal?.aborted) return;
+    clearTimeout(timer);
+    if (winner.kind === "native") {
+      this.showVoice({natural: false, why: "using an installed voice on this device for a quicker reply"});
+      const ended = await Promise.race([winner.done, aborted]);
+      if (ended.kind !== "abort" && !ended.ok && own()) this.say("The sound stopped before it finished.");
+      return;
+    }
+    clearTimeout(watchdog); cancelNative();
+    if (winner.kind === "error") throw winner.error;
+    url = URL.createObjectURL(winner.blob);
+    player = new Audio(url);
+    const playback = new Promise((resolve, reject) => {
+      player.onended = () => resolve({ok: true});
+      player.onerror = () => reject(new Error("The sound could not play."));
+      watchdog = setTimeout(() => reject(new Error("Playback stopped answering.")),
+        Math.max(15000, Math.min(120000, text.length * 180 + 5000)));
+      Promise.resolve(player.play()).catch(reject);
     });
-    this.$("wait").textContent = "";
-  } catch(e) {
-    this.$("wait").textContent = "";
-    this.$("speakingNow").hidden = true;
+    await Promise.race([playback, aborted]);
+  } catch (e) {
+    if (own() && !signal?.aborted) this.say("The sound could not play. Check sound permission and try again.");
+  } finally {
+    finished = true;
+    request.abort();
+    clearTimeout(timer); clearTimeout(watchdog); clearTimeout(requestTimer);
+    signal?.removeEventListener("abort", owner.cancel);
+    player?.pause();
+    if (url) URL.revokeObjectURL(url);
+    if (utterance && this.nativeReply === utterance) this.nativeReply = null;
+    if (own()) {
+      this.replyOwner = null;
+      this.$("speakingNow").hidden = true;
+      this.$("wait").textContent = "";
+    }
   }
 }
 
@@ -1407,7 +1516,11 @@ class VoiceApp {
   return bot;
 }
 
-  async doMove(r){
+  async doMove(r, signal){
+  if (this.movePending) await this.movePending.catch(() => {});
+  if (signal?.aborted) return;
+  const moveOwner = {};
+  this.moveOwner = moveOwner;
   if (this.$("moveOn") && !this.$("moveOn").checked) return;
   this.mvClear();
 
@@ -1442,17 +1555,25 @@ class VoiceApp {
 
   if (!targetMoves.length) return;
 
-  let stopped = false;
+  let stopped = false, started = false, stopRequest;
+  const halt = () => {
+    stopped = true;
+    if (started && this.moveOwner === moveOwner) {
+      stopRequest ||= fetch("/api/play/stop", {method: "POST"}).catch(() => {});
+    }
+  };
+  signal?.addEventListener("abort", halt, {once: true});
   this.mvBtn = document.createElement("button");
   this.mvBtn.textContent = "■ Stop the move";
+  const button = this.mvBtn;
   this.mvBtn.onclick = () => {
-    stopped = true;
+    halt();
     this.mvClear();
-    fetch("/api/play/stop", {method: "POST"}).catch(() => {});
   };
   this.$("wait").textContent = "";
   this.$("wait").appendChild(this.mvBtn);
 
+  try {
   for (let idx = 0; idx < targetMoves.length; idx++) {
     if (stopped) break;
     const item = targetMoves[idx];
@@ -1478,7 +1599,9 @@ class VoiceApp {
         continue;
       }
 
-      const st = await fetch("/api/play").then(x => x.json()).catch(() => null);
+      if (stopped) break;
+      const st = await fetch("/api/play", {signal}).then(x => x.json()).catch(() => null);
+      if (stopped) break;
       if (st && st.running && st.dev === bot.dev) {
         this.$("wait").textContent = labelPrefix + bot.name + " is already moving - ask again once it stops.";
         this.$("wait").appendChild(this.mvBtn);
@@ -1488,7 +1611,7 @@ class VoiceApp {
 
       this.$("wait").textContent = labelPrefix + "getting the moves…";
       this.$("wait").appendChild(this.mvBtn);
-      const s = await fetch("/api/seqsteps?name=" + encodeURIComponent(moveName))
+      const s = await fetch("/api/seqsteps?name=" + encodeURIComponent(moveName), {signal})
                   .then(x => x.json());
       if (stopped) break;
       if (!s.ok) {
@@ -1498,12 +1621,25 @@ class VoiceApp {
         continue;
       }
 
+      if (stopped) break;
+      started = true;
+      const dispatch = (async () => {
       const p = await fetch("/api/play", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({dev: bot.dev, steps: s.steps,
                               loop: s.loop, name: moveName}),
       }).then(x => x.json());
+      if (stopped) {
+        await stopRequest;
+        await fetch("/api/play/stop", {method: "POST"}).catch(() => {});
+      }
+      return p;
+      })();
+      this.movePending = dispatch;
+      let p;
+      try { p = await dispatch; }
+      finally { if (this.movePending === dispatch) this.movePending = null; }
       if (stopped) break;
       if (p.error) {
         this.$("wait").textContent = labelPrefix + p.error;
@@ -1527,12 +1663,16 @@ class VoiceApp {
         }, 500);
       });
     } catch(e) {
+      if (stopped || signal?.aborted) break;
       this.$("wait").textContent = labelPrefix + "The robot did not take that move — log in first?";
       this.$("wait").appendChild(this.mvBtn);
       await new Promise(res => setTimeout(res, 1500));
     }
   }
-  this.mvClear();
+  } finally {
+    signal?.removeEventListener("abort", halt);
+    if (this.mvBtn === button) this.mvClear();
+  }
 }
 
 // ---- Settings (A20-12; tabs and the answers sheet A42-1). The stores live
@@ -1780,6 +1920,14 @@ static langName(code){
   const ac = td();
   const acts = document.createElement("div");
   acts.className = "acts";
+  const complete = document.createElement("label");
+  complete.className = "pick";
+  const only = document.createElement("input");
+  only.type = "checkbox"; only.checked = !!row.item.wholeQuestion;
+  only.onchange = () => { row.item.wholeQuestion = only.checked; changed(); };
+  complete.appendChild(only);
+  complete.appendChild(document.createTextNode("Match only a short, complete question"));
+  acts.appendChild(complete);
   acts.appendChild(button("🌐 Translate", "Fill the empty languages, and add the ways of asking in each language",
                           () => this.translateRow(row, true)));
   acts.appendChild(button("✕ Delete", "Delete this answer (Undo changes brings it back until you save)",
@@ -2019,6 +2167,7 @@ static SAMPLES = {
   fillVoice(){
   const t = this.cfg.tts || {}, s = this.cfg.stt || {};
   this.$("speakOn").checked = t.enabled !== false;
+  this.$("fastDeviceVoice").checked = t.fastDeviceVoice !== false;
   this.$("listenOn").checked = s.enabled !== false;
   const ml = this.$("mainLang");
   ml.textContent = "";
@@ -2185,6 +2334,7 @@ static SAMPLES = {
   collectVoice(){
   const t = this.cfg.tts = this.cfg.tts || {};
   t.enabled = this.$("speakOn").checked;
+  t.fastDeviceVoice = this.$("fastDeviceVoice").checked;
   const ml = this.$("mainLang").value;
   if (ml) t.language = ml;
   // The main language is also what the listener falls back to when it

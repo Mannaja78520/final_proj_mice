@@ -43,7 +43,9 @@
       // 8 clips on the PC (2026-10-19) 28% letters wrong with them, 2.3% without.
       "jobs": {"hear": {"byLanguage": {"th": "Thaweewat/whisper-th-medium-ct2"},
                         "decode": {"repetition_penalty": 1.2, "no_repeat_ngram_size": 3},
-                        "decodeByLanguage": {"th": {}}},
+                        "decodeByLanguage": {"th": {}},
+                        "batchSize": 8, "chunkSeconds": 10,
+                        "contextByLanguage": {"th": "ตู้มหัศจรรย์ Mice"}},
                "think": {}, "speak": {}}
     },
     "edge": {

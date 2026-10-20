@@ -110,7 +110,7 @@ def run(t):
                     "en": {"bias": "toilet robot"}}},
         "llm": {"enabled": False}, "tts": {"enabled": False},
         # No language's own model here: one would download for real (4c tests it).
-        "providers": {"local": {"hear": {"byLanguage": {}}}},
+        "providers": {"local": {"hear": {"byLanguage": {}, "batchSize": 1, "contextByLanguage": {}}}},
     }, ensure_ascii=False), encoding="utf-8")
     os.environ["MICE_VOICE_CONFIG"] = str(cfg)
 
@@ -215,7 +215,7 @@ def run(t):
         def detect_language(self, audio):
             return self.said
     gen, thai = Looker(texts=("general",)), FakeSTT(texts=("ไทย",))
-    brain_fb.cfg["providers"] = {"local": {"hear": {"byLanguage": {"th": "thai-model"}}}}
+    brain_fb.cfg["providers"] = {"local": {"hear": {"byLanguage": {"th": "thai-model"}, "batchSize": 1, "contextByLanguage": {}}}}
     brain_fb.cfg["scenario"] = ""
     brain_fb._stt, brain_fb._stt_own = gen, {"thai-model": thai}
     svc_decode = sys.modules["faster_whisper"] if "faster_whisper" in sys.modules else None
