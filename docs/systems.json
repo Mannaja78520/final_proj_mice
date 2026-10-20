@@ -163,7 +163,8 @@
                "tools/branch.py", "tools/make_app_branch.py", "tools/livedoc.py",
                "tools/reports.py", "tools/make_diary.py", "tools/systems.py",
                "CLAUDE.md", "AGENTS.md", "GEMINI.md", "README.md", "CHANGELOG.md",
-               "NEXT_SESSION.*", "docs/systems.json"],
+               "NEXT_SESSION.*", "docs/systems.json",
+               "tools/handoff.py", "HANDOFF.md", "handoff/"],
      "depends": []},
 
     {"id": "bench", "summary": "Scripts for real boards on the bench.",

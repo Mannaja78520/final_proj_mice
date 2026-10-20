@@ -1,0 +1,19 @@
+# <task title>
+
+Owner: <agent id, e.g. claude:handoff-mkf9 or codex:10201312; empty = free>
+Updated: <date and time, from the clock>
+Branch: <branch, or main>
+Last commit: <sha>
+Plan: <plan ids, e.g. A45-11>
+
+## Goal
+<the user's ask, in their words if possible>
+
+## Done
+- <what landed, with PR or commit and how it was verified>
+
+## Next
+1. <the next concrete step, with the command if there is one>
+
+## Blocked
+- <what it waits on: robot, user account, a person, a decision; or "nothing">

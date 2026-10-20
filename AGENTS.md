@@ -1,5 +1,15 @@
 # Mice coding instructions
 
+## Start here: HANDOFF.md (user 2026-10-21)
+
+Read `HANDOFF.md` first, then your one task file in `handoff/tasks/`. Before
+ending a task, stopping, or when usage runs low: update your own task file
+(Done, Next, Blocked, Last commit) and push. One file per task, so parallel
+agents never clash. Do not create any other handoff file.
+Tokens: run QC as `python qc/run_qc.py --quiet <check names>` for the files
+you touched (full log in qc/last_run.log), full QC once before merge; grep or
+tail big files (BRIDGE, PLAN.html, app.js, reports/), never read them whole.
+
 ## Find the subsystem first (A26-76, user 2026-09-21)
 
 Before reading code: `python tools/systems.py which <file>` (or open
@@ -24,7 +34,7 @@ mutex. Existing sessions must reload these rules. Ownership and QC claims
 apply across all working copies. Do not infer release from inactivity.
 For limits or a new prompt, follow the provider-limit and resume procedure in
 `docs/COORDINATION.md`: Codex help first; fallback only when unavailable.
-The latest relevant BRIDGE handoff identifies the task, tree and next step.
+The task file in handoff/tasks/ identifies the task, tree and next step.
 
 User preference: Caveman **full**, plain-speak, and token-thrift. Replies stay
 short; clarity, exact technical detail, and verified results outrank compression.
@@ -78,10 +88,9 @@ Full rule: docs/COORDINATION.md, *Every task is in the plan*.
 
 ## Handoff at every work stop (user 2026-10-21)
 
-Before ending every work round, append a HANDOFF to the real docs/BRIDGE.md
-under the coordination mutex. Record task ids, owner, absolute tree/branch/HEAD,
-completed work and evidence, changed files, remaining steps and blockers, and
-exact resource/file claims retained or released. Include artifact paths and the
-next concrete action so another agent can resume without chat history. For
-unfinished owned work, also use tools/plan.py handoff; completed tasks stay done.
+Before ending every work round, update your task file in `handoff/tasks/`
+(see HANDOFF.md): task ids, owner, branch and HEAD, done and evidence, next
+concrete action, blockers. For unfinished owned work, also use
+tools/plan.py handoff; completed tasks stay done. `docs/BRIDGE.md` is only
+for live file/QC claims between agents running at the same time on the PC.
 Never transfer another active agent's task or infer its resource release.

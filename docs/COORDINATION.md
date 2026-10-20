@@ -1,5 +1,11 @@
 # Codex, Antigravity and Claude: shared working agreement
 
+Entry point is `HANDOFF.md` at the repo root (user 2026-10-21): rules, where
+things are, and one task file per open task in `handoff/tasks/`. Task state
+and handoffs live in those task files. This file is the detailed procedure for
+agents working in the same tree at the same time: claims, the mutex, exclusive
+resources. `docs/BRIDGE.md` is the claim log, not the state.
+
 This is the coordination procedure for this Mice workspace. It extends
 AGENTS.md and CLAUDE.md. The current user request determines task scope.
 It does not start model calls, share chat histories, or enforce filesystem
@@ -8,7 +14,8 @@ must be told to reload it; creating this file does not notify them.
 
 ## Read before writing
 
-1. Read AGENTS.md, CLAUDE.md and the newest entries of docs/BRIDGE.md.
+1. Read HANDOFF.md and your task file, then AGENTS.md / CLAUDE.md. Read the
+   newest docs/BRIDGE.md entries only to see live claims by other agents.
 2. Read only the relevant tasks in the real docs/PLAN.html. Use tools/plan.py
    with an explicit --page for changes; do not edit generated plan_state.js.
 3. Identify yourself by assistant and unique session, for example
@@ -19,8 +26,8 @@ must be told to reload it; creating this file does not notify them.
 
 All coordination uses the real root E:/final_proj/mice/code, even when source
 work is in a staging copy. BRIDGE is the append-only ownership and handoff
-log; PLAN remains the only task progress record. HANDOVER is a checkpoint,
-not proof of present ownership. Old timestamps do not release a claim.
+log; PLAN remains the task progress record and handoff/tasks/ the handoff
+state. HANDOVER is an old checkpoint, not proof of present ownership. Old timestamps do not release a claim.
 
 ## Every task is in the plan, with its agent AND session
 
@@ -129,7 +136,9 @@ continue. All assistants must adopt this protocol for it to prevent races.
 
 ## Handoff and token limits
 
-Append a compact block to BRIDGE under the mutex:
+Write the handoff in your task file `handoff/tasks/<name>.md` (Done, Next,
+Blocked, Last commit; see HANDOFF.md), commit and push. On the PC, when you
+held claims, also append a compact RELEASE block to BRIDGE under the mutex:
 
     ### <machine timestamp + timezone> — <assistant/session>
     Event: CLAIM | REQUEST | HANDOFF | RELEASE
@@ -270,18 +279,23 @@ evidence; mark missing evidence unknown. Never promote from a stale green run.
 
 ### Paste into Claude, Gemini or ChatGPT/Codex
 
+The current paste-in prompt is at the top of HANDOFF.md's pick-up steps:
+"Read HANDOFF.md, run python tools/handoff.py list, take one task file".
+The older long prompt below is kept for agents sharing one live tree.
+
 ```text
 Continue the current handed-off task in E:/final_proj/mice/code. Read
-AGENTS.md, CLAUDE.md, docs/COORDINATION.md and latest relevant docs/BRIDGE.md
-entries, then the named task in the real plan (robot/system page explicitly).
-Use the latest handoff's tree, files, evidence and next action; verify them
+HANDOFF.md and the named task file in handoff/tasks/, AGENTS.md, CLAUDE.md,
+docs/COORDINATION.md and latest relevant docs/BRIDGE.md claims, then the
+named task in the real plan (robot/system page explicitly).
+Use the task file's tree, files, evidence and next action; verify them
 against disk and active processes. Claim released/user-transferred paths under
 the shared mutex before edits. Preserve unrelated work and staging. Codex
 helps first on problems; only if Codex is limited/unavailable use Gemini or
 another available provider. Keep the real host identity and record failures,
 fallbacks and review evidence. Continue through required verification. Before
-stopping, update PLAN and append a compact BRIDGE handoff with the exact next
-step, in-flight processes and explicit claim releases. Do not restart unrelated
+stopping, update PLAN and your task file with the exact next step, and append
+a BRIDGE RELEASE with in-flight processes and explicit claim releases. Do not restart unrelated
 todo tasks. Use Caveman full, plain-speak and token-thrift.
 ```
 
