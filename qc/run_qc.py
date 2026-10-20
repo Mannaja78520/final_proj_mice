@@ -607,5 +607,47 @@ def main(argv):
     return 0 if ok else 1
 
 
+# --quiet (user 2026-10-21, tokens): an agent's context keeps every line QC
+# prints and re-reads it on every later call; a full run printed ~2,000 lines.
+# The whole log goes to qc/last_run.log, the screen gets only the failures
+# (with their detail lines) and the summary. Pass/fail and the receipt are the same.
+QUIET_LOG = CODE / "qc" / "last_run.log"
+QUIET_SHOW = ("FAIL", "CRASH", "BROKEN", "FLAKY", "QC PASS", "what regressed",
+              "in the crowd", "skipped (--quick)")
+
+
+class _Quiet:
+    def __init__(self, screen, path):
+        self.screen, self.log, self.buf, self.detail = screen, open(path, "w", encoding="utf-8"), "", False
+
+    def write(self, text):
+        self.log.write(text)
+        self.buf += text
+        while "\n" in self.buf:
+            line, self.buf = self.buf.split("\n", 1)
+            show = any(k in line for k in QUIET_SHOW) or line.startswith("  - ")
+            # a FAIL's detail lines are indented under it; keep them with it
+            if show or (self.detail and line.startswith("        ")):
+                self.screen.write(line + "\n")
+            self.detail = show or (self.detail and line.startswith("        "))
+        return len(text)
+
+    def flush(self):
+        self.log.flush()
+        self.screen.flush()
+
+    def close(self):
+        self.screen.write(self.buf + "full log: %s\n" % QUIET_LOG.relative_to(CODE))
+        self.log.close()
+
+
 if __name__ == "__main__":
+    if "--quiet" in sys.argv or "-q" in sys.argv:
+        quiet = sys.stdout = _Quiet(sys.stdout, QUIET_LOG)
+        try:
+            code = main(sys.argv[1:])
+        finally:
+            sys.stdout = quiet.screen
+            quiet.close()
+        sys.exit(code)
     sys.exit(main(sys.argv[1:]))

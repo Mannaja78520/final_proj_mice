@@ -1,5 +1,15 @@
 # Mice — read this before doing anything
 
+## Start here: HANDOFF.md (user 2026-10-21)
+
+Read `HANDOFF.md` first, then your one task file in `handoff/tasks/`. Before
+ending a task, stopping, or when usage runs low: update your own task file
+(Done, Next, Blocked, Last commit) and push. One file per task, so parallel
+agents never clash. Do not create any other handoff file.
+Tokens: run QC as `python qc/run_qc.py --quiet <check names>` for the files
+you touched (full log in qc/last_run.log), full QC once before merge; grep or
+tail big files (BRIDGE, PLAN.html, app.js, reports/), never read them whole.
+
 Short on purpose (user 2026-09-24: weekly limit hit fast; this file is sent on
 every turn). The long version with every incident story: `git show b89e7fa:CLAUDE.md`.
 Detailed agent procedure: `docs/COORDINATION.md` — read it only when coordinating
