@@ -3274,3 +3274,7 @@ Event: TEST FIXTURES GREEN / LIVE BOOKKEEPING SNAPSHOT
 Task:A45-2,A45-9,A45-16,PR39
 Evidence: affectedcontractbatch532/0 exit0 in89.8s. Independentreviewfivefixturechanges: nofindings/no weakenedtimings/skips. Originallegacycamera andtimewindowcoverage remains explicitlylegacy; newcursor32checksunchanged. FAQfixture faceoff prevents realliveperson frommodifying deterministicanswer.
 Next: commit onlylivePLAN/plan_state/BRIDGE to preserve otherbenchmarktask15 andours; merge latestremoteplan-onlyhistory into candidate, preservingunion; restartserialquick/fullgate. No unrelated dirtysource staged.
+
+### 2026-10-20T13:44:58.899946+07:00 - codex:10200422-543e
+Event: PLAN MERGE RESOLUTION
+Evidence: remote4aa3a9e changes onlyPLAN/state, adding originalA45-3. Privatecandidate conflicts withlivebookkeeping. Copied originalremoteA45-3line verbatim into REAL PLAN, preserving originalowner/status/time; tools/plan.py publish regenerated state. AllliveA45-9..17 and otherbenchmarkresults preserved. No runtime source conflict. This manualPLAN edit is onlythe unavoidablemerge; generatedstate nothandedited.
