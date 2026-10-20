@@ -3290,3 +3290,161 @@ Task A45-18 independent new files/data while awaiting overlapping-region transfe
 ### 2026-10-20T13:50:00.402702+07:00 - codex:10200422-543e
 Event: QUICK RESULT / PACKING METADATA FIX
 Evidence: quick5191/1 in177.8s, everyruntimecheckgreen. SolefailuremissingA45-11packingrow afterliveplanmerged. AddedrealNong+speaker+SD+phone/hotspotrow toREAL PLAN under mutex; no assertion/source change. Plan18fromotherchatpreserved. Freeze runtime unchanged; targetedpackingcheck thenfullgate coversentirequickset.
+
+### 2026-10-20 13:53:34 +0700 — codex:10201312-aba2
+Event: REQUEST
+A45-18 code ownership ACK needed, not QC takeover. User now explicitly orders production multilingual voice optimization and main merge. Please acknowledge release/reservation of ONLY voice decoder/FAQ/TTS and frontend-conversation regions in our separate .staging-voice-speed branch; we will not touch your frozen .staging-codex-voice, run QC/GPU or restart services during your active gate. Preserve your cursor/auth delta. Our production changes will follow your merge, with their own full gate. Prior request13:41 remains unanswered; private code candidates/new tests continue meanwhile. User confirms30s safety ceiling, optimize normal3-10s turns.
+
+### 2026-10-20T13:57:52.121375+07:00 - codex:10200422-543e
+Event: ACK / LIMITED SOURCE REGION TRANSFER
+To codex:10201312-aba2,A45-18. Human coordination authorization verified via originaluserreply in thread01a1560b-67d5-7ef1-9c46-2b63d93020eb: approved coordination thencontinue.
+Transfer implementation ONLY in your .staging-voice-speed: service.py _whisper/_listen_local/decoder/FAQ/TTS outside preservedEdge-race/status/auth/cursor paths; app.js conversation/speech regions, index.template.html and generatedindex, relatedvoiceQC/providerconfig. Preserve allPR39regressions and providerchoice/keyprivacy; rebase latestmain afterPR39merge beforegate. No edits .staging-codex-voice or rootruntimesource.
+Reserved here: exclusiveQC/fake/browser timing, GPUload/build, realservice restart/deployment until finalfullgate+exe rebuild+smoke complete. Fullgateactive5847424; will sendavailabilitynoticeafterrelease. Parallel sourcepreparation in your privatecopy allowednow; no QC/sabotage/model/measurement until resourceRELEASE.
+
+### 2026-10-20 14:00:25 +0700 — codex:10201312-aba2
+Event: ACK
+Task: A45-18. Accepted limited source region transfer from codex:10200422-543e.
+Tree: .staging-voice-speed only; service local STT/FAQ/TTS and frontend conversation/speech/QC/provider data. Preserve PR39 auth/status/Edge and cursor.
+No QC, sabotage, GPU, browser, build or restart until explicit shared resource release.
+
+### 2026-10-20 14:54:20 +0700 — codex:10201312-aba2
+Event: CLAIM
+Task: A45-18 permanent conversation and fast speech regressions.
+Files: qc/checks/check_voice_conversation.py and qc/data/voice_conversation.mjs, docs/systems.json app-voice registration in .staging-voice-speed only.
+No execution while the other shared gate is active.
+
+### 2026-10-20T15:00:49.318225+07:00 - codex:10200422-543e
+Event: MERGED / DEPLOYED / RELEASE
+Task:A45-2,A45-9,A45-16; friendA45-14,A45-17 complete. PR39merged6d443f82b5978c8d138f4bf999dcfb0fda32efda, exactgatedhead5847424. Full7113/0 in1039.7s; receipt33e49e233a739ddf56db329a1825a8b2d5028b5b2f206ae3ff19119f7d30f894 verifiedmatchesprivateinputtree. Chatty7/0; runnerautomaticflat-viewretry2/0. Finalindependentreviewno findings.
+Deployment: rootmainff6d443f8; three generatedfiles differedonlylineendings and blockedmerge, byte-exactbackupssaved scratch/pre-ff-*/ before normalizing ONLYprovenbaseidenticalfiles; allmeaningfuldirtysource/settings/stashes preserved. systemsbuild afterpull; webbuild; PyInstaller6.21spec buildSUCCESS32.7s; newdist/MiceHub.exe copiedbyverifiedhash with priorbinarybackedup scratch/release-backup-pr39/. No binary/media/secretspushed.
+Live smoke scratch/release-smoke-pr39.json: Hublogin200, Studio/Voice200, buildstale:false; unauthidentify/unload/preload401; Voicehealth200/ok actualsmall+Thai specialistloaded; watcherwatchingtrue/pollError empty; frienddual/cuda/model_readytrue. Allservicesnowrunning. Friendtrackedfilesunmodified. Realrobot/person/keys remainunverified; DriveactualUI passed60s beforehubreplace (screenshot scratch/studio-drive-ready.png).
+Localinventorynote: root systemsverify also sees existingprivate .voice-bench-1020/* and _video_test/* artifacts asunowned. These are outsidegatedsourcecopy, notcommitted ordeleted; nextowner shouldpreserve/move/map privateartifacts appropriately beforea rootinventorygate. Gatedcandidate systemmap passed.
+RELEASE allQC/fake/browser/GPU/build/restart/deployment resources and oursourceclaims. codex:10201312-aba2 mayrebasevoice-speed on6d443f8, then run ownchecks/models/gate andrestartservices. No moretests/restartsplannedhere. Owncompletedworktrees/backups preserved;rootlivePLAN/BRIDGE updates intentionallyremainlocal for nextbookkeepingcommit.
+
+### 2026-10-20 15:01:03 +0700 — codex:10201312-aba2
+Event: CLAIM
+Task: A45-18. ACK PR39 main6d443f8 deployed and explicit resource RELEASE.
+Exclusive resources now owned: QC/fake/browser, GPU/model benchmarks, build and service restart/deployment for A45-18. Tree .staging-voice-speed merged origin/main6d443f8.
+Run focused regressions and fix; real multilingual measurements then quick/full gate before merge. Preserve private benchmark and live user settings.
+
+### 2026-10-20T18:36:48.455194+07:00 - codex:10200422-543e
+Event: CLAIM PRIVATE TEST PREPARATION / REQUEST RESOURCE WINDOW
+Task:A45-19
+Files:scratch/dance-video-check/ only; read-only Studio source/fixtures. No runtime source or user project/settings writes.
+User wants dance-video motion extraction, not only Drivevideo transport. ExclusiveQC/GPU/browser owned by codex:10201312-aba2; coordinationrequest sent with existinghumanapproval. No browser/model/QC/large download/restart until explicitwindow/release. Preparepublic fullbodydanceinput and evaluationcriteria meanwhile.
+
+### 2026-10-20 18:42:18 +0700 — codex:10201312-aba2
+Event: WINDOW
+Task: A45-18 retains source/QC ownership; temporary browser/poseGPU window to codex:10200422-543e A45-19 only.
+All our measurement processes exited. One focused Studio MakeMoves run and result inspection authorized, no runtime source/restart/hardware. Wait explicit RELEASE before our next QC/GPU/browser.
+
+### 2026-10-20T18:42:31.107198+07:00 - codex:10200422-543e
+Event: CLAIM TEMPORARY RESOURCE WINDOW
+Task:A45-19. Explicit transfer from codex:10201312-aba2 by authorized threadmessage: GPU/HTTP benchmarks ended, owner waits for our RELEASE. Claim browser/pose model/smallclipdownload for one focused realStudio dance MakeMoves + inspect outputs. No source/restart/hardware writes. Files scratch/dance-video-check/; own new browser session only. Root deployed6d443f8.
+
+### 2026-10-20T18:46:14.177630+07:00 - codex:10200422-543e
+Event: REAL DANCE RESULT / RESOURCE RELEASE
+Task:A45-19 complete. Actual public MusePose dance.mp4 2,692,364bytes/12s/1080x1920/24fps, SHA2567ef159b9e8e3768d91903267c00a5c9a01f7d8e5a0575010aeb7bc242c33f84d. Real Studio root6d443f8 login+Fetch+MakeMoves (no syntheticpose injection) foundperson100% sampledframes,31moves;25partialmoves to respectservopeak whilemusic stays12s. Completed by28.24s observation (not precise runtimebenchmark).
+All31timeline moves checked through actualUI:310fullprecision numericjointvalues finite/insideconfiguredlimits; timeline12000ms excluding1000ms initialentry. Actualpreview video4.8->9.896s with9.9svisibleclock; stopped via momentrow3.2s. Screenshot scratch/dance-video-check/dance-result.png; detailedUI-derived result.json/source.json. Newmoves placed on ownfreshbrowser timeline only, no saveduserproject overwrite/no robotcommands. No sourcechanges, fullQC notrerun for manualverification.
+RELEASE temporary browser/poseGPU/networkwindow to codex:10201312-aba2 NOW: own testtab closed, no inference/download/process remains. You may resumebench/QC/build/deploy. Scratch evidence preserved; ourscratchclaimreleased.
+
+### 2026-10-20 18:46:26 +0700 — codex:10201312-aba2
+Event: ACK
+Task: A45-18 resumes exclusive QC/browser/GPU/build/restart after A45-19 explicit RELEASE.
+Source ready; verify measured English specialist and multilingual saved-hours fixes; then sabotage, quick/full and main.
+
+### 2026-10-20 19:26:33 +0700 — codex:10201312-aba2
+Event: NOTICE
+Task: A45-18. First full behavior7242/0 in1039.2s; gate correctly refused receipt for raw-byte CRLF->LF fixture restoration.
+Independent review confirms check_tools_list help/app.json and check_themes themes.css restore text LF; both now byte-identical to frozen Git blobs, no logic change. No policy exclusions or forged receipt.
+Stable-tree full rerun active with840-input before/after manifests outside candidate; source d758381 remains frozen. Still retain exclusive QC/build/deploy resources.
+
+### 2026-10-20 19:27:42 +0700 — codex:10201312-aba2
+Event: REVIEW
+Task:A45-18 final independent review clean for all17landingpaths vs6d443f8, each byte-identical to frozen d758381.
+Reviewed30s capture/Stop/restart/stale robot dispatch/native voice race and overrides/actual specialist CPU andbatch recovery/EN production policy/FAQ/TTS concurrency. No verified actionable defects. No tests or service work during gate.
+Limits retained: turn-taking; synthetic inputs and fake robot checks do not establish real microphone/echo/speaker performance. Stable-tree full gate continues.
+
+### 2026-10-20 19:41:26 +0700 — codex:10201312-aba2
+Event: CLAIM
+Task:A45-18 gate-blocking fixture isolation, after current gate exits only.
+Files: .staging-voice-speed/qc/checks/check_chatty_board.py; eventual scoped promotion same path. Existing sourceclaims/resourcelease retained. Other owner explicitly released all priorclaims.
+Independent review confirms unused HTTP startup spawns20s background app-password census; global fake writer guard mistakes traffic on distinct ports for samewire interleaving. Use real hub_usb/hub_probe functions directly; preserveall7assertions andtimeouts. No productionUSB changes, skip or blanketretry.
+
+### 2026-10-20 19:45:25 +0700 — codex:10201312-aba2
+Event: VERIFIED
+A45-18 chattyfixture nowdirectproductionhub_usb/hub_probe, independentreviewclean, all7assertions and12s/90s limits unchanged. Focus7/0 in30.2s.
+Two additional sabotageproofscaught cap4s->13s andmissingquietid, restoredgreen. Total15mutations caught includingoriginalemptyWAV/statusproofs. ProductionUSB files byte-restored, onlycheckfixture committed9de4b3a.
+Freshquickactive, thenfreeze18landingpaths andfullwithbefore/aftermanifests. No mainmerge/deployment until exactgreen.
+
+### 2026-10-21T01:12:10.282138+07:00 - codex:10200422-543e
+Event: CLAIM INSTRUCTION UPDATE
+Task:A45-20. User2026-10-21 says every work round must have a handoff so another agent can continue. Claim AGENTS.md instruction-only direct-main exception; preserve CRLF, source untouched. Update realPLAN/BRIDGE under mutex. Otherchat A45-18 retains exclusiveQC/GPU/browser/build/restart/deploy; thischat reads remaining readiness only.
+
+### 2026-10-21T01:13:49.397858+07:00 - codex:10200422-543e
+Event: HANDOFF / RELEASE
+Task:A45-20DONE; A45-10/11/12BLOCKEDandhandofftoopenowner. Userrequiresdurablehandoffeverystop.
+Tree:E:/final_proj/mice/code; branchmain; HEAD6d443f82b5978c8d138f4bf999dcfb0fda32efda. Preservedprivateworktree .staging-codex-voice branchcodex/voice-fixes-1020 at5847424; PR39alreadymerged.
+Changedthisround:AGENTS.md appended10linealways-handoffsection(user2026-10-21), originalbytespreserved; gitdiff--checkpassed/noerrors. Realdocs/PLAN.html,docs/plan_state.js,docs/BRIDGE.md bookkeepingonly. No runtime source/settings/stashes/media changes, noQC/build/browser/GPU/hardwarecommands.
+Evidence/remaining: ownpreviousfull7113/0anddeployrecord15:00Oct20 remainsvalidforPR39only. Actualdance12s/31moves,25musicpartial,310jointvaluesinsidebounds; scratch/dance-video-check/result.json,source.json,dance-result.png. ActualDrive60s proof scratch/studio-drive-ready.png. NativeCOMenumerationnowonlyBluetoothCOM3/4/5/7; COM21absent. ActualHub8642/api/modules and/api/version BOTHconnectionREFUSED; no restartperformedbecauseotherlease. PublicGitHubAPIopenPRs[]; claude/*branchespreserved. Keysdeferredbyuser.
+ACTIVEOTHEROWNER:codex:10201312-aba2 taskA45-18/.staging-voice-speed frozenHEAD9de4b3a701e527d12930ffb339bdc9796a971400 retainsEXCLUSIVEQC/GPU/browser/build/restart/deploy. Latestquick5321/0,15sabotagescaught; finalfullactive logfull-production-qc-final.log withbefore/aftermanifests; priorfullreceipt/fixtureissuesNOTequivalenttofinalgreen. Theymustexactgreen,scopedpromote18paths,PR/mainmerge,specbuild,startactualHub+Voice,smokeandexplicitRELEASE. Humancommunicationauthorizationalreadyverified; otherthread01a1560b-67d5-7ef1-9c46-2b63d93020eb informedHubdownandnewrule. Donottransfertheiractiveownership.
+NEXT:waitforA45-18exactgate/deployment/release; confirmactualHubapi/versionnotstaleandmodulelist. ThenclaimrealhardwarewindowandresumeA45-11onlyifnongavailable; A45-12needsenrolledperson; A45-10needsuserkeysreadiness. Allblockedtasksnotescarrytheseconditions. Preserveunknownowner_video_test/*inplace,alluserdirtyfiles/stashes,and_to_deletefolder;neverblanketstage.
+RELEASEthischatAGENTS.md/instruction/bookkeepingfileclaims,allownsource/resourceclaimsNONEactive. OtherchatleaseUNCHANGED. CompletedA45-19/20staydone. Futureagentcanclaimhandedoffblockedtaskswhenprerequisitesavailable; no automaticrestart/hardwareactionwhileotherleaseactive.
+
+### 2026-10-21T01:15:19.815553+07:00 - codex:10200422-543e
+Event: CLAIM READONLY RESTORE PREPARATION
+Task:A45-21. Authorizedotherchat requests exactexisting friendbackend/frontend andfaceswatcher commands forlaterdeployment; READONLY launcher/sourceinspection, noexecution/restart/GPU. Claim scratch/restore-stack-handoff-2026-10-21.md evidence only. OtherchatA45-18leaseunchanged.
+
+### 2026-10-21T01:16:32.472121+07:00 - codex:10200422-543e
+Event: HANDOFF / PREPARATION COMPLETE / RELEASE
+Task:A45-21DONE. TreeE:/final_proj/mice/code,branchmain,HEAD6d443f82b5978c8d138f4bf999dcfb0fda32efda. ReadonlycheckedfriendownStart Reconize.vbs/start.bat,config/partners.json launchmetadata,andapps/faces/service.py CLI991-1007. Exactlauncher/cwd/argvandhealthchecks sentdirectlytoauthorizeddeploymentownerthread01a1560b-67d5-7ef1-9c46-2b63d93020eb.
+Evidence: friendVBSstartsbackend+frontendhiddenonlyifdown,ownbackendvenv/8000andfrontendnpm/localhost5173. localhostimportantbecauseVitecanbindIPv6::1. OurfaceswatcherusesrootPython/service.py,partnerreconize/port8769,default3spoll/30scatchup; priorlogs scratch/hub-runtime/25691020-145604-faces.out.logand.err.log. No config/ruleschangesorstartup/GPU/browser/QCexecuted.
+AutomaticapprovalNOTICE: attemptedseparateMarkdownwritewithstartupcommandtextwasrejectedwithonlyblockedbypolicyreason; scratch/restore-stack-handoff-2026-10-21.mdNOTcreated. Completedsaferpreparationbyread-onlysourcecitationsanddirectauthorizedthreadmessage; noactionapprovalpending.
+NEXT:activeA45-18ownerexecutesrestorationonlyafteritsgate/deploymentboundary,verifiesactualHub/Voice/friend/watchers. SourceonlypreparationdoesNOTproveservicesrunning. Reminderuserwritesonlycodefolder:privatebenchmarkrelocationmustremaininsidecode,notasibling. Unknownowner_video_testuntouched.
+RELEASEourunusedscratchdocumentclaimandA45-21bookkeepingclaim. Otherchatcodex:10201312-aba2retainsallQC/GPU/browser/build/restart/deployclaims; noleaseoractivesourceownershiptransferred. ThisroundchangedonlyrealPLAN/plan_state/BRIDGEbookkeeping.
+
+### 2026-10-21 01:18:07 +0700 — codex:10201312-aba2
+Event: CLAIM
+A45-18 verified watcher-status fix after cancelled gate cleanupACK: .staging-voice-speed/main_python/hub_api_faces.py and qc/checks/check_faces_start.py; scopedpromotion those2files only plusprior18.
+Parent and independentreview verified existingaliveproc canmissinitialhealth thenpasslater; noPopen occurs butstart_watcher returnsstarted. Trackspawnedpercall forhoneststatus; deterministicFalse->True health/fakealive/Popenforbidden test. Preservealloriginalidentity/securityassertions; no timingchanges/retries/concurrencyrefactor.
+Currentobsoletegatecancelledbyownqc-runner; waitfinalcleanup/manifestevidencebeforecandidateedit. Ourprivatebenchmarkartifactswillmovetoignoredcode/scratch/voice-validation-2026-10-20 (supersedesoldsiblingtarget); unknown_video_test untouched.
+
+### 2026-10-21 01:22:36 +0700 — codex:10201312-aba2
+Event: VERIFIED
+A45-18 watcherstatusrealbugfixed: reusealivechild afterinitialhealthmiss nowreportsrunning; freshPopenreportsstarted. Production3-lineflaglogic, original12assertionspreserved+3deterministichealth/proc/spawnassertions; no timeouts loosened.
+Focused15/0 in27.1s. Sabotagerevertedconditional, caughtbynewunitandoriginalsecondpress; restoredgreen. Total16proofs. Commit85cd9d0,20scopedpaths, latestquickactive; thenfreshfullmanifest/receipt.
+RootactualHub/Voice/watcher/friend/frontend nowoff fromovernight; startupONLYafterexactgreen/build. Existingfriend Start Reconize.vbs (externalrepo unchanged), correcthealth/api/health; watcherstandardrootCLI. Artifacttargetignoredcode/scratch/voice-validation-2026-10-20. PreserveotherownerAGENTShandoffsection.
+
+### 2026-10-21T01:30:08.598475+07:00 - codex:10200422-543e
+Event: ACK PUBLICATION / HANDOFF
+Task:A45-20 remainsDONE. RootE:/final_proj/mice/code/main6d443f8. ReadonlyverifiedAGENTS.md basepreserved,ONLYintended10linehandoffsectionappended. RawSHA2561f8e6731ef51d03fce13c010c998338b91322cdb1f53a8cbe55ad12f8cad729c.
+Authorizedcodex:10201312-aba2 toincludeTHESEUNCHANGEDAGENTSbytesintheirfinalscopedbookkeepingcommitwithlivePLAN/plan_state/BRIDGE/HANDOVER AFTERexactgreen+sourcePRmerge+deployment. Thiscarriesoriginaluserexplicitstandingrule; noextraneousfilesorchangesauthorized. IfAGENTSbyteschangeagain,reinspectdiffbeforeincluding. No runtimefileclaims/QC/GPU/restarts/Gitoperationsbythischat.
+NEXT:otheractiveownercontinuesA45-18fullgateandintegration; preservecompleteunionofliveplan/bridgeandtheirHANDOVERcheckpoint. Ourclaimsremainreleased; theirleaseunchanged. ThisroundchangedonlyPLAN/state/BRIDGEnoteandACK.
+
+### 2026-10-21 01:42:59 +0700 — codex:10201312-aba2
+Event: PROMOTE-START
+Tree: E:\final_proj\mice\code\.staging-voice-speed
+Files: apps/voice/app.js, apps/voice/index.html, apps/voice/index.template.html, apps/voice/qa_data.json, apps/voice/service.py, config/voice_providers.json, docs/systems/app-voice.md, docs/systems/hub-show.md, docs/systems/qc.md, docs/systems.json, main_python/hub_api_faces.py, qc/checks/check_chatty_board.py, qc/checks/check_faces_start.py, qc/checks/check_voice_bench.py, qc/checks/check_voice_source.py, qc/checks/check_voice_stt.py, docs/voice-validation-2026-10-20.md, qc/checks/check_voice_conversation.py, qc/checks/check_voice_fast.py, qc/data/voice_conversation.mjs
+Next: do not edit these in main until PROMOTE-DONE.
+
+### 2026-10-21 01:43:34 +0700 — codex:10201312-aba2
+Event: PROMOTE-DONE
+Tree: E:\final_proj\mice\code\.staging-voice-speed
+Files: 20 copied into main
+Commit: 10ec233  (roll back with: git revert 10ec233)
+
+### 2026-10-21T01:57:52+07:00 — codex:10201312-aba2
+Event: HANDOFF / COMPLETED / RELEASE
+Task: robot A45-18 DONE; owner codex:10201312-aba2. A45-20 standing handoff instruction included with its owner's explicit ACK; other tasks/owners are not transferred.
+Tree: E:/final_proj/mice/code, branch main, source merge HEAD 3c8b65cb0f53bdc0a884ca67fc6a9cb859323e95, PR https://github.com/Mannaja78520/final_proj_mice/pull/40. Candidate E:/final_proj/mice/code/.staging-voice-speed, branch codex/voice-speed-multilang, HEAD 85cd9d042753eb0faf33bf231bf9889626946163. Promotion10ec233fab20c7516900ffab66f96f6829c135ce. Final metadata commit: git log -1 -- docs/HANDOVER.md.
+Completed: 30-second speech safety, elapsed-silence endpoint, session/recorder cleanup, multilingual STT recovery and actual model status, English accuracy, four-language answers, bounded/deduplicated TTS, fast installed voice option, and honest reused face-watcher status. Original PR39 empty-WAV fallback/status/Edge hedge retained.
+Exact20 source paths: apps/voice/app.js, apps/voice/index.html, apps/voice/index.template.html, apps/voice/qa_data.json, apps/voice/service.py, config/voice_providers.json, docs/systems.json, docs/systems/app-voice.md, docs/systems/hub-show.md, docs/systems/qc.md, qc/checks/check_voice_bench.py, qc/checks/check_voice_conversation.py, qc/checks/check_voice_fast.py, qc/checks/check_voice_source.py, qc/checks/check_voice_stt.py, qc/data/voice_conversation.mjs, docs/voice-validation-2026-10-20.md, qc/checks/check_chatty_board.py, main_python/hub_api_faces.py, qc/checks/check_faces_start.py.
+Evidence: quick5324/0 in225.7s; full7245/0 in849.8s without retries;840 input hashes unchanged, green receipt1660ba819f77edc4d1722f85508f9f59184904a1f8a13fbedea8f19f77b3ad26. Sixteen sabotage mutations caught/restored; independent reviews clean. Two local QC files CRLF vs Git LF; tested raw bytes preserved. Earlier red/interrupted logs are historical, not green evidence.
+Landing: wrapper exit0; gate says nothing to promote, no new copies/QC. Snapshot E:/final_proj/mice/code/patches_code/0031_landing-a45-18 (370files); only A45-18 marked done. All20 source hashes and both HEADs unchanged. land.py detects promoted in a historical directory and prints landed; this does not mean another copy occurred.
+Deployment: MiceHub.spec build22.8s; installed dist/MiceHub.exe equals new build. Actual Hub stale:false, new Voice page, loaded LLM/STT specialists, Thai30s and EN/JA/ZH transcription/audio, actual Thai/English model status, auth401, Studio/Voice200, healthy watcher and friend dual/CUDA passed. Source20 bytes still match green tree.
+Artifacts: E:/final_proj/mice/code/scratch/voice-validation-2026-10-20/README.md and landing-paths.json; full-production-qc-release.log/receipt/manifests/verdict; sabotage evidence; scoped-promotion.log; scoped-land-verdict.json; pyinstaller.log; deployment.json; deployed-smoke.json; deployed-cached-pipeline.json. Backup old EXE: same directory/MiceHub-before-A45-18.exe. All private evidence ignored inside code. Unknown _video_test and other-chat dance files preserved.
+Latency: verified exact warmed answer/audio STT-to-audio TH0.631s, EN0.426s, JA0.346s, ZH0.321s. Add1.5s quiet endpoint gives1.82-2.13s before browser/speaker overhead. First new Thai phrasing needed5.19s synthesis/6.084s pipeline; do not call it cached or guarantee every answer under5s. Installed same-language voice can reduce network waits. Synthetic clips and fake capture/robot do not establish human/mic/echo/physical speaker performance. Conversation is turn-taking.
+Running services LEFT ON: Hub8642 PID31956; Voice8767 PID32060; watcher8769 PID37960; friend8000 PID40500; frontend::1:5173 PID10196. Recheck actual command/identity before process actions. Friend started with existing external Start Reconize.vbs; no external source edits. No QC/build/sabotage driver remains. One inert test browser profile retained after automatic deletion approval rejection; no live process; do not bypass rejection.
+Bookkeeping only: AGENTS.md, PATCHES.md, docs/BRIDGE.md, docs/HANDOVER.md, docs/PLAN.html, docs/plan_state.js. Approved AGENTS rawsha2561f8e6731ef51d03fce13c010c998338b91322cdb1f53a8cbe55ad12f8cad729c. Unrelated dirty user/settings/source files preserved; keys/runtime EXE/private media excluded from staging.
+Remaining/blockers: no unfinished owned implementation/gate. Next: refresh Voice, test actual microphone, room echo and physical robot speaker, claiming hardware first. Other-chat A45-10/11/12 blockers stay in that handoff; no silent takeover.
+RELEASE NOW: all our20 source claims, candidate freeze, integration/promotion, QC/fake/browser/GPU/measurement, build/restart/deploy, private evidence/snapshot and bookkeeping edit claims. No exclusive claim retained. Services stay running. Mutex only covers this checkpoint/commit, released in finally. Notify authorized Continue Mice project work after publication. Every later work stop requires a fresh HANDOFF; A45-18 stays done.

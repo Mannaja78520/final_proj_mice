@@ -75,3 +75,13 @@ provider:session (`python tools/plan.py session <provider>`, then
 `--agent` or MICE_AGENT). Never a provider alone. Before a limit or stop,
 `python tools/plan.py handoff <id> "<next step>"` so any agent can continue.
 Full rule: docs/COORDINATION.md, *Every task is in the plan*.
+
+## Handoff at every work stop (user 2026-10-21)
+
+Before ending every work round, append a HANDOFF to the real docs/BRIDGE.md
+under the coordination mutex. Record task ids, owner, absolute tree/branch/HEAD,
+completed work and evidence, changed files, remaining steps and blockers, and
+exact resource/file claims retained or released. Include artifact paths and the
+next concrete action so another agent can resume without chat history. For
+unfinished owned work, also use tools/plan.py handoff; completed tasks stay done.
+Never transfer another active agent's task or infer its resource release.

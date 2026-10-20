@@ -35,3 +35,4 @@ Every change to the project code is saved here as a numbered patch. Old patches 
 | 0027 | 2026-09-08 21:03 | A25-1 shared rainbow removed, warmer neutral palette, quieter hub tools and module header; Studio and light tool next |
 | 0028 | 2026-09-08 21:33 | Codex's interface work gated and promoted |
 | 0029 | 2026-09-08 22:23 | A25 landed: rainbow guarded, shortcuts tab named |
+| 0031 | 2026-10-21 01:53 | landing A45-18 |
