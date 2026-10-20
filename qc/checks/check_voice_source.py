@@ -25,7 +25,7 @@ function node() { return {value:'', checked:false, hidden:true, textContent:'', 
  addEventListener(n,f){(this.on=this.on||{})[n]=f;},
  appendChild(v){this.children.push(v);}, prepend(){}, querySelector(){return node();}}; }
 let mounts = 0;
-const context = {console, Blob, AbortController, Uint8Array, setTimeout(){}, clearTimeout(){},
+const context = {console, Blob, AbortController, Uint8Array, performance: require("node:perf_hooks").performance, setTimeout(){}, clearTimeout(){},
  setInterval(){return 1;}, clearInterval(){}, localStorage:{getItem(){return null;},setItem(){}},
  document:{readyState:'loading', body:node(), getElementById(id){if(!nodes.has(id))nodes.set(id,node());return nodes.get(id);},
  createElement:node, createTextNode:node, querySelector(){return null;},
@@ -104,7 +104,7 @@ vm.runInContext(fs.readFileSync(process.argv[1],'utf8'),context);
  let recorder;
  context.MediaRecorder=class {constructor(){recorder=this;this.state='inactive';}start(){this.state='recording';}stop(){this.state='inactive';this.onstop();}};
  const pushRecorder={state:'untouched'}; app.rec=pushRecorder;
- await context.convRecord({}, {}, {}, 10);
+ await context.convRecord({getTracks:()=>[]}, {}, {}, 10);
  assert.equal(app.rec,pushRecorder); assert.equal(recorder.state,'inactive');
  assert.equal(context.convRms(),false);
  // Try plays what is ON SCREEN, before saving: its speed rides along.

@@ -28,6 +28,7 @@ import tempfile
 import threading
 import time
 import uuid
+import unicodedata
 from difflib import SequenceMatcher
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -485,8 +486,9 @@ class Brain:
         self._stt_err = None
         self._stt_loaded_model = None
         self._stt_loading = False
+        self._stt_batches = {}
         self._preload_thread = None
-        self._tts_lock = threading.Lock()   # one PowerShell synth at a time
+        self._tts_lock = threading.Lock()   # protects per-line synthesis slots
         self.faq_err = ""            # why the answers file could not be read
         self._lock = threading.Lock()   # one GPU: answers and listening queue
         self._cached_person = ""
@@ -532,6 +534,10 @@ class Brain:
                     setattr(self, "_%s_loaded_model" % kind, None)
                     setattr(self, "_%s" % kind, None)
                     setattr(self, "_%s_err" % kind, None)
+                    if kind == "stt":
+                        self._stt_batches = {}
+                        self._stt_own = {}
+                        self._stt_attempt_model = None
 
     def write_store(self, path, obj):
         """One data file rewritten atomically - a reader never sees half."""
@@ -734,6 +740,12 @@ class Brain:
         for item in self.faqs():
             for q in item.get("questions", []):
                 qc = q.strip().lower()
+                if item.get("wholeQuestion"):
+                    short = lambda v: "".join(c for c in v if not c.isspace() and not unicodedata.category(c).startswith("P"))
+                    nq, ng = short(qc), short(norm_got)
+                    coverage = min(len(ng), len(nq)) / max(len(ng), len(nq), 1)
+                    if coverage < 0.8:
+                        continue
                 s1 = SequenceMatcher(None, got, qc).ratio()
                 s2 = SequenceMatcher(None, norm_got, qc).ratio() if norm_got else 0.0
                 score = max(s1, s2)
@@ -944,12 +956,49 @@ class Brain:
                   getattr(info, "language_probability", 1.0) < fb.get("min_probability", 0.0))
         if not unsure:
             return segs, info
-        bias = ((scfg.get("languages") or {}).get(lang) or {}).get("bias")
-        return self._stt.transcribe(
-            path, language=lang, temperature=0, beam_size=int(scfg.get("beam") or 1),
-            condition_on_previous_text=False, vad_filter=True,
-            vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
-            initial_prompt=bias, **self._decode(lang))
+        try:
+            own = self._own_model(lang)
+        except Exception:
+            own = None       # an unavailable specialist still has a general fallback
+        model = own or self._stt
+        mine = (self.service("local")["jobs"].get("hear") or {}).get("byLanguage") or {}
+        self._stt_attempt = mine[lang] if own else self._stt_loaded_model or scfg.get("model", "small")
+        self._stt_attempt_model = model
+        return self._transcribe(model, path, lang, scfg)
+
+    def _transcribe(self, model, path, lang, scfg):
+        """Ten-second batches kept a 30 s Thai clip's tail (2026-10-20)."""
+        hear = self.service("local")["jobs"].get("hear") or {}
+        bias = ((scfg.get("languages") or {}).get(lang) or {}).get("bias") if lang else None
+        context = (hear.get("contextByLanguage") or {}).get(lang)
+        prompt = " ".join(str(x) for x in (bias, context) if x) or None
+        options = dict(language=lang or None, temperature=0,
+                       beam_size=int(scfg.get("beam") or 1), condition_on_previous_text=False,
+                       vad_filter=True, vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
+                       initial_prompt=prompt, **self._decode(lang))
+        chunk = max(1, min(30, int(hear.get("chunkSeconds") or 10)))
+        size = max(1, min(16, int(hear.get("batchSize") or 8)))
+        if size > 1:
+            try:
+                from faster_whisper import BatchedInferencePipeline
+            except ImportError:
+                BatchedInferencePipeline = None
+            if BatchedInferencePipeline is not None:
+                batches = getattr(self, "_stt_batches", None)
+                if batches is None:
+                    batches = self._stt_batches = {}
+                if id(model) not in batches:
+                    batches[id(model)] = BatchedInferencePipeline(model=model)
+                try:
+                    segments, info = batches[id(model)].transcribe(
+                        path, chunk_length=chunk, batch_size=size, **options)
+                    return list(segments), info
+                except RuntimeError as e:
+                    if "out of memory" not in str(e).lower():
+                        raise
+                    batches.pop(id(model), None)    # one serial retry needs less memory
+        segments, info = model.transcribe(path, chunk_length=chunk, **options)
+        return list(segments), info
 
     def listen(self, audio, hint=""):
         """Speech bytes -> ({text, language}, None) or (None, why-not).
@@ -999,21 +1048,11 @@ class Brain:
                     model, used = own, mine[lang]
             except Exception:                           # noqa: BLE001
                 pass               # no quick look, or no own model: as before
-        bias = ((scfg.get("languages") or {}).get(lang) or {}).get("bias") if lang else None
-        segments, info = model.transcribe(
-            path, language=lang or None,
-            temperature=0,
-            beam_size=int(scfg.get("beam") or 1),
-            condition_on_previous_text=False,
-            vad_filter=True,
-            vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
-            initial_prompt=bias, **self._decode(lang))
-        first_info = info
+        self._stt_attempt, self._stt_attempt_model = used, model
+        segments, info = self._transcribe(model, path, lang, scfg)
         segments, info = self._fallback_transcribe(path, segments, info, lang, scfg)
-        if info is not first_info:
-            used = self._stt_loaded_model or scfg.get("model", "small")
-        valid = [s.text for s in segments if getattr(s, "no_speech_prob", 0) <= 0.6]
-        self._stt_last = used
+        valid = [seg.text for seg in segments if getattr(seg, "no_speech_prob", 0) <= 0.6]
+        self._stt_last = self._stt_attempt
         return drop_repeats("".join(valid)), info
 
     def _listen_local(self, audio, resolved, scfg):
@@ -1038,9 +1077,14 @@ class Brain:
                         raise
                     # The graphics card's libraries are missing: the CPU hears.
                     from faster_whisper import WhisperModel
-                    mid = scfg.get("model", "small")
-                    self._stt = WhisperModel(mid, device="cpu", compute_type="int8")
-                    self._stt_loaded_model = mid
+                    mid = getattr(self, "_stt_attempt", None) or scfg.get("model", "small")
+                    failed = getattr(self, "_stt_attempt_model", self._stt)
+                    cpu = WhisperModel(mid, device="cpu", compute_type="int8")
+                    if failed is self._stt:
+                        self._stt, self._stt_loaded_model = cpu, mid
+                    else:
+                        self._stt_own[mid] = cpu
+                    (getattr(self, "_stt_batches", None) or {}).pop(id(failed), None)
                     text, info = self._whisper(path, resolved, scfg)
             finally:
                 os.unlink(path)
@@ -1354,29 +1398,41 @@ class Brain:
 
     def _spoken(self, ident, text, rate, pitch, make):
         """The cached sound for this line in this voice, else make() it and
-        keep it. One maker at a time: the waiter may find it already built."""
+        keep it. A background line leaves one slot for a visitor."""
         path = self._cache_path(ident, text, rate=rate, pitch=pitch)
         self._made.path = path               # what the saved-answer sweep keeps
         got = self._cached(path, ident)
         if got:
             return got, None
         with self._tts_lock:
-            got = self._cached(path, ident)
-            if got:
-                return got, None
-            data, why = make()
-            if not data:
-                return None, why
-            if providers.silent(data):
-                # A header and no sound (the Windows voice on the PC test,
-                # 2026-10-19: 46 bytes, sent as "spoken"). Silence is a
-                # failure, so the next speaker in line gets the line.
-                return None, "it gave back an empty sound (%d bytes)" % len(data)
-            path.parent.mkdir(exist_ok=True)
-            tmpf = path.with_suffix(".part%d" % next(_tmp_seq))
-            tmpf.write_bytes(data)
-            os.replace(tmpf, path)   # atomic - a reader never sees half a file
-            return data, None
+            if not hasattr(self, "_tts_keys"):
+                self._tts_keys = {}
+                self._tts_slots = threading.BoundedSemaphore(2)
+            entry = self._tts_keys.setdefault(str(path), [threading.Lock(), 0])
+            entry[1] += 1
+        try:
+            with entry[0], self._tts_slots:
+                got = self._cached(path, ident)
+                if got:
+                    return got, None
+                data, why = make()
+                if not data:
+                    return None, why
+                if providers.silent(data):
+                    # A header and no sound (the Windows voice on the PC test,
+                    # 2026-10-19: 46 bytes, sent as "spoken"). Silence is a
+                    # failure, so the next speaker in line gets the line.
+                    return None, "it gave back an empty sound (%d bytes)" % len(data)
+                path.parent.mkdir(exist_ok=True)
+                tmpf = path.with_suffix(".part%d" % next(_tmp_seq))
+                tmpf.write_bytes(data)
+                os.replace(tmpf, path)   # atomic - a reader never sees half a file
+                return data, None
+        finally:
+            with self._tts_lock:
+                entry[1] -= 1
+                if not entry[1]:
+                    self._tts_keys.pop(str(path), None)
 
     def _edge_speak(self, voice, text, rate, pitch):
         """Microsoft's natural voice, IN this process.
@@ -1593,6 +1649,8 @@ class Brain:
             self._llm = None
             self._stt = None
             self._stt_own = {}
+            self._stt_batches = {}
+            self._stt_attempt_model = None
             self._stt_last = None
             self._stt_own_err = {}
             self._llm_err = None

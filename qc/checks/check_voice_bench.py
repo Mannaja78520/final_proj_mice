@@ -86,6 +86,7 @@ def run(t):
         "faqThreshold": 0.75,
         "stt": {"enabled": False}, "llm": {"enabled": False},
         "tts": {"enabled": False},
+        "face": {"on": False},  # scoring fixtures never use a live visitor's name
     }), encoding="utf-8")
     os.environ["MICE_VOICE_CONFIG"] = str(cfg)
 
