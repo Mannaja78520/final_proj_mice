@@ -97,6 +97,7 @@ import registry                                      # noqa: E402
 # What we asked the face app for, in one place (A13): /api/look, present.
 sys.path.insert(0, str(CODE / "apps" / "faces"))
 import friend_api                                    # noqa: E402
+from face_history import HistoryCursor, local_when    # noqa: E402
 # Who can do each job besides this PC (A45-1): the wire shapes and the keys.
 sys.path.insert(0, str(CODE / "apps" / "voice"))
 import providers                                     # noqa: E402
@@ -2051,8 +2052,8 @@ class Brain:
                             continue
                         if who and p.get("known", True) and when_str:
                             try:
-                                w_dt = datetime.fromisoformat(str(when_str).replace("Z", ""))
-                                if abs((datetime.now() - w_dt).total_seconds()) <= 120:
+                                w_dt = local_when(when_str)
+                                if w_dt and 0 <= (datetime.now() - w_dt).total_seconds() <= self.seen_seconds():
                                     s = short_person_name(who)
                                     if s and s.lower() not in seen:
                                         seen.add(s.lower())
@@ -2184,10 +2185,10 @@ class Brain:
         if not u or not p:
             return ""
         now = time.time()
-        tok = getattr(self, "_reconize_token", "")
-        if tok and now < getattr(self, "_reconize_token_exp", 0.0) - 60:
-            return tok
         api = self._reconize_api()
+        tok = getattr(self, "_reconize_token", "")
+        if tok and getattr(self, "_reconize_token_api", None) == api and now < getattr(self, "_reconize_token_exp", 0.0) - 60:
+            return tok
         if not api:
             return ""
         body = json.dumps({"username": u, "password": p}).encode("utf-8")
@@ -2196,6 +2197,7 @@ class Brain:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             tok = json.loads(r.read().decode("utf-8")).get("access_token") or ""
         self._reconize_token = tok
+        self._reconize_token_api = api
         self._reconize_token_exp = now + 1800
         return tok
 
@@ -2388,56 +2390,77 @@ class Brain:
         return person, "", ""
 
     def _query_reconize_direct(self):
-        """Fallback: query Reconize directly at :8000/api/history if faces service isn't answering."""
+        """Last observations delivered by sequence when the watcher is down.
+
+        Sequence orders delivery; the original observation time controls expiry.
+        A delayed write, an empty page or a network outage is not a new sighting.
+        """
+        import urllib.error
         import urllib.request
         from datetime import datetime
-        try:
-            l_path = self._faces_login_path()
-            if not l_path.is_file():
+        lock = self.__dict__.setdefault("_history_lock", threading.RLock())
+        with lock:
+            entry = self._reconize_entry()
+            source = next((s for s in entry.get("events") or []
+                           if s.get("kind") == "poll" and s.get("cursor")), None)
+            if not source:
                 return ""
-            creds = json.loads(l_path.read_text(encoding="utf-8")).get("reconize") or {}
-            u, p = creds.get("username"), creds.get("password")
-            if not u or not p:
-                return ""
-            now = time.time()
-            tok = getattr(self, "_reconize_token", "")
-            exp = getattr(self, "_reconize_token_exp", 0.0)
-            if not tok or now >= exp - 60:
-                body = json.dumps({"username": u, "password": p}).encode("utf-8")
-                l_req = urllib.request.Request("http://127.0.0.1:8000/api/auth/login", data=body,
-                                               headers={"Content-Type": "application/json"})
-                with urllib.request.urlopen(l_req, timeout=1.5) as lr:
-                    l_data = json.loads(lr.read().decode("utf-8"))
-                    tok = l_data.get("access_token") or ""
-                    self._reconize_token = tok
-                    self._reconize_token_exp = now + 1800
-            if not tok:
-                return ""
-            h_req = urllib.request.Request("http://127.0.0.1:8000/api/history?page_size=5&page=1",
-                                           headers={"Authorization": "Bearer " + tok})
-            with urllib.request.urlopen(h_req, timeout=1.5) as hr:
-                h_data = json.loads(hr.read().decode("utf-8"))
-                items = h_data.get("items") or []
-                active = []
-                seen = set()
-                for item in items:
-                    who = (item.get("name") or "").strip()
-                    when_str = item.get("detected_at") or ""
-                    if who and when_str:
+            api = str(entry.get("api") or "").rstrip("/")
+            key = (api, json.dumps(source, sort_keys=True))
+            if key != getattr(self, "_direct_history_key", None):
+                self._direct_history_key = key
+                self._direct_history = HistoryCursor()
+                self._direct_observations = {}
+            mapping = source.get("map") or {}
+
+            def consume(row):
+                field = lambda name, default: row.get(mapping.get(name) or default)
+                node = str(field("camera", "node_id") or "")
+                when = local_when(field("when", "detected_at"))
+                if not node or node in (entry.get("notACamera") or []) or not when:
+                    return
+                age = (datetime.now() - when).total_seconds()
+                if not 0 <= age <= self.seen_seconds():
+                    return
+                seq = row[source["cursor"]["seq"]]
+                known = field("status", "status") == (
+                    friend_api.asks(entry, "person").get("matched") or "matched")
+                name = call_name({"who": field("who", "name"),
+                                  "callAs": field("callAs", "call_as")}) if known else ""
+                # A row is ONE face. An unknown companion is not an empty
+                # camera; only a real scene/look can clear known companions.
+                if not name:
+                    return
+                person_key = (node, str(field("id", "participant_id") or name))
+                old = self._direct_observations.get(person_key)
+                if old and (when, seq) <= (old["when"], old["seq"]):
+                    return
+                self._direct_observations[person_key] = {"when": when, "seq": seq, "names": [name]}
+
+            try:
+                token = self._reconize_login(timeout=1.5)
+                if token:
+                    def fetch(path):
+                        req = urllib.request.Request(api + path,
+                            headers={"Authorization": "Bearer " + token})
                         try:
-                            w_dt = datetime.fromisoformat(str(when_str).replace("Z", ""))
-                            if abs((datetime.now() - w_dt).total_seconds()) <= 120:
-                                s = short_person_name(who)
-                                if s and s.lower() not in seen:
-                                    seen.add(s.lower())
-                                    active.append(s)
-                        except Exception:
-                            pass
-                if active:
-                    return " และ ".join(active[:2]) if len(active) <= 2 else f"{active[0]}, {active[1]} และทุกท่าน"
-        except Exception:
-            pass
-        return ""
+                            with urllib.request.urlopen(req, timeout=1.5) as response:
+                                return json.loads(response.read().decode("utf-8")), ""
+                        except urllib.error.HTTPError as exc:
+                            if exc.code == 401 and getattr(self, "_reconize_token", "") == token:
+                                self._reconize_token = ""
+                            return {}, str(exc)
+                        except (OSError, ValueError) as exc:
+                            return {}, str(exc)
+                    self._direct_history.poll(source, fetch, consume)
+            except (OSError, ValueError):
+                pass
+            now = datetime.now()
+            self._direct_observations = {node: obs for node, obs in self._direct_observations.items()
+                if 0 <= (now - obs["when"]).total_seconds() <= self.seen_seconds()}
+            observations = sorted(self._direct_observations.values(),
+                                  key=lambda obs: (obs["when"], obs["seq"]), reverse=True)
+            return join_names(list(dict.fromkeys(name for obs in observations for name in obs["names"])))
 
     def address_words(self):
         """Words a Thai name may already start with, so no คุณ is added in

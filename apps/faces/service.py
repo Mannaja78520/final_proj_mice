@@ -48,6 +48,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import wsclient                                          # noqa: E402
 import rules                                             # noqa: E402
 import friend_api                                        # noqa: E402
+from face_history import HistoryCursor, local_when        # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 # The tree this copy belongs to. A working copy runs its own copy of this file
@@ -95,17 +96,8 @@ def _jwt_expiry(token):
 
 
 def _when(text):
-    """Their `detected_at`, as a datetime.
-
-    It is written with `datetime.now()` (their models/models.py:64), so it is
-    LOCAL time with no timezone on it. Compare it with our own local clock -
-    treating it as UTC would shift every arrival by the machine's offset and
-    silently empty the window this poll depends on.
-    """
-    try:
-        return datetime.fromisoformat(str(text).replace("Z", ""))
-    except Exception:                                        # noqa: BLE001
-        return None
+    """Both legacy local timestamps and their new offset-bearing API."""
+    return local_when(text)
 
 
 def load(rel, default=None):
@@ -142,6 +134,8 @@ class State:
         # person key -> the arrival we already reported, for accept()
         self.recent = OrderedDict()
         self.checkpoint = None
+        self._history_cursor = HistoryCursor()
+        self._history_key = None
         self.people = []
         self.poll_error = ""
         self.polls = 0
@@ -342,6 +336,9 @@ class State:
                 old["event"]["camera"] = event.get("camera")
                 old["event"]["hasCamera"] = True
                 old["event"]["source"] = event.get("source")
+                for field in ("node_id", "seq", "recordSource"):
+                    if field in event:
+                        old["event"][field] = event[field]
                 # The first copy was only counted (no camera), so this one is
                 # the arrival a greeting can be placed at. _note hands it on.
                 self.upgraded = old["event"]
@@ -499,15 +496,18 @@ class State:
             got, _why = friend_api.present(entry, token, camera, seconds) if token else (None, "")
             if got:
                 return dict(out, **{"from": "theirs"}, **got)
-        cut = datetime.now() - timedelta(seconds=float(seconds))
+        local_now = datetime.now()
+        cut = local_now - timedelta(seconds=float(seconds))
         seen, people = set(), []
         with self._events_lock:
             for e in self.people:
                 when = _when(e.get("when"))
                 key = e.get("id") or e.get("who")
+                if "seq" in e and (not e.get("hasCamera") or not when or when > local_now):
+                    continue
                 # Any camera at all counts only when no camera was asked for -
                 # what Voice has always read (a history row says no door).
-                if (e.get("known") and key not in seen and when and when >= cut
+                if (e.get("known") and key not in seen and when and cut <= when <= local_now
                         and (e.get("hasCamera") and e.get("camera") == camera or not camera)):
                     seen.add(key)
                     people.append({k: e.get(k) for k in ("who", "id", "known", "callAs",
@@ -540,8 +540,13 @@ class State:
         return None
 
     def _fetch(self, src, token, page):
-        p = self.partner()
         path = (src.get("path") or "").replace("{page}", str(page))
+        got, why = self._fetch_history(token, path)
+        items = got.get(src.get("items") or "items") if isinstance(got, dict) else []
+        return (items if isinstance(items, list) else []), why
+
+    def _fetch_history(self, token, path):
+        p = self.partner()
         url = (p.get("api") or "").rstrip("/") + path
         req = urllib.request.Request(
             url, headers={"Authorization": "Bearer " + token})
@@ -553,12 +558,51 @@ class State:
                 # The session ended under us. Say so plainly; the next poll
                 # logs in again rather than looping on a dead token.
                 self.invalidate_token(token)
-                return [], "the session ended - logging in again next time"
-            return [], "their history refused page %d (%s)" % (page, e.code)
+                return {}, "the session ended - logging in again next time"
+            return {}, "their history refused the request (%s)" % e.code
         except Exception as e:                               # noqa: BLE001
-            return [], "their history is not answering (%s)" % e
-        items = got.get(src.get("items") or "items")
-        return (items if isinstance(items, list) else []), ""
+            return {}, "their history is not answering (%s)" % e
+        return got, ""
+
+    def _poll_cursor(self, src, token, max_pages):
+        mapping = src.get("map") or {}
+        fresh = []
+
+        def consume(row):
+            field = lambda name, default: row.get(mapping.get(name) or default)
+            rid = field("row", "id")
+            if rid is None:
+                raise ValueError("history row has no identity")
+            if rid in self.seen:
+                return
+            when = _when(field("when", "detected_at"))
+            node = str(field("camera", "node_id") or "") if src.get("hasCamera") else ""
+            age = (datetime.now() - when).total_seconds() if when else None
+            recent = float(self.partner().get("dedupeSeconds") or 20)
+            who = str(field("who", "name") or "")
+            status = str(field("status", "status") or "")
+            known = bool(who) and status == (
+                friend_api.asks(self.entry(), "person").get("matched") or "matched")
+            event = {"who": who if known else "", "id": field("id", "participant_id") or "",
+                     "known": known, "status": status,
+                     "when": when.isoformat() if when else "",
+                     "node_id": node, "seq": row[src["cursor"]["seq"]],
+                     "recordSource": field("origin", "source") or "unknown",
+                     "camera": node if age is not None and 0 <= age <= recent else "",
+                     "hasCamera": False, "source": "poll",
+                     "callAs": str(field("callAs", "call_as") or "") if known else ""}
+            kept = self.note(event)
+            self.seen[rid] = time.time()
+            if kept is not None:
+                fresh.append(kept)
+
+        why = self._history_cursor.poll(
+            src, lambda path: self._fetch_history(token, path), consume, max_pages)
+        self.polls += 1
+        self.poll_error = why
+        while len(self.seen) > 4000:
+            self.seen.popitem(last=False)
+        return fresh, why
 
     def poll_once(self, max_pages=20):
         """Read their history and return only the rows we had not seen.
@@ -591,10 +635,24 @@ class State:
         if not src:
             self.poll_error = "this app has no history to read"
             return [], self.poll_error
+        if src.get("cursor"):
+            key = (self.partner().get("api"), json.dumps(src, sort_keys=True))
+            if key != self._history_key:
+                if self._history_key is not None:
+                    self.invalidate_token(self.token)
+                    self.seen.clear()
+                    with self._events_lock:
+                        self.recent.clear()
+                        self.people.clear()
+                self._history_cursor = HistoryCursor()
+                self._history_key = key
         token, why = self.token_now()
         if not token:
             self.poll_error = why
             return [], why
+
+        if src.get("cursor"):
+            return self._poll_cursor(src, token, max_pages)
 
         mapping = src.get("map") or {}
         k_when = mapping.get("when") or "detected_at"
