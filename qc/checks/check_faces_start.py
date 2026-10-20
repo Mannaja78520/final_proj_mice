@@ -14,6 +14,8 @@ import tempfile
 import time
 import threading
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 import qc as F
 
@@ -30,6 +32,7 @@ def run(t):
     os.environ["MICE_FACES_CONFIG"] = str(cfg)
     base, main = F.start_hub()
     faces = main.hub_api_faces
+    _reused_process(t, faces)
     real_watcher = faces.start_watcher
     real_partner = main.partner_launch.start
     launched = []
@@ -81,7 +84,9 @@ def run(t):
         code, body = F.post(base + "/api/faces/start", timeout=40)
         got = json.loads(body or "{}")
         t.ok(got.get("watcher") == "running" and faces._started.get("proc") is first,
-             "a second press finds it running and starts no second watcher", body[:200])
+             "a second press finds it running and starts no second watcher",
+             {"reply": got, "firstPid": getattr(first, "pid", None),
+              "nowPid": getattr(faces._started.get("proc"), "pid", None)})
         # Voice asks for OUR watcher only (A42-4): their app is not started
         # by a page that only wanted names to arrive faster.
         asked = []
@@ -110,3 +115,24 @@ def run(t):
             except Exception:                                # noqa: BLE001
                 proc.kill()
         os.environ.pop("MICE_FACES_CONFIG", None)
+
+
+def _reused_process(t, faces):
+    """A missed health poll cannot turn a reused watcher into a new launch."""
+    keep = faces._started.copy()
+    proc = SimpleNamespace(pid=41, poll=lambda: None)
+    launch = Mock(side_effect=AssertionError("a live watcher must be reused"))
+    try:
+        faces._started.clear()
+        faces._started["proc"] = proc
+        with patch.object(faces, "watcher_up", side_effect=[False, True]), \
+             patch.object(faces, "subprocess",
+                          SimpleNamespace(Popen=launch, STDOUT=faces.subprocess.STDOUT)):
+            state, _why, detail = faces.start_watcher()
+        t.eq(state, "running", "an existing watcher is running after a transient health miss")
+        t.ok(faces._started.get("proc") is proc,
+             "the health retry keeps the exact existing child", detail)
+        t.eq(launch.call_count, 0, "the health retry starts no second watcher")
+    finally:
+        faces._started.clear()
+        faces._started.update(keep)
