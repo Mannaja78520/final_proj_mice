@@ -106,6 +106,18 @@ def run(t):
              "a failed specialist is not retained by an old batch pipeline")
 
         b = brain()
+        b.cfg["providers"] = {}  # exercise the production catalog, not a fixture policy
+        b._stt_own["medium"] = Model("English medium")
+        b._whisper("english.wav", "en", b.cfg["stt"])
+        t.eq(calls[-1][0], "English medium", "production English uses its measured specialist")
+        t.ok(not {"repetition_penalty", "no_repeat_ngram_size"} & calls[-1][1].keys(),
+             "production English preserves legitimate repeated phrases", repr(calls[-1][1]))
+        for lang in ("ja", "zh"):
+            b._whisper("general.wav", lang, b.cfg["stt"])
+            t.ok(calls[-1][0] == "general" and calls[-1][1].get("repetition_penalty") == 1.2,
+                 lang + " keeps the measured general model and decoding policy", repr(calls[-1]))
+
+        b = brain()
         b._stt.batch_oom = True
         got, _ = b._whisper("large.wav", "en", b.cfg["stt"])
         t.eq(got, "heard", "a lazy batch memory failure gets one smaller serial retry")
@@ -162,6 +174,14 @@ def _answers(t, svc):
     hit, score = b.match_faq("วันนี้งานเปิดถึงกี่โมง", lang="th")
     t.ok(hit and "17:00" in hit.get("answer", ""),
          "the closing-hours paraphrase uses verified saved hours, not invented time", repr((score, hit)))
+    for text, lang, key in (
+        ("could you tell me what time u open and close?", "en", "answer_en"),
+        ("こんにちは 今日の営業時間について教えてください いつに開きますか そしていつに閉まりますか", "ja", "answer_ja"),
+        ("请问 今天的营业时间是几点到几點?", "zh", "answer_zh"),
+        ("請問今天的營業時間是幾點到幾點?", "zh", "answer_zh")):
+        hit, score = b.match_faq(text, lang=lang)
+        expected = json.loads(b.faq_path.read_text(encoding="utf-8"))["faqs"][3][key]
+        t.eq((hit or {}).get("answer"), expected, "a natural hours question uses saved facts in " + lang)
     hit, score = b.match_faq("ขอถ่ายรูปกับหุ่นยนต์ได้ไหม", lang="th")
     t.ok(hit and "ยืนข้าง" in hit.get("answer", ""),
          "the existing lower-score photo question still works", repr((score, hit)))
@@ -172,7 +192,7 @@ def _synthesis(t, svc):
         b = svc.Brain.__new__(svc.Brain)
         b._tts_lock = threading.Lock()
         b._cache_path = lambda ident, text, **_: Path(folder) / (ident + ".wav")
-        audio = svc.providers.pcm_wav(b"\x01\x02" * 500)
+        audio = svc.providers.pcm_wav(b"\x01\x02" * 2400)
         entered, release, foreground = threading.Event(), threading.Event(), threading.Event()
         made, errors = [], []
 

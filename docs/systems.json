@@ -3,7 +3,7 @@
 
   "exclude": [".git/", ".pio/", "__pycache__/", "node_modules/", ".vscode/", ".claude/",
               ".agents/", "dist/", "build/", "patches/", "patches_code/", "generated/",
-              "tts_cache/", "reports/", "scratch/", "sequences/", "projects/", "shows/",
+              "tts_cache/", "reports/", "scratch/", "_video_test/", "sequences/", "projects/", "shows/",
               "models/", "vendor/", "APPDATA/", ".staging", "firmware/lib/",
               "firmware/sd_card_example/", "scient_test/results/", ".unsnooze/",
               "docs/systems/",

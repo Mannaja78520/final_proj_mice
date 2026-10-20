@@ -19,6 +19,13 @@ await flush();
 const clock={now:0,next:0,jobs:new Map()};
 globalThis.setTimeout=(fn,ms=0)=>{const id=++clock.next;clock.jobs.set(id,{at:clock.now+ms,fn});return id;};
 globalThis.clearTimeout=id=>clock.jobs.delete(id);
+const repeaters=new Set();
+globalThis.setInterval=(fn,ms)=>{
+  const id=++clock.next;repeaters.add(id);
+  const next=()=>{if(!repeaters.has(id))return;fn();if(repeaters.has(id))clock.jobs.set(id,{at:clock.now+ms,fn:next});};
+  clock.jobs.set(id,{at:clock.now+ms,fn:next});return id;
+};
+globalThis.clearInterval=id=>{repeaters.delete(id);clock.jobs.delete(id);};
 Date.now=()=>clock.now;
 Object.defineProperty(performance,'now',{value:()=>clock.now,configurable:true});
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -59,7 +66,7 @@ Object.defineProperty(app,'askLang',{value:'en',configurable:true});
 const results=[];
 function ok(pass,label,detail){results.push({pass:!!pass,label,detail});}
 function reset(speech=[]){
-  clock.now=0;clock.jobs.clear();intervals=[];tracks=[];denied=false;recorderError=false;
+  clock.now=0;clock.jobs.clear();repeaters.clear();intervals=[];tracks=[];denied=false;recorderError=false;
   app.convActive=true;app.convSession+=10;app.convCapture=null;app.convAnalyser=null;
   app.convRms=()=>!speech.some(([a,b])=>a<=clock.now&&clock.now<b);
   app.cfg={tts:{enabled:true},stt:{},use:{speak:['edge','local']}};
@@ -129,6 +136,25 @@ globalThis.fetch=async(u,opts)=>{if(u==='/api/play'&&opts?.method==='POST')moves
 const moveAbort=new AbortController();setTimeout(()=>moveAbort.abort(),100);
 await drain(move({move:'hello.yaml',module:'nong'},moveAbort.signal));
 ok(!moves,'a delayed lookup cannot start movement after conversation Stop');
+
+reset([]);const motionEvents=[];let posted=0,newMove;
+app.findRobot=async()=>({dev:'fake-nong'});
+globalThis.fetch=async(u,opts)=>{
+  if(u==='/api/play'&&opts?.method==='POST'){
+    const n=++posted;motionEvents.push({kind:'play'+n,at:clock.now});
+    if(n===1)await delay(500);
+  }
+  if(u==='/api/play/stop')motionEvents.push({kind:'stop',at:clock.now});
+  return {json:async()=>({ok:true,running:false,steps:[]})};
+};
+const firstMoveAbort=new AbortController();
+const firstMove=move({move:'hello.yaml',module:'nong'},firstMoveAbort.signal);
+setTimeout(()=>firstMoveAbort.abort(),100);
+setTimeout(()=>{newMove=move({move:'hello.yaml',module:'nong'});},200);
+await drain(firstMove);await drain(newMove);
+const bAt=motionEvents.findIndex(e=>e.kind==='play2');
+ok(bAt>0&&!motionEvents.slice(bAt+1).some(e=>e.kind==='stop'),
+   'retiring an old pending move cannot stop a newer move',motionEvents);
 
 let speechLog=[],audioLog=[],voiceList=[],nativeError=false,nativeHang=false,nativeEndHang=false;
 globalThis.SpeechSynthesisUtterance=class {constructor(text){this.text=text;}};

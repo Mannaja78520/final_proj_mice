@@ -5,6 +5,19 @@ model), speech out.
 
 ## Rules and traps
 
+- Conversation caps speech at 30 s after onset, waits up to 10 s for speech,
+  and uses 1.5 s of elapsed quiet to finish a turn. It is turn-taking; it
+  waits for its own reply and the rig to finish before reopening the mic.
+- Fast device voice is a visible Voice setting (`tts.fastDeviceVoice`). A
+  cached server reply wins first; after 650 ms an installed same-language
+  voice may start. Named/scenario/mixed voice choices stay with the helper.
+  Both playback and Stop own their callbacks; 650 ms is not audible latency.
+- Local hearing batches ten-second windows (`local.hear` batchSize and
+  chunkSeconds). Specialist pipelines are reused and released with models;
+  a lazy CUDA failure replaces the actual specialist on CPU.
+- A saved answer's `wholeQuestion` switch limits short social replies to
+  whole questions, so an incidental greeting cannot trigger a greeting move.
+
 - Settings are DATA in `config/voice.json`. The unsure-language second pass is
   `stt.fallback` (language, when_not_in, min_probability); no key, no pass.
 - An empty store language means DETECT: no language and no bias prompt

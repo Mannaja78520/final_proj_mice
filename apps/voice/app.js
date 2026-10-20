@@ -904,7 +904,7 @@ class VoiceApp {
 // Silence detection: reads time-domain samples from the analyser, centers
 // them (silence is ~128, not 0), and returns true when rms is below 1%.
   convRms(analyser = this.convAnalyser){
-  if (!analyser) return true;
+  if (!analyser) return false;
   const buf = new Uint8Array(analyser.frequencyBinCount);
   analyser.getByteTimeDomainData(buf);
   let sum = 0;

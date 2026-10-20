@@ -488,7 +488,7 @@ class Brain:
         self._stt_loading = False
         self._stt_batches = {}
         self._preload_thread = None
-        self._tts_lock = threading.Lock()   # one PowerShell synth at a time
+        self._tts_lock = threading.Lock()   # protects per-line synthesis slots
         self.faq_err = ""            # why the answers file could not be read
         self._lock = threading.Lock()   # one GPU: answers and listening queue
         self._cached_person = ""
