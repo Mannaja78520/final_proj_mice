@@ -28,6 +28,7 @@ this is the check that reads it.
 The assertion is a CLOCK, not a value: the only thing that distinguishes the
 bug from the fix is whether the call comes back at all.
 """
+import sys
 import threading
 import time
 
@@ -86,7 +87,12 @@ def _with_deadline(fn, seconds):
 
 def run(t):
     fake_serial.reset()
-    base, main = F.start_hub()
+    # A full hub adds background censuses; the fake counts writers across ports.
+    # Drive the same production probes without unrelated scanner traffic.
+    fake_serial.install()
+    sys.path.insert(0, str(F.HUB))
+    import hub_probe
+    import hub_usb
     fake_serial.flood_listed[0] = True
     port = fake_serial.FLOOD_PORT
 
@@ -108,7 +114,7 @@ def run(t):
         return
 
     # ---- opening it comes back ----------------------------------------
-    done, took, err, _ = _with_deadline(lambda: main._usb_get(port), PATIENCE)
+    done, took, err, _ = _with_deadline(lambda: hub_usb._usb_get(port), PATIENCE)
     t.ok(done, "opening a flooding cable returns",
          "it never came back — the settle loop pushes its own deadline "
          "forward on every byte, so a cable that never goes quiet holds it "
@@ -119,21 +125,21 @@ def run(t):
              "4s is the whole wait, not 4s after the settle: both clocks start "
              "together, so a quiet board costs 1.2s and a talking one 4")
     try:
-        main.usb_close(port)
+        hub_usb.usb_close(port)
     except Exception:                            # noqa: BLE001
         pass
 
     # ---- and so does a full probe of it -------------------------------
     # The real failure was not one open: it was the scan, which walks every
     # port and stopped at this one.
-    done2, took2, err2, _ = _with_deadline(lambda: main.probe_usb_port(port),
+    done2, took2, err2, _ = _with_deadline(lambda: hub_probe.probe_usb_port(port),
                                            PATIENCE)
     t.ok(done2, "probing it returns too", err2 or "it never came back")
     if done2:
         t.ok((took2 or 0) < PATIENCE,
              "in bounded time (%.1fs)" % (took2 or 0))
     try:
-        main.usb_close(port)
+        hub_usb.usb_close(port)
     except Exception:                            # noqa: BLE001
         pass
 
@@ -141,7 +147,7 @@ def run(t):
     # A hub that survives the noisy cable but stops listing the good ones has
     # not fixed anything a person would notice.
     done3, took3, err3, quiet = _with_deadline(
-        lambda: main.probe_usb_port(fake_serial.PORT), PATIENCE)
+        lambda: hub_probe.probe_usb_port(fake_serial.PORT), PATIENCE)
     t.ok(done3, "and the QUIET board on another cable is still reachable",
          err3 or "it never came back")
     got = (quiet or {}).get("module")

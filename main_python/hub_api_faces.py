@@ -92,6 +92,7 @@ def start_watcher(wait=15.0):
     if watcher_up():
         return "running", "", ""
     proc = _started.get("proc")
+    spawned = False
     if proc is None or proc.poll() is not None:
         root = Path(sys.executable).parent.parent if getattr(sys, "frozen", False) else _hub.HERE.parent
         script = root / "apps" / "faces" / "service.py"
@@ -107,10 +108,11 @@ def start_watcher(wait=15.0):
                                     stdout=out, stderr=subprocess.STDOUT,
                                     creationflags=_hub.NO_WINDOW)
         _started.update(proc=proc, log=str(log))
+        spawned = True
     until = time.time() + wait
     while time.time() < until:
         if watcher_up(0.5):
-            return "started", "", "pid %d" % proc.pid
+            return "started" if spawned else "running", "", "pid %d" % proc.pid
         if proc.poll() is not None:
             return "failed", "the face helper stopped as soon as it started", _started.get("log", "")
         time.sleep(0.3)
