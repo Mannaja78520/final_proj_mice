@@ -2,10 +2,10 @@
   // WHO CAN DO EACH VOICE JOB (A45-1, user 2026-10-19: Gemini by voice, other
   // services too, a local backup, and "pick to fit the situation").
   //
-  // Three jobs. config/voice.json `use` holds, per job, an ORDERED list of the
+  // Four jobs. config/voice.json `use` holds, per job, an ORDERED list of the
   // ids below: the first one that works does the job, the next is the backup.
   //   hear   speech -> words        think  a question no saved answer fits
-  //   speak  words -> sound
+  //   speak  words -> sound          compose  a new verse (sameAs think)
   //
   // One entry per service:
   //   says   its name on the Voice page          kind   which wire it speaks
@@ -23,7 +23,11 @@
   "jobs": {
     "hear":  {"says": "Hearing", "about": "turns what people say into words"},
     "think": {"says": "Answering", "about": "answers a question no saved answer fits"},
-    "speak": {"says": "Speaking", "about": "reads the answer out loud"}
+    "speak": {"says": "Speaking", "about": "reads the answer out loud"},
+    // sameAs: every service that can `think` can do this job too, with its
+    // think settings; `use.compose` picks a different service for it, else
+    // the think choice is used (A45-24: verse wants a stronger writer).
+    "compose": {"says": "Writing verse", "about": "makes up a new poem when someone asks for one", "sameAs": "think"}
   },
   "default": {"hear": ["local"], "think": ["local"], "speak": ["edge", "local"]},
   // A service that failed on the network or ran out of its allowance is

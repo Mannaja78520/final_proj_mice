@@ -1,0 +1,114 @@
+{
+  // WHAT A QUESTION ASKS FOR BEYOND ITS WORDS (A45-24). Every rule here is
+  // data: a new phrase, language or loanword is one entry, no code change.
+  // apps/voice/intents.py reads this file again whenever it changes on disk.
+  //
+  // Found by the 2026-10-21 acceptance run (31 typed, 19 spoken questions):
+  //   * a Thai greeting then "Please answer in English" still got Thai,
+  //   * "Read this aloud: ..." went to the model, which added the visitor's name,
+  //   * "write a NEW poem about ..." got a greeting or the saved poem,
+  //   * a spoken English word inside Thai ("parking", "restroom") was written
+  //     in Thai letters or heard as other Thai words, so no saved answer fit.
+  // Patterns are Python regular expressions, matched ignoring case. Write a
+  // repeat as {3,4000}, never {3,}: the comment remover takes a comma before }.
+
+  // Asking for the answer in a language. The phrase is taken out before the
+  // saved answers are searched, and the answer comes in that language.
+  "replyLanguage": {
+    "en": ["(?:please\\s+)?(?:answer|reply|respond|speak|talk|tell me)\\s+(?:me\\s+)?in\\s+english(?:\\s+please)?",
+           "in\\s+english,?\\s+please",
+           "(?:ช่วย)?(?:ตอบ|พูด|บอก)(?:เป็น)?ภาษาอังกฤษ(?:หน่อย)?(?:ครับ|ค่ะ|นะ)?",
+           "英語で(?:答えて|話して|教えて)(?:ください)?",
+           "(?:请)?用英[语文](?:回答|说|回复)"],
+    "th": ["(?:please\\s+)?(?:answer|reply|respond|speak|talk)\\s+(?:me\\s+)?in\\s+thai(?:\\s+please)?",
+           "(?:ช่วย)?(?:ตอบ|พูด|บอก)(?:เป็น)?ภาษาไทย(?:หน่อย)?(?:ครับ|ค่ะ|นะ)?",
+           "タイ語で(?:答えて|話して|教えて)(?:ください)?",
+           "(?:请)?用泰[语文](?:回答|说|回复)"],
+    "ja": ["(?:please\\s+)?(?:answer|reply|respond|speak|talk)\\s+(?:me\\s+)?in\\s+japanese(?:\\s+please)?",
+           "(?:ช่วย)?(?:ตอบ|พูด|บอก)(?:เป็น)?ภาษาญี่ปุ่น(?:หน่อย)?(?:ครับ|ค่ะ|นะ)?",
+           "日本語で(?:答えて|話して|教えて)(?:ください)?",
+           "(?:请)?用日[语文](?:回答|说|回复)"],
+    "zh": ["(?:please\\s+)?(?:answer|reply|respond|speak|talk)\\s+(?:me\\s+)?in\\s+(?:chinese|mandarin)(?:\\s+please)?",
+           "(?:ช่วย)?(?:ตอบ|พูด|บอก)(?:เป็น)?ภาษาจีน(?:หน่อย)?(?:ครับ|ค่ะ|นะ)?",
+           "中国語で(?:答えて|話して|教えて)(?:ください)?",
+           "(?:请)?用(?:中文|汉语|普通话)(?:回答|说|回复)"]
+  },
+
+  // Read the given words out loud, exactly: no model, no name added. The
+  // part to read is the group named text.
+  "readAloud": [
+    "^(?:ช่วย)?(?:อ่าน|ท่อง)(?:กลอน|บทกลอน|ข้อความ|เนื้อหา)?(?:นี้)?(?:ให้ฟังหน่อย|ให้ฟัง|หน่อย)?(?:\\s*[:：\\-]\\s*|\\s+)(?:(?:บทกลอน|กลอน)(?:\\s*[:：\\-]\\s*|\\s+))?(?P<text>.{6,4000})$",
+    "^(?:please\\s+)?(?:read|say|recite)(?:\\s+(?:this|these words|the following|after me))?(?:\\s+(?:aloud|out loud|out))?\\s*[:：\\-]\\s*(?P<text>.{3,4000})$",
+    "^(?:次の文を|これを|この文を)?(?:読んで|読み上げて|言って)(?:ください)?\\s*[:：]\\s*(?P<text>.{2,4000})$",
+    "^(?:请)?(?:朗读|读一下|念一下|读出来|念出来|说一下)\\s*[:：]\\s*(?P<text>.{2,4000})$"
+  ],
+
+  // Make up a NEW verse. Skips the saved answers (the saved poem used to win),
+  // uses the `compose` services, and the result must look like a verse.
+  "compose": {
+    "patterns": ["แต่ง(?:กลอน|บทกลอน|กาพย์|โคลง|ฉันท์|คำประพันธ์|บทกวี|เพลง)",
+                 "(?:กลอน|บทกลอน|บทกวี)ใหม่",
+                 "\\b(?:write|compose|make up|create|give me)\\b.{0,40}\\b(?:poem|verse|rhyme|haiku)",
+                 "\\bnew\\s+(?:poem|verse|rhyme)",
+                 "(?:新しい)?(?:詩|俳句)を(?:作|書|詠)",
+                 "(?:写|作|创作)(?:一首)?(?:新的?)?诗"],
+    "minLines": 4,
+    // Letters per line [fewest, most]. A Thai วรรค of 6 to 9 words is about
+    // 18 to 40 letters; the local 0.5B model's "ตาสีดำ" (6) is a list item.
+    "lineChars": {"th": [14, 60], "en": [12, 90], "ja": [5, 40], "zh": [4, 30]},
+    "maxTokens": 200,
+    "prompt": {
+      "th": "คุณคือหุ่นยนต์ Mice ผู้ใช้ขอให้แต่งกลอนใหม่ จงแต่งกลอนภาษาไทยใหม่ 1 บท 4 วรรค ตามหัวข้อที่ผู้ใช้ขอเท่านั้น วรรคละ 6 ถึง 9 คำ ขึ้นบรรทัดใหม่ทุกวรรค ตอบเฉพาะตัวกลอน 4 บรรทัด ห้ามทักทาย ห้ามเรียกชื่อ ห้ามมีชื่อเรื่องหรือคำอธิบาย ห้ามใช้กลอนเดิม ไม่มีอีโมจิ",
+      "en": "You are the Mice robot. Write a NEW short poem of exactly 4 lines about the topic the user asks for. One line per line break. Reply with the 4 lines only: no greeting, no name, no title, no notes, no emojis.",
+      "ja": "あなたはMiceロボットです。ユーザーが頼んだテーマで新しい詩を4行で作ってください。1行ごとに改行し、詩の4行だけを答えてください。挨拶・名前・題名・説明・絵文字は不要です。",
+      "zh": "你是Mice机器人。请按用户要求的主题写一首新的四行短诗，每行换行，只回答这四行诗，不要问候、称呼、标题、解释或表情符号。"
+    },
+    "retry": {
+      "th": "ตอบเป็นกลอนภาษาไทย 4 บรรทัดเท่านั้น ขึ้นบรรทัดใหม่ทุกวรรค ห้ามมีคำอื่น",
+      "en": "Reply with exactly 4 lines of verse, one per line, nothing else.",
+      "ja": "詩の4行だけを、1行ずつ改行して答えてください。",
+      "zh": "只回答四行诗，每行换行，不要其他文字。"
+    },
+    "failed": {
+      "th": "ขออภัยครับ ตอนนี้ผมยังแต่งกลอนใหม่เรื่องนี้ได้ไม่ดีพอ ลองขอหัวข้ออื่น หรือให้ผมอ่านกลอนที่มีอยู่แทนได้ครับ",
+      "en": "Sorry, I could not write a good new poem on that just now. Try another topic, or ask me to read a poem you have.",
+      "ja": "すみません、今はそのテーマで良い新しい詩を作れませんでした。別のテーマか、お持ちの詩の読み上げをお試しください。",
+      "zh": "抱歉，我现在还写不好这个主题的新诗。请换个主题，或者让我朗读您已有的诗。"
+    },
+    // A reply that opens like this is a greeting, not a poem.
+    "notVerseStart": ["สวัสดี", "hello", "hi ", "dear ", "こんにちは", "你好"]
+  },
+
+  // English words a Thai listener writes in Thai letters. Before the saved
+  // answers are searched, each spelling becomes the English word, so
+  // "ฮัลโหล ปาร์กกิ้ง อยู่ตรงไหน" finds "parking อยู่ตรงไหน". Longest first.
+  "loanwords": {
+    "parking": ["ปาร์กกิ้ง", "ปาร์คกิ้ง", "พาร์คกิ้ง", "พาร์กกิ้ง", "พาร์คิง", "ปาร์คิ้ง", "ปาร์กิ้ง", "พาร์กิ้ง"],
+    "restroom": ["เรสต์รูม", "เรสท์รูม", "เรสรูม", "เรสต์รูมส์"],
+    "bathroom": ["บาธรูม", "บาทรูม"],
+    "toilet": ["ทอยเล็ต", "ทอยเลต", "ทอยเลท", "ท้อยเล็ต"],
+    "hello": ["ฮัลโหล", "เฮลโล", "เฮลโหล", "ฮัลโล"],
+    "exit": ["เอ็กซิท", "เอ็กซิต", "เอ็กซิส"],
+    "elevator": ["เอเลเวเตอร์", "อีเลเวเตอร์", "เอลิเวเตอร์"],
+    "information desk": ["อินฟอร์เมชั่น", "อินฟอเมชั่น", "อินฟอร์เมชัน"],
+    "wifi": ["ไวไฟ", "วายฟาย"],
+    "password": ["พาสเวิร์ด", "พาสเวิด", "พาสเวิร์ท"]
+  },
+
+  // Hearing a second time when Thai and English are mixed in one breath. The
+  // Thai listener writes an English question as Thai words ("restroom" came
+  // out as "ห้องนอน"). When the first hearing is in one of `when` and finds
+  // no saved answer at `faqBelow` or better, the clip is heard again in each
+  // of `languages`. The other hearing wins when it is `margin` closer to a
+  // saved answer and reaches `minScore`; a hello or thanks never wins. Else
+  // the first stays. Costs one more pass only for questions nothing fits.
+  // The second hearing is given the saved questions in its language as a word
+  // hint, up to `hintChars` letters (whisper reads about 224 tokens of hint).
+  // It runs only when a part of the clip (`windows`, fractions of its length)
+  // sounds like that language with at least `minShare` chance: asked for
+  // English, the listener TRANSLATES Thai speech. Measured 2026-10-21 (small):
+  // Thai greeting + English question 0.56-0.99 English in the later part;
+  // Thai questions 0.00-0.05 (two people overlapping 0.18); "Hello ห้องน้ำทางไหน" 0.01.
+  "codeSwitch": {"when": ["th"], "languages": ["en"], "faqBelow": 0.75, "minScore": 0.55, "margin": 0.15, "hintChars": 400,
+                 "minShare": 0.3, "windows": [[0, 1], [0.33, 1], [0, 0.67]]}
+}

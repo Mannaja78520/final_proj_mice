@@ -1169,6 +1169,28 @@
        answered in words — it never queues and never cuts the running move.
        A <b>Stop the move</b> button stays beside it until the sequence
        ends.</p></div>
+  <div class="f"><h3>Ask for a language, a reading or a new poem<span class="tag t-new">new</span></h3>
+    <p>Say <b>"Please answer in English"</b> (or <i>ตอบเป็นภาษาไทย</i>, 英語で答えて,
+       用中文回答) anywhere in the question, and the answer comes in that language,
+       even when the rest of the question is in another one.</p>
+    <p>Say <b>"Read this aloud: …"</b> (or <i>ช่วยอ่าน: …</i>, 読んでください：…,
+       请朗读：…) and the rig reads exactly those words, with nothing added.</p>
+    <p>Ask it to <b>write a new poem</b> (<i>แต่งกลอนใหม่ …</i>, "write a poem about …")
+       and it makes up a new one instead of reciting the saved poem. If the answer
+       does not look like a poem (a list, a greeting, too few lines, the old
+       poem), it says sorry honestly instead. The small model on this PC usually
+       cannot write a good Thai poem yet; pick a stronger service for
+       <b>Writing verse</b> on the Voice page once you have its key. The shape of
+       the poem is checked, its rhyme and rhythm are not.</p>
+    <p>English words spoken inside Thai, like <i>parking</i> or <i>restroom</i>,
+       still find their saved answers when the listener writes them in Thai
+       letters. When a Thai greeting is followed by an English question, the rig
+       listens to it a second time in English, but only if that part really
+       sounds English, so a Thai question is never answered in English.
+       <span class="tech">Rules, phrases and loanwords are data in
+       <code>config/voice_intents.json</code> (replyLanguage, readAloud, compose,
+       loanwords, codeSwitch); the second hearing adds one listening pass only
+       when no saved answer fits.</span></p></div>
   <div class="f"><h3>One brain, many PCs<span class="tag t-new">new</span></h3>
     <p>The answering helper normally listens to this PC only. To make one PC
        the brain for every hub at the venue, write that PC's address in
