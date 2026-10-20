@@ -477,9 +477,13 @@ class VoiceApp {
     const blob = await new Promise(res => c.toBlob(res, "image/jpeg", 0.9));
     let r;
     try {
-      r = await fetch("/api/voice/identify", {method: "POST", body: blob}).then(res => res.json());
+      const response = await fetch("/api/voice/identify", {method: "POST", body: blob});
+      r = await response.json();
+      // A refused look is no observation. Keep the badge until a real look
+      // confirms nobody known is there (429 used to make the name blink).
+      if (!response.ok) r = {...r, ok: false, noLook: true};
     } catch (e) {
-      r = {ok: false, error: "the voice helper stopped answering"};
+      r = {ok: false, noLook: true, error: "the voice helper stopped answering"};
     }
     if (r.wouldKeep) this.refuseLooks(r.error, r.detail);
     if (r.ok && r.person) {

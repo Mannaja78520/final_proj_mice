@@ -49,7 +49,7 @@
     "edge": {
       "says": "Microsoft Edge voices", "kind": "edge",
       "free": "Free, no key, natural Thai voices. Needs internet; Microsoft can slow it down without notice.",
-      "jobs": {"speak": {}}
+      "jobs": {"speak": {"hedgeSeconds": 1.5, "timeoutSeconds": 10}}
     },
     "gemini": {
       "says": "Google Gemini (AI Studio)", "kind": "gemini",

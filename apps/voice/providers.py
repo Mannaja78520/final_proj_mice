@@ -123,11 +123,13 @@ def silent(sound):
     at, per_s = 12, 0
     while at + 8 <= len(sound):
         tag, size = sound[at:at + 4], struct.unpack("<I", sound[at + 4:at + 8])[0]
+        if size > len(sound) - at - 8:
+            return True
         if tag == b"fmt " and size >= 16:
             per_s = struct.unpack("<I", sound[at + 16:at + 20])[0]   # bytes a second
         if tag == b"data":
             have = min(size, len(sound) - at - 8)
-            return have < max(per_s // 20, 1)
+            return per_s <= 0 or have < max(per_s // 20, 1)
         at += 8 + size + (size & 1)
     return True
 

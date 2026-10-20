@@ -117,16 +117,18 @@ def run(t):
     entered.clear()
     release.clear()
     polled = []
-    def fetch(src, token, page):
-        if page != 1:
-            return [], ""
+    def fetch(token, path):
+        if "after_seq" not in path:
+            return {"latest_seq": 0}, ""
         entered.set()
         release.wait(3)
-        return [dict(id="row1", participant_id="p1", name="Ann",
+        return {"items": [dict(id="row1", seq=1, participant_id="p1", name="Ann",
                      detected_at="2026-09-14T10:00:00", status="matched"),
-                dict(id="row2", participant_id="p2", name="Ben",
-                     detected_at="2026-09-14T09:59:59", status="matched")], ""
-    state._fetch = fetch
+                dict(id="row2", seq=2, participant_id="p2", name="Ben",
+                     detected_at="2026-09-14T09:59:59", status="matched")],
+                "latest_seq": 2, "next_after_seq": 2}, ""
+    state._fetch_history = fetch
+    state.poll_once()            # bootstrap before racing committed rows with live feed
     worker = threading.Thread(target=lambda: polled.append(state.poll_once()), daemon=True)
     worker.start()
     try:

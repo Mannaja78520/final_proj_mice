@@ -129,6 +129,8 @@ GATED_POST = {
     # and dropping the loaded models out from under whoever is talking.
     "/api/voice/keys",
     "/api/voice/unload",
+    "/api/voice/preload",
+    "/api/voice/identify",
     # Reading which build is available is as harmless as reading the module
     # list; replacing the hub is the most destructive thing it can be asked to
     # do, and it is on a network several people share.

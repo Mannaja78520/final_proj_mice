@@ -21,9 +21,7 @@ are not that good*. Three causes, none of them the voice itself:
 Runs the real Brain.say with the speech service and PowerShell faked: no
 network, no PowerShell, a throwaway cache folder.
 """
-import asyncio
 import importlib.util
-import time
 import sys
 import tempfile
 import threading
@@ -57,6 +55,7 @@ def run(t):
     was = sys.modules.get("edge_tts")
     try:
         _run(t)
+        _edge_race(t)
     finally:
         if was is None:
             sys.modules.pop("edge_tts", None)
@@ -80,9 +79,6 @@ def _run(t):
         async def stream(self):
             if not online["up"]:
                 raise OSError("offline")
-            if online.get("stall"):                     # this request hangs
-                online["stall"] -= 1
-                await asyncio.sleep(8)
             yield {"type": "audio", "data": MP3}
 
     sys.modules["edge_tts"] = SimpleNamespace(Communicate=Communicate)
@@ -154,11 +150,49 @@ def _run(t):
     t.ok(got == MP3 and edge and not any(a.startswith(("--rate", "--pitch")) for a in edge[0]),
          "a speed it cannot read is dropped and the voice kept", repr(edge))
 
-    # 5: a hung request (PC 2026-10-19: some lines 4-6 s, NoAudioReceived after
-    # 2.5 s) - a second one starts at 1.5 s and its sound is the one played
-    n, online["stall"], t0 = len(calls), 1, time.time()
-    got, why = b.say("สายช้าหนึ่งครั้ง", "th")
-    took = time.time() - t0
-    t.ok(got == MP3 and took < 3 and len([c for c in calls[n:] if "edge_tts" in c]) == 2,
-         "a slow line is asked for again and the first sound back is played",
-         "%.1f s, %r, %r" % (took, why, calls[n:]))
+
+def _edge_race(t):
+    """A stalled first request cannot hold up the spare or the next provider."""
+    import asyncio
+    import time
+    tmp = Path(tempfile.mkdtemp(prefix="mice_edge_qc_"))
+    mod, b = _brain(tmp, {"providers": {"edge": {"speak": {
+        "hedgeSeconds": 0.03, "timeoutSeconds": 0.18}}}})
+    calls, closed = [], []
+    mode = ["stall"]
+
+    class Communicate:
+        def __init__(self, *a, **k):
+            self.index = len(calls)
+            calls.append(self.index)
+
+        async def stream(self):
+            try:
+                if mode[0] == "dead" or (mode[0] == "stall" and self.index == 0):
+                    await asyncio.sleep(1)
+                if mode[0] == "fail" and self.index == 0:
+                    raise OSError("NoAudioReceived")
+                if mode[0] == "partial" and self.index == 0:
+                    yield {"type": "audio", "data": MP3[:10]}
+                    raise OSError("broken stream")
+                yield {"type": "audio", "data": MP3}
+            finally:
+                closed.append(self.index)
+
+    sys.modules["edge_tts"] = SimpleNamespace(Communicate=Communicate)
+    for case in ("fast", "stall", "fail", "partial", "dead"):
+        mode[0] = case
+        calls.clear()
+        closed.clear()
+        start = time.monotonic()
+        got, why = b._edge_speak("th-TH-PremwadeeNeural", "hello", "", "")
+        elapsed = time.monotonic() - start
+        t.eq(len(calls), 1 if case == "fast" else 2, case + ": at most one spare")
+        t.ok(sorted(closed) == calls, case + ": every stream is closed", repr(closed))
+        if case == "dead":
+            t.ok(got is None and "timed out" in str(why) and elapsed < 0.7,
+                 "two stalled streams stop at the shared deadline", repr((elapsed, why)))
+        else:
+            t.ok(got == MP3 and why is None and elapsed < 0.4,
+                 case + ": the first complete sound wins without waiting for the stalled request",
+                 repr((elapsed, why)))

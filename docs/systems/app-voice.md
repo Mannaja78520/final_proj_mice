@@ -75,10 +75,11 @@ model), speech out.
 
 - nothing
 
-## Checks that test it (24)
+## Checks that test it (28)
 
 - `check_build_web`
 - `check_face_photos`
+- `check_faces_cursor`
 - `check_faces_loopback`
 - `check_faces_presence`
 - `check_friend_api`
@@ -98,8 +99,11 @@ model), speech out.
 - `check_voice_reconize`
 - `check_voice_services`
 - `check_voice_settings`
+- `check_voice_sound`
 - `check_voice_source`
 - `check_voice_stt`
+- `check_voice_talkover`
 - `check_voice_tts`
+- `check_voice_view`
 
-Run them: `python qc/run_qc.py --no-build check_build_web check_face_photos check_faces_loopback check_faces_presence check_friend_api check_login_anywhere check_no_console_window check_page_frame check_speak check_translate check_voice check_voice_answers check_voice_bench check_voice_guard check_voice_identify check_voice_move check_voice_multi check_voice_one_voice check_voice_reconize check_voice_services check_voice_settings check_voice_source check_voice_stt check_voice_tts`
+Run them: `python qc/run_qc.py --no-build check_build_web check_face_photos check_faces_cursor check_faces_loopback check_faces_presence check_friend_api check_login_anywhere check_no_console_window check_page_frame check_speak check_translate check_voice check_voice_answers check_voice_bench check_voice_guard check_voice_identify check_voice_move check_voice_multi check_voice_one_voice check_voice_reconize check_voice_services check_voice_settings check_voice_sound check_voice_source check_voice_stt check_voice_talkover check_voice_tts check_voice_view`

@@ -12,6 +12,7 @@ import json
 import os
 import tempfile
 import time
+import threading
 from pathlib import Path
 
 import qc as F
@@ -29,22 +30,44 @@ def run(t):
     os.environ["MICE_FACES_CONFIG"] = str(cfg)
     base, main = F.start_hub()
     faces = main.hub_api_faces
+    real_watcher = faces.start_watcher
+    real_partner = main.partner_launch.start
+    launched = []
+    completed = threading.Event()
+    real_route = main.Handler.route
+    def route(handler, method):
+        try:
+            return real_route(handler, method)
+        finally:
+            if handler.path.startswith("/api/faces/start"):
+                completed.set()
+    main.Handler.route = route
+    # A denied HTTP response used to continue through the route and start
+    # both programs. Record the effects, not just its already-sent status.
+    faces.start_watcher = lambda *a, **k: launched.append("watcher") or ("started", "", "")
+    main.partner_launch.start = lambda *a, **k: launched.append("partner") or {"ok": True}
     try:
         F.logout_qc()
         real_is_self = main.is_self
         main.is_self = lambda ip: False          # a caller on the venue WiFi
         try:
             code, body = F.post(base + "/api/faces/start")
+            t.ok(completed.wait(5), "the denied remote handler finished")
         finally:
             main.is_self = real_is_self
         t.ok(code == 401 and '"need_login"' in body and not faces.watcher_up(),
              "from the network it needs a sign-in, and nothing starts", (code, body[:200]))
+        completed.clear()
         code, body = F.get(base + "/api/faces/start")
+        t.ok(completed.wait(5), "the denied GET handler finished")
         t.ok(code == 405 and not faces.watcher_up(), "and a plain GET starts nothing",
              (code, body[:200]))
 
+        t.eq(launched, [], "denied remote and GET requests start no program")
+        faces.start_watcher = real_watcher
         code, body = F.post(base + "/api/faces/start", timeout=40)
         got = json.loads(body or "{}")
+        t.ok("partner" in launched, "the allowed request asks the partner to start", repr(launched))
         t.ok(got.get("watcher") in ("started", "starting"),
              "at this PC, with no hub login, the watcher is started", (code, body[:300]))
         until = time.time() + 20
@@ -76,6 +99,9 @@ def run(t):
         t.contains(page, 'Mice.Api.post("/api/faces/start")',
                    "the Reconize screen has the button")
     finally:
+        faces.start_watcher = real_watcher
+        main.partner_launch.start = real_partner
+        main.Handler.route = real_route
         proc = faces._started.pop("proc", None)
         if proc is not None:
             proc.terminate()

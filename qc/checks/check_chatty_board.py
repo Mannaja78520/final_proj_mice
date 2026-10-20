@@ -39,6 +39,10 @@ TITLE = "a board that never stops talking cannot hang the hub"
 # Every probe of a flooding cable is seconds of real waiting, and there is no
 # honest way to fake that away: the thing under test IS the clock.
 SLOW = True
+# Two full gates lost the quiet board; two isolated runs identify it. The
+# probe has its own 0.6s INFO budget, so run this clock check without workers
+# competing for CPU. Keep every flood/identity assertion and deadline.
+SOLO = True
 
 # Generous on purpose. The real wait is 1.2s of settling plus the 4s cap; this
 # only has to be shorter than "forever", and a busy parallel gate is slow.
@@ -143,4 +147,5 @@ def run(t):
     got = (quiet or {}).get("module")
     t.ok(bool(got and got.get("id")),
          "and still identifies itself",
-         "one wedged board must not cost the whole module list: %r" % (got,))
+         "one wedged board must not cost the whole module list: %r; took=%r; error=%r"
+         % (quiet, took3, err3))

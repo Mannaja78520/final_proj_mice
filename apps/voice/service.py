@@ -97,6 +97,7 @@ import registry                                      # noqa: E402
 # What we asked the face app for, in one place (A13): /api/look, present.
 sys.path.insert(0, str(CODE / "apps" / "faces"))
 import friend_api                                    # noqa: E402
+from face_history import HistoryCursor, local_when    # noqa: E402
 # Who can do each job besides this PC (A45-1): the wire shapes and the keys.
 sys.path.insert(0, str(CODE / "apps" / "voice"))
 import providers                                     # noqa: E402
@@ -847,7 +848,8 @@ class Brain:
             if getattr(self, "_stt_last", None):
                 said += "; last heard by " + self._stt_last
             if getattr(self, "_stt_own_err", None):
-                said += "; own model could not load: " + self._stt_own_err
+                said += "; own model could not load: " + "; ".join(
+                    "%s: %s" % item for item in self._stt_own_err.copy().items())
             return said
         if self._stt_loading:
             return "loading in background…"
@@ -873,12 +875,7 @@ class Brain:
 
     @staticmethod
     def _whisper_model(mid):
-        """A whisper model on the graphics card if it can, else the CPU.
-
-        Trap (PC 2026-10-19): device="cuda" in a bare python fails at the
-        first clip with "cublas64_12.dll is not found"; in this helper it
-        works because torch is imported first and loads those DLLs.
-        """
+        """A whisper model on the graphics card if it can, else the CPU."""
         from faster_whisper import WhisperModel
         try:
             return WhisperModel(mid, device="cuda", compute_type="float16")
@@ -902,8 +899,16 @@ class Brain:
         got = getattr(self, "_stt_own", None)
         if got is None:
             got = self._stt_own = {}
+        errors = getattr(self, "_stt_own_err", None)
+        if errors is None:
+            errors = self._stt_own_err = {}
         if mid not in got:
-            got[mid] = self._whisper_model(mid)
+            try:
+                got[mid] = self._whisper_model(mid)
+            except Exception as e:                      # noqa: BLE001
+                errors[mid] = "%s: %s" % (e.__class__.__name__, e)
+                raise
+        errors.pop(mid, None)
         return got[mid]
 
     def _detect(self, path, scfg):
@@ -994,7 +999,6 @@ class Brain:
                     model, used = own, mine[lang]
             except Exception:                           # noqa: BLE001
                 pass               # no quick look, or no own model: as before
-        self._stt_last = used
         bias = ((scfg.get("languages") or {}).get(lang) or {}).get("bias") if lang else None
         segments, info = model.transcribe(
             path, language=lang or None,
@@ -1003,10 +1007,13 @@ class Brain:
             condition_on_previous_text=False,
             vad_filter=True,
             vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
-            initial_prompt=bias,
-            **self._decode(lang))
+            initial_prompt=bias, **self._decode(lang))
+        first_info = info
         segments, info = self._fallback_transcribe(path, segments, info, lang, scfg)
+        if info is not first_info:
+            used = self._stt_loaded_model or scfg.get("model", "small")
         valid = [s.text for s in segments if getattr(s, "no_speech_prob", 0) <= 0.6]
+        self._stt_last = used
         return drop_repeats("".join(valid)), info
 
     def _listen_local(self, audio, resolved, scfg):
@@ -1378,11 +1385,8 @@ class Brain:
         Python plus its imports, 0.4 s on the cloud box and more on Windows
         (measured 2026-10-19), before the service was even asked. Speed and
         pitch go as arguments, so the old "--rate -10%" trap (A42-1) cannot
-        come back.
-        Measured 2026-10-19: the first sound arrives in 0.25-0.75 s and is
-        most of the wait, but some lines took 4-6 s, and NoAudioReceived
-        came after 2.5 s. So a second request starts at 1.5 s, or as soon as
-        the first fails, and whichever brings sound first wins.
+        come back. A bounded spare request shortens stalls before audio
+        arrives; both timings are provider settings.
         """
         try:
             import asyncio
@@ -1402,30 +1406,49 @@ class Brain:
             async for ch in edge_tts.Communicate(clean, voice, **kw).stream():
                 if ch.get("type") == "audio":
                     out += ch.get("data") or b""
-            if len(out) < 100:
-                raise ValueError("no sound came back")
             return bytes(out)
+        job = self.service("edge")["jobs"]["speak"]
+        hedge = max(0.001, float(job["hedgeSeconds"]))
+        timeout = max(hedge, float(job["timeoutSeconds"]))
 
-        async def first_of_two():
-            runs, spare, err = {asyncio.ensure_future(go())}, True, None
-            while runs or spare:
-                done, runs = await asyncio.wait(
-                    runs, timeout=1.5 if spare else None,
-                    return_when=asyncio.FIRST_COMPLETED)
-                for d in done:
-                    if not d.exception():
-                        for r in runs:
-                            r.cancel()
-                        return d.result()
-                    err = d.exception()
-                if spare:                   # slow, or failed: one more try
-                    runs.add(asyncio.ensure_future(go()))
-                    spare = False
-            raise err
-        try:
-            return asyncio.run(asyncio.wait_for(first_of_two(), 10)), None
-        except Exception as e:                          # noqa: BLE001
-            return None, "%s: %s" % (e.__class__.__name__, e)
+        async def race():
+            # Some Edge requests stall before their first byte. Start at most
+            # one spare after the configured wait, or immediately on failure.
+            # Only a complete, nonempty response wins; always close the loser.
+            pending = {asyncio.create_task(go())}
+            tasks = set(pending)
+            loop = asyncio.get_running_loop()
+            started = loop.time()
+            spare = False
+            err = "no sound came back"
+            try:
+                while pending:
+                    left = timeout - (loop.time() - started)
+                    if left <= 0:
+                        return None, "the natural voice timed out"
+                    wait = left if spare else min(left, max(0, hedge - (loop.time() - started)))
+                    done, pending = await asyncio.wait(pending, timeout=wait,
+                                                       return_when=asyncio.FIRST_COMPLETED)
+                    for task in done:
+                        try:
+                            got = task.result()
+                            if not providers.silent(got):
+                                return got, None
+                        except Exception as e:                      # noqa: BLE001
+                            err = "%s: %s" % (e.__class__.__name__, e)
+                    if not spare:
+                        task = asyncio.create_task(go())
+                        pending.add(task)
+                        tasks.add(task)
+                        spare = True
+                return None, err
+            finally:
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                await asyncio.gather(*tasks, return_exceptions=True)
+
+        return asyncio.run(race())
 
     def _windows_speak(self, text, lang, voice):
         """The PC's own voice through tts.ps1: no internet, but flat."""
@@ -1557,8 +1580,8 @@ class Brain:
                 for lang in own:
                     try:
                         self._own_model(lang)
-                    except Exception as e:              # noqa: BLE001
-                        self._stt_own_err = "%s: %s" % (e.__class__.__name__, e)
+                    except Exception:                   # noqa: BLE001
+                        pass              # _own_model keeps each model's error until retry succeeds
 
         self._preload_thread = threading.Thread(target=_worker, daemon=True)
         self._preload_thread.start()
@@ -1570,7 +1593,8 @@ class Brain:
             self._llm = None
             self._stt = None
             self._stt_own = {}
-            self._stt_last = self._stt_own_err = None
+            self._stt_last = None
+            self._stt_own_err = {}
             self._llm_err = None
             self._stt_err = None
             self._llm_loading = False
@@ -2028,8 +2052,8 @@ class Brain:
                             continue
                         if who and p.get("known", True) and when_str:
                             try:
-                                w_dt = datetime.fromisoformat(str(when_str).replace("Z", ""))
-                                if abs((datetime.now() - w_dt).total_seconds()) <= 120:
+                                w_dt = local_when(when_str)
+                                if w_dt and 0 <= (datetime.now() - w_dt).total_seconds() <= self.seen_seconds():
                                     s = short_person_name(who)
                                     if s and s.lower() not in seen:
                                         seen.add(s.lower())
@@ -2161,10 +2185,10 @@ class Brain:
         if not u or not p:
             return ""
         now = time.time()
-        tok = getattr(self, "_reconize_token", "")
-        if tok and now < getattr(self, "_reconize_token_exp", 0.0) - 60:
-            return tok
         api = self._reconize_api()
+        tok = getattr(self, "_reconize_token", "")
+        if tok and getattr(self, "_reconize_token_api", None) == api and now < getattr(self, "_reconize_token_exp", 0.0) - 60:
+            return tok
         if not api:
             return ""
         body = json.dumps({"username": u, "password": p}).encode("utf-8")
@@ -2173,6 +2197,7 @@ class Brain:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             tok = json.loads(r.read().decode("utf-8")).get("access_token") or ""
         self._reconize_token = tok
+        self._reconize_token_api = api
         self._reconize_token_exp = now + 1800
         return tok
 
@@ -2365,56 +2390,77 @@ class Brain:
         return person, "", ""
 
     def _query_reconize_direct(self):
-        """Fallback: query Reconize directly at :8000/api/history if faces service isn't answering."""
+        """Last observations delivered by sequence when the watcher is down.
+
+        Sequence orders delivery; the original observation time controls expiry.
+        A delayed write, an empty page or a network outage is not a new sighting.
+        """
+        import urllib.error
         import urllib.request
         from datetime import datetime
-        try:
-            l_path = self._faces_login_path()
-            if not l_path.is_file():
+        lock = self.__dict__.setdefault("_history_lock", threading.RLock())
+        with lock:
+            entry = self._reconize_entry()
+            source = next((s for s in entry.get("events") or []
+                           if s.get("kind") == "poll" and s.get("cursor")), None)
+            if not source:
                 return ""
-            creds = json.loads(l_path.read_text(encoding="utf-8")).get("reconize") or {}
-            u, p = creds.get("username"), creds.get("password")
-            if not u or not p:
-                return ""
-            now = time.time()
-            tok = getattr(self, "_reconize_token", "")
-            exp = getattr(self, "_reconize_token_exp", 0.0)
-            if not tok or now >= exp - 60:
-                body = json.dumps({"username": u, "password": p}).encode("utf-8")
-                l_req = urllib.request.Request("http://127.0.0.1:8000/api/auth/login", data=body,
-                                               headers={"Content-Type": "application/json"})
-                with urllib.request.urlopen(l_req, timeout=1.5) as lr:
-                    l_data = json.loads(lr.read().decode("utf-8"))
-                    tok = l_data.get("access_token") or ""
-                    self._reconize_token = tok
-                    self._reconize_token_exp = now + 1800
-            if not tok:
-                return ""
-            h_req = urllib.request.Request("http://127.0.0.1:8000/api/history?page_size=5&page=1",
-                                           headers={"Authorization": "Bearer " + tok})
-            with urllib.request.urlopen(h_req, timeout=1.5) as hr:
-                h_data = json.loads(hr.read().decode("utf-8"))
-                items = h_data.get("items") or []
-                active = []
-                seen = set()
-                for item in items:
-                    who = (item.get("name") or "").strip()
-                    when_str = item.get("detected_at") or ""
-                    if who and when_str:
+            api = str(entry.get("api") or "").rstrip("/")
+            key = (api, json.dumps(source, sort_keys=True))
+            if key != getattr(self, "_direct_history_key", None):
+                self._direct_history_key = key
+                self._direct_history = HistoryCursor()
+                self._direct_observations = {}
+            mapping = source.get("map") or {}
+
+            def consume(row):
+                field = lambda name, default: row.get(mapping.get(name) or default)
+                node = str(field("camera", "node_id") or "")
+                when = local_when(field("when", "detected_at"))
+                if not node or node in (entry.get("notACamera") or []) or not when:
+                    return
+                age = (datetime.now() - when).total_seconds()
+                if not 0 <= age <= self.seen_seconds():
+                    return
+                seq = row[source["cursor"]["seq"]]
+                known = field("status", "status") == (
+                    friend_api.asks(entry, "person").get("matched") or "matched")
+                name = call_name({"who": field("who", "name"),
+                                  "callAs": field("callAs", "call_as")}) if known else ""
+                # A row is ONE face. An unknown companion is not an empty
+                # camera; only a real scene/look can clear known companions.
+                if not name:
+                    return
+                person_key = (node, str(field("id", "participant_id") or name))
+                old = self._direct_observations.get(person_key)
+                if old and (when, seq) <= (old["when"], old["seq"]):
+                    return
+                self._direct_observations[person_key] = {"when": when, "seq": seq, "names": [name]}
+
+            try:
+                token = self._reconize_login(timeout=1.5)
+                if token:
+                    def fetch(path):
+                        req = urllib.request.Request(api + path,
+                            headers={"Authorization": "Bearer " + token})
                         try:
-                            w_dt = datetime.fromisoformat(str(when_str).replace("Z", ""))
-                            if abs((datetime.now() - w_dt).total_seconds()) <= 120:
-                                s = short_person_name(who)
-                                if s and s.lower() not in seen:
-                                    seen.add(s.lower())
-                                    active.append(s)
-                        except Exception:
-                            pass
-                if active:
-                    return " และ ".join(active[:2]) if len(active) <= 2 else f"{active[0]}, {active[1]} และทุกท่าน"
-        except Exception:
-            pass
-        return ""
+                            with urllib.request.urlopen(req, timeout=1.5) as response:
+                                return json.loads(response.read().decode("utf-8")), ""
+                        except urllib.error.HTTPError as exc:
+                            if exc.code == 401 and getattr(self, "_reconize_token", "") == token:
+                                self._reconize_token = ""
+                            return {}, str(exc)
+                        except (OSError, ValueError) as exc:
+                            return {}, str(exc)
+                    self._direct_history.poll(source, fetch, consume)
+            except (OSError, ValueError):
+                pass
+            now = datetime.now()
+            self._direct_observations = {node: obs for node, obs in self._direct_observations.items()
+                if 0 <= (now - obs["when"]).total_seconds() <= self.seen_seconds()}
+            observations = sorted(self._direct_observations.values(),
+                                  key=lambda obs: (obs["when"], obs["seq"]), reverse=True)
+            return join_names(list(dict.fromkeys(name for obs in observations for name in obs["names"])))
 
     def address_words(self):
         """Words a Thai name may already start with, so no คุณ is added in

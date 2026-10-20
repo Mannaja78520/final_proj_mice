@@ -176,6 +176,18 @@ await window.toggleView();
 out.pc_src = els.camImg.src;
 els.camImg.onerror();
 out.pc_say = els.camSay.textContent;
+// 9: an unsuccessful request must not erase the last actual observation.
+await wait(50);
+clearInterval(app._faceInterval);
+app.updateFace("Manny");
+globalThis.fetch = async () => ({ok: false, status: 429,
+  json: async () => ({ok: false, error: "busy"})});
+await app.lookOnce(); out.busy_name = app.currentPerson;
+globalThis.fetch = async () => { throw new Error("offline"); };
+await app.lookOnce(); out.offline_name = app.currentPerson;
+globalThis.fetch = async () => ({ok: true, status: 200,
+  json: async () => ({ok: true, person: ""})});
+await app.lookOnce(); out.empty_name = app.currentPerson;
 console.log(JSON.stringify(out));
 process.exit(0);
 """
@@ -195,6 +207,8 @@ def _the_page(t):
         return t.ok(False, "the page's camera view code runs",
                     "node said: %s %s" % (r.stdout[-200:], r.stderr[-300:]))
     g = json.loads(line[-1])
+    t.ok(g["busy_name"] == "Manny" and g["offline_name"] == "Manny" and g["empty_name"] == "",
+         "429 and offline keep the name; a real empty look clears it", repr(g))
     t.ok(g["dev_opened"] == 1 and g["dev_box"] and g["dev_vid"],
          "Show the camera shows this device's camera", repr(g))
     t.ok(g["dev_stopped"] >= 1 and g["dev_box_off"],

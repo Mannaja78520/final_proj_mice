@@ -181,32 +181,19 @@
                  "title": "title", "lang": "language" }
       },
       {
-        // api/history.py:13 mounts /api/history. Newest first, page defaults
-        // to 1 (api/history.py:30,68), so a burst needs paging, not one read.
+        // Start at latest_seq once, then consume committed rows oldest first.
+        // Null legacy sequences are not replayed on watcher startup.
         "kind": "poll",
         "path": "/api/history?page_size=100&page={page}",
         "items": "items",
-
-        // STRANGERS ARRIVE HERE, AND NOWHERE ELSE - but with NO camera. The
-        // row is built at api/history.py:71-84 and carries id, upload_id,
-        // upload_filename, person_id, name, participant_id, confidence,
-        // status, detected_at. There is no node_id in it. So a history event
-        // may be counted, and must never be treated as somebody at the door.
+        "cursor": {"path": "/api/history?page_size=100&after_seq={after_seq}",
+                   "latest": "latest_seq", "next": "next_after_seq", "seq": "seq"},
+        // node_id is provenance. Old or delayed rows count but cannot greet.
         "reports": ["known", "unknown"],
-        "hasCamera": false,
+        "hasCamera": true,
         "map": { "who": "name", "id": "participant_id",
                  "when": "detected_at", "status": "status", "row": "id",
-                 // Asked for (brief item 4): when their rows carry node_id,
-                 // add "camera": "node_id" here AND turn hasCamera true.
-                 "callAs": "call_as" },
-
-        // detected_at is stamped when the row is BUILT, not when it commits
-        // (models/models.py:64, default_factory=datetime.now). An older
-        // looking row can therefore land after a newer one. So the poll
-        // re-reads this many seconds behind its checkpoint and throws away
-        // repeats by row id. 120 s is a starting figure, to be measured
-        // against their real timing on the bench.
-        "lagSeconds": 120
+                 "camera": "node_id", "origin": "source", "callAs": "call_as" }
       }
     ],
 
