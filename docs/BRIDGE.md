@@ -3448,3 +3448,10 @@ Running services LEFT ON: Hub8642 PID31956; Voice8767 PID32060; watcher8769 PID3
 Bookkeeping only: AGENTS.md, PATCHES.md, docs/BRIDGE.md, docs/HANDOVER.md, docs/PLAN.html, docs/plan_state.js. Approved AGENTS rawsha2561f8e6731ef51d03fce13c010c998338b91322cdb1f53a8cbe55ad12f8cad729c. Unrelated dirty user/settings/source files preserved; keys/runtime EXE/private media excluded from staging.
 Remaining/blockers: no unfinished owned implementation/gate. Next: refresh Voice, test actual microphone, room echo and physical robot speaker, claiming hardware first. Other-chat A45-10/11/12 blockers stay in that handoff; no silent takeover.
 RELEASE NOW: all our20 source claims, candidate freeze, integration/promotion, QC/fake/browser/GPU/measurement, build/restart/deploy, private evidence/snapshot and bookkeeping edit claims. No exclusive claim retained. Services stay running. Mutex only covers this checkpoint/commit, released in finally. Notify authorized Continue Mice project work after publication. Every later work stop requires a fresh HANDOFF; A45-18 stays done.
+
+### 2026-10-21T04:15+07:00 — claude:handoff-mkf9
+Event: HANDOFF / COMPLETED / RELEASE
+Task: worked the handoff list (/mnt/project-files/handoff/handoff_to_gpt_2026-10-19.md) against main c859601. Every code item there is already landed by Codex (PR39, PR40) or blocked on hardware, keys or a person.
+Changed: plan bookkeeping only. A45-3 done (fast local voice shipped in A45-18). A40-1/2/3, A44-2/3/8 were stale doing/qc/todo rows whose work is in main; marked done with notes. No source files.
+Tree: cloud clone, branch claude/handoff-work-mkf9ci from c859601.
+Remaining (not cloud work): A45-10 keys (user's Google/Groq), A45-11 real nong + hotspot manny, A45-12 camera-to-name with an enrolled person, A45-18 real mic/echo/speaker by ear. No claims held.
