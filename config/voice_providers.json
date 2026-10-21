@@ -2,10 +2,10 @@
   // WHO CAN DO EACH VOICE JOB (A45-1, user 2026-10-19: Gemini by voice, other
   // services too, a local backup, and "pick to fit the situation").
   //
-  // Three jobs. config/voice.json `use` holds, per job, an ORDERED list of the
+  // Four jobs. config/voice.json `use` holds, per job, an ORDERED list of the
   // ids below: the first one that works does the job, the next is the backup.
   //   hear   speech -> words        think  a question no saved answer fits
-  //   speak  words -> sound
+  //   speak  words -> sound          compose  a new verse (sameAs think)
   //
   // One entry per service:
   //   says   its name on the Voice page          kind   which wire it speaks
@@ -16,6 +16,9 @@
   //   jobs   job -> its settings (model, voice, ...). A job not listed is one
   //          this service cannot do. config/voice.json `providers.<id>.<job>`
   //          overrides any of them on one PC without touching this file.
+  //   styles  (speak) what a speaking manner (config/voice_styles.json) can
+  //          change: "instruct" told in words, "prosody" speed+pitch only,
+  //          "none" nothing. Checked against each service's docs 2026-10-21.
   //   prebuild  false = never used to pre-speak every saved answer at start-up
   //          (a small daily allowance would be gone before the first visitor)
   //
@@ -23,7 +26,11 @@
   "jobs": {
     "hear":  {"says": "Hearing", "about": "turns what people say into words"},
     "think": {"says": "Answering", "about": "answers a question no saved answer fits"},
-    "speak": {"says": "Speaking", "about": "reads the answer out loud"}
+    "speak": {"says": "Speaking", "about": "reads the answer out loud"},
+    // sameAs: every service that can `think` can do this job too, with its
+    // think settings; `use.compose` picks a different service for it, else
+    // the think choice is used (A45-24: verse wants a stronger writer).
+    "compose": {"says": "Writing verse", "about": "makes up a new poem when someone asks for one", "sameAs": "think"}
   },
   "default": {"hear": ["local"], "think": ["local"], "speak": ["edge", "local"]},
   // A service that failed on the network or ran out of its allowance is
@@ -47,12 +54,12 @@
                         "decodeByLanguage": {"th": {}, "en": {}},
                         "batchSize": 8, "chunkSeconds": 10,
                         "contextByLanguage": {"th": "ตู้มหัศจรรย์ Mice"}},
-               "think": {}, "speak": {}}
+               "think": {}, "speak": {"styles": "none"}}
     },
     "edge": {
       "says": "Microsoft Edge voices", "kind": "edge",
       "free": "Free, no key, natural Thai voices. Needs internet; Microsoft can slow it down without notice.",
-      "jobs": {"speak": {"hedgeSeconds": 1.5, "timeoutSeconds": 10}}
+      "jobs": {"speak": {"hedgeSeconds": 1.5, "timeoutSeconds": 10, "styles": "prosody"}}
     },
     "gemini": {
       "says": "Google Gemini (AI Studio)", "kind": "gemini",
@@ -64,7 +71,7 @@
         "hear":  {"model": "gemini-3.8-flash", "thinking": "minimal",
                   "prompt": "Write down exactly what is said, word for word, in the language it is spoken in. Reply with those words only, no notes. If nobody speaks, reply with nothing."},
         "think": {"model": "gemini-3.8-flash", "thinking": "minimal", "maxTokens": 512},
-        "speak": {"model": "gemini-3.8-flash-tts", "voice": "Kore"}
+        "speak": {"model": "gemini-3.8-flash-tts", "voice": "Kore", "styles": "instruct"}
       }
     },
     "groq": {
@@ -91,7 +98,7 @@
       "says": "Microsoft Azure Speech", "kind": "azure", "region": "southeastasia",
       "key": {"env": ["AZURE_SPEECH_KEY"], "get": "https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices"},
       "free": "Free tier (F0): 500,000 characters of speech a month, the same natural voices as Edge but on a supported line. Needs an Azure account; pick region Southeast Asia.",
-      "jobs": {"speak": {}}
+      "jobs": {"speak": {"styles": "prosody"}}
     },
     "ollama": {
       "says": "Ollama on this PC", "kind": "openai",

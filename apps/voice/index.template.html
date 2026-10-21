@@ -180,6 +180,12 @@
         <span>Pitch</span><select id="ttsPitch"></select>
       </div>
       <div class="field">
+        <span>Speaking manner</span>
+        <select id="ttsStyle" onchange="showStyleNote()"><option value="">As now (no manner)</option></select>
+        <button onclick="tryVoice()">▶ Try</button>
+      </div>
+      <p class="mini" id="styleNote" aria-live="polite">Polite, friendly, playful, sweet or a poem recital.</p>
+      <div class="field">
         <span>Main language</span><select id="mainLang"></select>
       </div>
       <p class="mini">Used when it cannot tell which language was spoken (for

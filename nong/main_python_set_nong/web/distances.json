@@ -1,9 +1,13 @@
 {
-  "_what": "Distances Studio can show in the 3D view, in mm (A26-44). One pair per entry: add a pair here, no code. Points: L_elbow, L_hand, R_elbow, R_hand.",
+  "_what": "Distances Studio can show in the 3D view, in mm (A26-44). One pair per entry: add a pair here, no code. Points: L_ or R_ plus shoulder, elbow or hand (the list is DIST_POINTS in app_parts/distances.js).",
   "pairs": [
     { "from": "L_elbow", "to": "L_hand",  "label": "left forearm" },
     { "from": "R_elbow", "to": "R_hand",  "label": "right forearm" },
     { "from": "L_elbow", "to": "R_elbow", "label": "elbow to elbow" },
-    { "from": "L_hand",  "to": "R_hand",  "label": "hand to hand" }
+    { "from": "L_hand",  "to": "R_hand",  "label": "hand to hand" },
+    { "from": "L_shoulder", "to": "L_elbow", "label": "left shoulder to elbow" },
+    { "from": "L_shoulder", "to": "L_hand",  "label": "left shoulder to hand" },
+    { "from": "R_shoulder", "to": "R_elbow", "label": "right shoulder to elbow" },
+    { "from": "R_shoulder", "to": "R_hand",  "label": "right shoulder to hand" }
   ]
 }

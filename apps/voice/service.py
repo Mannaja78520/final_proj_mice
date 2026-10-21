@@ -102,6 +102,9 @@ from face_history import HistoryCursor, local_when    # noqa: E402
 # Who can do each job besides this PC (A45-1): the wire shapes and the keys.
 sys.path.insert(0, str(CODE / "apps" / "voice"))
 import providers                                     # noqa: E402
+# What a question asks for beyond its words (A45-24): reply language,
+# read-aloud, a new verse, Thai-letter loanwords. Data in voice_intents.json.
+import intents                                       # noqa: E402
 
 
 def drop_repeats(text):
@@ -571,6 +574,12 @@ class Brain:
         jobs = {}
         for job, base in (prov.get("jobs") or {}).items():
             jobs[job] = dict(base, **(mine.get(job) or {}))
+        # A job that is another job with its own settings (registry `sameAs`,
+        # A45-24: compose = think): every service that thinks can compose.
+        for job, about in (self.services().get("jobs") or {}).items():
+            like = (about or {}).get("sameAs")
+            if like in jobs and job not in jobs:
+                jobs[job] = dict(jobs[like], **(mine.get(job) or {}))
         prov["jobs"] = jobs
         for k in ("base", "region"):
             if mine.get(k):
@@ -590,12 +599,15 @@ class Brain:
             if l.get("provider") == "google_studio" or (
                     str(self.cfg.get("googleApiKey") or "").strip() and not l.get("enabled")):
                 use = ["gemini", "local"]
+        like = ((self.services().get("jobs") or {}).get(job) or {}).get("sameAs")
+        if not use and like:
+            return self.chain(like)        # not chosen yet: whoever thinks writes too
         if not use:
             use = (self.services().get("default") or {}).get(job) or ["local"]
         known = self.services().get("providers") or {}
         out = []
         for pid in use if isinstance(use, list) else [use]:
-            if pid in known and job in (known[pid].get("jobs") or {}) and pid not in out:
+            if pid in known and job in self.service(pid)["jobs"] and pid not in out:
                 out.append(pid)
         return out
 
@@ -726,20 +738,21 @@ class Brain:
         got = self.cfg.get("faqStopWords")
         return tuple(got) if isinstance(got, list) and got else self.STOP_WORDS
 
-    def match_faq(self, text, lang=""):
-        """The closest saved ENTRY over the threshold, or (None, score).
-
-        The whole entry comes back, not just its answer: an entry may name
-        a move and a module too (A20-10), and the caller passes them on.
-        """
-        th = float(self.cfg.get("faqThreshold", 0.75))
+    def faq_best(self, text):
+        """(best score, closest saved entry) - no translation, no writes, so a
+        second hearing can be compared on it (A45-24)."""
         best, hit = 0.0, None
-        got = text.strip().lower()
+        # Thai-letter loanwords become the English word on BOTH sides, so
+        # "ปาร์กกิ้ง" finds "parking" and a saved "ไวไฟ" still finds itself.
+        got = intents.loanwords(text.strip().lower())
+        # A stop word is matched as stored AND as mapped ("ไวไฟ" is "wifi" now).
+        stops = set(self.faq_stop_words())
+        stops |= {intents.loanwords(w.lower()) for w in stops}
         norm_got = re.sub(r'^(ช่วยบอกหน่อย|รบกวนถามหน่อย|อยากทราบว่า|อยากรู้ว่า|ขอถามหน่อย|สอบถามหน่อย|ช่วยแนะนำหน่อย|please tell me |can you tell me |could you tell me )', '', got)
         norm_got = re.sub(r'(ครับ|ค่ะ|คะ|หน่อยครับ|หน่อยค่ะ|หน่อย|จ้า|จ๊ะ| please)[.!?]*$', '', norm_got).strip()
         for item in self.faqs():
             for q in item.get("questions", []):
-                qc = q.strip().lower()
+                qc = intents.loanwords(q.strip().lower())
                 if item.get("wholeQuestion"):
                     short = lambda v: "".join(c for c in v if not c.isspace() and not unicodedata.category(c).startswith("P"))
                     nq, ng = short(qc), short(norm_got)
@@ -773,11 +786,21 @@ class Brain:
                 # question is often long: "ไวไฟ" is 4 of the 14 in
                 # "รหัสไวไฟคืออะไร".
                 if (detect_lang(qc) in ("th", "ja", "zh") and len(got) >= 3
-                        and got not in self.faq_stop_words()
+                        and got not in stops
                         and got in qc and len(got) / max(len(qc), 1) >= 0.25):
                     score = max(score, 0.76 + 0.15 * (len(got) / max(len(qc), 1)))
                 if score > best:
                     best, hit = score, item
+        return best, hit
+
+    def match_faq(self, text, lang=""):
+        """The closest saved ENTRY over the threshold, or (None, score).
+
+        The whole entry comes back, not just its answer: an entry may name
+        a move and a module too (A20-10), and the caller passes them on.
+        """
+        th = float(self.cfg.get("faqThreshold", 0.75))
+        best, hit = self.faq_best(text)
         if best >= th and hit:
             eff_lang = lang or detect_lang(text)
             ans_key = f"answer_{eff_lang}"
@@ -966,12 +989,12 @@ class Brain:
         self._stt_attempt_model = model
         return self._transcribe(model, path, lang, scfg)
 
-    def _transcribe(self, model, path, lang, scfg):
+    def _transcribe(self, model, path, lang, scfg, prompt=None):
         """Ten-second batches kept a 30 s Thai clip's tail (2026-10-20)."""
         hear = self.service("local")["jobs"].get("hear") or {}
         bias = ((scfg.get("languages") or {}).get(lang) or {}).get("bias") if lang else None
         context = (hear.get("contextByLanguage") or {}).get(lang)
-        prompt = " ".join(str(x) for x in (bias, context) if x) or None
+        prompt = prompt or " ".join(str(x) for x in (bias, context) if x) or None
         options = dict(language=lang or None, temperature=0,
                        beam_size=int(scfg.get("beam") or 1), condition_on_previous_text=False,
                        vad_filter=True, vad_parameters={"min_silence_duration_ms": 500, "threshold": 0.6},
@@ -1086,9 +1109,98 @@ class Brain:
                         self._stt_own[mid] = cpu
                     (getattr(self, "_stt_batches", None) or {}).pop(id(failed), None)
                     text, info = self._whisper(path, resolved, scfg)
+                text, heard_lang = self._code_switch(path, text, info.language, resolved, scfg)
             finally:
                 os.unlink(path)
-            return {"text": text, "language": info.language}, None
+            return {"text": text, "language": heard_lang}, None
+
+    def _saved_words(self, lang, cs):
+        """The saved questions in `lang`, as the listener's word hint: the
+        English hearing of a mixed clip wrote "restroom" right but the rest
+        as "so what do you waste" (2026-10-21). From the store, so a new
+        saved question is a new hint. Social replies are left out."""
+        got = [q for it in self.faqs() if not it.get("wholeQuestion")
+               for q in it.get("questions", []) if detect_lang(q) == lang]
+        room = int(cs.get("hintChars") or 400)
+        out, size = [], 0
+        for q in got:
+            if size + len(q) + 2 > room:
+                break
+            out.append(q)
+            size += len(q) + 2
+        return ". ".join(out) or None
+
+    def _language_share(self, path, lang, cs):
+        """The highest chance, over the `windows` of the clip (fractions of
+        its length), that `lang` is what is spoken there. A greeting leads,
+        so the question's language shows in the later part. 0.0 = no look."""
+        try:
+            from faster_whisper import decode_audio
+            audio = decode_audio(path)
+        except Exception:                           # noqa: BLE001
+            return 0.0
+        n, best = len(audio), 0.0
+        for lo, hi in cs.get("windows") or [[0, 1]]:
+            part = audio[int(lo * n):int(hi * n)]
+            if len(part) < 16000 * 0.8 or not self._stt:
+                continue                  # under a second says nothing reliable
+            try:
+                _l, _p, every = self._stt.detect_language(part)
+            except Exception:                       # noqa: BLE001
+                continue
+            best = max(best, dict(every).get(lang, 0.0))
+        return best
+
+    def _code_switch(self, path, text, lang, resolved, scfg):
+        """Hear a mixed Thai-English question again in English (A45-24).
+
+        The Thai listener writes spoken English as Thai words: "where is the
+        restroom" came out as a question about a bedroom, and no saved answer
+        fit. Rules in voice_intents.json `codeSwitch`. Only when the language
+        was detected (not picked on the page), it is one of `when`, and no
+        saved answer fits. The other hearing wins when it comes closer to a
+        saved answer by `margin` and reaches `minScore`; it need not reach the
+        saved-answer threshold, because the model still answers from the
+        nearest saved answers. Scores 2026-10-21: the Thai hearing of "สวัสดี
+        where is the restroom" 0.37, its English hearing 0.62.
+        """
+        cs = intents.code_switch()
+        if resolved or not text or lang not in (cs.get("when") or []):
+            return text, lang
+        floor = float(cs.get("faqBelow") or self.cfg.get("faqThreshold", 0.75))
+        best = self.faq_best(text)[0]
+        if best >= floor:
+            return text, lang
+        # A social reply (wholeQuestion: hello, thanks) never wins: the
+        # English hearing of "Hello ห้องน้ำ..." kept only "Hello" (2026-10-21).
+        pick = (text, lang, best)
+        need = max(float(cs.get("minScore") or floor), best + float(cs.get("margin") or 0.0))
+        for other in cs.get("languages") or []:
+            if other == lang:
+                continue
+            # Only when part of the clip SOUNDS like that language. Asked for
+            # English, the listener translates Thai speech: "Hello ห้องน้ำ
+            # ทางไหน" came back as "hello. where is the restroom" and was
+            # answered in English (2026-10-21).
+            share = self._language_share(path, other, cs)
+            if share < float(cs.get("minShare") or 0.0):
+                continue
+            try:
+                model = self._own_model(other) or self._stt
+                segs, _info = self._transcribe(model, path, other, scfg,
+                                               prompt=self._saved_words(other, cs))
+            except Exception:                       # noqa: BLE001
+                continue           # no second listener: the first hearing stands
+            again = drop_repeats("".join(seg.text for seg in segs
+                                         if getattr(seg, "no_speech_prob", 0) <= 0.6))
+            score, hit = self.faq_best(again) if again else (0.0, None)
+            if hit and hit.get("wholeQuestion"):
+                continue
+            if score >= need and score > pick[2]:
+                pick = (again, other, score)
+        self._code_switched = {"first": text, "picked": pick[0], "language": pick[1],
+                               "score": round(pick[2], 2), "at": time.time()}
+        return pick[0], pick[1]
 
     # --- speaking out loud (A20-9) -------------------------------------
     # Windows' own synthesiser, reached through apps/voice/tts.ps1. No
@@ -1164,9 +1276,10 @@ class Brain:
                         "voice": str(s.get("voice") or "").strip(),
                         "rate": str(s.get("rate") or "").strip(),
                         "pitch": str(s.get("pitch") or "").strip(),
-                        "language": str(s.get("language") or "").strip()}
+                        "language": str(s.get("language") or "").strip(),
+                        "style": str(s.get("style") or "").strip()}   # A45-25 manner
         return {"name": "", "prompt": want, "voice": "", "rate": "", "pitch": "",
-                "language": ""}
+                "language": "", "style": ""}
 
     def main_language(self):
         """The language to fall back on: the scenario's own (a global event
@@ -1325,7 +1438,7 @@ class Brain:
             return None        # an empty sound kept by an older helper: build again
         return got
 
-    def say(self, text, lang="", voice="", rate=None, pitch=None, prebuild=False):
+    def say(self, text, lang="", voice="", rate=None, pitch=None, prebuild=False, style=None):
         """Text -> sound bytes, or (None, why-not) in plain words.
 
         rate / pitch given (the page's "Try it", A42-1) win over the store,
@@ -1351,36 +1464,47 @@ class Brain:
         # speed is the complaint this answers.
         rate, pitch = self.steps(rate, pitch)
         natural = "Neural" in (named or "")
+        # The speaking manner (A45-25): what it changes depends on the
+        # service, read from its `styles` capability - never assumed.
+        skey, sty = self.style_choice(style)
+        self._style_done = {"style": skey, "how": "", "by": ""}
 
         def one(pid, prov):
             kind = prov.get("kind")
             if prebuild and prov.get("prebuild") is False:
                 return None, "not used to pre-speak saved answers"
+            can = ((prov.get("jobs") or {}).get("speak") or {}).get("styles") or "none"
+            how = can if skey else ""
+            self._style_done = {"style": skey, "how": how, "by": pid}
+            r, p = (self.style_steps(rate, pitch, sty) if how == "prosody" else (rate, pitch))
+            tag = ("|style=%s:%s" % (skey, how)) if skey else ""   # never replay another manner
             if kind == "local":
                 # The PC's own voice: the named one if it is a Windows voice.
                 mine = "" if natural else named
                 own = ident if not natural else "<windows %s>" % (lang or voice_lang(named))
-                return self._spoken(own, text, rate, pitch,
+                return self._spoken(own + tag, text, rate, pitch,
                                     lambda: self._windows_speak(text, lang or voice_lang(named), mine))
             if kind in ("edge", "azure"):
                 if not natural:
                     return None, "the chosen voice is not one of its voices"
                 if kind == "edge":
-                    return self._spoken(named, text, rate, pitch,
-                                        lambda: self._edge_speak(named, text, rate, pitch))
-                return self._spoken("azure:" + named, text, rate, pitch,
+                    return self._spoken(named + tag, text, r, p,
+                                        lambda: self._edge_speak(named, text, r, p))
+                return self._spoken("azure:" + named + tag, text, r, p,
                                     lambda: providers.azure_speak(
                                         prov, self.key_for(pid), prov["jobs"]["speak"], text,
-                                        lang, named, timeout=10, rate=rate, pitch=pitch))
+                                        lang, named, timeout=10, rate=r, pitch=p))
             wire = providers.WIRES.get(kind, {}).get("speak")
             if not wire:
                 return None, "it cannot speak"
             job = prov["jobs"]["speak"]
             # Its own voices, not Microsoft's names; speed and pitch do not apply.
-            return self._spoken("%s:%s:%s" % (pid, job.get("model"), job.get("voice")),
+            told = sty.get("instruct", "") if how == "instruct" else ""
+            return self._spoken("%s:%s:%s%s" % (pid, job.get("model"), job.get("voice"), tag),
                                 text, "", "",
                                 lambda: wire(prov, self.key_for(pid), job, text,
-                                             lang or main_lang(text), "", timeout=20))
+                                             lang or main_lang(text), "", timeout=20,
+                                             **({"style": told} if told else {})))
         got, why = self.run_job("speak", one)
         did = (getattr(self, "_jobs", None) or {}).get("speak") or {}
         if got is not None and not prebuild:
@@ -1395,6 +1519,60 @@ class Brain:
             else:
                 self._heard = {"natural": False, "why": "this PC's own voice is chosen"}
         return got, why
+
+    def styles(self):
+        """config/voice_styles.json, re-read when it changes on disk."""
+        p = CODE / "config" / "voice_styles.json"
+        try:
+            m = p.stat().st_mtime
+        except OSError:
+            return {"styles": {}}
+        got = getattr(self, "_styles", None)
+        if not got or got[0] != m:
+            try:
+                got = (m, registry.load(p) or {})
+            except (OSError, ValueError):
+                got = (m, {"styles": {}})
+            self._styles = got
+        return got[1]
+
+    def style_choice(self, style=None):
+        """(key, entry) of the manner a line is said in: the request's, else
+        the scenario's, else tts.style. ("", {}) = none, as before A45-25.
+        An unknown name is none, so a typo never mutes the voice."""
+        key = style if style is not None else (
+            self.active_scenario().get("style") or (self.cfg.get("tts") or {}).get("style") or "")
+        key = str(key or "").strip()
+        entry = (self.styles().get("styles") or {}).get(key)
+        return (key, entry) if entry else ("", {})
+
+    def style_steps(self, rate, pitch, sty):
+        """The manner's speed and pitch steps ADDED to the chosen ones, kept
+        inside `limits` ("+0%" chosen + friendly 3 = "+3%")."""
+        lim = self.styles().get("limits") or {}
+        pro = sty.get("prosody") or {}
+
+        def add(base, step, unit, bounds):
+            try:
+                v = int(re.sub(r"[^0-9+-]", "", base or "") or 0) + int(step or 0)
+            except ValueError:
+                v = int(step or 0)
+            lo, hi = (bounds or [-50, 50])[:2]
+            v = max(lo, min(hi, v))
+            return "%+d%s" % (v, unit)
+        return (add(rate, pro.get("rate"), "%", lim.get("rate")),
+                add(pitch, pro.get("pitch"), "Hz", lim.get("pitch")))
+
+    def styles_view(self):
+        """Every manner and, per speaking service, what it would really do."""
+        out = {}
+        for key, sty in (self.styles().get("styles") or {}).items():
+            out[key] = {"says": sty.get("says") or key, "prosodyNote": sty.get("prosodyNote") or "",
+                        "by": {pid: ((self.service(pid)["jobs"].get("speak") or {}).get("styles") or "none")
+                               for pid in self.chain("speak")}}
+        chosen, _ = self.style_choice()
+        return {"styles": out, "chosen": chosen,
+                "last": getattr(self, "_style_done", None) or {}}
 
     def _spoken(self, ident, text, rate, pitch, make):
         """The cached sound for this line in this voice, else make() it and
@@ -1756,6 +1934,62 @@ class Brain:
             reply = personalize_answer(reply, person, lang=lang,
                                        address=self.address_words())
         return reply, None
+
+    def compose(self, history, lang=""):
+        """A NEW verse on the asked topic, or (None, why-not) (A45-24).
+
+        Its own `compose` chain, so a stronger service can write verse while
+        this PC still answers the rest. The reply must LOOK like a new verse
+        (intents.verse_problem): enough lines, no greeting, not a saved
+        answer. One stricter retry per service; when none manages, an honest
+        sorry is said instead of a greeting or the saved poem. No name is
+        added: it would break the first line.
+        """
+        lang = lang or "th"
+        system = intents.compose_text("prompt", lang)
+        retry = intents.compose_text("retry", lang)
+        limit = int((intents.table().get("compose") or {}).get("maxTokens") or 200)
+        saved = [it.get(k) or "" for it in self.faqs()
+                 for k in ("answer", "answer_en", "answer_ja", "answer_zh")]
+        problems = []
+
+        def check(reply):
+            reply = self.tidy_answer(self.clean(reply or ""), lang, verse=True)
+            why = intents.verse_problem(reply, saved, lang=lang)
+            if not why and not answers_in(reply, lang, self.particles()):
+                why = "it wrote in another language"
+            return (reply, "") if not why else (None, why)
+
+        def one(pid, prov):
+            for i, prompt in enumerate((system, system + "\n" + retry)):
+                if prov.get("kind") == "local":
+                    with self._lock:
+                        ok, why_not = self._ensure_llm()
+                        if not ok:
+                            return None, why_not
+                        raw, _ran_out = self._complete([{"role": "system", "content": prompt}] + history,
+                                                       max_tokens=limit, details=True)
+                else:
+                    wire = providers.WIRES.get(prov.get("kind"), {}).get("think")
+                    if not wire:
+                        return None, "it cannot write"
+                    raw, why = wire(prov, self.key_for(pid), prov["jobs"]["compose"], prompt,
+                                    history, limit, timeout=20)
+                    if not raw:
+                        return None, why
+                reply, why = check(raw)
+                if reply:
+                    return reply, None
+                problems.append("%s try %d: %s" % (pid, i + 1, why))
+            return None, problems[-1]
+        reply, why_not = self.run_job("compose", one)
+        if reply:
+            return reply, None
+        if not problems:
+            return None, why_not            # nobody could write at all (not loaded, no key)
+        # A writer answered but never with a verse: say so, honestly.
+        self._compose_why = why_not
+        return intents.compose_text("failed", lang) or self.cannot_answer(lang), None
 
     def _think_prompt(self, history, lang, person, scenario):
         """(system prompt, room for the reply, is it a verse) for a question."""
@@ -2696,6 +2930,9 @@ class VoiceHandler(BaseHTTPRequestHandler):
         if path == "/services":
             # Who can do each job and which keys are saved - never a key.
             return self._json(dict({"ok": True}, **self.brain.services_view()))
+        if path == "/styles":
+            # Speaking manners and what each speaking service really does (A45-25).
+            return self._json(dict({"ok": True}, **self.brain.styles_view()))
         if path == "/faq":
             return self._json({"ok": True, "faqs": self.brain.faqs()})
         if path == "/face":
@@ -2839,16 +3076,35 @@ class VoiceHandler(BaseHTTPRequestHandler):
             return self._json({"ok": False, "error": "there was no question in "
                                                     "that - say it again"}, 400)
         try:
-            read_match = re.match(r'^(?:ช่วย)?(?:อ่าน|ท่อง)(?:กลอน|บทกลอน|ข้อความ|เนื้อหา)?(?:นี้)?(?:ให้ฟังหน่อย|หน่อย)?(?:\s*[:：\-]\s*|\s+)(.+)$', text, re.DOTALL | re.I)
-            if read_match and len(read_match.group(1).strip()) >= 6:
-                read_target = read_match.group(1).strip()
-                read_target = re.sub(r'^(?:บทกลอน|กลอน)(?:\s*[:：\-]\s*|\s+)', '', read_target).strip()
-                out = {"ok": True, "answer": read_target, "source": "read", "lang": eff_lang}
+            # "Please answer in English" said inside a Thai sentence: the
+            # request wins over the script the words were written in, and
+            # is taken out before the saved answers are searched (A45-24).
+            asked_lang, question = intents.reply_language(text)
+            if asked_lang:
+                eff_lang = asked_lang
+            # Read out EXACTLY: no model, no name added (A45-24: the English
+            # form went to the model, which put the visitor's name in).
+            read_target = intents.read_aloud(text)
+            if read_target:
+                out = {"ok": True, "answer": read_target, "source": "read",
+                       "lang": asked_lang or (detect_lang(read_target) if auto_detect else eff_lang)}
+                if person:
+                    out["person"] = person
+                return self._json(out)
+            # A NEW verse skips the saved answers: the saved poem used to win
+            # on the word "กลอน", and the model's greeting was spoken as one.
+            if intents.wants_new_verse(text):
+                reply, why_not = self.brain.compose(
+                    [{"role": r.get("role", "user"), "content": str(r.get("content", ""))}
+                     for r in history][-8:] + [{"role": "user", "content": text}], lang=eff_lang)
+                if not reply:
+                    return self._json({"ok": False, "error": why_not})
+                out = {"ok": True, "answer": reply, "source": "verse", "lang": eff_lang}
                 if person:
                     out["person"] = person
                 return self._json(out)
 
-            hit, score = self.brain.match_faq(text, lang=eff_lang)
+            hit, score = self.brain.match_faq(question, lang=eff_lang)
             if hit:
                 faq_ans = hit.get("answer") or ""
                 if person:
@@ -2993,7 +3249,8 @@ class VoiceHandler(BaseHTTPRequestHandler):
             wav, why_not = self.brain.say(
                 text, req.get("lang") or "", voice=voice_name,
                 rate=(str(req["speed"]) if req.get("speed") is not None else None),
-                pitch=(str(req["pitch"]) if req.get("pitch") is not None else None))
+                pitch=(str(req["pitch"]) if req.get("pitch") is not None else None),
+                **({"style": str(req["style"])} if req.get("style") is not None else {}))
         except Exception as e:                      # noqa: BLE001
             return self._json({"ok": False,
                                "error": "speaking failed: %s: %s"
@@ -3013,6 +3270,11 @@ class VoiceHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         ctype = "audio/wav" if wav.startswith(b"RIFF") else "audio/mpeg"
         self.send_header("Content-Type", ctype)
+        # How the manner was applied: instruct / prosody / none (A45-25).
+        done = getattr(self.brain, "_style_done", None) or {}
+        if done.get("style"):
+            self.send_header("X-Voice-Style", "%s; %s; %s" % (done["style"], done.get("how") or "none",
+                                                              done.get("by") or ""))
         self.send_header("Content-Length", str(len(wav)))
         self.end_headers()
         self.wfile.write(wav)

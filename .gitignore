@@ -98,3 +98,4 @@ main_python/faces_fired.tmp
 
 # Photos for tools/face_photo_test.py: real faces never go in git (public repo)
 _photo_test/
+apps/voice/tts_cache/

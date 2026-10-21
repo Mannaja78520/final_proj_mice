@@ -183,7 +183,7 @@ soundSetup(50);await drain(speak('Hello','en'));
 ok(audioLog.length===1&&!speechLog.length,'cached server sound wins without a second voice',{audioLog,speechLog});
 soundSetup();await drain(speak('Hello','en'));
 ok(speechLog.length===1&&!audioLog.length&&clock.now===1660,'slow server uses one installed voice and waits until it finishes',{audioLog,at:clock.now});
-for(const mode of ['disabled','wrong language','remote voice','one voice','mixed voice','scenario','explicit','pitch','scenario rate','scenario pitch','unselected provider']){
+for(const mode of ['disabled','wrong language','remote voice','one voice','mixed voice','scenario','explicit','pitch','scenario rate','scenario pitch','unselected provider','style','scenario style']){
   soundSetup();let explicit;
   if(mode==='disabled')app.cfg.tts.fastDeviceVoice=false;
   if(mode==='wrong language')voiceList[0].lang='ja-JP';
@@ -195,6 +195,9 @@ for(const mode of ['disabled','wrong language','remote voice','one voice','mixed
   if(mode==='pitch')app.cfg.tts.pitch='+5Hz';
   if(mode==='scenario rate'||mode==='scenario pitch'){app.cfg.scenario='event';app.scenarioList=()=>[{name:'event',[mode.split(' ')[1]]:'+10%'}];}
   if(mode==='unselected provider'){app.cfg.use.speak=['edge'];app.svc.use.speak=['edge'];}
+  // A45-25: a device voice cannot speak in a manner, so a chosen one keeps the server voice
+  if(mode==='style')app.cfg.tts.style='playful';
+  if(mode==='scenario style'){app.cfg.scenario='event';app.scenarioList=()=>[{name:'event',style:'playful'}];}
   await drain(speak('Hello','en',null,explicit));
   ok(!speechLog.length&&audioLog.length===1,mode+' preserves the selected voice');
 }

@@ -1356,6 +1356,7 @@ class VoiceApp {
   const chain = this.svc?.use?.speak || this.cfg?.use?.speak || [];
   const scenario = this.scenarioList().find(s => s.name === this.cfg?.scenario);
   if (t.fastDeviceVoice === false || t.enabled === false || explicitVoice || t.oneVoice || t.mixedVoice
+      || t.style || scenario?.style                // A45-25: it would drop the chosen manner
       || scenario?.voice || scenario?.rate || scenario?.pitch || (t.pitch && !["+0Hz", "0Hz"].includes(t.pitch))
       || !chain.includes("local") || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return null;
   const scripts = {th: /[\p{Script=Thai}\p{Script=Latin}]/u, en: /\p{Script=Latin}/u,
@@ -2168,6 +2169,7 @@ static SAMPLES = {
   const t = this.cfg.tts || {}, s = this.cfg.stt || {};
   this.$("speakOn").checked = t.enabled !== false;
   this.$("fastDeviceVoice").checked = t.fastDeviceVoice !== false;
+  this.loadStyles();
   this.$("listenOn").checked = s.enabled !== false;
   const ml = this.$("mainLang");
   ml.textContent = "";
@@ -2328,13 +2330,59 @@ static SAMPLES = {
   voice = voice || one || (own ? own.value : "");
   const t = {speed: this.$("ttsRate").value || "+0%", pitch: this.$("ttsPitch").value || "+0Hz"};
   if (voice && voice !== "-") t.voice = voice;
+  // The picked manner; "" is sent only to Try "as now" over a SAVED manner.
+  const style = (this.$("ttsStyle") && this.styleInfo) ? this.$("ttsStyle").value : "";
+  if (style || (this.cfg.tts || {}).style) t.style = style;
   this.speak(VoiceApp.SAMPLES[lang] || VoiceApp.SAMPLES.en, lang, t);
+}
+
+// Speaking manner (A45-25): the list and what each speaking service can
+// really do come from the helper (config/voice_styles.json + the registry).
+  async loadStyles(){
+  const sel = this.$("ttsStyle"), note = this.$("styleNote");
+  if (!sel) return;
+  const keep = (this.cfg.tts || {}).style || "";
+  let got = null;
+  try { got = await fetch("/api/voice/styles").then(r => r.json()); } catch(e) { got = null; }
+  if (!got || !got.ok) {
+    note.textContent = "The list of manners could not be read - the voice helper may be off.";
+    return;
+  }
+  this.styleInfo = got.styles || {};
+  sel.textContent = "";
+  const none = document.createElement("option");
+  none.value = ""; none.textContent = "As now (no manner)";
+  sel.appendChild(none);
+  Object.entries(this.styleInfo).forEach(([key, s]) => {
+    const o = document.createElement("option");
+    o.value = key; o.textContent = s.says || key;
+    sel.appendChild(o);
+  });
+  sel.value = this.styleInfo[keep] ? keep : "";
+  this.showStyleNote();
+}
+  showStyleNote(){
+  const sel = this.$("ttsStyle"), note = this.$("styleNote");
+  if (!sel || !note) return;
+  const s = (this.styleInfo || {})[sel.value];
+  if (!s) { note.textContent = "Speaks the way it does now."; return; }
+  const svc = (this.svc && this.svc.providers) || {};
+  const first = Object.entries(s.by || {})[0];
+  const name = first ? ((svc[first[0]] || {}).says || first[0]) : "";
+  const how = first ? first[1] : "none";
+  note.textContent = how === "instruct"
+    ? name + " is told this manner in words, so the voice itself changes."
+    : how === "prosody"
+      ? name + " can change only speed and pitch for this, not real feeling"
+        + (s.prosodyNote ? " (" + s.prosodyNote + ")" : "") + ". A service that takes a manner in words does more."
+      : "The chosen voice cannot speak in a manner; it speaks as now.";
 }
 
   collectVoice(){
   const t = this.cfg.tts = this.cfg.tts || {};
   t.enabled = this.$("speakOn").checked;
   t.fastDeviceVoice = this.$("fastDeviceVoice").checked;
+  if (this.$("ttsStyle") && this.styleInfo) t.style = this.$("ttsStyle").value;
   const ml = this.$("mainLang").value;
   if (ml) t.language = ml;
   // The main language is also what the listener falls back to when it
@@ -2876,6 +2924,7 @@ window.saveAnswers = (...args) => window.voiceApp.saveAnswers(...args);
 window.undoAnswers = (...args) => window.voiceApp.undoAnswers(...args);
 window.pickAskLang = (...args) => window.voiceApp.pickAskLang(...args);
 window.tryVoice = (...args) => window.voiceApp.tryVoice(...args);
+window.showStyleNote = () => window.voiceApp.showStyleNote();
 window.pickOneVoice = (...args) => window.voiceApp.pickOneVoice(...args);
 window.pickScenario = (...args) => window.voiceApp.pickScenario(...args);
 window.addScenario = (...args) => window.voiceApp.addScenario(...args);

@@ -1169,6 +1169,28 @@
        answered in words — it never queues and never cuts the running move.
        A <b>Stop the move</b> button stays beside it until the sequence
        ends.</p></div>
+  <div class="f"><h3>Ask for a language, a reading or a new poem<span class="tag t-new">new</span></h3>
+    <p>Say <b>"Please answer in English"</b> (or <i>ตอบเป็นภาษาไทย</i>, 英語で答えて,
+       用中文回答) anywhere in the question, and the answer comes in that language,
+       even when the rest of the question is in another one.</p>
+    <p>Say <b>"Read this aloud: …"</b> (or <i>ช่วยอ่าน: …</i>, 読んでください：…,
+       请朗读：…) and the rig reads exactly those words, with nothing added.</p>
+    <p>Ask it to <b>write a new poem</b> (<i>แต่งกลอนใหม่ …</i>, "write a poem about …")
+       and it makes up a new one instead of reciting the saved poem. If the answer
+       does not look like a poem (a list, a greeting, too few lines, the old
+       poem), it says sorry honestly instead. The small model on this PC usually
+       cannot write a good Thai poem yet; pick a stronger service for
+       <b>Writing verse</b> on the Voice page once you have its key. The shape of
+       the poem is checked, its rhyme and rhythm are not.</p>
+    <p>English words spoken inside Thai, like <i>parking</i> or <i>restroom</i>,
+       still find their saved answers when the listener writes them in Thai
+       letters. When a Thai greeting is followed by an English question, the rig
+       listens to it a second time in English, but only if that part really
+       sounds English, so a Thai question is never answered in English.
+       <span class="tech">Rules, phrases and loanwords are data in
+       <code>config/voice_intents.json</code> (replyLanguage, readAloud, compose,
+       loanwords, codeSwitch); the second hearing adds one listening pass only
+       when no saved answer fits.</span></p></div>
   <div class="f"><h3>One brain, many PCs<span class="tag t-new">new</span></h3>
     <p>The answering helper normally listens to this PC only. To make one PC
        the brain for every hub at the venue, write that PC's address in
@@ -1187,6 +1209,23 @@
        as soon as it answers. While it stands in, a yellow line under the
        status says so and why (for example: the natural voice is not
        installed on this PC, or the PC is offline).</p></div>
+  <div class="f"><h3>Speaking manner: polite, friendly, playful, sweet, poem recital<span class="tag t-new">new</span></h3>
+    <p>On the Voice page, <b>Speaking manner</b> picks how the rig says its
+       lines; <b>▶ Try</b> plays a sample first. "As now" keeps today's voice.
+       An event (scenario) can have its own manner. The words are never
+       changed.</p>
+    <p>What a manner really does depends on the speaking service, and the
+       page says which: a service that takes a manner in words (Google Gemini
+       voice, with its key) changes the voice itself. The free Microsoft voices
+       can change only speed and pitch, so they sound lighter or slower, not
+       truly emotional, and a poem recital there is a slow reading, not a real
+       ทำนองเสนาะ tune. This PC's own voice cannot change at all. A manner is
+       never dropped silently: the quick device voice is not used while one is
+       chosen. <span class="tech">Manners are data in
+       <code>config/voice_styles.json</code>; each service's ability is the
+       speak job's <code>styles</code> (instruct / prosody / none) in
+       <code>config/voice_providers.json</code>; <code>/say</code> answers
+       <code>X-Voice-Style</code> with how it was applied.</span></p></div>
   <div class="f"><h3>Teach it new answers<span class="tag t-new">new</span></h3>
     <p>The <b>Settings</b> under the question are tabs, one topic each:</p>
     <p><b>Answers</b> is a sheet, like a spreadsheet: one row per answer,
@@ -1362,7 +1401,7 @@
        show silent for 4 s is stopped (<code>ShowPlayer.BEAT_TIMEOUT</code>).</span></p></div>
   <div class="f"><h3>See distances on the robot in Studio<span class="tag t-new">new</span></h3>
     <p>Press <b>📏 Distances</b> under the view buttons in Nong Studio's 3D view, or hold the <b>D</b> key, to see
-       dashed lines with the length in mm: each elbow to its hand, elbow to elbow and hand to hand. They follow the
+       dashed lines with the length in mm: each elbow to its hand, elbow to elbow, hand to hand, and on each side the shoulder to its elbow and the shoulder to its hand. They follow the
        pose as you move it. <span class="tech">The pairs are listed in
        <code>nong/main_python_set_nong/web/distances.json</code>; add a pair there to measure something else.</span></p></div>
   <div class="f"><h3>Open one app on its own<span class="tag t-new">new</span></h3>

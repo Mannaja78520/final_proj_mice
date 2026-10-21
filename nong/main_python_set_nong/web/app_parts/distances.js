@@ -2,7 +2,8 @@
 //
 // User 2026-09-17: *see the distance between the point that i need to know in
 // robot ... elbow and hand or elbow -> elbow ... hold that key or can click*.
-// Click Distances (or hold D) to see dashed lines with the length in mm. The
+// Click Distances (or hold D) to see dashed lines with the length in mm.
+// User 2026-10-21 added shoulder->elbow and shoulder->hand on each side. The
 // pairs are DATA in distances.json: a new pair is an entry there, not code.
 let distPairs = null;        // null = not read yet, [] = none listed
 let distOn = false;          // switched on by the button
@@ -13,12 +14,20 @@ distLayer.id = "distLayer";
 distLayer.hidden = true;
 viewport.appendChild(distLayer);
 
+// The points a pair may name, as L_<part> or R_<part>; a new kind of point is
+// one entry here. shoulder = the shrug anchor both shoulder servos turn about
+// (buildArm hangs joint groups 0/4 on it), so shoulder->elbow is upperLen.
+// Live world positions only: fkPoints() moves WAIST/SHRUG while it measures.
+const DIST_POINTS = {
+  shoulder: side => shrugAnchors[side],
+  elbow: side => elbowBalls[side === "L" ? 0 : 1],   // arm 0 is the robot's left (+X)
+  hand: side => wristBalls[side === "L" ? 0 : 1],
+};
 function distPoint(name) {   // world position of a named point, or null
-  const m = /^([LR])_(elbow|hand)$/.exec(name || "");
-  if (!m) return null;
-  const arm = m[1] === "L" ? 0 : 1;   // arm 0 is the robot's left (+X), see buildArm
-  const ball = (m[2] === "elbow" ? elbowBalls : wristBalls)[arm];
-  return ball ? ball.getWorldPosition(new THREE.Vector3()) : null;
+  const m = /^([LR])_([a-z]+)$/.exec(name || "");
+  const pick = m && Object.prototype.hasOwnProperty.call(DIST_POINTS, m[2]) ? DIST_POINTS[m[2]] : null;
+  const obj = pick ? pick(m[1]) : null;
+  return obj ? obj.getWorldPosition(new THREE.Vector3()) : null;
 }
 async function distLoad() {
   if (distPairs) return;
