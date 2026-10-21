@@ -116,6 +116,12 @@ def _edge(t, brain, cache):
          (why, got[-1:]))
     t.eq(brain._style_done, {"style": "playful", "how": "prosody", "by": "edge"},
          "and it is recorded as speed and pitch only")
+    import threading
+    other = threading.Thread(target=lambda: brain.say("อีกบรรทัดหนึ่ง", "th", style="coaxing"))
+    other.start()
+    other.join()
+    t.eq(brain._style_done.get("style"), "playful",
+         "another thread's line (the saved-answer sweep) never rewrites this line's record")
     n = len(got)
     again, _ = brain.say("สวัสดีครับ", "th", style="playful")
     t.ok(again == sound and len(got) == n, "the same manner again comes from its own cache")

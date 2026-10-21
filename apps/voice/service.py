@@ -476,6 +476,18 @@ class Brain:
 
     _made = threading.local()       # the sound file say() last used, per thread
 
+    # How THIS thread's last line was said (manner, how, by whom). Per thread:
+    # the saved-answer sweep speaks in the background and, shared, it wrote
+    # its own manner into a visitor's X-Voice-Style (2026-10-21).
+    @property
+    def _style_done(self):
+        return getattr(self._made, "style", None) or {}
+
+    @_style_done.setter
+    def _style_done(self, value):
+        self._made.style = value
+        self._style_last = value              # /styles "last" shows any thread's
+
     def __init__(self, cfg_path, faq_path=None):
         self.cfg_path = Path(cfg_path)
         self.cfg = registry.load(self.cfg_path)
@@ -1658,7 +1670,7 @@ class Brain:
         return {"styles": out, "chosen": chosen, "up": up,
                 "recommended": self.styles().get("recommended") or "",
                 "why": getattr(self, "_feeling_why", {}),
-                "last": getattr(self, "_style_done", None) or {}}
+                "last": getattr(self, "_style_last", None) or {}}
 
     def _spoken(self, ident, text, rate, pitch, make):
         """The cached sound for this line in this voice, else make() it and
