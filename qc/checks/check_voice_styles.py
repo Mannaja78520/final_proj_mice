@@ -51,7 +51,7 @@ def run(t):
             "presence": {"on": False}, "face": {"on": False}, "stt": {"enabled": False},
             "llm": {"enabled": False},
             "tts": {"enabled": True, "rate": "+0%", "pitch": "+0Hz",
-                    "voices": {"th": "th-TH-PremwadeeNeural"}},
+                    "voices": {"th": "th-TH-PremwadeeNeural", "en": "en-US-JennyNeural"}},
             "use": {"speak": ["edge", "local"]},
             "scenarios": [{"name": "fair", "style": "friendly"}],
         }), encoding="utf-8")
@@ -63,9 +63,13 @@ def run(t):
         brain._cache_path_real = brain._cache_path
         brain._cache_path = lambda ident, text, rate=None, pitch=None: cache / (
             brain._cache_path_real(ident, text, rate, pitch).name)
+        # Hermetic: a real feeling server may run on this PC (it does once
+        # deployed). It is "off" here unless a case turns it on.
+        brain.feeling_ready = lambda pid, prov: False
         _choice(t, brain)
         _edge(t, brain, cache)
         _others(t, brain, svc)
+        _feeling(t, brain, svc, tmp)
         _http(t, brain, svc)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -77,7 +81,8 @@ def _choice(t, brain):
         s = styles.get(key) or {}
         t.ok(s.get("says") and s.get("instruct") and "prosody" in s,
              "manner %s has a name, words for a service that takes them, and speed/pitch" % key)
-    t.eq(brain.style_choice()[0], "", "no manner chosen = speaks as before (the user has not picked one)")
+    t.eq(brain.style_choice()[0], "", "no manner set = speaks as before (the pick is only recommended)")
+    t.eq(brain.styles().get("recommended"), "friendly", "the Voice page recommends friendly (user: pick one)")
     brain.cfg["tts"]["style"] = "polite"
     t.eq(brain.style_choice()[0], "polite", "tts.style picks the manner")
     brain.cfg["scenario"] = "fair"
@@ -111,6 +116,12 @@ def _edge(t, brain, cache):
          (why, got[-1:]))
     t.eq(brain._style_done, {"style": "playful", "how": "prosody", "by": "edge"},
          "and it is recorded as speed and pitch only")
+    import threading
+    other = threading.Thread(target=lambda: brain.say("อีกบรรทัดหนึ่ง", "th", style="coaxing"))
+    other.start()
+    other.join()
+    t.eq(brain._style_done.get("style"), "playful",
+         "another thread's line (the saved-answer sweep) never rewrites this line's record")
     n = len(got)
     again, _ = brain.say("สวัสดีครับ", "th", style="playful")
     t.ok(again == sound and len(got) == n, "the same manner again comes from its own cache")
@@ -151,6 +162,76 @@ def _others(t, brain, svc):
     t.ok(view["styles"]["recite"]["by"].get("edge") == "prosody"
          and "not a real" in view["styles"]["recite"]["prosodyNote"],
          "the page is told recital on Edge is a slow reading, not a real ทำนองเสนาะ", view["styles"]["recite"])
+
+
+def _feeling(t, brain, svc, tmp):
+    """The Thai voice with feeling: first while a manner is on, Thai only,
+    told the manner's feeling; asleep or missing = the backup speaks."""
+    styles = brain.styles()["styles"]
+    brain.cfg["use"] = {"speak": ["edge", "local"]}
+    t.eq(brain.speak_order("playful")[:2], ["feeling", "edge"],
+         "a manner puts the feeling voice first, the chosen order stays as backup")
+    t.eq(brain.speak_order(""), ["edge", "local"], "no manner: the chosen order exactly")
+    told = []
+
+    def fake_feel(prov, key, job, text, lang, voice, timeout, style="", emotion=""):
+        told.append((text, emotion))
+        return b"RIFF" + bytes([len(told)]) * 400, None
+    real_feel = svc.providers.feeling_speak
+    svc.providers.feeling_speak = fake_feel
+    brain.feeling_ready = lambda pid, prov: True
+    try:
+        for key in ("friendly", "coaxing", "polite"):
+            snd, why = brain.say("ยินดีต้อนรับครับ", "th", style=key)
+            t.ok(snd and told and told[-1] == ("ยินดีต้อนรับครับ", styles[key]["emotion"]),
+                 "%s reaches the feeling voice as the feeling %r" % (key, styles[key]["emotion"]), (why, told[-1:]))
+        t.eq(brain._style_done, {"style": "polite", "how": "emotion", "by": "feeling"},
+             "and it is recorded as a real feeling")
+        n = len(told)
+        snd, _ = brain.say("Welcome to the show", "en", style="friendly")
+        t.ok(snd and len(told) == n and brain._style_done.get("by") == "edge",
+             "an English line skips the Thai-only feeling voice; Edge says it", brain._style_done)
+        brain.feeling_ready = lambda pid, prov: False
+        snd, why = brain.say("สวัสดีตอนบ่าย", "th", style="friendly")
+        t.ok(snd and brain._style_done.get("by") == "edge",
+             "feeling voice asleep or not installed: the line is still said, by Edge", (why, brain._style_done))
+    finally:
+        svc.providers.feeling_speak = real_feel
+        brain.feeling_ready = lambda pid, prov: False
+
+    # Its install is NOT under apps/: the hub serves every file there to the
+    # WiFi with no login (check_faces_secret caught the first layout).
+    st = brain.service("feeling")["jobs"]["speak"]["start"]
+    places = list(st["python"]) + list((st.get("env") or {}).values())
+    t.ok(places and not any(str(x).replace("\\", "/").startswith("apps/") for x in places),
+         "the feeling voice's venv and models live outside the served apps folder", places)
+    # the start command is DATA: built from the registry, nothing hard-coded
+    started = []
+
+    class FakeProc:
+        def poll(self):
+            return None
+    real_popen = svc.subprocess.Popen
+    svc.subprocess.Popen = lambda cmd, **kw: started.append((cmd, kw)) or FakeProc()
+    try:
+        prov = dict(brain.service("feeling"))
+        job = dict(prov["jobs"]["speak"])
+        job["start"] = dict(job["start"], python=[sys.executable], script=str(Path(__file__)))
+        prov["jobs"] = {"speak": job}
+        prov["base"] = "http://127.0.0.1:9"            # nothing listens: asleep
+        ready = svc.Brain.feeling_ready(brain, "feeling", prov)
+        t.ok(not ready and started and "--port" in started[0][0] and "8779" in started[0][0]
+             and started[0][1]["env"].get("HF_HOME", "").endswith("hf"),
+             "an asleep feeling voice is started from the registry's start command", started[:1])
+        again = svc.Brain.feeling_ready(brain, "feeling", prov)
+        t.ok(not again and len(started) == 1, "and not started twice while it loads")
+        job["start"] = dict(job["start"], python=[str(tmp / "no-such-python.exe")])
+        brain._feeling_proc = {}
+        svc.Brain.feeling_ready(brain, "feeling", prov)
+        t.ok("not installed" in brain._feeling_why.get("feeling", ""),
+             "not installed says how to install it", brain._feeling_why)
+    finally:
+        svc.subprocess.Popen = real_popen
 
 
 def _http(t, brain, svc):

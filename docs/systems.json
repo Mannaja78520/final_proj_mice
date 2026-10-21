@@ -6,7 +6,7 @@
               "tts_cache/", "reports/", "scratch/", "_video_test/", "sequences/", "projects/", "shows/",
               "models/", "vendor/", "APPDATA/", ".staging", "firmware/lib/",
               "firmware/sd_card_example/", "scient_test/results/", ".unsnooze/",
-              "docs/systems/",
+              "docs/systems/", ".local/",
               "hub_auth.json."],
   "excludeNames": ["promt.md", "PATCHES.md", "hub_auth.json", "hub_password.txt",
                    "faces_login.json", "known_hubs.json", "settings_shared.json",

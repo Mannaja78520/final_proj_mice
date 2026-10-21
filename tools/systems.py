@@ -67,8 +67,10 @@ def files(code=CODE, reg=None):
     out = []
     for parent, dirs, names in os.walk(code):
         rel_dir = Path(parent).relative_to(code).as_posix()
+        # removeprefix, not lstrip("./"): lstrip also ate the dot of ".local"
+        # and ".git", so those folders were walked file by file (A45-25).
         dirs[:] = [d for d in dirs
-                   if not _skipped((rel_dir + "/" + d + "/x").lstrip("./"), reg)]
+                   if not _skipped((rel_dir + "/" + d + "/x").removeprefix("./"), reg)]
         for n in names:
             rel = (Path(parent) / n).relative_to(code).as_posix()
             if not _skipped(rel, reg):

@@ -150,8 +150,27 @@ def run(t):
         B._cache[0], B._cache[1] = 0.0, None
         shutil.rmtree(tmp, ignore_errors=True)
 
-    # ---- the stamp covers what the build really bundles ------------------
+    # ---- a model installed on this PC is not source (A45-25) -------------
+    # apps/voice/tts_spark/.runtime (a venv + 3.8 GB of models) made the hub
+    # say "6839 source files changed" on 2026-10-21, and the spec bundles
+    # apps/ whole, so the next exe would have carried it.
+    loc = Path(tempfile.mkdtemp(prefix="qc_stamp_local_"))
+    try:
+        for rel in ("apps/voice/app.js", "apps/voice/tts_spark/.runtime/venv/cfg.json",
+                    "apps/voice/tts_cache/old.json"):
+            (loc / rel).parent.mkdir(parents=True, exist_ok=True)
+            (loc / rel).write_text("{}", encoding="utf-8")
+        got = sorted(B.source_files(loc))
+        t.eq(got, ["apps/voice/app.js"], "a local install and spoken audio are not counted as source")
+    finally:
+        shutil.rmtree(loc, ignore_errors=True)
     spec = (F.CODE / "MiceHub.spec").read_text(encoding="utf-8")
+    t.ok("build_stamp.skipped(d[0], names=False)" in spec
+         and B.skipped("apps/voice/tts_spark/.runtime/venv/x.py", names=False)
+         and not B.skipped("apps/voice/tts_spark/server.py", names=False),
+         "and the exe leaves them out with the same rule")
+
+    # ---- the stamp covers what the build really bundles ------------------
     t.contains(spec, "build_stamp.write(",
                "the spec writes the receipt at build time")
     covered = ["/".join([a] + ([p] if "*" not in p else []))

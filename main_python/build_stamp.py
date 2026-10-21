@@ -53,6 +53,22 @@ AREAS = (
 KEEP = (".py", ".html", ".css", ".js", ".json", ".svg", ".png", ".ico",
         ".webp", ".h", ".yaml", ".yml")
 STAMP = "build_stamp.json"
+# Folders that are made ON this PC, never built in: a model install with its
+# own venv (a .runtime folder there before it moved to code/.local, A45-25)
+# and spoken audio. Counted, it made the hub say "6839 source files changed" (2026-10-21)
+# and the spec would have packed it into the exe. Dot and _ names are local.
+LOCAL_DIRS = ("__pycache__", "tts_cache")
+
+
+def skipped(rel, names=True):
+    """True for a path the build neither stamps nor bundles: inside a local
+    folder (LOCAL_DIRS, or a name starting with "." or "_"). `names` also
+    skips a FILE named "_..." (QC's driver pages) - the stamp's old rule;
+    the bundle keeps such files (an __init__.py may be needed)."""
+    parts = Path(rel).parts
+    if any(p.startswith(("_", ".")) or p in LOCAL_DIRS for p in parts[:-1]):
+        return True
+    return names and Path(rel).name.startswith("_")
 
 
 def _sha(f):
@@ -74,7 +90,7 @@ def source_files(root):
             rel = f.relative_to(root)
             if not f.is_file() or f.suffix.lower() not in KEEP:
                 continue
-            if any(p.startswith("_") or p == "__pycache__" for p in rel.parts):
+            if skipped(rel):
                 continue
             try:
                 out[rel.as_posix()] = _sha(f)

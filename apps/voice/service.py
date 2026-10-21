@@ -476,6 +476,18 @@ class Brain:
 
     _made = threading.local()       # the sound file say() last used, per thread
 
+    # How THIS thread's last line was said (manner, how, by whom). Per thread:
+    # the saved-answer sweep speaks in the background and, shared, it wrote
+    # its own manner into a visitor's X-Voice-Style (2026-10-21).
+    @property
+    def _style_done(self):
+        return getattr(self._made, "style", None) or {}
+
+    @_style_done.setter
+    def _style_done(self, value):
+        self._made.style = value
+        self._style_last = value              # /styles "last" shows any thread's
+
     def __init__(self, cfg_path, faq_path=None):
         self.cfg_path = Path(cfg_path)
         self.cfg = registry.load(self.cfg_path)
@@ -619,7 +631,7 @@ class Brain:
             got = str(self.cfg.get("googleApiKey") or "").strip()
         return got
 
-    def run_job(self, job, one):
+    def run_job(self, job, one, order=None):
         """Try each service in the chain until one does the job.
 
         `one(pid, prov)` -> (result, why-not). A service with no key is passed
@@ -633,7 +645,7 @@ class Brain:
             rest = self._rest = {}
         pause = float(self.services().get("restSeconds") or 60)
         tried = []
-        for pid in self.chain(job):
+        for pid in (order if order is not None else self.chain(job)):
             prov = self.service(pid)
             if providers.needs_key(prov) and not self.key_for(pid):
                 tried.append({"by": pid, "why": "no key saved"})
@@ -1468,13 +1480,18 @@ class Brain:
         # service, read from its `styles` capability - never assumed.
         skey, sty = self.style_choice(style)
         self._style_done = {"style": skey, "how": "", "by": ""}
+        order = self.speak_order(skey)
 
         def one(pid, prov):
             kind = prov.get("kind")
             if prebuild and prov.get("prebuild") is False:
                 return None, "not used to pre-speak saved answers"
-            can = ((prov.get("jobs") or {}).get("speak") or {}).get("styles") or "none"
+            sjob = (prov.get("jobs") or {}).get("speak") or {}
+            can = sjob.get("styles") or "none"
             how = can if skey else ""
+            langs = sjob.get("languages")
+            if langs and (lang or main_lang(text)) not in langs:
+                return None, "it speaks only %s" % ", ".join(langs)
             self._style_done = {"style": skey, "how": how, "by": pid}
             r, p = (self.style_steps(rate, pitch, sty) if how == "prosody" else (rate, pitch))
             tag = ("|style=%s:%s" % (skey, how)) if skey else ""   # never replay another manner
@@ -1494,6 +1511,14 @@ class Brain:
                                     lambda: providers.azure_speak(
                                         prov, self.key_for(pid), prov["jobs"]["speak"], text,
                                         lang, named, timeout=10, rate=r, pitch=p))
+            if kind == "feeling":
+                if not self.feeling_ready(pid, prov):
+                    return None, getattr(self, "_feeling_why", {}).get(pid) or "it is starting"
+                feel = (sty.get("emotion") if skey else "") or "neutral"
+                return self._spoken("%s:%s%s" % (pid, feel, tag), text, "", "",
+                                    lambda: providers.feeling_speak(
+                                        prov, "", sjob, text, lang, "",
+                                        timeout=float(sjob.get("timeoutSeconds") or 20), emotion=feel))
             wire = providers.WIRES.get(kind, {}).get("speak")
             if not wire:
                 return None, "it cannot speak"
@@ -1505,7 +1530,7 @@ class Brain:
                                 lambda: wire(prov, self.key_for(pid), job, text,
                                              lang or main_lang(text), "", timeout=20,
                                              **({"style": told} if told else {})))
-        got, why = self.run_job("speak", one)
+        got, why = self.run_job("speak", one, order=order)
         did = (getattr(self, "_jobs", None) or {}).get("speak") or {}
         if got is not None and not prebuild:
             if did.get("by") != "local":
@@ -1540,11 +1565,71 @@ class Brain:
         """(key, entry) of the manner a line is said in: the request's, else
         the scenario's, else tts.style. ("", {}) = none, as before A45-25.
         An unknown name is none, so a typo never mutes the voice."""
-        key = style if style is not None else (
-            self.active_scenario().get("style") or (self.cfg.get("tts") or {}).get("style") or "")
+        if style is None:
+            style = self.active_scenario().get("style") or (self.cfg.get("tts") or {}).get("style")
+        key = style or ""
         key = str(key or "").strip()
         entry = (self.styles().get("styles") or {}).get(key)
         return (key, entry) if entry else ("", {})
+
+    def speak_order(self, skey):
+        """The speak chain, with a manner's preferred services first (voice_styles
+        `prefer`) - the chosen order stays as the backup, so a line is never
+        left unsaid when the feeling voice is off or still starting."""
+        chain = self.chain("speak")
+        if not skey:
+            return chain
+        known = self.services().get("providers") or {}
+        first = [p for p in (self.styles().get("prefer") or [])
+                 if p in known and "speak" in (known[p].get("jobs") or {}) and p not in chain]
+        return first + chain
+
+    def feeling_ready(self, pid, prov):
+        """Is the feeling server up? If not and it is installed, start it in the
+        background and say so; this line goes to the next service meanwhile.
+        Never blocks a visitor on a 20 s model load."""
+        if not hasattr(self, "_feeling_why"):
+            self._feeling_why, self._feeling_proc = {}, {}
+        job = (prov.get("jobs") or {}).get("speak") or {}
+        base = (prov.get("base") or "").rstrip("/")
+        try:
+            with urllib.request.urlopen(base + "/health", timeout=0.5) as r:
+                if json.loads(r.read()).get("ok"):
+                    return True
+        except Exception:                           # noqa: BLE001
+            pass
+        st = job.get("start") or {}
+        proc = self._feeling_proc.get(pid)
+        if proc is not None and proc.poll() is None:
+            self._feeling_why[pid] = "it is still starting"
+            return False
+        pys = st.get("python") or []
+        py = next((CODE / x for x in (pys if isinstance(pys, list) else [pys]) if (CODE / x).exists()), None)
+        if not py or not st.get("script"):
+            self._feeling_why[pid] = "it is not installed (python apps/voice/tts_spark/setup.py)"
+            return False
+        env = dict(os.environ, **{k: str(CODE / v) for k, v in (st.get("env") or {}).items()})
+        logs = CODE / ".local" / "tts_spark"
+        logs.mkdir(parents=True, exist_ok=True)
+        log = open(logs / "server.log", "ab")
+        self._feeling_proc[pid] = subprocess.Popen(
+            [str(py), "-u", str(CODE / st["script"])] + [str(a) for a in st.get("args") or []],
+            cwd=str(CODE), env=env, stdout=log, stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
+        self._feeling_why[pid] = "it was asleep and is starting now"
+        return False
+
+    def feeling_up(self):
+        """Are the manner's preferred feeling services up? Starts them if not
+        (so the model loads at boot, not at the first visitor)."""
+        skey, _ = self.style_choice()
+        if not skey:
+            return False
+        up = False
+        for pid in self.speak_order(skey):
+            prov = self.service(pid)
+            if prov.get("kind") == "feeling":
+                up = self.feeling_ready(pid, prov) or up
+        return up
 
     def style_steps(self, rate, pitch, sty):
         """The manner's speed and pitch steps ADDED to the chosen ones, kept
@@ -1568,11 +1653,24 @@ class Brain:
         out = {}
         for key, sty in (self.styles().get("styles") or {}).items():
             out[key] = {"says": sty.get("says") or key, "prosodyNote": sty.get("prosodyNote") or "",
+                        "emotion": sty.get("emotion") or "", "emotionNote": sty.get("emotionNote") or "",
                         "by": {pid: ((self.service(pid)["jobs"].get("speak") or {}).get("styles") or "none")
-                               for pid in self.chain("speak")}}
+                               for pid in self.speak_order(key)}}
         chosen, _ = self.style_choice()
-        return {"styles": out, "chosen": chosen,
-                "last": getattr(self, "_style_done", None) or {}}
+        up = {}
+        for pid in self.speak_order(chosen or "friendly"):
+            prov = self.service(pid)
+            if prov.get("kind") == "feeling":
+                try:
+                    with urllib.request.urlopen((prov.get("base") or "").rstrip("/") + "/health",
+                                                timeout=0.3) as r:
+                        up[pid] = bool(json.loads(r.read()).get("ok"))
+                except Exception:                   # noqa: BLE001
+                    up[pid] = False
+        return {"styles": out, "chosen": chosen, "up": up,
+                "recommended": self.styles().get("recommended") or "",
+                "why": getattr(self, "_feeling_why", {}),
+                "last": getattr(self, "_style_last", None) or {}}
 
     def _spoken(self, ident, text, rate, pitch, make):
         """The cached sound for this line in this voice, else make() it and
@@ -3333,13 +3431,16 @@ def watch_faq_audio(brain):
     instantly - no restart. The mtime poll is what notices the edit; the
     first pass at startup is just the poll seeing a new file.
     """
-    last = None
+    last, felt = None, False
     while True:
         try:
             brain.maybe_reload()
             m = brain.faq_path.stat().st_mtime
-            if m != last:
-                last = m
+            # The feeling voice loads for ~20 s after boot: the first sweep is
+            # spoken by the backup, so sweep again once it is up (A45-25).
+            now = brain.feeling_up()
+            if m != last or (now and not felt):
+                last, felt = m, now
                 brain.sync_faq_audio()
         except OSError:
             pass

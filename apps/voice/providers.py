@@ -310,9 +310,20 @@ def azure_speak(prov, key, job, text, lang, voice, timeout, rate="", pitch=""):
     return (got, None) if len(got) > 100 else (None, "it sent back no sound")
 
 
+# --- a speech server on this PC that takes a FEELING (A45-25) ----------------
+# apps/voice/tts_spark/server.py: Thai with neutral/happy/sad/angry/frustrated.
+
+def feeling_speak(prov, key, job, text, lang, voice, timeout, style="", emotion=""):
+    base = (job.get("base") or prov.get("base") or "").rstrip("/")
+    got = _call(base + "/speak", {"text": text, "emotion": emotion or "neutral"},
+                timeout=timeout, raw=True)
+    return (got, None) if len(got) > 100 else (None, "it sent back no sound")
+
+
 # kind -> job -> function. A kind missing a job simply cannot do it.
 WIRES = {
     "gemini": {"think": gemini_think, "hear": gemini_hear, "speak": gemini_speak},
     "openai": {"think": openai_think, "hear": openai_hear, "speak": openai_speak},
     "azure": {"speak": azure_speak},
+    "feeling": {"speak": feeling_speak},
 }
