@@ -1470,7 +1470,7 @@ class VoiceApp {
   const chain = this.svc?.use?.speak || this.cfg?.use?.speak || [];
   const scenario = this.scenarioList().find(s => s.name === this.cfg?.scenario);
   if (t.fastDeviceVoice === false || t.enabled === false || explicitVoice || t.oneVoice || t.mixedVoice
-      || t.style || scenario?.style                // A45-25: it would drop the chosen manner
+      || t.style || this.styleNow || scenario?.style   // A45-25: it would drop the manner (default too)
       || scenario?.voice || scenario?.rate || scenario?.pitch || (t.pitch && !["+0Hz", "0Hz"].includes(t.pitch))
       || !chain.includes("local") || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return null;
   const scripts = {th: /[\p{Script=Thai}\p{Script=Latin}]/u, en: /\p{Script=Latin}/u,
@@ -2463,16 +2463,19 @@ static SAMPLES = {
     return;
   }
   this.styleInfo = got.styles || {};
+  this.styleUp = got.up || {};
+  this.styleNow = got.chosen || "";
   sel.textContent = "";
   const none = document.createElement("option");
   none.value = ""; none.textContent = "As now (no manner)";
   sel.appendChild(none);
   Object.entries(this.styleInfo).forEach(([key, s]) => {
     const o = document.createElement("option");
-    o.value = key; o.textContent = s.says || key;
+    o.value = key; o.textContent = (s.says || key) + (key === got.recommended ? " - recommended" : "");
     sel.appendChild(o);
   });
-  sel.value = this.styleInfo[keep] ? keep : "";
+  const now = got.chosen != null ? got.chosen : keep;    // the helper's answer: it knows the default
+  sel.value = this.styleInfo[now] ? now : "";
   this.showStyleNote();
 }
   showStyleNote(){
@@ -2481,15 +2484,20 @@ static SAMPLES = {
   const s = (this.styleInfo || {})[sel.value];
   if (!s) { note.textContent = "Speaks the way it does now."; return; }
   const svc = (this.svc && this.svc.providers) || {};
-  const first = Object.entries(s.by || {})[0];
+  const up = this.styleUp || {};
+  // The first service that can really do it: a feeling voice only counts when it is running.
+  const first = Object.entries(s.by || {}).find(([pid, how]) => how !== "emotion" || up[pid]);
   const name = first ? ((svc[first[0]] || {}).says || first[0]) : "";
   const how = first ? first[1] : "none";
-  note.textContent = how === "instruct"
+  const asleep = Object.entries(s.by || {}).some(([pid, h]) => h === "emotion" && !up[pid]);
+  note.textContent = how === "emotion"
+    ? name + " says this with a real feeling (" + s.emotion + ")" + (s.emotionNote ? ": " + s.emotionNote : "") + "."
+    : (asleep ? "The Thai voice with feeling is not running yet, so for now: " : "") + (how === "instruct"
     ? name + " is told this manner in words, so the voice itself changes."
     : how === "prosody"
       ? name + " can change only speed and pitch for this, not real feeling"
         + (s.prosodyNote ? " (" + s.prosodyNote + ")" : "") + ". A service that takes a manner in words does more."
-      : "The chosen voice cannot speak in a manner; it speaks as now.";
+      : "The chosen voice cannot speak in a manner; it speaks as now.");
 }
 
   collectVoice(){

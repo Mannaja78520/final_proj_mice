@@ -1214,6 +1214,19 @@
        lines; <b>▶ Try</b> plays a sample first. "As now" keeps today's voice.
        An event (scenario) can have its own manner. The words are never
        changed.</p>
+    <p><b>Thai voice with feeling (this PC)</b> says Thai lines with a real
+       feeling: friendly and playful sound happy, polite is calm, sweet uses a
+       soft sad tone (the nearest it knows), all in the robot's own voice. It
+       runs on this PC's graphics card with no internet and no key, is tried
+       first while a manner is on, and starts by itself (about 20 seconds after
+       the helper starts; until then the usual voice speaks). It makes a
+       5-second line in about 3 seconds, then saved answers play at once. It
+       speaks Thai only; English lines go to the usual voice. Its model may not
+       be used commercially. <span class="tech">Install once:
+       <code>python apps/voice/tts_spark/setup.py</code> (3.8 GB, into
+       <code>apps/voice/tts_spark/.runtime</code>, not in git); it listens on
+       127.0.0.1:8779. Words were checked by hearing them back (0.87-1.0
+       alike); whether the feeling is right needs a human ear.</span></p>
     <p>What a manner really does depends on the speaking service, and the
        page says which: a service that takes a manner in words (Google Gemini
        voice, with its key) changes the voice itself. The free Microsoft voices
@@ -1223,7 +1236,7 @@
        never dropped silently: the quick device voice is not used while one is
        chosen. <span class="tech">Manners are data in
        <code>config/voice_styles.json</code>; each service's ability is the
-       speak job's <code>styles</code> (instruct / prosody / none) in
+       speak job's <code>styles</code> (instruct / emotion / prosody / none) in
        <code>config/voice_providers.json</code>; <code>/say</code> answers
        <code>X-Voice-Style</code> with how it was applied.</span></p></div>
   <div class="f"><h3>Teach it new answers<span class="tag t-new">new</span></h3>

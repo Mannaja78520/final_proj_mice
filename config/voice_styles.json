@@ -4,8 +4,7 @@
   // with emotion, and ทำนองเสนาะ for poems. A new manner is one entry here.
   //
   // Which manner: the /say request's `style`, else the scenario's `style`,
-  // else voice.json tts.style. Empty = none = exactly as before. The user has
-  // NOT chosen a permanent one yet, so nothing below is switched on.
+  // else voice.json tts.style. Empty = none = exactly as before A45-25.
   //
   // What each speaking service can really do is its speak job's `styles` in
   // voice_providers.json - never assumed here:
@@ -15,38 +14,60 @@
   //             heard on this PC yet (keys deferred by the user).
   //   prosody   only speed and pitch move (Edge, Azure Thai voices). That is
   //             a lighter or slower voice, NOT emotion, and NOT ทำนองเสนาะ.
+  //   emotion   the service is told a feeling by name (`emotion` below):
+  //             this PC's Thai voice with feeling (apps/voice/tts_spark).
+  //             Words checked by hearing them back (0.87-1.0 alike, 2026-10-
+  //             21); the feeling itself only a human ear can judge - two
+  //             automatic emotion judges were no better than chance.
   //   none      the manner cannot be applied (this PC's Windows voice).
   // The words never change: no particle, pronoun or name is added.
   "styles": {
     "polite": {
       "says": "สุภาพ (Polite)",
       "instruct": "polite, calm and respectful, like a courteous host",
-      "prosody": {"rate": -4, "pitch": 0}
+      "prosody": {"rate": -4, "pitch": 0},
+      "emotion": "neutral"
     },
     "friendly": {
       "says": "เป็นกันเอง (Friendly)",
       "instruct": "warm, casual and friendly, smiling while speaking",
-      "prosody": {"rate": 3, "pitch": 3}
+      "prosody": {"rate": 3, "pitch": 3},
+      "emotion": "happy"
     },
     "playful": {
       "says": "ขี้เล่น (Playful)",
       "instruct": "playful and cheerful, light and bouncy, a little teasing",
-      "prosody": {"rate": 8, "pitch": 6}
+      "prosody": {"rate": 8, "pitch": 6},
+      "emotion": "happy"
     },
     "coaxing": {
       "says": "อ้อน (Sweet, coaxing)",
       "instruct": "soft, sweet and endearing, gently coaxing, a little pleading",
-      "prosody": {"rate": -8, "pitch": 4}
+      "prosody": {"rate": -8, "pitch": 4},
+      // THAI-SER has no "sweet": a soft sad tone is the nearest it knows.
+      "emotion": "sad",
+      "emotionNote": "the nearest feeling it knows is a soft, sad tone"
     },
     "recite": {
       "says": "ทำนองเสนาะ (Poem recital)",
       "instruct": "recite this Thai poem in traditional Thai melodic recitation (ทำนองเสนาะ): slow, with long held vowels, a rising and falling tune in each line, and a pause between lines",
       "prosody": {"rate": -18, "pitch": 0},
+      "emotion": "neutral",
+      "emotionNote": "a calm reading, not a real ทำนองเสนาะ tune",
       // With prosody only this is a slow reading, never a tune. Said so on
       // the Voice page instead of pretending.
       "prosodyNote": "slow reading only, not a real ทำนองเสนาะ tune"
     }
   },
+  // The pick marked "recommended" on the Voice page (user 2026-10-21: do not
+  // wait for me - pick one). Friendly fits a robot greeting guests. It is
+  // NOT applied by itself: the PC's voice.json tts.style is the choice, set
+  // from the Voice page; every event can pick its own.
+  "recommended": "friendly",
+  // Services tried FIRST while a manner is on, when they are installed; the
+  // chosen speak order (voice.json use.speak) follows as the backup. So a
+  // feeling is used where it can be, and the line is never left unsaid.
+  "prefer": ["feeling"],
   // Steps the speed and pitch may reach in total (Edge refuses wild values).
   "limits": {"rate": [-50, 50], "pitch": [-30, 30]}
 }

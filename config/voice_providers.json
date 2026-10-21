@@ -18,7 +18,8 @@
   //          overrides any of them on one PC without touching this file.
   //   styles  (speak) what a speaking manner (config/voice_styles.json) can
   //          change: "instruct" told in words, "prosody" speed+pitch only,
-  //          "none" nothing. Checked against each service's docs 2026-10-21.
+  //          "emotion" told a feeling by name (`emotions`), "none" nothing.
+  //          Checked against each service's docs 2026-10-21.
   //   prebuild  false = never used to pre-speak every saved answer at start-up
   //          (a small daily allowance would be gone before the first visitor)
   //
@@ -60,6 +61,25 @@
       "says": "Microsoft Edge voices", "kind": "edge",
       "free": "Free, no key, natural Thai voices. Needs internet; Microsoft can slow it down without notice.",
       "jobs": {"speak": {"hedgeSeconds": 1.5, "timeoutSeconds": 10, "styles": "prosody"}}
+    },
+    // A45-25 (user 2026-10-21: real feeling, no key). Thai speech with a feeling
+    // on this PC: SparkTTS-Thai-Emotion-Control in its own venv, started on
+    // first use. Install once: python apps/voice/tts_spark/setup.py. The model
+    // is CC BY-NC-SA 4.0 (non-commercial: a thesis project is fine).
+    // emotion = told one of `emotions`; Thai only (English words inside Thai
+    // are read, a whole English line goes to the next service).
+    "feeling": {
+      "says": "Thai voice with feeling (this PC)", "kind": "feeling",
+      "base": "http://127.0.0.1:8779",
+      "free": "Free and offline on this PC's graphics card. Real feelings (happy, sad, ...) in Thai; about 3 s to make a 5 s line, then instant from the cache. Not for commercial use (model licence).",
+      "jobs": {"speak": {"styles": "emotion", "languages": ["th"], "timeoutSeconds": 20,
+                         "emotions": ["neutral", "happy", "sad", "angry", "frustrated"],
+                         "start": {"python": ["apps/voice/tts_spark/.runtime/venv/Scripts/python.exe",
+                                              "apps/voice/tts_spark/.runtime/venv/bin/python"],
+                                   "script": "apps/voice/tts_spark/server.py",
+                                   "args": ["--port", "8779", "--checkpoint", "raw"],
+                                   "env": {"HF_HOME": "apps/voice/tts_spark/.runtime/hf"},
+                                   "waitSeconds": 60}}}
     },
     "gemini": {
       "says": "Google Gemini (AI Studio)", "kind": "gemini",
