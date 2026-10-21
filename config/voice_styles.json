@@ -38,7 +38,10 @@
       "says": "ขี้เล่น (Playful)",
       "instruct": "playful and cheerful, light and bouncy, a little teasing",
       "prosody": {"rate": 8, "pitch": 6},
-      "emotion": "happy"
+      "emotion": "happy",
+      // The feeling voice knows one happy: playful and friendly sound the same
+      // there (same line = same sound, measured 2026-10-21). Edge differs.
+      "emotionNote": "the same happy feeling as friendly on this voice"
     },
     "coaxing": {
       "says": "อ้อน (Sweet, coaxing)",

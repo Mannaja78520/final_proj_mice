@@ -1609,12 +1609,12 @@ class Brain:
             self._feeling_why[pid] = "it is not installed (python apps/voice/tts_spark/setup.py)"
             return False
         env = dict(os.environ, **{k: str(CODE / v) for k, v in (st.get("env") or {}).items()})
-        logs = CODE / "apps" / "voice" / "tts_spark" / ".runtime"
+        logs = CODE / ".local" / "tts_spark"
         logs.mkdir(parents=True, exist_ok=True)
         log = open(logs / "server.log", "ab")
         self._feeling_proc[pid] = subprocess.Popen(
             [str(py), "-u", str(CODE / st["script"])] + [str(a) for a in st.get("args") or []],
-            cwd=str(CODE), env=env, stdout=log, stderr=subprocess.STDOUT)
+            cwd=str(CODE), env=env, stdout=log, stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
         self._feeling_why[pid] = "it was asleep and is starting now"
         return False
 

@@ -74,11 +74,11 @@
       "free": "Free and offline on this PC's graphics card. Real feelings (happy, sad, ...) in Thai; about 3 s to make a 5 s line, then instant from the cache. Not for commercial use (model licence).",
       "jobs": {"speak": {"styles": "emotion", "languages": ["th"], "timeoutSeconds": 20,
                          "emotions": ["neutral", "happy", "sad", "angry", "frustrated"],
-                         "start": {"python": ["apps/voice/tts_spark/.runtime/venv/Scripts/python.exe",
-                                              "apps/voice/tts_spark/.runtime/venv/bin/python"],
+                         "start": {"python": [".local/tts_spark/venv/Scripts/python.exe",
+                                              ".local/tts_spark/venv/bin/python"],
                                    "script": "apps/voice/tts_spark/server.py",
                                    "args": ["--port", "8779", "--checkpoint", "raw"],
-                                   "env": {"HF_HOME": "apps/voice/tts_spark/.runtime/hf"},
+                                   "env": {"HF_HOME": ".local/tts_spark/hf"},
                                    "waitSeconds": 60}}}
     },
     "gemini": {

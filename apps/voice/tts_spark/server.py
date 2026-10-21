@@ -5,10 +5,11 @@ voices only move speed and pitch. SparkTTS-Thai-Emotion-Control (Spark-TTS
 0.5B fine-tuned on THAI-SER, CC BY-NC-SA 4.0: non-commercial only) takes an
 emotion token: neutral, happy, sad, angry, frustrated.
 
-Runs in its OWN venv (apps/voice/tts_spark/.runtime/venv, made by setup.py)
+Runs in its OWN venv (code/.local/tts_spark/venv, made by setup.py)
 because it needs transformers 4.57 while the voice helper uses 5.x. Nothing
 here is in git except this code: venv, Spark-TTS clone, models and the
-reference voice stay in .runtime (git-ignored, public repo).
+reference voice stay in .local (git-ignored, public repo, and NOT under
+apps/: every file there is served to the WiFi with no login).
 
 The VOICE (who it sounds like) comes from a reference clip: by default the
 robot's own current voice saying one neutral line, so a feeling does not
@@ -220,7 +221,7 @@ class Handler(BaseHTTPRequestHandler):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8779)
-    ap.add_argument("--runtime", default=str(HERE / ".runtime"))
+    ap.add_argument("--runtime", default=str(HERE.parents[2] / ".local" / "tts_spark"))
     ap.add_argument("--checkpoint", default="raw")
     ap.add_argument("--reference", default="")
     ap.add_argument("--gender", default="female")

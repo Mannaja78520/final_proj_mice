@@ -199,6 +199,12 @@ def _feeling(t, brain, svc, tmp):
         svc.providers.feeling_speak = real_feel
         brain.feeling_ready = lambda pid, prov: False
 
+    # Its install is NOT under apps/: the hub serves every file there to the
+    # WiFi with no login (check_faces_secret caught the first layout).
+    st = brain.service("feeling")["jobs"]["speak"]["start"]
+    places = list(st["python"]) + list((st.get("env") or {}).values())
+    t.ok(places and not any(str(x).replace("\\", "/").startswith("apps/") for x in places),
+         "the feeling voice's venv and models live outside the served apps folder", places)
     # the start command is DATA: built from the registry, nothing hard-coded
     started = []
 

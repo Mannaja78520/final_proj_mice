@@ -70,7 +70,8 @@ model), speech out.
   of the cache name; the page's device voice is off while one is chosen
   (`check_voice_styles`). Gemini's manner is untested until a key exists.
 - The feeling voice (`apps/voice/tts_spark/server.py`, provider `feeling`)
-  runs in its OWN venv in `.runtime` (transformers 4.57 vs 5.x here), started
+  runs in its OWN venv in `code/.local/tts_spark` (never under apps/: served
+  with no login), transformers 4.57 vs 5.x here; started
   by the helper on first use; `prefer` in voice_styles puts it first. Its
   decode is one captured CUDA graph: HF generate was 50 ms/token on Windows.
   Tests stub `feeling_ready`: a real server on 8779 must not leak into QC.
@@ -111,7 +112,7 @@ model), speech out.
 
 - nothing
 
-## Checks that test it (32)
+## Checks that test it (33)
 
 - `check_build_web`
 - `check_face_photos`
@@ -123,6 +124,7 @@ model), speech out.
 - `check_no_console_window`
 - `check_page_frame`
 - `check_speak`
+- `check_stale_build`
 - `check_translate`
 - `check_voice`
 - `check_voice_answers`
@@ -146,4 +148,4 @@ model), speech out.
 - `check_voice_tts`
 - `check_voice_view`
 
-Run them: `python qc/run_qc.py --no-build check_build_web check_face_photos check_faces_cursor check_faces_loopback check_faces_presence check_friend_api check_login_anywhere check_no_console_window check_page_frame check_speak check_translate check_voice check_voice_answers check_voice_bench check_voice_conversation check_voice_fast check_voice_guard check_voice_identify check_voice_intents check_voice_move check_voice_multi check_voice_one_voice check_voice_reconize check_voice_services check_voice_settings check_voice_sound check_voice_source check_voice_stt check_voice_styles check_voice_talkover check_voice_tts check_voice_view`
+Run them: `python qc/run_qc.py --no-build check_build_web check_face_photos check_faces_cursor check_faces_loopback check_faces_presence check_friend_api check_login_anywhere check_no_console_window check_page_frame check_speak check_stale_build check_translate check_voice check_voice_answers check_voice_bench check_voice_conversation check_voice_fast check_voice_guard check_voice_identify check_voice_intents check_voice_move check_voice_multi check_voice_one_voice check_voice_reconize check_voice_services check_voice_settings check_voice_sound check_voice_source check_voice_stt check_voice_styles check_voice_talkover check_voice_tts check_voice_view`

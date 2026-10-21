@@ -3,8 +3,9 @@
     python apps/voice/tts_spark/setup.py           install or repair
     python apps/voice/tts_spark/setup.py --check   only say what is missing
 
-Everything goes in apps/voice/tts_spark/.runtime (git-ignored: the repo is
-public and these are big and licensed separately):
+Everything goes in code/.local/tts_spark (git-ignored: the repo is public
+and these are big and licensed separately; NOT under apps/, which the hub
+serves to the WiFi with no login - QC caught that, 2026-10-21):
   venv/            Python with the SYSTEM torch (no 2.5 GB torch download)
                    plus transformers 4.57 for this model only
   Spark-TTS/       SparkAudio code (Apache-2.0) at the commit the model used
@@ -16,13 +17,15 @@ Measured 2026-10-21 on the PC: 3.8 GB, about 5 minutes on a fast line.
 """
 import argparse
 import json
+import os
 import subprocess
 import sys
 import urllib.request
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-RT = HERE / ".runtime"
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0   # the project rule
+RT = HERE.parents[2] / ".local" / "tts_spark"
 SPARK_COMMIT = "2f1ea9082400547242641f5271b6f941c9f439d1"   # inference_colab.ipynb pins this
 PINS = ["transformers==4.57.6", "tokenizers>=0.22,<0.23", "huggingface-hub>=0.34,<1.0",
         "einops==0.8.1", "einx==0.3.0", "omegaconf==2.3.0", "antlr4-python3-runtime==4.9.3",
@@ -54,7 +57,7 @@ def missing():
 
 def run(cmd, **kw):
     print("  $", " ".join(str(c) for c in cmd), flush=True)
-    subprocess.run([str(c) for c in cmd], check=True, **kw)
+    subprocess.run([str(c) for c in cmd], check=True, creationflags=NO_WINDOW, **kw)
 
 
 def reference(helper):
@@ -102,12 +105,14 @@ def main():
 
 
 def _torch_version(py):
-    v = subprocess.run([str(py), "-c", "import torch;print(torch.__version__)"], capture_output=True, text=True).stdout
+    v = subprocess.run([str(py), "-c", "import torch;print(torch.__version__)"], capture_output=True, text=True,
+                       creationflags=NO_WINDOW).stdout
     return v.strip().split("+")[0]
 
 
 def _cuda_tag(py):
-    v = subprocess.run([str(py), "-c", "import torch;print(torch.version.cuda or '')"], capture_output=True, text=True).stdout
+    v = subprocess.run([str(py), "-c", "import torch;print(torch.version.cuda or '')"], capture_output=True, text=True,
+                       creationflags=NO_WINDOW).stdout
     v = v.strip().replace(".", "")
     return ("cu" + v) if v else "cpu"
 

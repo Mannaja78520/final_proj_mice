@@ -54,8 +54,8 @@ KEEP = (".py", ".html", ".css", ".js", ".json", ".svg", ".png", ".ico",
         ".webp", ".h", ".yaml", ".yml")
 STAMP = "build_stamp.json"
 # Folders that are made ON this PC, never built in: a model install with its
-# own venv (apps/voice/tts_spark/.runtime, 3.8 GB, A45-25) and spoken audio.
-# Counted, .runtime made the hub say "6839 source files changed" (2026-10-21)
+# own venv (a .runtime folder there before it moved to code/.local, A45-25)
+# and spoken audio. Counted, it made the hub say "6839 source files changed" (2026-10-21)
 # and the spec would have packed it into the exe. Dot and _ names are local.
 LOCAL_DIRS = ("__pycache__", "tts_cache")
 
