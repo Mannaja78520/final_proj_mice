@@ -23,6 +23,7 @@ RUN = [
     "   \x1b[31mFAIL\x1b[0m the door stays shut\n",
     "        expected open, got shut\n",
     "   \x1b[31m3 ok, 1 failed, 0.4s\x1b[0m\n",
+    "\x1b[33mskipped (--quick):\x1b[0m a slow one, another slow one, a third slow one\n",
     "\x1b[31mQC FAIL\x1b[0m  14 passed, 1 failed in 1.0s\n",
     "\nwhat regressed:\n",
     "  - another check / the door stays shut\n",
@@ -46,5 +47,7 @@ def run(t):
          "the summary and the regressed list reach the screen", shown)
     t.ok("some check" not in shown and "11 ok" not in shown,
          "passing checks stay off the screen", shown)
+    t.ok("skipped (--quick)" in shown and "another slow one" not in shown,
+         "--quick's long skipped list is named on screen, not printed", shown)
     t.ok(kept == "".join(RUN), "the log keeps every line", kept[-200:])
     t.ok("last_run.log" in shown, "the screen says where the full log is", shown[-120:])
