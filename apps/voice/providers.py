@@ -220,12 +220,17 @@ def gemini_hear(prov, key, job, audio, lang, timeout):
     return _gemini_texts(got), None
 
 
-def gemini_speak(prov, key, job, text, lang, voice, timeout):
+def gemini_speak(prov, key, job, text, lang, voice, timeout, style=""):
     sc = {"voice": voice or job.get("voice") or "Kore"}
     if lang:
         sc["language"] = lang
+    part = {"type": "text", "text": text}
+    if style:
+        # A45-25: the manner rides as a speech_metadata annotation (Gemini
+        # speech docs, read 2026-10-21). NOT yet heard: no key on this PC.
+        part["annotations"] = [{"type": "speech_metadata", "style": style}]
     got = _gemini(prov, key, {"model": job["model"],
-                              "input": [{"type": "text", "text": text}],
+                              "input": [part],
                               "response_format": {"type": "audio"},
                               "generation_config": {"speech_config": sc}}, timeout)
     data, mime, rate = _gemini_audio(got)
@@ -276,9 +281,11 @@ def openai_hear(prov, key, job, audio, lang, timeout):
     return str(got.get("text") or "").strip(), None
 
 
-def openai_speak(prov, key, job, text, lang, voice, timeout):
+def openai_speak(prov, key, job, text, lang, voice, timeout, style=""):
     body = {"model": job["model"], "voice": voice or job.get("voice") or "alloy",
             "input": text, "response_format": "mp3"}
+    if style:
+        body["instructions"] = style     # read by models that take a manner; others ignore it
     got = _call(prov["base"].rstrip("/") + "/audio/speech", body, _auth(key),
                 timeout=timeout, raw=True)
     return (got, None) if len(got) > 100 else (None, "it sent back no sound")

@@ -1,0 +1,52 @@
+{
+  // SPEAKING MANNER (จริต) - how a line is said, not what is said (A45-25).
+  // User 2026-10-21: closer to a person, polite / friendly / playful / อ้อน,
+  // with emotion, and ทำนองเสนาะ for poems. A new manner is one entry here.
+  //
+  // Which manner: the /say request's `style`, else the scenario's `style`,
+  // else voice.json tts.style. Empty = none = exactly as before. The user has
+  // NOT chosen a permanent one yet, so nothing below is switched on.
+  //
+  // What each speaking service can really do is its speak job's `styles` in
+  // voice_providers.json - never assumed here:
+  //   instruct  the service is TOLD the manner in words (Gemini TTS: Thai is
+  //             supported and it follows a style line, per Google's docs
+  //             2026-10-21). Real expression - but needs a key, and was NOT
+  //             heard on this PC yet (keys deferred by the user).
+  //   prosody   only speed and pitch move (Edge, Azure Thai voices). That is
+  //             a lighter or slower voice, NOT emotion, and NOT ทำนองเสนาะ.
+  //   none      the manner cannot be applied (this PC's Windows voice).
+  // The words never change: no particle, pronoun or name is added.
+  "styles": {
+    "polite": {
+      "says": "สุภาพ (Polite)",
+      "instruct": "polite, calm and respectful, like a courteous host",
+      "prosody": {"rate": -4, "pitch": 0}
+    },
+    "friendly": {
+      "says": "เป็นกันเอง (Friendly)",
+      "instruct": "warm, casual and friendly, smiling while speaking",
+      "prosody": {"rate": 3, "pitch": 3}
+    },
+    "playful": {
+      "says": "ขี้เล่น (Playful)",
+      "instruct": "playful and cheerful, light and bouncy, a little teasing",
+      "prosody": {"rate": 8, "pitch": 6}
+    },
+    "coaxing": {
+      "says": "อ้อน (Sweet, coaxing)",
+      "instruct": "soft, sweet and endearing, gently coaxing, a little pleading",
+      "prosody": {"rate": -8, "pitch": 4}
+    },
+    "recite": {
+      "says": "ทำนองเสนาะ (Poem recital)",
+      "instruct": "recite this Thai poem in traditional Thai melodic recitation (ทำนองเสนาะ): slow, with long held vowels, a rising and falling tune in each line, and a pause between lines",
+      "prosody": {"rate": -18, "pitch": 0},
+      // With prosody only this is a slow reading, never a tune. Said so on
+      // the Voice page instead of pretending.
+      "prosodyNote": "slow reading only, not a real ทำนองเสนาะ tune"
+    }
+  },
+  // Steps the speed and pitch may reach in total (Edge refuses wild values).
+  "limits": {"rate": [-50, 50], "pitch": [-30, 30]}
+}

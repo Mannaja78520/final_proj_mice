@@ -1276,9 +1276,10 @@ class Brain:
                         "voice": str(s.get("voice") or "").strip(),
                         "rate": str(s.get("rate") or "").strip(),
                         "pitch": str(s.get("pitch") or "").strip(),
-                        "language": str(s.get("language") or "").strip()}
+                        "language": str(s.get("language") or "").strip(),
+                        "style": str(s.get("style") or "").strip()}   # A45-25 manner
         return {"name": "", "prompt": want, "voice": "", "rate": "", "pitch": "",
-                "language": ""}
+                "language": "", "style": ""}
 
     def main_language(self):
         """The language to fall back on: the scenario's own (a global event
@@ -1437,7 +1438,7 @@ class Brain:
             return None        # an empty sound kept by an older helper: build again
         return got
 
-    def say(self, text, lang="", voice="", rate=None, pitch=None, prebuild=False):
+    def say(self, text, lang="", voice="", rate=None, pitch=None, prebuild=False, style=None):
         """Text -> sound bytes, or (None, why-not) in plain words.
 
         rate / pitch given (the page's "Try it", A42-1) win over the store,
@@ -1463,36 +1464,47 @@ class Brain:
         # speed is the complaint this answers.
         rate, pitch = self.steps(rate, pitch)
         natural = "Neural" in (named or "")
+        # The speaking manner (A45-25): what it changes depends on the
+        # service, read from its `styles` capability - never assumed.
+        skey, sty = self.style_choice(style)
+        self._style_done = {"style": skey, "how": "", "by": ""}
 
         def one(pid, prov):
             kind = prov.get("kind")
             if prebuild and prov.get("prebuild") is False:
                 return None, "not used to pre-speak saved answers"
+            can = ((prov.get("jobs") or {}).get("speak") or {}).get("styles") or "none"
+            how = can if skey else ""
+            self._style_done = {"style": skey, "how": how, "by": pid}
+            r, p = (self.style_steps(rate, pitch, sty) if how == "prosody" else (rate, pitch))
+            tag = ("|style=%s:%s" % (skey, how)) if skey else ""   # never replay another manner
             if kind == "local":
                 # The PC's own voice: the named one if it is a Windows voice.
                 mine = "" if natural else named
                 own = ident if not natural else "<windows %s>" % (lang or voice_lang(named))
-                return self._spoken(own, text, rate, pitch,
+                return self._spoken(own + tag, text, rate, pitch,
                                     lambda: self._windows_speak(text, lang or voice_lang(named), mine))
             if kind in ("edge", "azure"):
                 if not natural:
                     return None, "the chosen voice is not one of its voices"
                 if kind == "edge":
-                    return self._spoken(named, text, rate, pitch,
-                                        lambda: self._edge_speak(named, text, rate, pitch))
-                return self._spoken("azure:" + named, text, rate, pitch,
+                    return self._spoken(named + tag, text, r, p,
+                                        lambda: self._edge_speak(named, text, r, p))
+                return self._spoken("azure:" + named + tag, text, r, p,
                                     lambda: providers.azure_speak(
                                         prov, self.key_for(pid), prov["jobs"]["speak"], text,
-                                        lang, named, timeout=10, rate=rate, pitch=pitch))
+                                        lang, named, timeout=10, rate=r, pitch=p))
             wire = providers.WIRES.get(kind, {}).get("speak")
             if not wire:
                 return None, "it cannot speak"
             job = prov["jobs"]["speak"]
             # Its own voices, not Microsoft's names; speed and pitch do not apply.
-            return self._spoken("%s:%s:%s" % (pid, job.get("model"), job.get("voice")),
+            told = sty.get("instruct", "") if how == "instruct" else ""
+            return self._spoken("%s:%s:%s%s" % (pid, job.get("model"), job.get("voice"), tag),
                                 text, "", "",
                                 lambda: wire(prov, self.key_for(pid), job, text,
-                                             lang or main_lang(text), "", timeout=20))
+                                             lang or main_lang(text), "", timeout=20,
+                                             **({"style": told} if told else {})))
         got, why = self.run_job("speak", one)
         did = (getattr(self, "_jobs", None) or {}).get("speak") or {}
         if got is not None and not prebuild:
@@ -1507,6 +1519,60 @@ class Brain:
             else:
                 self._heard = {"natural": False, "why": "this PC's own voice is chosen"}
         return got, why
+
+    def styles(self):
+        """config/voice_styles.json, re-read when it changes on disk."""
+        p = CODE / "config" / "voice_styles.json"
+        try:
+            m = p.stat().st_mtime
+        except OSError:
+            return {"styles": {}}
+        got = getattr(self, "_styles", None)
+        if not got or got[0] != m:
+            try:
+                got = (m, registry.load(p) or {})
+            except (OSError, ValueError):
+                got = (m, {"styles": {}})
+            self._styles = got
+        return got[1]
+
+    def style_choice(self, style=None):
+        """(key, entry) of the manner a line is said in: the request's, else
+        the scenario's, else tts.style. ("", {}) = none, as before A45-25.
+        An unknown name is none, so a typo never mutes the voice."""
+        key = style if style is not None else (
+            self.active_scenario().get("style") or (self.cfg.get("tts") or {}).get("style") or "")
+        key = str(key or "").strip()
+        entry = (self.styles().get("styles") or {}).get(key)
+        return (key, entry) if entry else ("", {})
+
+    def style_steps(self, rate, pitch, sty):
+        """The manner's speed and pitch steps ADDED to the chosen ones, kept
+        inside `limits` ("+0%" chosen + friendly 3 = "+3%")."""
+        lim = self.styles().get("limits") or {}
+        pro = sty.get("prosody") or {}
+
+        def add(base, step, unit, bounds):
+            try:
+                v = int(re.sub(r"[^0-9+-]", "", base or "") or 0) + int(step or 0)
+            except ValueError:
+                v = int(step or 0)
+            lo, hi = (bounds or [-50, 50])[:2]
+            v = max(lo, min(hi, v))
+            return "%+d%s" % (v, unit)
+        return (add(rate, pro.get("rate"), "%", lim.get("rate")),
+                add(pitch, pro.get("pitch"), "Hz", lim.get("pitch")))
+
+    def styles_view(self):
+        """Every manner and, per speaking service, what it would really do."""
+        out = {}
+        for key, sty in (self.styles().get("styles") or {}).items():
+            out[key] = {"says": sty.get("says") or key, "prosodyNote": sty.get("prosodyNote") or "",
+                        "by": {pid: ((self.service(pid)["jobs"].get("speak") or {}).get("styles") or "none")
+                               for pid in self.chain("speak")}}
+        chosen, _ = self.style_choice()
+        return {"styles": out, "chosen": chosen,
+                "last": getattr(self, "_style_done", None) or {}}
 
     def _spoken(self, ident, text, rate, pitch, make):
         """The cached sound for this line in this voice, else make() it and
@@ -2864,6 +2930,9 @@ class VoiceHandler(BaseHTTPRequestHandler):
         if path == "/services":
             # Who can do each job and which keys are saved - never a key.
             return self._json(dict({"ok": True}, **self.brain.services_view()))
+        if path == "/styles":
+            # Speaking manners and what each speaking service really does (A45-25).
+            return self._json(dict({"ok": True}, **self.brain.styles_view()))
         if path == "/faq":
             return self._json({"ok": True, "faqs": self.brain.faqs()})
         if path == "/face":
@@ -3180,7 +3249,8 @@ class VoiceHandler(BaseHTTPRequestHandler):
             wav, why_not = self.brain.say(
                 text, req.get("lang") or "", voice=voice_name,
                 rate=(str(req["speed"]) if req.get("speed") is not None else None),
-                pitch=(str(req["pitch"]) if req.get("pitch") is not None else None))
+                pitch=(str(req["pitch"]) if req.get("pitch") is not None else None),
+                **({"style": str(req["style"])} if req.get("style") is not None else {}))
         except Exception as e:                      # noqa: BLE001
             return self._json({"ok": False,
                                "error": "speaking failed: %s: %s"
@@ -3200,6 +3270,11 @@ class VoiceHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         ctype = "audio/wav" if wav.startswith(b"RIFF") else "audio/mpeg"
         self.send_header("Content-Type", ctype)
+        # How the manner was applied: instruct / prosody / none (A45-25).
+        done = getattr(self.brain, "_style_done", None) or {}
+        if done.get("style"):
+            self.send_header("X-Voice-Style", "%s; %s; %s" % (done["style"], done.get("how") or "none",
+                                                              done.get("by") or ""))
         self.send_header("Content-Length", str(len(wav)))
         self.end_headers()
         self.wfile.write(wav)
