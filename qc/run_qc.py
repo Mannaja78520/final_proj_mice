@@ -626,6 +626,10 @@ class _Quiet:
         while "\n" in self.buf:
             line, self.buf = self.buf.split("\n", 1)
             show = any(k in line for k in QUIET_SHOW) or line.startswith("  - ")
+            if "skipped (--quick)" in line:   # ~90 titles on one line: name it, keep the list in the log
+                self.screen.write("skipped (--quick): the slow checks, listed in the log\n")
+                self.detail = False
+                continue
             # a FAIL's detail lines are indented under it; keep them with it
             if show or (self.detail and line.startswith("        ")):
                 self.screen.write(line + "\n")
