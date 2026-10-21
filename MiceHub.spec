@@ -66,6 +66,9 @@ a = Analysis(                                            # noqa: F821
     excludes=["tkinter", "unittest", "pydoc_data"],
     noarchive=False,
 )
+# Local installs and spoken audio live inside apps/ but are made on this PC
+# (build_stamp.LOCAL_DIRS): never pack them, or the exe carries a 3.8 GB venv.
+a.datas = [d for d in a.datas if not build_stamp.skipped(d[0], names=False)]
 pyz = PYZ(a.pure)                                        # noqa: F821
 
 exe = EXE(                                               # noqa: F821
