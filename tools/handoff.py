@@ -24,6 +24,15 @@ TEMPLATE = ROOT / "handoff" / "TEMPLATE.md"
 FIELD = re.compile(r"^([A-Z][A-Za-z ]*):[ \t]*(.*)$", re.M)
 
 
+
+def _shown(path):
+    """The path as printed: relative to the repo, or whole when it is on
+    another drive (Windows: relpath C: -> E: raises; QC's temp dir is on C:)."""
+    try:
+        return os.path.relpath(path, ROOT)
+    except ValueError:
+        return str(path)
+
 def fields(text):
     """Every 'Name: value' line before the first section heading."""
     return dict(FIELD.findall(text.split("\n## ", 1)[0]))
@@ -70,14 +79,14 @@ def cmd_list():
 def cmd_new(name, title):
     path = task_path(name)
     if path.exists():
-        sys.exit("%s already exists - take it or pick another name" % os.path.relpath(path, ROOT))
+        sys.exit("%s already exists - take it or pick another name" % _shown(path))
     text = TEMPLATE.read_text(encoding="utf-8")
     text = re.sub(r"^# .*$", "# " + title, text, count=1, flags=re.M)
     text = set_field(text, "Owner", "")
     text = set_field(text, "Updated", now())
     TASKS.mkdir(parents=True, exist_ok=True)
     write(path, text)
-    print("made", os.path.relpath(path, ROOT))
+    print("made", _shown(path))
 
 
 def cmd_take(name, agent):
@@ -85,13 +94,13 @@ def cmd_take(name, agent):
     text = path.read_text(encoding="utf-8")
     text = set_field(set_field(text, "Owner", agent), "Updated", now())
     write(path, text)
-    print("%s owned by %s" % (os.path.relpath(path, ROOT), agent))
+    print("%s owned by %s" % (_shown(path), agent))
 
 
 def cmd_done(name):
     path = task_path(name)
     path.unlink()
-    print("removed", os.path.relpath(path, ROOT), "- commit it with the work that finished it")
+    print("removed", _shown(path), "- commit it with the work that finished it")
 
 
 def main(argv):
