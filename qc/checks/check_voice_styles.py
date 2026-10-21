@@ -70,6 +70,7 @@ def run(t):
         _edge(t, brain, cache)
         _others(t, brain, svc)
         _feeling(t, brain, svc, tmp)
+        _sassy(t, brain)
         _http(t, brain, svc)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -232,6 +233,42 @@ def _feeling(t, brain, svc, tmp):
              "not installed says how to install it", brain._feeling_why)
     finally:
         svc.subprocess.Popen = real_popen
+
+
+def _sassy(t, brain):
+    """User 2026-10-21: *ขอจริตแบบฟาดๆด้วยหน่อยแบบเจ๊*. The manner's `answer`
+    reaches the MODEL's prompt and the guards that fix its Thai, and (opt-in
+    `saved`) the ending of saved answers - nothing else changes."""
+    s = brain.styles()["styles"].get("sassy") or {}
+    t.ok(s.get("emotion") and s.get("answer", {}).get("pronoun") == "เจ๊",
+         "the sassy เจ๊ manner is data: a feeling, an ending and a self-word")
+    brain.cfg["tts"]["style"] = "sassy"
+    try:
+        system, _limit, _v = brain._think_prompt([{"role": "user", "content": "ทดสอบ"}], "th", "", "")
+        t.ok("'ค่ะ'" in system and "'เจ๊'" in system and s["answer"]["wording"]["th"] in system,
+             "the model is told to end ค่ะ, call itself เจ๊ and speak sassy", system[:200])
+        t.ok("ห้ามใช้คำลงท้ายอื่น เช่น ค่ะ" not in system and "ห้ามใช้ ผม หรือ ฉัน หรือ ดิฉัน" in system,
+             "and is not told the opposite in the next breath", system[:260])
+        en, _l, _v = brain._think_prompt([{"role": "user", "content": "hi"}], "en", "", "")
+        t.ok(s["answer"]["wording"]["en"] in en, "English answers get the manner's English line")
+        t.eq(brain.tidy_answer("ผมว่าอากาศดีครับ", "th"), "เจ๊ว่าอากาศดีค่ะ",
+             "a model answer that slipped back to ผม/ครับ is put in the manner's words")
+        t.eq(brain.manner_saved("เดินตรงไปจะเห็นป้ายห้องน้ำทางซ้ายครับ", "th"),
+             "เดินตรงไปจะเห็นป้ายห้องน้ำทางซ้ายค่ะ", "a saved answer's ending follows (answer.saved)")
+        t.eq(brain.manner_saved("Walk straight ahead.", "en"), "Walk straight ahead.",
+             "an English saved answer is left alone")
+        real = brain.styles
+        plain = json.loads(json.dumps(real()))
+        plain["styles"]["sassy"]["answer"].pop("saved", None)
+        brain.styles = lambda: plain
+        t.eq(brain.manner_saved("ทางซ้ายครับ", "th"), "ทางซ้ายครับ",
+             "without answer.saved a saved answer keeps its own ending")
+        brain.styles = real
+    finally:
+        brain.cfg["tts"]["style"] = ""
+    t.eq(brain.tidy_answer("ผมว่าอากาศดีครับ", "th"), "ผมว่าอากาศดีครับ",
+         "no manner: the store's ผม/ครับ, exactly as before")
+    t.eq(brain.manner_saved("ทางซ้ายครับ", "th"), "ทางซ้ายครับ", "and saved answers untouched")
 
 
 def _http(t, brain, svc):
