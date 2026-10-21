@@ -1,9 +1,9 @@
 # Voice that sounds closer to a person, with a choosable manner
 
 Owner: claude:10210423-30cf (PC session)
-Updated: 2026-10-21 09:30 (Bangkok)
-Branch: claude/project-thread-5ylnwy
-Last commit: dcb1412 (feature); branch head see `git log -1`
+Updated: 2026-10-21 09:50 (Bangkok)
+Branch: main (merged in PR #42, 36d0b11)
+Last commit: 36d0b11
 Plan: A45-25
 
 ## Goal
@@ -20,6 +20,8 @@ Tones: polite, friendly, playful, sweet (อ้อน), plus real emotion and Th
 - `check_voice_styles` 28/0 (7/7 sabotages), fast-voice modes in voice_conversation (1/1).
 - Real Edge samples of every manner, cold/cached timing, pitch: PC only,
   `scratch/voice-a45-24-2026-10-21/styles/` + README table. They are speed/pitch only.
+
+- Deployed on the PC 2026-10-21 09:45: exe rebuilt (stale:false), Voice helper restarted; /styles lists the 5 manners, chosen = none (As now).
 
 ## Next
 1. The user listens to `styles/*.mp3` and picks a permanent manner (or none) -> set tts.style.
