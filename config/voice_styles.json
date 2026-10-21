@@ -20,7 +20,10 @@
   //             21); the feeling itself only a human ear can judge - two
   //             automatic emotion judges were no better than chance.
   //   none      the manner cannot be applied (this PC's Windows voice).
-  // The words never change: no particle, pronoun or name is added.
+  // The words of a line never change. Only a manner's `answer` (opt-in) asks
+  // the MODEL to word NEW answers its way - ending, self-word, a style line;
+  // with `answer.saved` the ending and self-word of saved answers follow too.
+  // Read-aloud always stays exactly as written.
   "styles": {
     "polite": {
       "says": "สุภาพ (Polite)",
@@ -50,6 +53,27 @@
       // THAI-SER has no "sweet": a soft sad tone is the nearest it knows.
       "emotion": "sad",
       "emotionNote": "the nearest feeling it knows is a soft, sad tone"
+    },
+    // User 2026-10-21: *ขอจริตแบบฟาดๆด้วยหน่อยแบบเจ๊* - sassy big sister: quick,
+    // cheeky, a bit dramatic, warm underneath. Never insults a visitor.
+    "sassy": {
+      "says": "ฟาดๆ แบบเจ๊ (Sassy)",
+      "instruct": "sassy and sharp like a confident Thai big sister, quick, cheeky and a little dramatic, but warm underneath and never rude",
+      "prosody": {"rate": 10, "pitch": 4},
+      "emotion": "angry",
+      "emotionNote": "a sharp, punchy tone (THAI-SER has no sassy: angry is the nearest); the words do the rest",
+      "answer": {
+        "particle": "ค่ะ", "pronoun": "เจ๊",
+        // saved answers too: only their ending and self-word change, so a
+        // เจ๊ voice never ends a saved answer with ครับ
+        "saved": true,
+        "wording": {
+          "th": "พูดแบบเจ๊ ฟาดๆ มั่นใจ ปากไวแต่ใจดี แซวเบาๆ ได้ เช่น ว้าย นี่นะ บอกเลย แต่ต้องสุภาพกับแขกเสมอ ห้ามดูถูก ห้ามหยาบคาย และยังต้องให้ข้อมูลที่ถูกต้อง",
+          "en": "Speak like a sassy, confident big sister: quick, cheeky, a little dramatic, but kind; never insult the visitor and still give the right information.",
+          "ja": "自信たっぷりで少し毒舌なお姉さん風に、でも優しく。相手を侮辱せず、正しい情報を伝えること。",
+          "zh": "像一个自信、嘴快又有点夸张的大姐那样说话，但心地善良；绝不侮辱客人，并且要给出正确的信息。"
+        }
+      }
     },
     "recite": {
       "says": "ทำนองเสนาะ (Poem recital)",

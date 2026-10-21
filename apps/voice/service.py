@@ -1631,6 +1631,28 @@ class Brain:
                 up = self.feeling_ready(pid, prov) or up
         return up
 
+    def manner_answer(self, lang):
+        """(particle, pronoun, wording line) the current manner asks of a
+        model answer (voice_styles `answer`), or the store's defaults. A45-25:
+        the sassy เจ๊ manner speaks as เจ๊ ending ค่ะ - by choice, opt-in."""
+        a = self.answer_cfg()
+        _key, sty = self.style_choice()
+        own = sty.get("answer") or {}
+        return (own.get("particle") or a.get("politeParticle") or "ครับ",
+                own.get("pronoun") or a.get("politePronoun") or "ผม",
+                ((own.get("wording") or {}).get(lang) or "").strip())
+
+    def manner_saved(self, text, lang):
+        """A saved Thai answer in the manner's own ending and self-word, ONLY
+        when the manner says `answer.saved` (the เจ๊ manner: a เจ๊ voice saying
+        ครับ sounded wrong, 2026-10-21). The rest of the words stay as saved."""
+        _key, sty = self.style_choice()
+        if lang != "th" or not (sty.get("answer") or {}).get("saved"):
+            return text
+        keep, me, _w = self.manner_answer("th")
+        text = one_particle(text, keep, self.particles())
+        return one_pronoun(text, me, self.pronouns())
+
     def style_steps(self, rate, pitch, sty):
         """The manner's speed and pitch steps ADDED to the chosen ones, kept
         inside `limits` ("+0%" chosen + friendly 3 = "+3%")."""
@@ -2193,10 +2215,12 @@ class Brain:
             # different people. one_particle() fixes what gets through, but
             # asking for it costs nothing and gives the model the character
             # to write in (user 2026-09-18).
-            keep = (self.answer_cfg().get("politeParticle") or "ครับ")
-            me = (self.answer_cfg().get("politePronoun") or "ผม")
+            keep, me, wording = self.manner_answer("th")
+            not_end = " ".join(p for p in ("ครับ", "ค่ะ", "คะ", "จ้า") if p != keep)
+            not_me = " หรือ ".join(p for p in ("ผม", "ฉัน", "ดิฉัน") if p != me)
             system = ("คุณคือหุ่นยนต์ Mice ให้ข้อมูลบริการและสถานที่ จงตอบเป็นภาษาไทยเท่านั้น สั้นๆ ตรงประเด็น 1 ประโยคจบในตัว ห้ามตอบเป็นภาษาอังกฤษหรือภาษาอื่น ไม่มีคำเยิ่นเย้อ ไม่มีอีโมจิ\n"
-                      + ("ลงท้ายประโยคด้วยคำว่า '%s' เสมอ ห้ามใช้คำลงท้ายอื่น เช่น ค่ะ คะ จ้า และเรียกตัวเองว่า '%s' เสมอ ห้ามใช้ ฉัน หรือ ดิฉัน เพราะคุณเป็นหุ่นยนต์ตัวเดียวและต้องพูดด้วยน้ำเสียงเดียวกันทุกประโยค\n" % (keep, me))
+                      + ("ลงท้ายประโยคด้วยคำว่า '%s' เสมอ ห้ามใช้คำลงท้ายอื่น เช่น %s และเรียกตัวเองว่า '%s' เสมอ ห้ามใช้ %s เพราะคุณเป็นหุ่นยนต์ตัวเดียวและต้องพูดด้วยน้ำเสียงเดียวกันทุกประโยค\n" % (keep, not_end, me, not_me))
+                      + ((wording + "\n") if wording else "")
                       + scenario_hint
                       + person_hint
                       + ("\nFAQ ที่เกี่ยวข้อง:\n" + "\n".join(faq_lines) + "\n\n" if faq_lines else "\n")
@@ -2206,6 +2230,10 @@ class Brain:
         # word, so the same budget stopped Thai answers in the middle of a
         # word (user 2026-09-18: *it cuts replies off*). The budget is DATA
         # so it can be tuned per language without touching this file.
+        if lang in ("en", "ja", "zh"):
+            wording = self.manner_answer(lang)[2]
+            if wording:
+                system += "\n" + wording
         limit = 96 if is_verse else self.token_budget(lang)
         return system, limit, is_verse
 
@@ -2272,9 +2300,9 @@ class Brain:
         if not reply:
             return ""
         if lang == "th":
-            a = self.answer_cfg()
-            reply = one_particle(reply, a.get("politeParticle"), self.particles())
-            reply = one_pronoun(reply, a.get("politePronoun"), self.pronouns())
+            keep, me, _w = self.manner_answer("th")
+            reply = one_particle(reply, keep, self.particles())
+            reply = one_pronoun(reply, me, self.pronouns())
         # A verse is lines, not sentences - trimming it to a particle would eat
         # the poem. Its budget is larger for the same reason.
         if ran_out and not verse:
@@ -3208,6 +3236,7 @@ class VoiceHandler(BaseHTTPRequestHandler):
                 if person:
                     faq_ans = personalize_answer(faq_ans, person, lang=hit.get("lang") or eff_lang,
                                                  address=self.brain.address_words())
+                faq_ans = self.brain.manner_saved(faq_ans, hit.get("lang") or eff_lang)
                 out = {"ok": True, "answer": faq_ans,
                        "source": "faq", "score": score,
                        "lang": hit.get("lang") or eff_lang}
