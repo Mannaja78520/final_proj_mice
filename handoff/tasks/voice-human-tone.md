@@ -1,9 +1,9 @@
 # Voice that sounds closer to a person, with a choosable manner
 
 Owner: claude:10210423-30cf (PC session)
-Updated: 2026-10-21 12:00 (Bangkok)
-Branch: claude/project-thread-5ylnwy
-Last commit: see `git log -1` on the branch
+Updated: 2026-10-21 15:05 (Bangkok)
+Branch: main (PR #45, ed1a215)
+Last commit: ed1a215
 Plan: A45-25
 
 ## Goal
@@ -30,12 +30,17 @@ User 2026-10-21: "ทำจริตเสียงด้วยเลยรอ�
 - Samples (PC only, git-ignored): `scratch/voice-a45-24-2026-10-21/feeling/`, `feeling-fresh/`,
   `emotion/` (raw server, 5 feelings), `styles/` (Edge speed/pitch only), README there.
 
+- Deployed on the PC 2026-10-21 14:56: exe rebuilt (stale:false, 10.8 MB: tts_cache no longer packed),
+  hub + Voice helper restarted, tts.style = friendly in the live voice.json (user delegated the pick;
+  backup of the old file in scratch/deploy-a45-2026-10-21). The helper started the feeling voice
+  itself. Replay of the 50 audit cases vs 8767: 50/50. Live Thai line 3.6 s by feeling, English by Edge.
+- GPU after deploy: 10.8 of 12.2 GB used (friend app + whisper + LLM + feeling): watch for out-of-memory.
+
 ## Next
-1. After merge: pull main, rebuild exe, restart hub + Voice helper; set tts.style = friendly
-   (recommended, the user delegated the pick) - changeable on the Voice page.
-2. A person listens to `feeling/*.wav` and `emotion/*.wav`: does each feeling sound right?
-3. Friendly and playful sound the same on the feeling voice (one "happy"); coaxing uses soft sad.
-4. True ทำนองเสนาะ: no tested service does it; do not claim it.
+1. A person listens to `feeling-fresh/`, `feeling/`, `emotion/` samples: does each feeling sound right?
+   Change the manner on the Voice page (Speaking manner) if not.
+2. With a Gemini key: hear the instruct path (A45-10 keys).
+3. True ทำนองเสนาะ: no tested service does it; do not claim it.
 
 ## Blocked
 - Human listening judgement; Gemini key (user paused sign-in) for the instruct path.
