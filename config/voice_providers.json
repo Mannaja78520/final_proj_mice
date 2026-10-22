@@ -74,6 +74,12 @@
       "free": "Free and offline on this PC's graphics card. Real feelings (happy, sad, ...) in Thai; about 3 s to make a 5 s line, then instant from the cache. Not for commercial use (model licence).",
       "jobs": {"speak": {"styles": "emotion", "languages": ["th"], "timeoutSeconds": 20,
                          "emotions": ["neutral", "happy", "sad", "angry", "frustrated"],
+                         // Clarity (A45-26, user 2026-10-22: the last word was cut in half,
+                         // speech run together). Sent with every line; the server's TUNE
+                         // lists the keys. Values picked by ear + whisper in
+                         // scratch/voice-clear-2026-10-22 (PC only).
+                         "tune": {"temperature": 0.8, "leadMs": 60, "tailMs": 450, "fadeMs": 6,
+                                  "pauseMs": 180, "split": 0},
                          "start": {"python": [".local/tts_spark/venv/Scripts/python.exe",
                                               ".local/tts_spark/venv/bin/python"],
                                    "script": "apps/voice/tts_spark/server.py",

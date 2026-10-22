@@ -1515,7 +1515,9 @@ class Brain:
                 if not self.feeling_ready(pid, prov):
                     return None, getattr(self, "_feeling_why", {}).get(pid) or "it is starting"
                 feel = (sty.get("emotion") if skey else "") or "neutral"
-                return self._spoken("%s:%s%s" % (pid, feel, tag), text, "", "",
+                # New clarity settings = new sound: never replay a clip cut by the old ones (A45-26).
+                tune = ("|tune=" + json.dumps(sjob["tune"], sort_keys=True)) if sjob.get("tune") else ""
+                return self._spoken("%s:%s%s%s" % (pid, feel, tag, tune), text, "", "",
                                     lambda: providers.feeling_speak(
                                         prov, "", sjob, text, lang, "",
                                         timeout=float(sjob.get("timeoutSeconds") or 20), emotion=feel))
