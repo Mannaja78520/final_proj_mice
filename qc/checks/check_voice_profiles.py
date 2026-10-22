@@ -235,9 +235,11 @@ def _web(t, base, sound):
     page = (F.CODE / "apps/voice/index.html").read_text(encoding="utf-8")
     driver = r"""
 <script>
-setTimeout(async () => {
+(async () => {
   const report = async (name, value) => qcMark("PROFILE " + name + "=" + (value ? "yes" : "no"));
   try {
+    if (!await qcWaitFor(() => window.voiceApp?.initialized && document.getElementById('profilePick')))
+      throw new Error('character editor did not become ready');
     await fetch('/api/login', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({password: PASSWORD})});
     const app = window.voiceApp;
@@ -270,7 +272,7 @@ setTimeout(async () => {
     }
   } catch (error) { await qcMark('PROFILE error=' + String(error).replace(/[^a-zA-Z0-9]/g, '_').slice(0,100)); }
   finally { await qcMark('done'); }
-}, 250);
+})();
 </script>
 """.replace("PASSWORD", json.dumps(F.HUB_PASSWORD)).replace("SOUND", json.dumps(base64.b64encode(sound).decode()))
     start = len(fake_serial.qc_marks)

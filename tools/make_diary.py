@@ -17,13 +17,10 @@ import sys
 from collections import OrderedDict
 from pathlib import Path
 
-# The REAL tree, always - a working copy is never the right place to read
-# from. Every PATCHES.md is in promote.py's SKIP_FILES because each patcher
-# appends to the copy in the real tree, so a freshly made working copy holds
-# none of them and the diary built there would be empty while looking fine.
-CODE = Path(__file__).resolve().parent.parent
-if CODE.name.startswith(".staging"):
-    CODE = CODE.parent
+# Canonical logs stay on the PC. A Git worktree can also carry newer merged
+# history; include it without rewriting or dropping either set of records.
+WORK = Path(__file__).resolve().parent.parent
+CODE = WORK.parent if WORK.name.startswith(".staging") else WORK
 
 SOURCES = [
     ("studio", CODE / "nong" / "main_python_set_nong" / "PATCHES.md"),
@@ -31,18 +28,25 @@ SOURCES = [
     ("firmware", CODE / "firmware" / "PATCHES.md"),
 ]
 
+if WORK != CODE:
+    SOURCES += [(where, WORK / path.relative_to(CODE)) for where, path in list(SOURCES)]
+
 # | 0031 | 2026-08-09 04:03 | what it did |
 ROW = re.compile(r"^\|\s*(\d{3,4})\s*\|\s*(\d{4}-\d{2}-\d{2})[^|]*\|\s*(.+?)\s*\|?\s*$")
 
 
 def rows():
+    seen = set()
     for where, path in SOURCES:
         if not path.is_file():
             continue
         for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
             m = ROW.match(line.strip())
             if m:
-                yield m.group(2), where, m.group(1), m.group(3).strip()
+                row = (m.group(2), where, m.group(1), m.group(3).strip())
+                if row not in seen:
+                    seen.add(row)
+                    yield row
 
 
 def tidy(text, limit=300):
