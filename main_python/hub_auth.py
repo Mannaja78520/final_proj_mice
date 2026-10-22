@@ -96,7 +96,7 @@ GATED = {
     "/api/gacha/rules/pull", "/api/gacha/rules/push", "/api/gacha/log", "/api/gacha/stats",
     "/api/gacha/rules", "/api/gacha/game", "/api/gacha/keys",
     # what visitors asked Voice, with their names (A47-3)
-    "/api/questions",
+    "/api/questions", "/api/questions/topics",
 }
 
 # Proved by something OTHER than a session. There is exactly one, and it is

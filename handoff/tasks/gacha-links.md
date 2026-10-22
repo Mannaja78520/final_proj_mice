@@ -34,8 +34,8 @@ Gaps found by reading the code 2026-10-22:
 4. A47-9 docs/gacha/friend_requests.md + Thai list in the thread.
 
 ## Doing now
-A47-8 voice: topics editor + "make a saved answer" on Voice > Questions (apps/voice/app.js,
-index.template.html, hub route /api/questions/topics).
+A47-9 docs: docs/gacha/README.md (games, keys, examples), docs/gacha/friend_requests.md
+(gacha + voice), Help page section, project file friend_api/ copy; then full QC + PR.
 
 ## Done
 - plan rows A47-6..9 added.
@@ -48,10 +48,13 @@ index.template.html, hub route /api/questions/topics).
 - A47-7 built: app keys .local/gacha/keys.json, hub_auth.KEY_OK, X-Mice-Key or ?key=,
   /api/gacha/keys, page card "Other PCs and forms". Keys never force.
 - A47-8 part: voice prize rule when.event (voice_prizes.prize_for), Event column on the page.
+- A47-8 done: /api/questions/topics (GET, POST login; patterns must compile), Voice > Questions:
+  Topics editor, "Asked often, no saved answer yet" + "Make an answer" (opens Answers with the
+  question filled in). voice_prizes.save_topics, stats "unsaved".
 - stats per hour + chart on Prize machines. check_gacha 39 asserts, 7 sabotages caught.
 
 ## Next
-1. A47-8 rest (topics editor, saved answer from a question), then A47-9 docs + README + Help.
+1. A47-9 docs + README + Help (see Doing now).
 2. A47-8 voice, A47-9 docs, full QC, PR, merge.
 
 ## Blocked

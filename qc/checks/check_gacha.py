@@ -21,7 +21,9 @@ _Gacha), both holding "keychain", 70 standing next to 71. Asserted on the WIRE
     in .git served); a win reported from a hub page on this PC turns a board,
     the same win twice turns it once, a loss and a foreign site turn nothing.
   * A47-7: an app key lets another PC ask (never force); a removed key stops.
-  * A47-8: a voice prize rule tied to an event fits only during that event.
+  * A47-8: a voice prize rule tied to an event fits only during that event;
+    topics are edited from the page (a broken pattern refused) and pick the
+    next question's topic; questions with no saved answer are listed apart.
 """
 import json
 import os
@@ -310,9 +312,36 @@ def run(t):
             json.dumps({"ok": True, "answer": "ได้", "source": "faq"}).encode()).decode())
         t.ok((out.get("prize") or {}).get("ok") and _dispenses()[-1] == (71, "GDISPENSE Jo"),
              "and the same rule for this event gives one", out)
+
+        # ---- A47-8: topics from the page, questions with no saved answer ----
+        topics = tmp / "topics.json"
+        topics.write_bytes(Path(main.asset("config", "voice_topics.json")).read_bytes())
+        os.environ["MICE_VOICE_TOPICS"] = str(topics)
+        code, got = F.get(base + "/api/questions/topics")
+        t.ok(code == 200 and "directions" in got, "the topic list reads back for the page", got[:120])
+        code, got = _post(base, "/api/questions/topics", {"topics": [{"id": "x", "patterns": ["(broken"]}]})
+        t.ok(code == 400 and "directions" in topics.read_text(encoding="utf-8"),
+             "a broken pattern is refused and the list is kept", (code, got))
+        code, got = _post(base, "/api/questions/topics", {"topics": [
+            {"id": "parking", "label": "ที่จอดรถ", "patterns": ["จอดรถ"]}]})
+        main.hub_api_gacha.voice_after_ask(json.dumps({"text": "จอดรถตรงไหนได้บ้าง"}).encode(),
+                                           json.dumps({"ok": True, "answer": "ข้างหลัง", "source": "model"},
+                                                      ensure_ascii=False).encode())
+        code, body = F.get(base + "/api/questions")
+        st = json.loads(body).get("stats", {})
+        t.ok(code == 200 and st.get("topic", {}).get("parking") == 1,
+             "a topic saved from the page names the next question", st.get("topic"))
+        t.ok("จอดรถตรงไหนได้บ้าง" in st.get("unsaved", {}) and "ห้องน้ำอยู่ไหน" not in st.get("unsaved", {}),
+             "a question the model answered is listed as needing a saved answer, a saved one is not",
+             st.get("unsaved"))
+        F.logout_qc()
+        code, got = _post(base, "/api/questions/topics", {"topics": []})
+        t.ok(code == 401 and "parking" in topics.read_text(encoding="utf-8"),
+             "changing topics needs a sign-in", (code, got))
+        F.login(base)
     finally:
         os.environ.pop("MICE_PARTNERS", None)
-        for k in ("MICE_VOICE_PRIZES", "MICE_QUESTIONS_DATA"):
+        for k in ("MICE_VOICE_PRIZES", "MICE_QUESTIONS_DATA", "MICE_VOICE_TOPICS"):
             os.environ.pop(k, None)
         hook.shutdown()
         os.environ.pop("MICE_GACHA_CONFIG", None)

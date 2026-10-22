@@ -22,6 +22,7 @@
     GET  /api/gacha/keys            app keys' names (login); POST {make: name} | {drop: name}
                                     An app key (header X-Mice-Key or ?key=) lets another
                                     PC or a form use dispense / can / game (A47-7)
+    GET  /api/questions/topics      the topic list (config/voice_topics.json); POST {topics} saves (login)
     GET  /api/questions             what Voice was asked: per topic / hour / source (login)
                                     ?day=YYYY-MM-DD narrows it, &csv=1 = the whole CSV
 
@@ -86,10 +87,14 @@ def gacha():
     return _gacha
 
 
+def topics_path():
+    return Path(os.environ.get("MICE_VOICE_TOPICS") or _config("voice_topics.json"))
+
+
 def questions():
     """The Voice question log + prize rules (voice_prizes.py)."""
     data = Path(os.environ.get("MICE_QUESTIONS_DATA") or (Path(_hub.DATA) / ".local" / "voice"))
-    return vp.Questions(os.environ.get("MICE_VOICE_TOPICS") or _hub.asset("config", "voice_topics.json"),
+    return vp.Questions(topics_path(),
                         prizes_path(), data, give=_voice_give,
                         event=lambda: gacha().cfg()["event"].get("name", ""))
 
@@ -158,6 +163,14 @@ class GachaRoutes:
         return d if isinstance(d, dict) else None
 
     def api_gacha(self, method, path, q):
+        if path == "/api/questions/topics":
+            if method == "GET":
+                return self.send_json(dict(vp._load(topics_path()), ok=True))
+            d = self._gacha_body()
+            if d is None:
+                return self.send_err("that request was not readable")
+            ok, why = vp.save_topics(topics_path(), d.get("topics"), d.get("fallback"))
+            return self.send_json({"ok": ok, "error": why}, 200 if ok else 400)
         if path == "/api/questions":
             qs = questions()
             if (q.get("csv") or [""])[0]:
@@ -203,8 +216,7 @@ class GachaRoutes:
         if path == "/api/gacha/voice" and method == "GET":
             return self.send_json(dict(vp._load(prizes_path()), ok=True,
                                        topics=[t.get("id") for t in vp._load(
-                                           os.environ.get("MICE_VOICE_TOPICS")
-                                           or _hub.asset("config", "voice_topics.json")).get("topics") or []]))
+                                           topics_path()).get("topics") or []]))
         if method != "POST":
             return self.send_err("POST only here", 405)
         d = self._gacha_body()

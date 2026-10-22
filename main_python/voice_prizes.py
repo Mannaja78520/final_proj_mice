@@ -143,7 +143,7 @@ class Questions:
         """Counts for the Voice tab's charts: per topic, per hour, per source,
         per language, top questions; `day` (YYYY-MM-DD) narrows it."""
         out = {"topic": {}, "hour": {str(h): 0 for h in range(24)}, "source": {},
-               "lang": {}, "prize": {}, "question": {}, "total": 0, "days": []}
+               "lang": {}, "prize": {}, "question": {}, "unsaved": {}, "total": 0, "days": []}
         days = set()
         for r in self.rows():
             d = (r.get("time") or "")[:10]
@@ -161,6 +161,39 @@ class Questions:
                 out["hour"][str(int(h))] += 1
             q = (r.get("question") or "").strip().lower()
             out["question"][q] = out["question"].get(q, 0) + 1
-        out["question"] = dict(sorted(out["question"].items(), key=lambda kv: -kv[1])[:15])
+            if r.get("source") != "faq":       # no saved answer yet: worth writing one
+                out["unsaved"][q] = out["unsaved"].get(q, 0) + 1
+        for k in ("question", "unsaved"):
+            out[k] = dict(sorted(out[k].items(), key=lambda kv: -kv[1])[:15])
         out["days"] = sorted(days)
         return out
+
+
+def save_topics(path, topics, fallback=None):
+    """Write the topic list from the Voice page (A47-8). -> (ok, why).
+    Every topic needs an id and its patterns must compile, so one typo on
+    the page cannot silently send every question to "other"."""
+    clean, seen = [], set()
+    for t in topics if isinstance(topics, list) else []:
+        if not isinstance(t, dict):
+            continue
+        tid = str(t.get("id") or "").strip()
+        pats = t.get("patterns") or []
+        pats = [str(x).strip() for x in (pats if isinstance(pats, list) else [pats]) if str(x).strip()]
+        if not tid or tid in seen:
+            return False, "every topic needs its own short name"
+        for x in pats:
+            try:
+                re.compile(x)
+            except re.error as e:
+                return False, "the words for %s could not be read (%s)" % (tid, e)
+        seen.add(tid)
+        clean.append({"id": tid, "label": str(t.get("label") or tid), "patterns": pats})
+    old = _load(path)
+    data = {"fallback": str(fallback or old.get("fallback") or "other"), "topics": clean}
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_name(p.name + ".tmp")
+    tmp.write_bytes((json.dumps(data, indent=2, ensure_ascii=False) + "\n").encode("utf-8"))
+    tmp.replace(p)
+    return True, ""
