@@ -25,6 +25,13 @@ no motion commands issued. Preserve existing browser31-keyframe backup and
 all real calibration. No firmware changes.
 
 ## Doing now
+Checked dispatch draft added; first combined31/1 exposed faithful fake status
+missing min/max/moving. Added firmware-shaped fields; second32/2 exposed
+dummy test assuming arrival after a fixed sleep. Test now awaits actual move.
+Final integration review blocks unchecked SD/handoff entry, mutable hub
+timeline, queued target changes, direct clock drift, Monitor cancellation,
+missing motion-state validation. Fixing these before next frozen check.
+No runtime deployment or real movement yet. Settings draft remains isolated.
 Pure RRT* implemented with checked parent choice, rewiring/descendant costs,
 goal reconsideration, quick connect seed and checked shortcuts. Original
 path check19/0. Added Settings extra gap in mm, persisted through rig/settings

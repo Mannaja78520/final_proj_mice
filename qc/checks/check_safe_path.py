@@ -119,8 +119,9 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
       sim(A);
       document.getElementById("dummyFollow").value = "robot"; dummyFollowChanged();
       await wait(900);
+      await lastSafeMove;
       await rawCmd("MOVE QCMARK SAFE~FOLLOW");
-      sim(B); await wait(1200);
+      sim(B); await wait(1200); await lastSafeMove;
       await rawCmd("MOVE QCMARK SAFE~HIT");
       sim(hitPose); await wait(900);
       holdSaid = document.getElementById("dummyStat").textContent.indexOf("holds its last safe pose") >= 0;

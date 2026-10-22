@@ -115,17 +115,12 @@ function crashGate(action) {
   if (!problems.length) { crashForced = false; return true; }
   const shown = problems.slice(0, 6).join("\n") +
     (problems.length > 6 ? "\n…and " + (problems.length - 6) + " more" : "");
-  const go = confirm(
-    "THE ROBOT WILL CRASH\n\n" + shown +
-    "\n\nThe bad keyframes are marked RED in the timeline.\n\n" +
-    "OK      = " + action + " ANYWAY — the arm may hit itself\n" +
-    "Cancel  = stop, and fix it first");
-  crashForced = go;
+  crashForced = false;
   const st = $("tlStat");
-  if (st) st.textContent = go
-    ? "⚠ FORCED past the crash check — the arm may hit itself"
-    : "stopped: this movement crashes (the red keyframes)";
-  return go;
+  const message="Not sent: this movement does not keep the safety gap. Fix the red keyframes or adjust the rig/gap in Setup.\n"+shown;
+  if (st) st.textContent = message;
+  notice(message);
+  return false;
 }
 
 function checkCollisions(showAlert) {

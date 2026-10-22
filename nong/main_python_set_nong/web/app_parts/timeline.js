@@ -156,6 +156,7 @@ function totalMs() {
 // jump there at once and ran ahead of the robot. With loop on, that travel is a
 // segment of its own: index K.length, pose K[0]. Never written to the file.
 function loopReturnMs() {
+  if (checkedTimeline() && safeTimelineCache.loop) return 0; // already a checked leg
   const K = playKeys();
   if (!$("loopChk") || !$("loopChk").checked || K.length < 2) return 0;
   return autoTime(K[K.length - 1].pose, K[0].pose, speedDps());
@@ -645,6 +646,8 @@ window.addEventListener("beforeunload", (e) => {
   e.returnValue = "";
 });
 function playKeys() {
+  const checked = checkedTimeline();
+  if (checked) return checked;
   const sig = keysSignature();
   if (_pkCache && _pkCache.sig === sig) return _pkCache.list;
   const list = buildPlayKeys();
@@ -835,7 +838,16 @@ function keepAwake(on) {
   } catch (e) { /* never let this break playback */ }
 }
 
-function togglePlay() {
+async function togglePlay() {
+  if (timelinePreparing) { timelinePreparing=false;cancelSafeMotion("planning cancelled");return; }
+  if (!playing) {
+    const epoch=safeMotionEpoch;
+    timelinePreparing=true;$("playBtn").textContent="⏹ Stop planning";
+    let ready=false;
+    try { ready=await ensureSafeTimeline(()=>epoch!==safeMotionEpoch); }
+    finally { timelinePreparing=false;$("playBtn").textContent="▶ Play"; }
+    if(!ready || epoch!==safeMotionEpoch)return;
+  }
   const K = playKeys();
   if (K.length < 2) {
     $("tlStat").textContent = keys.length >= 2
@@ -888,8 +900,8 @@ function togglePlay() {
     // From the start the hub first TRAVELS to keyframe 0 (as long as the board
     // needs); the show clock starts after. Hold the preview until then, or it
     // runs ahead of the arm by the whole entry move (A26-50).
-    if (playT === 0) { entryHold = true; hubPlay(0).then(ok => ok ? waitEntry() : (entryHold = false)); }
-    else hubPlay(playT);
+    entryHold = true;
+    hubPlay(playT).then(ok => ok ? waitEntry() : (entryHold = false));
     return;
   }
   // A segment is the move INTO a keyframe, so segmentAt() starts at 1 and
@@ -952,9 +964,17 @@ function hubShowSteps() {
   return steps;
 }
 async function hubPlay(fromMs) {
-  const steps = hubShowSteps();
-  if (!steps) return false;
-  try {
+  const epoch=safeMotionEpoch, device=safeTarget(), revision=safeRevision();
+  const goalRevision=safeGoalRevision;
+  const stale=()=>safeStale(epoch,device,revision) || goalRevision!==safeGoalRevision;
+  return withSafeMotion(async()=>{ try {
+    if(stale() || !(await ensureSafeTimeline(stale)))return false;
+    const initial=await safeTakeover(stale);
+    if(!initial || stale())return false;
+    const destination=poseAt(fromMs || 0).slice();
+    if(!(await checkedPoseUnlocked(destination,0,epoch,goalRevision,initial)) || stale())return false;
+    const steps = hubShowSteps();
+    if (!steps || stale()) return false;
     const r = await fetch("/api/play", {
       method: "POST",
       body: JSON.stringify({
@@ -964,6 +984,7 @@ async function hubPlay(fromMs) {
         music_stop_ms: showBarMusicStop(),   // a show's track may outlive its moves
       }),
     }).then(r => r.json());
+    if(stale()) {await hubStop();return false;}
     if (r.error) throw new Error(r.error);
     $("robotStat").textContent =
       "the HUB is playing this — it keeps going with this page closed or hidden. " +
@@ -974,8 +995,9 @@ async function hubPlay(fromMs) {
       + "did not move. Check the hub is still running, then press Play again. "
       + (e.message || e);
     notice($("robotStat").textContent);
+    playing=false;$("playBtn").textContent="▶ Play";keepAwake(false);
     return false;
-  }
+  }});
 }
 let entryHold = false;       // true while the hub travels to keyframe 0
 async function waitEntry() {
@@ -1012,10 +1034,7 @@ function livePause() {
   // Stop the HUB's clock FIRST, whatever the link state: a show started while
   // Live was unticked is hub-driven, and an early return here left that clock
   // running — Pause stopped the drawing but the robot carried on.
-  hubStop();
-  if (!liveLinked()) return;
-  liveAbort();        // drop moves not yet sent — pausing cancels them
-  liveSend("STOP");
+  cancelSafeMotion("paused");
   lastLiveSeg = -1;   // resume re-sends the segment, with the time still left
 }
 // ms left in the segment playT is inside — what a resume must ask for, or the

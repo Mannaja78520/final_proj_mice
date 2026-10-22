@@ -318,6 +318,7 @@ window.addEventListener("DOMContentLoaded", function () {
 });
 
 function clearHubTarget(why) {
+  cancelSafeMotion(why);
   const hadAuto = window.HUB_AUTO;
   clearPeer(why);
   window.HUB_AUTO = "";
@@ -360,6 +361,8 @@ function openModule() {
 }
 async function robotCmd(c) {
   if (!currentUser) return "";
+  if (/^POSE\s/i.test(c)) return (await liveSend(c)) ? "OK checked movement finished" : "";
+  if (/^(?:MOVE\s+)?STOP\s*$/i.test(c)) { await cancelSafeMotion("Stop"); return "OK stopped"; }
   try {
     const t = await rawCmd(c);
     $("robotStat").textContent = "> " + c.slice(0, 60) + "  →  " + t.slice(0, 120);
@@ -551,9 +554,7 @@ async function connectLink() {
   }
 }
 function sendPose(quiet) {
-  const c = "POSE " + pose.map(fmtA).join(" "); // no T: firmware uses its speed setting
-  if (quiet) { sendPoseLive(); return; }
-  robotCmd(c);
+  return quiet ? sendPoseLive() : liveSend("POSE " + pose.map(fmtA).join(" "));
 }
 
 // Live sending: ONE command in flight at a time, newest pose wins.
@@ -596,32 +597,65 @@ const LIVE_T_MIN = 80, LIVE_T_MAX = 300;
 function liveT() {
   return Math.max(LIVE_T_MIN, Math.min(LIVE_T_MAX, Math.round(liveRtt * 1.3)));
 }
-function liveSend(c) { if (!currentUser) return; liveQueue.push(c); livePump(); }
-function sendPoseLive() { if (!currentUser) return; livePending = pose.slice(); livePump(); }
-function liveAbort() { liveQueue = []; livePending = null; }
+function liveSend(c) {
+  if (!currentUser) return Promise.resolve(false);
+  if (/^(?:MOVE\s+)?STOP\s*$/i.test(c)) return cancelSafeMotion("Stop");
+  const p = /^POSE\s+(.+)$/i.exec(c);
+  const work = { c, epoch:safeMotionEpoch, target:safeTarget(), goal:null, ms:0, revision:null };
+  if (p) {
+    const bits=p[1].trim().split(/\s+/), at=bits.findIndex(v=>v.toUpperCase()==='T');
+    work.goal=(at<0 ? bits : bits.slice(0,at)).map(Number);
+    work.ms=at<0 ? 0 : Number(bits[at+1]);
+    if(work.goal.length!==NJ || work.goal.some(v=>!Number.isFinite(v)) ||
+      !Number.isFinite(work.ms) || work.ms<0 || (at>=0 && at+2!==bits.length)) {
+      safeMotionNote('Not moved: invalid pose or duration',true);return Promise.resolve(false);
+    }
+  }
+  const result=new Promise(resolve=>{work.resolve=resolve;});
+  if(work.goal && !playing) {
+    if(livePending && livePending.resolve)livePending.resolve(false);
+    work.revision=++safeGoalRevision;livePending=work;
+  } else liveQueue.push(work);
+  if(work.goal)lastSafeMove=result;
+  livePump();return result;
+}
+function sendPoseLive() { return liveSend("POSE " + pose.map(fmtA).join(" ") + " T " + liveT()); }
+function liveAbort() {
+  safeMotionEpoch++;safeGoalRevision++;
+  liveQueue.forEach(work=>{if(work.resolve)work.resolve(false);});
+  if(livePending && livePending.resolve)livePending.resolve(false);
+  liveQueue=[];livePending=null;
+}
 function livePump() {
   if (liveBusy) return;
   liveBusy = true;
   (async () => {
     try {
       for (;;) {
-        let c = null;
+        let work = null;
         if (liveQueue.length) {
-          c = liveQueue.shift();                 // ordered work comes first
+          work = liveQueue.shift();                 // ordered work comes first
         } else if (livePending) {
-          // ...with the time it has, not the module's default easing speed
-          c = "POSE " + livePending.map(fmtA).join(" ") + " T " + liveT();
+          work = livePending;
           livePending = null;                    // only ever the newest pose
         }
-        if (!c) break;
+        if (!work) break;
+        const c=work.c;
+        if(work.epoch!==safeMotionEpoch || work.target!==safeTarget()){work.resolve(false);continue;}
         try {
+          if(work.goal) {
+            const ok=await checkedPose(work.goal,work.ms,work.epoch,work.revision,work.target);
+            work.resolve(ok);continue;
+          }
           const t0 = performance.now();
           const r = await rawCmd(c);
           // Measure the link from the traffic itself — no probing, and it
           // follows a link that changes (USB pulled, WiFi gone slow).
           liveRtt += ((performance.now() - t0) - liveRtt) * 0.25;
           $("robotStat").textContent = "> " + c.slice(0, 60) + "  →  " + r.slice(0, 80);
+          work.resolve(true);
         } catch (e) {
+          work.resolve(false);liveAbort();
           $("robotStat").textContent = "" + (e.message || e);
         }
       }
@@ -807,6 +841,7 @@ async function refreshSd() {
 }
 async function uploadYaml() {
   if (nothingToWrite("sdStat")) return;
+  if (!(await ensureSafeTimeline())) return;
   if (!crashGate("UPLOAD it")) return;
   const { name, yaml } = buildYaml();
   try {
@@ -941,6 +976,7 @@ async function keepLastRun(yaml, file) {
 // first is what makes the check mean anything.
 async function robotRun() {
   if (nothingToWrite("sdStat")) return;     // a file with no moves does nothing
+  if (!(await ensureSafeTimeline())) return;
   if (!crashGate("RUN it on the robot")) return;
   // Run from where the clock is parked. Clicking a keyframe parks it there, so
   // Run continues the show from the pose on screen instead of sweeping back to
@@ -1020,13 +1056,14 @@ async function robotZeroSet() {
 let monTimer = null;
 function liveChanged() {
   if ($("liveChk").checked) { $("monChk").checked = false; monitorChanged(); }
+  else cancelSafeMotion("Live turned off");
 }
 function monitorChanged() {
   if ($("monChk").checked) {
     $("liveChk").checked = false;
     // Same trap as livePause: a show started while Live was ticked belongs to
     // the HUB's clock, and switching this page to watching must end it.
-    hubStop();
+    cancelSafeMotion('monitoring');
     playing = false; $("playBtn").textContent = "▶ Play";
     $("robotStat").textContent = "monitoring…";
     // Watching needs a link. Ticked before Connect (or after a first try that

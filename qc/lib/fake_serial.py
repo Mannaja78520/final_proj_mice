@@ -239,7 +239,10 @@ class _Nong:
             # same shape as the real board: seq is top level, and says whether
             # the module is playing something on its OWN clock right now
             "seq": {"running": self.playing, "file": self.playing_file},
-            "module": {"joints": self.joints, "seq": "", "speed": 120},
+            "module": {"joints": self.joints, "seq": "", "speed": 120,
+                       "speed_dps": 120, "moving": self.busy,
+                       "min": [float(self.jcfg.get(str(j + 1), [0, 180])[0]) for j in range(10)],
+                       "max": [float(self.jcfg.get(str(j + 1), [0, 180])[1]) for j in range(10)]},
         })
 
     def line(self, cmd):
