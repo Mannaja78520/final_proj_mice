@@ -139,4 +139,4 @@ def run(t):
         t.contains(body, "stopRobotSequence", "%s() takes control first" % fn.split()[1])
     pause = app[app.find("function livePause"):]
     pause = pause[:pause.find("\n}")]
-    t.contains(pause, '"STOP"', "pausing sends STOP, which now also ends the show")
+    t.contains(pause, 'cancelSafeMotion(', "pausing uses the shared physical Stop and cancellation path")

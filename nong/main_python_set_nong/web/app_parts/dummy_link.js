@@ -13,6 +13,7 @@ let dummySim = null;          // simulated pot angles, or null when not simulati
 let dummyFollowOn = false;    // the follow loop is running
 let dummyLast = null;         // the last pose read, for "did it move"
 let dummySafePose = null;     // the last pose the ROBOT was sent that was clear (A46-1)
+let dummyRobotFollowing=false;
 let dummyHeld = "";           // why the robot is holding, until a safe send
 let dummyRec = null;          // while recording: [{ pose, ms }]
 
@@ -119,6 +120,9 @@ async function dummyConnect() {
 // the link, and a slow bus cannot pile up requests.
 function dummyFollowChanged() {
   const mode = $("dummyFollow").value;
+  if(dummyRobotFollowing && mode!=='robot')cancelSafeMotion('dummy follow stopped');
+  dummyRobotFollowing=mode==='robot';
+  if(mode==='robot')dummySafePose=null; // first sample must reach the robot even if already displayed
   if (mode !== "off") {
     if (mode === "robot" && !(haveUsb() || haveWifi())) {
       $("dummyStat").textContent = "connect the robot first (Robot link above), then pick this again";
@@ -149,7 +153,8 @@ function dummySafeSend() {
     return false;
   }
   dummyHeld = "";
-  plan.path.slice(1, -1).forEach(q => liveSend("POSE " + q.map(fmtA).join(" ") + " T " + liveT()));
+  // The shared dispatcher replans from the reported pose. Sending preview
+  // waypoints separately would let newest-goal coalescing drop them.
   sendPoseLive();
   dummySafePose = want;
   return true;
@@ -195,9 +200,9 @@ async function dummyFollowTick() {
   try {
     const prev = dummyLast;
     const v = await dummyRead();
-    const moved = !prev || v.some((x, i) => (x === null) !== (prev[i] === null) ||
+    const moved = (mode==='robot' && !dummySafePose) || !prev || v.some((x, i) => (x === null) !== (prev[i] === null) ||
                                        (x !== null && Math.abs(x - prev[i]) >= 0.2));
-    if (moved && dummyFollowOn) {
+    if (moved && dummyFollowOn && mode===$("dummyFollow").value) {
       dummyApply(v);
       if (dummyRec) dummyRec.push({ pose: pose.slice(), ms: performance.now() });
       // The robot gets the pose through the same live path a slider drag

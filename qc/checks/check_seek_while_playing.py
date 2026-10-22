@@ -25,12 +25,13 @@ SLOW = True
 DRIVER = """
 function report(s){ rawCmd("MOVE QCMARK SEEK~" + s); }
 // Wait for the app and the cable, never a fixed sleep (A26-94).
-window.addEventListener("load", function(){ qcStudioReady().then(function(){ setTimeout(function(){
+window.addEventListener("load", function(){ qcStudioReady().then(function(){ setTimeout(async function(){
   try{
+    await qcWaitFor(function(){return !!boardSafeIdentity;});
     document.getElementById("liveChk").checked = true;
     keys = [];
     [90, 40, 140, 60].forEach(function(v){
-      pose = pose.map(function(){ return v; });
+      pose = pose.map(function(old,j){ return clampJ(j,v); });
       addKey();
     });
     document.getElementById("speedDps").value = 60;
@@ -69,6 +70,9 @@ def run(t):
     if not browser.available():
         t.give_up("headless Edge not found - this needs a real browser")
     fake_serial.reset()
+    fake_serial.NONG.motion_clock = True
+    fake_serial.NONG.joints = [60.0]*10
+    fake_serial.NONG.joints[9] = 90
     base, main = F.start_hub()
     F.login(base)
     browser.page(DRIVER, query="%s/studio/_qcdriver.html?dev=usb%%3A%s"
@@ -102,6 +106,8 @@ def run(t):
          "at the show's speed from where the arm was (T %d ms)" % click_t,
          "about 80 deg at 60 deg/s needs ~1300 ms; the move's own 833 ms is a lunge")
     nxt = [p for _m, p, _t in after[1:]]
+    while nxt and nxt[0] == 40:  # zero-distance checked entry at the clicked pose
+        nxt.pop(0)
     t.ok(60 not in nxt[:1],
          "the old show did not carry on over the click (no 60 next)", nxt[:4])
     t.ok(nxt[:1] == [140],

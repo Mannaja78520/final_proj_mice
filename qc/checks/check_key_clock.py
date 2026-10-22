@@ -26,7 +26,7 @@ AREA = "studio"
 TITLE = "clicking a move parks the play clock at that move"
 SLOW = True
 
-T1, H1, T2, H2, T3, T4 = 1000, 200, 1500, 300, 800, 900
+T1, H1, T2, H2, T3, T4 = 2000, 200, 1500, 300, 1800, 1500
 START3 = T1 + H1 + T2 + H2            # clock when the move INTO keyframe 3 begins
 TOTAL = START3 + T3 + T4
 
@@ -38,16 +38,16 @@ function step(){
 
     if (typeof addKey !== "function" || !document.getElementById("liveChk"))
       return setTimeout(step, 200);
-    if (!haveUsb()) return setTimeout(step, 300);
+    if (!haveUsb() || !boardSafeIdentity) return setTimeout(step, 300);
     document.getElementById("loopChk").checked = false;
     document.getElementById("liveChk").checked = true;
     liveChanged();
     keys = [];                                  // drop the boot keyframe
-    pose = pose.map(function(){ return 60; });  addKey();
-    pose = pose.map(function(){ return 120; }); addKey();
-    pose = pose.map(function(){ return 90; });  addKey();
-    pose = pose.map(function(){ return 30; });  addKey();
-    pose = pose.map(function(){ return 75; });  addKey();
+    pose = pose.map(function(o,j){ return clampJ(j,60); });  addKey();
+    pose = pose.map(function(o,j){ return clampJ(j,120); }); addKey();
+    pose = pose.map(function(o,j){ return clampJ(j,90); });  addKey();
+    pose = pose.map(function(o,j){ return clampJ(j,30); });  addKey();
+    pose = pose.map(function(o,j){ return clampJ(j,75); });  addKey();
     keys[1].t = %d; keys[1].hold = %d;
     keys[2].t = %d; keys[2].hold = %d;
     keys[3].t = %d; keys[3].hold = 0;
@@ -79,7 +79,7 @@ function step(){
         setTimeout(function(){
           qcMark("done");
           if (playing) togglePlay();
-        }, 3200);
+        }, 6000);
       }, 700);
     }, 900);
   }catch(e){ qcFail(e); }
@@ -104,7 +104,7 @@ def run(t):
     fake_serial.reset()
     base, main = F.start_hub()
     browser.page(DRIVER, query="%s/studio/_qcdriver.html?dev=usb%%3A%s"
-                 % (base, fake_serial.PORT), seconds=26)
+                 % (base, fake_serial.PORT), seconds=30)
 
     marks = fake_serial.qc_marks
     t.ok(not any(m.startswith("ERROR") for m in marks),
@@ -138,6 +138,14 @@ def run(t):
             if c.upper().startswith("POSE ") and (t_of(c) or 0) > 350]
     if not t.ok(segs, "playing from move 3 sent whole-move commands",
                 [c for c in wire[i + 1:] if c.upper().startswith("POSE")][:4]):
+        return
+    # Checked entry (A46-3): the arm first travels to where the parked clock
+    # stands (keyframe 2's 90), then the show plays move 3. That one entry is
+    # not a replayed move; any further 90/60/120 still is.
+    entry = segs[0] if pose_of(segs[0]) == 90.0 else None
+    if entry:
+        segs = segs[1:]
+    if not t.ok(segs, "after the entry, the show itself sent whole moves", entry):
         return
     p0, t0 = pose_of(segs[0]), t_of(segs[0])
     t.ok(p0 == 30.0 and abs(t0 - T3) <= 60,

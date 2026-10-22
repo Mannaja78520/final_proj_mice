@@ -45,7 +45,8 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     return typeof setHold === "function" && typeof palmMarks !== "undefined"
            && palmMarks.length === 2 && document.getElementById("handHold0")
            && document.getElementById("liveChk")
-           && typeof haveUsb === "function" && haveUsb();
+           && typeof haveUsb === "function" && haveUsb()
+           && !!boardSafeIdentity;   // board read: checked moves can start (A46-3)
   }, 20000).then(function(ready){
   if (!ready) { report("ERR-the-app-never-finished-loading"); report("done"); return; }
   try{

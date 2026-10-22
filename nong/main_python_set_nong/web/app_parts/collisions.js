@@ -57,6 +57,9 @@ function fkPoints(p) {
 
 // returns null (safe) or a short reason string
 function collisionAt(p) {
+  const extra = RIG.extraClearanceMm ?? 0;
+  if (!Number.isFinite(extra) || extra < 0) return "the extra safety gap is invalid";
+  const clearance = CLEAR + extra;
   const d = RIG.dims, k = fkPoints(p);
   const hx = d.torsoW / 2, hy = d.torsoH / 2, hz = d.torsoD / 2;
   const headC = new THREE.Vector3(0, hy + 68, 0);
@@ -72,17 +75,17 @@ function collisionAt(p) {
       const t = s.t0 + (1 - s.t0) * i / 6;
       const pt = segPoint(s.a, s.b, t);
       const r = t > 0.9 && s.n.includes("forearm") ? R_WRIST : s.r; // wrist ball
-      if (distToBox(pt, hx, hy, hz) < r + CLEAR) return s.n + " hits the body";
-      if (pt.distanceTo(headC) < r + R_HEAD + CLEAR) return s.n + " hits the head";
+      if (distToBox(pt, hx, hy, hz) < r + clearance) return s.n + " is too close to the body";
+      if (pt.distanceTo(headC) < r + R_HEAD + clearance) return s.n + " is too close to the head";
     }
   }
   // left arm vs right arm (all segment pairs)
   const L = [segs[0], segs[1]], R = [segs[2], segs[3]];
   for (const sl of L)
     for (const sr of R)
-      if (segSegDist(sl.a, sl.b, sr.a, sr.b) < sl.r + sr.r + CLEAR)
-        return sl.n + " hits the " + sr.n;
-  if (k.wrL.distanceTo(k.wrR) < 2 * R_WRIST + CLEAR) return "the hands hit each other";
+      if (segSegDist(sl.a, sl.b, sr.a, sr.b) < sl.r + sr.r + clearance)
+        return sl.n + " is too close to the " + sr.n;
+  if (k.wrL.distanceTo(k.wrR) < 2 * R_WRIST + clearance) return "the hands are too close to each other";
   return null;
 }
 
@@ -97,13 +100,8 @@ function clearBadMarks() { keys.forEach(k => delete k.bad); }
 // stuck; and Play said "the 3D preview will play so you can see where" while
 // hubPlay() and the live sends drove the real arm anyway.
 //
-// Now: the preview always plays — seeing the crash is how you fix it — and the
-// ROBOT only moves if you say so. Forcing is allowed because the check works
-// from the rig's dimensions, and a rig that does not match the real robot can
-// call a safe move a crash. It is your arm; you can see it.
-//
-// The permission lasts for one action. Any edit to the timeline clears it, so
-// a forced run never silently covers a movement you changed afterwards.
+// Preview can show a refused move, but the robot cannot bypass this gate.
+// Match the model and clothing gap in Setup before asking for another route.
 let crashForced = false;
 let previewOnly = false;   // this run draws, but does not drive the arm
 
@@ -112,17 +110,12 @@ function crashGate(action) {
   if (!problems.length) { crashForced = false; return true; }
   const shown = problems.slice(0, 6).join("\n") +
     (problems.length > 6 ? "\n…and " + (problems.length - 6) + " more" : "");
-  const go = confirm(
-    "THE ROBOT WILL CRASH\n\n" + shown +
-    "\n\nThe bad keyframes are marked RED in the timeline.\n\n" +
-    "OK      = " + action + " ANYWAY — the arm may hit itself\n" +
-    "Cancel  = stop, and fix it first");
-  crashForced = go;
+  crashForced = false;
   const st = $("tlStat");
-  if (st) st.textContent = go
-    ? "⚠ FORCED past the crash check — the arm may hit itself"
-    : "stopped: this movement crashes (the red keyframes)";
-  return go;
+  const message="Not sent: this movement does not keep the safety gap. Fix the red keyframes or adjust the rig/gap in Setup.\n"+shown;
+  if (st) st.textContent = message;
+  notice(message);
+  return false;
 }
 
 function checkCollisions(showAlert) {

@@ -5,6 +5,7 @@ the test proves the hub really shares ONE handle between its clients instead
 of each client opening its own.
 """
 import json
+import math
 import random
 import threading
 import time
@@ -108,6 +109,8 @@ def reset():
     flood_listed[0] = False      # only the check that wants it sees that cable
     dongle_listed[0] = False
     NONG.joints = [90.0] * 10
+    NONG.motion_clock = False
+    NONG._movement = None
     NONG.jcfg = {}
     NONG.neutral = FAR.neutral = [90.0] * 10
     NONG.offset = [0.0] * 10
@@ -165,6 +168,8 @@ class _Nong:
         # back, and that is the case worth being able to drive.
         self.hub = ""
         self.joints = [90.0] * 10
+        self.motion_clock = False  # opt-in real-time interpolation for arrival/seek checks
+        self._movement = None
         self.jcfg = {}   # joint -> the last JCFG applied
         # Where each joint goes on boot and on HOME. 90 is only the DEFAULT: a
         # check that asserts a chosen start pose reached the board reads this.
@@ -214,7 +219,18 @@ class _Nong:
         self.playing, self.playing_file = False, ""
         return reply if reply.startswith("ERR") else reply + " (sequence stopped)"
 
+    def _tick_motion(self):
+        if self._movement is None:
+            return
+        start, duration, source, goal = self._movement
+        f = min(1, max(0, (time.monotonic() - start) / duration))
+        eased = (1 - math.cos(math.pi * f)) / 2
+        self.joints = [a + (b - a) * eased for a, b in zip(source, goal)]
+        if f >= 1:
+            self._movement = None
+
     def info(self):
+        self._tick_motion()
         return json.dumps({
             "id": self.ident, "name": self.mod_name,
             "type": "nong", "sd": True,
@@ -239,7 +255,10 @@ class _Nong:
             # same shape as the real board: seq is top level, and says whether
             # the module is playing something on its OWN clock right now
             "seq": {"running": self.playing, "file": self.playing_file},
-            "module": {"joints": self.joints, "seq": "", "speed": 120},
+            "module": {"joints": self.joints, "seq": "", "speed": 120,
+                       "speed_dps": 120, "moving": self.busy or self._movement is not None,
+                       "min": [float(self.jcfg[str(j + 1)][7]) if str(j + 1) in self.jcfg else 0 for j in range(10)],
+                       "max": [float(self.jcfg[str(j + 1)][8]) if str(j + 1) in self.jcfg else 180 for j in range(10)]},
         })
 
     def line(self, cmd):
@@ -256,6 +275,8 @@ class _Nong:
             return "OK MOVE"
         head = c.split(" ", 1)[0].upper()
         if head == "STOP":
+            self._tick_motion()
+            self._movement = None
             return self._preempt(head, "OK stopped")
         if head == "INFO":
             return self.info()
@@ -275,8 +296,16 @@ class _Nong:
         if head == "POSE":
             vals = [float(x) for x in c.split()[1:] if x.replace(".", "").replace("-", "").isdigit()]
             with self.lock:
+                self._tick_motion()
+                goal = list(self.joints)
                 for i, v in enumerate(vals[:10]):
-                    self.joints[i] = v
+                    goal[i] = v
+                words = c.upper().split()
+                duration = float(words[words.index("T") + 1]) / 1000 if "T" in words else 0
+                if self.motion_clock and duration > 0:
+                    self._movement = (time.monotonic(), duration, list(self.joints), goal)
+                else:
+                    self.joints = goal
             return self._preempt(head, "OK POSE")
         if head == "FILES":
             # per folder: the music picker reads /music and must be able to

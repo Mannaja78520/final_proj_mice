@@ -40,7 +40,7 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     // "want=" mark vanished exactly this way while CLICK and done arrived).
     return typeof addKey === "function" && typeof selectKey === "function"
            && document.getElementById("liveChk") && typeof rawCmd === "function"
-           && typeof haveUsb === "function" && haveUsb();
+           && typeof haveUsb === "function" && haveUsb() && !!boardSafeIdentity;
   }, 20000).then(function(ready){
   if (!ready) { report("ERR-the-app-never-finished-loading"); report("done"); return; }
   try{
@@ -48,8 +48,10 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
 
     // a slow sequence: three keyframes, a big move, low deg/s
     keys = [];
+    // Inside each joint's rig limits: the checked path refuses a goal outside
+    // them, so an all-150 pose would test the refusal, not the click (A46-3).
     [90, 30, 150].forEach(function(v){
-      pose = pose.map(function(){ return v; });
+      pose = pose.map(function(old, j){ return clampJ(j, v); });
       addKey();
     });
     document.getElementById("speedDps").value = 40;      // slow
@@ -62,7 +64,8 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     setTimeout(function(){
       rawCmd("MOVE QCMARK CLICK");        // marker so the next POSE is ours
       selectKey(2);                        // <- the click under test
-      setTimeout(function(){ report("done"); }, 1200);
+      // checked path: Stop, read the pose, plan, then POSE (A46-3)
+      setTimeout(function(){ report("done"); }, 2500);
     }, 400);
   }catch(e){ report("ERR-" + String(e).slice(0,60)); report("done"); }
 }); });

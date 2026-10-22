@@ -47,7 +47,9 @@ function step(){
       return o.value === "qc_music.yaml"; });
     if (!opt) { qcFail(new Error("seeded sequence not offered in the list")); return; }
     sel.value = "qc_music.yaml";
-    editLocalSeq().then(function(){
+    // Opening the show sends the arm to keyframe 0 on a checked route
+    // (A46-3); let that finish so its POSE is not counted as Play's.
+    editLocalSeq().then(function(){ return lastSafeMove; }).then(function(){
       // the export half: the file Studio would write back must still say it
       var y = buildYaml(0).yaml;
       qcMark(y.indexOf("- play: qc_song.mp3") >= 0 ? "export-keeps-music"
@@ -106,8 +108,13 @@ def run(t):
         # (user 2026-09-27: *move to the start pose first, then start
         # everything at the same time*), so the music starts once the arm is
         # there: after that walk, before the show's first real move.
-        nxt = poses[1] if len(poses) > 1 else len(after)
-        t.ok(poses[0] < played[0] < nxt,
+        # The walk can be several sends to the same start pose: the checked
+        # entry, then the hub's own keyframe 0 (A46-3). All are the walk.
+        start = after[poses[0]].split(" T ")[0]
+        walk = [j for j in poses if after[j].split(" T ")[0] == start]
+        moves = [j for j in poses if after[j].split(" T ")[0] != start]
+        nxt = moves[0] if moves else len(after)
+        t.ok(walk[-1] < played[0] < nxt and all(j < nxt for j in walk),
              "the music starts when the arm reaches the start pose, with the "
              "show's first move - not during the walk there, not after",
              after[:6])

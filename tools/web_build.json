@@ -18,6 +18,7 @@
       "ik_4_dof_arm.js",
       "collisions.js",
       "safe_path.js",
+      "checked_motion.js",
       "sliders.js",
       "hand_hold.js",
       "timing.js",

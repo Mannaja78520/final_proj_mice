@@ -55,7 +55,7 @@ DRIVER = """
 function build(vals, ms){
   keys.length = 0;
   vals.forEach(function(v){
-    pose = pose.map(function(){ return v; });
+    pose = pose.map(function(o, j){ return clampJ(j, v); });   // inside rig limits (A46-3)
     addKey();
   });
   keys.forEach(function(k, i){ if (i) { k.t = ms; k.hold = 0; } });
@@ -67,13 +67,13 @@ function step(){
 
     if (typeof addKey !== "function" || !document.getElementById("liveChk"))
       return setTimeout(step, 200);
-    if (!haveUsb()) return setTimeout(step, 300);
+    if (!haveUsb() || !boardSafeIdentity) return setTimeout(step, 300);
     qcMark("connected");
     document.getElementById("loopChk").checked = false;
     document.getElementById("liveChk").checked = true;
     liveChanged();
     // ---- phase 1: Run, after clicking the third pose -------------------
-    build([30, 60, 120, 150], 900);
+    build([30, 60, 120, 150], 1800);   // each move physically possible (A46-3)
     document.getElementById("projName").value = "qcrun";
     qcMark("keys-" + keys.length);
     selectKey(2);                       // the pose 120 keyframe
@@ -96,7 +96,7 @@ function step(){
             build([30, 60, 150], 80);   // the timeline asks for the 80ms floor
             document.getElementById("projName").value = "qclunge";
             playT = keyStartMs(2);      // park WITHOUT clicking: pose stays put
-            pose = pose.map(function(){ return 30; });
+            pose = pose.map(function(o, j){ return clampJ(j, 30); });
             qcMark("far-" + Math.round(playT));
             robotRun().then(function(){
               qcMark("ran2");
@@ -154,8 +154,8 @@ def run(t):
     t.contains(marks, "ran", "Run on robot finished")
     t.contains(marks, "ran2", "the third phase ran too")
     # build() clears the timeline first, so the clicked keyframe is index 2
-    # of exactly four and one 900 ms move sits before it
-    t.contains(marks, "parked-900",
+    # of exactly four and one 1800 ms move sits before it
+    t.contains(marks, "parked-1800",
                "clicking a keyframe parks the clock at its own time")
 
     # Run also keeps a copy as last.yaml (A44-2); that copy is
@@ -183,7 +183,7 @@ def run(t):
                "the resumed file carries the speed in force there")
 
     # ---- phase 2: hiding the tab hands over from HERE --------------------
-    t.contains(marks, "hidden-1800",
+    t.contains(marks, "hidden-3600",
                "the clock was parked at the last move before the tab was hidden")
     p2 = poses_in(hand[1])
     t.eq(len(p2), 1, "the tab-hide handover wrote only the move still to come")
@@ -193,6 +193,9 @@ def run(t):
          "the move already played is nowhere in a handed-over file", hand[1])
 
     # ---- phase 3: the first move is never quicker than the distance ------
+    # The park is made on the 80 ms timeline; checked playback raises those
+    # times, so Run must re-find "start of move 2" on the raised clock instead
+    # of reading 80 ms as "mid move 1" and replaying it (A46-3).
     p3 = poses_in(lunge[1])
     t.eq(len(p3), 1, "the third run also wrote only what is still to come")
     if not p3:

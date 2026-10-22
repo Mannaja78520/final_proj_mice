@@ -282,6 +282,7 @@ const HANDS = [{ side: "L", label: "Left hand" }, { side: "R", label: "Right han
 // servo angle where the arm actually hangs — adjust it in the Rig setup
 // card, never in code. Persisted in the browser + saved into projects.
 const DEFAULT_RIG = {
+  extraClearanceMm: 0,       // extra space BETWEEN parts, above the 4 mm base
   // left and right arm lengths are separate — an STL on one side never
   // changes the other side.
   // DEFAULTS SCALED TO THE REAL ROBOT (measured from nong_assembly.STEP, mm):
@@ -1605,6 +1606,9 @@ function fkPoints(p) {
 
 // returns null (safe) or a short reason string
 function collisionAt(p) {
+  const extra = RIG.extraClearanceMm ?? 0;
+  if (!Number.isFinite(extra) || extra < 0) return "the extra safety gap is invalid";
+  const clearance = CLEAR + extra;
   const d = RIG.dims, k = fkPoints(p);
   const hx = d.torsoW / 2, hy = d.torsoH / 2, hz = d.torsoD / 2;
   const headC = new THREE.Vector3(0, hy + 68, 0);
@@ -1620,17 +1624,17 @@ function collisionAt(p) {
       const t = s.t0 + (1 - s.t0) * i / 6;
       const pt = segPoint(s.a, s.b, t);
       const r = t > 0.9 && s.n.includes("forearm") ? R_WRIST : s.r; // wrist ball
-      if (distToBox(pt, hx, hy, hz) < r + CLEAR) return s.n + " hits the body";
-      if (pt.distanceTo(headC) < r + R_HEAD + CLEAR) return s.n + " hits the head";
+      if (distToBox(pt, hx, hy, hz) < r + clearance) return s.n + " is too close to the body";
+      if (pt.distanceTo(headC) < r + R_HEAD + clearance) return s.n + " is too close to the head";
     }
   }
   // left arm vs right arm (all segment pairs)
   const L = [segs[0], segs[1]], R = [segs[2], segs[3]];
   for (const sl of L)
     for (const sr of R)
-      if (segSegDist(sl.a, sl.b, sr.a, sr.b) < sl.r + sr.r + CLEAR)
-        return sl.n + " hits the " + sr.n;
-  if (k.wrL.distanceTo(k.wrR) < 2 * R_WRIST + CLEAR) return "the hands hit each other";
+      if (segSegDist(sl.a, sl.b, sr.a, sr.b) < sl.r + sr.r + clearance)
+        return sl.n + " is too close to the " + sr.n;
+  if (k.wrL.distanceTo(k.wrR) < 2 * R_WRIST + clearance) return "the hands are too close to each other";
   return null;
 }
 
@@ -1645,13 +1649,8 @@ function clearBadMarks() { keys.forEach(k => delete k.bad); }
 // stuck; and Play said "the 3D preview will play so you can see where" while
 // hubPlay() and the live sends drove the real arm anyway.
 //
-// Now: the preview always plays — seeing the crash is how you fix it — and the
-// ROBOT only moves if you say so. Forcing is allowed because the check works
-// from the rig's dimensions, and a rig that does not match the real robot can
-// call a safe move a crash. It is your arm; you can see it.
-//
-// The permission lasts for one action. Any edit to the timeline clears it, so
-// a forced run never silently covers a movement you changed afterwards.
+// Preview can show a refused move, but the robot cannot bypass this gate.
+// Match the model and clothing gap in Setup before asking for another route.
 let crashForced = false;
 let previewOnly = false;   // this run draws, but does not drive the arm
 
@@ -1660,17 +1659,12 @@ function crashGate(action) {
   if (!problems.length) { crashForced = false; return true; }
   const shown = problems.slice(0, 6).join("\n") +
     (problems.length > 6 ? "\n…and " + (problems.length - 6) + " more" : "");
-  const go = confirm(
-    "THE ROBOT WILL CRASH\n\n" + shown +
-    "\n\nThe bad keyframes are marked RED in the timeline.\n\n" +
-    "OK      = " + action + " ANYWAY — the arm may hit itself\n" +
-    "Cancel  = stop, and fix it first");
-  crashForced = go;
+  crashForced = false;
   const st = $("tlStat");
-  if (st) st.textContent = go
-    ? "⚠ FORCED past the crash check — the arm may hit itself"
-    : "stopped: this movement crashes (the red keyframes)";
-  return go;
+  const message="Not sent: this movement does not keep the safety gap. Fix the red keyframes or adjust the rig/gap in Setup.\n"+shown;
+  if (st) st.textContent = message;
+  notice(message);
+  return false;
 }
 
 function checkCollisions(showAlert) {
@@ -1710,23 +1704,47 @@ function checkCollisions(showAlert) {
 // gestures while talking. A move is a straight line in joint space (the board
 // eases every joint together), so the fast answer is that line, checked with
 // collisionAt() on THIS rig's sizes. Only when the line hits does a planner
-// look for a way round: RRT-Connect from both ends, then shortcuts, which
-// leaves a short path close to what RRT* would give. The choices are DATA in
+// look for a way round: a quick RRT-Connect seed, then genuine RRT* parent
+// selection and rewiring, followed by checked shortcuts. The choices are DATA in
 // safe_path.json beside this page (planner, step, budgets); the long story is
 // in qc/checks/check_safe_path.py.
 let SAFE = {
-  planner: "rrt-connect",   // "straight" = never go round: a hit is a refusal
-  checkDeg: 3,              // biggest joint change between two checked points
+  planner: "rrt-star",      // "straight" refuses; rrt-connect remains available
+  checkDeg: 1,              // biggest joint change between two checked points
   stepDeg: 12,              // how far a tree grows per try
   goalBias: 0.2,
   budgetMs: 1500,           // planning in the editor (video, gestures)
   liveBudgetMs: 60,         // planning while following: miss it and the arm holds
   shortcuts: 60,
   seed: 1,
+  seedBudgetMs: 40,
+  optimizeMs: 80,
+  sliceMs: 12,
+  maxNodes: 2000,
+  rewireFactor: 1.1,
 };
-fetch("safe_path.json").then(r => r.json()).then(j => {
-  Object.keys(SAFE).forEach(k => { if (k in j) SAFE[k] = j[k]; });
-}).catch(() => {});        // no file: the built-in values above
+let SAFE_ERROR = "";
+function loadSafeSettings(j) {
+  const bounds = { checkDeg: [0.05, 10], stepDeg: [0.1, 180], goalBias: [0, 1],
+    budgetMs: [1, 30000], liveBudgetMs: [1, 5000], shortcuts: [0, 500],
+    seed: [0, 4294967295], seedBudgetMs: [0, 100], optimizeMs: [0, 1000],
+    sliceMs: [1, 50], maxNodes: [2, 10000], rewireFactor: [1, 5] };
+  if (!j || typeof j !== "object") { SAFE_ERROR = "invalid path settings"; return false; }
+  const next = { ...SAFE };
+  for (const key of Object.keys(SAFE)) if (key in j) next[key] = j[key];
+  if (!["straight", "rrt-connect", "rrt-star"].includes(next.planner)) {
+    SAFE_ERROR = "unknown path planner"; return false;
+  }
+  for (const [key, [lo, hi]] of Object.entries(bounds)) {
+    if (!Number.isFinite(next[key]) || next[key] < lo || next[key] > hi ||
+        (["shortcuts", "seed", "maxNodes"].includes(key) && !Number.isInteger(next[key]))) {
+      SAFE_ERROR = "invalid path setting: " + key; return false;
+    }
+  }
+  Object.assign(SAFE, next); SAFE_ERROR = ""; return true;
+}
+fetch("safe_path.json").then(r => r.json()).then(loadSafeSettings).catch(() => {});
+function safeRevision() { return JSON.stringify([SAFE, SAFE_ERROR, RIG]); }
 
 // Seeded, so a plan made twice is the same plan (and QC can repeat it).
 function safeRng(seed) {
@@ -1743,30 +1761,150 @@ function safeLerp(a, b, f) { return a.map((v, j) => v + (b[j] - v) * f); }
 function poseHit(p) { return collisionAt(p); }
 // null when every checked point on the straight move a->b is clear
 function pathHit(a, b) {
-  const n = Math.max(1, Math.ceil(safeGap(a, b) / SAFE.checkDeg));
-  for (let s = 1; s <= n; s++) {
+  if (SAFE_ERROR || !Number.isFinite(SAFE.checkDeg) || SAFE.checkDeg <= 0)
+    return SAFE_ERROR || "invalid collision sampling distance";
+  const n = Math.max(1, Math.ceil(safeGap(a, b) / Math.max(0.05, Math.min(1, SAFE.checkDeg))));
+  for (let s = 0; s <= n; s++) {
     const hit = collisionAt(safeLerp(a, b, s / n));
     if (hit) return hit;
   }
   return null;
 }
 // a -> b without a hit. { path: [a, ..., b], how: "straight"|"around", ms }
-// or { fail: why }. `a` is assumed clear: it is where the arm already is.
+// or { fail: why }. Both endpoints, including the source, must be valid.
 function planSafe(a, b, budgetMs, seed) {
-  const t0 = performance.now();
   const saved = pose;
   try {
-    const endHit = poseHit(b);
-    if (endHit) return { fail: "the pose itself: " + endHit };
-    if (!pathHit(a, b)) return { path: [a.slice(), b.slice()], how: "straight", ms: performance.now() - t0 };
-    if (SAFE.planner === "straight") return { fail: "the move goes through the body, and going round is off" };
-    const path = rrtConnect(a, b, budgetMs ?? SAFE.budgetMs, safeRng(seed ?? SAFE.seed), t0);
-    if (!path) return { fail: "no way round found in " + Math.round(budgetMs ?? SAFE.budgetMs) + " ms" };
-    return { path: safeShortcut(path, safeRng((seed ?? SAFE.seed) + 7)), how: "around", ms: performance.now() - t0 };
+    const search = safeSearch(Array.isArray(a) ? a.slice() : a, Array.isArray(b) ? b.slice() : b, budgetMs, seed);
+    let result;
+    do { result = search.next(); } while (!result.done);
+    return result.value;
   } finally {
     pose = saved;
     applyPose();
   }
+}
+// Live search yields between iterations. sliceMs is a scheduling target;
+// one geometry check and final path validation must finish before yielding.
+async function planSafeAsync(a, b, budgetMs, seed, cancelled = () => false) {
+  const revision = safeRevision();
+  const stale = () => cancelled() || revision !== safeRevision();
+  const search = safeSearch(Array.isArray(a) ? a.slice() : a, Array.isArray(b) ? b.slice() : b, budgetMs, seed);
+  for (;;) {
+    if (stale()) return { fail: "movement cancelled or safety settings changed", cancelled: true };
+    const saved = pose, until = performance.now() + Math.max(1, SAFE.sliceMs);
+    let result;
+    try {
+      do { result = search.next(); } while (!result.done && performance.now() < until);
+    } finally { pose = saved; applyPose(); }
+    if (result.done) return stale() ? { fail: "movement cancelled or safety settings changed", cancelled: true } : result.value;
+    await new Promise(resolve => setTimeout(resolve, 0));
+  }
+}
+function safePoseError(q) {
+  if (SAFE_ERROR) return SAFE_ERROR;
+  if (!Array.isArray(q) || q.length !== NJ) return "a pose needs all " + NJ + " joints";
+  for (let j = 0; j < NJ; j++) {
+    if (!Number.isFinite(RIG.min[j]) || !Number.isFinite(RIG.max[j]) || RIG.min[j] > RIG.max[j])
+      return "the rig has invalid joint limits";
+    if (!Number.isFinite(q[j])) return "a joint angle is not a number";
+    if (q[j] < RIG.min[j] - 1e-6 || q[j] > RIG.max[j] + 1e-6)
+      return "joint " + (j + 1) + " is outside the rig limits";
+  }
+  return poseHit(q);
+}
+function* safeSearch(a, b, budgetMs, seed) {
+  const t0 = performance.now(), budget = Math.max(1, budgetMs ?? SAFE.budgetMs);
+  for (const [label, q] of [["starting pose", a], ["destination", b]]) {
+    const error = safePoseError(q);
+    if (error) return { fail: label + ": " + error };
+  }
+  const stats = { rewires: 0, parentChoices: 0, improvements: 0 };
+  let path, how = "straight";
+  if (!pathHit(a, b)) path = [a.slice(), b.slice()];
+  else {
+    how = "around";
+    if (SAFE.planner === "straight") return { fail: "the move goes through the body, and going round is off" };
+    if (SAFE.planner === "rrt-connect") path = rrtConnect(a, b, budget, safeRng(seed ?? SAFE.seed), t0);
+    else path = yield* rrtStar(a, b, budget, safeRng(seed ?? SAFE.seed), t0, stats);
+    if (!path) return { fail: "no checked way round found in " + Math.round(budget) + " ms" };
+    path = safeShortcut(path, safeRng((seed ?? SAFE.seed) + 7));
+  }
+  // Check what will actually go over the wire, after rounding/shortcuts.
+  path = path.map((q, i) => i === 0 ? a.slice() : q.map(v => +fmtA(v)));
+  for (let i = 0; i < path.length; i++) {
+    if (safePoseError(path[i]) || (i && pathHit(path[i - 1], path[i])))
+      return { fail: "the final rounded path is not clear; the robot will hold" };
+  }
+  return { path, how, planner: SAFE.planner, stats, ms: performance.now() - t0 };
+}
+// RRT*: minimum-cost checked parent, neighbor rewiring, descendant cost updates.
+// A short connect search supplies an initial answer; rewiring can improve it.
+function* rrtStar(a, b, budgetMs, rnd, t0, stats) {
+  const end = t0 + budgetMs;
+  const body = (q, f = 0.5) => q.concat([a[8] + (b[8] - a[8]) * f, a[9] + (b[9] - a[9]) * f]);
+  const distance = (p, q) => Math.hypot(...p.map((v, j) => v - q[j]));
+  const free = (p, q) => !pathHit(body(p), body(q));
+  const goal = b.slice(0, ARMJ), nodes = [], goals = new Set();
+  const add = (q, up) => {
+    const n = { q, up, children: new Set(), cost: up < 0 ? 0 : nodes[up].cost + distance(nodes[up].q, q) };
+    nodes.push(n);
+    if (up >= 0) nodes[up].children.add(nodes.length - 1);
+    return nodes.length - 1;
+  };
+  add(a.slice(0, ARMJ), -1);
+  const seeded = rrtConnect(a, b, Math.min(budgetMs * 0.25, SAFE.seedBudgetMs), rnd, t0);
+  if (seeded) for (let i = 1; i < seeded.length; i++) add(seeded[i].slice(0, ARMJ), nodes.length - 1);
+  if (seeded) goals.add(nodes.length - 1);
+  let best = seeded ? nodes.length - 1 : -1;
+  let bestCost = best < 0 ? Infinity : nodes[best].cost;
+  let improveUntil = seeded ? Math.min(end, performance.now() + SAFE.optimizeMs) : end;
+  while (performance.now() < improveUntil && nodes.length < SAFE.maxNodes) {
+    const sample = rnd() < SAFE.goalBias ? goal : RIG.min.slice(0, ARMJ).map((l, j) => l + rnd() * (RIG.max[j] - l));
+    const ranked = nodes.map((n, i) => ({ i, d: distance(n.q, sample) })).sort((x, y) => x.d - y.d);
+    const nearest = nodes[ranked[0].i].q;
+    const gap = Math.max(...sample.map((v, j) => Math.abs(v - nearest[j])));
+    if (gap < 1e-6) { yield; continue; }
+    const q = nearest.map((v, j) => v + (sample[j] - v) * Math.min(1, SAFE.stepDeg / gap));
+    const k = Math.min(nodes.length, Math.ceil(SAFE.rewireFactor * Math.E * (1 + 1 / ARMJ) * Math.log(nodes.length + 1)));
+    const near = nodes.map((n, i) => ({ i, d: distance(n.q, q) })).sort((x, y) => x.d - y.d).slice(0, k);
+    const parents = near.slice().sort((x, y) => nodes[x.i].cost + x.d - nodes[y.i].cost - y.d);
+    let parent = -1;
+    for (const n of parents) {
+      if (performance.now() >= end) break;
+      if (free(nodes[n.i].q, q)) { parent = n.i; break; }
+    }
+    if (parent < 0) { yield; continue; }
+    if (parent !== ranked[0].i) stats.parentChoices++;
+    const index = add(q, parent);
+    for (const n of near) {
+      if (performance.now() >= end) break;
+      const newCost = nodes[index].cost + n.d;
+      if (n.i === parent || newCost + 1e-7 >= nodes[n.i].cost || !free(q, nodes[n.i].q)) continue;
+      const delta = newCost - nodes[n.i].cost;
+      nodes[nodes[n.i].up].children.delete(n.i);
+      nodes[n.i].up = index;
+      nodes[index].children.add(n.i);
+      const pending = [n.i];
+      while (pending.length) { const child = pending.pop(); nodes[child].cost += delta; pending.push(...nodes[child].children); }
+      stats.rewires++;
+    }
+    if (performance.now() < end && free(q, goal)) goals.add(index);
+    for (const i of goals) {
+      const cost = nodes[i].cost + distance(nodes[i].q, goal);
+      if (cost + 1e-7 < bestCost) {
+        if (best < 0) improveUntil = Math.min(end, performance.now() + SAFE.optimizeMs);
+        else stats.improvements++;
+        best = i; bestCost = cost;
+      }
+    }
+    yield;
+  }
+  if (best < 0) return null;
+  const qs = [goal];
+  for (let i = best; i >= 0; i = nodes[i].up) if (distance(nodes[i].q, qs[qs.length - 1]) > 1e-7) qs.push(nodes[i].q);
+  qs.reverse();
+  return qs.map((q, i) => body(q, i / (qs.length - 1)));
 }
 // Two trees, one from each end, each try reaching for the other. Only the 8
 // ARM joints are searched: the waist and shrug turn the body and arms
@@ -1800,11 +1938,12 @@ function rrtConnect(a, b, budgetMs, rnd, t0) {
   };
   // keep growing T toward q until it gets there (the index) or is blocked
   const connect = (T, q) => {
-    for (;;) {
+    while (performance.now() - t0 < budgetMs) {
       const i = extend(T, q);
       if (i < 0) return -1;
       if (Math.max(...T[i].q.map((v, j) => Math.abs(v - q[j]))) < 1e-6) return i;
     }
+    return -1;
   };
   const chain = (T, i) => { const out = []; for (; i >= 0; i = T[i].up) out.push(T[i].q); return out; };
   let X = A, Y = B;
@@ -1832,7 +1971,7 @@ function safeShortcut(path, rnd) {
     const i = Math.floor(rnd() * (p.length - 2)), k = i + 2 + Math.floor(rnd() * (p.length - i - 2));
     if (k < p.length && !pathHit(p[i], p[k])) p = p.slice(0, i + 1).concat(p.slice(k));
   }
-  return p.map(q => q.map((v, j) => clampJ(j, v)));
+  return p;
 }
 // A list of timeline keys made safe in one pass (video, recording, gestures):
 // a key whose pose hits is dropped (its time goes to the move before, so the
@@ -1888,6 +2027,290 @@ function safeSay(r) {
   if (r.dropped) bits.push(r.dropped + " pose" + (r.dropped > 1 ? "s" : "") + " would make the arm hit itself, so the arm holds instead");
   if (r.failed) bits.push(r.failed + " move" + (r.failed > 1 ? "s" : "") + " had no safe way round, so the arm holds instead");
   return bits.length ? "Safe path: " + bits.join("; ") + "." : "";
+}
+// One owner for Studio motion setup and individual checked waypoints.
+let safeMotionEpoch = 0, safeGoalRevision = 0;
+let safeMotionTail = Promise.resolve(), safeCancelTail = Promise.resolve(), lastSafeMove = Promise.resolve(true);
+let safeTimelineCache = null, timelinePreparing = false;
+let safeActiveDevice = null;
+function safeDevice() { return {dev:moduleDev(), port:serialPort, bus:busId(), target:safeTarget()}; }
+async function safeDeviceCmd(device,c) {
+  if (device.dev) {
+    const q=new URLSearchParams({dev:device.dev,c});
+    const r=await fetch('/api/dev/cmd?'+q);
+    if(!r.ok)throw new Error(await r.text());
+    return (await r.text()).trim();
+  }
+  return serialCmd(c,{port:device.port,id:device.bus});
+}
+function withSafeMotion(work) {
+  const result = safeMotionTail.catch(() => {}).then(async()=>{await safeCancelTail;return work();});
+  safeMotionTail = result.catch(() => {});
+  return result;
+}
+function safeTarget() { return moduleDev() + "|" + (boardSafeIdentity || ""); }
+function safeMotionNote(text, warning = false) {
+  if ($("robotStat")) $("robotStat").textContent = text;
+  if ($("tlStat")) $("tlStat").textContent = text;
+  if (warning) notice(text);
+}
+function cancelSafeMotion(reason) {
+  const device=safeActiveDevice || (haveRobot() ? safeDevice() : null);
+  liveAbort();
+  if(reason!=='sequence takeover') {
+    playing=false;entryHold=false;seekToken++;
+    if($('playBtn'))$('playBtn').textContent='▶ Play';keepAwake(false);
+  }
+  if (!currentUser || !device) return Promise.resolve(false);
+  const stop=safeCancelTail.catch(()=>{}).then(async () => {
+    await hubStop();
+    try { await safeDeviceCmd(device,"STOP"); } catch (e) { safeMotionNote("Could not confirm Stop: " + e.message, true); }
+    return false;
+  });
+  safeCancelTail=stop;return stop;
+}
+function safeStale(epoch, device, revision) {
+  return !currentUser || !haveRobot() || epoch !== safeMotionEpoch || device !== safeTarget() || revision !== safeRevision();
+}
+async function safeIdle(stale, expected, progress) {
+  const deadline = performance.now() + 90000;
+  while (!stale()) {
+    const status = await getStatus();
+    if (stale()) return null;
+    const q = status.module && status.module.joints;
+    if (!Array.isArray(q) || q.length !== NJ || q.some(v => !Number.isFinite(v)))
+      throw new Error("the robot did not report its current pose");
+    if(progress)progress(status);
+    if(typeof status.module.moving!=='boolean' || !status.seq || typeof status.seq.running!=='boolean')
+      throw new Error('the robot did not report whether it is moving');
+    if (!status.module.moving && !status.seq.running) {
+      if (expected && safeGap(q, expected) > 0.15)
+        throw new Error("the robot stopped away from the checked waypoint; reconnect before retrying");
+      return status;
+    }
+    if (performance.now() >= deadline) throw new Error("the robot did not confirm that movement finished");
+    await new Promise(resolve => setTimeout(resolve, 60));
+  }
+  return null;
+}
+async function safeTakeover(stale) {
+  if (stale()) return null;
+  safeActiveDevice=safeDevice();
+  await hubStop();
+  if (stale()) return null;
+  const reply = await rawCmd("STOP");
+  if (!/^OK\b/.test(reply)) throw new Error(reply || "Stop was not acknowledged");
+  const status = await safeIdle(stale);
+  if (!status) return null;
+  const m = status.module;
+  if (boardSafeIdentity && String(status.chip || status.id || "") !== boardSafeIdentity)
+    throw new Error("a different robot answered; reconnect first");
+  for (let j = 0; j < NJ; j++) {
+    if (!Array.isArray(m.min) || !Array.isArray(m.max) || !Number.isFinite(m.min[j]) || !Number.isFinite(m.max[j]) ||
+        RIG.min[j] < m.min[j] - 0.01 || RIG.max[j] > m.max[j] + 0.01)
+      throw new Error("Studio limits exceed the robot limits; match them in Setup before moving");
+  }
+  return status;
+}
+// Keep endpoint cues and holds on their original destination; onset cues start
+// with the first detour leg. Each eased leg gets the physical minimum time.
+function safeLegKeys(path, key) {
+  const lengths = path.slice(1).map((q,i) => safeGap(path[i],q));
+  const need = path.slice(1).map((q,i) => Math.ceil(Math.max(MIN_MOVE_MS,minTime(path[i],q))));
+  const total = lengths.reduce((a,b)=>a+b,0) || 1;
+  const spare = Math.max(0,(key.t || 0)-need.reduce((a,b)=>a+b,0));
+  return path.slice(1).map((q,i) => ({...key,pose:q.slice(),
+    t:Math.ceil(need[i]+spare*lengths[i]/total), hold:i===need.length-1 ? key.hold || 0 : 0,
+    cues:i===0 ? (key.cues || []).slice() : [],
+    cuesAfter:i===need.length-1 ? (key.cuesAfter || []).slice() : [],
+    name:i===need.length-1 ? key.name || "" : "checked detour",via:i!==need.length-1}));
+}
+async function checkedPoseUnlocked(goal, requestedMs, epoch, goalRevision, initial, progress) {
+  const device = safeTarget(), revision = safeRevision();
+  const hardStale = () => safeStale(epoch,device,revision);
+  const replaced = () => goalRevision !== null && goalRevision !== safeGoalRevision;
+  const stale = () => hardStale() || replaced();
+  const status = initial || await safeTakeover(hardStale);
+  if (!status || hardStale()) return false;
+  const source = status.module.joints.slice();
+  const plan = await planSafeAsync(source,goal,SAFE.budgetMs,SAFE.seed,hardStale);
+  if (hardStale()) return false;
+  if (plan.fail) { safeMotionNote("Not moved: " + plan.fail,true); return false; }
+  const duration = requestedMs || autoTime(source,goal,status.module.speed_dps || speedDps());
+  const legs = safeLegKeys(plan.path,{t:duration,hold:0});
+  if (plan.how === "around") safeMotionNote("RRT*: going around the body in " + legs.length +
+    " checked moves; keeping an extra " + (RIG.extraClearanceMm || 0) + " mm gap.",true);
+  let actual = source;
+  for (let index=0;index<legs.length;index++) {
+    const leg=legs[index];
+    if (hardStale() || (index>0 && replaced())) return false;
+    // Validate from the reported endpoint of the previous leg, not its target.
+    if (safePoseError(actual) || pathHit(actual,leg.pose))
+      throw new Error("the reported pose does not have a clear route to the next waypoint");
+    const started = performance.now();
+    const reply = await rawCmd("POSE " + leg.pose.map(fmtA).join(" ") + " T " + leg.t);
+    liveRtt += ((performance.now()-started)-liveRtt)*0.25;
+    if (!/^OK\b/.test(reply)) throw new Error(reply || "the robot refused the move");
+    if (hardStale()) return false;
+    // A newer drag finishes this checked leg, then replaces the remaining
+    // route. Stop/Live-off/settings changes cancel immediately after an await.
+    const arrived = await safeIdle(hardStale,leg.pose,progress);
+    if (!arrived) return false;
+    actual = arrived.module.joints.slice();
+    if (entryHold) { pose=actual.slice();applyPose();renderSliders(); }
+  }
+  return !stale();
+}
+async function checkedPose(goal,ms,epoch,goalRevision,target) {
+  return withSafeMotion(async () => {
+    if(target!==safeTarget() || epoch!==safeMotionEpoch)return false;
+    const device=safeDevice();
+    try { return await checkedPoseUnlocked(goal,ms,epoch,goalRevision); }
+    catch (e) {
+      liveAbort();
+      try { await safeDeviceCmd(device,"STOP"); } catch (_) {}
+      safeMotionNote("Movement stopped: " + e.message,true);
+      return false;
+    }
+  });
+}
+function safeTimelineSignature() { return keysSignature()+"|"+!!$("loopChk").checked+"|"+safeRevision(); }
+function checkedTimeline() {
+  return safeTimelineCache && safeTimelineCache.sig===safeTimelineSignature() ? safeTimelineCache.keys : null;
+}
+// A clock parked on the unchecked timeline (a keyframe click before Run) lands
+// on a different move once times are raised or detours added: the same 80 ms
+// park became "mid move 1" and Run replayed it. Re-find the same keyframe and
+// the same share of its move or hold in the checked list.
+function safeClockGroups(K) {
+  const groups=[];let at=K.length ? K[0].hold || 0 : 0;
+  for(let j=1;j<K.length;j++) {
+    const id=K[j].loopReturn ? 'loop' : K[j].src;
+    let g=groups[groups.length-1];
+    if(!g || g.id!==id) {g={id,start:at,move:0,hold:0};groups.push(g);}
+    g.move+=K[j].t || 0;g.hold+=K[j].hold || 0;at+=(K[j].t || 0)+(K[j].hold || 0);
+  }
+  return {first:K.length ? K[0].hold || 0 : 0,groups,total:at};
+}
+function safeRemapClock(ms, before, after) {
+  const a=safeClockGroups(before), b=safeClockGroups(after);
+  if(!(ms>0))return 0;
+  if(ms<a.first)return a.first ? b.first*ms/a.first : 0;
+  const g=a.groups.find(x=>ms<x.start+x.move+x.hold);
+  const n=g && b.groups.find(x=>x.id===g.id);
+  if(!n)return g ? Math.min(ms,b.total) : b.total;
+  const offset=ms-g.start;
+  if(offset<g.move)return n.start+(g.move ? n.move*offset/g.move : 0);
+  return n.start+n.move+Math.min(n.hold,offset-g.move);
+}
+async function ensureSafeTimeline(cancelled = () => false) {
+  const sig = safeTimelineSignature();
+  if (checkedTimeline()) return true;
+  const before = playKeys();
+  const source = buildPlayKeys().map(k=>({...k,pose:k.pose.slice()}));
+  if (!source.length) return false;
+  const stale=()=>cancelled() || sig!==safeTimelineSignature();
+  const error=safePoseError(source[0].pose);
+  if (error) {safeMotionNote("Cannot play: starting pose "+error,true);return false;}
+  const out=[source[0]], loop=!!$("loopChk").checked;
+  const remaining=source.slice(1);
+  if(loop && source.length>1) remaining.push({...source[0],hold:0,cues:[],cuesAfter:[],
+    t:autoTime(source[source.length-1].pose,source[0].pose,speedDps()),loopReturn:true});
+  let around=0;
+  for(const key of remaining) {
+    const plan=await planSafeAsync(out[out.length-1].pose,key.pose,SAFE.budgetMs,SAFE.seed,stale);
+    if(stale())return false;
+    if(plan.fail) {safeMotionNote("Cannot play: "+plan.fail+". Fix the highlighted pose or reduce the extra gap.",true);return false;}
+    if(plan.how==='around')around++;
+    out.push(...safeLegKeys(plan.path,key));
+  }
+  if(stale())return false;
+  playT=safeRemapClock(playT,before,out);
+  safeTimelineCache={sig,keys:out,loop};
+  _pkCache=null;
+  if(around) safeMotionNote("RRT*: "+around+" move(s) rerouted around the body. The preview and robot use these checked waypoints.",true);
+  return true;
+}
+// Snapshot the validated show. Stop, target changes and edits during upload
+// invalidate startup before any native MOVE can reach the board.
+async function startCheckedSequence(fromMs, keepCopy = true) {
+  const epoch=safeMotionEpoch, device=safeTarget(), revision=safeRevision();
+  const sig=safeTimelineSignature();
+  const stale=()=>safeStale(epoch,device,revision) || sig!==safeTimelineSignature();
+  if(!(await ensureSafeTimeline(stale)) || stale())return null;
+  const destination=poseAt(fromMs).slice();
+  const {name,yaml}=buildYaml(fromMs);
+  const part=fromMs>0 && keyIndexAtMs(fromMs)>0;
+  const file=(part ? name+'.part' : name)+'.yaml';
+  return withSafeMotion(async()=>{
+    if(stale())return null;
+    safeActiveDevice=safeDevice();
+    // A partial file starts at its retained keyframe. Its original loop
+    // closure belongs to the complete show, so a partial run plays once.
+    const nativeYaml=part ? yaml.replace(/^loop:\s*true\s*$/m,'loop: false') : yaml;
+    await sdUpload(file,nativeYaml);
+    if(stale())return null;
+    const kept=keepCopy ? await keepLastRun(nativeYaml,file) : '';
+    if(stale())return null;
+    const initial=await safeTakeover(stale);
+    if(!initial || stale())return null;
+    if(!(await checkedPoseUnlocked(destination,0,epoch,null,initial)) || stale())return null;
+    const reply=await rawCmd('MOVE '+file);
+    if(stale()) {await safeDeviceCmd(safeActiveDevice,'STOP');return null;}
+    if(!/^OK\b/.test(reply))throw new Error(reply || 'the robot did not start the sequence');
+    return {file,name,part,kept};
+  });
+}
+// Direct Web Serial has no native hub clock. Advance one checked move at a
+// time, including entry and holds, and draw the board's reported position.
+async function directSafePlay(fromMs) {
+  const epoch=safeMotionEpoch, device=safeTarget(), revision=safeRevision(),sig=safeTimelineSignature();
+  const stale=()=>!playing || safeStale(epoch,device,revision) || sig!==safeTimelineSignature();
+  const K=checkedTimeline().map(k=>({...k,pose:k.pose.slice()}));
+  const phases=[];let at=0;
+  const add=(key,ms,move)=>{if(ms>0)phases.push({key,start:at,end:at+ms,move});at+=ms;};
+  add(K[0],K[0].hold || 0,false);
+  K.slice(1).forEach(k=>{add(k,k.t,true);add(k,k.hold || 0,false);});
+  const draw=(q,time)=>{
+    pose=q.slice();playT=time;applyPose();renderSliders();
+    $('scrub').value=at ? Math.round(time/at*1000) : 0;
+    $('tlTime').textContent=(time/1000).toFixed(1)+'s / '+(at/1000).toFixed(1)+'s';
+  };
+  const hold=async(ms,update)=>{
+    const start=performance.now();
+    while(!stale() && performance.now()-start<ms) {
+      if(update)update(performance.now()-start);
+      await new Promise(r=>setTimeout(r,40));
+    }
+  };
+  entryHold=true;
+  return withSafeMotion(async()=>{try {
+    let status=await safeTakeover(stale);
+    if(!status || stale())return false;
+    if(!(await checkedPoseUnlocked(poseAt(fromMs),0,epoch,null,status,s=>draw(s.module.joints,fromMs))) || stale())return false;
+    let cursor=fromMs;
+    do {
+      for(const phase of phases) {
+        if(phase.end<=cursor)continue;
+        if(stale())return false;
+        const start=Math.max(cursor,phase.start),duration=phase.end-start,clock=performance.now();
+        if(phase.move) {
+          status=await safeIdle(stale);
+          if(!status || stale())return false;
+          if(!(await checkedPoseUnlocked(phase.key.pose,duration,epoch,null,status,s=>
+            draw(s.module.joints,Math.min(phase.end,start+performance.now()-clock)))) || stale())return false;
+          await hold(Math.max(0,duration-(performance.now()-clock)));
+        } else await hold(duration,elapsed=>draw(phase.key.pose,start+elapsed));
+        if(stale())return false;
+        draw(phase.key.pose,phase.end);cursor=phase.end;
+      }
+      cursor=0;
+    }while($('loopChk').checked && !stale());
+    return !stale();
+  }catch(e){await cancelSafeMotion('direct playback failed');safeMotionNote('Playback stopped: '+e.message,true);return false;}
+  finally {
+    if(epoch===safeMotionEpoch) {playing=false;entryHold=false;$('playBtn').textContent='▶ Play';keepAwake(false);}
+  }});
 }
 // --- sliders ---
 function renderSliders() {
@@ -2577,8 +3000,13 @@ function moveKey(d) {
 // re-timed value rather than the number stored against it.
 function keyTravelMs(i) {
   const K = playKeys();
-  const at = K.findIndex(k => k.src === i);
-  if (at > 0) return K[at].t;                 // its move, as played
+  const at = K.findIndex(k => k.src === i && !k.loopReturn);
+  if (at > 0) {
+    let travel=0;
+    for(let n=at;n<K.length && K[n].src===i && !K[n].loopReturn;n++)
+      travel+=K[n].t+(K[n].via ? K[n].hold || 0 : 0);
+    return travel;                           // all checked detour legs into this destination
+  }
   if (at === 0) return 0;                     // the start pose: nowhere to come from
   return keys[i] ? keys[i].t : 0;             // suspended: fall back to its own
 }
@@ -2589,7 +3017,7 @@ function keyTravelMs(i) {
 // clock lands where that jump begins (end of the show if none follows).
 function keyStartMs(i) {
   const K = playKeys();
-  let at = K.findIndex(k => k.src === i);
+  let at = K.findIndex(k => k.src === i && !k.loopReturn);
   if (at < 0) {
     at = K.findIndex(k => k.src > i);
     if (at < 0) return totalMs();
@@ -2627,11 +3055,12 @@ function keyIndexAtMs(ms) {
 let seekToken = 0;
 function selectKey(i) {
   const was = playing;
-  const token = ++seekToken;
+  let token = ++seekToken;
   if (was) {
     playing = false; $("playBtn").textContent = "▶ Play";
     livePause(); stopRobotSequence(); keepAwake(false);
   }
+  token=seekToken;
   selKey = i;
   let travel = 0;
   if (keys[i]) {
@@ -2645,9 +3074,11 @@ function selectKey(i) {
   // the clock follows the click: stopped, Play replays this move; playing,
   // the show continues AFTER it, since the arm is travelling there already
   playT = was ? keyStartMs(i) + keyTravelMs(i) : keyStartMs(i);
-  if (was) setTimeout(() => {
-    if (token === seekToken && !playing) togglePlay();
-  }, travel);
+  if (was) {
+    const epoch=safeMotionEpoch;
+    const arrived=liveLinked() ? lastSafeMove : new Promise(r=>setTimeout(()=>r(true),travel));
+    arrived.then(ok=>{if(ok && token===seekToken && epoch===safeMotionEpoch && !playing)togglePlay();});
+  }
   const total = totalMs();
   $("scrub").value = total ? Math.round(playT / total * 1000) : 0;
   renderTimeline();
@@ -2664,6 +3095,7 @@ function totalMs() {
 // jump there at once and ran ahead of the robot. With loop on, that travel is a
 // segment of its own: index K.length, pose K[0]. Never written to the file.
 function loopReturnMs() {
+  if (checkedTimeline() && safeTimelineCache.loop) return 0; // already a checked leg
   const K = playKeys();
   if (!$("loopChk") || !$("loopChk").checked || K.length < 2) return 0;
   return autoTime(K[K.length - 1].pose, K[0].pose, speedDps());
@@ -3075,6 +3507,7 @@ function bumpKeys() {
   // the timeline changed: a "yes, run it anyway" given for the old one does
   // not carry over to this
   crashForced = false;
+  if(playing && safeTimelineCache)cancelSafeMotion('timeline edited');
   _pkCache = null;                          // kept for explicit invalidation
   saveDraft();                              // and it is no longer only in RAM
 }
@@ -3153,6 +3586,8 @@ window.addEventListener("beforeunload", (e) => {
   e.returnValue = "";
 });
 function playKeys() {
+  const checked = checkedTimeline();
+  if (checked) return checked;
   const sig = keysSignature();
   if (_pkCache && _pkCache.sig === sig) return _pkCache.list;
   const list = buildPlayKeys();
@@ -3343,7 +3778,17 @@ function keepAwake(on) {
   } catch (e) { /* never let this break playback */ }
 }
 
-function togglePlay() {
+async function togglePlay() {
+  if (timelinePreparing) { timelinePreparing=false;cancelSafeMotion("planning cancelled");return; }
+  if (!playing) {
+    const epoch=safeMotionEpoch;
+    timelinePreparing=true;$("playBtn").textContent="⏹ Stop planning";
+    let ready=false;
+    try { ready=await ensureSafeTimeline(()=>epoch!==safeMotionEpoch); }
+    finally { timelinePreparing=false;$("playBtn").textContent="▶ Play"; }
+    if(epoch!==safeMotionEpoch)return;
+    previewOnly=!ready;
+  }
   const K = playKeys();
   if (K.length < 2) {
     $("tlStat").textContent = keys.length >= 2
@@ -3355,7 +3800,7 @@ function togglePlay() {
   // is how you fix it. Whether it also reaches the robot is a separate
   // question, and it is asked only when something is actually connected.
   if (!playing) {
-    previewOnly = false;
+    previewOnly = !checkedTimeline();
     if (checkCollisions(false).length && (liveLinked() || hubDriven())) {
       previewOnly = !crashGate("PLAY it on the robot");
       if (previewOnly) {
@@ -3396,8 +3841,8 @@ function togglePlay() {
     // From the start the hub first TRAVELS to keyframe 0 (as long as the board
     // needs); the show clock starts after. Hold the preview until then, or it
     // runs ahead of the arm by the whole entry move (A26-50).
-    if (playT === 0) { entryHold = true; hubPlay(0).then(ok => ok ? waitEntry() : (entryHold = false)); }
-    else hubPlay(playT);
+    entryHold = true;
+    hubPlay(playT).then(ok => {if(ok)return waitEntry();entryHold=false;playing=false;$("playBtn").textContent="▶ Play";keepAwake(false);});
     return;
   }
   // A segment is the move INTO a keyframe, so segmentAt() starts at 1 and
@@ -3405,9 +3850,7 @@ function togglePlay() {
   // move starts from wherever it happens to be standing instead of from the
   // start of the timeline. T is only a request: the firmware floors it per
   // joint, so a short one is stretched to what the servos can really do.
-  if (playT === 0 && K.length && liveLinked())
-    liveSend("POSE " + K[0].pose.map(fmtA).join(" ") +
-             " T " + minTime(pose, K[0].pose));
+  if (liveLinked()) directSafePlay(playT);
 }
 // A segment is handed to the module as one whole move (POSE ... T <ms>) and
 // the firmware interpolates it on its own — that is what keeps the motion
@@ -3460,18 +3903,31 @@ function hubShowSteps() {
   return steps;
 }
 async function hubPlay(fromMs) {
-  const steps = hubShowSteps();
-  if (!steps) return false;
-  try {
+  const epoch=safeMotionEpoch, device=safeTarget(), revision=safeRevision();
+  const goalRevision=safeGoalRevision;
+  const sig=safeTimelineSignature();
+  const stale=()=>safeStale(epoch,device,revision) || goalRevision!==safeGoalRevision || sig!==safeTimelineSignature();
+  return withSafeMotion(async()=>{ try {
+    if(stale() || !(await ensureSafeTimeline(stale)))return false;
+    const steps=hubShowSteps();
+    const destination=poseAt(fromMs || 0).slice();
+    const loop=$("loopChk").checked, name=($("projName").value || "sequence").trim();
+    const musicStop=showBarMusicStop();
+    const initial=await safeTakeover(stale);
+    if(!initial || stale())return false;
+    if(!(await checkedPoseUnlocked(destination,0,epoch,goalRevision,initial)) || stale())return false;
+    if (!steps || stale()) return false;
+    if(!(fromMs>0))steps[0].t=MIN_MOVE_MS; // checked entry has already reached keyframe 0
     const r = await fetch("/api/play", {
       method: "POST",
       body: JSON.stringify({
-        dev: moduleDev(), steps, loop: $("loopChk").checked,
-        name: ($("projName").value || "sequence").trim(), from_ms: Math.round(fromMs || 0),
+        dev: moduleDev(), steps, loop,
+        name, from_ms: Math.round(fromMs || 0),
         watch: !document.hidden,        // stop the arm if this page freezes (A26-46)
-        music_stop_ms: showBarMusicStop(),   // a show's track may outlive its moves
+        music_stop_ms: musicStop,   // a show's track may outlive its moves
       }),
     }).then(r => r.json());
+    if(stale()) {await hubStop();return false;}
     if (r.error) throw new Error(r.error);
     $("robotStat").textContent =
       "the HUB is playing this — it keeps going with this page closed or hidden. " +
@@ -3482,8 +3938,9 @@ async function hubPlay(fromMs) {
       + "did not move. Check the hub is still running, then press Play again. "
       + (e.message || e);
     notice($("robotStat").textContent);
+    playing=false;$("playBtn").textContent="▶ Play";keepAwake(false);
     return false;
-  }
+  }});
 }
 let entryHold = false;       // true while the hub travels to keyframe 0
 async function waitEntry() {
@@ -3520,10 +3977,7 @@ function livePause() {
   // Stop the HUB's clock FIRST, whatever the link state: a show started while
   // Live was unticked is hub-driven, and an early return here left that clock
   // running — Pause stopped the drawing but the robot carried on.
-  hubStop();
-  if (!liveLinked()) return;
-  liveAbort();        // drop moves not yet sent — pausing cancels them
-  liveSend("STOP");
+  cancelSafeMotion("paused");
   lastLiveSeg = -1;   // resume re-sends the segment, with the time still left
 }
 // ms left in the segment playT is inside — what a resume must ask for, or the
@@ -3699,6 +4153,7 @@ const DIM_LABELS = {
   shrugPivot: "shrug pivot ↑ (mm above shoulders)",
 };
 function renderRigUI() {
+  if ($("extraClearanceMm")) $("extraClearanceMm").value = RIG.extraClearanceMm ?? 0;
   const jb = $("rigJoints");
   jb.innerHTML = "";
   // WHERE EACH PALM SITS (A44-1). The hand part can be fixed to the forearm
@@ -4094,9 +4549,23 @@ function travelWarning(i) {
          `Use a wider servo (270°), a smaller gear ratio, or tighter min°/max°.`;
 }
 function rigChanged() {
+  if (typeof cancelSafeMotion === "function") cancelSafeMotion("the rig or safety gap changed");
   saveRig();
   buildRobot();
   renderSliders();
+}
+function setSafetyClearance(raw) {
+  const value = raw.trim() === "" ? NaN : Number(raw);
+  const stat = $("clearanceStat");
+  if (!Number.isFinite(value) || value < 0) {
+    stat.textContent = "Enter a distance of zero or more millimetres.";
+    $("extraClearanceMm").value = RIG.extraClearanceMm ?? 0;
+    return false;
+  }
+  RIG.extraClearanceMm = value;
+  rigChanged();
+  stat.textContent = "Saved: keep at least " + (CLEAR + value) + " mm between parts. Existing paths will be checked again.";
+  return true;
 }
 
 // ---- servo offset, one joint at a time -----------------------------------
@@ -6317,15 +6786,18 @@ async function serialReadLoop() {
 // the queue to swallow the FIRST command's reply - every later reply then
 // went to the wrong caller. Replies carry no id, so order is the only match.
 let serialChain = Promise.resolve();
-function serialCmd(c) {
-  const run = serialChain.then(() => serialCmdNow(c));
+function serialCmd(c, connection = {port:serialPort,id:busId()}) {
+  const epoch=safeMotionEpoch;
+  const run = serialChain.then(() => /^POSE\s/i.test(c) && epoch!==safeMotionEpoch
+    ? 'ERR movement cancelled' : serialCmdNow(c,connection));
   serialChain = run.catch(() => {});
   return run;
 }
-function serialCmdNow(c) {
+function serialCmdNow(c, connection = {port:serialPort,id:busId()}) {
   return new Promise((res, rej) => {
-    if (!serialPort || !serialPort.writable) return rej(new Error("USB not connected"));
-    const id = busId();
+    const port=connection.port;
+    if (!port || !port.writable) return rej(new Error("USB not connected"));
+    const id = connection.id;
     // direct USB: any reply line. bus mode: only "@<id> ..." from our module
     const filter = id
       ? (line) => (line.startsWith("@" + id + " ") ? line.slice(String(id).length + 2) : null)
@@ -6343,7 +6815,7 @@ function serialCmdNow(c) {
       rej(e);
     };
     try {
-      const writer = serialPort.writable.getWriter();
+      const writer = port.writable.getWriter();
       writer.write(new TextEncoder().encode(framed + "\n"))
         .catch(drop).finally(() => writer.releaseLock());
     } catch (e) { drop(e); }
@@ -6431,6 +6903,7 @@ window.addEventListener("DOMContentLoaded", function () {
 });
 
 function clearHubTarget(why) {
+  cancelSafeMotion(why);
   const hadAuto = window.HUB_AUTO;
   clearPeer(why);
   window.HUB_AUTO = "";
@@ -6473,6 +6946,8 @@ function openModule() {
 }
 async function robotCmd(c) {
   if (!currentUser) return "";
+  if (/^POSE\s/i.test(c)) return (await liveSend(c)) ? "OK checked movement finished" : "";
+  if (/^(?:MOVE\s+)?STOP\s*$/i.test(c)) { await cancelSafeMotion("Stop"); return "OK stopped"; }
   try {
     const t = await rawCmd(c);
     $("robotStat").textContent = "> " + c.slice(0, 60) + "  →  " + t.slice(0, 120);
@@ -6664,9 +7139,7 @@ async function connectLink() {
   }
 }
 function sendPose(quiet) {
-  const c = "POSE " + pose.map(fmtA).join(" "); // no T: firmware uses its speed setting
-  if (quiet) { sendPoseLive(); return; }
-  robotCmd(c);
+  return quiet ? sendPoseLive() : liveSend("POSE " + pose.map(fmtA).join(" "));
 }
 
 // Live sending: ONE command in flight at a time, newest pose wins.
@@ -6709,32 +7182,65 @@ const LIVE_T_MIN = 80, LIVE_T_MAX = 300;
 function liveT() {
   return Math.max(LIVE_T_MIN, Math.min(LIVE_T_MAX, Math.round(liveRtt * 1.3)));
 }
-function liveSend(c) { if (!currentUser) return; liveQueue.push(c); livePump(); }
-function sendPoseLive() { if (!currentUser) return; livePending = pose.slice(); livePump(); }
-function liveAbort() { liveQueue = []; livePending = null; }
+function liveSend(c) {
+  if (!currentUser) return Promise.resolve(false);
+  if (/^(?:MOVE\s+)?STOP\s*$/i.test(c)) return cancelSafeMotion("Stop");
+  const p = /^POSE\s+(.+)$/i.exec(c);
+  const work = { c, epoch:safeMotionEpoch, target:safeTarget(), goal:null, ms:0, revision:null };
+  if (p) {
+    const bits=p[1].trim().split(/\s+/), at=bits.findIndex(v=>v.toUpperCase()==='T');
+    work.goal=(at<0 ? bits : bits.slice(0,at)).map(Number);
+    work.ms=at<0 ? 0 : Number(bits[at+1]);
+    if(work.goal.length!==NJ || work.goal.some(v=>!Number.isFinite(v)) ||
+      !Number.isFinite(work.ms) || work.ms<0 || (at>=0 && at+2!==bits.length)) {
+      safeMotionNote('Not moved: invalid pose or duration',true);return Promise.resolve(false);
+    }
+  }
+  const result=new Promise(resolve=>{work.resolve=resolve;});
+  if(work.goal && !playing) {
+    if(livePending && livePending.resolve)livePending.resolve(false);
+    work.revision=++safeGoalRevision;livePending=work;
+  } else liveQueue.push(work);
+  if(work.goal)lastSafeMove=result;
+  livePump();return result;
+}
+function sendPoseLive() { return liveSend("POSE " + pose.map(fmtA).join(" ") + " T " + liveT()); }
+function liveAbort() {
+  safeMotionEpoch++;safeGoalRevision++;
+  liveQueue.forEach(work=>{if(work.resolve)work.resolve(false);});
+  if(livePending && livePending.resolve)livePending.resolve(false);
+  liveQueue=[];livePending=null;
+}
 function livePump() {
   if (liveBusy) return;
   liveBusy = true;
   (async () => {
     try {
       for (;;) {
-        let c = null;
+        let work = null;
         if (liveQueue.length) {
-          c = liveQueue.shift();                 // ordered work comes first
+          work = liveQueue.shift();                 // ordered work comes first
         } else if (livePending) {
-          // ...with the time it has, not the module's default easing speed
-          c = "POSE " + livePending.map(fmtA).join(" ") + " T " + liveT();
+          work = livePending;
           livePending = null;                    // only ever the newest pose
         }
-        if (!c) break;
+        if (!work) break;
+        const c=work.c;
+        if(work.epoch!==safeMotionEpoch || work.target!==safeTarget()){work.resolve(false);continue;}
         try {
+          if(work.goal) {
+            const ok=await checkedPose(work.goal,work.ms,work.epoch,work.revision,work.target);
+            work.resolve(ok);continue;
+          }
           const t0 = performance.now();
           const r = await rawCmd(c);
           // Measure the link from the traffic itself — no probing, and it
           // follows a link that changes (USB pulled, WiFi gone slow).
           liveRtt += ((performance.now() - t0) - liveRtt) * 0.25;
           $("robotStat").textContent = "> " + c.slice(0, 60) + "  →  " + r.slice(0, 80);
+          work.resolve(true);
         } catch (e) {
+          work.resolve(false);liveAbort();
           $("robotStat").textContent = "" + (e.message || e);
         }
       }
@@ -6920,6 +7426,7 @@ async function refreshSd() {
 }
 async function uploadYaml() {
   if (nothingToWrite("sdStat")) return;
+  if (!(await ensureSafeTimeline())) return;
   if (!crashGate("UPLOAD it")) return;
   const { name, yaml } = buildYaml();
   try {
@@ -6944,7 +7451,7 @@ async function uploadYaml() {
 function stopRobotSequence() {
   handedOff = false;
   if (!haveRobot()) return;
-  try { robotCmd("MOVE STOP"); } catch (e) {}
+  try { cancelSafeMotion('sequence takeover'); } catch (e) {}
 }
 
 // ---- keeping a show running when you leave the page --------------------
@@ -6987,13 +7494,11 @@ async function handOffToRobot() {
     // Hand over from where the show HAS GOT TO, not from the top. Hiding the
     // tab half way through used to send the arm back to keyframe 0 first —
     // the same sweep as Run, but nobody pressed anything to cause it.
-    const part = playT > 0 && keyIndexAtMs(playT) > 0;
-    const { name, yaml } = buildYaml(playT);
-    const file = (part ? name + ".part" : name) + ".yaml";
-    await sdUpload(file, yaml);              // falls back to module memory with no SD
-    // A refused MOVE must not stop the preview and claim the module has it.
-    const said = await robotCmd("MOVE " + file);
-    if (!said.startsWith("OK")) throw new Error(said || "the module did not start it");
+    const fromMs=playT;
+    await cancelSafeMotion('handover');
+    entryHold=true;
+    const started=await startCheckedSequence(fromMs,false);
+    if(!started) {handedOff=false;return;}
     // stop being the clock: the module owns the show now
     playing = false;
     keepAwake(false);
@@ -7003,7 +7508,8 @@ async function handOffToRobot() {
       + "it keeps going with this page closed. Press Stop to end it.";
   } catch (e) {
     handedOff = false;                       // it did not take: keep previewing
-  }
+    safeMotionNote('Could not hand over: '+e.message,true);
+  } finally {entryHold=false;}
 }
 
 document.addEventListener("visibilitychange", function () {
@@ -7054,37 +7560,29 @@ async function keepLastRun(yaml, file) {
 // first is what makes the check mean anything.
 async function robotRun() {
   if (nothingToWrite("sdStat")) return;     // a file with no moves does nothing
+  if (!(await ensureSafeTimeline())) return;
   if (!crashGate("RUN it on the robot")) return;
   // Run from where the clock is parked. Clicking a keyframe parks it there, so
   // Run continues the show from the pose on screen instead of sweeping back to
   // the first one — which is what the robot's arm would have to travel through.
   // A partial run is written under its own name: <name>.yaml stays the whole
   // show, so running part of it never overwrites the saved sequence.
-  const resumeMs = playT;
-  const part = resumeMs > 0 && keyIndexAtMs(resumeMs) > 0;
-  const { name, yaml } = buildYaml(resumeMs);
-  const file = (part ? name + ".part" : name) + ".yaml";
   const st = $("sdStat");
-  if (st) st.textContent = "sending " + file + " to the robot…";
+  if (st) st.textContent = "checking and sending the sequence to the robot…";
+  let started;
   try {
-    await sdUpload(file, yaml);
+    started=await startCheckedSequence(playT);
   } catch (e) {
-    if (st) st.textContent = "could not send the sequence, so nothing was run — "
+    cancelSafeMotion('sequence start failed');
+    if (st) st.textContent = "could not start the sequence — "
       + (e && e.message ? e.message : e);
     return;
   }
-  const kept = await keepLastRun(yaml, file);
-  const said = await robotCmd("MOVE " + file);
-  // robotCmd answers "" on a failure; the card said "running" anyway.
-  if (!said.startsWith("OK")) {
-    if (st) st.textContent = file + " was sent, but the robot did not start it — "
-      + (said || $("robotStat").textContent || "no answer");
-    notice(st ? st.textContent : "the robot did not start " + file);
-    return;
-  }
+  if(!started) {if(st)st.textContent='Start cancelled; check the current settings and try again.';return;}
+  const {file,name,part,kept}=started;
   if (st) st.textContent = (part
-    ? "the robot is running from the move you picked, to the end — it does not "
-      + "go back to the start. The whole show is still saved as " + name + ".yaml."
+    ? "the robot is running the checked remainder once, including any checked loop return. "
+      + "The whole show is still saved as " + name + ".yaml."
     : "the robot is running " + file + " on its own.")
     + (kept ? " Note: " + kept : keepRunOn() ? " A copy is kept on it as " + LAST_RUN_FILE + "." : "");
   if (kept) notice(kept);
@@ -7133,13 +7631,14 @@ async function robotZeroSet() {
 let monTimer = null;
 function liveChanged() {
   if ($("liveChk").checked) { $("monChk").checked = false; monitorChanged(); }
+  else cancelSafeMotion("Live turned off");
 }
 function monitorChanged() {
   if ($("monChk").checked) {
     $("liveChk").checked = false;
     // Same trap as livePause: a show started while Live was ticked belongs to
     // the HUB's clock, and switching this page to watching must end it.
-    hubStop();
+    cancelSafeMotion('monitoring');
     playing = false; $("playBtn").textContent = "▶ Play";
     $("robotStat").textContent = "monitoring…";
     // Watching needs a link. Ticked before Connect (or after a first try that
@@ -8117,6 +8616,7 @@ let dummySim = null;          // simulated pot angles, or null when not simulati
 let dummyFollowOn = false;    // the follow loop is running
 let dummyLast = null;         // the last pose read, for "did it move"
 let dummySafePose = null;     // the last pose the ROBOT was sent that was clear (A46-1)
+let dummyRobotFollowing=false;
 let dummyHeld = "";           // why the robot is holding, until a safe send
 let dummyRec = null;          // while recording: [{ pose, ms }]
 
@@ -8223,6 +8723,9 @@ async function dummyConnect() {
 // the link, and a slow bus cannot pile up requests.
 function dummyFollowChanged() {
   const mode = $("dummyFollow").value;
+  if(dummyRobotFollowing && mode!=='robot')cancelSafeMotion('dummy follow stopped');
+  dummyRobotFollowing=mode==='robot';
+  if(mode==='robot')dummySafePose=null; // first sample must reach the robot even if already displayed
   if (mode !== "off") {
     if (mode === "robot" && !(haveUsb() || haveWifi())) {
       $("dummyStat").textContent = "connect the robot first (Robot link above), then pick this again";
@@ -8253,7 +8756,8 @@ function dummySafeSend() {
     return false;
   }
   dummyHeld = "";
-  plan.path.slice(1, -1).forEach(q => liveSend("POSE " + q.map(fmtA).join(" ") + " T " + liveT()));
+  // The shared dispatcher replans from the reported pose. Sending preview
+  // waypoints separately would let newest-goal coalescing drop them.
   sendPoseLive();
   dummySafePose = want;
   return true;
@@ -8299,9 +8803,9 @@ async function dummyFollowTick() {
   try {
     const prev = dummyLast;
     const v = await dummyRead();
-    const moved = !prev || v.some((x, i) => (x === null) !== (prev[i] === null) ||
+    const moved = (mode==='robot' && !dummySafePose) || !prev || v.some((x, i) => (x === null) !== (prev[i] === null) ||
                                        (x !== null && Math.abs(x - prev[i]) >= 0.2));
-    if (moved && dummyFollowOn) {
+    if (moved && dummyFollowOn && mode===$("dummyFollow").value) {
       dummyApply(v);
       if (dummyRec) dummyRec.push({ pose: pose.slice(), ms: performance.now() });
       // The robot gets the pose through the same live path a slider drag

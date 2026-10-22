@@ -204,15 +204,18 @@ async function serialReadLoop() {
 // the queue to swallow the FIRST command's reply - every later reply then
 // went to the wrong caller. Replies carry no id, so order is the only match.
 let serialChain = Promise.resolve();
-function serialCmd(c) {
-  const run = serialChain.then(() => serialCmdNow(c));
+function serialCmd(c, connection = {port:serialPort,id:busId()}) {
+  const epoch=safeMotionEpoch;
+  const run = serialChain.then(() => /^POSE\s/i.test(c) && epoch!==safeMotionEpoch
+    ? 'ERR movement cancelled' : serialCmdNow(c,connection));
   serialChain = run.catch(() => {});
   return run;
 }
-function serialCmdNow(c) {
+function serialCmdNow(c, connection = {port:serialPort,id:busId()}) {
   return new Promise((res, rej) => {
-    if (!serialPort || !serialPort.writable) return rej(new Error("USB not connected"));
-    const id = busId();
+    const port=connection.port;
+    if (!port || !port.writable) return rej(new Error("USB not connected"));
+    const id = connection.id;
     // direct USB: any reply line. bus mode: only "@<id> ..." from our module
     const filter = id
       ? (line) => (line.startsWith("@" + id + " ") ? line.slice(String(id).length + 2) : null)
@@ -230,7 +233,7 @@ function serialCmdNow(c) {
       rej(e);
     };
     try {
-      const writer = serialPort.writable.getWriter();
+      const writer = port.writable.getWriter();
       writer.write(new TextEncoder().encode(framed + "\n"))
         .catch(drop).finally(() => writer.releaseLock());
     } catch (e) { drop(e); }
@@ -318,6 +321,7 @@ window.addEventListener("DOMContentLoaded", function () {
 });
 
 function clearHubTarget(why) {
+  cancelSafeMotion(why);
   const hadAuto = window.HUB_AUTO;
   clearPeer(why);
   window.HUB_AUTO = "";
@@ -360,6 +364,8 @@ function openModule() {
 }
 async function robotCmd(c) {
   if (!currentUser) return "";
+  if (/^POSE\s/i.test(c)) return (await liveSend(c)) ? "OK checked movement finished" : "";
+  if (/^(?:MOVE\s+)?STOP\s*$/i.test(c)) { await cancelSafeMotion("Stop"); return "OK stopped"; }
   try {
     const t = await rawCmd(c);
     $("robotStat").textContent = "> " + c.slice(0, 60) + "  →  " + t.slice(0, 120);
@@ -551,9 +557,7 @@ async function connectLink() {
   }
 }
 function sendPose(quiet) {
-  const c = "POSE " + pose.map(fmtA).join(" "); // no T: firmware uses its speed setting
-  if (quiet) { sendPoseLive(); return; }
-  robotCmd(c);
+  return quiet ? sendPoseLive() : liveSend("POSE " + pose.map(fmtA).join(" "));
 }
 
 // Live sending: ONE command in flight at a time, newest pose wins.
@@ -596,32 +600,65 @@ const LIVE_T_MIN = 80, LIVE_T_MAX = 300;
 function liveT() {
   return Math.max(LIVE_T_MIN, Math.min(LIVE_T_MAX, Math.round(liveRtt * 1.3)));
 }
-function liveSend(c) { if (!currentUser) return; liveQueue.push(c); livePump(); }
-function sendPoseLive() { if (!currentUser) return; livePending = pose.slice(); livePump(); }
-function liveAbort() { liveQueue = []; livePending = null; }
+function liveSend(c) {
+  if (!currentUser) return Promise.resolve(false);
+  if (/^(?:MOVE\s+)?STOP\s*$/i.test(c)) return cancelSafeMotion("Stop");
+  const p = /^POSE\s+(.+)$/i.exec(c);
+  const work = { c, epoch:safeMotionEpoch, target:safeTarget(), goal:null, ms:0, revision:null };
+  if (p) {
+    const bits=p[1].trim().split(/\s+/), at=bits.findIndex(v=>v.toUpperCase()==='T');
+    work.goal=(at<0 ? bits : bits.slice(0,at)).map(Number);
+    work.ms=at<0 ? 0 : Number(bits[at+1]);
+    if(work.goal.length!==NJ || work.goal.some(v=>!Number.isFinite(v)) ||
+      !Number.isFinite(work.ms) || work.ms<0 || (at>=0 && at+2!==bits.length)) {
+      safeMotionNote('Not moved: invalid pose or duration',true);return Promise.resolve(false);
+    }
+  }
+  const result=new Promise(resolve=>{work.resolve=resolve;});
+  if(work.goal && !playing) {
+    if(livePending && livePending.resolve)livePending.resolve(false);
+    work.revision=++safeGoalRevision;livePending=work;
+  } else liveQueue.push(work);
+  if(work.goal)lastSafeMove=result;
+  livePump();return result;
+}
+function sendPoseLive() { return liveSend("POSE " + pose.map(fmtA).join(" ") + " T " + liveT()); }
+function liveAbort() {
+  safeMotionEpoch++;safeGoalRevision++;
+  liveQueue.forEach(work=>{if(work.resolve)work.resolve(false);});
+  if(livePending && livePending.resolve)livePending.resolve(false);
+  liveQueue=[];livePending=null;
+}
 function livePump() {
   if (liveBusy) return;
   liveBusy = true;
   (async () => {
     try {
       for (;;) {
-        let c = null;
+        let work = null;
         if (liveQueue.length) {
-          c = liveQueue.shift();                 // ordered work comes first
+          work = liveQueue.shift();                 // ordered work comes first
         } else if (livePending) {
-          // ...with the time it has, not the module's default easing speed
-          c = "POSE " + livePending.map(fmtA).join(" ") + " T " + liveT();
+          work = livePending;
           livePending = null;                    // only ever the newest pose
         }
-        if (!c) break;
+        if (!work) break;
+        const c=work.c;
+        if(work.epoch!==safeMotionEpoch || work.target!==safeTarget()){work.resolve(false);continue;}
         try {
+          if(work.goal) {
+            const ok=await checkedPose(work.goal,work.ms,work.epoch,work.revision,work.target);
+            work.resolve(ok);continue;
+          }
           const t0 = performance.now();
           const r = await rawCmd(c);
           // Measure the link from the traffic itself — no probing, and it
           // follows a link that changes (USB pulled, WiFi gone slow).
           liveRtt += ((performance.now() - t0) - liveRtt) * 0.25;
           $("robotStat").textContent = "> " + c.slice(0, 60) + "  →  " + r.slice(0, 80);
+          work.resolve(true);
         } catch (e) {
+          work.resolve(false);liveAbort();
           $("robotStat").textContent = "" + (e.message || e);
         }
       }
@@ -807,6 +844,7 @@ async function refreshSd() {
 }
 async function uploadYaml() {
   if (nothingToWrite("sdStat")) return;
+  if (!(await ensureSafeTimeline())) return;
   if (!crashGate("UPLOAD it")) return;
   const { name, yaml } = buildYaml();
   try {
@@ -831,7 +869,7 @@ async function uploadYaml() {
 function stopRobotSequence() {
   handedOff = false;
   if (!haveRobot()) return;
-  try { robotCmd("MOVE STOP"); } catch (e) {}
+  try { cancelSafeMotion('sequence takeover'); } catch (e) {}
 }
 
 // ---- keeping a show running when you leave the page --------------------
@@ -874,13 +912,11 @@ async function handOffToRobot() {
     // Hand over from where the show HAS GOT TO, not from the top. Hiding the
     // tab half way through used to send the arm back to keyframe 0 first —
     // the same sweep as Run, but nobody pressed anything to cause it.
-    const part = playT > 0 && keyIndexAtMs(playT) > 0;
-    const { name, yaml } = buildYaml(playT);
-    const file = (part ? name + ".part" : name) + ".yaml";
-    await sdUpload(file, yaml);              // falls back to module memory with no SD
-    // A refused MOVE must not stop the preview and claim the module has it.
-    const said = await robotCmd("MOVE " + file);
-    if (!said.startsWith("OK")) throw new Error(said || "the module did not start it");
+    const fromMs=playT;
+    await cancelSafeMotion('handover');
+    entryHold=true;
+    const started=await startCheckedSequence(fromMs,false);
+    if(!started) {handedOff=false;return;}
     // stop being the clock: the module owns the show now
     playing = false;
     keepAwake(false);
@@ -890,7 +926,8 @@ async function handOffToRobot() {
       + "it keeps going with this page closed. Press Stop to end it.";
   } catch (e) {
     handedOff = false;                       // it did not take: keep previewing
-  }
+    safeMotionNote('Could not hand over: '+e.message,true);
+  } finally {entryHold=false;}
 }
 
 document.addEventListener("visibilitychange", function () {
@@ -941,37 +978,29 @@ async function keepLastRun(yaml, file) {
 // first is what makes the check mean anything.
 async function robotRun() {
   if (nothingToWrite("sdStat")) return;     // a file with no moves does nothing
+  if (!(await ensureSafeTimeline())) return;
   if (!crashGate("RUN it on the robot")) return;
   // Run from where the clock is parked. Clicking a keyframe parks it there, so
   // Run continues the show from the pose on screen instead of sweeping back to
   // the first one — which is what the robot's arm would have to travel through.
   // A partial run is written under its own name: <name>.yaml stays the whole
   // show, so running part of it never overwrites the saved sequence.
-  const resumeMs = playT;
-  const part = resumeMs > 0 && keyIndexAtMs(resumeMs) > 0;
-  const { name, yaml } = buildYaml(resumeMs);
-  const file = (part ? name + ".part" : name) + ".yaml";
   const st = $("sdStat");
-  if (st) st.textContent = "sending " + file + " to the robot…";
+  if (st) st.textContent = "checking and sending the sequence to the robot…";
+  let started;
   try {
-    await sdUpload(file, yaml);
+    started=await startCheckedSequence(playT);
   } catch (e) {
-    if (st) st.textContent = "could not send the sequence, so nothing was run — "
+    cancelSafeMotion('sequence start failed');
+    if (st) st.textContent = "could not start the sequence — "
       + (e && e.message ? e.message : e);
     return;
   }
-  const kept = await keepLastRun(yaml, file);
-  const said = await robotCmd("MOVE " + file);
-  // robotCmd answers "" on a failure; the card said "running" anyway.
-  if (!said.startsWith("OK")) {
-    if (st) st.textContent = file + " was sent, but the robot did not start it — "
-      + (said || $("robotStat").textContent || "no answer");
-    notice(st ? st.textContent : "the robot did not start " + file);
-    return;
-  }
+  if(!started) {if(st)st.textContent='Start cancelled; check the current settings and try again.';return;}
+  const {file,name,part,kept}=started;
   if (st) st.textContent = (part
-    ? "the robot is running from the move you picked, to the end — it does not "
-      + "go back to the start. The whole show is still saved as " + name + ".yaml."
+    ? "the robot is running the checked remainder once, including any checked loop return. "
+      + "The whole show is still saved as " + name + ".yaml."
     : "the robot is running " + file + " on its own.")
     + (kept ? " Note: " + kept : keepRunOn() ? " A copy is kept on it as " + LAST_RUN_FILE + "." : "");
   if (kept) notice(kept);
@@ -1020,13 +1049,14 @@ async function robotZeroSet() {
 let monTimer = null;
 function liveChanged() {
   if ($("liveChk").checked) { $("monChk").checked = false; monitorChanged(); }
+  else cancelSafeMotion("Live turned off");
 }
 function monitorChanged() {
   if ($("monChk").checked) {
     $("liveChk").checked = false;
     // Same trap as livePause: a show started while Live was ticked belongs to
     // the HUB's clock, and switching this page to watching must end it.
-    hubStop();
+    cancelSafeMotion('monitoring');
     playing = false; $("playBtn").textContent = "▶ Play";
     $("robotStat").textContent = "monitoring…";
     // Watching needs a link. Ticked before Connect (or after a first try that

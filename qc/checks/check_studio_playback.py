@@ -14,10 +14,10 @@ AREA = "studio"
 TITLE = "play / pause / hold over the cable"
 SLOW = True
 
-MOVE, HOLD = 1000, 1200        # ms per segment in the test timeline
+MOVE, HOLD = 2000, 1200        # respects the actual calibrated servo minimum
 
 DRIVER = """
-function step(){
+async function step(){
     
 
   try{
@@ -29,13 +29,13 @@ function step(){
     document.getElementById("loopChk").checked = false;
     document.getElementById("liveChk").checked = true;
     liveChanged();
-    pose = pose.map(function(){ return 60; });  addKey();
-    pose = pose.map(function(){ return 120; }); addKey();
+    pose = pose.map(function(v,j){ return clampJ(j,60); });  addKey();
+    pose = pose.map(function(v,j){ return clampJ(j,120); }); addKey();
     pose = pose.map(function(){ return 90; });  addKey();
     keys.forEach(function(k,i){ if(i){ k.t = %d; k.hold = %d; } });
     qcMark("timeline-" + keys.map(function(k){ return Math.round(k.pose[0]); }).join("_"));
     playT = 0;
-    togglePlay();
+    await togglePlay();
     qcMark("playing");
     // The show clock starts once the arm has reached keyframe 0 (A26-50), so
     // the pause is timed from THEN - mid second move, then resume.
@@ -57,6 +57,7 @@ def run(t):
     if not browser.available():
         t.give_up("headless Edge not found — install Edge or run --quick")
     fake_serial.reset()
+    fake_serial.NONG.motion_clock = True
     base, main = F.start_hub()
     browser.page(DRIVER, query="%s/studio/_qcdriver.html?dev=usb%%3A%s"
                  % (base, fake_serial.PORT), seconds=26)
@@ -81,7 +82,11 @@ def run(t):
     # it happens to be standing.
     if timeline:
         t.eq(sent[0], timeline[0], "keyframe 0 is sent when Play starts")
-        walked = [v for i, v in enumerate(sent) if i == 0 or v != sent[i - 1]]
+        # Checked resume first returns from the reported stop position to the
+        # parked timeline pose; the remaining native timeline follows it.
+        timeline_values = set(timeline)
+        retained = [v for v in sent if v in timeline_values]
+        walked = [v for i,v in enumerate(retained) if i == 0 or v != retained[i-1]]
         t.eq(walked, timeline, "the robot walks the whole timeline in order")
 
     t.ok(all(p[2] for p in poses), "every move carries an explicit T",
@@ -106,13 +111,15 @@ def run(t):
     t.ok(done and done[0] <= 50,
          "and the preview clock waited for it too, instead of running ahead",
          [m for m in marks if m.startswith("entry-done")])
-    stamps = stamps[1:]
-    moves = [s for i, s in enumerate(stamps) if i == 0 or s - stamps[i - 1] > 50]
-    gaps = [moves[i + 1] - moves[i] for i in range(len(moves) - 1)]
-    clean = [g for g in gaps if g > 300]        # ignore the pause/resume pair
-    if t.ok(clean, "there are gaps between the moves to measure", stamps):
-        worst = min(clean)
-        t.ok(worst > (MOVE + HOLD) * 0.75,
+    pause_at = next((ms for ms,c in fake_serial.wire if c.endswith('QCMARK pause')), float('inf'))
+    # Measure the uninterrupted completed move before Pause. A resumed move
+    # has a shorter remaining duration; checked entry is not a timeline hold.
+    sixty = next((p for p in poses if float(p[1][0]) == 60 and p[0] < pause_at), None)
+    following = next((p for p in poses if sixty and p[0] > sixty[0] and
+                      float(p[1][0]) == 120 and p[0] < pause_at), None)
+    if t.ok(sixty and following, "there are uninterrupted moves to measure", poses):
+        worst = following[0] - sixty[0]
+        t.ok(worst > (sixty[2] + HOLD) * 0.85,
              "a hold really waits between the moves",
              "shortest gap %d ms, expected ~%d (move %d + hold %d)"
              % (worst, MOVE + HOLD, MOVE, HOLD))
@@ -124,14 +131,17 @@ def run(t):
     cmds = [c for _, c in fake_serial.wire]
     t.ok(any(c.upper() == "STOP" for c in cmds),
          "Pause sends STOP — otherwise the arm finishes the move anyway", cmds[:12])
-    if any(c.upper() == "STOP" for c in cmds):
-        i = next(i for i, c in enumerate(cmds) if c.upper() == "STOP")
+    resume = next((i for i,c in enumerate(cmds) if c.endswith('QCMARK resume')), -1)
+    if resume >= 0:
+        i = resume
         after = [c for c in cmds[i + 1:] if c.upper().startswith("POSE")]
-        if t.ok(after, "playback continues after a resume"):
-            left = int(after[0].split(" T ")[1]) if " T " in after[0] else 0
+        if t.ok(len(after)>=2, "checked entry and playback continue after a resume"):
+            left = int(after[1].split(" T ")[1]) if " T " in after[1] else 0
             t.ok(0 < left < MOVE,
                  "resume asks only for the time still left in the segment",
                  "asked for T=%s of a %d ms move" % (left, MOVE))
+    else:
+        t.ok(False, "resume marker reached the wire", cmds[-8:])
 
     # ---- RESUME INSIDE A HOLD (A26-50). The hub skipped what was left of the
     # hold and sent the next move at once, so the arm ran ahead of the preview.

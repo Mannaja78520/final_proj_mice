@@ -31,7 +31,7 @@ function step(){
 
     if (typeof addKey !== "function" || !document.getElementById("liveChk"))
       return setTimeout(step, 200);
-    if (!haveUsb()) return setTimeout(step, 300);
+    if (!haveUsb() || !boardSafeIdentity) return setTimeout(step, 300);
     qcMark("connected");
     run();
   }catch(e){ qcFail(e); }
@@ -39,11 +39,11 @@ function step(){
 async function run(){
   try{
     // five keyframes so every edit has an UNAFFECTED witness further down
-    pose = pose.map(function(){ return 60; });  addKey();
-    pose = pose.map(function(){ return 120; }); addKey();
-    pose = pose.map(function(){ return 90; });  addKey();
-    pose = pose.map(function(){ return 30; });  addKey();
-    pose = pose.map(function(){ return 45; });  addKey();
+    pose = pose.map(function(o,j){ return clampJ(j,60); });  addKey();
+    pose = pose.map(function(o,j){ return clampJ(j,120); }); addKey();
+    pose = pose.map(function(o,j){ return clampJ(j,90); });  addKey();
+    pose = pose.map(function(o,j){ return clampJ(j,30); });  addKey();
+    pose = pose.map(function(o,j){ return clampJ(j,45); });  addKey();
 
     // ---- DELETE: only the keyframe after the gap may be re-timed.
     keys[1].t = 5000; bumpKeys();               // the hand-typed time
@@ -58,7 +58,7 @@ async function run(){
     // ---- MOVE: the swapped pair AND the keyframe after them re-time; the
     // witness below them does not. The pair must be two DIFFERENT poses or
     // the swap is a no-op and proves nothing.
-    pose = pose.map(function(){ return 60; });  addKey();   // 6th keyframe
+    pose = pose.map(function(o,j){ return clampJ(j,60); });  addKey();   // 6th keyframe
     keys[5].t = 7000; bumpKeys();                // witness AFTER the trio
     selKey = 3;                                  // swaps 30 and 120-dup
     moveKey(-1);
@@ -68,9 +68,13 @@ async function run(){
 
     // ---- PAUSE with Live unticked still ends the hub's clock.
     document.getElementById("liveChk").checked = true;
-    var started = await hubPlay(0);
-    await new Promise(function(r){ setTimeout(r, 400); });
-    var st = await (await fetch("/api/play")).json();
+    // hubPlay returns once the checked entry reached keyframe 0 and the hub
+    // took the show (A46-3); poll the hub instead of trusting a fixed sleep.
+    var started = await hubPlay(0), st = {};
+    for (var w = 0; w < 40 && !st.running; w++) {
+      st = await (await fetch("/api/play")).json();
+      if (!st.running) await new Promise(function(r){ setTimeout(r, 200); });
+    }
     qcMark("show-started-" + (started && st.running));
     document.getElementById("liveChk").checked = false;
     livePause();                                 // Live is OFF here on purpose
@@ -81,7 +85,11 @@ async function run(){
     // ---- switching to MONITOR ends it too (same hub-clock trap).
     document.getElementById("liveChk").checked = true;
     await hubPlay(0);
-    await new Promise(function(r){ setTimeout(r, 400); });
+    for (var w2 = 0, s2 = {}; w2 < 40 && !s2.running; w2++) {
+      s2 = await (await fetch("/api/play")).json();
+      if (!s2.running) await new Promise(function(r){ setTimeout(r, 200); });
+    }
+    qcMark("monitor-show-started-" + !!s2.running);
     document.getElementById("monChk").checked = true;
     monitorChanged();
     await new Promise(function(r){ setTimeout(r, 500); });
@@ -119,7 +127,7 @@ def run(t):
     fake_serial.reset()
     base, main = F.start_hub()
     browser.page(DRIVER, query="%s/studio/_qcdriver.html?dev=usb%%3A%s"
-                 % (base, fake_serial.PORT), seconds=26)
+                 % (base, fake_serial.PORT), seconds=40)
 
     marks = fake_serial.qc_marks
     t.ok(not any(m.startswith("ERROR") for m in marks),
@@ -133,6 +141,8 @@ def run(t):
         ("show-started-true", "the hub show was running before the pause"),
         ("pause-hub-stopped-true",
          "Pause ends the hub's show even with Live unticked"),
+        ("monitor-show-started-true",
+         "the second hub show was running before Monitor"),
         ("monitor-hub-stopped-true",
          "switching to Monitor ends the hub's show too"),
         ("asked-true", "opening a project over an unsaved edit asks first"),
