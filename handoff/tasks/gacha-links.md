@@ -34,13 +34,24 @@ Gaps found by reading the code 2026-10-22:
 4. A47-9 docs/gacha/friend_requests.md + Thai list in the thread.
 
 ## Doing now
-A47-6: hub route /play/<partner>/ + apps/all-jao/link.js + /api/gacha/game + page section.
+A47-8 voice: topics editor + "make a saved answer" on Voice > Questions (apps/voice/app.js,
+index.template.html, hub route /api/questions/topics).
 
 ## Done
 - plan rows A47-6..9 added.
+- A47-6 built: main.py serve_play (/play/<pid>/, read-only, injects partners.json play.inject +
+  watch), apps/all-jao/link.js, partners.json all-jao "play" (watch list read from their code),
+  gacha.py game_win (dedupe by ref) + "games" rules + busy_wait_s (a turning machine is waited
+  for, not "out everywhere"), /api/gacha/game (login | program here | key | hub page on this PC:
+  main.page_here, hub_auth.PAGE_HERE_OK), Prize machines page "Games that give a prize",
+  All-Jao page plays /play/all-jao/.
+- A47-7 built: app keys .local/gacha/keys.json, hub_auth.KEY_OK, X-Mice-Key or ?key=,
+  /api/gacha/keys, page card "Other PCs and forms". Keys never force.
+- A47-8 part: voice prize rule when.event (voice_prizes.prize_for), Event column on the page.
+- stats per hour + chart on Prize machines. check_gacha 39 asserts, 7 sabotages caught.
 
 ## Next
-1. A47-6 then A47-7, check_gacha asserts for each (sabotage-proven), quick QC.
+1. A47-8 rest (topics editor, saved answer from a question), then A47-9 docs + README + Help.
 2. A47-8 voice, A47-9 docs, full QC, PR, merge.
 
 ## Blocked

@@ -16,6 +16,12 @@ _Gacha), both holding "keychain", 70 standing next to 71. Asserted on the WIRE
   * the log is a CSV with every prize;
   * Voice (A47-3): every answered question is logged with its topic, and an
     answer a prize rule names gives that prize and says where to get it.
+  * A47-6: the friend's game folder is served at /play/<id>/ with our watcher
+    added on the way out (their file on disk unchanged, nothing outside it or
+    in .git served); a win reported from a hub page on this PC turns a board,
+    the same win twice turns it once, a loss and a foreign site turn nothing.
+  * A47-7: an app key lets another PC ask (never force); a removed key stops.
+  * A47-8: a voice prize rule tied to an event fits only during that event.
 """
 import json
 import os
@@ -39,6 +45,16 @@ def _post(base, path, body, cookie=True):
                                  headers={"Content-Type": "application/json"})
     if cookie and F._cookie[0]:
         req.add_header("Cookie", F._cookie[0])
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status, json.loads(r.read().decode() or "{}")
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read().decode() or "{}")
+
+
+def _post_as(base, path, body, headers):
+    req = urllib.request.Request(base + path, data=json.dumps(body).encode(), method="POST",
+                                 headers=dict({"Content-Type": "application/json"}, **headers))
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             return r.status, json.loads(r.read().decode() or "{}")
@@ -198,7 +214,104 @@ def run(t):
         code, body = F.get(base + "/api/questions?csv=1")
         t.ok("ห้องน้ำอยู่ไหน" in body and body.splitlines()[0].lstrip("\ufeff").startswith("time,"),
              "and every question downloads as a CSV", body[:200])
+        # ---- A47-6: a win in the friend's game gives a prize ----
+        games = tmp / "games"
+        (games / ".git").mkdir(parents=True)
+        (games / ".git" / "config").write_text("secret", encoding="utf-8")
+        page = "<html><body><p>wheel</p></body></html>"
+        (games / "index.html").write_text(page, encoding="utf-8")
+        (tmp / "outside.txt").write_text("no", encoding="utf-8")
+        (tmp / "partners.json").write_text(json.dumps({"games": {
+            "name": "Games", "folder": str(games), "play": {
+                "inject": "/app/all-jao/link.js",
+                "watch": [{"game": "wheel", "key": "w", "list": "logs", "result": "label"}]}}}),
+            encoding="utf-8")
+        os.environ["MICE_PARTNERS"] = str(tmp / "partners.json")
+        code, body = F.get(base + "/play/games/")
+        t.ok(code == 200 and "/app/all-jao/link.js" in body and '"game": "wheel"' in body
+             and body.index("link.js") < body.index("</body>"),
+             "the game page is served with our watcher and its list added", body[:300])
+        t.ok((games / "index.html").read_text(encoding="utf-8") == page,
+             "and the friend's file on disk is untouched", "")
+        bad = [F.get(base + u)[0] for u in ("/play/games/../outside.txt", "/play/games/.git/config",
+                                            "/play/nope/")]
+        t.ok(all(c in (400, 403, 404) for c in bad), "nothing outside their folder or in .git is served", bad)
+        code, body = F.get(base + "/app/all-jao/link.js")
+        t.ok(code == 200 and "/api/gacha/game" in body and "MICE_PLAY" in body,
+             "the watcher script itself is served", body[:120])
+
+        _post(base, "/api/gacha/machine", {"machine": "g2", "cmd": "GSTOCK 10"})
+        g.save_cfg({"games": [{"game": "wheel", "result": "ตุ๊กตา", "item": "keychain", "person": "Gus"}]})
+        F.logout_qc()
+        here = {"Origin": base, "Sec-Fetch-Site": "same-origin", "Sec-Fetch-Mode": "cors"}
+        n = len(_dispenses())
+        code, got = _post_as(base, "/api/gacha/game", {"game": "wheel", "result": "ตุ๊กตาหมี", "ref": "r1"}, here)
+        t.ok(code == 200 and got.get("ok") and _dispenses()[-1:] == [(71, "GDISPENSE Gus")],
+             "a wheel win from the game page on this PC turns a board, no sign-in", (code, got, _dispenses()[-2:]))
+        _post_as(base, "/api/gacha/game", {"game": "wheel", "result": "ตุ๊กตาหมี", "ref": "r1"}, here)
+        code, got = _post_as(base, "/api/gacha/game", {"game": "wheel", "result": "ลองใหม่", "ref": "r2"}, here)
+        t.ok(len(_dispenses()) == n + 1 and code == 200 and not got.get("ok"),
+             "the same win twice turns once, and a result with no prize turns nothing", (got, _dispenses()[-3:]))
+        code, got = _post_as(base, "/api/gacha/game", {"game": "wheel", "result": "ตุ๊กตา", "ref": "r3"},
+                             {"Origin": "http://evil.example", "Sec-Fetch-Site": "cross-site"})
+        t.ok(code == 401 and len(_dispenses()) == n + 1, "a foreign website cannot claim a win", (code, got))
+
+        n = len(_dispenses())
+        a1 = _post(base, "/api/gacha/dispense", {"item": "keychain", "person": "K1"})[1]
+        a2 = _post(base, "/api/gacha/dispense", {"item": "keychain", "person": "K2"})[1]
+        t.ok(a1.get("ok") and a2.get("ok") and len(_dispenses()) == n + 2,
+             "two prizes a moment apart are both given: the busy machine is waited for", (a1, a2))
+
+        # ---- A47-7: app keys for another PC or a form ----
+        F.login(base)
+        code, made = _post(base, "/api/gacha/keys", {"make": "pc2 game"})
+        key = made.get("key", "")
+        code, listed = F.get(base + "/api/gacha/keys")
+        t.ok(key and "pc2 game" in listed and key not in listed,
+             "a key is made once and the list never shows it whole", listed[:200])
+        F.logout_qc()
+        main.is_self = lambda ip: False                     # another PC on the venue WiFi
+        try:
+            n = len(_dispenses())
+            code, got = _post_as(base, "/api/gacha/dispense", {"item": "keychain", "person": "Hal"},
+                                 {"X-Mice-Key": key})
+            t.ok(code == 200 and got.get("ok") and _dispenses()[-1] == (71, "GDISPENSE Hal"),
+                 "another PC with the key gets a prize", (code, got))
+            code, got = _post_as(base, "/api/gacha/dispense?key=" + key, {"item": "keychain", "person": "Ivy"}, {})
+            t.ok(code == 200 and got.get("ok"), "the key also works on the address", (code, got))
+            code, got = _post_as(base, "/api/gacha/dispense", {"item": "keychain", "force": True},
+                                 {"X-Mice-Key": key})
+            code2, got2 = _post_as(base, "/api/gacha/dispense", {"item": "keychain"}, {"X-Mice-Key": key + "x"})
+            code3, got3 = _post_as(base, "/api/gacha/config", {"games": []}, {"X-Mice-Key": key})
+            t.ok(code == 401 and code2 == 401 and code3 == 401 and len(_dispenses()) == n + 2,
+                 "a key can never force, a wrong key is refused, and a key cannot change settings",
+                 (code, code2, code3))
+            F.login(base)
+            _post(base, "/api/gacha/keys", {"drop": "pc2 game"})
+            F.logout_qc()
+            code, got = _post_as(base, "/api/gacha/dispense", {"item": "keychain"}, {"X-Mice-Key": key})
+            t.ok(code == 401 and len(_dispenses()) == n + 2, "a removed key stops working", (code, got))
+        finally:
+            main.is_self = real
+            F.login(base)
+
+        # ---- A47-8: a voice prize rule for one event only ----
+        _post(base, "/api/gacha/voice", {"enabled": True, "rules": [
+            {"when": {"topic": "prize", "event": "another day"}, "item": "keychain"}]})
+        n = len(_dispenses())
+        out = json.loads(main.hub_api_gacha.voice_after_ask(
+            json.dumps({"text": "ขอรางวัลหน่อย", "person": "Jo"}).encode(),
+            json.dumps({"ok": True, "answer": "ได้", "source": "faq"}).encode()).decode())
+        t.ok("prize" not in out and len(_dispenses()) == n, "a rule for another event gives nothing today", out)
+        _post(base, "/api/gacha/voice", {"enabled": True, "rules": [
+            {"when": {"topic": "prize", "event": "QC Day"}, "item": "keychain"}]})
+        out = json.loads(main.hub_api_gacha.voice_after_ask(
+            json.dumps({"text": "ขอรางวัลหน่อย", "person": "Jo"}).encode(),
+            json.dumps({"ok": True, "answer": "ได้", "source": "faq"}).encode()).decode())
+        t.ok((out.get("prize") or {}).get("ok") and _dispenses()[-1] == (71, "GDISPENSE Jo"),
+             "and the same rule for this event gives one", out)
     finally:
+        os.environ.pop("MICE_PARTNERS", None)
         for k in ("MICE_VOICE_PRIZES", "MICE_QUESTIONS_DATA"):
             os.environ.pop(k, None)
         hook.shutdown()

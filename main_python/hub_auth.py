@@ -94,7 +94,7 @@ GATED = {
     # A program on this PC may still ask for a prize: see LOCAL_OK.
     "/api/gacha/dispense", "/api/gacha/can", "/api/gacha/event", "/api/gacha/machine",
     "/api/gacha/rules/pull", "/api/gacha/rules/push", "/api/gacha/log", "/api/gacha/stats",
-    "/api/gacha/rules",
+    "/api/gacha/rules", "/api/gacha/game", "/api/gacha/keys",
     # what visitors asked Voice, with their names (A47-3)
     "/api/questions",
 }
@@ -204,11 +204,31 @@ NEVER_GATED = {"/api/play/stop", "/api/stopall", "/api/play/beat",
 # POST only, and main.Handler.from_program_here decides what counts: this PC,
 # JSON, and none of the headers every browser sends - so a web page open on
 # this PC is refused like any stranger, a DNS-rebinding one included.
-LOCAL_OK = {"/api/speak", "/api/gacha/dispense", "/api/gacha/can"}
+LOCAL_OK = {"/api/speak", "/api/gacha/dispense", "/api/gacha/can", "/api/gacha/game"}
 
 
 def local_ok(path: str, method: str) -> bool:
     return method == "POST" and path in LOCAL_OK
+
+
+# Open to another PC or a form that holds an APP KEY made on the Prize machines
+# page (A47-7, header X-Mice-Key or ?key=): it can only ask for a prize, which
+# the per-person and per-event rules still limit; never force, never settings.
+KEY_OK = {"/api/gacha/dispense", "/api/gacha/can", "/api/gacha/game"}
+
+
+def key_ok(path: str, method: str) -> bool:
+    return method == "POST" and path in KEY_OK
+
+
+# Open to a hub page in this PC's own browser (main.Handler.page_here): the
+# friend's games, served by the hub at /play/<partner>/, report a win from the
+# player's screen, which has no hub login (A47-6).
+PAGE_HERE_OK = {"/api/gacha/game"}
+
+
+def page_here_ok(path: str, method: str) -> bool:
+    return method == "POST" and path in PAGE_HERE_OK
 
 
 # A READ on a command route is free, as it is on the board itself

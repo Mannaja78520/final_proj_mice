@@ -16,6 +16,12 @@
     GET  /api/gacha/stats           counts per item / machine / person / app (login)
     GET  /api/gacha/voice           which Voice answers give a prize (config/voice_prizes.json)
     POST /api/gacha/voice           {enabled, say, rules} save it                (login)
+    POST /api/gacha/game            {game, result, person?, ref?} a game says someone won;
+                                    config "games" names the kind (A47-6). Login, a
+                                    program here, an app key, or a hub page on this PC
+    GET  /api/gacha/keys            app keys' names (login); POST {make: name} | {drop: name}
+                                    An app key (header X-Mice-Key or ?key=) lets another
+                                    PC or a form use dispense / can / game (A47-7)
     GET  /api/questions             what Voice was asked: per topic / hour / source (login)
                                     ?day=YYYY-MM-DD narrows it, &csv=1 = the whole CSV
 
@@ -84,7 +90,8 @@ def questions():
     """The Voice question log + prize rules (voice_prizes.py)."""
     data = Path(os.environ.get("MICE_QUESTIONS_DATA") or (Path(_hub.DATA) / ".local" / "voice"))
     return vp.Questions(os.environ.get("MICE_VOICE_TOPICS") or _hub.asset("config", "voice_topics.json"),
-                        prizes_path(), data, give=_voice_give)
+                        prizes_path(), data, give=_voice_give,
+                        event=lambda: gacha().cfg()["event"].get("name", ""))
 
 
 def prizes_path():
@@ -115,6 +122,18 @@ def voice_after_ask(sent, got):
         return got
 
 
+def game_names():
+    """Every game a partner's "play.watch" list reports (config/partners.json)."""
+    out = []
+    for e in (_hub.read_partners().get("partners") or {}).values():
+        play = e.get("play") if isinstance(e, dict) else None
+        watch = play.get("watch") if isinstance(play, dict) else None
+        for w in watch or []:
+            if isinstance(w, dict) and w.get("game") and w["game"] not in out:
+                out.append(w["game"])
+    return out
+
+
 def face_now():
     """The person the face app sees nearest right now, or ''."""
     try:
@@ -126,6 +145,11 @@ def face_now():
 
 
 class GachaRoutes:
+    def app_key_name(self, q=None):
+        """The app whose key came with this request (hub_auth.KEY_OK), or ''."""
+        given = self.headers.get("X-Mice-Key") or ((q or {}).get("key") or [""])[0]
+        return gacha().key_name(given) if given else ""
+
     def _gacha_body(self):
         try:
             d = json.loads(self.body().decode() or "{}")
@@ -154,6 +178,8 @@ class GachaRoutes:
                                              if k != "sheet_write_url"},
                                    "webhooks": {k: len(v or []) for k, v in c["webhooks"].items()},
                                    "messages": c.get("messages") or {},
+                                   "games": c.get("games") or [],
+                                   "game_names": game_names(),
                                    "low_stock": c.get("low_stock")})
         if path == "/api/gacha/stats":
             return self.send_json({"ok": True, "stats": g.stats(), "hooks": g.hook_log[-20:]})
@@ -171,6 +197,9 @@ class GachaRoutes:
             return self.send_json({"ok": True, "rules": r, "csv": gm.rules_to_csv(r),
                                    "webhooks": g.cfg().get("webhooks") or {},
                                    "sheet_write_url": g.cfg()["rules"].get("sheet_write_url", "")})
+        if path == "/api/gacha/keys" and method == "GET":
+            return self.send_json({"ok": True, "keys": [{"name": k.get("name"), "made": k.get("made"),
+                                                         "end": str(k["key"])[-4:]} for k in g.keys()]})
         if path == "/api/gacha/voice" and method == "GET":
             return self.send_json(dict(vp._load(prizes_path()), ok=True,
                                        topics=[t.get("id") for t in vp._load(
@@ -182,6 +211,7 @@ class GachaRoutes:
         if d is None:
             return self.send_err("that request was not readable")
         who = self.logged_in_user() if self.logged_in() else ""
+        app_key = "" if who else self.app_key_name(q)
         if path == "/api/gacha/config":
             ok, why = g.save_cfg(d)
             return self.send_json({"ok": ok, "error": why}, 200 if ok else 400)
@@ -197,10 +227,27 @@ class GachaRoutes:
                 ok, why, detail = g.check(str(d.get("item") or ""), person, force)
                 return self.send_json(dict(detail, ok=ok, reason=why, person=person))
             got = g.dispense(item=str(d.get("item") or ""), person=person,
-                             app=str(d.get("app") or ("hub" if who else "program")),
+                             app=str(d.get("app") or ("hub" if who else app_key or "program")),
                              machine=d.get("machine") or None, force=force,
                              by=who or "program", wait=bool(d.get("wait")))
             return self.send_json(got, 200 if got.get("ok") else 409)
+        if path == "/api/gacha/game":
+            person = str(d.get("person") or "")
+            if person == "@face":
+                person = face_now()
+            got = g.game_win(d.get("game"), d.get("result"), person=person,
+                             ref=str(d.get("ref") or ""), by=who or app_key or "game")
+            if got.get("reason") == "no prize for this result":
+                return self.send_json(got)               # a loss is not an error
+            return self.send_json(got, 200 if got.get("ok") else 409)
+        if path == "/api/gacha/keys":
+            if not who:
+                return self.send_json({"ok": False, "need_login": True,
+                                       "error": "log in to make or remove app keys"}, 401)
+            if d.get("drop"):
+                return self.send_json({"ok": g.drop_key(str(d["drop"]))})
+            k = g.make_key(d.get("make"))
+            return self.send_json({"ok": True, "name": k["name"], "key": k["key"]})
         if path == "/api/gacha/event":
             sent = g.set_event(name=d.get("name"), open_=d.get("open"),
                                reset=bool(d.get("reset")))

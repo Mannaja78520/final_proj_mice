@@ -61,8 +61,9 @@ def topic_of(question, answer, topics):
     return str(topics.get("fallback") or "other")
 
 
-def prize_for(question, answer, topic, rules):
-    """The item type the first matching rule gives, or ''."""
+def prize_for(question, answer, topic, rules, event=""):
+    """The item type the first matching rule gives, or ''. A rule's
+    `when.event` only fits while that event is the open one (A47-8)."""
     if not rules.get("enabled", True):
         return ""
     if answer.get("prize"):                       # a saved answer may name it itself
@@ -70,6 +71,8 @@ def prize_for(question, answer, topic, rules):
     for r in rules.get("rules") or []:
         w = r.get("when") or {}
         if w.get("topic") and w["topic"] != topic:
+            continue
+        if w.get("event") and str(w["event"]).strip().lower() != str(event or "").strip().lower():
             continue
         if w.get("source") and w["source"] != answer.get("source"):
             continue
@@ -84,11 +87,13 @@ def prize_for(question, answer, topic, rules):
 
 
 class Questions:
-    def __init__(self, topics_path, prizes_path, data_dir, give=None, clock=time.time):
+    def __init__(self, topics_path, prizes_path, data_dir, give=None, clock=time.time,
+                 event=None):
         self.topics_path = Path(topics_path)
         self.prizes_path = Path(prizes_path)
         self.data = Path(data_dir)
         self.give = give                  # give(item, person) -> gacha dispense answer
+        self.event = event                # event() -> the prize machines' event name
         self.clock = clock
 
     @property
@@ -102,7 +107,8 @@ class Questions:
             return {}
         topic = topic_of(question, answer, _load(self.topics_path))
         rules = _load(self.prizes_path)
-        item = prize_for(question, answer, topic, rules) if answer.get("ok") else ""
+        ev = self.event() if self.event else ""
+        item = prize_for(question, answer, topic, rules, ev) if answer.get("ok") else ""
         person = str(answer.get("person") or req.get("person") or "")
         extra = {"topic": topic}
         res = ""
