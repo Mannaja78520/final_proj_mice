@@ -308,7 +308,9 @@ def _web(t, base, sound):
 """.replace("PASSWORD", json.dumps(F.HUB_PASSWORD)).replace("SOUND", json.dumps(base64.b64encode(sound).decode()))
     start = len(fake_serial.qc_marks)
     try:
-        browser.raw_page(page + driver, base, seconds=35)
+        # A real desktop window: headless opens 800 wide (cloud 2026-10-22: html set
+        # to 1280 overflowed a 765 px body, a frame no screen ever shows).
+        browser.raw_page(page + driver, base, seconds=35, flags=("--window-size=1366,900",))
         marks = [str(m) for m in fake_serial.qc_marks[start:] if "PROFILE " in str(m)]
         for name in ("copy", "upload", "faqsave", "switch", "restore", "active", "layout360", "layout1280"):
             t.ok(any("PROFILE " + name + "=yes" in m for m in marks),

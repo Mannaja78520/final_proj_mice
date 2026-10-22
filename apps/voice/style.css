@@ -53,6 +53,22 @@ code{background:var(--sunk);padding:1px 5px;border-radius:4px;
 .field > span + select{flex:1 1 120px}
 #langVoices .field.off{opacity:.45}
 
+/* Quick choices on the Voice tab (A45-29): one tile = one choice, click saves. */
+.quick{border-bottom:1px solid var(--line);padding-bottom:var(--sp-3);margin-bottom:var(--sp-3)}
+.quick h3:first-child{margin-top:0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(200px,100%),1fr));gap:var(--sp-2)}
+.tiles.slim{grid-template-columns:repeat(auto-fill,minmax(min(140px,100%),1fr))}
+.tile{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r-md);
+      background:var(--sunk);min-height:44px}
+.tile.on{border-color:var(--acc)}
+.tile > button{background:none;border:0;color:var(--txt);font:inherit;cursor:pointer;padding:var(--sp-2)}
+.tile .pick-it{flex:1 1 auto;text-align:left;display:flex;flex-direction:column;gap:2px}
+.tile .pick-it small{color:var(--mut);font-size:12px}
+.tile .pick-it .now{color:var(--acc);font-size:12px;font-weight:600}
+.tile .try-it{flex:0 0 44px;border-left:1px solid var(--line)}
+.tile > button:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.voice-group{margin:var(--sp-2) 0 var(--sp-1);font-size:13px;color:var(--mut)}
+
 /* The answers sheet: cells typed into where they stand. Wide content scrolls
    inside its own box, never the page. */
 .sheet-wrap{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:var(--r-md);margin-top:var(--sp-2)}
