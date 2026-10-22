@@ -2151,7 +2151,7 @@ function renderHands() {
   }
   HANDS.forEach((h, i) => {
     const el = $("handNow" + i);
-    if (el) el.textContent = "now: " + FACING_TEXT[palmWord(palmUpness(i))];
+    if (el) el.textContent = "now: " + FACING_TEXT[palmWord(palmUpness(i))] + " · " + sideText(i);
   });
   renderReach();
 }
@@ -2212,8 +2212,8 @@ function askReach(arm, target) {
 }
 function drawReach(arm) {
   if (!reachMarks[arm]) {
-    const ball = new THREE.Mesh(new THREE.SphereGeometry(9, 12, 8),
-      new THREE.MeshBasicMaterial({ color: 0xff9f1c, wireframe: true }));
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(14, 16, 12),
+      new THREE.MeshBasicMaterial({ color: 0xff9f1c, transparent: true, opacity: 0.55 }));
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(
       [new THREE.Vector3(), new THREE.Vector3()]),
       new THREE.LineBasicMaterial({ color: 0xff9f1c }));
@@ -2235,17 +2235,21 @@ function reachGap(arm) {
   robot.updateMatrixWorld(true);
   return a.target.distanceTo(wristPos(arm));
 }
-// One plain line per hand: which side is on top and by how much, the gap,
-// the joints at their stop, a self-hit. Built from the pose the robot gets.
-function reachText(arm) {
+// How far the side asked for (or the nearer one) is from straight up, in deg.
+function sideText(arm) {
   const up = palmUpness(arm), want = handHold[arm] || (up >= 0 ? 1 : -1);
   const off = Math.round(THREE.MathUtils.radToDeg(Math.acos(Math.max(-1, Math.min(1, want * up)))));
-  const side = want > 0 ? "palm" : "back of the hand";
-  const out = [off <= 60 ? side + " on top, " + off + "° from straight up"
-                         : "on its edge — the " + side + " is " + off + "° from straight up"];
+  return (want > 0 ? "palm " : "back ") + off + "° from straight up";
+}
+// One plain line per hand under it: the gap, the joints at their stop, a
+// self-hit. Built from the pose the robot gets.
+function reachText(arm) {
+  const out = [];
   const gap = reachGap(arm);
   if (gap !== null) out.push(gap <= HOLD.reachMm ? "reached where you put it"
     : Math.round(gap) + " mm short of where you put it (the orange mark)");
+  if (handHold[arm] && handHold[arm] * palmUpness(arm) <= 0.5)
+    out.push("the joints cannot turn it further with the hand here");
   const stops = armJoints(arm).filter(j => pose[j] <= RIG.min[j] + HOLD.stopDeg
                                          || pose[j] >= RIG.max[j] - HOLD.stopDeg);
   if (stops.length) out.push("at its stop: " + stops.map(j => JOINT_LABELS[j]).join(", "));

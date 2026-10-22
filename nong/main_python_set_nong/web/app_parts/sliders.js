@@ -260,7 +260,7 @@ function renderHands() {
   }
   HANDS.forEach((h, i) => {
     const el = $("handNow" + i);
-    if (el) el.textContent = "now: " + FACING_TEXT[palmWord(palmUpness(i))];
+    if (el) el.textContent = "now: " + FACING_TEXT[palmWord(palmUpness(i))] + " · " + sideText(i);
   });
   renderReach();
 }
