@@ -73,6 +73,24 @@ Plan: A48-1 (robot page)
 - Old A46-3 code is merged (handoff/tasks/robot-hotspot-live.md says deployed); its old BRIDGE claims on rig_setup_ui/rig_data/main_loop/html_parts/generated assets/web build manifest lack explicit RELEASE. Our BRIDGE entry REQUESTS release/coordination, not an inferred takeover. Resolve before overlapping edits/integration. Physical tests remain parked; do not revive them.
 - Own claim was limited to new URDF renderer/config/serving/QC paths plus app_parts/{build_rig,scene,stl_meshes,urdf_import,project_save_load,save_state,boot}.js and docs/urdf_nong.md in OWN tree. Own claims will be explicitly released for Cross. No QC/driver/runtime/hardware resources acquired or process started.
 
+## PC steps done 2026-10-23 06:06 (claude:xdlrot)
+- Pulled main 1cb87f3, build_web, systems build, MiceHub.exe rebuilt with the spec, hub +
+  Voice helper restarted, /api/version stale=false (3a460df0e536). Backups:
+  scratch/deploy-a48-1-2026-10-23 (exe, voice.json, settings_shared, old plan patch).
+- Copied model/nong_urdf/solidworks/export/nong_description (57 MB) to
+  nong/main_python_set_nong/models/nong_description/ (git-ignored; nothing under model/ edited).
+- `MICE_URDF_MODEL=<that folder> check_urdf_look`: 25/26. Real model: WAIST agree 1.00
+  (axis 1.00), SHRUG 0.99 (axis 1.00). ALL 8 arm joints agree -0.14..0.07 with axis
+  0.00..0.02: the URDF arm axes are PERPENDICULAR to the shapes' axes, not reversed.
+  sign/offsetDeg cannot fix that, so urdf_view.json was left unchanged. URDF (ROS frame:
+  y = left, z = up): SH_P/EL_P axis ~(-1,0,0) = forward axis; EL_R ~(0,-1,0) = lateral;
+  SH_R (0,-0.54,-0.84) tilted. Looks like the CAD's P/R naming (or frame) differs from
+  Studio's; a quick P<->R swap in the bindings broke the synthetic fixture checks
+  (5 fails), so it is NOT a plain swap. Needs the URDF thread's decision.
+- Studio > Views: Robot look = CAD model (URDF) loads "nong from SolidWorks", shows the 8
+  axis warnings, a slider moves it (screenshots scratch/deploy-a48-1-2026-10-23/urdf-*.png).
+  Put back to Simple shapes with the old sizes (dims identical) and the old pose.
+
 ## Next
 1. Full QC green -> PR -> merge.
 2. PC: copy E:/final_proj/mice/model/nong_urdf/solidworks/export/nong_description
