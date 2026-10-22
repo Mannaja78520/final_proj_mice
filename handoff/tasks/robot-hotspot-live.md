@@ -1,6 +1,6 @@
 # Real robot hotspot demonstration
 
-Owner:
+Owner: claude:xdlrot (PC session, thread "voice clear")
 Updated: 2026-10-22T17:36:15.352600+07:00
 Branch: main (A46-3 merged from claude/project-thread-48oymn)
 Last commit: 2485fe7 (WiFi-late test checkpoint follows)
@@ -16,9 +16,17 @@ Test saved motions, speech gestures/RRT, video copying and skeleton visibly on t
 - No robot motion sent. Hub modules empty, no hotspot interface in initial inventory.
 
 ## Doing now
-Nothing. Codex stopped here; A46-3 (checked RRT* detours, extra clothing gap)
-was finished, full-QC'd and merged by Claude cloud 2026-10-22. Deploy it on the
-PC before any real motion.
+- PARKED (user 2026-10-23 ~01:40: *ตอนนี้ไม่มีหุ่น กลับหอแล้ว ... ทำงานอื่นๆให้เสร็จ ยังไม่ต้องรอหุ่น
+  หุ่นค่อยเทสทีเดียวเลย*). All real-robot and board tests wait for ONE combined lab session.
+  Do not ask the user again before then. Hotspot "manny" was off, robot not connected.
+
+## Step 0 done 2026-10-23 (claude:xdlrot)
+- Backups: scratch/deploy-a46-3-2026-10-22 (exe, voice.json, voice_profiles, settings_shared).
+- Pulled main 5452fbe (#56 A46-3 + #57/#58 gachapon), build_web, systems build, exe rebuilt
+  with the spec, hub + Voice helper started. /api/version stale=false (30da52c4f960).
+- Studio Setup shows "Extra gap between parts": set 0 -> 1, survived a reload, put back to 0
+  (checked after another reload). /app/gacha/ 200; Voice > Questions tab opens (0 questions).
+- No board flashed, no pose or motion sent, calibration/pins/firmware untouched.
 
 ## Codex notes (2026-10-22 17:36)
 WiFi experiment finished. Hotspot was Off80s then On restored. Initial runner
