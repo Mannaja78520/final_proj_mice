@@ -601,7 +601,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: QC finished: 65 passed, 0 failed, started 2026-10-22 08:17
+# RUNNING: QC finished: 390 passed, 0 failed, started 2026-10-22 08:18
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1589,7 +1589,7 @@ A45-18: done   2026-10-21 01:53  agent=codex:10201312-aba2  — User: เอา�
 A45-19: done   2026-10-20 18:46  agent=codex:10200422-543e  — User corrected traffic-video test and explicitly says continue: verify actual dance/person video in Studio through pose extraction, generated robot joint motions and timing. Previous traffic clip proved Drive transport only. No real robot commands.
 A45-20: done   2026-10-21 01:13  agent=codex:10200422-543e  — User2026-10-21: every work round must leave a durable handoff for another agent; persist instruction and checkpoint remaining acceptance work without overlapping voice gate. Verified only intended10linehandoffsection appended; exactrawAGENTSsha2561f8e6731ef51d03fce13c010c998338b91322cdb1f53a8cbe55ad12f8cad729c. A45-18integrationowner authorized toincludeunchangedAGENTSinfinalscopedbookkeepingcommit AFTERexactgreen,sourcePRmergeanddeployment; no concurrentrootGitoperationhere.
 A45-21: done   2026-10-21 01:16  agent=codex:10200422-543e  — Prepare exact friend and faces watcher restore commands requested by active deployment owner; no service execution; durable handoff.
-A45-26: qc     2026-10-22 14:42  agent=claude:xdlrot  — User 2026-10-22: เอาแบบตั้งได้ว่างานแต่ละงานจะเป็นโทนไหน เสียงยังดูเป็น AI เกินไป เสียงรวบเกินฟังไม่รู้เรื่อง เอาแบบเสียงสำเนียงไทยฟังชัด ภาษาอื่นด้วย; คำสุดท้ายจบไวไป ไม่มีลากเสียง ออกแค่ครึ่งคำแล้วหายไป
+A45-26: done   2026-10-22 15:02  agent=claude:xdlrot  — User 2026-10-22: เอาแบบตั้งได้ว่างานแต่ละงานจะเป็นโทนไหน เสียงยังดูเป็น AI เกินไป เสียงรวบเกินฟังไม่รู้เรื่อง เอาแบบเสียงสำเนียงไทยฟังชัด ภาษาอื่นด้วย; คำสุดท้ายจบไวไป ไม่มีลากเสียง ออกแค่ครึ่งคำแล้วหายไป Deployed on PC 2026-10-22 15:02: exe rebuilt, hub + helper restarted, live tts.rate -10% (backup scratch/deploy-a45-26-2026-10-22), replay 50/50. Live Thai line by Edge friendly, 1.07 s quiet tail. Human ear still judges less-AI.
 
 # A46  Gestures with speech, safe paths (RRT) for copying a person
 A46-1: done   2026-10-22 08:17  agent=claude:10220724-db22  — User 2026-10-22: ขอแบบลองสุ่มท่าทางออกมาให้เข้ากับคำที่พูดแล้วส่งทำพร้อมกันด้วยได้ไหม ... เอาตัวขนาดของหุ่นมาใส่แล้วทำท่าทางได้ อาจจะโคกับ nong studio ดึงข้อมูลจากกันได้ (gestures that match the spoken words, random, played with the speech, using the robot's size from Studio) User 2026-10-22 07:27: ก็เพราะกลัวชนตัวเองเลยว่าใช้ดีกว่าไหมใช้กับที่ตามท่าทางด้วย -> RRT (RRT-Connect + shortcut) fallback when the straight joint path self-collides, shared by talk gestures, video copying and dummy follow; live follow holds last safe pose when no path in time User 07:28: แล้วมีการเซฟท่าหลังจากก็อปท่าคนไหม ... ปล่อยทำหลังโยนวีดีโอให้ -> one-click video to safe saved move; dummy follow record-and-save; no RL merged main (PR #48 A45-26) into the branch
