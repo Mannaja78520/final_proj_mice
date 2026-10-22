@@ -14,7 +14,7 @@ typing a wrist position; live view of the pose the arm really reaches (gap to
 the target, palm angle, joints at their stop, self-collision); save exactly that.
 
 ## Doing now
-Building in Studio web (nong/main_python_set_nong/web):
+QC setup + new check. Built: in Studio web (nong/main_python_set_nong/web):
 - hand_side.json (new data file): drag window/step, thresholds.
 - ik_4_dof_arm.js: facePalm(p, arm, want, opts) gains opts {range, step, safe}.
 - sliders.js renderHands: per hand "keep while moving" select (free/palm/back),
@@ -27,9 +27,13 @@ Building in Studio web (nong/main_python_set_nong/web):
 
 ## Done
 - Answered the user's question in the thread (Thai).
+- Code written and built (hand_hold.js, hand_side.json, facePalm opts, drag/goto
+  hold, readout + save buttons). Syntax ok; not yet run in a browser.
 
 ## Next
-1. Build the above, `python tools/build_web.py`, run check_palm_side + new check.
+1. Cloud QC setup (pip install pyserial psutil platformio; pio run -e mice_nong).
+2. Write qc/checks/check_palm_hold.py; run it + check_palm_side, check_studio_cost.
+3. help.html entry, docs/systems/studio.md trap line, full QC, PR, merge.
 
 ## Blocked
 - nothing (real-arm test needs the robot; fake only)
