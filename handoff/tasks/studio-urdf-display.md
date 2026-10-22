@@ -16,7 +16,7 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-- Round 2 (PC found arm axes "perpendicular"): full QC, PR, merge, PC steps again.
+- Round 2 full QC: 7790 passed, 0 checks failed (2 board-page flakes green alone; receipt refused only because a Studio check rewrites qc_chain_proj.json). PR + merge, then PC steps.
 
 ## Round 2 found (claude:10222214-b01b, 2026-10-23)
 - The PC's real-model block compared the URDF with the FIXTURE rig, not the
