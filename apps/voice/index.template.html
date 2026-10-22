@@ -161,6 +161,24 @@
 
     <!-- VOICE: how it sounds. -->
     <div class="card" data-pane="voice" hidden>
+      <!-- The quick choices (A45-27): tone, speed, voice. A click saves. The
+           lists come from config/voice_styles.json and the helper's voices. -->
+      <section class="quick" aria-labelledby="quickHead">
+        <h3 id="quickHead">Tone</h3>
+        <p class="mini">Click one and it is saved as the tone for every event that
+           has no tone of its own. ▶ plays it first.</p>
+        <div class="tiles" id="toneTiles" role="radiogroup" aria-label="Tone">
+          <p class="mini">Reading the tones…</p>
+        </div>
+        <h3>Speed</h3>
+        <div class="tiles slim" id="speedTiles" role="radiogroup" aria-label="Speed"></div>
+        <h3>Thai voice</h3>
+        <p class="mini">Women and men. <b>This PC</b> voices are made here on the
+           graphics card and sound less like a computer; the others are
+           Microsoft's online voices.</p>
+        <div id="voiceTiles"><p class="mini">Reading the voices…</p></div>
+        <p class="mini" id="quickStat" aria-live="polite"></p>
+      </section>
       <label class="pick"><input type="checkbox" id="speakOn"> Speak the answers out loud</label>
       <label class="pick"><input type="checkbox" id="fastDeviceVoice"> Start replies sooner with a voice on this device</label>
       <p class="mini">When the chosen service is slow, conversation can use an installed voice in the same language. Turn this off to keep the chosen voice every time.</p>

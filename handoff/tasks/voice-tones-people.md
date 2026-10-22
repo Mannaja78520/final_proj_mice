@@ -13,19 +13,23 @@ User 2026-10-22: *โทนแบบเลือกได้ คลิกเป�
 every word clear at both (measure CER at fast too).
 
 ## Doing now
-- Inventing speakers with the Thai feeling model (prompt stops at <|start_global_token|>,
-  the model writes its own 32 speaker tokens): `scratch/voice-human-2026-10-22/gen2.py`,
-  16 female + 16 male, 3 lines each at temperature 0.3, in `cand/`. Then judge CER + pitch
-  (`judge.py`) and keep the clearest 3 female + 3 male as `config/voice_people.json`.
-- Code done, not committed yet: server.py `speaker` + `tempo` (ffmpeg atempo), providers
-  feeling_speak person/tempo, service people()/person()/tempo_of, voices_by_lang lists them,
-  say() puts feeling first for a "person:<id>" voice with a same-gender Edge backup.
+- `scratch/voice-human-2026-10-22/refine.py` (running): shortlist 4 women + 4 men invented
+  voices x temperature 0.3/0.15, fast tempo 1.1/1.2, and Edge Premwadee/Niwat at +0/+10/+20%,
+  5 lines each, CER by the helper's whisper -> refine.jsonl. Then write
+  `config/voice_people.json` (3 women + 3 men, clearest), set `speeds.fast` and tune temperature.
+
+## Done so far (branch, WIP commits)
+- server.py speaker per request + tempo (ffmpeg atempo); providers person/tempo; service
+  people()/person()/tempo_of, voices_by_lang lists "person:<id>", say() feeling first + backup.
+- voice_styles.json `featured` [friendly, polite, sassy] + `speeds`; config/voice.json rate back
+  to +0% (user: the problem was slurring, not speed). styles_view sends featured/speeds/default.
+- Voice tab quick block (toneTiles / speedTiles / voiceTiles, click saves): app.js fillQuick etc,
+  style.css .tiles/.tile. New check qc/checks/check_voice_people.py (needs voice_people.json).
 
 ## Next
-1. voice_styles.json `featured` (3 tones) + `speeds` (normal +0%, fast); UI quick block on
-   the Voice tab: 3 tone cards (click = default, saved), speed chips, voice list female/male.
-2. Bench fast speed CER for Edge and the saved voices; samples to scratch for the user.
-3. QC check (check_voice_people), PR via coordinator, deploy.
+1. voice_people.json from refine results; run checks voice_people, voice_styles, voice_tail.
+2. Sabotage-prove check_voice_people; web-page-check the Voice tab at 360/768/1440.
+3. Push, coordinator PR + full QC + merge; deploy (exe, hub, helper, feeling server, replay).
 
 ## Blocked
 - Nothing. "Sounds less AI" only a human ear can judge.

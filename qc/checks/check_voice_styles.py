@@ -194,7 +194,7 @@ def _feeling(t, brain, svc, tmp):
     t.eq(brain.speak_order(""), ["edge", "local"], "no manner: the chosen order exactly")
     told = []
 
-    def fake_feel(prov, key, job, text, lang, voice, timeout, style="", emotion=""):
+    def fake_feel(prov, key, job, text, lang, voice, timeout, style="", emotion="", **_kw):
         told.append((text, emotion))
         return b"RIFF" + bytes([len(told)]) * 400, None
     real_feel = svc.providers.feeling_speak

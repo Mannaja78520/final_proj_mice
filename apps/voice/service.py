@@ -1751,6 +1751,11 @@ class Brain:
                     up[pid] = False
         return {"styles": out, "chosen": chosen, "up": up,
                 "recommended": self.styles().get("recommended") or "",
+                # The quick choices on the Voice tab (A45-27): the 3 tones shown
+                # as tiles, the speeds, and the saved default tone.
+                "featured": [k for k in self.styles().get("featured") or [] if k in out],
+                "speeds": self.styles().get("speeds") or {},
+                "default": str((self.cfg.get("tts") or {}).get("style") or ""),
                 "why": getattr(self, "_feeling_why", {}),
                 "last": getattr(self, "_style_last", None) or {}}
 
