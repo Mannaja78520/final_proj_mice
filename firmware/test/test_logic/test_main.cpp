@@ -446,6 +446,34 @@ void test_gacha_passes_per_slot_needs_a_whole_number() {
     TEST_ASSERT_EQUAL(0, gachamath::passesPerSlot(4, 0));
 }
 
+void test_gacha_encoder_stall_needs_no_count_for_the_whole_time() {
+    gachamath::EncWatch w;
+    w.start(100, 0);
+    TEST_ASSERT_FALSE(w.stalled(100, 299, 300));
+    TEST_ASSERT_FALSE(w.stalled(101, 299, 300));    // moved: the clock restarts
+    TEST_ASSERT_FALSE(w.stalled(101, 598, 300));
+    TEST_ASSERT_TRUE(w.stalled(101, 599, 300));
+    TEST_ASSERT_FALSE(w.stalled(101, 5000, 0));     // 0 = stall check off
+}
+
+void test_gacha_encoder_learns_counts_per_magnet() {
+    TEST_ASSERT_EQUAL(480, gachamath::learnPerPass(0, 480));
+    TEST_ASSERT_EQUAL(470, gachamath::learnPerPass(480, -470));  // backwards counts too
+    TEST_ASSERT_EQUAL(480, gachamath::learnPerPass(480, 50));    // a bounce is ignored
+    TEST_ASSERT_EQUAL(480, gachamath::learnPerPass(480, 0));
+}
+
+void test_gacha_encoder_slows_only_before_the_last_magnet() {
+    TEST_ASSERT_FALSE(gachamath::slowNow(2, 450, 480, 60));   // more magnets to come
+    TEST_ASSERT_FALSE(gachamath::slowNow(1, 400, 480, 60));   // not near yet
+    TEST_ASSERT_TRUE(gachamath::slowNow(1, 430, 480, 60));
+    TEST_ASSERT_TRUE(gachamath::slowNow(1, -430, 480, 60));
+    TEST_ASSERT_FALSE(gachamath::slowNow(1, 470, 0, 60));     // nothing learned yet
+    TEST_ASSERT_EQUAL(300, gachamath::slowSpeed(600, 50, 200));
+    TEST_ASSERT_EQUAL(200, gachamath::slowSpeed(600, 10, 200));
+    TEST_ASSERT_EQUAL(600, gachamath::slowSpeed(600, 150, 200));
+}
+
 void test_gacha_refusals_and_force() {
     TEST_ASSERT_NULL(gachamath::refusal(false, true, 3, false));
     TEST_ASSERT_EQUAL_STRING("event closed", gachamath::refusal(false, false, 3, false));
@@ -531,6 +559,9 @@ int main(int, char **) {
     RUN_TEST(test_gacha_a_bounce_is_not_a_pass);
     RUN_TEST(test_gacha_passes_per_slot_needs_a_whole_number);
     RUN_TEST(test_gacha_refusals_and_force);
+    RUN_TEST(test_gacha_encoder_stall_needs_no_count_for_the_whole_time);
+    RUN_TEST(test_gacha_encoder_learns_counts_per_magnet);
+    RUN_TEST(test_gacha_encoder_slows_only_before_the_last_magnet);
     RUN_TEST(test_id3_size_is_four_seven_bit_bytes);
     RUN_TEST(test_id3_v4_footer_is_skipped_too);
     RUN_TEST(test_not_a_tag_skips_nothing);

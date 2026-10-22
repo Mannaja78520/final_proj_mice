@@ -23,10 +23,16 @@ hall timeout and slows the motor just before the last magnet. Do not flash.
   firmware/config/commands.json:168.
 
 ## Doing now
-GachaMath EncWatch + slow logic + native tests; GachaModule ISR + GCFG keys; HwConfig pins;
-WebUI rows; COMMANDS/commands.json; pio run -e mice_gacha; pio test -e native.
+Full QC, then PR + merge.
 
 ## Done
+- GachaMath: EncWatch (stall), learnPerPass, slowNow, slowSpeed + 3 native tests (47/47).
+- GachaModule: ISR on enc A (B = direction), GCFG enc/enc_stall/slow/enc_per_slot (NVS, CLEAR),
+  status encoder/enc_count/enc_per_pass; learn skipped on GHOME; hall still ends every turn.
+- HwConfig: enc_a/enc_b on the gacha pin card, default -1 (GACHA_ENC_A/B in
+  firmware/config/esp32_hardware_gacha_module.h, + GACHA_ENC_STALL_MS/SLOW_PCT/MIN_SPEED).
+- WebUI GA_CFG rows + status text, COMMANDS.md, commands.json; systems.json fw-gacha now names
+  check_firmware_build + check_build_split. pio run -e mice_gacha OK (71.4%). 2 sabotages caught.
 
 ## Next
 1. QC (check names for firmware: tools/systems.py which firmware/src/modules/gacha/...), PR, merge.

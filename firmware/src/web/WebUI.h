@@ -1109,7 +1109,11 @@ const GA_CFG=[['slots','Pockets',1,64,'how many pockets the holder has'],
   ['timeout','Stuck after (ms)',200,60000,'no magnet for this long while turning = stuck, motor off'],
   ['settle','Keep turning after a magnet (ms)',0,2000,'centres the pocket'],
   ['debounce','Sensor steady for (ms)',0,200,''],
-  ['active_low','Sensor pulls low on a magnet',0,1,'1 for the usual hall sensors']];
+  ['active_low','Sensor pulls low on a magnet',0,1,'1 for the usual hall sensors'],
+  ['enc','Use the motor encoder',0,1,'needs Encoder A on the pin card; the magnet still decides where it stops'],
+  ['enc_stall','Stuck when the motor stops for (ms)',0,5000,'encoder only; 0 = off'],
+  ['slow','Slow down before the stop (%)',0,100,'encoder only; 0 = full speed to the magnet'],
+  ['enc_per_slot','Encoder counts per pocket',0,1000000,'0 = learn it from the magnets']];
 const GA_STATE={idle:'ready',turning:'turning',homing:'finding the loading place',dispensing:'giving a prize'};
 function gachaStatus(m,has){
   if(!has('dispense')||m.hits===undefined)return;
@@ -1129,6 +1133,7 @@ function gachaStatus(m,has){
   let now=GA_STATE[m.state]||m.state;
   if(m.want)now+=' ('+m.got+' of '+m.want+' magnets)';
   if(!m.motor)now+=' - no motor wired yet (Setup & wiring ▸ pins)';
+  if(m.encoder)now+=' · encoder '+(m.enc_per_pass?m.enc_per_pass+' per magnet':'learning');
   if(m.empty)now+=' - out of balls';
   if(!m.open)now+=' - event closed';
   $('gaNow').textContent=now;

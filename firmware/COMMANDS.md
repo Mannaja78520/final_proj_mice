@@ -760,7 +760,7 @@ Wiring defaults (change with `PIN`, reboot): motor `motor_a` 25, `motor_b` 26,
 | `GSTOCK <n>` / `GSTOCK ADD <n>` / `GSTOCK OFF` | `OK stock=12` | balls in the machine now / put more in / stop counting (`stock` -1, never empty) |
 | `GEVENT NAME <text>` / `OPEN` / `CLOSE` / `RESET` | `OK event open` | the event name (40 chars), open or closed, `RESET` = this event's counts to zero (given, forced, loaded, seq) |
 | `GITEM [<type>]` | `OK item "keychain"` | which item type this machine holds; the hub's gacha app routes "give type X" by it |
-| `GCFG <key> <value>` / `GCFG CLEAR` | `OK drop=2` | `magnets` `slots` (pockets) `drop` `speed` (50-1023) `dir` (1/-1) `timeout` `debounce` `settle` (ms) `active_low` (0/1). Magnets must be a whole multiple of pockets |
+| `GCFG <key> <value>` / `GCFG CLEAR` | `OK drop=2` | `magnets` `slots` (pockets) `drop` `speed` (50-1023) `dir` (1/-1) `timeout` `debounce` `settle` (ms) `active_low` (0/1); encoder (A47-11, needs PIN enc_a): `enc` (0/1) `enc_stall` (ms, 0 = off) `slow` (% before the last magnet, 0 = off) `enc_per_slot` (0 = learn). Magnets must be a whole multiple of pockets; the magnet, never the encoder, decides where it stops |
 | `GCFG?` | `{"magnets":4,"slots":4,"drop":2,...,"per_slot":1}` | the settings |
 | `G?` | `{"state":"idle","at_hall":true,"hits":42,"pos":0,"item":"","event":"","open":true,"stock":12,"empty":false,"loaded":12,"given":3,"forced":1,"total":40,"last":{"seq":3,"result":"done","who":"","forced":false,"ms":1830},"cfg":{...},"motor":true}` | everything; the same object is `module` in `INFO` / `/api/status` |
 | `GCOUNT RESET` | `OK lifetime counts cleared` | `hits` and `total` to zero |

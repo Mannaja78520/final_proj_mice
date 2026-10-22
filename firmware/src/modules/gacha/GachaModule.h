@@ -48,6 +48,8 @@ private:
     int timeoutMs_ = GACHA_SLOT_TIMEOUT_MS, debounceMs_ = GACHA_DEBOUNCE_MS;
     int settleMs_ = GACHA_SETTLE_MS;
     bool activeLow_ = GACHA_HALL_ACTIVE_LOW;
+    // optional encoder (A47-11): on/off, stall ms, slow %, counts per pocket (0 = learn)
+    int enc_ = 1, encStallMs_ = GACHA_ENC_STALL_MS, slowPct_ = GACHA_SLOW_PCT, encPerSlot_ = 0;
     String item_;                  // item type this machine holds ("" = not set)
 
     // event + stock (NVS)
@@ -64,6 +66,9 @@ private:
     int want_ = 0, got_ = 0, sign_ = 1;
     int pos_ = 0;                  // pocket at the sensor, counted from boot / GHOME
     uint32_t lastPassMs_ = 0, settleUntil_ = 0, startMs_ = 0;
+    gachamath::EncWatch encWatch_;
+    int32_t passCount_ = 0, learned_ = 0;  // encoder count at the last magnet; counts per magnet
+    bool slowing_ = false;
 
     // last dispense, for apps polling G?
     uint32_t seq_ = 0;
@@ -72,6 +77,9 @@ private:
     uint32_t lastMs_ = 0;
 
     bool hallActive() const;
+    bool encOn() const;
+    int32_t perPass() const;
+    void encLoop(uint32_t now);
     int perSlot() const { return gachamath::passesPerSlot(magnets_, slots_); }
     void startTurn(Job job, int passes);
     void finish(const char* result);
