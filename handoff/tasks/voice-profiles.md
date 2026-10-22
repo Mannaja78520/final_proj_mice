@@ -1,9 +1,9 @@
 # Named local character profiles
 
 Owner: codex:10221534-bb09
-Updated: 2026-10-22T16:07:17.980701+07:00
+Updated: 2026-10-22T16:50:33.171197+07:00
 Branch: task/A45-27-10221534-bb09
-Last commit: 060c9c0 (packaged-path checkpoint follows)
+Last commit: bd73420 (PR51 merged; deployment checkpoint follows)
 Plan: A45-27; A45-26 PC deployment continuation
 
 ## Goal
@@ -17,17 +17,18 @@ Plan: A45-27; A45-26 PC deployment continuation
 - One same-provider independent design/code reviewer found and verified fixes: automatic default writes, legacy-key read redaction, FAQ/search dirty-state tracking. No remaining blocker in bounded source review.
 
 ## Doing now
-Full gate at060c9c0 passed7544/0. Final packaging inspection found frozen
-hub reading temporary instead of external user-data folder. Fixed root derivation;
-3 actual target assertions added. Deliberate regression caught1/1, restored green.
-All8 sabotage cases caught. Final exact-tree full gate follows this checkpoint.
-No hardware moved. Prior4-failure run and aborted quick retained as historical evidence.
+Full final06f7434 passed7547/0 in500.7s, with check_hub_nav isolated retry green.
+PR51 merged bd73420. Root main updated with all user data preserved and plan union.
+First build failed because old exe still running; stopped verified idle hub, rebuilt
+via spec successfully. Voice8767 restarted; feeling8779/watcher/friend preserved.
+Actual packaged hub selects current's gestures; original voice/style/FAQ/calibration
+hashes unchanged. WAV76608frames, first4.591s/repeat0.049s, exact cache reuse.
+Replay50 cases now running against real8767, log root scratch/profiles-deploy-2026-10-22/replay.log.
 
 ## Next
-1. Run final full quiet QC after packaged-path fix; source frozen until completion.
-2. Inspect exact final diff, commit/push branch and PR; merge only after full QC green. Reviewer integration findings fixed (old-profile migration, Windows aliases, captured-path reads).
-3. Preserve root dirty work while deploying merged A45-26+A45-27: systems build, exe via spec, restart own hub/voice/feeling services, verify live profiles and prior 50-case replay. No robot motion without ready hardware.
-4. Mark plan done only after deployment verification; update this file and push at every stop.
+1. Finish real replay and inspect actual service health/errors.
+2. Mark A45-27 done only after replay; close this task via bookkeeping PR with generated header and own real plan row. Full runtime gate remains06f7434; metadata-only checks after closure.
+3. Release own QC/build/deploy claims in root BRIDGE, preserving user dirty files and running services. No robot motion performed.
 
 ## Blocked
-- No external prerequisite for implementation. Full QC pending; actual human judgement of voice emotion and real robot playback remain unmeasured.
+- No external prerequisite. Real replay in flight; human judgement of voice emotion and physical robot playback remain unmeasured.
