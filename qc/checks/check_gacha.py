@@ -264,6 +264,35 @@ def run(t):
         t.ok(a1.get("ok") and a2.get("ok") and len(_dispenses()) == n + 2,
              "two prizes a moment apart are both given: the busy machine is waited for", (a1, a2))
 
+        # ---- A47-10: the asked kind is out; a neighbour holds another kind ----
+        F.login(base)
+        g.save_cfg({"machines": [
+            {"id": "g1", "dev": "usb:COM99:70", "label": "ตู้หน้าเวที", "item": "sticker", "near": ["g2"]},
+            {"id": "g2", "dev": "usb:COM99:71", "label": "ตู้ข้างประตู", "item": "keychain", "near": ["g1"]}],
+            "items": {"keychain": {"label": "พวงกุญแจ", "instead": ["sticker"]},
+                      "sticker": {"label": "สติกเกอร์"}}})
+        _post(base, "/api/gacha/machine", {"machine": "g2", "cmd": "GSTOCK 0"})
+        _post(base, "/api/gacha/machine", {"machine": "g1", "cmd": "GSTOCK 3"})
+        n = len(_dispenses())
+        code, got = _post(base, "/api/gacha/dispense", {"item": "keychain", "person": "Lin", "machine": "g2"})
+        t.ok(got.get("ok") and got.get("item") == "sticker" and got.get("instead_of") == "keychain"
+             and _dispenses()[n:] == [(70, "GDISPENSE Lin")],
+             "keychains are out: the machine next door gives its other kind instead", (got, _dispenses()[n:]))
+        t.ok("สติกเกอร์" in (got.get("message") or "") and "พวงกุญแจ" in (got.get("message") or ""),
+             "and the answer says what ran out and what is given", got.get("message"))
+        code, view = F.get(base + "/api/gacha")
+        t.ok('"at": "usb:COM99:70"' in view, "each machine carries its address for its own page link", view[:200])
+        g.save_cfg({"items": {"keychain": {"label": "พวงกุญแจ"}, "sticker": {"label": "สติกเกอร์"}}})
+        time.sleep(0.5)
+        n = len(_dispenses())
+        code, got = _post(base, "/api/gacha/dispense", {"item": "keychain", "person": "Lin", "machine": "g2"})
+        t.ok(not got.get("ok") and got.get("reason") == "out everywhere" and len(_dispenses()) == n,
+             "with no substitute named it still says the kind ran out", got)
+        g.save_cfg({"machines": cfg["machines"], "items": cfg["items"]})
+        _post(base, "/api/gacha/machine", {"machine": "g2", "cmd": "GSTOCK 10"})
+        _post(base, "/api/gacha/machine", {"machine": "g1", "cmd": "GSTOCK 0"})
+        F.logout_qc()
+
         # ---- A47-7: app keys for another PC or a form ----
         F.login(base)
         code, made = _post(base, "/api/gacha/keys", {"make": "pc2 game"})

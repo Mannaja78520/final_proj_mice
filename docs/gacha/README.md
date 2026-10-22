@@ -13,6 +13,7 @@ turns and refuses; the hub decides which machine, who may have one, and logs.
 | `main_python/gacha.py` | the brain; `main_python/hub_api_gacha.py` the routes |
 | `docs/gacha/*.sample.csv` | sample rules = the Google Sheet layout |
 | `docs/gacha/apps_script.gs` | optional write-back to the sheet |
+| `docs/gacha/form_sample.gs` | sample Google Form that adds people rows |
 
 ## Rules (one Google Sheet, two tabs)
 
@@ -27,7 +28,13 @@ for them with no kind gets the kind on their row.
 An empty `event` applies to every event. Column order does not matter, the
 header names do. Pull: in the sheet, File ▸ Share ▸ Publish to web ▸ choose the
 tab ▸ CSV, paste each link on the page, press **Take them from the sheet**.
-A Google Form can feed either tab later (form responses → a sheet with the same headers).
+A Google Form can feed the people tab: `docs/gacha/form_sample.gs` makes the form and
+adds each answer as a row (same headers), so the hub reads it on the next pull.
+
+A kind may name substitutes: `items.<kind>.instead: ["sticker"]` (page: Kinds ▸ When it
+runs out, give instead). When the kind is out on every machine, the first substitute the
+person may still have is given, from a machine in the asked machine's `near` list first;
+the answer carries `instead_of` and says so (`messages.instead`).
 
 ## For other apps (Voice, the friend's game, Face_Regonize)
 

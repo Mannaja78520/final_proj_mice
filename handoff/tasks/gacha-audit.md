@@ -20,11 +20,13 @@ Audit the original ask (thread "Gachapon prize dispenser module", 13:47Z) agains
 - Sheet: pull (CSV) + push (docs/gacha/apps_script.gs); samples items/people CSV; no Form sample.
 
 ## Doing now
-Building: items.<kind>.instead (gacha.dispense tries a substitute kind, a near machine first,
-message key "instead"), Kinds table column, machine "its own page" link (/mod?dev=), Google Form
-sample docs/gacha/form_sample.gs; check_gacha asserts.
+Full QC, then PR + merge, then the Thai audit table in the thread.
 
 ## Done
+- gacha.py: dispense(instead_of), _instead (items.<kind>.instead, near machine first, message
+  "instead", log reason "instead of X"), machines_view "at" (address). Page: Kinds column, "its
+  own page" link per machine, message row. docs/gacha/form_sample.gs + README + Help.
+  check_gacha 48 asserts, 2 sabotages caught.
 
 ## Next
 1. QC check_gacha + sabotage, quick QC, full QC, PR, merge; post the Thai audit table.

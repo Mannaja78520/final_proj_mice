@@ -68,7 +68,9 @@
 
 <div class="card">
   <h2>Kinds of prize</h2>
-  <div class="wrapx"><table class="gt" id="iTable"><thead><tr><th>Short name</th><th>Shown as</th><th></th></tr></thead><tbody></tbody></table></div>
+  <p class="mini"><b>When it runs out, give instead</b>: other kinds (short names, spaces between) a person gets in
+    its place, from a machine next to the asked one first. Empty = say it ran out.</p>
+  <div class="wrapx"><table class="gt" id="iTable"><thead><tr><th>Short name</th><th>Shown as</th><th>When it runs out, give instead</th><th></th></tr></thead><tbody></tbody></table></div>
   <div class="row"><button onclick="addItem()">+ Kind</button><button class="primary" onclick="saveItems()">Save kinds</button></div>
   <div class="statline" id="iStat"></div>
 </div>
@@ -182,7 +184,7 @@ const HOOKS = [["dispensed", "a prize fell"], ["empty", "a machine ran out"], ["
 const MSG_KEYS = [["here", "prize ready here"], ["go_to", "this one is empty, go to another"],
                   ["refused_event_closed", "event not started"], ["refused_person_limit_reached", "person had enough"],
                   ["refused_item_used_up_for_this_event", "kind used up"], ["refused_out_everywhere", "out everywhere"],
-                  ["refused_no_machine", "no machine holds it"], ["refused_busy", "machine still giving the last one"]];
+                  ["refused_no_machine", "no machine holds it"], ["refused_busy", "machine still giving the last one"], ["instead", "ran out, another kind given instead"]];
 const STATE = {idle: "ready", turning: "turning", homing: "finding the loading place", dispensing: "giving"};
 
 function say(id, a, okWords) {
@@ -225,6 +227,8 @@ function drawMachines() {
       '<td><button onclick="mcmd(' + i + ',\'GSTOCK ADD \'+val(\'ballN\'))">add balls</button>' +
       '<button onclick="mcmd(' + i + ',\'GSTOCK \'+val(\'ballN\'))">set balls</button>' +
       '<button onclick="mcmd(' + i + ',\'GHOME\')">to loading place</button>' +
+      (m.at ? '<a class="btn" target="_blank" href="/mod?dev=' + encodeURIComponent(m.at) + '&name=' + encodeURIComponent(m.module || m.id) +
+        '" title="magnets, pockets until it falls, speed: the machine\'s own settings">its own page ↗</a>' : '') +
       '<button onclick="S.machines.splice(' + i + ',1);drawMachines()">remove</button></td></tr>';
   }).join("");
 }
@@ -250,14 +254,16 @@ async function mcmd(i, c) {
 
 function drawItems() {
   $("iTable").tBodies[0].innerHTML = Object.entries(S.items || {}).map(([k, v]) =>
-    '<tr>' + cell(k, "id") + cell(v.label, "label") + '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>').join("");
+    '<tr>' + cell(k, "id") + cell(v.label, "label") + cell((v.instead || []).join(" "), "instead") +
+    '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>').join("");
 }
-function addItem() { $("iTable").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' + cell("", "id") + cell("", "label") + '<td></td></tr>'); }
+function addItem() { $("iTable").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' + cell("", "id") + cell("", "label") + cell("", "instead") + '<td></td></tr>'); }
 async function saveItems() {
   const items = {};
   [...$("iTable").tBodies[0].rows].forEach(r => {
     const id = r.querySelector('[data-k="id"]').value.trim();
-    if (id) items[id] = {label: r.querySelector('[data-k="label"]').value.trim()};
+    const instead = r.querySelector('[data-k="instead"]').value.split(/[\s,]+/).filter(Boolean);
+    if (id) items[id] = Object.assign({label: r.querySelector('[data-k="label"]').value.trim()}, instead.length ? {instead} : {});
   });
   say("iStat", await Mice.Api.post("/api/gacha/config", {items}), "kinds saved"); load();
 }
