@@ -28,20 +28,25 @@ copied moves saved; "drop a video, get a safe saved move" in one step. No RL.
   time bar as a gesture, per-event switch.
 
 ## Doing now
-Step 1: safe paths in Studio. Files: app_parts/safe_path.js (built after
-collisions.js), web/safe_path.json, qc/checks/check_safe_path.py (browser:
-a straight move through the body must come back as a way round with no hit;
-an unreachable/hitting pose must be refused). Then hook into video + dummy.
+Step 2: talk gestures. Files: config/gestures.json (written), main_python/gestures.py
+(planner: words -> picks + random beats over the speech ms, steps from the fit,
+speed floor, clamp), routes in hub_api_studio.py (/api/gestures GET/POST,
+/fit, /plan open; /play gated), user file STUDIO/gestures.json git-ignored,
+MICE_GESTURES_MINE for QC. Then Studio fit + card, then Voice page.
 
 ## Done
-- safe_path.js written (not yet in tools/web_build.json, not tested).
-- HANDOFF/CLAUDE/AGENTS/GEMINI: "update the task file and push WIP after every step".
+- safe_path.js + web/safe_path.json: straight first, else RRT-Connect + shortcuts
+  (8-30 ms on the QC rig). check_safe_path (19 asserts, browser): ways round clear
+  at 1 deg, hitting pose refused, video keys safe, dummy live follow holds on a
+  hitting pose (asserted on fake_serial.wire), recording saved as a safe move.
+  Sabotage: 3 of 3 caught. check_video_moves still green (keepTime for music).
+- Video tab: "▶ Make and save" = one click to a safe saved move.
+- Dummy: live follow plans round / holds; "● Record the dummy" -> safe saved move.
+- HANDOFF/CLAUDE/AGENTS/GEMINI/TEMPLATE: Doing now + push WIP every step.
 
 ## Next
-1. Add safe_path.js to tools/web_build.json, safe_path.json, hook into video
-   (vidBuild/vidUse + one-click save), dummy follow (live + record).
-2. config/gestures.json, main_python/gestures.py, hub routes, Studio card, Voice page.
-3. QC: check_safe_path (colliding cases on the fake rig), check_gestures; full QC; PR.
+1. config/gestures.json, main_python/gestures.py, hub routes, Studio card, Voice page.
+2. QC check_gestures; help.html; systems.json; full QC; PR; merge.
 
 ## Blocked
 - nothing (real-arm test needs the robot).

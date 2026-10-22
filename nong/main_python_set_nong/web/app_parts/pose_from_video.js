@@ -415,8 +415,12 @@ function vidBuild(fit, picks, opts) {
     for (const a of [0, 1]) if (s.miss[a]) { handMiss[a]++; pk.missHand[a] = true; }
   }
   out.forEach(k => { k.hold = Math.round(k.hold); });
+  // A46-1: a person's arm passes where the robot's cannot (through its own
+  // body). safeKeys() drops a pose that hits and sends a hitting move round,
+  // on this rig's sizes; each move keeps its time, so the music still fits.
+  const safe = safeKeys(out, undefined, opts.music);
   // start: the first kept move's moment, where these moves meet the video
-  return { keys: out, videoMs: fit.videoMs, handMiss, kept, partial, start };
+  return { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe };
 }
 // frames -> timeline keys in one go. No video needed, so QC hands it a skeleton.
 // opts: { tol, mirror, waist, hand: [want L, R] (0 = as in the video),
@@ -443,6 +447,7 @@ function vidHandNote(made) {
 function vidSummary() {
   const m = vidMade, opts = vidOpts();
   return m.keys.length + " moves from " + (m.videoMs / 1000).toFixed(1) + " s of video."
+    + (m.safe && safeSay(m.safe) ? " " + safeSay(m.safe) : "")
     + (opts.music && m.partial
       ? " To stay with the music, " + m.partial + " of them go only part of the way: "
         + "the person moved faster than the robot can."
@@ -497,6 +502,18 @@ function vidSee(pk) {
   pose = vidPoseAt(vidFit, ms).slice();
   poseChanged(false);
 }
+// One step (user 2026-10-22: *drop a video, the robot does it*): make the
+// moves, put them on the time bar and save them under the video's name. The
+// safety pass is in vidBuild, so what is saved is what was checked.
+async function vidMakeAndSave() {
+  if (vidBusy) return;
+  await vidMake();
+  if (!vidMade || vidMade.keys.length < 2) return;
+  const base = ((vidSrc && (vidSrc.name || vidSrc.url)) || "video").split(/[\\/?#]/).filter(Boolean).pop();
+  setWorkName("video_" + base.replace(/\.[^.]*$/, ""));
+  if (!(await vidUse("replace"))) return;
+  if (await saveAll()) vidSay($("tlStat").textContent);
+}
 async function vidMake() {
   if (vidBusy) { vidStop = true; return; }
   vidBusy = true; vidStop = false;
@@ -546,10 +563,10 @@ function vidRebuild() {
   vidSay(vidSummary());
 }
 async function vidUse(how) {
-  if (!vidMade) return;
+  if (!vidMade) return false;
   const add = JSON.parse(JSON.stringify(vidMade.keys));
   if (how === "replace") {
-    if (!(await askUnsaved("replace the time bar with the moves from the video"))) return;
+    if (!(await askUnsaved("replace the time bar with the moves from the video"))) return false;
     keys = add;
   } else {
     // the first video pose is a move like any other once it follows a move
@@ -573,5 +590,6 @@ async function vidUse(how) {
       : "")
     + "Press Play to watch, edit any move, then Save or Save to robot.";
   vidSay($("tlStat").textContent);
+  return true;
 }
 vidFill();

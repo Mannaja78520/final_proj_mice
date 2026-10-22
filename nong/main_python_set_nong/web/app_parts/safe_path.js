@@ -130,10 +130,12 @@ function safeShortcut(path, rnd) {
 // A list of timeline keys made safe in one pass (video, recording, gestures):
 // a key whose pose hits is dropped (its time goes to the move before, so the
 // rhythm stays), and a move that would go through the body gets in-between
-// keys that go round. The move's time is shared by distance along the way
-// round, and never below what the servos need. Returns
+// keys that go round. Each leg gets what the servos need (minTime) plus a
+// share of the rest by distance. keepTime (a video's "stay with the music"):
+// a way round that cannot fit in the move's own time is a fail, so the arm
+// holds instead of falling behind the music. Returns
 // { keys, dropped, around, failed } - failed moves are dropped too.
-function safeKeys(K, budgetMs) {
+function safeKeys(K, budgetMs, keepTime) {
   const out = [], tally = { dropped: 0, around: 0, failed: 0 };
   for (const k0 of K) {
     const k = { ...k0, pose: k0.pose.map((v, j) => clampJ(j, v)) };
@@ -149,14 +151,24 @@ function safeKeys(K, budgetMs) {
       continue;
     }
     if (plan.how === "around") {
-      tally.around++;
       const legs = plan.path.slice(1).map((q, i) => safeGap(plan.path[i], q));
+      const need = plan.path.slice(1).map((q, i) => Math.max(MIN_MOVE_MS, minTime(plan.path[i], q)));
       const all = legs.reduce((s, v) => s + v, 0) || 1;
-      plan.path.slice(1, -1).forEach((q, i) => out.push({
-        pose: q, hold: 0, tset: k.tset, via: true,
-        t: Math.max(MIN_MOVE_MS, Math.round((k.t || 0) * legs[i] / all)),
-      }));
-      k.t = Math.max(MIN_MOVE_MS, Math.round((k.t || 0) * legs[legs.length - 1] / all));
+      const spare = (k.t || 0) - need.reduce((s, v) => s + v, 0);
+      if (keepTime && spare < 0) {
+        prev.hold = (prev.hold || 0) + (k.t || 0) + (k.hold || 0);
+        tally.failed++;
+        continue;
+      }
+      tally.around++;
+      const legT = i => Math.round(need[i] + Math.max(0, spare) * legs[i] / all);
+      plan.path.slice(1, -1).forEach((q, i) => out.push({ pose: q, hold: 0, tset: k.tset, via: true, t: legT(i) }));
+      k.t = legT(legs.length - 1);
+    } else if (keepTime && minTime(prev.pose, k.pose) > (k.t || 0) + 1) {
+      // a dropped pose before it made this move longer: go as far as the time
+      // allows, along the line just checked clear (like vidReachSide)
+      const f = Math.max(0, Math.min(1, ((k.t || 0) - 1) / minTime(prev.pose, k.pose)));
+      k.pose = safeLerp(prev.pose, k.pose, f).map((v, j) => clampJ(j, v));
     }
     out.push(k);
   }

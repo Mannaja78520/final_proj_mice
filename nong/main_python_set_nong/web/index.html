@@ -297,6 +297,8 @@
       </details>
       <div class="row">
         <button class="primary" id="vidGo" onclick="vidMake()" disabled>▶ Make moves</button>
+        <button id="vidGoSave" onclick="vidMakeAndSave()" disabled
+                title="One step: make the moves, keep them clear of the robot's own body, put them on the time bar and save them under the video's name.">▶ Make and save</button>
       </div>
       <div id="vidList" class="vidlist"></div>
       <div class="row" id="vidUseBox" hidden>
@@ -424,6 +426,9 @@
         <button class="primary" onclick="dummyToNewKey()" title="read the dummy now and add its pose to the end of the sequence">+ Dummy pose as new move</button>
         <button onclick="dummyToSelectedKey()" title="replace the selected move's pose with the dummy's pose now">Use dummy pose for selected move</button>
         <button onclick="robotToSelectedKey()" title="send the real robot to the move selected in the timeline, at that move's speed">Robot → selected move</button>
+      </div>
+      <div class="row">
+        <button id="dummyRecBtn" onclick="dummyRecToggle()" title="Record what the dummy does. Stop keeps it: the moves go on the time bar, clear of the robot's own body, and are saved.">● Record the dummy</button>
       </div>
       <div class="statline" id="dummyStat" aria-live="polite">not connected — pick where the dummy is, then Connect (or pick Simulated)</div>
     </div>

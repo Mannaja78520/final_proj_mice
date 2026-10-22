@@ -1817,10 +1817,12 @@ function safeShortcut(path, rnd) {
 // A list of timeline keys made safe in one pass (video, recording, gestures):
 // a key whose pose hits is dropped (its time goes to the move before, so the
 // rhythm stays), and a move that would go through the body gets in-between
-// keys that go round. The move's time is shared by distance along the way
-// round, and never below what the servos need. Returns
+// keys that go round. Each leg gets what the servos need (minTime) plus a
+// share of the rest by distance. keepTime (a video's "stay with the music"):
+// a way round that cannot fit in the move's own time is a fail, so the arm
+// holds instead of falling behind the music. Returns
 // { keys, dropped, around, failed } - failed moves are dropped too.
-function safeKeys(K, budgetMs) {
+function safeKeys(K, budgetMs, keepTime) {
   const out = [], tally = { dropped: 0, around: 0, failed: 0 };
   for (const k0 of K) {
     const k = { ...k0, pose: k0.pose.map((v, j) => clampJ(j, v)) };
@@ -1836,14 +1838,24 @@ function safeKeys(K, budgetMs) {
       continue;
     }
     if (plan.how === "around") {
-      tally.around++;
       const legs = plan.path.slice(1).map((q, i) => safeGap(plan.path[i], q));
+      const need = plan.path.slice(1).map((q, i) => Math.max(MIN_MOVE_MS, minTime(plan.path[i], q)));
       const all = legs.reduce((s, v) => s + v, 0) || 1;
-      plan.path.slice(1, -1).forEach((q, i) => out.push({
-        pose: q, hold: 0, tset: k.tset, via: true,
-        t: Math.max(MIN_MOVE_MS, Math.round((k.t || 0) * legs[i] / all)),
-      }));
-      k.t = Math.max(MIN_MOVE_MS, Math.round((k.t || 0) * legs[legs.length - 1] / all));
+      const spare = (k.t || 0) - need.reduce((s, v) => s + v, 0);
+      if (keepTime && spare < 0) {
+        prev.hold = (prev.hold || 0) + (k.t || 0) + (k.hold || 0);
+        tally.failed++;
+        continue;
+      }
+      tally.around++;
+      const legT = i => Math.round(need[i] + Math.max(0, spare) * legs[i] / all);
+      plan.path.slice(1, -1).forEach((q, i) => out.push({ pose: q, hold: 0, tset: k.tset, via: true, t: legT(i) }));
+      k.t = legT(legs.length - 1);
+    } else if (keepTime && minTime(prev.pose, k.pose) > (k.t || 0) + 1) {
+      // a dropped pose before it made this move longer: go as far as the time
+      // allows, along the line just checked clear (like vidReachSide)
+      const f = Math.max(0, Math.min(1, ((k.t || 0) - 1) / minTime(prev.pose, k.pose)));
+      k.pose = safeLerp(prev.pose, k.pose, f).map((v, j) => clampJ(j, v));
     }
     out.push(k);
   }
@@ -7524,8 +7536,12 @@ function vidBuild(fit, picks, opts) {
     for (const a of [0, 1]) if (s.miss[a]) { handMiss[a]++; pk.missHand[a] = true; }
   }
   out.forEach(k => { k.hold = Math.round(k.hold); });
+  // A46-1: a person's arm passes where the robot's cannot (through its own
+  // body). safeKeys() drops a pose that hits and sends a hitting move round,
+  // on this rig's sizes; each move keeps its time, so the music still fits.
+  const safe = safeKeys(out, undefined, opts.music);
   // start: the first kept move's moment, where these moves meet the video
-  return { keys: out, videoMs: fit.videoMs, handMiss, kept, partial, start };
+  return { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe };
 }
 // frames -> timeline keys in one go. No video needed, so QC hands it a skeleton.
 // opts: { tol, mirror, waist, hand: [want L, R] (0 = as in the video),
@@ -7552,6 +7568,7 @@ function vidHandNote(made) {
 function vidSummary() {
   const m = vidMade, opts = vidOpts();
   return m.keys.length + " moves from " + (m.videoMs / 1000).toFixed(1) + " s of video."
+    + (m.safe && safeSay(m.safe) ? " " + safeSay(m.safe) : "")
     + (opts.music && m.partial
       ? " To stay with the music, " + m.partial + " of them go only part of the way: "
         + "the person moved faster than the robot can."
@@ -7606,6 +7623,18 @@ function vidSee(pk) {
   pose = vidPoseAt(vidFit, ms).slice();
   poseChanged(false);
 }
+// One step (user 2026-10-22: *drop a video, the robot does it*): make the
+// moves, put them on the time bar and save them under the video's name. The
+// safety pass is in vidBuild, so what is saved is what was checked.
+async function vidMakeAndSave() {
+  if (vidBusy) return;
+  await vidMake();
+  if (!vidMade || vidMade.keys.length < 2) return;
+  const base = ((vidSrc && (vidSrc.name || vidSrc.url)) || "video").split(/[\\/?#]/).filter(Boolean).pop();
+  setWorkName("video_" + base.replace(/\.[^.]*$/, ""));
+  if (!(await vidUse("replace"))) return;
+  if (await saveAll()) vidSay($("tlStat").textContent);
+}
 async function vidMake() {
   if (vidBusy) { vidStop = true; return; }
   vidBusy = true; vidStop = false;
@@ -7655,10 +7684,10 @@ function vidRebuild() {
   vidSay(vidSummary());
 }
 async function vidUse(how) {
-  if (!vidMade) return;
+  if (!vidMade) return false;
   const add = JSON.parse(JSON.stringify(vidMade.keys));
   if (how === "replace") {
-    if (!(await askUnsaved("replace the time bar with the moves from the video"))) return;
+    if (!(await askUnsaved("replace the time bar with the moves from the video"))) return false;
     keys = add;
   } else {
     // the first video pose is a move like any other once it follows a move
@@ -7682,6 +7711,7 @@ async function vidUse(how) {
       : "")
     + "Press Play to watch, edit any move, then Save or Save to robot.";
   vidSay($("tlStat").textContent);
+  return true;
 }
 vidFill();
 // --- the Video page (A44-8) ---
@@ -7740,6 +7770,7 @@ function vidSetSrc(url, src) {
   $("vidUseBox").hidden = true;
   $("vidSoundBox").hidden = true;
   $("vidGo").disabled = false;
+  $("vidGoSave").disabled = false;
   $("vidPlayBtn").disabled = false;
   $("vidTech").textContent = "";
   vidLastMs = -1;
@@ -7930,6 +7961,9 @@ function vidApplySettings(s) {
 let dummySim = null;          // simulated pot angles, or null when not simulating
 let dummyFollowOn = false;    // the follow loop is running
 let dummyLast = null;         // the last pose read, for "did it move"
+let dummySafePose = null;     // the last pose the ROBOT was sent that was clear (A46-1)
+let dummyHeld = "";           // why the robot is holding, until a safe send
+let dummyRec = null;          // while recording: [{ pose, ms }]
 
 function dummySource() { return $("dummySrc").value; }
 function dummyBus() { const v = $("dummyBus").value.trim(); return v ? parseInt(v, 10) : 0; }
@@ -8047,7 +8081,62 @@ function dummyFollowChanged() {
     if (!dummyFollowOn) { dummyFollowOn = true; dummyFollowTick(); }
   } else {
     dummyFollowOn = false;
+    dummySafePose = null;      // the next follow starts from wherever the arm is
+    dummyHeld = "";
   }
+}
+// The robot copies the dummy only along a way that misses its own body
+// (A46-1, user 2026-10-22). The straight move is checked first; a hit gets a
+// way round, planned within liveBudgetMs so the follow stays live. Nothing in
+// time, or a dummy pose the robot's body cannot take: the robot HOLDS its last
+// safe pose and the line says so. Studio still shows the dummy as it is.
+function dummySafeSend() {
+  const want = pose.slice();
+  const plan = planSafe(dummySafePose || want, want, SAFE.liveBudgetMs);
+  if (plan.fail) {
+    dummyHeld = "robot holds its last safe pose: " + plan.fail;
+    return false;
+  }
+  dummyHeld = "";
+  plan.path.slice(1, -1).forEach(q => liveSend("POSE " + q.map(fmtA).join(" ") + " T " + liveT()));
+  sendPoseLive();
+  dummySafePose = want;
+  return true;
+}
+// ---- record what the dummy does, then keep it as a saved move -------------
+function dummyRecToggle() {
+  if (!dummyRec) {
+    if ($("dummyFollow").value === "off") { $("dummyFollow").value = "studio"; dummyFollowChanged(); }
+    dummyRec = [{ pose: pose.slice(), ms: performance.now() }];   // where it starts
+    $("dummyRecBtn").textContent = "■ Stop and save";
+    $("dummyStat").textContent = "recording the dummy: move it, then press Stop and save";
+    return;
+  }
+  const rec = dummyRec;
+  dummyRec = null;
+  $("dummyRecBtn").textContent = "● Record the dummy";
+  return dummyRecSave(rec);
+}
+// One key per real change (2 deg or more), timed as it was done, then the
+// same safety pass as a video; on the time bar and saved under one name.
+async function dummyRecSave(rec) {
+  const K = [];
+  for (const r of rec) {
+    const prev = K[K.length - 1];
+    if (!prev) { K.push({ pose: r.pose, t: 1000, hold: 0, ms: r.ms }); continue; }
+    if (deltaDeg(prev.pose, r.pose) < 2) continue;
+    K.push({ pose: r.pose, t: Math.max(MIN_MOVE_MS, Math.round(r.ms - prev.ms)), hold: 0, tset: true, ms: r.ms });
+  }
+  if (K.length < 2) { $("dummyStat").textContent = "nothing to keep: the dummy did not move"; return false; }
+  const safe = safeKeys(K.map(({ ms, ...k }) => k));
+  if (safe.keys.length < 2) { $("dummyStat").textContent = "nothing to keep: every pose would make the robot hit itself"; return false; }
+  if (!(await askUnsaved("replace the time bar with the recording"))) return false;
+  keys = safe.keys; bumpKeys(); clearBadMarks(); clampKeyTimes();
+  selKey = 0; pose = [...keys[0].pose]; poseChanged(false); renderTimeline();
+  setWorkName("dummy_" + new Date().toISOString().slice(0, 16).replace(/[-:T]/g, ""));
+  const ok = await saveAll();
+  $("dummyStat").textContent = keys.length + " moves recorded. " + safeSay(safe) + " " + $("tlStat").textContent;
+  return ok;
 }
 async function dummyFollowTick() {
   if (!dummyFollowOn) return;
@@ -8059,13 +8148,15 @@ async function dummyFollowTick() {
                                        (x !== null && Math.abs(x - prev[i]) >= 0.2));
     if (moved && dummyFollowOn) {
       dummyApply(v);
+      if (dummyRec) dummyRec.push({ pose: pose.slice(), ms: performance.now() });
       // The robot gets the pose through the same live path a slider drag
       // uses: its timing comes from the link, and the robot's own LIMIT and
       // max_dps still decide how far and how fast it really goes.
-      if (mode === "robot") sendPoseLive();
+      if (mode === "robot") dummySafeSend();
     }
-    $("dummyStat").textContent = (mode === "robot" ? "robot + Studio follow" : "Studio follows") +
-      " the dummy";
+    $("dummyStat").textContent = mode === "robot" && dummyHeld ? dummyHeld
+      : (mode === "robot" ? "robot + Studio follow" : "Studio follows") + " the dummy"
+        + (dummyRec ? " (recording)" : "");
   } catch (e) {
     $("dummyStat").textContent = "dummy: no answer (" + (e.message || e) + ") — still trying";
   }
