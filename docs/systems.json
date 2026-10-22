@@ -143,8 +143,9 @@
      "files": ["firmware/src/modules/dummy/"],
      "depends": ["fw-core", "fw-nong"]},
 
-    {"id": "fw-gacha", "summary": "The prize dispenser module (gachapon): one motor, one hall sensor at the loading place, magnets under the pockets; counts, turns, refuses when closed or empty (A47-1).",
+    {"id": "fw-gacha", "summary": "The prize dispenser module (gachapon): one motor, one hall sensor at the loading place, magnets under the pockets; counts, turns, refuses when closed or empty (A47-1); an optional motor encoder catches a stall and slows the stop (A47-11).",
      "files": ["firmware/src/modules/gacha/"],
+     "checks": ["check_firmware_build", "check_build_split"],
      "depends": ["fw-core"]},
 
     {"id": "fw-lift", "summary": "The lift module: motor, encoder, limits, RGB, speaker.",
