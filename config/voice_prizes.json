@@ -10,6 +10,7 @@
   //   source    how it was answered: faq | model | verse | read
   //   question  regular expression(s) on what the person said
   //   answer    regular expression(s) on the answer
+  //   event     only while this event (Prize machines page) is the current one
   // A saved answer in qa_data.json may also carry "prize": "<kind>" itself.
   //
   // say: true adds the machine's words ("รับ...ที่ตู้...ได้เลย") to the spoken answer.

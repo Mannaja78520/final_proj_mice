@@ -21,8 +21,9 @@
 <div class="card">
   <h2>Play Games</h2>
   <p class="mini" id="whatIs">All-Jao Games runs beside Mice on this PC. The server starts automatically when opening this page.</p>
+  <p class="mini" id="prizeNote">A win here can give a real prize from the prize machines: choose which game and which result gives what on the <a href="/app/gacha/#games">Prize machines</a> page.</p>
   <div class="row" style="margin-bottom:var(--sp-3)">
-    <button class="primary" id="openBtn" onclick="games.open('open', this)">Open in a new tab ↗</button>
+    <button class="primary" id="openBtn" onclick="openGames()">Open in a new tab ↗</button>
     <button id="checkBtn" onclick="look()">Check again</button>
   </div>
   <div class="statline tech mini" id="where"></div>
@@ -69,7 +70,21 @@ function showFrame(where) {
   document.getElementById("gameFrameContainer").hidden = false;
 }
 
+// The hub serves their folder itself at /play/all-jao/ with the prize link
+// added (A47-6, config/partners.json "play"); their own server is the fallback.
+const PLAY = "/play/all-jao/";
+async function playHere() {
+  try { return (await fetch(PLAY, {method: "GET", cache: "no-store"})).ok; } catch (e) { return false; }
+}
+async function openGames() {
+  if (await playHere()) return window.open(PLAY, "_blank");
+  games.open("open", document.getElementById("openBtn"));
+}
 async function look() {
+  if (await playHere()) {
+    games.status.ready("All-Jao Games is ready. A win can give a prize.");
+    return showFrame(PLAY);
+  }
   if (await games.check()) return showFrame(games.url("open"));
   try {
     showFrame(await games.ensure());

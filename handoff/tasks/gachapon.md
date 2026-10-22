@@ -39,6 +39,10 @@ nothing: A47-1..4 merged; only A47-5 (bench) left, owner free.
 - check_gacha (24 asserts, fake boards ids 70/71 in fake_serial) proven by sabotage (fallback, auth).
 
 ## Next
+1. After PR #60 (A47-6..9: game wins, app keys, Voice topics) on the PC: rebuild MiceHub.exe with
+   the spec, open /app/all-jao/, add a row on Prize machines > Games that give a prize, spin the
+   wheel and see the toast + the board turn. Their :8080 settings do not carry to /play/all-jao/.
+   Friend asks (Thai): docs/gacha/friend_requests.md.
 2. A47-5 on the bench (PC RC session): flash mice_gacha over USB/OTA, PIN motor_a/motor_b if not 25/26, measure drop pockets (GCFG drop), speed, settle; add the machine on the Prize machines page; rebuild MiceHub.exe (spec) so the new page and routes ship.
 
 ## Blocked

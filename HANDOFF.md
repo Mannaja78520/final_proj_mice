@@ -26,6 +26,13 @@ same file. History is in `docs/BRIDGE.md` and the STATE block of
   the files, the approach) and push; AFTER it move that to Done, update Next,
   Blocked, Last commit and Updated, and push a WIP commit to your branch.
   Before you end, stop for any reason, or when usage runs low: the same.
+- Write down what you LEARNED from reading code, not only what you did
+  (user 2026-10-22: stop paying tokens to read the same code twice): under
+  `## Facts found`, file:line and what it does / why it matters. The next AI
+  reads that and skips re-reading those files.
+- Usage about to run out: stop the step, bring the task file up to date, push,
+  and say in the thread "ChatGPT/Codex can continue from handoff/tasks/<file>"
+  (they have no auto-resume; a Claude session checks back after its reset).
 - Task fully done: delete its file in the PR that merges the work.
 - Do not create other handoff files. Edit this file only when a rule or a
   path below changes, or a big feature lands (Built so far).

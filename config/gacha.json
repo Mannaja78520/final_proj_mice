@@ -27,6 +27,13 @@
   "low_stock": 2,
   // seconds to wait for a board to say the prize fell
   "wait_s": 20,
+  // seconds to wait for a machine still turning for the last prize
+  "busy_wait_s": 8,
+  // games that give a prize (A47-6): first row that fits wins.
+  //   game    a game name from config/partners.json "play.watch" (empty = any)
+  //   result  pattern on what the game reports (prize name, quiz score, "won")
+  //   item    the kind;  machine  optional;  person  who, when the game names nobody
+  "games": [],
   // words the robot says; empty = the built-in Thai words in gacha.py
   "messages": {}
 }

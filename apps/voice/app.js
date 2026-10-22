@@ -1809,9 +1809,54 @@ static langName(code){
       Math.max(3, 100 * c / top) + '%"></b><span>' + c + '</span></div>').join("") : '<p class="mini">none yet</p>';
   };
   bars("qTopic", st.topic); bars("qSource", st.source); bars("qLang", st.lang); bars("qPrize", st.prize); bars("qTop", st.question);
+  const un = Object.entries(st.unsaved || {});
+  if (!this.$("qUnsaved")) return;
+  this.$("qUnsaved").innerHTML = un.length ? un.map(([n, c], i) => '<div class="row"><span style="flex:1">' + esc(n) +
+    ' <span class="mini">(' + c + ')</span></span><button data-i="' + i + '">Make an answer</button></div>').join("") :
+    '<p class="mini">none: every question had a saved answer</p>';
+  this.$("qUnsaved").querySelectorAll("button[data-i]").forEach(b => { b.onclick = () => this.answerFrom(un[+b.dataset.i][0]); });
+  if (!this.topicsLoaded) this.loadTopics();
   const hours = Object.keys(st.hour).map(Number).sort((x, y) => x - y), max = Math.max(1, ...Object.values(st.hour));
   this.$("qHour").innerHTML = hours.map(h => '<div title="' + h + ':00 · ' + st.hour[h] + '"><b style="height:' +
     (100 * st.hour[h] / max) + '%"></b><span>' + (h % 3 ? "" : h) + '</span></div>').join("");
+}
+
+  // A question people keep asking becomes a saved answer (A47-8): open the
+  // Answers tab with a new row that already holds the question.
+  answerFrom(question){
+  this.showTab("answers");
+  this.addAnswerRow([question]);
+}
+
+  // Voice ▸ Questions ▸ Topics (A47-8): config/voice_topics.json on the page.
+  async loadTopics(){
+  const a = await Mice.Api.get("/api/questions/topics");
+  if (!a.ok) return;
+  this.topicsLoaded = true;
+  this.topicsFallback = a.data.fallback;
+  this.$("qTopicsT").tBodies[0].innerHTML = "";
+  (a.data.topics || []).forEach(t => this.topicRow(t));
+}
+
+  topicRow(t){
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+  const tr = document.createElement("tr");
+  tr.innerHTML = '<td><input data-k="id" value="' + esc(t.id) + '" size="10"></td>' +
+    '<td><input data-k="label" value="' + esc(t.label) + '"></td>' +
+    '<td><textarea data-k="patterns" rows="2" style="width:100%">' + esc((t.patterns || []).join("\n")) + '</textarea></td>' +
+    '<td><button>remove</button></td>';
+  tr.querySelector("button").onclick = () => tr.remove();
+  this.$("qTopicsT").tBodies[0].appendChild(tr);
+}
+
+  async saveTopics(){
+  const topics = [...this.$("qTopicsT").tBodies[0].rows].map(r => {
+    const g = k => r.querySelector('[data-k="' + k + '"]').value;
+    return {id: g("id").trim(), label: g("label").trim(), patterns: g("patterns").split("\n").map(x => x.trim()).filter(Boolean)};
+  }).filter(t => t.id || t.patterns.length);
+  const a = await Mice.Api.post("/api/questions/topics", {topics, fallback: this.topicsFallback});
+  this.$("qTopicsStat").textContent = a.ok && a.data.ok !== false ? "Topics saved. New questions use them."
+    : (a.says || (a.data && a.data.error) || "could not save");
 }
 
   showTab(name){
@@ -2190,9 +2235,9 @@ static langName(code){
 }
 
   // A new row goes on TOP, where it can be seen, with its first box ready.
-  addAnswerRow(){
+  addAnswerRow(questions){
   this.$("ansFind").value = "";
-  this.sheet.unshift({item: {questions: [], answer: ""}, dirty: true});
+  this.sheet.unshift({item: {questions: Array.isArray(questions) ? questions : [], answer: ""}, dirty: true});
   this.drawSheet();
   const first = this.firstAsk(this.sheet[0]);
   if (first) { first.focus(); if (first.scrollIntoView) first.scrollIntoView({block: "center"}); }

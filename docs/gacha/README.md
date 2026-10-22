@@ -40,7 +40,7 @@ POST /api/gacha/dispense {"item": "keychain", "person": "Somchai", "app": "game"
   -> {"ok": true, "machine": "g2", "label": "...", "place": "...", "moved": true,
       "seq": 7, "stock": 4, "message": "ตู้ 1 หมดแล้ว เชิญรับ...ที่ตู้ 2 ..."}
   -> {"ok": false, "reason": "person limit reached" | "event closed" | "item used up for this event"
-                            | "out everywhere" | "no machine" | "no item", "message": "..."}
+                            | "out everywhere" | "no machine" | "no item" | "busy", "message": "..."}
 POST /api/gacha/can      {"item": "keychain", "person": "Somchai"} -> {"ok", "reason", "limit", "had", "special"}
 GET  /api/gacha          machines with live stock, kinds, event
 ```
@@ -48,6 +48,42 @@ GET  /api/gacha          machines with live stock, kinds, event
 (admin's extra, still counted) needs a logged-in person. Leave out `machine`
 for "any machine of that kind"; when it is empty the next machine of the same
 kind is used (its `near` list first) and `message` says where to go.
+
+### Another PC, a form, a button somewhere else: app keys (A47-7)
+
+Make a key on the page (**Other PCs and forms ▸ Make a key**, shown once; kept in
+`.local/gacha/keys.json`, never in git). Send it as the header `X-Mice-Key` or
+`?key=` on the address. A key works on `dispense`, `can` and `game` only: the
+limits still apply, `force` is refused, settings are refused.
+
+```
+curl -X POST http://<hub>:8642/api/gacha/dispense -H "Content-Type: application/json" \
+     -H "X-Mice-Key: <key>" -d '{"item": "keychain", "person": "Somchai", "app": "form"}'
+```
+```js
+// Google Apps Script (a Form's "on submit" trigger)
+function onFormSubmit(e) {
+  UrlFetchApp.fetch("http://<hub>:8642/api/gacha/dispense?key=<key>", {method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({item: e.namedValues["kind"][0], person: e.namedValues["name"][0], app: "form"})});
+}
+```
+(Apps Script runs on Google's servers: the hub must be reachable from the internet
+for that one; on the venue WiFi use a program on a PC instead.)
+
+### Games: a win gives a prize (A47-6)
+
+```
+POST /api/gacha/game {"game": "quiz", "result": "5", "person": "Somchai", "ref": "<unique id of this win>"}
+  -> the dispense answer, or {"ok": false, "reason": "no prize for this result"} (not an error)
+```
+`config/gacha.json` `"games"`: `[{game, result (pattern), item, machine?, person?}]`, first
+fit wins; the page edits it. The same `ref` twice gives once. The friend's All-Jao
+Games call this without any change on their side: the hub serves their folder at
+`/play/all-jao/` and adds `apps/all-jao/link.js`, which watches what
+`config/partners.json` `all-jao.play.watch` names (their localStorage win lists, the
+memory game's status text). Allowed for a hub page in this PC's browser (Origin =
+this hub), a program on this PC, a key, or a login.
 
 ### Webhooks (config `webhooks.<kind>`: list of addresses)
 

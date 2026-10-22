@@ -33,9 +33,25 @@
 
   <h3>Voice</h3>
   <p>Voice ▸ Questions shows what people ask about, by topic and by hour, and downloads every
-     question as a file. An answer can also give a prize: the prize rules say which answers give
-     which kind.</p>
-  <p class="tech">config/voice_topics.json · config/voice_prizes.json ("enabled": true to turn on) · log .local/voice/questions.csv</p>
+     question as a file. <b>Asked often, no saved answer yet</b> lists what the model had to answer;
+     <b>Make an answer</b> writes it once so the robot says it every time. The topics and their words
+     are edited on the same tab. An answer can also give a prize: the prize rules say which answers
+     give which kind, for every event or only one.</p>
+  <p class="tech">config/voice_topics.json (GET/POST /api/questions/topics) · config/voice_prizes.json ("enabled": true to turn on, when.event) · log .local/voice/questions.csv</p>
+
+  <h3>Games that give a prize</h3>
+  <p>A win in the friend's games (All-Jao Games opened from the hub) asks for a prize: the wheel's
+     and the claw's prize name, the quiz score with the player's name, or <b>won</b> for the memory
+     game. <b>Games that give a prize</b> says which result gives which kind. The hub shows their
+     own game folder with a small addition; their files are never changed. Settings saved in their
+     own copy (port 8080) are not seen there: set the wheel and claw prizes again once inside the hub.</p>
+  <p class="tech">config/partners.json all-jao "play" (what to watch) · config/gacha.json "games" · /play/all-jao/ · apps/all-jao/link.js · POST /api/gacha/game {game, result, person, ref}</p>
+
+  <h3>Other PCs and forms</h3>
+  <p><b>Make a key</b> for each app that should ask for prizes from another PC, a Google Form's script
+     or a button somewhere else. A key can only ask: the limits still hold and it can never give one
+     anyway. Remove the key to stop that app.</p>
+  <p class="tech">header X-Mice-Key: &lt;key&gt; or ?key=&lt;key&gt; on /api/gacha/dispense, /can, /game · keys in .local/gacha/keys.json</p>
 
   <h3>Not tried yet</h3>
   <p>Tested only with pretend machines. The real machine still needs its pockets-until-it-falls

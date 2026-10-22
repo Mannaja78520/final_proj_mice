@@ -22,6 +22,8 @@ import base64
 import itertools
 import hashlib
 import ipaddress
+import html
+import mimetypes
 import json
 import os
 import re
@@ -1906,6 +1908,10 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
             if hub_auth.gated(path, method) and not self.logged_in() \
                     and not (hub_auth.local_ok(path, method)
                              and self.from_program_here()) \
+                    and not (hub_auth.key_ok(path, method)
+                             and self.app_key_name(q)) \
+                    and not (hub_auth.page_here_ok(path, method)
+                             and self.page_here()) \
                     and not (path in hub_auth.CMD_ROUTES and hub_auth.free_read(
                         path, (q.get("c") or [""])[0], _commands())):
                 self.drain()
@@ -1942,6 +1948,9 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
                 return self.send_err("not found: " + path, 404)
             return self.send_bytes(f.read_bytes(),
                                    MIME.get(f.suffix.lower(), "application/octet-stream"))
+
+        if path.startswith("/play/"):
+            return self.serve_play(path)
 
         if path == "/mod" or path == "/mod.html":
             # the module's OWN website (WebUI.h) served with a transport shim —
@@ -2089,6 +2098,49 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
             return False
         return not self.headers.get("Origin") and not any(
             k.lower().startswith("sec-fetch-") for k in self.headers.keys())
+
+    def serve_play(self, path):
+        """A partner's own web folder, READ ONLY, at /play/<id>/ (A47-6).
+
+        For a partner whose config/partners.json entry has "play": its pages
+        get the `inject` script and the `watch` list, so a win in the friend's
+        game reaches /api/gacha/game. Their files are never written: the
+        script is added to the bytes on the way out."""
+        pid, _, rel = path[len("/play/"):].partition("/")
+        entry = (read_partners().get("partners") or {}).get(pid)
+        play = entry.get("play") if isinstance(entry, dict) else None
+        if not isinstance(play, dict):
+            return self.send_err("no such game folder: " + pid, 404)
+        if not rel and not path.endswith("/"):
+            return self.send_redirect(path + "/")
+        base = Path(entry.get("folder") or "")
+        if not base.is_dir():                    # the exe's own neighbour folder
+            base = HERE.parent.parent / base.name
+        base = base.resolve()
+        f = (base / (rel or play.get("page") or "index.html")).resolve()
+        if base not in f.parents or ".git" in f.relative_to(base).parts:
+            return self.send_err("forbidden", 403)
+        if not f.is_file():
+            return self.send_err("not found: " + path, 404)
+        data = f.read_bytes()
+        if f.suffix.lower() in (".html", ".htm") and play.get("inject"):
+            cfg = json.dumps({"partner": pid, "watch": play.get("watch") or []},
+                             ensure_ascii=False).replace("</", "<\\/")
+            tag = ('<script>window.MICE_PLAY=%s;</script><script src="%s"></script>'
+                   % (cfg, html.escape(str(play["inject"]), quote=True))).encode("utf-8")
+            low = data.lower()
+            at = low.rfind(b"</body>")
+            data = data[:at] + tag + data[at:] if at >= 0 else data + tag
+        return self.send_bytes(data, MIME.get(f.suffix.lower())
+                               or mimetypes.guess_type(f.name)[0] or "application/octet-stream")
+
+    def page_here(self) -> bool:
+        """A hub page in THIS PC's browser (hub_auth.PAGE_HERE_OK): this PC,
+        JSON, and an Origin that names this hub - a website or a DNS-rebinding
+        page carries its own origin, so it is refused."""
+        ctype = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        return (is_self(self.client_address[0]) and ctype == "application/json"
+                and bool(self.headers.get("Origin")) and self.origin_is_hub())
 
     def origin_is_hub(self) -> bool:
         """No Origin (a program), or one naming THIS hub - never a website.

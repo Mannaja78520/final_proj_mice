@@ -113,3 +113,9 @@ body.adv .not-adv{display:none}
 .qhist div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;min-width:0}
 .qhist b{display:block;background:var(--acc);border-radius:var(--r-sm) var(--r-sm) 0 0}
 .qhist span{font-size:10px;text-align:center;color:var(--mut)}
+/* Voice ▸ Questions ▸ Topics editor (A47-8): scrolls inside on a phone */
+.wrapx{overflow-x:auto}
+.qtopics{width:100%;border-collapse:collapse}
+.qtopics td{vertical-align:top;padding:2px}
+.qtopics input{width:100%;min-width:80px}
+.qtopics textarea{min-width:180px}

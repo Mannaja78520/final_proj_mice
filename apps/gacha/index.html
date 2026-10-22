@@ -117,10 +117,40 @@
     (Voice ▸ Questions); <b>Words</b> are words in the question.</p>
   <div class="row"><label><input type="checkbox" id="vpOn"> Answers can give prizes</label>
     <label><input type="checkbox" id="vpSay"> Say where to get it</label></div>
-  <div class="wrapx"><table class="gt" id="vpT"><thead><tr><th>About</th><th>Words</th><th>Answered from</th><th>Kind</th><th></th></tr></thead><tbody></tbody></table></div>
+  <div class="wrapx"><table class="gt" id="vpT"><thead><tr><th>About</th><th>Words</th><th>Answered from</th><th>Event</th><th>Kind</th><th></th></tr></thead><tbody></tbody></table></div>
   <div class="row"><button onclick="vpRow({})">+ Row</button><button class="primary" onclick="vpSave()">Save</button></div>
   <datalist id="vpTopics"></datalist>
   <div class="statline" id="vpStat"></div>
+</div>
+
+<div class="card" data-needs-login="gacha" id="games">
+  <h2>Games that give a prize</h2>
+  <p class="mini">A win in the friend's games (All-Jao Games, opened from the hub) asks for a prize. The first row that
+    fits gives its kind; the rules above still apply. <b>Result</b>: words in what the game shows, for example the
+    wheel's prize name, the quiz score <code>5</code> or <code>won</code> for the memory game; empty = any win.
+    <b>Who</b>: the person when the game does not name one (empty = whoever the camera sees).</p>
+  <div class="wrapx"><table class="gt" id="gmT"><thead><tr><th>Game</th><th>Result</th><th>Kind</th><th>Machine</th><th>Who</th><th></th></tr></thead><tbody></tbody></table></div>
+  <div class="row"><button onclick="gmRow({})">+ Row</button><button class="primary" onclick="gmSave()">Save</button>
+    <a href="/app/all-jao/">Play the games</a></div>
+  <datalist id="gmNames"></datalist>
+  <div class="statline" id="gmStat"></div>
+</div>
+
+<div class="card" data-needs-login="gacha">
+  <h2>Other PCs and forms</h2>
+  <p class="mini">A program on another PC, a Google Form's script or a button in another app can ask for a prize with
+    a key, without signing in here. One key per app; remove it to stop that app. A key can only ask: the limits per
+    person and per event still hold, and it can never give one anyway.</p>
+  <div class="row"><span class="lbl">App name</span><input id="kName" placeholder="the game on PC 2">
+    <button class="primary" onclick="keyMake()">Make a key</button></div>
+  <p class="mini" id="kNew" hidden>Copy this key now, it is shown once: <code id="kVal"></code></p>
+  <div class="wrapx"><table class="gt" id="kT"><thead><tr><th>App</th><th>Made</th><th>Ends with</th><th></th></tr></thead><tbody></tbody></table></div>
+  <pre class="tech mini">POST http://&lt;this PC&gt;:8642/api/gacha/dispense
+header X-Mice-Key: &lt;key&gt;   (or ?key=&lt;key&gt; on the address)
+{"item": "keychain", "person": "Somchai", "app": "my game"}
+POST /api/gacha/game {"game": "quiz", "result": "5", "person": "Somchai"}
+Examples: docs/gacha/README.md</pre>
+  <div class="statline" id="kStat"></div>
 </div>
 
 <div class="card">
@@ -152,7 +182,7 @@ const HOOKS = [["dispensed", "a prize fell"], ["empty", "a machine ran out"], ["
 const MSG_KEYS = [["here", "prize ready here"], ["go_to", "this one is empty, go to another"],
                   ["refused_event_closed", "event not started"], ["refused_person_limit_reached", "person had enough"],
                   ["refused_item_used_up_for_this_event", "kind used up"], ["refused_out_everywhere", "out everywhere"],
-                  ["refused_no_machine", "no machine holds it"]];
+                  ["refused_no_machine", "no machine holds it"], ["refused_busy", "machine still giving the last one"]];
 const STATE = {idle: "ready", turning: "turning", homing: "finding the loading place", dispensing: "giving"};
 
 function say(id, a, okWords) {
@@ -177,6 +207,7 @@ async function load() {
   $("lowN").value = S.low_stock || 0;
   const live = S.machines.filter(m => !m.live.error).length;
   stat.ready(live + " of " + S.machines.length + " machines answering", "GET /api/gacha");
+  gmDraw(); keysLoad();
   loadRules(); loadLog();
 }
 
@@ -310,8 +341,52 @@ async function loadLog() {
     const top = e.length ? e[0][1] : 1;
     return '<h3>' + w + '</h3>' + (e.length ? e.map(([n, c]) => '<div><span class="lbl">' + esc(n) +
       '</span><b style="width:' + Math.max(4, 200 * c / top) + 'px"></b>' + c + '</div>').join("") : '<p class="mini">none yet</p>');
-  }).join("");
+  }).join("") + hours(st.hour || {});
 }
+// prizes per hour of the day: one bar per hour that had any
+function hours(h) {
+  const e = Object.entries(h).map(([k, c]) => [+k, c]).sort((a, b) => a[0] - b[0]);
+  const top = Math.max(1, ...e.map(x => x[1]));
+  return '<h3>per hour</h3>' + (e.length ? e.map(([k, c]) => '<div><span class="lbl">' + k + ':00</span><b style="width:' +
+    Math.max(4, 200 * c / top) + 'px"></b>' + c + '</div>').join("") : '<p class="mini">none yet</p>');
+}
+
+function gmRow(r) {
+  $("gmT").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' +
+    '<td><input data-k="game" list="gmNames" value="' + esc(r.game) + '" placeholder="any game"></td>' +
+    '<td><input data-k="result" value="' + esc(r.result) + '" placeholder="any win"></td>' +
+    '<td><input data-k="item" value="' + esc(r.item) + '"></td>' +
+    '<td><input data-k="machine" value="' + esc(r.machine) + '" placeholder="any"></td>' +
+    '<td><input data-k="person" value="' + esc(r.person) + '" placeholder="the camera"></td>' +
+    '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
+}
+function gmDraw() {
+  $("gmNames").innerHTML = (S.game_names || []).map(n => '<option value="' + esc(n) + '">').join("");
+  $("gmT").tBodies[0].innerHTML = ""; (S.games || []).forEach(gmRow);
+}
+async function gmSave() {
+  const games = [...$("gmT").tBodies[0].rows].map(r => {
+    const o = {};
+    r.querySelectorAll("[data-k]").forEach(i => { if (i.value.trim()) o[i.dataset.k] = i.value.trim(); });
+    return o;
+  }).filter(o => o.item);
+  say("gmStat", await Mice.Api.post("/api/gacha/config", {games}), "saved"); load();
+}
+
+async function keysLoad() {
+  const a = await Mice.Api.get("/api/gacha/keys");
+  if (!a.ok) return;
+  $("kT").tBodies[0].innerHTML = a.data.keys.map(k => '<tr><td>' + esc(k.name) + '</td><td>' + esc(k.made) +
+    '</td><td>…' + esc(k.end) + '</td><td><button data-n="' + esc(k.name) + '" onclick="keyDrop(this.dataset.n)">remove</button></td></tr>').join("")
+    || '<tr><td colspan="4" class="mini">no keys yet</td></tr>';
+}
+async function keyMake() {
+  const a = await Mice.Api.post("/api/gacha/keys", {make: val("kName") || "app"});
+  say("kStat", a, "key made");
+  if (a.ok) { $("kVal").textContent = a.data.key; $("kNew").hidden = false; }
+  keysLoad();
+}
+async function keyDrop(name) { say("kStat", await Mice.Api.post("/api/gacha/keys", {drop: name}), "key removed"); keysLoad(); }
 
 function vpRow(r) {
   const w = r.when || {};
@@ -320,6 +395,7 @@ function vpRow(r) {
     '<td><input data-k="question" value="' + esc([].concat(w.question || []).join("|")) + '"></td>' +
     '<td><select data-k="source">' + ["", "faq", "model", "verse", "read"].map(v => '<option' + (v === (w.source || "") ? " selected" : "") +
       ' value="' + v + '">' + ({"": "any", faq: "saved answers", model: "the model", verse: "a new poem", read: "reading aloud"}[v]) + '</option>').join("") + '</select></td>' +
+    '<td><input data-k="event" value="' + esc(w.event) + '" placeholder="every event"></td>' +
     '<td><input data-k="item" value="' + esc(r.item) + '"></td>' +
     '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
 }
@@ -336,6 +412,7 @@ async function vpSave() {
     if (g("topic")) when.topic = g("topic");
     if (g("question")) when.question = g("question");
     if (g("source")) when.source = g("source");
+    if (g("event")) when.event = g("event");
     return {when, item: g("item")};
   }).filter(r => r.item);
   say("vpStat", await Mice.Api.post("/api/gacha/voice", {enabled: $("vpOn").checked, say: $("vpSay").checked, rules}), "saved");

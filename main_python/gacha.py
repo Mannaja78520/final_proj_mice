@@ -22,9 +22,12 @@ Settings: config/gacha.json. Rules and logs hold people's names, so they live
 in <data>/.local/gacha/ (git-ignored, never under apps/ which needs no login).
 """
 import csv
+import hmac
 import io
 import json
 import os
+import re
+import secrets
 import threading
 import time
 import urllib.request
@@ -39,7 +42,10 @@ DEFAULT_CFG = {
     "webhooks": {},
     "low_stock": 2,
     "wait_s": 20,
+    "busy_wait_s": 8,
     "messages": {},
+    # games that give a prize (A47-6): [{game, result (pattern), item, person}]
+    "games": [],
 }
 
 # Every log row has these columns, in this order (one source for the CSV
@@ -130,6 +136,7 @@ class Gacha:
         self.sleep = sleep
         self.lock = threading.RLock()     # one dispense decision at a time
         self.hook_log = []                # last webhook results, for the page
+        self.wins_seen = []               # game win refs already given (A47-6)
 
     # ---- files ---------------------------------------------------------------
     @property
@@ -139,6 +146,10 @@ class Gacha:
     @property
     def log_csv(self):
         return self.data / "dispense_log.csv"
+
+    @property
+    def keys_path(self):
+        return self.data / "keys.json"
 
     @property
     def log_jsonl(self):
@@ -437,11 +448,16 @@ class Gacha:
                 if st.get("error"):
                     tried.append({"machine": m["id"], "why": "not reachable"})
                     continue
+                if st.get("state") not in (None, "idle"):
+                    # still turning for the last prize: two wins a second apart
+                    # must both be given, not "out everywhere" (A47-6, measured
+                    # with the fake board: a turn takes the whole TURN time)
+                    st = self._wait_idle(m)
+                    if st.get("error") or st.get("state") not in (None, "idle"):
+                        tried.append({"machine": m["id"], "why": "busy"})
+                        continue
                 if st.get("stock") == 0 and not force:
                     tried.append({"machine": m["id"], "why": "empty"})
-                    continue
-                if st.get("state") not in (None, "idle"):
-                    tried.append({"machine": m["id"], "why": "busy"})
                     continue
                 cmd = "GDISPENSE " + ("FORCE " if force else "") + (person or app or "hub")
                 try:
@@ -468,7 +484,9 @@ class Gacha:
                 self._after(m, item, stock, row)
                 break
             else:
-                why = "out everywhere" if any(t["why"] == "empty" for t in tried) else "no machine"
+                whys = [t["why"] for t in tried]
+                why = ("busy" if "busy" in whys else "out everywhere" if "empty" in whys
+                       else "no machine")
                 row = self.log_event(dict(base, kind="refused", reason=why,
                                           message=self.message("refused_" + why.replace(" ", "_"),
                                                                item=self.item_label(item))))
@@ -481,6 +499,15 @@ class Gacha:
         else:
             threading.Thread(target=self.wait_done, args=(m, seq), daemon=True).start()
         return out
+
+    def _wait_idle(self, m):
+        """A busy machine's status once it is idle, or after busy_wait_s."""
+        until = self.clock() + float(self.cfg().get("busy_wait_s") or 0)
+        st = self.status_of(m)
+        while st.get("state") not in (None, "idle") and not st.get("error") and self.clock() < until:
+            self.sleep(0.2)
+            st = self.status_of(m)
+        return st
 
     def _after(self, m, item, stock, row):
         low = _int(self.cfg().get("low_stock"), 0)
@@ -544,9 +571,9 @@ class Gacha:
         return sent
 
     def stats(self):
-        """Counts for the page: per item, per machine, per person, this event."""
+        """Counts for the page: per item, machine, person, app, hour, this event."""
         ev = self.cfg()["event"].get("name", "")
-        per = {"item": {}, "machine": {}, "person": {}, "app": {}, "refused": {}}
+        per = {"item": {}, "machine": {}, "person": {}, "app": {}, "refused": {}, "hour": {}}
         for r in self.log_rows(limit=0):
             if not _same(r.get("event"), ev):
                 continue
@@ -554,10 +581,88 @@ class Gacha:
                 for k in ("item", "machine", "person", "app"):
                     v = r.get(k) or "-"
                     per[k][v] = per[k].get(v, 0) + 1
+                h = _int((r.get("time") or "")[11:13], -1)
+                if h >= 0:
+                    per["hour"][h] = per["hour"].get(h, 0) + 1
             elif r.get("kind") == "refused":
                 v = r.get("reason") or "-"
                 per["refused"][v] = per["refused"].get(v, 0) + 1
         return per
+
+    # ---- games that give a prize (A47-6) -------------------------------------
+    def game_item(self, game, result):
+        """(rule) the first "games" rule whose game and result pattern fit, or None."""
+        for r in self.cfg().get("games") or []:
+            if not isinstance(r, dict) or not r.get("item"):
+                continue
+            if r.get("game") and not _same(r["game"], game):
+                continue
+            pat = str(r.get("result") or "")
+            try:
+                if pat and not re.search(pat, str(result or ""), re.I):
+                    continue
+            except re.error:
+                continue                   # one bad pattern must not stop the rest
+            return r
+        return None
+
+    def game_win(self, game, result, person="", ref="", by="game"):
+        """A game says someone won: give what the rules name, once per `ref`."""
+        game = str(game or "").strip()
+        key = game + ":" + str(ref) if ref else ""
+        with self.lock:
+            if key and key in self.wins_seen:
+                return {"ok": True, "repeat": True, "message": ""}
+            rule = self.game_item(game, result)
+            if not rule:
+                self.log_event({"kind": "game", "app": "game:" + game, "person": person,
+                                "reason": "no prize for this result", "result": str(result)})
+                return {"ok": False, "reason": "no prize for this result", "message": ""}
+            if key:
+                self.wins_seen = (self.wins_seen + [key])[-500:]
+        person = person or rule.get("person") or ""
+        return self.dispense(item=rule["item"], person=person, app="game:" + game,
+                             machine=rule.get("machine") or None, by=by)
+
+    # ---- app keys: another PC or a form asks without a login (A47-7) -------
+    def keys(self):
+        try:
+            got = json.loads(self.keys_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return []
+        return [k for k in got.get("keys") or [] if isinstance(k, dict) and k.get("key")]
+
+    def _save_keys(self, keys):
+        self.data.mkdir(parents=True, exist_ok=True)
+        write_json(self.keys_path, {"keys": keys})
+
+    def make_key(self, name):
+        name = str(name or "").strip()[:40] or "app"
+        with self.lock:
+            keys = [k for k in self.keys() if k.get("name") != name]
+            k = {"name": name, "key": secrets.token_urlsafe(18),
+                 "made": time.strftime("%Y-%m-%d %H:%M", time.localtime(self.clock()))}
+            self._save_keys(keys + [k])
+        self.log_event({"kind": "settings", "reason": "app key made", "app": name})
+        return k
+
+    def drop_key(self, name):
+        with self.lock:
+            keys = self.keys()
+            left = [k for k in keys if k.get("name") != name]
+            self._save_keys(left)
+        self.log_event({"kind": "settings", "reason": "app key removed", "app": name})
+        return len(left) != len(keys)
+
+    def key_name(self, given):
+        """The name of the app whose key this is, or '' (compared in constant time)."""
+        given = str(given or "")
+        if not given:
+            return ""
+        for k in self.keys():
+            if hmac.compare_digest(str(k["key"]), given):
+                return k.get("name") or "app"
+        return ""
 
 
 DEFAULT_MESSAGES = {
@@ -568,5 +673,6 @@ DEFAULT_MESSAGES = {
     "refused_item_used_up_for_this_event": "{item}หมดสำหรับงานนี้แล้ว",
     "refused_out_everywhere": "{item}หมดทุกตู้แล้ว",
     "refused_no_machine": "ยังไม่มีตู้ที่ใส่{item}",
+    "refused_busy": "ตู้กำลังปล่อยของอยู่ รอสักครู่แล้วลองใหม่นะ",
     "refused_no_item": "ไม่ได้บอกว่าจะให้ของอะไร",
 }

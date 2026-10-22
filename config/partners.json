@@ -21,6 +21,27 @@
     "folder": "E:/final_proj/mice/All-Jao-Games",
     "start": "python -m http.server 8080",
     "login": { "kind": "none", "path": "" },
+    // A WIN GIVES A PRIZE (A47-6). The hub serves this folder read-only at
+    // /play/all-jao/ and adds `inject` to its pages; the script reports each
+    // new win below to /api/gacha/game. Their game keeps wins only in its own
+    // localStorage, so the list is read out of their code (2026-10-22):
+    // wheel script.js:8 + wheel-state.js:28, claw claw-game.js:8,308,
+    // quiz quiz-game.js:8,138 (name + score), memory matching-game.js:84,94.
+    // A new game is one more entry. A new origin: settings saved in their
+    // own copy at :8080 are not seen here (Help says so).
+    "play": {
+      "page": "index.html",
+      "inject": "/app/all-jao/link.js",
+      "watch": [
+        { "game": "wheel", "key": "all-jao-games.wheel.v2", "list": "logs", "id": "id", "result": "label", "defaultPerson": "@face" },
+        { "game": "claw", "key": "all-jao-games.claw.v1", "list": "logs", "id": "id", "result": "label", "defaultPerson": "@face" },
+        { "game": "quiz", "key": "all-jao-games.quiz.v1", "list": "players", "id": "id", "result": "score", "person": "name" },
+        { "game": "memory", "text": "memory-status-text", "match": "ครบทุกคู่", "result": "won", "defaultPerson": "@face" },
+        // asked of the friend (docs/gacha/friend_requests.md): one event for every
+        // game; when it comes, the rows above can go
+        { "event": "alljao:win", "result": "result", "person": "player", "id": "id", "defaultPerson": "@face" }
+      ]
+    },
     "events": [
       {
         "kind": "status",
