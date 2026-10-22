@@ -3,7 +3,7 @@
 Owner: codex:10221534-bb09
 Updated: 2026-10-22T16:50:33.171197+07:00
 Branch: task/A45-27-10221534-bb09
-Last commit: bd73420 (PR51 merged; deployment checkpoint follows)
+Last commit: 9b3b757 (readiness replay checkpoint follows)
 Plan: A45-27; A45-26 PC deployment continuation
 
 ## Goal
@@ -23,7 +23,7 @@ First build failed because old exe still running; stopped verified idle hub, reb
 via spec successfully. Voice8767 restarted; feeling8779/watcher/friend preserved.
 Actual packaged hub selects current's gestures; original voice/style/FAQ/calibration
 hashes unchanged. WAV76608frames, first4.591s/repeat0.049s, exact cache reuse.
-Replay50 cases now running against real8767, log root scratch/profiles-deploy-2026-10-22/replay.log.
+First real replay41/50:9 early typed/verse requests saw local model import unavailable while preloading. Health later loaded; failed user_exact/new_poem probes now pass. Original rows/verdict preserved in root scratch/profiles-deploy-2026-10-22/replay-first/. All50 re-running after confirmed readiness, replay-ready.log. No source changes to conceal startup failure.
 
 ## Next
 1. Finish real replay and inspect actual service health/errors.
