@@ -25,9 +25,10 @@ SolidWorks: E:\final_proj\mice\model\gachapong (read only, never in git).
 Lab window ended 14:00Z 2026-10-22: do NOT flash; the PC RC session flashes.
 
 ## Doing now
-A47-1: firmware module `gacha` (firmware/src/modules/gacha/), env mice_gacha.
+A47-1: run QC checks for firmware (registries, contracts, build split, native tests).
 
 ## Done
+- A47-1 firmware written: firmware/src/modules/gacha/, env mice_gacha builds (71.3% flash), web cards, COMMANDS.md, commands.json, native tests. Not on hardware.
 - plan rows A47-1..5 added.
 
 ## Next

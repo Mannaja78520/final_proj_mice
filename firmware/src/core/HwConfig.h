@@ -9,7 +9,8 @@
 // .json -> RgbPins.h): FastLED fixes a pin at build time, so the firmware
 // carries one instantiation per allowed pin and the page offers exactly those.
 struct Pins {
-    int motorA, motorB, motorPwm;    // lift motor driver
+    int motorA, motorB, motorPwm;    // lift / gacha motor driver
+    int hall;                        // gacha hall sensor (-1 = none)
     int encA, encB;                  // lift encoder (-1 = none)
     int limitTop, limitDown;         // lift limit switches
     int rs485Rx, rs485Tx, rs485De;   // RS485 transceiver

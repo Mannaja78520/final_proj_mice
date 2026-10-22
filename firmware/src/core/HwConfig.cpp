@@ -25,10 +25,22 @@ struct Field {
     bool output;
 };
 static const Field FIELDS[] = {
+// The motor driver pins are the lift's and the dispenser's; the group decides
+// which tab of the pin card they sit under.
 #if MICE_HAS_LIFT
-    {"motor_a",   "motora",  "Motor A",       "lift",  true},
-    {"motor_b",   "motorb",  "Motor B",       "lift",  true},
-    {"motor_pwm", "motorpwm","Motor PWM (-1=none)", "lift", true},
+#define MOTOR_GROUP "lift"
+#else
+#define MOTOR_GROUP "gacha"
+#endif
+#if MICE_HAS_LIFT || MICE_HAS_GACHA
+    {"motor_a",   "motora",  "Motor A",       MOTOR_GROUP,  true},
+    {"motor_b",   "motorb",  "Motor B",       MOTOR_GROUP,  true},
+    {"motor_pwm", "motorpwm","Motor PWM (-1=none)", MOTOR_GROUP, true},
+#endif
+#if MICE_HAS_GACHA
+    {"hall",      "hall",    "Hall sensor",   "gacha", false},
+#endif
+#if MICE_HAS_LIFT
     {"enc_a",     "enca",    "Encoder A",     "lift",  false},
     {"enc_b",     "encb",    "Encoder B",     "lift",  false},
     {"limit_top", "limtop",  "Limit top",     "lift",  false},
@@ -68,6 +80,7 @@ int* HwConfig::memberFor(const String& key) {
     if (key == "motor_a")   return &pins.motorA;
     if (key == "motor_b")   return &pins.motorB;
     if (key == "motor_pwm") return &pins.motorPwm;
+    if (key == "hall")      return &pins.hall;
     if (key == "enc_a")     return &pins.encA;
     if (key == "enc_b")     return &pins.encB;
     if (key == "limit_top") return &pins.limitTop;
@@ -99,7 +112,12 @@ const char* HwConfig::nvsFor(const String& key) {
 
 void HwConfig::begin() {
     // compile-time defaults from config/esp32_hardware.h
+#if MICE_HAS_GACHA && !MICE_HAS_LIFT
+    pins.motorA = GACHA_MOTOR_IN_A; pins.motorB = GACHA_MOTOR_IN_B; pins.motorPwm = GACHA_MOTOR_PWM;
+#else
     pins.motorA = MOTOR_IN_A;   pins.motorB = MOTOR_IN_B;   pins.motorPwm = MOTOR_PWM;
+#endif
+    pins.hall = GACHA_HALL_PIN;
     pins.encA = MOTOR_ENCODER_PIN_A; pins.encB = MOTOR_ENCODER_PIN_B;
     pins.limitTop = LIMIT_TOP;  pins.limitDown = LIMIT_DOWN;
     pins.rs485Rx = RS485_RX_PIN; pins.rs485Tx = RS485_TX_PIN; pins.rs485De = RS485_DE_PIN;

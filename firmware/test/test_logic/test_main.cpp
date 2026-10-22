@@ -9,6 +9,7 @@
 #include <unity.h>
 #include "modules/nong/NongMath.h"
 #include "modules/dummy/DummyMath.h"
+#include "modules/gacha/GachaMath.h"
 #include "core/WifiArgs.h"
 #include "core/WifiLink.h"
 #include "core/Log.h"
@@ -410,6 +411,53 @@ void test_dummy_zero_round_trips() {
     }
 }
 
+// ---------------------------------------------------------------- gacha
+// One hall, a magnet under every pocket (user 2026-10-22). The holder rests
+// ON a magnet at the receive position: leaving it must not count, or every
+// dispense would stop one pocket early and keep the prize.
+void test_gacha_resting_on_a_magnet_counts_nothing() {
+    gachamath::HallCounter h;
+    TEST_ASSERT_FALSE(h.feed(true, 0, 5));
+    TEST_ASSERT_FALSE(h.feed(false, 10, 5));
+    TEST_ASSERT_FALSE(h.feed(false, 20, 5));
+}
+
+void test_gacha_one_arrival_is_one_pass_after_debounce() {
+    gachamath::HallCounter h;
+    h.feed(false, 0, 5);
+    TEST_ASSERT_FALSE(h.feed(true, 10, 5));     // not held long enough yet
+    TEST_ASSERT_TRUE(h.feed(true, 15, 5));      // held 5 ms: counted once
+    TEST_ASSERT_FALSE(h.feed(true, 30, 5));     // still over it: no second count
+}
+
+void test_gacha_a_bounce_is_not_a_pass() {
+    gachamath::HallCounter h;
+    h.feed(false, 0, 5);
+    h.feed(true, 10, 5);
+    TEST_ASSERT_FALSE(h.feed(false, 12, 5));    // 2 ms blip
+    TEST_ASSERT_FALSE(h.feed(false, 40, 5));
+    TEST_ASSERT_FALSE(h.stable);
+}
+
+void test_gacha_passes_per_slot_needs_a_whole_number() {
+    TEST_ASSERT_EQUAL(1, gachamath::passesPerSlot(4, 4));
+    TEST_ASSERT_EQUAL(2, gachamath::passesPerSlot(8, 4));
+    TEST_ASSERT_EQUAL(0, gachamath::passesPerSlot(6, 4));
+    TEST_ASSERT_EQUAL(0, gachamath::passesPerSlot(4, 0));
+}
+
+void test_gacha_refusals_and_force() {
+    TEST_ASSERT_NULL(gachamath::refusal(false, true, 3, false));
+    TEST_ASSERT_EQUAL_STRING("event closed", gachamath::refusal(false, false, 3, false));
+    TEST_ASSERT_EQUAL_STRING("empty", gachamath::refusal(false, true, 0, false));
+    TEST_ASSERT_NULL(gachamath::refusal(false, true, -1, false));   // stock not counted
+    TEST_ASSERT_NULL(gachamath::refusal(false, false, 0, true));    // admin force
+    TEST_ASSERT_EQUAL_STRING("busy", gachamath::refusal(true, true, 3, true));
+    TEST_ASSERT_EQUAL(0, gachamath::stockAfter(1));
+    TEST_ASSERT_EQUAL(0, gachamath::stockAfter(0));
+    TEST_ASSERT_EQUAL(-1, gachamath::stockAfter(-1));
+}
+
 // ---------------------------------------------------------------- ID3 tags
 // The cover picture sits in this tag. Its length is read, never its bytes:
 // walking it byte by byte froze the robot at a show's first song.
@@ -478,6 +526,11 @@ int main(int, char **) {
     RUN_TEST(test_dummy_dir_flips_the_angle);
     RUN_TEST(test_dummy_clamps_to_the_limits);
     RUN_TEST(test_dummy_zero_round_trips);
+    RUN_TEST(test_gacha_resting_on_a_magnet_counts_nothing);
+    RUN_TEST(test_gacha_one_arrival_is_one_pass_after_debounce);
+    RUN_TEST(test_gacha_a_bounce_is_not_a_pass);
+    RUN_TEST(test_gacha_passes_per_slot_needs_a_whole_number);
+    RUN_TEST(test_gacha_refusals_and_force);
     RUN_TEST(test_id3_size_is_four_seven_bit_bytes);
     RUN_TEST(test_id3_v4_footer_is_skipped_too);
     RUN_TEST(test_not_a_tag_skips_nothing);
