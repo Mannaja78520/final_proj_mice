@@ -78,13 +78,22 @@ class StudioRoutes:
             # voice answer that moves a robot needs steps, not yaml text.
             # Reads only, so it is ungated like loadseq; starting the show
             # still goes through gated /api/play.
-            name = _hub.safe_name((q.get("name") or [""])[0])
-            f = _hub.SEQUENCES / name
-            if not f.is_file():
-                return self.send_err("no sequence " + name, 404)
+            name = "character.yaml" if method == "POST" else _hub.safe_name((q.get("name") or [""])[0])
             try:
-                got = _hub.seq_steps(f.read_text(encoding="utf-8"))
-            except ValueError as e:
+                if method == "POST":
+                    length = int(self.headers.get("Content-Length") or 0)
+                    if length < 0 or length > 3 * 1024 * 1024:
+                        return self.send_err("that move is too large", 400)
+                    text = json.loads(self.body().decode("utf-8")).get("text")
+                    if not isinstance(text, str):
+                        return self.send_err("that move could not be read", 400)
+                else:
+                    f = _hub.SEQUENCES / name
+                    if not f.is_file():
+                        return self.send_err("no sequence " + name, 404)
+                    text = f.read_text(encoding="utf-8")
+                got = _hub.seq_steps(text)
+            except (ValueError, TypeError) as e:
                 return self.send_err("cannot play %s: %s" % (name, e))
             if len(got["steps"]) < 2:
                 return self.send_err(

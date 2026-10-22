@@ -102,7 +102,7 @@ SKIP_DIRS = {".git", ".pio", "__pycache__", "node_modules",
              # projects/  Nong Studio saves. USER DATA: on 2026-09-16 a
              # staging copy from 08-10 was one promote away from replacing
              # the user's save of that evening.
-             "projects",
+             "projects", "voice_profiles",
              # sequences/  the YAML files Studio saves - user data too: the
              # same night staging's July my_move.yaml nearly replaced a 23:07 save.
              "sequences",

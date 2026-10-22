@@ -1,0 +1,225 @@
+"""Named local characters preserve defaults, reload edits and own sound/move files (A45-27).
+
+Uses temporary stores and the real helper/hub HTTP boundary. No user's saved
+settings, audio, motion or default snapshot is touched.
+"""
+import base64
+import concurrent.futures
+import importlib.util
+import io
+import json
+import os
+import tempfile
+import threading
+import urllib.error
+import urllib.request
+import wave
+from http.server import ThreadingHTTPServer
+from pathlib import Path
+
+import qc as F
+
+AREA = "tools"
+TITLE = "character folders keep defaults and other characters safe"
+
+
+def run(t):
+    spec = importlib.util.spec_from_file_location("qc_profile_service", F.CODE / "apps/voice/service.py")
+    svc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(svc)
+    with tempfile.TemporaryDirectory(prefix="qc_profiles_") as folder:
+        root = Path(folder)
+        config, faq = root / "voice.json", root / "qa.json"
+        config.write_text(json.dumps({"tts": {"enabled": False, "style": "friendly"},
+                                      "stt": {"enabled": False}, "llm": {"enabled": False},
+                                      "face": {"on": False}, "presence": {"on": False}}), encoding="utf-8")
+        faq.write_text('{"faqs": [{"questions": ["hello"], "answer": "Welcome"}]}', encoding="utf-8")
+        before = config.read_bytes(), faq.read_bytes()
+        brain = svc.Brain(config, faq)
+        handler = type("ProfileHandler", (svc.VoiceHandler,), {"brain": brain, "log_message": lambda *args: None})
+        server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        url = "http://127.0.0.1:%d" % server.server_port
+
+        def request(path, data=None):
+            req = urllib.request.Request(url + path, data=None if data is None else json.dumps(data).encode(),
+                                         headers={"Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    raw = response.read()
+                    return response.status, json.loads(raw) if "json" in response.headers.get_content_type() else raw
+            except urllib.error.HTTPError as error:
+                return error.code, json.loads(error.read())
+
+        try:
+            _, view = request("/profiles")
+            store = brain.profiles
+            t.eq(view["active"], "current", "existing work starts in an editable character")
+            t.eq(sorted(view["names"]), ["current", "default"], "original snapshot and current copy exist")
+            default = {name: (store.root / "default" / name).read_bytes() for name in store.FILES}
+            rev = view["revision"]
+            status, saved = request("/config", {"config": {"tts": {"pitch": "+5Hz"}}, "revision": rev})
+            t.eq(status, 200, "settings save to the active character")
+            t.eq(brain.cfg["tts"]["pitch"], "+5Hz", "the running helper picks up saved settings immediately")
+            t.eq(request("/config", {"config": {"tts": {"pitch": "+9Hz"}}, "revision": rev})[0], 409,
+                 "a stale tab cannot overwrite a later save")
+            _, created = request("/profiles", {"action": "create", "name": "เจ๊ใจดี", "revision": saved["revision"]})
+            t.eq(created["active"], "เจ๊ใจดี", "Thai character names get their own folder")
+            t.ok((store.root / "เจ๊ใจดี/audio").is_dir() and (store.root / "เจ๊ใจดี/motions").is_dir(),
+                 "each copy has sound and motion folders")
+            # An editor changing the files on disk is a first-class save path.
+            data = json.loads(brain.cfg_path.read_text(encoding="utf-8"))
+            data["tts"]["pitch"] = "-5Hz"
+            store.write(brain.cfg_path, data)
+            _, loaded = request("/config")
+            t.eq(loaded["config"]["tts"]["pitch"], "-5Hz", "local file edits apply without restarting")
+            data["googleApiKey"] = "qc-private-key"
+            store.write(brain.cfg_path, data)
+            _, private = request("/profiles")
+            t.ok("googleApiKey" not in private["config"], "profile snapshots never expose a legacy key edited on disk")
+            t.ok("googleApiKey" not in request("/config")[1]["config"], "the ordinary settings read also hides a legacy key")
+            t.eq(request("/faq", {"faqs": [], "revision": created["revision"]})[0], 409,
+                 "an external edit also invalidates old tab saves")
+            styles = json.loads(brain.styles_path.read_text(encoding="utf-8"))
+            styles["styles"]["friendly"]["instruct"] = "a warm storyteller"
+            store.write(brain.styles_path, styles)
+            t.eq(brain.styles()["styles"]["friendly"]["instruct"], "a warm storyteller",
+                 "each character's own manner file reloads immediately")
+            _, loaded = request("/config")
+            revision = loaded["revision"]
+            wav = io.BytesIO()
+            with wave.open(wav, "wb") as output:
+                output.setnchannels(1); output.setsampwidth(2); output.setframerate(16000)
+                output.writeframes(b"\x01\x00" * 1600)
+            sound = wav.getvalue()
+            upload = {"action": "upload", "kind": "audio", "name": "hello.wav",
+                      "data": base64.b64encode(sound).decode(), "revision": revision}
+            status, uploaded = request("/profiles", upload)
+            t.eq(status, 200, "a recording uploads only into this character")
+            t.eq(request("/profiles", upload)[0], 409, "uploading never silently replaces a recording")
+            t.eq(request("/say", {"text": "Welcome", "clip": "hello.wav", "profile": "เจ๊ใจดี"})[1], sound,
+                 "the sound player returns the actual chosen recording")
+            move = "steps:\n  - pose: 90 90 90 90 90 90 90 90 90 90 T 500\n  - pose: 80 90 90 90 90 90 90 90 90 90 T 800\n"
+            status, _ = request("/profiles", {"action": "upload", "kind": "motions", "name": "wave.yaml",
+                                 "data": base64.b64encode(move.encode()).decode(), "revision": revision})
+            t.eq(status, 200, "a Studio motion has its own character copy")
+            t.eq(request("/profiles?kind=motions&name=wave.yaml&profile=เจ๊ใจดี".replace("เจ๊ใจดี", "%E0%B9%80%E0%B8%88%E0%B9%8A%E0%B9%83%E0%B8%88%E0%B8%94%E0%B8%B5"))[1]["text"], move,
+                 "playback reads the local character motion bytes")
+            for name in ("../bad", "C:\\bad", "default", "CON", "..", "bad."):
+                status, _ = request("/profiles", {"action": "create", "name": name, "revision": revision})
+                t.eq(status, 409, "unsafe or existing character name is refused: " + name)
+            status, _ = request("/profiles", dict(upload, name="../outside.wav"))
+            t.eq(status, 409, "an upload cannot escape the character folder")
+            # Two writers with the same old revision: exactly one may publish.
+            with concurrent.futures.ThreadPoolExecutor(2) as pool:
+                results = list(pool.map(lambda pitch: request("/config", {
+                    "config": {"tts": {"pitch": pitch}}, "revision": revision})[0], ("+1Hz", "+2Hz")))
+            t.eq(sorted(results), [200, 409], "concurrent saves cannot both overwrite the same revision")
+            _, view = request("/profiles")
+            status, view = request("/profiles", {"action": "select", "name": "default", "revision": view["revision"]})
+            t.eq(status, 200, "the original snapshot can be selected")
+            t.eq(request("/config", {"config": {}, "revision": view["revision"]})[0], 409, "default settings are protected")
+            t.eq(request("/faq", {"faqs": [], "revision": view["revision"]})[0], 409, "default answers are protected")
+            t.eq(request("/profiles", dict(upload, revision=view["revision"]))[0], 409, "default sounds are protected")
+            try:
+                brain.write_store(brain.faq_path, {"faqs": []})
+                protected = False
+            except PermissionError:
+                protected = True
+            t.ok(protected, "automatic saves cannot bypass default protection")
+            t.eq({name: (store.root / "default" / name).read_bytes() for name in store.FILES}, default,
+                 "all original defaults remain byte-for-byte unchanged")
+            t.eq((config.read_bytes(), faq.read_bytes()), before, "the shared original stores were never rewritten")
+            restarted = svc.Brain(config, faq)
+            restarted.enable_profiles()
+            t.eq(restarted.profiles.active, "default", "the chosen character survives a new helper instance")
+            t.eq(restarted._cache_path("edge", "hello"), brain._cache_path("edge", "hello"),
+                 "cache identity survives restart in the same character")
+            store.select("current"); store.bind(brain); brain.maybe_reload()
+            t.eq(brain.cfg["tts"]["pitch"], "+5Hz", "switching back restores the other character's own settings")
+            t.ok(brain._cache_path("edge", "hello") != restarted._cache_path("edge", "hello"),
+                 "characters do not share derived audio folders")
+            _hub(t, url, config, move, sound)
+        finally:
+            server.shutdown(); server.server_close(); thread.join(timeout=5)
+
+
+def _hub(t, url, config, move, sound):
+    # The same parser used by Studio plays uploaded moves; no second timing formula.
+    cfg = json.loads(config.read_text(encoding="utf-8")); cfg["service"] = url
+    config.write_text(json.dumps(cfg), encoding="utf-8")
+    old = os.environ.get("MICE_VOICE_CONFIG")
+    os.environ["MICE_VOICE_CONFIG"] = str(config)
+    try:
+        base, _ = F.start_hub()
+        F.logout_qc()
+        t.eq(F.post(base + "/api/voice/profiles", b'{}')[0], 401, "character writes require the hub login")
+        F.login(base)
+        status, raw = F.post(base + "/api/seqsteps", json.dumps({"text": move}).encode())
+        parsed = json.loads(raw)
+        t.ok(status == 200, "uploaded YAML reaches the hub's existing motion parser", raw[:200])
+        t.eq([step["t"] for step in parsed["steps"]], [500, 800], "the actual parser preserves both move durations")
+        t.eq(parsed["steps"][1]["pose"][0], 80.0, "the actual parser preserves the uploaded joint angle")
+        _web(t, base, sound)
+    finally:
+        if old is None:
+            os.environ.pop("MICE_VOICE_CONFIG", None)
+        else:
+            os.environ["MICE_VOICE_CONFIG"] = old
+
+
+def _web(t, base, sound):
+    import browser
+    import fake_serial
+    t.ok(browser.available(), "Edge is available for the character editor journey")
+    page = (F.CODE / "apps/voice/index.html").read_text(encoding="utf-8")
+    driver = r"""
+<script>
+setTimeout(async () => {
+  const report = async (name, value) => qcMark("PROFILE " + name + "=" + (value ? "yes" : "no"));
+  try {
+    await fetch('/api/login', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({password: PASSWORD})});
+    const app = window.voiceApp;
+    await app.loadStores();
+    app.showTab('who');
+    app.$('profileName').value = 'Web happy';
+    await report('copy', await app.profileAction('create') && app.profileInfo.active === 'Web happy');
+    const data = new DataTransfer();
+    data.items.add(new File([Uint8Array.from(atob(SOUND), c => c.charCodeAt(0))], 'web.wav', {type:'audio/wav'}));
+    app.$('profileFile').files = data.files;
+    app.$('profileKind').value = 'audio';
+    await app.uploadProfileAsset();
+    await report('upload', app.profileInfo.assets.audio.includes('web.wav'));
+    const row = app.sheet[0];
+    row.item.answer_en = 'Welcome'; row.item.answer_ja = 'ようこそ'; row.item.answer_zh = '欢迎';
+    row.audioPick.value = 'web.wav'; row.audioPick.dispatchEvent(new Event('change', {bubbles:true}));
+    const input = document.querySelector('#ansRows textarea');
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+    await report('faqsave', await app.saveAnswers());
+    app.$('ansFind').dispatchEvent(new Event('input', {bubbles:true}));
+    app.$('profilePick').value = 'current';
+    await report('switch', await app.profileAction('select') && app.profileInfo.active === 'current');
+    app.$('profilePick').value = 'Web happy';
+    await report('restore', await app.profileAction('select') && app.sheet[0].item.audio === 'web.wav');
+    const cfg = await fetch('/api/voice/config').then(r => r.json());
+    await report('active', cfg.profile === 'Web happy');
+    for (const width of [360, 1280]) {
+      document.documentElement.style.width = width + 'px';
+      await report('layout' + width, document.body.scrollWidth <= document.body.clientWidth + 1);
+    }
+  } catch (error) { await qcMark('PROFILE error=' + String(error).replace(/[^a-zA-Z0-9]/g, '_').slice(0,100)); }
+  finally { await qcMark('done'); }
+}, 250);
+</script>
+""".replace("PASSWORD", json.dumps(F.HUB_PASSWORD)).replace("SOUND", json.dumps(base64.b64encode(sound).decode()))
+    start = len(fake_serial.qc_marks)
+    try:
+        browser.raw_page(page + driver, base, seconds=35)
+        marks = [str(m) for m in fake_serial.qc_marks[start:] if "PROFILE " in str(m)]
+        for name in ("copy", "upload", "faqsave", "switch", "restore", "active", "layout360", "layout1280"):
+            t.ok(any("PROFILE " + name + "=yes" in m for m in marks),
+                 "real character editor: " + name, " | ".join(marks))
+    finally:
+        browser.kill()

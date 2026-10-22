@@ -268,6 +268,7 @@ class Speech:
             return {"ok": False, "error": "maxAgeSeconds must be a number"}
         job = {"id": uuid.uuid4().hex[:10], "text": text, "to": str(d.get("to") or ""),
                "voice": str(d.get("voice") or ""), "lang": str(d.get("lang") or ""),
+               "clip": str(d.get("clip") or ""), "profile": str(d.get("profile") or ""),
                "move": move, "module": str(d.get("module") or ""),
                "whenBusy": when, "take": bool(d.get("take")),
                "from": str(who or d.get("from") or ""), "at": time.time(),
@@ -380,7 +381,7 @@ class Speech:
             if not speaker:
                 return "failed", why
             wav, why = self._make(job["text"], job["voice"] or speaker.get("voice") or "",
-                                  job["lang"], rate)
+                                  job["lang"], rate, **({"clip": job["clip"], "profile": job["profile"]} if job.get("clip") else {}))
             if why:
                 return "failed", why
         # Wait for the room (someone's live sound, a show), then play.
@@ -404,7 +405,7 @@ class Speech:
             return ("done", "") if ok else (self._cancelled(job) or ("failed", why))
         return self._to_board(job, speaker, wav, rate)
 
-    def _make(self, text, voice, lang, rate):
+    def _make(self, text, voice, lang, rate, clip="", profile=""):
         """Text -> 16-bit WAV bytes, from the voice helper. -> (wav, why)."""
         if self.tts:
             return self.tts(text, voice, lang, rate)
@@ -412,7 +413,7 @@ class Speech:
         if not base:
             return None, "the voice helper has no address - %s" % why
         body = json.dumps({"text": text, "voice": voice, "lang": lang,
-                           "format": "wav", "rate": rate}).encode("utf-8")
+                           "format": "wav", "rate": rate, **({"clip": clip, "profile": profile} if clip else {})}).encode("utf-8")
         req = urllib.request.Request(base + "/say", data=body,
                                      headers={"Content-Type": "application/json"})
         try:

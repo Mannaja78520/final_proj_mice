@@ -124,7 +124,8 @@ class PlayRoutes:
                 return self.send_err("no robot answers at %s right now" % dev, 404)
             got = _hub.hub_speak.SPEECH.submit(
                 {"text": d.get("text"), "to": name, "voice": d.get("voice"),
-                 "lang": d.get("lang"), "whenBusy": "queue"},
+                 "lang": d.get("lang"), "clip": d.get("clip"),
+                 "profile": d.get("profile"), "whenBusy": "queue"},
                 who=self.logged_in_user() or "the Voice page")
             return self.send_json(got, 200 if got.get("ok") else 400)
 

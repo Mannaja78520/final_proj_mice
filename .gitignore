@@ -100,3 +100,6 @@ main_python/faces_fired.tmp
 _photo_test/
 apps/voice/tts_cache/
 /.local/
+
+# Private character settings and uploaded sounds/moves stay on this PC.
+/config/voice_profiles/

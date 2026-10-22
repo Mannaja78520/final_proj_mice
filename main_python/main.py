@@ -1545,6 +1545,13 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
         When nothing is listening, the words name what to start - that IS the
         fix, and no page has to guess it.
         """
+        if method == "POST" and path == "/api/voice/profiles":
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                return self.send_err("that file could not be read", 400)
+            if length < 0 or length > 3 * 1024 * 1024:
+                return self.send_err("choose a file smaller than 2 MB", 400)
         base, why_not = voice_service_url()
         if not base:
             return self.send_err(
