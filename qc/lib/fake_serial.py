@@ -130,6 +130,9 @@ def reset():
     FAR.ram, FAR.ram_open, FAR.held, FAR.playing = "", False, "", False
     del dummy_wire[:]
     DUMMY.reset()
+    del gacha_wire[:]
+    for _g in GACHAS.values():
+        _g.reset()
 
 
 def poses():
@@ -613,6 +616,102 @@ dummy_wire = []                 # what the dummy was asked, for checks to read
 DUMMY = _Dummy()
 
 
+# ---- prize dispensers (gacha, A47): two boards on the bus, ids 70 and 71 ----
+# The line protocol of GachaModule, small: what the hub's gacha brain uses.
+# A dispense "turns" for a moment (state dispensing, last.result turning) and
+# then lands, so a check can see the hub wait for the prize to fall.
+GACHA_IDS = (70, 71)
+gacha_wire = []                 # (bus id, command) the dispensers were told
+
+
+class _Gacha:
+    TURN_S = 0.3
+
+    def __init__(self, bid):
+        self.bid = bid
+        self.reset()
+
+    def reset(self):
+        self.stock, self.loaded, self.given, self.forced = -1, 0, 0, 0
+        self.open, self.event, self.item = True, "", ""
+        self.seq, self.who, self.result, self.last_forced = 0, "", "none", False
+        self.until = 0.0
+        self.jam = False                       # a check sets it: the next prize sticks
+
+    def _state(self):
+        if self.until and time.time() >= self.until:
+            self.until = 0.0
+            self.result = "jam" if self.jam else "done"
+        return "dispensing" if self.until else "idle"
+
+    def status(self):
+        st = self._state()
+        return {"state": st, "at_hall": st == "idle", "hits": self.seq, "pos": 0,
+                "item": self.item, "event": self.event, "open": self.open,
+                "stock": self.stock, "empty": self.stock == 0, "loaded": self.loaded,
+                "given": self.given, "forced": self.forced, "total": self.seq,
+                "last": {"seq": self.seq, "result": self.result, "who": self.who,
+                         "forced": self.last_forced, "ms": 300},
+                "cfg": {"magnets": 4, "slots": 4, "drop": 2}, "motor": True}
+
+    def line(self, cmd):
+        c = cmd.strip()
+        gacha_wire.append((self.bid, c))
+        tok = c.split()
+        head = tok[0].upper() if tok else ""
+        if head == "INFO":
+            return json.dumps({"id": self.bid, "name": "gacha-%d" % self.bid, "type": "gacha",
+                               "sd": False, "fw": FW_VERSION, "caps": ["dispense"],
+                               "module": self.status()})
+        if head == "PING":
+            return "PONG %d gacha-%d gacha" % (self.bid, self.bid)
+        if head == "G?":
+            return json.dumps(self.status())
+        if head == "GDISPENSE":
+            force = len(tok) > 1 and tok[1].upper() == "FORCE"
+            if self._state() != "idle":
+                return "ERR busy"
+            if not force and not self.open:
+                return "ERR event closed"
+            if not force and self.stock == 0:
+                return "ERR empty"
+            self.seq += 1
+            self.given += 1
+            self.forced += 1 if force else 0
+            self.stock = -1 if self.stock < 0 else max(0, self.stock - 1)
+            self.who = " ".join(tok[2 if force else 1:])
+            self.last_forced, self.result = force, "turning"
+            self.until = time.time() + self.TURN_S
+            return "OK dispensing seq=%d stock=%d" % (self.seq, self.stock)
+        if head == "GSTOCK" and len(tok) >= 2:
+            if tok[1].upper() == "ADD":
+                self.stock = max(self.stock, 0) + int(tok[2])
+                self.loaded += int(tok[2])
+            elif tok[1].upper() == "OFF":
+                self.stock = -1
+            else:
+                self.stock = self.loaded = int(tok[1])
+            return "OK stock=%d" % self.stock
+        if head == "GEVENT" and len(tok) >= 2:
+            a = tok[1].upper()
+            if a == "NAME":
+                self.event = " ".join(tok[2:])
+            elif a in ("OPEN", "CLOSE"):
+                self.open = a == "OPEN"
+            elif a == "RESET":
+                self.given = self.forced = self.loaded = self.seq = 0
+            return "OK event"
+        if head == "GITEM":
+            self.item = " ".join(tok[1:])
+            return "OK item"
+        if head in ("GHOME", "STOP"):
+            return "OK"
+        return "ERR unknown cmd"
+
+
+GACHAS = {bid: _Gacha(bid) for bid in GACHA_IDS}
+
+
 class Serial:
     def __init__(self, *a, **k):
         self.port = k.get("port")
@@ -683,7 +782,8 @@ class Serial:
                     # every id as the near board made a bus child report the
                     # near board's chip, which merged two boards into one.
                     who = (FAR if bid == str(BUS_SLOW_ID) else
-                           DUMMY if bid == str(DUMMY_ID) else NONG)
+                           DUMMY if bid == str(DUMMY_ID) else
+                           GACHAS.get(int(bid)) if bid.isdigit() and int(bid) in GACHAS else NONG)
                     r = who.line(rest)
                     if bid == "*":
                         # A BROADCAST IS NOT INSTANT, and pretending it was is

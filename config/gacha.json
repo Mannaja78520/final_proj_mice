@@ -1,0 +1,32 @@
+{
+  // PRIZE MACHINES (gachapon) - A47-2. Edited from the Prize machines page;
+  // every list here is data, so a new machine, kind or webhook is one entry.
+  //
+  // machines: one per gacha board.
+  //   id      this file's own name for it (used by "near" and the API)
+  //   module  the board's name (SET NAME / module page); found on any route
+  //   dev     optional fixed address (wifi:<ip> or usb:<port>[:<bus id>])
+  //   label   what people read and hear ("the machine by the stage")
+  //   item    the kind it holds (a key of "items")
+  //   place   where it stands, said when a person is sent there
+  //   near    machines next to it: tried first when this one is empty
+  //   enabled false = never chosen
+  "machines": [],
+  // kinds of prize: key -> {label}
+  "items": {},
+  // the event every machine is told about (Start / Close / New event)
+  "event": {"name": "", "open": true},
+  // rules: "local" (the page) and optional Google Sheet tabs published as CSV,
+  // plus an optional Apps Script address to send them back (docs/gacha/).
+  "rules": {"source": "local", "sheet_items_csv": "", "sheet_people_csv": "",
+            "sheet_write_url": ""},
+  // other apps told about: dispensed, empty, out, low, refused, jam
+  // (lists of http addresses; each gets a JSON POST, see docs/gacha/README.md)
+  "webhooks": {},
+  // "few balls left" from this many
+  "low_stock": 2,
+  // seconds to wait for a board to say the prize fell
+  "wait_s": 20,
+  // words the robot says; empty = the built-in Thai words in gacha.py
+  "messages": {}
+}
