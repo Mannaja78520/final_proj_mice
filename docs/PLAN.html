@@ -601,7 +601,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: QC finished: 1121 passed, 0 failed, started 2026-10-22 20:09
+# RUNNING: QC finished: 107 passed, 0 failed, started 2026-10-22 20:10
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1596,7 +1596,7 @@ A45-27: done   2026-10-22 16:53  agent=codex:10221534-bb09  — User: ตั้�
 # A46  Gestures with speech, safe paths (RRT) for copying a person
 A46-1: done   2026-10-22 08:17  agent=claude:10220724-db22  — User 2026-10-22: ขอแบบลองสุ่มท่าทางออกมาให้เข้ากับคำที่พูดแล้วส่งทำพร้อมกันด้วยได้ไหม ... เอาตัวขนาดของหุ่นมาใส่แล้วทำท่าทางได้ อาจจะโคกับ nong studio ดึงข้อมูลจากกันได้ (gestures that match the spoken words, random, played with the speech, using the robot's size from Studio) User 2026-10-22 07:27: ก็เพราะกลัวชนตัวเองเลยว่าใช้ดีกว่าไหมใช้กับที่ตามท่าทางด้วย -> RRT (RRT-Connect + shortcut) fallback when the straight joint path self-collides, shared by talk gestures, video copying and dummy follow; live follow holds last safe pose when no path in time User 07:28: แล้วมีการเซฟท่าหลังจากก็อปท่าคนไหม ... ปล่อยทำหลังโยนวีดีโอให้ -> one-click video to safe saved move; dummy follow record-and-save; no RL merged main (PR #48 A45-26) into the branch
 A45-28: done   2026-10-22 13:06  agent=claude:10221240-e1f5  — Studio: palm up / back up while dragging the hand and while typing a wrist position, live view of the pose the arm really reaches (distance from target, palm angle, limits, self-collision), then save exactly that pose (user 2026-10-22: เลือกได้ตอน drag หรือแก้ค่าด้วยจะได้เห็นว่าไปถึงไหนอย่างไรแล้วกดเซฟท่าตามนั้นได้)
-A45-29: doing  2026-10-22 20:08  agent=claude:xdlrot  — User 2026-10-22: เอาให้มีโทนแบบเลือกได้คลิกเป็น default ได้ซัก 3 โทน และขอมีแบบเร็วได้ด้วย และขอเลือกเสียงได้ทั้งชายและหญิง; default clear ยังดูเป็น AI; เร็วขึ้นได้แต่ไม่รวบคำ (ปัญหาคือรวบคำ ไม่ใช่เร็วไป); เอาภาษาอื่นด้วย; เสียงไทยชายหญิงลงท้าย ครับ/ค่ะ ให้ตรง Characters with own folders + default folder (asked the same day) = A45-27 by codex, merged #51/#52; voice tiles save into the active character.
+A45-29: done   2026-10-22 20:29  agent=claude:xdlrot  — User 2026-10-22: เอาให้มีโทนแบบเลือกได้คลิกเป็น default ได้ซัก 3 โทน และขอมีแบบเร็วได้ด้วย และขอเลือกเสียงได้ทั้งชายและหญิง; default clear ยังดูเป็น AI; เร็วขึ้นได้แต่ไม่รวบคำ (ปัญหาคือรวบคำ ไม่ใช่เร็วไป); เอาภาษาอื่นด้วย; เสียงไทยชายหญิงลงท้าย ครับ/ค่ะ ให้ตรง Characters with own folders + default folder (asked the same day) = A45-27 by codex, merged #51/#52; voice tiles save into the active character. Deployed on PC 2026-10-22 20:40 with #50 and #53: exe rebuilt, hub + helper restarted, character 'current' tts.rate -10% -> +0% (backup scratch/deploy-a45-29-2026-10-22). Live: person:thai-woman-1 says ค่ะ/ดิฉัน, thai-man-1 ครับ/ผม, 450 ms tail, Edge backup while the feeling voice loads (~50 s cold). Studio Pose shows 'while moving it, keep'; gesture fit current (18, none bad). Replay 50: 38 exact, the 12 others differ only by ครับ->ค่ะ (Thai voice is a woman's: intended).
 
 END</code></pre>
 </details>
