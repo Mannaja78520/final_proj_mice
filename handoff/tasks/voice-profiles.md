@@ -1,9 +1,9 @@
 # Named local character profiles
 
 Owner: codex:10221534-bb09
-Updated: 2026-10-22T15:52:13.057103+07:00
+Updated: 2026-10-22T16:07:17.980701+07:00
 Branch: task/A45-27-10221534-bb09
-Last commit: 857fbcd; gesture integration and tests now ready for checkpoint
+Last commit: 555f728
 Plan: A45-27; A45-26 PC deployment continuation
 
 ## Goal
@@ -17,7 +17,7 @@ Plan: A45-27; A45-26 PC deployment continuation
 - One same-provider independent design/code reviewer found and verified fixes: automatic default writes, legacy-key read redaction, FAQ/search dirty-state tracking. No remaining blocker in bounded source review.
 
 ## Doing now
-Merged e212ffc at857fbcd. Targeted72/0 covers isolated gesture saves, migration, Windows aliases, valid default tokens and selection during save. Running2 integration sabotages, then full QC and deployment. Sabotage4/4 before integration passed.
+Full quiet QC on the stable integration tree before PR/merge. All6 sabotage cases caught (4 original +2 gesture guards), each restored green; related239/0 before integration, final targeted72/0 including actual Edge. No hardware moved.
 
 ## Next
 1. Complete2 gesture integration sabotages (original4/4 already caught) then run required full quiet QC. Fake Brain compatibility fixed and verified239/0.
