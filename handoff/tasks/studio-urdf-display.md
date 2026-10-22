@@ -106,6 +106,20 @@ Plan: A48-1 (robot page)
   axis warnings, a slider moves it (screenshots scratch/deploy-a48-1-2026-10-23/urdf-*.png).
   Put back to Simple shapes with the old sizes (dims identical) and the old pose.
 
+## PC check after A48-2 (2026-10-23 06:35, claude:xdlrot)
+- Pulled main ff72311, build_web, systems build, exe rebuilt with the spec, hub restarted
+  (stale=false 4483d12f1d67). check_urdf_look with MICE_URDF_MODEL = the export folder: 30/31.
+- Real model: fit L 15.9 deg (up 11.8), swapSh true, swapEl false; fit R 10.5 deg (up 10.5),
+  swapSh true, swapEl false. Bindings: L_SH_P=L_SH_R(-), L_SH_R=L_SH_P, L_EL_P=L_EL_P,
+  L_EL_R=L_EL_R(-), R_SH_P=R_SH_R(-), R_SH_R=R_SH_P(-), R_EL_P=R_EL_P, R_EL_R=R_EL_R(-).
+- Agree from home: L_SH_P/L_SH_R/L_EL_P/L_EL_R 1.00 each, WAIST 1.00, SHRUG 1.00, but
+  R_SH_P -0.22, R_SH_R 0.82, R_EL_P -0.10, R_EL_R -0.93: the RIGHT arm is still wrong.
+- Warnings > 5 deg: yes, both arms ("left ... up to 16 deg", "right ... up to 10-15 deg").
+- Studio > Views, CAD model: the two warnings still show. Left shoulder pitch 90 -> 150,
+  seen from the Left view: the CAD left arm swings forward like the shapes' (screenshots
+  scratch/deploy-a48-2-2026-10-23/left-up-*.png). Put back to Simple shapes, old pose and sizes.
+  urdf_view.json not changed.
+
 ## Next
 1. Full QC green -> PR -> merge.
 2. PC: copy E:/final_proj/mice/model/nong_urdf/solidworks/export/nong_description
