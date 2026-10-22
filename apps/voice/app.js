@@ -1113,7 +1113,8 @@ class VoiceApp {
       }
       tasks.push(this.doMove(a, signal));
     } else {
-      tasks.push(this.doGestures(a.answer, a.lang || detectedLang, signal));
+      // not awaited: the next question never waits for an arm (it rests itself)
+      this.doGestures(a.answer, a.lang || detectedLang, signal).catch(() => {});
     }
     if (this.$("sound").checked) {
       const convSpeakLang = this.autoDetect ? (a.lang || detectedLang) : this.askLang;
@@ -1250,7 +1251,7 @@ class VoiceApp {
         }
         tasks.push(this.doMove(r));
       } else {
-        tasks.push(this.doGestures(r.answer, r.lang || explicitLang || detectedLang));
+        this.doGestures(r.answer, r.lang || explicitLang || detectedLang).catch(() => {});
       }
       if (this.$("sound").checked) {
         const speakLang = this.autoDetect ? (r.lang || explicitLang || detectedLang) : this.askLang;
@@ -1294,7 +1295,7 @@ class VoiceApp {
     else if (kind.includes("wav")) this.checkVoice();
     const url = URL.createObjectURL(await r.blob());
     const player = new Audio(url);
-    player.addEventListener("playing", () => this.spoke(text, player.duration), {once: true});   // A46-1
+    player.onplaying = () => this.spoke(text, player.duration);   // A46-1: gestures start now
     player.onended = () => { URL.revokeObjectURL(url); this.$("wait").textContent = ""; this.$("speakingNow").hidden = true; };
     try {
       await player.play();
@@ -1467,7 +1468,7 @@ class VoiceApp {
     if (winner.kind === "error") throw winner.error;
     url = URL.createObjectURL(winner.blob);
     player = new Audio(url);
-    player.addEventListener("playing", () => this.spoke(text, player.duration), {once: true});   // A46-1
+    player.onplaying = () => this.spoke(text, player.duration);   // A46-1: gestures start now
     const playback = new Promise((resolve, reject) => {
       player.onended = () => resolve({ok: true});
       player.onerror = () => reject(new Error("The sound could not play."));

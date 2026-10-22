@@ -47,7 +47,7 @@ globalThis.URL = {createObjectURL: () => "blob:x", revokeObjectURL() {}};
 globalThis.Audio = class {
   constructor() { this.l = {}; this.duration = 2.5; }
   addEventListener(e, f) { this.l[e] = f; }
-  play() { setTimeout(() => { this.l.playing && this.l.playing(); setTimeout(() => this.onended && this.onended(), 20); }, 30); return Promise.resolve(); }
+  play() { setTimeout(() => { this.onplaying && this.onplaying(); setTimeout(() => this.onended && this.onended(), 20); }, 30); return Promise.resolve(); }
   pause() {}
 };
 globalThis.fetch = async (u, o) => {

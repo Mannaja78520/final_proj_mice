@@ -453,6 +453,51 @@
        list the robot will run, so the editor cannot show a show the robot does not
        perform. If the time bar is holding unsaved keyframes, opening a show leaves them
        alone and says so — press the button when you really mean to replace them.</p></div>
+  <div class="f"><h3>The arm never goes through its own body<span class="tag t-new">new</span></h3>
+    <p>Whenever Studio makes moves for you — from a video, from the dummy, or the
+       gestures the robot makes while it talks — every move is checked on this robot's
+       own sizes before the robot gets it. A move that is clear goes straight, as
+       always. A move whose straight line would take an arm through the body or the
+       other arm goes <b>round</b> instead: Studio finds a way with a few in-between
+       poses and keeps it short. A pose the robot's body cannot take at all is left
+       out, and the arm holds where it was. The status line says how many moves went
+       round or were held.</p>
+    <p>While the real robot follows the dummy live, the way round has to be found in a
+       moment; if it is not, the robot <b>holds its last safe pose</b> and the dummy
+       card says so, until the dummy moves somewhere the robot can go.</p>
+    <p class="tech">safe_path.js: straight joint path checked with collisionAt();
+       a hit is planned round with RRT-Connect plus shortcuts. Settings in
+       <code>nong/main_python_set_nong/web/safe_path.json</code>: planner
+       (<code>rrt-connect</code> or <code>straight</code>), checkDeg, stepDeg,
+       budgetMs, liveBudgetMs, shortcuts, seed.</p></div>
+  <div class="f"><h3>Record the dummy, keep it as a move<span class="tag t-new">new</span></h3>
+    <p>On the Dummy card, <b>● Record the dummy</b> starts recording what the dummy
+       does; <b>■ Stop and save</b> puts the moves on the time bar, timed as you made
+       them and kept clear of the robot's body, and saves them as
+       <code>dummy_&lt;date&gt;</code>.</p></div>
+  <div class="f"><h3>Moves while talking<span class="tag t-new">new</span></h3>
+    <p>On the Sequence tab, <b>Moves while talking</b>: the arm gestures the robot makes
+       while it answers on the Voice page. A word in the answer brings its gesture —
+       “สวัสดี” or “hello” a wave, “ขอบคุณ” a wai, “ทุกคน” arms wide, a question a hand to
+       the chin — and small random beats fill the rest, so no two answers move the same.
+       The speaking manner sets the pace: playful moves more and quicker, polite and
+       poem recital less and slower.</p>
+    <p>Every gesture is fitted to <b>this robot's size</b>: hands are placed around the
+       body in arm lengths, Studio works out the joints, checks every pose and move
+       against the body, and leaves out a gesture this robot cannot do safely (it names
+       it). This happens by itself when the robot's setup changes.</p>
+    <p>Type a sentence and press <b>▶ Show</b> to see the gestures picked for it on the
+       time bar (press again for another random pick). Under <b>The gestures and their
+       words</b> change which words bring each gesture, or make your own: pose moves on
+       the time bar, name them, give the words and press <b>＋ Keep as a gesture</b>.
+       <b>Events</b> switches gestures off for one event; the switch at the top, for
+       all.</p>
+    <p class="tech">Library <code>config/gestures.json</code> (keys: hand targets
+       [out, up, forward] in arm lengths, palm, waist, shrug; words per language;
+       manners: tempo, beats, prefer; events; pace, leadMs, lateMs, restGapMs,
+       maxDps). This PC's changes and the fit: <code>nong/main_python_set_nong/gestures.json</code>.
+       Routes: GET/POST <code>/api/gestures</code>, <code>/api/gestures/fit</code>,
+       <code>/api/gestures/plan</code>; <code>/api/gestures/play</code> needs a login.</p></div>
   <div class="f"><h3>Moves from a video of a person<span class="tag t-new">new</span></h3>
     <p><b>The Video tab.</b> Its own page: the person's video with its sound and the
        skeleton found on them, beside the 3D robot seen from the front (on a phone, one
@@ -478,7 +523,9 @@
        that copy them as closely as the robot's joints allow. The found skeleton is drawn
        over the video, and the 3D robot can play the result at once. Then
        <b>Use as new moves</b> (replaces the time bar, asking first if it has unsaved
-       changes) or <b>Add after the last move</b>. They are ordinary moves: edit any of
+       changes) or <b>Add after the last move</b>. <b>▶ Make and save</b> does it all
+       in one step: makes the moves, keeps them clear of the robot's body, puts them on
+       the time bar and saves them under the video's name. They are ordinary moves: edit any of
        them, then Save or Save to robot.</p>
     <p><b>How close.</b> The person's upper arm and forearm directions are put on the
        robot's own arm lengths, and the same solver as the drag handles places the elbow
@@ -1245,6 +1292,15 @@
        speak job's <code>styles</code> (instruct / emotion / prosody / none) in
        <code>config/voice_providers.json</code>; <code>/say</code> answers
        <code>X-Voice-Style</code> with how it was applied.</span></p></div>
+  <div class="f"><h3>Gestures while it talks<span class="tag t-new">new</span></h3>
+    <p><b>👋 Gestures</b> beside 🤖 Move: an answer that has no move of its own makes the
+       robot's arms move with the words, starting when the sound starts and lasting as
+       long as it. The gestures are picked at random to fit the words and the speaking
+       manner, fitted to the robot's size and kept clear of its body by Nong Studio
+       (Sequence tab, <b>Moves while talking</b>), where they are changed, tried and
+       switched off per event. Stop stops them with the answer. The robot used is the
+       one picked under Robot, else the nong robot that answers; a show that is already
+       playing is never interrupted.</p></div>
   <div class="f"><h3>Teach it new answers<span class="tag t-new">new</span></h3>
     <p>The <b>Settings</b> under the question are tabs, one topic each:</p>
     <p><b>Answers</b> is a sheet, like a spreadsheet: one row per answer,

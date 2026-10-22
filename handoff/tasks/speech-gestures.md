@@ -28,13 +28,15 @@ copied moves saved; "drop a video, get a safe saved move" in one step. No RL.
   time bar as a gesture, per-event switch.
 
 ## Doing now
-Step 3: Voice page. apps/voice/app.js: after an answer with no saved move and
-the Gestures switch on, POST /api/gestures/play {dev, text, lang, manner, event,
-ms} when the sound STARTS (one-line hooks in speak()/speakAndWait(): the PC
-thread owns that TTS code); Stop -> /api/play/stop. index.template.html: a
-"👋 Gestures" switch beside "🤖 Move".
+Step 4: full QC (python qc/run_qc.py --quiet), then PR, merge when green.
 
 ## Done
+- Voice page: 👋 Gestures switch; doGestures() posts /api/gestures/play when THIS
+  answer's sound starts (player.onplaying / utterance.onstart hooks, one line each),
+  with the audio's ms, manner, event; not awaited (never holds the next question).
+  check_voice_gestures (node, 9 asserts, sabotage 2/2).
+- help.html (Studio + Voice), docs/systems (hub-studio, studio traps), plan area A46.
+- Quick QC: only failures were mine (fixed: plan heading, Audio hook, awaited gestures).
 - Talk gestures: config/gestures.json, main_python/gestures.py (planner),
   /api/gestures (+/fit, /plan open; /play gated), Studio fit + "Moves while
   talking" card (app_parts/talk_gestures.js, html_parts/talk.html).
@@ -52,7 +54,7 @@ thread owns that TTS code); Stop -> /api/play/stop. index.template.html: a
 - HANDOFF/CLAUDE/AGENTS/GEMINI/TEMPLATE: Doing now + push WIP every step.
 
 ## Next
-1. Voice page (Doing now).
+1. Full QC, PR, merge (Doing now). Then deploy notes for the PC.
 2. QC check_gestures; help.html; systems.json; full QC; PR; merge.
 
 ## Blocked
