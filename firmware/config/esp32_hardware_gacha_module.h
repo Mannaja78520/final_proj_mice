@@ -26,14 +26,4 @@
     #define GACHA_SLOT_TIMEOUT_MS  4000   // no magnet for this long while turning = jammed
     #define GACHA_DEBOUNCE_MS      5      // hall must read the same this long to count
     #define GACHA_SETTLE_MS        0      // keep turning this long after a magnet, to centre the pocket
-
-    // Optional motor encoder (A47-11: the CAD's Namiki 22CL-3501PG has one).
-    // -1 = not wired; set ENC A/B on the Setup pin card. The hall still decides
-    // where the holder is; the encoder stops a stall sooner and slows the last
-    // bit of a turn. Counts per pocket are learned between magnets when 0.
-    #define GACHA_ENC_A            -1
-    #define GACHA_ENC_B            -1
-    #define GACHA_ENC_STALL_MS     500    // turning with no count this long = stuck
-    #define GACHA_SLOW_PCT         40     // speed before the last magnet (0 = never slow)
-    #define GACHA_MIN_SPEED        150    // PWM the gearbox still turns at - measure (A47-5)
 #endif

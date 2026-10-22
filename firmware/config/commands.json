@@ -165,7 +165,7 @@
     { "name": "GSTOCK",    "scope": "gacha", "args": "<n>|ADD <n>|OFF",                   "help": "balls in the machine: set, add more, or stop counting" },
     { "name": "GEVENT",    "scope": "gacha", "args": "NAME <text>|OPEN|CLOSE|RESET",      "help": "the event: its name, open or closed, or clear this event's counts" },
     { "name": "GITEM",     "scope": "gacha", "args": "[<item type>]",                     "help": "which item type this machine holds (the hub matches requests to it)" },
-    { "name": "GCFG",      "scope": "gacha", "args": "<key> <value>|CLEAR",               "help": "magnets slots drop speed dir timeout debounce settle active_low enc enc_stall slow enc_per_slot; CLEAR = defaults" },
+    { "name": "GCFG",      "scope": "gacha", "args": "<key> <value>|CLEAR",               "help": "magnets slots drop speed dir timeout debounce settle active_low; CLEAR = defaults" },
     { "name": "GCOUNT",    "scope": "gacha", "args": "RESET",                             "help": "clear the lifetime magnet and prize counts" }
   ]
 }

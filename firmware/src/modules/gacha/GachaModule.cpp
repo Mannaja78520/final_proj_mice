@@ -13,32 +13,10 @@ static String clip(const String& s) {
     return t.length() > TEXT_MAX ? t.substring(0, TEXT_MAX) : t;
 }
 
-// Encoder counts, from an interrupt on channel A. With channel B the count
-// follows the direction; without it every edge counts up (enough for a stall
-// and for "how far since the magnet", which are both taken as a size).
-static volatile int32_t encCount_ = 0;
-static int encBPin_ = -1;
-static void IRAM_ATTR encEdge() {
-    if (encBPin_ >= 0 && digitalRead(encBPin_)) encCount_--;
-    else encCount_++;
-}
-static int32_t encNow() {
-    noInterrupts();
-    const int32_t c = encCount_;
-    interrupts();
-    return c;
-}
-
 void GachaModule::begin() {
     load();
     // GPIO33 has an internal pull-up; 34-39 do not, and need one on the board.
     if (hw.pins.hall >= 0) pinMode(hw.pins.hall, INPUT_PULLUP);
-    if (hw.pins.encA >= 0) {
-        pinMode(hw.pins.encA, INPUT_PULLUP);
-        if (hw.pins.encB >= 0) pinMode(hw.pins.encB, INPUT_PULLUP);
-        encBPin_ = hw.pins.encB;
-        attachInterrupt(digitalPinToInterrupt(hw.pins.encA), encEdge, RISING);
-    }
     makeMotor();
     hall_ = gachamath::HallCounter();
 }
@@ -58,30 +36,6 @@ bool GachaModule::hallActive() const {
     return activeLow_ ? low : !low;
 }
 
-bool GachaModule::encOn() const { return enc_ != 0 && hw.pins.encA >= 0; }
-
-// Counts per magnet: the person's number (counts per pocket / magnets per
-// pocket) when set, else what the last turns measured.
-int32_t GachaModule::perPass() const {
-    const int ps = perSlot();
-    return encPerSlot_ > 0 && ps > 0 ? encPerSlot_ / ps : learned_;
-}
-
-// The encoder's two jobs while turning: stop a stall sooner than the hall
-// timeout, and slow down before the last magnet so the pocket stops centred.
-// It never ends a turn as "done": only the hall does.
-void GachaModule::encLoop(uint32_t now) {
-    const int32_t c = encNow();
-    if (encWatch_.stalled(c, now, (uint32_t)encStallMs_)) { finish("jam"); return; }
-    const bool slow = slowPct_ > 0 &&
-        gachamath::slowNow(want_ - got_, c - passCount_, perPass(), perPass() / 4);
-    if (slow != slowing_ && motor_) {
-        slowing_ = slow;
-        const int v = slow ? gachamath::slowSpeed(speed_, slowPct_, GACHA_MIN_SPEED) : speed_;
-        motor_->spin(sign_ * dir_ * v);
-    }
-}
-
 void GachaModule::motorOff() {
     if (motor_) motor_->spin(0);
 }
@@ -94,9 +48,6 @@ void GachaModule::startTurn(Job job, int passes) {
     settleUntil_ = 0;
     startMs_ = lastPassMs_ = millis();
     state_ = job == JOB_HOME ? HOMING : TURNING;
-    passCount_ = encNow();
-    encWatch_.start(passCount_, startMs_);
-    slowing_ = false;
     if (motor_) motor_->spin(sign_ * dir_ * speed_);
 }
 
@@ -123,11 +74,6 @@ void GachaModule::loop() {
         if ((int32_t)(now - settleUntil_) >= 0) finish("done");
         return;
     }
-    if (arrived && encOn()) {                 // counts per magnet, before a finish
-        const int32_t c = encNow();           // GHOME starts anywhere: its gap is no pass
-        if (job_ != JOB_HOME) learned_ = gachamath::learnPerPass(learned_, c - passCount_);
-        passCount_ = c;
-    }
     if (arrived) {
         hits_++;
         got_++;
@@ -139,10 +85,6 @@ void GachaModule::loop() {
             else finish("done");
             return;
         }
-    }
-    if (encOn()) {
-        encLoop(now);
-        if (state_ == IDLE) return;
     }
     if (now - lastPassMs_ > (uint32_t)timeoutMs_) finish("jam");
 }
@@ -273,7 +215,6 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
             speed_ = GACHA_SPEED; dir_ = 1; timeoutMs_ = GACHA_SLOT_TIMEOUT_MS;
             debounceMs_ = GACHA_DEBOUNCE_MS; settleMs_ = GACHA_SETTLE_MS;
             activeLow_ = GACHA_HALL_ACTIVE_LOW;
-            enc_ = 1; encStallMs_ = GACHA_ENC_STALL_MS; slowPct_ = GACHA_SLOW_PCT; encPerSlot_ = 0;
             saveCfg();
             reply = "OK settings back to defaults";
             return true;
@@ -291,8 +232,6 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
             {"speed", &speed_, 50, PWM_Max}, {"dir", &dir_, -1, 1},
             {"timeout", &timeoutMs_, 200, 60000}, {"debounce", &debounceMs_, 0, 200},
             {"settle", &settleMs_, 0, 2000}, {"active_low", &low, 0, 1},
-            {"enc", &enc_, 0, 1}, {"enc_stall", &encStallMs_, 0, 5000},
-            {"slow", &slowPct_, 0, 100}, {"enc_per_slot", &encPerSlot_, 0, 1000000},
         };
         for (const Num& n : nums) {
             if (k != n.key) continue;
@@ -312,8 +251,7 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
             reply = "OK " + k + "=" + String(v);
             return true;
         }
-        reply = "ERR key magnets slots drop speed dir timeout debounce settle active_low "
-                "enc enc_stall slow enc_per_slot";
+        reply = "ERR key magnets slots drop speed dir timeout debounce settle active_low";
         return true;
     }
     return false;
@@ -324,8 +262,6 @@ String GachaModule::cfgJson() const {
     d["magnets"] = magnets_; d["slots"] = slots_; d["drop"] = drop_;
     d["speed"] = speed_; d["dir"] = dir_; d["timeout"] = timeoutMs_;
     d["debounce"] = debounceMs_; d["settle"] = settleMs_; d["active_low"] = activeLow_ ? 1 : 0;
-    d["enc"] = enc_; d["enc_stall"] = encStallMs_; d["slow"] = slowPct_;
-    d["enc_per_slot"] = encPerSlot_;
     d["per_slot"] = perSlot();
     String out;
     serializeJson(d, out);
@@ -365,8 +301,6 @@ void GachaModule::status(JsonObject o) {
     deserializeJson(cfg, cfgJson());
     o["cfg"] = cfg.as<JsonObject>();
     o["motor"] = motor_ != nullptr;
-    o["encoder"] = encOn();
-    if (hw.pins.encA >= 0) { o["enc_count"] = encNow(); o["enc_per_pass"] = perPass(); }
 }
 
 void GachaModule::addCapabilities(JsonArray caps) {
@@ -417,10 +351,6 @@ void GachaModule::load() {
         debounceMs_ = d["debounce"] | debounceMs_;
         settleMs_ = d["settle"] | settleMs_;
         activeLow_ = (d["active_low"] | (activeLow_ ? 1 : 0)) != 0;
-        enc_ = d["enc"] | enc_;
-        encStallMs_ = d["enc_stall"] | encStallMs_;
-        slowPct_ = d["slow"] | slowPct_;
-        encPerSlot_ = d["enc_per_slot"] | encPerSlot_;
         item_ = (const char*)(d["item"] | "");
         event_ = (const char*)(d["event"] | "");
         open_ = d["open"] | open_;
