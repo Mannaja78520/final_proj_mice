@@ -1,0 +1,133 @@
+{
+  // Arm gestures while the robot talks (A46-1, user 2026-10-22: *สุ่มท่าทาง
+  // ออกมาให้เข้ากับคำที่พูดแล้วส่งทำพร้อมกัน*). DATA only: a new gesture, word,
+  // manner or event is an entry here, no code.
+  //
+  // A gesture is a few KEYS. A key puts each hand somewhere around the body:
+  //   "L" / "R": [out, up, forward] from that arm's shoulder, in arm lengths
+  //   (upper arm + forearm), so the same gesture fits any size of robot.
+  //   [0, -1, 0] is the arm hanging straight down. A hand left out rests.
+  //   "palmL" / "palmR": "up" or "down" turns that hand's palm (or back) up.
+  //   "waist": degrees from home (+ = turn to its left); "shrug": the same.
+  //   "t": ms for the move into this key at normal pace; "hold": ms it stays.
+  // Nong Studio fits every gesture to the robot's own sizes and joint limits
+  // (IK), keeps it clear of the robot's body (safe_path.js: straight, else a
+  // way round) and gives the hub the poses; a gesture that cannot be made
+  // safe on that robot is left out, and Studio says which.
+  //
+  // "words": a word in any language that brings the gesture, said near it.
+  // "beat": true = a small filler the robot may use when no word asks.
+  // "mirror": true = it may be done with the other arm too (picked at random).
+  "on": true,
+  // "" = the robot picked on the Voice page, else the first nong robot found
+  "robot": "",
+  // characters per second, when the length of the sound is not known yet
+  "pace": {"th": 11, "en": 14, "ja": 7, "zh": 5, "": 12},
+  // a gesture starts this early, so its biggest moment lands on its word
+  "leadMs": 300,
+  // gestures closer than this in time: the later one waits for the arm
+  "minGapMs": 250,
+  // a word whose gesture would have to wait longer than this for the arm is skipped
+  "lateMs": 1200,
+  // a gap shorter than this goes straight to the next gesture, a longer one
+  // rests the hands in between
+  "restGapMs": 900,
+  // the last N gestures are not picked again at random
+  "keepRecent": 2,
+  // chance that a mirrorable gesture is done with the other arm
+  "mirrorChance": 0.5,
+  // +-share of random change in each move's time, so no two are the same
+  "jitter": 0.15,
+  // fastest a joint moves in a gesture, deg/s (the board's own limit still holds)
+  "maxDps": 150,
+  // How each speaking manner (config/voice_styles.json ids) moves.
+  // tempo: >1 slower moves; beats: fillers per second of talk;
+  // prefer: extra weight for those gestures when one is picked at random.
+  "manners": {
+    "_default": {"tempo": 1.0, "beats": 0.3, "prefer": {}},
+    "friendly": {"tempo": 1.0, "beats": 0.35, "prefer": {"open_palms": 2}},
+    "polite":   {"tempo": 1.25, "beats": 0.2, "prefer": {"wai": 2, "open_palms": 1.5}},
+    "playful":  {"tempo": 0.85, "beats": 0.5, "prefer": {"wave": 2, "cheer": 2, "arms_wide": 1.5}},
+    "coaxing":  {"tempo": 1.15, "beats": 0.3, "prefer": {"self": 2, "open_palms": 2}},
+    "recite":   {"tempo": 1.35, "beats": 0.15, "prefer": {"open_palms": 2}},
+    "sassy":    {"tempo": 0.9, "beats": 0.45, "prefer": {"point_forward": 2, "shrug": 2, "hand_on_hip": 2}}
+  },
+  // Per event (the Voice page's scenario name): "on": false = no gestures
+  // there; "manner" moves like that manner whatever the voice uses.
+  // Nong Studio's "Moves while talking" card edits this list.
+  "events": {},
+  // Where the hands wait between gestures while talking.
+  "rest": {"label": "Hands ready", "keys": [
+    {"L": [0.05, -0.8, 0.3], "R": [0.05, -0.8, 0.3], "t": 600}
+  ]},
+  "gestures": {
+    "wave": {"label": "Wave", "mirror": true,
+      "words": {"th": ["สวัสดี", "หวัดดี", "บ๊ายบาย", "บายบาย", "ลาก่อน"],
+                "en": ["hello", "hi", "bye", "goodbye"], "ja": ["こんにちは", "さようなら"], "zh": ["你好", "再见"]},
+      "keys": [
+        {"R": [0.45, 0.25, 0.25], "palmR": "down", "t": 500},
+        {"R": [0.6, 0.3, 0.2], "t": 250},
+        {"R": [0.35, 0.3, 0.25], "t": 250},
+        {"R": [0.6, 0.3, 0.2], "t": 250, "hold": 100}
+      ]},
+    "open_palms": {"label": "Open hands", "beat": true,
+      "words": {"th": ["นี่คือ", "แนะนำ", "ได้เลย", "ยินดี", "ช่วย"],
+                "en": ["here is", "this is", "welcome", "sure", "help"]},
+      "keys": [
+        {"L": [0.3, -0.45, 0.55], "R": [0.3, -0.45, 0.55], "palmL": "up", "palmR": "up", "t": 450, "hold": 250}
+      ]},
+    "point_forward": {"label": "Point ahead", "mirror": true,
+      "words": {"th": ["คุณ", "ทางนี้", "ตรงนั้น", "ข้างหน้า", "ทางโน้น"],
+                "en": ["you", "there", "this way", "over there"]},
+      "keys": [
+        {"R": [0.05, -0.1, 0.9], "t": 450, "hold": 300}
+      ]},
+    "self": {"label": "Hand to chest", "mirror": true,
+      "words": {"th": ["ฉัน", "หนู", "ผม", "ดิฉัน", "เรา", "เจ๊"], "en": ["me", "my", "we"]},
+      "keys": [
+        {"R": [-0.12, -0.5, 0.4], "t": 450, "hold": 300}
+      ]},
+    "arms_wide": {"label": "Arms wide",
+      "words": {"th": ["ทุกคน", "ทั้งหมด", "เยอะ", "มากมาย", "ใหญ่"],
+                "en": ["everyone", "everybody", "all of", "big", "many"]},
+      "keys": [
+        {"L": [0.7, -0.2, 0.3], "R": [0.7, -0.2, 0.3], "palmL": "up", "palmR": "up", "t": 550, "hold": 300}
+      ]},
+    "think": {"label": "Hand to chin", "mirror": true,
+      "words": {"th": ["ไหม", "มั้ย", "อะไร", "อย่างไร", "ยังไง", "ทำไม", "หรือเปล่า"],
+                "en": ["what", "why", "how", "?"]},
+      "keys": [
+        {"R": [-0.05, -0.05, 0.4], "t": 500, "hold": 350}
+      ]},
+    "shrug": {"label": "Shrug",
+      "words": {"th": ["ไม่รู้", "ไม่แน่ใจ", "ก็แล้วแต่"], "en": ["don't know", "not sure", "maybe"]},
+      "keys": [
+        {"L": [0.35, -0.55, 0.35], "R": [0.35, -0.55, 0.35], "palmL": "up", "palmR": "up", "shrug": 8, "t": 450, "hold": 300}
+      ]},
+    "cheer": {"label": "Cheer",
+      "words": {"th": ["เยี่ยม", "สุดยอด", "ดีใจ", "เย้", "เก่งมาก"], "en": ["great", "awesome", "yay", "congratulations"]},
+      "keys": [
+        {"L": [0.3, 0.45, 0.2], "R": [0.3, 0.45, 0.2], "t": 500, "hold": 300}
+      ]},
+    "wai": {"label": "Wai (thank you)",
+      "words": {"th": ["ขอบคุณ", "ขอบใจ", "ขอโทษ", "ยินดีต้อนรับ"], "en": ["thank", "sorry"]},
+      "keys": [
+        {"L": [-0.05, -0.3, 0.45], "R": [-0.05, -0.3, 0.45], "t": 550, "hold": 500}
+      ]},
+    "hand_on_hip": {"label": "Hand on hip", "mirror": true,
+      "words": {"th": ["นี่แหละ", "แหม", "เอาเถอะ"], "en": ["well", "honestly"]},
+      "keys": [
+        {"R": [0.35, -0.6, -0.05], "t": 500, "hold": 400}
+      ]},
+    "beat_right": {"label": "Small beat", "beat": true, "mirror": true,
+      "keys": [
+        {"R": [0.15, -0.5, 0.5], "t": 300},
+        {"R": [0.15, -0.6, 0.45], "t": 250}
+      ]},
+    "beat_both": {"label": "Small beat, both hands", "beat": true,
+      "keys": [
+        {"L": [0.2, -0.5, 0.5], "R": [0.2, -0.5, 0.5], "t": 300},
+        {"L": [0.2, -0.6, 0.45], "R": [0.2, -0.6, 0.45], "t": 250}
+      ]}
+  }
+}

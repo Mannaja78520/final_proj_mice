@@ -37,6 +37,7 @@
       "dummy_link.js",
       "freeze_watch.js",
       "distances.js",
+      "talk_gestures.js",
       "main_loop.js",
       "boot.js"
     ]

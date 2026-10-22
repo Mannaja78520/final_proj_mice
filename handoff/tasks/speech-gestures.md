@@ -28,13 +28,20 @@ copied moves saved; "drop a video, get a safe saved move" in one step. No RL.
   time bar as a gesture, per-event switch.
 
 ## Doing now
-Step 2: talk gestures. Files: config/gestures.json (written), main_python/gestures.py
-(planner: words -> picks + random beats over the speech ms, steps from the fit,
-speed floor, clamp), routes in hub_api_studio.py (/api/gestures GET/POST,
-/fit, /plan open; /play gated), user file STUDIO/gestures.json git-ignored,
-MICE_GESTURES_MINE for QC. Then Studio fit + card, then Voice page.
+Step 3: Voice page. apps/voice/app.js: after an answer with no saved move and
+the Gestures switch on, POST /api/gestures/play {dev, text, lang, manner, event,
+ms} when the sound STARTS (one-line hooks in speak()/speakAndWait(): the PC
+thread owns that TTS code); Stop -> /api/play/stop. index.template.html: a
+"👋 Gestures" switch beside "🤖 Move".
 
 ## Done
+- Talk gestures: config/gestures.json, main_python/gestures.py (planner),
+  /api/gestures (+/fit, /plan open; /play gated), Studio fit + "Moves while
+  talking" card (app_parts/talk_gestures.js, html_parts/talk.html).
+  check_gestures 36 asserts (browser fit on QC rig 0.7 s, words, seeds, manners,
+  events, play asserted on fake_serial.wire, clear at 1 deg), check_gesture_legs
+  (800 random plans use only checked legs). Sabotage 2/3 caught (the 3rd, a hitting
+  key kept, is caught twice over by safeKeys - redundant guard).
 - safe_path.js + web/safe_path.json: straight first, else RRT-Connect + shortcuts
   (8-30 ms on the QC rig). check_safe_path (19 asserts, browser): ways round clear
   at 1 deg, hitting pose refused, video keys safe, dummy live follow holds on a
@@ -45,7 +52,7 @@ MICE_GESTURES_MINE for QC. Then Studio fit + card, then Voice page.
 - HANDOFF/CLAUDE/AGENTS/GEMINI/TEMPLATE: Doing now + push WIP every step.
 
 ## Next
-1. config/gestures.json, main_python/gestures.py, hub routes, Studio card, Voice page.
+1. Voice page (Doing now).
 2. QC check_gestures; help.html; systems.json; full QC; PR; merge.
 
 ## Blocked

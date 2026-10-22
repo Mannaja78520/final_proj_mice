@@ -209,6 +209,10 @@ def start_hub(fake=True):
     # their own hub.
     import os
     import tempfile
+    # Studio fits the talk gestures to its rig and the hub writes them beside
+    # the saved moves (A46-1): in QC that goes to a throwaway file, never the tree.
+    os.environ.setdefault("MICE_GESTURES_MINE", str(Path(tempfile.gettempdir())
+                                                    / ("mice_qc_gestures_%d.json" % os.getpid())))
     os.environ["MICE_HUB_AUTH"] = str(Path(tempfile.gettempdir())
                                       / ("mice_qc_auth_%d.json" % _hub_port[0]))
     if fake:
