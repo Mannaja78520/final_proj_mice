@@ -601,7 +601,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: QC finished: 58 passed, 0 failed, started 2026-10-22 19:34
+# RUNNING: QC finished: 1104 passed, 0 failed, started 2026-10-22 19:39
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1590,8 +1590,12 @@ A45-19: done   2026-10-20 18:46  agent=codex:10200422-543e  — User corrected t
 A45-20: done   2026-10-21 01:13  agent=codex:10200422-543e  — User2026-10-21: every work round must leave a durable handoff for another agent; persist instruction and checkpoint remaining acceptance work without overlapping voice gate. Verified only intended10linehandoffsection appended; exactrawAGENTSsha2561f8e6731ef51d03fce13c010c998338b91322cdb1f53a8cbe55ad12f8cad729c. A45-18integrationowner authorized toincludeunchangedAGENTSinfinalscopedbookkeepingcommit AFTERexactgreen,sourcePRmergeanddeployment; no concurrentrootGitoperationhere.
 A45-21: done   2026-10-21 01:16  agent=codex:10200422-543e  — Prepare exact friend and faces watcher restore commands requested by active deployment owner; no service execution; durable handoff.
 A45-26: done   2026-10-22 15:02  agent=claude:xdlrot  — User 2026-10-22: เอาแบบตั้งได้ว่างานแต่ละงานจะเป็นโทนไหน เสียงยังดูเป็น AI เกินไป เสียงรวบเกินฟังไม่รู้เรื่อง เอาแบบเสียงสำเนียงไทยฟังชัด ภาษาอื่นด้วย; คำสุดท้ายจบไวไป ไม่มีลากเสียง ออกแค่ครึ่งคำแล้วหายไป Deployed on PC 2026-10-22 15:02: exe rebuilt, hub + helper restarted, live tts.rate -10% (backup scratch/deploy-a45-26-2026-10-22), replay 50/50. Live Thai line by Edge friendly, 1.07 s quiet tail. Human ear still judges less-AI.
-A45-27: doing  2026-10-22 15:10  agent=claude:xdlrot  — User 2026-10-22: เอาให้มีโทนแบบเลือกได้คลิกเป็น default ได้ซัก 3 โทน และขอมีแบบเร็วได้ด้วย และขอเลือกเสียงได้ว่าเป็นเสียงแบบอื่น ทั้งชายและหญิง; เสียง default clear ยังดูเป็น AI; ขอแบบเร็วขึ้นได้แต่ไม่รวบคำ ปัญหาก่อนหน้าคือรวบคำจนฟังไม่ออก ไม่ใช่เร็วไป User 2026-10-22: เอาภาษาอื่นด้วยไม่ใช่แค่ไทย; เสียงไทยชายหญิงมีลงท้ายต่างกัน ครับ/ค่ะ ทำให้ตรงกับภาษาด้วย
-A45-28: todo  2026-10-22 19:29  agent=claude:xdlrot  — User 2026-10-22: ทำให้ตั้งได้ว่าจะเป็นจริตแบบไหน ท่าแนวไหน เสียงยังไง แล้วปรับแก้ตัวที่เซฟไว้ในเครื่องเองทันที แต่มี folder default ไว้สำหรับค่าเริ่มต้นทั้งหมด หลังจากนั้นจะมีชื่อจริตแต่ละอัน แล้วเอาเสียงหรืออะไรต่างๆใส่ในนั้น เพื่อไม่ให้กระทบค่าหลัก และเอาไปใช้ได้ในอนาคต มี folder ของตัวเอง
+
+A45-27: done   2026-10-22 16:53  agent=codex:10221534-bb09  — User: ตั้งจริต ท่าทาง เสียงได้ แก้ค่าที่เซฟในเครื่องทันที แยก folder default และ folder ชื่อจริตพร้อมเสียงของตัวเอง ไม่กระทบค่าหลัก ใช้ซ้ำในอนาคต PR51 bd73420 deployed on PC. Named character settings/FAQ/styles/gestures/audio/motions isolated under config/voice_profiles, protected default; immediate file reload. Final runtime full QC06f7434:7547/0 (hub_nav isolated retry green);69 profile assertions;8 sabotage regressions caught. Actual packaged hub/current path and WAV/cache verified; original config/FAQ/calibration hashes preserved. Replay initially41/50 during cold model load, then50/50 after confirmed readiness. No physical robot playback measured.
+
+# A46  Gestures with speech, safe paths (RRT) for copying a person
+A46-1: done   2026-10-22 08:17  agent=claude:10220724-db22  — User 2026-10-22: ขอแบบลองสุ่มท่าทางออกมาให้เข้ากับคำที่พูดแล้วส่งทำพร้อมกันด้วยได้ไหม ... เอาตัวขนาดของหุ่นมาใส่แล้วทำท่าทางได้ อาจจะโคกับ nong studio ดึงข้อมูลจากกันได้ (gestures that match the spoken words, random, played with the speech, using the robot's size from Studio) User 2026-10-22 07:27: ก็เพราะกลัวชนตัวเองเลยว่าใช้ดีกว่าไหมใช้กับที่ตามท่าทางด้วย -> RRT (RRT-Connect + shortcut) fallback when the straight joint path self-collides, shared by talk gestures, video copying and dummy follow; live follow holds last safe pose when no path in time User 07:28: แล้วมีการเซฟท่าหลังจากก็อปท่าคนไหม ... ปล่อยทำหลังโยนวีดีโอให้ -> one-click video to safe saved move; dummy follow record-and-save; no RL merged main (PR #48 A45-26) into the branch
+A45-28: doing  2026-10-22 19:35  agent=claude:xdlrot  — User 2026-10-22: เอาให้มีโทนแบบเลือกได้คลิกเป็น default ได้ซัก 3 โทน และขอมีแบบเร็วได้ด้วย และขอเลือกเสียงได้ทั้งชายและหญิง; default clear ยังดูเป็น AI; เร็วขึ้นได้แต่ไม่รวบคำ (ปัญหาคือรวบคำ ไม่ใช่เร็วไป); เอาภาษาอื่นด้วย; เสียงไทยชายหญิงลงท้าย ครับ/ค่ะ ให้ตรง User 2026-10-22 also asked for named characters with their own folders and a default folder: that is A45-27 (codex, merged #51/#52); voice tiles save into the active character.
 
 END</code></pre>
 </details>

@@ -252,6 +252,39 @@
       <div class="row"><button onclick="showTab('video')">Open the Video page</button></div>
     </div>
 
+    <!-- Moves while talking (A46-1): the Voice page's gestures, fitted to this
+         robot here (app_parts/talk_gestures.js, library config/gestures.json).
+         Hidden when Studio runs without the hub. -->
+    <div class="card" data-stab="sequence" id="talkCard" hidden>
+      <h2>Moves while talking</h2>
+      <p class="mini">When the robot answers on the Voice page, its arms move with the
+        words: these gestures, fitted to this robot’s size and kept clear of its body.</p>
+      <div class="row"><label><input type="checkbox" id="talkOn" onchange="talkSaveSwitch()">
+        Move the arms while talking</label></div>
+      <div class="statline" id="talkStat" role="status"></div>
+      <div class="row">
+        <input id="talkText" style="flex:1;min-width:0" placeholder="Try a sentence the robot might say"
+               onkeydown="if (event.key === 'Enter') talkTry()">
+        <select id="talkManner" title="How it moves: the speaking manner of the voice"></select>
+        <button onclick="talkTry()" title="Pick gestures for this sentence, at random as the robot would, and put them on the time bar.">▶ Show</button>
+      </div>
+      <div class="mini" id="talkPicks"></div>
+      <details class="disclosure">
+        <summary>The gestures and their words</summary>
+        <div id="talkList"></div>
+        <div class="row">
+          <input id="talkNewName" style="flex:1;min-width:0" placeholder="Name for the moves on the time bar">
+          <input id="talkNewWords" style="flex:1;min-width:0" placeholder="Words that bring it, a comma between">
+          <button onclick="talkAddFromBar()" title="Keep the moves on the time bar as a new gesture the Voice page can use.">＋ Keep as a gesture</button>
+        </div>
+      </details>
+      <details class="disclosure">
+        <summary>Events</summary>
+        <p class="mini">Untick an event and the robot keeps its arms still while talking there.</p>
+        <div id="talkEvents"></div>
+      </details>
+    </div>
+
     <!-- The Video page's choices (A44-4, A44-8: app_parts/pose_from_video.js and
          video_page.js). The person's video and its skeleton are on the stage
          beside the 3D view (view.html); choices are filled from VID_DETAIL /
@@ -297,6 +330,8 @@
       </details>
       <div class="row">
         <button class="primary" id="vidGo" onclick="vidMake()" disabled>▶ Make moves</button>
+        <button id="vidGoSave" onclick="vidMakeAndSave()" disabled
+                title="One step: make the moves, keep them clear of the robot's own body, put them on the time bar and save them under the video's name.">▶ Make and save</button>
       </div>
       <div id="vidList" class="vidlist"></div>
       <div class="row" id="vidUseBox" hidden>
@@ -424,6 +459,9 @@
         <button class="primary" onclick="dummyToNewKey()" title="read the dummy now and add its pose to the end of the sequence">+ Dummy pose as new move</button>
         <button onclick="dummyToSelectedKey()" title="replace the selected move's pose with the dummy's pose now">Use dummy pose for selected move</button>
         <button onclick="robotToSelectedKey()" title="send the real robot to the move selected in the timeline, at that move's speed">Robot → selected move</button>
+      </div>
+      <div class="row">
+        <button id="dummyRecBtn" onclick="dummyRecToggle()" title="Record what the dummy does. Stop keeps it: the moves go on the time bar, clear of the robot's own body, and are saved.">● Record the dummy</button>
       </div>
       <div class="statline" id="dummyStat" aria-live="polite">not connected — pick where the dummy is, then Connect (or pick Simulated)</div>
     </div>

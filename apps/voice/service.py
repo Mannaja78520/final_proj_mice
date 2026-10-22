@@ -17,6 +17,7 @@ Run it from the code folder:
     python apps\\voice\\service.py
 """
 import argparse
+import copy
 import hashlib
 import itertools
 import json
@@ -102,6 +103,7 @@ from face_history import HistoryCursor, local_when    # noqa: E402
 # Who can do each job besides this PC (A45-1): the wire shapes and the keys.
 sys.path.insert(0, str(CODE / "apps" / "voice"))
 import providers                                     # noqa: E402
+from profiles import Profiles, ProfileError, guarded  # noqa: E402
 # What a question asks for beyond its words (A45-24): reply language,
 # read-aloud, a new verse, Thai-letter loanwords. Data in voice_intents.json.
 import intents                                       # noqa: E402
@@ -489,6 +491,8 @@ class Brain:
         self._style_last = value              # /styles "last" shows any thread's
 
     def __init__(self, cfg_path, faq_path=None):
+        self.profile_lock = threading.RLock()
+        self.profiles = None
         self.cfg_path = Path(cfg_path)
         self.cfg = registry.load(self.cfg_path)
         self._cfg_mtime = None
@@ -511,6 +515,17 @@ class Brain:
         self._reconize_token = ""
         self._reconize_token_exp = 0.0
 
+    def enable_profiles(self):
+        if self.profiles is None:
+            spec = registry.load(CODE / "config" / "voice_profiles.json")
+            root = self.cfg_path.parent / spec["folder"]
+            self.move_old_key()
+            self.profiles = Profiles(root, self.cfg_path, self.faq_path,
+                                     CODE / "config" / "voice_styles.json")
+        self.profiles.bind(self)
+        self.maybe_reload()
+        return self.profiles
+
     def maybe_reload(self):
         """Pick up an edited voice.json without a restart - A20-12's promise.
 
@@ -521,7 +536,7 @@ class Brain:
         cleared. A broken edit keeps the old brain and retries next call.
         """
         try:
-            m = self.cfg_path.stat().st_mtime
+            m = self.cfg_path.stat().st_mtime_ns
         except OSError:
             return
         if m == self._cfg_mtime:
@@ -556,6 +571,8 @@ class Brain:
 
     def write_store(self, path, obj):
         """One data file rewritten atomically - a reader never sees half."""
+        if getattr(self, "profiles", None) and Path(path).resolve().is_relative_to(self.profiles.folder("default").resolve()):
+            raise PermissionError("Default is kept safe; save a named character instead.")
         body = json.dumps(obj, ensure_ascii=False, indent=1)
         # The server is threading: two saves at once must not share one temp
         # name, or A's os.replace publishes B's half-written file.
@@ -1370,7 +1387,7 @@ class Brain:
         """
         langs = list(((self.cfg.get("tts") or {}).get("voices") or {}).keys())
         out = {l: [] for l in langs}
-        # This PC's saved voices first (A45-27): {"name": "person:<id>", "own": true}.
+        # This PC's saved voices first (A45-28): {"name": "person:<id>", "own": true}.
         for pid, p in (self.people().get("people") or {}).items():
             for l in p.get("languages") or []:
                 if l in out:
@@ -1423,7 +1440,7 @@ class Brain:
         extra = ("\n%s\n%s" % (rate, pitch)) if (rate or pitch) else ""
         key = hashlib.md5(("%s\n%s%s" % (ident, text, extra))
                           .encode("utf-8")).hexdigest()
-        return CODE / "apps" / "voice" / "tts_cache" / (key + ".wav")
+        return getattr(self, "cache_dir", CODE / "apps" / "voice" / "tts_cache") / (key + ".wav")
 
     def steps(self, rate=None, pitch=None):
         """(speed, pitch) a line is spoken at: given, else the scenario's,
@@ -1482,7 +1499,7 @@ class Brain:
         # A scenario may set its own speed and pitch - a poem read at shop
         # speed is the complaint this answers.
         rate, pitch = self.steps(rate, pitch)
-        # A saved voice of the feeling voice (A45-27): that service first; the
+        # A saved voice of the feeling voice (A45-28): that service first; the
         # others speak its `backup` (same gender) if it is off or starting.
         who = self.person(named)
         if who:
@@ -1565,9 +1582,9 @@ class Brain:
 
     def styles(self):
         """config/voice_styles.json, re-read when it changes on disk."""
-        p = CODE / "config" / "voice_styles.json"
+        p = getattr(self, "styles_path", CODE / "config" / "voice_styles.json")
         try:
-            m = p.stat().st_mtime
+            m = (str(p), p.stat().st_mtime_ns)
         except OSError:
             return {"styles": {}}
         got = getattr(self, "_styles", None)
@@ -1581,7 +1598,7 @@ class Brain:
 
     def people(self):
         """config/voice_people.json - saved voices of this PC's Thai feeling
-        voice (A45-27), re-read when it changes on disk. {"people": {id: entry}}."""
+        voice (A45-28), re-read when it changes on disk. {"people": {id: entry}}."""
         p = CODE / "config" / "voice_people.json"
         try:
             m = p.stat().st_mtime
@@ -1611,6 +1628,17 @@ class Brain:
             return max(0.5, min(2.0, 1 + int(re.sub(r"[^0-9+-]", "", str(rate or "")) or 0) / 100.0))
         except ValueError:
             return 1.0
+
+    def style_extra(self, key):
+        """A key a character's snapshot may predate (`featured`, `speeds`,
+        A45-28): the character's own voice_styles, else the shipped one."""
+        got = self.styles().get(key)
+        if got is None:
+            try:
+                got = (registry.load(CODE / "config" / "voice_styles.json") or {}).get(key)
+            except (OSError, ValueError):
+                got = None
+        return got
 
     def style_choice(self, style=None):
         """(key, entry) of the manner a line is said in: the request's, else
@@ -1698,7 +1726,7 @@ class Brain:
         a = self.answer_cfg()
         _key, sty = self.style_choice()
         own = sty.get("answer") or {}
-        # A45-27 (user 2026-10-22: *เสียงไทยชายหญิงมีลงท้ายต่างกัน ครับ/ค่ะ*): the
+        # A45-28 (user 2026-10-22: *เสียงไทยชายหญิงมีลงท้ายต่างกัน ครับ/ค่ะ*): the
         # voice's gender sets the ending and self-word; a manner's own wins.
         g = self.gender_words("th")
         return (own.get("particle") or g.get("particle") or a.get("politeParticle") or "ครับ",
@@ -1797,10 +1825,10 @@ class Brain:
                     up[pid] = False
         return {"styles": out, "chosen": chosen, "up": up,
                 "recommended": self.styles().get("recommended") or "",
-                # The quick choices on the Voice tab (A45-27): the 3 tones shown
+                # The quick choices on the Voice tab (A45-28): the 3 tones shown
                 # as tiles, the speeds, and the saved default tone.
-                "featured": [k for k in self.styles().get("featured") or [] if k in out],
-                "speeds": self.styles().get("speeds") or {},
+                "featured": [k for k in self.style_extra("featured") or [] if k in out],
+                "speeds": self.style_extra("speeds") or {},
                 "default": str((self.cfg.get("tts") or {}).get("style") or ""),
                 "why": getattr(self, "_feeling_why", {}),
                 "last": getattr(self, "_style_last", None) or {}}
@@ -1961,7 +1989,7 @@ class Brain:
                         made = getattr(self._made, "path", None)
                         if made:
                             keep.add(made.stem)     # a backup's or a service's own file
-        cache = CODE / "apps" / "voice" / "tts_cache"
+        cache = getattr(self, "cache_dir", CODE / "apps" / "voice" / "tts_cache")
         if not cache.is_dir():
             return
         cutoff = time.time() - 24 * 3600
@@ -3149,11 +3177,26 @@ class VoiceHandler(BaseHTTPRequestHandler):
         self._json({"ok": False, "error": why}, 403)
         return True
 
+    @guarded
     def do_GET(self):                               # noqa: N802
         if self.refuse_web():
             return
         path = urlparse(self.path).path
         self.brain.maybe_reload()
+        if path == "/profiles":
+            try:
+                store = self.brain.enable_profiles()
+                query = parse_qs(urlparse(self.path).query)
+                if "kind" in query:
+                    kind = query["kind"][0]
+                    profile = query.get("profile", [store.active])[0]
+                    asset = store.asset(profile, kind, query.get("name", [""])[0])
+                    if kind != "motions":
+                        raise ProfileError("Use the sound player to hear a sound file.")
+                    return self._json({"ok": True, "text": asset.read_text(encoding="utf-8")})
+                return self._json({"ok": True, **store.view(), "config": self.public_config(), "faqs": self.brain.faqs()})
+            except (OSError, ValueError) as exc:
+                return self._json({"ok": False, "error": str(exc)}, 400)
         if path == "/health":
             try:
                 return self._json(self.brain.health())
@@ -3162,8 +3205,8 @@ class VoiceHandler(BaseHTTPRequestHandler):
         if path == "/config":
             # Reading is open - the same rule as every other read on the hub.
             # So no key ever rides in it: an old Google key is left out.
-            cfg = {k: v for k, v in self.brain.cfg.items() if k != "googleApiKey"}
-            return self._json({"ok": True, "config": cfg})
+            cfg = self.public_config()
+            return self._json({"ok": True, "config": cfg, **self.profile_state()})
         if path == "/services":
             # Who can do each job and which keys are saved - never a key.
             return self._json(dict({"ok": True}, **self.brain.services_view()))
@@ -3171,7 +3214,7 @@ class VoiceHandler(BaseHTTPRequestHandler):
             # Speaking manners and what each speaking service really does (A45-25).
             return self._json(dict({"ok": True}, **self.brain.styles_view()))
         if path == "/faq":
-            return self._json({"ok": True, "faqs": self.brain.faqs()})
+            return self._json({"ok": True, "faqs": self.brain.faqs(), **self.profile_state()})
         if path == "/face":
             want = parse_qs(urlparse(self.path).query).get("camera", [""])[0]
             return self._json({"ok": True,
@@ -3191,6 +3234,41 @@ class VoiceHandler(BaseHTTPRequestHandler):
                                                          "read: %s" % e}, 500)
         return self._json({"ok": False, "error": "unknown address"}, 404)
 
+    def public_config(self):
+        return {k: v for k, v in self.brain.cfg.items() if k != "googleApiKey"}
+
+    def profile_state(self):
+        store = getattr(self.brain, "profiles", None)
+        return {"revision": store.revision(), "profile": store.active} if store else {}
+
+    def do_profiles(self):
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+            if length < 0 or length > 3 * 1024 * 1024:
+                raise ProfileError("Choose a file smaller than 2 MB.")
+            req = json.loads(self.rfile.read(length))
+            if not isinstance(req, dict):
+                raise ProfileError("That request could not be read.")
+            store = self.brain.enable_profiles()
+            store.check(req, writable=False)
+            action = req.get("action")
+            if action == "create":
+                name = store.create(req.get("name"), store.active)
+                store.select(name)
+            elif action == "select":
+                store.select(req.get("name"))
+            elif action == "upload":
+                store.upload(req)
+            else:
+                raise ProfileError("Choose a character action.")
+            store.bind(self.brain)
+            self.brain.maybe_reload()
+            return self._json({"ok": True, **store.view()})
+        except ProfileError as exc:
+            return self._json({"ok": False, "error": str(exc)}, 409)
+        except (OSError, ValueError, TypeError) as exc:
+            return self._json({"ok": False, "error": str(exc)}, 400)
+
     def do_store(self, path, key):
         """A designer's save - the settings half of A20-12."""
         length = int(self.headers.get("Content-Length") or 0)
@@ -3204,6 +3282,11 @@ class VoiceHandler(BaseHTTPRequestHandler):
         except ValueError:
             return self._json({"ok": False, "error":
                                "that request was not readable"}, 400)
+        if getattr(self.brain, "profiles", None):
+            try:
+                self.brain.profiles.check(req)
+            except ProfileError as exc:
+                return self._json({"ok": False, "error": str(exc)}, 409)
         data = req.get(key)
         # The page sends the settings object as it is, but the answers file
         # wraps its list: {faqs: [...]} on disk, a bare [ ... ] on the wire.
@@ -3243,13 +3326,17 @@ class VoiceHandler(BaseHTTPRequestHandler):
             return self._json({"ok": False, "error":
                                "could not save: %s: %s"
                                % (e.__class__.__name__, e)}, 500)
-        return self._json({"ok": True})
+        self.brain.maybe_reload()
+        return self._json({"ok": True, **self.profile_state()})
 
+    @guarded
     def do_POST(self):                              # noqa: N802
         if self.refuse_web():
             return
         path = urlparse(self.path).path
         self.brain.maybe_reload()
+        if path == "/profiles":
+            return self.do_profiles()
         if path == "/config":
             return self.do_store(self.brain.cfg_path, "config")
         if path == "/faq":
@@ -3356,9 +3443,11 @@ class VoiceHandler(BaseHTTPRequestHandler):
                 # An answer may also MOVE a robot. The service only NAMES
                 # the move - it never holds the password; the page, which
                 # does, drives the show clock itself.
-                for k in ("move", "module", "moves"):
+                for k in ("move", "module", "moves", "audio"):
                     if hit.get(k):
                         out[k] = hit[k]
+                if getattr(self.brain, "profiles", None):
+                    out["profile"] = self.brain.profiles.active
                 return self._json(out)
             # Grey zone: close enough to suspect, not close enough to trust.
             # Asking again beats a confident wrong answer to a visitor.
@@ -3486,7 +3575,13 @@ class VoiceHandler(BaseHTTPRequestHandler):
                 text = self.brain.agree_text(text, req.get("lang") or "", voice_name)
             # "speed" / "pitch": the page's Try it, heard before saving.
             # Not "rate" - that is the robot speaker's sample rate below.
-            wav, why_not = self.brain.say(
+            if req.get("clip") and self.brain.profiles:
+                store = getattr(self.brain, "profiles", None)
+                path = store.asset(req.get("profile") or store.active, "audio", req["clip"])
+                wav, why_not = path.read_bytes(), ""
+                self.brain._style_done = {}
+            else:
+                wav, why_not = self.brain.say(
                 text, req.get("lang") or "", voice=voice_name,
                 rate=(str(req["speed"]) if req.get("speed") is not None else None),
                 pitch=(str(req["pitch"]) if req.get("pitch") is not None else None),
@@ -3508,7 +3603,7 @@ class VoiceHandler(BaseHTTPRequestHandler):
             if why_not:
                 return self._json({"ok": False, "error": why_not})
         self.send_response(200)
-        ctype = "audio/wav" if wav.startswith(b"RIFF") else "audio/mpeg"
+        ctype = "audio/wav" if wav.startswith(b"RIFF") else ("audio/ogg" if wav.startswith(b"OggS") else "audio/mpeg")
         self.send_header("Content-Type", ctype)
         # How the manner was applied: instruct / prosody / none (A45-25).
         done = getattr(self.brain, "_style_done", None) or {}
@@ -3576,14 +3671,22 @@ def watch_faq_audio(brain):
     last, felt = None, False
     while True:
         try:
-            brain.maybe_reload()
-            m = brain.faq_path.stat().st_mtime
+            with brain.profile_lock:
+                if brain.profiles:
+                    brain.profiles.bind(brain)
+                brain.maybe_reload()
+                snapshot = copy.copy(brain)
+                snapshot.cfg = copy.deepcopy(brain.cfg)
+                m = (str(brain.faq_path), brain.faq_path.stat().st_mtime_ns,
+                     brain.cfg_path.stat().st_mtime_ns,
+                     getattr(brain, "styles_path", CODE / "config" / "voice_styles.json").stat().st_mtime_ns)
+
             # The feeling voice loads for ~20 s after boot: the first sweep is
             # spoken by the backup, so sweep again once it is up (A45-25).
             now = brain.feeling_up()
             if m != last or (now and not felt):
                 last, felt = m, now
-                brain.sync_faq_audio()
+                snapshot.sync_faq_audio()
         except OSError:
             pass
         time.sleep(5)
@@ -3605,6 +3708,9 @@ def main():
         brain.move_old_key()
     except OSError as e:
         print("[voice] the old Google key could not be moved: %s" % e)
+    spec = registry.load(CODE / "config" / "voice_profiles.json")
+    if (brain.cfg_path.parent / spec["folder"] / "active.json").exists():
+        brain.enable_profiles()
     VoiceHandler.brain = brain
     svc = brain.cfg.get("service") or "http://127.0.0.1:8767"
     u = urlparse(svc)

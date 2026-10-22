@@ -52,10 +52,11 @@
      "depends": []},
 
     {"id": "hub-studio", "summary": "The hub's routes for Nong Studio's files, shared settings and the list of other hubs.",
-     "files": ["main_python/hub_api_studio.py", "main_python/hub_video.py", "config/video_links.json"],
+     "files": ["main_python/hub_api_studio.py", "main_python/hub_video.py", "config/video_links.json",
+               "main_python/gestures.py", "config/gestures.json"],
      "names": ["/api/list", "/api/load", "/api/save", "/api/seq", "/api/settings", "/api/hubs",
-               "/api/model/upload", "/api/rigdefault", "/api/video/"],
-     "checks": ["check_studio*"],
+               "/api/model/upload", "/api/rigdefault", "/api/video/", "/api/gestures"],
+     "checks": ["check_studio*", "check_gesture*", "check_voice_gestures"],
      "depends": []},
 
     {"id": "hub-auth", "summary": "Hub logins, sessions, which pages need a login, pairing two hubs.",
@@ -99,7 +100,7 @@
      "depends": ["shared-web"]},
 
     {"id": "app-voice", "summary": "Voice helper: speech in, answers, speech out.",
-     "files": ["apps/voice/", "config/voice.json", "config/voice_intents.json", "config/voice_providers.json", "config/voice_styles.json", "llm/", "qc/data/voice_conversation.mjs"],
+     "files": ["apps/voice/", "config/voice.json", "config/voice_intents.json", "config/voice_providers.json", "config/voice_styles.json", "config/voice_profiles.json", "config/voice_people.json", "llm/", "qc/data/voice_conversation.mjs"],
      "checks": ["check_voice*"],
      "depends": []},
 

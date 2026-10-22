@@ -316,7 +316,7 @@ def azure_speak(prov, key, job, text, lang, voice, timeout, rate="", pitch=""):
 def feeling_speak(prov, key, job, text, lang, voice, timeout, style="", emotion="", person=None,
                   tempo=1.0):
     """`person` = a saved voice from config/voice_people.json (its speaker
-    tokens and gender, A45-27); `tempo` = the chosen speed, 1 = as made."""
+    tokens and gender, A45-28); `tempo` = the chosen speed, 1 = as made."""
     base = (job.get("base") or prov.get("base") or "").rstrip("/")
     body = {"text": text, "emotion": emotion or "neutral"}
     if job.get("tune"):              # clarity knobs, data in voice_providers.json (A45-26)

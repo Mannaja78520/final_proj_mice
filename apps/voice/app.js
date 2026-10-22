@@ -100,9 +100,10 @@ class VoiceApp {
     try {
       r = await fetch("/api/voice/config", {method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({config: {face: {on}}})});
+        body: JSON.stringify({config: {face: {on}}, revision: this.profileRevision})});
     } catch (e) { r = null; }
     if (r && r.ok) {
+      this.profileRevision = (await r.json()).revision || this.profileRevision;
       this.say(on ? "Faces on: people it knows are greeted by name."
                   : "Faces off: no camera and no names — answers come at once.");
       if (on) { this.loadCamera(); this.pollFace(); }
@@ -1106,16 +1107,19 @@ class VoiceApp {
               signal,
               method: "POST",
               headers: {"Content-Type": "application/json"},
-              body: JSON.stringify({text: a.answer, dev: bot.dev})
+              body: JSON.stringify({text: a.answer, dev: bot.dev, clip: a.audio, profile: a.profile})
             }).catch(e => console.log(e));
           }
         }).catch(() => {});
       }
       tasks.push(this.doMove(a, signal));
+    } else {
+      // not awaited: the next question never waits for an arm (it rests itself)
+      this.doGestures(a.answer, a.lang || detectedLang, signal).catch(() => {});
     }
     if (this.$("sound").checked) {
       const convSpeakLang = this.autoDetect ? (a.lang || detectedLang) : this.askLang;
-      tasks.push(this.speakAndWait(a.answer, convSpeakLang, signal));
+      tasks.push(this.speakAndWait(a.answer, convSpeakLang, signal, a.audio ? {clip: a.audio, profile: a.profile} : null));
     }
     if (tasks.length) await Promise.all(tasks);
     if (!this.convActive || this.convSession !== mySession + 1) break;
@@ -1241,16 +1245,18 @@ class VoiceApp {
               fetch("/api/stream/voice", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({text: r.answer, dev: bot.dev})
+                body: JSON.stringify({text: r.answer, dev: bot.dev, clip: r.audio, profile: r.profile})
               }).catch(e => console.log(e));
             }
           }).catch(() => {});
         }
         tasks.push(this.doMove(r));
+      } else {
+        this.doGestures(r.answer, r.lang || explicitLang || detectedLang).catch(() => {});
       }
       if (this.$("sound").checked) {
         const speakLang = this.autoDetect ? (r.lang || explicitLang || detectedLang) : this.askLang;
-        tasks.push(this.speak(r.answer, speakLang));
+        tasks.push(this.speak(r.answer, speakLang, r.audio ? {clip: r.audio, profile: r.profile} : null));
       }
       if (tasks.length) await Promise.all(tasks);
     }
@@ -1290,6 +1296,7 @@ class VoiceApp {
     else if (kind.includes("wav")) this.checkVoice();
     const url = URL.createObjectURL(await r.blob());
     const player = new Audio(url);
+    player.onplaying = () => this.spoke(text, player.duration);   // A46-1: gestures start now
     player.onended = () => { URL.revokeObjectURL(url); this.$("wait").textContent = ""; this.$("speakingNow").hidden = true; };
     try {
       await player.play();
@@ -1400,7 +1407,7 @@ class VoiceApp {
     try {
       const r = await fetch("/api/voice/say", {
         method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(maybeVoice ? {text, lang, voice: maybeVoice} : {text, lang}),
+        body: JSON.stringify(Object.assign({text, lang}, typeof maybeVoice === "object" ? maybeVoice : (maybeVoice ? {voice: maybeVoice} : {}))),
         signal: request.signal,
       });
       const kind = r.headers?.get?.("Content-Type") || "";
@@ -1427,6 +1434,7 @@ class VoiceApp {
       utterance.onstart = () => {
         if (!own() || signal?.aborted || finished) return cancelNative();
         started = true; clearTimeout(watchdog);
+        this.spoke(text, NaN);                                  // A46-1: length unknown
         watchdog = setTimeout(() => { cancelNative(); end({ok: false}); },
           Math.max(15000, Math.min(120000, text.length * 180 / utterance.rate + 5000)));
         resolve({kind: "native", done});
@@ -1461,6 +1469,7 @@ class VoiceApp {
     if (winner.kind === "error") throw winner.error;
     url = URL.createObjectURL(winner.blob);
     player = new Audio(url);
+    player.onplaying = () => this.spoke(text, player.duration);   // A46-1: gestures start now
     const playback = new Promise((resolve, reject) => {
       player.onended = () => resolve({ok: true});
       player.onerror = () => reject(new Error("The sound could not play."));
@@ -1515,6 +1524,59 @@ class VoiceApp {
     bot.dev = live && live.dev;
   }
   return bot;
+}
+
+// ---- Moves while talking (A46-1, user 2026-10-22) -------------------------
+// An answer that names no move of its own gets arm gestures that fit its
+// words. The HUB picks and times them (config/gestures.json, fitted to the
+// robot's size and kept clear of its body by Nong Studio); this page only says
+// WHEN: as the sound starts, with how long it lasts, so the moves land on
+// their words. Stop ends them with the answer.
+  spoke(text, sec){
+  const w = this.speechWait;
+  if (w && w.text === text) { this.speechWait = null; w.done(sec); }
+}
+  async gestureRobot(){
+  const all = await fetch("/api/modules/all").then(x => x.json()).catch(() => null);
+  const mods = (all && all.modules) || [];
+  const live = m => (m.routes || []).find(rt => !rt.stale);
+  const want = (this.$("globalRobot") ? this.$("globalRobot").value : "").trim().toLowerCase();
+  const bot = want && want !== "__all__"
+    ? mods.find(m => String(m.name || "").trim().toLowerCase() === want)
+    : (mods.find(m => String(m.type || "").toLowerCase() === "nong" && live(m)) || mods.find(live));
+  const rt = bot && live(bot);
+  return rt ? {name: bot.name, dev: rt.dev} : null;
+}
+  async doGestures(text, lang, signal){
+  if (!text || !this.$("gestOn") || !this.$("gestOn").checked) return;
+  let started = null;
+  if (this.$("sound") && this.$("sound").checked) {
+    // wait for THIS answer's sound; registered before it is asked for
+    started = new Promise(done => {
+      this.speechWait = {text, done};
+      const t = setTimeout(() => done(null), 20000);
+      signal?.addEventListener("abort", () => { clearTimeout(t); done(null); }, {once: true});
+    });
+  }
+  const bot = await this.gestureRobot();
+  const sec = started ? await started : NaN;
+  if (!bot || signal?.aborted || sec === null) return;
+  const sc = this.scenarioNow();
+  const manner = (sc && sc.style) || this.cfg?.tts?.style || this.styleNow || "";
+  const p = await fetch("/api/gestures/play", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({dev: bot.dev, text, lang: lang || "", manner, event: this.cfg?.scenario || "",
+                          ms: Number.isFinite(sec) ? Math.round(sec * 1000) : 0}),
+  }).then(x => x.json()).catch(() => null);
+  const box = this.$("gestOn").parentElement || {};
+  box.title = p && p.ok ? "Moving with: " + p.picks.map(x => x.label).join(", ")
+    : "Move the robot's arms with the words while it answers" + (p && p.why ? " (" + p.why + ")" : "");
+  if (p && p.ok && signal) {
+    signal.addEventListener("abort", async () => {
+      const st = await fetch("/api/play").then(x => x.json()).catch(() => null);
+      if (st && st.running && st.name === "gestures") fetch("/api/play/stop", {method: "POST"}).catch(() => {});
+    }, {once: true});
+  }
 }
 
   async doMove(r, signal){
@@ -1612,8 +1674,16 @@ class VoiceApp {
 
       this.$("wait").textContent = labelPrefix + "getting the moves…";
       this.$("wait").appendChild(this.mvBtn);
-      const s = await fetch("/api/seqsteps?name=" + encodeURIComponent(moveName), {signal})
-                  .then(x => x.json());
+      let s;
+      if (moveName.startsWith("@profile/")) {
+        const query = new URLSearchParams({kind: "motions", name: moveName.slice(9),
+          profile: r.profile || this.profileInfo?.active || ""});
+        const file = await fetch("/api/voice/profiles?" + query, {signal}).then(x => x.json());
+        s = file.ok ? await fetch("/api/seqsteps", {method: "POST", signal,
+          headers: {"Content-Type": "application/json"}, body: JSON.stringify({text: file.text})}).then(x => x.json()) : file;
+      } else {
+        s = await fetch("/api/seqsteps?name=" + encodeURIComponent(moveName), {signal}).then(x => x.json());
+      }
       if (stopped) break;
       if (!s.ok) {
         this.$("wait").textContent = labelPrefix + (s.error || "cannot read that move.");
@@ -1727,15 +1797,20 @@ static langName(code){
 }
 
   async loadStores(){
+  const profiles = await fetch("/api/voice/profiles").then(r => r.json()).catch(() => null);
+  if (profiles?.ok && Array.isArray(profiles.names)) this.showProfiles(profiles);
   const [c, f, ls] = await Promise.all([
     fetch("/api/voice/config").then(x => x.json()).catch(() => null),
     fetch("/api/voice/faq").then(x => x.json()).catch(() => null),
     fetch("/api/list?kind=sequences").then(x => x.json()).catch(() => null),
   ]);
   if (!c || !c.ok) return;                 // the down-card already explains
-  this.cfg = c.config;
-  this.faqs = (f && f.ok && Array.isArray(f.faqs)) ? f.faqs : [];
-  this.seqs = (ls && ls.files) || [];
+  const snapshot = profiles?.config ? profiles : c;
+  this.cfg = snapshot.config;
+  if (this.$("gestOn") && this.cfg.gestures) this.$("gestOn").checked = this.cfg.gestures.on !== false;
+  this.profileRevision = snapshot.revision;
+  this.faqs = profiles?.faqs || ((f && f.ok && Array.isArray(f.faqs)) ? f.faqs : []);
+  this.seqs = [...((ls && ls.files) || []), ...((this.profileInfo?.assets?.motions || []).map(n => "@profile/" + n))];
   this.fillAnswers(); this.fillVoice(); this.fillWords(); this.fillScenario(); this.fillThai(); this.fillFaces(); this.fillAdvanced();
   this.fillAskLangs();
   this.loadServices();
@@ -1743,7 +1818,72 @@ static langName(code){
   // 2026-10-15) and EVERY settings box stayed empty until it came back - the
   // page looked broken. The boxes fill now; the robot lists catch up.
   this.loadRobots();
+  this.profileDirty = false;
 }
+
+  showProfiles(info){
+    this.profileInfo = info;
+    if (this.$("profileFolder")) this.$("profileFolder").textContent = info.folder || "";
+    const pick = this.$("profilePick");
+    if (!pick) return;
+    this.fillPick(pick, "Choose a character", info.names, info.active);
+    this.$("profileStat").textContent = info.readOnly
+      ? "Default is kept safe. Make a named copy to save changes."
+      : "Using “" + info.active + "”. Saves affect only this character.";
+  }
+
+  async profileAction(action, extra = {}){
+    const stat = this.$("profileStat");
+    if ((action === "select" || action === "create") &&
+        (this.profileDirty || this.sheet.some(row => row.dirty) || this.removedRows)) {
+      stat.textContent = "Save your edits first, or reload the saved character."; return false;
+    }
+    if (this.convActive || this.mvBtn || this.$("speakingNow")?.hidden === false) {
+      stat.textContent = "Finish or stop speaking and moving before changing characters."; return false;
+    }
+    const name = action === "create" ? this.$("profileName").value.trim() : this.$("profilePick").value;
+    stat.textContent = "Saving…";
+    try {
+      const response = await fetch("/api/voice/profiles", {method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({action, name, revision: this.profileRevision, ...extra})});
+      const result = await response.json();
+      if (!response.ok || !result.ok) {
+        stat.textContent = response.status === 401 ? miceLogin.required("Log in to save a character.")
+          : result.error || "That did not save.";
+        return false;
+      }
+      this.profileRevision = result.revision;
+      this.showProfiles(result);
+      this.convHistory = [];
+      if (action !== "upload") await this.loadStores();
+      else {
+        this.seqs = this.seqs.filter(n => !n.startsWith("@profile/")).concat(result.assets.motions.map(n => "@profile/" + n));
+        this.sheet.forEach(row => row.mvs?.forEach(m => this.fillPick(m.s, "(no move)", this.seqs, m.s.value)));
+        this.sheet.forEach(row => { if (row.audioPick) this.fillPick(row.audioPick, "Speak the answer", result.assets.audio, row.item.audio || ""); });
+      }
+      return true;
+    } catch (error) { stat.textContent = "The voice helper is not answering. Nothing was changed here."; return false; }
+  }
+
+  async reloadProfile(){
+    if ((this.profileDirty || this.sheet.some(row => row.dirty) || this.removedRows) &&
+        !confirm("Reload saved values and discard the edits on this page?")) return;
+    await this.loadStores();
+  }
+
+  async uploadProfileAsset(){
+    const file = this.$("profileFile").files[0];
+    if (!file || file.size > 2097152) {
+      this.$("profileStat").textContent = "Choose a sound or move file up to 2 MB."; return;
+    }
+    const data = await new Promise((resolve, reject) => {
+      const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(",")[1]);
+      reader.onerror = reject; reader.readAsDataURL(file);
+    }).catch(() => null);
+    if (data && await this.profileAction("upload", {kind: this.$("profileKind").value, name: file.name, data}))
+      this.$("profileFile").value = "";
+  }
 
   async loadRobots(){
   const ms = await fetch("/api/modules/all").then(x => x.json()).catch(() => null);
@@ -1777,7 +1917,7 @@ static langName(code){
   try {
     r = await fetch("/api/voice/config", {method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({config: this.cfg})});
+      body: JSON.stringify({config: this.cfg, revision: this.profileRevision})});
   } catch(e) {
     this.$(statId).textContent = "The voice helper is not answering."; return false;
   }
@@ -1791,7 +1931,9 @@ static langName(code){
                           || "That did not save — try again.";
     return false;
   }
-  this.$(statId).textContent = "Saved.";
+  this.profileRevision = (await r.json()).revision || this.profileRevision;
+  this.profileDirty = false;
+  this.$(statId).textContent = "Saved in " + (this.profileInfo?.active || "this PC") + ".";
   this.fillAskLangs();
   this.loadServices();
   const h = await fetch("/api/voice/health").then(x => x.json()).catch(() => null);
@@ -1807,7 +1949,7 @@ static langName(code){
   try {
     r = await fetch("/api/voice/faq", {method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({faqs})});
+      body: JSON.stringify({faqs, revision: this.profileRevision})});
   } catch(e) {
     stat.textContent = "The voice helper is not answering — nothing was saved."; return false;
   }
@@ -1821,6 +1963,7 @@ static langName(code){
                        || "That did not save — try again.";
     return false;
   }
+  this.profileRevision = (await r.json()).revision || this.profileRevision;
   return true;
 }
 
@@ -1933,6 +2076,16 @@ static langName(code){
                           () => this.translateRow(row, true)));
   acts.appendChild(button("✕ Delete", "Delete this answer (Undo changes brings it back until you save)",
                           () => this.deleteRow(row)));
+  if (this.profileInfo) {
+    const label = document.createElement("label");
+    label.textContent = "Recorded sound ";
+    const audio = document.createElement("select");
+    audio.setAttribute("aria-label", "Recorded sound for this answer");
+    this.fillPick(audio, "Speak the answer", this.profileInfo.assets.audio || [], row.item.audio || "");
+    audio.onchange = () => { row.item.audio = audio.value; changed(); };
+    row.audioPick = audio;
+    label.appendChild(audio); acts.appendChild(label);
+  }
   ac.appendChild(acts);
   return tr;
 }
@@ -2275,7 +2428,7 @@ static SAMPLES = {
   this.fillQuick();
 }
 
-// ---- Quick choices on the Voice tab (A45-27) ----------------------------
+// ---- Quick choices on the Voice tab (A45-28) ----------------------------
 // User 2026-10-22: *โทนแบบเลือกได้ คลิกเป็น default ได้ซัก 3 โทน ... ขอมีแบบเร็ว
 // ... เลือกเสียงได้ทั้งชายและหญิง*. One click = chosen AND saved. The tones and
 // speeds are config/voice_styles.json (`featured`, `speeds`); the voices are
@@ -2376,7 +2529,7 @@ static SAMPLES = {
   // Every language the store speaks (user 2026-10-22: *เอาภาษาอื่นด้วย*).
   const langSel = this.$("quickLang");
   const langs = this.langs();
-  if (langSel && !langSel.options.length) {
+  if (langSel && !(langSel.options && langSel.options.length)) {
     langs.forEach(l => { const o = document.createElement("option"); o.value = l; o.textContent = VoiceApp.langName(l); langSel.appendChild(o); });
     langSel.onchange = () => this.fillQuick();
   }
@@ -3007,6 +3160,10 @@ static SAMPLES = {
   init(){
     if (this.initialized) return;
     this.initialized = true;
+    document.addEventListener("input", event => {
+      const pane = event.target.closest?.("[data-pane]");
+      if (pane && pane.dataset.pane !== "answers" && !event.target.id?.startsWith("profile")) this.profileDirty = true;
+    });
     const keep = (key, fallback) => {
       try { const v = localStorage.getItem(key); return v === null ? fallback : v; }
       catch(e) { return fallback; }
@@ -3023,6 +3180,21 @@ static SAMPLES = {
     this.$("moveOn").addEventListener("change", () => {
       this.moveEnabled = !!this.$("moveOn").checked;
       save("voice_move_enabled", this.moveEnabled ? "1" : "0");
+    });
+
+    this.$("gestOn").checked = keep("voice_gestures", "1") === "1";
+    this.$("gestOn").addEventListener("change", () => save("voice_gestures", this.$("gestOn").checked ? "1" : "0"));
+    this.$("gestOn").addEventListener("change", async () => {
+      if (!this.cfg || !this.profileInfo) return;
+      const on = this.$("gestOn").checked;
+      const response = await fetch("/api/voice/config", {method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({config:{gestures:{on}}, revision:this.profileRevision})}).catch(() => null);
+      const result = response && await response.json().catch(() => null);
+      if (result?.ok) { this.cfg.gestures = {on}; this.profileRevision = result.revision; }
+      else {
+        this.$("gestOn").checked = this.cfg.gestures?.on !== false;
+        this.$("profileStat").textContent = result?.error || "Log in to save the moves switch.";
+      }
     });
 
     this.globalRobot = keep("voice_global_robot", "");

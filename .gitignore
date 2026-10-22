@@ -100,3 +100,10 @@ main_python/faces_fired.tmp
 _photo_test/
 apps/voice/tts_cache/
 /.local/
+
+# Private character settings and uploaded sounds/moves stay on this PC.
+/config/voice_profiles/
+# The talk gestures made or switched on THIS PC and Nong Studio's fit of them to
+# this robot (A46-1): written by the hub, never pulled over (config/gestures.json
+# is the shipped library).
+nong/main_python_set_nong/gestures.json

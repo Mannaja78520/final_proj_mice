@@ -1,0 +1,23 @@
+{
+  "folder": "voice_profiles",
+  "sequenceFolder": "nong/main_python_set_nong/sequences",
+  "files": [
+    "voice.json",
+    "qa_data.json",
+    "voice_styles.json",
+    "gestures.json"
+  ],
+  "assets": {
+    "audio": [
+      ".mp3",
+      ".wav",
+      ".ogg"
+    ],
+    "motions": [
+      ".yaml",
+      ".yml"
+    ]
+  },
+  "maxAssetBytes": 2097152,
+  "gestureFile": "nong/main_python_set_nong/gestures.json"
+}

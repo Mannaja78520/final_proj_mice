@@ -10,6 +10,7 @@ import socket
 import time
 import urllib.request
 
+import gestures
 import hub_video
 
 NOT_MINE = object()   # no route here matched: api() carries on
@@ -29,8 +30,68 @@ def bind(hub):
     _hub = hub
 
 
+def gesture_library(store_path=None):
+    """(library as it is on this PC, this PC's own file). Read per call: an
+    edit to config/gestures.json or a Studio save needs no restart."""
+    path = _hub.asset("config", "gestures.json")
+    shipped = (_hub.registry.load(path) if _hub.registry
+               else json.loads(path.read_text(encoding="utf-8")))
+    mine = (json.loads(store_path.read_text(encoding="utf-8")) if store_path.is_file() else {}) if store_path is not None else gestures.read_mine(_hub.STUDIO)
+    return gestures.library(shipped, mine), mine
+
+
 class StudioRoutes:
+    def api_gestures(self, method, path, q):
+        # ---- talk gestures (A46-1): the library, Studio's fit, a plan, play ----
+        # Reading, planning and saving are Studio tools (open, like /api/save);
+        # /api/gestures/play moves a robot and is gated (hub_auth GATED_POST).
+        try:
+            store_path = gestures.mine_path(_hub.STUDIO)
+            lib, mine = gesture_library(store_path)
+        except Exception as e:              # noqa: BLE001 - a broken file says so
+            return self.send_err("config/gestures.json could not be read: %s" % e)
+        if path == "/api/gestures" and method == "GET":
+            return self.send_json({"ok": True, "lib": lib, "fit": mine.get("fit") or {},
+                                   "file": str(gestures.mine_path(_hub.STUDIO).name),
+                                   **gestures.character_state(_hub.STUDIO, store_path)})
+        data = json.loads(self.body().decode() or "{}") if method == "POST" else {}
+        if path in ("/api/gestures", "/api/gestures/fit") and method == "POST":
+            change = {"fit": data} if path.endswith("/fit") else data
+            if path.endswith("/fit") and not isinstance(data.get("gestures"), dict):
+                return self.send_err("that does not look like a fit")
+            with gestures._lock:
+                state = gestures.character_state(_hub.STUDIO, store_path)
+                if state["readOnly"]:
+                    return self.send_err("Default is kept safe. Make a named copy in Voice first.", 409)
+                if state["character"] and any(data.get(k) != state[k] for k in ("character", "gestureRevision")):
+                    return self.send_err("The character changed. Reload the saved moves before saving.", 409)
+                mine = gestures.merge_mine(gesture_library(store_path)[1], change)
+                _hub.write_atomic(store_path, json.dumps(mine, indent=1))
+            return self.send_json({"ok": True, "lib": gesture_library(store_path)[0], **gestures.character_state(_hub.STUDIO, store_path)})
+        if path in ("/api/gestures/plan", "/api/gestures/play") and method == "POST":
+            got = gestures.plan(lib, mine.get("fit"), data.get("text"), data.get("lang") or "",
+                                data.get("manner") or "", data.get("event") or "",
+                                data.get("ms") or 0, data.get("seed"))
+            if path.endswith("/plan") or not got.get("ok"):
+                return self.send_json(got)
+            dev = str(data.get("dev") or "")
+            if not dev:
+                return self.send_err("which robot? (dev)")
+            # Gestures never take over a show: a running one (not ours) wins.
+            st = _hub.show.status()
+            if st.get("running") and st.get("name") != "gestures":
+                return self.send_json({"ok": False, "busy": True,
+                                       "why": "the robot is playing " + str(st.get("name") or "a show")})
+            try:
+                _hub.show.start(dev, got["steps"], False, "gestures")
+            except Exception as e:          # noqa: BLE001
+                return self.send_err(e)
+            return self.send_json(dict(got, playing=True))
+        return self.send_err("no such gestures route", 404)
+
     def api_studio(self, method, path, q):
+        if path.startswith("/api/gestures"):
+            return self.api_gestures(method, path, q)
         # ---- studio: local storage ----
         if path == "/api/list":
             kind = (q.get("kind") or ["projects"])[0]
@@ -78,13 +139,22 @@ class StudioRoutes:
             # voice answer that moves a robot needs steps, not yaml text.
             # Reads only, so it is ungated like loadseq; starting the show
             # still goes through gated /api/play.
-            name = _hub.safe_name((q.get("name") or [""])[0])
-            f = _hub.SEQUENCES / name
-            if not f.is_file():
-                return self.send_err("no sequence " + name, 404)
+            name = "character.yaml" if method == "POST" else _hub.safe_name((q.get("name") or [""])[0])
             try:
-                got = _hub.seq_steps(f.read_text(encoding="utf-8"))
-            except ValueError as e:
+                if method == "POST":
+                    length = int(self.headers.get("Content-Length") or 0)
+                    if length < 0 or length > 3 * 1024 * 1024:
+                        return self.send_err("that move is too large", 400)
+                    text = json.loads(self.body().decode("utf-8")).get("text")
+                    if not isinstance(text, str):
+                        return self.send_err("that move could not be read", 400)
+                else:
+                    f = _hub.SEQUENCES / name
+                    if not f.is_file():
+                        return self.send_err("no sequence " + name, 404)
+                    text = f.read_text(encoding="utf-8")
+                got = _hub.seq_steps(text)
+            except (ValueError, TypeError) as e:
                 return self.send_err("cannot play %s: %s" % (name, e))
             if len(got["steps"]) < 2:
                 return self.send_err(

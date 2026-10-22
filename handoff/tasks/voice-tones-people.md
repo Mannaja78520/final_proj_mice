@@ -4,7 +4,7 @@ Owner: claude:xdlrot (PC session, thread "voice clear")
 Updated: 2026-10-22 15:12 +0700
 Branch: claude/project-thread-xdlrot
 Last commit: (see branch)
-Plan: A45-27
+Plan: A45-28
 
 ## Goal
 User 2026-10-22: *โทนแบบเลือกได้ คลิกเป็น default ได้ซัก 3 โทน, ขอมีแบบเร็วได้ด้วย,
@@ -13,23 +13,23 @@ User 2026-10-22: *โทนแบบเลือกได้ คลิกเป�
 every word clear at both (measure CER at fast too).
 
 ## Doing now
-- `scratch/voice-human-2026-10-22/refine.py` (running): shortlist 4 women + 4 men invented
-  voices x temperature 0.3/0.15, fast tempo 1.1/1.2, and Edge Premwadee/Niwat at +0/+10/+20%,
-  5 lines each, CER by the helper's whisper -> refine.jsonl. Then write
-  `config/voice_people.json` (3 women + 3 men, clearest), set `speeds.fast` and tune temperature.
+- Handing branch to the coordinator for PR + full QC + merge (main merged in, voice checks
+  1104/0 locally). Then deploy on the PC together with PR #50 (gestures).
 
-## Done so far (branch, WIP commits)
-- server.py speaker per request + tempo (ffmpeg atempo); providers person/tempo; service
-  people()/person()/tempo_of, voices_by_lang lists "person:<id>", say() feeling first + backup.
-- voice_styles.json `featured` [friendly, polite, sassy] + `speeds`; config/voice.json rate back
-  to +0% (user: the problem was slurring, not speed). styles_view sends featured/speeds/default.
-- Voice tab quick block (toneTiles / speedTiles / voiceTiles, click saves): app.js fillQuick etc,
-  style.css .tiles/.tile. New check qc/checks/check_voice_people.py (needs voice_people.json).
+## Done (branch)
+- 6 saved voices in config/voice_people.json (refine bench: women 4.9/6.7/7.2%, men
+  7.3/7.7/8.2% letters wrong; Edge Premwadee 5.4%, Niwat 0%). Fast +20%: Edge same CER as +0%.
+- server speaker + tempo, providers person/tempo/temperature, service people/person/
+  tempo_of/voice_gender/gender_words/agree_text, /say `agree`, style_extra fallback.
+- Voice tab quick tiles (tone, speed, voice per language, women/men), click saves.
+- check_voice_people (sabotage 10/10); check_voice_answers/styles stub voice_gender.
+- User's "characters with own folders + default folder" = codex A45-27, already merged.
 
 ## Next
-1. voice_people.json from refine results; run checks voice_people, voice_styles, voice_tail.
-2. Sabotage-prove check_voice_people; web-page-check the Voice tab at 360/768/1440.
-3. Push, coordinator PR + full QC + merge; deploy (exe, hub, helper, feeling server, replay).
+1. After merge, deploy: pull, systems build, exe, restart hub + helper + feeling server,
+   live tts.rate +0%, open Studio Sequence once (PR #50 gestures), replay 50, send samples
+   `scratch/voice-human-2026-10-22/refine/` to the user.
+2. Delete this task file in a follow-up once deployed.
 
 ## Blocked
 - Nothing. "Sounds less AI" only a human ear can judge.

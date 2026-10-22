@@ -287,7 +287,7 @@ class Handler(BaseHTTPRequestHandler):
         except (TypeError, ValueError, AttributeError):
             return self._json({"ok": False, "error": "a tune setting was not readable"}, 400)
         ref = None
-        if req.get("speaker") is not None:            # a saved voice: 32 global tokens (A45-27)
+        if req.get("speaker") is not None:            # a saved voice: 32 global tokens (A45-28)
             try:
                 spk = [int(v) for v in req["speaker"]]
             except (TypeError, ValueError):
