@@ -254,10 +254,10 @@ self-collisions — arms against the body, the head, and each other — at every
 keyframe **and along the path between keyframes** (the same eased path the
 robot drives). If a collision is found:
 
-- a popup says **"CAN'T RUN — the robot will crash"** with the reason,
+- the status line reports the reason and refuses the unsafe motion,
 - the offending keyframes turn **red** in the timeline with the reason on
   the chip (e.g. "left forearm hits the body (during the move)"),
-- **Run on robot** and **Upload** are blocked until it's fixed; ▶ Play still
+- **Run on robot** and **Upload** are blocked until a route is checked; ▶ Play still
   works so you can watch where it goes wrong, and while posing a red banner
   appears in the viewport the moment the current pose collides.
 

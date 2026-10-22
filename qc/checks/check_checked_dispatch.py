@@ -83,8 +83,8 @@ DRIVER = r"""
     await mark('editDuringEntry',edited && !hubResult && posts===0);
     rawCmd=guardedRaw;sent=[];moving=false;actual=pair[0].slice();
     // An earlier delayed Stop is a barrier, never a late interruption of the next move.
-    let stopRelease;
-    hubStop=async()=>new Promise(r=>stopRelease=r);
+    let stopRelease,stopCalls=0;
+    hubStop=async()=>{if(++stopCalls===1)await new Promise(r=>stopRelease=r);};
     const stopping=cancelSafeMotion('QC delayed stop');
     await qcWaitFor(()=>!!stopRelease);
     const next=liveSend('POSE '+pair[0].join(' '));
@@ -93,7 +93,14 @@ DRIVER = r"""
     await mark('stopBarrier',beforeStop && await next);
     // Direct playback owns its clock through entry; Live-off releases both.
     keys=[{pose:pair[0].slice(),t:800,hold:0},{pose:pair[1].slice(),t:800,hold:0}];bumpKeys();
-    await ensureSafeTimeline();playing=true;sent=[];moving=false;
+    await ensureSafeTimeline();sent=[];moving=false;
+    await mark('detourClock',safeGap(poseAt(keyStartMs(1)+keyTravelMs(1)),keys[1].pose)<0.15);
+    keys=[keys[0],{...keys[1],off:true}, {...keys[1],hold:400}];bumpKeys();
+    $('loopChk').checked=true;await ensureSafeTimeline();
+    const selectedEnd=keyStartMs(2)+keyTravelMs(2);
+    await mark('detourClockExtras',keyTravelMs(0)===0 &&
+      safeGap(poseAt(selectedEnd+200),keys[2].pose)<0.15 && segmentAt(selectedEnd+1)===-1);
+    playing=true;
     const direct=directSafePlay(0);
     await qcWaitFor(()=>sent.length>0);
     $('liveChk').checked=false;liveChanged();
@@ -135,5 +142,7 @@ def run(t):
         ("stopBarrier", "a delayed old Stop completes before a new checked move starts"),
         ("directCancel", "Live off cancels direct playback and releases its preview clock"),
         ("partialLoop", "a partial native run cannot loop over an omitted checked prefix"),
+        ("detourClock", "selecting a detoured keyframe parks after all of its checked legs"),
+        ("detourClockExtras", "detour selection excludes destination hold and loop return after a suspended key"),
     ]:
         t.ok(results.get(key) == "true", label, results)

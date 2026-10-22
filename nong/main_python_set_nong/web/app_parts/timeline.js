@@ -69,8 +69,13 @@ function moveKey(d) {
 // re-timed value rather than the number stored against it.
 function keyTravelMs(i) {
   const K = playKeys();
-  const at = K.findIndex(k => k.src === i);
-  if (at > 0) return K[at].t;                 // its move, as played
+  const at = K.findIndex(k => k.src === i && !k.loopReturn);
+  if (at > 0) {
+    let travel=0;
+    for(let n=at;n<K.length && K[n].src===i && !K[n].loopReturn;n++)
+      travel+=K[n].t+(K[n].via ? K[n].hold || 0 : 0);
+    return travel;                           // all checked detour legs into this destination
+  }
   if (at === 0) return 0;                     // the start pose: nowhere to come from
   return keys[i] ? keys[i].t : 0;             // suspended: fall back to its own
 }
@@ -81,7 +86,7 @@ function keyTravelMs(i) {
 // clock lands where that jump begins (end of the show if none follows).
 function keyStartMs(i) {
   const K = playKeys();
-  let at = K.findIndex(k => k.src === i);
+  let at = K.findIndex(k => k.src === i && !k.loopReturn);
   if (at < 0) {
     at = K.findIndex(k => k.src > i);
     if (at < 0) return totalMs();

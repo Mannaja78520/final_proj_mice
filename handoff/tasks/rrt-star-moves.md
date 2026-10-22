@@ -1,9 +1,9 @@
 # Checked RRT* detours for normal Studio movements
 
 Owner: codex:10221724-9d65
-Updated: 2026-10-22T17:54:02.056842+07:00
+Updated: 2026-10-22T18:42:00+07:00
 Branch: task/A46-2-10221724-9d65
-Last commit: 0361ef7 (planner/settings checkpoint follows)
+Last commit: 239711d (final source checkpoint follows)
 Plan: A46-3
 
 ## Goal
@@ -25,40 +25,28 @@ no motion commands issued. Preserve existing browser31-keyframe backup and
 all real calibration. No firmware changes.
 
 ## Doing now
-Integration fixes now include immutable native/hub startup, checked entry,
-request target capture, bound direct serial port/bus, Stop barrier, explicit
-motion state, direct clock ownership, Monitor/follow cancellation, and no
-unsafe override. New dispatch10/0 and seek checks green in last targeted run;
-playback33/2 run found legacy tests using below-physical-floor1000ms moves
-and counting checked resume entry as a hold. Fixed realistic timing fixture,
-await async Play, and measure uninterrupted hold. Rechecking before review.
-Checked dispatch draft added; first combined31/1 exposed faithful fake status
-missing min/max/moving. Added firmware-shaped fields; second32/2 exposed
-dummy test assuming arrival after a fixed sleep. Test now awaits actual move.
-Final integration review blocks unchecked SD/handoff entry, mutable hub
-timeline, queued target changes, direct clock drift, Monitor cancellation,
-missing motion-state validation. Fixing these before next frozen check.
-No runtime deployment or real movement yet. Settings draft remains isolated.
-Pure RRT* implemented with checked parent choice, rewiring/descendant costs,
-goal reconsideration, quick connect seed and checked shortcuts. Original
-path check19/0. Added Settings extra gap in mm, persisted through rig/settings
-bundles. Baseline4mm unchanged; extra gap affects body/head/arms/hands.
-Initial combined31/3:3 failures were test bundle aliasing (collectSettings
-returns live RIG reference); fixed test to serialize before mutating. Recheck
-new check15/0. Real RRT* rewires and lower-cost parents observed in QC.
-Independent planner review found/fixed corrupt numeric setting bypass,
-source-rounding mismatch and async input/rig revision races. Async slicing is
-a scheduling target, not a hard per-collision deadline. Need final review.
-Remaining main work: normal motion single owner/settled actual source,
-checked timeline preview+dispatch, STOP/Live-off/cancel cases. Not deployed;
-robot idle onWiFi138. Original user calibration/config not changed.
+RRT* plus checked source/rounded legs, one dispatch owner and actual reported
+arrival, immutable native/hub startup, captured target/serial port/bus, Stop
+barrier and Monitor/follow cancellation implemented. No force override.
+Extra gap defaults0, adds to base4mm across body/head/arms/hands, persists in
+browser/rig/settings bundles. Original geometry/calibration unchanged.
+Focused72/0 (58.4s), expanded dispatch12/0. Eight deliberate mutations caught:
+gap ignored, rig revision ignored, no RRT rewiring, ACK-as-arrival, queued
+target adoption, Stop race, partial-loop jump, and detour clock backtracking.
+Private evidence scratch/rrt-*-sabotage.log; sources restored and green.
+Fake status now matches motion-state/limit contract; opt-in timed fake for
+seek/playback. Legacy fixtures now use valid poses/physical durations and
+await Play/arrival instead of assuming sleeps. Patch0056/0057 saved.
+Accidental unsupported --help started a second QC; stopped its verified own
+process tree/orphan, restored its equivalent ai_panel test mutation. Final
+isolated targeted72/0 afterward; full frozen gate still required.
+Final independent review requested from same rrt_guard_review on exact tree.
+Not deployed; real robot remains idle onWiFi138. No physical movement proof.
 
 ## Next
-1. Apply bounded RRT* algorithm and shared checked-motion integration, keeping
-preview and dispatch coherent. Reject colliding endpoints/no path and show
-clear route/refusal status. Revalidate all final smoothed legs.
-2. Focused fake/browser regressions and deliberate failure proofs; final review.
-3. Freeze exact runtime tree for full quiet QC before PR/merge/build/deploy.
+1. Resolve final review, freeze exact tree and run full quiet QC.
+2. PR/merge/build/deploy with fresh backups of main's dirty data/exe.
+3. Verify installed actual UI/version, clothing gap persistence, hardware idle.
 4. Resume A46-2 real visible tests only with permitted browser control, actual
 rig fit and checked paths. No source-only/fake result is physical proof.
 

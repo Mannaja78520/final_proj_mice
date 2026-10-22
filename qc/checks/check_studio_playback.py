@@ -85,8 +85,8 @@ def run(t):
         # Checked resume first returns from the reported stop position to the
         # parked timeline pose; the remaining native timeline follows it.
         timeline_values = set(timeline)
-        walked = [v for i, v in enumerate(sent) if v in timeline_values and
-                  (i == 0 or v != sent[i - 1])]
+        retained = [v for v in sent if v in timeline_values]
+        walked = [v for i,v in enumerate(retained) if i == 0 or v != retained[i-1]]
         t.eq(walked, timeline, "the robot walks the whole timeline in order")
 
     t.ok(all(p[2] for p in poses), "every move carries an explicit T",

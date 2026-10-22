@@ -127,3 +127,5 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0056 | 2026-10-19 17:18 | Video tab: person, skeleton and robot side by side; links fetched by the hub; video sound to robot music |
 | 0056 | 2026-10-21 04:33 | Distances: shoulder to elbow and shoulder to hand on each side (A45-26) |
 | 0056 | 2026-10-22 08:05 | A46-1: safe paths (straight, else RRT-Connect) for video, dummy follow and recording; Make and save; Moves while talking card |
+| 0056 | 2026-10-22 18:39 | RRT star checked Studio motion and clothing clearance in Setup |
+| 0057 | 2026-10-22 18:41 | RRT star complete detour timing and persistent clothing gap |
