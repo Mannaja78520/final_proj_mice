@@ -182,7 +182,12 @@ function palmUpnessOf(p, arm) {
 // "palm", "back" or "side": what the audience sees on top of that hand.
 function palmWord(v) { return v > 0.5 ? "palm" : v < -0.5 ? "back" : "side"; }
 // want +1 = palm up, -1 = back up. Returns { pose, upness } or null with no rig.
-function facePalm(p, arm, want) {
+// opts (A45-28): range/step = how far round each way and in what steps (deg),
+// small while a hand is dragged so the arm keeps its shape near where it was;
+// safe = never pick a shape that hits the body or the other arm, unless the
+// pose it started from already did (then there is nothing to keep).
+function facePalm(p, arm, want, opts) {
+  const o = opts || {}, range = o.range || 180, step = o.step || 5;
   if (!palmMarks[arm] || !wristBalls[arm]) return null;
   const sh = arm === 0 ? [0, 1] : [4, 5], el = arm === 0 ? [2, 3] : [6, 7];
   const W = (o) => o.getWorldPosition(new THREE.Vector3());
@@ -192,17 +197,19 @@ function facePalm(p, arm, want) {
     const S = W(jointGroups[sh[0]]), hand = W(wristBalls[arm]);
     const elbow0 = W(elbowBalls[arm]);
     const axis = hand.clone().sub(S).normalize();
+    const safe = o.safe && !collisionAt(p);
     let best = { score: want * palmUpness(arm), pose: p.slice() };
     for (const dir of [1, -1]) {
       pose = p.slice();
-      for (let deg = 5; deg <= 180; deg += 5) {
+      for (let deg = step; deg <= range; deg += step) {
         const e = elbow0.clone().sub(S).applyAxisAngle(axis, dir * deg * Math.PI / 180).add(S);
         ccdChain(sh, elbowBalls[arm], e, 8);
         const miss = ccdChain(el, wristBalls[arm], hand, 12);
         applyPose();             // ccdChain leaves its last rejected try drawn
         if (miss > 4) continue;  // the hand moved: that shape is not an answer
         const sc = want * palmUpness(arm);
-        if (sc > best.score + 1e-3) best = { score: sc, pose: pose.slice() };
+        if (sc > best.score + 1e-3 && !(safe && collisionAt(pose)))
+          best = { score: sc, pose: pose.slice() };
       }
     }
     return { pose: best.pose, upness: want * best.score };

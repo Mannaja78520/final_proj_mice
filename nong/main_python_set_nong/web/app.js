@@ -1288,7 +1288,12 @@ window.addEventListener("pointermove", (e) => {
     const target = planeHit(drag.planePoint, drag.normal);
     // strong IK per frame so the whole arm (shoulder + elbow together)
     // follows the wrist to wherever it can reach within the joint limits
-    if (target) { solveIK(drag.arm, target, 16); poseChanged(true); }
+    if (target) {
+      solveIK(drag.arm, target, 16);
+      holdSide(drag.arm, false);    // A45-28: keep the side picked on top
+      askReach(drag.arm, target);
+      poseChanged(true);
+    }
   } else if (drag.kind === "ikElbow") {
     const target = planeHit(drag.planePoint, drag.normal);
     // move the elbow by rotating only the 2 shoulder servos
@@ -1296,7 +1301,14 @@ window.addEventListener("pointermove", (e) => {
   }
 });
 window.addEventListener("pointerup", () => {
-  if (drag) { drag = null; controls.enabled = true; poseChanged(false); }
+  if (!drag) return;
+  // released: now the whole swing may be searched for the side kept on top
+  if (drag.kind === "ik" && handHold[drag.arm]) {
+    const t = reachAsk[drag.arm] && reachAsk[drag.arm].target;
+    holdSide(drag.arm, true);
+    if (t) askReach(drag.arm, t);
+  }
+  drag = null; controls.enabled = true; poseChanged(false);
 });
 
 function clampDeg(v) { return Math.min(180, Math.max(0, Math.round(v * 10) / 10)); }
@@ -1484,7 +1496,12 @@ function palmUpnessOf(p, arm) {
 // "palm", "back" or "side": what the audience sees on top of that hand.
 function palmWord(v) { return v > 0.5 ? "palm" : v < -0.5 ? "back" : "side"; }
 // want +1 = palm up, -1 = back up. Returns { pose, upness } or null with no rig.
-function facePalm(p, arm, want) {
+// opts (A45-28): range/step = how far round each way and in what steps (deg),
+// small while a hand is dragged so the arm keeps its shape near where it was;
+// safe = never pick a shape that hits the body or the other arm, unless the
+// pose it started from already did (then there is nothing to keep).
+function facePalm(p, arm, want, opts) {
+  const o = opts || {}, range = o.range || 180, step = o.step || 5;
   if (!palmMarks[arm] || !wristBalls[arm]) return null;
   const sh = arm === 0 ? [0, 1] : [4, 5], el = arm === 0 ? [2, 3] : [6, 7];
   const W = (o) => o.getWorldPosition(new THREE.Vector3());
@@ -1494,17 +1511,19 @@ function facePalm(p, arm, want) {
     const S = W(jointGroups[sh[0]]), hand = W(wristBalls[arm]);
     const elbow0 = W(elbowBalls[arm]);
     const axis = hand.clone().sub(S).normalize();
+    const safe = o.safe && !collisionAt(p);
     let best = { score: want * palmUpness(arm), pose: p.slice() };
     for (const dir of [1, -1]) {
       pose = p.slice();
-      for (let deg = 5; deg <= 180; deg += 5) {
+      for (let deg = step; deg <= range; deg += step) {
         const e = elbow0.clone().sub(S).applyAxisAngle(axis, dir * deg * Math.PI / 180).add(S);
         ccdChain(sh, elbowBalls[arm], e, 8);
         const miss = ccdChain(el, wristBalls[arm], hand, 12);
         applyPose();             // ccdChain leaves its last rejected try drawn
         if (miss > 4) continue;  // the hand moved: that shape is not an answer
         const sc = want * palmUpness(arm);
-        if (sc > best.score + 1e-3) best = { score: sc, pose: pose.slice() };
+        if (sc > best.score + 1e-3 && !(safe && collisionAt(pose)))
+          best = { score: sc, pose: pose.slice() };
       }
     }
     return { pose: best.pose, upness: want * best.score };
@@ -2402,9 +2421,12 @@ function gotoXyz(arm) {
     tryWalk();
   }
   pose = best;
-  poseChanged(false);
+  holdSide(arm, true);            // A45-28: the side kept on top, hand in place
   const got = fkPoints(pose)[wrKey];
-  const err = Math.round(bestErr);
+  // the gap readout and the orange mark work in the 3D view's own space
+  askReach(arm, wristPos(arm).add(t.clone().sub(got)));
+  poseChanged(false);
+  const err = Math.round(got.distanceTo(t));
   $("tlStat").textContent = (arm === 0 ? "left" : "right") +
     ` wrist moved to (${Math.round(got.x)}, ${Math.round(got.y)}, ${Math.round(got.z)})` +
     (err > 10 ? ` — target is ${err} mm out of reach, this is the closest pose` : " ✓");
@@ -2525,16 +2547,39 @@ function renderHands() {
       const now = document.createElement("span");
       now.className = "mini"; now.id = "handNow" + i;
       row.append(lbl, up, back, now);
-      box.appendChild(row);
+      // A45-28: keep a side on top while this hand is dragged or typed to
+      const keep = document.createElement("div"); keep.className = "row";
+      const kl = document.createElement("span"); kl.className = "mini";
+      kl.textContent = "while moving it, keep:";
+      const sel = document.createElement("select"); sel.id = "handHold" + i;
+      [["0", "nothing — free"], ["1", "✋ palm on top"], ["-1", "🤚 back on top"]]
+        .forEach(([v, t]) => sel.add(new Option(t, v)));
+      sel.title = "dragging this hand or typing where its wrist goes keeps that side "
+                + "on top as well as it can; the sliders always do exactly what you set";
+      sel.onchange = () => setHold(i, +sel.value);
+      keep.append(kl, sel);
+      const reach = document.createElement("div");
+      reach.className = "mini"; reach.id = "handReach" + i;
+      box.append(row, keep, reach);
     });
+    const save = document.createElement("div"); save.className = "row";
+    const add = document.createElement("button");
+    add.textContent = "＋ Save as a new move"; add.id = "handSaveNew";
+    add.onclick = () => saveShownPose(true);
+    const into = document.createElement("button");
+    into.textContent = "Save into the selected move"; into.id = "handSaveInto";
+    into.onclick = () => saveShownPose(false);
+    save.append(add, into);
+    box.appendChild(save);
   }
   HANDS.forEach((h, i) => {
     const el = $("handNow" + i);
-    if (el) el.textContent = "now: " + FACING_TEXT[palmWord(palmUpness(i))];
+    if (el) el.textContent = "now: " + FACING_TEXT[palmWord(palmUpness(i))] + " · " + sideText(i);
   });
+  renderReach();
 }
 function turnPalm(arm, want) {
-  const r = facePalm(pose, arm, want);
+  const r = facePalm(pose, arm, want, { safe: HOLD.avoidSelfHit });
   if (!r) return;
   pose = r.pose;
   poseChanged(false);
@@ -2545,6 +2590,115 @@ function turnPalm(arm, want) {
     : h + ": this is as far round as the joints let it turn with the hand here. "
       + "Move the hand a little and try again.";
   if (want * r.upness <= 0.5) notice($("tlStat").textContent);
+}
+// --- keep the palm or the back on top while a hand moves (A45-28) ---
+// User 2026-10-22: picking palm up / back up after the fact hid what the arm
+// can really do there, so the choice now holds WHILE you drag a hand or type
+// where a wrist goes, and the Pose tab shows live what the arm reaches: the
+// gap to where you pulled, how far the palm is from straight up, which joints
+// sit at their stop, and whether it hits itself. What is shown is the joint
+// angles the robot gets, so saving keeps exactly that. Settings are DATA in
+// hand_side.json beside this page; the story is in qc/checks/check_palm_hold.py.
+let HOLD = {
+  dragRangeDeg: 30,   // while dragging: look this far round each way, no further
+  stepDeg: 5,
+  reachMm: 4,         // a gap this small counts as "the hand got there"
+  stopDeg: 0.5,       // this close to a joint limit counts as "at its stop"
+  avoidSelfHit: true, // never turn the arm into a shape that hits the body
+};
+fetch("hand_side.json").then(r => r.json()).then(j => {
+  Object.keys(HOLD).forEach(k => { if (k in j) HOLD[k] = j[k]; });
+}).catch(() => {});        // no file: the built-in values above
+
+const handHold = HANDS.map(() => 0);     // per hand: 0 free, 1 palm on top, -1 back
+const reachAsk = HANDS.map(() => null);  // per hand: { target (world), joints } last asked for
+const reachMarks = [];                   // per hand: the asked-for point and a line to the hand
+
+const armJoints = (arm) => arm === 0 ? [0, 1, 2, 3] : [4, 5, 6, 7];
+const armKey = (arm) => armJoints(arm).map(j => pose[j].toFixed(2)).join(",");
+
+// Turn the arm to the held side, hand kept in place. full = the whole swing
+// (a button, a typed position, the end of a drag); otherwise only near the
+// shape it has, so a drag never flips the elbow to the far side mid-pull.
+function holdSide(arm, full) {
+  const want = handHold[arm];
+  if (!want) return;
+  const r = facePalm(pose, arm, want, full ? { safe: HOLD.avoidSelfHit }
+    : { range: HOLD.dragRangeDeg, step: HOLD.stepDeg, safe: HOLD.avoidSelfHit });
+  if (r) { pose = r.pose; applyPose(); }  // facePalm redraws the pose it was given
+}
+// Remember where this hand was asked to go (world space), for the gap readout
+// and the 3D mark. It goes stale the moment that arm's joints change any other way.
+function askReach(arm, target) {
+  reachAsk[arm] = { target: target.clone(), joints: armKey(arm) };
+  drawReach(arm);
+}
+function drawReach(arm) {
+  if (!reachMarks[arm]) {
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(14, 16, 12),
+      new THREE.MeshBasicMaterial({ color: 0xff9f1c, transparent: true, opacity: 0.55 }));
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(
+      [new THREE.Vector3(), new THREE.Vector3()]),
+      new THREE.LineBasicMaterial({ color: 0xff9f1c }));
+    scene.add(ball, line);
+    reachMarks[arm] = { ball, line };
+  }
+  const m = reachMarks[arm], a = reachAsk[arm];
+  const gap = reachGap(arm);
+  m.ball.visible = m.line.visible = gap !== null && gap > HOLD.reachMm;
+  if (!m.ball.visible) return;
+  m.ball.position.copy(a.target);
+  m.line.geometry.setFromPoints([a.target, wristPos(arm)]);
+}
+// mm between where the hand was asked to go and where it is; null = nothing asked
+function reachGap(arm) {
+  const a = reachAsk[arm];
+  if (!a || !wristBalls[arm]) return null;
+  if (a.joints !== armKey(arm)) { reachAsk[arm] = null; return null; }
+  robot.updateMatrixWorld(true);
+  return a.target.distanceTo(wristPos(arm));
+}
+// How far the side asked for (or the nearer one) is from straight up, in deg.
+function sideText(arm) {
+  const up = palmUpness(arm), want = handHold[arm] || (up >= 0 ? 1 : -1);
+  const off = Math.round(THREE.MathUtils.radToDeg(Math.acos(Math.max(-1, Math.min(1, want * up)))));
+  return (want > 0 ? "palm " : "back ") + off + "° from straight up";
+}
+// One plain line per hand under it: the gap, the joints at their stop, a
+// self-hit. Built from the pose the robot gets.
+function reachText(arm) {
+  const out = [];
+  const gap = reachGap(arm);
+  if (gap !== null) out.push(gap <= HOLD.reachMm ? "reached where you put it"
+    : Math.round(gap) + " mm short of where you put it (the orange mark)");
+  if (handHold[arm] && handHold[arm] * palmUpness(arm) <= 0.5)
+    out.push("the joints cannot turn it further with the hand here");
+  const stops = armJoints(arm).filter(j => pose[j] <= RIG.min[j] + HOLD.stopDeg
+                                         || pose[j] >= RIG.max[j] - HOLD.stopDeg);
+  if (stops.length) out.push("at its stop: " + stops.map(j => JOINT_LABELS[j]).join(", "));
+  const hit = collisionAt(pose);
+  if (hit) out.push("⚠ " + hit);
+  return out.join(" · ");
+}
+function renderReach() {
+  HANDS.forEach((h, i) => {
+    const el = $("handReach" + i);
+    if (el) el.textContent = reachText(i);
+    drawReach(i);
+  });
+}
+function setHold(arm, want) {
+  handHold[arm] = want;
+  if (!want) return;
+  holdSide(arm, true);
+  poseChanged(false);
+}
+// Save the pose on screen: these are the joint angles the robot is sent, so the
+// move plays exactly what you see, gap and all.
+function saveShownPose(asNew) {
+  if (asNew) addKey(); else if (keys[selKey]) updateKey(); else return;
+  $("tlStat").textContent = (asNew ? "added as move " : "saved into move ") + selKey
+    + " — exactly the pose shown, which is what the arm will do";
 }
 // --- timing ---
 // Show speed sets the automatic time; servo max speed sets the PHYSICAL

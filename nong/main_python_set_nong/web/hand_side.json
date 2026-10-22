@@ -1,0 +1,8 @@
+{
+  "_what": "How Studio keeps the palm or the back of a hand on top while you drag the hand or type where its wrist goes (A45-28). dragRangeDeg: while dragging, how far round each way the arm may swing to keep that side up (small = the arm keeps its shape; the whole swing is searched when you let go). stepDeg: the steps of that search. reachMm: a gap this small counts as reached. stopDeg: this close to a joint limit counts as at its stop. avoidSelfHit: never turn the arm into a shape that hits the body or the other arm.",
+  "dragRangeDeg": 30,
+  "stepDeg": 5,
+  "reachMm": 4,
+  "stopDeg": 0.5,
+  "avoidSelfHit": true
+}
