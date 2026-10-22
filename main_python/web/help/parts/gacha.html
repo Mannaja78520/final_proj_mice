@@ -18,7 +18,9 @@
   <p>Add each machine with its board name, the kind it holds and where it stands. Machines with
      the same kind stand in for each other: when the one asked for is empty, the next one gives
      the prize and the robot tells the person where to go. <b>Next to</b> says which to try
-     first.</p>
+     first. A machine next to it may hold a different kind: <b>When it runs out, give instead</b>
+     (Kinds) names what a person gets in its place. <b>its own page</b> opens the machine's own
+     settings (magnets, pockets until it falls, speed) from here.</p>
 
   <h3>Rules for an event</h3>
   <p><b>Per kind</b>: how many there are and how many times one person may get one.
@@ -28,7 +30,7 @@
   <div class="scroll"><table><thead><tr><th>items</th><th>people</th></tr></thead><tbody>
     <tr><td>event, item, total, per_person, note</td><td>event, person, item, times, special, note</td></tr>
   </tbody></table></div>
-  <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · write-back: docs/gacha/apps_script.gs ·
+  <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · Google Form: docs/gacha/form_sample.gs · write-back: docs/gacha/apps_script.gs ·
      API for other apps and webhooks: docs/gacha/README.md · POST /api/gacha/dispense {item, person, app}</p>
 
   <h3>Voice</h3>

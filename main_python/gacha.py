@@ -321,7 +321,7 @@ class Gacha:
         out = []
         for m in self.cfg()["machines"]:
             st = self.status_of(m)
-            out.append(dict(m, live=st))
+            out.append(dict(m, live=st, at=self.dev_of(m) or ""))
         return out
 
     def label(self, m):
@@ -420,7 +420,7 @@ class Gacha:
             return txt
 
     def dispense(self, item="", person="", app="", machine=None, force=False,
-                 by="", wait=False):
+                 by="", wait=False, instead_of=""):
         """Give one `item`. -> dict with ok, machine, message, seq, ... .
 
         The asked machine (or the first of the type) is used while it has
@@ -430,7 +430,8 @@ class Gacha:
             ok, why, detail = self.check(item, person, force)
             item = detail.get("item") or item
             base = {"item": item, "person": person, "app": app,
-                    "forced": 1 if force else 0, "by": by}
+                    "forced": 1 if force else 0, "by": by,
+                    "reason": "instead of " + instead_of if instead_of else ""}
             if not ok:
                 row = self.log_event(dict(base, kind="refused", reason=why,
                                           message=self.message("refused_" + why.replace(" ", "_"),
@@ -472,21 +473,32 @@ class Gacha:
                 stock = _int(reply.split("stock=")[1].split()[0], -1) if "stock=" in reply else -1
                 first = asked or (self.candidates(item)[0]["id"] if self.candidates(item) else "")
                 moved = bool(first) and not _same(m["id"], first)
-                msg = self.message("go_to" if moved else "here", item=self.item_label(item),
-                                   machine=self.label(m), place=m.get("place", ""),
-                                   person=person, asked=self.label(self.machine(first) or {"id": first}))
+                msg = self.message("instead" if instead_of else "go_to" if moved else "here",
+                                   item=self.item_label(item), machine=self.label(m),
+                                   place=m.get("place", ""), person=person,
+                                   asked=self.label(self.machine(first) or {"id": first}),
+                                   asked_item=self.item_label(instead_of))
                 row = self.log_event(dict(base, kind="dispense", machine=m["id"], seq=seq,
                                           stock=stock, result="turning",
                                           asked_machine=first if moved else "", message=msg))
                 out = dict(detail, ok=True, machine=m["id"], label=self.label(m),
                            place=m.get("place", ""), seq=seq, stock=stock, moved=moved,
                            asked=first, message=msg, tried=tried)
+                if instead_of:
+                    out["instead_of"] = instead_of
                 self._after(m, item, stock, row)
                 break
             else:
                 whys = [t["why"] for t in tried]
                 why = ("busy" if "busy" in whys else "out everywhere" if "empty" in whys
                        else "no machine")
+                if why == "out everywhere" and not instead_of:
+                    # A neighbour may hold ANOTHER kind (user 2026-10-22: "nearby
+                    # machines the same kind or a different one"): the kind's
+                    # "instead" list names what may be given in its place.
+                    got = self._instead(item, person, app, asked, force, by, wait)
+                    if got:
+                        return got
                 row = self.log_event(dict(base, kind="refused", reason=why,
                                           message=self.message("refused_" + why.replace(" ", "_"),
                                                                item=self.item_label(item))))
@@ -499,6 +511,21 @@ class Gacha:
         else:
             threading.Thread(target=self.wait_done, args=(m, seq), daemon=True).start()
         return out
+
+    def _instead(self, item, person, app, asked, force, by, wait):
+        """The first substitute kind (items.<item>.instead) that may be given,
+        from a machine next to the asked one when there is one. -> answer or None."""
+        subs = ((self.cfg().get("items") or {}).get(item) or {}).get("instead") or []
+        near = (self.machine(asked) or {}).get("near") or [] if asked else []
+        for alt in subs if isinstance(subs, list) else [subs]:
+            if not alt or _same(alt, item) or not self.check(alt, person, force)[0]:
+                continue
+            nm = next((n for n in near if _same((self.machine(n) or {}).get("item"), alt)), None)
+            got = self.dispense(item=alt, person=person, app=app, machine=nm, force=force,
+                                by=by, wait=wait, instead_of=item)
+            if got.get("ok"):
+                return got
+        return None
 
     def _wait_idle(self, m):
         """A busy machine's status once it is idle, or after busy_wait_s."""
@@ -673,6 +700,7 @@ DEFAULT_MESSAGES = {
     "refused_item_used_up_for_this_event": "{item}หมดสำหรับงานนี้แล้ว",
     "refused_out_everywhere": "{item}หมดทุกตู้แล้ว",
     "refused_no_machine": "ยังไม่มีตู้ที่ใส่{item}",
+    "instead": "{asked_item}หมดแล้ว รับ{item}แทนได้ที่{machine} {place}",
     "refused_busy": "ตู้กำลังปล่อยของอยู่ รอสักครู่แล้วลองใหม่นะ",
     "refused_no_item": "ไม่ได้บอกว่าจะให้ของอะไร",
 }
