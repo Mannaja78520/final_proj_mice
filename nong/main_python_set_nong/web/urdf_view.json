@@ -1,5 +1,5 @@
 {
-  "_what": "How Studio draws the robot (A48-1, user 2026-10-23). looks: the choices in the 3D view's Robot look box; kind 'rig' = the old simple shapes sized by Rig setup, kind 'urdf' = the CAD model from a URDF file at its own real sizes. models: URDF files offered, path under the Studio models folder (any other .urdf found there is offered too). joints: Studio joint -> the URDF joint names it may have; sign 'auto' = turn the way the simple shapes turn (picked from the axes), or 1 / -1 to force it; offsetDeg = the URDF angle when the Studio joint is at its zero ('auto' = fitted). fit: per arm, which URDF joint of each pair is which Studio joint (swap), its sense and its zero are fitted so the upper arm and forearm point where the simple shapes (your Rig setup) point them over many poses; a number in sign/offsetDeg is kept as given; warnDeg = say so when the fit is worse than this. hands: the forearm link of each hand and where its tip is ('mesh' = the far end of the forearm part, else the forearm length). sizes: Rig setup sizes the URDF gives when going back to the simple shapes (from/to = joints, tip:L / tip:R = hand tips; half = half the distance). The real CAD files stay on this PC only (public repo).",
+  "_what": "How Studio draws the robot (A48-1, user 2026-10-23). looks: the choices in the 3D view's Robot look box; kind 'rig' = the old simple shapes sized by Rig setup, kind 'urdf' = the CAD model from a URDF file at its own real sizes. models: URDF files offered, path under the Studio models folder (any other .urdf found there is offered too). joints: Studio joint -> the URDF joint names it may have; sign 'auto' = turn the way the simple shapes turn (picked from the axes), or 1 / -1 to force it; offsetDeg = the URDF angle when the Studio joint is at its zero ('auto' = fitted). fit: per arm, which URDF joint of each pair is which Studio joint (swap), its sense and its zero are fitted so the upper arm and forearm point where the simple shapes (your Rig setup) point them over many poses; a number in sign/offsetDeg is kept as given; frames = also match how each part TURNS from the home pose (pins the roll about a bone); warnDeg = say so when the fit is worse than this. hands: the forearm link of each hand and where its tip is ('mesh' = the far end of the forearm part, else the forearm length). sizes: Rig setup sizes the URDF gives when going back to the simple shapes (from/to = joints, tip:L / tip:R = hand tips; half = half the distance). The real CAD files stay on this PC only (public repo).",
   "looks": [
     {
       "id": "rig",
@@ -32,7 +32,8 @@
     "swap": true,
     "samples": 12,
     "gridDeg": 15,
-    "warnDeg": 5
+    "warnDeg": 5,
+    "frames": true
   },
   "joints": {
     "L_SH_P": {

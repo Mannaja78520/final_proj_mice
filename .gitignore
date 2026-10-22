@@ -111,3 +111,6 @@ nong/main_python_set_nong/gestures.json
 # A48-1: a URDF package copied into Studio's models folder (the real CAD:
 # <pkg>/urdf + <pkg>/meshes) is private user data; this repo is PUBLIC
 nong/main_python_set_nong/models/*/
+
+# A48: the real CAD joints dumped by check_urdf_look (PC only)
+qc/_urdf_real.json
