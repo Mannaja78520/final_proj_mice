@@ -1,7 +1,7 @@
 # Nong Studio: dynamic URDF display and motion parity
 
 Owner: claude:10222214-b01b (cloud thread "Studio URDF view mode")
-Updated: 2026-10-23T05:08:45.8071617+07:00
+Updated: 2026-10-23 (cloud, Bangkok morning)
 Branch: claude/project-thread-wvmxq5 (from task/A48-1-10230507-3ac1 @7b7a904)
 Tree: cloud clone (repo root); PC tree .staging-urdf-studio unused
 Last commit: c82daa6 (base; handoff-only WIP commit follows)
@@ -16,23 +16,33 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-- Step 1: new app part web/app_parts/urdf_view.js + data web/urdf_view.json.
-  Design (chosen 2026-10-22): URDF mode builds the URDF link tree AS the
-  kinematic robot; jointGroups/elbowBalls/wristBalls/palmMarks/bodyGroup/
-  shoulderMount point into it, so IK, collisions, video fit, dummy follow,
-  playback and monitor (all go pose -> applyPose -> these handles) use the
-  URDF chain itself. Every frame is conjugated ROS->Studio (studio=(y,z,x)).
-  Joint binding by name from the json; sign "auto" = dot of the URDF axis
-  with the old rig's axis (world, rest pose). Old mode: dims "urdf" (derived
-  from the file) or "custom" (RIG.view.custom kept, never overwritten).
+- Quick suite + related Studio checks, then full QC, PR, merge, ask PC to rebuild
+  and run check_urdf_look with MICE_URDF_MODEL=<real package folder>.
 
-## Done
-- Registered A48-1 as doing under codex:10230507-3ac1 in real root docs/PLAN.html; it will be handed off to todo before this turn ends.
-- Read HANDOFF.md, AGENTS.md, CLAUDE.md, docs/COORDINATION.md, latest BRIDGE claims, docs/systems/studio.md, docs/web_style.md and Studio CLAUDE.md.
-- Read applicable .agents/skills/{mice-web-check,mice-contract-check,mice-verification}/SKILL.md and .claude/skills/web-page-check/SKILL.md.
-- Prior CAD and VS Code tasks finished: working native SolidWorks export and visible URDF; details below. Those files are outside code and local only.
+## Done (claude:10222214-b01b, 2026-10-22/23)
+- web/urdf_view.json (looks, models, joint names/sign/offset, hands, sizes) +
+  app_parts/urdf_view.js (listed after build_rig.js in tools/web_build.json).
+- build_rig.js: buildRobot -> urdfBuildInto(robot) else buildRigShapes();
+  applyPose/jointAxisVec defer to URDF while urdfOn. rig_data.js: RIG.view.
+- pose_from_video.js vidWaistTable reads bodyGroup's WORLD turn.
+- html_parts/view.html Robot look box + #lookAsk dialog; style.css; help part.
+- hub_api_studio.py: /api/list?kind=models&deep=1 lists sub-folders.
+- .gitignore: models/*/ (real CAD package stays private).
+- qc/checks/check_urdf_look.py 24/24; sabotage 9/9 caught (rpy order, auto
+  sense, ROS turn, own sizes, mesh tip, hand frame, CAD-sizes button...).
 
 ## Facts found
+- urdf_view.js: tree built in mm (xyz*unitMm, mesh scale*unitMm), root
+  turned ROS->Studio once; shoulders re-centred onto (0, dims.shoulderY, 0).
+  bodyGroup = helper under the waist link, turned so it is world-aligned at
+  zero. Hand = at the tip, -Y along the forearm, palmTurn from the rig.
+- Tip "mesh": farthest forearm-mesh vertex along the upper arm's zero line.
+  Mesh loads can be synchronous (cache): urdfMeshArrived ignores them until
+  urdfOn; urdfSettle measures them. urdfMissing remembers 404 meshes.
+- Torso collision box is still RIG.dims torso* (not from the CAD).
+- SHRUG on the CAD look = the URDF shrug joint only (shrugCurve not used).
+- buildYaml() returns {name, yaml}, not a string.
+- fake_serial.NONG.joints = what monitorTick reads (set before browser.page).
 - tools/build_web.py:87-112: Studio app_parts order comes from tools/web_build.json; app.js/index.html are generated. New .js part must be listed or build fails. Edit sources then build, never hand-edit the bundles.
 - web/app_parts/build_rig.js:130 builds old proxy robot; :216 applyPose applies the shared pose. This is the likely common update boundary to investigate, avoiding separate video/realtime render logic.
 - web/app_parts/scene.js defines THREE scene/camera/controls in millimetres, Y up; camera default target near body. A loaded URDF needs framing based on its actual bounds.
@@ -64,15 +74,13 @@ Plan: A48-1 (robot page)
 - Own claim was limited to new URDF renderer/config/serving/QC paths plus app_parts/{build_rig,scene,stl_meshes,urdf_import,project_save_load,save_state,boot}.js and docs/urdf_nong.md in OWN tree. Own claims will be explicitly released for Cross. No QC/driver/runtime/hardware resources acquired or process started.
 
 ## Next
-1. Read this task; create a provider:session using plan.py, take A48-1 under real-root coordination mutex, record exact branch/tree/claims. Resolve old overlapping claims without discarding work.
-2. Read only targeted functions around applyPose/buildRobot and persistence/video/realtime entry points. Review design per existing Codex-first independent review workflow; no review has run yet.
-3. Implement generic URDF tree renderer: every link, parent->origin xyz/rpy->joint-axis rotation->child, visual origins/scales, multiple visuals, exact SI->Studio conversion, relative/package mesh resolution. Reject bad/missing/cyclic/unbound files clearly; handle async load failures/stale completions and dispose GPU resources.
-4. Add configurable UI display modes with explicit dimension source state. URDF mode always keeps native size. Ask on switching to old mode: URDF dimensions or custom; provide cancel that preserves current mode/state, keep custom values, persist selection/dimensions in projects/drafts/settings without breaking legacy projects. Avoid changing servo calibration/limits by choosing a display.
-5. IMPORTANT: old IK/collision/video fitting uses proxy rig dimensions. Drawing a URDF alone does not make motion correct. Ensure the kinematic chain used for fitting/IK matches displayed URDF, or explicitly resolve unsupported mapping before claiming parity. Do not merely overlay detailed meshes on mismatched old proxy pivots.
-6. Register new files/checks in docs/systems.json; build systems + web assets; add help section in main_python/web/help/parts/studio.html and rebuild help; save_patch.py per Studio rules. Actual CAD models remain excluded/private.
-7. Permanent browser/fake regression: load real local model privately plus synthetic rotated/non-axis-aligned fixture; zero pose/link transforms vs independent FK; all10 isolated joints; left-only/right-only hand up, mirrored camera option, elbows/waist/shrug; video -> fitted keys -> playback; realtime dummy -> pose; monitor reported pose; timeline/slider/export parity. Compare numeric world positions, render state and fake wire, not screenshot only. Verify modes/dimension prompt accept/cancel/custom, reload/project persistence, missing meshes/bad URDF/reselect races, phone/desktop layouts.
-8. Run applicable QC quiet, deliberate sabotage proving new check fails, independent final review, one exclusive full frozen-tree QC gate, then authorized integration/build/deploy with backups. Preserve old user projects/settings and all unrelated dirt. Do not report fake checks as physical measurements.
+1. Full QC green -> PR -> merge.
+2. PC: copy E:/final_proj/mice/model/nong_urdf/solidworks/export/nong_description
+   into Studio's models folder (models/nong_description/), rebuild MiceHub.exe,
+   run `MICE_URDF_MODEL=<that folder> python qc/run_qc.py --quiet check_urdf_look`
+   and read the "real model" lines (bindings, senses, agree per joint). A joint
+   with agree < 0.5 or "axis" < 0.7: set its sign/offsetDeg in urdf_view.json.
+3. Lab day: robot-tests.md item 6.
 
 ## Blocked / not done
-- Implementation, local Studio model installation, reviews, all A48-1 tests and deployment are NOT STARTED.
-- Old overlapping file-claim coordination unresolved. No technical blocker established; task paused solely because user requested this handoff.
+- Real SolidWorks URDF not tested yet (only on the PC). Not tested on the robot.

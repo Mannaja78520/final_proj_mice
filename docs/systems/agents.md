@@ -30,11 +30,11 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `docs/systems.json`
 - `handoff/TEMPLATE.md`
 - `handoff/tasks/friend-face-server.md`
-- `handoff/tasks/gacha-audit.md`
 - `handoff/tasks/gachapon.md`
 - `handoff/tasks/person-tests.md`
 - `handoff/tasks/robot-hotspot-live.md`
 - `handoff/tasks/robot-tests.md`
+- `handoff/tasks/studio-urdf-display.md`
 - `handoff/tasks/voice-human-tone.md`
 - `handoff/tasks/voice-keys.md`
 - `tools/ai_brief.txt`

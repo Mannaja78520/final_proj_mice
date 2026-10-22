@@ -775,6 +775,23 @@
     <p>Import STL exports per body part, each with its own rotation, offset, scale and
        colour. Part size automatically sets the rig's lengths. Texture images can be imported
        and assigned.</p></div>
+  <div class="f"><h3>Robot look: simple shapes or the CAD model<span class="tag t-new">new</span></h3>
+    <p>In the 3D view, open <b>Views ▾</b> and pick <b>Robot look</b>. <b>Simple shapes</b> is
+       the old robot, sized in Rig setup. <b>CAD model (URDF)</b> draws the URDF file at its own
+       real sizes — every part where the file puts it, every joint turning about the file's own
+       axis. It is not a picture laid over the old robot: dragging a hand, a video, the dummy,
+       playback and monitor all move the CAD model's own joints, so what you see is how the
+       real parts move. What is sent to the robot never changes with the look.</p>
+    <p>Put the SolidWorks export folder (the one holding <code>urdf/</code> and
+       <code>meshes/</code>) into Studio's <code>models</code> folder on this PC; every
+       <code>.urdf</code> found there is offered. Each Studio joint finds its URDF joint by
+       name and turns the same way as the simple shapes; the names, a forced sense, a zero
+       offset and which sizes come from the file are all in <code>web/urdf_view.json</code>,
+       so a new model needs no code change. The technical switch shows which joint went where.</p>
+    <p>Going back to the simple shapes asks which sizes to use: <b>the CAD model's</b>, or
+       <b>your own</b> (the ones you had before, kept untouched while the CAD model was shown),
+       or <b>stay</b> on the CAD model. A file that cannot be read says why and the simple
+       shapes are shown. The CAD files stay on this PC only.</p></div>
   <div class="f"><h3>Build the body from a URDF<span class="tag t-new">new</span></h3>
     <p>A <b>STEP</b> file cannot be opened in a browser at all, and an <b>STL</b> carries no
        origin — which is why a part dragged in lands at the middle of the robot and has to be

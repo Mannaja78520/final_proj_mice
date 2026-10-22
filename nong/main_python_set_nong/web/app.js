@@ -1175,6 +1175,7 @@ let urdfLast = { dims: null, warn: [], error: "" };  // what the last build foun
 let urdfModelList = [];            // [{path, label}] offered in the box
 const urdfGeo = {};                // mesh url -> BufferGeometry (kept across rebuilds)
 let urdfBuildGen = 0;              // a mesh arriving after a rebuild is dropped
+const urdfMissing = new Set();     // mesh names that were not found (said, not fetched again)
 
 fetch("urdf_view.json").then(r => r.json()).then(j => {
   URDF_CFG = j;
@@ -1394,11 +1395,15 @@ function urdfBuildInto(root) {
       if (v.box) put(new THREE.BoxGeometry(...v.box), [U, U, U]);
       else if (v.cyl) put(new THREE.CylinderGeometry(v.cyl[0], v.cyl[0], v.cyl[1], 20), [U, U, U]).rotation.x = Math.PI / 2;
       else if (v.sphere) put(new THREE.SphereGeometry(v.sphere, 20, 14), [U, U, U]);
+      else if (urdfMissing.has(f.path + "|" + v.mesh)) warn.push("the shape " + v.mesh.split(/[\\/]/).pop() + " is missing");
       else urdfMesh(urdfMeshUrls(v.mesh, f.path), geo => {
-        if (gen !== urdfBuildGen || !urdfOn || holder.parent !== linkG[name]) return;
+        if (gen !== urdfBuildGen || holder.parent !== linkG[name]) return;   // a rebuild came first
         put(geo, v.scale.map(s => s * U));
         urdfMeshArrived(name);
-      }, () => { urdfLast.warn.push("the shape " + v.mesh.split(/[\\/]/).pop() + " is missing"); renderLookUI(); });
+      }, () => {
+        urdfMissing.add(f.path + "|" + v.mesh);
+        if (gen === urdfBuildGen) { urdfLast.warn.push("the shape " + v.mesh.split(/[\\/]/).pop() + " is missing"); renderLookUI(); }
+      });
     });
   });
 
@@ -1522,6 +1527,7 @@ function urdfPlaceTip(side, arm) {
   pose = keep; applyPose();
 }
 function urdfMeshArrived(link) {
+  if (!urdfOn) return;             // still building (a cached mesh): urdfSettle measures it
   ["L", "R"].forEach((side, arm) => {
     if (!urdfTip[side] || urdfTip[side].link !== link) return;
     urdfPlaceTip(side, arm);
@@ -1618,10 +1624,18 @@ function renderLookUI() {
   tech.textContent = urdfOn ? (v.model + " · " + urdfJ.map((b, i) => b ? JOINT_NAMES[i] + "→" + b.name +
     (b.sign < 0 ? " (-)" : "") + (b.quality < 0.7 ? " (axis " + b.quality.toFixed(2) + ")" : "") : JOINT_NAMES[i] + "→none").join(", ")) : (v.model || "");
 }
-function urdfPickModel(path) {
+// another file: opened first, so a broken one never replaces what is shown
+async function urdfPickModel(path) {
+  const f = await urdfLoad(path);
+  if (f.error) {
+    $("lookModel").value = RIG.view.model;
+    $("lookStat").textContent = "Cannot open that CAD model: " + f.error + ". Still showing the last one.";
+    notice($("lookStat").textContent);
+    return;
+  }
   RIG.view.model = path;
   urdfLast.error = "";
-  setLook(RIG.view.look, true);
+  await setLook(RIG.view.look, true);
 }
 // Pick a look. Into the URDF: your current sizes are kept first (unless they
 // are the URDF's own). Back to the shapes: ask which sizes to use.

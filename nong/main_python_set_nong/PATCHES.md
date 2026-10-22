@@ -129,3 +129,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0056 | 2026-10-22 08:05 | A46-1: safe paths (straight, else RRT-Connect) for video, dummy follow and recording; Make and save; Moves while talking card |
 | 0056 | 2026-10-22 18:39 | RRT star checked Studio motion and clothing clearance in Setup |
 | 0057 | 2026-10-22 18:41 | RRT star complete detour timing and persistent clothing gap |
+| 0056 | 2026-10-22 22:29 | A48-1 robot look: simple shapes or CAD model (URDF), ask sizes on the way back |
