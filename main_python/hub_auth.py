@@ -124,6 +124,7 @@ GATED_POST = {
     # A20-12 settings: reading the voice stores is open, saving them rewrites
     # what the rig answers and how it listens - gated like /api/settings.
     "/api/voice/config",
+    "/api/voice/profiles",
     "/api/voice/faq",
     # A45-1: the keys to outside services, written only (never read back),
     # and dropping the loaded models out from under whoever is talking.

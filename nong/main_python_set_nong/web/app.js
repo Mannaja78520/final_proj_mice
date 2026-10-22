@@ -8392,6 +8392,8 @@ async function talkLoad() {
   try {
     const j = await fetch("/api/gestures").then(r => r.json());
     if (!j.ok) throw new Error(j.error || "no answer");
+    if (TALK.character !== j.character) TALK.events = null;
+    TALK.character = j.character || ""; TALK.revision = j.gestureRevision || ""; TALK.readOnly = !!j.readOnly;
     TALK.lib = j.lib; TALK.fit = j.fit || {}; TALK.hub = true;
   } catch (e) {
     TALK.hub = false;                 // Studio on its own server: no hub, no card
@@ -8496,9 +8498,9 @@ async function talkFit() {
       const ka = fit.gestures[a].keys, kb = fit.gestures[b].keys;
       if (a !== b && !pathHit(ka[ka.length - 1].pose, kb[0].pose)) fit.direct.push(a + ">" + b);
     }
-    const r = await fetch("/api/gestures/fit", { method: "POST", body: JSON.stringify(fit) }).then(x => x.json());
+    const r = await fetch("/api/gestures/fit", { method: "POST", body: JSON.stringify({...fit, character:TALK.character, gestureRevision:TALK.revision}) }).then(x => x.json());
     if (!r.ok) throw new Error(r.error || "the hub did not keep it");
-    TALK.fit = fit;
+    TALK.fit = fit; TALK.revision = r.gestureRevision || TALK.revision;
     talkRender();
     return true;
   } catch (e) {
@@ -8570,9 +8572,9 @@ function talkName(vid) {
 }
 async function talkSave(change) {
   try {
-    const j = await fetch("/api/gestures", { method: "POST", body: JSON.stringify(change) }).then(r => r.json());
+    const j = await fetch("/api/gestures", { method: "POST", body: JSON.stringify({...change, character: TALK.character, gestureRevision: TALK.revision}) }).then(r => r.json());
     if (!j.ok) throw new Error(j.error || "not saved");
-    TALK.lib = j.lib;
+    TALK.lib = j.lib; TALK.revision = j.gestureRevision || TALK.revision;
     talkRender();
     talkCheckFit();
   } catch (e) { talkSay("Not saved: " + (e.message || e)); notice($("talkStat").textContent); }
@@ -8584,7 +8586,7 @@ async function talkEvents() {
   if (!box) return;
   if (!TALK.events) {            // asked once: the voice helper may be far away or off
     TALK.events = [];
-    try { TALK.events = ((await fetch("/api/voice/config").then(r => r.json())).scenarios || []).map(s => s.name).filter(Boolean); }
+    try { TALK.events = ((await fetch("/api/voice/config").then(r => r.json())).config?.scenarios || []).map(s => s.name).filter(Boolean); }
     catch (e) { /* no voice settings here: no events to list */ }
   }
   const names = TALK.events;

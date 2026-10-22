@@ -254,7 +254,7 @@ def run(t):
     brain_fb._stt_own = {}
     brain_fb._stt = gen
     brain_fb._stt_loaded_model = "small"
-    brain_fb._cfg_mtime = brain_fb.cfg_path.stat().st_mtime
+    brain_fb._cfg_mtime = brain_fb.cfg_path.stat().st_mtime_ns
     def fail_model(mid):
         raise OSError("temporary download failure")
     brain_fb._whisper_model = fail_model

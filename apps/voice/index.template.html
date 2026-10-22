@@ -240,6 +240,29 @@
 
     <!-- PERSONALITY: who it is being. -->
     <div class="card" data-pane="who" hidden>
+      <h3>Character folders</h3>
+      <p class="mini">Each character keeps its voice, manner, answers, sounds and moves on this PC.
+         Default is the original snapshot. Make a named copy to change it.</p>
+      <div class="field">
+        <label for="profilePick">Character</label><select id="profilePick"></select>
+        <button onclick="voiceApp.profileAction('select')">Use this character</button>
+      </div>
+      <div class="field">
+        <label for="profileName">New name</label><input id="profileName" maxlength="80">
+        <button onclick="voiceApp.profileAction('create')">Make a copy</button>
+        <button onclick="voiceApp.reloadProfile()">Reload saved character</button>
+      </div>
+      <p class="mini tech">Saved folder on this PC: <code id="profileFolder" style="overflow-wrap:anywhere"></code></p>
+      <p id="profileStat" class="mini" role="status" aria-live="polite"></p>
+      <div class="field">
+        <label for="profileKind">Add to this character</label>
+        <select id="profileKind"><option value="audio">Sound</option><option value="motions">Robot move</option></select>
+        <input id="profileFile" style="max-width:100%;min-width:0" type="file" accept=".mp3,.wav,.ogg,.yaml,.yml" aria-label="Sound or robot move file">
+        <button onclick="voiceApp.uploadProfileAsset()">Add file</button>
+      </div>
+      <p class="mini">Sound: MP3, WAV or Ogg. Robot move: YAML saved in Studio. Up to 2 MB each.
+        Pick these files beside an answer below. Editing the character's saved files on this PC takes effect on the next request.</p>
+      <h3>Personality and voice</h3>
       <div class="field">
         <span>Scenario</span>
         <select id="scenPick" onchange="pickScenario()"></select>

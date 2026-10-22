@@ -109,7 +109,7 @@ def run(t):
     with tempfile.TemporaryDirectory() as d:
         f = Path(d) / "gestures.mjs"
         f.write_text(_HARNESS % json.dumps(src), encoding="utf-8")
-        r = subprocess.run([node, str(f)], capture_output=True, text=True, timeout=60)
+        r = subprocess.run([node, str(f)], capture_output=True, text=True, encoding="utf-8", timeout=60)
     line = [x for x in (r.stdout or "").splitlines() if x.startswith("{")]
     if not t.ok(line, "the page's gesture code runs", "node said: %s %s" % (r.stdout[-200:], r.stderr[-400:])):
         return

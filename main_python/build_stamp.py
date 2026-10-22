@@ -57,7 +57,7 @@ STAMP = "build_stamp.json"
 # own venv (a .runtime folder there before it moved to code/.local, A45-25)
 # and spoken audio. Counted, it made the hub say "6839 source files changed" (2026-10-21)
 # and the spec would have packed it into the exe. Dot and _ names are local.
-LOCAL_DIRS = ("__pycache__", "tts_cache")
+LOCAL_DIRS = ("__pycache__", "tts_cache", "voice_profiles")
 
 
 def skipped(rel, names=True):
