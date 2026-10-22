@@ -125,6 +125,16 @@ body.adv .not-adv{display:none}
 /* The face controls sit in the row as if unwrapped; Use faces off hides them. */
 #faceTools{display:contents}
 #faceTools[hidden]{display:none}
+
+/* Voice ▸ Questions charts (A47-3) */
+.qcharts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--sp-3)}
+.qbars div{display:grid;grid-template-columns:minmax(80px,40%) 1fr auto;gap:var(--sp-2);align-items:center;margin:2px 0}
+.qbars .qn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qbars b{display:block;height:12px;background:var(--acc);border-radius:var(--r-sm)}
+.qhist{display:flex;align-items:flex-end;gap:2px;height:120px}
+.qhist div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;min-width:0}
+.qhist b{display:block;background:var(--acc);border-radius:var(--r-sm) var(--r-sm) 0 0}
+.qhist span{font-size:10px;text-align:center;color:var(--mut)}
 </style>
 
 <script>
@@ -1919,6 +1929,31 @@ static langName(code){
   return out;
 }
 
+  // Voice ▸ Questions (A47-3): bars per topic, source, language, prize and
+  // the most asked; a 24-column histogram per hour. Drawn from /api/questions.
+  async loadQuestions(){
+  const day = this.$("qDay") ? this.$("qDay").value : "";
+  const a = await Mice.Api.get("/api/questions" + (day ? "?day=" + encodeURIComponent(day) : ""));
+  if (!a.ok) { if (this.$("qTotal")) this.$("qTotal").textContent = a.says || "could not read the questions"; return; }
+  const st = a.data.stats, esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+  const sel = this.$("qDay");
+  if (sel && sel.options.length !== st.days.length + 1) {
+    sel.innerHTML = '<option value="">every day</option>' + st.days.slice().reverse().map(d => '<option>' + esc(d) + '</option>').join("");
+    sel.value = day;
+  }
+  this.$("qTotal").textContent = st.total + " questions";
+  const bars = (id, obj) => {
+    const e = Object.entries(obj || {}).sort((x, y) => y[1] - x[1]);
+    const top = e.length ? e[0][1] : 1;
+    this.$(id).innerHTML = e.length ? e.map(([n, c]) => '<div><span class="qn">' + esc(n) + '</span><b style="width:' +
+      Math.max(3, 100 * c / top) + '%"></b><span>' + c + '</span></div>').join("") : '<p class="mini">none yet</p>';
+  };
+  bars("qTopic", st.topic); bars("qSource", st.source); bars("qLang", st.lang); bars("qPrize", st.prize); bars("qTop", st.question);
+  const hours = Object.keys(st.hour).map(Number).sort((x, y) => x - y), max = Math.max(1, ...Object.values(st.hour));
+  this.$("qHour").innerHTML = hours.map(h => '<div title="' + h + ':00 · ' + st.hour[h] + '"><b style="height:' +
+    (100 * st.hour[h] / max) + '%"></b><span>' + (h % 3 ? "" : h) + '</span></div>').join("");
+}
+
   showTab(name){
   const all = sel => (document.querySelectorAll ? [...document.querySelectorAll(sel)] : []);
   all("#setTabs .tab").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
@@ -3531,6 +3566,7 @@ if (document.readyState === "loading") {
       <button class="tab" data-tab="services" onclick="showTab('services')">Who does it</button>
       <button class="tab" data-tab="who" onclick="showTab('who')">Personality</button>
       <button class="tab" data-tab="faces" onclick="showTab('faces')">Faces</button>
+      <button class="tab" data-tab="questions" onclick="showTab('questions');voiceApp.loadQuestions()">Questions</button>
       <button class="tab tech" data-tab="adv" onclick="showTab('adv')">Advanced</button>
     </div>
     <p class="mini not-adv">The helper's address and the AI model are under
@@ -3746,6 +3782,25 @@ if (document.readyState === "loading") {
         <button class="primary" onclick="postConfig('fStat')">Save faces</button>
         <span class="mini" id="fStat" aria-live="polite"></span>
       </div>
+    </div>
+
+    <!-- What people asked (A47-3): every question is logged with a topic
+         (config/voice_topics.json) by the hub; the charts read /api/questions. -->
+    <div class="card" data-pane="questions" hidden data-needs-login="gacha">
+      <div class="row"><span class="lbl">Day</span><select id="qDay" onchange="voiceApp.loadQuestions()"></select>
+        <button onclick="voiceApp.loadQuestions()">Refresh</button>
+        <a href="/api/questions?csv=1" download="voice_questions.csv">Download every question</a></div>
+      <p class="mini" id="qTotal"></p>
+      <div class="qcharts">
+        <div><h3>About what</h3><div id="qTopic" class="qbars"></div></div>
+        <div><h3>When (hour of the day)</h3><div id="qHour" class="qhist"></div></div>
+        <div><h3>Answered from</h3><div id="qSource" class="qbars"></div></div>
+        <div><h3>Language</h3><div id="qLang" class="qbars"></div></div>
+        <div><h3>Prizes given</h3><div id="qPrize" class="qbars"></div></div>
+        <div><h3>Asked most</h3><div id="qTop" class="qbars"></div></div>
+      </div>
+      <p class="mini">Topics and the words that pick them are a list anyone can edit; answers that give a
+        prize are set in the prize rules (Help ▸ Prize machines).</p>
     </div>
 
     <!-- Shown only with "Show technical details" on, like every page. -->

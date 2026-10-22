@@ -1789,6 +1789,31 @@ static langName(code){
   return out;
 }
 
+  // Voice ▸ Questions (A47-3): bars per topic, source, language, prize and
+  // the most asked; a 24-column histogram per hour. Drawn from /api/questions.
+  async loadQuestions(){
+  const day = this.$("qDay") ? this.$("qDay").value : "";
+  const a = await Mice.Api.get("/api/questions" + (day ? "?day=" + encodeURIComponent(day) : ""));
+  if (!a.ok) { if (this.$("qTotal")) this.$("qTotal").textContent = a.says || "could not read the questions"; return; }
+  const st = a.data.stats, esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+  const sel = this.$("qDay");
+  if (sel && sel.options.length !== st.days.length + 1) {
+    sel.innerHTML = '<option value="">every day</option>' + st.days.slice().reverse().map(d => '<option>' + esc(d) + '</option>').join("");
+    sel.value = day;
+  }
+  this.$("qTotal").textContent = st.total + " questions";
+  const bars = (id, obj) => {
+    const e = Object.entries(obj || {}).sort((x, y) => y[1] - x[1]);
+    const top = e.length ? e[0][1] : 1;
+    this.$(id).innerHTML = e.length ? e.map(([n, c]) => '<div><span class="qn">' + esc(n) + '</span><b style="width:' +
+      Math.max(3, 100 * c / top) + '%"></b><span>' + c + '</span></div>').join("") : '<p class="mini">none yet</p>';
+  };
+  bars("qTopic", st.topic); bars("qSource", st.source); bars("qLang", st.lang); bars("qPrize", st.prize); bars("qTop", st.question);
+  const hours = Object.keys(st.hour).map(Number).sort((x, y) => x - y), max = Math.max(1, ...Object.values(st.hour));
+  this.$("qHour").innerHTML = hours.map(h => '<div title="' + h + ':00 · ' + st.hour[h] + '"><b style="height:' +
+    (100 * st.hour[h] / max) + '%"></b><span>' + (h % 3 ? "" : h) + '</span></div>').join("");
+}
+
   showTab(name){
   const all = sel => (document.querySelectorAll ? [...document.querySelectorAll(sel)] : []);
   all("#setTabs .tab").forEach(b => b.classList.toggle("on", b.dataset.tab === name));

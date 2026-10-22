@@ -31,7 +31,8 @@
     "settings",       // shared settings reach every page and every board
     "pair",           // pairing hands another PC this rig
     "lights",         // the light tool drives real hardware
-    "control"         // anything that moves a robot
+    "control",        // anything that moves a robot
+    "gacha"           // prize rules, log and app links: people's names (A47-2)
   ],
 
   // What the box says where a card used to be. Editable, because the words on

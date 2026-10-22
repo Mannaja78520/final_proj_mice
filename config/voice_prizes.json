@@ -1,0 +1,22 @@
+{
+  // WHICH ANSWERS GIVE A PRIZE (A47-3). After Voice answers, the hub checks
+  // these rules top to bottom; the first that fits names a kind of prize
+  // (a key of config/gacha.json "items"), and the Prize machines brain gives
+  // it to the person asking: per-person limits, the event being open and the
+  // hand-over to another machine all still apply.
+  //
+  // when (all given parts must fit, any part may be left out):
+  //   topic     a topic id from config/voice_topics.json
+  //   source    how it was answered: faq | model | verse | read
+  //   question  regular expression(s) on what the person said
+  //   answer    regular expression(s) on the answer
+  // A saved answer in qa_data.json may also carry "prize": "<kind>" itself.
+  //
+  // say: true adds the machine's words ("รับ...ที่ตู้...ได้เลย") to the spoken answer.
+  "enabled": false,
+  "say": true,
+  "rules": [
+    {"when": {"topic": "prize", "question": ["ขอ(?:ของ)?รางวัล|อยากได้ของ|give me a prize"]}, "item": "keychain"},
+    {"when": {"source": "verse"}, "item": "sticker"}
+  ]
+}

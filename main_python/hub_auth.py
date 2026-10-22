@@ -89,6 +89,14 @@ GATED = {
     # Moves from a video (A44-8): a video kept on this PC, and its sound made
     # with ffmpeg - files written here on someone's say-so.
     "/api/video/put", "/api/video/sound",
+    # Prize machines (A47-2): a prize comes out, every machine is told to open
+    # or close, a board command; rules, log and counts carry people's names.
+    # A program on this PC may still ask for a prize: see LOCAL_OK.
+    "/api/gacha/dispense", "/api/gacha/can", "/api/gacha/event", "/api/gacha/machine",
+    "/api/gacha/rules/pull", "/api/gacha/rules/push", "/api/gacha/log", "/api/gacha/stats",
+    "/api/gacha/rules",
+    # what visitors asked Voice, with their names (A47-3)
+    "/api/questions",
 }
 
 # Proved by something OTHER than a session. There is exactly one, and it is
@@ -142,6 +150,8 @@ GATED_POST = {
     # A46-1: talk gestures played on a robot. Reading, planning and saving
     # the library are Studio tools (NEVER_GATED below); playing moves an arm.
     "/api/gestures/play",
+    "/api/gacha/config",
+    "/api/gacha/voice",
 }
 
 # NEVER gated, deliberately, however much they change:
@@ -194,7 +204,7 @@ NEVER_GATED = {"/api/play/stop", "/api/stopall", "/api/play/beat",
 # POST only, and main.Handler.from_program_here decides what counts: this PC,
 # JSON, and none of the headers every browser sends - so a web page open on
 # this PC is refused like any stranger, a DNS-rebinding one included.
-LOCAL_OK = {"/api/speak"}
+LOCAL_OK = {"/api/speak", "/api/gacha/dispense", "/api/gacha/can"}
 
 
 def local_ok(path: str, method: str) -> bool:

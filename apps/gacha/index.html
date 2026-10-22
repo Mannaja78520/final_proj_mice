@@ -1,0 +1,348 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prize machines — Mice</title>
+<link rel="stylesheet" href="/mice.css">
+<script src="/mice.js"></script>
+<script src="/mice-ui.js"></script>
+<style>
+  .gt{width:100%;border-collapse:collapse}
+  .gt td,.gt th{padding:var(--sp-1) var(--sp-2);text-align:left;border-bottom:1px solid var(--line)}
+  .gt input{width:100%;min-width:60px}
+  .wrapx{overflow-x:auto}
+  .bars div{display:flex;gap:var(--sp-2);align-items:center;margin:2px 0}
+  .bars b{display:inline-block;height:12px;background:var(--acc);border-radius:var(--r-sm)}
+</style>
+<body class="page">
+
+<header class="topbar">
+  <h1>🎁 Prize machines</h1>
+  <span class="statline" id="stat">checking…</span>
+  <button onclick="load()">Check again</button>
+  <span class="sub">give prizes from one or more gachapon machines, with rules per event and per person</span>
+</header>
+
+<div class="card" id="loginHere"></div>
+
+<div class="card">
+  <h2>Give a prize</h2>
+  <div class="row"><span class="lbl">Kind</span><select id="gItem"></select>
+    <span class="lbl" style="min-width:0">for</span>
+    <input id="gPerson" placeholder="name, or empty" style="flex:1">
+    <button onclick="document.getElementById('gPerson').value='@face'" title="whoever the face app sees nearest">the person in front of the camera</button></div>
+  <div class="row"><span class="lbl">Machine</span><select id="gMachine"><option value="">any machine with that kind</option></select></div>
+  <div class="row">
+    <button class="primary" onclick="give(false)">🎁 Give</button>
+    <button onclick="give(true)" title="for the admin: works past the limits and when the event is closed, and is still counted">Give one anyway (admin)</button>
+    <button onclick="can()">Can they have one?</button>
+  </div>
+  <div class="statline" id="gStat" aria-live="polite"></div>
+</div>
+
+<div class="card">
+  <h2>Event</h2>
+  <div class="row"><span class="lbl">Name</span><input id="evName" maxlength="40" style="flex:1">
+    <button onclick="event_({name: val('evName')})">Save on every machine</button></div>
+  <div class="row"><span class="lbl">Now</span><b id="evOpen">-</b>
+    <button onclick="event_({open: true})">Start the event</button>
+    <button onclick="event_({open: false})">Close the event</button>
+    <button onclick="if(confirm('Start this event\'s counts on every machine from zero?'))event_({reset: true})">New event (counts to zero)</button></div>
+  <div class="statline" id="evStat"></div>
+</div>
+
+<div class="card">
+  <h2>Machines</h2>
+  <p class="mini">Each machine is one prize board. <b>Kind</b> is what it holds; machines with the same kind
+    stand in for each other when one runs out, nearest first (<b>Next to</b>).</p>
+  <div class="wrapx"><table class="gt" id="mTable"><thead><tr>
+    <th>Name on screen</th><th>Board</th><th>Kind</th><th>Where</th><th>Next to</th>
+    <th>Balls left</th><th>Given</th><th>Now</th><th></th></tr></thead><tbody></tbody></table></div>
+  <div class="row">
+    <button onclick="addMachine()">+ Machine</button>
+    <button class="primary" onclick="saveMachines()">Save machines</button>
+    <span class="lbl" style="min-width:0">balls</span><input type="number" id="ballN" value="10" min="0" style="width:80px">
+    <span class="mini">use the buttons in each row to put balls in</span>
+  </div>
+  <div class="statline" id="mStat"></div>
+</div>
+
+<div class="card">
+  <h2>Kinds of prize</h2>
+  <div class="wrapx"><table class="gt" id="iTable"><thead><tr><th>Short name</th><th>Shown as</th><th></th></tr></thead><tbody></tbody></table></div>
+  <div class="row"><button onclick="addItem()">+ Kind</button><button class="primary" onclick="saveItems()">Save kinds</button></div>
+  <div class="statline" id="iStat"></div>
+</div>
+
+<div class="card" data-needs-login="gacha">
+  <h2>Rules for this event</h2>
+  <p class="mini"><b>Per kind</b>: how many there are in the event and how many times one person may get one
+    (0 = no limit). <b>People</b>: a person's own limit, or a special person (their name as the face app knows it).
+    A row with no event applies to every event.</p>
+  <h3>Per kind</h3>
+  <div class="wrapx"><table class="gt" id="rItems"><thead><tr><th>Event</th><th>Kind</th><th>How many</th><th>Per person</th><th>Note</th><th></th></tr></thead><tbody></tbody></table></div>
+  <button onclick="addRow('rItems', {})">+ Row</button>
+  <h3>People</h3>
+  <div class="wrapx"><table class="gt" id="rPeople"><thead><tr><th>Event</th><th>Person</th><th>Kind (* = any)</th><th>Times</th><th>Special</th><th>Note</th><th></th></tr></thead><tbody></tbody></table></div>
+  <button onclick="addRow('rPeople', {})">+ Row</button>
+  <div class="row" style="margin-top:var(--sp-3)">
+    <button class="primary" onclick="saveRules()">Save rules</button>
+    <button onclick="pull()">Take them from the sheet</button>
+    <button onclick="push()">Send them to the sheet</button>
+    <a id="dlItems" download="gacha_items.csv">kinds as a file</a> · <a id="dlPeople" download="gacha_people.csv">people as a file</a>
+  </div>
+  <h3>Google Sheet</h3>
+  <p class="mini">Make a sheet with two tabs, <b>items</b> and <b>people</b> (layout in Help ▸ Prize machines),
+    then File ▸ Share ▸ Publish to web ▸ each tab as CSV, and paste the two links here.</p>
+  <div class="row"><span class="lbl">Kinds tab link</span><input id="shItems" style="flex:1"></div>
+  <div class="row"><span class="lbl">People tab link</span><input id="shPeople" style="flex:1"></div>
+  <div class="row"><span class="lbl">Write-back link</span><input id="shWrite" style="flex:1" placeholder="optional: the sheet's own script, to send rules back">
+    <button onclick="saveSheet()">Save links</button></div>
+  <div class="statline" id="rStat"></div>
+</div>
+
+<div class="card" data-needs-login="gacha">
+  <h2>Tell other apps</h2>
+  <p class="mini">Addresses that hear about each prize, one per line. The game or another program gets a
+    short message when this happens.</p>
+  <div id="hooks"></div>
+  <div class="row"><span class="lbl">Few balls left at</span><input type="number" id="lowN" min="0" style="width:80px">
+    <button class="primary" onclick="saveHooks()">Save</button></div>
+  <div class="statline" id="hStat"></div>
+</div>
+
+<div class="card" data-needs-login="gacha">
+  <h2>Voice answers that give a prize</h2>
+  <p class="mini">When Voice answers a question that fits a row, the person asking gets that kind (the rules above
+    still apply). Leave a box empty to not care about it. <b>About</b> is the question's topic
+    (Voice ▸ Questions); <b>Words</b> are words in the question.</p>
+  <div class="row"><label><input type="checkbox" id="vpOn"> Answers can give prizes</label>
+    <label><input type="checkbox" id="vpSay"> Say where to get it</label></div>
+  <div class="wrapx"><table class="gt" id="vpT"><thead><tr><th>About</th><th>Words</th><th>Answered from</th><th>Kind</th><th></th></tr></thead><tbody></tbody></table></div>
+  <div class="row"><button onclick="vpRow({})">+ Row</button><button class="primary" onclick="vpSave()">Save</button></div>
+  <datalist id="vpTopics"></datalist>
+  <div class="statline" id="vpStat"></div>
+</div>
+
+<div class="card">
+  <h2>What the robot says</h2>
+  <p class="mini">{item} {machine} {place} {person} {asked} are filled in.</p>
+  <div id="msgs"></div>
+  <button class="primary" onclick="saveMsgs()">Save words</button>
+  <div class="statline" id="sStat"></div>
+</div>
+
+<div class="card" data-needs-login="gacha">
+  <h2>This event so far</h2>
+  <div id="stats" class="bars"></div>
+  <h3>Every prize</h3>
+  <div class="wrapx"><table class="gt" id="logT"><thead><tr><th>When</th><th>What</th><th>Machine</th><th>Kind</th><th>Person</th><th>From</th><th>Admin</th><th>Words</th></tr></thead><tbody></tbody></table></div>
+  <div class="row"><button onclick="loadLog()">Refresh</button><a href="/api/gacha/log?limit=0&csv=1" download="gacha_log.csv">Download all as a file</a></div>
+</div>
+
+<script>
+// Everything goes through the hub (/api/gacha/*, main_python/hub_api_gacha.py);
+// the hub talks to the boards. Words for people on the surface, details behind
+// the technical switch.
+const $ = id => document.getElementById(id);
+const val = id => ($(id).value || "").trim();
+const stat = new Mice.Status("stat");
+let S = {machines: [], items: {}, event: {}, rules: {}, messages: {}};
+const HOOKS = [["dispensed", "a prize fell"], ["empty", "a machine ran out"], ["out", "a kind ran out everywhere"],
+               ["low", "few balls left"], ["refused", "a prize was refused"], ["jam", "a machine got stuck"]];
+const MSG_KEYS = [["here", "prize ready here"], ["go_to", "this one is empty, go to another"],
+                  ["refused_event_closed", "event not started"], ["refused_person_limit_reached", "person had enough"],
+                  ["refused_item_used_up_for_this_event", "kind used up"], ["refused_out_everywhere", "out everywhere"],
+                  ["refused_no_machine", "no machine holds it"]];
+const STATE = {idle: "ready", turning: "turning", homing: "finding the loading place", dispensing: "giving"};
+
+function say(id, a, okWords) {
+  const w = a.ok ? (okWords || "done") : (a.says || (a.data && (a.data.message || a.data.error)) || "it did not work");
+  $(id).textContent = a.ok && a.data && a.data.message ? a.data.message : w;
+}
+
+async function load() {
+  stat.loading("asking the machines…");
+  const a = await Mice.Api.get("/api/gacha", {timeout: 15000});
+  if (!a.ok) return stat.error(a.says, a.tech);
+  S = a.data;
+  const items = Object.keys(S.items || {});
+  $("gItem").innerHTML = items.map(k => '<option value="' + esc(k) + '">' + esc(S.items[k].label || k) + '</option>').join("");
+  $("gMachine").innerHTML = '<option value="">any machine with that kind</option>' +
+    S.machines.map(m => '<option value="' + esc(m.id) + '">' + esc(m.label || m.id) + '</option>').join("");
+  $("evName").value = S.event.name || "";
+  $("evOpen").textContent = S.event.open ? "open" : "closed";
+  drawMachines(); drawItems(); drawMsgs();
+  $("shItems").value = S.rules.sheet_items_csv || "";
+  $("shPeople").value = S.rules.sheet_people_csv || "";
+  $("lowN").value = S.low_stock || 0;
+  const live = S.machines.filter(m => !m.live.error).length;
+  stat.ready(live + " of " + S.machines.length + " machines answering", "GET /api/gacha");
+  loadRules(); loadLog();
+}
+
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c])); }
+function cell(v, key) { return '<td><input data-k="' + key + '" value="' + esc(v) + '"></td>'; }
+
+function drawMachines() {
+  $("mTable").tBodies[0].innerHTML = S.machines.map((m, i) => {
+    const L = m.live || {};
+    const now = L.error ? "not answering" : (STATE[L.state] || L.state) + (L.open === false ? ", event closed" : "");
+    return '<tr data-i="' + i + '">' + cell(m.label, "label") + cell(m.module || m.id, "module") +
+      cell(m.item, "item") + cell(m.place, "place") + cell((m.near || []).join(" "), "near") +
+      '<td>' + (L.error ? "-" : (L.stock < 0 ? "not counted" : L.stock)) + '</td><td>' + (L.given == null ? "-" : L.given) + '</td>' +
+      '<td>' + esc(now) + '<span class="tech mini"> ' + esc(L.error || "") + '</span></td>' +
+      '<td><button onclick="mcmd(' + i + ',\'GSTOCK ADD \'+val(\'ballN\'))">add balls</button>' +
+      '<button onclick="mcmd(' + i + ',\'GSTOCK \'+val(\'ballN\'))">set balls</button>' +
+      '<button onclick="mcmd(' + i + ',\'GHOME\')">to loading place</button>' +
+      '<button onclick="S.machines.splice(' + i + ',1);drawMachines()">remove</button></td></tr>';
+  }).join("");
+}
+function readMachines() {
+  return [...$("mTable").tBodies[0].rows].map(r => {
+    const old = S.machines[+r.dataset.i] || {};
+    const g = k => (r.querySelector('[data-k="' + k + '"]').value || "").trim();
+    const board = g("module");
+    const m = {id: old.id || board || ("machine" + Date.now() % 10000), module: board, label: g("label"),
+               item: g("item"), place: g("place"), near: g("near").split(/[\s,]+/).filter(Boolean)};
+    if (old.dev) m.dev = old.dev;
+    return m;
+  });
+}
+function addMachine() { S.machines = readMachines(); S.machines.push({id: "", module: "", label: "", item: "", near: [], live: {}}); drawMachines(); }
+async function saveMachines() { say("mStat", await Mice.Api.post("/api/gacha/config", {machines: readMachines()}), "machines saved"); load(); }
+async function mcmd(i, c) {
+  const m = S.machines[i];
+  const a = await Mice.Api.post("/api/gacha/machine", {machine: m.id, cmd: c});
+  $("mStat").textContent = a.ok ? "done" : (a.says || (a.data && a.data.reply) || "it did not work");
+  load();
+}
+
+function drawItems() {
+  $("iTable").tBodies[0].innerHTML = Object.entries(S.items || {}).map(([k, v]) =>
+    '<tr>' + cell(k, "id") + cell(v.label, "label") + '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>').join("");
+}
+function addItem() { $("iTable").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' + cell("", "id") + cell("", "label") + '<td></td></tr>'); }
+async function saveItems() {
+  const items = {};
+  [...$("iTable").tBodies[0].rows].forEach(r => {
+    const id = r.querySelector('[data-k="id"]').value.trim();
+    if (id) items[id] = {label: r.querySelector('[data-k="label"]').value.trim()};
+  });
+  say("iStat", await Mice.Api.post("/api/gacha/config", {items}), "kinds saved"); load();
+}
+
+async function give(force) {
+  $("gStat").textContent = "asking…";
+  const a = await Mice.Api.post("/api/gacha/dispense", {item: $("gItem").value, person: val("gPerson"),
+    machine: $("gMachine").value, force, app: "hub page"}, {timeout: 20000});
+  if (a.needLogin && window.miceLogin) miceLogin.required();
+  say("gStat", a); setTimeout(load, 2500);
+}
+async function can() {
+  const a = await Mice.Api.post("/api/gacha/can", {item: $("gItem").value, person: val("gPerson")});
+  const d = a.data || {};
+  $("gStat").textContent = !a.ok ? (a.says || "could not ask") : d.ok
+    ? "yes" + (d.limit ? " (" + d.had + " of " + d.limit + " so far)" : "") + (d.special ? ", special guest" : "")
+    : "no: " + d.reason;
+}
+async function event_(body) { const a = await Mice.Api.post("/api/gacha/event", body); say("evStat", a, "sent to every machine"); load(); }
+
+const RCOLS = {rItems: ["event", "item", "total", "per_person", "note"],
+               rPeople: ["event", "person", "item", "times", "special", "note"]};
+function addRow(t, r) {
+  $(t).tBodies[0].insertAdjacentHTML("beforeend", '<tr>' + RCOLS[t].map(k => cell(r[k], k)).join("") +
+    '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
+}
+function readRows(t) {
+  return [...$(t).tBodies[0].rows].map(r => Object.fromEntries(RCOLS[t].map(k => [k, r.querySelector('[data-k="' + k + '"]').value.trim()])));
+}
+async function loadRules() {
+  const a = await Mice.Api.get("/api/gacha/rules");
+  if (!a.ok) return;
+  $("rItems").tBodies[0].innerHTML = ""; $("rPeople").tBodies[0].innerHTML = "";
+  (a.data.rules.items || []).forEach(r => addRow("rItems", r));
+  (a.data.rules.people || []).forEach(r => addRow("rPeople", r));
+  $("dlItems").href = "data:text/csv;charset=utf-8," + encodeURIComponent(a.data.csv.items);
+  $("dlPeople").href = "data:text/csv;charset=utf-8," + encodeURIComponent(a.data.csv.people);
+  HOOKS.forEach(([k]) => { const e = $("hk_" + k); if (e && document.activeElement !== e) e.value = ((a.data.webhooks || {})[k] || []).join("\n"); });
+  $("shWrite").value = a.data.sheet_write_url || "";
+}
+async function saveRules() { say("rStat", await Mice.Api.post("/api/gacha/rules", {items: readRows("rItems"), people: readRows("rPeople")}), "rules saved"); loadRules(); }
+async function pull() { say("rStat", await Mice.Api.post("/api/gacha/rules/pull", {}, {timeout: 20000}), "taken from the sheet"); loadRules(); }
+async function push() { say("rStat", await Mice.Api.post("/api/gacha/rules/push", {}, {timeout: 20000}), "sent to the sheet"); }
+async function saveSheet() {
+  const rules = Object.assign({}, S.rules, {sheet_items_csv: val("shItems"), sheet_people_csv: val("shPeople"),
+                                           sheet_write_url: val("shWrite")});
+  say("rStat", await Mice.Api.post("/api/gacha/config", {rules}), "links saved");
+}
+
+function drawHooks(full) {
+  $("hooks").innerHTML = HOOKS.map(([k, w]) => '<div class="row"><span class="lbl">When ' + w + '</span>' +
+    '<textarea id="hk_' + k + '" rows="1" style="flex:1" placeholder="none"></textarea></div>').join("");
+}
+async function saveHooks() {
+  const webhooks = {};
+  HOOKS.forEach(([k]) => { webhooks[k] = $("hk_" + k).value.split(/\s+/).filter(Boolean); });
+  say("hStat", await Mice.Api.post("/api/gacha/config", {webhooks, low_stock: +val("lowN") || 0}), "saved");
+}
+
+function drawMsgs() {
+  $("msgs").innerHTML = MSG_KEYS.map(([k, w]) => '<div class="row"><span class="lbl">' + w + '</span>' +
+    '<input id="ms_' + k + '" style="flex:1" value="' + esc((S.messages || {})[k] || "") + '" placeholder="the built-in words"></div>').join("");
+}
+async function saveMsgs() {
+  const messages = {};
+  MSG_KEYS.forEach(([k]) => { if (val("ms_" + k)) messages[k] = val("ms_" + k); });
+  say("sStat", await Mice.Api.post("/api/gacha/config", {messages}), "words saved");
+}
+
+async function loadLog() {
+  const a = await Mice.Api.get("/api/gacha/log?limit=50");
+  if (a.ok) $("logT").tBodies[0].innerHTML = a.data.rows.slice().reverse().map(r =>
+    '<tr><td>' + esc(r.time) + '</td><td>' + esc(r.kind === "refused" ? "refused: " + r.reason : r.kind) + '</td><td>' + esc(r.machine) +
+    '</td><td>' + esc(r.item) + '</td><td>' + esc(r.person) + '</td><td>' + esc(r.app) + '</td><td>' + (r.forced === "1" ? "yes" : "") +
+    '</td><td>' + esc(r.message) + '</td></tr>').join("");
+  const s = await Mice.Api.get("/api/gacha/stats");
+  if (!s.ok) return;
+  const st = s.data.stats, parts = [["item", "per kind"], ["machine", "per machine"], ["person", "per person"], ["refused", "refused, why"]];
+  $("stats").innerHTML = parts.map(([k, w]) => {
+    const e = Object.entries(st[k] || {}).sort((a, b) => b[1] - a[1]);
+    const top = e.length ? e[0][1] : 1;
+    return '<h3>' + w + '</h3>' + (e.length ? e.map(([n, c]) => '<div><span class="lbl">' + esc(n) +
+      '</span><b style="width:' + Math.max(4, 200 * c / top) + 'px"></b>' + c + '</div>').join("") : '<p class="mini">none yet</p>');
+  }).join("");
+}
+
+function vpRow(r) {
+  const w = r.when || {};
+  $("vpT").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' +
+    '<td><input data-k="topic" list="vpTopics" value="' + esc(w.topic) + '"></td>' +
+    '<td><input data-k="question" value="' + esc([].concat(w.question || []).join("|")) + '"></td>' +
+    '<td><select data-k="source">' + ["", "faq", "model", "verse", "read"].map(v => '<option' + (v === (w.source || "") ? " selected" : "") +
+      ' value="' + v + '">' + ({"": "any", faq: "saved answers", model: "the model", verse: "a new poem", read: "reading aloud"}[v]) + '</option>').join("") + '</select></td>' +
+    '<td><input data-k="item" value="' + esc(r.item) + '"></td>' +
+    '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
+}
+async function vpLoad() {
+  const a = await Mice.Api.get("/api/gacha/voice");
+  if (!a.ok) return;
+  $("vpOn").checked = !!a.data.enabled; $("vpSay").checked = a.data.say !== false;
+  $("vpTopics").innerHTML = (a.data.topics || []).map(t => '<option value="' + esc(t) + '">').join("");
+  $("vpT").tBodies[0].innerHTML = ""; (a.data.rules || []).forEach(vpRow);
+}
+async function vpSave() {
+  const rules = [...$("vpT").tBodies[0].rows].map(r => {
+    const g = k => r.querySelector('[data-k="' + k + '"]').value.trim(), when = {};
+    if (g("topic")) when.topic = g("topic");
+    if (g("question")) when.question = g("question");
+    if (g("source")) when.source = g("source");
+    return {when, item: g("item")};
+  }).filter(r => r.item);
+  say("vpStat", await Mice.Api.post("/api/gacha/voice", {enabled: $("vpOn").checked, say: $("vpSay").checked, rules}), "saved");
+}
+
+drawHooks();
+vpLoad();
+if (window.miceLogin) miceLogin.mount($("loginHere"));
+load();
+</script>

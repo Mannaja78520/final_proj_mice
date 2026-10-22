@@ -601,7 +601,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: QC finished: 75 passed, 0 failed, started 2026-10-22 17:34
+# RUNNING: nothing right now
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1601,11 +1601,11 @@ A46-2: todo  2026-10-22 13:10  agent=claude:10221310-f868  — User 2026-10-22 (
 A46-3: done   2026-10-22 13:31  agent=claude:10221310-f868  — User 2026-10-22 (to Codex): normal point-to-point moves that would self-collide use RRT*, warn the user, and move smoothly without self-collision; configurable extra clothing gap.
 
 # A47  Gachapon prize dispenser: firmware, hub app, voice prizes
-A47-1: qc     2026-10-22 17:34  agent=claude:gacha-3pztbe  — Gachapon module firmware (user 2026-10-22: ESP32 prize dispenser, motor + hall GPIO33, 4 magnets/slots configurable, item arrives at receive slot and does not drop until dispense; web buttons rotate 1/N/dispense, count, magnets, event name, open/closed, stock; HTTP + RS485 API; no SD; many machines; pio env mice_gacha)
-A47-2: todo  2026-10-22 17:14  agent=claude:gacha-3pztbe  — Gachapon hub app: several machines, item type per machine, same/different type nearby, 'dispense type X' API with fallback to another machine of the same type + tell the person where, out-of-stock and dispense-done webhooks, per-event rules (items per type, times per person, special people by Face_Regonize name, admin force still counted), local rules + Google Sheet pull like faces, sample data + sheet layout, log everything
-A47-3: todo  2026-10-22 17:14  agent=claude:gacha-3pztbe  — Voice: config which answers/intents give which item type (gachapon), question topic logging to CSV + charts/histogram in a Voice tab
-A47-4: todo  2026-10-22 17:14  agent=claude:gacha-3pztbe  — Friend list: what Face_Regonize and the games must provide for the gachapon (our side built first)
-A47-5: todo  2026-10-22 17:14  agent=claude:gacha-3pztbe  — [hw] Gachapon on the bench: flash mice_gacha, set motor/hall pins, measure magnets per drop, motor speed, stock count
+A47-1: done   2026-10-22 17:35  agent=claude:gacha-3pztbe  — Gachapon module firmware (user 2026-10-22: ESP32 prize dispenser, motor + hall GPIO33, 4 magnets/slots configurable, item arrives at receive slot and does not drop until dispense; web buttons rotate 1/N/dispense, count, magnets, event name, open/closed, stock; HTTP + RS485 API; no SD; many machines; pio env mice_gacha)
+A47-2: done   2026-10-22 17:54  agent=claude:gacha-3pztbe  — Gachapon hub app: several machines, item type per machine, same/different type nearby, 'dispense type X' API with fallback to another machine of the same type + tell the person where, out-of-stock and dispense-done webhooks, per-event rules (items per type, times per person, special people by Face_Regonize name, admin force still counted), local rules + Google Sheet pull like faces, sample data + sheet layout, log everything
+A47-3: done   2026-10-22 17:54  agent=claude:gacha-3pztbe  — Voice: config which answers/intents give which item type (gachapon), question topic logging to CSV + charts/histogram in a Voice tab
+A47-4: done   2026-10-22 17:54  agent=claude:gacha-3pztbe  — Friend list: what Face_Regonize and the games must provide for the gachapon (our side built first)
+A47-5: todo  2026-10-22 17:14  agent=claude:gacha-3pztbe  — [hw] Gachapon on the bench: flash mice_gacha, set motor/hall pins, measure magnets per drop, motor speed, stock count firmware merged #57, hub app/voice merged next; bench: flash mice_gacha, measure drop pockets, motor pins, add machine on Prize machines page, rebuild exe
 
 END</code></pre>
 </details>

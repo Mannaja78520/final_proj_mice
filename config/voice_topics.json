@@ -1,0 +1,30 @@
+{
+  // WHAT A QUESTION IS ABOUT, for the Voice ▸ Questions tab (A47-3).
+  // Each asked question is logged with the FIRST topic whose pattern matches
+  // (Python regular expressions, ignoring case). A saved answer with its own
+  // "topic" field in qa_data.json wins. A new topic is one entry here.
+  // The log: .local/voice/questions.csv (people's names: never in git).
+  "fallback": "other",
+  "topics": [
+    {"id": "directions", "label": "ทาง / สถานที่",
+     "patterns": ["ห้องน้ำ|สุขา|ทางออก|ลิฟต์|บันได|ที่จอด|ประชาสัมพันธ์|อยู่ไหน|อยู่ที่ไหน|ไปทางไหน",
+                  "toilet|restroom|exit|elevator|lift|parking|where is|how do i get",
+                  "洗手间|出口|停车|在哪"]},
+    {"id": "time", "label": "เวลา / เปิดปิด",
+     "patterns": ["กี่โมง|เวลา|เปิด|ปิด", "\\b(?:time|open|close|hours?)\\b", "幾點|时间|几点"]},
+    {"id": "food", "label": "อาหาร / น้ำ",
+     "patterns": ["กิน|อาหาร|ข้าว|น้ำดื่ม|หิว", "\\b(?:food|eat|drink|water|hungry)\\b", "吃|水|美食"]},
+    {"id": "prize", "label": "ของรางวัล / เกม",
+     "patterns": ["ของรางวัล|รางวัล|ของแจก|กาชา|เกม|ลุ้น", "\\b(?:prize|gift|gacha|game|reward)\\b", "奖|礼物|游戏"]},
+    {"id": "robot", "label": "เกี่ยวกับหุ่นยนต์",
+     "patterns": ["คุณชื่อ|คุณคือ|หุ่นยนต์|ทำอะไรได้|เป็นคน", "\\b(?:your name|who are you|robot|what can you do)\\b", "你是|你叫|机器人"]},
+    {"id": "poem", "label": "กลอน / อ่านให้ฟัง",
+     "patterns": ["กลอน|อ่าน|ท่อง|แต่ง", "\\b(?:poem|verse|read|recite)\\b", "诗"]},
+    {"id": "greeting", "label": "ทักทาย / ขอบคุณ",
+     "patterns": ["^\\s*(?:สวัสดี|หวัดดี|ขอบคุณ|ลาก่อน|บาย)", "^\\s*(?:hello|hi|hey|thanks?|thank you|bye)\\b", "你好|谢谢|拜拜"]},
+    {"id": "photo", "label": "ถ่ายรูป",
+     "patterns": ["ถ่ายรูป|เซลฟี่", "\\b(?:photo|picture|selfie)\\b", "拍照"]},
+    {"id": "wifi", "label": "wifi / ชาร์จ",
+     "patterns": ["wifi|วายฟาย|ชาร์จ", "\\b(?:wi-?fi|charge|charger)\\b"]}
+  ]
+}

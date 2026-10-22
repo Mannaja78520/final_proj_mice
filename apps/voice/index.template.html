@@ -131,6 +131,7 @@
       <button class="tab" data-tab="services" onclick="showTab('services')">Who does it</button>
       <button class="tab" data-tab="who" onclick="showTab('who')">Personality</button>
       <button class="tab" data-tab="faces" onclick="showTab('faces')">Faces</button>
+      <button class="tab" data-tab="questions" onclick="showTab('questions');voiceApp.loadQuestions()">Questions</button>
       <button class="tab tech" data-tab="adv" onclick="showTab('adv')">Advanced</button>
     </div>
     <p class="mini not-adv">The helper's address and the AI model are under
@@ -346,6 +347,25 @@
         <button class="primary" onclick="postConfig('fStat')">Save faces</button>
         <span class="mini" id="fStat" aria-live="polite"></span>
       </div>
+    </div>
+
+    <!-- What people asked (A47-3): every question is logged with a topic
+         (config/voice_topics.json) by the hub; the charts read /api/questions. -->
+    <div class="card" data-pane="questions" hidden data-needs-login="gacha">
+      <div class="row"><span class="lbl">Day</span><select id="qDay" onchange="voiceApp.loadQuestions()"></select>
+        <button onclick="voiceApp.loadQuestions()">Refresh</button>
+        <a href="/api/questions?csv=1" download="voice_questions.csv">Download every question</a></div>
+      <p class="mini" id="qTotal"></p>
+      <div class="qcharts">
+        <div><h3>About what</h3><div id="qTopic" class="qbars"></div></div>
+        <div><h3>When (hour of the day)</h3><div id="qHour" class="qhist"></div></div>
+        <div><h3>Answered from</h3><div id="qSource" class="qbars"></div></div>
+        <div><h3>Language</h3><div id="qLang" class="qbars"></div></div>
+        <div><h3>Prizes given</h3><div id="qPrize" class="qbars"></div></div>
+        <div><h3>Asked most</h3><div id="qTop" class="qbars"></div></div>
+      </div>
+      <p class="mini">Topics and the words that pick them are a list anyone can edit; answers that give a
+        prize are set in the prize rules (Help ▸ Prize machines).</p>
     </div>
 
     <!-- Shown only with "Show technical details" on, like every page. -->
