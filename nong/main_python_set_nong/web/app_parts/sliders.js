@@ -107,9 +107,12 @@ function gotoXyz(arm) {
     tryWalk();
   }
   pose = best;
-  poseChanged(false);
+  holdSide(arm, true);            // A45-28: the side kept on top, hand in place
   const got = fkPoints(pose)[wrKey];
-  const err = Math.round(bestErr);
+  // the gap readout and the orange mark work in the 3D view's own space
+  askReach(arm, wristPos(arm).add(t.clone().sub(got)));
+  poseChanged(false);
+  const err = Math.round(got.distanceTo(t));
   $("tlStat").textContent = (arm === 0 ? "left" : "right") +
     ` wrist moved to (${Math.round(got.x)}, ${Math.round(got.y)}, ${Math.round(got.z)})` +
     (err > 10 ? ` — target is ${err} mm out of reach, this is the closest pose` : " ✓");
@@ -230,16 +233,39 @@ function renderHands() {
       const now = document.createElement("span");
       now.className = "mini"; now.id = "handNow" + i;
       row.append(lbl, up, back, now);
-      box.appendChild(row);
+      // A45-28: keep a side on top while this hand is dragged or typed to
+      const keep = document.createElement("div"); keep.className = "row";
+      const kl = document.createElement("span"); kl.className = "mini";
+      kl.textContent = "while moving it, keep:";
+      const sel = document.createElement("select"); sel.id = "handHold" + i;
+      [["0", "nothing — free"], ["1", "✋ palm on top"], ["-1", "🤚 back on top"]]
+        .forEach(([v, t]) => sel.add(new Option(t, v)));
+      sel.title = "dragging this hand or typing where its wrist goes keeps that side "
+                + "on top as well as it can; the sliders always do exactly what you set";
+      sel.onchange = () => setHold(i, +sel.value);
+      keep.append(kl, sel);
+      const reach = document.createElement("div");
+      reach.className = "mini"; reach.id = "handReach" + i;
+      box.append(row, keep, reach);
     });
+    const save = document.createElement("div"); save.className = "row";
+    const add = document.createElement("button");
+    add.textContent = "＋ Save as a new move"; add.id = "handSaveNew";
+    add.onclick = () => saveShownPose(true);
+    const into = document.createElement("button");
+    into.textContent = "Save into the selected move"; into.id = "handSaveInto";
+    into.onclick = () => saveShownPose(false);
+    save.append(add, into);
+    box.appendChild(save);
   }
   HANDS.forEach((h, i) => {
     const el = $("handNow" + i);
-    if (el) el.textContent = "now: " + FACING_TEXT[palmWord(palmUpness(i))];
+    if (el) el.textContent = "now: " + FACING_TEXT[palmWord(palmUpness(i))] + " · " + sideText(i);
   });
+  renderReach();
 }
 function turnPalm(arm, want) {
-  const r = facePalm(pose, arm, want);
+  const r = facePalm(pose, arm, want, { safe: HOLD.avoidSelfHit });
   if (!r) return;
   pose = r.pose;
   poseChanged(false);

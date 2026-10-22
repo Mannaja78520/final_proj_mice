@@ -1387,7 +1387,7 @@ class Brain:
         """
         langs = list(((self.cfg.get("tts") or {}).get("voices") or {}).keys())
         out = {l: [] for l in langs}
-        # This PC's saved voices first (A45-28): {"name": "person:<id>", "own": true}.
+        # This PC's saved voices first (A45-29): {"name": "person:<id>", "own": true}.
         for pid, p in (self.people().get("people") or {}).items():
             for l in p.get("languages") or []:
                 if l in out:
@@ -1499,7 +1499,7 @@ class Brain:
         # A scenario may set its own speed and pitch - a poem read at shop
         # speed is the complaint this answers.
         rate, pitch = self.steps(rate, pitch)
-        # A saved voice of the feeling voice (A45-28): that service first; the
+        # A saved voice of the feeling voice (A45-29): that service first; the
         # others speak its `backup` (same gender) if it is off or starting.
         who = self.person(named)
         if who:
@@ -1598,7 +1598,7 @@ class Brain:
 
     def people(self):
         """config/voice_people.json - saved voices of this PC's Thai feeling
-        voice (A45-28), re-read when it changes on disk. {"people": {id: entry}}."""
+        voice (A45-29), re-read when it changes on disk. {"people": {id: entry}}."""
         p = CODE / "config" / "voice_people.json"
         try:
             m = p.stat().st_mtime
@@ -1631,7 +1631,7 @@ class Brain:
 
     def style_extra(self, key):
         """A key a character's snapshot may predate (`featured`, `speeds`,
-        A45-28): the character's own voice_styles, else the shipped one."""
+        A45-29): the character's own voice_styles, else the shipped one."""
         got = self.styles().get(key)
         if got is None:
             try:
@@ -1726,7 +1726,7 @@ class Brain:
         a = self.answer_cfg()
         _key, sty = self.style_choice()
         own = sty.get("answer") or {}
-        # A45-28 (user 2026-10-22: *เสียงไทยชายหญิงมีลงท้ายต่างกัน ครับ/ค่ะ*): the
+        # A45-29 (user 2026-10-22: *เสียงไทยชายหญิงมีลงท้ายต่างกัน ครับ/ค่ะ*): the
         # voice's gender sets the ending and self-word; a manner's own wins.
         g = self.gender_words("th")
         return (own.get("particle") or g.get("particle") or a.get("politeParticle") or "ครับ",
@@ -1825,7 +1825,7 @@ class Brain:
                     up[pid] = False
         return {"styles": out, "chosen": chosen, "up": up,
                 "recommended": self.styles().get("recommended") or "",
-                # The quick choices on the Voice tab (A45-28): the 3 tones shown
+                # The quick choices on the Voice tab (A45-29): the 3 tones shown
                 # as tiles, the speeds, and the saved default tone.
                 "featured": [k for k in self.style_extra("featured") or [] if k in out],
                 "speeds": self.style_extra("speeds") or {},

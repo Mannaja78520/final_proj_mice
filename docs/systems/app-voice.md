@@ -80,7 +80,7 @@ model), speech out.
   the cache name (`check_voice_tail`). Clarity first: `prefer` is empty, so
   Edge at -10% speaks (2.9% letters wrong vs 6.1% feeling at its best); a
   manner may still `prefer` the feeling voice. Each scenario has a `style`.
-- A45-28: saved voices of the feeling voice (`config/voice_people.json`,
+- A45-29: saved voices of the feeling voice (`config/voice_people.json`,
   "person:<id>", 32 invented speaker tokens, same-gender Edge `backup`); the
   speed reaches it as a tempo; the Thai ending/self-word follows the voice's
   gender (`agree`), a manner's own wins. Voice tab quick tiles: `featured`

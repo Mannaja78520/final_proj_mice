@@ -111,7 +111,12 @@ window.addEventListener("pointermove", (e) => {
     const target = planeHit(drag.planePoint, drag.normal);
     // strong IK per frame so the whole arm (shoulder + elbow together)
     // follows the wrist to wherever it can reach within the joint limits
-    if (target) { solveIK(drag.arm, target, 16); poseChanged(true); }
+    if (target) {
+      solveIK(drag.arm, target, 16);
+      holdSide(drag.arm, false);    // A45-28: keep the side picked on top
+      askReach(drag.arm, target);
+      poseChanged(true);
+    }
   } else if (drag.kind === "ikElbow") {
     const target = planeHit(drag.planePoint, drag.normal);
     // move the elbow by rotating only the 2 shoulder servos
@@ -119,7 +124,14 @@ window.addEventListener("pointermove", (e) => {
   }
 });
 window.addEventListener("pointerup", () => {
-  if (drag) { drag = null; controls.enabled = true; poseChanged(false); }
+  if (!drag) return;
+  // released: now the whole swing may be searched for the side kept on top
+  if (drag.kind === "ik" && handHold[drag.arm]) {
+    const t = reachAsk[drag.arm] && reachAsk[drag.arm].target;
+    holdSide(drag.arm, true);
+    if (t) askReach(drag.arm, t);
+  }
+  drag = null; controls.enabled = true; poseChanged(false);
 });
 
 function clampDeg(v) { return Math.min(180, Math.max(0, Math.round(v * 10) / 10)); }

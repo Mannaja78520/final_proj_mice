@@ -1,4 +1,4 @@
-"""Three tones to click, a fast speed, and saved women's and men's voices (A45-28).
+"""Three tones to click, a fast speed, and saved women's and men's voices (A45-29).
 
 User 2026-10-22: *โทนแบบเลือกได้ คลิกเป็น default ได้ซัก 3 โทน และขอมีแบบเร็ว
 ... เลือกเสียงได้ทั้งชายและหญิง* and *default clear ยังดูเป็น AI*, then *เร็วขึ้น

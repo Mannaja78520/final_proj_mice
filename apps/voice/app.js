@@ -2428,7 +2428,7 @@ static SAMPLES = {
   this.fillQuick();
 }
 
-// ---- Quick choices on the Voice tab (A45-28) ----------------------------
+// ---- Quick choices on the Voice tab (A45-29) ----------------------------
 // User 2026-10-22: *โทนแบบเลือกได้ คลิกเป็น default ได้ซัก 3 โทน ... ขอมีแบบเร็ว
 // ... เลือกเสียงได้ทั้งชายและหญิง*. One click = chosen AND saved. The tones and
 // speeds are config/voice_styles.json (`featured`, `speeds`); the voices are

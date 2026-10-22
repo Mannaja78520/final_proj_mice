@@ -4,7 +4,7 @@ Owner: claude:xdlrot (PC session, thread "voice clear")
 Updated: 2026-10-22 15:12 +0700
 Branch: claude/project-thread-xdlrot
 Last commit: (see branch)
-Plan: A45-28
+Plan: A45-29
 
 ## Goal
 User 2026-10-22: *โทนแบบเลือกได้ คลิกเป็น default ได้ซัก 3 โทน, ขอมีแบบเร็วได้ด้วย,

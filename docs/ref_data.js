@@ -502,6 +502,27 @@ window.REF = [
   watch: "Change a link length here and the reach line must change with it - check_rig_presets adds them up and refuses a preset that disagrees with itself."
 },
 {
+  id: "palm-side",
+  group: "Nong — the humanoid",
+  name: "Which side of the hand is on top, and keeping it there",
+  where: [{file: "nong/main_python_set_nong/web/app_parts/ik_4_dof_arm.js", line: 166,
+           what: "palmUpness() and facePalm() — measure the side, swing the elbow to turn it"},
+          {file: "nong/main_python_set_nong/web/app_parts/hand_hold.js", line: 69,
+           what: "sideText() and reachText() — the angle from straight up, the gap to the target"}],
+  eq: "upness = (R_hand · ẑ) · ŷ   (+1 palm straight up, -1 back straight up)\n" +
+      "elbow&prime; = rotate(elbow - S, axis = (hand - S)/|hand - S|, φ) + S, φ = ±step … ±range\n" +
+      "keep φ with max(want · upness), hand moved ≤ 4 mm, no self-hit (safe)\n" +
+      "angle from straight up = acos(want · upness);  gap = |target - wrist|",
+  why: "Four joints, three numbers for where the hand is: the one left over swings " +
+       "the elbow round the shoulder-to-hand line and rolls the hand. A45-28 " +
+       "(user 2026-10-22) holds the chosen side while the hand is dragged: a " +
+       "&plusmn;dragRangeDeg window per frame so the elbow does not flip mid-pull, " +
+       "the whole swing on release. Settings in web/hand_side.json.",
+  from: "Swivel-angle (elbow self-motion) parameterisation of a redundant arm; CCD for each candidate.",
+  watch: "The joint limits cut the swing short on many reaches: the readout then says " +
+         "'on its edge' with the angle, instead of moving the hand. check_palm_side, check_palm_hold."
+},
+{
   id: "ik-dls",
   group: "Nong — the humanoid",
   name: "Inverse kinematics: where to put four joints so the wrist lands there",
