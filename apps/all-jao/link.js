@@ -6,6 +6,9 @@
 //   {game, key, list, id, result, person}  a localStorage record list: every NEW
 //                                          record (by id) is a win
 //   {game, text, match, result}            an element's text starting to match
+//   {event, game?, result, person, id}     a window event the game fires itself
+//                                          (asked of the friend: "alljao:win";
+//                                          detail.game names the game)
 // Each win goes to POST /api/gacha/game; the hub's "games" rules (Prize
 // machines page) decide which kind, and the answer says where to collect it.
 (function () {
@@ -90,6 +93,19 @@
       was = now;
     }).observe(el, {childList: true, characterData: true, subtree: true});
   }
+  // An event the game itself fires: the steadiest link, once the friend adds it.
+  (P.watch || []).filter(w => w.event).forEach(w => {
+    const done = new Set();
+    window.addEventListener(w.event, e => {
+      const d = (e && e.detail) || {};
+      const id = pick(d, w.id || "id");
+      if (id != null && done.has(id)) return;
+      if (id != null) done.add(id);
+      won(Object.assign({}, w, {game: w.game || d.game || "game"}), pick(d, w.result || "result"),
+          pick(d, w.person || "person"), id);
+    });
+  });
+
   const texts = (P.watch || []).filter(w => w.text);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => texts.forEach(watchText));

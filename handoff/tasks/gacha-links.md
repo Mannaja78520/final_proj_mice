@@ -34,8 +34,8 @@ Gaps found by reading the code 2026-10-22:
 4. A47-9 docs/gacha/friend_requests.md + Thai list in the thread.
 
 ## Doing now
-A47-9 docs: docs/gacha/README.md (games, keys, examples), docs/gacha/friend_requests.md
-(gacha + voice), Help page section, project file friend_api/ copy; then full QC + PR.
+Quick QC (`python qc/run_qc.py --quiet --quick`), then full QC, then PR from
+claude/project-thread-10qzvx to main and merge when green.
 
 ## Done
 - plan rows A47-6..9 added.
@@ -51,11 +51,24 @@ A47-9 docs: docs/gacha/README.md (games, keys, examples), docs/gacha/friend_requ
 - A47-8 done: /api/questions/topics (GET, POST login; patterns must compile), Voice > Questions:
   Topics editor, "Asked often, no saved answer yet" + "Make an answer" (opens Answers with the
   question filled in). voice_prizes.save_topics, stats "unsaved".
+- A47-6 browser proof: qc/checks/check_game_prize.py (fake game in an iframe at /play/games/:
+  storage record, alljao:win event, memory text; 3 sabotages caught). link.js also listens to
+  the event "alljao:win" asked of the friend.
+- A47-9 docs: docs/gacha/README.md (keys, curl + Apps Script examples, games), Help parts
+  (main_python/web/help/parts/gacha.html, all-jao.html -> tools/build_web.py), Thai friend list
+  docs/gacha/friend_requests.md (+ copy /mnt/project-files/friend_api/gacha_requests_2026-10-22.md),
+  docs/systems.json app-gacha + systems build.
 - stats per hour + chart on Prize machines. check_gacha 39 asserts, 7 sabotages caught.
 
 ## Next
-1. A47-9 docs + README + Help (see Doing now).
-2. A47-8 voice, A47-9 docs, full QC, PR, merge.
+1. Full QC green (cloud: pip install pyserial psutil platformio; cd firmware && pio run -e mice_nong;
+   git fetch origin app:refs/remotes/origin/app). Known flakes pass alone (see HANDOFF/memory).
+2. PR to main, merge, `python tools/plan.py done A47-9`, delete this file in the merging PR.
+3. On the PC after merge (Remote Control session): rebuild MiceHub.exe with the spec, open
+   /app/all-jao/ and play a wheel spin with a rule on Prize machines > Games, see the toast.
+   Their own :8080 settings do not carry over to /play/all-jao/ (new origin).
+4. Still open elsewhere (not this task): A47-5 bench (handoff/tasks/gachapon.md), voice keys,
+   person tests: all need the user or hardware.
 
 ## Blocked
 - nothing (no hardware needed; tested against fakes only).
