@@ -1,9 +1,9 @@
 # Nong Studio: dynamic URDF display and motion parity
 
-Owner: open — user requested handoff to Cross on 2026-10-23
+Owner: claude:10222214-b01b (cloud thread "Studio URDF view mode")
 Updated: 2026-10-23T05:08:45.8071617+07:00
-Branch: task/A48-1-10230507-3ac1
-Tree: E:/final_proj/mice/code/.staging-urdf-studio
+Branch: claude/project-thread-wvmxq5 (from task/A48-1-10230507-3ac1 @7b7a904)
+Tree: cloud clone (repo root); PC tree .staging-urdf-studio unused
 Last commit: c82daa6 (base; handoff-only WIP commit follows)
 Plan: A48-1 (robot page)
 
@@ -16,8 +16,15 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-- STOPPED at user's explicit handoff request, before Studio implementation. No source feature, integration, review or QC has been done for A48-1.
-- Created an isolated clean Git worktree at the tree above from main c82daa6. No staging source changes. Do not reinitialize or overwrite old staging trees.
+- Step 1: new app part web/app_parts/urdf_view.js + data web/urdf_view.json.
+  Design (chosen 2026-10-22): URDF mode builds the URDF link tree AS the
+  kinematic robot; jointGroups/elbowBalls/wristBalls/palmMarks/bodyGroup/
+  shoulderMount point into it, so IK, collisions, video fit, dummy follow,
+  playback and monitor (all go pose -> applyPose -> these handles) use the
+  URDF chain itself. Every frame is conjugated ROS->Studio (studio=(y,z,x)).
+  Joint binding by name from the json; sign "auto" = dot of the URDF axis
+  with the old rig's axis (world, rest pose). Old mode: dims "urdf" (derived
+  from the file) or "custom" (RIG.view.custom kept, never overwritten).
 
 ## Done
 - Registered A48-1 as doing under codex:10230507-3ac1 in real root docs/PLAN.html; it will be handed off to todo before this turn ends.
