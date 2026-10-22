@@ -66,7 +66,7 @@ nothing - waiting for the lab.
 ## Not hardware, waits on someone else (not for the lab)
 - A45-10 / voice-keys.md: the user's own Google AI Studio and Groq keys.
 - Friend: docs/gacha/friend_requests.md (Thai list already sent through the user).
-- A26-73: the slicer preset file from the user. A31-8: SolidWorks URDF on the user's PC.
+- A26-73 dropped (thesis only). A31-8 dropped: GPT made the URDF; A48-1 (Studio URDF view) uses it.
 - A31-11 ai_panel / A0-33 bypass: user's tool settings.
 - Thesis rows A21-17, A31-32: dropped (user 2026-10-12: no thesis work).
 
