@@ -16,8 +16,23 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-- Full QC 7779 passed; check_stream_audio failed once in the crowd, green alone
-  (audio timing, not this change). PR + merge next; then the PC steps in Next.
+- Round 2 (PC found arm axes "perpendicular"): full QC, PR, merge, PC steps again.
+
+## Round 2 found (claude:10222214-b01b, 2026-10-23)
+- The PC's real-model block compared the URDF with the FIXTURE rig, not the
+  user's rig: rig_default.json has axis y/x + tilts (-40 deg etc), invert, zero 0.
+  Against it, URDF L_SH_R ~ -(shapes' L_SH_P). And the CAD's zero is its drawn
+  pose, not Studio's zero. Axis-dot sense cannot handle either.
+- Fix: urdf_view.js urdfFitArm per arm: chain = the arm's 4 URDF joints by
+  depth; grid (gridDeg) + polish to 0.01 deg of sense/zero per pair (shoulder on
+  the upper-arm direction, elbow on the forearm direction) vs rigArmDirs (the
+  shapes, analytic) over `samples` poses; optional pair swap; tie-break toward
+  zero (a universal joint has twin answers). Numbers in sign/offsetDeg are kept.
+  urdf_view.json "fit"; arm offsetDeg now "auto".
+- Tip "mesh" = centroid of the forearm part's far end (each STL corner once!).
+- check_urdf_look fixture 2 = RIG2 (the real rig values), drawn at HOME,
+  names swapped (L shoulder, R elbow): 14 poses + each joint < 1 mm. Real
+  block now uses rig_default.json and compares from HOME.
 
 ## Done (claude:10222214-b01b, 2026-10-22/23)
 - web/urdf_view.json (looks, models, joint names/sign/offset, hands, sizes) +

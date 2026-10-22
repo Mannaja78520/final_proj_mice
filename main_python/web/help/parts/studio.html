@@ -463,9 +463,13 @@
     <p>Put the SolidWorks export folder (the one holding <code>urdf/</code> and
        <code>meshes/</code>) into Studio's <code>models</code> folder on this PC; every
        <code>.urdf</code> found there is offered. Each Studio joint finds its URDF joint by
-       name and turns the same way as the simple shapes; the names, a forced sense, a zero
-       offset and which sizes come from the file are all in <code>web/urdf_view.json</code>,
-       so a new model needs no code change. The technical switch shows which joint went where.</p>
+       name. A CAD file names and zeroes its joints its own way (it is drawn in one pose), so
+       for each arm Studio <b>fits</b> each joint's sense and zero, and which joint of each pair
+       is which, until the upper arm and forearm point where your Rig setup points them over
+       many poses; if the best fit is still off it says by how many degrees. A forced sense or
+       zero, the fit settings and which sizes come from the file are all in
+       <code>web/urdf_view.json</code>, so a new model needs no code change. The technical
+       switch shows which joint went where, its sense and its fitted zero.</p>
     <p>Going back to the simple shapes asks which sizes to use: <b>the CAD model's</b>, or
        <b>your own</b> (the ones you had before, kept untouched while the CAD model was shown),
        or <b>stay</b> on the CAD model. A file that cannot be read says why and the simple
