@@ -16,7 +16,18 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-- Round 2 full QC: 7790 passed, 0 checks failed (2 board-page flakes green alone; receipt refused only because a Studio check rewrites qc_chain_proj.json). PR + merge, then PC steps.
+- Round 3 full QC: 7793 passed (3 flakes green alone, receipt refused by qc_chain_proj rewrite). Merged; PC reruns check_urdf_look.
+
+## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
+- urdfFitArm now also matches how the upper arm and forearm TURN from HOME
+  (quaternion from home to each sample, fit.frames) - directions alone leave the
+  roll about a bone free - and polishes all 4 zeros together at the end.
+- Reported deg = directions only. Fixture 3 (check_urdf_look): CAD tilts 5-8 deg
+  off the rig: every arm joint agrees > 0.9. It did NOT reproduce the PC's right
+  arm failure (directions-only also passes it), so the real cause is unproven.
+- The real block now writes qc/_urdf_real.json (git-ignored): URDF joints, tips,
+  rig, bindings. If the PC still fails, paste that file's text to the cloud
+  thread (numbers only, no meshes) to work the fit out offline.
 
 ## Round 2 found (claude:10222214-b01b, 2026-10-23)
 - The PC's real-model block compared the URDF with the FIXTURE rig, not the
@@ -105,6 +116,20 @@ Plan: A48-1 (robot page)
 - Studio > Views: Robot look = CAD model (URDF) loads "nong from SolidWorks", shows the 8
   axis warnings, a slider moves it (screenshots scratch/deploy-a48-1-2026-10-23/urdf-*.png).
   Put back to Simple shapes with the old sizes (dims identical) and the old pose.
+
+## PC check after A48-2 (2026-10-23 06:35, claude:xdlrot)
+- Pulled main ff72311, build_web, systems build, exe rebuilt with the spec, hub restarted
+  (stale=false 4483d12f1d67). check_urdf_look with MICE_URDF_MODEL = the export folder: 30/31.
+- Real model: fit L 15.9 deg (up 11.8), swapSh true, swapEl false; fit R 10.5 deg (up 10.5),
+  swapSh true, swapEl false. Bindings: L_SH_P=L_SH_R(-), L_SH_R=L_SH_P, L_EL_P=L_EL_P,
+  L_EL_R=L_EL_R(-), R_SH_P=R_SH_R(-), R_SH_R=R_SH_P(-), R_EL_P=R_EL_P, R_EL_R=R_EL_R(-).
+- Agree from home: L_SH_P/L_SH_R/L_EL_P/L_EL_R 1.00 each, WAIST 1.00, SHRUG 1.00, but
+  R_SH_P -0.22, R_SH_R 0.82, R_EL_P -0.10, R_EL_R -0.93: the RIGHT arm is still wrong.
+- Warnings > 5 deg: yes, both arms ("left ... up to 16 deg", "right ... up to 10-15 deg").
+- Studio > Views, CAD model: the two warnings still show. Left shoulder pitch 90 -> 150,
+  seen from the Left view: the CAD left arm swings forward like the shapes' (screenshots
+  scratch/deploy-a48-2-2026-10-23/left-up-*.png). Put back to Simple shapes, old pose and sizes.
+  urdf_view.json not changed.
 
 ## Next
 1. Full QC green -> PR -> merge.

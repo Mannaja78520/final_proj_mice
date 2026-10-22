@@ -426,22 +426,22 @@ function urdfArmDirs(m, th, fore) {
   const P2 = m.T[1].clone().applyQuaternion(M);
   M.multiply(m.C[1]).multiply(_fQ.setFromAxisAngle(m.axes[1], th[1]));
   const P3 = P2.add(m.T[2].clone().applyQuaternion(M));
-  const up = P3.clone().normalize();
-  if (!fore) return { up };
+  const up = P3.clone().normalize(), qu = M.clone();
+  if (!fore) return { up, qu };
   M.multiply(m.C[2]).multiply(_fQ.setFromAxisAngle(m.axes[2], th[2]));
   const P4 = P3.clone().add(m.T[3].clone().applyQuaternion(M));
   M.multiply(m.C[3]).multiply(_fQ.setFromAxisAngle(m.axes[3], th[3]));
   const tip = P4.add(m.tipT.clone().applyQuaternion(M));
-  return { up, fore: tip.sub(P3).normalize() };
+  return { up, qu, fore: tip.sub(P3).normalize(), qf: M };
 }
 // the shapes' upper-arm and forearm directions for joint deltas d (deg)
 function rigArmDirs(b, d) {
   const q = new THREE.Quaternion(), r = new THREE.Quaternion();
   const turn = (k) => q.multiply(jointTiltQuat(b + k)).multiply(r.setFromAxisAngle(_AXVEC[RIG.axis[b + k]], THREE.MathUtils.degToRad(d[k])));
   turn(0); turn(1);
-  const up = new THREE.Vector3(0, -1, 0).applyQuaternion(q);
+  const up = new THREE.Vector3(0, -1, 0).applyQuaternion(q), qu = q.clone();
   turn(2); turn(3);
-  return { up, fore: new THREE.Vector3(0, -1, 0).applyQuaternion(q) };
+  return { up, qu, fore: new THREE.Vector3(0, -1, 0).applyQuaternion(q), qf: q };
 }
 function urdfFitArm(arm, warn) {
   const cfg = URDF_CFG.fit || {}, b = arm * 4, ch = urdfArm[arm];
@@ -457,17 +457,32 @@ function urdfFitArm(arm, warn) {
     });
     S.push({ d, ...rigArmDirs(b, d) });
   }
+  // HOME is the reference for how each part TURNS (not only where it points):
+  // from home to every pose the upper arm and forearm must turn alike. That
+  // pins the roll about a bone, which directions alone leave free.
+  const dH = [0, 1, 2, 3].map(k => (RIG.home[b + k] - RIG.zero[b + k]) * jdir(b + k));
+  const H = { d: dH, ...rigArmDirs(b, dH) };
+  S.forEach(x => {
+    x.tu = x.qu.clone().multiply(H.qu.clone().invert());
+    x.tf = x.qf.clone().multiply(H.qf.clone().invert());
+  });
+  const frames = cfg.frames !== false;
+  const qAng = (a, c) => 2 * Math.acos(Math.min(1, Math.abs(a.dot(c))));
   const D2R = Math.PI / 180, num = (v) => typeof v === "number" && Number.isFinite(v);
   // studio joint of chain slot k, per pairing choice
   const slot = (swapSh, swapEl) => [swapSh ? b + 1 : b, swapSh ? b : b + 1, swapEl ? b + 3 : b + 2, swapEl ? b + 2 : b + 3];
-  const cost = (map, sg, of, fore) => {
+  const cost = (map, sg, of, fore, dirsOnly) => {
     let c = 0;
     const th = [0, 0, 0, 0];
+    const at = (x) => { for (let k = 0; k < 4; k++) th[k] = sg[k] * x.d[map[k] - b] * D2R + of[k]; return urdfArmDirs(m, th, fore); };
+    const h = frames && !dirsOnly ? at(H) : null;
+    const hu = h && h.qu.clone().invert(), hf = h && fore && h.qf.clone().invert();
     for (const s of S) {
-      for (let k = 0; k < 4; k++) th[k] = sg[k] * s.d[map[k] - b] * D2R + of[k];
-      const r = urdfArmDirs(m, th, fore);
+      const r = at(s);
       c += r.up.angleTo(s.up) + (fore ? r.fore.angleTo(s.fore) : 0);
+      if (h) c += qAng(r.qu.multiply(hu), s.tu) + (fore ? qAng(r.qf.multiply(hf), s.tf) : 0);
     }
+    c /= (h ? 2 : 1);
     // a universal joint has twin answers (one zero turned half round, the
     // other sense flipped) that move the arm the same: a hair's weight on
     // the zeros picks the one nearest the file's own zero, every time
@@ -512,9 +527,27 @@ function urdfFitArm(arm, warn) {
     Object.assign(best, { map: top.map, sg: top.sg, of: top.of, c: top.c });
   };
   searchPair(0, false);
-  if (withFore) searchPair(2, true);
-  const upDeg = cost(best.map, best.sg, best.of, false);
-  const allDeg = withFore ? cost(best.map, best.sg, best.of, true) : upDeg;
+  if (withFore) {
+    searchPair(2, true);
+    // then all four zeros together: the shoulder was fitted before the forearm was seen
+    let c0 = cost(best.map, best.sg, best.of, true);
+    const free = [0, 1, 2, 3].map(k => fixedOff(best.map[k]) === null);
+    for (const st of [2, 0.5, 0.1, 0.02]) for (let it = 0; it < 10; it++) {
+      let moved = false;
+      for (let k = 0; k < 4; k++) {
+        if (!free[k]) continue;
+        for (const dd of [-st, st]) {
+          const of = best.of.slice(); of[k] += dd * D2R;
+          const c = cost(best.map, best.sg, of, true);
+          if (c < c0 - 1e-9) { best.of = of; c0 = c; moved = true; }
+        }
+      }
+      if (!moved) break;
+    }
+  }
+  // how far off it still points (directions only: what the eye sees)
+  const upDeg = cost(best.map, best.sg, best.of, false, true);
+  const allDeg = withFore ? cost(best.map, best.sg, best.of, true, true) : upDeg;
   // hand the fitted pairing, senses and zeros to the Studio joints
   const fitted = withFore ? 4 : 2;
   const entries = ch.slice();

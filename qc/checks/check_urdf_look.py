@@ -359,6 +359,26 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
                fit: urdfLast.fit, warn: urdfLast.warn.filter(function(w){ return w.indexOf("head_gone") < 0; }) };
     report("res2=" + JSON.stringify(r2).replace(/[~ ]/g, "_"));
 
+    // the same rig against a CAD that is a few degrees off it everywhere: the
+    // fit cannot be exact, but every joint must still move its hand the same way
+    function agreeAll(model){
+      return (async function(){
+        await another(CFG.rig2, model);
+        var I = isoFrom(RIG.home.slice()), base = I.map(pts), z0 = pts(RIG.home);
+        await setLook("urdf");
+        await until(function(){ return urdfOn && urdfTip.L.fromMesh && urdfTip.R.fromMesh; }, 15000);
+        var Z = pts(RIG.home), ag = [];
+        I.forEach(function(q, i){
+          var P = pts(q), k = i < 4 ? 4 : i < 8 ? 5 : 4;
+          var a = P[k].clone().sub(Z[k]), b = base[i][k].clone().sub(z0[k]);
+          ag.push(a.length() < 1 || b.length() < 1 ? 1 : f1(a.normalize().dot(b.normalize())));
+        });
+        return { agree: ag, fit: urdfLast.fit };
+      })();
+    }
+    var r3 = await agreeAll("qc_bot3/urdf/qc_bot3.urdf");
+    report("res3=" + JSON.stringify(r3).replace(/[~ ]/g, "_"));
+
     if (CFG.real) {
       // the PC's real model: bindings, senses, and each joint against the shapes
       // against YOUR rig (the hub's rig_default.json), from its home pose
@@ -376,6 +396,12 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
         rr.agree.push(JOINT_NAMES[i] + "=" + (a.length() < 1 || b.length() < 1 ? "still" : (a.normalize().dot(b.normalize())).toFixed(2)));
       });
       report("real=" + JSON.stringify(rr));
+      // the numbers to work a fit out by hand: joints, tips, the rig (no meshes)
+      var fj = (urdfFiles[CFG.real] || {}).joints || [];
+      report("realdump=" + JSON.stringify({ joints: fj, rig: { axis: RIG.axis, tilt: RIG.tilt, invert: RIG.invert, zero: RIG.zero,
+        min: RIG.min, max: RIG.max, home: RIG.home, dims: RIG.dims },
+        tips: ["L", "R"].map(function(sd){ var t = urdfTip[sd]; return { link: t.link, mm: t.mm, fromMesh: t.fromMesh, local: t.tipLocal && t.tipLocal.toArray() }; }),
+        bind: urdfJ.map(function(b){ return b && { name: b.name, sign: b.sign, offDeg: b.off * 57.29578 }; }) }).replace(/~/g, "-"));
     }
     setTimeout(function(){ report("done"); }, 200);
   } catch(e) { report("ERR-" + String(e && e.stack || e).slice(0, 160).replace(/~/g, "_")); report("done"); }
@@ -397,6 +423,14 @@ def run(t):
         (pkg2 / "urdf").mkdir(parents=True)
         (pkg2 / "meshes").mkdir()
         write_fixture(pkg2, "qc_bot2", RIG2, RIG2["home"], swap=("LSH", "REL"))
+        # a CAD that is NOT the rig: every tilt a few degrees off (a hand-tuned
+        # rig never matches the CAD exactly - the PC's real model, 2026-10-23)
+        rig3 = dict(RIG2, tilt=[[a + (7, -5, 6)[i % 3], b - 6, c + 8] for i, (a, b, c) in enumerate(RIG2["tilt"][:8])]
+                    + RIG2["tilt"][8:])
+        pkg3 = models / "qc_bot3"
+        (pkg3 / "urdf").mkdir(parents=True)
+        (pkg3 / "meshes").mkdir()
+        write_fixture(pkg3, "qc_bot3", rig3, RIG2["home"])
         real = os.environ.get("MICE_URDF_MODEL", "")
         real_rel = ""
         if real and Path(real).is_dir():
@@ -480,6 +514,16 @@ def run(t):
              "the pair the CAD named the other way round is found (left shoulder, right elbow)", f)
         t.ok(not r2["warn"] and max(x["deg"] for x in f) < 0.5,
              "the fit is exact and nothing is warned (%s deg)" % [x["deg"] for x in f], r2)
+
+    dump = next((m for m in marks if m.startswith("realdump=")), "")
+    if dump:      # beside the log, never committed (qc/_urdf_real.json is git-ignored)
+        (Path(__file__).resolve().parents[1] / "_urdf_real.json").write_text(dump[9:], encoding="utf-8")
+    got3 = next((m for m in marks if m.startswith("res3=")), "")
+    if t.ok(got3, "the driver measured a CAD that is not the rig", marks[-3:]):
+        r3 = json.loads(got3[5:])
+        t.ok(all(a > 0.9 for a in r3["agree"][:8]),
+             "a CAD a few degrees off the rig: every arm joint still moves its hand the same way (%s)" % r3["agree"][:8], r3)
+        t.ok(all(f["deg"] < 10 for f in r3["fit"]), "and the fit gets close (%s deg)" % [f["deg"] for f in r3["fit"]], r3)
 
     real = next((m for m in marks if m.startswith("real=")), "")
     if real:

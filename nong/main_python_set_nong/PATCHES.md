@@ -131,3 +131,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0057 | 2026-10-22 18:41 | RRT star complete detour timing and persistent clothing gap |
 | 0056 | 2026-10-22 22:29 | A48-1 robot look: simple shapes or CAD model (URDF), ask sizes on the way back |
 | 0057 | 2026-10-22 23:18 | A48-1 round 2: arm fit (sense, zero, pair) against the rig |
+| 0058 | 2026-10-22 23:34 | A48-3 arm fit also matches how parts turn from home |
