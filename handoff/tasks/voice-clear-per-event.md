@@ -11,6 +11,13 @@ User 2026-10-22: *เอาแบบตั้งได้ว่างานแ�
 เสียงรวบเกินฟังไม่รู้เรื่อง เอาแบบเสียงสำเนียงไทยฟังชัด ภาษาอื่นด้วย* and
 *คำสุดท้ายจบไวไป ไม่มีลากเสียง ออกแค่ครึ่งคำแล้วหายไป*.
 
+## Doing now
+- Waiting on the Thai bench (`scratch/voice-clear-2026-10-22/bench.py`, 12 candidates x 6
+  lines x 2 seeds, heard by the helper's /transcribe on 8767). Then English/Japanese/Chinese
+  (`bench_other.py`). Approach: lowest CER with the last word heard wins; clarity beats feeling.
+  Files to change after: `config/voice_providers.json` feeling `tune` (temperature, split).
+  Early result: temperature 0.3 CER 0.05 vs 0.11 at 0.8 (11 clips).
+
 ## Done (on the branch, not merged)
 - Cause of the cut last word, measured: feeling-voice clips end right on the last
   sound (16 of 30 under 100 ms after it, one at full volume). `tts_spark/server.py`
