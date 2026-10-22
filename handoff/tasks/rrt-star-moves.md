@@ -3,7 +3,7 @@
 Owner: claude:cloud-48oymn
 Updated: 2026-10-22 12:23 +0000
 Branch: claude/project-thread-48oymn (from task/A46-2-10221724-9d65 @4c362a9)
-Last commit: 239711d (final source checkpoint follows)
+Last commit: see branch head
 Plan: A46-3
 
 ## Goal
@@ -25,11 +25,19 @@ no motion commands issued. Preserve existing browser31-keyframe backup and
 all real calibration. No firmware changes.
 
 ## Doing now
-Fixing the 7 checks that full QC (cloud, 7527/10) showed failing on Codex's tree:
-latency, key_click, key_clock, studio_edits, studio_resume, ui_states, voice_profiles.
-Done: key_click (fixture went outside rig limits; now clampJ + waits for the board id),
-key_clock (physical times, clampJ, the one checked entry to the parked pose is allowed).
-Follow-up idea: SD file "Run" (robot_link.js ~810) starts natively without a checked entry.
+Final full quiet QC on the merged tree (main 32b8e42 + this branch), then PR + merge.
+
+## Done (Claude cloud, 2026-10-22)
+- Full QC on Codex's tree: 7527/10. Fixed the 9 red checks (fixtures went outside
+  rig limits or used physically impossible times; static checks followed the new
+  one-owner code): key_click, key_clock, latency, studio_edits, studio_resume,
+  ui_states, studio_music, voice_profiles (layout test measured the window, red on
+  main too; now an iframe at 360/1280).
+- Real bug found and fixed: a clock parked on the unchecked timeline landed on a
+  different move once checked times/detours replaced it, so Run replayed the move
+  before the park. safeRemapClock in checked_motion.js; sabotage caught.
+- Plan rows A46-2 (todo, hw) and A46-3 (qc) added; merged main (PR #53).
+- Follow-up: SD file "Run" in the SD list still starts natively (no checked entry).
 
 ## Codex state at hand-off (4c362a9)
 RRT* plus checked source/rounded legs, one dispatch owner and actual reported
