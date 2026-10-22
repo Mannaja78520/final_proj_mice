@@ -64,6 +64,7 @@ def run(t):
         brain.feeling_ready = lambda pid, prov: False
         _data(t, brain)
         _say(t, brain, svc)
+        _agree(t, brain)
         _quick(t, brain)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -136,6 +137,32 @@ def _say(t, brain, svc):
          "the speaker, gender and tempo go to the server with the line", sent)
 
 
+def _agree(t, brain):
+    """User 2026-10-22: *เสียงไทยชายหญิงมันมีลงท้ายต่างกัน ครับ/ค่ะ ทำให้ตรงกับภาษา*."""
+    people = brain.people()["people"]
+    man = next(k for k, p in people.items() if p["gender"] == "male")
+    woman = next(k for k, p in people.items() if p["gender"] == "female")
+    words = brain.people()["agree"]["th"]
+    brain.cfg["tts"]["voices"]["th"] = "person:" + woman
+    t.ok(brain.manner_answer("th")[:2] == (words["female"]["particle"], words["female"]["pronoun"]),
+         "a woman's voice: model answers end with ค่ะ and say ดิฉัน", brain.manner_answer("th")[:2])
+    said = brain.manner_saved("ผมช่วยได้ครับ เชิญทางนี้ครับ", "th")
+    t.ok(said == "ดิฉันช่วยได้ค่ะ เชิญทางนี้ค่ะ", "and a saved answer is said with her ending too", said)
+    brain.cfg["tts"]["voices"]["th"] = "person:" + man
+    t.ok(brain.manner_answer("th")[:2] == ("ครับ", "ผม"), "a man's voice: ครับ and ผม",
+         brain.manner_answer("th")[:2])
+    t.ok(brain.manner_saved("ดิฉันช่วยได้ค่ะ", "th") == "ผมช่วยได้ครับ", "and his saved answers end with ครับ")
+    t.ok(brain.agree_text("ยินดีต้อนรับครับ", "th", "person:" + woman) == "ยินดีต้อนรับค่ะ"
+         and brain.agree_text("Hello", "en", "person:" + woman) == "Hello",
+         "Try plays a sample in THAT voice's ending; other languages untouched")
+    brain.cfg["tts"]["style"] = "sassy"
+    own = (brain.styles()["styles"]["sassy"].get("answer") or {}).get("particle")
+    t.ok(own and brain.manner_answer("th")[0] == own,
+         "a manner with its own ending (the เจ๊ manner) still wins over the voice's", brain.manner_answer("th"))
+    brain.cfg["tts"].pop("style", None)
+    brain.cfg["tts"]["voices"]["th"] = "th-TH-PremwadeeNeural"
+
+
 def _quick(t, brain):
     v = brain.styles_view()
     styles = brain.styles()["styles"]
@@ -156,6 +183,11 @@ def _server(t):
         y = srv.stretch(x, 16000, 1.25)
         t.ok(abs(len(y) - len(x) / 1.25) < 400, "tempo 1.25 makes it 1.25 times shorter",
              "%d -> %d samples" % (len(x), len(y)))
+        fast = srv.to_wav({"rate": 16000}, [x], {"leadMs": 0, "tailMs": 0, "fadeMs": 0, "pauseMs": 0,
+                                                "tempo": 1.25})
+        with wave.open(io.BytesIO(fast)) as w:
+            t.ok(abs(w.getnframes() - len(x) / 1.25) < 400, "a tempo in the tune reaches the sound",
+                 "%d frames" % w.getnframes())
     code = (F.CODE / "apps" / "voice" / "tts_spark" / "server.py").read_text(encoding="utf-8")
     t.ok('"that voice is not one this server can use"' in code and "ref)" in code,
          "the server takes a speaker per request and refuses a wrong one")

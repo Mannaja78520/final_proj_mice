@@ -58,6 +58,7 @@ def run(t):
         faq = tmp / "qa.json"
         faq.write_text(json.dumps({"faqs": []}), encoding="utf-8")
         brain = svc.Brain(str(cfg), str(faq))
+        brain.voice_gender = lambda lang: ""     # the store's ending; gender agreement: check_voice_people
         cache = tmp / "cache"
         cache.mkdir()
         brain._cache_path_real = brain._cache_path

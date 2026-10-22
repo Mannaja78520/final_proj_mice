@@ -1,0 +1,26 @@
+{
+  // SAVED VOICES of this PC's Thai feeling voice (A45-27, user 2026-10-22:
+  // *เลือกเสียงได้ทั้งชายและหญิง ... default clear ยังดูเป็น AI*). The model was
+  // asked to invent a speaker (32 global tokens) instead of copying the Edge
+  // reference clip; 32 were made, these are the clearest 3 + 3 by the Thai
+  // whisper over 5 lines (letters wrong: `cer`, Edge Premwadee 5.4%, Niwat 0%).
+  // Proof and samples: scratch/voice-human-2026-10-22 (PC only, not in git).
+  // A new voice is one entry: speaker tokens, gender, a same-gender Edge
+  // `backup` (speaks while the feeling voice is off), and its languages.
+  // `temperature` overrides the feeling job's tune for this voice only.
+  "people": {
+    "thai-woman-1": {"says": "หญิง 1 · เสียงทุ้ม (Woman 1, lower)", "gender": "female", "languages": ["th"], "speaker": [3867, 2549, 3124, 3819, 1195, 3435, 2275, 349, 4019, 2069, 2131, 3895, 436, 3368, 3193, 3605, 4030, 535, 1718, 3455, 1292, 2412, 3312, 1341, 903, 893, 4095, 905, 1378, 590, 1929, 3858], "backup": "th-TH-PremwadeeNeural", "temperature": 0.3, "cer": 4.9},
+    "thai-woman-2": {"says": "หญิง 2 · เสียงกลาง (Woman 2, middle)", "gender": "female", "languages": ["th"], "speaker": [2659, 2289, 3132, 3831, 699, 3146, 3235, 285, 3767, 2080, 1173, 3698, 1020, 3608, 3196, 1446, 3966, 795, 503, 3416, 1288, 1372, 3554, 2615, 1995, 1786, 3787, 3781, 1459, 345, 3462, 3587], "backup": "th-TH-PremwadeeNeural", "temperature": 0.3, "cer": 6.7},
+    "thai-woman-3": {"says": "หญิง 3 · เสียงสูง (Woman 3, higher)", "gender": "female", "languages": ["th"], "speaker": [3635, 2528, 2100, 4094, 2399, 3338, 227, 155, 4023, 3092, 2113, 3959, 2044, 3628, 3197, 2705, 2879, 555, 2554, 3124, 88, 1324, 3218, 2613, 2711, 4045, 4062, 1998, 690, 525, 3981, 3719], "backup": "th-TH-PremwadeeNeural", "temperature": 0.15, "cer": 7.2},
+    "thai-man-1": {"says": "ชาย 1 · เสียงกลาง (Man 1, middle)", "gender": "male", "languages": ["th"], "speaker": [3863, 48, 3132, 4030, 1679, 3426, 2275, 412, 3771, 2081, 1089, 3643, 308, 3608, 3194, 3344, 3962, 855, 1452, 3645, 29, 1900, 3296, 2362, 1735, 570, 4079, 1736, 2930, 1099, 2889, 2385], "backup": "th-TH-NiwatNeural", "temperature": 0.15, "cer": 7.3},
+    "thai-man-2": {"says": "ชาย 2 · เสียงสูงกว่า (Man 2, higher)", "gender": "male", "languages": ["th"], "speaker": [2851, 1073, 3388, 3838, 3178, 2370, 3218, 398, 3454, 3106, 1623, 3381, 596, 3604, 3189, 1017, 3002, 991, 3454, 3372, 840, 154, 3810, 2098, 1659, 2110, 3782, 2776, 1649, 106, 68, 2631], "backup": "th-TH-NiwatNeural", "temperature": 0.15, "cer": 7.7},
+    "thai-man-3": {"says": "ชาย 3 · เสียงทุ้ม (Man 3, lower)", "gender": "male", "languages": ["th"], "speaker": [3603, 1073, 2104, 3710, 2463, 2074, 1249, 218, 3771, 3106, 1106, 3639, 824, 3604, 3256, 1696, 2943, 935, 3174, 3645, 1864, 1452, 3298, 2354, 483, 63, 4062, 3016, 2530, 1099, 1676, 2562], "backup": "th-TH-NiwatNeural", "temperature": 0.15, "cer": 8.2}
+  },
+  // Words that agree with the speaking voice's gender (user 2026-10-22:
+  // *เสียงไทยชายหญิงมันมีลงท้ายต่างกัน ครับ/ค่ะ*): model answers and saved
+  // answers end this way; a manner with its own (the เจ๊ manner) still wins.
+  "agree": {
+    "th": {"female": {"particle": "ค่ะ", "pronoun": "ดิฉัน"},
+           "male": {"particle": "ครับ", "pronoun": "ผม"}}
+  }
+}

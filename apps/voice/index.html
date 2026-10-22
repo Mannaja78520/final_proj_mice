@@ -2516,8 +2516,12 @@ static SAMPLES = {
   voices.textContent = "";
   const sel = ((this.langVoice || {})[lang] || {}).sel;
   const one = (this.$("oneVoice") || {}).value || "";
+  // English alone has dozens of voices: show the chosen voice's country
+  // (en-US, en-GB...) - the full list stays in the box below.
+  const cur = list.find(v => sel && v.name === sel.value);
+  const near = v => v.own || !cur || !cur.locale || v.locale === cur.locale;
   [["Female", "Women"], ["Male", "Men"]].forEach(([g, head]) => {
-    const mine = list.filter(v => v.gender === g).sort((a, b) => (b.own ? 1 : 0) - (a.own ? 1 : 0));
+    const mine = list.filter(v => v.gender === g && near(v)).sort((a, b) => (b.own ? 1 : 0) - (a.own ? 1 : 0));
     if (!mine.length) return;
     const h = document.createElement("p");
     h.className = "voice-group"; h.textContent = head;
@@ -2527,7 +2531,7 @@ static SAMPLES = {
     box.setAttribute("role", "radiogroup"); box.setAttribute("aria-label", head + " voices");
     voices.appendChild(box);
     mine.forEach(v => this.quickTile(box, {label: v.says || v.name,
-      small: v.own ? "This PC" + (v.note ? " · " + v.note : "") : "Microsoft online",
+      small: v.own ? "This PC" + (v.note ? " · " + v.note : "") : "Microsoft online · " + (v.locale || ""),
       on: !one && sel && sel.value === v.name,
       pick: () => {
         if (this.$("oneVoice")) { this.$("oneVoice").value = ""; this.pickOneVoice(); }

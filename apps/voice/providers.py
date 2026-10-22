@@ -327,6 +327,8 @@ def feeling_speak(prov, key, job, text, lang, voice, timeout, style="", emotion=
         body["speaker"] = person.get("speaker")
         if person.get("gender"):
             body["gender"] = person["gender"]
+        if person.get("temperature") is not None:     # this voice's own clearest setting
+            body["tune"] = dict(body.get("tune") or {}, temperature=float(person["temperature"]))
     got = _call(base + "/speak", body, timeout=timeout, raw=True)
     return (got, None) if len(got) > 100 else (None, "it sent back no sound")
 
