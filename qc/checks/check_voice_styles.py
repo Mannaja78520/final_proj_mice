@@ -93,9 +93,13 @@ def _choice(t, brain):
     t.eq(brain.style_choice("shouty")[0], "", "an unknown manner is none, never a silent voice")
     brain.cfg.pop("scenario", None)
     brain.cfg["tts"].pop("style", None)
-    t.eq(brain.style_steps("+0%", "+0Hz", styles["friendly"]), ("+3%", "+3Hz"),
+    # Expected values come from the data (manner speeds were retuned 2026-10-22).
+    fr, pl = styles["friendly"]["prosody"], styles["playful"]["prosody"]
+    t.eq(brain.style_steps("+5%", "+0Hz", styles["friendly"]),
+         ("%+d%%" % (5 + fr["rate"]), "%+dHz" % fr["pitch"]),
          "speed and pitch steps are ADDED to the chosen ones")
-    t.eq(brain.style_steps("+45%", "-28Hz", styles["playful"]), ("+50%", "-22Hz"),
+    t.eq(brain.style_steps("+49%", "-28Hz", styles["playful"]),
+         ("%+d%%" % min(50, 49 + pl["rate"]), "%+dHz" % (-28 + pl["pitch"])),
          "and kept inside the limits")
 
 
@@ -112,7 +116,9 @@ def _edge(t, brain, cache):
     old_name = brain._cache_path_real("th-TH-PremwadeeNeural", "สวัสดีครับ", "+0%", "+0Hz").name
     t.ok((cache / old_name).exists(), "and its sound keeps its old cache name, so old caches still work")
     sound, why = brain.say("สวัสดีครับ", "th", style="playful")
-    t.ok(sound and sound != plain and got[-1] == ("th-TH-PremwadeeNeural", "+8%", "+6Hz"),
+    pl = brain.styles()["styles"]["playful"]["prosody"]
+    t.ok(sound and sound != plain
+         and got[-1] == ("th-TH-PremwadeeNeural", "%+d%%" % pl["rate"], "%+dHz" % pl["pitch"]),
          "playful reaches Edge as its speed and pitch, and is a NEW sound, not the cached plain one",
          (why, got[-1:]))
     t.eq(brain._style_done, {"style": "playful", "how": "prosody", "by": "edge"},
@@ -128,7 +134,7 @@ def _edge(t, brain, cache):
     t.ok(again == sound and len(got) == n, "the same manner again comes from its own cache")
     coax, _ = brain.say("สวัสดีครับ", "th", style="coaxing")
     t.ok(coax not in (sound, plain), "another manner is another sound")
-    brain.cfg["tts"]["rate"] = "+44%"
+    brain.cfg["tts"]["rate"] = "+49%"
     brain.say("สวัสดีครับ", "th", style="playful")
     t.eq(got[-1][1], "+50%", "a chosen speed plus the manner never passes Edge's limit")
     brain.cfg["tts"]["rate"] = "+0%"
@@ -170,8 +176,21 @@ def _feeling(t, brain, svc, tmp):
     told the manner's feeling; asleep or missing = the backup speaks."""
     styles = brain.styles()["styles"]
     brain.cfg["use"] = {"speak": ["edge", "local"]}
+    # A45-26 (user 2026-10-22: clear first): the shipped data prefers nothing,
+    # so a manner keeps the chosen, clearer order.
+    t.eq(brain.speak_order("playful"), ["edge", "local"],
+         "clarity first: a manner keeps the chosen order unless the data prefers a service")
+    real = brain.styles()
+    mtime = brain._styles[0]
+    data = json.loads(json.dumps(real))
+    data["prefer"] = ["feeling"]
+    data["styles"]["polite"]["prefer"] = []
+    brain._styles = (mtime, data)              # same mtime: kept until the file changes
     t.eq(brain.speak_order("playful")[:2], ["feeling", "edge"],
-         "a manner puts the feeling voice first, the chosen order stays as backup")
+         "a preferred service goes first, the chosen order stays as backup")
+    t.eq(brain.speak_order("polite"), ["edge", "local"],
+         "a manner's own prefer wins over the shared one")
+    data["styles"]["polite"].pop("prefer")
     t.eq(brain.speak_order(""), ["edge", "local"], "no manner: the chosen order exactly")
     told = []
 

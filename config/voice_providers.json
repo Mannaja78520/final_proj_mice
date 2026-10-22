@@ -78,7 +78,9 @@
                          // speech run together). Sent with every line; the server's TUNE
                          // lists the keys. Values picked by ear + whisper in
                          // scratch/voice-clear-2026-10-22 (PC only).
-                         "tune": {"temperature": 0.8, "leadMs": 60, "tailMs": 450, "fadeMs": 6,
+                         // temperature 0.3: 6.1% letters wrong vs 11% at 0.8;
+                         // split at spaces made it WORSE (14%), so it stays 0.
+                         "tune": {"temperature": 0.3, "leadMs": 60, "tailMs": 450, "fadeMs": 6,
                                   "pauseMs": 180, "split": 0},
                          "start": {"python": [".local/tts_spark/venv/Scripts/python.exe",
                                               ".local/tts_spark/venv/bin/python"],

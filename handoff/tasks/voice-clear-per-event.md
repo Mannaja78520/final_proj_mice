@@ -12,11 +12,7 @@ User 2026-10-22: *เอาแบบตั้งได้ว่างานแ�
 *คำสุดท้ายจบไวไป ไม่มีลากเสียง ออกแค่ครึ่งคำแล้วหายไป*.
 
 ## Doing now
-- Waiting on the Thai bench (`scratch/voice-clear-2026-10-22/bench.py`, 12 candidates x 6
-  lines x 2 seeds, heard by the helper's /transcribe on 8767). Then English/Japanese/Chinese
-  (`bench_other.py`). Approach: lowest CER with the last word heard wins; clarity beats feeling.
-  Files to change after: `config/voice_providers.json` feeling `tune` (temperature, split).
-  Early result: temperature 0.3 CER 0.05 vs 0.11 at 0.8 (11 clips).
+- Handing the branch to the coordinator for PR + full QC + merge. Then deploy on the PC.
 
 ## Done (on the branch, not merged)
 - Cause of the cut last word, measured: feeling-voice clips end right on the last
@@ -31,15 +27,22 @@ User 2026-10-22: *เอาแบบตั้งได้ว่างานแ�
 - The LIVE feeling server on 8779 is currently the BRANCH's server.py (started from
   this worktree for the bench). Deploy restarts it from main.
 
+- Bench done (scratch/voice-clear-2026-10-22/README.md, listen/ for the ear). Picked by
+  whisper letters wrong: Edge Premwadee -10% 2.9% (new default, `config/voice.json`
+  tts.rate -10%), feeling best 6.1% at temperature 0.3 (tune), old feeling 11.2%.
+  Splitting at spaces was worse (14%): split stays 0. Other languages already clear
+  (en/zh 0-2%, ja 5.6% for every voice): voices unchanged.
+- `voice_styles.json` prefer [] (clarity first), a manner may carry its own `prefer`
+  (service.speak_order); manner speeds lowered (friendly 0, playful 3, sassy 4).
+  check_voice_styles reads expected values from the data now.
+
 ## Next
-1. Bench results: `scratch/voice-clear-2026-10-22/bench.jsonl` (Thai, 12 candidates,
-   heard by the helper's own /transcribe) and `bench_other.jsonl` (en/ja/zh Edge
-   voices). Pick the clearest Thai default: set `tune` (temperature/split) and/or the
-   manner `prefer` order; set per-language voices if one is clearly clearer.
-2. Optional: `raw_baseline` checkpoint is downloaded (CER 0.055 vs 0.09 in the model
-   card); bench it: restart server with `--checkpoint raw_baseline`, `python bench.py baseline`.
-3. Push, send coordinator branch + head for PR/full QC/merge; deploy on PC
-   (systems build, exe, restart hub + helper, 50-case replay).
+1. Merge (coordinator: cloud PR, full QC).
+2. Deploy on PC: `python tools/systems.py build`, rebuild exe with the spec, restart hub +
+   voice helper + feeling server (8779 is running the branch file now), set live
+   `config/voice.json` tts.rate -10% (live has style friendly), 50-case replay
+   (scratch/voice-a45-24-2026-10-21/regress.py), hear one live Thai line: tail present.
+3. Optional: bench `raw_baseline` (downloaded) if the feeling voice should become default.
 
 ## Blocked
 - Nothing. Human ear still needed to judge "sounds less AI".

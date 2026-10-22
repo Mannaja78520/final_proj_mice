@@ -34,13 +34,13 @@
     "friendly": {
       "says": "เป็นกันเอง (Friendly)",
       "instruct": "warm, casual and friendly, smiling while speaking",
-      "prosody": {"rate": 3, "pitch": 3},
+      "prosody": {"rate": 0, "pitch": 3},
       "emotion": "happy"
     },
     "playful": {
       "says": "ขี้เล่น (Playful)",
       "instruct": "playful and cheerful, light and bouncy, a little teasing",
-      "prosody": {"rate": 8, "pitch": 6},
+      "prosody": {"rate": 3, "pitch": 6},
       "emotion": "happy",
       // The feeling voice knows one happy: playful and friendly sound the same
       // there (same line = same sound, measured 2026-10-21). Edge differs.
@@ -59,7 +59,7 @@
     "sassy": {
       "says": "ฟาดๆ แบบเจ๊ (Sassy)",
       "instruct": "sassy and sharp like a confident Thai big sister, quick, cheeky and a little dramatic, but warm underneath and never rude",
-      "prosody": {"rate": 10, "pitch": 4},
+      "prosody": {"rate": 4, "pitch": 4},
       "emotion": "angry",
       "emotionNote": "a sharp, punchy tone (THAI-SER has no sassy: angry is the nearest); the words do the rest",
       "answer": {
@@ -92,9 +92,18 @@
   // from the Voice page; every event can pick its own.
   "recommended": "friendly",
   // Services tried FIRST while a manner is on, when they are installed; the
-  // chosen speak order (voice.json use.speak) follows as the backup. So a
-  // feeling is used where it can be, and the line is never left unsaid.
-  "prefer": ["feeling"],
+  // chosen speak order (voice.json use.speak) follows as the backup, so the
+  // line is never left unsaid. A manner may carry its own "prefer" (that one
+  // wins), e.g. "prefer": ["feeling"] for the Thai voice with feeling.
+  // EMPTY since 2026-10-22 (A45-26, user: *เสียงยังดูเป็น AI เกินไป ... รวบเกิน
+  // ฟังไม่รู้เรื่อง ... ฟังชัด*): heard back by the Thai whisper, 6 lines,
+  // Edge Premwadee at -10% speed got 2.9% letters wrong and every last word;
+  // the feeling voice 6.1% at its clearest (temperature 0.3), 11-12% before,
+  // and it speaks faster. Clarity wins over feeling. Samples + numbers:
+  // scratch/voice-clear-2026-10-22 (PC only).
+  "prefer": [],
+  // Manner speed steps were lowered 2026-10-22 (friendly 3->0, playful 8->3,
+  // sassy 10->4): a faster line is the one heard as run together.
   // Steps the speed and pitch may reach in total (Edge refuses wild values).
   "limits": {"rate": [-50, 50], "pitch": [-30, 30]}
 }
