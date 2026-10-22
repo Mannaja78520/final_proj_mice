@@ -16,17 +16,16 @@ Test saved motions, speech gestures/RRT, video copying and skeleton visibly on t
 - No robot motion sent. Hub modules empty, no hotspot interface in initial inventory.
 
 ## Doing now
-Resumed A46-2 for independent non-UI WiFi-late test after user asks actual proof.
-Browser URL-policy stop remains respected; no further browser input.
-Robot67 chip/B4BFE91C5A74 at192.168.137.66 and hub both idle; all joints at
-configured neutral. Existing hotspot manny On. Real PERF before: boots1,
-up_s1365. Plan: authenticated REBOOT (source default800ms), stop existing
-hotspot through official Windows tethering API, hold80s, restore hotspot,
-measure actual rejoin up to140s. Record reboot counter, uptime-derived boot
-interval and off timestamp to distinguish proven cold boot from ordinary rejoin.
-Always restore hotspot in finally; no pose, credentials, calibration or firmware changes.
-Private runner root scratch/robot-hotspot-2026-10-22/wifi-late-test.py;
-result wifi-late-result.json, console wifi-late.log. No run started before checkpoint.
+WiFi experiment finished. Hotspot was Off80s then On restored. Initial runner
+exit1 watched old DHCP66 for140s; actual Hub discovery found same chip at138.
+Authenticated INFO/PERF: boots1->2 reset=reboot, idle, all calibration arrays
+preserved. Evidence root scratch/robot-hotspot-2026-10-22/wifi-late-result.json,
+wifi-late.log and wifi-late-discovered.json. Rejoin observed, not exact latency
+or proven hotspot-off-before-boot ordering (Off2.438s after REBOOT ack).
+Hotspot left On. Browser URL policy stop from previous work remains unresolved.
+User now requests RRT* point-to-point detours+warnings; A46-3 owns source work
+in same private branch before further hardware motion. All original live
+motion/video/skeleton/browser tasks remain pending; no pose commands sent.
 
 ## Next
 1. Restore allowed actual-browser control after runtime policy stop; do not bypass browser security. Log in with verified admin/admin123; actual hotspot connection already works.
