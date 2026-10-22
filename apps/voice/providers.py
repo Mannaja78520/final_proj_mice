@@ -315,8 +315,10 @@ def azure_speak(prov, key, job, text, lang, voice, timeout, rate="", pitch=""):
 
 def feeling_speak(prov, key, job, text, lang, voice, timeout, style="", emotion=""):
     base = (job.get("base") or prov.get("base") or "").rstrip("/")
-    got = _call(base + "/speak", {"text": text, "emotion": emotion or "neutral"},
-                timeout=timeout, raw=True)
+    body = {"text": text, "emotion": emotion or "neutral"}
+    if job.get("tune"):              # clarity knobs, data in voice_providers.json (A45-26)
+        body["tune"] = job["tune"]
+    got = _call(base + "/speak", body, timeout=timeout, raw=True)
     return (got, None) if len(got) > 100 else (None, "it sent back no sound")
 
 
