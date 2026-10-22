@@ -24,6 +24,7 @@ import argparse
 import hashlib
 import io
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -33,6 +34,10 @@ import time
 import wave
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+
+# ffmpeg is a console program: started from the windowed helper it flashes a
+# black box on Windows (check_no_console).
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
 
 HERE = Path(__file__).resolve().parent
 
@@ -230,7 +235,8 @@ def stretch(x, rate, tempo):
     try:
         got = subprocess.run(["ffmpeg", "-loglevel", "error", "-f", "s16le", "-ar", str(rate), "-ac", "1",
                               "-i", "-", "-filter:a", "atempo=%.3f" % tempo, "-f", "s16le", "-"],
-                             input=pcm, capture_output=True, timeout=30, check=True).stdout
+                             input=pcm, capture_output=True, timeout=30, check=True,
+                             creationflags=NO_WINDOW).stdout
     except (OSError, subprocess.SubprocessError):
         return x
     return np.frombuffer(got, "<i2").astype("float32") / 32767 if got else x
