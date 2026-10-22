@@ -46,7 +46,22 @@ nothing: A47-1..4 merged; only A47-5 (bench) left, owner free.
    A47-10 (audit, PR after #60): a kind may name substitutes (Kinds > When it runs out, give
    instead); each machine row has "its own page"; Google Form sample docs/gacha/form_sample.gs.
    Audit table: /mnt/project-files/gacha/audit_2026-10-22.md.
+   A47-11 encoder code was REMOVED again by A47-12 (user 2026-10-22: no encoder on the
+   gachapon or the lift). The hall + magnets alone decide where it stops.
 2. A47-5 on the bench (PC RC session): flash mice_gacha over USB/OTA, PIN motor_a/motor_b if not 25/26, measure drop pockets (GCFG drop), speed, settle; add the machine on the Prize machines page; rebuild MiceHub.exe (spec) so the new page and routes ship.
+
+## The machine's CAD (read-only, 2026-10-23, claude:xdlrot)
+- `E:/final_proj/mice/model/gachapong/8_10_2026` (SolidWorks, NOT in git; never copy it in).
+  Sizes from its `stl/` export, in mm (bounding boxes):
+- **4 slots**: `gacha_tube` x4, outer ~76 mm, 70 mm tall, centres 100 mm from the shaft,
+  90 deg apart, on a turning `gacha_shaft_spinner` (80 mm across) - one capsule kind per tube.
+- Plates: top + bottom 350 x 350 x 8.5, two middle 300 x 300 x 8.5; plates span ~95 mm
+  (bottom at ~154, top ~248 on the model's axis). Walls 246.7 x 76.5 (3 plain sides, one
+  `gacha_wall_cover_hole` side = the way out), 4 base covers 211 x 46.5 x 14.
+- Drive: Namiki 22CL-3501PG geared motor (the user says: no encoder fitted), D20L25 jaw coupler (5 mm / 8 mm
+  shafts), bearings 6810-2RS + 608ZZ, SKF AXK1730 thrust bearing.
+- Not readable without SolidWorks: tube inner diameter (capsule size), gear ratio, the
+  hole's exact size. Firmware slot count should be 4 unless the build differs.
 
 ## Blocked
 - A47-5 needs the board on the bench (user).

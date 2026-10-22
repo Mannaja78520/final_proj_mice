@@ -94,3 +94,4 @@ As of main c859601 (2026-10-21): all merged, PRs #1-#40. Verified on the PC:
 - Voice (PR #39, #40): login on every voice route, no name blink on 429, 30 s speech, Thai/English/Japanese/Chinese hearing and answers, a fast installed-voice option that races server speech after 650 ms. Cached answer-to-audio 0.2-0.4 s; new Thai phrasing can take ~5 s. Detail: `docs/voice-validation-2026-10-20.md`.
 - Show/timeline/music/SD upload played on the real nong 2026-10-12.
 - Prize machines (gachapon, A47, 2026-10-22, fakes only): firmware `mice_gacha`, hub app /app/gacha/, Voice prizes + Questions tab. Open: handoff/tasks/gachapon.md (bench A47-5).
+- Lab day (2026-10-22): every test that needs a board, the robot or a person is ONE checklist, handoff/tasks/lab-day.md. Nothing else is open without hardware, the user's keys or the friend.
