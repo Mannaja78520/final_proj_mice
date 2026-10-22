@@ -15,7 +15,8 @@ The VOICE (who it sounds like) comes from a reference clip: by default the
 robot's own current voice saying one neutral line, so a feeling does not
 turn the robot into somebody else. The feeling comes from the token.
 
-    POST /speak {"text", "emotion", "gender"?, "seed"?, "tune"?} -> audio/wav
+    POST /speak {"text", "emotion", "gender"?, "seed"?, "tune"?, "speaker"?} -> audio/wav
+         speaker: 32 global tokens = a saved voice (config/voice_people.json)
          tune: any of TUNE below, for this request only
     GET  /health
 """
@@ -23,13 +24,20 @@ import argparse
 import hashlib
 import io
 import json
+import os
 import re
+import shutil
+import subprocess
 import sys
 import threading
 import time
 import wave
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+
+# ffmpeg is a console program: started from the windowed helper it flashes a
+# black box on Windows (check_no_console).
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
 
 HERE = Path(__file__).resolve().parent
 
@@ -57,14 +65,14 @@ def load(runtime, checkpoint, reference, device_name):
             "emotion_tokens": pre.uses_emotion_tokens(checkpoint)}
 
 
-def prompt(S, text, emotion, gender):
+def prompt(S, text, emotion, gender, ref=None):
     parts = ["<|task_tts|>"]
     if S["emotion_tokens"] and emotion:
         parts.append("<|emotion_%s|>" % emotion)
     if gender:
         parts.append("<|gender_%s|>" % gender)
     parts += ["<|start_content|>", text, "<|end_content|>", "<|start_global_token|>"]
-    parts += ["<|bicodec_global_%d|>" % int(i) for i in S["ref"].squeeze()]
+    parts += ["<|bicodec_global_%d|>" % int(i) for i in (S["ref"] if ref is None else ref).squeeze()]
     parts.append("<|end_global_token|>")
     return "".join(parts)
 
@@ -134,8 +142,10 @@ def decode_fast(S, ids, max_new, temperature):
     return seq[:seq.index(eos)] if eos in seq else seq
 
 
-def speak(S, text, emotion, gender, seed, temperature, max_new, end=""):
-    """One piece of text -> float samples (None = no sound)."""
+def speak(S, text, emotion, gender, seed, temperature, max_new, end="", ref=None):
+    """One piece of text -> float samples (None = no sound). `ref` = another
+    speaker (32 global tokens) instead of the reference clip's."""
+    ref = S["ref"] if ref is None else ref
     torch = S["torch"]
     if S["checkpoint"].startswith("raw"):
         model_text = S["pre"].preprocess_text(text)   # raw: no romanizer/phoneme models needed
@@ -146,7 +156,7 @@ def speak(S, text, emotion, gender, seed, temperature, max_new, end=""):
     if end and not model_text.endswith(end):
         model_text += end
     torch.manual_seed(seed)                # the same line + feeling sounds the same next time
-    ids = S["tok"]([prompt(S, model_text, emotion, gender)], return_tensors="pt").to(S["device"])
+    ids = S["tok"]([prompt(S, model_text, emotion, gender, ref)], return_tensors="pt").to(S["device"])
     with torch.inference_mode():
         if S["device"].type == "cuda":
             out = decode_fast(S, ids.input_ids, max_new, temperature)
@@ -158,7 +168,7 @@ def speak(S, text, emotion, gender, seed, temperature, max_new, end=""):
     if not sem:
         return None
     with torch.inference_mode():
-        wav = S["codec"].detokenize(S["ref"].to(S["device"]).squeeze(0),
+        wav = S["codec"].detokenize(ref.to(S["device"]).squeeze(0),
                                     torch.tensor(sem).long().unsqueeze(0).to(S["device"]))
     import numpy as np
     return np.clip(np.asarray(wav, dtype="float32").squeeze(), -1, 1)
@@ -194,6 +204,7 @@ def to_wav(S, parts, tune):
     ms = lambda v: np.zeros(int(rate * float(v) / 1000), dtype="float32")   # noqa: E731
     fade = int(rate * float(tune["fadeMs"]) / 1000)
     joined = [ms(tune["leadMs"])]
+    parts = [stretch(x, rate, float(tune.get("tempo") or 1)) for x in parts]
     for i, x in enumerate(parts):
         if fade and len(x) > 2 * fade:
             x = x.copy()
@@ -211,10 +222,30 @@ def to_wav(S, parts, tune):
     return buf.getvalue()
 
 
+def stretch(x, rate, tempo):
+    """Speed WITHOUT changing the pitch (ffmpeg atempo, a time-domain method).
+    This voice has no speed control of its own; the page's Slow / Normal /
+    Fast reach it this way (user 2026-10-22: *ขอมีแบบเร็วได้ด้วย*). No ffmpeg
+    on the PC = the speed is left as it is, never an error."""
+    if abs(tempo - 1) < 0.01 or not shutil.which("ffmpeg"):
+        return x
+    import numpy as np
+    tempo = max(0.5, min(2.0, tempo))
+    pcm = (np.clip(x, -1, 1) * 32767).astype("<i2").tobytes()
+    try:
+        got = subprocess.run(["ffmpeg", "-loglevel", "error", "-f", "s16le", "-ar", str(rate), "-ac", "1",
+                              "-i", "-", "-filter:a", "atempo=%.3f" % tempo, "-f", "s16le", "-"],
+                             input=pcm, capture_output=True, timeout=30, check=True,
+                             creationflags=NO_WINDOW).stdout
+    except (OSError, subprocess.SubprocessError):
+        return x
+    return np.frombuffer(got, "<i2").astype("float32") / 32767 if got else x
+
+
 # Every knob a request may change; the defaults come from the command line
 # (voice_providers.json `start.args`) and a request's `tune` overrides them.
 TUNE = {"temperature": float, "leadMs": float, "tailMs": float, "fadeMs": float, "pauseMs": float,
-        "split": int, "end": str}
+        "split": int, "end": str, "tempo": float}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -261,11 +292,20 @@ class Handler(BaseHTTPRequestHandler):
                     tune[k] = TUNE[k](v)
         except (TypeError, ValueError, AttributeError):
             return self._json({"ok": False, "error": "a tune setting was not readable"}, 400)
+        ref = None
+        if req.get("speaker") is not None:            # a saved voice: 32 global tokens (A45-29)
+            try:
+                spk = [int(v) for v in req["speaker"]]
+            except (TypeError, ValueError):
+                spk = []
+            if len(spk) != int(self.S["ref"].numel()) or not all(0 <= v < 65536 for v in spk):
+                return self._json({"ok": False, "error": "that voice is not one this server can use"}, 400)
+            ref = self.S["torch"].tensor(spk).long().view(self.S["ref"].shape)
         t0 = time.time()
         with self.lock:                               # one GPU job at a time
             gender = str(req.get("gender") or self.cfg["gender"])
             parts = [speak(self.S, piece, emotion, gender, seed, tune["temperature"],
-                           int(self.cfg["maxNewTokens"]), tune["end"])
+                           int(self.cfg["maxNewTokens"]), tune["end"], ref)
                      for piece in pieces(text, tune["split"])]
         if not parts or any(x is None for x in parts):
             return self._json({"ok": False, "error": "it made no sound for that line"}, 500)
@@ -300,7 +340,8 @@ def main():
     Handler.cfg = {"emotions": ["neutral", "happy", "sad", "angry", "frustrated"], "gender": a.gender,
                    "maxNewTokens": a.max_new_tokens,
                    "tune": {"temperature": a.temperature, "leadMs": a.lead_ms, "tailMs": a.tail_ms,
-                            "fadeMs": a.fade_ms, "pauseMs": a.pause_ms, "split": a.split, "end": a.end}}
+                            "fadeMs": a.fade_ms, "pauseMs": a.pause_ms, "split": a.split, "end": a.end,
+                            "tempo": 1.0}}
     Handler.S = load(runtime, a.checkpoint, ref, a.device)
     httpd = ThreadingHTTPServer(("127.0.0.1", a.port), Handler)
     print("[tts-spark] ready on 127.0.0.1:%d (%s, %s)" % (a.port, a.checkpoint, Handler.S["device"]), flush=True)

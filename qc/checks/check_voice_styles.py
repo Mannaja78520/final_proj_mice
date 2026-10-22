@@ -58,6 +58,7 @@ def run(t):
         faq = tmp / "qa.json"
         faq.write_text(json.dumps({"faqs": []}), encoding="utf-8")
         brain = svc.Brain(str(cfg), str(faq))
+        brain.voice_gender = lambda lang: ""     # the store's ending; gender agreement: check_voice_people
         cache = tmp / "cache"
         cache.mkdir()
         brain._cache_path_real = brain._cache_path
@@ -194,7 +195,7 @@ def _feeling(t, brain, svc, tmp):
     t.eq(brain.speak_order(""), ["edge", "local"], "no manner: the chosen order exactly")
     told = []
 
-    def fake_feel(prov, key, job, text, lang, voice, timeout, style="", emotion=""):
+    def fake_feel(prov, key, job, text, lang, voice, timeout, style="", emotion="", **_kw):
         told.append((text, emotion))
         return b"RIFF" + bytes([len(told)]) * 400, None
     real_feel = svc.providers.feeling_speak

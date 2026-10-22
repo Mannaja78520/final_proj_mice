@@ -91,6 +91,19 @@
   // NOT applied by itself: the PC's voice.json tts.style is the choice, set
   // from the Voice page; every event can pick its own.
   "recommended": "friendly",
+  // User 2026-10-22: *โทนแบบเลือกได้ คลิกเป็น default ได้ซัก 3 โทน*. These three
+  // are the tiles at the top of the Voice tab; a click saves it as tts.style.
+  // The other manners stay in the full list below them.
+  "featured": ["friendly", "polite", "sassy"],
+  // The speed buttons (user: *ขอมีแบบเร็วได้ด้วย ... แต่ไม่รวบคำ* - the old
+  // problem was words run together, NOT speed). Each sets tts.rate; the feeling
+  // voice gets the same speed as a tempo. Fast +20% was checked for clear words (Edge: the same letters
+  // wrong as at +0%, 5 lines, Niwat 0%, Premwadee 5.4%):
+  // scratch/voice-human-2026-10-22 (PC only).
+  "speeds": {
+    "normal": {"says": "ปกติ (Normal)", "rate": "+0%"},
+    "fast": {"says": "เร็ว (Fast)", "rate": "+20%"}
+  },
   // Services tried FIRST while a manner is on, when they are installed; the
   // chosen speak order (voice.json use.speak) follows as the backup, so the
   // line is never left unsaid. A manner may carry its own "prefer" (that one

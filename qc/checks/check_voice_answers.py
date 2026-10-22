@@ -43,6 +43,10 @@ def _brain(cfg=None):
     b = mod.Brain.__new__(mod.Brain)
     b.cfg = cfg or {"faqThreshold": 0.75}
     b.faqs = lambda: json.loads(json.dumps(FAQS))
+    # The store's own particle is what these cases test. Since A45-27 a voice
+    # of known gender sets it instead (check_voice_people); unknown here, and
+    # no network lookup of Microsoft's voice list.
+    b.voice_gender = lambda lang: ""
     return b
 
 

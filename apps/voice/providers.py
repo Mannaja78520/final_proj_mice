@@ -313,11 +313,22 @@ def azure_speak(prov, key, job, text, lang, voice, timeout, rate="", pitch=""):
 # --- a speech server on this PC that takes a FEELING (A45-25) ----------------
 # apps/voice/tts_spark/server.py: Thai with neutral/happy/sad/angry/frustrated.
 
-def feeling_speak(prov, key, job, text, lang, voice, timeout, style="", emotion=""):
+def feeling_speak(prov, key, job, text, lang, voice, timeout, style="", emotion="", person=None,
+                  tempo=1.0):
+    """`person` = a saved voice from config/voice_people.json (its speaker
+    tokens and gender, A45-29); `tempo` = the chosen speed, 1 = as made."""
     base = (job.get("base") or prov.get("base") or "").rstrip("/")
     body = {"text": text, "emotion": emotion or "neutral"}
     if job.get("tune"):              # clarity knobs, data in voice_providers.json (A45-26)
-        body["tune"] = job["tune"]
+        body["tune"] = dict(job["tune"])
+    if abs(float(tempo) - 1) >= 0.01:
+        body["tune"] = dict(body.get("tune") or {}, tempo=round(float(tempo), 3))
+    if person:
+        body["speaker"] = person.get("speaker")
+        if person.get("gender"):
+            body["gender"] = person["gender"]
+        if person.get("temperature") is not None:     # this voice's own clearest setting
+            body["tune"] = dict(body.get("tune") or {}, temperature=float(person["temperature"]))
     got = _call(base + "/speak", body, timeout=timeout, raw=True)
     return (got, None) if len(got) > 100 else (None, "it sent back no sound")
 

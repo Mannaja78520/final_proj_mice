@@ -2425,7 +2425,146 @@ static SAMPLES = {
   this.voicesReady = true;                  // collectVoice may read the boxes now
   this.pickOneVoice();
   this.fillScenarioVoices();
+  this.fillQuick();
 }
+
+// ---- Quick choices on the Voice tab (A45-29) ----------------------------
+// User 2026-10-22: *โทนแบบเลือกได้ คลิกเป็น default ได้ซัก 3 โทน ... ขอมีแบบเร็ว
+// ... เลือกเสียงได้ทั้งชายและหญิง*. One click = chosen AND saved. The tones and
+// speeds are config/voice_styles.json (`featured`, `speeds`); the voices are
+// the helper's list, this PC's saved voices first. Nothing listed here.
+  quickTile(box, o){
+  const t = document.createElement("div");
+  t.className = "tile" + (o.on ? " on" : "");
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "pick-it";
+  b.setAttribute("role", "radio"); b.setAttribute("aria-checked", o.on ? "true" : "false");
+  const name = document.createElement("span");
+  name.textContent = o.label;
+  b.appendChild(name);
+  if (o.small) { const s = document.createElement("small"); s.textContent = o.small; b.appendChild(s); }
+  if (o.on) { const n = document.createElement("span"); n.className = "now"; n.textContent = "✓ in use"; b.appendChild(n); }
+  b.onclick = o.pick;
+  t.appendChild(b);
+  if (o.tryIt) {
+    const p = document.createElement("button");
+    p.type = "button"; p.className = "try-it"; p.textContent = "▶";
+    p.title = "Play " + o.label;
+    p.setAttribute("aria-label", "Play " + o.label);
+    p.onclick = o.tryIt;
+    t.appendChild(p);
+  }
+  box.appendChild(t);
+}
+
+  quickNote(box, text){
+  box.textContent = "";
+  const p = document.createElement("p");
+  p.className = "mini"; p.textContent = text;
+  box.appendChild(p);
+}
+
+  // Plays the Thai sample as a quick choice would sound, before it is saved.
+  quickTry(over){
+  const lang = over.lang || "th";
+  const own = ((this.langVoice || {})[lang] || {}).sel;
+  // agree: the helper says the sample with THAT voice's ending (ครับ / ค่ะ).
+  const t = {speed: over.rate || (this.$("ttsRate") || {}).value || "+0%",
+             pitch: (this.$("ttsPitch") || {}).value || "+0Hz", agree: true};
+  const voice = over.voice || (own ? own.value : "");
+  if (voice && voice !== "-") t.voice = voice;
+  const style = over.style != null ? over.style : ((this.$("ttsStyle") || {}).value || "");
+  if (style || this.styleNow) t.style = style;
+  this.speak(VoiceApp.SAMPLES[lang] || VoiceApp.SAMPLES.en, lang, t);
+}
+
+  async quickSave(said){
+  const ok = await this.postConfig("quickStat");
+  if (ok) this.$("quickStat").textContent = said + " - saved.";
+  this.fillQuick();
+}
+
+  // Puts a value into a select, adding it when the list does not have it.
+  quickSet(sel, value){
+  if (!sel) return;
+  if (![...sel.options].some(o => o.value === value)) {
+    const o = document.createElement("option");
+    o.value = o.textContent = value;
+    sel.appendChild(o);
+  }
+  sel.value = value;
+}
+
+  fillQuick(){
+  const tones = this.$("toneTiles"), speeds = this.$("speedTiles"), voices = this.$("voiceTiles");
+  if (!tones) return;
+  const q = this.styleQuick || null;
+  if (!q) {
+    this.quickNote(tones, "The tones could not be read - the voice helper may be off.");
+    this.quickNote(speeds, "");
+  } else {
+    tones.textContent = "";
+    const now = (this.$("ttsStyle") || {}).value || "";
+    (q.featured || []).forEach(key => {
+      const s = (this.styleInfo || {})[key] || {};
+      this.quickTile(tones, {label: s.says || key, on: now === key,
+        small: key === q.recommended ? "recommended" : "",
+        pick: () => { this.$("ttsStyle").value = key; this.showStyleNote(); this.quickSave("Tone: " + (s.says || key)); },
+        tryIt: () => this.quickTry({style: key})});
+    });
+    if (!tones.children.length) this.quickNote(tones, "No tones are picked for here yet (featured in voice_styles.json).");
+    speeds.textContent = "";
+    const rate = (this.$("ttsRate") || {}).value || "+0%";
+    Object.entries(q.speeds || {}).forEach(([key, sp]) => {
+      this.quickTile(speeds, {label: sp.says || key, on: rate === sp.rate,
+        pick: () => { this.quickSet(this.$("ttsRate"), sp.rate); this.quickSave("Speed: " + (sp.says || key)); },
+        tryIt: () => this.quickTry({rate: sp.rate})});
+    });
+    const sc = this.scenarioNow && this.scenarioNow();
+    if (sc && sc.style) this.$("quickStat").textContent = "The event “" + sc.name
+      + "” has a tone of its own, so that one is used there. Change it on Personality.";
+  }
+  if (!voices) return;
+  if (!this.voicesReady) return;                 // still reading: keep "Reading the voices…"
+  // Every language the store speaks (user 2026-10-22: *เอาภาษาอื่นด้วย*).
+  const langSel = this.$("quickLang");
+  const langs = this.langs();
+  if (langSel && !(langSel.options && langSel.options.length)) {
+    langs.forEach(l => { const o = document.createElement("option"); o.value = l; o.textContent = VoiceApp.langName(l); langSel.appendChild(o); });
+    langSel.onchange = () => this.fillQuick();
+  }
+  const lang = (langSel && langSel.value) || langs[0] || "th";
+  const list = (this.voicesByLang || {})[lang];
+  if (!list || !list.length) { this.quickNote(voices, "No voice list - this PC may be offline; the saved voice still speaks."); return; }
+  voices.textContent = "";
+  const sel = ((this.langVoice || {})[lang] || {}).sel;
+  const one = (this.$("oneVoice") || {}).value || "";
+  // English alone has dozens of voices: show the chosen voice's country
+  // (en-US, en-GB...) - the full list stays in the box below.
+  const cur = list.find(v => sel && v.name === sel.value);
+  const near = v => v.own || !cur || !cur.locale || v.locale === cur.locale;
+  [["Female", "Women"], ["Male", "Men"]].forEach(([g, head]) => {
+    const mine = list.filter(v => v.gender === g && near(v)).sort((a, b) => (b.own ? 1 : 0) - (a.own ? 1 : 0));
+    if (!mine.length) return;
+    const h = document.createElement("p");
+    h.className = "voice-group"; h.textContent = head;
+    voices.appendChild(h);
+    const box = document.createElement("div");
+    box.className = "tiles";
+    box.setAttribute("role", "radiogroup"); box.setAttribute("aria-label", head + " voices");
+    voices.appendChild(box);
+    mine.forEach(v => this.quickTile(box, {label: v.says || v.name,
+      small: v.own ? "This PC" + (v.note ? " · " + v.note : "") : "Microsoft online · " + (v.locale || ""),
+      on: !one && sel && sel.value === v.name,
+      pick: () => {
+        if (this.$("oneVoice")) { this.$("oneVoice").value = ""; this.pickOneVoice(); }
+        this.quickSet(sel, v.name);
+        this.quickSave(VoiceApp.langName(lang) + " voice: " + (v.says || v.name));
+      },
+      tryIt: () => this.quickTry({voice: v.name, lang})}));
+  });
+}
+
 
   // One row per language: its own voice, used when no one voice is chosen.
   fillLangVoices(){
@@ -2517,6 +2656,8 @@ static SAMPLES = {
   sel.value = this.styleInfo[now] ? now : "";
   this.showStyleNote();
   this.fillScenarioStyle();
+  this.styleQuick = got;
+  this.fillQuick();
 }
   showStyleNote(){
   const sel = this.$("ttsStyle"), note = this.$("styleNote");

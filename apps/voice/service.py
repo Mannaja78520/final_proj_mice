@@ -1387,6 +1387,13 @@ class Brain:
         """
         langs = list(((self.cfg.get("tts") or {}).get("voices") or {}).keys())
         out = {l: [] for l in langs}
+        # This PC's saved voices first (A45-29): {"name": "person:<id>", "own": true}.
+        for pid, p in (self.people().get("people") or {}).items():
+            for l in p.get("languages") or []:
+                if l in out:
+                    out[l].append({"name": "person:" + pid, "says": p.get("says") or pid,
+                                   "gender": {"female": "Female", "male": "Male"}.get(p.get("gender"), ""),
+                                   "locale": l, "own": True, "note": p.get("note") or ""})
         for v in self._edge_voices():
             loc = str(v.get("Locale") or "")
             for l in langs:
@@ -1492,12 +1499,17 @@ class Brain:
         # A scenario may set its own speed and pitch - a poem read at shop
         # speed is the complaint this answers.
         rate, pitch = self.steps(rate, pitch)
+        # A saved voice of the feeling voice (A45-29): that service first; the
+        # others speak its `backup` (same gender) if it is off or starting.
+        who = self.person(named)
+        if who:
+            named = str(who.get("backup") or "")
         natural = "Neural" in (named or "")
         # The speaking manner (A45-25): what it changes depends on the
         # service, read from its `styles` capability - never assumed.
         skey, sty = self.style_choice(style)
         self._style_done = {"style": skey, "how": "", "by": ""}
-        order = self.speak_order(skey)
+        order = self.speak_order(skey, who)
 
         def one(pid, prov):
             kind = prov.get("kind")
@@ -1534,10 +1546,14 @@ class Brain:
                 feel = (sty.get("emotion") if skey else "") or "neutral"
                 # New clarity settings = new sound: never replay a clip cut by the old ones (A45-26).
                 tune = ("|tune=" + json.dumps(sjob["tune"], sort_keys=True)) if sjob.get("tune") else ""
+                tempo = self.tempo_of(rate)
+                tune += ("|person=%s" % who["id"]) if who else ""
+                tune += ("|tempo=%.2f" % tempo) if abs(tempo - 1) >= 0.01 else ""
                 return self._spoken("%s:%s%s%s" % (pid, feel, tag, tune), text, "", "",
                                     lambda: providers.feeling_speak(
                                         prov, "", sjob, text, lang, "",
-                                        timeout=float(sjob.get("timeoutSeconds") or 20), emotion=feel))
+                                        timeout=float(sjob.get("timeoutSeconds") or 20), emotion=feel,
+                                        person=who, tempo=tempo))
             wire = providers.WIRES.get(kind, {}).get("speak")
             if not wire:
                 return None, "it cannot speak"
@@ -1580,6 +1596,50 @@ class Brain:
             self._styles = got
         return got[1]
 
+    def people(self):
+        """config/voice_people.json - saved voices of this PC's Thai feeling
+        voice (A45-29), re-read when it changes on disk. {"people": {id: entry}}."""
+        p = CODE / "config" / "voice_people.json"
+        try:
+            m = p.stat().st_mtime
+        except OSError:
+            return {"people": {}}
+        got = getattr(self, "_people", None)
+        if not got or got[0] != m:
+            try:
+                got = (m, registry.load(p) or {})
+            except (OSError, ValueError):
+                got = (m, {"people": {}})
+            self._people = got
+        return got[1]
+
+    def person(self, name):
+        """The saved voice a voice name means ("person:<id>"), or None."""
+        name = str(name or "")
+        if not name.startswith("person:"):
+            return None
+        entry = (self.people().get("people") or {}).get(name[len("person:"):])
+        return dict(entry, id=name[len("person:"):]) if entry else None
+
+    @staticmethod
+    def tempo_of(rate):
+        """"-10%" -> 0.9: the chosen speed for a voice that has no rate of its own."""
+        try:
+            return max(0.5, min(2.0, 1 + int(re.sub(r"[^0-9+-]", "", str(rate or "")) or 0) / 100.0))
+        except ValueError:
+            return 1.0
+
+    def style_extra(self, key):
+        """A key a character's snapshot may predate (`featured`, `speeds`,
+        A45-29): the character's own voice_styles, else the shipped one."""
+        got = self.styles().get(key)
+        if got is None:
+            try:
+                got = (registry.load(CODE / "config" / "voice_styles.json") or {}).get(key)
+            except (OSError, ValueError):
+                got = None
+        return got
+
     def style_choice(self, style=None):
         """(key, entry) of the manner a line is said in: the request's, else
         the scenario's, else tts.style. ("", {}) = none, as before A45-25.
@@ -1591,14 +1651,19 @@ class Brain:
         entry = (self.styles().get("styles") or {}).get(key)
         return (key, entry) if entry else ("", {})
 
-    def speak_order(self, skey):
+    def speak_order(self, skey, who=None):
         """The speak chain, with a manner's preferred services first (voice_styles
         `prefer`) - the chosen order stays as the backup, so a line is never
-        left unsaid when the feeling voice is off or still starting."""
+        left unsaid when the feeling voice is off or still starting. A saved
+        voice (`who`) puts the feeling services first."""
         chain = self.chain("speak")
+        known = self.services().get("providers") or {}
+        if who:
+            first = [p for p, v in known.items() if v.get("kind") == "feeling"
+                     and "speak" in (v.get("jobs") or {}) and p not in chain]
+            return first + chain
         if not skey:
             return chain
-        known = self.services().get("providers") or {}
         # A manner's own `prefer` wins over the shared one (A45-26: clarity first,
         # the feeling voice only where a manner asks for it).
         entry = (self.styles().get("styles") or {}).get(skey) or {}
@@ -1661,16 +1726,62 @@ class Brain:
         a = self.answer_cfg()
         _key, sty = self.style_choice()
         own = sty.get("answer") or {}
-        return (own.get("particle") or a.get("politeParticle") or "ครับ",
-                own.get("pronoun") or a.get("politePronoun") or "ผม",
+        # A45-29 (user 2026-10-22: *เสียงไทยชายหญิงมีลงท้ายต่างกัน ครับ/ค่ะ*): the
+        # voice's gender sets the ending and self-word; a manner's own wins.
+        g = self.gender_words("th")
+        return (own.get("particle") or g.get("particle") or a.get("politeParticle") or "ครับ",
+                own.get("pronoun") or g.get("pronoun") or a.get("politePronoun") or "ผม",
                 ((own.get("wording") or {}).get(lang) or "").strip())
+
+    def voice_gender(self, lang):
+        """"female" / "male" / "" - the gender of the voice that speaks `lang`:
+        a saved voice says it, an Edge voice from Microsoft's own list."""
+        try:
+            ident, named = self.resolve_voice(lang)
+        except Exception:                               # noqa: BLE001
+            return ""
+        if not ident:
+            return ""
+        who = self.person(named)
+        if who:
+            return str(who.get("gender") or "")
+        for v in self._edge_voices():
+            if v.get("ShortName") == named:
+                return str(v.get("Gender") or "").lower()
+        return ""
+
+    def gender_words(self, lang, gender=None):
+        """{"particle", "pronoun"} that agree with the speaking voice
+        (config/voice_people.json `agree`), or {} when unknown."""
+        agree = ((self.people().get("agree") or {}).get(lang) or {})
+        if not agree:
+            return {}
+        return agree.get(self.voice_gender(lang) if gender is None else gender) or {}
+
+    def agree_text(self, text, lang, voice=""):
+        """The page's Try (`agree`): a sample said with the ending and self-word
+        of THAT voice's gender, so a man's voice never tries ค่ะ."""
+        if lang != "th":
+            return text
+        g = ""
+        who = self.person(voice)
+        if who:
+            g = str(who.get("gender") or "")
+        elif voice:
+            g = next((str(v.get("Gender") or "").lower() for v in self._edge_voices()
+                      if v.get("ShortName") == voice), "")
+        w = self.gender_words("th", g if voice else None)
+        if not w:
+            return text
+        text = one_particle(text, w.get("particle") or "", self.particles())
+        return one_pronoun(text, w.get("pronoun") or "", self.pronouns())
 
     def manner_saved(self, text, lang):
         """A saved Thai answer in the manner's own ending and self-word, ONLY
         when the manner says `answer.saved` (the เจ๊ manner: a เจ๊ voice saying
         ครับ sounded wrong, 2026-10-21). The rest of the words stay as saved."""
         _key, sty = self.style_choice()
-        if lang != "th" or not (sty.get("answer") or {}).get("saved"):
+        if lang != "th" or not ((sty.get("answer") or {}).get("saved") or self.gender_words("th")):
             return text
         keep, me, _w = self.manner_answer("th")
         text = one_particle(text, keep, self.particles())
@@ -1714,6 +1825,11 @@ class Brain:
                     up[pid] = False
         return {"styles": out, "chosen": chosen, "up": up,
                 "recommended": self.styles().get("recommended") or "",
+                # The quick choices on the Voice tab (A45-29): the 3 tones shown
+                # as tiles, the speeds, and the saved default tone.
+                "featured": [k for k in self.style_extra("featured") or [] if k in out],
+                "speeds": self.style_extra("speeds") or {},
+                "default": str((self.cfg.get("tts") or {}).get("style") or ""),
                 "why": getattr(self, "_feeling_why", {}),
                 "last": getattr(self, "_style_last", None) or {}}
 
@@ -3455,6 +3571,8 @@ class VoiceHandler(BaseHTTPRequestHandler):
                                "there was nothing to speak"}, 400)
         try:
             voice_name = str(req.get("voice") or "").strip()
+            if req.get("agree"):
+                text = self.brain.agree_text(text, req.get("lang") or "", voice_name)
             # "speed" / "pitch": the page's Try it, heard before saving.
             # Not "rate" - that is the robot speaker's sample rate below.
             if req.get("clip") and self.brain.profiles:
