@@ -3,7 +3,7 @@
 Owner: codex:10221724-9d65
 Updated: 2026-10-22T17:54:02.056842+07:00
 Branch: task/A46-2-10221724-9d65
-Last commit: e8d61e4 (design checkpoint follows)
+Last commit: 0361ef7 (planner/settings checkpoint follows)
 Plan: A46-3
 
 ## Goal
@@ -25,11 +25,19 @@ no motion commands issued. Preserve existing browser31-keyframe backup and
 all real calibration. No firmware changes.
 
 ## Doing now
-Design before code: inspect shared planner and normal motion dispatch,
-one outbound queue, latest-goal handling, STOP invalidation, actual settled
-start pose vs stale targets, leg timing/easing, preview/export integration.
-Candidate E:/final_proj/mice/code/.staging-profiles, same isolated WIP branch.
-No source edits or checks yet. Root user dirty files preserved.
+Pure RRT* implemented with checked parent choice, rewiring/descendant costs,
+goal reconsideration, quick connect seed and checked shortcuts. Original
+path check19/0. Added Settings extra gap in mm, persisted through rig/settings
+bundles. Baseline4mm unchanged; extra gap affects body/head/arms/hands.
+Initial combined31/3:3 failures were test bundle aliasing (collectSettings
+returns live RIG reference); fixed test to serialize before mutating. Recheck
+new check15/0. Real RRT* rewires and lower-cost parents observed in QC.
+Independent planner review found/fixed corrupt numeric setting bypass,
+source-rounding mismatch and async input/rig revision races. Async slicing is
+a scheduling target, not a hard per-collision deadline. Need final review.
+Remaining main work: normal motion single owner/settled actual source,
+checked timeline preview+dispatch, STOP/Live-off/cancel cases. Not deployed;
+robot idle onWiFi138. Original user calibration/config not changed.
 
 ## Next
 1. Apply bounded RRT* algorithm and shared checked-motion integration, keeping

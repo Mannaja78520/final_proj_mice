@@ -1,11 +1,16 @@
 {
-  "_what": "How Studio keeps the arm from hitting itself on a move (A46-1). A move is first tried as the straight joint path; only if that hits does the planner look for a way round. planner: rrt-connect (go round) or straight (refuse instead). checkDeg: biggest joint change between two checked points. stepDeg: how far the search grows per try. budgetMs: time allowed in the editor (video, recordings, talk gestures). liveBudgetMs: time allowed while following live - none found in time and the arm holds its last safe pose. shortcuts: tries at straightening the way round. seed: same seed, same path.",
-  "planner": "rrt-connect",
-  "checkDeg": 3,
+  "_what": "Studio checks each motion against its rig. A blocked straight path uses a quick connect seed and RRT* parent selection/rewiring, then checked shortcuts. Final wire-rounded legs and endpoints are rechecked. Budgets bound search; failure holds instead of sending an unchecked path. Data settings also control the yielding live planner.",
+  "planner": "rrt-star",
+  "checkDeg": 1,
   "stepDeg": 12,
   "goalBias": 0.2,
   "budgetMs": 1500,
   "liveBudgetMs": 60,
   "shortcuts": 60,
-  "seed": 1
+  "seed": 1,
+  "seedBudgetMs": 40,
+  "optimizeMs": 80,
+  "sliceMs": 12,
+  "maxNodes": 2000,
+  "rewireFactor": 1.1
 }

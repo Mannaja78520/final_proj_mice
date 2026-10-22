@@ -36,6 +36,7 @@ const HANDS = [{ side: "L", label: "Left hand" }, { side: "R", label: "Right han
 // servo angle where the arm actually hangs — adjust it in the Rig setup
 // card, never in code. Persisted in the browser + saved into projects.
 const DEFAULT_RIG = {
+  extraClearanceMm: 0,       // extra space BETWEEN parts, above the 4 mm base
   // left and right arm lengths are separate — an STL on one side never
   // changes the other side.
   // DEFAULTS SCALED TO THE REAL ROBOT (measured from nong_assembly.STEP, mm):

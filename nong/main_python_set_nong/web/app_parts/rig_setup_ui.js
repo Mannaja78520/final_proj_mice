@@ -7,6 +7,7 @@ const DIM_LABELS = {
   shrugPivot: "shrug pivot ↑ (mm above shoulders)",
 };
 function renderRigUI() {
+  if ($("extraClearanceMm")) $("extraClearanceMm").value = RIG.extraClearanceMm ?? 0;
   const jb = $("rigJoints");
   jb.innerHTML = "";
   // WHERE EACH PALM SITS (A44-1). The hand part can be fixed to the forearm
@@ -402,9 +403,23 @@ function travelWarning(i) {
          `Use a wider servo (270°), a smaller gear ratio, or tighter min°/max°.`;
 }
 function rigChanged() {
+  if (typeof cancelSafeMotion === "function") cancelSafeMotion("the rig or safety gap changed");
   saveRig();
   buildRobot();
   renderSliders();
+}
+function setSafetyClearance(raw) {
+  const value = raw.trim() === "" ? NaN : Number(raw);
+  const stat = $("clearanceStat");
+  if (!Number.isFinite(value) || value < 0) {
+    stat.textContent = "Enter a distance of zero or more millimetres.";
+    $("extraClearanceMm").value = RIG.extraClearanceMm ?? 0;
+    return false;
+  }
+  RIG.extraClearanceMm = value;
+  rigChanged();
+  stat.textContent = "Saved: keep at least " + (CLEAR + value) + " mm between parts. Existing paths will be checked again.";
+  return true;
 }
 
 // ---- servo offset, one joint at a time -----------------------------------

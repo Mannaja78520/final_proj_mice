@@ -57,6 +57,9 @@ function fkPoints(p) {
 
 // returns null (safe) or a short reason string
 function collisionAt(p) {
+  const extra = RIG.extraClearanceMm ?? 0;
+  if (!Number.isFinite(extra) || extra < 0) return "the extra safety gap is invalid";
+  const clearance = CLEAR + extra;
   const d = RIG.dims, k = fkPoints(p);
   const hx = d.torsoW / 2, hy = d.torsoH / 2, hz = d.torsoD / 2;
   const headC = new THREE.Vector3(0, hy + 68, 0);
@@ -72,17 +75,17 @@ function collisionAt(p) {
       const t = s.t0 + (1 - s.t0) * i / 6;
       const pt = segPoint(s.a, s.b, t);
       const r = t > 0.9 && s.n.includes("forearm") ? R_WRIST : s.r; // wrist ball
-      if (distToBox(pt, hx, hy, hz) < r + CLEAR) return s.n + " hits the body";
-      if (pt.distanceTo(headC) < r + R_HEAD + CLEAR) return s.n + " hits the head";
+      if (distToBox(pt, hx, hy, hz) < r + clearance) return s.n + " is too close to the body";
+      if (pt.distanceTo(headC) < r + R_HEAD + clearance) return s.n + " is too close to the head";
     }
   }
   // left arm vs right arm (all segment pairs)
   const L = [segs[0], segs[1]], R = [segs[2], segs[3]];
   for (const sl of L)
     for (const sr of R)
-      if (segSegDist(sl.a, sl.b, sr.a, sr.b) < sl.r + sr.r + CLEAR)
-        return sl.n + " hits the " + sr.n;
-  if (k.wrL.distanceTo(k.wrR) < 2 * R_WRIST + CLEAR) return "the hands hit each other";
+      if (segSegDist(sl.a, sl.b, sr.a, sr.b) < sl.r + sr.r + clearance)
+        return sl.n + " is too close to the " + sr.n;
+  if (k.wrL.distanceTo(k.wrR) < 2 * R_WRIST + clearance) return "the hands are too close to each other";
   return null;
 }
 

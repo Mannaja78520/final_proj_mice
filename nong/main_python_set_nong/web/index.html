@@ -607,6 +607,19 @@
     </div>
 
     <div class="card" data-stab="setup">
+      <h2>Movement safety</h2>
+      <div class="row">
+        <label for="extraClearanceMm">Extra gap between parts</label>
+        <input id="extraClearanceMm" type="number" min="0" step="1" value="0"
+          onchange="setSafetyClearance(this.value)" style="width:90px">
+        <span>mm</span>
+      </div>
+      <div class="mini">Added to the usual 4 mm gap between arms, body, head and hands.
+        Increase this for clothing, allowing for both layers where parts approach.
+        The planner refuses a move if it cannot keep the gap.</div>
+      <div id="clearanceStat" class="statline" role="status"></div>
+    </div>
+    <div class="card" data-stab="setup">
       <h2>Rig setup <span class="mini">(match the 3D model to your robot)</span></h2>
       <div class="mini"><b>zero°</b> = the joint angle where that joint is
         drawn <i>straight</i> (arm along the body). It is just a reference — the
