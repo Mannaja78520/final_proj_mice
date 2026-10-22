@@ -12,6 +12,9 @@ Plan: <plan ids, e.g. A45-11>
 ## Doing now
 <written and pushed BEFORE each step: what you are about to do, the files, the approach>
 
+## Facts found
+- <file:line - what it does / why it matters; so the next AI does not read it again>
+
 ## Done
 - <what landed, with PR or commit and how it was verified>
 

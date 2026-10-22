@@ -33,6 +33,16 @@ Gaps found by reading the code 2026-10-22:
    prize rules.
 4. A47-9 docs/gacha/friend_requests.md + Thai list in the thread.
 
+## Facts found
+- All-Jao-Games is a static folder (python -m http.server 8080); wins only in its localStorage:
+  wheel script.js:8 key all-jao-games.wheel.v2, record wheel-state.js:28 {id, prizeId, label};
+  claw claw-game.js:8,308 same ledger; quiz quiz-game.js:8,138 players {id, name, score};
+  memory matching-game.js:84,94 only #memory-status-text. No fetch/postMessage anywhere.
+- Face_Regonize e8d4a22: GET /api/node/{id}/present exists (nodes.py:68,397); person has
+  call_as/title/language (models.py:39-46), no tags/groups; import picks Name/Photo columns.
+- Hub gate: main.route uses hub_auth.gated + local_ok/from_program_here, now also key_ok +
+  app_key_name and page_here_ok + page_here. Help page is built from main_python/web/help/parts/.
+
 ## Doing now
 Quick QC (`python qc/run_qc.py --quiet --quick`), then full QC, then PR from
 claude/project-thread-10qzvx to main and merge when green.
