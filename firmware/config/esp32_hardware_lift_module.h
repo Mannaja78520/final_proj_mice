@@ -59,7 +59,9 @@
     // the limit switches, GOTO limited to bottom/top stage, stage known only
     // at the limits. (Also settable per-board: "encoder: 0" in module.yaml
     // on the SD card, or "CFG encoder 0".)
-    #define LIFT_HAS_ENCODER 1
+    // 0 since 2026-10-22: the user says the built lift has no encoder (A47-12);
+    // a lift that gets one later sets "CFG encoder 1" (pins below).
+    #define LIFT_HAS_ENCODER 0
     #define MOTOR_ENCODER_INCRIMENT -1
     #define MOTOR_ENCODER_PIN_A 25
     #define MOTOR_ENCODER_PIN_B 26

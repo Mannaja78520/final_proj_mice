@@ -46,9 +46,8 @@ nothing: A47-1..4 merged; only A47-5 (bench) left, owner free.
    A47-10 (audit, PR after #60): a kind may name substitutes (Kinds > When it runs out, give
    instead); each machine row has "its own page"; Google Form sample docs/gacha/form_sample.gs.
    Audit table: /mnt/project-files/gacha/audit_2026-10-22.md.
-   A47-11 encoder (optional, off until PIN enc_a is set): on the bench set Encoder A/B pins,
-   watch G? enc_per_pass learn, then try GCFG slow 40 / enc_stall 500 and measure
-   GACHA_MIN_SPEED (PWM the gearbox still turns at). The magnet always decides the stop.
+   A47-11 encoder code was REMOVED again by A47-12 (user 2026-10-22: no encoder on the
+   gachapon or the lift). The hall + magnets alone decide where it stops.
 2. A47-5 on the bench (PC RC session): flash mice_gacha over USB/OTA, PIN motor_a/motor_b if not 25/26, measure drop pockets (GCFG drop), speed, settle; add the machine on the Prize machines page; rebuild MiceHub.exe (spec) so the new page and routes ship.
 
 ## The machine's CAD (read-only, 2026-10-23, claude:xdlrot)
@@ -59,7 +58,7 @@ nothing: A47-1..4 merged; only A47-5 (bench) left, owner free.
 - Plates: top + bottom 350 x 350 x 8.5, two middle 300 x 300 x 8.5; plates span ~95 mm
   (bottom at ~154, top ~248 on the model's axis). Walls 246.7 x 76.5 (3 plain sides, one
   `gacha_wall_cover_hole` side = the way out), 4 base covers 211 x 46.5 x 14.
-- Drive: Namiki 22CL-3501PG geared motor with encoder, D20L25 jaw coupler (5 mm / 8 mm
+- Drive: Namiki 22CL-3501PG geared motor (the user says: no encoder fitted), D20L25 jaw coupler (5 mm / 8 mm
   shafts), bearings 6810-2RS + 608ZZ, SKF AXK1730 thrust bearing.
 - Not readable without SolidWorks: tube inner diameter (capsule size), gear ratio, the
   hole's exact size. Firmware slot count should be 4 unless the build differs.

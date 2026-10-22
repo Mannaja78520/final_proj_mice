@@ -1,6 +1,6 @@
 # fw-lift
 
-The lift module: motor, encoder, limits, RGB, speaker.
+The lift module: motor, limit switches (encoder optional, off by default: the built lift has none, user 2026-10-22), RGB, speaker.
 
 ## Rules and traps
 
@@ -23,10 +23,11 @@ The lift module: motor, encoder, limits, RGB, speaker.
 
 - nothing
 
-## Checks that test it (3)
+## Checks that test it (4)
 
 - `check_line_protocol`
+- `check_no_encoder`
 - `check_registries`
 - `check_rgb_pin`
 
-Run them: `python qc/run_qc.py --no-build check_line_protocol check_registries check_rgb_pin`
+Run them: `python qc/run_qc.py --no-build check_line_protocol check_no_encoder check_registries check_rgb_pin`

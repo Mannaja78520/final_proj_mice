@@ -39,10 +39,6 @@ static const Field FIELDS[] = {
 #endif
 #if MICE_HAS_GACHA
     {"hall",      "hall",    "Hall sensor",   "gacha", false},
-#if !MICE_HAS_LIFT
-    {"enc_a",     "enca",    "Encoder A (-1=none)", "gacha", false},
-    {"enc_b",     "encb",    "Encoder B (-1=none)", "gacha", false},
-#endif
 #endif
 #if MICE_HAS_LIFT
     {"enc_a",     "enca",    "Encoder A",     "lift",  false},
@@ -122,11 +118,7 @@ void HwConfig::begin() {
     pins.motorA = MOTOR_IN_A;   pins.motorB = MOTOR_IN_B;   pins.motorPwm = MOTOR_PWM;
 #endif
     pins.hall = GACHA_HALL_PIN;
-#if MICE_HAS_GACHA && !MICE_HAS_LIFT
-    pins.encA = GACHA_ENC_A; pins.encB = GACHA_ENC_B;   // optional, off by default
-#else
     pins.encA = MOTOR_ENCODER_PIN_A; pins.encB = MOTOR_ENCODER_PIN_B;
-#endif
     pins.limitTop = LIMIT_TOP;  pins.limitDown = LIMIT_DOWN;
     pins.rs485Rx = RS485_RX_PIN; pins.rs485Tx = RS485_TX_PIN; pins.rs485De = RS485_DE_PIN;
     pins.sdCs = SD_CS_PIN; pins.sdSck = SD_SCK_PIN; pins.sdMiso = SD_MISO_PIN; pins.sdMosi = SD_MOSI_PIN;
