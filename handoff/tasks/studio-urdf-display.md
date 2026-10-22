@@ -131,6 +131,20 @@ Plan: A48-1 (robot page)
   scratch/deploy-a48-2-2026-10-23/left-up-*.png). Put back to Simple shapes, old pose and sizes.
   urdf_view.json not changed.
 
+## PC check after A48-3 (2026-10-23 06:45, claude:xdlrot)
+- main ce99f69, build_web, systems build, exe rebuilt (stale=false ed5ace9ea74b), hub restarted.
+- check_urdf_look (real model): 33/34, real-model case still FAILS.
+  Fit L 15.7 deg (up 14.6) swapSh, R 11.4 deg (up 11.4) swapSh; swapEl false both.
+  Agree from home: left 1.00 x4, WAIST/SHRUG 1.00; R_SH_P -0.62, R_SH_R 0.43, R_EL_P -0.39,
+  R_EL_R 0.71. Bindings as A48-2 except R_SH_P=R_SH_R now (+).
+- qc/_urdf_real.json (git-ignored) sent to the coordinator in full. Note in it: the right
+  hand tip is NOT from the mesh (`fromMesh: false`, local [145.8, 63.0, -91.0]) while the
+  left one is (`fromMesh: true`, [-1.9, 4.7, -181.7]) - a likely cause of the right arm fit.
+- Studio Views CAD: warnings "left up to 16 deg, right up to 21 deg". Raising each shoulder
+  pitch +60 (Left / Right views): both CAD arms swing forward like the shapes, the right
+  forearm sits differently. Screenshots scratch/deploy-a48-3-2026-10-23/{left,right}-up-*.png.
+  Back to Simple shapes, old pose and sizes.
+
 ## Next
 1. Full QC green -> PR -> merge.
 2. PC: copy E:/final_proj/mice/model/nong_urdf/solidworks/export/nong_description
