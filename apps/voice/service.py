@@ -1370,6 +1370,13 @@ class Brain:
         """
         langs = list(((self.cfg.get("tts") or {}).get("voices") or {}).keys())
         out = {l: [] for l in langs}
+        # This PC's saved voices first (A45-27): {"name": "person:<id>", "own": true}.
+        for pid, p in (self.people().get("people") or {}).items():
+            for l in p.get("languages") or []:
+                if l in out:
+                    out[l].append({"name": "person:" + pid, "says": p.get("says") or pid,
+                                   "gender": {"female": "Female", "male": "Male"}.get(p.get("gender"), ""),
+                                   "locale": l, "own": True, "note": p.get("note") or ""})
         for v in self._edge_voices():
             loc = str(v.get("Locale") or "")
             for l in langs:
@@ -1475,12 +1482,17 @@ class Brain:
         # A scenario may set its own speed and pitch - a poem read at shop
         # speed is the complaint this answers.
         rate, pitch = self.steps(rate, pitch)
+        # A saved voice of the feeling voice (A45-27): that service first; the
+        # others speak its `backup` (same gender) if it is off or starting.
+        who = self.person(named)
+        if who:
+            named = str(who.get("backup") or "")
         natural = "Neural" in (named or "")
         # The speaking manner (A45-25): what it changes depends on the
         # service, read from its `styles` capability - never assumed.
         skey, sty = self.style_choice(style)
         self._style_done = {"style": skey, "how": "", "by": ""}
-        order = self.speak_order(skey)
+        order = self.speak_order(skey, who)
 
         def one(pid, prov):
             kind = prov.get("kind")
@@ -1517,10 +1529,14 @@ class Brain:
                 feel = (sty.get("emotion") if skey else "") or "neutral"
                 # New clarity settings = new sound: never replay a clip cut by the old ones (A45-26).
                 tune = ("|tune=" + json.dumps(sjob["tune"], sort_keys=True)) if sjob.get("tune") else ""
+                tempo = self.tempo_of(rate)
+                tune += ("|person=%s" % who["id"]) if who else ""
+                tune += ("|tempo=%.2f" % tempo) if abs(tempo - 1) >= 0.01 else ""
                 return self._spoken("%s:%s%s%s" % (pid, feel, tag, tune), text, "", "",
                                     lambda: providers.feeling_speak(
                                         prov, "", sjob, text, lang, "",
-                                        timeout=float(sjob.get("timeoutSeconds") or 20), emotion=feel))
+                                        timeout=float(sjob.get("timeoutSeconds") or 20), emotion=feel,
+                                        person=who, tempo=tempo))
             wire = providers.WIRES.get(kind, {}).get("speak")
             if not wire:
                 return None, "it cannot speak"
@@ -1563,6 +1579,39 @@ class Brain:
             self._styles = got
         return got[1]
 
+    def people(self):
+        """config/voice_people.json - saved voices of this PC's Thai feeling
+        voice (A45-27), re-read when it changes on disk. {"people": {id: entry}}."""
+        p = CODE / "config" / "voice_people.json"
+        try:
+            m = p.stat().st_mtime
+        except OSError:
+            return {"people": {}}
+        got = getattr(self, "_people", None)
+        if not got or got[0] != m:
+            try:
+                got = (m, registry.load(p) or {})
+            except (OSError, ValueError):
+                got = (m, {"people": {}})
+            self._people = got
+        return got[1]
+
+    def person(self, name):
+        """The saved voice a voice name means ("person:<id>"), or None."""
+        name = str(name or "")
+        if not name.startswith("person:"):
+            return None
+        entry = (self.people().get("people") or {}).get(name[len("person:"):])
+        return dict(entry, id=name[len("person:"):]) if entry else None
+
+    @staticmethod
+    def tempo_of(rate):
+        """"-10%" -> 0.9: the chosen speed for a voice that has no rate of its own."""
+        try:
+            return max(0.5, min(2.0, 1 + int(re.sub(r"[^0-9+-]", "", str(rate or "")) or 0) / 100.0))
+        except ValueError:
+            return 1.0
+
     def style_choice(self, style=None):
         """(key, entry) of the manner a line is said in: the request's, else
         the scenario's, else tts.style. ("", {}) = none, as before A45-25.
@@ -1574,14 +1623,19 @@ class Brain:
         entry = (self.styles().get("styles") or {}).get(key)
         return (key, entry) if entry else ("", {})
 
-    def speak_order(self, skey):
+    def speak_order(self, skey, who=None):
         """The speak chain, with a manner's preferred services first (voice_styles
         `prefer`) - the chosen order stays as the backup, so a line is never
-        left unsaid when the feeling voice is off or still starting."""
+        left unsaid when the feeling voice is off or still starting. A saved
+        voice (`who`) puts the feeling services first."""
         chain = self.chain("speak")
+        known = self.services().get("providers") or {}
+        if who:
+            first = [p for p, v in known.items() if v.get("kind") == "feeling"
+                     and "speak" in (v.get("jobs") or {}) and p not in chain]
+            return first + chain
         if not skey:
             return chain
-        known = self.services().get("providers") or {}
         # A manner's own `prefer` wins over the shared one (A45-26: clarity first,
         # the feeling voice only where a manner asks for it).
         entry = (self.styles().get("styles") or {}).get(skey) or {}
