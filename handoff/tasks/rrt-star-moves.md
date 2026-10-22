@@ -1,8 +1,8 @@
 # Checked RRT* detours for normal Studio movements
 
-Owner: codex:10221724-9d65
-Updated: 2026-10-22T18:42:00+07:00
-Branch: task/A46-2-10221724-9d65
+Owner: claude:cloud-48oymn
+Updated: 2026-10-22 12:23 +0000
+Branch: claude/project-thread-48oymn (from task/A46-2-10221724-9d65 @4c362a9)
 Last commit: 239711d (final source checkpoint follows)
 Plan: A46-3
 
@@ -25,6 +25,10 @@ no motion commands issued. Preserve existing browser31-keyframe backup and
 all real calibration. No firmware changes.
 
 ## Doing now
+Claude (cloud) took over from Codex 2026-10-22 19:25 Bangkok: set up cloud QC,
+run the A46-3 focused checks, then full quiet QC, then PR + merge.
+
+## Codex state at hand-off (4c362a9)
 RRT* plus checked source/rounded legs, one dispatch owner and actual reported
 arrival, immutable native/hub startup, captured target/serial port/bus, Stop
 barrier and Monitor/follow cancellation implemented. No force override.
