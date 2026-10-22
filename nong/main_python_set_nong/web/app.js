@@ -1999,10 +1999,10 @@ function gotoXyz(arm) {
   }
   pose = best;
   holdSide(arm, true);            // A45-28: the side kept on top, hand in place
-  poseChanged(false);
   const got = fkPoints(pose)[wrKey];
   // the gap readout and the orange mark work in the 3D view's own space
   askReach(arm, wristPos(arm).add(t.clone().sub(got)));
+  poseChanged(false);
   const err = Math.round(got.distanceTo(t));
   $("tlStat").textContent = (arm === 0 ? "left" : "right") +
     ` wrist moved to (${Math.round(got.x)}, ${Math.round(got.y)}, ${Math.round(got.z)})` +
