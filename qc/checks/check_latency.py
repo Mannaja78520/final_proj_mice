@@ -35,8 +35,14 @@ def run(t):
     app = (F.STUDIO_WEB / "app.js").read_text(encoding="utf-8", errors="replace")
     pump = app[app.find("function livePump"):]
     pump = pump[:pump.find("\n}")]
-    t.contains(pump, '" T " + liveT()',
+    # Since A46-3 the drag's time is attached where the pose is built and the
+    # pump hands it to the checked route; both halves must hold.
+    send = app[app.find("function sendPoseLive"):]
+    send = send[:send.find("\n")]
+    t.contains(send, '" T " + liveT()',
                "a dragged pose asks for a time, instead of the module's easing speed")
+    t.contains(pump, "checkedPose(work.goal,work.ms",
+               "and the pump passes that time on to the checked move")
     t.contains(pump, "liveRtt +=",
                "and the round trip is measured from the traffic itself")
     fn = app[app.find("function liveT()"):]
