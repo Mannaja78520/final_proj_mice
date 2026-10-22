@@ -216,6 +216,28 @@ def _hub(t, url, config, move, sound):
         finally:
             gestures.merge_mine = original_merge
             pointer.write_text('{"name":"current"}')
+        # A frozen module lives in an extraction folder; user data never does.
+        frozen = config.parent / "frozen-layout"
+        data = frozen / "data"
+        bundle = frozen / "bundle"
+        for parent in (data, bundle):
+            (parent / "config").mkdir(parents=True)
+            (parent / "config/voice_profiles.json").write_bytes((F.CODE / "config/voice_profiles.json").read_bytes())
+        character = data / "config/voice_profiles/current"
+        character.mkdir(parents=True)
+        (character / "gestures.json").write_text("{}")
+        (character.parent / "active.json").write_text('{"name":"current"}')
+        previous_file, previous_config = gestures.__file__, os.environ.pop("MICE_VOICE_CONFIG", None)
+        try:
+            gestures.__file__ = str(bundle / "main_python/gestures.py")
+            studio = data / "nong/main_python_set_nong"
+            t.eq(gestures.profile_folder(studio), character, "a packaged hub finds the external character folder")
+            t.eq(gestures.mine_path(studio), character / "gestures.json", "packaged saves target the character instead of the global store")
+            t.ok(not (studio / "gestures.json").exists(), "packaged lookup leaves the global gesture store untouched")
+        finally:
+            gestures.__file__ = previous_file
+            if previous_config is not None:
+                os.environ["MICE_VOICE_CONFIG"] = previous_config
         _web(t, base, sound)
     finally:
         if old_gestures is not None:

@@ -35,9 +35,12 @@ def profile_folder(studio):
     """The same local character selected by Voice; an explicit QC store wins."""
     if os.environ.get("MICE_GESTURES_MINE"):
         return None
-    code = Path(__file__).resolve().parent.parent
-    spec = json.loads((code / "config/voice_profiles.json").read_text(encoding="utf-8"))
-    config = Path(os.environ.get("MICE_VOICE_CONFIG") or (code / "config/voice.json"))
+    data = Path(studio).resolve().parents[1]
+    schema = data / "config/voice_profiles.json"
+    if not schema.is_file():
+        schema = Path(__file__).resolve().parents[1] / "config/voice_profiles.json"
+    spec = json.loads(schema.read_text(encoding="utf-8"))
+    config = Path(os.environ.get("MICE_VOICE_CONFIG") or (data / "config/voice.json"))
     root = (config.parent / spec["folder"]).resolve()
     pointer = root / "active.json"
     if not pointer.exists():

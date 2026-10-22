@@ -3,7 +3,7 @@
 Owner: codex:10221534-bb09
 Updated: 2026-10-22T16:07:17.980701+07:00
 Branch: task/A45-27-10221534-bb09
-Last commit: 43c06fc (full-gate fixes checkpoint follows)
+Last commit: 060c9c0 (packaged-path checkpoint follows)
 Plan: A45-27; A45-26 PC deployment continuation
 
 ## Goal
@@ -17,15 +17,14 @@ Plan: A45-27; A45-26 PC deployment continuation
 - One same-provider independent design/code reviewer found and verified fixes: automatic default writes, legacy-key read redaction, FAQ/search dirty-state tracking. No remaining blocker in bounded source review.
 
 ## Doing now
-Second completed-gate attempt after full43c06fc gave7540/4fail in590.4s.
-All4 failures fixed and targeted120/0: driver now waits for real readiness;
-STT fixture uses mtime_ns (2 failure assertions); diary preserves/deduplicates real
-and already-merged worktree histories without rewriting patch logs. Reviewer confirmed.
-Hub_nav auto-retried2/2 in prior gate, labeled flaky. No runtime voice change beyond
-fresh cache fix; all7 sabotage cases previously caught/restored green. No hardware moved.
+Full gate at060c9c0 passed7544/0. Final packaging inspection found frozen
+hub reading temporary instead of external user-data folder. Fixed root derivation;
+3 actual target assertions added. Deliberate regression caught1/1, restored green.
+All8 sabotage cases caught. Final exact-tree full gate follows this checkpoint.
+No hardware moved. Prior4-failure run and aborted quick retained as historical evidence.
 
 ## Next
-1. Complete2 gesture integration sabotages (original4/4 already caught) then run required full quiet QC. Fake Brain compatibility fixed and verified239/0.
+1. Run final full quiet QC after packaged-path fix; source frozen until completion.
 2. Inspect exact final diff, commit/push branch and PR; merge only after full QC green. Reviewer integration findings fixed (old-profile migration, Windows aliases, captured-path reads).
 3. Preserve root dirty work while deploying merged A45-26+A45-27: systems build, exe via spec, restart own hub/voice/feeling services, verify live profiles and prior 50-case replay. No robot motion without ready hardware.
 4. Mark plan done only after deployment verification; update this file and push at every stop.
