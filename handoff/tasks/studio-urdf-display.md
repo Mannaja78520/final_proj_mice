@@ -16,7 +16,7 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-- Round 3: full QC, PR, merge, then PC reruns check_urdf_look (real model).
+- Round 3 full QC: 7793 passed (3 flakes green alone, receipt refused by qc_chain_proj rewrite). Merged; PC reruns check_urdf_look.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
