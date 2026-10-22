@@ -601,7 +601,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: QC finished: 860 passed, 0 failed, started 2026-10-22 08:05
+# RUNNING: QC finished: 65 passed, 0 failed, started 2026-10-22 08:17
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1592,7 +1592,7 @@ A45-21: done   2026-10-21 01:16  agent=codex:10200422-543e  — Prepare exact fr
 A45-26: qc     2026-10-22 14:42  agent=claude:xdlrot  — User 2026-10-22: เอาแบบตั้งได้ว่างานแต่ละงานจะเป็นโทนไหน เสียงยังดูเป็น AI เกินไป เสียงรวบเกินฟังไม่รู้เรื่อง เอาแบบเสียงสำเนียงไทยฟังชัด ภาษาอื่นด้วย; คำสุดท้ายจบไวไป ไม่มีลากเสียง ออกแค่ครึ่งคำแล้วหายไป
 
 # A46  Gestures with speech, safe paths (RRT) for copying a person
-A46-1: doing  2026-10-22 07:25  agent=claude:10220724-db22  — User 2026-10-22: ขอแบบลองสุ่มท่าทางออกมาให้เข้ากับคำที่พูดแล้วส่งทำพร้อมกันด้วยได้ไหม ... เอาตัวขนาดของหุ่นมาใส่แล้วทำท่าทางได้ อาจจะโคกับ nong studio ดึงข้อมูลจากกันได้ (gestures that match the spoken words, random, played with the speech, using the robot's size from Studio) User 2026-10-22 07:27: ก็เพราะกลัวชนตัวเองเลยว่าใช้ดีกว่าไหมใช้กับที่ตามท่าทางด้วย -> RRT (RRT-Connect + shortcut) fallback when the straight joint path self-collides, shared by talk gestures, video copying and dummy follow; live follow holds last safe pose when no path in time User 07:28: แล้วมีการเซฟท่าหลังจากก็อปท่าคนไหม ... ปล่อยทำหลังโยนวีดีโอให้ -> one-click video to safe saved move; dummy follow record-and-save; no RL merged main (PR #48 A45-26) into the branch
+A46-1: done   2026-10-22 08:17  agent=claude:10220724-db22  — User 2026-10-22: ขอแบบลองสุ่มท่าทางออกมาให้เข้ากับคำที่พูดแล้วส่งทำพร้อมกันด้วยได้ไหม ... เอาตัวขนาดของหุ่นมาใส่แล้วทำท่าทางได้ อาจจะโคกับ nong studio ดึงข้อมูลจากกันได้ (gestures that match the spoken words, random, played with the speech, using the robot's size from Studio) User 2026-10-22 07:27: ก็เพราะกลัวชนตัวเองเลยว่าใช้ดีกว่าไหมใช้กับที่ตามท่าทางด้วย -> RRT (RRT-Connect + shortcut) fallback when the straight joint path self-collides, shared by talk gestures, video copying and dummy follow; live follow holds last safe pose when no path in time User 07:28: แล้วมีการเซฟท่าหลังจากก็อปท่าคนไหม ... ปล่อยทำหลังโยนวีดีโอให้ -> one-click video to safe saved move; dummy follow record-and-save; no RL merged main (PR #48 A45-26) into the branch
 
 END</code></pre>
 </details>
