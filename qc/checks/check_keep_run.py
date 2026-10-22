@@ -34,7 +34,7 @@ function later(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
 window.addEventListener("load", function(){ qcWaitFor(function(){
     return typeof robotRun === "function" && typeof saveRobotSetting === "function"
            && document.getElementById("rs_volume") && typeof haveUsb === "function"
-           && haveUsb();
+           && haveUsb() && !!boardSafeIdentity;   // a Run before the board is read goes stale (A46-3)
   }, 20000).then(async function(ready){
   if (!ready) { qcMark("ERR-not-ready"); qcMark("done"); return; }
   try{
