@@ -43,6 +43,9 @@ nothing: A47-1..4 merged; only A47-5 (bench) left, owner free.
    the spec, open /app/all-jao/, add a row on Prize machines > Games that give a prize, spin the
    wheel and see the toast + the board turn. Their :8080 settings do not carry to /play/all-jao/.
    Friend asks (Thai): docs/gacha/friend_requests.md.
+   A47-10 (audit, PR after #60): a kind may name substitutes (Kinds > When it runs out, give
+   instead); each machine row has "its own page"; Google Form sample docs/gacha/form_sample.gs.
+   Audit table: /mnt/project-files/gacha/audit_2026-10-22.md.
 2. A47-5 on the bench (PC RC session): flash mice_gacha over USB/OTA, PIN motor_a/motor_b if not 25/26, measure drop pockets (GCFG drop), speed, settle; add the machine on the Prize machines page; rebuild MiceHub.exe (spec) so the new page and routes ship.
 
 ## Blocked
