@@ -17,6 +17,7 @@
       "picking_drag.js",
       "ik_4_dof_arm.js",
       "collisions.js",
+      "safe_path.js",
       "sliders.js",
       "timing.js",
       "timeline.js",

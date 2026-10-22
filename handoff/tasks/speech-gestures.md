@@ -27,6 +27,12 @@ copied moves saved; "drop a video, get a safe saved move" in one step. No RL.
 - Studio "Moves while talking" card: try a sentence, show a gesture, save the
   time bar as a gesture, per-event switch.
 
+## Doing now
+Step 1: safe paths in Studio. Files: app_parts/safe_path.js (built after
+collisions.js), web/safe_path.json, qc/checks/check_safe_path.py (browser:
+a straight move through the body must come back as a way round with no hit;
+an unreachable/hitting pose must be refused). Then hook into video + dummy.
+
 ## Done
 - safe_path.js written (not yet in tools/web_build.json, not tested).
 - HANDOFF/CLAUDE/AGENTS/GEMINI: "update the task file and push WIP after every step".

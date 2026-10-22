@@ -22,9 +22,10 @@ same file. History is in `docs/BRIDGE.md` and the STATE block of
   (`python tools/handoff.py new <name> "<title>"`, or copy `handoff/TEMPLATE.md`;
   `take <name> <agent>` claims it). Edit only your own file, on your own branch.
 - WHILE you work, not only at the end (user 2026-10-22: any AI can run out
-  mid-task): after every meaningful step update Done, Next, Blocked, Last
-  commit and Updated in your file, then commit and push a WIP commit to your
-  branch. Before you end, stop for any reason, or when usage runs low: the same.
+  mid-task). BEFORE each step write `## Doing now` (what you are about to do,
+  the files, the approach) and push; AFTER it move that to Done, update Next,
+  Blocked, Last commit and Updated, and push a WIP commit to your branch.
+  Before you end, stop for any reason, or when usage runs low: the same.
 - Task fully done: delete its file in the PR that merges the work.
 - Do not create other handoff files. Edit this file only when a rule or a
   path below changes, or a big feature lands (Built so far).
