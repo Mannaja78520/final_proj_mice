@@ -1,6 +1,6 @@
 # Gachapon prize dispenser (firmware + hub app + voice)
 
-Owner: claude:gacha-3pztbe
+Owner:
 Updated: 2026-10-22 17:20Z
 Branch: claude/project-thread-3pztbe
 Last commit: (none yet)
@@ -25,7 +25,7 @@ SolidWorks: E:\final_proj\mice\model\gachapong (read only, never in git).
 Lab window ended 14:00Z 2026-10-22: do NOT flash; the PC RC session flashes.
 
 ## Doing now
-A47-2/3/4: full QC on the branch, then PR + merge.
+nothing: A47-1..4 merged; only A47-5 (bench) left, owner free.
 
 ## Done
 - A47-1 firmware written: firmware/src/modules/gacha/, env mice_gacha builds (71.3% flash), web cards, COMMANDS.md, commands.json, native tests. Not on hardware.
@@ -39,7 +39,6 @@ A47-2/3/4: full QC on the branch, then PR + merge.
 - check_gacha (24 asserts, fake boards ids 70/71 in fake_serial) proven by sabotage (fallback, auth).
 
 ## Next
-1. Full QC, PR, merge (A47-2..4).
 2. A47-5 on the bench (PC RC session): flash mice_gacha over USB/OTA, PIN motor_a/motor_b if not 25/26, measure drop pockets (GCFG drop), speed, settle; add the machine on the Prize machines page; rebuild MiceHub.exe (spec) so the new page and routes ship.
 
 ## Blocked
