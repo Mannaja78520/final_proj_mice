@@ -14,6 +14,7 @@ let elbowBalls = [];    // elbow IK handle per arm (moves the 2 shoulder joints)
 let palmMarks = [];     // the drawn hand per arm; its local +Z is the palm (A44-1)
 const palmCache = new Map(); // "arm|pose" -> palm upness; emptied on every rebuild
 let linkHolders = {};   // name -> group whose first child is the visual (STL-replaceable)
+let urdfOn = false;     // A48-1: the handles above live in a URDF tree (urdf_view.js)
 let pairRingParents = [];
 
 function linkVisual(name, defaultMesh) {
@@ -152,6 +153,18 @@ function buildRobot() {
   }
   robot = new THREE.Group();
   scene.add(robot);
+  jointGroups = []; pickMeshes = []; wristBalls = []; elbowBalls = []; palmMarks = []; linkHolders = {};
+  palmCache.clear();
+  // A48-1: the CAD model look builds the URDF's own tree and points every
+  // handle into it (urdf_view.js); otherwise the simple shapes below.
+  if (!urdfBuildInto(robot)) buildRigShapes();
+  clearGizmo(); selPair = -1;
+  applyMeshes();   // put assigned STLs back onto the fresh link holders
+  applyPose();
+}
+
+// the old look: simple shapes sized by the Rig setup
+function buildRigShapes() {
   // robot -> bodyGroup (WAIST yaw) -> {torso, head, shoulderMount (SHRUG)}.
   // The waist turns the WHOLE upper body (torso, head, both arms) left/right;
   // the shrug rocks the shoulder mount. Both are visual here — the real
@@ -165,8 +178,6 @@ function buildRobot() {
   shoulderMount = new THREE.Group();
   shoulderMount.position.set(0, d.shoulderY + (d.shrugPivot || 0), 0);
   bodyGroup.add(shoulderMount);
-  jointGroups = []; pickMeshes = []; wristBalls = []; elbowBalls = []; palmMarks = []; linkHolders = {};
-  palmCache.clear();
 
   // torso + head (visuals replaceable by STL)
   const torsoMesh = new THREE.Mesh(new THREE.BoxGeometry(d.torsoW, d.torsoH, d.torsoD), partMat("torso"));
@@ -187,9 +198,6 @@ function buildRobot() {
     [armL.shP.parent, armL.shP], [armL.elP.parent, armL.elP],
     [armR.shP.parent, armR.shP], [armR.elP.parent, armR.elP],
   ];
-  clearGizmo(); selPair = -1;
-  applyMeshes();   // put assigned STLs back onto the fresh link holders
-  applyPose();
 }
 
 const _AXVEC = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
@@ -203,6 +211,7 @@ function jointTiltQuat(i, out) {
   return (out || new THREE.Quaternion()).setFromEuler(_eTilt);
 }
 function jointAxisVec(i) {
+  if (urdfOn) return urdfAxisVec(i);
   return _AXVEC[RIG.axis[i]].clone().applyQuaternion(jointTiltQuat(i)).normalize();
 }
 // joint angle relative to its zero, in degrees — always FINITE. A missing
@@ -214,6 +223,7 @@ function jointDelta(i) {
   return v * jdir(i);
 }
 function applyPose() {
+  if (urdfOn) { urdfApplyPose(); return; }
   // the editor works in JOINT degrees — pose[i] IS the physical joint angle.
   // each joint = a mounting TILT (roll/pitch/yaw, for axes not exactly at 90°)
   // then the servo rotation about its primary axis (in the tilted frame).

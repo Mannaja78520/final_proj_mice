@@ -216,8 +216,9 @@ function vidBones(frames, mirror) {
 function vidWaistTable() {
   const tbl = [];
   for (let v = RIG.min[8]; v <= RIG.max[8]; v += 1) {
-    pose[8] = v; applyPose();
-    const d = new THREE.Vector3(0, 0, 1).applyQuaternion(bodyGroup.quaternion);
+    pose[8] = v; applyPose(); robot.updateMatrixWorld(true);
+    // world turn: with the CAD look (A48-1) bodyGroup sits inside the URDF tree
+    const d = new THREE.Vector3(0, 0, 1).applyQuaternion(bodyGroup.getWorldQuaternion(new THREE.Quaternion()));
     tbl.push({ v, yaw: Math.atan2(d.x, d.z) });
   }
   return tbl;

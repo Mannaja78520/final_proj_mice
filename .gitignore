@@ -107,3 +107,7 @@ apps/voice/tts_cache/
 # this robot (A46-1): written by the hub, never pulled over (config/gestures.json
 # is the shipped library).
 nong/main_python_set_nong/gestures.json
+
+# A48-1: a URDF package copied into Studio's models folder (the real CAD:
+# <pkg>/urdf + <pkg>/meshes) is private user data; this repo is PUBLIC
+nong/main_python_set_nong/models/*/

@@ -50,6 +50,10 @@ const DEFAULT_RIG = {
           // shoulder line (not on the servo). mm measured up from the shoulder
           // line. 0 = rock about the shoulder line itself.
           shrugPivot: 60 },
+  // A48-1 robot look (urdf_view.js / urdf_view.json): which look, which URDF,
+  // whose sizes the simple shapes use ("urdf" or "custom"), your own sizes
+  // kept while the URDF's are in use, and the URDF's last measured sizes.
+  view: { look: "rig", model: "", sizes: "custom", custom: null, urdfDims: null },
   zero: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
   axis: [...DEFAULT_AXIS],        // rotation axis per joint (roll/pitch/yaw)
   invert: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -107,7 +111,8 @@ const DEFAULT_RIG = {
 };
 function mergeRig(saved) {
   const r = { ...JSON.parse(JSON.stringify(DEFAULT_RIG)), ...saved,
-              dims: { ...DEFAULT_RIG.dims, ...(saved.dims || {}) } };
+              dims: { ...DEFAULT_RIG.dims, ...(saved.dims || {}) },
+              view: { ...DEFAULT_RIG.view, ...(saved.view || {}) } };
   // migrate old single-length rigs
   if (saved.dims && saved.dims.upperLen !== undefined) {
     r.dims.upperLenL = r.dims.upperLenR = saved.dims.upperLen;
