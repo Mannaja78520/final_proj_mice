@@ -16,10 +16,9 @@ Test saved motions, speech gestures/RRT, video copying and skeleton visibly on t
 - No robot motion sent. Hub modules empty, no hotspot interface in initial inventory.
 
 ## Doing now
-- Waiting on the user (2026-10-23 ~01:40 Bangkok): the hotspot "manny" is OFF (no 192.168.137.x
-  address on the PC, the hub sees no modules, 192.168.137.138 does not answer ping) and the
-  PC seems to have restarted (hub was not running). Memory rule: ask before switching the
-  hotspot on (it carries the user's internet). Real motion also needs someone at the robot.
+- PARKED (user 2026-10-23 ~01:40: *ตอนนี้ไม่มีหุ่น กลับหอแล้ว ... ทำงานอื่นๆให้เสร็จ ยังไม่ต้องรอหุ่น
+  หุ่นค่อยเทสทีเดียวเลย*). All real-robot and board tests wait for ONE combined lab session.
+  Do not ask the user again before then. Hotspot "manny" was off, robot not connected.
 
 ## Step 0 done 2026-10-23 (claude:xdlrot)
 - Backups: scratch/deploy-a46-3-2026-10-22 (exe, voice.json, voice_profiles, settings_shared).
