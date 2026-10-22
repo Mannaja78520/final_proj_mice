@@ -46,6 +46,9 @@ nothing: A47-1..4 merged; only A47-5 (bench) left, owner free.
    A47-10 (audit, PR after #60): a kind may name substitutes (Kinds > When it runs out, give
    instead); each machine row has "its own page"; Google Form sample docs/gacha/form_sample.gs.
    Audit table: /mnt/project-files/gacha/audit_2026-10-22.md.
+   A47-11 encoder (optional, off until PIN enc_a is set): on the bench set Encoder A/B pins,
+   watch G? enc_per_pass learn, then try GCFG slow 40 / enc_stall 500 and measure
+   GACHA_MIN_SPEED (PWM the gearbox still turns at). The magnet always decides the stop.
 2. A47-5 on the bench (PC RC session): flash mice_gacha over USB/OTA, PIN motor_a/motor_b if not 25/26, measure drop pockets (GCFG drop), speed, settle; add the machine on the Prize machines page; rebuild MiceHub.exe (spec) so the new page and routes ship.
 
 ## The machine's CAD (read-only, 2026-10-23, claude:xdlrot)
