@@ -148,9 +148,35 @@ function safeTimelineSignature() { return keysSignature()+"|"+!!$("loopChk").che
 function checkedTimeline() {
   return safeTimelineCache && safeTimelineCache.sig===safeTimelineSignature() ? safeTimelineCache.keys : null;
 }
+// A clock parked on the unchecked timeline (a keyframe click before Run) lands
+// on a different move once times are raised or detours added: the same 80 ms
+// park became "mid move 1" and Run replayed it. Re-find the same keyframe and
+// the same share of its move or hold in the checked list.
+function safeClockGroups(K) {
+  const groups=[];let at=K.length ? K[0].hold || 0 : 0;
+  for(let j=1;j<K.length;j++) {
+    const id=K[j].loopReturn ? 'loop' : K[j].src;
+    let g=groups[groups.length-1];
+    if(!g || g.id!==id) {g={id,start:at,move:0,hold:0};groups.push(g);}
+    g.move+=K[j].t || 0;g.hold+=K[j].hold || 0;at+=(K[j].t || 0)+(K[j].hold || 0);
+  }
+  return {first:K.length ? K[0].hold || 0 : 0,groups,total:at};
+}
+function safeRemapClock(ms, before, after) {
+  const a=safeClockGroups(before), b=safeClockGroups(after);
+  if(!(ms>0))return 0;
+  if(ms<a.first)return a.first ? b.first*ms/a.first : 0;
+  const g=a.groups.find(x=>ms<x.start+x.move+x.hold);
+  const n=g && b.groups.find(x=>x.id===g.id);
+  if(!n)return g ? Math.min(ms,b.total) : b.total;
+  const offset=ms-g.start;
+  if(offset<g.move)return n.start+(g.move ? n.move*offset/g.move : 0);
+  return n.start+n.move+Math.min(n.hold,offset-g.move);
+}
 async function ensureSafeTimeline(cancelled = () => false) {
   const sig = safeTimelineSignature();
   if (checkedTimeline()) return true;
+  const before = playKeys();
   const source = buildPlayKeys().map(k=>({...k,pose:k.pose.slice()}));
   if (!source.length) return false;
   const stale=()=>cancelled() || sig!==safeTimelineSignature();
@@ -169,6 +195,7 @@ async function ensureSafeTimeline(cancelled = () => false) {
     out.push(...safeLegKeys(plan.path,key));
   }
   if(stale())return false;
+  playT=safeRemapClock(playT,before,out);
   safeTimelineCache={sig,keys:out,loop};
   _pkCache=null;
   if(around) safeMotionNote("RRT*: "+around+" move(s) rerouted around the body. The preview and robot use these checked waypoints.",true);
