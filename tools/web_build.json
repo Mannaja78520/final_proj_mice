@@ -19,6 +19,7 @@
       "collisions.js",
       "safe_path.js",
       "sliders.js",
+      "hand_hold.js",
       "timing.js",
       "timeline.js",
       "yaml_export.js",
