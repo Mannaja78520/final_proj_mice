@@ -43,8 +43,11 @@ class Profiles:
             # Publish the complete snapshot once; a failed seed never becomes default.
             temp = Path(tempfile.mkdtemp(prefix=".seed-", dir=self.root))
             try:
-                for name, source in zip(self.FILES, (config, faq, styles)):
-                    data = registry.load(Path(source))
+                sources = dict(zip(self.FILES, (config, faq, styles)))
+                sources["gestures.json"] = Path(__file__).resolve().parents[2] / spec["gestureFile"]
+                for name in self.FILES:
+                    source = Path(sources[name])
+                    data = registry.load(source) if source.is_file() else {}
                     if name == "voice.json":
                         data.pop("googleApiKey", None)
                     self.write(temp / name, data)
@@ -70,6 +73,16 @@ class Profiles:
             finally:
                 if temp.exists():
                     shutil.rmtree(temp)
+        # Older characters predate the gesture store. Add only the missing file;
+        # their settings, answers and original default snapshot stay intact.
+        gesture_source = Path(__file__).resolve().parents[2] / spec["gestureFile"]
+        gesture_seed = registry.load(gesture_source) if gesture_source.is_file() else {}
+        for folder in self.root.iterdir():
+            if folder.name.startswith(".") or not folder.is_dir():
+                continue
+            target = self.confined(self.folder(folder.name) / "gestures.json")
+            if not target.exists():
+                self.write(target, gesture_seed)
         if not (self.root / "active.json").exists():
             if not self.folder("current").exists():
                 self.create("current", "default")
@@ -131,7 +144,7 @@ class Profiles:
             raise ProfileError("This character changed elsewhere. Reload it before saving.")
 
     def bind(self, brain):
-        config, faq, styles = (self.file(name) for name in self.FILES)
+        config, faq, styles = (self.file(name) for name in self.FILES[:3])
         for path in (config, faq, styles):
             if not path.is_file():
                 raise ProfileError("This character is missing a settings file.")

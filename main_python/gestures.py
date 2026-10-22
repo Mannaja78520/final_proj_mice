@@ -18,6 +18,7 @@ saved moves (STUDIO/gestures.json, or MICE_GESTURES_MINE): a pull never fights
 what was made on that PC.
 """
 import copy
+import hashlib
 import json
 import os
 import random
@@ -30,8 +31,48 @@ _recent = []                 # ids picked lately, across answers (keepRecent)
 LATIN = re.compile(r"[a-z]", re.I)
 
 
+def profile_folder(studio):
+    """The same local character selected by Voice; an explicit QC store wins."""
+    if os.environ.get("MICE_GESTURES_MINE"):
+        return None
+    code = Path(__file__).resolve().parent.parent
+    spec = json.loads((code / "config/voice_profiles.json").read_text(encoding="utf-8"))
+    config = Path(os.environ.get("MICE_VOICE_CONFIG") or (code / "config/voice.json"))
+    root = (config.parent / spec["folder"]).resolve()
+    pointer = root / "active.json"
+    if not pointer.exists():
+        return None
+    name = json.loads(pointer.read_text(encoding="utf-8"))["name"]
+    if (not isinstance(name, str) or not name or len(name) > 80 or name != name.strip()
+            or name.startswith(".") or name.endswith(".")
+            or re.search(r'[<>:"/\\|?*\x00-\x1f]', name)
+            or re.fullmatch(r"(?i)(con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\..*)?", name)):
+        raise ValueError("Choose a saved character in Voice first.")
+    folder = root / name
+    if (not folder.is_dir() or folder.is_symlink() or folder.is_junction()
+            or folder.resolve().parent != root):
+        raise ValueError("That character folder cannot be used.")
+    return folder
+
+
 def mine_path(studio):
-    return Path(os.environ.get("MICE_GESTURES_MINE") or (Path(studio) / "gestures.json"))
+    if os.environ.get("MICE_GESTURES_MINE"):
+        return Path(os.environ["MICE_GESTURES_MINE"])
+    folder = profile_folder(studio)
+    path = (folder or Path(studio)) / "gestures.json"
+    if folder and (path.is_symlink() or path.resolve().parent != folder.resolve()):
+        raise ValueError("That move file is outside this character.")
+    return path
+
+
+def character_state(studio, path=None):
+    path = Path(path) if path is not None else mine_path(studio)
+    folder = path.parent if not os.environ.get("MICE_GESTURES_MINE") and path != Path(studio) / "gestures.json" else None
+    if folder is None:
+        return {"character": "", "gestureRevision": "", "readOnly": False}
+    revision = hashlib.sha256(path.read_bytes()).hexdigest()
+    return {"character": folder.name, "gestureRevision": revision,
+            "readOnly": folder.name.lower() == "default"}
 
 
 def read_mine(studio):

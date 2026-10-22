@@ -87,7 +87,7 @@ model), speech out.
   (location and allowed assets in `config/voice_profiles.json`). The first use
   snapshots existing settings, manners and answers into `default`, then starts
   an editable `current` copy. Main stores and default never receive character saves.
-  Each folder has `voice.json`, `qa_data.json`, `voice_styles.json`, `audio/`, `motions/`.
+  Each folder has `voice.json`, `qa_data.json`, `voice_styles.json`, `gestures.json`, `audio/`, `motions/`.
 - Selection persists in local `active.json`; config and manner edits on disk reload
   on the next request. API saves carry a content revision so stale tabs cannot
   overwrite a new character or external edits. Switching and requests share a lock;

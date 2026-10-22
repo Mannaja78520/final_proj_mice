@@ -140,6 +140,13 @@ def run(t):
             t.eq(brain.cfg["tts"]["pitch"], "+5Hz", "switching back restores the other character's own settings")
             t.ok(brain._cache_path("edge", "hello") != restarted._cache_path("edge", "hello"),
                  "characters do not share derived audio folders")
+            for name in ("default", "current", "เจ๊ใจดี"):
+                (store.root / name / "gestures.json").unlink()
+            old_settings = brain.cfg_path.read_bytes()
+            migrated = svc.Brain(config, faq); migrated.enable_profiles()
+            t.ok(all((store.root / name / "gestures.json").is_file() for name in ("default", "current", "เจ๊ใจดี")),
+                 "older characters gain only their missing gesture file")
+            t.eq(brain.cfg_path.read_bytes(), old_settings, "gesture migration preserves existing settings exactly")
             _hub(t, url, config, move, sound)
         finally:
             server.shutdown(); server.server_close(); thread.join(timeout=5)
@@ -150,9 +157,11 @@ def _hub(t, url, config, move, sound):
     cfg = json.loads(config.read_text(encoding="utf-8")); cfg["service"] = url
     config.write_text(json.dumps(cfg), encoding="utf-8")
     old = os.environ.get("MICE_VOICE_CONFIG")
+    old_gestures = os.environ.pop("MICE_GESTURES_MINE", None)
     os.environ["MICE_VOICE_CONFIG"] = str(config)
     try:
-        base, _ = F.start_hub()
+        base, main = F.start_hub()
+        os.environ.pop("MICE_GESTURES_MINE", None)
         F.logout_qc()
         t.eq(F.post(base + "/api/voice/profiles", b'{}')[0], 401, "character writes require the hub login")
         F.login(base)
@@ -161,8 +170,49 @@ def _hub(t, url, config, move, sound):
         t.ok(status == 200, "uploaded YAML reaches the hub's existing motion parser", raw[:200])
         t.eq([step["t"] for step in parsed["steps"]], [500, 800], "the actual parser preserves both move durations")
         t.eq(parsed["steps"][1]["pose"][0], 80.0, "the actual parser preserves the uploaded joint angle")
+        _, raw = F.get(base + "/api/gestures")
+        gesture = json.loads(raw)
+        t.eq(gesture["character"], "current", "Studio uses the selected character's gesture folder")
+        token = {k: gesture[k] for k in ("character", "gestureRevision")}
+        status, raw = F.post(base + "/api/gestures", json.dumps({"on": False, **token}).encode())
+        t.eq(status, 200, "Studio saves its moves in this character")
+        profiles = config.parent / "voice_profiles"
+        t.eq(json.loads((profiles / "current/gestures.json").read_text())["on"], False, "the character's actual gesture file changed")
+        t.ok("on" not in json.loads((profiles / "default/gestures.json").read_text()), "the default gesture file did not change")
+        t.eq(F.post(base + "/api/gestures", json.dumps({"on": True, **token}).encode())[0], 409, "old Studio saves cannot overwrite new gesture edits")
+        pointer = profiles / "active.json"
+        default_before = (profiles / "default/gestures.json").read_bytes()
+        pointer.write_text('{"name":"default"}')
+        default_view = json.loads(F.get(base + "/api/gestures")[1])
+        default_token = {k: default_view[k] for k in ("character", "gestureRevision")}
+        t.eq(F.post(base + "/api/gestures", json.dumps({"on": True, **default_token}).encode())[0], 409, "Studio cannot write default even with a current token")
+        for bad in ("default.", "default ", "../default"):
+            pointer.write_text(json.dumps({"name": bad}))
+            status, _ = F.post(base + "/api/gestures", json.dumps({"on": True, **default_token, "character": bad}).encode())
+            t.ok(status >= 400, "Windows aliases cannot bypass default protection: " + bad)
+        pointer.write_text('{"name":"current"}')
+        current_view = json.loads(F.get(base + "/api/gestures")[1])
+        current_token = {k: current_view[k] for k in ("character", "gestureRevision")}
+        import gestures
+        original_merge = gestures.merge_mine
+        def switch_during_save(mine, change):
+            pointer.write_text('{"name":"default"}')
+            return original_merge(mine, change)
+        gestures.merge_mine = switch_during_save
+        try:
+            status, _ = F.post(base + "/api/gestures", json.dumps({"on": True, **current_token}).encode())
+            t.eq(status, 200, "a concurrent selection keeps a save in its original character")
+            t.eq(json.loads((profiles / "current/gestures.json").read_text())["on"], True, "the original character receives the edit")
+            t.eq((profiles / "default/gestures.json").read_bytes(), default_before, "a concurrent selection cannot redirect the save into default")
+        finally:
+            gestures.merge_mine = original_merge
+            pointer.write_text('{"name":"current"}')
         _web(t, base, sound)
     finally:
+        if old_gestures is not None:
+            os.environ["MICE_GESTURES_MINE"] = old_gestures
+        else:
+            os.environ.pop("MICE_GESTURES_MINE", None)
         if old is None:
             os.environ.pop("MICE_VOICE_CONFIG", None)
         else:

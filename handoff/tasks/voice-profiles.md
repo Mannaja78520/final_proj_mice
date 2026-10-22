@@ -3,7 +3,7 @@
 Owner: codex:10221534-bb09
 Updated: 2026-10-22T15:52:13.057103+07:00
 Branch: task/A45-27-10221534-bb09
-Last commit: base 6a855e1 (changes not committed yet)
+Last commit: 857fbcd; gesture integration and tests now ready for checkpoint
 Plan: A45-27; A45-26 PC deployment continuation
 
 ## Goal
@@ -17,13 +17,13 @@ Plan: A45-27; A45-26 PC deployment continuation
 - One same-provider independent design/code reviewer found and verified fixes: automatic default writes, legacy-key read redaction, FAQ/search dirty-state tracking. No remaining blocker in bounded source review.
 
 ## Doing now
-Merge current main e212ffc (Claude A46-1 gestures) before final gate; isolate editable gesture data per profile. Sabotage 4/4 caught and restored green.
+Merged e212ffc at857fbcd. Targeted72/0 covers isolated gesture saves, migration, Windows aliases, valid default tokens and selection during save. Running2 integration sabotages, then full QC and deployment. Sabotage4/4 before integration passed.
 
 ## Next
-1. Finish currently running quick QC; fix fake Brain compatibility if its profile_lock AttributeError repeats. No source edits while runner active.
-2. Run scratch/profile-sabotage.json (4 cases) and required full quiet QC, inspect exact final diff, commit/push branch and PR, merge only green.
+1. Complete2 gesture integration sabotages (original4/4 already caught) then run required full quiet QC. Fake Brain compatibility fixed and verified239/0.
+2. Inspect exact final diff, commit/push branch and PR; merge only after full QC green. Reviewer integration findings fixed (old-profile migration, Windows aliases, captured-path reads).
 3. Preserve root dirty work while deploying merged A45-26+A45-27: systems build, exe via spec, restart own hub/voice/feeling services, verify live profiles and prior 50-case replay. No robot motion without ready hardware.
 4. Mark plan done only after deployment verification; update this file and push at every stop.
 
 ## Blocked
-- No external prerequisite for implementation. Current quick QC result pending; actual human judgement of voice emotion and real robot playback remain unmeasured.
+- No external prerequisite for implementation. Full QC pending; actual human judgement of voice emotion and real robot playback remain unmeasured.

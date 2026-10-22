@@ -1807,6 +1807,7 @@ static langName(code){
   if (!c || !c.ok) return;                 // the down-card already explains
   const snapshot = profiles?.config ? profiles : c;
   this.cfg = snapshot.config;
+  if (this.$("gestOn") && this.cfg.gestures) this.$("gestOn").checked = this.cfg.gestures.on !== false;
   this.profileRevision = snapshot.revision;
   this.faqs = profiles?.faqs || ((f && f.ok && Array.isArray(f.faqs)) ? f.faqs : []);
   this.seqs = [...((ls && ls.files) || []), ...((this.profileInfo?.assets?.motions || []).map(n => "@profile/" + n))];
@@ -3042,6 +3043,18 @@ static SAMPLES = {
 
     this.$("gestOn").checked = keep("voice_gestures", "1") === "1";
     this.$("gestOn").addEventListener("change", () => save("voice_gestures", this.$("gestOn").checked ? "1" : "0"));
+    this.$("gestOn").addEventListener("change", async () => {
+      if (!this.cfg || !this.profileInfo) return;
+      const on = this.$("gestOn").checked;
+      const response = await fetch("/api/voice/config", {method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({config:{gestures:{on}}, revision:this.profileRevision})}).catch(() => null);
+      const result = response && await response.json().catch(() => null);
+      if (result?.ok) { this.cfg.gestures = {on}; this.profileRevision = result.revision; }
+      else {
+        this.$("gestOn").checked = this.cfg.gestures?.on !== false;
+        this.$("profileStat").textContent = result?.error || "Log in to save the moves switch.";
+      }
+    });
 
     this.globalRobot = keep("voice_global_robot", "");
     this.$("globalRobot").value = this.globalRobot;
