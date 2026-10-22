@@ -16,8 +16,8 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-- Quick suite + related Studio checks, then full QC, PR, merge, ask PC to rebuild
-  and run check_urdf_look with MICE_URDF_MODEL=<real package folder>.
+- Full QC 7779 passed; check_stream_audio failed once in the crowd, green alone
+  (audio timing, not this change). PR + merge next; then the PC steps in Next.
 
 ## Done (claude:10222214-b01b, 2026-10-22/23)
 - web/urdf_view.json (looks, models, joint names/sign/offset, hands, sizes) +
