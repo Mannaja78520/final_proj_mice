@@ -25,11 +25,12 @@ SolidWorks: E:\final_proj\mice\model\gachapong (read only, never in git).
 Lab window ended 14:00Z 2026-10-22: do NOT flash; the PC RC session flashes.
 
 ## Doing now
-A47-1: run QC checks for firmware (registries, contracts, build split, native tests).
+A47-1: open the firmware PR, merge when green. Hub app drafted (gacha.py, hub_api_gacha.py, apps/gacha page, voice_prizes.py) in the session scratchpad, to be moved in next.
 
 ## Done
 - A47-1 firmware written: firmware/src/modules/gacha/, env mice_gacha builds (71.3% flash), web cards, COMMANDS.md, commands.json, native tests. Not on hardware.
-- plan rows A47-1..5 added.
+- plan rows A47-1..5 added (heading # A47 in PLAN).
+- QC full 7682/6 then the 6 fixed or flaky: plan heading, systems map (fw-gacha), designer-first crash (parallel file race), rs485 census + show clock timing (pass alone).
 
 ## Next
 1. firmware: modules.json entry, GachaModule, hardware header, commands.json, WebUI card, COMMANDS.md, env, QC check.
