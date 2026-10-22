@@ -1,36 +1,144 @@
 {
-  "_what": "How Studio draws the robot (A48-1, user 2026-10-23). looks: the choices in the 3D view's Robot look box; kind 'rig' = the old simple shapes sized by Rig setup, kind 'urdf' = the CAD model from a URDF file at its own real sizes. models: URDF files offered, path under the Studio models folder (any other .urdf found there is offered too). joints: Studio joint -> the URDF joint names it may have; sign 'auto' = turn the way the simple shapes turn (picked from the axes), or 1 / -1 to force it; offsetDeg = the URDF angle when the Studio joint is at its zero. hands: the forearm link of each hand and where its tip is ('mesh' = the far end of the forearm part, else the forearm length). sizes: Rig setup sizes the URDF gives when going back to the simple shapes (from/to = joints, tip:L / tip:R = hand tips; half = half the distance). The real CAD files stay on this PC only (public repo).",
+  "_what": "How Studio draws the robot (A48-1, user 2026-10-23). looks: the choices in the 3D view's Robot look box; kind 'rig' = the old simple shapes sized by Rig setup, kind 'urdf' = the CAD model from a URDF file at its own real sizes. models: URDF files offered, path under the Studio models folder (any other .urdf found there is offered too). joints: Studio joint -> the URDF joint names it may have; sign 'auto' = turn the way the simple shapes turn (picked from the axes), or 1 / -1 to force it; offsetDeg = the URDF angle when the Studio joint is at its zero ('auto' = fitted). fit: per arm, which URDF joint of each pair is which Studio joint (swap), its sense and its zero are fitted so the upper arm and forearm point where the simple shapes (your Rig setup) point them over many poses; a number in sign/offsetDeg is kept as given; warnDeg = say so when the fit is worse than this. hands: the forearm link of each hand and where its tip is ('mesh' = the far end of the forearm part, else the forearm length). sizes: Rig setup sizes the URDF gives when going back to the simple shapes (from/to = joints, tip:L / tip:R = hand tips; half = half the distance). The real CAD files stay on this PC only (public repo).",
   "looks": [
-    { "id": "rig", "kind": "rig", "label": "Simple shapes" },
-    { "id": "urdf", "kind": "urdf", "label": "CAD model (URDF)" }
+    {
+      "id": "rig",
+      "kind": "rig",
+      "label": "Simple shapes"
+    },
+    {
+      "id": "urdf",
+      "kind": "urdf",
+      "label": "CAD model (URDF)"
+    }
   ],
   "default": "rig",
   "models": [
-    { "path": "nong_description/urdf/nong_description.urdf", "label": "nong from SolidWorks" },
-    { "path": "nong.urdf", "label": "nong made from the rig" }
+    {
+      "path": "nong_description/urdf/nong_description.urdf",
+      "label": "nong from SolidWorks"
+    },
+    {
+      "path": "nong.urdf",
+      "label": "nong made from the rig"
+    }
   ],
-  "frame": { "up": "z", "unitMm": 1000 },
+  "frame": {
+    "up": "z",
+    "unitMm": 1000
+  },
+  "fit": {
+    "on": true,
+    "swap": true,
+    "samples": 12,
+    "gridDeg": 15,
+    "warnDeg": 5
+  },
   "joints": {
-    "L_SH_P": { "urdf": ["L_SH_P"], "sign": "auto", "offsetDeg": 0 },
-    "L_SH_R": { "urdf": ["L_SH_R"], "sign": "auto", "offsetDeg": 0 },
-    "L_EL_P": { "urdf": ["L_EL_P"], "sign": "auto", "offsetDeg": 0 },
-    "L_EL_R": { "urdf": ["L_EL_R"], "sign": "auto", "offsetDeg": 0 },
-    "R_SH_P": { "urdf": ["R_SH_P"], "sign": "auto", "offsetDeg": 0 },
-    "R_SH_R": { "urdf": ["R_SH_R"], "sign": "auto", "offsetDeg": 0 },
-    "R_EL_P": { "urdf": ["R_EL_P"], "sign": "auto", "offsetDeg": 0 },
-    "R_EL_R": { "urdf": ["R_EL_R"], "sign": "auto", "offsetDeg": 0 },
-    "WAIST": { "urdf": ["waist", "WAIST"], "sign": "auto", "offsetDeg": 0 },
-    "SHRUG": { "urdf": ["shrug", "SHRUG"], "sign": "auto", "offsetDeg": 0 }
+    "L_SH_P": {
+      "urdf": [
+        "L_SH_P"
+      ],
+      "sign": "auto",
+      "offsetDeg": "auto"
+    },
+    "L_SH_R": {
+      "urdf": [
+        "L_SH_R"
+      ],
+      "sign": "auto",
+      "offsetDeg": "auto"
+    },
+    "L_EL_P": {
+      "urdf": [
+        "L_EL_P"
+      ],
+      "sign": "auto",
+      "offsetDeg": "auto"
+    },
+    "L_EL_R": {
+      "urdf": [
+        "L_EL_R"
+      ],
+      "sign": "auto",
+      "offsetDeg": "auto"
+    },
+    "R_SH_P": {
+      "urdf": [
+        "R_SH_P"
+      ],
+      "sign": "auto",
+      "offsetDeg": "auto"
+    },
+    "R_SH_R": {
+      "urdf": [
+        "R_SH_R"
+      ],
+      "sign": "auto",
+      "offsetDeg": "auto"
+    },
+    "R_EL_P": {
+      "urdf": [
+        "R_EL_P"
+      ],
+      "sign": "auto",
+      "offsetDeg": "auto"
+    },
+    "R_EL_R": {
+      "urdf": [
+        "R_EL_R"
+      ],
+      "sign": "auto",
+      "offsetDeg": "auto"
+    },
+    "WAIST": {
+      "urdf": [
+        "waist",
+        "WAIST"
+      ],
+      "sign": "auto",
+      "offsetDeg": 0
+    },
+    "SHRUG": {
+      "urdf": [
+        "shrug",
+        "SHRUG"
+      ],
+      "sign": "auto",
+      "offsetDeg": 0
+    }
   },
   "hands": {
-    "L": { "link": "L_fore_link", "tip": "mesh" },
-    "R": { "link": "R_fore_link", "tip": "mesh" }
+    "L": {
+      "link": "L_fore_link",
+      "tip": "mesh"
+    },
+    "R": {
+      "link": "R_fore_link",
+      "tip": "mesh"
+    }
   },
   "sizes": {
-    "shoulderX": { "from": "R_SH_P", "to": "L_SH_P", "half": true },
-    "upperLenL": { "from": "L_SH_P", "to": "L_EL_P" },
-    "upperLenR": { "from": "R_SH_P", "to": "R_EL_P" },
-    "foreLenL": { "from": "L_EL_P", "to": "tip:L" },
-    "foreLenR": { "from": "R_EL_P", "to": "tip:R" }
+    "shoulderX": {
+      "from": "R_SH_P",
+      "to": "L_SH_P",
+      "half": true
+    },
+    "upperLenL": {
+      "from": "L_SH_P",
+      "to": "L_EL_P"
+    },
+    "upperLenR": {
+      "from": "R_SH_P",
+      "to": "R_EL_P"
+    },
+    "foreLenL": {
+      "from": "L_EL_P",
+      "to": "tip:L"
+    },
+    "foreLenR": {
+      "from": "R_EL_P",
+      "to": "tip:R"
+    }
   }
 }

@@ -106,68 +106,124 @@ def box_tris(lo, hi):
     return out
 
 
-def write_fixture(root):
-    """The old robot (rig above) written as a URDF with turned frames."""
+BASE_DIR = [-1, 1, -1, 1, -1, -1, -1, -1, 1, 1]      # rig_data.js
+# the real nong's rig (rig_default.json 2026-10-23): other axes, tilts, senses
+# and a zero of 0, the case the PC run found. The fixture-2 URDF is drawn at
+# HOME (its zero is not Studio's) and has a pair of names swapped per arm.
+RIG2 = {"axis": ["y", "x", "y", "x", "y", "x", "y", "x", "y", "x"],
+        "tilt": [[0, 0, -40], [180, 0, 0], [0, 0, -90], [0, 0, 0], [180, 0, -40], [-180, 0, 0],
+                 [180, 0, 90], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        "invert": [1, 0, 0, 0, 1, 0, 0, 1, 0, 1], "zero": [0, 0, 0, 0, 0, 0, 0, 0, 90, 90],
+        "min": [25] * 8 + [30, 80], "max": [155] * 8 + [150, 100],
+        "home": [90, 140, 90, 90, 90, 40, 90, 90, 90, 90]}
+RIG1 = {"axis": AXIS, "tilt": [[0, 0, 0]] * 10, "invert": [0] * 10, "zero": [90] * 10}
+
+
+def rot(axis, deg):
+    a = math.radians(deg)
+    return {"x": rx, "y": ry, "z": rz}[axis](a)
+
+
+def rx(a):
+    c, s = math.cos(a), math.sin(a)
+    return [[1, 0, 0], [0, c, -s], [0, s, c]]
+
+
+def ry(a):
+    c, s = math.cos(a), math.sin(a)
+    return [[c, 0, s], [0, 1, 0], [-s, 0, c]]
+
+
+def rz(a):
+    c, s = math.cos(a), math.sin(a)
+    return [[c, -s, 0], [s, c, 0], [0, 0, 1]]
+
+
+def tilt(rig, k):                  # three.js Euler "XYZ" = Rx Ry Rz
+    t = rig["tilt"][k]
+    return mul(mul(rot("x", t[0]), rot("y", t[1])), rot("z", t[2]))
+
+
+def write_fixture(root, name="qc_bot", rig=RIG1, at=None, swap=()):
+    """The simple shapes (rig + DIMS) at pose `at` written as a URDF with turned frames.
+
+    Independent of Studio's code: the shapes' forward kinematics again, here."""
     rnd = random.Random(48)
     d = DIMS
     m = 0.001                                  # mm -> m
-    # joints in the WORLD at the zero pose, Studio mm (the simple shapes)
-    J = {"waist": ("base_link", "waist_link", (0, 0, 0), "y"),
-         "shrug": ("waist_link", "shrug_link", (0, d["shoulderY"] + d["shrugPivot"], 0), "z")}
-    for s, sx, up, fo in (("L", 1, d["upperLenL"], d["foreLenL"]), ("R", -1, d["upperLenR"], d["foreLenR"])):
+    at = at or rig["zero"]
+    delta = [(at[i] - rig["zero"][i]) * BASE_DIR[i] * (-1 if rig["invert"][i] else 1) for i in range(10)]
+    I3 = rpy_mat(0, 0, 0)
+    # joints in the WORLD, Studio mm: (parent, child, position, world axis)
+    J = {"waist": ("base_link", "waist_link", (0, 0, 0), (0, 1, 0)),
+         "shrug": ("waist_link", "shrug_link", (0, d["shoulderY"] + d["shrugPivot"], 0), (0, 0, 1))}
+    fore = {}
+    for s, sx in (("L", 1), ("R", -1)):
         b = 0 if s == "L" else 4
-        sh = (sx * d["shoulderX"], d["shoulderY"], 0)
-        el = (sh[0], sh[1] - up, 0)
-        J[s + "_SH_P"] = ("shrug_link", s + "_sh_mid", sh, AXIS[b])
-        J[s + "_SH_R"] = (s + "_sh_mid", s + "_upper_link", sh, AXIS[b + 1])
-        J[s + "_EL_P"] = (s + "_upper_link", s + "_el_mid", el, AXIS[b + 2])
-        J[s + "_EL_R"] = (s + "_el_mid", s + "_fore_link", el, AXIS[b + 3])
+        up, fo = d["upperLen" + s], d["foreLen" + s]
+        A = (sx * d["shoulderX"], d["shoulderY"], 0)
+        ax = lambda Qp, k: app(mul(Qp, tilt(rig, b + k)), V[rig["axis"][b + k]])
+        turn = lambda Qp, k: mul(mul(Qp, tilt(rig, b + k)), rot(rig["axis"][b + k], delta[b + k]))
+        Q0 = turn(I3, 0)
+        Q1 = turn(Q0, 1)
+        E = tuple(a + v for a, v in zip(A, app(Q1, (0, -up, 0))))
+        Q2 = turn(Q1, 2)
+        Q3 = turn(Q2, 3)
+        nm = [s + "_SH_P", s + "_SH_R", s + "_EL_P", s + "_EL_R"]
+        for pair in swap:                      # the CAD named this pair the other way round
+            if pair[0] == s:
+                k = 0 if pair[1:] == "SH" else 2
+                nm[k], nm[k + 1] = nm[k + 1], nm[k]
+        J[nm[0]] = ("shrug_link", s + "_sh_mid", A, ax(I3, 0))
+        J[nm[1]] = (s + "_sh_mid", s + "_upper_link", A, ax(Q0, 1))
+        J[nm[2]] = (s + "_upper_link", s + "_el_mid", E, ax(Q1, 2))
+        J[nm[3]] = (s + "_el_mid", s + "_fore_link", E, ax(Q2, 3))
+        fore[s] = (E, Q3, fo)
     links = ["base_link", "waist_link", "shrug_link", "head_link"] + \
             [s + n for s in "LR" for n in ("_sh_mid", "_upper_link", "_el_mid", "_fore_link")]
     Q = {n: rpy_mat(rnd.uniform(-3, 3), rnd.uniform(-1.2, 1.2), rnd.uniform(-3, 3)) for n in links}
-    Q["base_link"] = rpy_mat(0, 0, 0)          # the file's base IS its world
+    Q["base_link"] = I3                        # the file's base IS its world
     O = {"base_link": (3, -170, -4)}           # the base sits below and aside
-    for n, (p, c, at, ax) in J.items():
-        O[c] = at
+    for n, (p, c, pos, ax) in J.items():
+        O[c] = pos
     J["head"] = ("shrug_link", "head_link", (0, d["shoulderY"] + d["shrugPivot"] + 40, 0), None)
     O["head_link"] = J["head"][2]
     vis = {}
     for s in "LR":
-        el = O[s + "_el_mid"]
-        fo = d["foreLen" + s]
-        lo, hi = (el[0] - 9, el[1] - fo, -9), (el[0] + 9, el[1], 9)
-        corners = [(x, y, z) for x in (lo[0], hi[0]) for y in (lo[1], hi[1]) for z in (lo[2], hi[2])]
+        E, Q3, fo = fore[s]
+        # the forearm part hangs along the forearm (its frame at `at`)
+        local = box_tris((-9, -fo, -9), (9, 0, 9))
         # the mesh goes through a visual origin, in METRES like a SolidWorks export
         vq = rpy_mat(0.3, -0.7, 1.1)
         vxyz = (0.004, -0.002, 0.01)
         link = s + "_fore_link"
+        world = lambda p: tuple(e + v for e, v in zip(E, app(Q3, p)))
         to_link = lambda w: app(tr(Q[link]), ros(sub(w, O[link])))
         to_vis = lambda w: app(tr(vq), sub(tuple(x * m for x in to_link(w)), vxyz))
-        tris = [tuple(to_vis(p) for p in t) for t in box_tris(lo, hi)]
-        assert len(corners) == 8
+        tris = [tuple(to_vis(world(p)) for p in t) for t in local]
         stl(root / "meshes" / (s + "_fore.STL"), tris)
         vis[link] = ('<visual><origin xyz="%g %g %g" rpy="%.9g %.9g %.9g"/><geometry>'
-                     '<mesh filename="package://qc_bot/meshes/%s_fore.STL"/></geometry></visual>'
-                     % (vxyz + mat_rpy(vq) + (s,)))
-    vis["head_link"] = ('<visual><geometry><mesh filename="package://qc_bot/meshes/head_gone.STL"/>'
-                        '</geometry></visual>')
+                     '<mesh filename="package://%s/meshes/%s_fore.STL"/></geometry></visual>'
+                     % (vxyz + mat_rpy(vq) + (name, s)))
+    vis["head_link"] = ('<visual><geometry><mesh filename="package://%s/meshes/head_gone.STL"/>'
+                        '</geometry></visual>' % name)
     vis["base_link"] = '<visual><geometry><box size="0.06 0.05 0.2"/></geometry></visual>'
-    out = ['<?xml version="1.0"?>', '<robot name="qc_bot">']
+    out = ['<?xml version="1.0"?>', '<robot name="%s">' % name]
     out += ['<link name="%s">%s</link>' % (n, vis.get(n, "")) for n in links]
-    for n, (p, c, at, ax) in J.items():
+    for n, (p, c, pos, ax) in J.items():
         rel = mul(tr(Q[p]), Q[c])
-        xyz = tuple(x * m for x in app(tr(Q[p]), ros(sub(at, O[p]))))
+        xyz = tuple(x * m for x in app(tr(Q[p]), ros(sub(pos, O[p]))))
         out.append('<joint name="%s" type="%s"><parent link="%s"/><child link="%s"/>'
                    '<origin xyz="%.9g %.9g %.9g" rpy="%.9g %.9g %.9g"/>' %
                    ((n, "fixed" if ax is None else "revolute", p, c) + xyz + mat_rpy(rel)))
         if ax:
-            a = app(tr(Q[c]), ros(V[ax]))
+            a = app(tr(Q[c]), ros(ax))
             if n in FLIP:
                 a = tuple(-x for x in a)
             out.append('<axis xyz="%.9g %.9g %.9g"/><limit lower="-2" upper="2" effort="1" velocity="1"/>' % a)
         out.append("</joint>")
     out.append("</robot>")
-    (root / "urdf" / "qc_bot.urdf").write_text("\n".join(out), encoding="utf-8")
+    (root / "urdf" / (name + ".urdf")).write_text("\n".join(out), encoding="utf-8")
     # a file whose parts hang in a loop
     (root / "urdf" / "loop.urdf").write_text(
         '<robot name="loop"><link name="a"/><link name="b"/>'
@@ -217,6 +273,7 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     // ---- into the CAD look
     await setLook("urdf");
     await until(function(){ return urdfOn && urdfTip.L && urdfTip.L.fromMesh && urdfTip.R.fromMesh; }, 15000);
+    r.fit = JSON.stringify(urdfLast.fit).replace(/[~ ]/g, "_"); r.offs = urdfJ.map(function(b){ return b ? f1(b.off * 57.2958) : 0; }).join("_");
     r.on = urdfOn; r.fromMesh = !!(urdfTip.L && urdfTip.L.fromMesh && urdfTip.R.fromMesh);
     r.signs = urdfJ.map(function(b){ return b ? b.sign : 0; }).join("_");
     r.names = urdfJ.map(function(b){ return b ? b.name : "-"; }).join(",");
@@ -284,12 +341,33 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     r.loop = !urdfOn + "_" + $("lookStat").textContent.replace(/[~ ]/g, "_");
     report("res=" + JSON.stringify(r));
 
+    // ---- the real nong's kind of rig; the CAD drawn at HOME, a pair of names swapped per arm
+    async function another(rig, model){
+      RIG = mergeRig(Object.assign({ dims: CFG.dims, shrugCurve: [] }, rig,
+                     { view: { look: "rig", model: model, sizes: "custom", custom: null, urdfDims: null } }));
+      urdfLast.error = ""; saveRig(); buildRobot();
+    }
+    function isoFrom(h){ var o = []; for (var i = 0; i < 10; i++) { var q = h.slice(); q[i] = Math.min(RIG.max[i], q[i] + (i === 9 ? 8 : 20)); o.push(q); } return o; }
+    await another(CFG.rig2, "qc_bot2/urdf/qc_bot2.urdf");
+    var P2 = []; for (var n2 = 0; n2 < 14; n2++) P2.push(RIG.min.map(function(lo, i){ return Math.round(lo + (RIG.max[i] - lo) * rnd()); }));
+    var I2 = isoFrom(RIG.home.slice());
+    var rigP2 = P2.map(pts), rigI2 = I2.map(pts);
+    await setLook("urdf");
+    await until(function(){ return urdfOn && urdfTip.L && urdfTip.L.fromMesh && urdfTip.R.fromMesh; }, 15000);
+    var r2 = { on: urdfOn, poseErr: f1(worst(P2.map(pts), rigP2)),
+               isoErr: I2.map(function(q, i){ return f1(worst([pts(q)], [rigI2[i]])); }).join("_"),
+               fit: urdfLast.fit, warn: urdfLast.warn.filter(function(w){ return w.indexOf("head_gone") < 0; }) };
+    report("res2=" + JSON.stringify(r2).replace(/[~ ]/g, "_"));
+
     if (CFG.real) {
       // the PC's real model: bindings, senses, and each joint against the shapes
-      RIG.view.look = "rig"; RIG.view.model = CFG.real; urdfLast.error = ""; rigChanged();
-      var base = iso.map(pts), z0 = pts(RIG.zero);
+      // against YOUR rig (the hub's rig_default.json), from its home pose
+      await another(CFG.realRig || {}, CFG.real);
+      iso = isoFrom(RIG.home.slice());
+      var base = iso.map(pts), z0 = pts(RIG.home);
       await setLook("urdf"); await until(function(){ return urdfOn && urdfTip.L.fromMesh; }, 30000);
-      var Z = pts(RIG.zero), rr = { on: urdfOn, error: urdfLast.error, warn: urdfLast.warn,
+      var Z = pts(RIG.home), rr = { on: urdfOn, error: urdfLast.error, warn: urdfLast.warn, fit: urdfLast.fit,
+
         bind: urdfJ.map(function(b, i){ return JOINT_NAMES[i] + "=" + (b ? b.name + (b.sign < 0 ? "(-)" : "") + " axis " + b.quality.toFixed(2) : "none"); }),
         sizes: urdfLast.dims, agree: [] };
       iso.forEach(function(q, i){
@@ -315,6 +393,10 @@ def run(t):
         (pkg / "urdf").mkdir(parents=True)
         (pkg / "meshes").mkdir()
         write_fixture(pkg)
+        pkg2 = models / "qc_bot2"
+        (pkg2 / "urdf").mkdir(parents=True)
+        (pkg2 / "meshes").mkdir()
+        write_fixture(pkg2, "qc_bot2", RIG2, RIG2["home"], swap=("LSH", "REL"))
         real = os.environ.get("MICE_URDF_MODEL", "")
         real_rel = ""
         if real and Path(real).is_dir():
@@ -324,7 +406,14 @@ def run(t):
         base, main = F.start_hub()
         main.MODELS = models
         fake_serial.NONG.joints = [float(v) for v in MON_POSE]
-        cfg = {"dims": DIMS, "axis": AXIS, "model": "qc_bot/urdf/qc_bot.urdf", "real": real_rel}
+        rig2 = {k: RIG2[k] for k in ("axis", "tilt", "invert", "zero", "min", "max", "home")}
+        real_rig = {}
+        if real_rel:
+            rd = json.loads((Path(__file__).resolve().parents[2] / "nong" / "main_python_set_nong" / "rig_default.json").read_text(encoding="utf-8"))
+            real_rig = {k: rd[k] for k in ("axis", "tilt", "invert", "zero", "min", "max", "home", "palmTurn") if k in rd}
+            real_rig["dims"] = rd.get("dims", DIMS)
+        cfg = {"dims": DIMS, "axis": AXIS, "model": "qc_bot/urdf/qc_bot.urdf", "real": real_rel,
+               "rig2": rig2, "realRig": real_rig}
         browser.page(DRIVER.replace("__CFG__", json.dumps(cfg)),
                      query="%s/studio/_qcdriver.html?dev=usb%%3A%s" % (base, fake_serial.PORT),
                      seconds=120)
@@ -378,6 +467,19 @@ def run(t):
          "picking a missing file says so and keeps the model shown", r["missing"])
     t.ok(r["loop"].startswith("true_") and "Cannot_show" in r["loop"] and "loop" in r["loop"],
          "a saved look whose file forms a loop says so and shows the simple shapes", r["loop"])
+
+    got2 = next((m for m in marks if m.startswith("res2=")), "")
+    if t.ok(got2, "the driver measured the real-nong-style rig", marks[-3:]):
+        r2 = json.loads(got2[5:])
+        f = r2["fit"]
+        t.ok(r2["on"] and float(r2["poseErr"]) < 1.0,
+             "a CAD drawn at HOME with the nong's tilted, inverted axes: 14 random poses land on the shapes' (worst %s mm)" % r2["poseErr"], r2)
+        t.ok(all(float(x) < 1.0 for x in r2["isoErr"].split("_")),
+             "and each joint alone from home moves the arm like the shapes", r2["isoErr"])
+        t.ok(f[0]["swapSh"] and not f[0]["swapEl"] and f[1]["swapEl"] and not f[1]["swapSh"],
+             "the pair the CAD named the other way round is found (left shoulder, right elbow)", f)
+        t.ok(not r2["warn"] and max(x["deg"] for x in f) < 0.5,
+             "the fit is exact and nothing is warned (%s deg)" % [x["deg"] for x in f], r2)
 
     real = next((m for m in marks if m.startswith("real=")), "")
     if real:

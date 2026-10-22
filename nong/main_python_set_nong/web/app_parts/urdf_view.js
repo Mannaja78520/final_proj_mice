@@ -9,8 +9,9 @@
 let URDF_CFG = null;               // urdf_view.json
 const urdfFiles = {};              // models path -> parsed file, or {error}
 let urdfJ = [];                    // per Studio joint: {axis, sign, off, quality, name}
-let urdfTip = {};                  // "L"/"R" -> {link, dir, mm, fromMesh}
-let urdfLast = { dims: null, warn: [], error: "" };  // what the last build found
+let urdfTip = {};                  // "L"/"R" -> {link, tipLocal, mm, fromMesh}
+let urdfArm = [];                  // per arm: its 4 URDF joints, shoulder first
+let urdfLast = { dims: null, warn: [], error: "", fit: [null, null] };  // what the last build found
 let urdfModelList = [];            // [{path, label}] offered in the box
 const urdfGeo = {};                // mesh url -> BufferGeometry (kept across rebuilds)
 let urdfBuildGen = 0;              // a mesh arriving after a rebuild is dropped
@@ -197,9 +198,13 @@ function urdfBuildInto(root) {
       continue;
     }
     jointGroups[i] = hit.mov;
-    urdfJ[i] = { name: hit.j.name, axis: new THREE.Vector3(...hit.j.axis).normalize(),
-                 sign: 1, off: THREE.MathUtils.degToRad(+c.offsetDeg || 0), quality: 1, cfgSign: c.sign };
+    let depth = 0;
+    for (let n = hit.j.child; jointOf[n]; n = jointOf[n].j.parent) depth++;
+    urdfJ[i] = { name: hit.j.name, axis: new THREE.Vector3(...hit.j.axis).normalize(), mov: hit.mov, org: hit.org,
+                 depth, named: i, sign: 1, off: 0, quality: 1, cfgSign: c.sign, cfgOff: c.offsetDeg };
   }
+  // each arm's four joints in the order they hang (shoulder pair, then elbow)
+  urdfArm = [0, 4].map(b => urdfJ.slice(b, b + 4).slice().sort((x, y) => x.depth - y.depth));
   for (const side of ["L", "R"]) {
     const h = ((URDF_CFG.hands || {})[side]) || {};
     if (!linkG[h.link]) { urdfLast.error = "the file has no part " + (h.link || "?") + " for the " + (side === "L" ? "left" : "right") + " hand"; root.remove(base); renderLookUI(); return false; }
@@ -265,7 +270,7 @@ function urdfBuildInto(root) {
     const elbowBall = new THREE.Mesh(new THREE.SphereGeometry(12, 18, 12),
       new THREE.MeshBasicMaterial({ color: 0xff9944, depthTest: false }));
     elbowBall.userData.arm = arm; elbowBall.renderOrder = 19;
-    jointGroups[b + 2].parent.add(elbowBall); elbowBalls.push(elbowBall);
+    urdfArm[arm][2].org.add(elbowBall); elbowBalls.push(elbowBall);
     const fore = linkG[URDF_CFG.hands[side].link];
     const wrist = new THREE.Mesh(new THREE.SphereGeometry(14, 20, 14),
       new THREE.MeshBasicMaterial({ color: 0x3ecf8e, depthTest: false }));
@@ -278,39 +283,46 @@ function urdfBuildInto(root) {
     palm.position.set(0, -30, 2.6);
     back.userData.skel = palm.userData.skel = true;
     hand.add(back, palm); fore.add(hand); palmMarks.push(hand);
-    urdfTip[side] = { link: URDF_CFG.hands[side].link, fore, wrist, hand, mm: 0, fromMesh: false };
+    urdfTip[side] = { link: URDF_CFG.hands[side].link, fore, wrist, hand, mm: 0, fromMesh: false, tipLocal: null };
   });
-  pairRingParents = [0, 2, 4, 6].map(i => [jointGroups[i].parent, jointGroups[i + 1].parent]);
   urdfOn = true;
-  urdfSettle(base, warn);
+  urdfSettle(base, warn);         // may re-pair joints (the fit), so the rings come after
+  pairRingParents = [0, 2, 4, 6].map(i => [jointGroups[i].parent, jointGroups[i + 1].parent]);
   return true;
 }
 
-// Everything that depends on the zero pose: each joint's sense, where the
-// shoulders sit, the tips, the body and hand frames, and the file's sizes.
+// Everything that depends on the zero pose: each joint's sense and zero, where
+// the shoulders sit, the tips, the body and hand frames, and the file's sizes.
 function urdfSettle(base, warn) {
   const keep = pose;
   pose = RIG.zero.slice();
   base.position.set(0, 0, 0);
-  urdfJ.forEach(b => { if (b) b.sign = 1; });
+  const num = (v) => typeof v === "number" && Number.isFinite(v);
+  urdfJ.forEach(b => { if (b) { b.sign = 1; b.off = num(b.cfgOff) ? THREE.MathUtils.degToRad(b.cfgOff) : 0; } });
   applyPose(); robot.updateMatrixWorld(true);
   const W = (o) => o.getWorldPosition(new THREE.Vector3());
   const wq = (o) => o.getWorldQuaternion(new THREE.Quaternion());
+  const fitOn = (URDF_CFG.fit || {}).on !== false;
   urdfJ.forEach((b, i) => {
     if (!b) return;
-    const a = b.axis.clone().applyQuaternion(wq(jointGroups[i].parent));
+    const a = b.axis.clone().applyQuaternion(wq(b.org));
     const dot = a.dot(rigRestAxis(i));
     b.quality = Math.abs(dot);
     b.sign = b.cfgSign === 1 || b.cfgSign === -1 ? b.cfgSign : (dot < 0 ? -1 : 1);
-    if (b.cfgSign === "auto" && b.quality < 0.7 && i < ARMJ)
+    if (b.cfgSign === "auto" && b.quality < 0.7 && (i >= ARMJ || !fitOn))
       warn.push(JOINT_LABELS[i] + " turns about a different axis than the simple shapes");
   });
   // shoulders where the simple shapes have them, so the camera, the torso
   // box and the old saved views still line up
-  const mid = W(jointGroups[0].parent).add(W(jointGroups[4].parent)).multiplyScalar(0.5);
+  const mid = W(urdfArm[0][0].org).add(W(urdfArm[1][0].org)).multiplyScalar(0.5);
   base.position.set(-mid.x, (RIG.dims.shoulderY || 0) - mid.y, -mid.z);
   applyPose(); robot.updateMatrixWorld(true);
-  ["L", "R"].forEach((side, arm) => urdfPlaceTip(side, arm));
+  urdfLast.fit = [null, null];
+  ["L", "R"].forEach((side, arm) => {
+    urdfMeshTip(side, arm);
+    if (fitOn) urdfFitArm(arm, warn);
+    urdfPlaceHand(side, arm);
+  });
   bodyGroup.quaternion.copy(wq(bodyGroup.parent).invert());
   robot.updateMatrixWorld(true);
   urdfLast.dims = urdfSizes();
@@ -320,44 +332,58 @@ function urdfSettle(base, warn) {
   applyPose();
   renderLookUI();
 }
-// The tip: along the upper arm's line at zero, as far as the forearm part
-// reaches (tip "mesh"), or the forearm length until that part has arrived.
-function urdfPlaceTip(side, arm) {
+// The hand's tip from the forearm part itself (tip "mesh"): the middle of its
+// far end from the elbow, and how far the part reaches that way. In the
+// forearm's own frame, so it holds at any pose.
+function urdfMeshTip(side, arm) {
+  const t = urdfTip[side];
+  t.fromMesh = false; t.tipLocal = null;
+  if (((URDF_CFG.hands || {})[side] || {}).tip !== "mesh") return;
+  robot.updateMatrixWorld(true);
+  const el = t.fore.worldToLocal(urdfArm[arm][2].org.getWorldPosition(new THREE.Vector3()));
+  const toFore = new THREE.Matrix4().copy(t.fore.matrixWorld).invert();
+  const pts = [], m4 = new THREE.Matrix4();
+  t.fore.traverse(o => {
+    if (!o.isMesh || o.userData.urdfLink !== t.link) return;
+    const pos = o.geometry.attributes.position;
+    m4.multiplyMatrices(toFore, o.matrixWorld);
+    const step = Math.max(1, Math.floor(pos.count / 60000));
+    for (let k = 0; k < pos.count; k += step) pts.push(new THREE.Vector3().fromBufferAttribute(pos, k).applyMatrix4(m4).sub(el));
+  });
+  if (!pts.length) return;
+  const far = Math.max(...pts.map(v => v.length()));
+  if (far < 1) return;
+  // each corner once: an STL repeats a vertex in every triangle it touches
+  const end = new THREE.Vector3(), seen = new Set(); let n = 0;
+  pts.forEach(v => {
+    const key = v.toArray().map(x => Math.round(x * 100)).join();
+    if (v.length() > far * 0.97 && !seen.has(key)) { seen.add(key); end.add(v); n++; }
+  });
+  const dir = end.divideScalar(n).normalize();
+  t.mm = Math.max(...pts.map(v => v.dot(dir)));
+  t.tipLocal = el.clone().addScaledVector(dir, t.mm);
+  t.fromMesh = true;
+  t.wrist.position.copy(t.tipLocal);
+}
+// Without a forearm part: the forearm length along the shapes' forearm at
+// zero. Then the hand frame of the shapes at zero (tilt chain + palmTurn),
+// its -Y laid exactly along this forearm.
+function urdfPlaceHand(side, arm) {
   const t = urdfTip[side], b = arm * 4;
   const keep = pose;
   pose = RIG.zero.slice(); applyPose(); robot.updateMatrixWorld(true);
-  const W = (o) => o.getWorldPosition(new THREE.Vector3());
-  const sh = W(jointGroups[b].parent), el = W(jointGroups[b + 2].parent);
-  const dirW = el.clone().sub(sh).normalize();
   const inv = t.fore.getWorldQuaternion(new THREE.Quaternion()).invert();
-  const dir = dirW.clone().applyQuaternion(inv).normalize();
-  const elLocal = t.fore.worldToLocal(el.clone());
-  let mm = side === "L" ? RIG.dims.foreLenL : RIG.dims.foreLenR;
-  let reach = -Infinity;
-  if (((URDF_CFG.hands || {})[side] || {}).tip === "mesh") {
-    t.fore.updateMatrixWorld(true);
-    const toFore = new THREE.Matrix4().copy(t.fore.matrixWorld).invert();
-    const v = new THREE.Vector3(), m4 = new THREE.Matrix4();
-    t.fore.traverse(o => {
-      if (!o.isMesh || !o.userData.urdfLink || o.userData.urdfLink !== t.link) return;
-      const pos = o.geometry.attributes.position;
-      m4.multiplyMatrices(toFore, o.matrixWorld);
-      const step = Math.max(1, Math.floor(pos.count / 60000));
-      for (let k = 0; k < pos.count; k += step) {
-        v.fromBufferAttribute(pos, k).applyMatrix4(m4).sub(elLocal);
-        reach = Math.max(reach, v.dot(dir));
-      }
-    });
-  }
-  t.fromMesh = reach > 1;
-  if (t.fromMesh) mm = reach;
-  t.mm = mm;
-  t.wrist.position.copy(elLocal).addScaledVector(dir, mm);
-  t.hand.position.copy(t.wrist.position);
-  // the hand frame of the simple shapes at zero (its tilt chain + palmTurn),
-  // with its -Y laid exactly along this forearm
+  const el = t.fore.worldToLocal(urdfArm[arm][2].org.getWorldPosition(new THREE.Vector3()));
   const q = new THREE.Quaternion();
   for (let k = b; k < b + 4; k++) q.multiply(jointTiltQuat(k));
+  if (!t.fromMesh) {
+    t.mm = side === "L" ? RIG.dims.foreLenL : RIG.dims.foreLenR;
+    const dirW = new THREE.Vector3(0, -1, 0).applyQuaternion(q);
+    t.tipLocal = el.clone().addScaledVector(dirW.applyQuaternion(inv), t.mm);
+  }
+  t.wrist.position.copy(t.tipLocal);
+  t.hand.position.copy(t.tipLocal);
+  const dir = t.tipLocal.clone().sub(el).normalize();
   q.multiply(new THREE.Quaternion().setFromAxisAngle(_AXVEC.y, THREE.MathUtils.degToRad(RIG.palmTurn[arm] || 0)));
   const local = inv.clone().multiply(q);
   const down = new THREE.Vector3(0, -1, 0).applyQuaternion(local);
@@ -365,15 +391,153 @@ function urdfPlaceTip(side, arm) {
   palmCache.clear();
   pose = keep; applyPose();
 }
+
+// ---- which URDF joint is which Studio joint, its sense and its zero --------
+// A CAD export names and zeroes its joints its own way: the real nong's file
+// turns its first shoulder joint about the front axis where the shapes turn
+// theirs about a tilted side axis, and its zero is the pose it was drawn in
+// (PC run 2026-10-23: every arm axis "perpendicular"). So, per arm, the
+// pairing inside each joint pair, the sense and the zero are FITTED: the
+// upper arm and the forearm must point where the shapes point them over
+// many poses. urdf_view.json "fit" turns it off; a number in "sign" or
+// "offsetDeg" is kept as given. The story is in check_urdf_look.
+const _fQ = new THREE.Quaternion(), _fV = new THREE.Vector3();
+function urdfArmModel(arm) {
+  const ch = urdfArm[arm];
+  pose = RIG.zero.slice(); applyPose();
+  ch.forEach(c => c.mov.quaternion.identity());
+  robot.updateMatrixWorld(true);
+  const Wq = ch.map(c => c.org.getWorldQuaternion(new THREE.Quaternion()));
+  const P = ch.map(c => c.org.getWorldPosition(new THREE.Vector3()));
+  const C = [null], T = [null];
+  for (let k = 1; k < 4; k++) {
+    const inv = Wq[k - 1].clone().invert();
+    C[k] = inv.clone().multiply(Wq[k]);
+    T[k] = P[k].clone().sub(P[k - 1]).applyQuaternion(inv);
+  }
+  const tipW = wristBalls[arm].getWorldPosition(new THREE.Vector3());
+  const tipT = tipW.sub(P[3]).applyQuaternion(Wq[3].clone().invert());
+  applyPose();
+  return { W1: Wq[0], C, T, tipT, axes: ch.map(c => c.axis) };
+}
+// upper-arm and forearm directions for chain angles th (rad); fore only if asked
+function urdfArmDirs(m, th, fore) {
+  const M = m.W1.clone().multiply(_fQ.setFromAxisAngle(m.axes[0], th[0]));
+  const P2 = m.T[1].clone().applyQuaternion(M);
+  M.multiply(m.C[1]).multiply(_fQ.setFromAxisAngle(m.axes[1], th[1]));
+  const P3 = P2.add(m.T[2].clone().applyQuaternion(M));
+  const up = P3.clone().normalize();
+  if (!fore) return { up };
+  M.multiply(m.C[2]).multiply(_fQ.setFromAxisAngle(m.axes[2], th[2]));
+  const P4 = P3.clone().add(m.T[3].clone().applyQuaternion(M));
+  M.multiply(m.C[3]).multiply(_fQ.setFromAxisAngle(m.axes[3], th[3]));
+  const tip = P4.add(m.tipT.clone().applyQuaternion(M));
+  return { up, fore: tip.sub(P3).normalize() };
+}
+// the shapes' upper-arm and forearm directions for joint deltas d (deg)
+function rigArmDirs(b, d) {
+  const q = new THREE.Quaternion(), r = new THREE.Quaternion();
+  const turn = (k) => q.multiply(jointTiltQuat(b + k)).multiply(r.setFromAxisAngle(_AXVEC[RIG.axis[b + k]], THREE.MathUtils.degToRad(d[k])));
+  turn(0); turn(1);
+  const up = new THREE.Vector3(0, -1, 0).applyQuaternion(q);
+  turn(2); turn(3);
+  return { up, fore: new THREE.Vector3(0, -1, 0).applyQuaternion(q) };
+}
+function urdfFitArm(arm, warn) {
+  const cfg = URDF_CFG.fit || {}, b = arm * 4, ch = urdfArm[arm];
+  const m = urdfArmModel(arm);
+  const withFore = urdfTip[arm ? "R" : "L"].fromMesh;
+  let seed = 4801 + arm;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const S = [];
+  for (let n = 0; n < (cfg.samples || 12); n++) {
+    const d = [0, 1, 2, 3].map(k => {
+      const j = b + k, v = RIG.min[j] + (RIG.max[j] - RIG.min[j]) * rnd();
+      return (v - RIG.zero[j]) * jdir(j);
+    });
+    S.push({ d, ...rigArmDirs(b, d) });
+  }
+  const D2R = Math.PI / 180, num = (v) => typeof v === "number" && Number.isFinite(v);
+  // studio joint of chain slot k, per pairing choice
+  const slot = (swapSh, swapEl) => [swapSh ? b + 1 : b, swapSh ? b : b + 1, swapEl ? b + 3 : b + 2, swapEl ? b + 2 : b + 3];
+  const cost = (map, sg, of, fore) => {
+    let c = 0;
+    const th = [0, 0, 0, 0];
+    for (const s of S) {
+      for (let k = 0; k < 4; k++) th[k] = sg[k] * s.d[map[k] - b] * D2R + of[k];
+      const r = urdfArmDirs(m, th, fore);
+      c += r.up.angleTo(s.up) + (fore ? r.fore.angleTo(s.fore) : 0);
+    }
+    // a universal joint has twin answers (one zero turned half round, the
+    // other sense flipped) that move the arm the same: a hair's weight on
+    // the zeros picks the one nearest the file's own zero, every time
+    const tie = of.reduce((a, o) => a + Math.abs(Math.atan2(Math.sin(o), Math.cos(o))), 0) * 1e-4;
+    return c / S.length / (fore ? 2 : 1) / D2R + tie;
+  };
+  // what the data fixes: a numeric sign or offset of the Studio joint
+  const fixedSign = (j) => { const v = urdfJointCfg(j).sign; return v === 1 || v === -1 ? [v] : [1, -1]; };
+  const fixedOff = (j) => { const v = urdfJointCfg(j).offsetDeg; return num(v) ? v * D2R : null; };
+  const swaps = cfg.swap === false ? [false] : [false, true];
+  const grid = cfg.gridDeg || 15;
+  // search one pair (k0 = 0 shoulder, 2 elbow) with the other fixed
+  const best = { map: slot(false, false), sg: [1, 1, 1, 1], of: [0, 0, 0, 0], c: Infinity };
+  const searchPair = (k0, fore) => {
+    let top = { c: Infinity };
+    for (const sw of swaps) {
+      const map = k0 === 0 ? slot(sw, best.map[2] === b + 3) : slot(best.map[0] === b + 1, sw);
+      for (const s0 of fixedSign(map[k0])) for (const s1 of fixedSign(map[k0 + 1])) {
+        const sg = best.sg.slice(); sg[k0] = s0; sg[k0 + 1] = s1;
+        const f0 = fixedOff(map[k0]), f1 = fixedOff(map[k0 + 1]);
+        const g = (f) => f !== null ? [f] : Array.from({ length: Math.round(360 / grid) }, (_, i) => (i * grid - 180) * D2R);
+        for (const o0 of g(f0)) for (const o1 of g(f1)) {
+          const of = best.of.slice(); of[k0] = o0; of[k0 + 1] = o1;
+          const c = cost(map, sg, of, fore);
+          if (c < top.c) top = { map, sg, of, c, free: [f0 === null, f1 === null] };
+        }
+      }
+    }
+    // polish the two zeros, down to 0.01 degree
+    for (const st of [5, 1, 0.25, 0.05, 0.01]) for (let it = 0; it < 8; it++) {
+      let moved = false;
+      for (let k = 0; k < 2; k++) {
+        if (!top.free[k]) continue;
+        for (const dd of [-st, st]) {
+          const of = top.of.slice(); of[k0 + k] += dd * D2R;
+          const c = cost(top.map, top.sg, of, fore);
+          if (c < top.c - 1e-9) { top = { ...top, of, c }; moved = true; }
+        }
+      }
+      if (!moved) break;
+    }
+    Object.assign(best, { map: top.map, sg: top.sg, of: top.of, c: top.c });
+  };
+  searchPair(0, false);
+  if (withFore) searchPair(2, true);
+  const upDeg = cost(best.map, best.sg, best.of, false);
+  const allDeg = withFore ? cost(best.map, best.sg, best.of, true) : upDeg;
+  // hand the fitted pairing, senses and zeros to the Studio joints
+  const fitted = withFore ? 4 : 2;
+  const entries = ch.slice();
+  for (let k = 0; k < fitted; k++) {
+    const j = best.map[k], e = entries[k];
+    urdfJ[j] = Object.assign(e, { sign: best.sg[k], off: best.of[k], fitted: true });
+    jointGroups[j] = e.mov;
+  }
+  urdfLast.fit[arm] = { deg: Math.round(allDeg * 10) / 10, upDeg: Math.round(upDeg * 10) / 10,
+                        // swapped = against the file's own names
+                        swapSh: urdfJ[b].named !== b, swapEl: withFore && urdfJ[b + 2].named !== b + 2, fore: withFore };
+  const side = arm ? "right" : "left";
+  if (allDeg > (cfg.warnDeg || 5))
+    warn.push("the " + side + " arm of the CAD model points up to " + Math.round(allDeg) + "° away from the simple shapes");
+  pose = RIG.zero.slice(); applyPose(); robot.updateMatrixWorld(true);
+}
+// a forearm part arrived: tip, fit and hand all depend on it, so settle again
+// (a rebuild: the cached meshes come back at once)
 function urdfMeshArrived(link) {
   if (!urdfOn) return;             // still building (a cached mesh): urdfSettle measures it
-  ["L", "R"].forEach((side, arm) => {
-    if (!urdfTip[side] || urdfTip[side].link !== link) return;
-    urdfPlaceTip(side, arm);
-    urdfLast.dims = urdfSizes();
-    if (lookKind() === "urdf") { urdfUseSizes(); renderRigUI(); }
-    renderLookUI();
-  });
+  if (!["L", "R"].some(side => urdfTip[side] && urdfTip[side].link === link)) return;
+  buildRobot();
+  if (lookKind() === "urdf") { urdfUseSizes(); renderRigUI(); }
 }
 // the sizes this file gives the Rig setup (urdf_view.json "sizes")
 function urdfSizes() {
@@ -460,8 +624,10 @@ function renderLookUI() {
   stat.textContent = urdfLast.error ? "Cannot show the CAD model: " + urdfLast.error + ". The simple shapes are shown."
     : !urdfOn ? "Opening the CAD model…"
     : urdfLast.warn.length ? urdfLast.warn.join("; ") : "CAD model at its real sizes.";
-  tech.textContent = urdfOn ? (v.model + " · " + urdfJ.map((b, i) => b ? JOINT_NAMES[i] + "→" + b.name +
-    (b.sign < 0 ? " (-)" : "") + (b.quality < 0.7 ? " (axis " + b.quality.toFixed(2) + ")" : "") : JOINT_NAMES[i] + "→none").join(", ")) : (v.model || "");
+  const fitTxt = (urdfLast.fit || []).map((f, a) => f ? (a ? " R" : " L") + " arm fit " + f.deg + "°" +
+    (f.swapSh ? " shoulder pair swapped" : "") + (f.swapEl ? " elbow pair swapped" : "") + (f.fore ? "" : " (upper arm only)") : "").join(",");
+  tech.textContent = urdfOn ? (v.model + " ·" + fitTxt + " · " + urdfJ.map((b, i) => b ? JOINT_NAMES[i] + "→" + b.name +
+    (b.sign < 0 ? " (-)" : "") + (b.off ? " " + Math.round(THREE.MathUtils.radToDeg(b.off)) + "°" : "") + (b.quality < 0.7 && !b.fitted ? " (axis " + b.quality.toFixed(2) + ")" : "") : JOINT_NAMES[i] + "→none").join(", ")) : (v.model || "");
 }
 // another file: opened first, so a broken one never replaces what is shown
 async function urdfPickModel(path) {
