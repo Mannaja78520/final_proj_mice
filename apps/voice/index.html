@@ -2477,6 +2477,7 @@ static SAMPLES = {
   const now = got.chosen != null ? got.chosen : keep;    // the helper's answer: it knows the default
   sel.value = this.styleInfo[now] ? now : "";
   this.showStyleNote();
+  this.fillScenarioStyle();
 }
   showStyleNote(){
   const sel = this.$("ttsStyle"), note = this.$("styleNote");
@@ -2654,6 +2655,26 @@ static SAMPLES = {
   this.fillSteps(this.$("scenPitch"), "pitch", s.pitch, "same as the Voice tab");
   this.scenVoiceWant = s.voice || "";
   this.fillScenarioVoices();
+  this.scenStyleWant = s.style || "";
+  this.fillScenarioStyle();
+}
+
+  // User 2026-10-22: *ตั้งได้ว่างานแต่ละงานจะเป็นโทนไหน* - each event (scenario)
+  // picks its own manner; the list is config/voice_styles.json via the helper.
+  fillScenarioStyle(){
+  const sel = this.$("scenStyle");
+  if (!sel) return;
+  const want = this.scenStyleWant || "";
+  sel.textContent = "";
+  const add = (v, txt) => {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = txt;
+    sel.appendChild(o);
+  };
+  add("", "same as the Voice tab");
+  Object.entries(this.styleInfo || {}).forEach(([key, s]) => add(key, s.says || key));
+  if (want && !(this.styleInfo || {})[want]) add(want, want);   // kept, even if the list is not read yet
+  sel.value = want;
 }
 
   // Every voice offered, one voice for every language first; "same as the
@@ -2693,6 +2714,7 @@ static SAMPLES = {
                              voice: this.$("scenVoice").value,
                              rate: this.$("scenRate").value,
                              pitch: this.$("scenPitch").value,
+                             style: (this.$("scenStyle") || {}).value || "",
                              language: (this.$("scenLang") || {}).value || ""});
   this.cfg.scenario = name;
   this.fillScenario();
@@ -2709,6 +2731,8 @@ static SAMPLES = {
   const t = {speed: this.$("scenRate").value || this.$("ttsRate").value || "+0%",
              pitch: this.$("scenPitch").value || this.$("ttsPitch").value || "+0Hz"};
   if (voice && voice !== "-") t.voice = voice;
+  const style = ((this.$("scenStyle") || {}).value) || ((this.$("ttsStyle") || {}).value) || "";
+  if (style || this.styleNow) t.style = style;
   this.speak(VoiceApp.SAMPLES[lang] || VoiceApp.SAMPLES.en, lang, t);
 }
 
@@ -2720,6 +2744,7 @@ static SAMPLES = {
                 voice: this.$("scenVoice").value,
                 rate: this.$("scenRate").value,
                 pitch: this.$("scenPitch").value,
+                style: (this.$("scenStyle") || {}).value || "",
                 language: (this.$("scenLang") || {}).value || ""};
   if (!name) {                                // no scenario: the words alone
     this.cfg.scenario = body.prompt;
@@ -3303,6 +3328,11 @@ if (document.readyState === "loading") {
       <div class="field">
         <span>Its voice</span><select id="scenVoice"></select>
       </div>
+      <div class="field">
+        <span>Its speaking manner</span><select id="scenStyle"></select>
+      </div>
+      <p class="mini">Polite for a formal event, playful for kids, sassy for a
+         fun show. "Same as the Voice tab" keeps the manner chosen there.</p>
       <div class="field">
         <span>Speed</span><select id="scenRate"></select>
         <span>Pitch</span><select id="scenPitch"></select>

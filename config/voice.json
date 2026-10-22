@@ -81,7 +81,7 @@
  "tts": {
   "enabled": true,
   "language": "th",
-  "rate": "+0%",
+  "rate": "-10%",
   "pitch": "+0Hz",
   "voices": {
    "th": "th-TH-PremwadeeNeural",

@@ -15,7 +15,8 @@ The VOICE (who it sounds like) comes from a reference clip: by default the
 robot's own current voice saying one neutral line, so a feeling does not
 turn the robot into somebody else. The feeling comes from the token.
 
-    POST /speak {"text", "emotion", "gender"?, "seed"?} -> audio/wav
+    POST /speak {"text", "emotion", "gender"?, "seed"?, "tune"?} -> audio/wav
+         tune: any of TUNE below, for this request only
     GET  /health
 """
 import argparse
@@ -133,7 +134,8 @@ def decode_fast(S, ids, max_new, temperature):
     return seq[:seq.index(eos)] if eos in seq else seq
 
 
-def speak(S, text, emotion, gender, seed, temperature, max_new):
+def speak(S, text, emotion, gender, seed, temperature, max_new, end=""):
+    """One piece of text -> float samples (None = no sound)."""
     torch = S["torch"]
     if S["checkpoint"].startswith("raw"):
         model_text = S["pre"].preprocess_text(text)   # raw: no romanizer/phoneme models needed
@@ -141,6 +143,8 @@ def speak(S, text, emotion, gender, seed, temperature, max_new):
         model_text = S["pre"].get_text_for_model(S["pre"].TTSDataProcessor().process(text), S["checkpoint"])
     if not model_text:
         return None
+    if end and not model_text.endswith(end):
+        model_text += end
     torch.manual_seed(seed)                # the same line + feeling sounds the same next time
     ids = S["tok"]([prompt(S, model_text, emotion, gender)], return_tensors="pt").to(S["device"])
     with torch.inference_mode():
@@ -157,14 +161,60 @@ def speak(S, text, emotion, gender, seed, temperature, max_new):
         wav = S["codec"].detokenize(S["ref"].to(S["device"]).squeeze(0),
                                     torch.tensor(sem).long().unsqueeze(0).to(S["device"]))
     import numpy as np
-    pcm = (np.clip(np.asarray(wav).squeeze(), -1, 1) * 32767).astype("<i2").tobytes()
+    return np.clip(np.asarray(wav, dtype="float32").squeeze(), -1, 1)
+
+
+def pieces(text, least):
+    """Thai writes a space where a speaker takes a breath. One long line in one
+    go came out rushed and run together (user 2026-10-22: รวบเกินฟังไม่รู้เรื่อง);
+    each piece said on its own, with a short pause between, is clearer.
+    Pieces under `least` letters join the next one (a lone ครับ is no phrase)."""
+    if least <= 0:
+        return [text]
+    out = []
+    for word in text.split():
+        if out and len(out[-1]) < least:
+            out[-1] += " " + word
+        else:
+            out.append(word)
+    if len(out) > 1 and len(out[-1]) < least:      # a short tail joins the piece before
+        last = out.pop()
+        out[-1] += " " + last
+    return out
+
+
+def to_wav(S, parts, tune):
+    """Pieces -> one 16-bit WAV with a quiet lead and TAIL. Measured 2026-10-22:
+    the model stops on the last sound of the last word (16 of 30 clips had
+    under 100 ms after it, one ended at full volume) and a speaker or the
+    browser drops the end of a buffer: the user heard the last word cut in
+    half. The fade is a few ms only: it removes a click, not a word."""
+    import numpy as np
+    rate = S["rate"]
+    ms = lambda v: np.zeros(int(rate * float(v) / 1000), dtype="float32")   # noqa: E731
+    fade = int(rate * float(tune["fadeMs"]) / 1000)
+    joined = [ms(tune["leadMs"])]
+    for i, x in enumerate(parts):
+        if fade and len(x) > 2 * fade:
+            x = x.copy()
+            x[:fade] *= np.linspace(0, 1, fade, dtype="float32")
+            x[-fade:] *= np.linspace(1, 0, fade, dtype="float32")
+        joined.append(x)
+        joined.append(ms(tune["pauseMs"] if i < len(parts) - 1 else tune["tailMs"]))
+    pcm = (np.concatenate(joined) * 32767).astype("<i2").tobytes()
     buf = io.BytesIO()
     with wave.open(buf, "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
-        w.setframerate(S["rate"])
+        w.setframerate(rate)
         w.writeframes(pcm)
     return buf.getvalue()
+
+
+# Every knob a request may change; the defaults come from the command line
+# (voice_providers.json `start.args`) and a request's `tune` overrides them.
+TUNE = {"temperature": float, "leadMs": float, "tailMs": float, "fadeMs": float, "pauseMs": float,
+        "split": int, "end": str}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -204,12 +254,22 @@ class Handler(BaseHTTPRequestHandler):
         if emotion not in self.cfg["emotions"]:
             return self._json({"ok": False, "error": "it has no feeling called %r" % emotion}, 400)
         seed = int(req.get("seed") or int(hashlib.md5((text + emotion).encode()).hexdigest()[:8], 16))
+        tune = dict(self.cfg["tune"])
+        try:
+            for k, v in (req.get("tune") or {}).items():
+                if k in TUNE:
+                    tune[k] = TUNE[k](v)
+        except (TypeError, ValueError, AttributeError):
+            return self._json({"ok": False, "error": "a tune setting was not readable"}, 400)
         t0 = time.time()
         with self.lock:                               # one GPU job at a time
-            wav = speak(self.S, text, emotion, str(req.get("gender") or self.cfg["gender"]), seed,
-                        float(self.cfg["temperature"]), int(self.cfg["maxNewTokens"]))
-        if not wav:
+            gender = str(req.get("gender") or self.cfg["gender"])
+            parts = [speak(self.S, piece, emotion, gender, seed, tune["temperature"],
+                           int(self.cfg["maxNewTokens"]), tune["end"])
+                     for piece in pieces(text, tune["split"])]
+        if not parts or any(x is None for x in parts):
             return self._json({"ok": False, "error": "it made no sound for that line"}, 500)
+        wav = to_wav(self.S, parts, tune)
         self.send_response(200)
         self.send_header("Content-Type", "audio/wav")
         self.send_header("Content-Length", str(len(wav)))
@@ -228,11 +288,19 @@ def main():
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--temperature", type=float, default=0.8)
     ap.add_argument("--max-new-tokens", type=int, default=3000)
+    ap.add_argument("--lead-ms", type=float, default=60)
+    ap.add_argument("--tail-ms", type=float, default=450)
+    ap.add_argument("--fade-ms", type=float, default=6)
+    ap.add_argument("--pause-ms", type=float, default=180)
+    ap.add_argument("--split", type=int, default=0, help="pieces under this many letters join the next; 0 = one piece")
+    ap.add_argument("--end", default="", help="mark added to a line that does not end with it")
     a = ap.parse_args()
     runtime = Path(a.runtime)
     ref = Path(a.reference) if a.reference else runtime / "reference.wav"
     Handler.cfg = {"emotions": ["neutral", "happy", "sad", "angry", "frustrated"], "gender": a.gender,
-                   "temperature": a.temperature, "maxNewTokens": a.max_new_tokens}
+                   "maxNewTokens": a.max_new_tokens,
+                   "tune": {"temperature": a.temperature, "leadMs": a.lead_ms, "tailMs": a.tail_ms,
+                            "fadeMs": a.fade_ms, "pauseMs": a.pause_ms, "split": a.split, "end": a.end}}
     Handler.S = load(runtime, a.checkpoint, ref, a.device)
     httpd = ThreadingHTTPServer(("127.0.0.1", a.port), Handler)
     print("[tts-spark] ready on 127.0.0.1:%d (%s, %s)" % (a.port, a.checkpoint, Handler.S["device"]), flush=True)

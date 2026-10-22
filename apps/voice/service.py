@@ -1515,7 +1515,9 @@ class Brain:
                 if not self.feeling_ready(pid, prov):
                     return None, getattr(self, "_feeling_why", {}).get(pid) or "it is starting"
                 feel = (sty.get("emotion") if skey else "") or "neutral"
-                return self._spoken("%s:%s%s" % (pid, feel, tag), text, "", "",
+                # New clarity settings = new sound: never replay a clip cut by the old ones (A45-26).
+                tune = ("|tune=" + json.dumps(sjob["tune"], sort_keys=True)) if sjob.get("tune") else ""
+                return self._spoken("%s:%s%s%s" % (pid, feel, tag, tune), text, "", "",
                                     lambda: providers.feeling_speak(
                                         prov, "", sjob, text, lang, "",
                                         timeout=float(sjob.get("timeoutSeconds") or 20), emotion=feel))
@@ -1580,7 +1582,11 @@ class Brain:
         if not skey:
             return chain
         known = self.services().get("providers") or {}
-        first = [p for p in (self.styles().get("prefer") or [])
+        # A manner's own `prefer` wins over the shared one (A45-26: clarity first,
+        # the feeling voice only where a manner asks for it).
+        entry = (self.styles().get("styles") or {}).get(skey) or {}
+        want = entry["prefer"] if "prefer" in entry else self.styles().get("prefer")
+        first = [p for p in (want or [])
                  if p in known and "speak" in (known[p].get("jobs") or {}) and p not in chain]
         return first + chain
 
