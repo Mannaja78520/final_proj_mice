@@ -112,6 +112,9 @@
         <button onclick="dummyToSelectedKey()" title="replace the selected move's pose with the dummy's pose now">Use dummy pose for selected move</button>
         <button onclick="robotToSelectedKey()" title="send the real robot to the move selected in the timeline, at that move's speed">Robot → selected move</button>
       </div>
+      <div class="row">
+        <button id="dummyRecBtn" onclick="dummyRecToggle()" title="Record what the dummy does. Stop keeps it: the moves go on the time bar, clear of the robot's own body, and are saved.">● Record the dummy</button>
+      </div>
       <div class="statline" id="dummyStat" aria-live="polite">not connected — pick where the dummy is, then Connect (or pick Simulated)</div>
     </div>
 

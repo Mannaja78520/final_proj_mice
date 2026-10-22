@@ -12,6 +12,9 @@
 let dummySim = null;          // simulated pot angles, or null when not simulating
 let dummyFollowOn = false;    // the follow loop is running
 let dummyLast = null;         // the last pose read, for "did it move"
+let dummySafePose = null;     // the last pose the ROBOT was sent that was clear (A46-1)
+let dummyHeld = "";           // why the robot is holding, until a safe send
+let dummyRec = null;          // while recording: [{ pose, ms }]
 
 function dummySource() { return $("dummySrc").value; }
 function dummyBus() { const v = $("dummyBus").value.trim(); return v ? parseInt(v, 10) : 0; }
@@ -129,7 +132,62 @@ function dummyFollowChanged() {
     if (!dummyFollowOn) { dummyFollowOn = true; dummyFollowTick(); }
   } else {
     dummyFollowOn = false;
+    dummySafePose = null;      // the next follow starts from wherever the arm is
+    dummyHeld = "";
   }
+}
+// The robot copies the dummy only along a way that misses its own body
+// (A46-1, user 2026-10-22). The straight move is checked first; a hit gets a
+// way round, planned within liveBudgetMs so the follow stays live. Nothing in
+// time, or a dummy pose the robot's body cannot take: the robot HOLDS its last
+// safe pose and the line says so. Studio still shows the dummy as it is.
+function dummySafeSend() {
+  const want = pose.slice();
+  const plan = planSafe(dummySafePose || want, want, SAFE.liveBudgetMs);
+  if (plan.fail) {
+    dummyHeld = "robot holds its last safe pose: " + plan.fail;
+    return false;
+  }
+  dummyHeld = "";
+  plan.path.slice(1, -1).forEach(q => liveSend("POSE " + q.map(fmtA).join(" ") + " T " + liveT()));
+  sendPoseLive();
+  dummySafePose = want;
+  return true;
+}
+// ---- record what the dummy does, then keep it as a saved move -------------
+function dummyRecToggle() {
+  if (!dummyRec) {
+    if ($("dummyFollow").value === "off") { $("dummyFollow").value = "studio"; dummyFollowChanged(); }
+    dummyRec = [{ pose: pose.slice(), ms: performance.now() }];   // where it starts
+    $("dummyRecBtn").textContent = "■ Stop and save";
+    $("dummyStat").textContent = "recording the dummy: move it, then press Stop and save";
+    return;
+  }
+  const rec = dummyRec;
+  dummyRec = null;
+  $("dummyRecBtn").textContent = "● Record the dummy";
+  return dummyRecSave(rec);
+}
+// One key per real change (2 deg or more), timed as it was done, then the
+// same safety pass as a video; on the time bar and saved under one name.
+async function dummyRecSave(rec) {
+  const K = [];
+  for (const r of rec) {
+    const prev = K[K.length - 1];
+    if (!prev) { K.push({ pose: r.pose, t: 1000, hold: 0, ms: r.ms }); continue; }
+    if (deltaDeg(prev.pose, r.pose) < 2) continue;
+    K.push({ pose: r.pose, t: Math.max(MIN_MOVE_MS, Math.round(r.ms - prev.ms)), hold: 0, tset: true, ms: r.ms });
+  }
+  if (K.length < 2) { $("dummyStat").textContent = "nothing to keep: the dummy did not move"; return false; }
+  const safe = safeKeys(K.map(({ ms, ...k }) => k));
+  if (safe.keys.length < 2) { $("dummyStat").textContent = "nothing to keep: every pose would make the robot hit itself"; return false; }
+  if (!(await askUnsaved("replace the time bar with the recording"))) return false;
+  keys = safe.keys; bumpKeys(); clearBadMarks(); clampKeyTimes();
+  selKey = 0; pose = [...keys[0].pose]; poseChanged(false); renderTimeline();
+  setWorkName("dummy_" + new Date().toISOString().slice(0, 16).replace(/[-:T]/g, ""));
+  const ok = await saveAll();
+  $("dummyStat").textContent = keys.length + " moves recorded. " + safeSay(safe) + " " + $("tlStat").textContent;
+  return ok;
 }
 async function dummyFollowTick() {
   if (!dummyFollowOn) return;
@@ -141,13 +199,15 @@ async function dummyFollowTick() {
                                        (x !== null && Math.abs(x - prev[i]) >= 0.2));
     if (moved && dummyFollowOn) {
       dummyApply(v);
+      if (dummyRec) dummyRec.push({ pose: pose.slice(), ms: performance.now() });
       // The robot gets the pose through the same live path a slider drag
       // uses: its timing comes from the link, and the robot's own LIMIT and
       // max_dps still decide how far and how fast it really goes.
-      if (mode === "robot") sendPoseLive();
+      if (mode === "robot") dummySafeSend();
     }
-    $("dummyStat").textContent = (mode === "robot" ? "robot + Studio follow" : "Studio follows") +
-      " the dummy";
+    $("dummyStat").textContent = mode === "robot" && dummyHeld ? dummyHeld
+      : (mode === "robot" ? "robot + Studio follow" : "Studio follows") + " the dummy"
+        + (dummyRec ? " (recording)" : "");
   } catch (e) {
     $("dummyStat").textContent = "dummy: no answer (" + (e.message || e) + ") — still trying";
   }

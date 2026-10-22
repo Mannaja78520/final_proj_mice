@@ -29,7 +29,10 @@ def run(t):
     hand = F.CODE / "HANDOFF.md"
     t.ok(hand.is_file(), "HANDOFF.md is at the repo root", "a new AI has nowhere to start")
     text = hand.read_text(encoding="utf-8") if hand.is_file() else ""
-    for need in ("handoff/tasks/", "python tools/handoff.py list", "## Hard rules"):
+    # "## Doing now" (user 2026-10-22): what an agent is about to do is pushed
+    # BEFORE the step, so a run that dies mid-step still says what it was on.
+    for need in ("handoff/tasks/", "python tools/handoff.py list", "## Hard rules",
+                 "## Doing now"):
         t.ok(need in text, "HANDOFF.md names %s" % need, "the pick-up steps lost a piece")
 
     t.ok(len(text.splitlines()) <= MAX_LINES, "HANDOFF.md stays under %d lines" % MAX_LINES,
@@ -47,6 +50,8 @@ def run(t):
     need = set(H.fields(H.TEMPLATE.read_text(encoding="utf-8")))
     t.ok({"Owner", "Updated", "Last commit"} <= need, "the template carries Owner, Updated, Last commit",
          "got %s" % sorted(need))
+    t.ok("## Doing now" in H.TEMPLATE.read_text(encoding="utf-8"),
+         "the template has a Doing now section", "agents only record what is finished")
     for f in sorted(H.TASKS.glob("*.md")):
         body = f.read_text(encoding="utf-8")
         gone = need - set(H.fields(body))

@@ -9,6 +9,9 @@ Plan: <plan ids, e.g. A45-11>
 ## Goal
 <the user's ask, in their words if possible>
 
+## Doing now
+<written and pushed BEFORE each step: what you are about to do, the files, the approach>
+
 ## Done
 - <what landed, with PR or commit and how it was verified>
 

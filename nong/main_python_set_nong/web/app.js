@@ -62,6 +62,7 @@ function showTab(which) {
   if (!STAB_BTN[which]) which = "pose";
   sideTab = which;
   if (which === "shows" && typeof refreshShows === "function") refreshShows();   // saved elsewhere since
+  if (which === "sequence" && typeof talkShown === "function") talkShown();      // A46-1: refit if the rig changed
   
   let renderWhich = which;
   if (!currentUser && (which === "robot" || which === "setup")) {
@@ -1684,6 +1685,190 @@ function checkCollisions(showAlert) {
       $("tlStat").textContent = "collision check passed — the sequence is safe ✓";
   }
   return problems;
+}
+// --- safe paths (A46-1) ---
+// User 2026-10-22: the arm must not hit itself when it copies a person or
+// gestures while talking. A move is a straight line in joint space (the board
+// eases every joint together), so the fast answer is that line, checked with
+// collisionAt() on THIS rig's sizes. Only when the line hits does a planner
+// look for a way round: RRT-Connect from both ends, then shortcuts, which
+// leaves a short path close to what RRT* would give. The choices are DATA in
+// safe_path.json beside this page (planner, step, budgets); the long story is
+// in qc/checks/check_safe_path.py.
+let SAFE = {
+  planner: "rrt-connect",   // "straight" = never go round: a hit is a refusal
+  checkDeg: 3,              // biggest joint change between two checked points
+  stepDeg: 12,              // how far a tree grows per try
+  goalBias: 0.2,
+  budgetMs: 1500,           // planning in the editor (video, gestures)
+  liveBudgetMs: 60,         // planning while following: miss it and the arm holds
+  shortcuts: 60,
+  seed: 1,
+};
+fetch("safe_path.json").then(r => r.json()).then(j => {
+  Object.keys(SAFE).forEach(k => { if (k in j) SAFE[k] = j[k]; });
+}).catch(() => {});        // no file: the built-in values above
+
+// Seeded, so a plan made twice is the same plan (and QC can repeat it).
+function safeRng(seed) {
+  let s = (seed >>> 0) || 1;
+  return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+}
+function safeGap(a, b) {   // the biggest joint change, deg
+  let m = 0;
+  for (let j = 0; j < NJ; j++) m = Math.max(m, Math.abs((b[j] ?? 90) - (a[j] ?? 90)));
+  return m;
+}
+function safeLerp(a, b, f) { return a.map((v, j) => v + (b[j] - v) * f); }
+// null when the pose is clear, else what hits (collisionAt's words)
+function poseHit(p) { return collisionAt(p); }
+// null when every checked point on the straight move a->b is clear
+function pathHit(a, b) {
+  const n = Math.max(1, Math.ceil(safeGap(a, b) / SAFE.checkDeg));
+  for (let s = 1; s <= n; s++) {
+    const hit = collisionAt(safeLerp(a, b, s / n));
+    if (hit) return hit;
+  }
+  return null;
+}
+// a -> b without a hit. { path: [a, ..., b], how: "straight"|"around", ms }
+// or { fail: why }. `a` is assumed clear: it is where the arm already is.
+function planSafe(a, b, budgetMs, seed) {
+  const t0 = performance.now();
+  const saved = pose;
+  try {
+    const endHit = poseHit(b);
+    if (endHit) return { fail: "the pose itself: " + endHit };
+    if (!pathHit(a, b)) return { path: [a.slice(), b.slice()], how: "straight", ms: performance.now() - t0 };
+    if (SAFE.planner === "straight") return { fail: "the move goes through the body, and going round is off" };
+    const path = rrtConnect(a, b, budgetMs ?? SAFE.budgetMs, safeRng(seed ?? SAFE.seed), t0);
+    if (!path) return { fail: "no way round found in " + Math.round(budgetMs ?? SAFE.budgetMs) + " ms" };
+    return { path: safeShortcut(path, safeRng((seed ?? SAFE.seed) + 7)), how: "around", ms: performance.now() - t0 };
+  } finally {
+    pose = saved;
+    applyPose();
+  }
+}
+// Two trees, one from each end, each try reaching for the other. Only the 8
+// ARM joints are searched: the waist and shrug turn the body and arms
+// together, so they cannot cause a hit (fkPoints holds them still) and they
+// simply glide from a to b along the path.
+function rrtConnect(a, b, budgetMs, rnd, t0) {
+  const lo = RIG.min.slice(0, ARMJ), hi = RIG.max.slice(0, ARMJ);
+  const body = (q, f) => q.concat([a[8] + (b[8] - a[8]) * f, a[9] + (b[9] - a[9]) * f]);
+  const arm = p => p.slice(0, ARMJ);
+  const free = (p, q) => !pathHit(body(p, 0.5), body(q, 0.5));
+  const A = [{ q: arm(a), up: -1 }], B = [{ q: arm(b), up: -1 }];
+  const near = (T, q) => {
+    let best = 0, bd = Infinity;
+    for (let i = 0; i < T.length; i++) {
+      let d = 0;
+      for (let j = 0; j < ARMJ; j++) d += (T[i].q[j] - q[j]) ** 2;
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  };
+  const steer = (from, to) => {
+    const g = Math.max(...to.map((v, j) => Math.abs(v - from[j])));
+    return g <= SAFE.stepDeg ? to.slice() : from.map((v, j) => v + (to[j] - v) * SAFE.stepDeg / g);
+  };
+  // grow T toward q by one step; the new node's index, or -1 when blocked
+  const extend = (T, q) => {
+    const n = near(T, q), s = steer(T[n].q, q);
+    if (!free(T[n].q, s)) return -1;
+    T.push({ q: s, up: n });
+    return T.length - 1;
+  };
+  // keep growing T toward q until it gets there (the index) or is blocked
+  const connect = (T, q) => {
+    for (;;) {
+      const i = extend(T, q);
+      if (i < 0) return -1;
+      if (Math.max(...T[i].q.map((v, j) => Math.abs(v - q[j]))) < 1e-6) return i;
+    }
+  };
+  const chain = (T, i) => { const out = []; for (; i >= 0; i = T[i].up) out.push(T[i].q); return out; };
+  let X = A, Y = B;
+  while (performance.now() - t0 < budgetMs) {
+    const goal = rnd() < SAFE.goalBias ? Y[0].q : lo.map((l, j) => l + rnd() * (hi[j] - l));
+    const i = extend(X, goal);
+    if (i >= 0) {
+      const k = connect(Y, X[i].q);
+      if (k >= 0) {
+        const fromA = X === A ? chain(X, i).reverse() : chain(Y, k).reverse();
+        const toB = X === A ? chain(Y, k).slice(1) : chain(X, i).slice(1);
+        const qs = fromA.concat(toB);
+        return qs.map((q, n) => body(q, n / (qs.length - 1)));
+      }
+    }
+    [X, Y] = [Y, X];
+  }
+  return null;
+}
+// Random shortcuts: any two points of the path that see each other directly
+// lose everything between them. What is left is short and has few corners.
+function safeShortcut(path, rnd) {
+  let p = path.slice();
+  for (let r = 0; r < SAFE.shortcuts && p.length > 2; r++) {
+    const i = Math.floor(rnd() * (p.length - 2)), k = i + 2 + Math.floor(rnd() * (p.length - i - 2));
+    if (k < p.length && !pathHit(p[i], p[k])) p = p.slice(0, i + 1).concat(p.slice(k));
+  }
+  return p.map(q => q.map((v, j) => clampJ(j, v)));
+}
+// A list of timeline keys made safe in one pass (video, recording, gestures):
+// a key whose pose hits is dropped (its time goes to the move before, so the
+// rhythm stays), and a move that would go through the body gets in-between
+// keys that go round. Each leg gets what the servos need (minTime) plus a
+// share of the rest by distance. keepTime (a video's "stay with the music"):
+// a way round that cannot fit in the move's own time is a fail, so the arm
+// holds instead of falling behind the music. Returns
+// { keys, dropped, around, failed } - failed moves are dropped too.
+function safeKeys(K, budgetMs, keepTime) {
+  const out = [], tally = { dropped: 0, around: 0, failed: 0 };
+  for (const k0 of K) {
+    const k = { ...k0, pose: k0.pose.map((v, j) => clampJ(j, v)) };
+    const prev = out[out.length - 1];
+    if (!prev) {
+      if (poseHit(k.pose)) { tally.dropped++; continue; }
+      out.push(k); continue;
+    }
+    const plan = planSafe(prev.pose, k.pose, budgetMs);
+    if (plan.fail) {
+      prev.hold = (prev.hold || 0) + (k.t || 0) + (k.hold || 0);
+      tally[poseHit(k.pose) ? "dropped" : "failed"]++;
+      continue;
+    }
+    if (plan.how === "around") {
+      const legs = plan.path.slice(1).map((q, i) => safeGap(plan.path[i], q));
+      const need = plan.path.slice(1).map((q, i) => Math.max(MIN_MOVE_MS, minTime(plan.path[i], q)));
+      const all = legs.reduce((s, v) => s + v, 0) || 1;
+      const spare = (k.t || 0) - need.reduce((s, v) => s + v, 0);
+      if (keepTime && spare < 0) {
+        prev.hold = (prev.hold || 0) + (k.t || 0) + (k.hold || 0);
+        tally.failed++;
+        continue;
+      }
+      tally.around++;
+      const legT = i => Math.round(need[i] + Math.max(0, spare) * legs[i] / all);
+      plan.path.slice(1, -1).forEach((q, i) => out.push({ pose: q, hold: 0, tset: k.tset, via: true, t: legT(i) }));
+      k.t = legT(legs.length - 1);
+    } else if (keepTime && minTime(prev.pose, k.pose) > (k.t || 0) + 1) {
+      // a dropped pose before it made this move longer: go as far as the time
+      // allows, along the line just checked clear (like vidReachSide)
+      const f = Math.max(0, Math.min(1, ((k.t || 0) - 1) / minTime(prev.pose, k.pose)));
+      k.pose = safeLerp(prev.pose, k.pose, f).map((v, j) => clampJ(j, v));
+    }
+    out.push(k);
+  }
+  return Object.assign({ keys: out }, tally);
+}
+// In words, for the status lines; "" when nothing needed changing.
+function safeSay(r) {
+  const bits = [];
+  if (r.around) bits.push(r.around + " move" + (r.around > 1 ? "s" : "") + " go round the body instead of through it");
+  if (r.dropped) bits.push(r.dropped + " pose" + (r.dropped > 1 ? "s" : "") + " would make the arm hit itself, so the arm holds instead");
+  if (r.failed) bits.push(r.failed + " move" + (r.failed > 1 ? "s" : "") + " had no safe way round, so the arm holds instead");
+  return bits.length ? "Safe path: " + bits.join("; ") + "." : "";
 }
 // --- sliders ---
 function renderSliders() {
@@ -7352,8 +7537,12 @@ function vidBuild(fit, picks, opts) {
     for (const a of [0, 1]) if (s.miss[a]) { handMiss[a]++; pk.missHand[a] = true; }
   }
   out.forEach(k => { k.hold = Math.round(k.hold); });
+  // A46-1: a person's arm passes where the robot's cannot (through its own
+  // body). safeKeys() drops a pose that hits and sends a hitting move round,
+  // on this rig's sizes; each move keeps its time, so the music still fits.
+  const safe = safeKeys(out, undefined, opts.music);
   // start: the first kept move's moment, where these moves meet the video
-  return { keys: out, videoMs: fit.videoMs, handMiss, kept, partial, start };
+  return { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe };
 }
 // frames -> timeline keys in one go. No video needed, so QC hands it a skeleton.
 // opts: { tol, mirror, waist, hand: [want L, R] (0 = as in the video),
@@ -7380,6 +7569,7 @@ function vidHandNote(made) {
 function vidSummary() {
   const m = vidMade, opts = vidOpts();
   return m.keys.length + " moves from " + (m.videoMs / 1000).toFixed(1) + " s of video."
+    + (m.safe && safeSay(m.safe) ? " " + safeSay(m.safe) : "")
     + (opts.music && m.partial
       ? " To stay with the music, " + m.partial + " of them go only part of the way: "
         + "the person moved faster than the robot can."
@@ -7434,6 +7624,18 @@ function vidSee(pk) {
   pose = vidPoseAt(vidFit, ms).slice();
   poseChanged(false);
 }
+// One step (user 2026-10-22: *drop a video, the robot does it*): make the
+// moves, put them on the time bar and save them under the video's name. The
+// safety pass is in vidBuild, so what is saved is what was checked.
+async function vidMakeAndSave() {
+  if (vidBusy) return;
+  await vidMake();
+  if (!vidMade || vidMade.keys.length < 2) return;
+  const base = ((vidSrc && (vidSrc.name || vidSrc.url)) || "video").split(/[\\/?#]/).filter(Boolean).pop();
+  setWorkName("video_" + base.replace(/\.[^.]*$/, ""));
+  if (!(await vidUse("replace"))) return;
+  if (await saveAll()) vidSay($("tlStat").textContent);
+}
 async function vidMake() {
   if (vidBusy) { vidStop = true; return; }
   vidBusy = true; vidStop = false;
@@ -7483,10 +7685,10 @@ function vidRebuild() {
   vidSay(vidSummary());
 }
 async function vidUse(how) {
-  if (!vidMade) return;
+  if (!vidMade) return false;
   const add = JSON.parse(JSON.stringify(vidMade.keys));
   if (how === "replace") {
-    if (!(await askUnsaved("replace the time bar with the moves from the video"))) return;
+    if (!(await askUnsaved("replace the time bar with the moves from the video"))) return false;
     keys = add;
   } else {
     // the first video pose is a move like any other once it follows a move
@@ -7510,6 +7712,7 @@ async function vidUse(how) {
       : "")
     + "Press Play to watch, edit any move, then Save or Save to robot.";
   vidSay($("tlStat").textContent);
+  return true;
 }
 vidFill();
 // --- the Video page (A44-8) ---
@@ -7568,6 +7771,7 @@ function vidSetSrc(url, src) {
   $("vidUseBox").hidden = true;
   $("vidSoundBox").hidden = true;
   $("vidGo").disabled = false;
+  $("vidGoSave").disabled = false;
   $("vidPlayBtn").disabled = false;
   $("vidTech").textContent = "";
   vidLastMs = -1;
@@ -7758,6 +7962,9 @@ function vidApplySettings(s) {
 let dummySim = null;          // simulated pot angles, or null when not simulating
 let dummyFollowOn = false;    // the follow loop is running
 let dummyLast = null;         // the last pose read, for "did it move"
+let dummySafePose = null;     // the last pose the ROBOT was sent that was clear (A46-1)
+let dummyHeld = "";           // why the robot is holding, until a safe send
+let dummyRec = null;          // while recording: [{ pose, ms }]
 
 function dummySource() { return $("dummySrc").value; }
 function dummyBus() { const v = $("dummyBus").value.trim(); return v ? parseInt(v, 10) : 0; }
@@ -7875,7 +8082,62 @@ function dummyFollowChanged() {
     if (!dummyFollowOn) { dummyFollowOn = true; dummyFollowTick(); }
   } else {
     dummyFollowOn = false;
+    dummySafePose = null;      // the next follow starts from wherever the arm is
+    dummyHeld = "";
   }
+}
+// The robot copies the dummy only along a way that misses its own body
+// (A46-1, user 2026-10-22). The straight move is checked first; a hit gets a
+// way round, planned within liveBudgetMs so the follow stays live. Nothing in
+// time, or a dummy pose the robot's body cannot take: the robot HOLDS its last
+// safe pose and the line says so. Studio still shows the dummy as it is.
+function dummySafeSend() {
+  const want = pose.slice();
+  const plan = planSafe(dummySafePose || want, want, SAFE.liveBudgetMs);
+  if (plan.fail) {
+    dummyHeld = "robot holds its last safe pose: " + plan.fail;
+    return false;
+  }
+  dummyHeld = "";
+  plan.path.slice(1, -1).forEach(q => liveSend("POSE " + q.map(fmtA).join(" ") + " T " + liveT()));
+  sendPoseLive();
+  dummySafePose = want;
+  return true;
+}
+// ---- record what the dummy does, then keep it as a saved move -------------
+function dummyRecToggle() {
+  if (!dummyRec) {
+    if ($("dummyFollow").value === "off") { $("dummyFollow").value = "studio"; dummyFollowChanged(); }
+    dummyRec = [{ pose: pose.slice(), ms: performance.now() }];   // where it starts
+    $("dummyRecBtn").textContent = "■ Stop and save";
+    $("dummyStat").textContent = "recording the dummy: move it, then press Stop and save";
+    return;
+  }
+  const rec = dummyRec;
+  dummyRec = null;
+  $("dummyRecBtn").textContent = "● Record the dummy";
+  return dummyRecSave(rec);
+}
+// One key per real change (2 deg or more), timed as it was done, then the
+// same safety pass as a video; on the time bar and saved under one name.
+async function dummyRecSave(rec) {
+  const K = [];
+  for (const r of rec) {
+    const prev = K[K.length - 1];
+    if (!prev) { K.push({ pose: r.pose, t: 1000, hold: 0, ms: r.ms }); continue; }
+    if (deltaDeg(prev.pose, r.pose) < 2) continue;
+    K.push({ pose: r.pose, t: Math.max(MIN_MOVE_MS, Math.round(r.ms - prev.ms)), hold: 0, tset: true, ms: r.ms });
+  }
+  if (K.length < 2) { $("dummyStat").textContent = "nothing to keep: the dummy did not move"; return false; }
+  const safe = safeKeys(K.map(({ ms, ...k }) => k));
+  if (safe.keys.length < 2) { $("dummyStat").textContent = "nothing to keep: every pose would make the robot hit itself"; return false; }
+  if (!(await askUnsaved("replace the time bar with the recording"))) return false;
+  keys = safe.keys; bumpKeys(); clearBadMarks(); clampKeyTimes();
+  selKey = 0; pose = [...keys[0].pose]; poseChanged(false); renderTimeline();
+  setWorkName("dummy_" + new Date().toISOString().slice(0, 16).replace(/[-:T]/g, ""));
+  const ok = await saveAll();
+  $("dummyStat").textContent = keys.length + " moves recorded. " + safeSay(safe) + " " + $("tlStat").textContent;
+  return ok;
 }
 async function dummyFollowTick() {
   if (!dummyFollowOn) return;
@@ -7887,13 +8149,15 @@ async function dummyFollowTick() {
                                        (x !== null && Math.abs(x - prev[i]) >= 0.2));
     if (moved && dummyFollowOn) {
       dummyApply(v);
+      if (dummyRec) dummyRec.push({ pose: pose.slice(), ms: performance.now() });
       // The robot gets the pose through the same live path a slider drag
       // uses: its timing comes from the link, and the robot's own LIMIT and
       // max_dps still decide how far and how fast it really goes.
-      if (mode === "robot") sendPoseLive();
+      if (mode === "robot") dummySafeSend();
     }
-    $("dummyStat").textContent = (mode === "robot" ? "robot + Studio follow" : "Studio follows") +
-      " the dummy";
+    $("dummyStat").textContent = mode === "robot" && dummyHeld ? dummyHeld
+      : (mode === "robot" ? "robot + Studio follow" : "Studio follows") + " the dummy"
+        + (dummyRec ? " (recording)" : "");
   } catch (e) {
     $("dummyStat").textContent = "dummy: no answer (" + (e.message || e) + ") — still trying";
   }
@@ -8102,6 +8366,282 @@ window.addEventListener("keydown", (e) => {
 });
 window.addEventListener("keyup", (e) => { if (e.key === "d" || e.key === "D") distHeld = false; });
 window.addEventListener("blur", () => { distHeld = false; });
+// --- moves while talking (A46-1) ---
+// User 2026-10-22: gestures that fit the words, made with the robot's own size
+// and shared between the Voice page and Studio. The library is
+// config/gestures.json on the hub (plus this PC's own, saved by this card);
+// Studio is where the body lives, so Studio FITS it: hand targets -> joint
+// angles by IK on this rig, every pose and every move checked by safe_path.js,
+// and the result posted to the hub, which only times and plays it. A fit is
+// redone when the rig or a gesture changes: when the Sequence tab opens, or
+// after the page has been left alone a while (TALK_IDLE_MS).
+let TALK = { lib: null, fit: null, busy: false, hub: false };
+const TALK_IDLE_MS = 20000;
+let talkIdleAt = performance.now();
+["pointerdown", "keydown", "wheel"].forEach(e => window.addEventListener(e, () => { talkIdleAt = performance.now(); }, true));
+
+function talkSay(s) { if ($("talkStat")) $("talkStat").textContent = s; }
+// The rig as it shapes a gesture: sizes, calibration and limits. A change to
+// any of it changes where a hand lands, so it is part of what was fitted.
+function talkRigSnap() {
+  const r = JSON.parse(JSON.stringify(RIG));
+  return { dims: r.dims, zero: r.zero, axis: r.axis, invert: r.invert, offset: r.offset,
+           tilt: r.tilt, min: r.min, max: r.max, home: r.home, palmTurn: r.palmTurn };
+}
+async function talkLoad() {
+  try {
+    const j = await fetch("/api/gestures").then(r => r.json());
+    if (!j.ok) throw new Error(j.error || "no answer");
+    TALK.lib = j.lib; TALK.fit = j.fit || {}; TALK.hub = true;
+  } catch (e) {
+    TALK.hub = false;                 // Studio on its own server: no hub, no card
+  }
+  talkRender();
+  return TALK.hub;
+}
+function talkStale() {
+  const L = TALK.lib, F = TALK.fit || {};
+  if (!L) return false;
+  if (JSON.stringify(F.rigFull || null) !== JSON.stringify(talkRigSnap())) return true;
+  if (JSON.stringify(F.restDef || null) !== JSON.stringify((L.rest || {}).keys || null)) return true;
+  const defs = F.defs || {};
+  return Object.keys(L.gestures || {}).some(id => JSON.stringify(defs[id] || null) !== JSON.stringify(L.gestures[id].keys || null))
+    || Object.keys(defs).some(id => !(L.gestures || {})[id]);
+}
+// One key of the library -> a pose on this rig. `from` is where the arms come
+// from (IK starts there, so a gesture flows), `restArm` holds a hand left out.
+function talkKeyPose(k, from, restArm, mirror) {
+  const p = from.slice();
+  const sideOf = a => (a === 0 ? 1 : -1);
+  const tgt = [mirror ? k.R : k.L, mirror ? k.L : k.R];
+  const palm = [mirror ? k.palmR : k.palmL, mirror ? k.palmL : k.palmR];
+  if (k.pose) return k.pose.map((v, j) => clampJ(j, v));          // a pose made on the time bar
+  p[8] = clampJ(8, RIG.home[8] + (mirror ? -1 : 1) * (k.waist || 0));
+  p[9] = clampJ(9, RIG.home[9] + (k.shrug || 0));
+  for (const a of [0, 1]) {
+    const idx = a === 0 ? [0, 1, 2, 3] : [4, 5, 6, 7];
+    if (!tgt[a]) { idx.forEach(j => { p[j] = restArm[j]; }); continue; }
+    pose = p.slice(); applyPose(); robot.updateMatrixWorld(true);
+    const S = bodyGroup.worldToLocal(jointGroups[idx[0]].parent.getWorldPosition(new THREE.Vector3()));
+    const d = RIG.dims, reach = a === 0 ? d.upperLenL + d.foreLenL : d.upperLenR + d.foreLenR;
+    const v = tgt[a];
+    const local = new THREE.Vector3(S.x + sideOf(a) * v[0] * reach, S.y + v[1] * reach, S.z + v[2] * reach);
+    solveIK(a, bodyGroup.localToWorld(local), 24);
+    let q = pose.slice();
+    if (palm[a] === "up" || palm[a] === "down") {
+      const f = facePalm(q, a, palm[a] === "up" ? 1 : -1);
+      if (f) q = f.pose;
+    }
+    idx.forEach(j => { p[j] = clampJ(j, q[j]); });
+  }
+  return p;
+}
+// A gesture's keys from `start`, made safe: { keys, in, out } or { bad }
+function talkFitOne(def, mirror, restPose) {
+  const raw = [];
+  let from = restPose;
+  for (const k of def) {
+    const p = talkKeyPose(k, from, restPose, mirror);
+    const hit = poseHit(p);
+    if (hit) return { bad: hit };
+    raw.push({ pose: p, t: k.t || 400, hold: k.hold || 0 });
+    from = p;
+  }
+  // inside the gesture: a hitting move gets in-between keys (marked via)
+  const inner = safeKeys(raw);
+  if (inner.failed || inner.dropped) return { bad: "a move inside it has no safe way" };
+  const leg = (a, b) => {
+    const r = planSafe(a, b);
+    return r.fail ? null : r.path.slice(1, -1).map(q => ({ pose: q, t: 300, via: true }));
+  };
+  const ins = leg(restPose, inner.keys[0].pose), outs = leg(inner.keys[inner.keys.length - 1].pose, restPose);
+  if (!ins || !outs) return { bad: "no safe way from the resting hands" };
+  return { keys: inner.keys.map(k => ({ pose: k.pose, t: k.t, hold: k.hold || 0, via: !!k.via })), in: ins, out: outs };
+}
+// The whole library, a gesture per tick so the page stays live.
+async function talkFit() {
+  if (TALK.busy || !TALK.lib || !robot) return false;
+  TALK.busy = true;
+  const saved = pose.slice();
+  const L = TALK.lib, fit = { rig: { min: RIG.min.slice(), max: RIG.max.slice(), home: RIG.home.slice() },
+    rigFull: talkRigSnap(), restDef: (L.rest || {}).keys || [], defs: {}, gestures: {}, bad: {}, direct: [],
+    at: new Date().toISOString() };
+  try {
+    talkSay("Fitting the gestures to this robot…");
+    const home = RIG.home.map((v, j) => clampJ(j, v));
+    const restDef = (L.rest || {}).keys || [];
+    const restKeys = [];
+    let from = home;
+    for (const k of restDef) { const p = talkKeyPose(k, from, home, false); restKeys.push({ pose: p, t: k.t || 600, hold: k.hold || 0 }); from = p; }
+    if (!restKeys.length || poseHit(restKeys[restKeys.length - 1].pose)) throw new Error("the resting hands hit the body on this robot");
+    const restPose = restKeys[restKeys.length - 1].pose;
+    const rIn = planSafe(home, restKeys[0].pose), rOut = planSafe(restPose, home);
+    if (rIn.fail || rOut.fail) throw new Error("no safe way from home to the resting hands");
+    fit.rest = { keys: restKeys,
+                 in: rIn.path.slice(1, -1).map(q => ({ pose: q, t: 300, via: true })),
+                 out: rOut.path.slice(1, -1).map(q => ({ pose: q, t: 300, via: true })) };
+    for (const [id, g] of Object.entries(L.gestures || {})) {
+      await new Promise(r => setTimeout(r, 0));
+      fit.defs[id] = g.keys || [];
+      for (const m of g.mirror && !(g.keys || []).some(k => k.pose) ? [false, true] : [false]) {
+        const vid = id + (m ? "~m" : "");
+        const one = talkFitOne(g.keys || [], m, restPose);
+        if (one.bad) fit.bad[vid] = one.bad; else fit.gestures[vid] = one;
+      }
+      pose = saved.slice(); applyPose();
+    }
+    // which gesture may flow straight into which, without resting between
+    const ids = Object.keys(fit.gestures);
+    for (const a of ids) for (const b of ids) {
+      const ka = fit.gestures[a].keys, kb = fit.gestures[b].keys;
+      if (a !== b && !pathHit(ka[ka.length - 1].pose, kb[0].pose)) fit.direct.push(a + ">" + b);
+    }
+    const r = await fetch("/api/gestures/fit", { method: "POST", body: JSON.stringify(fit) }).then(x => x.json());
+    if (!r.ok) throw new Error(r.error || "the hub did not keep it");
+    TALK.fit = fit;
+    talkRender();
+    return true;
+  } catch (e) {
+    talkSay("The gestures could not be fitted: " + (e.message || e));
+    return false;
+  } finally {
+    pose = saved; applyPose();
+    TALK.busy = false;
+  }
+}
+async function talkCheckFit() {
+  if (!TALK.lib && !(await talkLoad())) return;
+  if (talkStale()) await talkFit();
+}
+// The Sequence tab opened (showTab), or the page sat still long enough.
+function talkShown() { talkCheckFit(); }
+setInterval(() => {
+  if (!TALK.busy && !document.hidden && performance.now() - talkIdleAt > TALK_IDLE_MS && typeof robot !== "undefined" && robot) {
+    talkIdleAt = performance.now();
+    talkCheckFit();
+  }
+}, 5000);
+
+// ---- the card ----------------------------------------------------------------
+function talkRender() {
+  const card = $("talkCard");
+  if (!card) return;
+  card.hidden = !TALK.hub;
+  if (!TALK.hub) return;
+  const L = TALK.lib, F = TALK.fit || {};
+  $("talkOn").checked = L.on !== false;
+  const sel = $("talkManner"), keep = sel.value;
+  sel.textContent = "";
+  Object.keys(L.manners || {}).filter(m => m !== "_default").forEach(m => {
+    const o = document.createElement("option"); o.value = o.textContent = m; sel.appendChild(o);
+  });
+  sel.value = keep || "friendly";
+  const n = Object.keys(F.gestures || {}).length, bad = Object.keys(F.bad || {});
+  talkSay(talkStale() ? "The gestures are not fitted to this robot as it is now. They will be in a moment."
+    : n + " gestures fitted to this robot and kept clear of its body."
+      + (bad.length ? " Left out on this robot: " + bad.map(b => talkName(b) + " (" + F.bad[b] + ")").join(", ") + "." : ""));
+  const list = $("talkList");
+  list.textContent = "";
+  Object.entries(L.gestures || {}).forEach(([id, g]) => {
+    const row = document.createElement("div"); row.className = "row";
+    const name = document.createElement("span"); name.className = "lbl"; name.textContent = g.label || id;
+    const words = document.createElement("input");
+    words.style.flex = "1"; words.style.minWidth = "0";
+    words.title = "Words that bring this gesture, a comma between. Any language.";
+    words.value = [].concat(...Object.values(g.words || {})).join(", ");
+    words.onchange = () => talkSave({ gestures: { [id]: { words: { any: words.value.split(",").map(s => s.trim()).filter(Boolean) } } } });
+    const show = document.createElement("button");
+    show.textContent = "▶"; show.title = "Put this gesture on the time bar, fitted to this robot";
+    show.onclick = () => talkShowOne(id);
+    row.append(name, words, show);
+    if (g.mine) {
+      const del = document.createElement("button");
+      del.textContent = "✕"; del.title = "Remove this gesture";
+      del.onclick = () => talkSave({ gestures: { [id]: null } });
+      row.append(del);
+    }
+    list.appendChild(row);
+  });
+  talkEvents();
+}
+function talkName(vid) {
+  const g = ((TALK.lib || {}).gestures || {})[vid.replace(/~m$/, "")] || {};
+  return (g.label || vid) + (vid.endsWith("~m") ? " (other arm)" : "");
+}
+async function talkSave(change) {
+  try {
+    const j = await fetch("/api/gestures", { method: "POST", body: JSON.stringify(change) }).then(r => r.json());
+    if (!j.ok) throw new Error(j.error || "not saved");
+    TALK.lib = j.lib;
+    talkRender();
+    talkCheckFit();
+  } catch (e) { talkSay("Not saved: " + (e.message || e)); notice($("talkStat").textContent); }
+}
+function talkSaveSwitch() { talkSave({ on: $("talkOn").checked }); }
+// The events are the Voice page's scenarios: one switch each.
+async function talkEvents() {
+  const box = $("talkEvents");
+  if (!box) return;
+  if (!TALK.events) {            // asked once: the voice helper may be far away or off
+    TALK.events = [];
+    try { TALK.events = ((await fetch("/api/voice/config").then(r => r.json())).scenarios || []).map(s => s.name).filter(Boolean); }
+    catch (e) { /* no voice settings here: no events to list */ }
+  }
+  const names = TALK.events;
+  box.textContent = "";
+  if (!names.length) { box.textContent = "No events are set up on the Voice page yet."; return; }
+  names.forEach(n => {
+    const lab = document.createElement("label"); lab.className = "row";
+    const c = document.createElement("input"); c.type = "checkbox";
+    c.checked = ((TALK.lib.events || {})[n] || {}).on !== false;
+    c.onchange = () => talkSave({ events: { [n]: Object.assign({}, (TALK.lib.events || {})[n], { on: c.checked }) } });
+    lab.append(c, document.createTextNode(" " + n));
+    box.appendChild(lab);
+  });
+}
+// Steps from the hub (or a fit) -> the time bar, pinned to their own times.
+async function talkToBar(steps, what) {
+  if (!(await askUnsaved(what))) return false;
+  keys = steps.map((s, i) => ({ pose: s.pose.map((v, j) => clampJ(j, v)), t: i ? s.t : 1000, hold: s.hold || 0, tset: i > 0 }));
+  bumpKeys(); clearBadMarks();
+  selKey = 0; pose = [...keys[0].pose]; poseChanged(false); renderTimeline();
+  return true;
+}
+async function talkTry() {
+  const text = $("talkText").value.trim();
+  if (!text) { talkSay("Type something the robot might say."); return; }
+  await talkCheckFit();
+  const j = await fetch("/api/gestures/plan", { method: "POST", body: JSON.stringify({
+    text, manner: $("talkManner").value, seed: Math.floor(Math.random() * 1e9) }) }).then(r => r.json()).catch(e => ({ why: String(e) }));
+  if (!j.ok) { talkSay(j.why || j.error || "No gestures for that."); return; }
+  if (!(await talkToBar(j.steps, "put these gestures on the time bar"))) return;
+  $("talkPicks").textContent = j.picks.length
+    ? j.picks.map(p => (p.at / 1000).toFixed(1) + " s " + p.label + (p.mirrored ? " (other arm)" : "") + (p.word ? " ← “" + p.word + "”" : "")).join(" · ")
+    : "No word asked for a gesture and no beat fitted.";
+  $("tlStat").textContent = "Gestures for " + (j.ms / 1000).toFixed(1) + " s of talk are on the time bar. Press Play to watch; press Show again for another random pick.";
+}
+async function talkShowOne(id) {
+  await talkCheckFit();
+  const F = TALK.fit || {}, g = (F.gestures || {})[id], rest = F.rest;
+  if (!g || !rest) { talkSay(talkName(id) + " is not fitted to this robot: " + ((F.bad || {})[id] || "fit it first")); return; }
+  const steps = [{ pose: rest.keys[rest.keys.length - 1].pose, t: 0, hold: 300 }]
+    .concat(g.in, g.keys, g.out, [{ pose: rest.keys[rest.keys.length - 1].pose, t: 500, hold: 0 }]);
+  if (await talkToBar(steps, "show this gesture on the time bar")) $("tlStat").textContent = talkName(id) + " is on the time bar. Press Play to watch.";
+}
+// The time bar as a new gesture: its poses as they are (made on this robot),
+// checked like every other gesture when it is fitted.
+async function talkAddFromBar() {
+  const name = $("talkNewName").value.trim();
+  if (!name) { talkSay("Give the gesture a name first."); return; }
+  const K = playKeys();
+  if (K.length < 1) { talkSay("Put at least one move on the time bar first."); return; }
+  const id = "mine_" + name.toLowerCase().replace(/[^\w]+/g, "_");
+  await talkSave({ gestures: { [id]: { label: name, mine: true,
+    words: { any: $("talkNewWords").value.split(",").map(s => s.trim()).filter(Boolean) },
+    keys: K.map(k => ({ pose: k.pose.map(v => Math.round(v * 10) / 10), t: Math.round(k.t || 400), hold: Math.round(k.hold || 0) })) } } });
+  talkSay(name + " is kept as a gesture. It is fitted and checked next, then the Voice page can use it.");
+}
+window.addEventListener("load", () => setTimeout(talkLoad, 800));
 // --- main loop ---
 function resize() {
   const w = viewport.clientWidth, h = viewport.clientHeight;
