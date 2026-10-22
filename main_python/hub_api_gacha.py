@@ -14,6 +14,10 @@
     POST /api/gacha/rules/push      send the local rules to the sheet's script (login)
     GET  /api/gacha/log             the dispense log, newest last (?limit=, &csv=1)  (login)
     GET  /api/gacha/stats           counts per item / machine / person / app (login)
+    GET  /api/gacha/voice           which Voice answers give a prize (config/voice_prizes.json)
+    POST /api/gacha/voice           {enabled, say, rules} save it                (login)
+    GET  /api/questions             what Voice was asked: per topic / hour / source (login)
+                                    ?day=YYYY-MM-DD narrows it, &csv=1 = the whole CSV
 
 Force (admin's extra prize) needs a logged-in person, never a local program:
 it skips the limits, so a program must not be able to hand out the whole box.
@@ -26,6 +30,7 @@ import sys
 from pathlib import Path
 
 import gacha as gm
+import voice_prizes as vp
 
 NOT_MINE = object()
 _hub = None
@@ -37,15 +42,21 @@ def bind(hub):
     _hub = hub
 
 
-def cfg_path():
-    if os.environ.get("MICE_GACHA_CONFIG"):
-        return Path(os.environ["MICE_GACHA_CONFIG"])
-    p = Path(_hub.asset("config", "gacha.json"))
+def _config(name):
+    p = Path(_hub.asset("config", name))
     bundled = getattr(sys, "_MEIPASS", "")
     if bundled and Path(bundled) in p.parents:
         # the exe's bundled copy vanishes on exit: keep changes beside the exe
-        p = Path(_hub.HERE) / "config" / "gacha.json"
+        mine = Path(_hub.HERE) / "config" / name
+        if not mine.is_file():
+            mine.parent.mkdir(parents=True, exist_ok=True)
+            mine.write_bytes(p.read_bytes())
+        p = mine
     return p
+
+
+def cfg_path():
+    return Path(os.environ.get("MICE_GACHA_CONFIG") or _config("gacha.json"))
 
 
 def data_dir():
@@ -69,6 +80,41 @@ def gacha():
     return _gacha
 
 
+def questions():
+    """The Voice question log + prize rules (voice_prizes.py)."""
+    data = Path(os.environ.get("MICE_QUESTIONS_DATA") or (Path(_hub.DATA) / ".local" / "voice"))
+    return vp.Questions(os.environ.get("MICE_VOICE_TOPICS") or _hub.asset("config", "voice_topics.json"),
+                        prizes_path(), data, give=_voice_give)
+
+
+def prizes_path():
+    return os.environ.get("MICE_VOICE_PRIZES") or _config("voice_prizes.json")
+
+
+def _voice_give(item, person):
+    return gacha().dispense(item=item, person=person, app="voice", by="voice")
+
+
+def voice_after_ask(sent, got):
+    """After every /api/voice/ask: log the question's topic and, when a prize
+    rule fits, give the prize and add its words to the answer. Any failure
+    here leaves the answer exactly as the helper sent it."""
+    try:
+        req = json.loads((sent or b"{}").decode("utf-8") or "{}")
+        out = json.loads(got.decode("utf-8") or "{}")
+        extra = questions().after_ask(req, out)
+        if not extra:
+            return got
+        out.update(extra)
+        say = (extra.get("prize") or {}).get("message")
+        if say and out.get("answer") and vp.say_prize(prizes_path()):
+            out["answer"] = out["answer"].rstrip() + " " + say
+        return json.dumps(out, ensure_ascii=False).encode("utf-8")
+    except Exception as e:                                   # noqa: BLE001
+        print("[gacha] voice question not logged:", e)
+        return got
+
+
 def face_now():
     """The person the face app sees nearest right now, or ''."""
     try:
@@ -88,6 +134,15 @@ class GachaRoutes:
         return d if isinstance(d, dict) else None
 
     def api_gacha(self, method, path, q):
+        if path == "/api/questions":
+            qs = questions()
+            if (q.get("csv") or [""])[0]:
+                buf = io.StringIO()
+                w = csv.DictWriter(buf, fieldnames=vp.FIELDS, extrasaction="ignore")
+                w.writeheader()
+                w.writerows(qs.rows())
+                return self.send_bytes(buf.getvalue().encode("utf-8-sig"), "text/csv; charset=utf-8")
+            return self.send_json({"ok": True, "stats": qs.stats((q.get("day") or [""])[0])})
         if not path.startswith("/api/gacha"):
             return NOT_MINE
         g = gacha()
@@ -116,6 +171,11 @@ class GachaRoutes:
             return self.send_json({"ok": True, "rules": r, "csv": gm.rules_to_csv(r),
                                    "webhooks": g.cfg().get("webhooks") or {},
                                    "sheet_write_url": g.cfg()["rules"].get("sheet_write_url", "")})
+        if path == "/api/gacha/voice" and method == "GET":
+            return self.send_json(dict(vp._load(prizes_path()), ok=True,
+                                       topics=[t.get("id") for t in vp._load(
+                                           os.environ.get("MICE_VOICE_TOPICS")
+                                           or _hub.asset("config", "voice_topics.json")).get("topics") or []]))
         if method != "POST":
             return self.send_err("POST only here", 405)
         d = self._gacha_body()
@@ -158,6 +218,13 @@ class GachaRoutes:
                          "reason": cmd, "result": reply})
             return self.send_json({"ok": reply.startswith("OK") or reply.startswith("{"),
                                    "reply": reply})
+        if path == "/api/gacha/voice":
+            rules = [r for r in d.get("rules") or [] if isinstance(r, dict) and r.get("item")]
+            gm.write_json(Path(prizes_path()), {"enabled": bool(d.get("enabled")),
+                                                "say": d.get("say", True) is not False, "rules": rules})
+            g.log_event({"kind": "settings", "by": who, "reason": "voice prizes",
+                         "message": "%d rules, %s" % (len(rules), "on" if d.get("enabled") else "off")})
+            return self.send_json({"ok": True})
         if path == "/api/gacha/rules":
             ok, why = g.save_rules(d.get("rules") if "rules" in d else d)
             return self.send_json({"ok": ok, "error": why}, 200 if ok else 400)

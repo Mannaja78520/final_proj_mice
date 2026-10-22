@@ -95,6 +95,8 @@ GATED = {
     "/api/gacha/dispense", "/api/gacha/can", "/api/gacha/event", "/api/gacha/machine",
     "/api/gacha/rules/pull", "/api/gacha/rules/push", "/api/gacha/log", "/api/gacha/stats",
     "/api/gacha/rules",
+    # what visitors asked Voice, with their names (A47-3)
+    "/api/questions",
 }
 
 # Proved by something OTHER than a session. There is exactly one, and it is
@@ -149,6 +151,7 @@ GATED_POST = {
     # the library are Studio tools (NEVER_GATED below); playing moves an arm.
     "/api/gestures/play",
     "/api/gacha/config",
+    "/api/gacha/voice",
 }
 
 # NEVER gated, deliberately, however much they change:

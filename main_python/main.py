@@ -1565,18 +1565,20 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
                 target += "?" + urllib.parse.urlencode(flat)
             # Built INSIDE the try: a bad saved address (no scheme) raises
             # here, and outside it killed the request thread with no answer.
-            req = urllib.request.Request(
-                target,
-                data=self.body() if method == "POST" else None,
-                method=method)
+            sent = self.body() if method == "POST" else None
+            req = urllib.request.Request(target, data=sent, method=method)
             req.add_header("Content-Type",
                            self.headers.get("Content-Type") or "application/json")
             with urllib.request.urlopen(req, timeout=180) as r:
+                got = r.read()
+                if path == "/api/voice/ask":
+                    # topic log + prize for this answer (A47-3, hub_api_gacha)
+                    got = hub_api_gacha.voice_after_ask(sent, got)
                 # The helper names its own type - /say answers audio/wav,
                 # everything else json. Forcing a MIME here would turn the
                 # sound into a download the browser refuses to play.
                 return self.send_bytes(
-                    r.read(), r.headers.get("Content-Type") or MIME[".json"])
+                    got, r.headers.get("Content-Type") or MIME[".json"])
         except urllib.error.HTTPError as e:
             # The helper's own honest error passes through with its code.
             return self.send_bytes(e.read(), MIME[".json"], e.code)

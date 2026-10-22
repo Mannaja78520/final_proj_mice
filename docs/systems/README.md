@@ -23,6 +23,7 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 | [shared-web](shared-web.md) | One stylesheet and theme set for every page (mice.css, themes), and the page parts every hub page is built from (mice-ui.js; guide docs/web_style.md). |
 | [studio](studio.md) | Nong Studio: pose editor, timeline, 3D monitor. |
 | [app-voice](app-voice.md) | Voice helper: speech in, answers, speech out. |
+| [app-gacha](app-gacha.md) | Prize machines (gachapon): several gacha boards, kinds, hand-over when one is empty, rules per event and person (local or Google Sheet), webhooks, the prize log; and which Voice answers give a prize plus the Voice question log (A47-2, A47-3). |
 | [app-faces](app-faces.md) | Face recognition app. |
 | [app-camera](app-camera.md) | Camera viewer app. |
 | [app-small](app-small.md) | Small apps: help, All-Jao, Photobooth. |

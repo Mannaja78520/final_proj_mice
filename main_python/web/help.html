@@ -119,6 +119,7 @@
   <a href="#camera">Cameras</a>
   <a href="#voice">Voice</a>
   <a href="#faces">Reconize</a>
+  <a href="#gacha">Prize machines</a>
   <a href="#all-jao">All-Jao Games</a>
   <a href="#accounts">Accounts</a>
   <div class="grp">Build and set up</div>
@@ -197,7 +198,7 @@
     <div class="f"><h3>See what a camera sees</h3>
       <p>Watching a camera on any screen, setting up how it looks, and knowing
          who it recognises.</p>
-      <p><a href="#camera">ESP32 camera</a> · <a href="#faces">Reconize</a> · <a href="#all-jao">All-Jao Games</a> · <a href="#accounts">Accounts and passwords</a></p></div>
+      <p><a href="#camera">ESP32 camera</a> · <a href="#faces">Reconize</a> · <a href="#gacha">Prize machines</a> · <a href="#all-jao">All-Jao Games</a> · <a href="#accounts">Accounts and passwords</a></p></div>
     <div class="f"><h3>Ask it a question</h3>
       <p>Talking to the rig: a question in, an answer out.</p>
       <p><a href="#voice">Voice</a></p></div>
@@ -1440,6 +1441,49 @@
      with the real cameras at the lab.</p>
   <p>Each of those arrives as its own small change, and the plan for all of it is
      <b>docs/system_integral.html</b>, beside this project's own plan.</p>
+</section>
+<section id="gacha">
+  <div class="shead">
+    <span class="where tech">code/apps/gacha · served at /app/gacha/ · firmware type gacha</span>
+    <h2>🎁 Prize machines — gachapon</h2>
+    <p>One or more prize machines, each one board that turns a holder of pockets until a ball
+       falls. This page decides which machine gives the prize, who may have one, and keeps a
+       record of every prize.</p>
+  </div>
+
+  <h3>On the machine itself</h3>
+  <p>Open the machine's own page (Home ▸ Modules). <b>Give one prize</b> turns until a ball
+     falls. <b>Turn 1 pocket</b> and <b>pockets</b> are for testing: count how many pockets it
+     takes from the loading place until the ball drops and type that into
+     <b>Pockets until it falls</b> on the Setup tab. Set the event name, start or close the
+     event, the kind of prize and how many balls are in it.</p>
+
+  <h3>Several machines</h3>
+  <p>Add each machine with its board name, the kind it holds and where it stands. Machines with
+     the same kind stand in for each other: when the one asked for is empty, the next one gives
+     the prize and the robot tells the person where to go. <b>Next to</b> says which to try
+     first.</p>
+
+  <h3>Rules for an event</h3>
+  <p><b>Per kind</b>: how many there are and how many times one person may get one.
+     <b>People</b>: a person's own limit or a special guest, by the name the face app knows.
+     <b>Give one anyway</b> is for the admin: it works past the limits and is still counted.
+     The rules can come from a Google Sheet with two tabs, <b>items</b> and <b>people</b>:</p>
+  <table><thead><tr><th>items</th><th>people</th></tr></thead><tbody>
+    <tr><td>event, item, total, per_person, note</td><td>event, person, item, times, special, note</td></tr>
+  </tbody></table>
+  <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · write-back: docs/gacha/apps_script.gs ·
+     API for other apps and webhooks: docs/gacha/README.md · POST /api/gacha/dispense {item, person, app}</p>
+
+  <h3>Voice</h3>
+  <p>Voice ▸ Questions shows what people ask about, by topic and by hour, and downloads every
+     question as a file. An answer can also give a prize: the prize rules say which answers give
+     which kind.</p>
+  <p class="tech">config/voice_topics.json · config/voice_prizes.json ("enabled": true to turn on) · log .local/voice/questions.csv</p>
+
+  <h3>Not tried yet</h3>
+  <p>Tested only with pretend machines. The real machine still needs its pockets-until-it-falls
+     measured on the bench.</p>
 </section>
 
 <section id="all-jao">

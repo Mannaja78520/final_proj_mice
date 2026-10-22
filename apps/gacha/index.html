@@ -11,7 +11,7 @@
   .gt input{width:100%;min-width:60px}
   .wrapx{overflow-x:auto}
   .bars div{display:flex;gap:var(--sp-2);align-items:center;margin:2px 0}
-  .bars b{display:inline-block;height:12px;background:var(--accent);border-radius:var(--r-1)}
+  .bars b{display:inline-block;height:12px;background:var(--acc);border-radius:var(--r-sm)}
 </style>
 <body class="page">
 
@@ -108,6 +108,19 @@
   <div class="row"><span class="lbl">Few balls left at</span><input type="number" id="lowN" min="0" style="width:80px">
     <button class="primary" onclick="saveHooks()">Save</button></div>
   <div class="statline" id="hStat"></div>
+</div>
+
+<div class="card" data-needs-login="gacha">
+  <h2>Voice answers that give a prize</h2>
+  <p class="mini">When Voice answers a question that fits a row, the person asking gets that kind (the rules above
+    still apply). Leave a box empty to not care about it. <b>About</b> is the question's topic
+    (Voice ▸ Questions); <b>Words</b> are words in the question.</p>
+  <div class="row"><label><input type="checkbox" id="vpOn"> Answers can give prizes</label>
+    <label><input type="checkbox" id="vpSay"> Say where to get it</label></div>
+  <div class="wrapx"><table class="gt" id="vpT"><thead><tr><th>About</th><th>Words</th><th>Answered from</th><th>Kind</th><th></th></tr></thead><tbody></tbody></table></div>
+  <div class="row"><button onclick="vpRow({})">+ Row</button><button class="primary" onclick="vpSave()">Save</button></div>
+  <datalist id="vpTopics"></datalist>
+  <div class="statline" id="vpStat"></div>
 </div>
 
 <div class="card">
@@ -300,7 +313,36 @@ async function loadLog() {
   }).join("");
 }
 
+function vpRow(r) {
+  const w = r.when || {};
+  $("vpT").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' +
+    '<td><input data-k="topic" list="vpTopics" value="' + esc(w.topic) + '"></td>' +
+    '<td><input data-k="question" value="' + esc([].concat(w.question || []).join("|")) + '"></td>' +
+    '<td><select data-k="source">' + ["", "faq", "model", "verse", "read"].map(v => '<option' + (v === (w.source || "") ? " selected" : "") +
+      ' value="' + v + '">' + ({"": "any", faq: "saved answers", model: "the model", verse: "a new poem", read: "reading aloud"}[v]) + '</option>').join("") + '</select></td>' +
+    '<td><input data-k="item" value="' + esc(r.item) + '"></td>' +
+    '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
+}
+async function vpLoad() {
+  const a = await Mice.Api.get("/api/gacha/voice");
+  if (!a.ok) return;
+  $("vpOn").checked = !!a.data.enabled; $("vpSay").checked = a.data.say !== false;
+  $("vpTopics").innerHTML = (a.data.topics || []).map(t => '<option value="' + esc(t) + '">').join("");
+  $("vpT").tBodies[0].innerHTML = ""; (a.data.rules || []).forEach(vpRow);
+}
+async function vpSave() {
+  const rules = [...$("vpT").tBodies[0].rows].map(r => {
+    const g = k => r.querySelector('[data-k="' + k + '"]').value.trim(), when = {};
+    if (g("topic")) when.topic = g("topic");
+    if (g("question")) when.question = g("question");
+    if (g("source")) when.source = g("source");
+    return {when, item: g("item")};
+  }).filter(r => r.item);
+  say("vpStat", await Mice.Api.post("/api/gacha/voice", {enabled: $("vpOn").checked, say: $("vpSay").checked, rules}), "saved");
+}
+
 drawHooks();
+vpLoad();
 if (window.miceLogin) miceLogin.mount($("loginHere"));
 load();
 </script>

@@ -13,7 +13,9 @@ _Gacha), both holding "keychain", 70 standing next to 71. Asserted on the WIRE
   * a program on this PC may ask; the venue WiFi may not; force needs a login;
   * closing the event reaches every machine and refuses the next prize;
   * webhooks hear "dispensed"; rules come in from a sheet's CSV tabs;
-  * the log is a CSV with every prize.
+  * the log is a CSV with every prize;
+  * Voice (A47-3): every answered question is logged with its topic, and an
+    answer a prize rule names gives that prize and says where to get it.
 """
 import json
 import os
@@ -161,7 +163,44 @@ def run(t):
         code, body = F.get(base + "/api/gacha/log?limit=0&csv=1")
         t.ok(code == 200 and body.count("Bob") >= 2 and "person" in body.splitlines()[0],
              "the log downloads as a CSV with every prize", body[:300])
+
+        # ---- Voice: topic log + an answer that gives a prize (A47-3) ----
+        (tmp / "prizes.json").write_text(json.dumps({"enabled": True, "say": True, "rules": [
+            {"when": {"topic": "prize"}, "item": "keychain"}]}), encoding="utf-8")
+        os.environ["MICE_VOICE_PRIZES"] = str(tmp / "prizes.json")
+        os.environ["MICE_QUESTIONS_DATA"] = str(tmp / "voice")
+        g.save_rules({"items": [], "people": []})        # the sheet's 3 keychains are given out
+        n = len(_dispenses())
+        out = json.loads(main.hub_api_gacha.voice_after_ask(
+            json.dumps({"text": "ขอรางวัลหน่อยได้ไหม", "person": "Eve"}).encode(),
+            json.dumps({"ok": True, "answer": "ได้เลยครับ", "source": "faq", "person": "Eve"},
+                       ensure_ascii=False).encode()).decode())
+        t.ok(out.get("topic") == "prize" and (out.get("prize") or {}).get("ok"),
+             "a prize question is logged as 'prize' and the rule gives one", out)
+        t.ok(len(_dispenses()) == n + 1 and _dispenses()[-1][1] == "GDISPENSE Eve",
+             "the voice prize reached a board, for the person asking", _dispenses()[-2:])
+        t.ok("พวงกุญแจ" in out.get("answer", "") and out["answer"].startswith("ได้เลยครับ"),
+             "and the robot's answer says where to get it", out.get("answer"))
+        code, got = _post(base, "/api/gacha/voice", {"enabled": False, "rules": [
+            {"when": {"topic": "prize"}, "item": "keychain"}]})
+        n = len(_dispenses())
+        out = json.loads(main.hub_api_gacha.voice_after_ask(
+            json.dumps({"text": "ขอรางวัลอีกได้ไหม", "person": "Fay"}).encode(),
+            json.dumps({"ok": True, "answer": "ได้", "source": "faq"}).encode()).decode())
+        t.ok(code == 200 and "prize" not in out and len(_dispenses()) == n,
+             "the page's switch turns voice prizes off, and then nothing turns", (code, out))
+        main.hub_api_gacha.voice_after_ask(json.dumps({"text": "ห้องน้ำอยู่ไหน"}).encode(),
+                                           json.dumps({"ok": True, "answer": "ทางซ้าย", "source": "faq"}).encode())
+        code, body = F.get(base + "/api/questions")
+        st = json.loads(body).get("stats", {})
+        t.ok(st.get("topic", {}).get("prize") == 2 and st.get("topic", {}).get("directions") == 1
+             and st.get("total") == 3, "the Questions tab counts each topic", st.get("topic"))
+        code, body = F.get(base + "/api/questions?csv=1")
+        t.ok("ห้องน้ำอยู่ไหน" in body and body.splitlines()[0].lstrip("\ufeff").startswith("time,"),
+             "and every question downloads as a CSV", body[:200])
     finally:
+        for k in ("MICE_VOICE_PRIZES", "MICE_QUESTIONS_DATA"):
+            os.environ.pop(k, None)
         hook.shutdown()
         os.environ.pop("MICE_GACHA_CONFIG", None)
         os.environ.pop("MICE_GACHA_DATA", None)

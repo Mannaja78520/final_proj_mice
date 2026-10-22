@@ -25,16 +25,22 @@ SolidWorks: E:\final_proj\mice\model\gachapong (read only, never in git).
 Lab window ended 14:00Z 2026-10-22: do NOT flash; the PC RC session flashes.
 
 ## Doing now
-A47-1: open the firmware PR, merge when green. Hub app drafted (gacha.py, hub_api_gacha.py, apps/gacha page, voice_prizes.py) in the session scratchpad, to be moved in next.
+A47-2/3/4: full QC on the branch, then PR + merge.
 
 ## Done
 - A47-1 firmware written: firmware/src/modules/gacha/, env mice_gacha builds (71.3% flash), web cards, COMMANDS.md, commands.json, native tests. Not on hardware.
 - plan rows A47-1..5 added (heading # A47 in PLAN).
 - QC full 7682/6 then the 6 fixed or flaky: plan heading, systems map (fw-gacha), designer-first crash (parallel file race), rs485 census + show clock timing (pass alone).
 
+- PR #57 merged (firmware A47-1).
+- A47-2 hub app: main_python/gacha.py (brain), hub_api_gacha.py (routes /api/gacha/*), apps/gacha/index.html, config/gacha.json, docs/gacha/ (README API + webhooks, sample CSV = sheet layout, apps_script.gs write-back), help section. Rules + logs in .local/gacha/ (names, git-ignored).
+- A47-3 voice: hub voice_proxy -> hub_api_gacha.voice_after_ask -> voice_prizes.py: topic per question (config/voice_topics.json), CSV .local/voice/questions.csv, prize rules config/voice_prizes.json (off by default; switch on the Prize machines page), Voice > Questions tab charts (/api/questions).
+- A47-4: docs/gacha/friend_requests.md (+ copy in project files friend_api/).
+- check_gacha (24 asserts, fake boards ids 70/71 in fake_serial) proven by sabotage (fallback, auth).
+
 ## Next
-1. firmware: modules.json entry, GachaModule, hardware header, commands.json, WebUI card, COMMANDS.md, env, QC check.
-2. hub app apps/gacha/ (A47-2), voice (A47-3), friend list (A47-4).
+1. Full QC, PR, merge (A47-2..4).
+2. A47-5 on the bench (PC RC session): flash mice_gacha over USB/OTA, PIN motor_a/motor_b if not 25/26, measure drop pockets (GCFG drop), speed, settle; add the machine on the Prize machines page; rebuild MiceHub.exe (spec) so the new page and routes ship.
 
 ## Blocked
 - A47-5 needs the board on the bench (user).

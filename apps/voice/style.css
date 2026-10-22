@@ -103,3 +103,13 @@ body.adv .not-adv{display:none}
 /* The face controls sit in the row as if unwrapped; Use faces off hides them. */
 #faceTools{display:contents}
 #faceTools[hidden]{display:none}
+
+/* Voice ▸ Questions charts (A47-3) */
+.qcharts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--sp-3)}
+.qbars div{display:grid;grid-template-columns:minmax(80px,40%) 1fr auto;gap:var(--sp-2);align-items:center;margin:2px 0}
+.qbars .qn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qbars b{display:block;height:12px;background:var(--acc);border-radius:var(--r-sm)}
+.qhist{display:flex;align-items:flex-end;gap:2px;height:120px}
+.qhist div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;min-width:0}
+.qhist b{display:block;background:var(--acc);border-radius:var(--r-sm) var(--r-sm) 0 0}
+.qhist span{font-size:10px;text-align:center;color:var(--mut)}

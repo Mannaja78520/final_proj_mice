@@ -52,7 +52,7 @@ Face recognition app.
 
 ## Used by
 
-- nothing
+- [app-gacha](app-gacha.md)
 
 ## Checks that test it (14)
 
