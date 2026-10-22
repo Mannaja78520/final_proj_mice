@@ -1,0 +1,32 @@
+    <!-- Moves while talking (A46-1): the Voice page's gestures, fitted to this
+         robot here (app_parts/talk_gestures.js, library config/gestures.json).
+         Hidden when Studio runs without the hub. -->
+    <div class="card" data-stab="sequence" id="talkCard" hidden>
+      <h2>Moves while talking</h2>
+      <p class="mini">When the robot answers on the Voice page, its arms move with the
+        words: these gestures, fitted to this robot’s size and kept clear of its body.</p>
+      <div class="row"><label><input type="checkbox" id="talkOn" onchange="talkSaveSwitch()">
+        Move the arms while talking</label></div>
+      <div class="statline" id="talkStat" role="status"></div>
+      <div class="row">
+        <input id="talkText" style="flex:1;min-width:0" placeholder="Try a sentence the robot might say"
+               onkeydown="if (event.key === 'Enter') talkTry()">
+        <select id="talkManner" title="How it moves: the speaking manner of the voice"></select>
+        <button onclick="talkTry()" title="Pick gestures for this sentence, at random as the robot would, and put them on the time bar.">▶ Show</button>
+      </div>
+      <div class="mini" id="talkPicks"></div>
+      <details class="disclosure">
+        <summary>The gestures and their words</summary>
+        <div id="talkList"></div>
+        <div class="row">
+          <input id="talkNewName" style="flex:1;min-width:0" placeholder="Name for the moves on the time bar">
+          <input id="talkNewWords" style="flex:1;min-width:0" placeholder="Words that bring it, a comma between">
+          <button onclick="talkAddFromBar()" title="Keep the moves on the time bar as a new gesture the Voice page can use.">＋ Keep as a gesture</button>
+        </div>
+      </details>
+      <details class="disclosure">
+        <summary>Events</summary>
+        <p class="mini">Untick an event and the robot keeps its arms still while talking there.</p>
+        <div id="talkEvents"></div>
+      </details>
+    </div>

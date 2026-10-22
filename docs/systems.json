@@ -52,10 +52,11 @@
      "depends": []},
 
     {"id": "hub-studio", "summary": "The hub's routes for Nong Studio's files, shared settings and the list of other hubs.",
-     "files": ["main_python/hub_api_studio.py", "main_python/hub_video.py", "config/video_links.json"],
+     "files": ["main_python/hub_api_studio.py", "main_python/hub_video.py", "config/video_links.json",
+               "main_python/gestures.py", "config/gestures.json"],
      "names": ["/api/list", "/api/load", "/api/save", "/api/seq", "/api/settings", "/api/hubs",
-               "/api/model/upload", "/api/rigdefault", "/api/video/"],
-     "checks": ["check_studio*"],
+               "/api/model/upload", "/api/rigdefault", "/api/video/", "/api/gestures"],
+     "checks": ["check_studio*", "check_gesture*", "check_voice_gestures"],
      "depends": []},
 
     {"id": "hub-auth", "summary": "Hub logins, sessions, which pages need a login, pairing two hubs.",

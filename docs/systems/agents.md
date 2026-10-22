@@ -32,9 +32,9 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `handoff/tasks/friend-face-server.md`
 - `handoff/tasks/person-tests.md`
 - `handoff/tasks/robot-tests.md`
-- `handoff/tasks/voice-clear-per-event.md`
 - `handoff/tasks/voice-human-tone.md`
 - `handoff/tasks/voice-keys.md`
+- `handoff/tasks/voice-profiles.md`
 - `tools/ai_brief.txt`
 - `tools/ai_panel.py`
 - `tools/branch.py`

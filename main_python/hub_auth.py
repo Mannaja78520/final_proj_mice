@@ -139,6 +139,9 @@ GATED_POST = {
     # A video fetched from a link onto this PC (A44-8): POST reaches the
     # internet and writes here, GET only says how far it has got.
     "/api/video/fetch",
+    # A46-1: talk gestures played on a robot. Reading, planning and saving
+    # the library are Studio tools (NEVER_GATED below); playing moves an arm.
+    "/api/gestures/play",
 }
 
 # NEVER gated, deliberately, however much they change:
@@ -181,7 +184,10 @@ NEVER_GATED = {"/api/play/stop", "/api/stopall", "/api/play/beat",
                # stoppable by whoever is standing next to it, for the
                # same reason a moving one must be.
                "/api/stream/stop", "/api/speak/stop",
-               "/api/save", "/api/export", "/api/model/upload", "/api/rigdefault"}
+               "/api/save", "/api/export", "/api/model/upload", "/api/rigdefault",
+               # A46-1: the talk-gesture library, Studio's fit of it to the
+               # rig, and a plan (computed, nothing moves) - Studio tools too
+               "/api/gestures", "/api/gestures/fit", "/api/gestures/plan"}
 
 # Gated from the network, but open to a PROGRAM ON THIS PC with no login
 # (A6-3, user: *a foreign Python program needs one address and one verb*).

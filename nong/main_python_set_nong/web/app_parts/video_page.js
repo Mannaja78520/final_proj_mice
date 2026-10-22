@@ -54,6 +54,7 @@ function vidSetSrc(url, src) {
   $("vidUseBox").hidden = true;
   $("vidSoundBox").hidden = true;
   $("vidGo").disabled = false;
+  $("vidGoSave").disabled = false;
   $("vidPlayBtn").disabled = false;
   $("vidTech").textContent = "";
   vidLastMs = -1;

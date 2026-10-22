@@ -1113,6 +1113,9 @@ class VoiceApp {
         }).catch(() => {});
       }
       tasks.push(this.doMove(a, signal));
+    } else {
+      // not awaited: the next question never waits for an arm (it rests itself)
+      this.doGestures(a.answer, a.lang || detectedLang, signal).catch(() => {});
     }
     if (this.$("sound").checked) {
       const convSpeakLang = this.autoDetect ? (a.lang || detectedLang) : this.askLang;
@@ -1248,6 +1251,8 @@ class VoiceApp {
           }).catch(() => {});
         }
         tasks.push(this.doMove(r));
+      } else {
+        this.doGestures(r.answer, r.lang || explicitLang || detectedLang).catch(() => {});
       }
       if (this.$("sound").checked) {
         const speakLang = this.autoDetect ? (r.lang || explicitLang || detectedLang) : this.askLang;
@@ -1291,6 +1296,7 @@ class VoiceApp {
     else if (kind.includes("wav")) this.checkVoice();
     const url = URL.createObjectURL(await r.blob());
     const player = new Audio(url);
+    player.onplaying = () => this.spoke(text, player.duration);   // A46-1: gestures start now
     player.onended = () => { URL.revokeObjectURL(url); this.$("wait").textContent = ""; this.$("speakingNow").hidden = true; };
     try {
       await player.play();
@@ -1428,6 +1434,7 @@ class VoiceApp {
       utterance.onstart = () => {
         if (!own() || signal?.aborted || finished) return cancelNative();
         started = true; clearTimeout(watchdog);
+        this.spoke(text, NaN);                                  // A46-1: length unknown
         watchdog = setTimeout(() => { cancelNative(); end({ok: false}); },
           Math.max(15000, Math.min(120000, text.length * 180 / utterance.rate + 5000)));
         resolve({kind: "native", done});
@@ -1462,6 +1469,7 @@ class VoiceApp {
     if (winner.kind === "error") throw winner.error;
     url = URL.createObjectURL(winner.blob);
     player = new Audio(url);
+    player.onplaying = () => this.spoke(text, player.duration);   // A46-1: gestures start now
     const playback = new Promise((resolve, reject) => {
       player.onended = () => resolve({ok: true});
       player.onerror = () => reject(new Error("The sound could not play."));
@@ -1516,6 +1524,59 @@ class VoiceApp {
     bot.dev = live && live.dev;
   }
   return bot;
+}
+
+// ---- Moves while talking (A46-1, user 2026-10-22) -------------------------
+// An answer that names no move of its own gets arm gestures that fit its
+// words. The HUB picks and times them (config/gestures.json, fitted to the
+// robot's size and kept clear of its body by Nong Studio); this page only says
+// WHEN: as the sound starts, with how long it lasts, so the moves land on
+// their words. Stop ends them with the answer.
+  spoke(text, sec){
+  const w = this.speechWait;
+  if (w && w.text === text) { this.speechWait = null; w.done(sec); }
+}
+  async gestureRobot(){
+  const all = await fetch("/api/modules/all").then(x => x.json()).catch(() => null);
+  const mods = (all && all.modules) || [];
+  const live = m => (m.routes || []).find(rt => !rt.stale);
+  const want = (this.$("globalRobot") ? this.$("globalRobot").value : "").trim().toLowerCase();
+  const bot = want && want !== "__all__"
+    ? mods.find(m => String(m.name || "").trim().toLowerCase() === want)
+    : (mods.find(m => String(m.type || "").toLowerCase() === "nong" && live(m)) || mods.find(live));
+  const rt = bot && live(bot);
+  return rt ? {name: bot.name, dev: rt.dev} : null;
+}
+  async doGestures(text, lang, signal){
+  if (!text || !this.$("gestOn") || !this.$("gestOn").checked) return;
+  let started = null;
+  if (this.$("sound") && this.$("sound").checked) {
+    // wait for THIS answer's sound; registered before it is asked for
+    started = new Promise(done => {
+      this.speechWait = {text, done};
+      const t = setTimeout(() => done(null), 20000);
+      signal?.addEventListener("abort", () => { clearTimeout(t); done(null); }, {once: true});
+    });
+  }
+  const bot = await this.gestureRobot();
+  const sec = started ? await started : NaN;
+  if (!bot || signal?.aborted || sec === null) return;
+  const sc = this.scenarioNow();
+  const manner = (sc && sc.style) || this.cfg?.tts?.style || this.styleNow || "";
+  const p = await fetch("/api/gestures/play", {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({dev: bot.dev, text, lang: lang || "", manner, event: this.cfg?.scenario || "",
+                          ms: Number.isFinite(sec) ? Math.round(sec * 1000) : 0}),
+  }).then(x => x.json()).catch(() => null);
+  const box = this.$("gestOn").parentElement || {};
+  box.title = p && p.ok ? "Moving with: " + p.picks.map(x => x.label).join(", ")
+    : "Move the robot's arms with the words while it answers" + (p && p.why ? " (" + p.why + ")" : "");
+  if (p && p.ok && signal) {
+    signal.addEventListener("abort", async () => {
+      const st = await fetch("/api/play").then(x => x.json()).catch(() => null);
+      if (st && st.running && st.name === "gestures") fetch("/api/play/stop", {method: "POST"}).catch(() => {});
+    }, {once: true});
+  }
 }
 
   async doMove(r, signal){
@@ -2978,6 +3039,9 @@ static SAMPLES = {
       this.moveEnabled = !!this.$("moveOn").checked;
       save("voice_move_enabled", this.moveEnabled ? "1" : "0");
     });
+
+    this.$("gestOn").checked = keep("voice_gestures", "1") === "1";
+    this.$("gestOn").addEventListener("change", () => save("voice_gestures", this.$("gestOn").checked ? "1" : "0"));
 
     this.globalRobot = keep("voice_global_robot", "");
     this.$("globalRobot").value = this.globalRobot;

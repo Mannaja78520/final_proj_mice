@@ -2,9 +2,10 @@
 
 ## Start here: HANDOFF.md (user 2026-10-21)
 
-Read `HANDOFF.md` first, then your one task file in `handoff/tasks/`. Before
-ending a task, stopping, or when usage runs low: update your own task file
-(Done, Next, Blocked, Last commit) and push. One file per task, so parallel
+Read `HANDOFF.md` first, then your one task file in `handoff/tasks/`. Update
+your own task file and push a WIP commit around EVERY step, not only at the
+end: `## Doing now` before it, Done/Next/Last commit after it (user
+2026-10-22: any AI can run out mid-task). One file per task, so parallel
 agents never clash. Do not create any other handoff file.
 Tokens: run QC as `python qc/run_qc.py --quiet <check names>` for the files
 you touched (full log in qc/last_run.log), full QC once before merge; grep or

@@ -37,6 +37,7 @@ function showTab(which) {
   if (!STAB_BTN[which]) which = "pose";
   sideTab = which;
   if (which === "shows" && typeof refreshShows === "function") refreshShows();   // saved elsewhere since
+  if (which === "sequence" && typeof talkShown === "function") talkShown();      // A46-1: refit if the rig changed
   
   let renderWhich = which;
   if (!currentUser && (which === "robot" || which === "setup")) {
