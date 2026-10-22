@@ -197,8 +197,13 @@ def run(t):
     i = code.find("async function handOffToRobot(")
     if t.ok(i >= 0, "leaving the page hands the show to the robot"):
         body = code[i:i + 900]
-        t.contains(body, "MOVE ", "by telling the module to play the sequence")
-        t.contains(body, "sdUpload", "after sending it the sequence")
+        # Since A46-3 the upload and MOVE live in startCheckedSequence, which
+        # first brings the arm to the handover pose on a checked route.
+        t.contains(body, "startCheckedSequence(", "through the checked start")
+        j = code.find("async function startCheckedSequence(")
+        start = code[j:code.find("\n}", j)] if j >= 0 else ""
+        t.contains(start, "MOVE ", "by telling the module to play the sequence")
+        t.contains(start, "sdUpload", "after sending it the sequence")
         t.contains(body, "playing = false",
                    "and the browser stops trying to be the clock")
         t.ok("haveRobot" in body,
@@ -216,8 +221,16 @@ def run(t):
     # moves by the esp32 sequence".
     i = code.find("function stopRobotSequence(")
     if t.ok(i >= 0, "there is a way to stop the module's own sequence"):
-        t.contains(code[i:i + 400], "MOVE STOP",
+        # A46-3: one Stop owner. The board's STOP is a motion command, so it
+        # also ends the board's own sequence (CommandRouter preemptSequence)
+        # and silences it, like MOVE STOP did.
+        t.contains(code[i:i + 400], "cancelSafeMotion(",
+                   "which goes through the one Stop owner")
+        j = code.find("function cancelSafeMotion(")
+        cancel = code[j:code.find("\n}", j)] if j >= 0 else ""
+        t.contains(cancel, 'safeDeviceCmd(device,"STOP")',
                    "which tells the module to stop playing")
+        t.contains(cancel, "hubStop()", "and ends the hub's clock too")
     j = code.find("function togglePlay(")
     if t.ok(j >= 0, "the play button exists"):
         body = code[j:j + 2200]
