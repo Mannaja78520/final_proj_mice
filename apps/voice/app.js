@@ -2296,7 +2296,7 @@ static SAMPLES = {
   if (o.tryIt) {
     const p = document.createElement("button");
     p.type = "button"; p.className = "try-it"; p.textContent = "▶";
-    p.title = p.ariaLabel = "Play " + o.label;
+    p.title = "Play " + o.label;
     p.setAttribute("aria-label", "Play " + o.label);
     p.onclick = o.tryIt;
     t.appendChild(p);
@@ -2313,14 +2313,16 @@ static SAMPLES = {
 
   // Plays the Thai sample as a quick choice would sound, before it is saved.
   quickTry(over){
-  const own = ((this.langVoice || {}).th || {}).sel;
+  const lang = over.lang || "th";
+  const own = ((this.langVoice || {})[lang] || {}).sel;
+  // agree: the helper says the sample with THAT voice's ending (ครับ / ค่ะ).
   const t = {speed: over.rate || (this.$("ttsRate") || {}).value || "+0%",
-             pitch: (this.$("ttsPitch") || {}).value || "+0Hz"};
+             pitch: (this.$("ttsPitch") || {}).value || "+0Hz", agree: true};
   const voice = over.voice || (own ? own.value : "");
   if (voice && voice !== "-") t.voice = voice;
   const style = over.style != null ? over.style : ((this.$("ttsStyle") || {}).value || "");
   if (style || this.styleNow) t.style = style;
-  this.speak(VoiceApp.SAMPLES.th || VoiceApp.SAMPLES.en, "th", t);
+  this.speak(VoiceApp.SAMPLES[lang] || VoiceApp.SAMPLES.en, lang, t);
 }
 
   async quickSave(said){
@@ -2370,11 +2372,19 @@ static SAMPLES = {
       + "” has a tone of its own, so that one is used there. Change it on Personality.";
   }
   if (!voices) return;
-  const list = (this.voicesByLang || {}).th;
   if (!this.voicesReady) return;                 // still reading: keep "Reading the voices…"
+  // Every language the store speaks (user 2026-10-22: *เอาภาษาอื่นด้วย*).
+  const langSel = this.$("quickLang");
+  const langs = this.langs();
+  if (langSel && !langSel.options.length) {
+    langs.forEach(l => { const o = document.createElement("option"); o.value = l; o.textContent = VoiceApp.langName(l); langSel.appendChild(o); });
+    langSel.onchange = () => this.fillQuick();
+  }
+  const lang = (langSel && langSel.value) || langs[0] || "th";
+  const list = (this.voicesByLang || {})[lang];
   if (!list || !list.length) { this.quickNote(voices, "No voice list - this PC may be offline; the saved voice still speaks."); return; }
   voices.textContent = "";
-  const sel = ((this.langVoice || {}).th || {}).sel;
+  const sel = ((this.langVoice || {})[lang] || {}).sel;
   const one = (this.$("oneVoice") || {}).value || "";
   [["Female", "Women"], ["Male", "Men"]].forEach(([g, head]) => {
     const mine = list.filter(v => v.gender === g).sort((a, b) => (b.own ? 1 : 0) - (a.own ? 1 : 0));
@@ -2392,9 +2402,9 @@ static SAMPLES = {
       pick: () => {
         if (this.$("oneVoice")) { this.$("oneVoice").value = ""; this.pickOneVoice(); }
         this.quickSet(sel, v.name);
-        this.quickSave("Thai voice: " + (v.says || v.name));
+        this.quickSave(VoiceApp.langName(lang) + " voice: " + (v.says || v.name));
       },
-      tryIt: () => this.quickTry({voice: v.name})}));
+      tryIt: () => this.quickTry({voice: v.name, lang})}));
   });
 }
 

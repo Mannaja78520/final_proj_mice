@@ -1698,16 +1698,62 @@ class Brain:
         a = self.answer_cfg()
         _key, sty = self.style_choice()
         own = sty.get("answer") or {}
-        return (own.get("particle") or a.get("politeParticle") or "ครับ",
-                own.get("pronoun") or a.get("politePronoun") or "ผม",
+        # A45-27 (user 2026-10-22: *เสียงไทยชายหญิงมีลงท้ายต่างกัน ครับ/ค่ะ*): the
+        # voice's gender sets the ending and self-word; a manner's own wins.
+        g = self.gender_words("th")
+        return (own.get("particle") or g.get("particle") or a.get("politeParticle") or "ครับ",
+                own.get("pronoun") or g.get("pronoun") or a.get("politePronoun") or "ผม",
                 ((own.get("wording") or {}).get(lang) or "").strip())
+
+    def voice_gender(self, lang):
+        """"female" / "male" / "" - the gender of the voice that speaks `lang`:
+        a saved voice says it, an Edge voice from Microsoft's own list."""
+        try:
+            ident, named = self.resolve_voice(lang)
+        except Exception:                               # noqa: BLE001
+            return ""
+        if not ident:
+            return ""
+        who = self.person(named)
+        if who:
+            return str(who.get("gender") or "")
+        for v in self._edge_voices():
+            if v.get("ShortName") == named:
+                return str(v.get("Gender") or "").lower()
+        return ""
+
+    def gender_words(self, lang, gender=None):
+        """{"particle", "pronoun"} that agree with the speaking voice
+        (config/voice_people.json `agree`), or {} when unknown."""
+        agree = ((self.people().get("agree") or {}).get(lang) or {})
+        if not agree:
+            return {}
+        return agree.get(self.voice_gender(lang) if gender is None else gender) or {}
+
+    def agree_text(self, text, lang, voice=""):
+        """The page's Try (`agree`): a sample said with the ending and self-word
+        of THAT voice's gender, so a man's voice never tries ค่ะ."""
+        if lang != "th":
+            return text
+        g = ""
+        who = self.person(voice)
+        if who:
+            g = str(who.get("gender") or "")
+        elif voice:
+            g = next((str(v.get("Gender") or "").lower() for v in self._edge_voices()
+                      if v.get("ShortName") == voice), "")
+        w = self.gender_words("th", g if voice else None)
+        if not w:
+            return text
+        text = one_particle(text, w.get("particle") or "", self.particles())
+        return one_pronoun(text, w.get("pronoun") or "", self.pronouns())
 
     def manner_saved(self, text, lang):
         """A saved Thai answer in the manner's own ending and self-word, ONLY
         when the manner says `answer.saved` (the เจ๊ manner: a เจ๊ voice saying
         ครับ sounded wrong, 2026-10-21). The rest of the words stay as saved."""
         _key, sty = self.style_choice()
-        if lang != "th" or not (sty.get("answer") or {}).get("saved"):
+        if lang != "th" or not ((sty.get("answer") or {}).get("saved") or self.gender_words("th")):
             return text
         keep, me, _w = self.manner_answer("th")
         text = one_particle(text, keep, self.particles())
@@ -3436,6 +3482,8 @@ class VoiceHandler(BaseHTTPRequestHandler):
                                "there was nothing to speak"}, 400)
         try:
             voice_name = str(req.get("voice") or "").strip()
+            if req.get("agree"):
+                text = self.brain.agree_text(text, req.get("lang") or "", voice_name)
             # "speed" / "pitch": the page's Try it, heard before saving.
             # Not "rate" - that is the robot speaker's sample rate below.
             wav, why_not = self.brain.say(
