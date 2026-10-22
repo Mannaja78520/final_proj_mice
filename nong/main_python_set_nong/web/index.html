@@ -72,8 +72,26 @@
         <button id="distBtn" aria-pressed="false" onclick="distSet(!distOn)"
                 title="show distances in mm: elbow to hand, elbow to elbow, hand to hand, shoulder to elbow and shoulder to hand. Hold D to see them only while held.">📏 Distances</button>
       </div>
+      <!-- A48-1 robot look: the choices come from urdf_view.json (urdf_view.js) -->
+      <div class="vcRow vcLook">
+        <label for="lookSel" class="mini">Robot look</label>
+        <select id="lookSel" onchange="setLook(this.value)"
+                title="Simple shapes = the old robot sized in Rig setup. CAD model = the URDF file at its real sizes."></select>
+        <select id="lookModel" hidden onchange="urdfPickModel(this.value)" title="which CAD model file"></select>
+      </div>
+      <div class="vcRow"><span class="mini" id="lookStat" role="status"></span></div>
+      <div class="vcRow"><span class="mini tech" id="lookTech"></span></div>
     </div>
   </div>
+  <!-- A48-1: leaving the CAD look asks whose sizes the simple shapes use -->
+  <dialog id="lookAsk" aria-labelledby="lookAskTitle">
+    <h2 id="lookAskTitle">Back to the simple shapes: which sizes?</h2>
+    <p><button class="primary" id="lookUseUrdf">Use the CAD model's sizes</button>
+      <span class="mini" id="lookAskUrdf"></span></p>
+    <p><button id="lookUseMine">Use my own sizes</button>
+      <span class="mini" id="lookAskMine"></span></p>
+    <p><button id="lookStay">Stay on the CAD model</button></p>
+  </dialog>
 
   <div id="sideDrag" title="drag to make the panel wider or narrower"></div>
 

@@ -13,6 +13,7 @@
       "state.js",
       "scene.js",
       "build_rig.js",
+      "urdf_view.js",
       "gizmo_rings.js",
       "picking_drag.js",
       "ik_4_dof_arm.js",

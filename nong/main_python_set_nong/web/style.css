@@ -232,6 +232,13 @@ input[type=checkbox]{accent-color:var(--acc)}
   border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;min-width:48px;
 }
 #viewCube button:hover{border-color:var(--acc)}
+/* A48-1 robot look box + its status (urdf_view.js) */
+#viewCube .vcLook{flex-wrap:wrap;align-items:center;max-width:220px}
+#viewCube .vcLook select{max-width:200px;font-size:12px}
+#lookStat{display:block;max-width:220px;text-align:center}
+#lookAsk{max-width:min(460px,92vw);background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:10px}
+#lookAsk::backdrop{background:rgba(0,0,0,.5)}
+#lookAsk p{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 /* distances overlay (A26-44): labels sit over the 3D view, never catch the mouse */
 #distLayer{position:absolute;inset:0;pointer-events:none;z-index:4}
 #distLayer .distTag{position:absolute;transform:translate(-50%,-50%);

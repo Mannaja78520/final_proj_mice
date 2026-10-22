@@ -98,7 +98,13 @@ class StudioRoutes:
             folder = {"projects": _hub.PROJECTS, "sequences": _hub.SEQUENCES, "models": _hub.MODELS}.get(kind)
             if folder is None:
                 return self.send_err("kind must be projects|sequences|models")
-            files = sorted(p.name for p in folder.iterdir() if p.is_file())
+            if kind == "models" and (q.get("deep") or [""])[0] == "1":
+                # A48-1: a URDF package keeps its file in <pkg>/urdf/ and its
+                # meshes in <pkg>/meshes/, so the CAD look needs sub-folders
+                files = sorted(p.relative_to(folder).as_posix()
+                               for p in folder.rglob("*") if p.is_file())
+            else:
+                files = sorted(p.name for p in folder.iterdir() if p.is_file())
             return self.send_json({"ok": True, "files": files})
 
         if path == "/api/load":
