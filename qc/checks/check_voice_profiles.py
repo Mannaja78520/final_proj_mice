@@ -288,9 +288,18 @@ def _web(t, base, sound):
     await report('restore', await app.profileAction('select') && app.sheet[0].item.audio === 'web.wav');
     const cfg = await fetch('/api/voice/config').then(r => r.json());
     await report('active', cfg.profile === 'Web happy');
+    // Width through an IFRAME, which has its own viewport. Setting <html>'s
+    // width never narrowed 360 and made 1280 overflow any window under 1280
+    // px (cloud headless 780 px), so it measured the browser, not the page.
     for (const width of [360, 1280]) {
-      document.documentElement.style.width = width + 'px';
-      await report('layout' + width, document.body.scrollWidth <= document.body.clientWidth + 1);
+      const frame = document.createElement('iframe');
+      frame.style.cssText = 'width:' + width + 'px;height:800px;border:0';
+      frame.src = '/app/voice/';
+      document.body.appendChild(frame);
+      const ready = await qcWaitFor(() => frame.contentWindow?.voiceApp?.initialized, 15000);
+      const doc = frame.contentDocument;
+      await report('layout' + width, ready && doc.documentElement.scrollWidth <= doc.documentElement.clientWidth + 1);
+      frame.remove();
     }
   } catch (error) { await qcMark('PROFILE error=' + String(error).replace(/[^a-zA-Z0-9]/g, '_').slice(0,100)); }
   finally { await qcMark('done'); }
