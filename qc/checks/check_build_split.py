@@ -40,6 +40,8 @@ ENVS = {
     # the camera is a different BOARD (esp32cam), which is the strongest form
     # of "costs the other modules nothing" — it cannot even share their binary
     "mice_cam": (["cam"], ['id="jointRows"', 'id="liftCard"', "RGB Strip"]),
+    # the prize dispenser (A47-1): a motor like the lift's, none of its page
+    "mice_gacha": (["gacha"], ['id="jointRows"', 'id="liftCard"', 'id="camCard"', "RGB Strip"]),
 }
 LEGACY = "mice_module_firmware"     # every type in one binary, kept for now
 FLASH_CEILING = 90.0
@@ -195,7 +197,7 @@ def run(t):
             # ...and its own controls really are there, or the absence above
             # would pass on an empty page
             own = {"nong": 'id="jointRows"', "lift": 'id="liftCard"',
-                   "cam": 'id="camCard"'}[types[0]]
+                   "cam": 'id="camCard"', "gacha": 'id="gachaCard"'}[types[0]]
             t.ok(own.encode() in blob, "%s does contain its own controls" % env)
 
     # ---- 3. the split must actually save something --------------------

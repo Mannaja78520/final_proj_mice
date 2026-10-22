@@ -738,6 +738,43 @@ Calibration lives in the board's own memory (NVS), so it survives a reboot
 with no SD card. The status JSON (`INFO`, the website) carries `module.joints`
 (angles, `null` = no pot), `module.raw` and `module.cal`.
 
+## Commands — gacha module (prize dispenser)
+
+A gachapon (user 2026-10-22): one motor turns a holder with pockets, one hall
+sensor sits at the **loading place** (the ball comes in from the back there and
+does not fall yet), and a magnet is under every pocket. A prize falls after the
+holder turns `drop` pockets on. Motion is counted in **magnet arrivals**, never
+in time; no arrival for `timeout` ms = stuck, motor off, `last.result` = `jam`.
+No SD card on this module. Build: `pio run -e mice_gacha`.
+
+Wiring defaults (change with `PIN`, reboot): motor `motor_a` 25, `motor_b` 26,
+`motor_pwm` -1 (2-pin H-bridge; set it for an EN + IN1/IN2 driver), `hall` 33
+(internal pull-up, magnet pulls LOW). RS485 16/17/4 as on every module.
+
+| Command | Reply | Notes |
+|---|---|---|
+| `GDISPENSE [FORCE] [<who>]` | `OK dispensing seq=7 stock=11` | turn `drop` pockets so one prize falls. Refused `ERR event closed`, `ERR empty`, `ERR busy`. `FORCE` = the admin's extra: skips closed/empty, still counted (`forced`). `<who>` (text) is kept in `last.who` |
+| `GSPIN <n> [MAG]` | `OK turning 2 magnet(s)` | test turn: n pockets (n magnets with `MAG`), negative = backwards; not a prize, stock untouched |
+| `GHOME` | `OK finding the next magnet` | turn until a magnet is over the sensor (pocket at the loading place); `pos` = 0 |
+| `STOP` | `OK stopped` | motor off now (safety: never needs a login) |
+| `GSTOCK <n>` / `GSTOCK ADD <n>` / `GSTOCK OFF` | `OK stock=12` | balls in the machine now / put more in / stop counting (`stock` -1, never empty) |
+| `GEVENT NAME <text>` / `OPEN` / `CLOSE` / `RESET` | `OK event open` | the event name (40 chars), open or closed, `RESET` = this event's counts to zero (given, forced, loaded, seq) |
+| `GITEM [<type>]` | `OK item "keychain"` | which item type this machine holds; the hub's gacha app routes "give type X" by it |
+| `GCFG <key> <value>` / `GCFG CLEAR` | `OK drop=2` | `magnets` `slots` (pockets) `drop` `speed` (50-1023) `dir` (1/-1) `timeout` `debounce` `settle` (ms) `active_low` (0/1). Magnets must be a whole multiple of pockets |
+| `GCFG?` | `{"magnets":4,"slots":4,"drop":2,...,"per_slot":1}` | the settings |
+| `G?` | `{"state":"idle","at_hall":true,"hits":42,"pos":0,"item":"","event":"","open":true,"stock":12,"empty":false,"loaded":12,"given":3,"forced":1,"total":40,"last":{"seq":3,"result":"done","who":"","forced":false,"ms":1830},"cfg":{...},"motor":true}` | everything; the same object is `module` in `INFO` / `/api/status` |
+| `GCOUNT RESET` | `OK lifetime counts cleared` | `hits` and `total` to zero |
+
+`state`: `idle` `turning` `homing` `dispensing`. `last.result`: `turning`
+`done` `jam` `stopped`. An app that asked for a prize polls `G?` until
+`last.seq` is its seq and `last.result` is not `turning`.
+
+Other apps (simple API): over WiFi `GET /api/cmd?c=G%3F` needs no login;
+`GDISPENSE` needs a login session (`POST /api/login`), or go through the hub's
+gacha app, which logs in for you. Over RS485: `#<id> GDISPENSE <who>`.
+Everything except the motion state is stored in NVS namespace `gacha`, so the
+event and the counts survive a reboot.
+
 ## Commands — cam module (ESP32-CAM)
 
 An AI-Thinker ESP32-CAM running the same firmware core as every other module:

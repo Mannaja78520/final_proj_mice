@@ -2443,6 +2443,17 @@
     <tr><td>DZERO</td><td class="wrap2">Hold the dummy in a known pose (default 90&deg;) and each joint works out its own zero</td></tr>
     <tr><td>DMUX | DMUX?</td><td class="wrap2">Which pins the 16-channel analog switch (CD74HC4067) is on, or <code>OFF</code> for one ADC pin per joint</td></tr>
   </tbody></table></div>
+  <div class="grp2">Prize dispenser only (gachapon)</div>
+  <div class="scroll"><table><thead><tr><th>Command</th><th class="wrap2">Does</th></tr></thead><tbody>
+    <tr><td>GDISPENSE</td><td class="wrap2">Turn until one prize falls; refused when the event is closed or the balls ran out. <code>FORCE</code> = the admin's extra, still counted; a name after it is kept with the record</td></tr>
+    <tr><td>GSPIN</td><td class="wrap2">Test turn: n pockets (n magnets with <code>MAG</code>), negative turns back; not counted as a prize</td></tr>
+    <tr><td>GHOME</td><td class="wrap2">Turn until a magnet is over the sensor, so a pocket sits at the loading place</td></tr>
+    <tr><td>GSTOCK</td><td class="wrap2">Balls in the machine: how many now, <code>ADD</code> more, or <code>OFF</code> to stop counting</td></tr>
+    <tr><td>GEVENT</td><td class="wrap2">The event: <code>NAME</code>, <code>OPEN</code>, <code>CLOSE</code>, or <code>RESET</code> its counts</td></tr>
+    <tr><td>GITEM</td><td class="wrap2">Which kind of prize this machine holds; the hub sends "give kind X" to a machine that has it</td></tr>
+    <tr><td>GCFG | GCFG? | G?</td><td class="wrap2">Pockets, magnets, pockets until it falls, speed, direction, stuck time; <code>G?</code> reads everything</td></tr>
+    <tr><td>GCOUNT</td><td class="wrap2"><code>RESET</code> the lifetime magnet and prize counts</td></tr>
+  </tbody></table></div>
 </section>
 
 <!-- ===================== FILES ===================== -->

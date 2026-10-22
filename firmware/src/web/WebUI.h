@@ -438,6 +438,60 @@ a.peer:hover{border-color:var(--acc)}
   </div>
 <!--#end-->
 
+<!--#type gacha-->
+  <div class="card" data-tab="control" id="gachaCard" style="grid-column:1/-1">
+    <h2>Prize dispenser</h2>
+    <div class="statline" id="gaNow" aria-live="polite">waiting for the board</div>
+    <div class="row">
+      <button class="primary" onclick="gaCmd('GDISPENSE')">&#127873; Give one prize</button>
+      <button onclick="gaCmd('GDISPENSE FORCE admin')" title="for the admin: works when the event is closed or the count says empty, and is still counted">Give one anyway (admin)</button>
+      <button class="danger" onclick="gaCmd('STOP')">&#9632; Stop</button>
+    </div>
+    <div class="row">
+      <span class="lbl">Turn</span>
+      <button onclick="gaCmd('GSPIN 1')">1 pocket</button>
+      <input type="number" id="gaN" value="2" min="1" max="64" style="width:64px">
+      <button onclick="gaCmd('GSPIN '+($('gaN').value||1))">pockets</button>
+      <button onclick="gaCmd('GSPIN -1')">1 back</button>
+      <button onclick="gaCmd('GSPIN 1 MAG')" title="one magnet, for a holder with more magnets than pockets">1 magnet</button>
+      <button onclick="gaCmd('GHOME')" title="turn until a magnet is over the sensor: a pocket is then at the loading place">Find the loading place</button>
+    </div>
+    <div class="row"><span class="lbl">Magnets seen</span><b id="gaHits">-</b>
+      <span class="lbl" style="min-width:0">pocket at the loading place</span><b id="gaPos">-</b>
+      <span class="lbl" style="min-width:0">sensor</span><b id="gaHall">-</b></div>
+    <div class="row"><span class="lbl">Last prize</span><span id="gaLast">-</span></div>
+    <div class="statline" id="gaStat" aria-live="polite"></div>
+  </div>
+  <div class="card" data-tab="control" id="gachaEvent" style="grid-column:1/-1">
+    <h2>Event and balls</h2>
+    <div class="row"><span class="lbl">Event name</span>
+      <input id="gaEvent" maxlength="40" placeholder="e.g. Open House day 1" style="flex:1">
+      <button onclick="gaCmd('GEVENT NAME '+$('gaEvent').value)">Save name</button></div>
+    <div class="row"><span class="lbl">Event is</span><b id="gaOpen">-</b>
+      <button onclick="gaCmd('GEVENT OPEN')">Start the event</button>
+      <button onclick="gaCmd('GEVENT CLOSE')">Close the event</button>
+      <button onclick="if(confirm('Start this event\'s counts from zero?'))gaCmd('GEVENT RESET')">New event (counts to zero)</button></div>
+    <div class="row"><span class="lbl">Prize kind</span>
+      <input id="gaItem" maxlength="40" placeholder="e.g. keychain" style="flex:1">
+      <button onclick="gaCmd('GITEM '+$('gaItem').value)">Save kind</button></div>
+    <div class="row"><span class="lbl">Balls left</span><b id="gaStock">-</b>
+      <span class="lbl" style="min-width:0">given</span><b id="gaGiven">-</b>
+      <span class="lbl" style="min-width:0">put in</span><b id="gaLoaded">-</b></div>
+    <div class="row"><span class="lbl">Balls</span>
+      <input type="number" id="gaStockN" value="10" min="0" max="9999" style="width:80px">
+      <button onclick="gaCmd('GSTOCK '+($('gaStockN').value||0))">There are this many now</button>
+      <button onclick="gaCmd('GSTOCK ADD '+($('gaStockN').value||0))">Add this many</button>
+      <button onclick="gaCmd('GSTOCK OFF')">Do not count</button></div>
+  </div>
+  <div class="card setupCard" data-tab="setup" id="gachaCfg" style="grid-column:1/-1;display:none">
+    <h2>Prize dispenser settings</h2>
+    <div class="statline">turn one pocket at a time and count how many pockets it takes for the ball to fall:
+      that number is <b>Pockets until it falls</b>. Magnets must be a whole number per pocket.</div>
+    <div id="gaCfgRows"></div>
+    <div class="row"><button onclick="if(confirm('Back to the factory settings?'))gaCmd('GCFG CLEAR')">Back to defaults</button></div>
+  </div>
+<!--#end-->
+
 <!--#type cam-->
   <div class="card" data-tab="control" id="camCard" style="grid-column:1/-1">
     <h2>Camera</h2>
@@ -657,6 +711,9 @@ function render(){
   showCard('camCard',has('camera'));
   showCard('dummyCard',has('pots'));
   showCard('dummyCal',has('pots'));
+  showCard('gachaCard',has('dispense'));
+  showCard('gachaEvent',has('dispense'));
+  showCard('gachaCfg',has('dispense'));
   applyTabs();          // one pass, after the capabilities are known
   if(st.wifi){
     $('hwifi').textContent=st.wifi.mode==='ap'?'AP '+st.wifi.ip:(st.wifi.mode==='sta'?st.wifi.ip+' ('+st.wifi.rssi+'dBm)':'off');
@@ -680,6 +737,7 @@ function render(){
   if(typeof nongStatus==='function')nongStatus(m,has);
   if(typeof camStatus==='function')camStatus(m);
   if(typeof dummyStatus==='function')dummyStatus(m,has);
+  if(typeof gachaStatus==='function')gachaStatus(m,has);
   if(st.seq)$('seqStat').textContent=st.seq.running?('running '+st.seq.file):'idle';
   if(st.types&&!$('setType').options.length)
     st.types.forEach(t=>{const o=document.createElement('option');o.textContent=t;$('setType').appendChild(o);});
@@ -1033,6 +1091,58 @@ function dummyStatus(m,has){
   [['dmSig',mux.sig]].concat((mux.sel||[]).map((v,k)=>['dmS'+k,v])).forEach(([id,v])=>{
     const e=$(id); if(e&&document.activeElement!==e&&v!==undefined)e.value=v;
   });
+}
+//#end
+//#type gacha
+// ---- prize dispenser: one motor, one magnet sensor at the loading place ----
+async function gaCmd(c){
+  const r=await cmd(c);
+  if($('gaStat'))$('gaStat').textContent=refusal(r)||r;
+  return r;
+}
+// [setting, label, min, max, tip] - one row per GCFG key
+const GA_CFG=[['slots','Pockets',1,64,'how many pockets the holder has'],
+  ['magnets','Magnets',1,64,'magnets around the holder'],
+  ['drop','Pockets until it falls',1,64,'from the loading place to where the ball drops'],
+  ['speed','Motor speed',50,1023,'50-1023'],
+  ['dir','Turn direction',-1,1,'1 or -1'],
+  ['timeout','Stuck after (ms)',200,60000,'no magnet for this long while turning = stuck, motor off'],
+  ['settle','Keep turning after a magnet (ms)',0,2000,'centres the pocket'],
+  ['debounce','Sensor steady for (ms)',0,200,''],
+  ['active_low','Sensor pulls low on a magnet',0,1,'1 for the usual hall sensors']];
+const GA_STATE={idle:'ready',turning:'turning',homing:'finding the loading place',dispensing:'giving a prize'};
+function gachaStatus(m,has){
+  if(!has('dispense')||m.hits===undefined)return;
+  const box=$('gaCfgRows');
+  if(box&&!box.dataset.built){
+    box.dataset.built=1;
+    GA_CFG.forEach(([k,label,lo,hi,tip])=>{
+      const r=document.createElement('div');r.className='row';
+      const l=document.createElement('span');l.className='lbl';l.textContent=label;l.title=tip;r.appendChild(l);
+      const e=document.createElement('input');e.type='number';e.min=lo;e.max=hi;e.style.width='90px';e.id='gaC_'+k;
+      e.onchange=()=>gaCmd('GCFG '+k+' '+e.value);r.appendChild(e);
+      box.appendChild(r);
+    });
+  }
+  const c=m.cfg||{};
+  GA_CFG.forEach(([k])=>{const e=$('gaC_'+k);if(e&&document.activeElement!==e&&c[k]!==undefined)e.value=c[k];});
+  let now=GA_STATE[m.state]||m.state;
+  if(m.want)now+=' ('+m.got+' of '+m.want+' magnets)';
+  if(!m.motor)now+=' - no motor wired yet (Setup & wiring ▸ pins)';
+  if(m.empty)now+=' - out of balls';
+  if(!m.open)now+=' - event closed';
+  $('gaNow').textContent=now;
+  $('gaHits').textContent=m.hits;
+  $('gaPos').textContent=(m.pos+1)+' of '+(c.slots||'?');
+  $('gaHall').textContent=m.at_hall?'magnet here':'between magnets';
+  const L=m.last||{};
+  $('gaLast').textContent=L.seq?('#'+L.seq+' '+({done:'fell',jam:'stuck - check the holder',stopped:'stopped',turning:'turning'}[L.result]||L.result)+
+    (L.who?' for '+L.who:'')+(L.forced?' (admin)':'')+(L.ms?' in '+(L.ms/1000).toFixed(1)+' s':'')):'none yet';
+  $('gaOpen').textContent=m.open?'open':'closed';
+  $('gaStock').textContent=m.stock<0?'not counted':m.stock;
+  $('gaGiven').textContent=m.given+(m.forced?' ('+m.forced+' by admin)':'');
+  $('gaLoaded').textContent=m.loaded;
+  [['gaEvent',m.event],['gaItem',m.item]].forEach(([id,v])=>{const e=$(id);if(e&&document.activeElement!==e)e.value=v||'';});
 }
 //#end
 //#type cam
@@ -1770,6 +1880,9 @@ const PIN_GROUPS={bus:'RS485 bus',sd:'microSD card',audio:'Speaker',
 //#type nong
   nong:'Nong servos',
 //#end
+//#type gacha
+  gacha:'Prize dispenser (motor / magnet sensor)',
+//#end
 };
 // which module type each pin group belongs to ("core" = shown for every type).
 // SD + RS485 (bus) are on every module; the speaker (audio) is wired on lift
@@ -1780,6 +1893,9 @@ const GROUP_TYPE={bus:'core',sd:'core',audio:['lift','nong'],rgb:'lift',
 //#end
 //#type nong
   nong:'nong',
+//#end
+//#type gacha
+  gacha:'gacha',
 //#end
 };
 function pinGroupTypes(g){const v=GROUP_TYPE[g];
@@ -1792,6 +1908,9 @@ const GROUP_LABEL={
 //#end
 //#type nong
   nong:'Nong module',
+//#end
+//#type gacha
+  gacha:'Prize dispenser',
 //#end
 };
 let pinValid=[],pinCur={},pinBy={},pinTab=null;

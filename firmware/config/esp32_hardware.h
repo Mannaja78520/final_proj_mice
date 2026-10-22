@@ -10,6 +10,7 @@
     //   config/esp32_hardware_lift_module.h   — lift motor/encoder/limits/rack
 //   config/esp32_hardware_cam_module.h    — ESP32-CAM sensor pins (fixed by the board)
     //   config/esp32_hardware_nong_module.h   — nong servos/limits/gear
+    //   config/esp32_hardware_gacha_module.h  — prize dispenser motor/hall/pockets
 
     #define FW_VERSION "1.0.0"
 
@@ -51,5 +52,6 @@
     #endif
     #include "esp32_hardware_nong_module.h"
     #include "esp32_hardware_dummy_module.h"
+    #include "esp32_hardware_gacha_module.h"
 
 #endif
