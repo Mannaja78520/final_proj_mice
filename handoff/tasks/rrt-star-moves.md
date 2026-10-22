@@ -25,8 +25,11 @@ no motion commands issued. Preserve existing browser31-keyframe backup and
 all real calibration. No firmware changes.
 
 ## Doing now
-Claude (cloud) took over from Codex 2026-10-22 19:25 Bangkok: set up cloud QC,
-run the A46-3 focused checks, then full quiet QC, then PR + merge.
+Fixing the 7 checks that full QC (cloud, 7527/10) showed failing on Codex's tree:
+latency, key_click, key_clock, studio_edits, studio_resume, ui_states, voice_profiles.
+Done: key_click (fixture went outside rig limits; now clampJ + waits for the board id),
+key_clock (physical times, clampJ, the one checked entry to the parked pose is allowed).
+Follow-up idea: SD file "Run" (robot_link.js ~810) starts natively without a checked entry.
 
 ## Codex state at hand-off (4c362a9)
 RRT* plus checked source/rounded legs, one dispatch owner and actual reported
