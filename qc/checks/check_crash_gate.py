@@ -25,7 +25,7 @@ import fake_serial
 import qc as F
 
 AREA = "studio"
-TITLE = "a crashing movement previews freely, but only reaches the robot if you force it"
+TITLE = "a colliding movement cannot be forced onto the robot"
 SLOW = True
 
 # Two keyframes that put the arms through each other, so collisionAt() fires.
@@ -136,8 +136,8 @@ def run(t):
         t.ok(False, "the driver reported usable fields", repr(raw))
         return
 
-    t.eq(g.get("asked"), "yes", "a crashing movement asks before touching the arm")
+    t.eq(g.get("asked"), "no", "a colliding movement is refused without an unsafe override")
     t.eq(g.get("refused"), "yes", "answering no stops it")
-    t.eq(g.get("forced"), "yes", "answering yes lets it through")
+    t.eq(g.get("forced"), "no", "answering yes cannot bypass collision checking")
     t.eq(g.get("safequiet"), "yes",
          "and a safe movement is never asked about at all")

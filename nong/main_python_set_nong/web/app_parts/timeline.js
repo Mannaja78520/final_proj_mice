@@ -119,11 +119,12 @@ function keyIndexAtMs(ms) {
 let seekToken = 0;
 function selectKey(i) {
   const was = playing;
-  const token = ++seekToken;
+  let token = ++seekToken;
   if (was) {
     playing = false; $("playBtn").textContent = "▶ Play";
     livePause(); stopRobotSequence(); keepAwake(false);
   }
+  token=seekToken;
   selKey = i;
   let travel = 0;
   if (keys[i]) {
@@ -137,9 +138,11 @@ function selectKey(i) {
   // the clock follows the click: stopped, Play replays this move; playing,
   // the show continues AFTER it, since the arm is travelling there already
   playT = was ? keyStartMs(i) + keyTravelMs(i) : keyStartMs(i);
-  if (was) setTimeout(() => {
-    if (token === seekToken && !playing) togglePlay();
-  }, travel);
+  if (was) {
+    const epoch=safeMotionEpoch;
+    const arrived=liveLinked() ? lastSafeMove : new Promise(r=>setTimeout(()=>r(true),travel));
+    arrived.then(ok=>{if(ok && token===seekToken && epoch===safeMotionEpoch && !playing)togglePlay();});
+  }
   const total = totalMs();
   $("scrub").value = total ? Math.round(playT / total * 1000) : 0;
   renderTimeline();
@@ -568,6 +571,7 @@ function bumpKeys() {
   // the timeline changed: a "yes, run it anyway" given for the old one does
   // not carry over to this
   crashForced = false;
+  if(playing && safeTimelineCache)cancelSafeMotion('timeline edited');
   _pkCache = null;                          // kept for explicit invalidation
   saveDraft();                              // and it is no longer only in RAM
 }
@@ -846,7 +850,8 @@ async function togglePlay() {
     let ready=false;
     try { ready=await ensureSafeTimeline(()=>epoch!==safeMotionEpoch); }
     finally { timelinePreparing=false;$("playBtn").textContent="▶ Play"; }
-    if(!ready || epoch!==safeMotionEpoch)return;
+    if(epoch!==safeMotionEpoch)return;
+    previewOnly=!ready;
   }
   const K = playKeys();
   if (K.length < 2) {
@@ -859,7 +864,7 @@ async function togglePlay() {
   // is how you fix it. Whether it also reaches the robot is a separate
   // question, and it is asked only when something is actually connected.
   if (!playing) {
-    previewOnly = false;
+    previewOnly = !checkedTimeline();
     if (checkCollisions(false).length && (liveLinked() || hubDriven())) {
       previewOnly = !crashGate("PLAY it on the robot");
       if (previewOnly) {
@@ -901,7 +906,7 @@ async function togglePlay() {
     // needs); the show clock starts after. Hold the preview until then, or it
     // runs ahead of the arm by the whole entry move (A26-50).
     entryHold = true;
-    hubPlay(playT).then(ok => ok ? waitEntry() : (entryHold = false));
+    hubPlay(playT).then(ok => {if(ok)return waitEntry();entryHold=false;playing=false;$("playBtn").textContent="▶ Play";keepAwake(false);});
     return;
   }
   // A segment is the move INTO a keyframe, so segmentAt() starts at 1 and
@@ -909,9 +914,7 @@ async function togglePlay() {
   // move starts from wherever it happens to be standing instead of from the
   // start of the timeline. T is only a request: the firmware floors it per
   // joint, so a short one is stretched to what the servos can really do.
-  if (playT === 0 && K.length && liveLinked())
-    liveSend("POSE " + K[0].pose.map(fmtA).join(" ") +
-             " T " + minTime(pose, K[0].pose));
+  if (liveLinked()) directSafePlay(playT);
 }
 // A segment is handed to the module as one whole move (POSE ... T <ms>) and
 // the firmware interpolates it on its own — that is what keeps the motion
@@ -966,22 +969,26 @@ function hubShowSteps() {
 async function hubPlay(fromMs) {
   const epoch=safeMotionEpoch, device=safeTarget(), revision=safeRevision();
   const goalRevision=safeGoalRevision;
-  const stale=()=>safeStale(epoch,device,revision) || goalRevision!==safeGoalRevision;
+  const sig=safeTimelineSignature();
+  const stale=()=>safeStale(epoch,device,revision) || goalRevision!==safeGoalRevision || sig!==safeTimelineSignature();
   return withSafeMotion(async()=>{ try {
     if(stale() || !(await ensureSafeTimeline(stale)))return false;
+    const steps=hubShowSteps();
+    const destination=poseAt(fromMs || 0).slice();
+    const loop=$("loopChk").checked, name=($("projName").value || "sequence").trim();
+    const musicStop=showBarMusicStop();
     const initial=await safeTakeover(stale);
     if(!initial || stale())return false;
-    const destination=poseAt(fromMs || 0).slice();
     if(!(await checkedPoseUnlocked(destination,0,epoch,goalRevision,initial)) || stale())return false;
-    const steps = hubShowSteps();
     if (!steps || stale()) return false;
+    if(!(fromMs>0))steps[0].t=MIN_MOVE_MS; // checked entry has already reached keyframe 0
     const r = await fetch("/api/play", {
       method: "POST",
       body: JSON.stringify({
-        dev: moduleDev(), steps, loop: $("loopChk").checked,
-        name: ($("projName").value || "sequence").trim(), from_ms: Math.round(fromMs || 0),
+        dev: moduleDev(), steps, loop,
+        name, from_ms: Math.round(fromMs || 0),
         watch: !document.hidden,        // stop the arm if this page freezes (A26-46)
-        music_stop_ms: showBarMusicStop(),   // a show's track may outlive its moves
+        music_stop_ms: musicStop,   // a show's track may outlive its moves
       }),
     }).then(r => r.json());
     if(stale()) {await hubStop();return false;}

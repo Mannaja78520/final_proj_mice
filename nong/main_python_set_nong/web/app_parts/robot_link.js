@@ -204,15 +204,18 @@ async function serialReadLoop() {
 // the queue to swallow the FIRST command's reply - every later reply then
 // went to the wrong caller. Replies carry no id, so order is the only match.
 let serialChain = Promise.resolve();
-function serialCmd(c) {
-  const run = serialChain.then(() => serialCmdNow(c));
+function serialCmd(c, connection = {port:serialPort,id:busId()}) {
+  const epoch=safeMotionEpoch;
+  const run = serialChain.then(() => /^POSE\s/i.test(c) && epoch!==safeMotionEpoch
+    ? 'ERR movement cancelled' : serialCmdNow(c,connection));
   serialChain = run.catch(() => {});
   return run;
 }
-function serialCmdNow(c) {
+function serialCmdNow(c, connection = {port:serialPort,id:busId()}) {
   return new Promise((res, rej) => {
-    if (!serialPort || !serialPort.writable) return rej(new Error("USB not connected"));
-    const id = busId();
+    const port=connection.port;
+    if (!port || !port.writable) return rej(new Error("USB not connected"));
+    const id = connection.id;
     // direct USB: any reply line. bus mode: only "@<id> ..." from our module
     const filter = id
       ? (line) => (line.startsWith("@" + id + " ") ? line.slice(String(id).length + 2) : null)
@@ -230,7 +233,7 @@ function serialCmdNow(c) {
       rej(e);
     };
     try {
-      const writer = serialPort.writable.getWriter();
+      const writer = port.writable.getWriter();
       writer.write(new TextEncoder().encode(framed + "\n"))
         .catch(drop).finally(() => writer.releaseLock());
     } catch (e) { drop(e); }
@@ -866,7 +869,7 @@ async function uploadYaml() {
 function stopRobotSequence() {
   handedOff = false;
   if (!haveRobot()) return;
-  try { robotCmd("MOVE STOP"); } catch (e) {}
+  try { cancelSafeMotion('sequence takeover'); } catch (e) {}
 }
 
 // ---- keeping a show running when you leave the page --------------------
@@ -909,13 +912,11 @@ async function handOffToRobot() {
     // Hand over from where the show HAS GOT TO, not from the top. Hiding the
     // tab half way through used to send the arm back to keyframe 0 first —
     // the same sweep as Run, but nobody pressed anything to cause it.
-    const part = playT > 0 && keyIndexAtMs(playT) > 0;
-    const { name, yaml } = buildYaml(playT);
-    const file = (part ? name + ".part" : name) + ".yaml";
-    await sdUpload(file, yaml);              // falls back to module memory with no SD
-    // A refused MOVE must not stop the preview and claim the module has it.
-    const said = await robotCmd("MOVE " + file);
-    if (!said.startsWith("OK")) throw new Error(said || "the module did not start it");
+    const fromMs=playT;
+    await cancelSafeMotion('handover');
+    entryHold=true;
+    const started=await startCheckedSequence(fromMs,false);
+    if(!started) {handedOff=false;return;}
     // stop being the clock: the module owns the show now
     playing = false;
     keepAwake(false);
@@ -925,7 +926,8 @@ async function handOffToRobot() {
       + "it keeps going with this page closed. Press Stop to end it.";
   } catch (e) {
     handedOff = false;                       // it did not take: keep previewing
-  }
+    safeMotionNote('Could not hand over: '+e.message,true);
+  } finally {entryHold=false;}
 }
 
 document.addEventListener("visibilitychange", function () {
@@ -983,31 +985,22 @@ async function robotRun() {
   // the first one — which is what the robot's arm would have to travel through.
   // A partial run is written under its own name: <name>.yaml stays the whole
   // show, so running part of it never overwrites the saved sequence.
-  const resumeMs = playT;
-  const part = resumeMs > 0 && keyIndexAtMs(resumeMs) > 0;
-  const { name, yaml } = buildYaml(resumeMs);
-  const file = (part ? name + ".part" : name) + ".yaml";
   const st = $("sdStat");
-  if (st) st.textContent = "sending " + file + " to the robot…";
+  if (st) st.textContent = "checking and sending the sequence to the robot…";
+  let started;
   try {
-    await sdUpload(file, yaml);
+    started=await startCheckedSequence(playT);
   } catch (e) {
-    if (st) st.textContent = "could not send the sequence, so nothing was run — "
+    cancelSafeMotion('sequence start failed');
+    if (st) st.textContent = "could not start the sequence — "
       + (e && e.message ? e.message : e);
     return;
   }
-  const kept = await keepLastRun(yaml, file);
-  const said = await robotCmd("MOVE " + file);
-  // robotCmd answers "" on a failure; the card said "running" anyway.
-  if (!said.startsWith("OK")) {
-    if (st) st.textContent = file + " was sent, but the robot did not start it — "
-      + (said || $("robotStat").textContent || "no answer");
-    notice(st ? st.textContent : "the robot did not start " + file);
-    return;
-  }
+  if(!started) {if(st)st.textContent='Start cancelled; check the current settings and try again.';return;}
+  const {file,name,part,kept}=started;
   if (st) st.textContent = (part
-    ? "the robot is running from the move you picked, to the end — it does not "
-      + "go back to the start. The whole show is still saved as " + name + ".yaml."
+    ? "the robot is running the checked remainder once, including any checked loop return. "
+      + "The whole show is still saved as " + name + ".yaml."
     : "the robot is running " + file + " on its own.")
     + (kept ? " Note: " + kept : keepRunOn() ? " A copy is kept on it as " + LAST_RUN_FILE + "." : "");
   if (kept) notice(kept);

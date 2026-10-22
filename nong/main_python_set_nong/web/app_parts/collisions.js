@@ -100,13 +100,8 @@ function clearBadMarks() { keys.forEach(k => delete k.bad); }
 // stuck; and Play said "the 3D preview will play so you can see where" while
 // hubPlay() and the live sends drove the real arm anyway.
 //
-// Now: the preview always plays — seeing the crash is how you fix it — and the
-// ROBOT only moves if you say so. Forcing is allowed because the check works
-// from the rig's dimensions, and a rig that does not match the real robot can
-// call a safe move a crash. It is your arm; you can see it.
-//
-// The permission lasts for one action. Any edit to the timeline clears it, so
-// a forced run never silently covers a movement you changed afterwards.
+// Preview can show a refused move, but the robot cannot bypass this gate.
+// Match the model and clothing gap in Setup before asking for another route.
 let crashForced = false;
 let previewOnly = false;   // this run draws, but does not drive the arm
 

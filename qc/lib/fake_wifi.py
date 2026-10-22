@@ -103,7 +103,9 @@ class _Module:
             "seq": {"running": False, "file": ""},
             "wifi": {"mode": "sta", "wmode": "on", "ip": "127.0.0.1",
                      "ssid": "qc", "rssi": -50},
-            "module": {"joints": self.joints, "seq": "", "speed": 120},
+            "module": {"joints": self.joints, "seq": "", "speed": 120,
+                       "speed_dps": 120, "moving": False,
+                       "min": [0]*10, "max": [180]*10},
         }
 
 

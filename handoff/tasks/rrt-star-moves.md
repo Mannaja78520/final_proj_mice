@@ -25,6 +25,13 @@ no motion commands issued. Preserve existing browser31-keyframe backup and
 all real calibration. No firmware changes.
 
 ## Doing now
+Integration fixes now include immutable native/hub startup, checked entry,
+request target capture, bound direct serial port/bus, Stop barrier, explicit
+motion state, direct clock ownership, Monitor/follow cancellation, and no
+unsafe override. New dispatch10/0 and seek checks green in last targeted run;
+playback33/2 run found legacy tests using below-physical-floor1000ms moves
+and counting checked resume entry as a hold. Fixed realistic timing fixture,
+await async Play, and measure uninterrupted hold. Rechecking before review.
 Checked dispatch draft added; first combined31/1 exposed faithful fake status
 missing min/max/moving. Added firmware-shaped fields; second32/2 exposed
 dummy test assuming arrival after a fixed sleep. Test now awaits actual move.

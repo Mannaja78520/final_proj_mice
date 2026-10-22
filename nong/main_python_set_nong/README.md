@@ -261,8 +261,13 @@ robot drives). If a collision is found:
   works so you can watch where it goes wrong, and while posing a red banner
   appears in the viewport the moment the current pose collides.
 
-Fix it by editing the red keyframe, or add an in-between keyframe that
-steers around the obstacle, then press **⚠ Check crash** again.
+Studio now finds an RRT* detour between clear endpoints. Colliding endpoints
+are refused. Setup → Movement safety → Extra gap between parts (mm) adds a
+clothing allowance to the existing 4 mm gap (20 extra means 24 mm total).
+Include fabric on both facing parts. This persists in browser settings and
+project rigs. Checked playback uses the same waypoints as its preview and
+waits for reported arrival. Stop or changing the rig cancels pending moves.
+The geometric model must match the real robot; it does not measure clothing.
 
 ## Files
 

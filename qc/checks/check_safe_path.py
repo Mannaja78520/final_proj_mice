@@ -109,17 +109,22 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
     vid += "_hits" + vidHits;
 
     // ---- the robot follows a simulated dummy, live -------------------------
-    var holdSaid = false, recSaid = "";
+    var holdSaid = false, recSaid = "", entryDiagnostic = "";
     if (pairs.length && hitPose) {
       window.confirm = function(){ return true; };
       if (typeof setAskUnsaved === "function") setAskUnsaved(false);
       var A = pairs[0][0], B = pairs[0][1];
+      await qcWaitFor(function(){return !!boardSafeIdentity;});
       var sim = function(p){ for (var j = 0; j < NJ; j++) dummySim[j] = p[j]; };
       document.getElementById("dummySrc").value = "sim"; dummySrcChanged();
       sim(A);
       document.getElementById("dummyFollow").value = "robot"; dummyFollowChanged();
       await wait(900);
-      await lastSafeMove;
+      await qcWaitFor(function(){ return dummySafePose !== null || !!dummyHeld; });
+      var initialArrived=await lastSafeMove;
+      entryDiagnostic = document.getElementById('robotStat').textContent;
+      entryDiagnostic += ' actual=' + (await getStatus()).module.joints.join(',');
+      entryDiagnostic += ' arrived:' + initialArrived + ' dummy:' + document.getElementById('dummyStat').textContent + ' held:' + dummyHeld + ' target:' + JSON.stringify(dummySafePose);
       await rawCmd("MOVE QCMARK SAFE~FOLLOW");
       sim(B); await wait(1200); await lastSafeMove;
       await rawCmd("MOVE QCMARK SAFE~HIT");
@@ -142,7 +147,7 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
            "~ends=" + ends + "~ms=" + ms.join("_") + "~fails=" + fails.join("_").replace(/[^\\w_]/g, "") +
            "~refused=" + refused + "~hitPose=" + !!hitPose + "~keys=" + keysOut +
            "~timeKept=" + timeKept + "~studioClean=" + studioClean +
-           "~straightRefuses=" + straightRefuses + "~holdSaid=" + holdSaid + "~rec=" + recSaid +
+           "~entryDiagnostic=" + entryDiagnostic.replace(/[~=]/g,':') + "~straightRefuses=" + straightRefuses + "~holdSaid=" + holdSaid + "~rec=" + recSaid +
            "~vid=" + vid + "~A=" + (pairs.length ? pairs[0][0].map(fmtA).join(",") : ""));
   }catch(e){ report("ERR-" + String(e).slice(0,70).replace(/[^\\w ]/g, "")); }
   setTimeout(function(){ report("done"); }, 300);
@@ -230,7 +235,7 @@ def run(t):
          "%s poses were sent after the dummy took a hitting pose" % (held and len(held)))
     t.ok(len(follow) >= 2,
          "the dummy's move through the body reached the robot as a way round",
-         "%d poses: a straight follow sends one" % len(follow))
+         "%d poses: a straight follow sends one; %s" % (len(follow), v.get('entryDiagnostic')))
     start = [float(x) for x in v["A"].split(",")] if v.get("A") else None
     rec = v.get("rec", "")
     t.ok(rec.startswith("true_dummy_"), "a recording is kept, and the line says it went round", rec)
