@@ -3,7 +3,7 @@
 Owner: codex:10221534-bb09
 Updated: 2026-10-22T16:07:17.980701+07:00
 Branch: task/A45-27-10221534-bb09
-Last commit: 555f728
+Last commit: ef9b569 (fresh cache fix checkpoint follows)
 Plan: A45-27; A45-26 PC deployment continuation
 
 ## Goal
@@ -17,7 +17,11 @@ Plan: A45-27; A45-26 PC deployment continuation
 - One same-provider independent design/code reviewer found and verified fixes: automatic default writes, legacy-key read redaction, FAQ/search dirty-state tracking. No remaining blocker in bounded source review.
 
 ## Doing now
-Full quiet QC on the stable integration tree before PR/merge. All6 sabotage cases caught (4 original +2 gesture guards), each restored green; related239/0 before integration, final targeted72/0 including actual Edge. No hardware moved.
+Full quiet QC restart after final-diff inspection found a fresh cache-directory issue.
+Fixed confined recursive cache creation; actual _spoken first-use and cache replay tested.
+All7 sabotages caught and restored green (4 core +2 gesture guards +1 fresh cache).
+Related239/0 before integration; integration72/0 before3 new cache assertions. No hardware moved.
+Initial full attempt explicitly terminated before completion; no approval claimed for it.
 
 ## Next
 1. Complete2 gesture integration sabotages (original4/4 already caught) then run required full quiet QC. Fake Brain compatibility fixed and verified239/0.

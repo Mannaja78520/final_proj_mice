@@ -155,6 +155,7 @@ class Profiles:
         brain.styles_path = styles
         # Derived audio is kept out of the immutable default snapshot, too.
         brain.cache_dir = self.confined(self.root / ".cache" / self.active)
+        brain.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def create(self, name, source):
         name = self.name(name)

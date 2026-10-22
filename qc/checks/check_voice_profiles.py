@@ -93,6 +93,15 @@ def run(t):
                 output.setnchannels(1); output.setsampwidth(2); output.setframerate(16000)
                 output.writeframes(b"\x01\x00" * 1600)
             sound = wav.getvalue()
+            made = []
+            def make_sound():
+                made.append(True)
+                return sound, None
+            t.eq(brain._spoken("profile-test", "first line", "", "", make_sound)[0], sound,
+                 "a fresh character can generate its first sound and cache it")
+            t.eq(brain._spoken("profile-test", "first line", "", "", make_sound)[0], sound,
+                 "the character replays its generated audio")
+            t.eq(len(made), 1, "the second line uses the character's actual cache")
             upload = {"action": "upload", "kind": "audio", "name": "hello.wav",
                       "data": base64.b64encode(sound).decode(), "revision": revision}
             status, uploaded = request("/profiles", upload)
