@@ -1,9 +1,9 @@
 # Nong Studio: dynamic URDF display and motion parity
 
-Owner: claude:10222214-b01b (cloud thread "Studio URDF view mode")
-Updated: 2026-10-23 (cloud, Bangkok morning)
-Branch: claude/project-thread-wvmxq5 (from task/A48-1-10230507-3ac1 @7b7a904)
-Tree: cloud clone (repo root); PC tree .staging-urdf-studio unused
+Owner: codex:10231353-0401
+Updated: 2026-10-23T13:54:40.404140+07:00
+Branch: codex/continue-urdf-1023
+Tree: E:/final_proj/mice/code/.staging-continue-urdf
 Last commit: c82daa6 (base; handoff-only WIP commit follows)
 Plan: A48-1 (robot page)
 
@@ -16,7 +16,7 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-- A48-8/9/10: full QC, PR, merge, PC steps.
+User-authorized Claude limit takeover of f8a9576: independent Codex review, targeted and full QC, then integrate/deploy preserving PC user data. No physical motion.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
