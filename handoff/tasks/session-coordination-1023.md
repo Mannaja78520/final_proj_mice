@@ -1,20 +1,23 @@
 # Existing sessions and Gemini continuation
 
-Owner: codex:10231859-coord
-Updated: 2026-10-23T19:01:20.709653+07:00
+Owner:
+Updated: 2026-10-23T19:06:05.255899+07:00
 Branch: codex/coordination-1023
 Tree: E:/final_proj/mice/code/.staging-coordination-1023
-Last commit: 024fc12 initial checkpoint; see git log for this result update
+Last commit: dbd7ba5 Gemini result checkpoint; see git log for final coordination checkpoint
 Plan: A0-34 (robot)
 
 ## Goal
 Finish pending work including Claude; resume six existing sessions, prioritize authorized real robot testing and verify portable Gemini handoffs.
 
 ## Doing now
-Gemini response/file-access check succeeded. Monitoring original task owners through final gate/deployment and dedicated hardware tests. No source, QC, hardware, services, camera or deployment resources held by this chat.
+Coordination/readiness audit complete. Integration and Lab chats remain active on their own tasks; this chat holds no resources. All metadata claims released.
 
 ## Done
 - Six existing chats resumed via authorized send_message_to_thread, all accepted.
+- GitHub connector open PR search returned none; older Claude branches include work already merged as #32/#34/#36. No old branch merged blindly.
+- Real Lab WiFi probe reached nong67 idle at HOME, angles matched saved neutral. COM9/10 did not answer INFO. No motion or flash yet. Lab released identity window before integration gate.
+- Integration now owns A48-11/A47-18, restored Face/CAD rows, fixed receipt input scope with checks that source/config/test edits still invalidate receipts. Final review/full gate/deployment still in progress; do not claim complete.
 - Sole hardware executor: Lab chat01a167a0-2a75-7c93-89ea-81df71a29ff4.
 - URDF source/QC owner01a16787-933e-7d81-97a1-0a3561d110b9; final deployment01a1679e-50a4-7e71-9cfb-64b6afa635c1 must receive explicit release.
 - Face/Photobooth01a1678d-8e2e-76a0-a93d-1d68575115cd, gacha01a1678d-8bba-7a81-83b9-673cbec98fa1 and native axes01a16792-f8a8-7cc0-9cde-33619c83b8e7 retain their own task files.
@@ -31,7 +34,7 @@ Gemini response/file-access check succeeded. Monitoring original task owners thr
 
 ## Next
 1. Gemini file read verified; future Gemini resumes from HANDOFF.md plus named task, then verifies live claims/processes before acting.
-2. Update this task after session results; preserve per-owner task handoffs and exclusive resources.
+2. For further results use the active integration/Lab task files, not this completed readiness audit; message existing chats only when authorized.
 3. Integration must pass current final gate before deployment; Lab then runs bounded actual hardware tests.
 
 ## Blocked
