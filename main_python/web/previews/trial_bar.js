@@ -5,7 +5,9 @@
   function bar() {
     const b = document.createElement("div");
     b.className = "trial-bar";
-    b.innerHTML = '🧪 Trial look (หน้าทดลอง) · <a href="' + real + '">open the real page</a>';
+    b.innerHTML = '🧪 <span class="trial-words">Trial look (หน้าทดลอง) ·</span> <a href="' + real +
+      '">real page</a><button type="button" title="hide this" aria-label="hide this">✕</button>';
+    b.querySelector("button").onclick = () => b.remove();
     document.body.appendChild(b);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bar);
