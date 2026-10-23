@@ -12,7 +12,7 @@ User 2026-10-23: "🎁 Prize machines ขอเป็น tab เพื่อใ�
 Sheet link and the hub reads AND writes it. No key in git; the way is config, not one route.
 
 ## Doing now
-Full QC (`python qc/run_qc.py --quiet`), then PR + merge.
+Second full QC after adding shared Mice.Tabs (mice-ui.js + .tabbed in mice.css), then merge PR #70.
 
 ## Facts found
 - apps/gacha/index.html: one long page, 11 cards; all JS inline; Mice.Api for every call.
@@ -42,3 +42,14 @@ Full QC (`python qc/run_qc.py --quiet`), then PR + merge.
 
 ## Blocked
 - nothing (real Google Sheet test needs the user's sheet: lab-day or user later).
+
+## Widened ask (user 2026-10-23 05:38Z, 05:43Z)
+- Tabs like Face_Regonize on every app page except Studio; Voice first after Prize machines
+  (settings + each answer in tabs after login). Then TRIAL pages next to the real ones:
+  Studio with the new tabs, Help split by topic (separate preview links, nothing replaced).
+- Face_Regonize (read only): frontend/src/components/Layout.tsx = left sidebar NAV list,
+  one page per section; components/ui.tsx:122 `Tabs` = pill row for filters.
+- Shared part: Mice.Tabs (shared/web/mice-ui.js) + `.tabbed` (shared/web/mice.css), held by
+  check_mice_tabs (browser, wide = beside, phone = above; sabotage 3/3). mice_nong flash 82.9% after.
+- Full QC #1 (before Mice.Tabs): 7815 pass; only the known receipt refusal (qc_chain_proj.json
+  rewrite) + 5 crowd flakes (modsite_*, studio_peer) that pass alone.

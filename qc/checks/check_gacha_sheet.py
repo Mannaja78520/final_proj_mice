@@ -116,7 +116,7 @@ def run(t):
     try:
         # ---- the page: tabs ------------------------------------------------
         page = (ROOT / "apps" / "gacha" / "index.html").read_text(encoding="utf-8")
-        tabs = re.findall(r'\["(\w+)", "[^"]+"\]', page[page.index("const TABS"):page.index("const TAB_LOAD")])
+        tabs = re.findall(r'\["(\w+)", "[^"]+", "[^"]+"\]', page[page.index("const TABS"):page.index("const TAB_LOAD")])
         cards = re.findall(r'<div class="card"([^>]*)>', page)
         named = [re.search(r'data-tab="(\w+)"', c) for c in cards]
         untabbed = [c for c, n in zip(cards, named) if not n and 'id="loginHere"' not in c]
@@ -124,8 +124,8 @@ def run(t):
         t.ok(len(tabs) >= 6 and not untabbed and used == set(tabs),
              "every card of the page sits in a tab and every tab shows a card",
              {"tabs": tabs, "cards in tabs": sorted(used), "cards in no tab": untabbed})
-        t.ok('<nav class="tabs"' in page and 'class="tab"' in page and "c.hidden = c.dataset.tab !== id" in page,
-             "the tab row uses the shared tab look and hides the other tabs' cards", "apps/gacha/index.html")
+        t.ok('<div class="tabbed"><nav id="tabs">' in page and "new Mice.Tabs(" in page,
+             "the page is built on the shared Mice.Tabs (side list, one section at a time)", "apps/gacha/index.html")
 
         # ---- the script the user pastes carries this hub's secret ----------
         code, got = _call(base, "/api/gacha/sheet/script")

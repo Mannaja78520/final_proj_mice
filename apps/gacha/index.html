@@ -24,9 +24,9 @@
 
 <div class="card" id="loginHere"></div>
 
-<!-- One tab per job (user 2026-10-23: tabs, not one long scroll). The row is
-     drawn from TABS in the script; each card names its tab in data-tab. -->
-<nav class="tabs" id="tabs" role="tablist"></nav>
+<!-- One tab per job (user 2026-10-23: tabs, not one long scroll). Mice.Tabs
+     draws the list from TABS in the script; each card names its tab in data-tab. -->
+<div class="tabbed"><nav id="tabs"></nav><div>
 
 <div class="card" data-tab="give">
   <h2>Give a prize</h2>
@@ -225,6 +225,8 @@ Examples: docs/gacha/README.md</pre>
   <div class="wrapx"><table class="gt" id="logT"><thead><tr><th>When</th><th>What</th><th>Machine</th><th>Kind</th><th>Person</th><th>From</th><th>Admin</th><th>Words</th></tr></thead><tbody></tbody></table></div>
   <div class="row"><button onclick="loadLog()">Refresh</button><a href="/api/gacha/log?limit=0&csv=1" download="gacha_log.csv">Download all as a file</a></div>
 </div>
+
+</div></div>
 
 <script>
 // Everything goes through the hub (/api/gacha/*, main_python/hub_api_gacha.py);
@@ -539,19 +541,12 @@ async function vpSave() {
 }
 
 // ---- tabs: one job each; the open one is kept in the address (#sheet) ----
-const TABS = [["give", "🎁 Give"], ["machines", "Machines and kinds"], ["rules", "Rules"], ["sheet", "Google Sheet"],
-              ["games", "Games and Voice"], ["apps", "Other apps"], ["words", "Words"], ["log", "Prizes given"]];
-const TAB_LOAD = {sheet: shLoad, log: loadLog};
-function showTab(id) {
-  if (!TABS.some(t => t[0] === id)) id = TABS[0][0];
-  document.querySelectorAll("[data-tab]").forEach(c => { c.hidden = c.dataset.tab !== id; });
-  document.querySelectorAll("#tabs .tab").forEach(b => { const on = b.dataset.t === id; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
-  if (location.hash !== "#" + id) history.replaceState(null, "", "#" + id);
-  if (TAB_LOAD[id]) TAB_LOAD[id]();
-}
-$("tabs").innerHTML = TABS.map(([id, w]) => '<button class="tab" role="tab" data-t="' + id + '" onclick="showTab(\'' + id + '\')">' + w + '</button>').join("");
-window.addEventListener("hashchange", () => showTab(location.hash.slice(1)));
-showTab(location.hash.slice(1));
+const TABS = [["give", "Give a prize", "🎁"], ["machines", "Machines and kinds", "🧰"], ["rules", "Rules", "📋"],
+              ["sheet", "Google Sheet", "📄"], ["games", "Games and Voice", "🎮"], ["apps", "Other apps", "🔗"],
+              ["words", "Words", "💬"], ["log", "Prizes given", "📊"]];
+const TAB_LOAD = {sheet: () => shLoad(), log: () => loadLog()};
+const tabs = new Mice.Tabs("tabs", TABS.map(([id, label, icon]) => ({id, label, icon, load: TAB_LOAD[id]})));
+const showTab = id => tabs.show(id);
 
 drawHooks();
 vpLoad();
