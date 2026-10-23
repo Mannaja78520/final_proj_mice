@@ -1,10 +1,10 @@
 # Prize machines tabs + Google Sheet: PC reconciliation
 
 Owner: codex:10231359-8856
-Updated: 2569-10-23 07:01Z
+Updated: 2026-10-23 07:04Z
 Branch: codex/gacha-reconcile-1023
 Tree: E:/final_proj/mice/code/.staging-gacha-reconcile
-Last commit: baseline 993862e (PR #75)
+Last commit: f83bfad (pre-audit checkpoint); source baseline 993862e
 Plan: A47-14/15/16 done; A47-17 trial pages; A47-18 PC reconciliation/deployment
 
 ## Goal
@@ -14,11 +14,9 @@ and coordinate one final hub build with parent chat 01a16787-933e-7d81-97a1-0a35
 Preserve Studio/Help trials until the user chooses keep/drop. A47-5 remains hardware-only.
 
 ## Doing now
-Audit actual local hub and redacted config presence. Read-only HTTP/files only.
-Parent codex:10231353-0401 owns QC/fake browser, URDF and eventual hub build/restart.
-No QC, heavy model loads, hardware movement, external sheet calls or service changes.
-Own only this task file, serialized A47-17/18 plan metadata, isolated metadata tree,
-and private scratch/gacha-reconcile-1023. Human authorizes parent coordination.
+Reconcile stale A47-17 status using live preview evidence, then hand A47-18 final
+combined deployment to parent. Parent holds all QC/fake browser/build/restart resources.
+No source edits required: all requested gacha/tabs/trial implementation is already merged.
 
 ## Facts found
 - GitHub API 2026-10-23 confirms all four PRs merged: #70 c73488d,
@@ -44,11 +42,29 @@ and private scratch/gacha-reconcile-1023. Human authorizes parent coordination.
 - Created isolated metadata worktree from merged #75. Main dirty files remain untouched.
 - Parent notified: no QC/build/restart competition; requested gacha/tabs/previews in final gate.
 
+## Runtime audit (2026-10-23; actual PC, not a fake gate)
+- Evidence: real root scratch/gacha-reconcile-1023/runtime-audit.json (redacted).
+- Actual exe dist/MiceHub.exe (PIDs9080/33336), no MICE_GACHA_CONFIG/DATA overrides.
+  /api/version HTTP200, built 2026-10-23 13:25, stale:false. A stale:false response alone
+  does not prove the latest assets: root is #74 while parent source includes #75.
+- /app/gacha/, /app/voice/app.js and /mice-ui.js HTTP200; SHA256 matches #75 baseline.
+- /studio/preview.html and /help-preview HTTP200; all registered files injected and
+  data-real links present. All10 preview/page asset requests HTTP200.
+- /studio/ and /help match actual root page text exactly; neither has trial injections.
+- Live trial_bar.css=505B and trial_bar.js=624B match #74 root; both differ from #75.
+  Parent includes #75 (993862e): final build/deploy must serve its mobile/close fix.
+- Effective /api/gacha rules: no Sheet link or CSV links, machines0. Offline config:
+  no script URL, key override, service key or secret at root/dist/main_python local paths.
+  No external Sheet call, secret generation, real Google write or hardware command.
+- All checks here are read-only HTTP/content/config assertions. No QC/browser gate,
+  new screenshot, model load, service restart or build was performed by this chat.
+
 ## Next
-1. Audit live HTTP availability/assets and running exe paths; inspect effective gacha config
-   presence only, including external overrides, dist copy and local service-key presence.
-2. Update exact evidence and pending deployment instructions; close A47-17 only on evidence.
-3. Send result/branch to parent so one verified build includes merged gacha/trials.
+1. Under shared mutex close A47-17 (merged trials + real HTTP/content evidence).
+2. Parent final combined gate includes gacha/gacha_sheet/mice_tabs/previews, then builds
+   MiceHub.spec and deploys once. Recheck trial_bar.css/js hashes against #75 after restart.
+3. Parent takes A47-18 for that final integration and completion. Preserve real pages,
+   dirty user data, trial pages, no real Sheet write without explicit authorization.
 
 ## Blocked
 - Real Google read/write requires a configured Sheet and authorized Google setup/write test.
