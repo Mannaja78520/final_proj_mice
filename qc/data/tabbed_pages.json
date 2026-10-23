@@ -1,0 +1,7 @@
+{
+  "_why": "Hub app pages built in sections on Mice.Tabs (user 2026-10-23: tabs like the friend's Reconize app on every app page except Nong Studio). A page moved to Mice.Tabs is one entry here; check_mice_tabs holds each to the shared markup.",
+  "pages": [
+    {"file": "apps/gacha/index.html", "script": "apps/gacha/index.html"},
+    {"file": "apps/voice/index.template.html", "script": "apps/voice/app.js"}
+  ]
+}

@@ -1,4 +1,13 @@
 "use strict";
+// The page's sections, in the side list (Mice.Tabs). A new section is one
+// entry here and one element with data-pane="<id>" in index.template.html.
+const VOICE_TABS = [
+  {id: "talk", label: "Talk", icon: "🎤"}, {id: "answers", label: "Answers", icon: "📝"},
+  {id: "voice", label: "Voice", icon: "🔊"}, {id: "listen", label: "Listening", icon: "👂"},
+  {id: "services", label: "Who does it", icon: "🧩"}, {id: "who", label: "Personality", icon: "🙂"},
+  {id: "faces", label: "Faces", icon: "👤"}, {id: "questions", label: "Questions", icon: "📊"},
+  {id: "adv", label: "Advanced", icon: "⚙", tech: true}];
+
 class VoiceApp {
   constructor() {
     this.$ = id => document.getElementById(id);
@@ -1860,10 +1869,7 @@ static langName(code){
 }
 
   showTab(name){
-  const all = sel => (document.querySelectorAll ? [...document.querySelectorAll(sel)] : []);
-  all("#setTabs .tab").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
-  all("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== name; });
-  try { localStorage.setItem("voice_tab", name); } catch(e) {}
+  if (this.tabs) this.tabs.show(name);
 }
 
   async loadStores(){
@@ -3278,8 +3284,14 @@ static SAMPLES = {
 
     // The open tab is remembered; Advanced is not, since it hides with the
     // technical switch and would leave an empty settings area.
-    const tab = keep("voice_tab", "answers");
-    this.showTab(tab === "adv" ? "answers" : tab);
+    // The side list (Mice.Tabs, user 2026-10-23): one section at a time, the
+    // open one in the address (#answers) so a reload lands on it.
+    const tab = keep("voice_tab", "talk");
+    if (window.Mice && Mice.Tabs && this.$("setTabs") && this.$("setTabs").classList)
+      this.tabs = new Mice.Tabs("setTabs", VOICE_TABS.map(t => Object.assign({}, t,
+        t.id === "questions" ? {load: () => this.loadQuestions()} : {})), {
+        attr: "pane", start: tab === "adv" ? "talk" : tab,
+        onShow: id => { try { localStorage.setItem("voice_tab", id); } catch(e) {} }});
 
     // Unsaved answers are not lost to a closed tab.
     if (typeof window.addEventListener === "function")

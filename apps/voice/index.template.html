@@ -53,6 +53,11 @@
     <p class="mini tech">Or start it by hand: <code>python apps\voice\service.py</code></p>
   </div>
 
+  <!-- One section at a time from the side list (Mice.Tabs, user 2026-10-23:
+       "voice ส่วนใหญ่จะต้องเลื่อนลงด้านล่าง ... ให้มี tab แก้แบบ face reg").
+       Talk is a section like the settings, so no setting sits under it. -->
+  <div class="tabbed"><nav id="setTabs"></nav><div>
+  <div data-pane="talk">
   <div class="card" id="ready" hidden>
     <!-- What is working, in words; the helper's own lines behind the switch. -->
     <div class="row between">
@@ -119,27 +124,16 @@
     </div>
   </div>
 
+  </div>
+
   <!-- SETTINGS (A20-12, made tabs A42-1). Everything the store holds, one
        topic per tab, in designer words. Reading is open; every save goes
        through the gated /api/voice/config and /api/voice/faq. -->
   <section id="settings" hidden>
-    <h2>Settings</h2>
-    <div class="tabs" id="setTabs" role="tablist">
-      <button class="tab on" data-tab="answers" onclick="showTab('answers')">Answers</button>
-      <button class="tab" data-tab="voice" onclick="showTab('voice')">Voice</button>
-      <button class="tab" data-tab="listen" onclick="showTab('listen')">Listening</button>
-      <button class="tab" data-tab="services" onclick="showTab('services')">Who does it</button>
-      <button class="tab" data-tab="who" onclick="showTab('who')">Personality</button>
-      <button class="tab" data-tab="faces" onclick="showTab('faces')">Faces</button>
-      <button class="tab" data-tab="questions" onclick="showTab('questions');voiceApp.loadQuestions()">Questions</button>
-      <button class="tab tech" data-tab="adv" onclick="showTab('adv')">Advanced</button>
-    </div>
-    <p class="mini not-adv">The helper's address and the AI model are under
-       Advanced, which appears with Show technical details on.</p>
 
     <!-- ANSWERS: a sheet. Every cell is typed into where it stands; one Save
          sends them all. Nothing jumps to a form somewhere else. -->
-    <div class="card" data-pane="answers">
+    <div class="card" data-pane="answers" hidden>
       <div class="row">
         <input id="ansFind" type="search" placeholder="Find an answer…" oninput="findAnswers()">
         <button onclick="addAnswerRow()">＋ Add a row</button>
@@ -400,4 +394,5 @@
       </div>
     </div>
   </section>
+  </div></div>
 </div>
