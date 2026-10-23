@@ -106,7 +106,7 @@
 
     {"id": "app-gacha", "summary": "Prize machines (gachapon): several gacha boards, kinds, hand-over when one is empty, rules per event and person (local or Google Sheet), webhooks, the prize log; and which Voice answers give a prize plus the Voice question log (A47-2, A47-3); wins in the friend's games (/play/<id>/ + apps/all-jao/link.js) and app keys for other PCs (A47-6, A47-7).",
      "files": ["apps/gacha/", "config/gacha.json", "config/voice_topics.json", "config/voice_prizes.json",
-               "main_python/gacha.py", "main_python/hub_api_gacha.py", "main_python/voice_prizes.py",
+               "main_python/gacha.py", "main_python/gacha_sheet.py", "main_python/hub_api_gacha.py", "main_python/voice_prizes.py",
                "docs/gacha/", "apps/all-jao/link.js"],
      "checks": ["check_gacha*", "check_game_prize"],
      "depends": ["fw-gacha", "app-voice", "app-faces"]},

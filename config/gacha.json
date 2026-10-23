@@ -16,10 +16,18 @@
   "items": {},
   // the event every machine is told about (Start / Close / New event)
   "event": {"name": "", "open": true},
-  // rules: "local" (the page) and optional Google Sheet tabs published as CSV,
-  // plus an optional Apps Script address to send them back (docs/gacha/).
+  // rules: kept on the page; a Google Sheet can hold them too (A47-15,
+  // main_python/gacha_sheet.py). sheet_link = the pasted sheet address;
+  // sheet_way auto | script | service | link (read only); sheet_write_url = the
+  // sheet's Apps Script web app (apps/gacha/sheet_script.gs); sheet_key_file =
+  // a service account key, default .local/gacha/google_service.json (never git);
+  // sheet_tabs {items, people, log} renames the tabs; sheet_auto_push writes
+  // every saved rule, sheet_log adds a row per prize. sheet_*_csv: the older
+  // published-CSV links, used only when no sheet_link is set.
   "rules": {"source": "local", "sheet_items_csv": "", "sheet_people_csv": "",
-            "sheet_write_url": ""},
+            "sheet_write_url": "", "sheet_link": "", "sheet_way": "auto",
+            "sheet_key_file": "", "sheet_tabs": {}, "sheet_auto_push": false,
+            "sheet_log": false},
   // other apps told about: dispensed, empty, out, low, refused, jam
   // (lists of http addresses; each gets a JSON POST, see docs/gacha/README.md)
   "webhooks": {},

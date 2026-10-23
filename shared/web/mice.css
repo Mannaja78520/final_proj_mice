@@ -187,6 +187,18 @@ input[type=color]{padding:2px;width:56px;height:40px}
 .tab.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
 @media (pointer:coarse){ .tab{padding:11px 18px} }
 
+/* A page in sections (Mice.Tabs): the list of sections down the side on a
+   wide screen, the content beside it; a wrapping row on top on a phone. The
+   layout of the friend's Reconize app, asked 2026-10-23 so settings are a
+   click away, not a long scroll. The page frame widens to fit the list. */
+body.page:has(.tabbed){max-width:1180px}
+@media (min-width:900px){
+  .tabbed{display:grid;grid-template-columns:210px minmax(0,1fr);gap:var(--sp-4);align-items:start}
+  .tabbed>.tabs{flex-direction:column;flex-wrap:nowrap;margin:0;position:sticky;top:var(--sp-4)}
+  .tabbed>.tabs .tab{text-align:left;border-radius:var(--r-sm)}
+  .tabbed>div>.card:first-child{margin-top:0}
+}
+
 /* ------------------------------------------------- the states people forget */
 /* An error keeps the last good data on screen and says it is old, rather than
    blanking the panel or presenting stale rows as live. Colour is never the
