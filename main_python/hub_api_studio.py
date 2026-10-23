@@ -212,6 +212,17 @@ class StudioRoutes:
             return self.send_json({"ok": True, "file": "rig_default.json",
                                    "keys": len(rig)})
 
+        if path == "/api/rigcad" and method == "POST":
+            # A48-6: "Use the CAD's sizes" (or putting the old shapes back)
+            # pressed on one browser, kept here so every browser adopts it.
+            # {at, parts} or {at, parts: null} for undone; a stamp per press.
+            data = json.loads(self.body().decode())
+            at, parts = data.get("at"), data.get("parts")
+            if not isinstance(at, str) or not at or not (parts is None or isinstance(parts, dict)):
+                return self.send_err("that does not look like rig parts from the CAD")
+            _hub.write_atomic(_hub.RIG_CAD_FILE, json.dumps({"at": at, "parts": parts}, indent=1))
+            return self.send_json({"ok": True, "at": at})
+
         if path == "/api/settings" and method == "POST":
             # Studio's whole setup, parked on THIS hub so another PC can pull
             # it. The browser is the only place these settings live (they are

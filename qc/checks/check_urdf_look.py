@@ -434,7 +434,11 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
       URDF_CFG.rigFromCad.take = take;
       var oldGeo = JSON.stringify([RIG.tilt, RIG.after, RIG.mount, RIG.order, RIG.dims]), sv0 = servo(), j0 = joints();
       var cad6 = P6.map(pts), r6 = { btn: !$("rigCadMake").hidden, label: $("rigCadMake").textContent };
+      var other = mergeRig(JSON.parse(JSON.stringify(RIG)));      // a browser that never pressed it
       r6.made = rigFromCad();
+      var sv = await served(RIG.view.cadAt);
+      r6.shared = !!(sv && sv.parts && rigCadAdopt(other, sv)) && JSON.stringify([other.dims, other.mount, other.tilt, other.order]) === JSON.stringify([RIG.dims, RIG.mount, RIG.tilt, RIG.order])
+                  && !!other.view.oldRig && !rigCadAdopt(other, sv);
       await until(function(){ return urdfOn && urdfTip.L.fromMesh && urdfTip.R.fromMesh; }, 15000);
       r6.fit = urdfLast.fit.map(function(f){ return f.deg; });
       // the CAD keeps its shape; it only slides so the waist turns on the
@@ -456,13 +460,40 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
       var kept = mergeRig(JSON.parse(localStorage.getItem("nong_rig")));
       r6.kept = JSON.stringify([kept.tilt, kept.after, kept.mount, kept.order, kept.dims]) === JSON.stringify([RIG.tilt, RIG.after, RIG.mount, RIG.order, RIG.dims]) && !!kept.view.oldRig;
       r6.back = rigOldBack();
+      var sb = await served(RIG.view.cadAt);
+      r6.sharedBack = !!(sb && sb.parts === null && rigCadAdopt(other, sb)) && JSON.stringify([other.dims, other.mount]) === JSON.stringify([RIG.dims, RIG.mount]);
       r6.oldSame = JSON.stringify([RIG.tilt, RIG.after, RIG.mount, RIG.order, RIG.dims]) === oldGeo && !RIG.view.oldRig && servo() === sv0;
       return r6;
+    }
+    // what every other browser of this hub gets: /rig_default.js carries it
+    async function served(at){
+      var c = null;
+      for (var k = 0; k < 40; k++) {
+        var txt = await fetch("/rig_default.js").then(function(x){ return x.text(); });
+        var mm = /window\.NONG_RIG_CAD = ([\s\S]*?);\n/.exec(txt);
+        c = mm ? JSON.parse(mm[1]) : null;
+        if (c && c.at === at) return c;
+        await sleep(100);
+      }
+      return c;
     }
     var take0 = URDF_CFG.rigFromCad.take.slice();
     var r6 = await make6(take0);
     var r7 = await make6(take0.concat(["joints"]));
     URDF_CFG.rigFromCad.take = take0;
+    // the way back through the question: the box then shows the shapes, and
+    // what it says wraps instead of widening the panel over the 3D view
+    await another(CFG.rig2, "qc_bot5/urdf/qc_bot5.urdf"); await setLook("urdf");
+    await until(function(){ return urdfOn && urdfTip.L.fromMesh && urdfTip.R.fromMesh; }, 15000);
+    $("viewCube").classList.add("open");
+    var w0 = $("viewCube").getBoundingClientRect().width;
+    var going = setLook("rig");
+    await until(function(){ return $("lookAsk").open; }, 3000);
+    $("lookUseCad").click(); await going;
+    var r8 = { look: $("lookSel").value, on: urdfOn, stat: $("lookStat").textContent, cad: RIG.view.sizes,
+               said: $("rigCadStat").textContent.length, w0: Math.round(w0), w1: Math.round($("viewCube").getBoundingClientRect().width) };
+    rigOldBack();
+    report("res8=" + JSON.stringify(r8).replace(/[~ ]/g, "_"));
     report("res6=" + JSON.stringify(r6).replace(/[~ ]/g, "_"));
     report("res7=" + JSON.stringify(r7).replace(/[~ ]/g, "_"));
 
@@ -528,6 +559,7 @@ def run(t):
             real_rel = urdfs[0].relative_to(models).as_posix() if urdfs else ""
         base, main = F.start_hub()
         main.MODELS = models
+        main.RIG_CAD_FILE = models / "rig_cad.json"     # never the PC's own
         fake_serial.NONG.joints = [float(v) for v in MON_POSE]
         rig2 = {k: RIG2[k] for k in ("axis", "tilt", "invert", "zero", "min", "max", "home")}
         real_rig = {}
@@ -626,6 +658,8 @@ def run(t):
              "and keep every joint (axis, tilt, order) and servo number of the rig; the CAD stays put", r6)
         t.ok("moved" in r6["stat"] and r6["backBtn"] and r6["kept"],
              "it says how far the hands moved at home, offers the old shapes back, and is kept over a reload (%s)" % r6["stat"], r6)
+        t.ok(r6["shared"] and r6["sharedBack"],
+             "the hub keeps it for every browser: one that never pressed it takes the same parts once, and the undo too", r6)
         t.ok(r6["back"] and r6["oldSame"] and r7["back"] and r7["oldSame"],
              "'Put my old shapes back' brings back exactly the old rig", [r6, r7])
         t.ok(r7["made"] and r7["cadAgain"] < 0.5 and all(d < 0.5 for d in r7["fit"]),
@@ -633,6 +667,13 @@ def run(t):
         t.ok(r7["shapesOn"] and r7["err"] < 1 and r7["servoSame"],
              "and the shapes land where the CAD does: elbows, hands, palms, 15 poses (worst %s mm), servo numbers unchanged"
              % r7["err"], r7)
+    got8 = next((m for m in marks if m.startswith("res8=")), "")
+    if t.ok(got8, "the driver went back to the shapes through the question", marks[-3:]):
+        r8 = json.loads(got8[5:])
+        t.ok(r8["look"] == "rig" and not r8["on"] and r8["stat"] == "" and r8["cad"] == "cad",
+             "choosing the CAD's sizes on the way back shows the simple shapes in the box, no CAD warnings left", r8)
+        t.ok(r8["said"] > 40 and r8["w1"] <= max(r8["w0"], 240),
+             "its long message wraps inside the views panel (%s px, was %s)" % (r8["w1"], r8["w0"]), r8)
     got5 = next((m for m in marks if m.startswith("res5=")), "")
     if t.ok(got5, "the driver measured a CAD drawn its own way", marks[-3:]):
         r5 = json.loads(got5[5:])

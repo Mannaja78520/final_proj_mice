@@ -16,10 +16,7 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-- A48-6 (user 2026-10-23 "เอาให้เหมือน cad"): Rig made FROM the CAD. New rig fields after
-  (turn after each servo), mount (per-shoulder offset), order (CAD chain order per arm);
-  app_parts/rig_from_cad.js computes them at the zero pose; zero/home/invert/min/max kept
-  (servo numbers unchanged); old rig kept in RIG.view.oldRig; button + dialog choice.
+- A48-7: full QC, PR, merge; then PC steps.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
@@ -108,19 +105,7 @@ Plan: A48-1 (robot page)
 - A48-2: left arm agree 1.00, right arm still wrong (R_SH_P -0.22, R_EL_R -0.93).
   Screenshots scratch/deploy-a48-{1,2}-2026-10-23/ on the PC. Studio put back each time.
 
-## PC check after A48-3 (2026-10-23 06:45, claude:xdlrot)
-- main ce99f69, build_web, systems build, exe rebuilt (stale=false ed5ace9ea74b), hub restarted.
-- check_urdf_look (real model): 33/34, real-model case still FAILS.
-  Fit L 15.7 deg (up 14.6) swapSh, R 11.4 deg (up 11.4) swapSh; swapEl false both.
-  Agree from home: left 1.00 x4, WAIST/SHRUG 1.00; R_SH_P -0.62, R_SH_R 0.43, R_EL_P -0.39,
-  R_EL_R 0.71. Bindings as A48-2 except R_SH_P=R_SH_R now (+).
-- qc/_urdf_real.json (git-ignored) sent to the coordinator in full. Note in it: the right
-  hand tip is NOT from the mesh (`fromMesh: false`, local [145.8, 63.0, -91.0]) while the
-  left one is (`fromMesh: true`, [-1.9, 4.7, -181.7]) - a likely cause of the right arm fit.
-- Studio Views CAD: warnings "left up to 16 deg, right up to 21 deg". Raising each shoulder
-  pitch +60 (Left / Right views): both CAD arms swing forward like the shapes, the right
-  forearm sits differently. Screenshots scratch/deploy-a48-3-2026-10-23/{left,right}-up-*.png.
-  Back to Simple shapes, old pose and sizes.
+## PC check after A48-3 (06:45): 33/34; right tip not from the mesh (fixed in A48-4).
 
 ## Round 4 (A48-4): right forearm STL now downloads once (`urdfLoading`); check waits for both tips.
 
@@ -138,9 +123,19 @@ Plan: A48-1 (robot page)
 - CAD look base shift uses the shapes' middle incl. mount (waist on the shapes' line).
 - Not done: tools/make_urdf.py ignores after/mount/order (fine for the default rig).
 
+## PC check after A48-6 (12:50, claude:xdlrot) + round 7 (A48-7, claude:wvmxq5)
+- PC: 45/45; button said hands moved 4 / 4 mm; shoulderX 91.738, foreLen 181.81, shrugPivot
+  0 -> 63.33, mount L [2.41,3.49,0] R [2.41,-3.49,0]; joints unchanged. Screens on the PC
+  scratch/deploy-a48-6-2026-10-23/. Found: per-browser only; dialog path left a stale box;
+  the long message widened the panel.
+- A48-7: hub file rig_cad.json (git-ignored, main.RIG_CAD_FILE) via POST /api/rigcad,
+  served as NONG_RIG_CAD in /rig_default.js; rig_data.js rigCadAdopt() takes it once per
+  stamp on load (own rig kept in view.oldRig; parts null = put back). setLook re-renders
+  the box; #rigCadStat wraps at 220 px.
+
 ## Next
-1. PC: pull, build_web, systems build, rebuild exe; Views > Robot look = CAD, press
-   "Use the CAD's sizes and shoulder spots", note the hand moves; ship as default only if OK.
+1. PC: pull, build_web, systems build, rebuild exe, restart hub; press the button once in the
+   user's browser profile (or any); every other browser adopts it on reload.
 2. Lab day: robot-tests.md items 6-7.
 ## Blocked / not done
 - Real SolidWorks URDF not tested yet (only on the PC). Not tested on the robot.

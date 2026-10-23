@@ -71,7 +71,8 @@ MUTATING = [
 TOOL_ROUTES = [
     ("POST", "/api/save"),          # a Studio project
     ("POST", "/api/export"),        # a sequence, as YAML, on this PC
-    ("POST", "/api/rigdefault"),    # this person's own rig, kept as the default
+    ("POST", "/api/rigdefault"),
+    ("POST", "/api/rigcad"),        # the rig parts taken from the CAD (A48-6)    # this person's own rig, kept as the default
     ("POST", "/api/model/upload"),  # an STL to look at
 ]
 
