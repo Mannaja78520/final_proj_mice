@@ -81,12 +81,22 @@
       </div>
       <div class="vcRow"><span class="mini" id="lookStat" role="status"></span></div>
       <div class="vcRow"><span class="mini tech" id="lookTech"></span></div>
+      <!-- A48-6: the simple shapes made from the CAD (rig_from_cad.js) -->
+      <div class="vcRow">
+        <button id="rigCadMake" hidden onclick="rigFromCad()"
+                title="The arm lengths and where each shoulder sits are taken from the CAD model. The servo numbers and your joints stay as they are.">Use the CAD's sizes and shoulder spots</button>
+        <button id="rigCadBack" hidden onclick="rigOldBack()"
+                title="Puts back the simple shapes you had before they were made from the CAD.">Put my old shapes back</button>
+      </div>
+      <div class="vcRow"><span class="mini" id="rigCadStat" role="status"></span></div>
     </div>
   </div>
   <!-- A48-1: leaving the CAD look asks whose sizes the simple shapes use -->
   <dialog id="lookAsk" aria-labelledby="lookAskTitle">
     <h2 id="lookAskTitle">Back to the simple shapes: which sizes?</h2>
-    <p><button class="primary" id="lookUseUrdf">Use the CAD model's sizes</button>
+    <p><button class="primary" id="lookUseCad">Use the CAD's sizes and shoulder spots</button>
+      <span class="mini">arm lengths and where each shoulder sits from the CAD, your joints kept; the old shapes are kept too</span></p>
+    <p><button id="lookUseUrdf">Use the CAD model's sizes</button>
       <span class="mini" id="lookAskUrdf"></span></p>
     <p><button id="lookUseMine">Use my own sizes</button>
       <span class="mini" id="lookAskMine"></span></p>

@@ -234,7 +234,8 @@ def write_fixture(root, name="qc_bot", rig=RIG1, at=None, swap=()):
 
 def write_own_cad(root):
     """A URDF drawn the way a SolidWorks export is, not from the rig: ROS frame,
-    zero rpy, roll axes tilted 30 / 37 deg, arms hanging straight down.
+    zero rpy, roll axes tilted 30 / 37 deg, arms hanging straight down, the
+    shoulders not mirror images.
 
     Round numbers in the shape of the PC's real nong (2026-10-23). There a full
     weight on the turn match pointed the right arm 20 deg off against 15 deg at
@@ -243,12 +244,13 @@ def write_own_cad(root):
     (root / "meshes").mkdir()
     J = [("waist", "base_link", "waist_link", (0, 0, 0.08), (0, 0, -1)),
          ("shrug", "waist_link", "shrug_link", (0, 0, 0.46), (-1, 0, 0))]
-    for s, sy, rl in (("L", 1, (0, -0.5, -0.866)), ("R", -1, (0, 0.6, -0.8))):
-        J += [(s + "_SH_P", "shrug_link", s + "_a", (0, sy * 0.092, -0.063), (-1, 0, 0)),
+    # the two shoulders 5 mm apart in reach and 7 mm in height, like the real one
+    for s, sy, sh, rl in (("L", 0.094, -0.060, (0, -0.5, -0.866)), ("R", -0.089, -0.067, (0, 0.6, -0.8))):
+        J += [(s + "_SH_P", "shrug_link", s + "_a", (0, sy, sh), (-1, 0, 0)),
               (s + "_SH_R", s + "_a", s + "_upper_link", (0, 0, 0), rl),
               (s + "_EL_P", s + "_upper_link", s + "_b", (0, 0, -0.129), (-1, 0, 0)),
               (s + "_EL_R", s + "_b", s + "_fore_link", (0, 0, 0), (0, -1, 0))]
-        tip = (-0.002, sy * 0.0047, -0.1817)
+        tip = (-0.002, 0.0047 if s == "L" else -0.0047, -0.1817)
         w = 0.009
         c = [(tip[0] * k + dx, tip[1] * k + dy, tip[2] * k) for k in (0, 1) for dx in (-w, w) for dy in (-w, w)]
         F3 = [(0, 1, 3), (0, 3, 2), (4, 7, 5), (4, 6, 7), (0, 4, 5), (0, 5, 1),
@@ -418,6 +420,52 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     var r5 = await agreeAll("qc_bot5/urdf/qc_bot5.urdf");
     report("res5=" + JSON.stringify(r5).replace(/[~ ]/g, "_"));
 
+    // A48-6: the simple shapes made from that CAD. By default its sizes and
+    // shoulder spots only (user: keep the rig's joints); with "joints" too
+    // they move exactly like it. Never a servo number; the old ones come back.
+    var servo = function(){ return JSON.stringify([RIG.zero, RIG.home, RIG.invert, RIG.min, RIG.max, RIG.offset]); };
+    var joints = function(){ return JSON.stringify([RIG.axis, RIG.tilt, RIG.after, RIG.order]); };
+    var P6 = []; for (var n6 = 0; n6 < 14; n6++) P6.push(RIG.min.map(function(lo, i){ return Math.round(lo + (RIG.max[i] - lo) * rnd()); }));
+    P6.push(RIG.home.slice());
+    var lens = function(p){ return [p[2].distanceTo(p[0]), p[3].distanceTo(p[1]), p[4].distanceTo(p[2]), p[5].distanceTo(p[3])]; };
+    async function make6(take){
+      await another(CFG.rig2, "qc_bot5/urdf/qc_bot5.urdf"); await setLook("urdf");
+      await until(function(){ return urdfOn && urdfTip.L.fromMesh && urdfTip.R.fromMesh; }, 15000);
+      URDF_CFG.rigFromCad.take = take;
+      var oldGeo = JSON.stringify([RIG.tilt, RIG.after, RIG.mount, RIG.order, RIG.dims]), sv0 = servo(), j0 = joints();
+      var cad6 = P6.map(pts), r6 = { btn: !$("rigCadMake").hidden, label: $("rigCadMake").textContent };
+      r6.made = rigFromCad();
+      await until(function(){ return urdfOn && urdfTip.L.fromMesh && urdfTip.R.fromMesh; }, 15000);
+      r6.fit = urdfLast.fit.map(function(f){ return f.deg; });
+      // the CAD keeps its shape; it only slides so the waist turns on the
+      // shapes' middle line (the shoulders are not mirror images)
+      var cadA = P6.map(pts), sl = cadA[0][0].clone().sub(cad6[0][0]);
+      r6.slide = f1(sl.length());
+      r6.cadAgain = f1(worst(cadA.map(function(p){ return p.map(function(v){ return v.clone().sub(sl); }); }), cad6));
+      cad6 = cadA;
+      RIG.view.look = "rig"; rigChanged();
+      r6.shapesOn = !urdfOn;
+      var sh6 = P6.map(pts);
+      r6.err = f1(worst(sh6, cad6));
+      r6.shoulderErr = f1(worst(sh6.map(function(p){ return p.slice(0, 2); }), cad6.map(function(p){ return p.slice(0, 2); })));
+      r6.lenErr = f1(Math.max.apply(null, sh6.map(function(p, i){ var a = lens(p), c = lens(cad6[i]); return Math.max.apply(null, a.map(function(v, k){ return Math.abs(v - c[k]); })); })));
+      r6.servoSame = servo() === sv0;
+      r6.jointsSame = joints() === j0;
+      r6.stat = $("rigCadStat").textContent;
+      r6.backBtn = !$("rigCadBack").hidden;
+      var kept = mergeRig(JSON.parse(localStorage.getItem("nong_rig")));
+      r6.kept = JSON.stringify([kept.tilt, kept.after, kept.mount, kept.order, kept.dims]) === JSON.stringify([RIG.tilt, RIG.after, RIG.mount, RIG.order, RIG.dims]) && !!kept.view.oldRig;
+      r6.back = rigOldBack();
+      r6.oldSame = JSON.stringify([RIG.tilt, RIG.after, RIG.mount, RIG.order, RIG.dims]) === oldGeo && !RIG.view.oldRig && servo() === sv0;
+      return r6;
+    }
+    var take0 = URDF_CFG.rigFromCad.take.slice();
+    var r6 = await make6(take0);
+    var r7 = await make6(take0.concat(["joints"]));
+    URDF_CFG.rigFromCad.take = take0;
+    report("res6=" + JSON.stringify(r6).replace(/[~ ]/g, "_"));
+    report("res7=" + JSON.stringify(r7).replace(/[~ ]/g, "_"));
+
     if (CFG.real) {
       // the PC's real model: bindings, senses, and each joint against the shapes
       // against YOUR rig (the hub's rig_default.json), from its home pose
@@ -565,6 +613,26 @@ def run(t):
         t.ok(all(a > 0.9 for a in r3["agree"][:8]),
              "a CAD a few degrees off the rig: every arm joint still moves its hand the same way (%s)" % r3["agree"][:8], r3)
         t.ok(all(f["deg"] < 10 for f in r3["fit"]), "and the fit gets close (%s deg)" % [f["deg"] for f in r3["fit"]], r3)
+    got6 = next((m for m in marks if m.startswith("res6=")), "")
+    got7 = next((m for m in marks if m.startswith("res7=")), "")
+    if t.ok(got6 and got7, "the driver made the simple shapes from a CAD", marks[-3:]):
+        r6, r7 = json.loads(got6[5:]), json.loads(got7[5:])
+        t.ok(r6["btn"] and r6["made"] and "sizes" in r6["label"],
+             "on the CAD model, '%s' is offered and works" % r6["label"].replace("_", " "), r6)
+        t.ok(r6["shoulderErr"] < 1 and r6["lenErr"] < 1,
+             "the shapes then sit their shoulders where the CAD does, with its arm lengths, 15 poses (%s / %s mm)"
+             % (r6["shoulderErr"], r6["lenErr"]), r6)
+        t.ok(r6["jointsSame"] and r6["servoSame"] and r6["cadAgain"] < 0.5,
+             "and keep every joint (axis, tilt, order) and servo number of the rig; the CAD stays put", r6)
+        t.ok("moved" in r6["stat"] and r6["backBtn"] and r6["kept"],
+             "it says how far the hands moved at home, offers the old shapes back, and is kept over a reload (%s)" % r6["stat"], r6)
+        t.ok(r6["back"] and r6["oldSame"] and r7["back"] and r7["oldSame"],
+             "'Put my old shapes back' brings back exactly the old rig", [r6, r7])
+        t.ok(r7["made"] and r7["cadAgain"] < 0.5 and all(d < 0.5 for d in r7["fit"]),
+             "with the joints taken too, the CAD fits the shapes (%s deg)" % r7["fit"], r7)
+        t.ok(r7["shapesOn"] and r7["err"] < 1 and r7["servoSame"],
+             "and the shapes land where the CAD does: elbows, hands, palms, 15 poses (worst %s mm), servo numbers unchanged"
+             % r7["err"], r7)
     got5 = next((m for m in marks if m.startswith("res5=")), "")
     if t.ok(got5, "the driver measured a CAD drawn its own way", marks[-3:]):
         r5 = json.loads(got5[5:])

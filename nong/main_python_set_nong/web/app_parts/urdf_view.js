@@ -160,9 +160,22 @@ function urdfRpyQuat(rpy, out) {
 function rigRestAxis(i) {
   if (i === 8) return new THREE.Vector3(0, 1, 0);      // waist: bodyGroup yaw
   if (i === 9) return new THREE.Vector3(0, 0, 1);      // shrug: shoulderMount roll
-  const q = new THREE.Quaternion();
-  for (let k = i - i % 4; k <= i; k++) q.multiply(jointTiltQuat(k));
-  return _AXVEC[RIG.axis[i]].clone().applyQuaternion(q).normalize();
+  const c = rigChain(i - i % 4, [0, 0, 0, 0]);
+  return _AXVEC[RIG.axis[i]].clone().applyQuaternion(c.pre[i % 4]).normalize();
+}
+// The shapes' arm chain for joint deltas d (deg, d[k] = joint b+k), in the
+// body's frame: pre[k] = the frame joint b+k turns in (its tilt included),
+// at[c] = the frame after the c-th joint from the body out (RIG.order).
+// The same as applyPose builds, without touching the scene.
+function rigChain(b, d) {
+  const q = new THREE.Quaternion(), r = new THREE.Quaternion(), pre = [], at = [];
+  RIG.order[b / 4].forEach((j, c) => {
+    q.multiply(jointTiltQuat(j));
+    pre[j - b] = q.clone();
+    q.multiply(r.setFromAxisAngle(_AXVEC[RIG.axis[j]], THREE.MathUtils.degToRad(d[j - b]))).multiply(jointAfterQuat(j));
+    at[c] = q.clone();
+  });
+  return { pre, at };
 }
 function urdfJointCfg(i) { return ((URDF_CFG && URDF_CFG.joints) || {})[JOINT_NAMES[i]] || {}; }
 
@@ -327,8 +340,10 @@ function urdfSettle(base, warn) {
   });
   // shoulders where the simple shapes have them, so the camera, the torso
   // box and the old saved views still line up
+  // (the shapes' own middle: RIG.mount moves each shoulder off the symmetric spot)
   const mid = W(urdfArm[0][0].org).add(W(urdfArm[1][0].org)).multiplyScalar(0.5);
-  base.position.set(-mid.x, (RIG.dims.shoulderY || 0) - mid.y, -mid.z);
+  const mm = new THREE.Vector3().fromArray(RIG.mount.L).add(new THREE.Vector3().fromArray(RIG.mount.R)).multiplyScalar(0.5);
+  base.position.set(mm.x - mid.x, (RIG.dims.shoulderY || 0) + mm.y - mid.y, mm.z - mid.z);
   applyPose(); robot.updateMatrixWorld(true);
   urdfLast.fit = [null, null];
   ["L", "R"].forEach((side, arm) => {
@@ -387,8 +402,7 @@ function urdfPlaceHand(side, arm) {
   pose = RIG.zero.slice(); applyPose(); robot.updateMatrixWorld(true);
   const inv = t.fore.getWorldQuaternion(new THREE.Quaternion()).invert();
   const el = t.fore.worldToLocal(urdfArm[arm][2].org.getWorldPosition(new THREE.Vector3()));
-  const q = new THREE.Quaternion();
-  for (let k = b; k < b + 4; k++) q.multiply(jointTiltQuat(k));
+  const q = rigChain(b, [0, 0, 0, 0]).at[3];
   if (!t.fromMesh) {
     t.mm = side === "L" ? RIG.dims.foreLenL : RIG.dims.foreLenR;
     const dirW = new THREE.Vector3(0, -1, 0).applyQuaternion(q);
@@ -449,12 +463,8 @@ function urdfArmDirs(m, th, fore) {
 }
 // the shapes' upper-arm and forearm directions for joint deltas d (deg)
 function rigArmDirs(b, d) {
-  const q = new THREE.Quaternion(), r = new THREE.Quaternion();
-  const turn = (k) => q.multiply(jointTiltQuat(b + k)).multiply(r.setFromAxisAngle(_AXVEC[RIG.axis[b + k]], THREE.MathUtils.degToRad(d[k])));
-  turn(0); turn(1);
-  const up = new THREE.Vector3(0, -1, 0).applyQuaternion(q), qu = q.clone();
-  turn(2); turn(3);
-  return { up, qu, fore: new THREE.Vector3(0, -1, 0).applyQuaternion(q), qf: q };
+  const c = rigChain(b, d), qu = c.at[1], qf = c.at[3];
+  return { up: new THREE.Vector3(0, -1, 0).applyQuaternion(qu), qu, fore: new THREE.Vector3(0, -1, 0).applyQuaternion(qf), qf };
 }
 function urdfFitArm(arm, warn) {
   const cfg = URDF_CFG.fit || {}, b = arm * 4, ch = urdfArm[arm];
@@ -670,6 +680,7 @@ function renderLookUI() {
   if (v.model) msel.value = v.model;
   msel.hidden = lookKind() !== "urdf" || urdfModelList.length < 2;
   const tech = $("lookTech");
+  if (typeof renderRigCadUI === "function") renderRigCadUI();
   if (lookKind() !== "urdf") { stat.textContent = ""; tech.textContent = ""; return; }
   stat.textContent = urdfLast.error ? "Cannot show the CAD model: " + urdfLast.error + ". The simple shapes are shown."
     : !urdfOn ? "Opening the CAD model…"
@@ -721,6 +732,13 @@ async function setLook(id, force) {
   if (!wasUrdf) { v.look = id; rigChanged(); return; }
   const pick = await askLookSizes();
   if (!pick) { renderLookUI(); return; }
+  if (pick === "cad") {
+    // measured on the CAD still shown, then the shapes are built from it
+    if (!rigFromCad()) { renderLookUI(); return; }
+    v.look = id;
+    rigChanged();
+    return;
+  }
   const keys = Object.keys(URDF_CFG.sizes || {});
   if (pick === "urdf") Object.assign(RIG.dims, urdfDimsOf(keys, urdfLast.dims || {}));
   else Object.assign(RIG.dims, urdfDimsOf(keys, v.custom || {}));
@@ -741,6 +759,7 @@ function askLookSizes() {
   $("lookAskMine").textContent = v.custom ? lookSizeText(v.custom) : "none kept yet: the URDF sizes, then change them in Rig setup";
   return new Promise(res => {
     const done = (x) => { dlg.close ? dlg.close() : dlg.removeAttribute("open"); res(x); };
+    $("lookUseCad").onclick = () => done("cad");
     $("lookUseUrdf").onclick = () => done("urdf");
     $("lookUseMine").onclick = () => done("custom");
     $("lookStay").onclick = () => done(null);
