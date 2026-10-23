@@ -1,10 +1,10 @@
 # Lab: robot and prize ESP32 transport acceptance
 
 Owner: codex:10231420-85cc (chat 01a167a0-2a75-7c93-89ea-81df71a29ff4)
-Updated: 2026-10-23 19:13 (Bangkok)
+Updated: 2026-10-23 19:24 (Bangkok)
 Branch: codex/lab-hardware-1023
 Tree: E:/final_proj/mice/code/.staging-lab-1023
-Last commit: 6400432 identity checkpoint; see git log for current
+Last commit: 71d8677 preparation checkpoint; see git log for current
 Plan: A47-19 (combined), A47-5, A45-11, A46-2; native audit A48-12
 
 ## Goal
@@ -47,6 +47,14 @@ No Hub stop/restart by this chat. Motion/flash permission is a separate handover
   no TX, DTR/RTSfalse, max5s/port) and rom_identity.py (esptool flash_id only,
   timeout35s/port, no erase/write, after=no_reset). Both syntax checked, NOT RUN.
   Installed tool C:/Users/manma/.platformio/packages/tool-esptoolpy/esptool.py v4.9.0.
+- Integration final gate passed7910/0 +925stable; PR77 merged a884558. Under its
+  explicit artifact lease, copied bootloader17536/partitions3072/firmware1408720
+  to root firmware/.pio/build/mice_gacha. All SHA256 match source; no different
+  destination bytes existed. Shared PlatformIO boot_app0.bin8192 exists.
+  Firmware SHA25636c6d1d1364f7ff7567c371b6bf33a178f7ac7a2d89f6246ac81815d215172e4.
+  Manifest private scratch/lab-hardware-1023/gacha-artifact-manifest.json.
+  esptool image checksum/hash valid; firmware source diff d9c97d4..3e4cdd1 empty.
+  Explicitly RELEASED artifact lease in BRIDGE19:24. No compile/board write.
 
 ## Facts found
 - firmware/config/esp32_hardware_gacha_module.h:17-32: motor25/26, optional EN=-1,
