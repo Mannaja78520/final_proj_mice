@@ -127,6 +127,19 @@ Plan: A48-1 (robot page)
   L 13.9 deg (up 11.2), R 12.4 deg (up 9.8), swapSh on both. Studio's fit (15.7 / 11.4) is
   near that, so the residual is rig setup vs CAD, not the fit: the warning is true.
 
+## PC check after A48-4 (2026-10-23 07:30, claude:xdlrot)
+- main ac33fb8, build_web, systems build, exe rebuilt (stale=false 4448772707e1), hub restarted.
+- check_urdf_look (real model): 34/34 PASS. Tips: L_fore_link fromMesh true 181.8 mm,
+  R_fore_link fromMesh true 181.8 mm. Every arm joint agree > 0.5 (the pass case; exact
+  numbers are not logged on a pass). Bind (qc/_urdf_real.json): L_SH_R -1/90.3,
+  L_SH_P +1/-135.8, L_EL_P +1/87.1, L_EL_R -1/92.0, R_SH_R +1/-89.2, R_SH_P -1/-56.2,
+  R_EL_P +1/-74.8, R_EL_R +1/89.7, waist -1/0, shrug -1/0.
+- Studio Views (the live RIG: shoulderX 91.5, foreLen 183/183, not rig_default's
+  91.8/181.8): fit L 15.7 deg (up 14.6), R 20.6 deg (up 22.8), swapSh both, fore true;
+  warnings "left up to 16 deg, right up to 21 deg". Each shoulder pitch +60: both CAD arms
+  swing forward like the shapes. Screens scratch/deploy-a48-4-2026-10-23/. Back to Simple
+  shapes (checked after a reload: look rig, sizes unchanged).
+
 ## Next
 1. PC: pull main, build_web, systems build, rebuild exe, run check_urdf_look with
    MICE_URDF_MODEL; expect R fromMesh true. Agree < 0.5: set sign/offsetDeg in urdf_view.json.
