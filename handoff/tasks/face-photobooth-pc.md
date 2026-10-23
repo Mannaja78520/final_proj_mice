@@ -1,9 +1,9 @@
 # PC Face app, watcher and Photobooth integration
 
 Owner: codex:10231359-7280
-Updated: 2026-10-23T19:02:17+07:00
+Updated: 2026-10-23T19:34:30+07:00
 Branch: codex/face-pc-1023
-Last commit: 026d34e (readiness checkpoint; see git log for final)
+Last commit: 5425bb2 (readiness handoff; see git log for latest)
 Plan: A45-30; remaining real run A45-14/A45-12
 
 ## Goal
@@ -11,12 +11,10 @@ Finish all PC-only Face app/watcher/Photobooth work without editing friend's sou
 Coordinate results with parent codex:10231353-0401, which owns URDF/QC/build/restart.
 
 ## Doing now
-Metadata and read-only preparation complete after latest user lab authorization.
-Own task-file/scratch released for this checkpoint; no runtime/camera/QC/hardware lease.
-Wait for parent deployment completion and hardware owner's camera coordination.
-Plan resume refused: A45-30 disappeared from live PLAN after earlier successful handoff.
-Integration owner is restoring the single row as todo/open; do not duplicate plan writes.
-Startup remains pending deployment; coordinator can message this chat to resume then.
+Resumed own task-file/scratch only; A45-30 restored row verified and doing.
+Prepare official stop-main/run-main -NoBrowser, bounded health/read-only HTML smoke.
+Lab rawUSB window RELEASE19:34 verified; wait integration to start newHub and confirm
+actual assets/stale:false plus explicit startup handover. No runtime/camera/COM/QC lease yet.
 
 ## Facts found
 - HANDOFF.md: friend sources outside code are read-only/start-only; no edits allowed.
@@ -54,8 +52,9 @@ Startup remains pending deployment; coordinator can message this chat to resume 
   RS485 is not connected. Only hardware owner may identify/move/flash them.
 - Main status recipient 01a1689b-5608-7123-b8c2-a6f489b5b675 is human-authorized.
   Deployment now belongs to 01a1679e-50a4-7e71-9cfb-64b6afa635c1 after original
-  owner explicit RELEASE19:00. Source gate7885pass/1fail refused changed input;
-  no green receipt/deployment. Integration diagnoses/fixes and reruns; do not bypass.
+  owner explicit RELEASE19:00. Final exact gate7910/0+925stable accepted, PR77 merged
+  a884558, specbuild0 and new executable installed; oldHub stopped19:27 idle.
+  Lab rawUSB identity/backup window RELEASE19:34; integration starts newHub next.
 - Passive resume health: friend8000 HTTP200/model_ready, watcher8769 HTTP200/
   watching/error empty, booth8121 connection refused. No new recognition request added.
 - BoothStartPage.tsx:10/35 opens frames before capture; camera.open occurs only
