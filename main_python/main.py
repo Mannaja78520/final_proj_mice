@@ -474,6 +474,8 @@ def is_self(ip: str) -> bool:
 # Studio's settings, shared from this PC so another one can pull them over the
 # network. Sits with the other user data, not in the code.
 SETTINGS_FILE = STUDIO / "settings_shared.json"
+# A48-6: the rig parts taken from the CAD, shared by every browser of this hub
+RIG_CAD_FILE = STUDIO / "rig_cad.json"
 
 
 
@@ -2024,6 +2026,10 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
             f = STUDIO / "rig_default.json"
             body = f.read_text(encoding="utf-8") if f.is_file() else "null"
             js = "window.NONG_RIG_DEFAULT = " + body + ";\n"
+            # + the parts taken from the CAD on any browser (A48-6), so every
+            # browser of this hub adopts them on its next load
+            cad = RIG_CAD_FILE.read_text(encoding="utf-8") if RIG_CAD_FILE.is_file() else "null"
+            js += "window.NONG_RIG_CAD = " + cad + ";\n"
             return self.send_bytes(js.encode(), MIME[".js"])
         if path in ("/help", "/help.html"):
             # Every feature of the whole system, offline. Served from the PC so

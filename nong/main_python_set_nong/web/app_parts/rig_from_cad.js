@@ -14,7 +14,6 @@
 // The old rig is kept in RIG.view.oldRig and comes back with one button.
 // Which parts are taken: urdf_view.json "rigFromCad". check_urdf_look holds it.
 
-const RIG_CAD_KEYS = ["dims", "tilt", "after", "mount", "order"];   // what is replaced (and kept)
 let rigCadLast = "";              // what the last make/undo said
 
 function rigCadCfg() { return (URDF_CFG && URDF_CFG.rigFromCad) || {}; }
@@ -106,35 +105,47 @@ function rigHandsAt(r, p) {
     });
   } finally { RIG = keep; }
 }
+// only what is taken goes in the parts (another browser keeps its own rest)
+function rigCadParts(m) {
+  const p = { dims: m.dims };
+  if (rigCadTakes("shoulders")) p.mount = m.mount;
+  if (rigCadTakes("joints")) { p.tilt = m.tilt; p.after = m.after; p.order = m.order; }
+  return p;
+}
+// every browser of this hub picks it up on its next load (rig_data.js)
+async function rigCadShare(cad) {
+  try {
+    const r = await fetch("/api/rigcad", { method: "POST", body: JSON.stringify(cad) }).then(r => r.json());
+    if (!r.ok) throw new Error(r.error || "no answer");
+    return true;
+  } catch (e) {
+    rigCadLast += " Kept on this browser only: the hub did not take it (" + (e.message || e) + ").";
+    renderRigCadUI();
+    return false;
+  }
+}
 // Make it: the old rig is kept (once: a second make keeps the hand-made one).
 function rigFromCad() {
   const m = rigFromCadMeasure();
   if (m.error) { rigCadLast = "Cannot make the simple shapes from the CAD: " + m.error + "."; renderRigCadUI(); return false; }
-  const v = RIG.view;
-  if (!v.oldRig) v.oldRig = JSON.parse(JSON.stringify(RIG_CAD_KEYS.reduce((o, k) => (o[k] = RIG[k], o), {})));
+  const cad = { at: new Date().toISOString(), parts: rigCadParts(m) };
   const before = rigHandsAt(RIG, RIG.home);
-  const next = JSON.parse(JSON.stringify(RIG));
-  Object.assign(next.dims, m.dims);
-  ["tilt", "after", "mount", "order"].forEach(k => { next[k] = m[k]; });
-  const after = rigHandsAt(next, next.home);
-  ["tilt", "after", "mount", "order"].forEach(k => { RIG[k] = m[k]; });
-  Object.assign(RIG.dims, m.dims);
-  v.sizes = "cad";
-  const mv = after.map((p, a) => Math.round(p.distanceTo(before[a])));
+  rigCadAdopt(RIG, cad);
+  const mv = rigHandsAt(RIG, RIG.home).map((p, a) => Math.round(p.distanceTo(before[a])));
   rigCadLast = (rigCadTakes("joints") ? "The simple shapes now match the CAD." : "The simple shapes now have the CAD's sizes and shoulder spots; your joints are kept.") + " At home the left hand moved " + mv[0] + " mm and the right " + mv[1] +
     " mm; the servo numbers did not change." + (m.warn.length ? " " + m.warn.join("; ") + "." : "");
   rigChanged();
+  rigCadShare(cad);
   return true;
 }
-// Back to the rig kept before the first make.
+// Back to the rig kept before the first make, on every browser of this hub.
 function rigOldBack() {
-  const v = RIG.view;
-  if (!v.oldRig) return false;
-  RIG_CAD_KEYS.forEach(k => { if (v.oldRig[k] !== undefined) RIG[k] = JSON.parse(JSON.stringify(v.oldRig[k])); });
-  v.oldRig = null;
-  v.sizes = "custom";
+  if (!RIG.view.oldRig) return false;
+  const cad = { at: new Date().toISOString(), parts: null };
+  rigCadAdopt(RIG, cad);
   rigCadLast = "Your old simple shapes are back.";
   rigChanged();
+  rigCadShare(cad);
   return true;
 }
 function renderRigCadUI() {

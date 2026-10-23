@@ -8,6 +8,8 @@ silently dropped a field is the failure this guards against.
 Round trips, not status codes.
 """
 import json
+from pathlib import Path
+import tempfile
 import urllib.parse
 
 import fake_serial
@@ -120,6 +122,23 @@ def run(t):
     t.ok((bak_file.read_bytes() if bak_file.is_file() else None) == saved_bak,
          "and so is its backup, so QC leaves the tree it checked",
          "rig_default.json.bak was left as the rig this check replaced")
+
+    # ---- A48-6: the rig parts taken from the CAD, for every browser ----
+    keep_cad = main.RIG_CAD_FILE
+    main.RIG_CAD_FILE = Path(tempfile.mkdtemp(prefix="mice_qc_rigcad_")) / "rig_cad.json"
+    try:
+        parts = {"dims": {"shoulderX": 91.7}, "mount": {"L": [2.4, 3.5, 0], "R": [2.4, -3.5, 0]}}
+        s, b = _post(base, "/api/rigcad", {"at": "qc-1", "parts": parts})
+        t.eq(s, 200, "the rig parts from the CAD are kept on the hub")
+        s, b = F.get(base + "/rig_default.js")
+        t.contains(b, '"at": "qc-1"', "and served to every browser with the shipped rig")
+        s, b = _post(base, "/api/rigcad", {"at": "qc-2", "parts": None})
+        s2, b2 = F.get(base + "/rig_default.js")
+        t.ok(s == 200 and '"qc-2"' in b2 and '"parts": null' in b2, "putting the old shapes back is kept too", b2[-200:])
+        s, b = _post(base, "/api/rigcad", {"at": "", "parts": []})
+        t.ok(s >= 400, "a malformed one is refused", "returned %s" % s)
+    finally:
+        main.RIG_CAD_FILE = keep_cad
 
     # ---- names that must be refused -----------------------------------
     # A save endpoint that accepts a path is a way out of the folder.

@@ -729,7 +729,7 @@ async function setLook(id, force) {
     if (urdfOn) { urdfUseSizes(); renderRigUI(); }
     return;
   }
-  if (!wasUrdf) { v.look = id; rigChanged(); return; }
+  if (!wasUrdf) { v.look = id; rigChanged(); renderLookUI(); return; }
   const pick = await askLookSizes();
   if (!pick) { renderLookUI(); return; }
   if (pick === "cad") {
@@ -737,6 +737,7 @@ async function setLook(id, force) {
     if (!rigFromCad()) { renderLookUI(); return; }
     v.look = id;
     rigChanged();
+    renderLookUI();
     return;
   }
   const keys = Object.keys(URDF_CFG.sizes || {});
@@ -745,6 +746,7 @@ async function setLook(id, force) {
   v.sizes = pick;
   v.look = id;
   rigChanged();
+  renderLookUI();                  // the box shows the shapes, not the CAD's last words
 }
 function lookSizeText(d) {
   if (!d || !Object.keys(d).length) return "";
