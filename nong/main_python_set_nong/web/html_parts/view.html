@@ -44,6 +44,14 @@
       </div>
       <div class="vcRow"><span class="mini" id="lookStat" role="status"></span></div>
       <div class="vcRow"><span class="mini tech" id="lookTech"></span></div>
+      <div class="vcRow">
+        <label class="mini" title="The floor grid under the robot. On the CAD model it sits at the bottom of the base.">
+          <input type="checkbox" id="viewGrid" onchange="viewSetGrid(this.checked)"> Show the floor grid</label>
+      </div>
+      <div class="vcRow" id="lookHandMarksRow" hidden>
+        <label class="mini" title="The flat hand Studio draws at each wrist (skin = palm, grey = back). The CAD hand already shows the palm, so it can be hidden.">
+          <input type="checkbox" id="lookHandMarks" onchange="urdfSetHandMarks(this.checked)"> Show the drawn hands</label>
+      </div>
       <!-- A48-6: the simple shapes made from the CAD (rig_from_cad.js) -->
       <div class="vcRow">
         <button id="rigCadMake" hidden onclick="rigFromCad()"

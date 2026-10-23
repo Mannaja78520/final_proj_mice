@@ -1,5 +1,5 @@
 {
-  "_what": "How Studio draws the robot (A48-1, user 2026-10-23). looks: the choices in the 3D view's Robot look box; kind 'rig' = the old simple shapes sized by Rig setup, kind 'urdf' = the CAD model from a URDF file at its own real sizes. models: URDF files offered, path under the Studio models folder (any other .urdf found there is offered too). joints: Studio joint -> the URDF joint names it may have; sign 'auto' = turn the way the simple shapes turn (picked from the axes), or 1 / -1 to force it; offsetDeg = the URDF angle when the Studio joint is at its zero ('auto' = fitted). fit: per arm, which URDF joint of each pair is which Studio joint (swap), its sense and its zero are fitted so the upper arm and forearm point where the simple shapes (your Rig setup) point them over many poses; a number in sign/offsetDeg is kept as given; frames = how much it also matches how each part TURNS from the home pose (pins the roll about a bone; 1 = as much as where it points, 0 = off); warnDeg = say so when the fit is worse than this; hands: the forearm link of each hand and where its tip is ('mesh' = the far end of the forearm part, else the forearm length). rigFromCad: what the button takes from the CAD (sizes = arm lengths, shoulders = where each shoulder sits, shrugPivot = the shrug's height over the shoulders, joints = every joint's tilt, the turn after each servo and the pair order: add it and the shapes move EXACTLY like the CAD; left out (user 2026-10-23) because the rig's joints were tuned to the real robot); label = the button's words; the servo numbers (zero, home, invert, limits) are never changed; round = decimals kept; colocatedMm = how far apart a joint pair may sit before it says so. sizes: Rig setup sizes the URDF gives when going back to the simple shapes (from/to = joints, tip:L / tip:R = hand tips; half = half the distance). The real CAD files stay on this PC only (public repo).",
+  "_what": "How Studio draws the robot (A48-1, user 2026-10-23). looks: the choices in the 3D view's Robot look box; kind 'rig' = the old simple shapes sized by Rig setup, kind 'urdf' = the CAD model from a URDF file at its own real sizes. models: URDF files offered, path under the Studio models folder (any other .urdf found there is offered too). joints: Studio joint -> the URDF joint names it may have; sign 'auto' = turn the way the simple shapes turn (picked from the axes), or 1 / -1 to force it; offsetDeg = the URDF angle when the Studio joint is at its zero ('auto' = fitted). fit: per arm, which URDF joint of each pair is which Studio joint (swap), its sense and its zero are fitted so the upper arm and forearm point where the simple shapes (your Rig setup) point them over many poses; a number in sign/offsetDeg is kept as given; anchor 'home' = at the robot's home every CAD joint sits as the CAD was drawn, so only which joint is which and the sense are fitted (a free zero let a shoulder block turn: user 2026-10-23); 'none' = fit the zeros too; frames = how much it also matches how each part TURNS from the home pose (pins the roll about a bone; 1 = as much as where it points, 0 = off); warnDeg = say so when the fit is worse than this; hands: the forearm link of each hand and where its tip is ('mesh' = the far end of the forearm part, else the forearm length); palm 'mesh' = the drawn hand lies in the CAD hand's own plane (else as Rig setup turns it). palm: from = the part of the forearm length that counts as the hand, flat = how thin it must be across (thin/wide spread) to have a plane. handMarks = show the drawn hands on the CAD model (each browser can switch it; kept). floor: the grid under the robot; show = shown at first (each browser can switch it; kept), shapesY = its height under the simple shapes (mm), cad 'root' = on the CAD model it sits at the bottom of the file's root part (the base box) less gapMm; only the grid moves, never the robot. rigFromCad: what the button takes from the CAD (sizes = arm lengths, shoulders = where each shoulder sits, shrugPivot = the shrug's height over the shoulders, joints = every joint's tilt, the turn after each servo and the pair order: add it and the shapes move EXACTLY like the CAD; left out (user 2026-10-23) because the rig's joints were tuned to the real robot); label = the button's words; the servo numbers (zero, home, invert, limits) are never changed; round = decimals kept; colocatedMm = how far apart a joint pair may sit before it says so. sizes: Rig setup sizes the URDF gives when going back to the simple shapes (from/to = joints, tip:L / tip:R = hand tips; half = half the distance). The real CAD files stay on this PC only (public repo).",
   "looks": [
     {
       "id": "rig",
@@ -33,7 +33,8 @@
     "samples": 12,
     "gridDeg": 15,
     "warnDeg": 5,
-    "frames": 0.5
+    "frames": 0.5,
+    "anchor": "home"
   },
   "rigFromCad": {
     "take": [
@@ -122,12 +123,25 @@
   "hands": {
     "L": {
       "link": "L_fore_link",
-      "tip": "mesh"
+      "tip": "mesh",
+      "palm": "mesh"
     },
     "R": {
       "link": "R_fore_link",
-      "tip": "mesh"
+      "tip": "mesh",
+      "palm": "mesh"
     }
+  },
+  "palm": {
+    "from": 0.6,
+    "flat": 0.35
+  },
+  "handMarks": true,
+  "floor": {
+    "show": true,
+    "shapesY": -250,
+    "cad": "root",
+    "gapMm": 0
   },
   "sizes": {
     "shoulderX": {

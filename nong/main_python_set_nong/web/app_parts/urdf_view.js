@@ -177,12 +177,56 @@ function rigChain(b, d) {
   });
   return { pre, at };
 }
+// the drawn hand on the CAD model: shown or not (RIG.view.handMarks, else the
+// data's "handMarks"); the CAD hand already shows the palm. Facing still works.
+function urdfHandMarksOn() {
+  const v = RIG.view || {};
+  return typeof v.handMarks === "boolean" ? v.handMarks : (URDF_CFG || {}).handMarks !== false;
+}
+function urdfSetHandMarks(on) {
+  RIG.view.handMarks = !!on;
+  saveRig();
+  if (urdfOn) palmMarks.forEach(h => h.children.forEach(c => { if (c.isMesh) c.visible = !!on; }));
+  renderLookUI();
+}
+// ---- the floor grid (user 2026-10-23: "can the grid be hidden, and the box
+// lifted above it") -----------------------------------------------------------
+// Shown or not: RIG.view.grid (else the data's floor.show). Its height: the
+// shapes' floor (floor.shapesY), or on the CAD model the bottom of the file's
+// root part + floor.gapMm (floor.cad "root"), so the base box stands on it.
+// Only the grid moves: the robot and every position Studio sends stay put.
+let urdfRootLink = "";
+function viewFloorCfg() { return (URDF_CFG && URDF_CFG.floor) || {}; }
+function viewGridOn() {
+  const v = RIG.view || {};
+  return typeof v.grid === "boolean" ? v.grid : viewFloorCfg().show !== false;
+}
+function viewFloor() {
+  if (typeof grid === "undefined") return;
+  const cfg = viewFloorCfg();
+  grid.visible = viewGridOn();
+  let y = Number.isFinite(cfg.shapesY) ? cfg.shapesY : -250;
+  if (urdfRootLink && cfg.cad === "root" && robot) {
+    robot.updateMatrixWorld(true);
+    const box = new THREE.Box3();
+    robot.traverse(o => { if (o.isMesh && o.userData.urdfLink === urdfRootLink) box.expandByObject(o); });
+    if (!box.isEmpty()) y = box.min.y - (+cfg.gapMm || 0);
+  }
+  grid.position.y = y;
+}
+function viewSetGrid(on) {
+  RIG.view.grid = !!on;
+  saveRig();
+  viewFloor();
+}
 function urdfJointCfg(i) { return ((URDF_CFG && URDF_CFG.joints) || {})[JOINT_NAMES[i]] || {}; }
 
 // Builds the file's tree into `root` and points every handle into it.
 // Returns false (nothing built) when the look is not URDF or not ready yet.
 function urdfBuildInto(root) {
   urdfOn = false;
+  urdfRootLink = "";
+  viewFloor();
   if (lookKind() !== "urdf" || !URDF_CFG) return false;
   const path = (RIG.view || {}).model;
   if (!path) return false;
@@ -195,6 +239,7 @@ function urdfBuildInto(root) {
   root.add(base);
   const linkG = {}, jointOf = {};                       // link -> group, link -> joint that carries it
   linkG[f.root] = new THREE.Group(); base.add(linkG[f.root]);
+  urdfRootLink = f.root;
   const byParent = {};
   f.joints.forEach(j => (byParent[j.parent] = byParent[j.parent] || []).push(j));
   const walk = (name) => (byParent[name] || []).forEach(j => {
@@ -269,6 +314,7 @@ function urdfBuildInto(root) {
       else urdfMesh(urdfMeshUrls(v.mesh, f.path), geo => {
         if (gen !== urdfBuildGen || holder.parent !== linkG[name]) return;   // a rebuild came first
         put(geo, v.scale.map(s => s * U));
+        if (name === urdfRootLink) viewFloor();
         urdfMeshArrived(name);
       }, () => {
         urdfMissing.add(f.path + "|" + v.mesh);
@@ -309,10 +355,12 @@ function urdfBuildInto(root) {
     palm.position.set(0, -30, 2.6);
     back.userData.skel = palm.userData.skel = true;
     hand.add(back, palm); fore.add(hand); palmMarks.push(hand);
+    back.visible = palm.visible = urdfHandMarksOn();
     urdfTip[side] = { link: URDF_CFG.hands[side].link, fore, wrist, hand, mm: 0, fromMesh: false, tipLocal: null };
   });
   urdfOn = true;
   urdfSettle(base, warn);         // may re-pair joints (the fit), so the rings come after
+  viewFloor();
   pairRingParents = [0, 2, 4, 6].map(i => [jointGroups[i].parent, jointGroups[i + 1].parent]);
   return true;
 }
@@ -392,6 +440,39 @@ function urdfMeshTip(side, arm) {
   t.tipLocal = el.clone().addScaledVector(dir, t.mm);
   t.fromMesh = true;
   t.wrist.position.copy(t.tipLocal);
+  t.palmN = urdfMeshPalm(side, pts, dir, t.mm);
+}
+// The CAD hand's own plane (user 2026-10-23: "why is the palm tilted, not in
+// the plane of the hand"): the drawn hand turned by RIG.palmTurn sat across
+// the CAD hand. The far part of the forearm mesh (urdf_view.json palm.from of
+// its length) is spread wide one way across the forearm and thin the other:
+// the thin way is the palm's normal. Not flat enough (palm.flat) = no plane.
+function urdfMeshPalm(side, pts, dir, mm) {
+  const cfg = URDF_CFG.palm || {};
+  if (((URDF_CFG.hands || {})[side] || {}).palm !== "mesh") return null;
+  const u = new THREE.Vector3(1, 0, 0);
+  if (Math.abs(u.dot(dir)) > 0.9) u.set(0, 1, 0);
+  u.addScaledVector(dir, -u.dot(dir)).normalize();
+  const w = dir.clone().cross(u);
+  let n = 0, su = 0, sw = 0, suu = 0, sww = 0, suw = 0;
+  const seen = new Set();
+  pts.forEach(v => {
+    if (v.dot(dir) < mm * (cfg.from || 0.6)) return;
+    const key = v.toArray().map(x => Math.round(x * 100)).join();
+    if (seen.has(key)) return;
+    seen.add(key);
+    const a = v.dot(u), b = v.dot(w);
+    n++; su += a; sw += b; suu += a * a; sww += b * b; suw += a * b;
+  });
+  if (n < 4) return null;
+  const cuu = suu / n - (su / n) ** 2, cww = sww / n - (sw / n) ** 2, cuw = suw / n - (su / n) * (sw / n);
+  // the 2x2 spread across the forearm: its thin axis is the palm normal
+  const tr = cuu + cww, det = cuu * cww - cuw * cuw, gap = Math.sqrt(Math.max(0, tr * tr / 4 - det));
+  const lo = tr / 2 - gap, hi = tr / 2 + gap;
+  if (!(hi > 0) || lo / hi > (cfg.flat || 0.35)) return null;
+  const th = 0.5 * Math.atan2(2 * cuw, cuu - cww);          // the wide axis
+  const wide = u.clone().multiplyScalar(Math.cos(th)).addScaledVector(w, Math.sin(th));
+  return dir.clone().cross(wide).normalize();
 }
 // Without a forearm part: the forearm length along the shapes' forearm at
 // zero. Then the hand frame of the shapes at zero (tilt chain + palmTurn),
@@ -415,6 +496,15 @@ function urdfPlaceHand(side, arm) {
   const local = inv.clone().multiply(q);
   const down = new THREE.Vector3(0, -1, 0).applyQuaternion(local);
   t.hand.quaternion.copy(new THREE.Quaternion().setFromUnitVectors(down, dir).multiply(local));
+  if (t.fromMesh && t.palmN) {
+    // turned about the forearm into the CAD hand's plane; of its two faces,
+    // the one nearest the Rig setup's palm (the mesh cannot say which is which)
+    const z = new THREE.Vector3(0, 0, 1).applyQuaternion(t.hand.quaternion);
+    const n = t.palmN.clone().multiplyScalar(t.palmN.dot(z) < 0 ? -1 : 1);
+    const zf = z.addScaledVector(dir, -z.dot(dir)).normalize();
+    const phi = Math.atan2(zf.clone().cross(n).dot(dir), zf.dot(n));
+    if (Number.isFinite(phi)) t.hand.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(dir, phi));
+  }
   palmCache.clear();
   pose = keep; applyPose();
 }
@@ -519,6 +609,12 @@ function urdfFitArm(arm, warn) {
   // what the data fixes: a numeric sign or offset of the Studio joint
   const fixedSign = (j) => { const v = urdfJointCfg(j).sign; return v === 1 || v === -1 ? [v] : [1, -1]; };
   const fixedOff = (j) => { const v = urdfJointCfg(j).offsetDeg; return num(v) ? v * D2R : null; };
+  // fit.anchor "home": at HOME every joint sits as the CAD was drawn (zero =
+  // home), so only which-is-which and the sense are fitted. Pointing alone
+  // leaves a twist free: the real nong's shoulder blocks came out turned
+  // 45-135 deg, the two sides no longer mirror images (user 2026-10-23).
+  const anchored = cfg.anchor === "home";
+  const homeOff = (j, s) => -s * dH[j - b] * D2R;
   const swaps = cfg.swap === false ? [false] : [false, true];
   const grid = cfg.gridDeg || 15;
   // search one pair (k0 = 0 shoulder, 2 elbow) with the other fixed
@@ -529,12 +625,14 @@ function urdfFitArm(arm, warn) {
       const map = k0 === 0 ? slot(sw, best.map[2] === b + 3) : slot(best.map[0] === b + 1, sw);
       for (const s0 of fixedSign(map[k0])) for (const s1 of fixedSign(map[k0 + 1])) {
         const sg = best.sg.slice(); sg[k0] = s0; sg[k0 + 1] = s1;
-        const f0 = fixedOff(map[k0]), f1 = fixedOff(map[k0 + 1]);
+        let f0 = fixedOff(map[k0]), f1 = fixedOff(map[k0 + 1]);
+        const free0 = f0 === null && !anchored, free1 = f1 === null && !anchored;
+        if (anchored) { if (f0 === null) f0 = homeOff(map[k0], s0); if (f1 === null) f1 = homeOff(map[k0 + 1], s1); }
         const g = (f) => f !== null ? [f] : Array.from({ length: Math.round(360 / grid) }, (_, i) => (i * grid - 180) * D2R);
         for (const o0 of g(f0)) for (const o1 of g(f1)) {
           const of = best.of.slice(); of[k0] = o0; of[k0 + 1] = o1;
           const c = cost(map, sg, of, fore);
-          if (c < top.c) top = { map, sg, of, c, free: [f0 === null, f1 === null] };
+          if (c < top.c) top = { map, sg, of, c, free: [free0, free1] };
         }
       }
     }
@@ -558,7 +656,7 @@ function urdfFitArm(arm, warn) {
     searchPair(2, true);
     // then all four zeros together: the shoulder was fitted before the forearm was seen
     let c0 = cost(best.map, best.sg, best.of, true);
-    const free = [0, 1, 2, 3].map(k => fixedOff(best.map[k]) === null);
+    const free = [0, 1, 2, 3].map(k => fixedOff(best.map[k]) === null && !anchored);
     for (const st of [2, 0.5, 0.1, 0.02]) for (let it = 0; it < 10; it++) {
       let moved = false;
       for (let k = 0; k < 4; k++) {
@@ -681,6 +779,8 @@ function renderLookUI() {
   msel.hidden = lookKind() !== "urdf" || urdfModelList.length < 2;
   const tech = $("lookTech");
   if (typeof renderRigCadUI === "function") renderRigCadUI();
+  if ($("viewGrid")) $("viewGrid").checked = viewGridOn();
+  if ($("lookHandMarks")) { $("lookHandMarks").checked = urdfHandMarksOn(); $("lookHandMarksRow").hidden = !urdfOn; }
   if (lookKind() !== "urdf") { stat.textContent = ""; tech.textContent = ""; return; }
   stat.textContent = urdfLast.error ? "Cannot show the CAD model: " + urdfLast.error + ". The simple shapes are shown."
     : !urdfOn ? "Opening the CAD model…"

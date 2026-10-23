@@ -16,7 +16,7 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-- A48-7: full QC, PR, merge; then PC steps.
+- A48-8/9/10: full QC, PR, merge, PC steps.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
@@ -132,6 +132,14 @@ Plan: A48-1 (robot page)
   served as NONG_RIG_CAD in /rig_default.js; rig_data.js rigCadAdopt() takes it once per
   stamp on load (own rig kept in view.oldRig; parts null = put back). setLook re-renders
   the box; #rigCadStat wraps at 220 px.
+
+## Round 8 (A48-8): the drawn hand on the CAD lies in the CAD hand's plane (urdfMeshPalm: thin
+axis of the forearm mesh's far 40%); "Show the drawn hands" (RIG.view.handMarks). qc_bot5 has a
+flat hand plate now.
+
+## Round 9-10 (A48-9/10, user 06:37Z: arms not mirrored, bolts off; grid off, box above grid)
+- fit.anchor "home": offsets = -s*delta(home); private real-number URDF: fit 15.6/17.3 deg,
+  agree 1.00 all, every part at home as drawn. viewFloor(): grid at the base's bottom.
 
 ## Next
 1. PC: pull, build_web, systems build, rebuild exe, restart hub; press the button once in the
