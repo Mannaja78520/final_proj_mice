@@ -1,11 +1,11 @@
 # Prize machines tabs + Google Sheet: PC reconciliation
 
-Owner: codex:10231359-8856
+Owner:
 Updated: 2026-10-23 07:04Z
 Branch: codex/gacha-reconcile-1023
 Tree: E:/final_proj/mice/code/.staging-gacha-reconcile
-Last commit: f83bfad (pre-audit checkpoint); source baseline 993862e
-Plan: A47-14/15/16 done; A47-17 trial pages; A47-18 PC reconciliation/deployment
+Last commit: 8402ea2 (completed audit evidence); source baseline 993862e
+Plan: A47-14/15/16/17 done; A47-18 handed off for parent final deployment
 
 ## Goal
 Finish safe PC-only gacha work. Reconcile PR #70/#73/#74/#75 with actual runtime,
@@ -14,9 +14,10 @@ and coordinate one final hub build with parent chat 01a16787-933e-7d81-97a1-0a35
 Preserve Studio/Help trials until the user chooses keep/drop. A47-5 remains hardware-only.
 
 ## Doing now
-Reconcile stale A47-17 status using live preview evidence, then hand A47-18 final
-combined deployment to parent. Parent holds all QC/fake browser/build/restart resources.
-No source edits required: all requested gacha/tabs/trial implementation is already merged.
+None. Audit by codex:10231359-8856 complete; A47-17 closed with actual PC evidence.
+A47-18 returned to todo/open with exact final deployment step for parent.
+All this chat's file/metadata/scratch claims released; no process left in flight.
+Parent codex:10231353-0401 retains its own QC/fake-browser/build/restart/URDF claims.
 
 ## Facts found
 - GitHub API 2026-10-23 confirms all four PRs merged: #70 c73488d,
@@ -38,7 +39,7 @@ No source edits required: all requested gacha/tabs/trial implementation is alrea
 ## Done
 - Read AGENTS, HANDOFF, coordination, CLAUDE, system headers and verification/web skills.
 - Claimed task via BRIDGE under shared mutex; stale stopped Claude ownership explicitly
-  transferred under human continuation request. A47-18 added; A47-17 taken, still doing.
+  transferred under human continuation request. A47-18 audited; A47-17 now done.
 - Created isolated metadata worktree from merged #75. Main dirty files remain untouched.
 - Parent notified: no QC/build/restart competition; requested gacha/tabs/previews in final gate.
 
@@ -60,10 +61,10 @@ No source edits required: all requested gacha/tabs/trial implementation is alrea
   new screenshot, model load, service restart or build was performed by this chat.
 
 ## Next
-1. Under shared mutex close A47-17 (merged trials + real HTTP/content evidence).
+1. Parent claims A47-18 with plan.py doing and its own deployment file claims.
 2. Parent final combined gate includes gacha/gacha_sheet/mice_tabs/previews, then builds
    MiceHub.spec and deploys once. Recheck trial_bar.css/js hashes against #75 after restart.
-3. Parent takes A47-18 for that final integration and completion. Preserve real pages,
+3. Parent closes A47-18 after that final integration and completion. Preserve real pages,
    dirty user data, trial pages, no real Sheet write without explicit authorization.
 
 ## Blocked
