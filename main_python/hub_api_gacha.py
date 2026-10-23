@@ -11,7 +11,11 @@
     GET  /api/gacha/rules           the rules (people's names: login)
     POST /api/gacha/rules           {items, people} save locally              (login)
     POST /api/gacha/rules/pull      read the Google Sheet tabs into the local rules (login)
-    POST /api/gacha/rules/push      send the local rules to the sheet's script (login)
+    POST /api/gacha/rules/push      write the local rules over the sheet's tabs (login)
+    GET  /api/gacha/sheet           the pasted sheet: which way, can it write, its tabs (login)
+    GET  /api/gacha/sheet/read      ?tab= one tab's rows (login)
+    POST /api/gacha/sheet/write     {tab, rows} replace that tab (login)
+    GET  /api/gacha/sheet/script    the Apps Script to paste, this hub's secret in it (login)
     GET  /api/gacha/log             the dispense log, newest last (?limit=, &csv=1)  (login)
     GET  /api/gacha/stats           counts per item / machine / person / app (login)
     GET  /api/gacha/voice           which Voice answers give a prize (config/voice_prizes.json)
@@ -37,6 +41,7 @@ import sys
 from pathlib import Path
 
 import gacha as gm
+import gacha_sheet as gs
 import voice_prizes as vp
 
 NOT_MINE = object()
@@ -139,6 +144,28 @@ def game_names():
     return out
 
 
+def sheet_view(g):
+    """What the page's Google Sheet tab shows: the way in use, whether it can
+    write, and the sheet's tabs (or why they could not be listed)."""
+    rc = g.cfg()["rules"]
+    sid = gs.sheet_id(rc.get("sheet_link"))
+    w = g.sheet()
+    out = {"ok": True, "link": rc.get("sheet_link", ""), "id": sid,
+           "open": "https://docs.google.com/spreadsheets/d/%s/edit" % sid if sid else "",
+           "way": w.name if w else "", "writes": bool(w and w.writes),
+           "chosen": rc.get("sheet_way") or "auto", "ways": list(gs.WAYS),
+           "script_set": bool(rc.get("sheet_write_url")),
+           "key_file": bool(gs.ServiceWay(rc, g.data).key_path().is_file()),
+           "names": gs.tab_names(rc), "auto_push": bool(rc.get("sheet_auto_push")),
+           "log": bool(rc.get("sheet_log")), "tabs": [], "error": "",
+           "items_csv": rc.get("sheet_items_csv", ""), "people_csv": rc.get("sheet_people_csv", "")}
+    try:
+        out["tabs"] = w.tabs() if w else []
+    except gs.SheetError as e:
+        out["error"] = str(e)
+    return out
+
+
 def face_now():
     """The person the face app sees nearest right now, or ''."""
     try:
@@ -210,6 +237,19 @@ class GachaRoutes:
             return self.send_json({"ok": True, "rules": r, "csv": gm.rules_to_csv(r),
                                    "webhooks": g.cfg().get("webhooks") or {},
                                    "sheet_write_url": g.cfg()["rules"].get("sheet_write_url", "")})
+        if path == "/api/gacha/sheet" and method == "GET":
+            return self.send_json(sheet_view(g))
+        if path == "/api/gacha/sheet/read":
+            try:
+                w = g.sheet()
+                if not w:
+                    raise gs.SheetError("paste the sheet's link first")
+                return self.send_json({"ok": True, "rows": w.read((q.get("tab") or [""])[0])})
+            except gs.SheetError as e:
+                return self.send_json({"ok": False, "error": str(e)}, 502)
+        if path == "/api/gacha/sheet/script":
+            tpl = Path(_hub.asset("apps", "gacha", "sheet_script.gs")).read_text(encoding="utf-8")
+            return self.send_json({"ok": True, "script": gs.script_text(tpl, g.data)})
         if path == "/api/gacha/keys" and method == "GET":
             return self.send_json({"ok": True, "keys": [{"name": k.get("name"), "made": k.get("made"),
                                                          "end": str(k["key"])[-4:]} for k in g.keys()]})
@@ -290,6 +330,20 @@ class GachaRoutes:
         if path == "/api/gacha/rules/pull":
             ok, why, rules = g.pull_rules()
             return self.send_json({"ok": ok, "error": why, "rules": rules}, 200 if ok else 502)
+        if path == "/api/gacha/sheet/write":
+            rows, tab = d.get("rows"), str(d.get("tab") or "").strip()
+            if not tab or not isinstance(rows, list) or not all(isinstance(r, list) for r in rows):
+                return self.send_err("which tab, and its rows as lists")
+            try:
+                w = g.sheet()
+                if not w:
+                    raise gs.SheetError("paste the sheet's link first")
+                w.write(tab, rows)
+            except gs.SheetError as e:
+                return self.send_json({"ok": False, "error": str(e)}, 502)
+            g.log_event({"kind": "sheet", "by": who, "reason": "tab written",
+                         "message": "%s: %d rows" % (tab, len(rows))})
+            return self.send_json({"ok": True})
         if path == "/api/gacha/rules/push":
             ok, why = g.push_rules()
             return self.send_json({"ok": ok, "error": why}, 200 if ok else 502)

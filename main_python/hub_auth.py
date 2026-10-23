@@ -95,6 +95,10 @@ GATED = {
     "/api/gacha/dispense", "/api/gacha/can", "/api/gacha/event", "/api/gacha/machine",
     "/api/gacha/rules/pull", "/api/gacha/rules/push", "/api/gacha/log", "/api/gacha/stats",
     "/api/gacha/rules", "/api/gacha/game", "/api/gacha/keys",
+    # The pasted Google Sheet (A47-15): reading it shows names, writing edits
+    # the user's sheet, and the script text carries the hub's sheet secret.
+    "/api/gacha/sheet", "/api/gacha/sheet/read", "/api/gacha/sheet/write",
+    "/api/gacha/sheet/script",
     # what visitors asked Voice, with their names (A47-3)
     "/api/questions", "/api/questions/topics",
 }

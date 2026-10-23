@@ -33,12 +33,18 @@ import time
 import urllib.request
 from pathlib import Path
 
+import gacha_sheet as gs
+
 DEFAULT_CFG = {
     "machines": [],
     "items": {},
     "event": {"name": "", "open": True},
+    # sheet_*: gacha_sheet.py (link, way, script address, key file, tab names);
+    # sheet_auto_push writes every saved rule to the sheet, sheet_log every prize.
     "rules": {"source": "local", "sheet_items_csv": "", "sheet_people_csv": "",
-              "sheet_write_url": ""},
+              "sheet_write_url": "", "sheet_link": "", "sheet_way": "auto",
+              "sheet_key_file": "", "sheet_tabs": {}, "sheet_auto_push": False,
+              "sheet_log": False},
     "webhooks": {},
     "low_stock": 2,
     "wait_s": 20,
@@ -132,6 +138,7 @@ class Gacha:
         self.find_dev = find_dev
         self.fetch = fetch or self._fetch
         self.post = post or self._post
+        self.sheet_http = None            # gacha_sheet.http unless QC hands one in
         self.clock = clock
         self.sleep = sleep
         self.lock = threading.RLock()     # one dispense decision at a time
@@ -180,7 +187,9 @@ class Gacha:
             for k, v in change.items():
                 if k not in DEFAULT_CFG:
                     return False, "unknown setting %r" % k
-                raw[k] = v
+                # rules: a part of it may come alone (the sheet tab saves its
+                # own keys; the script address is never sent back to the page)
+                raw[k] = dict(raw.get(k) or {}, **v) if k == "rules" and isinstance(v, dict) else v
             ids = [m.get("id") for m in raw.get("machines") or []]
             if any(not i for i in ids) or len(ids) != len(set(ids)):
                 return False, "every machine needs its own id"
@@ -205,6 +214,8 @@ class Gacha:
         self.log_event({"kind": "rules", "reason": why,
                         "message": "%d item rows, %d people rows"
                                    % (len(clean["items"]), len(clean["people"]))})
+        if why == "edited" and self.cfg()["rules"].get("sheet_auto_push"):
+            self._sheet_soon(self.push_rules, "rules to the sheet")
         return True, ""
 
     # ---- Google Sheet (or any CSV address) ------------------------------------
@@ -219,14 +230,28 @@ class Gacha:
         with urllib.request.urlopen(req, timeout=10) as r:
             return r.status
 
+    def sheet(self):
+        """The way to the pasted Google Sheet (gacha_sheet.py), or None."""
+        return gs.open_way(self.cfg()["rules"], self.data, self.sheet_http)
+
+    def sheet_tab(self, key):
+        return gs.tab_names(self.cfg()["rules"])[key]
+
     def pull_rules(self):
-        """Fetch the sheet's two tabs (CSV export links) and keep them locally."""
+        """Read the sheet's items + people tabs into the local rules. A pasted
+        sheet link goes through gacha_sheet; old published-CSV links still work."""
         rc = self.cfg()["rules"]
-        if not rc.get("sheet_items_csv") and not rc.get("sheet_people_csv"):
-            return False, "no sheet address set (rules ▸ sheet links)", None
         try:
-            items = self.fetch(rc["sheet_items_csv"]) if rc.get("sheet_items_csv") else ""
-            people = self.fetch(rc["sheet_people_csv"]) if rc.get("sheet_people_csv") else ""
+            if gs.sheet_id(rc.get("sheet_link")) or rc.get("sheet_write_url"):
+                w = self.sheet()
+                if not w:
+                    return False, "the sheet's way is not set up (Google Sheet tab)", None
+                items, people = (gs.rows_csv(w.read(self.sheet_tab(k))) for k in ("items", "people"))
+            elif rc.get("sheet_items_csv") or rc.get("sheet_people_csv"):
+                items = self.fetch(rc["sheet_items_csv"]) if rc.get("sheet_items_csv") else ""
+                people = self.fetch(rc["sheet_people_csv"]) if rc.get("sheet_people_csv") else ""
+            else:
+                return False, "paste the sheet's link first (Google Sheet tab)", None
         except Exception as e:                                   # noqa: BLE001
             return False, "the sheet could not be read (%s)" % e, None
         rules = parse_rules_csv(items, people)
@@ -234,16 +259,28 @@ class Gacha:
         return True, "", rules
 
     def push_rules(self):
-        """Send the local rules to the user's Apps Script (docs/gacha/apps_script.gs)."""
-        url = self.cfg()["rules"].get("sheet_write_url")
-        if not url:
-            return False, "no write address set (see docs/gacha/README.md)"
+        """Write the local rules over the sheet's items + people tabs."""
+        w = self.sheet()
+        if not w or not w.writes:
+            return False, "the sheet can only be read until writing is set up (Google Sheet tab)"
         try:
-            self.post(url, {"kind": "rules", "rules": self.rules()})
+            r = self.rules()
+            for key, cols in (("items", ITEM_COLS), ("people", PEOPLE_COLS)):
+                w.write(self.sheet_tab(key), [cols] + [[x.get(c, "") for c in cols] for x in r[key]])
         except Exception as e:                                   # noqa: BLE001
             return False, "the sheet did not take it (%s)" % e
         self.log_event({"kind": "rules", "reason": "pushed to the sheet"})
         return True, ""
+
+    def _sheet_soon(self, job, why):
+        """A sheet write that must not hold up a prize or a save: in the
+        background, a failure only logged (the page shows the log)."""
+        def go():
+            try:
+                job()
+            except Exception as e:                               # noqa: BLE001
+                self.log_event({"kind": "sheet", "reason": why, "result": "failed", "message": str(e)})
+        threading.Thread(target=go, daemon=True).start()
 
     # ---- logging + webhooks -----------------------------------------------------
     def log_event(self, row):
@@ -260,6 +297,11 @@ class Gacha:
                 if new:
                     w.writeheader()
                 w.writerow({k: row.get(k, "") for k in LOG_FIELDS})
+            if self.cfg()["rules"].get("sheet_log") and row.get("kind") != "done":
+                w = self.sheet()
+                if w and w.writes:
+                    self._sheet_soon(lambda: w.append(self.sheet_tab("log"), [row.get(k, "") for k in LOG_FIELDS],
+                                                      head=LOG_FIELDS), "prize log to the sheet")
         return row
 
     def log_rows(self, limit=200):
