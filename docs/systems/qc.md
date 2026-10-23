@@ -23,7 +23,6 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `.promote-manifest.json`
 - `promote.py`
 - `qc/README.md`
-- `qc/_urdf_real.json`
 - `qc/checks/check_accounts.py`
 - `qc/checks/check_accounts_firmware.py`
 - `qc/checks/check_adapter_fast_fail.py`
@@ -333,6 +332,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/data/handover_sabotage.json`
 - `qc/data/qc_speed.json`
 - `qc/data/scope.json`
+- `qc/data/tabbed_pages.json`
 - `qc/lib/browser.py`
 - `qc/lib/fake_friend.py`
 - `qc/lib/fake_serial.py`

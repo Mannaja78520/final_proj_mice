@@ -9,9 +9,12 @@ a real browser, wide and phone-narrow, and measures what the browser did:
   * opened with #rules, only the rules card shows and that tab is ON;
   * a click on another tab shows only its cards and writes the address (#sheet),
     so a reload or a shared link lands there;
+  * every page in qc/data/tabbed_pages.json uses the shared frame (Voice too);
   * wide: the list is BESIDE the content (left of it); phone: ABOVE it, and
     the page has no sideways scroll.
 """
+import json
+
 import browser
 import fake_serial
 import qc as F
@@ -47,6 +50,15 @@ window.addEventListener("load", async function(){
 
 
 def run(t):
+    # Every page listed in qc/data/tabbed_pages.json is built the shared way:
+    # the .tabbed frame with its list, and Mice.Tabs (not a page's own copy).
+    pages = json.loads((F.CODE / "qc" / "data" / "tabbed_pages.json").read_text(encoding="utf-8"))["pages"]
+    for p in pages:
+        html = (F.CODE / p["file"]).read_text(encoding="utf-8")
+        js = (F.CODE / p["script"]).read_text(encoding="utf-8")
+        t.ok('<div class="tabbed"><nav id=' in html and "new Mice.Tabs(" in js
+             and "/mice-ui.js" in html,
+             "%s is built on the shared Mice.Tabs" % p["file"], p)
     if not browser.available():
         t.give_up("headless Edge not found - install Edge or run --quick")
     fake_serial.reset()

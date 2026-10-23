@@ -145,6 +145,15 @@ body.adv .not-adv{display:none}
 
 <script>
 "use strict";
+// The page's sections, in the side list (Mice.Tabs). A new section is one
+// entry here and one element with data-pane="<id>" in index.template.html.
+const VOICE_TABS = [
+  {id: "talk", label: "Talk", icon: "🎤"}, {id: "answers", label: "Answers", icon: "📝"},
+  {id: "voice", label: "Voice", icon: "🔊"}, {id: "listen", label: "Listening", icon: "👂"},
+  {id: "services", label: "Who does it", icon: "🧩"}, {id: "who", label: "Personality", icon: "🙂"},
+  {id: "faces", label: "Faces", icon: "👤"}, {id: "questions", label: "Questions", icon: "📊"},
+  {id: "adv", label: "Advanced", icon: "⚙", tech: true}];
+
 class VoiceApp {
   constructor() {
     this.$ = id => document.getElementById(id);
@@ -2006,10 +2015,7 @@ static langName(code){
 }
 
   showTab(name){
-  const all = sel => (document.querySelectorAll ? [...document.querySelectorAll(sel)] : []);
-  all("#setTabs .tab").forEach(b => b.classList.toggle("on", b.dataset.tab === name));
-  all("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== name; });
-  try { localStorage.setItem("voice_tab", name); } catch(e) {}
+  if (this.tabs) this.tabs.show(name);
 }
 
   async loadStores(){
@@ -3424,8 +3430,14 @@ static SAMPLES = {
 
     // The open tab is remembered; Advanced is not, since it hides with the
     // technical switch and would leave an empty settings area.
-    const tab = keep("voice_tab", "answers");
-    this.showTab(tab === "adv" ? "answers" : tab);
+    // The side list (Mice.Tabs, user 2026-10-23): one section at a time, the
+    // open one in the address (#answers) so a reload lands on it.
+    const tab = keep("voice_tab", "talk");
+    if (window.Mice && Mice.Tabs && this.$("setTabs") && this.$("setTabs").classList)
+      this.tabs = new Mice.Tabs("setTabs", VOICE_TABS.map(t => Object.assign({}, t,
+        t.id === "questions" ? {load: () => this.loadQuestions()} : {})), {
+        attr: "pane", start: tab === "adv" ? "talk" : tab,
+        onShow: id => { try { localStorage.setItem("voice_tab", id); } catch(e) {} }});
 
     // Unsaved answers are not lost to a closed tab.
     if (typeof window.addEventListener === "function")
@@ -3539,6 +3551,11 @@ if (document.readyState === "loading") {
     <p class="mini tech">Or start it by hand: <code>python apps\voice\service.py</code></p>
   </div>
 
+  <!-- One section at a time from the side list (Mice.Tabs, user 2026-10-23:
+       "voice ส่วนใหญ่จะต้องเลื่อนลงด้านล่าง ... ให้มี tab แก้แบบ face reg").
+       Talk is a section like the settings, so no setting sits under it. -->
+  <div class="tabbed"><nav id="setTabs"></nav><div>
+  <div data-pane="talk">
   <div class="card" id="ready" hidden>
     <!-- What is working, in words; the helper's own lines behind the switch. -->
     <div class="row between">
@@ -3605,27 +3622,16 @@ if (document.readyState === "loading") {
     </div>
   </div>
 
+  </div>
+
   <!-- SETTINGS (A20-12, made tabs A42-1). Everything the store holds, one
        topic per tab, in designer words. Reading is open; every save goes
        through the gated /api/voice/config and /api/voice/faq. -->
   <section id="settings" hidden>
-    <h2>Settings</h2>
-    <div class="tabs" id="setTabs" role="tablist">
-      <button class="tab on" data-tab="answers" onclick="showTab('answers')">Answers</button>
-      <button class="tab" data-tab="voice" onclick="showTab('voice')">Voice</button>
-      <button class="tab" data-tab="listen" onclick="showTab('listen')">Listening</button>
-      <button class="tab" data-tab="services" onclick="showTab('services')">Who does it</button>
-      <button class="tab" data-tab="who" onclick="showTab('who')">Personality</button>
-      <button class="tab" data-tab="faces" onclick="showTab('faces')">Faces</button>
-      <button class="tab" data-tab="questions" onclick="showTab('questions');voiceApp.loadQuestions()">Questions</button>
-      <button class="tab tech" data-tab="adv" onclick="showTab('adv')">Advanced</button>
-    </div>
-    <p class="mini not-adv">The helper's address and the AI model are under
-       Advanced, which appears with Show technical details on.</p>
 
     <!-- ANSWERS: a sheet. Every cell is typed into where it stands; one Save
          sends them all. Nothing jumps to a form somewhere else. -->
-    <div class="card" data-pane="answers">
+    <div class="card" data-pane="answers" hidden>
       <div class="row">
         <input id="ansFind" type="search" placeholder="Find an answer…" oninput="findAnswers()">
         <button onclick="addAnswerRow()">＋ Add a row</button>
@@ -3886,4 +3892,5 @@ if (document.readyState === "loading") {
       </div>
     </div>
   </section>
+  </div></div>
 </div>

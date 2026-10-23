@@ -61,7 +61,9 @@ p.warn{color:var(--warn)}
      opening it from this PC needs none. The hub still asks a caller on the
      network, in main.py. -->
 
-<div class="card">
+<!-- One section at a time (Mice.Tabs, user 2026-10-23: tabs like Reconize's own). -->
+<div class="tabbed"><nav id="tabs"></nav><div>
+<div class="card" data-tab="open">
   <h2>Open it</h2>
   <p class="mini" id="whatIs">Reconize runs beside Mice on this PC. It watches the
     cameras and knows who is who; the rig follows it.</p>
@@ -80,7 +82,7 @@ p.warn{color:var(--warn)}
   </div>
 </div>
 
-<div class="card">
+<div class="card" data-tab="follow">
   <h2>Is the rig following it?</h2>
   <div class="row" style="align-items:baseline">
     <span class="statline" id="wStat" role="status" aria-live="polite">checking…</span>
@@ -102,7 +104,7 @@ p.warn{color:var(--warn)}
      where the login is. The watcher reads the file on the next arrival, so a
      save needs no restart. Keys starting with _ are the file's own notes: the
      page sends them back untouched so they survive the save. -->
-<div class="card" id="rulesCard">
+<div class="card" id="rulesCard" data-tab="say">
   <h2>What the rig says</h2>
   <p class="mini">When the face app sees somebody at a camera you set up, the rig says
     hello (or goodbye). Nothing is said until you turn it on.</p>
@@ -145,6 +147,8 @@ p.warn{color:var(--warn)}
     </div>
   </div>
 </div>
+
+</div></div>
 
 <script>
 // WHICH outside program this page is for. Asking, starting and opening it is
@@ -448,4 +452,7 @@ async function saveRules(){
   rSay("Saved. The next person the rig sees gets these words.", "ok");
 }
 loadRules();
+new Mice.Tabs("tabs", [{id: "open", label: "Open it", icon: "👁"},
+                       {id: "follow", label: "Is the rig following it?", icon: "🔗"},
+                       {id: "say", label: "What the rig says", icon: "💬"}]);
 </script>

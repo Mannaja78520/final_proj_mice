@@ -4,7 +4,7 @@ Owner: claude:10230525-3d21
 Updated: 2026-10-23 06:05Z
 Branch: claude/project-thread-s0kmlq
 Last commit: (none yet)
-Plan: A47-14 tabs, A47-15 sheet editing
+Plan: A47-14 tabs, A47-15 sheet editing (both merged PR #70), A47-16 tabs on all pages, A47-17 trial pages
 
 ## Goal
 User 2026-10-23: "🎁 Prize machines ขอเป็น tab เพื่อให้ตั้งค่าง่ายไม่ต้องเลื่อนลงล่างอย่างเดียว
@@ -12,7 +12,8 @@ User 2026-10-23: "🎁 Prize machines ขอเป็น tab เพื่อใ�
 Sheet link and the hub reads AND writes it. No key in git; the way is config, not one route.
 
 ## Doing now
-Second full QC after adding shared Mice.Tabs (mice-ui.js + .tabbed in mice.css), then merge PR #70.
+A47-16: Voice on Mice.Tabs done locally (Talk + 8 sections in the side list); next Camera,
+Reconize, Photobooth, All-Jao pages, then PR. Then A47-17 previews (/studio-preview/, /help-preview/).
 
 ## Facts found
 - apps/gacha/index.html: one long page, 11 cards; all JS inline; Mice.Api for every call.
@@ -36,7 +37,7 @@ Second full QC after adding shared Mice.Tabs (mice-ui.js + .tabbed in mice.css),
 - check_gacha_sheet 16 asserts; sabotage 9/9 caught. Browser look 1280/390: no sideways scroll, no JS errors.
 
 ## Next
-1. Full QC, PR, merge; delete this file in the merging PR.
+1. A47-16 other app pages, QC, PR, merge. 2. A47-17 previews. Delete this file when all merged.
 2. PC: rebuild MiceHub.exe (spec); user does the 5 Thai steps once with a real sheet (not tested
    against real Google yet: only fakes).
 
@@ -53,3 +54,9 @@ Second full QC after adding shared Mice.Tabs (mice-ui.js + .tabbed in mice.css),
   check_mice_tabs (browser, wide = beside, phone = above; sabotage 3/3). mice_nong flash 82.9% after.
 - Full QC #1 (before Mice.Tabs): 7815 pass; only the known receipt refusal (qc_chain_proj.json
   rewrite) + 5 crowd flakes (modsite_*, studio_peer) that pass alone.
+- Voice: apps/voice/app.js VOICE_TABS (top) + init builds Mice.Tabs(attr "pane", start from
+  localStorage voice_tab); showTab(name) kept as a wrapper (check_voice_profiles calls it).
+  #settings stays hidden while the helper is down (only the Talk pane + down card then).
+- qc/data/tabbed_pages.json lists pages on Mice.Tabs; check_mice_tabs checks each.
+- Screenshot trick: scratch shot_voice.py runs apps/voice/service.py Brain on a free port
+  and points MICE_VOICE_CONFIG {"service": url} at it, so settings render with no models.
