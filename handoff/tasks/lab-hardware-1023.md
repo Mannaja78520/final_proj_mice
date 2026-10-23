@@ -15,9 +15,10 @@ Latest direct clarification: same board/default wiring as existing module;
 RS485 currently NOT wired. User authorizes bounded motor/Hall identification.
 
 ## Doing now
-Raw USB window explicitly RELEASED19:34:48; no esptool child/UART handle remains.
-Integration starts new Hub and owns runtime acceptance. Offline bounded diagnosis
-of bulkread only; await separate hardware handover. No flash/erase/motor yet.
+Integration runtime accepted/released19:36. Actual hardware claimed19:38: robot67,
+COM9/10, gacha provision/update/motorHall; Hub sole serial owner/managed flasher.
+User asks focus actual provision/motor, not wholechip backup. Start known COM9
+USB gacha flash after inspecting standard offset-only write command; no erase-all.
 Integration chat 01a1679e-50a4-7e71-9cfb-64b6afa635c1 owns gate/build/restart.
 Agreed next window: integration builds to alternate output, stops old Hub,
 sends WINDOW OPEN for raw USB identity/backup, then resumes final startup.
