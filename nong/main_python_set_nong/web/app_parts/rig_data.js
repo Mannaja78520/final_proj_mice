@@ -53,7 +53,7 @@ const DEFAULT_RIG = {
   // A48-1 robot look (urdf_view.js / urdf_view.json): which look, which URDF,
   // whose sizes the simple shapes use ("urdf" or "custom"), your own sizes
   // kept while the URDF's are in use, and the URDF's last measured sizes.
-  view: { look: "rig", model: "", sizes: "custom", custom: null, urdfDims: null },
+  view: { look: "rig", model: "", sizes: "custom", custom: null, urdfDims: null, oldRig: null },
   zero: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
   axis: [...DEFAULT_AXIS],        // rotation axis per joint (roll/pitch/yaw)
   invert: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -99,6 +99,15 @@ const DEFAULT_RIG = {
   // axes aren't exactly aligned to X/Y/Z / 90°, so this rotates each joint's
   // rotation axis to match. Visual/rig only. Default no tilt.
   tilt: [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]],
+  // A48-6 (user 2026-10-23 "make it like the CAD"): what a CAD needs that the
+  // tilts alone cannot say, filled by "Make the simple shapes match the CAD"
+  // (rig_from_cad.js). after = a fixed turn AFTER each servo (roll/pitch/yaw
+  // deg): a CAD bone need not be square to its joint's axis. mount = each
+  // shoulder's offset (mm) from the symmetric spot. order = each arm's joints
+  // from the body out, as the CAD chains them. Defaults change nothing.
+  after: [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]],
+  mount: { L: [0, 0, 0], R: [0, 0, 0] },
+  order: [[0, 1, 2, 3], [4, 5, 6, 7]],
   // SIZES per universal joint / per bar, indexed like PAIRS:
   //   0 = L shoulder, 1 = L elbow, 2 = R shoulder, 3 = R elbow
   // bar hanging from it (0/1 = L upper arm / L forearm, 2/3 = R upper / R fore).
@@ -157,6 +166,16 @@ function mergeRig(saved) {
   if (!Array.isArray(r.tilt)) r.tilt = JSON.parse(JSON.stringify(DEFAULT_RIG.tilt));
   r.tilt = DEFAULT_RIG.tilt.map((d, i) =>
     (Array.isArray(r.tilt[i]) && r.tilt[i].length === 3) ? r.tilt[i] : [...d]);
+  r.after = DEFAULT_RIG.after.map((d, i) =>
+    (Array.isArray(r.after) && Array.isArray(r.after[i]) && r.after[i].length === 3) ? r.after[i].map(v => +v || 0) : [...d]);
+  const m3 = (v) => Array.isArray(v) && v.length === 3 ? v.map(x => +x || 0) : [0, 0, 0];
+  r.mount = { L: m3((r.mount || {}).L), R: m3((r.mount || {}).R) };
+  // an order only swaps WITHIN a pair (shoulder pair first, then the elbow pair)
+  r.order = [0, 4].map((b, a) => {
+    const o = Array.isArray(r.order) && Array.isArray(r.order[a]) ? r.order[a].map(Number) : [];
+    const ok = o.length === 4 && [o[0], o[1]].sort().join() === [b, b + 1].join() && [o[2], o[3]].sort().join() === [b + 2, b + 3].join();
+    return ok ? o : [b, b + 1, b + 2, b + 3];
+  });
   if (!Array.isArray(r.jointR) || r.jointR.length !== 4) r.jointR = [...DEFAULT_RIG.jointR];
   if (!Array.isArray(r.barR) || r.barR.length !== 4) r.barR = [...DEFAULT_RIG.barR];
   return r;

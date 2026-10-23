@@ -124,30 +124,23 @@ Plan: A48-1 (robot page)
 
 ## Round 4 (A48-4): right forearm STL now downloads once (`urdfLoading`); check waits for both tips.
 
-## PC check after A48-4 (2026-10-23 07:30, claude:xdlrot)
-- main ac33fb8, build_web, systems build, exe rebuilt (stale=false 4448772707e1), hub restarted.
-- check_urdf_look (real model): 34/34 PASS. Tips: L_fore_link fromMesh true 181.8 mm,
-  R_fore_link fromMesh true 181.8 mm. Every arm joint agree > 0.5 (the pass case; exact
-  numbers are not logged on a pass). Bind (qc/_urdf_real.json): L_SH_R -1/90.3,
-  L_SH_P +1/-135.8, L_EL_P +1/87.1, L_EL_R -1/92.0, R_SH_R +1/-89.2, R_SH_P -1/-56.2,
-  R_EL_P +1/-74.8, R_EL_R +1/89.7, waist -1/0, shrug -1/0.
-- Studio Views (the live RIG: shoulderX 91.5, foreLen 183/183, not rig_default's
-  91.8/181.8): fit L 15.7 deg (up 14.6), R 20.6 deg (up 22.8), swapSh both, fore true;
-  warnings "left up to 16 deg, right up to 21 deg". Each shoulder pitch +60: both CAD arms
-  swing forward like the shapes. Screens scratch/deploy-a48-4-2026-10-23/. Back to Simple
-  shapes (checked after a reload: look rig, sizes unchanged).
+## A48-4/5 PC + round 5 (2026-10-23)
+- PC A48-4: real model 34/34, both tips fromMesh 181.8 mm. Studio R 20.6 deg came from
+  fit.frames at full weight (private real-number URDF reproduced it); weight 0.5 -> ~15/15.
+- qc_bot5 (write_own_cad): round-number CAD, tilted roll axes, asymmetric shoulders.
 
-## Round 5 (A48-5, claude:wvmxq5, 2026-10-23)
-- Studio's R 20.6 is NOT the live RIG: a private local URDF from the real joint numbers
-  with rig_default gives the same 15.7 / 20.1. Cause: the turn-from-home term (fit.frames)
-  at full weight pulls the right arm's pointing off. Weight 0.5 -> 15 / 15 (0 -> 15/14.9).
-  urdf_view.json fit.frames is now a weight (0.5). Keeping 3 shoulder candidates did NOT help.
-- New fixture qc_bot5 (check_urdf_look write_own_cad, round numbers, ROS frame, tilted roll
-  axes): 21.6 at weight 1, 15 at 0.5; the check needs < 17. ~15 deg left = rig vs CAD.
+## Round 6 (A48-6, claude:wvmxq5): rig from the CAD
+- rig_from_cad.js measures at the zero pose in CAD look: dims, RIG.mount (per shoulder),
+  shrugPivot; with "joints" in urdf_view.json rigFromCad also tilt, RIG.after, RIG.order
+  (then shapes == CAD, 0 mm). Default WITHOUT joints (user 05:26Z: keep the rig's axes,
+  senses, zero, home - tuned to the real robot). Never servo numbers. Old in view.oldRig.
+- applyPose: tilt*servo*after; shrug anchors y += mount (applyPose overwrote it: bug found).
+- CAD look base shift uses the shapes' middle incl. mount (waist on the shapes' line).
+- Not done: tools/make_urdf.py ignores after/mount/order (fine for the default rig).
 
 ## Next
-1. PC: pull main, build_web, systems build, rebuild exe, check_urdf_look with
-   MICE_URDF_MODEL; Studio Views fit should read ~15 / ~15 deg.
-2. Lab day: robot-tests.md item 6.
+1. PC: pull, build_web, systems build, rebuild exe; Views > Robot look = CAD, press
+   "Use the CAD's sizes and shoulder spots", note the hand moves; ship as default only if OK.
+2. Lab day: robot-tests.md items 6-7.
 ## Blocked / not done
 - Real SolidWorks URDF not tested yet (only on the PC). Not tested on the robot.
