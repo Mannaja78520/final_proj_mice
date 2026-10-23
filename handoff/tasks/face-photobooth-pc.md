@@ -1,9 +1,9 @@
 # PC Face app, watcher and Photobooth integration
 
 Owner: codex:10231359-7280
-Updated: 2026-10-23T14:04:35.748731+07:00
+Updated: 2026-10-23T14:09:15+07:00
 Branch: codex/face-pc-1023
-Last commit: 7298ab4 (inspection-start checkpoint; see git log for latest)
+Last commit: bbff243 (audit checkpoint; see git log for final)
 Plan: A45-30; remaining real run A45-14/A45-12
 
 ## Goal
@@ -11,8 +11,9 @@ Finish all PC-only Face app/watcher/Photobooth work without editing friend's sou
 Coordinate results with parent codex:10231353-0401, which owns URDF/QC/build/restart.
 
 ## Doing now
-Prepare official Photobooth startup + health/hub-page smoke after parent QC release.
-No extra four-source benchmark: it was already done and the booth connector is absent.
+Preparation complete. Waiting for parent QC release; no process runs in this chat.
+Parent may resume this chat for the bounded startup smoke or do it during deployment.
+Task-file and scratch claims released at this checkpoint; no exclusive lease was acquired.
 
 ## Facts found
 - HANDOFF.md: friend sources outside code are read-only/start-only; no edits allowed.
@@ -33,21 +34,36 @@ No extra four-source benchmark: it was already done and the booth connector is a
 - friend /api/health: model_ready true, dual/CUDA live+background, queues0.
 - friend OpenAPI /api/look is stateless. /recognize-central defaults persist=true;
   do not use it for testing real event data. No inference request added here.
+- Actual hub /app/photobooth/200 (1768bytes); its health probe returns up:false,
+  correctly matching stopped Main. Partner entry matches the installed Main folder.
+- Hub partner-start route uses official stop-main then run-main and browser pairing.
+  Prefer this end-to-end check after resource release; no source change/rebuild needed.
+- PID40156 is absent. Official stop-main can discard its matching dead record.
+- Protected baseline: Face e8d4a22 has 3 existing dirty entries; All-Jao f9e8ff4,
+  Photobooth858f0b6 and installed booth41561e3 are clean. Preserve those existing edits.
 
 ## Done
 - Read AGENTS/HANDOFF/CLAUDE, coordination, relevant task files and app-faces header.
 - Claimed only this handoff plus private scratch; A45-30 added under shared mutex.
 - Parent informed that exclusive resources remain theirs.
+- Private evidence in scratch/face-photobooth-pc-1023/: OpenAPI, watcher health/state,
+  passive observation, protected baseline, stale PID record and hub routes.
+- No source edits, inference, QC, service changes, capture or hardware commands.
 
 ## Next
 1. Parent explicitly says hold startup until QC RELEASE in BRIDGE (~full gate pending).
-2. Then official stop-main.ps1 (stale record cleanup), run-main.ps1 -NoBrowser,
-   health8121, hub Photobooth entry/read-only pages; preserve original services/data.
+2. After recording own startup lease, recheck ports8121/8123 and dead PID identity.
+   Use hub POST /api/partners/start?id=photobooth; poll health8121 with a time limit.
+   Check booth/admin read-only pages and hub health up:true; record PID, leave it running.
+   Preserve friend8000/web5173/watcher8769/Voice and all event data.
+   If schema revision refuses startup, report it to friend; never migrate here.
+   Do not start TV camera/photo session while hub owns the PC camera.
 3. Return exact checklist delta to parent; no direct lab-day.md/friend-face-server.md edits.
 4. Friend must add booth name connector before simultaneous names can be measured.
 
 ## Blocked
-- Startup/runtime smoke waits for explicit parent resource release; no QC run here.
+- Startup smoke waits for explicit parent QC RELEASE, not user approval/hardware.
+  Parent instructed targeted CAD then frozen full gate; hold startup until release.
 - Friend: booth Reconize adapter/name display is absent, not a hardware blocker.
 - Friend: booth TV only takes a physical camera index; shared hub stream unsupported.
 - Real robot source and enrolled-person camera-to-name measurement require robot/person.
@@ -66,4 +82,4 @@ No extra four-source benchmark: it was already done and the booth connector is a
 - A13-8: phone WiFi OTA; A13-4: second PC same WiFi; optional A9-2/3: TV at3m/remote.
 - Friend: docs/gacha/friend_requests.md game events/player IDs/tags remain optional asks.
 - A31-11/A0-33: user's tool settings. Thesis A26-73/A21-17/A31-32 dropped; no thesis work.
-- A47 gacha PC acceptance lives with codex:10231359-8856, not a hardware-only wait.
+- A47-18 gacha PC acceptance returned from codex:10231359-8856 to parent for deployment.
