@@ -16,7 +16,10 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-- Round 5 (A48-5): full QC, PR, merge; then the PC reruns check_urdf_look.
+- A48-6 (user 2026-10-23 "เอาให้เหมือน cad"): Rig made FROM the CAD. New rig fields after
+  (turn after each servo), mount (per-shoulder offset), order (CAD chain order per arm);
+  app_parts/rig_from_cad.js computes them at the zero pose; zero/home/invert/min/max kept
+  (servo numbers unchanged); old rig kept in RIG.view.oldRig; button + dialog choice.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
