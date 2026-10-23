@@ -12,6 +12,7 @@
  *   Mice.Status   one status line, five states, the technical part hidden
  *   Mice.TopBar   the same head on every page (auto-mounted, see below)
  *   Mice.Partner  an outside program: is it up, start it, open it
+ *   Mice.Tabs     one section on screen at a time, picked from a side list
  *
  * Served by the hub only (not compiled into a board's flash: the board site
  * has no room - mice_nong is near its OTA slot). How to build a page with
@@ -240,7 +241,62 @@
     }
   }
 
-  window.Mice = {Api, Status, TopBar, Partner, here};
+  /* --------------------------------------------------------------- Tabs */
+  // One section on screen at a time, picked from a list down the side (a
+  // wrapping row on a phone): the friend's Reconize app's layout, asked
+  // 2026-10-23 ("ทำ tab ... ให้ใช้งานง่ายแบบตัวของ facereg") so a setting is
+  // a click away instead of a long scroll. Markup:
+  //   <div class="tabbed"><nav id="tabs"></nav><div> cards with data-tab="id" </div></div>
+  //   new Mice.Tabs("tabs", [{id, label, icon?, load?}], {onShow?, hash?, attr?})
+  // The open tab is kept in the address (#id) so a reload or a shared link
+  // lands on it; `load` runs each time its tab opens (fresh data, no polling).
+  class Tabs {
+    constructor(nav, tabs, opts = {}) {
+      this.nav = typeof nav === "string" ? document.getElementById(nav) : nav;
+      this.tabs = tabs;
+      this.opts = opts;
+      this.attr = opts.attr || "tab";
+      this.nav.classList.add("tabs");
+      this.nav.setAttribute("role", "tablist");
+      this.nav.innerHTML = "";
+      tabs.forEach(t => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "tab" + (t.tech ? " tech" : "");
+        b.setAttribute("role", "tab");
+        b.dataset.t = t.id;
+        b.textContent = (t.icon ? t.icon + " " : "") + t.label;
+        b.onclick = () => this.show(t.id);
+        this.nav.appendChild(b);
+      });
+      if (opts.hash !== false)
+        window.addEventListener("hashchange", () => this.show(location.hash.slice(1), true));
+      this.show(opts.hash !== false ? location.hash.slice(1) : opts.start);
+    }
+    has(id) { return this.tabs.some(t => t.id === id); }
+    show(id, fromHash) {
+      if (!this.has(id)) {
+        if (fromHash) return;               // a hash that is not ours (an in-page link)
+        id = this.opts.start && this.has(this.opts.start) ? this.opts.start : this.tabs[0].id;
+      }
+      this.current = id;
+      document.querySelectorAll("[data-" + this.attr + "]").forEach(c => {
+        c.hidden = c.dataset[this.attr] !== id;
+      });
+      this.nav.querySelectorAll(".tab").forEach(b => {
+        const on = b.dataset.t === id;
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-selected", on);
+      });
+      if (this.opts.hash !== false && location.hash !== "#" + id)
+        history.replaceState(null, "", "#" + id);
+      const t = this.tabs.find(x => x.id === id);
+      if (t.load) t.load();
+      if (this.opts.onShow) this.opts.onShow(id);
+    }
+  }
+
+  window.Mice = {Api, Status, TopBar, Partner, Tabs, here};
 
   if (document.readyState === "loading")
     document.addEventListener("DOMContentLoaded", TopBar.mountAll);

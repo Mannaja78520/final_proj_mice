@@ -128,6 +128,12 @@ every status push.
   `config/partners.json`: `.load()`, `.check()` (the HUB asks it), `.ensure()`
   (start if silent), `.open(which, button)`. A new outside program is an entry
   in that file and a page with one `new Mice.Partner(...)`.
+* **`new Mice.Tabs("tabs", [{id, label, icon, load}])`** — a page in sections, one
+  shown at a time (the friend's Reconize layout, user 2026-10-23). Markup
+  `<div class="tabbed"><nav id="tabs"></nav><div> cards with data-tab="id" </div></div>`;
+  the list sits beside the content on a wide screen and above it on a phone,
+  the open section is kept in the address (`#id`), `load` runs when it opens.
+  Every app page with more than one job uses it (`check_mice_tabs`).
 * **`Mice.here(url)`** — a `127.0.0.1` link made to work from a phone.
 
 ## Rules the checks hold

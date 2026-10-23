@@ -24,7 +24,11 @@
 
 <div class="card" id="loginHere"></div>
 
-<div class="card">
+<!-- One tab per job (user 2026-10-23: tabs, not one long scroll). Mice.Tabs
+     draws the list from TABS in the script; each card names its tab in data-tab. -->
+<div class="tabbed"><nav id="tabs"></nav><div>
+
+<div class="card" data-tab="give">
   <h2>Give a prize</h2>
   <div class="row"><span class="lbl">Kind</span><select id="gItem"></select>
     <span class="lbl" style="min-width:0">for</span>
@@ -39,7 +43,7 @@
   <div class="statline" id="gStat" aria-live="polite"></div>
 </div>
 
-<div class="card">
+<div class="card" data-tab="give">
   <h2>Event</h2>
   <div class="row"><span class="lbl">Name</span><input id="evName" maxlength="40" style="flex:1">
     <button onclick="event_({name: val('evName')})">Save on every machine</button></div>
@@ -50,7 +54,7 @@
   <div class="statline" id="evStat"></div>
 </div>
 
-<div class="card">
+<div class="card" data-tab="machines">
   <h2>Machines</h2>
   <p class="mini">Each machine is one prize board. <b>Kind</b> is what it holds; machines with the same kind
     stand in for each other when one runs out, nearest first (<b>Next to</b>).</p>
@@ -66,7 +70,7 @@
   <div class="statline" id="mStat"></div>
 </div>
 
-<div class="card">
+<div class="card" data-tab="machines">
   <h2>Kinds of prize</h2>
   <p class="mini"><b>When it runs out, give instead</b>: other kinds (short names, spaces between) a person gets in
     its place, from a machine next to the asked one first. Empty = say it ran out.</p>
@@ -75,7 +79,7 @@
   <div class="statline" id="iStat"></div>
 </div>
 
-<div class="card" data-needs-login="gacha">
+<div class="card" data-tab="rules" data-needs-login="gacha">
   <h2>Rules for this event</h2>
   <p class="mini"><b>Per kind</b>: how many there are in the event and how many times one person may get one
     (0 = no limit). <b>People</b>: a person's own limit, or a special person (their name as the face app knows it).
@@ -92,17 +96,68 @@
     <button onclick="push()">Send them to the sheet</button>
     <a id="dlItems" download="gacha_items.csv">kinds as a file</a> · <a id="dlPeople" download="gacha_people.csv">people as a file</a>
   </div>
-  <h3>Google Sheet</h3>
-  <p class="mini">Make a sheet with two tabs, <b>items</b> and <b>people</b> (layout in Help ▸ Prize machines),
-    then File ▸ Share ▸ Publish to web ▸ each tab as CSV, and paste the two links here.</p>
-  <div class="row"><span class="lbl">Kinds tab link</span><input id="shItems" style="flex:1"></div>
-  <div class="row"><span class="lbl">People tab link</span><input id="shPeople" style="flex:1"></div>
-  <div class="row"><span class="lbl">Write-back link</span><input id="shWrite" style="flex:1" placeholder="optional: the sheet's own script, to send rules back">
-    <button onclick="saveSheet()">Save links</button></div>
+  <p class="mini">The sheet itself is set up in the <a href="#sheet" onclick="showTab('sheet')">Google Sheet</a> tab.</p>
   <div class="statline" id="rStat"></div>
 </div>
 
-<div class="card" data-needs-login="gacha">
+<div class="card" data-tab="sheet" data-needs-login="gacha">
+  <h2>Google Sheet</h2>
+  <p class="mini">Paste the sheet's link (the address in the browser when the sheet is open). The hub reads the
+    rules from it and, once writing is set up, edits it too: the rules, any tab below, and a row per prize.</p>
+  <div class="row"><span class="lbl">Sheet link</span><input id="shLink" style="flex:1" placeholder="https://docs.google.com/spreadsheets/d/…/edit">
+    <button class="primary" onclick="shSave()">Save</button>
+    <a class="btn" id="shOpen" target="_blank" hidden>Open the sheet ↗</a></div>
+  <div class="statline" id="shStat" aria-live="polite">-</div>
+  <details id="shHow">
+    <summary>วิธีตั้งค่าครั้งแรก ให้ hub แก้ชีตได้ (ทำครั้งเดียว ประมาณ 3 นาที)</summary>
+    <ol class="mini" style="padding-left:var(--sp-4)">
+      <li>เปิดชีตของคุณ แล้ววางลิงก์ชีตในช่อง <b>Sheet link</b> ด้านบน กด <b>Save</b>
+        (ถ้าแค่อ่าน: Share ▸ General access ▸ Anyone with the link ก็พอ)</li>
+      <li>กด <b>Copy the script</b> ด้านล่าง (สคริปต์มีรหัสลับของ hub นี้อยู่แล้ว ห้ามส่งให้คนอื่น)</li>
+      <li>ในชีต: Extensions ▸ Apps Script ลบของเดิมทั้งหมด วางสคริปต์ แล้วกด Save</li>
+      <li>Deploy ▸ New deployment ▸ ⚙ เลือก Web app, Execute as: <b>Me</b>, Who has access: <b>Anyone</b> ▸ Deploy
+        ▸ Authorize (ถ้าขึ้นเตือน กด Advanced ▸ Go to … เพราะเป็นสคริปต์ของคุณเอง)</li>
+      <li>คัดลอก <b>Web app URL</b> มาวางในช่อง <b>Script address</b> แล้วกด <b>Save</b>
+        บรรทัดสถานะจะขึ้นว่า "can read and write"</li>
+    </ol>
+    <p class="mini">ถ้าแก้สคริปต์ภายหลัง: Deploy ▸ Manage deployments ▸ ✎ ▸ Version: New version (ที่อยู่เดิมใช้ต่อได้)</p>
+  </details>
+  <div class="row"><span class="lbl">Script address</span><input id="shScript" style="flex:1" placeholder="the Web app URL from step 5 (empty = read only)">
+    <button onclick="shCopyScript()">Copy the script</button></div>
+  <textarea id="shScriptText" rows="6" hidden readonly style="width:100%"></textarea>
+  <div class="row"><span class="lbl">How it writes</span><select id="shWay">
+      <option value="auto">by itself: the first that is set up</option>
+      <option value="script">through the sheet's own script</option>
+      <option value="service">through a Google service account</option>
+      <option value="link">never: read only</option></select></div>
+  <p class="mini tech">service account: key file <code>.local/gacha/google_service.json</code> on this PC (never in git),
+    the sheet shared with its e-mail as Editor; needs the cryptography package. Ways: main_python/gacha_sheet.py.</p>
+  <div class="row"><label><input type="checkbox" id="shAuto"> Every saved rule goes to the sheet too</label>
+    <label><input type="checkbox" id="shLog"> Each prize is a new row in the sheet</label></div>
+  <div class="row"><span class="lbl">Tab names</span>
+    <span class="mini">kinds</span><input id="shTabItems" style="width:110px">
+    <span class="mini">people</span><input id="shTabPeople" style="width:110px">
+    <span class="mini">prizes</span><input id="shTabLog" style="width:110px">
+    <button class="primary" onclick="shSave()">Save</button></div>
+  <div class="row"><button onclick="pull()">Take the rules from the sheet</button>
+    <button onclick="push()">Send the rules to the sheet</button></div>
+
+  <h3>Edit a tab of the sheet</h3>
+  <div class="row"><span class="lbl">Tab</span><input id="edTab" list="edTabs" style="flex:1" placeholder="items">
+    <datalist id="edTabs"></datalist>
+    <button onclick="edOpen()">Open</button></div>
+  <div class="wrapx"><table class="gt" id="edT"><tbody></tbody></table></div>
+  <div class="row"><button onclick="edAdd('row')">+ Row</button><button onclick="edAdd('col')">+ Column</button>
+    <button class="primary" onclick="edSave()">Save to the sheet</button></div>
+  <div class="statline" id="edStat" aria-live="polite"></div>
+
+  <details class="tech"><summary>Older way: tabs published as CSV</summary>
+    <div class="row"><span class="lbl">Kinds tab link</span><input id="shItems" style="flex:1"></div>
+    <div class="row"><span class="lbl">People tab link</span><input id="shPeople" style="flex:1"></div>
+    <p class="mini">Used only when no sheet link is set.</p></details>
+</div>
+
+<div class="card" data-tab="apps" data-needs-login="gacha">
   <h2>Tell other apps</h2>
   <p class="mini">Addresses that hear about each prize, one per line. The game or another program gets a
     short message when this happens.</p>
@@ -112,7 +167,7 @@
   <div class="statline" id="hStat"></div>
 </div>
 
-<div class="card" data-needs-login="gacha">
+<div class="card" data-tab="games" data-needs-login="gacha">
   <h2>Voice answers that give a prize</h2>
   <p class="mini">When Voice answers a question that fits a row, the person asking gets that kind (the rules above
     still apply). Leave a box empty to not care about it. <b>About</b> is the question's topic
@@ -125,7 +180,7 @@
   <div class="statline" id="vpStat"></div>
 </div>
 
-<div class="card" data-needs-login="gacha" id="games">
+<div class="card" data-tab="games" data-needs-login="gacha" id="games">
   <h2>Games that give a prize</h2>
   <p class="mini">A win in the friend's games (All-Jao Games, opened from the hub) asks for a prize. The first row that
     fits gives its kind; the rules above still apply. <b>Result</b>: words in what the game shows, for example the
@@ -138,7 +193,7 @@
   <div class="statline" id="gmStat"></div>
 </div>
 
-<div class="card" data-needs-login="gacha">
+<div class="card" data-tab="apps" data-needs-login="gacha">
   <h2>Other PCs and forms</h2>
   <p class="mini">A program on another PC, a Google Form's script or a button in another app can ask for a prize with
     a key, without signing in here. One key per app; remove it to stop that app. A key can only ask: the limits per
@@ -155,7 +210,7 @@ Examples: docs/gacha/README.md</pre>
   <div class="statline" id="kStat"></div>
 </div>
 
-<div class="card">
+<div class="card" data-tab="words">
   <h2>What the robot says</h2>
   <p class="mini">{item} {machine} {place} {person} {asked} are filled in.</p>
   <div id="msgs"></div>
@@ -163,13 +218,15 @@ Examples: docs/gacha/README.md</pre>
   <div class="statline" id="sStat"></div>
 </div>
 
-<div class="card" data-needs-login="gacha">
+<div class="card" data-tab="log" data-needs-login="gacha">
   <h2>This event so far</h2>
   <div id="stats" class="bars"></div>
   <h3>Every prize</h3>
   <div class="wrapx"><table class="gt" id="logT"><thead><tr><th>When</th><th>What</th><th>Machine</th><th>Kind</th><th>Person</th><th>From</th><th>Admin</th><th>Words</th></tr></thead><tbody></tbody></table></div>
   <div class="row"><button onclick="loadLog()">Refresh</button><a href="/api/gacha/log?limit=0&csv=1" download="gacha_log.csv">Download all as a file</a></div>
 </div>
+
+</div></div>
 
 <script>
 // Everything goes through the hub (/api/gacha/*, main_python/hub_api_gacha.py);
@@ -204,8 +261,6 @@ async function load() {
   $("evName").value = S.event.name || "";
   $("evOpen").textContent = S.event.open ? "open" : "closed";
   drawMachines(); drawItems(); drawMsgs();
-  $("shItems").value = S.rules.sheet_items_csv || "";
-  $("shPeople").value = S.rules.sheet_people_csv || "";
   $("lowN").value = S.low_stock || 0;
   const live = S.machines.filter(m => !m.live.error).length;
   stat.ready(live + " of " + S.machines.length + " machines answering", "GET /api/gacha");
@@ -302,15 +357,76 @@ async function loadRules() {
   $("dlItems").href = "data:text/csv;charset=utf-8," + encodeURIComponent(a.data.csv.items);
   $("dlPeople").href = "data:text/csv;charset=utf-8," + encodeURIComponent(a.data.csv.people);
   HOOKS.forEach(([k]) => { const e = $("hk_" + k); if (e && document.activeElement !== e) e.value = ((a.data.webhooks || {})[k] || []).join("\n"); });
-  $("shWrite").value = a.data.sheet_write_url || "";
 }
 async function saveRules() { say("rStat", await Mice.Api.post("/api/gacha/rules", {items: readRows("rItems"), people: readRows("rPeople")}), "rules saved"); loadRules(); }
 async function pull() { say("rStat", await Mice.Api.post("/api/gacha/rules/pull", {}, {timeout: 20000}), "taken from the sheet"); loadRules(); }
 async function push() { say("rStat", await Mice.Api.post("/api/gacha/rules/push", {}, {timeout: 20000}), "sent to the sheet"); }
-async function saveSheet() {
-  const rules = Object.assign({}, S.rules, {sheet_items_csv: val("shItems"), sheet_people_csv: val("shPeople"),
-                                           sheet_write_url: val("shWrite")});
-  say("rStat", await Mice.Api.post("/api/gacha/config", {rules}), "links saved");
+
+// ---- Google Sheet tab (A47-15; the ways are main_python/gacha_sheet.py) ----
+const WAY_WORDS = {script: "through the sheet's own script", service: "through a service account", link: "the shared link"};
+async function shLoad() {
+  const a = await Mice.Api.get("/api/gacha/sheet", {timeout: 25000});
+  if (!a.ok) { $("shStat").textContent = a.says || "could not ask"; return; }
+  const d = a.data, n = d.names || {};
+  $("shLink").value = d.link || ""; $("shWay").value = d.chosen || "auto";
+  $("shItems").value = d.items_csv || ""; $("shPeople").value = d.people_csv || "";
+  $("shAuto").checked = !!d.auto_push; $("shLog").checked = !!d.log;
+  $("shTabItems").value = n.items || ""; $("shTabPeople").value = n.people || ""; $("shTabLog").value = n.log || "";
+  $("shScript").placeholder = d.script_set ? "set (hidden); type a new one to change it" : "the Web app URL from step 5 (empty = read only)";
+  $("shOpen").hidden = !d.open; if (d.open) $("shOpen").href = d.open;
+  $("edTabs").innerHTML = (d.tabs || []).map(t => '<option value="' + esc(t) + '">').join("");
+  $("shHow").open = !d.writes;
+  $("shStat").innerHTML = !d.way ? "no sheet yet: paste its link" :
+    esc(d.writes ? "can read and write, " : "can only read, ") + esc(WAY_WORDS[d.way] || d.way) +
+    (d.error ? esc("; the sheet did not answer") + ' <span class="tech">' + esc(d.error) + '</span>'
+             : (d.tabs.length ? esc(" · tabs: " + d.tabs.join(", ")) : ""));
+}
+async function shSave() {
+  const rules = {sheet_link: val("shLink"), sheet_way: $("shWay").value, sheet_auto_push: $("shAuto").checked,
+                 sheet_log: $("shLog").checked, sheet_items_csv: val("shItems"), sheet_people_csv: val("shPeople"),
+                 sheet_tabs: {items: val("shTabItems"), people: val("shTabPeople"), log: val("shTabLog")}};
+  if (val("shScript")) rules.sheet_write_url = val("shScript");
+  const a = await Mice.Api.post("/api/gacha/config", {rules});
+  say("shStat", a, "saved"); if (a.ok) { $("shScript").value = ""; S.rules = Object.assign(S.rules, rules); shLoad(); }
+}
+async function shCopyScript() {
+  const a = await Mice.Api.get("/api/gacha/sheet/script");
+  if (!a.ok) { $("shStat").textContent = a.says || "the script could not be made"; return; }
+  const box = $("shScriptText");
+  box.value = a.data.script; box.hidden = false; box.select();
+  try { await navigator.clipboard.writeText(a.data.script); $("shStat").textContent = "copied: paste it in the sheet's Apps Script (step 3)"; }
+  catch (e) { $("shStat").textContent = "select all in the box below and copy it"; }
+}
+// the tab editor: row 0 is the sheet's header row, every cell an input
+let ED = [];
+function edDraw() {
+  $("edT").tBodies[0].innerHTML = ED.map((r, i) => '<tr>' + r.map((c, j) =>
+    '<td><input data-r="' + i + '" data-c="' + j + '" value="' + esc(c) + '"' + (i ? '' : ' style="font-weight:600"') + '></td>').join("") +
+    '<td><button onclick="edRead();ED.splice(' + i + ',1);edDraw()">remove</button></td></tr>').join("");
+}
+function edRead() { $("edT").querySelectorAll("input").forEach(e => { ED[+e.dataset.r][+e.dataset.c] = e.value; }); }
+function edAdd(what) {
+  edRead();
+  const w = Math.max(1, ...ED.map(r => r.length));
+  if (what === "col" || !ED.length) ED = (ED.length ? ED : [[]]).map(r => r.concat(Array(w - r.length + (what === "col" ? 1 : 0)).fill("")));
+  if (what === "row") ED.push(Array(w).fill(""));
+  edDraw();
+}
+async function edOpen() {
+  const tab = val("edTab") || "items";
+  $("edStat").textContent = "reading…";
+  const a = await Mice.Api.get("/api/gacha/sheet/read?tab=" + encodeURIComponent(tab), {timeout: 25000});
+  if (!a.ok) { $("edStat").textContent = a.says || "could not read it"; return; }
+  ED = a.data.rows || []; edDraw();
+  $("edStat").textContent = ED.length ? ED.length + " rows in " + tab : tab + " is empty: add rows and save";
+}
+async function edSave() {
+  edRead();
+  const tab = val("edTab") || "items";
+  const rows = ED.filter((r, i) => i === 0 || r.some(c => String(c).trim()));
+  $("edStat").textContent = "writing…";
+  const a = await Mice.Api.post("/api/gacha/sheet/write", {tab, rows}, {timeout: 25000});
+  say("edStat", a, "saved in the sheet: " + tab);
 }
 
 function drawHooks(full) {
@@ -423,6 +539,14 @@ async function vpSave() {
   }).filter(r => r.item);
   say("vpStat", await Mice.Api.post("/api/gacha/voice", {enabled: $("vpOn").checked, say: $("vpSay").checked, rules}), "saved");
 }
+
+// ---- tabs: one job each; the open one is kept in the address (#sheet) ----
+const TABS = [["give", "Give a prize", "🎁"], ["machines", "Machines and kinds", "🧰"], ["rules", "Rules", "📋"],
+              ["sheet", "Google Sheet", "📄"], ["games", "Games and Voice", "🎮"], ["apps", "Other apps", "🔗"],
+              ["words", "Words", "💬"], ["log", "Prizes given", "📊"]];
+const TAB_LOAD = {sheet: () => shLoad(), log: () => loadLog()};
+const tabs = new Mice.Tabs("tabs", TABS.map(([id, label, icon]) => ({id, label, icon, load: TAB_LOAD[id]})));
+const showTab = id => tabs.show(id);
 
 drawHooks();
 vpLoad();

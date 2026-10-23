@@ -12,7 +12,8 @@ turns and refuses; the hub decides which machine, who may have one, and logs.
 | `.local/gacha/events.jsonl` | everything: settings, rules, board commands, webhook results |
 | `main_python/gacha.py` | the brain; `main_python/hub_api_gacha.py` the routes |
 | `docs/gacha/*.sample.csv` | sample rules = the Google Sheet layout |
-| `docs/gacha/apps_script.gs` | optional write-back to the sheet |
+| `apps/gacha/sheet_script.gs` | the sheet's Apps Script: lets the hub read and write the sheet (copy it from the page, it carries the hub's secret) |
+| `main_python/gacha_sheet.py` | the ways to the sheet: link (read only), script, service account |
 | `docs/gacha/form_sample.gs` | sample Google Form that adds people rows |
 
 ## Rules (one Google Sheet, two tabs)
@@ -26,8 +27,28 @@ as Face_Regonize knows it. `item` `*` = any kind. `times` overrides
 for them with no kind gets the kind on their row.
 
 An empty `event` applies to every event. Column order does not matter, the
-header names do. Pull: in the sheet, File ▸ Share ▸ Publish to web ▸ choose the
-tab ▸ CSV, paste each link on the page, press **Take them from the sheet**.
+header names do.
+
+## The sheet: paste its link, read and write it (A47-15)
+
+Prize machines ▸ **Google Sheet** tab. Paste the sheet's own address. How the hub
+gets in is `rules.sheet_way` (config/gacha.json), one class each in gacha_sheet.py:
+
+| way | reads | writes | one-time setup |
+|---|---|---|---|
+| `link` | yes | no | Share ▸ Anyone with the link (Viewer) |
+| `script` | yes (private sheet too) | yes | **Copy the script** on the page, paste in Extensions ▸ Apps Script, Deploy ▸ Web app (Execute as Me, Anyone), paste the Web app URL as Script address |
+| `service` | yes | yes | a service account key in `.local/gacha/google_service.json` (never git), share the sheet with its e-mail as Editor; needs `pip install cryptography` |
+| `auto` | the first that is set up: script, service, link |
+
+The script refuses anything without the hub's secret (`.local/gacha/sheet_secret.txt`,
+made on first use), so its address alone writes nothing. On the page: **Take / Send the
+rules**, edit any tab as a table (**Edit a tab of the sheet**), **Every saved rule goes to
+the sheet too** (`sheet_auto_push`), **Each prize is a new row** (`sheet_log`, tab `log`).
+Tab names: `sheet_tabs {items, people, log}`. Routes: `GET /api/gacha/sheet`,
+`GET /api/gacha/sheet/read?tab=`, `POST /api/gacha/sheet/write {tab, rows}`,
+`GET /api/gacha/sheet/script` (all login). The older published-CSV links
+(`sheet_items_csv`, `sheet_people_csv`) still work when no link is set.
 A Google Form can feed the people tab: `docs/gacha/form_sample.gs` makes the form and
 adds each answer as a row (same headers), so the hub reads it on the next pull.
 

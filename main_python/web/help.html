@@ -1500,11 +1500,13 @@
   <p><b>Per kind</b>: how many there are and how many times one person may get one.
      <b>People</b>: a person's own limit or a special guest, by the name the face app knows.
      <b>Give one anyway</b> is for the admin: it works past the limits and is still counted.
-     The rules can come from a Google Sheet with two tabs, <b>items</b> and <b>people</b>:</p>
+     The rules can come from a Google Sheet with two tabs, <b>items</b> and <b>people</b>.
+     Paste the sheet's link in the <b>Google Sheet</b> tab of the page; with the sheet's own script set up once
+     (the steps are on that tab, in Thai) the hub also writes the sheet: the rules, any tab as a table, and a row per prize.</p>
   <div class="scroll"><table><thead><tr><th>items</th><th>people</th></tr></thead><tbody>
     <tr><td>event, item, total, per_person, note</td><td>event, person, item, times, special, note</td></tr>
   </tbody></table></div>
-  <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · Google Form: docs/gacha/form_sample.gs · write-back: docs/gacha/apps_script.gs ·
+  <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · Google Form: docs/gacha/form_sample.gs · the sheet's script: apps/gacha/sheet_script.gs ·
      API for other apps and webhooks: docs/gacha/README.md · POST /api/gacha/dispense {item, person, app}</p>
 
   <h3>Voice</h3>
