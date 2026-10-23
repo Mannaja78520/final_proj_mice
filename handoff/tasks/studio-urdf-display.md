@@ -138,6 +138,22 @@ Plan: A48-1 (robot page)
 - CAD look base shift uses the shapes' middle incl. mount (waist on the shapes' line).
 - Not done: tools/make_urdf.py ignores after/mount/order (fine for the default rig).
 
+## PC check after A48-6 (2026-10-23 12:50, claude:xdlrot)
+- main 3bc4d15, build_web, systems build, exe rebuilt (stale=false 733fdfe94b60), hub restarted.
+  check_urdf_look with the real model: 45/45 PASS.
+- Studio (headless Edge, its own profile): CAD model -> "Use the CAD's sizes and shoulder
+  spots" said: "The simple shapes now have the CAD's sizes and shoulder spots; your joints
+  are kept. At home the left hand moved 4 mm and the right 4 mm; the servo numbers did not
+  change." New Rig: shoulderX 91.8 -> 91.7383, foreLenL/R 181.8 -> 181.8101/181.8102,
+  shrugPivot 0 -> 63.3291, mount L [0,0,0] -> [2.4064, 3.4858, 0], R -> [2.4064, -3.4858, 0];
+  axis/invert/zero/home/min/max/tilt/after/order unchanged. Home and +60 shoulder poses look
+  as before (scratch/deploy-a48-6-2026-10-23/shapes-*.png). Factory default NOT pressed.
+- Found: (1) the Rig lives in each browser's localStorage, so this applies only in that test
+  profile; the user's own browser needs the button pressed once. (2) After back to Simple
+  shapes via the dialog's "Use the CAD's sizes...", the Robot look box still shows "CAD model"
+  with the old warnings, and the long result line widens the view panel over the whole 3D
+  view (after-*.png). A reload shows it right.
+
 ## Next
 1. PC: pull, build_web, systems build, rebuild exe; Views > Robot look = CAD, press
    "Use the CAD's sizes and shoulder spots", note the hand moves; ship as default only if OK.
