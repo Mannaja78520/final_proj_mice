@@ -1,9 +1,9 @@
 # PC Face app, watcher and Photobooth integration
 
 Owner: codex:10231359-7280
-Updated: 2026-10-23T14:09:15+07:00
+Updated: 2026-10-23T19:00:06+07:00
 Branch: codex/face-pc-1023
-Last commit: bbff243 (audit checkpoint; see git log for final)
+Last commit: 4d516a8 (audit handoff; see git log for latest)
 Plan: A45-30; remaining real run A45-14/A45-12
 
 ## Goal
@@ -11,9 +11,11 @@ Finish all PC-only Face app/watcher/Photobooth work without editing friend's sou
 Coordinate results with parent codex:10231353-0401, which owns URDF/QC/build/restart.
 
 ## Doing now
-Preparation complete. Waiting for parent QC release; no process runs in this chat.
-Parent may resume this chat for the bounded startup smoke or do it during deployment.
-Task-file and scratch claims released at this checkpoint; no exclusive lease was acquired.
+Resumed metadata and read-only preparation after latest user lab authorization.
+Only own task-file/scratch claimed; no runtime, camera, QC or hardware lease.
+Wait for parent deployment completion and hardware owner's camera coordination.
+Plan resume refused: A45-30 disappeared from live PLAN after earlier successful handoff.
+Parent notified; do not overwrite current plan or infer a new resource release.
 
 ## Facts found
 - HANDOFF.md: friend sources outside code are read-only/start-only; no edits allowed.
@@ -41,6 +43,14 @@ Task-file and scratch claims released at this checkpoint; no exclusive lease was
 - PID40156 is absent. Official stop-main can discard its matching dead record.
 - Protected baseline: Face e8d4a22 has 3 existing dirty entries; All-Jao f9e8ff4,
   Photobooth858f0b6 and installed booth41561e3 are clean. Preserve those existing edits.
+- Latest user is at lab and explicitly authorizes real robot/prize ESP32 testing.
+  Sole hardware owner is chat 01a167a0-2a75-7c93-89ea-81df71a29ff4.
+  Old no-robot-at-lab assumption is superseded; actual readiness/results come from that owner.
+- Hardware owner reports inventory-only: no camera/COM/motion lease and no serial COM
+  detected yet. It permits NoBrowser health smoke after integration runtime release;
+  camera use still needs coordination before its video acceptance phase.
+- Main status recipient 01a1689b-5608-7123-b8c2-a6f489b5b675 is human-authorized.
+  Original deployment owner remains 01a16787-933e-7d81-97a1-0a3561d110b9.
 
 ## Done
 - Read AGENTS/HANDOFF/CLAUDE, coordination, relevant task files and app-faces header.
@@ -51,9 +61,12 @@ Task-file and scratch claims released at this checkpoint; no exclusive lease was
 - No source edits, inference, QC, service changes, capture or hardware commands.
 
 ## Next
-1. Parent explicitly says hold startup until QC RELEASE in BRIDGE (~full gate pending).
+1. Hold startup until parent QC RELEASE plus deployment completion, then agree camera
+   window with sole hardware owner. Never restart hub during flash/motion/video tests.
 2. After recording own startup lease, recheck ports8121/8123 and dead PID identity.
-   Use hub POST /api/partners/start?id=photobooth; poll health8121 with a time limit.
+   Prefer official stop-main then run-main -NoBrowser while hardware tests use camera;
+   poll health8121 with a time limit. Full hub launch auto-opens browser pairing, so defer
+   that step until hardware owner confirms no camera/video conflict.
    Check booth/admin read-only pages and hub health up:true; record PID, leave it running.
    Preserve friend8000/web5173/watcher8769/Voice and all event data.
    If schema revision refuses startup, report it to friend; never migrate here.
@@ -62,18 +75,19 @@ Task-file and scratch claims released at this checkpoint; no exclusive lease was
 4. Friend must add booth name connector before simultaneous names can be measured.
 
 ## Blocked
-- Startup smoke waits for explicit parent QC RELEASE, not user approval/hardware.
-  Parent instructed targeted CAD then frozen full gate; hold startup until release.
+- Startup smoke waits for QC/deployment and hardware-owner camera coordination.
 - Friend: booth Reconize adapter/name display is absent, not a hardware blocker.
 - Friend: booth TV only takes a physical camera index; shared hub stream unsupported.
-- Real robot source and enrolled-person camera-to-name measurement require robot/person.
+- Robot/prize ESP32 tests are now authorized at lab; hardware owner must confirm readiness.
+  Enrolled-person camera-to-name still unmeasured; do not substitute unknown-face timing.
 
 ## Other open work; do not silently close
 - A45-10: user's Google AI Studio/Groq sign-in + keys; provider order stays until keys work.
 - A45-12/A45-18/A45-25: enrolled person camera arrival, real mic Thai3/5-10s,
   room echo/robot speaker and human listening to emotion/voice samples.
-- A47-5: gacha board/motor/hall sensor + magnets, flash, drop/speed/jam and real dispense.
-- A45-11/A46-2/A26-99/A26-77: real nong, hotspot manny, COM21/RS485;
+- A47-5: prize ESP32 now at lab/authorized; sole hardware owner handles inventory,
+  flash, motor/hall/magnets, drop/speed/jam and real dispense; no result yet from this chat.
+- A45-11/A46-2/A26-99/A26-77: nong now authorized at lab; hardware owner checks manny/COM;
   palm/last.yaml/OTA/TALK/video sound, motion/RRT/video/skeleton, PERF and legacy bench list.
 - A48-6/A26-71/A26-92/A16-1: robot home+3poses/CAD, shrug calibration,
   RELAX diagnose-only, ruler measurement of four-bar curve. Parent owns URDF axis work.
