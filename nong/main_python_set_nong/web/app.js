@@ -1230,12 +1230,14 @@ const urdfGeo = {};                // mesh url -> BufferGeometry (kept across re
 let urdfBuildGen = 0;              // a mesh arriving after a rebuild is dropped
 const urdfMissing = new Set();     // mesh names that were not found (said, not fetched again)
 
-fetch("urdf_view.json").then(r => r.json()).then(j => {
+function urdfConfigReady(j) {
   URDF_CFG = j;
+  viewFloor();                 // config can arrive after the simple shapes were built
   renderLookUI();
   urdfRefreshModels();
   if (lookKind() === "urdf") buildRobot();      // a saved URDF look waits for this
-}).catch(() => {});
+}
+fetch("urdf_view.json").then(r => r.json()).then(urdfConfigReady).catch(() => {});
 
 function lookOf(id) {
   const looks = (URDF_CFG && URDF_CFG.looks) || [];
@@ -1892,6 +1894,14 @@ function urdfFitArm(arm, warn) {
   for (let k = 0; k < fitted; k++) {
     const j = best.map[k], e = entries[k];
     urdfJ[j] = Object.assign(e, { sign: best.sg[k], off: best.of[k], fitted: true });
+    jointGroups[j] = e.mov;
+  }
+  // Missing/loading forearm meshes skip its fit, but HOME must still leave
+  // every CAD joint as drawn. Explicit offsets remain authoritative.
+  for (let k = fitted; k < 4; k++) {
+    const e = entries[k], j = e.named;
+    const choices = fixedSign(j), sign = choices.length === 1 ? choices[0] : e.sign, off = fixedOff(j);
+    urdfJ[j] = Object.assign(e, { sign, off: off !== null ? off : anchored ? homeOff(j, sign) : 0, fitted: false });
     jointGroups[j] = e.mov;
   }
   urdfLast.fit[arm] = { deg: Math.round(allDeg * 10) / 10, upDeg: Math.round(upDeg * 10) / 10,

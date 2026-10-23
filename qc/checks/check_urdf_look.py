@@ -432,6 +432,18 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     pts(RIG.home);
     r10.turned = f1(Math.max.apply(null, urdfJ.slice(0, 8).map(function(b){ return 2 * Math.acos(Math.min(1, Math.abs(b.mov.quaternion.w))) * 57.2958; })));
     r10.anchor = anchor0;
+    var homeKeep = RIG.home.slice();
+    [2, 3, 6, 7].forEach(function(j){ RIG.home[j] = RIG.zero[j] + 30; });
+    urdfTip.L.fromMesh = urdfTip.R.fromMesh = false;
+    urdfArm[0][2].sign = -1;
+    urdfFitArm(0, []); urdfFitArm(1, []); pts(RIG.home);
+    r10.noMeshSign = urdfJ[urdfArm[0][2].named].sign;
+    var nj = urdfArm[0][2].named, movedPose = RIG.home.slice(); movedPose[nj] += 5; pts(movedPose);
+    var nb = urdfJ[nj], nq = nb.mov.quaternion;
+    r10.noMeshMove = Math.abs(2 * Math.atan2(new THREE.Vector3(nq.x, nq.y, nq.z).dot(nb.axis), nq.w) * 57.2957795 + jdir(nj) * 5) < 0.01;
+    pts(RIG.home);
+    r10.noMeshTurned = f1(Math.max.apply(null, urdfJ.slice(0, 8).map(function(b){ return 2 * Math.acos(Math.min(1, Math.abs(b.mov.quaternion.w))) * 57.2958; })));
+    RIG.home = homeKeep;
     URDF_CFG.fit.anchor = "none";
     report("res10=" + JSON.stringify(r10).replace(/[~ ]/g, "_"));
 
@@ -554,6 +566,11 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     r11.shapesY = grid.position.y; r11.stillHidden = !grid.visible;
     r11.kept = JSON.parse(localStorage.getItem("nong_rig")).view.grid === false;
     viewSetGrid(true);
+    var cfgKeep = URDF_CFG, gridKeep = RIG.view.grid;
+    delete RIG.view.grid;
+    urdfConfigReady(Object.assign({}, cfgKeep, {floor: {show: false, shapesY: -300}}));
+    r11.lateConfig = !grid.visible && grid.position.y === -300 && !$("viewGrid").checked;
+    RIG.view.grid = gridKeep; urdfConfigReady(cfgKeep);
     report("res11=" + JSON.stringify(r11).replace(/[~ ]/g, "_"));
     URDF_CFG.fit.anchor = anchor0;          // the real model: as the data says
     if (CFG.real) {
@@ -746,7 +763,9 @@ def run(t):
     if t.ok(got10, "the driver fitted a CAD anchored at home", marks[-3:]):
         r10 = json.loads(got10[6:])
         t.ok(r10["anchor"] == "home" and r10["turned"] < 0.1,
-             "anchored at home (urdf_view.json): at the robot's home every CAD joint sits as drawn, no part turned (%s deg)" % r10["turned"], r10)
+             "anchored at home (urdf_view.json): at the robot's home every arm joint with an automatic offset sits as drawn, no part turned (%s deg)" % r10["turned"], r10)
+        t.ok(r10["noMeshTurned"] < 0.1, "HOME anchors elbows even without forearm meshes", r10)
+        t.ok(r10["noMeshSign"] == -1 and r10["noMeshMove"], "missing-mesh fallback keeps the computed negative axis sense", r10)
         t.ok(all(a > 0.5 for a in r10["agree"][:8]) and all(f["deg"] < 20 for f in r10["fit"]),
              "and each arm joint still moves its hand the shapes' way (%s, fit %s deg)" % (r10["agree"][:8], [f["deg"] for f in r10["fit"]]), r10)
     got11 = next((m for m in marks if m.startswith("res11=")), "")
@@ -754,6 +773,7 @@ def run(t):
         r11 = json.loads(got11[6:])
         t.ok(r11["shown"] and abs(r11["cadY"] - r11["baseY"]) < 0.5 and r11["shapesY"] == -250,
              "on the CAD model the grid sits at the bottom of the base (%s / %s mm); the shapes keep theirs" % (r11["cadY"], r11["baseY"]), r11)
+        t.ok(r11["lateConfig"], "late floor config updates simple-shapes grid and checkbox together", r11)
         t.ok(r11["hidden"] and r11["stillHidden"] and r11["kept"],
              "'Show the floor grid' hides it, in both looks, and the choice is kept", r11)
     got5 = next((m for m in marks if m.startswith("res5=")), "")

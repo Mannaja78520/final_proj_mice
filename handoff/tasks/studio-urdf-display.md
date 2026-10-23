@@ -1,11 +1,11 @@
 # Nong Studio: dynamic URDF display and motion parity
 
-Owner: claude:10222214-b01b (cloud thread "Studio URDF view mode")
-Updated: 2026-10-23 (cloud, Bangkok morning)
-Branch: claude/project-thread-wvmxq5 (from task/A48-1-10230507-3ac1 @7b7a904)
-Tree: cloud clone (repo root); PC tree .staging-urdf-studio unused
-Last commit: c82daa6 (base; handoff-only WIP commit follows)
-Plan: A48-1 (robot page)
+Owner: codex:10231901-f6cc
+Updated: 2026-10-23T19:09:24.504567+07:00
+Branch: codex/continue-urdf-1023
+Tree: E:/final_proj/mice/code/.staging-continue-urdf
+Last commit: 4823a28; source-fix checkpoint follows (runtime c40f438 plus receipt scope fix)
+Plan: A48-11 / A47-18 (robot page); A48-1 feature history
 
 ## Goal
 - User: เอา URDF ไปใส่ nong studio เลือกได้ว่าจะโชว์แบบเดิมหรือ URDF
@@ -13,10 +13,10 @@ Plan: A48-1 (robot page)
 - On returning to the old display, ASK whether to use URDF dimensions or edit/use custom dimensions. Keep custom dimensions recoverable; do not overwrite silently.
 - User added: ทำให้เป็น dynamic แก้ง่ายด้วย. Put choices, joint bindings/signs, source paths and dimension mappings in editable config/data; one source of truth, not model-specific conditionals.
 - User added: test video following, realtime following, and related playback/monitor paths. Verify anatomical left/right, raised-hand direction and URDF joint movement, not merely a static screenshot.
-- Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
+- User is now at lab and authorizes physical tests; dedicated Lab chat01a167a0 owns hardware after deployment. This integration chat does not issue motion/flash commands.
 
 ## Doing now
-- A48-8/9/10: full QC, PR, merge, PC steps.
+Frozen exact full gate next: receipt excludes private .local/scratch outputs and exact qc/_urdf_real.json; source/config/test/handoff edits still invalidate proof. New regression24/0; tooling focused61/0; 3/3 sabotages caught/restored; existing parent independent same-provider review APPROVED. Actual private CAD check61/0; exact fingerprint before/after identical across925 inputs (input-stability.json). All claims retained; Lab identity window explicitly released. Root#76 already live; own c40f438 fixes still require green receipt and PR. Preserve live plan union; A48-12 now completed by native owner. After gate build spec to alternate output, stop idle Hub, give Lab bounded raw-ID window, then install/start and verify assets/stale:false; trigger Face startup and hand hardware back to Lab.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
@@ -142,8 +142,8 @@ flat hand plate now.
   agree 1.00 all, every part at home as drawn. viewFloor(): grid at the base's bottom.
 
 ## Next
-1. PC: pull, build_web, systems build, rebuild exe, restart hub; press the button once in the
-   user's browser profile (or any); every other browser adopts it on reload.
-2. Lab day: robot-tests.md items 6-7.
+1. Exact full gate -> inspect source diff -> PR/merge -> reconcile dirty root -> spec build/deploy.
+   Keep settings/calibration/rig_cad/projects and every newer task row intact.
+2. Trigger Face official NoBrowser startup after deployment; Lab alone tests real hardware.
 ## Blocked / not done
-- Real SolidWorks URDF not tested yet (only on the PC). Not tested on the robot.
+- Private real CAD exercised by PC fake/browser check61/0. Physical channels/directions remain Lab acceptance.

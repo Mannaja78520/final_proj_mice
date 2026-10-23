@@ -41,7 +41,7 @@ RECEIPT = CODE / ".qc-receipt.json"
 SKIP_PARTS = {".git", ".pio", "__pycache__", ".staging", "node_modules",
               ".vscode", ".claude", ".unsnooze", "dist", "build", "patches",
               "patches_code", "generated", "tts_cache", "reports",
-              "projects", "sequences", "shows"}
+              "projects", "sequences", "shows", ".local", "scratch"}
 
 
 def tree_fingerprint():
@@ -69,6 +69,10 @@ def tree_fingerprint():
         # change, so hashing this line threw away the twelve-minute run that had
         # just gone green and made the gate run twice for no new information.
         if f.name == "PATCHES.md":
+            continue
+        # Private runtime output, not an input: the real-CAD check rewrites it.
+        # .local/ and scratch/ above likewise hold generated PC data/evidence.
+        if rel.as_posix() == "qc/_urdf_real.json":
             continue
         h.update(rel.as_posix().encode())
         h.update(f.read_bytes())
