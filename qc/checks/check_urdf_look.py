@@ -232,6 +232,41 @@ def write_fixture(root, name="qc_bot", rig=RIG1, at=None, swap=()):
         encoding="utf-8")
 
 
+def write_own_cad(root):
+    """A URDF drawn the way a SolidWorks export is, not from the rig: ROS frame,
+    zero rpy, roll axes tilted 30 / 37 deg, arms hanging straight down.
+
+    Round numbers in the shape of the PC's real nong (2026-10-23). There a full
+    weight on the turn match pointed the right arm 20 deg off against 15 deg at
+    0.5 (urdf_view.json fit.frames), and this file does the same (21.6 / 15)."""
+    (root / "urdf").mkdir(parents=True)
+    (root / "meshes").mkdir()
+    J = [("waist", "base_link", "waist_link", (0, 0, 0.08), (0, 0, -1)),
+         ("shrug", "waist_link", "shrug_link", (0, 0, 0.46), (-1, 0, 0))]
+    for s, sy, rl in (("L", 1, (0, -0.5, -0.866)), ("R", -1, (0, 0.6, -0.8))):
+        J += [(s + "_SH_P", "shrug_link", s + "_a", (0, sy * 0.092, -0.063), (-1, 0, 0)),
+              (s + "_SH_R", s + "_a", s + "_upper_link", (0, 0, 0), rl),
+              (s + "_EL_P", s + "_upper_link", s + "_b", (0, 0, -0.129), (-1, 0, 0)),
+              (s + "_EL_R", s + "_b", s + "_fore_link", (0, 0, 0), (0, -1, 0))]
+        tip = (-0.002, sy * 0.0047, -0.1817)
+        w = 0.009
+        c = [(tip[0] * k + dx, tip[1] * k + dy, tip[2] * k) for k in (0, 1) for dx in (-w, w) for dy in (-w, w)]
+        F3 = [(0, 1, 3), (0, 3, 2), (4, 7, 5), (4, 6, 7), (0, 4, 5), (0, 5, 1),
+              (2, 3, 7), (2, 7, 6), (0, 2, 6), (0, 6, 4), (1, 5, 7), (1, 7, 3)]
+        stl(root / "meshes" / (s + "_fore.STL"), [tuple(c[i] for i in f) for f in F3])
+    links = ["base_link"] + [c for _, _, c, _, _ in J]
+    vis = lambda n: ('<visual><geometry><mesh filename="package://qc_bot5/meshes/%s_fore.STL"/></geometry></visual>'
+                     % n[0]) if n.endswith("fore_link") else ""
+    out = ['<?xml version="1.0"?>', '<robot name="qc_bot5">'] + ['<link name="%s">%s</link>' % (n, vis(n)) for n in links]
+    for n, p, c, xyz, ax in J:
+        lim = 1.0472 if n == "waist" else 0.27925 if n == "shrug" else 0.5236
+        out.append('<joint name="%s" type="revolute"><parent link="%s"/><child link="%s"/>'
+                   '<origin xyz="%g %g %g" rpy="0 0 0"/><axis xyz="%g %g %g"/>'
+                   '<limit lower="%g" upper="%g" effort="1" velocity="1"/></joint>'
+                   % ((n, p, c) + xyz + ax + (-lim, lim)))
+    (root / "urdf" / "qc_bot5.urdf").write_text("\n".join(out + ["</robot>"]), encoding="utf-8")
+
+
 DRIVER = r"""
 function report(s){ qcMark("ULOOK~" + s); }
 function W(o){ return o.getWorldPosition(new THREE.Vector3()); }
@@ -378,6 +413,10 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     }
     var r3 = await agreeAll("qc_bot3/urdf/qc_bot3.urdf");
     report("res3=" + JSON.stringify(r3).replace(/[~ ]/g, "_"));
+    // a CAD drawn its own way (roll axes tilted 30-37 deg, straight arms):
+    // the fit must still point the arms near the shapes
+    var r5 = await agreeAll("qc_bot5/urdf/qc_bot5.urdf");
+    report("res5=" + JSON.stringify(r5).replace(/[~ ]/g, "_"));
 
     if (CFG.real) {
       // the PC's real model: bindings, senses, and each joint against the shapes
@@ -432,6 +471,7 @@ def run(t):
         (pkg3 / "urdf").mkdir(parents=True)
         (pkg3 / "meshes").mkdir()
         write_fixture(pkg3, "qc_bot3", rig3, RIG2["home"])
+        write_own_cad(models / "qc_bot5")
         real = os.environ.get("MICE_URDF_MODEL", "")
         real_rel = ""
         if real and Path(real).is_dir():
@@ -525,6 +565,13 @@ def run(t):
         t.ok(all(a > 0.9 for a in r3["agree"][:8]),
              "a CAD a few degrees off the rig: every arm joint still moves its hand the same way (%s)" % r3["agree"][:8], r3)
         t.ok(all(f["deg"] < 10 for f in r3["fit"]), "and the fit gets close (%s deg)" % [f["deg"] for f in r3["fit"]], r3)
+    got5 = next((m for m in marks if m.startswith("res5=")), "")
+    if t.ok(got5, "the driver measured a CAD drawn its own way", marks[-3:]):
+        r5 = json.loads(got5[5:])
+        t.ok(all(a > 0.5 for a in r5["agree"][:8]),
+             "a CAD drawn its own way: every arm joint moves its hand the same way (%s)" % r5["agree"][:8], r5)
+        t.ok(all(f["deg"] < 17 for f in r5["fit"]),
+             "and the turn match does not pull the arms off (%s deg; 21 at full weight)" % [f["deg"] for f in r5["fit"]], r5)
 
     real = next((m for m in marks if m.startswith("real=")), "")
     if real:
