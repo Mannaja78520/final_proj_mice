@@ -16,7 +16,7 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-- Round 3 full QC: 7793 passed (3 flakes green alone, receipt refused by qc_chain_proj rewrite). Merged; PC reruns check_urdf_look.
+- Round 4 (A48-4): full QC, PR, merge; then the PC reruns check_urdf_look.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
@@ -99,37 +99,11 @@ Plan: A48-1 (robot page)
 - Old A46-3 code is merged (handoff/tasks/robot-hotspot-live.md says deployed); its old BRIDGE claims on rig_setup_ui/rig_data/main_loop/html_parts/generated assets/web build manifest lack explicit RELEASE. Our BRIDGE entry REQUESTS release/coordination, not an inferred takeover. Resolve before overlapping edits/integration. Physical tests remain parked; do not revive them.
 - Own claim was limited to new URDF renderer/config/serving/QC paths plus app_parts/{build_rig,scene,stl_meshes,urdf_import,project_save_load,save_state,boot}.js and docs/urdf_nong.md in OWN tree. Own claims will be explicitly released for Cross. No QC/driver/runtime/hardware resources acquired or process started.
 
-## PC steps done 2026-10-23 06:06 (claude:xdlrot)
-- Pulled main 1cb87f3, build_web, systems build, MiceHub.exe rebuilt with the spec, hub +
-  Voice helper restarted, /api/version stale=false (3a460df0e536). Backups:
-  scratch/deploy-a48-1-2026-10-23 (exe, voice.json, settings_shared, old plan patch).
-- Copied model/nong_urdf/solidworks/export/nong_description (57 MB) to
-  nong/main_python_set_nong/models/nong_description/ (git-ignored; nothing under model/ edited).
-- `MICE_URDF_MODEL=<that folder> check_urdf_look`: 25/26. Real model: WAIST agree 1.00
-  (axis 1.00), SHRUG 0.99 (axis 1.00). ALL 8 arm joints agree -0.14..0.07 with axis
-  0.00..0.02: the URDF arm axes are PERPENDICULAR to the shapes' axes, not reversed.
-  sign/offsetDeg cannot fix that, so urdf_view.json was left unchanged. URDF (ROS frame:
-  y = left, z = up): SH_P/EL_P axis ~(-1,0,0) = forward axis; EL_R ~(0,-1,0) = lateral;
-  SH_R (0,-0.54,-0.84) tilted. Looks like the CAD's P/R naming (or frame) differs from
-  Studio's; a quick P<->R swap in the bindings broke the synthetic fixture checks
-  (5 fails), so it is NOT a plain swap. Needs the URDF thread's decision.
-- Studio > Views: Robot look = CAD model (URDF) loads "nong from SolidWorks", shows the 8
-  axis warnings, a slider moves it (screenshots scratch/deploy-a48-1-2026-10-23/urdf-*.png).
-  Put back to Simple shapes with the old sizes (dims identical) and the old pose.
-
-## PC check after A48-2 (2026-10-23 06:35, claude:xdlrot)
-- Pulled main ff72311, build_web, systems build, exe rebuilt with the spec, hub restarted
-  (stale=false 4483d12f1d67). check_urdf_look with MICE_URDF_MODEL = the export folder: 30/31.
-- Real model: fit L 15.9 deg (up 11.8), swapSh true, swapEl false; fit R 10.5 deg (up 10.5),
-  swapSh true, swapEl false. Bindings: L_SH_P=L_SH_R(-), L_SH_R=L_SH_P, L_EL_P=L_EL_P,
-  L_EL_R=L_EL_R(-), R_SH_P=R_SH_R(-), R_SH_R=R_SH_P(-), R_EL_P=R_EL_P, R_EL_R=R_EL_R(-).
-- Agree from home: L_SH_P/L_SH_R/L_EL_P/L_EL_R 1.00 each, WAIST 1.00, SHRUG 1.00, but
-  R_SH_P -0.22, R_SH_R 0.82, R_EL_P -0.10, R_EL_R -0.93: the RIGHT arm is still wrong.
-- Warnings > 5 deg: yes, both arms ("left ... up to 16 deg", "right ... up to 10-15 deg").
-- Studio > Views, CAD model: the two warnings still show. Left shoulder pitch 90 -> 150,
-  seen from the Left view: the CAD left arm swings forward like the shapes' (screenshots
-  scratch/deploy-a48-2-2026-10-23/left-up-*.png). Put back to Simple shapes, old pose and sizes.
-  urdf_view.json not changed.
+## PC checks A48-1 / A48-2 (2026-10-23 06:06 / 06:35, claude:xdlrot)
+- Package copied to nong/main_python_set_nong/models/nong_description/ (git-ignored, 57 MB).
+- A48-1: arm axes perpendicular to the shapes' (CAD P/R naming differs) -> fit added.
+- A48-2: left arm agree 1.00, right arm still wrong (R_SH_P -0.22, R_EL_R -0.93).
+  Screenshots scratch/deploy-a48-{1,2}-2026-10-23/ on the PC. Studio put back each time.
 
 ## PC check after A48-3 (2026-10-23 06:45, claude:xdlrot)
 - main ce99f69, build_web, systems build, exe rebuilt (stale=false ed5ace9ea74b), hub restarted.
@@ -145,14 +119,17 @@ Plan: A48-1 (robot page)
   forearm sits differently. Screenshots scratch/deploy-a48-3-2026-10-23/{left,right}-up-*.png.
   Back to Simple shapes, old pose and sizes.
 
-## Next
-1. Full QC green -> PR -> merge.
-2. PC: copy E:/final_proj/mice/model/nong_urdf/solidworks/export/nong_description
-   into Studio's models folder (models/nong_description/), rebuild MiceHub.exe,
-   run `MICE_URDF_MODEL=<that folder> python qc/run_qc.py --quiet check_urdf_look`
-   and read the "real model" lines (bindings, senses, agree per joint). A joint
-   with agree < 0.5 or "axis" < 0.7: set its sign/offsetDeg in urdf_view.json.
-3. Lab day: robot-tests.md item 6.
+## Round 4 (A48-4, claude:wvmxq5, 2026-10-23)
+- Cause of the right tip: each rebuild started another download of the big forearm STL,
+  so it never landed (urdf_view.js `urdfLoading`: one download per file, callers wait).
+  The real-model check waits for BOTH tips fromMesh (90 s).
+- Offline best fit with the real joint numbers (numpy/scipy, all swaps/signs, Powell):
+  L 13.9 deg (up 11.2), R 12.4 deg (up 9.8), swapSh on both. Studio's fit (15.7 / 11.4) is
+  near that, so the residual is rig setup vs CAD, not the fit: the warning is true.
 
+## Next
+1. PC: pull main, build_web, systems build, rebuild exe, run check_urdf_look with
+   MICE_URDF_MODEL; expect R fromMesh true. Agree < 0.5: set sign/offsetDeg in urdf_view.json.
+2. Lab day: robot-tests.md item 6.
 ## Blocked / not done
 - Real SolidWorks URDF not tested yet (only on the PC). Not tested on the robot.
