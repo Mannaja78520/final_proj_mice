@@ -255,7 +255,11 @@ def write_own_cad(root):
         c = [(tip[0] * k + dx, tip[1] * k + dy, tip[2] * k) for k in (0, 1) for dx in (-w, w) for dy in (-w, w)]
         F3 = [(0, 1, 3), (0, 3, 2), (4, 7, 5), (4, 6, 7), (0, 4, 5), (0, 5, 1),
               (2, 3, 7), (2, 7, 6), (0, 2, 6), (0, 6, 4), (1, 5, 7), (1, 7, 3)]
-        stl(root / "meshes" / (s + "_fore.STL"), [tuple(c[i] for i in f) for f in F3])
+        # + a flat hand at the far end: 44 mm wide (link X), 6 mm thin (link Y), so
+        # its palm faces the link's Y, which the rig's palm does not
+        h = [(dx, dy, tip[2] + dz) for dz in (0, 0.06) for dx in (-0.022, 0.022) for dy in (-0.003, 0.003)]
+        hand = [tuple(h[i] for i in f) for f in F3]
+        stl(root / "meshes" / (s + "_fore.STL"), [tuple(c[i] for i in f) for f in F3] + hand)
     links = ["base_link"] + [c for _, _, c, _, _ in J]
     vis = lambda n: ('<visual><geometry><mesh filename="package://qc_bot5/meshes/%s_fore.STL"/></geometry></visual>'
                      % n[0]) if n.endswith("fore_link") else ""
@@ -494,6 +498,35 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
                said: $("rigCadStat").textContent.length, w0: Math.round(w0), w1: Math.round($("viewCube").getBoundingClientRect().width) };
     rigOldBack();
     report("res8=" + JSON.stringify(r8).replace(/[~ ]/g, "_"));
+
+    // the drawn hand lies in the CAD hand's own plane, and can be hidden
+    await another(CFG.rig2, "qc_bot5/urdf/qc_bot5.urdf"); await setLook("urdf");
+    await until(function(){ return urdfOn && urdfTip.L.fromMesh && urdfTip.R.fromMesh; }, 15000);
+    function palmDots(){
+      return ["L", "R"].map(function(sd, a){
+        pts(RIG.home);
+        var n = new THREE.Vector3(0, 1, 0).applyQuaternion(urdfTip[sd].fore.getWorldQuaternion(new THREE.Quaternion()));
+        var z = new THREE.Vector3(0, 0, 1).applyQuaternion(palmMarks[a].getWorldQuaternion(new THREE.Quaternion()));
+        return Math.round(Math.abs(n.dot(z)) * 1000) / 1000;
+      });
+    }
+    var r9 = { dots: palmDots(), row: !$("lookHandMarksRow").hidden };
+    URDF_CFG.hands.L.palm = URDF_CFG.hands.R.palm = "rig"; buildRobot();
+    await until(function(){ return urdfOn && urdfTip.L.fromMesh && urdfTip.R.fromMesh; }, 15000);
+    r9.rigDots = palmDots();
+    URDF_CFG.hands.L.palm = URDF_CFG.hands.R.palm = "mesh"; buildRobot();
+    await until(function(){ return urdfOn && urdfTip.L.fromMesh && urdfTip.R.fromMesh; }, 15000);
+    var vis = function(){ return palmMarks.map(function(h){ return h.children.filter(function(c){ return c.isMesh && c.visible; }).length; }); };
+    r9.shown = vis();
+    $("lookHandMarks").checked = false; $("lookHandMarks").dispatchEvent(new Event("change"));
+    r9.hidden = vis();
+    buildRobot();
+    await until(function(){ return urdfOn && urdfTip.L.fromMesh && urdfTip.R.fromMesh; }, 15000);
+    r9.afterRebuild = vis();
+    r9.kept = JSON.parse(localStorage.getItem("nong_rig")).view.handMarks === false;
+    r9.facing = palmMarks.length === 2 && !!facePalm;
+    urdfSetHandMarks(true);
+    report("res9=" + JSON.stringify(r9).replace(/[~ ]/g, "_"));
     report("res6=" + JSON.stringify(r6).replace(/[~ ]/g, "_"));
     report("res7=" + JSON.stringify(r7).replace(/[~ ]/g, "_"));
 
@@ -674,6 +707,15 @@ def run(t):
              "choosing the CAD's sizes on the way back shows the simple shapes in the box, no CAD warnings left", r8)
         t.ok(r8["said"] > 40 and r8["w1"] <= max(r8["w0"], 240),
              "its long message wraps inside the views panel (%s px, was %s)" % (r8["w1"], r8["w0"]), r8)
+    got9 = next((m for m in marks if m.startswith("res9=")), "")
+    if t.ok(got9, "the driver looked at the CAD hands", marks[-3:]):
+        r9 = json.loads(got9[5:])
+        t.ok(all(d > 0.99 for d in r9["dots"]) and not all(d > 0.99 for d in r9["rigDots"]),
+             "the drawn hand lies in the CAD hand's own plane (%s), not where Rig setup turns it (%s)"
+             % (r9["dots"], r9["rigDots"]), r9)
+        t.ok(r9["row"] and all(n > 0 for n in r9["shown"]) and r9["hidden"] == [0, 0] and r9["afterRebuild"] == [0, 0]
+             and r9["kept"] and r9["facing"],
+             "'Show the drawn hands' hides them on the CAD model, stays hidden over a rebuild and a reload, and palm facing still works", r9)
     got5 = next((m for m in marks if m.startswith("res5=")), "")
     if t.ok(got5, "the driver measured a CAD drawn its own way", marks[-3:]):
         r5 = json.loads(got5[5:])

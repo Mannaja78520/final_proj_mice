@@ -177,6 +177,18 @@ function rigChain(b, d) {
   });
   return { pre, at };
 }
+// the drawn hand on the CAD model: shown or not (RIG.view.handMarks, else the
+// data's "handMarks"); the CAD hand already shows the palm. Facing still works.
+function urdfHandMarksOn() {
+  const v = RIG.view || {};
+  return typeof v.handMarks === "boolean" ? v.handMarks : (URDF_CFG || {}).handMarks !== false;
+}
+function urdfSetHandMarks(on) {
+  RIG.view.handMarks = !!on;
+  saveRig();
+  if (urdfOn) palmMarks.forEach(h => h.children.forEach(c => { if (c.isMesh) c.visible = !!on; }));
+  renderLookUI();
+}
 function urdfJointCfg(i) { return ((URDF_CFG && URDF_CFG.joints) || {})[JOINT_NAMES[i]] || {}; }
 
 // Builds the file's tree into `root` and points every handle into it.
@@ -309,6 +321,7 @@ function urdfBuildInto(root) {
     palm.position.set(0, -30, 2.6);
     back.userData.skel = palm.userData.skel = true;
     hand.add(back, palm); fore.add(hand); palmMarks.push(hand);
+    back.visible = palm.visible = urdfHandMarksOn();
     urdfTip[side] = { link: URDF_CFG.hands[side].link, fore, wrist, hand, mm: 0, fromMesh: false, tipLocal: null };
   });
   urdfOn = true;
@@ -392,6 +405,39 @@ function urdfMeshTip(side, arm) {
   t.tipLocal = el.clone().addScaledVector(dir, t.mm);
   t.fromMesh = true;
   t.wrist.position.copy(t.tipLocal);
+  t.palmN = urdfMeshPalm(side, pts, dir, t.mm);
+}
+// The CAD hand's own plane (user 2026-10-23: "why is the palm tilted, not in
+// the plane of the hand"): the drawn hand turned by RIG.palmTurn sat across
+// the CAD hand. The far part of the forearm mesh (urdf_view.json palm.from of
+// its length) is spread wide one way across the forearm and thin the other:
+// the thin way is the palm's normal. Not flat enough (palm.flat) = no plane.
+function urdfMeshPalm(side, pts, dir, mm) {
+  const cfg = URDF_CFG.palm || {};
+  if (((URDF_CFG.hands || {})[side] || {}).palm !== "mesh") return null;
+  const u = new THREE.Vector3(1, 0, 0);
+  if (Math.abs(u.dot(dir)) > 0.9) u.set(0, 1, 0);
+  u.addScaledVector(dir, -u.dot(dir)).normalize();
+  const w = dir.clone().cross(u);
+  let n = 0, su = 0, sw = 0, suu = 0, sww = 0, suw = 0;
+  const seen = new Set();
+  pts.forEach(v => {
+    if (v.dot(dir) < mm * (cfg.from || 0.6)) return;
+    const key = v.toArray().map(x => Math.round(x * 100)).join();
+    if (seen.has(key)) return;
+    seen.add(key);
+    const a = v.dot(u), b = v.dot(w);
+    n++; su += a; sw += b; suu += a * a; sww += b * b; suw += a * b;
+  });
+  if (n < 4) return null;
+  const cuu = suu / n - (su / n) ** 2, cww = sww / n - (sw / n) ** 2, cuw = suw / n - (su / n) * (sw / n);
+  // the 2x2 spread across the forearm: its thin axis is the palm normal
+  const tr = cuu + cww, det = cuu * cww - cuw * cuw, gap = Math.sqrt(Math.max(0, tr * tr / 4 - det));
+  const lo = tr / 2 - gap, hi = tr / 2 + gap;
+  if (!(hi > 0) || lo / hi > (cfg.flat || 0.35)) return null;
+  const th = 0.5 * Math.atan2(2 * cuw, cuu - cww);          // the wide axis
+  const wide = u.clone().multiplyScalar(Math.cos(th)).addScaledVector(w, Math.sin(th));
+  return dir.clone().cross(wide).normalize();
 }
 // Without a forearm part: the forearm length along the shapes' forearm at
 // zero. Then the hand frame of the shapes at zero (tilt chain + palmTurn),
@@ -415,6 +461,15 @@ function urdfPlaceHand(side, arm) {
   const local = inv.clone().multiply(q);
   const down = new THREE.Vector3(0, -1, 0).applyQuaternion(local);
   t.hand.quaternion.copy(new THREE.Quaternion().setFromUnitVectors(down, dir).multiply(local));
+  if (t.fromMesh && t.palmN) {
+    // turned about the forearm into the CAD hand's plane; of its two faces,
+    // the one nearest the Rig setup's palm (the mesh cannot say which is which)
+    const z = new THREE.Vector3(0, 0, 1).applyQuaternion(t.hand.quaternion);
+    const n = t.palmN.clone().multiplyScalar(t.palmN.dot(z) < 0 ? -1 : 1);
+    const zf = z.addScaledVector(dir, -z.dot(dir)).normalize();
+    const phi = Math.atan2(zf.clone().cross(n).dot(dir), zf.dot(n));
+    if (Number.isFinite(phi)) t.hand.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(dir, phi));
+  }
   palmCache.clear();
   pose = keep; applyPose();
 }
@@ -681,6 +736,7 @@ function renderLookUI() {
   msel.hidden = lookKind() !== "urdf" || urdfModelList.length < 2;
   const tech = $("lookTech");
   if (typeof renderRigCadUI === "function") renderRigCadUI();
+  if ($("lookHandMarks")) { $("lookHandMarks").checked = urdfHandMarksOn(); $("lookHandMarksRow").hidden = !urdfOn; }
   if (lookKind() !== "urdf") { stat.textContent = ""; tech.textContent = ""; return; }
   stat.textContent = urdfLast.error ? "Cannot show the CAD model: " + urdfLast.error + ". The simple shapes are shown."
     : !urdfOn ? "Opening the CAD model…"
