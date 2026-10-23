@@ -294,6 +294,8 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
   }, 20000).then(async function(ready){
   if (!ready) { report("ERR-the-app-never-finished-loading"); report("done"); return; }
   try {
+    // the fixtures test the free fit; fit.anchor "home" (the real nong's) has its own case
+    var anchor0 = URDF_CFG.fit.anchor; URDF_CFG.fit.anchor = "none";
     var r = {};
     RIG = mergeRig({ dims: CFG.dims, axis: CFG.axis, tilt: CFG.axis.map(function(){ return [0,0,0]; }),
                      invert: new Array(10).fill(0), zero: new Array(10).fill(90), shrugCurve: [],
@@ -423,6 +425,15 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     // the fit must still point the arms near the shapes
     var r5 = await agreeAll("qc_bot5/urdf/qc_bot5.urdf");
     report("res5=" + JSON.stringify(r5).replace(/[~ ]/g, "_"));
+    // anchored at home: the CAD sits exactly as drawn at the robot's home (no
+    // twisted shoulder block), and still moves each hand the shapes' way
+    URDF_CFG.fit.anchor = anchor0;
+    var r10 = await agreeAll("qc_bot5/urdf/qc_bot5.urdf");
+    pts(RIG.home);
+    r10.turned = f1(Math.max.apply(null, urdfJ.slice(0, 8).map(function(b){ return 2 * Math.acos(Math.min(1, Math.abs(b.mov.quaternion.w))) * 57.2958; })));
+    r10.anchor = anchor0;
+    URDF_CFG.fit.anchor = "none";
+    report("res10=" + JSON.stringify(r10).replace(/[~ ]/g, "_"));
 
     // A48-6: the simple shapes made from that CAD. By default its sizes and
     // shoulder spots only (user: keep the rig's joints); with "joints" too
@@ -530,6 +541,21 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     report("res6=" + JSON.stringify(r6).replace(/[~ ]/g, "_"));
     report("res7=" + JSON.stringify(r7).replace(/[~ ]/g, "_"));
 
+    // the floor grid: hidden at will (kept), and on the CAD model it sits at
+    // the bottom of the base part, so the box stands on it
+    await another(CFG.rig2, CFG.model); await setLook("urdf");
+    await until(function(){ return urdfOn; }, 15000);
+    var bb = new THREE.Box3(); robot.updateMatrixWorld(true);
+    robot.traverse(function(o){ if (o.isMesh && o.userData.urdfLink === "base_link") bb.expandByObject(o); });
+    var r11 = { cadY: f1(grid.position.y), baseY: f1(bb.min.y), shown: grid.visible && $("viewGrid").checked };
+    $("viewGrid").checked = false; $("viewGrid").dispatchEvent(new Event("change"));
+    r11.hidden = !grid.visible;
+    RIG.view.look = "rig"; rigChanged();
+    r11.shapesY = grid.position.y; r11.stillHidden = !grid.visible;
+    r11.kept = JSON.parse(localStorage.getItem("nong_rig")).view.grid === false;
+    viewSetGrid(true);
+    report("res11=" + JSON.stringify(r11).replace(/[~ ]/g, "_"));
+    URDF_CFG.fit.anchor = anchor0;          // the real model: as the data says
     if (CFG.real) {
       // the PC's real model: bindings, senses, and each joint against the shapes
       // against YOUR rig (the hub's rig_default.json), from its home pose
@@ -716,6 +742,20 @@ def run(t):
         t.ok(r9["row"] and all(n > 0 for n in r9["shown"]) and r9["hidden"] == [0, 0] and r9["afterRebuild"] == [0, 0]
              and r9["kept"] and r9["facing"],
              "'Show the drawn hands' hides them on the CAD model, stays hidden over a rebuild and a reload, and palm facing still works", r9)
+    got10 = next((m for m in marks if m.startswith("res10=")), "")
+    if t.ok(got10, "the driver fitted a CAD anchored at home", marks[-3:]):
+        r10 = json.loads(got10[6:])
+        t.ok(r10["anchor"] == "home" and r10["turned"] < 0.1,
+             "anchored at home (urdf_view.json): at the robot's home every CAD joint sits as drawn, no part turned (%s deg)" % r10["turned"], r10)
+        t.ok(all(a > 0.5 for a in r10["agree"][:8]) and all(f["deg"] < 20 for f in r10["fit"]),
+             "and each arm joint still moves its hand the shapes' way (%s, fit %s deg)" % (r10["agree"][:8], [f["deg"] for f in r10["fit"]]), r10)
+    got11 = next((m for m in marks if m.startswith("res11=")), "")
+    if t.ok(got11, "the driver looked at the floor grid", marks[-3:]):
+        r11 = json.loads(got11[6:])
+        t.ok(r11["shown"] and abs(r11["cadY"] - r11["baseY"]) < 0.5 and r11["shapesY"] == -250,
+             "on the CAD model the grid sits at the bottom of the base (%s / %s mm); the shapes keep theirs" % (r11["cadY"], r11["baseY"]), r11)
+        t.ok(r11["hidden"] and r11["stillHidden"] and r11["kept"],
+             "'Show the floor grid' hides it, in both looks, and the choice is kept", r11)
     got5 = next((m for m in marks if m.startswith("res5=")), "")
     if t.ok(got5, "the driver measured a CAD drawn its own way", marks[-3:]):
         r5 = json.loads(got5[5:])

@@ -484,7 +484,12 @@
     <p>On the CAD model the flat hand Studio draws at each wrist (skin = palm, grey = back) lies
        in the CAD hand's own plane, found from the shape of the forearm part's far end. The CAD
        hand already shows the palm, so <b>Show the drawn hands</b> hides it; the choice is
-       kept and palm facing still works. Adding <code>joints</code> to
+       kept and palm facing still works.</p>
+    <p>At the robot's <b>home</b> the CAD model sits exactly as it was drawn, every part as the
+       CAD placed it (left and right mirror images, every bolt where it belongs); only which
+       joint is which and its turning sense are fitted (<code>fit.anchor</code>). <b>Show the
+       floor grid</b> hides the grid; on the CAD model the grid sits at the bottom of the base,
+       so the box stands on it. Only the grid moves, never the robot. Adding <code>joints</code> to
        <code>rigFromCad</code> in <code>urdf_view.json</code> takes every joint's tilt from
        the CAD too, and the simple shapes then move exactly like the CAD.</p></div>
   <div class="f"><h3>Build the body from a URDF<span class="tag t-new">new</span></h3>
