@@ -178,6 +178,30 @@ PAIR_PENDING = hub_pair.Pending()
 # config/voice.json needs no restart, and because QC boots several hubs in
 # one process, where an import-time path would freeze whichever environment
 # existed first.
+def preview_page(path):
+    """A TRIAL look of a real page (A47-17): main_python/web/previews/previews.json
+    names the page and the files to add; the real page itself never changes.
+    -> the page's bytes with those files linked in, or None (not a trial)."""
+    try:
+        reg = json.loads((HUB_WEB / "previews" / "previews.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    for p in reg.get("previews") or []:
+        if p.get("path") != path:
+            continue
+        root = {"studio": STUDIO_WEB, "hub": HUB_WEB}.get(p.get("root"))
+        page = (root / p["from"]).read_text(encoding="utf-8")
+        real = html.escape(p.get("real") or "/", quote=True)
+        css = "".join('<link rel="stylesheet" href="/hubweb/previews/%s">' % f
+                      for f in p.get("add") or [] if f.endswith(".css"))
+        js = "".join('<script src="/hubweb/previews/%s" data-real="%s"></script>' % (f, real)
+                     for f in p.get("add") or [] if f.endswith(".js"))
+        page = page.replace("</head>", css + "</head>", 1) if "</head>" in page else css + page
+        page = page.replace("</body>", js + "</body>", 1) if "</body>" in page else page + js
+        return page.encode("utf-8")
+    return None
+
+
 def voice_service_url():
     """(address, why-not). An empty address means the proxy must refuse — and
     say which of the two reasons it is, because the fix differs: a broken file
@@ -2031,6 +2055,9 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
             cad = RIG_CAD_FILE.read_text(encoding="utf-8") if RIG_CAD_FILE.is_file() else "null"
             js += "window.NONG_RIG_CAD = " + cad + ";\n"
             return self.send_bytes(js.encode(), MIME[".js"])
+        trial = preview_page(path)
+        if trial is not None:
+            return self.send_bytes(trial, MIME[".html"])
         if path in ("/help", "/help.html"):
             # Every feature of the whole system, offline. Served from the PC so
             # it works with no internet and no account — see the "docs" QC

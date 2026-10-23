@@ -4,7 +4,7 @@ Owner: claude:10230525-3d21
 Updated: 2026-10-23 06:05Z
 Branch: claude/project-thread-s0kmlq
 Last commit: (none yet)
-Plan: A47-14 tabs, A47-15 sheet editing (both merged PR #70), A47-16 tabs on all pages, A47-17 trial pages
+Plan: A47-14 tabs, A47-15 sheet editing (both merged PR #70), A47-16 tabs on all pages (merged PR #73), A47-17 trial pages
 
 ## Goal
 User 2026-10-23: "🎁 Prize machines ขอเป็น tab เพื่อให้ตั้งค่าง่ายไม่ต้องเลื่อนลงล่างอย่างเดียว
@@ -12,8 +12,9 @@ User 2026-10-23: "🎁 Prize machines ขอเป็น tab เพื่อใ�
 Sheet link and the hub reads AND writes it. No key in git; the way is config, not one route.
 
 ## Doing now
-A47-16: Voice on Mice.Tabs done locally (Talk + 8 sections in the side list); next Camera,
-Reconize, Photobooth, All-Jao pages, then PR. Then A47-17 previews (/studio-preview/, /help-preview/).
+A47-17 previews built (/studio/preview.html, /help-preview); full QC, PR, merge, then tell the
+user the links. After the user decides keep/drop: keep = fold the trial into the real page;
+drop = delete its previews.json entry + files.
 
 ## Facts found
 - apps/gacha/index.html: one long page, 11 cards; all JS inline; Mice.Api for every call.
@@ -60,3 +61,7 @@ Reconize, Photobooth, All-Jao pages, then PR. Then A47-17 previews (/studio-prev
 - qc/data/tabbed_pages.json lists pages on Mice.Tabs; check_mice_tabs checks each.
 - Screenshot trick: scratch shot_voice.py runs apps/voice/service.py Brain on a free port
   and points MICE_VOICE_CONFIG {"service": url} at it, so settings render with no models.
+- Previews: main_python/web/previews/previews.json + files; main.py preview_page() serves
+  `from` with the `add` files linked (/hubweb/previews/...), real page untouched; check_previews.
+  Studio trial moves #sideTabs into a #pvRail beside #side (desk only); Help trial shows one
+  `main > section` at a time, a search shows all again.

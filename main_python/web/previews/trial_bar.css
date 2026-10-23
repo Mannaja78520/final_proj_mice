@@ -1,0 +1,6 @@
+/* The strip that says this page is a trial (A47-17). Tokens only. */
+.trial-bar{position:fixed;left:50%;bottom:var(--sp-3);transform:translateX(-50%);z-index:50;
+  display:flex;gap:var(--sp-2);align-items:center;flex-wrap:wrap;max-width:calc(100vw - 2 * var(--sp-4));
+  background:var(--card);border:1px solid var(--acc);border-radius:var(--r-pill);
+  padding:var(--sp-1) var(--sp-3);font-size:13px;box-shadow:0 4px 16px color-mix(in srgb,var(--txt) 18%,transparent)}
+.trial-bar a{font-weight:600}
