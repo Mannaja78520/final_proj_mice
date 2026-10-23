@@ -1,10 +1,10 @@
 # Prize machines tabs + Google Sheet: PC reconciliation
 
 Owner: codex:10231359-8856
-Updated: 2026-10-23 12:00Z
+Updated: 2026-10-23 12:01Z
 Branch: codex/gacha-reconcile-1023
 Tree: E:/final_proj/mice/code/.staging-gacha-reconcile
-Last commit: 5a3dac6 (prior finished audit); source baseline 993862e
+Last commit: 020fc3b (resume checkpoint); source baseline 993862e
 Plan: A47-14/15/16/17 done; A47-18 handed off for parent final deployment
 
 ## Goal
@@ -14,11 +14,10 @@ and coordinate one final hub build with parent chat 01a16787-933e-7d81-97a1-0a35
 Preserve Studio/Help trials until the user chooses keep/drop. A47-5 remains hardware-only.
 
 ## Doing now
-Resume from main chat01a1689b: refresh passive PC HTTP/config evidence after incoming
-main d9c97d4. Claim only this task metadata and scratch; no QC/service/camera/hardware.
-Parent retains final build/gate/restart; hardware chat01a167a0 is sole physical tester.
-Restored own A47-17 closure/A47-18 row that incoming PLAN lost, using BRIDGE14:06/14:11.
-No assumption that a stopped process releases another session's claims.
+Passive refresh complete; waiting only for parent/deployer's valid final gate/receipt
+before closing A47-18. No source change or special resource lease. Preserve trial choice.
+New main chat01a1689b received actual PC results and PLAN bookkeeping-loss notice.
+Hardware chat01a167a0 is sole physical tester. Do not take its ports/services/camera.
 
 ## Facts found
 - GitHub API 2026-10-23 confirms all four PRs merged: #70 c73488d,
@@ -61,11 +60,25 @@ No assumption that a stopped process releases another session's claims.
 - All checks here are read-only HTTP/content/config assertions. No QC/browser gate,
   new screenshot, model load, service restart or build was performed by this chat.
 
+## Resume evidence (2026-10-23 19:01 Bangkok)
+- Root main now d9c97d4; runtime-audit-resume.json under the same private scratch.
+- Actual /api/version reports built17:16, stale:false. This alone is not final QC proof.
+- Gacha/Voice/Mice.Tabs assets200 match merged #75. Live trial_bar.css848B/js789B
+  now match #75 exactly; the earlier14:03 missing-mobile-fix observation is superseded.
+- Trial endpoints200 have trial injection; actual Studio/Help match root text with none.
+- Effective machine count0, no Sheet/CSV link; no script URL, key/secret or env override.
+- No external Sheet request/write, hardware command, camera, browser, model, build,
+  restart or QC driver in this audit. These are passive PC checks, not hardware proof.
+- Incoming root PLAN had lost our14:06 closure and A47-18. Restored only A47-17done
+  and A47-18todo under mutex from BRIDGE14:06/14:11 and pushed5a3dac6. Main notified.
+- Parent compact status reported7885 assertions pass but gate refused because inputs
+  changed during run. Final valid receipt/full gate remains parent's responsibility.
+
 ## Next
-0. Refresh local HTTP/assets and config-presence only; send actual results to new main.
+0. Passive refresh done; new main and parent notified. Wait for valid receipt/gate evidence.
 1. Parent claims A47-18 with plan.py doing and its own deployment file claims.
 2. Parent final combined gate includes gacha/gacha_sheet/mice_tabs/previews, then builds
-   MiceHub.spec and deploys once. Recheck trial_bar.css/js hashes against #75 after restart.
+   MiceHub.spec and deploys once. PR75 live hashes already verified; recheck if deployment changes them.
 3. Parent closes A47-18 after that final integration and completion. Preserve real pages,
    dirty user data, trial pages, no real Sheet write without explicit authorization.
 
