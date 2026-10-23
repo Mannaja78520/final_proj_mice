@@ -15,9 +15,9 @@ Latest direct clarification: same board/default wiring as existing module;
 RS485 currently NOT wired. User authorizes bounded motor/Hall identification.
 
 ## Doing now
-Identity window completed and explicitly RELEASED in BRIDGE19:05. All physical
-activity waits integration's post-deployment runtime handover. Preparing bounded
-USB diagnosis/test steps; preserve every user setting.
+Raw USB WINDOW OPEN from integration after build: old Hub stopped and8642closed.
+Claimed COM9/10 read-only passive/ROM identity and necessary backup only. No flash,
+erase, motor/robot motion or Hub startup. Release immediately with board states.
 Integration chat 01a1679e-50a4-7e71-9cfb-64b6afa635c1 owns gate/build/restart.
 Agreed next window: integration builds to alternate output, stops old Hub,
 sends WINDOW OPEN for raw USB identity/backup, then resumes final startup.
