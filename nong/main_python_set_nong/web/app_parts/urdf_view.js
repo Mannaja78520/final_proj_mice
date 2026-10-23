@@ -17,12 +17,14 @@ const urdfGeo = {};                // mesh url -> BufferGeometry (kept across re
 let urdfBuildGen = 0;              // a mesh arriving after a rebuild is dropped
 const urdfMissing = new Set();     // mesh names that were not found (said, not fetched again)
 
-fetch("urdf_view.json").then(r => r.json()).then(j => {
+function urdfConfigReady(j) {
   URDF_CFG = j;
+  viewFloor();                 // config can arrive after the simple shapes were built
   renderLookUI();
   urdfRefreshModels();
   if (lookKind() === "urdf") buildRobot();      // a saved URDF look waits for this
-}).catch(() => {});
+}
+fetch("urdf_view.json").then(r => r.json()).then(urdfConfigReady).catch(() => {});
 
 function lookOf(id) {
   const looks = (URDF_CFG && URDF_CFG.looks) || [];
@@ -681,12 +683,20 @@ function urdfFitArm(arm, warn) {
     urdfJ[j] = Object.assign(e, { sign: best.sg[k], off: best.of[k], fitted: true });
     jointGroups[j] = e.mov;
   }
+  // Missing/loading forearm meshes skip its fit, but HOME must still leave
+  // every CAD joint as drawn. Explicit offsets remain authoritative.
+  for (let k = fitted; k < 4; k++) {
+    const e = entries[k], j = e.named;
+    const sign = fixedSign(j)[0], off = fixedOff(j);
+    urdfJ[j] = Object.assign(e, { sign, off: off !== null ? off : anchored ? homeOff(j, sign) : 0, fitted: false });
+    jointGroups[j] = e.mov;
+  }
   urdfLast.fit[arm] = { deg: Math.round(allDeg * 10) / 10, upDeg: Math.round(upDeg * 10) / 10,
                         // swapped = against the file's own names
                         swapSh: urdfJ[b].named !== b, swapEl: withFore && urdfJ[b + 2].named !== b + 2, fore: withFore };
   const side = arm ? "right" : "left";
   if (allDeg > (cfg.warnDeg || 5))
-    warn.push("the " + side + " arm of the CAD model points up to " + Math.round(allDeg) + "° away from the simple shapes");
+    warn.push("the " + side + " arm of the CAD model points up to " + Math.round(allDeg) + "Â° away from the simple shapes");
   pose = RIG.zero.slice(); applyPose(); robot.updateMatrixWorld(true);
 }
 // a forearm part arrived: tip, fit and hand all depend on it, so settle again
@@ -783,12 +793,12 @@ function renderLookUI() {
   if ($("lookHandMarks")) { $("lookHandMarks").checked = urdfHandMarksOn(); $("lookHandMarksRow").hidden = !urdfOn; }
   if (lookKind() !== "urdf") { stat.textContent = ""; tech.textContent = ""; return; }
   stat.textContent = urdfLast.error ? "Cannot show the CAD model: " + urdfLast.error + ". The simple shapes are shown."
-    : !urdfOn ? "Opening the CAD model…"
+    : !urdfOn ? "Opening the CAD modelâ€¦"
     : urdfLast.warn.length ? urdfLast.warn.join("; ") : "CAD model at its real sizes.";
-  const fitTxt = (urdfLast.fit || []).map((f, a) => f ? (a ? " R" : " L") + " arm fit " + f.deg + "°" +
+  const fitTxt = (urdfLast.fit || []).map((f, a) => f ? (a ? " R" : " L") + " arm fit " + f.deg + "Â°" +
     (f.swapSh ? " shoulder pair swapped" : "") + (f.swapEl ? " elbow pair swapped" : "") + (f.fore ? "" : " (upper arm only)") : "").join(",");
-  tech.textContent = urdfOn ? (v.model + " ·" + fitTxt + " · " + urdfJ.map((b, i) => b ? JOINT_NAMES[i] + "→" + b.name +
-    (b.sign < 0 ? " (-)" : "") + (b.off ? " " + Math.round(THREE.MathUtils.radToDeg(b.off)) + "°" : "") + (b.quality < 0.7 && !b.fitted ? " (axis " + b.quality.toFixed(2) + ")" : "") : JOINT_NAMES[i] + "→none").join(", ")) : (v.model || "");
+  tech.textContent = urdfOn ? (v.model + " Â·" + fitTxt + " Â· " + urdfJ.map((b, i) => b ? JOINT_NAMES[i] + "â†’" + b.name +
+    (b.sign < 0 ? " (-)" : "") + (b.off ? " " + Math.round(THREE.MathUtils.radToDeg(b.off)) + "Â°" : "") + (b.quality < 0.7 && !b.fitted ? " (axis " + b.quality.toFixed(2) + ")" : "") : JOINT_NAMES[i] + "â†’none").join(", ")) : (v.model || "");
 }
 // another file: opened first, so a broken one never replaces what is shown
 async function urdfPickModel(path) {

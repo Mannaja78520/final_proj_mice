@@ -1,7 +1,7 @@
 # Nong Studio: dynamic URDF display and motion parity
 
 Owner: codex:10231353-0401
-Updated: 2026-10-23T13:54:40.404140+07:00
+Updated: 2026-10-23T14:03:36.952640+07:00
 Branch: codex/continue-urdf-1023
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
 Last commit: c82daa6 (base; handoff-only WIP commit follows)
@@ -16,7 +16,7 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-User-authorized Claude limit takeover of f8a9576: independent Codex review, targeted and full QC, then integrate/deploy preserving PC user data. No physical motion.
+A48-11: reviewer found missing-mesh HOME anchoring and delayed grid-config defects; fixes60/0 with actual private CAD, original3/3 sabotages caught; new2 regression sabotage running. User widened scope: all10 axes/planes and90deg meaning; numeric audit underway. Independent app/sheet and Face/Photobooth chats own other PC work. Full frozen QC and deployment next after final review. No robot motion.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
