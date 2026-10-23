@@ -1,10 +1,10 @@
 # Nong Studio: dynamic URDF display and motion parity
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-23T19:09:24.504567+07:00
-Branch: codex/continue-urdf-1023
+Updated: 2026-10-23T19:26:20.002894+07:00
+Branch: codex/deploy-close-1023-f6cc (metadata closure); runtime merged PR77 a884558
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
-Last commit: 4823a28; source-fix checkpoint follows (runtime c40f438 plus receipt scope fix)
+Last commit: a884558 merged/gated runtime; metadata checkpoint follows
 Plan: A48-11 / A47-18 (robot page); A48-1 feature history
 
 ## Goal
@@ -16,7 +16,7 @@ Plan: A48-11 / A47-18 (robot page); A48-1 feature history
 - User is now at lab and authorizes physical tests; dedicated Lab chat01a167a0 owns hardware after deployment. This integration chat does not issue motion/flash commands.
 
 ## Doing now
-Frozen exact full gate next: receipt excludes private .local/scratch outputs and exact qc/_urdf_real.json; source/config/test/handoff edits still invalidate proof. New regression24/0; tooling focused61/0; 3/3 sabotages caught/restored; existing parent independent same-provider review APPROVED. Actual private CAD check61/0; exact fingerprint before/after identical across925 inputs (input-stability.json). All claims retained; Lab identity window explicitly released. Root#76 already live; own c40f438 fixes still require green receipt and PR. Preserve live plan union; A48-12 now completed by native owner. After gate build spec to alternate output, stop idle Hub, give Lab bounded raw-ID window, then install/start and verify assets/stale:false; trigger Face startup and hand hardware back to Lab.
+PR77 merged a884558; exact runtime gate3e4cdd1 passed7910/0 in624.8s, full receipt validated,925 per-file hashes unchanged (scratch/continue-urdf-1023/input-stability.json; same folder real-input-stability.log and original receipt). Two parallel browser failures passed built-in isolated2/2. Root FF integrated with73 dirty raw files backed up scratch/deploy-codex-1023/pre-integration-76;68 protected files unchanged,10 required task rows retained. Root spec build in flight session26394, log scratch/deploy-codex-1023/build.log, alternate new-build/MiceHub.exe; oldHub43560/48780 stays up. Next verify build exit, idle play/flash, stop owned oldHub, explicitly OPEN bounded COM identity/backup window for Lab then wait its RELEASE. Install/start hidden, confirm stale:false and actual assets match source, resume Face NoBrowser startup and release runtime/hardware to Lab. Source/runtime closure removes completed URDF/gacha handoffs; preserve Lab/hardware tasks. Metadata-only checkpoint after gate does not change reviewed runtime source.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
