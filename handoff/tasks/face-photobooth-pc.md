@@ -3,7 +3,7 @@
 Owner: codex:10231359-7280
 Updated: 2026-10-23T19:02:17+07:00
 Branch: codex/face-pc-1023
-Last commit: c30b486 (lab coordination checkpoint; see git log for latest)
+Last commit: 026d34e (readiness checkpoint; see git log for final)
 Plan: A45-30; remaining real run A45-14/A45-12
 
 ## Goal
@@ -11,12 +11,12 @@ Finish all PC-only Face app/watcher/Photobooth work without editing friend's sou
 Coordinate results with parent codex:10231353-0401, which owns URDF/QC/build/restart.
 
 ## Doing now
-Resumed metadata and read-only preparation after latest user lab authorization.
-Only own task-file/scratch claimed; no runtime, camera, QC or hardware lease.
+Metadata and read-only preparation complete after latest user lab authorization.
+Own task-file/scratch released for this checkpoint; no runtime/camera/QC/hardware lease.
 Wait for parent deployment completion and hardware owner's camera coordination.
 Plan resume refused: A45-30 disappeared from live PLAN after earlier successful handoff.
 Integration owner is restoring the single row as todo/open; do not duplicate plan writes.
-Preparation checkpoint complete; release own metadata/scratch when round ends.
+Startup remains pending deployment; coordinator can message this chat to resume then.
 
 ## Facts found
 - HANDOFF.md: friend sources outside code are read-only/start-only; no edits allowed.
