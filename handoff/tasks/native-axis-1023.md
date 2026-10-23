@@ -1,35 +1,38 @@
-# Native SolidWorks axes and planes audit
+# Native SolidWorks axes and planes audit — completed
 
 Owner: codex:10231404-5229
-Updated: 2026-10-23T14:13:46.321152+07:00
+Updated: 2026-10-23T19:05:05.792433+07:00
 Branch: codex/native-axis-1023
 Tree: E:/final_proj/mice/code/.staging-native-axis-1023
-Last commit: 9ba8e85 (initial metadata checkpoint)
+Last commit: ee9c0ed (native geometry checkpoint); final completion commit follows
 Plan: robot A48-12
 
 ## Goal
-Check all 10 native SolidWorks joint axes, left/right mirrors and XY/XZ/YZ planes against exported URDF and Studio servo90/CADzero/Home. Read-only native audit authorized by parent chat 01a16787-933e-7d81-97a1-0a3561d110b9.
+Check all 10 native SolidWorks joint axes, left/right mirrors and XY/XZ/YZ planes against exported URDF and Studio command90/CADzero/Home. Read-only native audit authorized by parent chat 01a16787-933e-7d81-97a1-0a3561d110b9; status/results sent to main 01a1689b-5608-7123-b8c2-a6f489b5b675 and dedicated hardware owner 01a167a0-2a75-7c93-89ea-81df71a29ff4.
 
 ## Doing now
-Analyze captured read-only native geometry: all ten axis lines match actual analytic cylinder geometry at micrometre-scale residual. Inspect saved assembly mates to explain native pose, then compute independent centers/mirrors/XY/XZ/YZ projections and recommendations. No runtime source or CAD edits.
+Audit and report complete. Final checkpoint/plan closure/resource release only. No source promotion or CAD change is part of this task.
 
 ## Facts found
-- model/nong_urdf/solidworks/setup_native.py:24-26,93-96 creates URDF reference frames from earlier STEP-derived joints_review.json; agreement with these refs alone is not independent physical-axis proof.
-- Parent private axis-audit.json is the preliminary URDF/Studio measurement, not native mate evidence.
-- root scratch/native-axis-1023/native_capture.json: native COM read-only true, dirty false before/after; 264 components, 1519 analytic cylinder faces, 11 ref frames, 10 ref axes, zero capture errors. All 10 exported axes independently match intended gear-hub/shaft/bearing cylinder lines. Native saved geometry contains the observed skew; no exporter axis-line defect found.
-- open_native.py/capture_native.py call read methods only; initial OpenDoc6 options67, load errors0. Canonical native assembly hash unchanged. COM is held in own Python session63476 to retain access; do not save/close user docs.
-- No active SolidWorks COM object was available on first read; no user CAD document closed or saved.
-- Main baseline is dirty and older than parent source; this metadata branch does not change runtime code.
+- model/nong_urdf/solidworks/setup_native.py:24-26,93-96 creates URDF reference frames from STEP-derived joints_review.json; matching refs alone was insufficient independent proof.
+- Root scratch/native-axis-1023/native_capture.json is independent in-context COM evidence from intended native analytic cylinders via component Transform2: all ten axes agree with URDF; paired shoulder/elbow hinges are perpendicular. No exporter axis-line correction is indicated.
+- Carrier-plane differences are already in the saved native pose. Shoulder center asymmetry is consistent with a shared saved shrug rotation; it does not establish an intrinsically asymmetric mount. Detailed numeric angles/positions remain private scratch only.
+- Underlying subassembly document mate dimensions are not flexible-root-instance angles or physical servo calibration. Native COM capture and mate enumeration had zero API errors.
+- Parent fit snapshot swaps both shoulder pitch/roll bindings. Command90, saved Home and native drawn0 are distinct; saved shrug Home does not equal exact native0. Preserve warnings where native/proxy chains differ.
+- Software fit does not verify hardware channel, sense, gear ratio or horn neutral. Dedicated hardware chat owns real testing; this task did not move or calibrate the robot.
+- Canonical native assembly remained read-only, clean and hash-identical before/after. Python COM client63476 exited; no explicit save/export/close/pose calls were made.
 
 ## Done
-- Read project handoff, coordination, communication skills and relevant systems headers.
-- Claimed only own task/scratch and read-only COM; registered A48-12.
-- Captured refs, component transforms and analytic geometry independently; no QC/fakes/robot/services used.
+- Independent native audit: 264 components, 241 active leaves, 1519 analytic cylindrical faces, 11 coordinate frames, 10 reference axes, 12 unique native assembly documents and 384 mate features.
+- Private numeric report: root scratch/native-axis-1023/native-axis-audit.md + .json; actual center/axis/plane/mirror/projection and command/Home mapping tables, bounded recommendations and primary API references.
+- Private three-view figure: native-axis-projections.png + .svg, visually inspected; diagrams share an origin only for direction comparison, with this convention explicit.
+- Bounded evidence verification: native geometry agreement, all paired angles, all ten projections/control mappings, identity visual transforms, uniform native ref/export sign, root proper rotation, zero capture errors and clean unchanged CAD. See verification.json and native_end_state.json. These are PC/native checks, not QC/fake or hardware tests.
+- All geometry evidence remains git-ignored scratch. Only this task metadata is committed/pushed; no runtime source, model, URDF, mesh or calibration data was committed.
 
 ## Next
-1. Finish native mate audit and independent numeric report; validate provenance, every joint/projection, model bytes unchanged.
-2. Separate native pose/export/Studio findings; send bounded evidence and actionable recommendation to parent.
-3. Update task and plan, push metadata checkpoints, release own claims.
+1. Parent source owner incorporates command/Home/native-zero wording and retains faithful axes; dedicated hardware owner verifies actual channel/direction/neutral before any mapping change.
+2. If a different geometric neutral is desired, agree an explicit native CAD configuration and datum/angle constraints in a separate authorized modelling task; no silent cosmetic correction.
+3. No remaining audit work. Keep this completed metadata until parent closure integration; remove task file only in a merging PR per HANDOFF.md.
 
 ## Blocked
-- Nothing. No hardware calibration claims are possible from this audit.
+- None for this completed read-only audit. Physical neutral remains outside its evidence; hardware owner is separately authorized and active.
