@@ -1,0 +1,15 @@
+/* Studio with a rail of tabs (A47-17 trial, user 2026-10-23: "nong studio ถ้าดูยาก
+   ก็เปลี่ยน style tab ได้"). On a desk screen the six tabs leave the side panel
+   for a narrow column of their own, icon over word, like the friend's Reconize
+   list: one row each, never wrapping Setup onto a second line, and the panel
+   keeps its full width for the joints. A phone keeps the real layout. */
+@media (min-width:861px){
+  #pvRail{flex:0 0 auto;width:84px;border-left:1px solid var(--line);background:var(--card);
+    padding:var(--sp-3) var(--sp-1);overflow-y:auto}
+  #pvRail #sideTabs{flex-direction:column;flex-wrap:nowrap;gap:var(--sp-1);margin:0}
+  #pvRail #sideTabs .tab{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:2px;
+    padding:var(--sp-2) 0;border-radius:var(--r-sm);font-size:12px;white-space:nowrap}
+  #pvRail #sideTabs .tab::before{font-size:20px;line-height:1}
+  #tabBtnMove::before{content:"🧍"} #tabBtnSeq::before{content:"🎞"} #tabBtnVideo::before{content:"🎥"}
+  #tabBtnShows::before{content:"🎭"} #tabBtnRobot::before{content:"🤖"} #tabBtnSetup::before{content:"⚙"}
+}
