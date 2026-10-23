@@ -1,9 +1,9 @@
 # PC Face app, watcher and Photobooth integration
 
 Owner: codex:10231359-7280
-Updated: 2026-10-23T19:00:06+07:00
+Updated: 2026-10-23T19:02:17+07:00
 Branch: codex/face-pc-1023
-Last commit: 4d516a8 (audit handoff; see git log for latest)
+Last commit: c30b486 (lab coordination checkpoint; see git log for latest)
 Plan: A45-30; remaining real run A45-14/A45-12
 
 ## Goal
@@ -15,7 +15,8 @@ Resumed metadata and read-only preparation after latest user lab authorization.
 Only own task-file/scratch claimed; no runtime, camera, QC or hardware lease.
 Wait for parent deployment completion and hardware owner's camera coordination.
 Plan resume refused: A45-30 disappeared from live PLAN after earlier successful handoff.
-Parent notified; do not overwrite current plan or infer a new resource release.
+Integration owner is restoring the single row as todo/open; do not duplicate plan writes.
+Preparation checkpoint complete; release own metadata/scratch when round ends.
 
 ## Facts found
 - HANDOFF.md: friend sources outside code are read-only/start-only; no edits allowed.
@@ -49,8 +50,16 @@ Parent notified; do not overwrite current plan or infer a new resource release.
 - Hardware owner reports inventory-only: no camera/COM/motion lease and no serial COM
   detected yet. It permits NoBrowser health smoke after integration runtime release;
   camera use still needs coordination before its video acceptance phase.
+- Later hardware BRIDGE19:01 identifies CP210x COM9/COM10, still unidentified boards;
+  RS485 is not connected. Only hardware owner may identify/move/flash them.
 - Main status recipient 01a1689b-5608-7123-b8c2-a6f489b5b675 is human-authorized.
-  Original deployment owner remains 01a16787-933e-7d81-97a1-0a3561d110b9.
+  Deployment now belongs to 01a1679e-50a4-7e71-9cfb-64b6afa635c1 after original
+  owner explicit RELEASE19:00. Source gate7885pass/1fail refused changed input;
+  no green receipt/deployment. Integration diagnoses/fixes and reruns; do not bypass.
+- Passive resume health: friend8000 HTTP200/model_ready, watcher8769 HTTP200/
+  watching/error empty, booth8121 connection refused. No new recognition request added.
+- BoothStartPage.tsx:10/35 opens frames before capture; camera.open occurs only
+  in CapturePage.tsx:171. Health/HTML probes do not start a photo session or camera.
 
 ## Done
 - Read AGENTS/HANDOFF/CLAUDE, coordination, relevant task files and app-faces header.
@@ -73,6 +82,9 @@ Parent notified; do not overwrite current plan or infer a new resource release.
    Do not start TV camera/photo session while hub owns the PC camera.
 3. Return exact checklist delta to parent; no direct lab-day.md/friend-face-server.md edits.
 4. Friend must add booth name connector before simultaneous names can be measured.
+5. CLI-only continuation reads this file and live BRIDGE. Codex native chat/handoff
+   tools are not assumed available in Gemini CLI. Record a BRIDGE REQUEST under mutex
+   for missing lease/coordination; do independent read-only work, never infer release.
 
 ## Blocked
 - Startup smoke waits for QC/deployment and hardware-owner camera coordination.
