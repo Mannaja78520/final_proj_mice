@@ -54,7 +54,8 @@ function buildArm(side) {           // side: +1 = robot left (+X), -1 = right
   const anchor = new THREE.Group(); // fixed shoulder anchor on the torso
   // shoulderMount's origin is the shrug bearing (shoulderY + shrugPivot up), so
   // the anchor hangs shrugPivot below it and lands back on the shoulder line.
-  anchor.position.set(side * d.shoulderX, -(d.shrugPivot || 0), 0);
+  const mt = RIG.mount[side > 0 ? "L" : "R"];
+  anchor.position.set(side * d.shoulderX + mt[0], -(d.shrugPivot || 0) + mt[1], mt[2]);
   shoulderMount.add(anchor);        // SHRUG rocks the mount; WAIST yaws the body
   // Keep a handle on each anchor and its resting height. With a 4-bar shrug
   // the two shoulders do NOT move by the same amount, so each one is placed
@@ -67,9 +68,12 @@ function buildArm(side) {           // side: +1 = robot left (+X), -1 = right
   shrugAnchors[side > 0 ? "L" : "R"] = anchor;
   shrugBaseY = -(d.shrugPivot || 0);
 
-  const shP = new THREE.Group(); anchor.add(shP);      // joint base+0
-  const shR = new THREE.Group(); shP.add(shR);         // joint base+1
-  jointGroups[base] = shP; jointGroups[base + 1] = shR;
+  // the joints from the body out (RIG.order: a CAD may chain a pair the other
+  // way round); the bars hang on the 2nd and 4th, whichever joints those are
+  const ord = RIG.order[side > 0 ? 0 : 1];
+  const shP = new THREE.Group(); anchor.add(shP);
+  const shR = new THREE.Group(); shP.add(shR);
+  jointGroups[ord[0]] = shP; jointGroups[ord[1]] = shR;
 
   const upperLen = side > 0 ? d.upperLenL : d.upperLenR;
   const foreLen = side > 0 ? d.foreLenL : d.foreLenR;
@@ -91,9 +95,9 @@ function buildArm(side) {           // side: +1 = robot left (+X), -1 = right
   elAnchor.add(elbowBall);
   elbowBalls.push(elbowBall);
 
-  const elP = new THREE.Group(); elAnchor.add(elP);    // joint base+2
-  const elR = new THREE.Group(); elP.add(elR);         // joint base+3
-  jointGroups[base + 2] = elP; jointGroups[base + 3] = elR;
+  const elP = new THREE.Group(); elAnchor.add(elP);
+  const elR = new THREE.Group(); elP.add(elR);
+  jointGroups[ord[2]] = elP; jointGroups[ord[3]] = elR;
 
   const foreName = side > 0 ? "L_fore" : "R_fore";
   elR.add(linkVisual(foreName, armSegment(foreLen, RIG.barR[pairEl], RIG.jointR[pairEl],
@@ -194,10 +198,8 @@ function buildRigShapes() {
   const armL = buildArm(+1);
   const armR = buildArm(-1);
   // gizmo ring parents: axis-1 ring on the fixed anchor, axis-2 ring inside joint-1
-  pairRingParents = [
-    [armL.shP.parent, armL.shP], [armL.elP.parent, armL.elP],
-    [armR.shP.parent, armR.shP], [armR.elP.parent, armR.elP],
-  ];
+  // (each ring on its own joint's parent, so a swapped pair keeps them right)
+  pairRingParents = [0, 2, 4, 6].map(i => [jointGroups[i].parent, jointGroups[i + 1].parent]);
 }
 
 const _AXVEC = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
@@ -206,6 +208,13 @@ const _qBase = new THREE.Quaternion(), _qAxis = new THREE.Quaternion(), _eTilt =
 // primary axis. Used by applyPose and the gizmo rings so both agree.
 function jointTiltQuat(i, out) {
   const t = RIG.tilt[i] || [0, 0, 0];
+  _eTilt.set(THREE.MathUtils.degToRad(t[0]), THREE.MathUtils.degToRad(t[1]),
+             THREE.MathUtils.degToRad(t[2]), "XYZ");
+  return (out || new THREE.Quaternion()).setFromEuler(_eTilt);
+}
+// the fixed turn after joint i's servo (RIG.after, A48-6)
+function jointAfterQuat(i, out) {
+  const t = RIG.after[i] || [0, 0, 0];
   _eTilt.set(THREE.MathUtils.degToRad(t[0]), THREE.MathUtils.degToRad(t[1]),
              THREE.MathUtils.degToRad(t[2]), "XYZ");
   return (out || new THREE.Quaternion()).setFromEuler(_eTilt);
@@ -238,6 +247,7 @@ function applyPose() {
     _qBase.setFromEuler(_eTilt);
     _qAxis.setFromAxisAngle(_AXVEC[ax], THREE.MathUtils.degToRad(v));
     g.quaternion.copy(_qBase).multiply(_qAxis);    // rotate about the tilted axis
+    g.quaternion.multiply(jointAfterQuat(i, _qBase));
   }
   // WAIST (joint 9) yaws the whole upper body about vertical; SHRUG (joint 10)
   // pitches the shoulder mount so both shoulders rise/fall together.
@@ -250,14 +260,14 @@ function applyPose() {
       // The mount itself does not rock, or the rotation would be applied on
       // top of the measurement and double-count it.
       shoulderMount.rotation.set(0, 0, 0);
-      if (shrugAnchors.L) shrugAnchors.L.position.y = shrugBaseY + rise.l;
-      if (shrugAnchors.R) shrugAnchors.R.position.y = shrugBaseY + rise.r;
+      if (shrugAnchors.L) shrugAnchors.L.position.y = shrugBaseY + RIG.mount.L[1] + rise.l;
+      if (shrugAnchors.R) shrugAnchors.R.position.y = shrugBaseY + RIG.mount.R[1] + rise.r;
     } else {
       // Uncalibrated: the original symmetric see-saw, unchanged. SHRUG is a
       // ROLL about the front-back axis (Z) — one shoulder rises while the
       // other drops.
-      if (shrugAnchors.L) shrugAnchors.L.position.y = shrugBaseY;
-      if (shrugAnchors.R) shrugAnchors.R.position.y = shrugBaseY;
+      if (shrugAnchors.L) shrugAnchors.L.position.y = shrugBaseY + RIG.mount.L[1];   // + its own height (A48-6)
+      if (shrugAnchors.R) shrugAnchors.R.position.y = shrugBaseY + RIG.mount.R[1];
       // At the TRUE angle: it was drawn x3 so a small move would read, and 10
       // deg on the robot showed as 30 (user 2026-09-17, A26-45).
       shoulderMount.rotation.set(0, 0, THREE.MathUtils.degToRad(jointDelta(9)));

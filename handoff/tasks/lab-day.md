@@ -44,6 +44,9 @@ nothing - waiting for the lab.
 - [ ] A46-2: saved motions, speech gestures / RRT detours, video copying, skeleton - small moves first.
 - [ ] A26-99: play LhongMarePing, read PERF? right after the song starts.
 - [ ] A26-77: anything still untested from the 2026-09-21 hardware list.
+- [ ] A48-6 / robot-tests.md 7: Studio rig with the CAD's sizes and shoulder spots: put the robot
+      at home and at 3 poses, compare with Studio (simple shapes and CAD model). If the real arms
+      match the CAD better, add "joints" to urdf_view.json rigFromCad and press the button again.
 - [ ] A26-71: shrug angle at full left / middle (90) / full right -> calibrate, save PDF.
 - [ ] A26-92: RELAX not releasing TD8135MG (user: diagnose only, do not fix yet).
 - [ ] A16-1: the 4-bar's own curve with a ruler.

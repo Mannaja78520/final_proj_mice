@@ -299,7 +299,7 @@ const DEFAULT_RIG = {
   // A48-1 robot look (urdf_view.js / urdf_view.json): which look, which URDF,
   // whose sizes the simple shapes use ("urdf" or "custom"), your own sizes
   // kept while the URDF's are in use, and the URDF's last measured sizes.
-  view: { look: "rig", model: "", sizes: "custom", custom: null, urdfDims: null },
+  view: { look: "rig", model: "", sizes: "custom", custom: null, urdfDims: null, oldRig: null },
   zero: [90, 90, 90, 90, 90, 90, 90, 90, 90, 90],
   axis: [...DEFAULT_AXIS],        // rotation axis per joint (roll/pitch/yaw)
   invert: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -345,6 +345,15 @@ const DEFAULT_RIG = {
   // axes aren't exactly aligned to X/Y/Z / 90°, so this rotates each joint's
   // rotation axis to match. Visual/rig only. Default no tilt.
   tilt: [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]],
+  // A48-6 (user 2026-10-23 "make it like the CAD"): what a CAD needs that the
+  // tilts alone cannot say, filled by "Make the simple shapes match the CAD"
+  // (rig_from_cad.js). after = a fixed turn AFTER each servo (roll/pitch/yaw
+  // deg): a CAD bone need not be square to its joint's axis. mount = each
+  // shoulder's offset (mm) from the symmetric spot. order = each arm's joints
+  // from the body out, as the CAD chains them. Defaults change nothing.
+  after: [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]],
+  mount: { L: [0, 0, 0], R: [0, 0, 0] },
+  order: [[0, 1, 2, 3], [4, 5, 6, 7]],
   // SIZES per universal joint / per bar, indexed like PAIRS:
   //   0 = L shoulder, 1 = L elbow, 2 = R shoulder, 3 = R elbow
   // bar hanging from it (0/1 = L upper arm / L forearm, 2/3 = R upper / R fore).
@@ -403,6 +412,16 @@ function mergeRig(saved) {
   if (!Array.isArray(r.tilt)) r.tilt = JSON.parse(JSON.stringify(DEFAULT_RIG.tilt));
   r.tilt = DEFAULT_RIG.tilt.map((d, i) =>
     (Array.isArray(r.tilt[i]) && r.tilt[i].length === 3) ? r.tilt[i] : [...d]);
+  r.after = DEFAULT_RIG.after.map((d, i) =>
+    (Array.isArray(r.after) && Array.isArray(r.after[i]) && r.after[i].length === 3) ? r.after[i].map(v => +v || 0) : [...d]);
+  const m3 = (v) => Array.isArray(v) && v.length === 3 ? v.map(x => +x || 0) : [0, 0, 0];
+  r.mount = { L: m3((r.mount || {}).L), R: m3((r.mount || {}).R) };
+  // an order only swaps WITHIN a pair (shoulder pair first, then the elbow pair)
+  r.order = [0, 4].map((b, a) => {
+    const o = Array.isArray(r.order) && Array.isArray(r.order[a]) ? r.order[a].map(Number) : [];
+    const ok = o.length === 4 && [o[0], o[1]].sort().join() === [b, b + 1].join() && [o[2], o[3]].sort().join() === [b + 2, b + 3].join();
+    return ok ? o : [b, b + 1, b + 2, b + 3];
+  });
   if (!Array.isArray(r.jointR) || r.jointR.length !== 4) r.jointR = [...DEFAULT_RIG.jointR];
   if (!Array.isArray(r.barR) || r.barR.length !== 4) r.barR = [...DEFAULT_RIG.barR];
   return r;
@@ -854,7 +873,8 @@ function buildArm(side) {           // side: +1 = robot left (+X), -1 = right
   const anchor = new THREE.Group(); // fixed shoulder anchor on the torso
   // shoulderMount's origin is the shrug bearing (shoulderY + shrugPivot up), so
   // the anchor hangs shrugPivot below it and lands back on the shoulder line.
-  anchor.position.set(side * d.shoulderX, -(d.shrugPivot || 0), 0);
+  const mt = RIG.mount[side > 0 ? "L" : "R"];
+  anchor.position.set(side * d.shoulderX + mt[0], -(d.shrugPivot || 0) + mt[1], mt[2]);
   shoulderMount.add(anchor);        // SHRUG rocks the mount; WAIST yaws the body
   // Keep a handle on each anchor and its resting height. With a 4-bar shrug
   // the two shoulders do NOT move by the same amount, so each one is placed
@@ -867,9 +887,12 @@ function buildArm(side) {           // side: +1 = robot left (+X), -1 = right
   shrugAnchors[side > 0 ? "L" : "R"] = anchor;
   shrugBaseY = -(d.shrugPivot || 0);
 
-  const shP = new THREE.Group(); anchor.add(shP);      // joint base+0
-  const shR = new THREE.Group(); shP.add(shR);         // joint base+1
-  jointGroups[base] = shP; jointGroups[base + 1] = shR;
+  // the joints from the body out (RIG.order: a CAD may chain a pair the other
+  // way round); the bars hang on the 2nd and 4th, whichever joints those are
+  const ord = RIG.order[side > 0 ? 0 : 1];
+  const shP = new THREE.Group(); anchor.add(shP);
+  const shR = new THREE.Group(); shP.add(shR);
+  jointGroups[ord[0]] = shP; jointGroups[ord[1]] = shR;
 
   const upperLen = side > 0 ? d.upperLenL : d.upperLenR;
   const foreLen = side > 0 ? d.foreLenL : d.foreLenR;
@@ -891,9 +914,9 @@ function buildArm(side) {           // side: +1 = robot left (+X), -1 = right
   elAnchor.add(elbowBall);
   elbowBalls.push(elbowBall);
 
-  const elP = new THREE.Group(); elAnchor.add(elP);    // joint base+2
-  const elR = new THREE.Group(); elP.add(elR);         // joint base+3
-  jointGroups[base + 2] = elP; jointGroups[base + 3] = elR;
+  const elP = new THREE.Group(); elAnchor.add(elP);
+  const elR = new THREE.Group(); elP.add(elR);
+  jointGroups[ord[2]] = elP; jointGroups[ord[3]] = elR;
 
   const foreName = side > 0 ? "L_fore" : "R_fore";
   elR.add(linkVisual(foreName, armSegment(foreLen, RIG.barR[pairEl], RIG.jointR[pairEl],
@@ -994,10 +1017,8 @@ function buildRigShapes() {
   const armL = buildArm(+1);
   const armR = buildArm(-1);
   // gizmo ring parents: axis-1 ring on the fixed anchor, axis-2 ring inside joint-1
-  pairRingParents = [
-    [armL.shP.parent, armL.shP], [armL.elP.parent, armL.elP],
-    [armR.shP.parent, armR.shP], [armR.elP.parent, armR.elP],
-  ];
+  // (each ring on its own joint's parent, so a swapped pair keeps them right)
+  pairRingParents = [0, 2, 4, 6].map(i => [jointGroups[i].parent, jointGroups[i + 1].parent]);
 }
 
 const _AXVEC = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
@@ -1006,6 +1027,13 @@ const _qBase = new THREE.Quaternion(), _qAxis = new THREE.Quaternion(), _eTilt =
 // primary axis. Used by applyPose and the gizmo rings so both agree.
 function jointTiltQuat(i, out) {
   const t = RIG.tilt[i] || [0, 0, 0];
+  _eTilt.set(THREE.MathUtils.degToRad(t[0]), THREE.MathUtils.degToRad(t[1]),
+             THREE.MathUtils.degToRad(t[2]), "XYZ");
+  return (out || new THREE.Quaternion()).setFromEuler(_eTilt);
+}
+// the fixed turn after joint i's servo (RIG.after, A48-6)
+function jointAfterQuat(i, out) {
+  const t = RIG.after[i] || [0, 0, 0];
   _eTilt.set(THREE.MathUtils.degToRad(t[0]), THREE.MathUtils.degToRad(t[1]),
              THREE.MathUtils.degToRad(t[2]), "XYZ");
   return (out || new THREE.Quaternion()).setFromEuler(_eTilt);
@@ -1038,6 +1066,7 @@ function applyPose() {
     _qBase.setFromEuler(_eTilt);
     _qAxis.setFromAxisAngle(_AXVEC[ax], THREE.MathUtils.degToRad(v));
     g.quaternion.copy(_qBase).multiply(_qAxis);    // rotate about the tilted axis
+    g.quaternion.multiply(jointAfterQuat(i, _qBase));
   }
   // WAIST (joint 9) yaws the whole upper body about vertical; SHRUG (joint 10)
   // pitches the shoulder mount so both shoulders rise/fall together.
@@ -1050,14 +1079,14 @@ function applyPose() {
       // The mount itself does not rock, or the rotation would be applied on
       // top of the measurement and double-count it.
       shoulderMount.rotation.set(0, 0, 0);
-      if (shrugAnchors.L) shrugAnchors.L.position.y = shrugBaseY + rise.l;
-      if (shrugAnchors.R) shrugAnchors.R.position.y = shrugBaseY + rise.r;
+      if (shrugAnchors.L) shrugAnchors.L.position.y = shrugBaseY + RIG.mount.L[1] + rise.l;
+      if (shrugAnchors.R) shrugAnchors.R.position.y = shrugBaseY + RIG.mount.R[1] + rise.r;
     } else {
       // Uncalibrated: the original symmetric see-saw, unchanged. SHRUG is a
       // ROLL about the front-back axis (Z) — one shoulder rises while the
       // other drops.
-      if (shrugAnchors.L) shrugAnchors.L.position.y = shrugBaseY;
-      if (shrugAnchors.R) shrugAnchors.R.position.y = shrugBaseY;
+      if (shrugAnchors.L) shrugAnchors.L.position.y = shrugBaseY + RIG.mount.L[1];   // + its own height (A48-6)
+      if (shrugAnchors.R) shrugAnchors.R.position.y = shrugBaseY + RIG.mount.R[1];
       // At the TRUE angle: it was drawn x3 so a small move would read, and 10
       // deg on the robot showed as 30 (user 2026-09-17, A26-45).
       shoulderMount.rotation.set(0, 0, THREE.MathUtils.degToRad(jointDelta(9)));
@@ -1321,9 +1350,22 @@ function urdfRpyQuat(rpy, out) {
 function rigRestAxis(i) {
   if (i === 8) return new THREE.Vector3(0, 1, 0);      // waist: bodyGroup yaw
   if (i === 9) return new THREE.Vector3(0, 0, 1);      // shrug: shoulderMount roll
-  const q = new THREE.Quaternion();
-  for (let k = i - i % 4; k <= i; k++) q.multiply(jointTiltQuat(k));
-  return _AXVEC[RIG.axis[i]].clone().applyQuaternion(q).normalize();
+  const c = rigChain(i - i % 4, [0, 0, 0, 0]);
+  return _AXVEC[RIG.axis[i]].clone().applyQuaternion(c.pre[i % 4]).normalize();
+}
+// The shapes' arm chain for joint deltas d (deg, d[k] = joint b+k), in the
+// body's frame: pre[k] = the frame joint b+k turns in (its tilt included),
+// at[c] = the frame after the c-th joint from the body out (RIG.order).
+// The same as applyPose builds, without touching the scene.
+function rigChain(b, d) {
+  const q = new THREE.Quaternion(), r = new THREE.Quaternion(), pre = [], at = [];
+  RIG.order[b / 4].forEach((j, c) => {
+    q.multiply(jointTiltQuat(j));
+    pre[j - b] = q.clone();
+    q.multiply(r.setFromAxisAngle(_AXVEC[RIG.axis[j]], THREE.MathUtils.degToRad(d[j - b]))).multiply(jointAfterQuat(j));
+    at[c] = q.clone();
+  });
+  return { pre, at };
 }
 function urdfJointCfg(i) { return ((URDF_CFG && URDF_CFG.joints) || {})[JOINT_NAMES[i]] || {}; }
 
@@ -1488,8 +1530,10 @@ function urdfSettle(base, warn) {
   });
   // shoulders where the simple shapes have them, so the camera, the torso
   // box and the old saved views still line up
+  // (the shapes' own middle: RIG.mount moves each shoulder off the symmetric spot)
   const mid = W(urdfArm[0][0].org).add(W(urdfArm[1][0].org)).multiplyScalar(0.5);
-  base.position.set(-mid.x, (RIG.dims.shoulderY || 0) - mid.y, -mid.z);
+  const mm = new THREE.Vector3().fromArray(RIG.mount.L).add(new THREE.Vector3().fromArray(RIG.mount.R)).multiplyScalar(0.5);
+  base.position.set(mm.x - mid.x, (RIG.dims.shoulderY || 0) + mm.y - mid.y, mm.z - mid.z);
   applyPose(); robot.updateMatrixWorld(true);
   urdfLast.fit = [null, null];
   ["L", "R"].forEach((side, arm) => {
@@ -1548,8 +1592,7 @@ function urdfPlaceHand(side, arm) {
   pose = RIG.zero.slice(); applyPose(); robot.updateMatrixWorld(true);
   const inv = t.fore.getWorldQuaternion(new THREE.Quaternion()).invert();
   const el = t.fore.worldToLocal(urdfArm[arm][2].org.getWorldPosition(new THREE.Vector3()));
-  const q = new THREE.Quaternion();
-  for (let k = b; k < b + 4; k++) q.multiply(jointTiltQuat(k));
+  const q = rigChain(b, [0, 0, 0, 0]).at[3];
   if (!t.fromMesh) {
     t.mm = side === "L" ? RIG.dims.foreLenL : RIG.dims.foreLenR;
     const dirW = new THREE.Vector3(0, -1, 0).applyQuaternion(q);
@@ -1610,12 +1653,8 @@ function urdfArmDirs(m, th, fore) {
 }
 // the shapes' upper-arm and forearm directions for joint deltas d (deg)
 function rigArmDirs(b, d) {
-  const q = new THREE.Quaternion(), r = new THREE.Quaternion();
-  const turn = (k) => q.multiply(jointTiltQuat(b + k)).multiply(r.setFromAxisAngle(_AXVEC[RIG.axis[b + k]], THREE.MathUtils.degToRad(d[k])));
-  turn(0); turn(1);
-  const up = new THREE.Vector3(0, -1, 0).applyQuaternion(q), qu = q.clone();
-  turn(2); turn(3);
-  return { up, qu, fore: new THREE.Vector3(0, -1, 0).applyQuaternion(q), qf: q };
+  const c = rigChain(b, d), qu = c.at[1], qf = c.at[3];
+  return { up: new THREE.Vector3(0, -1, 0).applyQuaternion(qu), qu, fore: new THREE.Vector3(0, -1, 0).applyQuaternion(qf), qf };
 }
 function urdfFitArm(arm, warn) {
   const cfg = URDF_CFG.fit || {}, b = arm * 4, ch = urdfArm[arm];
@@ -1831,6 +1870,7 @@ function renderLookUI() {
   if (v.model) msel.value = v.model;
   msel.hidden = lookKind() !== "urdf" || urdfModelList.length < 2;
   const tech = $("lookTech");
+  if (typeof renderRigCadUI === "function") renderRigCadUI();
   if (lookKind() !== "urdf") { stat.textContent = ""; tech.textContent = ""; return; }
   stat.textContent = urdfLast.error ? "Cannot show the CAD model: " + urdfLast.error + ". The simple shapes are shown."
     : !urdfOn ? "Opening the CAD model…"
@@ -1882,6 +1922,13 @@ async function setLook(id, force) {
   if (!wasUrdf) { v.look = id; rigChanged(); return; }
   const pick = await askLookSizes();
   if (!pick) { renderLookUI(); return; }
+  if (pick === "cad") {
+    // measured on the CAD still shown, then the shapes are built from it
+    if (!rigFromCad()) { renderLookUI(); return; }
+    v.look = id;
+    rigChanged();
+    return;
+  }
   const keys = Object.keys(URDF_CFG.sizes || {});
   if (pick === "urdf") Object.assign(RIG.dims, urdfDimsOf(keys, urdfLast.dims || {}));
   else Object.assign(RIG.dims, urdfDimsOf(keys, v.custom || {}));
@@ -1902,12 +1949,161 @@ function askLookSizes() {
   $("lookAskMine").textContent = v.custom ? lookSizeText(v.custom) : "none kept yet: the URDF sizes, then change them in Rig setup";
   return new Promise(res => {
     const done = (x) => { dlg.close ? dlg.close() : dlg.removeAttribute("open"); res(x); };
+    $("lookUseCad").onclick = () => done("cad");
     $("lookUseUrdf").onclick = () => done("urdf");
     $("lookUseMine").onclick = () => done("custom");
     $("lookStay").onclick = () => done(null);
     dlg.oncancel = (e) => { e.preventDefault(); done(null); };
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
   });
+}
+// --- the simple shapes made from the CAD (A48-6) ---
+//
+// User 2026-10-23: "why 15 deg off? make it like the real one - the rig was
+// set up roughly in a hurry, the real robot follows the CAD", then "but keep
+// the old rig's axes, they were tuned to the real robot". So from the CAD:
+// sizes, where each shoulder sits and the shrug pivot. With "joints" in the
+// data also each joint's tilt, a fixed turn after each servo (RIG.after: a
+// CAD bone is not square to its joint) and the CAD's pair order.
+// Measured at the zero pose with the fitted sense and zero of every joint
+// (urdf_view.js), so the shapes then move EXACTLY like the CAD.
+//
+// What it never changes: zero, home, invert, min, max, offset. Those are the
+// servo numbers; a pose keeps the same numbers and the CAD the same pose.
+// The old rig is kept in RIG.view.oldRig and comes back with one button.
+// Which parts are taken: urdf_view.json "rigFromCad". check_urdf_look holds it.
+
+const RIG_CAD_KEYS = ["dims", "tilt", "after", "mount", "order"];   // what is replaced (and kept)
+let rigCadLast = "";              // what the last make/undo said
+
+function rigCadCfg() { return (URDF_CFG && URDF_CFG.rigFromCad) || {}; }
+function rigCadTakes(part) { return (rigCadCfg().take || ["sizes", "shoulders", "shrugPivot"]).includes(part); }
+function rigCadLabel() { return rigCadCfg().label || (rigCadTakes("joints") ? "Make the simple shapes match the CAD" : "Use the CAD's sizes and shoulder spots"); }
+
+// The rig parts from the CAD on screen, or {error}. Touches nothing.
+function rigFromCadMeasure() {
+  if (!urdfOn) return { error: "the CAD model is not shown" };
+  const cfg = rigCadCfg(), dp = Math.pow(10, cfg.round == null ? 4 : cfg.round);
+  const rd = (v) => Math.round(v * dp) / dp;
+  for (const side of ["L", "R"])
+    if (((URDF_CFG.hands || {})[side] || {}).tip === "mesh" && !urdfTip[side].fromMesh)
+      return { error: "the " + (side === "L" ? "left" : "right") + " forearm part has not arrived yet" };
+  const keep = pose;
+  pose = RIG.zero.slice(); applyPose(); robot.updateMatrixWorld(true);
+  try {
+    const rq = robot.getWorldQuaternion(new THREE.Quaternion()).invert();
+    const at = (o) => robot.worldToLocal(o.getWorldPosition(new THREE.Vector3()));
+    // the waist turns about the body's middle: measure from its line
+    const w0 = urdfJ[8] ? at(urdfJ[8].org) : new THREE.Vector3();
+    const P = (o) => { const v = at(o); v.x -= w0.x; v.z -= w0.z; return v; };
+    const out = { dims: {}, tilt: RIG.tilt.map(t => t.slice()), after: RIG.after.map(t => t.slice()),
+                  mount: { L: RIG.mount.L.slice(), R: RIG.mount.R.slice() }, order: RIG.order.map(o => o.slice()), warn: [] };
+    const eul = (q) => { const e = new THREE.Euler().setFromQuaternion(q, "XYZ"); return [e.x, e.y, e.z].map(v => rd(THREE.MathUtils.radToDeg(v))); };
+    const S = [], E = [], T = [];
+    for (let a = 0; a < 2; a++) {
+      const b = a * 4, ch = urdfArm[a];
+      S[a] = P(ch[0].org); E[a] = P(ch[2].org); T[a] = P(wristBalls[a]);
+      if (P(ch[1].org).distanceTo(S[a]) > (cfg.colocatedMm || 1) || P(ch[3].org).distanceTo(E[a]) > (cfg.colocatedMm || 1))
+        out.warn.push("a joint pair of the " + (a ? "right" : "left") + " arm is not at one point in the CAD");
+      const ord = [b, b + 1, b + 2, b + 3].sort((x, y) => urdfJ[x].depth - urdfJ[y].depth);
+      if ([ord[0], ord[1]].sort().join() !== [b, b + 1].join()) return { error: "the CAD chains the " + (a ? "right" : "left") + " arm in an order the shapes cannot follow" };
+      let Wp = new THREE.Quaternion();
+      const tilt = [], after = [];
+      ord.forEach((j, c) => {
+        const e = urdfJ[j];
+        // the CAD axis in the body, turned the way the Studio joint turns
+        const aw = e.axis.clone().applyQuaternion(e.mov.getWorldQuaternion(new THREE.Quaternion())).applyQuaternion(rq).multiplyScalar(e.sign).normalize();
+        const T0 = new THREE.Quaternion().setFromUnitVectors(_AXVEC[RIG.axis[j]], aw.applyQuaternion(Wp.clone().invert()));
+        let Wn = Wp.clone().multiply(T0), U = new THREE.Quaternion();
+        if (c === 1 || c === 3) {
+          // the bar hangs along -Y: turn it onto the CAD's own bone
+          const bone = (c === 1 ? E[a].clone().sub(S[a]) : T[a].clone().sub(E[a])).normalize();
+          // the forearm takes the CAD hand's own frame (its -Y lies on the
+          // forearm, urdfPlaceHand), less the palm turn the hand adds back
+          const R = c === 3
+            ? rq.clone().multiply(urdfTip[a ? "R" : "L"].hand.getWorldQuaternion(new THREE.Quaternion()))
+                .multiply(new THREE.Quaternion().setFromAxisAngle(_AXVEC.y, -THREE.MathUtils.degToRad(RIG.palmTurn[a] || 0)))
+                .multiply(Wn.clone().invert())
+            : new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0).applyQuaternion(Wn), bone);
+          const W2 = R.multiply(Wn);
+          U = Wn.clone().invert().multiply(W2);
+          Wn = W2;
+        }
+        tilt[j] = eul(T0); after[j] = eul(U);
+        Wp = Wn;
+      });
+      if (rigCadTakes("joints")) {
+        out.order[a] = ord;
+        ord.forEach(j => { out.tilt[j] = tilt[j]; out.after[j] = after[j]; });
+      }
+    }
+    const sx = (S[0].x - S[1].x) / 2, sy = RIG.dims.shoulderY || 0;
+    if (rigCadTakes("shoulders")) {
+      out.dims.shoulderX = rd(sx);
+      out.mount.L = [S[0].x - sx, S[0].y - sy, S[0].z].map(rd);
+      out.mount.R = [S[1].x + sx, S[1].y - sy, S[1].z].map(rd);
+    }
+    if (rigCadTakes("sizes")) {
+      out.dims.upperLenL = rd(E[0].distanceTo(S[0])); out.dims.upperLenR = rd(E[1].distanceTo(S[1]));
+      out.dims.foreLenL = rd(T[0].distanceTo(E[0])); out.dims.foreLenR = rd(T[1].distanceTo(E[1]));
+    }
+    if (rigCadTakes("shrugPivot") && urdfJ[9])
+      out.dims.shrugPivot = rd(P(urdfJ[9].org).y - (S[0].y + S[1].y) / 2);
+    return out;
+  } finally { pose = keep; applyPose(); }
+}
+// the shapes' hands at a pose (arms only), for a rig `r`: how far a change moves them
+function rigHandsAt(r, p) {
+  const keep = RIG; RIG = r;
+  try {
+    return [0, 1].map(a => {
+      const b = a * 4, d = [0, 1, 2, 3].map(k => (p[b + k] - RIG.zero[b + k]) * jdir(b + k));
+      const c = rigChain(b, d), side = a ? -1 : 1, D = RIG.dims, m = RIG.mount[a ? "R" : "L"];
+      return new THREE.Vector3(side * D.shoulderX + m[0], D.shoulderY + m[1], m[2])
+        .addScaledVector(new THREE.Vector3(0, -1, 0).applyQuaternion(c.at[1]), a ? D.upperLenR : D.upperLenL)
+        .addScaledVector(new THREE.Vector3(0, -1, 0).applyQuaternion(c.at[3]), a ? D.foreLenR : D.foreLenL);
+    });
+  } finally { RIG = keep; }
+}
+// Make it: the old rig is kept (once: a second make keeps the hand-made one).
+function rigFromCad() {
+  const m = rigFromCadMeasure();
+  if (m.error) { rigCadLast = "Cannot make the simple shapes from the CAD: " + m.error + "."; renderRigCadUI(); return false; }
+  const v = RIG.view;
+  if (!v.oldRig) v.oldRig = JSON.parse(JSON.stringify(RIG_CAD_KEYS.reduce((o, k) => (o[k] = RIG[k], o), {})));
+  const before = rigHandsAt(RIG, RIG.home);
+  const next = JSON.parse(JSON.stringify(RIG));
+  Object.assign(next.dims, m.dims);
+  ["tilt", "after", "mount", "order"].forEach(k => { next[k] = m[k]; });
+  const after = rigHandsAt(next, next.home);
+  ["tilt", "after", "mount", "order"].forEach(k => { RIG[k] = m[k]; });
+  Object.assign(RIG.dims, m.dims);
+  v.sizes = "cad";
+  const mv = after.map((p, a) => Math.round(p.distanceTo(before[a])));
+  rigCadLast = (rigCadTakes("joints") ? "The simple shapes now match the CAD." : "The simple shapes now have the CAD's sizes and shoulder spots; your joints are kept.") + " At home the left hand moved " + mv[0] + " mm and the right " + mv[1] +
+    " mm; the servo numbers did not change." + (m.warn.length ? " " + m.warn.join("; ") + "." : "");
+  rigChanged();
+  return true;
+}
+// Back to the rig kept before the first make.
+function rigOldBack() {
+  const v = RIG.view;
+  if (!v.oldRig) return false;
+  RIG_CAD_KEYS.forEach(k => { if (v.oldRig[k] !== undefined) RIG[k] = JSON.parse(JSON.stringify(v.oldRig[k])); });
+  v.oldRig = null;
+  v.sizes = "custom";
+  rigCadLast = "Your old simple shapes are back.";
+  rigChanged();
+  return true;
+}
+function renderRigCadUI() {
+  const mk = $("rigCadMake"), back = $("rigCadBack"), st = $("rigCadStat");
+  if (!mk) return;
+  mk.hidden = !(typeof urdfOn !== "undefined" && urdfOn);
+  mk.textContent = rigCadLabel();
+  if ($("lookUseCad")) $("lookUseCad").textContent = rigCadLabel();
+  back.hidden = !(RIG.view && RIG.view.oldRig);
+  st.textContent = rigCadLast;
 }
 // --- gizmo rings ---
 const gizmo = new THREE.Group();
