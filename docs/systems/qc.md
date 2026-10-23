@@ -23,7 +23,6 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `.promote-manifest.json`
 - `promote.py`
 - `qc/README.md`
-- `qc/_urdf_real.json`
 - `qc/checks/check_accounts.py`
 - `qc/checks/check_accounts_firmware.py`
 - `qc/checks/check_adapter_fast_fail.py`
@@ -99,6 +98,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/checks/check_freeze_stop.py`
 - `qc/checks/check_friend_api.py`
 - `qc/checks/check_gacha.py`
+- `qc/checks/check_gacha_sheet.py`
 - `qc/checks/check_game_prize.py`
 - `qc/checks/check_gate_order.py`
 - `qc/checks/check_gesture_legs.py`

@@ -1,7 +1,7 @@
 # Prize machines page in tabs + edit the Google Sheet
 
 Owner: claude:10230525-3d21
-Updated: 2026-10-23 05:35Z
+Updated: 2026-10-23 06:05Z
 Branch: claude/project-thread-s0kmlq
 Last commit: (none yet)
 Plan: A47-14 tabs, A47-15 sheet editing
@@ -12,8 +12,7 @@ User 2026-10-23: "🎁 Prize machines ขอเป็น tab เพื่อใ�
 Sheet link and the hub reads AND writes it. No key in git; the way is config, not one route.
 
 ## Doing now
-Writing main_python/gacha_sheet.py (ways: link read-only, script = Apps Script web app with a
-hub-made secret, service = service-account key file in .local) + page tabs.
+Full QC (`python qc/run_qc.py --quiet`), then PR + merge.
 
 ## Facts found
 - apps/gacha/index.html: one long page, 11 cards; all JS inline; Mice.Api for every call.
@@ -28,11 +27,18 @@ hub-made secret, service = service-account key file in .local) + page tabs.
 
 ## Done
 - plan rows A47-14, A47-15 added (doing).
+- main_python/gacha_sheet.py: ways link (gviz CSV, read only) / script (apps/gacha/sheet_script.gs,
+  hub secret in .local/gacha/sheet_secret.txt) / service (JWT RS256 via cryptography, Sheets v4,
+  key .local/gacha/google_service.json); auto = script, service, link. docs/gacha/apps_script.gs removed.
+- gacha.py: pull/push through the way; sheet_auto_push, sheet_log (background `_sheet_soon`);
+  save_cfg merges `rules`. Routes /api/gacha/sheet, /sheet/read, /sheet/write, /sheet/script (gated in hub_auth).
+- apps/gacha/index.html: 8 tabs from TABS (#hash kept), Google Sheet tab with Thai steps + tab editor.
+- check_gacha_sheet 16 asserts; sabotage 9/9 caught. Browser look 1280/390: no sideways scroll, no JS errors.
 
 ## Next
-1. gacha_sheet.py + routes /api/gacha/sheet*, apps_script.gs with ops + SECRET.
-2. Tabs on the page, Sheet tab with an editable grid and Thai one-time steps.
-3. check_gacha_sheet (fake script server) + sabotage; full QC; PR; merge.
+1. Full QC, PR, merge; delete this file in the merging PR.
+2. PC: rebuild MiceHub.exe (spec); user does the 5 Thai steps once with a real sheet (not tested
+   against real Google yet: only fakes).
 
 ## Blocked
 - nothing (real Google Sheet test needs the user's sheet: lab-day or user later).

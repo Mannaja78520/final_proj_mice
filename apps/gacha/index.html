@@ -110,7 +110,7 @@
   <div class="statline" id="shStat" aria-live="polite">-</div>
   <details id="shHow">
     <summary>วิธีตั้งค่าครั้งแรก ให้ hub แก้ชีตได้ (ทำครั้งเดียว ประมาณ 3 นาที)</summary>
-    <ol class="mini">
+    <ol class="mini" style="padding-left:var(--sp-4)">
       <li>เปิดชีตของคุณ แล้ววางลิงก์ชีตในช่อง <b>Sheet link</b> ด้านบน กด <b>Save</b>
         (ถ้าแค่อ่าน: Share ▸ General access ▸ Anyone with the link ก็พอ)</li>
       <li>กด <b>Copy the script</b> ด้านล่าง (สคริปต์มีรหัสลับของ hub นี้อยู่แล้ว ห้ามส่งให้คนอื่น)</li>
@@ -137,7 +137,8 @@
   <div class="row"><span class="lbl">Tab names</span>
     <span class="mini">kinds</span><input id="shTabItems" style="width:110px">
     <span class="mini">people</span><input id="shTabPeople" style="width:110px">
-    <span class="mini">prizes</span><input id="shTabLog" style="width:110px"></div>
+    <span class="mini">prizes</span><input id="shTabLog" style="width:110px">
+    <button class="primary" onclick="shSave()">Save</button></div>
   <div class="row"><button onclick="pull()">Take the rules from the sheet</button>
     <button onclick="push()">Send the rules to the sheet</button></div>
 
