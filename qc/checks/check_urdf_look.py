@@ -385,7 +385,8 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
       await another(CFG.realRig || {}, CFG.real);
       iso = isoFrom(RIG.home.slice());
       var base = iso.map(pts), z0 = pts(RIG.home);
-      await setLook("urdf"); await until(function(){ return urdfOn && urdfTip.L.fromMesh; }, 30000);
+      // both forearms: a real export's parts are tens of MB each
+      await setLook("urdf"); await until(function(){ return urdfOn && urdfTip.L.fromMesh && urdfTip.R.fromMesh; }, 90000);
       var Z = pts(RIG.home), rr = { on: urdfOn, error: urdfLast.error, warn: urdfLast.warn, fit: urdfLast.fit,
 
         bind: urdfJ.map(function(b, i){ return JOINT_NAMES[i] + "=" + (b ? b.name + (b.sign < 0 ? "(-)" : "") + " axis " + b.quality.toFixed(2) : "none"); }),
@@ -450,7 +451,7 @@ def run(t):
                "rig2": rig2, "realRig": real_rig}
         browser.page(DRIVER.replace("__CFG__", json.dumps(cfg)),
                      query="%s/studio/_qcdriver.html?dev=usb%%3A%s" % (base, fake_serial.PORT),
-                     seconds=120)
+                     seconds=240 if real_rel else 120)
     finally:
         shutil.rmtree(models, ignore_errors=True)
     marks = [m[6:] for m in fake_serial.qc_marks if m.startswith("ULOOK~")]

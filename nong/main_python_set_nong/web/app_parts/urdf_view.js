@@ -127,12 +127,25 @@ function urdfMeshUrls(fn, urdfPath) {
   out.push([fn.split(/[\\/]/).pop()]);
   return out.map(p => "/models/" + p.map(encodeURIComponent).join("/"));
 }
+// One download per file: a rebuild while a big part is still coming joins
+// the same download. Before, it started another and dropped the first, and
+// the right forearm of the real nong (tens of MB) never arrived in time (PC
+// run 2026-10-23: its tip fell back, its elbow was never fitted).
+const urdfLoading = {};            // url -> [[cb, fail], ...] waiting for it
 function urdfMesh(urls, cb, fail) {
   const u = urls[0];
   if (!u) { fail(); return; }
   if (urdfGeo[u]) { cb(urdfGeo[u]); return; }
-  stlLoader.load(u, geo => { urdfGeo[u] = geo; cb(geo); }, undefined,
-                 () => urdfMesh(urls.slice(1), cb, fail));
+  const next = () => urdfMesh(urls.slice(1), cb, fail);
+  if (urdfLoading[u]) { urdfLoading[u].push([cb, next]); return; }
+  urdfLoading[u] = [[cb, next]];
+  const done = (geo) => {
+    const w = urdfLoading[u] || [];
+    delete urdfLoading[u];
+    if (geo) urdfGeo[u] = geo;
+    w.forEach(([ok, no]) => geo ? ok(geo) : no());
+  };
+  stlLoader.load(u, done, undefined, () => done(null));
 }
 
 // ---- building it ------------------------------------------------------------
