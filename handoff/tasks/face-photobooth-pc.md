@@ -3,7 +3,7 @@
 Owner: codex:10231359-7280
 Updated: 2026-10-23T19:34:30+07:00
 Branch: codex/face-pc-1023
-Last commit: 5425bb2 (readiness handoff; see git log for latest)
+Last commit: fb84606 (startup readiness; see git log for latest)
 Plan: A45-30; remaining real run A45-14/A45-12
 
 ## Goal
@@ -11,10 +11,11 @@ Finish all PC-only Face app/watcher/Photobooth work without editing friend's sou
 Coordinate results with parent codex:10231353-0401, which owns URDF/QC/build/restart.
 
 ## Doing now
-Resumed own task-file/scratch only; A45-30 restored row verified and doing.
-Prepare official stop-main/run-main -NoBrowser, bounded health/read-only HTML smoke.
-Lab rawUSB window RELEASE19:34 verified; wait integration to start newHub and confirm
-actual assets/stale:false plus explicit startup handover. No runtime/camera/COM/QC lease yet.
+Integration explicitly released newHub built19:25 ef590e60cbff/stale:false and startup scope.
+Lab fresh agreement allows NoBrowser health; rawUSB window RELEASE19:34 verified.
+Own Photobooth8121/8123 startup lease now; run official stop-main then run-main -NoBrowser,
+record normal script output + health/HTML + original service PIDs. No camera/inference/COM/
+hardware/Hub restart/DB migration/QC. Leave successful booth service running, release afterward.
 
 ## Facts found
 - HANDOFF.md: friend sources outside code are read-only/start-only; no edits allowed.
