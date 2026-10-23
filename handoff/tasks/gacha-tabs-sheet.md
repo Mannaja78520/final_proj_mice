@@ -1,10 +1,10 @@
 # Prize machines tabs + Google Sheet: PC reconciliation
 
-Owner: codex:10231359-8856
-Updated: 2026-10-23 12:01Z
+Owner:
+Updated: 2026-10-23 12:03Z
 Branch: codex/gacha-reconcile-1023
 Tree: E:/final_proj/mice/code/.staging-gacha-reconcile
-Last commit: 020fc3b (resume checkpoint); source baseline 993862e
+Last commit: 08f63b8 (resumed audit evidence); source baseline 993862e
 Plan: A47-14/15/16/17 done; A47-18 handed off for parent final deployment
 
 ## Goal
@@ -14,10 +14,10 @@ and coordinate one final hub build with parent chat 01a16787-933e-7d81-97a1-0a35
 Preserve Studio/Help trials until the user chooses keep/drop. A47-5 remains hardware-only.
 
 ## Doing now
-Passive refresh complete; waiting only for parent/deployer's valid final gate/receipt
-before closing A47-18. No source change or special resource lease. Preserve trial choice.
-New main chat01a1689b received actual PC results and PLAN bookkeeping-loss notice.
-Hardware chat01a167a0 is sole physical tester. Do not take its ports/services/camera.
+None. Passive PC follow-through complete; A47-18 handed off/open for integration's valid
+final gate/receipt. All this chat's metadata/worktree/scratch claims released; no process.
+Parent explicitly transferred source/QC/build/restart to integration chat01a1679e at19:00:50.
+Hardware chat01a167a0 remains sole physical tester. Keep all other sessions' leases.
 
 ## Facts found
 - GitHub API 2026-10-23 confirms all four PRs merged: #70 c73488d,
@@ -76,19 +76,20 @@ Hardware chat01a167a0 is sole physical tester. Do not take its ports/services/ca
 
 ## Next
 0. Passive refresh done; new main and parent notified. Wait for valid receipt/gate evidence.
-1. Parent claims A47-18 with plan.py doing and its own deployment file claims.
-2. Parent final combined gate includes gacha/gacha_sheet/mice_tabs/previews, then builds
+1. Integration chat01a1679e-50a4-7e71-9cfb-64b6afa635c1 claims A47-18; parent
+   BRIDGE19:00:50 explicitly transferred gate/build/restart. No green receipt yet.
+2. Integration final combined gate includes gacha/gacha_sheet/mice_tabs/previews, then builds
    MiceHub.spec and deploys once. PR75 live hashes already verified; recheck if deployment changes them.
-3. Parent closes A47-18 after that final integration and completion. Preserve real pages,
+3. Integration closes A47-18 after that final integration and completion. Preserve real pages,
    dirty user data, trial pages, no real Sheet write without explicit authorization.
 
 ## Blocked
 - Real Google read/write requires a configured Sheet and authorized Google setup/write test.
 - Keep/drop for trial design is the user's choice; preserve both trial pages meanwhile.
-- Actual hub build/restart/full gate reserved to parent until explicit BRIDGE release.
+- Actual hub build/restart/full gate now belongs to integration per BRIDGE19:00:50.
 - A47-5 requires board/bench; no flash or physical motion authorized in this chat.
 
 ## CLI continuation
 Gemini may read this repo task/BRIDGE and use its available CLI/filesystem tools.
 Native Codex chat/handoff tools are not assumed available in Gemini. Keep parent
-resource leases; use the shared mutex and do not start hardware/QC/service work.
+resource leases (now integration + Lab); use the shared mutex and do not start hardware/QC/service work.
