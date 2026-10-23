@@ -435,7 +435,13 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     var homeKeep = RIG.home.slice();
     [2, 3, 6, 7].forEach(function(j){ RIG.home[j] = RIG.zero[j] + 30; });
     urdfTip.L.fromMesh = urdfTip.R.fromMesh = false;
+    urdfArm[0][2].sign = -1;
     urdfFitArm(0, []); urdfFitArm(1, []); pts(RIG.home);
+    r10.noMeshSign = urdfJ[urdfArm[0][2].named].sign;
+    var nj = urdfArm[0][2].named, movedPose = RIG.home.slice(); movedPose[nj] += 5; pts(movedPose);
+    var nb = urdfJ[nj], nq = nb.mov.quaternion;
+    r10.noMeshMove = Math.abs(2 * Math.atan2(new THREE.Vector3(nq.x, nq.y, nq.z).dot(nb.axis), nq.w) * 57.2957795 + jdir(nj) * 5) < 0.01;
+    pts(RIG.home);
     r10.noMeshTurned = f1(Math.max.apply(null, urdfJ.slice(0, 8).map(function(b){ return 2 * Math.acos(Math.min(1, Math.abs(b.mov.quaternion.w))) * 57.2958; })));
     RIG.home = homeKeep;
     URDF_CFG.fit.anchor = "none";
@@ -757,8 +763,9 @@ def run(t):
     if t.ok(got10, "the driver fitted a CAD anchored at home", marks[-3:]):
         r10 = json.loads(got10[6:])
         t.ok(r10["anchor"] == "home" and r10["turned"] < 0.1,
-             "anchored at home (urdf_view.json): at the robot's home every CAD joint sits as drawn, no part turned (%s deg)" % r10["turned"], r10)
+             "anchored at home (urdf_view.json): at the robot's home every arm joint with an automatic offset sits as drawn, no part turned (%s deg)" % r10["turned"], r10)
         t.ok(r10["noMeshTurned"] < 0.1, "HOME anchors elbows even without forearm meshes", r10)
+        t.ok(r10["noMeshSign"] == -1 and r10["noMeshMove"], "missing-mesh fallback keeps the computed negative axis sense", r10)
         t.ok(all(a > 0.5 for a in r10["agree"][:8]) and all(f["deg"] < 20 for f in r10["fit"]),
              "and each arm joint still moves its hand the shapes' way (%s, fit %s deg)" % (r10["agree"][:8], [f["deg"] for f in r10["fit"]]), r10)
     got11 = next((m for m in marks if m.startswith("res11=")), "")

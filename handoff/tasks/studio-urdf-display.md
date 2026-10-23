@@ -16,7 +16,7 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-A48-11: reviewer found missing-mesh HOME anchoring and delayed grid-config defects; fixes60/0 with actual private CAD, original3/3 sabotages caught; new2 regression sabotage running. User widened scope: all10 axes/planes and90deg meaning; numeric audit underway. Independent app/sheet and Face/Photobooth chats own other PC work. Full frozen QC and deployment next after final review. No robot motion.
+A48-11 frozen full QC next: fixes reviewed,61/0 with actual CAD before final wording/motion check,6 deliberate regressions caught. Numeric10-axis audit in scratch/continue-urdf-1023/axis-audit.md/json; native SolidWorks comparison delegated to fresh chat A48-12. App/Sheet audit done A47-17; A47-18 pending combined deployment; Face chat waiting QC release. No motion/calibration changes.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
