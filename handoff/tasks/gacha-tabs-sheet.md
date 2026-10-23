@@ -1,67 +1,57 @@
-# Prize machines page in tabs + edit the Google Sheet
+# Prize machines tabs + Google Sheet: PC reconciliation
 
-Owner: claude:10230525-3d21
-Updated: 2026-10-23 06:05Z
-Branch: claude/project-thread-s0kmlq
-Last commit: (none yet)
-Plan: A47-14 tabs, A47-15 sheet editing (both merged PR #70), A47-16 tabs on all pages (merged PR #73), A47-17 trial pages
+Owner: codex:10231359-8856
+Updated: 2569-10-23 07:01Z
+Branch: codex/gacha-reconcile-1023
+Tree: E:/final_proj/mice/code/.staging-gacha-reconcile
+Last commit: baseline 993862e (PR #75)
+Plan: A47-14/15/16 done; A47-17 trial pages; A47-18 PC reconciliation/deployment
 
 ## Goal
-User 2026-10-23: "🎁 Prize machines ขอเป็น tab เพื่อให้ตั้งค่าง่ายไม่ต้องเลื่อนลงล่างอย่างเดียว
-และขอให้แก้ไฟล์ใน google sheet ได้ด้วยถ้าเอาลิ้งมาใส่". Tabs on /app/gacha/; paste a Google
-Sheet link and the hub reads AND writes it. No key in git; the way is config, not one route.
+Finish safe PC-only gacha work. Reconcile PR #70/#73/#74/#75 with actual runtime,
+check whether a real Sheet is configured without exposing secrets or writing to Google,
+and coordinate one final hub build with parent chat 01a16787-933e-7d81-97a1-0a3561d110b9.
+Preserve Studio/Help trials until the user chooses keep/drop. A47-5 remains hardware-only.
 
 ## Doing now
-A47-17 previews built (/studio/preview.html, /help-preview); full QC, PR, merge, then tell the
-user the links. After the user decides keep/drop: keep = fold the trial into the real page;
-drop = delete its previews.json entry + files.
+Audit actual local hub and redacted config presence. Read-only HTTP/files only.
+Parent codex:10231353-0401 owns QC/fake browser, URDF and eventual hub build/restart.
+No QC, heavy model loads, hardware movement, external sheet calls or service changes.
+Own only this task file, serialized A47-17/18 plan metadata, isolated metadata tree,
+and private scratch/gacha-reconcile-1023. Human authorizes parent coordination.
 
 ## Facts found
-- apps/gacha/index.html: one long page, 11 cards; all JS inline; Mice.Api for every call.
-- shared/web/mice.css:162-186 `.tabs` / `.tab` / `.tab.on` are the shared tab look (Voice uses them).
-- main_python/gacha.py:40 rules cfg is flat keys (sheet_items_csv, sheet_people_csv,
-  sheet_write_url); cfg() merges nested dicts ONE level (c[k].update), so keep rules keys flat.
-- gacha.py:216 `_post` returned only the HTTP status: the script's {ok:false} was ignored.
-- gacha.py:222 pull_rules reads two published-CSV links; push_rules POSTs {kind:"rules"}.
-- hub_api_gacha.py:186 GET /api/gacha hides sheet_write_url; routes are one if-chain.
-- hub_auth.py:95 gated paths list for /api/gacha/*: a new route must be added there.
-- qc/checks/check_gacha.py:172 tests pull by replacing g.fetch.
+- GitHub API 2026-10-23 confirms all four PRs merged: #70 c73488d,
+  #73 e1dc35d, #74 45dac39, #75 993862e. Real root HEAD at audit start =45dac39.
+- #70: gacha page tabs; gacha_sheet.py ways link/script/service; login-only sheet routes.
+- #73: Voice/Reconize on Mice.Tabs; small Camera/Photobooth/All-Jao pages retained.
+- #74: Studio /studio/preview.html and Help /help-preview injected through previews.json;
+  #75: trial strip one line, bottom-left, mobile icon/link, close button.
+- Prior PR evidence is reported evidence, not a new local gate: #70 fake sheet16 asserts,
+  sabotage9/9; #73 full7834 with isolated reruns; #74 full7855 with isolated reruns;
+  #75 quick5747 + check_previews. Parent must verify final combined source before deployment.
+- main_python/gacha.py:44 flat rules.sheet_* defaults; save_cfg merges rules.
+- main_python/gacha_sheet.py:137 secret is local; :191 key defaults to data/google_service.json;
+  :262 auto order script/service/link. Do not print keys, secrets or configured Sheet IDs.
+- main_python/hub_api_gacha.py:147 sheet_view may contact configured external service;
+  use redacted offline config checks before any sheet route. /sheet/script can create a secret.
+- SolidWorks under E:/final_proj/mice/model/gachapong is read-only and outside this scope.
 
 ## Done
-- plan rows A47-14, A47-15 added (doing).
-- main_python/gacha_sheet.py: ways link (gviz CSV, read only) / script (apps/gacha/sheet_script.gs,
-  hub secret in .local/gacha/sheet_secret.txt) / service (JWT RS256 via cryptography, Sheets v4,
-  key .local/gacha/google_service.json); auto = script, service, link. docs/gacha/apps_script.gs removed.
-- gacha.py: pull/push through the way; sheet_auto_push, sheet_log (background `_sheet_soon`);
-  save_cfg merges `rules`. Routes /api/gacha/sheet, /sheet/read, /sheet/write, /sheet/script (gated in hub_auth).
-- apps/gacha/index.html: 8 tabs from TABS (#hash kept), Google Sheet tab with Thai steps + tab editor.
-- check_gacha_sheet 16 asserts; sabotage 9/9 caught. Browser look 1280/390: no sideways scroll, no JS errors.
+- Read AGENTS, HANDOFF, coordination, CLAUDE, system headers and verification/web skills.
+- Claimed task via BRIDGE under shared mutex; stale stopped Claude ownership explicitly
+  transferred under human continuation request. A47-18 added; A47-17 taken, still doing.
+- Created isolated metadata worktree from merged #75. Main dirty files remain untouched.
+- Parent notified: no QC/build/restart competition; requested gacha/tabs/previews in final gate.
 
 ## Next
-1. A47-16 other app pages, QC, PR, merge. 2. A47-17 previews. Delete this file when all merged.
-2. PC: rebuild MiceHub.exe (spec); user does the 5 Thai steps once with a real sheet (not tested
-   against real Google yet: only fakes).
+1. Audit live HTTP availability/assets and running exe paths; inspect effective gacha config
+   presence only, including external overrides, dist copy and local service-key presence.
+2. Update exact evidence and pending deployment instructions; close A47-17 only on evidence.
+3. Send result/branch to parent so one verified build includes merged gacha/trials.
 
 ## Blocked
-- nothing (real Google Sheet test needs the user's sheet: lab-day or user later).
-
-## Widened ask (user 2026-10-23 05:38Z, 05:43Z)
-- Tabs like Face_Regonize on every app page except Studio; Voice first after Prize machines
-  (settings + each answer in tabs after login). Then TRIAL pages next to the real ones:
-  Studio with the new tabs, Help split by topic (separate preview links, nothing replaced).
-- Face_Regonize (read only): frontend/src/components/Layout.tsx = left sidebar NAV list,
-  one page per section; components/ui.tsx:122 `Tabs` = pill row for filters.
-- Shared part: Mice.Tabs (shared/web/mice-ui.js) + `.tabbed` (shared/web/mice.css), held by
-  check_mice_tabs (browser, wide = beside, phone = above; sabotage 3/3). mice_nong flash 82.9% after.
-- Full QC #1 (before Mice.Tabs): 7815 pass; only the known receipt refusal (qc_chain_proj.json
-  rewrite) + 5 crowd flakes (modsite_*, studio_peer) that pass alone.
-- Voice: apps/voice/app.js VOICE_TABS (top) + init builds Mice.Tabs(attr "pane", start from
-  localStorage voice_tab); showTab(name) kept as a wrapper (check_voice_profiles calls it).
-  #settings stays hidden while the helper is down (only the Talk pane + down card then).
-- qc/data/tabbed_pages.json lists pages on Mice.Tabs; check_mice_tabs checks each.
-- Screenshot trick: scratch shot_voice.py runs apps/voice/service.py Brain on a free port
-  and points MICE_VOICE_CONFIG {"service": url} at it, so settings render with no models.
-- Previews: main_python/web/previews/previews.json + files; main.py preview_page() serves
-  `from` with the `add` files linked (/hubweb/previews/...), real page untouched; check_previews.
-  Studio trial moves #sideTabs into a #pvRail beside #side (desk only); Help trial shows one
-  `main > section` at a time, a search shows all again.
+- Real Google read/write requires a configured Sheet and authorized Google setup/write test.
+- Keep/drop for trial design is the user's choice; preserve both trial pages meanwhile.
+- Actual hub build/restart/full gate reserved to parent until explicit BRIDGE release.
+- A47-5 requires board/bench; no flash or physical motion authorized in this chat.
