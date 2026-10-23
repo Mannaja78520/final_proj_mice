@@ -1640,7 +1640,11 @@ function urdfFitArm(arm, warn) {
     x.tu = x.qu.clone().multiply(H.qu.clone().invert());
     x.tf = x.qf.clone().multiply(H.qf.clone().invert());
   });
-  const frames = cfg.frames !== false;
+  // how much the turn counts against where the bones point (true = 1): a
+  // CAD unlike the rig pays for a full weight in pointing (real nong
+  // 2026-10-23: right arm 20 deg at 1, 15 deg at 0.5)
+  const fw = cfg.frames === false ? 0 : cfg.frames === true || cfg.frames == null ? 1 : +cfg.frames || 0;
+  const frames = fw > 0;
   const qAng = (a, c) => 2 * Math.acos(Math.min(1, Math.abs(a.dot(c))));
   const D2R = Math.PI / 180, num = (v) => typeof v === "number" && Number.isFinite(v);
   // studio joint of chain slot k, per pairing choice
@@ -1654,9 +1658,9 @@ function urdfFitArm(arm, warn) {
     for (const s of S) {
       const r = at(s);
       c += r.up.angleTo(s.up) + (fore ? r.fore.angleTo(s.fore) : 0);
-      if (h) c += qAng(r.qu.multiply(hu), s.tu) + (fore ? qAng(r.qf.multiply(hf), s.tf) : 0);
+      if (h) c += fw * (qAng(r.qu.multiply(hu), s.tu) + (fore ? qAng(r.qf.multiply(hf), s.tf) : 0));
     }
-    c /= (h ? 2 : 1);
+    c /= (h ? 1 + fw : 1);
     // a universal joint has twin answers (one zero turned half round, the
     // other sense flipped) that move the arm the same: a hair's weight on
     // the zeros picks the one nearest the file's own zero, every time

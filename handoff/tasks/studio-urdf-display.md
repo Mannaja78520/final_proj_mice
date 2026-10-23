@@ -16,7 +16,7 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-- Round 4 (A48-4): full QC, PR, merge; then the PC reruns check_urdf_look.
+- Round 5 (A48-5): full QC, PR, merge; then the PC reruns check_urdf_look.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
@@ -119,13 +119,7 @@ Plan: A48-1 (robot page)
   forearm sits differently. Screenshots scratch/deploy-a48-3-2026-10-23/{left,right}-up-*.png.
   Back to Simple shapes, old pose and sizes.
 
-## Round 4 (A48-4, claude:wvmxq5, 2026-10-23)
-- Cause of the right tip: each rebuild started another download of the big forearm STL,
-  so it never landed (urdf_view.js `urdfLoading`: one download per file, callers wait).
-  The real-model check waits for BOTH tips fromMesh (90 s).
-- Offline best fit with the real joint numbers (numpy/scipy, all swaps/signs, Powell):
-  L 13.9 deg (up 11.2), R 12.4 deg (up 9.8), swapSh on both. Studio's fit (15.7 / 11.4) is
-  near that, so the residual is rig setup vs CAD, not the fit: the warning is true.
+## Round 4 (A48-4): right forearm STL now downloads once (`urdfLoading`); check waits for both tips.
 
 ## PC check after A48-4 (2026-10-23 07:30, claude:xdlrot)
 - main ac33fb8, build_web, systems build, exe rebuilt (stale=false 4448772707e1), hub restarted.
@@ -140,9 +134,17 @@ Plan: A48-1 (robot page)
   swing forward like the shapes. Screens scratch/deploy-a48-4-2026-10-23/. Back to Simple
   shapes (checked after a reload: look rig, sizes unchanged).
 
+## Round 5 (A48-5, claude:wvmxq5, 2026-10-23)
+- Studio's R 20.6 is NOT the live RIG: a private local URDF from the real joint numbers
+  with rig_default gives the same 15.7 / 20.1. Cause: the turn-from-home term (fit.frames)
+  at full weight pulls the right arm's pointing off. Weight 0.5 -> 15 / 15 (0 -> 15/14.9).
+  urdf_view.json fit.frames is now a weight (0.5). Keeping 3 shoulder candidates did NOT help.
+- New fixture qc_bot5 (check_urdf_look write_own_cad, round numbers, ROS frame, tilted roll
+  axes): 21.6 at weight 1, 15 at 0.5; the check needs < 17. ~15 deg left = rig vs CAD.
+
 ## Next
-1. PC: pull main, build_web, systems build, rebuild exe, run check_urdf_look with
-   MICE_URDF_MODEL; expect R fromMesh true. Agree < 0.5: set sign/offsetDeg in urdf_view.json.
+1. PC: pull main, build_web, systems build, rebuild exe, check_urdf_look with
+   MICE_URDF_MODEL; Studio Views fit should read ~15 / ~15 deg.
 2. Lab day: robot-tests.md item 6.
 ## Blocked / not done
 - Real SolidWorks URDF not tested yet (only on the PC). Not tested on the robot.
