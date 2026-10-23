@@ -1,10 +1,10 @@
 # Prize machines tabs + Google Sheet: PC reconciliation
 
-Owner:
-Updated: 2026-10-23 07:04Z
+Owner: codex:10231359-8856
+Updated: 2026-10-23 12:00Z
 Branch: codex/gacha-reconcile-1023
 Tree: E:/final_proj/mice/code/.staging-gacha-reconcile
-Last commit: 8402ea2 (completed audit evidence); source baseline 993862e
+Last commit: 5a3dac6 (prior finished audit); source baseline 993862e
 Plan: A47-14/15/16/17 done; A47-18 handed off for parent final deployment
 
 ## Goal
@@ -14,10 +14,11 @@ and coordinate one final hub build with parent chat 01a16787-933e-7d81-97a1-0a35
 Preserve Studio/Help trials until the user chooses keep/drop. A47-5 remains hardware-only.
 
 ## Doing now
-None. Audit by codex:10231359-8856 complete; A47-17 closed with actual PC evidence.
-A47-18 returned to todo/open with exact final deployment step for parent.
-All this chat's file/metadata/scratch claims released; no process left in flight.
-Parent codex:10231353-0401 retains its own QC/fake-browser/build/restart/URDF claims.
+Resume from main chat01a1689b: refresh passive PC HTTP/config evidence after incoming
+main d9c97d4. Claim only this task metadata and scratch; no QC/service/camera/hardware.
+Parent retains final build/gate/restart; hardware chat01a167a0 is sole physical tester.
+Restored own A47-17 closure/A47-18 row that incoming PLAN lost, using BRIDGE14:06/14:11.
+No assumption that a stopped process releases another session's claims.
 
 ## Facts found
 - GitHub API 2026-10-23 confirms all four PRs merged: #70 c73488d,
@@ -61,6 +62,7 @@ Parent codex:10231353-0401 retains its own QC/fake-browser/build/restart/URDF cl
   new screenshot, model load, service restart or build was performed by this chat.
 
 ## Next
+0. Refresh local HTTP/assets and config-presence only; send actual results to new main.
 1. Parent claims A47-18 with plan.py doing and its own deployment file claims.
 2. Parent final combined gate includes gacha/gacha_sheet/mice_tabs/previews, then builds
    MiceHub.spec and deploys once. Recheck trial_bar.css/js hashes against #75 after restart.
@@ -72,3 +74,8 @@ Parent codex:10231353-0401 retains its own QC/fake-browser/build/restart/URDF cl
 - Keep/drop for trial design is the user's choice; preserve both trial pages meanwhile.
 - Actual hub build/restart/full gate reserved to parent until explicit BRIDGE release.
 - A47-5 requires board/bench; no flash or physical motion authorized in this chat.
+
+## CLI continuation
+Gemini may read this repo task/BRIDGE and use its available CLI/filesystem tools.
+Native Codex chat/handoff tools are not assumed available in Gemini. Keep parent
+resource leases; use the shared mutex and do not start hardware/QC/service work.
