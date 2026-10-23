@@ -1,11 +1,11 @@
 # Nong Studio: dynamic URDF display and motion parity
 
-Owner: open (assigned integration chat 01a1679e-50a4-7e71-9cfb-64b6afa635c1)
-Updated: 2026-10-23T19:00:49.757968+07:00
+Owner: codex:10231901-f6cc
+Updated: 2026-10-23T19:03:52.337696+07:00
 Branch: codex/continue-urdf-1023
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
 Last commit: c40f438 (reviewed runtime; checkpoint commit follows)
-Plan: A48-1 (robot page)
+Plan: A48-11 / A47-18 (robot page); A48-1 feature history
 
 ## Goal
 - User: เอา URDF ไปใส่ nong studio เลือกได้ว่าจะโชว์แบบเดิมหรือ URDF
@@ -13,10 +13,10 @@ Plan: A48-1 (robot page)
 - On returning to the old display, ASK whether to use URDF dimensions or edit/use custom dimensions. Keep custom dimensions recoverable; do not overwrite silently.
 - User added: ทำให้เป็น dynamic แก้ง่ายด้วย. Put choices, joint bindings/signs, source paths and dimension mappings in editable config/data; one source of truth, not model-specific conditionals.
 - User added: test video following, realtime following, and related playback/monitor paths. Verify anatomical left/right, raised-hand direction and URDF joint movement, not merely a static screenshot.
-- Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
+- User is now at lab and authorizes physical tests; dedicated Lab chat01a167a0 owns hardware after deployment. This integration chat does not issue motion/flash commands.
 
 ## Doing now
-Transferred to integration chat after full QC c40f438:7885passed/1failed in750.8s,sole failure input tree changed/receipt refused;dummy/game green auto-isolated2/2. No green receipt; no merge/deploy yet. Proven new hashed runtime file .local/voice/questions.csv created14:11:55 during gate14:08-14:20 (tree_fingerprint does not skip .local); qc/_urdf_real.json rewritten too. Diagnose via per-file before/after focused check before restarting full; preserve all source checks. Main advanced independently to d9c97d4/#76 and discarded live metadata; union latest BRIDGE/task rows. User now at lab explicitly allows real motion; only dedicated Labchat owns hardware after deployment. Parent releases source/QC/build/runtime leases to integration chat; no active QC process.
+Integration takeover: diagnose runtime-only QC input drift with isolated per-file fixture, then fix exact exclusions while keeping source/config invalidation. Claim source/QC/build/restart transferred explicitly; no active driver. Lab has a bounded identity-only window, must release before gate. Live plan union restored A45-30/A48-12 while retaining A0-34/A47-19 and newer rows. Root#76 already contains Claude changes, own c40f438 fixes still need valid receipt/PR/deployment. Next checkpoint includes regression evidence and independent review.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
