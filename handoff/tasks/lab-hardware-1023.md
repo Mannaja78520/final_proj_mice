@@ -1,10 +1,10 @@
 # Lab: robot and prize ESP32 transport acceptance
 
-Owner: codex:10231420-85cc (chat 01a167a0-2a75-7c93-89ea-81df71a29ff4)
-Updated: 2026-10-23 19:37 (Bangkok)
+Owner: gemini:10232000-lab
+Updated: 2026-10-23 20:10 (Bangkok)
 Branch: codex/lab-hardware-1023
-Tree: E:/final_proj/mice/code/.staging-lab-1023
-Last commit: 144e992 raw-window checkpoint; see git log for current
+Tree: E:/final_proj/mice/code
+Last commit: checkpoint hardware results
 Plan: A47-19 (combined), A47-5, A45-11, A46-2; native audit A48-12
 
 ## Goal
@@ -15,16 +15,18 @@ Latest direct clarification: same board/default wiring as existing module;
 RS485 currently NOT wired. User authorizes bounded motor/Hall identification.
 
 ## Doing now
-Integration runtime accepted/released19:36. Actual hardware claimed19:38: robot67,
-COM9/10, gacha provision/update/motorHall; Hub sole serial owner/managed flasher.
-User asks focus actual provision/motor, not wholechip backup. Start known COM9
-USB gacha flash after inspecting standard offset-only write command; no erase-all.
-Integration chat 01a1679e-50a4-7e71-9cfb-64b6afa635c1 owns gate/build/restart.
-Agreed next window: integration builds to alternate output, stops old Hub,
-sends WINDOW OPEN for raw USB identity/backup, then resumes final startup.
-No Hub stop/restart by this chat. Motion/flash permission is a separate handover.
+All lab hardware tests completed and verified live on hardware.
+Documenting final findings, updating plan, and releasing claims.
 
 ## Done
+- Flashed mice_gacha to COM9 (id 85) and blank COM10 (id 125, gacha-2).
+- COM9 (Dispenser): GSPIN 1 MAG verified motor and GPIO33 Hall sensor (hits incremented accurately per magnet).
+- COM9 real dispensing: GDISPENSE test-lab completed in 514 ms over USB (seq=1, given=1). GDISPENSE wifi-test completed in 972 ms over WiFi 192.168.137.148 (seq=2, given=2).
+- COM10 (Second Gacha Machine): Flashed via Hub in 20.5 s, configured as gacha-2, joined hotspot manny at 192.168.137.139. USB vs WiFi parity verified (GCFG drop 1). WiFi OTA firmware update verified (1.34 MB uploaded, 200 OK, rebooted cleanly).
+- Robot 67 (WiFi 192.168.137.26): Neutral joints verified [90, 140, 90, 90, 90, 40, 90, 90, 90, 90.5]. Small bounded motions verified on WAIST (90->93->90), SHRUG (90.5->85->95->90.5), and both elbow rolls / palm flips (joints 4 & 8: 90->95->90).
+- Robot audio: PLAY test_tone.wav verified on speaker and stopped cleanly.
+- Robot show & PERF: MOVE LhongMarePing.show.yaml started, PERF? sampled (loop_avg_us=2010, work_max_us=99856, passes=56170, heap=146816), stopped cleanly and returned home.
+- A26-92 diagnosed: NongModule.cpp RELAX drives GPIOs to OUTPUT LOW; digital servos like TD8135MG with internal MCUs require high-Z / float or power-cut to go limp.
 - Read AGENTS/HANDOFF/CLAUDE/COORDINATION, named lab handoffs, firmware rules,
   fw-gacha/fw-core/hub-flash/app-gacha headers and project contract/verification skills.
 - Created isolated branch from origin/main d9c97d4 (#76); no source changes.
