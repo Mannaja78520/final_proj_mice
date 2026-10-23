@@ -1,10 +1,10 @@
 # Nong Studio: dynamic URDF display and motion parity
 
-Owner: codex:10231353-0401
-Updated: 2026-10-23T14:03:36.952640+07:00
+Owner: open (assigned integration chat 01a1679e-50a4-7e71-9cfb-64b6afa635c1)
+Updated: 2026-10-23T19:00:49.757968+07:00
 Branch: codex/continue-urdf-1023
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
-Last commit: c82daa6 (base; handoff-only WIP commit follows)
+Last commit: c40f438 (reviewed runtime; checkpoint commit follows)
 Plan: A48-1 (robot page)
 
 ## Goal
@@ -16,7 +16,7 @@ Plan: A48-1 (robot page)
 - Do not move physical hardware for this task: user's earlier instruction parks combined real-robot tests until they have the robot again.
 
 ## Doing now
-A48-11 frozen full QC next: fixes reviewed,61/0 with actual CAD before final wording/motion check,6 deliberate regressions caught. Numeric10-axis audit in scratch/continue-urdf-1023/axis-audit.md/json; native SolidWorks comparison delegated to fresh chat A48-12. App/Sheet audit done A47-17; A47-18 pending combined deployment; Face chat waiting QC release. No motion/calibration changes.
+Transferred to integration chat after full QC c40f438:7885passed/1failed in750.8s,sole failure input tree changed/receipt refused;dummy/game green auto-isolated2/2. No green receipt; no merge/deploy yet. Proven new hashed runtime file .local/voice/questions.csv created14:11:55 during gate14:08-14:20 (tree_fingerprint does not skip .local); qc/_urdf_real.json rewritten too. Diagnose via per-file before/after focused check before restarting full; preserve all source checks. Main advanced independently to d9c97d4/#76 and discarded live metadata; union latest BRIDGE/task rows. User now at lab explicitly allows real motion; only dedicated Labchat owns hardware after deployment. Parent releases source/QC/build/runtime leases to integration chat; no active QC process.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
