@@ -1,7 +1,7 @@
 # Nong Studio: dynamic URDF display and motion parity
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-23T19:26:20.002894+07:00
+Updated: 2026-10-23T19:30:07.619874+07:00
 Branch: codex/deploy-close-1023-f6cc (metadata closure); runtime merged PR77 a884558
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
 Last commit: a884558 merged/gated runtime; metadata checkpoint follows
@@ -16,7 +16,7 @@ Plan: A48-11 / A47-18 (robot page); A48-1 feature history
 - User is now at lab and authorizes physical tests; dedicated Lab chat01a167a0 owns hardware after deployment. This integration chat does not issue motion/flash commands.
 
 ## Doing now
-PR77 merged a884558; exact runtime gate3e4cdd1 passed7910/0 in624.8s, full receipt validated,925 per-file hashes unchanged (scratch/continue-urdf-1023/input-stability.json; same folder real-input-stability.log and original receipt). Two parallel browser failures passed built-in isolated2/2. Root FF integrated with73 dirty raw files backed up scratch/deploy-codex-1023/pre-integration-76;68 protected files unchanged,10 required task rows retained. Root spec build in flight session26394, log scratch/deploy-codex-1023/build.log, alternate new-build/MiceHub.exe; oldHub43560/48780 stays up. Next verify build exit, idle play/flash, stop owned oldHub, explicitly OPEN bounded COM identity/backup window for Lab then wait its RELEASE. Install/start hidden, confirm stale:false and actual assets match source, resume Face NoBrowser startup and release runtime/hardware to Lab. Source/runtime closure removes completed URDF/gacha handoffs; preserve Lab/hardware tasks. Metadata-only checkpoint after gate does not change reviewed runtime source.
+PR77 merged a884558; exact gate3e4cdd1 passed7910/0 in624.8s, receipt validated,925 hashes stable. Root maina884558 integrated with raw dirty backup and68 protected files unchanged. Spec build exited0 (build.log); new11292406byte MiceHub.exe installed atomically, original17:16 exe preserved in scratch/deploy-codex-1023/pre-integration-76/dist/. OldHub43560/48780 verified play/flash idle then stopped; port8642 closed. ACTIVE bounded COM9/10 read-only raw-ID/backup lease transferred to Labchat01a167a0; both ESP32-D0WD-V3/4MB identified, sequential fullflash backups running, after=no_reset. DO NOT START HUB until Lab explicit COM/window RELEASE. Next start installed exe hidden, actual assets+stale:false+protected hashes audit via scratch/deploy-codex-1023/verify_runtime.py, resume Face NoBrowser startup then hardware handover. Source/receipt evidence in source scratch/continue-urdf-1023; root deployment evidence scratch/deploy-codex-1023. Gacha compiled3flash artifacts already copied by Lab with equal SHA/source firmware unchanged. Metadata closure removes URDF/gacha completed handoffs after actual runtime acceptance; keep all Lab/hardware tasks.
 
 ## Round 3 (PC 06:35 run: fit L 15.9 / R 10.5 deg, right arm agree -0.22..-0.93)
 - urdfFitArm now also matches how the upper arm and forearm TURN from HOME
