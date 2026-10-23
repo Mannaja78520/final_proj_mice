@@ -1,10 +1,10 @@
 # Lab: robot and prize ESP32 transport acceptance
 
 Owner: codex:10231420-85cc (chat 01a167a0-2a75-7c93-89ea-81df71a29ff4)
-Updated: 2026-10-23 19:24 (Bangkok)
+Updated: 2026-10-23 19:37 (Bangkok)
 Branch: codex/lab-hardware-1023
 Tree: E:/final_proj/mice/code/.staging-lab-1023
-Last commit: 71d8677 preparation checkpoint; see git log for current
+Last commit: 144e992 raw-window checkpoint; see git log for current
 Plan: A47-19 (combined), A47-5, A45-11, A46-2; native audit A48-12
 
 ## Goal
@@ -15,9 +15,9 @@ Latest direct clarification: same board/default wiring as existing module;
 RS485 currently NOT wired. User authorizes bounded motor/Hall identification.
 
 ## Doing now
-Raw USB WINDOW OPEN from integration after build: old Hub stopped and8642closed.
-Claimed COM9/10 read-only passive/ROM identity and necessary backup only. No flash,
-erase, motor/robot motion or Hub startup. Release immediately with board states.
+Raw USB window explicitly RELEASED19:34:48; no esptool child/UART handle remains.
+Integration starts new Hub and owns runtime acceptance. Offline bounded diagnosis
+of bulkread only; await separate hardware handover. No flash/erase/motor yet.
 Integration chat 01a1679e-50a4-7e71-9cfb-64b6afa635c1 owns gate/build/restart.
 Agreed next window: integration builds to alternate output, stops old Hub,
 sends WINDOW OPEN for raw USB identity/backup, then resumes final startup.
@@ -55,6 +55,17 @@ No Hub stop/restart by this chat. Motion/flash permission is a separate handover
   Manifest private scratch/lab-hardware-1023/gacha-artifact-manifest.json.
   esptool image checksum/hash valid; firmware source diff d9c97d4..3e4cdd1 empty.
   Explicitly RELEASED artifact lease in BRIDGE19:24. No compile/board write.
+- Raw actual ROM ID succeeded: COM9 ESP32-D0WD-V3rev3.1/MAC3076F593B454, flash4MB
+  manufacturer5e/device4016; COM10 samechip/MACECC9FFFE387C,4MB/a1/4016.
+  Both passive115200 captures0bytes; both remain ROM/stub (after=no_reset).
+- Fullchip backups FAILED: COM9 at460800/90s and921600/120s both stopped at24576B
+  (0%). First theory only time/rate wrong. Own COM10 reader+wrapper cancelled
+  to bound window, no flash write/erase. No completed backup exists. Private
+  rom-identity-summary.json, flash-backup-manifest.json and *backup*.log.
+  User asked why4MB; explained rollback copy, admitted broader than needed,
+  stopped wholechipreads and refocused requested provisioning/motor+Hall.
+- Requested independent offline diagnosis from existing main chat01a1689b;
+  no new chat. Next consider small partition/NVS-only reads, not fullchip loops.
 
 ## Facts found
 - firmware/config/esp32_hardware_gacha_module.h:17-32: motor25/26, optional EN=-1,
@@ -106,7 +117,10 @@ No Hub stop/restart by this chat. Motion/flash permission is a separate handover
 
 ## Blocked
 - Integration holds runtime gate/build/restart; no physical commands yet.
-- USB identity/chip/type/pins/attached hardware not measured; INFO gave no reply.
+- Both USB chips identified; application type/pins/attached hardware still unknown.
+- No fullchip backup. Bulkread fails; do not present backup as successful or keep
+  extending window. Targeted settings preservation + existing NVS-safe flash path
+  to assess after runtime handover. Both boards deliberately left ROM/stub.
 - RS485 explicitly not wired; dummy cannot prove dispensing or physical bus.
 
 ## Coordination
