@@ -111,6 +111,7 @@ void GachaModule::startSpan(uint32_t now) {
 // Every motion ends here, whatever ended it: the motor is off and a dispense
 // leaves a record an app can read back with G? (seq, result, who).
 void GachaModule::finish(const char* result) {
+    if (testing_ && !strcmp(result, "done") && !hall_.stable) result = "jam";
     motorOff();
     center_.cancel();
     motionResult_ = result;
@@ -125,6 +126,16 @@ void GachaModule::finish(const char* result) {
         lastMs_ = millis() - startMs_;
     }
     saveCounts();                             // magnet count + the dispense record
+
+    if (testing_) {
+        if (strcmp(result, "done") != 0) testing_ = false;
+        else {
+            ++testCount_;
+            const int ps = perSlot();
+            if (testCount_ < testMax_ && ps > 0 && motor_) startTurn(JOB_SPIN, ps);
+            else testing_ = false;
+        }
+    }
 
     if (draining_) {
         drainCount_++;
@@ -285,7 +296,7 @@ void GachaModule::loop() {
             motorOff();
             if ((int32_t)(now - phaseUntil_) >= 0) {
                 settlePhase_ = SETTLE_NONE;
-                finish("done");
+                finish(hall_.stable ? "done" : "jam");
             }
             return;
         }
@@ -403,7 +414,9 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
             if (end == argv[1].c_str() || *end) { reply = "ERR pocket count"; return true; }
         }
         if (count < 1 || count > GACHA_MAX_PASSES / ps) { reply = "ERR pocket count outside test limit"; return true; }
-        startTurn(JOB_SPIN, (int)count * ps);
+        draining_ = false;
+        testing_ = true; testMax_ = (int)count; testCount_ = 0;
+        startTurn(JOB_SPIN, ps);
         reply = "OK testing";
         return true;
     }
@@ -424,6 +437,7 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
         const int ps = perSlot();
         if (ps == 0) { reply = "ERR magnets must be a multiple of pockets"; return true; }
         draining_ = true;
+        testing_ = false;
         drainMax_ = (int)maxCount;
         drainCount_ = 0;
         seq_++; given_++; total_++;
@@ -437,6 +451,7 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
 
     if (cmd == "STOP") {
         draining_ = false;
+        testing_ = false;
         const bool moving = state_ != IDLE;
         if (moving) finish("stopped");
         else motorOff();
@@ -449,13 +464,18 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
     if (cmd == "GSPIN") {
         if (argc < 2) { reply = "ERR GSPIN <pockets> [MAG]"; return true; }
         if (state_ != IDLE) { reply = "ERR busy"; return true; }
-        const int n = argv[1].toInt();
+        if (!argv[1].length()) { reply = "ERR spin count"; return true; }
+        char* end;
+        const long n = strtol(argv[1].c_str(), &end, 10);
+        if (end == argv[1].c_str() || *end) { reply = "ERR spin count"; return true; }
         const bool mag = argc >= 3 && argv[2].equalsIgnoreCase("MAG");
         const int ps = perSlot();
         if (!mag && ps == 0) { reply = "ERR magnets must be a multiple of pockets"; return true; }
-        const int passes = mag ? n : n * ps;
-        if (passes == 0 || passes > GACHA_MAX_PASSES || passes < -GACHA_MAX_PASSES) { reply = "ERR 1-100 either way"; return true; }
+        const int unit = mag ? 1 : ps;
+        if (n == 0 || n > GACHA_MAX_PASSES / unit || n < -GACHA_MAX_PASSES / unit) { reply = "ERR 1-100 either way"; return true; }
+        const int passes = (int)n * unit;
         if (!motor_) { reply = "ERR no motor pins (PIN motor_a / motor_b)"; return true; }
+        testing_ = draining_ = false;
         startTurn(JOB_SPIN, passes);
         reply = "OK turning " + String(passes) + " magnet(s)";
         return true;
@@ -645,6 +665,9 @@ void GachaModule::status(JsonObject o) {
     o["forced"] = forced_;
     o["total"] = total_;
     o["draining"] = draining_;
+    o["testing"] = testing_;
+    o["test_done"] = testCount_;
+    o["test_total"] = testMax_;
     JsonObject last = o["last"].to<JsonObject>();
     last["seq"] = seq_;
     last["result"] = lastResult_;

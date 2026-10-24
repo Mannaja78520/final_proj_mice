@@ -3,13 +3,24 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <cctype>
 #include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
 #include "esp32_hardware_gacha_module.h"
 #include "modules/gacha/GachaMath.h"
-using String = std::string;
+struct String : std::string {
+    using std::string::string;
+    using std::string::operator=;
+    String(long value) : std::string(std::to_string(value)) {}
+    bool equalsIgnoreCase(const char* other) const {
+        if (size() != std::strlen(other)) return false;
+        for (size_t i = 0; i < size(); ++i)
+            if (std::tolower((unsigned char)(*this)[i]) != std::tolower((unsigned char)other[i])) return false;
+        return true;
+    }
+};
 constexpr int PWM_Max = 1023;
 uint32_t clockMs = 0;
 int delayCalls = 0, removedCfg = 0;
@@ -52,6 +63,8 @@ public:
     int want_ = 0, got_ = 0, sign_ = 1, pos_ = 2, stock_ = 7, given_ = 4;
     bool posKnown_ = true, open_ = true, draining_ = false, lastForced_ = false;
     int drainMax_ = 0, drainCount_ = 0;
+    bool testing_ = false;
+    int testMax_ = 0, testCount_ = 0;
     uint32_t total_ = 0, seq_ = 0, spanOnMs_ = 0, spanTickMs_ = 0;
     bool spanWasOn_ = false;
     int learnedAdvanceMs_ = 0;
@@ -77,6 +90,7 @@ public:
     bool nudge(String argv[], int argc, String& reply);
     bool calibrate(String& reply);
     bool test(String argv[], int argc, String& reply);
+    bool spin(String argv[], int argc, String& reply);
     bool drain(String argv[], int argc, String& reply);
     bool stop(String& reply);
     bool clear(String& reply);
@@ -251,12 +265,46 @@ int main() {
     {
         GachaModule m; String reply, args[] = {"GTEST", "3"}; m.magnets_ = 8; m.slots_ = 4;
         m.test(args, 2, reply);
-        check(reply == "OK testing" && m.want_ == 6, "GTEST pockets convert to magnet arrivals");
+        check(reply == "OK testing" && m.want_ == 2 && m.testMax_ == 3,
+              "GTEST starts one pocket and remembers total pockets");
         m.test(args, 2, reply); check(reply == "ERR busy", "GTEST refuses an active job");
     }
     for (const String value : {"-1", "0", "101", "bad", "999999999999999999999", ""}) {
         GachaModule m; String reply, args[] = {"GTEST", value}; m.test(args, 2, reply);
         check(reply.rfind("ERR", 0) == 0 && m.io.history.empty(), "invalid GTEST cannot become a default movement");
+    }
+    for (const String value : {"2147483647", "-2147483648", "999999999999999999999", "51", "-51", "2x", ""}) {
+        GachaModule m; String reply, args[] = {"GSPIN", value}; m.magnets_ = 8;
+        m.spin(args, 2, reply);
+        check(reply.rfind("ERR", 0) == 0 && m.io.history.empty(), "GSPIN validates token and bounds before multiplication");
+    }
+    {
+        GachaModule m; String reply, args[] = {"GSPIN", "-50"}; m.magnets_ = 8;
+        m.spin(args, 2, reply); check(m.want_ == 100 && m.sign_ == -1, "negative GSPIN boundary remains supported");
+    }
+    {
+        GachaModule m; String reply, args[] = {"GSPIN", "-100", "MAG"}; m.magnets_ = 8;
+        m.spin(args, 3, reply); check(m.want_ == 100 && m.sign_ == -1, "GSPIN MAG uses arrivals rather than pockets");
+    }
+    {
+        GachaModule m; String reply, args[] = {"GTEST", "3"}; clockMs = 0; m.loop();
+        m.magnets_ = 8; m.overshootMs_ = m.returnMs_ = 0; m.pauseMs_ = 5;
+        m.test(args, 2, reply); int changes = 0, previous = 0; bool pauseMotorOff = true;
+        for (uint32_t now = 0; now <= 400 && m.state_ != GachaModule::IDLE; ++now) {
+            const bool sensor = now >= 10 && ((now - 10) / 20) % 2 == 0;
+            tick(m, now, sensor);
+            if (m.settlePhase_ == GachaModule::SETTLE_PAUSE) pauseMotorOff &= m.io.pwm == 0;
+            if (m.testCount_ != previous) { ++changes; previous = m.testCount_; }
+        }
+        check(m.testCount_ == 3 && changes == 3 && !m.testing_ && m.motionResult_ == "done",
+              "actual loop verifies and completes each self-test pocket separately");
+        check(pauseMotorOff && m.stock_ == 7 && m.given_ == 4, "per-pocket test pauses without dispensing");
+    }
+    {
+        GachaModule m; clockMs = 0; m.startTurn(GachaModule::JOB_SPIN, 1);
+        m.settlePhase_ = GachaModule::SETTLE_PAUSE; m.phaseUntil_ = 100;
+        tick(m, 90, false); tick(m, 100, false);
+        check(m.motionResult_ == "jam" && m.io.pwm == 0, "lost Hall during pause cannot finish successfully");
     }
     {
         GachaModule m; String reply, args[] = {"GDRAIN", "2"}; clockMs = 0; m.stock_ = 2;

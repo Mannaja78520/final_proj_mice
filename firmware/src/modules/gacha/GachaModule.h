@@ -85,6 +85,8 @@ private:
     SettlePhase settlePhase_ = SETTLE_NONE;
     bool draining_ = false;
     int drainMax_ = 0, drainCount_ = 0;
+    bool testing_ = false;
+    int testMax_ = 0, testCount_ = 0;
     int want_ = 0, got_ = 0, sign_ = 1;
     int pos_ = 0;                  // pocket at the sensor, counted from boot / GHOME
     bool posKnown_ = false;

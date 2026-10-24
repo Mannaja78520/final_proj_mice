@@ -36,6 +36,7 @@ def run(t):
             ("nudge", 'if (cmd == "GNUDGE")', "String argv[], int argc, String& reply"),
             ("calibrate", 'if (cmd == "GCALIB")', "String& reply"),
             ("test", 'if (cmd == "GTEST")', "String argv[], int argc, String& reply"),
+            ("spin", 'if (cmd == "GSPIN")', "String argv[], int argc, String& reply"),
             ("drain", 'if (cmd == "GDRAIN")', "String argv[], int argc, String& reply"),
             ("stop", 'if (cmd == "STOP")', "String& reply"),
             ("clear", 'if (argc == 2 && argv[1].equalsIgnoreCase("CLEAR"))', "String& reply")):
