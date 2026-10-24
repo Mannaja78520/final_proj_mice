@@ -1,7 +1,7 @@
 # Nong HOME/CAD and Gemini evidence audit
 
 Owner:
-Updated: 2026-10-24T15:49:06.622308+07:00
+Updated: 2026-10-24T22:11:47.507831+07:00
 Plan: A48-13 (robot)
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
@@ -54,3 +54,6 @@ Nothing for read-only audit. Physical testing depends on actual device readiness
 
 ## Checkpoint release
 A48-13 handed off with exact next step; own metadata/scratch claims released, no process/driver/resource held. Existing Lab and source chats continue autonomously. Main receives source candidate for independent review; pick up this task then. All work is not complete. Last pushed checkpoint133638f before this metadata release update.
+
+## Latest22xx recheck,24Oct
+User asks check Gemini again. Current root AAAE3506...25103B includes GCALIB/GTEST/GDRAIN, changed17:33 after original freeze. Current confirmed blocking/unbounded GNUDGE, blocking/false-success GCALIB, center timeout->done, incomplete CLEAR; registry now includes new verbs. Earlier90847e8 fix must preserve/rebase latest features, not overwrite them. Private latest-gemini-review.md contains exact lines and limits. Root no .qc-receipt; last_run165focused only. Lab was interrupted by usage limit, resumed only to checkpoint cleanup and explicit driver release; last result idle/audiooff/TALKoff/vol70. No robot/trim changes. Main read-only report delivered; await source candidate and Lab final matrix/lease. No main driver/process/resource held after report.
