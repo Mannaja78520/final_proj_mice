@@ -6,6 +6,52 @@
     <p>The first page you open. Finds every module by itself and links to each one's
        website and to Nong Studio. Stdlib Python only; ships as a single exe.</p>
   </div>
+
+  <!-- Infographic: Mice Hub Visual Guide & Settings -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ภาพรวมหน้าจอ Mice Hub และคู่มือการตั้งค่า</b>
+      <span class="info-badge">Infographic</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/hub-new.png" alt="Mice Hub Screen" class="info-img">
+      <div class="callout-pin" style="top: 18%; left: 32%;" title="1. Transport Mode">1</div>
+      <div class="callout-pin" style="top: 48%; left: 24%;" title="2. Module Card">2</div>
+      <div class="callout-pin" style="top: 48%; left: 72%;" title="3. App Tiles">3</div>
+      <div class="callout-pin" style="top: 14%; left: 88%;" title="4. Hub Security &amp; Accounts">4</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> โหมด USB Shared vs Exclusive</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> คลิกเลือกโหมดเชื่อมต่อในหน้าตั้งค่าก่อนกด Connect</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          • <b>Shared:</b> Hub จะเป็นตัวกลางแชร์พอร์ต COM เดียวกัน ทำให้เปิด Nong Studio และเว็บบอร์ดพร้อมกันได้ ไม่ชนกัน<br>
+          • <b>Exclusive:</b> หน้าเดียวจะยึดพอร์ตไว้คนเดียว ตอบสนองเร็วขึ้น 2-5ms แต่แอปอื่นจะคุยกับบอร์ดไม่ได้
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> บอร์ดโมดูล &amp; Open Module</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Open Module</b> บนการ์ดของโมดูลที่เจอ</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          เปิดหน้า Dashboard ประจำตัวของ ESP32 บอร์ดนั้นทันที ไม่ว่าบอร์ดจะต่อผ่านสาย RS485, USB หรือ WiFi ก็ใช้ UI เดียวกันทั้งหมด
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ทางลัดเปิด Nong Studio &amp; Apps</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> คลิกการ์ดแอป เช่น <b>Studio</b> หรือ <b>Voice</b></div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ระบบจะเปิดหน้าแอปโดยส่งค่า Bus ID และพาธการเชื่อมต่อให้อัตโนมัติ ไม่ต้องมานั่งกรอก IP หรือสแกนหาพอร์ตใหม่
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> ความปลอดภัย &amp; สิทธิ์ Admin</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ล็อกอินผ่านมุมขวาบน หรือกำหนดรหัสผ่านใน <code>hub_auth.json</code></div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ถ้ายังไม่ล็อกอิน: บุคคลภายนอกจะ "ดูได้อย่างเดียว" (Read-only) / ถ้าล็อกอิน: ถึงจะได้รับสิทธิ์สั่งขยับหุ่นยนต์ แฟลชบอร์ด หรือแก้ค่าตั้งค่า
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="f"><h3>Finds modules on its own</h3>
     <p>Parallel scan of the whole local subnet, plus every COM port on the PC. Bluetooth
        phantom ports are recognised from the device type and skipped instead of being
@@ -71,4 +117,10 @@
        tablets and large monitors, with bigger touch targets on a touchscreen. Studio
        stacks the 3D view above its panel below 860px instead of squeezing both, and on a
        phone its view buttons (Top, Front, 3D…) fold behind one <b>Views ▾</b> button.</p></div>
+  <div class="f"><h3>Rebuilding or stopping MiceHub<span class="tag t-new">new</span></h3>
+    <p>To rebuild the single-file executable from source:
+       <code>python -m PyInstaller --clean MiceHub.spec</code></p>
+    <p>If <code>MiceHub.exe</code> is running, the build automatically terminates it to avoid
+       <code>PermissionError: [WinError 5] Access is denied</code>. You can also stop running instances manually with:
+       <code>taskkill /F /IM MiceHub.exe</code> (or <code>python main.py --kill</code>).</p></div>
 </section>

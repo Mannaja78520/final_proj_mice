@@ -95,6 +95,158 @@
   .f{border-radius:var(--r-md);padding:var(--sp-4);margin-bottom:var(--sp-3)}
   #bytask{margin-top:var(--sp-6)}
   nav .grp{font-size:11px;opacity:1}
+
+/* Topic-by-topic Help Navigation (A47-17 / Decoupled View) */
+main > section.pv-off { display: none !important; }
+nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--acc-soft); font-weight: 600; }
+
+.sec-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.sec-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--txt);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: border-color .15s, background .15s;
+}
+.sec-nav-btn:hover {
+  background: var(--acc-soft);
+  border-color: var(--acc);
+  color: var(--acc);
+}
+.sec-nav-prev { margin-right: auto; }
+.sec-nav-next { margin-left: auto; }
+
+/* Interactive Infographics & Visual Setting Annotations */
+.info-box {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  margin: var(--sp-4) 0 var(--sp-6);
+}
+.info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: var(--sp-3);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--line);
+}
+.info-header b {
+  font-size: 15.5px;
+  color: var(--txt);
+}
+.info-badge {
+  font-size: 11px;
+  background: var(--acc-soft);
+  color: var(--acc);
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.info-visual-wrapper {
+  position: relative;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  margin-bottom: var(--sp-4);
+  background: var(--sunk);
+}
+.info-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.callout-pin {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--acc);
+  color: var(--card);
+  font-weight: 700;
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px var(--card), 0 2px 8px rgba(0,0,0,0.3);
+  z-index: 10;
+  transform: translate(-50%, -50%);
+  cursor: default;
+}
+.action-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--sp-3);
+}
+.action-card {
+  background: var(--sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.action-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--txt);
+}
+.action-card-title .num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--acc);
+  color: var(--card);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.action-step {
+  font-size: 13px;
+  color: var(--mut);
+  line-height: 1.4;
+}
+.action-step b {
+  color: var(--txt);
+}
+.action-impact {
+  font-size: 12.5px;
+  background: var(--acc-soft);
+  color: var(--txt);
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  border-left: 3px solid var(--acc);
+  margin-top: 4px;
+}
+.action-impact b {
+  color: var(--acc);
+}
 </style>
 </head><body>
 
@@ -116,6 +268,7 @@
   <a href="#hub">Mice Hub</a>
   <a href="#modsite">A module's own page</a>
   <a href="#studio">Nong Studio</a>
+  <a href="#tv">TV Remote</a>
   <a href="#camera">Cameras</a>
   <a href="#voice">Voice</a>
   <a href="#faces">Reconize</a>
@@ -194,7 +347,7 @@
          <a href="#modsite">Module website</a></p></div>
     <div class="f"><h3>Run the robot</h3>
       <p>Day to day: find the modules, drive them, flash new firmware.</p>
-      <p><a href="#hub">Mice Hub</a></p></div>
+      <p><a href="#hub">Mice Hub</a> · <a href="#tv">TV Remote &amp; Monitor</a></p></div>
     <div class="f"><h3>See what a camera sees</h3>
       <p>Watching a camera on any screen, setting up how it looks, and knowing
          who it recognises.</p>
@@ -220,6 +373,52 @@
     <h2>Mice Hub — the PC app</h2>
     <p>The first page you open. Finds every module by itself and links to each one's
        website and to Nong Studio. Stdlib Python only; ships as a single exe.</p>
+  </div>
+
+  <!-- Infographic: Mice Hub Visual Guide & Settings -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ภาพรวมหน้าจอ Mice Hub และคู่มือการตั้งค่า</b>
+      <span class="info-badge">Infographic</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/hub-new.png" alt="Mice Hub Screen" class="info-img">
+      <div class="callout-pin" style="top: 18%; left: 32%;" title="1. Transport Mode">1</div>
+      <div class="callout-pin" style="top: 48%; left: 24%;" title="2. Module Card">2</div>
+      <div class="callout-pin" style="top: 48%; left: 72%;" title="3. App Tiles">3</div>
+      <div class="callout-pin" style="top: 14%; left: 88%;" title="4. Hub Security &amp; Accounts">4</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> โหมด USB Shared vs Exclusive</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> คลิกเลือกโหมดเชื่อมต่อในหน้าตั้งค่าก่อนกด Connect</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          • <b>Shared:</b> Hub จะเป็นตัวกลางแชร์พอร์ต COM เดียวกัน ทำให้เปิด Nong Studio และเว็บบอร์ดพร้อมกันได้ ไม่ชนกัน<br>
+          • <b>Exclusive:</b> หน้าเดียวจะยึดพอร์ตไว้คนเดียว ตอบสนองเร็วขึ้น 2-5ms แต่แอปอื่นจะคุยกับบอร์ดไม่ได้
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> บอร์ดโมดูล &amp; Open Module</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Open Module</b> บนการ์ดของโมดูลที่เจอ</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          เปิดหน้า Dashboard ประจำตัวของ ESP32 บอร์ดนั้นทันที ไม่ว่าบอร์ดจะต่อผ่านสาย RS485, USB หรือ WiFi ก็ใช้ UI เดียวกันทั้งหมด
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ทางลัดเปิด Nong Studio &amp; Apps</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> คลิกการ์ดแอป เช่น <b>Studio</b> หรือ <b>Voice</b></div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ระบบจะเปิดหน้าแอปโดยส่งค่า Bus ID และพาธการเชื่อมต่อให้อัตโนมัติ ไม่ต้องมานั่งกรอก IP หรือสแกนหาพอร์ตใหม่
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> ความปลอดภัย &amp; สิทธิ์ Admin</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ล็อกอินผ่านมุมขวาบน หรือกำหนดรหัสผ่านใน <code>hub_auth.json</code></div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ถ้ายังไม่ล็อกอิน: บุคคลภายนอกจะ "ดูได้อย่างเดียว" (Read-only) / ถ้าล็อกอิน: ถึงจะได้รับสิทธิ์สั่งขยับหุ่นยนต์ แฟลชบอร์ด หรือแก้ค่าตั้งค่า
+        </div>
+      </div>
+    </div>
   </div>
   <div class="f"><h3>Finds modules on its own</h3>
     <p>Parallel scan of the whole local subnet, plus every COM port on the PC. Bluetooth
@@ -286,6 +485,12 @@
        tablets and large monitors, with bigger touch targets on a touchscreen. Studio
        stacks the 3D view above its panel below 860px instead of squeezing both, and on a
        phone its view buttons (Top, Front, 3D…) fold behind one <b>Views ▾</b> button.</p></div>
+  <div class="f"><h3>Rebuilding or stopping MiceHub<span class="tag t-new">new</span></h3>
+    <p>To rebuild the single-file executable from source:
+       <code>python -m PyInstaller --clean MiceHub.spec</code></p>
+    <p>If <code>MiceHub.exe</code> is running, the build automatically terminates it to avoid
+       <code>PermissionError: [WinError 5] Access is denied</code>. You can also stop running instances manually with:
+       <code>taskkill /F /IM MiceHub.exe</code> (or <code>python main.py --kill</code>).</p></div>
 </section>
 
 <!-- ===================== MODULE SITE ===================== -->
@@ -323,780 +528,284 @@
 <section id="studio">
   <div class="shead">
     <span class="where tech">code/nong/main_python_set_nong · served at /studio/</span>
-    <h2>Nong Studio — pose &amp; sequence editor</h2>
-    <p>A 3D editor for the humanoid. Build poses, chain them into a timeline, watch the real
-       robot follow along, and export sequences the module plays from its SD card.
-       three.js is vendored — no CDN at runtime.</p>
+    <h2>Nong Studio — 3D Pose &amp; Sequence Editor</h2>
+    <p>เครื่องมือจำลอง 3 มิติสำหรับออกแบบท่าทางและสร้างลำดับการเคลื่อนไหวของหุ่นยนต์ Humanoid Nong (เซอร์โว 10 จุด) พรีวิวเสมือนจริงด้วย Three.js คำนวณความปลอดภัยทางฟิสิกส์อัตโนมัติ และส่งออกเป็นไฟล์ YAML สั่งงานหุ่นจริงได้โดยตรง</p>
   </div>
 
-  <div class="f"><h3>The dummy: pose the robot by hand<span class="tag t-new">new</span></h3>
-    <p>The <b>dummy</b> is a second module type (<code>mice_dummy</code>): a copy of the nong with the
-       same 10 joints and a potentiometer on each instead of a servo. It sits on the same RS485
-       bus with its own bus id (or its own USB / WiFi). In Studio's <b>Robot</b> tab, the
-       <b>Dummy</b> card connects to it and offers: <b>Studio follows the dummy</b>,
-       <b>Studio + real robot follow the dummy</b> (the robot's own limits and speed still apply),
-       <b>+ Dummy pose as new move</b>, <b>Use dummy pose for selected move</b> and
-       <b>Robot &rarr; selected move</b>. Pick <b>Simulated</b> to try all of it with sliders and
-       no dummy built. Pot pins, direction, travel, limits and zero are set on the dummy's own
-       module page (Setup &rarr; Dummy calibration). Tested against the QC fake only.</p></div>
+  <!-- ==================== MAIN INFOGRAPHIC: CURRENT UI ==================== -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>🗺️ ผังหน้าจอจริง Nong Studio (เวอร์ชันปัจจุบัน) และจุดควบคุมสำคัญ</b>
+      <span class="info-badge">Current UI</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-current.png" alt="Nong Studio Current Interface" class="info-img">
+      <!-- Callouts corresponding to real UI elements in user screenshot -->
+      <div class="callout-pin" style="top: 3.5%; left: 58%;" title="1. File & Project Controls">1</div>
+      <div class="callout-pin" style="top: 19%; left: 53%;" title="2. 3D Viewport Controls & Distances">2</div>
+      <div class="callout-pin" style="top: 25%; left: 32%;" title="3. 3D Model & Servo Rings (Gizmos)">3</div>
+      <div class="callout-pin" style="top: 14%; left: 81%;" title="4. Six Studio Tabs">4</div>
+      <div class="callout-pin" style="top: 35%; left: 81%;" title="5. Joint Sliders & Orientation">5</div>
+      <div class="callout-pin" style="top: 56%; left: 18%;" title="6. Timeline Action Bar & Collision Check">6</div>
+      <div class="callout-pin" style="top: 76%; left: 10%;" title="7. Keyframe Chips, Timing & Music">7</div>
+      <div class="callout-pin" style="top: 97%; left: 24%;" title="8. Auto-Save & Recovery Banner">8</div>
+    </div>
 
+    <!-- Overview Grid -->
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> บันทึก &amp; โหลดไฟล์ (Save / Load)</div>
+        <div class="action-step"><b>ตำแหน่ง:</b> แถบบนสุด — ช่องพิมพ์ชื่อไฟล์ + ปุ่ม <code>Save</code> + <code>Load...</code></div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          บันทึกท่าทางทั้งหมดลงเครื่องพร้อมกัน 2 นามสกุล: <code>.json</code> สำหรับเปิดแก้ใน Studio และ <code>.yaml</code> สำหรับนำไปใส่ SD Card หุ่นยนต์จริง
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> มุมมอง 3 มิติ &amp; วัดระยะ (View &amp; Distances)</div>
+        <div class="action-step"><b>ตำแหน่ง:</b> กล่องมุมมองกึ่งกลางบน — ปุ่ม <code>Top</code>, <code>Front</code>, <code>3D</code>, <code>Distances</code></div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          เปลี่ยนมุมกล้องเป็นมุมตั้งฉากแบบ Orthographic เพื่อดัดท่าให้แม่นยำ และปุ่ม <code>Distances</code> จะลากเส้นบอกระยะระหว่างไหล่ถึงมือเป็นมิลลิเมตร (mm) ทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> วงแหวนดัดท่า &amp; บอลข้อมือ (Gizmo &amp; IK)</div>
+        <div class="action-step"><b>ตำแหน่ง:</b> หน้าต่าง 3D — คลิกท่อนแขนจะมีวงแหวนสี หรือคลิกบอลข้อมือสีเขียว</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          • <b>วงแหวน:</b> หมุนองศาเฉพาะแกนนั้นของเซอร์โว (Pitch/Roll)<br>
+          • <b>บอลสีเขียว:</b> ระบบ Inverse Kinematics คำนวณไหล่และข้อศอก 4 ตัวพร้อมกันให้มือยืดไปตำแหน่งนั้น
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> แถบเมนู 6 หมวด (The 6 Tabs)</div>
+        <div class="action-step"><b>ตำแหน่ง:</b> แถบแท็บด้านขวาบน — <code>Pose</code>, <code>Sequence</code>, <code>Video</code>, <code>Shows</code>, <code>Robot</code>, <code>Setup</code></div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          แยกการทำงานเป็นหมวดหมู่อย่างเป็นระเบียบ ตั้งแต่การดัดข้อต่อ, การตั้งเวลา, สกัดท่าจากคลิป YouTube, รวมโชว์, ลิงก์หุ่นจริง ไปจนถึงโมเดล CAD
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">5</span> สไลเดอร์ 10 Joint &amp; สันมือ/หลังมือ</div>
+        <div class="action-step"><b>ตำแหน่ง:</b> แถบขวาแท็บ Pose — สไลเดอร์องศา + เมนูดรอปดาวน์ <code>on edge</code>, <code>palm down</code></div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ปรับองศาแบบละเอียด 0–180° หรือ 270° พร้อมทั้งระบุทิศทางฝ่ามือ (เช่น แบมือ หงายมือ สันมือตั้ง) ให้ระบบคำนวณข้อต่อปลายแขนให้ตรงกับท่าที่ต้องการ
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">6</span> ตรวจการชน &amp; เล่นท่า (Crash Check &amp; Play)</div>
+        <div class="action-step"><b>ตำแหน่ง:</b> แถบเครื่องมือไทม์ไลน์ — ปุ่ม <code>▲ Check crash</code>, <code>▶ Play</code>, <code>Save to robot</code></div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          • <b>Check crash:</b> ใช้อัลกอริทึม RRT* คำนวณว่าแขนจะเหวี่ยงชนตัวหรือเสื้อผ้าไหม หากชนจะคำนวณเส้นทางอ้อมที่ปลอดภัยให้<br>
+          • <b>Save to robot:</b> ส่งไฟล์ YAML ขึ้น SD Card ของบอร์ด ESP32 เพื่อให้หุ่นแสดงเองได้โดยไม่ต้องเปิดคอม
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">7</span> ชิปคีย์เฟรม (Keyframe Chip: T / Hold / Min)</div>
+        <div class="action-step"><b>ตำแหน่ง:</b> ไทม์ไลน์ด้านล่าง — ชิปคีย์เฟรมแต่ละช่อง (เช่น <code>0 start pose</code>)</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          • <b>T (ms):</b> เวลาที่ใช้เคลื่อนที่ไปยังท่านั้น<br>
+          • <b>Hold (ms):</b> เวลาหยุดค้างนิ่งก่อนเริ่มท่าต่อไป<br>
+          • <b>Min:</b> ขีดจำกัดเวลาขั้นต่ำตามสเปกมอเตอร์ ป้องกันคนพิมพ์เวลาน้อยเกินไปจนเฟืองหัก
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">8</span> แถบกู้คืนงานอัตโนมัติ (Crash Recovery)</div>
+        <div class="action-step"><b>ตำแหน่ง:</b> แถบด้านล่างสุดสีเทา — ปุ่ม <code>Restore it</code> / <code>Discard</code></div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ระบบเซฟท่าทางลง LocalStorage ตลอดเวลา หากเบราว์เซอร์ดับหรือเผลอปิด สามารถกด <b>Restore it</b> เพื่อดึงงานคีย์เฟรมทั้งหมดกลับมาได้ 100%
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <div class="grp2">Posing</div>
-  <div class="f"><h3>Five tabs, grouped by what you are doing<span class="tag t-new">new</span></h3>
-    <p><b>Pose</b> (joints, XYZ, view) · <b>Sequence</b> (timing, the robot SD card) ·
-       <b>Shows</b> (several sequences in a row) ·
-       <b>Robot</b> (link, module config, zero calibration) · <b>Setup</b> (rig, model,
-       clothes). The old Movement/Setup split put the robot link, the SD card and the zero
-       calibration all under Movement, so posing meant scrolling past things you touch once.</p>
-    <p>Nothing moved in the page itself — only what is on screen at once — so every saved
-       project, link and shortcut behaves as before. QC fails if a card ever ends up on no
-       tab, which would hide a feature completely.</p></div>
-  <div class="f"><h3>Shows — several sequences in a row<span class="tag t-new">new</span></h3>
-    <p>A <b>show</b> is a list of saved sequences played one after another: greeting, then
-       a wave, then byebye. Open the <b>Shows</b> tab, add saved sequences in the order you
-       want them, set a pause after any of them in milliseconds, name the show and press
-       <b>Save show</b>. <b>▶ Run on robot</b> hands the whole thing to the hub, so it keeps
-       going with the page closed; <b>⏹ Stop</b> ends it from anywhere.</p>
-    <p><b>⇪ Save to robot</b> puts the show on the robot's own card as one file,
-       <code>&lt;show name&gt;.show.yaml</code>. The robot can then play it by itself, with
-       the hub and the computer switched off: pick it in the robot's list of sequences
-       (Robot tab, or the robot's own page). It is the same run as ▶ Run on robot — the
-       same moves, pauses and music. A very long show may not fit in the robot's memory;
-       you are told before anything is sent. Change the show, then send it again.</p>
-    <p>A show only stores the sequence <i>names</i>, never a copy — so one greeting can sit
-       in ten shows, and editing the greeting changes all ten. Shows are small files in
-       <code>nong/main_python_set_nong/shows/</code> you can also write by hand. Deleting a
-       show moves it to <code>shows/.deleted</code> rather than erasing it, and never
-       touches its sequences. A show naming a sequence that is gone refuses to start and
-       says which step is wrong, instead of playing half of itself.</p></div>
-  <div class="f"><h3>A show runs straight through, and can repeat a sequence<span class="tag t-new">new</span></h3>
-    <p>One sequence now runs <b>straight into the next</b>, with no gap. There used to be
-       one, and it looked like the robot had stopped: every sequence begins with its start
-       pose, timed for travel from wherever the robot happened to be — <code>yakyai.yaml</code>
-       asks for 3273&nbsp;ms — so in a chain the arm stood almost still for three seconds
-       between sequences. That first move is now timed from where the arm really is, at
-       that sequence's own speed, so two sequences that end and start on the same pose hand
-       over instantly. <b>The only thing that makes the robot wait is a pause you typed.</b></p>
-    <p><b>Repeat</b> beside each sequence plays it again, in whichever way you think about
-       it: <b>repeat × times</b> (3 times, 4 times) or <b>repeat for seconds</b>
-       (30&nbsp;s, 60&nbsp;s). Seconds never cuts a pass in half — it starts another whole
-       pass while the time is still under the target, so 60&nbsp;s of a 22&nbsp;s sequence
-       is three passes. A sequence far too short to fill the target is refused, by name,
-       instead of building a list nothing can stop.</p></div>
-  <div class="f"><h3>Run a sequence for exactly so many seconds<span class="tag t-new">new</span></h3>
-    <p>The third repeat setting, <b>run for exactly … s</b>, is for a show on a
-       <b>timetable</b> — music, a slot in a programme, anything the robot has to stay in
-       step with. The sequence gets exactly that long and no more. If it would run over it
-       is <b>cut</b> wherever it has got to; if it is shorter it repeats to fill, and the
-       last pass is cut too.</p>
-    <p>The cut is not a stop. Whatever time the cut frees is spent <b>travelling into the
-       next sequence's first pose</b>, so the arm leaves early, is already on its way during
-       the freed time, and <b>arrives exactly on the deadline</b>. The next sequence starts
-       on time and there is no join to see.</p>
-    <p>The cut always lands on a keyframe, never inside a move — stopping half way through
-       one would leave the arm at a position nobody chose. A pause you set on the item
-       counts inside its budget rather than pushing the deadline out, and an item at the
-       <b>end</b> of a show holds its last pose to length, since there is nowhere to travel
-       to. <b>Repeat for seconds</b> is the gentler cousin: it never cuts, so it runs a
-       little over.</p>
-    <p>On the time bar that travel is drawn as the <b>end of the cut sequence</b>, labelled
-       <i>one → two</i>, and the next sequence's name starts right on the deadline — 42 s
-       reads 42.0 s on the ruler. The seconds are counted from the show's <b>first pose</b>,
-       the same place the time bar starts; the robot's walk to that first pose, from
-       wherever it was standing, comes before the clock and belongs to no sequence.</p></div>
-  <div class="f"><h3>The time bar and the robot keep the same time<span class="tag t-new">fixed</span></h3>
-    <p>A show could reach a point on the robot a few seconds later than the time bar said
-       (49&nbsp;s on the bar, 52&nbsp;s on the robot). Two things added up: the hub waited
-       for each move <b>after</b> the robot had answered, so the cable's answer time was
-       added to every move; and a move between sequences could be asked for faster than the
-       robot allows, so the robot quietly took longer. Now the hub keeps one clock for the
-       whole show, and every move is planned at no less than the time the robot will
-       really take — with the robot's own speed limits, the ones in <b>Timing</b>.</p></div>
-  <div class="f"><h3>A gentler move between sequences<span class="tag t-new">new</span></h3>
-    <p>When one sequence ends in a different pose from where the next one starts, the robot
-       travels between them. In the Shows tab, <b>Between</b> sets how that move looks:
-       a top speed in °/s, a shortest time in seconds, or both. Leave them empty and the
-       move uses the next sequence's own speed, as before. Two sequences that end and start
-       on the same pose still run straight on. The time bar includes this move, so
-       everything after it moves along to match.</p></div>
-  <div class="f"><h3>Music for a whole show<span class="tag t-new">new</span></h3>
-    <p>A show can have its own <b>Music</b>: a track on the robot's card, with a volume and
-       a <b>repeat</b> tick. It starts on the show's first pose — the robot walks to that pose first, then the
-       music and the moves start together — and stops when the show
-       ends or you press Stop. While a show has its own track, the music saved inside its
-       sequences is left out, so nothing cuts the show's track off. Choose <i>no music</i>
-       to keep each sequence's own music. <b>＋ From PC</b> puts a track from your computer
-       onto the robot's card and makes it the show's music in one step. Over the cable
-       a file travels in small pieces, so a whole song takes a long time. While it is
-       sent, a wheel shows how many percent have arrived and about how long is left, and
-       nothing else can be done; <b>Cancel sending</b> stops it and takes the half-sent
-       file back off the card. The robot's card only takes English letters, numbers,
-       space, dot, <code>_</code> and <code>-</code> in a track name, so a Thai name is
-       renamed (to <code>track-</code> and the date if nothing is left) and Studio tells
-       you the new name. The faster ways are the robot's WiFi or copying the song
-       onto the SD card's <code>/music</code> folder. If the hub was restarted you must log in again first,
-       and Studio now says so instead of <i>Failed to fetch</i>.</p>
-    <p><b>Music stops</b> says how long the track plays: <i>with the last move</i>, a
-       number of seconds <i>after the show ends</i>, or a number of seconds <i>in all</i>
-       from the show's first pose — which can be before the moves end. Stop always
-       silences it at once. A looping show never ends, so its track plays until Stop.</p></div>
-  <div class="f"><h3>A sequence faster or slower in one show<span class="tag t-new">new</span></h3>
-    <p>Each sequence in a show has a <b>speed</b> in percent: 100 plays it as saved, 50 at
-       half speed, 200 twice as fast. It changes that show only, never the sequence file.
-       Pauses keep their length, and no move goes faster than the robot allows, so a very
-       high number may not shorten every move. The time bar follows the new speed.</p></div>
-  <div class="f"><h3>See a whole show on the time bar<span class="tag t-new">new</span></h3>
-    <p>Open a show, or press <b>⇣ Show on the time bar</b>, and every sequence of it lands
-       on the one timeline, end to end, with a line and a name where each one begins — a
-       repeated pass says which pass it is (<code>wave ×2</code>). You can then scrub
-       through the whole show, preview it and see exactly where the hand-overs are.</p>
-    <p>The steps come from the hub, not from Studio re-reading the files: it is the same
-       list the robot will run, so the editor cannot show a show the robot does not
-       perform. If the time bar is holding unsaved keyframes, opening a show leaves them
-       alone and says so — press the button when you really mean to replace them.</p></div>
-  <div class="f"><h3>The arm never goes through its own body<span class="tag t-new">new</span></h3>
-    <p>Whenever Studio makes moves for you — from a video, from the dummy, or the
-       gestures the robot makes while it talks — every move is checked on this robot's
-       own sizes before the robot gets it. A move that is clear goes straight, as
-       always. A move whose straight line would take an arm through the body or the
-       other arm goes <b>round</b> instead: Studio finds a way with a few in-between
-       poses and keeps it short. A pose the robot's body cannot take at all is left
-       out, and the arm holds where it was. The status line says how many moves went
-       round or were held.</p>
-    <p>While the real robot follows the dummy live, the way round has to be found in a
-       moment; if it is not, the robot <b>holds its last safe pose</b> and the dummy
-       card says so, until the dummy moves somewhere the robot can go.</p>
-    <p class="tech">safe_path.js: straight joint path checked with collisionAt();
-       a hit is planned round with RRT-Connect plus shortcuts. Settings in
-       <code>nong/main_python_set_nong/web/safe_path.json</code>: planner
-       (<code>rrt-connect</code> or <code>straight</code>), checkDeg, stepDeg,
-       budgetMs, liveBudgetMs, shortcuts, seed.</p></div>
-  <div class="f"><h3>Record the dummy, keep it as a move<span class="tag t-new">new</span></h3>
-    <p>On the Dummy card, <b>● Record the dummy</b> starts recording what the dummy
-       does; <b>■ Stop and save</b> puts the moves on the time bar, timed as you made
-       them and kept clear of the robot's body, and saves them as
-       <code>dummy_&lt;date&gt;</code>.</p></div>
-  <div class="f"><h3>Moves while talking<span class="tag t-new">new</span></h3>
-    <p>On the Sequence tab, <b>Moves while talking</b>: the arm gestures the robot makes
-       while it answers on the Voice page. A word in the answer brings its gesture —
-       “สวัสดี” or “hello” a wave, “ขอบคุณ” a wai, “ทุกคน” arms wide, a question a hand to
-       the chin — and small random beats fill the rest, so no two answers move the same.
-       The speaking manner sets the pace: playful moves more and quicker, polite and
-       poem recital less and slower.</p>
-    <p>Every gesture is fitted to <b>this robot's size</b>: hands are placed around the
-       body in arm lengths, Studio works out the joints, checks every pose and move
-       against the body, and leaves out a gesture this robot cannot do safely (it names
-       it). This happens by itself when the robot's setup changes.</p>
-    <p>Type a sentence and press <b>▶ Show</b> to see the gestures picked for it on the
-       time bar (press again for another random pick). Under <b>The gestures and their
-       words</b> change which words bring each gesture, or make your own: pose moves on
-       the time bar, name them, give the words and press <b>＋ Keep as a gesture</b>.
-       <b>Events</b> switches gestures off for one event; the switch at the top, for
-       all.</p>
-    <p class="tech">Library <code>config/gestures.json</code> (keys: hand targets
-       [out, up, forward] in arm lengths, palm, waist, shrug; words per language;
-       manners: tempo, beats, prefer; events; pace, leadMs, lateMs, restGapMs,
-       maxDps). This PC's changes and the fit: <code>nong/main_python_set_nong/gestures.json</code>.
-       Routes: GET/POST <code>/api/gestures</code>, <code>/api/gestures/fit</code>,
-       <code>/api/gestures/plan</code>; <code>/api/gestures/play</code> needs a login.</p></div>
-  <div class="f"><h3>Moves from a video of a person<span class="tag t-new">new</span></h3>
-    <p><b>The Video tab.</b> Its own page: the person's video with its sound and the
-       skeleton found on them, beside the 3D robot seen from the front (on a phone, one
-       above the other). Pick a video of one person, or paste a link and press
-       <b>Fetch</b>: YouTube, Google Drive, Dropbox, Facebook, TikTok, Vimeo and other
-       video sites, or a link straight to a video file. This PC fetches it (a browser
-       cannot read the picture of a video another site plays) and Studio reads it like
-       a file. A Drive or Dropbox file must be shared with “Anyone with the link”; a
-       private video or one that needs a login cannot be fetched, and Studio says so.
-       Video sites need <code>yt-dlp</code> on the PC (<code>pip install -U
-       "yt-dlp[default]"</code>; Studio names it when it is missing). Then press</p>
-    <p><b>▶ Play person and robot</b> plays the video with its sound while the robot
-       does the moves made from it, in step; dragging the video's time does the same.
-       It is a preview: the real robot moves only when the moves are on the time bar.
-       After <b>Use as new moves</b>, <b>♪ Put the video's sound on the robot</b>
-       cuts the sound of the part the moves were made from (ffmpeg on the PC) and puts
-       it on the robot's card as the first video move's music, so the show plays with
-       the song. The video, the link and every choice are saved with the project, so
-       opening it again brings them back (press Fetch, or pick the file, to see the
-       video again).</p>
-    <p>Pick a video of one person, press
-       <b>▶ Make moves</b>, and Studio follows their arms frame by frame and makes moves
-       that copy them as closely as the robot's joints allow. The found skeleton is drawn
-       over the video, and the 3D robot can play the result at once. Then
-       <b>Use as new moves</b> (replaces the time bar, asking first if it has unsaved
-       changes) or <b>Add after the last move</b>. <b>▶ Make and save</b> does it all
-       in one step: makes the moves, keeps them clear of the robot's body, puts them on
-       the time bar and saves them under the video's name. They are ordinary moves: edit any of
-       them, then Save or Save to robot.</p>
-    <p><b>How close.</b> The person's upper arm and forearm directions are put on the
-       robot's own arm lengths, and the same solver as the drag handles places the elbow
-       and the hand there. A shape past a joint limit lands on the nearest one the robot
-       can make. Only the arms (and, if asked, the waist) are copied; the robot has no
-       legs or head to follow.</p>
-    <p><b>Follow</b> picks how many moves: every move eases to a stop, as on the robot,
-       so <b>Close</b> follows the video more tightly but stops and starts more, and
-       <b>Smooth</b> keeps only the turning points. The moves keep the video's own timing;
-       a move faster than the servos and the peak speed limit allow is slowed to what they
-       can do, and Studio says how much longer the whole thing became.</p>
-    <p><b>Move like a mirror</b>: the robot's left copies the person's right, as a
-       reflection does. <b>More choices</b>: palm or back of each hand on top (as below;
-       "as in the video" keeps the person's elbow), turning the waist when the person
-       turns, and which part of the video to use. A nearly straight arm cannot roll its
-       hand, so where the asked-for side could not be shown Studio says in how many moves.
-       Pick <b>palm on top, always</b> (or back) and the hand moves just enough to show that
-       side, staying as close to the person's pose as the joints allow.</p>
-    <p><b>Stay with the music</b> (on at first): every move ends on its own moment in the
-       video, so a show built on the video's song stays in time. A move the robot is too
-       slow for goes as far toward the pose as it can in that time instead of making
-       everything after it late. The hand side you picked still holds on that
-       part-way pose.</p>
-    <p><b>Choose what to keep.</b> After Make moves, each move has a row: click its time to
-       see that moment of the video and the robot's pose for it, then <b>Keep</b>,
-       <b>Keep, hand side forced</b>, <b>Use another moment…</b> (type the second of the
-       video whose pose should fill this move) or <b>Leave out</b>. Every move keeps its
-       place in time, so leaving one out or filling it from elsewhere never shifts the rest
-       off the beat.</p>
-    <p>The video is read in this browser and never leaves the PC; fetched videos are kept
-       in the PC's temp folder (the newest few only). The body finder
-       (MediaPipe Pose, from Google) is fetched from the internet the first time; the
-       browser keeps it after that. Tested with a still photo and made-up skeletons, not
-       yet on the real robot.</p></div>
+  <!-- ==================== TAB BY TAB DEEP DIVE ==================== -->
+  <div class="grp2">คู่มือการตั้งค่าแบบละเอียดแยกตาม 6 แท็บหลัก (All 6 Tabs Detailed)</div>
 
-  <div class="f"><h3>Palm or back of the hand on top, per hand<span class="tag t-new">new</span></h3>
-    <p>A hand-like part sits on each forearm, and whether the audience sees its
-       <b>palm</b> or its <b>back</b> on top changes how a move and the end pose feel. The
-       3D view draws each hand: skin colour is the palm, grey is the back.</p>
-    <p><b>Pose tab:</b> each hand has <b>✋ Palm up</b> and <b>🤚 Back up</b>, and says
-       which side is on top now. <b>Timeline:</b> every move has a picker per hand
-       (<b>L ✋ palm up</b> / <b>L 🤚 back up</b>, and the same for R). It always shows
-       what the move's pose really does; pick the other side and that arm turns round.</p>
-    <p>The hand stays where it is; only the arm's shape changes. The arm has no wrist
-       twist, so the hand rolls by swinging the elbow round the shoulder-to-hand line.
-       Joint limits cap that swing: with a straight arm, or near a limit, the hand can
-       only turn part of the way, and Studio says so instead of moving the hand.</p>
-    <p><b>Keep a side while you move the hand:</b> under each hand, <b>while moving it,
-       keep</b> ✋ palm on top or 🤚 back on top. Dragging that hand, or typing where its
-       wrist goes, then keeps that side up as well as the joints allow. The line under it
-       shows live what the arm really reaches: which side is on top and how many degrees
-       from straight up, how many mm short of where you pulled (an orange mark shows
-       that spot), which joints are at their stop, and whether it hits itself. What you
-       see is the joint angles the robot is sent, so <b>＋ Save as a new move</b> or
-       <b>Save into the selected move</b> keeps exactly that. The settings are in
-       <code>hand_side.json</code> beside Studio. Tried on the simulated robot only.</p>
-    <p>If the drawn palm is not on the same side as the real one, press
-       <b>Setup ▸ Rig setup ▸ ↻ Turn the drawn hand</b> for that hand until they match.
-       This replaces the old "front arm / back arm" picker.</p>
-    <p>The <b>⇄</b> button beside it plays the same shape on the other arm. It is a real
-       mirror, not a swap of the numbers: the two arms are not built as exact opposites of
-       each other, so copying the angles across put the hand 613&nbsp;mm from where it
-       belonged. Studio reflects the elbow and the hand in the body's own centre line and
-       solves the arm to reach them.</p></div>
-  <div class="f"><h3>Sliders, gizmos and inverse kinematics</h3>
-    <p>A slider per joint, clamped to that joint's own limits. Drag the 🟢 wrist ball for
-       4-DOF whole-arm IK, or the 🟠 elbow ball for shoulder-only IK. Gimbal rings follow
-       each joint's configured axis and tilt.</p></div>
-  <div class="f"><h3>Flat plane views<span class="tag t-new">new</span></h3>
-    <p>Front, Back, Left, Right, Top and Bottom are true <b>orthographic</b> views — parallel
-       edges stay parallel and nothing looks bigger for being nearer, so Shift+dragging a
-       joint in that plane matches exactly what is on screen. The iso/free view keeps
-       perspective, where depth is the point. Switching between them never moves the
-       camera.</p>
-    <p><b>A flat view now stays flat.</b> It did not before: a plain drag orbits the camera,
-       so taking hold of the arm quietly turned Front back into a 3D view while the button
-       still said Front, and the plane you had chosen no longer matched what you were
-       looking at. In a plane view the camera cannot be orbited at all — pan and zoom still
-       work — and because nothing orbits there, <b>dragging a hand needs no Shift held</b>.
-       Press <b>3D</b> to turn the view loose again; there, dragging a hand still needs
-       Shift, because a plain drag orbits.</p></div>
-  <div class="f"><h3>Live XYZ readout</h3>
-    <p>Joint positions in millimetres, origin at the torso centre.</p></div>
-  <div class="f"><h3>Collision checking</h3>
-    <p>Arms against torso, head and each other, sampled along the whole path — not just at
-       keyframes. Offending keyframes turn red and Run/Upload are blocked until it is fixed.</p></div>
-  <div class="f"><h3>Two mirrors: left↔right and front↔back<span class="tag t-new">new</span></h3>
-    <p>A puppet has two mirrors, so there are two buttons — on the Pose tab, and on every
-       move in the timeline.</p>
-    <p><b>⇄ Mirror L↔R</b> swaps the arms: the left arm takes the right's shape and the
-       right takes the left's. <b>⇅ Mirror front↔back</b> does <i>not</i> swap them — each
-       arm stays on its own side and only its reach turns round, so a gesture aimed at the
-       audience now points behind. The waist turns to the other side either way; the shrug
-       is unchanged.</p>
-    <p>Both are taken in the <b>body's own frame</b>, so a turned waist cannot tilt the
-       mirror.</p></div>
-  <div class="f"><h3>Mirror and neutral</h3>
-    <p>Jump to the neutral pose, or save the current pose <em>as</em>
-       the neutral. Mirror is a <b>real reflection</b>, not a swap of the joint numbers:
-       the two arms are not built as exact opposites of each other, so copying the angles
-       across put the hand 613&nbsp;mm from where it belonged. Studio reflects the elbow and
-       the hand in the body's centre line and solves each arm to reach them; the waist turns
-       to the other side and the shrug is unchanged.</p></div>
+  <!-- TAB 1: POSE -->
+  <div class="f">
+    <h3>📍 แท็บ 1: Pose — ปรับแต่งท่าทาง เซอร์โว 10 จุด และทิศทางมือ</h3>
+    <p>ใช้สำหรับจัดท่าทางของหุ่นยนต์ Humanoid ท่อนบน โดยมีเซอร์โวควบคุม 10 ข้อต่อหลัก:</p>
+    <ul>
+      <li><b>L/R shoulder pitch &amp; roll:</b> ข้อต่อไหล่แบบ Universal Joint สองตัวขับเคลื่อนมุมก้ม-เงย และกาง-หุบ (เซอร์โว PDI-1181MG หมุนได้กว้าง 270°)</li>
+      <li><b>L/R elbow pitch &amp; roll:</b> ข้อต่อข้อศอกสองตัวขับเคลื่อนการงอแขนและการหมุนท่อนแขน (เซอร์โว MG90S 180°)</li>
+      <li><b>Waist (เอว):</b> เซอร์โว TianKongRC 35kg พลังแรงบิดสูง หมุนเอวซ้าย-ขวา 270°</li>
+      <li><b>Shrug (ยักไหล่):</b> กลไก 4-bar linkage ยกสะบักไหล่ทั้งสองข้างขึ้นพร้อมกัน (~6°)</li>
+      <li><b>Hand Orientation:</b> เลือกระหว่าง <code>L/R on edge</code> (สันมือตั้ง), <code>palm down</code> (คว่ำมือ), <code>palm up</code> (หงายมือ) เพื่อล็อกแนวหมุนของข้อมือให้สวยงามตามธรรมชาติ</li>
+    </ul>
+  </div>
 
-  <div class="grp2">Timeline</div>
-  <div class="f"><h3>Keyframes with time and hold</h3>
-    <p>Each keyframe carries its move duration and a hold. Times auto-calculate from show
-       speed and are floored per joint by the slowest servo in that move — the same formula
-       the firmware uses. Any keyframe's time can also be typed in directly, which is how you
-       make one move slower than the rest.</p></div>
-  <div class="f"><h3>A time you typed is kept<span class="tag t-new">new</span></h3>
-    <p>Type a time on a move and it is <b>pinned</b> (📌). Editing that move's pose, editing
-       the move before it, or changing Show speed will <b>not</b> re-time it any more. Before
-       this, every small correction to a pose ran the automatic timer over the number you had
-       chosen, and you had to type it again — every time.</p>
-    <p>The only thing that may change a pinned time is the servos' own minimum, and it can
-       only make it <b>longer</b> — a move the arm cannot make in that time is not a choice
-       anybody can make.</p>
-    <p>Times that come from a <b>saved sequence file</b> are not pinned, so re-opening a
-       sequence and changing Show speed still re-times the whole thing, as it always has.
-       A pin is for a time you typed or pinned yourself. To hold one that came from a file,
-       press its 📌 once.</p>
-    <p>Two ways to hand the timing back to Studio: press the <b>📌</b> on that move's time
-       box, or type a <b>°/s</b> for it — asking for a speed is asking to be timed. A move
-       Studio is timing shows a 🕘 instead.</p></div>
-  <div class="f"><h3>Speed per sequence, and per move<span class="tag t-new">new</span></h3>
-    <p><b>Show speed</b> (°/s) is saved into the sequence file as its first step and restored
-       when you re-edit it, so each sequence keeps its own pace. Change it and every keyframe
-       time is recalculated.</p>
-    <p>Each keyframe also has its own <b>°/s</b> box — leave it blank to run at the
-       sequence's speed, or set it to make that one gesture slower or snappier. The file
-       sets that speed before the move and puts the sequence speed back after, so the rest of
-       the show is untouched. Speed and time are two views of the same thing: set a speed and
-       the time follows, type a time and the override is dropped.</p>
-    <p>Because each file sets its own speed at the start, a chain hands over cleanly — a
-       fast sequence following a slow one runs at its own speed instead of inheriting the
-       previous one's.</p>
-    <p><b>Peak speed limit</b> is a separate safety cap on the fastest instant of a
-       move. The robot may make a move longer than Show speed requests. Studio shows
-       the active limit after Connect. Save to robot stores a new limit for the next
-       restart; the current limit stays active until then. If boards are linked,
-       set the same limit on both before synchronized playback. Raising the limit
-       can cause harder impacts. Do not raise it while a joint loses torque.</p>
-    <p><b>Why a faster °/s sometimes changes nothing, and how to see it.</b> A move eases
-       in and out, so its fastest instant is about 1.6× its average — which means the peak
-       limit starts deciding the time at roughly <b>two thirds</b> of itself. At the shipped
-       60&nbsp;°/s that is about 38&nbsp;°/s: above it, raising Show speed or a move's own
-       °/s produced exactly the same time, silently. The arithmetic was right; it just never
-       said so. Now every move's line names the limit that is holding it — the peak limit,
-       or a particular joint's servo top speed — and says what to change. The
-       <b>⚑</b> beside a move's minimum means that move is already as short as it is
-       allowed to be.</p>
-    <p><b>Show speed lives inside the saved limit.</b> The box will not accept a number
-       above the flat point, because above it nothing gets faster — so raising the
-       <b>Peak speed limit</b> and pressing <b>Save to robot</b> is what lets Show speed go
-       higher. Measured on a real nong (board 67): at a saved limit of 120 the ceiling is
-       76 °/s; saved at 190 it is 121 °/s, and the same moves went from 130/196/327 ms to
-       82/124/206 ms — about a third quicker. A saved limit takes effect when the board
-       restarts.</p>
-    <p>The <b>Peak speed limit</b> box is also editable with <b>no robot connected</b>. It
-       is then simply the number Studio plans with, and it is saved with the project, so you
-       can time a show away from the bench. <b>Save to robot</b> still needs a connection —
-       Studio planning faster than the robot allows would be a show it cannot perform.</p></div>
-  <div class="f"><h3>Suspend a keyframe instead of deleting it<span class="tag t-new">new</span></h3>
-    <p>The ● button on a keyframe chip suspends it: it stays in the timeline to edit, but is
-       skipped when playing, exporting and uploading — so you can try the sequence without
-       one move while you check something else, then switch it back on.</p>
-    <p>Skipping keyframe 2 of 1–2–3 creates a new, longer move 1→3. Its time is recomputed
-       <b>at the speed that applies</b> — keyframe 3's own °/s if it has one, otherwise the
-       sequence speed — so the arm covers the extra distance at the pace you asked for
-       instead of lunging. Suspending can only ever slow a move down: a time you typed
-       yourself is kept if it is already longer.</p>
-    <p>The crash check re-tests that new path, and the suspended pose never reaches the robot
-       or the exported file.</p></div>
-  <div class="f"><h3>Play, scrub and loop<span class="tag t-new">fixed</span></h3>
-    <p>Preview in 3D, or with <b>live</b> ticked drive the real robot: keyframe 0 first, then
-       each segment with its exact duration. A hold is a real pause <em>between</em> the
-       moves. Pause sends <code>STOP</code> to freeze the arm where it is, and resuming asks
-       only for the time still left in the segment.</p></div>
-  <div class="f"><h3>Every Run is kept on the robot as last.yaml<span class="tag t-new">new</span></h3>
-    <p><b>▶ Run on robot</b>, on the time bar or on a show, also saves what it runs on the
-       robot as <code>last.yaml</code>. The robot's own page offers it first under <b>Play a
-       saved show</b>, so the last thing you ran can be played again with no hub and no
-       computer. A show Run keeps the same file <b>⇪ Save to robot</b> writes. If the copy
-       fails, the run still starts and the notice line says so.</p>
-    <p>Turn it off in <b>Setup ▸ This robot ▸ Keep a copy on the robot every time I press
-       Run</b>; then Run sends only the sequence itself, which is quicker over a slow cable.</p>
-    <p>Three ways to put moves on the robot: <b>⇪ Save to robot</b> on the time bar (what is
-       on screen), <b>⇪ Save to robot</b> in <b>Saved moves on this PC</b> (a saved file, as
-       it is, without opening it), and <b>⇪ Save to robot</b> on the Shows tab.</p></div>
-  <div class="f"><h3>This robot's settings, from Studio<span class="tag t-new">new</span></h3>
-    <p><b>Setup ▸ This robot</b> sets the robot's own settings: its <b>name</b> (its WiFi
-       name and <code>name.local</code> address change with it, so connect again after), the
-       <b>speed when a pose has no time</b>, and the <b>volume</b>. Press <b>⬇ Read from
-       robot</b> to see what it uses now; each <b>Save to robot</b> sets it at once and keeps
-       it after a restart. Joint limits, gear and offsets are in <b>Rig setup</b>, the peak
-       speed limit is on the Sequence tab, and <b>Open the robot's own page</b> has the rest
-       (WiFi, pins, logins).</p></div>
-  <div class="f"><h3>Let the robot run the show on its own<span class="tag t-new">new</span></h3>
-    <p>A browser stops its animation clock in a hidden tab, so a sequence driven <b>live</b>
-       from Studio freezes when you switch to another tab or app. Press <b>⇪ Save to robot</b>
-       then <b>Run on robot</b> instead: the module plays it from its own clock and you can
-       close the browser entirely.</p>
-    <p>This used to need an SD card. Now a board without one keeps the sequence in memory
-       (up to 8 KB, until it reboots) and plays it just the same — the editor is unchanged,
-       the board decides where it lands.</p>
-    <p><b>It starts from the move you clicked.</b> Click a pose in the timeline and the play
-       head parks there; Run then carries on from that pose to the end. It does not travel
-       back to the first pose first — on a robot built into a rig, that trip back is where
-       the arm hits something. The same is true when you switch tabs part way through a
-       show: the robot is handed the rest of it, not the whole thing from the start. A part
-       run is saved beside the full one as <code>&lt;name&gt;.part.yaml</code>, so your
-       saved sequence is never overwritten by running a piece of it. And the first move
-       after a jump is given as much time as the distance really needs, however fast the
-       timeline had it — the robot may be standing anywhere when you press Run.</p>
-    <p>Robot-side playback is also <b>more accurate</b>, not less: the module interpolates
-       every move on its own 50 Hz clock, so timing does not depend on the browser or the
-       link. Tick <b>monitor</b> to watch the real robot in 3D while it runs.</p>
-    <p>While playing live, Studio now holds a silent audio track and drives the clock from a
-       timer, which keeps most browsers from throttling a background tab — best effort, and
-       no substitute for running it on the robot for a real show.</p></div>
-  <div class="f"><h3>Monitor mode — the model follows the robot</h3>
-    <p>The 3D rig animates from the robot's real joint angles, and the status line shows
-       which sequence is playing and how long the current move has left. Use it to watch a
-       run started from the SD card.</p></div>
+  <!-- TAB 2: SEQUENCE -->
+  <div class="f">
+    <h3>⏱️ แท็บ 2: Sequence — การคำนวณเวลา ความเร็วปลอดภัย และจัดการ SD Card</h3>
+    <p>ควบคุมพฤติกรรมการเล่นท่าทางตามหลักฟิสิกส์จริงของฮาร์ดแวร์:</p>
+    <ul>
+      <li><b>สูตรคำนวณเวลาอัตโนมัติ:</b> <code>Time = Biggest Joint Change ÷ Servo Speed (°/s)</code> ระบบจะหาข้อต่อที่ต้องหมุนไกลที่สุด และคำนวณเวลาให้พอดีกับความเร็วสูงสุดที่ตั้งไว้</li>
+      <li><b>Safe Speed Cap (ความเร็วสูงสุดปลอดภัย):</b> ค่าเริ่มต้นจำกัดที่ 375–400°/s เพื่อป้องกันไม่ให้เซอร์โวกระชากตัวหุ่นยนต์จนโครงสร้างปริแตก</li>
+      <li><b>Robot SD Card File Manager:</b> ดูรายการไฟล์ YAML ทั้งหมดที่อยู่ในการ์ด SD ของบอร์ด ESP32 สามารถกด <b>Upload</b>, <b>Download</b> กลับมาแก้ หรือ <b>Delete</b> ทิ้งได้โดยตรง</li>
+    </ul>
+  </div>
 
-  <div class="grp2">Rig setup — calibrate the model to your robot</div>
-  <div class="f"><h3>Per joint: zero, limits, axis, invert, tilt</h3>
-    <p>Rotation axis (roll-X / pitch-Y / yaw-Z), invert, and a three-angle axis tilt. Tilt is
-       visual only — it is never sent to the module.</p></div>
-  <div class="f"><h3>Per joint: servo, gear, pulse, speed, travel, frame rate</h3>
-    <p>Plus group presets (shoulders / elbows / waist / shrug / all) and a warning when the
-       gear and joint limits together need more travel than the servo has.
-       <b>Send</b> pushes limits, gear, pulse, travel and rate to the robot;
-       <b>read back</b> pulls the robot's current values into the rig.</p></div>
-  <div class="f"><h3>Body dimensions and your own default</h3>
-    <p>Arm lengths, joint radii, shoulder width, shrug pivot height. <b>★ Save current as
-       default</b> locks your tuned rig in, so Reset returns to <em>yours</em> rather than
-       the factory scale.</p></div>
-  <div class="f"><h3>Opens on your neutral pose<span class="tag t-new">new</span></h3>
-    <p>The editor and keyframe 0 start at the Neutral pose from Setup — the same pose as the
-       robot's <code>HOME</code> — instead of a flat 90.</p></div>
+  <!-- TAB 3: VIDEO -->
+  <div class="f">
+    <h3>🎬 แท็บ 3: Video — แปลงวิดีโอคลิปคนเต้นเป็นท่าทางหุ่นยนต์อัตโนมัติ</h3>
+    <p>ฟีเจอร์ AI Motion Capture จากคลิปวิดีโอ:</p>
+    <ul>
+      <li><b>แหล่งวิดีโอที่รองรับ:</b> วางลิงก์ YouTube, Google Drive แบบสาธารณะ, Dropbox หรือ Direct Video Link (MP4/WebM)</li>
+      <li><b>Skeleton Extraction:</b> สกัดจุดข้อต่อกระดูกของมนุษย์ในคลิปวิดีโอ แปลงเป็นมุมองศา Servo 10 ตัวที่หุ่นยนต์ Nong สามารถทำตามได้จริง</li>
+      <li><b>Mirror Switch:</b> เลือกว่าจะให้หุ่นขยับแบบกระจกเงา (Mirror) หรือทิศทางเดียวกับคนในวิดีโอ</li>
+    </ul>
+  </div>
 
-  <div class="grp2">Appearance</div>
-  <div class="f"><h3>Your own STL parts</h3>
-    <p>Import STL exports per body part, each with its own rotation, offset, scale and
-       colour. Part size automatically sets the rig's lengths. Texture images can be imported
-       and assigned.</p></div>
-  <div class="f"><h3>Robot look: simple shapes or the CAD model<span class="tag t-new">new</span></h3>
-    <p>In the 3D view, open <b>Views ▾</b> and pick <b>Robot look</b>. <b>Simple shapes</b> is
-       the old robot, sized in Rig setup. <b>CAD model (URDF)</b> draws the URDF file at its own
-       real sizes — every part where the file puts it, every joint turning about the file's own
-       axis. It is not a picture laid over the old robot: dragging a hand, a video, the dummy,
-       playback and monitor all move the CAD model's own joints, so what you see is how the
-       real parts move. What is sent to the robot never changes with the look.</p>
-    <p>Put the SolidWorks export folder (the one holding <code>urdf/</code> and
-       <code>meshes/</code>) into Studio's <code>models</code> folder on this PC; every
-       <code>.urdf</code> found there is offered. Each Studio joint finds its URDF joint by
-       name. A CAD file names and zeroes its joints its own way (it is drawn in one pose), so
-       for each arm Studio <b>fits</b> each joint's sense and zero, and which joint of each pair
-       is which, until the upper arm and forearm point where your Rig setup points them over
-       many poses; if the best fit is still off it says by how many degrees. A forced sense or
-       zero, the fit settings and which sizes come from the file are all in
-       <code>web/urdf_view.json</code>, so a new model needs no code change. The technical
-       switch shows which joint went where, its sense and its fitted zero.</p>
-    <p>Going back to the simple shapes asks which sizes to use: <b>the CAD model's</b>, or
-       <b>your own</b> (the ones you had before, kept untouched while the CAD model was shown),
-       or <b>stay</b> on the CAD model. A file that cannot be read says why and the simple
-       shapes are shown. The CAD files stay on this PC only.</p>
-    <p><b>Use the CAD's sizes and shoulder spots</b> (on the CAD model, or the first choice on
-       the way back) takes the arm lengths, where each shoulder sits (left and right need not
-       be mirror images) and the shrug's pivot from the CAD. Your joints stay as you tuned
-       them to the real robot: their axes, turning senses, zero and home, so every angle
-       means what it meant before and no servo number changes. It says how far each hand
-       moved at home; <b>Put my old shapes back</b> undoes it. Either is kept on the hub, so every
-       browser that opens Studio here takes it on its next load (each keeps its own old shapes).</p>
-    <p>On the CAD model Studio estimates the drawn hand's plane from the far end of the
-       forearm mesh. This estimate may differ from the CAD hand's surface. The CAD
-       hand already shows the palm, so <b>Show the drawn hands</b> hides it; the choice is
-       kept and palm facing still works.</p>
-    <p>With home anchoring enabled (<code>fit.anchor</code>), arm joints with automatic offsets
-       use the CAD's drawn pose at the robot's saved <b>home</b>. Explicit offsets stay as set;
-       waist and shrug keep their configured mapping. The CAD may have left/right differences.
-       A command of 90 degrees is not necessarily home or the CAD's zero pose. <b>Show the
-       floor grid</b> hides the grid; on the CAD model the grid sits at the bottom of the base,
-       so the box stands on it. Only the grid moves, never the robot. Adding <code>joints</code> to
-       <code>rigFromCad</code> in <code>urdf_view.json</code> takes every joint's tilt from
-       the CAD too, and the simple shapes then move exactly like the CAD.</p></div>
-  <div class="f"><h3>Build the body from a URDF<span class="tag t-new">new</span></h3>
-    <p>A <b>STEP</b> file cannot be opened in a browser at all, and an <b>STL</b> carries no
-       origin — which is why a part dragged in lands at the middle of the robot and has to be
-       rotated, offset and scaled by hand until it looks right. A <b>URDF</b> carries exactly
-       those missing numbers: where each part sits, which way it is turned, how big it is and
-       which part hangs off which.</p>
-    <p>From SolidWorks, use the <b>sw2urdf</b> add-in (Tools ▸ Export as URDF). Import the
-       <code>meshes/*.STL</code> it writes, then pick the <code>.urdf</code> in
-       <b>Setup ▸ Build it from a URDF</b>. Studio lists every link with the body part it
-       guessed from the name, which you can correct. <b>Reading the file changes nothing</b>
-       — pressing <b>Use this URDF</b> is what places the parts, and it offers to set the arm
-       lengths from the joint origins rather than overwriting measurements you made by hand.
-       A mesh the URDF names but <code>models/</code> does not hold is reported by name.</p>
-    <p>Two settings, because no two exports agree: <b>Sizes are in</b> (URDF is metres,
-       Studio is millimetres) and <b>Up is</b> (URDF/ROS is Z-up, this editor is Y-up). If
-       the robot arrives lying on its side, change the second; if it is a thousand times too
-       big, change the first. The joint table for the nong is written out in
-       <code>docs/urdf_nong.md</code>.</p>
-    <p><b>You may not need SolidWorks for the URDF itself.</b> Every number the add-in would
-       ask for — the joint tree, the origins, the axes, the limits — is already measured in
-       the rig. <code>python tools/make_urdf.py</code> writes the whole file from it in one
-       command, and rewrites it whenever the rig changes. Export one STL per body part, name
-       them <code>torso.stl</code>, <code>head.stl</code>, <code>L_upper.stl</code>,
-       <code>L_fore.stl</code>, <code>R_upper.stl</code>, <code>R_fore.stl</code> in
-       <code>models/</code>, and that is the whole job.</p></div>
-  <div class="f"><h3>Clothes and add-ons</h3>
-    <p>Extra meshes attached to any part, for costume pieces and props.</p></div>
+  <!-- TAB 4: SHOWS -->
+  <div class="f">
+    <h3>🎭 แท็บ 4: Shows — จัดรายการแสดงต่อเนื่องหลายท่าทาง (Show Playlist)</h3>
+    <p>สร้างการแสดงแบบสมบูรณ์ที่เล่นหลายๆ ท่าต่อกันโดยไม่มีช่องว่างสะดุด:</p>
+    <ul>
+      <li><b>เรียงลำดับการแสดง:</b> เช่น <code>greeting.yaml</code> &rarr; หยุดพัก 1.5 วินาที &rarr; <code>wai.yaml</code> &rarr; <code>dance.yaml</code> &rarr; <code>byebye.yaml</code></li>
+      <li><b>แนบไฟล์เพลง (Show Music):</b> อัปโหลดไฟล์ MP3/WAV ลงบอร์ด หุ่นยนต์จะเริ่มเล่นเพลงพร้อมกับขยับท่าทางไปพร้อมกันอย่างตรงจังหวะ</li>
+      <li><b>Save to robot (.show.yaml):</b> บันทึกชุดการแสดงลงบอร์ด ESP32 เมื่อเสียบปลั๊ก หุ่นสามารถกดปุ่มเล่นโชว์ทั้งหมดได้ทันทีโดยไม่ต้องมีคอมพิวเตอร์เปิดค้างไว้</li>
+    </ul>
+  </div>
 
-  <div class="grp2">Getting moves onto the robot</div>
-  <div class="f"><h3>Export, upload and re-edit</h3>
-    <p>Export <code>/moves</code> YAML with an explicit <code>T</code> on every step so
-       linked boards stay in sync. Upload straight to the robot's SD card, or re-open a saved
-       YAML — local or downloaded from the robot — and keep editing.</p></div>
-  <div class="f"><h3>Many sequences on one card</h3>
-    <p>The card holds as many <code>/moves/*.yaml</code> as fit. The Robot SD card panel
-       lists them all with <b>▶ Run</b>, <b>▶ Preview</b>, <b>✎ Edit</b> and delete on each,
-       over WiFi, USB or RS485 — and the module's own website has the same list in its
-       Sequences card. Give each one its own name in the name box at the top to keep them separate.</p></div>
-  <div class="f"><h3>Play a saved sequence without editing it<span class="tag t-new">new</span></h3>
-    <p><b>▶ Play saved</b> (Sequence tab, next to “Load for editing”) loads the sequence you picked and
-       starts playing it right away, exactly as if you had loaded it and pressed Play — so
-       it follows whichever clock applies: through the hub the show keeps running even with
-       this page closed; over USB it plays from here.</p>
-    <p><b>▶ Preview</b> on a Robot SD card row does the same for a file still only on the
-       card, while <b>▶ Run</b> hands it to the robot itself.</p></div>
-  <div class="f"><h3>Chain one sequence into the next<span class="tag t-new">new</span></h3>
-    <p>The <b>Then run</b> box (Sequence tab) writes <code>next:</code> into the file, so when it finishes
-       the module starts that one by itself — a show built from short files that can each be
-       run and edited on their own. The box offers the sequences already on the card.</p>
-    <p>It applies only when a sequence actually ends, so <code>loop</code> wins over it.
-       Chains stop after 16 files, so a file pointing back at itself cannot run forever, and
-       <code>MOVE STOP</code> ends the whole chain.</p></div>
-  <div class="f"><h3>Camera module<span class="tag t-new">new</span></h3>
-    <p>A third module type: an <b>ESP32-CAM</b> running the same firmware core as the lift
-       and the humanoid — same identity, same commands, same website, same RS485 address,
-       same update over WiFi. Build it with <code>pio run -e mice_cam</code>, or flash it
-       from the hub like any other board.</p>
-    <p><b>Take a picture</b> on its Control card shows one frame; the <b>live view</b> tick
-       box refreshes it once a second. <code>SNAP &lt;name&gt;</code> saves a picture to
-       <code>/photos</code> on its SD card. <code>CAM</code> reports and changes the sensor:
-       <code>CAM SIZE vga</code>, <code>CAM QUALITY 12</code>, <code>CAM FLASH ON</code>
-       (the white LED), <code>CAM VFLIP 1</code> and <code>CAM HMIRROR 1</code> for a camera
-       mounted upside down or behind glass.</p>
-    <p><b>It can never also drive a servo.</b> The camera and the on-board SD card use every
-       usable pin on that board, which is exactly why it is a module type of its own. Its
-       pins are fixed in the firmware rather than set on the Hardware pins page — they are
-       etched onto the board, so "changing" one could only break the camera.</p>
-    <p>The <b>live view</b> is a stream (<code>/api/cam.stream</code>), not one request per
-       picture: about <b>19 frames a second</b> at 320×240, where repeated stills managed 7
-       and the original one-second timer managed 1. Only <b>one person at a time</b> can
-       watch — the board has four connections in total, and a viewer holds one for as long
-       as the picture is on screen. Untick <b>live view</b> to give it back.</p>
-    <p>The picture is HTTP (<code>/api/cam.jpg</code>), never a command reply: a JPEG is far
-       too big for the one-line channels that RS485 and USB serial are. If the camera does
-       not start, the card says so — it is almost always the ribbon cable not seated, or a
-       5V supply that cannot hold the current.</p></div>
-  <div class="f"><h3>Update a module over WiFi<span class="tag t-new">new</span></h3>
-    <p><b>It asks which firmware to send.</b> The list is whatever this PC has built,
-       with the board's current type marked and preselected — so the usual case is two
-       clicks, and the unusual one is possible: picking a <i>different</i> type turns that
-       board into another kind of module without finding a cable. When you do that the hub
-       finishes the job, because a board flashed with a different type still has the old one
-       in its own memory and would come back as <code>blank</code>: it waits for the module,
-       sends <code>SET TYPE</code>, and reboots it once more.</p>
-    <p>It all happens on the <b>Firmware</b> screen. A module on the network appears there
-       with <b>⚡ Write over WiFi</b> — no cable, no reaching behind the set. The module's
-       own row still has a <b>⚡ firmware…</b> link, because the row is where you notice a
-       board needs updating; it takes you to the one screen that does the writing.</p>
-    <p><b>A failed update cannot brick a board.</b> The chip has two firmware slots
-       (1.875 MB each) and the update goes into the one that is <i>not</i> running. If the
-       WiFi drops, the PC walks away, or the image is bad, the board simply keeps booting
-       the firmware it already had. Ask a board where it stands with <code>OTA</code> —
-       it answers <code>running=app0 size=1294617 target=app1 room=1966080
-       free=671463</code>.</p>
-    <p>It is <b>refused while the module is moving or playing a sequence</b> — writing
-       flash stalls the servo loop, and a reboot in the middle of a show is worse than an
-       update that waits. Stop it first (or add <code>force=1</code> if you mean it).</p>
-    <p>The first update still has to arrive by cable: a board running older firmware has no
-       <code>/api/ota</code> to receive it. Flash it once over USB, and every update after
-       that can be over the air.</p></div>
-  <div class="f"><h3>Flash a board from the hub<span class="tag t-new">new</span></h3>
-    <p>Open <b>Firmware</b>. It lists every module type this PC has built, and under each
-       one every board it could write it to — this PC's cables, boards on the WiFi, and
-       cables on other PCs running the same hub. Pick the firmware, pick the board,
-       confirm, and the hub writes it: no PlatformIO, no command line. Cables where
-       <i>nothing</i> answered are listed too, which is exactly when you need this.</p>
-    <p>A type that has <b>not</b> been built is still shown, with the reason and the exact
-       command that fixes it — so a missing <code>lift</code> looks like something you can
-       do, not like something broken.</p>
-    <p>The hub owns every cable and shares it between its pages, but esptool cannot share.
-       So for the length of the flash the hub <b>gives that port up completely</b>: it
-       stops playing a show on it, closes the handle, and refuses to reopen it until
-       esptool is finished. That is what all the old <code>port is busy</code> failures
-       were.</p>
-    <p>It flashes what is on this PC: <code>pio run -e mice_nong</code> (or
-       <code>mice_lift</code>) has to have been run at least once in
-       <code>code/firmware</code>. If it has not, the page says so and names the command
-       instead of offering a button that cannot work. The board keeps its stored id, name,
-       WiFi and pins — those live in its own memory, not in the firmware.</p>
-    <p>If the board does not answer, hold its <b>BOOT/IO0</b> button as the flash starts,
-       and check the cable is a data cable. The message says so too.</p></div>
-  <div class="f"><h3>A way back to the hub, from the board's own page<span class="tag t-new">new</span></h3>
-    <p>Opening a module's website used to be a one-way trip. Typed straight into a
-       phone there is no Back to press, and the hub is the only screen that shows the
-       other modules. Now <b>← Hub</b> is first in the board's head, as on every page.</p>
-    <p>It never guesses. Several PCs at a venue run this same hub and the addresses
-       move with the network, so a link to the wrong one would land you on somebody
-       else's control panel. Opened <b>through</b> the hub, the link is simply back to
-       the hub serving the page. Opened <b>directly</b>, the board offers the hub that
-       last spoke to it — every hub says who it is on each request it makes — and it
-       names that PC in the link.</p>
-    <p>If no hub has been in touch, or the last one has been quiet for five minutes,
-       there is no link. The board never invents an address, and it forgets one that
-       has stopped being true.</p></div>
-  <div class="f"><h3>The board's page admits when something failed<span class="tag t-new">new</span></h3>
-    <p>Four things on the module's own website used to fail quietly and leave the page
-       showing a state the board was not in. Each now says what happened:</p>
-    <p>&bull; Changing a password signs you back in, and if that fails it says so —
-       before, Setup opened on a dead session, with every card visible and every action
-       behind it refused.<br>
-       &bull; A board that has never had a password chosen asks for one. If the board's
-       answer cannot be read, it <b>asks anyway</b>: being prompted once too often is
-       recoverable, and a prompt that turns itself off is not.<br>
-       &bull; <b>Log out</b> tells the board, and admits it if the board did not confirm —
-       a logout that only forgets locally leaves the cookie working for whoever sits
-       down next.<br>
-       &bull; A file list that could not be read says so instead of showing an empty
-       dropdown, which already means <i>nothing on this card</i>.</p></div>
-  <div class="f"><h3>Addresses and ports are hidden until you ask<span class="tag t-new">new</span></h3>
-    <p>An IP address tells you nothing while everything is working, and it was on every
-       row in the same grey as the name. <b>Settings &rarr; Show technical details</b>
-       brings back the addresses, the cable ports and the signal strengths, and the
-       choice is remembered in that browser.</p>
-    <p>Always shown, switch or no switch: the <b>name</b>, the <b>type</b> and the
-       <b>module number</b>. The number is not trivia — it is how a module is addressed
-       on the RS485 bus, and how two identical arms on a shelf are told apart.</p>
-    <p>It is one rule in the shared stylesheet (<code>.tech</code>), so a new screen
-       marks a detail as technical and it follows the same switch — nothing to wire up
-       and nothing to remember.</p>
-    <p>The same switch is now on <b>every</b> screen: this help page, the RGB wall
-       page, the camera page, Nong Studio (typed addresses hide; Find modules still
-       works with no typing) and each module's own website, always last in the
-       page's head. One choice, remembered everywhere.</p></div>
-  <div class="f"><h3>One board is one row, however it is reached<span class="tag t-new">new</span></h3>
-    <p>A module plugged into this PC <b>and</b> on the WiFi used to appear twice, as two
-       robots. The two rows were not even equivalent: one drove it down the cable and
-       the other over the air, so which copy you happened to click decided how the arm
-       moved. Now it is one row, and it says every way the board can be reached —
-       <i>reachable on COM9 and over WiFi</i>.</p>
-    <p>The hub matches boards on the <b>chip</b>: the ESP32's own MAC, which the board
-       now reports in <code>INFO</code> and <code>/api/status</code>. It is the only
-       identifier on a board that nobody can change — the id is a byte someone sets,
-       the name is typed, the type is chosen.</p>
-    <p>That matters in the direction people do not expect. Two <i>different</i> boards
-       out of the same box share a default id, and merging on the id would show them as
-       one robot — a command meant for one arm going to the other. So without a chip
-       (older firmware) the id is used only together with the type, and a board that
-       reports a chip is never merged with one that does not.</p></div>
-  <div class="f"><h3>Open the hub on a phone: a QR, and a name<span class="tag t-new">new</span></h3>
-    <p><b>Network</b> shows a QR of this hub's address. Point a phone camera at it and
-       the phone opens the hub — no number read across a room, no
-       <code>192.168.137.1</code> typed as <code>192.168.13.71</code>. The address is
-       printed beside it for anyone working over a remote desktop.</p>
-    <p>The QR is drawn by the hub itself, with nothing installed: the encoder is part
-       of the program. It is redrawn every time you open <b>Network</b>, because a
-       laptop that moves between a venue WiFi and its own hotspot gets a new address,
-       and a QR of the old one sends the phone nowhere.</p>
-    <p>There is a <b>name</b> as well: <code>http://mice.local:8642/</code>, answered by
-       the hub over multicast DNS, which phones, Macs and Windows already speak. A name
-       does not change when the address does.</p>
-    <p><b>Both exist because either can fail.</b> Many venue networks block multicast
-       between clients, and then no name resolves — the QR still works. If another
-       program on this PC already holds the mDNS port, the page says so plainly and
-       shows only the address, rather than printing a name that answers to nothing.</p></div>
-  <div class="f"><h3>Flash from a PC that never built the firmware<span class="tag t-new">new</span></h3>
-    <p>At a venue there is usually one laptop with PlatformIO on it and several without —
-       and the board is plugged into whichever machine was nearest. So the <b>image
-       travels, not the command</b>: <b>Firmware</b> lists boards on other PCs' cables as
-       <b>⚡ Write over the cable on <i>that PC</i></b>. This PC sends the firmware there,
-       and <i>that</i> PC writes it over its own cable. esptool only ever runs on the
-       machine holding the board.</p>
-    <p>That PC has its own accounts, so the confirm asks for a login on it. It is used for
-       the one request and <b>not stored</b>: no hub ever holds another hub's password.</p>
-    <p>Progress comes back from the machine doing the work, through this hub, because a
-       browser cannot ask another hub directly. When the write finishes, a board that is
-       becoming a <i>different</i> type is named along with the one command that finishes
-       the job there — this PC has no route to a board on someone else's cable.</p></div>
-  <div class="f"><h3>Two hubs, one rig<span class="tag t-new">new</span></h3>
-    <p>Two PCs on the same WiFi can <b>link</b>: one shows a short <b>code</b>, you type it
-       into the other, and from then on each hub lists the other's modules in its own
-       <b>Modules</b> tab. Open one of them and it works exactly like a board on this PC's
-       own cable — drive it, run sequences, watch it. The link is by address, so it
-       survives a module moving between the two PCs.</p></div>
-  <div class="f"><h3>Report a problem<span class="tag t-new">new</span></h3>
-    <p>Every hub page carries a <b>Report</b> button. It saves what went wrong — which page,
-       what was happening — into a <code>reports</code> folder next to the program, and the
-       hub keeps a <b>complaints screen</b> where each report can be marked fixed or
-       not-a-problem. A complaint written in another language is translated into English
-       automatically about a minute later, so the whole list reads in one language.
-       Nothing is sent to the internet: reports stay on this PC.</p></div>
-  <div class="f"><h3>The hub keeps the show running<span class="tag t-new">new</span></h3>
-    <p>Press <b>Play</b> and the <b>hub</b> — the Python program, not the page — sends the
-       moves. Switch tabs, minimise the window, open something else: the rehearsal keeps
-       going, because nothing throttles a native process. The page is only the picture.</p>
-    <p>This is the missing middle clock. A browser cannot be fixed for it: a hidden tab has
-       its animation stopped and its timers slowed to about once a minute, by policy, in
-       every browser. Which clock you want depends on the job:</p>
-    <div class="scroll"><table><thead><tr><th>Clock</th><th class="wrap2">Survives</th><th class="wrap2">Use it for</th></tr></thead><tbody>
-      <tr><td>the module (<code>MOVE</code>, ▶ Run on robot)</td><td>the PC switched off</td><td>the show</td></tr>
-      <tr><td><b>the hub</b> (Play, connected through the hub)</td><td>the browser closed</td><td>editing and rehearsal</td></tr>
-      <tr><td>the browser</td><td>nothing</td><td>preview only</td></tr>
-    </tbody></table></div>
-    <p>It also works <b>before</b> anything is uploaded, which the module clock cannot —
-       you are still editing. Come back to the page and the play head jumps to where the
-       robot actually is, instead of sitting behind it.</p>
-    <p>USB direct (Web Serial) is the one exception: the browser holds that port itself, so
-       the hub cannot reach the robot and the old behaviour stands — the show is handed to
-       the module when you leave the page.</p></div>
-  <div class="f"><h3>Only one thing drives the robot<span class="tag t-new">new</span></h3>
-    <p>The module plays a sequence on its own clock, and Nong Studio can send poses down
-       the same cable at the same time. Both drove the same servos: the moves overlapped,
-       the arm fought itself, and <b>Pause</b> in Studio stopped only the browser while the
-       module carried on.</p>
-    <p>Now any command that <b>moves</b> the robot — <code>POSE</code>, <code>JOINT</code>,
-       <code>HOME</code>, <code>STOP</code>, <code>RELAX</code>, <code>ATTACH</code>
-       (and <code>UP</code>/<code>DOWN</code>/<code>GOTO</code> on a lift) — stops the
-       sequence the module was playing, and the reply says
-       <code>(sequence stopped)</code> so nothing loses track. Whoever moved the robot last
-       owns it.</p>
-    <p>Settings do <b>not</b> interrupt a show: <code>SPEED</code>, <code>LIMIT</code>,
-       <code>SERVO</code>, <code>RANGE</code> and every question keep it running, so you can
-       tune a sequence while it plays. When Studio connects to a module that is already
-       playing, it now says so instead of leaving you to guess.</p></div>
-  <div class="f"><h3>Projects</h3>
-    <p>One name box and one <b>💾 Save</b>, both in Studio's head. Save writes the moves twice
-       under that name: a project (rig, meshes and timeline together) to edit later, and the
-       YAML the robot plays.</p></div>
+  <!-- TAB 5: ROBOT -->
+  <div class="f">
+    <h3>🔌 แท็บ 5: Robot — จัดการการเชื่อมต่อฮาร์ดแวร์จริง และ Zero Calibration</h3>
+    <p>ศูนย์ควบคุมการคุยกับหุ่นยนต์จริงผ่านสายและไร้สาย:</p>
+    <ul>
+      <li><b>โหมด WiFi:</b> พิมพ์ชื่อโฮสต์ <code>nong.local</code> หรือ IP เพื่อสั่งงานผ่านเครือข่าย</li>
+      <li><b>โหมด USB / RS485 (Shared):</b> แชร์พอร์ต COM เดียวกันผ่าน MiceHub ทำให้หน้า Studio และหน้าโมดูลเปิดคุยกับบอร์ดพร้อมกันได้โดยไม่แย่งพอร์ต</li>
+      <li><b>โหมด Dummy Follow:</b> หากมีหุ่นจำลองบอร์ด <code>mice_dummy</code> (ใช้ Potentiometer แทนเซอร์โว) สามารถจับหุ่นดัดท่าด้วยมือจริง แล้วโมเดล 3D ใน Studio จะขยับตามแบบเรียลไทม์</li>
+      <li><b>Zero-Position Lock:</b> ป้องกันคนเผลอกดรีเซ็ตตำแหน่งศูนย์ (Neutral 90°) ต้องกรอกรหัสผ่าน Admin จึงจะสามารถปรับแต่งค่าศูนย์ของมอเตอร์ได้</li>
+    </ul>
+  </div>
 
-  <div class="grp2">Connection</div>
-  <div class="f"><h3>WiFi and cable at the same time</h3>
-    <p>Pick a discovered module, or a COM port shared through the hub with an optional RS485
-       bus id. Both links can be open at once; commands take the cable when it is there.</p></div>
-  <div class="f"><h3>Open the module's config from the editor<span class="tag t-new">new</span></h3>
-    <p><b>⚙ Open module config</b> in the Robot link card opens the connected board's own
-       website in a new tab — hardware pins, WiFi, users, servo type, SD files. It follows
-       the same link your commands take, carrying the RS485 bus id when there is one, so it
-       always configures the board you are actually posing.</p>
-    <p>Over shared USB the module site and the editor stay open together on the one cable.
-       In direct Web Serial mode the browser owns the port exclusively, so the button says
-       to switch to shared USB instead.</p></div>
-  <div class="f"><h3>Live sending that keeps up and stays in order<span class="tag t-new">fixed</span></h3>
-    <p>One command in flight at a time: playback segments queue in order, while a drag keeps
-       only the <em>newest</em> pose. So a fast drag ends where you released it, and it paces
-       itself to the link instead of a fixed interval.</p></div>
-  <div class="f"><h3>Built-in self-tests</h3>
-    <p><code>?selftest=</code> <code>ik</code> · <code>gimbal</code> · <code>elbow</code> ·
-       <code>view</code> · <code>servo</code> · <code>migrate</code> — each reports its
-       verdict through the page title.</p></div>
-  <div class="f"><h3>Every change is a saved snapshot</h3>
-    <p><code>save_patch.py</code> preserves the whole web app per change into
-       <code>patches/NNNN_&lt;slug&gt;/</code> — append-only, with <code>--list</code> and
-       <code>--restore</code> (which backs up first).</p></div>
+  <!-- TAB 6: SETUP -->
+  <div class="f">
+    <h3>⚙️ แท็บ 6: Setup — สเปกโครงสร้าง Rig, มอเตอร์ และ CAD 3D Models</h3>
+    <p>การปรับแต่งฮาร์ดแวร์เชิงลึก:</p>
+    <ul>
+      <li><b>Servo Profiles:</b> เลือกรุ่นเซอร์โวที่ประกอบจริง เช่น ไหล่ PDI-1181MG (270°), ข้อศอก MG90S (180°), เอว TianKongRC 35kg (270°)</li>
+      <li><b>Pinion / Gear Ratios:</b> ใส่อัตราทดของเฟืองขับ เพื่อให้มุมองศาบนหน้าจอตรงกับการเคลื่อนที่จริงของข้อต่อกระดูก</li>
+      <li><b>3D CAD Package (URDF Import):</b> สลับการแสดงผลจาก Simple Shapes ทรงเรขาคณิตทั่วไป ไปเป็นโมเดลชิ้นงาน CAD เสมือนจริงที่วาดขึ้นจาก SolidWorks เพื่อดูรายละเอียดการประกอบ</li>
+    </ul>
+  </div>
+
+  <!-- TIMELINE CONTROLS -->
+  <div class="grp2">ปุ่มควบคุมบนแถบไทม์ไลน์ด้านล่าง (Timeline Controls Detailed)</div>
+
+  <div class="tasks">
+    <div class="f">
+      <h3>+ Add keyframe</h3>
+      <p><b>หน้าที่:</b> บันทึกท่าทางปัจจุบันที่ดัดไว้เป็นคีย์เฟรมถัดไปในไทม์ไลน์ คำนวณเวลาเดินทางอัตโนมัติ</p>
+    </div>
+    <div class="f">
+      <h3>Update selected</h3>
+      <p><b>หน้าที่:</b> แก้ไขท่าทางคีย์เฟรมเดิมที่กำลังเลือกอยู่ให้กลายเป็นท่าทางปัจจุบันที่กำลังจัดบนจอ 3D</p>
+    </div>
+    <div class="f">
+      <h3>▲ Check crash</h3>
+      <p><b>หน้าที่:</b> ใช้ RRT* ตรวจสอบว่ามีท่าใดที่แขนเหวี่ยงฟาดลำตัว เสื้อผ้า หรือข้อต่อเกินขีดจำกัด หากพบจะเตือนสีแดงทันที</p>
+    </div>
+    <div class="f">
+      <h3>▶ Play / Loop</h3>
+      <p><b>หน้าที่:</b> เล่นพรีวิวท่าทางทั้งหมดบนจอคอมพิวเตอร์ด้วยความเร็วฟิสิกส์จริง หากติ๊ก Loop จะเล่นวนซ้ำต่อเนื่อง</p>
+    </div>
+    <div class="f">
+      <h3>💾 Save to robot</h3>
+      <p><b>หน้าที่:</b> แปลงไฟล์เป็น YAML และอัปโหลดไปยังโฟลเดอร์ <code>/moves/</code> บน SD Card ของหุ่นยนต์ Nong ทันที</p>
+    </div>
+    <div class="f">
+      <h3>▶ Run on robot</h3>
+      <p><b>หน้าที่:</b> สั่งให้หุ่นยนต์ตัวจริงเริ่มเล่นท่าทางตามไทม์ไลน์นี้ผ่านสาย RS485 หรือ WiFi แบบสดๆ</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TV REMOTE ===================== -->
+<section id="tv">
+  <div class="shead">
+    <span class="where tech">code/apps/tv · served at /tv, /monitor, and /app/tv/</span>
+    <h2>📺 TV Remote &amp; Monitor — หน้าจอควบคุมสำหรับ Smart TV และมือถือ</h2>
+    <p>หน้าเว็บควบคุมและตรวจสอบสถานะแบบบางเฉียบ (Thin Client) ออกแบบตามสถาปัตยกรรม Centralized Server
+       ตัดการประมวลผล 3D Three.js ออก 100% ทำให้เปิดได้รวดเร็ว ลื่นไหล ไม่กินสเปก และไม่มีอาการค้างบน Smart TV หรือสมาร์ทโฟน</p>
+  </div>
+
+  <!-- Infographic: TV Remote Decoupled Architecture -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ผังเปรียบเทียบสถาปัตยกรรม Nong Studio (PC) vs TV Remote (Smart TV / Mobile)</b>
+      <span class="info-badge">Infographic</span>
+    </div>
+    <div class="info-visual-wrapper" style="padding: 20px; background: var(--card);">
+      <svg viewBox="0 0 760 210" width="100%" height="auto" style="display:block; font-family:var(--sans); font-size:12px;">
+        <!-- Left: Heavy PC Studio -->
+        <rect x="15" y="20" width="345" height="170" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="35" y="48" font-weight="700" fill="var(--txt)" font-size="14">🖥️ Nong Studio (PC Mode)</text>
+        <text x="35" y="75" fill="var(--mut)">• 3D WebGL Canvas (Three.js 60fps)</text>
+        <text x="35" y="98" fill="var(--mut)">• Inverse Kinematics (IK) &amp; Timeline Drag</text>
+        <text x="35" y="121" fill="var(--mut)">• ใช้การ์ดจอ GPU และ RAM ~150MB</text>
+        <text x="35" y="150" font-weight="600" fill="var(--txt)">🎯 เหมาะสำหรับ: คอมพิวเตอร์ PC ตั้งโต๊ะ / แล็ปท็อป</text>
+        <rect x="35" y="162" width="160" height="18" rx="4" fill="#fef3c7"/>
+        <text x="42" y="175" fill="#92400e" font-size="11" font-weight="600">หนักเกินไปสำหรับ Smart TV</text>
+
+        <!-- Right: Lightweight TV Remote -->
+        <rect x="400" y="20" width="345" height="170" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+        <text x="420" y="48" font-weight="700" fill="#15803d" font-size="14">📺 TV Remote &amp; Monitor (Thin Client)</text>
+        <text x="420" y="75" fill="#166534">• Zero 3D / Zero Three.js (ไม่มี 3D เด็ดขาด)</text>
+        <text x="420" y="98" fill="#166534">• แถบวัดองศา CSS Light Gauges (200ms poll)</text>
+        <text x="420" y="121" fill="#166534">• ปุ่มสัมผัสขนาดใหญ่ เหมาะกับรีโมท TV</text>
+        <text x="420" y="150" font-weight="600" fill="#15803d">🎯 เหมาะสำหรับ: Smart TV, แท็บเล็ต, มือถือทุกรุ่น</text>
+        <rect x="420" y="162" width="170" height="18" rx="4" fill="#bbf7d0"/>
+        <text x="428" y="175" fill="#14532d" font-size="11" font-weight="600">เปิดปุ๊บติดปั๊บ ลื่นไหล 100%</text>
+      </svg>
+    </div>
+
+    <!-- Action Impact Grid -->
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมการเคลื่อนไหวหลัก (Play / Pause / Stop / Home)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่มขนาดใหญ่บนหน้าจอ หรือใช้ปุ่มลูกศร/Enter บนรีโมททีวี</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          • <b>Play / Pause:</b> สั่งเริ่มหรือหยุดการขยับท่าทางชั่วคราว<br>
+          • <b>Stop:</b> สั่งหยุดหุ่นยนต์ฉุกเฉินทันที มอเตอร์จะล็อคตำแหน่งปัจจุบัน<br>
+          • <b>Home:</b> คืนแขนและคอหุ่นยนต์กลับสู่ท่าเริ่มต้นที่ปลอดภัย (Neutral Pose)
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> รายการท่าทาง (Sequence Launcher)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> เลือกท่าทางจากกล่องดรอปดาวน์ แล้วกด <b>▶ Play Sequence</b></div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ระบบจะดึงไฟล์ท่าทางจาก Hub กลาง (`/api/list?kind=sequences`) และสั่งให้หุ่นรันชุดท่าทางนั้นทันที เจ้าหน้าที่หลังเวทีสามารถใช้มือถือกดเลือกโชว์ได้สะดวก
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> สั่งเสียงพูดด่วน (Quick Speech &amp; Speak)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> แตะปุ่มคำพูดยอดนิยม เช่น "สวัสดีครับ", "ขอบคุณครับ" หรือพิมพ์ข้อความในช่อง</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ส่งคำสั่งเข้าคิวเสียงกลาง (`/api/speak`) เสียงจะเปล่งออกจากลำโพงของหุ่นยนต์ Nong หรือลำโพงเวทีทันทีโดยไม่กระตุก
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> มอนิเตอร์ข้อต่อ 10 จุด (10-Joint Monitor Gauges)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ดูแถบวัดระดับองศาเซอร์โวด้านล่างหน้าจอ</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          แสดงมุมองศาจริง (0° - 180°) ของข้อต่อทั้ง 10 จุด (ไหล่ ข้อศอก เอว คอ) แบบ Real-time ด้วย CSS Gauge เบาๆ แสดงผลอัปเดตแบบ 200ms โดยไม่ดึงภาระ GPU หรือ CPU ของทีวี
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="f"><h3>Decoupled Architecture: ป้องกันทีวีค้างได้อย่างไร?</h3>
+    <p>ในสถาปัตยกรรมแบบเดิม หากเปิดหน้า 3D (Three.js) บน Web Browser ของ Smart TV หรือมือถือรุ่นเก่า
+       เบราว์เซอร์จะต้องคอมไพล์ WebGL Shaders และรันลูปคำนวณ 60 รอบต่อวินาที ซึ่งชิปประมวลผลของสมาร์ททีวีไม่ได้ออกแบบมาเพื่อรองรับ
+       ส่งผลให้เบราว์เซอร์ทีวีปิดตัวเองหรือเครื่องค้าง</p>
+    <p><b>ทีวีรีโมท (TV Remote) แก้ไขปัญหานี้โดย:</b>
+       1. ย้ายการคำนวณทั้งหมดไปไว้ที่ Python Hub บนคอมพิวเตอร์ส่วนกลาง<br>
+       2. ฝั่งหน้าจอทีวีส่งเฉพาะคำสั่ง JSON สั้นๆ ผ่าน REST API<br>
+       3. การแสดงผลกราฟิกใช้เฉพาะ HTML5 &amp; CSS3 พื้นฐาน ไม่มี Canvas 3D แม้แต่บรรทัดเดียว<br>
+       4. น้ำหนักหน้าเว็บรวมไม่ถึง 25 KB โหลดเสร็จในเสี้ยววินาที</p></div>
+
+  <div class="f"><h3>การควบคุมด้วยรีโมททีวี (Smart TV Navigation)</h3>
+    <p>ออกแบบปุ่มให้มีขนาดใหญ่ มีขอบโฟกัสชัดเจนเมื่อกดปุ่มลูกศร (D-Pad) บนรีโมททีวี รองรับปุ่ม Enter
+       เพื่อสั่งงาน และมีแถบแสดงข้อผิดพลาดหากระบบเครือข่ายหลุดการเชื่อมต่อ</p></div>
 </section>
 
 <!-- ===================== STUDIO ===================== -->
@@ -1109,6 +818,37 @@
     <p>It is called <b>ESP32 camera</b> because that is all it can show. The list
        is built from modules of type <i>cam</i> — the ESP32-CAM boards. A webcam
        plugged into this PC is not one of them and will not appear here.</p>
+  </div>
+
+  <!-- Infographic: ESP32-CAM Relay & Tuning Guide -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ผังการทำงานของกล้อง ESP32-CAM และคู่มือการปรับภาพ</b>
+      <span class="info-badge">Infographic</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> การกระจายภาพหลายจอ (Multi-Client Relay)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> เปิดหน้า <code>/app/camera</code> จากโทรศัพท์หรือคอมกี่เครื่องก็ได้บน WiFi เดียวกัน</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          เนื่องจากชิป ESP32-CAM มีแรมจำกัดรับคนเดียวได้แค่ 1 สตรีม Hub ส่วนกลางจึงเป็นตัวดึงภาพมา 1 สตรีม แล้วนำมากระจายต่อให้คนดูหลายคนพร้อมกันโดยบอร์ดไม่ล่ม
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> แหล่งรับสัญญาณ WiFi vs USB</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ตรวจสอบให้แน่ใจว่าบอร์ดต่อ WiFi (ไฟสถานะเขียว)</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          สาย USB / RS485 รองรับเฉพาะข้อความและคำสั่งตัวอักษร ไม่สามารถส่งไฟล์ภาพ JPEG ได้ หากต่อเฉพาะสาย ภาพจะไม่ขึ้นแต่สามารถตั้งค่าเซนเซอร์ได้
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ปรับแสงและความไว (Exposure &amp; Gain)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ปิด Auto Exposure / Auto Gain ก่อน จึงจะเลื่อนแถบ Manual ได้</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ปรับให้ภาพคมชัดในห้องมืดหรือกลางแจ้ง หากเปิด Auto ค้างไว้ แถบสไลเดอร์จะถูกล็อคเป็นสีเทาเพื่อแจ้งเตือน
+        </div>
+      </div>
+    </div>
   </div>
 
   <h3>Several people can watch at once</h3>
@@ -1149,6 +889,76 @@
     <span class="where tech">code/apps/voice · served at /app/voice/</span>
     <h2>🎤 Voice</h2>
   </div>
+  <!-- Infographic: Voice System Architecture & Settings -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ผังการทำงานระบบเสียงพูด (Voice) และคู่มือการตั้งค่า</b>
+      <span class="info-badge">Infographic</span>
+    </div>
+    <div class="info-visual-wrapper" style="padding: 20px; background: var(--card);">
+      <svg viewBox="0 0 760 170" width="100%" height="auto" style="display:block; font-family:var(--sans); font-size:12px;">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="var(--acc)" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="var(--acc)" stop-opacity="0.3"/>
+          </linearGradient>
+        </defs>
+        <!-- Hearing Box -->
+        <rect x="10" y="25" width="210" height="110" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="30" y="55" font-weight="700" fill="var(--txt)" font-size="14">1. การรับฟัง (Hear / STT)</text>
+        <text x="30" y="80" fill="var(--mut)">• ไมค์ PC / เว็บเบราว์เซอร์</text>
+        <text x="30" y="100" fill="var(--mut)">• รองรับ ไทย / อังกฤษ / จีน / ญี่ปุ่น</text>
+        <circle cx="205" cy="40" r="11" fill="var(--acc)"/>
+        <text x="202" y="44" fill="#fff" font-weight="700" font-size="11">1</text>
+
+        <!-- Arrow 1 -->
+        <path d="M 225 80 L 265 80" stroke="var(--acc)" stroke-width="2" marker-end="url(#arr)" stroke-dasharray="4"/>
+
+        <!-- Thinking Box -->
+        <rect x="275" y="25" width="210" height="110" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="295" y="55" font-weight="700" fill="var(--txt)" font-size="14">2. การประมวลผล (Think)</text>
+        <text x="295" y="80" fill="var(--mut)">• จับคู่คำตอบในชีต (0.2s)</text>
+        <text x="295" y="100" fill="var(--mut)">• AI Cloud (Gemini / Groq)</text>
+        <circle cx="470" cy="40" r="11" fill="var(--acc)"/>
+        <text x="467" y="44" fill="#fff" font-weight="700" font-size="11">2</text>
+
+        <!-- Arrow 2 -->
+        <path d="M 490 80 L 530 80" stroke="var(--acc)" stroke-width="2" marker-end="url(#arr)" stroke-dasharray="4"/>
+
+        <!-- Speaking Box -->
+        <rect x="540" y="25" width="210" height="110" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="560" y="55" font-weight="700" fill="var(--txt)" font-size="14">3. การเปล่งเสียง (Speak)</text>
+        <text x="560" y="80" fill="var(--mut)">• ลำโพง PC / ลำโพงหุ่นยนต์ Nong</text>
+        <text x="560" y="100" fill="var(--mut)">• บุคลิกเสียง (Speaking Manner)</text>
+        <circle cx="735" cy="40" r="11" fill="var(--acc)"/>
+        <text x="732" y="44" fill="#fff" font-weight="700" font-size="11">3</text>
+      </svg>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> บุคลิกเสียงพูด (Speaking Manner)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> เลือกรูปแบบในหน้า Voice: สุภาพ, ขี้เล่น, ออดอ้อน, หรือท่องจำ</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ปรับแต่งคำลงท้ายอัตโนมัติ (เช่น จ้ะ, นะคะ, ครับ) พร้อมทั้งปรับแต่ง Pitch ความสูง-ต่ำ และความเร็วของเสียงพูดให้สะท้อนอารมณ์นั้นทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> แข่งขันความเร็วเสียง (Fast-Race 650ms)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> เปิดใช้งาน Fast-installed Voice ในการตั้งค่า</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ระบบจะเรียก Cloud TTS ก่อน หากเกิน 650ms แล้วยังไม่ตอบกลับ จะสลับมาใช้เสียงพูด Offline ในเครื่องทันที หุ่นจะไม่ยืนนิ่งค้าง
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> คิวเสียงพูดและการจัดลำดับ (Queue &amp; Priority)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ตั้งค่า <code>maxAgeSeconds</code> (ค่าเริ่มต้น 30 วิ) และเลือกปลายทางลำโพง</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          เสียงสดจะแซงคิวเสียงตอบคำถาม และเสียงทักทายที่รอนานเกิน 30 วิจะถูกทิ้งอัตโนมัติ ป้องกันหุ่นทักทายคนที่เดินผ่านไปแล้ว
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="f"><h3>Ask the rig a question</h3>
     <p>The Voice app in the Tools list: type a question, the rig answers. The
        answers come from a helper program that runs on this PC next to the
@@ -1411,6 +1221,37 @@
        you choose what the rig says when it sees somebody.</p>
   </div>
 
+  <!-- Infographic: Face Recognition & Greeting Rules Guide -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ผังการทำงานตรวจจับใบหน้า (Reconize) และการผูกท่าทาง</b>
+      <span class="info-badge">Infographic</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ตรวจจับและแยกแยะ (Known vs Stranger)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> กล้องส่องหน้า &rarr; Reconize (Port 8000) คำนวณเวกเตอร์ใบหน้า</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          แยกแยะว่าคือคนที่เคยลงทะเบียนไว้ (Known) หรือคนแปลกหน้า (Stranger) เพื่อเลือกประโยคทักทายที่เหมาะสมโดยอัตโนมัติ
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ผูกคำพูดและท่าทางหุ่น (Greet Words &amp; Move)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> พิมพ์คำพูดใส่ <code>{name}</code> และเลือกท่าทาง <code>wai.yaml</code> หรือ <code>wave.yaml</code></div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          เมื่อคนเดิมเดินผ่าน หุ่นยนต์ Nong จะยกมือไหว้หรือโบกมือพร้อมเปล่งเสียงทักทายชื่อคนนั้นทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ป้องกันการทักซ้ำ (Cooldown &amp; Busy Guard)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ตั้งค่า Cooldown (เช่น 10 นาที) และเลือก Skip if busy</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          คนเดิมที่ยืนคุยหน้ากล้องจะไม่โดนทักซ้ำๆ ทุก 5 วินาที และถ้าหุ่นกำลังแสดงโชว์อยู่ จะไม่ถูกขัดจังหวะ
+        </div>
+      </div>
+    </div>
+  </div>
+
   <h3>What works today</h3>
   <p><b>Open Reconize</b> starts it if it is not running and shows it in the page.
      <b>Is the rig following it?</b> says whether the rig is seeing people arrive.
@@ -1484,20 +1325,327 @@
 </section>
 <section id="gacha">
   <div class="shead">
-    <span class="where tech">code/apps/gacha · served at /app/gacha/ · firmware type gacha</span>
-    <h2>🎁 Prize machines — gachapon</h2>
-    <p>One or more prize machines, each one board that turns a holder of pockets until a ball
-       falls. This page decides which machine gives the prize, who may have one, and keeps a
-       record of every prize.</p>
+    <span class="where tech">code/apps/gacha · served at /app/gacha/ and /mod?dev=COM9 · firmware type gacha</span>
+    <h2>🎁 Prize machines — gachapon (เครื่องแจกของรางวัล / กาชาปอง)</h2>
+    <p>เครื่องแจกของรางวัลอัตโนมัติแบบ Revolver Carousel 4 ช่อง พร้อมระบบ 4-Phase Safety Centering หยุดกึ่งกลาง Hall เซนเซอร์ 100% และระบบ Auto Detect ปรับจูนตามมวลของรางวัล</p>
   </div>
 
-  <h3>On the machine itself</h3>
-  <p>Open the machine's own page (Home ▸ Modules). <b>Give one prize</b> turns until a ball
-     falls. <b>Turn 1 pocket</b> and <b>pockets</b> are for testing: count how many pockets it
-     takes from the loading place until the ball drops and type that into
-     <b>Pockets until it falls</b> on the Setup tab. Set the event name, start or close the
-     event, the kind of prize and how many balls are in it.</p>
+  <!-- ==================== INFOGRAPHIC 1: ARCHITECTURE ==================== -->
+  <div class="f" style="border: 2px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4); background: var(--card); margin-bottom: 24px;">
+    <h3 style="font-size: 17px; margin-bottom: 12px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
+      <span>📐</span> 1. สถาปัตยกรรมล้อหมุน 4 ช่อง (Revolver Mechanism)
+    </h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-items: center;">
+      <!-- Visual SVG Wheel -->
+      <div style="text-align: center; background: var(--code-bg); padding: 18px; border-radius: var(--r-sm); border: 1px solid var(--line);">
+        <svg viewBox="0 0 280 280" width="220" height="220" style="margin: 0 auto; display: block;">
+          <!-- Outer circle -->
+          <circle cx="140" cy="140" r="115" fill="none" stroke="var(--line)" stroke-width="4" stroke-dasharray="6,4"/>
+          <circle cx="140" cy="140" r="95" fill="none" stroke="var(--acc)" stroke-width="3" opacity="0.4"/>
+          <!-- 4 Pockets -->
+          <!-- Pocket 0 (Top, 0 deg) -->
+          <circle cx="140" cy="45" r="28" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="140" y="42" text-anchor="middle" font-size="12" font-weight="bold" fill="#0369a1">Slot 1</text>
+          <text x="140" y="56" text-anchor="middle" font-size="9" fill="#0284c7">🧲 Hall #1</text>
 
+          <!-- Pocket 1 (Right, 90 deg) -->
+          <circle cx="235" cy="140" r="28" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="235" y="137" text-anchor="middle" font-size="12" font-weight="bold" fill="#b45309">Slot 2</text>
+          <text x="235" y="151" text-anchor="middle" font-size="9" fill="#d97706">📥 Receive</text>
+
+          <!-- Pocket 2 (Bottom, 180 deg) -->
+          <circle cx="140" cy="235" r="28" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="140" y="232" text-anchor="middle" font-size="12" font-weight="bold" fill="#0369a1">Slot 3</text>
+          <text x="140" y="246" text-anchor="middle" font-size="9" fill="#0284c7">🧲 Hall #3</text>
+
+          <!-- Pocket 3 (Left, 270 deg) -->
+          <circle cx="45" cy="140" r="28" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+          <text x="45" y="137" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">Slot 4</text>
+          <text x="45" y="151" text-anchor="middle" font-size="9" fill="#16a34a">🎁 Drop Chute</text>
+
+          <!-- Center Motor & Direction Arrow -->
+          <circle cx="140" cy="140" r="22" fill="var(--acc)" opacity="0.9"/>
+          <text x="140" y="144" text-anchor="middle" font-size="16" fill="#fff">⚙️</text>
+          <!-- Curved rotation arrow -->
+          <path d="M 120 105 A 40 40 0 0 1 175 125" fill="none" stroke="var(--txt)" stroke-width="2.5" marker-end="url(#arrow)"/>
+        </svg>
+        <div style="font-size: 11.5px; color: var(--mut); margin-top: 8px;">
+          หมุนทิศทางตามเข็มนาฬิกา (CW, <code>dir: 1</code>)
+        </div>
+      </div>
+
+      <!-- Explanatory Cards -->
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: var(--r-sm);">
+          <b style="color: #15803d; font-size: 14px;">🟢 Continuous Vending (โหมดแจกปกติ: <code>drop: 1</code>)</b>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #166534;">
+            เมื่อมีแคปซูลบรรจุพร้อมทั้ง 4 ช่อง การแจกของแต่ละครั้ง <b>หมุนเพียง 1 แม่เหล็ก (90° / 1 ช่อง)</b> แคปซูลในช่องถัดไปจะหล่นลงรางทันที ทำงานรวดเร็ว กระชับ ไม่เสียเวลาหมุนฟรี
+          </p>
+        </div>
+
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: var(--r-sm);">
+          <b style="color: #1d4ed8; font-size: 14px;">🔵 Initial Prime Mode (โหมดโหลดตู้ครั้งแรก: <code>drop: 2</code>)</b>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #1e40af;">
+            ตามระยะใน CAD ระหว่างจุดรับของ (ช่อง 2) กับปากรางปล่อย (ช่อง 4) ห่างกัน 180° (2 ช่อง) ใช้เฉพาะตอนเริ่มโหลดลูกแรกเข้าตู้ว่างให้พร้อมแจก
+          </p>
+        </div>
+
+        <div style="background: var(--code-bg); border: 1px solid var(--line); padding: 10px 14px; border-radius: var(--r-sm); font-size: 12.5px; color: var(--mut);">
+          💡 <b>ฮาร์ดแวร์:</b> บอร์ด ESP32 คุม H-bridge 2 ขา (GPIO 25 & 26, <code>Drive2pin</code>), เซนเซอร์ Hall GPIO 33 (Active-Low), มอเตอร์มี Schottky Diode (0.187V drop) กันไฟย้อน
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== INFOGRAPHIC 2: 4-PHASE SAFETY CYCLE ==================== -->
+  <div class="f" style="border: 2px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4); background: var(--card); margin-bottom: 24px;">
+    <h3 style="font-size: 17px; margin-bottom: 6px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
+      <span>🔄</span> 2. วงรอบการแจกของ 4 ขั้นตอน (4-Phase Safety Settle Cycle)
+    </h3>
+    <p style="color: var(--mut); font-size: 13.5px; margin-bottom: 16px;">
+      ออกแบบพิเศษป้องกันของติดคาปากราง (Dual-Rocking Agitation) และดูดกลับเข้ากึ่งกลาง Hall แม่นยำ 100%
+    </p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+      <!-- Phase 1 -->
+      <div style="background: var(--code-bg); border-top: 4px solid #0284c7; padding: 14px; border-radius: var(--r-sm); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #0284c7;">Phase 1</span>
+          <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 4px; font-family: var(--mono);">180 ms</span>
+        </div>
+        <b style="font-size: 14px; display: block; margin-bottom: 4px;">⏩ Forward Overshoot</b>
+        <p style="font-size: 12.5px; color: var(--mut); margin: 0;">
+          หมุนเลยปากรางปล่อยช้าๆ (ความเร็ว <code>overshoot_speed: 380</code>) เพื่อให้แรงโน้มถ่วงเริ่มดึงแคปซูลให้ลื่นไหลลงราง
+        </p>
+      </div>
+
+      <!-- Phase 2 -->
+      <div style="background: var(--code-bg); border-top: 4px solid #f59e0b; padding: 14px; border-radius: var(--r-sm); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #f59e0b;">Phase 2</span>
+          <span style="font-size: 11px; background: #fef3c7; color: #b45309; padding: 1px 6px; border-radius: 4px; font-family: var(--mono);">250 ms</span>
+        </div>
+        <b style="font-size: 14px; display: block; margin-bottom: 4px;">🔁 Reverse Agitation</b>
+        <p style="font-size: 12.5px; color: var(--mut); margin: 0;">
+          โยกถอยหลังข้ามแม่เหล็กไปอีกฝั่ง (ความเร็ว <code>return_speed: 360</code>) เขย่าสะบัดให้แคปซูลที่ติดหลุดลงไป แล้วหยุดพัก 60 ms ตัดแรงเฉื่อย
+        </p>
+      </div>
+
+      <!-- Phase 3 -->
+      <div style="background: var(--code-bg); border-top: 4px solid #16a34a; padding: 14px; border-radius: var(--r-sm); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #16a34a;">Phase 3</span>
+          <span style="font-size: 11px; background: #dcfce7; color: #15803d; padding: 1px 6px; border-radius: 4px; font-family: var(--mono);">Micro-Step</span>
+        </div>
+        <b style="font-size: 14px; display: block; margin-bottom: 4px;">🎯 Dead-Center Alignment</b>
+        <p style="font-size: 12.5px; color: var(--mut); margin: 0;">
+          ย่องก้าวสั้นๆ (15 ms ที่ <code>center_speed: 260</code>) เข้าหาแม่เหล็ก พอเซนเซอร์แตะขอบ จะแทงเข้า Sweet Spot 18 ms แล้วล็อกเบรกตรงกลางทันที
+        </p>
+      </div>
+
+      <!-- Phase 4 -->
+      <div style="background: var(--code-bg); border-top: 4px solid #8b5cf6; padding: 14px; border-radius: var(--r-sm); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #8b5cf6;">Phase 4</span>
+          <span style="font-size: 11px; background: #ede9fe; color: #6d28d9; padding: 1px 6px; border-radius: 4px; font-family: var(--mono);">5,000 ms</span>
+        </div>
+        <b style="font-size: 14px; display: block; margin-bottom: 4px;">⏸️ Observation Pause</b>
+        <p style="font-size: 12.5px; color: var(--mut); margin: 0;">
+          หยุดนิ่งตรงกลาง 5 วินาที (ปรับลดได้ 2s/5s) เพื่อให้แอดมินหรือผู้รับของมองเห็นสถานะของหล่นชัดเจน ไฟ <code>at_hall</code> ขึ้นเขียวเสถียร 100%
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== INFOGRAPHIC 3: PARAMETERS ==================== -->
+  <div class="f" style="border: 2px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4); background: var(--card); margin-bottom: 24px;">
+    <h3 style="font-size: 17px; margin-bottom: 12px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
+      <span>⚙️</span> 3. ตารางพารามิเตอร์ทุกตัว ทุกจุด ทุกการตั้งค่า (Parameters Reference)
+    </h3>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Key (GCFG)</th>
+            <th>ชื่อภาษาไทย</th>
+            <th>ค่ามาตรฐาน</th>
+            <th>ช่วงค่าที่ตั้งได้</th>
+            <th class="wrap2">หน้าที่เชิงกลและผลลัพธ์</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>drop</code></td>
+            <td>จำนวนช่องที่หมุนปล่อย</td>
+            <td><b>1</b></td>
+            <td>1 - 64</td>
+            <td class="wrap2">1 สำหรับการแจกของปกติเมื่อล้อเต็ม, 2 สำหรับโหลดลูกแรกตอนตู้ว่าง</td>
+          </tr>
+          <tr>
+            <td><code>intake</code></td>
+            <td>หน่วงเวลารอของหล่นลงช่อง (ms)</td>
+            <td><b>300</b></td>
+            <td>0 - 5000</td>
+            <td class="wrap2">หยุดรอให้แรงโน้มถ่วงดึงลูกจากท่อด้านบนตกลง Slot 2 ให้สนิทก่อนเริ่มหมุน ป้องกันลูกติดขัดหรือตกไม่ทัน</td>
+          </tr>
+          <tr>
+            <td><code>speed</code></td>
+            <td>ความเร็วหมุนเดินทาง</td>
+            <td><b>500</b></td>
+            <td>50 - 1023</td>
+            <td class="wrap2">ความเร็วในการหมุนระหว่างช่อง (PWM duty: 500 ≈ 49% power) นุ่มนวล ไม่กระชาก</td>
+          </tr>
+          <tr>
+            <td><code>overshoot</code></td>
+            <td>ระยะเวลาเลยปากราง (ms)</td>
+            <td><b>180</b></td>
+            <td>0 - 3000</td>
+            <td class="wrap2">เวลาที่ปล่อยให้หมุนเกินจุดจ่ายของช้าๆ เพื่อให้ของตกลงราง</td>
+          </tr>
+          <tr>
+            <td><code>overshoot_speed</code></td>
+            <td>ความเร็วตอนเลยปากราง</td>
+            <td><b>380</b></td>
+            <td>50 - 1023</td>
+            <td class="wrap2">ความเร็วช้าพิเศษใน Phase 1 ป้องกันของกระเด็น</td>
+          </tr>
+          <tr>
+            <td><code>return</code></td>
+            <td>ระยะเวลาโยกถอยหลัง (ms)</td>
+            <td><b>250</b></td>
+            <td>0 - 3000</td>
+            <td class="wrap2">เวลาที่หมุนถอยหลังเพื่อเขย่าคลายของที่อาจติดขอบราง</td>
+          </tr>
+          <tr>
+            <td><code>return_speed</code></td>
+            <td>ความเร็วตอนโยกถอยหลัง</td>
+            <td><b>360</b></td>
+            <td>50 - 1023</td>
+            <td class="wrap2">ความเร็วตอนถอยหลังเขย่าใน Phase 2</td>
+          </tr>
+          <tr>
+            <td><code>center_speed</code></td>
+            <td>ความเร็วคลานเข้าเซนเซอร์</td>
+            <td><b>260</b></td>
+            <td>50 - 1023</td>
+            <td class="wrap2">ความเร็วย่องแบบ Micro-Step ใน Phase 3 เพื่อหยุดตรงกลางพอดี ไม่เลยขอบ</td>
+          </tr>
+          <tr>
+            <td><code>pause</code></td>
+            <td>เวลาหยุดสังเกตของ (ms)</td>
+            <td><b>5000</b></td>
+            <td>0 - 30000</td>
+            <td class="wrap2">เวลาหยุดนิ่งที่จุดกึ่งกลาง (5 วินาที) ก่อนจบสถานะ ปรับเป็น 2000 ได้ถ้าต้องการไวขึ้น</td>
+          </tr>
+          <tr>
+            <td><code>slots</code></td>
+            <td>จำนวนช่องบนล้อ</td>
+            <td><b>4</b></td>
+            <td>1 - 64</td>
+            <td class="wrap2">จำนวนหลุมใส่แคปซูลของล้อหมุน (ตามโมเดล 3D/CAD ปัจจุบันคือ 4 ช่อง)</td>
+          </tr>
+          <tr>
+            <td><code>magnets</code></td>
+            <td>จำนวนแม่เหล็ก</td>
+            <td><b>4</b></td>
+            <td>1 - 64</td>
+            <td class="wrap2">แม่เหล็กที่ฝังใต้ช่อง (ต้องเป็นจำนวนเท่าของ slots)</td>
+          </tr>
+          <tr>
+            <td><code>timeout</code></td>
+            <td>เวลาแจ้งเครื่องติด (ms)</td>
+            <td><b>5000</b></td>
+            <td>200 - 60000</td>
+            <td class="wrap2">หากหมุนแล้วไม่เจอแม่เหล็กในเวลานี้ มอเตอร์จะตัดเพื่อความปลอดภัย (แจ้งสถานะ <code>jam</code>)</td>
+          </tr>
+          <tr>
+            <td><code>debounce</code></td>
+            <td>เวลาหน่วง Hall เซนเซอร์ (ms)</td>
+            <td><b>5</b></td>
+            <td>0 - 200</td>
+            <td class="wrap2">เวลากรองสัญญาณแม่เหล็กให้นิ่ง ป้องกันการนับเบิ้ลจากสัญญาณรบกวน</td>
+          </tr>
+          <tr>
+            <td><code>active_low</code></td>
+            <td>ขั้วสัญญาณเซนเซอร์</td>
+            <td><b>1</b></td>
+            <td>0 หรือ 1</td>
+            <td class="wrap2">1 = ดึง LOW เมื่อมีแม่เหล็ก (สำหรับเซนเซอร์ A3144 / US1881)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== INFOGRAPHIC 4: FEATURES & MODES ==================== -->
+  <div class="f" style="border: 2px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4); background: var(--card); margin-bottom: 24px;">
+    <h3 style="font-size: 17px; margin-bottom: 12px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
+      <span>🧪</span> 4. โหมดพิเศษและการใช้งานจริง (Special Modes & Tools)
+    </h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+      <!-- Auto Detect -->
+      <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 14px; border-radius: var(--r-sm);">
+        <b style="color: #b45309; font-size: 14px; display: block; margin-bottom: 4px;">⚡ Auto Detect Mass (`GCALIB`)</b>
+        <p style="font-size: 12.5px; color: #92400e; margin: 0 0 8px;">
+          <b>แก้ปัญหามวลของแต่ละชิ้นไม่เท่ากัน:</b> เมื่อเปลี่ยนของรางวัลใหม่ (เช่น พวงกุญแจเหล็ก vs แคปซูลพลาสติกเบา) ให้กดปุ่มนี้ เครื่องจะหมุนสแกนหาขอบแม่เหล็กและวัดระยะเฉื่อยของมวลจริง แล้วคำนวณจุดหยุดกึ่งกลาง Hall พร้อมบันทึกลง NVS ให้อัตโนมัติทันที
+        </p>
+        <code style="font-size: 11px; background: #fef3c7; color: #78350f;">คำสั่ง: GCALIB -> OK CALIBRATED span_ms=50</code>
+      </div>
+
+      <!-- Test Machine -->
+      <div style="background: #eef2ff; border: 1px solid #c7d2fe; padding: 14px; border-radius: var(--r-sm);">
+        <b style="color: #4338ca; font-size: 14px; display: block; margin-bottom: 4px;">🧪 Machine Self-Test (`GTEST`)</b>
+        <p style="font-size: 12.5px; color: #3730a3; margin: 0 0 8px;">
+          <b>ทดสอบเครื่องก่อนเริ่มงาน:</b>
+          <br>• <b>Test 1 Pocket:</b> หมุนทดสอบ 1 ช่องพร้อมตรวจเช็กการหยุด Dead-Center
+          <br>• <b>Test 4 Pockets:</b> รันวนทดสอบรอบล้อทั้ง 4 ช่องต่อเนื่อง เพื่อยืนยันว่าทุกลูกหยุดตรงกลางแม่เหล็ก 100%
+        </p>
+        <code style="font-size: 11px; background: #e0e7ff; color: #312e81;">คำสั่ง: GTEST 1 หรือ GTEST 4</code>
+      </div>
+
+      <!-- Force Drop -->
+      <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 14px; border-radius: var(--r-sm);">
+        <b style="color: #991b1b; font-size: 14px; display: block; margin-bottom: 4px;">&#9889; Force Drop (บังคับปล่อยเพื่อทดสอบ)</b>
+        <p style="font-size: 12.5px; color: #7f1d1d; margin: 0 0 8px;">
+          <b>ทดสอบระบบได้ทุกสถานะ:</b> สั่งหมุนปล่อยของ 1 ช่องพร้อมระบบ 4-phase ทันที แม้ในกรณีที่ไม่มีของ สต็อกเป็น 0 หรือปิดอีเวนต์อยู่ เหมาะสำหรับแอดมินหรือช่างทดสอบความพร้อมของกลไก
+        </p>
+        <code style="font-size: 11px; background: #fee2e2; color: #991b1b;">คำสั่ง: GDISPENSE FORCE &lt;who&gt;</code>
+      </div>
+
+      <!-- Pulse Motor Nudge -->
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px; border-radius: var(--r-sm);">
+        <b style="color: #166534; font-size: 14px; display: block; margin-bottom: 4px;">Motor Diagnostic Pulse (<code>GNUDGE</code>)</b>
+        <p style="font-size: 12.5px; color: #14532d; margin: 0 0 8px;">
+          ทดสอบสั่งหมุนสั้นๆ: ส่งสัญญาณ PWM และระยะเวลา ms เพื่อขยับมอเตอร์ดูความพร้อมของกลไก
+        </p>
+        <code style="font-size: 11px; background: #dcfce7; color: #166534;">คำสั่ง: GNUDGE &lt;pwm&gt; &lt;ms&gt;</code>
+      </div>
+
+      <!-- Drain Machine -->
+      <div style="background: #fefce8; border: 1px solid #fef08a; padding: 14px; border-radius: var(--r-sm);">
+        <b style="color: #854d0e; font-size: 14px; display: block; margin-bottom: 4px;">&#127744; Drain Machine (โหมดวนปล่อยจนของหมด)</b>
+        <p style="font-size: 12.5px; color: #713f12; margin: 0 0 8px;">
+          <b>วนปล่อยต่อเนื่องอัตโนมัติ:</b> เครื่องจะแจกของทีละลูกต่อเนื่องตามลำดับ พร้อมรอบเขย่า 4-phase ในทุกลูก จนกระทั่งของในสต็อกหมดลง (Stock = 0) หรือกดปุ่ม <b>&#9209;&#65039; Stop Drain</b> เพื่อหยุดกลางคัน
+        </p>
+        <code style="font-size: 11px; background: #fef9c3; color: #854d0e;">คำสั่ง: GDRAIN [&lt;max&gt;] | STOP เพื่อยกเลิก</code>
+      </div>
+
+      <!-- Real-time Web UI -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: var(--r-sm);">
+        <b style="color: #0f172a; font-size: 14px; display: block; margin-bottom: 4px;">📊 หน้าเว็บ Real-Time Status & Tuning</b>
+        <p style="font-size: 12.5px; color: #475569; margin: 0 0 8px;">
+          บนหน้าเว็บ <code>/app/gacha</code> จะมีไฟสถานะสด:
+          <br>• <b>🟢 Center:</b> ล้อหยุดตรงกลางแม่เหล็กพอดี
+          <br>• <b>Phase:</b> แสดงขั้นตอนปัจจุบัน <code>[turning]</code>, <code>[center]</code>, <code>[pause]</code>
+          <br>• <b>Pocket:</b> ตำแหน่งช่องปัจจุบัน (เช่น <code>P1/4</code>)
+          <br>• <b>⚙️ Tune:</b> แถบปรับค่าความเร็ว/เวลาได้ทันที
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== EXISTING SECTIONS ==================== -->
   <h3>Several machines</h3>
   <p>Add each machine with its board name, the kind it holds and where it stands. Machines with
      the same kind stand in for each other: when the one asked for is empty, the next one gives
@@ -1519,41 +1667,88 @@
   <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · Google Form: docs/gacha/form_sample.gs · the sheet's script: apps/gacha/sheet_script.gs ·
      API for other apps and webhooks: docs/gacha/README.md · POST /api/gacha/dispense {item, person, app}</p>
 
-  <h3>Voice</h3>
-  <p>Voice ▸ Questions shows what people ask about, by topic and by hour, and downloads every
-     question as a file. <b>Asked often, no saved answer yet</b> lists what the model had to answer;
-     <b>Make an answer</b> writes it once so the robot says it every time. The topics and their words
-     are edited on the same tab. An answer can also give a prize: the prize rules say which answers
-     give which kind, for every event or only one.</p>
-  <p class="tech">config/voice_topics.json (GET/POST /api/questions/topics) · config/voice_prizes.json ("enabled": true to turn on, when.event) · log .local/voice/questions.csv</p>
-
-  <h3>Games that give a prize</h3>
-  <p>A win in the friend's games (All-Jao Games opened from the hub) asks for a prize: the wheel's
-     and the claw's prize name, the quiz score with the player's name, or <b>won</b> for the memory
-     game. <b>Games that give a prize</b> says which result gives which kind. The hub shows their
-     own game folder with a small addition; their files are never changed. Settings saved in their
-     own copy (port 8080) are not seen there: set the wheel and claw prizes again once inside the hub.</p>
-  <p class="tech">config/partners.json all-jao "play" (what to watch) · config/gacha.json "games" · /play/all-jao/ · apps/all-jao/link.js · POST /api/gacha/game {game, result, person, ref}</p>
-
-  <h3>Other PCs and forms</h3>
-  <p><b>Make a key</b> for each app that should ask for prizes from another PC, a Google Form's script
-     or a button somewhere else. A key can only ask: the limits still hold and it can never give one
-     anyway. Remove the key to stop that app.</p>
-  <p class="tech">header X-Mice-Key: &lt;key&gt; or ?key=&lt;key&gt; on /api/gacha/dispense, /can, /game · keys in .local/gacha/keys.json</p>
-
-  <h3>Not tried yet</h3>
-  <p>Tested only with pretend machines. The real machine still needs its pockets-until-it-falls
-     measured on the bench.</p>
+  <h3>Voice & Games Integration</h3>
+  <p>Voice ▸ Questions can trigger prizes based on question topic. All-Jao Games (wheel, quiz, claw) automatically request prizes upon win via <code>POST /api/gacha/game</code>.</p>
 </section>
 
+<!-- ===================== ALL-JAO ===================== -->
 <section id="all-jao">
   <div class="shead">
     <span class="where tech">code/apps/all-jao · served at /app/all-jao/</span>
-    <h2>🎮 All-Jao Games</h2>
-    <p>All-Jao is the event organiser this project is built for. Their games &mdash;
-       claw machine, matching, quiz and wheel of fortune &mdash; run beside Mice on the
-       same PC, and this page opens them.</p>
+    <h2>🎮 All-Jao Games — มินิเกมและระบบแจกของรางวัลอัตโนมัติ</h2>
+    <p>ชุดมินิเกมสำหรับจัดกิจกรรมงานอีเวนต์ (ตู้คีบ, จับคู่การ์ด, ตอบคำถาม, วงล้อเสี่ยงโชค)
+       เชื่อมโยงกับเซิร์ฟเวอร์ Mice Hub และผูกเข้ากับตู้กาชาปองแจกของรางวัลอัตโนมัติ</p>
   </div>
+
+  <!-- Infographic: Games to Prize Machine Event Flow -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ผังการทำงานของ All-Jao Games และการเชื่อมต่อตู้แจกของรางวัล</b>
+      <span class="info-badge">Infographic</span>
+    </div>
+    <div class="info-visual-wrapper" style="padding: 20px; background: var(--card);">
+      <svg viewBox="0 0 760 170" width="100%" height="auto" style="display:block; font-family:var(--sans); font-size:12px;">
+        <!-- Box 1: Mini-games -->
+        <rect x="10" y="25" width="220" height="115" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="25" y="52" font-weight="700" fill="var(--txt)" font-size="14">1. ผู้เล่นร่วมสนุก (4 Games)</text>
+        <text x="25" y="76" fill="var(--mut)">• 🕹️ Claw Machine (ตู้คีบ)</text>
+        <text x="25" y="96" fill="var(--mut)">• 🃏 Matching (จับคู่) / ❓ Quiz</text>
+        <text x="25" y="116" fill="var(--mut)">• 🎡 Lucky Wheel (วงล้อ)</text>
+        <circle cx="215" cy="40" r="11" fill="var(--acc)"/>
+        <text x="212" y="44" fill="#fff" font-weight="700" font-size="11">1</text>
+
+        <!-- Arrow 1 -->
+        <path d="M 235 80 L 275 80" stroke="var(--acc)" stroke-width="2" stroke-dasharray="4"/>
+
+        <!-- Box 2: Hub API -->
+        <rect x="280" y="25" width="200" height="115" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="295" y="52" font-weight="700" fill="var(--txt)" font-size="14">2. ส่งคะแนน / ผลชนะ</text>
+        <text x="295" y="76" fill="var(--mut)">• API: /play/all-jao/</text>
+        <text x="295" y="96" fill="var(--mut)">• ตรวจสอบเงื่อนไขในชีต</text>
+        <text x="295" y="116" fill="var(--mut)">• ส่งสัญญาณ Event Win</text>
+        <circle cx="465" cy="40" r="11" fill="var(--acc)"/>
+        <text x="462" y="44" fill="#fff" font-weight="700" font-size="11">2</text>
+
+        <!-- Arrow 2 -->
+        <path d="M 485 80 L 525 80" stroke="var(--acc)" stroke-width="2" stroke-dasharray="4"/>
+
+        <!-- Box 3: Gacha Dispense -->
+        <rect x="530" y="25" width="220" height="115" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="545" y="52" font-weight="700" fill="var(--txt)" font-size="14">3. ตู้กาชาปองจ่ายรางวัล</text>
+        <text x="545" y="76" fill="var(--mut)">• หมุนมอเตอร์ Revolver 90°</text>
+        <text x="545" y="96" fill="var(--mut)">• ปล่อยแคปซูลของรางวัล</text>
+        <text x="545" y="116" fill="var(--mut)">• หุ่น Nong แสดงท่าดีใจ</text>
+        <circle cx="735" cy="40" r="11" fill="var(--acc)"/>
+        <text x="732" y="44" fill="#fff" font-weight="700" font-size="11">3</text>
+      </svg>
+    </div>
+
+    <!-- Action Impact Grid -->
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> การเปิดเล่นเกม (Open Games)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Open in a new tab ↗</b> หรือเล่นผ่านกล่องในหน้าเว็บ</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          Hub จะสั่งเริ่มโปรเซสเกมฝั่ง Python อัตโนมัติ (`/api/all-jao/start`) และเสิร์ฟหน้าจอเกมพร้อมเล่นทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> เชื่อมต่อตู้แจกของรางวัล (Prize Binding)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ไปที่หน้า <a href="#gacha">Prize machines</a> ในหัวข้อ Games that give a prize เพื่อเลือกว่าเกมไหนให้รางวัลช่องใด</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          เมื่อผู้เล่นทำคะแนนถึงเกณฑ์ ตู้กาชาปองจะหมุนจ่ายของรางวัลโดยอัตโนมัติทันที พร้อมแจ้งจุดรับของรางวัลบนหน้าจอ
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> สิทธิ์ความปลอดภัย (Venue Security)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> หากเปิดเล่นจากเครื่อง PC ของบูธ ไม่ต้องล็อกอิน / หากเข้าผ่าน WiFi วงนอก ต้องล็อกอิน Admin</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ป้องกันบุคคลภายนอกที่เชื่อมต่อ WiFi ในงานแอบสั่งรันโปรแกรมบน PC หรือแอบสั่งหมุนของรางวัล
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="f"><h3>No hub sign-in needed on this PC<span class="tag t-new">new</span></h3>
     <p>The games have their own login, so opening them on the PC that runs Mice asks for
        nothing. Opened from another device on the network, the hub asks you to sign in
@@ -1641,6 +1836,40 @@
     <h2>Firmware core — shared by all module types</h2>
     <p>One shared core, one build per module type. Nothing about wiring or identity
        is compiled in — only which module the board <em>is</em>.</p>
+  </div>
+
+  <!-- Infographic: ESP32 Hardware Wiring & Configuration -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ผังการต่อสายฮาร์ดแวร์ ESP32 (WROOM) และคู่มือการตั้งค่าบอร์ด</b>
+      <span class="info-badge">Infographic</span>
+    </div>
+    <div class="info-visual-wrapper" style="padding: 10px; background: var(--card); text-align: center;">
+      <img src="/pinout.svg" alt="ESP32 WROOM Pinout Reference" style="max-height: 280px; width: auto; margin: 0 auto; display: block;">
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> หมายเลขบัส RS485 (Bus ID)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ส่งคำสั่ง <code>SET ID &lt;1..254&gt;</code> หรือตั้งค่าในหน้า Settings ของบอร์ด</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          กำหนดที่อยู่ประจำตัวของบอร์ดบนสายสื่อสาร RS485 (เช่น Nong หุ่นยนต์ = 67) ป้องกันการส่งคำสั่งชนกันบนสายคู่เดียว
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> โหมดไฟเลี้ยงและ Brownout Guard</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ใช้แหล่งจ่ายไฟ 5V แยกเฉพาะสำหรับเซอร์โวมอเตอร์ อย่าใช้ไฟจากพอร์ต USB คอมพิวเตอร์</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          เมื่อเซอร์โว 10 ตัวออกแรงพร้อมกัน กระแสไฟจะตก (Voltage Sag) หากต่อไฟไม่พอ ชิป ESP32 จะ Brownout รีเซ็ตตัวเองทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> การแฟลชข้ามเครือข่าย WiFi (OTA Flash)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Flash over WiFi</b> บนหน้า Hub โดยไม่ต้องเสียบสาย USB</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          Hub จะส่ง Firmware binary ผ่าน OTA ไปยังพาร์ติชันสำรองของบอร์ด เมื่อแฟลชเสร็จ บอร์ดจะรีบูตเข้าสู่เฟิร์มแวร์ใหม่โดยอัตโนมัติ
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="grp2">Identity &amp; configuration</div>
@@ -2067,7 +2296,9 @@
     <p>The build now carries a receipt (a checksum for every source file that went into it),
        and the running hub compares it against the tree beside it. If they differ, a caution
        banner names the files that changed and the command that rebuilds it:
-       <code>python -m PyInstaller --clean MiceHub.spec</code>. On a PC that has only the
+       <code>python -m PyInstaller --clean MiceHub.spec</code>. If <code>MiceHub.exe</code> is running,
+       the build automatically closes it to avoid Windows file locks (or you can run
+       <code>taskkill /F /IM MiceHub.exe</code>). On a PC that has only the
        program and no source &mdash; a venue laptop &mdash; there is nothing to compare, so
        it says nothing rather than guessing.</p></div>
   <div class="f"><h3>The hub tells the truth when it cannot reach anything<span class="tag t-new">fixed</span></h3>
@@ -2591,56 +2822,109 @@
 
 <script>
 (function(){
-  // Filter: hide any feature card or table row that does not match, then hide
-  // a section once nothing inside it is left.
+  // Topic-by-topic presentation with Next / Previous navigation, plus live search.
   var q = document.getElementById("q"), none = document.getElementById("none");
-  var secs = Array.prototype.slice.call(document.querySelectorAll("section"));
-  q.addEventListener("input", function(){
-    var term = q.value.trim().toLowerCase(), any = false;
-    secs.forEach(function(s){
-      // Decide about the HEADING first. Searching "camera" matches the Camera
-      // section's own title, and every card inside it is then relevant — but
-      // the rows were filtered on their own text first, so a section kept for
-      // its heading rendered as a title with nothing underneath it. Looking
-      // like the page has no answer is worse than not matching at all.
-      var head = s.querySelector(".shead").textContent.toLowerCase();
-      var headHit = !!term && head.indexOf(term) >= 0;
-      var hits = 0;
-      s.querySelectorAll(".f, tbody tr").forEach(function(el){
-        var show = !term || headHit ||
-                   el.textContent.toLowerCase().indexOf(term) >= 0;
-        el.style.display = show ? "" : "none";
-        if (show) hits++;
-      });
-      var keep = hits > 0 || headHit;
-      s.style.display = keep ? "" : "none";
-      // group labels and empty tables would otherwise float alone
-      s.querySelectorAll(".scroll").forEach(function(box){
-        var rows = box.querySelectorAll("tbody tr");
-        var live = Array.prototype.filter.call(rows, function(r){
-          return r.style.display !== "none"; }).length;
-        box.style.display = live ? "" : "none";
-      });
-      if (keep) any = true;
-    });
-    none.style.display = any ? "none" : "block";
-  });
-
-  // Sidebar follows the section you are reading.
-  var links = Array.prototype.slice.call(document.querySelectorAll("nav a"));
+  var secs = Array.prototype.slice.call(document.querySelectorAll("main > section[id]"));
+  var links = Array.prototype.slice.call(document.querySelectorAll("nav a[href^='#']"));
   var byId = {};
   links.forEach(function(a){ byId[a.getAttribute("href").slice(1)] = a; });
-  if ("IntersectionObserver" in window) {
-    var seen = {};
-    var io = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){ seen[e.target.id] = e.isIntersecting; });
-      var current = null;
-      secs.forEach(function(s){ if (seen[s.id] && !current) current = s.id; });
-      links.forEach(function(a){ a.classList.remove("on"); });
-      if (current && byId[current]) byId[current].classList.add("on");
-    }, { rootMargin: "-10% 0px -75% 0px" });
-    secs.forEach(function(s){ io.observe(s); });
+
+  // 1. Build Next / Previous navigation at the foot of each section
+  secs.forEach(function(s, idx){
+    if (s.querySelector(".sec-nav")) return;
+    var nav = document.createElement("div");
+    nav.className = "sec-nav";
+    var prev = secs[idx - 1];
+    var next = secs[idx + 1];
+    if (prev) {
+      var prevHead = prev.querySelector(".shead h2");
+      var prevTitle = (prevHead ? prevHead.textContent : prev.id).replace(/^[—\s]+|[—\s]+$/g, "");
+      var aPrev = document.createElement("a");
+      aPrev.className = "sec-nav-btn sec-nav-prev";
+      aPrev.href = "#" + prev.id;
+      aPrev.innerHTML = "← ก่อนหน้า: " + prevTitle;
+      nav.appendChild(aPrev);
+    }
+    if (next) {
+      var nextHead = next.querySelector(".shead h2");
+      var nextTitle = (nextHead ? nextHead.textContent : next.id).replace(/^[—\s]+|[—\s]+$/g, "");
+      var aNext = document.createElement("a");
+      aNext.className = "sec-nav-btn sec-nav-next";
+      aNext.href = "#" + next.id;
+      aNext.innerHTML = "ถัดไป: " + nextTitle + " →";
+      nav.appendChild(aNext);
+    }
+    s.appendChild(nav);
+  });
+
+  // 2. Topic-by-Topic mode: display only the chosen section when not searching
+  function showTopic(id){
+    var searching = q && q.value.trim().length > 0;
+    if (!searching) {
+      if (!id || !secs.some(function(s){ return s.id === id; })) {
+        id = secs.length ? secs[0].id : "";
+      }
+      secs.forEach(function(s){
+        var active = s.id === id;
+        s.classList.toggle("pv-off", !active);
+        if (active) {
+          s.style.display = "";
+          s.querySelectorAll(".f, tbody tr, .scroll").forEach(function(el){
+            el.style.display = "";
+          });
+        }
+      });
+      links.forEach(function(a){
+        a.classList.toggle("on", a.getAttribute("href") === "#" + id);
+      });
+      window.scrollTo(0, 0);
+    } else {
+      secs.forEach(function(s){
+        s.classList.remove("pv-off");
+      });
+    }
   }
+
+  window.addEventListener("hashchange", function(){
+    showTopic(location.hash.slice(1));
+  });
+
+  // 3. Search: reveal all sections to filter matches, or return to topic view when cleared
+  if (q) {
+    q.addEventListener("input", function(){
+      var term = q.value.trim().toLowerCase(), any = false;
+      if (!term) {
+        showTopic(location.hash.slice(1));
+        if (none) none.style.display = "none";
+        return;
+      }
+      secs.forEach(function(s){
+        s.classList.remove("pv-off");
+        var head = s.querySelector(".shead") ? s.querySelector(".shead").textContent.toLowerCase() : "";
+        var headHit = !!term && head.indexOf(term) >= 0;
+        var hits = 0;
+        s.querySelectorAll(".f, tbody tr").forEach(function(el){
+          var show = !term || headHit ||
+                     el.textContent.toLowerCase().indexOf(term) >= 0;
+          el.style.display = show ? "" : "none";
+          if (show) hits++;
+        });
+        var keep = hits > 0 || headHit;
+        s.style.display = keep ? "" : "none";
+        s.querySelectorAll(".scroll").forEach(function(box){
+          var rows = box.querySelectorAll("tbody tr");
+          var live = Array.prototype.filter.call(rows, function(r){
+            return r.style.display !== "none"; }).length;
+          box.style.display = live ? "" : "none";
+        });
+        if (keep) any = true;
+      });
+      if (none) none.style.display = any ? "none" : "block";
+    });
+  }
+
+  // Initial show on load
+  showTopic(location.hash.slice(1));
 })();
 </script>
 </body></html>

@@ -3,6 +3,76 @@
     <span class="where tech">code/apps/voice · served at /app/voice/</span>
     <h2>🎤 Voice</h2>
   </div>
+  <!-- Infographic: Voice System Architecture & Settings -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ผังการทำงานระบบเสียงพูด (Voice) และคู่มือการตั้งค่า</b>
+      <span class="info-badge">Infographic</span>
+    </div>
+    <div class="info-visual-wrapper" style="padding: 20px; background: var(--card);">
+      <svg viewBox="0 0 760 170" width="100%" height="auto" style="display:block; font-family:var(--sans); font-size:12px;">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="var(--acc)" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="var(--acc)" stop-opacity="0.3"/>
+          </linearGradient>
+        </defs>
+        <!-- Hearing Box -->
+        <rect x="10" y="25" width="210" height="110" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="30" y="55" font-weight="700" fill="var(--txt)" font-size="14">1. การรับฟัง (Hear / STT)</text>
+        <text x="30" y="80" fill="var(--mut)">• ไมค์ PC / เว็บเบราว์เซอร์</text>
+        <text x="30" y="100" fill="var(--mut)">• รองรับ ไทย / อังกฤษ / จีน / ญี่ปุ่น</text>
+        <circle cx="205" cy="40" r="11" fill="var(--acc)"/>
+        <text x="202" y="44" fill="#fff" font-weight="700" font-size="11">1</text>
+
+        <!-- Arrow 1 -->
+        <path d="M 225 80 L 265 80" stroke="var(--acc)" stroke-width="2" marker-end="url(#arr)" stroke-dasharray="4"/>
+
+        <!-- Thinking Box -->
+        <rect x="275" y="25" width="210" height="110" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="295" y="55" font-weight="700" fill="var(--txt)" font-size="14">2. การประมวลผล (Think)</text>
+        <text x="295" y="80" fill="var(--mut)">• จับคู่คำตอบในชีต (0.2s)</text>
+        <text x="295" y="100" fill="var(--mut)">• AI Cloud (Gemini / Groq)</text>
+        <circle cx="470" cy="40" r="11" fill="var(--acc)"/>
+        <text x="467" y="44" fill="#fff" font-weight="700" font-size="11">2</text>
+
+        <!-- Arrow 2 -->
+        <path d="M 490 80 L 530 80" stroke="var(--acc)" stroke-width="2" marker-end="url(#arr)" stroke-dasharray="4"/>
+
+        <!-- Speaking Box -->
+        <rect x="540" y="25" width="210" height="110" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="560" y="55" font-weight="700" fill="var(--txt)" font-size="14">3. การเปล่งเสียง (Speak)</text>
+        <text x="560" y="80" fill="var(--mut)">• ลำโพง PC / ลำโพงหุ่นยนต์ Nong</text>
+        <text x="560" y="100" fill="var(--mut)">• บุคลิกเสียง (Speaking Manner)</text>
+        <circle cx="735" cy="40" r="11" fill="var(--acc)"/>
+        <text x="732" y="44" fill="#fff" font-weight="700" font-size="11">3</text>
+      </svg>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> บุคลิกเสียงพูด (Speaking Manner)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> เลือกรูปแบบในหน้า Voice: สุภาพ, ขี้เล่น, ออดอ้อน, หรือท่องจำ</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ปรับแต่งคำลงท้ายอัตโนมัติ (เช่น จ้ะ, นะคะ, ครับ) พร้อมทั้งปรับแต่ง Pitch ความสูง-ต่ำ และความเร็วของเสียงพูดให้สะท้อนอารมณ์นั้นทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> แข่งขันความเร็วเสียง (Fast-Race 650ms)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> เปิดใช้งาน Fast-installed Voice ในการตั้งค่า</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ระบบจะเรียก Cloud TTS ก่อน หากเกิน 650ms แล้วยังไม่ตอบกลับ จะสลับมาใช้เสียงพูด Offline ในเครื่องทันที หุ่นจะไม่ยืนนิ่งค้าง
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> คิวเสียงพูดและการจัดลำดับ (Queue &amp; Priority)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ตั้งค่า <code>maxAgeSeconds</code> (ค่าเริ่มต้น 30 วิ) และเลือกปลายทางลำโพง</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          เสียงสดจะแซงคิวเสียงตอบคำถาม และเสียงทักทายที่รอนานเกิน 30 วิจะถูกทิ้งอัตโนมัติ ป้องกันหุ่นทักทายคนที่เดินผ่านไปแล้ว
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="f"><h3>Ask the rig a question</h3>
     <p>The Voice app in the Tools list: type a question, the rig answers. The
        answers come from a helper program that runs on this PC next to the

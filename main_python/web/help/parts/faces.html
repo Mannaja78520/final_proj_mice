@@ -7,6 +7,37 @@
        you choose what the rig says when it sees somebody.</p>
   </div>
 
+  <!-- Infographic: Face Recognition & Greeting Rules Guide -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ผังการทำงานตรวจจับใบหน้า (Reconize) และการผูกท่าทาง</b>
+      <span class="info-badge">Infographic</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ตรวจจับและแยกแยะ (Known vs Stranger)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> กล้องส่องหน้า &rarr; Reconize (Port 8000) คำนวณเวกเตอร์ใบหน้า</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          แยกแยะว่าคือคนที่เคยลงทะเบียนไว้ (Known) หรือคนแปลกหน้า (Stranger) เพื่อเลือกประโยคทักทายที่เหมาะสมโดยอัตโนมัติ
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ผูกคำพูดและท่าทางหุ่น (Greet Words &amp; Move)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> พิมพ์คำพูดใส่ <code>{name}</code> และเลือกท่าทาง <code>wai.yaml</code> หรือ <code>wave.yaml</code></div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          เมื่อคนเดิมเดินผ่าน หุ่นยนต์ Nong จะยกมือไหว้หรือโบกมือพร้อมเปล่งเสียงทักทายชื่อคนนั้นทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ป้องกันการทักซ้ำ (Cooldown &amp; Busy Guard)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ตั้งค่า Cooldown (เช่น 10 นาที) และเลือก Skip if busy</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          คนเดิมที่ยืนคุยหน้ากล้องจะไม่โดนทักซ้ำๆ ทุก 5 วินาที และถ้าหุ่นกำลังแสดงโชว์อยู่ จะไม่ถูกขัดจังหวะ
+        </div>
+      </div>
+    </div>
+  </div>
+
   <h3>What works today</h3>
   <p><b>Open Reconize</b> starts it if it is not running and shows it in the page.
      <b>Is the rig following it?</b> says whether the rig is seeing people arrive.

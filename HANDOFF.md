@@ -85,6 +85,11 @@ not the state: the state is your task file.
    live in config/data files (`config/*.json`, registries), not in code, so the
    next one is added or changed without a code edit. One source, no copies.
    Applies to new work; do not refactor old code only for this.
+9. Strict OOP & modularity — no monolithic dumping (user 2026-10-24, all AIs):
+   code MUST follow OOP and modular design. Never append hundreds of lines into
+   monolithic main files (main.py, etc.) — separate into small, focused classes
+   and modules (token-friendly). Never edit built web files (hub.html, help.html,
+   app.js) directly; edit their sources in parts/ and run `python tools/build_web.py`.
 
 ## Built so far
 

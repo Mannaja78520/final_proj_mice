@@ -10,6 +10,37 @@
        plugged into this PC is not one of them and will not appear here.</p>
   </div>
 
+  <!-- Infographic: ESP32-CAM Relay & Tuning Guide -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ผังการทำงานของกล้อง ESP32-CAM และคู่มือการปรับภาพ</b>
+      <span class="info-badge">Infographic</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> การกระจายภาพหลายจอ (Multi-Client Relay)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> เปิดหน้า <code>/app/camera</code> จากโทรศัพท์หรือคอมกี่เครื่องก็ได้บน WiFi เดียวกัน</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          เนื่องจากชิป ESP32-CAM มีแรมจำกัดรับคนเดียวได้แค่ 1 สตรีม Hub ส่วนกลางจึงเป็นตัวดึงภาพมา 1 สตรีม แล้วนำมากระจายต่อให้คนดูหลายคนพร้อมกันโดยบอร์ดไม่ล่ม
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> แหล่งรับสัญญาณ WiFi vs USB</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ตรวจสอบให้แน่ใจว่าบอร์ดต่อ WiFi (ไฟสถานะเขียว)</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          สาย USB / RS485 รองรับเฉพาะข้อความและคำสั่งตัวอักษร ไม่สามารถส่งไฟล์ภาพ JPEG ได้ หากต่อเฉพาะสาย ภาพจะไม่ขึ้นแต่สามารถตั้งค่าเซนเซอร์ได้
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ปรับแสงและความไว (Exposure &amp; Gain)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ปิด Auto Exposure / Auto Gain ก่อน จึงจะเลื่อนแถบ Manual ได้</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ปรับให้ภาพคมชัดในห้องมืดหรือกลางแจ้ง หากเปิด Auto ค้างไว้ แถบสไลเดอร์จะถูกล็อคเป็นสีเทาเพื่อแจ้งเตือน
+        </div>
+      </div>
+    </div>
+  </div>
+
   <h3>Several people can watch at once</h3>
   <p>The board itself can only be read by one thing at a time, and that is the
      hardware rather than a limit anybody chose: it has a single frame buffer,
