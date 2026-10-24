@@ -42,13 +42,15 @@ struct CenterMotion {
     enum Result { REST, PULSE, AT_HALL, TIMED_OUT };
     uint32_t started = 0, changed = 0, timeout = 0;
     uint32_t pulseMs = 0, restMs = 0, waitMs = 0;
+    uint32_t pulses = 0, maxPulses = 0;
     bool active = false, pulsing = false, first = true;
 
     void begin(uint32_t now, uint32_t limit, uint32_t pulse,
-               uint32_t rest, uint32_t wait) {
+               uint32_t rest, uint32_t wait, uint32_t budget = 0) {
         started = changed = now;
         timeout = limit; pulseMs = pulse; restMs = rest; waitMs = wait;
         active = true; pulsing = false; first = true;
+        pulses = 0; maxPulses = budget;
     }
     void cancel() { active = pulsing = false; }
     Result tick(bool atHall, uint32_t now) {
@@ -58,7 +60,9 @@ struct CenterMotion {
         if (atHall) { cancel(); return AT_HALL; }
         const uint32_t interval = pulsing ? pulseMs : (first ? waitMs : restMs);
         if (now - changed >= interval) {
+            if (!pulsing && maxPulses && pulses >= maxPulses) { cancel(); return TIMED_OUT; }
             pulsing = !pulsing;
+            if (pulsing) ++pulses;
             first = false;
             changed = now;
         }

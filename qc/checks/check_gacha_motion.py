@@ -30,9 +30,13 @@ def run(t):
     root = F.CODE
     cpp = (root / "firmware/src/modules/gacha/GachaModule.cpp").read_text(encoding="utf-8")
     methods = "\n\n".join(_block(cpp, "void GachaModule::" + name + "(", whole=True)
-                            for name in ("startTurn", "startNudge", "startCenter", "finish", "resetDefaults", "loop"))
+                            for name in ("startTurn", "startNudge", "startCenter", "startCalibrate", "startSpan",
+                                         "finish", "resetDefaults", "loop"))
     for name, marker, args in (
             ("nudge", 'if (cmd == "GNUDGE")', "String argv[], int argc, String& reply"),
+            ("calibrate", 'if (cmd == "GCALIB")', "String& reply"),
+            ("test", 'if (cmd == "GTEST")', "String argv[], int argc, String& reply"),
+            ("drain", 'if (cmd == "GDRAIN")', "String argv[], int argc, String& reply"),
             ("stop", 'if (cmd == "STOP")', "String& reply"),
             ("clear", 'if (argc == 2 && argv[1].equalsIgnoreCase("CLEAR"))', "String& reply")):
         methods += "\nbool GachaModule::%s(%s) {\n%s\n}\n" % (name, args, _block(cpp, marker))

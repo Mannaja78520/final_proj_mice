@@ -28,25 +28,34 @@ struct Preferences {
 class GachaModule {
 public:
     enum State { IDLE, TURNING, HOMING };
-    enum Job { JOB_SPIN, JOB_HOME, JOB_DISPENSE, JOB_NUDGE };
-    enum SettlePhase { SETTLE_NONE, SETTLE_ROCK_FWD, SETTLE_ROCK_BACK,
-                       SETTLE_CENTER, SETTLE_PAUSE, SETTLE_NUDGE };
+    enum Job { JOB_SPIN, JOB_HOME, JOB_DISPENSE, JOB_NUDGE, JOB_CALIB };
+    enum SettlePhase { SETTLE_NONE, SETTLE_INTAKE, SETTLE_ROCK_FWD, SETTLE_ROCK_BACK,
+                       SETTLE_CENTER, SETTLE_ADVANCE, SETTLE_VERIFY, SETTLE_PAUSE, SETTLE_NUDGE,
+                       CALIB_REVERSE, CALIB_REST, CALIB_FIND, CALIB_SPAN, CALIB_BACK, CALIB_VERIFY };
     Controller io;
     Controller* motor_ = &io;
     gachamath::HallCounter hall_;
     gachamath::CenterMotion center_;
     bool sensor = false, activeLow_ = true;
     int magnets_ = GACHA_MAGNETS, slots_ = GACHA_SLOTS, drop_ = GACHA_DROP_SLOTS;
+    int intakeDwellMs_ = GACHA_INTAKE_DWELL_MS;
     int speed_ = GACHA_SPEED, dir_ = 1, timeoutMs_ = GACHA_SLOT_TIMEOUT_MS;
     int debounceMs_ = GACHA_DEBOUNCE_MS, settleMs_ = GACHA_SETTLE_MS;
     int overshootMs_ = GACHA_OVERSHOOT_MS, overshootSpeed_ = GACHA_OVERSHOOT_SPEED;
     int returnMs_ = GACHA_RETURN_MS, returnSpeed_ = GACHA_RETURN_SPEED;
     int centerSpeed_ = GACHA_CENTER_SPEED, pauseMs_ = GACHA_PAUSE_MS;
+    int advanceMs_ = GACHA_CENTER_ADVANCE_MS;
     int fallbackSlotMs_ = GACHA_FALLBACK_SLOT_MS;
     State state_ = IDLE;
     Job job_ = JOB_SPIN;
     SettlePhase settlePhase_ = SETTLE_NONE;
     int want_ = 0, got_ = 0, sign_ = 1, pos_ = 2, stock_ = 7, given_ = 4;
+    bool posKnown_ = true, open_ = true, draining_ = false, lastForced_ = false;
+    int drainMax_ = 0, drainCount_ = 0;
+    uint32_t total_ = 0, seq_ = 0, spanOnMs_ = 0, spanTickMs_ = 0;
+    bool spanWasOn_ = false;
+    int learnedAdvanceMs_ = 0;
+    String lastWho_;
     uint32_t hits_ = 0, lastPassMs_ = 0, settleUntil_ = 0, phaseUntil_ = 0;
     uint32_t startMs_ = 0, lastMs_ = 0;
     String lastResult_ = "turning";
@@ -59,11 +68,16 @@ public:
     void saveCounts() { ++countSaves; }
     void startTurn(Job job, int passes);
     void startNudge(int pwm, uint32_t duration);
-    void startCenter(uint32_t now);
+    void startCenter(uint32_t now, uint32_t rest = GACHA_CENTER_WAIT_MS);
+    void startCalibrate();
+    void startSpan(uint32_t now);
     void finish(const char* result);
     void resetDefaults();
     void loop();
     bool nudge(String argv[], int argc, String& reply);
+    bool calibrate(String& reply);
+    bool test(String argv[], int argc, String& reply);
+    bool drain(String argv[], int argc, String& reply);
     bool stop(String& reply);
     bool clear(String& reply);
 };
@@ -77,6 +91,35 @@ void check(bool condition, const char* label) {
 }
 void tick(GachaModule& m, uint32_t now, bool sensor) {
     clockMs = now; m.sensor = sensor; m.loop();
+}
+void calibrationScenario(bool verify, uint32_t start) {
+    GachaModule m; String reply; clockMs = start; m.timeoutMs_ = 1000;
+    const int oldAdvance = m.advanceMs_;
+    m.calibrate(reply);
+    check(reply == "OK calibrating" && clockMs == start, "calibration starts asynchronously");
+    m.calibrate(reply); check(reply == "ERR busy", "calibration cannot replace an active job");
+    auto lastPhase = GachaModule::SETTLE_NONE;
+    uint32_t phaseAt = start;
+    for (uint32_t elapsed = 0; elapsed <= GACHA_CALIB_MAX_MS && m.state_ != GachaModule::IDLE; ++elapsed) {
+        const uint32_t now = start + elapsed;
+        if (lastPhase != m.settlePhase_) { lastPhase = m.settlePhase_; phaseAt = now; }
+        bool sensor = false;
+        if (lastPhase == GachaModule::CALIB_FIND) sensor = now - phaseAt >= 70;
+        if (lastPhase == GachaModule::CALIB_SPAN) sensor = now - phaseAt < 130;
+        if (lastPhase == GachaModule::CALIB_BACK) sensor = true;
+        if (lastPhase == GachaModule::CALIB_VERIFY) sensor = verify;
+        tick(m, now, sensor);
+    }
+    check(m.state_ == GachaModule::IDLE && m.io.pwm == 0, "calibration terminates with motor off");
+    if (verify) {
+        check(m.motionResult_ == "done" && m.saves == 1, "only verified Hall calibration is saved");
+        check(m.advanceMs_ > 0 && m.advanceMs_ <= GACHA_ADVANCE_MAX_MS,
+              "calibration learns a bounded advance for future cycles");
+    } else {
+        check(m.motionResult_ == "jam" && m.saves == 0 && m.advanceMs_ == oldAdvance,
+              "failed calibration verification never reports or saves success");
+    }
+    check(m.stock_ == 7 && m.given_ == 4 && !m.posKnown_, "calibration does not dispense or claim pocket reference");
 }
 int main() {
     {
@@ -100,37 +143,42 @@ int main() {
         m.startTurn(GachaModule::JOB_DISPENSE, 1); m.startCenter(0);
         tick(m, 40, false);
         check(m.io.pwm == m.centerSpeed_, "center pulse starts after configured wait");
-        tick(m, 60, false);
+        tick(m, 55, false);
         check(m.io.pwm == 0, "center pulse ends without blocking loop");
-        tick(m, 94, false);
+        tick(m, 89, false);
         check(m.io.pwm == 0, "center motor rests for full configured interval");
-        tick(m, 95, false);
+        tick(m, 90, false);
         check(m.io.pwm == m.centerSpeed_, "next center pulse uses clock, not delay");
-        tick(m, 96, true); tick(m, 97, false);
+        tick(m, 91, true); tick(m, 92, false);
         check(m.settlePhase_ == GachaModule::SETTLE_CENTER, "one noisy raw Hall sample cannot finish");
         tick(m, 100, true); tick(m, 105, true);
-        check(m.settlePhase_ == GachaModule::SETTLE_PAUSE && m.io.pwm == 0, "debounced Hall enters stationary pause");
-        tick(m, 5104, true);
+        check(m.settlePhase_ == GachaModule::SETTLE_ADVANCE, "debounced Hall starts bounded advance");
+        tick(m, 123, true); tick(m, 158, true);
+        check(m.settlePhase_ == GachaModule::SETTLE_PAUSE && m.io.pwm == 0, "Hall verified at rest enters pause");
+        tick(m, 5157, true);
         check(m.state_ != GachaModule::IDLE && m.io.pwm == 0, "default five-second pause is not shortened");
-        tick(m, 5105, true);
+        tick(m, 5158, true);
         check(m.state_ == GachaModule::IDLE && m.lastResult_ == "done", "only confirmed Hall completes after pause");
     }
     {
-        GachaModule m; clockMs = 0; m.loop(); m.startTurn(GachaModule::JOB_DISPENSE, 1);
+        GachaModule m; clockMs = 0; m.intakeDwellMs_ = 0; m.loop(); m.startTurn(GachaModule::JOB_DISPENSE, 1);
         tick(m, 10, true); tick(m, 15, true);
         check(m.settlePhase_ == GachaModule::SETTLE_ROCK_FWD && m.io.pwm > 0, "arrival starts forward rock");
         tick(m, 195, true);
         check(m.settlePhase_ == GachaModule::SETTLE_ROCK_BACK && m.io.pwm < 0, "forward deadline starts reverse rock");
         tick(m, 196, false); tick(m, 201, false); tick(m, 475, false);
         check(m.settlePhase_ == GachaModule::SETTLE_CENTER && m.io.pwm == 0, "reverse deadline starts bounded center");
-        tick(m, 515, false); tick(m, 518, true); tick(m, 523, true);
+        tick(m, 575, false); tick(m, 578, true); tick(m, 583, true);
+        tick(m, 601, true); tick(m, 636, true);
         check(m.settlePhase_ == GachaModule::SETTLE_PAUSE && m.io.pwm == 0, "full phase chain confirms Hall");
-        tick(m, 5523, true);
+        tick(m, 5636, true);
         check(m.state_ == GachaModule::IDLE && m.lastResult_ == "done", "full phase chain completes after five-second hold");
     }
-    for (auto phase : {GachaModule::SETTLE_ROCK_FWD, GachaModule::SETTLE_ROCK_BACK,
-                       GachaModule::SETTLE_CENTER, GachaModule::SETTLE_PAUSE,
-                       GachaModule::SETTLE_NUDGE}) {
+    for (auto phase : {GachaModule::SETTLE_INTAKE, GachaModule::SETTLE_ROCK_FWD, GachaModule::SETTLE_ROCK_BACK,
+                       GachaModule::SETTLE_CENTER, GachaModule::SETTLE_ADVANCE, GachaModule::SETTLE_VERIFY,
+                       GachaModule::SETTLE_PAUSE, GachaModule::SETTLE_NUDGE, GachaModule::CALIB_REVERSE,
+                       GachaModule::CALIB_REST, GachaModule::CALIB_FIND, GachaModule::CALIB_SPAN,
+                       GachaModule::CALIB_BACK, GachaModule::CALIB_VERIFY}) {
         GachaModule m; String reply; clockMs = 0;
         m.startTurn(GachaModule::JOB_DISPENSE, 1); m.settlePhase_ = phase;
         m.center_.begin(0, 200, 20, 35, 40); m.io.spin(250);
@@ -166,6 +214,7 @@ int main() {
         tick(m, start + 20, false);
         check(m.io.pwm == 0 && m.state_ == GachaModule::IDLE, "nudge deadline works across millis wrap");
         check(m.stock_ == 7 && m.given_ == 4 && m.pos_ == 2, "nudge does not count or claim pocket position");
+        check(!m.posKnown_, "manual nudge invalidates pocket reference");
     }
     {
         GachaModule m; String reply, args[] = {"GNUDGE", "250", "20"}; m.motor_ = nullptr;
@@ -185,6 +234,67 @@ int main() {
         m.state_ = GachaModule::TURNING; m.clear(reply);
         check(reply == "ERR busy" && removedCfg == 1 && m.saves == 1, "busy CLEAR cannot erase persisted settings");
     }
+    {
+        GachaModule m; clockMs = 0; m.timeoutMs_ = 200;
+        m.startTurn(GachaModule::JOB_DISPENSE, 1);
+        tick(m, GACHA_INTAKE_DWELL_MS - 1, false);
+        check(m.io.pwm == 0 && m.state_ != GachaModule::IDLE, "intake dwell keeps motor off without premature jam");
+        tick(m, GACHA_INTAKE_DWELL_MS, false);
+        check(m.io.pwm == m.speed_ && m.lastPassMs_ == GACHA_INTAKE_DWELL_MS, "intake completion starts slot timeout from motor start");
+    }
+    {
+        GachaModule m; String reply; clockMs = 0; m.loop();
+        m.startTurn(GachaModule::JOB_SPIN, 1); m.startCenter(0);
+        tick(m, 40, true); tick(m, 45, true); tick(m, 63, false); tick(m, 68, false); tick(m, 98, false);
+        check(m.motionResult_ == "jam" && m.io.pwm == 0, "leaving Hall after advance fails final verification");
+    }
+    {
+        GachaModule m; String reply, args[] = {"GTEST", "3"}; m.magnets_ = 8; m.slots_ = 4;
+        m.test(args, 2, reply);
+        check(reply == "OK testing" && m.want_ == 6, "GTEST pockets convert to magnet arrivals");
+        m.test(args, 2, reply); check(reply == "ERR busy", "GTEST refuses an active job");
+    }
+    for (const String value : {"-1", "0", "101", "bad", "999999999999999999999", ""}) {
+        GachaModule m; String reply, args[] = {"GTEST", value}; m.test(args, 2, reply);
+        check(reply.rfind("ERR", 0) == 0 && m.io.history.empty(), "invalid GTEST cannot become a default movement");
+    }
+    {
+        GachaModule m; String reply, args[] = {"GDRAIN", "2"}; clockMs = 0; m.stock_ = 2;
+        m.drain(args, 2, reply);
+        check(reply == "OK drain started" && m.stock_ == 1 && m.given_ == 5, "drain reserves one prize at a time");
+        m.finish("done"); check(m.draining_ && m.stock_ == 0 && m.given_ == 6, "drain starts exactly one next prize");
+        m.finish("done"); check(!m.draining_ && m.state_ == GachaModule::IDLE && m.given_ == 6, "drain stops at stock and request limit");
+    }
+    {
+        GachaModule m; String reply, args[] = {"GDRAIN", "2"}; m.open_ = false;
+        m.drain(args, 2, reply);
+        check(reply == "ERR event closed" && m.io.history.empty(), "drain cannot bypass closed event");
+        m.open_ = true; m.stock_ = -1; m.drain(args, 1, reply);
+        check(reply.rfind("ERR", 0) == 0 && m.io.history.empty(), "uncounted stock needs an explicit drain limit");
+    }
+    {
+        GachaModule m; String reply, args[] = {"GDRAIN", "3"}; clockMs = 0; m.drain(args, 2, reply);
+        m.stop(reply); tick(m, 10000, false);
+        check(!m.draining_ && m.state_ == GachaModule::IDLE && m.given_ == 5, "STOP prevents drain restart");
+    }
+    for (const String value : {"-1", "0", "1000", "bad", "999999999999999999999", ""}) {
+        GachaModule m; String reply, args[] = {"GDRAIN", value}; m.drain(args, 2, reply);
+        check(reply.rfind("ERR", 0) == 0 && m.io.history.empty(), "invalid drain never defaults to hundreds of prizes");
+    }
+    {
+        GachaModule m; String reply; clockMs = 0; m.timeoutMs_ = 200; m.calibrate(reply);
+        for (uint32_t now = 0; now < 1000 && m.state_ != GachaModule::IDLE; ++now) tick(m, now, false);
+        check(m.motionResult_ == "jam" && m.io.pwm == 0 && m.saves == 0, "calibration with missing Hall fails without saving");
+    }
+    {
+        GachaModule m; String reply; clockMs = 0; m.calibrate(reply);
+        m.settlePhase_ = GachaModule::CALIB_REST; m.phaseUntil_ = 10000;
+        tick(m, GACHA_CALIB_MAX_MS, false);
+        check(m.motionResult_ == "jam" && m.io.pwm == 0, "whole calibration has a hard deadline");
+    }
+    calibrationScenario(true, 0);
+    calibrationScenario(false, 0);
+    calibrationScenario(true, UINT32_MAX - 400);
     check(delayCalls == 0, "all tested command and loop paths are nonblocking");
     return failures ? 1 : 0;
 }

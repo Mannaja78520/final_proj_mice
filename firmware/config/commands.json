@@ -159,14 +159,17 @@
     { "name": "GCFG?",     "scope": "gacha", "args": "",                  "query": true,  "help": "dispenser settings as JSON (magnets, pockets, drop, speed, ...)" },
     { "name": "GDISPENSE", "scope": "gacha", "args": "[FORCE] [<who>]",                   "motion": true, "help": "turn until one prize drops; FORCE = admin extra (closed event or empty), still counted" },
     { "name": "GSPIN",     "scope": "gacha", "args": "<pockets> [MAG]",                   "motion": true, "help": "turn n pockets (or n magnets with MAG), negative = backwards; a test, not counted as a prize" },
-    { "name": "GNUDGE",    "scope": "gacha", "args": "<pwm> <ms>",                       "motion": true, "help": "short manual motor movement: nonzero signed PWM within motor range, positive duration up to configured nudge limit; poll G? and STOP anytime; not a prize" },
     { "name": "GHOME",     "scope": "gacha", "args": "",                                  "motion": true, "help": "turn to the next magnet so a pocket sits at the receive position" },
     { "name": "STOP",      "scope": "gacha", "args": "",                                  "motion": true,
       "safety": true, "help": "stop the motor now" },
     { "name": "GSTOCK",    "scope": "gacha", "args": "<n>|ADD <n>|OFF",                   "help": "balls in the machine: set, add more, or stop counting" },
     { "name": "GEVENT",    "scope": "gacha", "args": "NAME <text>|OPEN|CLOSE|RESET",      "help": "the event: its name, open or closed, or clear this event's counts" },
     { "name": "GITEM",     "scope": "gacha", "args": "[<item type>]",                     "help": "which item type this machine holds (the hub matches requests to it)" },
-    { "name": "GCFG",      "scope": "gacha", "args": "<key> <value>|CLEAR",               "help": "magnets slots drop speed dir timeout debounce settle active_low overshoot overshoot_speed return return_speed center_speed pause fallback; CLEAR = all defaults while idle" },
-    { "name": "GCOUNT",    "scope": "gacha", "args": "RESET",                             "help": "clear the lifetime magnet and prize counts" }
+    { "name": "GCFG",      "scope": "gacha", "args": "<key> <value>|CLEAR",               "help": "magnets slots drop speed dir timeout debounce settle active_low; CLEAR = defaults" },
+    { "name": "GCOUNT",    "scope": "gacha", "args": "RESET",                             "help": "clear the lifetime magnet and prize counts" },
+    { "name": "GCALIB",    "scope": "gacha", "args": "",                                  "motion": true, "help": "auto-detect and calibrate centering for custom capsule mass" },
+    { "name": "GTEST",     "scope": "gacha", "args": "[<pockets>]",                       "motion": true, "help": "self-test mode: cycle pockets and verify dead-center hall alignment" },
+    { "name": "GDRAIN",    "scope": "gacha", "args": "[<max>]",                           "motion": true, "help": "continuously dispense prizes one by one until empty or STOP" },
+    { "name": "GNUDGE",    "scope": "gacha", "args": "<pwm> <ms>",                        "motion": true, "help": "pulse motor forward/reverse for test" }
   ]
 }
