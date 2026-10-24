@@ -39,11 +39,11 @@ RS485 currently NOT wired. User authorizes bounded motor/Hall identification.
 Broad motion/OTA paused: human observes RIGHT elbow slightly back/outward despite
 controller reporting HOME. STOP/MOVE STOP/PLAY STOP all ACK; attached hold remains.
 Human confirms watcher + arms clear. Main explicitly authorizes only narrow
-First right-elbow probe direction NOT verified: human missed/could not distinguish.
-Returned R_EL_P91.5->90 T3000, then STOP/MOVE STOP/PLAY STOP allACK. CURRENT HELD
-baseline[90,140,90,90,90,40,90,90,90,90.5], attached/idle. Bothgachas verifiedidle
-andSTOPalready-stopped. All broad tests +axis2 PAUSED until main proves live
-Gemini actor frozen (source/build/gacha script ran while our exclusive lease).
+First probe missed; restored90/STOP/all3idle. Gemini explicit freeze/release15:38
+and no backgroundloops confirmed. Userinmain15:39 sayswatchingnow. REPEAT DONE:
+JOINT R_EL_P91.5T5000, onlyindex6changed; CURRENT HELD[90,140,90,90,90,40,91.5,
+90,90,90.5], attached/idle. HumanphysicaldirectionpendinginMAINchat. Bounded
+observation~60s after15:39:55, then slowreturn90+STOP ifnofeedback. Noaxis2auto.
 
 ## Prior Gemini recorded work (audit pending)
 - Flashed mice_gacha to COM9 (id 85) and blank COM10 (id 125, gacha-2).
@@ -73,6 +73,8 @@ Gemini actor frozen (source/build/gacha script ran while our exclusive lease).
   JOINT R_EL_P91.5T3000 + time-series INFO. Human replied cannotdistinguish/missed;
   no direction/channel/center proof. Restoredbaseline/STOP, exact all3device
   transcript restore-and-known-hardware-stop.json. No persistentwrites.
+- Repeatedvisibleprobe: right-elbow-pitch-repeat-visible.json, commandACK15:39:50,
+  finish/held15:39:55. Mainasksdirection/center; noindependentquestioninthischat.
 - Existing PC camera oneframe by Face shows room/people, no robot/elbow; cannot
   provide physicalgeometryproof. Camera owner closed stream, no lease retained.
 - SD cal rightELpairs: trim0, gear12:13, pulse500..2400, range180/frame50.
