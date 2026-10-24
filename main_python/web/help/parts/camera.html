@@ -1,27 +1,29 @@
-<!-- ===================== STUDIO ===================== -->
 <section id="camera">
   <div class="shead">
     <span class="where tech">code/apps/camera · served at /app/camera/</span>
-    <h2>ESP32 camera — watch a board's camera on its own</h2>
-    <p>Every camera board the hub can reach, in one place, without opening a
-       module's whole website to find its Camera card.</p>
-    <p>It is called <b>ESP32 camera</b> because that is all it can show. The list
-       is built from modules of type <i>cam</i> — the ESP32-CAM boards. A webcam
-       plugged into this PC is not one of them and will not appear here.</p>
+    <h2>📷 ESP32 camera — ดูกล้องและปรับแต่งภาพแบบแยกจอ</h2>
+    <p>รวมภาพจากบอร์ดโมดูลกล้อง (ESP32-CAM) ทุกตัวที่เชื่อมต่ออยู่มาแสดงในหน้าเดียว
+       โดยไม่ต้องเปิดหน้าเว็บของแต่ละบอร์ด พร้อมระบบ Relay สตรีมมิ่งภาพให้ดูได้พร้อมกันหลายอุปกรณ์</p>
   </div>
 
-  <!-- Infographic: ESP32-CAM Relay & Tuning Guide -->
+  <!-- Real Screenshot & Visual Callout Guide -->
   <div class="info-box">
     <div class="info-header">
-      <b>ผังการทำงานของกล้อง ESP32-CAM และคู่มือการปรับภาพ</b>
-      <span class="info-badge">Infographic</span>
+      <b>ภาพหน้าจอจริงของ ESP32 Camera และคู่มือการปรับภาพ</b>
+      <span class="info-badge">Real UI · Callouts</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/camera-current.png" alt="Camera Real UI" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 35%;" title="1. กล่องแสดงภาพสด">1</div>
+      <div class="callout-pin" style="top: 30%; left: 75%;" title="2. สถานะการเชื่อมต่อ WiFi">2</div>
+      <div class="callout-pin" style="top: 60%; left: 50%;" title="3. แถบควบคุม Exposure &amp; Gain">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> การกระจายภาพหลายจอ (Multi-Client Relay)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> เปิดหน้า <code>/app/camera</code> จากโทรศัพท์หรือคอมกี่เครื่องก็ได้บน WiFi เดียวกัน</div>
+        <div class="action-card-title"><span class="num">1</span> กล่องภาพสดและการกระจายสัญญาณ (Live Stream Relay)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> เปิดดูผ่าน <code>/app/camera</code> จากเบราว์เซอร์กี่เครื่องก็ได้พร้อมกัน</div>
         <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          เนื่องจากชิป ESP32-CAM มีแรมจำกัดรับคนเดียวได้แค่ 1 สตรีม Hub ส่วนกลางจึงเป็นตัวดึงภาพมา 1 สตรีม แล้วนำมากระจายต่อให้คนดูหลายคนพร้อมกันโดยบอร์ดไม่ล่ม
+          ชิป ESP32 มีแรมจำกัดส่งได้แค่ 1 สตรีม Hub ส่วนกลางจึงเป็นตัวดึงภาพมา 1 สตรีม แล้วนำมากระจายต่อให้คนดูหลายคนพร้อมกันโดยบอร์ดไม่ล่ม
         </div>
       </div>
       <div class="action-card">

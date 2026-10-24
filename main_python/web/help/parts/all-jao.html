@@ -7,56 +7,24 @@
        เชื่อมโยงกับเซิร์ฟเวอร์ Mice Hub และผูกเข้ากับตู้กาชาปองแจกของรางวัลอัตโนมัติ</p>
   </div>
 
-  <!-- Infographic: Games to Prize Machine Event Flow -->
+  <!-- Real Screenshot & Visual Callout Guide -->
   <div class="info-box">
     <div class="info-header">
-      <b>ผังการทำงานของ All-Jao Games และการเชื่อมต่อตู้แจกของรางวัล</b>
-      <span class="info-badge">Infographic</span>
+      <b>ภาพหน้าจอจริงของ All-Jao Games และการควบคุม</b>
+      <span class="info-badge">Real UI · Callouts</span>
     </div>
-    <div class="info-visual-wrapper" style="padding: 20px; background: var(--card);">
-      <svg viewBox="0 0 760 170" width="100%" height="auto" style="display:block; font-family:var(--sans); font-size:12px;">
-        <!-- Box 1: Mini-games -->
-        <rect x="10" y="25" width="220" height="115" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
-        <text x="25" y="52" font-weight="700" fill="var(--txt)" font-size="14">1. ผู้เล่นร่วมสนุก (4 Games)</text>
-        <text x="25" y="76" fill="var(--mut)">• 🕹️ Claw Machine (ตู้คีบ)</text>
-        <text x="25" y="96" fill="var(--mut)">• 🃏 Matching (จับคู่) / ❓ Quiz</text>
-        <text x="25" y="116" fill="var(--mut)">• 🎡 Lucky Wheel (วงล้อ)</text>
-        <circle cx="215" cy="40" r="11" fill="var(--acc)"/>
-        <text x="212" y="44" fill="#fff" font-weight="700" font-size="11">1</text>
-
-        <!-- Arrow 1 -->
-        <path d="M 235 80 L 275 80" stroke="var(--acc)" stroke-width="2" stroke-dasharray="4"/>
-
-        <!-- Box 2: Hub API -->
-        <rect x="280" y="25" width="200" height="115" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
-        <text x="295" y="52" font-weight="700" fill="var(--txt)" font-size="14">2. ส่งคะแนน / ผลชนะ</text>
-        <text x="295" y="76" fill="var(--mut)">• API: /play/all-jao/</text>
-        <text x="295" y="96" fill="var(--mut)">• ตรวจสอบเงื่อนไขในชีต</text>
-        <text x="295" y="116" fill="var(--mut)">• ส่งสัญญาณ Event Win</text>
-        <circle cx="465" cy="40" r="11" fill="var(--acc)"/>
-        <text x="462" y="44" fill="#fff" font-weight="700" font-size="11">2</text>
-
-        <!-- Arrow 2 -->
-        <path d="M 485 80 L 525 80" stroke="var(--acc)" stroke-width="2" stroke-dasharray="4"/>
-
-        <!-- Box 3: Gacha Dispense -->
-        <rect x="530" y="25" width="220" height="115" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
-        <text x="545" y="52" font-weight="700" fill="var(--txt)" font-size="14">3. ตู้กาชาปองจ่ายรางวัล</text>
-        <text x="545" y="76" fill="var(--mut)">• หมุนมอเตอร์ Revolver 90°</text>
-        <text x="545" y="96" fill="var(--mut)">• ปล่อยแคปซูลของรางวัล</text>
-        <text x="545" y="116" fill="var(--mut)">• หุ่น Nong แสดงท่าดีใจ</text>
-        <circle cx="735" cy="40" r="11" fill="var(--acc)"/>
-        <text x="732" y="44" fill="#fff" font-weight="700" font-size="11">3</text>
-      </svg>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/all-jao-current.png" alt="All-Jao Real UI" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 20%;" title="1. ปุ่มเปิดเล่นเกม">1</div>
+      <div class="callout-pin" style="top: 55%; left: 50%;" title="2. มินิเกมทั้ง 4 ชนิด">2</div>
+      <div class="callout-pin" style="top: 85%; left: 50%;" title="3. การเชื่อมต่อตู้แจกของรางวัล">3</div>
     </div>
-
-    <!-- Action Impact Grid -->
     <div class="action-impact-grid">
       <div class="action-card">
         <div class="action-card-title"><span class="num">1</span> การเปิดเล่นเกม (Open Games)</div>
         <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Open in a new tab ↗</b> หรือเล่นผ่านกล่องในหน้าเว็บ</div>
         <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          Hub จะสั่งเริ่มโปรเซสเกมฝั่ง Python อัตโนมัติ (`/api/all-jao/start`) และเสิร์ฟหน้าจอเกมพร้อมเล่นทันที
+          Hub จะสั่งเริ่มโปรเซสเกมฝั่ง Python อัตโนมัติ (<code>/api/all-jao/start</code>) และเสิร์ฟหน้าจอเกมพร้อมเล่นทันที
         </div>
       </div>
       <div class="action-card">

@@ -7,41 +7,23 @@
        ตัดการประมวลผล 3D Three.js ออก 100% ทำให้เปิดได้รวดเร็ว ลื่นไหล ไม่กินสเปก และไม่มีอาการค้างบน Smart TV หรือสมาร์ทโฟน</p>
   </div>
 
-  <!-- Infographic: TV Remote Decoupled Architecture -->
+  <!-- Real Screenshot & Visual Callout Guide -->
   <div class="info-box">
     <div class="info-header">
-      <b>ผังเปรียบเทียบสถาปัตยกรรม Nong Studio (PC) vs TV Remote (Smart TV / Mobile)</b>
-      <span class="info-badge">Infographic</span>
+      <b>ภาพหน้าจอจริงของ TV Remote และจุดควบคุมการใช้งาน</b>
+      <span class="info-badge">Real UI · Callouts</span>
     </div>
-    <div class="info-visual-wrapper" style="padding: 20px; background: var(--card);">
-      <svg viewBox="0 0 760 210" width="100%" height="auto" style="display:block; font-family:var(--sans); font-size:12px;">
-        <!-- Left: Heavy PC Studio -->
-        <rect x="15" y="20" width="345" height="170" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
-        <text x="35" y="48" font-weight="700" fill="var(--txt)" font-size="14">🖥️ Nong Studio (PC Mode)</text>
-        <text x="35" y="75" fill="var(--mut)">• 3D WebGL Canvas (Three.js 60fps)</text>
-        <text x="35" y="98" fill="var(--mut)">• Inverse Kinematics (IK) &amp; Timeline Drag</text>
-        <text x="35" y="121" fill="var(--mut)">• ใช้การ์ดจอ GPU และ RAM ~150MB</text>
-        <text x="35" y="150" font-weight="600" fill="var(--txt)">🎯 เหมาะสำหรับ: คอมพิวเตอร์ PC ตั้งโต๊ะ / แล็ปท็อป</text>
-        <rect x="35" y="162" width="160" height="18" rx="4" fill="#fef3c7"/>
-        <text x="42" y="175" fill="#92400e" font-size="11" font-weight="600">หนักเกินไปสำหรับ Smart TV</text>
-
-        <!-- Right: Lightweight TV Remote -->
-        <rect x="400" y="20" width="345" height="170" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
-        <text x="420" y="48" font-weight="700" fill="#15803d" font-size="14">📺 TV Remote &amp; Monitor (Thin Client)</text>
-        <text x="420" y="75" fill="#166534">• Zero 3D / Zero Three.js (ไม่มี 3D เด็ดขาด)</text>
-        <text x="420" y="98" fill="#166534">• แถบวัดองศา CSS Light Gauges (200ms poll)</text>
-        <text x="420" y="121" fill="#166534">• ปุ่มสัมผัสขนาดใหญ่ เหมาะกับรีโมท TV</text>
-        <text x="420" y="150" font-weight="600" fill="#15803d">🎯 เหมาะสำหรับ: Smart TV, แท็บเล็ต, มือถือทุกรุ่น</text>
-        <rect x="420" y="162" width="170" height="18" rx="4" fill="#bbf7d0"/>
-        <text x="428" y="175" fill="#14532d" font-size="11" font-weight="600">เปิดปุ๊บติดปั๊บ ลื่นไหล 100%</text>
-      </svg>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/tv-current.png" alt="TV Remote Real UI" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 50%;" title="1. ปุ่มควบคุมหลัก">1</div>
+      <div class="callout-pin" style="top: 38%; left: 50%;" title="2. รายการท่าทาง">2</div>
+      <div class="callout-pin" style="top: 54%; left: 50%;" title="3. สั่งเสียงพูดด่วน">3</div>
+      <div class="callout-pin" style="top: 80%; left: 50%;" title="4. แถบมอนิเตอร์เซอร์โว 10 จุด">4</div>
     </div>
-
-    <!-- Action Impact Grid -->
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมการเคลื่อนไหวหลัก (Play / Pause / Stop / Home)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่มขนาดใหญ่บนหน้าจอ หรือใช้ปุ่มลูกศร/Enter บนรีโมททีวี</div>
+        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมการเคลื่อนไหวหลัก (Motion Controls)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม Play, Pause, Stop หรือ Home ด้วยรีโมททีวีหรือนิ้วมือ</div>
         <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
           • <b>Play / Pause:</b> สั่งเริ่มหรือหยุดการขยับท่าทางชั่วคราว<br>
           • <b>Stop:</b> สั่งหยุดหุ่นยนต์ฉุกเฉินทันที มอเตอร์จะล็อคตำแหน่งปัจจุบัน<br>
@@ -52,14 +34,14 @@
         <div class="action-card-title"><span class="num">2</span> รายการท่าทาง (Sequence Launcher)</div>
         <div class="action-step"><b>ทำอย่างไร:</b> เลือกท่าทางจากกล่องดรอปดาวน์ แล้วกด <b>▶ Play Sequence</b></div>
         <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ระบบจะดึงไฟล์ท่าทางจาก Hub กลาง (`/api/list?kind=sequences`) และสั่งให้หุ่นรันชุดท่าทางนั้นทันที เจ้าหน้าที่หลังเวทีสามารถใช้มือถือกดเลือกโชว์ได้สะดวก
+          ระบบจะดึงไฟล์ท่าทางจาก Hub กลาง (<code>/api/list?kind=sequences</code>) และสั่งให้หุ่นรันชุดท่าทางนั้นทันที เจ้าหน้าที่หลังเวทีสามารถใช้มือถือกดเลือกโชว์ได้สะดวก
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">3</span> สั่งเสียงพูดด่วน (Quick Speech &amp; Speak)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> แตะปุ่มคำพูดยอดนิยม เช่น "สวัสดีครับ", "ขอบคุณครับ" หรือพิมพ์ข้อความในช่อง</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> แตะปุ่มคำพูดยอดนิยม เช่น "สวัสดีครับ", "ยินดีต้อนรับครับ", "ขอบคุณครับ" หรือพิมพ์ข้อความในช่อง</div>
         <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ส่งคำสั่งเข้าคิวเสียงกลาง (`/api/speak`) เสียงจะเปล่งออกจากลำโพงของหุ่นยนต์ Nong หรือลำโพงเวทีทันทีโดยไม่กระตุก
+          ส่งคำสั่งเข้าคิวเสียงกลาง (<code>/api/speak</code>) เสียงจะเปล่งออกจากลำโพงของหุ่นยนต์ Nong หรือลำโพงเวทีทันทีโดยไม่กระตุก
         </div>
       </div>
       <div class="action-card">
@@ -69,6 +51,31 @@
           แสดงมุมองศาจริง (0° - 180°) ของข้อต่อทั้ง 10 จุด (ไหล่ ข้อศอก เอว คอ) แบบ Real-time ด้วย CSS Gauge เบาๆ แสดงผลอัปเดตแบบ 200ms โดยไม่ดึงภาระ GPU หรือ CPU ของทีวี
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Infographic: Decoupled Architecture -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ผังเปรียบเทียบสถาปัตยกรรม Nong Studio (PC) vs TV Remote (Smart TV / Mobile)</b>
+      <span class="info-badge">Architecture</span>
+    </div>
+    <div class="info-visual-wrapper" style="padding: 20px; background: var(--card);">
+      <svg viewBox="0 0 760 190" width="100%" height="auto" style="display:block; font-family:var(--sans); font-size:12px;">
+        <rect x="15" y="15" width="345" height="160" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
+        <text x="35" y="42" font-weight="700" fill="var(--txt)" font-size="14">🖥️ Nong Studio (PC Mode)</text>
+        <text x="35" y="68" fill="var(--mut)">• 3D WebGL Canvas (Three.js 60fps)</text>
+        <text x="35" y="90" fill="var(--mut)">• Inverse Kinematics (IK) &amp; Timeline Drag</text>
+        <text x="35" y="112" fill="var(--mut)">• ใช้การ์ดจอ GPU และ RAM ~150MB</text>
+        <text x="35" y="138" font-weight="600" fill="var(--txt)">🎯 เหมาะสำหรับ: คอมพิวเตอร์ PC ตั้งโต๊ะ / แล็ปท็อป</text>
+
+        <rect x="400" y="15" width="345" height="160" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+        <text x="420" y="42" font-weight="700" fill="#15803d" font-size="14">📺 TV Remote &amp; Monitor (Thin Client)</text>
+        <text x="420" y="68" fill="#166534">• Zero 3D / Zero Three.js (ไม่มี 3D เด็ดขาด)</text>
+        <text x="420" y="90" fill="#166534">• แถบวัดองศา CSS Light Gauges (200ms poll)</text>
+        <text x="420" y="112" fill="#166534">• ปุ่มสัมผัสขนาดใหญ่ เหมาะกับรีโมท TV</text>
+        <text x="420" y="138" font-weight="600" fill="#15803d">🎯 เหมาะสำหรับ: Smart TV, แท็บเล็ต, มือถือทุกรุ่น</text>
+      </svg>
     </div>
   </div>
 
