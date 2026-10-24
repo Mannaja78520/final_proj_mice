@@ -30,8 +30,12 @@
     #define GACHA_OVERSHOOT_SPEED  380    // gentle forward overshoot speed (0-1023)
     #define GACHA_RETURN_MS        280    // 2. reverse rock duration past magnet to agitate prize (ms)
     #define GACHA_RETURN_SPEED     360    // gentle reverse rock speed (0-1023)
-    #define GACHA_CENTER_SPEED     260    // 3. gentle forward crawl speed to dead-center on Hall (0-1023)
-    #define GACHA_PAUSE_MS         5000   // 4. pause at dead-center point (ms, user requested 5s)
+    #define GACHA_CENTER_SPEED     260    // 3. gentle forward steps to a debounced Hall stop (0-1023)
+    #define GACHA_CENTER_PULSE_MS   20    // motor-on step; loop stays responsive to Hall and STOP
+    #define GACHA_CENTER_REST_MS    35    // motor-off rest between steps
+    #define GACHA_CENTER_WAIT_MS    40    // settle before accepting debounced Hall
+    #define GACHA_NUDGE_MAX_MS      1000  // maximum duration of one manual GNUDGE
+    #define GACHA_PAUSE_MS         5000   // 4. stationary pause after Hall found (ms, user requested 5s)
     #define GACHA_FALLBACK_SLOT_MS 0      // timed slot backup if sensor fails (0 = disable, ms per slot)
     // Hardware note: Motor has anti-back-EMF Schottky diode (drop ~0.187V). Future INA219 sensor on I2C.
 #endif

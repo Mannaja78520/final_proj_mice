@@ -2,6 +2,7 @@
 #include "core/HwConfig.h"
 #include "core/Util.h"
 #include <Preferences.h>
+#include <stdlib.h>
 
 // Text the person types (event name, item type, who) is stored and echoed in
 // JSON: keep it short so an NVS slot and a status push stay small.
@@ -42,10 +43,12 @@ void GachaModule::motorOff() {
 
 void GachaModule::startTurn(Job job, int passes) {
     job_ = job;
+    motionResult_ = "turning";
     want_ = passes < 0 ? -passes : passes;
     sign_ = passes < 0 ? -1 : 1;
     got_ = 0;
     settleUntil_ = 0;
+    center_.cancel();
     settlePhase_ = SETTLE_NONE;
     phaseUntil_ = 0;
     startMs_ = lastPassMs_ = millis();
@@ -53,10 +56,32 @@ void GachaModule::startTurn(Job job, int passes) {
     if (motor_) motor_->spin(sign_ * dir_ * speed_);
 }
 
+void GachaModule::startNudge(int pwm, uint32_t duration) {
+    job_ = JOB_NUDGE;
+    motionResult_ = "turning";
+    want_ = got_ = 0;
+    settleUntil_ = 0;
+    center_.cancel();
+    startMs_ = millis();
+    phaseUntil_ = startMs_ + duration;
+    state_ = TURNING;
+    settlePhase_ = SETTLE_NUDGE;
+    if (motor_) motor_->spin(dir_ * pwm);
+}
+
+void GachaModule::startCenter(uint32_t now) {
+    motorOff();
+    settlePhase_ = SETTLE_CENTER;
+    center_.begin(now, (uint32_t)timeoutMs_, GACHA_CENTER_PULSE_MS,
+                  GACHA_CENTER_REST_MS, GACHA_CENTER_WAIT_MS);
+}
+
 // Every motion ends here, whatever ended it: the motor is off and a dispense
 // leaves a record an app can read back with G? (seq, result, who).
 void GachaModule::finish(const char* result) {
     motorOff();
+    center_.cancel();
+    motionResult_ = result;
     settlePhase_ = SETTLE_NONE;
     phaseUntil_ = 0;
     const bool wasDispense = state_ != IDLE && job_ == JOB_DISPENSE;
@@ -75,6 +100,10 @@ void GachaModule::loop() {
     if (state_ == IDLE) return;
 
     if (settlePhase_ != SETTLE_NONE) {
+        if (settlePhase_ == SETTLE_NUDGE) {
+            if ((int32_t)(now - phaseUntil_) >= 0) finish("done");
+            return;
+        }
         if (settlePhase_ == SETTLE_ROCK_FWD) {
             // Phase 1: Forward overshoot past drop lip (slowly)
             if ((int32_t)(now - phaseUntil_) >= 0) {
@@ -84,10 +113,7 @@ void GachaModule::loop() {
                     const int rSpeed = returnSpeed_ > 0 ? returnSpeed_ : 360;
                     if (motor_) motor_->spin(-sign_ * dir_ * rSpeed); // reverse rock past magnet to other side
                 } else {
-                    motorOff();
-                    settlePhase_ = SETTLE_CENTER;
-                    centerStartMs_ = now;
-                    phaseUntil_ = now + 40;
+                    startCenter(now);
                 }
             }
             return;
@@ -97,17 +123,16 @@ void GachaModule::loop() {
             // Phase 2: Reverse rock past magnet to the other side to agitate prize
             if ((int32_t)(now - phaseUntil_) >= 0) {
                 // Now on reverse side: micro-step forward to center dead-on Hall magnet
-                motorOff();
-                settlePhase_ = SETTLE_CENTER;
-                centerStartMs_ = now;
-                phaseUntil_ = now + 40;
+                startCenter(now);
             }
             return;
         }
 
         if (settlePhase_ == SETTLE_CENTER) {
-            // Phase 3: Micro-step forward onto Hall sensor dead-center (zero coasting)
-            if (hallActive()) {
+            const gachamath::CenterMotion::Result step = center_.tick(hall_.stable, now);
+            if (step == gachamath::CenterMotion::TIMED_OUT) {
+                finish("jam");
+            } else if (step == gachamath::CenterMotion::AT_HALL) {
                 motorOff();
                 if (pauseMs_ > 0) {
                     settlePhase_ = SETTLE_PAUSE;
@@ -115,30 +140,10 @@ void GachaModule::loop() {
                 } else {
                     finish("done");
                 }
-                return;
-            }
-
-            // Fallback safety timeout if hall sensor is disconnected or broken
-            if ((int32_t)(now - centerStartMs_) >= 3500) {
+            } else if (step == gachamath::CenterMotion::PULSE) {
+                if (motor_) motor_->spin(sign_ * dir_ * centerSpeed_);
+            } else {
                 motorOff();
-                if (pauseMs_ > 0) {
-                    settlePhase_ = SETTLE_PAUSE;
-                    phaseUntil_ = now + (uint32_t)pauseMs_;
-                } else {
-                    finish("done");
-                }
-                return;
-            }
-
-            if ((int32_t)(now - phaseUntil_) >= 0) {
-                // Inch forward in tiny 20ms micro-step (zero momentum)
-                const int cSpeed = centerSpeed_ > 0 ? centerSpeed_ : 260;
-                if (motor_) {
-                    motor_->spin(sign_ * dir_ * cSpeed);
-                    delay(20);
-                    motorOff();
-                }
-                phaseUntil_ = now + 35; // wait 35ms mechanical rest before re-checking
             }
             return;
         }
@@ -206,6 +211,16 @@ void GachaModule::loop() {
     if (now - lastPassMs_ > (uint32_t)timeoutMs_) finish("jam");
 }
 
+void GachaModule::resetDefaults() {
+    magnets_ = GACHA_MAGNETS; slots_ = GACHA_SLOTS; drop_ = GACHA_DROP_SLOTS;
+    speed_ = GACHA_SPEED; dir_ = 1; timeoutMs_ = GACHA_SLOT_TIMEOUT_MS;
+    debounceMs_ = GACHA_DEBOUNCE_MS; settleMs_ = GACHA_SETTLE_MS;
+    overshootMs_ = GACHA_OVERSHOOT_MS; overshootSpeed_ = GACHA_OVERSHOOT_SPEED;
+    returnMs_ = GACHA_RETURN_MS; returnSpeed_ = GACHA_RETURN_SPEED;
+    centerSpeed_ = GACHA_CENTER_SPEED; pauseMs_ = GACHA_PAUSE_MS;
+    fallbackSlotMs_ = GACHA_FALLBACK_SLOT_MS; activeLow_ = GACHA_HALL_ACTIVE_LOW;
+}
+
 bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
     String& cmd = argv[0];   // already uppercased by the router
 
@@ -214,15 +229,20 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
 
     if (cmd == "GNUDGE") {
         if (argc < 3) { reply = "ERR GNUDGE <pwm> <ms>"; return true; }
-        const int pwm = argv[1].toInt();
-        const int ms = argv[2].toInt();
-        if (motor_) {
-            motor_->spin(dir_ * pwm);
-            delay(ms);
-            motorOff();
+        if (state_ != IDLE) { reply = "ERR busy"; return true; }
+        if (!motor_) { reply = "ERR no motor pins (PIN motor_a / motor_b)"; return true; }
+        if (!argv[1].length() || !argv[2].length()) { reply = "ERR GNUDGE <pwm> <ms>"; return true; }
+        char *pwmEnd, *msEnd;
+        const long pwm = strtol(argv[1].c_str(), &pwmEnd, 10);
+        const long ms = strtol(argv[2].c_str(), &msEnd, 10);
+        if (pwmEnd == argv[1].c_str() || *pwmEnd || pwm == 0 || pwm < -PWM_Max || pwm > PWM_Max) {
+            reply = "ERR pwm nonzero within motor range"; return true;
         }
-        delay(30);
-        reply = "OK at_hall=" + String(hallActive() ? "1" : "0");
+        if (msEnd == argv[2].c_str() || *msEnd || ms < 1 || ms > GACHA_NUDGE_MAX_MS) {
+            reply = "ERR ms outside nudge limit"; return true;
+        }
+        startNudge((int)pwm, (uint32_t)ms);
+        reply = "OK nudging";  // poll G?; never hold the router lock while moving
         return true;
     }
 
@@ -340,12 +360,10 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
 
     if (cmd == "GCFG") {
         if (argc == 2 && argv[1].equalsIgnoreCase("CLEAR")) {
+            if (state_ != IDLE) { reply = "ERR busy"; return true; }
             Preferences p;
             if (p.begin("gacha", false)) { p.remove("cfg"); p.end(); }
-            magnets_ = GACHA_MAGNETS; slots_ = GACHA_SLOTS; drop_ = GACHA_DROP_SLOTS;
-            speed_ = GACHA_SPEED; dir_ = 1; timeoutMs_ = GACHA_SLOT_TIMEOUT_MS;
-            debounceMs_ = GACHA_DEBOUNCE_MS; settleMs_ = GACHA_SETTLE_MS;
-            activeLow_ = GACHA_HALL_ACTIVE_LOW;
+            resetDefaults();
             saveCfg();
             reply = "OK settings back to defaults";
             return true;
@@ -417,7 +435,9 @@ String GachaModule::statusJson() {
 
 void GachaModule::status(JsonObject o) {
     o["state"] = state_ == IDLE ? "idle" : (state_ == HOMING ? "homing" : (job_ == JOB_DISPENSE ? "dispensing" : "turning"));
-    o["at_hall"] = hallActive() || hall_.stable;
+    o["motion_result"] = motionResult_;
+    o["at_hall"] = hall_.stable;
+    o["hall_raw"] = hallActive();
     o["hits"] = hits_;
     o["pos"] = pos_;
     o["item"] = item_;
@@ -442,6 +462,7 @@ void GachaModule::status(JsonObject o) {
         else if (settlePhase_ == SETTLE_ROCK_BACK) o["phase"] = "rock_back";
         else if (settlePhase_ == SETTLE_CENTER) o["phase"] = "center";
         else if (settlePhase_ == SETTLE_PAUSE) o["phase"] = "pause";
+        else if (settlePhase_ == SETTLE_NUDGE) o["phase"] = "nudge";
         else o["phase"] = "turning";
     }
     JsonDocument cfg;

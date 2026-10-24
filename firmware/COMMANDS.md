@@ -755,12 +755,13 @@ Wiring defaults (change with `PIN`, reboot): motor `motor_a` 25, `motor_b` 26,
 |---|---|---|
 | `GDISPENSE [FORCE] [<who>]` | `OK dispensing seq=7 stock=11` | turn `drop` pockets so one prize falls. Refused `ERR event closed`, `ERR empty`, `ERR busy`. `FORCE` = the admin's extra: skips closed/empty, still counted (`forced`). `<who>` (text) is kept in `last.who` |
 | `GSPIN <n> [MAG]` | `OK turning 2 magnet(s)` | test turn: n pockets (n magnets with `MAG`), negative = backwards; not a prize, stock untouched |
+| `GNUDGE <pwm> <ms>` | `OK nudging` | idle-only manual movement: nonzero signed PWM within motor range, duration 1 to `GACHA_NUDGE_MAX_MS` (default 1000 ms). Asynchronous; poll `G?` and `STOP` at any time. No stock/dispense count or pocket-position claim |
 | `GHOME` | `OK finding the next magnet` | turn until a magnet is over the sensor (pocket at the loading place); `pos` = 0 |
 | `STOP` | `OK stopped` | motor off now (safety: never needs a login) |
 | `GSTOCK <n>` / `GSTOCK ADD <n>` / `GSTOCK OFF` | `OK stock=12` | balls in the machine now / put more in / stop counting (`stock` -1, never empty) |
 | `GEVENT NAME <text>` / `OPEN` / `CLOSE` / `RESET` | `OK event open` | the event name (40 chars), open or closed, `RESET` = this event's counts to zero (given, forced, loaded, seq) |
 | `GITEM [<type>]` | `OK item "keychain"` | which item type this machine holds; the hub's gacha app routes "give type X" by it |
-| `GCFG <key> <value>` / `GCFG CLEAR` | `OK drop=2` | `magnets` `slots` (pockets) `drop` `speed` (50-1023) `dir` (1/-1) `timeout` `debounce` `settle` (ms) `active_low` (0/1). Magnets must be a whole multiple of pockets |
+| `GCFG <key> <value>` / `GCFG CLEAR` | `OK drop=2` | `magnets` `slots` (pockets) `drop` `speed` (50-1023) `dir` (1/-1) `timeout` `debounce` `settle` (ms) `active_low` (0/1), `overshoot`/`return` (ms) and their `_speed`, `center_speed`, `pause` (ms), `fallback` (ms, 0 disables). Magnets must be a whole multiple of pockets. CLEAR restores all settings and is refused while moving |
 | `GCFG?` | `{"magnets":4,"slots":4,"drop":2,...,"per_slot":1}` | the settings |
 | `G?` | `{"state":"idle","at_hall":true,"hits":42,"pos":0,"item":"","event":"","open":true,"stock":12,"empty":false,"loaded":12,"given":3,"forced":1,"total":40,"last":{"seq":3,"result":"done","who":"","forced":false,"ms":1830},"cfg":{...},"motor":true}` | everything; the same object is `module` in `INFO` / `/api/status` |
 | `GCOUNT RESET` | `OK lifetime counts cleared` | `hits` and `total` to zero |
@@ -768,6 +769,18 @@ Wiring defaults (change with `PIN`, reboot): motor `motor_a` 25, `motor_b` 26,
 `state`: `idle` `turning` `homing` `dispensing`. `last.result`: `turning`
 `done` `jam` `stopped`. An app that asked for a prize polls `G?` until
 `last.seq` is its seq and `last.result` is not `turning`.
+
+Rocking uses the configured forward/reverse durations and speeds. Centering
+uses debounced Hall, nonblocking motor steps and the configured `timeout` as
+its own deadline; no Hall by that deadline gives `jam`, motor off, without a
+success pause. When Hall is found, `pause` (default 5000 ms) keeps the motor
+off before completion. `STOP` cancels every phase, including `GNUDGE`.
+`motion_result` reports the current/last motion (`turning`, `done`, `jam`,
+`stopped`), including GSPIN/GHOME/GNUDGE, without replacing the last prize's
+separate `last.seq` / `last.result` record.
+`at_hall` is the debounced sensor state (`hall_raw` is the raw input); neither
+proves the physical magnet centre or that a capsule fell. Timed `fallback`
+is disabled by default and cannot establish a sensor-confirmed position.
 
 Other apps (simple API): over WiFi `GET /api/cmd?c=G%3F` needs no login;
 `GDISPENSE` needs a login session (`POST /api/login`), or go through the hub's
