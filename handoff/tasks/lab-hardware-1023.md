@@ -1,10 +1,10 @@
 # Lab: robot and prize ESP32 transport acceptance
 
 Owner: codex:10231420-85cc
-Updated: 2026-10-24 22:12 (Bangkok)
+Updated: 2026-10-24 22:17 (Bangkok)
 Branch: codex/lab-hardware-1023
 Tree: E:/final_proj/mice/code/.staging-lab-1023
-Last commit: f9714c7 before this metadata checkpoint
+Last commit: 0b19c02 before closing evidence checkpoint; closing commit at branch HEAD
 Plan: A45-11 expanded nong acceptance; historical A47-19/A47-5/A46-2
 
 ## Goal and latest scope
@@ -15,10 +15,13 @@ only, inspect active drivers and release QC/build resources; no new physical,
 trim, motion, OTA, restart or live fixture operation unless exact owned cleanup
 is demonstrably necessary. Current evidence already records cleanup complete.
 
-## Doing now
-Reconcile 32-command plus 19-feature matrix against saved SD/audio/TALK logs and
-human hearing confirmation; checkpoint and send exact results to main/source.
+## Current checkpoint
+32-command plus 19-feature matrix reconciled against saved SD/audio/TALK logs
+and direct human hearing confirmation. Markdown/JSON/CSV agree, all referenced
+evidence files exist; no pending owned cleanup. Full acceptance stays incomplete.
 No hardware request, raw COM handle, test child, QC or build is in flight here.
+Matrix: scratch/nong-acceptance-1024/nong-acceptance-matrix.{md,json}; command
+details: nong-command-acceptance.csv. Private wire logs retained, not committed.
 
 ## Actual last device state (historical snapshot, not a fresh live poll)
 web-talk-test.json final INFO: nong67/chipB4BFE91C5A74 at WiFi192.168.137.26;
@@ -84,13 +87,14 @@ freeze/release15:38 (historical; later root edits are source owner's audit).
 22:12 read-only Windows inventory found no matching QC/native/PlatformIO/
 esptool/fake/pocket-loop/nong-acceptance children. This is an inventory snapshot,
 not proof against an unseen future actor. Normal services were not stopped.
-Release QC/fake/native-build/timing-driver exclusion to source01a1679e after
-BRIDGE serialization. Physical hardware remains separately reserved/stopped;
+RELEASED QC/fake/native-build/timing-driver exclusion to source01a1679e in
+serialized BRIDGE22:12; ACK sent to source/main. Physical remains reserved/stopped;
 this release does NOT authorize flash, motion, live commands or service restart.
 No PC camera lease. Hub remains sole normal COM owner. No root source edits.
 
 ## Remaining limits / next
-1. Finish matrix reconciliation and commit/push this metadata; notify both chats.
+1. Metadata checkpoint finished; A45-11 handed back todo/open with exact limits
+   and next coordination step via tools/plan.py. Closing commit shared with main/source.
 2. A45-11 stays incomplete: physical HOME/axes user-deferred; nong USB/RS485
    absent; broad motion/Studio/RRT/video/RELAX and calibration mutators not run;
    phone mic, OTA/FW update and hotspot outage not independently tested.
