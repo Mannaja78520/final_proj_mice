@@ -3,10 +3,11 @@
 ## Start here: HANDOFF.md (user 2026-10-21)
 
 Read `HANDOFF.md` first, then your one task file in `handoff/tasks/`.
-Mandatory Handoff-First (user 2026-10-25, all AIs): never write a line of code
-without an active task in `handoff/tasks/` (`python tools/handoff.py take/new`).
+Mandatory Handoff-First & Force-Queue Reconciliation (user 2026-10-25, all AIs):
+never write code without an active task in `handoff/tasks/` (`tools/handoff.py take/new`).
 Update `## Doing now` before each step, `## Done`/`## Next` after each step, and
-commit WIP around EVERY step, not only at the end. Parallel agents never clash.
+commit WIP around EVERY step. If interrupted or force-queued, check the task file,
+compare and pair old work with the new demand — never blindly abandon in-flight tasks.
 Tokens: run QC as `python qc/run_qc.py --quiet <check names>` for the files
 you touched (full log in qc/last_run.log), full QC once before merge; grep or
 tail big files (BRIDGE, PLAN.html, app.js, reports/), never read them whole.
