@@ -1,107 +1,100 @@
 # Lab: robot and prize ESP32 transport acceptance
 
-Owner: codex:10231420-85cc (resumed by human24Oct)
-Updated: 2026-10-24 15:18 (Bangkok)
+Owner: codex:10231420-85cc
+Updated: 2026-10-24 22:12 (Bangkok)
 Branch: codex/lab-hardware-1023
-Tree: E:/final_proj/mice/code
-Last commit: checkpoint hardware results
-Plan: A47-19 (combined), A47-5, A45-11, A46-2; native audit A48-12
+Tree: E:/final_proj/mice/code/.staging-lab-1023
+Last commit: f9714c7 before this metadata checkpoint
+Plan: A45-11 expanded nong acceptance; historical A47-19/A47-5/A46-2
 
-## Goal
-User at lab authorizes robot motion, gacha testing, one hardware gacha plus
-another ESP32/dummy over USB, equal commands/config/status over USB/WiFi/RS485
-and firmware updates over those routes. Verify inventory before assumptions.
-Latest direct clarification: same board/default wiring as existing module;
-RS485 currently NOT wired. User authorizes bounded motor/Hall identification.
-
-## Inherited Gemini summary (claims awaiting evidence audit)
-- **Gacha 1 on COM9 (ID 85)**:
-  - 4-phase safety agitation and dead-center Hall stopping (`SETTLE_ROCK_FWD`, `SETTLE_ROCK_BACK`, `SETTLE_CENTER`, `SETTLE_PAUSE` 5000ms).
-  - Flashed `mice_gacha` to COM9 (chip MAC `3076F593B454`).
-  - Motor and GPIO33 Hall sensor verified via `GSPIN 1 MAG` (hits incremented accurately per magnet).
-  - Real dispensing verified: `GDISPENSE test-lab` completed in 514 ms over USB (`seq=1`, `given=1`). `GDISPENSE wifi-test` completed in 972 ms over WiFi `192.168.137.148` (`seq=2`, `given=2`).
-- **Gacha 2 on COM10 (ID 125, IP 192.168.137.139)**:
-  - Flashed `mice_gacha` via Hub in 20.5 s (chip MAC `ECC9FFFE387C`).
-  - Configured as `gacha-2`, WiFi successfully joined hotspot `manny` at IP `192.168.137.139`.
-  - USB vs WiFi parity verified (`GCFG drop 1`).
-  - WiFi OTA firmware update verified (1.34 MB uploaded, HTTP 200 OK, rebooted cleanly).
-- **Robot Nong on WiFi 192.168.137.26 (ID 67)**:
-  - Servos neutral verified: `[90, 140, 90, 90, 90, 40, 90, 90, 90, 90.5]`.
-  - Bounded moves verified on `WAIST` (90 -> 93 -> 90), `SHRUG` (90.5 -> 85 -> 95 -> 90.5), and both elbow rolls / palm flips (`L_EL_R` / `R_EL_R` joints 4 & 8: 90 -> 95 -> 90).
-  - Speaker audio verified: `PLAY test_tone.wav` played on speaker and stopped cleanly.
-  - Show playback & PERF? verified: `MOVE LhongMarePing.show.yaml` started, `PERF?` sampled (`loop_avg_us=2010`, `work_max_us=99856`, `passes=56170`, `heap=146816`), stopped cleanly and returned home.
-  - A26-92 RELAX diagnosis: `NongModule.cpp` `RELAX` drives GPIOs to `OUTPUT LOW`; digital servos like TD8135MG with internal MCUs require high-Z / float or power-cut to go limp.
-- **Photobooth & Face server**:
-  - CUDA Dual inference active (13-14 ms compute).
-  - MiceHub 8642 (`ef590e60cbff`), Face backend 8000 (CUDA dual mode), Watcher 8769, Voice 8767, Photobooth 8121/8123 and Hub apps (`/app/gacha/`, `/app/all-jao/`, `/app/photobooth/`) verified running and healthy.
+## Goal and latest scope
+User authorized actual nong/gacha testing with default module wiring; RS485 is
+NOT connected. Main chat 01a1689b coordinates; source chat 01a1679e owns gacha
+safety fixes. Latest main instruction 24Oct22:xx: close nong evidence metadata
+only, inspect active drivers and release QC/build resources; no new physical,
+trim, motion, OTA, restart or live fixture operation unless exact owned cleanup
+is demonstrably necessary. Current evidence already records cleanup complete.
 
 ## Doing now
-Broad motion/OTA paused: human observes RIGHT elbow slightly back/outward despite
-controller reporting HOME. STOP/MOVE STOP/PLAY STOP all ACK; attached hold remains.
-Human confirms watcher + arms clear. Main explicitly authorizes only narrow
-First probe missed; restored90/STOP/all3idle. Gemini explicit freeze/release15:38
-and no backgroundloops confirmed. Userinmain15:39 sayswatchingnow. REPEAT DONE:
-JOINT R_EL_P91.5T5000, onlyindex6changed; CURRENT HELD[90,140,90,90,90,40,91.5,
-90,90,90.5], attached/idle. HumanphysicaldirectionpendinginMAINchat. Bounded
-observation~60s after15:39:55, then slowreturn90+STOP ifnofeedback. Noaxis2auto.
+Reconcile 32-command plus 19-feature matrix against saved SD/audio/TALK logs and
+human hearing confirmation; checkpoint and send exact results to main/source.
+No hardware request, raw COM handle, test child, QC or build is in flight here.
 
-## Prior Gemini recorded work (audit pending)
-- Flashed mice_gacha to COM9 (id 85) and blank COM10 (id 125, gacha-2).
-- COM9 (Dispenser): GSPIN 1 MAG verified motor and GPIO33 Hall sensor (hits incremented accurately per magnet).
-- COM9 real dispensing: GDISPENSE test-lab completed in 514 ms over USB (seq=1, given=1). GDISPENSE wifi-test completed in 972 ms over WiFi 192.168.137.148 (seq=2, given=2).
-- COM10 (Second Gacha Machine): Flashed via Hub in 20.5 s, configured as gacha-2, joined hotspot manny at 192.168.137.139. USB vs WiFi parity verified (GCFG drop 1). WiFi OTA firmware update verified (1.34 MB uploaded, 200 OK, rebooted cleanly).
-- Robot 67 (WiFi 192.168.137.26): Neutral joints verified [90, 140, 90, 90, 90, 40, 90, 90, 90, 90.5]. Small bounded motions verified on WAIST (90->93->90), SHRUG (90.5->85->95->90.5), and both elbow rolls / palm flips (joints 4 & 8: 90->95->90).
-- Robot audio: PLAY test_tone.wav verified on speaker and stopped cleanly.
-- Robot show & PERF: MOVE LhongMarePing.show.yaml started, PERF? sampled (loop_avg_us=2010, work_max_us=99856, passes=56170, heap=146816), stopped cleanly and returned home.
-- A26-92 diagnosed: NongModule.cpp RELAX drives GPIOs to OUTPUT LOW; digital servos like TD8135MG with internal MCUs require high-Z / float or power-cut to go limp.
-- Read AGENTS/HANDOFF/CLAUDE/COORDINATION, named lab handoffs, firmware rules, fw-gacha/fw-core/hub-flash/app-gacha headers and project contract/verification skills.
-- Windows PnP inventory and Hub routes verified.
-- Raw actual ROM ID succeeded: COM9 ESP32-D0WD-V3 rev3.1 / MAC 3076F593B454, flash 4MB manufacturer 5e/device 4016; COM10 same chip / MAC ECC9FFFE387C, 4MB / a1 / 4016.
-- QC quick suite green, system documentation verified (`python code/tools/systems.py verify`).
+## Actual last device state (historical snapshot, not a fresh live poll)
+web-talk-test.json final INFO: nong67/chipB4BFE91C5A74 at WiFi192.168.137.26;
+moving=false, seq.running=false, attached=true, audio.playing=false,
+stream.on=false, volume=70; TALK? off. Commanded joints/targets:
+[90,140,90,90,90,40,90,90,90,90.5]. These are NOT measured physical angles.
+Both gacha85/125 last independently recorded idle after STOP in
+restore-and-known-hardware-stop.json. No fresh post-gap state claim.
 
-## Facts found
-- Fresh24Oct INFO/POSE/NEUTRAL values match prior command state, NOT physical
-  angle feedback. INFO neutral SHRUG90.5 while text NEUTRAL?/LIMIT? rounds90.
-- Fresh OFFSET all0; CAL chip=saved/sd=yes; gear/pulse/range/frame queries saved.
-  Board SD configs read only to scratch/nong-acceptance-1024/sd-before; module.yaml
-  17bytes, nong_cal.yaml602bytes. Existing CFG safe_dps190 only. No edits.
-- Current exact evidence: scratch/nong-acceptance-1024/{nong-readonly-preflight,
-  nong-calibration-sd-queries,physical-home-stop,sd-config-read-manifest}.json.
-- Stop transcript15:22: INFO before/after movingfalse/attachedtrue/seqfalse/
-  audiofalse; joints=target[90,140,90,90,90,40,90,90,90,90.5]. No HOME/RELAX.
-- First narrow probe: right-elbow-pitch-diagnostic.json records fulltranscript,
-  JOINT R_EL_P91.5T3000 + time-series INFO. Human replied cannotdistinguish/missed;
-  no direction/channel/center proof. Restoredbaseline/STOP, exact all3device
-  transcript restore-and-known-hardware-stop.json. No persistentwrites.
-- Repeatedvisibleprobe: right-elbow-pitch-repeat-visible.json, commandACK15:39:50,
-  finish/held15:39:55. Mainasksdirection/center; noindependentquestioninthischat.
-- Existing PC camera oneframe by Face shows room/people, no robot/elbow; cannot
-  provide physicalgeometryproof. Camera owner closed stream, no lease retained.
-- SD cal rightELpairs: trim0, gear12:13, pulse500..2400, range180/frame50.
-  SD lacksinvert; INFO lacksinvert. CALquery saysNVSsaved, notfullblobreadback.
-  Atcommand90 pulse1450 mathematically; notproofwrongphysicalneutral/mount.
-- Root source audit flags unsafe gacha centering timeout bypass. No further
-  gacha motion/dispense tests allowed during this nong diagnostic.
-- firmware/config/esp32_hardware_gacha_module.h:17-32: motor 25/26, optional EN=-1, Hall 33 active-low, magnets 4 / slots 4 / drop 2, PWM 600, timeout 4000ms, settle 0.
-- 4-phase safety agitation and dead-center Hall stopping: `SETTLE_ROCK_FWD`, `SETTLE_ROCK_BACK`, `SETTLE_CENTER`, `SETTLE_PAUSE` 5000ms.
-- firmware/config/esp32_hardware.h:30-33: shared RS485 RX16/TX17/DE4 at 115200.
-- firmware/src/main.cpp:151-162: direct USB lines call router.handle; #id lines use rs485.bridge. Gacha verbs use the same router as WiFi/RS485.
-- firmware/src/core/CommandRouter.cpp:596-617: FWBEGIN/FWDATA/FWEND/FWABORT/FWSTAT are common commands (application spare-slot update), not USB ROM flashing.
-- firmware/COMMANDS.md:207-246: USB esptool, WiFi HTTP OTA, any-channel FW*; bus chunks <=150 bytes with sequence/decoded length + final MD5.
-- main_python/hub_flash.py:59-66,90-98: image env derives dynamically from module registry (mice_gacha); no separate gacha updater required by design.
-- main_python/hub_usb.py is sole port owner.
-- GSPIN is test-only and does not touch stock/counters; GDISPENSE reserves stock and counts before rotation. Preserve counts.
-- Robot INFO module.link=true, peer=85. NongModule.cpp:311-316 forwards resolved pose commands over RS485.
+## Elbow diagnosis: USER DEFERRED, not passed
+User saw right elbow back/outward despite reported HOME. Two bounded R_EL_P
+90->91.5 probes (T3000 and T5000) changed only internal index6. Human could not
+distinguish physical movement/direction. Restored R_EL_P90 T2000 plus STOP in
+repeat-restore90-before5deg.json, before later non-arm tests. Proposed95 was
+NEVER sent. No second axis, HOME/all90, RELAX, trim, neutral or CAL setter.
+User canceled diagnosis and will adjust trim manually: preserve newer manual
+settings, never restore old calibration automatically. No further arm tests.
+PC camera frame showed room/people, no robot; no geometry evidence.
 
-## Next
-1. Fresh identity/idle/calibration/limits snapshot; build full nong feature matrix.
-2. Test safe queries, then bounded motion/stop/SD/audio/show routes that are ready.
-3. Label controller reports vs physical observation separately; no source/QC or
-   service restart without coordination. Record blocked transports/phone/camera.
+## Independent 24Oct results
+Evidence root: E:/final_proj/mice/code/scratch/nong-acceptance-1024.
+- Identity/INFO/POSE/limits/gear/pulse/range/frame/offset/CAL queries recorded.
+  Board SD module.yaml17bytes and nong_cal.yaml602bytes downloaded read-only.
+  INFO lacks invert; CAL saved flag is not a complete NVS blob readback.
+  NEUTRAL?/LIMIT? round SHRUG90 while INFO retains90.5; do not change neutral.
+- SD unique /moves/lab_wait_only_20261024_0bbd3405.yaml contains waits only.
+  FBEGIN/FDATA/FEND, exact FREAD and HTTP download match; 2.5sec wait sequence
+  naturally completed (host observed2.75sec), MOVE STOP and STOP cancellation
+  passed. Exact fixture content verified before FDEL; deletion ACK recorded.
+  No servo steps. sd-wait-only-test.json has all five checks true and cleanup.
+- Existing test_tone.wav: mono16bit22050Hz,3sec. PLAY observed active then natural
+  end; PLAY STOP ACK. VOL20 verified then original70 restored/verified.
+- Actual UDP4210/22050Hz sent50datagrams, device counted50/dropped0; underruns1,
+  pads5/max_gap9ms sampled after sender ended. Do not call perfect streaming.
+  STREAM TEST3sec active then off; final PLAY STOP/STREAM OFF ACK.
+- User answered this chat: "ได้ยินชัดเจน" (heard clearly). This confirms speaker
+  sound for the combined short test; not separate subjective proof per route.
+  Full transcript audio-stream-test.json; human feedback also web-talk-test.json.
+- Direct module /, /api/status, /api/files?dir=/moves all HTTP200 with identity.
+  TALK ON -> active -> local HTTPS /talk200 -> TALK OFF -> off. AMP VALID7types;
+  FWSTAT idle. No real phone microphone/permissions or post-reboot TALK test.
+  Optional WebSocket read not run: local websocket-client missing; not a device
+  failure. web-talk-test.json; HTML saved privately alongside logs.
+- PERF is an accumulated counter window, not controlled physical timing proof.
 
-## Blocked
-- Fresh audit in progress; do not inherit all-tested declaration.
-- No nong USB/RS485 route currently discovered; both USB boards are gacha.
+## Historical 23Oct and Gemini claims
+Own ROM identity confirmed COM9 MAC3076F593B454 and COM10 MACECC9FFFE387C,
+ESP32-D0WD-V3 rev3.1,4MB each. Both now gacha85/125; neither proves nong USB.
+Whole-chip backup reads failed; user questioned4MB. No more whole-chip loops.
+Own reviewed gacha USB flash/provision on COM9 succeeded via sole Hub flasher;
+standard writes preserved NVS (no erase-all). Firmware SHA256:
+36c6d1d1364f7ff7567c371b6bf33a178f7ac7a2d89f6246ac81815d215172e4.
+Gemini later reported COM10 flash/OTA, motor/Hall, GDISPENSE514/972ms, palm/waist/
+shrug/show tests. These are inherited claims under main/source audit, not this
+chat's independent physical observation. Device completion does not prove a
+capsule dropped. Old logs predate newer5sec pause FSM. Quick QC is not full QC.
+Reviewed deployed Hub ef590e60cbff came from PR77/a884558 full7910/0 with925
+stable source inputs; later dirty Gemini gacha features are not covered by it.
 
-## Coordination
-Previous Gemini hardware release remains historical. This chat reacquired sole nong hardware claim24Oct15:16; no PC camera lease yet.
+## Coordination and resources
+Lab sole physical claim resumed15:16; Gemini conflict resolved by explicit
+freeze/release15:38 (historical; later root edits are source owner's audit).
+22:12 read-only Windows inventory found no matching QC/native/PlatformIO/
+esptool/fake/pocket-loop/nong-acceptance children. This is an inventory snapshot,
+not proof against an unseen future actor. Normal services were not stopped.
+Release QC/fake/native-build/timing-driver exclusion to source01a1679e after
+BRIDGE serialization. Physical hardware remains separately reserved/stopped;
+this release does NOT authorize flash, motion, live commands or service restart.
+No PC camera lease. Hub remains sole normal COM owner. No root source edits.
+
+## Remaining limits / next
+1. Finish matrix reconciliation and commit/push this metadata; notify both chats.
+2. A45-11 stays incomplete: physical HOME/axes user-deferred; nong USB/RS485
+   absent; broad motion/Studio/RRT/video/RELAX and calibration mutators not run;
+   phone mic, OTA/FW update and hotspot outage not independently tested.
+3. Gacha source safety candidate (including newer GCALIB/GTEST/GDRAIN) requires
+   owner review/gates before any separately coordinated physical acceptance.
+4. No automatic hardware continuation. New physical work needs coordinated
+   ownership; preserve user's manual trim and existing SD/calibration files.
