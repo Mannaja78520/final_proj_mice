@@ -1,7 +1,7 @@
 # Nong HOME/CAD and Gemini evidence audit
 
 Owner:
-Updated: 2026-10-24T22:11:47.507831+07:00
+Updated: 2026-10-24T22:45:14.573076+07:00
 Plan: A48-13 (robot)
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
@@ -57,3 +57,10 @@ A48-13 handed off with exact next step; own metadata/scratch claims released, no
 
 ## Latest22xx recheck,24Oct
 User asks check Gemini again. Current root AAAE3506...25103B includes GCALIB/GTEST/GDRAIN, changed17:33 after original freeze. Current confirmed blocking/unbounded GNUDGE, blocking/false-success GCALIB, center timeout->done, incomplete CLEAR; registry now includes new verbs. Earlier90847e8 fix must preserve/rebase latest features, not overwrite them. Private latest-gemini-review.md contains exact lines and limits. Root no .qc-receipt; last_run165focused only. Lab was interrupted by usage limit, resumed only to checkpoint cleanup and explicit driver release; last result idle/audiooff/TALKoff/vol70. No robot/trim changes. Main read-only report delivered; await source candidate and Lab final matrix/lease. No main driver/process/resource held after report.
+
+## Independent review of later tracked commits
+Actual HEAD2bd3299 includes ce0aeb0/b5a161b/2bd3299 after olde30. Prior UI-attribution assumption HEAD=e30 was wrong and withdrawn: syntax bug introduced in later committed history, not proved preexisting-in-e30. Current gacha source AAAE plus new UI/TV/performance features must be preserved.
+Root independently reviewed backend candidate65bdbc93400c878d4b01716137e03b6339be54c88a3f4dde5a1894c4c398be91 (focused actual-source123/0 only). Findings sent source: GSPIN parse/multiply int overflow before bound checks; GTEST must not claim per-pocket verification when only final Hall is checked; recheck Hall after5second pause. No final signoff.
+Additional current Studio P2: applyPose URDF early return misses markDirty3d while new tick stops idle rendering; grid/hand visibility, delayed mesh and resize also need invalidation. Preserve on-demand idle benefit, regression after idle.
+Additional TV P1: goHome sends literal all90 instead of native saved HOME/manualtrim. P2: poll uses nonexistent local/api/status; telemetry shape, at_ms/total_ms vs ms/total and fake pause/resume(firstsequence restart) need corrected contracts. No actual TV command executed by audit. Source owner authorized to claim/fix/regress these directly relevant latest Gemini gaps; no new agents/models. Full syntax-only parse8changedscripts found onlygacha parse failure; functional semantics still require browser checks.
+Detailed reports remain scratch/nong-gemini-audit-1024/latest-gemini-review.md and candidate-backend-review.md. Source independent-review cycle still active; no full approval/promotion/flash claimed.
