@@ -1,7 +1,7 @@
 # Nong HOME/CAD and Gemini evidence audit
 
-Owner: codex:10241515-audit (main review coordinator; Lab and source owners continue independently)
-Updated: 2026-10-24T15:46:16.655334+07:00
+Owner:
+Updated: 2026-10-24T15:49:06.622308+07:00
 Plan: A48-13 (robot)
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
@@ -51,3 +51,6 @@ Nothing for read-only audit. Physical testing depends on actual device readiness
 ## Current continuation
 - Source owner now A47-20, isolated codex/gacha-safety-1024-f6cc in .staging-continue-urdf, source claims BRIDGE15:42. Includes latest unsafe GNUDGE nonblocking/bounds/motion registry, centering fault/reset fixes and native0/HOME docs. Main must independently review exact diff when owner sends it; no extra paid model/agent required. QC/build only after Lab explicit lease.
 - Lab continues non-wide-motion nong SD/wait-only sequence/audio/transport checks with original calibration preserved. Full matrix scratch/nong-acceptance-1024/nong-acceptance-matrix.md/.json and nong-command-acceptance.csv:32verbs+19groups, not all passed. Physical elbow centered/HOME geometry intentionally deferred by user.
+
+## Checkpoint release
+A48-13 handed off with exact next step; own metadata/scratch claims released, no process/driver/resource held. Existing Lab and source chats continue autonomously. Main receives source candidate for independent review; pick up this task then. All work is not complete. Last pushed checkpoint133638f before this metadata release update.
