@@ -323,7 +323,7 @@ class TVRemoteApp {
       }
 
       // 2. Hardware / Modules status
-      const stRes = await fetch("/api/status");
+      const stRes = await fetch("/api/modules");
       if (stRes.ok) {
         const st = await stRes.json();
         this.updateHardwareState(st);
@@ -344,8 +344,8 @@ class TVRemoteApp {
       badge.textContent = "PLAYING";
       badge.className = "tv-badge badge-busy";
       title.textContent = p.name ? p.name.replace(/\.yaml$/, "") : "Active Move";
-      const total = p.total || 1;
-      const ms = p.ms || 0;
+      const total = p.total_ms || p.total || 1;
+      const ms = p.at_ms || p.ms || 0;
       const pct = Math.min(100, Math.round((ms / total) * 100));
       fill.style.width = pct + "%";
       cur.textContent = (ms / 1000).toFixed(1) + "s";
@@ -361,13 +361,14 @@ class TVRemoteApp {
 
   updateHardwareState(st) {
     if (!st) return;
-    const mods = st.modules || [];
-    const nong = mods.find(m => m.type === "nong") || mods[0];
+    const mods = Array.isArray(st) ? st : (st.modules || []);
+    const nong = mods.find(m => m.type === "nong");
     if (nong) {
       this.activeDev = nong.dev || ("usb:" + nong.port);
       this.$("statBadge").textContent = "🟢 " + (nong.name || "Nong") + " (" + (nong.ip || nong.dev || "online") + ")";
-      if (nong.pose && Array.isArray(nong.pose)) {
-        this.updateJoints(nong.pose);
+      const j = nong.joints || nong.pose;
+      if (Array.isArray(j)) {
+        this.updateJoints(j);
       }
     } else {
       this.$("statBadge").textContent = "⚪ Waiting for modules";
@@ -388,6 +389,7 @@ class TVRemoteApp {
 
   async playSequence(name) {
     try {
+      this.currentSeqName = name;
       this.$("nowSeq").textContent = "Starting " + name + "…";
       const res = await fetch("/api/seqsteps?name=" + encodeURIComponent(name));
       if (!res.ok) return;
@@ -420,25 +422,21 @@ class TVRemoteApp {
   }
 
   async resume() {
-    if (this.sequences.length) {
+    if (this.currentSeqName) {
+      this.playSequence(this.currentSeqName);
+    } else if (this.sequences.length) {
       this.playSequence(this.sequences[0]);
     }
   }
 
   async goHome() {
     await this.stop();
-    // Default neutral 90 degrees
-    const flat90 = new Array(10).fill(90);
-    await fetch("/api/play", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        dev: this.activeDev || "auto",
-        name: "Home",
-        steps: [{ pose: flat90, t: 1500, hold: 0 }],
-        loop: false
-      })
-    });
+    // Send native calibrated HOME command to the robot
+    if (this.activeDev) {
+      await fetch("/api/dev/cmd?dev=" + encodeURIComponent(this.activeDev) + "&c=HOME", {
+        method: "POST"
+      });
+    }
     this.poll();
   }
 
