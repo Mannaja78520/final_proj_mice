@@ -1,193 +1,266 @@
+<!-- ===================== STUDIO ===================== -->
 <section id="studio">
   <div class="shead">
     <span class="where tech">code/nong/main_python_set_nong · served at /studio/</span>
-    <h2>Nong Studio — 3D Pose &amp; Sequence Editor</h2>
-    <p>เครื่องมือจำลอง 3 มิติสำหรับออกแบบท่าทางและสร้างลำดับการเคลื่อนไหวของหุ่นยนต์ Humanoid Nong (เซอร์โว 10 จุด) พรีวิวเสมือนจริงด้วย Three.js คำนวณความปลอดภัยทางฟิสิกส์อัตโนมัติ และส่งออกเป็นไฟล์ YAML สั่งงานหุ่นจริงได้โดยตรง</p>
+    <h2>Nong Studio — คู่มือการใช้งานและจุดปรับแต่งอย่างละเอียดทุกส่วน</h2>
+    <p>โปรแกรมจำลอง 3D และออกแบบท่าทางแอนิเมชันสำหรับหุ่นยนต์ฮิวแมนนอยด์ Nong (10 ข้อต่อเซอร์โว)
+       ประมวลผลบนเครื่องคอมพิวเตอร์ PC พร้อมระบบ On-Demand 3D Rendering ที่ช่วยประหยัดพลังงาน ไม่กินสเปก และไม่ค้าง</p>
   </div>
 
-  <!-- ==================== MAIN INFOGRAPHIC: CURRENT UI ==================== -->
+  <!-- OVERALL SCREENSHOT -->
   <div class="info-box">
     <div class="info-header">
-      <b>🗺️ ผังหน้าจอจริง Nong Studio (เวอร์ชันปัจจุบัน) และจุดควบคุมสำคัญ</b>
-      <span class="info-badge">Current UI</span>
+      <b>ภาพรวมหน้าจอ Nong Studio ในปัจจุบัน (Current Real UI)</b>
+      <span class="info-badge">Overview</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/studio-current.png" alt="Nong Studio Current Interface" class="info-img">
-      <!-- Callouts corresponding to real UI elements in user screenshot -->
-      <div class="callout-pin" style="top: 3.5%; left: 58%;" title="1. File & Project Controls">1</div>
-      <div class="callout-pin" style="top: 19%; left: 53%;" title="2. 3D Viewport Controls & Distances">2</div>
-      <div class="callout-pin" style="top: 25%; left: 32%;" title="3. 3D Model & Servo Rings (Gizmos)">3</div>
-      <div class="callout-pin" style="top: 14%; left: 81%;" title="4. Six Studio Tabs">4</div>
-      <div class="callout-pin" style="top: 35%; left: 81%;" title="5. Joint Sliders & Orientation">5</div>
-      <div class="callout-pin" style="top: 56%; left: 18%;" title="6. Timeline Action Bar & Collision Check">6</div>
-      <div class="callout-pin" style="top: 76%; left: 10%;" title="7. Keyframe Chips, Timing & Music">7</div>
-      <div class="callout-pin" style="top: 97%; left: 24%;" title="8. Auto-Save & Recovery Banner">8</div>
+      <img src="/docs/shots/studio-current.png" alt="Nong Studio Current Real UI" class="info-img">
+      <div class="callout-pin" style="top: 45%; left: 30%;" title="1. พื้นที่ 3D Model Viewport">1</div>
+      <div class="callout-pin" style="top: 45%; left: 78%;" title="2. แผงควบคุมสไลเดอร์ 10 ข้อต่อ">2</div>
+      <div class="callout-pin" style="top: 90%; left: 50%;" title="3. แถบไทม์ไลน์และเครื่องเล่นท่าทาง">3</div>
     </div>
+  </div>
 
-    <!-- Overview Grid -->
+  <!-- SUB-SECTION 1: JOINT SLIDERS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 1: แผงปรับแต่งองศาข้อต่อเซอร์โว 10 จุด (Joint Sliders &amp; Inspector)</b>
+      <span class="info-badge">Joint Controls</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-sliders.png" alt="Joint Sliders Panel" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 25%;" title="1. ข้อต่อแขนซ้าย L_SH / L_EL">1</div>
+      <div class="callout-pin" style="top: 55%; left: 25%;" title="2. ข้อต่อแขนขวา R_SH / R_EL">2</div>
+      <div class="callout-pin" style="top: 80%; left: 25%;" title="3. เอวและยักไหล่ WAIST / SHRUG">3</div>
+      <div class="callout-pin" style="top: 92%; left: 50%;" title="4. ปุ่ม Quick Actions (Home / Relax)">4</div>
+    </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> บันทึก &amp; โหลดไฟล์ (Save / Load)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> แถบบนสุด — ช่องพิมพ์ชื่อไฟล์ + ปุ่ม <code>Save</code> + <code>Load...</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          บันทึกท่าทางทั้งหมดลงเครื่องพร้อมกัน 2 นามสกุล: <code>.json</code> สำหรับเปิดแก้ใน Studio และ <code>.yaml</code> สำหรับนำไปใส่ SD Card หุ่นยนต์จริง
+        <div class="action-card-title"><span class="num">1</span> สไลเดอร์แขนซ้าย (L_SH_P, L_SH_R, L_EL_P, L_EL_R)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือพิมพ์องศา (ช่วง 10° – 170°, กลาง 90°)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          • <b>L_SH_P / L_SH_R:</b> ไหล่ซ้ายก้ม-เงย (Pitch) และกางออก-หุบเข้า (Roll)<br>
+          • <b>L_EL_P / L_EL_R:</b> ข้อศอกซ้ายงอพับและหมุนบิดท่อนแขน<br>
+          เซอร์โวหมุนตามองศาจริงทันที พร้อมระบบจำกัดขอบเขตไม่ให้ชนโครงหุ่น
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> มุมมอง 3 มิติ &amp; วัดระยะ (View &amp; Distances)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> กล่องมุมมองกึ่งกลางบน — ปุ่ม <code>Top</code>, <code>Front</code>, <code>3D</code>, <code>Distances</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          เปลี่ยนมุมกล้องเป็นมุมตั้งฉากแบบ Orthographic เพื่อดัดท่าให้แม่นยำ และปุ่ม <code>Distances</code> จะลากเส้นบอกระยะระหว่างไหล่ถึงมือเป็นมิลลิเมตร (mm) ทันที
+        <div class="action-card-title"><span class="num">2</span> สไลเดอร์แขนขวา (R_SH_P, R_SH_R, R_EL_P, R_EL_R)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือกดปุ่ม <b>Mirror</b> เพื่อคัดลอกท่าจากแขนซ้าย</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          คุมแขนขวา 4 แกนอิสระ หากกด Mirror แขนขวาจะกางทำท่าสมมาตรกับแขนซ้ายทันที เหมาะสำหรับทำท่าไหว้ ท่ากอดอก หรือท่ายกมือพร้อมกัน
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> วงแหวนดัดท่า &amp; บอลข้อมือ (Gizmo &amp; IK)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> หน้าต่าง 3D — คลิกท่อนแขนจะมีวงแหวนสี หรือคลิกบอลข้อมือสีเขียว</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          • <b>วงแหวน:</b> หมุนองศาเฉพาะแกนนั้นของเซอร์โว (Pitch/Roll)<br>
-          • <b>บอลสีเขียว:</b> ระบบ Inverse Kinematics คำนวณไหล่และข้อศอก 4 ตัวพร้อมกันให้มือยืดไปตำแหน่งนั้น
+        <div class="action-card-title"><span class="num">3</span> สไลเดอร์เอวและยักไหล่ (WAIST &amp; SHRUG)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> WAIST ปรับหมุนซ้าย-ขวา / SHRUG ปรับโครงสร้าง 4-Bar Linkage</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          • <b>WAIST:</b> เอวเอี้ยวตัวมองไปด้านข้างได้ ±30°<br>
+          • <b>SHRUG:</b> คานไหล่เอียงยกข้างหนึ่งขึ้น อีกข้างหนึ่งลง รวม 26° เลียนแบบการยักไหล่ของมนุษย์
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> แถบเมนู 6 หมวด (The 6 Tabs)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> แถบแท็บด้านขวาบน — <code>Pose</code>, <code>Sequence</code>, <code>Video</code>, <code>Shows</code>, <code>Robot</code>, <code>Setup</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          แยกการทำงานเป็นหมวดหมู่อย่างเป็นระเบียบ ตั้งแต่การดัดข้อต่อ, การตั้งเวลา, สกัดท่าจากคลิป YouTube, รวมโชว์, ลิงก์หุ่นจริง ไปจนถึงโมเดล CAD
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">5</span> สไลเดอร์ 10 Joint &amp; สันมือ/หลังมือ</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> แถบขวาแท็บ Pose — สไลเดอร์องศา + เมนูดรอปดาวน์ <code>on edge</code>, <code>palm down</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ปรับองศาแบบละเอียด 0–180° หรือ 270° พร้อมทั้งระบุทิศทางฝ่ามือ (เช่น แบมือ หงายมือ สันมือตั้ง) ให้ระบบคำนวณข้อต่อปลายแขนให้ตรงกับท่าที่ต้องการ
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">6</span> ตรวจการชน &amp; เล่นท่า (Crash Check &amp; Play)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> แถบเครื่องมือไทม์ไลน์ — ปุ่ม <code>▲ Check crash</code>, <code>▶ Play</code>, <code>Save to robot</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          • <b>Check crash:</b> ใช้อัลกอริทึม RRT* คำนวณว่าแขนจะเหวี่ยงชนตัวหรือเสื้อผ้าไหม หากชนจะคำนวณเส้นทางอ้อมที่ปลอดภัยให้<br>
-          • <b>Save to robot:</b> ส่งไฟล์ YAML ขึ้น SD Card ของบอร์ด ESP32 เพื่อให้หุ่นแสดงเองได้โดยไม่ต้องเปิดคอม
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">7</span> ชิปคีย์เฟรม (Keyframe Chip: T / Hold / Min)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> ไทม์ไลน์ด้านล่าง — ชิปคีย์เฟรมแต่ละช่อง (เช่น <code>0 start pose</code>)</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          • <b>T (ms):</b> เวลาที่ใช้เคลื่อนที่ไปยังท่านั้น<br>
-          • <b>Hold (ms):</b> เวลาหยุดค้างนิ่งก่อนเริ่มท่าต่อไป<br>
-          • <b>Min:</b> ขีดจำกัดเวลาขั้นต่ำตามสเปกมอเตอร์ ป้องกันคนพิมพ์เวลาน้อยเกินไปจนเฟืองหัก
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">8</span> แถบกู้คืนงานอัตโนมัติ (Crash Recovery)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> แถบด้านล่างสุดสีเทา — ปุ่ม <code>Restore it</code> / <code>Discard</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ระบบเซฟท่าทางลง LocalStorage ตลอดเวลา หากเบราว์เซอร์ดับหรือเผลอปิด สามารถกด <b>Restore it</b> เพื่อดึงงานคีย์เฟรมทั้งหมดกลับมาได้ 100%
+        <div class="action-card-title"><span class="num">4</span> ปุ่มลัดความปลอดภัย (Home / Relax / Zero Lock)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกปุ่ม Home, Relax หรือ Zero Lock ด้านล่าง</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          • <b>Home:</b> คืนแขนทุกข้างกลับท่า 90° ปลอดภัย<br>
+          • <b>Relax:</b> ตัดไฟเลี้ยงเซอร์โว แขนจะอ่อนลง สามารถใช้มือจับดัดท่าจริงได้<br>
+          • <b>Zero Lock:</b> ล็อคพิกัดจุดศูนย์ ป้องกันคนกดเลื่อนตำแหน่งโดยไม่ตั้งใจ
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ==================== TAB BY TAB DEEP DIVE ==================== -->
-  <div class="grp2">คู่มือการตั้งค่าแบบละเอียดแยกตาม 6 แท็บหลัก (All 6 Tabs Detailed)</div>
-
-  <!-- TAB 1: POSE -->
-  <div class="f">
-    <h3>📍 แท็บ 1: Pose — ปรับแต่งท่าทาง เซอร์โว 10 จุด และทิศทางมือ</h3>
-    <p>ใช้สำหรับจัดท่าทางของหุ่นยนต์ Humanoid ท่อนบน โดยมีเซอร์โวควบคุม 10 ข้อต่อหลัก:</p>
-    <ul>
-      <li><b>L/R shoulder pitch &amp; roll:</b> ข้อต่อไหล่แบบ Universal Joint สองตัวขับเคลื่อนมุมก้ม-เงย และกาง-หุบ (เซอร์โว PDI-1181MG หมุนได้กว้าง 270°)</li>
-      <li><b>L/R elbow pitch &amp; roll:</b> ข้อต่อข้อศอกสองตัวขับเคลื่อนการงอแขนและการหมุนท่อนแขน (เซอร์โว MG90S 180°)</li>
-      <li><b>Waist (เอว):</b> เซอร์โว TianKongRC 35kg พลังแรงบิดสูง หมุนเอวซ้าย-ขวา 270°</li>
-      <li><b>Shrug (ยักไหล่):</b> กลไก 4-bar linkage ยกสะบักไหล่ทั้งสองข้างขึ้นพร้อมกัน (~6°)</li>
-      <li><b>Hand Orientation:</b> เลือกระหว่าง <code>L/R on edge</code> (สันมือตั้ง), <code>palm down</code> (คว่ำมือ), <code>palm up</code> (หงายมือ) เพื่อล็อกแนวหมุนของข้อมือให้สวยงามตามธรรมชาติ</li>
-    </ul>
-  </div>
-
-  <!-- TAB 2: SEQUENCE -->
-  <div class="f">
-    <h3>⏱️ แท็บ 2: Sequence — การคำนวณเวลา ความเร็วปลอดภัย และจัดการ SD Card</h3>
-    <p>ควบคุมพฤติกรรมการเล่นท่าทางตามหลักฟิสิกส์จริงของฮาร์ดแวร์:</p>
-    <ul>
-      <li><b>สูตรคำนวณเวลาอัตโนมัติ:</b> <code>Time = Biggest Joint Change ÷ Servo Speed (°/s)</code> ระบบจะหาข้อต่อที่ต้องหมุนไกลที่สุด และคำนวณเวลาให้พอดีกับความเร็วสูงสุดที่ตั้งไว้</li>
-      <li><b>Safe Speed Cap (ความเร็วสูงสุดปลอดภัย):</b> ค่าเริ่มต้นจำกัดที่ 375–400°/s เพื่อป้องกันไม่ให้เซอร์โวกระชากตัวหุ่นยนต์จนโครงสร้างปริแตก</li>
-      <li><b>Robot SD Card File Manager:</b> ดูรายการไฟล์ YAML ทั้งหมดที่อยู่ในการ์ด SD ของบอร์ด ESP32 สามารถกด <b>Upload</b>, <b>Download</b> กลับมาแก้ หรือ <b>Delete</b> ทิ้งได้โดยตรง</li>
-    </ul>
-  </div>
-
-  <!-- TAB 3: VIDEO -->
-  <div class="f">
-    <h3>🎬 แท็บ 3: Video — แปลงวิดีโอคลิปคนเต้นเป็นท่าทางหุ่นยนต์อัตโนมัติ</h3>
-    <p>ฟีเจอร์ AI Motion Capture จากคลิปวิดีโอ:</p>
-    <ul>
-      <li><b>แหล่งวิดีโอที่รองรับ:</b> วางลิงก์ YouTube, Google Drive แบบสาธารณะ, Dropbox หรือ Direct Video Link (MP4/WebM)</li>
-      <li><b>Skeleton Extraction:</b> สกัดจุดข้อต่อกระดูกของมนุษย์ในคลิปวิดีโอ แปลงเป็นมุมองศา Servo 10 ตัวที่หุ่นยนต์ Nong สามารถทำตามได้จริง</li>
-      <li><b>Mirror Switch:</b> เลือกว่าจะให้หุ่นขยับแบบกระจกเงา (Mirror) หรือทิศทางเดียวกับคนในวิดีโอ</li>
-    </ul>
-  </div>
-
-  <!-- TAB 4: SHOWS -->
-  <div class="f">
-    <h3>🎭 แท็บ 4: Shows — จัดรายการแสดงต่อเนื่องหลายท่าทาง (Show Playlist)</h3>
-    <p>สร้างการแสดงแบบสมบูรณ์ที่เล่นหลายๆ ท่าต่อกันโดยไม่มีช่องว่างสะดุด:</p>
-    <ul>
-      <li><b>เรียงลำดับการแสดง:</b> เช่น <code>greeting.yaml</code> &rarr; หยุดพัก 1.5 วินาที &rarr; <code>wai.yaml</code> &rarr; <code>dance.yaml</code> &rarr; <code>byebye.yaml</code></li>
-      <li><b>แนบไฟล์เพลง (Show Music):</b> อัปโหลดไฟล์ MP3/WAV ลงบอร์ด หุ่นยนต์จะเริ่มเล่นเพลงพร้อมกับขยับท่าทางไปพร้อมกันอย่างตรงจังหวะ</li>
-      <li><b>Save to robot (.show.yaml):</b> บันทึกชุดการแสดงลงบอร์ด ESP32 เมื่อเสียบปลั๊ก หุ่นสามารถกดปุ่มเล่นโชว์ทั้งหมดได้ทันทีโดยไม่ต้องมีคอมพิวเตอร์เปิดค้างไว้</li>
-    </ul>
-  </div>
-
-  <!-- TAB 5: ROBOT -->
-  <div class="f">
-    <h3>🔌 แท็บ 5: Robot — จัดการการเชื่อมต่อฮาร์ดแวร์จริง และ Zero Calibration</h3>
-    <p>ศูนย์ควบคุมการคุยกับหุ่นยนต์จริงผ่านสายและไร้สาย:</p>
-    <ul>
-      <li><b>โหมด WiFi:</b> พิมพ์ชื่อโฮสต์ <code>nong.local</code> หรือ IP เพื่อสั่งงานผ่านเครือข่าย</li>
-      <li><b>โหมด USB / RS485 (Shared):</b> แชร์พอร์ต COM เดียวกันผ่าน MiceHub ทำให้หน้า Studio และหน้าโมดูลเปิดคุยกับบอร์ดพร้อมกันได้โดยไม่แย่งพอร์ต</li>
-      <li><b>โหมด Dummy Follow:</b> หากมีหุ่นจำลองบอร์ด <code>mice_dummy</code> (ใช้ Potentiometer แทนเซอร์โว) สามารถจับหุ่นดัดท่าด้วยมือจริง แล้วโมเดล 3D ใน Studio จะขยับตามแบบเรียลไทม์</li>
-      <li><b>Zero-Position Lock:</b> ป้องกันคนเผลอกดรีเซ็ตตำแหน่งศูนย์ (Neutral 90°) ต้องกรอกรหัสผ่าน Admin จึงจะสามารถปรับแต่งค่าศูนย์ของมอเตอร์ได้</li>
-    </ul>
-  </div>
-
-  <!-- TAB 6: SETUP -->
-  <div class="f">
-    <h3>⚙️ แท็บ 6: Setup — สเปกโครงสร้าง Rig, มอเตอร์ และ CAD 3D Models</h3>
-    <p>การปรับแต่งฮาร์ดแวร์เชิงลึก:</p>
-    <ul>
-      <li><b>Servo Profiles:</b> เลือกรุ่นเซอร์โวที่ประกอบจริง เช่น ไหล่ PDI-1181MG (270°), ข้อศอก MG90S (180°), เอว TianKongRC 35kg (270°)</li>
-      <li><b>Pinion / Gear Ratios:</b> ใส่อัตราทดของเฟืองขับ เพื่อให้มุมองศาบนหน้าจอตรงกับการเคลื่อนที่จริงของข้อต่อกระดูก</li>
-      <li><b>3D CAD Package (URDF Import):</b> สลับการแสดงผลจาก Simple Shapes ทรงเรขาคณิตทั่วไป ไปเป็นโมเดลชิ้นงาน CAD เสมือนจริงที่วาดขึ้นจาก SolidWorks เพื่อดูรายละเอียดการประกอบ</li>
-    </ul>
-  </div>
-
-  <!-- TIMELINE CONTROLS -->
-  <div class="grp2">ปุ่มควบคุมบนแถบไทม์ไลน์ด้านล่าง (Timeline Controls Detailed)</div>
-
-  <div class="tasks">
-    <div class="f">
-      <h3>+ Add keyframe</h3>
-      <p><b>หน้าที่:</b> บันทึกท่าทางปัจจุบันที่ดัดไว้เป็นคีย์เฟรมถัดไปในไทม์ไลน์ คำนวณเวลาเดินทางอัตโนมัติ</p>
+  <!-- SUB-SECTION 2: TIMELINE & KEYFRAMES -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 2: แถบไทม์ไลน์และลำดับท่าทาง (Timeline &amp; Keyframe Sequencer)</b>
+      <span class="info-badge">Timeline</span>
     </div>
-    <div class="f">
-      <h3>Update selected</h3>
-      <p><b>หน้าที่:</b> แก้ไขท่าทางคีย์เฟรมเดิมที่กำลังเลือกอยู่ให้กลายเป็นท่าทางปัจจุบันที่กำลังจัดบนจอ 3D</p>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-timeline-bar.png" alt="Timeline Controls" class="info-img">
+      <div class="callout-pin" style="top: 50%; left: 8%;" title="1. ปุ่ม Play / Run on robot">1</div>
+      <div class="callout-pin" style="top: 50%; left: 25%;" title="2. ปุ่ม + Add keyframe">2</div>
+      <div class="callout-pin" style="top: 50%; left: 60%;" title="3. แถบเลื่อนเวลา Scrub Bar">3</div>
+      <div class="callout-pin" style="top: 50%; left: 90%;" title="4. เช็คบ็อกซ์ Loop &amp; ซูม">4</div>
     </div>
-    <div class="f">
-      <h3>▲ Check crash</h3>
-      <p><b>หน้าที่:</b> ใช้ RRT* ตรวจสอบว่ามีท่าใดที่แขนเหวี่ยงฟาดลำตัว เสื้อผ้า หรือข้อต่อเกินขีดจำกัด หากพบจะเตือนสีแดงทันที</p>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> สั่งเล่นท่าทาง (Play / Run on robot)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>▶ Play</b> เพื่อพรีวิวในจอ หรือ <b>▶ Run on robot</b> เพื่อสั่งหุ่นจริง</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          โมเดล 3D และตัวหุ่นจริงจะเคลื่อนที่ต่อเนื่องตามคีย์เฟรม ด้วยความนุ่มนวลตามเส้นโค้งความเร็วที่คำนวณไว้
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> การบันทึกท่า (+ Add Keyframe &amp; Duration)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ดัดท่าที่ต้องการแล้วกด <b>+ Add keyframe</b> พร้อมกำหนดเวลา (เช่น 800ms)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เพิ่มท่าใหม่เข้าไปในเส้นเวลา หากกำหนดเวลาน้อยเกินกว่าที่เซอร์โวหมุนทัน ระบบจะยืดเวลาออกให้อัตโนมัติเพื่อป้องกันมอเตอร์กระชาก
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> สครับบาร์ (Scrub Bar &amp; Live Tracking)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> แดรกเลื่อนตัวชี้เวลาไปข้างหน้าหรือข้างหลัง</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หุ่นยนต์จะเคลื่อนตามจุดเวลาที่ลากแบบ Real-time ช่วยให้ตรวจสอบจุดที่มีการกระทบกันของโครงสร้างได้อย่างแม่นยำ
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> เล่นวนซ้ำและซูม (Loop Checkbox)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ติ๊กถูกที่ช่อง <b>Loop</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เมื่อเล่นถึงท่าสุดท้าย หุ่นยนต์จะเคลื่อนที่ย้อนกลับสู่ท่าแรกอย่างนุ่มนวลและเริ่มเล่นซ้ำต่อเนื่อง ไม่มีการกระตุกหรือสะบัดแขน
+        </div>
+      </div>
     </div>
-    <div class="f">
-      <h3>▶ Play / Loop</h3>
-      <p><b>หน้าที่:</b> เล่นพรีวิวท่าทางทั้งหมดบนจอคอมพิวเตอร์ด้วยความเร็วฟิสิกส์จริง หากติ๊ก Loop จะเล่นวนซ้ำต่อเนื่อง</p>
+  </div>
+
+  <!-- SUB-SECTION 3: 3D MODEL & IK INTERACTION -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 3: โมเดล 3D และการควบคุมด้วย Inverse Kinematics (3D Canvas)</b>
+      <span class="info-badge">3D &amp; IK</span>
     </div>
-    <div class="f">
-      <h3>💾 Save to robot</h3>
-      <p><b>หน้าที่:</b> แปลงไฟล์เป็น YAML และอัปโหลดไปยังโฟลเดอร์ <code>/moves/</code> บน SD Card ของหุ่นยนต์ Nong ทันที</p>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-3d-model.png" alt="3D Model Canvas" class="info-img">
+      <div class="callout-pin" style="top: 35%; left: 35%;" title="1. วงแหวนควบคุมแกนเซอร์โว">1</div>
+      <div class="callout-pin" style="top: 60%; left: 30%;" title="2. จุดจับลากแขน IK (Wrist &amp; Elbow)">2</div>
+      <div class="callout-pin" style="top: 15%; left: 50%;" title="3. ปุ่มมุมมองระนาบ Orthographic">3</div>
     </div>
-    <div class="f">
-      <h3>▶ Run on robot</h3>
-      <p><b>หน้าที่:</b> สั่งให้หุ่นยนต์ตัวจริงเริ่มเล่นท่าทางตามไทม์ไลน์นี้ผ่านสาย RS485 หรือ WiFi แบบสดๆ</p>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> วงแหวนควบคุมแกน (Gizmo Rings)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกที่ข้อต่อ จะปรากฏวงแหวนสี แดง (Pitch), เขียว (Roll), น้ำเงิน (Yaw) ให้คลิกลาก</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หมุนข้อต่อจุดนั้นโดยตรงตามแนวแกน ช่วยให้กะองศาเชิงมุมได้ง่ายกว่าการเลื่อนสไลเดอร์
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ลากมือแบบผกผัน (Shift+Drag IK Solver)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Shift ค้างไว้</b> แล้วคลิกลากลูกบอลข้อมือ (🟢 Wrist)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ระบบจะคำนวณหามุมของไหล่และข้อศอกพร้อมกัน 4 แกนอัตโนมัติ ทำให้สามารถจับมือหุ่นยนต์ชี้ไปยังเป้าหมายในอวกาศ 3D ได้ทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> สลับมุมมองแท้จริง (Orthographic Plane Views)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Front</b>, <b>Top</b> หรือ <b>Side</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          สลับมุมมองกล้องเป็นแบบฉายระนาบขนาน (ไม่มี Perspective เพี้ยน) ช่วยให้จัดแขนทั้งสองข้างให้ตรงได้ระดับเท่ากันเป๊ะ
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 4: CALIBRATION & SERVO OFFSET -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 4: การตั้งค่าชดเชยและแคลิเบรตเซอร์โว (Setup &amp; Servo Offset)</b>
+      <span class="info-badge">Calibration</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-tuning-card.png" alt="Tuning &amp; Calibration Card" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. ปุ่ม Nudge ชดเชย ±0.5 องศา">1</div>
+      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. กำหนดช่วงลิมิต Min / Max">2</div>
+      <div class="callout-pin" style="top: 75%; left: 30%;" title="3. อัตราทดเฟืองและ Shrug Curve">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ชดเชยฟันเฟือง (Servo Offset Nudge)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>-</b> หรือ <b>+</b> ปรับทีละ 0.5° หรือกด 0 เพื่อรีเซ็ต</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          แก้ปัญหาเขาสวมเซอร์โวขบฟันเฟืองไม่ตรงตำแหน่ง ช่วยให้แขนตรงสนิทโดยค่าที่ชดเชยจะถูกบันทึกลงหน่วยความจำ NVS บนตัวหุ่นยนต์ ไม่สูญหายเมื่อปิดสวิตช์
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ลิมิตความปลอดภัย (Joint Safety Limits)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ระบุค่า Min (เช่น 15°) และ Max (เช่น 165°) ของแต่ละข้อต่อ</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ตัวหุ่นจริงและ Studio จะไม่ยอมหมุนเกินพิกัดนี้เด็ดขาด ป้องกันแขนพับชนลำตัวหรือเซอร์โวติดขัดจนไฟตก (Brownout Guard)
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ตารางแคลิเบรตยักไหล่ (4-Bar Shrug Curve)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ป้อนระยะยกจริง (mm) เทียบกับองศาเซอร์โวยักไหล่</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          คานยักไหล่จะขยับตามกลศาสตร์คณิตศาสตร์ของ 4-Bar Linkage จริง หัวไหล่ยกขึ้นได้อย่างสมจริงเป็นธรรมชาติ
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 5: SEQUENCE CHAIN -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 5: การร้อยเรียงชุดท่าทาง (Sequence Chains &amp; Speeds)</b>
+      <span class="info-badge">Sequences</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-sequence-card.png" alt="Sequence Manager Card" class="info-img">
+      <div class="callout-pin" style="top: 20%; left: 40%;" title="1. กล่องเลือกไฟล์ YAML">1</div>
+      <div class="callout-pin" style="top: 45%; left: 40%;" title="2. ตัวคูณความเร็วประจำไฟล์">2</div>
+      <div class="callout-pin" style="top: 70%; left: 40%;" title="3. ช่อง Chain ต่อไฟล์ถัดไป">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ไฟล์ท่าทาง (YAML Sequence Files)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกไฟล์จากดรอปดาวน์ <b>Open saved YAML…</b> หรือกด <b>Save</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          โหลดชุดท่าทางที่เคยออกแบบไว้กลับเข้าสู่เส้นเวลาเพื่อแก้ไข หรือส่งไฟล์ขึ้นการ์ด SD ของหุ่นยนต์
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ตัวคูณความเร็ว (Sequence Speed Multiplier)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ปรับสปีด 0.5x, 1.0x, หรือ 1.5x</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เร่งหรือหน่วงการเคลื่อนไหวทั้งชุดท่าทางให้เร็วขึ้นหรือช้าลงตามต้องการ โดยคงอัตราส่วนจังหวะเดิมไว้ครบถ้วน
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> การร้อยท่าทางอัตโนมัติ (Sequence Chain)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ใส่ชื่อไฟล์ถัดไปในช่อง <b>Chain</b> เช่น <code>wave.yaml</code></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เมื่อหุ่นเล่นท่าปัจจุบันจบ จะเริ่มเล่นท่าต่อไปทันทีโดยไม่ต้องส่งคำสั่งใหม่ ทำให้จัดโชว์ยาวๆ ได้อย่างต่อเนื่อง
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 6: SHOWS & MUSIC -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 6: การจัดโชว์และซิงก์ดนตรี (Shows &amp; Music Synchronization)</b>
+      <span class="info-badge">Shows &amp; Music</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-shows-card.png" alt="Shows &amp; Music Card" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 40%;" title="1. เลือกไฟล์เพลง MP3 จากการ์ด SD">1</div>
+      <div class="callout-pin" style="top: 50%; left: 40%;" title="2. กำหนดจุดหยุดพัก Pause">2</div>
+      <div class="callout-pin" style="top: 75%; left: 40%;" title="3. ปุ่ม Save to robot สำหรับรันเดี่ยว">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ผูกเพลงประกอบ (Show Music Sync)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกไฟล์เพลงจาก <code>/music/song.mp3</code> ในการ์ด SD</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เสียงเพลงและท่าทางของหุ่นยนต์จะเริ่มเล่นพร้อมกันอย่างตรงจังหวะ และระบบจะปิดเสียงอัตโนมัติเมื่อกด Stop
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> จุดพักหยุดรอ (Pause Intervals)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กำหนดเวลาหยุดพักระหว่างท่า เช่น <code>pause: 2.0s</code></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หุ่นยนต์จะหยุดค้างท่าทางสวยงามตามเวลาที่กำหนด ก่อนจะเริ่มเล่นท่าถัดไป
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ส่งโชว์เข้าบอร์ด (Save to robot)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>💾 Save to robot</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          โชว์จะถูกบันทึกลงในการ์ด SD ของตัวหุ่น ทำให้หุ่นยนต์สามารถเปิดเครื่องและแสดงโชว์ได้ด้วยตนเองโดยไม่ต้องต่อคอมพิวเตอร์
+        </div>
+      </div>
     </div>
   </div>
 </section>

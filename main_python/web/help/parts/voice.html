@@ -6,79 +6,71 @@
        พร้อมการสลับไปมาระหว่างลำโพงบนคอมพิวเตอร์ และลำโพงติดตัวหุ่นยนต์ Nong อย่างราบรื่น</p>
   </div>
 
-  <!-- Real Screenshot & Visual Callout Guide -->
+  <!-- SECTION 1: CHAT & STT -->
   <div class="info-box">
     <div class="info-header">
-      <b>ภาพหน้าจอจริงของ Voice และคู่มือการตั้งค่าเสียงพูด</b>
-      <span class="info-badge">Real UI · Callouts</span>
+      <b>จุดที่ 1: กล่องถาม-ตอบและการพิมพ์/พูด (Q&amp;A Chat &amp; Speech Input)</b>
+      <span class="info-badge">Chat &amp; STT</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/voice-current.png" alt="Voice Real UI" class="info-img">
-      <div class="callout-pin" style="top: 28%; left: 38%;" title="1. ช่องพิมพ์คำถาม / กดเพื่อพูด">1</div>
-      <div class="callout-pin" style="top: 28%; left: 82%;" title="2. ปุ่มส่งถาม Ask">2</div>
-      <div class="callout-pin" style="top: 48%; left: 45%;" title="3. เลือกปลายทางลำโพง">3</div>
-      <div class="callout-pin" style="top: 68%; left: 45%;" title="4. บุคลิกเสียงและคิว">4</div>
+      <img src="/docs/shots/voice-chat-box.png" alt="Voice Chat Box" class="info-img">
+      <div class="callout-pin" style="top: 45%; left: 35%;" title="1. ช่องพิมพ์คำถาม">1</div>
+      <div class="callout-pin" style="top: 45%; left: 65%;" title="2. ปุ่ม Press to talk (ไมค์ STT)">2</div>
+      <div class="callout-pin" style="top: 45%; left: 88%;" title="3. ปุ่มส่งถาม Ask">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> การรับฟัง (Speech-to-Text &amp; Input)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> พิมพ์ข้อความในช่อง หรือกดปุ่ม <b>Press to talk</b> แล้วพูดใส่ไมค์</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ระบบจะแปลงเสียงพูดเป็นข้อความ รองรับ 4 ภาษา (ไทย, อังกฤษ, จีน, ญี่ปุ่น) โดยเทียบคำศัพท์ใกล้เคียงจาก <code>config/voice.json</code>
+        <div class="action-card-title"><span class="num">1</span> กล่องพิมพ์คำถาม (Question Input)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์คำถามหรือข้อความที่ต้องการให้หุ่นยนต์ตอบ</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ระบบจะประมวลผลค้นหาคำตอบในชีตกิจกรรมก่อน (0.2 วิ) หากไม่พบจะส่งต่อให้ Cloud AI (Gemini / Groq) ช่วยตอบ
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> การประมวลผลคำตอบ (Answer Matching &amp; AI)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Ask</b> หรือกด Enter</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ระบบจะค้นหาคำตอบในชีตกิจกรรมก่อน (ตอบกลับใน 0.2 วินาที) หากไม่พบจึงส่งต่อให้ Cloud AI (Gemini / Groq) ช่วยตอบอย่างเป็นธรรมชาติ
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> ปลายทางลำโพง (Speaker Destination)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> เลือกปลายทางระหว่าง <b>PC Speaker</b> หรือ <b>Nong Robot Speaker</b></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          • <b>PC Speaker:</b> เปล่งเสียงผ่านลำโพงของคอมพิวเตอร์หลักทันที<br>
-          • <b>Nong Speaker:</b> ส่งสตรีมเสียงผ่าน WiFi เข้าบอร์ด ESP32 ขับออกชิปแอมป์ I2S (PCM5102A / TPA3118) บนตัวหุ่น พร้อมขยับหัวและปาก
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> บุคลิกเสียงและคิวเสียง (Speaking Manner &amp; Queue)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ปรับแต่งใน <code>config/voice_styles.json</code> หรือเลือกสไตล์ในหน้าระบบ</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ปรับสำเนียง ความเร็ว และคำลงท้าย (เช่น สุภาพ "ครับ/ค่ะ", สนุกสนาน "จ้า/นะจ๊ะ") และคิวเสียงจะตัดคำทักทายที่หมดอายุเกิน 30 วินาทีทิ้งอัตโนมัติ
+        <div class="action-card-title"><span class="num">2</span> พูดใส่ไมค์ (Press to talk STT)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Press to talk</b> แล้วพูด (ไทย/อังกฤษ/จีน/ญี่ปุ่น)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          แปลงเสียงสดจากไมโครโฟนเป็นข้อความลงในช่องถามทันที พร้อมแก้คำเพี้ยนตามดิกชันนารีใน <code>config/voice.json</code>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- SVG Architecture -->
+  <!-- SECTION 2: SPEAKERS & MANNERS -->
   <div class="info-box">
     <div class="info-header">
-      <b>ผังกระบวนการทำงานระบบเสียง (Hearing &rarr; Thinking &rarr; Speaking)</b>
-      <span class="info-badge">Flow</span>
+      <b>จุดที่ 2: ปลายทางลำโพง บุคลิกเสียง และระบบคิว (Speakers, Manner &amp; Queue)</b>
+      <span class="info-badge">Speakers &amp; Manners</span>
     </div>
-    <div class="info-visual-wrapper" style="padding: 20px; background: var(--card);">
-      <svg viewBox="0 0 760 150" width="100%" height="auto" style="display:block; font-family:var(--sans); font-size:12px;">
-        <rect x="10" y="20" width="220" height="100" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
-        <text x="25" y="48" font-weight="700" fill="var(--txt)" font-size="13">1. การรับฟัง (Hear / STT)</text>
-        <text x="25" y="70" fill="var(--mut)">• ไมค์ PC / เว็บเบราว์เซอร์</text>
-        <text x="25" y="90" fill="var(--mut)">• ไทย / อังกฤษ / จีน / ญี่ปุ่น</text>
-
-        <path d="M 235 70 L 265 70" stroke="var(--acc)" stroke-width="2" stroke-dasharray="4"/>
-
-        <rect x="270" y="20" width="220" height="100" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
-        <text x="285" y="48" font-weight="700" fill="var(--txt)" font-size="13">2. การคิด (Think / Q&amp;A)</text>
-        <text x="285" y="70" fill="var(--mut)">• ค้นหาชีตคำตอบด่วน (0.2s)</text>
-        <text x="285" y="90" fill="var(--mut)">• AI Cloud (Gemini / Groq)</text>
-
-        <path d="M 495 70 L 525 70" stroke="var(--acc)" stroke-width="2" stroke-dasharray="4"/>
-
-        <rect x="530" y="20" width="220" height="100" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
-        <text x="545" y="48" font-weight="700" fill="var(--txt)" font-size="13">3. การเปล่งเสียง (Speak)</text>
-        <text x="545" y="70" fill="var(--mut)">• ลำโพง PC / ลำโพงหุ่นยนต์</text>
-        <text x="545" y="90" fill="var(--mut)">• สำเนียงบุคลิกภาพ (Manner)</text>
-      </svg>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/voice-settings-card.png" alt="Voice Settings Card" class="info-img">
+      <div class="callout-pin" style="top: 35%; left: 30%;" title="1. เลือกปลายทางลำโพง">1</div>
+      <div class="callout-pin" style="top: 35%; left: 70%;" title="2. สไตล์และบุคลิกเสียง">2</div>
+      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. ระบบ Fast-Race 650ms">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> สลับลำโพง (PC vs Robot Speaker)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกปลายทางระหว่าง <b>PC Speaker</b> หรือ <b>Nong Robot Speaker</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          • <b>PC Speaker:</b> เปล่งเสียงผ่านลำโพงของคอมพิวเตอร์หลัก<br>
+          • <b>Nong Speaker:</b> สตรีมเสียงผ่าน WiFi เข้าชิป I2S (PCM5102A/TPA3118) บนตัวหุ่น พร้อมขยับหัวเอียงตามจังหวะคำพูด
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> บุคลิกเสียงพูด (Speaking Manner)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกสไตล์: ปกติ, สุภาพ, ขี้เล่น (Sassy เจ๊), หรือท่องจำ</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ปรับแต่งคำลงท้ายอัตโนมัติ (เช่น จ้ะ, นะคะ, ครับ) พร้อมทั้งปรับแต่ง Pitch ความสูง-ต่ำ และความเร็วของเสียงพูดให้สะท้อนอารมณ์นั้นทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> แข่งขันความเร็วเสียง (Fast-Race 650ms)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เปิดใช้งาน Fast-Race ในการตั้งค่าเสียง</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ระบบจะเรียก Cloud TTS ก่อน หากเกิน 650ms แล้วยังไม่ตอบกลับ จะสลับมาใช้เสียงพูด Offline ในเครื่องทันที หุ่นจะไม่ยืนนิ่งค้าง
+        </div>
+      </div>
     </div>
   </div>
 
@@ -100,22 +92,5 @@
        other. Something that arrives while the rig is talking either
        <b>waits its turn</b> or is <b>skipped</b> — whoever asked chooses — and
        a greeting that waited too long is dropped, because the person has
-       walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p>
-    <p><b>Where it speaks.</b> Speakers are found by themselves: every robot
-       with a speaker that the hub reaches over WiFi, and this PC's own
-       speakers. A robot reached only by cable is listed with that reason, and
-       a robot whose board has no amplifier wired says so after its first try
-       — plug one in and it is asked again. Which one is the default, and
-       which voice each uses, is <code>config/speakers.json</code>; the hub
-       reads it on every speak so an edit takes effect at once.</p></div>
-  <div class="f"><h3>Speaks in several manners<span class="tag t-new">new</span></h3>
-    <p>A voice profile can choose a <b>manner</b>: normal, calm, excited, polite
-       or cheeky. The manner tweaks the rate and pitch, and appends the right
-       polite particle (ครับ, ค่ะ, จ้า) when speaking Thai so the robot sounds
-       like one character rather than a neutral synthesiser.</p></div>
-  <div class="f"><h3>Fast-race speech<span class="tag t-new">new</span></h3>
-    <p>Cloud TTS has better pronunciation; local synthesis is instant. Mice
-       fires both: if the cloud delivers in under <b>650 ms</b> its audio plays;
-       if not, the local engine speaks the words instead, so guests never wait
-       in awkward silence when venue WiFi wobbles.</p></div>
+       walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p></div>
 </section>

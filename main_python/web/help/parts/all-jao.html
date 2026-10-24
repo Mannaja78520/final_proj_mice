@@ -7,38 +7,32 @@
        เชื่อมโยงกับเซิร์ฟเวอร์ Mice Hub และผูกเข้ากับตู้กาชาปองแจกของรางวัลอัตโนมัติ</p>
   </div>
 
-  <!-- Real Screenshot & Visual Callout Guide -->
+  <!-- SECTION 1: MINI-GAMES SUITE -->
   <div class="info-box">
     <div class="info-header">
-      <b>ภาพหน้าจอจริงของ All-Jao Games และการควบคุม</b>
-      <span class="info-badge">Real UI · Callouts</span>
+      <b>จุดที่ 1: ชุดมินิเกมกิจกรรมทั้ง 4 ชนิด (Mini-Games Suite)</b>
+      <span class="info-badge">Mini-Games</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/all-jao-current.png" alt="All-Jao Real UI" class="info-img">
-      <div class="callout-pin" style="top: 25%; left: 20%;" title="1. ปุ่มเปิดเล่นเกม">1</div>
-      <div class="callout-pin" style="top: 55%; left: 50%;" title="2. มินิเกมทั้ง 4 ชนิด">2</div>
-      <div class="callout-pin" style="top: 85%; left: 50%;" title="3. การเชื่อมต่อตู้แจกของรางวัล">3</div>
+      <img src="/docs/shots/all-jao-games-box.png" alt="All-Jao Games Suite" class="info-img">
+      <div class="callout-pin" style="top: 50%; left: 15%;" title="1. 🕹️ Claw Machine (ตู้คีบ)">1</div>
+      <div class="callout-pin" style="top: 50%; left: 38%;" title="2. 🃏 Matching Game (จับคู่การ์ด)">2</div>
+      <div class="callout-pin" style="top: 50%; left: 62%;" title="3. ❓ Quiz Game (ตอบคำถามชิงรางวัล)">3</div>
+      <div class="callout-pin" style="top: 50%; left: 85%;" title="4. 🎡 Lucky Wheel (วงล้อเสี่ยงโชค)">4</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> การเปิดเล่นเกม (Open Games)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Open in a new tab ↗</b> หรือเล่นผ่านกล่องในหน้าเว็บ</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          Hub จะสั่งเริ่มโปรเซสเกมฝั่ง Python อัตโนมัติ (<code>/api/all-jao/start</code>) และเสิร์ฟหน้าจอเกมพร้อมเล่นทันที
+        <div class="action-card-title"><span class="num">1</span> เกมตู้คีบและวงล้อ (Claw &amp; Wheel)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่มเล่นเกม ผู้เล่นสามารถควบคุมก้านคีบหรือหมุนวงล้อเสี่ยงทาย</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          เมื่อคีบตุ๊กตาสำเร็จหรือหมุนได้แต้มรางวัล ระบบจะส่งสัญญาณ Event ไปยัง Hub เพื่อสั่งตู้กาชาปองปล่อยแคปซูลของรางวัล
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> เชื่อมต่อตู้แจกของรางวัล (Prize Binding)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ไปที่หน้า <a href="#gacha">Prize machines</a> ในหัวข้อ Games that give a prize เพื่อเลือกว่าเกมไหนให้รางวัลช่องใด</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          เมื่อผู้เล่นทำคะแนนถึงเกณฑ์ ตู้กาชาปองจะหมุนจ่ายของรางวัลโดยอัตโนมัติทันที พร้อมแจ้งจุดรับของรางวัลบนหน้าจอ
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> สิทธิ์ความปลอดภัย (Venue Security)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> หากเปิดเล่นจากเครื่อง PC ของบูธ ไม่ต้องล็อกอิน / หากเข้าผ่าน WiFi วงนอก ต้องล็อกอิน Admin</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ป้องกันบุคคลภายนอกที่เชื่อมต่อ WiFi ในงานแอบสั่งรันโปรแกรมบน PC หรือแอบสั่งหมุนของรางวัล
+        <div class="action-card-title"><span class="num">2</span> เกมจับคู่และตอบคำถาม (Matching &amp; Quiz)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ผู้เล่นทดสอบความจำหรือตอบคำถามตามเวลาที่กำหนด</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          เมื่อผ่านด่าน หุ่นยนต์ Nong จะแสดงท่าดีใจและเอ่ยคำยินดีผ่านลำโพง
         </div>
       </div>
     </div>

@@ -2,56 +2,167 @@
 <section id="hub">
   <div class="shead">
     <span class="where tech">code/main_python · MiceHub.exe · port 8642</span>
-    <h2>Mice Hub — the PC app</h2>
-    <p>The first page you open. Finds every module by itself and links to each one's
-       website and to Nong Studio. Stdlib Python only; ships as a single exe.</p>
+    <h2>Mice Hub — ศูนย์กลางควบคุมและปรับแต่งทุกระบบ</h2>
+    <p>โปรแกรมเซิร์ฟเวอร์หลักของระบบ ค้นหาโมดูลและบอร์ด ESP32 ทุกตัวบนเครือข่ายและพอร์ต USB อัตโนมัติ
+       พร้อมเป็นตัวกลางแชร์พอร์ตและกระจายคำสั่งให้กับทุกแอปพลิเคชัน</p>
   </div>
 
-  <!-- Infographic: Mice Hub Visual Guide & Settings -->
+  <!-- SECTION 1: HOME & MODULES -->
   <div class="info-box">
     <div class="info-header">
-      <b>ภาพรวมหน้าจอ Mice Hub และคู่มือการตั้งค่า</b>
-      <span class="info-badge">Infographic</span>
+      <b>จุดที่ 1: การเชื่อมต่อโมดูลและพอร์ต USB (Home &amp; Transports)</b>
+      <span class="info-badge">Home &amp; Modules</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/hub-new.png" alt="Mice Hub Screen" class="info-img">
-      <div class="callout-pin" style="top: 18%; left: 32%;" title="1. Transport Mode">1</div>
-      <div class="callout-pin" style="top: 48%; left: 24%;" title="2. Module Card">2</div>
-      <div class="callout-pin" style="top: 48%; left: 72%;" title="3. App Tiles">3</div>
-      <div class="callout-pin" style="top: 14%; left: 88%;" title="4. Hub Security &amp; Accounts">4</div>
+      <img src="/docs/shots/hub-module-card.png" alt="Hub Module Card" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 30%;" title="1. โหมด USB Shared vs Exclusive">1</div>
+      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. รายการการ์ดโมดูลที่ค้นพบ">2</div>
+      <div class="callout-pin" style="top: 80%; left: 75%;" title="3. ปุ่มเปิดบอร์ด Open Module">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
         <div class="action-card-title"><span class="num">1</span> โหมด USB Shared vs Exclusive</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> คลิกเลือกโหมดเชื่อมต่อในหน้าตั้งค่าก่อนกด Connect</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          • <b>Shared:</b> Hub จะเป็นตัวกลางแชร์พอร์ต COM เดียวกัน ทำให้เปิด Nong Studio และเว็บบอร์ดพร้อมกันได้ ไม่ชนกัน<br>
-          • <b>Exclusive:</b> หน้าเดียวจะยึดพอร์ตไว้คนเดียว ตอบสนองเร็วขึ้น 2-5ms แต่แอปอื่นจะคุยกับบอร์ดไม่ได้
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกโหมดเชื่อมต่อในแถบตั้งค่าก่อนสั่ง Connect</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          • <b>Shared:</b> Hub จะแชร์พอร์ต COM เดียวกัน ทำให้เปิด Nong Studio และหน้าเว็บบอร์ดพร้อมกันได้โดยสายไม่ชนกัน<br>
+          • <b>Exclusive:</b> หน้าเดียวจะยึดสายไว้ ตอบสนองเร็วกว่า 2-5ms แต่หน้าอื่นจะคุยกับบอร์ดไม่ได้
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> บอร์ดโมดูล &amp; Open Module</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Open Module</b> บนการ์ดของโมดูลที่เจอ</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          เปิดหน้า Dashboard ประจำตัวของ ESP32 บอร์ดนั้นทันที ไม่ว่าบอร์ดจะต่อผ่านสาย RS485, USB หรือ WiFi ก็ใช้ UI เดียวกันทั้งหมด
+        <div class="action-card-title"><span class="num">2</span> บอร์ดโมดูลและการระบุตัวตน (Module Cards)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ดูรายชื่อการ์ดบอร์ดที่ Hub ตรวจจับได้อัตโนมัติ (IP, ชนิดบอร์ด, ขีดความสามารถ)</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          Hub จะส่งคำสั่ง Probe เบาๆ ทางสาย USB / RS485 / WiFi เพื่อเช็คว่าคือบอร์ดชนิดใด (nong, lift, cam, gacha) โดยไม่ต้องตั้งค่าเอง
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> ทางลัดเปิด Nong Studio &amp; Apps</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> คลิกการ์ดแอป เช่น <b>Studio</b> หรือ <b>Voice</b></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ระบบจะเปิดหน้าแอปโดยส่งค่า Bus ID และพาธการเชื่อมต่อให้อัตโนมัติ ไม่ต้องมานั่งกรอก IP หรือสแกนหาพอร์ตใหม่
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> ความปลอดภัย &amp; สิทธิ์ Admin</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ล็อกอินผ่านมุมขวาบน หรือกำหนดรหัสผ่านใน <code>hub_auth.json</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ถ้ายังไม่ล็อกอิน: บุคคลภายนอกจะ "ดูได้อย่างเดียว" (Read-only) / ถ้าล็อกอิน: ถึงจะได้รับสิทธิ์สั่งขยับหุ่นยนต์ แฟลชบอร์ด หรือแก้ค่าตั้งค่า
+        <div class="action-card-title"><span class="num">3</span> เปิดแดชบอร์ดเฉพาะบอร์ด (Open Module)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกปุ่ม <b>Open Module</b> บนการ์ดโมดูล</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          เปิดหน้าเว็บประจำตัวของ ESP32 บอร์ดนั้น เพื่อปรับแต่งพินฮาร์ดแวร์ ดูสถานะแรม หรือทดสอบขับมอเตอร์โดยตรง
         </div>
       </div>
     </div>
   </div>
+
+  <!-- SECTION 2: TOOLS LAUNCHER -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 2: เมนูเครื่องมือและแอปพลิเคชัน (Tools Launcher)</b>
+      <span class="info-badge">Tools</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/hub-tools-card.png" alt="Hub Tools Card" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 50%;" title="1. แอป Nong Studio">1</div>
+      <div class="callout-pin" style="top: 50%; left: 50%;" title="2. แอป TV Remote">2</div>
+      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. แอป Voice, Camera, Faces, Gacha">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ทางลัดเปิด Nong Studio &amp; TV Remote</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกการ์ดแอปเพื่อเปิดใช้งาน</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          ระบบจะเปิดหน้าเว็บโดยแนบพารามิเตอร์ Bus ID และเส้นทางเชื่อมต่อให้อัตโนมัติ ไม่ต้องมานั่งกรอก IP ใหม่
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> การเพิ่มแอปใหม่ในอนาคต (Extensibility)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> สร้างโฟลเดอร์ใน <code>code/apps/&lt;name&gt;</code> พร้อมไฟล์ <code>app.json</code></div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          Hub จะตรวจพบแอปใหม่และนำมาแสดงผลบนหน้านี้ให้อัตโนมัติทันที ไม่ต้องแก้โค้ดหลังบ้านแม้แต่บรรทัดเดียว
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: FIRMWARE FLASHING -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 3: แฟลชเฟิร์มแวร์ลงบอร์ด ESP32 (Firmware Flashing)</b>
+      <span class="info-badge">Firmware</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/hub-firmware-card.png" alt="Hub Firmware Flashing Card" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. เลือกไฟล์เฟิร์มแวร์ .bin">1</div>
+      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. เลือกพอร์ต COM หรือ RS485 Bus ID">2</div>
+      <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่ม Flash พร้อมแถบความคืบหน้า">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> เลือกไฟล์เฟิร์มแวร์ (.bin File)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดเลือกไฟล์เฟิร์มแวร์ที่คอมไพล์แล้ว เช่น <code>nong.bin</code> หรือ <code>gacha.bin</code></div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          Hub จะตรวจสอบความถูกต้องของ Header ไฟล์ เพื่อป้องกันการอัปโหลดเฟิร์มแวร์ผิดประเภทข้ามบอร์ด
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> แฟลชผ่านสาย RS485 หรือ USB</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกบอร์ดปลายทางแล้วกด <b>Flash firmware</b></div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          Hub จะส่งคำสั่งรีบูตบอร์ดเข้าโหมด Bootloader และเขียนโปรแกรมลงชิป ESP32 พร้อมแถบเปอร์เซ็นต์ความคืบหน้า
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: NETWORK & PAIRING -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 4: การตั้งค่าเครือข่ายและการจับคู่โมดูล (Network &amp; Pairing)</b>
+      <span class="info-badge">Network</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/hub-network-card.png" alt="Hub Network Card" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. ตั้งชื่อและรหัสผ่าน WiFi บอร์ด">1</div>
+      <div class="callout-pin" style="top: 65%; left: 30%;" title="2. รหัสจับคู่ Peer Pairing Code">2</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ตั้งค่า WiFi ของสถานที่ (SSID &amp; Password)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์ชื่อ WiFi และรหัสผ่าน แล้วกดส่งเข้าทุกโมดูล</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          บอร์ดทุกตัวจะเชื่อมต่อเข้ากับ WiFi ของสถานที่พร้อมกันโดยไม่ต้องนำสายมาเสียบตั้งทีละตัว
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> รหัสจับคู่ระหว่างโมดูล (Peer Pairing Code)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ป้อนรหัส 6 หลักเพื่อจับคู่โมดูลเข้ากลุ่มเดียวกัน</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          โมดูลจะสื่อสารหากันเฉพาะในกลุ่มของตนเอง ป้องกันสัญญาณกวนข้ามบูธเมื่อมีหุ่นยนต์หลายตัวในงานเดียวกัน
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: SETTINGS & THEMES -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 5: การตั้งค่าระบบ ธีม และการสำเนาข้อมูล (Settings &amp; Diagnostics)</b>
+      <span class="info-badge">Settings</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/hub-settings-card.png" alt="Hub Settings Card" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. เลือกธีมสี Dark / Midnight / Light">1</div>
+      <div class="callout-pin" style="top: 60%; left: 30%;" title="2. ปุ่มคัดลอกบันทึก Diagnostics Bundle">2</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ธีมการแสดงผล (Theme Selection)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกธีมระหว่าง <b>Reconize</b>, <b>Midnight</b> หรือ <b>Paper</b></div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          เปลี่ยนโทนสีของทุกหน้าเว็บพร้อมกันทันที สำหรับฮอลล์มืดแนะนำธีม Midnight เพื่อไม่ให้แสบตา
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> สำเนาข้อมูลวิเคราะห์ (Diagnostics Bundle)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Copy diagnostics</b></div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          รวบรวม Log ความเร็วเครือข่าย ค่าคอนฟิก และประวัติข้อผิดพลาดลงในคลิปบอร์ด โดยตัดรหัสผ่านทิ้งอัตโนมัติเพื่อความปลอดภัย
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="f"><h3>Finds modules on its own</h3>
     <p>Parallel scan of the whole local subnet, plus every COM port on the PC. Bluetooth
        phantom ports are recognised from the device type and skipped instead of being
@@ -123,4 +234,5 @@
     <p>If <code>MiceHub.exe</code> is running, the build automatically terminates it to avoid
        <code>PermissionError: [WinError 5] Access is denied</code>. You can also stop running instances manually with:
        <code>taskkill /F /IM MiceHub.exe</code> (or <code>python main.py --kill</code>).</p></div>
+
 </section>

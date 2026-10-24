@@ -6,101 +6,68 @@
        หน้านี้ใช้สำหรับเปิดโปรแกรมและกำหนดว่าเมื่อหุ่นยนต์เห็นใคร จะให้พูดและแสดงท่าทางอย่างไร</p>
   </div>
 
-  <!-- Real Screenshot & Visual Callout Guide -->
+  <!-- SECTION 1: GREET WORDS -->
   <div class="info-box">
     <div class="info-header">
-      <b>ภาพหน้าจอจริงของ Reconize และคู่มือการตั้งค่าทักทาย</b>
-      <span class="info-badge">Real UI · Callouts</span>
+      <b>จุดที่ 1: กำหนดคำพูดทักทายแยกตามบุคคล (Greet Words Editor)</b>
+      <span class="info-badge">Greet Words</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/faces-current.png" alt="Reconize Real UI" class="info-img">
-      <div class="callout-pin" style="top: 25%; left: 25%;" title="1. ปุ่มเปิดและติดตามโปรแกรม">1</div>
-      <div class="callout-pin" style="top: 25%; left: 75%;" title="2. สถานะการทำงานของ Reconize">2</div>
-      <div class="callout-pin" style="top: 60%; left: 50%;" title="3. ตั้งค่าคำพูดและท่าทางหุ่น">3</div>
+      <img src="/docs/shots/faces-words-box.png" alt="Faces Greet Words Box" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. คำทักคนที่มาครั้งแรกของวัน">1</div>
+      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. คำทักคนที่เดินกลับมาอีกครั้ง">2</div>
+      <div class="callout-pin" style="top: 80%; left: 30%;" title="3. คำทักคนแปลกหน้า (Stranger)">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ตรวจจับและแยกแยะ (Known vs Stranger)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> กล้องส่องหน้า &rarr; Reconize (Port 8000) คำนวณเวกเตอร์ใบหน้า</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          แยกแยะว่าคือคนที่เคยลงทะเบียนไว้ (Known) หรือคนแปลกหน้า (Stranger) เพื่อเลือกประโยคทักทายที่เหมาะสมโดยอัตโนมัติ
+        <div class="action-card-title"><span class="num">1</span> คำพูดคนรู้จัก (Known Person: First visit &amp; Return)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ใส่แท็ก <code>{title}</code> (เช่น อาจารย์) และ <code>{name}</code> (ชื่อคน)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เมื่อคนรู้จักเดินผ่าน หุ่นยนต์จะเอ่ยชื่อคนนั้นอย่างถูกต้องเป็นธรรมชาติ เช่น "สวัสดีครับ {title} {name} ยินดีต้อนรับครับ"
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> ผูกคำพูดและท่าทางหุ่น (Greet Words &amp; Move)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> พิมพ์คำพูดใส่ <code>{name}</code> และเลือกท่าทาง <code>wai.yaml</code> หรือ <code>wave.yaml</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          เมื่อคนเดิมเดินผ่าน หุ่นยนต์ Nong จะยกมือไหว้หรือโบกมือพร้อมเปล่งเสียงทักทายชื่อคนนั้นทันที
+        <div class="action-card-title"><span class="num">2</span> คำทักคนแปลกหน้า (Stranger Words)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์คำทักทายทั่วไป (ห้ามใส่ <code>{name}</code> เด็ดขาด)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หากเป็นใบหน้าที่ยังไม่เคยบันทึกในฐานข้อมูล หุ่นยนต์จะใช้ประโยคสุภาพทั่วไป เช่น "สวัสดีครับ ยินดีต้อนรับสู่บูธของเราครับ"
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: CAMERA TO MOVE BINDING & COOLDOWN -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 2: ผูกท่าทางแอนิเมชันและการป้องกันทักซ้ำ (Move Binding &amp; Cooldown)</b>
+      <span class="info-badge">Rules &amp; Cooldown</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/faces-rules-box.png" alt="Faces Rules Box" class="info-img">
+      <div class="callout-pin" style="top: 40%; left: 30%;" title="1. เลือกท่าทาง wai.yaml / wave.yaml">1</div>
+      <div class="callout-pin" style="top: 40%; left: 70%;" title="2. ตั้งเวลา Cooldown ป้องกันทักซ้ำ">2</div>
+      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. เงื่อนไข Skip if busy">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ผูกท่าทางหุ่นยนต์ (Move Binding)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกท่า <code>wai.yaml</code> (ไหว้) หรือ <code>wave.yaml</code> (โบกมือ)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หุ่นยนต์ Nong จะแสดงท่าทางพร้อมเปล่งเสียงทักทายพร้อมกัน เพิ่มความมีชีวิตชีวาและดึงดูดผู้เข้าชมงาน
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> ป้องกันการทักซ้ำ (Cooldown &amp; Busy Guard)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ตั้งค่า Cooldown (เช่น 10 นาที) และเลือก Skip if busy</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+        <div class="action-card-title"><span class="num">2</span> คูลดาวน์และป้องกันขัดจังหวะ (Cooldown &amp; Busy Guard)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กำหนด Cooldown (เช่น 10 นาที) และเลือก Skip if busy</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           คนเดิมที่ยืนคุยหน้ากล้องจะไม่โดนทักซ้ำๆ ทุก 5 วินาที และถ้าหุ่นกำลังแสดงโชว์อยู่ จะไม่ถูกขัดจังหวะ
         </div>
       </div>
     </div>
   </div>
 
-  <h3>What works today</h3>
-  <p><b>Open Reconize</b> starts it if it is not running and shows it in the page.
-     <b>Is the rig following it?</b> says whether the rig is seeing people arrive.
-     When it is not, <b>Start following Reconize</b> starts Reconize and the rig's
-     own face helper together, in one press. Under the open button a line says
-     whether the installed Reconize is the version Mice was tested with; a newer
-     one is only pointed out, and everything keeps working as before.</p>
-  <p><b>What the rig says</b> is where you choose the words. Nothing is said until
-     you tick <b>Greet people the face app sees</b> and press <b>Save</b>. Saving asks
-     you to sign in on the hub page first, because it changes what a robot says
-     to a guest. The next person who arrives already gets the new words; nothing
-     needs restarting.</p>
-  <ul>
-    <li><b>The words.</b> One line for each case: somebody's first visit today,
-        somebody who already came today, and somebody it does not know. Write
-        <b>{title}</b> where the polite word goes and <b>{name}</b> where the name
-        goes. Somebody it does not know is never called by a name, so only
-        {title} works in that line, and the page refuses to save otherwise.</li>
-    <li><b>Cameras.</b> Each camera that has seen somebody appears by itself. Pick
-        whether it <i>says hello</i>, <i>says goodbye</i> or <i>only counts</i>, which
-        speaker says it, and a saved move a robot plays with it. A camera you
-        never set up only counts, so a new camera never starts talking on its own.
-        Open <i>Its own words</i> to give one camera different words.</li>
-    <li><b>Once per person.</b> The same person is greeted at most once in the
-        minutes you choose, whichever camera sees them. Somebody it does not know
-        is greeted at most once per camera in the seconds you choose.</li>
-    <li><b>If the rig is busy.</b> <i>skip this hello</i> drops it while the rig is
-        talking or playing a show; <i>wait its turn</i> says it afterwards. A
-        greeting never stops a show.</li>
-    <li><b>Celebrations.</b> Said once a day when that many people have come
-        today, by Reconize's own count. Each can play a move too.</li>
-    <li><b>Titles.</b> Give a particular person their own polite word, such as
-        อาจารย์, instead of the usual one.</li>
-  </ul>
-  <p>If it says Reconize is not answering, start it with <b>start.bat</b> in its
-     own folder and wait about fifteen seconds — it loads a face model before it
-     answers anything, so <i>not answering</i> and <i>not started</i> look the
-     same for those first seconds.</p>
-
   <h3>Where Reconize lives, and how to move it</h3>
   <p>Its addresses are written in <b>config/partners.json</b> — one entry for
      each outside program Mice follows. Change the address there and the button
-     follows on the next refresh. Nothing is compiled in, so moving Reconize to
-     another port or another PC costs one edit and no rebuild.</p>
-  <p>That same file is how the <b>next</b> outside program is added: one entry,
-     no code. Each entry says where the app is, how to log in to it, where its
-     events come from, and — just as important — what each of those sources
-     <i>cannot</i> tell us, so the rig never promises more than it can see.</p>
-  <p><b>No password is kept in that folder, and none ever will be.</b> Every file
-     belonging to a tool is served to anyone who can reach the hub, with no login
-     at all — so a password put there would be readable by everybody on the venue
-     WiFi. Logins for Reconize live beside the hub's own password file instead,
-     outside anything that is served.</p>
-
-  <h3>We never change Reconize itself</h3>
-  <p>It updates itself, often, and its updater throws away anything it finds that
-     it did not write. So Mice never puts a file in its folder, never runs its
-     updater, and never opens its database directly — reading that database while
-     it is running would block its own writing. Everything goes through its
-     web address, the same way any other program would talk to it.</p>
+     follows on the next refresh.</p>
 </section>

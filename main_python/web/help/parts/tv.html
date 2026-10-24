@@ -7,24 +7,23 @@
        ตัดการประมวลผล 3D Three.js ออก 100% ทำให้เปิดได้รวดเร็ว ลื่นไหล ไม่กินสเปก และไม่มีอาการค้างบน Smart TV หรือสมาร์ทโฟน</p>
   </div>
 
-  <!-- Real Screenshot & Visual Callout Guide -->
+  <!-- SECTION 1: REMOTE CONTROLS -->
   <div class="info-box">
     <div class="info-header">
-      <b>ภาพหน้าจอจริงของ TV Remote และจุดควบคุมการใช้งาน</b>
-      <span class="info-badge">Real UI · Callouts</span>
+      <b>จุดที่ 1: แผงปุ่มควบคุมหลักและเครื่องเล่นท่าทาง (Remote &amp; Sequence Launcher)</b>
+      <span class="info-badge">Remote Buttons</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/tv-current.png" alt="TV Remote Real UI" class="info-img">
-      <div class="callout-pin" style="top: 25%; left: 50%;" title="1. ปุ่มควบคุมหลัก">1</div>
-      <div class="callout-pin" style="top: 38%; left: 50%;" title="2. รายการท่าทาง">2</div>
-      <div class="callout-pin" style="top: 54%; left: 50%;" title="3. สั่งเสียงพูดด่วน">3</div>
-      <div class="callout-pin" style="top: 80%; left: 50%;" title="4. แถบมอนิเตอร์เซอร์โว 10 จุด">4</div>
+      <img src="/docs/shots/tv-controls-box.png" alt="TV Controls Box" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 50%;" title="1. ปุ่ม Play / Pause / Stop / Home">1</div>
+      <div class="callout-pin" style="top: 55%; left: 50%;" title="2. รายการเลือก Sequence">2</div>
+      <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่มสั่งพูดด่วน Quick Speech">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมการเคลื่อนไหวหลัก (Motion Controls)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม Play, Pause, Stop หรือ Home ด้วยรีโมททีวีหรือนิ้วมือ</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมหลัก (Play, Pause, Stop, Home)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่มสัมผัสขนาดใหญ่บนหน้าจอ หรือกดผ่านรีโมททีวี</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           • <b>Play / Pause:</b> สั่งเริ่มหรือหยุดการขยับท่าทางชั่วคราว<br>
           • <b>Stop:</b> สั่งหยุดหุ่นยนต์ฉุกเฉินทันที มอเตอร์จะล็อคตำแหน่งปัจจุบัน<br>
           • <b>Home:</b> คืนแขนและคอหุ่นยนต์กลับสู่ท่าเริ่มต้นที่ปลอดภัย (Neutral Pose)
@@ -32,64 +31,38 @@
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">2</span> รายการท่าทาง (Sequence Launcher)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> เลือกท่าทางจากกล่องดรอปดาวน์ แล้วกด <b>▶ Play Sequence</b></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกท่าทางจากกล่องดรอปดาวน์ แล้วกด <b>▶ Play Sequence</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           ระบบจะดึงไฟล์ท่าทางจาก Hub กลาง (<code>/api/list?kind=sequences</code>) และสั่งให้หุ่นรันชุดท่าทางนั้นทันที เจ้าหน้าที่หลังเวทีสามารถใช้มือถือกดเลือกโชว์ได้สะดวก
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> สั่งเสียงพูดด่วน (Quick Speech &amp; Speak)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> แตะปุ่มคำพูดยอดนิยม เช่น "สวัสดีครับ", "ยินดีต้อนรับครับ", "ขอบคุณครับ" หรือพิมพ์ข้อความในช่อง</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ส่งคำสั่งเข้าคิวเสียงกลาง (<code>/api/speak</code>) เสียงจะเปล่งออกจากลำโพงของหุ่นยนต์ Nong หรือลำโพงเวทีทันทีโดยไม่กระตุก
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> มอนิเตอร์ข้อต่อ 10 จุด (10-Joint Monitor Gauges)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ดูแถบวัดระดับองศาเซอร์โวด้านล่างหน้าจอ</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          แสดงมุมองศาจริง (0° - 180°) ของข้อต่อทั้ง 10 จุด (ไหล่ ข้อศอก เอว คอ) แบบ Real-time ด้วย CSS Gauge เบาๆ แสดงผลอัปเดตแบบ 200ms โดยไม่ดึงภาระ GPU หรือ CPU ของทีวี
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Infographic: Decoupled Architecture -->
+  <!-- SECTION 2: JOINT GAUGES -->
   <div class="info-box">
     <div class="info-header">
-      <b>ผังเปรียบเทียบสถาปัตยกรรม Nong Studio (PC) vs TV Remote (Smart TV / Mobile)</b>
-      <span class="info-badge">Architecture</span>
+      <b>จุดที่ 2: แถบมอนิเตอร์ระดับองศาข้อต่อเซอร์โว 10 จุด (10-Joint Monitor Gauges)</b>
+      <span class="info-badge">Joint Gauges</span>
     </div>
-    <div class="info-visual-wrapper" style="padding: 20px; background: var(--card);">
-      <svg viewBox="0 0 760 190" width="100%" height="auto" style="display:block; font-family:var(--sans); font-size:12px;">
-        <rect x="15" y="15" width="345" height="160" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
-        <text x="35" y="42" font-weight="700" fill="var(--txt)" font-size="14">🖥️ Nong Studio (PC Mode)</text>
-        <text x="35" y="68" fill="var(--mut)">• 3D WebGL Canvas (Three.js 60fps)</text>
-        <text x="35" y="90" fill="var(--mut)">• Inverse Kinematics (IK) &amp; Timeline Drag</text>
-        <text x="35" y="112" fill="var(--mut)">• ใช้การ์ดจอ GPU และ RAM ~150MB</text>
-        <text x="35" y="138" font-weight="600" fill="var(--txt)">🎯 เหมาะสำหรับ: คอมพิวเตอร์ PC ตั้งโต๊ะ / แล็ปท็อป</text>
-
-        <rect x="400" y="15" width="345" height="160" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
-        <text x="420" y="42" font-weight="700" fill="#15803d" font-size="14">📺 TV Remote &amp; Monitor (Thin Client)</text>
-        <text x="420" y="68" fill="#166534">• Zero 3D / Zero Three.js (ไม่มี 3D เด็ดขาด)</text>
-        <text x="420" y="90" fill="#166534">• แถบวัดองศา CSS Light Gauges (200ms poll)</text>
-        <text x="420" y="112" fill="#166534">• ปุ่มสัมผัสขนาดใหญ่ เหมาะกับรีโมท TV</text>
-        <text x="420" y="138" font-weight="600" fill="#15803d">🎯 เหมาะสำหรับ: Smart TV, แท็บเล็ต, มือถือทุกรุ่น</text>
-      </svg>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/tv-gauges-box.png" alt="TV Gauges Box" class="info-img">
+      <div class="callout-pin" style="top: 50%; left: 25%;" title="1. เกจวัดระดับองศาแขนซ้าย">1</div>
+      <div class="callout-pin" style="top: 50%; left: 75%;" title="2. เกจวัดระดับองศาแขนขวาและเอว">2</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> แถบวัดองศา CSS Light Gauges</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> สังเกตแถบระดับสีฟ้า-เขียวที่ขยับตามมุมจริงของเซอร์โว</div>
+        <div class="action-impact"><b>ระบบทำงานอย่างไร:</b>
+          แสดงตำแหน่งจริงของเซอร์โวทั้ง 10 จุด ด้วย CSS Gauge เบาๆ แสดงผลอัปเดตแบบ 200ms โดยไม่ดึงภาระ GPU หรือ CPU ของทีวี
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="f"><h3>Decoupled Architecture: ป้องกันทีวีค้างได้อย่างไร?</h3>
     <p>ในสถาปัตยกรรมแบบเดิม หากเปิดหน้า 3D (Three.js) บน Web Browser ของ Smart TV หรือมือถือรุ่นเก่า
        เบราว์เซอร์จะต้องคอมไพล์ WebGL Shaders และรันลูปคำนวณ 60 รอบต่อวินาที ซึ่งชิปประมวลผลของสมาร์ททีวีไม่ได้ออกแบบมาเพื่อรองรับ
-       ส่งผลให้เบราว์เซอร์ทีวีปิดตัวเองหรือเครื่องค้าง</p>
-    <p><b>ทีวีรีโมท (TV Remote) แก้ไขปัญหานี้โดย:</b>
-       1. ย้ายการคำนวณทั้งหมดไปไว้ที่ Python Hub บนคอมพิวเตอร์ส่วนกลาง<br>
-       2. ฝั่งหน้าจอทีวีส่งเฉพาะคำสั่ง JSON สั้นๆ ผ่าน REST API<br>
-       3. การแสดงผลกราฟิกใช้เฉพาะ HTML5 &amp; CSS3 พื้นฐาน ไม่มี Canvas 3D แม้แต่บรรทัดเดียว<br>
-       4. น้ำหนักหน้าเว็บรวมไม่ถึง 25 KB โหลดเสร็จในเสี้ยววินาที</p></div>
-
-  <div class="f"><h3>การควบคุมด้วยรีโมททีวี (Smart TV Navigation)</h3>
-    <p>ออกแบบปุ่มให้มีขนาดใหญ่ มีขอบโฟกัสชัดเจนเมื่อกดปุ่มลูกศร (D-Pad) บนรีโมททีวี รองรับปุ่ม Enter
-       เพื่อสั่งงาน และมีแถบแสดงข้อผิดพลาดหากระบบเครือข่ายหลุดการเชื่อมต่อ</p></div>
+       ส่งผลให้เบราว์เซอร์ทีวีปิดตัวเองหรือเครื่องค้าง</p></div>
 </section>

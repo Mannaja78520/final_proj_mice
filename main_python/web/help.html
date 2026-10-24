@@ -370,56 +370,167 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 <section id="hub">
   <div class="shead">
     <span class="where tech">code/main_python · MiceHub.exe · port 8642</span>
-    <h2>Mice Hub — the PC app</h2>
-    <p>The first page you open. Finds every module by itself and links to each one's
-       website and to Nong Studio. Stdlib Python only; ships as a single exe.</p>
+    <h2>Mice Hub — ศูนย์กลางควบคุมและปรับแต่งทุกระบบ</h2>
+    <p>โปรแกรมเซิร์ฟเวอร์หลักของระบบ ค้นหาโมดูลและบอร์ด ESP32 ทุกตัวบนเครือข่ายและพอร์ต USB อัตโนมัติ
+       พร้อมเป็นตัวกลางแชร์พอร์ตและกระจายคำสั่งให้กับทุกแอปพลิเคชัน</p>
   </div>
 
-  <!-- Infographic: Mice Hub Visual Guide & Settings -->
+  <!-- SECTION 1: HOME & MODULES -->
   <div class="info-box">
     <div class="info-header">
-      <b>ภาพรวมหน้าจอ Mice Hub และคู่มือการตั้งค่า</b>
-      <span class="info-badge">Infographic</span>
+      <b>จุดที่ 1: การเชื่อมต่อโมดูลและพอร์ต USB (Home &amp; Transports)</b>
+      <span class="info-badge">Home &amp; Modules</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/hub-new.png" alt="Mice Hub Screen" class="info-img">
-      <div class="callout-pin" style="top: 18%; left: 32%;" title="1. Transport Mode">1</div>
-      <div class="callout-pin" style="top: 48%; left: 24%;" title="2. Module Card">2</div>
-      <div class="callout-pin" style="top: 48%; left: 72%;" title="3. App Tiles">3</div>
-      <div class="callout-pin" style="top: 14%; left: 88%;" title="4. Hub Security &amp; Accounts">4</div>
+      <img src="/docs/shots/hub-module-card.png" alt="Hub Module Card" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 30%;" title="1. โหมด USB Shared vs Exclusive">1</div>
+      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. รายการการ์ดโมดูลที่ค้นพบ">2</div>
+      <div class="callout-pin" style="top: 80%; left: 75%;" title="3. ปุ่มเปิดบอร์ด Open Module">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
         <div class="action-card-title"><span class="num">1</span> โหมด USB Shared vs Exclusive</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> คลิกเลือกโหมดเชื่อมต่อในหน้าตั้งค่าก่อนกด Connect</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          • <b>Shared:</b> Hub จะเป็นตัวกลางแชร์พอร์ต COM เดียวกัน ทำให้เปิด Nong Studio และเว็บบอร์ดพร้อมกันได้ ไม่ชนกัน<br>
-          • <b>Exclusive:</b> หน้าเดียวจะยึดพอร์ตไว้คนเดียว ตอบสนองเร็วขึ้น 2-5ms แต่แอปอื่นจะคุยกับบอร์ดไม่ได้
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกโหมดเชื่อมต่อในแถบตั้งค่าก่อนสั่ง Connect</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          • <b>Shared:</b> Hub จะแชร์พอร์ต COM เดียวกัน ทำให้เปิด Nong Studio และหน้าเว็บบอร์ดพร้อมกันได้โดยสายไม่ชนกัน<br>
+          • <b>Exclusive:</b> หน้าเดียวจะยึดสายไว้ ตอบสนองเร็วกว่า 2-5ms แต่หน้าอื่นจะคุยกับบอร์ดไม่ได้
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> บอร์ดโมดูล &amp; Open Module</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Open Module</b> บนการ์ดของโมดูลที่เจอ</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          เปิดหน้า Dashboard ประจำตัวของ ESP32 บอร์ดนั้นทันที ไม่ว่าบอร์ดจะต่อผ่านสาย RS485, USB หรือ WiFi ก็ใช้ UI เดียวกันทั้งหมด
+        <div class="action-card-title"><span class="num">2</span> บอร์ดโมดูลและการระบุตัวตน (Module Cards)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ดูรายชื่อการ์ดบอร์ดที่ Hub ตรวจจับได้อัตโนมัติ (IP, ชนิดบอร์ด, ขีดความสามารถ)</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          Hub จะส่งคำสั่ง Probe เบาๆ ทางสาย USB / RS485 / WiFi เพื่อเช็คว่าคือบอร์ดชนิดใด (nong, lift, cam, gacha) โดยไม่ต้องตั้งค่าเอง
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> ทางลัดเปิด Nong Studio &amp; Apps</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> คลิกการ์ดแอป เช่น <b>Studio</b> หรือ <b>Voice</b></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ระบบจะเปิดหน้าแอปโดยส่งค่า Bus ID และพาธการเชื่อมต่อให้อัตโนมัติ ไม่ต้องมานั่งกรอก IP หรือสแกนหาพอร์ตใหม่
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> ความปลอดภัย &amp; สิทธิ์ Admin</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ล็อกอินผ่านมุมขวาบน หรือกำหนดรหัสผ่านใน <code>hub_auth.json</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ถ้ายังไม่ล็อกอิน: บุคคลภายนอกจะ "ดูได้อย่างเดียว" (Read-only) / ถ้าล็อกอิน: ถึงจะได้รับสิทธิ์สั่งขยับหุ่นยนต์ แฟลชบอร์ด หรือแก้ค่าตั้งค่า
+        <div class="action-card-title"><span class="num">3</span> เปิดแดชบอร์ดเฉพาะบอร์ด (Open Module)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกปุ่ม <b>Open Module</b> บนการ์ดโมดูล</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          เปิดหน้าเว็บประจำตัวของ ESP32 บอร์ดนั้น เพื่อปรับแต่งพินฮาร์ดแวร์ ดูสถานะแรม หรือทดสอบขับมอเตอร์โดยตรง
         </div>
       </div>
     </div>
   </div>
+
+  <!-- SECTION 2: TOOLS LAUNCHER -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 2: เมนูเครื่องมือและแอปพลิเคชัน (Tools Launcher)</b>
+      <span class="info-badge">Tools</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/hub-tools-card.png" alt="Hub Tools Card" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 50%;" title="1. แอป Nong Studio">1</div>
+      <div class="callout-pin" style="top: 50%; left: 50%;" title="2. แอป TV Remote">2</div>
+      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. แอป Voice, Camera, Faces, Gacha">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ทางลัดเปิด Nong Studio &amp; TV Remote</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกการ์ดแอปเพื่อเปิดใช้งาน</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          ระบบจะเปิดหน้าเว็บโดยแนบพารามิเตอร์ Bus ID และเส้นทางเชื่อมต่อให้อัตโนมัติ ไม่ต้องมานั่งกรอก IP ใหม่
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> การเพิ่มแอปใหม่ในอนาคต (Extensibility)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> สร้างโฟลเดอร์ใน <code>code/apps/&lt;name&gt;</code> พร้อมไฟล์ <code>app.json</code></div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          Hub จะตรวจพบแอปใหม่และนำมาแสดงผลบนหน้านี้ให้อัตโนมัติทันที ไม่ต้องแก้โค้ดหลังบ้านแม้แต่บรรทัดเดียว
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: FIRMWARE FLASHING -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 3: แฟลชเฟิร์มแวร์ลงบอร์ด ESP32 (Firmware Flashing)</b>
+      <span class="info-badge">Firmware</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/hub-firmware-card.png" alt="Hub Firmware Flashing Card" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. เลือกไฟล์เฟิร์มแวร์ .bin">1</div>
+      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. เลือกพอร์ต COM หรือ RS485 Bus ID">2</div>
+      <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่ม Flash พร้อมแถบความคืบหน้า">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> เลือกไฟล์เฟิร์มแวร์ (.bin File)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดเลือกไฟล์เฟิร์มแวร์ที่คอมไพล์แล้ว เช่น <code>nong.bin</code> หรือ <code>gacha.bin</code></div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          Hub จะตรวจสอบความถูกต้องของ Header ไฟล์ เพื่อป้องกันการอัปโหลดเฟิร์มแวร์ผิดประเภทข้ามบอร์ด
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> แฟลชผ่านสาย RS485 หรือ USB</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกบอร์ดปลายทางแล้วกด <b>Flash firmware</b></div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          Hub จะส่งคำสั่งรีบูตบอร์ดเข้าโหมด Bootloader และเขียนโปรแกรมลงชิป ESP32 พร้อมแถบเปอร์เซ็นต์ความคืบหน้า
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: NETWORK & PAIRING -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 4: การตั้งค่าเครือข่ายและการจับคู่โมดูล (Network &amp; Pairing)</b>
+      <span class="info-badge">Network</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/hub-network-card.png" alt="Hub Network Card" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. ตั้งชื่อและรหัสผ่าน WiFi บอร์ด">1</div>
+      <div class="callout-pin" style="top: 65%; left: 30%;" title="2. รหัสจับคู่ Peer Pairing Code">2</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ตั้งค่า WiFi ของสถานที่ (SSID &amp; Password)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์ชื่อ WiFi และรหัสผ่าน แล้วกดส่งเข้าทุกโมดูล</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          บอร์ดทุกตัวจะเชื่อมต่อเข้ากับ WiFi ของสถานที่พร้อมกันโดยไม่ต้องนำสายมาเสียบตั้งทีละตัว
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> รหัสจับคู่ระหว่างโมดูล (Peer Pairing Code)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ป้อนรหัส 6 หลักเพื่อจับคู่โมดูลเข้ากลุ่มเดียวกัน</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          โมดูลจะสื่อสารหากันเฉพาะในกลุ่มของตนเอง ป้องกันสัญญาณกวนข้ามบูธเมื่อมีหุ่นยนต์หลายตัวในงานเดียวกัน
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: SETTINGS & THEMES -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 5: การตั้งค่าระบบ ธีม และการสำเนาข้อมูล (Settings &amp; Diagnostics)</b>
+      <span class="info-badge">Settings</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/hub-settings-card.png" alt="Hub Settings Card" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. เลือกธีมสี Dark / Midnight / Light">1</div>
+      <div class="callout-pin" style="top: 60%; left: 30%;" title="2. ปุ่มคัดลอกบันทึก Diagnostics Bundle">2</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ธีมการแสดงผล (Theme Selection)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกธีมระหว่าง <b>Reconize</b>, <b>Midnight</b> หรือ <b>Paper</b></div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          เปลี่ยนโทนสีของทุกหน้าเว็บพร้อมกันทันที สำหรับฮอลล์มืดแนะนำธีม Midnight เพื่อไม่ให้แสบตา
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> สำเนาข้อมูลวิเคราะห์ (Diagnostics Bundle)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Copy diagnostics</b></div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          รวบรวม Log ความเร็วเครือข่าย ค่าคอนฟิก และประวัติข้อผิดพลาดลงในคลิปบอร์ด โดยตัดรหัสผ่านทิ้งอัตโนมัติเพื่อความปลอดภัย
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="f"><h3>Finds modules on its own</h3>
     <p>Parallel scan of the whole local subnet, plus every COM port on the PC. Bluetooth
        phantom ports are recognised from the device type and skipped instead of being
@@ -491,6 +602,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <p>If <code>MiceHub.exe</code> is running, the build automatically terminates it to avoid
        <code>PermissionError: [WinError 5] Access is denied</code>. You can also stop running instances manually with:
        <code>taskkill /F /IM MiceHub.exe</code> (or <code>python main.py --kill</code>).</p></div>
+
 </section>
 
 <!-- ===================== MODULE SITE ===================== -->
@@ -525,196 +637,269 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        over WiFi, USB or RS485 alike.</p></div>
 </section>
 
+<!-- ===================== STUDIO ===================== -->
 <section id="studio">
   <div class="shead">
     <span class="where tech">code/nong/main_python_set_nong · served at /studio/</span>
-    <h2>Nong Studio — 3D Pose &amp; Sequence Editor</h2>
-    <p>เครื่องมือจำลอง 3 มิติสำหรับออกแบบท่าทางและสร้างลำดับการเคลื่อนไหวของหุ่นยนต์ Humanoid Nong (เซอร์โว 10 จุด) พรีวิวเสมือนจริงด้วย Three.js คำนวณความปลอดภัยทางฟิสิกส์อัตโนมัติ และส่งออกเป็นไฟล์ YAML สั่งงานหุ่นจริงได้โดยตรง</p>
+    <h2>Nong Studio — คู่มือการใช้งานและจุดปรับแต่งอย่างละเอียดทุกส่วน</h2>
+    <p>โปรแกรมจำลอง 3D และออกแบบท่าทางแอนิเมชันสำหรับหุ่นยนต์ฮิวแมนนอยด์ Nong (10 ข้อต่อเซอร์โว)
+       ประมวลผลบนเครื่องคอมพิวเตอร์ PC พร้อมระบบ On-Demand 3D Rendering ที่ช่วยประหยัดพลังงาน ไม่กินสเปก และไม่ค้าง</p>
   </div>
 
-  <!-- ==================== MAIN INFOGRAPHIC: CURRENT UI ==================== -->
+  <!-- OVERALL SCREENSHOT -->
   <div class="info-box">
     <div class="info-header">
-      <b>🗺️ ผังหน้าจอจริง Nong Studio (เวอร์ชันปัจจุบัน) และจุดควบคุมสำคัญ</b>
-      <span class="info-badge">Current UI</span>
+      <b>ภาพรวมหน้าจอ Nong Studio ในปัจจุบัน (Current Real UI)</b>
+      <span class="info-badge">Overview</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/studio-current.png" alt="Nong Studio Current Interface" class="info-img">
-      <!-- Callouts corresponding to real UI elements in user screenshot -->
-      <div class="callout-pin" style="top: 3.5%; left: 58%;" title="1. File & Project Controls">1</div>
-      <div class="callout-pin" style="top: 19%; left: 53%;" title="2. 3D Viewport Controls & Distances">2</div>
-      <div class="callout-pin" style="top: 25%; left: 32%;" title="3. 3D Model & Servo Rings (Gizmos)">3</div>
-      <div class="callout-pin" style="top: 14%; left: 81%;" title="4. Six Studio Tabs">4</div>
-      <div class="callout-pin" style="top: 35%; left: 81%;" title="5. Joint Sliders & Orientation">5</div>
-      <div class="callout-pin" style="top: 56%; left: 18%;" title="6. Timeline Action Bar & Collision Check">6</div>
-      <div class="callout-pin" style="top: 76%; left: 10%;" title="7. Keyframe Chips, Timing & Music">7</div>
-      <div class="callout-pin" style="top: 97%; left: 24%;" title="8. Auto-Save & Recovery Banner">8</div>
+      <img src="/docs/shots/studio-current.png" alt="Nong Studio Current Real UI" class="info-img">
+      <div class="callout-pin" style="top: 45%; left: 30%;" title="1. พื้นที่ 3D Model Viewport">1</div>
+      <div class="callout-pin" style="top: 45%; left: 78%;" title="2. แผงควบคุมสไลเดอร์ 10 ข้อต่อ">2</div>
+      <div class="callout-pin" style="top: 90%; left: 50%;" title="3. แถบไทม์ไลน์และเครื่องเล่นท่าทาง">3</div>
     </div>
+  </div>
 
-    <!-- Overview Grid -->
+  <!-- SUB-SECTION 1: JOINT SLIDERS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 1: แผงปรับแต่งองศาข้อต่อเซอร์โว 10 จุด (Joint Sliders &amp; Inspector)</b>
+      <span class="info-badge">Joint Controls</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-sliders.png" alt="Joint Sliders Panel" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 25%;" title="1. ข้อต่อแขนซ้าย L_SH / L_EL">1</div>
+      <div class="callout-pin" style="top: 55%; left: 25%;" title="2. ข้อต่อแขนขวา R_SH / R_EL">2</div>
+      <div class="callout-pin" style="top: 80%; left: 25%;" title="3. เอวและยักไหล่ WAIST / SHRUG">3</div>
+      <div class="callout-pin" style="top: 92%; left: 50%;" title="4. ปุ่ม Quick Actions (Home / Relax)">4</div>
+    </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> บันทึก &amp; โหลดไฟล์ (Save / Load)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> แถบบนสุด — ช่องพิมพ์ชื่อไฟล์ + ปุ่ม <code>Save</code> + <code>Load...</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          บันทึกท่าทางทั้งหมดลงเครื่องพร้อมกัน 2 นามสกุล: <code>.json</code> สำหรับเปิดแก้ใน Studio และ <code>.yaml</code> สำหรับนำไปใส่ SD Card หุ่นยนต์จริง
+        <div class="action-card-title"><span class="num">1</span> สไลเดอร์แขนซ้าย (L_SH_P, L_SH_R, L_EL_P, L_EL_R)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือพิมพ์องศา (ช่วง 10° – 170°, กลาง 90°)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          • <b>L_SH_P / L_SH_R:</b> ไหล่ซ้ายก้ม-เงย (Pitch) และกางออก-หุบเข้า (Roll)<br>
+          • <b>L_EL_P / L_EL_R:</b> ข้อศอกซ้ายงอพับและหมุนบิดท่อนแขน<br>
+          เซอร์โวหมุนตามองศาจริงทันที พร้อมระบบจำกัดขอบเขตไม่ให้ชนโครงหุ่น
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> มุมมอง 3 มิติ &amp; วัดระยะ (View &amp; Distances)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> กล่องมุมมองกึ่งกลางบน — ปุ่ม <code>Top</code>, <code>Front</code>, <code>3D</code>, <code>Distances</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          เปลี่ยนมุมกล้องเป็นมุมตั้งฉากแบบ Orthographic เพื่อดัดท่าให้แม่นยำ และปุ่ม <code>Distances</code> จะลากเส้นบอกระยะระหว่างไหล่ถึงมือเป็นมิลลิเมตร (mm) ทันที
+        <div class="action-card-title"><span class="num">2</span> สไลเดอร์แขนขวา (R_SH_P, R_SH_R, R_EL_P, R_EL_R)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือกดปุ่ม <b>Mirror</b> เพื่อคัดลอกท่าจากแขนซ้าย</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          คุมแขนขวา 4 แกนอิสระ หากกด Mirror แขนขวาจะกางทำท่าสมมาตรกับแขนซ้ายทันที เหมาะสำหรับทำท่าไหว้ ท่ากอดอก หรือท่ายกมือพร้อมกัน
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> วงแหวนดัดท่า &amp; บอลข้อมือ (Gizmo &amp; IK)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> หน้าต่าง 3D — คลิกท่อนแขนจะมีวงแหวนสี หรือคลิกบอลข้อมือสีเขียว</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          • <b>วงแหวน:</b> หมุนองศาเฉพาะแกนนั้นของเซอร์โว (Pitch/Roll)<br>
-          • <b>บอลสีเขียว:</b> ระบบ Inverse Kinematics คำนวณไหล่และข้อศอก 4 ตัวพร้อมกันให้มือยืดไปตำแหน่งนั้น
+        <div class="action-card-title"><span class="num">3</span> สไลเดอร์เอวและยักไหล่ (WAIST &amp; SHRUG)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> WAIST ปรับหมุนซ้าย-ขวา / SHRUG ปรับโครงสร้าง 4-Bar Linkage</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          • <b>WAIST:</b> เอวเอี้ยวตัวมองไปด้านข้างได้ ±30°<br>
+          • <b>SHRUG:</b> คานไหล่เอียงยกข้างหนึ่งขึ้น อีกข้างหนึ่งลง รวม 26° เลียนแบบการยักไหล่ของมนุษย์
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> แถบเมนู 6 หมวด (The 6 Tabs)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> แถบแท็บด้านขวาบน — <code>Pose</code>, <code>Sequence</code>, <code>Video</code>, <code>Shows</code>, <code>Robot</code>, <code>Setup</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          แยกการทำงานเป็นหมวดหมู่อย่างเป็นระเบียบ ตั้งแต่การดัดข้อต่อ, การตั้งเวลา, สกัดท่าจากคลิป YouTube, รวมโชว์, ลิงก์หุ่นจริง ไปจนถึงโมเดล CAD
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">5</span> สไลเดอร์ 10 Joint &amp; สันมือ/หลังมือ</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> แถบขวาแท็บ Pose — สไลเดอร์องศา + เมนูดรอปดาวน์ <code>on edge</code>, <code>palm down</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ปรับองศาแบบละเอียด 0–180° หรือ 270° พร้อมทั้งระบุทิศทางฝ่ามือ (เช่น แบมือ หงายมือ สันมือตั้ง) ให้ระบบคำนวณข้อต่อปลายแขนให้ตรงกับท่าที่ต้องการ
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">6</span> ตรวจการชน &amp; เล่นท่า (Crash Check &amp; Play)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> แถบเครื่องมือไทม์ไลน์ — ปุ่ม <code>▲ Check crash</code>, <code>▶ Play</code>, <code>Save to robot</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          • <b>Check crash:</b> ใช้อัลกอริทึม RRT* คำนวณว่าแขนจะเหวี่ยงชนตัวหรือเสื้อผ้าไหม หากชนจะคำนวณเส้นทางอ้อมที่ปลอดภัยให้<br>
-          • <b>Save to robot:</b> ส่งไฟล์ YAML ขึ้น SD Card ของบอร์ด ESP32 เพื่อให้หุ่นแสดงเองได้โดยไม่ต้องเปิดคอม
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">7</span> ชิปคีย์เฟรม (Keyframe Chip: T / Hold / Min)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> ไทม์ไลน์ด้านล่าง — ชิปคีย์เฟรมแต่ละช่อง (เช่น <code>0 start pose</code>)</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          • <b>T (ms):</b> เวลาที่ใช้เคลื่อนที่ไปยังท่านั้น<br>
-          • <b>Hold (ms):</b> เวลาหยุดค้างนิ่งก่อนเริ่มท่าต่อไป<br>
-          • <b>Min:</b> ขีดจำกัดเวลาขั้นต่ำตามสเปกมอเตอร์ ป้องกันคนพิมพ์เวลาน้อยเกินไปจนเฟืองหัก
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">8</span> แถบกู้คืนงานอัตโนมัติ (Crash Recovery)</div>
-        <div class="action-step"><b>ตำแหน่ง:</b> แถบด้านล่างสุดสีเทา — ปุ่ม <code>Restore it</code> / <code>Discard</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ระบบเซฟท่าทางลง LocalStorage ตลอดเวลา หากเบราว์เซอร์ดับหรือเผลอปิด สามารถกด <b>Restore it</b> เพื่อดึงงานคีย์เฟรมทั้งหมดกลับมาได้ 100%
+        <div class="action-card-title"><span class="num">4</span> ปุ่มลัดความปลอดภัย (Home / Relax / Zero Lock)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกปุ่ม Home, Relax หรือ Zero Lock ด้านล่าง</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          • <b>Home:</b> คืนแขนทุกข้างกลับท่า 90° ปลอดภัย<br>
+          • <b>Relax:</b> ตัดไฟเลี้ยงเซอร์โว แขนจะอ่อนลง สามารถใช้มือจับดัดท่าจริงได้<br>
+          • <b>Zero Lock:</b> ล็อคพิกัดจุดศูนย์ ป้องกันคนกดเลื่อนตำแหน่งโดยไม่ตั้งใจ
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ==================== TAB BY TAB DEEP DIVE ==================== -->
-  <div class="grp2">คู่มือการตั้งค่าแบบละเอียดแยกตาม 6 แท็บหลัก (All 6 Tabs Detailed)</div>
-
-  <!-- TAB 1: POSE -->
-  <div class="f">
-    <h3>📍 แท็บ 1: Pose — ปรับแต่งท่าทาง เซอร์โว 10 จุด และทิศทางมือ</h3>
-    <p>ใช้สำหรับจัดท่าทางของหุ่นยนต์ Humanoid ท่อนบน โดยมีเซอร์โวควบคุม 10 ข้อต่อหลัก:</p>
-    <ul>
-      <li><b>L/R shoulder pitch &amp; roll:</b> ข้อต่อไหล่แบบ Universal Joint สองตัวขับเคลื่อนมุมก้ม-เงย และกาง-หุบ (เซอร์โว PDI-1181MG หมุนได้กว้าง 270°)</li>
-      <li><b>L/R elbow pitch &amp; roll:</b> ข้อต่อข้อศอกสองตัวขับเคลื่อนการงอแขนและการหมุนท่อนแขน (เซอร์โว MG90S 180°)</li>
-      <li><b>Waist (เอว):</b> เซอร์โว TianKongRC 35kg พลังแรงบิดสูง หมุนเอวซ้าย-ขวา 270°</li>
-      <li><b>Shrug (ยักไหล่):</b> กลไก 4-bar linkage ยกสะบักไหล่ทั้งสองข้างขึ้นพร้อมกัน (~6°)</li>
-      <li><b>Hand Orientation:</b> เลือกระหว่าง <code>L/R on edge</code> (สันมือตั้ง), <code>palm down</code> (คว่ำมือ), <code>palm up</code> (หงายมือ) เพื่อล็อกแนวหมุนของข้อมือให้สวยงามตามธรรมชาติ</li>
-    </ul>
-  </div>
-
-  <!-- TAB 2: SEQUENCE -->
-  <div class="f">
-    <h3>⏱️ แท็บ 2: Sequence — การคำนวณเวลา ความเร็วปลอดภัย และจัดการ SD Card</h3>
-    <p>ควบคุมพฤติกรรมการเล่นท่าทางตามหลักฟิสิกส์จริงของฮาร์ดแวร์:</p>
-    <ul>
-      <li><b>สูตรคำนวณเวลาอัตโนมัติ:</b> <code>Time = Biggest Joint Change ÷ Servo Speed (°/s)</code> ระบบจะหาข้อต่อที่ต้องหมุนไกลที่สุด และคำนวณเวลาให้พอดีกับความเร็วสูงสุดที่ตั้งไว้</li>
-      <li><b>Safe Speed Cap (ความเร็วสูงสุดปลอดภัย):</b> ค่าเริ่มต้นจำกัดที่ 375–400°/s เพื่อป้องกันไม่ให้เซอร์โวกระชากตัวหุ่นยนต์จนโครงสร้างปริแตก</li>
-      <li><b>Robot SD Card File Manager:</b> ดูรายการไฟล์ YAML ทั้งหมดที่อยู่ในการ์ด SD ของบอร์ด ESP32 สามารถกด <b>Upload</b>, <b>Download</b> กลับมาแก้ หรือ <b>Delete</b> ทิ้งได้โดยตรง</li>
-    </ul>
-  </div>
-
-  <!-- TAB 3: VIDEO -->
-  <div class="f">
-    <h3>🎬 แท็บ 3: Video — แปลงวิดีโอคลิปคนเต้นเป็นท่าทางหุ่นยนต์อัตโนมัติ</h3>
-    <p>ฟีเจอร์ AI Motion Capture จากคลิปวิดีโอ:</p>
-    <ul>
-      <li><b>แหล่งวิดีโอที่รองรับ:</b> วางลิงก์ YouTube, Google Drive แบบสาธารณะ, Dropbox หรือ Direct Video Link (MP4/WebM)</li>
-      <li><b>Skeleton Extraction:</b> สกัดจุดข้อต่อกระดูกของมนุษย์ในคลิปวิดีโอ แปลงเป็นมุมองศา Servo 10 ตัวที่หุ่นยนต์ Nong สามารถทำตามได้จริง</li>
-      <li><b>Mirror Switch:</b> เลือกว่าจะให้หุ่นขยับแบบกระจกเงา (Mirror) หรือทิศทางเดียวกับคนในวิดีโอ</li>
-    </ul>
-  </div>
-
-  <!-- TAB 4: SHOWS -->
-  <div class="f">
-    <h3>🎭 แท็บ 4: Shows — จัดรายการแสดงต่อเนื่องหลายท่าทาง (Show Playlist)</h3>
-    <p>สร้างการแสดงแบบสมบูรณ์ที่เล่นหลายๆ ท่าต่อกันโดยไม่มีช่องว่างสะดุด:</p>
-    <ul>
-      <li><b>เรียงลำดับการแสดง:</b> เช่น <code>greeting.yaml</code> &rarr; หยุดพัก 1.5 วินาที &rarr; <code>wai.yaml</code> &rarr; <code>dance.yaml</code> &rarr; <code>byebye.yaml</code></li>
-      <li><b>แนบไฟล์เพลง (Show Music):</b> อัปโหลดไฟล์ MP3/WAV ลงบอร์ด หุ่นยนต์จะเริ่มเล่นเพลงพร้อมกับขยับท่าทางไปพร้อมกันอย่างตรงจังหวะ</li>
-      <li><b>Save to robot (.show.yaml):</b> บันทึกชุดการแสดงลงบอร์ด ESP32 เมื่อเสียบปลั๊ก หุ่นสามารถกดปุ่มเล่นโชว์ทั้งหมดได้ทันทีโดยไม่ต้องมีคอมพิวเตอร์เปิดค้างไว้</li>
-    </ul>
-  </div>
-
-  <!-- TAB 5: ROBOT -->
-  <div class="f">
-    <h3>🔌 แท็บ 5: Robot — จัดการการเชื่อมต่อฮาร์ดแวร์จริง และ Zero Calibration</h3>
-    <p>ศูนย์ควบคุมการคุยกับหุ่นยนต์จริงผ่านสายและไร้สาย:</p>
-    <ul>
-      <li><b>โหมด WiFi:</b> พิมพ์ชื่อโฮสต์ <code>nong.local</code> หรือ IP เพื่อสั่งงานผ่านเครือข่าย</li>
-      <li><b>โหมด USB / RS485 (Shared):</b> แชร์พอร์ต COM เดียวกันผ่าน MiceHub ทำให้หน้า Studio และหน้าโมดูลเปิดคุยกับบอร์ดพร้อมกันได้โดยไม่แย่งพอร์ต</li>
-      <li><b>โหมด Dummy Follow:</b> หากมีหุ่นจำลองบอร์ด <code>mice_dummy</code> (ใช้ Potentiometer แทนเซอร์โว) สามารถจับหุ่นดัดท่าด้วยมือจริง แล้วโมเดล 3D ใน Studio จะขยับตามแบบเรียลไทม์</li>
-      <li><b>Zero-Position Lock:</b> ป้องกันคนเผลอกดรีเซ็ตตำแหน่งศูนย์ (Neutral 90°) ต้องกรอกรหัสผ่าน Admin จึงจะสามารถปรับแต่งค่าศูนย์ของมอเตอร์ได้</li>
-    </ul>
-  </div>
-
-  <!-- TAB 6: SETUP -->
-  <div class="f">
-    <h3>⚙️ แท็บ 6: Setup — สเปกโครงสร้าง Rig, มอเตอร์ และ CAD 3D Models</h3>
-    <p>การปรับแต่งฮาร์ดแวร์เชิงลึก:</p>
-    <ul>
-      <li><b>Servo Profiles:</b> เลือกรุ่นเซอร์โวที่ประกอบจริง เช่น ไหล่ PDI-1181MG (270°), ข้อศอก MG90S (180°), เอว TianKongRC 35kg (270°)</li>
-      <li><b>Pinion / Gear Ratios:</b> ใส่อัตราทดของเฟืองขับ เพื่อให้มุมองศาบนหน้าจอตรงกับการเคลื่อนที่จริงของข้อต่อกระดูก</li>
-      <li><b>3D CAD Package (URDF Import):</b> สลับการแสดงผลจาก Simple Shapes ทรงเรขาคณิตทั่วไป ไปเป็นโมเดลชิ้นงาน CAD เสมือนจริงที่วาดขึ้นจาก SolidWorks เพื่อดูรายละเอียดการประกอบ</li>
-    </ul>
-  </div>
-
-  <!-- TIMELINE CONTROLS -->
-  <div class="grp2">ปุ่มควบคุมบนแถบไทม์ไลน์ด้านล่าง (Timeline Controls Detailed)</div>
-
-  <div class="tasks">
-    <div class="f">
-      <h3>+ Add keyframe</h3>
-      <p><b>หน้าที่:</b> บันทึกท่าทางปัจจุบันที่ดัดไว้เป็นคีย์เฟรมถัดไปในไทม์ไลน์ คำนวณเวลาเดินทางอัตโนมัติ</p>
+  <!-- SUB-SECTION 2: TIMELINE & KEYFRAMES -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 2: แถบไทม์ไลน์และลำดับท่าทาง (Timeline &amp; Keyframe Sequencer)</b>
+      <span class="info-badge">Timeline</span>
     </div>
-    <div class="f">
-      <h3>Update selected</h3>
-      <p><b>หน้าที่:</b> แก้ไขท่าทางคีย์เฟรมเดิมที่กำลังเลือกอยู่ให้กลายเป็นท่าทางปัจจุบันที่กำลังจัดบนจอ 3D</p>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-timeline-bar.png" alt="Timeline Controls" class="info-img">
+      <div class="callout-pin" style="top: 50%; left: 8%;" title="1. ปุ่ม Play / Run on robot">1</div>
+      <div class="callout-pin" style="top: 50%; left: 25%;" title="2. ปุ่ม + Add keyframe">2</div>
+      <div class="callout-pin" style="top: 50%; left: 60%;" title="3. แถบเลื่อนเวลา Scrub Bar">3</div>
+      <div class="callout-pin" style="top: 50%; left: 90%;" title="4. เช็คบ็อกซ์ Loop &amp; ซูม">4</div>
     </div>
-    <div class="f">
-      <h3>▲ Check crash</h3>
-      <p><b>หน้าที่:</b> ใช้ RRT* ตรวจสอบว่ามีท่าใดที่แขนเหวี่ยงฟาดลำตัว เสื้อผ้า หรือข้อต่อเกินขีดจำกัด หากพบจะเตือนสีแดงทันที</p>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> สั่งเล่นท่าทาง (Play / Run on robot)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>▶ Play</b> เพื่อพรีวิวในจอ หรือ <b>▶ Run on robot</b> เพื่อสั่งหุ่นจริง</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          โมเดล 3D และตัวหุ่นจริงจะเคลื่อนที่ต่อเนื่องตามคีย์เฟรม ด้วยความนุ่มนวลตามเส้นโค้งความเร็วที่คำนวณไว้
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> การบันทึกท่า (+ Add Keyframe &amp; Duration)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ดัดท่าที่ต้องการแล้วกด <b>+ Add keyframe</b> พร้อมกำหนดเวลา (เช่น 800ms)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เพิ่มท่าใหม่เข้าไปในเส้นเวลา หากกำหนดเวลาน้อยเกินกว่าที่เซอร์โวหมุนทัน ระบบจะยืดเวลาออกให้อัตโนมัติเพื่อป้องกันมอเตอร์กระชาก
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> สครับบาร์ (Scrub Bar &amp; Live Tracking)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> แดรกเลื่อนตัวชี้เวลาไปข้างหน้าหรือข้างหลัง</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หุ่นยนต์จะเคลื่อนตามจุดเวลาที่ลากแบบ Real-time ช่วยให้ตรวจสอบจุดที่มีการกระทบกันของโครงสร้างได้อย่างแม่นยำ
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> เล่นวนซ้ำและซูม (Loop Checkbox)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ติ๊กถูกที่ช่อง <b>Loop</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เมื่อเล่นถึงท่าสุดท้าย หุ่นยนต์จะเคลื่อนที่ย้อนกลับสู่ท่าแรกอย่างนุ่มนวลและเริ่มเล่นซ้ำต่อเนื่อง ไม่มีการกระตุกหรือสะบัดแขน
+        </div>
+      </div>
     </div>
-    <div class="f">
-      <h3>▶ Play / Loop</h3>
-      <p><b>หน้าที่:</b> เล่นพรีวิวท่าทางทั้งหมดบนจอคอมพิวเตอร์ด้วยความเร็วฟิสิกส์จริง หากติ๊ก Loop จะเล่นวนซ้ำต่อเนื่อง</p>
+  </div>
+
+  <!-- SUB-SECTION 3: 3D MODEL & IK INTERACTION -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 3: โมเดล 3D และการควบคุมด้วย Inverse Kinematics (3D Canvas)</b>
+      <span class="info-badge">3D &amp; IK</span>
     </div>
-    <div class="f">
-      <h3>💾 Save to robot</h3>
-      <p><b>หน้าที่:</b> แปลงไฟล์เป็น YAML และอัปโหลดไปยังโฟลเดอร์ <code>/moves/</code> บน SD Card ของหุ่นยนต์ Nong ทันที</p>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-3d-model.png" alt="3D Model Canvas" class="info-img">
+      <div class="callout-pin" style="top: 35%; left: 35%;" title="1. วงแหวนควบคุมแกนเซอร์โว">1</div>
+      <div class="callout-pin" style="top: 60%; left: 30%;" title="2. จุดจับลากแขน IK (Wrist &amp; Elbow)">2</div>
+      <div class="callout-pin" style="top: 15%; left: 50%;" title="3. ปุ่มมุมมองระนาบ Orthographic">3</div>
     </div>
-    <div class="f">
-      <h3>▶ Run on robot</h3>
-      <p><b>หน้าที่:</b> สั่งให้หุ่นยนต์ตัวจริงเริ่มเล่นท่าทางตามไทม์ไลน์นี้ผ่านสาย RS485 หรือ WiFi แบบสดๆ</p>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> วงแหวนควบคุมแกน (Gizmo Rings)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกที่ข้อต่อ จะปรากฏวงแหวนสี แดง (Pitch), เขียว (Roll), น้ำเงิน (Yaw) ให้คลิกลาก</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หมุนข้อต่อจุดนั้นโดยตรงตามแนวแกน ช่วยให้กะองศาเชิงมุมได้ง่ายกว่าการเลื่อนสไลเดอร์
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ลากมือแบบผกผัน (Shift+Drag IK Solver)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Shift ค้างไว้</b> แล้วคลิกลากลูกบอลข้อมือ (🟢 Wrist)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ระบบจะคำนวณหามุมของไหล่และข้อศอกพร้อมกัน 4 แกนอัตโนมัติ ทำให้สามารถจับมือหุ่นยนต์ชี้ไปยังเป้าหมายในอวกาศ 3D ได้ทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> สลับมุมมองแท้จริง (Orthographic Plane Views)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Front</b>, <b>Top</b> หรือ <b>Side</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          สลับมุมมองกล้องเป็นแบบฉายระนาบขนาน (ไม่มี Perspective เพี้ยน) ช่วยให้จัดแขนทั้งสองข้างให้ตรงได้ระดับเท่ากันเป๊ะ
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 4: CALIBRATION & SERVO OFFSET -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 4: การตั้งค่าชดเชยและแคลิเบรตเซอร์โว (Setup &amp; Servo Offset)</b>
+      <span class="info-badge">Calibration</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-tuning-card.png" alt="Tuning &amp; Calibration Card" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. ปุ่ม Nudge ชดเชย ±0.5 องศา">1</div>
+      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. กำหนดช่วงลิมิต Min / Max">2</div>
+      <div class="callout-pin" style="top: 75%; left: 30%;" title="3. อัตราทดเฟืองและ Shrug Curve">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ชดเชยฟันเฟือง (Servo Offset Nudge)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>-</b> หรือ <b>+</b> ปรับทีละ 0.5° หรือกด 0 เพื่อรีเซ็ต</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          แก้ปัญหาเขาสวมเซอร์โวขบฟันเฟืองไม่ตรงตำแหน่ง ช่วยให้แขนตรงสนิทโดยค่าที่ชดเชยจะถูกบันทึกลงหน่วยความจำ NVS บนตัวหุ่นยนต์ ไม่สูญหายเมื่อปิดสวิตช์
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ลิมิตความปลอดภัย (Joint Safety Limits)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ระบุค่า Min (เช่น 15°) และ Max (เช่น 165°) ของแต่ละข้อต่อ</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ตัวหุ่นจริงและ Studio จะไม่ยอมหมุนเกินพิกัดนี้เด็ดขาด ป้องกันแขนพับชนลำตัวหรือเซอร์โวติดขัดจนไฟตก (Brownout Guard)
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ตารางแคลิเบรตยักไหล่ (4-Bar Shrug Curve)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ป้อนระยะยกจริง (mm) เทียบกับองศาเซอร์โวยักไหล่</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          คานยักไหล่จะขยับตามกลศาสตร์คณิตศาสตร์ของ 4-Bar Linkage จริง หัวไหล่ยกขึ้นได้อย่างสมจริงเป็นธรรมชาติ
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 5: SEQUENCE CHAIN -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 5: การร้อยเรียงชุดท่าทาง (Sequence Chains &amp; Speeds)</b>
+      <span class="info-badge">Sequences</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-sequence-card.png" alt="Sequence Manager Card" class="info-img">
+      <div class="callout-pin" style="top: 20%; left: 40%;" title="1. กล่องเลือกไฟล์ YAML">1</div>
+      <div class="callout-pin" style="top: 45%; left: 40%;" title="2. ตัวคูณความเร็วประจำไฟล์">2</div>
+      <div class="callout-pin" style="top: 70%; left: 40%;" title="3. ช่อง Chain ต่อไฟล์ถัดไป">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ไฟล์ท่าทาง (YAML Sequence Files)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกไฟล์จากดรอปดาวน์ <b>Open saved YAML…</b> หรือกด <b>Save</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          โหลดชุดท่าทางที่เคยออกแบบไว้กลับเข้าสู่เส้นเวลาเพื่อแก้ไข หรือส่งไฟล์ขึ้นการ์ด SD ของหุ่นยนต์
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ตัวคูณความเร็ว (Sequence Speed Multiplier)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ปรับสปีด 0.5x, 1.0x, หรือ 1.5x</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เร่งหรือหน่วงการเคลื่อนไหวทั้งชุดท่าทางให้เร็วขึ้นหรือช้าลงตามต้องการ โดยคงอัตราส่วนจังหวะเดิมไว้ครบถ้วน
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> การร้อยท่าทางอัตโนมัติ (Sequence Chain)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ใส่ชื่อไฟล์ถัดไปในช่อง <b>Chain</b> เช่น <code>wave.yaml</code></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เมื่อหุ่นเล่นท่าปัจจุบันจบ จะเริ่มเล่นท่าต่อไปทันทีโดยไม่ต้องส่งคำสั่งใหม่ ทำให้จัดโชว์ยาวๆ ได้อย่างต่อเนื่อง
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-SECTION 6: SHOWS & MUSIC -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 6: การจัดโชว์และซิงก์ดนตรี (Shows &amp; Music Synchronization)</b>
+      <span class="info-badge">Shows &amp; Music</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-shows-card.png" alt="Shows &amp; Music Card" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 40%;" title="1. เลือกไฟล์เพลง MP3 จากการ์ด SD">1</div>
+      <div class="callout-pin" style="top: 50%; left: 40%;" title="2. กำหนดจุดหยุดพัก Pause">2</div>
+      <div class="callout-pin" style="top: 75%; left: 40%;" title="3. ปุ่ม Save to robot สำหรับรันเดี่ยว">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ผูกเพลงประกอบ (Show Music Sync)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกไฟล์เพลงจาก <code>/music/song.mp3</code> ในการ์ด SD</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เสียงเพลงและท่าทางของหุ่นยนต์จะเริ่มเล่นพร้อมกันอย่างตรงจังหวะ และระบบจะปิดเสียงอัตโนมัติเมื่อกด Stop
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> จุดพักหยุดรอ (Pause Intervals)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กำหนดเวลาหยุดพักระหว่างท่า เช่น <code>pause: 2.0s</code></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หุ่นยนต์จะหยุดค้างท่าทางสวยงามตามเวลาที่กำหนด ก่อนจะเริ่มเล่นท่าถัดไป
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ส่งโชว์เข้าบอร์ด (Save to robot)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>💾 Save to robot</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          โชว์จะถูกบันทึกลงในการ์ด SD ของตัวหุ่น ทำให้หุ่นยนต์สามารถเปิดเครื่องและแสดงโชว์ได้ด้วยตนเองโดยไม่ต้องต่อคอมพิวเตอร์
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -728,24 +913,23 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        ตัดการประมวลผล 3D Three.js ออก 100% ทำให้เปิดได้รวดเร็ว ลื่นไหล ไม่กินสเปก และไม่มีอาการค้างบน Smart TV หรือสมาร์ทโฟน</p>
   </div>
 
-  <!-- Real Screenshot & Visual Callout Guide -->
+  <!-- SECTION 1: REMOTE CONTROLS -->
   <div class="info-box">
     <div class="info-header">
-      <b>ภาพหน้าจอจริงของ TV Remote และจุดควบคุมการใช้งาน</b>
-      <span class="info-badge">Real UI · Callouts</span>
+      <b>จุดที่ 1: แผงปุ่มควบคุมหลักและเครื่องเล่นท่าทาง (Remote &amp; Sequence Launcher)</b>
+      <span class="info-badge">Remote Buttons</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/tv-current.png" alt="TV Remote Real UI" class="info-img">
-      <div class="callout-pin" style="top: 25%; left: 50%;" title="1. ปุ่มควบคุมหลัก">1</div>
-      <div class="callout-pin" style="top: 38%; left: 50%;" title="2. รายการท่าทาง">2</div>
-      <div class="callout-pin" style="top: 54%; left: 50%;" title="3. สั่งเสียงพูดด่วน">3</div>
-      <div class="callout-pin" style="top: 80%; left: 50%;" title="4. แถบมอนิเตอร์เซอร์โว 10 จุด">4</div>
+      <img src="/docs/shots/tv-controls-box.png" alt="TV Controls Box" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 50%;" title="1. ปุ่ม Play / Pause / Stop / Home">1</div>
+      <div class="callout-pin" style="top: 55%; left: 50%;" title="2. รายการเลือก Sequence">2</div>
+      <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่มสั่งพูดด่วน Quick Speech">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมการเคลื่อนไหวหลัก (Motion Controls)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม Play, Pause, Stop หรือ Home ด้วยรีโมททีวีหรือนิ้วมือ</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมหลัก (Play, Pause, Stop, Home)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่มสัมผัสขนาดใหญ่บนหน้าจอ หรือกดผ่านรีโมททีวี</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           • <b>Play / Pause:</b> สั่งเริ่มหรือหยุดการขยับท่าทางชั่วคราว<br>
           • <b>Stop:</b> สั่งหยุดหุ่นยนต์ฉุกเฉินทันที มอเตอร์จะล็อคตำแหน่งปัจจุบัน<br>
           • <b>Home:</b> คืนแขนและคอหุ่นยนต์กลับสู่ท่าเริ่มต้นที่ปลอดภัย (Neutral Pose)
@@ -753,66 +937,40 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">2</span> รายการท่าทาง (Sequence Launcher)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> เลือกท่าทางจากกล่องดรอปดาวน์ แล้วกด <b>▶ Play Sequence</b></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกท่าทางจากกล่องดรอปดาวน์ แล้วกด <b>▶ Play Sequence</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           ระบบจะดึงไฟล์ท่าทางจาก Hub กลาง (<code>/api/list?kind=sequences</code>) และสั่งให้หุ่นรันชุดท่าทางนั้นทันที เจ้าหน้าที่หลังเวทีสามารถใช้มือถือกดเลือกโชว์ได้สะดวก
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> สั่งเสียงพูดด่วน (Quick Speech &amp; Speak)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> แตะปุ่มคำพูดยอดนิยม เช่น "สวัสดีครับ", "ยินดีต้อนรับครับ", "ขอบคุณครับ" หรือพิมพ์ข้อความในช่อง</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ส่งคำสั่งเข้าคิวเสียงกลาง (<code>/api/speak</code>) เสียงจะเปล่งออกจากลำโพงของหุ่นยนต์ Nong หรือลำโพงเวทีทันทีโดยไม่กระตุก
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> มอนิเตอร์ข้อต่อ 10 จุด (10-Joint Monitor Gauges)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ดูแถบวัดระดับองศาเซอร์โวด้านล่างหน้าจอ</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          แสดงมุมองศาจริง (0° - 180°) ของข้อต่อทั้ง 10 จุด (ไหล่ ข้อศอก เอว คอ) แบบ Real-time ด้วย CSS Gauge เบาๆ แสดงผลอัปเดตแบบ 200ms โดยไม่ดึงภาระ GPU หรือ CPU ของทีวี
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Infographic: Decoupled Architecture -->
+  <!-- SECTION 2: JOINT GAUGES -->
   <div class="info-box">
     <div class="info-header">
-      <b>ผังเปรียบเทียบสถาปัตยกรรม Nong Studio (PC) vs TV Remote (Smart TV / Mobile)</b>
-      <span class="info-badge">Architecture</span>
+      <b>จุดที่ 2: แถบมอนิเตอร์ระดับองศาข้อต่อเซอร์โว 10 จุด (10-Joint Monitor Gauges)</b>
+      <span class="info-badge">Joint Gauges</span>
     </div>
-    <div class="info-visual-wrapper" style="padding: 20px; background: var(--card);">
-      <svg viewBox="0 0 760 190" width="100%" height="auto" style="display:block; font-family:var(--sans); font-size:12px;">
-        <rect x="15" y="15" width="345" height="160" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
-        <text x="35" y="42" font-weight="700" fill="var(--txt)" font-size="14">🖥️ Nong Studio (PC Mode)</text>
-        <text x="35" y="68" fill="var(--mut)">• 3D WebGL Canvas (Three.js 60fps)</text>
-        <text x="35" y="90" fill="var(--mut)">• Inverse Kinematics (IK) &amp; Timeline Drag</text>
-        <text x="35" y="112" fill="var(--mut)">• ใช้การ์ดจอ GPU และ RAM ~150MB</text>
-        <text x="35" y="138" font-weight="600" fill="var(--txt)">🎯 เหมาะสำหรับ: คอมพิวเตอร์ PC ตั้งโต๊ะ / แล็ปท็อป</text>
-
-        <rect x="400" y="15" width="345" height="160" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
-        <text x="420" y="42" font-weight="700" fill="#15803d" font-size="14">📺 TV Remote &amp; Monitor (Thin Client)</text>
-        <text x="420" y="68" fill="#166534">• Zero 3D / Zero Three.js (ไม่มี 3D เด็ดขาด)</text>
-        <text x="420" y="90" fill="#166534">• แถบวัดองศา CSS Light Gauges (200ms poll)</text>
-        <text x="420" y="112" fill="#166534">• ปุ่มสัมผัสขนาดใหญ่ เหมาะกับรีโมท TV</text>
-        <text x="420" y="138" font-weight="600" fill="#15803d">🎯 เหมาะสำหรับ: Smart TV, แท็บเล็ต, มือถือทุกรุ่น</text>
-      </svg>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/tv-gauges-box.png" alt="TV Gauges Box" class="info-img">
+      <div class="callout-pin" style="top: 50%; left: 25%;" title="1. เกจวัดระดับองศาแขนซ้าย">1</div>
+      <div class="callout-pin" style="top: 50%; left: 75%;" title="2. เกจวัดระดับองศาแขนขวาและเอว">2</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> แถบวัดองศา CSS Light Gauges</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> สังเกตแถบระดับสีฟ้า-เขียวที่ขยับตามมุมจริงของเซอร์โว</div>
+        <div class="action-impact"><b>ระบบทำงานอย่างไร:</b>
+          แสดงตำแหน่งจริงของเซอร์โวทั้ง 10 จุด ด้วย CSS Gauge เบาๆ แสดงผลอัปเดตแบบ 200ms โดยไม่ดึงภาระ GPU หรือ CPU ของทีวี
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="f"><h3>Decoupled Architecture: ป้องกันทีวีค้างได้อย่างไร?</h3>
     <p>ในสถาปัตยกรรมแบบเดิม หากเปิดหน้า 3D (Three.js) บน Web Browser ของ Smart TV หรือมือถือรุ่นเก่า
        เบราว์เซอร์จะต้องคอมไพล์ WebGL Shaders และรันลูปคำนวณ 60 รอบต่อวินาที ซึ่งชิปประมวลผลของสมาร์ททีวีไม่ได้ออกแบบมาเพื่อรองรับ
-       ส่งผลให้เบราว์เซอร์ทีวีปิดตัวเองหรือเครื่องค้าง</p>
-    <p><b>ทีวีรีโมท (TV Remote) แก้ไขปัญหานี้โดย:</b>
-       1. ย้ายการคำนวณทั้งหมดไปไว้ที่ Python Hub บนคอมพิวเตอร์ส่วนกลาง<br>
-       2. ฝั่งหน้าจอทีวีส่งเฉพาะคำสั่ง JSON สั้นๆ ผ่าน REST API<br>
-       3. การแสดงผลกราฟิกใช้เฉพาะ HTML5 &amp; CSS3 พื้นฐาน ไม่มี Canvas 3D แม้แต่บรรทัดเดียว<br>
-       4. น้ำหนักหน้าเว็บรวมไม่ถึง 25 KB โหลดเสร็จในเสี้ยววินาที</p></div>
-
-  <div class="f"><h3>การควบคุมด้วยรีโมททีวี (Smart TV Navigation)</h3>
-    <p>ออกแบบปุ่มให้มีขนาดใหญ่ มีขอบโฟกัสชัดเจนเมื่อกดปุ่มลูกศร (D-Pad) บนรีโมททีวี รองรับปุ่ม Enter
-       เพื่อสั่งงาน และมีแถบแสดงข้อผิดพลาดหากระบบเครือข่ายหลุดการเชื่อมต่อ</p></div>
+       ส่งผลให้เบราว์เซอร์ทีวีปิดตัวเองหรือเครื่องค้าง</p></div>
 </section>
 
 <section id="camera">
@@ -823,38 +981,60 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        โดยไม่ต้องเปิดหน้าเว็บของแต่ละบอร์ด พร้อมระบบ Relay สตรีมมิ่งภาพให้ดูได้พร้อมกันหลายอุปกรณ์</p>
   </div>
 
-  <!-- Real Screenshot & Visual Callout Guide -->
+  <!-- SECTION 1: STREAM PREVIEW -->
   <div class="info-box">
     <div class="info-header">
-      <b>ภาพหน้าจอจริงของ ESP32 Camera และคู่มือการปรับภาพ</b>
-      <span class="info-badge">Real UI · Callouts</span>
+      <b>จุดที่ 1: กล่องแสดงภาพสดจากกล้อง ESP32-CAM (Live Stream &amp; Relay)</b>
+      <span class="info-badge">Live Stream</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/camera-current.png" alt="Camera Real UI" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 35%;" title="1. กล่องแสดงภาพสด">1</div>
-      <div class="callout-pin" style="top: 30%; left: 75%;" title="2. สถานะการเชื่อมต่อ WiFi">2</div>
-      <div class="callout-pin" style="top: 60%; left: 50%;" title="3. แถบควบคุม Exposure &amp; Gain">3</div>
+      <img src="/docs/shots/camera-preview-box.png" alt="Camera Live Stream Box" class="info-img">
+      <div class="callout-pin" style="top: 40%; left: 50%;" title="1. กล่องแสดงภาพสด">1</div>
+      <div class="callout-pin" style="top: 85%; left: 50%;" title="2. สถานะการเชื่อมต่อ WiFi">2</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> กล่องภาพสดและการกระจายสัญญาณ (Live Stream Relay)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> เปิดดูผ่าน <code>/app/camera</code> จากเบราว์เซอร์กี่เครื่องก็ได้พร้อมกัน</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+        <div class="action-card-title"><span class="num">1</span> กล่องภาพสดและการกระจายสัญญาณ (Multi-Client Relay)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เปิดดูผ่าน <code>/app/camera</code> จากเบราว์เซอร์กี่เครื่องก็ได้พร้อมกัน</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
           ชิป ESP32 มีแรมจำกัดส่งได้แค่ 1 สตรีม Hub ส่วนกลางจึงเป็นตัวดึงภาพมา 1 สตรีม แล้วนำมากระจายต่อให้คนดูหลายคนพร้อมกันโดยบอร์ดไม่ล่ม
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">2</span> แหล่งรับสัญญาณ WiFi vs USB</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ตรวจสอบให้แน่ใจว่าบอร์ดต่อ WiFi (ไฟสถานะเขียว)</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ตรวจสอบให้แน่ใจว่าบอร์ดต่อ WiFi (ไฟสถานะเขียว)</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
           สาย USB / RS485 รองรับเฉพาะข้อความและคำสั่งตัวอักษร ไม่สามารถส่งไฟล์ภาพ JPEG ได้ หากต่อเฉพาะสาย ภาพจะไม่ขึ้นแต่สามารถตั้งค่าเซนเซอร์ได้
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: TUNING CONTROLS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 2: การปรับเซนเซอร์ภาพ (Exposure, Gain, Brightness, Contrast)</b>
+      <span class="info-badge">Sensor Tuning</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/camera-tuning-box.png" alt="Camera Tuning Box" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 40%;" title="1. สไลเดอร์ Brightness / Contrast">1</div>
+      <div class="callout-pin" style="top: 60%; left: 40%;" title="2. สวิตช์ Auto vs Manual Exposure">2</div>
+      <div class="callout-pin" style="top: 85%; left: 40%;" title="3. สมดุลสีขาว White Balance">3</div>
+    </div>
+    <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> ปรับแสงและความไว (Exposure &amp; Gain)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ปิด Auto Exposure / Auto Gain ก่อน จึงจะเลื่อนแถบ Manual ได้</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ปรับให้ภาพคมชัดในห้องมืดหรือกลางแจ้ง หากเปิด Auto ค้างไว้ แถบสไลเดอร์จะถูกล็อคเป็นสีเทาเพื่อแจ้งเตือน
+        <div class="action-card-title"><span class="num">1</span> ปรับแสงและความคมชัด (Brightness &amp; Contrast)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลื่อนแถบสไลเดอร์ระหว่าง -2 ถึง +2</div>
+        <div class="action-impact"><b>ภาพกล้องเปลี่ยนไปยังไง:</b>
+          ปรับให้ภาพสว่างหรือมืดลง และเพิ่มมิติของภาพให้มองเห็นรายละเอียดใบหน้าได้คมชัดยิ่งขึ้น
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ปรับแสงและความไว (Exposure &amp; Gain)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ปิด Auto Exposure / Auto Gain ก่อน จึงจะเลื่อนแถบ Manual ได้</div>
+        <div class="action-impact"><b>ภาพกล้องเปลี่ยนไปยังไง:</b>
+          ช่วยให้ภาพไม่มืดในห้องจัดแสดงแสงน้อย หรือลดความจ้าเมื่อจัดแสดงกลางแจ้ง
         </div>
       </div>
     </div>
@@ -867,30 +1047,6 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
      tear each other's pictures. The hub therefore holds <b>one</b> connection
      to each camera and feeds every viewer from it. Open this page on as many
      screens as you like.</p>
-  <p>A slow viewer — a phone on poor WiFi — is given the newest frame each time
-     it is ready for another, so it drops frames rather than holding anyone
-     else back. If a camera stops answering, the live view says so instead of
-     leaving an old picture on screen pretending to be now.</p>
-
-  <h3>A camera has to be on WiFi to be seen</h3>
-  <p>Pictures do not travel down a USB or RS485 cable: those carry one line of
-     text at a time, and a JPEG is not that. A camera reachable only on a cable
-     is listed, and says so, with its picture controls switched off. Its
-     <b>settings</b> still work over the cable.</p>
-
-  <h3>Settings</h3>
-  <p>Every setting the sensor has — brightness, contrast, saturation, white
-     balance, exposure, gain, effects and the correction switches — lives on
-     the module's own page under <b>Settings</b>, grouped, with one control to
-     put everything back to default. The list is built from what the board
-     reports, so it is always what that board can really do.</p>
-  <p>Two things it will tell you rather than hide. A setting this sensor does
-     not have is shown greyed with <i>this sensor does not have it</i> — the
-     OV2640 has no sharpness, for instance. And a setting that only applies
-     while another is off (exposure time needs auto exposure off, gain needs
-     auto gain off) says which one to turn off.</p>
-  <p><b>There is no autofocus.</b> The OV2640 on these boards is fixed focus,
-     so there is nothing to switch on and no control for it.</p>
 </section>
 
 <section id="voice">
@@ -901,79 +1057,71 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        พร้อมการสลับไปมาระหว่างลำโพงบนคอมพิวเตอร์ และลำโพงติดตัวหุ่นยนต์ Nong อย่างราบรื่น</p>
   </div>
 
-  <!-- Real Screenshot & Visual Callout Guide -->
+  <!-- SECTION 1: CHAT & STT -->
   <div class="info-box">
     <div class="info-header">
-      <b>ภาพหน้าจอจริงของ Voice และคู่มือการตั้งค่าเสียงพูด</b>
-      <span class="info-badge">Real UI · Callouts</span>
+      <b>จุดที่ 1: กล่องถาม-ตอบและการพิมพ์/พูด (Q&amp;A Chat &amp; Speech Input)</b>
+      <span class="info-badge">Chat &amp; STT</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/voice-current.png" alt="Voice Real UI" class="info-img">
-      <div class="callout-pin" style="top: 28%; left: 38%;" title="1. ช่องพิมพ์คำถาม / กดเพื่อพูด">1</div>
-      <div class="callout-pin" style="top: 28%; left: 82%;" title="2. ปุ่มส่งถาม Ask">2</div>
-      <div class="callout-pin" style="top: 48%; left: 45%;" title="3. เลือกปลายทางลำโพง">3</div>
-      <div class="callout-pin" style="top: 68%; left: 45%;" title="4. บุคลิกเสียงและคิว">4</div>
+      <img src="/docs/shots/voice-chat-box.png" alt="Voice Chat Box" class="info-img">
+      <div class="callout-pin" style="top: 45%; left: 35%;" title="1. ช่องพิมพ์คำถาม">1</div>
+      <div class="callout-pin" style="top: 45%; left: 65%;" title="2. ปุ่ม Press to talk (ไมค์ STT)">2</div>
+      <div class="callout-pin" style="top: 45%; left: 88%;" title="3. ปุ่มส่งถาม Ask">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> การรับฟัง (Speech-to-Text &amp; Input)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> พิมพ์ข้อความในช่อง หรือกดปุ่ม <b>Press to talk</b> แล้วพูดใส่ไมค์</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ระบบจะแปลงเสียงพูดเป็นข้อความ รองรับ 4 ภาษา (ไทย, อังกฤษ, จีน, ญี่ปุ่น) โดยเทียบคำศัพท์ใกล้เคียงจาก <code>config/voice.json</code>
+        <div class="action-card-title"><span class="num">1</span> กล่องพิมพ์คำถาม (Question Input)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์คำถามหรือข้อความที่ต้องการให้หุ่นยนต์ตอบ</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ระบบจะประมวลผลค้นหาคำตอบในชีตกิจกรรมก่อน (0.2 วิ) หากไม่พบจะส่งต่อให้ Cloud AI (Gemini / Groq) ช่วยตอบ
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> การประมวลผลคำตอบ (Answer Matching &amp; AI)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Ask</b> หรือกด Enter</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ระบบจะค้นหาคำตอบในชีตกิจกรรมก่อน (ตอบกลับใน 0.2 วินาที) หากไม่พบจึงส่งต่อให้ Cloud AI (Gemini / Groq) ช่วยตอบอย่างเป็นธรรมชาติ
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> ปลายทางลำโพง (Speaker Destination)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> เลือกปลายทางระหว่าง <b>PC Speaker</b> หรือ <b>Nong Robot Speaker</b></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          • <b>PC Speaker:</b> เปล่งเสียงผ่านลำโพงของคอมพิวเตอร์หลักทันที<br>
-          • <b>Nong Speaker:</b> ส่งสตรีมเสียงผ่าน WiFi เข้าบอร์ด ESP32 ขับออกชิปแอมป์ I2S (PCM5102A / TPA3118) บนตัวหุ่น พร้อมขยับหัวและปาก
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">4</span> บุคลิกเสียงและคิวเสียง (Speaking Manner &amp; Queue)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ปรับแต่งใน <code>config/voice_styles.json</code> หรือเลือกสไตล์ในหน้าระบบ</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ปรับสำเนียง ความเร็ว และคำลงท้าย (เช่น สุภาพ "ครับ/ค่ะ", สนุกสนาน "จ้า/นะจ๊ะ") และคิวเสียงจะตัดคำทักทายที่หมดอายุเกิน 30 วินาทีทิ้งอัตโนมัติ
+        <div class="action-card-title"><span class="num">2</span> พูดใส่ไมค์ (Press to talk STT)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Press to talk</b> แล้วพูด (ไทย/อังกฤษ/จีน/ญี่ปุ่น)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          แปลงเสียงสดจากไมโครโฟนเป็นข้อความลงในช่องถามทันที พร้อมแก้คำเพี้ยนตามดิกชันนารีใน <code>config/voice.json</code>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- SVG Architecture -->
+  <!-- SECTION 2: SPEAKERS & MANNERS -->
   <div class="info-box">
     <div class="info-header">
-      <b>ผังกระบวนการทำงานระบบเสียง (Hearing &rarr; Thinking &rarr; Speaking)</b>
-      <span class="info-badge">Flow</span>
+      <b>จุดที่ 2: ปลายทางลำโพง บุคลิกเสียง และระบบคิว (Speakers, Manner &amp; Queue)</b>
+      <span class="info-badge">Speakers &amp; Manners</span>
     </div>
-    <div class="info-visual-wrapper" style="padding: 20px; background: var(--card);">
-      <svg viewBox="0 0 760 150" width="100%" height="auto" style="display:block; font-family:var(--sans); font-size:12px;">
-        <rect x="10" y="20" width="220" height="100" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
-        <text x="25" y="48" font-weight="700" fill="var(--txt)" font-size="13">1. การรับฟัง (Hear / STT)</text>
-        <text x="25" y="70" fill="var(--mut)">• ไมค์ PC / เว็บเบราว์เซอร์</text>
-        <text x="25" y="90" fill="var(--mut)">• ไทย / อังกฤษ / จีน / ญี่ปุ่น</text>
-
-        <path d="M 235 70 L 265 70" stroke="var(--acc)" stroke-width="2" stroke-dasharray="4"/>
-
-        <rect x="270" y="20" width="220" height="100" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
-        <text x="285" y="48" font-weight="700" fill="var(--txt)" font-size="13">2. การคิด (Think / Q&amp;A)</text>
-        <text x="285" y="70" fill="var(--mut)">• ค้นหาชีตคำตอบด่วน (0.2s)</text>
-        <text x="285" y="90" fill="var(--mut)">• AI Cloud (Gemini / Groq)</text>
-
-        <path d="M 495 70 L 525 70" stroke="var(--acc)" stroke-width="2" stroke-dasharray="4"/>
-
-        <rect x="530" y="20" width="220" height="100" rx="10" fill="var(--sunk)" stroke="var(--line)" stroke-width="1.5"/>
-        <text x="545" y="48" font-weight="700" fill="var(--txt)" font-size="13">3. การเปล่งเสียง (Speak)</text>
-        <text x="545" y="70" fill="var(--mut)">• ลำโพง PC / ลำโพงหุ่นยนต์</text>
-        <text x="545" y="90" fill="var(--mut)">• สำเนียงบุคลิกภาพ (Manner)</text>
-      </svg>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/voice-settings-card.png" alt="Voice Settings Card" class="info-img">
+      <div class="callout-pin" style="top: 35%; left: 30%;" title="1. เลือกปลายทางลำโพง">1</div>
+      <div class="callout-pin" style="top: 35%; left: 70%;" title="2. สไตล์และบุคลิกเสียง">2</div>
+      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. ระบบ Fast-Race 650ms">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> สลับลำโพง (PC vs Robot Speaker)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกปลายทางระหว่าง <b>PC Speaker</b> หรือ <b>Nong Robot Speaker</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          • <b>PC Speaker:</b> เปล่งเสียงผ่านลำโพงของคอมพิวเตอร์หลัก<br>
+          • <b>Nong Speaker:</b> สตรีมเสียงผ่าน WiFi เข้าชิป I2S (PCM5102A/TPA3118) บนตัวหุ่น พร้อมขยับหัวเอียงตามจังหวะคำพูด
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> บุคลิกเสียงพูด (Speaking Manner)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกสไตล์: ปกติ, สุภาพ, ขี้เล่น (Sassy เจ๊), หรือท่องจำ</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ปรับแต่งคำลงท้ายอัตโนมัติ (เช่น จ้ะ, นะคะ, ครับ) พร้อมทั้งปรับแต่ง Pitch ความสูง-ต่ำ และความเร็วของเสียงพูดให้สะท้อนอารมณ์นั้นทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> แข่งขันความเร็วเสียง (Fast-Race 650ms)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เปิดใช้งาน Fast-Race ในการตั้งค่าเสียง</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ระบบจะเรียก Cloud TTS ก่อน หากเกิน 650ms แล้วยังไม่ตอบกลับ จะสลับมาใช้เสียงพูด Offline ในเครื่องทันที หุ่นจะไม่ยืนนิ่งค้าง
+        </div>
+      </div>
     </div>
   </div>
 
@@ -995,24 +1143,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        other. Something that arrives while the rig is talking either
        <b>waits its turn</b> or is <b>skipped</b> — whoever asked chooses — and
        a greeting that waited too long is dropped, because the person has
-       walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p>
-    <p><b>Where it speaks.</b> Speakers are found by themselves: every robot
-       with a speaker that the hub reaches over WiFi, and this PC's own
-       speakers. A robot reached only by cable is listed with that reason, and
-       a robot whose board has no amplifier wired says so after its first try
-       — plug one in and it is asked again. Which one is the default, and
-       which voice each uses, is <code>config/speakers.json</code>; the hub
-       reads it on every speak so an edit takes effect at once.</p></div>
-  <div class="f"><h3>Speaks in several manners<span class="tag t-new">new</span></h3>
-    <p>A voice profile can choose a <b>manner</b>: normal, calm, excited, polite
-       or cheeky. The manner tweaks the rate and pitch, and appends the right
-       polite particle (ครับ, ค่ะ, จ้า) when speaking Thai so the robot sounds
-       like one character rather than a neutral synthesiser.</p></div>
-  <div class="f"><h3>Fast-race speech<span class="tag t-new">new</span></h3>
-    <p>Cloud TTS has better pronunciation; local synthesis is instant. Mice
-       fires both: if the cloud delivers in under <b>650 ms</b> its audio plays;
-       if not, the local engine speaks the words instead, so guests never wait
-       in awkward silence when venue WiFi wobbles.</p></div>
+       walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p></div>
 </section>
 
 <section id="faces">
@@ -1023,103 +1154,70 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        หน้านี้ใช้สำหรับเปิดโปรแกรมและกำหนดว่าเมื่อหุ่นยนต์เห็นใคร จะให้พูดและแสดงท่าทางอย่างไร</p>
   </div>
 
-  <!-- Real Screenshot & Visual Callout Guide -->
+  <!-- SECTION 1: GREET WORDS -->
   <div class="info-box">
     <div class="info-header">
-      <b>ภาพหน้าจอจริงของ Reconize และคู่มือการตั้งค่าทักทาย</b>
-      <span class="info-badge">Real UI · Callouts</span>
+      <b>จุดที่ 1: กำหนดคำพูดทักทายแยกตามบุคคล (Greet Words Editor)</b>
+      <span class="info-badge">Greet Words</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/faces-current.png" alt="Reconize Real UI" class="info-img">
-      <div class="callout-pin" style="top: 25%; left: 25%;" title="1. ปุ่มเปิดและติดตามโปรแกรม">1</div>
-      <div class="callout-pin" style="top: 25%; left: 75%;" title="2. สถานะการทำงานของ Reconize">2</div>
-      <div class="callout-pin" style="top: 60%; left: 50%;" title="3. ตั้งค่าคำพูดและท่าทางหุ่น">3</div>
+      <img src="/docs/shots/faces-words-box.png" alt="Faces Greet Words Box" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. คำทักคนที่มาครั้งแรกของวัน">1</div>
+      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. คำทักคนที่เดินกลับมาอีกครั้ง">2</div>
+      <div class="callout-pin" style="top: 80%; left: 30%;" title="3. คำทักคนแปลกหน้า (Stranger)">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ตรวจจับและแยกแยะ (Known vs Stranger)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> กล้องส่องหน้า &rarr; Reconize (Port 8000) คำนวณเวกเตอร์ใบหน้า</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          แยกแยะว่าคือคนที่เคยลงทะเบียนไว้ (Known) หรือคนแปลกหน้า (Stranger) เพื่อเลือกประโยคทักทายที่เหมาะสมโดยอัตโนมัติ
+        <div class="action-card-title"><span class="num">1</span> คำพูดคนรู้จัก (Known Person: First visit &amp; Return)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ใส่แท็ก <code>{title}</code> (เช่น อาจารย์) และ <code>{name}</code> (ชื่อคน)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เมื่อคนรู้จักเดินผ่าน หุ่นยนต์จะเอ่ยชื่อคนนั้นอย่างถูกต้องเป็นธรรมชาติ เช่น "สวัสดีครับ {title} {name} ยินดีต้อนรับครับ"
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> ผูกคำพูดและท่าทางหุ่น (Greet Words &amp; Move)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> พิมพ์คำพูดใส่ <code>{name}</code> และเลือกท่าทาง <code>wai.yaml</code> หรือ <code>wave.yaml</code></div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          เมื่อคนเดิมเดินผ่าน หุ่นยนต์ Nong จะยกมือไหว้หรือโบกมือพร้อมเปล่งเสียงทักทายชื่อคนนั้นทันที
+        <div class="action-card-title"><span class="num">2</span> คำทักคนแปลกหน้า (Stranger Words)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์คำทักทายทั่วไป (ห้ามใส่ <code>{name}</code> เด็ดขาด)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หากเป็นใบหน้าที่ยังไม่เคยบันทึกในฐานข้อมูล หุ่นยนต์จะใช้ประโยคสุภาพทั่วไป เช่น "สวัสดีครับ ยินดีต้อนรับสู่บูธของเราครับ"
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: CAMERA TO MOVE BINDING & COOLDOWN -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 2: ผูกท่าทางแอนิเมชันและการป้องกันทักซ้ำ (Move Binding &amp; Cooldown)</b>
+      <span class="info-badge">Rules &amp; Cooldown</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/faces-rules-box.png" alt="Faces Rules Box" class="info-img">
+      <div class="callout-pin" style="top: 40%; left: 30%;" title="1. เลือกท่าทาง wai.yaml / wave.yaml">1</div>
+      <div class="callout-pin" style="top: 40%; left: 70%;" title="2. ตั้งเวลา Cooldown ป้องกันทักซ้ำ">2</div>
+      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. เงื่อนไข Skip if busy">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ผูกท่าทางหุ่นยนต์ (Move Binding)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกท่า <code>wai.yaml</code> (ไหว้) หรือ <code>wave.yaml</code> (โบกมือ)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หุ่นยนต์ Nong จะแสดงท่าทางพร้อมเปล่งเสียงทักทายพร้อมกัน เพิ่มความมีชีวิตชีวาและดึงดูดผู้เข้าชมงาน
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> ป้องกันการทักซ้ำ (Cooldown &amp; Busy Guard)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ตั้งค่า Cooldown (เช่น 10 นาที) และเลือก Skip if busy</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+        <div class="action-card-title"><span class="num">2</span> คูลดาวน์และป้องกันขัดจังหวะ (Cooldown &amp; Busy Guard)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กำหนด Cooldown (เช่น 10 นาที) และเลือก Skip if busy</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           คนเดิมที่ยืนคุยหน้ากล้องจะไม่โดนทักซ้ำๆ ทุก 5 วินาที และถ้าหุ่นกำลังแสดงโชว์อยู่ จะไม่ถูกขัดจังหวะ
         </div>
       </div>
     </div>
   </div>
 
-  <h3>What works today</h3>
-  <p><b>Open Reconize</b> starts it if it is not running and shows it in the page.
-     <b>Is the rig following it?</b> says whether the rig is seeing people arrive.
-     When it is not, <b>Start following Reconize</b> starts Reconize and the rig's
-     own face helper together, in one press. Under the open button a line says
-     whether the installed Reconize is the version Mice was tested with; a newer
-     one is only pointed out, and everything keeps working as before.</p>
-  <p><b>What the rig says</b> is where you choose the words. Nothing is said until
-     you tick <b>Greet people the face app sees</b> and press <b>Save</b>. Saving asks
-     you to sign in on the hub page first, because it changes what a robot says
-     to a guest. The next person who arrives already gets the new words; nothing
-     needs restarting.</p>
-  <ul>
-    <li><b>The words.</b> One line for each case: somebody's first visit today,
-        somebody who already came today, and somebody it does not know. Write
-        <b>{title}</b> where the polite word goes and <b>{name}</b> where the name
-        goes. Somebody it does not know is never called by a name, so only
-        {title} works in that line, and the page refuses to save otherwise.</li>
-    <li><b>Cameras.</b> Each camera that has seen somebody appears by itself. Pick
-        whether it <i>says hello</i>, <i>says goodbye</i> or <i>only counts</i>, which
-        speaker says it, and a saved move a robot plays with it. A camera you
-        never set up only counts, so a new camera never starts talking on its own.
-        Open <i>Its own words</i> to give one camera different words.</li>
-    <li><b>Once per person.</b> The same person is greeted at most once in the
-        minutes you choose, whichever camera sees them. Somebody it does not know
-        is greeted at most once per camera in the seconds you choose.</li>
-    <li><b>If the rig is busy.</b> <i>skip this hello</i> drops it while the rig is
-        talking or playing a show; <i>wait its turn</i> says it afterwards. A
-        greeting never stops a show.</li>
-    <li><b>Celebrations.</b> Said once a day when that many people have come
-        today, by Reconize's own count. Each can play a move too.</li>
-    <li><b>Titles.</b> Give a particular person their own polite word, such as
-        อาจารย์, instead of the usual one.</li>
-  </ul>
-  <p>If it says Reconize is not answering, start it with <b>start.bat</b> in its
-     own folder and wait about fifteen seconds — it loads a face model before it
-     answers anything, so <i>not answering</i> and <i>not started</i> look the
-     same for those first seconds.</p>
-
   <h3>Where Reconize lives, and how to move it</h3>
   <p>Its addresses are written in <b>config/partners.json</b> — one entry for
      each outside program Mice follows. Change the address there and the button
-     follows on the next refresh. Nothing is compiled in, so moving Reconize to
-     another port or another PC costs one edit and no rebuild.</p>
-  <p>That same file is how the <b>next</b> outside program is added: one entry,
-     no code. Each entry says where the app is, how to log in to it, where its
-     events come from, and — just as important — what each of those sources
-     <i>cannot</i> tell us, so the rig never promises more than it can see.</p>
-  <p><b>No password is kept in that folder, and none ever will be.</b> Every file
-     belonging to a tool is served to anyone who can reach the hub, with no login
-     at all — so a password put there would be readable by everybody on the venue
-     WiFi. Logins for Reconize live beside the hub's own password file instead,
-     outside anything that is served.</p>
-
-  <h3>We never change Reconize itself</h3>
-  <p>It updates itself, often, and its updater throws away anything it finds that
-     it did not write. So Mice never puts a file in its folder, never runs its
-     updater, and never opens its database directly — reading that database while
-     it is running would block its own writing. Everything goes through its
-     web address, the same way any other program would talk to it.</p>
+     follows on the next refresh.</p>
 </section>
 <section id="gacha">
   <div class="shead">
@@ -1515,38 +1613,32 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        เชื่อมโยงกับเซิร์ฟเวอร์ Mice Hub และผูกเข้ากับตู้กาชาปองแจกของรางวัลอัตโนมัติ</p>
   </div>
 
-  <!-- Real Screenshot & Visual Callout Guide -->
+  <!-- SECTION 1: MINI-GAMES SUITE -->
   <div class="info-box">
     <div class="info-header">
-      <b>ภาพหน้าจอจริงของ All-Jao Games และการควบคุม</b>
-      <span class="info-badge">Real UI · Callouts</span>
+      <b>จุดที่ 1: ชุดมินิเกมกิจกรรมทั้ง 4 ชนิด (Mini-Games Suite)</b>
+      <span class="info-badge">Mini-Games</span>
     </div>
     <div class="info-visual-wrapper">
-      <img src="/docs/shots/all-jao-current.png" alt="All-Jao Real UI" class="info-img">
-      <div class="callout-pin" style="top: 25%; left: 20%;" title="1. ปุ่มเปิดเล่นเกม">1</div>
-      <div class="callout-pin" style="top: 55%; left: 50%;" title="2. มินิเกมทั้ง 4 ชนิด">2</div>
-      <div class="callout-pin" style="top: 85%; left: 50%;" title="3. การเชื่อมต่อตู้แจกของรางวัล">3</div>
+      <img src="/docs/shots/all-jao-games-box.png" alt="All-Jao Games Suite" class="info-img">
+      <div class="callout-pin" style="top: 50%; left: 15%;" title="1. 🕹️ Claw Machine (ตู้คีบ)">1</div>
+      <div class="callout-pin" style="top: 50%; left: 38%;" title="2. 🃏 Matching Game (จับคู่การ์ด)">2</div>
+      <div class="callout-pin" style="top: 50%; left: 62%;" title="3. ❓ Quiz Game (ตอบคำถามชิงรางวัล)">3</div>
+      <div class="callout-pin" style="top: 50%; left: 85%;" title="4. 🎡 Lucky Wheel (วงล้อเสี่ยงโชค)">4</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> การเปิดเล่นเกม (Open Games)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Open in a new tab ↗</b> หรือเล่นผ่านกล่องในหน้าเว็บ</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          Hub จะสั่งเริ่มโปรเซสเกมฝั่ง Python อัตโนมัติ (<code>/api/all-jao/start</code>) และเสิร์ฟหน้าจอเกมพร้อมเล่นทันที
+        <div class="action-card-title"><span class="num">1</span> เกมตู้คีบและวงล้อ (Claw &amp; Wheel)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่มเล่นเกม ผู้เล่นสามารถควบคุมก้านคีบหรือหมุนวงล้อเสี่ยงทาย</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          เมื่อคีบตุ๊กตาสำเร็จหรือหมุนได้แต้มรางวัล ระบบจะส่งสัญญาณ Event ไปยัง Hub เพื่อสั่งตู้กาชาปองปล่อยแคปซูลของรางวัล
         </div>
       </div>
       <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> เชื่อมต่อตู้แจกของรางวัล (Prize Binding)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ไปที่หน้า <a href="#gacha">Prize machines</a> ในหัวข้อ Games that give a prize เพื่อเลือกว่าเกมไหนให้รางวัลช่องใด</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          เมื่อผู้เล่นทำคะแนนถึงเกณฑ์ ตู้กาชาปองจะหมุนจ่ายของรางวัลโดยอัตโนมัติทันที พร้อมแจ้งจุดรับของรางวัลบนหน้าจอ
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> สิทธิ์ความปลอดภัย (Venue Security)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> หากเปิดเล่นจากเครื่อง PC ของบูธ ไม่ต้องล็อกอิน / หากเข้าผ่าน WiFi วงนอก ต้องล็อกอิน Admin</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ป้องกันบุคคลภายนอกที่เชื่อมต่อ WiFi ในงานแอบสั่งรันโปรแกรมบน PC หรือแอบสั่งหมุนของรางวัล
+        <div class="action-card-title"><span class="num">2</span> เกมจับคู่และตอบคำถาม (Matching &amp; Quiz)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ผู้เล่นทดสอบความจำหรือตอบคำถามตามเวลาที่กำหนด</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          เมื่อผ่านด่าน หุ่นยนต์ Nong จะแสดงท่าดีใจและเอ่ยคำยินดีผ่านลำโพง
         </div>
       </div>
     </div>
