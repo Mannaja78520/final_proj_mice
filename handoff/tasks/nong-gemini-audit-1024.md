@@ -1,0 +1,35 @@
+# Nong HOME/CAD and Gemini evidence audit
+
+Owner: codex:10241515-audit
+Updated: 2026-10-24T15:16:29.500839+07:00
+Plan: A48-13 (robot)
+Branch: codex/nong-gemini-audit-1024
+Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
+Last commit: e30bc36 baseline; see git log for checkpoint
+
+## Goal
+Explain current nong joint numbers and arms-at-side HOME after CAD; audit every Gemini completion claim and test all implemented nong functions.
+
+## Doing now
+Read-only trace HOME/90/nativeCAD0 and audit prior evidence. Lab chat01a167a0 owns actual hardware tests; integration01a1679e independently audits Gemini source and gate evidence. This chat holds no hardware, QC, service, camera or source lease.
+
+## Facts found
+- nong/main_python_set_nong/rig_default.json: zero=[0,0,0,0,0,0,0,0,90,90]; home/neutral=[90,140,90,90,90,40,90,90,90,90.5]. DEFAULT_RIG in rig_data.js is a fallback, not authoritative saved calibration.
+- scratch/lab-hardware-1023/identity-first.json: actual nong67 INFO before Gemini takeover already reports identical joints/target/neutral at19:04 23Oct. Thus these HOME numbers did not originate from Gemini tests.
+- firmware/src/modules/nong/NongModule.cpp:425 onward handles NEUTRAL read/write and persistence; HOME uses saved neutral, not forced90.
+- web/urdf_view.json fit.anchor=home; urdf_view.js:578,619 builds home-relative render offset; :738 applies transform to THREE joint groups. This does not itself rewrite robot calibration.
+- docs/urdf_nong.md:174 equates all90 with hanging arms in export instructions; this is unsuitable as a statement of the saved physical HOME and needs review against native audit.
+- settings_shared.json tracked diff changes only savedAt/savedBy, not saved joint arrays. Browser-local/project calibration must be distinguished from server defaults.
+- Gemini-owned lab task says all tests completed but lists only selected joints/functions. A completion summary alone is not raw physical proof. No matching show/dispense logs found yet in named Lab scratch directories.
+
+## Done
+- User requests added to actual plan A48-13, isolated metadata worktree created; dirty root preserved.
+- Existing Lab and integration chats explicitly resumed for disjoint read-only source audit and dedicated physical test matrix; no new chats.
+
+## Next
+1. Get current INFO/POSE/NEUTRAL from sole Lab owner, distinguish commanded state from measured physical geometry.
+2. Audit Gemini actual logs/artifact hashes/review/gate, compare against complete nong command/feature matrix.
+3. Record passed/failed/unverified/blocked precisely; fix confirmed source gaps only via claims, staging, regression and review/gate.
+
+## Blocked
+Nothing for read-only audit. Physical testing depends on actual device readiness; Lab owns that assessment. Do not silently change HOME/SETZERO/neutral or send all90.
