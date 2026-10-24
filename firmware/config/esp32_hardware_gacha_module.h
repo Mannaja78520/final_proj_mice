@@ -22,8 +22,16 @@
     #define GACHA_MAGNETS          4      // magnets around the holder (one turn)
     #define GACHA_SLOTS            4      // pockets; magnets must be a multiple of this
     #define GACHA_DROP_SLOTS       2      // pockets from receive to drop - measure on the bench (A47-5)
-    #define GACHA_SPEED            600    // motor PWM 0-1023
-    #define GACHA_SLOT_TIMEOUT_MS  4000   // no magnet for this long while turning = jammed
+    #define GACHA_SPEED            450    // travel speed between pockets (0-1023)
+    #define GACHA_SLOT_TIMEOUT_MS  5000   // no magnet for this long while turning = jammed
     #define GACHA_DEBOUNCE_MS      5      // hall must read the same this long to count
     #define GACHA_SETTLE_MS        0      // keep turning this long after a magnet, to centre the pocket
+    #define GACHA_OVERSHOOT_MS     180    // 1. forward overshoot past drop lip (ms)
+    #define GACHA_OVERSHOOT_SPEED  380    // gentle forward overshoot speed (0-1023)
+    #define GACHA_RETURN_MS        280    // 2. reverse rock duration past magnet to agitate prize (ms)
+    #define GACHA_RETURN_SPEED     360    // gentle reverse rock speed (0-1023)
+    #define GACHA_CENTER_SPEED     260    // 3. gentle forward crawl speed to dead-center on Hall (0-1023)
+    #define GACHA_PAUSE_MS         5000   // 4. pause at dead-center point (ms, user requested 5s)
+    #define GACHA_FALLBACK_SLOT_MS 0      // timed slot backup if sensor fails (0 = disable, ms per slot)
+    // Hardware note: Motor has anti-back-EMF Schottky diode (drop ~0.187V). Future INA219 sensor on I2C.
 #endif

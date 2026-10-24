@@ -47,6 +47,13 @@ private:
     int speed_ = GACHA_SPEED, dir_ = 1;
     int timeoutMs_ = GACHA_SLOT_TIMEOUT_MS, debounceMs_ = GACHA_DEBOUNCE_MS;
     int settleMs_ = GACHA_SETTLE_MS;
+    int overshootMs_ = GACHA_OVERSHOOT_MS;
+    int overshootSpeed_ = GACHA_OVERSHOOT_SPEED;
+    int returnMs_ = GACHA_RETURN_MS;
+    int returnSpeed_ = GACHA_RETURN_SPEED;
+    int centerSpeed_ = GACHA_CENTER_SPEED;
+    int pauseMs_ = GACHA_PAUSE_MS;
+    int fallbackSlotMs_ = GACHA_FALLBACK_SLOT_MS;
     bool activeLow_ = GACHA_HALL_ACTIVE_LOW;
     String item_;                  // item type this machine holds ("" = not set)
 
@@ -58,12 +65,20 @@ private:
     int given_ = 0, forced_ = 0;   // dispensed this event; forced ones are in given_ too
     uint32_t total_ = 0, hits_ = 0;  // lifetime dispenses / magnet arrivals
 
-    // motion
+    // motion: 4-phase safety agitation and dead-center stopping
+    enum SettlePhase {
+        SETTLE_NONE,
+        SETTLE_ROCK_FWD,   // 1. Overshoot forward gently past drop lip
+        SETTLE_ROCK_BACK,  // 2. Reverse rock past hall to other side (agitating prize)
+        SETTLE_CENTER,     // 3. Forward crawl dead-center onto Hall magnet
+        SETTLE_PAUSE       // 4. Hold stationary at dead-center for 5s
+    };
     State state_ = IDLE;
     Job job_ = JOB_SPIN;
+    SettlePhase settlePhase_ = SETTLE_NONE;
     int want_ = 0, got_ = 0, sign_ = 1;
     int pos_ = 0;                  // pocket at the sensor, counted from boot / GHOME
-    uint32_t lastPassMs_ = 0, settleUntil_ = 0, startMs_ = 0;
+    uint32_t lastPassMs_ = 0, settleUntil_ = 0, phaseUntil_ = 0, startMs_ = 0, centerStartMs_ = 0;
 
     // last dispense, for apps polling G?
     uint32_t seq_ = 0;

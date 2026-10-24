@@ -46,6 +46,8 @@ void GachaModule::startTurn(Job job, int passes) {
     sign_ = passes < 0 ? -1 : 1;
     got_ = 0;
     settleUntil_ = 0;
+    settlePhase_ = SETTLE_NONE;
+    phaseUntil_ = 0;
     startMs_ = lastPassMs_ = millis();
     state_ = job == JOB_HOME ? HOMING : TURNING;
     if (motor_) motor_->spin(sign_ * dir_ * speed_);
@@ -55,6 +57,8 @@ void GachaModule::startTurn(Job job, int passes) {
 // leaves a record an app can read back with G? (seq, result, who).
 void GachaModule::finish(const char* result) {
     motorOff();
+    settlePhase_ = SETTLE_NONE;
+    phaseUntil_ = 0;
     const bool wasDispense = state_ != IDLE && job_ == JOB_DISPENSE;
     state_ = IDLE;
     if (job_ == JOB_HOME && !strcmp(result, "done")) pos_ = 0;
@@ -70,6 +74,86 @@ void GachaModule::loop() {
     const bool arrived = hall_.feed(hallActive(), now, (uint32_t)debounceMs_);
     if (state_ == IDLE) return;
 
+    if (settlePhase_ != SETTLE_NONE) {
+        if (settlePhase_ == SETTLE_ROCK_FWD) {
+            // Phase 1: Forward overshoot past drop lip (slowly)
+            if ((int32_t)(now - phaseUntil_) >= 0) {
+                if (returnMs_ > 0) {
+                    settlePhase_ = SETTLE_ROCK_BACK;
+                    phaseUntil_ = now + (uint32_t)returnMs_;
+                    const int rSpeed = returnSpeed_ > 0 ? returnSpeed_ : 360;
+                    if (motor_) motor_->spin(-sign_ * dir_ * rSpeed); // reverse rock past magnet to other side
+                } else {
+                    motorOff();
+                    settlePhase_ = SETTLE_CENTER;
+                    centerStartMs_ = now;
+                    phaseUntil_ = now + 40;
+                }
+            }
+            return;
+        }
+
+        if (settlePhase_ == SETTLE_ROCK_BACK) {
+            // Phase 2: Reverse rock past magnet to the other side to agitate prize
+            if ((int32_t)(now - phaseUntil_) >= 0) {
+                // Now on reverse side: micro-step forward to center dead-on Hall magnet
+                motorOff();
+                settlePhase_ = SETTLE_CENTER;
+                centerStartMs_ = now;
+                phaseUntil_ = now + 40;
+            }
+            return;
+        }
+
+        if (settlePhase_ == SETTLE_CENTER) {
+            // Phase 3: Micro-step forward onto Hall sensor dead-center (zero coasting)
+            if (hallActive()) {
+                motorOff();
+                if (pauseMs_ > 0) {
+                    settlePhase_ = SETTLE_PAUSE;
+                    phaseUntil_ = now + (uint32_t)pauseMs_;
+                } else {
+                    finish("done");
+                }
+                return;
+            }
+
+            // Fallback safety timeout if hall sensor is disconnected or broken
+            if ((int32_t)(now - centerStartMs_) >= 3500) {
+                motorOff();
+                if (pauseMs_ > 0) {
+                    settlePhase_ = SETTLE_PAUSE;
+                    phaseUntil_ = now + (uint32_t)pauseMs_;
+                } else {
+                    finish("done");
+                }
+                return;
+            }
+
+            if ((int32_t)(now - phaseUntil_) >= 0) {
+                // Inch forward in tiny 20ms micro-step (zero momentum)
+                const int cSpeed = centerSpeed_ > 0 ? centerSpeed_ : 260;
+                if (motor_) {
+                    motor_->spin(sign_ * dir_ * cSpeed);
+                    delay(20);
+                    motorOff();
+                }
+                phaseUntil_ = now + 35; // wait 35ms mechanical rest before re-checking
+            }
+            return;
+        }
+
+        if (settlePhase_ == SETTLE_PAUSE) {
+            // Phase 4: Stationary hold at dead-center for user / admin inspection
+            motorOff();
+            if ((int32_t)(now - phaseUntil_) >= 0) {
+                settlePhase_ = SETTLE_NONE;
+                finish("done");
+            }
+            return;
+        }
+    }
+
     if (settleUntil_) {                       // last magnet seen: centre the pocket
         if ((int32_t)(now - settleUntil_) >= 0) finish("done");
         return;
@@ -81,11 +165,44 @@ void GachaModule::loop() {
         const int ps = perSlot();
         if (ps > 0 && got_ % ps == 0) pos_ = ((pos_ + sign_) % slots_ + slots_) % slots_;
         if (got_ >= want_) {
-            if (settleMs_ > 0) settleUntil_ = now + (uint32_t)settleMs_;
-            else finish("done");
+            // Overshoot past drop lip to ensure prize drops, then rock back and center
+            if (overshootMs_ > 0) {
+                settlePhase_ = SETTLE_ROCK_FWD;
+                phaseUntil_ = now + (uint32_t)overshootMs_;
+                const int s = overshootSpeed_ > 0 ? overshootSpeed_ : speed_;
+                if (motor_) motor_->spin(sign_ * dir_ * s);
+            } else if (returnMs_ > 0) {
+                settlePhase_ = SETTLE_ROCK_BACK;
+                phaseUntil_ = now + (uint32_t)returnMs_;
+                const int rSpeed = returnSpeed_ > 0 ? returnSpeed_ : speed_;
+                if (motor_) motor_->spin(-sign_ * dir_ * rSpeed);
+            } else if (pauseMs_ > 0) {
+                motorOff();
+                settlePhase_ = SETTLE_PAUSE;
+                phaseUntil_ = now + (uint32_t)pauseMs_;
+            } else if (settleMs_ > 0) {
+                settleUntil_ = now + (uint32_t)settleMs_;
+            } else {
+                finish("done");
+            }
             return;
         }
     }
+
+    // Timed slot fallback if hall sensor is disconnected / broken
+    if (fallbackSlotMs_ > 0 && (now - lastPassMs_ >= (uint32_t)fallbackSlotMs_)) {
+        hits_++;
+        got_++;
+        lastPassMs_ = now;
+        const int ps = perSlot();
+        if (ps > 0 && got_ % ps == 0) pos_ = ((pos_ + sign_) % slots_ + slots_) % slots_;
+        if (got_ >= want_) {
+            motorOff();
+            finish("done");
+            return;
+        }
+    }
+
     if (now - lastPassMs_ > (uint32_t)timeoutMs_) finish("jam");
 }
 
@@ -94,6 +211,20 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
 
     if (cmd == "G?") { reply = statusJson(); return true; }
     if (cmd == "GCFG?") { reply = cfgJson(); return true; }
+
+    if (cmd == "GNUDGE") {
+        if (argc < 3) { reply = "ERR GNUDGE <pwm> <ms>"; return true; }
+        const int pwm = argv[1].toInt();
+        const int ms = argv[2].toInt();
+        if (motor_) {
+            motor_->spin(dir_ * pwm);
+            delay(ms);
+            motorOff();
+        }
+        delay(30);
+        reply = "OK at_hall=" + String(hallActive() ? "1" : "0");
+        return true;
+    }
 
     if (cmd == "STOP") {
         const bool moving = state_ != IDLE;
@@ -232,6 +363,10 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
             {"speed", &speed_, 50, PWM_Max}, {"dir", &dir_, -1, 1},
             {"timeout", &timeoutMs_, 200, 60000}, {"debounce", &debounceMs_, 0, 200},
             {"settle", &settleMs_, 0, 2000}, {"active_low", &low, 0, 1},
+            {"overshoot", &overshootMs_, 0, 3000}, {"overshoot_speed", &overshootSpeed_, 50, PWM_Max},
+            {"return", &returnMs_, 0, 3000}, {"return_speed", &returnSpeed_, 50, PWM_Max},
+            {"center_speed", &centerSpeed_, 50, PWM_Max},
+            {"pause", &pauseMs_, 0, 30000}, {"fallback", &fallbackSlotMs_, 0, 5000},
         };
         for (const Num& n : nums) {
             if (k != n.key) continue;
@@ -251,7 +386,7 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
             reply = "OK " + k + "=" + String(v);
             return true;
         }
-        reply = "ERR key magnets slots drop speed dir timeout debounce settle active_low";
+        reply = "ERR key magnets slots drop speed dir timeout debounce settle active_low overshoot overshoot_speed return return_speed center_speed pause fallback";
         return true;
     }
     return false;
@@ -262,6 +397,10 @@ String GachaModule::cfgJson() const {
     d["magnets"] = magnets_; d["slots"] = slots_; d["drop"] = drop_;
     d["speed"] = speed_; d["dir"] = dir_; d["timeout"] = timeoutMs_;
     d["debounce"] = debounceMs_; d["settle"] = settleMs_; d["active_low"] = activeLow_ ? 1 : 0;
+    d["overshoot"] = overshootMs_; d["overshoot_speed"] = overshootSpeed_;
+    d["return"] = returnMs_; d["return_speed"] = returnSpeed_;
+    d["center_speed"] = centerSpeed_; d["pause"] = pauseMs_;
+    d["fallback"] = fallbackSlotMs_;
     d["per_slot"] = perSlot();
     String out;
     serializeJson(d, out);
@@ -278,7 +417,7 @@ String GachaModule::statusJson() {
 
 void GachaModule::status(JsonObject o) {
     o["state"] = state_ == IDLE ? "idle" : (state_ == HOMING ? "homing" : (job_ == JOB_DISPENSE ? "dispensing" : "turning"));
-    o["at_hall"] = hall_.stable;
+    o["at_hall"] = hallActive() || hall_.stable;
     o["hits"] = hits_;
     o["pos"] = pos_;
     o["item"] = item_;
@@ -296,7 +435,15 @@ void GachaModule::status(JsonObject o) {
     last["who"] = lastWho_;
     last["forced"] = lastForced_;
     last["ms"] = lastMs_;
-    if (state_ != IDLE) { o["want"] = want_; o["got"] = got_; }
+    if (state_ != IDLE) {
+        o["want"] = want_;
+        o["got"] = got_;
+        if (settlePhase_ == SETTLE_ROCK_FWD) o["phase"] = "rock_fwd";
+        else if (settlePhase_ == SETTLE_ROCK_BACK) o["phase"] = "rock_back";
+        else if (settlePhase_ == SETTLE_CENTER) o["phase"] = "center";
+        else if (settlePhase_ == SETTLE_PAUSE) o["phase"] = "pause";
+        else o["phase"] = "turning";
+    }
     JsonDocument cfg;
     deserializeJson(cfg, cfgJson());
     o["cfg"] = cfg.as<JsonObject>();
@@ -350,6 +497,13 @@ void GachaModule::load() {
         timeoutMs_ = d["timeout"] | timeoutMs_;
         debounceMs_ = d["debounce"] | debounceMs_;
         settleMs_ = d["settle"] | settleMs_;
+        overshootMs_ = d["overshoot"] | overshootMs_;
+        overshootSpeed_ = d["overshoot_speed"] | overshootSpeed_;
+        returnMs_ = d["return"] | returnMs_;
+        returnSpeed_ = d["return_speed"] | returnSpeed_;
+        centerSpeed_ = d["center_speed"] | centerSpeed_;
+        pauseMs_ = d["pause"] | pauseMs_;
+        fallbackSlotMs_ = d["fallback"] | fallbackSlotMs_;
         activeLow_ = (d["active_low"] | (activeLow_ ? 1 : 0)) != 0;
         item_ = (const char*)(d["item"] | "");
         event_ = (const char*)(d["event"] | "");
