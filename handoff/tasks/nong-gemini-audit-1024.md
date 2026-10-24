@@ -1,7 +1,7 @@
 # Nong HOME/CAD and Gemini evidence audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-24T22:57:31.147630+07:00
+Updated: 2026-10-24T23:06:43.629523+07:00
 Plan: A48-13 (robot)
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
@@ -69,3 +69,6 @@ Detailed reports remain scratch/nong-gemini-audit-1024/latest-gemini-review.md a
 Read-only audit resumed at human request. Current corrected backend3bb6c07/C++c8604095 resolves prior three findings in inspected code; focused native135/0 only, final stable batch review still pending. Gacha UI/Studio render/TV regressions remain with source A47-20/A48-14; no approval/deployment/physical movement.
 New help inconsistencies sent owner: HOME falsely described all90; GCALIB falsely mass-detect/synchronous-success and registry dead-center claims. Correct related docs/contracts as part of existing batch.
 Raw Gemini ed497bb9 step776 launches --quick20:32, step778 reports5735/0 at20:35. Earlier5735 runs alsoquick. Saved six originalsteps in scratch/nong-gemini-audit-1024/gemini-5735-provenance.json. FullQC not proven by dashboard5735. Reports updated; no nong/trim commands or driver execution by main. Await exact final source/hash/browser+sabotage evidence, independently review before fullgate.
+
+## Progress review after source browser results
+Source reports actual fake-browser Gacha20/0, TV11/0, Studioidle10/0; main inspected current uncommitted source/test bodies. Correct direction, not frozen final approval/fullQC/hardware proof. New P2: Test1Pocket still GSPIN1MAG, so supported8magnets/4slots moves halfpocket; request GSPIN1 pocket semantics and non1:1 regression. Source notified active HelpUI owner codex:10242258-597a claim22:59, chat01a16ea1; coordinate gacha/help.html overlap before doc integration. No new main driver/physical/source execution. Final candidate/hash/sabotage/fullgate remains next step; source active.
