@@ -1,7 +1,7 @@
 # Nong HOME/CAD and Gemini evidence audit
 
-Owner:
-Updated: 2026-10-24T22:45:14.573076+07:00
+Owner: codex:10241515-audit
+Updated: 2026-10-24T22:57:31.147630+07:00
 Plan: A48-13 (robot)
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
@@ -64,3 +64,8 @@ Root independently reviewed backend candidate65bdbc93400c878d4b01716137e03b6339b
 Additional current Studio P2: applyPose URDF early return misses markDirty3d while new tick stops idle rendering; grid/hand visibility, delayed mesh and resize also need invalidation. Preserve on-demand idle benefit, regression after idle.
 Additional TV P1: goHome sends literal all90 instead of native saved HOME/manualtrim. P2: poll uses nonexistent local/api/status; telemetry shape, at_ms/total_ms vs ms/total and fake pause/resume(firstsequence restart) need corrected contracts. No actual TV command executed by audit. Source owner authorized to claim/fix/regress these directly relevant latest Gemini gaps; no new agents/models. Full syntax-only parse8changedscripts found onlygacha parse failure; functional semantics still require browser checks.
 Detailed reports remain scratch/nong-gemini-audit-1024/latest-gemini-review.md and candidate-backend-review.md. Source independent-review cycle still active; no full approval/promotion/flash claimed.
+
+## Latest review checkpoint
+Read-only audit resumed at human request. Current corrected backend3bb6c07/C++c8604095 resolves prior three findings in inspected code; focused native135/0 only, final stable batch review still pending. Gacha UI/Studio render/TV regressions remain with source A47-20/A48-14; no approval/deployment/physical movement.
+New help inconsistencies sent owner: HOME falsely described all90; GCALIB falsely mass-detect/synchronous-success and registry dead-center claims. Correct related docs/contracts as part of existing batch.
+Raw Gemini ed497bb9 step776 launches --quick20:32, step778 reports5735/0 at20:35. Earlier5735 runs alsoquick. Saved six originalsteps in scratch/nong-gemini-audit-1024/gemini-5735-provenance.json. FullQC not proven by dashboard5735. Reports updated; no nong/trim commands or driver execution by main. Await exact final source/hash/browser+sabotage evidence, independently review before fullgate.
