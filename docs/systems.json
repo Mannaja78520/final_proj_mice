@@ -100,7 +100,7 @@
      "depends": ["shared-web"]},
 
     {"id": "app-voice", "summary": "Voice helper: speech in, answers, speech out.",
-     "files": ["apps/voice/", "config/voice.json", "config/voice_intents.json", "config/voice_providers.json", "config/voice_styles.json", "config/voice_profiles.json", "config/voice_people.json", "llm/", "qc/data/voice_conversation.mjs"],
+     "files": ["apps/voice/", "config/voice.json", "config/voice_intents.json", "config/voice_providers.json", "config/voice_styles.json", "config/voice_profiles.json", "config/voice_profiles/", "config/voice_people.json", "llm/", "qc/data/voice_conversation.mjs"],
      "checks": ["check_voice*"],
      "depends": []},
 
@@ -120,8 +120,8 @@
      "files": ["apps/camera/"],
      "depends": ["shared-web"]},
 
-    {"id": "app-small", "summary": "Small apps: help, All-Jao, Photobooth.",
-     "files": ["apps/help/", "apps/all-jao/", "apps/photobooth/"],
+    {"id": "app-small", "summary": "Small apps: help, All-Jao, Photobooth, TV Remote.",
+     "files": ["apps/help/", "apps/all-jao/", "apps/photobooth/", "apps/tv/"],
      "depends": ["shared-web"]},
 
     {"id": "fw-core", "summary": "Firmware shared by every board: identity, commands, RS485, WiFi/web portal, SD, OTA, PERF?.",

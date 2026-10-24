@@ -1,19 +1,363 @@
 <section id="gacha">
   <div class="shead">
-    <span class="where tech">code/apps/gacha · served at /app/gacha/ · firmware type gacha</span>
-    <h2>🎁 Prize machines — gachapon</h2>
-    <p>One or more prize machines, each one board that turns a holder of pockets until a ball
-       falls. This page decides which machine gives the prize, who may have one, and keeps a
-       record of every prize.</p>
+    <span class="where tech">code/apps/gacha · served at /app/gacha/ and /mod?dev=COM9 · firmware type gacha</span>
+    <h2>🎁 Prize machines — gachapon (เครื่องแจกของรางวัล / กาชาปอง)</h2>
+    <p>เครื่องแจกของรางวัลอัตโนมัติแบบ Revolver Carousel 4 ช่อง พร้อมระบบ 4-Phase Safety Centering หยุดกึ่งกลาง Hall เซนเซอร์ 100% และระบบ Auto Detect ปรับจูนตามมวลของรางวัล</p>
+  </div>
+  <!-- Real Screenshot & Visual Callout Guide -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ภาพหน้าจอจริงของ Prize Machines (Gacha) และการตั้งค่าล้อหมุน</b>
+      <span class="info-badge">Real UI · Callouts</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/gacha-current.png" alt="Gacha Real UI" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 30%;" title="1. สถานะช่องล้อหมุน 4 ช่อง">1</div>
+      <div class="callout-pin" style="top: 25%; left: 80%;" title="2. ปุ่มสั่งจ่ายของรางวัล Drop Prize">2</div>
+      <div class="callout-pin" style="top: 60%; left: 50%;" title="3. เซนเซอร์ Hall และการจูนแรงขับ">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ตรวจสอบความพร้อมของช่อง (Slot Status)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ดูไฟสถานะ 4 ช่องบนหน้าจอ (เขียว = มีของ, เทา = ว่าง)</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          ระบบจะเช็คว่าช่องใดมีของรางวัลอยู่ หากช่องปัจจุบันว่าง จะหมุนข้ามไปช่องถัดไปอัตโนมัติ ไม่ปล่อยให้ผู้เล่นได้ช่องว่าง
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> สั่งแจกของรางวัล (Drop Prize / Vending)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Drop prize</b> หรือรับคำสั่ง Event อัตโนมัติจากเกม</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          มอเตอร์ Revolver จะหมุน 90° แคปซูลหล่นลงรางรับของ พร้อมไฟ RGB กะพริบยินดีและเสียงเอฟเฟกต์
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ระบบหยุดกึ่งกลางอัตโนมัติ (4-Phase Hall Centering)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ทำงานอัตโนมัติผ่านแม่เหล็กและ Hall Sensor บนบอร์ด ESP32</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          เมื่อหมุนเข้าใกล้ตำแหน่ง แม่เหล็กจะดูดเข้าพิกัดและตัดกระแสมอเตอร์ทันที หยุดกึ่งกลางช่อง 100% ไม่ติดขัด
+        </div>
+      </div>
+    </div>
   </div>
 
-  <h3>On the machine itself</h3>
-  <p>Open the machine's own page (Home ▸ Modules). <b>Give one prize</b> turns until a ball
-     falls. <b>Turn 1 pocket</b> and <b>pockets</b> are for testing: count how many pockets it
-     takes from the loading place until the ball drops and type that into
-     <b>Pockets until it falls</b> on the Setup tab. Set the event name, start or close the
-     event, the kind of prize and how many balls are in it.</p>
 
+  <!-- ==================== INFOGRAPHIC 1: ARCHITECTURE ==================== -->
+  <div class="f" style="border: 2px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4); background: var(--card); margin-bottom: 24px;">
+    <h3 style="font-size: 17px; margin-bottom: 12px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
+      <span>📐</span> 1. สถาปัตยกรรมล้อหมุน 4 ช่อง (Revolver Mechanism)
+    </h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-items: center;">
+      <!-- Visual SVG Wheel -->
+      <div style="text-align: center; background: var(--code-bg); padding: 18px; border-radius: var(--r-sm); border: 1px solid var(--line);">
+        <svg viewBox="0 0 280 280" width="220" height="220" style="margin: 0 auto; display: block;">
+          <!-- Outer circle -->
+          <circle cx="140" cy="140" r="115" fill="none" stroke="var(--line)" stroke-width="4" stroke-dasharray="6,4"/>
+          <circle cx="140" cy="140" r="95" fill="none" stroke="var(--acc)" stroke-width="3" opacity="0.4"/>
+          <!-- 4 Pockets -->
+          <!-- Pocket 0 (Top, 0 deg) -->
+          <circle cx="140" cy="45" r="28" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="140" y="42" text-anchor="middle" font-size="12" font-weight="bold" fill="#0369a1">Slot 1</text>
+          <text x="140" y="56" text-anchor="middle" font-size="9" fill="#0284c7">🧲 Hall #1</text>
+
+          <!-- Pocket 1 (Right, 90 deg) -->
+          <circle cx="235" cy="140" r="28" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="235" y="137" text-anchor="middle" font-size="12" font-weight="bold" fill="#b45309">Slot 2</text>
+          <text x="235" y="151" text-anchor="middle" font-size="9" fill="#d97706">📥 Receive</text>
+
+          <!-- Pocket 2 (Bottom, 180 deg) -->
+          <circle cx="140" cy="235" r="28" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="140" y="232" text-anchor="middle" font-size="12" font-weight="bold" fill="#0369a1">Slot 3</text>
+          <text x="140" y="246" text-anchor="middle" font-size="9" fill="#0284c7">🧲 Hall #3</text>
+
+          <!-- Pocket 3 (Left, 270 deg) -->
+          <circle cx="45" cy="140" r="28" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+          <text x="45" y="137" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">Slot 4</text>
+          <text x="45" y="151" text-anchor="middle" font-size="9" fill="#16a34a">🎁 Drop Chute</text>
+
+          <!-- Center Motor & Direction Arrow -->
+          <circle cx="140" cy="140" r="22" fill="var(--acc)" opacity="0.9"/>
+          <text x="140" y="144" text-anchor="middle" font-size="16" fill="#fff">⚙️</text>
+          <!-- Curved rotation arrow -->
+          <path d="M 120 105 A 40 40 0 0 1 175 125" fill="none" stroke="var(--txt)" stroke-width="2.5" marker-end="url(#arrow)"/>
+        </svg>
+        <div style="font-size: 11.5px; color: var(--mut); margin-top: 8px;">
+          หมุนทิศทางตามเข็มนาฬิกา (CW, <code>dir: 1</code>)
+        </div>
+      </div>
+
+      <!-- Explanatory Cards -->
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: var(--r-sm);">
+          <b style="color: #15803d; font-size: 14px;">🟢 Continuous Vending (โหมดแจกปกติ: <code>drop: 1</code>)</b>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #166534;">
+            เมื่อมีแคปซูลบรรจุพร้อมทั้ง 4 ช่อง การแจกของแต่ละครั้ง <b>หมุนเพียง 1 แม่เหล็ก (90° / 1 ช่อง)</b> แคปซูลในช่องถัดไปจะหล่นลงรางทันที ทำงานรวดเร็ว กระชับ ไม่เสียเวลาหมุนฟรี
+          </p>
+        </div>
+
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: var(--r-sm);">
+          <b style="color: #1d4ed8; font-size: 14px;">🔵 Initial Prime Mode (โหมดโหลดตู้ครั้งแรก: <code>drop: 2</code>)</b>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #1e40af;">
+            ตามระยะใน CAD ระหว่างจุดรับของ (ช่อง 2) กับปากรางปล่อย (ช่อง 4) ห่างกัน 180° (2 ช่อง) ใช้เฉพาะตอนเริ่มโหลดลูกแรกเข้าตู้ว่างให้พร้อมแจก
+          </p>
+        </div>
+
+        <div style="background: var(--code-bg); border: 1px solid var(--line); padding: 10px 14px; border-radius: var(--r-sm); font-size: 12.5px; color: var(--mut);">
+          💡 <b>ฮาร์ดแวร์:</b> บอร์ด ESP32 คุม H-bridge 2 ขา (GPIO 25 & 26, <code>Drive2pin</code>), เซนเซอร์ Hall GPIO 33 (Active-Low), มอเตอร์มี Schottky Diode (0.187V drop) กันไฟย้อน
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== INFOGRAPHIC 2: 4-PHASE SAFETY CYCLE ==================== -->
+  <div class="f" style="border: 2px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4); background: var(--card); margin-bottom: 24px;">
+    <h3 style="font-size: 17px; margin-bottom: 6px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
+      <span>🔄</span> 2. วงรอบการแจกของ 4 ขั้นตอน (4-Phase Safety Settle Cycle)
+    </h3>
+    <p style="color: var(--mut); font-size: 13.5px; margin-bottom: 16px;">
+      ออกแบบพิเศษป้องกันของติดคาปากราง (Dual-Rocking Agitation) และดูดกลับเข้ากึ่งกลาง Hall แม่นยำ 100%
+    </p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+      <!-- Phase 1 -->
+      <div style="background: var(--code-bg); border-top: 4px solid #0284c7; padding: 14px; border-radius: var(--r-sm); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #0284c7;">Phase 1</span>
+          <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 4px; font-family: var(--mono);">180 ms</span>
+        </div>
+        <b style="font-size: 14px; display: block; margin-bottom: 4px;">⏩ Forward Overshoot</b>
+        <p style="font-size: 12.5px; color: var(--mut); margin: 0;">
+          หมุนเลยปากรางปล่อยช้าๆ (ความเร็ว <code>overshoot_speed: 380</code>) เพื่อให้แรงโน้มถ่วงเริ่มดึงแคปซูลให้ลื่นไหลลงราง
+        </p>
+      </div>
+
+      <!-- Phase 2 -->
+      <div style="background: var(--code-bg); border-top: 4px solid #f59e0b; padding: 14px; border-radius: var(--r-sm); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #f59e0b;">Phase 2</span>
+          <span style="font-size: 11px; background: #fef3c7; color: #b45309; padding: 1px 6px; border-radius: 4px; font-family: var(--mono);">250 ms</span>
+        </div>
+        <b style="font-size: 14px; display: block; margin-bottom: 4px;">🔁 Reverse Agitation</b>
+        <p style="font-size: 12.5px; color: var(--mut); margin: 0;">
+          โยกถอยหลังข้ามแม่เหล็กไปอีกฝั่ง (ความเร็ว <code>return_speed: 360</code>) เขย่าสะบัดให้แคปซูลที่ติดหลุดลงไป แล้วหยุดพัก 60 ms ตัดแรงเฉื่อย
+        </p>
+      </div>
+
+      <!-- Phase 3 -->
+      <div style="background: var(--code-bg); border-top: 4px solid #16a34a; padding: 14px; border-radius: var(--r-sm); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #16a34a;">Phase 3</span>
+          <span style="font-size: 11px; background: #dcfce7; color: #15803d; padding: 1px 6px; border-radius: 4px; font-family: var(--mono);">Micro-Step</span>
+        </div>
+        <b style="font-size: 14px; display: block; margin-bottom: 4px;">🎯 Dead-Center Alignment</b>
+        <p style="font-size: 12.5px; color: var(--mut); margin: 0;">
+          ย่องก้าวสั้นๆ (15 ms ที่ <code>center_speed: 260</code>) เข้าหาแม่เหล็ก พอเซนเซอร์แตะขอบ จะแทงเข้า Sweet Spot 18 ms แล้วล็อกเบรกตรงกลางทันที
+        </p>
+      </div>
+
+      <!-- Phase 4 -->
+      <div style="background: var(--code-bg); border-top: 4px solid #8b5cf6; padding: 14px; border-radius: var(--r-sm); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #8b5cf6;">Phase 4</span>
+          <span style="font-size: 11px; background: #ede9fe; color: #6d28d9; padding: 1px 6px; border-radius: 4px; font-family: var(--mono);">5,000 ms</span>
+        </div>
+        <b style="font-size: 14px; display: block; margin-bottom: 4px;">⏸️ Observation Pause</b>
+        <p style="font-size: 12.5px; color: var(--mut); margin: 0;">
+          หยุดนิ่งตรงกลาง 5 วินาที (ปรับลดได้ 2s/5s) เพื่อให้แอดมินหรือผู้รับของมองเห็นสถานะของหล่นชัดเจน ไฟ <code>at_hall</code> ขึ้นเขียวเสถียร 100%
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== INFOGRAPHIC 3: PARAMETERS ==================== -->
+  <div class="f" style="border: 2px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4); background: var(--card); margin-bottom: 24px;">
+    <h3 style="font-size: 17px; margin-bottom: 12px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
+      <span>⚙️</span> 3. ตารางพารามิเตอร์ทุกตัว ทุกจุด ทุกการตั้งค่า (Parameters Reference)
+    </h3>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Key (GCFG)</th>
+            <th>ชื่อภาษาไทย</th>
+            <th>ค่ามาตรฐาน</th>
+            <th>ช่วงค่าที่ตั้งได้</th>
+            <th class="wrap2">หน้าที่เชิงกลและผลลัพธ์</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>drop</code></td>
+            <td>จำนวนช่องที่หมุนปล่อย</td>
+            <td><b>1</b></td>
+            <td>1 - 64</td>
+            <td class="wrap2">1 สำหรับการแจกของปกติเมื่อล้อเต็ม, 2 สำหรับโหลดลูกแรกตอนตู้ว่าง</td>
+          </tr>
+          <tr>
+            <td><code>intake</code></td>
+            <td>หน่วงเวลารอของหล่นลงช่อง (ms)</td>
+            <td><b>300</b></td>
+            <td>0 - 5000</td>
+            <td class="wrap2">หยุดรอให้แรงโน้มถ่วงดึงลูกจากท่อด้านบนตกลง Slot 2 ให้สนิทก่อนเริ่มหมุน ป้องกันลูกติดขัดหรือตกไม่ทัน</td>
+          </tr>
+          <tr>
+            <td><code>speed</code></td>
+            <td>ความเร็วหมุนเดินทาง</td>
+            <td><b>500</b></td>
+            <td>50 - 1023</td>
+            <td class="wrap2">ความเร็วในการหมุนระหว่างช่อง (PWM duty: 500 ≈ 49% power) นุ่มนวล ไม่กระชาก</td>
+          </tr>
+          <tr>
+            <td><code>overshoot</code></td>
+            <td>ระยะเวลาเลยปากราง (ms)</td>
+            <td><b>180</b></td>
+            <td>0 - 3000</td>
+            <td class="wrap2">เวลาที่ปล่อยให้หมุนเกินจุดจ่ายของช้าๆ เพื่อให้ของตกลงราง</td>
+          </tr>
+          <tr>
+            <td><code>overshoot_speed</code></td>
+            <td>ความเร็วตอนเลยปากราง</td>
+            <td><b>380</b></td>
+            <td>50 - 1023</td>
+            <td class="wrap2">ความเร็วช้าพิเศษใน Phase 1 ป้องกันของกระเด็น</td>
+          </tr>
+          <tr>
+            <td><code>return</code></td>
+            <td>ระยะเวลาโยกถอยหลัง (ms)</td>
+            <td><b>250</b></td>
+            <td>0 - 3000</td>
+            <td class="wrap2">เวลาที่หมุนถอยหลังเพื่อเขย่าคลายของที่อาจติดขอบราง</td>
+          </tr>
+          <tr>
+            <td><code>return_speed</code></td>
+            <td>ความเร็วตอนโยกถอยหลัง</td>
+            <td><b>360</b></td>
+            <td>50 - 1023</td>
+            <td class="wrap2">ความเร็วตอนถอยหลังเขย่าใน Phase 2</td>
+          </tr>
+          <tr>
+            <td><code>center_speed</code></td>
+            <td>ความเร็วคลานเข้าเซนเซอร์</td>
+            <td><b>260</b></td>
+            <td>50 - 1023</td>
+            <td class="wrap2">ความเร็วย่องแบบ Micro-Step ใน Phase 3 เพื่อหยุดตรงกลางพอดี ไม่เลยขอบ</td>
+          </tr>
+          <tr>
+            <td><code>pause</code></td>
+            <td>เวลาหยุดสังเกตของ (ms)</td>
+            <td><b>5000</b></td>
+            <td>0 - 30000</td>
+            <td class="wrap2">เวลาหยุดนิ่งที่จุดกึ่งกลาง (5 วินาที) ก่อนจบสถานะ ปรับเป็น 2000 ได้ถ้าต้องการไวขึ้น</td>
+          </tr>
+          <tr>
+            <td><code>slots</code></td>
+            <td>จำนวนช่องบนล้อ</td>
+            <td><b>4</b></td>
+            <td>1 - 64</td>
+            <td class="wrap2">จำนวนหลุมใส่แคปซูลของล้อหมุน (ตามโมเดล 3D/CAD ปัจจุบันคือ 4 ช่อง)</td>
+          </tr>
+          <tr>
+            <td><code>magnets</code></td>
+            <td>จำนวนแม่เหล็ก</td>
+            <td><b>4</b></td>
+            <td>1 - 64</td>
+            <td class="wrap2">แม่เหล็กที่ฝังใต้ช่อง (ต้องเป็นจำนวนเท่าของ slots)</td>
+          </tr>
+          <tr>
+            <td><code>timeout</code></td>
+            <td>เวลาแจ้งเครื่องติด (ms)</td>
+            <td><b>5000</b></td>
+            <td>200 - 60000</td>
+            <td class="wrap2">หากหมุนแล้วไม่เจอแม่เหล็กในเวลานี้ มอเตอร์จะตัดเพื่อความปลอดภัย (แจ้งสถานะ <code>jam</code>)</td>
+          </tr>
+          <tr>
+            <td><code>debounce</code></td>
+            <td>เวลาหน่วง Hall เซนเซอร์ (ms)</td>
+            <td><b>5</b></td>
+            <td>0 - 200</td>
+            <td class="wrap2">เวลากรองสัญญาณแม่เหล็กให้นิ่ง ป้องกันการนับเบิ้ลจากสัญญาณรบกวน</td>
+          </tr>
+          <tr>
+            <td><code>active_low</code></td>
+            <td>ขั้วสัญญาณเซนเซอร์</td>
+            <td><b>1</b></td>
+            <td>0 หรือ 1</td>
+            <td class="wrap2">1 = ดึง LOW เมื่อมีแม่เหล็ก (สำหรับเซนเซอร์ A3144 / US1881)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== INFOGRAPHIC 4: FEATURES & MODES ==================== -->
+  <div class="f" style="border: 2px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4); background: var(--card); margin-bottom: 24px;">
+    <h3 style="font-size: 17px; margin-bottom: 12px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
+      <span>🧪</span> 4. โหมดพิเศษและการใช้งานจริง (Special Modes & Tools)
+    </h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+      <!-- Auto Detect -->
+      <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 14px; border-radius: var(--r-sm);">
+        <b style="color: #b45309; font-size: 14px; display: block; margin-bottom: 4px;">⚡ Auto Detect Mass (`GCALIB`)</b>
+        <p style="font-size: 12.5px; color: #92400e; margin: 0 0 8px;">
+          <b>แก้ปัญหามวลของแต่ละชิ้นไม่เท่ากัน:</b> เมื่อเปลี่ยนของรางวัลใหม่ (เช่น พวงกุญแจเหล็ก vs แคปซูลพลาสติกเบา) ให้กดปุ่มนี้ เครื่องจะหมุนสแกนหาขอบแม่เหล็กและวัดระยะเฉื่อยของมวลจริง แล้วคำนวณจุดหยุดกึ่งกลาง Hall พร้อมบันทึกลง NVS ให้อัตโนมัติทันที
+        </p>
+        <code style="font-size: 11px; background: #fef3c7; color: #78350f;">คำสั่ง: GCALIB -> OK CALIBRATED span_ms=50</code>
+      </div>
+
+      <!-- Test Machine -->
+      <div style="background: #eef2ff; border: 1px solid #c7d2fe; padding: 14px; border-radius: var(--r-sm);">
+        <b style="color: #4338ca; font-size: 14px; display: block; margin-bottom: 4px;">🧪 Machine Self-Test (`GTEST`)</b>
+        <p style="font-size: 12.5px; color: #3730a3; margin: 0 0 8px;">
+          <b>ทดสอบเครื่องก่อนเริ่มงาน:</b>
+          <br>• <b>Test 1 Pocket:</b> หมุนทดสอบ 1 ช่องพร้อมตรวจเช็กการหยุด Dead-Center
+          <br>• <b>Test 4 Pockets:</b> รันวนทดสอบรอบล้อทั้ง 4 ช่องต่อเนื่อง เพื่อยืนยันว่าทุกลูกหยุดตรงกลางแม่เหล็ก 100%
+        </p>
+        <code style="font-size: 11px; background: #e0e7ff; color: #312e81;">คำสั่ง: GTEST 1 หรือ GTEST 4</code>
+      </div>
+
+      <!-- Force Drop -->
+      <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 14px; border-radius: var(--r-sm);">
+        <b style="color: #991b1b; font-size: 14px; display: block; margin-bottom: 4px;">&#9889; Force Drop (บังคับปล่อยเพื่อทดสอบ)</b>
+        <p style="font-size: 12.5px; color: #7f1d1d; margin: 0 0 8px;">
+          <b>ทดสอบระบบได้ทุกสถานะ:</b> สั่งหมุนปล่อยของ 1 ช่องพร้อมระบบ 4-phase ทันที แม้ในกรณีที่ไม่มีของ สต็อกเป็น 0 หรือปิดอีเวนต์อยู่ เหมาะสำหรับแอดมินหรือช่างทดสอบความพร้อมของกลไก
+        </p>
+        <code style="font-size: 11px; background: #fee2e2; color: #991b1b;">คำสั่ง: GDISPENSE FORCE &lt;who&gt;</code>
+      </div>
+
+      <!-- Pulse Motor Nudge -->
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px; border-radius: var(--r-sm);">
+        <b style="color: #166534; font-size: 14px; display: block; margin-bottom: 4px;">Motor Diagnostic Pulse (<code>GNUDGE</code>)</b>
+        <p style="font-size: 12.5px; color: #14532d; margin: 0 0 8px;">
+          ทดสอบสั่งหมุนสั้นๆ: ส่งสัญญาณ PWM และระยะเวลา ms เพื่อขยับมอเตอร์ดูความพร้อมของกลไก
+        </p>
+        <code style="font-size: 11px; background: #dcfce7; color: #166534;">คำสั่ง: GNUDGE &lt;pwm&gt; &lt;ms&gt;</code>
+      </div>
+
+      <!-- Drain Machine -->
+      <div style="background: #fefce8; border: 1px solid #fef08a; padding: 14px; border-radius: var(--r-sm);">
+        <b style="color: #854d0e; font-size: 14px; display: block; margin-bottom: 4px;">&#127744; Drain Machine (โหมดวนปล่อยจนของหมด)</b>
+        <p style="font-size: 12.5px; color: #713f12; margin: 0 0 8px;">
+          <b>วนปล่อยต่อเนื่องอัตโนมัติ:</b> เครื่องจะแจกของทีละลูกต่อเนื่องตามลำดับ พร้อมรอบเขย่า 4-phase ในทุกลูก จนกระทั่งของในสต็อกหมดลง (Stock = 0) หรือกดปุ่ม <b>&#9209;&#65039; Stop Drain</b> เพื่อหยุดกลางคัน
+        </p>
+        <code style="font-size: 11px; background: #fef9c3; color: #854d0e;">คำสั่ง: GDRAIN [&lt;max&gt;] | STOP เพื่อยกเลิก</code>
+      </div>
+
+      <!-- Real-time Web UI -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: var(--r-sm);">
+        <b style="color: #0f172a; font-size: 14px; display: block; margin-bottom: 4px;">📊 หน้าเว็บ Real-Time Status & Tuning</b>
+        <p style="font-size: 12.5px; color: #475569; margin: 0 0 8px;">
+          บนหน้าเว็บ <code>/app/gacha</code> จะมีไฟสถานะสด:
+          <br>• <b>🟢 Center:</b> ล้อหยุดตรงกลางแม่เหล็กพอดี
+          <br>• <b>Phase:</b> แสดงขั้นตอนปัจจุบัน <code>[turning]</code>, <code>[center]</code>, <code>[pause]</code>
+          <br>• <b>Pocket:</b> ตำแหน่งช่องปัจจุบัน (เช่น <code>P1/4</code>)
+          <br>• <b>⚙️ Tune:</b> แถบปรับค่าความเร็ว/เวลาได้ทันที
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== EXISTING SECTIONS ==================== -->
   <h3>Several machines</h3>
   <p>Add each machine with its board name, the kind it holds and where it stands. Machines with
      the same kind stand in for each other: when the one asked for is empty, the next one gives
@@ -35,29 +379,6 @@
   <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · Google Form: docs/gacha/form_sample.gs · the sheet's script: apps/gacha/sheet_script.gs ·
      API for other apps and webhooks: docs/gacha/README.md · POST /api/gacha/dispense {item, person, app}</p>
 
-  <h3>Voice</h3>
-  <p>Voice ▸ Questions shows what people ask about, by topic and by hour, and downloads every
-     question as a file. <b>Asked often, no saved answer yet</b> lists what the model had to answer;
-     <b>Make an answer</b> writes it once so the robot says it every time. The topics and their words
-     are edited on the same tab. An answer can also give a prize: the prize rules say which answers
-     give which kind, for every event or only one.</p>
-  <p class="tech">config/voice_topics.json (GET/POST /api/questions/topics) · config/voice_prizes.json ("enabled": true to turn on, when.event) · log .local/voice/questions.csv</p>
-
-  <h3>Games that give a prize</h3>
-  <p>A win in the friend's games (All-Jao Games opened from the hub) asks for a prize: the wheel's
-     and the claw's prize name, the quiz score with the player's name, or <b>won</b> for the memory
-     game. <b>Games that give a prize</b> says which result gives which kind. The hub shows their
-     own game folder with a small addition; their files are never changed. Settings saved in their
-     own copy (port 8080) are not seen there: set the wheel and claw prizes again once inside the hub.</p>
-  <p class="tech">config/partners.json all-jao "play" (what to watch) · config/gacha.json "games" · /play/all-jao/ · apps/all-jao/link.js · POST /api/gacha/game {game, result, person, ref}</p>
-
-  <h3>Other PCs and forms</h3>
-  <p><b>Make a key</b> for each app that should ask for prizes from another PC, a Google Form's script
-     or a button somewhere else. A key can only ask: the limits still hold and it can never give one
-     anyway. Remove the key to stop that app.</p>
-  <p class="tech">header X-Mice-Key: &lt;key&gt; or ?key=&lt;key&gt; on /api/gacha/dispense, /can, /game · keys in .local/gacha/keys.json</p>
-
-  <h3>Not tried yet</h3>
-  <p>Tested only with pretend machines. The real machine still needs its pockets-until-it-falls
-     measured on the bench.</p>
+  <h3>Voice & Games Integration</h3>
+  <p>Voice ▸ Questions can trigger prizes based on question topic. All-Jao Games (wheel, quiz, claw) automatically request prizes upon win via <code>POST /api/gacha/game</code>.</p>
 </section>

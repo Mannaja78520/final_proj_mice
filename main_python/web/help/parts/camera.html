@@ -1,13 +1,68 @@
-<!-- ===================== STUDIO ===================== -->
 <section id="camera">
   <div class="shead">
     <span class="where tech">code/apps/camera · served at /app/camera/</span>
-    <h2>ESP32 camera — watch a board's camera on its own</h2>
-    <p>Every camera board the hub can reach, in one place, without opening a
-       module's whole website to find its Camera card.</p>
-    <p>It is called <b>ESP32 camera</b> because that is all it can show. The list
-       is built from modules of type <i>cam</i> — the ESP32-CAM boards. A webcam
-       plugged into this PC is not one of them and will not appear here.</p>
+    <h2>📷 ESP32 camera — ดูกล้องและปรับแต่งภาพแบบแยกจอ</h2>
+    <p>รวมภาพจากบอร์ดโมดูลกล้อง (ESP32-CAM) ทุกตัวที่เชื่อมต่ออยู่มาแสดงในหน้าเดียว
+       โดยไม่ต้องเปิดหน้าเว็บของแต่ละบอร์ด พร้อมระบบ Relay สตรีมมิ่งภาพให้ดูได้พร้อมกันหลายอุปกรณ์</p>
+  </div>
+
+  <!-- SECTION 1: STREAM PREVIEW -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 1: กล่องแสดงภาพสดจากกล้อง ESP32-CAM (Live Stream &amp; Relay)</b>
+      <span class="info-badge">Live Stream</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/camera-preview-box.png" alt="Camera Live Stream Box" class="info-img">
+      <div class="callout-pin" style="top: 40%; left: 50%;" title="1. กล่องแสดงภาพสด">1</div>
+      <div class="callout-pin" style="top: 85%; left: 50%;" title="2. สถานะการเชื่อมต่อ WiFi">2</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> กล่องภาพสดและการกระจายสัญญาณ (Multi-Client Relay)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เปิดดูผ่าน <code>/app/camera</code> จากเบราว์เซอร์กี่เครื่องก็ได้พร้อมกัน</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          ชิป ESP32 มีแรมจำกัดส่งได้แค่ 1 สตรีม Hub ส่วนกลางจึงเป็นตัวดึงภาพมา 1 สตรีม แล้วนำมากระจายต่อให้คนดูหลายคนพร้อมกันโดยบอร์ดไม่ล่ม
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> แหล่งรับสัญญาณ WiFi vs USB</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ตรวจสอบให้แน่ใจว่าบอร์ดต่อ WiFi (ไฟสถานะเขียว)</div>
+        <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
+          สาย USB / RS485 รองรับเฉพาะข้อความและคำสั่งตัวอักษร ไม่สามารถส่งไฟล์ภาพ JPEG ได้ หากต่อเฉพาะสาย ภาพจะไม่ขึ้นแต่สามารถตั้งค่าเซนเซอร์ได้
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: TUNING CONTROLS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 2: การปรับเซนเซอร์ภาพ (Exposure, Gain, Brightness, Contrast)</b>
+      <span class="info-badge">Sensor Tuning</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/camera-tuning-box.png" alt="Camera Tuning Box" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 40%;" title="1. สไลเดอร์ Brightness / Contrast">1</div>
+      <div class="callout-pin" style="top: 60%; left: 40%;" title="2. สวิตช์ Auto vs Manual Exposure">2</div>
+      <div class="callout-pin" style="top: 85%; left: 40%;" title="3. สมดุลสีขาว White Balance">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ปรับแสงและความคมชัด (Brightness &amp; Contrast)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลื่อนแถบสไลเดอร์ระหว่าง -2 ถึง +2</div>
+        <div class="action-impact"><b>ภาพกล้องเปลี่ยนไปยังไง:</b>
+          ปรับให้ภาพสว่างหรือมืดลง และเพิ่มมิติของภาพให้มองเห็นรายละเอียดใบหน้าได้คมชัดยิ่งขึ้น
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ปรับแสงและความไว (Exposure &amp; Gain)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ปิด Auto Exposure / Auto Gain ก่อน จึงจะเลื่อนแถบ Manual ได้</div>
+        <div class="action-impact"><b>ภาพกล้องเปลี่ยนไปยังไง:</b>
+          ช่วยให้ภาพไม่มืดในห้องจัดแสดงแสงน้อย หรือลดความจ้าเมื่อจัดแสดงกลางแจ้ง
+        </div>
+      </div>
+    </div>
   </div>
 
   <h3>Several people can watch at once</h3>
@@ -17,28 +72,4 @@
      tear each other's pictures. The hub therefore holds <b>one</b> connection
      to each camera and feeds every viewer from it. Open this page on as many
      screens as you like.</p>
-  <p>A slow viewer — a phone on poor WiFi — is given the newest frame each time
-     it is ready for another, so it drops frames rather than holding anyone
-     else back. If a camera stops answering, the live view says so instead of
-     leaving an old picture on screen pretending to be now.</p>
-
-  <h3>A camera has to be on WiFi to be seen</h3>
-  <p>Pictures do not travel down a USB or RS485 cable: those carry one line of
-     text at a time, and a JPEG is not that. A camera reachable only on a cable
-     is listed, and says so, with its picture controls switched off. Its
-     <b>settings</b> still work over the cable.</p>
-
-  <h3>Settings</h3>
-  <p>Every setting the sensor has — brightness, contrast, saturation, white
-     balance, exposure, gain, effects and the correction switches — lives on
-     the module's own page under <b>Settings</b>, grouped, with one control to
-     put everything back to default. The list is built from what the board
-     reports, so it is always what that board can really do.</p>
-  <p>Two things it will tell you rather than hide. A setting this sensor does
-     not have is shown greyed with <i>this sensor does not have it</i> — the
-     OV2640 has no sharpness, for instance. And a setting that only applies
-     while another is off (exposure time needs auto exposure off, gain needs
-     auto gain off) says which one to turn off.</p>
-  <p><b>There is no autofocus.</b> The OV2640 on these boards is fixed focus,
-     so there is nothing to switch on and no control for it.</p>
 </section>

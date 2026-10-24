@@ -109,6 +109,7 @@ New file or system: add it to `docs/systems.json`, then `python tools/systems.py
   without opening this file?
 * Shallow beats clever. No layers that exist only to be layers.
 * Web pages: read `docs/web_style.md` first; build from `shared/web/mice-ui.js` parts.
+* Strict OOP & modularity (user 2026-10-24): code MUST follow OOP and modularity. Do not dump code into monolithic files (main.py) — use classes/modules. Never edit built files (hub.html, help.html, app.js) directly; edit parts/ and run `tools/build_web.py`.
 * Every formula has an entry in `docs/ref_data.js` (`check_ref` enforces it).
 * Replies to the user: short, except warnings, destructive steps, and "why".
 

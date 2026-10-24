@@ -1,778 +1,266 @@
+<!-- ===================== STUDIO ===================== -->
 <section id="studio">
   <div class="shead">
     <span class="where tech">code/nong/main_python_set_nong · served at /studio/</span>
-    <h2>Nong Studio — pose &amp; sequence editor</h2>
-    <p>A 3D editor for the humanoid. Build poses, chain them into a timeline, watch the real
-       robot follow along, and export sequences the module plays from its SD card.
-       three.js is vendored — no CDN at runtime.</p>
+    <h2>Nong Studio — คู่มือการใช้งานและจุดปรับแต่งอย่างละเอียดทุกส่วน</h2>
+    <p>โปรแกรมจำลอง 3D และออกแบบท่าทางแอนิเมชันสำหรับหุ่นยนต์ฮิวแมนนอยด์ Nong (10 ข้อต่อเซอร์โว)
+       ประมวลผลบนเครื่องคอมพิวเตอร์ PC พร้อมระบบ On-Demand 3D Rendering ที่ช่วยประหยัดพลังงาน ไม่กินสเปก และไม่ค้าง</p>
   </div>
 
-  <div class="f"><h3>The dummy: pose the robot by hand<span class="tag t-new">new</span></h3>
-    <p>The <b>dummy</b> is a second module type (<code>mice_dummy</code>): a copy of the nong with the
-       same 10 joints and a potentiometer on each instead of a servo. It sits on the same RS485
-       bus with its own bus id (or its own USB / WiFi). In Studio's <b>Robot</b> tab, the
-       <b>Dummy</b> card connects to it and offers: <b>Studio follows the dummy</b>,
-       <b>Studio + real robot follow the dummy</b> (the robot's own limits and speed still apply),
-       <b>+ Dummy pose as new move</b>, <b>Use dummy pose for selected move</b> and
-       <b>Robot &rarr; selected move</b>. Pick <b>Simulated</b> to try all of it with sliders and
-       no dummy built. Pot pins, direction, travel, limits and zero are set on the dummy's own
-       module page (Setup &rarr; Dummy calibration). Tested against the QC fake only.</p></div>
+  <!-- OVERALL SCREENSHOT -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ภาพรวมหน้าจอ Nong Studio ในปัจจุบัน (Current Real UI)</b>
+      <span class="info-badge">Overview</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-current.png" alt="Nong Studio Current Real UI" class="info-img">
+      <div class="callout-pin" style="top: 45%; left: 30%;" title="1. พื้นที่ 3D Model Viewport">1</div>
+      <div class="callout-pin" style="top: 45%; left: 78%;" title="2. แผงควบคุมสไลเดอร์ 10 ข้อต่อ">2</div>
+      <div class="callout-pin" style="top: 90%; left: 50%;" title="3. แถบไทม์ไลน์และเครื่องเล่นท่าทาง">3</div>
+    </div>
+  </div>
 
+  <!-- SUB-SECTION 1: JOINT SLIDERS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 1: แผงปรับแต่งองศาข้อต่อเซอร์โว 10 จุด (Joint Sliders &amp; Inspector)</b>
+      <span class="info-badge">Joint Controls</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-sliders.png" alt="Joint Sliders Panel" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 25%;" title="1. ข้อต่อแขนซ้าย L_SH / L_EL">1</div>
+      <div class="callout-pin" style="top: 55%; left: 25%;" title="2. ข้อต่อแขนขวา R_SH / R_EL">2</div>
+      <div class="callout-pin" style="top: 80%; left: 25%;" title="3. เอวและยักไหล่ WAIST / SHRUG">3</div>
+      <div class="callout-pin" style="top: 92%; left: 50%;" title="4. ปุ่ม Quick Actions (Home / Relax)">4</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> สไลเดอร์แขนซ้าย (L_SH_P, L_SH_R, L_EL_P, L_EL_R)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือพิมพ์องศา (ช่วง 10° – 170°, กลาง 90°)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          • <b>L_SH_P / L_SH_R:</b> ไหล่ซ้ายก้ม-เงย (Pitch) และกางออก-หุบเข้า (Roll)<br>
+          • <b>L_EL_P / L_EL_R:</b> ข้อศอกซ้ายงอพับและหมุนบิดท่อนแขน<br>
+          เซอร์โวหมุนตามองศาจริงทันที พร้อมระบบจำกัดขอบเขตไม่ให้ชนโครงหุ่น
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> สไลเดอร์แขนขวา (R_SH_P, R_SH_R, R_EL_P, R_EL_R)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือกดปุ่ม <b>Mirror</b> เพื่อคัดลอกท่าจากแขนซ้าย</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          คุมแขนขวา 4 แกนอิสระ หากกด Mirror แขนขวาจะกางทำท่าสมมาตรกับแขนซ้ายทันที เหมาะสำหรับทำท่าไหว้ ท่ากอดอก หรือท่ายกมือพร้อมกัน
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> สไลเดอร์เอวและยักไหล่ (WAIST &amp; SHRUG)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> WAIST ปรับหมุนซ้าย-ขวา / SHRUG ปรับโครงสร้าง 4-Bar Linkage</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          • <b>WAIST:</b> เอวเอี้ยวตัวมองไปด้านข้างได้ ±30°<br>
+          • <b>SHRUG:</b> คานไหล่เอียงยกข้างหนึ่งขึ้น อีกข้างหนึ่งลง รวม 26° เลียนแบบการยักไหล่ของมนุษย์
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> ปุ่มลัดความปลอดภัย (Home / Relax / Zero Lock)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกปุ่ม Home, Relax หรือ Zero Lock ด้านล่าง</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          • <b>Home:</b> คืนแขนทุกข้างกลับท่า 90° ปลอดภัย<br>
+          • <b>Relax:</b> ตัดไฟเลี้ยงเซอร์โว แขนจะอ่อนลง สามารถใช้มือจับดัดท่าจริงได้<br>
+          • <b>Zero Lock:</b> ล็อคพิกัดจุดศูนย์ ป้องกันคนกดเลื่อนตำแหน่งโดยไม่ตั้งใจ
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <div class="grp2">Posing</div>
-  <div class="f"><h3>Five tabs, grouped by what you are doing<span class="tag t-new">new</span></h3>
-    <p><b>Pose</b> (joints, XYZ, view) · <b>Sequence</b> (timing, the robot SD card) ·
-       <b>Shows</b> (several sequences in a row) ·
-       <b>Robot</b> (link, module config, zero calibration) · <b>Setup</b> (rig, model,
-       clothes). The old Movement/Setup split put the robot link, the SD card and the zero
-       calibration all under Movement, so posing meant scrolling past things you touch once.</p>
-    <p>Nothing moved in the page itself — only what is on screen at once — so every saved
-       project, link and shortcut behaves as before. QC fails if a card ever ends up on no
-       tab, which would hide a feature completely.</p></div>
-  <div class="f"><h3>Shows — several sequences in a row<span class="tag t-new">new</span></h3>
-    <p>A <b>show</b> is a list of saved sequences played one after another: greeting, then
-       a wave, then byebye. Open the <b>Shows</b> tab, add saved sequences in the order you
-       want them, set a pause after any of them in milliseconds, name the show and press
-       <b>Save show</b>. <b>▶ Run on robot</b> hands the whole thing to the hub, so it keeps
-       going with the page closed; <b>⏹ Stop</b> ends it from anywhere.</p>
-    <p><b>⇪ Save to robot</b> puts the show on the robot's own card as one file,
-       <code>&lt;show name&gt;.show.yaml</code>. The robot can then play it by itself, with
-       the hub and the computer switched off: pick it in the robot's list of sequences
-       (Robot tab, or the robot's own page). It is the same run as ▶ Run on robot — the
-       same moves, pauses and music. A very long show may not fit in the robot's memory;
-       you are told before anything is sent. Change the show, then send it again.</p>
-    <p>A show only stores the sequence <i>names</i>, never a copy — so one greeting can sit
-       in ten shows, and editing the greeting changes all ten. Shows are small files in
-       <code>nong/main_python_set_nong/shows/</code> you can also write by hand. Deleting a
-       show moves it to <code>shows/.deleted</code> rather than erasing it, and never
-       touches its sequences. A show naming a sequence that is gone refuses to start and
-       says which step is wrong, instead of playing half of itself.</p></div>
-  <div class="f"><h3>A show runs straight through, and can repeat a sequence<span class="tag t-new">new</span></h3>
-    <p>One sequence now runs <b>straight into the next</b>, with no gap. There used to be
-       one, and it looked like the robot had stopped: every sequence begins with its start
-       pose, timed for travel from wherever the robot happened to be — <code>yakyai.yaml</code>
-       asks for 3273&nbsp;ms — so in a chain the arm stood almost still for three seconds
-       between sequences. That first move is now timed from where the arm really is, at
-       that sequence's own speed, so two sequences that end and start on the same pose hand
-       over instantly. <b>The only thing that makes the robot wait is a pause you typed.</b></p>
-    <p><b>Repeat</b> beside each sequence plays it again, in whichever way you think about
-       it: <b>repeat × times</b> (3 times, 4 times) or <b>repeat for seconds</b>
-       (30&nbsp;s, 60&nbsp;s). Seconds never cuts a pass in half — it starts another whole
-       pass while the time is still under the target, so 60&nbsp;s of a 22&nbsp;s sequence
-       is three passes. A sequence far too short to fill the target is refused, by name,
-       instead of building a list nothing can stop.</p></div>
-  <div class="f"><h3>Run a sequence for exactly so many seconds<span class="tag t-new">new</span></h3>
-    <p>The third repeat setting, <b>run for exactly … s</b>, is for a show on a
-       <b>timetable</b> — music, a slot in a programme, anything the robot has to stay in
-       step with. The sequence gets exactly that long and no more. If it would run over it
-       is <b>cut</b> wherever it has got to; if it is shorter it repeats to fill, and the
-       last pass is cut too.</p>
-    <p>The cut is not a stop. Whatever time the cut frees is spent <b>travelling into the
-       next sequence's first pose</b>, so the arm leaves early, is already on its way during
-       the freed time, and <b>arrives exactly on the deadline</b>. The next sequence starts
-       on time and there is no join to see.</p>
-    <p>The cut always lands on a keyframe, never inside a move — stopping half way through
-       one would leave the arm at a position nobody chose. A pause you set on the item
-       counts inside its budget rather than pushing the deadline out, and an item at the
-       <b>end</b> of a show holds its last pose to length, since there is nowhere to travel
-       to. <b>Repeat for seconds</b> is the gentler cousin: it never cuts, so it runs a
-       little over.</p>
-    <p>On the time bar that travel is drawn as the <b>end of the cut sequence</b>, labelled
-       <i>one → two</i>, and the next sequence's name starts right on the deadline — 42 s
-       reads 42.0 s on the ruler. The seconds are counted from the show's <b>first pose</b>,
-       the same place the time bar starts; the robot's walk to that first pose, from
-       wherever it was standing, comes before the clock and belongs to no sequence.</p></div>
-  <div class="f"><h3>The time bar and the robot keep the same time<span class="tag t-new">fixed</span></h3>
-    <p>A show could reach a point on the robot a few seconds later than the time bar said
-       (49&nbsp;s on the bar, 52&nbsp;s on the robot). Two things added up: the hub waited
-       for each move <b>after</b> the robot had answered, so the cable's answer time was
-       added to every move; and a move between sequences could be asked for faster than the
-       robot allows, so the robot quietly took longer. Now the hub keeps one clock for the
-       whole show, and every move is planned at no less than the time the robot will
-       really take — with the robot's own speed limits, the ones in <b>Timing</b>.</p></div>
-  <div class="f"><h3>A gentler move between sequences<span class="tag t-new">new</span></h3>
-    <p>When one sequence ends in a different pose from where the next one starts, the robot
-       travels between them. In the Shows tab, <b>Between</b> sets how that move looks:
-       a top speed in °/s, a shortest time in seconds, or both. Leave them empty and the
-       move uses the next sequence's own speed, as before. Two sequences that end and start
-       on the same pose still run straight on. The time bar includes this move, so
-       everything after it moves along to match.</p></div>
-  <div class="f"><h3>Music for a whole show<span class="tag t-new">new</span></h3>
-    <p>A show can have its own <b>Music</b>: a track on the robot's card, with a volume and
-       a <b>repeat</b> tick. It starts on the show's first pose — the robot walks to that pose first, then the
-       music and the moves start together — and stops when the show
-       ends or you press Stop. While a show has its own track, the music saved inside its
-       sequences is left out, so nothing cuts the show's track off. Choose <i>no music</i>
-       to keep each sequence's own music. <b>＋ From PC</b> puts a track from your computer
-       onto the robot's card and makes it the show's music in one step. Over the cable
-       a file travels in small pieces, so a whole song takes a long time. While it is
-       sent, a wheel shows how many percent have arrived and about how long is left, and
-       nothing else can be done; <b>Cancel sending</b> stops it and takes the half-sent
-       file back off the card. The robot's card only takes English letters, numbers,
-       space, dot, <code>_</code> and <code>-</code> in a track name, so a Thai name is
-       renamed (to <code>track-</code> and the date if nothing is left) and Studio tells
-       you the new name. The faster ways are the robot's WiFi or copying the song
-       onto the SD card's <code>/music</code> folder. If the hub was restarted you must log in again first,
-       and Studio now says so instead of <i>Failed to fetch</i>.</p>
-    <p><b>Music stops</b> says how long the track plays: <i>with the last move</i>, a
-       number of seconds <i>after the show ends</i>, or a number of seconds <i>in all</i>
-       from the show's first pose — which can be before the moves end. Stop always
-       silences it at once. A looping show never ends, so its track plays until Stop.</p></div>
-  <div class="f"><h3>A sequence faster or slower in one show<span class="tag t-new">new</span></h3>
-    <p>Each sequence in a show has a <b>speed</b> in percent: 100 plays it as saved, 50 at
-       half speed, 200 twice as fast. It changes that show only, never the sequence file.
-       Pauses keep their length, and no move goes faster than the robot allows, so a very
-       high number may not shorten every move. The time bar follows the new speed.</p></div>
-  <div class="f"><h3>See a whole show on the time bar<span class="tag t-new">new</span></h3>
-    <p>Open a show, or press <b>⇣ Show on the time bar</b>, and every sequence of it lands
-       on the one timeline, end to end, with a line and a name where each one begins — a
-       repeated pass says which pass it is (<code>wave ×2</code>). You can then scrub
-       through the whole show, preview it and see exactly where the hand-overs are.</p>
-    <p>The steps come from the hub, not from Studio re-reading the files: it is the same
-       list the robot will run, so the editor cannot show a show the robot does not
-       perform. If the time bar is holding unsaved keyframes, opening a show leaves them
-       alone and says so — press the button when you really mean to replace them.</p></div>
-  <div class="f"><h3>The arm never goes through its own body<span class="tag t-new">new</span></h3>
-    <p>Whenever Studio makes moves for you — from a video, from the dummy, or the
-       gestures the robot makes while it talks — every move is checked on this robot's
-       own sizes before the robot gets it. A move that is clear goes straight, as
-       always. A move whose straight line would take an arm through the body or the
-       other arm goes <b>round</b> instead: Studio finds a way with a few in-between
-       poses and keeps it short. A pose the robot's body cannot take at all is left
-       out, and the arm holds where it was. The status line says how many moves went
-       round or were held.</p>
-    <p>While the real robot follows the dummy live, the way round has to be found in a
-       moment; if it is not, the robot <b>holds its last safe pose</b> and the dummy
-       card says so, until the dummy moves somewhere the robot can go.</p>
-    <p class="tech">safe_path.js: straight joint path checked with collisionAt();
-       a hit is planned round with RRT-Connect plus shortcuts. Settings in
-       <code>nong/main_python_set_nong/web/safe_path.json</code>: planner
-       (<code>rrt-connect</code> or <code>straight</code>), checkDeg, stepDeg,
-       budgetMs, liveBudgetMs, shortcuts, seed.</p></div>
-  <div class="f"><h3>Record the dummy, keep it as a move<span class="tag t-new">new</span></h3>
-    <p>On the Dummy card, <b>● Record the dummy</b> starts recording what the dummy
-       does; <b>■ Stop and save</b> puts the moves on the time bar, timed as you made
-       them and kept clear of the robot's body, and saves them as
-       <code>dummy_&lt;date&gt;</code>.</p></div>
-  <div class="f"><h3>Moves while talking<span class="tag t-new">new</span></h3>
-    <p>On the Sequence tab, <b>Moves while talking</b>: the arm gestures the robot makes
-       while it answers on the Voice page. A word in the answer brings its gesture —
-       “สวัสดี” or “hello” a wave, “ขอบคุณ” a wai, “ทุกคน” arms wide, a question a hand to
-       the chin — and small random beats fill the rest, so no two answers move the same.
-       The speaking manner sets the pace: playful moves more and quicker, polite and
-       poem recital less and slower.</p>
-    <p>Every gesture is fitted to <b>this robot's size</b>: hands are placed around the
-       body in arm lengths, Studio works out the joints, checks every pose and move
-       against the body, and leaves out a gesture this robot cannot do safely (it names
-       it). This happens by itself when the robot's setup changes.</p>
-    <p>Type a sentence and press <b>▶ Show</b> to see the gestures picked for it on the
-       time bar (press again for another random pick). Under <b>The gestures and their
-       words</b> change which words bring each gesture, or make your own: pose moves on
-       the time bar, name them, give the words and press <b>＋ Keep as a gesture</b>.
-       <b>Events</b> switches gestures off for one event; the switch at the top, for
-       all.</p>
-    <p class="tech">Library <code>config/gestures.json</code> (keys: hand targets
-       [out, up, forward] in arm lengths, palm, waist, shrug; words per language;
-       manners: tempo, beats, prefer; events; pace, leadMs, lateMs, restGapMs,
-       maxDps). This PC's changes and the fit: <code>nong/main_python_set_nong/gestures.json</code>.
-       Routes: GET/POST <code>/api/gestures</code>, <code>/api/gestures/fit</code>,
-       <code>/api/gestures/plan</code>; <code>/api/gestures/play</code> needs a login.</p></div>
-  <div class="f"><h3>Moves from a video of a person<span class="tag t-new">new</span></h3>
-    <p><b>The Video tab.</b> Its own page: the person's video with its sound and the
-       skeleton found on them, beside the 3D robot seen from the front (on a phone, one
-       above the other). Pick a video of one person, or paste a link and press
-       <b>Fetch</b>: YouTube, Google Drive, Dropbox, Facebook, TikTok, Vimeo and other
-       video sites, or a link straight to a video file. This PC fetches it (a browser
-       cannot read the picture of a video another site plays) and Studio reads it like
-       a file. A Drive or Dropbox file must be shared with “Anyone with the link”; a
-       private video or one that needs a login cannot be fetched, and Studio says so.
-       Video sites need <code>yt-dlp</code> on the PC (<code>pip install -U
-       "yt-dlp[default]"</code>; Studio names it when it is missing). Then press</p>
-    <p><b>▶ Play person and robot</b> plays the video with its sound while the robot
-       does the moves made from it, in step; dragging the video's time does the same.
-       It is a preview: the real robot moves only when the moves are on the time bar.
-       After <b>Use as new moves</b>, <b>♪ Put the video's sound on the robot</b>
-       cuts the sound of the part the moves were made from (ffmpeg on the PC) and puts
-       it on the robot's card as the first video move's music, so the show plays with
-       the song. The video, the link and every choice are saved with the project, so
-       opening it again brings them back (press Fetch, or pick the file, to see the
-       video again).</p>
-    <p>Pick a video of one person, press
-       <b>▶ Make moves</b>, and Studio follows their arms frame by frame and makes moves
-       that copy them as closely as the robot's joints allow. The found skeleton is drawn
-       over the video, and the 3D robot can play the result at once. Then
-       <b>Use as new moves</b> (replaces the time bar, asking first if it has unsaved
-       changes) or <b>Add after the last move</b>. <b>▶ Make and save</b> does it all
-       in one step: makes the moves, keeps them clear of the robot's body, puts them on
-       the time bar and saves them under the video's name. They are ordinary moves: edit any of
-       them, then Save or Save to robot.</p>
-    <p><b>How close.</b> The person's upper arm and forearm directions are put on the
-       robot's own arm lengths, and the same solver as the drag handles places the elbow
-       and the hand there. A shape past a joint limit lands on the nearest one the robot
-       can make. Only the arms (and, if asked, the waist) are copied; the robot has no
-       legs or head to follow.</p>
-    <p><b>Follow</b> picks how many moves: every move eases to a stop, as on the robot,
-       so <b>Close</b> follows the video more tightly but stops and starts more, and
-       <b>Smooth</b> keeps only the turning points. The moves keep the video's own timing;
-       a move faster than the servos and the peak speed limit allow is slowed to what they
-       can do, and Studio says how much longer the whole thing became.</p>
-    <p><b>Move like a mirror</b>: the robot's left copies the person's right, as a
-       reflection does. <b>More choices</b>: palm or back of each hand on top (as below;
-       "as in the video" keeps the person's elbow), turning the waist when the person
-       turns, and which part of the video to use. A nearly straight arm cannot roll its
-       hand, so where the asked-for side could not be shown Studio says in how many moves.
-       Pick <b>palm on top, always</b> (or back) and the hand moves just enough to show that
-       side, staying as close to the person's pose as the joints allow.</p>
-    <p><b>Stay with the music</b> (on at first): every move ends on its own moment in the
-       video, so a show built on the video's song stays in time. A move the robot is too
-       slow for goes as far toward the pose as it can in that time instead of making
-       everything after it late. The hand side you picked still holds on that
-       part-way pose.</p>
-    <p><b>Choose what to keep.</b> After Make moves, each move has a row: click its time to
-       see that moment of the video and the robot's pose for it, then <b>Keep</b>,
-       <b>Keep, hand side forced</b>, <b>Use another moment…</b> (type the second of the
-       video whose pose should fill this move) or <b>Leave out</b>. Every move keeps its
-       place in time, so leaving one out or filling it from elsewhere never shifts the rest
-       off the beat.</p>
-    <p>The video is read in this browser and never leaves the PC; fetched videos are kept
-       in the PC's temp folder (the newest few only). The body finder
-       (MediaPipe Pose, from Google) is fetched from the internet the first time; the
-       browser keeps it after that. Tested with a still photo and made-up skeletons, not
-       yet on the real robot.</p></div>
+  <!-- SUB-SECTION 2: TIMELINE & KEYFRAMES -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 2: แถบไทม์ไลน์และลำดับท่าทาง (Timeline &amp; Keyframe Sequencer)</b>
+      <span class="info-badge">Timeline</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-timeline-bar.png" alt="Timeline Controls" class="info-img">
+      <div class="callout-pin" style="top: 50%; left: 8%;" title="1. ปุ่ม Play / Run on robot">1</div>
+      <div class="callout-pin" style="top: 50%; left: 25%;" title="2. ปุ่ม + Add keyframe">2</div>
+      <div class="callout-pin" style="top: 50%; left: 60%;" title="3. แถบเลื่อนเวลา Scrub Bar">3</div>
+      <div class="callout-pin" style="top: 50%; left: 90%;" title="4. เช็คบ็อกซ์ Loop &amp; ซูม">4</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> สั่งเล่นท่าทาง (Play / Run on robot)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>▶ Play</b> เพื่อพรีวิวในจอ หรือ <b>▶ Run on robot</b> เพื่อสั่งหุ่นจริง</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          โมเดล 3D และตัวหุ่นจริงจะเคลื่อนที่ต่อเนื่องตามคีย์เฟรม ด้วยความนุ่มนวลตามเส้นโค้งความเร็วที่คำนวณไว้
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> การบันทึกท่า (+ Add Keyframe &amp; Duration)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ดัดท่าที่ต้องการแล้วกด <b>+ Add keyframe</b> พร้อมกำหนดเวลา (เช่น 800ms)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เพิ่มท่าใหม่เข้าไปในเส้นเวลา หากกำหนดเวลาน้อยเกินกว่าที่เซอร์โวหมุนทัน ระบบจะยืดเวลาออกให้อัตโนมัติเพื่อป้องกันมอเตอร์กระชาก
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> สครับบาร์ (Scrub Bar &amp; Live Tracking)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> แดรกเลื่อนตัวชี้เวลาไปข้างหน้าหรือข้างหลัง</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หุ่นยนต์จะเคลื่อนตามจุดเวลาที่ลากแบบ Real-time ช่วยให้ตรวจสอบจุดที่มีการกระทบกันของโครงสร้างได้อย่างแม่นยำ
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> เล่นวนซ้ำและซูม (Loop Checkbox)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ติ๊กถูกที่ช่อง <b>Loop</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เมื่อเล่นถึงท่าสุดท้าย หุ่นยนต์จะเคลื่อนที่ย้อนกลับสู่ท่าแรกอย่างนุ่มนวลและเริ่มเล่นซ้ำต่อเนื่อง ไม่มีการกระตุกหรือสะบัดแขน
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <div class="f"><h3>Palm or back of the hand on top, per hand<span class="tag t-new">new</span></h3>
-    <p>A hand-like part sits on each forearm, and whether the audience sees its
-       <b>palm</b> or its <b>back</b> on top changes how a move and the end pose feel. The
-       3D view draws each hand: skin colour is the palm, grey is the back.</p>
-    <p><b>Pose tab:</b> each hand has <b>✋ Palm up</b> and <b>🤚 Back up</b>, and says
-       which side is on top now. <b>Timeline:</b> every move has a picker per hand
-       (<b>L ✋ palm up</b> / <b>L 🤚 back up</b>, and the same for R). It always shows
-       what the move's pose really does; pick the other side and that arm turns round.</p>
-    <p>The hand stays where it is; only the arm's shape changes. The arm has no wrist
-       twist, so the hand rolls by swinging the elbow round the shoulder-to-hand line.
-       Joint limits cap that swing: with a straight arm, or near a limit, the hand can
-       only turn part of the way, and Studio says so instead of moving the hand.</p>
-    <p><b>Keep a side while you move the hand:</b> under each hand, <b>while moving it,
-       keep</b> ✋ palm on top or 🤚 back on top. Dragging that hand, or typing where its
-       wrist goes, then keeps that side up as well as the joints allow. The line under it
-       shows live what the arm really reaches: which side is on top and how many degrees
-       from straight up, how many mm short of where you pulled (an orange mark shows
-       that spot), which joints are at their stop, and whether it hits itself. What you
-       see is the joint angles the robot is sent, so <b>＋ Save as a new move</b> or
-       <b>Save into the selected move</b> keeps exactly that. The settings are in
-       <code>hand_side.json</code> beside Studio. Tried on the simulated robot only.</p>
-    <p>If the drawn palm is not on the same side as the real one, press
-       <b>Setup ▸ Rig setup ▸ ↻ Turn the drawn hand</b> for that hand until they match.
-       This replaces the old "front arm / back arm" picker.</p>
-    <p>The <b>⇄</b> button beside it plays the same shape on the other arm. It is a real
-       mirror, not a swap of the numbers: the two arms are not built as exact opposites of
-       each other, so copying the angles across put the hand 613&nbsp;mm from where it
-       belonged. Studio reflects the elbow and the hand in the body's own centre line and
-       solves the arm to reach them.</p></div>
-  <div class="f"><h3>Sliders, gizmos and inverse kinematics</h3>
-    <p>A slider per joint, clamped to that joint's own limits. Drag the 🟢 wrist ball for
-       4-DOF whole-arm IK, or the 🟠 elbow ball for shoulder-only IK. Gimbal rings follow
-       each joint's configured axis and tilt.</p></div>
-  <div class="f"><h3>Flat plane views<span class="tag t-new">new</span></h3>
-    <p>Front, Back, Left, Right, Top and Bottom are true <b>orthographic</b> views — parallel
-       edges stay parallel and nothing looks bigger for being nearer, so Shift+dragging a
-       joint in that plane matches exactly what is on screen. The iso/free view keeps
-       perspective, where depth is the point. Switching between them never moves the
-       camera.</p>
-    <p><b>A flat view now stays flat.</b> It did not before: a plain drag orbits the camera,
-       so taking hold of the arm quietly turned Front back into a 3D view while the button
-       still said Front, and the plane you had chosen no longer matched what you were
-       looking at. In a plane view the camera cannot be orbited at all — pan and zoom still
-       work — and because nothing orbits there, <b>dragging a hand needs no Shift held</b>.
-       Press <b>3D</b> to turn the view loose again; there, dragging a hand still needs
-       Shift, because a plain drag orbits.</p></div>
-  <div class="f"><h3>Live XYZ readout</h3>
-    <p>Joint positions in millimetres, origin at the torso centre.</p></div>
-  <div class="f"><h3>Collision checking</h3>
-    <p>Arms against torso, head and each other, sampled along the whole path — not just at
-       keyframes. Offending keyframes turn red and Run/Upload are blocked until it is fixed.</p></div>
-  <div class="f"><h3>Two mirrors: left↔right and front↔back<span class="tag t-new">new</span></h3>
-    <p>A puppet has two mirrors, so there are two buttons — on the Pose tab, and on every
-       move in the timeline.</p>
-    <p><b>⇄ Mirror L↔R</b> swaps the arms: the left arm takes the right's shape and the
-       right takes the left's. <b>⇅ Mirror front↔back</b> does <i>not</i> swap them — each
-       arm stays on its own side and only its reach turns round, so a gesture aimed at the
-       audience now points behind. The waist turns to the other side either way; the shrug
-       is unchanged.</p>
-    <p>Both are taken in the <b>body's own frame</b>, so a turned waist cannot tilt the
-       mirror.</p></div>
-  <div class="f"><h3>Mirror and neutral</h3>
-    <p>Jump to the neutral pose, or save the current pose <em>as</em>
-       the neutral. Mirror is a <b>real reflection</b>, not a swap of the joint numbers:
-       the two arms are not built as exact opposites of each other, so copying the angles
-       across put the hand 613&nbsp;mm from where it belonged. Studio reflects the elbow and
-       the hand in the body's centre line and solves each arm to reach them; the waist turns
-       to the other side and the shrug is unchanged.</p></div>
+  <!-- SUB-SECTION 3: 3D MODEL & IK INTERACTION -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 3: โมเดล 3D และการควบคุมด้วย Inverse Kinematics (3D Canvas)</b>
+      <span class="info-badge">3D &amp; IK</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-3d-model.png" alt="3D Model Canvas" class="info-img">
+      <div class="callout-pin" style="top: 35%; left: 35%;" title="1. วงแหวนควบคุมแกนเซอร์โว">1</div>
+      <div class="callout-pin" style="top: 60%; left: 30%;" title="2. จุดจับลากแขน IK (Wrist &amp; Elbow)">2</div>
+      <div class="callout-pin" style="top: 15%; left: 50%;" title="3. ปุ่มมุมมองระนาบ Orthographic">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> วงแหวนควบคุมแกน (Gizmo Rings)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกที่ข้อต่อ จะปรากฏวงแหวนสี แดง (Pitch), เขียว (Roll), น้ำเงิน (Yaw) ให้คลิกลาก</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หมุนข้อต่อจุดนั้นโดยตรงตามแนวแกน ช่วยให้กะองศาเชิงมุมได้ง่ายกว่าการเลื่อนสไลเดอร์
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ลากมือแบบผกผัน (Shift+Drag IK Solver)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Shift ค้างไว้</b> แล้วคลิกลากลูกบอลข้อมือ (🟢 Wrist)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ระบบจะคำนวณหามุมของไหล่และข้อศอกพร้อมกัน 4 แกนอัตโนมัติ ทำให้สามารถจับมือหุ่นยนต์ชี้ไปยังเป้าหมายในอวกาศ 3D ได้ทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> สลับมุมมองแท้จริง (Orthographic Plane Views)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Front</b>, <b>Top</b> หรือ <b>Side</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          สลับมุมมองกล้องเป็นแบบฉายระนาบขนาน (ไม่มี Perspective เพี้ยน) ช่วยให้จัดแขนทั้งสองข้างให้ตรงได้ระดับเท่ากันเป๊ะ
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <div class="grp2">Timeline</div>
-  <div class="f"><h3>Keyframes with time and hold</h3>
-    <p>Each keyframe carries its move duration and a hold. Times auto-calculate from show
-       speed and are floored per joint by the slowest servo in that move — the same formula
-       the firmware uses. Any keyframe's time can also be typed in directly, which is how you
-       make one move slower than the rest.</p></div>
-  <div class="f"><h3>A time you typed is kept<span class="tag t-new">new</span></h3>
-    <p>Type a time on a move and it is <b>pinned</b> (📌). Editing that move's pose, editing
-       the move before it, or changing Show speed will <b>not</b> re-time it any more. Before
-       this, every small correction to a pose ran the automatic timer over the number you had
-       chosen, and you had to type it again — every time.</p>
-    <p>The only thing that may change a pinned time is the servos' own minimum, and it can
-       only make it <b>longer</b> — a move the arm cannot make in that time is not a choice
-       anybody can make.</p>
-    <p>Times that come from a <b>saved sequence file</b> are not pinned, so re-opening a
-       sequence and changing Show speed still re-times the whole thing, as it always has.
-       A pin is for a time you typed or pinned yourself. To hold one that came from a file,
-       press its 📌 once.</p>
-    <p>Two ways to hand the timing back to Studio: press the <b>📌</b> on that move's time
-       box, or type a <b>°/s</b> for it — asking for a speed is asking to be timed. A move
-       Studio is timing shows a 🕘 instead.</p></div>
-  <div class="f"><h3>Speed per sequence, and per move<span class="tag t-new">new</span></h3>
-    <p><b>Show speed</b> (°/s) is saved into the sequence file as its first step and restored
-       when you re-edit it, so each sequence keeps its own pace. Change it and every keyframe
-       time is recalculated.</p>
-    <p>Each keyframe also has its own <b>°/s</b> box — leave it blank to run at the
-       sequence's speed, or set it to make that one gesture slower or snappier. The file
-       sets that speed before the move and puts the sequence speed back after, so the rest of
-       the show is untouched. Speed and time are two views of the same thing: set a speed and
-       the time follows, type a time and the override is dropped.</p>
-    <p>Because each file sets its own speed at the start, a chain hands over cleanly — a
-       fast sequence following a slow one runs at its own speed instead of inheriting the
-       previous one's.</p>
-    <p><b>Peak speed limit</b> is a separate safety cap on the fastest instant of a
-       move. The robot may make a move longer than Show speed requests. Studio shows
-       the active limit after Connect. Save to robot stores a new limit for the next
-       restart; the current limit stays active until then. If boards are linked,
-       set the same limit on both before synchronized playback. Raising the limit
-       can cause harder impacts. Do not raise it while a joint loses torque.</p>
-    <p><b>Why a faster °/s sometimes changes nothing, and how to see it.</b> A move eases
-       in and out, so its fastest instant is about 1.6× its average — which means the peak
-       limit starts deciding the time at roughly <b>two thirds</b> of itself. At the shipped
-       60&nbsp;°/s that is about 38&nbsp;°/s: above it, raising Show speed or a move's own
-       °/s produced exactly the same time, silently. The arithmetic was right; it just never
-       said so. Now every move's line names the limit that is holding it — the peak limit,
-       or a particular joint's servo top speed — and says what to change. The
-       <b>⚑</b> beside a move's minimum means that move is already as short as it is
-       allowed to be.</p>
-    <p><b>Show speed lives inside the saved limit.</b> The box will not accept a number
-       above the flat point, because above it nothing gets faster — so raising the
-       <b>Peak speed limit</b> and pressing <b>Save to robot</b> is what lets Show speed go
-       higher. Measured on a real nong (board 67): at a saved limit of 120 the ceiling is
-       76 °/s; saved at 190 it is 121 °/s, and the same moves went from 130/196/327 ms to
-       82/124/206 ms — about a third quicker. A saved limit takes effect when the board
-       restarts.</p>
-    <p>The <b>Peak speed limit</b> box is also editable with <b>no robot connected</b>. It
-       is then simply the number Studio plans with, and it is saved with the project, so you
-       can time a show away from the bench. <b>Save to robot</b> still needs a connection —
-       Studio planning faster than the robot allows would be a show it cannot perform.</p></div>
-  <div class="f"><h3>Suspend a keyframe instead of deleting it<span class="tag t-new">new</span></h3>
-    <p>The ● button on a keyframe chip suspends it: it stays in the timeline to edit, but is
-       skipped when playing, exporting and uploading — so you can try the sequence without
-       one move while you check something else, then switch it back on.</p>
-    <p>Skipping keyframe 2 of 1–2–3 creates a new, longer move 1→3. Its time is recomputed
-       <b>at the speed that applies</b> — keyframe 3's own °/s if it has one, otherwise the
-       sequence speed — so the arm covers the extra distance at the pace you asked for
-       instead of lunging. Suspending can only ever slow a move down: a time you typed
-       yourself is kept if it is already longer.</p>
-    <p>The crash check re-tests that new path, and the suspended pose never reaches the robot
-       or the exported file.</p></div>
-  <div class="f"><h3>Play, scrub and loop<span class="tag t-new">fixed</span></h3>
-    <p>Preview in 3D, or with <b>live</b> ticked drive the real robot: keyframe 0 first, then
-       each segment with its exact duration. A hold is a real pause <em>between</em> the
-       moves. Pause sends <code>STOP</code> to freeze the arm where it is, and resuming asks
-       only for the time still left in the segment.</p></div>
-  <div class="f"><h3>Every Run is kept on the robot as last.yaml<span class="tag t-new">new</span></h3>
-    <p><b>▶ Run on robot</b>, on the time bar or on a show, also saves what it runs on the
-       robot as <code>last.yaml</code>. The robot's own page offers it first under <b>Play a
-       saved show</b>, so the last thing you ran can be played again with no hub and no
-       computer. A show Run keeps the same file <b>⇪ Save to robot</b> writes. If the copy
-       fails, the run still starts and the notice line says so.</p>
-    <p>Turn it off in <b>Setup ▸ This robot ▸ Keep a copy on the robot every time I press
-       Run</b>; then Run sends only the sequence itself, which is quicker over a slow cable.</p>
-    <p>Three ways to put moves on the robot: <b>⇪ Save to robot</b> on the time bar (what is
-       on screen), <b>⇪ Save to robot</b> in <b>Saved moves on this PC</b> (a saved file, as
-       it is, without opening it), and <b>⇪ Save to robot</b> on the Shows tab.</p></div>
-  <div class="f"><h3>This robot's settings, from Studio<span class="tag t-new">new</span></h3>
-    <p><b>Setup ▸ This robot</b> sets the robot's own settings: its <b>name</b> (its WiFi
-       name and <code>name.local</code> address change with it, so connect again after), the
-       <b>speed when a pose has no time</b>, and the <b>volume</b>. Press <b>⬇ Read from
-       robot</b> to see what it uses now; each <b>Save to robot</b> sets it at once and keeps
-       it after a restart. Joint limits, gear and offsets are in <b>Rig setup</b>, the peak
-       speed limit is on the Sequence tab, and <b>Open the robot's own page</b> has the rest
-       (WiFi, pins, logins).</p></div>
-  <div class="f"><h3>Let the robot run the show on its own<span class="tag t-new">new</span></h3>
-    <p>A browser stops its animation clock in a hidden tab, so a sequence driven <b>live</b>
-       from Studio freezes when you switch to another tab or app. Press <b>⇪ Save to robot</b>
-       then <b>Run on robot</b> instead: the module plays it from its own clock and you can
-       close the browser entirely.</p>
-    <p>This used to need an SD card. Now a board without one keeps the sequence in memory
-       (up to 8 KB, until it reboots) and plays it just the same — the editor is unchanged,
-       the board decides where it lands.</p>
-    <p><b>It starts from the move you clicked.</b> Click a pose in the timeline and the play
-       head parks there; Run then carries on from that pose to the end. It does not travel
-       back to the first pose first — on a robot built into a rig, that trip back is where
-       the arm hits something. The same is true when you switch tabs part way through a
-       show: the robot is handed the rest of it, not the whole thing from the start. A part
-       run is saved beside the full one as <code>&lt;name&gt;.part.yaml</code>, so your
-       saved sequence is never overwritten by running a piece of it. And the first move
-       after a jump is given as much time as the distance really needs, however fast the
-       timeline had it — the robot may be standing anywhere when you press Run.</p>
-    <p>Robot-side playback is also <b>more accurate</b>, not less: the module interpolates
-       every move on its own 50 Hz clock, so timing does not depend on the browser or the
-       link. Tick <b>monitor</b> to watch the real robot in 3D while it runs.</p>
-    <p>While playing live, Studio now holds a silent audio track and drives the clock from a
-       timer, which keeps most browsers from throttling a background tab — best effort, and
-       no substitute for running it on the robot for a real show.</p></div>
-  <div class="f"><h3>Monitor mode — the model follows the robot</h3>
-    <p>The 3D rig animates from the robot's real joint angles, and the status line shows
-       which sequence is playing and how long the current move has left. Use it to watch a
-       run started from the SD card.</p></div>
+  <!-- SUB-SECTION 4: CALIBRATION & SERVO OFFSET -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 4: การตั้งค่าชดเชยและแคลิเบรตเซอร์โว (Setup &amp; Servo Offset)</b>
+      <span class="info-badge">Calibration</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-tuning-card.png" alt="Tuning &amp; Calibration Card" class="info-img">
+      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. ปุ่ม Nudge ชดเชย ±0.5 องศา">1</div>
+      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. กำหนดช่วงลิมิต Min / Max">2</div>
+      <div class="callout-pin" style="top: 75%; left: 30%;" title="3. อัตราทดเฟืองและ Shrug Curve">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ชดเชยฟันเฟือง (Servo Offset Nudge)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>-</b> หรือ <b>+</b> ปรับทีละ 0.5° หรือกด 0 เพื่อรีเซ็ต</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          แก้ปัญหาเขาสวมเซอร์โวขบฟันเฟืองไม่ตรงตำแหน่ง ช่วยให้แขนตรงสนิทโดยค่าที่ชดเชยจะถูกบันทึกลงหน่วยความจำ NVS บนตัวหุ่นยนต์ ไม่สูญหายเมื่อปิดสวิตช์
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ลิมิตความปลอดภัย (Joint Safety Limits)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ระบุค่า Min (เช่น 15°) และ Max (เช่น 165°) ของแต่ละข้อต่อ</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ตัวหุ่นจริงและ Studio จะไม่ยอมหมุนเกินพิกัดนี้เด็ดขาด ป้องกันแขนพับชนลำตัวหรือเซอร์โวติดขัดจนไฟตก (Brownout Guard)
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ตารางแคลิเบรตยักไหล่ (4-Bar Shrug Curve)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ป้อนระยะยกจริง (mm) เทียบกับองศาเซอร์โวยักไหล่</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          คานยักไหล่จะขยับตามกลศาสตร์คณิตศาสตร์ของ 4-Bar Linkage จริง หัวไหล่ยกขึ้นได้อย่างสมจริงเป็นธรรมชาติ
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <div class="grp2">Rig setup — calibrate the model to your robot</div>
-  <div class="f"><h3>Per joint: zero, limits, axis, invert, tilt</h3>
-    <p>Rotation axis (roll-X / pitch-Y / yaw-Z), invert, and a three-angle axis tilt. Tilt is
-       visual only — it is never sent to the module.</p></div>
-  <div class="f"><h3>Per joint: servo, gear, pulse, speed, travel, frame rate</h3>
-    <p>Plus group presets (shoulders / elbows / waist / shrug / all) and a warning when the
-       gear and joint limits together need more travel than the servo has.
-       <b>Send</b> pushes limits, gear, pulse, travel and rate to the robot;
-       <b>read back</b> pulls the robot's current values into the rig.</p></div>
-  <div class="f"><h3>Body dimensions and your own default</h3>
-    <p>Arm lengths, joint radii, shoulder width, shrug pivot height. <b>★ Save current as
-       default</b> locks your tuned rig in, so Reset returns to <em>yours</em> rather than
-       the factory scale.</p></div>
-  <div class="f"><h3>Opens on your neutral pose<span class="tag t-new">new</span></h3>
-    <p>The editor and keyframe 0 start at the Neutral pose from Setup — the same pose as the
-       robot's <code>HOME</code> — instead of a flat 90.</p></div>
+  <!-- SUB-SECTION 5: SEQUENCE CHAIN -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 5: การร้อยเรียงชุดท่าทาง (Sequence Chains &amp; Speeds)</b>
+      <span class="info-badge">Sequences</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-sequence-card.png" alt="Sequence Manager Card" class="info-img">
+      <div class="callout-pin" style="top: 20%; left: 40%;" title="1. กล่องเลือกไฟล์ YAML">1</div>
+      <div class="callout-pin" style="top: 45%; left: 40%;" title="2. ตัวคูณความเร็วประจำไฟล์">2</div>
+      <div class="callout-pin" style="top: 70%; left: 40%;" title="3. ช่อง Chain ต่อไฟล์ถัดไป">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ไฟล์ท่าทาง (YAML Sequence Files)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกไฟล์จากดรอปดาวน์ <b>Open saved YAML…</b> หรือกด <b>Save</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          โหลดชุดท่าทางที่เคยออกแบบไว้กลับเข้าสู่เส้นเวลาเพื่อแก้ไข หรือส่งไฟล์ขึ้นการ์ด SD ของหุ่นยนต์
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ตัวคูณความเร็ว (Sequence Speed Multiplier)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ปรับสปีด 0.5x, 1.0x, หรือ 1.5x</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เร่งหรือหน่วงการเคลื่อนไหวทั้งชุดท่าทางให้เร็วขึ้นหรือช้าลงตามต้องการ โดยคงอัตราส่วนจังหวะเดิมไว้ครบถ้วน
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> การร้อยท่าทางอัตโนมัติ (Sequence Chain)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ใส่ชื่อไฟล์ถัดไปในช่อง <b>Chain</b> เช่น <code>wave.yaml</code></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เมื่อหุ่นเล่นท่าปัจจุบันจบ จะเริ่มเล่นท่าต่อไปทันทีโดยไม่ต้องส่งคำสั่งใหม่ ทำให้จัดโชว์ยาวๆ ได้อย่างต่อเนื่อง
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <div class="grp2">Appearance</div>
-  <div class="f"><h3>Your own STL parts</h3>
-    <p>Import STL exports per body part, each with its own rotation, offset, scale and
-       colour. Part size automatically sets the rig's lengths. Texture images can be imported
-       and assigned.</p></div>
-  <div class="f"><h3>Robot look: simple shapes or the CAD model<span class="tag t-new">new</span></h3>
-    <p>In the 3D view, open <b>Views ▾</b> and pick <b>Robot look</b>. <b>Simple shapes</b> is
-       the old robot, sized in Rig setup. <b>CAD model (URDF)</b> draws the URDF file at its own
-       real sizes — every part where the file puts it, every joint turning about the file's own
-       axis. It is not a picture laid over the old robot: dragging a hand, a video, the dummy,
-       playback and monitor all move the CAD model's own joints, so what you see is how the
-       real parts move. What is sent to the robot never changes with the look.</p>
-    <p>Put the SolidWorks export folder (the one holding <code>urdf/</code> and
-       <code>meshes/</code>) into Studio's <code>models</code> folder on this PC; every
-       <code>.urdf</code> found there is offered. Each Studio joint finds its URDF joint by
-       name. A CAD file names and zeroes its joints its own way (it is drawn in one pose), so
-       for each arm Studio <b>fits</b> each joint's sense and zero, and which joint of each pair
-       is which, until the upper arm and forearm point where your Rig setup points them over
-       many poses; if the best fit is still off it says by how many degrees. A forced sense or
-       zero, the fit settings and which sizes come from the file are all in
-       <code>web/urdf_view.json</code>, so a new model needs no code change. The technical
-       switch shows which joint went where, its sense and its fitted zero.</p>
-    <p>Going back to the simple shapes asks which sizes to use: <b>the CAD model's</b>, or
-       <b>your own</b> (the ones you had before, kept untouched while the CAD model was shown),
-       or <b>stay</b> on the CAD model. A file that cannot be read says why and the simple
-       shapes are shown. The CAD files stay on this PC only.</p>
-    <p><b>Use the CAD's sizes and shoulder spots</b> (on the CAD model, or the first choice on
-       the way back) takes the arm lengths, where each shoulder sits (left and right need not
-       be mirror images) and the shrug's pivot from the CAD. Your joints stay as you tuned
-       them to the real robot: their axes, turning senses, zero and home, so every angle
-       means what it meant before and no servo number changes. It says how far each hand
-       moved at home; <b>Put my old shapes back</b> undoes it. Either is kept on the hub, so every
-       browser that opens Studio here takes it on its next load (each keeps its own old shapes).</p>
-    <p>On the CAD model Studio estimates the drawn hand's plane from the far end of the
-       forearm mesh. This estimate may differ from the CAD hand's surface. The CAD
-       hand already shows the palm, so <b>Show the drawn hands</b> hides it; the choice is
-       kept and palm facing still works.</p>
-    <p>With home anchoring enabled (<code>fit.anchor</code>), arm joints with automatic offsets
-       use the CAD's drawn pose at the robot's saved <b>home</b>. Explicit offsets stay as set;
-       waist and shrug keep their configured mapping. The CAD may have left/right differences.
-       A command of 90 degrees is not necessarily home or the CAD's zero pose. <b>Show the
-       floor grid</b> hides the grid; on the CAD model the grid sits at the bottom of the base,
-       so the box stands on it. Only the grid moves, never the robot. Adding <code>joints</code> to
-       <code>rigFromCad</code> in <code>urdf_view.json</code> takes every joint's tilt from
-       the CAD too, and the simple shapes then move exactly like the CAD.</p></div>
-  <div class="f"><h3>Build the body from a URDF<span class="tag t-new">new</span></h3>
-    <p>A <b>STEP</b> file cannot be opened in a browser at all, and an <b>STL</b> carries no
-       origin — which is why a part dragged in lands at the middle of the robot and has to be
-       rotated, offset and scaled by hand until it looks right. A <b>URDF</b> carries exactly
-       those missing numbers: where each part sits, which way it is turned, how big it is and
-       which part hangs off which.</p>
-    <p>From SolidWorks, use the <b>sw2urdf</b> add-in (Tools ▸ Export as URDF). Import the
-       <code>meshes/*.STL</code> it writes, then pick the <code>.urdf</code> in
-       <b>Setup ▸ Build it from a URDF</b>. Studio lists every link with the body part it
-       guessed from the name, which you can correct. <b>Reading the file changes nothing</b>
-       — pressing <b>Use this URDF</b> is what places the parts, and it offers to set the arm
-       lengths from the joint origins rather than overwriting measurements you made by hand.
-       A mesh the URDF names but <code>models/</code> does not hold is reported by name.</p>
-    <p>Two settings, because no two exports agree: <b>Sizes are in</b> (URDF is metres,
-       Studio is millimetres) and <b>Up is</b> (URDF/ROS is Z-up, this editor is Y-up). If
-       the robot arrives lying on its side, change the second; if it is a thousand times too
-       big, change the first. The joint table for the nong is written out in
-       <code>docs/urdf_nong.md</code>.</p>
-    <p><b>You may not need SolidWorks for the URDF itself.</b> Every number the add-in would
-       ask for — the joint tree, the origins, the axes, the limits — is already measured in
-       the rig. <code>python tools/make_urdf.py</code> writes the whole file from it in one
-       command, and rewrites it whenever the rig changes. Export one STL per body part, name
-       them <code>torso.stl</code>, <code>head.stl</code>, <code>L_upper.stl</code>,
-       <code>L_fore.stl</code>, <code>R_upper.stl</code>, <code>R_fore.stl</code> in
-       <code>models/</code>, and that is the whole job.</p></div>
-  <div class="f"><h3>Clothes and add-ons</h3>
-    <p>Extra meshes attached to any part, for costume pieces and props.</p></div>
-
-  <div class="grp2">Getting moves onto the robot</div>
-  <div class="f"><h3>Export, upload and re-edit</h3>
-    <p>Export <code>/moves</code> YAML with an explicit <code>T</code> on every step so
-       linked boards stay in sync. Upload straight to the robot's SD card, or re-open a saved
-       YAML — local or downloaded from the robot — and keep editing.</p></div>
-  <div class="f"><h3>Many sequences on one card</h3>
-    <p>The card holds as many <code>/moves/*.yaml</code> as fit. The Robot SD card panel
-       lists them all with <b>▶ Run</b>, <b>▶ Preview</b>, <b>✎ Edit</b> and delete on each,
-       over WiFi, USB or RS485 — and the module's own website has the same list in its
-       Sequences card. Give each one its own name in the name box at the top to keep them separate.</p></div>
-  <div class="f"><h3>Play a saved sequence without editing it<span class="tag t-new">new</span></h3>
-    <p><b>▶ Play saved</b> (Sequence tab, next to “Load for editing”) loads the sequence you picked and
-       starts playing it right away, exactly as if you had loaded it and pressed Play — so
-       it follows whichever clock applies: through the hub the show keeps running even with
-       this page closed; over USB it plays from here.</p>
-    <p><b>▶ Preview</b> on a Robot SD card row does the same for a file still only on the
-       card, while <b>▶ Run</b> hands it to the robot itself.</p></div>
-  <div class="f"><h3>Chain one sequence into the next<span class="tag t-new">new</span></h3>
-    <p>The <b>Then run</b> box (Sequence tab) writes <code>next:</code> into the file, so when it finishes
-       the module starts that one by itself — a show built from short files that can each be
-       run and edited on their own. The box offers the sequences already on the card.</p>
-    <p>It applies only when a sequence actually ends, so <code>loop</code> wins over it.
-       Chains stop after 16 files, so a file pointing back at itself cannot run forever, and
-       <code>MOVE STOP</code> ends the whole chain.</p></div>
-  <div class="f"><h3>Camera module<span class="tag t-new">new</span></h3>
-    <p>A third module type: an <b>ESP32-CAM</b> running the same firmware core as the lift
-       and the humanoid — same identity, same commands, same website, same RS485 address,
-       same update over WiFi. Build it with <code>pio run -e mice_cam</code>, or flash it
-       from the hub like any other board.</p>
-    <p><b>Take a picture</b> on its Control card shows one frame; the <b>live view</b> tick
-       box refreshes it once a second. <code>SNAP &lt;name&gt;</code> saves a picture to
-       <code>/photos</code> on its SD card. <code>CAM</code> reports and changes the sensor:
-       <code>CAM SIZE vga</code>, <code>CAM QUALITY 12</code>, <code>CAM FLASH ON</code>
-       (the white LED), <code>CAM VFLIP 1</code> and <code>CAM HMIRROR 1</code> for a camera
-       mounted upside down or behind glass.</p>
-    <p><b>It can never also drive a servo.</b> The camera and the on-board SD card use every
-       usable pin on that board, which is exactly why it is a module type of its own. Its
-       pins are fixed in the firmware rather than set on the Hardware pins page — they are
-       etched onto the board, so "changing" one could only break the camera.</p>
-    <p>The <b>live view</b> is a stream (<code>/api/cam.stream</code>), not one request per
-       picture: about <b>19 frames a second</b> at 320×240, where repeated stills managed 7
-       and the original one-second timer managed 1. Only <b>one person at a time</b> can
-       watch — the board has four connections in total, and a viewer holds one for as long
-       as the picture is on screen. Untick <b>live view</b> to give it back.</p>
-    <p>The picture is HTTP (<code>/api/cam.jpg</code>), never a command reply: a JPEG is far
-       too big for the one-line channels that RS485 and USB serial are. If the camera does
-       not start, the card says so — it is almost always the ribbon cable not seated, or a
-       5V supply that cannot hold the current.</p></div>
-  <div class="f"><h3>Update a module over WiFi<span class="tag t-new">new</span></h3>
-    <p><b>It asks which firmware to send.</b> The list is whatever this PC has built,
-       with the board's current type marked and preselected — so the usual case is two
-       clicks, and the unusual one is possible: picking a <i>different</i> type turns that
-       board into another kind of module without finding a cable. When you do that the hub
-       finishes the job, because a board flashed with a different type still has the old one
-       in its own memory and would come back as <code>blank</code>: it waits for the module,
-       sends <code>SET TYPE</code>, and reboots it once more.</p>
-    <p>It all happens on the <b>Firmware</b> screen. A module on the network appears there
-       with <b>⚡ Write over WiFi</b> — no cable, no reaching behind the set. The module's
-       own row still has a <b>⚡ firmware…</b> link, because the row is where you notice a
-       board needs updating; it takes you to the one screen that does the writing.</p>
-    <p><b>A failed update cannot brick a board.</b> The chip has two firmware slots
-       (1.875 MB each) and the update goes into the one that is <i>not</i> running. If the
-       WiFi drops, the PC walks away, or the image is bad, the board simply keeps booting
-       the firmware it already had. Ask a board where it stands with <code>OTA</code> —
-       it answers <code>running=app0 size=1294617 target=app1 room=1966080
-       free=671463</code>.</p>
-    <p>It is <b>refused while the module is moving or playing a sequence</b> — writing
-       flash stalls the servo loop, and a reboot in the middle of a show is worse than an
-       update that waits. Stop it first (or add <code>force=1</code> if you mean it).</p>
-    <p>The first update still has to arrive by cable: a board running older firmware has no
-       <code>/api/ota</code> to receive it. Flash it once over USB, and every update after
-       that can be over the air.</p></div>
-  <div class="f"><h3>Flash a board from the hub<span class="tag t-new">new</span></h3>
-    <p>Open <b>Firmware</b>. It lists every module type this PC has built, and under each
-       one every board it could write it to — this PC's cables, boards on the WiFi, and
-       cables on other PCs running the same hub. Pick the firmware, pick the board,
-       confirm, and the hub writes it: no PlatformIO, no command line. Cables where
-       <i>nothing</i> answered are listed too, which is exactly when you need this.</p>
-    <p>A type that has <b>not</b> been built is still shown, with the reason and the exact
-       command that fixes it — so a missing <code>lift</code> looks like something you can
-       do, not like something broken.</p>
-    <p>The hub owns every cable and shares it between its pages, but esptool cannot share.
-       So for the length of the flash the hub <b>gives that port up completely</b>: it
-       stops playing a show on it, closes the handle, and refuses to reopen it until
-       esptool is finished. That is what all the old <code>port is busy</code> failures
-       were.</p>
-    <p>It flashes what is on this PC: <code>pio run -e mice_nong</code> (or
-       <code>mice_lift</code>) has to have been run at least once in
-       <code>code/firmware</code>. If it has not, the page says so and names the command
-       instead of offering a button that cannot work. The board keeps its stored id, name,
-       WiFi and pins — those live in its own memory, not in the firmware.</p>
-    <p>If the board does not answer, hold its <b>BOOT/IO0</b> button as the flash starts,
-       and check the cable is a data cable. The message says so too.</p></div>
-  <div class="f"><h3>A way back to the hub, from the board's own page<span class="tag t-new">new</span></h3>
-    <p>Opening a module's website used to be a one-way trip. Typed straight into a
-       phone there is no Back to press, and the hub is the only screen that shows the
-       other modules. Now <b>← Hub</b> is first in the board's head, as on every page.</p>
-    <p>It never guesses. Several PCs at a venue run this same hub and the addresses
-       move with the network, so a link to the wrong one would land you on somebody
-       else's control panel. Opened <b>through</b> the hub, the link is simply back to
-       the hub serving the page. Opened <b>directly</b>, the board offers the hub that
-       last spoke to it — every hub says who it is on each request it makes — and it
-       names that PC in the link.</p>
-    <p>If no hub has been in touch, or the last one has been quiet for five minutes,
-       there is no link. The board never invents an address, and it forgets one that
-       has stopped being true.</p></div>
-  <div class="f"><h3>The board's page admits when something failed<span class="tag t-new">new</span></h3>
-    <p>Four things on the module's own website used to fail quietly and leave the page
-       showing a state the board was not in. Each now says what happened:</p>
-    <p>&bull; Changing a password signs you back in, and if that fails it says so —
-       before, Setup opened on a dead session, with every card visible and every action
-       behind it refused.<br>
-       &bull; A board that has never had a password chosen asks for one. If the board's
-       answer cannot be read, it <b>asks anyway</b>: being prompted once too often is
-       recoverable, and a prompt that turns itself off is not.<br>
-       &bull; <b>Log out</b> tells the board, and admits it if the board did not confirm —
-       a logout that only forgets locally leaves the cookie working for whoever sits
-       down next.<br>
-       &bull; A file list that could not be read says so instead of showing an empty
-       dropdown, which already means <i>nothing on this card</i>.</p></div>
-  <div class="f"><h3>Addresses and ports are hidden until you ask<span class="tag t-new">new</span></h3>
-    <p>An IP address tells you nothing while everything is working, and it was on every
-       row in the same grey as the name. <b>Settings &rarr; Show technical details</b>
-       brings back the addresses, the cable ports and the signal strengths, and the
-       choice is remembered in that browser.</p>
-    <p>Always shown, switch or no switch: the <b>name</b>, the <b>type</b> and the
-       <b>module number</b>. The number is not trivia — it is how a module is addressed
-       on the RS485 bus, and how two identical arms on a shelf are told apart.</p>
-    <p>It is one rule in the shared stylesheet (<code>.tech</code>), so a new screen
-       marks a detail as technical and it follows the same switch — nothing to wire up
-       and nothing to remember.</p>
-    <p>The same switch is now on <b>every</b> screen: this help page, the RGB wall
-       page, the camera page, Nong Studio (typed addresses hide; Find modules still
-       works with no typing) and each module's own website, always last in the
-       page's head. One choice, remembered everywhere.</p></div>
-  <div class="f"><h3>One board is one row, however it is reached<span class="tag t-new">new</span></h3>
-    <p>A module plugged into this PC <b>and</b> on the WiFi used to appear twice, as two
-       robots. The two rows were not even equivalent: one drove it down the cable and
-       the other over the air, so which copy you happened to click decided how the arm
-       moved. Now it is one row, and it says every way the board can be reached —
-       <i>reachable on COM9 and over WiFi</i>.</p>
-    <p>The hub matches boards on the <b>chip</b>: the ESP32's own MAC, which the board
-       now reports in <code>INFO</code> and <code>/api/status</code>. It is the only
-       identifier on a board that nobody can change — the id is a byte someone sets,
-       the name is typed, the type is chosen.</p>
-    <p>That matters in the direction people do not expect. Two <i>different</i> boards
-       out of the same box share a default id, and merging on the id would show them as
-       one robot — a command meant for one arm going to the other. So without a chip
-       (older firmware) the id is used only together with the type, and a board that
-       reports a chip is never merged with one that does not.</p></div>
-  <div class="f"><h3>Open the hub on a phone: a QR, and a name<span class="tag t-new">new</span></h3>
-    <p><b>Network</b> shows a QR of this hub's address. Point a phone camera at it and
-       the phone opens the hub — no number read across a room, no
-       <code>192.168.137.1</code> typed as <code>192.168.13.71</code>. The address is
-       printed beside it for anyone working over a remote desktop.</p>
-    <p>The QR is drawn by the hub itself, with nothing installed: the encoder is part
-       of the program. It is redrawn every time you open <b>Network</b>, because a
-       laptop that moves between a venue WiFi and its own hotspot gets a new address,
-       and a QR of the old one sends the phone nowhere.</p>
-    <p>There is a <b>name</b> as well: <code>http://mice.local:8642/</code>, answered by
-       the hub over multicast DNS, which phones, Macs and Windows already speak. A name
-       does not change when the address does.</p>
-    <p><b>Both exist because either can fail.</b> Many venue networks block multicast
-       between clients, and then no name resolves — the QR still works. If another
-       program on this PC already holds the mDNS port, the page says so plainly and
-       shows only the address, rather than printing a name that answers to nothing.</p></div>
-  <div class="f"><h3>Flash from a PC that never built the firmware<span class="tag t-new">new</span></h3>
-    <p>At a venue there is usually one laptop with PlatformIO on it and several without —
-       and the board is plugged into whichever machine was nearest. So the <b>image
-       travels, not the command</b>: <b>Firmware</b> lists boards on other PCs' cables as
-       <b>⚡ Write over the cable on <i>that PC</i></b>. This PC sends the firmware there,
-       and <i>that</i> PC writes it over its own cable. esptool only ever runs on the
-       machine holding the board.</p>
-    <p>That PC has its own accounts, so the confirm asks for a login on it. It is used for
-       the one request and <b>not stored</b>: no hub ever holds another hub's password.</p>
-    <p>Progress comes back from the machine doing the work, through this hub, because a
-       browser cannot ask another hub directly. When the write finishes, a board that is
-       becoming a <i>different</i> type is named along with the one command that finishes
-       the job there — this PC has no route to a board on someone else's cable.</p></div>
-  <div class="f"><h3>Two hubs, one rig<span class="tag t-new">new</span></h3>
-    <p>Two PCs on the same WiFi can <b>link</b>: one shows a short <b>code</b>, you type it
-       into the other, and from then on each hub lists the other's modules in its own
-       <b>Modules</b> tab. Open one of them and it works exactly like a board on this PC's
-       own cable — drive it, run sequences, watch it. The link is by address, so it
-       survives a module moving between the two PCs.</p></div>
-  <div class="f"><h3>Report a problem<span class="tag t-new">new</span></h3>
-    <p>Every hub page carries a <b>Report</b> button. It saves what went wrong — which page,
-       what was happening — into a <code>reports</code> folder next to the program, and the
-       hub keeps a <b>complaints screen</b> where each report can be marked fixed or
-       not-a-problem. A complaint written in another language is translated into English
-       automatically about a minute later, so the whole list reads in one language.
-       Nothing is sent to the internet: reports stay on this PC.</p></div>
-  <div class="f"><h3>The hub keeps the show running<span class="tag t-new">new</span></h3>
-    <p>Press <b>Play</b> and the <b>hub</b> — the Python program, not the page — sends the
-       moves. Switch tabs, minimise the window, open something else: the rehearsal keeps
-       going, because nothing throttles a native process. The page is only the picture.</p>
-    <p>This is the missing middle clock. A browser cannot be fixed for it: a hidden tab has
-       its animation stopped and its timers slowed to about once a minute, by policy, in
-       every browser. Which clock you want depends on the job:</p>
-    <div class="scroll"><table><thead><tr><th>Clock</th><th class="wrap2">Survives</th><th class="wrap2">Use it for</th></tr></thead><tbody>
-      <tr><td>the module (<code>MOVE</code>, ▶ Run on robot)</td><td>the PC switched off</td><td>the show</td></tr>
-      <tr><td><b>the hub</b> (Play, connected through the hub)</td><td>the browser closed</td><td>editing and rehearsal</td></tr>
-      <tr><td>the browser</td><td>nothing</td><td>preview only</td></tr>
-    </tbody></table></div>
-    <p>It also works <b>before</b> anything is uploaded, which the module clock cannot —
-       you are still editing. Come back to the page and the play head jumps to where the
-       robot actually is, instead of sitting behind it.</p>
-    <p>USB direct (Web Serial) is the one exception: the browser holds that port itself, so
-       the hub cannot reach the robot and the old behaviour stands — the show is handed to
-       the module when you leave the page.</p></div>
-  <div class="f"><h3>Only one thing drives the robot<span class="tag t-new">new</span></h3>
-    <p>The module plays a sequence on its own clock, and Nong Studio can send poses down
-       the same cable at the same time. Both drove the same servos: the moves overlapped,
-       the arm fought itself, and <b>Pause</b> in Studio stopped only the browser while the
-       module carried on.</p>
-    <p>Now any command that <b>moves</b> the robot — <code>POSE</code>, <code>JOINT</code>,
-       <code>HOME</code>, <code>STOP</code>, <code>RELAX</code>, <code>ATTACH</code>
-       (and <code>UP</code>/<code>DOWN</code>/<code>GOTO</code> on a lift) — stops the
-       sequence the module was playing, and the reply says
-       <code>(sequence stopped)</code> so nothing loses track. Whoever moved the robot last
-       owns it.</p>
-    <p>Settings do <b>not</b> interrupt a show: <code>SPEED</code>, <code>LIMIT</code>,
-       <code>SERVO</code>, <code>RANGE</code> and every question keep it running, so you can
-       tune a sequence while it plays. When Studio connects to a module that is already
-       playing, it now says so instead of leaving you to guess.</p></div>
-  <div class="f"><h3>Projects</h3>
-    <p>One name box and one <b>💾 Save</b>, both in Studio's head. Save writes the moves twice
-       under that name: a project (rig, meshes and timeline together) to edit later, and the
-       YAML the robot plays.</p></div>
-
-  <div class="grp2">Connection</div>
-  <div class="f"><h3>WiFi and cable at the same time</h3>
-    <p>Pick a discovered module, or a COM port shared through the hub with an optional RS485
-       bus id. Both links can be open at once; commands take the cable when it is there.</p></div>
-  <div class="f"><h3>Open the module's config from the editor<span class="tag t-new">new</span></h3>
-    <p><b>⚙ Open module config</b> in the Robot link card opens the connected board's own
-       website in a new tab — hardware pins, WiFi, users, servo type, SD files. It follows
-       the same link your commands take, carrying the RS485 bus id when there is one, so it
-       always configures the board you are actually posing.</p>
-    <p>Over shared USB the module site and the editor stay open together on the one cable.
-       In direct Web Serial mode the browser owns the port exclusively, so the button says
-       to switch to shared USB instead.</p></div>
-  <div class="f"><h3>Live sending that keeps up and stays in order<span class="tag t-new">fixed</span></h3>
-    <p>One command in flight at a time: playback segments queue in order, while a drag keeps
-       only the <em>newest</em> pose. So a fast drag ends where you released it, and it paces
-       itself to the link instead of a fixed interval.</p></div>
-  <div class="f"><h3>Built-in self-tests</h3>
-    <p><code>?selftest=</code> <code>ik</code> · <code>gimbal</code> · <code>elbow</code> ·
-       <code>view</code> · <code>servo</code> · <code>migrate</code> — each reports its
-       verdict through the page title.</p></div>
-  <div class="f"><h3>Every change is a saved snapshot</h3>
-    <p><code>save_patch.py</code> preserves the whole web app per change into
-       <code>patches/NNNN_&lt;slug&gt;/</code> — append-only, with <code>--list</code> and
-       <code>--restore</code> (which backs up first).</p></div>
+  <!-- SUB-SECTION 6: SHOWS & MUSIC -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 6: การจัดโชว์และซิงก์ดนตรี (Shows &amp; Music Synchronization)</b>
+      <span class="info-badge">Shows &amp; Music</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/studio-shows-card.png" alt="Shows &amp; Music Card" class="info-img">
+      <div class="callout-pin" style="top: 25%; left: 40%;" title="1. เลือกไฟล์เพลง MP3 จากการ์ด SD">1</div>
+      <div class="callout-pin" style="top: 50%; left: 40%;" title="2. กำหนดจุดหยุดพัก Pause">2</div>
+      <div class="callout-pin" style="top: 75%; left: 40%;" title="3. ปุ่ม Save to robot สำหรับรันเดี่ยว">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ผูกเพลงประกอบ (Show Music Sync)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกไฟล์เพลงจาก <code>/music/song.mp3</code> ในการ์ด SD</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          เสียงเพลงและท่าทางของหุ่นยนต์จะเริ่มเล่นพร้อมกันอย่างตรงจังหวะ และระบบจะปิดเสียงอัตโนมัติเมื่อกด Stop
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> จุดพักหยุดรอ (Pause Intervals)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กำหนดเวลาหยุดพักระหว่างท่า เช่น <code>pause: 2.0s</code></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หุ่นยนต์จะหยุดค้างท่าทางสวยงามตามเวลาที่กำหนด ก่อนจะเริ่มเล่นท่าถัดไป
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ส่งโชว์เข้าบอร์ด (Save to robot)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>💾 Save to robot</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          โชว์จะถูกบันทึกลงในการ์ด SD ของตัวหุ่น ทำให้หุ่นยนต์สามารถเปิดเครื่องและแสดงโชว์ได้ด้วยตนเองโดยไม่ต้องต่อคอมพิวเตอร์
+        </div>
+      </div>
+    </div>
+  </div>
 </section>

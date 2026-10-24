@@ -2058,6 +2058,8 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
         trial = preview_page(path)
         if trial is not None:
             return self.send_bytes(trial, MIME[".html"])
+        if path in ("/tv", "/tv/", "/monitor", "/monitor/"):
+            return self.send_redirect("/app/tv/")
         if path in ("/help", "/help.html"):
             # Every feature of the whole system, offline. Served from the PC so
             # it works with no internet and no account — see the "docs" QC
@@ -2791,6 +2793,43 @@ def open_target(argv):
 
 
 def main():
+    if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
+        print("Mice Control Hub")
+        print("Usage: python main.py [OPTIONS] or MiceHub.exe [OPTIONS]")
+        print("")
+        print("Options:")
+        print("  --open <app_id>    Open a specific app directly (e.g. --open voice)")
+        print("  --kill             Terminate running MiceHub process(es)")
+        print("  -h, --help         Show this help message")
+        print("")
+        print("To stop running hub instances:")
+        print("  taskkill /F /IM MiceHub.exe   (Windows)")
+        print("  python main.py --kill")
+        print("")
+        print("Rebuild command:")
+        print("  python -m PyInstaller --clean MiceHub.spec")
+        print("  (Running instances will be terminated automatically during build)")
+        return
+    if "--kill" in sys.argv[1:]:
+        if os.name == "nt":
+            pids_to_skip = {os.getpid()}
+            try:
+                pids_to_skip.add(os.getppid())
+            except Exception:
+                pass
+            args = ["taskkill", "/F", "/T"]
+            for p in pids_to_skip:
+                args.extend(["/FI", f"PID ne {p}"])
+            args.extend(["/IM", "MiceHub.exe"])
+            r = subprocess.run(args, capture_output=True, text=True, check=False, creationflags=NO_WINDOW)
+            if r.returncode == 0 and "SUCCESS" in (r.stdout or ""):
+                print("Terminated running MiceHub.exe process(es).")
+            else:
+                print("No other running MiceHub.exe found.")
+                print("Command to kill manually: taskkill /F /IM MiceHub.exe")
+        else:
+            print("--kill is only needed on Windows (use kill/pkill on Unix).")
+        return
     for d in (PROJECTS, SEQUENCES, MODELS):
         d.mkdir(parents=True, exist_ok=True)
     path, show = open_target(sys.argv[1:])

@@ -1,0 +1,7 @@
+{
+  "name": "TV Remote",
+  "blurb": "Lightweight remote controller & monitor for Smart TV and mobile — zero 3D, fast & smooth",
+  "icon": "📺",
+  "order": 12,
+  "help": "tv"
+}

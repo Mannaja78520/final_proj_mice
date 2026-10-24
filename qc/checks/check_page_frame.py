@@ -127,8 +127,11 @@ def run(t):
         "folder": str(tmp)}}), encoding="utf-8")
     old_env = os.environ.get("MICE_PARTNERS")
     os.environ["MICE_PARTNERS"] = str(cfg)
+    old_tmp = None
     try:
         base, _main = F.start_hub()
+        old_tmp = getattr(_main.partner_launch, "TMP", None)
+        _main.partner_launch.TMP = tmp
         F.logout_qc()
         code, body = F.get(base + "/api/partners/health?id=photobooth")
         got = json.loads(body or "{}")
@@ -176,6 +179,8 @@ window.addEventListener("load", async function(){
         t.ok(json.loads(body or "{}").get("up") is False,
              "and down once it stops", body[:200])
     finally:
+        if old_tmp is not None:
+            _main.partner_launch.TMP = old_tmp
         srv.shutdown()
         srv.server_close()
         if old_env is None:
