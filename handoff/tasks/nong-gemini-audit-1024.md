@@ -1,7 +1,7 @@
 # Nong HOME/CAD and Gemini evidence audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-24T15:28:54.605579+07:00
+Updated: 2026-10-24T15:42:02.073877+07:00
 Plan: A48-13 (robot)
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
@@ -11,7 +11,7 @@ Last commit: 33f3892 initial checkpoint; see git log for latest
 Explain current nong joint numbers and arms-at-side HOME after CAD; audit every Gemini completion claim and test all implemented nong functions.
 
 ## Doing now
-Human observes actual HOME mismatch, specifically right elbow rotated slightly backwards AND outwards away from body/not centered. Broad motion tests paused; Lab instructed safe STOP, targeted right-elbow diagnosis and no global/persistent calibration writes. Continue read-only trace HOME/90/nativeCAD0 and audit prior evidence. Lab chat01a167a0 owns actual hardware tests; integration01a1679e independently audits Gemini source and gate evidence. This chat holds no hardware, QC, service, camera or source lease.
+User explicitly deferred right elbow trim/centering diagnosis24Oct: they will adjust trim themselves; skip that diagnosis and continue other work. Lab told to cancel larger probes, return only R_EL_P90 if needed and STOP, no persistent writes. Continue all other feasible nong checks and Gemini source/evidence safety remediation. Gemini live UI actor coordinated to freeze/release15:38; preserve its queued feature work.
 
 ## Facts found
 - nong/main_python_set_nong/rig_default.json: zero=[0,0,0,0,0,0,0,0,90,90]; home/neutral=[90,140,90,90,90,40,90,90,90,90.5]. DEFAULT_RIG in rig_data.js is a fallback, not authoritative saved calibration.
@@ -40,3 +40,10 @@ Human observes actual HOME mismatch, specifically right elbow rotated slightly b
 
 ## Blocked
 Nothing for read-only audit. Physical testing depends on actual device readiness; Lab owns that assessment. Do not silently change HOME/SETZERO/neutral or send all90.
+
+## Latest steering and coordination
+- USER: right elbow back/outward; firstprobe missed, repeat1.5deg not visually distinguishable. Do not infer backlash/latency or calibration correction from that evidence.
+- USER then explicitly canceled elbow trim diagnosis and will set trim themselves. No persistent adjustment authorized/needed from us now; do not keep asking visual questions or repeat probes.
+- Gemini actor was still changing/building/flashing root while Lab owned hardware. CLI wrong-profile stop failed (trajectory not found); agentapi requires absent LS address. Computer Use reached actual Antigravity fe045 session, interrupted active task, delivered pause via Send Now. Gemini BRIDGE15:38 explicitly releases physical/code/build/flash; user queued gacha work preserved. Matched process inventory no related loop children.
+- Lab restored91.5->90/STOP and both known gacha STOP15:34, all3 reported idle then. Check any later probe is restored on cancellation.
+- Integration audit now must use latest frozen source00BDA4... rather than earlier original/unbounded or3500ms-false-success snapshots. Root remains metadata/report only, no test driver/hardware/source lease.
