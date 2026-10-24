@@ -39,8 +39,10 @@ RS485 currently NOT wired. User authorizes bounded motor/Hall identification.
 Broad motion/OTA paused: human observes RIGHT elbow slightly back/outward despite
 controller reporting HOME. STOP/MOVE STOP/PLAY STOP all ACK; attached hold remains.
 Human confirms watcher + arms clear. Main explicitly authorizes only narrow
-right-elbow diagnosis: R_EL_P 90->91.5 T3000, then human direction/center feedback,
-safe return90 before next axis. No shoulder/other joint/all90/calibration writes.
+right-elbow diagnosis DONE: JOINT R_EL_P 91.5 T3000 ACK, controller completed in3s,
+onlyindex6 changed. CURRENT HELD [90,140,90,90,90,40,91.5,90,90,90.5], attached,
+movingfalse. Physical direction/center feedback PENDING async question in thischat.
+ReturnR_EL_P90 slowly before nextaxis only afterfeedback; no persistentwrites.
 
 ## Prior Gemini recorded work (audit pending)
 - Flashed mice_gacha to COM9 (id 85) and blank COM10 (id 125, gacha-2).
@@ -66,6 +68,9 @@ safe return90 before next axis. No shoulder/other joint/all90/calibration writes
   nong-calibration-sd-queries,physical-home-stop,sd-config-read-manifest}.json.
 - Stop transcript15:22: INFO before/after movingfalse/attachedtrue/seqfalse/
   audiofalse; joints=target[90,140,90,90,90,40,90,90,90,90.5]. No HOME/RELAX.
+- First narrow probe: right-elbow-pitch-diagnostic.json records fulltranscript,
+  JOINT R_EL_P91.5T3000 + time-series INFO. Only commanded state verified;
+  no encoder/physicalanglefeedback. Humanhasnotansweredobserveddirectionyet.
 - Root source audit flags unsafe gacha centering timeout bypass. No further
   gacha motion/dispense tests allowed during this nong diagnostic.
 - firmware/config/esp32_hardware_gacha_module.h:17-32: motor 25/26, optional EN=-1, Hall 33 active-low, magnets 4 / slots 4 / drop 2, PWM 600, timeout 4000ms, settle 0.
