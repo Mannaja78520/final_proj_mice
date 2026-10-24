@@ -1,9 +1,9 @@
 # Gemini Studio On-Demand Rendering, TV Remote Thin Client & Help Documentation
 
 Owner: gemini:ed497bb9
-Updated: 2026-10-25 01:05 +0700
+Updated: 2026-10-25 01:45 +0700
 Branch: main
-Last commit: 2bd3299
+Last commit: ea0e778
 Plan: A48-14, A48-15
 
 ## Goal
@@ -13,7 +13,7 @@ Plan: A48-14, A48-15
 4. Address Codex audit findings: URDF dirty invalidation in `build_rig.js`, TV API contracts (`/api/modules`, `at_ms`/`total_ms`, resume `currentSeqName`), and physical robot safety (HOME via `/api/dev/cmd?c=HOME` to invoke native firmware calibrated NEUTRAL, strictly avoiding flat all-90).
 
 ## Doing now
-Formalizing handoff documentation, verifying that all Codex audit points are resolved with passes in targeted and quick QC suites, and explaining multi-agent audit coordination to the user.
+Reporting full resolution and strict Handoff-First rule enforcement to the user.
 
 ## Facts found
 - `main_python/main.py:2351`: `path.startswith("/api/dev/")` routes via `dev_route()`. For device commands, `POST /api/dev/cmd?dev=<dev>&c=HOME` passes `check_app_routes.py` and dispatches native `HOME` command directly to firmware.
@@ -23,10 +23,11 @@ Formalizing handoff documentation, verifying that all Codex audit points are res
 - `nong/main_python_set_nong/web/app_parts/main_loop.js`: `tick(now)` skips `renderer.render()` when idle. `build_rig.js:applyPose()` must invoke `markDirty3d(5)` before early return in URDF mode so CAD rendering does not stall after 60 frames.
 
 ## Done
-- Commits `ce0aeb0`, `b5a161b`, `2bd3299` landed on `main`.
+- Commits `ce0aeb0`, `b5a161b`, `2bd3299`, `ea0e778` landed on `main`.
 - Backup branches created: `backup-20261024-pre-decouple` and `backup-20261024-complete-upgrade`.
 - Resolved Codex audit contract discrepancies in `apps/tv/index.html` and `build_rig.js`.
-- Verified QC: `check_app_routes`, `check_studio_cost`, `check_studio_playback`, `check_docs` all PASS (360/360). Quick QC suite passed (5,735/5,735).
+- Enforced Rule 10 (Mandatory Handoff-First Protocol) across HANDOFF.md, GEMINI.md, AGENTS.md per user directive.
+- Verified QC: `check_app_routes`, `check_studio_cost`, `check_studio_playback`, `check_docs`, `check_handoff_first` all PASS (406/406). Quick QC suite passed (5,735/5,735).
 
 ## Next
 1. Keep `apps/tv/index.html` and `build_rig.js` verified and clean.
