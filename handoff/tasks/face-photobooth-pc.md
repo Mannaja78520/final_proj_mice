@@ -1,9 +1,9 @@
 # PC Face app, watcher and Photobooth integration
 
 Owner: codex:10231359-7280
-Updated: 2026-10-23T19:42:07+07:00
+Updated: 2026-10-24T15:29:03+07:00
 Branch: codex/face-pc-1023
-Last commit: a210a02 (authorized startup checkpoint; see git log for final)
+Last commit: 7358450 (startup result plus frame request; see git log for final)
 Plan: A45-30; remaining real run A45-14/A45-12
 
 ## Goal
@@ -11,20 +11,19 @@ Finish all PC-only Face app/watcher/Photobooth work without editing friend's sou
 Report to integration codex:10231901-f6cc and main coordinator; Lab alone owns hardware.
 
 ## Doing now
-24Oct Lab requests ONE actual existing PC camera frame for stopped robot elbow check.
-Existing FHD Camera ffmpegPID32872 parentHub10448 already active; watcher fresh368978frames.
-Bounded firstJPEG from existing /api/dev/cam.stream?dev=pc:, then close; no new capture,
-orientation/TV/booth takeover/inference/hardware command. Private image only, never Git.
-23Oct PC startup complete; prior startup lease RELEASED, service left normally running.
+24Oct one actual existing PC frame delivered to Lab; no robot/elbow visible.
+Camera-read HTTP closed and lease RELEASED; original Hub/watcher capture unchanged.
+23Oct PC startup complete and startup lease RELEASED; booth left normally running.
+No runtime/camera/COM/QC/hardware resources held; finish own metadata checkpoint only.
 
 ## Facts found
 - HANDOFF.md: friend sources outside code are read-only/start-only; no edits allowed.
 - apps/faces/service.py belongs to app-faces; its system header has been read.
-- Live baseline: friend 8000 PID11376, web5173 PID49656, watcher8769 PID38676,
+- Initial23Oct baseline: friend8000 PID11376, web5173 PID49656, watcher8769 PID38676,
   hub8642 PID33336 and Voice8767 PID29020 are listening.
 - Source branch is HEAD-only for task metadata; dirty main runtime is not assumed equal.
 
-- C:/Photobooth/Main/app container.py:1068 instantiates AllowAllEligibility;
+- Inspected23Oct C:/Photobooth/Main/app container.py:1068 uses AllowAllEligibility;
   modules/eligibility/domain.py:3 says Reconize integration is a later phase.
   The E:/final_proj/mice/Photobooth copy has the same gap; its 858f0b6 is remote HEAD.
 - Installed Main 41561e3; scripts/run-main.ps1 refuses stale PID records and never
@@ -52,7 +51,7 @@ orientation/TV/booth takeover/inference/hardware command. Private image only, ne
   Deployment now belongs to 01a1679e-50a4-7e71-9cfb-64b6afa635c1 after original
   owner explicit RELEASE19:00. Final exact gate7910/0+925stable accepted, PR77 merged
   a884558, specbuild0 and new executable installed; oldHub stopped19:27 idle.
-  Lab rawUSB identity/backup window RELEASE19:34; integration starts newHub next.
+  Lab rawUSB identity/backup window RELEASE19:34; newHub accepted built19:25/stale:false.
 - Before/after startup PIDs unchanged: Hub10448, friend11376, web49656, watcher38676,
   Voice2932. Friend model_ready and watcher watching/error empty both HTTP200.
 - BoothStartPage.tsx:10/35 opens frames before capture; camera.open occurs only
@@ -76,9 +75,15 @@ orientation/TV/booth takeover/inference/hardware command. Private image only, ne
 - Evidence scratch/face-photobooth-pc-1023/{before-startup,startup-smoke}.json;
   all existing listener PIDs preserved. This proves PC service/HTTP only, not visible UI,
   real camera-name latency, robot recognition or simultaneous Photobooth names.
+- 24Oct15:27:39 one actual PC firstJPEG640x360/23989bytes/516ms; private
+  scratch/face-photobooth-pc-1023/elbow-frame-1024.jpg plus .json, verified gitignored.
+  Existing ffmpeg32872/Hub10448 unchanged, HTTP closed; no new capture/inference.
+  View shows desks/windows/people, no robot/elbow; cannot judge right elbow angle.
+  Lab received path/result; bounded read lease explicitly RELEASED in BRIDGE.
 
 ## Next
 1. Leave successful booth service running; no Hub restart during Lab flash/motion/video.
+   Existing camera points elsewhere; Lab owner handles any human camera/robot view request.
 2. Friend must add configurable Reconize name adapter/display and shared-stream input.
    Never edit friend's code here. After friend ships it, agree camera/person window with
    sole Lab owner, pair actual browser with official run-main -PairOnly if needed, then
