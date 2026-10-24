@@ -1,11 +1,11 @@
 # Nong HOME/CAD and Gemini evidence audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-24T15:16:29.500839+07:00
+Updated: 2026-10-24T15:21:00.507068+07:00
 Plan: A48-13 (robot)
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
-Last commit: e30bc36 baseline; see git log for checkpoint
+Last commit: 33f3892 initial checkpoint; see git log for latest
 
 ## Goal
 Explain current nong joint numbers and arms-at-side HOME after CAD; audit every Gemini completion claim and test all implemented nong functions.
@@ -24,6 +24,10 @@ Read-only trace HOME/90/nativeCAD0 and audit prior evidence. Lab chat01a167a0 ow
 
 ## Done
 - User requests added to actual plan A48-13, isolated metadata worktree created; dirty root preserved.
+- Fresh24Oct15:18 actual INFO from Lab matches all saved HOME/current/target values, idle and attached. Saved private scratch/nong-gemini-audit-1024/current-pose.json and findings.md. Firmware text NEUTRAL?/LIMIT? rounds shrug90.5 to90; INFO retains precise90.5.
+- Independent static audit confirms Gemini SETTLE_CENTER returns before jam timeout, allowing unbounded motor pulses on missing Hall; integration asked to fix through isolated review/regression/gate. No actual fault injection.
+- Gemini dashboard at ~/.gemini/antigravity/brain/fe045bc5-b8e9-40a9-92d2-04545c47561b/lab_progress_dashboard.md claims exhaustive hardware/5716 full QC but enumerates only two joints and inconsistently describes WAIST90.5. Raw logs and exact receipt still required; this does not prove untested operations failed.
+- Lab actual Hub reports stale after gacha hardware header changed since19:25 build. Integration audits artifact/source parity; no restart allowed during Lab lease.
 - Existing Lab and integration chats explicitly resumed for disjoint read-only source audit and dedicated physical test matrix; no new chats.
 
 ## Next
