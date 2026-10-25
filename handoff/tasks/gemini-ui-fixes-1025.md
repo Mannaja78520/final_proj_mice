@@ -11,7 +11,7 @@ Plan: A48-13; related Gemini A48-17
 User: independently fix discovered issues and search all latest Gemini work for further problems. Preserve user data/calibration; no realhardware while user-notready.
 
 ## Doing now
-Final immutable full5a6231d passed8335/0 in570.2s, no crowd retry.983source hashes stable fp17cd6b3964cc9b1732ffa1e4b38c01b3e23c3b3490ad5278797b098843ef4374;20privateCAD hashes unchanged. Independent actualdelta reviewed;13iterative reversions caught/restored. Rebuild EXE in isolated scratch via spec and inspect archive without executing it; then metadata closure/PR81 merge/scoped rootintegration. Preserve all dirtyroot bytes; hardware/userdata/runtime unchanged.
+Final immutable full5a6231d passed8335/0 in570.2s, one crowd retry check_gestures passed alone2/2.983source hashes stable fp17cd6b3964cc9b1732ffa1e4b38c01b3e23c3b3490ad5278797b098843ef4374;20privateCAD hashes unchanged. Independent actualdelta reviewed;13iterative reversions caught/restored. Rebuild EXE in isolated scratch via spec and inspect archive without executing it; then metadata closure/PR81 merge/scoped rootintegration. Preserve all dirtyroot bytes; hardware/userdata/runtime unchanged.
 
 ## File status
 Baseline: ffff102; unrelated rootdirtywork not owned. Planned exactpaths below; remove unchanged rows or label reviewed-only at final reconciliation.
@@ -54,9 +54,9 @@ Baseline: ffff102; unrelated rootdirtywork not owned. Planned exactpaths below; 
 | qc/checks/check_systems.py | Full-gate correction or tool grouping | implemented | full8335/0@5a6231d; guard reversion caught/restored | this checkpoint |
 | docs/systems.json | Full-gate correction or tool grouping | implemented | full8335/0@5a6231d; guard reversion caught/restored | this checkpoint |
 
-| scratch/gemini-ui-fixes-1025/full-gate-r2/full-result.json | Final immutable gate/source/CAD guard | done, private | full8335/0; no retry | uncommitted, ignored |
+| scratch/gemini-ui-fixes-1025/full-gate-r2/full-result.json | Final immutable gate/source/CAD guard | done, private | full8335/0; check_gestures isolated2/2 | uncommitted, ignored |
 
-| scratch/gemini-ui-fixes-1025/full-gate-r2/receipt.json | Actual full8335/0 receipt | done, private | full8335/0; no retry | uncommitted, ignored |
+| scratch/gemini-ui-fixes-1025/full-gate-r2/receipt.json | Actual full8335/0 receipt | done, private | full8335/0; check_gestures isolated2/2 | uncommitted, ignored |
 
 | scratch/gemini-ui-fixes-1025/package_checked.py | Spec rebuild/archive proof driver; never start EXE | done, private | not run | uncommitted, ignored |
 
