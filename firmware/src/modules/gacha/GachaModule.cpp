@@ -353,6 +353,12 @@ void GachaModule::loop() {
     if (now - lastPassMs_ > (uint32_t)timeoutMs_) finish("jam");
 }
 
+void GachaModule::invalidateReference(bool resetHall) {
+    pos_ = 0;
+    posKnown_ = false;
+    if (resetHall) hall_ = gachamath::HallCounter();
+}
+
 void GachaModule::resetDefaults() {
     magnets_ = GACHA_MAGNETS; slots_ = GACHA_SLOTS; drop_ = GACHA_DROP_SLOTS;
     intakeDwellMs_ = GACHA_INTAKE_DWELL_MS;
@@ -363,6 +369,7 @@ void GachaModule::resetDefaults() {
     centerSpeed_ = GACHA_CENTER_SPEED; pauseMs_ = GACHA_PAUSE_MS;
     advanceMs_ = GACHA_CENTER_ADVANCE_MS;
     fallbackSlotMs_ = GACHA_FALLBACK_SLOT_MS; activeLow_ = GACHA_HALL_ACTIVE_LOW;
+    invalidateReference(true);
 }
 
 bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
@@ -613,7 +620,11 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
                 reply = "ERR magnets must be a multiple of pockets";
                 return true;
             }
+            const bool referenceChanged = old != v &&
+                (k == "magnets" || k == "slots" || k == "dir" || k == "active_low");
+            const bool polarityChanged = activeLow_ != (low != 0);
             activeLow_ = low != 0;
+            if (referenceChanged) invalidateReference(polarityChanged);
             saveCfg();
             reply = "OK " + k + "=" + String(v);
             return true;

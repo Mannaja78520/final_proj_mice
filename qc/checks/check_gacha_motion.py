@@ -31,7 +31,7 @@ def run(t):
     cpp = (root / "firmware/src/modules/gacha/GachaModule.cpp").read_text(encoding="utf-8")
     methods = "\n\n".join(_block(cpp, "void GachaModule::" + name + "(", whole=True)
                             for name in ("startTurn", "startNudge", "startCenter", "startCalibrate", "startSpan",
-                                         "finish", "resetDefaults", "loop"))
+                                         "finish", "invalidateReference", "resetDefaults", "loop"))
     for name, marker, args in (
             ("nudge", 'if (cmd == "GNUDGE")', "String argv[], int argc, String& reply"),
             ("calibrate", 'if (cmd == "GCALIB")', "String& reply"),
@@ -40,10 +40,11 @@ def run(t):
             ("home", 'if (cmd == "GHOME")', "String& reply"),
             ("drain", 'if (cmd == "GDRAIN")', "String argv[], int argc, String& reply"),
             ("stop", 'if (cmd == "STOP")', "String& reply"),
-            ("clear", 'if (argc == 2 && argv[1].equalsIgnoreCase("CLEAR"))', "String& reply")):
+            ("config", 'if (cmd == "GCFG")', "String argv[], int argc, String& reply")):
         methods += "\nbool GachaModule::%s(%s) {\n%s\n}\n" % (name, args, _block(cpp, marker))
     template = (root / "qc/data/gacha_motion.cpp").read_text(encoding="utf-8")
-    code = template.replace("/*__PRODUCTION_METHODS__*/", methods)
+    code = template.replace("/*__PRODUCTION_METHODS__*/", methods).replace(
+        "/*__CONFIG_REFERENCE_CHECKS__*/", (root / "qc/data/gacha_config.cpp").read_text(encoding="utf-8"))
     cxx = shutil.which("g++") or shutil.which("clang++")
     if not t.ok(bool(cxx), "host C++ compiler is available", "the motion regression must run, not silently skip"):
         return

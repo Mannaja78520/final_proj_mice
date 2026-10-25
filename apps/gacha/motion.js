@@ -13,7 +13,7 @@ class GachaMotion {
     await this.refresh();
   }
 
-  error(a) { return a.says || (a.data && (a.data.reply || a.data.error)) || "The machine did not answer"; }
+  error(a) { return (a.data && (a.data.reply || a.data.error)) || a.says || "The machine did not answer"; }
 
   async run(i, cmd, label, {test = false} = {}) {
     const m = this.machine(i);

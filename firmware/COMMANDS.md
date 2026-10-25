@@ -757,7 +757,7 @@ Wiring defaults (change with `PIN`, reboot): motor `motor_a` 25, `motor_b` 26,
 | `GSPIN <n> [MAG]` | `OK turning 2 magnet(s)` | test turn: n pockets (n magnets with `MAG`), negative = backwards; not a prize, stock untouched |
 | `GNUDGE <pwm> <ms>` | `OK nudging` | idle-only manual movement: nonzero signed PWM within motor range, duration 1 to `GACHA_NUDGE_MAX_MS` (default 1000 ms). Asynchronous; poll `G?` and `STOP` at any time. No stock/dispense count or pocket-position claim |
 | `GCALIB` | `OK calibrating` | idle-only, asynchronous Hall-band scan, bounded to 5 seconds. Estimates `advance` from motor-on time across the band, reverses half that time and verifies Hall at rest; saves only on success. It does not measure capsule mass or geometric centre |
-| `GTEST [<pockets>]` | `OK testing` | default configured slots; finite 1–100 magnet-pass budget. Each pocket runs a separate settle/verification cycle. Poll `test_done` / `test_total`, `testing` and `motion_result`; no prizes counted |
+| `GTEST [<pockets>]` | `OK testing` | default one pocket; finite 1–100 magnet-pass budget. Each pocket runs a separate settle/verification cycle. Poll `test_done` / `test_total`, `testing` and `motion_result`; no prizes counted |
 | `GDRAIN [<max>]` | `OK drain started` | idle/open-only sequence of counted dispenses, finite maximum 1–999. Without a maximum requires known positive stock; uncounted stock requires an explicit maximum. Stops at empty, limit, closure, STOP or fault |
 | `GHOME` | `OK finding the next magnet` | find and verify the next magnet at rest; only successful Hall verification establishes `pos` = 0 and `pos_known` = true |
 | `STOP` | `OK stopped` | motor off now (safety: never needs a login) |
@@ -787,6 +787,10 @@ is disabled by default, reports `timed` instead of `done`, and clears `pos_known
 The UI waits for the final `motion_result`; an accepted command or an active
 Hall input alone is not a successful test. `phase` and `phase_ms_left` report
 progress; `test_done` / `test_total` count verified pockets in a self-test.
+Changing `magnets`, `slots`, `dir` or `active_low` clears the logical pocket
+reference (`pos_known` false, `pos` 0); `GCFG CLEAR` also clears it. Polarity
+changes and CLEAR discard the previous Hall state and prime from fresh input.
+Rejected settings preserve the existing reference. Use GHOME to establish it again.
 
 Other apps (simple API): over WiFi `GET /api/cmd?c=G%3F` needs no login;
 `GDISPENSE` needs a login session (`POST /api/login`), or go through the hub's

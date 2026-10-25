@@ -1,17 +1,17 @@
 # Studio/TV correctness + reconciled Help — frozen for review
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T09:11:23+07:00
+Updated: 2026-10-25T15:54:29+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
-Last commit: this checkpoint; functional source9e46ad0, prior metadata cf23113
+Last commit: this checkpoint; final3 review corrections after frozen dc5a953
 Plan: A48-14 (robot); combined with A47-20; imported A48-15 Help8064292 owned597a
 
 ## Goal
 Keep idle rendering savings but redraw all actual mutations; target a valid selected Nong for native saved HOME/telemetry and truthful show restart; preserve Help owner menu/diagram fixes.
 
 ## Doing now
-Human/main resumed review. After explicit Lab09:06 release, claim software-only final review fixes: invalidate logical pocket reference on accepted layout/reference changes/CLEAR; refresh Hall on polarity change, preserve rejected-config state; actual whole-GCFG branch regression. Correct GTEST documented default1 with omitted-arg production assertion, and prefer actual board ERRbusy in GachaMotion.error with real Hub/fake browser refusal. Add focused fixture; then deliberate failures/restored green, affected builds and exact new review before fullgate. No hardware/runtime/userdata writes.
+All3 final review corrections implemented. New actual whole-GCFG/omitted-GTEST/native+Hub/fakebusy+syntax223/0 (native195,UI24,parse4); old uncorrected production209/10 proved the symptoms. Checkpoint before deliberate reference/CLEAR/polarity/rejection/default/UIerror reversions, restoregreen, actual affected firmware builds and exact correctedSHA independent inspection. Remainder frozen; no fullgate until main final conclusion, no hardware/runtime writes.
 
 ## Facts found
 - applyPose invalidates before URDF early return; grid/hand/late non-tip CAD mesh, late shape STL and resize invalidate. Measured >60idleframes and zero idle paints; actual monitor/pose mutations redraw.
@@ -26,7 +26,7 @@ Human/main resumed review. After explicit Lab09:06 release, claim software-only 
 - Per-file state pending means review/full/landing remains, not an unresolved test failure. Earlier203/637 batches are historical; use latest1566 and69 evidence.
 
 ## Next
-1. Human resumes existing main chat01a1689b-5608-7123-b8c2-a6f489b5b675; independent review of exact functional9e46ad0 plus frozen checkpoint. No approval exists yet.
+1. Existing main review of9e46ad0 found3 final deltas; run new deliberate regressions/restored affected builds and send exact correctedSHA for final delta inspection. No final approval exists yet.
 2. Apply actual findings in this branch, recheck affected behavior/build and update ledgers; freeze current source/input hashes.
 3. Run full QC once on the exact stable candidate, with source fingerprints before/after and fresh no-driver inventory. Then source PR/integration only with required review/authorization.
 4. Physical/runtime deployment is separate: no flash, Hub restart, camera, HOME/motion/RELAX/calibration command or trim write authorized by this task.
@@ -85,3 +85,5 @@ Baseline:e30bc36; preserved Gemini2bd3299/8530dbf/6db1aeb, rules9b57ee9 and Help
 - No actual physical centering/drop/name-recognition proof from these simulated checks. Ordinary Hub/friend/Voice processes were left alone.
 
 - Review findings: config keeps stale pos_known/pos after layout/CLEAR; GTEST actually defaults1, not slots; API200 generic says hides board ERRbusy. Earlier1566/69/27 proof applies to functional9e46ad0; changed files need new proof.
+
+- Final delta: one invalidateReference helper, called after successful true layout/reference changes and by CLEAR; rejected/no-op/non-reference settings preserve reference. Polarity/CLEAR reset Hall; immediate GHOME cannot reuse old polarity. Source GTEST default1 unchanged, documentation corrected; real Hub HTTP200 ERRbusy now visible.

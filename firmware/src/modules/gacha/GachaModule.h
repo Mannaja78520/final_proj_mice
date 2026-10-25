@@ -109,6 +109,7 @@ private:
     void startCenter(uint32_t now, uint32_t rest = GACHA_CENTER_WAIT_MS);
     void startCalibrate();
     void startSpan(uint32_t now);
+    void invalidateReference(bool resetHall);
     void resetDefaults();
     void finish(const char* result);
     void motorOff();

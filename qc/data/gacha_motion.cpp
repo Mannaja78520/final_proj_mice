@@ -14,6 +14,10 @@ struct String : std::string {
     using std::string::string;
     using std::string::operator=;
     String(long value) : std::string(std::to_string(value)) {}
+    long toInt() const { return std::strtol(c_str(), nullptr, 10); }
+    void toLowerCase() {
+        for (char& c : *this) c = (char)std::tolower((unsigned char)c);
+    }
     bool equalsIgnoreCase(const char* other) const {
         if (size() != std::strlen(other)) return false;
         for (size_t i = 0; i < size(); ++i)
@@ -84,6 +88,7 @@ public:
     void startCenter(uint32_t now, uint32_t rest = GACHA_CENTER_WAIT_MS);
     void startCalibrate();
     void startSpan(uint32_t now);
+    void invalidateReference(bool resetHall);
     void finish(const char* result);
     void resetDefaults();
     void loop();
@@ -94,7 +99,7 @@ public:
     bool home(String& reply);
     bool drain(String argv[], int argc, String& reply);
     bool stop(String& reply);
-    bool clear(String& reply);
+    bool config(String argv[], int argc, String& reply);
 };
 
 /*__PRODUCTION_METHODS__*/
@@ -136,7 +141,17 @@ void calibrationScenario(bool verify, uint32_t start) {
     }
     check(m.stock_ == 7 && m.given_ == 4 && !m.posKnown_, "calibration does not dispense or claim pocket reference");
 }
+/*__CONFIG_REFERENCE_CHECKS__*/
+
 int main() {
+    GachaConfigChecks::run();
+    {
+        GachaModule m; String reply, args[] = {"GTEST"}; m.magnets_ = 8;
+        m.test(args, 1, reply);
+        check(reply == "OK testing" && m.testMax_ == 1 && m.want_ == m.perSlot(),
+              "omitted GTEST count defaults to one pocket, not every configured slot");
+        check(m.stock_ == 7 && m.given_ == 4, "default one-pocket GTEST does not dispense");
+    }
     {
         GachaModule m; String reply; m.hall_.stable = true; m.motionResult_ = "jam";
         m.home(reply);
@@ -244,10 +259,10 @@ int main() {
         m.nudge(args, 3, reply); check(reply.rfind("ERR no motor", 0) == 0, "nudge refuses missing motor");
     }
     {
-        GachaModule m; String reply; removedCfg = 0;
+        GachaModule m; String reply, args[] = {"GCFG", "CLEAR"}; removedCfg = 0;
         m.overshootMs_ = m.overshootSpeed_ = m.returnMs_ = m.returnSpeed_ = 1;
         m.centerSpeed_ = m.pauseMs_ = m.fallbackSlotMs_ = 1;
-        m.intakeDwellMs_ = m.advanceMs_ = 1; m.clear(reply);
+        m.intakeDwellMs_ = m.advanceMs_ = 1; m.config(args, 2, reply);
         check(m.overshootMs_ == GACHA_OVERSHOOT_MS && m.overshootSpeed_ == GACHA_OVERSHOOT_SPEED,
               "CLEAR restores forward phase defaults");
         check(m.returnMs_ == GACHA_RETURN_MS && m.returnSpeed_ == GACHA_RETURN_SPEED,
@@ -257,7 +272,7 @@ int main() {
         check(m.saves == 1 && m.stock_ == 7 && m.given_ == 4, "CLEAR persists settings without changing stock/counts");
         check(m.intakeDwellMs_ == GACHA_INTAKE_DWELL_MS && m.advanceMs_ == GACHA_CENTER_ADVANCE_MS,
               "CLEAR restores intake and learned advance defaults");
-        m.state_ = GachaModule::TURNING; m.clear(reply);
+        m.state_ = GachaModule::TURNING; m.config(args, 2, reply);
         check(reply == "ERR busy" && removedCfg == 1 && m.saves == 1, "busy CLEAR cannot erase persisted settings");
     }
     {

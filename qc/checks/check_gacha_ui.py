@@ -51,6 +51,12 @@ window.addEventListener('load',async()=>{
   button('to loading').click(); await sleep(150); button('Stop motion').click();
   await qcWaitFor(()=>/stopped/.test(d.getElementById('mStat').textContent),5000);
   await mark('stop',d.getElementById('mStat').textContent);
+  const outside=await fetch('/api/gacha/machine',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({machine:'g1',cmd:'GSPIN 1'})}).then(r=>r.json());
+  if(!outside.ok)throw Error('external-client busy fixture did not start');
+  button('Estimate Hall Advance').click();
+  await qcWaitFor(()=>d.getElementById('mStat').textContent==='ERR busy',5000);
+  await mark('busy',d.getElementById('mStat').textContent);
+  button('Stop motion').click();await sleep(300);
   f.style.width='390px'; await sleep(300);
   await mark('narrow',d.documentElement.scrollWidth<=w.innerWidth);
   const mod=document.createElement('iframe'); mod.style='width:390px;height:850px';mod.src='/mod?dev=usb%3ACOM99%3A70';document.body.appendChild(mod);
@@ -120,6 +126,8 @@ def run(t):
                 if c == "STOP":
                     job["stop"] = True
                 else:
+                    if motion_status()["state"] != "idle":
+                        return "ERR busy"
                     job.update(cmd=c, at=time.monotonic(), stop=False)
                 return "OK accepted"
             return line(c)
@@ -152,3 +160,4 @@ def run(t):
          "generated module page shows final fault and live countdown", got)
     t.ok(wire.count("GCALIB") >= 2 and "GCFG advance 0" in wire,
          "generated module-page controls reach the fake board", wire)
+    t.ok(got.get("busy") == "ERR busy", "actual HTTP200 board refusal is shown instead of generic API200 or done", got)
