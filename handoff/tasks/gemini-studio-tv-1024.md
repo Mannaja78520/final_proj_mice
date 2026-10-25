@@ -1,7 +1,7 @@
 # Latest Gemini Studio rendering and TV control correctness
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T07:41:54+07:00
+Updated: 2026-10-25T07:43:24+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
 Last commit: 3bb6c07; source below uncommitted
@@ -11,7 +11,7 @@ Plan: A48-14 (same verified-source batch as A47-20)
 Main delegates confirmed latest Gemini Studio/TV regressions from ce0aeb0/b5a161b/2bd3299. Preserve all new features and idle render saving. No physical pose/calibration/CAD changes.
 
 ## Doing now
-25Oct handoff reconciliation before code: keep current UI/render fixes, migrate per-file ledger, then native fixture/docs/system generation and browser sabotage. Main independent exact-source review before final full gate. Help overlap owner codex:10242258-597a messaged with exact correctness hunks; await merge-safe reconciliation. No hardware/config/runtime actions.
+25Oct handoff reconciliation before code: keep current UI/render fixes, migrate per-file ledger, native162/0 and browser/syntax41/0 now; next merge latestroot8530dbf preserving stronger guards, docs/system generation and sabotage. Main independent exact-source review before final full gate. Help overlap owner codex:10242258-597a messaged with exact correctness hunks; await merge-safe reconciliation. No hardware/config/runtime actions.
 
 ## Facts found
 - Main static review: applyPose URDF early return skips bottom markDirty3d, so after60 idle frames CAD pose/monitor can fail to redraw. Hand/grid/late mesh and resize lack invalidation. Mark mutation callbacks, retain zero idle renders.
@@ -46,3 +46,5 @@ handoff/tasks/gemini-studio-tv-1024.md | Reconciled per-file current state | pen
 
 ## Preserved unrelated files
 apps/camera/index.html and apps/voice/index.html: builder EOL-only, not staged. qc_chain_proj.json/settings_shared.json and old reports: preexisting QC/user data, not owned or promoted.
+
+- Current combined evidence: scratch/continue-urdf-1023/ui-native-affected-1025-v1.log =203/0 (25.5s), not full QC.

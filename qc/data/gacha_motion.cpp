@@ -293,8 +293,9 @@ int main() {
         GachaModule m; String reply, args[] = {"GTEST", "3"}; clockMs = 0; m.loop();
         m.magnets_ = 8; m.overshootMs_ = m.returnMs_ = 0; m.pauseMs_ = 5;
         m.test(args, 2, reply); int changes = 0, previous = 0; bool pauseMotorOff = true;
-        for (uint32_t now = 0; now <= 400 && m.state_ != GachaModule::IDLE; ++now) {
-            const bool sensor = now >= 10 && ((now - 10) / 20) % 2 == 0;
+        for (uint32_t now = 0; now <= 2500 && m.state_ != GachaModule::IDLE; ++now) {
+            const bool sensor = m.settlePhase_ != GachaModule::SETTLE_NONE ||
+                                (now >= 10 && ((now - 10) / 20) % 2 == 0);
             tick(m, now, sensor);
             if (m.settlePhase_ == GachaModule::SETTLE_PAUSE) pauseMotorOff &= m.io.pwm == 0;
             if (m.testCount_ != previous) { ++changes; previous = m.testCount_; }
