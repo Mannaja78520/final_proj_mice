@@ -1,85 +1,81 @@
-# Latest Gemini Studio rendering and TV control correctness
+# Studio/TV correctness + reconciled Help — frozen for review
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T08:06:21+07:00
+Updated: 2026-10-25T08:12:43+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
-Last commit: bb5ad4b; functional9e46ad0 unchanged; current checkpoint records actual builds
-Plan: A48-14 (same verified-source batch as A47-20)
+Last commit: this checkpoint; functional source9e46ad0, prior metadata cf23113
+Plan: A48-14 (robot); combined with A47-20; imported A48-15 Help8064292 owned597a
 
 ## Goal
-Main delegates confirmed latest Gemini Studio/TV regressions from ce0aeb0/b5a161b/2bd3299. Preserve all new features and idle render saving. No physical pose/calibration/CAD changes.
+Keep idle rendering savings but redraw all actual mutations; target a valid selected Nong for native saved HOME/telemetry and truthful show restart; preserve Help owner menu/diagram fixes.
 
 ## Doing now
-Actual5-environment firmware builds + native logic checks69/0 (61.5s), all27 deliberate regressions caught/restoredgreen. Functional9e46ad0 unchanged and sent existing main for independent review. Next run final affected browser/contract/layout/actual-CAD checks, resolve review findings, exact source freeze and full gate once. No flash/hardware/Hub/userdata writes.
+Checkpoint exact frozen candidate/evidence and release QC-only driver lease. Human explicitly paused existing main reviewer to run errands, returning with “ทำต่อ”; no independent approval is implied. Do not start full gate, PR/merge, deploy or another reviewer. No more source edits until authorized review/resume.
 
 ## Facts found
-- Main static review: applyPose URDF early return skips bottom markDirty3d, so after60 idle frames CAD pose/monitor can fail to redraw. Hand/grid/late mesh and resize lack invalidation. Mark mutation callbacks, retain zero idle renders.
-- TV goHome posts all90 via /api/play, unsafe relative to actual savedHOME; use chosen valid Nong nativeHOME, no generic auto/first-module fallback.
-- TV poll uses nonexistent Hub/api/status instead of/api/modules and pose field instead of module.joints. Play status uses at_ms/total_ms, not ms/total.
-- TV pause is actually stop; resume plays sequences[0]. Must truthfully represent supported behavior or preserve exact paused clip semantics, no surprise first sequence.
-
-## Next
-Implement focused invalidation and TV API/target guards; fake browser tests idle CAD pose/monitor/grid/hand/late mesh/resize and idle zero rendering; TV selected HOME/no-all90/no-device+telemetry/progress. Existing main independent review exact final batch then full gate after source freeze.
-
-## Evidence / limits
-Only source inspection so far for this task. A47-20 native135/0 is backend-only. QC-only lease is ours after Lab22:12 release; physical remains stopped/reserved, no hardware, camera, restart or flash. User deferred actual elbow trim; no physical centering pass.
-
-## File status
-Baseline: e30bc36; preserve inherited latest Gemini2bd3299/8530dbf and rules9b57ee9; ledger lists own changes only.
-| File | Change | State | Verification | Commit |
-| --- | --- | --- | --- | --- |
-| apps/tv/index.html | Valid selectedNong, nativeHOME, module.joints, progress, exactclip restart | pending | real fake browser11/0; final deliberate regression caught; review pending | fa6c986 |
-| nong/main_python_set_nong/web/app_parts/build_rig.js | Invalidate before CAD early return | pending | idle browser10/0; deliberate regression caught/restoredgreen | fa6c986 |
-| nong/main_python_set_nong/web/app_parts/main_loop.js | Resize invalidates renderer | pending | idle browser10/0; deliberate regression caught/restoredgreen | fa6c986 |
-| nong/main_python_set_nong/web/app_parts/urdf_view.js | Hand/grid/non-tip late mesh invalidate | pending | idle browser10/0; deliberate regression caught/restoredgreen | fa6c986 |
-| nong/main_python_set_nong/web/app_parts/stl_meshes.js | Immediate and late mesh invalidate | pending | idle browser10/0; deliberate regression caught/restoredgreen | fa6c986 |
-| nong/main_python_set_nong/web/app.js | Builder output | pending | generated then actual browser10/0 | fa6c986 |
-| nong/main_python_set_nong/web/index.html | Builder output/EOL | pending | generation consistency pending | f8a9576 |
-| main_python/web/help/parts/studio.html | SavedHOME/limits/RELAX wording, idle rendering | pending | correctness edits; docs check pending | 46ad847 |
-| main_python/web/help/parts/tv.html | Target/nativeHOME/restart description | pending | matches browser11/0; docs check pending | fa6c986 |
-| main_python/web/help/parts/gacha.html | Async Hall estimate vs false mass/deadcentre claims | pending | merged owner597a8064292 menu and diagram in5b6f122; own command facts retained | e79ea8a |
-| main_python/web/help.html | Builder output | pending | regenerate after correctness+owner reconciliation | 5b6f122 |
-| main_python/web/hub.html | Builder sync10lines inherited source feature | pending | inspect provenance+generation check before stage | 46ad847 |
-| qc/checks/check_studio_render_idle.py | Real browser idle>60frames then mutations and idlezero | pending | 10/0; deliberate deliberate regression caught/restoredgreen | fa6c986 |
-| qc/checks/check_tv_remote.py | Real page->Hub->fake HOME/target/joints/progress/restart | pending | 11/0; deliberate deliberate regression caught/restoredgreen | fa6c986 |
-| handoff/tasks/gemini-studio-tv-1024.md | Reconciled per-file current state | pending | explicit ledger; final completion later | this checkpoint |
-
-## Preserved unrelated files
-apps/camera/index.html and apps/voice/index.html: builder EOL-only, not staged. qc_chain_proj.json/settings_shared.json and old reports: preexisting QC/user data, not owned or promoted.
-
-- Current combined evidence: scratch/continue-urdf-1023/ui-native-affected-1025-v1.log =203/0 (25.5s), not full QC.
+- applyPose invalidates before URDF early return; grid/hand/late non-tip CAD mesh, late shape STL and resize invalidate. Measured >60idleframes and zero idle paints; actual monitor/pose mutations redraw.
+- TV uses /api/modules best/routes, selected nonstale Nong, /api/dev/status module.joints, at_ms/total_ms/entering/error. Native HOME reaches chosen Nong; no all90 show or generic target. Restart keeps the last chosen clip.
+- Help8064292 merged5b6f122 with owner597a menu/search/singlefixedHall diagram. One sensor at Receive,4rotating magnets, no Hall atDrop, Receive/Drop same side per human. Only factual conflicting hunks reconciled; their layout/geometry preserved.
+- Root8530dbf partial Gemini fixes and metadata6db1aeb retained; rules9b57ee9 merged. Other user/agent work was not overwritten. Help other topics were not audited beyond changed sections.
 
 ## Done
-- Native/UI203/0 then contracts/affected637/0; logs private scratch/continue-urdf-1023. Studio10/0,TV11/0 are simulated browser evidence, no physical proof.
+- Actual firmware5environments + native logic/build69/0 (61.5s). Gacha image1416752bytes,71.7% flash; artifacts/source hashes recorded. Compiled, not flashed.
+- Current affected suite1566/0 (50.3s): both Gacha pages, TV, idle Studio, actual private CAD, Help,360–1920layout, contracts/generators/rules. Functional9e46ad0 unchanged.
+- Across iteration27/27 deliberate regressions caught and restoredgreen: native9+HOME1,syntax1,HubUI2,TV4,Studio6,Help2,moduleUI2. Current affected suite ran after all restores.
+- Per-file state pending means review/full/landing remains, not an unresolved test failure. Earlier203/637 batches are historical; use latest1566 and69 evidence.
+
+## Next
+1. Human resumes existing main chat01a1689b-5608-7123-b8c2-a6f489b5b675; independent review of exact functional9e46ad0 plus frozen checkpoint. No approval exists yet.
+2. Apply actual findings in this branch, recheck affected behavior/build and update ledgers; freeze current source/input hashes.
+3. Run full QC once on the exact stable candidate, with source fingerprints before/after and fresh no-driver inventory. Then source PR/integration only with required review/authorization.
+4. Physical/runtime deployment is separate: no flash, Hub restart, camera, HOME/motion/RELAX/calibration command or trim write authorized by this task.
+
+## Blocked
+Independent review awaits the human-paused existing main chat. Full QC NOT RUN for this candidate; no source promotion/PR/deploy. Physical elbow centering remains user-deferred and unpassed. QC-only lease is explicitly released at checkpoint; no transfer of physical rights.
+
+## File status
+Baseline:e30bc36; preserved Gemini2bd3299/8530dbf/6db1aeb, rules9b57ee9 and Help8064292. One latest row per owned file; imported owner597a design is attributed above.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| docs/systems.json | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
-| docs/systems/agents.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 9e46ad0 |
-| docs/systems/app-gacha.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
-| docs/systems/app-small.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
-| docs/systems/app-voice.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
-| docs/systems/fw-core.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
-| docs/systems/fw-gacha.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
-| docs/systems/fw-registry.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
-| docs/systems/hub-modules.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
-| docs/systems/hub-studio.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
-| docs/systems/qc.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 5b6f122 |
-| docs/systems/studio.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
-| nong/main_python_set_nong/PATCHES.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
+| apps/tv/index.html | Valid selectedNong, nativeHOME, module.joints, progress, exactclip restart | pending | current fake-browser11/0;4 deliberate regressions caught/restored; affected1566/0; full/review pending | fa6c986 |
+| nong/main_python_set_nong/web/app_parts/build_rig.js | Invalidate before CAD early return | pending | current idle-browser10/0,6 deliberate regressions caught/restored; actual-CAD affected1566/0; full/review pending | fa6c986 |
+| nong/main_python_set_nong/web/app_parts/main_loop.js | Resize invalidates renderer | pending | current idle-browser10/0,6 deliberate regressions caught/restored; actual-CAD affected1566/0; full/review pending | fa6c986 |
+| nong/main_python_set_nong/web/app_parts/urdf_view.js | Hand/grid/non-tip late mesh invalidate | pending | current idle-browser10/0,6 deliberate regressions caught/restored; actual-CAD affected1566/0; full/review pending | fa6c986 |
+| nong/main_python_set_nong/web/app_parts/stl_meshes.js | Immediate and late mesh invalidate | pending | current idle-browser10/0,6 deliberate regressions caught/restored; actual-CAD affected1566/0; full/review pending | fa6c986 |
+| nong/main_python_set_nong/web/app.js | Builder output | pending | current idle-browser10/0,6 deliberate regressions caught/restored; actual-CAD affected1566/0; full/review pending | fa6c986 |
+| nong/main_python_set_nong/web/index.html | Builder output/EOL | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | f8a9576 |
+| main_python/web/help/parts/studio.html | SavedHOME/limits/RELAX wording, idle rendering | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 46ad847 |
+| main_python/web/help/parts/tv.html | Target/nativeHOME/restart description | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | fa6c986 |
+| main_python/web/help/parts/gacha.html | Async Hall estimate vs false mass/deadcentre claims | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | e79ea8a |
+| main_python/web/help.html | Builder output | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 5b6f122 |
+| main_python/web/hub.html | Builder sync10lines inherited source feature | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 46ad847 |
+| qc/checks/check_studio_render_idle.py | Real browser idle>60frames then mutations and idlezero | pending | current idle-browser10/0,6 deliberate regressions caught/restored; actual-CAD affected1566/0; full/review pending | fa6c986 |
+| qc/checks/check_tv_remote.py | Real page->Hub->fake HOME/target/joints/progress/restart | pending | current fake-browser11/0;4 deliberate regressions caught/restored; affected1566/0; full/review pending | fa6c986 |
+| handoff/tasks/gemini-studio-tv-1024.md | Reconciled per-file current state | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | this checkpoint |
+| docs/systems.json | Generator mapping/header or snapshot index | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | bb5ad4b |
+| docs/systems/agents.md | Generator mapping/header or snapshot index | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 9e46ad0 |
+| docs/systems/app-gacha.md | Generator mapping/header or snapshot index | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 46ad847 |
+| docs/systems/app-small.md | Generator mapping/header or snapshot index | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 46ad847 |
+| docs/systems/app-voice.md | Generator mapping/header or snapshot index | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 46ad847 |
+| docs/systems/fw-core.md | Generator mapping/header or snapshot index | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | bb5ad4b |
+| docs/systems/fw-gacha.md | Generator mapping/header or snapshot index | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 46ad847 |
+| docs/systems/fw-registry.md | Generator mapping/header or snapshot index | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 46ad847 |
+| docs/systems/hub-modules.md | Generator mapping/header or snapshot index | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 46ad847 |
+| docs/systems/hub-studio.md | Generator mapping/header or snapshot index | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 46ad847 |
+| docs/systems/qc.md | Generator mapping/header or snapshot index | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 5b6f122 |
+| docs/systems/studio.md | Generator mapping/header or snapshot index | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 46ad847 |
+| nong/main_python_set_nong/PATCHES.md | Generator mapping/header or snapshot index | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | 46ad847 |
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/app.js | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/index.html | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/patch.md | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/shared/mice.css | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/shared/themes.css | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/style.css | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
+| docs/systems/fw-web.md | Map generated Gacha page browser regression | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | bb5ad4b |
 
-- Deliberate proofs: scratch/continue-urdf-1023/sabotage-{gacha,syntax,ui,tv,render}-1025.log:22/22 caught, each restoredgreen. Not full QC.
-
-- New evidence: module-help-affected-1025.log46/0; actual generated gacha-only page controls reach fakeboard, phasecountdown, unknownposition, Halllabel, configuredzero values; Help browsersearch/navigation/tech/phone. No hardware proof.
-| docs/systems/fw-web.md | Map generated Gacha page browser regression | pending | generator/check_systems pending | 1ff8409 |
-
-- Added proofs: sabotage-home-1025.log1/1, sabotage-help-1025.log2/2, sabotage-module-ui-1025.log2/2; each restoredgreen. Source functional files now match9e46ad0.
-
-- Actual build proof: firmware-build-1025.log69/0, firmware-build-details-1025.log, firmware-artifacts-1025.json (5image SHA/size/flash). No upload/flash.
+## Evidence / preserved data
+- Current logs/artifact manifest and27sabotage proofs: scratch/continue-urdf-1023/*1025*; frozen review package: scratch/gacha-safety-1025/candidate-cf23113/ in own tree and root.
+- nong/main_python_set_nong/projects/qc_chain_proj.json, settings_shared.json and old reports remain preexisting/other QC data, unstaged/unpromoted. Camera/Voice and generated-header EOL-only status noise has no content diff; not owned changes.
+- No actual physical centering/drop/name-recognition proof from these simulated checks. Ordinary Hub/friend/Voice processes were left alone.
