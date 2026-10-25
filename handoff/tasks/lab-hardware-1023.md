@@ -1,10 +1,10 @@
 # Lab: robot and prize ESP32 transport acceptance
 
 Owner: codex:10231420-85cc
-Updated: 2026-10-25 09:04 (Bangkok)
+Updated: 2026-10-25 09:07 (Bangkok)
 Branch: codex/lab-hardware-1023
 Tree: E:/final_proj/mice/code/.staging-lab-1023
-Last commit: this checkpoint (resumed from aa23345)
+Last commit: this checkpoint (resume baseline aa23345; preflight31adf09)
 Plan: A45-11 expanded nong acceptance; historical A47-19/A47-5/A46-2
 
 ## ## Goal and latest scope
@@ -14,20 +14,31 @@ bounded read-only readiness window through existing Hub. Source driver released
 No elbow probes, broad arm motion, trim/HOME setters, flash/reboot or restart.
 
 ## Doing now
-Read current Hub/module identity, idle/config/calibration and available files;
-compare old snapshots without restoring. Save exact readiness and missing-test
-report, then RELEASE command/testdriver exclusion before source fullQC.
-No product source edits. Resume baseline aa23345; existing tree was clean.
+Closing metadata only; no live request, process or resource lease remains.
+No product source edits. Resume baseline aa23345; own tree was clean.
+
+## Done
+25Oct bounded read-only readiness: Hub responds but no nong identity confirmed;
+one INFO attempt HTTP502, then no further device requests/downloads. Exact
+readiness JSON/Markdown saved. ALL physical/command/testdriver reservations
+explicitly released before source gate; A45-11 handoff todo/open with limits.
 
 ## File status
 | File | Change | State | Verification | Commit |
 |---|---|---|---|---|
-| handoff/tasks/lab-hardware-1023.md | Resume and migrate per-file ledger | pending | baseline clean; under150lines | this checkpoint |
-| scratch/nong-acceptance-1025/readiness.json | Exact read-only Hub/device replies | pending | not run | uncommitted (private) |
-| scratch/nong-acceptance-1025/readiness.md | Readiness and feasible missing tests | pending | not run | uncommitted (private) |
-| docs/BRIDGE.md | Serialized own claim/release only; preserve other entries | pending | claim appended/read back; no driver child found | local shared metadata |
-| docs/PLAN.html | A45-11 doing and next handoff; preserve other rows | pending | plan.py doing successful | local shared metadata |
-| docs/plan_state.js | Generated plan publication | pending | plan.py published | local shared metadata |
+| handoff/tasks/lab-hardware-1023.md | Resume, per-file ledger and readiness closure | done | owned diff inspected; under150lines; root copy matches | this checkpoint |
+| scratch/nong-acceptance-1025/readiness.json | Exact Hub replies/host inventory; failed INFO | done | actual read-only; identity blocked HTTP502; no mutations | uncommitted (private) |
+| scratch/nong-acceptance-1025/readiness.md | Readiness and missing-test prerequisites | done | cross-checked against readiness.json; no new functional pass | uncommitted (private) |
+| docs/BRIDGE.md | Only own serialized claim/release; others preserved | done | own entries read back; all Lab resources released | uncommitted (shared root metadata) |
+| docs/PLAN.html | A45-11 resume then handoff; other rows preserved | done | plan.py handoff successful | uncommitted (shared root metadata) |
+| docs/plan_state.js | Generated plan publication | done | plan.py published; A45-11 todo/open | uncommitted (shared root metadata) |
+
+## Facts found
+readiness.json: Hub5c3513666e8d/stale:false, modules[]/LAN192.168.100.36;
+play/flash.running false (flash success log is history, not this test).
+Host has no192.168.137.x interface; serial inventory BluetoothCOM3/4/5/7 only.
+Oldnong.137.26 INFO502 does not identify power/network/firmware cause. Current
+manualtrim/config unread; do not claim unchanged or restore yesterday's values.
 
 Actual last device state (historical snapshot, not a fresh live poll)
 web-talk-test.json final INFO: nong67/chipB4BFE91C5A74 at WiFi192.168.137.26;
@@ -88,23 +99,21 @@ Reviewed deployed Hub ef590e60cbff came from PR77/a884558 full7910/0 with925
 stable source inputs; later dirty Gemini gacha features are not covered by it.
 
 ## Coordination and resources
-Lab sole physical claim resumed15:16; Gemini conflict resolved by explicit
-freeze/release15:38 (historical; later root edits are source owner's audit).
-22:12 read-only Windows inventory found no matching QC/native/PlatformIO/
-esptool/fake/pocket-loop/nong-acceptance children. This is an inventory snapshot,
-not proof against an unseen future actor. Normal services were not stopped.
-RELEASED QC/fake/native-build/timing-driver exclusion to source01a1679e in
-serialized BRIDGE22:12; ACK sent to source/main. Physical remains reserved/stopped;
-this release does NOT authorize flash, motion, live commands or service restart.
-No PC camera lease. Hub remains sole normal COM owner. No root source edits.
+Source25Oct08:14/08:16 explicitly released softwaredriver; main authorized this
+bounded read-only window. Initial driver inventory matching0, source ACK held.
+After one failed INFO, process exited0; ALL Lab command/testdriver/physical
+reservations explicitly RELEASED in BRIDGE and ACK to main/source. No active
+COM/camera/QC/fake/build/timing lease. Release transfers no motion/flash/restart
+authority. Existing Hub/services/network untouched. Retain metadata only until
+this checkpoint; no root product source edits or other-owner changes claimed.
 
-## Remaining limits / next
-1. Metadata checkpoint finished; A45-11 handed back todo/open with exact limits
-   and next coordination step via tools/plan.py. Closing commit shared with main/source.
+## Next
+1. A45-11 handed todo/open: reconnect actual nong route, then fresh identity and
+   current configuration reads in a new coordinated window; preserve manualtrim.
 2. A45-11 stays incomplete: physical HOME/axes user-deferred; nong USB/RS485
    absent; broad motion/Studio/RRT/video/RELAX and calibration mutators not run;
    phone mic, OTA/FW update and hotspot outage not independently tested.
 3. Gacha source safety candidate (including newer GCALIB/GTEST/GDRAIN) requires
    owner review/gates before any separately coordinated physical acceptance.
-4. No automatic hardware continuation. New physical work needs coordinated
-   ownership; preserve user's manual trim and existing SD/calibration files.
+4. Main/source continue exact frozen candidate review/fullgate. No automatic
+   hardware continuation or repeated failed probes; wait actual connection.
