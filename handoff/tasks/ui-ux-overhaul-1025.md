@@ -3,7 +3,7 @@
 Owner: gemini:ed497bb9
 Updated: 2026-10-25 21:05 +0700
 Branch: main
-Last commit: ff332b1
+Last commit: e9127bb
 Plan: A48-17
 
 ## Goal
@@ -26,25 +26,25 @@ Baseline: 645143e
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | `shared/web/mice.js` | OOP MiceThemeManager with multi-window/tab theme sync | done | quick: check_themes pass (84/0) | 0ab2d1c |
-| `shared/web/mice-ui.js` | Base OOP Mice.App class with lifecycle and events | done | quick: check_handoff_first pass | this checkpoint |
-| `apps/all-jao/index.html` | OOP AllJaoApp extends Mice.App & equal-height grid | done | quick: check_game_prize pass | this checkpoint |
-| `apps/faces/index.html` | OOP FacesApp extends Mice.App & theme inheritance | done | quick: check_faces_rules pass | this checkpoint |
-| `apps/gacha/index.html` | OOP GachaApp extends Mice.App & Quick Presets | done | quick: check_gacha_ui pass (238/0) | this checkpoint |
-| `apps/camera/app.js` | OOP CameraApp extends Mice.App lifecycle | done | quick: check_camera pass | this checkpoint |
-| `apps/camera/index.html` | Recompiled Camera bundle from template | done | quick: check_camera pass | this checkpoint |
-| `apps/photobooth/index.html` | OOP PhotoboothApp extends Mice.App lifecycle | done | quick: check_dev_tools pass | this checkpoint |
-| `apps/tv/index.html` | OOP TVRemoteApp extends Mice.App & Dual-mode UI | done | quick: check_tv_remote pass (11/0) | this checkpoint |
-| `apps/voice/app.js` | OOP VoiceApp extends Mice.App & language filter bar | done | quick: check_voice_view pass (131/0) | this checkpoint |
+| `shared/web/mice-ui.js` | Base OOP Mice.App class with lifecycle and events | done | quick: check_handoff_first pass | e9127bb |
+| `apps/all-jao/index.html` | OOP AllJaoApp extends Mice.App & equal-height grid | done | quick: check_game_prize pass | e9127bb |
+| `apps/faces/index.html` | OOP FacesApp extends Mice.App & theme inheritance | done | quick: check_faces_rules pass | e9127bb |
+| `apps/gacha/index.html` | OOP GachaApp extends Mice.App & Quick Presets | done | quick: check_gacha_ui pass (238/0) | e9127bb |
+| `apps/camera/app.js` | OOP CameraApp extends Mice.App lifecycle | done | quick: check_camera pass | e9127bb |
+| `apps/camera/index.html` | Recompiled Camera bundle from template | done | quick: check_camera pass | e9127bb |
+| `apps/photobooth/index.html` | OOP PhotoboothApp extends Mice.App lifecycle | done | quick: check_dev_tools pass | e9127bb |
+| `apps/tv/index.html` | OOP TVRemoteApp extends Mice.App & Dual-mode UI | done | quick: check_tv_remote pass (11/0) | e9127bb |
+| `apps/voice/app.js` | OOP VoiceApp extends Mice.App & language filter bar | done | quick: check_voice_view pass (131/0) | e9127bb |
 | `apps/voice/index.template.html` | Language filter toolbar & Answers/Questions redesign | done | quick: check_voice_view pass (131/0) | ff332b1 |
 | `apps/voice/style.css` | Language filter styles & card-like topics table | done | quick: check_voice_view pass (131/0) | ff332b1 |
-| `apps/voice/index.html` | Recompiled Voice bundle from template | done | quick: check_voice_view pass (131/0) | this checkpoint |
-| `main_python/web/home/parts/tools.js` | OOP MiceToolsManager with categorization layout | done | quick: check_tools_list pass | this checkpoint |
+| `apps/voice/index.html` | Recompiled Voice bundle from template | done | quick: check_voice_view pass (131/0) | e9127bb |
+| `main_python/web/home/parts/tools.js` | OOP MiceToolsManager with categorization layout | done | quick: check_tools_list pass | e9127bb |
 | `main_python/web/home/parts/tools.html` | Categorized tools container structure | done | quick: check_tools_list pass | 0ab2d1c |
 | `main_python/web/home/parts/top.html` | Elevated Help link in topbar navigation | done | quick: check_tools_list pass | 0ab2d1c |
-| `main_python/web/hub.html` | Recompiled Hub bundle from parts | done | quick: check_tools_list pass | this checkpoint |
-| `main_python/web/help/parts/search.js` | OOP MiceHelpNavigator with symmetric card navigation | done | quick: check_help_topics pass | this checkpoint |
+| `main_python/web/hub.html` | Recompiled Hub bundle from parts | done | quick: check_tools_list pass | e9127bb |
+| `main_python/web/help/parts/search.js` | OOP MiceHelpNavigator with symmetric card navigation | done | quick: check_help_topics pass | e9127bb |
 | `main_python/web/help/style.css` | Styles for symmetric 2-column topic navigation | done | quick: check_help_topics pass | 0ab2d1c |
-| `main_python/web/help.html` | Recompiled Help bundle from parts | done | quick: check_help_topics pass | this checkpoint |
+| `main_python/web/help.html` | Recompiled Help bundle from parts | done | quick: check_help_topics pass | e9127bb |
 | `main_python/web/help/parts/faces.html` | Document theme synchronization | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
 | `main_python/web/help/parts/gacha.html` | Document Quick Event Presets | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
 | `main_python/web/help/parts/hub.html` | Document categorized tools & topbar Help | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
@@ -54,7 +54,7 @@ Baseline: 645143e
 | `GEMINI.md` | Add Rule 11 Mandatory Help Parity & Sync | done | quick: check_docs pass (415/0) | 0ab2d1c |
 | `AGENTS.md` | Add Rule 11 Mandatory Help Parity & Sync | done | quick: check_docs pass (415/0) | 0ab2d1c |
 | `CLAUDE.md` | Add Rule 11 Mandatory Help Parity & Sync | done | quick: check_docs pass (415/0) | 0ab2d1c |
-| `handoff/tasks/ui-ux-overhaul-1025.md` | Own task tracking and per-file ledger | done | inspection: Markdown pass | this checkpoint |
+| `handoff/tasks/ui-ux-overhaul-1025.md` | Own task tracking and per-file ledger | done | inspection: Markdown pass | e9127bb |
 
 ## Facts found
 - `shared/web/mice-ui.js`: Adding `class App` directly to the `Mice` namespace provides universal standard lifecycle (`init()`), DOM query helpers (`this.$`), sanitization (`this.esc()`), event emitter (`on`, `off`, `emit`), and status handling.
