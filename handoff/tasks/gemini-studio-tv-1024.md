@@ -1,17 +1,17 @@
-# Studio/TV + Help — approved source, full gate next
+# Studio/TV + Help — full green, source integration pending
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T16:51:13+07:00
+Updated: 2026-10-25T17:08:17+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
-Last commit: this checkpoint; approved functional source4d41a3c
+Last commit: this metadata-only checkpoint; full gate8da4e169; runtime4d41a3c; verificationf037d3a
 Plan: A48-14 (robot), combined A47-20; imported Help8064292 owner597a
 
 ## Goal
 Keep idle rendering savings with mutation redraw; selected Nong native savedHOME/telemetry/truthful restart; preserve menu-based Help and human-corrected Hall diagram.
 
 ## Doing now
-Existing main APPROVED verification delta f037d3a and own-ledger-only20d66fe merge; product runtime4d41a3c remains unchanged/approved. Focused144/0, actual real-probe325/0, integrity5/5 caught/restored,3source byte hashes exact. Freeze r2 input manifest+fresh0driver inventory, notify main and launch justified second full. Keep failed first8217/1 evidence immutable and all assertions/guard checks. No source changes during r2; no hardware/runtime/PCservice actions.
+R2 full finished8258/0 in686.0s; exact978raw inputs stable at8da4e169/db76249b...d90c7. Existing main independently accepted receipt with3crowdFLAKY each alone2/2. Prepare sourcePR and scoped integration handoff; keep runtime unchanged, root user work intact. Software driver explicitly released with postflight0. No hardware/runtime actions.
 
 ## Facts found
 - CAD pose/monitor, grid/hand visibility, late non-tip CAD mesh, late shape STL and resize redraw after >60idleframes; idle still paints zero times.
@@ -20,73 +20,75 @@ Existing main APPROVED verification delta f037d3a and own-ledger-only20d66fe mer
 - Final Gacha error/default/config delta4d41a3c is independently reviewed; unchanged TV/Studio/Help remains part of that approved scope. Root data/runtime edits are outside this candidate.
 
 ## Done
+- Current FULL8258/0 in686.0s,313checks at8da4e169; freeze/before/after978raw inputs identical db76249bd51ffa8a06ddbe8413f47a03455acda12b8008206321f086b11d90c7, changedinputs[]. Receipt fulltrue, main independently accepted.
+- Existing crowdFLAKY check_gestures/check_game_prize/check_studio_auto_route each passed alone2/2 under unchanged runner; retained raw symptoms. Gacha SOLO passed. All5actual firmware hashes match approved build; unflashed.
 - Final affected+actual5firmwareenvironment/native suite1667/0 (94.8s), including actual private CAD, both Gacha pages, TV/Studio/Help, layout360–1920, contracts/generators/handoff. This is affected, not full.
 - New focused native195 + browser24 + parse4 =223/0; uncorrected old production209/10 demonstrated new review symptoms. Across iteration33 deliberate cases caught/restored (old27 + config/default5 + board-error1).
 - Existing main review source4d41a3c approved all3final corrections; no other actionable source finding in reviewed scope. This approval is not fullQC, hardware or deployment acceptance.
 - Evidence current: scratch/gacha-safety-1025/full-gate-4d41a3c/affected-build.log and affected-build-details.log; firmware-artifacts.json records all5 binary hashes/sizes. Gacha image is unflashed.
 
 ## Next
-1. Run justified second full after exact r2freeze; record raw inputs before/after and receipt. First failed result remains preserved.
-2. If green, prepare source PR/PCintegration handoff with both source approvals (runtime4d41a3c, verificationf037d3a) and exact r2manifest. Product source changes require existing main delta review.
-3. Hardware usernotready: no device retry/read, movement, flash, network/trim/calibration or Hub/service restart.
+1. Open and attach sourcePR with exact8da full certificate, approvals and3crowd retry qualification.
+2. Coordinate scoped root integration separately; preserve newer live metadata and all unrelated dirty source/user data. No deployment or service restart.
+3. Hardware USER-NOTREADY: no device reads/retries, motion, flash, network, trim/calibration, camera or Hub/service actions.
 
 ## Blocked
-First full failed; no fullgreen/PR/merge/deploy claim yet. Diagnosed verification fixes are approved and may proceed to r2 with stable inputs. Source software-only driver claim active; hardware remains explicitly usernotready.
+No software test blocker; sourcePR/integration pending. Hardware acceptance remains explicitly paused by human; source fullpass is not physical acceptance.
 
 ## File status
 Baseline:e30bc36; preserved Gemini2bd3299/8530dbf/6db1aeb, rules9b57ee9, Help8064292. Only owned changes below; imported Help design attributed above.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| apps/tv/index.html | Valid selectedNong, nativeHOME, module.joints, progress, exactclip restart | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | fa6c986 |
-| nong/main_python_set_nong/web/app_parts/build_rig.js | Invalidate before CAD early return | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | fa6c986 |
-| nong/main_python_set_nong/web/app_parts/main_loop.js | Resize invalidates renderer | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | fa6c986 |
-| nong/main_python_set_nong/web/app_parts/urdf_view.js | Hand/grid/non-tip late mesh invalidate | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | fa6c986 |
-| nong/main_python_set_nong/web/app_parts/stl_meshes.js | Immediate and late mesh invalidate | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | fa6c986 |
-| nong/main_python_set_nong/web/app.js | Builder output | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | fa6c986 |
-| nong/main_python_set_nong/web/index.html | Builder output/EOL | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | f8a9576 |
-| main_python/web/help/parts/studio.html | SavedHOME/limits/RELAX wording, idle rendering | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | 46ad847 |
-| main_python/web/help/parts/tv.html | Target/nativeHOME/restart description | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | fa6c986 |
-| main_python/web/help/parts/gacha.html | Async Hall estimate vs false mass/deadcentre claims | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | e79ea8a |
-| main_python/web/help.html | Builder output | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | 5b6f122 |
-| main_python/web/hub.html | Builder sync10lines inherited source feature | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | 46ad847 |
-| qc/checks/check_studio_render_idle.py | Real browser idle>60frames then mutations and idlezero | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | fa6c986 |
-| qc/checks/check_tv_remote.py | Real page->Hub->fake HOME/target/joints/progress/restart | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | fa6c986 |
-| handoff/tasks/gemini-studio-tv-1024.md | Reconciled per-file current state | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | this checkpoint |
-| docs/systems.json | Generator mapping/header or snapshot index | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | bb5ad4b |
-| docs/systems/agents.md | Generator mapping/header or snapshot index | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | 9e46ad0 |
-| docs/systems/app-gacha.md | Generator mapping/header or snapshot index | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | 46ad847 |
-| docs/systems/app-small.md | Generator mapping/header or snapshot index | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | 46ad847 |
-| docs/systems/app-voice.md | Generator mapping/header or snapshot index | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | 46ad847 |
-| docs/systems/fw-core.md | Generator mapping/header or snapshot index | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | bb5ad4b |
-| docs/systems/fw-gacha.md | Generator mapping/header or snapshot index | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | 46ad847 |
-| docs/systems/fw-registry.md | Generator mapping/header or snapshot index | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | 46ad847 |
-| docs/systems/hub-modules.md | Generator mapping/header or snapshot index | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | 46ad847 |
-| docs/systems/hub-studio.md | Generator mapping/header or snapshot index | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | 46ad847 |
-| docs/systems/qc.md | Generator mapping/header or snapshot index | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | d444999 |
-| docs/systems/studio.md | Generator mapping/header or snapshot index | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | 46ad847 |
-| nong/main_python_set_nong/PATCHES.md | Generator mapping/header or snapshot index | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | 46ad847 |
+| apps/tv/index.html | Valid selectedNong, nativeHOME, module.joints, progress, exactclip restart | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | fa6c986 |
+| nong/main_python_set_nong/web/app_parts/build_rig.js | Invalidate before CAD early return | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | fa6c986 |
+| nong/main_python_set_nong/web/app_parts/main_loop.js | Resize invalidates renderer | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | fa6c986 |
+| nong/main_python_set_nong/web/app_parts/urdf_view.js | Hand/grid/non-tip late mesh invalidate | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | fa6c986 |
+| nong/main_python_set_nong/web/app_parts/stl_meshes.js | Immediate and late mesh invalidate | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | fa6c986 |
+| nong/main_python_set_nong/web/app.js | Builder output | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | fa6c986 |
+| nong/main_python_set_nong/web/index.html | Builder output/EOL | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | f8a9576 |
+| main_python/web/help/parts/studio.html | SavedHOME/limits/RELAX wording, idle rendering | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 46ad847 |
+| main_python/web/help/parts/tv.html | Target/nativeHOME/restart description | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | fa6c986 |
+| main_python/web/help/parts/gacha.html | Async Hall estimate vs false mass/deadcentre claims | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | e79ea8a |
+| main_python/web/help.html | Builder output | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 5b6f122 |
+| main_python/web/hub.html | Builder sync10lines inherited source feature | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 46ad847 |
+| qc/checks/check_studio_render_idle.py | Real browser idle>60frames then mutations and idlezero | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | fa6c986 |
+| qc/checks/check_tv_remote.py | Real page->Hub->fake HOME/target/joints/progress/restart | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | fa6c986 |
+| handoff/tasks/gemini-studio-tv-1024.md | Reconciled per-file current state | pending integration | metadata-only current checkpoint; gate8da certificate recorded, no rerun for prose | this checkpoint |
+| docs/systems.json | Generator mapping/header or snapshot index | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | bb5ad4b |
+| docs/systems/agents.md | Generator mapping/header or snapshot index | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 431cf83 |
+| docs/systems/app-gacha.md | Generator mapping/header or snapshot index | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 46ad847 |
+| docs/systems/app-small.md | Generator mapping/header or snapshot index | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 46ad847 |
+| docs/systems/app-voice.md | Generator mapping/header or snapshot index | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 46ad847 |
+| docs/systems/fw-core.md | Generator mapping/header or snapshot index | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | bb5ad4b |
+| docs/systems/fw-gacha.md | Generator mapping/header or snapshot index | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 46ad847 |
+| docs/systems/fw-registry.md | Generator mapping/header or snapshot index | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 46ad847 |
+| docs/systems/hub-modules.md | Generator mapping/header or snapshot index | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 46ad847 |
+| docs/systems/hub-studio.md | Generator mapping/header or snapshot index | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 46ad847 |
+| docs/systems/qc.md | Generator mapping/header or snapshot index | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 431cf83 |
+| docs/systems/studio.md | Generator mapping/header or snapshot index | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 431cf83 |
+| nong/main_python_set_nong/PATCHES.md | Generator mapping/header or snapshot index | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 46ad847 |
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/app.js | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/index.html | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/patch.md | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/shared/mice.css | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/shared/themes.css | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/style.css | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
-| docs/systems/fw-web.md | Map generated Gacha page browser regression | pending | approved runtime4d41a3c; current affected+actual firmware/native1667/0; full/landing pending | bb5ad4b |
+| docs/systems/fw-web.md | Map generated Gacha page browser regression | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | bb5ad4b |
 | docs/PLAN.html | Only own A47-20/A48-14 handoff rows; preserve live union | done | only own resumed status/claims/freeze; real plan tool, preserve live union; no physical permission | uncommitted root metadata |
 | docs/plan_state.js | Generated live plan state for own handoff | done | only own resumed status/claims/freeze; real plan tool, preserve live union; no physical permission | uncommitted root metadata |
 | docs/BRIDGE.md | Only own scope/freeze/software-driver-release entries | done | only own resumed status/claims/freeze; real plan tool, preserve live union; no physical permission | uncommitted root metadata |
-
-## Evidence / preserved data
-- Earlier dc5a953/input82527a snapshot stays historical under scratch/gacha-safety-1025/candidate-cf23113/. Current gate folder is full-gate-4d41a3c/; runtime source approved4d41a3c.
-- Existing qc_chain_proj.json/settings_shared.json and old reports remain unstaged/unpromoted QC/user data. EOL-only status noise in generated files has no content diff. Root other-owner files and ordinary services preserved.
-- Main may receive later Gemini own-handoff prose only; no additional full/affected rerun solely for that metadata, per explicit main instruction. Keep gate source frozen during run.
-
-- First-gate exact evidence: full-gate-4d41a3c/full.log,full-details.log,full-result.json,inputs-before/after.json,input-drift-analysis.json. Gacha crowd failed with noGUI marks, then2/2 greenalone; startup/resource explanation is inference, not proven product fault. All assertions retained.
 | apps/help/app.json | QC line endings restored to exact original prefreeze bytes | done | before/current SHA matches first freeze, no normalized Git diff | no Git content change |
 | shared/web/themes.css | QC line endings restored to exact original prefreeze bytes | done | before/current SHA matches first freeze, no normalized Git diff | no Git content change |
 | tools/ai_panel.py | QC line endings restored to exact original prefreeze bytes | done | before/current SHA matches first freeze, no normalized Git diff | no Git content change |
 
-- Latest verification evidence: gate-integrity-focused-1025.log144/0, gate-integrity-real-probes-1025.log325/0, probe-restoration-result-1025.json all_exacttrue, sabotage-integrity-1025.log5/5 caught/restored. These repair verification only; original product runtime4d remains unchanged.
+## Evidence / preserved data
+- Earlier dc5a953/input82527a snapshot stays historical under scratch/gacha-safety-1025/candidate-cf23113/. Current successful gate folder is full-gate-4d41a3c-r2/; first failed folder full-gate-4d41a3c/ remains immutable; runtime source approved4d41a3c.
+- Existing qc_chain_proj.json/settings_shared.json and old reports remain unstaged/unpromoted QC/user data. EOL-only status noise in generated files has no content diff. Root other-owner files and ordinary services preserved.
+- Main may receive later Gemini own-handoff prose only; no additional full/affected rerun solely for that metadata, per explicit main instruction. Keep gate source frozen during run.
+
+- First-gate exact evidence: full-gate-4d41a3c/full.log,full-details.log,full-result.json,inputs-before/after.json,input-drift-analysis.json. Gacha crowd failed with noGUI marks, then2/2 greenalone; startup/resource explanation is inference, not proven product fault. All assertions retained.
+
+- Latest verification evidence: gate-integrity-focused-1025.log144/0, gate-integrity-real-probes-1025.log325/0, probe-restoration-result-1025.json all_exacttrue, sabotage-integrity-1025.log5/5 caught/restored. These repair verification only; original product runtime4d remains unchanged. R2 full evidence in scratch/gacha-safety-1025/full-gate-4d41a3c-r2/{freeze,inputs-before,inputs-after,full-result,receipt,firmware-artifacts}.json plus full.log/full-details.log. Later handoff prose is metadata-only, not a new full certificate.
 
 - Existing main reviewed exactf037d3a and20d66fe; approved for r2 with all assertions/timeouts intact. Current metadata checkpoint carries generation/ledgers only. Product runtime4d41a3c unchanged.
