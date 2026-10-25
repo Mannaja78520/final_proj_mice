@@ -61,6 +61,7 @@ class MiceToolsManager {
     const assigned = new Set();
     this.groups.forEach(g => {
       const groupApps = apps.filter(a => {
+        if (assigned.has(a)) return false;
         const id = (a.id || a.path || a.name || "").toLowerCase();
         return g.match.some(m => id.includes(m));
       });

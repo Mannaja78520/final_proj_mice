@@ -10,7 +10,7 @@
               "hub_auth.json."],
   "excludeNames": ["promt.md", "PATCHES.md", "hub_auth.json", "hub_password.txt",
                    "faces_login.json", "known_hubs.json", "settings_shared.json",
-                   ".qc-receipt.json", ".gitignore", "MiceHub.exe"],
+                   ".qc-receipt.json", ".gitignore", "MiceHub.exe", "_urdf_real.json"],
   "excludeExt": [".pyc", ".bin", ".exe", ".log", ".wav", ".mp3", ".png", ".jpg",
                  ".ico", ".onnx", ".bak", ".tmp"],
 

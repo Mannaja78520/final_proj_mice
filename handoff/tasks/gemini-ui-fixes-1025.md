@@ -11,7 +11,7 @@ Plan: A48-13; related Gemini A48-17
 User: independently fix discovered issues and search all latest Gemini work for further problems. Preserve user data/calibration; no realhardware while user-notready.
 
 ## Doing now
-First full immutable52e1037 FAILED8321/4; four isolated crowd retries green2/2. Source983/CAD20 hashes unchanged. Fix dynamic Tools duplication and inspect/fix all four gate failures (designer literal scanner, whitespace-only Help guard, translated Answers empty copy, generated QC artifact inventory). Preserve first full proof; run focused checks, review actualdelta then fresh full for changedsource. No hardware/runtime/root source changes.
+First full immutable52e1037 FAILED8321/4; four isolated crowd retries green2/2. Source983/CAD20 hashes unchanged. Fixed dynamic Tools duplication and all four gate failures; focused186/0. Designer scanner also now resumes visible scanning after nested technical blocks. Original Voice fallback retained. Guardreversion caught/restored; actualdelta independent review pending. Preserve first full proof; run focused checks, review actualdelta then fresh full for changedsource. No hardware/runtime/root source changes.
 
 ## File status
 Baseline: ffff102; unrelated rootdirtywork not owned. Planned exactpaths below; remove unchanged rows or label reviewed-only at final reconciliation.
@@ -46,13 +46,13 @@ Baseline: ffff102; unrelated rootdirtywork not owned. Planned exactpaths below; 
 | scratch/gemini-ui-fixes-1025/extra-regression-reversions.json | 3extra head/metadata/backend cases | done, private | exact saved evidence, no hardware proof | uncommitted, ignored |
 | scratch/gemini-ui-fixes-1025/focused-final.log | Actual57/0 focused rawlog | done, private | exact saved evidence, no hardware proof | uncommitted, ignored |
 
-| main_python/web/home/parts/tools.js | Full-gate correction or tool grouping | pending | not run | uncommitted |
-| main_python/web/hub.html | Full-gate correction or tool grouping | pending | not run | uncommitted |
-| qc/checks/check_designer_first.py | Full-gate correction or tool grouping | pending | not run | uncommitted |
-| qc/checks/check_help_links.py | Full-gate correction or tool grouping | pending | not run | uncommitted |
-| qc/checks/check_voice_settings.py | Full-gate correction or tool grouping | pending | not run | uncommitted |
-| qc/checks/check_systems.py | Full-gate correction or tool grouping | pending | not run | uncommitted |
-| docs/systems.json | Full-gate correction or tool grouping | pending | not run | uncommitted |
+| main_python/web/home/parts/tools.js | Full-gate correction or tool grouping | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
+| main_python/web/hub.html | Full-gate correction or tool grouping | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
+| qc/checks/check_designer_first.py | Type operand/visitor literal distinction; technical subtree stack | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
+| qc/checks/check_help_links.py | Full-gate correction or tool grouping | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
+| qc/checks/check_voice_settings.py | Full-gate correction or tool grouping | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
+| qc/checks/check_systems.py | Full-gate correction or tool grouping | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
+| docs/systems.json | Full-gate correction or tool grouping | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
 
 ## Facts found
 - Prior8258full@8da predates newGemini UI/OOP and does not cover this source.
@@ -65,9 +65,9 @@ Baseline: ffff102; unrelated rootdirtywork not owned. Planned exactpaths below; 
 - Focused57/0, actualEdge58/0, iterative12reversions caught/restored; independent source review approved6runtime hashes. Hardware untouched; current full pending.
 
 ## Next
-1. Add meaningful integration regressions; demonstrate failures on oldsource, apply narrow OOP fixes and inspect finaldiff.
-2. Review remaining30files + relevant dirtyStudio source; confirm and fix concrete findings, preserve unrelated data.
-3. Actual full gate on immutable source, then update PR81 with exact certificate, scoped root integration preserving dirtywork, no runtime cutover.
+1. Final actualdelta independent review; fresh full gate after confirmed newfixes.
+2. Isolated EXE rebuild/archive verification; update PR81 with exact certificate.
+3. Scoped root source integration preserving all dirtywork; release driver, retain hardwarepause.
 
 ## Blocked
 Realhardware remains USER-NOTREADY. No software blocker; source/QCdriver lease main only. No rootruntime cutover authorized by softwaretests.

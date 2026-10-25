@@ -208,5 +208,24 @@ const machine = (id, label = id) => ({id, label, module: id, item: "gift", near:
     c.miceTheme.set("second"); c.fire("storage", {key: "mice_theme", newValue: null});
     ok(!c.document.documentElement["data-theme"] && a.value === "first", "removing a stored theme restores default and picker together");
   });
+  await test("Tools overlap, fallback and optional help", () => {
+    const c = context(), src = read("main_python/web/home/parts/tools.js");
+    vm.runInContext(src.slice(0, src.indexOf("window.MiceToolsManager")), c);
+    const manager = vm.runInContext("new MiceToolsManager()", c), box = new Element();
+    const apps = [{id: "cctv-camera", name: "Camera", path: "/app/cctv-camera/", help: "camera"},
+      {id: "new-addon", name: "New add-on", path: "/app/new-addon/"}];
+    const rows = node => (node.className.split(" ").includes("tool-tile") ? [node] : []).concat(...node.children.map(rows));
+    manager.render(box, apps);
+    let rendered = rows(box);
+    ok(rendered.length === 2 && rendered.filter(r => r.innerHTML.includes("Camera")).length === 1,
+      "a tool matching multiple groups appears exactly once");
+    ok(rendered.some(r => r.innerHTML.includes("New add-on")), "unmatched tools remain in Other Tools");
+    ok(rendered[0].children.filter(n => n.tag === "a").length === 1 &&
+      rendered[0].children.find(n => n.tag === "a").href === "/help#camera",
+      "declared Help produces the matching section link");
+    ok(rendered[1].children.every(n => n.tag !== "a"), "tools without Help do not receive a broken link");
+    manager.render(box, apps);
+    ok(rows(box).length === 2, "redrawing categorized tools replaces rather than duplicates rows");
+  });
   process.exitCode = failed ? 1 : 0;
 })().catch(error => { console.error(error); process.exitCode = 1; });

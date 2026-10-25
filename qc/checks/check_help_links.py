@@ -90,7 +90,7 @@ def run(t):
                  "%s names a real help section (#%s)" % (a["id"], a["help"]),
                  "app.json can point anywhere; a wrong name is a dead link "
                  "that looks like a working one")
-    t.contains(hub, "if(a.help){",
+    t.ok(re.search(r"if\s*\(\s*a\.help\s*\)\s*\{", hub),
                "and the tool row only offers a link when there is one to offer",
                )
 

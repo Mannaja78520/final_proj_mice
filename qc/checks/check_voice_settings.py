@@ -133,7 +133,8 @@ def run(t):
                    "the listening model speaks designer words, not ids")
         t.contains(p, "Show technical details",
                    "advanced hides behind the same switch as the hub's")
-        t.ok("No answers yet" in p,
+        empty = re.search(r'<p\b[^>]*\bid="ansEmpty"[^>]*>(.*?)</p>', p, re.S)
+        t.ok(empty and re.search(r"No answers yet|ยังไม่มีคำตอบ", empty[1]),
              "the answers section says what its empty state is")
 
         # A26-69: the polite particle, the Thai room and the apology were all
