@@ -22,6 +22,7 @@ def run(t):
             r = subprocess.run([node, "--check", "-"], input=script, text=True,
                                capture_output=True, encoding="utf-8", timeout=10)
             t.ok(r.returncode == 0, "%s inline script %d parses" % (page, i), r.stderr[-800:])
-    p = F.CODE / "apps/gacha/motion.js"
-    r = subprocess.run([node, "--check", str(p)], capture_output=True, text=True, timeout=10)
-    t.ok(r.returncode == 0, "Gacha motion helper parses", r.stderr[-800:])
+    for helper in ("motion", "presets"):
+        p = F.CODE / ("apps/gacha/" + helper + ".js")
+        r = subprocess.run([node, "--check", str(p)], capture_output=True, text=True, timeout=10)
+        t.ok(r.returncode == 0, "Gacha %s helper parses" % helper, r.stderr[-800:])

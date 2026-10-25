@@ -265,7 +265,8 @@ const VOICE_TABS = [
 
 class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Object) {
   constructor() {
-    super('voice', {statusId: 'stat'});
+    // The bundle is loaded in <head>; create Status lazily after the DOM exists.
+    super('voice');
     this.$ = id => document.getElementById(id);
     this.rec = null;
     this.ch = null;
@@ -306,8 +307,8 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
   say(msg, kind = "ready", tech = ""){
     const M = globalThis.Mice;
     if (M && M.Status) {
-      this.status = this.status || new M.Status("stat");
-      return (this.status[kind] || this.status.ready).call(this.status, msg, tech);
+      const status = this.status || this._status || (this._status = new M.Status("stat"));
+      return (status[kind] || status.ready).call(status, msg, tech);
     }
     this.$("stat").textContent = msg;
   }

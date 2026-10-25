@@ -338,7 +338,10 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
   }
 
   init() {
-    this.currentMode = localStorage.getItem("mice_tv_mode") || (window.innerWidth < 768 ? "mobile" : "tech");
+    const defaultMode = window.innerWidth < 768 ? "mobile" : "tech";
+    let savedMode = "";
+    try { savedMode = localStorage.getItem("mice_tv_mode") || ""; } catch (e) {}
+    this.currentMode = ["mobile", "stage", "tech"].includes(savedMode) ? savedMode : defaultMode;
     this.applyMode(this.currentMode);
     this.buildJointRows();
     if (window.miceLogin) {
@@ -378,8 +381,9 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
 
   resetPollTimer(intervalMs) {
     if (this.pollTimer) clearInterval(this.pollTimer);
+    this.pollTimer = null;
     this.pollInterval = intervalMs;
-    this.pollTimer = setInterval(() => this.poll(), intervalMs);
+    if (!document.hidden) this.pollTimer = setInterval(() => this.poll(), intervalMs);
   }
 
   buildJointRows() {
@@ -438,7 +442,7 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
   }
 
   async poll() {
-    if (this.pollBusy) return;
+    if (document.hidden || this.pollBusy) return;
     this.pollBusy = true;
     try {
       const stRes = await fetch("/api/modules");

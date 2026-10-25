@@ -29,8 +29,8 @@ class MiceThemeManager {
     // Dynamic cross-window / cross-tab theme synchronization
     if (typeof window !== "undefined") {
       window.addEventListener("storage", (e) => {
-        if (e.key === this.key && e.newValue !== null) {
-          this.apply(e.newValue, false);
+        if (e.key === this.key || e.key === null) {
+          this.apply(e.newValue || "", false);
         }
       });
     }
@@ -109,6 +109,10 @@ class MiceThemeManager {
     sel.onchange = () => { this.set(sel.value); say(); };
     el.appendChild(sel);
     el.appendChild(note);
+    this.onChange(id => {
+      sel.value = id || (all[0] && all[0].id) || "";
+      say();
+    });
     say();
     return sel;
   }

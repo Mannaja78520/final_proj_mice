@@ -245,6 +245,7 @@ Examples: docs/gacha/README.md</pre>
 </div></div>
 
 <script src="motion.js"></script>
+<script src="presets.js"></script>
 <script>
 // OOP GachaApp (A48-17) - encapsulated application lifecycle
 const HOOKS = [["dispensed", "a prize fell"], ["empty", "a machine ran out"], ["out", "a kind ran out everywhere"],
@@ -322,6 +323,20 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
       post: body => Mice.Api.post("/api/gacha/machine", body),
       tell: text => { const el = this.$("mStat"); if (el) el.textContent = text; }
     });
+    this.preset = new GachaPreset({
+      post: (path, body) => Mice.Api.post(path, body),
+      read: () => ({name: this.val("evName"), machines: this.readMachines(), items: this.readItems(),
+        rules: {items: this.readRows("rItems"), people: this.readRows("rPeople")}}),
+      refresh: () => this.load(),
+      setBusy: busy => document.querySelectorAll('[data-preset-start],button[onclick^="applyPreset"]').forEach(b => { b.disabled = busy; }),
+      tell: (kind, text) => {
+        const notice = this.$("presetNotice");
+        notice.hidden = false;
+        notice.textContent = text;
+        if (kind === "ready") notice.innerHTML += ' <button class="primary" onclick="showTab(\'give\')">ไปหน้าแจกรางวัล</button>';
+        if (kind === "error") notice.innerHTML += ' <button class="primary" data-preset-start onclick="saveAllPreset()">ลองบันทึกและเปิดงานอีกครั้ง</button>';
+      }
+    });
     this.tabs = null;
   }
 
@@ -394,7 +409,7 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
         '<button onclick="toggleTuning(' + i + ')" title="Tune speeds, timing & drop count">&#9881;&#65039; Tune</button>' +
         (m.at ? '<a class="btn" target="_blank" href="/mod?dev=' + encodeURIComponent(m.at) + '&name=' + encodeURIComponent(m.module || m.id) +
           '" title="magnets, speed, timing: the machine page">page &nearr;</a>' : '') +
-        '<button onclick="S.machines.splice(' + i + ',1);drawMachines()">remove</button></div></td></tr>';
+        '<button onclick="removeMachine(' + i + ')">remove</button></div></td></tr>';
 
       if (this.openTuning[i]) {
         tr += '<tr style="background:#f8fafc"><td colspan="9" style="padding:12px 16px;border-bottom:2px solid #cbd5e1">' +
@@ -506,9 +521,19 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
   }
 
   addMachine() {
-    this.S.machines = this.readMachines();
+    this.S.machines = this.editedMachines();
     this.S.machines.push({id: "", module: "", label: "", item: "", near: [], live: {}});
     this.drawMachines();
+  }
+
+  removeMachine(i) {
+    this.S.machines = this.editedMachines();
+    this.S.machines.splice(i, 1);
+    this.drawMachines();
+  }
+
+  editedMachines() {
+    return this.readMachines().map((edited, i) => Object.assign({}, this.S.machines[i], edited));
   }
 
   async saveMachines() {
@@ -535,14 +560,18 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
     this.$("iTable").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' + this.cell("", "id") + this.cell("", "label") + this.cell("", "instead") + '<td></td></tr>');
   }
 
-  async saveItems() {
+  readItems() {
     const items = {};
     [...this.$("iTable").tBodies[0].rows].forEach(r => {
       const id = r.querySelector('[data-k="id"]').value.trim();
       const instead = r.querySelector('[data-k="instead"]').value.split(/[\s,]+/).filter(Boolean);
       if (id) items[id] = Object.assign({label: r.querySelector('[data-k="label"]').value.trim()}, instead.length ? {instead} : {});
     });
-    this.say("iStat", await Mice.Api.post("/api/gacha/config", {items}), "kinds saved");
+    return items;
+  }
+
+  async saveItems() {
+    this.say("iStat", await Mice.Api.post("/api/gacha/config", {items: this.readItems()}), "kinds saved");
     this.load();
   }
 
@@ -642,11 +671,17 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
   edDraw() {
     this.$("edT").tBodies[0].innerHTML = this.ED.map((r, i) => '<tr>' + r.map((c, j) =>
       '<td><input data-r="' + i + '" data-c="' + j + '" value="' + this.esc(c) + '"' + (i ? '' : ' style="font-weight:600"') + '></td>').join("") +
-      '<td><button onclick="edRead();ED.splice(' + i + ',1);edDraw()">remove</button></td></tr>').join("");
+      '<td><button onclick="edRemove(' + i + ')">remove</button></td></tr>').join("");
   }
 
   edRead() {
     this.$("edT").querySelectorAll("input").forEach(e => { this.ED[+e.dataset.r][+e.dataset.c] = e.value; });
+  }
+
+  edRemove(i) {
+    this.edRead();
+    this.ED.splice(i, 1);
+    this.edDraw();
   }
 
   edAdd(what) {
@@ -798,33 +833,10 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
     this.say("vpStat", await Mice.Api.post("/api/gacha/voice", {enabled: this.$("vpOn").checked, say: this.$("vpSay").checked, rules}), "saved");
   }
 
-  async saveAllPreset() {
-    this.$("presetNotice").innerHTML = "⏳ กำลังบันทึกข้อมูลและเปิดงานกิจกรรม…";
-    this.$("presetNotice").hidden = false;
-    try {
-      // 1. Save event
-      await Mice.Api.post("/api/gacha/event", {name: this.val("evName"), open: true});
-      // 2. Save machines
-      await Mice.Api.post("/api/gacha/config", {machines: this.readMachines()});
-      // 3. Save items
-      const items = {};
-      [...this.$("iTable").tBodies[0].rows].forEach(r => {
-        const id = r.querySelector('[data-k="id"]').value.trim();
-        const instead = r.querySelector('[data-k="instead"]').value.split(/[\s,]+/).filter(Boolean);
-        if (id) items[id] = Object.assign({label: r.querySelector('[data-k="label"]').value.trim()}, instead.length ? {instead} : {});
-      });
-      await Mice.Api.post("/api/gacha/config", {items});
-      // 4. Save rules
-      await Mice.Api.post("/api/gacha/rules", {items: this.readRows("rItems"), people: this.readRows("rPeople")});
-      await this.load();
-      this.$("presetNotice").innerHTML = "🎉 <b>บันทึกทุกตารางและเปิดงานกิจกรรมสำเร็จ!</b> ระบบพร้อมแจกของรางวัลทันที " +
-        '<button class="primary" style="margin-left:8px;padding:3px 10px;font-size:12px" onclick="showTab(\'give\')">🎁 ไปที่หน้าแจกรางวัล</button>';
-    } catch(e) {
-      this.$("presetNotice").innerHTML = "⚠️ บันทึกไม่สำเร็จ: " + this.esc(e.message || e);
-    }
-  }
+  saveAllPreset() { return this.preset.run(); }
 
   applyPreset(key) {
+    if (this.preset.busy) return;
     const p = PRESETS[key];
     if (!p) return;
     this.$("evName").value = p.event;
@@ -836,7 +848,7 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
     p.rules.forEach(r => this.addRow("rItems", r));
     this.$("presetNotice").innerHTML = "⚡ <b>นำเข้าพรีเซต: " + this.esc(p.name) + " เรียบร้อย!</b> " +
       '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
-      '<button class="primary" onclick="saveAllPreset()" style="font-weight:700">💾 บันทึกทุกตารางและเริ่มงานทันที</button>' +
+      '<button class="primary" data-preset-start onclick="saveAllPreset()" style="font-weight:700">💾 บันทึกทุกตารางและเริ่มงานทันที</button>' +
       '<button class="secondary" onclick="showTab(\'machines\')">🛠️ ดู/แก้ตารางเครื่องและของรางวัล</button>' +
       '<button class="secondary" onclick="showTab(\'rules\')">📋 ดู/แก้ตารางกฎสิทธิ์</button>' +
       '</div>';
@@ -855,8 +867,7 @@ window.GachaApp = GachaApp;
 const gachaApp = new GachaApp();
 window.gachaApp = gachaApp;
 window.motion = gachaApp.motion;
-let S = gachaApp.S;
-window.S = S;
+window.S = gachaApp.S;
 const $ = id => gachaApp.$(id);
 const val = id => gachaApp.val(id);
 const stat = gachaApp.stat;
@@ -875,6 +886,7 @@ const testAllSlots = i => gachaApp.testAllSlots(i);
 const readMachines = () => gachaApp.readMachines();
 const addMachine = () => gachaApp.addMachine();
 const saveMachines = () => gachaApp.saveMachines();
+const removeMachine = i => gachaApp.removeMachine(i);
 const mcmd = (i, c) => gachaApp.mcmd(i, c);
 const drawItems = () => gachaApp.drawItems();
 const addItem = () => gachaApp.addItem();
@@ -891,10 +903,10 @@ const push = () => gachaApp.push();
 const shLoad = () => gachaApp.shLoad();
 const shSave = () => gachaApp.shSave();
 const shCopyScript = () => gachaApp.shCopyScript();
-let ED = gachaApp.ED;
 const edDraw = () => gachaApp.edDraw();
 const edRead = () => gachaApp.edRead();
 const edAdd = what => gachaApp.edAdd(what);
+const edRemove = i => gachaApp.edRemove(i);
 const edOpen = () => gachaApp.edOpen();
 const edSave = () => gachaApp.edSave();
 const drawHooks = full => gachaApp.drawHooks(full);

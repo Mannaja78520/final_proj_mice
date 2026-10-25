@@ -73,7 +73,7 @@ Baseline: 645143e
 - Step 2: Full OOP conversion of all 7 client apps (`all-jao`, `camera`, `faces`, `gacha`, `photobooth`, `tv`, `voice`).
 - Step 3: Full OOP conversion of Hub Tools (`MiceToolsManager`) and Help Navigator (`MiceHelpNavigator`).
 - Step 4: Web bundles compiled via `python tools/build_web.py`.
-- Step 5: Full verification suite passed (301 passed, 0 failed).
+- Step 5: Selected verification passed301/0 in8.7s (check_faces_app, check_faces_rules, check_camera, check_voice_fast, check_voice_services, check_voice_answers). This was NOT a full gate; corrected by independent Codex audit. Later fixes/proof: handoff/tasks/gemini-ui-fixes-1025.md.
 
 ## Next
 - Commit to `main` and update `backup-20261024-complete-upgrade`.
