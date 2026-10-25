@@ -63,16 +63,17 @@ def run_check(name):
 
 
 def apply(spec):
-    """Patch one file. Returns the original text, or raises if it did not bite."""
+    """Patch one file. Returns the original bytes, or raises if it did not bite."""
     f = ROOT / spec["file"]
-    was = f.read_text(encoding="utf-8")
+    original = f.read_bytes()
+    was = original.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
     find, repl = spec["find"], spec.get("replace", "")
     if find not in was:
         raise SystemExit("sabotage %r does not appear in %s - nothing would "
                          "have changed, and the check would have passed for "
                          "the wrong reason" % (find[:60], spec["file"]))
     f.write_text(was.replace(find, repl, 1), encoding="utf-8", newline="")
-    return f, was
+    return f, original
 
 
 def main(argv=None):
@@ -99,7 +100,7 @@ def main(argv=None):
         try:
             passed, bad, _out = run_check(a.check)
         finally:
-            f.write_text(was, encoding="utf-8", newline="")   # always
+            f.write_bytes(was)   # always, including original line endings
         why = spec.get("why") or spec["find"][:50]
         if passed:
             print("%d. SILENT  %s" % (i, why))

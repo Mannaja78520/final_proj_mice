@@ -1,7 +1,7 @@
 # Studio/TV + Help — approved source, full gate next
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T16:32:14+07:00
+Updated: 2026-10-25T16:38:08+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
 Last commit: this checkpoint; approved functional source4d41a3c
@@ -11,7 +11,7 @@ Plan: A48-14 (robot), combined A47-20; imported Help8064292 owner597a
 Keep idle rendering savings with mutation redraw; selected Nong native savedHOME/telemetry/truthful restart; preserve menu-based Help and human-corrected Hall diagram.
 
 ## Doing now
-First fullgate FAILED8217/1 (561.7s): packing checker read stale local published plan_state(A47-19doing) while localHTML/root state isdone. Root status is not changed. Input guard caught3CRLF->LF restorations only (no normalized runtime change); exact original bytes restored and failed logs preserved. Main authorizes verification-only canonical plan resolver/stale-copy regression, byte-safe probe/tool restoration with CRLF+exception cases, and existing SOLO isolation for complete Gacha browser journey (same assertions/timeouts). Implement narrow delta, review exactSHA with main before justified second full. Runtime4d41a3c remains unchanged/approved; hardware notready.
+Verification-only correction implemented; focused integrity/packing/devtools144/0. Canonical path uses existing plan writer resolver; stale fullpublished worktree+override regression. Manifest/theme helpers and sabotage CLI restore original bytes; LF/CRLF+UTF8 normal/exception checks execute actual helpers/main. Full Gacha journey isolated in existing SOLO lane with identical assertions/timeouts; crowd-startup explanation remains inference. Next real theme/tools/Gacha probes and raw3file before/after checks, deliberate integrity failures/restoredgreen, then exact verification delta main review before second full. Product runtime4d41a3c unchanged; first failed gate preserved.
 
 ## Facts found
 - CAD pose/monitor, grid/hand visibility, late non-tip CAD mesh, late shape STL and resize redraw after >60idleframes; idle still paints zero times.
