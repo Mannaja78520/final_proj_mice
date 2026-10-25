@@ -1,7 +1,7 @@
 # Gacha safety — approved source, full gate next
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T16:04:28+07:00
+Updated: 2026-10-25T16:32:14+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
 Last commit: this checkpoint; approved functional source4d41a3c
@@ -11,7 +11,7 @@ Plan: A47-20 (robot); A0-35 audit done
 Preserve Gemini Gacha features; bound motion, make completion/reference/refusals truthful, verify and prepare source integration. No physical calibration or runtime changes.
 
 ## Doing now
-Freeze immutable inputs, confirm fresh matching-driver inventory0, send exact evidence/fingerprint to existing main, then run full QC ONCE as explicitly authorized. Main independently APPROVED source4d41a3c; all current affected/build checks passed and deliberate reversions restored. No runtime source change beyond4d41a3c without delta review. Software-only QC lease active; hardware USER NOT READY.
+First fullgate FAILED8217/1 (561.7s): packing checker read stale local published plan_state(A47-19doing) while localHTML/root state isdone. Root status is not changed. Input guard caught3CRLF->LF restorations only (no normalized runtime change); exact original bytes restored and failed logs preserved. Main authorizes verification-only canonical plan resolver/stale-copy regression, byte-safe probe/tool restoration with CRLF+exception cases, and existing SOLO isolation for complete Gacha browser journey (same assertions/timeouts). Implement narrow delta, review exactSHA with main before justified second full. Runtime4d41a3c remains unchanged/approved; hardware notready.
 
 ## Facts found
 - Preserved incoming root C++AAAE3506 and WebUI1e3b2e features (intake/GCALIB/GTEST/GDRAIN/tuning) in corrected branch. Earlier quick5716/5735 are proven quick, not full.
@@ -26,13 +26,12 @@ Freeze immutable inputs, confirm fresh matching-driver inventory0, send exact ev
 - Evidence current: scratch/gacha-safety-1025/full-gate-4d41a3c/affected-build.log and affected-build-details.log; firmware-artifacts.json records all5 binary hashes/sizes. Gacha image is unflashed.
 
 ## Next
-1. Full gate on this exact frozen input manifest; record before/after fingerprints and receipt, no concurrent driver or source mutation.
-2. After fullgreen prepare source PR/PCintegration handoff with exact source/build/evidence; reconcile any later root handoff-only prose once without runtime changes.
-3. Any actual runtime source finding invalidates approval/proof and needs affected checks + existing main delta review before release.
-4. USER NOT READY for hardware: no device retries/checks, motion, HOME/RELAX, network, flash, trim/calibration or Hub/service restart.
+1. Fix verification only: canonical plan resolver using existing plan tool; exact bytes in manifest/theme/sabotage cleanup; CRLF/error-path regression. Isolate long Gacha journey in existing SOLO lane without dropping assertions or changing timeout budgets.
+2. Focused checks + deliberate failures/restoredgreen, generator headers, exact verification delta review by existing main. No hardware-state changes or guard exclusions.
+3. Freeze corrected input manifest and rerun full for this diagnosed failure once approved; preserve first run evidence. Then PR/PCintegration preparation.
 
 ## Blocked
-Full QC NOT RUN yet; PR/merge/source promotion/runtime deployment not done. Source review is approved4d41a3c; software gate may proceed autonomously only after input/inventory conditions. No physical/runtime rights acquired.
+Fullgate NOT GREEN; no valid completion/PR/merge/deploy. Product runtime4d41a3c remains source-approved, but verification repairs/delta review + stable fullgate required. Human hardware notready; no actual hardware/network/service action.
 
 ## File status
 Baseline:e30bc36; preserved Gemini2bd3299/8530dbf/6db1aeb, rules9b57ee9, Help8064292. Only owned changes below; imported Help design attributed above.
@@ -60,3 +59,12 @@ Baseline:e30bc36; preserved Gemini2bd3299/8530dbf/6db1aeb, rules9b57ee9, Help806
 - Earlier dc5a953/input82527a snapshot stays historical under scratch/gacha-safety-1025/candidate-cf23113/. Current gate folder is full-gate-4d41a3c/; runtime source approved4d41a3c.
 - Existing qc_chain_proj.json/settings_shared.json and old reports remain unstaged/unpromoted QC/user data. EOL-only status noise in generated files has no content diff. Root other-owner files and ordinary services preserved.
 - Main may receive later Gemini own-handoff prose only; no additional full/affected rerun solely for that metadata, per explicit main instruction. Keep gate source frozen during run.
+
+- First-gate exact evidence: full-gate-4d41a3c/full.log,full-details.log,full-result.json,inputs-before/after.json,input-drift-analysis.json. Gacha crowd failed with noGUI marks, then2/2 greenalone; startup/resource explanation is inference, not proven product fault. All assertions retained.
+| qc/checks/check_packing_list.py | Resolve only canonical live plan, not stale published worktree copy | pending | planned verification-only repair after failed full; tests/review pending | uncommitted |
+| qc/checks/check_tools_list.py | Restore manifest probe original bytes | pending | planned verification-only repair after failed full; tests/review pending | uncommitted |
+| qc/checks/check_themes.py | Restore theme probe original bytes | pending | planned verification-only repair after failed full; tests/review pending | uncommitted |
+| tools/sabotage.py | Always restore original source bytes | pending | planned verification-only repair after failed full; tests/review pending | uncommitted |
+| qc/checks/check_dev_tools.py | Actual byte comparison for sabotage cleanup | pending | planned verification-only repair after failed full; tests/review pending | uncommitted |
+| qc/checks/check_qc_probe_integrity.py | Stale published plan + CRLF/exception probe regressions | pending | planned verification-only repair after failed full; tests/review pending | uncommitted |
+| qc/run_qc.py | Complete Gacha journey in existing SOLO isolation lane | pending | planned verification-only repair after failed full; tests/review pending | uncommitted |
