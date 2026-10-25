@@ -1,7 +1,7 @@
 # Nong HOME/CAD and Gemini evidence audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-25T09:03:52.641840+07:00
+Updated: 2026-10-25T09:08:37.610184+07:00
 Plan: A48-13 (robot)
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
@@ -18,7 +18,7 @@ Baseline: prior own checkpoint8588b6b. Runtime code is read-only in another owne
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| `handoff/tasks/nong-gemini-audit-1024.md` | Resume independent review; concise owned inventory | pending | current freeze976hashes match; review pending | this checkpoint |
+| `handoff/tasks/nong-gemini-audit-1024.md` | Resume independent review; concise owned inventory | pending | 976freeze+5artifact hashes match; final3findings sent | this checkpoint |
 
 ## Facts found
 - nong/main_python_set_nong/rig_default.json: zero=[0,0,0,0,0,0,0,0,90,90]; home/neutral=[90,140,90,90,90,40,90,90,90,90.5]. DEFAULT_RIG in rig_data.js is a fallback, not authoritative saved calibration.
@@ -82,3 +82,7 @@ Source reports actual fake-browser Gacha20/0, TV11/0, Studioidle10/0; main inspe
 
 ## Current review evidence
 Private report scratch/nong-gemini-audit-1024/review-1025.md tracks exact candidate/evidence and actionable findings; prior reports remain historical. No runtime file changed by this audit.
+
+## Resumed review conclusion checkpoint
+Exact9e46ad0 inspected, all976freezeinputs +5firmwareartifact hashes match. Original motion/TV/render/Help findings addressed; final delta required: P2 config/CLEAR invalidates logicalreference + polarity debounce; GTEST docdefault1 + omittedarg assertion; asyncUI shows precise boardERR rather than genericHTTP200 refusal. Owner acknowledged mainconfigfinding; sent remaining2. Inspect exact corrected source/test diff before fullgate, no current finalapproval.
+Lab25Oct readiness: Hubhealthy/modulesempty, hostdifferentLAN, oldnongINFO502, noUSBboard. All Lab command/testdriver reservations explicitly RELEASED, closing70ebb7d. Currenttrim unread/untouched; no newhardwareacceptance. Asked user current power/WiFireadiness while sourcefixes continue. No broadarm/elbowtrim/flash/restart by main.
