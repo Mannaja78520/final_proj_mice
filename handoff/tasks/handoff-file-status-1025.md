@@ -46,3 +46,6 @@ Nothing for rules/metadata work. Do not run another owner's QC/fake/hardware dri
 ## Verification checkpoint
 V1: scratch/handoff-file-status-1025/metadata-validation.json. Live six-file hash manifest: scratch/handoff-file-status-1025/live-rules.json. Delivery receipt: scratch/handoff-file-status-1025/gemini-notice.json.
 41 isolated metadata assertions passed; removing template table, Claude entry rule and common rule each correctly fails the check. No shared QC/fake/Hub/browser/hardware driver ran. Coverage here protects the rule/template and creation/take behavior; it does not automatically prove every historical changed file was listed.
+
+## Adoption audit follow-up
+Gemini committedcce6e57 own56file ledger; source owner adopted exact columns in both task files. Independent path-vs-commit check caught4wrong Gemini SHA rows: notices/tabs should2bd3299, helpgacha b5a161b, helpfirmware ce0aeb0. Correction notice visibly delivered to nativeed497bb9, Working; only its own ledger allowed. Gemini also ran handoffQC55/0 despite no-driver instruction; source QC owner notified, avoid shared dashboard as gate proof. No main QC/hardware/appsource action. Report scratch/handoff-file-status-1025/gemini-ledger-provenance-check.json; not final approval of Gemini work. Requested rules/notice task staysdone; Gemini owns corrections.
