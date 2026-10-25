@@ -373,7 +373,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 
 - nothing
 
-## Checks that test it (173)
+## Checks that test it (174)
 
 - `check_advanced`
 - `check_amp_wiring`
@@ -539,6 +539,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `check_video_moves`
 - `check_video_page`
 - `check_view`
+- `check_voice_fast`
 - `check_voice_identify`
 - `check_voice_move`
 - `check_voice_multi`

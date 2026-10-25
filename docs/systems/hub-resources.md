@@ -24,9 +24,10 @@ Machine-local configurable CPU/GPU/RAM policy, bounded capability discovery, nex
 
 - nothing
 
-## Checks that test it (2)
+## Checks that test it (3)
 
 - `check_resource_policy`
 - `check_resource_policy_browser`
+- `check_voice_fast`
 
-Run them: `python qc/run_qc.py --no-build check_resource_policy check_resource_policy_browser`
+Run them: `python qc/run_qc.py --no-build check_resource_policy check_resource_policy_browser check_voice_fast`
