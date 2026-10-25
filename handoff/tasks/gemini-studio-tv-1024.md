@@ -1,7 +1,7 @@
 # Studio/TV correctness + reconciled Help — frozen for review
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T08:15:05+07:00
+Updated: 2026-10-25T09:11:23+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
 Last commit: this checkpoint; functional source9e46ad0, prior metadata cf23113
@@ -11,7 +11,7 @@ Plan: A48-14 (robot); combined with A47-20; imported A48-15 Help8064292 owned597
 Keep idle rendering savings but redraw all actual mutations; target a valid selected Nong for native saved HOME/telemetry and truthful show restart; preserve Help owner menu/diagram fixes.
 
 ## Doing now
-Checkpoint exact frozen candidate/evidence and release QC-only driver lease. Human explicitly paused existing main reviewer to run errands, returning with “ทำต่อ”; no independent approval is implied. Do not start full gate, PR/merge, deploy or another reviewer. No more source edits until authorized review/resume.
+Human/main resumed review. After explicit Lab09:06 release, claim software-only final review fixes: invalidate logical pocket reference on accepted layout/reference changes/CLEAR; refresh Hall on polarity change, preserve rejected-config state; actual whole-GCFG branch regression. Correct GTEST documented default1 with omitted-arg production assertion, and prefer actual board ERRbusy in GachaMotion.error with real Hub/fake browser refusal. Add focused fixture; then deliberate failures/restored green, affected builds and exact new review before fullgate. No hardware/runtime/userdata writes.
 
 ## Facts found
 - applyPose invalidates before URDF early return; grid/hand/late non-tip CAD mesh, late shape STL and resize invalidate. Measured >60idleframes and zero idle paints; actual monitor/pose mutations redraw.
@@ -32,7 +32,7 @@ Checkpoint exact frozen candidate/evidence and release QC-only driver lease. Hum
 4. Physical/runtime deployment is separate: no flash, Hub restart, camera, HOME/motion/RELAX/calibration command or trim write authorized by this task.
 
 ## Blocked
-Independent review awaits the human-paused existing main chat. Full QC NOT RUN for this candidate; no source promotion/PR/deploy. Physical elbow centering remains user-deferred and unpassed. QC-only lease is explicitly released at checkpoint; no transfer of physical rights.
+Independent review found3final deltas; authorized corrections in progress. Full QC NOT RUN for this candidate; no source promotion/PR/deploy. Physical elbow centering remains user-deferred and unpassed. Software-only driver lease reclaimed after Lab09:06 release; no transfer of physical rights.
 
 ## File status
 Baseline:e30bc36; preserved Gemini2bd3299/8530dbf/6db1aeb, rules9b57ee9 and Help8064292. One latest row per owned file; imported owner597a design is attributed above.
@@ -83,3 +83,5 @@ Baseline:e30bc36; preserved Gemini2bd3299/8530dbf/6db1aeb, rules9b57ee9 and Help
 - Current logs/artifact manifest and27sabotage proofs: scratch/continue-urdf-1023/*1025*; frozen review package: scratch/gacha-safety-1025/candidate-cf23113/ in own tree and root.
 - nong/main_python_set_nong/projects/qc_chain_proj.json, settings_shared.json and old reports remain preexisting/other QC data, unstaged/unpromoted. Camera/Voice and generated-header EOL-only status noise has no content diff; not owned changes.
 - No actual physical centering/drop/name-recognition proof from these simulated checks. Ordinary Hub/friend/Voice processes were left alone.
+
+- Review findings: config keeps stale pos_known/pos after layout/CLEAR; GTEST actually defaults1, not slots; API200 generic says hides board ERRbusy. Earlier1566/69/27 proof applies to functional9e46ad0; changed files need new proof.
