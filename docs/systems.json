@@ -135,6 +135,7 @@
 
     {"id": "fw-web", "summary": "The board's own website (WebUI.h).",
      "files": ["firmware/src/web/"],
+     "checks": ["check_gacha_ui"],
      "depends": ["fw-core"]},
 
     {"id": "fw-nong", "summary": "The nong (humanoid) module: servos, joints, poses.",

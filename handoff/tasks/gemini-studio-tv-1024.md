@@ -1,17 +1,17 @@
 # Latest Gemini Studio rendering and TV control correctness
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T08:00:19+07:00
+Updated: 2026-10-25T08:04:08+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
-Last commit: 5b6f122; latest measured source in this checkpoint
+Last commit: 9e46ad0 functional source; this checkpoint records27/27 caught/restored proofs
 Plan: A48-14 (same verified-source batch as A47-20)
 
 ## Goal
 Main delegates confirmed latest Gemini Studio/TV regressions from ce0aeb0/b5a161b/2bd3299. Preserve all new features and idle render saving. No physical pose/calibration/CAD changes.
 
 ## Doing now
-Help8064292 merged5b6f122 preserving menu/newsingleHall diagram and own Studio/TV facts. Current native+syntax168/0 and generatedgacha-page/HubUI/Help46/0. Next prove added HOME/module-page/Help regressions deliberately, restoregreen, actual firmware/native builds, final affected checks, then freeze exact source to existing main for independent review/fullgate. No physical/runtime/userdata actions.
+All27 deliberate regressions caught and restoredgreen: native9+HOME1,syntax1,HubUI2,TV4,Studio6,Help2,moduleUI2. Functional source9e46ad0 sent to existing main for Git-object review (avoid transient sabotage files). Next compile actual per-type firmware/native, final affected checks; reconcile findings, freeze exact final source, then full gate once. No hardware/runtime/userconfig action.
 
 ## Facts found
 - Main static review: applyPose URDF early return skips bottom markDirty3d, so after60 idle frames CAD pose/monitor can fail to redraw. Hand/grid/late mesh and resize lack invalidation. Mark mutation callbacks, retain zero idle renders.
@@ -38,7 +38,7 @@ Baseline: e30bc36; preserve inherited latest Gemini2bd3299/8530dbf and rules9b57
 | nong/main_python_set_nong/web/index.html | Builder output/EOL | pending | generation consistency pending | f8a9576 |
 | main_python/web/help/parts/studio.html | SavedHOME/limits/RELAX wording, idle rendering | pending | correctness edits; docs check pending | 46ad847 |
 | main_python/web/help/parts/tv.html | Target/nativeHOME/restart description | pending | matches browser11/0; docs check pending | fa6c986 |
-| main_python/web/help/parts/gacha.html | Async Hall estimate vs false mass/deadcentre claims | pending | overlap owner contacted; preserve their layout | e79ea8a |
+| main_python/web/help/parts/gacha.html | Async Hall estimate vs false mass/deadcentre claims | pending | merged owner597a8064292 menu and diagram in5b6f122; own command facts retained | e79ea8a |
 | main_python/web/help.html | Builder output | pending | regenerate after correctness+owner reconciliation | 5b6f122 |
 | main_python/web/hub.html | Builder sync10lines inherited source feature | pending | inspect provenance+generation check before stage | 46ad847 |
 | qc/checks/check_studio_render_idle.py | Real browser idle>60frames then mutations and idlezero | pending | 10/0; deliberate deliberate regression caught/restoredgreen | fa6c986 |
@@ -55,12 +55,12 @@ apps/camera/index.html and apps/voice/index.html: builder EOL-only, not staged. 
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| docs/systems.json | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
-| docs/systems/agents.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| docs/systems.json | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| docs/systems/agents.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 9e46ad0 |
 | docs/systems/app-gacha.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
 | docs/systems/app-small.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
 | docs/systems/app-voice.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
-| docs/systems/fw-core.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
+| docs/systems/fw-core.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
 | docs/systems/fw-gacha.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
 | docs/systems/fw-registry.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
 | docs/systems/hub-modules.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | 46ad847 |
@@ -79,3 +79,5 @@ apps/camera/index.html and apps/voice/index.html: builder EOL-only, not staged. 
 
 - New evidence: module-help-affected-1025.log46/0; actual generated gacha-only page controls reach fakeboard, phasecountdown, unknownposition, Halllabel, configuredzero values; Help browsersearch/navigation/tech/phone. No hardware proof.
 | docs/systems/fw-web.md | Map generated Gacha page browser regression | pending | generator/check_systems pending | 1ff8409 |
+
+- Added proofs: sabotage-home-1025.log1/1, sabotage-help-1025.log2/2, sabotage-module-ui-1025.log2/2; each restoredgreen. Source functional files now match9e46ad0.
