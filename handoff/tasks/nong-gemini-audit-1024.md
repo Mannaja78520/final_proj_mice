@@ -1,17 +1,17 @@
 # Nong acceptance and independent Gemini/source audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-25T16:44:35.656544+07:00
+Updated: 2026-10-25T16:49:43.335031+07:00
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
-Last commit: this checkpoint; prior7c5e09b
+Last commit: this checkpoint; prior0ce9bb8
 Plan: A48-13 (robot); related A47-20/A48-14 source, A45-11 Lab, A48-16 rules
 
 ## Goal
 Finish the authorized pending Gemini/Claude work, independently review exact source/evidence and test every implemented Nong feature where possible. Preserve manual trim and distinguish software proof from real-device acceptance.
 
 ## Doing now
-Independent exact Git review APPROVED verification f037d3a plus metadata-only Gemini ledger merge20d66fe; runtime4d41a3c unchanged. Canonical plan resolver, actual byte-restoring helpers/CLI normal+exception LF/CRLF tests and complete Gacha journey SOLO inspected; no assertion/timeout reduction or source exclusion. Source reports focused144/0, real325/0, deliberate integrity5/5 restored and exact3source hashes; raw evidence paths requested. Source authorized fresh r2freeze/full under existing sole software driver lease. First full8217/1 remains failed; old7910receipt invalid. Main owns metadata/report only and releases after checkpoint. Hardware remains USER-NOTREADY.
+Independent exact Git review APPROVED verification f037d3a plus metadata-only Gemini ledger merge20d66fe; runtime4d41a3c unchanged. Canonical plan resolver, actual byte-restoring helpers/CLI normal+exception LF/CRLF tests and complete Gacha journey SOLO inspected; no assertion/timeout reduction or source exclusion. Focused144/0; raw real325/0, integrity5/5 restoredgreen and probe-restoration changed_files[]/all_exacttrue now independently read under scratch/continue-urdf-1023. Generated systems-only431cf83 inspected/approved. Source authorized fresh r2freeze/full under existing sole software driver lease. First full8217/1 remains failed; old7910receipt invalid. Main owns metadata/report only and releases after checkpoint. Hardware remains USER-NOTREADY.
 
 ## File status
 Baseline: own9351b2c; reviewed runtime files belong to source owner and are not main's changes.
@@ -40,7 +40,7 @@ Baseline: own9351b2c; reviewed runtime files belong to source owner and are not 
 - Passive Face takeover after authorusage limit: f1573bc and private readiness report; corePC JSONhealth200/Faceweb200, delivery8123listener but previous APIhealth404. No inference/person/full-load proof or runtime changes. Main passive claim released.
 
 ## Next
-1. Read source raw325/0, restored5/5 and3bytehash evidence; verify fresh r2freeze/full receipt. Exact verification f037d3a and ledger-only20d66fe approved; firstfull8217/1 preserved. Do not accept old7910receipt.
+1. Verify fresh r2freeze/full receipt. Verification f037d3a, ledger-only20d66fe and generated systems431cf83 approved; raw325/0+restored5/5+byteexact proof inspected. Firstfull8217/1 preserved; old7910receipt invalid.
 2. Source owner prepares PR/integration after fullgreen; attach PR and preserve root dirtyuser data, current instructions and reviewed files. Runtime deployment requires its own idle/resource claim.
 3. Keep physical tests paused until human explicitly ready; then fresh identity/config preserving trim and coordinated missing-feature matrix, never reuse staleacceptance.
 4. Historical reasoning: scratch/nong-gemini-audit-1024/latest-gemini-review.md and candidate-backend-review.md; current review-1025.md. Full chronology is in prior task commits, not repeated here.
