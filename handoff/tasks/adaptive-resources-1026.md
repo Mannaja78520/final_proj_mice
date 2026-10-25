@@ -11,7 +11,7 @@ Plan: A48-18 (robot); related A48-13 hardwarepause
 Dynamic configurable resource use on weaker/stronger future Hub PCs and browser clients. Preserve models, provider chain, dirtyroot and physical pause.
 
 ## Doing now
-Runtime corrected after independent backend/client reviews; checkpoint exact file ledger then sequential deliberate regressions, broader affected checks, final full/package and guarded integration. Single QC driver main only; no live models, robot, service restart or cutover.
+Nine deliberate regressions caught and exact raw source restored; now run final affected checks, then freeze full/package and guarded integration. Single QC driver main only; no live models, robot, service restart or cutover.
 
 ## File status
 Verification: selected326/0 then latest resource+Edge77/0; full/package pending. EOL-only generator paths included conservatively. Source reviewers approved current substantive corrections; low-RAM diagnostic/last test fixture added afterward.
@@ -66,7 +66,7 @@ Verification: selected326/0 then latest resource+Edge77/0; full/package pending.
 - Separate assessment found Lift missing travel deadline (P1), not repaired by this PC scope. No physical fault observed.
 
 ## Done
-Design and final substantive source reviews: resource_design (supported gpt-6-astra high) + audit_latest_ui; reviewed findings verified and corrected. Latest selected326/0 and resource+actual Edge77/0, no actual models/hardware. Isolated child-layout Python imports passed. Logs scratch/adaptive-resources-1026; older full8335 does not cover this task.
+Design and final substantive source reviews: resource_design (supported gpt-6-astra high) + audit_latest_ui; reviewed findings verified and corrected. Latest selected326/0 and resource+actual Edge77/0, no actual models/hardware. Isolated child-layout Python imports passed. Deliberate9/9 guards caught, restored green; scratch/adaptive-resources-1026/regressions.log. Logs scratch/adaptive-resources-1026; older full8335 does not cover this task.
 
 ## Next
 1. Deliberately revert guards sequentially and restore exact bytes; prove tests catch regressions.
