@@ -1,7 +1,7 @@
 # Nong acceptance and independent Gemini/source audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-25T16:07:13.618520+07:00
+Updated: 2026-10-25T16:21:37.731914+07:00
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
 Last commit: this checkpoint; prior9351b2c
@@ -11,7 +11,7 @@ Plan: A48-13 (robot); related A47-20/A48-14 source, A45-11 Lab, A48-16 rules
 Finish the authorized pending Gemini/Claude work, independently review exact source/evidence and test every implemented Nong feature where possible. Preserve manual trim and distinguish software proof from real-device acceptance.
 
 ## Doing now
-Exact source4d41a3c APPROVED by this independent reviewer after9e46ad0 scope and final3finding delta. Restored33sabotages and final affected+all5build1667/0 verified. FullQC launched on checkpoint4ef8dae/functional4d41a3c,977inputs fingerprint ee2c9d3c4f156dc398426ec0051b2261260e010f8f83f3146c52ac62fbb16eae; await exact receipt. No further code review needed unless runtime source changes. Main holds metadata/report only, no driver/hardware/service/camera/source lease.
+Exact source4d41a3c APPROVED by this independent reviewer after9e46ad0 scope and final3finding delta. Restored33sabotages and final affected+all5build1667/0 verified. FullQC launched on checkpoint4ef8dae/functional4d41a3c,977inputs fingerprint ee2c9d3c4f156dc398426ec0051b2261260e010f8f83f3146c52ac62fbb16eae; first fullgate8217/1 NOTGREEN; packing check read stale stage publication, plus3raw CRLF->LF drifts from probes. Source investigating verification-only fix and crowded browser failure; review exact tooling delta before rerun. Do not accept old7910receipt. No further code review needed unless runtime source changes. Main holds metadata/report only, no driver/hardware/service/camera/source lease.
 
 ## File status
 Baseline: own9351b2c; reviewed runtime files belong to source owner and are not main's changes.
@@ -40,7 +40,7 @@ Baseline: own9351b2c; reviewed runtime files belong to source owner and are not 
 - Passive Face takeover after authorusage limit: f1573bc and private readiness report; corePC JSONhealth200/Faceweb200, delivery8123listener but previous APIhealth404. No inference/person/full-load proof or runtime changes. Main passive claim released.
 
 ## Next
-1. Verify source final restored proof/input hashes and exact fullQC receipt. If source changes, inspect delta first.
+1. Review verification-only delta: canonical live plan lookup, byte-preserving probe restore and crowdedbrowser diagnosis. Firstfull8217/1 remainsfailed; rerun exact stable fullgate only after causal fixes/proof.
 2. Source owner prepares PR/integration after fullgreen; attach PR and preserve root dirtyuser data, current instructions and reviewed files. Runtime deployment requires its own idle/resource claim.
 3. Keep physical tests paused until human explicitly ready; then fresh identity/config preserving trim and coordinated missing-feature matrix, never reuse staleacceptance.
 4. Historical reasoning: scratch/nong-gemini-audit-1024/latest-gemini-review.md and candidate-backend-review.md; current review-1025.md. Full chronology is in prior task commits, not repeated here.
