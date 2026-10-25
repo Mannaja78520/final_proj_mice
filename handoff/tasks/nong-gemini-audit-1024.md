@@ -1,26 +1,26 @@
 # Nong acceptance and independent Gemini/source audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-25T16:49:43.335031+07:00
+Updated: 2026-10-25T17:07:49.269545+07:00
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
-Last commit: this checkpoint; prior0ce9bb8
+Last commit: this checkpoint; prior908648c
 Plan: A48-13 (robot); related A47-20/A48-14 source, A45-11 Lab, A48-16 rules
 
 ## Goal
 Finish the authorized pending Gemini/Claude work, independently review exact source/evidence and test every implemented Nong feature where possible. Preserve manual trim and distinguish software proof from real-device acceptance.
 
 ## Doing now
-Independent exact Git review APPROVED verification f037d3a plus metadata-only Gemini ledger merge20d66fe; runtime4d41a3c unchanged. Canonical plan resolver, actual byte-restoring helpers/CLI normal+exception LF/CRLF tests and complete Gacha journey SOLO inspected; no assertion/timeout reduction or source exclusion. Focused144/0; raw real325/0, integrity5/5 restoredgreen and probe-restoration changed_files[]/all_exacttrue now independently read under scratch/continue-urdf-1023. Generated systems-only431cf83 inspected/approved. Source authorized fresh r2freeze/full under existing sole software driver lease. First full8217/1 remains failed; old7910receipt invalid. Main owns metadata/report only and releases after checkpoint. Hardware remains USER-NOTREADY.
+R2 FULL ACCEPTED with recorded crowd retries:8258/0 in686.0s, exit0, receipt fulltrue; certified HEAD8da4e169/runtime4d41a3c/verificationf037d3a. Independently compared freeze/before/after identical978file manifests and recomputed all978current rawfiles: fingerprint db76249bd51ffa8a06ddbe8413f47a03455acda12b8008206321f086b11d90c7,0missing/0changed. Root evidence equals owner copies. Three built-in crowd retries (gestures/game_prize/studio_auto_route) passed alone2/2 each; not first-pass-clean. First failed8217/1 immutable. Source authorized PRpreparation with exact certificate+qualifications; no deploy/restart/flash/hardware acceptance. Main metadata/report only; releases after checkpoint.
 
 ## File status
 Baseline: own9351b2c; reviewed runtime files belong to source owner and are not main's changes.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| handoff/tasks/nong-gemini-audit-1024.md | Current review/status/next; historical detail linked | pending | exact Git4d41a3c+f037d3a+20d66fe inspected; r2full pending | this checkpoint |
-| scratch/nong-gemini-audit-1024/review-1025.md | Exact independent source review and findings | done, private |976oldfreeze+5artifact hashes matched; finaldelta reviewed | uncommitted, ignored |
-| docs/PLAN.html | Only own audit notes/status | pending, shared | serialized plan tool; source fullgate pending | uncommitted, mixed owners |
+| handoff/tasks/nong-gemini-audit-1024.md | Current review/status/next; historical detail linked | pending | exact runtime/verification reviewed; raw full8258/0 and978hash verified | this checkpoint |
+| scratch/nong-gemini-audit-1024/review-1025.md | Exact independent source review and findings | done, private |978r2rawhashes+receipt exact; runtime/verification source approved | uncommitted, ignored |
+| docs/PLAN.html | Only own audit notes/status | pending, shared | serialized plan tool; source PRpreparation active | uncommitted, mixed owners |
 | docs/plan_state.js | Generated live status | pending, shared | plan tool; preserve other actors | uncommitted, mixed owners |
 | docs/BRIDGE.md | Only own metadata/coordination entries | done, shared | mutex/release recorded; no main driver | uncommitted, mixed owners |
 
@@ -40,10 +40,10 @@ Baseline: own9351b2c; reviewed runtime files belong to source owner and are not 
 - Passive Face takeover after authorusage limit: f1573bc and private readiness report; corePC JSONhealth200/Faceweb200, delivery8123listener but previous APIhealth404. No inference/person/full-load proof or runtime changes. Main passive claim released.
 
 ## Next
-1. Verify fresh r2freeze/full receipt. Verification f037d3a, ledger-only20d66fe and generated systems431cf83 approved; raw325/0+restored5/5+byteexact proof inspected. Firstfull8217/1 preserved; old7910receipt invalid.
+1. Inspect source PR exact scope, certificate8da4e169 and3crowdretry qualification; attach PR. R2raw978hash/receipt verification complete; first8217/1 preserved and old7910receipt invalid.
 2. Source owner prepares PR/integration after fullgreen; attach PR and preserve root dirtyuser data, current instructions and reviewed files. Runtime deployment requires its own idle/resource claim.
 3. Keep physical tests paused until human explicitly ready; then fresh identity/config preserving trim and coordinated missing-feature matrix, never reuse staleacceptance.
 4. Historical reasoning: scratch/nong-gemini-audit-1024/latest-gemini-review.md and candidate-backend-review.md; current review-1025.md. Full chronology is in prior task commits, not repeated here.
 
 ## Blocked
-Realhardware acceptance USER-PAUSED; phone/person/absenttransports need actual prerequisites. Source r2freeze/full remains active with original owner; main waits for exact current evidence/receipt message. Not all work complete. No main process or testdriver held.
+Realhardware acceptance USER-PAUSED; phone/person/absenttransports need actual prerequisites. Source PRpreparation/integration remains active with original owner; main resumes exact PRscope review when ready. Not all work complete. No main process or testdriver held.
