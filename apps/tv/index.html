@@ -325,8 +325,9 @@ const JOINTS = [
   "WAIST", "SHRUG"
 ];
 
-class TVRemoteApp {
+class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Object) {
   constructor() {
+    super("tv");
     this.$ = id => document.getElementById(id);
     this.pollTimer = null;
     this.sequences = [];

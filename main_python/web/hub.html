@@ -1456,99 +1456,112 @@ const TOOL_GROUPS = [
   }
 ];
 
-function renderCategorizedApps(box, apps) {
-  box.innerHTML = "";
-  const assigned = new Set();
-  TOOL_GROUPS.forEach(g => {
-    const groupApps = apps.filter(a => {
-      const id = (a.id || a.path || a.name || "").toLowerCase();
-      return g.match.some(m => id.includes(m));
-    });
-    if (!groupApps.length) return;
-    groupApps.forEach(a => assigned.add(a));
-
-    const gDiv = document.createElement("div");
-    gDiv.style.marginBottom = "var(--sp-4)";
-    const h = document.createElement("h3");
-    h.style.fontSize = "14.5px";
-    h.style.fontWeight = "700";
-    h.style.margin = "0 0 var(--sp-2) 0";
-    h.style.color = "var(--txt)";
-    h.textContent = g.title;
-    gDiv.appendChild(h);
-
-    const grid = document.createElement("div");
-    grid.className = "tool-grid";
-    grid.style.display = "grid";
-    grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(280px, 1fr))";
-    grid.style.gap = "var(--sp-2)";
-    groupApps.forEach(a => grid.appendChild(toolRow(a)));
-    gDiv.appendChild(grid);
-    box.appendChild(gDiv);
-  });
-
-  const otherApps = apps.filter(a => !assigned.has(a));
-  if (otherApps.length) {
-    const gDiv = document.createElement("div");
-    gDiv.style.marginBottom = "var(--sp-4)";
-    const h = document.createElement("h3");
-    h.style.fontSize = "14.5px";
-    h.style.fontWeight = "700";
-    h.style.margin = "0 0 var(--sp-2) 0";
-    h.textContent = "🛠️ เครื่องมือเพิ่มเติม (Other Tools)";
-    gDiv.appendChild(h);
-    const grid = document.createElement("div");
-    grid.className = "tool-grid";
-    grid.style.display = "grid";
-    grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(280px, 1fr))";
-    grid.style.gap = "var(--sp-2)";
-    otherApps.forEach(a => grid.appendChild(toolRow(a)));
-    gDiv.appendChild(grid);
-    box.appendChild(gDiv);
-  }
-}
 function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+// OOP Tools Manager (A48-17)
+class MiceToolsManager {
+  constructor(groups) {
+    this.groups = groups || TOOL_GROUPS;
+  }
+  boxes() {
+    return [].slice.call(document.querySelectorAll('.js-tools'));
+  }
+  say(html) {
+    this.boxes().forEach(b => { b.innerHTML = html; });
+  }
+  createToolRow(a) {
+    const d = document.createElement('div');
+    d.className = 'mod tool-tile';
+    d.innerHTML = '<span class="nm">' + (a.icon ? a.icon + ' ' : '') + esc(a.name || '?') + '</span>' +
+                  '<span class="ip">' + esc(a.blurb || '') + '</span>';
+    const b = document.createElement('button');
+    b.textContent = 'Open';
+    b.title = 'open ' + (a.name || 'this tool') + ' in a new tab';
+    b.onclick = () => window.open(a.path, '_blank');
+    d.appendChild(b);
+    if (a.help) {
+      const h = document.createElement('a');
+      h.className = 'tab tab-link';
+      h.href = '/help#' + encodeURIComponent(a.help);
+      h.textContent = 'Help ↗';
+      h.title = 'Help about ' + a.name;
+      d.appendChild(h);
+    }
+    return d;
+  }
+  render(box, apps) {
+    box.innerHTML = "";
+    const assigned = new Set();
+    this.groups.forEach(g => {
+      const groupApps = apps.filter(a => {
+        const id = (a.id || a.path || a.name || "").toLowerCase();
+        return g.match.some(m => id.includes(m));
+      });
+      if (!groupApps.length) return;
+      groupApps.forEach(a => assigned.add(a));
+
+      const gDiv = document.createElement("div");
+      gDiv.style.marginBottom = "var(--sp-4)";
+      const h = document.createElement("h3");
+      h.style.fontSize = "14.5px";
+      h.style.fontWeight = "700";
+      h.style.margin = "0 0 var(--sp-2) 0";
+      h.style.color = "var(--txt)";
+      h.textContent = g.title;
+      gDiv.appendChild(h);
+
+      const grid = document.createElement("div");
+      grid.className = "tool-grid";
+      grid.style.display = "grid";
+      grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(280px, 1fr))";
+      grid.style.gap = "var(--sp-2)";
+      groupApps.forEach(a => grid.appendChild(this.createToolRow(a)));
+      gDiv.appendChild(grid);
+      box.appendChild(gDiv);
+    });
+
+    const otherApps = apps.filter(a => !assigned.has(a));
+    if (otherApps.length) {
+      const gDiv = document.createElement("div");
+      gDiv.style.marginBottom = "var(--sp-4)";
+      const h = document.createElement("h3");
+      h.style.fontSize = "14.5px";
+      h.style.fontWeight = "700";
+      h.style.margin = "0 0 var(--sp-2) 0";
+      h.textContent = "🛠️ เครื่องมือเพิ่มเติม (Other Tools)";
+      gDiv.appendChild(h);
+      const grid = document.createElement("div");
+      grid.className = "tool-grid";
+      grid.style.display = "grid";
+      grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(280px, 1fr))";
+      grid.style.gap = "var(--sp-2)";
+      otherApps.forEach(a => grid.appendChild(this.createToolRow(a)));
+      gDiv.appendChild(grid);
+      box.appendChild(gDiv);
+    }
+  }
+}
+window.MiceToolsManager = MiceToolsManager;
+window.miceTools = new MiceToolsManager(TOOL_GROUPS);
+
+function toolBoxes(){
+  return window.miceTools.boxes();
+}
+function toolsSay(html){
+  window.miceTools.say(html);
+}
+function toolRow(a){
+  return window.miceTools.createToolRow(a);
+}
+function renderCategorizedApps(box, apps){
+  window.miceTools.render(box, apps);
+}
 
 // The tool list comes from the app registry (code/apps/*/app.json), so a new
 // web app appears here by dropping a folder in — no button to hand-write.
 // Drawn into EVERY tools container - the Tools tab and the card on Home -
 // from one answer, so the two lists cannot say different things.
-function toolBoxes(){
-  return [].slice.call(document.querySelectorAll('.js-tools'));
-}
-function toolsSay(html){
-  toolBoxes().forEach(function(b){ b.innerHTML = html; });
-}
-// One row for one tool.
-//
-// A TOOL IS NOT A MODULE. This was copied from the module list and still read
-// `m.type` - but the loop variable is `a`, and an app has no module type at
-// all. `m` was undefined, the exception left loadApps half-finished, and the
-// Tools list rendered NOTHING. It looked like there were no tools rather than
-// like a broken page, which is why it survived: an empty list is a plausible
-// state. The user met the same exception again on 2026-08-21 from an exe built
-// nine hours before the fix.
-function toolRow(a){
-  const d=document.createElement('div');
-  d.className='mod tool-tile';
-  d.innerHTML='<span class="nm">'+(a.icon?a.icon+' ':'')+esc(a.name||'?')+'</span>'+
-              '<span class="ip">'+esc(a.blurb||'')+'</span>';
-  const b=document.createElement('button');b.textContent='Open';
-  b.title='open '+(a.name||'this tool')+' in a new tab';
-  b.onclick=()=>window.open(a.path,'_blank');
-  d.appendChild(b);
-  // Help about THIS tool, when the tool says which section is about it
-  // (app.json -> help). No section, no link: one pointing at the top of the
-  // help page is not help, it is a thousand lines and a scrollbar.
-  if(a.help){
-    const h=document.createElement('a');
-    h.className='tab tab-link'; h.href='/help#'+encodeURIComponent(a.help);
-    h.textContent='Help ↗'; h.title='Help about '+a.name;
-    d.appendChild(h);
-  }
-  return d;
-}
 async function loadApps(){
   try{
     const r=await fetch('/api/apps').then(r=>r.json());
@@ -1578,7 +1591,7 @@ async function loadApps(){
     // drops every handler, so the copy on Home would have looked identical and
     // done nothing when pressed.
     toolBoxes().forEach(function(box){
-      renderCategorizedApps(box, apps);
+      window.miceTools.render(box, apps);
     });
   }catch(e){
     // An error says what to DO, and offers the control that does it - and

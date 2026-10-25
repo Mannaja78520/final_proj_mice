@@ -263,8 +263,9 @@ const VOICE_TABS = [
   {id: "faces", label: "Faces", icon: "👤"}, {id: "questions", label: "Questions", icon: "📊"},
   {id: "adv", label: "Advanced", icon: "⚙", tech: true}];
 
-class VoiceApp {
+class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Object) {
   constructor() {
+    super('voice', {statusId: 'stat'});
     this.$ = id => document.getElementById(id);
     this.rec = null;
     this.ch = null;

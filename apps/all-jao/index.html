@@ -57,48 +57,68 @@
 </div>
 
 <script>
-// Mice.Partner (shared/web/mice-ui.js) does the asking and starting. Their
-// games are a plain folder served by `python -m http.server`, started by the
-// hub's own /api/all-jao/start. Opening this page is asking to play: start it
-// when it is silent, then show it below.
-const games = new Mice.Partner("all-jao", {status: new Mice.Status("stat"),
-                                           startPath: "/api/all-jao/start", startWait: 15000});
-
-function showFrame(where) {
-  const frame = document.getElementById("gameFrame");
-  if (!frame.src || frame.src === "about:blank") frame.src = where;
-  document.getElementById("gameFrameContainer").hidden = false;
-}
-
-// The hub serves their folder itself at /play/all-jao/ with the prize link
-// added (A47-6, config/partners.json "play"); their own server is the fallback.
-const PLAY = "/play/all-jao/";
-async function playHere() {
-  try { return (await fetch(PLAY, {method: "GET", cache: "no-store"})).ok; } catch (e) { return false; }
-}
-async function openGames() {
-  if (await playHere()) return window.open(PLAY, "_blank");
-  games.open("open", document.getElementById("openBtn"));
-}
-async function look() {
-  if (await playHere()) {
-    games.status.ready("All-Jao Games is ready. A win can give a prize.");
-    return showFrame(PLAY);
+// OOP AllJaoApp (A48-17) - encapsulated application lifecycle
+class AllJaoApp extends Mice.App {
+  constructor() {
+    super("all-jao", {statusId: "stat"});
+    this.playPath = "/play/all-jao/";
+    this.partner = new Mice.Partner("all-jao", {
+      status: this.status,
+      startPath: "/api/all-jao/start",
+      startWait: 15000
+    });
   }
-  if (await games.check()) return showFrame(games.url("open"));
-  try {
-    showFrame(await games.ensure());
-    games.status.ready("All-Jao Games is running.");
-  } catch (err) {
-    const [words, detail] = Array.isArray(err) ? err : ["All-Jao Games could not be started.", String(err)];
-    games.status.error(words, detail);
+
+  async init() {
+    const links = await this.partner.load();
+    if (!links) return;
+    const where = this.$("where");
+    if (where) where.textContent = "app " + this.partner.url("open") + " · folder " + (links.folder || "All-Jao-Games");
+    await this.look();
+  }
+
+  showFrame(where) {
+    const frame = this.$("gameFrame");
+    if (frame && (!frame.src || frame.src === "about:blank")) frame.src = where;
+    const container = this.$("gameFrameContainer");
+    if (container) container.hidden = false;
+  }
+
+  async playHere() {
+    try {
+      return (await fetch(this.playPath, {method: "GET", cache: "no-store"})).ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async openGames() {
+    if (await this.playHere()) return window.open(this.playPath, "_blank");
+    this.partner.open("open", this.$("openBtn"));
+  }
+
+  async look() {
+    if (await this.playHere()) {
+      this.status.ready("All-Jao Games is ready. A win can give a prize.");
+      return this.showFrame(this.playPath);
+    }
+    if (await this.partner.check()) return this.showFrame(this.partner.url("open"));
+    try {
+      this.showFrame(await this.partner.ensure());
+      this.status.ready("All-Jao Games is running.");
+    } catch (err) {
+      const [words, detail] = Array.isArray(err) ? err : ["All-Jao Games could not be started.", String(err)];
+      this.status.error(words, detail);
+    }
   }
 }
 
-games.load().then(links => {
-  if (!links) return;
-  document.getElementById("where").textContent =
-    "app " + games.url("open") + " · folder " + (links.folder || "All-Jao-Games");
-  look();
-});
+const allJaoApp = new AllJaoApp();
+window.allJaoApp = allJaoApp;
+const games = allJaoApp.partner;
+function showFrame(where) { return allJaoApp.showFrame(where); }
+function playHere() { return allJaoApp.playHere(); }
+function openGames() { return allJaoApp.openGames(); }
+function look() { return allJaoApp.look(); }
+allJaoApp.init();
 </script>

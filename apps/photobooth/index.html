@@ -31,13 +31,26 @@
 </div>
 
 <script>
-// Everything this page does is Mice.Partner (shared/web/mice-ui.js): the hub
-// checks it, starts it with their own script, and the tab opens in the click.
-const booth = new Mice.Partner("photobooth", {status: new Mice.Status("stat")});
-booth.load().then(links => {
-  if (!links) return;
-  document.getElementById("where").textContent =
-    "booth " + booth.url("open") + " · admin " + booth.url("admin") + " · folder " + (links.folder || "");
-  booth.check();
-});
+// OOP PhotoboothApp (A48-17) - encapsulated application lifecycle
+class PhotoboothApp extends (window.Mice && window.Mice.App ? window.Mice.App : Object) {
+  constructor() {
+    super("photobooth", {statusId: "stat"});
+    this.partner = new Mice.Partner("photobooth", {status: this.status});
+  }
+
+  async init() {
+    const links = await this.partner.load();
+    if (!links) return;
+    const where = this.$("where");
+    if (where) {
+      where.textContent = "booth " + this.partner.url("open") + " · admin " + this.partner.url("admin") + " · folder " + (links.folder || "");
+    }
+    await this.partner.check();
+  }
+}
+
+const boothApp = new PhotoboothApp();
+window.boothApp = boothApp;
+const booth = boothApp.partner;
+boothApp.init();
 </script>

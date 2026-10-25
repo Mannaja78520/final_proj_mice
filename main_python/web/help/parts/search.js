@@ -1,97 +1,114 @@
 (function(){
-  // Topic-by-topic presentation with Next / Previous navigation, plus live search.
-  var q = document.getElementById("q"), none = document.getElementById("none");
-  var secs = Array.prototype.slice.call(document.querySelectorAll("main > section[id]"));
-  var links = Array.prototype.slice.call(document.querySelectorAll("nav a[href^='#']"));
-  var byId = {};
-  // Capture topic text before adding Previous/Next links, which name neighbours.
-  var topicText = new Map(secs.map(function(s){ return [s, s.textContent.toLowerCase()]; }));
-  links.forEach(function(a){ byId[a.getAttribute("href").slice(1)] = a; });
-
-  // 1. Build Next / Previous navigation at the foot of each section
-  secs.forEach(function(s, idx){
-    if (s.querySelector(".sec-nav")) return;
-    var nav = document.createElement("div");
-    nav.className = "sec-nav";
-    var prev = secs[idx - 1];
-    var next = secs[idx + 1];
-    if (prev) {
-      var prevHead = prev.querySelector(".shead h2");
-      var prevTitle = (prevHead ? prevHead.textContent : prev.id).replace(/^[—\s]+|[—\s]+$/g, "");
-      var aPrev = document.createElement("a");
-      aPrev.className = "sec-nav-btn sec-nav-prev";
-      aPrev.href = "#" + prev.id;
-      aPrev.innerHTML = "<span class='sec-nav-lbl'>← ก่อนหน้า (Previous)</span><span class='sec-nav-title'>" + prevTitle + "</span>";
-      nav.appendChild(aPrev);
-    } else {
-      var dummy = document.createElement("div");
-      dummy.className = "sec-nav-spacer";
-      nav.appendChild(dummy);
+  // OOP MiceHelpNavigator (A48-17) - encapsulated topic navigation, live search, and dynamic routing
+  class MiceHelpNavigator {
+    constructor() {
+      this.q = document.getElementById("q");
+      this.none = document.getElementById("none");
+      this.secs = Array.prototype.slice.call(document.querySelectorAll("main > section[id]"));
+      this.links = Array.prototype.slice.call(document.querySelectorAll("nav a[href^='#']"));
+      this.byId = {};
+      this.topicText = new Map(this.secs.map(function(s){ return [s, s.textContent.toLowerCase()]; }));
+      var self = this;
+      this.links.forEach(function(a){ self.byId[a.getAttribute("href").slice(1)] = a; });
     }
-    if (next) {
-      var nextHead = next.querySelector(".shead h2");
-      var nextTitle = (nextHead ? nextHead.textContent : next.id).replace(/^[—\s]+|[—\s]+$/g, "");
-      var aNext = document.createElement("a");
-      aNext.className = "sec-nav-btn sec-nav-next";
-      aNext.href = "#" + next.id;
-      aNext.innerHTML = "<span class='sec-nav-lbl'>ถัดไป (Next) →</span><span class='sec-nav-title'>" + nextTitle + "</span>";
-      nav.appendChild(aNext);
-    }
-    s.appendChild(nav);
-  });
 
-  // 2. Topic-by-Topic mode: display only the chosen section when not searching
-  function showTopic(id){
-    var searching = q && q.value.trim().length > 0;
-    if (!searching) {
-      if (!id || !secs.some(function(s){ return s.id === id; })) {
-        id = secs.length ? secs[0].id : "";
-      }
-      secs.forEach(function(s){
-        var active = s.id === id;
-        s.classList.toggle("pv-off", !active);
-        if (active) {
-          s.style.display = "";
-          s.querySelectorAll(".f, tbody tr, .scroll").forEach(function(el){
-            el.style.display = "";
-          });
+    // 1. Build Next / Previous navigation at the foot of each section
+    buildNav() {
+      var secs = this.secs;
+      secs.forEach(function(s, idx){
+        if (s.querySelector(".sec-nav")) return;
+        var nav = document.createElement("div");
+        nav.className = "sec-nav";
+        var prev = secs[idx - 1];
+        var next = secs[idx + 1];
+        if (prev) {
+          var prevHead = prev.querySelector(".shead h2");
+          var prevTitle = (prevHead ? prevHead.textContent : prev.id).replace(/^[—\s]+|[—\s]+$/g, "");
+          var aPrev = document.createElement("a");
+          aPrev.className = "sec-nav-btn sec-nav-prev";
+          aPrev.href = "#" + prev.id;
+          aPrev.innerHTML = "<span class='sec-nav-lbl'>← ก่อนหน้า (Previous)</span><span class='sec-nav-title'>" + prevTitle + "</span>";
+          nav.appendChild(aPrev);
+        } else {
+          var dummy = document.createElement("div");
+          dummy.className = "sec-nav-spacer";
+          nav.appendChild(dummy);
         }
-      });
-      links.forEach(function(a){
-        a.classList.toggle("on", a.getAttribute("href") === "#" + id);
-      });
-      window.scrollTo(0, 0);
-    } else {
-      secs.forEach(function(s){
-        s.classList.remove("pv-off");
+        if (next) {
+          var nextHead = next.querySelector(".shead h2");
+          var nextTitle = (nextHead ? nextHead.textContent : next.id).replace(/^[—\s]+|[—\s]+$/g, "");
+          var aNext = document.createElement("a");
+          aNext.className = "sec-nav-btn sec-nav-next";
+          aNext.href = "#" + next.id;
+          aNext.innerHTML = "<span class='sec-nav-lbl'>ถัดไป (Next) →</span><span class='sec-nav-title'>" + nextTitle + "</span>";
+          nav.appendChild(aNext);
+        }
+        s.appendChild(nav);
       });
     }
-  }
 
-  window.addEventListener("hashchange", function(){
-    showTopic(location.hash.slice(1));
-  });
+    // 2. Topic-by-Topic mode: display only the chosen section when not searching
+    showTopic(id) {
+      var searching = this.q && this.q.value.trim().length > 0;
+      var secs = this.secs, links = this.links;
+      if (!searching) {
+        if (!id || !secs.some(function(s){ return s.id === id; })) {
+          id = secs.length ? secs[0].id : "";
+        }
+        secs.forEach(function(s){
+          var active = s.id === id;
+          s.classList.toggle("pv-off", !active);
+          if (active) {
+            s.style.display = "";
+            s.querySelectorAll(".f, tbody tr, .scroll").forEach(function(el){
+              el.style.display = "";
+            });
+          }
+        });
+        links.forEach(function(a){
+          a.classList.toggle("on", a.getAttribute("href") === "#" + id);
+        });
+        window.scrollTo(0, 0);
+      } else {
+        secs.forEach(function(s){
+          s.classList.remove("pv-off");
+        });
+      }
+    }
 
-  // 3. Search: reveal all sections to filter matches, or return to topic view when cleared
-  if (q) {
-    q.addEventListener("input", function(){
-      var term = q.value.trim().toLowerCase(), any = false;
+    search(term) {
+      term = (term || "").trim().toLowerCase();
+      var any = false, secs = this.secs, topicText = this.topicText;
       if (!term) {
-        showTopic(location.hash.slice(1));
-        if (none) none.style.display = "none";
+        this.showTopic(location.hash.slice(1));
+        if (this.none) this.none.style.display = "none";
         return;
       }
       secs.forEach(function(s){
         s.classList.remove("pv-off");
-        // Match the complete topic, including illustrated cards and paragraphs.
         var keep = topicText.get(s).indexOf(term) >= 0;
         s.style.display = keep ? "" : "none";
         if (keep) any = true;
       });
-      if (none) none.style.display = any ? "none" : "block";
-    });
+      if (this.none) this.none.style.display = any ? "none" : "block";
+    }
+
+    init() {
+      this.buildNav();
+      var self = this;
+      window.addEventListener("hashchange", function(){
+        self.showTopic(location.hash.slice(1));
+      });
+      if (this.q) {
+        this.q.addEventListener("input", function(){
+          self.search(self.q.value);
+        });
+      }
+      this.showTopic(location.hash.slice(1));
+    }
   }
 
-  // Initial show on load
-  showTopic(location.hash.slice(1));
+  window.MiceHelpNavigator = MiceHelpNavigator;
+  window.miceHelp = new MiceHelpNavigator();
+  window.miceHelp.init();
 })();

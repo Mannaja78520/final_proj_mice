@@ -419,40 +419,64 @@ function drawRules(camsSeen){
   free.forEach(p => pp.appendChild(el("option", {value: p.id, text: p.who || p.id})));
   window._camsSeen = camsSeen;
 }
-function addCam(){
-  const name = (prompt("The camera's name, exactly as the face app calls it") || "").trim();
-  if (!name || !R) return;
-  R.cameras[name] = R.cameras[name] || {role: "entry"};
-  drawRules(window._camsSeen || []);
-}
-function addMile(){
-  if (!R) return;
-  R.milestones.push({at: 100, text: "", move: "", module: ""});
-  drawRules(window._camsSeen || []);
-}
-function addPerson(){
-  const id = document.getElementById("rPersonPick").value;
-  if (!id || !R) return;
-  R.people[id] = {title: R.title || ""};
-  drawRules(window._camsSeen || []);
-}
-async function saveRules(){
-  if (!R) return;
-  rSay("saving…");
-  let got;
-  try{
-    got = await fetch("/api/faces/rules", {method: "POST", headers: {"Content-Type": "application/json"},
-                      body: JSON.stringify({rules: R})}).then(r => r.json());
-  }catch(e){
-    return rSay("cannot reach the hub — is it still running?", "err", String(e.message || e));
+// OOP FacesApp (A48-17) - encapsulated application lifecycle
+class FacesApp extends Mice.App {
+  constructor() {
+    super("faces");
+    this.tabs = null;
   }
-  if (got.need_login) return rSay("Sign in on the hub page first: changing what the rig says to guests needs it.", "warn");
-  if (!got.ok) return rSay("Not saved: " + (got.error || "the face helper refused it."), "err", got.detail);
-  R = got.rules || R;
-  rSay("Saved. The next person the rig sees gets these words.", "ok");
+
+  async init() {
+    this.tabs = new Mice.Tabs("tabs", [
+      {id: "open", label: "Open it", icon: "👁"},
+      {id: "follow", label: "Is the rig following it?", icon: "🔗"},
+      {id: "say", label: "What the rig says", icon: "💬"}
+    ]);
+    await loadRules();
+  }
+
+  addCam() {
+    const name = (prompt("The camera's name, exactly as the face app calls it") || "").trim();
+    if (!name || !R) return;
+    R.cameras[name] = R.cameras[name] || {role: "entry"};
+    drawRules(window._camsSeen || []);
+  }
+
+  addMile() {
+    if (!R) return;
+    R.milestones.push({at: 100, text: "", move: "", module: ""});
+    drawRules(window._camsSeen || []);
+  }
+
+  addPerson() {
+    const id = document.getElementById("rPersonPick").value;
+    if (!id || !R) return;
+    R.people[id] = {title: R.title || ""};
+    drawRules(window._camsSeen || []);
+  }
+
+  async saveRules() {
+    if (!R) return;
+    rSay("saving…");
+    let got;
+    try {
+      got = await fetch("/api/faces/rules", {method: "POST", headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({rules: R})}).then(r => r.json());
+    } catch(e) {
+      return rSay("cannot reach the hub — is it still running?", "err", String(e.message || e));
+    }
+    if (got.need_login) return rSay("Sign in on the hub page first: changing what the rig says to guests needs it.", "warn");
+    if (!got.ok) return rSay("Not saved: " + (got.error || "the face helper refused it."), "err", got.detail);
+    R = got.rules || R;
+    rSay("Saved. The next person the rig sees gets these words.", "ok");
+  }
 }
-loadRules();
-new Mice.Tabs("tabs", [{id: "open", label: "Open it", icon: "👁"},
-                       {id: "follow", label: "Is the rig following it?", icon: "🔗"},
-                       {id: "say", label: "What the rig says", icon: "💬"}]);
+
+const facesApp = new FacesApp();
+window.facesApp = facesApp;
+function addCam() { return facesApp.addCam(); }
+function addMile() { return facesApp.addMile(); }
+function addPerson() { return facesApp.addPerson(); }
+function saveRules() { return facesApp.saveRules(); }
+facesApp.init();
 </script>

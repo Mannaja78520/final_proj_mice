@@ -1,7 +1,8 @@
 "use strict";
 
-class CameraApp {
+class CameraApp extends (window.Mice && window.Mice.App ? window.Mice.App : Object) {
   constructor() {
+    super("camera");
     this.$ = id => document.getElementById(id);
     this.esc = s => {
       const d = document.createElement('div');
