@@ -11,7 +11,7 @@ Plan: A48-18 (robot); related A48-13 hardwarepause
 Dynamic configurable resource use on weaker/stronger future Hub PCs and browser clients. Preserve models, provider chain, dirtyroot and physical pause.
 
 ## Doing now
-Nine deliberate regressions caught and exact raw source restored; now run final affected checks, then freeze full/package and guarded integration. Single QC driver main only; no live models, robot, service restart or cutover.
+Affected1207/1: update legacy fast-STT Brain.__new__ fixture to initialize actual adapter with deterministic CPU plan; production constructor already correct. Then selected/full/package. Nine regressions caught/restored; failed affected log preserved. Single QC driver main only; no live models, robot, service restart or cutover.
 
 ## File status
 Verification: selected326/0 then latest resource+Edge77/0; full/package pending. EOL-only generator paths included conservatively. Source reviewers approved current substantive corrections; low-RAM diagnostic/last test fixture added afterward.
@@ -55,6 +55,8 @@ Verification: selected326/0 then latest resource+Edge77/0; full/package pending.
 | qc/checks/check_resource_policy_browser.py | Production regression coverage | implemented | selected326/77; full pending | this checkpoint |
 | qc/data/resource_policy.js | Production regression coverage | implemented | selected326/77; full pending | this checkpoint |
 | shared/web/resources.js | Independent client display policy | implemented | selected326/77; full pending | this checkpoint |
+
+| qc/checks/check_voice_fast.py | Initialize actual resource adapter in legacy partial-Brain fixture | implemented | first repair147/0; final assertions pending | uncommitted |
 
 ## Facts found
 - Capacity uses totalCPU/RAM; free RAM/VRAM budgets refreshed at model admission. Detection never imports/loads AI models.
