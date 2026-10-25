@@ -93,29 +93,26 @@ code{background:var(--sunk);padding:1px 5px;border-radius:4px;
 
 /* The answers sheet: cells typed into where they stand. Wide content scrolls
    inside its own box, never the page. */
-.sheet-wrap{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:var(--r-md);margin-top:var(--sp-2)}
-.sheet{border-collapse:collapse;width:100%;min-width:1040px;font-size:14px;table-layout:fixed}
-.sheet th:first-child{width:30px}
-.sheet th:nth-last-child(2){width:150px}
-.sheet th:last-child{width:104px}
-.sheet th{position:sticky;top:0;z-index:1;background:var(--sunk);text-align:left;font-weight:600;
-          font-size:12px;color:var(--mut);padding:6px 8px;border-bottom:1px solid var(--line)}
-.sheet td{vertical-align:top;padding:4px;border-bottom:1px solid var(--line);border-left:1px solid var(--line)}
-.sheet td:first-child{border-left:0;width:28px;text-align:right;color:var(--mut);font-size:12px;padding-top:10px}
-.sheet textarea{min-height:38px;border-color:transparent;background:transparent;padding:6px;
-                font-size:14px;line-height:1.4;resize:none;max-height:8.6em;overflow:auto}
-/* A long cell shows its first lines until it is clicked, so 24 answers
-   stay a sheet you can scan, not ten screens of poem. */
-.sheet textarea:focus{max-height:none}
-.sheet textarea:hover{border-color:var(--line)}
-.sheet textarea:focus{border-color:var(--acc);background:var(--card);outline:none}
+.sheet-wrap{overflow:auto;max-height:75vh;border:1px solid var(--line);border-radius:var(--r-md);margin-top:var(--sp-2);background:var(--card)}
+.sheet{border-collapse:collapse;width:100%;min-width:1080px;font-size:14px;table-layout:fixed}
+.sheet th:first-child{width:36px}
+.sheet th:nth-last-child(2){width:160px}
+.sheet th:last-child{width:110px}
+.sheet th{position:sticky;top:0;z-index:2;background:var(--sunk);text-align:left;font-weight:600;
+          font-size:12.5px;color:var(--txt);padding:8px 10px;border-bottom:2px solid var(--line)}
+.sheet td{vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line);border-left:1px solid var(--line);background:var(--card);transition:background 0.15s ease}
+.sheet td:first-child{border-left:0;width:32px;text-align:right;color:var(--mut);font-size:12px;font-weight:600;padding-top:12px}
+.sheet tr:hover td{background:color-mix(in srgb,var(--acc-soft) 35%,var(--card))}
+.sheet textarea{width:100%;box-sizing:border-box;min-height:54px;border:1px solid var(--line);border-radius:var(--r-sm);
+                background:var(--sunk);color:var(--txt);padding:8px;font-size:14px;line-height:1.45;resize:vertical;max-height:16em;overflow:auto;transition:border-color .15s,background .15s}
+.sheet textarea:focus{border-color:var(--acc);background:var(--card);outline:none;box-shadow:0 0 0 2px var(--acc-soft)}
 .sheet tr.dirty td:first-child{box-shadow:inset 3px 0 var(--acc);color:var(--acc)}
 .sheet tr.bad td{background:color-mix(in srgb,var(--err) 8%,transparent)}
 /* How people ask it, above what it says, in each language's column. */
-.sheet textarea.ask{font-size:13px;color:var(--mut);border-bottom:1px dashed var(--line);border-radius:0}
+.sheet textarea.ask{font-size:13.5px;color:var(--txt);margin-bottom:6px;border-bottom:1px dashed var(--line);background:color-mix(in srgb,var(--sunk) 85%,var(--card))}
 .sheet textarea.ask:focus{color:inherit}
-.sheet .cellbar{display:flex;justify-content:flex-end}
-.sheet .cellbar button,.sheet .acts button{padding:1px 7px;font-size:12px;min-height:0}
+.sheet .cellbar{display:flex;justify-content:flex-end;margin-top:4px}
+.sheet .cellbar button,.sheet .acts button{padding:3px 9px;font-size:12px;min-height:0;border-radius:var(--r-sm)}
 .sheet .moves select{width:100%;font-size:12px;margin-bottom:3px}
 .sheet .mv{border-bottom:1px dashed var(--line);padding-bottom:3px;margin-bottom:3px}
 .sheet .acts{display:flex;flex-direction:column;gap:4px;align-items:stretch}
@@ -127,7 +124,14 @@ body.adv .not-adv{display:none}
 #faceTools[hidden]{display:none}
 
 /* Voice ▸ Questions charts (A47-3) */
-.qcharts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--sp-3)}
+.qcharts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--sp-3)}
+.qchart-box{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-3)}
+.qchart-box h3{margin-top:0;font-size:14px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:6px;margin-bottom:var(--sp-2)}
+.qsec-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-4);margin-top:var(--sp-4)}
+.qsec-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-2)}
+.qsec-head h3{font-size:16px;margin:0;color:var(--txt)}
+#qUnsaved .row{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+#qUnsaved .row:hover{border-color:var(--acc)}
 .qbars div{display:grid;grid-template-columns:minmax(80px,40%) 1fr auto;gap:var(--sp-2);align-items:center;margin:2px 0}
 .qbars .qn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .qbars b{display:block;height:12px;background:var(--acc);border-radius:var(--r-sm)}
@@ -3632,19 +3636,18 @@ if (document.readyState === "loading") {
     <!-- ANSWERS: a sheet. Every cell is typed into where it stands; one Save
          sends them all. Nothing jumps to a form somewhere else. -->
     <div class="card" data-pane="answers" hidden>
+      <div class="row" style="margin-bottom:var(--sp-2)">
+        <h2 style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px">💬 ตารางคำตอบของหุ่นยนต์ (Robot Answers & FAQ)</h2>
+      </div>
       <div class="row">
-        <input id="ansFind" type="search" placeholder="Find an answer…" oninput="findAnswers()">
-        <button onclick="addAnswerRow()">＋ Add a row</button>
-        <button class="primary" id="ansSave" onclick="saveAnswers()" disabled>Save answers</button>
-        <button id="ansUndo" onclick="undoAnswers()" disabled>Undo changes</button>
+        <input id="ansFind" type="search" placeholder="🔍 ค้นหาคำตอบ (Find an answer)…" oninput="findAnswers()" style="min-width:220px">
+        <button onclick="addAnswerRow()">＋ เพิ่มแถวคำตอบ (+ Add Row)</button>
+        <button class="primary" id="ansSave" onclick="saveAnswers()" disabled>💾 บันทึกคำตอบ (Save)</button>
+        <button id="ansUndo" onclick="undoAnswers()" disabled>↩ ยกเลิกที่แก้ (Undo)</button>
         <span class="mini" id="ansStat" aria-live="polite"></span>
       </div>
-      <p class="mini">Click a cell to change it. Each language has its own
-         column: on top, <b>how people ask it</b> (one per line); under it,
-         <b>what the rig says</b>. A reply left empty is translated for you
-         when you save. ▶ plays that reply.</p>
-      <p class="mini" id="ansEmpty" hidden>No answers yet. Add what people ask,
-         and what the rig replies.</p>
+      <p class="mini" style="margin-top:var(--sp-2)">คลิกในช่องเพื่อแก้ไข: แต่ละภาษามีคอลัมน์ของตัวเอง ด้านบนคือ <b>คำถามที่คนถาม</b> (พิมพ์ 1 คำถามต่อ 1 บรรทัด); ด้านล่างคือ <b>คำตอบที่หุ่นยนต์จะพูด</b> หากเว้นคำตอบภาษาอื่นว่างไว้ ระบบจะแปลภาษาให้อัตโนมัติเมื่อกดบันทึก (▶ เพื่อทดลองฟังเสียง)</p>
+      <p class="mini" id="ansEmpty" hidden>ยังไม่มีคำตอบในระบบ — กดปุ่ม "+ เพิ่มแถวคำตอบ" เพื่อเริ่มต้นเพิ่มบทสนทนา</p>
       <div class="sheet-wrap">
         <table class="sheet" id="ansTable">
           <thead><tr id="ansHead"></tr></thead>
@@ -3844,30 +3847,48 @@ if (document.readyState === "loading") {
     <!-- What people asked (A47-3): every question is logged with a topic
          (config/voice_topics.json) by the hub; the charts read /api/questions. -->
     <div class="card" data-pane="questions" hidden data-needs-login="gacha">
-      <div class="row"><span class="lbl">Day</span><select id="qDay" onchange="voiceApp.loadQuestions()"></select>
-        <button onclick="voiceApp.loadQuestions()">Refresh</button>
-        <a href="/api/questions?csv=1" download="voice_questions.csv">Download every question</a></div>
-      <p class="mini" id="qTotal"></p>
-      <div class="qcharts">
-        <div><h3>About what</h3><div id="qTopic" class="qbars"></div></div>
-        <div><h3>When (hour of the day)</h3><div id="qHour" class="qhist"></div></div>
-        <div><h3>Answered from</h3><div id="qSource" class="qbars"></div></div>
-        <div><h3>Language</h3><div id="qLang" class="qbars"></div></div>
-        <div><h3>Prizes given</h3><div id="qPrize" class="qbars"></div></div>
-        <div><h3>Asked most</h3><div id="qTop" class="qbars"></div></div>
+      <!-- Section 1: Analytics & Statistics -->
+      <div class="qsec-head">
+        <h2 style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px">📊 ภาพรวมและสถิติคำถาม (Question Analytics)</h2>
       </div>
-      <h3>Asked often, no saved answer yet</h3>
-      <p class="mini">Answered by the model or not at all. Press <b>Make an answer</b> to write the answer once;
-        the robot then says it every time.</p>
-      <div id="qUnsaved"></div>
-      <h3>Topics</h3>
-      <p class="mini">Each question gets the first topic whose words fit. <b>Words</b>: one way of saying it per line,
-        <code>|</code> between choices. Answers that give a prize are set on the
-        <a href="/app/gacha/">Prize machines</a> page.</p>
-      <div class="wrapx"><table class="qtopics" id="qTopicsT"><thead><tr><th>Short name</th><th>Shown as</th><th>Words</th><th></th></tr></thead><tbody></tbody></table></div>
-      <div class="row"><button onclick="voiceApp.topicRow({})">＋ Topic</button>
-        <button class="primary" onclick="voiceApp.saveTopics()">Save topics</button></div>
-      <div class="statline" id="qTopicsStat"></div>
+      <div class="row" style="margin-bottom:var(--sp-3)">
+        <span class="lbl">วันที่ (Day)</span><select id="qDay" onchange="voiceApp.loadQuestions()"></select>
+        <button onclick="voiceApp.loadQuestions()">⟳ รีเฟรช (Refresh)</button>
+        <a href="/api/questions?csv=1" download="voice_questions.csv" class="btn" style="text-decoration:none">📥 ดาวน์โหลดประวัติทั้งหมด (CSV)</a>
+      </div>
+      <p class="mini" id="qTotal" style="font-weight:600;color:var(--txt);margin-bottom:var(--sp-3)"></p>
+      
+      <div class="qcharts">
+        <div class="qchart-box"><h3>📌 หัวข้อคำถาม (Topics Breakdown)</h3><div id="qTopic" class="qbars"></div></div>
+        <div class="qchart-box"><h3>⏰ ช่วงเวลาที่ถาม (Peak Hours)</h3><div id="qHour" class="qhist"></div></div>
+        <div class="qchart-box"><h3>🤖 ที่มาของคำตอบ (Answer Source)</h3><div id="qSource" class="qbars"></div></div>
+        <div class="qchart-box"><h3>🗣️ ภาษาที่ใช้ถาม (Languages)</h3><div id="qLang" class="qbars"></div></div>
+        <div class="qchart-box"><h3>🎁 รางวัลที่แจก (Prizes Awarded)</h3><div id="qPrize" class="qbars"></div></div>
+        <div class="qchart-box"><h3>🔥 คำถามยอดนิยม (Top Questions)</h3><div id="qTop" class="qbars"></div></div>
+      </div>
+
+      <!-- Section 2: Unanswered / Frequent questions needing pre-set answers -->
+      <div class="qsec-card">
+        <div class="qsec-head">
+          <h3>💡 คำถามที่พบบ่อยแต่ยังไม่มีคำตอบตายตัว (Frequently Asked — Needs Answer)</h3>
+        </div>
+        <p class="mini">คำถามเหล่านี้ผู้คนถามเข้ามาบ่อย แต่หุ่นยนต์ยังไม่มีคำตอบในตาราง (ใช้ AI คิดสดหรือยังตอบไม่ได้) — กดปุ่ม <b>Make an answer</b> เพื่อสร้างคำตอบลงในตาราง หุ่นยนต์จะจำและตอบแบบนี้ทุกครั้ง</p>
+        <div id="qUnsaved" style="margin-top:var(--sp-2)"></div>
+      </div>
+
+      <!-- Section 3: Topic Keyword Matching -->
+      <div class="qsec-card">
+        <div class="qsec-head">
+          <h3>🏷️ การจัดกลุ่มหัวข้อและคำสำคัญ (Topic Categorization & Keywords)</h3>
+        </div>
+        <p class="mini">ระบบจะจัดหมวดหมู่คำถามตามคำสำคัญที่ระบุไว้ด้านล่าง เพื่อนำไปวิเคราะห์สถิติหรือผูกกับการแจกของรางวัลกาชาปอง (พิมพ์ 1 คำต่อ 1 บรรทัด หรือใช้ <code>|</code> คั่นระหว่างตัวเลือก)</p>
+        <div class="wrapx" style="margin:var(--sp-3) 0"><table class="qtopics" id="qTopicsT"><thead><tr><th>รหัสย่อ (Short name)</th><th>ชื่อที่แสดง (Display name)</th><th>คำสำคัญที่ตรวจจับ (Trigger Words)</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="row">
+          <button onclick="voiceApp.topicRow({})">＋ เพิ่มหมวดหมู่ (+ Topic)</button>
+          <button class="primary" onclick="voiceApp.saveTopics()">💾 บันทึกหมวดหมู่ (Save topics)</button>
+        </div>
+        <div class="statline" id="qTopicsStat" style="margin-top:var(--sp-2)"></div>
+      </div>
     </div>
 
     <!-- Shown only with "Show technical details" on, like every page. -->

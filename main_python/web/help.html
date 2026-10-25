@@ -105,36 +105,52 @@ main > section.pv-off { display: none !important; }
 nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--acc-soft); font-weight: 600; }
 
 .sec-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--sp-3);
   margin-top: 48px;
   padding-top: 24px;
   border-top: 1px solid var(--line);
 }
 .sec-nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 18px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   color: var(--txt);
   text-decoration: none;
   font-size: 13.5px;
-  font-weight: 600;
-  transition: border-color .15s, background .15s;
+  transition: border-color .15s, background .15s, transform .1s;
+  box-sizing: border-box;
 }
 .sec-nav-btn:hover {
   background: var(--acc-soft);
   border-color: var(--acc);
   color: var(--acc);
+  transform: translateY(-1px);
 }
-.sec-nav-prev { margin-right: auto; }
-.sec-nav-next { margin-left: auto; }
+.sec-nav-prev { text-align: left; }
+.sec-nav-next { text-align: right; }
+.sec-nav-spacer { display: block; }
+.sec-nav-lbl {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--mut);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.sec-nav-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+}
+@media (max-width: 600px) {
+  .sec-nav { grid-template-columns: 1fr; }
+  .sec-nav-next { text-align: left; }
+  .sec-nav-spacer { display: none; }
+}
 
 /* Interactive Infographics & Visual Setting Annotations */
 .info-box {
@@ -431,10 +447,10 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ทางลัดเปิด Nong Studio &amp; TV Remote</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกการ์ดแอปเพื่อเปิดใช้งาน</div>
+        <div class="action-card-title"><span class="num">1</span> การจัดหมวดหมู่แอปและการแยกคู่มือ (Categorized Tools &amp; Help)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เมนู Apps &amp; Tools แบ่งออกเป็น 4 หมวดหมู่อย่างเป็นระเบียบ: หุ่นยนต์และการแสดง, ระบบรู้จำ/เสียง/กล้อง, มินิเกม/ของรางวัล และคู่มือเอกสารอ้างอิง</div>
         <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
-          ระบบจะเปิดหน้าเว็บโดยแนบพารามิเตอร์ Bus ID และเส้นทางเชื่อมต่อให้อัตโนมัติ ไม่ต้องมานั่งกรอก IP ใหม่
+          ช่วยให้ผู้ดูแลระบบและทีมงานเข้าถึงเครื่องมือที่ต้องการได้ทันที พร้อมปุ่ม <b>📖 คู่มือ Help ↗</b> เด่นชัดบนแถบเมนูด้านบนของ Hub ทำให้เปิดคู่มือได้เสมอโดยไม่ต้องเลื่อนหาในรายการเครื่องมือ
         </div>
       </div>
       <div class="action-card">
@@ -976,6 +992,30 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <p>ในสถาปัตยกรรมแบบเดิม หากเปิดหน้า 3D (Three.js) บน Web Browser ของ Smart TV หรือมือถือรุ่นเก่า
        เบราว์เซอร์จะต้องคอมไพล์ WebGL Shaders และรันลูปคำนวณ 60 รอบต่อวินาที ซึ่งชิปประมวลผลของสมาร์ททีวีไม่ได้ออกแบบมาเพื่อรองรับ
        ส่งผลให้เบราว์เซอร์ทีวีปิดตัวเองหรือเครื่องค้าง</p></div>
+  <!-- SECTION 3: DUAL-MODE CONTROLLER -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 3: สลับโหมดการใช้งาน Dual-Mode (Mobile Remote vs Stage Display)</b>
+      <span class="info-badge">Dual-Mode</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> โหมด 📱 รีโมทมือถือ (Mobile Controller)</div>
+        <div class="action-step"><b>การใช้งาน:</b> เหมาะสำหรับเจ้าหน้าที่หรือผู้บังคับหุ่นถือใช้งานผ่านสมาร์ทโฟน</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          ปุ่มสัมผัสขนาดใหญ่พิเศษ กดง่ายด้วยนิ้วโป้ง มีปุ่มหยุดฉุกเฉิน ⏹ STOP, ท่าเริ่มต้น 🏠 HOME, แผ่นป้ายเลือกท่าทางสัมผัสขนาดใหญ่ และปุ่มสั่งพูดทักทายด่วน พร้อมซ่อนข้อมูลเซอร์โวเชิงเทคนิคเพื่อประหยัดพื้นที่หน้าจอ
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> โหมด 📺 จอแสดงเวที (10-Foot Stage Display)</div>
+        <div class="action-step"><b>การใช้งาน:</b> เปิดแสดงบนจอทีวีขนาดใหญ่บนเวทีสำหรับผู้ชมและผู้จัดงาน</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          แสดงชื่อการแสดงปัจจุบัน (Now Playing) และหลอดความคืบหน้าด้วยตัวหนังสือขนาดใหญ่พิเศษ มองเห็นได้ชัดเจนจากระยะ 3-5 เมตร พร้อมสถานะ 🟢 กำลังแสดง (PLAYING) โดยซ่อนเมนูตั้งค่าและเซอร์โวไม่ให้รกสายตา
+        </div>
+      </div>
+    </div>
+  </div>
+
 </section>
 
 <section id="camera">
@@ -1149,6 +1189,30 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        <b>waits its turn</b> or is <b>skipped</b> — whoever asked chooses — and
        a greeting that waited too long is dropped, because the person has
        walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p></div>
+  <!-- SECTION 3: ANSWERS SHEET & QUESTIONS ANALYTICS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 3: ตารางคำตอบแบบขยายและแดชบอร์ดสถิติคำถาม (Answers Sheet &amp; Questions Analytics)</b>
+      <span class="info-badge">Answers &amp; Analytics</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ตารางคำตอบโปร่งสบาย (Comfortable Answers Sheet)</div>
+        <div class="action-step"><b>การใช้งาน:</b> แท็บ Answers — พิมพ์คำถามที่คนถามด้านบน และคำตอบของหุ่นยนต์ด้านล่าง</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          ช่องข้อความปรับขนาดได้อิสระ ไม่บีบอัด ไม่เกิดแถบเลื่อนซ้อนซ้ำซ้อนในช่อง พร้อมระบบแปลภาษาอัตโนมัติสำหรับภาษาที่เว้นว่างไว้เมื่อกด Save
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> แดชบอร์ดคำถามและคำถามค้างตอบ (Questions &amp; Unanswered)</div>
+        <div class="action-step"><b>การใช้งาน:</b> แท็บ Questions — ดูกราฟวิเคราะห์และคำถามที่พบบ่อย</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          แสดงสถิติ 6 มิติ (หัวข้อ, ช่วงเวลา, แหล่งคำตอบ, ภาษา, รางวัล, คำถามยอดฮิต) และกล่องรวมคำถามที่คนถามบ่อยแต่ยังไม่มีคำตอบตายตัว พร้อมปุ่ม <b>+ Make an answer</b> เพื่อเพิ่มลงตารางคำตอบได้ในคลิกเดียว
+        </div>
+      </div>
+    </div>
+  </div>
+
 </section>
 
 <section id="faces">
@@ -1192,6 +1256,11 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <p>ถ้าต้องการประกาศเมื่อยอดคนถึงจำนวนที่กำหนด ใช้ <b>Celebrations</b> ส่วนคำเรียกเฉพาะบุคคลอยู่ใน <b>Titles for particular people</b></p>
   </div>
   <p class="tech">ที่อยู่โปรแกรมภายนอกอ่านจาก config/partners.json</p>
+  <div class="info-box">
+    <div class="info-header"><b>4. ระบบสีและการสืบทอดธีมแบบไดนามิก (Universal Dynamic Theme Sync)</b></div>
+    <p>หน้า Reconize สืบทอดธีมสีจาก Hub กลางอัตโนมัติผ่าน <code>MiceThemeManager</code> (เช่น โหมดมืด Midnight) ไม่บังคับแสดงผลพื้นหลังขาวจ้า แสบตา หรือกระพริบเปลี่ยนสี เมื่อผู้ใช้เปลี่ยนธีมใน Hub ทุกแท็บและแอปจะปรับสีตามทันทีแบบเรียลไทม์</p>
+  </div>
+
 </section>
 <section id="gacha">
   <div class="shead">
@@ -1204,6 +1273,20 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <p><a href="/app/gacha/">เปิดระบบแจกของ</a> แล้วเลือกแท็บตามงาน ชื่อภาษาอังกฤษด้านล่างตรงกับชื่อบนหน้าจอ</p>
     <p>ถ้าไม่เห็นแท็บและสถานะค้างที่ <b>checking…</b> แสดงว่าหน้าแอปยังโหลดไม่สำเร็จ จึงยังทำตามขั้นตอนต่อไปไม่ได้</p>
   </div>
+    <div class="info-box">
+    <div class="info-header">
+      <b>⚡ พรีเซตงานกิจกรรมเริ่มต้น (Quick Event Presets)</b>
+      <span class="info-badge">1-Click Setup</span>
+    </div>
+    <p>สำหรับผู้ดูแลงานอีเวนต์ที่ต้องการเริ่มใช้งานทันทีโดยไม่ต้องตั้งค่าตารางเอง สามารถกดเลือกพรีเซต 3 รูปแบบด้านบนของหน้ากาชาปอง:</p>
+    <ul>
+      <li><b>🎁 งานกิจกรรมทั่วไป (Standard Giveaway):</b> 1 ตู้กาชาปอง (พวงกุญแจ 50 ชิ้น สำรองสติกเกอร์ 100 ชิ้น) จำกัดสิทธิ์คนละ 1 ชิ้น</li>
+      <li><b>🍀 ลุ้นโชคไม่อั้น / บูธเกม (Unlimited Fun):</b> 2 ตู้ลุ้นโชค A/B (ขนม 200 ชิ้น และของที่ระลึก 50 ชิ้น) เล่นได้ไม่จำกัดจำนวนต่อคน</li>
+      <li><b>🏆 รางวัลใหญ่ VIP (VIP &amp; Limited Event):</b> ตู้ทองคำรางวัลใหญ่ 10 ชิ้น (คนละ 1 สิทธิ์) + ตู้รางวัลปลอบใจ 80 ชิ้น (คนละ 2 สิทธิ์)</li>
+    </ul>
+    <p class="mini">เมื่อกดพรีเซต ระบบจะกรอกชื่อเครื่อง รหัสของรางวัล และกฎให้ทันที ผู้จัดงานเพียงแก้ไขชื่อของรางวัลตามจริง แล้วกด <b>Save</b> ในแต่ละตารางเพื่อเริ่มใช้งานได้เลย</p>
+  </div>
+
   <div class="scroll"><table>
     <thead><tr><th>ต้องการทำอะไร</th><th>เลือกแท็บ</th><th>ทำอย่างไร / ผลที่ได้</th></tr></thead>
     <tbody>
@@ -2429,8 +2512,12 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       var aPrev = document.createElement("a");
       aPrev.className = "sec-nav-btn sec-nav-prev";
       aPrev.href = "#" + prev.id;
-      aPrev.innerHTML = "← ก่อนหน้า: " + prevTitle;
+      aPrev.innerHTML = "<span class='sec-nav-lbl'>← ก่อนหน้า (Previous)</span><span class='sec-nav-title'>" + prevTitle + "</span>";
       nav.appendChild(aPrev);
+    } else {
+      var dummy = document.createElement("div");
+      dummy.className = "sec-nav-spacer";
+      nav.appendChild(dummy);
     }
     if (next) {
       var nextHead = next.querySelector(".shead h2");
@@ -2438,7 +2525,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       var aNext = document.createElement("a");
       aNext.className = "sec-nav-btn sec-nav-next";
       aNext.href = "#" + next.id;
-      aNext.innerHTML = "ถัดไป: " + nextTitle + " →";
+      aNext.innerHTML = "<span class='sec-nav-lbl'>ถัดไป (Next) →</span><span class='sec-nav-title'>" + nextTitle + "</span>";
       nav.appendChild(aNext);
     }
     s.appendChild(nav);

@@ -71,29 +71,26 @@ code{background:var(--sunk);padding:1px 5px;border-radius:4px;
 
 /* The answers sheet: cells typed into where they stand. Wide content scrolls
    inside its own box, never the page. */
-.sheet-wrap{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:var(--r-md);margin-top:var(--sp-2)}
-.sheet{border-collapse:collapse;width:100%;min-width:1040px;font-size:14px;table-layout:fixed}
-.sheet th:first-child{width:30px}
-.sheet th:nth-last-child(2){width:150px}
-.sheet th:last-child{width:104px}
-.sheet th{position:sticky;top:0;z-index:1;background:var(--sunk);text-align:left;font-weight:600;
-          font-size:12px;color:var(--mut);padding:6px 8px;border-bottom:1px solid var(--line)}
-.sheet td{vertical-align:top;padding:4px;border-bottom:1px solid var(--line);border-left:1px solid var(--line)}
-.sheet td:first-child{border-left:0;width:28px;text-align:right;color:var(--mut);font-size:12px;padding-top:10px}
-.sheet textarea{min-height:38px;border-color:transparent;background:transparent;padding:6px;
-                font-size:14px;line-height:1.4;resize:none;max-height:8.6em;overflow:auto}
-/* A long cell shows its first lines until it is clicked, so 24 answers
-   stay a sheet you can scan, not ten screens of poem. */
-.sheet textarea:focus{max-height:none}
-.sheet textarea:hover{border-color:var(--line)}
-.sheet textarea:focus{border-color:var(--acc);background:var(--card);outline:none}
+.sheet-wrap{overflow:auto;max-height:75vh;border:1px solid var(--line);border-radius:var(--r-md);margin-top:var(--sp-2);background:var(--card)}
+.sheet{border-collapse:collapse;width:100%;min-width:1080px;font-size:14px;table-layout:fixed}
+.sheet th:first-child{width:36px}
+.sheet th:nth-last-child(2){width:160px}
+.sheet th:last-child{width:110px}
+.sheet th{position:sticky;top:0;z-index:2;background:var(--sunk);text-align:left;font-weight:600;
+          font-size:12.5px;color:var(--txt);padding:8px 10px;border-bottom:2px solid var(--line)}
+.sheet td{vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line);border-left:1px solid var(--line);background:var(--card);transition:background 0.15s ease}
+.sheet td:first-child{border-left:0;width:32px;text-align:right;color:var(--mut);font-size:12px;font-weight:600;padding-top:12px}
+.sheet tr:hover td{background:color-mix(in srgb,var(--acc-soft) 35%,var(--card))}
+.sheet textarea{width:100%;box-sizing:border-box;min-height:54px;border:1px solid var(--line);border-radius:var(--r-sm);
+                background:var(--sunk);color:var(--txt);padding:8px;font-size:14px;line-height:1.45;resize:vertical;max-height:16em;overflow:auto;transition:border-color .15s,background .15s}
+.sheet textarea:focus{border-color:var(--acc);background:var(--card);outline:none;box-shadow:0 0 0 2px var(--acc-soft)}
 .sheet tr.dirty td:first-child{box-shadow:inset 3px 0 var(--acc);color:var(--acc)}
 .sheet tr.bad td{background:color-mix(in srgb,var(--err) 8%,transparent)}
 /* How people ask it, above what it says, in each language's column. */
-.sheet textarea.ask{font-size:13px;color:var(--mut);border-bottom:1px dashed var(--line);border-radius:0}
+.sheet textarea.ask{font-size:13.5px;color:var(--txt);margin-bottom:6px;border-bottom:1px dashed var(--line);background:color-mix(in srgb,var(--sunk) 85%,var(--card))}
 .sheet textarea.ask:focus{color:inherit}
-.sheet .cellbar{display:flex;justify-content:flex-end}
-.sheet .cellbar button,.sheet .acts button{padding:1px 7px;font-size:12px;min-height:0}
+.sheet .cellbar{display:flex;justify-content:flex-end;margin-top:4px}
+.sheet .cellbar button,.sheet .acts button{padding:3px 9px;font-size:12px;min-height:0;border-radius:var(--r-sm)}
 .sheet .moves select{width:100%;font-size:12px;margin-bottom:3px}
 .sheet .mv{border-bottom:1px dashed var(--line);padding-bottom:3px;margin-bottom:3px}
 .sheet .acts{display:flex;flex-direction:column;gap:4px;align-items:stretch}
@@ -105,7 +102,14 @@ body.adv .not-adv{display:none}
 #faceTools[hidden]{display:none}
 
 /* Voice ▸ Questions charts (A47-3) */
-.qcharts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--sp-3)}
+.qcharts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--sp-3)}
+.qchart-box{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-3)}
+.qchart-box h3{margin-top:0;font-size:14px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:6px;margin-bottom:var(--sp-2)}
+.qsec-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-4);margin-top:var(--sp-4)}
+.qsec-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-2)}
+.qsec-head h3{font-size:16px;margin:0;color:var(--txt)}
+#qUnsaved .row{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+#qUnsaved .row:hover{border-color:var(--acc)}
 .qbars div{display:grid;grid-template-columns:minmax(80px,40%) 1fr auto;gap:var(--sp-2);align-items:center;margin:2px 0}
 .qbars .qn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .qbars b{display:block;height:12px;background:var(--acc);border-radius:var(--r-sm)}

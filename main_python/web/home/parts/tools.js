@@ -1,3 +1,78 @@
+// App categorization config (A48-17)
+const TOOL_GROUPS = [
+  {
+    id: "motion",
+    title: "🤖 หุ่นยนต์และการแสดง (Robot & Motion Control)",
+    match: ["studio", "tv"]
+  },
+  {
+    id: "ai",
+    title: "👁️ ระบบรู้จำ เสียง และกล้อง (AI, Vision & Voice)",
+    match: ["voice", "faces", "camera", "photobooth"]
+  },
+  {
+    id: "games",
+    title: "🎮 มินิเกมและของรางวัล (Games & Prizes)",
+    match: ["gacha", "all-jao"]
+  },
+  {
+    id: "docs",
+    title: "📖 คู่มือและเอกสารอ้างอิงระบบ (System Help & Documentation)",
+    match: ["help"]
+  }
+];
+
+function renderCategorizedApps(box, apps) {
+  box.innerHTML = "";
+  const assigned = new Set();
+  TOOL_GROUPS.forEach(g => {
+    const groupApps = apps.filter(a => {
+      const id = (a.id || a.path || a.name || "").toLowerCase();
+      return g.match.some(m => id.includes(m));
+    });
+    if (!groupApps.length) return;
+    groupApps.forEach(a => assigned.add(a));
+
+    const gDiv = document.createElement("div");
+    gDiv.style.marginBottom = "var(--sp-4)";
+    const h = document.createElement("h3");
+    h.style.fontSize = "14.5px";
+    h.style.fontWeight = "700";
+    h.style.margin = "0 0 var(--sp-2) 0";
+    h.style.color = "var(--txt)";
+    h.textContent = g.title;
+    gDiv.appendChild(h);
+
+    const grid = document.createElement("div");
+    grid.className = "tool-grid";
+    grid.style.display = "grid";
+    grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(280px, 1fr))";
+    grid.style.gap = "var(--sp-2)";
+    groupApps.forEach(a => grid.appendChild(toolRow(a)));
+    gDiv.appendChild(grid);
+    box.appendChild(gDiv);
+  });
+
+  const otherApps = apps.filter(a => !assigned.has(a));
+  if (otherApps.length) {
+    const gDiv = document.createElement("div");
+    gDiv.style.marginBottom = "var(--sp-4)";
+    const h = document.createElement("h3");
+    h.style.fontSize = "14.5px";
+    h.style.fontWeight = "700";
+    h.style.margin = "0 0 var(--sp-2) 0";
+    h.textContent = "🛠️ เครื่องมือเพิ่มเติม (Other Tools)";
+    gDiv.appendChild(h);
+    const grid = document.createElement("div");
+    grid.className = "tool-grid";
+    grid.style.display = "grid";
+    grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(280px, 1fr))";
+    grid.style.gap = "var(--sp-2)";
+    otherApps.forEach(a => grid.appendChild(toolRow(a)));
+    gDiv.appendChild(grid);
+    box.appendChild(gDiv);
+  }
+}
 function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
@@ -69,7 +144,7 @@ async function loadApps(){
     // drops every handler, so the copy on Home would have looked identical and
     // done nothing when pressed.
     toolBoxes().forEach(function(box){
-      apps.forEach(function(a){ box.appendChild(toolRow(a)); });
+      renderCategorizedApps(box, apps);
     });
   }catch(e){
     // An error says what to DO, and offers the control that does it - and

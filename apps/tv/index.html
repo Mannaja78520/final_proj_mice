@@ -140,6 +140,93 @@
   background: var(--acc);
 }
 .joint-val { width: 34px; text-align: right; color: var(--txt); }
+
+/* Dual-Mode TV Remote & 10-Foot Stage Display (A48-17) */
+.mode-bar {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  background: var(--sunk);
+  padding: 4px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  overflow-x: auto;
+}
+.mode-btn {
+  flex: 1;
+  min-height: 38px;
+  border: 0;
+  background: transparent;
+  color: var(--mut);
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  padding: 6px 14px;
+}
+.mode-btn.active {
+  background: var(--card);
+  color: var(--txt);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.mode-btn:hover:not(.active) {
+  color: var(--txt);
+  background: var(--acc-soft);
+}
+
+/* Mobile Remote Mode (Default on narrow screens) */
+body.mode-mobile .tv-grid {
+  grid-template-columns: 1fr;
+}
+body.mode-mobile #cardJoints {
+  display: none;
+}
+body.mode-mobile .tv-btn {
+  min-height: 52px;
+  font-size: 16px;
+}
+body.mode-mobile .seq-pill {
+  padding: 14px 16px;
+  font-size: 15px;
+  min-height: 48px;
+}
+
+/* TV Stage Display Mode (10-Foot UI for big screen on stage) */
+body.mode-stage .tv-grid {
+  grid-template-columns: 1fr;
+  max-width: 900px;
+  margin: 0 auto;
+}
+body.mode-stage #cardDev,
+body.mode-stage #cardJoints,
+body.mode-stage #cardSpeech {
+  display: none;
+}
+body.mode-stage .now-playing-box {
+  padding: var(--sp-6) var(--sp-4);
+  background: var(--card);
+}
+body.mode-stage .now-playing-title {
+  font-size: 34px;
+  letter-spacing: -0.02em;
+  margin: 12px 0 16px;
+  color: var(--txt);
+}
+body.mode-stage .progress-bar-bg {
+  height: 22px;
+  margin: 20px 0 12px;
+}
+body.mode-stage .mini {
+  font-size: 16px;
+}
+
+/* Tech Monitor Mode: shows all 4 cards */
+body.mode-tech .tv-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+}
+
 </style>
 </head>
 <body class="page">
@@ -149,11 +236,17 @@
   <button onclick="app.refresh()" style="margin-left:auto;">⟳ Refresh</button>
 </header>
 
-<div class="card" id="loginHere" style="margin-bottom:var(--sp-4)"></div>
+<div class="card" id="loginHere" style="margin-bottom:var(--sp-3)"></div>
+
+<div class="mode-bar">
+  <button class="mode-btn active" id="btnModeMobile" onclick="app.setMode('mobile')">📱 รีโมทมือถือ (Mobile Controller)</button>
+  <button class="mode-btn" id="btnModeStage" onclick="app.setMode('stage')">📺 จอแสดงเวที (Stage Display)</button>
+  <button class="mode-btn" id="btnModeTech" onclick="app.setMode('tech')">🛠️ มอนิเตอร์เซอร์โว (Tech Monitor)</button>
+</div>
 
 <div class="tv-grid">
   <!-- Card 1: Player & Now Playing -->
-  <div class="tv-card" style="grid-column: span 1;">
+  <div class="tv-card" id="cardPlayer" style="grid-column: span 1;">
     <h2>
       <span>🎮 Show &amp; Move Controller</span>
       <span class="tv-badge badge-idle" id="playBadge">IDLE</span>
@@ -181,7 +274,7 @@
   </div>
 
   <!-- Card 2: Quick Sequence Picker -->
-  <div class="tv-card">
+  <div class="tv-card" id="cardSeqs">
     <h2>
       <span>📂 Saved Sequences</span>
       <span class="mini" id="seqCount" style="color:var(--mut); font-weight:normal;">0 items</span>
@@ -192,7 +285,7 @@
   </div>
 
   <!-- Card 3: Quick Voice & Sound -->
-  <div class="tv-card">
+  <div class="tv-card" id="cardSpeech">
     <h2>
       <span>🗣️ Quick Speech &amp; Actions</span>
       <button class="tv-btn-danger" onclick="app.stopAllSound()" style="font-size:12px; padding:2px 8px; border-radius:4px;">Silenced All</button>
@@ -210,7 +303,7 @@
   </div>
 
   <!-- Card 4: 10-Joint Monitor (Zero 3D) -->
-  <div class="tv-card">
+  <div class="tv-card" id="cardJoints">
     <h2>
       <span>🦾 Joint Monitor (Real-time)</span>
       <span class="mini" style="color:var(--mut); font-weight:normal;">10 Servos</span>
@@ -244,23 +337,48 @@ class TVRemoteApp {
   }
 
   init() {
+    this.currentMode = localStorage.getItem("mice_tv_mode") || (window.innerWidth < 768 ? "mobile" : "tech");
+    this.applyMode(this.currentMode);
     this.buildJointRows();
     if (window.miceLogin) {
       window.miceLogin.mount(this.$("loginHere"));
     }
     this.loadSequences();
     this.poll();
-    this.pollTimer = setInterval(() => this.poll(), 900);
+    this.resetPollTimer(900);
 
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
-        clearInterval(this.pollTimer);
-        this.pollTimer = null;
+        if (this.pollTimer) {
+          clearInterval(this.pollTimer);
+          this.pollTimer = null;
+        }
       } else {
         this.poll();
-        if (!this.pollTimer) this.pollTimer = setInterval(() => this.poll(), 900);
+        this.resetPollTimer(900);
       }
     });
+  }
+
+  setMode(mode) {
+    this.currentMode = mode;
+    try { localStorage.setItem("mice_tv_mode", mode); } catch (e) {}
+    this.applyMode(mode);
+  }
+
+  applyMode(mode) {
+    document.body.classList.remove("mode-mobile", "mode-stage", "mode-tech");
+    document.body.classList.add("mode-" + mode);
+    ["mobile", "stage", "tech"].forEach(m => {
+      const btn = this.$("btnMode" + m.charAt(0).toUpperCase() + m.slice(1));
+      if (btn) btn.classList.toggle("active", m === mode);
+    });
+  }
+
+  resetPollTimer(intervalMs) {
+    if (this.pollTimer) clearInterval(this.pollTimer);
+    this.pollInterval = intervalMs;
+    this.pollTimer = setInterval(() => this.poll(), intervalMs);
   }
 
   buildJointRows() {
@@ -361,6 +479,7 @@ class TVRemoteApp {
       fill.style.width = pct + "%";
       cur.textContent = (ms / 1000).toFixed(1) + "s";
       tot.textContent = (total / 1000).toFixed(1) + "s";
+      if (this.pollInterval !== 600) this.resetPollTimer(600);
     } else {
       badge.textContent = p && p.error ? "ERROR" : "IDLE";
       if (p && p.error) title.textContent = p.error;
@@ -368,6 +487,7 @@ class TVRemoteApp {
       if (title.textContent !== "Ready") {
         fill.style.width = "0%";
       }
+      if (this.pollInterval !== 1500) this.resetPollTimer(1500);
     }
   }
 

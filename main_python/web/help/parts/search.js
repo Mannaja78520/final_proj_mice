@@ -21,8 +21,12 @@
       var aPrev = document.createElement("a");
       aPrev.className = "sec-nav-btn sec-nav-prev";
       aPrev.href = "#" + prev.id;
-      aPrev.innerHTML = "← ก่อนหน้า: " + prevTitle;
+      aPrev.innerHTML = "<span class='sec-nav-lbl'>← ก่อนหน้า (Previous)</span><span class='sec-nav-title'>" + prevTitle + "</span>";
       nav.appendChild(aPrev);
+    } else {
+      var dummy = document.createElement("div");
+      dummy.className = "sec-nav-spacer";
+      nav.appendChild(dummy);
     }
     if (next) {
       var nextHead = next.querySelector(".shead h2");
@@ -30,7 +34,7 @@
       var aNext = document.createElement("a");
       aNext.className = "sec-nav-btn sec-nav-next";
       aNext.href = "#" + next.id;
-      aNext.innerHTML = "ถัดไป: " + nextTitle + " →";
+      aNext.innerHTML = "<span class='sec-nav-lbl'>ถัดไป (Next) →</span><span class='sec-nav-title'>" + nextTitle + "</span>";
       nav.appendChild(aNext);
     }
     s.appendChild(nav);

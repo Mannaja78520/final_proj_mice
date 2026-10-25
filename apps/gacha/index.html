@@ -24,6 +24,22 @@
 
 <div class="card" id="loginHere"></div>
 
+<!-- Quick Event Presets (A48-17) -->
+<div class="card preset-card" style="background:var(--sunk);border:1px solid var(--line);margin-bottom:var(--sp-3)">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div>
+      <h3 style="margin:0;font-size:15px;color:var(--txt)">⚡ พรีเซตงานกิจกรรมเริ่มต้น (Quick Event Presets)</h3>
+      <p class="mini" style="margin:2px 0 0">คลิกเลือกพรีเซตเพื่อกรอกตารางให้อัตโนมัติ ปรับแต่งชื่อหรือจำนวนรางวัลตามต้องการ แล้วกด Save</p>
+    </div>
+    <div style="display:flex;gap:var(--sp-2);flex-wrap:wrap">
+      <button class="secondary" onclick="applyPreset('giveaway')">🎁 งานกิจกรรมทั่วไป</button>
+      <button class="secondary" onclick="applyPreset('unlimited')">🍀 ลุ้นโชคไม่อั้น (บูธเกม)</button>
+      <button class="secondary" onclick="applyPreset('vip')">🏆 รางวัลใหญ่ VIP</button>
+    </div>
+  </div>
+  <div id="presetNotice" class="statline" style="margin-top:var(--sp-2);background:var(--ok-soft);color:var(--ok);padding:6px 10px;border-radius:var(--r-sm)" hidden></div>
+</div>
+
 <!-- One tab per job (user 2026-10-23: tabs, not one long scroll). Mice.Tabs
      draws the list from TABS in the script; each card names its tab in data-tab. -->
 <div class="tabbed"><nav id="tabs"></nav><div>
@@ -677,4 +693,70 @@ drawHooks();
 vpLoad();
 if (window.miceLogin) miceLogin.mount($("loginHere"));
 load();
+
+// Quick Event Presets logic (A48-17)
+const PRESETS = {
+  giveaway: {
+    name: "งานกิจกรรมทั่วไป (Standard Giveaway)",
+    event: "กิจกรรมแจกของที่ระลึก",
+    machines: [
+      {id: "m1", module: "m1", label: "ตู้กาชาปองหลัก", item: "keychain", near: [], place: "เวทีกลาง", live: {stock: 50, given: 0}}
+    ],
+    items: {
+      "keychain": {label: "พวงกุญแจที่ระลึก", instead: ["sticker"]},
+      "sticker": {label: "สติกเกอร์น้อง"}
+    },
+    rules: [
+      {event: "กิจกรรมแจกของที่ระลึก", item: "keychain", total: "50", per_person: "1", note: "จำกัดคนละ 1 ชิ้น"},
+      {event: "กิจกรรมแจกของที่ระลึก", item: "sticker", total: "100", per_person: "2", note: "จำกัดคนละ 2 ชิ้น"}
+    ]
+  },
+  unlimited: {
+    name: "ลุ้นโชคไม่อั้น / บูธเกม (Unlimited Fun)",
+    event: "บูธเล่นเกมลุ้นโชค",
+    machines: [
+      {id: "m1", module: "m1", label: "ตู้ลุ้นโชค A", item: "snack", near: ["m2"], place: "บูธ 1", live: {stock: 100, given: 0}},
+      {id: "m2", module: "m2", label: "ตู้ลุ้นโชค B", item: "souvenir", near: ["m1"], place: "บูธ 2", live: {stock: 100, given: 0}}
+    ],
+    items: {
+      "snack": {label: "ขนม / ของว่าง", instead: ["souvenir"]},
+      "souvenir": {label: "ของที่ระลึกพิเศษ"}
+    },
+    rules: [
+      {event: "บูธเล่นเกมลุ้นโชค", item: "snack", total: "200", per_person: "0", note: "ไม่จำกัดจำนวน"},
+      {event: "บูธเล่นเกมลุ้นโชค", item: "souvenir", total: "50", per_person: "1", note: "คนละ 1 ชิ้น"}
+    ]
+  },
+  vip: {
+    name: "รางวัลใหญ่จำกัดสิทธิ์ (VIP & Limited Event)",
+    event: "งานแจกรางวัลใหญ่ VIP",
+    machines: [
+      {id: "m1", module: "m1", label: "ตู้ทองคำ VIP", item: "doll", near: ["m2"], place: "เวทีหลัก", live: {stock: 10, given: 0}},
+      {id: "m2", module: "m2", label: "ตู้รางวัลปลอบใจ", item: "pin", near: ["m1"], place: "ซุ้มลงทะเบียน", live: {stock: 80, given: 0}}
+    ],
+    items: {
+      "doll": {label: "ตุ๊กตาลิมิเต็ด VIP", instead: ["pin"]},
+      "pin": {label: "เข็มกลัดที่ระลึก"}
+    },
+    rules: [
+      {event: "งานแจกรางวัลใหญ่ VIP", item: "doll", total: "10", per_person: "1", note: "จำกัดสิทธิ์ 1 ชิ้นเท่านั้น"},
+      {event: "งานแจกรางวัลใหญ่ VIP", item: "pin", total: "80", per_person: "2", note: "รับได้สูงสุด 2 ชิ้น"}
+    ]
+  }
+};
+
+function applyPreset(key) {
+  const p = PRESETS[key];
+  if (!p) return;
+  $("evName").value = p.event;
+  S.machines = JSON.parse(JSON.stringify(p.machines));
+  drawMachines();
+  S.items = JSON.parse(JSON.stringify(p.items));
+  drawItems();
+  $("rItems").tBodies[0].innerHTML = "";
+  p.rules.forEach(r => addRow("rItems", r));
+  $("presetNotice").innerHTML = "⚡ <b>นำเข้าพรีเซต: " + esc(p.name) + " สำเร็จ!</b> ข้อมูลเครื่อง ของรางวัล และกฎถูกตั้งค่าเรียบร้อย คุณสามารถปรับแก้ชื่อหรือจำนวนในตาราง แล้วกดปุ่ม Save เพื่อใช้งานได้ทันที";
+  $("presetNotice").hidden = false;
+}
+
 </script>
