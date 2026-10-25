@@ -1,7 +1,7 @@
 # Fix and verify latest Gemini UI/OOP work
 
 Owner: codex:10241515-audit
-Updated: 2026-10-25T22:45:12.632996+07:00
+Updated: 2026-10-25T23:15:45.738615+07:00
 Branch: codex/gemini-ui-fixes-1025
 Tree: E:/final_proj/mice/code/.staging-gemini-ui-fixes-1025
 Last commit: this checkpoint; runtimefbceae6; publicmetadata merged6da26d6
@@ -11,48 +11,56 @@ Plan: A48-13; related Gemini A48-17
 User: independently fix discovered issues and search all latest Gemini work for further problems. Preserve user data/calibration; no realhardware while user-notready.
 
 ## Doing now
-First full immutable52e1037 FAILED8321/4; four isolated crowd retries green2/2. Source983/CAD20 hashes unchanged. Fixed dynamic Tools duplication and all four gate failures; focused186/0. Designer scanner also now resumes visible scanning after nested technical blocks. Original Voice fallback retained. Guardreversion caught/restored; actualdelta independent review pending. Preserve first full proof; run focused checks, review actualdelta then fresh full for changedsource. No hardware/runtime/root source changes.
+Final immutable full5a6231d passed8335/0 in570.2s, no crowd retry.983source hashes stable fp17cd6b3964cc9b1732ffa1e4b38c01b3e23c3b3490ad5278797b098843ef4374;20privateCAD hashes unchanged. Independent actualdelta reviewed;13iterative reversions caught/restored. Rebuild EXE in isolated scratch via spec and inspect archive without executing it; then metadata closure/PR81 merge/scoped rootintegration. Preserve all dirtyroot bytes; hardware/userdata/runtime unchanged.
 
 ## File status
 Baseline: ffff102; unrelated rootdirtywork not owned. Planned exactpaths below; remove unchanged rows or label reviewed-only at final reconciliation.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| apps/gacha/index.html | Confirmed lifecycle/state/event-order fix | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| apps/gacha/presets.js | Confirmed lifecycle/state/event-order fix | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| apps/tv/index.html | Confirmed lifecycle/state/event-order fix | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| apps/voice/app.js | Confirmed lifecycle/state/event-order fix | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| apps/voice/index.html | Generated inventory or web bundle | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| docs/systems/agents.md | Generated inventory or web bundle | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | 6da26d6 |
-| docs/systems/app-gacha.md | Generated inventory or web bundle | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| docs/systems/qc.md | Generated inventory or web bundle | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| docs/systems/shared-web.md | Generated inventory or web bundle | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | e7d20ca |
-| handoff/tasks/gemini-ui-fixes-1025.md | Own per-file task | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | this checkpoint |
-| handoff/tasks/ui-ux-overhaul-1025.md | Correct historical301selected-notFull claim; originalowner retained | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| main_python/gacha.py | Confirmed lifecycle/state/event-order fix | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| main_python/web/help.html | Generated inventory or web bundle | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| main_python/web/help/parts/gacha.html | Help parity for corrected operation | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| main_python/web/help/parts/hub.html | Help parity for corrected operation | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| main_python/web/help/parts/tv.html | Help parity for corrected operation | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| main_python/web/help/parts/voice.html | Help parity for corrected operation | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| qc/checks/check_app_browser.py | Regression coverage for actual production behavior | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| qc/checks/check_app_lifecycle.py | Regression coverage for actual production behavior | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| qc/checks/check_gacha_event_order.py | Regression coverage for actual production behavior | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| qc/checks/check_remote_scripts.py | Regression coverage for actual production behavior | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| qc/data/app_lifecycle.js | Regression coverage for actual production behavior | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
-| shared/web/mice.js | Confirmed lifecycle/state/event-order fix | implemented; full pending | affected1028/0; metadata86/0; reviewed6runtimehashes; full not run | fbceae6 |
+| apps/gacha/index.html | Confirmed lifecycle/state/event-order fix | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| apps/gacha/presets.js | Confirmed lifecycle/state/event-order fix | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| apps/tv/index.html | Confirmed lifecycle/state/event-order fix | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| apps/voice/app.js | Confirmed lifecycle/state/event-order fix | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| apps/voice/index.html | Generated inventory or web bundle | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| docs/systems/agents.md | Generated inventory or web bundle | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | 6da26d6 |
+| docs/systems/app-gacha.md | Generated inventory or web bundle | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| docs/systems/qc.md | Generated inventory or web bundle | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| docs/systems/shared-web.md | Generated inventory or web bundle | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | e7d20ca |
+| handoff/tasks/gemini-ui-fixes-1025.md | Own per-file task | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | this checkpoint |
+| handoff/tasks/ui-ux-overhaul-1025.md | Correct historical301selected-notFull claim; originalowner retained | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| main_python/gacha.py | Confirmed lifecycle/state/event-order fix | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| main_python/web/help.html | Generated inventory or web bundle | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| main_python/web/help/parts/gacha.html | Help parity for corrected operation | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| main_python/web/help/parts/hub.html | Help parity for corrected operation | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| main_python/web/help/parts/tv.html | Help parity for corrected operation | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| main_python/web/help/parts/voice.html | Help parity for corrected operation | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| qc/checks/check_app_browser.py | Regression coverage for actual production behavior | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| qc/checks/check_app_lifecycle.py | Regression coverage for actual production behavior | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| qc/checks/check_gacha_event_order.py | Regression coverage for actual production behavior | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| qc/checks/check_remote_scripts.py | Regression coverage for actual production behavior | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| qc/data/app_lifecycle.js | Regression coverage for actual production behavior | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
+| shared/web/mice.js | Confirmed lifecycle/state/event-order fix | verified software | full8335/0@5a6231d; stable983inputs; hardware not run | fbceae6 |
 | scratch/gemini-ui-fixes-1025/source-review.json | Independent runtime review + exact6rawhashes | done, private | exact saved evidence, no hardware proof | uncommitted, ignored |
 | scratch/gemini-ui-fixes-1025/regression-reversions.json | 9iterative original-reversion cases | done, private | exact saved evidence, no hardware proof | uncommitted, ignored |
 | scratch/gemini-ui-fixes-1025/extra-regression-reversions.json | 3extra head/metadata/backend cases | done, private | exact saved evidence, no hardware proof | uncommitted, ignored |
 | scratch/gemini-ui-fixes-1025/focused-final.log | Actual57/0 focused rawlog | done, private | exact saved evidence, no hardware proof | uncommitted, ignored |
 
-| main_python/web/home/parts/tools.js | Full-gate correction or tool grouping | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
-| main_python/web/hub.html | Full-gate correction or tool grouping | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
-| qc/checks/check_designer_first.py | Type operand/visitor literal distinction; technical subtree stack | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
-| qc/checks/check_help_links.py | Full-gate correction or tool grouping | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
-| qc/checks/check_voice_settings.py | Full-gate correction or tool grouping | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
-| qc/checks/check_systems.py | Full-gate correction or tool grouping | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
-| docs/systems.json | Full-gate correction or tool grouping | implemented | focused186/0; tools guard reversion caught/restored | this checkpoint |
+| main_python/web/home/parts/tools.js | Full-gate correction or tool grouping | implemented | full8335/0@5a6231d; guard reversion caught/restored | this checkpoint |
+| main_python/web/hub.html | Full-gate correction or tool grouping | implemented | full8335/0@5a6231d; guard reversion caught/restored | this checkpoint |
+| qc/checks/check_designer_first.py | Type operand/visitor literal distinction; technical subtree stack | implemented | full8335/0@5a6231d; guard reversion caught/restored | this checkpoint |
+| qc/checks/check_help_links.py | Full-gate correction or tool grouping | implemented | full8335/0@5a6231d; guard reversion caught/restored | this checkpoint |
+| qc/checks/check_voice_settings.py | Full-gate correction or tool grouping | implemented | full8335/0@5a6231d; guard reversion caught/restored | this checkpoint |
+| qc/checks/check_systems.py | Full-gate correction or tool grouping | implemented | full8335/0@5a6231d; guard reversion caught/restored | this checkpoint |
+| docs/systems.json | Full-gate correction or tool grouping | implemented | full8335/0@5a6231d; guard reversion caught/restored | this checkpoint |
+
+| scratch/gemini-ui-fixes-1025/full-gate-r2/full-result.json | Final immutable gate/source/CAD guard | done, private | full8335/0; no retry | uncommitted, ignored |
+
+| scratch/gemini-ui-fixes-1025/full-gate-r2/receipt.json | Actual full8335/0 receipt | done, private | full8335/0; no retry | uncommitted, ignored |
+
+| scratch/gemini-ui-fixes-1025/package_checked.py | Spec rebuild/archive proof driver; never start EXE | done, private | not run | uncommitted, ignored |
+
+| scratch/gemini-ui-fixes-1025/package-proof.json | Pending packaged exe byte inventory | pending | not run | uncommitted, ignored |
 
 ## Facts found
 - Prior8258full@8da predates newGemini UI/OOP and does not cover this source.
