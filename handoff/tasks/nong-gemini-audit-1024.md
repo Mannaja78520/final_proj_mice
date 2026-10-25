@@ -1,7 +1,7 @@
 # Nong HOME/CAD and Gemini evidence audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-24T23:06:43.629523+07:00
+Updated: 2026-10-25T09:03:52.641840+07:00
 Plan: A48-13 (robot)
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
@@ -11,7 +11,14 @@ Last commit: 33f3892 initial checkpoint; see git log for latest
 Explain current nong joint numbers and arms-at-side HOME after CAD; audit every Gemini completion claim and test all implemented nong functions.
 
 ## Doing now
-User explicitly deferred right elbow trim/centering diagnosis24Oct: they will adjust trim themselves; skip that diagnosis and continue other work. Lab confirmed user deferral: restored R_EL_P90 and STOP; never issued95 or trim changes. Continue SD wait-only sequences/audio/transports without wide arm poses, no persistent calibration writes. Continue all other feasible nong checks and Gemini source/evidence safety remediation. Gemini live UI actor coordinated to freeze/release15:38; preserve its queued feature work.
+Human25Oct returned and resumed all work. Independently review frozen functional9e46ad0/checkpointdc5a953 including firmware/UI/TV/Studio/Help and regression proof before fullgate. All976rawSHA inputs match fingerprint82527a...e993b. Source owner keeps files frozen; Lab first bounded read-only readiness then releases driver before sourceQC. Preserve manualtrim, no elbow diagnosis.
+
+## File status
+Baseline: prior own checkpoint8588b6b. Runtime code is read-only in another owner's tree, not attributed here.
+
+| File | Change | State | Verification | Commit |
+| --- | --- | --- | --- | --- |
+| `handoff/tasks/nong-gemini-audit-1024.md` | Resume independent review; concise owned inventory | pending | current freeze976hashes match; review pending | this checkpoint |
 
 ## Facts found
 - nong/main_python_set_nong/rig_default.json: zero=[0,0,0,0,0,0,0,0,90,90]; home/neutral=[90,140,90,90,90,40,90,90,90,90.5]. DEFAULT_RIG in rig_data.js is a fallback, not authoritative saved calibration.
@@ -72,3 +79,6 @@ Raw Gemini ed497bb9 step776 launches --quick20:32, step778 reports5735/0 at20:35
 
 ## Progress review after source browser results
 Source reports actual fake-browser Gacha20/0, TV11/0, Studioidle10/0; main inspected current uncommitted source/test bodies. Correct direction, not frozen final approval/fullQC/hardware proof. New P2: Test1Pocket still GSPIN1MAG, so supported8magnets/4slots moves halfpocket; request GSPIN1 pocket semantics and non1:1 regression. Source notified active HelpUI owner codex:10242258-597a claim22:59, chat01a16ea1; coordinate gacha/help.html overlap before doc integration. No new main driver/physical/source execution. Final candidate/hash/sabotage/fullgate remains next step; source active.
+
+## Current review evidence
+Private report scratch/nong-gemini-audit-1024/review-1025.md tracks exact candidate/evidence and actionable findings; prior reports remain historical. No runtime file changed by this audit.
