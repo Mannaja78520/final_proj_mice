@@ -1,7 +1,7 @@
 # Gacha safety — full green, source integration pending
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T17:08:17+07:00
+Updated: 2026-10-25T17:17:17+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
 Last commit: this metadata-only checkpoint; full gate8da4e169; runtime4d41a3c; verificationf037d3a
@@ -11,7 +11,7 @@ Plan: A47-20 (robot); A0-35 audit done
 Preserve Gemini Gacha features; bound motion, make completion/reference/refusals truthful, verify and prepare source integration. No physical calibration or runtime changes.
 
 ## Doing now
-R2 full finished8258/0 in686.0s; exact978raw inputs stable at8da4e169/db76249b...d90c7. Existing main independently accepted receipt with3crowdFLAKY each alone2/2. Prepare sourcePR and scoped integration handoff; keep runtime unchanged, root user work intact. Software driver explicitly released with postflight0. No hardware/runtime actions.
+Software source integrated/public PR79 merged645143e; root64path reconciliation exact54copies/9equivalent/1dirtyHubpreserved, outside tracked changes[]. Prepare metadata-only closure: snapshot final per-file ledger privately, remove these2completed task files perHANDOFF, regenerate agents inventory, update own realplan done and release source integration claim. Full certificate remains8da; no newruntime/hardware/deployment.
 
 ## Facts found
 - Preserved incoming root C++AAAE3506 and WebUI1e3b2e features (intake/GCALIB/GTEST/GDRAIN/tuning) in corrected branch. Earlier quick5716/5735 are proven quick, not full.
@@ -20,6 +20,7 @@ R2 full finished8258/0 in686.0s; exact978raw inputs stable at8da4e169/db76249b..
 - GTEST omitted count remains1 (production assertion); doc corrected. Actual HTTP200 ERRbusy from board is preferred over generic Api says; browser verifies real Hub->fake boundary.
 
 ## Done
+- PR79 merged645143e; root ff-only integration completed sameSHA. Private root scratch/gacha-safety-1025/root-integration-preview/outcome.json:64paths,54copied/9equivalent/1Hubpreserved,all_expectedtrue,outside_tracked_changed[]. No receipt rewritten.
 - Current FULL8258/0 in686.0s,313checks at8da4e169; freeze/before/after978raw inputs identical db76249bd51ffa8a06ddbe8413f47a03455acda12b8008206321f086b11d90c7, changedinputs[]. Receipt fulltrue, main independently accepted.
 - Existing crowdFLAKY check_gestures/check_game_prize/check_studio_auto_route each passed alone2/2 under unchanged runner; retained raw symptoms. Gacha SOLO passed. All5actual firmware hashes match approved build; unflashed.
 - Final affected+actual5firmwareenvironment/native suite1667/0 (94.8s), including actual private CAD, both Gacha pages, TV/Studio/Help, layout360–1920, contracts/generators/handoff. This is affected, not full.
@@ -28,41 +29,42 @@ R2 full finished8258/0 in686.0s; exact978raw inputs stable at8da4e169/db76249b..
 - Evidence current: scratch/gacha-safety-1025/full-gate-4d41a3c/affected-build.log and affected-build-details.log; firmware-artifacts.json records all5 binary hashes/sizes. Gacha image is unflashed.
 
 ## Next
-1. Open and attach sourcePR with exact8da full certificate, approvals and3crowd retry qualification.
-2. Coordinate scoped root integration separately; preserve newer live metadata and all unrelated dirty source/user data. No deployment or service restart.
-3. Hardware USER-NOTREADY: no device reads/retries, motion, flash, network, trim/calibration, camera or Hub/service actions.
+1. Merge metadata-only closure PR and integrate its exact removals/generated header.
+2. Release own bookkeeping claims; hardware acceptance stays paused in Lab/person tasks.
 
 ## Blocked
-No software test blocker; sourcePR/integration pending. Hardware acceptance remains explicitly paused by human; source fullpass is not physical acceptance.
+No software blocker. Hardware is user-paused and outside these completed software tasks; no physical acceptance or deployment.
 
 ## File status
 Baseline:e30bc36; preserved Gemini2bd3299/8530dbf/6db1aeb, rules9b57ee9, Help8064292. Only owned changes below; imported Help design attributed above.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| firmware/config/esp32_hardware_gacha_module.h | Bounded timing/default constants | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 0dc1d06 |
-| firmware/src/modules/gacha/GachaMath.h | Nonblocking bounded CenterMotion | verified; landing pending | full8258/0@8da,978stable; actual-source native195/0; restored config/default5/5 + prior native proofs; actual firmware builds in1667/0 | 0dc1d06 |
-| firmware/src/modules/gacha/GachaModule.h | Async jobs/phases, progress, learned advance | verified; landing pending | full8258/0@8da,978stable; actual-source native195/0; restored config/default5/5 + prior native proofs; actual firmware builds in1667/0 | 4d41a3c |
-| firmware/src/modules/gacha/GachaModule.cpp | Bounded jobs/STOP/args/per-pocket/Hall verification, timedfallback, already-at-Hall HOME result | verified; landing pending | full8258/0@8da,978stable; actual-source native195/0; restored config/default5/5 + prior native proofs; actual firmware builds in1667/0 | 4d41a3c |
-| firmware/config/commands.json | Preserve latest features; truthful async Hall contract | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | fa6c986 |
-| firmware/COMMANDS.md | Limits/progress/timed result, no mass/centre guarantee | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 4d41a3c |
-| apps/gacha/index.html | Parse fixes, motion status, per-pocket units, STOP | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 9e46ad0 |
-| apps/gacha/motion.js | Separate async polling class | verified; landing pending | full8258/0@8da,978stable; actual Hub/fake browser24/0 incl HTTP200 ERRbusy; error-priority sabotage1/1 caught/restored; affected1667/0 | 4d41a3c |
-| qc/checks/check_gacha_motion.py | Compile actual source methods/commands with fake IO | verified; landing pending | full8258/0@8da,978stable; actual-source native195/0; restored config/default5/5 + prior native proofs; actual firmware builds in1667/0 | 4d41a3c |
-| qc/data/gacha_motion.cpp | Motor/deadline/args/calib/drain/test/default/no-rock regressions | verified; landing pending | full8258/0@8da,978stable; actual-source native195/0; restored config/default5/5 + prior native proofs; actual firmware builds in1667/0 | 4d41a3c |
-| qc/checks/check_gacha_ui.py | Actual page->Hub->fake board;8magnets/4pockets | verified; landing pending | full8258/0@8da,978stable; actual Hub/fake browser24/0 incl HTTP200 ERRbusy; error-priority sabotage1/1 caught/restored; affected1667/0 | 4d41a3c |
-| qc/checks/check_remote_scripts.py | Parse shipped inline/helper JS | verified; landing pending | full8258/0@8da,978stable; parse4/0 and quote sabotage caught; affected1667/0 | fa6c986 |
-| docs/urdf_nong.md | Separate native zero/Studio zero/90/HOME | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 90847e8 |
-| handoff/tasks/gacha-safety-1024.md | Reconciled per-file current state | pending integration | metadata-only current checkpoint; gate8da certificate recorded, no rerun for prose | this checkpoint |
-| firmware/src/web/WebUI.h | Preserve root20line module-page features, truthful Hall/progress | verified; landing pending | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 9e46ad0 |
-| qc/data/gacha_config.cpp | Focused actual-GCFG accepted/rejected/CLEAR/polarity reference cases | verified; landing pending | full8258/0@8da,978stable; actual-source native195/0; restored config/default5/5 + prior native proofs; actual firmware builds in1667/0 | 4d41a3c |
-| qc/checks/check_packing_list.py | Resolve only canonical live plan, not stale published worktree copy | verified; landing pending | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
-| qc/checks/check_tools_list.py | Restore manifest probe original bytes | verified; landing pending | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
-| qc/checks/check_themes.py | Restore theme probe original bytes | verified; landing pending | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
-| tools/sabotage.py | Always restore original source bytes | verified; landing pending | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
-| qc/checks/check_dev_tools.py | Actual byte comparison for sabotage cleanup | verified; landing pending | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
-| qc/checks/check_qc_probe_integrity.py | Stale published plan + CRLF/exception probe regressions | verified; landing pending | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
-| qc/run_qc.py | Complete Gacha journey in existing SOLO isolation lane | verified; landing pending | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
+| firmware/config/esp32_hardware_gacha_module.h | Bounded timing/default constants | done | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 0dc1d06 |
+| firmware/src/modules/gacha/GachaMath.h | Nonblocking bounded CenterMotion | done | full8258/0@8da,978stable; actual-source native195/0; restored config/default5/5 + prior native proofs; actual firmware builds in1667/0 | 0dc1d06 |
+| firmware/src/modules/gacha/GachaModule.h | Async jobs/phases, progress, learned advance | done | full8258/0@8da,978stable; actual-source native195/0; restored config/default5/5 + prior native proofs; actual firmware builds in1667/0 | 4d41a3c |
+| firmware/src/modules/gacha/GachaModule.cpp | Bounded jobs/STOP/args/per-pocket/Hall verification, timedfallback, already-at-Hall HOME result | done | full8258/0@8da,978stable; actual-source native195/0; restored config/default5/5 + prior native proofs; actual firmware builds in1667/0 | 4d41a3c |
+| firmware/config/commands.json | Preserve latest features; truthful async Hall contract | done | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | fa6c986 |
+| firmware/COMMANDS.md | Limits/progress/timed result, no mass/centre guarantee | done | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 4d41a3c |
+| apps/gacha/index.html | Parse fixes, motion status, per-pocket units, STOP | done | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 9e46ad0 |
+| apps/gacha/motion.js | Separate async polling class | done | full8258/0@8da,978stable; actual Hub/fake browser24/0 incl HTTP200 ERRbusy; error-priority sabotage1/1 caught/restored; affected1667/0 | 4d41a3c |
+| qc/checks/check_gacha_motion.py | Compile actual source methods/commands with fake IO | done | full8258/0@8da,978stable; actual-source native195/0; restored config/default5/5 + prior native proofs; actual firmware builds in1667/0 | 4d41a3c |
+| qc/data/gacha_motion.cpp | Motor/deadline/args/calib/drain/test/default/no-rock regressions | done | full8258/0@8da,978stable; actual-source native195/0; restored config/default5/5 + prior native proofs; actual firmware builds in1667/0 | 4d41a3c |
+| qc/checks/check_gacha_ui.py | Actual page->Hub->fake board;8magnets/4pockets | done | full8258/0@8da,978stable; actual Hub/fake browser24/0 incl HTTP200 ERRbusy; error-priority sabotage1/1 caught/restored; affected1667/0 | 4d41a3c |
+| qc/checks/check_remote_scripts.py | Parse shipped inline/helper JS | done | full8258/0@8da,978stable; parse4/0 and quote sabotage caught; affected1667/0 | fa6c986 |
+| docs/urdf_nong.md | Separate native zero/Studio zero/90/HOME | done | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 90847e8 |
+| handoff/tasks/gacha-safety-1024.md | Remove completed own task after final private snapshot | pending closure | metadata-only current checkpoint; gate8da certificate recorded, no rerun for prose | this checkpoint |
+| firmware/src/web/WebUI.h | Preserve root20line module-page features, truthful Hall/progress | done | full8258/0@8da,978stable; approved runtime4d41a3c; current affected+actual firmware/native1667/0 | 9e46ad0 |
+| qc/data/gacha_config.cpp | Focused actual-GCFG accepted/rejected/CLEAR/polarity reference cases | done | full8258/0@8da,978stable; actual-source native195/0; restored config/default5/5 + prior native proofs; actual firmware builds in1667/0 | 4d41a3c |
+| qc/checks/check_packing_list.py | Resolve only canonical live plan, not stale published worktree copy | done | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
+| qc/checks/check_tools_list.py | Restore manifest probe original bytes | done | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
+| qc/checks/check_themes.py | Restore theme probe original bytes | done | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
+| tools/sabotage.py | Always restore original source bytes | done | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
+| qc/checks/check_dev_tools.py | Actual byte comparison for sabotage cleanup | done | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
+| qc/checks/check_qc_probe_integrity.py | Stale published plan + CRLF/exception probe regressions | done | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
+| qc/run_qc.py | Complete Gacha journey in existing SOLO isolation lane | done | full8258/0@8da,978stable; approved f037d3a; real325/0, integrity5/5 restored, exact3source bytes | f037d3a |
+
+| docs/systems/agents.md | Regenerate inventory after2completed task removals | pending closure | generator/check pending; no runtime delta | uncommitted |
 
 ## Evidence / preserved data
 - Earlier dc5a953/input82527a snapshot stays historical under scratch/gacha-safety-1025/candidate-cf23113/. Current successful gate folder is full-gate-4d41a3c-r2/; first failed folder full-gate-4d41a3c/ remains immutable; runtime source approved4d41a3c.
