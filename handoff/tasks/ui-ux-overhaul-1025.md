@@ -3,7 +3,7 @@
 Owner: gemini:ed497bb9
 Updated: 2026-10-25 19:43 +0700
 Branch: main
-Last commit: 645143e
+Last commit: 0ab2d1c
 Plan: A48-17
 
 ## Goal
@@ -18,37 +18,37 @@ Plan: A48-17
 9. Rule 11 (Mandatory Help Parity): Enforced across HANDOFF, GEMINI, AGENTS, CLAUDE with synchronous help/parts updates.
 
 ## Doing now
-Completed all 5 implementation steps; verified with 558/0 passed tests; preparing checkpoint.
+Completed all 5 implementation steps; verified with 558/0 passed tests; landed in commit 0ab2d1c.
 
 ## File status
 Baseline: 645143e
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| `shared/web/mice.js` | OOP MiceThemeManager with multi-window/tab theme sync | done | quick: check_themes pass (84/0) | uncommitted |
-| `apps/faces/index.html` | Dynamic theme inheritance from central Hub | done | quick: check_themes pass (84/0) | uncommitted |
-| `apps/all-jao/index.html` | Equal-height mini-game cards via CSS grid stretch | done | quick: check_themes pass (84/0) | uncommitted |
-| `main_python/web/help/parts/search.js` | Symmetric 2-column previous/next card navigation | done | quick: check_help_topics pass (415/0) | uncommitted |
-| `main_python/web/help/style.css` | Styles for symmetric 2-column topic navigation | done | quick: check_help_topics pass (415/0) | uncommitted |
-| `main_python/web/help.html` | Recompiled Help bundle from parts | done | quick: check_help_topics pass (415/0) | uncommitted |
-| `apps/voice/index.template.html` | Redesign Answers table & Questions analytics | done | quick: check_voice_view pass (53/0) | uncommitted |
-| `apps/voice/style.css` | Responsive multiline styles for Voice answers & questions | done | quick: check_voice_view pass (53/0) | uncommitted |
-| `apps/voice/index.html` | Recompiled Voice bundle from template | done | quick: check_voice_view pass (53/0) | uncommitted |
-| `apps/gacha/index.html` | Quick Event Presets system with instant table fill | done | quick: check_gacha_ui pass (140/0) | uncommitted |
-| `main_python/web/home/parts/tools.js` | Categorized tools layout in Hub | done | quick: check_tools_list pass (140/0) | uncommitted |
-| `main_python/web/home/parts/tools.html` | Categorized tools container structure | done | quick: check_tools_list pass (140/0) | uncommitted |
-| `main_python/web/home/parts/top.html` | Elevated Help link in topbar navigation | done | quick: check_tools_list pass (140/0) | uncommitted |
-| `main_python/web/hub.html` | Recompiled Hub bundle from parts | done | quick: check_tools_list pass (140/0) | uncommitted |
-| `apps/tv/index.html` | Dual-mode Remote (Mobile Gamepad vs TV Stage Display) | done | quick: check_tv_remote pass (11/0) | uncommitted |
-| `main_python/web/help/parts/faces.html` | Document theme synchronization | done | quick: check_help_topics pass (415/0) | uncommitted |
-| `main_python/web/help/parts/gacha.html` | Document Quick Event Presets | done | quick: check_help_topics pass (415/0) | uncommitted |
-| `main_python/web/help/parts/hub.html` | Document categorized tools & topbar Help | done | quick: check_help_topics pass (415/0) | uncommitted |
-| `main_python/web/help/parts/tv.html` | Document TV Dual-Mode & adaptive performance | done | quick: check_help_topics pass (415/0) | uncommitted |
-| `main_python/web/help/parts/voice.html` | Document Answers sheet & Questions analytics | done | quick: check_help_topics pass (415/0) | uncommitted |
-| `HANDOFF.md` | Add Rule 11 Mandatory Help Parity & Sync | done | quick: check_docs pass (415/0) | uncommitted |
-| `GEMINI.md` | Add Rule 11 Mandatory Help Parity & Sync | done | quick: check_docs pass (415/0) | uncommitted |
-| `AGENTS.md` | Add Rule 11 Mandatory Help Parity & Sync | done | quick: check_docs pass (415/0) | uncommitted |
-| `CLAUDE.md` | Add Rule 11 Mandatory Help Parity & Sync | done | quick: check_docs pass (415/0) | uncommitted |
+| `shared/web/mice.js` | OOP MiceThemeManager with multi-window/tab theme sync | done | quick: check_themes pass (84/0) | 0ab2d1c |
+| `apps/faces/index.html` | Dynamic theme inheritance from central Hub | done | quick: check_themes pass (84/0) | 0ab2d1c |
+| `apps/all-jao/index.html` | Equal-height mini-game cards via CSS grid stretch | done | quick: check_themes pass (84/0) | 0ab2d1c |
+| `main_python/web/help/parts/search.js` | Symmetric 2-column previous/next card navigation | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
+| `main_python/web/help/style.css` | Styles for symmetric 2-column topic navigation | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
+| `main_python/web/help.html` | Recompiled Help bundle from parts | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
+| `apps/voice/index.template.html` | Redesign Answers table & Questions analytics | done | quick: check_voice_view pass (53/0) | 0ab2d1c |
+| `apps/voice/style.css` | Responsive multiline styles for Voice answers & questions | done | quick: check_voice_view pass (53/0) | 0ab2d1c |
+| `apps/voice/index.html` | Recompiled Voice bundle from template | done | quick: check_voice_view pass (53/0) | 0ab2d1c |
+| `apps/gacha/index.html` | Quick Event Presets system with instant table fill | done | quick: check_gacha_ui pass (140/0) | 0ab2d1c |
+| `main_python/web/home/parts/tools.js` | Categorized tools layout in Hub | done | quick: check_tools_list pass (140/0) | 0ab2d1c |
+| `main_python/web/home/parts/tools.html` | Categorized tools container structure | done | quick: check_tools_list pass (140/0) | 0ab2d1c |
+| `main_python/web/home/parts/top.html` | Elevated Help link in topbar navigation | done | quick: check_tools_list pass (140/0) | 0ab2d1c |
+| `main_python/web/hub.html` | Recompiled Hub bundle from parts | done | quick: check_tools_list pass (140/0) | 0ab2d1c |
+| `apps/tv/index.html` | Dual-mode Remote (Mobile Gamepad vs TV Stage Display) | done | quick: check_tv_remote pass (11/0) | 0ab2d1c |
+| `main_python/web/help/parts/faces.html` | Document theme synchronization | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
+| `main_python/web/help/parts/gacha.html` | Document Quick Event Presets | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
+| `main_python/web/help/parts/hub.html` | Document categorized tools & topbar Help | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
+| `main_python/web/help/parts/tv.html` | Document TV Dual-Mode & adaptive performance | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
+| `main_python/web/help/parts/voice.html` | Document Answers sheet & Questions analytics | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
+| `HANDOFF.md` | Add Rule 11 Mandatory Help Parity & Sync | done | quick: check_docs pass (415/0) | 0ab2d1c |
+| `GEMINI.md` | Add Rule 11 Mandatory Help Parity & Sync | done | quick: check_docs pass (415/0) | 0ab2d1c |
+| `AGENTS.md` | Add Rule 11 Mandatory Help Parity & Sync | done | quick: check_docs pass (415/0) | 0ab2d1c |
+| `CLAUDE.md` | Add Rule 11 Mandatory Help Parity & Sync | done | quick: check_docs pass (415/0) | 0ab2d1c |
 | `handoff/tasks/ui-ux-overhaul-1025.md` | Own task tracking and per-file ledger | done | inspection: Markdown pass | this checkpoint |
 
 ## Facts found
