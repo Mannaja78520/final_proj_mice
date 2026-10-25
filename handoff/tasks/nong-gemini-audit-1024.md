@@ -1,7 +1,7 @@
 # Nong acceptance and independent Gemini/source audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-26T04:04:56.498510+07:00
+Updated: 2026-10-26T04:25:21.834063+07:00
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
 Last commit: this checkpoint; softwarePR81merged69fd19ed
@@ -11,7 +11,7 @@ Plan: A48-13 (robot); related A47-20/A48-14 source, A45-11 Lab, A48-16 rules
 Finish the authorized pending Gemini/Claude work, independently review exact source/evidence and test every implemented Nong feature where possible. Preserve manual trim and distinguish software proof from real-device acceptance.
 
 ## Doing now
-Residual assessment complete: confirmed missing Lift travel/homing deadline remains a separate source repair; no physical fault observed. Hub denied-storage startup fixed in active adaptivePC task A48-18, now full QC at f248802. Read-only report records subsystem optimizations and unmeasured combined PC/Face/robot performance. No real hardware or runtime cutover. Preserve earlier accepted PR81 evidence as historical, not proof of newpolicy.
+AdaptivePC A48-18 completed PR82/root3298e36, full8418/0@f248802 qualified4isolated2/2 retries,994inputs/CAD20 stable, package/archive verified/notstarted,36rootactions/3732protected independently accepted. No active coding/QC/runtime/device driver. Residual Lift P1 travel/homing deadline repair remains open separately; actual model/combined PC+Face performance and physical matrix not measured. Physical USER-NOTREADY and elbowtrim user-deferred.
 
 ## File status
 Baseline: own9351b2c; reviewed runtime files belong to source owner and are not main's changes.
@@ -31,6 +31,8 @@ Baseline: own9351b2c; reviewed runtime files belong to source owner and are not 
 
 | scratch/nong-gemini-audit-1024/performance-assessment-1026.md | Residual source gaps, PC capacity and measurement needs | assessment done; Lift fix pending | source-based only; no hardware/load measurements | uncommitted, private ignored |
 
+| scratch/nong-gemini-audit-1024/adaptive-acceptance-1026.json | PR82/full/package/root acceptance and open limits | done, private | 8418/0 qualified4retries;212metadata;36actions/3732protected independently verified | uncommitted, ignored |
+
 ## Facts found
 - Latest source is merged root69fd19ed/PR81. This audit branch carries review metadata only; never promote its older runtime. Final source ledger/history58883c2; exact proofs in latest-ui-acceptance-1025.json.
 - Saved Nong HOME=[90,140,90,90,90,40,90,90,90,90.5] predates CAD/Gemini. Native CAD0, Studio0, command90 and savedHOME differ. Controller angles are commands, not physical measured angles.
@@ -49,10 +51,10 @@ Baseline: own9351b2c; reviewed runtime files belong to source owner and are not 
 - Passive Face takeover after authorusage limit: f1573bc and private readiness report; corePC JSONhealth200/Faceweb200, delivery8123listener but previous APIhealth404. No inference/person/full-load proof or runtime changes. Main passive claim released.
 
 ## Next
-1. Prior Gemini software accepted; adaptivePC A48-18 in verification. Separate Lift P1 source repair remains: configurable travel/homing deadline and latched fault, native regressions/build before any physical acceptance. Keep realhardware/person acceptance paused until the human explicitly ready; connection alone is not consent. Do not repeat scans/probes while paused.
+1. Prior Gemini software accepted; adaptivePC A48-18 accepted PR82/root3298e36. Separate Lift P1 source repair remains: configurable travel/homing deadline and latched fault, native regressions/build before any physical acceptance. Keep realhardware/person acceptance paused until the human explicitly ready; connection alone is not consent. Do not repeat scans/probes while paused.
 2. On explicit readiness, use existing Lab A45-11 handoff and32verb+19feature missing-evidence matrix with fresh identity/config; preserve manualtrim/HOME and coordinate one driver. User owns elbowtrim adjustment.
 3. Any future runtime deployment needs its own idle/resource claim/current-tree validation; no Hub/service restart under this pause. Isolated EXE is built but not installed/executed.
 4. Historical findings/provenance are retained in prior commits and scratch reports. Handoff-first per-file rules remain mandatory for all AIs; historical301/0 selected-notFull corrected.
 
 ## Blocked
-Realhardware/person/absenttransports USER-PAUSED. LatestGemini review PR81 accepted historically. New residual assessment found Lift missing travel/homing deadline (unfixed); PC adaptation A48-18 has its own current gate, no old receipt reused. One qualified test reliability issue: check_gestures failed under parallel load but passed alone2/2; preserve that evidence. No live-deployment or physical acceptance claim. No main driver/source/runtime/hardware resources held after finalrelease.
+Realhardware/person/absenttransports USER-PAUSED. LatestGemini review PR81 accepted historically. New residual assessment found Lift missing travel/homing deadline (unfixed); PC adaptation A48-18 accepted with its own8418/0 qualified4retries gate and package/root proofs, no old receipt reused. One qualified test reliability issue: check_gestures failed under parallel load but passed alone2/2; preserve that evidence. No live-deployment or physical acceptance claim. No main driver/source/runtime/hardware resources held after finalrelease.
