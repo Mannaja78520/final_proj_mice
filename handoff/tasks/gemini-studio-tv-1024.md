@@ -1,17 +1,17 @@
 # Latest Gemini Studio rendering and TV control correctness
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T07:43:24+07:00
+Updated: 2026-10-25T07:46:24+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
-Last commit: 3bb6c07; source below uncommitted
+Last commit: a176f3a (merged8530dbf +9b57ee9); current changes in this checkpoint
 Plan: A48-14 (same verified-source batch as A47-20)
 
 ## Goal
 Main delegates confirmed latest Gemini Studio/TV regressions from ce0aeb0/b5a161b/2bd3299. Preserve all new features and idle render saving. No physical pose/calibration/CAD changes.
 
 ## Doing now
-25Oct handoff reconciliation before code: keep current UI/render fixes, migrate per-file ledger, native162/0 and browser/syntax41/0 now; next merge latestroot8530dbf preserving stronger guards, docs/system generation and sabotage. Main independent exact-source review before final full gate. Help overlap owner codex:10242258-597a messaged with exact correctness hunks; await merge-safe reconciliation. No hardware/config/runtime actions.
+Checkpoint current measured fixes plus generated Help/systems/snapshot; next deliberate browser sabotage and restored regression, then exact independent review/full gate with A47-20. Reconcile HelpUI597a overlappinggacha facts; preserve their layout. Latest8530dbf/9b57ee9 now merged. No hardware/runtime/userdata actions.
 
 ## Facts found
 - Main static review: applyPose URDF early return skips bottom markDirty3d, so after60 idle frames CAD pose/monitor can fail to redraw. Hand/grid/late mesh and resize lack invalidation. Mark mutation callbacks, retain zero idle renders.
@@ -25,26 +25,52 @@ Implement focused invalidation and TV API/target guards; fake browser tests idle
 ## Evidence / limits
 Only source inspection so far for this task. A47-20 native135/0 is backend-only. QC-only lease is ours after Lab22:12 release; physical remains stopped/reserved, no hardware, camera, restart or flash. User deferred actual elbow trim; no physical centering pass.
 
-## File handoff
-File | Change | State | Verification/evidence | Commit
---- | --- | --- | --- | ---
-apps/tv/index.html | Valid selectedNong, nativeHOME, module.joints, progress, exactclip restart | pending | real fake browser11/0; final sabotage/review pending | uncommitted
-nong/main_python_set_nong/web/app_parts/build_rig.js | Invalidate before CAD early return | pending | idle browser10/0; sabotage pending | uncommitted
-nong/main_python_set_nong/web/app_parts/main_loop.js | Resize invalidates renderer | pending | idle browser10/0; sabotage pending | uncommitted
-nong/main_python_set_nong/web/app_parts/urdf_view.js | Hand/grid/non-tip late mesh invalidate | pending | idle browser10/0; sabotage pending | uncommitted
-nong/main_python_set_nong/web/app_parts/stl_meshes.js | Immediate and late mesh invalidate | pending | idle browser10/0; sabotage pending | uncommitted
-nong/main_python_set_nong/web/app.js | Builder output | pending | generated then actual browser10/0 | uncommitted
-nong/main_python_set_nong/web/index.html | Builder output/EOL | pending | generation consistency pending | uncommitted
-main_python/web/help/parts/studio.html | SavedHOME/limits/RELAX wording, idle rendering | pending | correctness edits; docs check pending | uncommitted
-main_python/web/help/parts/tv.html | Target/nativeHOME/restart description | pending | matches browser11/0; docs check pending | uncommitted
-main_python/web/help/parts/gacha.html | Async Hall estimate vs false mass/deadcentre claims | pending | overlap owner contacted; preserve their layout | uncommitted
-main_python/web/help.html | Builder output | pending | regenerate after correctness+owner reconciliation | uncommitted
-main_python/web/hub.html | Builder sync10lines inherited source feature | pending | inspect provenance+generation check before stage | uncommitted
-qc/checks/check_studio_render_idle.py | Real browser idle>60frames then mutations and idlezero | pending |10/0; deliberate sabotage pending | uncommitted
-qc/checks/check_tv_remote.py | Real page->Hub->fake HOME/target/joints/progress/restart | pending |11/0; deliberate sabotage pending | uncommitted
-handoff/tasks/gemini-studio-tv-1024.md | Reconciled per-file current state | pending | explicit ledger; final completion later | next WIP
+## File status
+Baseline: e30bc36; preserve inherited latest Gemini2bd3299/8530dbf and rules9b57ee9; ledger lists own changes only.
+| File | Change | State | Verification | Commit |
+| --- | --- | --- | --- | --- |
+| apps/tv/index.html | Valid selectedNong, nativeHOME, module.joints, progress, exactclip restart | pending | real fake browser11/0; final sabotage/review pending | fa6c986 |
+| nong/main_python_set_nong/web/app_parts/build_rig.js | Invalidate before CAD early return | pending | idle browser10/0; sabotage pending | fa6c986 |
+| nong/main_python_set_nong/web/app_parts/main_loop.js | Resize invalidates renderer | pending | idle browser10/0; sabotage pending | fa6c986 |
+| nong/main_python_set_nong/web/app_parts/urdf_view.js | Hand/grid/non-tip late mesh invalidate | pending | idle browser10/0; sabotage pending | fa6c986 |
+| nong/main_python_set_nong/web/app_parts/stl_meshes.js | Immediate and late mesh invalidate | pending | idle browser10/0; sabotage pending | fa6c986 |
+| nong/main_python_set_nong/web/app.js | Builder output | pending | generated then actual browser10/0 | fa6c986 |
+| nong/main_python_set_nong/web/index.html | Builder output/EOL | pending | generation consistency pending | f8a9576 |
+| main_python/web/help/parts/studio.html | SavedHOME/limits/RELAX wording, idle rendering | pending | correctness edits; docs check pending | uncommitted |
+| main_python/web/help/parts/tv.html | Target/nativeHOME/restart description | pending | matches browser11/0; docs check pending | fa6c986 |
+| main_python/web/help/parts/gacha.html | Async Hall estimate vs false mass/deadcentre claims | pending | overlap owner contacted; preserve their layout | fa6c986 |
+| main_python/web/help.html | Builder output | pending | regenerate after correctness+owner reconciliation | uncommitted |
+| main_python/web/hub.html | Builder sync10lines inherited source feature | pending | inspect provenance+generation check before stage | uncommitted |
+| qc/checks/check_studio_render_idle.py | Real browser idle>60frames then mutations and idlezero | pending |10/0; deliberate sabotage pending | fa6c986 |
+| qc/checks/check_tv_remote.py | Real page->Hub->fake HOME/target/joints/progress/restart | pending |11/0; deliberate sabotage pending | fa6c986 |
+| handoff/tasks/gemini-studio-tv-1024.md | Reconciled per-file current state | pending | explicit ledger; final completion later | this checkpoint |
 
 ## Preserved unrelated files
 apps/camera/index.html and apps/voice/index.html: builder EOL-only, not staged. qc_chain_proj.json/settings_shared.json and old reports: preexisting QC/user data, not owned or promoted.
 
 - Current combined evidence: scratch/continue-urdf-1023/ui-native-affected-1025-v1.log =203/0 (25.5s), not full QC.
+
+## Done
+- Native/UI203/0 then contracts/affected637/0; logs private scratch/continue-urdf-1023. Studio10/0,TV11/0 are simulated browser evidence, no physical proof.
+
+| File | Change | State | Verification | Commit |
+| --- | --- | --- | --- | --- |
+| docs/systems.json | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| docs/systems/agents.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| docs/systems/app-gacha.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| docs/systems/app-small.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| docs/systems/app-voice.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| docs/systems/fw-core.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| docs/systems/fw-gacha.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| docs/systems/fw-registry.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| docs/systems/hub-modules.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| docs/systems/hub-studio.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| docs/systems/qc.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| docs/systems/studio.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| nong/main_python_set_nong/PATCHES.md | Generator mapping/header or snapshot index | pending | check_systems/check_build_web green637/0 before latest explicit studio mapping; rerun pending | uncommitted |
+| nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/app.js | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
+| nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/index.html | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
+| nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/patch.md | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
+| nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/shared/mice.css | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
+| nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/shared/themes.css | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
+| nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/style.css | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |

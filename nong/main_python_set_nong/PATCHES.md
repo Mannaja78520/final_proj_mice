@@ -134,3 +134,4 @@ Every change to the Nong Studio web app is saved here as a numbered patch. Old p
 | 0058 | 2026-10-22 23:34 | A48-3 arm fit also matches how parts turn from home |
 | 0059 | 2026-10-23 00:15 | A48-4 URDF look: one download per mesh file |
 | 0056 | 2026-10-23 14:05 | CAD HOME fallback and late floor config verified; preserve computed axis sense |
+| 0057 | 2026-10-25 07:44 | Redraw idle CAD updates and preserve selected native HOME controls |

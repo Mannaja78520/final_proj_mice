@@ -376,7 +376,10 @@ async function saveAllTuning(i) {
     ['center_speed', val('t_cspeed_' + i)]
   ];
   for (const [k, v] of fields) {
-    if (v) await Mice.Api.post("/api/gacha/machine", {machine: S.machines[i].id, cmd: 'GCFG ' + k + ' ' + v});
+    if (v !== "") {
+      const a = await Mice.Api.post("/api/gacha/machine", {machine: S.machines[i].id, cmd: 'GCFG ' + k + ' ' + v});
+      if (!a.ok) { say("mStat", a); return; }
+    }
   }
   say("mStat", {ok: true}, "All tuning saved to NVS");
   load();

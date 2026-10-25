@@ -676,7 +676,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <div class="action-impact-grid">
       <div class="action-card">
         <div class="action-card-title"><span class="num">1</span> สไลเดอร์แขนซ้าย (L_SH_P, L_SH_R, L_EL_P, L_EL_R)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือพิมพ์องศา (ช่วง 10° – 170°, กลาง 90°)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือพิมพ์องศา (ช่วงที่ตั้งไว้สำหรับข้อนั้น; HOME และจุดศูนย์อาจต่างกัน)</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           • <b>L_SH_P / L_SH_R:</b> ไหล่ซ้ายก้ม-เงย (Pitch) และกางออก-หุบเข้า (Roll)<br>
           • <b>L_EL_P / L_EL_R:</b> ข้อศอกซ้ายงอพับและหมุนบิดท่อนแขน<br>
@@ -702,8 +702,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
         <div class="action-card-title"><span class="num">4</span> ปุ่มลัดความปลอดภัย (Home / Relax / Zero Lock)</div>
         <div class="action-step"><b>ปรับอย่างไร:</b> คลิกปุ่ม Home, Relax หรือ Zero Lock ด้านล่าง</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>Home:</b> คืนแขนทุกข้างกลับท่า 90° ปลอดภัย<br>
-          • <b>Relax:</b> ตัดไฟเลี้ยงเซอร์โว แขนจะอ่อนลง สามารถใช้มือจับดัดท่าจริงได้<br>
+          • <b>Home:</b> กลับท่า HOME ที่ตั้งไว้ องศาแต่ละข้ออาจไม่ใช่ 90°; ตรวจท่าจริงและค่าที่บันทึกไว้<br>
+          • <b>Relax:</b> หยุดส่งพัลส์ควบคุมเซอร์โว; ไม่ได้ตัดไฟเลี้ยง และการคลายแรงยึดขึ้นกับเซอร์โว<br>
           • <b>Zero Lock:</b> ล็อคพิกัดจุดศูนย์ ป้องกันคนกดเลื่อนตำแหน่งโดยไม่ตั้งใจ
         </div>
       </div>
@@ -902,6 +902,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       </div>
     </div>
   </div>
+<p class="mini">ภาพ 3D หยุดวาดเมื่ออยู่นิ่ง และวาดใหม่เมื่อท่าจากตัวแก้ไขหรือ Monitor เปลี่ยน เมื่อเปิด/ปิดกริดหรือเครื่องหมายมือ โหลดโมเดลเพิ่ม หรือปรับขนาดหน้าจอ</p>
 </section>
 
 <!-- ===================== TV REMOTE ===================== -->
@@ -921,23 +922,23 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     </div>
     <div class="info-visual-wrapper">
       <img src="/docs/shots/tv-controls-box.png" alt="TV Controls Box" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 50%;" title="1. ปุ่ม Play / Pause / Stop / Home">1</div>
+      <div class="callout-pin" style="top: 30%; left: 50%;" title="1. ปุ่ม Restart selected / Stop / Home">1</div>
       <div class="callout-pin" style="top: 55%; left: 50%;" title="2. รายการเลือก Sequence">2</div>
       <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่มสั่งพูดด่วน Quick Speech">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมหลัก (Play, Pause, Stop, Home)</div>
+        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมหลัก (Restart selected, Stop, Home)</div>
         <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่มสัมผัสขนาดใหญ่บนหน้าจอ หรือกดผ่านรีโมททีวี</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>Play / Pause:</b> สั่งเริ่มหรือหยุดการขยับท่าทางชั่วคราว<br>
-          • <b>Stop:</b> สั่งหยุดหุ่นยนต์ฉุกเฉินทันที มอเตอร์จะล็อคตำแหน่งปัจจุบัน<br>
-          • <b>Home:</b> คืนแขนและคอหุ่นยนต์กลับสู่ท่าเริ่มต้นที่ปลอดภัย (Neutral Pose)
+          • <b>Restart selected:</b> เริ่มคลิปที่เลือกล่าสุดใหม่จากต้น; ต้องเลือกคลิปก่อน<br>
+          • <b>Stop:</b> หยุดโชว์ที่ Hub กำลังเล่น<br>
+          • <b>Home:</b> หยุดโชว์แล้วส่ง HOME ให้ Nong ที่เลือก ใช้ท่าที่บอร์ดบันทึกไว้ ไม่ตั้งทุกข้อเป็น 90°
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">2</span> รายการท่าทาง (Sequence Launcher)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกท่าทางจากกล่องดรอปดาวน์ แล้วกด <b>▶ Play Sequence</b></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือก Nong จากรายการ Robot แล้วกดปุ่มชื่อคลิป; ถ้ามีหลายเครื่องต้องเลือกเป้าหมายก่อน</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           ระบบจะดึงไฟล์ท่าทางจาก Hub กลาง (<code>/api/list?kind=sequences</code>) และสั่งให้หุ่นรันชุดท่าทางนั้นทันที เจ้าหน้าที่หลังเวทีสามารถใช้มือถือกดเลือกโชว์ได้สะดวก
         </div>
@@ -1519,11 +1520,11 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
       <!-- Auto Detect -->
       <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 14px; border-radius: var(--r-sm);">
-        <b style="color: #b45309; font-size: 14px; display: block; margin-bottom: 4px;">⚡ Auto Detect Mass (`GCALIB`)</b>
+        <b style="color: #b45309; font-size: 14px; display: block; margin-bottom: 4px;">⚡ Estimate Hall Advance (<code>GCALIB</code>)</b>
         <p style="font-size: 12.5px; color: #92400e; margin: 0 0 8px;">
-          <b>แก้ปัญหามวลของแต่ละชิ้นไม่เท่ากัน:</b> เมื่อเปลี่ยนของรางวัลใหม่ (เช่น พวงกุญแจเหล็ก vs แคปซูลพลาสติกเบา) ให้กดปุ่มนี้ เครื่องจะหมุนสแกนหาขอบแม่เหล็กและวัดระยะเฉื่อยของมวลจริง แล้วคำนวณจุดหยุดกึ่งกลาง Hall พร้อมบันทึกลง NVS ให้อัตโนมัติทันที
+          <b>ประมาณระยะขยับจากแถบ Hall:</b> สแกนแบบมีเวลาสิ้นสุดไม่เกิน 5 วินาที วัดเวลาเปิดมอเตอร์ข้ามแถบ แล้วถอยครึ่งเวลาและตรวจ Hall ขณะหยุด บันทึก advance เฉพาะเมื่อสำเร็จ ไม่ได้วัดมวลหรือพิสูจน์ศูนย์กลางทางกายภาพ
         </p>
-        <code style="font-size: 11px; background: #fef3c7; color: #78350f;">คำสั่ง: GCALIB -> OK CALIBRATED span_ms=50</code>
+        <code style="font-size: 11px; background: #fef3c7; color: #78350f;">คำสั่ง: GCALIB → OK calibrating; ดู G? motion_result = done / jam / stopped</code>
       </div>
 
       <!-- Test Machine -->
@@ -1531,8 +1532,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
         <b style="color: #4338ca; font-size: 14px; display: block; margin-bottom: 4px;">🧪 Machine Self-Test (`GTEST`)</b>
         <p style="font-size: 12.5px; color: #3730a3; margin: 0 0 8px;">
           <b>ทดสอบเครื่องก่อนเริ่มงาน:</b>
-          <br>• <b>Test 1 Pocket:</b> หมุนทดสอบ 1 ช่องพร้อมตรวจเช็กการหยุด Dead-Center
-          <br>• <b>Test 4 Pockets:</b> รันวนทดสอบรอบล้อทั้ง 4 ช่องต่อเนื่อง เพื่อยืนยันว่าทุกลูกหยุดตรงกลางแม่เหล็ก 100%
+          <br>• <b>Test 1 Pocket:</b> หมุนทดสอบ 1 ช่อง รอหยุดแล้วตรวจ Hall และผลสุดท้ายจากบอร์ด
+          <br>• <b>Test All Pockets:</b> ทดสอบทีละช่องตามจำนวนที่ตั้งไว้ ดู test_done / test_total และ motion_result; Hall ไม่ได้ยืนยันว่าแคปซูลตกหรืออยู่ตรงศูนย์เรขาคณิต
         </p>
         <code style="font-size: 11px; background: #e0e7ff; color: #312e81;">คำสั่ง: GTEST 1 หรือ GTEST 4</code>
       </div>
@@ -1550,7 +1551,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px; border-radius: var(--r-sm);">
         <b style="color: #166534; font-size: 14px; display: block; margin-bottom: 4px;">Motor Diagnostic Pulse (<code>GNUDGE</code>)</b>
         <p style="font-size: 12.5px; color: #14532d; margin: 0 0 8px;">
-          ทดสอบสั่งหมุนสั้นๆ: ส่งสัญญาณ PWM และระยะเวลา ms เพื่อขยับมอเตอร์ดูความพร้อมของกลไก
+          ทดสอบสั่งหมุนสั้นๆ: รับเฉพาะตอนว่าง ส่ง PWM มีเครื่องหมายและเวลา 1–1000 ms ทำงานแบบไม่บล็อก และกด STOP ยกเลิกได้
         </p>
         <code style="font-size: 11px; background: #dcfce7; color: #166534;">คำสั่ง: GNUDGE &lt;pwm&gt; &lt;ms&gt;</code>
       </div>
@@ -1559,7 +1560,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       <div style="background: #fefce8; border: 1px solid #fef08a; padding: 14px; border-radius: var(--r-sm);">
         <b style="color: #854d0e; font-size: 14px; display: block; margin-bottom: 4px;">&#127744; Drain Machine (โหมดวนปล่อยจนของหมด)</b>
         <p style="font-size: 12.5px; color: #713f12; margin: 0 0 8px;">
-          <b>วนปล่อยต่อเนื่องอัตโนมัติ:</b> เครื่องจะแจกของทีละลูกต่อเนื่องตามลำดับ พร้อมรอบเขย่า 4-phase ในทุกลูก จนกระทั่งของในสต็อกหมดลง (Stock = 0) หรือกดปุ่ม <b>&#9209;&#65039; Stop Drain</b> เพื่อหยุดกลางคัน
+          <b>วนปล่อยต่อเนื่องอัตโนมัติ:</b> เครื่องจะแจกของทีละลูกต่อเนื่องตามลำดับ พร้อมรอบเขย่า 4-phase ในทุกลูก จนครบขีดจำกัด สต็อกหมด ปิดงาน ติดขัด หรือกด <b>Stop motion</b> หน้าเว็บต้องมีสต็อกบวกที่นับไว้; คำสั่งกำหนดได้สูงสุด 999 ครั้ง และสต็อกที่ไม่นับต้องระบุ max
         </p>
         <code style="font-size: 11px; background: #fef9c3; color: #854d0e;">คำสั่ง: GDRAIN [&lt;max&gt;] | STOP เพื่อยกเลิก</code>
       </div>
