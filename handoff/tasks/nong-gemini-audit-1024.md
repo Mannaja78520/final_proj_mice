@@ -1,7 +1,7 @@
 # Nong acceptance and independent Gemini/source audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-25T23:21:45.677276+07:00
+Updated: 2026-10-26T01:23:18.533322+07:00
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
 Last commit: this checkpoint; softwarePR81merged69fd19ed
@@ -11,7 +11,7 @@ Plan: A48-13 (robot); related A47-20/A48-14 source, A45-11 Lab, A48-16 rules
 Finish the authorized pending Gemini/Claude work, independently review exact source/evidence and test every implemented Nong feature where possible. Preserve manual trim and distinguish software proof from real-device acceptance.
 
 ## Doing now
-LatestGemini software ACCEPTED after autonomous fixes, independent same-provider reviews, exactfull8335/0@5a6231d and guardedPR81merge69fd19ed/rootintegration. One crowd retry check_gestures passed alone2/2;983sourceinputs and20privateCAD unchanged. Isolated spec EXE built/archiveverified, notstarted/rootEXEuntouched. Root33actions=29copy+2cleanpublicclosedtaskdeletion+2livePLANpreserve;3726protectedrawfiles unchanged, indexempty. Sourceledger archived in58883c2/private final-file-ledger.md and sourcehandoff closed7d69. Finalize ownplan/release metadata; physical tests remain USER-NOTREADY, no automatic retry or elbowtrim work.
+26Oct user asks residual bugs/odd behavior, useful additions for each subsystem and whether PC/ESP32 hardware is fully utilized. Read-only current-source/config/evidence assessment only; record facts vs unmeasured gaps vs optional improvements. No source/runtime edits, load tests or real-device access; previous accepted PR81/full evidence retained, physical USER-NOTREADY and elbowtrim deferred. Wide firmware/Studio/UI reading delegated to existing audit_latest_ui; main reviews PC Voice/Face/resource evidence. Update this ledger/private assessment and ownplan only after evidence.
 
 ## File status
 Baseline: own9351b2c; reviewed runtime files belong to source owner and are not main's changes.
