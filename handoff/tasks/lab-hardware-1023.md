@@ -1,29 +1,35 @@
 # Lab: robot and prize ESP32 transport acceptance
 
 Owner: codex:10231420-85cc
-Updated: 2026-10-24 22:17 (Bangkok)
+Updated: 2026-10-25 09:04 (Bangkok)
 Branch: codex/lab-hardware-1023
 Tree: E:/final_proj/mice/code/.staging-lab-1023
-Last commit: 0b19c02 before closing evidence checkpoint; closing commit at branch HEAD
+Last commit: this checkpoint (resumed from aa23345)
 Plan: A45-11 expanded nong acceptance; historical A47-19/A47-5/A46-2
 
-## Goal and latest scope
-User authorized actual nong/gacha testing with default module wiring; RS485 is
-NOT connected. Main chat 01a1689b coordinates; source chat 01a1679e owns gacha
-safety fixes. Latest main instruction 24Oct22:xx: close nong evidence metadata
-only, inspect active drivers and release QC/build resources; no new physical,
-trim, motion, OTA, restart or live fixture operation unless exact owned cleanup
-is demonstrably necessary. Current evidence already records cleanup complete.
+## ## Goal and latest scope
+Human25Oct returned and authorized continuing via main01a1689b. This step is a
+bounded read-only readiness window through existing Hub. Source driver released
+08:14/08:16; main independently reviews with no driver. Preserve newer manualtrim.
+No elbow probes, broad arm motion, trim/HOME setters, flash/reboot or restart.
 
-## Current checkpoint
-32-command plus 19-feature matrix reconciled against saved SD/audio/TALK logs
-and direct human hearing confirmation. Markdown/JSON/CSV agree, all referenced
-evidence files exist; no pending owned cleanup. Full acceptance stays incomplete.
-No hardware request, raw COM handle, test child, QC or build is in flight here.
-Matrix: scratch/nong-acceptance-1024/nong-acceptance-matrix.{md,json}; command
-details: nong-command-acceptance.csv. Private wire logs retained, not committed.
+## Doing now
+Read current Hub/module identity, idle/config/calibration and available files;
+compare old snapshots without restoring. Save exact readiness and missing-test
+report, then RELEASE command/testdriver exclusion before source fullQC.
+No product source edits. Resume baseline aa23345; existing tree was clean.
 
-## Actual last device state (historical snapshot, not a fresh live poll)
+## File status
+| File | Change | State | Verification | Commit |
+|---|---|---|---|---|
+| handoff/tasks/lab-hardware-1023.md | Resume and migrate per-file ledger | pending | baseline clean; under150lines | this checkpoint |
+| scratch/nong-acceptance-1025/readiness.json | Exact read-only Hub/device replies | pending | not run | uncommitted (private) |
+| scratch/nong-acceptance-1025/readiness.md | Readiness and feasible missing tests | pending | not run | uncommitted (private) |
+| docs/BRIDGE.md | Serialized own claim/release only; preserve other entries | pending | claim appended/read back; no driver child found | local shared metadata |
+| docs/PLAN.html | A45-11 doing and next handoff; preserve other rows | pending | plan.py doing successful | local shared metadata |
+| docs/plan_state.js | Generated plan publication | pending | plan.py published | local shared metadata |
+
+Actual last device state (historical snapshot, not a fresh live poll)
 web-talk-test.json final INFO: nong67/chipB4BFE91C5A74 at WiFi192.168.137.26;
 moving=false, seq.running=false, attached=true, audio.playing=false,
 stream.on=false, volume=70; TALK? off. Commanded joints/targets:
