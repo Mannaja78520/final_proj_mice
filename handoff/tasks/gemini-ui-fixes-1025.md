@@ -11,7 +11,7 @@ Plan: A48-13; related Gemini A48-17
 User: independently fix discovered issues and search all latest Gemini work for further problems. Preserve user data/calibration; no realhardware while user-notready.
 
 ## Doing now
-PR81 opened; independent final runtime review approved exact6rawhashes (source-review.json). Broad affected24checks+all5actualfirmware builds1028/0 in231.8s, metadata86/0 after replaying publicmetadata closuree961 into6da26d6; runtime rawhashes unchanged. Focused57/0, realEdgejourney58/0; iterative12reversions caught/restored. Freeze final source inputs now and run actual full with realprivateCAD export through existing harness; no source edits while running. RootdirtyStudio/config/userdata/privateCAD preserved, no runtime/deploy/hardware actions. Old301/0 selected-only evidence corrected; newfull stillpending.
+First full immutable52e1037 FAILED8321/4; four isolated crowd retries green2/2. Source983/CAD20 hashes unchanged. Fix dynamic Tools duplication and inspect/fix all four gate failures (designer literal scanner, whitespace-only Help guard, translated Answers empty copy, generated QC artifact inventory). Preserve first full proof; run focused checks, review actualdelta then fresh full for changedsource. No hardware/runtime/root source changes.
 
 ## File status
 Baseline: ffff102; unrelated rootdirtywork not owned. Planned exactpaths below; remove unchanged rows or label reviewed-only at final reconciliation.
@@ -45,6 +45,14 @@ Baseline: ffff102; unrelated rootdirtywork not owned. Planned exactpaths below; 
 | scratch/gemini-ui-fixes-1025/regression-reversions.json | 9iterative original-reversion cases | done, private | exact saved evidence, no hardware proof | uncommitted, ignored |
 | scratch/gemini-ui-fixes-1025/extra-regression-reversions.json | 3extra head/metadata/backend cases | done, private | exact saved evidence, no hardware proof | uncommitted, ignored |
 | scratch/gemini-ui-fixes-1025/focused-final.log | Actual57/0 focused rawlog | done, private | exact saved evidence, no hardware proof | uncommitted, ignored |
+
+| main_python/web/home/parts/tools.js | Full-gate correction or tool grouping | pending | not run | uncommitted |
+| main_python/web/hub.html | Full-gate correction or tool grouping | pending | not run | uncommitted |
+| qc/checks/check_designer_first.py | Full-gate correction or tool grouping | pending | not run | uncommitted |
+| qc/checks/check_help_links.py | Full-gate correction or tool grouping | pending | not run | uncommitted |
+| qc/checks/check_voice_settings.py | Full-gate correction or tool grouping | pending | not run | uncommitted |
+| qc/checks/check_systems.py | Full-gate correction or tool grouping | pending | not run | uncommitted |
+| docs/systems.json | Full-gate correction or tool grouping | pending | not run | uncommitted |
 
 ## Facts found
 - Prior8258full@8da predates newGemini UI/OOP and does not cover this source.
