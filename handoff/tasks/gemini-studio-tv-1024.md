@@ -1,7 +1,7 @@
 # Studio/TV correctness + reconciled Help — frozen for review
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T08:12:43+07:00
+Updated: 2026-10-25T08:15:05+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
 Last commit: this checkpoint; functional source9e46ad0, prior metadata cf23113
@@ -74,6 +74,10 @@ Baseline:e30bc36; preserved Gemini2bd3299/8530dbf/6db1aeb, rules9b57ee9 and Help
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/shared/themes.css | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
 | nong/main_python_set_nong/patches/0057_redraw-idle-cad-updates-and-preserve-selected-na/style.css | Required local web snapshot | done | save_patch0057, ignored by existing repository rule | uncommitted (ignored) |
 | docs/systems/fw-web.md | Map generated Gacha page browser regression | pending | current affected1566/0 (docs/contracts/generators/layout/actual CAD); full/review pending | bb5ad4b |
+
+| docs/PLAN.html | Only own A47-20/A48-14 handoff rows; preserve live union | done | real plan tool stamped todo/open, review/full pending | uncommitted root metadata |
+| docs/plan_state.js | Generated live plan state for own handoff | done | plan tool publish; no source promotion | uncommitted root metadata |
+| docs/BRIDGE.md | Only own scope/freeze/software-driver-release entries | done | fresh matching-driver inventory0; no physical transfer | uncommitted root metadata |
 
 ## Evidence / preserved data
 - Current logs/artifact manifest and27sabotage proofs: scratch/continue-urdf-1023/*1025*; frozen review package: scratch/gacha-safety-1025/candidate-cf23113/ in own tree and root.
