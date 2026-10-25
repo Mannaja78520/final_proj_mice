@@ -1,3 +1,6 @@
+  .mechanism-figure{margin:var(--sp-4) 0;overflow-x:auto}
+  .mechanism-figure svg{display:block;width:100%;height:auto;min-width:480px}
+  .mechanism-figure figcaption{color:var(--mut);font-size:13px;margin-top:var(--sp-2)}
   /* Only what is the HELP page's own. Tokens, the reset, the focus ring,
      reduced motion and touch targets all come from /mice.css above.
      This page is a document, not a control panel: it is the one surface with
@@ -37,7 +40,8 @@
   .shead h2{margin:0;font-size:21px;letter-spacing:-.015em;font-weight:700;
             color:var(--txt);text-transform:none}
   .where{font-family:var(--mono);font-size:11.5px;color:var(--acc);
-         text-transform:none;letter-spacing:0;display:block;margin-bottom:5px}
+         text-transform:none;letter-spacing:0;margin-bottom:5px}
+  body.adv .where{display:block}
   .shead p{margin:7px 0 0;color:var(--mut);font-size:14px;max-width:70ch}
   .grp2{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--mut);
         margin:26px 0 9px;font-weight:600}
@@ -184,7 +188,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 }
 .action-impact-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: var(--sp-3);
 }
 .action-card {

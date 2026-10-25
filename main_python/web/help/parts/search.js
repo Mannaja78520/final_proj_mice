@@ -4,6 +4,8 @@
   var secs = Array.prototype.slice.call(document.querySelectorAll("main > section[id]"));
   var links = Array.prototype.slice.call(document.querySelectorAll("nav a[href^='#']"));
   var byId = {};
+  // Capture topic text before adding Previous/Next links, which name neighbours.
+  var topicText = new Map(secs.map(function(s){ return [s, s.textContent.toLowerCase()]; }));
   links.forEach(function(a){ byId[a.getAttribute("href").slice(1)] = a; });
 
   // 1. Build Next / Previous navigation at the foot of each section
@@ -77,23 +79,9 @@
       }
       secs.forEach(function(s){
         s.classList.remove("pv-off");
-        var head = s.querySelector(".shead") ? s.querySelector(".shead").textContent.toLowerCase() : "";
-        var headHit = !!term && head.indexOf(term) >= 0;
-        var hits = 0;
-        s.querySelectorAll(".f, tbody tr").forEach(function(el){
-          var show = !term || headHit ||
-                     el.textContent.toLowerCase().indexOf(term) >= 0;
-          el.style.display = show ? "" : "none";
-          if (show) hits++;
-        });
-        var keep = hits > 0 || headHit;
+        // Match the complete topic, including illustrated cards and paragraphs.
+        var keep = topicText.get(s).indexOf(term) >= 0;
         s.style.display = keep ? "" : "none";
-        s.querySelectorAll(".scroll").forEach(function(box){
-          var rows = box.querySelectorAll("tbody tr");
-          var live = Array.prototype.filter.call(rows, function(r){
-            return r.style.display !== "none"; }).length;
-          box.style.display = live ? "" : "none";
-        });
         if (keep) any = true;
       });
       if (none) none.style.display = any ? "none" : "block";
