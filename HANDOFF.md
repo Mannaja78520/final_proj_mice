@@ -115,6 +115,11 @@ not the state: the state is your task file.
     compare existing work with the new forced request, reconcile both together,
     update the task file, and proceed without dropping prior state. Unclaimed work
     causes other agents to audit and block changes.
+11. Mandatory Help Parity & Sync (user 2026-10-25, all AIs):
+    whenever any feature, UI, workflow, or setting is modified, created, or reorganized,
+    `help.html` and its sources in `main_python/web/help/parts/` MUST be updated in the
+    exact same step to match the current system. No changes may be left undocumented or
+    out-of-sync with the help manual. The user relies on Help as the single source of truth.
 
 ## Built so far
 

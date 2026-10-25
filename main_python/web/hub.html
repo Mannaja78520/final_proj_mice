@@ -194,6 +194,7 @@
 <div class="banner warn" id="staleExe" hidden role="alert">
   <span id="staleExeWhy"></span>
   <span class="mono" id="staleExeFix"></span>
+  <span class="tech" style="font-size:12px;opacity:0.85" title="MiceHub.spec auto-terminates running instances during build, or run taskkill /F /IM MiceHub.exe manually">(auto-kills running app on build, or: <code>taskkill /F /IM MiceHub.exe</code>)</span>
 </div>
 <!-- STOP, FROM ANYWHERE. There was no stop control on this page at all: the
      only one was inside Nong Studio, on another screen, behind a tab. Somebody
@@ -223,7 +224,7 @@
     <button class="secondary" id="keysOpen" title="Keyboard shortcuts"
             onclick="toggleKeys(true)" aria-haspopup="dialog">⌨ Shortcuts</button>
     <!-- Help LEAVES the page, so it is a link and looks like one. -->
-    <a class="tab tab-link" id="helpLink" href="/help">Help ↗</a>
+    <a class="tab tab-link" id="helpLink" href="/help" title="คู่มือการใช้งานและเอกสารอ้างอิงระบบ (System Help)" style="font-weight:600">📖 คู่มือ Help ↗</a>
   </span>
   <span class="sub">A little space for your whole rig. Open a module to move it,
     or start a sequence in Nong Studio. Your modules appear here when they connect.</span>
@@ -725,10 +726,14 @@
   </div>
 
   <div class="card" data-tab="tools">
-    <h2>🧰 Apps &amp; tools</h2>
-    <div id="tools" class="js-tools mini">loading…</div>
-    <div class="mini">tip: use the “Studio + monitor” button on a nong module above —
-      it opens the editor already connected, showing the real robot moving in 3D.</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:var(--sp-3);padding-bottom:var(--sp-2);border-bottom:1px solid var(--line)">
+      <h2 style="margin:0">🧰 เครื่องมือและแอปพลิเคชัน (Apps &amp; Tools)</h2>
+      <a href="/help" class="btn" style="text-decoration:none;font-size:13px">📖 เปิดคู่มือทั้งหมด (Open Help ↗)</a>
+    </div>
+    <div id="tools" class="js-tools">กำลังโหลดเครื่องมือ…</div>
+    <div class="mini" style="margin-top:var(--sp-3);padding-top:var(--sp-2);border-top:1px solid var(--line);color:var(--mut)">
+      💡 แนะนำ: กดปุ่ม “Studio + monitor” บนแถบโมดูลหุ่นยนต์ด้านบน เพื่อเปิด 3D Motion Editor พร้อมเชื่อมต่อหุ่นยนต์จริงแบบเรียลไทม์
+    </div>
   </div>
 
   <!-- Complaints screen — reads reports from /api/reports, newest first.
@@ -1427,48 +1432,137 @@ onTab('network', loadNet);
 onTab('network', function(){ loadHubs(false); });
 onTab('network', paintQr);
 
+// App categorization config (A48-17)
+const TOOL_GROUPS = [
+  {
+    id: "motion",
+    title: "🤖 หุ่นยนต์และการแสดง (Robot & Motion Control)",
+    match: ["studio", "tv"]
+  },
+  {
+    id: "ai",
+    title: "👁️ ระบบรู้จำ เสียง และกล้อง (AI, Vision & Voice)",
+    match: ["voice", "faces", "camera", "photobooth"]
+  },
+  {
+    id: "games",
+    title: "🎮 มินิเกมและของรางวัล (Games & Prizes)",
+    match: ["gacha", "all-jao"]
+  },
+  {
+    id: "docs",
+    title: "📖 คู่มือและเอกสารอ้างอิงระบบ (System Help & Documentation)",
+    match: ["help"]
+  }
+];
+
 function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+// OOP Tools Manager (A48-17)
+class MiceToolsManager {
+  constructor(groups) {
+    this.groups = groups || TOOL_GROUPS;
+  }
+  boxes() {
+    return [].slice.call(document.querySelectorAll('.js-tools'));
+  }
+  say(html) {
+    this.boxes().forEach(b => { b.innerHTML = html; });
+  }
+  createToolRow(a) {
+    const d = document.createElement('div');
+    d.className = 'mod tool-tile';
+    d.innerHTML = '<span class="nm">' + (a.icon ? a.icon + ' ' : '') + esc(a.name || '?') + '</span>' +
+                  '<span class="ip">' + esc(a.blurb || '') + '</span>';
+    const b = document.createElement('button');
+    b.textContent = 'Open';
+    b.title = 'open ' + (a.name || 'this tool') + ' in a new tab';
+    b.onclick = () => window.open(a.path, '_blank');
+    d.appendChild(b);
+    if (a.help) {
+      const h = document.createElement('a');
+      h.className = 'tab tab-link';
+      h.href = '/help#' + encodeURIComponent(a.help);
+      h.textContent = 'Help ↗';
+      h.title = 'Help about ' + a.name;
+      d.appendChild(h);
+    }
+    return d;
+  }
+  render(box, apps) {
+    box.innerHTML = "";
+    const assigned = new Set();
+    this.groups.forEach(g => {
+      const groupApps = apps.filter(a => {
+        if (assigned.has(a)) return false;
+        const id = (a.id || a.path || a.name || "").toLowerCase();
+        return g.match.some(m => id.includes(m));
+      });
+      if (!groupApps.length) return;
+      groupApps.forEach(a => assigned.add(a));
+
+      const gDiv = document.createElement("div");
+      gDiv.style.marginBottom = "var(--sp-4)";
+      const h = document.createElement("h3");
+      h.style.fontSize = "14.5px";
+      h.style.fontWeight = "700";
+      h.style.margin = "0 0 var(--sp-2) 0";
+      h.style.color = "var(--txt)";
+      h.textContent = g.title;
+      gDiv.appendChild(h);
+
+      const grid = document.createElement("div");
+      grid.className = "tool-grid";
+      grid.style.display = "grid";
+      grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(280px, 1fr))";
+      grid.style.gap = "var(--sp-2)";
+      groupApps.forEach(a => grid.appendChild(this.createToolRow(a)));
+      gDiv.appendChild(grid);
+      box.appendChild(gDiv);
+    });
+
+    const otherApps = apps.filter(a => !assigned.has(a));
+    if (otherApps.length) {
+      const gDiv = document.createElement("div");
+      gDiv.style.marginBottom = "var(--sp-4)";
+      const h = document.createElement("h3");
+      h.style.fontSize = "14.5px";
+      h.style.fontWeight = "700";
+      h.style.margin = "0 0 var(--sp-2) 0";
+      h.textContent = "🛠️ เครื่องมือเพิ่มเติม (Other Tools)";
+      gDiv.appendChild(h);
+      const grid = document.createElement("div");
+      grid.className = "tool-grid";
+      grid.style.display = "grid";
+      grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(280px, 1fr))";
+      grid.style.gap = "var(--sp-2)";
+      otherApps.forEach(a => grid.appendChild(this.createToolRow(a)));
+      gDiv.appendChild(grid);
+      box.appendChild(gDiv);
+    }
+  }
+}
+window.MiceToolsManager = MiceToolsManager;
+window.miceTools = new MiceToolsManager(TOOL_GROUPS);
+
+function toolBoxes(){
+  return window.miceTools.boxes();
+}
+function toolsSay(html){
+  window.miceTools.say(html);
+}
+function toolRow(a){
+  return window.miceTools.createToolRow(a);
+}
+function renderCategorizedApps(box, apps){
+  window.miceTools.render(box, apps);
+}
 
 // The tool list comes from the app registry (code/apps/*/app.json), so a new
 // web app appears here by dropping a folder in — no button to hand-write.
 // Drawn into EVERY tools container - the Tools tab and the card on Home -
 // from one answer, so the two lists cannot say different things.
-function toolBoxes(){
-  return [].slice.call(document.querySelectorAll('.js-tools'));
-}
-function toolsSay(html){
-  toolBoxes().forEach(function(b){ b.innerHTML = html; });
-}
-// One row for one tool.
-//
-// A TOOL IS NOT A MODULE. This was copied from the module list and still read
-// `m.type` - but the loop variable is `a`, and an app has no module type at
-// all. `m` was undefined, the exception left loadApps half-finished, and the
-// Tools list rendered NOTHING. It looked like there were no tools rather than
-// like a broken page, which is why it survived: an empty list is a plausible
-// state. The user met the same exception again on 2026-08-21 from an exe built
-// nine hours before the fix.
-function toolRow(a){
-  const d=document.createElement('div');
-  d.className='mod tool-tile';
-  d.innerHTML='<span class="nm">'+(a.icon?a.icon+' ':'')+esc(a.name||'?')+'</span>'+
-              '<span class="ip">'+esc(a.blurb||'')+'</span>';
-  const b=document.createElement('button');b.textContent='Open';
-  b.title='open '+(a.name||'this tool')+' in a new tab';
-  b.onclick=()=>window.open(a.path,'_blank');
-  d.appendChild(b);
-  // Help about THIS tool, when the tool says which section is about it
-  // (app.json -> help). No section, no link: one pointing at the top of the
-  // help page is not help, it is a thousand lines and a scrollbar.
-  if(a.help){
-    const h=document.createElement('a');
-    h.className='tab tab-link'; h.href='/help#'+encodeURIComponent(a.help);
-    h.textContent='Help ↗'; h.title='Help about '+a.name;
-    d.appendChild(h);
-  }
-  return d;
-}
 async function loadApps(){
   try{
     const r=await fetch('/api/apps').then(r=>r.json());
@@ -1498,7 +1592,7 @@ async function loadApps(){
     // drops every handler, so the copy on Home would have looked identical and
     // done nothing when pressed.
     toolBoxes().forEach(function(box){
-      apps.forEach(function(a){ box.appendChild(toolRow(a)); });
+      window.miceTools.render(box, apps);
     });
   }catch(e){
     // An error says what to DO, and offers the control that does it - and

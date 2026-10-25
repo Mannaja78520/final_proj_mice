@@ -36,69 +36,89 @@
 
 <div class="card" id="gamesOverview">
   <h2>Available Mini-Games</h2>
-  <div class="row" style="display:flex;flex-wrap:wrap;gap:var(--sp-3);margin-top:var(--sp-2)">
-    <div style="flex:1;min-width:180px;padding:var(--sp-3);background:var(--sunk);border-radius:var(--r-md);border:1px solid var(--line)">
+  <div class="row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--sp-3);align-items:stretch;margin-top:var(--sp-2)">
+    <div style="display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:var(--sp-3);background:var(--sunk);border-radius:var(--r-md);border:1px solid var(--line)">
       <h3 style="margin-top:0">🕹️ Claw Machine</h3>
-      <p class="mini">Grab cute prizes with arcade-style claw controls and physics.</p>
+      <p class="mini" style="flex:1;margin-bottom:0">Grab cute prizes with arcade-style claw controls and physics.</p>
     </div>
-    <div style="flex:1;min-width:180px;padding:var(--sp-3);background:var(--sunk);border-radius:var(--r-md);border:1px solid var(--line)">
+    <div style="display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:var(--sp-3);background:var(--sunk);border-radius:var(--r-md);border:1px solid var(--line)">
       <h3 style="margin-top:0">🃏 Matching Game</h3>
-      <p class="mini">Test your memory by flipping and pairing matching cards.</p>
+      <p class="mini" style="flex:1;margin-bottom:0">Test your memory by flipping and pairing matching cards.</p>
     </div>
-    <div style="flex:1;min-width:180px;padding:var(--sp-3);background:var(--sunk);border-radius:var(--r-md);border:1px solid var(--line)">
+    <div style="display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:var(--sp-3);background:var(--sunk);border-radius:var(--r-md);border:1px solid var(--line)">
       <h3 style="margin-top:0">❓ Quiz Game</h3>
-      <p class="mini">Multi-choice trivia game with timer and scoring.</p>
+      <p class="mini" style="flex:1;margin-bottom:0">Multi-choice trivia game with timer and scoring.</p>
     </div>
-    <div style="flex:1;min-width:180px;padding:var(--sp-3);background:var(--sunk);border-radius:var(--r-md);border:1px solid var(--line)">
+    <div style="display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:var(--sp-3);background:var(--sunk);border-radius:var(--r-md);border:1px solid var(--line)">
       <h3 style="margin-top:0">🎡 Lucky Wheel</h3>
-      <p class="mini">Spin the prize wheel with dynamic physics and sound effects.</p>
+      <p class="mini" style="flex:1;margin-bottom:0">Spin the prize wheel with dynamic physics and sound effects.</p>
     </div>
   </div>
 </div>
 
 <script>
-// Mice.Partner (shared/web/mice-ui.js) does the asking and starting. Their
-// games are a plain folder served by `python -m http.server`, started by the
-// hub's own /api/all-jao/start. Opening this page is asking to play: start it
-// when it is silent, then show it below.
-const games = new Mice.Partner("all-jao", {status: new Mice.Status("stat"),
-                                           startPath: "/api/all-jao/start", startWait: 15000});
-
-function showFrame(where) {
-  const frame = document.getElementById("gameFrame");
-  if (!frame.src || frame.src === "about:blank") frame.src = where;
-  document.getElementById("gameFrameContainer").hidden = false;
-}
-
-// The hub serves their folder itself at /play/all-jao/ with the prize link
-// added (A47-6, config/partners.json "play"); their own server is the fallback.
-const PLAY = "/play/all-jao/";
-async function playHere() {
-  try { return (await fetch(PLAY, {method: "GET", cache: "no-store"})).ok; } catch (e) { return false; }
-}
-async function openGames() {
-  if (await playHere()) return window.open(PLAY, "_blank");
-  games.open("open", document.getElementById("openBtn"));
-}
-async function look() {
-  if (await playHere()) {
-    games.status.ready("All-Jao Games is ready. A win can give a prize.");
-    return showFrame(PLAY);
+// OOP AllJaoApp (A48-17) - encapsulated application lifecycle
+class AllJaoApp extends Mice.App {
+  constructor() {
+    super("all-jao", {statusId: "stat"});
+    this.playPath = "/play/all-jao/";
+    this.partner = new Mice.Partner("all-jao", {
+      status: this.status,
+      startPath: "/api/all-jao/start",
+      startWait: 15000
+    });
   }
-  if (await games.check()) return showFrame(games.url("open"));
-  try {
-    showFrame(await games.ensure());
-    games.status.ready("All-Jao Games is running.");
-  } catch (err) {
-    const [words, detail] = Array.isArray(err) ? err : ["All-Jao Games could not be started.", String(err)];
-    games.status.error(words, detail);
+
+  async init() {
+    const links = await this.partner.load();
+    if (!links) return;
+    const where = this.$("where");
+    if (where) where.textContent = "app " + this.partner.url("open") + " · folder " + (links.folder || "All-Jao-Games");
+    await this.look();
+  }
+
+  showFrame(where) {
+    const frame = this.$("gameFrame");
+    if (frame && (!frame.src || frame.src === "about:blank")) frame.src = where;
+    const container = this.$("gameFrameContainer");
+    if (container) container.hidden = false;
+  }
+
+  async playHere() {
+    try {
+      return (await fetch(this.playPath, {method: "GET", cache: "no-store"})).ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async openGames() {
+    if (await this.playHere()) return window.open(this.playPath, "_blank");
+    this.partner.open("open", this.$("openBtn"));
+  }
+
+  async look() {
+    if (await this.playHere()) {
+      this.status.ready("All-Jao Games is ready. A win can give a prize.");
+      return this.showFrame(this.playPath);
+    }
+    if (await this.partner.check()) return this.showFrame(this.partner.url("open"));
+    try {
+      this.showFrame(await this.partner.ensure());
+      this.status.ready("All-Jao Games is running.");
+    } catch (err) {
+      const [words, detail] = Array.isArray(err) ? err : ["All-Jao Games could not be started.", String(err)];
+      this.status.error(words, detail);
+    }
   }
 }
 
-games.load().then(links => {
-  if (!links) return;
-  document.getElementById("where").textContent =
-    "app " + games.url("open") + " · folder " + (links.folder || "All-Jao-Games");
-  look();
-});
+const allJaoApp = new AllJaoApp();
+window.allJaoApp = allJaoApp;
+const games = allJaoApp.partner;
+function showFrame(where) { return allJaoApp.showFrame(where); }
+function playHere() { return allJaoApp.playHere(); }
+function openGames() { return allJaoApp.openGames(); }
+function look() { return allJaoApp.look(); }
+allJaoApp.init();
 </script>

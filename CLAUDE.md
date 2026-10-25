@@ -115,6 +115,7 @@ New file or system: add it to `docs/systems.json`, then `python tools/systems.py
 * Shallow beats clever. No layers that exist only to be layers.
 * Web pages: read `docs/web_style.md` first; build from `shared/web/mice-ui.js` parts.
 * Strict OOP & modularity (user 2026-10-24): code MUST follow OOP and modularity. Do not dump code into monolithic files (main.py) — use classes/modules. Never edit built files (hub.html, help.html, app.js) directly; edit parts/ and run `tools/build_web.py`.
+* Rule 11 Mandatory Help Parity & Sync (user 2026-10-25, all AIs): whenever any feature, UI, or setting is modified, `help.html` and its sources in `main_python/web/help/parts/` MUST be updated in the exact same step.
 * Every formula has an entry in `docs/ref_data.js` (`check_ref` enforces it).
 * Replies to the user: short, except warnings, destructive steps, and "why".
 

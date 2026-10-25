@@ -8,8 +8,10 @@ const VOICE_TABS = [
   {id: "faces", label: "Faces", icon: "👤"}, {id: "questions", label: "Questions", icon: "📊"},
   {id: "adv", label: "Advanced", icon: "⚙", tech: true}];
 
-class VoiceApp {
+class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Object) {
   constructor() {
+    // The bundle is loaded in <head>; create Status lazily after the DOM exists.
+    super('voice');
     this.$ = id => document.getElementById(id);
     this.rec = null;
     this.ch = null;
@@ -50,8 +52,8 @@ class VoiceApp {
   say(msg, kind = "ready", tech = ""){
     const M = globalThis.Mice;
     if (M && M.Status) {
-      this.status = this.status || new M.Status("stat");
-      return (this.status[kind] || this.status.ready).call(this.status, msg, tech);
+      const status = this.status || this._status || (this._status = new M.Status("stat"));
+      return (status[kind] || status.ready).call(status, msg, tech);
     }
     this.$("stat").textContent = msg;
   }
@@ -2054,12 +2056,31 @@ static langName(code){
   this.drawSheet();
 }
 
+  
+  setLangFilter(lang) {
+    this.currentLangFilter = lang;
+    const table = this.$("ansTable");
+    if (!table) return;
+    table.classList.remove("view-all", "view-th", "view-en", "view-ja", "view-zh");
+    if (lang !== "all") {
+      table.classList.add("view-" + lang);
+    }
+    document.querySelectorAll(".lang-pill").forEach(b => {
+      b.classList.toggle("active", b.getAttribute("onclick") && b.getAttribute("onclick").includes("'" + lang + "'"));
+    });
+  }
+
   drawSheet(){
   const head = this.$("ansHead"), body = this.$("ansRows");
   head.textContent = "";
   const th = t => { const e = document.createElement("th"); e.textContent = t; head.appendChild(e); };
   ["#"].forEach(th);
-  VoiceApp.ANSWER_KEYS.forEach(([l]) => th(VoiceApp.langName(l)));
+  VoiceApp.ANSWER_KEYS.forEach(([l]) => {
+    const e = document.createElement("th");
+    e.textContent = VoiceApp.langName(l);
+    e.dataset.lang = l;
+    head.appendChild(e);
+  });
   ["Robot move", ""].forEach(th);
   body.textContent = "";
   this.sheet.forEach((row, i) => body.appendChild(this.sheetRow(row, i)));
@@ -2093,6 +2114,7 @@ static langName(code){
   };
   VoiceApp.ANSWER_KEYS.forEach(([lang, key]) => {
     const c = td();
+    c.dataset.lang = lang;
     const ask = this.cell(this.asksIn(row.item.questions, lang).join("\n"),
                           "people ask… (one per line)", joinAsks);
     ask.classList.add("ask");

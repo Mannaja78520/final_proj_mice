@@ -34,6 +34,7 @@ add it to `docs/systems.json`, then `python tools/systems.py build`.
 - Logs: print the failing line only (tail / grep), never the full run.
 - Moving code: write a script that moves exact lines; do not retype it.
 - Strict OOP & modularity (user 2026-10-24, all AIs): code MUST follow OOP and modularity. Never dump features into monolithic main files (e.g. main.py) — create small, focused classes and modules (token-friendly). Never edit built web files (hub.html, help.html, app.js) directly; edit their sources in parts/ and run `tools/build_web.py`.
+- Rule 11 Mandatory Help Parity & Sync (user 2026-10-25, all AIs): whenever any feature, UI, or setting is modified, `help.html` and its sources in `main_python/web/help/parts/` MUST be updated in the exact same step.
 
 Read AGENTS.md, CLAUDE.md, docs/COORDINATION.md and the latest relevant
 docs/BRIDGE.md entries before editing. Use the named robot/system plan task.
