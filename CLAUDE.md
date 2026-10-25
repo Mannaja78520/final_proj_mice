@@ -7,6 +7,11 @@ your own task file and push a WIP commit around EVERY step, not only at the
 end: `## Doing now` before it, Done/Next/Last commit after it (user
 2026-10-22: any AI can run out mid-task). One file per task, so parallel
 agents never clash. Do not create any other handoff file.
+Per-file handoff (all AIs, user 2026-10-25): maintain `## File status` in your
+task with one latest row per owned changed file: File | Change | State |
+Verification | Commit. Include generated/tests/config/docs; mark uncommitted
+and not run explicitly. Reconcile owned Git changes before each checkpoint;
+keep it short and link evidence. Read HANDOFF.md for the full contract.
 Tokens: run QC as `python qc/run_qc.py --quiet <check names>` for the files
 you touched (full log in qc/last_run.log), full QC once before merge; grep or
 tail big files (BRIDGE, PLAN.html, app.js, reports/), never read them whole.

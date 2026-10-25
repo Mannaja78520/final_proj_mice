@@ -26,6 +26,21 @@ same file. History is in `docs/BRIDGE.md` and the STATE block of
   the files, the approach) and push; AFTER it move that to Done, update Next,
   Blocked, Last commit and Updated, and push a WIP commit to your branch.
   Before you end, stop for any reason, or when usage runs low: the same.
+- Per-file handoff is mandatory for every AI (user 2026-10-25). In your task,
+  maintain `## File status` with columns `File | Change | State | Verification | Commit`.
+  One current row per exact repo-relative path: what changed, done/pending/blocked,
+  verification result + evidence link (or `not run`), and SHA (or `uncommitted`).
+  Include owned source, generated output, tests, config, docs, additions/deletions
+  and renames. A task summary or a directory name does not replace file rows.
+  Before edits, list planned files as pending; after each step refresh the rows.
+  Before every checkpoint/interrupt/limit, compare your baseline-to-HEAD diff,
+  tracked working diff and untracked files with the table. Do not claim or
+  overwrite pre-existing/other-owned edits; identify uncertain ownership.
+  On resume migrate your active task to this format before the next code edit.
+  Keep only latest status; link commits/logs rather than pasting code or history.
+  Label quick/full and simulated/hardware evidence; stale tests do not cover
+  newer edits. For the handoff file's own SHA use `this checkpoint` (Git resolves
+  it) to avoid a self-referential commit hash. No edits yet: say so explicitly.
 - Write down what you LEARNED from reading code, not only what you did
   (user 2026-10-22: stop paying tokens to read the same code twice): under
   `## Facts found`, file:line and what it does / why it matters. The next AI

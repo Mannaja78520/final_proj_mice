@@ -12,6 +12,18 @@ Plan: <plan ids, e.g. A45-11>
 ## Doing now
 <written and pushed BEFORE each step: what you are about to do, the files, the approach>
 
+## File status
+Baseline: <starting SHA; reconcile owned commits, working diff and untracked files>
+
+| File | Change | State | Verification | Commit |
+| --- | --- | --- | --- | --- |
+| `<repo/relative/path>` | <short change> | pending | not run | uncommitted |
+
+<One latest row per owned source/generated/test/config/doc file, including additions,
+deletions and renames. Use exact paths; link evidence and label quick/full or
+simulated/hardware. Do not attribute other owners' edits. No edits: say so.
+For this handoff file itself, Commit may be `this checkpoint`.>
+
 ## Facts found
 - <file:line - what it does / why it matters; so the next AI does not read it again>
 
