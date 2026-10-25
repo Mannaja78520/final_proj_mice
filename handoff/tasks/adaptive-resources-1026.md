@@ -1,76 +1,77 @@
 # Adaptive PC and browser resource policy
 
 Owner: codex:10241515-audit
-Updated: 2026-10-26T01:28:48.309454+07:00
+Updated: 2026-10-26T03:54:07.101479+07:00
 Branch: codex/adaptive-resources-1026
 Tree: E:/final_proj/mice/code/.staging-adaptive-resources-1026
 Last commit: this checkpoint; baseline69fd19ed
-Plan: A48-18 (robot); related A48-13 assessment/hardwarepause
+Plan: A48-18 (robot); related A48-13 hardwarepause
 
 ## Goal
-User: dynamically suit weaker/stronger future PCs and allow customization, including Hubsoftware CPU/GPU/RAM and client rendering. Preserve manual model/character choices, userdata/dirtyroot and physical pause.
+Dynamic configurable resource use on weaker/stronger future Hub PCs and browser clients. Preserve models, provider chain, dirtyroot and physical pause.
 
 ## Doing now
-Design reviewed by resource_design (gpt-6-astra high, supported agent) and audit_latest_ui, same-provider; main verified recommendations againstcode. Implement now: strict gated/revisioned settings, unknown-safe cached discovery, stable capacity profiles/free-memory budgets, all STT fallback hooks, requested/resident revision reporting, client-local browser policy and render-only throttle. Propose data-driven shared capability/profile service, persistent machine-local settings, bounded cached probes, gated settings API/UI, effective Voice compute/thread/memory settings, separately client-local Studio render policy. Preserve existing dirty-only rendering, link RTT adaptation, safety/collision/motion timing and provider fallback. No models downloaded/loaded or hardware probed by detection. Read-only quality assessment also found Lift missing traveldeadline (separate issue), Hub denied-storage startup fault (fix in this UI step). No runtime/service cutover.
+Runtime corrected after independent backend/client reviews; checkpoint exact file ledger then sequential deliberate regressions, broader affected checks, final full/package and guarded integration. Single QC driver main only; no live models, robot, service restart or cutover.
 
 ## File status
-Planned exactpaths; final design may narrow these. Runtime implemented; firstresource41/0. Broadaffected590passed/9failed: one temporaryCODE registry-path crash and browserfixture lexicalglobal lookup; corrected shippedregistry path +actualDOMclick driver. Package analysis found childprocess cannot import PYZ, so rawsharedpolicy datas added to spec; actualpackaging proof stillpending.
+Verification: selected326/0 then latest resource+Edge77/0; full/package pending. EOL-only generator paths included conservatively. Source reviewers approved current substantive corrections; low-RAM diagnostic/last test fixture added afterward.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| config/resource_policy.json | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| main_python/resource_policy.py | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| main_python/hub_api_resources.py | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| main_python/main.py | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| apps/voice/resources.py | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| apps/voice/service.py | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| shared/web/resources.js | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| main_python/web/home/parts/settings.html | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| main_python/web/home/parts/settings.js | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| main_python/web/home/parts/boot_scans.js | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| main_python/web/help/parts/hub.html | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| main_python/web/help/parts/voice.html | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| main_python/web/hub.html | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| main_python/web/help.html | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/app_parts/scene.js | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/app_parts/main_loop.js | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/app.js | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| qc/checks/check_resource_policy.py | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| qc/data/resource_policy.js | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| docs/systems.json | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| docs/systems/hub-web.md | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| docs/systems/app-voice.md | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| docs/systems/shared-web.md | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| docs/systems/studio.md | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| docs/systems/qc.md | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-| handoff/tasks/adaptive-resources-1026.md | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
-
-| main_python/resource_hardware.py | Resource module/auth/shared DATA launch wiring | pending | not run | uncommitted |
-| main_python/resource_settings.py | Resource module/auth/shared DATA launch wiring | pending | not run | uncommitted |
-| main_python/hub_auth.py | Resource module/auth/shared DATA launch wiring | pending | not run | uncommitted |
-| main_python/hub_api_apps.py | Resource module/auth/shared DATA launch wiring | pending | not run | uncommitted |
-
-| apps/voice/tts_spark/server.py | Managed TTS budget/browser proof or generated header | pending | not run | uncommitted |
-| qc/checks/check_resource_policy_browser.py | Managed TTS budget/browser proof or generated header | pending | not run | uncommitted |
-| docs/systems/hub-resources.md | Managed TTS budget/browser proof or generated header | pending | not run | uncommitted |
-| docs/systems/README.md | Managed TTS budget/browser proof or generated header | pending | not run | uncommitted |
-
-| MiceHub.spec | Raw sharedpolicy modules for separately launched packaged Voice/Spark | pending | package not run | uncommitted |
+| MiceHub.spec | Ship raw policy modules for child Python | implemented | selected326/77; full pending | this checkpoint |
+| apps/voice/resources.py | Admission, device verification, bounded shared pool and resident status | implemented | selected326/77; full pending | this checkpoint |
+| apps/voice/service.py | Apply policy to every local inference/translation path | implemented | selected326/77; full pending | this checkpoint |
+| apps/voice/tts_spark/server.py | Apply shared policy to managed Spark | implemented | selected326/77; full pending | this checkpoint |
+| config/resource_policy.json | Editable profiles, reserves and admission thresholds | implemented | selected326/77; full pending | this checkpoint |
+| docs/systems.json | Generated inventory/build output | implemented | selected326/77; full pending | this checkpoint |
+| docs/systems/README.md | Generated inventory/build output | implemented | selected326/77; full pending | this checkpoint |
+| docs/systems/agents.md | Generated inventory/build output | implemented | selected326/77; full pending | this checkpoint |
+| docs/systems/app-voice.md | Generated inventory/build output | implemented | selected326/77; full pending | this checkpoint |
+| docs/systems/hub-auth.md | Generated inventory/build output | implemented | selected326/77; full pending | this checkpoint |
+| docs/systems/hub-resources.md | Generated inventory/build output | implemented | selected326/77; full pending | this checkpoint |
+| docs/systems/hub-web.md | Generated inventory/build output | implemented | selected326/77; full pending | this checkpoint |
+| docs/systems/qc.md | Generated inventory/build output | implemented | selected326/77; full pending | this checkpoint |
+| docs/systems/shared-web.md | Generated inventory/build output | implemented | selected326/77; full pending | this checkpoint |
+| handoff/tasks/adaptive-resources-1026.md | Per-file checkpoint and next actions | implemented | selected326/77; full pending | this checkpoint |
+| main_python/hub_api_apps.py | Pass shared DATA policy environment to Voice | implemented | selected326/77; full pending | this checkpoint |
+| main_python/hub_api_resources.py | Authenticated settings and public-only client bootstrap | implemented | selected326/77; full pending | this checkpoint |
+| main_python/hub_auth.py | Gate resource POST | implemented | selected326/77; full pending | this checkpoint |
+| main_python/main.py | Bind resource API and bootstrap | implemented | selected326/77; full pending | this checkpoint |
+| main_python/resource_hardware.py | Bounded unknown-safe CPU RAM GPU discovery | implemented | selected326/77; full pending | this checkpoint |
+| main_python/resource_policy.py | Validated stable capacity profiles and fresh load budgets | implemented | selected326/77; full pending | this checkpoint |
+| main_python/resource_settings.py | Atomic revisioned machine-local settings | implemented | selected326/77; full pending | this checkpoint |
+| main_python/web/help.html | Generated inventory/build output | implemented | selected326/77; full pending | this checkpoint |
+| main_python/web/help/parts/hub.html | Help parity | implemented | selected326/77; full pending | this checkpoint |
+| main_python/web/help/parts/studio.html | Help parity | implemented | selected326/77; full pending | this checkpoint |
+| main_python/web/help/parts/voice.html | Help parity | implemented | selected326/77; full pending | this checkpoint |
+| main_python/web/home/parts/boot_scans.js | Storage-denial safe initial scans | implemented | selected326/77; full pending | this checkpoint |
+| main_python/web/home/parts/settings.html | Resource settings controls | implemented | selected326/77; full pending | this checkpoint |
+| main_python/web/home/parts/settings.js | Editable settings and honest applied/pending display | implemented | selected326/77; full pending | this checkpoint |
+| main_python/web/hub.html | Generated inventory/build output | implemented | selected326/77; full pending | this checkpoint |
+| nong/main_python_set_nong/web/app.js | Generated inventory/build output | implemented | selected326/77; full pending | this checkpoint |
+| nong/main_python_set_nong/web/app_parts/main_loop.js | Throttle rendering without motion timing changes | implemented | selected326/77; full pending | this checkpoint |
+| nong/main_python_set_nong/web/app_parts/scene.js | Client renderer limits | implemented | selected326/77; full pending | this checkpoint |
+| qc/checks/check_resource_policy.py | Production regression coverage | implemented | selected326/77; full pending | this checkpoint |
+| qc/checks/check_resource_policy_browser.py | Production regression coverage | implemented | selected326/77; full pending | this checkpoint |
+| qc/data/resource_policy.js | Production regression coverage | implemented | selected326/77; full pending | this checkpoint |
+| shared/web/resources.js | Independent client display policy | implemented | selected326/77; full pending | this checkpoint |
 
 ## Facts found
-- Root69fd19ed accepted prior8335/0 (one gesturecrowdretry2/2), not proof of upcomingpolicy.
-- CurrentPC Ultra9 275HX24cores,31.4GiB RAM, RTX5070TiLaptop12227MiB VRAM. Snapshot only, no full-load utilization proof.
-- Voice already CUDA16/CPUint8 fallback, local LLM GPU/4bit/CPU paths, speechcache; use existing mechanisms and don't equate100%utilization with success.
-- Studio already dirty-renders and RTT-adapts link; safe planning yields under budgets. Client can be weaker than Hub, so resolve separately.
-- Frozen assets via asset(); writable machine settings must live under DATA, not PyInstaller _MEIPASS. Local settings never modify registry defaults or characterconfig.
+- Capacity uses totalCPU/RAM; free RAM/VRAM budgets refreshed at model admission. Detection never imports/loads AI models.
+- CPU LLM metadata admission includes buffers and headroom; STT/Spark minimum floors are advisory, not hard model-size caps.
+- GPU UUID verification respects actual library indices; explicit CPU cannot allocate GPU. Unknown hardware falls back conservatively.
+- One process-wide translation pool; native thread/pool changes report restart pending. Existing models report actual resident revision.
+- Hub PC policy and browser display policy are independent; control/playback/safety ticks remain unchanged.
+- Packaged Voice/Spark child Python needs raw policy modules outside native PYZ. Root spec is already dirty: merge only own data entries.
+- Separate assessment found Lift missing travel deadline (P1), not repaired by this PC scope. No physical fault observed.
 
 ## Done
-Initial resource41/0; realAPI/UI/onefile/stalebuild/voiceServices focused166/0 after actualfixture/path fixes. Same-provider actualsource review found CPU fallback reserve bypass, stale modelrecords, process-globalthread pending state, nestedtranslationworkers, CVDmapping/Sparkexplicitdevice and registryvalidation gaps; correcting before finalgate. No model/hardware/runtime activity.
+Design and final substantive source reviews: resource_design (supported gpt-6-astra high) + audit_latest_ui; reviewed findings verified and corrected. Latest selected326/0 and resource+actual Edge77/0, no actual models/hardware. Isolated child-layout Python imports passed. Logs scratch/adaptive-resources-1026; older full8335 does not cover this task.
 
 ## Next
-1. Complete independent design review; implement bounded modular policy and Help parity.
-2. Actual integration/regression/browser checks, deliberate reversions, final independent review and stable full.
-3. Spec package/archive verification and guarded PR/sourceintegration preserving rootdirtywork. Hardware remains paused.
+1. Deliberately revert guards sequentially and restore exact bytes; prove tests catch regressions.
+2. Final affected/full stable-input gate and spec build/archive verification.
+3. PR/guarded source integration; preserve all root dirty userdata/spec/EXE, record remaining Lift/physical work.
 
 ## Blocked
-Physical tests USER-NOTREADY; elbowtrim user-deferred. No software blocker. No device/service/runtime changes authorized by adaptation task.
+Physical USER-NOTREADY, elbow trim user-deferred. No software blocker. No service/runtime/robot cutover.

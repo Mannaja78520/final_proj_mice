@@ -4,8 +4,8 @@ let failed = 0;
 const ok = (value, message) => { console.log((value ? 'PASS ' : 'FAIL ') + message); if (!value) failed++; };
 const registry = JSON.parse(fs.readFileSync('config/resource_policy.json', 'utf8')).browser;
 function context(hints, denied) {
-  const events = {}, c = {console, navigator:hints, CustomEvent:class {},
-    addEventListener:(name,fn)=>{events[name]=fn;}, dispatchEvent(){}};
+  const events = {}, c = {console, navigator:hints, CustomEvent:class {constructor(type){this.type=type;}},
+    addEventListener:(name,fn)=>{events[name]=fn;}, dispatchEvent(event){if(events[event.type])events[event.type](event);}};
   Object.defineProperty(c,'localStorage',{get(){if(denied)throw Error('denied');return {getItem(){return null;},setItem(){}};}});
   c.window=c;c.MiceResourceRegistry=registry;vm.createContext(c);
   vm.runInContext(fs.readFileSync('shared/web/resources.js','utf8'),c);c.events=events;return c;
@@ -22,6 +22,14 @@ function context(hints, denied) {
   const absent=context({},true);delete absent.MiceResourceRegistry;
   const fallback=new absent.MiceResourceClient(null,{},null);
   ok(fallback.display().fps>0 && fallback.display().pixelRatio===1,'missing bootstrap retains a conservative render budget');
+  const controlsById={resourceDisplay:{value:'auto'},resourceMode:{value:'fast'}};
+  weak.document={addEventListener(){},getElementById:id=>controlsById[id]};weak.onTab=()=>{};
+  vm.runInContext(fs.readFileSync('main_python/web/home/parts/settings.js','utf8'),weak);
+  weak.MiceResources.setMode('fast');
+  ok(controlsById.resourceDisplay.value==='fast','actual settings selector follows policy changes');
+  weak.events.storage({key:'mice_display_mode',newValue:null});
+  ok(controlsById.resourceDisplay.value==='auto'&&controlsById.resourceMode.value==='fast',
+    'cross-tab reset updates only the actual display selector and preserves unsaved Hub edits');
   // Execute actual Studio tick: render throttling cannot throttle playback/control.
   let draws=0,moves=0;const c=weak;
   Object.assign(c,{requestAnimationFrame(){},freezeCheck(){},playTick(){moves++;},distDraw(){},controls:{update(){return false;}},

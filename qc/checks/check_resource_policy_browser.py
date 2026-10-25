@@ -35,6 +35,12 @@ window.addEventListener('load',async()=>{
   const unchanged=await fetch('/api/resources').then(r=>r.json());
   await mark('display_local',w.MiceResources.mode==='fast'&&unchanged.revision===revision);
   await mark('next_load',d.getElementById('resourceNotice').textContent.includes('ครั้งถัดไป'));
+  d.getElementById('resourceMode').value='fast';
+  w.dispatchEvent(new w.StorageEvent('storage',{key:'mice_display_mode',newValue:'light'}));
+  await mark('display_sync',d.getElementById('resourceDisplay').value==='light');
+  w.dispatchEvent(new w.StorageEvent('storage',{key:'mice_display_mode',newValue:null}));
+  await mark('display_reset',d.getElementById('resourceDisplay').value==='auto');
+  await mark('unsaved_kept',d.getElementById('resourceMode').value==='fast');
  }catch(error){await qcMark('RESOURCE~error='+String(error));}
  await qcMark('done');
 });
@@ -66,7 +72,7 @@ def run(t):
                     key, result = value[9:].split("=", 1)
                     got[key] = result
             t.ok("error" not in got, "real resource settings journey completes", str(got))
-            for key in ("choices", "saved", "bounded", "independent", "display_local", "next_load"):
+            for key in ("choices", "saved", "bounded", "independent", "display_local", "next_load", "display_sync", "display_reset", "unsaved_kept"):
                 t.eq(got.get(key), "true", "real resource settings: " + key)
             t.eq(manager.store.read()["settings"]["mode"], "light", "browser save persisted only to its isolated machine store")
         finally:

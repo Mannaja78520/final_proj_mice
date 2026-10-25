@@ -60,7 +60,13 @@ def load(runtime, checkpoint, reference, device_name):
     import thai_text_preprocess as pre
 
     resources, budget = resource_budget(torch)
-    picked = "cuda:" + str(budget["deviceIndex"]) if budget["device"] == "cuda" and device_name != "cpu" else "cpu"
+    picked = resources.pick_device(budget, device_name)
+    try:
+        resources.admit(budget, "spark", picked)
+    except MemoryError:
+        if picked == "cpu": raise
+        picked = "cpu"
+        resources.admit(budget, "spark", picked)
     device = torch.device(picked)
     dtype = torch.bfloat16 if device.type == "cuda" and torch.cuda.is_bf16_supported() else torch.float32
     codec = BiCodecTokenizer(str(runtime / "Spark-TTS-0.5B"), device=device)

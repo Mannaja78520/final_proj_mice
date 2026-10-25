@@ -4,7 +4,12 @@
   class MiceResourceClient {
     constructor(registry, hints, storage) {
       this.registry = registry || {};
-      this.hints = hints || {};
+      this.hints = {};
+      try {
+        const cpu = (hints || {}).hardwareConcurrency, memory = (hints || {}).deviceMemory;
+        this.hints = {hardwareConcurrency: Number.isFinite(cpu) && cpu > 0 ? cpu : 1,
+          deviceMemory: Number.isFinite(memory) && memory > 0 ? memory : 0};
+      } catch (_) {}
       this.storage = storage;
       this.mode = "auto";
       this.lastFrame = null;

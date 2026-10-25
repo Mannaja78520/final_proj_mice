@@ -28,7 +28,7 @@ class ResourceSettings:
             revision = hashlib.sha256(raw).hexdigest()
             try:
                 data = json.loads(raw)
-                if data.get("version") != 1:
+                if type(data.get("version")) is not int or data["version"] != 1:
                     raise ValueError("Unsupported settings")
                 settings = self.validate(data["settings"])
                 return {"revision": revision, "settings": settings, "warning": ""}

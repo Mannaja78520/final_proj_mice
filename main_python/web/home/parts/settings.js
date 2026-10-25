@@ -18,7 +18,13 @@ function paintSettings(){
 onTab('settings', paintSettings);
 
 class ResourceSettingsView {
-  constructor() { this.revision = null; this.loading = false; }
+  constructor() {
+    this.revision = null; this.loading = false;
+    window.addEventListener('mice-resource-change', () => {
+      const select = document.getElementById('resourceDisplay');
+      if (select && window.MiceResources) select.value = window.MiceResources.mode;
+    });
+  }
   async request(options) {
     const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 6000);
     try {
@@ -40,7 +46,7 @@ class ResourceSettingsView {
       this.select('resourceMode', [{id:'auto',label:'อัตโนมัติ'}].concat(data.choices.profiles), data.settings.mode);
       this.select('resourceDevice', data.choices.devices, data.settings.device);
       const advanced = document.getElementById('resourceAdvanced'); advanced.textContent = '';
-      const labels = {cpuThreads:'จำนวนเธรด (0 = อัตโนมัติ)', workers:'งานพร้อมกัน (0 = อัตโนมัติ)', ramReserveMiB:'RAM ที่เว้นไว้ (MiB)', vramReserveMiB:'VRAM ที่เว้นไว้ (MiB)'};
+      const labels = {cpuThreads:'จำนวนเธรด (0 = อัตโนมัติ)', workers:'งานแปลพร้อมกัน / งานฟังต่อโมเดล (0 = อัตโนมัติ)', ramReserveMiB:'RAM ที่เว้นไว้ (MiB)', vramReserveMiB:'VRAM ที่เว้นไว้ (MiB)'};
       Object.keys(data.choices.limits).forEach(key => {
         const label = document.createElement('label'), input = document.createElement('input');
         label.textContent = labels[key] || key; input.type = 'number'; input.id = 'resource_' + key;
@@ -48,7 +54,7 @@ class ResourceSettingsView {
         input.value = data.settings[key]; label.appendChild(input); advanced.appendChild(label);
       });
       this.settings = data.settings;
-      document.getElementById('resourceSummary').textContent = 'ค่าที่จะใช้กับการโหลดใหม่: ' + data.effective.label + ' · ' + data.effective.device.toUpperCase() + ' · ' + data.effective.cpuThreads + ' เธรด · ' + data.effective.workers + ' งานพร้อมกัน';
+      document.getElementById('resourceSummary').textContent = 'ค่าที่จะใช้กับการโหลดใหม่: ' + data.effective.label + ' · ' + data.effective.device.toUpperCase() + ' · ' + data.effective.cpuThreads + ' เธรด · ' + data.effective.workers + ' งานแปล / งานฟังต่อโมเดล';
       document.getElementById('resourceNotice').textContent = data.notice;
       document.getElementById('resourceStatus').textContent = data.effective.warning || 'พร้อมใช้กับการโหลดงานครั้งถัดไป';
       const client = window.MiceResources;

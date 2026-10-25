@@ -563,6 +563,7 @@ class Brain:
         if drop:
             with self._lock:
                 for kind in drop:
+                    self._resources.drop(kind)
                     setattr(self, "_%s_loaded_model" % kind, None)
                     setattr(self, "_%s" % kind, None)
                     setattr(self, "_%s_err" % kind, None)
@@ -2001,7 +2002,7 @@ class Brain:
         self._llm_loading = True
         try:
             import torch                                    # noqa: F401
-            from transformers import AutoModelForCausalLM, AutoTokenizer
+            from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
             mid = self.cfg.get("llm", {}).get("model", r"E:\final_proj\mice\code\llm")
             tok = AutoTokenizer.from_pretrained(mid, trust_remote_code=True)
             mdl = None
@@ -2024,13 +2025,9 @@ class Brain:
                             mid, quantization_config=quant, device_map="auto", max_memory=memory_budget,
                             trust_remote_code=True)
                     except Exception:
-                        mdl = AutoModelForCausalLM.from_pretrained(
-                            mid, torch_dtype=torch.float32, device_map="cpu",
-                            trust_remote_code=True)
+                        mdl = self._resources.cpu_load(mid, AutoModelForCausalLM, AutoConfig, torch, resource_plan)
             else:
-                mdl = AutoModelForCausalLM.from_pretrained(
-                    mid, torch_dtype=torch.float32, device_map="cpu",
-                    trust_remote_code=True)
+                mdl = self._resources.cpu_load(mid, AutoModelForCausalLM, AutoConfig, torch, resource_plan)
             self._resources.mark("llm:" + mid, resource_plan, str(mdl.device))
             self._llm = (tok, mdl)
             self._llm_loaded_model = mid
@@ -2530,16 +2527,14 @@ class Brain:
         src = detect_lang(text) if source in ("auto", "") else source
         results = {src: text.strip()}
         targets = [t for t in ("th", "en", "ja", "zh") if t != src]
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self._resources.workers(len(targets))) as ex:
-            futs = {ex.submit(self.translate_text, text, target=t, source=src): t for t in targets}
-            for fut in concurrent.futures.as_completed(futs):
-                t = futs[fut]
-                try:
-                    trans, _ = fut.result()
-                    results[t] = trans or text.strip()
-                except Exception:
-                    results[t] = text.strip()
+        def translate(target):
+            try:
+                trans, _ = self.translate_text(text, target=target, source=src)
+                return target, trans or text.strip()
+            except Exception:
+                return target, text.strip()
+        for target, translated in self._resources.map(translate, targets):
+            results[target] = translated
         for t in ("th", "en", "ja", "zh"):
             if t not in results:
                 results[t] = text.strip()
@@ -3627,9 +3622,7 @@ class VoiceHandler(BaseHTTPRequestHandler):
                                "that request was not readable"}, 400)
         texts = req.get("texts")
         if texts and isinstance(texts, list):
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor(max_workers=self.brain._resources.workers(min(4, len(texts)))) as ex:
-                res_list = list(ex.map(lambda t: self.brain.translate_all(str(t).strip(), source=req.get("source", "auto")), texts))
+            res_list = [self.brain.translate_all(str(t).strip(), source=req.get("source", "auto")) for t in texts]
             return self._json({"ok": True, "results": res_list})
 
         text = (req.get("text") or "").strip()
@@ -3643,14 +3636,14 @@ class VoiceHandler(BaseHTTPRequestHandler):
             return self._json({"ok": True, "translations": translations})
         if req.get("target"):
             tgt = req.get("target")
-            trans, err = self.brain.translate_text(text, target=tgt, source=req.get("source", "auto"))
+            trans, err = self.brain._resources.map(lambda value: self.brain.translate_text(value, target=tgt, source=req.get("source", "auto")), [text])[0]
             return self._json({"ok": True, "text": trans, "target": tgt})
 
         # Default complaints translation (A21-8): keeps words and gains English twin
         if all(ord(c) < 128 for c in text):
             return self._json({"ok": True, "text": text, "translated": False})
         try:
-            reply, why_not = self.brain.translate(text)
+            reply, why_not = self.brain._resources.map(self.brain.translate, [text])[0]
         except Exception as e:                      # noqa: BLE001
             return self._json({"ok": False,
                                "error": "translation failed: %s: %s"
