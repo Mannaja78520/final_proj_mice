@@ -1,7 +1,7 @@
 # PC Face app, watcher and Photobooth integration
 
-Owner: codex:10231359-7280
-Updated: 2026-10-25 09:11 +0700
+Owner: codex:10241515-audit (passive readiness takeover; prior author7280)
+Updated: 2026-10-25T15:50:20.089992+07:00
 Branch: codex/face-pc-1023
 Last commit: this checkpoint
 Plan: A45-30; remaining real run A45-14/A45-12
@@ -11,7 +11,7 @@ Finish all PC-only Face app/watcher/Photobooth work without editing friend's sou
 Report to integration codex:10231901-f6cc and main coordinator; Lab alone owns hardware.
 
 ## Doing now
-25Oct bounded read-only PC process/listener + existing HTTP-health refresh only.
+25Oct main resumes bounded passive process/listener + existing HTTP-health refresh after author7280 hit usage limit before reporting. Human authorized allwork; original files/evidence preserved. No driver/runtime changes.
 Migrate per-file ledger FIRST; no source/runtime/config edits or shared driver.
 23Oct startup proof and24Oct one-frame proof remain dated; reconcile, never discard them.
 No camera read/capture/inference/GPU/service start/restart/friend edits/hardware/QC/fakes.
