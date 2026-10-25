@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "probeSeconds": 30,
+  "defaults": {"mode": "auto", "device": "auto", "cpuThreads": 0, "workers": 0, "ramReserveMiB": 2048, "vramReserveMiB": 2048},
+  "limits": {"cpuThreads": [0, 256], "workers": [0, 8], "ramReserveMiB": [512, 65536], "vramReserveMiB": [256, 65536]},
+  "devices": [{"id": "auto", "label": "อัตโนมัติ"}, {"id": "cpu", "label": "ใช้ CPU"}, {"id": "cuda", "label": "ใช้ GPU เมื่อพร้อม"}],
+  "profiles": [
+    {"id": "light", "label": "ประหยัด", "minCpus": 1, "minMemoryMiB": 0, "cpuShare": 0.25, "maxThreads": 4, "workers": 1},
+    {"id": "balanced", "label": "สมดุล", "minCpus": 4, "minMemoryMiB": 8192, "cpuShare": 0.5, "maxThreads": 8, "workers": 2},
+    {"id": "fast", "label": "เร็วขึ้น", "minCpus": 8, "minMemoryMiB": 24576, "cpuShare": 0.65, "maxThreads": 16, "workers": 3}
+  ],
+  "browser": {
+    "profiles": [
+      {"id": "light", "label": "ภาพประหยัด", "minCpus": 1, "minMemoryGiB": 0, "fps": 24, "pixelRatio": 1, "antialias": false},
+      {"id": "balanced", "label": "ภาพสมดุล", "minCpus": 4, "minMemoryGiB": 4, "fps": 40, "pixelRatio": 1.5, "antialias": true},
+      {"id": "fast", "label": "ภาพละเอียด", "minCpus": 8, "minMemoryGiB": 8, "fps": 60, "pixelRatio": 2, "antialias": true}
+    ]
+  }
+}

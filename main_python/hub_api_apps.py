@@ -9,6 +9,7 @@ from pathlib import Path
 import json
 import os
 import shutil
+import hub_api_resources
 import subprocess
 import sys
 import urllib.request
@@ -153,6 +154,7 @@ class AppRoutes:
                 subprocess.Popen(
                     [py, str(script)],
                     cwd=str(root_dir),
+                    env=hub_api_resources.child_environment(),
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                     creationflags=flags)

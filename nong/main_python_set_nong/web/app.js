@@ -706,8 +706,14 @@ let boardSafePeer = 0;      // linked board needs the same cap for synchronized 
 let boardSafeIdentity = ""; // never save a persistent setting to a different board
 // --- scene ---
 const viewport = $("viewport");
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio);
+const displayPolicy = window.MiceResources;
+const renderer = new THREE.WebGLRenderer({ antialias: displayPolicy ? displayPolicy.display().antialias : true });
+if (displayPolicy) displayPolicy.applyRenderer(renderer, window.devicePixelRatio);
+else renderer.setPixelRatio(window.devicePixelRatio);
+window.addEventListener('mice-resource-change', function () {
+  if (displayPolicy) displayPolicy.applyRenderer(renderer, window.devicePixelRatio);
+  if (typeof markDirty3d === 'function') markDirty3d(10);
+});
 renderer.outputEncoding = THREE.sRGBEncoding; // painted textures keep their colors
 viewport.appendChild(renderer.domElement);
 
@@ -10562,9 +10568,10 @@ function tick(now) {
   distDraw();              // distances follow the pose and the camera (A26-44)
   const inMotion = controls ? controls.update() : false;
   const needRender = playing || inMotion || (typeof distShown === "function" && distShown()) || _dirty3d > 0;
-  if (needRender) {
+  if (needRender && (!window.MiceResources || window.MiceResources.frameDue(now))) {
     if (!playing && !inMotion && (!distShown || !distShown()) && _dirty3d > 0) _dirty3d--;
     renderer.render(scene, activeCam());
+    if (window.MiceResources) window.MiceResources.rendered(now);
   }
 }
 

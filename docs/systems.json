@@ -15,6 +15,10 @@
                  ".ico", ".onnx", ".bak", ".tmp"],
 
   "systems": [
+    {"id": "hub-resources", "summary": "Machine-local configurable CPU/GPU/RAM policy, bounded capability discovery, next-load Voice budgets and independent client display choices.",
+     "files": ["main_python/resource_policy.py", "main_python/resource_hardware.py", "main_python/resource_settings.py", "main_python/hub_api_resources.py", "config/resource_policy.json"],
+     "names": ["/api/resources", "ResourcePolicy", "VoiceResources", "MiceResources"],
+     "checks": ["check_resource_policy*"], "depends": ["hub-auth"]},
     {"id": "hub", "summary": "The hub program: HTTP server, the device routes (dev, modules, USB proxy, pairing, robot proxy), startup. Split into hub-* systems (A26-76, A26-93).",
      "files": ["main_python/main.py", "main_python/app_window.py", "main_python/build_stamp.py",
                "main_python/partner_launch.py", "main_python/partner_version.py", "main_python/run_hub.*", "main_python/README.md",

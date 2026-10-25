@@ -11,10 +11,10 @@ Plan: A48-18 (robot); related A48-13 assessment/hardwarepause
 User: dynamically suit weaker/stronger future PCs and allow customization, including Hubsoftware CPU/GPU/RAM and client rendering. Preserve manual model/character choices, userdata/dirtyroot and physical pause.
 
 ## Doing now
-Before runtime edits: Codex-first same-provider independent design consultation per COORDINATION supported-agent route. Propose data-driven shared capability/profile service, persistent machine-local settings, bounded cached probes, gated settings API/UI, effective Voice compute/thread/memory settings, separately client-local Studio render policy. Preserve existing dirty-only rendering, link RTT adaptation, safety/collision/motion timing and provider fallback. No models downloaded/loaded or hardware probed by detection. Read-only quality assessment also found Lift missing traveldeadline (separate issue), Hub denied-storage startup fault (fix in this UI step). No runtime/service cutover.
+Design reviewed by resource_design (gpt-6-astra high, supported agent) and audit_latest_ui, same-provider; main verified recommendations againstcode. Implement now: strict gated/revisioned settings, unknown-safe cached discovery, stable capacity profiles/free-memory budgets, all STT fallback hooks, requested/resident revision reporting, client-local browser policy and render-only throttle. Propose data-driven shared capability/profile service, persistent machine-local settings, bounded cached probes, gated settings API/UI, effective Voice compute/thread/memory settings, separately client-local Studio render policy. Preserve existing dirty-only rendering, link RTT adaptation, safety/collision/motion timing and provider fallback. No models downloaded/loaded or hardware probed by detection. Read-only quality assessment also found Lift missing traveldeadline (separate issue), Hub denied-storage startup fault (fix in this UI step). No runtime/service cutover.
 
 ## File status
-Planned exactpaths; final design may narrow these. No runtime files changed yet.
+Planned exactpaths; final design may narrow these. Runtime implemented; firstresource41/0. Broadaffected590passed/9failed: one temporaryCODE registry-path crash and browserfixture lexicalglobal lookup; corrected shippedregistry path +actualDOMclick driver. Package analysis found childprocess cannot import PYZ, so rawsharedpolicy datas added to spec; actualpackaging proof stillpending.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
@@ -45,6 +45,18 @@ Planned exactpaths; final design may narrow these. No runtime files changed yet.
 | docs/systems/qc.md | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
 | handoff/tasks/adaptive-resources-1026.md | Adaptive resource implementation/docs/checks or generated output | pending | not run | uncommitted |
 
+| main_python/resource_hardware.py | Resource module/auth/shared DATA launch wiring | pending | not run | uncommitted |
+| main_python/resource_settings.py | Resource module/auth/shared DATA launch wiring | pending | not run | uncommitted |
+| main_python/hub_auth.py | Resource module/auth/shared DATA launch wiring | pending | not run | uncommitted |
+| main_python/hub_api_apps.py | Resource module/auth/shared DATA launch wiring | pending | not run | uncommitted |
+
+| apps/voice/tts_spark/server.py | Managed TTS budget/browser proof or generated header | pending | not run | uncommitted |
+| qc/checks/check_resource_policy_browser.py | Managed TTS budget/browser proof or generated header | pending | not run | uncommitted |
+| docs/systems/hub-resources.md | Managed TTS budget/browser proof or generated header | pending | not run | uncommitted |
+| docs/systems/README.md | Managed TTS budget/browser proof or generated header | pending | not run | uncommitted |
+
+| MiceHub.spec | Raw sharedpolicy modules for separately launched packaged Voice/Spark | pending | package not run | uncommitted |
+
 ## Facts found
 - Root69fd19ed accepted prior8335/0 (one gesturecrowdretry2/2), not proof of upcomingpolicy.
 - CurrentPC Ultra9 275HX24cores,31.4GiB RAM, RTX5070TiLaptop12227MiB VRAM. Snapshot only, no full-load utilization proof.
@@ -53,7 +65,7 @@ Planned exactpaths; final design may narrow these. No runtime files changed yet.
 - Frozen assets via asset(); writable machine settings must live under DATA, not PyInstaller _MEIPASS. Local settings never modify registry defaults or characterconfig.
 
 ## Done
-Read-only initial assessment, isolated tree established; no source edits/build/QC/device activity yet.
+Initial resource41/0; realAPI/UI/onefile/stalebuild/voiceServices focused166/0 after actualfixture/path fixes. Same-provider actualsource review found CPU fallback reserve bypass, stale modelrecords, process-globalthread pending state, nestedtranslationworkers, CVDmapping/Sparkexplicitdevice and registryvalidation gaps; correcting before finalgate. No model/hardware/runtime activity.
 
 ## Next
 1. Complete independent design review; implement bounded modular policy and Help parity.
