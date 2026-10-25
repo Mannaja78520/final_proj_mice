@@ -47,7 +47,17 @@ def run(t):
     spec = importlib.util.spec_from_file_location("handoff_under_test", str(F.CODE / "tools" / "handoff.py"))
     H = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(H)
-    need = set(H.fields(H.TEMPLATE.read_text(encoding="utf-8")))
+    template = H.TEMPLATE.read_text(encoding="utf-8")
+    columns = "| File | Change | State | Verification | Commit |"
+    t.ok("## File status" in text and columns.strip("| ") in text,
+         "shared handoff rules require the per-file contract", "task summaries alone lose changed files")
+    t.ok("## File status" in template and columns in template,
+         "new task template carries every per-file column", "missing change/state/evidence/commit inventory")
+    for name in ENTRY_FILES:
+        top = "\n".join((F.CODE / name).read_text(encoding="utf-8").splitlines()[:22])
+        t.ok("Per-file handoff" in top and "## File status" in top,
+             "%s requires per-file handoff at entry" % name, "the provider can miss the shared contract")
+    need = set(H.fields(template))
     t.ok({"Owner", "Updated", "Last commit"} <= need, "the template carries Owner, Updated, Last commit",
          "got %s" % sorted(need))
     t.ok("## Doing now" in H.TEMPLATE.read_text(encoding="utf-8"),
@@ -66,8 +76,12 @@ def run(t):
         body = made.read_text(encoding="utf-8")
         t.ok(body.startswith("# Probe task") and H.fields(body).get("Owner", "x") == "",
              "new makes a free task file with the given title", body[:120])
+        t.ok("## File status" in body and columns in body,
+             "new task retains the per-file table", "handoff creation lost the contract")
         H.cmd_take("probe", "someone:1")
         t.ok(H.fields(made.read_text(encoding="utf-8")).get("Owner") == "someone:1",
              "take writes the agent id as Owner", made.read_text(encoding="utf-8")[:120])
+        t.ok("## File status" in made.read_text(encoding="utf-8"),
+             "taking a task preserves its file inventory", "ownership update removed the table")
         H.cmd_done("probe")
         t.ok(not made.exists(), "done removes the task file", "the finished task still looks open")

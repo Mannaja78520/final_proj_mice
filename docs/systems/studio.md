@@ -129,7 +129,7 @@ Nong Studio: the pose editor, timeline and live 3D monitor.
 
 - nothing
 
-## Checks that test it (25)
+## Checks that test it (27)
 
 - `check_build_web`
 - `check_design_system`
@@ -146,10 +146,12 @@ Nong Studio: the pose editor, timeline and live 3D monitor.
 - `check_persistence`
 - `check_plan_live`
 - `check_promote_ask`
+- `check_qc_probe_integrity`
 - `check_rig_presets`
 - `check_safe_path`
 - `check_studio_distances`
 - `check_studio_music_ui`
+- `check_studio_render_idle`
 - `check_studio_wifi_after_cable`
 - `check_ui_states`
 - `check_urdf_export`
@@ -157,4 +159,4 @@ Nong Studio: the pose editor, timeline and live 3D monitor.
 - `check_video_page`
 - `check_zero_lock`
 
-Run them: `python qc/run_qc.py --no-build check_build_web check_design_system check_dev_tools check_gestures check_help_links check_history check_monitor_link check_no_data_loss check_no_rainbow check_packing_list check_page_frame check_palm_hold check_persistence check_plan_live check_promote_ask check_rig_presets check_safe_path check_studio_distances check_studio_music_ui check_studio_wifi_after_cable check_ui_states check_urdf_export check_urdf_look check_video_page check_zero_lock`
+Run them: `python qc/run_qc.py --no-build check_build_web check_design_system check_dev_tools check_gestures check_help_links check_history check_monitor_link check_no_data_loss check_no_rainbow check_packing_list check_page_frame check_palm_hold check_persistence check_plan_live check_promote_ask check_qc_probe_integrity check_rig_presets check_safe_path check_studio_distances check_studio_music_ui check_studio_render_idle check_studio_wifi_after_cable check_ui_states check_urdf_export check_urdf_look check_video_page check_zero_lock`

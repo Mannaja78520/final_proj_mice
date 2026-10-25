@@ -176,3 +176,12 @@ function initSideDrag() {
     localStorage.setItem("nong_sidew", parseInt(side.style.width) || 320);
   });
 }
+
+window.addEventListener('DOMContentLoaded', function(){
+  var h = (location.hash || '').replace('#', '');
+  if(h && typeof showTab === 'function') showTab(h);
+});
+window.addEventListener('hashchange', function(){
+  var h = (location.hash || '').replace('#', '');
+  if(h && typeof showTab === 'function') showTab(h);
+});

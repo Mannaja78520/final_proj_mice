@@ -16,6 +16,7 @@ what `/api/apps` returned. That is the only way the two can be told apart: the
 registry being right is exactly what the old checks proved while the screen
 showed nothing.
 """
+from contextlib import contextmanager
 import json
 import re
 import urllib.request
@@ -26,6 +27,16 @@ import qc as F
 AREA = "hub"
 TITLE = "the Tools list draws one row per tool, and knows when there are none"
 SLOW = True
+
+
+@contextmanager
+def broken_manifest(path):
+    original = path.read_bytes()
+    try:
+        path.write_bytes(original.replace(b"{", b"{,", 1))
+        yield original
+    finally:
+        path.write_bytes(original)
 
 
 def run(t):
@@ -90,9 +101,7 @@ def run(t):
     # is false and throws away the file and line that RegistryError already
     # knew. Both hid a real fault behind a tidy state.
     man = F.CODE / "apps" / "help" / "app.json"
-    keep = man.read_text(encoding="utf-8")
-    try:
-        man.write_text(keep.replace("{", "{,", 1), encoding="utf-8")
+    with broken_manifest(man) as keep:
         with urllib.request.urlopen(base + "/api/apps", timeout=10) as r:
             broke = json.loads(r.read())
             code = r.status
@@ -115,8 +124,7 @@ def run(t):
              "and does NOT tell the operator to go and add one",
              "that is advice for a different situation, and it hides a fault "
              "somebody could fix in ten seconds if they were told which file")
-    finally:
-        man.write_text(keep, encoding="utf-8", newline="")
+    t.eq(man.read_bytes(), keep, "broken manifest probe restores exact original bytes")
 
     # The specific mistake, kept out by name: the loop variable is `a`, and
     # anything reaching for a module's fields here is the same bug again.

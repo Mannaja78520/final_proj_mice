@@ -444,7 +444,8 @@ a.peer:hover{border-color:var(--acc)}
     <div class="statline" id="gaNow" aria-live="polite">waiting for the board</div>
     <div class="row">
       <button class="primary" onclick="gaCmd('GDISPENSE')">&#127873; Give one prize</button>
-      <button onclick="gaCmd('GDISPENSE FORCE admin')" title="for the admin: works when the event is closed or the count says empty, and is still counted">Give one anyway (admin)</button>
+      <button onclick="gaCmd('GDISPENSE FORCE admin')" style="background:#fee2e2;border-color:#ef4444;color:#991b1b;font-weight:600" title="Force dispense immediately, works when closed/empty for testing">&#9889; Force Drop (Admin)</button>
+      <button onclick="gaCmd('GDRAIN')" style="background:#fef9c3;border-color:#eab308;font-weight:600" title="Continuously dispense prizes until empty or STOP">&#127744; Drain Machine</button>
       <button class="danger" onclick="gaCmd('STOP')">&#9632; Stop</button>
     </div>
     <div class="row">
@@ -455,10 +456,13 @@ a.peer:hover{border-color:var(--acc)}
       <button onclick="gaCmd('GSPIN -1')">1 back</button>
       <button onclick="gaCmd('GSPIN 1 MAG')" title="one magnet, for a holder with more magnets than pockets">1 magnet</button>
       <button onclick="gaCmd('GHOME')" title="turn until a magnet is over the sensor: a pocket is then at the loading place">Find the loading place</button>
+      <button onclick="gaCmd('GCALIB')" title="Bounded Hall-band advance estimate; poll status for completion">&#9889; Estimate Hall Advance</button>
+      <button onclick="gaCmd('GTEST 1')" title="Run self-test on machine">&#129514; Test Machine</button>
     </div>
     <div class="row"><span class="lbl">Magnets seen</span><b id="gaHits">-</b>
       <span class="lbl" style="min-width:0">pocket at the loading place</span><b id="gaPos">-</b>
-      <span class="lbl" style="min-width:0">sensor</span><b id="gaHall">-</b></div>
+      <span class="lbl" style="min-width:0">sensor</span><b id="gaHall">-</b>
+      <span class="lbl" style="min-width:0">phase</span><b id="gaPhase">-</b></div>
     <div class="row"><span class="lbl">Last prize</span><span id="gaLast">-</span></div>
     <div class="statline" id="gaStat" aria-live="polite"></div>
   </div>
@@ -1103,11 +1107,20 @@ async function gaCmd(c){
 // [setting, label, min, max, tip] - one row per GCFG key
 const GA_CFG=[['slots','Pockets',1,64,'how many pockets the holder has'],
   ['magnets','Magnets',1,64,'magnets around the holder'],
-  ['drop','Pockets until it falls',1,64,'from the loading place to where the ball drops'],
+  ['drop','Pockets per dispense',1,64,'number of pockets per dispense; verify actual delivery on this mechanism'],
+  ['intake','Intake gravity dwell (ms)',0,5000,'pause at receive position before rotating so capsule falls in'],
   ['speed','Motor speed',50,1023,'50-1023'],
+  ['overshoot','Overshoot past drop lip (ms)',0,3000,'forward roll past chute to start capsule slide'],
+  ['overshoot_speed','Overshoot speed',50,1023,'gentle forward speed (50-1023)'],
+  ['return','Reverse rock agitation (ms)',0,3000,'reverse rock to shake stuck capsule loose'],
+  ['return_speed','Reverse rock speed',50,1023,'gentle reverse speed (50-1023)'],
+  ['center_speed','Centering speed',50,1023,'gentle crawl speed to Hall magnet (50-1023)'],
+  ['advance','Advance after Hall (ms)',0,100,'estimated by GCALIB or set for this mechanism'],
+  ['pause','Hold after Hall check (ms)',0,30000,'motor off after resting Hall verification'],
+  ['fallback','Timed fallback (ms)',0,5000,'0 disables; timed travel does not confirm position'],
   ['dir','Turn direction',-1,1,'1 or -1'],
   ['timeout','Stuck after (ms)',200,60000,'no magnet for this long while turning = stuck, motor off'],
-  ['settle','Keep turning after a magnet (ms)',0,2000,'centres the pocket'],
+  ['settle','Keep turning after a magnet (ms)',0,2000,'then verify Hall at rest'],
   ['debounce','Sensor steady for (ms)',0,200,''],
   ['active_low','Sensor pulls low on a magnet',0,1,'1 for the usual hall sensors']];
 const GA_STATE={idle:'ready',turning:'turning',homing:'finding the loading place',dispensing:'giving a prize'};
@@ -1127,16 +1140,19 @@ function gachaStatus(m,has){
   const c=m.cfg||{};
   GA_CFG.forEach(([k])=>{const e=$('gaC_'+k);if(e&&document.activeElement!==e&&c[k]!==undefined)e.value=c[k];});
   let now=GA_STATE[m.state]||m.state;
+  if(m.state==='idle'&&m.motion_result&&m.motion_result!=='idle')now+=' — '+m.motion_result;
+  if(m.testing)now+=' ('+(m.test_done||0)+'/'+m.test_total+' pockets checked)';
   if(m.want)now+=' ('+m.got+' of '+m.want+' magnets)';
   if(!m.motor)now+=' - no motor wired yet (Setup & wiring ▸ pins)';
   if(m.empty)now+=' - out of balls';
   if(!m.open)now+=' - event closed';
   $('gaNow').textContent=now;
   $('gaHits').textContent=m.hits;
-  $('gaPos').textContent=(m.pos+1)+' of '+(c.slots||'?');
-  $('gaHall').textContent=m.at_hall?'magnet here':'between magnets';
+  $('gaPos').textContent=m.pos_known?(m.pos+1)+' of '+(c.slots||'?'):'reference unknown';
+  $('gaHall').textContent=m.at_hall?'Hall detected':'Hall clear';
+  if($('gaPhase'))$('gaPhase').textContent=(m.phase||'-')+(m.phase_ms_left?' ('+m.phase_ms_left+' ms left)':'');
   const L=m.last||{};
-  $('gaLast').textContent=L.seq?('#'+L.seq+' '+({done:'fell',jam:'stuck - check the holder',stopped:'stopped',turning:'turning'}[L.result]||L.result)+
+  $('gaLast').textContent=L.seq?('#'+L.seq+' '+({done:'motion completed',timed:'timed travel — position unconfirmed',jam:'stuck - check the holder',stopped:'stopped',turning:'turning'}[L.result]||L.result)+
     (L.who?' for '+L.who:'')+(L.forced?' (admin)':'')+(L.ms?' in '+(L.ms/1000).toFixed(1)+' s':'')):'none yet';
   $('gaOpen').textContent=m.open?'open':'closed';
   $('gaStock').textContent=m.stock<0?'not counted':m.stock;

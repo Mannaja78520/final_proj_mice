@@ -820,6 +820,16 @@ function filterMods(){
   }
 }
 
+
+window.addEventListener('DOMContentLoaded', function(){
+  var h = (location.hash || '').replace('#', '');
+  if(h && document.querySelector('#tabs [data-go="' + h + '"]')) showTab(h);
+});
+window.addEventListener('hashchange', function(){
+  var h = (location.hash || '').replace('#', '');
+  if(h && document.querySelector('#tabs [data-go="' + h + '"]')) showTab(h);
+});
+
 // ---- pinned modules --------------------------------------------------
 // A venue rig has four modules that matter and a shelf of spares that do not,
 // and the spares are not fewer than the ones you use - they are usually more.

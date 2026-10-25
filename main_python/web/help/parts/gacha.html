@@ -1,63 +1,100 @@
 <section id="gacha">
   <div class="shead">
-    <span class="where tech">code/apps/gacha · served at /app/gacha/ · firmware type gacha</span>
-    <h2>🎁 Prize machines — gachapon</h2>
-    <p>One or more prize machines, each one board that turns a holder of pockets until a ball
-       falls. This page decides which machine gives the prize, who may have one, and keeps a
-       record of every prize.</p>
+    <span class="where tech">code/apps/gacha · /app/gacha/ · firmware type gacha</span>
+    <h2>🎁 แจกของรางวัล — Prize machines</h2>
+    <p>เตรียมเครื่องและชนิดของรางวัล ตั้งกติกาของงาน แล้วจึงแจกและดูประวัติ</p>
   </div>
-
-  <h3>On the machine itself</h3>
-  <p>Open the machine's own page (Home ▸ Modules). <b>Give one prize</b> turns until a ball
-     falls. <b>Turn 1 pocket</b> and <b>pockets</b> are for testing: count how many pockets it
-     takes from the loading place until the ball drops and type that into
-     <b>Pockets until it falls</b> on the Setup tab. Set the event name, start or close the
-     event, the kind of prize and how many balls are in it.</p>
-
-  <h3>Several machines</h3>
-  <p>Add each machine with its board name, the kind it holds and where it stands. Machines with
-     the same kind stand in for each other: when the one asked for is empty, the next one gives
-     the prize and the robot tells the person where to go. <b>Next to</b> says which to try
-     first. A machine next to it may hold a different kind: <b>When it runs out, give instead</b>
-     (Kinds) names what a person gets in its place. <b>its own page</b> opens the machine's own
-     settings (magnets, pockets until it falls, speed) from here.</p>
-
-  <h3>Rules for an event</h3>
-  <p><b>Per kind</b>: how many there are and how many times one person may get one.
-     <b>People</b>: a person's own limit or a special guest, by the name the face app knows.
-     <b>Give one anyway</b> is for the admin: it works past the limits and is still counted.
-     The rules can come from a Google Sheet with two tabs, <b>items</b> and <b>people</b>.
-     Paste the sheet's link in the <b>Google Sheet</b> tab of the page; with the sheet's own script set up once
-     (the steps are on that tab, in Thai) the hub also writes the sheet: the rules, any tab as a table, and a row per prize.</p>
-  <div class="scroll"><table><thead><tr><th>items</th><th>people</th></tr></thead><tbody>
-    <tr><td>event, item, total, per_person, note</td><td>event, person, item, times, special, note</td></tr>
-  </tbody></table></div>
-  <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · Google Form: docs/gacha/form_sample.gs · the sheet's script: apps/gacha/sheet_script.gs ·
-     API for other apps and webhooks: docs/gacha/README.md · POST /api/gacha/dispense {item, person, app}</p>
-
-  <h3>Voice</h3>
-  <p>Voice ▸ Questions shows what people ask about, by topic and by hour, and downloads every
-     question as a file. <b>Asked often, no saved answer yet</b> lists what the model had to answer;
-     <b>Make an answer</b> writes it once so the robot says it every time. The topics and their words
-     are edited on the same tab. An answer can also give a prize: the prize rules say which answers
-     give which kind, for every event or only one.</p>
-  <p class="tech">config/voice_topics.json (GET/POST /api/questions/topics) · config/voice_prizes.json ("enabled": true to turn on, when.event) · log .local/voice/questions.csv</p>
-
-  <h3>Games that give a prize</h3>
-  <p>A win in the friend's games (All-Jao Games opened from the hub) asks for a prize: the wheel's
-     and the claw's prize name, the quiz score with the player's name, or <b>won</b> for the memory
-     game. <b>Games that give a prize</b> says which result gives which kind. The hub shows their
-     own game folder with a small addition; their files are never changed. Settings saved in their
-     own copy (port 8080) are not seen there: set the wheel and claw prizes again once inside the hub.</p>
-  <p class="tech">config/partners.json all-jao "play" (what to watch) · config/gacha.json "games" · /play/all-jao/ · apps/all-jao/link.js · POST /api/gacha/game {game, result, person, ref}</p>
-
-  <h3>Other PCs and forms</h3>
-  <p><b>Make a key</b> for each app that should ask for prizes from another PC, a Google Form's script
-     or a button somewhere else. A key can only ask: the limits still hold and it can never give one
-     anyway. Remove the key to stop that app.</p>
-  <p class="tech">header X-Mice-Key: &lt;key&gt; or ?key=&lt;key&gt; on /api/gacha/dispense, /can, /game · keys in .local/gacha/keys.json</p>
-
-  <h3>Not tried yet</h3>
-  <p>Tested only with pretend machines. The real machine still needs its pockets-until-it-falls
-     measured on the bench.</p>
+  <div class="f">
+    <h3>เริ่มใช้งานที่ไหน</h3>
+    <p><a href="/app/gacha/">เปิดระบบแจกของ</a> แล้วเลือกแท็บตามงาน ชื่อภาษาอังกฤษด้านล่างตรงกับชื่อบนหน้าจอ</p>
+    <p>ถ้าไม่เห็นแท็บและสถานะค้างที่ <b>checking…</b> แสดงว่าหน้าแอปยังโหลดไม่สำเร็จ จึงยังทำตามขั้นตอนต่อไปไม่ได้</p>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th>ต้องการทำอะไร</th><th>เลือกแท็บ</th><th>ทำอย่างไร / ผลที่ได้</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap2">เตรียมเครื่องและของ</td><td>Machines and kinds</td><td>กำหนดเครื่อง ชนิดของรางวัล และจำนวนของที่เติม บันทึกก่อนเริ่มแจก</td></tr>
+      <tr><td class="wrap2">ตั้งสิทธิ์รับของ</td><td>Rules</td><td>กำหนดจำนวนรวมของงานและจำนวนต่อคน แยกตามชนิดของรางวัล หรือกำหนดให้บุคคลเฉพาะ</td></tr>
+      <tr><td class="wrap2">แจกให้ผู้ร่วมงาน</td><td>Give a prize</td><td>เลือก Kind ผู้รับ และ Machine กด Can they have one? เพื่อตรวจสิทธิ์ หรือ Give เพื่อสั่งแจกจริง</td></tr>
+      <tr><td class="wrap2">ดูว่าแจกให้ใครแล้ว</td><td>Prizes given</td><td>ดูประวัติการแจกและจำนวนที่แจกไป</td></tr>
+      <tr><td class="wrap2">ใช้กติกาจากชีต</td><td>Google Sheet</td><td>วางลิงก์ชีตและทำตามวิธีตั้งค่าในแท็บนี้ หากต้องการเขียนกลับชีตต้องตั้งค่าส่วนการเขียนด้วย</td></tr>
+      <tr><td class="wrap2">ให้เกมหรือเสียงเรียกแจก</td><td>Games and Voice</td><td>กำหนดเกมหรือหัวข้อคำถามที่มีสิทธิ์ขอรางวัล</td></tr>
+      <tr><td class="wrap2">เชื่อมแอปอื่น</td><td>Other apps</td><td>กำหนดการเชื่อมต่อของแอปที่ขอแจกของ</td></tr>
+      <tr><td class="wrap2">เปลี่ยนคำพูด</td><td>Words</td><td>แก้ข้อความที่ใช้ประกอบการแจกและแจ้งผล</td></tr>
+    </tbody>
+  </table></div>
+  <div class="f">
+    <h3>แจกของหนึ่งครั้ง</h3>
+    <ol>
+      <li>ใน <b>Give a prize</b> เลือก <b>Kind</b> ให้ตรงกับของที่เตรียมไว้</li>
+      <li>ระบุชื่อผู้รับ หรือเลือก <b>the person in front of the camera</b> เพื่อใช้คนที่ระบบใบหน้าเห็น</li>
+      <li>เลือก <b>Machine</b> หรือให้ระบบเลือกเครื่องที่มีของชนิดนั้น</li>
+      <li>กด <b>Can they have one?</b> เพื่อตรวจสิทธิ์ก่อน จากนั้นกด <b>Give</b> เมื่อต้องการแจกจริง</li>
+    </ol>
+    <p><b>Give one anyway (admin)</b> ข้ามข้อจำกัดสิทธิ์ของผู้รับและยังนับการแจก ใช้เมื่อตั้งใจให้เกินกติกา</p>
+  </div>
+  <div class="f" id="gacha-mechanism">
+    <h3>กลไกจริง: Hall 1 ตัว กับแม่เหล็ก 4 ตัว</h3>
+    <p>จุดรับของ (Receive) และจุดปล่อยของ (Drop) อยู่ด้านเดียวกัน Hall ติดอยู่กับที่ตรงจุดรับของเพียงตัวเดียว ส่วนแม่เหล็กทั้ง 4 ตัวติดไปกับล้อหมุน ฝั่งปล่อยของไม่มี Hall</p>
+    <figure class="mechanism-figure">
+      <svg viewBox="0 0 680 300" role="img" aria-labelledby="gacha-mechanism-title gacha-mechanism-desc">
+        <title id="gacha-mechanism-title">แม่เหล็ก 4 ตัวบนล้อ และ Hall ตัวเดียวที่จุดรับของ</title>
+        <desc id="gacha-mechanism-desc">ซ้ายแสดงล้อพร้อมแม่เหล็กสี่ตัว ขวาแสดงจุดรับและจุดปล่อยด้านเดียวกัน Hall อยู่ที่ Receive เท่านั้น Drop ไม่มี Hall ผังนี้ไม่ระบุมุมหรือระยะจริง</desc>
+        <g fill="var(--card)" stroke="var(--line)" stroke-width="2">
+          <circle cx="155" cy="150" r="105"/><circle cx="155" cy="150" r="27"/>
+        </g>
+        <g fill="var(--acc-soft)" stroke="var(--acc)" stroke-width="2">
+          <circle cx="155" cy="57" r="26"/><circle cx="248" cy="150" r="26"/>
+          <circle cx="155" cy="243" r="26"/><circle cx="62" cy="150" r="26"/>
+        </g>
+        <g fill="var(--txt)" text-anchor="middle" font-size="15" font-weight="600">
+          <text x="155" y="62">M1</text><text x="248" y="155">M2</text>
+          <text x="155" y="248">M3</text><text x="62" y="155">M4</text>
+          <text x="155" y="155" font-size="12">ล้อหมุน</text>
+        </g>
+        <g fill="var(--card)" stroke="var(--line)" stroke-width="2">
+          <rect x="330" y="28" width="332" height="244" rx="14"/>
+          <rect x="348" y="74" width="296" height="88" rx="8"/>
+          <rect x="348" y="179" width="296" height="70" rx="8"/>
+        </g>
+        <g fill="var(--txt)" font-size="17" text-anchor="middle">
+          <text x="496" y="55" font-weight="700">จุดรับและปล่อยอยู่ด้านเดียวกัน</text>
+          <text x="496" y="104" font-weight="700">Receive · จุดรับของ</text>
+          <text x="496" y="140" fill="var(--acc)">● Hall 1 ตัว อยู่กับที่</text>
+          <text x="496" y="207" font-weight="700">Drop · จุดปล่อยของ</text>
+          <text x="496" y="233">ไม่มี Hall</text>
+        </g>
+      </svg>
+      <figcaption>M1–M4 คือแม่เหล็กที่หมุนไปกับล้อ ผังแยกส่วนประกอบเพื่ออธิบาย ไม่ใช่แบบระบุตำแหน่ง มุม หรือระยะจริง</figcaption>
+    </figure>
+    <p><b>Hall บอกว่าแม่เหล็กอยู่ตรงจุดรับของ</b> สัญญาณนี้ไม่ได้วัดว่าของตกออกจากรางแล้ว และไม่ได้วัดว่าล้ออยู่กึ่งกลางแม่เหล็กพอดี</p>
+  </div>
+  <div class="f">
+    <h3>จำนวนช่องที่หมุนต่อการแจก (drop)</h3>
+    <p>ค่านี้กำหนดจำนวนช่องที่เครื่องหมุนในการแจกหนึ่งครั้ง <b>drop = 1</b> คือหนึ่งช่อง และ <b>drop = 2</b> คือสองช่อง ต้องเลือกตามกลไกและการทดสอบการจ่ายจริงของเครื่อง</p>
+    <p>จำนวนแม่เหล็กไม่ได้บอกระยะจากจุดรับถึงจุดปล่อยโดยลำพัง รูปนี้จึงใช้สรุปไม่ได้ว่าต้องตั้ง 1 หรือ 2 และไม่ได้กำหนดว่า 2 ใช้เฉพาะตอนโหลดของครั้งแรก</p>
+  </div>
+  <details class="f">
+    <summary>ตั้งค่าและทดสอบกลไกของเครื่อง</summary>
+    <p>เปิด <b>Machines and kinds</b> แล้วดูเครื่องที่ต้องการ ปุ่มทดสอบและปรับจูนทำให้มอเตอร์หมุนจริง ควรตรวจพื้นที่และเตรียมรับของก่อนใช้</p>
+    <ul>
+      <li><b>ความเร็วและทิศหมุน:</b> ใช้กำหนดการขับมอเตอร์</li>
+      <li><b>ช่วงโยกไป–กลับและการเข้า Hall:</b> ใช้ปรับการหยุดหลังหมุน ต้องดูการหยุดจริงประกอบ</li>
+      <li><b>เวลาพัก:</b> ระยะรอหลังการหมุนแต่ละครั้ง</li>
+      <li><b>จำนวนช่อง / จำนวนแม่เหล็ก:</b> ตั้งให้ตรงกับชุดกลไกนี้ซึ่งมี 4 ช่องและแม่เหล็ก 4 ตัว</li>
+      <li><b>Auto Detect / Estimate Hall Advance:</b> ประเมินระยะข้ามแถบ Hall ไม่ได้วัดน้ำหนักของรางวัล</li>
+      <li><b>Test 1 Pocket, Test 4 Pockets / Test All Pockets:</b> ทดสอบทีละช่องและดูผลเมื่อเครื่องหยุด สัญญาณ Hall อย่างเดียวไม่ยืนยันความแม่นยำของจุดหยุดหรือการตกของรางวัล</li>
+      <li><b>Drain Machine:</b> ใช้วนจ่ายของออกจากเครื่อง ต้องเตรียมรับของและเฝ้าดูการทำงาน</li>
+    </ul>
+    <p>ถ้าสถานะหรือปุ่มไม่โหลด ให้แก้ปัญหาหน้าแอปก่อน ไม่ควรเปลี่ยนค่าตัวเครื่องเพื่อแก้หน้าจอ</p>
+    <div class="tech">
+      <p>สัญญาของชุดแก้ไข A47-20 ที่ต้องตรวจรวมก่อนใช้งาน:</p>
+      <ul>
+        <li><code>GCALIB</code> สแกนแถบ Hall แบบมีขีดจำกัดเวลาไม่เกิน 5 วินาที ถอยครึ่งเวลาที่วัดแล้วตรวจ Hall ขณะหยุด บันทึก advance เฉพาะเมื่อสำเร็จ ตอบรับ <code>OK calibrating</code> ไม่ใช่ผลสำเร็จสุดท้าย ดู <code>G? motion_result</code> เป็น done / jam / stopped</li>
+        <li><code>GTEST 1</code> หรือ <code>GTEST 4</code> ทดสอบทีละช่อง ดู <code>test_done / test_total</code> และผลสุดท้ายจากบอร์ด</li>
+        <li><code>GNUDGE &lt;pwm&gt; &lt;ms&gt;</code> รับเมื่อเครื่องว่าง เวลา 1–1000 ms ทำงานโดยไม่บล็อก และใช้ STOP ยกเลิกได้</li>
+        <li><code>GDRAIN [&lt;max&gt;]</code> ไม่เกิน 999 ครั้ง หยุดเมื่อถึงขีดจำกัด ของหมด ปิดงาน ติดขัด หรือ STOP หน้าเว็บต้องมีสต็อกบวกที่นับไว้ หากไม่นับสต็อกต้องระบุ max</li>
+      </ul>
+    </div>
+  </details>
+  <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · Google Form: docs/gacha/form_sample.gs · sheet script: apps/gacha/sheet_script.gs · API: docs/gacha/README.md</p>
 </section>

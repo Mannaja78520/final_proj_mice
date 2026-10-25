@@ -97,10 +97,11 @@
     {"id": "studio", "summary": "Nong Studio: pose editor, timeline, 3D monitor.",
      "files": ["nong/", "apps/studio/", "config/rig_presets.json",
                "tools/make_urdf.py", "tools/step_preset.py", "docs/urdf_nong.md"],
+     "checks": ["check_studio_render_idle"],
      "depends": ["shared-web"]},
 
     {"id": "app-voice", "summary": "Voice helper: speech in, answers, speech out.",
-     "files": ["apps/voice/", "config/voice.json", "config/voice_intents.json", "config/voice_providers.json", "config/voice_styles.json", "config/voice_profiles.json", "config/voice_people.json", "llm/", "qc/data/voice_conversation.mjs"],
+     "files": ["apps/voice/", "config/voice.json", "config/voice_intents.json", "config/voice_providers.json", "config/voice_styles.json", "config/voice_profiles.json", "config/voice_profiles/", "config/voice_people.json", "llm/", "qc/data/voice_conversation.mjs"],
      "checks": ["check_voice*"],
      "depends": []},
 
@@ -108,7 +109,7 @@
      "files": ["apps/gacha/", "config/gacha.json", "config/voice_topics.json", "config/voice_prizes.json",
                "main_python/gacha.py", "main_python/gacha_sheet.py", "main_python/hub_api_gacha.py", "main_python/voice_prizes.py",
                "docs/gacha/", "apps/all-jao/link.js"],
-     "checks": ["check_gacha*", "check_game_prize"],
+     "checks": ["check_gacha*", "check_game_prize", "check_remote_scripts"],
      "depends": ["fw-gacha", "app-voice", "app-faces"]},
 
     {"id": "app-faces", "summary": "Face recognition app.",
@@ -120,8 +121,9 @@
      "files": ["apps/camera/"],
      "depends": ["shared-web"]},
 
-    {"id": "app-small", "summary": "Small apps: help, All-Jao, Photobooth.",
-     "files": ["apps/help/", "apps/all-jao/", "apps/photobooth/"],
+    {"id": "app-small", "summary": "Small apps: help, All-Jao, Photobooth, TV Remote.",
+     "files": ["apps/help/", "apps/all-jao/", "apps/photobooth/", "apps/tv/"],
+     "checks": ["check_tv_remote", "check_remote_scripts"],
      "depends": ["shared-web"]},
 
     {"id": "fw-core", "summary": "Firmware shared by every board: identity, commands, RS485, WiFi/web portal, SD, OTA, PERF?.",
@@ -133,6 +135,7 @@
 
     {"id": "fw-web", "summary": "The board's own website (WebUI.h).",
      "files": ["firmware/src/web/"],
+     "checks": ["check_gacha_ui"],
      "depends": ["fw-core"]},
 
     {"id": "fw-nong", "summary": "The nong (humanoid) module: servos, joints, poses.",

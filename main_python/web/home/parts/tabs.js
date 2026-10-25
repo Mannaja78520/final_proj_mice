@@ -75,3 +75,12 @@ function filterMods(){
   }
 }
 
+
+window.addEventListener('DOMContentLoaded', function(){
+  var h = (location.hash || '').replace('#', '');
+  if(h && document.querySelector('#tabs [data-go="' + h + '"]')) showTab(h);
+});
+window.addEventListener('hashchange', function(){
+  var h = (location.hash || '').replace('#', '');
+  if(h && document.querySelector('#tabs [data-go="' + h + '"]')) showTab(h);
+});

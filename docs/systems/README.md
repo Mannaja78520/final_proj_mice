@@ -26,7 +26,7 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 | [app-gacha](app-gacha.md) | Prize machines (gachapon): several gacha boards, kinds, hand-over when one is empty, rules per event and person (local or Google Sheet), webhooks, the prize log; and which Voice answers give a prize plus the Voice question log (A47-2, A47-3); wins in the friend's games (/play/<id>/ + apps/all-jao/link.js) and app keys for other PCs (A47-6, A47-7). |
 | [app-faces](app-faces.md) | Face recognition app. |
 | [app-camera](app-camera.md) | Camera viewer app. |
-| [app-small](app-small.md) | Small apps: help, All-Jao, Photobooth. |
+| [app-small](app-small.md) | Small apps: help, All-Jao, Photobooth, TV Remote. |
 | [fw-core](fw-core.md) | Firmware shared by every board: identity, commands, RS485, WiFi/web portal, SD, OTA, PERF?. |
 | [fw-web](fw-web.md) | The board's own website (WebUI.h). |
 | [fw-nong](fw-nong.md) | The nong (humanoid) module: servos, joints, poses. |

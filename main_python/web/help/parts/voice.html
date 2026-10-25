@@ -1,8 +1,79 @@
 <section id="voice">
   <div class="shead">
     <span class="where tech">code/apps/voice · served at /app/voice/</span>
-    <h2>🎤 Voice</h2>
+    <h2>🎤 Voice — สนทนาและสั่งงานด้วยเสียงพูด</h2>
+    <p>ระบบถาม-ตอบอัจฉริยะ (Q&amp;A) และแปลงข้อความเป็นเสียงพูด (Text-to-Speech)
+       พร้อมการสลับไปมาระหว่างลำโพงบนคอมพิวเตอร์ และลำโพงติดตัวหุ่นยนต์ Nong อย่างราบรื่น</p>
   </div>
+
+  <!-- SECTION 1: CHAT & STT -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 1: กล่องถาม-ตอบและการพิมพ์/พูด (Q&amp;A Chat &amp; Speech Input)</b>
+      <span class="info-badge">Chat &amp; STT</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/voice-chat-box.png" alt="Voice Chat Box" class="info-img">
+      <div class="callout-pin" style="top: 45%; left: 35%;" title="1. ช่องพิมพ์คำถาม">1</div>
+      <div class="callout-pin" style="top: 45%; left: 65%;" title="2. ปุ่ม Press to talk (ไมค์ STT)">2</div>
+      <div class="callout-pin" style="top: 45%; left: 88%;" title="3. ปุ่มส่งถาม Ask">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> กล่องพิมพ์คำถาม (Question Input)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์คำถามหรือข้อความที่ต้องการให้หุ่นยนต์ตอบ</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ระบบจะประมวลผลค้นหาคำตอบในชีตกิจกรรมก่อน (0.2 วิ) หากไม่พบจะส่งต่อให้ Cloud AI (Gemini / Groq) ช่วยตอบ
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> พูดใส่ไมค์ (Press to talk STT)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่ม <b>Press to talk</b> แล้วพูด (ไทย/อังกฤษ/จีน/ญี่ปุ่น)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          แปลงเสียงสดจากไมโครโฟนเป็นข้อความลงในช่องถามทันที พร้อมแก้คำเพี้ยนตามดิกชันนารีใน <code>config/voice.json</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: SPEAKERS & MANNERS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 2: ปลายทางลำโพง บุคลิกเสียง และระบบคิว (Speakers, Manner &amp; Queue)</b>
+      <span class="info-badge">Speakers &amp; Manners</span>
+    </div>
+    <div class="info-visual-wrapper">
+      <img src="/docs/shots/voice-settings-card.png" alt="Voice Settings Card" class="info-img">
+      <div class="callout-pin" style="top: 35%; left: 30%;" title="1. เลือกปลายทางลำโพง">1</div>
+      <div class="callout-pin" style="top: 35%; left: 70%;" title="2. สไตล์และบุคลิกเสียง">2</div>
+      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. ระบบ Fast-Race 650ms">3</div>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> สลับลำโพง (PC vs Robot Speaker)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกปลายทางระหว่าง <b>PC Speaker</b> หรือ <b>Nong Robot Speaker</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          • <b>PC Speaker:</b> เปล่งเสียงผ่านลำโพงของคอมพิวเตอร์หลัก<br>
+          • <b>Nong Speaker:</b> สตรีมเสียงผ่าน WiFi เข้าชิป I2S (PCM5102A/TPA3118) บนตัวหุ่น พร้อมขยับหัวเอียงตามจังหวะคำพูด
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> บุคลิกเสียงพูด (Speaking Manner)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกสไตล์: ปกติ, สุภาพ, ขี้เล่น (Sassy เจ๊), หรือท่องจำ</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ปรับแต่งคำลงท้ายอัตโนมัติ (เช่น จ้ะ, นะคะ, ครับ) พร้อมทั้งปรับแต่ง Pitch ความสูง-ต่ำ และความเร็วของเสียงพูดให้สะท้อนอารมณ์นั้นทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> แข่งขันความเร็วเสียง (Fast-Race 650ms)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เปิดใช้งาน Fast-Race ในการตั้งค่าเสียง</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ระบบจะเรียก Cloud TTS ก่อน หากเกิน 650ms แล้วยังไม่ตอบกลับ จะสลับมาใช้เสียงพูด Offline ในเครื่องทันที หุ่นจะไม่ยืนนิ่งค้าง
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="f"><h3>Ask the rig a question</h3>
     <p>The Voice app in the Tools list: type a question, the rig answers. The
        answers come from a helper program that runs on this PC next to the
@@ -21,237 +92,5 @@
        other. Something that arrives while the rig is talking either
        <b>waits its turn</b> or is <b>skipped</b> — whoever asked chooses — and
        a greeting that waited too long is dropped, because the person has
-       walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p>
-    <p><b>Where it speaks.</b> Speakers are found by themselves: every robot
-       with a speaker that the hub reaches over WiFi, and this PC's own
-       speakers. A robot reached only by cable is listed with that reason, and
-       a robot whose board has no amplifier wired says so after its first try
-       — plug one in and it is asked again. Which one is the default, and
-       which voice each uses, is <code>config/speakers.json</code>; the hub
-       writes it when somebody picks on a screen.</p>
-    <p><b>Live sound wins.</b> Somebody sending sound to a robot (<i>Send
-       sound to the robot</i> on its page) takes the speaker; greetings wait
-       until it has been quiet for two seconds. If the rig's own speech takes a
-       speaker back, the sending page stops and says so instead of sending
-       into nothing.</p>
-    <p><b>Stop All silences it all</b> — what is being said, everything
-       waiting, and live sound — with no login, like every other stop.</p>
-    <p>In conversation mode this page waits for the robot to finish before it
-       listens again, and throws away anything it heard while the robot was
-       talking, so it never answers its own voice.</p>
-    <p class="tech">For a program on this PC: <code>POST /api/speak</code> with
-       JSON <code>{text, to, voice, lang, whenBusy: "queue"|"skip", take,
-       move, module, maxAgeSeconds}</code> needs no login when it comes from
-       this PC with <code>Content-Type: application/json</code> and no browser
-       headers; from the network, or from a web page, it needs one.
-       <code>GET /api/speak</code> shows what is said and what waits (login),
-       <code>GET /api/speakers</code> lists the speakers,
-       <code>POST /api/speak/stop</code> is quiet now. The voice helper itself
-       answers programs only: a web page, or any address that is not an IP or
-       <code>localhost</code>, is refused.</p></div>
-  <div class="f"><h3>It can greet you by name<span class="tag t-new">new</span></h3>
-    <p>Beside the answer box there is a face badge and two buttons.
-       <b>Check who I am</b> uses the camera of the device the page is open on:
-       it takes one picture, asks the face app who it is, and shows the name.
-       <b>The picture is not kept</b> — nothing is written to the face app's
-       history and no image lands on the disk. The name is remembered for two
-       minutes, so the next answers greet that person by name in Thai,
-       English, Japanese or Chinese.</p>
-    <p>That promise has to come from the face app itself. Before sending
-       anything the page asks the face app whether it can look without
-       keeping; a face app that cannot (the current Reconize cannot) is sent
-       <b>no picture at all</b>, and the line under the camera says so and
-       the looking stops. Recognition then still works through a camera the
-       face app watches, or through <b>Open Reconize</b>. When the face app
-       learns to look without keeping, this button works again by itself.</p>
-    <p>Next to it, <b>Check by itself</b> keeps looking every few seconds, so
-       nobody has to press anything — still keeping no pictures. It stops
-       while the tab is hidden, and it lets the camera go the moment it is
-       switched off. How often it looks is <code>face.autoSeconds</code> in
-       <code>config/voice.json</code>.</p>
-    <p>The list beside the switch holds two kinds of camera.
-       <b>Cameras the face app watches</b> are the stations it already runs —
-       its kiosk, a CCTV camera, a phone, or a PC watching several cameras at
-       once. Picking one of those opens <i>no</i> camera here: the face app is
-       already looking through that lens, and Voice simply reads what it sees.
-       That is how one camera serves both programs at the same time. Under
-       <b>This device</b> are the cameras of the machine the page is open on,
-       for when no station is running.</p>
-    <p>It starts on the camera the face app saved as its own default, so
-       choosing there chooses here too; picking another is remembered in this
-       browser only, the same way the face app's kiosk remembers its own.</p>
-    <p><b>How fast a name shows.</b> Names come from the face app's live
-       camera through the rig's face watcher, so a face shows here about as
-       fast as the face app sees it. When the watcher is not running, the
-       page starts it by itself (only the watcher, never the face app);
-       until then names come from the face app's history, which is slow.</p>
-    <p><b>👤 Use faces</b> at the start of that row turns face recognition off
-       altogether: no camera, no names, nothing waited on, and every answer
-       comes the plain way. Tick it again to bring faces back. It is saved for
-       the rig, not only this browser.</p>
-    <p><b>Show the camera</b> keeps a live picture of the chosen camera under
-       the row. This device's camera is shown only here; a camera on the rig
-       comes through the hub, the same picture the face watcher reads. A
-       camera only the face app knows shows its picture in the face app, so
-       the line says to use <b>Open Reconize</b>. Showing sends and keeps
-       nothing, and the picture stops while the tab is hidden.</p>
-    <p><b>Open Reconize</b> opens the face app's own camera page instead, in a
-       new tab, and starts the face app first if it is not running. That way
-       keeps a record of every sighting, which is what an event needs; the
-       button above is for a quick hello. Where the face app lives is one
-       entry in <code>config/partners.json</code> — a second face app is an
-       entry there, not new code.</p></div>
-  <div class="f"><h3>Saved answers first<span class="tag t-new">new</span></h3>
-    <p>A question close to a saved one is answered instantly from
-       <code>apps/voice/qa_data.json</code> — the same trick as the original
-       prototype, and the part that works with no AI at all. Add or change an
-       answer by editing that file; the helper reads it fresh every time, so
-       there is nothing to restart.</p>
-    <p>If a question is only <b>somewhat</b> close to a saved one, the rig does
-       not guess — it asks the visitor to say it again. A confident wrong
-       answer is worse than asking twice.</p>
-    <p>A saved answer can also carry a <b>move</b>: give the entry a
-       <code>move</code> (a saved sequence file) and a <code>module</code>
-       (which robot plays it — its <b>name</b> as the modules screen shows it),
-       and the robot performs that sequence when the answer is given. The name
-       is looked up at play time, so the robot can be plugged into any PC
-       without editing anything; if no robot of that name is connected, the
-       page says so plainly. While that robot is already moving, another ask is
-       answered in words — it never queues and never cuts the running move.
-       A <b>Stop the move</b> button stays beside it until the sequence
-       ends.</p></div>
-  <div class="f"><h3>Ask for a language, a reading or a new poem<span class="tag t-new">new</span></h3>
-    <p>Say <b>"Please answer in English"</b> (or <i>ตอบเป็นภาษาไทย</i>, 英語で答えて,
-       用中文回答) anywhere in the question, and the answer comes in that language,
-       even when the rest of the question is in another one.</p>
-    <p>Say <b>"Read this aloud: …"</b> (or <i>ช่วยอ่าน: …</i>, 読んでください：…,
-       请朗读：…) and the rig reads exactly those words, with nothing added.</p>
-    <p>Ask it to <b>write a new poem</b> (<i>แต่งกลอนใหม่ …</i>, "write a poem about …")
-       and it makes up a new one instead of reciting the saved poem. If the answer
-       does not look like a poem (a list, a greeting, too few lines, the old
-       poem), it says sorry honestly instead. The small model on this PC usually
-       cannot write a good Thai poem yet; pick a stronger service for
-       <b>Writing verse</b> on the Voice page once you have its key. The shape of
-       the poem is checked, its rhyme and rhythm are not.</p>
-    <p>English words spoken inside Thai, like <i>parking</i> or <i>restroom</i>,
-       still find their saved answers when the listener writes them in Thai
-       letters. When a Thai greeting is followed by an English question, the rig
-       listens to it a second time in English, but only if that part really
-       sounds English, so a Thai question is never answered in English.
-       <span class="tech">Rules, phrases and loanwords are data in
-       <code>config/voice_intents.json</code> (replyLanguage, readAloud, compose,
-       loanwords, codeSwitch); the second hearing adds one listening pass only
-       when no saved answer fits.</span></p></div>
-  <div class="f"><h3>One brain, many PCs<span class="tag t-new">new</span></h3>
-    <p>The answering helper normally listens to this PC only. To make one PC
-       the brain for every hub at the venue, write that PC's address in
-       <code>service</code> in <code>config/voice.json</code> there (instead of
-       127.0.0.1) and point every other hub's own <code>config/voice.json</code>
-       at it. Sharing is opt-in by editing, never automatic — and the tradeoff
-       is written next to the setting: the helper itself has no password, so
-       anything on the venue WiFi could then ask it or make it speak. Moving a
-       robot stays safe: that still needs a login at whichever hub you use.</p></div>
-  <div class="f"><h3>Out loud<span class="tag t-new">new</span></h3>
-    <p>The rig can also <b>speak</b> its answer. Turn on <b>🔊 Sound here</b>
-       on the Voice page to hear it in the browser too; the choice is
-       remembered. Saved answers are prepared ahead of time, so they sound
-       instantly. When the online voice cannot be reached, this PC's own
-       voice stands in for that line only, and the good voice is used again
-       as soon as it answers. While it stands in, a yellow line under the
-       status says so and why (for example: the natural voice is not
-       installed on this PC, or the PC is offline).</p></div>
-  <div class="f"><h3>Speaking manner: polite, friendly, playful, sweet, sassy, poem recital<span class="tag t-new">new</span></h3>
-    <p>On the Voice page, <b>Speaking manner</b> picks how the rig says its
-       lines; <b>▶ Try</b> plays a sample first. "As now" keeps today's voice.
-       An event (scenario) can have its own manner. The words of a line are
-       never changed.</p>
-    <p><b>Sassy (ฟาดๆ แบบเจ๊)</b> is a cheeky big-sister manner: a sharper
-       voice, and new answers from the AI call the robot เจ๊ and end with ค่ะ,
-       teasing a little but never rude to a visitor. Saved answers keep their
-       words; only their ending (ครับ to ค่ะ) and the robot's word for itself
-       follow the manner. The small AI on this PC follows the ending reliably,
-       the sassy wording only sometimes.</p>
-    <p><b>Thai voice with feeling (this PC)</b> says Thai lines with a real
-       feeling: friendly and playful sound happy, polite is calm, sweet uses a
-       soft sad tone (the nearest it knows), all in the robot's own voice. It
-       runs on this PC's graphics card with no internet and no key, is tried
-       first while a manner is on, and starts by itself (about 20 seconds after
-       the helper starts; until then the usual voice speaks). It makes a
-       5-second line in about 3 seconds, then saved answers play at once. It
-       speaks Thai only; English lines go to the usual voice. Its model may not
-       be used commercially. <span class="tech">Install once:
-       <code>python apps/voice/tts_spark/setup.py</code> (3.8 GB, into
-       <code>.local/tts_spark</code>, not in git); it listens on
-       127.0.0.1:8779. Words were checked by hearing them back (0.87-1.0
-       alike); whether the feeling is right needs a human ear.</span></p>
-    <p>What a manner really does depends on the speaking service, and the
-       page says which: a service that takes a manner in words (Google Gemini
-       voice, with its key) changes the voice itself. The free Microsoft voices
-       can change only speed and pitch, so they sound lighter or slower, not
-       truly emotional, and a poem recital there is a slow reading, not a real
-       ทำนองเสนาะ tune. This PC's own voice cannot change at all. A manner is
-       never dropped silently: the quick device voice is not used while one is
-       chosen. <span class="tech">Manners are data in
-       <code>config/voice_styles.json</code>; each service's ability is the
-       speak job's <code>styles</code> (instruct / emotion / prosody / none) in
-       <code>config/voice_providers.json</code>; <code>/say</code> answers
-       <code>X-Voice-Style</code> with how it was applied.</span></p></div>
-  <div class="f"><h3>Gestures while it talks<span class="tag t-new">new</span></h3>
-    <p><b>👋 Gestures</b> beside 🤖 Move: an answer that has no move of its own makes the
-       robot's arms move with the words, starting when the sound starts and lasting as
-       long as it. The gestures are picked at random to fit the words and the speaking
-       manner, fitted to the robot's size and kept clear of its body by Nong Studio
-       (Sequence tab, <b>Moves while talking</b>), where they are changed, tried and
-       switched off per event. Stop stops them with the answer. The robot used is the
-       one picked under Robot, else the nong robot that answers; a show that is already
-       playing is never interrupted.</p></div>
-  <div class="f"><h3>Teach it new answers<span class="tag t-new">new</span></h3>
-    <p>The <b>Settings</b> under the question are tabs, one topic each:</p>
-    <p><b>Answers</b> is a sheet, like a spreadsheet: one row per answer,
-       one column per language, with the ways people ask it on top (one per
-       line) and the reply under them. Click a cell and type — nothing moves to a form
-       somewhere else. <b>＋ Add a row</b> puts a new row on top, <b>▶</b>
-       plays a cell, <b>🌐 Translate</b> fills a row's empty languages, and a
-       language left empty is translated when you save. Changed rows are
-       marked; <b>Save answers</b> keeps them all, <b>Undo changes</b> puts
-       back what is saved. A robot move is a robot and one of its saved
-       sequences, both picked from a list.</p>
-    <p><b>Voice</b> — one voice that speaks every language (best: a Thai name
-       inside an English answer is still read), or a voice per language, with
-       <b>▶ Try</b> beside each, plus speed and pitch. <b>Listening</b> —
-       fast / balanced / most accurate, and the words it often mishears.
-       <b>Personality</b> — what the rig is being (a scenario, which may have
-       its own voice and speed), its polite word and what it calls itself.
-       <b>Faces</b> — how long a name is remembered. The helper's address and
-       the AI model are under <b>Advanced</b>, behind the
-       <b>Show technical details</b> switch.</p>
-    <p><b>How it speaks Thai</b><span class="tag t-new">new</span> — the small
-       model that answers when nothing is saved used to write uneven Thai: it
-       ended one sentence <b>ครับ</b> and the next <b>ค่ะ</b>, called itself
-       <b>ผม</b> then <b>ฉัน</b>, stopped in the middle of a word, and now and
-       then answered a Thai question in English. The Personality tab fixes the first two
-       by choosing one of each and changing anything else it writes, gives Thai
-       more room to finish a sentence (Thai costs two to four times more room
-       than English, which is why the setting that suited English cut Thai
-       short), and sets what the rig says when it has nothing to say.</p>
-    <p>Three things happen to every answer before it is spoken: an answer that
-       is still unfinished is cut back to its last whole sentence, an answer in
-       the wrong language is asked for again and then given up on, and an answer
-       whose only Thai is the polite ending is treated as no answer at all. In
-       every one of those cases the rig says it does not know and points at a
-       member of staff. That is on purpose: <b>it never invents a password, a
-       price, a time, a floor, a place or an event.</b> The most reliable way to
-       improve what it says is not this tab — it is adding the answer under
-       <b>Answers</b>, because a saved answer always wins.</p>
-    <p>Saving needs the same login as everything that can change the rig.
-       A change reaches the running helper at once — nothing to restart,
-       no file to edit by hand.</p></div>
-  <div class="f"><h3>Starting the helper</h3>
-    <p>If the page says the voice helper is not running, start it from the
-       <b>code</b> folder:</p>
-    <p><code>python apps\voice\service.py</code></p>
-    <p>Everything about it lives in <code>config/voice.json</code>: where it
-       answers, how close a question must be to count as saved, and which
-       model and voice to use. Asking is behind the same login gate as every
-       other command that can move the rig.</p></div>
+       walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p></div>
 </section>

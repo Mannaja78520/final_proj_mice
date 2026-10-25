@@ -228,6 +228,7 @@ Examples: docs/gacha/README.md</pre>
 
 </div></div>
 
+<script src="motion.js"></script>
 <script>
 // Everything goes through the hub (/api/gacha/*, main_python/hub_api_gacha.py);
 // the hub talks to the boards. Words for people on the surface, details behind
@@ -252,7 +253,7 @@ function say(id, a, okWords) {
 async function load() {
   stat.loading("asking the machines…");
   const a = await Mice.Api.get("/api/gacha", {timeout: 15000});
-  if (!a.ok) return stat.error(a.says, a.tech);
+  if (!a.ok) { stat.error(a.says, a.tech); return false; }
   S = a.data;
   const items = Object.keys(S.items || {});
   $("gItem").innerHTML = items.map(k => '<option value="' + esc(k) + '">' + esc(S.items[k].label || k) + '</option>').join("");
@@ -266,29 +267,151 @@ async function load() {
   stat.ready(live + " of " + S.machines.length + " machines answering", "GET /api/gacha");
   gmDraw(); keysLoad();
   loadRules(); loadLog();
+  return true;
 }
 
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c])); }
 function cell(v, key) { return '<td><input data-k="' + key + '" value="' + esc(v) + '"></td>'; }
 
+let openTuning = {};
+
 function drawMachines() {
   $("mTable").tBodies[0].innerHTML = S.machines.map((m, i) => {
     const L = m.live || {};
-    const now = L.error ? "not answering" : (STATE[L.state] || L.state) + (L.open === false ? ", event closed" : "");
-    return '<tr data-i="' + i + '">' + cell(m.label, "label") + cell(m.module || m.id, "module") +
+    const c = L.cfg || {};
+    let statusHtml = "";
+    if (L.error) {
+      statusHtml = '<span class="tech mini danger">' + esc(L.error) + '</span>';
+    } else {
+      const stText = L.state === 'idle' && L.motion_result && !['done', 'idle'].includes(L.motion_result) ? L.motion_result : (STATE[L.state] || L.state || 'ready');
+      const phaseBadge = L.phase ? '<span class="badge" style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:4px">' + esc(L.phase) + '</span>' : '';
+      const hallBadge = L.at_hall 
+        ? '<span style="color:#16a34a;font-weight:bold;font-size:12px">🟢 Hall detected</span>' 
+        : '<span style="color:#94a3b8;font-size:12px">⚪ Hall clear</span>';
+      const pocketInfo = L.pos_known && L.pos !== undefined ? '<span style="font-size:12px;color:#475569"> (P' + (L.pos + 1) + '/' + (c.slots || 4) + ')</span>' : '';
+      statusHtml = '<div><b>' + esc(stText) + '</b>' + phaseBadge + '</div><div>' + hallBadge + pocketInfo + (L.open === false ? ' <span class="mini danger">closed</span>' : '') + '</div>';
+    }
+
+    let tr = '<tr data-i="' + i + '">' + cell(m.label, "label") + cell(m.module || m.id, "module") +
       cell(m.item, "item") + cell(m.place, "place") + cell((m.near || []).join(" "), "near") +
       '<td>' + (L.error ? "-" : (L.stock < 0 ? "not counted" : L.stock)) + '</td><td>' + (L.given == null ? "-" : L.given) + '</td>' +
-      '<td>' + esc(now) + '<span class="tech mini"> ' + esc(L.error || "") + '</span></td>' +
-      '<td><button onclick="mcmd(' + i + ',\'GSTOCK ADD \'+val(\'ballN\'))">add balls</button>' +
+      '<td>' + statusHtml + '</td>' +
+      '<td><div style="display:flex;gap:4px;flex-wrap:wrap">' +
+      '<button onclick="mcmd(' + i + ',\'GSTOCK ADD \'+val(\'ballN\'))">add balls</button>' +
       '<button onclick="mcmd(' + i + ',\'GSTOCK \'+val(\'ballN\'))">set balls</button>' +
-      '<button onclick="mcmd(' + i + ',\'GHOME\')">to loading place</button>' +
+      '<button onclick="mcmd(' + i + ',\'GHOME\')">to loading</button>' +
+      '<button onclick="motion.stop(' + i + ')">Stop motion</button>' +
+      '<button onclick="forceDrop(' + i + ')" style="background:#fee2e2;border-color:#ef4444;color:#991b1b;font-weight:600" title="Force dispense 1 prize immediately (bypasses empty/closed limits for testing)">&#9889; Force Drop</button>' +
+      '<button onclick="toggleDrain(' + i + ')" id="drainBtn_' + i + '" style="background:#fef9c3;border-color:#eab308;font-weight:600" title="Continuously dispense until out of stock or stopped">&#127744; Drain Machine</button>' +
+      '<button onclick="mcmd(' + i + ',\'GCALIB\')" style="background:#fef3c7;border-color:#f59e0b;font-weight:600" title="Estimate advance from the Hall band; verify the machine afterwards">&#9889; Estimate Hall Advance</button>' +
+      '<button onclick="testMachine(' + i + ')" style="background:#e0e7ff;border-color:#6366f1" title="Test 1 pocket step">&#129514; Test 1 Pocket</button>' +
+      '<button onclick="testAllSlots(' + i + ')" title="Test each configured pocket and report Hall verification">&#128260; Test All Pockets</button>' +
+      '<button onclick="toggleTuning(' + i + ')" title="Tune speeds, timing & drop count">&#9881;&#65039; Tune</button>' +
       (m.at ? '<a class="btn" target="_blank" href="/mod?dev=' + encodeURIComponent(m.at) + '&name=' + encodeURIComponent(m.module || m.id) +
-        '" title="magnets, pockets until it falls, speed: the machine\'s own settings">its own page ↗</a>' : '') +
-      '<button onclick="S.machines.splice(' + i + ',1);drawMachines()">remove</button></td></tr>';
+        '" title="magnets, speed, timing: the machine page">page &nearr;</a>' : '') +
+      '<button onclick="S.machines.splice(' + i + ',1);drawMachines()">remove</button></div></td></tr>';
+
+    if (openTuning[i]) {
+      tr += '<tr style="background:#f8fafc"><td colspan="9" style="padding:12px 16px;border-bottom:2px solid #cbd5e1">' +
+        '<div style="font-weight:600;margin-bottom:8px">&#9881;&#65039; Tuning for ' + esc(m.label || m.id) + '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;font-size:13px">' +
+        '<div><label style="display:block;margin-bottom:2px"><b>Pockets per dispense (drop):</b></label>' +
+        '<input type="number" id="t_drop_' + i + '" value="' + (c.drop || 1) + '" style="width:70px"> ' +
+        '<button onclick="document.getElementById(\'t_drop_' + i + '\').value=1;setCfg(' + i + ',\'drop\',1)">1 (Normal)</button> ' +
+        '<button onclick="document.getElementById(\'t_drop_' + i + '\').value=2;setCfg(' + i + ',\'drop\',2)">2 (Prime)</button></div>' +
+        '<div><label style="display:block;margin-bottom:2px"><b>Intake dwell gravity pause (ms):</b></label>' +
+        '<input type="number" id="t_intake_' + i + '" value="' + (c.intake !== undefined ? c.intake : 300) + '" style="width:70px"> ' +
+        '<button onclick="document.getElementById(\'t_intake_' + i + '\').value=0;setCfg(' + i + ',\'intake\',0)">0ms</button> ' +
+        '<button onclick="document.getElementById(\'t_intake_' + i + '\').value=300;setCfg(' + i + ',\'intake\',300)">300ms</button> ' +
+        '<button onclick="document.getElementById(\'t_intake_' + i + '\').value=600;setCfg(' + i + ',\'intake\',600)">600ms</button> ' +
+        '<button onclick="setCfg(' + i + ',\'intake\',val(\'t_intake_' + i + '\'))">Save</button></div>' +
+        '<div><label style="display:block;margin-bottom:2px"><b>Pause at center (ms):</b></label>' +
+        '<input type="number" id="t_pause_' + i + '" value="' + (c.pause ?? 5000) + '" style="width:80px"> ' +
+        '<button onclick="document.getElementById(\'t_pause_' + i + '\').value=2000;setCfg(' + i + ',\'pause\',2000)">2s</button> ' +
+        '<button onclick="document.getElementById(\'t_pause_' + i + '\').value=5000;setCfg(' + i + ',\'pause\',5000)">5s</button></div>' +
+        '<div><label style="display:block;margin-bottom:2px"><b>Travel speed (50-1023):</b></label>' +
+        '<input type="number" id="t_speed_' + i + '" value="' + (c.speed || 500) + '" style="width:80px"> ' +
+        '<button onclick="setCfg(' + i + ',\'speed\',val(\'t_speed_' + i + '\'))">Save</button></div>' +
+        '<div><label style="display:block;margin-bottom:2px"><b>Overshoot lip (ms / speed):</b></label>' +
+        '<input type="number" id="t_over_' + i + '" value="' + (c.overshoot ?? 180) + '" style="width:65px"> ' +
+        '<input type="number" id="t_overspeed_' + i + '" value="' + (c.overshoot_speed || 380) + '" style="width:65px"> ' +
+        '<button onclick="setCfg(' + i + ',\'overshoot\',val(\'t_over_' + i + '\'));setCfg(' + i + ',\'overshoot_speed\',val(\'t_overspeed_' + i + '\'))">Save</button></div>' +
+        '<div><label style="display:block;margin-bottom:2px"><b>Reverse shake (ms / speed):</b></label>' +
+        '<input type="number" id="t_ret_' + i + '" value="' + (c.return ?? 280) + '" style="width:65px"> ' +
+        '<input type="number" id="t_retspeed_' + i + '" value="' + (c.return_speed || 360) + '" style="width:65px"> ' +
+        '<button onclick="setCfg(' + i + ',\'return\',val(\'t_ret_' + i + '\'));setCfg(' + i + ',\'return_speed\',val(\'t_retspeed_' + i + '\'))">Save</button></div>' +
+        '<div><label style="display:block;margin-bottom:2px"><b>Advance after Hall (ms):</b></label>' +
+        '<input type="number" min="0" max="100" id="t_advance_' + i + '" value="' + (c.advance ?? 18) + '" style="width:80px"> ' +
+        '<button onclick="setCfg(' + i + ',\'advance\',val(\'t_advance_' + i + '\'))">Save</button></div>' +
+        '<div><label style="display:block;margin-bottom:2px"><b>Center crawl speed (50-1023):</b></label>' +
+        '<input type="number" id="t_cspeed_' + i + '" value="' + (c.center_speed || 260) + '" style="width:80px"> ' +
+        '<button onclick="setCfg(' + i + ',\'center_speed\',val(\'t_cspeed_' + i + '\'))">Save</button></div>' +
+        '</div>' +
+        '<div style="margin-top:10px;display:flex;gap:8px">' +
+        '<button class="primary" onclick="saveAllTuning(' + i + ')">Save All Tuning</button>' +
+        '<button onclick="mcmd(' + i + ',\'GCALIB\')">&#9889; Estimate Hall Advance Now</button>' +
+        '<button onclick="toggleTuning(' + i + ')">Close</button></div>' +
+        '</td></tr>';
+    }
+    return tr;
   }).join("");
 }
+
+function toggleTuning(i) {
+  openTuning[i] = !openTuning[i];
+  drawMachines();
+}
+
+async function setCfg(i, key, val) {
+  await mcmd(i, 'GCFG ' + key + ' ' + val);
+}
+
+async function saveAllTuning(i) {
+  const fields = [
+    ['drop', val('t_drop_' + i)],
+    ['intake', val('t_intake_' + i)],
+    ['pause', val('t_pause_' + i)],
+    ['advance', val('t_advance_' + i)],
+    ['speed', val('t_speed_' + i)],
+    ['overshoot', val('t_over_' + i)],
+    ['overshoot_speed', val('t_overspeed_' + i)],
+    ['return', val('t_ret_' + i)],
+    ['return_speed', val('t_retspeed_' + i)],
+    ['center_speed', val('t_cspeed_' + i)]
+  ];
+  for (const [k, v] of fields) {
+    if (v !== "") {
+      const a = await Mice.Api.post("/api/gacha/machine", {machine: S.machines[i].id, cmd: 'GCFG ' + k + ' ' + v});
+      if (!a.ok) { say("mStat", a); return; }
+    }
+  }
+  say("mStat", {ok: true}, "All tuning saved to NVS");
+  load();
+}
+
+const motion = new GachaMotion({
+  machine: i => S.machines[i], refresh: load,
+  post: body => Mice.Api.post("/api/gacha/machine", body),
+  tell: text => { $("mStat").textContent = text; }
+});
+function forceDrop(i) { return motion.run(i, "GDISPENSE FORCE ManualTest", "Force drop"); }
+function toggleDrain(i) {
+  const m = S.machines[i], live = m.live || {};
+  if (motion.jobs.has(m.id) || live.draining) return motion.stop(i);
+  if (!Number.isInteger(live.stock) || live.stock <= 0) {
+    $("mStat").textContent = "Set a positive stock count before draining";
+    return;
+  }
+  return motion.run(i, "GDRAIN " + Math.min(live.stock, 999), "Drain");
+}
+function testMachine(i) { return motion.run(i, "GSPIN 1", "One pocket"); }
+function testAllSlots(i) {
+  const slots = (S.machines[i].live.cfg || {}).slots || 4;
+  return motion.run(i, "GTEST " + slots, "Pocket test", {test: true});
+}
+
 function readMachines() {
-  return [...$("mTable").tBodies[0].rows].map(r => {
+  return [...$("mTable").tBodies[0].querySelectorAll("tr[data-i]")].map(r => {
     const old = S.machines[+r.dataset.i] || {};
     const g = k => (r.querySelector('[data-k="' + k + '"]').value || "").trim();
     const board = g("module");
@@ -301,10 +424,12 @@ function readMachines() {
 function addMachine() { S.machines = readMachines(); S.machines.push({id: "", module: "", label: "", item: "", near: [], live: {}}); drawMachines(); }
 async function saveMachines() { say("mStat", await Mice.Api.post("/api/gacha/config", {machines: readMachines()}), "machines saved"); load(); }
 async function mcmd(i, c) {
+  if (c === "GHOME" || c === "GCALIB") return motion.run(i, c, c === "GHOME" ? "Loading position" : "Hall advance estimate");
   const m = S.machines[i];
   const a = await Mice.Api.post("/api/gacha/machine", {machine: m.id, cmd: c});
   $("mStat").textContent = a.ok ? "done" : (a.says || (a.data && a.data.reply) || "it did not work");
-  load();
+  await load();
+  return a;
 }
 
 function drawItems() {

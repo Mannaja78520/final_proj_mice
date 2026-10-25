@@ -201,6 +201,15 @@ function initSideDrag() {
     localStorage.setItem("nong_sidew", parseInt(side.style.width) || 320);
   });
 }
+
+window.addEventListener('DOMContentLoaded', function(){
+  var h = (location.hash || '').replace('#', '');
+  if(h && typeof showTab === 'function') showTab(h);
+});
+window.addEventListener('hashchange', function(){
+  var h = (location.hash || '').replace('#', '');
+  if(h && typeof showTab === 'function') showTab(h);
+});
 // --- fold a side card to its title (A31-24) ---
 // User 2026-09-24: *all card in the top right which tab is more than 1 card or
 // hard to scroll down to setup can hide it like the POSE tab*. In a tab with
@@ -1074,6 +1083,7 @@ function jointDelta(i) {
   return v * jdir(i);
 }
 function applyPose() {
+  if (typeof markDirty3d === "function") markDirty3d(5);
   if (urdfOn) { urdfApplyPose(); return; }
   // the editor works in JOINT degrees — pose[i] IS the physical joint angle.
   // each joint = a mounting TILT (roll/pitch/yaw, for axes not exactly at 90°)
@@ -1402,6 +1412,7 @@ function urdfSetHandMarks(on) {
   RIG.view.handMarks = !!on;
   saveRig();
   if (urdfOn) palmMarks.forEach(h => h.children.forEach(c => { if (c.isMesh) c.visible = !!on; }));
+  if (typeof markDirty3d === "function") markDirty3d(5);
   renderLookUI();
 }
 // ---- the floor grid (user 2026-10-23: "can the grid be hidden, and the box
@@ -1428,6 +1439,7 @@ function viewFloor() {
     if (!box.isEmpty()) y = box.min.y - (+cfg.gapMm || 0);
   }
   grid.position.y = y;
+  if (typeof markDirty3d === "function") markDirty3d(5);
 }
 function viewSetGrid(on) {
   RIG.view.grid = !!on;
@@ -1529,6 +1541,7 @@ function urdfBuildInto(root) {
       else urdfMesh(urdfMeshUrls(v.mesh, f.path), geo => {
         if (gen !== urdfBuildGen || holder.parent !== linkG[name]) return;   // a rebuild came first
         put(geo, v.scale.map(s => s * U));
+        if (typeof markDirty3d === "function") markDirty3d(5);
         if (name === urdfRootLink) viewFloor();
         urdfMeshArrived(name);
       }, () => {
@@ -7199,6 +7212,7 @@ function cfgMesh(geo, cfg, part) {
   return m;
 }
 function applyMeshes() {
+  if (typeof markDirty3d === "function") markDirty3d(5);
   const gen = ++meshGen;
   MESH_PARTS.forEach(part => {
     const cfg = meshCfg[part];
@@ -7213,6 +7227,7 @@ function applyMeshes() {
     if (cfg.file) getGeo(cfg.file, geo => {
       if (gen !== meshGen || linkHolders[part] !== holder) return;
       holder.add(cfgMesh(geo, cfg, part));
+      if (typeof markDirty3d === "function") markDirty3d(5);
     });
   });
   addons.forEach(ad => { // clothes & extra parts: layered on top, never replace
@@ -7221,6 +7236,7 @@ function applyMeshes() {
     getGeo(ad.file, geo => {
       if (gen !== meshGen || linkHolders[ad.part] !== holder) return;
       holder.add(cfgMesh(geo, ad, ad.part));
+      if (typeof markDirty3d === "function") markDirty3d(5);
     });
   });
 }
@@ -10417,6 +10433,8 @@ function resize() {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   syncOrtho();                    // the ortho frustum follows the new aspect
+  viewport.classList.toggle("short", h < 260);
+  markDirty3d(5);
 }
 window.addEventListener("resize", resize);
 // The viewport also changes size WITHOUT the window changing: dragging the
@@ -10528,6 +10546,12 @@ function playTick() {
   }
 }
 
+let _dirty3d = 60;
+function markDirty3d(n) { _dirty3d = Math.max(_dirty3d, n || 10); }
+if (typeof controls !== "undefined" && controls && controls.addEventListener) {
+  controls.addEventListener("change", function () { markDirty3d(5); });
+}
+
 function tick(now) {
   requestAnimationFrame(tick);
   freezeCheck(now);
@@ -10535,9 +10559,13 @@ function tick(now) {
   playTick();               // no-op when the interval already advanced it
   _drawing = false;
   lastFrame = now;
-  controls.update();
   distDraw();              // distances follow the pose and the camera (A26-44)
-  renderer.render(scene, activeCam());
+  const inMotion = controls ? controls.update() : false;
+  const needRender = playing || inMotion || (typeof distShown === "function" && distShown()) || _dirty3d > 0;
+  if (needRender) {
+    if (!playing && !inMotion && (!distShown || !distShown()) && _dirty3d > 0) _dirty3d--;
+    renderer.render(scene, activeCam());
+  }
 }
 
 // Per-joint servo self-test (?selftest=servo): a slow servo on ONE joint must

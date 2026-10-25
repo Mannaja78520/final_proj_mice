@@ -197,6 +197,10 @@ SOLO = {
     # as an empty one, and puts it back. Any check reading the app registry
     # while that is happening sees a fault that is not theirs.
     "check_tools_list",
+    # Complete multi-client Gacha journey: no marks in the crowded run,
+    # then green alone twice. Keep all assertions/budgets; isolate startup
+    # and the generated module-page journey from other heavy browsers.
+    "check_gacha_ui",
     # Another clock, not another resource. It drives a browser on fixed
     # setTimeout deadlines - pause at 1000ms, resume, finish at +4000 - and
     # then asserts the robot walked the timeline in ORDER. With ten workers

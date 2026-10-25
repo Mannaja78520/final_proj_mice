@@ -7,6 +7,40 @@
        is compiled in — only which module the board <em>is</em>.</p>
   </div>
 
+  <!-- Infographic: ESP32 Hardware Wiring & Configuration -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>ผังการต่อสายฮาร์ดแวร์ ESP32 (WROOM) และคู่มือการตั้งค่าบอร์ด</b>
+      <span class="info-badge">Infographic</span>
+    </div>
+    <div class="info-visual-wrapper" style="padding: 10px; background: var(--card); text-align: center;">
+      <img src="/pinout.svg" alt="ESP32 WROOM Pinout Reference" style="max-height: 280px; width: auto; margin: 0 auto; display: block;">
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> หมายเลขบัส RS485 (Bus ID)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ส่งคำสั่ง <code>SET ID &lt;1..254&gt;</code> หรือตั้งค่าในหน้า Settings ของบอร์ด</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          กำหนดที่อยู่ประจำตัวของบอร์ดบนสายสื่อสาร RS485 (เช่น Nong หุ่นยนต์ = 67) ป้องกันการส่งคำสั่งชนกันบนสายคู่เดียว
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> โหมดไฟเลี้ยงและ Brownout Guard</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> ใช้แหล่งจ่ายไฟ 5V แยกเฉพาะสำหรับเซอร์โวมอเตอร์ อย่าใช้ไฟจากพอร์ต USB คอมพิวเตอร์</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          เมื่อเซอร์โว 10 ตัวออกแรงพร้อมกัน กระแสไฟจะตก (Voltage Sag) หากต่อไฟไม่พอ ชิป ESP32 จะ Brownout รีเซ็ตตัวเองทันที
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> การแฟลชข้ามเครือข่าย WiFi (OTA Flash)</div>
+        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Flash over WiFi</b> บนหน้า Hub โดยไม่ต้องเสียบสาย USB</div>
+        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
+          Hub จะส่ง Firmware binary ผ่าน OTA ไปยังพาร์ติชันสำรองของบอร์ด เมื่อแฟลชเสร็จ บอร์ดจะรีบูตเข้าสู่เฟิร์มแวร์ใหม่โดยอัตโนมัติ
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="grp2">Identity &amp; configuration</div>
   <div class="f"><h3>One binary per module type<span class="tag t-new">new</span></h3>
     <p>A board runs one module type, so it now carries one:
@@ -431,7 +465,9 @@
     <p>The build now carries a receipt (a checksum for every source file that went into it),
        and the running hub compares it against the tree beside it. If they differ, a caution
        banner names the files that changed and the command that rebuilds it:
-       <code>python -m PyInstaller --clean MiceHub.spec</code>. On a PC that has only the
+       <code>python -m PyInstaller --clean MiceHub.spec</code>. If <code>MiceHub.exe</code> is running,
+       the build automatically closes it to avoid Windows file locks (or you can run
+       <code>taskkill /F /IM MiceHub.exe</code>). On a PC that has only the
        program and no source &mdash; a venue laptop &mdash; there is nothing to compare, so
        it says nothing rather than guessing.</p></div>
   <div class="f"><h3>The hub tells the truth when it cannot reach anything<span class="tag t-new">fixed</span></h3>

@@ -26,6 +26,21 @@ same file. History is in `docs/BRIDGE.md` and the STATE block of
   the files, the approach) and push; AFTER it move that to Done, update Next,
   Blocked, Last commit and Updated, and push a WIP commit to your branch.
   Before you end, stop for any reason, or when usage runs low: the same.
+- Per-file handoff is mandatory for every AI (user 2026-10-25). In your task,
+  maintain `## File status` with columns `File | Change | State | Verification | Commit`.
+  One current row per exact repo-relative path: what changed, done/pending/blocked,
+  verification result + evidence link (or `not run`), and SHA (or `uncommitted`).
+  Include owned source, generated output, tests, config, docs, additions/deletions
+  and renames. A task summary or a directory name does not replace file rows.
+  Before edits, list planned files as pending; after each step refresh the rows.
+  Before every checkpoint/interrupt/limit, compare your baseline-to-HEAD diff,
+  tracked working diff and untracked files with the table. Do not claim or
+  overwrite pre-existing/other-owned edits; identify uncertain ownership.
+  On resume migrate your active task to this format before the next code edit.
+  Keep only latest status; link commits/logs rather than pasting code or history.
+  Label quick/full and simulated/hardware evidence; stale tests do not cover
+  newer edits. For the handoff file's own SHA use `this checkpoint` (Git resolves
+  it) to avoid a self-referential commit hash. No edits yet: say so explicitly.
 - Write down what you LEARNED from reading code, not only what you did
   (user 2026-10-22: stop paying tokens to read the same code twice): under
   `## Facts found`, file:line and what it does / why it matters. The next AI
@@ -85,6 +100,21 @@ not the state: the state is your task file.
    live in config/data files (`config/*.json`, registries), not in code, so the
    next one is added or changed without a code edit. One source, no copies.
    Applies to new work; do not refactor old code only for this.
+9. Strict OOP & modularity — no monolithic dumping (user 2026-10-24, all AIs):
+   code MUST follow OOP and modular design. Never append hundreds of lines into
+   monolithic main files (main.py, etc.) — separate into small, focused classes
+   and modules (token-friendly). Never edit built web files (hub.html, help.html,
+   app.js) directly; edit their sources in parts/ and run `python tools/build_web.py`.
+10. Mandatory Handoff-First & Force-Queue Reconciliation (user 2026-10-25, all AIs):
+    every AI (Gemini, Claude, Codex) MUST prioritize handoff before touching code.
+    Before writing code, claim or create your task file in `handoff/tasks/<task>.md`
+    (`python tools/handoff.py new/take`). Set `## Doing now` before each step, update
+    `## Done`, `## Next`, `## Facts found` after each step, and commit WIP.
+    When a message interrupts or force-queues new work, NEVER blindly abandon
+    in-flight work or chase only the forced task. Check the handoff task file,
+    compare existing work with the new forced request, reconcile both together,
+    update the task file, and proceed without dropping prior state. Unclaimed work
+    causes other agents to audit and block changes.
 
 ## Built so far
 

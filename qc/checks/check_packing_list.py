@@ -15,6 +15,7 @@ update itself, so this check is what keeps it honest:
     longer needed - the second half of what this task asked for. A packing list
     that only ever grows is one nobody trusts.
 """
+import importlib.util
 import json
 import re
 
@@ -27,34 +28,11 @@ DONE_WORDS = ("done", "no longer", "not needed", "here, and working", "finished"
 
 
 def docs_dir():
-    """Where the ONE real plan lives.
-
-    `docs/PLAN.html` and `plan_state.js` are in promote.py's SKIP_FILES: they
-    are written by the running system, not source, so they never travel into
-    staging. There is exactly one copy, and a gate running from `.staging` has
-    to look next door for it rather than skip - a check that quietly skips
-    during every gate guards nothing at all.
-    """
-    # Ask for the file this check actually reads. Testing for plan_state.js
-    # instead was wrong: that one is NOT in SKIP_FILES, so it IS copied into a
-    # working copy while PLAN.html beside it is not. In `.staging` the two
-    # happen to sit together, left from before PLAN.html was skipped; in a
-    # freshly made tree only plan_state.js arrives, the test said *here*, and
-    # the check died on a PLAN.html that was never copied. Found 2026-09-10 in
-    # `.staging-integral`, the first tree made since the skip rule existed.
-    # ...and asking whether the file EXISTS is still not enough. `.staging/docs`
-    # holds a deliberate 919-byte SIGNPOST titled *The plan is not here*, which
-    # redirects a reader to the real tree. It satisfied is_file(), so this check
-    # read the signpost, found no packing table and failed with `there is a
-    # packing list` — while the real 288 KB plan sat next door with one in it.
-    # Found 2026-09-10. So test for the real thing: only the published plan
-    # loads plan_state.js, and the signpost carries no script at all.
-    here = F.CODE / "docs"
-    p = here / "PLAN.html"
-    if p.is_file() and "plan_state.js" in p.read_text(encoding="utf-8",
-                                                     errors="replace"):
-        return here
-    return F.CODE.parent / "docs"
+    """Use the same canonical plan as the writer, even with stale full snapshots."""
+    spec = importlib.util.spec_from_file_location("_packing_plan_tool", F.CODE / "tools/plan.py")
+    plan = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(plan)
+    return plan.plan_path("robot").parent
 
 
 def state_lines():
