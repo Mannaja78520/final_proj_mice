@@ -1,26 +1,26 @@
 # Nong acceptance and independent Gemini/source audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-25T17:10:27.416985+07:00
+Updated: 2026-10-25T17:17:20.452788+07:00
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
-Last commit: this checkpoint; priord932cc8
+Last commit: this checkpoint; priord66ea47
 Plan: A48-13 (robot); related A47-20/A48-14 source, A45-11 Lab, A48-16 rules
 
 ## Goal
 Finish the authorized pending Gemini/Claude work, independently review exact source/evidence and test every implemented Nong feature where possible. Preserve manual trim and distinguish software proof from real-device acceptance.
 
 ## Doing now
-R2 FULL ACCEPTED with recorded crowd retries:8258/0 in686.0s, exit0, receipt fulltrue; certified HEAD8da4e169/runtime4d41a3c/verificationf037d3a. Independently compared freeze/before/after identical978file manifests and recomputed all978current rawfiles: fingerprint db76249bd51ffa8a06ddbe8413f47a03455acda12b8008206321f086b11d90c7,0missing/0changed. Root evidence equals owner copies. Three built-in crowd retries (gestures/game_prize/studio_auto_route) passed alone2/2 each; not first-pass-clean. First failed8217/1 immutable. PR79 created+attached, exacthead5d4a36bf/basee30 APIchecked open/non-draft/mergeable. 8da->5d only2ownedhandoff prose; body accurately records fullproof,3crowdretries, limited Help audit and hardwarepause. PRscope APPROVED; source solely owns scoped rootintegration/publicmerge, preserving newer liveplan/instructions/dirtyuserdata. No deploy/restart/flash/hardware acceptance. Main metadata/report only; releases after checkpoint.
+Gemini/source SOFTWARE REVIEW+INTEGRATION ACCEPTED. PR79 merged645143e5485fe75abf14e5a45c29779bdc01c8a8; APIchecked and actualrootHEAD matches/indexempty. Independently verified all64rootintegration actions rawbyteexact (54copy reviewedsource,9keep equivalent original,1preserve dirtyHub),3713->3727tracked manifest nooutsidechanges; livePLAN+dirtyHub/top/userdata preserved. R2full8258/0@8da/runtime4d/verificationf037,978rawhash db76249b...d90c7 verified;3crowdretries alone2/2 qualified. Source finishing metadata-only closure; no rootfull/live runtime/hardware acceptance. Hardware USER-NOTREADY and omitted physical/person prerequisites remain open. Main metadata/report only, releases after checkpoint.
 
 ## File status
 Baseline: own9351b2c; reviewed runtime files belong to source owner and are not main's changes.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| handoff/tasks/nong-gemini-audit-1024.md | Current review/status/next; historical detail linked | pending | exact runtime/verification reviewed; raw full8258/0 and978hash verified | this checkpoint |
+| handoff/tasks/nong-gemini-audit-1024.md | Current review/status/next; historical detail linked | software done; physical pending | PR79 merged;64rootactions byteexact; raw full8258/0 and978hash verified | this checkpoint |
 | scratch/nong-gemini-audit-1024/review-1025.md | Exact independent source review and findings | done, private |978r2rawhashes+receipt exact; runtime/verification source approved | uncommitted, ignored |
-| docs/PLAN.html | Only own audit notes/status | pending, shared | serialized plan tool; source PRpreparation active | uncommitted, mixed owners |
+| docs/PLAN.html | Only own audit notes/status | pending, shared | serialized plan tool; software integrated; physical userpaused | uncommitted, mixed owners |
 | docs/plan_state.js | Generated live status | pending, shared | plan tool; preserve other actors | uncommitted, mixed owners |
 | docs/BRIDGE.md | Only own metadata/coordination entries | done, shared | mutex/release recorded; no main driver | uncommitted, mixed owners |
 
@@ -40,10 +40,10 @@ Baseline: own9351b2c; reviewed runtime files belong to source owner and are not 
 - Passive Face takeover after authorusage limit: f1573bc and private readiness report; corePC JSONhealth200/Faceweb200, delivery8123listener but previous APIhealth404. No inference/person/full-load proof or runtime changes. Main passive claim released.
 
 ## Next
-1. Source solely owns scoped rootreconciliation/integration/publicmerge; main awaits manifest/outcome/finalmergeSHA for independent confirmation. PR79 exacthead5d4a36bf scope/body reviewed+attached; no review blocker. Actual gate requirements remain; never forge updated receipt for latermetadata.
-2. Source owner prepares PR/integration after fullgreen; attach PR and preserve root dirtyuser data, current instructions and reviewed files. Runtime deployment requires its own idle/resource claim.
+1. Source completes metadata-only closure of own2software tasks after independently accepted PR79 merge/rootintegration; verify closure has no source delta. Current live root is not claimed fulltested/deployed; retained dirtyHub/top belongs to other work.
+2. Software PR79+rootintegration complete. Any later runtime deployment needs separate idle/resource claim and relevant current-tree checks; no deploy/restart under hardware pause.
 3. Keep physical tests paused until human explicitly ready; then fresh identity/config preserving trim and coordinated missing-feature matrix, never reuse staleacceptance.
 4. Historical reasoning: scratch/nong-gemini-audit-1024/latest-gemini-review.md and candidate-backend-review.md; current review-1025.md. Full chronology is in prior task commits, not repeated here.
 
 ## Blocked
-Realhardware acceptance USER-PAUSED; phone/person/absenttransports need actual prerequisites. Source PRpreparation/integration remains active with original owner; main resumes exact integration/outcome confirmation when ready. Not all work complete. No main process or testdriver held.
+Realhardware acceptance USER-PAUSED; phone/person/absenttransports need actual prerequisites. Only source metadata closure remains active with original owner; main software review/integration confirmation complete. Not all work complete. No main process or testdriver held.
