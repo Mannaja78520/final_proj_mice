@@ -90,6 +90,16 @@ not the state: the state is your task file.
    monolithic main files (main.py, etc.) — separate into small, focused classes
    and modules (token-friendly). Never edit built web files (hub.html, help.html,
    app.js) directly; edit their sources in parts/ and run `python tools/build_web.py`.
+10. Mandatory Handoff-First & Force-Queue Reconciliation (user 2026-10-25, all AIs):
+    every AI (Gemini, Claude, Codex) MUST prioritize handoff before touching code.
+    Before writing code, claim or create your task file in `handoff/tasks/<task>.md`
+    (`python tools/handoff.py new/take`). Set `## Doing now` before each step, update
+    `## Done`, `## Next`, `## Facts found` after each step, and commit WIP.
+    When a message interrupts or force-queues new work, NEVER blindly abandon
+    in-flight work or chase only the forced task. Check the handoff task file,
+    compare existing work with the new forced request, reconcile both together,
+    update the task file, and proceed without dropping prior state. Unclaimed work
+    causes other agents to audit and block changes.
 
 ## Built so far
 
