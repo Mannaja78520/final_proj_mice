@@ -8,6 +8,11 @@ never write code without an active task in `handoff/tasks/` (`tools/handoff.py t
 Update `## Doing now` before each step, `## Done`/`## Next` after each step, and
 commit WIP around EVERY step. If interrupted or force-queued, check the task file,
 compare and pair old work with the new demand — never blindly abandon in-flight tasks.
+Per-file handoff (all AIs, user 2026-10-25): maintain `## File status` in your
+task with one latest row per owned changed file: File | Change | State |
+Verification | Commit. Include generated/tests/config/docs; mark uncommitted
+and not run explicitly. Reconcile owned Git changes before each checkpoint;
+keep it short and link evidence. Read HANDOFF.md for the full contract.
 Tokens: run QC as `python qc/run_qc.py --quiet <check names>` for the files
 you touched (full log in qc/last_run.log), full QC once before merge; grep or
 tail big files (BRIDGE, PLAN.html, app.js, reports/), never read them whole.
