@@ -54,6 +54,7 @@ function cfgMesh(geo, cfg, part) {
   return m;
 }
 function applyMeshes() {
+  if (typeof markDirty3d === "function") markDirty3d(5);
   const gen = ++meshGen;
   MESH_PARTS.forEach(part => {
     const cfg = meshCfg[part];
@@ -68,6 +69,7 @@ function applyMeshes() {
     if (cfg.file) getGeo(cfg.file, geo => {
       if (gen !== meshGen || linkHolders[part] !== holder) return;
       holder.add(cfgMesh(geo, cfg, part));
+      if (typeof markDirty3d === "function") markDirty3d(5);
     });
   });
   addons.forEach(ad => { // clothes & extra parts: layered on top, never replace
@@ -76,6 +78,7 @@ function applyMeshes() {
     getGeo(ad.file, geo => {
       if (gen !== meshGen || linkHolders[ad.part] !== holder) return;
       holder.add(cfgMesh(geo, ad, ad.part));
+      if (typeof markDirty3d === "function") markDirty3d(5);
     });
   });
 }

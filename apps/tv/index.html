@@ -171,11 +171,12 @@
       </div>
     </div>
 
+    <label for="targetDev">Robot</label>
+    <select id="targetDev" onchange="app.selectDevice(this.value)"><option value="">Waiting for Nong</option></select>
     <div class="btn-row">
-      <button class="tv-btn tv-btn-primary" onclick="app.resume()">▶ Play</button>
-      <button class="tv-btn" onclick="app.pause()">⏸ Pause</button>
+      <button class="tv-btn tv-btn-primary" data-motion onclick="app.resume()" disabled>▶ Restart selected</button>
       <button class="tv-btn tv-btn-danger" onclick="app.stop()">⏹ Stop</button>
-      <button class="tv-btn" onclick="app.goHome()">🏠 Home</button>
+      <button class="tv-btn" data-motion onclick="app.goHome()" disabled>🏠 Home</button>
     </div>
   </div>
 
@@ -237,6 +238,9 @@ class TVRemoteApp {
     this.pollTimer = null;
     this.sequences = [];
     this.activeDev = "";
+    this.modules = [];
+    this.selectedSequence = "";
+    this.pollBusy = false;
   }
 
   init() {
@@ -308,29 +312,36 @@ class TVRemoteApp {
       btn.className = "seq-pill";
       btn.textContent = name.replace(/\.yaml$/, "");
       btn.title = name;
+      btn.disabled = !this.activeDev;
       btn.onclick = () => this.playSequence(name);
       box.appendChild(btn);
     });
   }
 
   async poll() {
+    if (this.pollBusy) return;
+    this.pollBusy = true;
     try {
-      // 1. Play status
+      const stRes = await fetch("/api/modules");
+      if (!stRes.ok) throw new Error("Module list unavailable");
+      this.updateHardwareState(await stRes.json());
+      const dev = this.activeDev;
+      if (dev) {
+        const res = await fetch("/api/dev/status?dev=" + encodeURIComponent(dev));
+        if (!res.ok) throw new Error("Robot did not answer");
+        const status = await res.json();
+        if (dev === this.activeDev) {
+          if (status.type !== "nong") throw new Error("Selected module is not Nong");
+          this.updateJoints((status.module || {}).joints || []);
+        }
+      }
       const playRes = await fetch("/api/play");
-      if (playRes.ok) {
-        const p = await playRes.json();
-        this.updatePlayState(p);
-      }
-
-      // 2. Hardware / Modules status
-      const stRes = await fetch("/api/status");
-      if (stRes.ok) {
-        const st = await stRes.json();
-        this.updateHardwareState(st);
-      }
+      if (playRes.ok) this.updatePlayState(await playRes.json());
     } catch (e) {
-      this.$("statBadge").textContent = "offline";
-    }
+      this.activeDev = "";
+      this.setMotionEnabled(false);
+      this.$("statBadge").textContent = e.message;
+    } finally { this.pollBusy = false; }
   }
 
   updatePlayState(p) {
@@ -341,17 +352,18 @@ class TVRemoteApp {
     const tot = this.$("totTime");
 
     if (p && p.running) {
-      badge.textContent = "PLAYING";
+      badge.textContent = p.entering ? "ENTERING" : "PLAYING";
       badge.className = "tv-badge badge-busy";
       title.textContent = p.name ? p.name.replace(/\.yaml$/, "") : "Active Move";
-      const total = p.total || 1;
-      const ms = p.ms || 0;
-      const pct = Math.min(100, Math.round((ms / total) * 100));
+      const total = Math.max(0, Number(p.total_ms) || 0);
+      const ms = Math.max(0, Number(p.at_ms) || 0);
+      const pct = Math.min(100, Math.round((ms / (total || 1)) * 100));
       fill.style.width = pct + "%";
       cur.textContent = (ms / 1000).toFixed(1) + "s";
       tot.textContent = (total / 1000).toFixed(1) + "s";
     } else {
-      badge.textContent = "IDLE";
+      badge.textContent = p && p.error ? "ERROR" : "IDLE";
+      if (p && p.error) title.textContent = p.error;
       badge.className = "tv-badge badge-idle";
       if (title.textContent !== "Ready") {
         fill.style.width = "0%";
@@ -359,19 +371,29 @@ class TVRemoteApp {
     }
   }
 
+  setMotionEnabled(on) {
+    document.querySelectorAll("[data-motion], .seq-pill").forEach(b => { b.disabled = !on; });
+  }
+
+  selectDevice(dev) {
+    this.activeDev = this.modules.some(m => m.dev === dev) ? dev : "";
+    this.setMotionEnabled(!!this.activeDev);
+  }
+
   updateHardwareState(st) {
-    if (!st) return;
-    const mods = st.modules || [];
-    const nong = mods.find(m => m.type === "nong") || mods[0];
-    if (nong) {
-      this.activeDev = nong.dev || ("usb:" + nong.port);
-      this.$("statBadge").textContent = "🟢 " + (nong.name || "Nong") + " (" + (nong.ip || nong.dev || "online") + ")";
-      if (nong.pose && Array.isArray(nong.pose)) {
-        this.updateJoints(nong.pose);
-      }
-    } else {
-      this.$("statBadge").textContent = "⚪ Waiting for modules";
-    }
+    this.modules = ((st && st.modules) || []).map(m => ({...m,
+      dev: m.best || m.dev || ((m.routes || []).find(r => !r.stale && r.dev) || {}).dev
+    })).filter(m => m.type === "nong" && !m.stale &&
+      typeof m.dev === "string" && /^(usb:|wifi:|hub:|auto:).+/.test(m.dev));
+    if (!this.modules.some(m => m.dev === this.activeDev)) this.activeDev = "";
+    if (!this.activeDev && this.modules.length === 1) this.activeDev = this.modules[0].dev;
+    const select = this.$("targetDev");
+    select.replaceChildren(new Option("Choose Nong", ""), ...this.modules.map(m => new Option(m.name || m.dev, m.dev)));
+    select.value = this.activeDev;
+    const nong = this.modules.find(m => m.dev === this.activeDev);
+    this.$("statBadge").textContent = nong ? "🟢 " + (nong.name || "Nong") : "Choose an available Nong";
+    this.setMotionEnabled(!!nong);
+    if (!nong) this.updateJoints(new Array(10).fill(null));
   }
 
   updateJoints(pose) {
@@ -379,6 +401,7 @@ class TVRemoteApp {
       const bar = this.$("jbar_" + i);
       const val = this.$("jval_" + i);
       if (bar && val) {
+        if (!Number.isFinite(deg)) { bar.style.width = "0%"; val.textContent = "—"; return; }
         const pct = Math.max(0, Math.min(100, Math.round((deg / 180) * 100)));
         bar.style.width = pct + "%";
         val.textContent = Math.round(deg) + "°";
@@ -387,17 +410,20 @@ class TVRemoteApp {
   }
 
   async playSequence(name) {
+    const dev = this.activeDev;
+    if (!dev || !this.modules.some(m => m.dev === dev)) return;
+    this.selectedSequence = name;
     try {
       this.$("nowSeq").textContent = "Starting " + name + "…";
       const res = await fetch("/api/seqsteps?name=" + encodeURIComponent(name));
       if (!res.ok) return;
       const data = await res.json();
-      if (!data.steps) return;
+      if (!Array.isArray(data.steps) || !data.steps.length || this.activeDev !== dev) return;
       await fetch("/api/play", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          dev: this.activeDev || "auto",
+          dev,
           name: name,
           steps: data.steps,
           loop: false
@@ -414,31 +440,19 @@ class TVRemoteApp {
     this.poll();
   }
 
-  async pause() {
-    await fetch("/api/play/stop", { method: "POST" });
-    this.poll();
-  }
-
   async resume() {
-    if (this.sequences.length) {
-      this.playSequence(this.sequences[0]);
-    }
+    if (this.selectedSequence) return this.playSequence(this.selectedSequence);
+    this.$("nowSeq").textContent = "Choose a sequence first";
   }
 
   async goHome() {
+    const dev = this.activeDev;
+    if (!dev || !this.modules.some(m => m.dev === dev)) return;
     await this.stop();
-    // Default neutral 90 degrees
-    const flat90 = new Array(10).fill(90);
-    await fetch("/api/play", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        dev: this.activeDev || "auto",
-        name: "Home",
-        steps: [{ pose: flat90, t: 1500, hold: 0 }],
-        loop: false
-      })
-    });
+    if (this.activeDev !== dev) return;
+    const res = await fetch("/api/dev/cmd?dev=" + encodeURIComponent(dev) + "&c=HOME");
+    const reply = await res.text();
+    this.$("nowSeq").textContent = res.ok && reply.startsWith("OK") ? "Saved HOME requested" : reply;
     this.poll();
   }
 

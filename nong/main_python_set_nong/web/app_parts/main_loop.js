@@ -6,6 +6,7 @@ function resize() {
   camera.updateProjectionMatrix();
   syncOrtho();                    // the ortho frustum follows the new aspect
   viewport.classList.toggle("short", h < 260);
+  markDirty3d(5);
 }
 window.addEventListener("resize", resize);
 // The viewport also changes size WITHOUT the window changing: dragging the

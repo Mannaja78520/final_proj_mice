@@ -303,7 +303,10 @@ void GachaModule::loop() {
     }
 
     if (settleUntil_) {                       // last magnet seen: centre the pocket
-        if ((int32_t)(now - settleUntil_) >= 0) finish("done");
+        if ((int32_t)(now - settleUntil_) >= 0) {
+            settleUntil_ = 0;
+            startCenter(now);
+        }
         return;
     }
     if (arrived) {
@@ -324,14 +327,10 @@ void GachaModule::loop() {
                 phaseUntil_ = now + (uint32_t)returnMs_;
                 const int rSpeed = returnSpeed_ > 0 ? returnSpeed_ : speed_;
                 if (motor_) motor_->spin(-sign_ * dir_ * rSpeed);
-            } else if (pauseMs_ > 0) {
-                motorOff();
-                settlePhase_ = SETTLE_PAUSE;
-                phaseUntil_ = now + (uint32_t)pauseMs_;
             } else if (settleMs_ > 0) {
                 settleUntil_ = now + (uint32_t)settleMs_;
             } else {
-                finish("done");
+                startCenter(now);
             }
             return;
         }
@@ -346,7 +345,7 @@ void GachaModule::loop() {
         if (ps > 0 && got_ % ps == 0) pos_ = ((pos_ + sign_) % slots_ + slots_) % slots_;
         if (got_ >= want_) {
             motorOff();
-            finish("done");
+            finish("timed"); // estimated travel, never a sensor-confirmed position
             return;
         }
     }

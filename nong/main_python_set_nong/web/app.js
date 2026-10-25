@@ -1083,6 +1083,7 @@ function jointDelta(i) {
   return v * jdir(i);
 }
 function applyPose() {
+  if (typeof markDirty3d === "function") markDirty3d(5);
   if (urdfOn) { urdfApplyPose(); return; }
   // the editor works in JOINT degrees — pose[i] IS the physical joint angle.
   // each joint = a mounting TILT (roll/pitch/yaw, for axes not exactly at 90°)
@@ -1124,7 +1125,6 @@ function applyPose() {
       shoulderMount.rotation.set(0, 0, THREE.MathUtils.degToRad(jointDelta(9)));
     }
   }
-  if (typeof markDirty3d === "function") markDirty3d(5);
 }
 
 // The measurement table. Rows are "at this SHRUG angle, the left shoulder rose
@@ -1412,6 +1412,7 @@ function urdfSetHandMarks(on) {
   RIG.view.handMarks = !!on;
   saveRig();
   if (urdfOn) palmMarks.forEach(h => h.children.forEach(c => { if (c.isMesh) c.visible = !!on; }));
+  if (typeof markDirty3d === "function") markDirty3d(5);
   renderLookUI();
 }
 // ---- the floor grid (user 2026-10-23: "can the grid be hidden, and the box
@@ -1438,6 +1439,7 @@ function viewFloor() {
     if (!box.isEmpty()) y = box.min.y - (+cfg.gapMm || 0);
   }
   grid.position.y = y;
+  if (typeof markDirty3d === "function") markDirty3d(5);
 }
 function viewSetGrid(on) {
   RIG.view.grid = !!on;
@@ -1539,6 +1541,7 @@ function urdfBuildInto(root) {
       else urdfMesh(urdfMeshUrls(v.mesh, f.path), geo => {
         if (gen !== urdfBuildGen || holder.parent !== linkG[name]) return;   // a rebuild came first
         put(geo, v.scale.map(s => s * U));
+        if (typeof markDirty3d === "function") markDirty3d(5);
         if (name === urdfRootLink) viewFloor();
         urdfMeshArrived(name);
       }, () => {
@@ -7209,6 +7212,7 @@ function cfgMesh(geo, cfg, part) {
   return m;
 }
 function applyMeshes() {
+  if (typeof markDirty3d === "function") markDirty3d(5);
   const gen = ++meshGen;
   MESH_PARTS.forEach(part => {
     const cfg = meshCfg[part];
@@ -7223,6 +7227,7 @@ function applyMeshes() {
     if (cfg.file) getGeo(cfg.file, geo => {
       if (gen !== meshGen || linkHolders[part] !== holder) return;
       holder.add(cfgMesh(geo, cfg, part));
+      if (typeof markDirty3d === "function") markDirty3d(5);
     });
   });
   addons.forEach(ad => { // clothes & extra parts: layered on top, never replace
@@ -7231,6 +7236,7 @@ function applyMeshes() {
     getGeo(ad.file, geo => {
       if (gen !== meshGen || linkHolders[ad.part] !== holder) return;
       holder.add(cfgMesh(geo, ad, ad.part));
+      if (typeof markDirty3d === "function") markDirty3d(5);
     });
   });
 }
@@ -10428,6 +10434,7 @@ function resize() {
   camera.updateProjectionMatrix();
   syncOrtho();                    // the ortho frustum follows the new aspect
   viewport.classList.toggle("short", h < 260);
+  markDirty3d(5);
 }
 window.addEventListener("resize", resize);
 // The viewport also changes size WITHOUT the window changing: dragging the

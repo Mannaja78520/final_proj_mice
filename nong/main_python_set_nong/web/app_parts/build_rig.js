@@ -232,6 +232,7 @@ function jointDelta(i) {
   return v * jdir(i);
 }
 function applyPose() {
+  if (typeof markDirty3d === "function") markDirty3d(5);
   if (urdfOn) { urdfApplyPose(); return; }
   // the editor works in JOINT degrees — pose[i] IS the physical joint angle.
   // each joint = a mounting TILT (roll/pitch/yaw, for axes not exactly at 90°)
@@ -273,7 +274,6 @@ function applyPose() {
       shoulderMount.rotation.set(0, 0, THREE.MathUtils.degToRad(jointDelta(9)));
     }
   }
-  if (typeof markDirty3d === "function") markDirty3d(5);
 }
 
 // The measurement table. Rows are "at this SHRUG angle, the left shoulder rose

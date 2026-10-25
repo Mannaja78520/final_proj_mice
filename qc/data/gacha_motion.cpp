@@ -237,7 +237,8 @@ int main() {
     {
         GachaModule m; String reply; removedCfg = 0;
         m.overshootMs_ = m.overshootSpeed_ = m.returnMs_ = m.returnSpeed_ = 1;
-        m.centerSpeed_ = m.pauseMs_ = m.fallbackSlotMs_ = 1; m.clear(reply);
+        m.centerSpeed_ = m.pauseMs_ = m.fallbackSlotMs_ = 1;
+        m.intakeDwellMs_ = m.advanceMs_ = 1; m.clear(reply);
         check(m.overshootMs_ == GACHA_OVERSHOOT_MS && m.overshootSpeed_ == GACHA_OVERSHOOT_SPEED,
               "CLEAR restores forward phase defaults");
         check(m.returnMs_ == GACHA_RETURN_MS && m.returnSpeed_ == GACHA_RETURN_SPEED,
@@ -245,6 +246,8 @@ int main() {
         check(m.centerSpeed_ == GACHA_CENTER_SPEED && m.pauseMs_ == GACHA_PAUSE_MS &&
               m.fallbackSlotMs_ == GACHA_FALLBACK_SLOT_MS, "CLEAR restores center pause and fallback defaults");
         check(m.saves == 1 && m.stock_ == 7 && m.given_ == 4, "CLEAR persists settings without changing stock/counts");
+        check(m.intakeDwellMs_ == GACHA_INTAKE_DWELL_MS && m.advanceMs_ == GACHA_CENTER_ADVANCE_MS,
+              "CLEAR restores intake and learned advance defaults");
         m.state_ = GachaModule::TURNING; m.clear(reply);
         check(reply == "ERR busy" && removedCfg == 1 && m.saves == 1, "busy CLEAR cannot erase persisted settings");
     }
@@ -343,6 +346,24 @@ int main() {
     calibrationScenario(true, 0);
     calibrationScenario(false, 0);
     calibrationScenario(true, UINT32_MAX - 400);
+    for (int settle : {0, 45}) for (int pause : {0, 60}) for (bool keepHall : {false, true}) {
+        GachaModule m; clockMs = 0; m.loop();
+        m.overshootMs_ = m.returnMs_ = 0; m.settleMs_ = settle; m.pauseMs_ = pause; m.timeoutMs_ = 150;
+        m.startTurn(GachaModule::JOB_HOME, 1);
+        tick(m, 10, true); tick(m, 15, true);
+        check(m.state_ != GachaModule::IDLE, "no-rock arrival still requires verification, including pause=0");
+        for (uint32_t now = 16; now < 500 && m.state_ != GachaModule::IDLE; ++now) tick(m, now, keepHall);
+        check(m.motionResult_ == (keepHall ? "done" : "jam") && m.io.pwm == 0,
+              "no-rock/settle/pause combinations cannot bypass resting Hall verification");
+        check(m.posKnown_ == keepHall, "only verified no-rock HOME establishes pocket reference");
+    }
+    {
+        GachaModule m; clockMs = 0; m.posKnown_ = true; m.fallbackSlotMs_ = 20;
+        m.startTurn(GachaModule::JOB_SPIN, 1); tick(m, 20, false);
+        check(m.state_ == GachaModule::IDLE && m.io.pwm == 0 && m.motionResult_ == "timed",
+              "explicit timed fallback stops and reports estimated completion");
+        check(!m.posKnown_, "timed fallback cannot retain a sensor-confirmed position");
+    }
     check(delayCalls == 0, "all tested command and loop paths are nonblocking");
     return failures ? 1 : 0;
 }

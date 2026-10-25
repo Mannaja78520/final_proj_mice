@@ -228,6 +228,7 @@ Examples: docs/gacha/README.md</pre>
 
 </div></div>
 
+<script src="motion.js"></script>
 <script>
 // Everything goes through the hub (/api/gacha/*, main_python/hub_api_gacha.py);
 // the hub talks to the boards. Words for people on the surface, details behind
@@ -252,7 +253,7 @@ function say(id, a, okWords) {
 async function load() {
   stat.loading("asking the machines…");
   const a = await Mice.Api.get("/api/gacha", {timeout: 15000});
-  if (!a.ok) return stat.error(a.says, a.tech);
+  if (!a.ok) { stat.error(a.says, a.tech); return false; }
   S = a.data;
   const items = Object.keys(S.items || {});
   $("gItem").innerHTML = items.map(k => '<option value="' + esc(k) + '">' + esc(S.items[k].label || k) + '</option>').join("");
@@ -266,6 +267,7 @@ async function load() {
   stat.ready(live + " of " + S.machines.length + " machines answering", "GET /api/gacha");
   gmDraw(); keysLoad();
   loadRules(); loadLog();
+  return true;
 }
 
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c])); }
@@ -281,12 +283,12 @@ function drawMachines() {
     if (L.error) {
       statusHtml = '<span class="tech mini danger">' + esc(L.error) + '</span>';
     } else {
-      const stText = (STATE[L.state] || L.state || "ready");
+      const stText = L.state === 'idle' && L.motion_result && !['done', 'idle'].includes(L.motion_result) ? L.motion_result : (STATE[L.state] || L.state || 'ready');
       const phaseBadge = L.phase ? '<span class="badge" style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:4px">' + esc(L.phase) + '</span>' : '';
       const hallBadge = L.at_hall 
-        ? '<span style="color:#16a34a;font-weight:bold;font-size:12px">🟢 Center</span>' 
-        : '<span style="color:#94a3b8;font-size:12px">⚪ Off-center</span>';
-      const pocketInfo = L.pos !== undefined ? '<span style="font-size:12px;color:#475569"> (P' + (L.pos + 1) + '/' + (c.slots || 4) + ')</span>' : '';
+        ? '<span style="color:#16a34a;font-weight:bold;font-size:12px">🟢 Hall detected</span>' 
+        : '<span style="color:#94a3b8;font-size:12px">⚪ Hall clear</span>';
+      const pocketInfo = L.pos_known && L.pos !== undefined ? '<span style="font-size:12px;color:#475569"> (P' + (L.pos + 1) + '/' + (c.slots || 4) + ')</span>' : '';
       statusHtml = '<div><b>' + esc(stText) + '</b>' + phaseBadge + '</div><div>' + hallBadge + pocketInfo + (L.open === false ? ' <span class="mini danger">closed</span>' : '') + '</div>';
     }
 
@@ -295,17 +297,18 @@ function drawMachines() {
       '<td>' + (L.error ? "-" : (L.stock < 0 ? "not counted" : L.stock)) + '</td><td>' + (L.given == null ? "-" : L.given) + '</td>' +
       '<td>' + statusHtml + '</td>' +
       '<td><div style="display:flex;gap:4px;flex-wrap:wrap">' +
-      '<button onclick="mcmd(' + i + ','GSTOCK ADD '+val('ballN'))">add balls</button>' +
-      '<button onclick="mcmd(' + i + ','GSTOCK '+val('ballN'))">set balls</button>' +
-      '<button onclick="mcmd(' + i + ','GHOME')">to loading</button>' +
+      '<button onclick="mcmd(' + i + ',\'GSTOCK ADD \'+val(\'ballN\'))">add balls</button>' +
+      '<button onclick="mcmd(' + i + ',\'GSTOCK \'+val(\'ballN\'))">set balls</button>' +
+      '<button onclick="mcmd(' + i + ',\'GHOME\')">to loading</button>' +
+      '<button onclick="motion.stop(' + i + ')">Stop motion</button>' +
       '<button onclick="forceDrop(' + i + ')" style="background:#fee2e2;border-color:#ef4444;color:#991b1b;font-weight:600" title="Force dispense 1 prize immediately (bypasses empty/closed limits for testing)">&#9889; Force Drop</button>' +
       '<button onclick="toggleDrain(' + i + ')" id="drainBtn_' + i + '" style="background:#fef9c3;border-color:#eab308;font-weight:600" title="Continuously dispense until out of stock or stopped">&#127744; Drain Machine</button>' +
-      '<button onclick="mcmd(' + i + ','GCALIB')" style="background:#fef3c7;border-color:#f59e0b;font-weight:600" title="Auto-detect mass and calibrate dead-center">&#9889; Auto Detect</button>' +
+      '<button onclick="mcmd(' + i + ',\'GCALIB\')" style="background:#fef3c7;border-color:#f59e0b;font-weight:600" title="Estimate advance from the Hall band; verify the machine afterwards">&#9889; Estimate Hall Advance</button>' +
       '<button onclick="testMachine(' + i + ')" style="background:#e0e7ff;border-color:#6366f1" title="Test 1 pocket step">&#129514; Test 1 Pocket</button>' +
-      '<button onclick="testAllSlots(' + i + ')" title="Cycle all 4 pockets and verify dead-center">&#128260; Test 4 Pockets</button>' +
+      '<button onclick="testAllSlots(' + i + ')" title="Test each configured pocket and report Hall verification">&#128260; Test All Pockets</button>' +
       '<button onclick="toggleTuning(' + i + ')" title="Tune speeds, timing & drop count">&#9881;&#65039; Tune</button>' +
       (m.at ? '<a class="btn" target="_blank" href="/mod?dev=' + encodeURIComponent(m.at) + '&name=' + encodeURIComponent(m.module || m.id) +
-        '" title="magnets, speed, timing: the machine's own page">page &nearr;</a>' : '') +
+        '" title="magnets, speed, timing: the machine page">page &nearr;</a>' : '') +
       '<button onclick="S.machines.splice(' + i + ',1);drawMachines()">remove</button></div></td></tr>';
 
     if (openTuning[i]) {
@@ -343,7 +346,7 @@ function drawMachines() {
         '</div>' +
         '<div style="margin-top:10px;display:flex;gap:8px">' +
         '<button class="primary" onclick="saveAllTuning(' + i + ')">Save All Tuning</button>' +
-        '<button onclick="mcmd(' + i + ','GCALIB')">&#9889; Auto Detect Mass Now</button>' +
+        '<button onclick="mcmd(' + i + ',\'GCALIB\')">&#9889; Estimate Hall Advance Now</button>' +
         '<button onclick="toggleTuning(' + i + ')">Close</button></div>' +
         '</td></tr>';
     }
@@ -379,97 +382,29 @@ async function saveAllTuning(i) {
   load();
 }
 
-async function forceDrop(i) {
-  $("mStat").textContent = "⚡ Force dropping on machine " + S.machines[i].id + "...";
-  const a = await Mice.Api.post("/api/gacha/machine", {machine: S.machines[i].id, cmd: "GDISPENSE FORCE ManualTest"});
-  if (!a.ok) {
-    say("mStat", a);
+const motion = new GachaMotion({
+  machine: i => S.machines[i], refresh: load,
+  post: body => Mice.Api.post("/api/gacha/machine", body),
+  tell: text => { $("mStat").textContent = text; }
+});
+function forceDrop(i) { return motion.run(i, "GDISPENSE FORCE ManualTest", "Force drop"); }
+function toggleDrain(i) {
+  const m = S.machines[i], live = m.live || {};
+  if (motion.jobs.has(m.id) || live.draining) return motion.stop(i);
+  if (!Number.isInteger(live.stock) || live.stock <= 0) {
+    $("mStat").textContent = "Set a positive stock count before draining";
     return;
   }
-  say("mStat", {ok: true}, "⚡ Force drop running with 4-phase settle");
-  load();
+  return motion.run(i, "GDRAIN " + Math.min(live.stock, 999), "Drain");
 }
-
-let activeDrains = {};
-async function toggleDrain(i) {
-  const m = S.machines[i];
-  if (activeDrains[i]) {
-    activeDrains[i] = false;
-    await Mice.Api.post("/api/gacha/machine", {machine: m.id, cmd: "STOP"});
-    $("mStat").textContent = "⏹️ Drain stopped on machine " + m.id;
-    const btn = $("drainBtn_" + i);
-    if (btn) { btn.innerHTML = "&#127744; Drain Machine"; btn.style.background = "#fef9c3"; }
-    load();
-    return;
-  }
-
-  activeDrains[i] = true;
-  const btn = $("drainBtn_" + i);
-  if (btn) { btn.innerHTML = "&#9209;&#65039; Stop Drain"; btn.style.background = "#fee2e2"; }
-  $("mStat").textContent = "🌀 Starting continuous drain on machine " + m.id + "...";
-  
-  await Mice.Api.post("/api/gacha/machine", {machine: m.id, cmd: "GDRAIN"});
-  load();
-
-  let drainPoll = setInterval(async () => {
-    if (!activeDrains[i]) {
-      clearInterval(drainPoll);
-      return;
-    }
-    await load();
-    const cur = S.machines[i].live || {};
-    if (cur.stock === 0 || (!cur.draining && cur.state === "idle")) {
-      activeDrains[i] = false;
-      clearInterval(drainPoll);
-      const b = $("drainBtn_" + i);
-      if (b) { b.innerHTML = "&#127744; Drain Machine"; b.style.background = "#fef9c3"; }
-      $("mStat").innerHTML = "✅ <b>Drain completed:</b> Machine " + m.id + " is empty (stock=" + cur.stock + ")!";
-    } else {
-      $("mStat").innerHTML = "🌀 <b>Draining:</b> Given: " + cur.given + ", Stock left: " + cur.stock + " (<a href='javascript:void(0)' onclick='toggleDrain(" + i + ")'>Stop</a>)";
-    }
-  }, 1000);
-}
-
-async function testMachine(i) {
-  $("mStat").textContent = "🧪 Testing machine " + S.machines[i].id + ": stepping 1 pocket...";
-  const a = await Mice.Api.post("/api/gacha/machine", {machine: S.machines[i].id, cmd: "GSPIN 1 MAG"});
-  if (!a.ok) {
-    say("mStat", a);
-    return;
-  }
-  let tries = 0;
-  const poll = setInterval(async () => {
-    tries++;
-    await load();
-    const cur = S.machines[i].live || {};
-    if (cur.state === "idle" || tries > 25) {
-      clearInterval(poll);
-      const ok = cur.at_hall;
-      $("mStat").innerHTML = ok 
-        ? "✅ <b>Test PASSED:</b> Pocket " + (cur.pos + 1) + " stopped DEAD CENTER on Hall sensor!" 
-        : "⚠️ Test completed: at_hall=" + cur.at_hall + " (pos=" + cur.pos + ")";
-    }
-  }, 500);
-}
-
-async function testAllSlots(i) {
-  $("mStat").textContent = "🔄 Running full 4-pocket cycle test...";
-  let passed = 0;
-  for (let step = 1; step <= 4; step++) {
-    $("mStat").textContent = "🔄 Testing Pocket " + step + "/4: GSPIN 1 MAG...";
-    await Mice.Api.post("/api/gacha/machine", {machine: S.machines[i].id, cmd: "GSPIN 1 MAG"});
-    await new Promise(r => setTimeout(r, 7000));
-    await load();
-    const cur = S.machines[i].live || {};
-    if (cur.at_hall) passed++;
-  }
-  $("mStat").innerHTML = (passed === 4)
-    ? "🎉 <b>FULL CYCLE TEST PASSED:</b> 4/4 pockets stopped 100% DEAD CENTER on Hall sensor!"
-    : "⚠️ Full cycle test: " + passed + "/4 pockets at dead center.";
+function testMachine(i) { return motion.run(i, "GSPIN 1", "One pocket"); }
+function testAllSlots(i) {
+  const slots = (S.machines[i].live.cfg || {}).slots || 4;
+  return motion.run(i, "GTEST " + slots, "Pocket test", {test: true});
 }
 
 function readMachines() {
-  return [...$("mTable").tBodies[0].rows].map(r => {
+  return [...$("mTable").tBodies[0].querySelectorAll("tr[data-i]")].map(r => {
     const old = S.machines[+r.dataset.i] || {};
     const g = k => (r.querySelector('[data-k="' + k + '"]').value || "").trim();
     const board = g("module");
@@ -482,10 +417,12 @@ function readMachines() {
 function addMachine() { S.machines = readMachines(); S.machines.push({id: "", module: "", label: "", item: "", near: [], live: {}}); drawMachines(); }
 async function saveMachines() { say("mStat", await Mice.Api.post("/api/gacha/config", {machines: readMachines()}), "machines saved"); load(); }
 async function mcmd(i, c) {
+  if (c === "GHOME" || c === "GCALIB") return motion.run(i, c, c === "GHOME" ? "Loading position" : "Hall advance estimate");
   const m = S.machines[i];
   const a = await Mice.Api.post("/api/gacha/machine", {machine: m.id, cmd: c});
   $("mStat").textContent = a.ok ? "done" : (a.says || (a.data && a.data.reply) || "it did not work");
-  load();
+  await load();
+  return a;
 }
 
 function drawItems() {

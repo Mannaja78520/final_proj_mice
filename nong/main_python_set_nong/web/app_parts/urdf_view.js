@@ -189,6 +189,7 @@ function urdfSetHandMarks(on) {
   RIG.view.handMarks = !!on;
   saveRig();
   if (urdfOn) palmMarks.forEach(h => h.children.forEach(c => { if (c.isMesh) c.visible = !!on; }));
+  if (typeof markDirty3d === "function") markDirty3d(5);
   renderLookUI();
 }
 // ---- the floor grid (user 2026-10-23: "can the grid be hidden, and the box
@@ -215,6 +216,7 @@ function viewFloor() {
     if (!box.isEmpty()) y = box.min.y - (+cfg.gapMm || 0);
   }
   grid.position.y = y;
+  if (typeof markDirty3d === "function") markDirty3d(5);
 }
 function viewSetGrid(on) {
   RIG.view.grid = !!on;
@@ -316,6 +318,7 @@ function urdfBuildInto(root) {
       else urdfMesh(urdfMeshUrls(v.mesh, f.path), geo => {
         if (gen !== urdfBuildGen || holder.parent !== linkG[name]) return;   // a rebuild came first
         put(geo, v.scale.map(s => s * U));
+        if (typeof markDirty3d === "function") markDirty3d(5);
         if (name === urdfRootLink) viewFloor();
         urdfMeshArrived(name);
       }, () => {
