@@ -1,17 +1,17 @@
 # Nong acceptance and independent Gemini/source audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-25T17:07:49.269545+07:00
+Updated: 2026-10-25T17:10:27.416985+07:00
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
-Last commit: this checkpoint; prior908648c
+Last commit: this checkpoint; priord932cc8
 Plan: A48-13 (robot); related A47-20/A48-14 source, A45-11 Lab, A48-16 rules
 
 ## Goal
 Finish the authorized pending Gemini/Claude work, independently review exact source/evidence and test every implemented Nong feature where possible. Preserve manual trim and distinguish software proof from real-device acceptance.
 
 ## Doing now
-R2 FULL ACCEPTED with recorded crowd retries:8258/0 in686.0s, exit0, receipt fulltrue; certified HEAD8da4e169/runtime4d41a3c/verificationf037d3a. Independently compared freeze/before/after identical978file manifests and recomputed all978current rawfiles: fingerprint db76249bd51ffa8a06ddbe8413f47a03455acda12b8008206321f086b11d90c7,0missing/0changed. Root evidence equals owner copies. Three built-in crowd retries (gestures/game_prize/studio_auto_route) passed alone2/2 each; not first-pass-clean. First failed8217/1 immutable. Source authorized PRpreparation with exact certificate+qualifications; no deploy/restart/flash/hardware acceptance. Main metadata/report only; releases after checkpoint.
+R2 FULL ACCEPTED with recorded crowd retries:8258/0 in686.0s, exit0, receipt fulltrue; certified HEAD8da4e169/runtime4d41a3c/verificationf037d3a. Independently compared freeze/before/after identical978file manifests and recomputed all978current rawfiles: fingerprint db76249bd51ffa8a06ddbe8413f47a03455acda12b8008206321f086b11d90c7,0missing/0changed. Root evidence equals owner copies. Three built-in crowd retries (gestures/game_prize/studio_auto_route) passed alone2/2 each; not first-pass-clean. First failed8217/1 immutable. PR79 created+attached, exacthead5d4a36bf/basee30 APIchecked open/non-draft/mergeable. 8da->5d only2ownedhandoff prose; body accurately records fullproof,3crowdretries, limited Help audit and hardwarepause. PRscope APPROVED; source solely owns scoped rootintegration/publicmerge, preserving newer liveplan/instructions/dirtyuserdata. No deploy/restart/flash/hardware acceptance. Main metadata/report only; releases after checkpoint.
 
 ## File status
 Baseline: own9351b2c; reviewed runtime files belong to source owner and are not main's changes.
@@ -40,10 +40,10 @@ Baseline: own9351b2c; reviewed runtime files belong to source owner and are not 
 - Passive Face takeover after authorusage limit: f1573bc and private readiness report; corePC JSONhealth200/Faceweb200, delivery8123listener but previous APIhealth404. No inference/person/full-load proof or runtime changes. Main passive claim released.
 
 ## Next
-1. Inspect source PR exact scope, certificate8da4e169 and3crowdretry qualification; attach PR. R2raw978hash/receipt verification complete; first8217/1 preserved and old7910receipt invalid.
+1. Source solely owns scoped rootreconciliation/integration/publicmerge; main awaits manifest/outcome/finalmergeSHA for independent confirmation. PR79 exacthead5d4a36bf scope/body reviewed+attached; no review blocker. Actual gate requirements remain; never forge updated receipt for latermetadata.
 2. Source owner prepares PR/integration after fullgreen; attach PR and preserve root dirtyuser data, current instructions and reviewed files. Runtime deployment requires its own idle/resource claim.
 3. Keep physical tests paused until human explicitly ready; then fresh identity/config preserving trim and coordinated missing-feature matrix, never reuse staleacceptance.
 4. Historical reasoning: scratch/nong-gemini-audit-1024/latest-gemini-review.md and candidate-backend-review.md; current review-1025.md. Full chronology is in prior task commits, not repeated here.
 
 ## Blocked
-Realhardware acceptance USER-PAUSED; phone/person/absenttransports need actual prerequisites. Source PRpreparation/integration remains active with original owner; main resumes exact PRscope review when ready. Not all work complete. No main process or testdriver held.
+Realhardware acceptance USER-PAUSED; phone/person/absenttransports need actual prerequisites. Source PRpreparation/integration remains active with original owner; main resumes exact integration/outcome confirmation when ready. Not all work complete. No main process or testdriver held.
