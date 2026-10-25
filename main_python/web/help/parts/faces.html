@@ -1,73 +1,42 @@
 <section id="faces">
   <div class="shead">
-    <span class="where tech">code/apps/faces · served at /app/faces/</span>
-    <h2>👋 Reconize — ตรวจจับใบหน้าและผูกท่าทางทักทาย</h2>
-    <p>Reconize เป็นโปรแกรมตรวจจับและจำแนกใบหน้าผู้คน ทำงานเคียงคู่กับ Mice บนคอมพิวเตอร์เครื่องเดียวกัน
-       หน้านี้ใช้สำหรับเปิดโปรแกรมและกำหนดว่าเมื่อหุ่นยนต์เห็นใคร จะให้พูดและแสดงท่าทางอย่างไร</p>
+    <span class="where tech">code/apps/faces · /app/faces/</span>
+    <h2>👋 FaceReg / Reconize — ใบหน้าและการทักทาย</h2>
+    <p>เปิดโปรแกรมใบหน้า ตรวจว่าหุ่นรับข้อมูลได้ แล้วตั้งคำพูดและท่าทางเมื่อพบคน</p>
   </div>
-
-  <!-- SECTION 1: GREET WORDS -->
+  <div class="f">
+    <h3>เลือกหน้าที่ตรงกับงาน</h3>
+    <p><a href="/app/faces/">เปิดหน้า Reconize ของ Mice</a> หน้านี้มี 3 แท็บ ส่วนโปรแกรมจัดการใบหน้าจะเปิดผ่านปุ่ม Open Reconize</p>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th>ต้องการทำอะไร</th><th>เลือกแท็บ</th><th>ทำอย่างไร / ผลที่ได้</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap2">เปิดโปรแกรมใบหน้า</td><td>Open it</td><td>กด Open Reconize เพื่อเปิดโปรแกรม ใช้ Check it is running เพื่อตรวจว่าโปรแกรมทำงานหรือยัง</td></tr>
+      <tr><td class="wrap2">ตรวจการรับข้อมูลของหุ่น</td><td>Is the rig following it?</td><td>ดูสถานะตัวติดตามข้อมูล ถ้ายังไม่เริ่ม จะมีปุ่ม Start following Reconize</td></tr>
+      <tr><td class="wrap2">เปลี่ยนคำทักและท่าทาง</td><td>What the rig says</td><td>ตั้งคำพูด ผู้พูด เวลาเว้นการทัก และพฤติกรรมแยกตามกล้อง แล้วกด Save</td></tr>
+    </tbody>
+  </table></div>
   <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 1: กำหนดคำพูดทักทายแยกตามบุคคล (Greet Words Editor)</b>
-      <span class="info-badge">Greet Words</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img src="/docs/shots/faces-words-box.png" alt="Faces Greet Words Box" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. คำทักคนที่มาครั้งแรกของวัน">1</div>
-      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. คำทักคนที่เดินกลับมาอีกครั้ง">2</div>
-      <div class="callout-pin" style="top: 80%; left: 30%;" title="3. คำทักคนแปลกหน้า (Stranger)">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> คำพูดคนรู้จัก (Known Person: First visit &amp; Return)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ใส่แท็ก <code>{title}</code> (เช่น อาจารย์) และ <code>{name}</code> (ชื่อคน)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          เมื่อคนรู้จักเดินผ่าน หุ่นยนต์จะเอ่ยชื่อคนนั้นอย่างถูกต้องเป็นธรรมชาติ เช่น "สวัสดีครับ {title} {name} ยินดีต้อนรับครับ"
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> คำทักคนแปลกหน้า (Stranger Words)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์คำทักทายทั่วไป (ห้ามใส่ <code>{name}</code> เด็ดขาด)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          หากเป็นใบหน้าที่ยังไม่เคยบันทึกในฐานข้อมูล หุ่นยนต์จะใช้ประโยคสุภาพทั่วไป เช่น "สวัสดีครับ ยินดีต้อนรับสู่บูธของเราครับ"
-        </div>
-      </div>
-    </div>
+    <div class="info-header"><b>1. เปิดการทักทายและเลือกผู้พูด</b></div>
+    <p>ใน <b>What the rig says</b> เปิด <b>Greet people the face app sees</b> แล้วเลือก <b>Speaker</b> ว่าจะให้เสียงออกที่ไหน</p>
+    <p>ช่อง <b>Polite word before a name</b> เป็นคำเรียกนำหน้าชื่อ ส่วน <b>If the rig is already talking or playing</b> เลือก <b>skip this hello</b> เพื่อข้าม หรือ <b>wait its turn</b> เพื่อรอ</p>
   </div>
-
-  <!-- SECTION 2: CAMERA TO MOVE BINDING & COOLDOWN -->
   <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 2: ผูกท่าทางแอนิเมชันและการป้องกันทักซ้ำ (Move Binding &amp; Cooldown)</b>
-      <span class="info-badge">Rules &amp; Cooldown</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img src="/docs/shots/faces-rules-box.png" alt="Faces Rules Box" class="info-img">
-      <div class="callout-pin" style="top: 40%; left: 30%;" title="1. เลือกท่าทาง wai.yaml / wave.yaml">1</div>
-      <div class="callout-pin" style="top: 40%; left: 70%;" title="2. ตั้งเวลา Cooldown ป้องกันทักซ้ำ">2</div>
-      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. เงื่อนไข Skip if busy">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ผูกท่าทางหุ่นยนต์ (Move Binding)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกท่า <code>wai.yaml</code> (ไหว้) หรือ <code>wave.yaml</code> (โบกมือ)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          หุ่นยนต์ Nong จะแสดงท่าทางพร้อมเปล่งเสียงทักทายพร้อมกัน เพิ่มความมีชีวิตชีวาและดึงดูดผู้เข้าชมงาน
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> คูลดาวน์และป้องกันขัดจังหวะ (Cooldown &amp; Busy Guard)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กำหนด Cooldown (เช่น 10 นาที) และเลือก Skip if busy</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          คนเดิมที่ยืนคุยหน้ากล้องจะไม่โดนทักซ้ำๆ ทุก 5 วินาที และถ้าหุ่นกำลังแสดงโชว์อยู่ จะไม่ถูกขัดจังหวะ
-        </div>
-      </div>
-    </div>
+    <div class="info-header"><b>2. เขียนคำทักทายและเว้นระยะการทักซ้ำ</b></div>
+    <p>ตั้งเวลาใน <b>Greet the same person at most once every</b> เป็นนาที และเวลาของคนที่ยังไม่รู้จักเป็นวินาทีต่อกล้อง</p>
+    <p>ในส่วน <b>When they arrive</b> และ <b>When they leave</b> ใส่คำพูดแยกตามคนที่มาครั้งแรก กลับมาอีก และคนที่ยังไม่รู้จัก</p>
+    <p><code>{title}</code> แทนคำเรียก และ <code>{name}</code> แทนชื่อ คนที่ยังไม่รู้จักไม่มีชื่อให้แทน ใช้คำทักทั่วไป เช่น “สวัสดีครับ ยินดีต้อนรับครับ”</p>
   </div>
-
-  <h3>Where Reconize lives, and how to move it</h3>
-  <p>Its addresses are written in <b>config/partners.json</b> — one entry for
-     each outside program Mice follows. Change the address there and the button
-     follows on the next refresh.</p>
+  <div class="info-box">
+    <div class="info-header"><b>3. เลือกพฤติกรรมและท่าทางของแต่ละกล้อง</b></div>
+    <p>ในหัวข้อ <b>Cameras</b> เลือกว่ากล้องนั้นจะทักตอนพบคน (<b>says hello</b>) บอกลา (<b>says goodbye</b>) หรือนับคนอย่างเดียว (<b>only counts</b>)</p>
+    <p>เลือก <b>Move</b> และหุ่นในช่อง <b>on</b> ของกล้องนั้น รายการท่ามาจากไฟล์ที่บันทึกไว้จริง ถ้าต้องการพูดอย่างเดียวให้เลือก <b>none</b></p>
+    <p>ถ้ากล้องยังไม่ปรากฏ ใช้ <b>Add a camera by name</b> ชื่อกล้องต้องตรงกับข้อมูลที่โปรแกรมใบหน้าส่งมา</p>
+  </div>
+  <div class="f">
+    <h3>บันทึกและตรวจผล</h3>
+    <p>กด <b>Save</b> ด้านล่างและรอข้อความยืนยันการบันทึก การเปลี่ยนค่ามีผลเมื่อระบบพบคนตามเงื่อนไขครั้งถัดไป <b>Undo my changes</b> โหลดค่าที่บันทึกไว้กลับมา</p>
+    <p>ถ้าต้องการประกาศเมื่อยอดคนถึงจำนวนที่กำหนด ใช้ <b>Celebrations</b> ส่วนคำเรียกเฉพาะบุคคลอยู่ใน <b>Titles for particular people</b></p>
+  </div>
+  <p class="tech">ที่อยู่โปรแกรมภายนอกอ่านจาก config/partners.json</p>
 </section>
