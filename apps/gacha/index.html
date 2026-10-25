@@ -326,20 +326,23 @@ function drawMachines() {
         '<button onclick="document.getElementById(\'t_intake_' + i + '\').value=600;setCfg(' + i + ',\'intake\',600)">600ms</button> ' +
         '<button onclick="setCfg(' + i + ',\'intake\',val(\'t_intake_' + i + '\'))">Save</button></div>' +
         '<div><label style="display:block;margin-bottom:2px"><b>Pause at center (ms):</b></label>' +
-        '<input type="number" id="t_pause_' + i + '" value="' + (c.pause || 5000) + '" style="width:80px"> ' +
+        '<input type="number" id="t_pause_' + i + '" value="' + (c.pause ?? 5000) + '" style="width:80px"> ' +
         '<button onclick="document.getElementById(\'t_pause_' + i + '\').value=2000;setCfg(' + i + ',\'pause\',2000)">2s</button> ' +
         '<button onclick="document.getElementById(\'t_pause_' + i + '\').value=5000;setCfg(' + i + ',\'pause\',5000)">5s</button></div>' +
         '<div><label style="display:block;margin-bottom:2px"><b>Travel speed (50-1023):</b></label>' +
         '<input type="number" id="t_speed_' + i + '" value="' + (c.speed || 500) + '" style="width:80px"> ' +
         '<button onclick="setCfg(' + i + ',\'speed\',val(\'t_speed_' + i + '\'))">Save</button></div>' +
         '<div><label style="display:block;margin-bottom:2px"><b>Overshoot lip (ms / speed):</b></label>' +
-        '<input type="number" id="t_over_' + i + '" value="' + (c.overshoot || 180) + '" style="width:65px"> ' +
+        '<input type="number" id="t_over_' + i + '" value="' + (c.overshoot ?? 180) + '" style="width:65px"> ' +
         '<input type="number" id="t_overspeed_' + i + '" value="' + (c.overshoot_speed || 380) + '" style="width:65px"> ' +
         '<button onclick="setCfg(' + i + ',\'overshoot\',val(\'t_over_' + i + '\'));setCfg(' + i + ',\'overshoot_speed\',val(\'t_overspeed_' + i + '\'))">Save</button></div>' +
         '<div><label style="display:block;margin-bottom:2px"><b>Reverse shake (ms / speed):</b></label>' +
-        '<input type="number" id="t_ret_' + i + '" value="' + (c.return || 250) + '" style="width:65px"> ' +
+        '<input type="number" id="t_ret_' + i + '" value="' + (c.return ?? 280) + '" style="width:65px"> ' +
         '<input type="number" id="t_retspeed_' + i + '" value="' + (c.return_speed || 360) + '" style="width:65px"> ' +
         '<button onclick="setCfg(' + i + ',\'return\',val(\'t_ret_' + i + '\'));setCfg(' + i + ',\'return_speed\',val(\'t_retspeed_' + i + '\'))">Save</button></div>' +
+        '<div><label style="display:block;margin-bottom:2px"><b>Advance after Hall (ms):</b></label>' +
+        '<input type="number" min="0" max="100" id="t_advance_' + i + '" value="' + (c.advance ?? 18) + '" style="width:80px"> ' +
+        '<button onclick="setCfg(' + i + ',\'advance\',val(\'t_advance_' + i + '\'))">Save</button></div>' +
         '<div><label style="display:block;margin-bottom:2px"><b>Center crawl speed (50-1023):</b></label>' +
         '<input type="number" id="t_cspeed_' + i + '" value="' + (c.center_speed || 260) + '" style="width:80px"> ' +
         '<button onclick="setCfg(' + i + ',\'center_speed\',val(\'t_cspeed_' + i + '\'))">Save</button></div>' +
@@ -368,6 +371,7 @@ async function saveAllTuning(i) {
     ['drop', val('t_drop_' + i)],
     ['intake', val('t_intake_' + i)],
     ['pause', val('t_pause_' + i)],
+    ['advance', val('t_advance_' + i)],
     ['speed', val('t_speed_' + i)],
     ['overshoot', val('t_over_' + i)],
     ['overshoot_speed', val('t_overspeed_' + i)],

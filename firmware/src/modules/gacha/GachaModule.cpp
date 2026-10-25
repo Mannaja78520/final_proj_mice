@@ -483,7 +483,10 @@ bool GachaModule::handleCommand(String argv[], int argc, String& reply) {
     // GHOME: turn to the next magnet so a pocket sits at the receive position.
     if (cmd == "GHOME") {
         if (state_ != IDLE) { reply = "ERR busy"; return true; }
-        if (hall_.stable) { pos_ = 0; posKnown_ = true; reply = "OK already at a magnet"; return true; }
+        if (hall_.stable) {
+            job_ = JOB_HOME; motionResult_ = "done";
+            pos_ = 0; posKnown_ = true; reply = "OK already at a magnet"; return true;
+        }
         if (!motor_) { reply = "ERR no motor pins (PIN motor_a / motor_b)"; return true; }
         startTurn(JOB_HOME, 1);
         reply = "OK finding the next magnet";

@@ -91,6 +91,7 @@ public:
     bool calibrate(String& reply);
     bool test(String argv[], int argc, String& reply);
     bool spin(String argv[], int argc, String& reply);
+    bool home(String& reply);
     bool drain(String argv[], int argc, String& reply);
     bool stop(String& reply);
     bool clear(String& reply);
@@ -136,6 +137,14 @@ void calibrationScenario(bool verify, uint32_t start) {
     check(m.stock_ == 7 && m.given_ == 4 && !m.posKnown_, "calibration does not dispense or claim pocket reference");
 }
 int main() {
+    {
+        GachaModule m; String reply; m.hall_.stable = true; m.motionResult_ = "jam";
+        m.home(reply);
+        check(reply == "OK already at a magnet" && m.motionResult_ == "done" && m.posKnown_ && m.pos_ == 0,
+              "already-at-Hall HOME replaces the previous motion fault truthfully");
+        m.state_ = GachaModule::TURNING; m.motionResult_ = "turning"; m.home(reply);
+        check(reply == "ERR busy" && m.motionResult_ == "turning", "HOME cannot claim completion while another job runs");
+    }
     {
         GachaModule m; clockMs = 0; m.timeoutMs_ = 200;
         m.startTurn(GachaModule::JOB_DISPENSE, 1); m.startCenter(0);
