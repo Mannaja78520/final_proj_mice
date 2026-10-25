@@ -1,26 +1,30 @@
 # Nong acceptance and independent Gemini/source audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-25T17:17:20.452788+07:00
+Updated: 2026-10-25T21:54:27.805757+07:00
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
-Last commit: this checkpoint; priord66ea47
+Last commit: this checkpoint; priorf4841d8
 Plan: A48-13 (robot); related A47-20/A48-14 source, A45-11 Lab, A48-16 rules
 
 ## Goal
 Finish the authorized pending Gemini/Claude work, independently review exact source/evidence and test every implemented Nong feature where possible. Preserve manual trim and distinguish software proof from real-device acceptance.
 
 ## Doing now
-Gemini/source SOFTWARE REVIEW+INTEGRATION ACCEPTED. PR79 merged645143e5485fe75abf14e5a45c29779bdc01c8a8; APIchecked and actualrootHEAD matches/indexempty. Independently verified all64rootintegration actions rawbyteexact (54copy reviewedsource,9keep equivalent original,1preserve dirtyHub),3713->3727tracked manifest nooutsidechanges; livePLAN+dirtyHub/top/userdata preserved. R2full8258/0@8da/runtime4d/verificationf037,978rawhash db76249b...d90c7 verified;3crowdretries alone2/2 qualified. Source finishing metadata-only closure; no rootfull/live runtime/hardware acceptance. Hardware USER-NOTREADY and omitted physical/person prerequisites remain open. Main metadata/report only, releases after checkpoint.
+LatestGemini REVIEW COMPLETE, NOT ACCEPTED: exactHEADffff102/runtimee9127bb, baseline645143e;30ledgerrows=30Gitpaths,0missing/0commitpatherrors. Actual methods with realsharedApp/API in isolatedNode (no realnetwork): P1Voice say() assigns getter-only inheritedstatus and throwsTypeError (baseline645passes); P1Gacha saveAllPreset reports success after all4HTTP403/okfalse replies and continues; P2TV latehidden reply recreates1500ms polling (baseline645noschedule). Also301/0 is6selectedchecks per actualnativeQCcommand, NOT full as handoffStep5claims; old8258@8da not applicable. Evidence in scratch/nong-gemini-audit-1024/latest-ui-*.json. Source unmodified, hardware USER-NOTREADY. Main metadata/report only, releases after checkpoint.
 
 ## File status
 Baseline: own9351b2c; reviewed runtime files belong to source owner and are not main's changes.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| handoff/tasks/nong-gemini-audit-1024.md | Current review/status/next; historical detail linked | software done; physical pending | PR79 merged;64rootactions byteexact; raw full8258/0 and978hash verified | this checkpoint |
+| handoff/tasks/nong-gemini-audit-1024.md | Current review/status/next; historical detail linked | latest review failed; fixes pending | priorPR79 verified; latestffff102 three functional regressions reproduced | this checkpoint |
 | scratch/nong-gemini-audit-1024/review-1025.md | Exact independent source review and findings | done, private |978r2rawhashes+receipt exact; runtime/verification source approved | uncommitted, ignored |
-| docs/PLAN.html | Only own audit notes/status | pending, shared | serialized plan tool; software integrated; physical userpaused | uncommitted, mixed owners |
+| scratch/nong-gemini-audit-1024/latest-ui-method-proof-1025.json | Actual sharedApp/Voice/Gacha/TV regression proof+645 baseline | done, private | 3 current defects reproduced; baselineVoice/TV pass; no realnetwork | uncommitted, ignored |
+| scratch/nong-gemini-audit-1024/latest-ui-ledger-proof-1025.json | NewGemini per-file Git coverage | done, private | 30/30 paths;0missing/0wrongcommitpath | uncommitted, ignored |
+| scratch/nong-gemini-audit-1024/latest-ui-qc-commands-1025.json | Exact recent nativeGemini QC commands | done, private | selected named checks; no latestfull command | uncommitted, ignored |
+| scratch/nong-gemini-audit-1024/latest-ui-301-provenance-1025.json | Actual301/0 provenance | done, private | sixselectedchecks8.7s; handoffFull claim unsupported | uncommitted, ignored |
+| docs/PLAN.html | Only own audit notes/status | pending, shared | serialized plan tool; latest review findings open; physical userpaused | uncommitted, mixed owners |
 | docs/plan_state.js | Generated live status | pending, shared | plan tool; preserve other actors | uncommitted, mixed owners |
 | docs/BRIDGE.md | Only own metadata/coordination entries | done, shared | mutex/release recorded; no main driver | uncommitted, mixed owners |
 
@@ -40,10 +44,10 @@ Baseline: own9351b2c; reviewed runtime files belong to source owner and are not 
 - Passive Face takeover after authorusage limit: f1573bc and private readiness report; corePC JSONhealth200/Faceweb200, delivery8123listener but previous APIhealth404. No inference/person/full-load proof or runtime changes. Main passive claim released.
 
 ## Next
-1. Source completes metadata-only closure of own2software tasks after independently accepted PR79 merge/rootintegration; verify closure has no source delta. Current live root is not claimed fulltested/deployed; retained dirtyHub/top belongs to other work.
+1. Fix latest3reproduced regressions under a source owner: Voice getter-onlystatus, Gacha responsevalidation/openafterallsaves, TV hidden/inflight polling. Add integration regressions using realsharedApp/API; affectedchecks then current fullgate required. Correct latestGemini301Full claim to selected checks.
 2. Software PR79+rootintegration complete. Any later runtime deployment needs separate idle/resource claim and relevant current-tree checks; no deploy/restart under hardware pause.
 3. Keep physical tests paused until human explicitly ready; then fresh identity/config preserving trim and coordinated missing-feature matrix, never reuse staleacceptance.
 4. Historical reasoning: scratch/nong-gemini-audit-1024/latest-gemini-review.md and candidate-backend-review.md; current review-1025.md. Full chronology is in prior task commits, not repeated here.
 
 ## Blocked
-Realhardware acceptance USER-PAUSED; phone/person/absenttransports need actual prerequisites. Only source metadata closure remains active with original owner; main software review/integration confirmation complete. Not all work complete. No main process or testdriver held.
+Realhardware acceptance USER-PAUSED; phone/person/absenttransports need actual prerequisites. LatestGemini UI/OOP NOT accepted:3reproducedregressions and unsupportedFull301 claim. Originalsourceowner hitusage limit after remotePR80metadata merge; root has newerGemini commits, preserve them and do not blindff oldclosure. Not all work complete. No main process or testdriver held.
