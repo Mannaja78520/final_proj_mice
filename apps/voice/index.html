@@ -145,6 +145,111 @@ body.adv .not-adv{display:none}
 .qtopics td{vertical-align:top;padding:2px}
 .qtopics input{width:100%;min-width:80px}
 .qtopics textarea{min-width:180px}
+
+
+/* Language View Filter Bar (A48-17) */
+.lang-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.lang-filter-bar span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mut);
+}
+.lang-pill {
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--txt);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.lang-pill:hover {
+  background: var(--acc-soft);
+  border-color: var(--acc);
+}
+.lang-pill.active {
+  background: var(--acc);
+  color: var(--on-acc);
+  border-color: var(--acc);
+}
+
+/* Dynamic Column Visibility & Full Width Expansion */
+#ansTable.view-th th[data-lang]:not([data-lang="th"]),
+#ansTable.view-th td[data-lang]:not([data-lang="th"]),
+#ansTable.view-en th[data-lang]:not([data-lang="en"]),
+#ansTable.view-en td[data-lang]:not([data-lang="en"]),
+#ansTable.view-ja th[data-lang]:not([data-lang="ja"]),
+#ansTable.view-ja td[data-lang]:not([data-lang="ja"]),
+#ansTable.view-zh th[data-lang]:not([data-lang="zh"]),
+#ansTable.view-zh td[data-lang]:not([data-lang="zh"]) {
+  display: none !important;
+}
+#ansTable.view-th,
+#ansTable.view-en,
+#ansTable.view-ja,
+#ansTable.view-zh {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+/* Topics Table in Questions Tab Improvements */
+.qtopics {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+}
+.qtopics tr {
+  background: var(--sunk);
+  transition: background 0.15s ease;
+}
+.qtopics tr:hover {
+  background: color-mix(in srgb, var(--acc-soft) 25%, var(--sunk));
+}
+.qtopics th {
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  color: var(--mut);
+  border-bottom: 2px solid var(--line);
+}
+.qtopics td {
+  padding: 8px 10px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.qtopics td:first-child {
+  border-left: 1px solid var(--line);
+  border-radius: var(--r-sm) 0 0 var(--r-sm);
+}
+.qtopics td:last-child {
+  border-right: 1px solid var(--line);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+.qtopics input, .qtopics textarea {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--card);
+  color: var(--txt);
+  padding: 6px 8px;
+  font-size: 13.5px;
+}
+.qtopics input:focus, .qtopics textarea:focus {
+  border-color: var(--acc);
+  outline: none;
+}
 </style>
 
 <script>
@@ -2204,12 +2309,31 @@ static langName(code){
   this.drawSheet();
 }
 
+  
+  setLangFilter(lang) {
+    this.currentLangFilter = lang;
+    const table = this.$("ansTable");
+    if (!table) return;
+    table.classList.remove("view-all", "view-th", "view-en", "view-ja", "view-zh");
+    if (lang !== "all") {
+      table.classList.add("view-" + lang);
+    }
+    document.querySelectorAll(".lang-pill").forEach(b => {
+      b.classList.toggle("active", b.getAttribute("onclick") && b.getAttribute("onclick").includes("'" + lang + "'"));
+    });
+  }
+
   drawSheet(){
   const head = this.$("ansHead"), body = this.$("ansRows");
   head.textContent = "";
   const th = t => { const e = document.createElement("th"); e.textContent = t; head.appendChild(e); };
   ["#"].forEach(th);
-  VoiceApp.ANSWER_KEYS.forEach(([l]) => th(VoiceApp.langName(l)));
+  VoiceApp.ANSWER_KEYS.forEach(([l]) => {
+    const e = document.createElement("th");
+    e.textContent = VoiceApp.langName(l);
+    e.dataset.lang = l;
+    head.appendChild(e);
+  });
   ["Robot move", ""].forEach(th);
   body.textContent = "";
   this.sheet.forEach((row, i) => body.appendChild(this.sheetRow(row, i)));
@@ -2243,6 +2367,7 @@ static langName(code){
   };
   VoiceApp.ANSWER_KEYS.forEach(([lang, key]) => {
     const c = td();
+    c.dataset.lang = lang;
     const ask = this.cell(this.asksIn(row.item.questions, lang).join("\n"),
                           "people ask… (one per line)", joinAsks);
     ask.classList.add("ask");
@@ -3648,6 +3773,14 @@ if (document.readyState === "loading") {
       </div>
       <p class="mini" style="margin-top:var(--sp-2)">คลิกในช่องเพื่อแก้ไข: แต่ละภาษามีคอลัมน์ของตัวเอง ด้านบนคือ <b>คำถามที่คนถาม</b> (พิมพ์ 1 คำถามต่อ 1 บรรทัด); ด้านล่างคือ <b>คำตอบที่หุ่นยนต์จะพูด</b> หากเว้นคำตอบภาษาอื่นว่างไว้ ระบบจะแปลภาษาให้อัตโนมัติเมื่อกดบันทึก (▶ เพื่อทดลองฟังเสียง)</p>
       <p class="mini" id="ansEmpty" hidden>ยังไม่มีคำตอบในระบบ — กดปุ่ม "+ เพิ่มแถวคำตอบ" เพื่อเริ่มต้นเพิ่มบทสนทนา</p>
+      <div class="lang-filter-bar">
+        <span>👁️ กรองมุมมองภาษา (View Language):</span>
+        <button type="button" class="lang-pill active" onclick="voiceApp.setLangFilter('all')">🌐 แสดงทุกภาษา (All)</button>
+        <button type="button" class="lang-pill" onclick="voiceApp.setLangFilter('th')">🇹🇭 ภาษาไทย (TH)</button>
+        <button type="button" class="lang-pill" onclick="voiceApp.setLangFilter('en')">🇬🇧 English (EN)</button>
+        <button type="button" class="lang-pill" onclick="voiceApp.setLangFilter('ja')">🇯🇵 日本語 (JA)</button>
+        <button type="button" class="lang-pill" onclick="voiceApp.setLangFilter('zh')">🇨🇳 中文 (ZH)</button>
+      </div>
       <div class="sheet-wrap">
         <table class="sheet" id="ansTable">
           <thead><tr id="ansHead"></tr></thead>

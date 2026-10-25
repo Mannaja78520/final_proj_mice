@@ -146,6 +146,14 @@
       </div>
       <p class="mini" style="margin-top:var(--sp-2)">คลิกในช่องเพื่อแก้ไข: แต่ละภาษามีคอลัมน์ของตัวเอง ด้านบนคือ <b>คำถามที่คนถาม</b> (พิมพ์ 1 คำถามต่อ 1 บรรทัด); ด้านล่างคือ <b>คำตอบที่หุ่นยนต์จะพูด</b> หากเว้นคำตอบภาษาอื่นว่างไว้ ระบบจะแปลภาษาให้อัตโนมัติเมื่อกดบันทึก (▶ เพื่อทดลองฟังเสียง)</p>
       <p class="mini" id="ansEmpty" hidden>ยังไม่มีคำตอบในระบบ — กดปุ่ม "+ เพิ่มแถวคำตอบ" เพื่อเริ่มต้นเพิ่มบทสนทนา</p>
+      <div class="lang-filter-bar">
+        <span>👁️ กรองมุมมองภาษา (View Language):</span>
+        <button type="button" class="lang-pill active" onclick="voiceApp.setLangFilter('all')">🌐 แสดงทุกภาษา (All)</button>
+        <button type="button" class="lang-pill" onclick="voiceApp.setLangFilter('th')">🇹🇭 ภาษาไทย (TH)</button>
+        <button type="button" class="lang-pill" onclick="voiceApp.setLangFilter('en')">🇬🇧 English (EN)</button>
+        <button type="button" class="lang-pill" onclick="voiceApp.setLangFilter('ja')">🇯🇵 日本語 (JA)</button>
+        <button type="button" class="lang-pill" onclick="voiceApp.setLangFilter('zh')">🇨🇳 中文 (ZH)</button>
+      </div>
       <div class="sheet-wrap">
         <table class="sheet" id="ansTable">
           <thead><tr id="ansHead"></tr></thead>

@@ -745,6 +745,32 @@ const PRESETS = {
   }
 };
 
+async function saveAllPreset() {
+  $("presetNotice").innerHTML = "⏳ กำลังบันทึกข้อมูลและเปิดงานกิจกรรม…";
+  $("presetNotice").hidden = false;
+  try {
+    // 1. Save event
+    await Mice.Api.post("/api/gacha/event", {name: val("evName"), open: true});
+    // 2. Save machines
+    await Mice.Api.post("/api/gacha/config", {machines: readMachines()});
+    // 3. Save items
+    const items = {};
+    [...$("iTable").tBodies[0].rows].forEach(r => {
+      const id = r.querySelector('[data-k="id"]').value.trim();
+      const instead = r.querySelector('[data-k="instead"]').value.split(/[\s,]+/).filter(Boolean);
+      if (id) items[id] = Object.assign({label: r.querySelector('[data-k="label"]').value.trim()}, instead.length ? {instead} : {});
+    });
+    await Mice.Api.post("/api/gacha/config", {items});
+    // 4. Save rules
+    await Mice.Api.post("/api/gacha/rules", {items: readRows("rItems"), people: readRows("rPeople")});
+    await load();
+    $("presetNotice").innerHTML = "🎉 <b>บันทึกทุกตารางและเปิดงานกิจกรรมสำเร็จ!</b> ระบบพร้อมแจกของรางวัลทันที " +
+      '<button class="primary" style="margin-left:8px;padding:3px 10px;font-size:12px" onclick="showTab(\'give\')">🎁 ไปที่หน้าแจกรางวัล</button>';
+  } catch(e) {
+    $("presetNotice").innerHTML = "⚠️ บันทึกไม่สำเร็จ: " + esc(e.message || e);
+  }
+}
+
 function applyPreset(key) {
   const p = PRESETS[key];
   if (!p) return;
@@ -755,7 +781,12 @@ function applyPreset(key) {
   drawItems();
   $("rItems").tBodies[0].innerHTML = "";
   p.rules.forEach(r => addRow("rItems", r));
-  $("presetNotice").innerHTML = "⚡ <b>นำเข้าพรีเซต: " + esc(p.name) + " สำเร็จ!</b> ข้อมูลเครื่อง ของรางวัล และกฎถูกตั้งค่าเรียบร้อย คุณสามารถปรับแก้ชื่อหรือจำนวนในตาราง แล้วกดปุ่ม Save เพื่อใช้งานได้ทันที";
+  $("presetNotice").innerHTML = "⚡ <b>นำเข้าพรีเซต: " + esc(p.name) + " เรียบร้อย!</b> " +
+    '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+    '<button class="primary" onclick="saveAllPreset()" style="font-weight:700">💾 บันทึกทุกตารางและเริ่มงานทันที</button>' +
+    '<button class="secondary" onclick="showTab(\'machines\')">🛠️ ดู/แก้ตารางเครื่องและของรางวัล</button>' +
+    '<button class="secondary" onclick="showTab(\'rules\')">📋 ดู/แก้ตารางกฎสิทธิ์</button>' +
+    '</div>';
   $("presetNotice").hidden = false;
 }
 

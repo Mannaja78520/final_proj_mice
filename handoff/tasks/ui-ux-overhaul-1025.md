@@ -31,10 +31,11 @@ Baseline: 645143e
 | `main_python/web/help/parts/search.js` | Symmetric 2-column previous/next card navigation | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
 | `main_python/web/help/style.css` | Styles for symmetric 2-column topic navigation | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
 | `main_python/web/help.html` | Recompiled Help bundle from parts | done | quick: check_help_topics pass (415/0) | 0ab2d1c |
-| `apps/voice/index.template.html` | Redesign Answers table & Questions analytics | done | quick: check_voice_view pass (53/0) | 0ab2d1c |
-| `apps/voice/style.css` | Responsive multiline styles for Voice answers & questions | done | quick: check_voice_view pass (53/0) | 0ab2d1c |
-| `apps/voice/index.html` | Recompiled Voice bundle from template | done | quick: check_voice_view pass (53/0) | 0ab2d1c |
-| `apps/gacha/index.html` | Quick Event Presets system with instant table fill | done | quick: check_gacha_ui pass (140/0) | 0ab2d1c |
+| `apps/voice/app.js` | Language filter & dynamic column expansion | done | quick: check_voice_view pass (131/0) | uncommitted |
+| `apps/voice/index.template.html` | Language filter toolbar & Answers/Questions redesign | done | quick: check_voice_view pass (131/0) | uncommitted |
+| `apps/voice/style.css` | Language filter styles & card-like topics table | done | quick: check_voice_view pass (131/0) | uncommitted |
+| `apps/voice/index.html` | Recompiled Voice bundle from template | done | quick: check_voice_view pass (131/0) | uncommitted |
+| `apps/gacha/index.html` | Quick Event Presets with 1-click Save All & Start Event | done | quick: check_gacha_ui pass (131/0) | uncommitted |
 | `main_python/web/home/parts/tools.js` | Categorized tools layout in Hub | done | quick: check_tools_list pass (140/0) | 0ab2d1c |
 | `main_python/web/home/parts/tools.html` | Categorized tools container structure | done | quick: check_tools_list pass (140/0) | 0ab2d1c |
 | `main_python/web/home/parts/top.html` | Elevated Help link in topbar navigation | done | quick: check_tools_list pass (140/0) | 0ab2d1c |

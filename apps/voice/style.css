@@ -123,3 +123,108 @@ body.adv .not-adv{display:none}
 .qtopics td{vertical-align:top;padding:2px}
 .qtopics input{width:100%;min-width:80px}
 .qtopics textarea{min-width:180px}
+
+
+/* Language View Filter Bar (A48-17) */
+.lang-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.lang-filter-bar span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mut);
+}
+.lang-pill {
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--txt);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.lang-pill:hover {
+  background: var(--acc-soft);
+  border-color: var(--acc);
+}
+.lang-pill.active {
+  background: var(--acc);
+  color: var(--on-acc);
+  border-color: var(--acc);
+}
+
+/* Dynamic Column Visibility & Full Width Expansion */
+#ansTable.view-th th[data-lang]:not([data-lang="th"]),
+#ansTable.view-th td[data-lang]:not([data-lang="th"]),
+#ansTable.view-en th[data-lang]:not([data-lang="en"]),
+#ansTable.view-en td[data-lang]:not([data-lang="en"]),
+#ansTable.view-ja th[data-lang]:not([data-lang="ja"]),
+#ansTable.view-ja td[data-lang]:not([data-lang="ja"]),
+#ansTable.view-zh th[data-lang]:not([data-lang="zh"]),
+#ansTable.view-zh td[data-lang]:not([data-lang="zh"]) {
+  display: none !important;
+}
+#ansTable.view-th,
+#ansTable.view-en,
+#ansTable.view-ja,
+#ansTable.view-zh {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+/* Topics Table in Questions Tab Improvements */
+.qtopics {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+}
+.qtopics tr {
+  background: var(--sunk);
+  transition: background 0.15s ease;
+}
+.qtopics tr:hover {
+  background: color-mix(in srgb, var(--acc-soft) 25%, var(--sunk));
+}
+.qtopics th {
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  color: var(--mut);
+  border-bottom: 2px solid var(--line);
+}
+.qtopics td {
+  padding: 8px 10px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.qtopics td:first-child {
+  border-left: 1px solid var(--line);
+  border-radius: var(--r-sm) 0 0 var(--r-sm);
+}
+.qtopics td:last-child {
+  border-right: 1px solid var(--line);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+.qtopics input, .qtopics textarea {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--card);
+  color: var(--txt);
+  padding: 6px 8px;
+  font-size: 13.5px;
+}
+.qtopics input:focus, .qtopics textarea:focus {
+  border-color: var(--acc);
+  outline: none;
+}
