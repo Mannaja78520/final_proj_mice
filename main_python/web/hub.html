@@ -531,6 +531,21 @@
         on the PC.</div>
     </div>
 
+    <h2 style="margin-top:var(--sp-4)">⚡ ประสิทธิภาพของเครื่อง Hub</h2>
+    <p class="mini">อัตโนมัติเลือกให้เหมาะกับเครื่องนี้ เปลี่ยนคอมพิวเตอร์แล้วจะตรวจใหม่ โดยคงโมเดลและตัวละครที่คุณเลือกไว้</p>
+    <div id="resourceSummary" class="mini" aria-live="polite"></div>
+    <div class="row">
+      <label>โหมด <select id="resourceMode"></select></label>
+      <label>หน่วยประมวลผล <select id="resourceDevice"></select></label>
+      <button id="resourceSave" onclick="resourceView.save()">บันทึกประสิทธิภาพ</button>
+      <button onclick="resourceView.load()">โหลดค่าปัจจุบัน</button>
+    </div>
+    <div class="tech" id="resourceAdvanced"></div>
+    <p class="mini" id="resourceNotice"></p>
+    <p class="mini" id="resourceStatus" role="status"></p>
+    <h3>ภาพ 3D บนอุปกรณ์ที่เปิดหน้านี้</h3>
+    <div class="row"><label>คุณภาพภาพ <select id="resourceDisplay"></select></label></div>
+    <p class="mini">เลือกตามอุปกรณ์ที่เปิดเว็บ ไม่ใช้สเปก Hub แทนโทรศัพท์หรือคอมพิวเตอร์อีกเครื่อง ปรับความละเอียดและความลื่นได้ทันที ส่วนขอบภาพจะเปลี่ยนเมื่อโหลดหน้าใหม่</p>
     <div class="mini">The first password is generated on the PC that runs the hub
       and written next to it, so it cannot be lost. It is never shown on a page.</div>
   </div>
@@ -2329,14 +2344,15 @@ function flashBusy(on){ flashActive=Math.max(0,flashActive+(on?1:-1)); }
 let autoUsbTimer=null;
 function autoUsbChanged(){
   const on=document.getElementById('autoUsb').checked;
-  localStorage.setItem('hub_autousb',on?'1':'0');
+  try { localStorage.setItem('hub_autousb',on?'1':'0'); } catch (_) {}
   clearInterval(autoUsbTimer);autoUsbTimer=null;
   if(on)autoUsbTimer=setInterval(()=>{
 
     if(!document.hidden&&!flashActive)scanUsb();
   },12000);
 }
-document.getElementById('autoUsb').checked=localStorage.getItem('hub_autousb')==='1';
+try { document.getElementById('autoUsb').checked=localStorage.getItem('hub_autousb')==='1'; }
+catch (_) { document.getElementById('autoUsb').checked=false; }
 autoUsbChanged();
 // Start on the tab you were last on. Defaults to Modules, so a fresh browser
 // opens exactly the page it always did.
@@ -3428,6 +3444,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 function paintSettings(){
   loadUsers();
+  if (authed) resourceView.load();
   $('setWho').textContent = authed
     ? ('Logged in on ' + (MY_PC || 'this PC') + ' — you can move, flash and delete.')
     : ('Not logged in' + (MY_PC ? ' on ' + MY_PC : '') + ' — you can look at '
@@ -3435,6 +3452,69 @@ function paintSettings(){
 }
 
 onTab('settings', paintSettings);
+
+class ResourceSettingsView {
+  constructor() {
+    this.revision = null; this.loading = false;
+    window.addEventListener('mice-resource-change', () => {
+      const select = document.getElementById('resourceDisplay');
+      if (select && window.MiceResources) select.value = window.MiceResources.mode;
+    });
+  }
+  async request(options) {
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 6000);
+    try {
+      const response = await fetch('/api/resources', Object.assign({signal: controller.signal}, options));
+      const data = await response.json();
+      if (!response.ok || data.ok === false) throw Error(data.error || 'อ่านหรือบันทึกค่าไม่ได้');
+      return data;
+    } finally { clearTimeout(timer); }
+  }
+  select(id, choices, value) {
+    const box = document.getElementById(id); box.textContent = '';
+    choices.forEach(p => { const option = document.createElement('option'); option.value = p.id; option.textContent = p.label; box.appendChild(option); });
+    box.value = value;
+  }
+  async load() {
+    if (this.loading) return; this.loading = true;
+    try {
+      const data = await this.request(); this.revision = data.revision;
+      this.select('resourceMode', [{id:'auto',label:'อัตโนมัติ'}].concat(data.choices.profiles), data.settings.mode);
+      this.select('resourceDevice', data.choices.devices, data.settings.device);
+      const advanced = document.getElementById('resourceAdvanced'); advanced.textContent = '';
+      const labels = {cpuThreads:'จำนวนเธรด (0 = อัตโนมัติ)', workers:'งานแปลพร้อมกัน / งานฟังต่อโมเดล (0 = อัตโนมัติ)', ramReserveMiB:'RAM ที่เว้นไว้ (MiB)', vramReserveMiB:'VRAM ที่เว้นไว้ (MiB)'};
+      Object.keys(data.choices.limits).forEach(key => {
+        const label = document.createElement('label'), input = document.createElement('input');
+        label.textContent = labels[key] || key; input.type = 'number'; input.id = 'resource_' + key;
+        input.min = data.choices.limits[key][0]; input.max = data.choices.limits[key][1]; input.step = '1';
+        input.value = data.settings[key]; label.appendChild(input); advanced.appendChild(label);
+      });
+      this.settings = data.settings;
+      document.getElementById('resourceSummary').textContent = 'ค่าที่จะใช้กับการโหลดใหม่: ' + data.effective.label + ' · ' + data.effective.device.toUpperCase() + ' · ' + data.effective.cpuThreads + ' เธรด · ' + data.effective.workers + ' งานแปล / งานฟังต่อโมเดล';
+      document.getElementById('resourceNotice').textContent = data.notice;
+      document.getElementById('resourceStatus').textContent = data.effective.warning || 'พร้อมใช้กับการโหลดงานครั้งถัดไป';
+      const client = window.MiceResources;
+      if (client) {
+        this.select('resourceDisplay', [{id:'auto',label:'อัตโนมัติ'}].concat(client.registry.profiles || []), client.mode);
+        document.getElementById('resourceDisplay').onchange = event => client.setMode(event.target.value);
+      }
+    } catch (error) { document.getElementById('resourceStatus').textContent = 'อ่านค่าไม่ได้ ลองโหลดค่าปัจจุบันอีกครั้ง: ' + error.message; }
+    finally { this.loading = false; }
+  }
+  async save() {
+    if (!this.settings || !this.revision || this.saving) return;
+    this.saving = true; document.getElementById('resourceSave').disabled = true;
+    try {
+      const settings = Object.assign({}, this.settings, {mode: document.getElementById('resourceMode').value, device: document.getElementById('resourceDevice').value});
+      Object.keys(settings).filter(k => k !== 'mode' && k !== 'device').forEach(k => { settings[k] = Number(document.getElementById('resource_' + k).value); });
+      await this.request({method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({settings,revision:this.revision})});
+      await this.load();
+      document.getElementById('resourceStatus').textContent += ' · บันทึกแล้ว งานที่เปิดอยู่ยังใช้ค่าเดิม';
+    } catch (error) { document.getElementById('resourceStatus').textContent = 'ยังไม่ได้บันทึก ค่าที่กรอกยังอยู่: ' + error.message; }
+    finally { this.saving = false; document.getElementById('resourceSave').disabled = false; }
+  }
+}
+const resourceView = new ResourceSettingsView();
 
 // ---- last: what runs once every part is in --------------------------
 // Home repaints on its own timer while it is the tab on screen.

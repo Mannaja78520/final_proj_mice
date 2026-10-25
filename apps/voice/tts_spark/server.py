@@ -42,6 +42,15 @@ NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
 HERE = Path(__file__).resolve().parent
 
 
+def resource_budget(torch):
+    # Same writable Hub settings reach this separate environment through launch env.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from resources import VoiceResources
+    resources = VoiceResources(Path(__file__).resolve().parents[3])
+    plan, _memory = resources.torch_plan(torch)
+    return resources, plan
+
+
 def load(runtime, checkpoint, reference, device_name):
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -50,17 +59,26 @@ def load(runtime, checkpoint, reference, device_name):
     from sparktts.models.audio_tokenizer import BiCodecTokenizer
     import thai_text_preprocess as pre
 
-    device = torch.device(device_name if torch.cuda.is_available() or device_name == "cpu" else "cpu")
+    resources, budget = resource_budget(torch)
+    picked = resources.pick_device(budget, device_name)
+    try:
+        resources.admit(budget, "spark", picked)
+    except MemoryError:
+        if picked == "cpu": raise
+        picked = "cpu"
+        resources.admit(budget, "spark", picked)
+    device = torch.device(picked)
     dtype = torch.bfloat16 if device.type == "cuda" and torch.cuda.is_bf16_supported() else torch.float32
     codec = BiCodecTokenizer(str(runtime / "Spark-TTS-0.5B"), device=device)
     ck = runtime / "thai-emotion" / checkpoint
     tok = AutoTokenizer.from_pretrained(str(ck), use_fast=False)
     model = AutoModelForCausalLM.from_pretrained(str(ck), torch_dtype=dtype, low_cpu_mem_usage=True).to(device)
+    resources.mark("tts:" + checkpoint, budget, str(device))
     model.eval()
     with torch.inference_mode():
         ref_global, _sem = codec.tokenize(str(reference))
     return {"torch": torch, "codec": codec, "tok": tok, "model": model, "pre": pre,
-            "device": device, "ref": ref_global, "checkpoint": checkpoint,
+            "device": device, "resources": resources, "ref": ref_global, "checkpoint": checkpoint,
             "rate": int(codec.config.get("sample_rate", 16000)),
             "emotion_tokens": pre.uses_emotion_tokens(checkpoint)}
 
@@ -265,7 +283,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):                                 # noqa: N802
         if self.path.rstrip("/") == "/health":
             return self._json({"ok": True, "service": "tts-spark", "checkpoint": self.S["checkpoint"],
-                               "device": str(self.S["device"]), "emotions": self.cfg["emotions"]})
+                               "device": str(self.S["device"]), "resources": self.S["resources"].status(), "emotions": self.cfg["emotions"]})
         self._json({"ok": False, "error": "unknown address"}, 404)
 
     def do_POST(self):                                # noqa: N802

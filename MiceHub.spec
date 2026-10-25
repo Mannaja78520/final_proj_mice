@@ -25,6 +25,10 @@ sys.path.insert(0, str(ROOT / "main_python"))
 import build_stamp                                       # noqa: E402
 
 datas = [
+    # Voice/Spark also run in separate Python environments and cannot import
+    # modules from this executable's PYZ. Ship these shared policy modules raw.
+    *[(str(ROOT / "main_python" / name), "main_python") for name in
+      ("resource_policy.py", "resource_hardware.py", "resource_settings.py")],
     (str(ROOT / "main_python" / "web"), "main_python/web"),
     (str(ROOT / "shared" / "web"), "shared/web"),
     (str(ROOT / "nong" / "main_python_set_nong" / "web"),

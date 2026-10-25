@@ -134,9 +134,10 @@ function tick(now) {
   distDraw();              // distances follow the pose and the camera (A26-44)
   const inMotion = controls ? controls.update() : false;
   const needRender = playing || inMotion || (typeof distShown === "function" && distShown()) || _dirty3d > 0;
-  if (needRender) {
+  if (needRender && (!window.MiceResources || window.MiceResources.frameDue(now))) {
     if (!playing && !inMotion && (!distShown || !distShown()) && _dirty3d > 0) _dirty3d--;
     renderer.render(scene, activeCam());
+    if (window.MiceResources) window.MiceResources.rendered(now);
   }
 }
 

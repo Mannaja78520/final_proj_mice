@@ -21,6 +21,7 @@ Hub logins, sessions, which pages need a login, pairing two hubs.
 
 ## Used by
 
+- [hub-resources](hub-resources.md)
 - [hub](hub.md)
 
 ## Checks that test it (17)

@@ -1,7 +1,13 @@
 // --- scene ---
 const viewport = $("viewport");
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio);
+const displayPolicy = window.MiceResources;
+const renderer = new THREE.WebGLRenderer({ antialias: displayPolicy ? displayPolicy.display().antialias : true });
+if (displayPolicy) displayPolicy.applyRenderer(renderer, window.devicePixelRatio);
+else renderer.setPixelRatio(window.devicePixelRatio);
+window.addEventListener('mice-resource-change', function () {
+  if (displayPolicy) displayPolicy.applyRenderer(renderer, window.devicePixelRatio);
+  if (typeof markDirty3d === 'function') markDirty3d(10);
+});
 renderer.outputEncoding = THREE.sRGBEncoding; // painted textures keep their colors
 viewport.appendChild(renderer.domElement);
 

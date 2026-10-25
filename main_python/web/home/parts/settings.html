@@ -68,6 +68,21 @@
         on the PC.</div>
     </div>
 
+    <h2 style="margin-top:var(--sp-4)">⚡ ประสิทธิภาพของเครื่อง Hub</h2>
+    <p class="mini">อัตโนมัติเลือกให้เหมาะกับเครื่องนี้ เปลี่ยนคอมพิวเตอร์แล้วจะตรวจใหม่ โดยคงโมเดลและตัวละครที่คุณเลือกไว้</p>
+    <div id="resourceSummary" class="mini" aria-live="polite"></div>
+    <div class="row">
+      <label>โหมด <select id="resourceMode"></select></label>
+      <label>หน่วยประมวลผล <select id="resourceDevice"></select></label>
+      <button id="resourceSave" onclick="resourceView.save()">บันทึกประสิทธิภาพ</button>
+      <button onclick="resourceView.load()">โหลดค่าปัจจุบัน</button>
+    </div>
+    <div class="tech" id="resourceAdvanced"></div>
+    <p class="mini" id="resourceNotice"></p>
+    <p class="mini" id="resourceStatus" role="status"></p>
+    <h3>ภาพ 3D บนอุปกรณ์ที่เปิดหน้านี้</h3>
+    <div class="row"><label>คุณภาพภาพ <select id="resourceDisplay"></select></label></div>
+    <p class="mini">เลือกตามอุปกรณ์ที่เปิดเว็บ ไม่ใช้สเปก Hub แทนโทรศัพท์หรือคอมพิวเตอร์อีกเครื่อง ปรับความละเอียดและความลื่นได้ทันที ส่วนขอบภาพจะเปลี่ยนเมื่อโหลดหน้าใหม่</p>
     <div class="mini">The first password is generated on the PC that runs the hub
       and written next to it, so it cannot be lost. It is never shown on a page.</div>
   </div>
