@@ -1,7 +1,7 @@
 # Nong acceptance and independent Gemini/source audit
 
 Owner: codex:10241515-audit
-Updated: 2026-10-25T16:21:37.731914+07:00
+Updated: 2026-10-25T16:31:45.720601+07:00
 Branch: codex/nong-gemini-audit-1024
 Tree: E:/final_proj/mice/code/.staging-nong-gemini-audit-1024
 Last commit: this checkpoint; prior9351b2c
@@ -11,7 +11,7 @@ Plan: A48-13 (robot); related A47-20/A48-14 source, A45-11 Lab, A48-16 rules
 Finish the authorized pending Gemini/Claude work, independently review exact source/evidence and test every implemented Nong feature where possible. Preserve manual trim and distinguish software proof from real-device acceptance.
 
 ## Doing now
-Exact source4d41a3c APPROVED by this independent reviewer after9e46ad0 scope and final3finding delta. Restored33sabotages and final affected+all5build1667/0 verified. FullQC launched on checkpoint4ef8dae/functional4d41a3c,977inputs fingerprint ee2c9d3c4f156dc398426ec0051b2261260e010f8f83f3146c52ac62fbb16eae; first fullgate8217/1 NOTGREEN; packing check read stale stage publication, plus3raw CRLF->LF drifts from probes. Source investigating verification-only fix and crowded browser failure; review exact tooling delta before rerun. Do not accept old7910receipt. No further code review needed unless runtime source changes. Main holds metadata/report only, no driver/hardware/service/camera/source lease.
+Exact source4d41a3c APPROVED by this independent reviewer after9e46ad0 scope and final3finding delta. Restored33sabotages and final affected+all5build1667/0 verified. FullQC launched on checkpoint4ef8dae/functional4d41a3c,977inputs fingerprint ee2c9d3c4f156dc398426ec0051b2261260e010f8f83f3146c52ac62fbb16eae; first fullgate8217/1 NOTGREEN; packing check read stale stage publication, plus3raw CRLF->LF drifts from probes. Source actively owns authorized verification-only fix: canonical plan lookup, exact-byte probe/tool restore and complete Gacha journey SOLO (assertions unchanged). Existing main reviewer resumes on source exact-delta message before rerun. Human all-software-work authorization remains active; this is asynchronous wait, NOT a human pause. Do not accept old7910receipt. No further code review needed unless runtime source changes. Main holds metadata/report only, no driver/hardware/service/camera/source lease.
 
 ## File status
 Baseline: own9351b2c; reviewed runtime files belong to source owner and are not main's changes.
@@ -46,4 +46,4 @@ Baseline: own9351b2c; reviewed runtime files belong to source owner and are not 
 4. Historical reasoning: scratch/nong-gemini-audit-1024/latest-gemini-review.md and candidate-backend-review.md; current review-1025.md. Full chronology is in prior task commits, not repeated here.
 
 ## Blocked
-Realhardware acceptance USER-PAUSED; phone/person/absenttransports need actual prerequisites. Source fullgate in progress/planned by original owner; not all work complete. No main process or testdriver held.
+Realhardware acceptance USER-PAUSED; phone/person/absenttransports need actual prerequisites. Source verification fix/rerun remains active with original owner; main waits for exact delta/receipt message. Not all work complete. No main process or testdriver held.
