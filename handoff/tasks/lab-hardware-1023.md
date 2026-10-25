@@ -1,36 +1,38 @@
 # Lab: robot and prize ESP32 transport acceptance
 
 Owner: codex:10231420-85cc
-Updated: 2026-10-25 09:07 (Bangkok)
+Updated: 2569-10-25 15:49 (Bangkok)
 Branch: codex/lab-hardware-1023
 Tree: E:/final_proj/mice/code/.staging-lab-1023
-Last commit: this checkpoint (resume baseline aa23345; preflight31adf09)
+Last commit: this checkpoint (pause-note baseline70ebb7d)
 Plan: A45-11 expanded nong acceptance; historical A47-19/A47-5/A46-2
 
-## ## Goal and latest scope
-Human25Oct returned and authorized continuing via main01a1689b. This step is a
-bounded read-only readiness window through existing Hub. Source driver released
-08:14/08:16; main independently reviews with no driver. Preserve newer manualtrim.
-No elbow probes, broad arm motion, trim/HOME setters, flash/reboot or restart.
+## Goal and latest scope
+Human25Oct explicitly says not ready to test robot (main01a1689b relay).
+Actual hardware testing is USER-PAUSED/unavailable until human explicitly says
+ready in a later coordinated window. No readiness retries, motion, flash,
+calibration, network or service changes. All Lab resources remain RELEASED for
+software gates. Preserve newer manualtrim and existing partial evidence.
 
 ## Doing now
-Closing metadata only; no live request, process or resource lease remains.
-No product source edits. Resume baseline aa23345; own tree was clean.
+Record explicit human hardware pause in metadata only; no live request,
+process or resource lease remains. No product source edits; baseline70ebb7d.
 
 ## Done
 25Oct bounded read-only readiness: Hub responds but no nong identity confirmed;
 one INFO attempt HTTP502, then no further device requests/downloads. Exact
 readiness JSON/Markdown saved. ALL physical/command/testdriver reservations
 explicitly released before source gate; A45-11 handoff todo/open with limits.
+Later human not-ready instruction recorded; no additional readiness attempt.
 
 ## File status
 | File | Change | State | Verification | Commit |
 |---|---|---|---|---|
-| handoff/tasks/lab-hardware-1023.md | Resume, per-file ledger and readiness closure | done | owned diff inspected; under150lines; root copy matches | this checkpoint |
+| handoff/tasks/lab-hardware-1023.md | Preserve readiness; record explicit human hardware pause | done | metadata diff/line count/root copy checked; no live test | this checkpoint |
 | scratch/nong-acceptance-1025/readiness.json | Exact Hub replies/host inventory; failed INFO | done | actual read-only; identity blocked HTTP502; no mutations | uncommitted (private) |
 | scratch/nong-acceptance-1025/readiness.md | Readiness and missing-test prerequisites | done | cross-checked against readiness.json; no new functional pass | uncommitted (private) |
 | docs/BRIDGE.md | Only own serialized claim/release; others preserved | done | own entries read back; all Lab resources released | uncommitted (shared root metadata) |
-| docs/PLAN.html | A45-11 resume then handoff; other rows preserved | done | plan.py handoff successful | uncommitted (shared root metadata) |
+| docs/PLAN.html | A45-11 handoff plus human-pause note; other rows preserved | done | plan.py note successful | uncommitted (shared root metadata) |
 | docs/plan_state.js | Generated plan publication | done | plan.py published; A45-11 todo/open | uncommitted (shared root metadata) |
 
 ## Facts found
@@ -40,7 +42,7 @@ Host has no192.168.137.x interface; serial inventory BluetoothCOM3/4/5/7 only.
 Oldnong.137.26 INFO502 does not identify power/network/firmware cause. Current
 manualtrim/config unread; do not claim unchanged or restore yesterday's values.
 
-Actual last device state (historical snapshot, not a fresh live poll)
+## Actual last device state (historical snapshot, not a fresh live poll)
 web-talk-test.json final INFO: nong67/chipB4BFE91C5A74 at WiFi192.168.137.26;
 moving=false, seq.running=false, attached=true, audio.playing=false,
 stream.on=false, volume=70; TALK? off. Commanded joints/targets:
@@ -108,12 +110,12 @@ authority. Existing Hub/services/network untouched. Retain metadata only until
 this checkpoint; no root product source edits or other-owner changes claimed.
 
 ## Next
-1. A45-11 handed todo/open: reconnect actual nong route, then fresh identity and
-   current configuration reads in a new coordinated window; preserve manualtrim.
+1. WAIT for human explicitly ready. Only then coordinate a new hardware window,
+   restore an actual route and read fresh identity/current config; preserve trim.
 2. A45-11 stays incomplete: physical HOME/axes user-deferred; nong USB/RS485
    absent; broad motion/Studio/RRT/video/RELAX and calibration mutators not run;
    phone mic, OTA/FW update and hotspot outage not independently tested.
 3. Gacha source safety candidate (including newer GCALIB/GTEST/GDRAIN) requires
    owner review/gates before any separately coordinated physical acceptance.
-4. Main/source continue exact frozen candidate review/fullgate. No automatic
-   hardware continuation or repeated failed probes; wait actual connection.
+4. Main/source may continue software review/gates with resources already released.
+   Hardware remains USER-PAUSED; connection appearing alone is not resume consent.
