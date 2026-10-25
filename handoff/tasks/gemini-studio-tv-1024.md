@@ -1,17 +1,17 @@
 # Studio/TV correctness + reconciled Help — frozen for review
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T15:54:29+07:00
+Updated: 2026-10-25T15:59:35+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
-Last commit: this checkpoint; final3 review corrections after frozen dc5a953
+Last commit: this checkpoint; runtime source4d41a3c independently approved
 Plan: A48-14 (robot); combined with A47-20; imported A48-15 Help8064292 owned597a
 
 ## Goal
 Keep idle rendering savings but redraw all actual mutations; target a valid selected Nong for native saved HOME/telemetry and truthful show restart; preserve Help owner menu/diagram fixes.
 
 ## Doing now
-All3 final review corrections implemented. New actual whole-GCFG/omitted-GTEST/native+Hub/fakebusy+syntax223/0 (native195,UI24,parse4); old uncorrected production209/10 proved the symptoms. Checkpoint before deliberate reference/CLEAR/polarity/rejection/default/UIerror reversions, restoregreen, actual affected firmware builds and exact correctedSHA independent inspection. Remainder frozen; no fullgate until main final conclusion, no hardware/runtime writes.
+Existing main independently APPROVED runtime source4d41a3c after all3 final corrections; no further source finding. New deliberate config/default5/5 and board-refusal1/1 reversions caught/restoredgreen, total33iterative. Current focused223/0. Next actual firmware/native builds plus final affected/generator/layout/actual-CAD checks; freeze input manifest, fresh0driver inventory, notify main with exact evidence/fingerprint, then run fullgate once as explicitly authorized. Stop for delta review if runtime source changes beyond4d41a3c. No hardware/runtime/userdata operations.
 
 ## Facts found
 - applyPose invalidates before URDF early return; grid/hand/late non-tip CAD mesh, late shape STL and resize invalidate. Measured >60idleframes and zero idle paints; actual monitor/pose mutations redraw.
@@ -26,13 +26,13 @@ All3 final review corrections implemented. New actual whole-GCFG/omitted-GTEST/n
 - Per-file state pending means review/full/landing remains, not an unresolved test failure. Earlier203/637 batches are historical; use latest1566 and69 evidence.
 
 ## Next
-1. Existing main review of9e46ad0 found3 final deltas; run new deliberate regressions/restored affected builds and send exact correctedSHA for final delta inspection. No final approval exists yet.
-2. Apply actual findings in this branch, recheck affected behavior/build and update ledgers; freeze current source/input hashes.
-3. Run full QC once on the exact stable candidate, with source fingerprints before/after and fresh no-driver inventory. Then source PR/integration only with required review/authorization.
-4. Physical/runtime deployment is separate: no flash, Hub restart, camera, HOME/motion/RELAX/calibration command or trim write authorized by this task.
+1. Rebuild actual firmware/native and recheck final affected suite on approved4d41a3c; keep runtime source fixed.
+2. Freeze input manifest+fresh empty softwaredriver inventory and send exact evidence/fingerprint to main, then full QC once. No additional reviewer needed for unchanged runtime source.
+3. After fullgreen prepare source PR/PCintegration handoff with exact evidence; preserve all root user data and separate physical/runtime actions.
+4. USER NOT READY for hardware: no device check/retry, motion, HOME/RELAX, network change, flash, trim/calibration or Hub/service restart.
 
 ## Blocked
-Independent review found3final deltas; authorized corrections in progress. Full QC NOT RUN for this candidate; no source promotion/PR/deploy. Physical elbow centering remains user-deferred and unpassed. Software-only driver lease reclaimed after Lab09:06 release; no transfer of physical rights.
+No source-review blocker remains at4d41a3c. Required final affected/build/input freeze/fullgate pending. User not ready for physical tests; no physical/runtime permission acquired. Source software-only driver lease reclaimed after Lab09:06 release.
 
 ## File status
 Baseline:e30bc36; preserved Gemini2bd3299/8530dbf/6db1aeb, rules9b57ee9 and Help8064292. One latest row per owned file; imported owner597a design is attributed above.
@@ -87,3 +87,5 @@ Baseline:e30bc36; preserved Gemini2bd3299/8530dbf/6db1aeb, rules9b57ee9 and Help
 - Review findings: config keeps stale pos_known/pos after layout/CLEAR; GTEST actually defaults1, not slots; API200 generic says hides board ERRbusy. Earlier1566/69/27 proof applies to functional9e46ad0; changed files need new proof.
 
 - Final delta: one invalidateReference helper, called after successful true layout/reference changes and by CLEAR; rejected/no-op/non-reference settings preserve reference. Polarity/CLEAR reset Hall; immediate GHOME cannot reuse old polarity. Source GTEST default1 unchanged, documentation corrected; real Hub HTTP200 ERRbusy now visible.
+
+- Main final review approved4d41a3c (exact Git delta against9e46ad0); this is source approval only. New sabotage-final-config-1025.log5/5 and sabotage-final-error-1025.log1/1 restoredgreen; previous27+new6=33iterative proofs.
