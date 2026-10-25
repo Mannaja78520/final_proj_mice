@@ -1,7 +1,7 @@
 # Adaptive PC and browser resource policy
 
 Owner: codex:10241515-audit
-Updated: 2026-10-26T04:17:51.331829+07:00
+Updated: 2026-10-26T04:19:22.588407+07:00
 Branch: codex/adaptive-resources-1026
 Tree: E:/final_proj/mice/code/.staging-adaptive-resources-1026
 Last commit: this checkpoint; baseline69fd19ed
@@ -11,10 +11,10 @@ Plan: A48-18 (robot); related A48-13 hardwarepause
 Dynamic configurable resource use on weaker/stronger future Hub PCs and browser clients. Preserve models, provider chain, dirtyroot and physical pause.
 
 ## Doing now
-Full8418/0 at f248802 completed,794.5s,994 raw inputs+privateCAD20 stable. Four parallel failures passed alone2/2 each: check_app_browser/check_edge_cases/check_freeze_stop/check_checked_dispatch (qualified, not clean first attempt). Build spec and verify exact archive assets now; no EXE execution/root replacement. Then task closure metadata/PR/guarded source integration.
+Full8418/0@f248802 qualified four parallel failures -> isolated2/2 each;994source+20CAD stable. Package11,463,270bytes built;11 exact asset payloads+4 native resource modules archive-verified, EXE never started/installed. Independent backend gate review accepted. Close only own task metadata next, selected metadata checks; PR then guarded root integration preserving all dirty user files and insert-only3module root spec merge. All runtime hashes frozen.
 
 ## File status
-Verification: selected326/0 +77/0; nine deliberate regressions caught/restored. Affected1207/1 legacy fixture repaired;1253/1 generated headers refreshed; final selected270/0. Full8418/0 qualified4isolatedretries; package pending. Exact evidence in scratch/adaptive-resources-1026. Runtime reviews approved82e1d5c; source-review.json binds25 raw inputs.
+Verification: selected326/0 +77/0; nine deliberate regressions caught/restored. Affected1207/1 legacy fixture repaired;1253/1 generated headers refreshed; final selected270/0. Full8418/0 qualified4isolatedretries; package archive verified; not executed. Exact evidence in scratch/adaptive-resources-1026. Runtime reviews approved82e1d5c; source-review.json binds25 raw inputs.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
@@ -32,7 +32,7 @@ Verification: selected326/0 +77/0; nine deliberate regressions caught/restored. 
 | docs/systems/hub-web.md | Generated inventory/build output | implemented | full8418/0@f248802;4 isolated retries | 405084b |
 | docs/systems/qc.md | Generated inventory/build output | implemented | full8418/0@f248802;4 isolated retries | f248802 |
 | docs/systems/shared-web.md | Generated inventory/build output | implemented | full8418/0@f248802;4 isolated retries | 405084b |
-| handoff/tasks/adaptive-resources-1026.md | Per-file checkpoint and next actions | implemented | full8418/0@f248802;4 isolated retries | this checkpoint |
+| handoff/tasks/adaptive-resources-1026.md | Per-file checkpoint and next actions | implemented | metadata after full; selected closure pending | this checkpoint |
 | main_python/hub_api_apps.py | Pass shared DATA policy environment to Voice | implemented | full8418/0@f248802;4 isolated retries | 405084b |
 | main_python/hub_api_resources.py | Authenticated settings and public-only client bootstrap | implemented | full8418/0@f248802;4 isolated retries | 405084b |
 | main_python/hub_auth.py | Gate resource POST | implemented | full8418/0@f248802;4 isolated retries | 405084b |
@@ -68,11 +68,11 @@ Verification: selected326/0 +77/0; nine deliberate regressions caught/restored. 
 - Separate assessment found Lift missing travel deadline (P1), not repaired by this PC scope. No physical fault observed.
 
 ## Done
-Design and final substantive source reviews: resource_design (supported gpt-6-astra high) + audit_latest_ui; reviewed findings verified and corrected. Latest selected326/0 and resource+actual Edge77/0, no actual models/hardware. Isolated child-layout Python imports passed. Deliberate9/9 guards caught, restored green; scratch/adaptive-resources-1026/regressions.log. Logs scratch/adaptive-resources-1026; older full8335 does not cover this task.
+Design and final substantive source reviews: resource_design (supported gpt-6-astra high) + audit_latest_ui; reviewed findings verified and corrected. Final full8418/0 with4qualifiedisolatedretries and archive verified, no actual models/hardware. Isolated child-layout Python imports passed. Deliberate9/9 guards caught, restored green; scratch/adaptive-resources-1026/regressions.log. Logs scratch/adaptive-resources-1026; older full8335 does not cover this task.
 
 ## Next
-1. Run stable-input full once; preserve before/after raw manifests and private CAD20 hashes.
-2. Spec build/archive verification; metadata closure only after green full.
+1. Archive final per-file ledger, delete only own closed task and rebuild agents inventory; selected metadata gate.
+2. PR expected-head merge after independent closure review; guarded root source integration.
 3. PR/guarded source integration; preserve all root dirty userdata/spec/EXE, record remaining Lift/physical work.
 
 ## Blocked
