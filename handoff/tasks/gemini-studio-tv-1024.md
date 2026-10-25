@@ -1,17 +1,17 @@
 # Latest Gemini Studio rendering and TV control correctness
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T08:04:08+07:00
+Updated: 2026-10-25T08:06:21+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
-Last commit: 9e46ad0 functional source; this checkpoint records27/27 caught/restored proofs
+Last commit: bb5ad4b; functional9e46ad0 unchanged; current checkpoint records actual builds
 Plan: A48-14 (same verified-source batch as A47-20)
 
 ## Goal
 Main delegates confirmed latest Gemini Studio/TV regressions from ce0aeb0/b5a161b/2bd3299. Preserve all new features and idle render saving. No physical pose/calibration/CAD changes.
 
 ## Doing now
-All27 deliberate regressions caught and restoredgreen: native9+HOME1,syntax1,HubUI2,TV4,Studio6,Help2,moduleUI2. Functional source9e46ad0 sent to existing main for Git-object review (avoid transient sabotage files). Next compile actual per-type firmware/native, final affected checks; reconcile findings, freeze exact final source, then full gate once. No hardware/runtime/userconfig action.
+Actual5-environment firmware builds + native logic checks69/0 (61.5s), all27 deliberate regressions caught/restoredgreen. Functional9e46ad0 unchanged and sent existing main for independent review. Next run final affected browser/contract/layout/actual-CAD checks, resolve review findings, exact source freeze and full gate once. No flash/hardware/Hub/userdata writes.
 
 ## Facts found
 - Main static review: applyPose URDF early return skips bottom markDirty3d, so after60 idle frames CAD pose/monitor can fail to redraw. Hand/grid/late mesh and resize lack invalidation. Mark mutation callbacks, retain zero idle renders.
@@ -81,3 +81,5 @@ apps/camera/index.html and apps/voice/index.html: builder EOL-only, not staged. 
 | docs/systems/fw-web.md | Map generated Gacha page browser regression | pending | generator/check_systems pending | 1ff8409 |
 
 - Added proofs: sabotage-home-1025.log1/1, sabotage-help-1025.log2/2, sabotage-module-ui-1025.log2/2; each restoredgreen. Source functional files now match9e46ad0.
+
+- Actual build proof: firmware-build-1025.log69/0, firmware-build-details-1025.log, firmware-artifacts-1025.json (5image SHA/size/flash). No upload/flash.
