@@ -1,7 +1,7 @@
 # Studio/TV + Help — approved source, full gate next
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T16:38:08+07:00
+Updated: 2026-10-25T16:48:55+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
 Last commit: this checkpoint; approved functional source4d41a3c
@@ -11,7 +11,7 @@ Plan: A48-14 (robot), combined A47-20; imported Help8064292 owner597a
 Keep idle rendering savings with mutation redraw; selected Nong native savedHOME/telemetry/truthful restart; preserve menu-based Help and human-corrected Hall diagram.
 
 ## Doing now
-Verification-only correction implemented; focused integrity/packing/devtools144/0. Canonical path uses existing plan writer resolver; stale fullpublished worktree+override regression. Manifest/theme helpers and sabotage CLI restore original bytes; LF/CRLF+UTF8 normal/exception checks execute actual helpers/main. Full Gacha journey isolated in existing SOLO lane with identical assertions/timeouts; crowd-startup explanation remains inference. Next real theme/tools/Gacha probes and raw3file before/after checks, deliberate integrity failures/restoredgreen, then exact verification delta main review before second full. Product runtime4d41a3c unchanged; first failed gate preserved.
+Verification delta f037d3a complete: focused144/0; real Tools/theme/Gacha/receipt/plan/devtools+integrity325/0; all3original CRLF source hashes unchanged. Integrity5/5 deliberate reversions caught/restored. Metadata-only Gemini75-row handoff a56c177 merged; generator headers current. Existing main must inspect exact verification delta before justified second full. Product runtime4d41a3c unchanged/approved; first failed8217/1 and input-drift evidence preserved, no PR/fullgreen claim.
 
 ## Facts found
 - CAD pose/monitor, grid/hand visibility, late non-tip CAD mesh, late shape STL and resize redraw after >60idleframes; idle still paints zero times.
@@ -86,3 +86,5 @@ Baseline:e30bc36; preserved Gemini2bd3299/8530dbf/6db1aeb, rules9b57ee9, Help806
 | apps/help/app.json | QC line endings restored to exact original prefreeze bytes | done | before/current SHA matches first freeze, no normalized Git diff | no Git content change |
 | shared/web/themes.css | QC line endings restored to exact original prefreeze bytes | done | before/current SHA matches first freeze, no normalized Git diff | no Git content change |
 | tools/ai_panel.py | QC line endings restored to exact original prefreeze bytes | done | before/current SHA matches first freeze, no normalized Git diff | no Git content change |
+
+- Latest verification evidence: gate-integrity-focused-1025.log144/0, gate-integrity-real-probes-1025.log325/0, probe-restoration-result-1025.json all_exacttrue, sabotage-integrity-1025.log5/5 caught/restored. These repair verification only; original product runtime4d remains unchanged.

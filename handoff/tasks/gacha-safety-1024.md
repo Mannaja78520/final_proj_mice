@@ -1,7 +1,7 @@
 # Gacha safety — approved source, full gate next
 
 Owner: codex:10231901-f6cc
-Updated: 2026-10-25T16:38:08+07:00
+Updated: 2026-10-25T16:48:55+07:00
 Branch: codex/gacha-safety-1024-f6cc
 Tree: E:/final_proj/mice/code/.staging-continue-urdf
 Last commit: this checkpoint; approved functional source4d41a3c
@@ -11,7 +11,7 @@ Plan: A47-20 (robot); A0-35 audit done
 Preserve Gemini Gacha features; bound motion, make completion/reference/refusals truthful, verify and prepare source integration. No physical calibration or runtime changes.
 
 ## Doing now
-Verification-only correction implemented; focused integrity/packing/devtools144/0. Canonical path uses existing plan writer resolver; stale fullpublished worktree+override regression. Manifest/theme helpers and sabotage CLI restore original bytes; LF/CRLF+UTF8 normal/exception checks execute actual helpers/main. Full Gacha journey isolated in existing SOLO lane with identical assertions/timeouts; crowd-startup explanation remains inference. Next real theme/tools/Gacha probes and raw3file before/after checks, deliberate integrity failures/restoredgreen, then exact verification delta main review before second full. Product runtime4d41a3c unchanged; first failed gate preserved.
+Verification delta f037d3a complete: focused144/0; real Tools/theme/Gacha/receipt/plan/devtools+integrity325/0; all3original CRLF source hashes unchanged. Integrity5/5 deliberate reversions caught/restored. Metadata-only Gemini75-row handoff a56c177 merged; generator headers current. Existing main must inspect exact verification delta before justified second full. Product runtime4d41a3c unchanged/approved; first failed8217/1 and input-drift evidence preserved, no PR/fullgreen claim.
 
 ## Facts found
 - Preserved incoming root C++AAAE3506 and WebUI1e3b2e features (intake/GCALIB/GTEST/GDRAIN/tuning) in corrected branch. Earlier quick5716/5735 are proven quick, not full.
@@ -61,10 +61,12 @@ Baseline:e30bc36; preserved Gemini2bd3299/8530dbf/6db1aeb, rules9b57ee9, Help806
 - Main may receive later Gemini own-handoff prose only; no additional full/affected rerun solely for that metadata, per explicit main instruction. Keep gate source frozen during run.
 
 - First-gate exact evidence: full-gate-4d41a3c/full.log,full-details.log,full-result.json,inputs-before/after.json,input-drift-analysis.json. Gacha crowd failed with noGUI marks, then2/2 greenalone; startup/resource explanation is inference, not proven product fault. All assertions retained.
-| qc/checks/check_packing_list.py | Resolve only canonical live plan, not stale published worktree copy | pending | focused integrity/packing/devtools144/0; real probes+sabotage/review/full pending | this checkpoint |
-| qc/checks/check_tools_list.py | Restore manifest probe original bytes | pending | focused integrity/packing/devtools144/0; real probes+sabotage/review/full pending | this checkpoint |
-| qc/checks/check_themes.py | Restore theme probe original bytes | pending | focused integrity/packing/devtools144/0; real probes+sabotage/review/full pending | this checkpoint |
-| tools/sabotage.py | Always restore original source bytes | pending | focused integrity/packing/devtools144/0; real probes+sabotage/review/full pending | this checkpoint |
-| qc/checks/check_dev_tools.py | Actual byte comparison for sabotage cleanup | pending | focused integrity/packing/devtools144/0; real probes+sabotage/review/full pending | this checkpoint |
-| qc/checks/check_qc_probe_integrity.py | Stale published plan + CRLF/exception probe regressions | pending | focused integrity/packing/devtools144/0; real probes+sabotage/review/full pending | this checkpoint |
-| qc/run_qc.py | Complete Gacha journey in existing SOLO isolation lane | pending | focused integrity/packing/devtools144/0; real probes+sabotage/review/full pending | this checkpoint |
+| qc/checks/check_packing_list.py | Resolve only canonical live plan, not stale published worktree copy | pending | focused144/0, real probes325/0, integrity5/5 caught/restored, exact3source bytes; review/r2full pending | f037d3a |
+| qc/checks/check_tools_list.py | Restore manifest probe original bytes | pending | focused144/0, real probes325/0, integrity5/5 caught/restored, exact3source bytes; review/r2full pending | f037d3a |
+| qc/checks/check_themes.py | Restore theme probe original bytes | pending | focused144/0, real probes325/0, integrity5/5 caught/restored, exact3source bytes; review/r2full pending | f037d3a |
+| tools/sabotage.py | Always restore original source bytes | pending | focused144/0, real probes325/0, integrity5/5 caught/restored, exact3source bytes; review/r2full pending | f037d3a |
+| qc/checks/check_dev_tools.py | Actual byte comparison for sabotage cleanup | pending | focused144/0, real probes325/0, integrity5/5 caught/restored, exact3source bytes; review/r2full pending | f037d3a |
+| qc/checks/check_qc_probe_integrity.py | Stale published plan + CRLF/exception probe regressions | pending | focused144/0, real probes325/0, integrity5/5 caught/restored, exact3source bytes; review/r2full pending | f037d3a |
+| qc/run_qc.py | Complete Gacha journey in existing SOLO isolation lane | pending | focused144/0, real probes325/0, integrity5/5 caught/restored, exact3source bytes; review/r2full pending | f037d3a |
+
+- Latest verification evidence: gate-integrity-focused-1025.log144/0, gate-integrity-real-probes-1025.log325/0, probe-restoration-result-1025.json all_exacttrue, sabotage-integrity-1025.log5/5 caught/restored. These repair verification only; original product runtime4d remains unchanged.
