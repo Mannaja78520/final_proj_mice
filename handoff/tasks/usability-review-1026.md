@@ -11,70 +11,81 @@ Plan: A48-19 (robot); related A48-13 (Lift/physical), A48-18 done
 Finish all own UI usability and residual software gaps. No duplicated Help in Tools (global entry exists). Continue autonomously; preserve root dirty files and immutable proof trees. Physical USER-NOTREADY.
 
 ## Doing now
-Step2 checkpoint: actual methods reproduced19fail/1pass before fixes, now21/0; affected browser/source274/0. First270/3 preserved: mojibake fixture+legacy null Stop stub (production returns status dict); corrected fixtures, no weakened wire assertions. Current exact snapshot goes to independent review; next separate Lift P1 deadline/fault/native/build step. Latest Tools screenshots still need refresh after affordance polish.
+Step3 Lift P1: implement independent configurable travel/homing phase deadlines +latched fault/explicit clear, preserving sequence fault wait. Native fake IO runs actual class header and production motion methods, then mice_lift build. Design completed tools_design (same-provider); UI independent ui_review pending exact b908c98. No hardware/COM/network/motion/HOME/flash/service/model actions.
 
 ## File status
 Current baseline-to-worktree Git paths reconciled; generated unrelated4outputs and other headers touched raw EOL only, no Git content delta. Private evidence under scratch/usability-review-1026 (not source/public).
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| apps/all-jao/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/all-jao/index.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/camera/app.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/camera/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/camera/index.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/faces/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/gacha/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/gacha/index.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/help/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/photobooth/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/studio/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/tv/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/tv/index.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/voice/app.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/voice/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| apps/voice/index.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| docs/shots/hub-tools-card.png | UI error/action/identity and Help parity | refresh screenshot pending | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| docs/systems/agents.md | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/generated; final metadata checks pending | uncommitted |
-| docs/systems/hub-web.md | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/generated; final metadata checks pending | uncommitted |
-| docs/systems/qc.md | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/generated; final metadata checks pending | uncommitted |
-| docs/systems/shared-web.md | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/generated; final metadata checks pending | uncommitted |
-| firmware/src/web/WebUI.h | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
+| apps/all-jao/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/all-jao/index.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/camera/app.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/camera/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/camera/index.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/faces/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/gacha/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/gacha/index.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/help/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/photobooth/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/studio/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/tv/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/tv/index.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/voice/app.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/voice/app.json | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| apps/voice/index.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| docs/shots/hub-tools-card.png | UI error/action/identity and Help parity | refresh screenshot pending | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| docs/systems/agents.md | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/generated; final metadata checks pending | b908c98 |
+| docs/systems/hub-web.md | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/generated; final metadata checks pending | b908c98 |
+| docs/systems/qc.md | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/generated; final metadata checks pending | b908c98 |
+| docs/systems/shared-web.md | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/generated; final metadata checks pending | b908c98 |
+| firmware/src/web/WebUI.h | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
 | handoff/tasks/usability-review-1026.md | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | this checkpoint |
-| main_python/web/help.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/help/parts/all-jao.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/help/parts/camera.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/help/parts/firmware.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/help/parts/gacha.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/help/parts/hub.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/help/parts/modsite.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/help/parts/studio.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/help/parts/tv.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/help/parts/voice.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/home/parts/firmware.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/home/parts/home.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/home/parts/home.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/home/parts/modules.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/home/parts/network.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/home/parts/network.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/home/parts/tools.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/home/parts/tools.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/home/parts/top.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/home/style.css | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| main_python/web/hub.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| nong/main_python_set_nong/web/app.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| nong/main_python_set_nong/web/app_parts/project_save_load.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| nong/main_python_set_nong/web/html_parts/header.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| nong/main_python_set_nong/web/index.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| qc/checks/check_help_links.py | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| qc/checks/check_registries.py | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| qc/checks/check_tools_list.py | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| qc/checks/check_tv_remote.py | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| qc/checks/check_usability_states.py | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| qc/data/tools_launcher.js | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| qc/data/usability_apps.js | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| qc/data/usability_dom.js | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
-| qc/data/usability_hub.js | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | uncommitted |
+| main_python/web/help.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/help/parts/all-jao.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/help/parts/camera.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/help/parts/firmware.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/help/parts/gacha.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/help/parts/hub.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/help/parts/modsite.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/help/parts/studio.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/help/parts/tv.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/help/parts/voice.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/home/parts/firmware.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/home/parts/home.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/home/parts/home.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/home/parts/modules.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/home/parts/network.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/home/parts/network.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/home/parts/tools.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/home/parts/tools.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/home/parts/top.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/home/style.css | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| main_python/web/hub.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| nong/main_python_set_nong/web/app.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| nong/main_python_set_nong/web/app_parts/project_save_load.js | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| nong/main_python_set_nong/web/html_parts/header.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| nong/main_python_set_nong/web/index.html | UI error/action/identity and Help parity | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| qc/checks/check_help_links.py | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| qc/checks/check_registries.py | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| qc/checks/check_tools_list.py | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| qc/checks/check_tv_remote.py | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| qc/checks/check_usability_states.py | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| qc/data/tools_launcher.js | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| qc/data/usability_apps.js | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| qc/data/usability_dom.js | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| qc/data/usability_hub.js | Production-method / browser regression | WIP; proof current | scratch/usability-review-1026/allpage-affected-r2:274/0; native UI fixtures21/0 | b908c98 |
+| firmware/src/modules/lift/LiftModule.cpp | Lift bounded motion/fault/config contract | pending | not run | uncommitted |
+| firmware/src/modules/lift/LiftModule.h | Lift bounded motion/fault/config contract | pending | not run | uncommitted |
+| firmware/config/esp32_hardware_lift_module.h | Lift bounded motion/fault/config contract | pending | not run | uncommitted |
+| firmware/src/core/ConfigStore.cpp | Lift bounded motion/fault/config contract | pending | not run | uncommitted |
+| firmware/config/commands.json | Lift bounded motion/fault/config contract | pending | not run | uncommitted |
+| firmware/COMMANDS.md | Lift bounded motion/fault/config contract | pending | not run | uncommitted |
+| firmware/README.md | Lift bounded motion/fault/config contract | pending | not run | uncommitted |
+| firmware/sd_card_example/data/module.yaml | Lift bounded motion/fault/config contract | pending | not run | uncommitted |
+| main_python/web/help/parts/lift.html | Lift bounded motion/fault/config contract | pending | not run | uncommitted |
+| qc/checks/check_lift_motion.py | Lift bounded motion/fault/config contract | pending | not run | uncommitted |
+| qc/data/lift_motion.cpp | Lift bounded motion/fault/config contract | pending | not run | uncommitted |
 
 ## Facts found
 - Dynamic CPU/GPU/RAM/Voice/browser policy DONE in PR82/root3298e36; previous full8418/0 qualified4isolated retries+994inputs stable. Do not rework or reuse old receipt.
