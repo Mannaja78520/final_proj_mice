@@ -23,11 +23,12 @@ The lift module: motor, limit switches (encoder optional, off by default: the bu
 
 - nothing
 
-## Checks that test it (4)
+## Checks that test it (5)
 
+- `check_lift_motion`
 - `check_line_protocol`
 - `check_no_encoder`
 - `check_registries`
 - `check_rgb_pin`
 
-Run them: `python qc/run_qc.py --no-build check_line_protocol check_no_encoder check_registries check_rgb_pin`
+Run them: `python qc/run_qc.py --no-build check_lift_motion check_line_protocol check_no_encoder check_registries check_rgb_pin`

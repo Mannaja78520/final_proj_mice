@@ -15,6 +15,12 @@ const {read,vm,context,loadClass,response,check,test,finish}=require('./usabilit
   c.fetch=async()=>response({error:'refused'},false);
   c.el('customSpeak').value='keep draft';await a.speakCustom();check(c.el('customSpeak').value==='keep draft','TV failed speech retains draft');
   c.fetch=async()=>{throw Error('offline');};await a.stop();check(c.el('nowSeq').textContent.length>0,'TV Stop network failure is handled visibly');
+  home=0;c.fetch=async u=>{if(u.includes('c=HOME'))home++;return response({running:false,error:'serial port disconnected'});};await a.goHome();
+  check(home===0,'TV Stop transport error blocks HOME even when clock stopped');
+  let resolveSeq,plays=0;c.fetch=async u=>u.startsWith('/api/seqsteps')?new Promise(r=>resolveSeq=r):(u==='/api/play'?(plays++,response({ok:true})):response({running:false,error:''}));
+  const delayed=a.playSequence('delayed');await a.stop();resolveSeq(response({steps:[{pose:[90],t:1000}]}));await delayed;
+  check(plays===0,'TV Stop cancels a delayed sequence-load continuation');
+
  });
  await test('Voice model controls',async()=>{
   const c=context(),a=loadClass(c,'apps/voice/app.js','VoiceApp','window.voiceApp =');a.say=()=>{};a.pollTimer=null;

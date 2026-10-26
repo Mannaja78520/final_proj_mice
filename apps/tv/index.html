@@ -336,6 +336,7 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
     this.modules = [];
     this.selectedSequence = "";
     this.pollBusy = false;
+    this.motionGeneration = 0;
   }
 
   init() {
@@ -501,18 +502,26 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
     document.querySelectorAll("[data-motion], .seq-pill").forEach(b => { b.disabled = !on; });
   }
 
+  invalidateMotion() {
+    this.motionGeneration = (this.motionGeneration || 0) + 1;
+    return this.motionGeneration;
+  }
+
   selectDevice(dev) {
+    this.invalidateMotion();
     this.activeDev = this.modules.some(m => m.dev === dev) ? dev : "";
     this.setMotionEnabled(!!this.activeDev);
   }
 
   updateHardwareState(st) {
+    const previousDev = this.activeDev;
     this.modules = ((st && st.modules) || []).map(m => ({...m,
       dev: m.best || m.dev || ((m.routes || []).find(r => !r.stale && r.dev) || {}).dev
     })).filter(m => m.type === "nong" && !m.stale &&
       typeof m.dev === "string" && /^(usb:|wifi:|hub:|auto:).+/.test(m.dev));
     if (!this.modules.some(m => m.dev === this.activeDev)) this.activeDev = "";
     if (!this.activeDev && this.modules.length === 1) this.activeDev = this.modules[0].dev;
+    if (previousDev !== this.activeDev) this.invalidateMotion();
     const select = this.$("targetDev");
     select.replaceChildren(new Option("Choose Nong", ""), ...this.modules.map(m => new Option(m.name || m.dev, m.dev)));
     select.value = this.activeDev;
@@ -542,21 +551,25 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
   }
 
   actionError(error) {
-    const text = 'คำสั่งไม่สำเร็จ ลองอีกครั้ง: ' + String(error.message || error);
+    const text = 'คำสั่งไม่สำเร็จ ตรวจสถานะแล้วลองอีกครั้ง';
     this.$("actionStat").textContent = text;
+    const detail = document.createElement('span');
+    detail.className = 'tech'; detail.textContent = ' ' + String(error.message || error);
+    this.$("actionStat").appendChild(detail);
     this.$("nowSeq").textContent = text;
   }
 
   async playSequence(name) {
     const dev = this.activeDev;
     if (!dev || !this.modules.some(m => m.dev === dev)) return;
+    const generation = this.invalidateMotion();
     this.selectedSequence = name;
     this.$("actionStat").textContent = '';
     try {
       this.$("nowSeq").textContent = "Starting " + name + "…";
       const data = await this.checked("/api/seqsteps?name=" + encodeURIComponent(name));
       if (!Array.isArray(data.steps) || !data.steps.length) throw Error('ลำดับการแสดงไม่มีท่าทาง');
-      if (this.activeDev !== dev) return;
+      if (this.activeDev !== dev || generation !== this.motionGeneration) return false;
       await this.checked("/api/play", {method:"POST", body:{dev, name, steps:data.steps, loop:false}});
       this.poll();
       return true;
@@ -564,9 +577,10 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
   }
 
   async stop() {
+    this.invalidateMotion();
     try {
       const status = await this.checked("/api/play/stop", {method:"POST"});
-      if (!status || status.running !== false || /previous show.*finishing/i.test(status.error || ''))
+      if (!status || status.running !== false || !!status.error)
         throw Error(status && status.error || 'ยังไม่ได้รับคำตอบว่าหยุดการแสดงแล้ว');
       this.$("actionStat").textContent = '';
       this.poll();
@@ -582,7 +596,8 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
   async goHome() {
     const dev = this.activeDev;
     if (!dev || !this.modules.some(m => m.dev === dev)) return;
-    if (!await this.stop() || this.activeDev !== dev) return;
+    const stopped = this.stop(), generation = this.motionGeneration;
+    if (!await stopped || generation !== this.motionGeneration || this.activeDev !== dev) return;
     try {
       const res = await fetch("/api/dev/cmd?dev=" + encodeURIComponent(dev) + "&c=HOME");
       const reply = await res.text();

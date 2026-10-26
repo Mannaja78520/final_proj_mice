@@ -86,6 +86,11 @@
     #define LIFT_DEFAULT_SPEED 900    // travel PWM (used when speed_mms is 0)
     #define LIFT_SLOW_SPEED    350    // PWM used near target / while homing
     #define LIFT_DEFAULT_STAGES 4
+    // Independent phase deadlines. Tune for the mechanism before physical use.
+    #define LIFT_TRAVEL_TIMEOUT_MS 30000UL
+    #define LIFT_HOME_TIMEOUT_MS   30000UL
+    #define LIFT_TIMEOUT_MIN_MS    1UL
+    #define LIFT_TIMEOUT_MAX_MS    600000UL
     #define LIFT_TOL_MM        2.0f   // "arrived" tolerance (mm)
     #define LIFT_SLOW_MM       40.0f  // distance from target where we slow down (mm)
     

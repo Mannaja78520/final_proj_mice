@@ -395,6 +395,27 @@ it's shown as `rgb` in `PIN VALID` and can't be reassigned from the web.
 
 ## Commands — lift module
 
+Every UP/DOWN/HOME/GOTO phase has an independent deadline. Defaults are
+`travel_timeout_ms=30000` and `home_timeout_ms=30000`; configure with
+`CFG <key> <ms>` or module.yaml, range 1..600000 ms (fractional ms truncate).
+Zero/negative/nonfinite/out-of-range CFG values are refused; invalid SD values
+retain the previous finite setting. The active phase snapshots its deadline;
+settings/SPEED updates and repeated motion commands cannot extend it. A new
+motion requires STOP first while already moving.
+
+Timeout (`travel_timeout` or `home_timeout`), missing limit pins or both limits
+asserted stops motor output, cancels pending GOTO and invalidates home. Status
+reports `state: fault`, `fault`, `stage: -1`, `homed: false`, both configured
+timeouts and the active `motion_timeout_ms` (zero when stopped).
+STOP remains available and retains the fault. Inspect the mechanism and inputs,
+STOP, then `FAULT CLEAR`; clearing requires stopped output and noncontradictory
+configured inputs. It never moves. HOME must be requested separately. A fault
+keeps `busy()` true so a waiting sequence cannot interpret failure as arrival;
+FAULT CLEAR preempts/cancels that sequence instead of resuming it.
+The defaults and switch behavior have not been verified on the physical lift;
+a single stuck-low switch still looks like an endpoint, not a diagnosed sensor.
+
+
 **No encoder?** Set `encoder: 0` (module.yaml) or `CFG encoder 0`. The lift
 then only moves between the limit switches: `UP`/`DOWN`/`HOME` work normally,
 `GOTO` accepts only stage `0` (bottom limit) and the top stage, `STAGE?` knows
@@ -408,6 +429,8 @@ web UI shows only the endpoint stage buttons. `SPEED <v> MS` still works
 | `STOP` | `OK stopped` | also cancels `GOTO`, and silences the speaker |
 | `HOME` | `OK homing` | slow down to bottom limit, zeroes the encoder |
 | `GOTO <stage>` | `OK goto 2` | 0..stages-1; auto-homes first if position unknown |
+| `FAULT?` | `FAULT travel_timeout` / `OK no fault` | read the latched motion fault |
+| `FAULT CLEAR` | `OK fault cleared; HOME required for position reference` | stopped only; cancels waiting sequence; never resumes motion |
 | `STAGE?` | `2` (or `-1` if not homed) | current stage |
 | `SPEED <100-1023>` | `OK speed pwm=900 (~0.23 m/s)` | travel speed as raw PWM (persist with `CFG speed`) |
 | `SPEED <v> MS` | `OK speed=0.20 m/s (pwm 781, 500mm in ~2.5s)` | travel speed in m/s, e.g. `SPEED 0.2 MS` (also `MMS` for mm/s); persist with `CFG speed_mms` |
