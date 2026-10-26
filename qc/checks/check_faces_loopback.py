@@ -140,6 +140,8 @@ def run(t):
             if isinstance(out, bytes):
                 out = out.decode("utf-8", "replace")
             said = out
+        t.ok("USER-NOTREADY" not in said,
+             "the refusal comes from production policy, not the test envelope", said[:300])
         t.ok(not served_anyway,
              "a non-loopback address does not start a server at all",
              "it kept listening on 0.0.0.0 - it holds a login for the face "
