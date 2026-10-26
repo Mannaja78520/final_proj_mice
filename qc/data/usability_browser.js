@@ -27,7 +27,7 @@ window.addEventListener('load',async()=>{
    const a=w.app;clearInterval(a.pollTimer);a.poll=()=>{};a.activeDev='usb:COM99';a.modules=[{dev:a.activeDev}];
    let homes=0;w.fetch=async url=>{if(url.includes('c=HOME'))homes++;return new w.Response(JSON.stringify({running:false,error:'serial port disconnected'}));};
    await a.goHome();await mark('tv_stop_error_blocks_home',homes===0&&d.getElementById('actionStat').textContent.length>0);
-   let resolveSeq,plays=0;w.fetch=async url=>url.startsWith('/api/seqsteps')?new Promise(r=>resolveSeq=r):(url==='/api/play'?(plays++,new w.Response('{"ok":true}')):new w.Response('{"running":false,"error":""}'));
+   let resolveSeq,plays=0;w.fetch=async url=>url.startsWith('/api/seqsteps')?new Promise(r=>resolveSeq=r):(url==='/api/play'?(plays++,new w.Response('{"ok":true}')):new w.Response('{"running":false,"error":"","stop_ok":true,"stop_reply":"OK stopped","dev":"usb:COM99","epoch":0}'));
    const pending=a.playSequence('slow');await a.stop();resolveSeq(new w.Response('{"steps":[{"pose":[90],"t":1000}]}'));await pending;
    await mark('tv_stop_cancels_delayed_play',plays===0);
    w.fetch=async()=>new w.Response('{"ok":false,"error":"refused"}',{status:403});d.getElementById('customSpeak').value='keep this';await a.speakCustom();

@@ -84,6 +84,9 @@ int failures=0,passes=0;
 void check(bool okay,const std::string& label){std::cout<<(okay?"CPP_PASS ":"CPP_FAIL ")<<label<<'\n';if(okay)passes++;else failures++;}
 bool fault(Fixture& f,const char* why){return f.lift.faultReason_&&std::string(f.lift.faultReason_)==why;}
 int main(){
+ check(LIFT_TRAVEL_TIMEOUT_MS >= LIFT_TIMEOUT_MIN_MS && LIFT_TRAVEL_TIMEOUT_MS <= LIFT_TIMEOUT_MAX_MS &&
+       LIFT_HOME_TIMEOUT_MS >= LIFT_TIMEOUT_MIN_MS && LIFT_HOME_TIMEOUT_MS <= LIFT_TIMEOUT_MAX_MS,
+       "built-in travel and home deadlines are finite positive bounded values");
  for(const char* cmd:{"UP","DOWN","HOME"}){
   Fixture f;f.lift.travelTimeoutMs_=10;f.lift.homeTimeoutMs_=12;const uint32_t limit=std::string(cmd)=="HOME"?12:10;
   check(f.command(cmd).find("OK")==0,std::string(cmd)+" accepts valid request");

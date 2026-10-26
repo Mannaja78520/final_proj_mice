@@ -29,10 +29,11 @@ class PlayRoutes:
         if path == "/api/play" and method == "POST":
             try:
                 d = json.loads(self.body().decode())
-                return self.send_json(_hub.show.start(
-                    d["dev"], d["steps"], d.get("loop"), d.get("name", ""),
-                    d.get("from_ms", 0), bool(d.get("watch")),
-                    d.get("music_stop_ms")))
+                args = [d["dev"], d["steps"], d.get("loop"), d.get("name", ""),
+                        d.get("from_ms", 0), bool(d.get("watch")), d.get("music_stop_ms")]
+                if "expected_epoch" in d:
+                    args.append(d["expected_epoch"])
+                return self.send_json(_hub.show.start(*args))
             except Exception as e:            # noqa: BLE001
                 return self.send_err(e)
         if path == "/api/play":

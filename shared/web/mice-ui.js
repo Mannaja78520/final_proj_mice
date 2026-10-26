@@ -51,7 +51,7 @@
       try {
         const r = await fetch(path, init);
         let data = {};
-        try { data = await r.json(); } catch (e) { /* not JSON: keep {} */ }
+        try { data = opts.text ? {reply: await r.text()} : await r.json(); } catch (e) { /* not JSON: keep {} */ }
         const ok = r.ok && data.ok !== false;
         return {ok, data, status: r.status,
                 needLogin: r.status === 401 || !!data.need_login,

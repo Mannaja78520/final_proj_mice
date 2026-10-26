@@ -47,6 +47,7 @@ class ShowPlayer:
         # which the running thread takes constantly - holding that one
         # across a join would deadlock.
         self._starting = threading.Lock()
+        self._epoch = 0
         self.thread = None
         self.stop_flag = threading.Event()
         self.dev = ""
@@ -87,7 +88,7 @@ class ShowPlayer:
     def status(self):
         with self.lock:
             return {
-                "running": self.running(),
+                "running": self.running(), "epoch": self._epoch,
                 "dev": self.dev, "name": self.name, "loop": self.loop,
                 "at_ms": int(self.at_ms), "total_ms": int(self.total_ms),
                 "step": self.step, "steps": len(self.steps),
@@ -120,8 +121,13 @@ class ShowPlayer:
         return {"ok": True, "running": self.running(), "watched": self.watched}
 
     def start(self, dev, steps, loop=False, name="", from_ms=0, watch=False,
-              music_stop_ms=None):
+              music_stop_ms=None, expected_epoch=None):
         """Take over this device and play. Any previous run is stopped first."""
+        with self._starting:
+            if expected_epoch is not None and (isinstance(expected_epoch, bool) or
+                    not isinstance(expected_epoch, int) or expected_epoch != self._epoch):
+                return {"ok": False, "error": "play request was cancelled; refresh before starting again"}
+            reservation = self._epoch
         parse_fn = self._get_parse()
         parse_fn(dev)                       # raises on a malformed device
         cues_fn = self._get_cues()
@@ -145,7 +151,12 @@ class ShowPlayer:
         # exact fault check_takeover exists to prevent and could never see.
         # Found 2026-08-21.
         with self._starting:
-            self.stop()
+            if reservation != self._epoch:
+                return {"ok": False, "error": "play request was cancelled by a newer operation"}
+            stopped = self._stop_locked()
+            if not stopped["stop_ok"]:
+                return {"ok": False, "error": stopped["error"] or "previous show could not be stopped"}
+            self._epoch += 1
             with self.lock:
                 self.dev, self.steps, self.loop, self.name = dev, steps, bool(loop), name
                 self.music_stop_ms = (None if music_stop_ms is None
@@ -170,45 +181,51 @@ class ShowPlayer:
             return self.status()
 
     def stop(self, freeze=True, why=""):
-        """Stop playing. `freeze` also tells the module to hold where it is."""
+        """Invalidate pending starts, stop the clock and confirm the board reply."""
+        with self._starting:
+            self._epoch += 1
+            return self._stop_locked(freeze=freeze, why=why)
+
+    def _stop_locked(self, freeze=True, why=""):
+        # Caller owns _starting; never hold self.lock while joining or doing IO.
+        errors, stop_reply = [], ""
         th = self.thread
         timer, self._music_timer = self._music_timer, None
         if timer and timer.is_alive():
-            # the moves are over but the track was still playing on its
-            # timer: Stop means quiet now, not when the timer comes round
             timer.cancel()
             try:
                 self._say("PLAY STOP")
-            except Exception:               # noqa: BLE001
+            except Exception:
                 pass
-        if th and th.is_alive():
+        if th:
             self.stop_flag.set()
-            th.join(timeout=3.0)
             if th.is_alive():
-                # Its OWN event is set, so it exits at its next wake-up even
-                # though we stopped waiting - but say so; silence would read
-                # as stopped when a command is still in flight.
-                with self.lock:
-                    self.error = "the previous show was still finishing"
-            if freeze:
-                try:
-                    self._say("STOP")
-                except Exception as e:      # noqa: BLE001 - a dead cable must
-                    self.error = str(e)     # not stop us from marking it stopped
-            if self._had_music():
-                # A24-18 made the board's own STOP silence the speaker, but the
-                # show is stopped here on boards that may still be older, and
-                # stopall stops without freezing at all. Music over a robot that
-                # has already frozen is what a panic stop must never leave.
-                try:
-                    self._say("PLAY STOP")
-                except Exception:           # noqa: BLE001
-                    pass
-        self.thread = None
-        if why:
+                th.join(timeout=3.0)
+            if th.is_alive():
+                errors.append("the previous show was still finishing")
+        # Retry even after its worker exits: a prior ERR/timeout is not a STOP ack.
+        if freeze and self.dev:
+            try:
+                stop_reply = str(self._say("STOP") or "").strip()
+                if not re.match(r"^OK(?:\s|$)", stop_reply):
+                    errors.append(stop_reply or "the board did not acknowledge STOP")
+            except Exception as error:
+                errors.append(str(error) or "the board did not answer STOP")
+        if self._had_music():
+            try:
+                self._say("PLAY STOP")
+            except Exception:
+                pass
+        # An unresolved worker still owns its dev/steps/event. start() must refuse
+        # to replace them until both quiescence and STOP acknowledgement succeed.
+        self.thread = th if th and th.is_alive() else None
+        if errors or why:
             with self.lock:
-                self.error = why
-        return self.status()
+                self.error = "; ".join(errors) if errors else why
+        result = self.status()
+        result.update(ok=not errors, stop_ok=not errors, stop_reply=stop_reply,
+                      error="; ".join(errors))
+        return result
 
     # ---- the clock itself ----
     def _music_off(self, flag):

@@ -17,10 +17,52 @@ const {read,vm,context,loadClass,response,check,test,finish}=require('./usabilit
   c.fetch=async()=>{throw Error('offline');};await a.stop();check(c.el('nowSeq').textContent.length>0,'TV Stop network failure is handled visibly');
   home=0;c.fetch=async u=>{if(u.includes('c=HOME'))home++;return response({running:false,error:'serial port disconnected'});};await a.goHome();
   check(home===0,'TV Stop transport error blocks HOME even when clock stopped');
-  let resolveSeq,plays=0;c.fetch=async u=>u.startsWith('/api/seqsteps')?new Promise(r=>resolveSeq=r):(u==='/api/play'?(plays++,response({ok:true})):response({running:false,error:''}));
+  let resolveSeq,plays=0;c.fetch=async u=>u.startsWith('/api/seqsteps')?new Promise(r=>resolveSeq=r):(u==='/api/play'?(plays++,response({ok:true})):response({running:false,error:'',stop_ok:true,stop_reply:'OK stopped',dev:'usb:COM99',epoch:0}));
   const delayed=a.playSequence('delayed');await a.stop();resolveSeq(response({steps:[{pose:[90],t:1000}]}));await delayed;
   check(plays===0,'TV Stop cancels a delayed sequence-load continuation');
 
+ });
+ await test('TV epoch and selected-board barrier',async()=>{
+  const c=context(),a=loadClass(c,'apps/tv/index.html','TVRemoteApp','const app =');a.activeDev='usb:COM99';a.modules=[{dev:a.activeDev}];a.poll=()=>{};
+  let home=0;const commands=[];
+  c.fetch=async url=>url==='/api/play/stop'?response({running:false,stop_ok:true,stop_reply:'OK stopped',dev:'usb:OTHER',error:''}):url.includes('c=STOP')?(commands.push('STOP'),response('ERR locked')):(home++,response('OK home'));
+  await a.goHome();check(home===0&&commands.join()==='STOP','TV confirms selected robot STOP separately from another show target');
+  commands.length=0;c.fetch=async url=>url==='/api/play/stop'?response({running:false,stop_ok:true,stop_reply:'OK stopped',dev:'usb:OTHER',error:''}):(url.includes('c=STOP')?(commands.push('STOP'),response('OK stopped')):(commands.push('HOME'),response('OK home')));
+  await a.goHome();check(commands.join()==='STOP,HOME','TV selected STOP acknowledgement precedes HOME');
+  let epochReady,releaseEpoch,posts=0;const fetchingEpoch=new Promise(r=>epochReady=r);
+  c.fetch=async(url,opts)=>{
+   if(url.startsWith('/api/seqsteps'))return response({steps:[{pose:[90],t:1000}]});
+   if(url==='/api/play'&&opts.method==='GET'){epochReady();return new Promise(r=>releaseEpoch=r);}
+   if(url==='/api/play'){posts++;return response({ok:true});}
+   return response({running:false,stop_ok:true,stop_reply:'OK stopped',dev:a.activeDev,error:'',epoch:8});
+  };
+  const epochPending=a.playSequence('epoch-read');await fetchingEpoch;await a.stop();releaseEpoch(response({epoch:8}));await epochPending;
+  check(posts===0,'TV Stop cancels intent even when late epoch read returns the new revision');
+
+  let sendStart,resolveStart;const dispatched=new Promise(r=>sendStart=r);let stamped;
+  c.fetch=async(url,opts)=>{
+   if(url.startsWith('/api/seqsteps'))return response({steps:[{pose:[90],t:1000}]});
+   if(url==='/api/play'&&opts.method==='GET')return response({epoch:7});
+   if(url==='/api/play'){stamped=JSON.parse(opts.body);sendStart();return new Promise(r=>resolveStart=r);}
+   return response({running:false,stop_ok:true,stop_reply:'OK stopped',dev:a.activeDev,error:'',epoch:8});
+  };
+  const pending=a.playSequence('already-dispatched');await dispatched;const stopped=await a.stop();
+  check(stopped&&stamped.expected_epoch===7,'TV dispatches Stop immediately while stamped Play response is outstanding');
+  resolveStart(response({ok:false,error:'stale epoch'}));await pending;
+  let stopRelease,playCount=0;const waiting=a.stop();
+  // The prior fetch resolved synchronously; create a deliberately pending STOP next.
+  await waiting;
+  c.fetch=async(url,opts)=>{
+   if(url==='/api/play/stop')return new Promise(r=>stopRelease=r);
+   if(url.startsWith('/api/seqsteps'))return response({steps:[{pose:[90],t:1000}]});
+   if(url==='/api/play'&&opts.method==='GET')return response({epoch:9});
+   if(url==='/api/play'){playCount++;return response({ok:true});}
+   return response('OK stopped');
+  };
+  const barrier=a.stop(),later=a.playSequence('later');
+  await new Promise(r=>setTimeout(r,0));check(playCount===0,'TV later Play waits for full Stop confirmation barrier');
+  stopRelease(response({running:false,stop_ok:true,stop_reply:'OK stopped',dev:a.activeDev,error:'',epoch:9}));await barrier;await later;
+  check(playCount===1,'TV new explicit Play can start after confirmed Stop');
  });
  await test('Voice model controls',async()=>{
   const c=context(),a=loadClass(c,'apps/voice/app.js','VoiceApp','window.voiceApp =');a.say=()=>{};a.pollTimer=null;
