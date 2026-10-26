@@ -5,7 +5,7 @@
   // "/studio/" address, so every existing link, bookmark and QC driver keeps
   // working. Nothing was moved to make it an app.
   "name": "Nong Studio",
-  "blurb": "pose & sequence editor, 3D simulation",
+  "blurb": "จัดท่าทางและลำดับการแสดง พร้อมดูตัวอย่าง 3D",
   "icon": "🤖",
   "root": "nong/main_python_set_nong/web",
   "url": "/studio/",

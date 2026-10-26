@@ -1,75 +1,67 @@
 # UX/UI usability sweep and residual quality follow-through
 
 Owner: codex:10260449-5ec2
-Updated: 2026-10-26 04:49 +0700
+Updated: 2026-10-26T08:41:01.256161+07:00
 Branch: codex/usability-review-1026
 Tree: E:/final_proj/mice/code/.staging-usability-review-1026
 Last commit: this checkpoint; baseline3298e36
-Plan: A48-19 (robot); related A48-13 (physical/remaining Lift), A48-18 completed
+Plan: A48-19 (robot); related A48-13 (Lift/physical), A48-18 done
 
 ## Goal
-User asks: finish residual bug/usability/performance improvements across our entire UI, including Hub software hardware use, dynamic for weaker/stronger future PCs and configurable. Latest steering: if Help exists elsewhere, do not add it to Tools; authorizes a fresh session to save tokens. Continue autonomously; no confirmation of routine choices.
+Finish all own UI usability and residual software gaps. No duplicated Help in Tools (global entry exists). Continue autonomously; preserve root dirty files and immutable proof trees. Physical USER-NOTREADY.
 
 ## Doing now
-Step 1: implement reviewed flat registry launcher, native safe links, truthful states/keyboard focus; Help parity and affected browser regressions. Claimed manifests/Home/help-links/data/screenshot additions. No source edits before this checkpoint. Design review completed tools_design (same-provider gpt-6-astra high); private report pending persistence.
+Tools checkpoint: flat registry grid, native safe newtab links, Thai manifest descriptions, hidden launcher Help, truthful states/focus, same-step Help. Design consultation tools_design gpt-6-astra high completed. First443/1 was inline fixture closing-script; fixed474/0. Visual8layouts/0overflow/realEnter newtab passed; last button/globalHelp polish awaits rerun/screenshot refresh. Next bounded step all-page source findings with exact claims before edits, then Lift P1 repair/native/build separately.
 
 ## File status
-Planned paths only; can narrow/extend after source/visual audit. Claim additions before editing. New regression filenames/config catalogs may replace listed checks after design.
+Current baseline-to-worktree Git paths reconciled; generated unrelated4outputs and other headers touched raw EOL only, no Git content delta. Private evidence under scratch/usability-review-1026 (not source/public).
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| main_python/web/home/parts/tools.html | Remove duplicated Help/header clutter; tools only | planned, not edited | not run | uncommitted, planned |
-| main_python/web/home/parts/tools.js | Data-driven compact discoverable tools; omit Help cards/buttons | planned, not edited | not run | uncommitted, planned |
-| main_python/web/home/style.css | Responsive consistent cards without tall empty columns | planned, not edited | not run | uncommitted, planned |
-| main_python/web/home/parts/top.html | Keep one clear global Help entry, inspect header usability | planned, not edited | not run | uncommitted, planned |
-| main_python/web/help/parts/hub.html | Same-step Help parity for actual Tools behavior | planned, not edited | not run | uncommitted, planned |
-| main_python/web/hub.html | Generated from parts only | planned, not edited | not run | uncommitted, planned |
-| main_python/web/help.html | Generated from parts only | planned, not edited | not run | uncommitted, planned |
-| qc/checks/check_tools_list.py | Registry/unknown apps/Help exclusion/keyboard and layout regression | planned, not edited | not run | uncommitted, planned |
-| qc/checks/check_responsive.py | Narrow/wide real browser overflow and tap-target checks | planned, not edited | not run | uncommitted, planned |
-| docs/systems.json | Only if new paths/system registration needed | planned, not edited | not run | uncommitted, planned |
-| docs/systems/hub-web.md | Generated inventory when sources change | planned, not edited | not run | uncommitted, planned |
-| docs/systems/qc.md | Generated inventory after test changes | planned, not edited | not run | uncommitted, planned |
-| docs/systems/agents.md | Generated active task inventory | planned, not edited | not run | uncommitted, planned |
-| handoff/tasks/usability-review-1026.md | Per-file handoff and concrete next actions | ready for takeover | handoff structure checked | this checkpoint |
-| apps/studio/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
-| apps/tv/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
-| apps/camera/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
-| apps/voice/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
-| apps/all-jao/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
-| apps/photobooth/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
-| apps/gacha/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
-| apps/faces/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
-| apps/help/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
-| main_python/web/home/parts/home.html | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
-| qc/checks/check_help_links.py | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
-| qc/data/tools_launcher.js | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
-| docs/shots/hub-tools-card.png | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
+| apps/all-jao/app.json | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| apps/camera/app.json | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| apps/faces/app.json | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| apps/gacha/app.json | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| apps/help/app.json | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| apps/photobooth/app.json | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| apps/studio/app.json | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| apps/tv/app.json | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| apps/voice/app.json | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| docs/shots/hub-tools-card.png | Generated inventory / current screenshot | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| docs/systems/agents.md | Generated inventory / current screenshot | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| docs/systems/hub-web.md | Generated inventory / current screenshot | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| docs/systems/qc.md | Generated inventory / current screenshot | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| docs/systems/shared-web.md | Generated inventory / current screenshot | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| handoff/tasks/usability-review-1026.md | Current per-file ledger | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | this checkpoint |
+| main_python/web/help.html | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| main_python/web/help/parts/hub.html | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| main_python/web/home/parts/home.html | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| main_python/web/home/parts/tools.html | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| main_python/web/home/parts/tools.js | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| main_python/web/home/parts/top.html | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| main_python/web/home/style.css | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| main_python/web/hub.html | Launcher/Help parity | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| qc/checks/check_help_links.py | Regression coverage | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| qc/checks/check_registries.py | Regression coverage | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| qc/checks/check_tools_list.py | Regression coverage | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
+| qc/data/tools_launcher.js | Regression coverage | WIP | Tools474/0; latest polish pending; scratch/usability-review-1026/tools-affected-r2.log | uncommitted |
 
 ## Facts found
-- Root main HEAD3298e36 = merged PR82. AdaptivePC policy is DONE in source: profiles/CPU-GPU-RAM/headroom/settings, bounded Voice translation/native threads/admission, independent browser render limits. Do not rebuild it needlessly or claim unknown real performance.
-- PR82 full8418/0@f248802,994inputs+20privateCAD stable; four parallel failures passed alone2/2 (app_browser,edge_cases,freeze_stop,checked_dispatch). Metadata closure212/0. Package11,463,270bytes,11assets+4native modules archiveverified, not run/installed. Proof root scratch/adaptive-resources-1026 and immutable .staging-adaptive-resources-1026/scratch/adaptive-resources-1026.
-- Screenshot private root scratch/usability-review-1026/user-tools.png; inspect it. Current Tools groups are separate columns with unequal card counts, fourth Help category falls into a low isolated block; headings duplicate Thai/English and cards mix styles. User explicitly dislikes this.
-- Global Help ALREADY EXISTS at main_python/web/home/parts/top.html #helpLink. Tools redundantly has top Open Help link (tools.html), docs/help category, per-tool Help buttons and Help links in empty/error states (tools.js). User latest wants Help absent from Tools when elsewhere: retain global accessible Help and remove duplicates from Tools/Home embedded tools, update tests/docs accordingly.
-- Tools implementation main_python/web/home/parts/tools.js: MiceToolsManager/createToolRow/render/loadApps; app registry /api/apps auto-discovers apps. Preserve unknown/new app discovery, truthful error versus empty state, escaping and global login/STOP. Categorization currently hardcoded TOOL_GROUPS; move new adjustable labels/category data to config/registry per user data-driven rule if redesign changes them.
-- Tools current UI says Open/Help and English blurbs; favor short Thai-first descriptions and consistent Open actions, brand names may remain. Confirm actual global Help remains reachable by keyboard/narrow screen before removing duplicates.
-- Hub is built from home parts; NEVER edit generated hub.html/help.html/app.js directly. Mandatory Help parity in same feature step; OOP/modular focused classes, no monolithic dump.
-- Root is intentionally dirty. Preserve exact user config/gacha.json+voice.json, dist/MiceHub.exe, MiceHub.spec (contains user process-kill helper +our3raw policy data entries), Nong Studio html_parts/setup.html+view.html/style.css/generatedindex, projects/settings_shared, plans/logs/private data/untracked files. Audit existing dirty Studio differences before any scoped merge; never blanket copy. Do NOT execute root spec (its preexisting helper kills live Hub). Isolated spec baseline is safe for packaging.
-- Existing source trees/proofs must stay intact; no reset/stash/clean/init/archive old trees. Root E:/final_proj/mice/code; app project path is parent E:/final_proj/mice, not Git itself.
-- Confirmed remaining P1 Lift gap: firmware/src/modules/lift/LiftModule.cpp continuous UP/DOWN/HOME relies on limit switches, no independent travel/homing deadline; disconnected/stuckHIGH input can keep motor energized until STOP. No hardware fault observed. Source repair remains: configurable deadline +latched fault, meaningful native/fake regression and mice_lift build. Do not silently drop this older authorized issue; handle as separate scoped step after UX investigation with contract/design review.
-- Combined Voice+Face+browser actual inference latency/CPU-RAM-VRAM/thermal utilization UNMEASURED; capacity snapshot Ultra9 275HX24logical/31.4GiB RAM/RTX5070TiLaptop12227MiB is not utilization proof. No 100%hardware or bug-free claim. Resource admission advisory; STT/Spark floors are not hard model-size caps. External Face_Regonize/All-Jao-Games belong to friend; no edits outside code.
-- Physical pause is HUMAN USER-NOTREADY. No robot probes, scans/retries, COM/WiFi reads, motion/flash/calibration/HOME/trim, camera capture or Hub/helper/service cutover. Connection alone is not consent. User will adjust elbowtrim manually. Prior live processes/settings unchanged.
-- Sole QC/fake/browser/build/timing driver may run only after fresh inventory and BRIDGE claim; no concurrent heavy/model jobs. Simulated modules/browser and native compile permitted. No real models downloaded/loaded by settings tests. Preserve source inputs during full and raw-hash privateCAD read-only model path E:/final_proj/mice/model/nong_urdf/solidworks/export/nong_description.
-- Coordination/plan mutations use short root .staging-coordination.lock, owner.txt, no recursive delete; docs/BRIDGE live exact file claims; tools/plan.py --page robot --agent provider:session. Required reviews codex-first supported agents per docs/COORDINATION.md212; previous source reviews are historical, not approval of new UI.
+- Dynamic CPU/GPU/RAM/Voice/browser policy DONE in PR82/root3298e36; previous full8418/0 qualified4isolated retries+994inputs stable. Do not rework or reuse old receipt.
+- Tools Help duplicate removed via apps/help/app.json show:false; registry route/global #helpLink still works. Unknown apps preserved, no extra catalog/API/spec changes needed. Manifest icon previously unescaped; native DOM now text-safe; malformed/HTTP errors distinct from empty.
+- All-page source review (same-provider) found candidates: modules stale handlers/scan race; network label dedup/probe failures/result reset; camera failure-as-empty; TV unchecked play/stop/speech; Voice stuck modelbuttons; Gacha silent logs; WebUI Run refusal; AllJao async popup; Studio projectlist silent error; Home failure-as-empty; remote firmware bus address stripped (P1). Must reproduce/fix, not merely report.
+- Lift design review confirms UP/DOWN/HOME AND encoder/endpoint GOTO lack independent deadlines. Use finite configurable phase limits, latched fault, explicit clear, busy semantics preventing sequence continuation; native executed production methods plus mice_lift build. No actual hardware fault observed.
+- Root dirty Studio relocates CAD look controls setup/view and CSS. Read-only inspected; preserve setup/view/style/generatedindex, configs, spec processkill helper, exe, projects/settings/privatefiles. Never run root spec.
+- USER-NOTREADY: no robot probes/COM/network/camera/motion/HOME/trim/flash or Hub/helper service cutover. Driver uses private Python socket guard: isolated loopback fakes only; no existing helper ports. No inference load; combined real Voice/Face load unmeasured.
+- One claimed software QC/fake/browser/build/timing driver; inventory before each run. Claim integration separately. Source only isolated, parts only; Help parity mandatory. Root discovery task mirrors own ledger.
 
 ## Done
-Prepared isolated branch from accepted root, privately preserved user screenshot, identified existing global Help and duplicated Tools entries, recorded old completed work and real remaining gaps. No source fixes/QC/model/robot/runtime actions in this task yet.
+Task/A48-19 taken as own session; source/design and allpage/Lift consultations complete. Tools functional affected474/0 and8visual layouts+realEnter verified before final minor affordance polish. Initial failing fixture evidence preserved. No physical/runtime/model actions.
 
 ## Next
-1. New session take this task and A48-19 with its own provider:session; read screenshot/rules/relevant system headers; inspect root dirty diffs read-only; claim exact source/test/help paths under mutex.
-2. Ask bounded design/source review; redesign Tools without duplicated Help; real browser visuals/click/keyboard at360-1920px/allthemes, error/empty/discovery states. Inspect all own pages and record actionable findings; fix through parts, update Help same step.
-3. Reconcile other residual software gaps (including Lift) in separate scoped/tested steps, then affected checks +deliberate regressions, independent final review, stable full once per final batch, safe spec package/archive proof.
-4. Scoped PR/merge/root integration only after current proof, preserve all root dirty bytes or explicit own insert-only merges; use existing private guarded script patterns without inheriting old full receipt. Do not end at a plan or report only; finish authorized implementable work.
+1. Refresh Tools final proof/screenshot, deliberately regress and restore launcher guards. Address reproduced allpage UI findings through sources with tests/Help in same step.
+2. Separate Lift deadlines/fault/config/command/UI/native tests/build step; no hardware actions.
+3. Affected+deliberate regressions, independent exact final review, stable current full gate once final batch complete; safe isolated spec package/archive proof, scoped PR/rootintegration preserving dirty bytes. Do not stop at plan/report.
 
 ## Blocked
-Physical tests remain user-paused; no software blocker. Actual combined inference measurements require idle/resource claim and must never overlap QC; no unsupported real-performance or external-backend enforcement claims.
+Physical/user matrix paused. Actual combined inference performance unmeasured; no real hardware/bugfree/100% claim. No software blocker.
