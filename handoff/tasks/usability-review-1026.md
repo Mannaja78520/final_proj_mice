@@ -1,7 +1,7 @@
 # UX/UI usability sweep and residual quality follow-through
 
-Owner:
-Updated: 2026-10-26T04:47:51.313348+07:00
+Owner: codex:10260449-5ec2
+Updated: 2026-10-26 04:49 +0700
 Branch: codex/usability-review-1026
 Tree: E:/final_proj/mice/code/.staging-usability-review-1026
 Last commit: this checkpoint; baseline3298e36
@@ -11,7 +11,7 @@ Plan: A48-19 (robot); related A48-13 (physical/remaining Lift), A48-18 completed
 User asks: finish residual bug/usability/performance improvements across our entire UI, including Hub software hardware use, dynamic for weaker/stronger future PCs and configurable. Latest steering: if Help exists elsewhere, do not add it to Tools; authorizes a fresh session to save tokens. Continue autonomously; no confirmation of routine choices.
 
 ## Doing now
-Fresh-session preparation only; NO runtime source edits yet. Read this task then rules, identify systems, claim exact paths before writing. Design consultation before UI edits and independent final review per COORDINATION (supported same-provider gpt-6-astra high allowed). Start Tools, then audit ALL own Hub tabs/apps/Studio/module UI and fix concrete awkward/error/loading/empty/mobile/keyboard issues found. Do not limit scope to cosmetic screenshot matching.
+Step 1: implement reviewed flat registry launcher, native safe links, truthful states/keyboard focus; Help parity and affected browser regressions. Claimed manifests/Home/help-links/data/screenshot additions. No source edits before this checkpoint. Design review completed tools_design (same-provider gpt-6-astra high); private report pending persistence.
 
 ## File status
 Planned paths only; can narrow/extend after source/visual audit. Claim additions before editing. New regression filenames/config catalogs may replace listed checks after design.
@@ -32,6 +32,19 @@ Planned paths only; can narrow/extend after source/visual audit. Claim additions
 | docs/systems/qc.md | Generated inventory after test changes | planned, not edited | not run | uncommitted, planned |
 | docs/systems/agents.md | Generated active task inventory | planned, not edited | not run | uncommitted, planned |
 | handoff/tasks/usability-review-1026.md | Per-file handoff and concrete next actions | ready for takeover | handoff structure checked | this checkpoint |
+| apps/studio/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
+| apps/tv/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
+| apps/camera/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
+| apps/voice/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
+| apps/all-jao/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
+| apps/photobooth/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
+| apps/gacha/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
+| apps/faces/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
+| apps/help/app.json | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
+| main_python/web/home/parts/home.html | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
+| qc/checks/check_help_links.py | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
+| qc/data/tools_launcher.js | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
+| docs/shots/hub-tools-card.png | Flat launcher copy/regression/Help parity | pending | not run | uncommitted |
 
 ## Facts found
 - Root main HEAD3298e36 = merged PR82. AdaptivePC policy is DONE in source: profiles/CPU-GPU-RAM/headroom/settings, bounded Voice translation/native threads/admission, independent browser render limits. Do not rebuild it needlessly or claim unknown real performance.
