@@ -38,14 +38,15 @@ const VID_USE = [
   { id: "moment", label: "Use another moment…" },
   { id: "drop", label: "Leave out" },
 ];
-let vidLib = null, vidFrames = null, vidMade = null, vidStop = false, vidBusy = false;
+let vidLib = null, vidLibMode = null, vidFrames = null, vidMade = null, vidStop = false, vidBusy = false;
 let vidFit = null, vidPicks = null;   // fitted frames, and the moves made from them
 
 // The person's skeleton finder. Loaded the first time it is used; the model
 // file is then kept in the browser's own store, as its server lets a cache
 // hold it for only an hour and the hub must not need the internet every time.
-async function vidLoadLib() {
-  if (vidLib) return vidLib;
+async function vidLoadLib(mode = "single") {
+  if (vidLib && vidLibMode === mode) return vidLib;
+  if (vidLib) { vidLib.close(); vidLib = null; }
   const mp = await import(VID_LIB + "/vision_bundle.mjs");
   let model = null;
   try {
@@ -57,9 +58,10 @@ async function vidLoadLib() {
   const files = await mp.FilesetResolver.forVisionTasks(VID_LIB + "/wasm");
   const base = model ? { modelAssetBuffer: model } : { modelAssetPath: VID_MODEL };
   const make = (delegate) => mp.PoseLandmarker.createFromOptions(files, {
-    baseOptions: { ...base, delegate }, runningMode: "VIDEO", numPoses: 1 });
+    baseOptions: { ...base, delegate }, runningMode: "VIDEO", numPoses: mode === "group" ? VIDEO_FOLLOW.tracking.people : 1 });
   // Some graphics drivers refuse the GPU path; the CPU one is slower, not wrong.
   try { vidLib = await make("GPU"); } catch (e) { vidLib = await make("CPU"); }
+  vidLibMode = mode;
   return vidLib;
 }
 
@@ -72,7 +74,10 @@ function vidOpts() {
   const h = [0, 1].map(a => VID_HAND.find(x => x.id === $("vidHand" + a).value) || {});
   return { tol: det.tol, mirror: $("vidMirror").checked, waist: $("vidWaist").checked,
            hand: h.map(x => x.want || 0), force: h.map(x => !!x.force),
-           music: $("vidMusic").checked };
+           music: $("vidMusic").checked,
+           subjectMode: $("vidSubject")?.value || "single", cameraMode: $("vidCamera")?.value || "fixed",
+           dancer: $("vidDancer")?.value || "auto", shrug: $("vidShrug")?.checked ?? false,
+           learned: $("vidLearned")?.checked ?? true };
 }
 function vidFill() {        // the choices are built from the lists above
   const fill = (sel, list, pick) => {
@@ -85,6 +90,15 @@ function vidFill() {        // the choices are built from the lists above
     if (lbl) lbl.textContent = h.label;
     fill($("vidHand" + a), VID_HAND, "video");
   });
+  if (VIDEO_FOLLOW) {
+    fill($("vidSubject"), VIDEO_FOLLOW.subjectModes, "single");
+    fill($("vidCamera"), VIDEO_FOLLOW.cameraModes, "fixed");
+  }
+}
+function vidModeChanged() {
+  if (vidBusy) vidStop = true;
+  vidFrames = vidFit = vidMade = vidPicks = null;
+  vidSay("Tracking choices changed. Press Make moves to read the performers again.");
 }
 
 // A picked file goes on the stage like a fetched link (video_page.js).
@@ -101,7 +115,15 @@ async function vidRead() {
   if (!v.src || !isFinite(v.duration)) { vidSay("Pick a video first.", true); return null; }
   vidSay("Loading the body finder (the first time needs the internet)…");
   let lib;
-  try { lib = await vidLoadLib(); }
+  let tracker, picture;
+  try {
+    await videoFollowReady(); vidFill();
+    const options = vidOpts();
+    tracker = new VideoSubjectTracker({ ...options, mirror: false });
+    if (!options.learned) tracker.policy.model = null;
+    picture = document.createElement("canvas"); picture.width = 64; picture.height = 36;
+    lib = await vidLoadLib(options.subjectMode);
+  }
   catch (e) {
     vidSay("Could not load the body finder. It needs the internet the first time; "
            + "check the connection and press Make moves again.", true);
@@ -116,11 +138,14 @@ async function vidRead() {
     await new Promise(res => { v.onseeked = res; v.currentTime = Math.min(t, v.duration - 0.001); });
     // timestamps must only grow, also on a second read of the same video
     const r = lib.detectForVideo(v, performance.now());
-    const w = r.worldLandmarks && r.worldLandmarks[0], s = r.landmarks && r.landmarks[0];
-    // p: the same points on the picture, so the skeleton plays along later
-    frames.push({ t: t - from, w: w ? w.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility })) : null,
-                  p: s ? s.map(p => ({ x: p.x, y: p.y, v: p.visibility })) : null });
-    vidDraw(frames[frames.length - 1].p);
+    const context = picture.getContext("2d", { willReadFrequently: true });
+    context.drawImage(v, 0, 0, 64, 36);
+    const frame = tracker.step(r, t - from, context.getImageData(0, 0, 64, 36).data);
+    frames.push(frame);
+    const select = $("vidDancer");
+    for (const person of frame.people || []) if (select && ![...select.options].some(o => o.value === String(person.id)))
+      select.add(new Option("Performer " + person.id, String(person.id)));
+    vidDraw(frame.p, frame.people);
     vidSay("Reading the video: " + Math.round(100 * (t - from) / Math.max(0.1, to - from)) + "%");
   }
   return frames;
@@ -130,7 +155,7 @@ async function vidRead() {
 // box: they are placed on the picture, not on the box.
 const VID_BONES = [[11, 12], [11, 23], [12, 24], [23, 24],
                    [11, 13], [13, 15], [12, 14], [14, 16]];
-function vidDraw(pts) {
+function vidDraw(pts, people) {
   const v = $("vidPlayer"), c = $("vidOverlay");
   c.width = v.clientWidth; c.height = v.clientHeight;
   c.style.left = v.offsetLeft + "px"; c.style.top = v.offsetTop + "px";
@@ -150,6 +175,8 @@ function vidDraw(pts) {
   for (const i of [11, 12, 13, 14, 15, 16]) if (seen(i)) {
     g.beginPath(); g.arc(...P(i), 4, 0, 2 * Math.PI); g.fill();
   }
+  g.font = "14px sans-serif";
+  for (const person of people || []) g.fillText(String(person.id), ox + person.x * w, oy + person.y * h);
 }
 
 // ---- skeleton -> the robot's two bone directions per arm --------------------
@@ -238,7 +265,10 @@ function vidFitArm(arm, bones, first) {
   const eW = bodyGroup.localToWorld(e), hW = bodyGroup.localToWorld(h);
   if (first) solveElbowIK(arm, eW);
   else if (ccdChain(sh, elbowBalls[arm], eW, 6) > 15) solveElbowIK(arm, eW);
-  ccdChain(el, wristBalls[arm], hW, first ? 24 : 8);
+  robot.updateMatrixWorld(true);
+  const achievedElbow = bodyGroup.worldToLocal(W(elbowBalls[arm]));
+  const achievedHand = bodyGroup.localToWorld(achievedElbow.addScaledVector(bones.fore, foreLen));
+  ccdChain(el, wristBalls[arm], achievedHand, first ? 24 : 8);
   applyPose();             // ccdChain leaves its last rejected try drawn
 }
 // Douglas-Peucker on the joint angles: keep the frame that strays furthest from
@@ -264,6 +294,7 @@ function vidThin(times, poses, tol) {
 // ---- frames -> moves, in three steps (A44-6) --------------------------------
 // 1. Fit every frame: the slow part, done again only when Mirror or Waist change.
 function vidFitFrames(frames, opts) {
+  if (opts.subjectMode && VIDEO_FOLLOW) return new VideoRigFitter(opts).frames(frames);
   const bones = vidBones(frames, opts.mirror);
   if (!bones.some(b => b.arms[0] || b.arms[1])) return null;
   const saved = pose;
@@ -421,7 +452,7 @@ function vidBuild(fit, picks, opts) {
   // on this rig's sizes; each move keeps its time, so the music still fits.
   const safe = safeKeys(out, undefined, opts.music);
   // start: the first kept move's moment, where these moves meet the video
-  return { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe };
+  return { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, quality: fit.quality || null };
 }
 // frames -> timeline keys in one go. No video needed, so QC hands it a skeleton.
 // opts: { tol, mirror, waist, hand: [want L, R] (0 = as in the video),
@@ -594,3 +625,4 @@ async function vidUse(how) {
   return true;
 }
 vidFill();
+videoFollowReady().then(vidFill).catch(() => {});

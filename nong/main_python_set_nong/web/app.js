@@ -2673,6 +2673,129 @@ function solve3(A, b) { // gaussian elimination, 3x3
   }
   return [M[0][3] / M[0][0], M[1][3] / M[1][1], M[2][3] / M[2][2]];
 }
+// Physical envelopes, independent of helper visibility. FK uses the full pose;
+// only the rigid waist frame is removed. SHRUG really changes clearances.
+class StudioCollisionGeometry {
+  static clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+  static box(center, axes, half, name, arm = -1) { return { center, axes, half, name, arm }; }
+  static local(p, box) {
+    const d = p.clone().sub(box.center);
+    return box.axes.map(a => d.dot(a));
+  }
+  static pointBox(p, box) {
+    return Math.hypot(...this.local(p, box).map((v, i) => Math.max(0, Math.abs(v) - box.half[i])));
+  }
+  // Exact minimum on the piecewise-quadratic segment-to-AABB distance.
+  static segmentBox(a, b, box) {
+    const p = this.local(a, box), q = this.local(b, box), d = q.map((v, i) => v - p[i]);
+    const ts = [0, 1];
+    for (let i = 0; i < 3; i++) if (Math.abs(d[i]) > 1e-10)
+      for (const sign of [-1, 1]) { const t = (sign * box.half[i] - p[i]) / d[i]; if (t > 0 && t < 1) ts.push(t); }
+    ts.sort((x, y) => x - y);
+    const sq = t => p.reduce((s, v, i) => s + Math.max(0, Math.abs(v + d[i] * t) - box.half[i]) ** 2, 0);
+    let best = Math.min(sq(0), sq(1));
+    for (let k = 1; k < ts.length; k++) {
+      const lo = ts[k - 1], hi = ts[k], mid = (lo + hi) / 2;
+      let aa = 0, bb = 0;
+      for (let i = 0; i < 3; i++) {
+        const v = p[i] + d[i] * mid;
+        if (Math.abs(v) > box.half[i]) { aa += d[i] ** 2; bb += d[i] * (p[i] - Math.sign(v) * box.half[i]); }
+      }
+      const t = aa ? this.clamp(-bb / aa, lo, hi) : mid;
+      best = Math.min(best, sq(lo), sq(hi), sq(t));
+    }
+    return Math.sqrt(best);
+  }
+  static boxesHit(a, b, gap) {
+    const axes = [...a.axes, ...b.axes];
+    for (const x of a.axes) for (const y of b.axes) {
+      const c = x.clone().cross(y); if (c.lengthSq() > 1e-12) axes.push(c.normalize());
+    }
+    const delta = b.center.clone().sub(a.center);
+    for (const axis of axes) {
+      const ra = a.axes.reduce((s, x, i) => s + (a.half[i] + gap / 2) * Math.abs(axis.dot(x)), 0);
+      const rb = b.axes.reduce((s, x, i) => s + (b.half[i] + gap / 2) * Math.abs(axis.dot(x)), 0);
+      if (Math.abs(delta.dot(axis)) >= ra + rb) return false;
+    }
+    return true;
+  }
+  static snapshot(p) {
+    const saved = pose;
+    try {
+      pose = p.slice(); applyPose(); robot.updateMatrixWorld(true);
+      const inv = bodyGroup.matrixWorld.clone().invert();
+      const at = o => o.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv);
+      const basis = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)];
+      const d = RIG.dims;
+      const torso = this.box(new THREE.Vector3(), basis, [d.torsoW / 2, d.torsoH / 2, d.torsoD / 2], "body");
+      const head = { at: new THREE.Vector3(0, d.torsoH / 2 + 68, 0), r: R_HEAD, name: "head" };
+      const arms = [0, 1].map(arm => {
+        const label = arm ? "right" : "left", j = arm * 4;
+        const s = at(jointGroups[j]), e = at(elbowBalls[arm]), w = at(wristBalls[arm]);
+        const sr = RIG.jointR[arm * 2], er = RIG.jointR[arm * 2 + 1];
+        const start = segPoint(s, e, Math.min(0.8, (sr + CLEAR) / Math.max(1, s.distanceTo(e))));
+        const bars = [{ a: start, b: e, r: RIG.barR[arm * 2], name: label + " upper arm" },
+                      { a: e, b: w, r: RIG.barR[arm * 2 + 1], name: label + " forearm" }];
+        let hand = null;
+        // BoxGeometry is the physical paddle; helper balls and visibility are irrelevant.
+        palmMarks[arm].traverse(o => {
+          if (hand || !o.geometry || o.geometry.type !== "BoxGeometry") return;
+          o.geometry.computeBoundingBox(); const bb = o.geometry.boundingBox;
+          const matrix = inv.clone().multiply(o.matrixWorld), el = matrix.elements;
+          const center = bb.getCenter(new THREE.Vector3()).applyMatrix4(matrix);
+          const axes = [new THREE.Vector3(el[0], el[1], el[2]), new THREE.Vector3(el[4], el[5], el[6]), new THREE.Vector3(el[8], el[9], el[10])];
+          const size = bb.getSize(new THREE.Vector3()).toArray();
+          const half = axes.map((a, i) => size[i] * a.length() / 2); axes.forEach(a => a.normalize());
+          hand = this.box(center, axes, half, label + " hand", arm);
+        });
+        return { s, e, w, sr, er, bars, hand, label };
+      });
+      return { torso, head, arms };
+    } finally { pose = saved; applyPose(); robot.updateMatrixWorld(true); }
+  }
+  static hit(p) {
+    const extra = RIG.extraClearanceMm ?? 0;
+    if (!Number.isFinite(extra) || extra < 0) return "the extra safety gap is invalid";
+    const gap = CLEAR + extra, { torso, head, arms } = this.snapshot(p);
+    const sphereBox = (s, box) => this.pointBox(s.at, box) < s.r + gap;
+    const sphereBar = (s, bar) => segSegDist(s.at, s.at, bar.a, bar.b) < s.r + bar.r + gap;
+    for (const a of arms) {
+      for (const bar of a.bars) {
+        if (this.segmentBox(bar.a, bar.b, torso) < bar.r + gap) return bar.name + " is too close to the body";
+        if (sphereBar(head, bar)) return bar.name + " is too close to the head";
+      }
+      const elbow = { at: a.e, r: a.er };
+      if (sphereBox(elbow, torso)) return a.label + " elbow joint is too close to the body";
+      if (a.e.distanceTo(head.at) < a.er + head.r + gap) return a.label + " elbow joint is too close to the head";
+      if (a.hand) {
+        if (this.boxesHit(a.hand, torso, gap)) return a.hand.name + " is too close to the body";
+        if (sphereBox(head, a.hand)) return a.hand.name + " is too close to the head";
+        if (this.segmentBox(a.bars[0].a, a.bars[0].b, a.hand) < a.bars[0].r + gap)
+          return a.hand.name + " is too close to its upper arm";
+        if (this.pointBox(a.s, a.hand) < a.sr + gap) return a.hand.name + " is too close to its shoulder joint";
+      }
+    }
+    const [l, r] = arms;
+    for (const a of [l, r]) {
+      const other = a === l ? r : l;
+      for (const bar of a.bars) {
+        for (const ob of other.bars)
+          if (segSegDist(bar.a, bar.b, ob.a, ob.b) < bar.r + ob.r + gap) return bar.name + " is too close to the opposite arm";
+        for (const s of [{ at: other.s, r: other.sr }, { at: other.e, r: other.er }])
+          if (sphereBar(s, bar)) return bar.name + " is too close to the opposite joint";
+        if (other.hand && this.segmentBox(bar.a, bar.b, other.hand) < bar.r + gap)
+          return bar.name + " is too close to the opposite hand";
+      }
+      if (a.hand) for (const s of [{ at: other.s, r: other.sr }, { at: other.e, r: other.er }])
+        if (sphereBox(s, a.hand)) return a.hand.name + " is too close to the opposite joint";
+    }
+    for (const a of [{ at: l.s, r: l.sr }, { at: l.e, r: l.er }])
+      for (const b of [{ at: r.s, r: r.sr }, { at: r.e, r: r.er }])
+        if (a.at.distanceTo(b.at) < a.r + b.r + gap) return "the opposite joint balls are too close";
+    if (l.hand && r.hand && this.boxesHit(l.hand, r.hand, gap)) return "the hands are too close to each other";
+    return null;
+  }
+}
 // --- collisions ---
 // Self-collision check: arms vs torso box, head sphere, and each other.
 // Bodies are capsules along the arm segments (radii from the built-in
@@ -2732,36 +2855,7 @@ function fkPoints(p) {
 
 // returns null (safe) or a short reason string
 function collisionAt(p) {
-  const extra = RIG.extraClearanceMm ?? 0;
-  if (!Number.isFinite(extra) || extra < 0) return "the extra safety gap is invalid";
-  const clearance = CLEAR + extra;
-  const d = RIG.dims, k = fkPoints(p);
-  const hx = d.torsoW / 2, hy = d.torsoH / 2, hz = d.torsoD / 2;
-  const headC = new THREE.Vector3(0, hy + 68, 0);
-  const segs = [ // upper arms start next to the torso, so skip their first part
-    // radii come from the per-bar sizes in the rig (0=L upper, 1=L fore, 2=R upper, 3=R fore)
-    { n: "left upper arm",  a: k.shL, b: k.elL, r: RIG.barR[0] || R_ARM, t0: 0.4 },
-    { n: "left forearm",    a: k.elL, b: k.wrL, r: RIG.barR[1] || R_ARM, t0: 0.1 },
-    { n: "right upper arm", a: k.shR, b: k.elR, r: RIG.barR[2] || R_ARM, t0: 0.4 },
-    { n: "right forearm",   a: k.elR, b: k.wrR, r: RIG.barR[3] || R_ARM, t0: 0.1 },
-  ];
-  for (const s of segs) {
-    for (let i = 0; i <= 6; i++) {
-      const t = s.t0 + (1 - s.t0) * i / 6;
-      const pt = segPoint(s.a, s.b, t);
-      const r = t > 0.9 && s.n.includes("forearm") ? R_WRIST : s.r; // wrist ball
-      if (distToBox(pt, hx, hy, hz) < r + clearance) return s.n + " is too close to the body";
-      if (pt.distanceTo(headC) < r + R_HEAD + clearance) return s.n + " is too close to the head";
-    }
-  }
-  // left arm vs right arm (all segment pairs)
-  const L = [segs[0], segs[1]], R = [segs[2], segs[3]];
-  for (const sl of L)
-    for (const sr of R)
-      if (segSegDist(sl.a, sl.b, sr.a, sr.b) < sl.r + sr.r + clearance)
-        return sl.n + " is too close to the " + sr.n;
-  if (k.wrL.distanceTo(k.wrR) < 2 * R_WRIST + clearance) return "the hands are too close to each other";
-  return null;
+  return StudioCollisionGeometry.hit(p);
 }
 
 function clearBadMarks() { keys.forEach(k => delete k.bad); }
@@ -2968,31 +3062,31 @@ function* safeSearch(a, b, budgetMs, seed) {
 // A short connect search supplies an initial answer; rewiring can improve it.
 function* rrtStar(a, b, budgetMs, rnd, t0, stats) {
   const end = t0 + budgetMs;
-  const body = (q, f = 0.5) => q.concat([a[8] + (b[8] - a[8]) * f, a[9] + (b[9] - a[9]) * f]);
+  const body = q => q.slice();
   const distance = (p, q) => Math.hypot(...p.map((v, j) => v - q[j]));
   const free = (p, q) => !pathHit(body(p), body(q));
-  const goal = b.slice(0, ARMJ), nodes = [], goals = new Set();
+  const goal = b.slice(0, NJ), nodes = [], goals = new Set();
   const add = (q, up) => {
     const n = { q, up, children: new Set(), cost: up < 0 ? 0 : nodes[up].cost + distance(nodes[up].q, q) };
     nodes.push(n);
     if (up >= 0) nodes[up].children.add(nodes.length - 1);
     return nodes.length - 1;
   };
-  add(a.slice(0, ARMJ), -1);
+  add(a.slice(0, NJ), -1);
   const seeded = rrtConnect(a, b, Math.min(budgetMs * 0.25, SAFE.seedBudgetMs), rnd, t0);
-  if (seeded) for (let i = 1; i < seeded.length; i++) add(seeded[i].slice(0, ARMJ), nodes.length - 1);
+  if (seeded) for (let i = 1; i < seeded.length; i++) add(seeded[i].slice(0, NJ), nodes.length - 1);
   if (seeded) goals.add(nodes.length - 1);
   let best = seeded ? nodes.length - 1 : -1;
   let bestCost = best < 0 ? Infinity : nodes[best].cost;
   let improveUntil = seeded ? Math.min(end, performance.now() + SAFE.optimizeMs) : end;
   while (performance.now() < improveUntil && nodes.length < SAFE.maxNodes) {
-    const sample = rnd() < SAFE.goalBias ? goal : RIG.min.slice(0, ARMJ).map((l, j) => l + rnd() * (RIG.max[j] - l));
+    const sample = rnd() < SAFE.goalBias ? goal : RIG.min.slice(0, NJ).map((l, j) => l + rnd() * (RIG.max[j] - l));
     const ranked = nodes.map((n, i) => ({ i, d: distance(n.q, sample) })).sort((x, y) => x.d - y.d);
     const nearest = nodes[ranked[0].i].q;
     const gap = Math.max(...sample.map((v, j) => Math.abs(v - nearest[j])));
     if (gap < 1e-6) { yield; continue; }
     const q = nearest.map((v, j) => v + (sample[j] - v) * Math.min(1, SAFE.stepDeg / gap));
-    const k = Math.min(nodes.length, Math.ceil(SAFE.rewireFactor * Math.E * (1 + 1 / ARMJ) * Math.log(nodes.length + 1)));
+    const k = Math.min(nodes.length, Math.ceil(SAFE.rewireFactor * Math.E * (1 + 1 / NJ) * Math.log(nodes.length + 1)));
     const near = nodes.map((n, i) => ({ i, d: distance(n.q, q) })).sort((x, y) => x.d - y.d).slice(0, k);
     const parents = near.slice().sort((x, y) => nodes[x.i].cost + x.d - nodes[y.i].cost - y.d);
     let parent = -1;
@@ -3032,21 +3126,18 @@ function* rrtStar(a, b, budgetMs, rnd, t0, stats) {
   qs.reverse();
   return qs.map((q, i) => body(q, i / (qs.length - 1)));
 }
-// Two trees, one from each end, each try reaching for the other. Only the 8
-// ARM joints are searched: the waist and shrug turn the body and arms
-// together, so they cannot cause a hit (fkPoints holds them still) and they
-// simply glide from a to b along the path.
+// Search all joints: shoulder lift changes physical clearances too.
 function rrtConnect(a, b, budgetMs, rnd, t0) {
-  const lo = RIG.min.slice(0, ARMJ), hi = RIG.max.slice(0, ARMJ);
-  const body = (q, f) => q.concat([a[8] + (b[8] - a[8]) * f, a[9] + (b[9] - a[9]) * f]);
-  const arm = p => p.slice(0, ARMJ);
+  const lo = RIG.min.slice(0, NJ), hi = RIG.max.slice(0, NJ);
+  const body = q => q.slice();
+  const arm = p => p.slice(0, NJ);
   const free = (p, q) => !pathHit(body(p, 0.5), body(q, 0.5));
   const A = [{ q: arm(a), up: -1 }], B = [{ q: arm(b), up: -1 }];
   const near = (T, q) => {
     let best = 0, bd = Infinity;
     for (let i = 0; i < T.length; i++) {
       let d = 0;
-      for (let j = 0; j < ARMJ; j++) d += (T[i].q[j] - q[j]) ** 2;
+      for (let j = 0; j < NJ; j++) d += (T[i].q[j] - q[j]) ** 2;
       if (d < bd) { bd = d; best = i; }
     }
     return best;
@@ -3141,6 +3232,19 @@ function safeKeys(K, budgetMs, keepTime) {
       // allows, along the line just checked clear (like vidReachSide)
       const f = Math.max(0, Math.min(1, ((k.t || 0) - 1) / minTime(prev.pose, k.pose)));
       k.pose = safeLerp(prev.pose, k.pose, f).map((v, j) => clampJ(j, v));
+    }
+    // Validate the actual shortened/rounded motion, including body joints.
+    const actualPrev = out[out.length - 1];
+    if (keepTime && minTime(actualPrev.pose, k.pose) > k.t) {
+      const target = k.pose.slice(); let lo = 0, hi = 1, best = actualPrev.pose.slice();
+      for (let z = 0; z < 18; z++) {
+        const f = (lo + hi) / 2, q = safeLerp(actualPrev.pose, target, f).map((v, j) => clampJ(j, v));
+        if (minTime(actualPrev.pose, q) <= k.t) { best = q; lo = f; } else hi = f;
+      }
+      k.pose = best;
+    }
+    if (poseHit(k.pose) || pathHit(actualPrev.pose, k.pose)) {
+      actualPrev.hold = (actualPrev.hold || 0) + (k.t || 0) + (k.hold || 0); tally.failed++; continue;
     }
     out.push(k);
   }
@@ -8902,6 +9006,298 @@ async function saveRobotSetting(def) {
   }
 }
 renderRobotSettings();
+// Keep observation geometry and inferred movement separate: a camera cut is
+// not a robot command. Hip-relative measurements also preserve an opening twist.
+let VIDEO_FOLLOW = null, VIDEO_POLICY = null;
+async function videoFollowReady() {
+  if (VIDEO_FOLLOW) return VIDEO_FOLLOW;
+  const config = await fetch("video_follow.json").then(r => r.json());
+  if (!config.tracking || !config.fitting || config.version !== 1) throw new Error("Video follow settings could not be read");
+  VIDEO_FOLLOW = config;
+  try { VIDEO_POLICY = await fetch(config.policy.model).then(r => r.json()); } catch (_) { VIDEO_POLICY = null; }
+  return config;
+}
+class VideoBodyMotion {
+  static wrap(v) { return Math.atan2(Math.sin(v), Math.cos(v)); }
+  static measure(w, mirror = false) {
+    if (!w || w.length < 25) return null;
+    const point = i => {
+      const j = mirror ? (i % 2 ? i + 1 : i - 1) : i, p = w[j];
+      return { at: new THREE.Vector3(mirror ? -p.x : p.x, -p.y, -p.z), seen: p.v ?? p.visibility ?? 1 };
+    };
+    const sl = point(11), sr = point(12), hl = point(23), hr = point(24);
+    const confidence = Math.min(sl.seen, sr.seen, hl.seen, hr.seen);
+    if (confidence < (VIDEO_FOLLOW?.tracking.confidence ?? 0.55)) return null;
+    const left = hl.at.clone().sub(hr.at), spine = sl.at.clone().add(sr.at).sub(hl.at).sub(hr.at);
+    if (left.length() < 0.025 || spine.length() < 0.05) return null;
+    left.normalize();
+    const up = spine.clone().addScaledVector(left, -spine.dot(left)).normalize();
+    const front = left.clone().cross(up).normalize();
+    const shoulder = sl.at.clone().sub(sr.at), sx = shoulder.dot(left), sz = shoulder.dot(front);
+    const twist = Math.atan2(-sz, sx), roll = Math.atan2(shoulder.dot(up), Math.hypot(sx, sz));
+    const torsoLeft = shoulder.clone().addScaledVector(up, -shoulder.dot(up)).normalize();
+    const torsoFront = torsoLeft.clone().cross(up).normalize();
+    const arms = [0, 1].map(a => {
+      const S = point(11 + a), E = point(13 + a), W = point(15 + a);
+      const local = v => new THREE.Vector3(v.dot(torsoLeft), v.dot(up), v.dot(torsoFront)).normalize();
+      return { ok: Math.min(S.seen, E.seen, W.seen) >= (VIDEO_FOLLOW?.tracking.confidence ?? 0.55),
+        upper: local(E.at.clone().sub(S.at)), fore: local(W.at.clone().sub(E.at)),
+        rawUpper: E.at.clone().sub(S.at).normalize(), rawFore: W.at.clone().sub(E.at).normalize() };
+    });
+    return { arms, twist, roll, confidence, hipYaw: Math.atan2(front.x, front.z) };
+  }
+  static difference(a, b, raw = false) {
+    if (!a || !b) return 180;
+    let error = 0;
+    for (let i = 0; i < 2; i++) if (a.arms[i].ok && b.arms[i].ok)
+      for (const key of raw ? ["rawUpper", "rawFore"] : ["upper", "fore"])
+        error = Math.max(error, THREE.MathUtils.radToDeg(a.arms[i][key].angleTo(b.arms[i][key])));
+    return error;
+  }
+}
+class VideoTemporalPolicy {
+  constructor(model = VIDEO_POLICY) { this.model = model; this.accepted = null; this.previous = null; this.held = 0; this.heading = 0; }
+  static bin(value, edges) { let n = 0; while (n < edges.length && value >= edges[n]) n++; return n; }
+  static state(features, model) {
+    return model.features.map((name, i) => VideoTemporalPolicy.bin(features[name], model.bins[i])).join(":");
+  }
+  step(body, scene, shot, groupTrust = 1) {
+    if (!body) { this.held++; return { body: this.accepted, action: "uncertain", trusted: false, waist: this.accepted ? this.heading + this.accepted.twist : null }; }
+    if (!this.accepted) {
+      this.accepted = body; this.previous = body;
+      return { body, action: "initial", trusted: true, waist: body.twist };
+    }
+    const features = {
+      invariant: VideoBodyMotion.difference(body, this.accepted), raw: VideoBodyMotion.difference(body, this.previous, true),
+      body: THREE.MathUtils.radToDeg(Math.max(Math.abs(VideoBodyMotion.wrap(body.twist - this.accepted.twist)), Math.abs(body.roll - this.accepted.roll))),
+      scene, confidence: body.confidence * groupTrust, held: this.held,
+      heading: THREE.MathUtils.radToDeg(Math.abs(VideoBodyMotion.wrap(body.hipYaw - this.previous.hipYaw)))
+    };
+    let action = "uncertain", learned = false;
+    const model = this.model;
+    if (model?.enabled && model.schema === "mice-video-q-v1") {
+      const row = model.q[VideoTemporalPolicy.state(features, model)];
+      if (row && row.every(Number.isFinite)) {
+        const ranks = row.map((q, i) => ({ q, i })).sort((a, b) => b.q - a.q);
+        if (ranks[0].q - ranks[1].q >= (VIDEO_FOLLOW?.policy.minimumMargin ?? 0.5)) {
+          action = model.actions[ranks[0].i]; learned = true;
+        }
+      }
+    }
+    // Explicit geometry fallback for unseen states or a policy that did not
+    // meet held-out acceptance. Missing identity never authorizes a pose jump.
+    if (!learned && features.confidence >= 0.55) {
+      if (scene > 0.18 && features.invariant < 12 && features.body < 8) action = "compensate";
+      else if (scene <= 0.18 && (features.invariant > 3 || features.body > 2 || features.heading > 3)) action = "accept";
+      else if (features.invariant <= 3 && features.body <= 2) action = "hold";
+    }
+    if (groupTrust < 0.5 || (scene > 0.18 && (features.invariant > 45 || features.body > 35))) action = "uncertain";
+    if (action === "accept" && this.previous && !shot)
+      this.heading += VideoBodyMotion.wrap(body.hipYaw - this.previous.hipYaw);
+    if (action === "accept" || action === "compensate") { this.accepted = body; this.held = 0; }
+    else this.held++;
+    this.previous = body;
+    return { body: this.accepted, action, learned, trusted: action !== "uncertain", features,
+      waist: this.heading + this.accepted.twist };
+  }
+}
+class VideoSubjectTracker {
+  constructor(options, config = VIDEO_FOLLOW) {
+    this.options = options; this.config = config.tracking; this.tracks = []; this.nextId = 1;
+    this.primary = null; this.shot = 0; this.lastImage = null; this.history = [];
+    this.policy = new VideoTemporalPolicy();
+  }
+  imageChange(image) {
+    if (!image) return 0;
+    let difference = 0, count = 0;
+    if (this.lastImage && this.lastImage.length === image.length)
+      for (let i = 0; i < image.length; i += 4) {
+        difference += Math.abs(image[i] - this.lastImage[i]) + Math.abs(image[i + 1] - this.lastImage[i + 1]) + Math.abs(image[i + 2] - this.lastImage[i + 2]); count += 3;
+      }
+    this.lastImage = new Uint8Array(image);
+    return count ? difference / count / 255 : 0;
+  }
+  candidates(result) {
+    return (result.worldLandmarks || []).map((points, i) => {
+      const w = points.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility ?? 1 }));
+      const p = result.landmarks[i].map(v => ({ x: v.x, y: v.y, v: v.visibility ?? 1 }));
+      const body = VideoBodyMotion.measure(w, this.options.mirror);
+      const cx = (p[11].x + p[12].x + p[23].x + p[24].x) / 4, cy = (p[11].y + p[12].y + p[23].y + p[24].y) / 4;
+      const size = Math.hypot(p[11].x - p[23].x, p[11].y - p[23].y) + Math.hypot(p[12].x - p[24].x, p[12].y - p[24].y);
+      return { w, p, body, cx, cy, size, confidence: body?.confidence || 0 };
+    }).filter(p => p.body && p.size > 0.025);
+  }
+  step(result, t, image = null, sceneOverride = null) {
+    const scene = sceneOverride ?? this.imageChange(image);
+    const cut = this.options.cameraMode === "cuts" && scene > this.config.cutDifference;
+    if (cut) { this.shot++; this.tracks = []; this.primary = null; }
+    const candidates = this.candidates(result), used = new Set();
+    for (const c of candidates) {
+      let match = null, cost = Infinity;
+      for (const previous of this.tracks) if (!used.has(previous.id) && t - previous.t <= this.config.missingSeconds) {
+        const spatial = Math.hypot(c.cx - previous.cx, c.cy - previous.cy);
+        const distance = spatial + 0.15 * Math.abs(Math.log(c.size / previous.size)) + VideoBodyMotion.difference(c.body, previous.body) / 180 * 0.04;
+        if (spatial < this.config.identityGap && distance < cost) { match = previous; cost = distance; }
+      }
+      c.id = match ? match.id : this.nextId++; c.t = t; used.add(c.id);
+    }
+    // An explicit person is always followed independently, regardless of sex
+    // or apparent clothing. Different choreographies are never averaged.
+    let chosen = candidates.find(c => String(c.id) === String(this.options.dancer));
+    if (!chosen && this.primary) chosen = candidates.find(c => c.id === this.primary.id);
+    if (!chosen && this.primary && !cut && t - this.primary.t <= this.config.missingSeconds) {
+      const state = this.policy.step(null, scene, cut, 0);
+      return { t, w: null, p: null, shot: this.shot, cut, scene, ...state, candidates: candidates.length };
+    }
+    if (!chosen && candidates.length) {
+      const previousBody = this.policy.accepted;
+      chosen = candidates.slice().sort((a, b) => {
+        const score = c => (previousBody ? VideoBodyMotion.difference(c.body, previousBody) / 90 : 0) + Math.abs(c.cx - (this.options.anchorX ?? 0.5)) - c.size;
+        return score(a) - score(b);
+      })[0];
+    }
+    this.tracks = candidates;
+    if (!chosen) return { t, w: null, p: null, shot: this.shot, cut, scene, ...this.policy.step(null, scene, cut, 0), candidates: 0 };
+    this.primary = chosen;
+    const supporters = candidates.filter(c => VideoBodyMotion.difference(c.body, chosen.body) <= this.config.styleDegrees);
+    const styles = [];
+    for (const c of candidates) {
+      const group = styles.find(s => VideoBodyMotion.difference(c.body, s.leader.body) <= this.config.styleDegrees);
+      if (group) group.people.push(c.id); else styles.push({ leader: c, people: [c.id] });
+    }
+    const state = this.policy.step(chosen.body, scene, cut, chosen.confidence >= this.config.confidence ? 1 : 0);
+    let repeatAt = null;
+    for (const old of this.history) if (t - old.t > 1 && t - old.t <= this.config.repeatSeconds &&
+      VideoBodyMotion.difference(chosen.body, old.body) < 3 && Math.abs(chosen.body.twist - old.body.twist) < 0.04) { repeatAt = old.t; break; }
+    this.history.push({ t, body: chosen.body }); this.history = this.history.filter(h => t - h.t <= this.config.repeatSeconds);
+    return { t, w: chosen.w, p: chosen.p, shot: this.shot, cut, scene, ...state,
+      track: chosen.id, candidates: candidates.length, supporters: supporters.length, repeatAt,
+      styles: styles.map(s => ({ people: s.people, x: s.leader.cx })),
+      people: candidates.map(c => ({ id: c.id, x: c.cx, y: c.cy })) };
+  }
+}
+class VideoRigFitter {
+  constructor(options) { this.options = options; this.settings = VIDEO_FOLLOW.fitting; this.tables = {}; }
+  bodyTable(joint) {
+    if (this.tables[joint]) return this.tables[joint];
+    const saved = pose, rows = [];
+    try {
+      pose = RIG.neutral.slice();
+      for (let v = RIG.min[joint]; v <= RIG.max[joint]; v += 0.5) {
+        pose[joint] = v; applyPose(); robot.updateMatrixWorld(true);
+        let angle;
+        if (joint === 8) {
+          const front = new THREE.Vector3(0, 0, 1).applyQuaternion(bodyGroup.getWorldQuaternion(new THREE.Quaternion()));
+          angle = Math.atan2(front.x, front.z);
+        } else {
+          const local = o => bodyGroup.worldToLocal(o.getWorldPosition(new THREE.Vector3()));
+          const line = local(jointGroups[0]).sub(local(jointGroups[4]));
+          angle = Math.atan2(line.y, Math.hypot(line.x, line.z));
+        }
+        rows.push({ v, angle });
+      }
+    } finally { pose = saved; applyPose(); robot.updateMatrixWorld(true); }
+    const base = rows.reduce((a, b) => Math.abs(b.v - RIG.neutral[joint]) < Math.abs(a.v - RIG.neutral[joint]) ? b : a).angle;
+    return (this.tables[joint] = { rows, base });
+  }
+  setBody(joint, target) {
+    const table = this.bodyTable(joint);
+    const best = table.rows.reduce((a, b) => Math.abs(VideoBodyMotion.wrap(b.angle - table.base - target)) < Math.abs(VideoBodyMotion.wrap(a.angle - table.base - target)) ? b : a);
+    pose[joint] = clampJ(joint, best.v);
+  }
+  armCost(arm, bones) {
+    applyPose(); robot.updateMatrixWorld(true);
+    const local = o => bodyGroup.worldToLocal(o.getWorldPosition(new THREE.Vector3()));
+    const s = local(jointGroups[arm * 4]), e = local(elbowBalls[arm]), w = local(wristBalls[arm]);
+    const upper = e.clone().sub(s).normalize(), fore = w.clone().sub(e).normalize();
+    return 1 - upper.dot(bones.upper) + 1 - fore.dot(bones.fore);
+  }
+  arm(arm, bones, first) {
+    const before = pose.slice();
+    // Existing solver is a seed; the objective below evaluates BOTH achieved
+    // bone directions, so an unreachable elbow cannot redirect the forearm.
+    vidFitArm(arm, bones, first);
+    let bestPose = pose.slice(), best = this.armCost(arm, bones);
+    const seeds = first ? [pose.slice(), before, RIG.neutral.map((v, j) => j >= arm * 4 && j < arm * 4 + 4 ? v : pose[j])] : [pose.slice()];
+    for (const seed of seeds) {
+      pose = seed.slice();
+      for (const step of this.settings.steps) for (let pass = 0; pass < this.settings.passes; pass++) {
+        let improved = false;
+        for (let j = arm * 4; j < arm * 4 + 4; j++) {
+          const old = pose[j]; let chosen = old;
+          const cost = () => this.armCost(arm, bones) + this.settings.continuityWeight * (pose[j] - before[j]) ** 2 / 10000;
+          let score = cost();
+          for (const sign of [-1, 1]) {
+            pose[j] = clampJ(j, old + sign * step); const value = cost();
+            if (value < score - 1e-8) { score = value; chosen = pose[j]; improved = true; }
+          }
+          pose[j] = chosen;
+        }
+        if (!improved) break;
+      }
+      const score = this.armCost(arm, bones);
+      if (score < best + 1e-8) { best = score; bestPose = pose.slice(); }
+    }
+    pose = bestPose; applyPose(); return best;
+  }
+  repair(target, previous) {
+    if (!collisionAt(target)) return { pose: target, repaired: false };
+    let best = previous && !collisionAt(previous) ? previous.slice() : null;
+    let distance = best ? Math.hypot(...best.map((v, j) => v - target[j])) : Infinity;
+    const consider = candidate => {
+      if (collisionAt(candidate)) return;
+      const d = Math.hypot(...candidate.map((v, j) => v - target[j]));
+      if (d < distance) { best = candidate.slice(); distance = d; }
+    };
+    consider(RIG.neutral.map((v, j) => clampJ(j, v)));
+    for (const step of this.settings.repairDegrees) {
+      for (let j = 0; j < NJ; j++) for (const sign of [-1, 1]) {
+        const candidate = target.slice(); candidate[j] = clampJ(j, candidate[j] + sign * step); consider(candidate);
+      }
+      if (best && distance < step) break;
+    }
+    // A deterministic local search can adjust two interacting hands together.
+    const random = safeRng(17);
+    for (let k = 0; k < 64; k++) {
+      const candidate = target.map((v, j) => clampJ(j, v + (random() - 0.5) * (k < 32 ? 24 : 60)));
+      consider(candidate);
+    }
+    return best ? { pose: best, repaired: true } : null;
+  }
+  frames(frames) {
+    const saved = pose, poses = [], times = [], quality = { repaired: 0, missing: 0, uncertain: 0, worstBoneDegrees: 0 };
+    let previous = null, shot = null;
+    try {
+      pose = RIG.neutral.map((v, j) => clampJ(j, v));
+      for (const frame of frames) {
+        let body = frame.body;
+        if (body) body = { ...body, arms: body.arms.map(a => ({ ...a,
+          upper: new THREE.Vector3(a.upper.x, a.upper.y, a.upper.z), fore: new THREE.Vector3(a.fore.x, a.fore.y, a.fore.z) })) };
+        else body = VideoBodyMotion.measure(frame.w, false);
+        if (body && this.options.mirror) body = { ...body, twist: -body.twist, roll: -body.roll,
+          arms: [body.arms[1], body.arms[0]].map(a => ({ ...a,
+            upper: new THREE.Vector3(-a.upper.x, a.upper.y, a.upper.z), fore: new THREE.Vector3(-a.fore.x, a.fore.y, a.fore.z) })) };
+        const trusted = frame.trusted !== false;
+        if (!body || !trusted) { quality[body ? "uncertain" : "missing"]++; }
+        else if (!(previous && frame.action === "hold")) {
+          if (this.options.waist) this.setBody(8, frame.waist == null ? body.twist : frame.waist * (this.options.mirror ? -1 : 1));
+          if (this.options.shrug) this.setBody(9, body.roll);
+          applyPose();
+          for (const a of [0, 1]) if (body.arms[a].ok) {
+            const error = this.arm(a, body.arms[a], previous === null || shot !== frame.shot);
+            quality.worstBoneDegrees = Math.max(quality.worstBoneDegrees, THREE.MathUtils.radToDeg(Math.acos(Math.max(-1, 1 - error / 2))));
+          }
+        }
+        const target = this.repair(pose.map((v, j) => clampJ(j, v)), previous);
+        if (!target) { quality.uncertain++; continue; }
+        if (target.repaired) quality.repaired++;
+        pose = target.pose.slice(); previous = pose.slice(); shot = frame.shot;
+        poses.push(pose.slice()); times.push(frame.t * 1000);
+      }
+    } finally { pose = saved; applyPose(); robot.updateMatrixWorld(true); }
+    return poses.length ? { poses, times, videoMs: Math.round(times.at(-1)), quality, mirror: this.options.mirror, waist: this.options.waist, shrug: this.options.shrug } : null;
+  }
+}
 // --- moves from a video of a person (A44-4) ---
 // User 2026-10-19: make the robot's moves from a video of a person, as close
 // as the robot's joints allow. The browser finds the person's skeleton in each
@@ -8942,14 +9338,15 @@ const VID_USE = [
   { id: "moment", label: "Use another moment…" },
   { id: "drop", label: "Leave out" },
 ];
-let vidLib = null, vidFrames = null, vidMade = null, vidStop = false, vidBusy = false;
+let vidLib = null, vidLibMode = null, vidFrames = null, vidMade = null, vidStop = false, vidBusy = false;
 let vidFit = null, vidPicks = null;   // fitted frames, and the moves made from them
 
 // The person's skeleton finder. Loaded the first time it is used; the model
 // file is then kept in the browser's own store, as its server lets a cache
 // hold it for only an hour and the hub must not need the internet every time.
-async function vidLoadLib() {
-  if (vidLib) return vidLib;
+async function vidLoadLib(mode = "single") {
+  if (vidLib && vidLibMode === mode) return vidLib;
+  if (vidLib) { vidLib.close(); vidLib = null; }
   const mp = await import(VID_LIB + "/vision_bundle.mjs");
   let model = null;
   try {
@@ -8961,9 +9358,10 @@ async function vidLoadLib() {
   const files = await mp.FilesetResolver.forVisionTasks(VID_LIB + "/wasm");
   const base = model ? { modelAssetBuffer: model } : { modelAssetPath: VID_MODEL };
   const make = (delegate) => mp.PoseLandmarker.createFromOptions(files, {
-    baseOptions: { ...base, delegate }, runningMode: "VIDEO", numPoses: 1 });
+    baseOptions: { ...base, delegate }, runningMode: "VIDEO", numPoses: mode === "group" ? VIDEO_FOLLOW.tracking.people : 1 });
   // Some graphics drivers refuse the GPU path; the CPU one is slower, not wrong.
   try { vidLib = await make("GPU"); } catch (e) { vidLib = await make("CPU"); }
+  vidLibMode = mode;
   return vidLib;
 }
 
@@ -8976,7 +9374,10 @@ function vidOpts() {
   const h = [0, 1].map(a => VID_HAND.find(x => x.id === $("vidHand" + a).value) || {});
   return { tol: det.tol, mirror: $("vidMirror").checked, waist: $("vidWaist").checked,
            hand: h.map(x => x.want || 0), force: h.map(x => !!x.force),
-           music: $("vidMusic").checked };
+           music: $("vidMusic").checked,
+           subjectMode: $("vidSubject")?.value || "single", cameraMode: $("vidCamera")?.value || "fixed",
+           dancer: $("vidDancer")?.value || "auto", shrug: $("vidShrug")?.checked ?? false,
+           learned: $("vidLearned")?.checked ?? true };
 }
 function vidFill() {        // the choices are built from the lists above
   const fill = (sel, list, pick) => {
@@ -8989,6 +9390,15 @@ function vidFill() {        // the choices are built from the lists above
     if (lbl) lbl.textContent = h.label;
     fill($("vidHand" + a), VID_HAND, "video");
   });
+  if (VIDEO_FOLLOW) {
+    fill($("vidSubject"), VIDEO_FOLLOW.subjectModes, "single");
+    fill($("vidCamera"), VIDEO_FOLLOW.cameraModes, "fixed");
+  }
+}
+function vidModeChanged() {
+  if (vidBusy) vidStop = true;
+  vidFrames = vidFit = vidMade = vidPicks = null;
+  vidSay("Tracking choices changed. Press Make moves to read the performers again.");
 }
 
 // A picked file goes on the stage like a fetched link (video_page.js).
@@ -9005,7 +9415,15 @@ async function vidRead() {
   if (!v.src || !isFinite(v.duration)) { vidSay("Pick a video first.", true); return null; }
   vidSay("Loading the body finder (the first time needs the internet)…");
   let lib;
-  try { lib = await vidLoadLib(); }
+  let tracker, picture;
+  try {
+    await videoFollowReady(); vidFill();
+    const options = vidOpts();
+    tracker = new VideoSubjectTracker({ ...options, mirror: false });
+    if (!options.learned) tracker.policy.model = null;
+    picture = document.createElement("canvas"); picture.width = 64; picture.height = 36;
+    lib = await vidLoadLib(options.subjectMode);
+  }
   catch (e) {
     vidSay("Could not load the body finder. It needs the internet the first time; "
            + "check the connection and press Make moves again.", true);
@@ -9020,11 +9438,14 @@ async function vidRead() {
     await new Promise(res => { v.onseeked = res; v.currentTime = Math.min(t, v.duration - 0.001); });
     // timestamps must only grow, also on a second read of the same video
     const r = lib.detectForVideo(v, performance.now());
-    const w = r.worldLandmarks && r.worldLandmarks[0], s = r.landmarks && r.landmarks[0];
-    // p: the same points on the picture, so the skeleton plays along later
-    frames.push({ t: t - from, w: w ? w.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility })) : null,
-                  p: s ? s.map(p => ({ x: p.x, y: p.y, v: p.visibility })) : null });
-    vidDraw(frames[frames.length - 1].p);
+    const context = picture.getContext("2d", { willReadFrequently: true });
+    context.drawImage(v, 0, 0, 64, 36);
+    const frame = tracker.step(r, t - from, context.getImageData(0, 0, 64, 36).data);
+    frames.push(frame);
+    const select = $("vidDancer");
+    for (const person of frame.people || []) if (select && ![...select.options].some(o => o.value === String(person.id)))
+      select.add(new Option("Performer " + person.id, String(person.id)));
+    vidDraw(frame.p, frame.people);
     vidSay("Reading the video: " + Math.round(100 * (t - from) / Math.max(0.1, to - from)) + "%");
   }
   return frames;
@@ -9034,7 +9455,7 @@ async function vidRead() {
 // box: they are placed on the picture, not on the box.
 const VID_BONES = [[11, 12], [11, 23], [12, 24], [23, 24],
                    [11, 13], [13, 15], [12, 14], [14, 16]];
-function vidDraw(pts) {
+function vidDraw(pts, people) {
   const v = $("vidPlayer"), c = $("vidOverlay");
   c.width = v.clientWidth; c.height = v.clientHeight;
   c.style.left = v.offsetLeft + "px"; c.style.top = v.offsetTop + "px";
@@ -9054,6 +9475,8 @@ function vidDraw(pts) {
   for (const i of [11, 12, 13, 14, 15, 16]) if (seen(i)) {
     g.beginPath(); g.arc(...P(i), 4, 0, 2 * Math.PI); g.fill();
   }
+  g.font = "14px sans-serif";
+  for (const person of people || []) g.fillText(String(person.id), ox + person.x * w, oy + person.y * h);
 }
 
 // ---- skeleton -> the robot's two bone directions per arm --------------------
@@ -9142,7 +9565,10 @@ function vidFitArm(arm, bones, first) {
   const eW = bodyGroup.localToWorld(e), hW = bodyGroup.localToWorld(h);
   if (first) solveElbowIK(arm, eW);
   else if (ccdChain(sh, elbowBalls[arm], eW, 6) > 15) solveElbowIK(arm, eW);
-  ccdChain(el, wristBalls[arm], hW, first ? 24 : 8);
+  robot.updateMatrixWorld(true);
+  const achievedElbow = bodyGroup.worldToLocal(W(elbowBalls[arm]));
+  const achievedHand = bodyGroup.localToWorld(achievedElbow.addScaledVector(bones.fore, foreLen));
+  ccdChain(el, wristBalls[arm], achievedHand, first ? 24 : 8);
   applyPose();             // ccdChain leaves its last rejected try drawn
 }
 // Douglas-Peucker on the joint angles: keep the frame that strays furthest from
@@ -9168,6 +9594,7 @@ function vidThin(times, poses, tol) {
 // ---- frames -> moves, in three steps (A44-6) --------------------------------
 // 1. Fit every frame: the slow part, done again only when Mirror or Waist change.
 function vidFitFrames(frames, opts) {
+  if (opts.subjectMode && VIDEO_FOLLOW) return new VideoRigFitter(opts).frames(frames);
   const bones = vidBones(frames, opts.mirror);
   if (!bones.some(b => b.arms[0] || b.arms[1])) return null;
   const saved = pose;
@@ -9325,7 +9752,7 @@ function vidBuild(fit, picks, opts) {
   // on this rig's sizes; each move keeps its time, so the music still fits.
   const safe = safeKeys(out, undefined, opts.music);
   // start: the first kept move's moment, where these moves meet the video
-  return { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe };
+  return { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, quality: fit.quality || null };
 }
 // frames -> timeline keys in one go. No video needed, so QC hands it a skeleton.
 // opts: { tol, mirror, waist, hand: [want L, R] (0 = as in the video),
@@ -9498,6 +9925,7 @@ async function vidUse(how) {
   return true;
 }
 vidFill();
+videoFollowReady().then(vidFill).catch(() => {});
 // --- the Video page (A44-8) ---
 // User 2026-10-19: a page of its own for moves from a video - the person with
 // their music, the skeleton found on them and the robot moving beside them,
@@ -9710,6 +10138,9 @@ async function vidSound() {
 function vidSettings() {
   if (!vidSrc) return vidSaved;
   return { src: { kind: vidSrc.kind, name: vidSrc.name, url: vidSrc.url || "" },
+           subjectMode: $("vidSubject")?.value || "single", cameraMode: $("vidCamera")?.value || "fixed",
+           dancer: $("vidDancer")?.value || "auto", shrug: !!$("vidShrug")?.checked,
+           learned: $("vidLearned")?.checked !== false,
            detail: $("vidDetail").value, mirror: $("vidMirror").checked,
            music: $("vidMusic").checked, waist: $("vidWaist").checked,
            hand: [$("vidHand0").value, $("vidHand1").value],
@@ -9721,6 +10152,15 @@ function vidApplySettings(s) {
   vidFill();
   const pick = (sel, id) => { if (sel && [...sel.options].some(o => o.value === id)) sel.value = id; };
   pick($("vidDetail"), s.detail);
+  pick($("vidSubject"), s.subjectMode || "single");
+  pick($("vidCamera"), s.cameraMode || "fixed");
+  if ($("vidShrug")) $("vidShrug").checked = !!s.shrug;
+  if ($("vidLearned")) $("vidLearned").checked = s.learned !== false;
+  if ($("vidDancer")) {
+    if (s.dancer && ![...$("vidDancer").options].some(o => o.value === s.dancer))
+      $("vidDancer").add(new Option("Performer " + s.dancer, s.dancer));
+    $("vidDancer").value = s.dancer || "auto";
+  }
   (s.hand || []).forEach((h, a) => pick($("vidHand" + a), h));
   $("vidMirror").checked = !!s.mirror;
   $("vidMusic").checked = s.music !== false;

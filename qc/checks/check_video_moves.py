@@ -83,9 +83,16 @@ function flip(sh){ function m(v){ return [-v[0], v[1], v[2]]; }
   return [[m(sh[1][0]), m(sh[1][1])], [m(sh[0][0]), m(sh[0][1])]]; }
 var seed = 7;
 function rnd(){ seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
-function randomPose(){ var p = RIG.neutral.slice();
-  for (var i = 0; i < 8; i++) p[i] = Math.round(RIG.min[i] + rnd() * (RIG.max[i] - RIG.min[i]));
-  return p; }
+function randomPose(){
+  // Kinematic imitation is measured only on physically clear target shapes.
+  // Random joint angles can now correctly collide with a hand or joint ball.
+  for (var attempt = 0; attempt < 300; attempt++) {
+    var p = RIG.neutral.slice();
+    for (var i = 0; i < 8; i++) p[i] = Math.round(RIG.min[i] + rnd() * (RIG.max[i] - RIG.min[i]));
+    if (!collisionAt(p)) return p;
+  }
+  throw new Error('no collision-clear reference pose');
+}
 function worst(p, sh){ return Math.max(off(p, 0, sh[0]), off(p, 1, sh[1])); }
 window.addEventListener("load", function(){ qcWaitFor(function(){
     return typeof movesFromFrames === "function" && typeof elbowBalls !== "undefined"
@@ -134,7 +141,7 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     var hp = null;
     for (var n = 0; n < 80 && !hp; n++) {
       var p = randomPose(), a = facePalm(p, 0, 1), b = facePalm(p, 0, -1);
-      if (a.upness > 0.6 && b.upness < -0.6) hp = p;
+      if (a.upness > 0.6 && b.upness < -0.6 && !collisionAt(a.pose) && !collisionAt(b.pose)) hp = p;
     }
     if (hp) {
       var hs = shapeOf(hp);

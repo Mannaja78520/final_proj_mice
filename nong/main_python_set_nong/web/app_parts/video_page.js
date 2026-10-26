@@ -210,6 +210,9 @@ async function vidSound() {
 function vidSettings() {
   if (!vidSrc) return vidSaved;
   return { src: { kind: vidSrc.kind, name: vidSrc.name, url: vidSrc.url || "" },
+           subjectMode: $("vidSubject")?.value || "single", cameraMode: $("vidCamera")?.value || "fixed",
+           dancer: $("vidDancer")?.value || "auto", shrug: !!$("vidShrug")?.checked,
+           learned: $("vidLearned")?.checked !== false,
            detail: $("vidDetail").value, mirror: $("vidMirror").checked,
            music: $("vidMusic").checked, waist: $("vidWaist").checked,
            hand: [$("vidHand0").value, $("vidHand1").value],
@@ -221,6 +224,15 @@ function vidApplySettings(s) {
   vidFill();
   const pick = (sel, id) => { if (sel && [...sel.options].some(o => o.value === id)) sel.value = id; };
   pick($("vidDetail"), s.detail);
+  pick($("vidSubject"), s.subjectMode || "single");
+  pick($("vidCamera"), s.cameraMode || "fixed");
+  if ($("vidShrug")) $("vidShrug").checked = !!s.shrug;
+  if ($("vidLearned")) $("vidLearned").checked = s.learned !== false;
+  if ($("vidDancer")) {
+    if (s.dancer && ![...$("vidDancer").options].some(o => o.value === s.dancer))
+      $("vidDancer").add(new Option("Performer " + s.dancer, s.dancer));
+    $("vidDancer").value = s.dancer || "auto";
+  }
   (s.hand || []).forEach((h, a) => pick($("vidHand" + a), h));
   $("vidMirror").checked = !!s.mirror;
   $("vidMusic").checked = s.music !== false;
