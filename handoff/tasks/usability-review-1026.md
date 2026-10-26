@@ -11,7 +11,7 @@ Plan: A48-19 (robot); related A48-13 (Lift/physical), A48-18 done
 Finish all own UI usability and residual software gaps. No duplicated Help in Tools (global entry exists). Continue autonomously; preserve root dirty files and immutable proof trees. Physical USER-NOTREADY.
 
 ## Doing now
-Step4 checkpoint: server transition lock/epoch and fresh STOP ack implemented; TV stamps epoch, serializes pending starts/Stop barrier, checks selected robot ACK before HOME. Actual-thread/API+UI affected226/0; extended VM app22/0+Hub7/0. Legacy race test contract updated to refuse replacement while worker unresolved, then explicit retry; abandoned-clock one-pose proof retained. Exact final review delta now required. Remaining visual keyboard fixture diagnosis, deliberate regression proof, latest Lift rebuild, stable full/package/scoped integration.
+Step5 final review corrections: c2fff NOTAPPROVED (fence late HOME, send selected STOP independently, release confirmed historical owner). Design complete: authenticated epoch-fenced HOME, _motion_dev separate from history retained after ambiguous dispatch, independent concurrent stops/allSettled, fresh ack. Add exact regressions then re-review. Prior226/0 and29actual methods; visual17/136 overflow0 and corrected native keyboard17/17. Lift latest rebuild/full/sabotage/package/integration remain; no physical actions.
 
 ## File status
 Current baseline-to-worktree Git paths reconciled; generated unrelated4outputs and other headers touched raw EOL only, no Git content delta. Private evidence under scratch/usability-review-1026 (not source/public).
@@ -100,6 +100,7 @@ Current baseline-to-worktree Git paths reconciled; generated unrelated4outputs a
 | qc/data/usability_dom.js | UI/Lift/Help parity and regression | implemented; review/full pending | scratch/usability-review-1026/current-affected622/0; stop-order-r2 226/0 | uncommitted |
 | qc/data/usability_hub.js | UI/Lift/Help parity and regression | implemented; review/full pending | scratch/usability-review-1026/current-affected622/0; stop-order-r2 226/0 | uncommitted |
 | shared/web/mice-ui.js | UI/Lift/Help parity and regression | implemented; review/full pending | scratch/usability-review-1026/current-affected622/0; stop-order-r2 226/0 | uncommitted |
+| main_python/hub_auth.py | Gated POST fenced HOME | pending | not run | uncommitted |
 
 ## Facts found
 - Dynamic CPU/GPU/RAM/Voice/browser policy DONE in PR82/root3298e36; previous full8418/0 qualified4isolated retries+994inputs stable. Do not rework or reuse old receipt.
