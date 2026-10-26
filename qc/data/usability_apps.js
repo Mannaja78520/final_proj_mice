@@ -102,7 +102,9 @@ const {read,vm,context,loadClass,response,check,test,finish}=require('./usabilit
  await test('Studio project-list failure',async()=>{
   const c=context();c.syncAskUnsavedBox=()=>{};c.askUnsavedOn=()=>false;c.Mice.Api.get=async()=>({ok:false,says:'offline'});
   const s=read('nong/main_python_set_nong/web/app_parts/project_save_load.js');vm.runInContext(s.slice(s.indexOf('async function refreshProjects')),c);
+  const notices=[];c.notice=text=>notices.push(text);
   c.el('projList').innerHTML='cached project';await c.refreshProjects();
+  check(notices.length===1&&notices[0]===c.el('tlStat').textContent,'Studio refresh error reaches global notice from every tab');
   check(c.el('projList').innerHTML==='cached project'&&c.el('tlStat').textContent.length>0,'Studio project list failure preserves choices and explains retry');
  });
  await test('module Run refusal',async()=>{

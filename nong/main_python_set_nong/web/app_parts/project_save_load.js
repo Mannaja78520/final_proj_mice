@@ -291,6 +291,7 @@ async function refreshProjects() {
   if (retry) retry.hidden = a.ok;
   if (!a.ok) {
     $("tlStat").textContent = "Could not read saved moves. Your choices are kept. Press Retry saved moves.";
+    notice($("tlStat").textContent);
     return;
   }
   const r = a.data;

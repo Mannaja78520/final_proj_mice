@@ -26,6 +26,7 @@ And the brownout guard said *two in a row* while counting *two ever*, because
 nothing cleared the count after a boot that worked.
 """
 import re
+import ast
 
 import qc as F
 
@@ -112,22 +113,36 @@ def run(t):
          "one is the claim's own; a second is a path that can still race")
 
     # ---- the show player cannot be started twice --------------------
-    st = main[main.find("    def start(self, dev, steps"):]
-    st = st[:st.find("\n    def ", 1)]
-    t.contains(st, "with self._starting:",
-               "stopping and starting a show is one atomic step")
-    i_stop = st.find("self.stop()")
-    i_lock = st.find("with self._starting:")
-    t.ok(0 < i_lock < i_stop,
-         "with the stop INSIDE it",
-         "two POSTs for one robot could each find nothing to stop and each "
-         "spawn a clock: two threads sending POSE to the same arm")
-    t.contains(main, "self._starting = threading.Lock()",
-               "on a lock of its own")
-    t.ok("with self.lock:" in st.split("with self._starting:")[1][:400],
-         "and the state is still written under the ordinary lock",
-         "holding the running thread's lock across a join would deadlock, "
-         "which is why these are two locks and not one")
+    show = ast.parse((F.HUB / "hub_show.py").read_text(encoding="utf-8"))
+    cls = next(n for n in show.body if isinstance(n, ast.ClassDef) and n.name == "ShowPlayer")
+    methods = {n.name: n for n in cls.body if isinstance(n, ast.FunctionDef)}
+    def calls(node, name):
+        return [n for n in ast.walk(node) if isinstance(n, ast.Call) and ast.unparse(n.func) == name]
+    def locks(node, name):
+        return [n for n in ast.walk(node) if isinstance(n, ast.With) and
+                any(ast.unparse(i.context_expr) == name for i in n.items)]
+    # Reservation and validation may use an earlier lock. The transition lock
+    # must contain STOP, state claim and worker spawn together.
+    transitions = [n for n in locks(methods["start"], "self._starting") if calls(n, "self._stop_locked")]
+    t.eq(len(transitions), 1, "stopping and starting share exactly one transition block")
+    transition = transitions[0] if transitions else methods["start"]
+    stop = calls(transition, "self._stop_locked")
+    spawn = calls(transition, "threading.Thread")
+    launch = calls(transition, "self.thread.start")
+    t.ok(bool(transitions and stop and spawn and launch and stop[0].lineno < spawn[0].lineno < launch[0].lineno),
+         "with the stop INSIDE the same lock before worker creation and start",
+         "two clocks must never claim one device through separate transition locks")
+    state = locks(transition, "self.lock")
+    t.ok(any(any(isinstance(n, ast.Assign) and any("self.dev" in ast.unparse(target)
+             for target in n.targets) for n in ast.walk(block)) for block in state),
+         "and the device state is still written under the ordinary lock")
+    stop_blocks = locks(methods["stop"], "self._starting")
+    t.ok(any(calls(block, "self._stop_locked") for block in stop_blocks),
+         "external Stop uses the same transition lock")
+    helper = methods["_stop_locked"]
+    t.ok(bool(calls(helper, "th.join")) and all(not calls(block, "th.join") for block in locks(helper, "self.lock")),
+         "joining the worker never holds its ordinary state lock")
+    t.contains(main, "self._starting = threading.Lock()", "on a lock of its own")
 
     # ---- the identity cache is read once ----------------------------
     t.ok("_usb_ident.get(port)" in main,
