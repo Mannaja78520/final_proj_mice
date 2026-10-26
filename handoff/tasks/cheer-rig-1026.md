@@ -10,7 +10,7 @@ Plan: A48-21, fixes rejected A48-20 v1
 Follow two supplied group cheer videos with real waist/shrug, stable actor identity across camera changes, separate choreography, collision-aware paths and genuine supplementary RL. Deliver four checked editable rigs/previews and the Studio feature fix.
 
 ## Doing now
-Torso-style comparisons verified affected187/0, native35/0 and sabotage caught. Fix independent reviewer finding: acknowledged seek must permit normal playback resume; add realistic seeking-setter regression, then focused/review/full QC. No robot, HOME, calibration, live services or real network probes. No heavy/model jobs during QC.
+Torso-style comparisons verified affected187/0, native35/0 and sabotage caught. Independent playback finding fixed and realistic seek regression passes. Final reviews approved; current native36/0, affected187/0, playback85/0. Freeze own tree for full QC under private guard; no further source edits or heavy/model/render jobs until gate completes. No robot, HOME, calibration, live services or real network probes. No heavy/model jobs during QC.
 
 ## File status
 Exact owned source paths below. Private v1 is rejected and preserved, not completion evidence; old inventory/status is .local/cheer_rig_1027/task_previous.md. Private v2 files stay local; full exact inventory will accompany final validation.
@@ -56,10 +56,10 @@ Exact owned source paths below. Private v1 is rejected and preserved, not comple
 - Full raw YOLO+MediaPipe tracks retain waist/shoulders; 4 useful people in wide shots. Positional actor sets remain independent.
 - Four native Blender files built with 10 animated controls and actual checked curves. No final v2 video rendering/audio/package yet.
 - Native33/0 and affected185/0 passed (private .staging-final-focused.log); broader prior1736/2 failures diagnosed and fixed in focused run. Final full QC pending.
-- Review: collision_review approved geometry/path scope; tracking_review pending final re-review after seek/media fixes.
+- Review: collision_review approved geometry/path scope; tracking_review APPROVED after realistic seek-resume fix.
 
 ## Next
-1. Torso-style regression, sabotage proof, final review; update scoped source WIP.
+1. Full QC frozen gate; fix genuine failures without skipping assertions. Snapshot0117 saved privately.
 2. Delegate full QC under own loopback-only guard, frozen source, no heavy jobs.
 3. Render four checked sequences; compose time-matched video/audio; native/file/visual validation and ZIP. Install uniquely named projects without overwrite.
 4. Scoped review/integration only own files; preserve root user templates and regenerate their built outputs. Complete required source packaging/PR checks, no live restart or hardware.

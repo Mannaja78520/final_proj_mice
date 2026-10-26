@@ -133,6 +133,16 @@ if(require.main===module){
     playback.update(player,made,0,0,100);now=1000;const source=playback.update(player,made,0,0,100);
     return !!playback.manual&&player.paused&&Math.abs(source-100/6)<1e-6&&Math.abs(VideoRigFitter.clockForSource(made.keys,source).ms-1000)<1e-6;
   })()`);
+  check('acknowledged slow seek resumes normal playback with real seeking setter',`(()=>{
+    let now=0,played=0,time=0;
+    const video={paused:false,seeking:false,playbackRate:1,pause(){this.paused=true;},play(){played++;this.paused=false;return Promise.resolve();}};
+    Object.defineProperty(video,'currentTime',{get(){return time;},set(v){time=v;this.seeking=true;}});
+    const playback=new VideoCheckedPlayback(()=>now),made={keepMusic:false,keys:[{sourceMs:0,t:1000},{sourceMs:100,t:6000},{sourceMs:1100,t:1000}]};
+    playback.update(video,made,0,0,1100);now=1000;playback.update(video,made,0,0,1100);
+    if(!video.seeking||!playback.manual)return false;
+    video.seeking=false;now=6200;const source=playback.update(video,made,0,0,1100);
+    return playback.manual===null&&played===1&&!video.paused&&source>100&&video.playbackRate===1;
+  })()`);
   check('clearing analysis resets any inherited video slowdown',`(()=>{const p={playbackRate:.1};vidCheckedPlayback.reset(p);return p.playbackRate===1;})()`);
   async function checkAsync(name,code){try{if(!(await run(code)))throw Error('assertion false');passed++;console.log('PASS '+name);}catch(e){failed++;console.log('FAIL '+name+': '+e.message);}}
   (async()=>{

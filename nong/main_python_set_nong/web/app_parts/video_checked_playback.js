@@ -16,11 +16,15 @@ class VideoCheckedPlayback {
     if (this.manual) {
       const robotMs = this.manual.robotMs + Math.max(0, this.now() - this.manual.wallMs);
       const next = VideoRigFitter.sourceForClock(made.keys, robotMs);
-      if (!video.seeking) video.currentTime = fromSeconds + next.sourceMs / 1000;
       if (next.end || next.sourceMs >= endMs) { this.stop(video); return Math.min(endMs, next.sourceMs); }
       const rate = VideoRigFitter.clockForSource(made.keys, next.sourceMs).rate;
-      if (rate >= 0.0625 && !video.seeking) {
-        this.manual = null; video.playbackRate = Math.min(4, rate); video.play().catch(() => {});
+      if (!video.seeking) {
+        // Setting currentTime starts a new asynchronous seek. Decide whether
+        // to resume before that assignment can invalidate the ready state.
+        video.currentTime = fromSeconds + next.sourceMs / 1000;
+        if (rate >= 0.0625) {
+          this.manual = null; video.playbackRate = Math.min(4, rate); video.play().catch(() => {});
+        }
       }
       return next.sourceMs;
     }
