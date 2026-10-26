@@ -11,7 +11,7 @@ Plan: A48-19 (robot); related A48-13 (Lift/physical), A48-18 done
 Finish all own UI usability and residual software gaps. No duplicated Help in Tools (global entry exists). Continue autonomously; preserve root dirty files and immutable proof trees. Physical USER-NOTREADY.
 
 ## Doing now
-Step3 checkpoint: Lift deadline/fault/config/commands/UI/Help/native implementation complete; current selected622/0 includes actual Edge error/recovery journeys. First native broken import fixed; native107/0 then GPIO+idle-conflict expanded. mice_lift build exit0 RAM53140/Flash1590045(80.9%) before last GPIO/idle change; rebuild required. UI review2TV P1s fixed with new23/0 actual-method cases. Final review remains unapproved (reviewer hit quota); fresh review after reset/fallback only. Next allpage visual matrix, deliberate regressions, final exact review and frozen full/package/integration.
+Step4 required review corrections: final_review9ebd817 NOT APPROVED:2TVP1s (already-dispatched start survives Stop; raw STOP ERR ignored). Design consultation complete: shared transition lock, start epoch reservations +optional stamped API, explicit fresh STOP ack and selected-device confirmation, retain unresolved workers. Implement/test exact thread interleavings and Help parity. Lift implemented, selected622/0;17page136theme-width visual0overflow; Voice keyboard initial-focus fixture needs diagnosis. No physical/runtime/model work.
 
 ## File status
 Current baseline-to-worktree Git paths reconciled; generated unrelated4outputs and other headers touched raw EOL only, no Git content delta. Private evidence under scratch/usability-review-1026 (not source/public).
@@ -94,6 +94,9 @@ Current baseline-to-worktree Git paths reconciled; generated unrelated4outputs a
 | qc/data/usability_browser.js | Executed production/native/browser regression | implemented; review/full pending | selected622/0; scratch/usability-review-1026/current-affected.log | uncommitted |
 | qc/data/usability_dom.js | Executed production/native/browser regression | implemented; review/full pending | selected622/0; scratch/usability-review-1026/current-affected.log | uncommitted |
 | qc/data/usability_hub.js | Executed production/native/browser regression | implemented; review/full pending | selected622/0; scratch/usability-review-1026/current-affected.log | uncommitted |
+| main_python/hub_show.py | Stop/start barrier and acknowledgement contract | pending | not run | uncommitted |
+| main_python/hub_api_play.py | Stop/start barrier and acknowledgement contract | pending | not run | uncommitted |
+| qc/checks/check_play_stop_order.py | Stop/start barrier and acknowledgement contract | pending | not run | uncommitted |
 
 ## Facts found
 - Dynamic CPU/GPU/RAM/Voice/browser policy DONE in PR82/root3298e36; previous full8418/0 qualified4isolated retries+994inputs stable. Do not rework or reuse old receipt.
