@@ -52,6 +52,17 @@ if(require.main===module){
   check('front side high camera transforms preserve anatomical pose',`(()=>{const a=VideoBodyMotion.measure(person(.3,.08));return [[0,1.2,0],[.8,.9,.2],[-.5,-1.4,-.15]].every(v=>{const b=VideoBodyMotion.measure(person(.3,.08,v));return VideoBodyMotion.difference(a,b)<1e-4&&Math.abs(a.twist-b.twist)<1e-6&&Math.abs(a.roll-b.roll)<1e-6;});})()`);
   check('tracking identity survives detector order swaps',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'fixed',dancer:'auto'});const a={x:.5,w:person(.2,0)},b={x:.8,w:person(-.2,0,[],true)};const x=tr.step(result([a,b]),0,null,0),y=tr.step(result([b,a]),.1,null,0);return x.track===y.track;})()`);
   check('different group routines remain separate',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'fixed',dancer:'auto'});const f=tr.step(result([{x:.5,w:person(0,0)},{x:.8,w:person(0,0,[0,0,0],true)}]),0,null,0);return f.styles.length===2&&f.supporters===1;})()`);
+  check('same arms but different waist or shrug are separate routines',`(()=>{
+    const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'fixed',dancer:'auto'});
+    const f=tr.step(result([{x:.5,w:person(.4,0)},{x:.8,w:person(-.4,0)},{x:.15,w:person(.4,.5)}]),0,null,0);
+    return f.styles.length===3&&f.supporters===1;
+  })()`);
+  check('repeat annotation includes shoulder roll and torso twist',`(()=>{
+    const tr=new VideoSubjectTracker({subjectMode:'single',cameraMode:'fixed',dancer:'auto'});
+    tr.step(result([{x:.5,w:person(0,0)}]),0,null,0);
+    const f=tr.step(result([{x:.5,w:person(0,.2)}]),2,null,0);
+    return f.repeatAt===null;
+  })()`);
   check('explicit performer overrides auto subject',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'fixed',dancer:'2'});const f=tr.step(result([{x:.5,w:person(0,0)},{x:.8,w:person(0,0,[0,0,0],true)}]),0,null,0);return f.track===2;})()`);
   check('camera cut does not create waist jump',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'cuts',dancer:'auto'});const a=tr.step(result([{x:.5,w:person(.3,.05)}]),0,null,0),b=tr.step(result([{x:.4,w:person(.3,.05,[.7,1.2,.2])}]),.1,null,.8);return Math.abs(a.waist-b.waist)<.02;})()`);
   check('hand boxes collide despite old clear wrist spacing',`(()=>{const G=StudioCollisionGeometry,A=[new THREE.Vector3(1,0,0),new THREE.Vector3(0,1,0),new THREE.Vector3(0,0,1)];return 40>2*R_WRIST+CLEAR&&G.boxesHit(G.box(new THREE.Vector3(),A,[17,23,2.5]),G.box(new THREE.Vector3(0,40,0),A,[17,23,2.5]),CLEAR);})()`);

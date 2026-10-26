@@ -10,7 +10,7 @@ Plan: A48-21, fixes rejected A48-20 v1
 Follow two supplied group cheer videos with real waist/shrug, stable actor identity across camera changes, separate choreography, collision-aware paths and genuine supplementary RL. Deliver four checked editable rigs/previews and the Studio feature fix.
 
 ## Doing now
-Add torso-aware style/repetition comparisons and their regression; then focused verification, independent final review and frozen full QC. Current affected185/0 and native33/0 passed. No robot, HOME, calibration, live services or real network probes. No heavy/model jobs during QC.
+Torso-style comparisons verified affected187/0, native35/0 and sabotage caught. Fix independent reviewer finding: acknowledged seek must permit normal playback resume; add realistic seeking-setter regression, then focused/review/full QC. No robot, HOME, calibration, live services or real network probes. No heavy/model jobs during QC.
 
 ## File status
 Exact owned source paths below. Private v1 is rejected and preserved, not completion evidence; old inventory/status is .local/cheer_rig_1027/task_previous.md. Private v2 files stay local; full exact inventory will accompany final validation.

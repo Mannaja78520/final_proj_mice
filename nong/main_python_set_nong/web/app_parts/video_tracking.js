@@ -77,16 +77,16 @@ class VideoSubjectTracker {
       smooth.roll = median(this.observations.map(b => b.roll)); chosen.body = smooth;
       smooth.hipYaw = chosen.body.hipYaw + median(this.observations.map(b => VideoBodyMotion.wrap(b.hipYaw - chosen.body.hipYaw)));
     }
-    const supporters = candidates.filter(c => VideoBodyMotion.difference(c.body, chosen.body) <= this.config.styleDegrees);
+    const supporters = candidates.filter(c => VideoBodyMotion.styleDifference(c.body, chosen.body) <= this.config.styleDegrees);
     const styles = [];
     for (const c of candidates) {
-      const group = styles.find(s => VideoBodyMotion.difference(c.body, s.leader.body) <= this.config.styleDegrees);
+      const group = styles.find(s => VideoBodyMotion.styleDifference(c.body, s.leader.body) <= this.config.styleDegrees);
       if (group) group.people.push(c.id); else styles.push({ leader: c, people: [c.id] });
     }
     const state = this.policy.step(chosen.body, policyScene, cut, chosen.confidence >= this.config.confidence ? 1 : 0);
     let repeatAt = null;
     for (const old of this.history) if (t - old.t > 1 && t - old.t <= this.config.repeatSeconds &&
-      VideoBodyMotion.difference(chosen.body, old.body) < 3 && Math.abs(chosen.body.twist - old.body.twist) < 0.04) { repeatAt = old.t; break; }
+      VideoBodyMotion.styleDifference(chosen.body, old.body) < 3) { repeatAt = old.t; break; }
     this.history.push({ t, body: chosen.body }); this.history = this.history.filter(h => t - h.t <= this.config.repeatSeconds);
     return { t, w: chosen.w, p: chosen.p, shot: this.shot, cut, scene, ...state,
       track: chosen.id, candidates: candidates.length, supporters: supporters.length, repeatAt,

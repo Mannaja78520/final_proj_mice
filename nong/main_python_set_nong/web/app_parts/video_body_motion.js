@@ -48,6 +48,11 @@ class VideoBodyMotion {
         error = Math.max(error, THREE.MathUtils.radToDeg(a.arms[i][key].angleTo(b.arms[i][key])));
     return error;
   }
+  static styleDifference(a, b) {
+    if (!a || !b) return 180;
+    return Math.max(this.difference(a, b), THREE.MathUtils.radToDeg(Math.max(
+      Math.abs(this.wrap(a.twist - b.twist)), Math.abs(a.roll - b.roll))));
+  }
   static blend(previous, observed, weight = 0.6) {
     return { ...observed,
       twist: previous.twist + this.wrap(observed.twist - previous.twist) * weight,
