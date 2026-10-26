@@ -540,6 +540,7 @@ a.peer:hover{border-color:var(--acc)}
       <button class="primary" onclick="runSel()">Run</button>
       <button onclick="cmd('MOVE STOP')">Stop</button>
     </div>
+    <div class="statline" id="moveRunStat" role="status"></div>
     <div class="statline" id="seqStat">idle</div>
   </div>
 
@@ -1753,7 +1754,12 @@ async function loadList(dir,sel){
     s.appendChild(o);
   }
 }
-function runSel(){const v=$('moveSel').value;if(v)cmd('MOVE '+v);}
+async function runSel(){
+  const v=$('moveSel').value;if(!v)return;
+  $('moveRunStat').textContent='starting…';
+  const reply=await cmd('MOVE '+v);
+  if(!sayRefusal('moveRunStat',reply)) $('moveRunStat').textContent='start requested';
+}
 async function loadFiles(){
   const dir=$('dirSel').value;
   try{

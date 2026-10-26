@@ -739,6 +739,8 @@
       the same room cannot join yours, and yours cannot join theirs, because a
       module's own hotspot password is derived from its group name.</div>
     <div id="netlist" class="spin" aria-live="polite" style="margin-top:12px">Looking for modules…</div>
+    <div id="netNotice" class="mini" role="status"></div>
+    <div id="grpout" class="mini" role="status" style="margin-top:8px"></div>
     <div id="netact" style="margin-top:12px"></div>
   </div>
 
@@ -1265,32 +1267,36 @@ async function loadNet(){
   netBusy = true;
   box.className = 'spin'; box.textContent = 'looking for modules…';
   var out = [], failed = 0;
+  const read = async function(url){
+    const response = await fetch(url), data = await response.json();
+    if(!response.ok || data.ok === false) throw new Error(data.error || 'scan failed');
+    return data;
+  };
   try{
-    var r = await fetch('/api/scan').then(x=>x.json());
+    var r = await read('/api/scan');
     (r.modules||[]).forEach(function(m){
-      out.push({dev:'wifi:'+m.ip, label:m.name, type:m.type, via:m.ip, group:m.group||''});
+      out.push({chip:m.chip, dev:'wifi:'+m.ip, label:m.name, type:m.type, via:m.ip, group:m.group||''});
     });
   }catch(e){ failed++; }
   try{
     // /api/ports is only the TYPED port list — it carries no identity until a
     // port is actually probed, so reading it alone showed every module as
     // unnamed and ungrouped. /api/scanusb is what opens the cable and asks.
-    var p = await fetch('/api/ports').then(x=>x.json());
+    var p = await read('/api/ports');
     var real = (p.ports||[]).filter(function(x){ return !x.bt; });
     var probes = real.map(function(x){
-      return fetch('/api/scanusb?port='+encodeURIComponent(x.port))
-        .then(function(r){ return r.json(); })
+      return read('/api/scanusb?port='+encodeURIComponent(x.port))
         .then(function(r){ return (r.usb&&r.usb[0])||null; })
-        .catch(function(){ return null; });
+        .catch(function(){ failed++; return null; });
     });
     (await Promise.all(probes)).forEach(function(u){
       if(!u || !u.module) return;
-      out.push({dev:'usb:'+u.port, label:u.module.name||u.port,
+      out.push({chip:u.module.chip, dev:'usb:'+u.port, label:u.module.name||u.port,
                 type:u.module.type||'', via:u.port,
                 group:u.module.group||''});
       // modules living BEHIND this one on RS485 count too
       (u.rs485||[]).forEach(function(b){
-        out.push({dev:'usb:'+u.port+':'+b.id, label:b.name||('id '+b.id),
+        out.push({chip:b.chip, dev:'usb:'+u.port+':'+b.id, label:b.name||('id '+b.id),
                   type:b.type||'', via:u.port+' #'+b.id, group:b.group||''});
       });
     });
@@ -1299,7 +1305,7 @@ async function loadNet(){
   // the same module can answer on WiFi AND on its cable — show it once
   var seen = {}, uniq = [];
   out.forEach(function(m){
-    var k = m.label + '|' + m.type;
+    var k = m.chip ? 'chip:' + m.chip : m.dev;
     if(seen[k]) return;
     seen[k] = 1; uniq.push(m);
   });
@@ -1309,7 +1315,7 @@ async function loadNet(){
     // "Nothing found" and "could not look" are different facts, and saying the
     // first when the second is true is the page lying to the reader. Both
     // scans failing used to render as a confident empty list.
-    if(failed >= 2){
+    if(failed > 0){
       box.setAttribute('role','alert');
       box.innerHTML = 'Could not look for modules — the hub did not answer. '
         + 'Please check if it is running. '
@@ -1322,6 +1328,8 @@ async function loadNet(){
     return;
   }
   box.removeAttribute('role');
+  const notice = document.getElementById('netNotice');
+  if(notice) notice.textContent = failed ? 'Some modules could not be checked. Press Refresh to try again.' : '';
   box.className = '';
   box.innerHTML = uniq.map(function(m,i){
     return '<label class="netrow" id="netrow'+i+'">'+
@@ -1357,7 +1365,7 @@ function netPick(){
       '<button onclick="linkSel()">🔗 Link these</button>'+
       '<button class="danger" onclick="unlinkSel()" title="Remove the ticked modules from their '+
       'group. They go back to the shared fallback password.">✂ Unlink the ticked modules</button>'+
-    '</div><div id="grpout" class="mini" style="margin-top:8px"></div>';
+    '</div>';
 }
 
 async function groupCmd(dev, cmd){
@@ -1640,21 +1648,27 @@ async function scan(force){
     // not reach" banner and the late answer wiped it (check_ui_states, red
     // when run alone, 2026-10-10).
     if(gen !== scanGen) return;
-    window.MODS = r.modules || [];
+    if(r.ok === false || !Array.isArray(r.modules)) throw new Error(r.error || "invalid module list");
+    window.MODS_ERROR = false;
+    window.HOME_SCANNED = true;
+    window.MODS = r.modules;
     repaintMods();
     if(!(r.modules||[]).length)
       el.innerHTML='<span class="mini">no modules found on '+ (r.lan||'?') +'/24 — are they powered and on the same WiFi? (⟳ Rescan)</span>';
     modsAt = Date.now(); modsHtml = el.innerHTML;
+    if(typeof paintHome === "function") paintHome();
   }catch(e){
-    // Keep the last good list rather than going blank — but mark it plainly as
-    // old, and give the one control that fixes it. A control panel that blanks
-    // when the network hiccups is worse than one that admits the data is old.
-    el.innerHTML =
-      '<div class="banner err" role="alert">Could not reach the hub just now — '+
+    if(gen !== scanGen) return;
+    window.MODS_ERROR = true;
+    el.replaceChildren();
+    if((window.MODS || []).length) repaintMods();
+    const warning = '<div class="banner err" role="alert">Could not reach the hub just now — '+
       esc(String(e && e.message || e))+
       ' <button onclick="scan(true)">Try again</button></div>' +
-      (modsHtml ? '<div class="stale">showing what was found '+agoText(modsAt)+
-                  ' — these may no longer be there</div>'+modsHtml : '');
+      ((window.MODS || []).length ? '<div class="stale">showing what was found '+agoText(modsAt)+
+        ' — these may no longer be there</div>' : '');
+    el.insertAdjacentHTML('afterbegin', warning);
+    if(typeof paintHome === 'function') paintHome();
     modsMeta();
     return;                       // nothing local to merge the far ones into
   }
@@ -2748,7 +2762,9 @@ function paintHome(){
     $('homeGo').innerHTML = '';
     return;
   }
-  if (!total){
+  if (!total && window.MODS_ERROR){
+    sum.textContent = 'Could not check modules. Press Look again to retry.';
+  } else if (!total){
     // EMPTY, not blank: say what it means and what to do about it.
     sum.textContent = 'No modules found yet. Plug a board into this PC with a '
       + 'USB cable, or put one on this WiFi, and it appears here by itself.';
@@ -3059,7 +3075,10 @@ async function fwBoards(){
     const me = await whoAmI();
     (all.modules || []).forEach(function(m){
       if (!m.host || m.host === me) return;      // this PC's own cables
-      const port = (String(m.dev || '').split('usb:')[1] || '').split(':')[0];
+      const route = (String(m.dev || '').split('usb:')[1] || '').split(':');
+      // Remote cable flashing cannot address a bus child; never flash its gateway.
+      if(route.length > 1 && Number(route[1]) !== 0) return;
+      const port = route[0];
       if (!port) return;                          // only a cable can be written
       const k = key(m, 'far' + m.host + port);
       out.set(k, Object.assign({name: m.name || port, id: m.id, type: m.type},

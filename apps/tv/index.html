@@ -235,6 +235,7 @@ body.mode-tech .tv-grid {
   <span class="mini" id="statBadge">connecting…</span>
   <button onclick="app.refresh()" style="margin-left:auto;">⟳ Refresh</button>
 </header>
+<div id="actionStat" class="statline" role="status"></div>
 
 <div class="card" id="loginHere" style="margin-bottom:var(--sp-3)"></div>
 
@@ -534,35 +535,43 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
     });
   }
 
+  async checked(path, opts) {
+    const result = await Mice.Api.call(path, opts);
+    if (!result.ok) throw new Error(result.says || 'คำสั่งไม่สำเร็จ');
+    return result.data;
+  }
+
+  actionError(error) {
+    const text = 'คำสั่งไม่สำเร็จ ลองอีกครั้ง: ' + String(error.message || error);
+    this.$("actionStat").textContent = text;
+    this.$("nowSeq").textContent = text;
+  }
+
   async playSequence(name) {
     const dev = this.activeDev;
     if (!dev || !this.modules.some(m => m.dev === dev)) return;
     this.selectedSequence = name;
+    this.$("actionStat").textContent = '';
     try {
       this.$("nowSeq").textContent = "Starting " + name + "…";
-      const res = await fetch("/api/seqsteps?name=" + encodeURIComponent(name));
-      if (!res.ok) return;
-      const data = await res.json();
-      if (!Array.isArray(data.steps) || !data.steps.length || this.activeDev !== dev) return;
-      await fetch("/api/play", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dev,
-          name: name,
-          steps: data.steps,
-          loop: false
-        })
-      });
+      const data = await this.checked("/api/seqsteps?name=" + encodeURIComponent(name));
+      if (!Array.isArray(data.steps) || !data.steps.length) throw Error('ลำดับการแสดงไม่มีท่าทาง');
+      if (this.activeDev !== dev) return;
+      await this.checked("/api/play", {method:"POST", body:{dev, name, steps:data.steps, loop:false}});
       this.poll();
-    } catch (e) {
-      console.error("Play failed:", e);
-    }
+      return true;
+    } catch (error) { this.actionError(error); return false; }
   }
 
   async stop() {
-    await fetch("/api/play/stop", { method: "POST" });
-    this.poll();
+    try {
+      const status = await this.checked("/api/play/stop", {method:"POST"});
+      if (!status || status.running !== false || /previous show.*finishing/i.test(status.error || ''))
+        throw Error(status && status.error || 'ยังไม่ได้รับคำตอบว่าหยุดการแสดงแล้ว');
+      this.$("actionStat").textContent = '';
+      this.poll();
+      return true;
+    } catch (error) { this.actionError(error); return false; }
   }
 
   async resume() {
@@ -573,39 +582,35 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
   async goHome() {
     const dev = this.activeDev;
     if (!dev || !this.modules.some(m => m.dev === dev)) return;
-    await this.stop();
-    if (this.activeDev !== dev) return;
-    const res = await fetch("/api/dev/cmd?dev=" + encodeURIComponent(dev) + "&c=HOME");
-    const reply = await res.text();
-    this.$("nowSeq").textContent = res.ok && reply.startsWith("OK") ? "Saved HOME requested" : reply;
-    this.poll();
+    if (!await this.stop() || this.activeDev !== dev) return;
+    try {
+      const res = await fetch("/api/dev/cmd?dev=" + encodeURIComponent(dev) + "&c=HOME");
+      const reply = await res.text();
+      if (!res.ok || !reply.startsWith("OK")) throw Error(reply);
+      this.$("nowSeq").textContent = "Saved HOME requested";
+      this.poll();
+    } catch (error) { this.actionError(error); }
   }
 
   async speak(text) {
-    if (!text) return;
+    if (!text) return false;
     try {
-      await fetch("/api/speak", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text })
-      });
-    } catch (e) {
-      console.warn("Speak error:", e);
-    }
+      await this.checked("/api/speak", {method:"POST", body:{text}});
+      this.$("actionStat").textContent = '';
+      return true;
+    } catch (error) { this.actionError(error); return false; }
   }
 
-  speakCustom() {
-    const inp = this.$("customSpeak");
-    const txt = inp.value.trim();
-    if (txt) {
-      this.speak(txt);
-      inp.value = "";
-    }
+  async speakCustom() {
+    const input = this.$("customSpeak"), draft = input.value;
+    if (draft.trim() && await this.speak(draft.trim()) && input.value === draft) input.value = '';
   }
 
   async stopAllSound() {
-    await fetch("/api/stream/stop", { method: "POST" });
+    try { await this.checked("/api/stream/stop", {method:"POST"}); }
+    catch (error) { this.actionError(error); }
   }
+
 }
 
 const app = new TVRemoteApp();

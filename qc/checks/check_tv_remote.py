@@ -83,7 +83,7 @@ def run(t):
     main.show.start = start_show
     main.show.status = lambda: {"running": True, "name": "second.yaml", "at_ms": 2500, "total_ms": 10000,
                                 "entering": False, "error": ""}
-    main.show.stop = lambda *a, **k: None
+    main.show.stop = lambda *a, **k: {"running": False, "error": ""}
     fake_serial.NONG.joints = [90, 140, 90, 90, 90, 40, 90, 90, 90, 90.5]
     try:
         browser.raw_page(DRIVER, base, seconds=35)
