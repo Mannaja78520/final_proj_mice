@@ -1,7 +1,7 @@
 # UX/UI usability sweep and residual quality follow-through
 
 Owner: codex:10260449-5ec2
-Updated: 2026-10-26T19:10:40.215130+07:00
+Updated: 2026-10-26T19:11:48.154686+07:00
 Branch: codex/usability-review-1026
 Tree: E:/final_proj/mice/code/.staging-usability-review-1026
 Last commit: this checkpoint; baseline3298e36
@@ -11,100 +11,100 @@ Plan: A48-19 (robot); related A48-13 (Lift/physical), A48-18 done
 Finish all own UI usability and residual software gaps. No duplicated Help in Tools (global entry exists). Continue autonomously; preserve root dirty files and immutable proof trees. Physical USER-NOTREADY.
 
 ## Doing now
-Step6 done: 25/25 deliberate source mutations caught/restored; two test gaps strengthened. Current affected623/0; latest Lift build SUCCESS80.9%. Final bounded review of stamp1line/Help/test refinements, then freeze current full gate; isolated package/archive and scoped integration remain. Physical USER-NOTREADY.
+Step7 frozen full gate: final_review APPROVED38858e5 (prior dc112da retained), affected623/0 and25mutations restored. Freeze all current inputs/no source edits during full QC. After green, private isolated spec package/archive verification then guarded PR/rootintegration preserving dirty bytes. No hardware/runtime/model actions.
 
 ## File status
 Current baseline-to-worktree Git paths reconciled; generated unrelated4outputs and other headers touched raw EOL only, no Git content delta. Private evidence under scratch/usability-review-1026 (not source/public).
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| MiceHub.spec | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | dc112da |
-| apps/all-jao/app.json | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| apps/all-jao/index.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| apps/camera/app.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| apps/camera/app.json | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| apps/camera/index.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| apps/faces/app.json | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| apps/gacha/app.json | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| apps/gacha/index.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| apps/help/app.json | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| apps/photobooth/app.json | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| apps/studio/app.json | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| apps/tv/app.json | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| apps/tv/index.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | dc112da |
-| apps/voice/app.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| apps/voice/app.json | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| apps/voice/index.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| docs/shots/hub-tools-card.png | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b2752c5 |
-| docs/systems/agents.md | Generated inventory/handoff | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| docs/systems/fw-core.md | Generated inventory/handoff | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| docs/systems/fw-lift.md | Generated inventory/handoff | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| docs/systems/fw-registry.md | Generated inventory/handoff | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| docs/systems/hub-apps.md | Generated inventory/handoff | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| docs/systems/hub-show.md | Generated inventory/handoff | implemented; full pending | affected623/0;25mutations;see Done | c2fff7a |
-| docs/systems/hub-web.md | Generated inventory/handoff | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| docs/systems/qc.md | Generated inventory/handoff | implemented; full pending | affected623/0;25mutations;see Done | dc112da |
-| docs/systems/shared-web.md | Generated inventory/handoff | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| firmware/COMMANDS.md | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| firmware/README.md | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| firmware/config/commands.json | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| firmware/config/esp32_hardware_lift_module.h | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| firmware/sd_card_example/data/module.yaml | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| firmware/src/core/ConfigStore.cpp | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| firmware/src/modules/lift/LiftModule.cpp | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| firmware/src/modules/lift/LiftModule.h | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| firmware/src/web/WebUI.h | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| handoff/tasks/usability-review-1026.md | Generated inventory/handoff | implemented; full pending | affected623/0;25mutations;see Done | this checkpoint |
-| main_python/build_stamp.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | uncommitted |
-| main_python/hub_api_play.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | dc112da |
-| main_python/hub_auth.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | dc112da |
-| main_python/hub_show.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | dc112da |
-| main_python/main.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | dc112da |
-| main_python/web/help.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | uncommitted |
-| main_python/web/help/parts/all-jao.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| main_python/web/help/parts/camera.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| main_python/web/help/parts/firmware.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| main_python/web/help/parts/gacha.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| main_python/web/help/parts/hub.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | uncommitted |
-| main_python/web/help/parts/lift.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| main_python/web/help/parts/modsite.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| main_python/web/help/parts/studio.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| main_python/web/help/parts/tv.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | dc112da |
-| main_python/web/help/parts/voice.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| main_python/web/home/parts/firmware.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| main_python/web/home/parts/home.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| main_python/web/home/parts/home.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| main_python/web/home/parts/modules.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| main_python/web/home/parts/network.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| main_python/web/home/parts/network.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| main_python/web/home/parts/tools.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| main_python/web/home/parts/tools.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| main_python/web/home/parts/top.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| main_python/web/home/style.css | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| main_python/web/hub.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| nong/main_python_set_nong/web/app.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| nong/main_python_set_nong/web/app_parts/project_save_load.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| nong/main_python_set_nong/web/html_parts/header.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| nong/main_python_set_nong/web/index.html | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| qc/checks/check_docs.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| qc/checks/check_help_links.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| qc/checks/check_lift_motion.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| qc/checks/check_onefile.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | dc112da |
-| qc/checks/check_play_stop_order.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | dc112da |
-| qc/checks/check_race_guards.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | c2fff7a |
-| qc/checks/check_registries.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| qc/checks/check_responsive.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| qc/checks/check_tools_list.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| qc/checks/check_tv_remote.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | dc112da |
-| qc/checks/check_usability_browser.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 9ebd817 |
-| qc/checks/check_usability_states.py | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| qc/data/lift_motion.cpp | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | uncommitted |
-| qc/data/tools_launcher.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | 873f81b |
-| qc/data/usability_apps.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | uncommitted |
-| qc/data/usability_browser.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | dc112da |
-| qc/data/usability_dom.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| qc/data/usability_hub.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | b908c98 |
-| shared/web/mice-ui.js | UI/Lift/Help regression | implemented; full pending | affected623/0;25mutations;see Done | c2fff7a |
+| MiceHub.spec | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | dc112da |
+| apps/all-jao/app.json | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| apps/all-jao/index.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| apps/camera/app.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| apps/camera/app.json | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| apps/camera/index.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| apps/faces/app.json | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| apps/gacha/app.json | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| apps/gacha/index.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| apps/help/app.json | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| apps/photobooth/app.json | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| apps/studio/app.json | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| apps/tv/app.json | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| apps/tv/index.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | dc112da |
+| apps/voice/app.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| apps/voice/app.json | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| apps/voice/index.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| docs/shots/hub-tools-card.png | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b2752c5 |
+| docs/systems/agents.md | Generated inventory/handoff | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| docs/systems/fw-core.md | Generated inventory/handoff | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| docs/systems/fw-lift.md | Generated inventory/handoff | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| docs/systems/fw-registry.md | Generated inventory/handoff | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| docs/systems/hub-apps.md | Generated inventory/handoff | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| docs/systems/hub-show.md | Generated inventory/handoff | source approved; frozen full next | affected623/0;25mutations;see Done | c2fff7a |
+| docs/systems/hub-web.md | Generated inventory/handoff | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| docs/systems/qc.md | Generated inventory/handoff | source approved; frozen full next | affected623/0;25mutations;see Done | dc112da |
+| docs/systems/shared-web.md | Generated inventory/handoff | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| firmware/COMMANDS.md | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| firmware/README.md | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| firmware/config/commands.json | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| firmware/config/esp32_hardware_lift_module.h | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| firmware/sd_card_example/data/module.yaml | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| firmware/src/core/ConfigStore.cpp | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| firmware/src/modules/lift/LiftModule.cpp | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| firmware/src/modules/lift/LiftModule.h | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| firmware/src/web/WebUI.h | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| handoff/tasks/usability-review-1026.md | Generated inventory/handoff | source approved; frozen full next | affected623/0;25mutations;see Done | this checkpoint |
+| main_python/build_stamp.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 38858e5 |
+| main_python/hub_api_play.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | dc112da |
+| main_python/hub_auth.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | dc112da |
+| main_python/hub_show.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | dc112da |
+| main_python/main.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | dc112da |
+| main_python/web/help.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 38858e5 |
+| main_python/web/help/parts/all-jao.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| main_python/web/help/parts/camera.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| main_python/web/help/parts/firmware.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| main_python/web/help/parts/gacha.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| main_python/web/help/parts/hub.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 38858e5 |
+| main_python/web/help/parts/lift.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| main_python/web/help/parts/modsite.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| main_python/web/help/parts/studio.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| main_python/web/help/parts/tv.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | dc112da |
+| main_python/web/help/parts/voice.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| main_python/web/home/parts/firmware.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| main_python/web/home/parts/home.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| main_python/web/home/parts/home.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| main_python/web/home/parts/modules.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| main_python/web/home/parts/network.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| main_python/web/home/parts/network.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| main_python/web/home/parts/tools.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| main_python/web/home/parts/tools.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| main_python/web/home/parts/top.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| main_python/web/home/style.css | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| main_python/web/hub.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| nong/main_python_set_nong/web/app.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| nong/main_python_set_nong/web/app_parts/project_save_load.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| nong/main_python_set_nong/web/html_parts/header.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| nong/main_python_set_nong/web/index.html | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| qc/checks/check_docs.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| qc/checks/check_help_links.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| qc/checks/check_lift_motion.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| qc/checks/check_onefile.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | dc112da |
+| qc/checks/check_play_stop_order.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | dc112da |
+| qc/checks/check_race_guards.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | c2fff7a |
+| qc/checks/check_registries.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| qc/checks/check_responsive.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| qc/checks/check_tools_list.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| qc/checks/check_tv_remote.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | dc112da |
+| qc/checks/check_usability_browser.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 9ebd817 |
+| qc/checks/check_usability_states.py | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| qc/data/lift_motion.cpp | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 38858e5 |
+| qc/data/tools_launcher.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 873f81b |
+| qc/data/usability_apps.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | 38858e5 |
+| qc/data/usability_browser.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | dc112da |
+| qc/data/usability_dom.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| qc/data/usability_hub.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | b908c98 |
+| shared/web/mice-ui.js | UI/Lift/Help regression | source approved; frozen full next | affected623/0;25mutations;see Done | c2fff7a |
 | dist/MiceHub.exe | Private isolated package only | pending; excluded from PR | not run | uncommitted |
 
 ## Facts found
@@ -117,6 +117,7 @@ Current baseline-to-worktree Git paths reconciled; generated unrelated4outputs a
 - One claimed software QC/fake/browser/build/timing driver; inventory before each run. Claim integration separately. Source only isolated, parts only; Help parity mandatory. Root discovery task mirrors own ledger.
 
 ## Done
+Bounded final_review same-provider gpt-6-astra high APPROVED38858e5; stamp/Help and strengthened fixtures match contract. No material issue; previous implementation approval retained.
 25mutations green/restored: play8, Lift5, UI4, Tools3, package2, Help1, CFG1, stamp1. Evidence regressions/play.log,lift-r2.log,stamp.log and regressions-rest-r2/*.log. Initial wrap/HOMEepoch silent mutations preserved, fixtures strengthened then caught; runtime unchanged. Stamp before51/1 -> affected623/0 after source area/Help. Latest mice_lift compile SUCCESS1590129bytes80.9%.
 Final_review same-provider gpt-6-astra high APPROVED immutable dc112da source delta; prior3TV findings resolved. Closure559/0 including actual frozen Help fallback and HOMEauth; expanded525/0 includes all18responsive routes. Full/packaged/physical acceptance pending.
 Review-required Stop protocol fix implemented with actual-thread/API tests20/0; focused226/0 including clock, TV wire HOME, freeze/stop, native Lift.29actual UI-method cases green. Allpage17pages136theme-width overflow0; Tools realEnter newtab passed.
