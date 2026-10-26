@@ -241,6 +241,7 @@ def start_hub(fake=True):
     base = ""
     for attempt in range(4):
         _hub_port[0] = _free_port()
+        main.HOST = "127.0.0.1"  # fake Hub never listens on physical adapters
         main.PORT = _hub_port[0]
         th = threading.Thread(target=main.main, daemon=True)
         th.start()

@@ -1,7 +1,7 @@
 # UX/UI usability sweep and residual quality follow-through
 
 Owner: codex:10260449-5ec2
-Updated: 2026-10-26T23:53:03.513162+07:00
+Updated: 2026-10-27T00:02:19.101376+07:00
 Branch: codex/usability-review-1026
 Tree: E:/final_proj/mice/code/.staging-usability-review-1026
 Last commit: this checkpoint; baseline3298e36
@@ -11,107 +11,108 @@ Plan: A48-19 (robot); related A48-13 (Lift/physical), A48-18 done
 Finish all own UI usability and residual software gaps. No duplicated Help in Tools (global entry exists). Continue autonomously; preserve root dirty files and immutable proof trees. Physical USER-NOTREADY.
 
 ## Doing now
-Step7 source APPROVED1fd2c0d; independent guard review required denying wildcard/LAN binds too. Tightened private envelope, added explicit production-refusal-vs-envelope assertion in Faces test. Four new source mutations caught/restored (total29); formerly failed19checks998/0 before final bind tightening. Recheck envelope/affected, exact assertion review, then frozen full-r2. Full-r1 evidence retained; no physical/runtime/inference.
+Step7 corrections ready: strict loopback envelope17/17, all former19failure checks999/0,30source mutations caught/restored. Source70a0feb+guard2c3a84f6 approved; final qc/lib/qc.py fake-Hub HOST line needs bounded immutable review, then freeze full-r2. First full8503/25 and strict-envelope failed rerun preserved. Physical/runtime/inference pause remains.
 
 ## File status
 Current baseline-to-worktree Git paths reconciled; generated unrelated4outputs and other headers touched raw EOL only, no Git content delta. Private evidence under scratch/usability-review-1026 (not source/public).
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| MiceHub.spec | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | dc112da |
-| apps/all-jao/app.json | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| apps/all-jao/index.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| apps/camera/app.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| apps/camera/app.json | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| apps/camera/index.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| apps/faces/app.json | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| apps/gacha/app.json | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| apps/gacha/index.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| apps/help/app.json | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| apps/photobooth/app.json | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| apps/studio/app.json | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| apps/tv/app.json | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| apps/tv/index.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | dc112da |
-| apps/voice/app.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| apps/voice/app.json | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| apps/voice/index.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| docs/shots/hub-tools-card.png | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b2752c5 |
-| docs/systems/agents.md | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| docs/systems/fw-core.md | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| docs/systems/fw-lift.md | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| docs/systems/fw-registry.md | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| docs/systems/hub-apps.md | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| docs/systems/hub-show.md | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 1fd2c0d |
-| docs/systems/hub-web.md | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| docs/systems/qc.md | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | dc112da |
-| docs/systems/shared-web.md | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| firmware/COMMANDS.md | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| firmware/README.md | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| firmware/config/commands.json | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| firmware/config/esp32_hardware_lift_module.h | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| firmware/sd_card_example/data/module.yaml | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| firmware/src/core/ConfigStore.cpp | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| firmware/src/modules/lift/LiftModule.cpp | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| firmware/src/modules/lift/LiftModule.h | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| firmware/src/web/WebUI.h | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| handoff/tasks/usability-review-1026.md | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | this checkpoint |
-| main_python/build_stamp.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 38858e5 |
-| main_python/hub_api_play.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | dc112da |
-| main_python/hub_auth.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | dc112da |
-| main_python/hub_show.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | dc112da |
-| main_python/main.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | dc112da |
-| main_python/web/help.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 1fd2c0d |
-| main_python/web/help/parts/all-jao.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| main_python/web/help/parts/camera.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| main_python/web/help/parts/firmware.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| main_python/web/help/parts/gacha.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| main_python/web/help/parts/hub.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 38858e5 |
-| main_python/web/help/parts/lift.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| main_python/web/help/parts/modsite.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| main_python/web/help/parts/studio.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 1fd2c0d |
-| main_python/web/help/parts/tv.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | dc112da |
-| main_python/web/help/parts/voice.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| main_python/web/home/parts/firmware.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| main_python/web/home/parts/home.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| main_python/web/home/parts/home.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| main_python/web/home/parts/modules.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| main_python/web/home/parts/network.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| main_python/web/home/parts/network.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| main_python/web/home/parts/tools.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| main_python/web/home/parts/tools.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| main_python/web/home/parts/top.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| main_python/web/home/style.css | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| main_python/web/hub.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| nong/main_python_set_nong/web/app.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 1fd2c0d |
-| nong/main_python_set_nong/web/app_parts/project_save_load.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 1fd2c0d |
-| nong/main_python_set_nong/web/html_parts/header.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| nong/main_python_set_nong/web/index.html | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| qc/checks/check_docs.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| qc/checks/check_faces_loopback.py | UI/Lift/Help/QC correction | assertion review pending | full-r1 stable8503/25;fixes998/0;see Done | uncommitted |
-| qc/checks/check_guards_armed.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 1fd2c0d |
-| qc/checks/check_help_links.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| qc/checks/check_lift_motion.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| qc/checks/check_mdns.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 1fd2c0d |
-| qc/checks/check_name_claim.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 1fd2c0d |
-| qc/checks/check_onefile.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | dc112da |
-| qc/checks/check_play_stop_order.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | dc112da |
-| qc/checks/check_race_guards.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | c2fff7a |
-| qc/checks/check_registries.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| qc/checks/check_responsive.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| qc/checks/check_tools_list.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| qc/checks/check_tv_remote.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | dc112da |
-| qc/checks/check_usability_browser.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 9ebd817 |
-| qc/checks/check_usability_states.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| qc/checks/check_voice_multi.py | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 1fd2c0d |
-| qc/data/app_lifecycle.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 1fd2c0d |
-| qc/data/lift_motion.cpp | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 38858e5 |
-| qc/data/tools_launcher.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 873f81b |
-| qc/data/usability_apps.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | 1fd2c0d |
-| qc/data/usability_browser.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | dc112da |
-| qc/data/usability_dom.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| qc/data/usability_hub.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | b908c98 |
-| shared/web/mice-ui.js | UI/Lift/Help/QC correction | source approved1fd; full-r2 pending | full-r1 stable8503/25;fixes998/0;see Done | c2fff7a |
+| MiceHub.spec | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | dc112da |
+| apps/all-jao/app.json | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| apps/all-jao/index.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| apps/camera/app.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| apps/camera/app.json | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| apps/camera/index.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| apps/faces/app.json | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| apps/gacha/app.json | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| apps/gacha/index.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| apps/help/app.json | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| apps/photobooth/app.json | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| apps/studio/app.json | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| apps/tv/app.json | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| apps/tv/index.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | dc112da |
+| apps/voice/app.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| apps/voice/app.json | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| apps/voice/index.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| docs/shots/hub-tools-card.png | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b2752c5 |
+| docs/systems/agents.md | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| docs/systems/fw-core.md | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| docs/systems/fw-lift.md | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| docs/systems/fw-registry.md | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| docs/systems/hub-apps.md | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| docs/systems/hub-show.md | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 1fd2c0d |
+| docs/systems/hub-web.md | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| docs/systems/qc.md | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | dc112da |
+| docs/systems/shared-web.md | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| firmware/COMMANDS.md | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| firmware/README.md | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| firmware/config/commands.json | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| firmware/config/esp32_hardware_lift_module.h | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| firmware/sd_card_example/data/module.yaml | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| firmware/src/core/ConfigStore.cpp | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| firmware/src/modules/lift/LiftModule.cpp | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| firmware/src/modules/lift/LiftModule.h | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| firmware/src/web/WebUI.h | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| handoff/tasks/usability-review-1026.md | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | this checkpoint |
+| main_python/build_stamp.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 38858e5 |
+| main_python/hub_api_play.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | dc112da |
+| main_python/hub_auth.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | dc112da |
+| main_python/hub_show.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | dc112da |
+| main_python/main.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | dc112da |
+| main_python/web/help.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 1fd2c0d |
+| main_python/web/help/parts/all-jao.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| main_python/web/help/parts/camera.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| main_python/web/help/parts/firmware.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| main_python/web/help/parts/gacha.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| main_python/web/help/parts/hub.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 38858e5 |
+| main_python/web/help/parts/lift.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| main_python/web/help/parts/modsite.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| main_python/web/help/parts/studio.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 1fd2c0d |
+| main_python/web/help/parts/tv.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | dc112da |
+| main_python/web/help/parts/voice.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| main_python/web/home/parts/firmware.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| main_python/web/home/parts/home.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| main_python/web/home/parts/home.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| main_python/web/home/parts/modules.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| main_python/web/home/parts/network.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| main_python/web/home/parts/network.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| main_python/web/home/parts/tools.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| main_python/web/home/parts/tools.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| main_python/web/home/parts/top.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| main_python/web/home/style.css | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| main_python/web/hub.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| nong/main_python_set_nong/web/app.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 1fd2c0d |
+| nong/main_python_set_nong/web/app_parts/project_save_load.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 1fd2c0d |
+| nong/main_python_set_nong/web/html_parts/header.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| nong/main_python_set_nong/web/index.html | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| qc/checks/check_docs.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| qc/checks/check_faces_loopback.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 70a0feb |
+| qc/checks/check_guards_armed.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 1fd2c0d |
+| qc/checks/check_help_links.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| qc/checks/check_lift_motion.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| qc/checks/check_mdns.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 1fd2c0d |
+| qc/checks/check_name_claim.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 1fd2c0d |
+| qc/checks/check_onefile.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | dc112da |
+| qc/checks/check_play_stop_order.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | dc112da |
+| qc/checks/check_race_guards.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | c2fff7a |
+| qc/checks/check_registries.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| qc/checks/check_responsive.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| qc/checks/check_tools_list.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| qc/checks/check_tv_remote.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | dc112da |
+| qc/checks/check_usability_browser.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 9ebd817 |
+| qc/checks/check_usability_states.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| qc/checks/check_voice_multi.py | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 1fd2c0d |
+| qc/data/app_lifecycle.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 1fd2c0d |
+| qc/data/lift_motion.cpp | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 38858e5 |
+| qc/data/tools_launcher.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 873f81b |
+| qc/data/usability_apps.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | 1fd2c0d |
+| qc/data/usability_browser.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | dc112da |
+| qc/data/usability_dom.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| qc/data/usability_hub.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | b908c98 |
+| shared/web/mice-ui.js | UI/Lift/Help/QC correction | source approved70a0feb; full-r2 pending | former-failures999/0;30mutations;see Done | c2fff7a |
 | scratch/usability-review-1026/package/MiceHub.exe | Private package; not source PR | pending | not run | uncommitted |
+| qc/lib/qc.py | Bind fake Hubs only on loopback | bounded review pending | former-failures999/0;30mutations;see Done | uncommitted |
 
 ## Facts found
 - Dynamic CPU/GPU/RAM/Voice/browser policy DONE in PR82/root3298e36; previous full8418/0 qualified4isolated retries+994inputs stable. Do not rework or reuse old receipt.
@@ -123,7 +124,8 @@ Current baseline-to-worktree Git paths reconciled; generated unrelated4outputs a
 - One claimed software QC/fake/browser/build/timing driver; inventory before each run. Claim integration separately. Source only isolated, parts only; Help parity mandatory. Root discovery task mirrors own ledger.
 
 ## Done
-Final_review APPROVED1fd2c0d source delta; guard review found wildcard/LAN bind gap (no observed exposure), fixed before next gate. New AST3+notice1 mutations caught/restored; prior25 retained. Final refusal assertion pending review/affected after bind tightening.
+Strict loopback-only envelope + final F.start_hub HOST fixture: former failures999/0; guard17/17, fake-bind mutation caught/restored (total30). No live driver remains. Source product behavior unchanged by fixture bind.
+Final_review APPROVED1fd2c0d source delta; guard review found wildcard/LAN bind gap (no observed external access; old fake binds were wildcard), fixed before next gate. New AST3+notice1 mutations caught/restored; prior25 retained. Final refusal assertion pending review/affected after bind tightening.
 Full-r1 d4f2039 FAIL8503/25,1004inputs/CAD stable. Consulted final_review on3code/test causes; tools_design diagnosed Windows audit string then quota11:27PM; fallback Gemini3.8FlashHigh inline design returned concrete guards (initial read_file denied/empty not approval). Corrected19failed checks998/0; guard14/14 no dispatch; actual local UDP/HTTP proof. Private fake reports archived; isolated test settings/projects baseline restored, root untouched.
 Bounded final_review same-provider gpt-6-astra high APPROVED38858e5; stamp/Help and strengthened fixtures match contract. No material issue; previous implementation approval retained.
 25mutations green/restored: play8, Lift5, UI4, Tools3, package2, Help1, CFG1, stamp1. Evidence regressions/play.log,lift-r2.log,stamp.log and regressions-rest-r2/*.log. Initial wrap/HOMEepoch silent mutations preserved, fixtures strengthened then caught; runtime unchanged. Stamp before51/1 -> affected623/0 after source area/Help. Latest mice_lift compile SUCCESS1590129bytes80.9%.
