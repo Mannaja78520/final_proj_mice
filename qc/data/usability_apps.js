@@ -38,6 +38,16 @@ const {read,vm,context,loadClass,response,check,test,finish}=require('./usabilit
    return stopped();
   };
   const epochPending=a.playSequence('epoch-read');await fetchingEpoch;await a.stop();releaseEpoch(response({epoch:8}));await epochPending;check(posts===0,'TV Stop cancels intent even when late epoch read returns new revision');
+  let homeEpochReady,releaseHomeEpoch,homePosts=0;const fetchingHomeEpoch=new Promise(r=>homeEpochReady=r);
+  c.fetch=async(url,opts)=>{
+   if(url.includes('c=STOP'))return response('OK stopped');
+   if(url==='/api/play/stop')return stopped();
+   if(url==='/api/play'){homeEpochReady();return new Promise(r=>releaseHomeEpoch=r);}
+   if(url==='/api/play/home'){homePosts++;return response({ok:true});}
+   throw Error('unexpected HOME epoch fixture request');
+  };
+  const pendingHomeEpoch=a.goHome();await fetchingHomeEpoch;await a.stop();releaseHomeEpoch(response({epoch:9}));await pendingHomeEpoch;
+  check(homePosts===0,'TV Stop cancels HOME even when delayed epoch read returns fresh revision');
   let sendStart,resolveStart;const dispatched=new Promise(r=>sendStart=r);let stamped;
   c.fetch=async(url,opts)=>{
    if(url.includes('c=STOP'))return response('OK stopped');
