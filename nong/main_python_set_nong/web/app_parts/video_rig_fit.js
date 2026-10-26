@@ -87,7 +87,7 @@ class VideoRigFitter {
     return best ? { pose: best, repaired: true } : null;
   }
   frames(frames) {
-    const saved = pose, poses = [], times = [], quality = { repaired: 0, missing: 0, uncertain: 0, worstBoneDegrees: 0 };
+    const saved = pose, poses = [], times = [], targets = [], quality = { repaired: 0, missing: 0, uncertain: 0, worstBoneDegrees: 0 };
     let previous = null, shot = null;
     try {
       pose = RIG.neutral.map((v, j) => clampJ(j, v));
@@ -106,8 +106,7 @@ class VideoRigFitter {
           if (this.options.shrug) this.setBody(9, body.roll);
           applyPose();
           for (const a of [0, 1]) if (body.arms[a].ok) {
-            const error = this.arm(a, body.arms[a], previous === null || shot !== frame.shot);
-            quality.worstBoneDegrees = Math.max(quality.worstBoneDegrees, THREE.MathUtils.radToDeg(Math.acos(Math.max(-1, 1 - error / 2))));
+            this.arm(a, body.arms[a], previous === null || shot !== frame.shot);
           }
         }
         const target = this.repair(pose.map((v, j) => clampJ(j, v)), previous);
@@ -115,8 +114,67 @@ class VideoRigFitter {
         if (target.repaired) quality.repaired++;
         pose = target.pose.slice(); previous = pose.slice(); shot = frame.shot;
         poses.push(pose.slice()); times.push(frame.t * 1000);
+        targets.push(body && trusted ? body : null);
       }
     } finally { pose = saved; applyPose(); robot.updateMatrixWorld(true); }
-    return poses.length ? { poses, times, videoMs: Math.round(times.at(-1)), quality, mirror: this.options.mirror, waist: this.options.waist, shrug: this.options.shrug } : null;
+    return poses.length ? { poses, times, targets, videoMs: Math.round(times.at(-1)), quality, mirror: this.options.mirror, waist: this.options.waist, shrug: this.options.shrug } : null;
+  }
+  static assess(fit, made) {
+    if (!fit.targets || !made.keys.length) return null;
+    const saved = pose, errors = []; let sum = 0, worst = 0, count = 0;
+    try {
+      fit.targets.forEach((body, i) => {
+        if (!body) return;
+        pose = easeKeys(made.keys, this.clockForSource(made.keys, fit.times[i]).ms).pose;
+        applyPose(); robot.updateMatrixWorld(true);
+        const local = o => bodyGroup.worldToLocal(o.getWorldPosition(new THREE.Vector3()));
+        let error = 0;
+        for (const a of [0, 1]) if (body.arms[a].ok) {
+          const s = local(jointGroups[a * 4]), e = local(elbowBalls[a]), w = local(wristBalls[a]);
+          for (const [got, wanted] of [[e.clone().sub(s).normalize(), body.arms[a].upper], [w.clone().sub(e).normalize(), body.arms[a].fore]]) {
+            const angle = THREE.MathUtils.radToDeg(got.angleTo(wanted)); error = Math.max(error, angle); sum += angle; count++;
+          }
+        }
+        worst = Math.max(worst, error); errors.push({ t: fit.times[i], degrees: Math.round(error * 10) / 10 });
+      });
+    } finally { pose = saved; applyPose(); robot.updateMatrixWorld(true); }
+    return { meanBoneDegrees: count ? sum / count : null, worstBoneDegrees: worst, samples: errors,
+      measuredAfterCollisionAndTiming: true, limitedTransitions: made.partial,
+      pathCorrections: { around: made.safe.around, dropped: made.safe.dropped, failed: made.safe.failed } };
+  }
+  static clockForSource(keys, sourceMs) {
+    if (!keys.length || !Number.isFinite(keys[0].sourceMs)) return { ms: Math.max(0, sourceMs), rate: 1 };
+    let clock = 0;
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i], arrival = i ? clock + key.t : 0;
+      if (i && sourceMs <= key.sourceMs) {
+        const previous = keys[i - 1], from = previous.sourceHoldEnd ?? previous.sourceMs;
+        const fraction = Math.max(0, Math.min(1, (sourceMs - from) / Math.max(1, key.sourceMs - from)));
+        return { ms: clock + fraction * key.t, rate: (key.sourceMs - from) / Math.max(1, key.t) };
+      }
+      const end = key.sourceHoldEnd ?? key.sourceMs;
+      if (sourceMs < end) {
+        const fraction = Math.max(0, Math.min(1, (sourceMs - key.sourceMs) / Math.max(1, end - key.sourceMs)));
+        return { ms: arrival + fraction * (key.hold || 0), rate: (end - key.sourceMs) / Math.max(1, key.hold || 0) || 1 };
+      }
+      clock = arrival + (key.hold || 0);
+    }
+    return { ms: clock, rate: 1 };
+  }
+  static sourceForClock(keys, robotMs) {
+    let clock = 0;
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i], arrival = i ? clock + key.t : 0;
+      if (i && robotMs <= arrival) {
+        const from = keys[i - 1].sourceHoldEnd ?? keys[i - 1].sourceMs;
+        return { sourceMs: from + (key.sourceMs - from) * Math.max(0, (robotMs - clock) / Math.max(1, key.t)), end: false };
+      }
+      const end = arrival + (key.hold || 0);
+      if (robotMs <= end) return { sourceMs: key.sourceMs + ((key.sourceHoldEnd ?? key.sourceMs) - key.sourceMs) *
+        Math.max(0, (robotMs - arrival) / Math.max(1, key.hold || 0)), end: false };
+      clock = end;
+    }
+    const last = keys.at(-1);
+    return { sourceMs: last ? (last.sourceHoldEnd ?? last.sourceMs ?? robotMs) : 0, end: true };
   }
 }

@@ -289,6 +289,7 @@ function safeKeys(K, budgetMs, keepTime) {
     const plan = planSafe(prev.pose, k.pose, budgetMs);
     if (plan.fail) {
       prev.hold = (prev.hold || 0) + (k.t || 0) + (k.hold || 0);
+      if (Number.isFinite(k.sourceMs)) prev.sourceHoldEnd = k.sourceHoldEnd ?? k.sourceMs;
       tally[poseHit(k.pose) ? "dropped" : "failed"]++;
       continue;
     }
@@ -299,12 +300,19 @@ function safeKeys(K, budgetMs, keepTime) {
       const spare = (k.t || 0) - need.reduce((s, v) => s + v, 0);
       if (keepTime && spare < 0) {
         prev.hold = (prev.hold || 0) + (k.t || 0) + (k.hold || 0);
+        if (Number.isFinite(k.sourceMs)) prev.sourceHoldEnd = k.sourceHoldEnd ?? k.sourceMs;
         tally.failed++;
         continue;
       }
       tally.around++;
       const legT = i => Math.round(need[i] + Math.max(0, spare) * legs[i] / all);
-      plan.path.slice(1, -1).forEach((q, i) => out.push({ pose: q, hold: 0, tset: k.tset, via: true, t: legT(i) }));
+      const total = legs.reduce((s, _, i) => s + legT(i), 0), sourceFrom = prev.sourceHoldEnd ?? prev.sourceMs;
+      let elapsed = 0;
+      plan.path.slice(1, -1).forEach((q, i) => {
+        elapsed += legT(i);
+        const sourceMs = Number.isFinite(k.sourceMs) ? sourceFrom + (k.sourceMs - sourceFrom) * elapsed / total : undefined;
+        out.push({ pose: q, hold: 0, tset: k.tset, via: true, t: legT(i), sourceMs, sourceHoldEnd: sourceMs });
+      });
       k.t = legT(legs.length - 1);
     } else if (keepTime && minTime(prev.pose, k.pose) > (k.t || 0) + 1) {
       // a dropped pose before it made this move longer: go as far as the time
@@ -314,6 +322,7 @@ function safeKeys(K, budgetMs, keepTime) {
     }
     // Validate the actual shortened/rounded motion, including body joints.
     const actualPrev = out[out.length - 1];
+    if (!keepTime) k.t = Math.max(k.t || 0, minTime(actualPrev.pose, k.pose));
     if (keepTime && minTime(actualPrev.pose, k.pose) > k.t) {
       const target = k.pose.slice(); let lo = 0, hi = 1, best = actualPrev.pose.slice();
       for (let z = 0; z < 18; z++) {
@@ -323,7 +332,9 @@ function safeKeys(K, budgetMs, keepTime) {
       k.pose = best;
     }
     if (poseHit(k.pose) || pathHit(actualPrev.pose, k.pose)) {
-      actualPrev.hold = (actualPrev.hold || 0) + (k.t || 0) + (k.hold || 0); tally.failed++; continue;
+      actualPrev.hold = (actualPrev.hold || 0) + (k.t || 0) + (k.hold || 0);
+      if (Number.isFinite(k.sourceMs)) actualPrev.sourceHoldEnd = k.sourceHoldEnd ?? k.sourceMs;
+      tally.failed++; continue;
     }
     out.push(k);
   }

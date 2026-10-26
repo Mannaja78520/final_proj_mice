@@ -1,13 +1,15 @@
 // Keep observation geometry and inferred movement separate: a camera cut is
 // not a robot command. Hip-relative measurements also preserve an opening twist.
-let VIDEO_FOLLOW = null, VIDEO_POLICY = null;
-async function videoFollowReady() {
-  if (VIDEO_FOLLOW) return VIDEO_FOLLOW;
-  const config = await fetch("video_follow.json").then(r => r.json());
-  if (!config.tracking || !config.fitting || config.version !== 1) throw new Error("Video follow settings could not be read");
-  VIDEO_FOLLOW = config;
-  try { VIDEO_POLICY = await fetch(config.policy.model).then(r => r.json()); } catch (_) { VIDEO_POLICY = null; }
-  return config;
+let VIDEO_FOLLOW = null, VIDEO_POLICY = null, VIDEO_READY = null;
+function videoFollowReady() {
+  if (!VIDEO_READY) VIDEO_READY = (async () => {
+    const config = await fetch("video_follow.json").then(r => r.json());
+    if (!config.tracking || !config.fitting || config.version !== 1) throw new Error("Video follow settings could not be read");
+    let policy = null;
+    try { policy = await fetch(config.policy.model).then(r => r.json()); } catch (_) { /* conservative geometry fallback */ }
+    VIDEO_POLICY = policy; VIDEO_FOLLOW = config; return config;
+  })().catch(error => { VIDEO_READY = null; throw error; });
+  return VIDEO_READY;
 }
 class VideoBodyMotion {
   static wrap(v) { return Math.atan2(Math.sin(v), Math.cos(v)); }
@@ -46,9 +48,20 @@ class VideoBodyMotion {
         error = Math.max(error, THREE.MathUtils.radToDeg(a.arms[i][key].angleTo(b.arms[i][key])));
     return error;
   }
+  static blend(previous, observed, weight = 0.6) {
+    return { ...observed,
+      twist: previous.twist + this.wrap(observed.twist - previous.twist) * weight,
+      roll: previous.roll + (observed.roll - previous.roll) * weight,
+      arms: observed.arms.map((a, i) => ({ ...a,
+        upper: previous.arms[i].upper.clone().lerp(a.upper, weight).normalize(),
+        fore: previous.arms[i].fore.clone().lerp(a.fore, weight).normalize() })) };
+  }
 }
 class VideoTemporalPolicy {
-  constructor(model = VIDEO_POLICY) { this.model = model; this.accepted = null; this.previous = null; this.held = 0; this.heading = 0; }
+  constructor(model = VIDEO_POLICY, cameraMode = "fixed") {
+    this.model = model; this.cameraMode = cameraMode; this.accepted = null; this.previous = null;
+    this.headingBaseline = null; this.held = 0; this.heading = 0;
+  }
   static bin(value, edges) { let n = 0; while (n < edges.length && value >= edges[n]) n++; return n; }
   static state(features, model) {
     return model.features.map((name, i) => VideoTemporalPolicy.bin(features[name], model.bins[i])).join(":");
@@ -56,14 +69,14 @@ class VideoTemporalPolicy {
   step(body, scene, shot, groupTrust = 1) {
     if (!body) { this.held++; return { body: this.accepted, action: "uncertain", trusted: false, waist: this.accepted ? this.heading + this.accepted.twist : null }; }
     if (!this.accepted) {
-      this.accepted = body; this.previous = body;
+      this.accepted = body; this.previous = body; this.headingBaseline = body.hipYaw;
       return { body, action: "initial", trusted: true, waist: body.twist };
     }
     const features = {
       invariant: VideoBodyMotion.difference(body, this.accepted), raw: VideoBodyMotion.difference(body, this.previous, true),
       body: THREE.MathUtils.radToDeg(Math.max(Math.abs(VideoBodyMotion.wrap(body.twist - this.accepted.twist)), Math.abs(body.roll - this.accepted.roll))),
       scene, confidence: body.confidence * groupTrust, held: this.held,
-      heading: THREE.MathUtils.radToDeg(Math.abs(VideoBodyMotion.wrap(body.hipYaw - this.previous.hipYaw)))
+      heading: THREE.MathUtils.radToDeg(Math.abs(VideoBodyMotion.wrap(body.hipYaw - this.headingBaseline)))
     };
     let action = "uncertain", learned = false;
     const model = this.model;
@@ -84,9 +97,17 @@ class VideoTemporalPolicy {
       else if (features.invariant <= 3 && features.body <= 2) action = "hold";
     }
     if (groupTrust < 0.5 || (scene > 0.18 && (features.invariant > 45 || features.body > 35))) action = "uncertain";
-    if (action === "accept" && this.previous && !shot)
-      this.heading += VideoBodyMotion.wrap(body.hipYaw - this.previous.hipYaw);
-    if (action === "accept" || action === "compensate") { this.accepted = body; this.held = 0; }
+    if (features.confidence >= 0.55 && features.invariant < (VIDEO_FOLLOW?.body.stillBonesDegrees ?? 6) &&
+        features.body < (VIDEO_FOLLOW?.body.stillBodyDegrees ?? 3) && features.heading < 3 && scene < 0.1) action = "hold";
+    const headingObservable = this.cameraMode === "fixed" || scene < 0.01;
+    if (features.confidence >= 0.55 && features.heading >= 3 && !shot && scene <= 0.18 && headingObservable) {
+      this.heading += VideoBodyMotion.wrap(body.hipYaw - this.headingBaseline);
+      this.headingBaseline = body.hipYaw;
+    }
+    if (shot || scene > 0.18 || !headingObservable) this.headingBaseline = body.hipYaw;
+    if (action === "accept" || action === "compensate") {
+      this.accepted = action === "compensate" ? VideoBodyMotion.blend(this.accepted, body) : body; this.held = 0;
+    }
     else this.held++;
     this.previous = body;
     return { body: this.accepted, action, learned, trusted: action !== "uncertain", features,

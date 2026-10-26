@@ -40,6 +40,7 @@ class CameraEpisode:
         self.last_output=None
         self.current=self.observe()
         self.accepted=self.current['observed'];self.previous=self.accepted
+        self.headingBaseline=self.accepted['hipYaw']
 
     def skeleton(self,t):
         phase=t*self.speed
@@ -94,18 +95,23 @@ class CameraEpisode:
         return dict(invariant=difference(b,a),raw=difference(b,self.previous,'raw'),
           body=math.degrees(max(abs(wrap(b['twist']-a['twist'])),abs(b['roll']-a['roll']))),
           scene=self.current['scene'],confidence=self.current['confidence'],held=self.held,
-          heading=math.degrees(abs(wrap(b['hipYaw']-self.previous['hipYaw']))))
+          heading=math.degrees(abs(wrap(b['hipYaw']-self.headingBaseline))))
 
     def step(self,action):
         row=self.current;obs=row['observed'];previous=self.accepted
-        if action=='accept' and not row['camera']:
-            self.heading+=wrap(obs['hipYaw']-self.previous['hipYaw'])
-        # Misclassifying camera movement as true motion is costly. In runtime
-        # explicit cuts already fence heading; non-cut viewpoint changes remain.
-        elif action=='accept' and row['camera']:
-            self.heading+=wrap(obs['hipYaw']-self.previous['hipYaw'])
+        pending=wrap(obs['hipYaw']-self.headingBaseline)
+        if row['confidence']>=.55 and abs(math.degrees(pending))>=3 and not row['camera']:
+            self.heading+=wrap(obs['hipYaw']-self.headingBaseline)
+            self.headingBaseline=obs['hipYaw']
+        if row['camera']:self.headingBaseline=obs['hipYaw']
         if action in ('accept','compensate'):
-            self.accepted=obs;self.held=0
+            self.accepted=dict(obs)
+            if action=='compensate':
+                bones=previous['bones']*.4+obs['bones']*.6
+                self.accepted['bones']=bones/np.linalg.norm(bones,axis=1,keepdims=True)
+                self.accepted['twist']=previous['twist']+wrap(obs['twist']-previous['twist'])*.6
+                self.accepted['roll']=previous['roll']+(obs['roll']-previous['roll'])*.6
+            self.held=0
         else:self.held+=1
         error=difference(self.accepted,row['truth'])
         body_error=math.degrees(abs(wrap(self.accepted['twist']-row['truth']['twist']))+abs(self.accepted['roll']-row['truth']['roll']))
@@ -158,6 +164,9 @@ class QTrainer:
                 else:
                     ranks=np.argsort(q)
                     action=ACTIONS[int(ranks[-1])] if q[ranks[-1]]-q[ranks[-2]]>=.5 else self.analytic(f)
+                # Same mandatory trust/quiet-pose guards as the shipped router.
+                if f['confidence']<.55 or (f['scene']>.18 and (f['invariant']>45 or f['body']>35)):action='uncertain'
+                if f['confidence']>=.55 and f['invariant']<6 and f['body']<3 and f['heading']<3 and f['scene']<.1:action='hold'
                 _,done,row=env.step(action);rows.append(row)
                 if done:break
         camera=[r for r in rows if r['label']=='camera'];motion=[r for r in rows if r['label']=='motion'];still=[r for r in rows if r['label']=='still']
@@ -173,14 +182,28 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--episodes',type=int,default=6000);parser.add_argument('--seed',type=int,default=1027)
     parser.add_argument('--out',type=Path,default=Path(__file__).parent/'web/video_motion_policy.json');args=parser.parse_args()
     trainer=QTrainer(args.seed);trainer.train(args.episodes)
+    # Validate exactly the serialized table, including pruning, rounding and
+    # missing-state fallback. No unpublished optimistic table is scored.
+    trainer.q={k:np.array([round(float(x),5) for x in v]) for k,v in trainer.q.items() if trainer.visits[k]>=5}
     scores={mode:trainer.evaluate(args.seed+901,400,mode) for mode in ('learned','analytic','hold')}
-    good=scores['learned']['falseCameraAcceptance']<=.05 and scores['learned']['meanBoneError']<=scores['analytic']['meanBoneError']*1.05
+    good=(scores['learned']['falseCameraAcceptance']<=.05 and
+          scores['learned']['meanBoneError']<=scores['analytic']['meanBoneError']*1.05 and
+          scores['learned']['meanHeadingError']<=scores['analytic']['meanHeadingError']*1.05 and
+          scores['learned']['stillHoldRate']>=scores['analytic']['stillHoldRate']-.02)
     model=dict(schema='mice-video-q-v1',version=1,algorithm='episodic-tabular-q-learning',seed=args.seed,
         enabled=good,features=FEATURES,bins=BINS,actions=ACTIONS,
-        q={k:[round(float(x),5) for x in v] for k,v in trainer.q.items() if trainer.visits[k]>=5},
+        q={k:[float(x) for x in v] for k,v in trainer.q.items()},
         validation=dict(syntheticOnly=True,heldoutUnseenCameraAngles=True,metrics=scores,acceptancePassed=good),
         training=dict(episodes=args.episodes,episodeFrames=36,discount=.85,learningRate=.12,exploration=.22,
           randomized=['camera yaw/pitch/roll','body proportions','speed','cuts with motion','occlusion','monocular depth bias','landmark noise'],
           actionChangesAcceptedState=True,noMotorActions=True))
+    blind={mode:trainer.evaluate(991027,500,mode) for mode in ('learned','analytic','hold')}
+    blind_good=(blind['learned']['falseCameraAcceptance']<=.05 and
+        blind['learned']['meanBoneError']<=blind['analytic']['meanBoneError']*1.05 and
+        blind['learned']['meanHeadingError']<=blind['analytic']['meanHeadingError']*1.05 and
+        blind['learned']['stillHoldRate']>=blind['analytic']['stillHoldRate']-.02)
+    model['enabled']=bool(good and blind_good)
+    model['validation'].update(blindSeed=991027,blindMetrics=blind,
+        serializedTableEvaluated=True,blindAcceptancePassed=blind_good)
     args.out.parent.mkdir(parents=True,exist_ok=True);args.out.write_text(json.dumps(model,separators=(',',':')),encoding='utf-8')
     print(json.dumps(dict(enabled=good,states=len(model['q']),metrics=scores),indent=2),flush=True)

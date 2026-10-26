@@ -2,7 +2,7 @@ class VideoSubjectTracker {
   constructor(options, config = VIDEO_FOLLOW) {
     this.options = options; this.config = config.tracking; this.tracks = []; this.nextId = 1;
     this.primary = null; this.shot = 0; this.lastImage = null; this.history = [];
-    this.policy = new VideoTemporalPolicy();
+    this.policy = new VideoTemporalPolicy(VIDEO_POLICY, options.cameraMode); this.observations = [];
   }
   imageChange(image) {
     if (!image) return 0;
@@ -18,7 +18,7 @@ class VideoSubjectTracker {
     return (result.worldLandmarks || []).map((points, i) => {
       const w = points.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility ?? 1 }));
       const p = result.landmarks[i].map(v => ({ x: v.x, y: v.y, v: v.visibility ?? 1 }));
-      const body = VideoBodyMotion.measure(w, this.options.mirror);
+      const body = VideoBodyMotion.measure(w, false);
       const cx = (p[11].x + p[12].x + p[23].x + p[24].x) / 4, cy = (p[11].y + p[12].y + p[23].y + p[24].y) / 4;
       const size = Math.hypot(p[11].x - p[23].x, p[11].y - p[23].y) + Math.hypot(p[12].x - p[24].x, p[12].y - p[24].y);
       return { w, p, body, cx, cy, size, confidence: body?.confidence || 0 };
@@ -26,9 +26,12 @@ class VideoSubjectTracker {
   }
   step(result, t, image = null, sceneOverride = null) {
     const scene = sceneOverride ?? this.imageChange(image);
-    const cut = this.options.cameraMode === "cuts" && scene > this.config.cutDifference;
-    if (cut) { this.shot++; this.tracks = []; this.primary = null; }
     const candidates = this.candidates(result), used = new Set();
+    const sameView = this.primary && candidates.some(c => Math.hypot(c.cx - this.primary.cx, c.cy - this.primary.cy) < 0.06 &&
+      Math.abs(Math.log(c.size / this.primary.size)) < 0.15 && VideoBodyMotion.difference(c.body, this.primary.body, true) < 10);
+    const cut = this.options.cameraMode === "cuts" && scene > this.config.cutDifference && !sameView;
+    const policyScene = cut ? Math.max(0.25, scene) : scene;
+    if (cut) { this.shot++; this.tracks = []; this.observations = []; }
     for (const c of candidates) {
       let match = null, cost = Infinity;
       for (const previous of this.tracks) if (!used.has(previous.id) && t - previous.t <= this.config.missingSeconds) {
@@ -40,10 +43,18 @@ class VideoSubjectTracker {
     }
     // An explicit person is always followed independently, regardless of sex
     // or apparent clothing. Different choreographies are never averaged.
+    const explicit = this.options.dancer && this.options.dancer !== "auto";
     let chosen = candidates.find(c => String(c.id) === String(this.options.dancer));
-    if (!chosen && this.primary) chosen = candidates.find(c => c.id === this.primary.id);
-    if (!chosen && this.primary && !cut && t - this.primary.t <= this.config.missingSeconds) {
-      const state = this.policy.step(null, scene, cut, 0);
+    if (!chosen && this.primary && (!explicit || String(this.primary.id) === String(this.options.dancer))) chosen = candidates.find(c => c.id === this.primary.id);
+    if (!chosen && this.primary && (cut || t - this.primary.t > this.config.missingSeconds)) {
+      const ranked = candidates.map(c => ({ c, score: VideoBodyMotion.difference(c.body, this.primary.body) +
+        THREE.MathUtils.radToDeg(Math.abs(VideoBodyMotion.wrap(c.body.twist - this.primary.body.twist))) })).sort((a, b) => a.score - b.score);
+      if (ranked.length && ranked[0].score < this.config.styleDegrees && (ranked.length === 1 || ranked[1].score - ranked[0].score > 8)) {
+        chosen = ranked[0].c; chosen.id = this.primary.id;
+      }
+    }
+    if (!chosen && (explicit || (this.primary && !cut && t - this.primary.t <= this.config.missingSeconds))) {
+      const state = this.policy.step(null, policyScene, cut, 0);
       return { t, w: null, p: null, shot: this.shot, cut, scene, ...state, candidates: candidates.length };
     }
     if (!chosen && candidates.length) {
@@ -54,15 +65,25 @@ class VideoSubjectTracker {
       })[0];
     }
     this.tracks = candidates;
-    if (!chosen) return { t, w: null, p: null, shot: this.shot, cut, scene, ...this.policy.step(null, scene, cut, 0), candidates: 0 };
+    if (!chosen) return { t, w: null, p: null, shot: this.shot, cut, scene, ...this.policy.step(null, policyScene, cut, 0), candidates: 0 };
     this.primary = chosen;
+    this.observations.push(chosen.body); this.observations = this.observations.slice(-3);
+    if (this.observations.length === 3) {
+      const median = values => values.sort((a, b) => a - b)[1];
+      const smooth = { ...chosen.body, arms: chosen.body.arms.map(a => ({ ...a })) };
+      for (const arm of [0, 1]) for (const key of ["upper", "fore"])
+        smooth.arms[arm][key] = new THREE.Vector3(...["x", "y", "z"].map(axis => median(this.observations.map(b => b.arms[arm][key][axis])))).normalize();
+      smooth.twist = chosen.body.twist + median(this.observations.map(b => VideoBodyMotion.wrap(b.twist - chosen.body.twist)));
+      smooth.roll = median(this.observations.map(b => b.roll)); chosen.body = smooth;
+      smooth.hipYaw = chosen.body.hipYaw + median(this.observations.map(b => VideoBodyMotion.wrap(b.hipYaw - chosen.body.hipYaw)));
+    }
     const supporters = candidates.filter(c => VideoBodyMotion.difference(c.body, chosen.body) <= this.config.styleDegrees);
     const styles = [];
     for (const c of candidates) {
       const group = styles.find(s => VideoBodyMotion.difference(c.body, s.leader.body) <= this.config.styleDegrees);
       if (group) group.people.push(c.id); else styles.push({ leader: c, people: [c.id] });
     }
-    const state = this.policy.step(chosen.body, scene, cut, chosen.confidence >= this.config.confidence ? 1 : 0);
+    const state = this.policy.step(chosen.body, policyScene, cut, chosen.confidence >= this.config.confidence ? 1 : 0);
     let repeatAt = null;
     for (const old of this.history) if (t - old.t > 1 && t - old.t <= this.config.repeatSeconds &&
       VideoBodyMotion.difference(chosen.body, old.body) < 3 && Math.abs(chosen.body.twist - old.body.twist) < 0.04) { repeatAt = old.t; break; }

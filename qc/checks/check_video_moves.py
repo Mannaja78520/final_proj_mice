@@ -217,7 +217,7 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     var cut = vidBuild(fit, picks, opt({}));
     o.dropped = whole - cut.keys.length;
     var clock = cut.keys.slice(1, 2).reduce(function(s, k){ return s + k.t; }, cut.keys[0].hold);
-    o.slotKept = Math.abs(clock - fit.times[picks[2].i]) < 2;
+    o.slotKept = Math.abs(cut.keys[1].sourceMs - fit.times[picks[2].i]) < 2 && Math.abs(clock - VideoRigFitter.clockForSource(cut.keys, fit.times[picks[2].i]).ms) < 2;
     o.momentPose = cut.keys[1].pose.join(" ") === vidPoseAt(fit, picks[2].at).join(" ");
     vidFrames = f6; vidFit = fit; vidPicks = picks; vidList();
     o.rows = document.querySelectorAll("#vidList .vidrow").length; o.picks = picks.length;

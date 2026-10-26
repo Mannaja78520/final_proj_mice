@@ -33,6 +33,8 @@ function vidPage(on) {
     requestAnimationFrame(vidTick);
     return;
   }
+  if (vidSeekCancel) vidSeekCancel();
+  vidCheckedPlayback.reset(v);
   if (v && !v.paused) v.pause();
   // The page drew the video's poses on the editor's robot; give it back.
   if (vidHeld) { pose = vidHeld; applyPose(); renderSliders(); }
@@ -42,7 +44,11 @@ function vidPage(on) {
 
 // A video for the stage, from a file or a fetched link.
 function vidSetSrc(url, src) {
+  vidGeneration++;
+  if (vidSeekCancel) vidSeekCancel();
+  if (vidBusy) vidStop = true;
   const v = $("vidPlayer");
+  vidCheckedPlayback.reset(v);
   if (v.src && v.src.startsWith("blob:")) URL.revokeObjectURL(v.src);
   vidSrc = src;
   v.src = url;
@@ -119,10 +125,16 @@ async function vidFetch() {
 function vidPlayBoth() {
   const v = $("vidPlayer");
   if (!v.src) return;
+  if (vidCheckedPlayback.manual) { vidCheckedPlayback.stop(v); return; }
   if (!v.paused) { v.pause(); return; }
   const from = +$("vidFrom").value || 0, to = +$("vidTo").value || v.duration;
   if (v.currentTime < from || v.currentTime >= to - 0.05) v.currentTime = from;
   v.muted = false;
+  if (vidMade?.keepMusic === false && vidMade.keys.length) {
+    const mapped = VideoRigFitter.clockForSource(vidMade.keys, (v.currentTime - from) * 1000);
+    if (mapped.rate < 0.0625) { vidCheckedPlayback.start(v, mapped.ms); return; }
+    v.playbackRate = Math.min(4, mapped.rate);
+  }
   v.play().catch(e => vidSay("The video would not play: " + (e.message || e), true));
 }
 // Every frame while the page is open: the robot takes the made moves' pose at
@@ -136,7 +148,8 @@ function vidTick() {
   if (!v.src || !isFinite(v.duration) || vidBusy || playing) return;
   const from = +$("vidFrom").value || 0, to = +$("vidTo").value || v.duration;
   if (!v.paused && v.currentTime >= to) v.pause();
-  const ms = Math.round((v.currentTime - from) * 1000);
+  let ms = Math.round((v.currentTime - from) * 1000);
+  ms = vidCheckedPlayback.update(v, vidMade, ms, from, (to - from) * 1000);
   if (ms === vidLastMs) return;
   vidLastMs = ms;
   vidShowAt(ms);
@@ -147,7 +160,7 @@ function vidShowAt(ms) {
     vidDraw($("vidSkel").checked && ms >= 0 ? f.p : null);
   }
   if (vidMade && vidMade.keys.length && ms >= 0) {
-    pose = easeKeys(vidMade.keys, Math.max(0, ms - vidMade.start)).pose;
+    pose = easeKeys(vidMade.keys, VideoRigFitter.clockForSource(vidMade.keys, ms).ms).pose;
     applyPose();
   }
   $("vidClock").textContent = ms >= 0 ? (ms / 1000).toFixed(1) + " s" : "";
@@ -164,6 +177,14 @@ function vidOnBar(first) {
 // card the way any track does (uploadMusicFile). A picked file is copied to
 // the hub first; a link is already there.
 async function vidSound() {
+  if (vidMade?.keepMusic === false && vidMade.keys.length) {
+    const last = vidMade.keys.at(-1), end = last.sourceHoldEnd ?? last.sourceMs;
+    const timed = VideoRigFitter.clockForSource(vidMade.keys, end).ms;
+    if (Number.isFinite(end) && timed > end - (vidMade.keys[0].sourceMs || 0) + 2) {
+      vidSay("These moves use a slower clock. The original sound would be out of step; use a retimed music file for this show.", true);
+      return;
+    }
+  }
   const k = keys[vidFirstKey];
   if (!vidSrc || !k) return;
   if (!haveRobot()) {
@@ -212,6 +233,10 @@ function vidSettings() {
   return { src: { kind: vidSrc.kind, name: vidSrc.name, url: vidSrc.url || "" },
            subjectMode: $("vidSubject")?.value || "single", cameraMode: $("vidCamera")?.value || "fixed",
            dancer: $("vidDancer")?.value || "auto", shrug: !!$("vidShrug")?.checked,
+           anchorX: Number.isFinite(vidSaved?.anchorX) ? vidSaved.anchorX : 0.5,
+           analysis: vidMade?.achieved ? { meanBoneDegrees: vidMade.achieved.meanBoneDegrees,
+             worstBoneDegrees: vidMade.achieved.worstBoneDegrees, corrected: vidMade.safe.around,
+             uncertain: vidMade.quality?.uncertain || 0, limited: vidMade.partial } : null,
            learned: $("vidLearned")?.checked !== false,
            detail: $("vidDetail").value, mirror: $("vidMirror").checked,
            music: $("vidMusic").checked, waist: $("vidWaist").checked,
@@ -232,6 +257,7 @@ function vidApplySettings(s) {
     if (s.dancer && ![...$("vidDancer").options].some(o => o.value === s.dancer))
       $("vidDancer").add(new Option("Performer " + s.dancer, s.dancer));
     $("vidDancer").value = s.dancer || "auto";
+    if ($("vidDancer").options[0]) $("vidDancer").options[0].text = Number.isFinite(s.anchorX) && s.anchorX !== 0.5 ? "Saved reference" : "Main performer";
   }
   (s.hand || []).forEach((h, a) => pick($("vidHand" + a), h));
   $("vidMirror").checked = !!s.mirror;

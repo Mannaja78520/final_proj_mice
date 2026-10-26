@@ -7,7 +7,7 @@ function context() {
   const safe=JSON.parse(fs.readFileSync(path.join(STUDIO,'web/safe_path.json')));
   const policy=JSON.parse(fs.readFileSync(path.join(STUDIO,'web/video_motion_policy.json')));
   const elements=new Map();
-  const c=vm.createContext({THREE,console,performance,setTimeout,clearTimeout,
+  const c=vm.createContext({THREE,console,performance,setTimeout,clearTimeout,notice:()=>{},
     window:{NONG_RIG_DEFAULT:JSON.parse(fs.readFileSync(path.join(STUDIO,'rig_default.json')))},
     localStorage:{getItem:()=>null,setItem:()=>{}},document:{getElementById:id=>{
       if(!elements.has(id))elements.set(id,{value:id==='speedDps'?38:id==='maxDps'?400:'',checked:false,options:[],add(o){this.options.push(o);}});
@@ -16,8 +16,9 @@ function context() {
     Option:function(label,value){this.label=label;this.value=value;}});
   const run=s=>vm.runInContext(s,c);
   run('const $=id=>document.getElementById(id);');
-  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','yaml_export','video_body_motion','video_tracking','video_rig_fit'])run(read(name));
-  run(read('pose_from_video').replace(/\nvidFill\(\);\s*\nvideoFollowReady\(\)\.then\(vidFill\)\.catch\(\(\) => \{\}\);\s*$/,''));
+  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','yaml_export','video_body_motion','video_tracking','video_rig_fit','video_checked_playback'])run(read(name));
+  const timeline=read('timeline');run(timeline.slice(timeline.indexOf('function easeKeys('),timeline.indexOf('\nfunction poseAt(')));
+  const videoSource=read('pose_from_video');run(videoSource.slice(0,videoSource.lastIndexOf('\nvidFill();')));
   c.config=config;c.safe=safe;c.policy=policy;
   run(`VIDEO_FOLLOW=config;VIDEO_POLICY=policy;
     let pose=RIG.neutral.map((v,i)=>clampJ(i,v)),keys=[],SAFE_DPS=60;const MIN_MOVE_MS=80;
@@ -59,6 +60,28 @@ if(require.main===module){
   check('physical collision snapshot restores pose and transforms',`(()=>{const p=pose.slice(),q=RIG.home.slice();q[9]=RIG.max[9];StudioCollisionGeometry.snapshot(q);return pose===p?false:JSON.stringify(pose)===JSON.stringify(p);})()`);
   check('waist rotation preserves clearance but shrug moves shoulders',`(()=>{const a=RIG.home.slice(),b=a.slice(),d=a.slice();b[8]=RIG.max[8];d[9]=RIG.max[9];const A=StudioCollisionGeometry.snapshot(a),B=StudioCollisionGeometry.snapshot(b),D=StudioCollisionGeometry.snapshot(d);return A.arms[0].e.distanceTo(B.arms[0].e)<1e-5&&A.arms[0].s.distanceTo(D.arms[0].s)>.1;})()`);
   check('factory HOME clear with physical hand and joint envelopes',`!collisionAt(RIG.home)`);
+  check('actual FK hand penetrates body despite clear wrist spacing',`(()=>{const p=[93.4,111.5,41.5,89.3,105.5,83.1,47.2,84.1,101.4,98.3],g=StudioCollisionGeometry.snapshot(p);return g.arms[0].w.distanceTo(g.arms[1].w)>2*R_WRIST+CLEAR&&(collisionAt(p)||'').includes('hand');})()`);
+  check('actual folded forearm hits its own shoulder in alternate joint travel',`(collisionAt([90,140,-100,80,90,40,90,90,90,90.5])||'').includes('its shoulder joint')`);
+  check('snapshot restores exact pose identity and matrices after exception',`(()=>{
+    const original=pose,matrix=bodyGroup.matrixWorld.toArray().join(','),g=palmMarks[0].children.find(o=>o.geometry?.type==='BoxGeometry').geometry,originalCompute=g.computeBoundingBox;
+    try{g.computeBoundingBox=()=>{throw Error('fixture geometry failure');};const p=RIG.home.slice();p[9]=RIG.max[9];try{StudioCollisionGeometry.snapshot(p);}catch(_){} }
+    finally{g.computeBoundingBox=originalCompute;}
+    return pose===original&&bodyGroup.matrixWorld.toArray().join(',')===matrix;
+  })()`);
+  check('selected performer loss cannot silently choose another routine',`(()=>{
+    const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'cuts',dancer:'1'});
+    tr.step(result([{x:.3,w:person(0,0)},{x:.7,w:person(0,0,[0,0,0],true)}]),0,null,0);
+    const f=tr.step(result([{x:.7,w:person(0,0,[0,0,0],true)}]),1,null,.8);
+    return f.w===null&&f.action==='uncertain';
+  })()`);
+  check('gradual genuine turns accumulate across held frames',`(()=>{
+    const gate=new VideoTemporalPolicy(null,'fixed');let f;for(let i=0;i<15;i++)f=gate.step(VideoBodyMotion.measure(person(0,0,[0,i*.025,0])),0,false);
+    return Math.abs(f.waist)>.2;
+  })()`);
+  check('moving-view heading-only observations do not rotate waist without evidence',`(()=>{
+    const gate=new VideoTemporalPolicy(null,'cuts');let f;for(let i=0;i<15;i++)f=gate.step(VideoBodyMotion.measure(person(0,0,[0,i*.025,0])),.03,false);
+    return Math.abs(f.waist)<.03;
+  })()`);
   run(`function fromRig(p){
     const saved=pose;pose=p.slice();applyPose();robot.updateMatrixWorld(true);
     const w=person(0,0);const put=(i,o)=>{const v=o.getWorldPosition(new THREE.Vector3()).multiplyScalar(.001);w[i]={x:v.x,y:-v.y,z:-v.z,v:1};};
@@ -84,5 +107,55 @@ if(require.main===module){
   })()`);
   check('unknown learned states use conservative geometric fallback',`(()=>{const p=new VideoTemporalPolicy({enabled:true,schema:'mice-video-q-v1',features:policy.features,bins:policy.bins,q:{},actions:policy.actions});p.step(VideoBodyMotion.measure(person(.2,0)),0,false);return p.step(null,.8,true).action==='uncertain';})()`);
   check('sequential learning model has held-out acceptance and real stateful actions',`VIDEO_POLICY.algorithm==='episodic-tabular-q-learning'&&VIDEO_POLICY.training.actionChangesAcceptedState&&VIDEO_POLICY.validation.syntheticOnly&&VIDEO_POLICY.validation.acceptancePassed`);
-  console.log('RESULT '+JSON.stringify({passed,failed}));process.exitCode=failed?1:0;
+  check('pose-preserving source clock follows actual slowed motion and holds',`(()=>{
+    const K=[{sourceMs:0,sourceHoldEnd:1000,hold:1000,t:1000},{sourceMs:2000,sourceHoldEnd:2000,hold:0,t:4000}];
+    const a=VideoRigFitter.clockForSource(K,500),b=VideoRigFitter.clockForSource(K,1500),c=VideoRigFitter.clockForSource(K,2000);
+    return a.ms===500&&b.ms===3000&&b.rate===.25&&c.ms===5000;
+  })()`);
+  check('RRT via source slots remain in chronological order',`(()=>{
+    const K=[{sourceMs:0,sourceHoldEnd:0,hold:0,t:1000},{sourceMs:1000,sourceHoldEnd:1000,hold:0,t:3000,via:true},{sourceMs:2000,sourceHoldEnd:2000,hold:0,t:1000}];
+    return VideoRigFitter.clockForSource(K,500).ms===1500&&VideoRigFitter.clockForSource(K,1500).ms===3500;
+  })()`);
+  check('very slow video steps the checked robot clock rather than clamping speed',`(()=>{
+    let now=0;const player={paused:false,seeking:false,currentTime:0,playbackRate:1,pause(){this.paused=true;},play(){this.paused=false;return Promise.resolve();}};
+    const playback=new VideoCheckedPlayback(()=>now),made={keepMusic:false,keys:[{sourceMs:0,sourceHoldEnd:0,hold:0,t:1000},{sourceMs:100,sourceHoldEnd:100,hold:0,t:6000}]};
+    playback.update(player,made,0,0,100);now=1000;const source=playback.update(player,made,0,0,100);
+    return !!playback.manual&&player.paused&&Math.abs(source-100/6)<1e-6&&Math.abs(VideoRigFitter.clockForSource(made.keys,source).ms-1000)<1e-6;
+  })()`);
+  check('clearing analysis resets any inherited video slowdown',`(()=>{const p={playbackRate:.1};vidCheckedPlayback.reset(p);return p.playbackRate===1;})()`);
+  async function checkAsync(name,code){try{if(!(await run(code)))throw Error('assertion false');passed++;console.log('PASS '+name);}catch(e){failed++;console.log('FAIL '+name+': '+e.message);}}
+  (async()=>{
+    await checkAsync('pending seek resolves on mode cancellation without a media event',`(async()=>{
+      const listeners=new Map(),video={currentTime:0,readyState:2,seeking:false,addEventListener(k,v){listeners.set(k,v);},removeEventListener(k){listeners.delete(k);}};
+      vidStop=false;const pending=vidSeek(video,1,vidGeneration);vidModeChanged();
+      return (await pending)===false&&vidSeekCancel===null&&listeners.size===0;
+    })()`);
+    await checkAsync('cancelled read cannot repopulate observations or fit new modes',`(async()=>{
+      vidFrames=vidFit=vidMade=null;vidRead=async()=>{vidModeChanged();return[{t:0,w:person()}];};
+      const result=await vidMake();return result===false&&vidFrames===null&&vidFit===null;
+    })()`);
+    await checkAsync('Make-and-save cannot save after analysis mode changed',`(async()=>{
+      vidBusy=false;var saves=0;saveAll=async()=>{saves++;return true;};vidMake=async()=>{vidGeneration++;return true;};
+      await vidMakeAndSave();return saves===0;
+    })()`);
+    run(read('video_page'));
+    await checkAsync('retimed show cannot attach original unwarped audio',`(async()=>{
+      vidMade={keepMusic:false,keys:[{sourceMs:0,sourceHoldEnd:0,hold:0,t:1000},{sourceMs:1000,sourceHoldEnd:1000,hold:0,t:4000}]};
+      let calls=0;fetch=async()=>{calls++;throw Error('must not upload');};
+      await vidSound();return calls===0&&$('vidStat').textContent.includes('retimed music');
+    })()`);
+    await checkAsync('configuration and policy share one complete readiness promise',`(async()=>{
+      VIDEO_FOLLOW=null;VIDEO_POLICY=null;VIDEO_READY=null;
+      fetch=async file=>({json:async()=>file==='video_follow.json'?config:policy});
+      const a=videoFollowReady(),b=videoFollowReady();const same=a===b;await a;
+      return same&&VIDEO_FOLLOW===config&&VIDEO_POLICY===policy;
+    })()`);
+    await checkAsync('saved group/camera/performer choices survive late option population',`(async()=>{
+      $('vidSubject').options=[];$('vidCamera').options=[];VIDEO_FOLLOW=null;
+      const saved={subjectMode:'group',cameraMode:'cuts',dancer:'2',waist:true,shrug:true,learned:true};
+      vidApplySettings(saved);VIDEO_FOLLOW=config;vidFill();vidApplySettings(vidSaved);
+      return $('vidSubject').value==='group'&&$('vidCamera').value==='cuts'&&$('vidDancer').value==='2'&&$('vidShrug').checked;
+    })()`);
+    console.log('RESULT '+JSON.stringify({passed,failed}));process.exitCode=failed?1:0;
+  })().catch(e=>{console.error(e);process.exitCode=1;});
 }

@@ -25,7 +25,7 @@
         <button id="vidFetchBtn" onclick="vidFetch()"
                 title="This PC fetches the video from the link, then Studio reads it like a file.">Fetch</button>
       </div>
-      <div class="row"><label class="lbl" for="vidDetail">Follow</label>
+      <div class="row"><label class="lbl" for="vidDetail">Pose detail</label>
         <select id="vidDetail" style="flex:1" onchange="vidRemake('pick')"
                 title="Every move eases to a stop. More moves follow the video more closely; fewer moves flow more smoothly."></select>
       </div>
@@ -41,7 +41,7 @@
           <select id="vidHand0" style="flex:1" onchange="vidRemake()"></select></div>
         <div class="row"><label class="lbl" id="vidHandLbl1" for="vidHand1">Right hand</label>
           <select id="vidHand1" style="flex:1" onchange="vidRemake()"></select></div>
-        <div class="row"><label><input type="checkbox" id="vidWaist" onchange="vidRemake('fit')">
+        <div class="row"><label><input type="checkbox" id="vidWaist" checked onchange="vidRemake('fit')">
           Turn the waist when the person turns</label></div>
         <div class="row"><label><input type="checkbox" id="vidShrug" checked onchange="vidRemake('fit')">
           Follow shoulder tilt</label></div>

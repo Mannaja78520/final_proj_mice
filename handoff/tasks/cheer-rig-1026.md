@@ -1,94 +1,68 @@
-# Rig Nong from two group cheer videos with camera changes
+# Group cheer video rig follow-up
 
 Owner: codex:10270037-9c0d
-Updated: 2026-10-27T04:49:09.237063+07:00
-Branch: codex/cheer-video-1027; tree .staging-cheer-video-1027
-Last commit: this checkpoint; A48-21 source WIP, root unchanged
-Plan: A48-21 (follow-up to A48-20)
+Updated: 2026-10-27T05:58:12.227579
+Branch: codex/cheer-video-1027; isolated tree .staging-cheer-video-1027
+Last commit: this checkpoint; root HEAD3298e36 and unrelated dirty work preserved
+Plan: A48-21, fixes rejected A48-20 v1
 
 ## Goal
-Rig Nong from both supplied cheer videos. Multiple dancers perform the same routine and the camera changes angle. Produce two private Studio projects and review previews.
+Follow two supplied group cheer videos with real waist/shrug, stable actor identity across camera changes, separate choreography, collision-aware paths and genuine supplementary RL. Deliver four checked editable rigs/previews and the Studio feature fix.
 
 ## Doing now
-User rejected v1 overlaps and missing torso/shoulders. Implement a real Studio fix in isolated .staging-cheer-video-1027: separate subject/camera modes, preserve body landmarks, fit waist/shrug, improve achieved-elbow IK, check physical hands/joint balls/full SHRUG and use existing RRT* for checked transitions. Regenerate BOTH clips from the same checked motion shown/exported. Existing reference previews are rejected, not completion evidence. User now explicitly requests RL: implement genuine sequential Q-learning trust/router policy trained in simulation; actions update accepted pose and future observations. Compare held-out unseen-view metrics with analytic and hold baselines. Keep geometry and RRT* authoritative. Also separate different choreography groups/selected performers; do not infer a uniform dance or average incompatible male/female routines.
+Add torso-aware style/repetition comparisons and their regression; then focused verification, independent final review and frozen full QC. Current affected185/0 and native33/0 passed. No robot, HOME, calibration, live services or real network probes. No heavy/model jobs during QC.
 
 ## File status
-Baseline: root had unrelated source/config/EXE/project/plan changes; preserve all. Only own task and private artifact directory are owned.
+Exact owned source paths below. Private v1 is rejected and preserved, not completion evidence; old inventory/status is .local/cheer_rig_1027/task_previous.md. Private v2 files stay local; full exact inventory will accompany final validation.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| `handoff/tasks/cheer-rig-1026.md` | task status | doing | manual | this checkpoint |
-| `.local/cheer_rig_1026/I0lCxX8373M.mp4` | local reference | done | decoded 168.28 seconds | private, uncommitted |
-| `.local/cheer_rig_1026/CLG7VdVhhLM.mp4` | local reference | done | decoded 94.84 seconds | private, uncommitted |
-| `.local/cheer_rig_1026/I0lCxX8373M_sheet.jpg` | contact sheet | done | visually inspected | private, uncommitted |
-| `.local/cheer_rig_1026/CLG7VdVhhLM_sheet.jpg` | contact sheet | done | visually inspected | private, uncommitted |
-| `.local/cheer_rig_1026/extract_group.py` | offline multi-person extraction | done | complete 8 Hz extraction and overlays | private, uncommitted |
-| `.local/cheer_rig_1026/fit_studio.cjs` | existing Studio solver offline | done | 788/440 keys, collision/time checks pass | private, uncommitted |
-| `.local/cheer_rig_1026/build_blender.py` | exact transform hierarchy | done | four native files saved | private, uncommitted |
-| `.local/cheer_rig_1026/render_motion.py` | reference and robot previews | done | full rendered sequences | private, uncommitted |
-| `.local/cheer_rig_1026/compose_preview.py` | paired preview/audio | done | four complete audio/video decodes pass | private, uncommitted |
-| `.local/cheer_rig_1026/verify_blender.py` | native rig verification | done | four files, 10 animated controls each | private, uncommitted |
-| `.local/cheer_rig_1026/finish_artifacts.py` | artifact checks/package | done | independent angle/time/YAML/video/ZIP checks pass | private, uncommitted |
-| `.local/cheer_rig_1026/README_TH.md` | instructions and real limits | done | manual | private, uncommitted |
-| `.local/cheer_rig_1026/come_and_cheer.json` | speed-limited show | done | 788 poses/paths/timing incl HOME entry pass | private, uncommitted |
-| `.local/cheer_rig_1026/witsawa_kriangkrai.json` | speed-limited show | done | 440 poses/paths/timing incl HOME entry pass | private, uncommitted |
-| `.local/cheer_rig_1026/come_and_cheer.yaml` | existing Studio export | done | independently parsed and matched all JSON angles/times | private, uncommitted |
-| `.local/cheer_rig_1026/witsawa_kriangkrai.yaml` | existing Studio export | done | independently parsed and matched all JSON angles/times | private, uncommitted |
-| `.local/cheer_rig_1026/come_and_cheer.blend` | speed-limited editable rig | done | native render pass | private, uncommitted |
-| `.local/cheer_rig_1026/witsawa_kriangkrai.blend` | speed-limited editable rig | done | native render pass | private, uncommitted |
-| `.local/cheer_rig_1026/come_and_cheer_reference.blend` | reference editable rig | done | native render pass | private, uncommitted |
-| `.local/cheer_rig_1026/witsawa_kriangkrai_reference.blend` | reference editable rig | done | native render pass | private, uncommitted |
-| `nong/main_python_set_nong/projects/cheer_come_and_cheer_20261026.json` | new user project | done | new name, valid 10-joint JSON, no overwrite | private, uncommitted |
-| `nong/main_python_set_nong/projects/cheer_witsawa_kriangkrai_20261026.json` | new user project | done | new name, valid 10-joint JSON, no overwrite | private, uncommitted |
-| `nong/main_python_set_nong/sequences/cheer_come_and_cheer_20261026.yaml` | new user sequence | done | parsed format, no overwrite | private, uncommitted |
-| `nong/main_python_set_nong/sequences/cheer_witsawa_kriangkrai_20261026.yaml` | new user sequence | done | parsed format, no overwrite | private, uncommitted |
-
-Private exact per-file inventory including generated intermediates: .local/cheer_rig_1026/file_status.csv (5937 rows). Deliverable hashes: .local/cheer_rig_1026/manifest.json; independent results: .local/cheer_rig_1026/validation.json.
-
-## A48-21 source file status
-
-| File | Change | State | Verification | Commit |
-| --- | --- | --- | --- | --- |
-| nong/main_python_set_nong/web/app_parts/collision_shapes.js | A48-21 isolated follow-up | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/app_parts/video_body_motion.js | A48-21 isolated follow-up | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/app_parts/video_tracking.js | A48-21 isolated follow-up | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/app_parts/video_rig_fit.js | A48-21 isolated follow-up | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/app_parts/pose_from_video.js | A48-21 isolated follow-up | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/app_parts/video_page.js | A48-21 isolated follow-up | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/app_parts/collisions.js | A48-21 isolated follow-up | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/app_parts/safe_path.js | A48-21 isolated follow-up | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/html_parts/video.html | A48-21 isolated follow-up | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/video_follow.json | A48-21 isolated follow-up | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/video_motion_policy.json | A48-21 isolated follow-up | pending | not run | uncommitted |
-| nong/main_python_set_nong/train_video_policy.py | A48-21 isolated follow-up | pending | not run | uncommitted |
-| tools/web_build.json | A48-21 isolated follow-up | pending | not run | uncommitted |
-| main_python/web/help/parts/studio.html | A48-21 isolated follow-up | pending | not run | uncommitted |
-| main_python/web/help.html | A48-21 isolated follow-up | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/app.js | A48-21 isolated follow-up | pending | not run | uncommitted |
-| nong/main_python_set_nong/web/index.html | A48-21 isolated follow-up | pending | not run | uncommitted |
-| qc/checks/check_video_group.py | A48-21 isolated follow-up | pending | not run | uncommitted |
-| qc/data/video_group.cjs | A48-21 isolated follow-up | pending | not run | uncommitted |
+| handoff/tasks/cheer-rig-1026.md | current handoff | doing | manually reconciled | this checkpoint |
+| main_python/web/help.html | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| main_python/web/help/parts/studio.html | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/train_video_policy.py | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/app.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/app_parts/collision_shapes.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/app_parts/collisions.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/app_parts/pose_from_video.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/app_parts/safe_path.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/app_parts/video_body_motion.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/app_parts/video_page.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/app_parts/video_rig_fit.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/app_parts/video_tracking.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/html_parts/video.html | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/video_follow.json | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/video_motion_policy.json | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| qc/checks/check_video_group.py | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| qc/checks/check_video_moves.py | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| qc/data/video_group.cjs | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| tools/web_build.json | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/app_parts/video_checked_playback.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| nong/main_python_set_nong/web/index.html | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| qc/checks/check_gestures.py | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+| qc/lib/qc.py | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
 
 ## Facts found
-- 2026-10-27 diagnosis: v1 canonical() destroyed pelvis/shoulder data; fitter disabled waist and never inferred shrug; unchecked reference was delivered as main preview. User reports visible clipping, wrong static start, torso twist and shoulder tilt missed. Retain originals, supersede with v2.
-- Mandatory pre-code design consultations completed by collision_review/tracking_review: preserve fkPoints legacy readout but use actual-pose body-frame collision snapshot; include hand OBB/joint spheres; no camera-cut future backfill, preserve raw landmarks and uncertainty; end effector target must anchor at achieved elbow; preview/export SAME checked motion.
-- Root has A48-19 active exclusive QC/full-gate lease; no heavy model/browser/QC activity until explicit release. Own new leaf source/staging only; shared generated Help/app/build registry requires reconciliation. Current tree baseline root3298e36 plus protected existing dirty Studio/config/EXE; do not overwrite.
-- Studio pose_from_video.js:61 sets numPoses=1; ordinary UI cannot reliably handle group clips. vidBodyFrame:161 removes camera yaw for arm directions. Waist mapping uses camera-relative yaw so keep waist neutral for these reference clips.
-- rig_default.json contains measured CAD rig. settings_shared.json includes malformed test rig min:[30], so do not use that as calibrated production data.
-- Existing user source changes in Studio setup/view/style must remain intact.
-- Artifacts use shipped rig_default, not malformed settings_shared. Both HOME entry legs clear; entry needs 864/878 ms <=1000 ms. At 60 deg/s peak most human cheer transitions must reduce amplitude. Reference Blender animation is explicitly virtual only; robot JSON remains speed/path checked. Waist and shrug stay at saved neutral to avoid confusing camera yaw with human yaw.
+- v1 canonicalization destroyed raw hip/shoulder geometry; old reference previews bypassed full physical checks. All v2 previews use the exact checked exported sequence.
+- Full geometry includes hand OBBs, joint spheres, nonadjacent same-arm bars and actual SHRUG. Legacy fkPoints readout remains unchanged. Final rounded RRT* legs rechecked using the most recent waypoint.
+- Slow motion must map source time to checked robot time. Extremely slow sections frame-step the video; original unwarped song attachment is blocked. Private warped MP3s will be supplied.
+- Detector order is not identity; selected actor loss holds until plausible re-acquisition. No incompatible choreography averaging or gender inference. User asked to identify representative positions; awaiting optional reply, defaults left/back and front/center A/B.
+- Synthetic sequential Q-learning updates accepted pose and future states. Serialized/pruned table passes heldout400episodes and blind500episodes; improvement is small and does not prove real-video accuracy.
+- Root setup/view/style, tests, configs, spec/EXE and all other user work are protected. Source baseline HEAD versions of five unowned dirty inputs were restored ONLY in own staging; backups .local/cheer_rig_1027/protected_root_inputs.json. Never bulk promote/reset.
+- A48-19 stopped-without-handoff scoped software-QC/shared-output lease takeover recorded BRIDGE1006; its frozen tree/full8774/package and unrelated claims remain preserved.
 
 ## Done
-- A48-21 current: new subject/body/fit/collision classes plus UI/persistence/Help and sequential Q-learning trainer/model implemented in isolated tree. 17 native JS regressions pass; affected video/safe-path browser checks56/0 after fixing final-leg validation against latest RRT waypoint. Initial5checks110/2 failures preserved privately; legacy random targets now required physically collision-clear. Learned synthetic holdout400episodes14400frames: bone5.861 vs analytic5.865 deg, camera falseaccept0; improvement small, not actual-video proof. Re-extraction preserves raw hips/shoulders and two independent routine anchors, background ORB supports view evidence.
-- Downloaded both user reference clips locally. Contact sheets confirm synchronized red-shirt dancers and several cuts/front/oblique views. No application source, service, robot or calibration writes.
-- Extracted 1347/759 samples at 8 Hz; kept dance windows 5–163.375 and 5–89.875 s. Group corroboration in 502/337 samples. Original Studio fitter and 1-degree collision sampling reused without changing application files. Wire rounding corrected offline and rechecked.
-- Four Blender rigs created and rendered; two original-rhythm references plus two constrained to saved 60 deg/s peak. User MP3 cues contain 1 s prep silence for robot versions. No video/model files go to public Git.
-
-- Final validation passed: 1228 checked robot poses and every leg, peak-speed floors, HOME entries, YAML parity, four full decoded MP4s with audio, four native Blender rigs with 10 animated controls each. ZIP 16 deliverables, 54,613,911 bytes, CRC pass. Saved two new Studio projects and two YAMLs under claimed unique names.
+- Four new independent full retargetings: Come left567keys/RRT31, center569/RRT30; Witsawa left273/RRT10, center279/RRT17. Every final pose/leg/time and HOME entry checked. Arm mean7.5/7.8/9.9/8.9deg; residual limits remain.
+- Full raw YOLO+MediaPipe tracks retain waist/shoulders; 4 useful people in wide shots. Positional actor sets remain independent.
+- Four native Blender files built with 10 animated controls and actual checked curves. No final v2 video rendering/audio/package yet.
+- Native33/0 and affected185/0 passed (private .staging-final-focused.log); broader prior1736/2 failures diagnosed and fixed in focused run. Final full QC pending.
+- Review: collision_review approved geometry/path scope; tracking_review pending final re-review after seek/media fixes.
 
 ## Next
-1. No required work remains; deliver ZIP and reference previews. Optional future refinement can use the editable reference rigs.
-2. Full application QC not run: no application source changed. Real hardware remains untested, outside this artifact task.
+1. Torso-style regression, sabotage proof, final review; update scoped source WIP.
+2. Delegate full QC under own loopback-only guard, frozen source, no heavy jobs.
+3. Render four checked sequences; compose time-matched video/audio; native/file/visual validation and ZIP. Install uniquely named projects without overwrite.
+4. Scoped review/integration only own files; preserve root user templates and regenerate their built outputs. Complete required source packaging/PR checks, no live restart or hardware.
 
 ## Blocked
-- None. Defaulted to full dance windows and group corroboration after optional question remained unanswered. No hardware acceptance claimed.
+None. Hardware untested. Camera-only yaw ambiguity cannot always be resolved from one recording; conservative holds and quality reports remain visible.

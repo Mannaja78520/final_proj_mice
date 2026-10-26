@@ -2,8 +2,9 @@
   "version": 1,
   "subjectModes": [{"id":"single","label":"One performer"},{"id":"group","label":"Group dance — keep different routines separate"}],
   "cameraModes": [{"id":"fixed","label":"One camera view"},{"id":"cuts","label":"Changing shots / viewpoints"}],
-  "tracking": {"people": 8, "identityGap": 0.18, "confidence": 0.55, "styleDegrees": 24, "missingSeconds": 0.4, "cutDifference": 0.18, "repeatSeconds": 20},
-  "body": {"deadbandDegrees": 2, "maxFrameDegrees": 20, "uncertaintySeconds": 0.5},
+  "tracking": {"people": 8, "identityGap": 0.18, "confidence": 0.55, "styleDegrees": 24, "missingSeconds": 0.4, "cutDifference": 0.08, "repeatSeconds": 20, "seekTimeoutMs": 5000,
+    "crops": [[0,0,1,1],[0,0.1,0.5,1],[0.25,0.1,0.75,1],[0.5,0.1,1,1]]},
+  "body": {"deadbandDegrees": 2, "stillBonesDegrees": 6, "stillBodyDegrees": 3, "maxFrameDegrees": 20, "uncertaintySeconds": 0.5},
   "fitting": {"steps": [16,8,4,2,1,0.5], "passes": 3, "continuityWeight": 0.002, "repairDegrees": [5,12,24,40]},
   "policy": {"model":"video_motion_policy.json", "minimumMargin": 0.5, "enableAfterValidation": true}
 }

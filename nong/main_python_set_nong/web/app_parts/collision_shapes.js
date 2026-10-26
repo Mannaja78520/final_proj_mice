@@ -79,12 +79,22 @@ class StudioCollisionGeometry {
     } finally { pose = saved; applyPose(); robot.updateMatrixWorld(true); }
   }
   static hit(p) {
+    if (!Array.isArray(p) || p.length !== NJ || !p.every(Number.isFinite)) return "the pose is invalid";
+    if (![...RIG.jointR, ...RIG.barR, RIG.dims.torsoW, RIG.dims.torsoH, RIG.dims.torsoD].every(v => Number.isFinite(v) && v > 0))
+      return "the physical collision sizes are invalid";
     const extra = RIG.extraClearanceMm ?? 0;
     if (!Number.isFinite(extra) || extra < 0) return "the extra safety gap is invalid";
     const gap = CLEAR + extra, { torso, head, arms } = this.snapshot(p);
     const sphereBox = (s, box) => this.pointBox(s.at, box) < s.r + gap;
     const sphereBar = (s, bar) => segSegDist(s.at, s.at, bar.a, bar.b) < s.r + bar.r + gap;
     for (const a of arms) {
+      if (sphereBar({ at: a.s, r: a.sr }, a.bars[1])) return a.label + " forearm is too close to its shoulder joint";
+      const upper = a.bars[0], fore = a.bars[1];
+      const upperEnd = segPoint(a.e, upper.a, Math.min(1, (a.er + upper.r + gap) / Math.max(1, a.e.distanceTo(upper.a))));
+      const foreStart = segPoint(a.e, a.w, Math.min(1, (a.er + fore.r + gap) / Math.max(1, a.e.distanceTo(a.w))));
+      if (segSegDist(upper.a, upperEnd, foreStart, a.w) < upper.r + fore.r + gap)
+        return a.label + " forearm is too close to its upper arm";
+      if (a.s.distanceTo(head.at) < a.sr + head.r + gap) return a.label + " shoulder joint is too close to the head";
       for (const bar of a.bars) {
         if (this.segmentBox(bar.a, bar.b, torso) < bar.r + gap) return bar.name + " is too close to the body";
         if (sphereBar(head, bar)) return bar.name + " is too close to the head";
@@ -93,6 +103,7 @@ class StudioCollisionGeometry {
       if (sphereBox(elbow, torso)) return a.label + " elbow joint is too close to the body";
       if (a.e.distanceTo(head.at) < a.er + head.r + gap) return a.label + " elbow joint is too close to the head";
       if (a.hand) {
+        if (this.pointBox(a.e, a.hand) < a.er + gap) return a.hand.name + " is too close to its elbow joint";
         if (this.boxesHit(a.hand, torso, gap)) return a.hand.name + " is too close to the body";
         if (sphereBox(head, a.hand)) return a.hand.name + " is too close to the head";
         if (this.segmentBox(a.bars[0].a, a.bars[0].b, a.hand) < a.bars[0].r + gap)
