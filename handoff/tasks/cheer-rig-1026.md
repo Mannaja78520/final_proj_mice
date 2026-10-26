@@ -2,15 +2,15 @@
 
 Owner: codex:10261829-d886
 Updated: 2026-10-26 18:30 +0700
-Branch: private artifact work; application source unchanged
-Last commit: pending metadata checkpoint
+Branch: codex/cheer-rig-1026 (metadata only; application source unchanged)
+Last commit: this checkpoint (metadata only; media stay private)
 Plan: A48-20
 
 ## Goal
 Rig Nong from both supplied cheer videos. Multiple dancers perform the same routine and the camera changes angle. Produce two private Studio projects and review previews.
 
 ## Doing now
-Final artifact validation and newly named Studio project saves. Four editable mechanical Blender rigs (reference rhythm and separately speed-limited), four paired previews, JSON/YAML/music. Decode complete previews, verify joint/timing/path reports and native Blender animation, package locally. No application source or hardware changes.
+Complete. All four Blender rigs and previews validated, JSON/YAML/music saved, two newly named Studio projects installed, ZIP tested. No running process, application source change or hardware command.
 
 ## File status
 Baseline: root had unrelated source/config/EXE/project/plan changes; preserve all. Only own task and private artifact directory are owned.
@@ -22,26 +22,28 @@ Baseline: root had unrelated source/config/EXE/project/plan changes; preserve al
 | `.local/cheer_rig_1026/CLG7VdVhhLM.mp4` | local reference | done | decoded 94.84 seconds | private, uncommitted |
 | `.local/cheer_rig_1026/I0lCxX8373M_sheet.jpg` | contact sheet | done | visually inspected | private, uncommitted |
 | `.local/cheer_rig_1026/CLG7VdVhhLM_sheet.jpg` | contact sheet | done | visually inspected | private, uncommitted |
-| `.local/cheer_rig_1026/extract_group.py` | offline multi-person extraction | pending | not run | private, uncommitted |
+| `.local/cheer_rig_1026/extract_group.py` | offline multi-person extraction | done | complete 8 Hz extraction and overlays | private, uncommitted |
 | `.local/cheer_rig_1026/fit_studio.cjs` | existing Studio solver offline | done | 788/440 keys, collision/time checks pass | private, uncommitted |
 | `.local/cheer_rig_1026/build_blender.py` | exact transform hierarchy | done | four native files saved | private, uncommitted |
 | `.local/cheer_rig_1026/render_motion.py` | reference and robot previews | done | full rendered sequences | private, uncommitted |
-| `.local/cheer_rig_1026/compose_preview.py` | paired preview/audio | doing | final reference pair rendering | private, uncommitted |
-| `.local/cheer_rig_1026/verify_blender.py` | native rig verification | pending | not run | private, uncommitted |
-| `.local/cheer_rig_1026/finish_artifacts.py` | artifact checks/package | pending | not run | private, uncommitted |
+| `.local/cheer_rig_1026/compose_preview.py` | paired preview/audio | done | four complete audio/video decodes pass | private, uncommitted |
+| `.local/cheer_rig_1026/verify_blender.py` | native rig verification | done | four files, 10 animated controls each | private, uncommitted |
+| `.local/cheer_rig_1026/finish_artifacts.py` | artifact checks/package | done | independent angle/time/YAML/video/ZIP checks pass | private, uncommitted |
 | `.local/cheer_rig_1026/README_TH.md` | instructions and real limits | done | manual | private, uncommitted |
 | `.local/cheer_rig_1026/come_and_cheer.json` | speed-limited show | done | 788 poses/paths/timing incl HOME entry pass | private, uncommitted |
 | `.local/cheer_rig_1026/witsawa_kriangkrai.json` | speed-limited show | done | 440 poses/paths/timing incl HOME entry pass | private, uncommitted |
-| `.local/cheer_rig_1026/come_and_cheer.yaml` | existing Studio export | done | pending independent parse | private, uncommitted |
-| `.local/cheer_rig_1026/witsawa_kriangkrai.yaml` | existing Studio export | done | pending independent parse | private, uncommitted |
+| `.local/cheer_rig_1026/come_and_cheer.yaml` | existing Studio export | done | independently parsed and matched all JSON angles/times | private, uncommitted |
+| `.local/cheer_rig_1026/witsawa_kriangkrai.yaml` | existing Studio export | done | independently parsed and matched all JSON angles/times | private, uncommitted |
 | `.local/cheer_rig_1026/come_and_cheer.blend` | speed-limited editable rig | done | native render pass | private, uncommitted |
 | `.local/cheer_rig_1026/witsawa_kriangkrai.blend` | speed-limited editable rig | done | native render pass | private, uncommitted |
 | `.local/cheer_rig_1026/come_and_cheer_reference.blend` | reference editable rig | done | native render pass | private, uncommitted |
 | `.local/cheer_rig_1026/witsawa_kriangkrai_reference.blend` | reference editable rig | done | native render pass | private, uncommitted |
-| `nong/main_python_set_nong/projects/cheer_come_and_cheer_20261026.json` | new user project | pending | absent before save | private, uncommitted |
-| `nong/main_python_set_nong/projects/cheer_witsawa_kriangkrai_20261026.json` | new user project | pending | absent before save | private, uncommitted |
-| `nong/main_python_set_nong/sequences/cheer_come_and_cheer_20261026.yaml` | new user sequence | pending | absent before save | private, uncommitted |
-| `nong/main_python_set_nong/sequences/cheer_witsawa_kriangkrai_20261026.yaml` | new user sequence | pending | absent before save | private, uncommitted |
+| `nong/main_python_set_nong/projects/cheer_come_and_cheer_20261026.json` | new user project | done | new name, valid 10-joint JSON, no overwrite | private, uncommitted |
+| `nong/main_python_set_nong/projects/cheer_witsawa_kriangkrai_20261026.json` | new user project | done | new name, valid 10-joint JSON, no overwrite | private, uncommitted |
+| `nong/main_python_set_nong/sequences/cheer_come_and_cheer_20261026.yaml` | new user sequence | done | parsed format, no overwrite | private, uncommitted |
+| `nong/main_python_set_nong/sequences/cheer_witsawa_kriangkrai_20261026.yaml` | new user sequence | done | parsed format, no overwrite | private, uncommitted |
+
+Private exact per-file inventory including generated intermediates: .local/cheer_rig_1026/file_status.csv (5937 rows). Deliverable hashes: .local/cheer_rig_1026/manifest.json; independent results: .local/cheer_rig_1026/validation.json.
 
 ## Facts found
 - Studio pose_from_video.js:61 sets numPoses=1; ordinary UI cannot reliably handle group clips. vidBodyFrame:161 removes camera yaw for arm directions. Waist mapping uses camera-relative yaw so keep waist neutral for these reference clips.
@@ -54,9 +56,11 @@ Baseline: root had unrelated source/config/EXE/project/plan changes; preserve al
 - Extracted 1347/759 samples at 8 Hz; kept dance windows 5–163.375 and 5–89.875 s. Group corroboration in 502/337 samples. Original Studio fitter and 1-degree collision sampling reused without changing application files. Wire rounding corrected offline and rechecked.
 - Four Blender rigs created and rendered; two original-rhythm references plus two constrained to saved 60 deg/s peak. User MP3 cues contain 1 s prep silence for robot versions. No video/model files go to public Git.
 
+- Final validation passed: 1228 checked robot poses and every leg, peak-speed floors, HOME entries, YAML parity, four full decoded MP4s with audio, four native Blender rigs with 10 animated controls each. ZIP 16 deliverables, 54,613,911 bytes, CRC pass. Saved two new Studio projects and two YAMLs under claimed unique names.
+
 ## Next
-1. Complete compose/verify, save uniquely named projects, ZIP and validate archive.
-2. Final metadata checkpoint and plan completion; deliver local previews/ZIP. Application QC not applicable: no app source change; no physical acceptance claim.
+1. No required work remains; deliver ZIP and reference previews. Optional future refinement can use the editable reference rigs.
+2. Full application QC not run: no application source changed. Real hardware remains untested, outside this artifact task.
 
 ## Blocked
-- No blocker. Optional question unanswered; use full dance windows and group corroboration. Physical testing outside this artifact task; no hardware commands sent.
+- None. Defaulted to full dance windows and group corroboration after optional question remained unanswered. No hardware acceptance claimed.
