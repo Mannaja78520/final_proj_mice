@@ -26,6 +26,14 @@ class PlayRoutes:
         # POST /api/play   {dev, steps:[{pose[10], t, hold}], loop, name, from_ms}
         # GET  /api/play   where the show is right now
         # POST /api/play/stop
+        if path == "/api/play/home":
+            if method != "POST":
+                return self.send_err("HOME needs POST", 405)
+            try:
+                data = json.loads(self.body().decode())
+                return self.send_json(_hub.show.home(data["dev"], data.get("expected_epoch")))
+            except Exception as error:
+                return self.send_err(error)
         if path == "/api/play" and method == "POST":
             try:
                 d = json.loads(self.body().decode())

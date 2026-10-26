@@ -48,6 +48,7 @@ class ShowPlayer:
         # across a join would deadlock.
         self._starting = threading.Lock()
         self._epoch = 0
+        self._motion_dev = ""
         self.thread = None
         self.stop_flag = threading.Event()
         self.dev = ""
@@ -159,6 +160,7 @@ class ShowPlayer:
             self._epoch += 1
             with self.lock:
                 self.dev, self.steps, self.loop, self.name = dev, steps, bool(loop), name
+                self._motion_dev = dev
                 self.music_stop_ms = (None if music_stop_ms is None
                                       else max(0, int(music_stop_ms)))
                 self.total_ms = self.total(steps)
@@ -189,6 +191,7 @@ class ShowPlayer:
     def _stop_locked(self, freeze=True, why=""):
         # Caller owns _starting; never hold self.lock while joining or doing IO.
         errors, stop_reply = [], ""
+        owner = self._motion_dev
         th = self.thread
         timer, self._music_timer = self._music_timer, None
         if timer and timer.is_alive():
@@ -204,14 +207,14 @@ class ShowPlayer:
             if th.is_alive():
                 errors.append("the previous show was still finishing")
         # Retry even after its worker exits: a prior ERR/timeout is not a STOP ack.
-        if freeze and self.dev:
+        if freeze and owner:
             try:
-                stop_reply = str(self._say("STOP") or "").strip()
+                stop_reply = str(self._say_to(owner, "STOP") or "").strip()
                 if not re.match(r"^OK(?:\s|$)", stop_reply):
                     errors.append(stop_reply or "the board did not acknowledge STOP")
             except Exception as error:
                 errors.append(str(error) or "the board did not answer STOP")
-        if self._had_music():
+        if owner and owner == self.dev and self._had_music():
             try:
                 self._say("PLAY STOP")
             except Exception:
@@ -222,10 +225,33 @@ class ShowPlayer:
         if errors or why:
             with self.lock:
                 self.error = "; ".join(errors) if errors else why
+        if freeze and not errors:
+            self._motion_dev = ""
         result = self.status()
-        result.update(ok=not errors, stop_ok=not errors, stop_reply=stop_reply,
+        result.update(ok=not errors, stop_ok=not errors, stop_reply=stop_reply, stop_dev=owner,
                       error="; ".join(errors))
         return result
+
+    def home(self, dev, expected_epoch):
+        """A participating HOME cannot arrive after a newer confirmed Stop."""
+        if isinstance(expected_epoch, bool) or not isinstance(expected_epoch, int):
+            return {"ok": False, "error": "HOME requires the current epoch"}
+        self._get_parse()(dev)
+        with self._starting:
+            if expected_epoch != self._epoch:
+                return {"ok": False, "error": "HOME was cancelled by a newer operation"}
+            if self.running() or self._motion_dev:
+                return {"ok": False, "error": "confirm Stop before HOME"}
+            self._epoch += 1
+            # Retain ownership even on ERR/empty/timeout: dispatch may have moved.
+            self._motion_dev = dev
+            try:
+                reply = str(self._say_to(dev, "HOME") or "").strip()
+                if not re.match(r"^OK(?:\s|$)", reply):
+                    return {"ok": False, "error": reply or "HOME was not acknowledged"}
+                return {"ok": True, "reply": reply, "epoch": self._epoch}
+            except Exception as error:
+                return {"ok": False, "error": str(error) or "HOME was not acknowledged"}
 
     # ---- the clock itself ----
     def _music_off(self, flag):
@@ -239,8 +265,11 @@ class ShowPlayer:
                 self.error = "music stop: %s" % e
 
     def _say(self, c):
+        return self._say_to(self.dev, c)
+
+    def _say_to(self, dev, c):
         cmd = self._get_cmd()
-        r = cmd(self.dev, c)
+        r = cmd(dev, c)
         with self.lock:
             self.last = r
         return r

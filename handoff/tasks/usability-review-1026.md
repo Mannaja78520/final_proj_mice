@@ -1,7 +1,7 @@
 # UX/UI usability sweep and residual quality follow-through
 
 Owner: codex:10260449-5ec2
-Updated: 2026-10-26T15:51:46.857739+07:00
+Updated: 2026-10-26T18:54:12.553549+07:00
 Branch: codex/usability-review-1026
 Tree: E:/final_proj/mice/code/.staging-usability-review-1026
 Last commit: this checkpoint; baseline3298e36
@@ -11,7 +11,7 @@ Plan: A48-19 (robot); related A48-13 (Lift/physical), A48-18 done
 Finish all own UI usability and residual software gaps. No duplicated Help in Tools (global entry exists). Continue autonomously; preserve root dirty files and immutable proof trees. Physical USER-NOTREADY.
 
 ## Doing now
-Step5 final review corrections: c2fff NOTAPPROVED (fence late HOME, send selected STOP independently, release confirmed historical owner). Design complete: authenticated epoch-fenced HOME, _motion_dev separate from history retained after ambiguous dispatch, independent concurrent stops/allSettled, fresh ack. Add exact regressions then re-review. Prior226/0 and29actual methods; visual17/136 overflow0 and corrected native keyboard17/17. Lift latest rebuild/full/sabotage/package/integration remain; no physical actions.
+Step5 corrections implemented: authenticated epoch-fenced HOME, separate motion ownership retained on ambiguity, independent selected/global STOP and aggregate acknowledgement. Focused260/0 + closure559/0; awaiting exact immutable implementation review. Next responsive/native build, deliberate regressions, stable full gate, private package, scoped integration. No physical actions.
 
 ## File status
 Current baseline-to-worktree Git paths reconciled; generated unrelated4outputs and other headers touched raw EOL only, no Git content delta. Private evidence under scratch/usability-review-1026 (not source/public).
@@ -34,7 +34,7 @@ Current baseline-to-worktree Git paths reconciled; generated unrelated4outputs a
 | apps/voice/app.js | UI/Lift/Help parity and regression | implemented; review/full pending | scratch/usability-review-1026/current-affected622/0; stop-order-r2 226/0 | uncommitted |
 | apps/voice/app.json | UI/Lift/Help parity and regression | implemented; review/full pending | scratch/usability-review-1026/current-affected622/0; stop-order-r2 226/0 | uncommitted |
 | apps/voice/index.html | UI/Lift/Help parity and regression | implemented; review/full pending | scratch/usability-review-1026/current-affected622/0; stop-order-r2 226/0 | uncommitted |
-| docs/shots/hub-tools-card.png | UI/Lift/Help parity and regression | implemented; review/full pending | scratch/usability-review-1026/refreshed screenshot; allpage17/136 overflow0; keyboard1fixture under diagnosis | uncommitted |
+| docs/shots/hub-tools-card.png | UI/Lift/Help parity and regression | implemented; review/full pending | scratch/usability-review-1026/refreshed screenshot; allpage17/136 overflow0; keyboard17/17 corrected fixture | uncommitted |
 | docs/systems/agents.md | Generated inventory | implemented; review/full pending | scratch/usability-review-1026/current-affected622/0; stop-order-r2 226/0 | uncommitted |
 | docs/systems/fw-core.md | Generated inventory | implemented; review/full pending | scratch/usability-review-1026/current-affected622/0; stop-order-r2 226/0 | uncommitted |
 | docs/systems/fw-lift.md | Generated inventory | implemented; review/full pending | scratch/usability-review-1026/current-affected622/0; stop-order-r2 226/0 | uncommitted |
@@ -100,7 +100,11 @@ Current baseline-to-worktree Git paths reconciled; generated unrelated4outputs a
 | qc/data/usability_dom.js | UI/Lift/Help parity and regression | implemented; review/full pending | scratch/usability-review-1026/current-affected622/0; stop-order-r2 226/0 | uncommitted |
 | qc/data/usability_hub.js | UI/Lift/Help parity and regression | implemented; review/full pending | scratch/usability-review-1026/current-affected622/0; stop-order-r2 226/0 | uncommitted |
 | shared/web/mice-ui.js | UI/Lift/Help parity and regression | implemented; review/full pending | scratch/usability-review-1026/current-affected622/0; stop-order-r2 226/0 | uncommitted |
-| main_python/hub_auth.py | Gated POST fenced HOME | pending | not run | uncommitted |
+| main_python/hub_auth.py | Gated POST fenced HOME | implemented; review/full pending | closure-affected559/0 | next checkpoint |
+| MiceHub.spec | One-file Help illustration parity / private package | implemented; review/full pending | closure-affected559/0 | next checkpoint |
+| main_python/main.py | One-file Help illustration parity / private package | implemented; review/full pending | closure-affected559/0 | next checkpoint |
+| qc/checks/check_onefile.py | One-file Help illustration parity / private package | implemented; review/full pending | closure-affected559/0 | next checkpoint |
+| dist/MiceHub.exe | One-file Help illustration parity / private package | implemented; review/full pending | closure-affected559/0 | next checkpoint |
 
 ## Facts found
 - Dynamic CPU/GPU/RAM/Voice/browser policy DONE in PR82/root3298e36; previous full8418/0 qualified4isolated retries+994inputs stable. Do not rework or reuse old receipt.
@@ -118,8 +122,8 @@ Allpage source candidates reproduced and repaired with same-step Help, UI method
 Task/A48-19 taken as own session; source/design and allpage/Lift consultations complete. Tools functional affected474/0 and8visual layouts+realEnter verified before final minor affordance polish. Initial failing fixture evidence preserved. No physical/runtime/model actions.
 
 ## Next
-1. Refresh Tools final proof/screenshot, deliberately regress and restore launcher guards. Address reproduced allpage UI findings through sources with tests/Help in same step.
-2. Separate Lift deadlines/fault/config/command/UI/native tests/build step; no hardware actions.
+1. Exact independent final review of current corrections; expanded responsive and latest Lift compile.
+2. Deliberate regressions and restored-green proof; frozen full gate; no hardware actions.
 3. Affected+deliberate regressions, independent exact final review, stable current full gate once final batch complete; safe isolated spec package/archive proof, scoped PR/rootintegration preserving dirty bytes. Do not stop at plan/report.
 
 ## Blocked

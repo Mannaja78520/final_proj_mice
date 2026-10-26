@@ -383,7 +383,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 
 - nothing
 
-## Checks that test it (177)
+## Checks that test it (178)
 
 - `check_advanced`
 - `check_amp_wiring`
@@ -480,6 +480,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `check_persistence`
 - `check_plan_live`
 - `check_play_saved`
+- `check_play_stop_order`
 - `check_promote_ask`
 - `check_promote_pipeline`
 - `check_qc_parallel`

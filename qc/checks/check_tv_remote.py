@@ -82,7 +82,7 @@ def run(t):
     main.Handler.route, main.modules_here = routed, module_list
     main.show.start = start_show
     main.show.status = lambda: {"running": True, "name": "second.yaml", "at_ms": 2500, "total_ms": 10000,
-                                "entering": False, "error": "", "epoch": 0}
+                                "entering": False, "error": "", "epoch": main.show._epoch}
     main.show.stop = lambda *a, **k: {"running": False, "error": "", "stop_ok": True, "stop_reply": "OK stopped", "dev": "usb:COM99", "epoch": 0}
     fake_serial.NONG.joints = [90, 140, 90, 90, 90, 40, 90, 90, 90, 90.5]
     try:

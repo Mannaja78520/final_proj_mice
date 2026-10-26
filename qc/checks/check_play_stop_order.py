@@ -106,6 +106,7 @@ def run(t):
     for reply in ("ERR locked", ""):
         p = player(lambda dev, cmd, reply=reply: reply)
         p.dev = "usb:COM99"
+        p._motion_dev = p.dev
         result = p.stop()
         t.ok(result["stop_ok"] is False and result["error"],
              "raw STOP %r cannot be mistaken for acknowledgement" % reply, result)
@@ -115,6 +116,7 @@ def run(t):
         raise OSError("serial port disconnected")
     p = player(broken)
     p.dev = "usb:COM99"
+    p._motion_dev = p.dev
     t.ok(p.stop()["stop_ok"] is False, "STOP exception is an explicit failed acknowledgement")
 
     class BusyWorker:
@@ -126,6 +128,7 @@ def run(t):
     p = player()
     old_worker = BusyWorker()
     p.thread, p.dev = old_worker, "usb:COM99"
+    p._motion_dev = p.dev
     result = p.stop()
     t.ok(not result["stop_ok"] and p.thread is old_worker,
          "join timeout preserves unresolved worker ownership", result)
@@ -141,7 +144,88 @@ def run(t):
 
     p = player(lambda dev, cmd: "OK stopped" if cmd == "STOP" else "OK audio stopped")
     p.dev = "usb:COM99"
+    p._motion_dev = p.dev
     p.steps = [{"cues": ["PLAY /music/demo.mp3"]}]
     result = p.stop()
     t.eq(result["stop_reply"], "OK stopped", "STOP proof is separate from later audio reply")
     t.eq(result["last"], "OK audio stopped", "later audio command cannot overwrite STOP acknowledgement field")
+
+    # Confirmed history is not unresolved ownership: disconnected A cannot block B.
+    calls, disconnected = [], [False]
+    def routed(dev, command):
+        calls.append((dev, command))
+        if dev == "usb:A" and disconnected[0]:
+            raise OSError("A disconnected")
+        return "OK accepted"
+    p = player(routed)
+    p.home("usb:A", p.status()["epoch"])
+    t.ok(p.stop()["stop_ok"] and not p._motion_dev, "confirmed HOME Stop releases actual motion ownership")
+    disconnected[0] = True
+    old_count = len(calls)
+    started = p.start("usb:B", STEPS)
+    t.ok(started.get("running") is True and not any(dev == "usb:A" for dev, _ in calls[old_count:]),
+         "confirmed/disconnected historical A does not block playing B", calls[old_count:])
+    p.stop()
+
+    # Transport-delayed HOME carries an epoch and never dispatches after Stop.
+    wire = []
+    p = player(lambda dev, command: wire.append((dev, command)) or "OK stopped")
+    epoch = p.status()["epoch"]
+    p.stop()
+    t.ok(p.home("usb:B", epoch).get("ok") is False and not wire,
+         "HOME delivered after newer Stop cannot dispatch")
+    for bad in (None, True, 0.5, "1"):
+        t.ok(p.home("usb:B", bad).get("ok") is False, "HOME refuses invalid epoch %r" % (bad,))
+
+    # HOME dispatch owns its target through timeout, then Stop reaches that target.
+    def lost_home(dev, command):
+        wire.append((dev, command))
+        if command == "HOME":
+            raise TimeoutError("HOME sent; reply lost")
+        return "OK stopped"
+    p = player(lost_home)
+    t.ok(not p.home("usb:B", p.status()["epoch"])["ok"] and p._motion_dev == "usb:B",
+         "ambiguous HOME retains ownership for safety")
+    result = p.stop()
+    t.ok(result["stop_ok"] and result["stop_dev"] == "usb:B" and not p._motion_dev,
+         "Stop after ambiguous HOME acknowledges and releases the actual target", result)
+
+    # Stop arriving during HOME IO waits the transition and sends STOP afterward.
+    entered, release, finished = (threading.Event() for _ in range(3))
+    order = []
+    def waiting_home(dev, command):
+        order.append(command)
+        if command == "HOME":
+            entered.set()
+            if not release.wait(5):
+                raise TimeoutError("fixture HOME release missing")
+        return "OK acknowledged"
+    p = player(waiting_home)
+    home_thread = threading.Thread(target=lambda: p.home("usb:B", p.status()["epoch"]))
+    stop_results = []
+    def concurrent_stop():
+        stop_results.append(p.stop())
+        finished.set()
+    stop_thread = threading.Thread(target=concurrent_stop)
+    home_thread.start()
+    try:
+        t.ok(entered.wait(3), "HOME is paused inside bounded dispatch")
+        stop_thread.start()
+        t.ok(not finished.wait(0.05), "Stop cannot report success while HOME IO owns transition")
+    finally:
+        release.set()
+        home_thread.join(5)
+        stop_thread.join(5)
+    t.ok(order == ["HOME", "STOP"] and stop_results and stop_results[0]["stop_ok"] and not p._motion_dev,
+         "Stop during HOME finishes with acknowledged STOP on the same target", order)
+
+    # The new exact route is login gated before it can touch any fake board.
+    import fake_serial
+    base, main = F.start_hub()
+    F.logout_qc()
+    before = sum(command == "HOME" for _, command in fake_serial.wire)
+    status, body = F.post(base + "/api/play/home", json.dumps({"dev": "usb:COM99", "expected_epoch": 0}).encode())
+    t.eq(status, 401, "fenced HOME requires authentication")
+    t.eq(sum(command == "HOME" for _, command in fake_serial.wire), before,
+         "unauthorized fenced HOME never reaches the module")
+    F.login(base)

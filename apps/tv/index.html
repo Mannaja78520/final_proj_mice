@@ -593,7 +593,10 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
       if (this.activeDev !== dev || generation !== this.motionGeneration) return false;
       this.poll();
       return true;
-    } catch (error) { this.actionError(error); return false; }
+    } catch (error) {
+      if (generation === this.motionGeneration && this.activeDev === dev) this.actionError(error);
+      return false;
+    }
   }
 
   async stop() {
@@ -606,13 +609,18 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
 
   async stopAction(dev) {
     try {
-      const status = await this.checked("/api/play/stop", {method:"POST"});
-      if (!status || status.running !== false || status.stop_ok !== true || !!status.error)
-        throw Error(status && status.error || 'ยังไม่ได้รับคำตอบว่าหยุดการแสดงแล้ว');
-      // The selected robot may differ from the clock's last target (or none).
-      if (dev && (status.dev !== dev || !/^OK(?:\s|$)/.test(status.stop_reply || ''))) {
-        await this.boardCommand(dev, "STOP");
-      }
+      // Neither failure may skip stopping the other target. Keep the barrier
+      // pending until the clock and the selected board have both answered.
+      const attempts = await Promise.allSettled([
+        this.checked("/api/play/stop", {method:"POST"}).then(status => {
+          if (!status || status.running !== false || status.stop_ok !== true || !!status.error)
+            throw Error(status && status.error || 'ยังไม่ได้รับคำตอบว่าหยุดการแสดงแล้ว');
+          return status;
+        }),
+        dev ? this.boardCommand(dev, "STOP") : Promise.resolve()
+      ]);
+      const failures = attempts.filter(a => a.status === 'rejected').map(a => String(a.reason.message || a.reason));
+      if (failures.length) throw Error(failures.join(' · '));
       this.$("actionStat").textContent = '';
       this.poll();
       return true;
@@ -630,10 +638,16 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
     const stopped = this.stop(), generation = this.motionGeneration;
     if (!await stopped || generation !== this.motionGeneration || this.activeDev !== dev) return;
     try {
-      await this.boardCommand(dev, "HOME");
+      const clock = await this.checked("/api/play");
+      if (generation !== this.motionGeneration || this.activeDev !== dev) return;
+      if (!Number.isSafeInteger(clock.epoch)) throw Error('อ่านรุ่นคำสั่งไม่ได้ รีเฟรชแล้วลองใหม่');
+      await this.checked("/api/play/home", {method:"POST", body:{dev, expected_epoch:clock.epoch}});
+      if (generation !== this.motionGeneration || this.activeDev !== dev) return;
       this.$("nowSeq").textContent = "Saved HOME requested";
       this.poll();
-    } catch (error) { this.actionError(error); }
+    } catch (error) {
+      if (generation === this.motionGeneration && this.activeDev === dev) this.actionError(error);
+    }
   }
 
   async speak(text) {
