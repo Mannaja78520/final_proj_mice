@@ -9175,7 +9175,8 @@ class VideoMotionSmoother {
     if (!poses.length) return { poses: [], before: null, after: null };
     const cfg = this.config, before = VideoMotionSmoother.quality(poses, times);
     const out = [poses[0].slice()], velocity = poses[0].map(() => 0);
-    const reliable = i => frames[i]?.trusted !== false && frames[i]?.action !== 'uncertain' && frames[i]?.action !== 'hold';
+    const reliable = i => frames[i]?.trusted !== false && frames[i]?.action !== 'uncertain' &&
+      (frames[i]?.trusted === true || frames[i]?.body || frames[i]?.w);
     for (let i = 1; i < poses.length; i++) {
       const previous = out[i - 1], dt = Math.max(.001, (times[i] - times[i - 1]) / 1000);
       if (!reliable(i)) { out.push(previous.slice()); velocity.fill(0); continue; }
@@ -9195,7 +9196,9 @@ class VideoMotionSmoother {
           const w = s.weight * Math.min(1, cfg.outlierDegrees / Math.max(1, Math.abs(s.pose[j] - median)));
           sum += s.pose[j] * w; weight += w;
         }
-        const target = weight ? sum / weight : value;
+        // A trusted observed hold is a target to settle toward, not a command
+        // to freeze a partially filtered output before it arrives.
+        const target = frames[i]?.action === 'hold' ? value : weight ? sum / weight : value;
         let distance = target - previous[j];
         // Continuous damping retains slow intentional motion; a hard deadband
         // turns it into a series of small stops and jumps.
@@ -9246,6 +9249,43 @@ class VideoAppearanceDescriptor {
   static average(values) {
     const valid = values.filter(Boolean); if (!valid.length) return null;
     return valid[0].map((_, i) => valid.reduce((sum, row) => sum + row[i], 0) / valid.length);
+  }
+}
+// Rectangular Hungarian assignment: bounded polynomial work even when many
+// similar dancers and camera fragments make every local match ambiguous.
+class VideoRoutineAssignment {
+  static solve(matrix, forbiddenRow = -1, forbiddenColumn = -1) {
+    const rows = matrix.length, columns = matrix[0]?.length || 0, large = 1e12;
+    if (!rows) return { cost: 0, columns: [] };
+    if (columns < rows || matrix.some(row => row.length !== columns)) throw new Error('Incomplete routine assignment matrix');
+    const u = new Float64Array(rows + 1), v = new Float64Array(columns + 1);
+    const matched = new Int32Array(columns + 1), way = new Int32Array(columns + 1);
+    const value = (i, j) => (i === forbiddenRow && j === forbiddenColumn) || !Number.isFinite(matrix[i][j]) ? large : matrix[i][j];
+    for (let row = 1; row <= rows; row++) {
+      matched[0] = row;
+      const minimum = new Float64Array(columns + 1).fill(large), used = new Uint8Array(columns + 1);
+      let column = 0;
+      do {
+        used[column] = 1;
+        const current = matched[column]; let delta = large, next = 0;
+        for (let j = 1; j <= columns; j++) if (!used[j]) {
+          const cost = value(current - 1, j - 1) - u[current] - v[j];
+          if (cost < minimum[j]) { minimum[j] = cost; way[j] = column; }
+          if (minimum[j] < delta) { delta = minimum[j]; next = j; }
+        }
+        if (delta >= large / 2) return { cost: Infinity, columns: [] };
+        for (let j = 0; j <= columns; j++) {
+          if (used[j]) { u[matched[j]] += delta; v[j] -= delta; }
+          else minimum[j] -= delta;
+        }
+        column = next;
+      } while (matched[column]);
+      do { const previous = way[column]; matched[column] = matched[previous]; column = previous; } while (column);
+    }
+    const result = Array(rows).fill(-1);
+    for (let j = 1; j <= columns; j++) if (matched[j]) result[matched[j] - 1] = j - 1;
+    const cost = result.reduce((sum, column, row) => sum + value(row, column), 0);
+    return { cost: cost >= large / 2 ? Infinity : cost, columns: result };
   }
 }
 // Discover motion groups from the whole clip, rather than a single still or
@@ -9314,21 +9354,20 @@ class VideoRoutineDiscovery {
         const motion = this.joinCost(rows, r), look = VideoAppearanceDescriptor.distance(appearance, r.appearance);
         const cost = Number.isFinite(look) ? Math.min(Number.isFinite(motion) ? motion : this.config.newRoutineCost, this.config.newRoutineCost) * this.config.motionWeight + look * this.config.appearanceWeight : motion;
         return { routine: r, cost };
-      }).filter(c => c.cost < this.config.newRoutineCost).sort((a, b) => a.cost - b.cost).slice(0, 4)
+      }).filter(c => c.cost < this.config.newRoutineCost).sort((a, b) => a.cost - b.cost)
         .concat({ routine: null, cost: this.config.newRoutineCost });
     });
-    let best = Infinity, picked = [];
-    const search = (i, cost, used, path) => {
-      if (cost >= best) return;
-      if (i === groups.length) { best = cost; picked = path.slice(); return; }
-      for (const choice of choices[i]) if (!choice.routine || !used.has(choice.routine)) {
-        const next = new Set(used); if (choice.routine) next.add(choice.routine);
-        search(i + 1, cost + choice.cost, next, [...path, choice]);
-      }
-    };
-    search(0, 0, new Set(), []);
-    return picked.map((choice, i) => ({ ...choice, ambiguous: !!choice.routine && choices[i].some(c => c.routine !== choice.routine && c.cost - choice.cost < this.config.joinMarginDegrees) }));
+    const slots = new Map(routines.map((routine, i) => [routine, i]));
+    const matrix = choices.map((row, i) => {
+      const costs = Array(routines.length + groups.length).fill(Infinity);
+      for (const choice of row) costs[choice.routine ? slots.get(choice.routine) : routines.length + i] = choice.cost;
+      return costs;
+    });
+    const best = VideoRoutineAssignment.solve(matrix);
+    return best.columns.map((column, row) => ({ routine: routines[column] || null, cost: matrix[row][column],
+      ambiguous: column < routines.length && VideoRoutineAssignment.solve(matrix, row, column).cost - best.cost < this.config.joinMarginDegrees }));
   }
+
   classify(routines) {
     const distinct = [];
     for (const routine of routines) {
@@ -9381,7 +9420,7 @@ class VideoRoutineDiscovery {
           const old = routine.observations.get(row.index);
           // Select a real observation, never average different people.
           if (!old || row.actor.confidence > old.confidence) routine.observations.set(row.index, { ...row.actor,
-            associationUncertain: !!assignment?.ambiguous && row.t - first.t < this.config.cutHoldSeconds });
+            associationUncertain: !!assignment?.ambiguous });
           routine.people.add(row.actor.id);
         }
         routine.last = rows.at(-1);
@@ -9393,7 +9432,8 @@ class VideoRoutineDiscovery {
       const frames = this.frames.map((f, i) => {
         // Shared motion is supported by multiple people in THIS frame, not
         // backfilled from a later pose or averaged over incompatible dancers.
-        const actor = r.observations.get(i) || common.get(i);
+        const own = r.observations.get(i);
+        const actor = own?.associationUncertain ? common.get(i) || own : own || common.get(i);
         const state = policy.step(actor?.associationUncertain ? null : actor?.body || null, f.cut ? Math.max(.25, f.scene) : f.scene, f.cut, actor && actor.confidence >= VIDEO_FOLLOW.tracking.confidence ? 1 : 0);
         return { ...f, ...state, w: actor?.w || null, p: actor?.p || null, track: actor?.id || null };
       });
@@ -10301,6 +10341,7 @@ async function vidSaveRoutines() {
   try {
     for (const routine of vidRoutines.filter(r => r.kind === 'routine' && r.trustedCoverage >= VIDEO_FOLLOW.routines.minimumSaveCoverage)) {
       if (vidStop || generation !== vidGeneration) break;
+      $("vidRoutine").value = String(routine.id);
       vidFrames = routine.frames; vidRemake('fit');
       if (!vidMade?.keys.length) continue;
       setWorkName('video_' + stamp + '_routine_' + routine.id);

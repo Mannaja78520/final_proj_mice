@@ -557,6 +557,7 @@ async function vidSaveRoutines() {
   try {
     for (const routine of vidRoutines.filter(r => r.kind === 'routine' && r.trustedCoverage >= VIDEO_FOLLOW.routines.minimumSaveCoverage)) {
       if (vidStop || generation !== vidGeneration) break;
+      $("vidRoutine").value = String(routine.id);
       vidFrames = routine.frames; vidRemake('fit');
       if (!vidMade?.keys.length) continue;
       setWorkName('video_' + stamp + '_routine_' + routine.id);

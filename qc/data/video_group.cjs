@@ -16,7 +16,7 @@ function context() {
     Option:function(label,value){this.label=label;this.value=value;}});
   const run=s=>vm.runInContext(s,c);
   run('const $=id=>document.getElementById(id);');
-  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','yaml_export','video_body_motion','video_tracking','video_motion_smooth','video_appearance','video_routines','video_rig_fit','video_checked_playback'])run(read(name));
+  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','yaml_export','video_body_motion','video_tracking','video_motion_smooth','video_appearance','video_routine_assignment','video_routines','video_rig_fit','video_checked_playback'])run(read(name));
   const timeline=read('timeline');run(timeline.slice(timeline.indexOf('function easeKeys('),timeline.indexOf('\nfunction poseAt(')));
   const videoSource=read('pose_from_video');run(videoSource.slice(0,videoSource.lastIndexOf('\nvidFill();')));
   c.config=config;c.safe=safe;c.policy=policy;
@@ -126,6 +126,17 @@ if(require.main===module){
       {id:i<8?1:3,confidence:1,cx:.3,w:person(),body:a},{id:i<8?2:4,confidence:1,cx:.7,w:person(0,0,[0,0,0],true),body:b}]});
     const roles=d.finish();return roles.length===2&&roles.every(r=>r.frames.slice(8).every(f=>!f.trusted&&f.action==='uncertain'));
   })()`);
+  check('trusted still observations let the smoothed rig finish reaching the accepted target',`(()=>{
+    const start=RIG.home.slice(),target=start.slice();target[0]+=20;
+    const poses=Array.from({length:15},(_,i)=>(i?target:start).slice()),times=poses.map((_,i)=>i*100),frames=poses.map((_,i)=>({trusted:true,shot:0,action:i===0?'initial':i===1?'accept':'hold'}));
+    const output=new VideoMotionSmoother().apply(poses,times,frames).poses;
+    return Math.abs(output.at(-1)[0]-target[0])<.5&&output[1][0]<target[0];
+  })()`);
+  check('many similar performers use bounded exact global assignment',`(()=>{
+    const matrix=Array.from({length:30},(_,i)=>Array.from({length:60},(_,j)=>j===i?10:j===i+30?11:Infinity));
+    const best=VideoRoutineAssignment.solve(matrix),alternate=VideoRoutineAssignment.solve(matrix,0,0);
+    return best.cost===300&&best.columns.every((column,row)=>column===row)&&alternate.cost===301;
+  })()`);
   check('explicit performer overrides auto subject',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'fixed',dancer:'2'});const f=tr.step(result([{x:.5,w:person(0,0)},{x:.8,w:person(0,0,[0,0,0],true)}]),0,null,0);return f.track===2;})()`);
   check('camera cut does not create waist jump',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'cuts',dancer:'auto'});const a=tr.step(result([{x:.5,w:person(.3,.05)}]),0,null,0),b=tr.step(result([{x:.4,w:person(.3,.05,[.7,1.2,.2])}]),.1,null,.8);return Math.abs(a.waist-b.waist)<.02;})()`);
   check('hand boxes collide despite old clear wrist spacing',`(()=>{const G=StudioCollisionGeometry,A=[new THREE.Vector3(1,0,0),new THREE.Vector3(0,1,0),new THREE.Vector3(0,0,1)];return 40>2*R_WRIST+CLEAR&&G.boxesHit(G.box(new THREE.Vector3(),A,[17,23,2.5]),G.box(new THREE.Vector3(0,40,0),A,[17,23,2.5]),CLEAR);})()`);
@@ -216,6 +227,7 @@ if(require.main===module){
   check('clearing analysis resets any inherited video slowdown',`(()=>{const p={playbackRate:.1};vidCheckedPlayback.reset(p);return p.playbackRate===1;})()`);
   async function checkAsync(name,code){try{if(!(await run(code)))throw Error('assertion false');passed++;console.log('PASS '+name);}catch(e){failed++;console.log('FAIL '+name+': '+e.message);}}
   (async()=>{
+    run(read('video_page'));
     await checkAsync('pending seek resolves on mode cancellation without a media event',`(async()=>{
       const listeners=new Map(),video={currentTime:0,readyState:2,seeking:false,addEventListener(k,v){listeners.set(k,v);},removeEventListener(k){listeners.delete(k);}};
       vidStop=false;const pending=vidSeek(video,1,vidGeneration);vidModeChanged();
@@ -236,6 +248,18 @@ if(require.main===module){
       try{globalThis.askUnsaved=async()=>{vidGeneration++;return true;};const used=await vidUse('replace');return used===false&&keys.length===0;}
       finally{globalThis.askUnsaved=oldAsk;}
     })()`);
+    await checkAsync('each saved routine serializes its own choice and restores the batch selection',`(async()=>{
+      const oldUse=vidUse,oldRemake=vidRemake,oldSave=globalThis.saveAll,oldAsk=globalThis.askUnsaved,oldName=globalThis.setWorkName,oldSrc=vidSrc;
+      const selected=[];
+      try{
+        vidBusy=false;vidStop=false;vidSrc={kind:'file',name:'new_clip.mp4'};$('vidRoutine').value='auto';
+        vidRoutines=[{id:1,kind:'routine',trustedCoverage:1,frames:[]},{id:2,kind:'routine',trustedCoverage:1,frames:[]}];
+        globalThis.askUnsaved=async()=>true;globalThis.setWorkName=()=>{};
+        globalThis.saveAll=async()=>{selected.push(vidSettings().routine);return true;};
+        vidRemake=()=>{vidMade={keys:[{pose:RIG.home,t:1000}],videoMs:1000,handMiss:[0,0],kept:1};};vidUse=async()=>true;
+        await vidSaveRoutines();return selected.join(',')==='1,2'&&$('vidRoutine').value==='auto';
+      }finally{vidUse=oldUse;vidRemake=oldRemake;globalThis.saveAll=oldSave;globalThis.askUnsaved=oldAsk;globalThis.setWorkName=oldName;vidSrc=oldSrc;vidRoutines=[];}
+    })()`);
     await checkAsync('cancelled read cannot repopulate observations or fit new modes',`(async()=>{
       vidFrames=vidFit=vidMade=null;vidRead=async()=>{vidModeChanged();return[{t:0,w:person()}];};
       const result=await vidMake();return result===false&&vidFrames===null&&vidFit===null;
@@ -244,7 +268,6 @@ if(require.main===module){
       vidBusy=false;var saves=0;saveAll=async()=>{saves++;return true;};vidMake=async()=>{vidGeneration++;return true;};
       await vidMakeAndSave();return saves===0;
     })()`);
-    run(read('video_page'));
     await checkAsync('video tick displays a moving checked rig while source time remains flat',`(async()=>{
       const oldNow=vidCheckedPlayback.now,oldRaf=globalThis.requestAnimationFrame;
       const player=$('vidPlayer'),start=RIG.home.slice(),target=RIG.home.slice();target[0]+=10;

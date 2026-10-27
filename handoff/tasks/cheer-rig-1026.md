@@ -10,7 +10,7 @@ Plan: A48-21, fixes rejected A48-20 v1
 Follow two supplied group cheer videos with real waist/shrug, stable actor identity across camera changes, separate choreography, collision-aware paths and genuine supplementary RL. Deliver four checked editable rigs/previews and the Studio feature fix.
 
 ## Doing now
-Merged main023c644 into own r2 without conflicts. Affected587/0, native50/0, prerequisite firmware/network/fake checks236/0 passed; no QC driver active. Current TDD exposes2 association defects (49pass/2expectedfail): global uniqueness must compare complete assignments; ambiguous links cannot become trusted merely after.5s. Independent tracking review also found trusted holds freeze before filtered target settles and batch saves serialize wrong routine selection. Fix all four with regressions, then new affected/review/full gate. User said continue; same scope, no abandonment. Review attempt hit next provider limit20:01; findings retained, no approval claimed. Source/rig outputs not final; no promotion/hardware/services.
+Merged main023c644 into own r2 without conflicts. Affected587/0, native50/0, prerequisite firmware/network/fake checks236/0 passed; no QC driver active. Current TDD exposes2 association defects (49pass/2expectedfail): global uniqueness must compare complete assignments; ambiguous links cannot become trusted merely after.5s. Independent tracking review also found trusted holds freeze before filtered target settles and batch saves serialize wrong routine selection. Four regressions fixed; current native54/0 including bounded Hungarian solver. Strict association checks leave no full-clip eligible set in these uniform/cutting examples. Private OSNet x025 spike exported/verified (<1e-4 Torch/ONNX error),5872local descriptors; same-shot heldout matching high but cross-shot choreography remains ambiguous, so do NOT weaken trust or ship unproven model dependency. Implement automatic source-windowed scene-segment fallback for ambiguous/unqualified roles, with save/preview clocks and metadata aligned. Whole trustworthy routines still work for clearer future clips. Add polynomial global assignment to replace exponential search before final gate. User said continue; same scope, no abandonment. Review attempt hit next provider limit20:01; findings retained, no approval claimed. Source/rig outputs not final; no promotion/hardware/services.
 
 ## File status
 Exact owned source paths below. Private v1 is rejected and preserved, not completion evidence; old inventory/status is .local/cheer_rig_1027/task_previous.md. Private v2 files stay local; full exact inventory will accompany final validation.
@@ -48,6 +48,8 @@ Exact owned source paths below. Private v1 is rejected and preserved, not comple
 | docs/systems/agents.md | regenerated current task count after baseline merge | done | build, final QC pending | uncommitted |
 | docs/systems/qc.md | regenerated QC ownership count | done | build, final QC pending | uncommitted |
 | docs/systems/studio.md | new source module ownership | done | build, final QC pending | uncommitted |
+
+| nong/main_python_set_nong/web/app_parts/video_routine_assignment.js | bounded global matching solver | planned | not run | uncommitted |
 
 ## Facts found
 - v1 canonicalization destroyed raw hip/shoulder geometry; old reference previews bypassed full physical checks. All v2 previews use the exact checked exported sequence.

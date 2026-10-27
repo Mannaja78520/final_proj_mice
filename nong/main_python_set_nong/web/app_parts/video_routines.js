@@ -64,21 +64,20 @@ class VideoRoutineDiscovery {
         const motion = this.joinCost(rows, r), look = VideoAppearanceDescriptor.distance(appearance, r.appearance);
         const cost = Number.isFinite(look) ? Math.min(Number.isFinite(motion) ? motion : this.config.newRoutineCost, this.config.newRoutineCost) * this.config.motionWeight + look * this.config.appearanceWeight : motion;
         return { routine: r, cost };
-      }).filter(c => c.cost < this.config.newRoutineCost).sort((a, b) => a.cost - b.cost).slice(0, 4)
+      }).filter(c => c.cost < this.config.newRoutineCost).sort((a, b) => a.cost - b.cost)
         .concat({ routine: null, cost: this.config.newRoutineCost });
     });
-    let best = Infinity, picked = [];
-    const search = (i, cost, used, path) => {
-      if (cost >= best) return;
-      if (i === groups.length) { best = cost; picked = path.slice(); return; }
-      for (const choice of choices[i]) if (!choice.routine || !used.has(choice.routine)) {
-        const next = new Set(used); if (choice.routine) next.add(choice.routine);
-        search(i + 1, cost + choice.cost, next, [...path, choice]);
-      }
-    };
-    search(0, 0, new Set(), []);
-    return picked.map((choice, i) => ({ ...choice, ambiguous: !!choice.routine && choices[i].some(c => c.routine !== choice.routine && c.cost - choice.cost < this.config.joinMarginDegrees) }));
+    const slots = new Map(routines.map((routine, i) => [routine, i]));
+    const matrix = choices.map((row, i) => {
+      const costs = Array(routines.length + groups.length).fill(Infinity);
+      for (const choice of row) costs[choice.routine ? slots.get(choice.routine) : routines.length + i] = choice.cost;
+      return costs;
+    });
+    const best = VideoRoutineAssignment.solve(matrix);
+    return best.columns.map((column, row) => ({ routine: routines[column] || null, cost: matrix[row][column],
+      ambiguous: column < routines.length && VideoRoutineAssignment.solve(matrix, row, column).cost - best.cost < this.config.joinMarginDegrees }));
   }
+
   classify(routines) {
     const distinct = [];
     for (const routine of routines) {
@@ -131,7 +130,7 @@ class VideoRoutineDiscovery {
           const old = routine.observations.get(row.index);
           // Select a real observation, never average different people.
           if (!old || row.actor.confidence > old.confidence) routine.observations.set(row.index, { ...row.actor,
-            associationUncertain: !!assignment?.ambiguous && row.t - first.t < this.config.cutHoldSeconds });
+            associationUncertain: !!assignment?.ambiguous });
           routine.people.add(row.actor.id);
         }
         routine.last = rows.at(-1);
@@ -143,7 +142,8 @@ class VideoRoutineDiscovery {
       const frames = this.frames.map((f, i) => {
         // Shared motion is supported by multiple people in THIS frame, not
         // backfilled from a later pose or averaged over incompatible dancers.
-        const actor = r.observations.get(i) || common.get(i);
+        const own = r.observations.get(i);
+        const actor = own?.associationUncertain ? common.get(i) || own : own || common.get(i);
         const state = policy.step(actor?.associationUncertain ? null : actor?.body || null, f.cut ? Math.max(.25, f.scene) : f.scene, f.cut, actor && actor.confidence >= VIDEO_FOLLOW.tracking.confidence ? 1 : 0);
         return { ...f, ...state, w: actor?.w || null, p: actor?.p || null, track: actor?.id || null };
       });

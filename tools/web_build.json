@@ -40,6 +40,7 @@
       "video_body_motion.js",
       "video_motion_smooth.js",
       "video_appearance.js",
+      "video_routine_assignment.js",
       "video_routines.js",
       "video_tracking.js",
       "video_rig_fit.js",

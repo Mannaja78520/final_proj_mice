@@ -18,7 +18,8 @@ class VideoMotionSmoother {
     if (!poses.length) return { poses: [], before: null, after: null };
     const cfg = this.config, before = VideoMotionSmoother.quality(poses, times);
     const out = [poses[0].slice()], velocity = poses[0].map(() => 0);
-    const reliable = i => frames[i]?.trusted !== false && frames[i]?.action !== 'uncertain' && frames[i]?.action !== 'hold';
+    const reliable = i => frames[i]?.trusted !== false && frames[i]?.action !== 'uncertain' &&
+      (frames[i]?.trusted === true || frames[i]?.body || frames[i]?.w);
     for (let i = 1; i < poses.length; i++) {
       const previous = out[i - 1], dt = Math.max(.001, (times[i] - times[i - 1]) / 1000);
       if (!reliable(i)) { out.push(previous.slice()); velocity.fill(0); continue; }
@@ -38,7 +39,9 @@ class VideoMotionSmoother {
           const w = s.weight * Math.min(1, cfg.outlierDegrees / Math.max(1, Math.abs(s.pose[j] - median)));
           sum += s.pose[j] * w; weight += w;
         }
-        const target = weight ? sum / weight : value;
+        // A trusted observed hold is a target to settle toward, not a command
+        // to freeze a partially filtered output before it arrives.
+        const target = frames[i]?.action === 'hold' ? value : weight ? sum / weight : value;
         let distance = target - previous[j];
         // Continuous damping retains slow intentional motion; a hard deadband
         // turns it into a series of small stops and jumps.
