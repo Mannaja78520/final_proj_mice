@@ -3033,9 +3033,9 @@ class StudioCollisionGeometry {
 // Bodies are capsules along the arm segments (radii from the built-in
 // shapes) with a small safety margin. Checked for every keyframe AND along
 // the interpolated path between keyframes (collisions often happen mid-move).
-// Safety margin (mm): anything closer counts as a hit. 5 mm for servo
-// backlash (user 2026-10-27); the value is DATA, safe_path.json clearMm.
-let CLEAR = 5;
+// Safety margin (mm): anything closer counts as a hit. 10 mm for servo
+// backlash over shoulder + elbow (user 2026-10-27); DATA: safe_path.json clearMm.
+let CLEAR = 10;
 const R_ARM = 14, R_WRIST = 16, R_HEAD = 46;
 
 function distToBox(p, hx, hy, hz) { // 0 = inside the torso box
@@ -3164,8 +3164,8 @@ function checkCollisions(showAlert) {
 // in qc/checks/check_safe_path.py.
 let SAFE = {
   planner: "rrt-star",      // "straight" refuses; rrt-connect remains available
-  clearMm: 5,               // every check: closer than this is a hit (CLEAR)
-  musicGapMm: 12,           // extra gap at the music pace: fast moves cut corners (nong_sim)
+  clearMm: 10,              // every check: closer than this is a hit (CLEAR)
+  musicGapMm: 7,            // extra gap at the music pace: fast moves cut corners (nong_sim)
   checkDeg: 1,              // biggest joint change between two checked points
   stepDeg: 12,              // how far a tree grows per try
   goalBias: 0.2,

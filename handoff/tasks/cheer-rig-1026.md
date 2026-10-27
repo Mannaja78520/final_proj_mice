@@ -30,6 +30,12 @@ in the branch history; rows below are what this session changed on top.
 | qc/checks/check_nong_sim.py | sim FK == Studio scene on bent rigs, clock == minTime, hit/home | done | sabotage: after-turn and sense breaks fail | this checkpoint |
 | docs/systems.json, docs/systems/*.md | nong-sim system; rebuilt | done | systems build | this checkpoint |
 | docs/PLAN.html, docs/plan_state.js | A48-22 | done | plan.py | this checkpoint |
+| firmware NongModule.{h,cpp}, NongMath.h, Module.h, SequencePlayer.cpp, ConfigStore.cpp, nong hw .h, commands.json, test_main.cpp | A48-23 PACE MUSIC [N]/NORMAL, music_dps, moveFloor | done | native 45/45, mice_nong builds; check_contracts sabotage caught | WIP f8d742a.. |
+| studio app_parts: timing, state, yaml_export, pose_from_video, checked_motion, project_save_load, timeline, main_loop, rig_data, rig_setup_ui, safe_path, collisions, collision_shapes; new music_pace.js, servo_follow.js; servo_follow.json, safe_path.json (clearMm 5, musicGapMm 12), rig_default.json, html_parts sequence/setup, style.css, tools/web_build.json | A48-23/24 + 5 mm gap | done | check_music_pace 21/0 (sabotage 6 caught), check_safe_motion, check_video_* | WIP |
+| tools/nong_sim board_clock/kinematics/studio/world/play.py, record.py, config/nong_sim.json | pace N, hand boxes, shared servo model, recorder | done | check_nong_sim 12/0 (sabotage 2 caught) | WIP |
+| qc/checks check_music_pace (new), check_nong_sim, check_video_moves, check_safe_motion, check_contracts; qc/data/video_group.cjs | checks | done | ran | WIP |
+| main_python/web/help parts studio+commands, help.html; firmware/COMMANDS.md; docs/ref_data.js; docs/systems | help parity | done | check_ref, check_registries | WIP |
+| handoff/tasks/lab-day.md | A48-23 ramp test, A48-24 servo measure | done | n/a | WIP |
 
 ## Facts found
 - A48-23 pace: firmware NongModule PACE MUSIC [N] / NORMAL, paceCap() (NongModule.cpp ~271),
