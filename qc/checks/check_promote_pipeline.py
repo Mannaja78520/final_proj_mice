@@ -51,6 +51,14 @@ if __name__ == '__main__':
     return main, stage
 
 
+def _left(main):
+    """What a refused promote left in main. The empty .staging/ home the lock
+    lived in (A51-1) is not a copy; the lock itself or any file is."""
+    home = main / ".staging"
+    inside = list(home.iterdir()) if home.is_dir() else []
+    return [x for x in main.iterdir() if x != home] + inside
+
+
 def run(t):
     p = _load()
     with tempfile.TemporaryDirectory(prefix="mice-promote-test-") as folder:
@@ -60,7 +68,7 @@ def run(t):
             code = p.main(["--staging", str(p.STAGING)])
         t.eq(code, 1, "failed web build refuses promotion")
         t.ok(not (p.STAGING / "qc-ran").exists(), "failed build never starts QC")
-        t.ok(not list(p.MAIN.iterdir()), "failed build copies nothing and releases lock")
+        t.ok(not _left(p.MAIN), "failed build copies nothing and releases lock")
 
         p.MAIN, p.STAGING = _fixture(root / "generated")
         with mock.patch.object(p, "_plan"), contextlib.redirect_stdout(io.StringIO()):
@@ -85,7 +93,7 @@ def run(t):
         with mock.patch.object(p.subprocess, "run", side_effect=subprocess.TimeoutExpired([], 300)):
             t.ok(not p.already_green(p.STAGING), "fingerprint timeout rejects receipt")
 
-        lock = p.MAIN / ".staging-promotion.lock"
+        lock = p._book("promotion_lock", ".staging-promotion.lock")
         lock.mkdir()
         _write(lock / "owner.txt", "another-session")
         for flags in ([], ["--check"]):
@@ -114,7 +122,7 @@ def run(t):
             # --full: a scoped gate proves the tree by fingerprint instead of a receipt
             code = p.main(["--full", "--staging", str(p.STAGING)])
         t.eq(code, 1, "QC exit zero without exact receipt refuses promotion")
-        t.ok(not list(p.MAIN.iterdir()), "stale receipt copies nothing")
+        t.ok(not _left(p.MAIN), "stale receipt copies nothing")
 
         tree = root / "pruning"
         for name in ("keep.py", ".staging-other/nested/hidden.py", "node_modules/nested/hidden.js"):

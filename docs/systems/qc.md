@@ -20,7 +20,6 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 
 ## Files (363)
 
-- `.promote-manifest.json`
 - `promote.py`
 - `qc/README.md`
 - `qc/checks/check_accounts.py`
@@ -235,6 +234,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `qc/checks/check_responsive.py`
 - `qc/checks/check_rgb_pin.py`
 - `qc/checks/check_rig_presets.py`
+- `qc/checks/check_root_tidy.py`
 - `qc/checks/check_route_latency.py`
 - `qc/checks/check_rs485_census.py`
 - `qc/checks/check_rs485_frame.py`
@@ -392,7 +392,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 
 - nothing
 
-## Checks that test it (185)
+## Checks that test it (186)
 
 - `check_advanced`
 - `check_amp_wiring`
@@ -506,6 +506,7 @@ The QC suite, the gate (`promote.py`) and the tools that keep checks honest.
 - `check_resource_policy`
 - `check_resource_policy_browser`
 - `check_responsive`
+- `check_root_tidy`
 - `check_rs485_census`
 - `check_safe_motion`
 - `check_safe_path`

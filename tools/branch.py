@@ -2,7 +2,7 @@
 """One task, one branch, one working copy - and main is changed only by a merge.
 
     set MICE_AGENT=claude:09171042-a7db
-    python tools/branch.py start A0-24      main must be clean; makes .staging-A0-24-<session>
+    python tools/branch.py start A0-24      main must be clean; makes .staging/A0-24-<session>
     python tools/branch.py save  A0-24      commit the copy to task/A0-24-<session>
     python tools/branch.py check A0-24      would it merge into main? names the conflicts
     python tools/branch.py land  A0-24      gate, then fast-forward main to a merge commit
@@ -66,7 +66,11 @@ def who():
 
 def names(task, agent):
     session = agent.split(":", 1)[1]
-    return ".staging-%s-%s" % (task, session), "task/%s-%s" % (task, session)
+    old = ".staging-%s-%s" % (task, session)          # before A51-1, beside the root
+    if (REAL / old).is_dir():
+        return old, "task/%s-%s" % (task, session)
+    home = RepoLayout(REAL).data["staging"]["home"]   # now inside .staging/
+    return "%s/%s-%s" % (home, task, session), "task/%s-%s" % (task, session)
 
 
 def dirty(main):

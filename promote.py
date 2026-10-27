@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Staging workspace: work in a copy, promote to the real tree only when QC is green.
 
-    python promote.py --init      make/refresh code/.staging/ from the real tree
+    python promote.py --init      make/refresh .staging/main/ from the real tree
     python promote.py --check     run the FULL QC suite inside .staging
     python promote.py             --check, and copy back only if it passes
     python promote.py --diff      what would move, without moving it
@@ -42,14 +42,29 @@ for _out in (sys.stdout, sys.stderr):
                     # with a StringIO, which has no reconfigure at all
 
 MAIN = Path(__file__).resolve().parent
-# Which working copy to promote. `.staging` unless told otherwise, so two trees
-# can be worked and verified at the same time:
+
+
+def _layout():
+    """config/layout.json through tools/layout.py (A51-1), or None in a bare
+    test box that has neither: the old flat names below still work there."""
+    try:
+        sys.path.insert(0, str(MAIN / "tools"))
+        from layout import RepoLayout
+        return RepoLayout(MAIN)
+    except Exception:                                          # noqa: BLE001
+        return None
+
+
+LAYOUT = _layout()
+# Which working copy to promote. `.staging/main` unless told otherwise, so two
+# trees can be worked and verified at the same time:
 #
-#     python promote.py --staging .staging-ui
+#     python promote.py --staging ui          (= .staging/ui)
 #
-# Promoting stays SERIAL even so: both trees copy into the same real tree, and
-# two promotes touching one file is a lost edit.
-STAGING = MAIN / ".staging"
+# Every copy lives INSIDE .staging/ (user 2026-10-27: twenty .staging-* folders
+# had piled up at the root). An old .staging-xxx, or an old flat .staging,
+# is still found. Promoting stays SERIAL even so: both trees copy into the
+# same real tree, and two promotes touching one file is a lost edit.
 
 
 def rebuild_cmd():
@@ -69,11 +84,21 @@ def rebuild_cmd():
 
 
 def _pick_staging(name):
-    """Where the working copy is. A bare name is relative to the repo."""
-    if not name:
-        return MAIN / ".staging"
-    p = Path(name)
-    return p if p.is_absolute() else MAIN / name
+    """Where the working copy is: a bare task name goes in .staging/, a path
+    (or an old .staging-xxx name) is relative to the repo."""
+    if LAYOUT is not None:
+        return LAYOUT.rooted(MAIN).tree(name)
+    p = Path(name or ".staging")
+    return p if p.is_absolute() else MAIN / p
+
+
+def _book(key, legacy):
+    """A staging bookkeeping file: inside .staging/, not loose at the root.
+    Follows MAIN, which QC points at a throwaway box."""
+    return LAYOUT.rooted(MAIN).book(key) if LAYOUT is not None else MAIN / legacy
+
+
+STAGING = _pick_staging(None)
 
 # Never copied either way: build output, VCS, caches, the built exe (QC runs
 # main.py directly; the exe is rebuilt after promotion when main.py moved), and
@@ -88,6 +113,8 @@ def _pick_staging(name):
 # so a second working copy is skipped too. See the note there.
 SKIP_DIRS = {".git", ".pio", "__pycache__", "node_modules",
              ".vscode", "dist", "build",
+             # _out  what tools and tests write on one PC (config/layout.json)
+             "_out",
              # .claude  this machine's Claude Code settings and permissions.
              # Staging's copy is stale the moment it is made, and promoting it
              # put an old permissions file over the live one. Machine-local
@@ -174,8 +201,8 @@ def walk(root: Path):
 # keeps main's old time, so a later staging edit looked newer than another
 # session's promote. The .staging prefix keeps it out of walk() and QC's hash.
 BASE_NAME = ".staging-base.json"
-LANDED_LOG = ".staging-landed.jsonl"     # in MAIN: what each promote wrote, for watch_main.py
-TREES_LIST = ".staging-trees.txt"        # in MAIN: every working copy --init made
+LANDED_LOG = ".staging-landed.jsonl"     # in .staging/: what each promote wrote, for watch_main.py
+TREES_LIST = ".staging-trees.txt"        # in .staging/: every working copy --init made
 
 
 def load_base(tree=None):
@@ -217,7 +244,7 @@ def init(force=False):
         base[key] = file_hash(dst)
         copied += 1
     save_base(base)
-    listed = MAIN / TREES_LIST
+    listed = _book("trees", TREES_LIST)
     known = listed.read_text(encoding="utf-8").split("\n") if listed.is_file() else []
     if str(STAGING) not in known:
         with open(listed, "a", encoding="utf-8", newline="") as f:
@@ -414,7 +441,7 @@ def file_hash(path):
 
 @contextmanager
 def promotion_lock():
-    lock = MAIN / ".staging-promotion.lock"
+    lock = _book("promotion_lock", ".staging-promotion.lock")
     token = "%s:%s" % (os.getpid(), uuid.uuid4().hex)
     try:
         lock.mkdir()
@@ -453,7 +480,7 @@ def bridge(event, lines):
     shared mutex (docs/COORDINATION.md). Best effort: never blocks a promote."""
     if not (MAIN / "docs" / "BRIDGE.md").is_file():
         return                   # a throwaway tree (QC) has no BRIDGE to tell
-    lock = MAIN / ".staging-coordination.lock"
+    lock = _book("coordination_lock", ".staging-coordination.lock")
     who = os.environ.get("MICE_AGENT") or "unknown-session (set MICE_AGENT)"
     for _ in range(50):
         try:
@@ -603,7 +630,7 @@ def promote(full=False, only=None):
         return 1
     wrote = {rel.as_posix(): file_hash(STAGING / rel) for rel in changed + added}
     # Logged BEFORE the copy, so watch_main.py never reports this land as a direct write.
-    with open(MAIN / LANDED_LOG, "a", encoding="utf-8", newline="") as f:
+    with open(_book("landed", LANDED_LOG), "a", encoding="utf-8", newline="") as f:
         f.write(json.dumps({"when": time.strftime("%Y-%m-%d %H:%M:%S"), "tree": str(STAGING),
                             "who": os.environ.get("MICE_AGENT", ""), "files": wrote}) + "\n")
     base = load_base()
@@ -636,8 +663,8 @@ def main(argv):
                     help="land only these files (the gate still checks the whole staging tree)")
     ap.add_argument("--full", action="store_true",
                     help="run the whole QC suite even for a one-system change")
-    ap.add_argument("--staging", metavar="DIR", default=".staging",
-                    help="which working copy to use (default .staging) — a second one lets another change be verified at the same time")
+    ap.add_argument("--staging", metavar="TASK", default=None,
+                    help="which working copy to use: a task name lives in .staging/<task> (default .staging/main) — a second one lets another change be verified at the same time")
     ap.add_argument("--accept-main", nargs="+", metavar="PATH",
                     help="after merging main's version into staging, take main's current copy as the base")
     a = ap.parse_args(argv)

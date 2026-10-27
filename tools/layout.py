@@ -68,6 +68,46 @@ class RepoLayout:
                 top = p
         return top.parent if top is not None else path
 
+    def rooted(self, root):
+        """The same layout with another real root (a QC test box, or the
+        main a tool was handed): every path below follows it."""
+        other = object.__new__(RepoLayout)
+        other.__dict__.update(self.__dict__)
+        other.real = other.work = Path(root)
+        other.staging_home = other.real / self.data["staging"]["home"]
+        other.out_home = other.real / self.data["out"]["home"]
+        return other
+
+    # A flat .staging (before A51-1) is itself a tree, not a home of trees.
+    FLAT_SIGNS = ("promote.py", ".staging-base.json", "qc", "tools", "main_python")
+
+    @property
+    def flat_home(self):
+        """True while .staging is still one old flat working copy. New copies
+        then go beside it as .staging-<task>: a folder made INSIDE a flat
+        tree would be promoted as source."""
+        return any((self.staging_home / n).exists() for n in self.FLAT_SIGNS)
+
+    def trees(self):
+        """Every working copy folder: .staging/<task>, an old flat .staging,
+        and old .staging-xxx folders beside the root."""
+        found = []
+        home = self.staging_home
+        if self.flat_home:
+            found.append(home)
+        elif home.is_dir():
+            found += [d for d in home.iterdir() if d.is_dir()
+                      and not self.is_copy_part(d.name)]
+        found += [d for d in self.real.glob(self.prefix + "*")
+                  if d.is_dir() and d != home and not d.name.endswith(".lock")]
+        return sorted(found)
+
+    def books(self, key):
+        """Where a bookkeeping file is now, then where it was before A51-1."""
+        now = self.real / self.data["staging"]["books"][key]
+        old = self.real / now.name
+        return [now] if now == old else [now, old]
+
     def is_copy_part(self, name):
         """True for a working-copy folder or a staging bookkeeping file."""
         return str(name).startswith(self.prefix)
@@ -77,26 +117,26 @@ class RepoLayout:
         return self.work != self.real
 
     def tree(self, name=None):
-        """Where the working copy called name is. A path with a separator is
-        taken as given (relative to the root); a bare name goes in the home.
-        An old flat .staging (a tree, not a home) is still found."""
-        name = name or self.data["staging"]["default"]
-        p = Path(name)
+        """Where the working copy called name is. A bare task name goes in
+        the home (.staging/<task>); a path or an old .staging-xxx name is
+        relative to the root. An old flat .staging is still found."""
+        st = self.data["staging"]
+        p = Path(name or st["default"])
         if p.is_absolute():
             return p
+        if p.as_posix() in (st["home"], st["default"]):
+            return self.staging_home if self.flat_home else self.staging_home / st["default"]
         if len(p.parts) > 1 or p.name.startswith(self.prefix):
-            legacy = self.real / p
-            if p.name == self.data["staging"]["home"] and (legacy / "promote.py").is_file():
-                return legacy                       # old flat .staging tree
-            if p.name == self.data["staging"]["home"]:
-                return self.staging_home / self.data["staging"]["default"]
-            return legacy
-        return self.staging_home / name
+            return self.real / p
+        if self.flat_home:
+            return self.real / ("%s-%s" % (st["home"], p))
+        return self.staging_home / p
 
     def book(self, key):
         """A staging bookkeeping file (landed log, tree list, locks)."""
-        self.staging_home.mkdir(parents=True, exist_ok=True)
-        return self.staging_home / self.data["staging"]["books"][key]
+        path = self.real / self.data["staging"]["books"][key]
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return path
 
     def out(self, kind):
         if kind not in self.data["out"]["kinds"]:

@@ -6,7 +6,7 @@
               "tts_cache/", "reports/", "scratch/", "_video_test/", "sequences/", "projects/", "shows/",
               "models/", "vendor/", "APPDATA/", ".staging", "firmware/lib/",
               "firmware/sd_card_example/", "scient_test/results/", ".unsnooze/",
-              "docs/systems/", ".local/",
+              "docs/systems/", ".local/", "_out/",
               "hub_auth.json."],
   "excludeNames": ["promt.md", "PATCHES.md", "hub_auth.json", "hub_password.txt",
                    "faces_login.json", "known_hubs.json", "settings_shared.json",
@@ -174,7 +174,7 @@
      "depends": []},
 
     {"id": "qc", "summary": "The QC suite, its gate and the promotion tool.",
-     "files": ["qc/", "promote.py", ".promote-manifest.json", "tools/sabotage.py", "tools/land.py", "tools/snapshot.py",
+     "files": ["qc/", "promote.py", "tools/sabotage.py", "tools/land.py", "tools/snapshot.py",
                "tools/save_code_patch.py", "tools/watch_main.py"],
      "depends": []},
 
@@ -188,13 +188,14 @@
                "tools/local_panel.py", "tools/ai_brief.txt", "tools/next_batch.py",
                "tools/branch.py", "tools/make_app_branch.py", "tools/livedoc.py",
                "tools/reports.py", "tools/make_diary.py", "tools/systems.py",
-               "CLAUDE.md", "AGENTS.md", "GEMINI.md", "README.md", "CHANGELOG.md",
-               "NEXT_SESSION.*", "docs/systems.json",
+               "CLAUDE.md", "AGENTS.md", "GEMINI.md", "README.md",
+               "docs/systems.json", "config/layout.json", "tools/layout.py", "docs/LAYOUT.md",
                "tools/handoff.py", "HANDOFF.md", "handoff/"],
      "depends": []},
 
     {"id": "bench", "summary": "Scripts for real boards on the bench.",
-     "files": ["tools/bench_*.py", "tools/rs485_test.py", "bench_*.py", "tools/make_app_shortcuts.py"],
+     "files": ["tools/bench_*.py", "tools/rs485_test.py", "tools/bench/", "tools/make_app_shortcuts.py",
+               "tools/build_exe.bat"],
      "depends": ["fw-core"]},
 
     {"id": "docs", "summary": "Plan, references, thesis sources, architecture notes, panel reports.",
@@ -204,7 +205,7 @@
 
     {"id": "misc", "summary": "One-off scripts and experiments kept for reference, and any loose file at the top of the tree. Move a file out of here when it becomes part of a system.",
      "listFiles": false,
-     "files": ["scient_test/", "auto_click/", "*"],
+     "files": ["scient_test/", "tools/auto_click/", "*"],
      "depends": []}
   ]
 }

@@ -38,7 +38,7 @@ import qc as F  # noqa: E402
 # through that the suite has not actually seen.
 RECEIPT = CODE / ".qc-receipt.json"
 
-SKIP_PARTS = {".git", ".pio", "__pycache__", ".staging", "node_modules",
+SKIP_PARTS = {".git", ".pio", "__pycache__", ".staging", "_out", "node_modules",
               ".vscode", ".claude", ".unsnooze", "dist", "build", "patches",
               "patches_code", "generated", "tts_cache", "reports",
               "projects", "sequences", "shows", ".local", "scratch"}
@@ -319,13 +319,13 @@ def main(argv):
     exact = None
     if "--changed" in argv:
         import scope
-        if not CODE.name.startswith(".staging"):
-            print("--changed needs a working copy (.staging*) to compare with")
+        if not F.LAYOUT.in_copy:
+            print("--changed needs a working copy (.staging/<task>) to compare with")
             return 2
         # promote.py --only names the files being landed: scope those, not
         # every difference the shared staging happens to carry (2026-09-17)
         only = [x for x in (os.environ.get("MICE_QC_ONLY") or "").split("|") if x]
-        got = scope.decide(CODE, only or scope.changed(CODE, CODE.parent))
+        got = scope.decide(CODE, only or scope.changed(CODE, F.REAL))
         print("%sSCOPE:%s %s -> %s" % (B, D, got[-1], got[0] if got[0] != "checks"
                                         else "%d checks" % len(got[1])), flush=True)
         if got[0] == "quick":

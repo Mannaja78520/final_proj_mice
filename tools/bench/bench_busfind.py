@@ -11,8 +11,8 @@ cannot prove (a lone console hears itself: bridge() answers self-addressed
 and broadcast frames locally, so silence there means nothing).
 
 Usage:
-    python bench_busfind.py                every COM port
-    python bench_busfind.py COM26 COM29    just these
+    python tools/bench/bench_busfind.py                every COM port
+    python tools/bench/bench_busfind.py COM26 COM29    just these
 
 CLOSE THE HUB FIRST - it owns the ports, and an open port here fails anyway.
 """

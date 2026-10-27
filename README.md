@@ -23,9 +23,15 @@ Module types today:
 firmware/                 ESP32 firmware — one binary for every module type
 main_python/              Mice Control Hub — the PC program you start first
 nong/main_python_set_nong Nong Studio — 3D pose & sequence editor for the humanoid
+apps/                     apps the hub serves (voice, faces, gacha, camera, ...)
+config/                   settings and registries, one JSON per subject
+tools/ qc/ docs/          developer tools, the QC suite, plan and system headers
 scient_test/              the experiment plan: tests, tools, measured results
-auto_click/               small standalone screen-automation helper (unrelated to the robot)
 ```
+
+The full map of every root folder is [docs/LAYOUT.md](docs/LAYOUT.md), generated
+from `config/layout.json`. Nothing new goes loose at the root: working copies
+live in `.staging/<task>`, tool output in `_out/` (QC check_root_tidy).
 
 Each folder has its own README with the full detail. Start with the one you
 need:
@@ -90,7 +96,7 @@ module, and RS485 / WiFi / USB each on their own — plus `tools/bench.py` for
 latency and loss measurements and `results/*.csv` sheets to fill in. Nothing in
 here modifies the robot's code.
 
-### [auto_click/](auto_click/)
+### [tools/auto_click/](tools/auto_click/)
 
 A standalone `pyautogui` script that waits for a time, finds a button image on
 screen and clicks it. Not part of the robot; kept here because it lives with

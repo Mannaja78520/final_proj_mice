@@ -37,7 +37,7 @@ def real_root():
     skip rule existed, and this check has been reading them ever since.
     Found 2026-09-10, in the first tree made after that rule.
     """
-    return F.CODE.parent if F.CODE.name.startswith(".staging") else F.CODE
+    return F.REAL
 
 
 def run(t):

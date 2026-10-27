@@ -94,7 +94,7 @@ New file or system: add it to `docs/systems.json`, then `python tools/systems.py
 ## Rules that already cost real work
 
 1. The code is the source of truth — not the plan, a comment, or the user's description.
-2. Work in `code/.staging`. Promote with `python E:/final_proj/mice/code/promote.py`
+2. Work in `.staging/<task>` (default `.staging/main`; map: docs/LAYOUT.md). Promote with `python E:/final_proj/mice/code/promote.py`
    (runs full QC, copies back only when green). Always the absolute path.
 3. NEVER run `promote.py --init` while staging holds unpromoted work.
 4. Every fix needs a QC check, proven by breaking the fix:

@@ -9,11 +9,11 @@ You run checks for the Mice project and report the result. You never edit files.
 
 Commands (always by absolute path; the tree comes from the script's location):
 
-    python E:/final_proj/mice/code/.staging/qc/run_qc.py --quick
-    python E:/final_proj/mice/code/.staging/qc/run_qc.py
+    python E:/final_proj/mice/code/.staging/main/qc/run_qc.py --quick
+    python E:/final_proj/mice/code/.staging/main/qc/run_qc.py
     python E:/final_proj/mice/code/promote.py
     python E:/final_proj/mice/code/tools/land.py --done <ids>
-    pio run -e mice_nong -e mice_cam -e mice_lift -e mice_blank   (in .staging/firmware)
+    pio run -e mice_nong -e mice_cam -e mice_lift -e mice_blank   (in .staging/main/firmware)
 
 Rules:
 

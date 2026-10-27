@@ -7,8 +7,9 @@
     "home": ".staging",
     "default": "main",
     "books": {
-      "landed": ".staging-landed.jsonl",
-      "trees": ".staging-trees.txt",
+      "_why": "Paths from the real root. The two lasting files live in the home; the three LOCKS stay at the root on purpose: they exist only while held, and agents, old branches and docs/COORDINATION.md take the coordination lock by that exact path - moving it would let two writers in at once.",
+      "landed": ".staging/.staging-landed.jsonl",
+      "trees": ".staging/.staging-trees.txt",
       "promotion_lock": ".staging-promotion.lock",
       "coordination_lock": ".staging-coordination.lock",
       "watch_lock": ".staging-watch.lock"
