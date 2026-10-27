@@ -84,7 +84,8 @@ class StudioCollisionGeometry {
       return "the physical collision sizes are invalid";
     const extra = RIG.extraClearanceMm ?? 0;
     if (!Number.isFinite(extra) || extra < 0) return "the extra safety gap is invalid";
-    const gap = CLEAR + extra, { torso, head, arms } = this.snapshot(p);
+    // the music pace (no speed cap) lets servo lag cut corners: SAFE.musicGapMm
+    const gap = CLEAR + extra + (planPace() === "music" ? SAFE.musicGapMm : 0), { torso, head, arms } = this.snapshot(p);
     const sphereBox = (s, box) => this.pointBox(s.at, box) < s.r + gap;
     const sphereBar = (s, bar) => segSegDist(s.at, s.at, bar.a, bar.b) < s.r + bar.r + gap;
     for (const a of arms) {

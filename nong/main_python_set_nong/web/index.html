@@ -256,6 +256,18 @@
         <button id="saveSafeDps" class="secondary" onclick="saveSafetySpeed()" disabled>Save to robot</button>
       </div>
       <p id="safeSpeedStat" class="mini" role="status">Studio plans at 60 °/s. Connect to read the robot's own limit. A saved change needs a restart.</p>
+      <!-- A48-23: a sequence that follows its song has its own limit (music_pace.js) -->
+      <div class="row" id="musicPaceRow" hidden><label class="lbl" for="musicDpsSeq">Speed limit with music</label>
+        <input type="number" id="musicDpsSeq" min="0" max="1000" step="1" style="width:70px"
+               onchange="musicPace.changed()"
+               title="how fast this sequence may move while it follows its song. Empty = the robot's own setting; 0 = as fast as the servos can go. Only this sequence, only while its music plays; everything else keeps the Peak speed limit. Start low on the real robot and raise it step by step."> °/s
+        <span class="mini">this sequence, with its song</span>
+      </div>
+      <p id="musicFitStat" class="mini" role="status" hidden></p>
+      <div id="musicFitList" class="row wrap"></div>
+      <!-- A48-24: the real servos answer late; show where (servo_follow.js) -->
+      <div class="row"><label><input type="checkbox" id="servoView"> Play like the real servos</label></div>
+      <p id="servoStat" class="mini" role="status"></p>
       <div class="mini">time between keyframes = biggest joint change ÷ show speed.
         Three things can make a move longer than that, and the move's own line
         says which one did it:
@@ -674,7 +686,7 @@
           onchange="setSafetyClearance(this.value)" style="width:90px">
         <span>mm</span>
       </div>
-      <div class="mini">Added to the usual 4 mm gap between arms, body, head and hands.
+      <div class="mini">Added to the usual 10 mm gap between arms, body, head and hands (room for servo backlash).
         Increase this for clothing, allowing for both layers where parts approach.
         The planner refuses a move if it cannot keep the gap.</div>
       <div id="clearanceStat" class="statline" role="status"></div>

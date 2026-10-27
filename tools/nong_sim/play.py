@@ -40,7 +40,7 @@ def run(world, seconds=None, on_frame=None):
     """Play every robot to the end; returns one report per robot."""
     world.reset()
     end = seconds or world.length() + 0.5
-    rows = [{"name": r["name"], "lagMs": round(r["lag"] * 1000), "worstFollowDeg": 0.0, "worstJoint": None,
+    rows = [{"name": r["name"], "lagScale": round(r["lagScale"], 2), "worstFollowDeg": 0.0, "worstJoint": None,
              "hits": [], "nearMisses": 0, "closestMm": None, "actual": []} for r in world.robots]
     seen = set()
     while world.t < end:
@@ -129,8 +129,8 @@ def main(argv=None):
     if a.report:
         a.report.write_bytes(text.encode("utf-8"))
     for row in report:
-        print("%-24s lag %3d ms | %d hits, %d near | behind music %.2f s (%d steps lengthened) | worst follow %.1f deg %s"
-              % (row["name"], row["lagMs"], len(row["hits"]), row["nearMisses"], row["behindMusicSeconds"],
+        print("%-24s lag x%.2f | %d hits, %d near | behind music %.2f s (%d steps lengthened) | worst follow %.1f deg %s"
+              % (row["name"], row["lagScale"], len(row["hits"]), row["nearMisses"], row["behindMusicSeconds"],
                  row["lengthenedSteps"], row["worstFollowDeg"], row["worstJoint"] or ""))
     return 1 if any(r["hits"] for r in report) else 0
 

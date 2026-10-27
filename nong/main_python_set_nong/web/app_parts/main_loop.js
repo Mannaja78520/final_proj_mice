@@ -81,7 +81,7 @@ function playTick() {
       keepAwake(false);                    // the show is over: let the tab idle
     }
   }
-  pose = poseAt(playT).map((v, i) => clampJ(i, v));
+  pose = servoPlayPose(poseAt(playT), dt).map((v, i) => clampJ(i, v));
   // DRAW only from the animation frame. Both rAF and the keep-awake interval
   // call this, so the picture was being redrawn ~76 times a second when the
   // screen can only show 60 — the extra passes were pure cost. Time still

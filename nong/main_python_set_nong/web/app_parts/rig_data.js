@@ -84,6 +84,11 @@ const DEFAULT_RIG = {
   pulseMin:   [500, 500, 500, 500, 500, 500, 500, 500, 500, 500],
   pulseMax:   [2500, 2500, 2400, 2400, 2500, 2500, 2400, 2400, 2500, 2400],
   servoMaxDps:[375, 375, 400, 400, 375, 375, 400, 400, 200, 400],
+  // How the horn FOLLOWS a target (servo_follow.js, A48-24): its answer delay
+  // in ms and its acceleration in °/s² of the joint. Guesses until measured on
+  // the bench (lab-day.md); they only change Studio's picture and the sim.
+  servoLagMs: [40, 40, 40, 40, 40, 40, 40, 40, 60, 40],
+  servoAccel: [3000, 3000, 4000, 4000, 3000, 3000, 4000, 4000, 1500, 4000],
   // SERVO travel per joint: how far the SERVO turns end to end. 180 for a
   // normal hobby servo, 270 for a wide-angle one. This is NOT the joint's
   // range (that is min/max above) — fitting a 270 servo is this one number,
@@ -149,7 +154,7 @@ function mergeRig(saved) {
   if (!Array.isArray(r.home) && Array.isArray(r.neutral)) r.home = [...r.neutral];
   ["zero", "min", "max", "axis", "invert", "neutral", "home", "offset",
    "gearPinion", "gearGear", "pulseMin", "pulseMax", "servoMaxDps", "servoRange",
-   "frameHz"].forEach(fixLen);
+   "frameHz", "servoLagMs", "servoAccel"].forEach(fixLen);
   // The SHRUG 4-bar calibration. An empty list means "not measured", which is
   // the old symmetric behaviour — so every rig saved before this keeps looking
   // exactly as it did until you actually measure the linkage.

@@ -104,6 +104,17 @@ inline uint32_t safeDuration(const float from[], const float to[], int n,
     return ms > minMoveMs ? ms : minMoveMs;
 }
 
+// The floor a move really gets: the servos' own limit, and the peak-speed cap
+// when there is one. capDps <= 0 = no cap (PACE MUSIC with music_dps 0, user
+// 2026-10-27): only each servo's max_dps holds the arm then.
+inline uint32_t moveFloor(const float from[], const float to[], const float maxDps[],
+                          int n, uint32_t minMoveMs, float capDps) {
+    const uint32_t phys = minDuration(from, to, maxDps, n, minMoveMs);
+    if (capDps <= 0.0f) return phys;
+    const uint32_t safe = safeDuration(from, to, n, capDps, minMoveMs);
+    return safe > phys ? safe : phys;
+}
+
 // ---- cosine ease, the shape of every move -----------------------------
 inline float ease(float t) {
     if (t <= 0.0f) return 0.0f;

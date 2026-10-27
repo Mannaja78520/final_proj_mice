@@ -109,6 +109,11 @@
      "checks": ["check_nong_sim"],
      "depends": ["studio"]},
 
+    {"id": "rl-compare", "summary": "Separate experiment: RL imitation policy vs Studio's video planner on the cheer v2 dances, same servo model and collision gap, scores + side-by-side videos (tools/rl_compare, user 2026-10-27). Nothing else needs it.",
+     "files": ["tools/rl_compare/", "config/rl_compare.json", "docs/experiments/"],
+     "checks": ["check_rl_compare"],
+     "depends": ["studio", "nong-sim"]},
+
     {"id": "app-voice", "summary": "Voice helper: speech in, answers, speech out.",
      "files": ["apps/voice/", "config/voice.json", "config/voice_intents.json", "config/voice_providers.json", "config/voice_styles.json", "config/voice_profiles.json", "config/voice_profiles/", "config/voice_people.json", "llm/", "qc/data/voice_conversation.mjs"],
      "checks": ["check_voice*"],

@@ -130,6 +130,7 @@ function selectKey(i) {
     livePause(); stopRobotSequence(); keepAwake(false);
   }
   token=seekToken;
+  servoPlay = null;          // the real-servo picture starts again where the clock lands
   selKey = i;
   let travel = 0;
   if (keys[i]) {
@@ -444,6 +445,11 @@ function renderTimeline() {
     mn.appendChild(mus);
     el.append(bar, idx, pv, tr, mn);
     if (musOpen.has(i) || keyCue(k, "play")) el.append(musicRow(k, i));
+    const lag = servoLag.forKey(i);   // the real servos trail this move (servo_follow.js)
+    if (lag && lag.level) {
+      el.classList.add("lag" + lag.level);
+      el.title = `the real servos fall ${Math.round(lag.deg)}° behind here (${JOINT_LABELS[lag.joint] || "joint " + (lag.joint + 1)})`;
+    }
     if (k.bad) { // collision found by checkCollisions(): mark the chip red
       el.classList.add("bad");
       const b = document.createElement("div");
@@ -454,6 +460,8 @@ function renderTimeline() {
     box.appendChild(el);
   });
   $("tlTime").textContent = (playT / 1000).toFixed(1) + "s / " + (totalMs() / 1000).toFixed(1) + "s";
+  musicPace.render();
+  if ($("servoStat")) $("servoStat").textContent = servoLag.summary();
   renderTimeBar();
 }
 

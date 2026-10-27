@@ -46,6 +46,7 @@ void NongModule::applySettings(JsonVariant s) {
 
     speedDps_ = s["speed_dps"] | speedDps_;
     safeDps_  = s["safe_dps"] | safeDps_;
+    musicDps_ = s["music_dps"] | musicDps_;
     link_     = (s["link"] | (link_ ? 1 : 0)) != 0;
     peer_     = s["peer"] | peer_;
     if (peer_ < 0 || peer_ > 247) peer_ = 0;
@@ -63,6 +64,9 @@ void NongModule::applySettings(JsonVariant s) {
     if (speedDps_ > slowestMaxDps()) speedDps_ = slowestMaxDps();
     if (!(safeDps_ >= 5)) safeDps_ = 5;               // NaN too
     if (safeDps_ > slowestMaxDps()) safeDps_ = slowestMaxDps();
+    if (!(musicDps_ >= 0)) musicDps_ = 0;             // NaN too; 0 = no music cap
+    if (musicDps_ > 0 && musicDps_ < 5) musicDps_ = 5;
+    if (musicDps_ > slowestMaxDps()) musicDps_ = slowestMaxDps();
     reclamp();
 }
 
@@ -262,6 +266,23 @@ float NongModule::clampJoint(int i, float deg) const {
 }
 
 
+// A show ending (or the next file starting) ends its PACE MUSIC, here and on
+// the partner board, so the fast pace can never outlive the music it was for.
+void NongModule::showRunning(bool on) {
+    if (on || !musicPace_) return;
+    musicPace_ = false;
+    paceDps_ = -1.0f;
+    forward("PACE NORMAL");
+}
+
+// A file may name its own music cap (PACE MUSIC 120, set per sequence in
+// Studio); without one the saved music_dps holds. Same bounds as music_dps.
+float NongModule::paceCap() const {
+    float c = paceDps_ >= 0 ? paceDps_ : musicDps_;
+    if (c > 0 && c < 5) c = 5;
+    return c > slowestMaxDps() ? slowestMaxDps() : c;
+}
+
 uint32_t NongModule::durationFor(const float tgt[N]) const {
     return nongmath::durationFor(cur_, tgt, N, speedDps_, NONG_MIN_MOVE_MS);
 }
@@ -269,9 +290,9 @@ uint32_t NongModule::durationFor(const float tgt[N]) const {
 // physical floor: no servo can move faster than ITS OWN max_dps, so the move
 // must be at least as long as the slowest joint needs for its own travel
 uint32_t NongModule::minDuration(const float tgt[N]) const {
-    uint32_t phys = nongmath::minDuration(cur_, tgt, maxDps_, N, NONG_MIN_MOVE_MS);
-    uint32_t safe = nongmath::safeDuration(cur_, tgt, N, safeDps_, NONG_MIN_MOVE_MS);
-    return max(phys, safe);
+    // PACE MUSIC holds only until the show that asked for it ends (showRunning)
+    return nongmath::moveFloor(cur_, tgt, maxDps_, N, NONG_MIN_MOVE_MS,
+                               musicPace_ ? paceCap() : safeDps_);
 }
 
 void NongModule::startMove(const float tgt[N], uint32_t ms) {
@@ -648,9 +669,29 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
         // freeze mid-move: current interpolated pose becomes the target
         for (int i = 0; i < N; i++) target_[i] = cur_[i];
         moving_ = false;
+        musicPace_ = false; paceDps_ = -1.0f; // the panic button also ends a fast music pace
         silence();          // A24-18: still AND quiet
         forward("STOP");    // the partner board stops and goes quiet too
         reply = "OK stopped";
+        return true;
+    }
+    if (cmd == "PACE" || cmd == "PACE?") {
+        // A show that follows its music must not be slowed by the safety cap
+        // (user 2026-10-27), so the FILE says PACE MUSIC and the board drops
+        // to music_dps until that show ends, STOP, or a reboot (never saved).
+        // Allowed outside a show too: the partner board gets it forwarded.
+        if (cmd == "PACE" && argc >= 2) {
+            String m = argv[1]; m.toUpperCase();
+            if (m != "MUSIC" && m != "NORMAL") { reply = "ERR PACE MUSIC [deg/s]|NORMAL"; return true; }
+            musicPace_ = m == "MUSIC";
+            paceDps_ = musicPace_ && argc >= 3 ? max(0.0f, argv[2].toFloat()) : -1.0f;
+            forward(musicPace_ && argc >= 3 ? "PACE MUSIC " + String(paceDps_, 0) : "PACE " + m);
+        }
+        const bool music = musicPace_;
+        const float cap = paceCap();
+        reply = String(cmd == "PACE" && argc >= 2 ? "OK " : "") + "PACE " + (music ? "MUSIC" : "NORMAL") +
+                " cap=" + (music ? (cap > 0 ? String(cap, 0) + " deg/s" : String("servo max only"))
+                                 : String(safeDps_, 0) + " deg/s");
         return true;
     }
     if (cmd == "SPEED" || cmd == "SPEED?") {
@@ -962,6 +1003,8 @@ void NongModule::status(JsonObject o) {
     o["attached"] = attached_;
     o["speed_dps"] = speedDps_;
     o["safe_dps"] = safeDps_;
+    o["music_dps"] = musicDps_;
+    o["pace"] = musicPace_ ? "music" : "normal";
     o["link"] = link_;
     o["peer"] = peer_;
     // sequence progress for monitor mode: remaining ms of the current move

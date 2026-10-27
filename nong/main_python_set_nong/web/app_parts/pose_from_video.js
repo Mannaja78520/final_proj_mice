@@ -481,7 +481,14 @@ function vidReachSide(from, to, ms, pk, opts) {
     && opts.hand[a] * palmUpnessOf(plain, a) <= 0.5) };
 }
 // 3. The moves, from the picks and the choices.
+// Stay with the music = the show follows its song, so it is planned AND
+// played at the music pace (PACE MUSIC, user 2026-10-27), not the safe cap.
 function vidBuild(fit, picks, opts) {
+  const before = PACE_OVERRIDE;
+  PACE_OVERRIDE = opts.music ? "music" : null;
+  try { return vidBuildAtPace(fit, picks, opts); } finally { PACE_OVERRIDE = before; }
+}
+function vidBuildAtPace(fit, picks, opts) {
   const out = [], handMiss = [0, 0];
   let kept = 0, partial = 0, last = 0, start = 0;
   for (const pk of picks) {
@@ -515,8 +522,15 @@ function vidBuild(fit, picks, opts) {
   // body). safeKeys() drops a pose that hits and sends a hitting move round,
   // on this rig's sizes; each move keeps its time, so the music still fits.
   const safe = safeKeys(out, undefined, opts.music);
+  // each move's time on the song, after detours split it: what the speed
+  // limit with music is measured against later (music_pace.js)
+  if (opts.music) safe.keys.forEach((k, i) => { if (i) k.musicMs = k.t; });
+  // then give the real, lagging servos room where the hands would meet
+  const settled = opts.music ? ServoFollow.settle(safe.keys) : 0;
+  if (opts.music && safe.keys.length)            // the file keeps the pace
+    safe.keys[0].cues = (safe.keys[0].cues || []).filter(c => !/^pace:/i.test(c)).concat(musicPace.cue());
   // start: the first kept move's moment, where these moves meet the video
-  const made = { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, keepMusic: opts.music, quality: fit.quality || null };
+  const made = { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, settled, keepMusic: opts.music, quality: fit.quality || null };
   if (fit.targets) made.achieved = VideoRigFitter.assess(fit, made);
   if (made.achieved && made.quality) made.quality.worstBoneDegrees = made.achieved.worstBoneDegrees;
   return made;

@@ -164,11 +164,14 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
         return wristBalls[0].getWorldPosition(new THREE.Vector3()); }
       var d = H(last(st)).distanceTo(H(last(fo))); pose = keep; applyPose(); return d; })().toFixed(0);
     document.getElementById("vidHand0").value = "video";
-    // 10. a person faster than the servos: B and A swapped every 0.2 s
+    // 10. a person faster than the servos: B and A swapped every 0.1 s. With
+    // the music the cap is only the servos' own max (A48-23), so the swap has
+    // to beat THAT: 0.2 s fitted a 400 deg/s servo and nothing was cut.
     var f10 = [], P = randomPose(), Q = randomPose();
-    for (var i = 0; i <= 20; i++) { var sh10 = shapeOf(i % 4 < 2 ? P : Q); f10.push({t: i / 10, w: person(sh10[0], sh10[1], 0)}); }
-    function slow(r){ return r.keys.slice(1).filter(function(k, j){ return minTime(r.keys[j].pose, k.pose) > k.t + 1; }).length; }
-    function span(r){ return r.keys.slice(1).reduce(function(s, k){ return s + Math.max(k.t, minTime(r.keys[r.keys.indexOf(k) - 1].pose, k.pose)) + k.hold; }, r.keys[0].hold); }
+    for (var i = 0; i <= 40; i++) { var sh10 = shapeOf(i % 4 < 2 ? P : Q); f10.push({t: i / 20, w: person(sh10[0], sh10[1], 0)}); }
+    // timed at the pace the FILE will play at (music = PACE MUSIC on the board)
+    function slow(r){ var p = planPace(r.keys); return r.keys.slice(1).filter(function(k, j){ return minTime(r.keys[j].pose, k.pose, p) > k.t + 1; }).length; }
+    function span(r){ var p = planPace(r.keys); return r.keys.slice(1).reduce(function(s, k){ return s + Math.max(k.t, minTime(r.keys[r.keys.indexOf(k) - 1].pose, k.pose, p)) + k.hold; }, r.keys[0].hold); }
     var mu = movesFromFrames(f10, opt({tol: 4, music: true})), st10 = movesFromFrames(f10, opt({tol: 4, music: false}));
     o.musicSlow = slow(mu); o.musicPartial = mu.partial; o.musicSpan = span(mu); o.music0Span = span(st10); o.fastVideo = mu.videoMs;
     // 10b. music cuts a move short: the forced side must hold on the cut pose,
