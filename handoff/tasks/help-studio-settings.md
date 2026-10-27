@@ -13,7 +13,7 @@ User 2026-10-23 06:37Z: "help ดีแล้วแต่ทำ group ให้�
 พวก ช่องอื่นๆ ด้วยและ setting ขอให้มีแบบไม่ใส่รหัสสำหรับ setting ที่ไม่ซีเรียสกับหุ่นจริง ใส่รหัสกับที่ซีเรียสจริงๆ"
 
 ## Doing now
-A49-2 Settings split next (Studio Setup tab): data file of cards that open without a login.
+A49-2 built + checked alone (check_studio_open_settings, sabotage 3/3); full QC, PR, merge. Then A49-3.
 
 ## File status
 Baseline: origin/main 023c644
@@ -40,6 +40,8 @@ Baseline: origin/main 023c644
   Setting iframe src that differs only in #part does not reload (no onload).
 
 ## Done
+- A49-2: nong/main_python_set_nong/web/settings_open.json lists card ids open without a login (Model, Saving);
+  app_parts/notices.js showTab shows them beside the login card; login card text; Help studio.html note.
 - A49-1 Help groups: full QC 8752 pass; failing on main too (not ours, verified in a clean origin/main
   worktree 2026-10-27): check_race_guards "abandoned clock" (2 asserts) and check_responsive /app/tv/ at
   320px (#btnModeTech 42px too wide). Flaky in crowd, green alone: check_safe_motion, check_loop_return.
