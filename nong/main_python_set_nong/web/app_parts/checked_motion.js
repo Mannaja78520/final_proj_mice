@@ -254,9 +254,12 @@ async function directSafePlay(fromMs) {
     }
   };
   entryHold=true;
+  // no board show here, so the music pace is asked for by hand and handed back
+  const music=planPace(K)==='music';
   return withSafeMotion(async()=>{try {
     let status=await safeTakeover(stale);
     if(!status || stale())return false;
+    if(music) await rawCmd('PACE MUSIC').catch(()=>'');   // an older board: moves just run slower
     if(!(await checkedPoseUnlocked(poseAt(fromMs),0,epoch,null,status,s=>draw(s.module.joints,fromMs))) || stale())return false;
     let cursor=fromMs;
     do {
@@ -279,6 +282,7 @@ async function directSafePlay(fromMs) {
     return !stale();
   }catch(e){await cancelSafeMotion('direct playback failed');safeMotionNote('Playback stopped: '+e.message,true);return false;}
   finally {
+    if(music) await rawCmd('PACE NORMAL').catch(()=>'');
     if(epoch===safeMotionEpoch) {playing=false;entryHold=false;$('playBtn').textContent='▶ Play';keepAwake(false);}
   }});
 }

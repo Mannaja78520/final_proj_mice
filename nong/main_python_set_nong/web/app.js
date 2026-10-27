@@ -714,6 +714,10 @@ const MIN_MOVE_MS = 80;                  // same floor as the firmware
 // Safety cap on PEAK joint speed, firmware NONG_SAFE_DPS; the board's own
 // value (INFO safe_dps) replaces it on connect so both sides time moves alike.
 let SAFE_DPS = 60;
+// The cap while a show follows its music (firmware NONG_MUSIC_DPS, INFO
+// music_dps; user 2026-10-27: no cap then). 0 = only each servo's own max.
+let MUSIC_DPS = 0;
+let PACE_OVERRIDE = null;   // "music" while the Video page builds a stay-with-the-music show
 let boardSafeDpsMax = 0;    // from INFO max_dps; 0 means this board cannot be configured here
 let boardSafePeer = 0;      // linked board needs the same cap for synchronized moves
 let boardSafeIdentity = ""; // never save a persistent setting to a different board
@@ -2969,7 +2973,8 @@ class StudioCollisionGeometry {
       return "the physical collision sizes are invalid";
     const extra = RIG.extraClearanceMm ?? 0;
     if (!Number.isFinite(extra) || extra < 0) return "the extra safety gap is invalid";
-    const gap = CLEAR + extra, { torso, head, arms } = this.snapshot(p);
+    // the music pace (no speed cap) lets servo lag cut corners: SAFE.musicGapMm
+    const gap = CLEAR + extra + (planPace() === "music" ? SAFE.musicGapMm : 0), { torso, head, arms } = this.snapshot(p);
     const sphereBox = (s, box) => this.pointBox(s.at, box) < s.r + gap;
     const sphereBar = (s, bar) => segSegDist(s.at, s.at, bar.a, bar.b) < s.r + bar.r + gap;
     for (const a of arms) {
@@ -3151,6 +3156,7 @@ function checkCollisions(showAlert) {
 // in qc/checks/check_safe_path.py.
 let SAFE = {
   planner: "rrt-star",      // "straight" refuses; rrt-connect remains available
+  musicGapMm: 0,            // extra gap at the music pace: fast moves cut corners (nong_sim)
   checkDeg: 1,              // biggest joint change between two checked points
   stepDeg: 12,              // how far a tree grows per try
   goalBias: 0.2,
@@ -3169,7 +3175,7 @@ function loadSafeSettings(j) {
   const bounds = { checkDeg: [0.05, 10], stepDeg: [0.1, 180], goalBias: [0, 1],
     budgetMs: [1, 30000], liveBudgetMs: [1, 5000], shortcuts: [0, 500],
     seed: [0, 4294967295], seedBudgetMs: [0, 100], optimizeMs: [0, 1000],
-    sliceMs: [1, 50], maxNodes: [2, 10000], rewireFactor: [1, 5] };
+    sliceMs: [1, 50], maxNodes: [2, 10000], rewireFactor: [1, 5], musicGapMm: [0, 100] };
   if (!j || typeof j !== "object") { SAFE_ERROR = "invalid path settings"; return false; }
   const next = { ...SAFE };
   for (const key of Object.keys(SAFE)) if (key in j) next[key] = j[key];
@@ -3746,9 +3752,12 @@ async function directSafePlay(fromMs) {
     }
   };
   entryHold=true;
+  // no board show here, so the music pace is asked for by hand and handed back
+  const music=planPace(K)==='music';
   return withSafeMotion(async()=>{try {
     let status=await safeTakeover(stale);
     if(!status || stale())return false;
+    if(music) await rawCmd('PACE MUSIC').catch(()=>'');   // an older board: moves just run slower
     if(!(await checkedPoseUnlocked(poseAt(fromMs),0,epoch,null,status,s=>draw(s.module.joints,fromMs))) || stale())return false;
     let cursor=fromMs;
     do {
@@ -3771,6 +3780,7 @@ async function directSafePlay(fromMs) {
     return !stale();
   }catch(e){await cancelSafeMotion('direct playback failed');safeMotionNote('Playback stopped: '+e.message,true);return false;}
   finally {
+    if(music) await rawCmd('PACE NORMAL').catch(()=>'');
     if(epoch===safeMotionEpoch) {playing=false;entryHold=false;$('playBtn').textContent='▶ Play';keepAwake(false);}
   }});
 }
@@ -4192,7 +4202,17 @@ function deltaDeg(from, to) {
 // so any speed above about 38 °/s produces the identical time. The number was
 // never wrong; it was invisible. Every caller that shows a time to a person
 // asks for the reason too.
-function minTimeWhy(from, to) {
+// The pace a sequence is planned and played at. One that plays a song (a
+// `play:` cue) or says `pace: music` follows its music: the board drops the
+// peak-speed cap to music_dps for that file (PACE MUSIC), and Studio plans the
+// same. Everything else keeps SAFE_DPS. Collisions, limits and servo max hold
+// in both.
+function planPace(K = keys) {
+  if (PACE_OVERRIDE) return PACE_OVERRIDE;
+  return K.some(k => keyCue(k, "play") || /^music$/i.test(keyCue(k, "pace"))) ? "music" : "normal";
+}
+function paceCapDps(pace = planPace()) { return pace === "music" ? MUSIC_DPS : SAFE_DPS; }
+function minTimeWhy(from, to, atPace) {
   // per joint (the slow WAIST servo counts too), the slowest joint wins
   let servo = 0, slowest = 0;
   for (let i = 0; i < NJ; i++) {
@@ -4200,15 +4220,18 @@ function minTimeWhy(from, to) {
     if (need > servo) { servo = need; slowest = i; }
   }
   // safety floor, same as firmware nongmath::safeDuration (ease peaks at pi/2 x average)
-  const peak = deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, SAFE_DPS);
+  const pace = atPace || planPace(), cap = paceCapDps(pace);
+  const peak = cap > 0 ? deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, cap) : 0;
   const need = Math.max(servo, peak);
   const ms = Math.max(MIN_MOVE_MS, Math.ceil(need * 1000));
   let why = "the 80 ms shortest-move floor", fix = "";
   if (need * 1000 > MIN_MOVE_MS) {
     if (peak >= servo) {
-      why = `the robot's peak speed limit, ${SAFE_DPS} °/s`;
-      fix = `Above about ${flatDps()} °/s nothing gets faster. Raise ` +
-            `Peak speed limit (Timing) to shorten it.`;
+      why = pace === "music" ? `the robot's speed limit with music, ${cap} °/s`
+                             : `the robot's peak speed limit, ${SAFE_DPS} °/s`;
+      fix = pace === "music" ? "Set the music speed limit to 0 on the robot to follow the song at full servo speed."
+                             : `Above about ${flatDps()} °/s nothing gets faster. Raise ` +
+                               `Peak speed limit (Timing) to shorten it.`;
     } else {
       why = `${JOINT_LABELS[slowest] || ("joint " + (slowest + 1))} at its ` +
             `servo max, ${Math.round(jointMaxDps(slowest))} °/s`;
@@ -4217,7 +4240,8 @@ function minTimeWhy(from, to) {
   }
   return { ms, why, fix };
 }
-function minTime(from, to) { return minTimeWhy(from, to).ms; }
+// atPace: a list being planned that is not the open sequence (planPace(list))
+function minTime(from, to, atPace) { return minTimeWhy(from, to, atPace).ms; }
 // The show speed above which the peak limit decides every safety-limited move.
 // pi/2 is the ease curve's peak-to-average ratio, the same one the firmware uses.
 function flatDps() { return Math.floor(SAFE_DPS * 2 / Math.PI); }
@@ -4334,8 +4358,10 @@ function adoptBoardSafety(module) {
   // choice and must not be silently replaced after reconnecting to a board.
   const wasAuto = keys.map((k, i) => i > 0 && !timePinned(i) && k.t ===
     autoTime(keys[i - 1].pose, k.pose, keyDps(i)));
-  const changed = safe !== SAFE_DPS;
+  const music = Number(module.music_dps);
+  const changed = safe !== SAFE_DPS || (Number.isFinite(music) && music !== MUSIC_DPS);
   SAFE_DPS = safe;
+  if (Number.isFinite(music) && music >= 0) MUSIC_DPS = music;   // older boards: keep 0
   boardSafeDpsMax = max;
   boardSafePeer = module.link ? Number(module.peer) || 0 : 0;
   input.disabled = button.disabled = false;
@@ -5519,6 +5545,10 @@ function buildYaml(fromMs) {
   let cur = seqDps;
   for (let s = 0; s < from && s < K0.length; s++) cur = Math.round(K0[s].dps || seqDps);
   lines.push(`  - speed: ${cur}`);
+  // A sequence that follows its music says so first and puts the pace back
+  // last, so inside a longer show it never speeds up the sequence after it.
+  const music = planPace(K0) === "music";
+  if (music && !K0.some(k => keyCue(k, "pace"))) lines.push("  - pace: music");
   // suspended keyframes are left out entirely — the robot never sees them
   playKeys().forEach((k, i) => {
     if (i < from) return;      // walked for state above, never written as motion
@@ -5549,6 +5579,7 @@ function buildYaml(fromMs) {
     if (k.hold > 0) lines.push(`  - wait: ${k.hold}`);
     (k.cuesAfter || []).forEach(c => lines.push(`  - ${c}`));
   });
+  if (music) lines.push("  - pace: normal");
   const next = ($("seqNext").value || "").trim().replace(/[^\w.-]+/g, "");
   if (next) {
     // chain: when this sequence ends the module starts that one, so a show can
@@ -10515,7 +10546,14 @@ function vidReachSide(from, to, ms, pk, opts) {
     && opts.hand[a] * palmUpnessOf(plain, a) <= 0.5) };
 }
 // 3. The moves, from the picks and the choices.
+// Stay with the music = the show follows its song, so it is planned AND
+// played at the music pace (PACE MUSIC, user 2026-10-27), not the safe cap.
 function vidBuild(fit, picks, opts) {
+  const before = PACE_OVERRIDE;
+  PACE_OVERRIDE = opts.music ? "music" : null;
+  try { return vidBuildAtPace(fit, picks, opts); } finally { PACE_OVERRIDE = before; }
+}
+function vidBuildAtPace(fit, picks, opts) {
   const out = [], handMiss = [0, 0];
   let kept = 0, partial = 0, last = 0, start = 0;
   for (const pk of picks) {
@@ -10549,6 +10587,8 @@ function vidBuild(fit, picks, opts) {
   // body). safeKeys() drops a pose that hits and sends a hitting move round,
   // on this rig's sizes; each move keeps its time, so the music still fits.
   const safe = safeKeys(out, undefined, opts.music);
+  if (opts.music && safe.keys.length)            // the file keeps the pace
+    safe.keys[0].cues = (safe.keys[0].cues || []).filter(c => !/^pace:/i.test(c)).concat("pace: music");
   // start: the first kept move's moment, where these moves meet the video
   const made = { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, keepMusic: opts.music, quality: fit.quality || null };
   if (fit.targets) made.achieved = VideoRigFitter.assess(fit, made);

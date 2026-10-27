@@ -3,7 +3,9 @@
 Mirrors firmware/src/core/SequencePlayer.cpp + modules/nong (NongMath.h):
 a pose step lasts max(asked T or the show speed, slowest-servo floor, safety
 floor), follows the cosine ease, and the next step leaves on that deadline.
-`wait` adds to the same clock. What the board lengthens is exactly where the
+`wait` adds to the same clock. `pace: music` swaps the safety cap for
+music_dps (0 = only the servos' own limit) until `pace: normal` or the end,
+as NongModule's PACE does. What the board lengthens is exactly where the
 dance falls behind its music, so every lengthened step is reported.
 """
 import math
@@ -37,9 +39,12 @@ class Move:
 
 
 class BoardClock:
-    def __init__(self, rig, facts, safe_dps=None, speed_dps=None):
+    def __init__(self, rig, facts, safe_dps=None, speed_dps=None, music_dps=None):
         self.rig, self.facts = rig, facts
         self.safe_dps = safe_dps or facts.safe_dps
+        self.music_dps = facts.music_dps if music_dps is None else music_dps
+        self.cap = self.safe_dps
+        self.music_at = None      # board time the first `play:` step fires
         self.speed = speed_dps or 60.0
         self.max_dps = [max(30.0, min(facts.max_dps, v or facts.max_dps)) for v in rig["servoMaxDps"]]
 
@@ -49,8 +54,10 @@ class BoardClock:
     def floor_ms(self, a, b):
         """NongModule::minDuration: max(physical, safety), both >= the min move."""
         phys = max(abs(y - x) / d for x, y, d in zip(a, b, self.max_dps))
+        if self.cap <= 0:                       # music pace, no cap: nongmath::moveFloor
+            return max(self.facts.min_move_ms, int(phys * 1000))
         big = max(abs(y - x) for x, y in zip(a, b))
-        safe = big * (math.pi / 2) / max(1.0, self.safe_dps)
+        safe = big * (math.pi / 2) / max(1.0, self.cap)
         return max(self.facts.min_move_ms, int(phys * 1000), int(safe * 1000))
 
     def plan(self, steps):
@@ -59,6 +66,10 @@ class BoardClock:
         for n, (key, value) in enumerate(steps):
             if key == "speed":
                 self.speed = float(value)
+            elif key == "pace":
+                self.cap = self.music_dps if value.strip().lower() == "music" else self.safe_dps
+            elif key == "play" and self.music_at is None:
+                self.music_at = t
             elif key == "wait":
                 t += max(0, float(value)) / 1000
                 asked_t += max(0, float(value)) / 1000
@@ -73,6 +84,7 @@ class BoardClock:
                 asked_t += ask_ms / 1000
                 cur = pose
         self.length, self.asked_length = t, asked_t
+        self.cap = self.safe_dps                 # the show's end puts the pace back
         return moves
 
     @staticmethod

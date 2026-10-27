@@ -30,6 +30,10 @@ function buildYaml(fromMs) {
   let cur = seqDps;
   for (let s = 0; s < from && s < K0.length; s++) cur = Math.round(K0[s].dps || seqDps);
   lines.push(`  - speed: ${cur}`);
+  // A sequence that follows its music says so first and puts the pace back
+  // last, so inside a longer show it never speeds up the sequence after it.
+  const music = planPace(K0) === "music";
+  if (music && !K0.some(k => keyCue(k, "pace"))) lines.push("  - pace: music");
   // suspended keyframes are left out entirely — the robot never sees them
   playKeys().forEach((k, i) => {
     if (i < from) return;      // walked for state above, never written as motion
@@ -60,6 +64,7 @@ function buildYaml(fromMs) {
     if (k.hold > 0) lines.push(`  - wait: ${k.hold}`);
     (k.cuesAfter || []).forEach(c => lines.push(`  - ${c}`));
   });
+  if (music) lines.push("  - pace: normal");
   const next = ($("seqNext").value || "").trim().replace(/[^\w.-]+/g, "");
   if (next) {
     // chain: when this sequence ends the module starts that one, so a show can

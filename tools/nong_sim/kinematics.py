@@ -126,9 +126,12 @@ class NongTree:
                 if n == 1:
                     parent = self._add(Body(key + "_elbow", parent, (0, -upper, 0), arm=arm))
                     self.points["el" + key] = parent
-            wrist = self._add(Body(key + "_wrist", parent, (0, -fore, 0), arm=arm,
-                                   geoms=[Geom("sphere", (f.wrist_r,), part=key + "_hand")]))
+            wrist = self._add(Body(key + "_wrist", parent, (0, -fore, 0), arm=arm))
             self.points["wr" + key] = wrist
+            # the paddle Studio checks (collision_shapes.js), turned by palmTurn
+            turn = (r.get("palmTurn") or [0, 0])[arm]
+            self._add(Body(key + "_hand", wrist, (0, 0, 0), quat_euler_xyz((0, turn, 0)), arm=arm,
+                           geoms=[Geom("box", tuple(v / 2 for v in f.hand_size), (0, f.hand_y, 0), part=key + "_hand")]))
 
     def forward(self, pose):
         """World (Studio frame, mm) position of every named point at a pose."""

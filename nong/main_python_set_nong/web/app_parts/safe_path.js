@@ -9,6 +9,7 @@
 // in qc/checks/check_safe_path.py.
 let SAFE = {
   planner: "rrt-star",      // "straight" refuses; rrt-connect remains available
+  musicGapMm: 0,            // extra gap at the music pace: fast moves cut corners (nong_sim)
   checkDeg: 1,              // biggest joint change between two checked points
   stepDeg: 12,              // how far a tree grows per try
   goalBias: 0.2,
@@ -27,7 +28,7 @@ function loadSafeSettings(j) {
   const bounds = { checkDeg: [0.05, 10], stepDeg: [0.1, 180], goalBias: [0, 1],
     budgetMs: [1, 30000], liveBudgetMs: [1, 5000], shortcuts: [0, 500],
     seed: [0, 4294967295], seedBudgetMs: [0, 100], optimizeMs: [0, 1000],
-    sliceMs: [1, 50], maxNodes: [2, 10000], rewireFactor: [1, 5] };
+    sliceMs: [1, 50], maxNodes: [2, 10000], rewireFactor: [1, 5], musicGapMm: [0, 100] };
   if (!j || typeof j !== "object") { SAFE_ERROR = "invalid path settings"; return false; }
   const next = { ...SAFE };
   for (const key of Object.keys(SAFE)) if (key in j) next[key] = j[key];

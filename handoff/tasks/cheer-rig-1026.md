@@ -4,7 +4,7 @@ Owner: claude:3z5k (took over from codex:10270037-9c0d, 2026-10-27)
 Updated: 2026-10-27T16:53Z
 Branch: claude/project-thread-3z5kgn (carries codex/cheer-video-1027 + PC staging r2)
 Last commit: this checkpoint
-Plan: A48-21 (Codex), A48-22
+Plan: A48-21 (Codex), A48-22, A48-23 (music pace), A48-24 (servo model + waist/shrug)
 
 ## Goal
 User 2026-10-27: *ทำท่าเต้นของน้องให้หน่อย และ RL ขอจำลองในโลกจำลอง ฟิสิกส์ ได้ไหม*
@@ -12,7 +12,10 @@ and *อยากเห็นตอนจำลองด้วยให้ดู
 videos; answer whether RL/physics sim helps; optional sim the user can watch.
 
 ## Doing now
-Merge to main after this checkpoint. Then only the PC-side Next items remain.
+Phase 2 (WIP on branch, base main 4c230e0): music-sync pace (firmware PACE MUSIC/NORMAL,
+music_dps; Studio planPace/minTime(atPace); musicGapMm), sim recorder record.py. Next:
+per-sequence adjustable music speed in Studio + list of moves that can't keep up, then
+servo model in Studio view (A48-24), waist/shrug from video, clearance rounds, QC, help.
 
 ## File status
 Baseline: origin/main ecf48c2. Codex's committed work (681bc4c and earlier) is

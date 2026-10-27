@@ -40,7 +40,7 @@ class NongWorld:
         lo, hi = config["robots"]["vary"].get("lagMs", [config["servo"]["lagMs"]] * 2)
         self.robots = []
         for k in range(count):
-            clock = BoardClock(rig, facts, config.get("safeDps"))
+            clock = BoardClock(rig, facts, config.get("safeDps"), music_dps=config.get("musicDps"))
             moves = clock.plan(sequences[k % len(sequences)][1])
             lag = config["servo"]["lagMs"] if count == 1 else lo + (hi - lo) * k / (count - 1)
             self.robots.append({"name": sequences[k % len(sequences)][0], "moves": moves, "clock": clock,

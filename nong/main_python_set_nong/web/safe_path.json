@@ -1,5 +1,5 @@
 {
-  "_what": "Studio checks each motion against its rig. A blocked straight path uses a quick connect seed and RRT* parent selection/rewiring, then checked shortcuts. Final wire-rounded legs and endpoints are rechecked. Budgets bound search; failure holds instead of sending an unchecked path. Data settings also control the yielding live planner.",
+  "_what": "Studio checks each motion against its rig. A blocked straight path uses a quick connect seed and RRT* parent selection/rewiring, then checked shortcuts. Final wire-rounded legs and endpoints are rechecked. Budgets bound search; failure holds instead of sending an unchecked path. Data settings also control the yielding live planner. musicGapMm: extra clearance for sequences at the music pace (no speed cap, user 2026-10-27): at full servo speed the real arm lags and cuts corners, so the simulator (tools/nong_sim) found hands meeting that Studio passed with the normal gap; the value is the one the sim's rounds needed.",
   "planner": "rrt-star",
   "checkDeg": 1,
   "stepDeg": 12,
@@ -12,5 +12,6 @@
   "optimizeMs": 80,
   "sliceMs": 12,
   "maxNodes": 2000,
-  "rewireFactor": 1.1
+  "rewireFactor": 1.1,
+  "musicGapMm": 0
 }
