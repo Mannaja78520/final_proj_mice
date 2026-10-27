@@ -712,7 +712,7 @@ class _Gacha:
 
 GACHAS = {bid: _Gacha(bid) for bid in GACHA_IDS}
 
-# A dispenser on its OWN cable (A47-19, user 2026-10-23: a second ESP32 on USB
+# A dispenser on its OWN cable (A47-21, user 2026-10-23: a second ESP32 on USB
 # stands in as a machine). Plain lines on GACHA_PORT are its own, no bus id.
 # Listed only when a check asks, so the module census elsewhere is unchanged.
 GACHA_PORT = "COM96"

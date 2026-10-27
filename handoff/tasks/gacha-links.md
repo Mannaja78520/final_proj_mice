@@ -1,41 +1,39 @@
-# Gachapon over USB, WiFi and RS485 (commands + firmware update) and GPT's open branches
+# Gachapon over USB, WiFi and RS485: hub QC proof + bare-ESP32 stand-in
 
 Owner: claude:pzzxe0
-Updated: 2026-10-23 10:25Z
+Updated: 2026-10-27 13:50Z
 Branch: claude/project-thread-pzzxe0
-Last commit: (base d9c97d4)
-Plan: A47-19
+Last commit: see branch
+Plan: A47-21 (A47-19 = gemini lab session 2026-10-23, real USB/WiFi parity done)
 
 ## Goal
-User 2026-10-23 (in the lab, one ESP32 wired to the dispenser): check how far GPT got and
-continue it. Gachapon must be commanded and updated (OTA) over WiFi, RS485 AND USB like the
-other modules; a second ESP32 on USB pretends to be another machine. Hub too, all three.
+User 2026-10-23 (in the lab, one ESP32 on the dispenser): continue what GPT did; gachapon
+commanded and updated over WiFi, RS485 and USB like other modules; a second ESP32 on USB
+pretends to be another machine. Hub too.
 
 ## Doing now
-Adding a "practice" setting (GCFG sim <ms>) to GachaModule so a bare ESP32 with no motor or
-hall counts pretend magnets; then QC check that the hub drives a gacha over usb:, wifi:, bus.
+Full QC on the branch, then PR + merge.
 
 ## Facts found
-- firmware/src/main.cpp:151-171 USB serial lines go to the same router as RS485/WiFi
-  (`#id ...` lines bridge onto the bus): every module, gacha included, takes commands on all 3.
-- firmware/src/core/BusUpdate.h: FWBEGIN/FWDATA/FWEND/FWABORT = firmware update by commands,
-  so the same update rides USB, RS485 or WiFi; WebPortal.cpp:1095 /api/ota = WiFi HTTP OTA.
-- main_python/hub_flash.py:59 env = "mice_" + type; :90 flash_images lists every type in
-  firmware/config/modules.json (gacha included); start_bus :371 sends FW* to any dev address.
-- main_python/main.py:869 dev_cmd(dev): wifi:<ip> -> /api/cmd, else usb_cmd (usb:<port>, bus).
-- main_python/hub_api_gacha.py:78 find_dev = module name -> its fastest live route ("best").
-- qc/lib/fake_serial.py:619-712 fake gacha boards 70/71 exist only ON THE BUS.
-- GPT (codex) branches 2026-10-23: codex/continue-urdf-1023 has real code (A48-11 CAD HOME
-  fallback for joints without forearm meshes + late floor config); face-pc-1023,
-  gacha-reconcile-1023, native-axis-1023 are task-file-only (PC work: startup smoke,
-  SolidWorks audit, A47-18 deploy).
+- This thread hit the usage limit 2026-10-23 10:18Z; meanwhile gemini:10232000-lab did A47-19
+  on the real board (USB/WiFi; RS485 not wired then) and codex merged A47-20 gacha safety.
+- firmware/src/main.cpp USB reader + RS485 + WiFi /api/cmd feed one CommandRouter; FW* update
+  (core/BusUpdate.h) rides any of them; WebPortal /api/ota for WiFi. No gacha-specific code.
+- GachaModule.cpp `GCFG fallback <ms>`: no magnet -> pass counted by time, result "timed".
+  That is the bare-ESP32 stand-in; no new firmware needed.
+- main_python/gacha.py wait_done logged "timed" as a jam; now config given_results decides.
+- hub_flash.py flash_env = "mice_" + type; flash_images lists every modules.json type.
+- qc/lib/fake_serial.py GACHA_PORT COM96 / USB_GACHA id 72 (own cable, listed on request);
+  fake_wifi MODULE.gacha answers as a dispenser behind the WiFi login gate.
 
 ## Done
-- (none yet)
+- check_gacha_routes 19/19: usb:COM96, usb:COM99:70 (bus), wifi:<fake> each get GSTOCK +
+  GDISPENSE; timed counts, jam does not; mice_gacha offered for flashing. Sabotage 3/3.
+- docs/gacha/README.md: routes + stand-in steps.
 
 ## Next
-1. GCFG sim, build mice_gacha, check, PR, full QC, merge, tell coordinator (PC flashes).
-2. Review + QC + merge codex/continue-urdf-1023 and the three task-file branches.
+1. Full QC, PR, merge, plan done A47-21, delete this file in the merge.
+2. Lab: RS485 wired -> one prize + one FW* update over the bus (handoff/tasks/lab-day.md).
 
 ## Blocked
-- Real flash/spin is the PC Remote Control session's job (user is in the lab now).
+- RS485 on the real gacha board needs the wiring (lab).

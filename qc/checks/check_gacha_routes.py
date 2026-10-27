@@ -1,4 +1,4 @@
-"""Prize machines over every route a module has: USB, RS485 and WiFi (A47-19).
+"""Prize machines over every route a module has: USB, RS485 and WiFi (A47-21).
 
 User 2026-10-23, in the lab with one dispenser and a second bare ESP32 on USB:
 the gachapon must be commanded and updated over WiFi, RS485 and USB "like the

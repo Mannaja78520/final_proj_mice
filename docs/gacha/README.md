@@ -126,7 +126,7 @@ result, reason, message, event, time`.
 `firmware/COMMANDS.md` ▸ gacha module: `GDISPENSE`, `G?`, `GSTOCK`, `GEVENT`,
 `GCFG`... over HTTP `/api/cmd` or RS485 `#<id> ...`.
 
-### USB, RS485 and WiFi: the same commands, the same update (A47-19)
+### USB, RS485 and WiFi: the same commands, the same update (A47-21)
 
 A gacha board is a normal module: USB serial, the RS485 bus (`#<id> ...`) and
 WiFi (`/api/cmd`, login first) all feed the one command router, so every

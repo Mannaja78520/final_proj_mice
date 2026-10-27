@@ -54,7 +54,7 @@ class _Module:
         self.frames_sent = 0
         self.streams_opened = 0
         # A check sets a fake_serial._Gacha here and the board answers as that
-        # dispenser over WiFi (A47-19): same line protocol, same login gate.
+        # dispenser over WiFi (A47-21): same line protocol, same login gate.
         self.gacha = None
 
     # the text command surface, mirroring fake_serial's module

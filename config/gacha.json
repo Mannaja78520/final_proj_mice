@@ -37,7 +37,7 @@
   "wait_s": 20,
   // seconds to wait for a machine still turning for the last prize
   "busy_wait_s": 8,
-  // board results that count as a prize given (A47-19). "timed" = the board's
+  // board results that count as a prize given (A47-21). "timed" = the board's
   // fallback turned by time, no magnet seen (GCFG fallback; a bare ESP32
   // standing in as a machine): the board already took it off its stock.
   "given_results": ["done", "timed"],
