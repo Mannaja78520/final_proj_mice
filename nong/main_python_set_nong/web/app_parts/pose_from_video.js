@@ -38,14 +38,16 @@ const VID_USE = [
   { id: "moment", label: "Use another moment…" },
   { id: "drop", label: "Leave out" },
 ];
-let vidLib = null, vidFrames = null, vidMade = null, vidStop = false, vidBusy = false;
+let vidRoutines = [], vidRoutineRange = null;
+let vidLib = null, vidLibMode = null, vidFrames = null, vidMade = null, vidStop = false, vidBusy = false, vidGeneration = 0, vidSeekCancel = null;
 let vidFit = null, vidPicks = null;   // fitted frames, and the moves made from them
 
 // The person's skeleton finder. Loaded the first time it is used; the model
 // file is then kept in the browser's own store, as its server lets a cache
 // hold it for only an hour and the hub must not need the internet every time.
-async function vidLoadLib() {
-  if (vidLib) return vidLib;
+async function vidLoadLib(mode = "single") {
+  if (vidLib && vidLibMode === mode) return vidLib;
+  if (vidLib) { vidLib.close(); vidLib = null; }
   const mp = await import(VID_LIB + "/vision_bundle.mjs");
   let model = null;
   try {
@@ -57,9 +59,10 @@ async function vidLoadLib() {
   const files = await mp.FilesetResolver.forVisionTasks(VID_LIB + "/wasm");
   const base = model ? { modelAssetBuffer: model } : { modelAssetPath: VID_MODEL };
   const make = (delegate) => mp.PoseLandmarker.createFromOptions(files, {
-    baseOptions: { ...base, delegate }, runningMode: "VIDEO", numPoses: 1 });
+    baseOptions: { ...base, delegate }, runningMode: "VIDEO", numPoses: mode !== "single" ? VIDEO_FOLLOW.tracking.people : 1 });
   // Some graphics drivers refuse the GPU path; the CPU one is slower, not wrong.
   try { vidLib = await make("GPU"); } catch (e) { vidLib = await make("CPU"); }
+  vidLibMode = mode;
   return vidLib;
 }
 
@@ -72,7 +75,11 @@ function vidOpts() {
   const h = [0, 1].map(a => VID_HAND.find(x => x.id === $("vidHand" + a).value) || {});
   return { tol: det.tol, mirror: $("vidMirror").checked, waist: $("vidWaist").checked,
            hand: h.map(x => x.want || 0), force: h.map(x => !!x.force),
-           music: $("vidMusic").checked };
+           music: $("vidMusic").checked,
+           subjectMode: $("vidSubject")?.value || "auto", cameraMode: $("vidCamera")?.value || "auto",
+           dancer: $("vidDancer")?.value || "auto", shrug: $("vidShrug")?.checked ?? false,
+           learned: $("vidLearned")?.checked ?? true,
+           anchorX: typeof vidSaved !== "undefined" && Number.isFinite(vidSaved?.anchorX) ? Math.max(0, Math.min(1, vidSaved.anchorX)) : 0.5 };
 }
 function vidFill() {        // the choices are built from the lists above
   const fill = (sel, list, pick) => {
@@ -85,6 +92,18 @@ function vidFill() {        // the choices are built from the lists above
     if (lbl) lbl.textContent = h.label;
     fill($("vidHand" + a), VID_HAND, "video");
   });
+  if (VIDEO_FOLLOW) {
+    fill($("vidSubject"), VIDEO_FOLLOW.subjectModes, "auto");
+    fill($("vidCamera"), VIDEO_FOLLOW.cameraModes, "auto");
+  }
+}
+function vidModeChanged() {
+  vidGeneration++;
+  if (vidSeekCancel) vidSeekCancel();
+  if (typeof vidCheckedPlayback !== "undefined") vidCheckedPlayback.reset($("vidPlayer"));
+  if (vidBusy) vidStop = true;
+  vidFrames = vidFit = vidMade = vidPicks = null; vidRoutines = []; vidRoutineRange = null;
+  vidSay("Video choices or range changed. Press Make moves to read the performers again.");
 }
 
 // A picked file goes on the stage like a fetched link (video_page.js).
@@ -93,15 +112,65 @@ function vidPick(file) {
   if (!file) return;
   vidSetSrc(URL.createObjectURL(file), { kind: "file", name: file.name, file });
 }
+function vidDetectPerformers(lib, video, group) {
+  if (!group) return lib.detectForVideo(video, performance.now());
+  const people = [], canvas = document.createElement("canvas");
+  for (const [x0, y0, x1, y1] of VIDEO_FOLLOW.tracking.crops) {
+    canvas.width = Math.max(1, Math.round(video.videoWidth * (x1 - x0)));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * (y1 - y0)));
+    canvas.getContext("2d").drawImage(video, video.videoWidth * x0, video.videoHeight * y0,
+      canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+    const result = lib.detectForVideo(canvas, performance.now());
+    for (let i = 0; i < (result.landmarks || []).length; i++) {
+      const p = result.landmarks[i].map(v => ({ ...v, x: x0 + v.x * (x1 - x0), y: y0 + v.y * (y1 - y0) }));
+      const center = [11, 12, 23, 24].reduce((s, j) => [s[0] + p[j].x / 4, s[1] + p[j].y / 4], [0, 0]);
+      const quality = [11, 12, 13, 14, 15, 16, 23, 24].reduce((s, j) => s + (p[j].visibility ?? 1), 0);
+      const old = people.findIndex(q => Math.hypot(q.center[0] - center[0], q.center[1] - center[1]) < 0.028);
+      const candidate = { p, w: result.worldLandmarks[i], center, quality };
+      if (old < 0) people.push(candidate); else if (quality > people[old].quality) people[old] = candidate;
+    }
+  }
+  people.sort((a, b) => a.center[0] - b.center[0]);
+  return { landmarks: people.map(p => p.p), worldLandmarks: people.map(p => p.w) };
+}
 
 // Seek through the video and find the person in each frame. Seeking, not
 // playing, so every frame is read however slow the PC is.
+function vidSeek(video, seconds, generation) {
+  return new Promise(resolve => {
+    let settled = false, timer = 0;
+    const cancel = () => finish(false), done = () => finish(generation === vidGeneration && !vidStop), error = () => finish(false);
+    function finish(ok) {
+      if (settled) return; settled = true; clearTimeout(timer);
+      video.removeEventListener("seeked", done); video.removeEventListener("error", error); video.removeEventListener("loadeddata", ready);
+      if (vidSeekCancel === cancel) vidSeekCancel = null;
+      resolve(ok);
+    }
+    function ready() { if (!video.seeking && Math.abs(video.currentTime - seconds) < 0.001) done(); }
+    vidSeekCancel = cancel;
+    video.addEventListener("seeked", done); video.addEventListener("error", error); video.addEventListener("loadeddata", ready);
+    timer = setTimeout(error, VIDEO_FOLLOW?.tracking.seekTimeoutMs ?? 5000);
+    if (generation !== vidGeneration || vidStop) return cancel();
+    if (video.readyState >= 2 && !video.seeking && Math.abs(video.currentTime - seconds) < 0.001) return done();
+    video.currentTime = seconds;
+  });
+}
 async function vidRead() {
+  const generation = vidGeneration;
   const v = $("vidPlayer");
   if (!v.src || !isFinite(v.duration)) { vidSay("Pick a video first.", true); return null; }
   vidSay("Loading the body finder (the first time needs the internet)…");
   let lib;
-  try { lib = await vidLoadLib(); }
+  let tracker, picture, discovery, readOptions;
+  try {
+    await videoFollowReady(); vidFill();
+    const options = vidOpts(); readOptions = options;
+    discovery = new VideoRoutineDiscovery(options);
+    tracker = new VideoSubjectTracker({ ...options, mirror: false });
+    if (!options.learned) tracker.policy.model = null;
+    picture = document.createElement("canvas"); picture.width = VIDEO_FOLLOW.tracking.imageWidth; picture.height = VIDEO_FOLLOW.tracking.imageHeight;
+    lib = await vidLoadLib(options.subjectMode);
+  }
   catch (e) {
     vidSay("Could not load the body finder. It needs the internet the first time; "
            + "check the connection and press Make moves again.", true);
@@ -112,25 +181,44 @@ async function vidRead() {
   const to = Math.min(v.duration, +$("vidTo").value || v.duration);
   const frames = [];
   v.pause();
-  for (let t = from; t <= to + 1e-6 && !vidStop; t += 1 / VID_FPS) {
-    await new Promise(res => { v.onseeked = res; v.currentTime = Math.min(t, v.duration - 0.001); });
+  for (let t = from; t <= to + 1e-6 && !vidStop && generation === vidGeneration; t += 1 / VID_FPS) {
+    if (!(await vidSeek(v, Math.min(t, v.duration - 0.001), generation))) {
+      if (!vidStop && generation === vidGeneration) vidSay("The video could not reach that moment. Try reading it again.", true);
+      return null;
+    }
     // timestamps must only grow, also on a second read of the same video
-    const r = lib.detectForVideo(v, performance.now());
-    const w = r.worldLandmarks && r.worldLandmarks[0], s = r.landmarks && r.landmarks[0];
-    // p: the same points on the picture, so the skeleton plays along later
-    frames.push({ t: t - from, w: w ? w.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility })) : null,
-                  p: s ? s.map(p => ({ x: p.x, y: p.y, v: p.visibility })) : null });
-    vidDraw(frames[frames.length - 1].p);
+    const r = vidDetectPerformers(lib, v, vidLibMode !== "single");
+    const context = picture.getContext("2d", { willReadFrequently: true });
+    context.drawImage(v, 0, 0, picture.width, picture.height);
+    const frame = tracker.step(r, t - from, context.getImageData(0, 0, picture.width, picture.height).data);
+    frames.push(frame); discovery.add(frame);
+    const select = $("vidDancer");
+    for (const person of frame.people || []) if (select && ![...select.options].some(o => o.value === String(person.id)))
+      select.add(new Option("Performer " + person.id, String(person.id)));
+    vidDraw(frame.p, frame.people);
     vidSay("Reading the video: " + Math.round(100 * (t - from) / Math.max(0.1, to - from)) + "%");
   }
-  return frames;
+  if (vidStop || generation !== vidGeneration) return null;
+  vidRoutines = readOptions.subjectMode !== 'single' && readOptions.dancer === 'auto' ? discovery.finish() : [];
+  vidRoutineRange = { from, to };
+  const select = $("vidRoutine"), previous = select?.value;
+  if (select) {
+    select.innerHTML = ''; select.add(new Option('Automatic main routine', 'auto'));
+    vidRoutines.forEach((routine, i) => {
+      const label = routine.kind === 'segment' ? 'Scene segment ' + (i + 1) + ' · ' + (routine.sourceEnd - routine.sourceStart).toFixed(1) + ' s' : (routine.kind === 'fragment' ? 'Partial routine ' : 'Routine ') + routine.id;
+      select.add(new Option(label + ' · ' + Math.round(routine.trustedCoverage * 100) + '% reliable' + (routine.ambiguous ? ' · check cut' : ''), String(routine.id)));
+    });
+    select.value = vidRoutines.some(r => String(r.id) === previous) ? previous : 'auto';
+  }
+  const selected = vidRoutines.find(r => String(r.id) === select?.value) || vidRoutines[0];
+  return selected ? vidSelectFrames(selected) : frames;
 }
 // The skeleton over the video, so it is plain whether the person was found.
 // Points are fractions of the PICTURE, which the player letterboxes inside its
 // box: they are placed on the picture, not on the box.
 const VID_BONES = [[11, 12], [11, 23], [12, 24], [23, 24],
                    [11, 13], [13, 15], [12, 14], [14, 16]];
-function vidDraw(pts) {
+function vidDraw(pts, people) {
   const v = $("vidPlayer"), c = $("vidOverlay");
   c.width = v.clientWidth; c.height = v.clientHeight;
   c.style.left = v.offsetLeft + "px"; c.style.top = v.offsetTop + "px";
@@ -150,6 +238,8 @@ function vidDraw(pts) {
   for (const i of [11, 12, 13, 14, 15, 16]) if (seen(i)) {
     g.beginPath(); g.arc(...P(i), 4, 0, 2 * Math.PI); g.fill();
   }
+  g.font = "14px sans-serif";
+  for (const person of people || []) g.fillText(String(person.id), ox + person.x * w, oy + person.y * h);
 }
 
 // ---- skeleton -> the robot's two bone directions per arm --------------------
@@ -238,7 +328,10 @@ function vidFitArm(arm, bones, first) {
   const eW = bodyGroup.localToWorld(e), hW = bodyGroup.localToWorld(h);
   if (first) solveElbowIK(arm, eW);
   else if (ccdChain(sh, elbowBalls[arm], eW, 6) > 15) solveElbowIK(arm, eW);
-  ccdChain(el, wristBalls[arm], hW, first ? 24 : 8);
+  robot.updateMatrixWorld(true);
+  const achievedElbow = bodyGroup.worldToLocal(W(elbowBalls[arm]));
+  const achievedHand = bodyGroup.localToWorld(achievedElbow.addScaledVector(bones.fore, foreLen));
+  ccdChain(el, wristBalls[arm], achievedHand, first ? 24 : 8);
   applyPose();             // ccdChain leaves its last rejected try drawn
 }
 // Douglas-Peucker on the joint angles: keep the frame that strays furthest from
@@ -264,6 +357,7 @@ function vidThin(times, poses, tol) {
 // ---- frames -> moves, in three steps (A44-6) --------------------------------
 // 1. Fit every frame: the slow part, done again only when Mirror or Waist change.
 function vidFitFrames(frames, opts) {
+  if (opts.subjectMode && VIDEO_FOLLOW) return new VideoRigFitter(opts).frames(frames);
   const bones = vidBones(frames, opts.mirror);
   if (!bones.some(b => b.arms[0] || b.arms[1])) return null;
   const saved = pose;
@@ -399,9 +493,9 @@ function vidBuild(fit, picks, opts) {
     const prev = out[out.length - 1];
     const gap = t - last;
     last = t;
-    if (!prev) { out.push({ pose: s.pose, t: 1000, hold: 0 }); start = t; }
+    if (!prev) { out.push({ pose: s.pose, t: 1000, hold: 0, sourceMs: t, sourceHoldEnd: t }); start = t; }
     // the same pose again is a pause on the last move, not a move of no length
-    else if (deltaDeg(prev.pose, s.pose) < 1) prev.hold += gap;
+    else if (deltaDeg(prev.pose, s.pose) < 1) { prev.hold += gap; prev.sourceHoldEnd = t; }
     else {
       if (opts.music && minTime(prev.pose, s.pose) > gap) {
         s = vidReachSide(prev.pose, s.pose, gap, pk, opts);
@@ -409,8 +503,9 @@ function vidBuild(fit, picks, opts) {
       }
       // Pinned, so Show speed does not re-time the video's rhythm. Without
       // "stay with the music" a move too fast for the servos is slowed instead.
-      if (deltaDeg(prev.pose, s.pose) < 1) prev.hold += gap;
-      else out.push({ pose: s.pose, t: Math.round(gap), hold: 0, tset: true });
+      if (deltaDeg(prev.pose, s.pose) < 1) { prev.hold += gap; prev.sourceHoldEnd = t; }
+      else out.push({ pose: s.pose, t: opts.music ? Math.round(gap) : Math.max(Math.round(gap), minTime(prev.pose, s.pose)),
+        hold: 0, tset: true, sourceMs: t, sourceHoldEnd: t });
     }
     // counted on the pose that went on the bar, after any part-way cut
     for (const a of [0, 1]) if (s.miss[a]) { handMiss[a]++; pk.missHand[a] = true; }
@@ -421,7 +516,10 @@ function vidBuild(fit, picks, opts) {
   // on this rig's sizes; each move keeps its time, so the music still fits.
   const safe = safeKeys(out, undefined, opts.music);
   // start: the first kept move's moment, where these moves meet the video
-  return { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe };
+  const made = { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, keepMusic: opts.music, quality: fit.quality || null };
+  if (fit.targets) made.achieved = VideoRigFitter.assess(fit, made);
+  if (made.achieved && made.quality) made.quality.worstBoneDegrees = made.achieved.worstBoneDegrees;
+  return made;
 }
 // frames -> timeline keys in one go. No video needed, so QC hands it a skeleton.
 // opts: { tol, mirror, waist, hand: [want L, R] (0 = as in the video),
@@ -445,10 +543,58 @@ function vidHandNote(made) {
         + "“Keep, hand side forced” on those moves below, and the hand moves "
         + "just enough to show it.")).join("");
 }
+function vidSelectFrames(routine) {
+  if (vidRoutineRange && Number.isFinite(routine.sourceStart) && Number.isFinite(routine.sourceEnd)) {
+    $("vidFrom").value = (vidRoutineRange.from + routine.sourceStart).toFixed(3);
+    $("vidTo").value = Math.min(vidRoutineRange.to, vidRoutineRange.from + routine.sourceEnd).toFixed(3);
+  }
+  return routine.frames;
+}
+function vidEligibleRoutines() {
+  return vidRoutines.filter(r => (r.kind === 'routine' || r.kind === 'segment') && r.trustedCoverage >= VIDEO_FOLLOW.routines.minimumSaveCoverage);
+}
+function vidChooseRoutine() {
+  if (vidBusy || !vidRoutines.length) return;
+  const selected = vidRoutines.find(r => String(r.id) === $("vidRoutine").value) || vidRoutines[0];
+  vidFrames = vidSelectFrames(selected); vidRemake('fit');
+  vidLastMs = -1;
+  const video = $("vidPlayer"); vidCheckedPlayback.reset(video);
+  if (video?.pause) video.pause();
+  if (video?.src && Number.isFinite(video.duration)) video.currentTime = +$("vidFrom").value || 0;
+  vidSay(vidSummary());
+}
+async function vidSaveRoutines() {
+  if (vidBusy) return;
+  if (!vidRoutines.length && !(await vidMake())) return;
+  if (!vidRoutines.length) return vidMakeAndSave();
+  const generation = vidGeneration, stamp = Date.now();
+  const original = $("vidRoutine").value;
+  if (!(await askUnsaved("save the discovered dance routines as separate projects")) || generation !== vidGeneration) return;
+  vidBusy = true; vidStop = false; $("vidGo").textContent = '■ Stop';
+  let saved = 0;
+  try {
+    for (const routine of vidEligibleRoutines()) {
+      if (vidStop || generation !== vidGeneration) break;
+      $("vidRoutine").value = String(routine.id);
+      vidFrames = vidSelectFrames(routine); vidRemake('fit');
+      if (!vidMade?.keys.length) continue;
+      setWorkName('video_' + stamp + '_routine_' + routine.id);
+      if (!(await vidUse('replace', { skipUnsaved: true })) || generation !== vidGeneration || vidStop) break;
+      if (!(await saveAll())) break;
+      saved++; await new Promise(resolve => setTimeout(resolve, 30));
+    }
+  } finally {
+    vidBusy = false; $("vidGo").textContent = '▶ Make moves';
+    if (generation === vidGeneration) { $("vidRoutine").value = original; vidChooseRoutine(); vidSay('Saved ' + saved + ' separate routine projects. Short or uncertain fragments remain available for review.'); }
+  }
+}
 function vidSummary() {
   const m = vidMade, opts = vidOpts();
   return m.keys.length + " moves from " + (m.videoMs / 1000).toFixed(1) + " s of video."
+    + (vidRoutines.length ? " " + vidRoutines.length + " routine groups / scene sections found automatically. Uncertain camera links are split rather than stitched into another dance." : "")
+    + (m.quality?.smoothing ? " Short reversals: " + m.quality.smoothing.before.reversals + " → " + m.quality.smoothing.afterRepair.reversals + "." : "")
     + (m.safe && safeSay(m.safe) ? " " + safeSay(m.safe) : "")
+    + (m.quality?.uncertain ? " " + m.quality.uncertain + " uncertain observations hold the last trustworthy pose." : "")
     + (opts.music && m.partial
       ? " To stay with the music, " + m.partial + " of them go only part of the way: "
         + "the person moved faster than the robot can."
@@ -500,7 +646,7 @@ function vidSee(pk) {
     v.pause();
     v.currentTime = Math.min(v.duration, (+$("vidFrom").value || 0) + ms / 1000);
   }
-  pose = vidPoseAt(vidFit, ms).slice();
+  pose = vidMade?.keys.length ? easeKeys(vidMade.keys, VideoRigFitter.clockForSource(vidMade.keys, ms).ms).pose : vidPoseAt(vidFit, ms).slice();
   poseChanged(false);
 }
 // One step (user 2026-10-22: *drop a video, the robot does it*): make the
@@ -508,21 +654,25 @@ function vidSee(pk) {
 // safety pass is in vidBuild, so what is saved is what was checked.
 async function vidMakeAndSave() {
   if (vidBusy) return;
-  await vidMake();
+  const generation = vidGeneration;
+  if (!(await vidMake()) || generation !== vidGeneration) return;
   if (!vidMade || vidMade.keys.length < 2) return;
+  if (vidEligibleRoutines().length > 1) { await vidSaveRoutines(); return; }
   const base = ((vidSrc && (vidSrc.name || vidSrc.url)) || "video").split(/[\\/?#]/).filter(Boolean).pop();
   setWorkName("video_" + base.replace(/\.[^.]*$/, ""));
   if (!(await vidUse("replace"))) return;
+  if (generation !== vidGeneration) return;
   if (await saveAll()) vidSay($("tlStat").textContent);
 }
 async function vidMake() {
-  if (vidBusy) { vidStop = true; return; }
+  if (vidBusy) { vidStop = true; if (vidSeekCancel) vidSeekCancel(); return false; }
   vidBusy = true; vidStop = false;
+  const generation = vidGeneration;
   $("vidGo").textContent = "■ Stop";
   $("vidUseBox").hidden = true;
   try {
     const frames = await vidRead();
-    if (!frames) return;
+    if (!frames || vidStop || generation !== vidGeneration) return false;
     if (!frames.some(f => f.w)) {
       vidSay("No person was found in the video. Use a video where one person's "
              + "upper body and arms are in the picture.", true);
@@ -541,6 +691,7 @@ async function vidMake() {
     const seen = frames.filter(f => f.w).length;
     vidSay("The person was found in " + Math.round(100 * seen / frames.length)
            + "% of the video. " + vidSummary());
+    return true;
   } finally {
     vidBusy = false;
     $("vidGo").textContent = "▶ Make moves";
@@ -563,11 +714,13 @@ function vidRebuild() {
   $("vidUseBox").hidden = !(vidMade && vidMade.keys.length >= 2);
   vidSay(vidSummary());
 }
-async function vidUse(how) {
+async function vidUse(how, options = {}) {
+  const generation = vidGeneration;
   if (!vidMade) return false;
   const add = JSON.parse(JSON.stringify(vidMade.keys));
   if (how === "replace") {
-    if (!(await askUnsaved("replace the time bar with the moves from the video"))) return false;
+    if (!options.skipUnsaved && !(await askUnsaved("replace the time bar with the moves from the video"))) return false;
+    if (generation !== vidGeneration || vidStop) return false;
     keys = add;
   } else {
     // the first video pose is a move like any other once it follows a move
@@ -594,3 +747,7 @@ async function vidUse(how) {
   return true;
 }
 vidFill();
+videoFollowReady().then(() => {
+  vidFill();
+  if (typeof vidSaved !== "undefined" && vidSaved) vidApplySettings(vidSaved);
+}).catch(() => {});

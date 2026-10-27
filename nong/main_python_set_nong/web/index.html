@@ -328,9 +328,19 @@
          VID_HAND. -->
     <div class="card" data-stab="video" id="vidCard">
       <h2>Moves from a video</h2>
-      <p class="mini">A video of one person: Studio follows their arms and makes moves
-        that copy them as closely as the robot’s joints allow, and shows the person
-        and the robot side by side.</p>
+      <p class="mini">Follow one performer or a group dance. Keep different routines separate,
+        account for changing camera views, and check the robot's whole movement.</p>
+      <div class="row"><label class="lbl" for="vidSubject">Performers</label>
+        <select id="vidSubject" style="flex:1" onchange="vidModeChanged()"></select></div>
+      <div class="row"><label class="lbl" for="vidCamera">Camera</label>
+        <select id="vidCamera" style="flex:1" onchange="vidModeChanged()"></select></div>
+      <div class="row"><label class="lbl" for="vidRoutine">Dance routine</label>
+        <select id="vidRoutine" style="flex:1" onchange="vidChooseRoutine()"><option value="auto">Find routines automatically</option></select></div>
+      <p class="mini">Groups are found from movement across the clip. Uncertain camera links become separate scene sections with matching video ranges. Make and save writes the qualified sets separately. Smoothing keeps still poses steady; all resulting paths are checked again.</p>
+      <div class="row"><label class="lbl" for="vidDancer">Follow</label>
+        <select id="vidDancer" style="flex:1" onchange="vidModeChanged()"><option value="auto">Automatic — discover dance groups</option></select></div>
+      <p class="mini">Read the video once to see performer numbers. Choose a performer to keep
+        their routine; people performing different moves are never averaged together.</p>
       <div class="row"><label class="lbl" for="vidFile">A file</label>
         <input type="file" id="vidFile" accept="video/*" style="flex:1;min-width:0"
                onchange="vidPick(this.files[0])">
@@ -342,14 +352,14 @@
         <button id="vidFetchBtn" onclick="vidFetch()"
                 title="This PC fetches the video from the link, then Studio reads it like a file.">Fetch</button>
       </div>
-      <div class="row"><label class="lbl" for="vidDetail">Follow</label>
+      <div class="row"><label class="lbl" for="vidDetail">Pose detail</label>
         <select id="vidDetail" style="flex:1" onchange="vidRemake('pick')"
                 title="Every move eases to a stop. More moves follow the video more closely; fewer moves flow more smoothly."></select>
       </div>
       <div class="row"><label><input type="checkbox" id="vidMirror" onchange="vidRemake('fit')">
         Move like a mirror</label>
         <span class="mini">the robot’s left copies the person’s right</span></div>
-      <div class="row"><label><input type="checkbox" id="vidMusic" checked onchange="vidRemake()">
+      <div class="row"><label><input type="checkbox" id="vidMusic" onchange="vidRemake()">
         Stay with the music</label>
         <span class="mini">every move ends on its moment in the video; one the robot is too slow for goes as far as it can</span></div>
       <details class="disclosure">
@@ -358,17 +368,22 @@
           <select id="vidHand0" style="flex:1" onchange="vidRemake()"></select></div>
         <div class="row"><label class="lbl" id="vidHandLbl1" for="vidHand1">Right hand</label>
           <select id="vidHand1" style="flex:1" onchange="vidRemake()"></select></div>
-        <div class="row"><label><input type="checkbox" id="vidWaist" onchange="vidRemake('fit')">
+        <div class="row"><label><input type="checkbox" id="vidWaist" checked onchange="vidRemake('fit')">
           Turn the waist when the person turns</label></div>
+        <div class="row"><label><input type="checkbox" id="vidShrug" checked onchange="vidRemake('fit')">
+          Follow shoulder tilt</label></div>
+        <div class="row"><label><input type="checkbox" id="vidLearned" checked onchange="vidModeChanged()">
+          Learned camera checks</label><span class="mini">Together with body geometry and track confidence; uncertain observations hold the last trustworthy pose.</span></div>
         <div class="row"><label class="lbl" for="vidFrom">Use from</label>
-          <input type="number" id="vidFrom" value="0" min="0" step="0.5" style="width:70px"> s
+          <input type="number" id="vidFrom" oninput="vidModeChanged()" value="0" min="0" step="0.5" style="width:70px"> s
           <label for="vidTo">to</label>
-          <input type="number" id="vidTo" value="0" min="0" step="0.5" style="width:70px"> s</div>
+          <input type="number" id="vidTo" oninput="vidModeChanged()" value="0" min="0" step="0.5" style="width:70px"> s</div>
       </details>
       <div class="row">
         <button class="primary" id="vidGo" onclick="vidMake()" disabled>▶ Make moves</button>
         <button id="vidGoSave" onclick="vidMakeAndSave()" disabled
                 title="One step: make the moves, keep them clear of the robot's own body, put them on the time bar and save them under the video's name.">▶ Make and save</button>
+        <button id="vidSaveRoutines" onclick="vidSaveRoutines()">💾 Save separate dances / scenes</button>
       </div>
       <div id="vidList" class="vidlist"></div>
       <div class="row" id="vidUseBox" hidden>

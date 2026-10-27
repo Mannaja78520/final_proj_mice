@@ -23,6 +23,7 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 | [hub-web](hub-web.md) | The pages the hub serves: Home/Modules, help, login, and their patch snapshots. |
 | [shared-web](shared-web.md) | One stylesheet and theme set for every page (mice.css, themes), and the page parts every hub page is built from (mice-ui.js; guide docs/web_style.md). |
 | [studio](studio.md) | Nong Studio: pose editor, timeline, 3D monitor. |
+| [nong-sim](nong-sim.md) | Optional MuJoCo world: any number of Nongs play Studio sequences with servo lag, gravity and the board's clock (tools/nong_sim, user 2026-10-27). Nothing else needs it. |
 | [app-voice](app-voice.md) | Voice helper: speech in, answers, speech out. |
 | [app-gacha](app-gacha.md) | Prize machines (gachapon): several gacha boards, kinds, hand-over when one is empty, rules per event and person (local or Google Sheet), webhooks, the prize log; and which Voice answers give a prize plus the Voice question log (A47-2, A47-3); wins in the friend's games (/play/<id>/ + apps/all-jao/link.js) and app keys for other PCs (A47-6, A47-7). |
 | [app-faces](app-faces.md) | Face recognition app. |

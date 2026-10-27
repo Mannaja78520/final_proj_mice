@@ -30,21 +30,21 @@
   "devices": [
     {
       "id": "auto",
-      "label": "à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´"
+      "label": "อัตโนมัติ"
     },
     {
       "id": "cpu",
-      "label": "à¹ƒà¸Šà¹‰ CPU"
+      "label": "ใช้ CPU"
     },
     {
       "id": "cuda",
-      "label": "à¹ƒà¸Šà¹‰ GPU à¹€à¸¡à¸·à¹ˆà¸­à¸žà¸£à¹‰à¸­à¸¡"
+      "label": "ใช้ GPU เมื่อพร้อม"
     }
   ],
   "profiles": [
     {
       "id": "light",
-      "label": "à¸›à¸£à¸°à¸«à¸¢à¸±à¸”",
+      "label": "ประหยัด",
       "minCpus": 1,
       "minMemoryMiB": 0,
       "cpuShare": 0.25,
@@ -53,7 +53,7 @@
     },
     {
       "id": "balanced",
-      "label": "à¸ªà¸¡à¸”à¸¸à¸¥",
+      "label": "สมดุล",
       "minCpus": 4,
       "minMemoryMiB": 8192,
       "cpuShare": 0.5,
@@ -62,7 +62,7 @@
     },
     {
       "id": "fast",
-      "label": "à¹€à¸£à¹‡à¸§à¸‚à¸¶à¹‰à¸™",
+      "label": "เร็วขึ้น",
       "minCpus": 8,
       "minMemoryMiB": 24576,
       "cpuShare": 0.65,
@@ -74,7 +74,7 @@
     "profiles": [
       {
         "id": "light",
-        "label": "à¸ à¸²à¸žà¸›à¸£à¸°à¸«à¸¢à¸±à¸”",
+        "label": "ภาพประหยัด",
         "minCpus": 1,
         "minMemoryGiB": 0,
         "fps": 24,
@@ -83,7 +83,7 @@
       },
       {
         "id": "balanced",
-        "label": "à¸ à¸²à¸žà¸ªà¸¡à¸”à¸¸à¸¥",
+        "label": "ภาพสมดุล",
         "minCpus": 4,
         "minMemoryGiB": 4,
         "fps": 40,
@@ -92,7 +92,7 @@
       },
       {
         "id": "fast",
-        "label": "à¸ à¸²à¸žà¸¥à¸°à¹€à¸­à¸µà¸¢à¸”",
+        "label": "ภาพละเอียด",
         "minCpus": 8,
         "minMemoryGiB": 8,
         "fps": 60,
