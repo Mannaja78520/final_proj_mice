@@ -14,6 +14,7 @@
       "scene.js",
       "build_rig.js",
       "urdf_view.js",
+      "urdf_pieces.js",
       "rig_from_cad.js",
       "gizmo_rings.js",
       "picking_drag.js",

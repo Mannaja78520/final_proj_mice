@@ -294,7 +294,17 @@ function urdfBuildInto(root) {
     return -1;
   };
   const PAIR_PART = ["L_upper", "L_fore", "R_upper", "R_fore"];
+  const matOf = (pair) => partMat(pair >= 0 ? PAIR_PART[pair] : "torso");
   const gen = ++urdfBuildGen;
+  // every link's frame at zero (nothing turned yet): CAD pieces move between links by it
+  const linkZero = {};
+  root.updateMatrixWorld(true);
+  Object.keys(linkG).forEach(n => { linkZero[n] = linkG[n].matrixWorld.clone(); });
+  const meshPut = [], piecesOn = urdfPiecesOn();
+  let meshWant = 0, meshLate = 0, meshGone = 0;
+  const meshDone = () => {        // the last mesh in after the build: build again, all cached now
+    if (piecesOn && (meshLate || meshGone) && meshPut.length + meshGone === meshWant && gen === urdfBuildGen) buildRobot();
+  };
   Object.entries(f.links).forEach(([name, l]) => {
     const pair = pairOfLink(name);
     l.visuals.forEach(v => {
@@ -302,7 +312,9 @@ function urdfBuildInto(root) {
       holder.position.set(v.xyz[0] * U, v.xyz[1] * U, v.xyz[2] * U);
       urdfRpyQuat(v.rpy, holder.quaternion);
       linkG[name].add(holder);
-      const mat = partMat(pair >= 0 ? PAIR_PART[pair] : "torso");
+      holder.updateMatrixWorld(true);
+      holder.userData.zero = holder.matrixWorld.clone();
+      const mat = matOf(pair);
       const put = (geo, sc) => {
         const m = new THREE.Mesh(geo, mat);
         m.scale.set(sc[0], sc[1], sc[2]);
@@ -315,18 +327,27 @@ function urdfBuildInto(root) {
       else if (v.cyl) put(new THREE.CylinderGeometry(v.cyl[0], v.cyl[0], v.cyl[1], 20), [U, U, U]).rotation.x = Math.PI / 2;
       else if (v.sphere) put(new THREE.SphereGeometry(v.sphere, 20, 14), [U, U, U]);
       else if (urdfMissing.has(f.path + "|" + v.mesh)) warn.push("the shape " + v.mesh.split(/[\\/]/).pop() + " is missing");
-      else urdfMesh(urdfMeshUrls(v.mesh, f.path), geo => {
-        if (gen !== urdfBuildGen || holder.parent !== linkG[name]) return;   // a rebuild came first
-        put(geo, v.scale.map(s => s * U));
-        if (typeof markDirty3d === "function") markDirty3d(5);
-        if (name === urdfRootLink) viewFloor();
-        urdfMeshArrived(name);
-      }, () => {
-        urdfMissing.add(f.path + "|" + v.mesh);
-        if (gen === urdfBuildGen) { urdfLast.warn.push("the shape " + v.mesh.split(/[\\/]/).pop() + " is missing"); renderLookUI(); }
-      });
+      else {
+        meshWant++;
+        let sync = true;
+        urdfMesh(urdfMeshUrls(v.mesh, f.path), geo => {
+          if (gen !== urdfBuildGen || holder.parent !== linkG[name]) return;   // a rebuild came first
+          meshPut.push({ name, holder, mesh: put(geo, v.scale.map(s => s * U)) });
+          if (!sync) meshLate++;
+          if (typeof markDirty3d === "function") markDirty3d(5);
+          if (name === urdfRootLink) viewFloor();
+          if (!sync) { urdfMeshArrived(name); meshDone(); }
+        }, () => {
+          urdfMissing.add(f.path + "|" + v.mesh);
+          meshGone++;
+          if (gen === urdfBuildGen) { urdfLast.warn.push("the shape " + v.mesh.split(/[\\/]/).pop() + " is missing"); renderLookUI(); meshDone(); }
+        });
+        sync = false;
+      }
     });
   });
+  // every mesh already in: split them and hang each bolt on its part (urdf_pieces.js)
+  if (piecesOn && meshPut.length === meshWant) urdfPieces(meshPut, linkG, linkZero, matOf, pairOfLink);
 
   // skeleton balls on every arm joint (pick a pair, see the centres)
   for (let i = 0; i < ARMJ; i++) {
