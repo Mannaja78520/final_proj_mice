@@ -259,7 +259,7 @@ async function directSafePlay(fromMs) {
   return withSafeMotion(async()=>{try {
     let status=await safeTakeover(stale);
     if(!status || stale())return false;
-    if(music) await rawCmd('PACE MUSIC').catch(()=>'');   // an older board: moves just run slower
+    if(music) await rawCmd('PACE '+musicPace.cue().replace(/^pace:\s*/i,'').toUpperCase()).catch(()=>'');   // an older board: moves just run slower
     if(!(await checkedPoseUnlocked(poseAt(fromMs),0,epoch,null,status,s=>draw(s.module.joints,fromMs))) || stale())return false;
     let cursor=fromMs;
     do {

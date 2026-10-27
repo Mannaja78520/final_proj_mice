@@ -8,14 +8,19 @@
 const musicPace = {
   // the cap a list K follows its music at
   cap(K = keys) {
+    const own = this.own(K);
+    return own != null ? own : MUSIC_DPS;
+  },
+  // the sequence's own number: the box, else a file's `pace: music N`; null = the robot's
+  own(K = keys) {
     if (SEQ_MUSIC_DPS != null) return SEQ_MUSIC_DPS;
     for (const k of K) {
       const m = /^music\s+(\d+(?:\.\d+)?)/i.exec(keyCue(k, "pace") || "");
       if (m) return +m[1];
     }
-    return MUSIC_DPS;
+    return null;
   },
-  cue() { return "pace: music" + (SEQ_MUSIC_DPS != null ? " " + SEQ_MUSIC_DPS : ""); },
+  cue(K = keys) { const own = this.own(K); return "pace: music" + (own != null ? " " + own : ""); },
   // the value in the box, then every pace cue and every music-timed move follow it
   changed() {
     const raw = ($("musicDpsSeq").value || "").trim(), v = Math.round(+raw);

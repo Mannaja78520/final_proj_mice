@@ -3,8 +3,8 @@
 Mirrors firmware/src/core/SequencePlayer.cpp + modules/nong (NongMath.h):
 a pose step lasts max(asked T or the show speed, slowest-servo floor, safety
 floor), follows the cosine ease, and the next step leaves on that deadline.
-`wait` adds to the same clock. `pace: music` swaps the safety cap for
-music_dps (0 = only the servos' own limit) until `pace: normal` or the end,
+`wait` adds to the same clock. `pace: music [N]` swaps the safety cap for
+N or music_dps (0 = only the servos' own limit) until `pace: normal` or the end,
 as NongModule's PACE does. What the board lengthens is exactly where the
 dance falls behind its music, so every lengthened step is reported.
 """
@@ -67,7 +67,10 @@ class BoardClock:
             if key == "speed":
                 self.speed = float(value)
             elif key == "pace":
-                self.cap = self.music_dps if value.strip().lower() == "music" else self.safe_dps
+                word = value.split()                # `pace: music 120` = this file's own cap
+                music = bool(word) and word[0].lower() == "music"
+                self.cap = (max(0.0, float(word[1])) if music and len(word) > 1 else self.music_dps) \
+                    if music else self.safe_dps
             elif key == "play" and self.music_at is None:
                 self.music_at = t
             elif key == "wait":

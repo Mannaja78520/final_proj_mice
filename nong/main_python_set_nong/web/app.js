@@ -3763,7 +3763,7 @@ async function directSafePlay(fromMs) {
   return withSafeMotion(async()=>{try {
     let status=await safeTakeover(stale);
     if(!status || stale())return false;
-    if(music) await rawCmd('PACE MUSIC').catch(()=>'');   // an older board: moves just run slower
+    if(music) await rawCmd('PACE '+musicPace.cue().replace(/^pace:\s*/i,'').toUpperCase()).catch(()=>'');   // an older board: moves just run slower
     if(!(await checkedPoseUnlocked(poseAt(fromMs),0,epoch,null,status,s=>draw(s.module.joints,fromMs))) || stale())return false;
     let cursor=fromMs;
     do {
@@ -4433,14 +4433,19 @@ function clampKeyTimes() { // raise any hand-edited time that fell below the flo
 const musicPace = {
   // the cap a list K follows its music at
   cap(K = keys) {
+    const own = this.own(K);
+    return own != null ? own : MUSIC_DPS;
+  },
+  // the sequence's own number: the box, else a file's `pace: music N`; null = the robot's
+  own(K = keys) {
     if (SEQ_MUSIC_DPS != null) return SEQ_MUSIC_DPS;
     for (const k of K) {
       const m = /^music\s+(\d+(?:\.\d+)?)/i.exec(keyCue(k, "pace") || "");
       if (m) return +m[1];
     }
-    return MUSIC_DPS;
+    return null;
   },
-  cue() { return "pace: music" + (SEQ_MUSIC_DPS != null ? " " + SEQ_MUSIC_DPS : ""); },
+  cue(K = keys) { const own = this.own(K); return "pace: music" + (own != null ? " " + own : ""); },
   // the value in the box, then every pace cue and every music-timed move follow it
   changed() {
     const raw = ($("musicDpsSeq").value || "").trim(), v = Math.round(+raw);

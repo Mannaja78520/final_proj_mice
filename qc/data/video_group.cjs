@@ -16,14 +16,14 @@ function context() {
     Option:function(label,value){this.label=label;this.value=value;}});
   const run=s=>vm.runInContext(s,c);
   run('const $=id=>document.getElementById(id);');
-  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','yaml_export','video_body_motion','video_tracking','video_motion_smooth','video_appearance','video_routine_assignment','video_routine_sections','video_routines','video_rig_fit','video_checked_playback'])run(read(name));
+  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','music_pace','yaml_export','video_body_motion','video_tracking','video_motion_smooth','video_appearance','video_routine_assignment','video_routine_sections','video_routines','video_rig_fit','video_checked_playback'])run(read(name));
   const timeline=read('timeline');run(timeline.slice(timeline.indexOf('function easeKeys('),timeline.indexOf('\nfunction poseAt(')));
   // keyCue/setKeyCue: planPace() reads a sequence's play:/pace: cues
   const cues=read('music_on_a_keyframe'),at=cues.indexOf('function keyCue(');run(cues.slice(at,cues.indexOf('\n}\n',cues.indexOf('function setKeyCue(',at))+3));
   const videoSource=read('pose_from_video');run(videoSource.slice(0,videoSource.lastIndexOf('\nvidFill();')));
   c.config=config;c.safe=safe;c.policy=policy;
   run(`VIDEO_FOLLOW=config;VIDEO_POLICY=policy;
-    let pose=RIG.neutral.map((v,i)=>clampJ(i,v)),keys=[],SAFE_DPS=60,MUSIC_DPS=0,PACE_OVERRIDE=null;function bumpKeys(){}const MIN_MOVE_MS=80;
+    let pose=RIG.neutral.map((v,i)=>clampJ(i,v)),keys=[],SAFE_DPS=60,MUSIC_DPS=0,PACE_OVERRIDE=null,SEQ_MUSIC_DPS=null;function bumpKeys(){}const MIN_MOVE_MS=80;
     const scene=new THREE.Scene(),matJoint=new THREE.MeshBasicMaterial();
     function partMat(){return new THREE.MeshBasicMaterial();}
     robot=new THREE.Group();scene.add(robot);buildRigShapes();applyPose();loadSafeSettings(safe);
