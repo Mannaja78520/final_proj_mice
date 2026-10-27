@@ -303,9 +303,17 @@
         <input id="talkText" style="flex:1;min-width:0" placeholder="Try a sentence the robot might say"
                onkeydown="if (event.key === 'Enter') talkTry()">
         <select id="talkManner" title="How it moves: the speaking manner of the voice"></select>
-        <button onclick="talkTry()" title="Pick gestures for this sentence, at random as the robot would, and put them on the time bar.">▶ Show</button>
+        <button onclick="talkTry()" title="Say this sentence in the chosen manner and move the arms with it, as the robot would. The moves stay on the time bar.">▶ Show</button>
+      </div>
+      <div class="row">
+        <label title="How the arms wait between gestures">Hands between gestures
+          <select id="talkRest" onchange="talkSave({ restStyle: this.value })"></select></label>
+        <label title="When no rule makes a move for the words, ask the AI the Voice page answers with (needs login)">
+          <input type="checkbox" id="talkAi" onchange="talkAiSwitch()"> Ask the AI for new moves</label>
       </div>
       <div class="mini" id="talkPicks"></div>
+      <!-- A46-4: moves made for words no gesture has, fitted on this robot -->
+      <div id="talkMade"></div>
       <details class="disclosure">
         <summary>The gestures and their words</summary>
         <div id="talkList"></div>

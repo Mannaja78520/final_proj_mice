@@ -2189,6 +2189,27 @@ class Brain:
                                        address=self.address_words())
         return reply, None
 
+    def free_think(self, system, text, limit=200):
+        """One reply to exactly this instruction, no persona (A46-4: Studio
+        asks for a talk gesture as JSON). The same `think` chain as answers,
+        cloud or this PC, so nothing is tied to one service."""
+        history = [{"role": "user", "content": str(text)}]
+
+        def one(pid, prov):
+            if prov.get("kind") == "local":
+                with self._lock:
+                    ok, why_not = self._ensure_llm()
+                    if not ok:
+                        return None, why_not
+                    return self._complete([{"role": "system", "content": system}] + history,
+                                          max_tokens=limit) or None, None
+            wire = providers.WIRES.get(prov.get("kind"), {}).get("think")
+            if not wire:
+                return None, "it cannot answer"
+            return wire(prov, self.key_for(pid), prov["jobs"]["think"], system,
+                        history, limit, timeout=20)
+        return self.run_job("think", one)
+
     def compose(self, history, lang=""):
         """A NEW verse on the asked topic, or (None, why-not) (A45-24).
 
@@ -3345,6 +3366,8 @@ class VoiceHandler(BaseHTTPRequestHandler):
             return self.do_say()
         if path == "/translate":
             return self.do_translate()
+        if path == "/gesture":
+            return self.do_gesture()
         if path == "/preload":
             self.brain.preload(force=True)
             return self._json({"ok": True, "llm": self.brain.llm_status(), "stt": self.brain.stt_status()})
@@ -3607,6 +3630,24 @@ class VoiceHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(wav)))
         self.end_headers()
         self.wfile.write(wav)
+
+    def do_gesture(self):
+        """POST {prompt, text} -> {ok, text}: the think chain's raw reply to a
+        gesture request (A46-4). The hub cleans it (gestures.clean_made)."""
+        length = int(self.headers.get("Content-Length") or 0)
+        if length > 64 * 1024:
+            return self._json({"ok": False, "error": "that request is too long"}, 400)
+        try:
+            req = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
+        except ValueError:
+            return self._json({"ok": False, "error": "that request was not readable"}, 400)
+        prompt, text = str(req.get("prompt") or "").strip(), str(req.get("text") or "").strip()
+        if not prompt or not text:
+            return self._json({"ok": False, "error": "a prompt and a sentence are needed"}, 400)
+        reply, why_not = self.brain.free_think(prompt, text)
+        if not reply:
+            return self._json({"ok": False, "error": why_not or "no service answered"})
+        return self._json({"ok": True, "text": reply})
 
     def do_translate(self):
         """Translate text. Supports multi-target FAQ translation or complaints translation."""

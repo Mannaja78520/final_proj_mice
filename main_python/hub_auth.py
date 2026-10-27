@@ -156,6 +156,8 @@ GATED_POST = {
     # A46-1: talk gestures played on a robot. Reading, planning and saving
     # the library are Studio tools (NEVER_GATED below); playing moves an arm.
     "/api/gestures/play",
+    # A46-4: asks an AI service (its allowance) for a new gesture
+    "/api/gestures/think",
     "/api/gacha/config",
     "/api/gacha/voice",
 }
@@ -203,7 +205,9 @@ NEVER_GATED = {"/api/play/stop", "/api/stopall", "/api/play/beat",
                "/api/save", "/api/export", "/api/model/upload", "/api/rigdefault",
                # A46-1: the talk-gesture library, Studio's fit of it to the
                # rig, and a plan (computed, nothing moves) - Studio tools too
-               "/api/gestures", "/api/gestures/fit", "/api/gestures/plan"}
+               "/api/gestures", "/api/gestures/fit", "/api/gestures/plan",
+               # A46-4: made gestures by rules, computed only
+               "/api/gestures/make"}
 
 # Gated from the network, but open to a PROGRAM ON THIS PC with no login
 # (A6-3, user: *a foreign Python program needs one address and one verb*).
