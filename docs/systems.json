@@ -100,7 +100,7 @@
 
     {"id": "studio", "summary": "Nong Studio: pose editor, timeline, 3D monitor.",
      "files": ["nong/", "apps/studio/", "config/rig_presets.json",
-               "tools/make_urdf.py", "tools/step_preset.py", "docs/urdf_nong.md"],
+               "tools/make_urdf.py", "tools/urdf_parts.py", "tools/step_preset.py", "docs/urdf_nong.md"],
      "checks": ["check_studio_render_idle"],
      "depends": ["shared-web"]},
 

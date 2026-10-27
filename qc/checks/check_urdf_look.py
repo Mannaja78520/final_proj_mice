@@ -33,6 +33,7 @@ and how each joint moves a hand against the shapes.
 import json
 import math
 import os
+import sys
 import random
 import shutil
 import struct
@@ -232,7 +233,7 @@ def write_fixture(root, name="qc_bot", rig=RIG1, at=None, swap=()):
         encoding="utf-8")
 
 
-def write_own_cad(root):
+def write_own_cad(root, name="qc_bot5", extra=None):
     """A URDF drawn the way a SolidWorks export is, not from the rig: ROS frame,
     zero rpy, roll axes tilted 30 / 37 deg, arms hanging straight down, the
     shoulders not mirror images.
@@ -261,16 +262,38 @@ def write_own_cad(root):
         hand = [tuple(h[i] for i in f) for f in F3]
         stl(root / "meshes" / (s + "_fore.STL"), [tuple(c[i] for i in f) for f in F3] + hand)
     links = ["base_link"] + [c for _, _, c, _, _ in J]
-    vis = lambda n: ('<visual><geometry><mesh filename="package://qc_bot5/meshes/%s_fore.STL"/></geometry></visual>'
-                     % n[0]) if n.endswith("fore_link") else ""
-    out = ['<?xml version="1.0"?>', '<robot name="qc_bot5">'] + ['<link name="%s">%s</link>' % (n, vis(n)) for n in links]
+    for n, tris in (extra or {}).items():
+        stl(root / "meshes" / (n + ".STL"), tris)
+    vis = lambda n: ('<visual><geometry><mesh filename="package://%s/meshes/%s_fore.STL"/></geometry></visual>'
+                     % (name, n[0]) if n.endswith("fore_link") else "") + (
+                     '<visual><geometry><mesh filename="package://%s/meshes/%s.STL"/></geometry></visual>'
+                     % (name, n) if n in (extra or {}) else "")
+    out = ['<?xml version="1.0"?>', '<robot name="%s">' % name] + ['<link name="%s">%s</link>' % (n, vis(n)) for n in links]
     for n, p, c, xyz, ax in J:
         lim = 1.0472 if n == "waist" else 0.27925 if n == "shrug" else 0.5236
         out.append('<joint name="%s" type="revolute"><parent link="%s"/><child link="%s"/>'
                    '<origin xyz="%g %g %g" rpy="0 0 0"/><axis xyz="%g %g %g"/>'
                    '<limit lower="%g" upper="%g" effort="1" velocity="1"/></joint>'
                    % ((n, p, c) + xyz + ax + (-lim, lim)))
-    (root / "urdf" / "qc_bot5.urdf").write_text("\n".join(out + ["</robot>"]), encoding="utf-8")
+    (root / "urdf" / (name + ".urdf")).write_text("\n".join(out + ["</robot>"]), encoding="utf-8")
+
+
+def write_pieces_cad(root):
+    """qc_bot5 with the parts a SolidWorks export gets wrong (PC's real nong,
+    2026-10-27): the body's file holds a plate, a bolt on the plate, and a bolt
+    on the upper arm's shoulder block; the ring between the two shoulder joints
+    (L_a, like the real L_sh_mid) is fixed to the body. 5 mm bolts, 20 mm ring.
+    Coordinates in each link's frame, metres; L_SH_P sits at (0, .094, -.06)."""
+    sh = (0, 0.094, -0.060)
+    at = lambda lo, hi, o=(0, 0, 0): box_tris([lo[k] + o[k] for k in range(3)], [hi[k] + o[k] for k in range(3)])
+    write_own_cad(root, "qc_bot6", {
+        "shrug_link": at((-0.005, 0.06, -0.09), (0.005, 0.08, -0.06))                  # body plate, two boxes
+                      + at((-0.005, 0.06, -0.06), (0.005, 0.08, -0.03))                # welded: one 24-triangle piece
+                      + at((0.005, 0.065, -0.05), (0.010, 0.070, -0.045))              # bolt on the plate
+                      + at((0.0, 0.106, -0.065), (0.005, 0.111, -0.060)),              # bolt on the arm block
+        "L_a": at((0.017, -0.010, -0.004), (0.026, 0.010, 0.016)),                     # the ring, a bit off-centre
+        "L_upper_link": at((-0.02, -0.010, -0.030), (0.02, 0.012, 0.010)),              # shoulder block
+    })
 
 
 DRIVER = r"""
@@ -572,6 +595,49 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     r11.lateConfig = !grid.visible && grid.position.y === -300 && !$("viewGrid").checked;
     RIG.view.grid = gridKeep; urdfConfigReady(cfgKeep);
     report("res11=" + JSON.stringify(r11).replace(/[~ ]/g, "_"));
+    // A48-19: a bolt rides on the part it touches, the shoulder ring on the
+    // body. A material point is found by its own corner in its own file.
+    function where(file, raw){
+      var hit = null; robot.updateMatrixWorld(true);
+      robot.traverse(function(o){
+        if (hit || !o.isMesh || (o.userData.urdfFrom || o.userData.urdfLink) !== file) return;
+        var a = o.geometry.attributes.position;
+        for (var k = 0; k < a.count; k++) if (Math.abs(a.getX(k) - raw[0]) < 1e-6 && Math.abs(a.getY(k) - raw[1]) < 1e-6 && Math.abs(a.getZ(k) - raw[2]) < 1e-6) {
+          hit = { m: o, p: o.localToWorld(new THREE.Vector3(raw[0], raw[1], raw[2])) }; return;
+        }
+      });
+      return hit;
+    }
+    var RING = ["L_a", [0.017, -0.010, -0.004]], BOLTB = ["shrug_link", [0.005, 0.065, -0.05]],
+        BOLTA = ["shrug_link", [0.0, 0.106, -0.065]], BLOCK = ["L_upper_link", [0.02, 0.012, 0.01]];
+    async function piecesCase(cfg){
+      var keep = URDF_CFG.pieces; URDF_CFG.pieces = cfg; urdfPieceInfo = null;
+      await another(CFG.rig2, "qc_bot6/urdf/qc_bot6.urdf"); await setLook("urdf");
+      await until(function(){ return urdfOn && urdfTip.L.fromMesh && urdfTip.R.fromMesh && (!cfg || urdfPieceInfo); }, 15000);
+      var o = { moved: urdfPieceInfo ? urdfPieceInfo.moved : null };
+      ["L_SH_P", "L_SH_R"].forEach(function(jn){
+        var i = urdfJ.findIndex(function(b){ return b && b.name === jn; }), q = RIG.home.slice();
+        q[i] += q[i] > 120 ? -25 : 25;
+        pts(RIG.home);
+        var r0 = where.apply(null, RING), b0 = where.apply(null, BOLTB), a0 = where.apply(null, BOLTA), k0 = where.apply(null, BLOCK);
+        var aIn0 = k0.m.worldToLocal(a0.p.clone());
+        pts(q);
+        var r1 = where.apply(null, RING), b1 = where.apply(null, BOLTB), a1 = where.apply(null, BOLTA), k1 = where.apply(null, BLOCK);
+        o[jn] = { ring: f1(r1.p.distanceTo(r0.p)), boltB: f1(b1.p.distanceTo(b0.p)), boltA: f1(a1.p.distanceTo(a0.p)),
+                  boltAdrift: f1(k1.m.worldToLocal(a1.p.clone()).sub(aIn0).length() * k1.m.scale.x) };
+      });
+      // with every joint at zero each piece is drawn exactly where the file has it
+      jointGroups.forEach(function(g){ if (g) g.quaternion.identity(); });
+      o.zero = [RING, BOLTB, BOLTA, BLOCK].map(function(w){ return where.apply(null, w).p.toArray().map(f1); });
+      pts(RIG.home);
+      URDF_CFG.pieces = keep;
+      return o;
+    }
+    var pcsData = URDF_CFG.pieces, fixLinks = { links: [{ link: "L_a", to: "shrug_link" }], lock: pcsData.lock, pick: [] };
+    var r12 = { on: await piecesCase(fixLinks), off: await piecesCase(null),
+                pick: await piecesCase(Object.assign({}, fixLinks, { pick: [{ link: "shrug_link", pieces: [1], to: "L_upper_link" }] })),
+                data: !!(pcsData && pcsData.lock && pcsData.lock.on !== false && pcsData.links.length) };
+    report("res12=" + JSON.stringify(r12).replace(/[~ ]/g, "_"));
     URDF_CFG.fit.anchor = anchor0;          // the real model: as the data says
     if (CFG.real) {
       // the PC's real model: bindings, senses, and each joint against the shapes
@@ -627,6 +693,7 @@ def run(t):
         (pkg3 / "meshes").mkdir()
         write_fixture(pkg3, "qc_bot3", rig3, RIG2["home"])
         write_own_cad(models / "qc_bot5")
+        write_pieces_cad(models / "qc_bot6")
         real = os.environ.get("MICE_URDF_MODEL", "")
         real_rel = ""
         if real and Path(real).is_dir():
@@ -648,6 +715,11 @@ def run(t):
         browser.page(DRIVER.replace("__CFG__", json.dumps(cfg)),
                      query="%s/studio/_qcdriver.html?dev=usb%%3A%s" % (base, fake_serial.PORT),
                      seconds=240 if real_rel else 120)
+        # the Python twin (tools/urdf_parts.py) must number and place pieces the same way
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
+        import urdf_parts
+        twin = urdf_parts.moved_pieces(str(models / "qc_bot6" / "urdf" / "qc_bot6.urdf"),
+                                       {"links": [{"link": "L_a", "to": "shrug_link"}], "lock": {"on": True}, "pick": []})
     finally:
         shutil.rmtree(models, ignore_errors=True)
     marks = [m[6:] for m in fake_serial.qc_marks if m.startswith("ULOOK~")]
@@ -776,6 +848,23 @@ def run(t):
         t.ok(r11["lateConfig"], "late floor config updates simple-shapes grid and checkbox together", r11)
         t.ok(r11["hidden"] and r11["stillHidden"] and r11["kept"],
              "'Show the floor grid' hides it, in both looks, and the choice is kept", r11)
+    got12 = next((m for m in marks if m.startswith("res12=")), "")
+    if t.ok(got12, "the driver turned a CAD whose bolts sit in the wrong file", marks[-3:]):
+        r12 = json.loads(got12[6:])
+        on, off, pk = r12["on"], r12["off"], r12["pick"]
+        t.ok(off["L_SH_P"]["ring"] > 1 and off["L_SH_P"]["boltAdrift"] > 1,
+             "as exported: the shoulder ring turns with the roll and the arm's bolt is left behind (%s / %s mm)"
+             % (off["L_SH_P"]["ring"], off["L_SH_P"]["boltAdrift"]), off)
+        t.ok(all(on[j]["ring"] < 0.05 and on[j]["boltB"] < 0.05 for j in ("L_SH_P", "L_SH_R")),
+             "the ring and the plate's bolt stay on the body whichever shoulder joint turns", on)
+        t.ok(all(on[j]["boltA"] > 1 and on[j]["boltAdrift"] < 0.05 for j in ("L_SH_P", "L_SH_R")),
+             "the bolt touching the shoulder block moves locked to it (%s mm off)" % [on[j]["boltAdrift"] for j in ("L_SH_P", "L_SH_R")], on)
+        t.ok(pk["L_SH_R"]["boltB"] > 1 and pk["L_SH_R"]["ring"] < 0.05,
+             "a 'pick' line in urdf_view.json puts a named piece on another part", pk)
+        t.ok(sorted(on["moved"] or []) == sorted(twin),
+             "tools/urdf_parts.py --assign numbers and places the pieces the same way (%s)" % twin, [on["moved"], twin])
+        t.ok(on["zero"] == off["zero"], "at the file's zero every moved piece is drawn where the file has it", [on["zero"], off["zero"]])
+        t.ok(r12["data"], "urdf_view.json pieces: bolts lock on, the real ring (L/R_sh_mid) rides on the body", r12)
     got5 = next((m for m in marks if m.startswith("res5=")), "")
     if t.ok(got5, "the driver measured a CAD drawn its own way", marks[-3:]):
         r5 = json.loads(got5[5:])
