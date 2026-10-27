@@ -661,7 +661,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <p>หน้า Video เลือก Performers เป็น One performer หรือ Group dance และเลือก Camera เป็น One camera view หรือ Changing shots / viewpoints แยกกันได้ หลังอ่านคลิปจะมีเลขผู้เต้นให้เลือกที่ Follow ชุดท่าที่ต่างกัน เช่นท่าของผู้เต้นชายและหญิง จะไม่ถูกเฉลี่ยรวมกัน ตรวจและบันทึกแต่ละคนหรือแต่ละชุดแยกชื่อ</p>
     <p>Turn the waist ใช้มุมลำตัวสัมพันธ์กับสะโพก ส่วน Follow shoulder tilt ใช้มุมไหล่สัมพันธ์กับลำตัว ผ่านการเทียบกับกลไกจริงในริก คนที่ยืนนิ่งจะไม่ดึงท่าอนาคตมาเติม และไม่เกลี่ยข้ามภาพตัด กล้องด้านข้างหรือมุมสูงจะตรวจในกรอบลำตัวก่อนรับท่าใหม่</p>
     <p>Learned camera checks ใช้นโยบาย Q-learning ที่ฝึกในตัวจำลองช่วยตัดสินใจรับท่า เก็บท่าเดิม หรือชดเชยมุมมอง เปรียบเทียบกับวิธีเรขาคณิตก่อนเปิดใช้ ถ้าถูกบัง ไม่แน่ใจว่าเป็นคนเดิม หรือแยกการหมุนคนกับกล้องไม่ได้ จะเก็บท่าที่เชื่อถือได้ล่าสุด ผลตัวจำลองไม่ได้ยืนยันความแม่นยำบนคลิปจริง</p>
-    <p>ตรวจแผ่นมือ ลูกบอลข้อต่อ ก้านแขน ลำตัว และศีรษะตามท่าจริง รวมการยกไหล่ ท่าปลายทางที่ชนจะหาท่าใกล้เคียงที่ว่างก่อน แล้วใช้ RRT* หาเส้นทางอ้อม ตรวจหลังปัดมุมและปรับเวลาอีกครั้ง พรีวิว โปรเจกต์ และชุดคำสั่งส่งออกใช้ชุดท่าที่ตรวจแล้วเดียวกัน Stay with the music อาจลดระยะขยับเมื่อหุ่นตามไม่ทัน หากปิดจะรักษาท่าและเพิ่มเวลาให้ขยับหรืออ้อม โดยวิดีโอพรีวิวช้าลงตามจังหวะหุ่น การเกิดท่าซ้ำไม่ยุบหรือย้อนเวลาเพลง</p>
+    <p>ตรวจแผ่นมือ ลูกบอลข้อต่อ ก้านแขน ลำตัว และศีรษะตามท่าจริง รวมการยกไหล่ ทุกชิ้นต้องห่างกันอย่างน้อย 10 มม. (เผื่อระยะคลอนของเฟืองเซอร์โว ตั้งได้ใน safe_path.json ค่า clearMm บวกระยะเผื่อของ rig) ท่าปลายทางที่ชนจะหาท่าใกล้เคียงที่ว่างก่อน แล้วใช้ RRT* หาเส้นทางอ้อม ตรวจหลังปัดมุมและปรับเวลาอีกครั้ง พรีวิว โปรเจกต์ และชุดคำสั่งส่งออกใช้ชุดท่าที่ตรวจแล้วเดียวกัน Stay with the music อาจลดระยะขยับเมื่อหุ่นตามไม่ทัน หากปิดจะรักษาท่าและเพิ่มเวลาให้ขยับหรืออ้อม โดยวิดีโอพรีวิวช้าลงตามจังหวะหุ่น การเกิดท่าซ้ำไม่ยุบหรือย้อนเวลาเพลง</p>
   </div>
   <p class="mini">คุณภาพภาพ 3D เลือกอัตโนมัติจากอุปกรณ์ที่เปิดเว็บ เปลี่ยนได้ที่ Hub → Settings → ภาพ 3D โหมดประหยัดลดจำนวนภาพและความละเอียด โดยยังคงจังหวะการเล่นและการตรวจชนเดิม ขอบภาพใช้ค่าใหม่หลังโหลดหน้าใหม่</p>
   <div class="shead">
@@ -891,6 +891,20 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
         <div class="action-step"><b>ปรับอย่างไร:</b> ใส่ชื่อไฟล์ถัดไปในช่อง <b>Chain</b> เช่น <code>wave.yaml</code></div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           เมื่อหุ่นเล่นท่าปัจจุบันจบ จะเริ่มเล่นท่าต่อไปทันทีโดยไม่ต้องส่งคำสั่งใหม่ ทำให้จัดโชว์ยาวๆ ได้อย่างต่อเนื่อง
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> ความเร็วตอนเต้นตามเพลง (Speed limit with music)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ในการ์ด <b>Timing</b> ช่อง <b>Speed limit with music</b> (ขึ้นเฉพาะชุดท่าที่มีเพลง) ใส่ °/วินาที ปล่อยว่าง = ใช้ค่าของหุ่น, 0 = เร็วสุดเท่าที่เซอร์โวไหว ใต้ช่องจะบอกว่าท่าไหนตามเพลงไม่ทันและช้ากว่าเพลงกี่วินาที กดชื่อท่าเพื่อไปแก้ ตัด หรือเปลี่ยนท่านั้น</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ใช้เฉพาะชุดท่านี้ตอนเพลงเล่นเท่านั้น (ไฟล์เขียน <code>pace: music N</code> หุ่นรับเป็น <code>PACE MUSIC N</code>) จบเพลง กด STOP หรือเปิดเครื่องใหม่ หุ่นกลับไปใช้ Peak speed limit เดิม (60 °/วินาที) ทุกครั้ง ตรวจการชน ขอบเขตข้อต่อ และระยะห่างมือยังทำงานที่ความเร็วใหม่ ลองกับหุ่นจริงให้เริ่มจากค่าต่ำแล้วค่อยเพิ่ม
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">5</span> ดูว่าเซอร์โวจริงตามทันไหม (Play like the real servos)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ติ๊ก <b>Play like the real servos</b> ในการ์ด Timing แล้วกด Play หุ่นในภาพจะขยับช้ากว่าแผนแบบเซอร์โวจริง ท่าที่เซอร์โวตามไม่ทันมีขอบเส้นประบนแถบเวลา (เหลือง = ช้าเล็กน้อย, แดง = ช้ามาก) ค่าความหน่วงและการเร่งของแต่ละข้อปรับได้ใน Setup &gt; rig (delay ms, speed-up °/s²)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ไม่เปลี่ยนหุ่น เป็นภาพตรวจในจอเท่านั้น ค่าความหน่วงยังเป็นค่าประมาณจนกว่าจะวัดกับหุ่นจริง ตัวจำลองฟิสิกส์ (tools/nong_sim) ใช้ค่าชุดเดียวกัน
         </div>
       </div>
     </div>
@@ -2499,6 +2513,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <tr><td>STOP</td><td class="wrap2">Freeze mid-move — the pose holds, the speaker goes quiet, and a linked partner board stops too</td></tr>
     <tr><td>RELAX | ATTACH</td><td class="wrap2">Go limp to pose by hand; power up again holding position</td></tr>
     <tr><td>SPEED | SPEED? | TIME?</td><td class="wrap2">Default speed in °/s, and move-time estimates</td></tr>
+    <tr><td>PACE MUSIC [°/s] | PACE NORMAL | PACE?</td><td class="wrap2">While a show follows its song: the speed cap becomes the given °/s, or the saved <code>music_dps</code> (0 = the servos' top speed). Ends with the show, STOP, or a restart</td></tr>
     <tr><td>SETZERO</td><td class="wrap2">Make the current pose home — the arm does not move</td></tr>
     <tr><td>LIMIT | LIMIT?</td><td class="wrap2">Per-joint joint travel; the JSON reply carries the whole calibration</td></tr>
     <tr><td>GEAR | PULSE | RANGE | RATE</td><td class="wrap2">Per-joint reduction, pulse range, servo travel and frame rate</td></tr>

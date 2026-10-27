@@ -1,5 +1,5 @@
 {
-  "_what": "Studio checks each motion against its rig. A blocked straight path uses a quick connect seed and RRT* parent selection/rewiring, then checked shortcuts. Final wire-rounded legs and endpoints are rechecked. Budgets bound search; failure holds instead of sending an unchecked path. Data settings also control the yielding live planner.",
+  "_what": "Studio checks each motion against its rig. A blocked straight path uses a quick connect seed and RRT* parent selection/rewiring, then checked shortcuts. Final wire-rounded legs and endpoints are rechecked. Budgets bound search; failure holds instead of sending an unchecked path. Data settings also control the yielding live planner. musicGapMm: extra clearance for sequences at the music pace (no speed cap, user 2026-10-27): at full servo speed the real arm lags and cuts corners, so the simulator (tools/nong_sim) found hands meeting that Studio passed with the normal gap; the value is the one the sim's rounds needed (2026-10-27, 4 cheer dances x lag 0.5-2x on a 4-5 mm base: extra 0 mm -> 0-4 hand touches per dance, 6 mm -> 0-2, 12 mm -> 0; with the 10 mm base, 7 mm keeps the same 17 mm total). clearMm: the gap every collision check keeps between two parts (Studio, its RRT* paths, video and gesture moves, and tools/nong_sim near misses); 10 mm allows for servo backlash, which adds up over shoulder and elbow (user's pick 2026-10-27; about 1 deg play per joint = 5.4 mm at the hand from each shoulder joint, docs/experiments/2026-10-27_music_pace.md). A rig's extraClearanceMm adds to it, and musicGapMm on top at the music pace.",
   "planner": "rrt-star",
   "checkDeg": 1,
   "stepDeg": 12,
@@ -12,5 +12,7 @@
   "optimizeMs": 80,
   "sliceMs": 12,
   "maxNodes": 2000,
-  "rewireFactor": 1.1
+  "rewireFactor": 1.1,
+  "clearMm": 10,
+  "musicGapMm": 7
 }

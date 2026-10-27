@@ -46,6 +46,10 @@ public:
     // a short show — but a repeating one would never end by itself.
     virtual void silenceLoop() {}
 
+    // The sequence player starts (true) or stops (false) a file: a setting a
+    // show turns on for itself (nong PACE MUSIC) must end with that show.
+    virtual void showRunning(bool on) { (void)on; }
+
     // Settings loaded from /data/module.yaml on the SD card, called before begin().
     virtual void applySettings(JsonVariant s) {}
 };

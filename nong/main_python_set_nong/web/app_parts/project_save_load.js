@@ -11,6 +11,7 @@ async function saveProject(opts) {
     // project re-times every automatic move against a different 60 °/s default
     // and the show quietly got slower (A31-4).
     safeDps: SAFE_DPS,
+    musicDps: SEQ_MUSIC_DPS,   // speed limit with music, this sequence only (A48-23)
     meshes: meshCfg, addons,
     robotIp: $("robotIp").value, seqName: $("projName").value,   // kept: older Studios read it
     // The chain is part of the show: a project saved with one and reopened
@@ -112,6 +113,7 @@ async function loadProject(file) {
   bumpKeys();
   $("speedDps").value = p.speedDps || 120;
   $("maxDps").value = p.maxDps || 400;
+  SEQ_MUSIC_DPS = Number.isFinite(p.musicDps) && p.musicDps >= 0 ? p.musicDps : null;
   // A connected board's own limit still wins: adoptBoardSafety runs on connect
   // and overwrites this. Saved projects only decide what Studio plans with
   // while no robot is telling it otherwise.

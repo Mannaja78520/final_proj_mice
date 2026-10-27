@@ -35,17 +35,30 @@ def fw_define(name):
     return float(m.group(1))
 
 
+def hand_box():
+    """The hand paddle Studio collides with (build_rig.js buildArm `back`):
+    full size mm and its centre below the wrist, mm."""
+    text = _read(PARTS / "build_rig.js")
+    size = re.search(r"const back = new THREE\.Mesh\(new THREE\.BoxGeometry\(([\d.]+), ([\d.]+), ([\d.]+)\)", text)
+    drop = re.search(r"back\.position\.y = (-?[\d.]+);", text)
+    if not (size and drop):
+        raise KeyError("the hand box is no longer built in build_rig.js")
+    return [float(v) for v in size.groups()], float(drop.group(1))
+
+
 class StudioFacts:
     """The constants Studio's kinematics, collision check and timing use."""
 
     def __init__(self):
         self.joint_names = js_value("rig_data.js", "JOINT_NAMES")
         self.base_dir = js_value("rig_data.js", "BASE_DIR")
-        self.clear_mm = js_value("collisions.js", "CLEAR")
+        self.clear_mm = json.loads(_read(STUDIO / "web/safe_path.json"))["clearMm"]   # Studio CLEAR
         self.wrist_r = js_value("collisions.js", "R_WRIST")
         self.head_r = js_value("collisions.js", "R_HEAD")
+        self.hand_size, self.hand_y = hand_box()
         self.min_move_ms = fw_define("NONG_MIN_MOVE_MS")
         self.safe_dps = fw_define("NONG_SAFE_DPS")
+        self.music_dps = fw_define("NONG_MUSIC_DPS")
         self.max_dps = fw_define("NONG_MAX_SPEED_DPS")
 
 

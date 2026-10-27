@@ -352,6 +352,11 @@ const DEFAULT_RIG = {
   pulseMin:   [500, 500, 500, 500, 500, 500, 500, 500, 500, 500],
   pulseMax:   [2500, 2500, 2400, 2400, 2500, 2500, 2400, 2400, 2500, 2400],
   servoMaxDps:[375, 375, 400, 400, 375, 375, 400, 400, 200, 400],
+  // How the horn FOLLOWS a target (servo_follow.js, A48-24): its answer delay
+  // in ms and its acceleration in °/s² of the joint. Guesses until measured on
+  // the bench (lab-day.md); they only change Studio's picture and the sim.
+  servoLagMs: [40, 40, 40, 40, 40, 40, 40, 40, 60, 40],
+  servoAccel: [3000, 3000, 4000, 4000, 3000, 3000, 4000, 4000, 1500, 4000],
   // SERVO travel per joint: how far the SERVO turns end to end. 180 for a
   // normal hobby servo, 270 for a wide-angle one. This is NOT the joint's
   // range (that is min/max above) — fitting a 270 servo is this one number,
@@ -417,7 +422,7 @@ function mergeRig(saved) {
   if (!Array.isArray(r.home) && Array.isArray(r.neutral)) r.home = [...r.neutral];
   ["zero", "min", "max", "axis", "invert", "neutral", "home", "offset",
    "gearPinion", "gearGear", "pulseMin", "pulseMax", "servoMaxDps", "servoRange",
-   "frameHz"].forEach(fixLen);
+   "frameHz", "servoLagMs", "servoAccel"].forEach(fixLen);
   // The SHRUG 4-bar calibration. An empty list means "not measured", which is
   // the old symmetric behaviour — so every rig saved before this keeps looking
   // exactly as it did until you actually measure the linkage.
@@ -714,6 +719,11 @@ const MIN_MOVE_MS = 80;                  // same floor as the firmware
 // Safety cap on PEAK joint speed, firmware NONG_SAFE_DPS; the board's own
 // value (INFO safe_dps) replaces it on connect so both sides time moves alike.
 let SAFE_DPS = 60;
+// The cap while a show follows its music (firmware NONG_MUSIC_DPS, INFO
+// music_dps; user 2026-10-27: no cap then). 0 = only each servo's own max.
+let MUSIC_DPS = 0;
+let PACE_OVERRIDE = null;
+let SEQ_MUSIC_DPS = null;  // this sequence's own speed limit with music (music_pace.js); null = MUSIC_DPS   // "music" while the Video page builds a stay-with-the-music show
 let boardSafeDpsMax = 0;    // from INFO max_dps; 0 means this board cannot be configured here
 let boardSafePeer = 0;      // linked board needs the same cap for synchronized moves
 let boardSafeIdentity = ""; // never save a persistent setting to a different board
@@ -2969,7 +2979,8 @@ class StudioCollisionGeometry {
       return "the physical collision sizes are invalid";
     const extra = RIG.extraClearanceMm ?? 0;
     if (!Number.isFinite(extra) || extra < 0) return "the extra safety gap is invalid";
-    const gap = CLEAR + extra, { torso, head, arms } = this.snapshot(p);
+    // the music pace (no speed cap) lets servo lag cut corners: SAFE.musicGapMm
+    const gap = CLEAR + extra + (planPace() === "music" ? SAFE.musicGapMm : 0), { torso, head, arms } = this.snapshot(p);
     const sphereBox = (s, box) => this.pointBox(s.at, box) < s.r + gap;
     const sphereBar = (s, bar) => segSegDist(s.at, s.at, bar.a, bar.b) < s.r + bar.r + gap;
     for (const a of arms) {
@@ -3022,7 +3033,9 @@ class StudioCollisionGeometry {
 // Bodies are capsules along the arm segments (radii from the built-in
 // shapes) with a small safety margin. Checked for every keyframe AND along
 // the interpolated path between keyframes (collisions often happen mid-move).
-const CLEAR = 4;         // safety margin (mm)
+// Safety margin (mm): anything closer counts as a hit. 10 mm for servo
+// backlash over shoulder + elbow (user 2026-10-27); DATA: safe_path.json clearMm.
+let CLEAR = 10;
 const R_ARM = 14, R_WRIST = 16, R_HEAD = 46;
 
 function distToBox(p, hx, hy, hz) { // 0 = inside the torso box
@@ -3151,6 +3164,8 @@ function checkCollisions(showAlert) {
 // in qc/checks/check_safe_path.py.
 let SAFE = {
   planner: "rrt-star",      // "straight" refuses; rrt-connect remains available
+  clearMm: 10,              // every check: closer than this is a hit (CLEAR)
+  musicGapMm: 7,            // extra gap at the music pace: fast moves cut corners (nong_sim)
   checkDeg: 1,              // biggest joint change between two checked points
   stepDeg: 12,              // how far a tree grows per try
   goalBias: 0.2,
@@ -3169,7 +3184,7 @@ function loadSafeSettings(j) {
   const bounds = { checkDeg: [0.05, 10], stepDeg: [0.1, 180], goalBias: [0, 1],
     budgetMs: [1, 30000], liveBudgetMs: [1, 5000], shortcuts: [0, 500],
     seed: [0, 4294967295], seedBudgetMs: [0, 100], optimizeMs: [0, 1000],
-    sliceMs: [1, 50], maxNodes: [2, 10000], rewireFactor: [1, 5] };
+    sliceMs: [1, 50], maxNodes: [2, 10000], rewireFactor: [1, 5], musicGapMm: [0, 100], clearMm: [0, 50] };
   if (!j || typeof j !== "object") { SAFE_ERROR = "invalid path settings"; return false; }
   const next = { ...SAFE };
   for (const key of Object.keys(SAFE)) if (key in j) next[key] = j[key];
@@ -3182,7 +3197,7 @@ function loadSafeSettings(j) {
       SAFE_ERROR = "invalid path setting: " + key; return false;
     }
   }
-  Object.assign(SAFE, next); SAFE_ERROR = ""; return true;
+  Object.assign(SAFE, next); SAFE_ERROR = ""; CLEAR = SAFE.clearMm; return true;
 }
 fetch("safe_path.json").then(r => r.json()).then(loadSafeSettings).catch(() => {});
 function safeRevision() { return JSON.stringify([SAFE, SAFE_ERROR, RIG]); }
@@ -3746,9 +3761,12 @@ async function directSafePlay(fromMs) {
     }
   };
   entryHold=true;
+  // no board show here, so the music pace is asked for by hand and handed back
+  const music=planPace(K)==='music';
   return withSafeMotion(async()=>{try {
     let status=await safeTakeover(stale);
     if(!status || stale())return false;
+    if(music) await rawCmd('PACE '+musicPace.cue().replace(/^pace:\s*/i,'').toUpperCase()).catch(()=>'');   // an older board: moves just run slower
     if(!(await checkedPoseUnlocked(poseAt(fromMs),0,epoch,null,status,s=>draw(s.module.joints,fromMs))) || stale())return false;
     let cursor=fromMs;
     do {
@@ -3771,6 +3789,7 @@ async function directSafePlay(fromMs) {
     return !stale();
   }catch(e){await cancelSafeMotion('direct playback failed');safeMotionNote('Playback stopped: '+e.message,true);return false;}
   finally {
+    if(music) await rawCmd('PACE NORMAL').catch(()=>'');
     if(epoch===safeMotionEpoch) {playing=false;entryHold=false;$('playBtn').textContent='▶ Play';keepAwake(false);}
   }});
 }
@@ -4192,7 +4211,17 @@ function deltaDeg(from, to) {
 // so any speed above about 38 °/s produces the identical time. The number was
 // never wrong; it was invisible. Every caller that shows a time to a person
 // asks for the reason too.
-function minTimeWhy(from, to) {
+// The pace a sequence is planned and played at. One that plays a song (a
+// `play:` cue) or says `pace: music` follows its music: the board drops the
+// peak-speed cap to music_dps for that file (PACE MUSIC), and Studio plans the
+// same. Everything else keeps SAFE_DPS. Collisions, limits and servo max hold
+// in both.
+function planPace(K = keys) {
+  if (PACE_OVERRIDE) return PACE_OVERRIDE;
+  return K.some(k => keyCue(k, "play") || /^music\b/i.test(keyCue(k, "pace") || "")) ? "music" : "normal";
+}
+function paceCapDps(pace = planPace()) { return pace === "music" ? musicPace.cap() : SAFE_DPS; }
+function minTimeWhy(from, to, atPace) {
   // per joint (the slow WAIST servo counts too), the slowest joint wins
   let servo = 0, slowest = 0;
   for (let i = 0; i < NJ; i++) {
@@ -4200,15 +4229,18 @@ function minTimeWhy(from, to) {
     if (need > servo) { servo = need; slowest = i; }
   }
   // safety floor, same as firmware nongmath::safeDuration (ease peaks at pi/2 x average)
-  const peak = deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, SAFE_DPS);
+  const pace = atPace || planPace(), cap = paceCapDps(pace);
+  const peak = cap > 0 ? deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, cap) : 0;
   const need = Math.max(servo, peak);
   const ms = Math.max(MIN_MOVE_MS, Math.ceil(need * 1000));
   let why = "the 80 ms shortest-move floor", fix = "";
   if (need * 1000 > MIN_MOVE_MS) {
     if (peak >= servo) {
-      why = `the robot's peak speed limit, ${SAFE_DPS} °/s`;
-      fix = `Above about ${flatDps()} °/s nothing gets faster. Raise ` +
-            `Peak speed limit (Timing) to shorten it.`;
+      why = pace === "music" ? `the speed limit with music, ${cap} °/s`
+                             : `the robot's peak speed limit, ${SAFE_DPS} °/s`;
+      fix = pace === "music" ? "Raise Speed limit with music (Timing), or 0 for the servos' top speed."
+                             : `Above about ${flatDps()} °/s nothing gets faster. Raise ` +
+                               `Peak speed limit (Timing) to shorten it.`;
     } else {
       why = `${JOINT_LABELS[slowest] || ("joint " + (slowest + 1))} at its ` +
             `servo max, ${Math.round(jointMaxDps(slowest))} °/s`;
@@ -4217,7 +4249,8 @@ function minTimeWhy(from, to) {
   }
   return { ms, why, fix };
 }
-function minTime(from, to) { return minTimeWhy(from, to).ms; }
+// atPace: a list being planned that is not the open sequence (planPace(list))
+function minTime(from, to, atPace) { return minTimeWhy(from, to, atPace).ms; }
 // The show speed above which the peak limit decides every safety-limited move.
 // pi/2 is the ease curve's peak-to-average ratio, the same one the firmware uses.
 function flatDps() { return Math.floor(SAFE_DPS * 2 / Math.PI); }
@@ -4334,8 +4367,10 @@ function adoptBoardSafety(module) {
   // choice and must not be silently replaced after reconnecting to a board.
   const wasAuto = keys.map((k, i) => i > 0 && !timePinned(i) && k.t ===
     autoTime(keys[i - 1].pose, k.pose, keyDps(i)));
-  const changed = safe !== SAFE_DPS;
+  const music = Number(module.music_dps);
+  const changed = safe !== SAFE_DPS || (Number.isFinite(music) && music !== MUSIC_DPS);
   SAFE_DPS = safe;
+  if (Number.isFinite(music) && music >= 0) MUSIC_DPS = music;   // older boards: keep 0
   boardSafeDpsMax = max;
   boardSafePeer = module.link ? Number(module.peer) || 0 : 0;
   input.disabled = button.disabled = false;
@@ -4390,6 +4425,206 @@ function retimeAt(i) {
 function clampKeyTimes() { // raise any hand-edited time that fell below the floor
   bumpKeys();
   for (let i = 0; i < keys.length; i++) keys[i].t = Math.max(keys[i].t, keyMin(i));
+}
+// --- speed limit with music (A48-23) ---
+// User 2026-10-27: a show that follows its song may run faster than the 60 °/s
+// safety cap, set PER SEQUENCE and tuned by the user, who then cuts, adds or
+// changes the moves that still cannot keep up. One number per sequence:
+// empty = the robot's own music_dps, 0 = only the servos' top speed. It is
+// saved in the project and written into the file as `pace: music N`, which
+// the board obeys for that file only (PACE MUSIC N, NongModule.cpp).
+const musicPace = {
+  // the cap a list K follows its music at
+  cap(K = keys) {
+    const own = this.own(K);
+    return own != null ? own : MUSIC_DPS;
+  },
+  // the sequence's own number: the box, else a file's `pace: music N`; null = the robot's
+  own(K = keys) {
+    if (SEQ_MUSIC_DPS != null) return SEQ_MUSIC_DPS;
+    for (const k of K) {
+      const m = /^music\s+(\d+(?:\.\d+)?)/i.exec(keyCue(k, "pace") || "");
+      if (m) return +m[1];
+    }
+    return null;
+  },
+  cue(K = keys) { const own = this.own(K); return "pace: music" + (own != null ? " " + own : ""); },
+  // the value in the box, then every pace cue and every music-timed move follow it
+  changed() {
+    const raw = ($("musicDpsSeq").value || "").trim(), v = Math.round(+raw);
+    SEQ_MUSIC_DPS = raw === "" || !(v >= 0) ? null : v > 0 && v < 5 ? 5 : Math.min(v, Math.round(slowestDps()));
+    $("musicDpsSeq").value = SEQ_MUSIC_DPS == null ? "" : SEQ_MUSIC_DPS;
+    keys.forEach(k => {
+      if (k.cues) k.cues = k.cues.map(c => /^pace:\s*music/i.test(c) ? this.cue() : c);
+    });
+    this.retime();
+    renderTimeline();
+  },
+  // A move timed by the song gets back the song's time when the cap allows
+  // it, and only as much more as the servos need when it does not.
+  retime() {
+    bumpKeys();
+    keys.forEach((k, i) => {
+      if (k.musicMs > 0) { delete k.servoMs; k.t = Math.max(k.musicMs, keyMin(i)); }
+    });
+    // faster moves may now let the lagging arm touch: lengthen those again
+    if (planPace() === "music") ServoFollow.settle(keys.filter(k => !k.off));
+  },
+  // the moves that cannot keep up at this cap: [{i, behindMs, why}]
+  late() {
+    if (planPace() !== "music") return [];
+    const out = [];
+    keys.forEach((k, i) => {
+      if (k.off || !(i > 0)) return;
+      const want = k.musicMs > 0 ? k.musicMs : null;
+      if (want == null) return;
+      const w = minTimeWhy(keys[i - 1].pose, k.pose);
+      if (k.servoMs > Math.max(want, w.ms) + 10)
+        out.push({ i, behindMs: k.servoMs - want, why: "the real servos: at full speed the hands would touch" });
+      else if (w.ms > want + 10) out.push({ i, behindMs: w.ms - want, why: w.why });
+    });
+    return out;
+  },
+  render() {
+    const row = $("musicPaceRow");
+    if (!row) return;
+    const music = planPace() === "music";
+    row.hidden = !music;
+    $("musicFitStat").hidden = !music;
+    const list = $("musicFitList");
+    list.innerHTML = "";
+    if (!music) return;
+    if (document.activeElement !== $("musicDpsSeq"))
+      $("musicDpsSeq").value = SEQ_MUSIC_DPS == null ? "" : SEQ_MUSIC_DPS;
+    $("musicDpsSeq").placeholder = MUSIC_DPS > 0 ? String(MUSIC_DPS) : "robot";
+    const cap = this.cap(), late = this.late();
+    const at = cap > 0 ? `${cap} °/s` : "the servos' top speed";
+    if (!late.length) { $("musicFitStat").textContent = `Every move keeps up with the song at ${at}.`; return; }
+    const behind = late.reduce((s, x) => s + x.behindMs, 0);
+    $("musicFitStat").textContent = `${late.length} move(s) fall behind the song at ${at}; ` +
+      `the show ends ${(behind / 1000).toFixed(1)} s after the music. Raise the limit, or click a move to ` +
+      "shorten, change or remove it.";
+    late.slice(0, 40).forEach(x => {
+      const b = document.createElement("button");
+      b.className = "secondary mini";
+      b.textContent = `${keys[x.i].name || "move " + x.i} +${(x.behindMs / 1000).toFixed(2)} s`;
+      b.title = "held back by " + x.why;
+      b.onclick = () => selectKey(x.i);
+      list.appendChild(b);
+    });
+  },
+};
+// --- the real servos (A48-24) ---
+// User 2026-10-27: see in Studio where the real robot falls behind the timing.
+// The board sends a target every frame; a hobby servo reaches it late: it
+// answers after a delay (lag), speeds up no faster than its acceleration and
+// turns no faster than its top speed. All three are per joint on the RIG
+// (Setup > rig), so they follow this robot's servos; lag and acceleration are
+// guesses until measured on the bench (lab-day.md). The warn/bad lines and the
+// frame are DATA in servo_follow.json. tools/nong_sim/world.py uses the same
+// model (_servo_step), so Studio and the physics player agree.
+let SERVO_VIEW = { frameMs: 20, warnDeg: 8, badDeg: 20 };
+fetch("servo_follow.json").then(r => r.json()).then(j => {
+  for (const k of Object.keys(SERVO_VIEW)) if (Number.isFinite(j[k]) && j[k] > 0) SERVO_VIEW[k] = j[k];
+}).catch(() => {});
+
+class ServoFollow {
+  constructor(start) { this.reset(start); }
+  reset(start) {
+    this.pos = [...start]; this.aim = [...start]; this.vel = new Array(NJ).fill(0);
+  }
+  // one step of dt ms toward target; returns where the horns are
+  step(target, dt) {
+    const s = dt / 1000;
+    for (let j = 0; j < NJ; j++) {
+      const lag = Math.max(0.1, +RIG.servoLagMs[j] || 0) / 1000;
+      this.aim[j] += (target[j] - this.aim[j]) * (1 - Math.exp(-s / lag));
+      const top = jointMaxDps(j), acc = Math.max(1, +RIG.servoAccel[j] || 1);
+      const err = this.aim[j] - this.pos[j];
+      // the fastest speed that can still stop on the aim: no overshoot
+      const want = Math.sign(err) * Math.min(top, Math.sqrt(2 * acc * Math.abs(err)), Math.abs(err) / s);
+      const dv = Math.max(-acc * s, Math.min(acc * s, want - this.vel[j]));
+      this.vel[j] += dv;
+      this.pos[j] += this.vel[j] * s;
+    }
+    return this.pos;
+  }
+  // The whole list K played at the board's frame: for every move, how far the
+  // horns trailed the timeline at worst, and on which joint.
+  // opts.hits: also check the HORNS' pose for touching (every other frame,
+  // ~0.3 ms a check): the plan can be clear while the lagging arm is not.
+  static trace(K, opts = {}) {
+    if (!K.length) return { moves: [], worst: null };
+    const f = new ServoFollow(K[0].pose), dt = SERVO_VIEW.frameMs;
+    const end = easeKeys(K, Infinity).end || 0, starts = [];
+    let t = K[0].hold || 0;
+    for (let i = 1; i < K.length; i++) { starts.push(t); t += K[i].t + (K[i].hold || 0); }
+    const moves = K.map(() => ({ deg: 0, joint: -1 }));
+    let worst = null, m = 0;
+    for (let ms = 0; ms <= end + 500; ms += dt) {
+      while (m < starts.length - 1 && ms >= starts[m + 1]) m++;
+      const want = easeKeys(K, ms).pose, got = f.step(want, dt);
+      for (let j = 0; j < NJ; j++) {
+        const e = Math.abs(want[j] - got[j]), mv = moves[Math.min(m + 1, K.length - 1)];
+        if (e > mv.deg) { mv.deg = e; mv.joint = j; }
+        if (!worst || e > worst.deg) worst = { deg: e, joint: j, move: m + 1, ms };
+      }
+      const mv = moves[Math.min(m + 1, K.length - 1)];
+      if (opts.hits && !mv.hitMs && (ms / dt) % 2 === 0 && collisionAt(got)) mv.hitMs = ms;
+    }
+    return { moves, worst };
+  }
+  // A show that follows its song may move faster than the real arm can follow
+  // without its hands meeting (nong_sim found 0-4 touches per cheer dance,
+  // 2026-10-27). Lengthen each move where the HORNS touch, a little at a
+  // time, until none does; k.servoMs keeps that floor so later re-timing
+  // (music_pace.js) honours it. Returns how many moves it lengthened.
+  static settle(K, tries = 6) {
+    const longer = new Set();
+    for (let n = 0; n < tries; n++) {
+      const hit = ServoFollow.trace(K, { hits: true }).moves
+        .map((mv, i) => (mv.hitMs ? i : -1)).filter(i => i > 0);
+      if (!hit.length) break;
+      for (const i of hit) {
+        K[i].t = Math.round(K[i].t * 1.3); K[i].servoMs = K[i].t; longer.add(i);
+      }
+    }
+    return longer.size;
+  }
+}
+
+// What the time bar and the status line show: cached per edit of the moves.
+const servoLag = {
+  sig: "", res: null,
+  of() {
+    const sig = keysSignature() + "|" + RIG.servoLagMs + "|" + RIG.servoAccel + "|" + RIG.servoMaxDps + "|" + maxDps();
+    if (sig !== this.sig) { this.sig = sig; this.res = ServoFollow.trace(playKeys()); }
+    return this.res;
+  },
+  // for bar chip i: {deg, joint, level: "" | "warn" | "bad"}; a suspended
+  // chip is not played, so the played list counts only the others
+  forKey(i) {
+    if (!keys[i] || keys[i].off) return null;
+    let p = 0;
+    for (let n = 0; n < i; n++) if (!keys[n].off) p++;
+    const mv = this.of().moves[p];
+    if (!p || !mv) return null;
+    const level = mv.deg >= SERVO_VIEW.badDeg ? "bad" : mv.deg >= SERVO_VIEW.warnDeg ? "warn" : "";
+    return { ...mv, level };
+  },
+  summary() {
+    const w = this.of().worst;
+    if (!w || w.deg < SERVO_VIEW.warnDeg) return "The real servos keep up with every move.";
+    return `The real servos fall up to ${Math.round(w.deg)}° behind (${JOINT_LABELS[w.joint] || "joint " + (w.joint + 1)}, ` +
+           `move ${w.move}). Marked moves on the bar; slow them or tick “Play like the real servos” to watch it.`;
+  },
+};
+// "Play like the real servos": the 3D robot shows the horns, not the plan.
+let servoPlay = null;
+function servoPlayPose(target, dt) {
+  if (!$("servoView") || !$("servoView").checked) { servoPlay = null; return target; }
+  if (!servoPlay) servoPlay = new ServoFollow(target);
+  return [...servoPlay.step(target, dt)];
 }
 // --- timeline ---
 function addKey() {
@@ -4523,6 +4758,7 @@ function selectKey(i) {
     livePause(); stopRobotSequence(); keepAwake(false);
   }
   token=seekToken;
+  servoPlay = null;          // the real-servo picture starts again where the clock lands
   selKey = i;
   let travel = 0;
   if (keys[i]) {
@@ -4837,6 +5073,11 @@ function renderTimeline() {
     mn.appendChild(mus);
     el.append(bar, idx, pv, tr, mn);
     if (musOpen.has(i) || keyCue(k, "play")) el.append(musicRow(k, i));
+    const lag = servoLag.forKey(i);   // the real servos trail this move (servo_follow.js)
+    if (lag && lag.level) {
+      el.classList.add("lag" + lag.level);
+      el.title = `the real servos fall ${Math.round(lag.deg)}° behind here (${JOINT_LABELS[lag.joint] || "joint " + (lag.joint + 1)})`;
+    }
     if (k.bad) { // collision found by checkCollisions(): mark the chip red
       el.classList.add("bad");
       const b = document.createElement("div");
@@ -4847,6 +5088,8 @@ function renderTimeline() {
     box.appendChild(el);
   });
   $("tlTime").textContent = (playT / 1000).toFixed(1) + "s / " + (totalMs() / 1000).toFixed(1) + "s";
+  musicPace.render();
+  if ($("servoStat")) $("servoStat").textContent = servoLag.summary();
   renderTimeBar();
 }
 
@@ -5519,6 +5762,10 @@ function buildYaml(fromMs) {
   let cur = seqDps;
   for (let s = 0; s < from && s < K0.length; s++) cur = Math.round(K0[s].dps || seqDps);
   lines.push(`  - speed: ${cur}`);
+  // A sequence that follows its music says so first and puts the pace back
+  // last, so inside a longer show it never speeds up the sequence after it.
+  const music = planPace(K0) === "music";
+  if (music && !K0.some(k => keyCue(k, "pace"))) lines.push("  - " + musicPace.cue());
   // suspended keyframes are left out entirely — the robot never sees them
   playKeys().forEach((k, i) => {
     if (i < from) return;      // walked for state above, never written as motion
@@ -5537,7 +5784,7 @@ function buildYaml(fromMs) {
     // The cues this keyframe carried in, written back where they came from —
     // before the move, the same order the file had them in. Without this an
     // edit-and-export silently threw the show's music away.
-    (k.cues || []).forEach(c => lines.push(`  - ${c}`));
+    (k.cues || []).forEach(c => lines.push(`  - ${/^pace:\s*music/i.test(c) ? musicPace.cue() : c}`));
     // The FIRST move written is the only one whose starting point the file
     // cannot know — the robot is wherever it is standing, not where the
     // timeline says. Give it at least the time that distance really needs, so
@@ -5549,6 +5796,7 @@ function buildYaml(fromMs) {
     if (k.hold > 0) lines.push(`  - wait: ${k.hold}`);
     (k.cuesAfter || []).forEach(c => lines.push(`  - ${c}`));
   });
+  if (music) lines.push("  - pace: normal");
   const next = ($("seqNext").value || "").trim().replace(/[^\w.-]+/g, "");
   if (next) {
     // chain: when this sequence ends the module starts that one, so a show can
@@ -5712,7 +5960,7 @@ function renderRigUI() {
   // PER-JOINT servo + gear (each joint can use a different servo)
   const svh = document.createElement("div"); svh.className = "tlabel";
   svh.style.marginTop = "8px";
-  svh.textContent = "servo & gear per joint (pinion:gear, pulse µs, max °/s, travel°, Hz):";
+  svh.textContent = "servo & gear per joint (pinion:gear, pulse µs, max °/s, delay ms, speed-up °/s², travel°, Hz):";
   jb.appendChild(svh);
   const presetRow = document.createElement("div"); presetRow.className = "row";
   const pl = document.createElement("span"); pl.className = "lbl"; pl.textContent = "preset";
@@ -5732,7 +5980,7 @@ function renderRigUI() {
   jb.appendChild(presetRow);
   JOINT_LABELS.forEach((label, i) => {
     const row = document.createElement("div"); row.className = "rigjrow";
-    row.style.gridTemplateColumns = "78px 38px 38px 50px 50px 44px 44px 44px";
+    row.style.gridTemplateColumns = "78px 38px 38px 50px 50px 44px 40px 52px 44px 44px";
     const name = document.createElement("span");
     name.className = "jname"; name.textContent = label;
     row.appendChild(name);
@@ -5756,6 +6004,8 @@ function renderRigUI() {
     mk("pulseMin", 100, "servo pulse minimum (µs)");
     mk("pulseMax", 200, "servo pulse maximum (µs)");
     mk("servoMaxDps", 30, "this servo's physical speed limit (°/s of the joint)");
+    mk("servoLagMs", 0, "how late this servo answers a new target (ms). A guess until measured; only Studio's picture of the real servos uses it.");
+    mk("servoAccel", 100, "how fast this servo can speed up (°/s² of the joint). A guess until measured; only Studio's picture of the real servos uses it.", 100000);
     mk("servoRange", 60,
        "SERVO travel: how far this servo turns end to end. 180 = normal hobby " +
        "servo, 270 = wide-angle. NOT the joint's range (that is min°/max° above).",
@@ -7193,6 +7443,7 @@ async function saveProject(opts) {
     // project re-times every automatic move against a different 60 °/s default
     // and the show quietly got slower (A31-4).
     safeDps: SAFE_DPS,
+    musicDps: SEQ_MUSIC_DPS,   // speed limit with music, this sequence only (A48-23)
     meshes: meshCfg, addons,
     robotIp: $("robotIp").value, seqName: $("projName").value,   // kept: older Studios read it
     // The chain is part of the show: a project saved with one and reopened
@@ -7294,6 +7545,7 @@ async function loadProject(file) {
   bumpKeys();
   $("speedDps").value = p.speedDps || 120;
   $("maxDps").value = p.maxDps || 400;
+  SEQ_MUSIC_DPS = Number.isFinite(p.musicDps) && p.musicDps >= 0 ? p.musicDps : null;
   // A connected board's own limit still wins: adoptBoardSafety runs on connect
   // and overwrites this. Saved projects only decide what Studio plans with
   // while no robot is telling it otherwise.
@@ -10515,7 +10767,14 @@ function vidReachSide(from, to, ms, pk, opts) {
     && opts.hand[a] * palmUpnessOf(plain, a) <= 0.5) };
 }
 // 3. The moves, from the picks and the choices.
+// Stay with the music = the show follows its song, so it is planned AND
+// played at the music pace (PACE MUSIC, user 2026-10-27), not the safe cap.
 function vidBuild(fit, picks, opts) {
+  const before = PACE_OVERRIDE;
+  PACE_OVERRIDE = opts.music ? "music" : null;
+  try { return vidBuildAtPace(fit, picks, opts); } finally { PACE_OVERRIDE = before; }
+}
+function vidBuildAtPace(fit, picks, opts) {
   const out = [], handMiss = [0, 0];
   let kept = 0, partial = 0, last = 0, start = 0;
   for (const pk of picks) {
@@ -10549,8 +10808,15 @@ function vidBuild(fit, picks, opts) {
   // body). safeKeys() drops a pose that hits and sends a hitting move round,
   // on this rig's sizes; each move keeps its time, so the music still fits.
   const safe = safeKeys(out, undefined, opts.music);
+  // each move's time on the song, after detours split it: what the speed
+  // limit with music is measured against later (music_pace.js)
+  if (opts.music) safe.keys.forEach((k, i) => { if (i) k.musicMs = k.t; });
+  // then give the real, lagging servos room where the hands would meet
+  const settled = opts.music ? ServoFollow.settle(safe.keys) : 0;
+  if (opts.music && safe.keys.length)            // the file keeps the pace
+    safe.keys[0].cues = (safe.keys[0].cues || []).filter(c => !/^pace:/i.test(c)).concat(musicPace.cue());
   // start: the first kept move's moment, where these moves meet the video
-  const made = { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, keepMusic: opts.music, quality: fit.quality || null };
+  const made = { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, settled, keepMusic: opts.music, quality: fit.quality || null };
   if (fit.targets) made.achieved = VideoRigFitter.assess(fit, made);
   if (made.achieved && made.quality) made.quality.worstBoneDegrees = made.achieved.worstBoneDegrees;
   return made;
@@ -11969,7 +12235,7 @@ function playTick() {
       keepAwake(false);                    // the show is over: let the tab idle
     }
   }
-  pose = poseAt(playT).map((v, i) => clampJ(i, v));
+  pose = servoPlayPose(poseAt(playT), dt).map((v, i) => clampJ(i, v));
   // DRAW only from the animation frame. Both rAF and the keep-awake interval
   // call this, so the picture was being redrawn ~76 times a second when the
   // screen can only show 60 — the extra passes were pure cost. Time still

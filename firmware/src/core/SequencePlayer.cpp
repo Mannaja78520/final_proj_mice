@@ -37,6 +37,7 @@ bool SequencePlayer::startText(const String& yaml, String& err) {
     file_ = "(memory)";
     chain_ = 0;
     running_ = true;
+    if (router_->module()) router_->module()->showRunning(true);
     return true;
 }
 
@@ -70,6 +71,7 @@ bool SequencePlayer::startAt(const String& path, String& err, int depth) {
     file_ = path;
     chain_ = depth;
     running_ = true;
+    if (router_->module()) router_->module()->showRunning(true);
     return true;
 }
 
@@ -77,6 +79,7 @@ void SequencePlayer::stop() {
     // ramYaml_ deliberately survives: stopping a run does not unload the
     // sequence, so it can be played again without re-sending it.
     running_ = false;
+    if (router_ && router_->module()) router_->module()->showRunning(false);
     file_ = "";
     delete doc_;
     doc_ = nullptr;

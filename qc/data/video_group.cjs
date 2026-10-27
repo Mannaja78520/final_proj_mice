@@ -16,12 +16,14 @@ function context() {
     Option:function(label,value){this.label=label;this.value=value;}});
   const run=s=>vm.runInContext(s,c);
   run('const $=id=>document.getElementById(id);');
-  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','yaml_export','video_body_motion','video_tracking','video_motion_smooth','video_appearance','video_routine_assignment','video_routine_sections','video_routines','video_rig_fit','video_checked_playback'])run(read(name));
+  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','music_pace','servo_follow','yaml_export','video_body_motion','video_tracking','video_motion_smooth','video_appearance','video_routine_assignment','video_routine_sections','video_routines','video_rig_fit','video_checked_playback'])run(read(name));
   const timeline=read('timeline');run(timeline.slice(timeline.indexOf('function easeKeys('),timeline.indexOf('\nfunction poseAt(')));
+  // keyCue/setKeyCue: planPace() reads a sequence's play:/pace: cues
+  const cues=read('music_on_a_keyframe'),at=cues.indexOf('function keyCue(');run(cues.slice(at,cues.indexOf('\n}\n',cues.indexOf('function setKeyCue(',at))+3));
   const videoSource=read('pose_from_video');run(videoSource.slice(0,videoSource.lastIndexOf('\nvidFill();')));
   c.config=config;c.safe=safe;c.policy=policy;
   run(`VIDEO_FOLLOW=config;VIDEO_POLICY=policy;
-    let pose=RIG.neutral.map((v,i)=>clampJ(i,v)),keys=[],SAFE_DPS=60;const MIN_MOVE_MS=80;
+    let pose=RIG.neutral.map((v,i)=>clampJ(i,v)),keys=[],SAFE_DPS=60,MUSIC_DPS=0,PACE_OVERRIDE=null,SEQ_MUSIC_DPS=null;function bumpKeys(){}const MIN_MOVE_MS=80;
     const scene=new THREE.Scene(),matJoint=new THREE.MeshBasicMaterial();
     function partMat(){return new THREE.MeshBasicMaterial();}
     robot=new THREE.Group();scene.add(robot);buildRigShapes();applyPose();loadSafeSettings(safe);
@@ -149,7 +151,7 @@ if(require.main===module){
   })()`);
   check('explicit performer overrides auto subject',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'fixed',dancer:'2'});const f=tr.step(result([{x:.5,w:person(0,0)},{x:.8,w:person(0,0,[0,0,0],true)}]),0,null,0);return f.track===2;})()`);
   check('camera cut does not create waist jump',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'cuts',dancer:'auto'});const a=tr.step(result([{x:.5,w:person(.3,.05)}]),0,null,0),b=tr.step(result([{x:.4,w:person(.3,.05,[.7,1.2,.2])}]),.1,null,.8);return Math.abs(a.waist-b.waist)<.02;})()`);
-  check('hand boxes collide despite old clear wrist spacing',`(()=>{const G=StudioCollisionGeometry,A=[new THREE.Vector3(1,0,0),new THREE.Vector3(0,1,0),new THREE.Vector3(0,0,1)];return 40>2*R_WRIST+CLEAR&&G.boxesHit(G.box(new THREE.Vector3(),A,[17,23,2.5]),G.box(new THREE.Vector3(0,40,0),A,[17,23,2.5]),CLEAR);})()`);
+  check('hand boxes collide despite old clear wrist spacing',`(()=>{const G=StudioCollisionGeometry,A=[new THREE.Vector3(1,0,0),new THREE.Vector3(0,1,0),new THREE.Vector3(0,0,1)];const d=2*R_WRIST+CLEAR+2;return G.boxesHit(G.box(new THREE.Vector3(),A,[17,23,2.5]),G.box(new THREE.Vector3(0,d,0),A,[17,23,2.5]),CLEAR);})()`);
   check('depth separated crossed hands remain clear',`(()=>{const G=StudioCollisionGeometry,A=[new THREE.Vector3(1,0,0),new THREE.Vector3(0,1,0),new THREE.Vector3(0,0,1)];return !G.boxesHit(G.box(new THREE.Vector3(),A,[17,23,2.5]),G.box(new THREE.Vector3(0,0,16),A,[17,23,2.5]),CLEAR);})()`);
   check('segment box distance detects crossing between endpoints',`(()=>{const G=StudioCollisionGeometry,A=[new THREE.Vector3(1,0,0),new THREE.Vector3(0,1,0),new THREE.Vector3(0,0,1)];return G.segmentBox(new THREE.Vector3(-50,0,0),new THREE.Vector3(50,0,0),G.box(new THREE.Vector3(),A,[10,10,10]))===0;})()`);
   check('physical collision snapshot restores pose and transforms',`(()=>{const p=pose.slice(),q=RIG.home.slice();q[9]=RIG.max[9];StudioCollisionGeometry.snapshot(q);return pose===p?false:JSON.stringify(pose)===JSON.stringify(p);})()`);

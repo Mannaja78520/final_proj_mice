@@ -53,6 +53,9 @@ window.addEventListener("load", function(){ qcStudioReady().then(function(){ set
     });
     var a = CASES[0].poses[0], b = CASES[0].poses[1];
     report("time=" + minTime(a, b) + "," + minTime(b, a));
+    var f = new ServoFollow(a), horn = a;
+    for (var i = 0; i < 12; i++) horn = f.step(b, 20);
+    report("servo=" + horn.map(function(x){ return x.toFixed(3); }).join(","));
   }catch(e){ report("ERR-" + String(e).slice(0, 90)); }
   setTimeout(function(){ report("done"); }, 300);
 }, 150); }); });
@@ -95,6 +98,19 @@ def run(t):
          "a move asked faster than the servos can go is lengthened, and the show falls behind its music",
          [clock.length, clock.asked_length])
     t.ok(abs(clock.length - moves[0].took - 0.25) < 1e-9, "a wait adds to the same clock", clock.length)
+    # pace: the board's PACE MUSIC [N] / NORMAL (A48-23)
+    big = list(a)
+    big[0] = a[0] + 60 if a[0] + 60 <= clock.rig["max"][0] else a[0] - 60
+    def took(pace):
+        c = BoardClock(load_rig(), facts, music_dps=0)
+        return c.plan(parse_sequence('steps:\n%s  - pose: "%s T 10"\n' % (pace, " ".join(map(str, big)))))[0].took
+    safe, own, free = took(""), took("  - pace: music 120\n"), took("  - pace: music\n")
+    t.ok(safe > own > free and abs(own - safe * facts.safe_dps / 120) < 0.01,
+         "pace: music 120 caps a 60 deg move at 120 deg/s, a bare pace: music at the servos only",
+         [safe, own, free])
+    back = BoardClock(load_rig(), facts, music_dps=0)
+    back.plan(parse_sequence('steps:\n  - pace: music\n  - pace: normal\n  - pose: "%s T 10"\n' % " ".join(map(str, big))))
+    t.ok(abs(back.length - safe) < 1e-9, "pace: normal puts the safety cap back", [back.length, safe])
 
     if not browser.available():
         t.give_up("headless browser unavailable - the parts above still ran")
@@ -116,6 +132,16 @@ def run(t):
                 worst, where = d, "%s %s studio %s sim %s" % (key, name, s, list(points[name]))
     t.ok(worst < 0.05, "every shoulder, elbow and wrist lands where Studio draws it (tilt, after-turn, "
          "offsets, swapped pair, flipped senses, 4-bar shrug)", "worst %.4f mm at %s" % (worst, where))
+    # the servo model: Python (the sim) and Studio's servo_follow.js agree
+    from tools.nong_sim.world import NongWorld
+    last = cases[-1]["rig"]
+    r = {"servo": list(a), "aim": list(a), "vel": [0.0] * 10, "lagScale": 1.0,
+         "clock": BoardClock(last, facts)}
+    for _ in range(12):
+        NongWorld._servo_step(type("W", (), {"rig": last})(), r, b, 0.02)
+    js = [float(x) for x in got.get("servo", "").split(",") if x]
+    t.ok(len(js) == 10 and max(abs(x - y) for x, y in zip(js, r["servo"])) < 0.5,
+         "the sim's servos lag as Studio's Play like the real servos does", [js[:4], r["servo"][:4]])
     times = [int(v) for v in got.get("time", "0,0").split(",")]
     ours = [clock.floor_ms(a, b), clock.floor_ms(b, a)]
     # the firmware truncates to whole ms, Studio rounds up: 1 ms apart at most
