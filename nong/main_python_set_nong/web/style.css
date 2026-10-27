@@ -214,6 +214,11 @@ input[type=checkbox]{accent-color:var(--acc)}
          background:color-mix(in srgb,var(--err) 12%,var(--bg))}
 .key.bad .kbar{background:var(--err)}
 .key .kbad{font-size:11px;color:var(--err);white-space:normal;max-width:150px}
+/* the real servos trail this move (servo_follow.js): a dashed edge, so it
+   never reads as a collision (solid red) or the selection */
+.key.lagwarn{border-style:dashed;border-color:var(--warn)}
+.key.lagbad{border-style:dashed;border-color:var(--err)}
+#musicFitList button{margin:2px 4px 2px 0}
 #collideWarn{
   display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);
   background:color-mix(in srgb,var(--err) 18%,var(--bg));

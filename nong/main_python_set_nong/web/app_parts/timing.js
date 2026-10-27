@@ -35,9 +35,9 @@ function deltaDeg(from, to) {
 // in both.
 function planPace(K = keys) {
   if (PACE_OVERRIDE) return PACE_OVERRIDE;
-  return K.some(k => keyCue(k, "play") || /^music$/i.test(keyCue(k, "pace"))) ? "music" : "normal";
+  return K.some(k => keyCue(k, "play") || /^music\b/i.test(keyCue(k, "pace") || "")) ? "music" : "normal";
 }
-function paceCapDps(pace = planPace()) { return pace === "music" ? MUSIC_DPS : SAFE_DPS; }
+function paceCapDps(pace = planPace()) { return pace === "music" ? musicPace.cap() : SAFE_DPS; }
 function minTimeWhy(from, to, atPace) {
   // per joint (the slow WAIST servo counts too), the slowest joint wins
   let servo = 0, slowest = 0;
@@ -53,9 +53,9 @@ function minTimeWhy(from, to, atPace) {
   let why = "the 80 ms shortest-move floor", fix = "";
   if (need * 1000 > MIN_MOVE_MS) {
     if (peak >= servo) {
-      why = pace === "music" ? `the robot's speed limit with music, ${cap} °/s`
+      why = pace === "music" ? `the speed limit with music, ${cap} °/s`
                              : `the robot's peak speed limit, ${SAFE_DPS} °/s`;
-      fix = pace === "music" ? "Set the music speed limit to 0 on the robot to follow the song at full servo speed."
+      fix = pace === "music" ? "Raise Speed limit with music (Timing), or 0 for the servos' top speed."
                              : `Above about ${flatDps()} °/s nothing gets faster. Raise ` +
                                `Peak speed limit (Timing) to shorten it.`;
     } else {

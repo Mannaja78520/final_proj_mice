@@ -26,6 +26,8 @@
       "sliders.js",
       "hand_hold.js",
       "timing.js",
+      "music_pace.js",
+      "servo_follow.js",
       "timeline.js",
       "yaml_export.js",
       "rig_setup_ui.js",

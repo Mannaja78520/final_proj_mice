@@ -102,7 +102,7 @@ function renderRigUI() {
   // PER-JOINT servo + gear (each joint can use a different servo)
   const svh = document.createElement("div"); svh.className = "tlabel";
   svh.style.marginTop = "8px";
-  svh.textContent = "servo & gear per joint (pinion:gear, pulse µs, max °/s, travel°, Hz):";
+  svh.textContent = "servo & gear per joint (pinion:gear, pulse µs, max °/s, delay ms, speed-up °/s², travel°, Hz):";
   jb.appendChild(svh);
   const presetRow = document.createElement("div"); presetRow.className = "row";
   const pl = document.createElement("span"); pl.className = "lbl"; pl.textContent = "preset";
@@ -122,7 +122,7 @@ function renderRigUI() {
   jb.appendChild(presetRow);
   JOINT_LABELS.forEach((label, i) => {
     const row = document.createElement("div"); row.className = "rigjrow";
-    row.style.gridTemplateColumns = "78px 38px 38px 50px 50px 44px 44px 44px";
+    row.style.gridTemplateColumns = "78px 38px 38px 50px 50px 44px 40px 52px 44px 44px";
     const name = document.createElement("span");
     name.className = "jname"; name.textContent = label;
     row.appendChild(name);
@@ -146,6 +146,8 @@ function renderRigUI() {
     mk("pulseMin", 100, "servo pulse minimum (µs)");
     mk("pulseMax", 200, "servo pulse maximum (µs)");
     mk("servoMaxDps", 30, "this servo's physical speed limit (°/s of the joint)");
+    mk("servoLagMs", 0, "how late this servo answers a new target (ms). A guess until measured; only Studio's picture of the real servos uses it.");
+    mk("servoAccel", 100, "how fast this servo can speed up (°/s² of the joint). A guess until measured; only Studio's picture of the real servos uses it.", 100000);
     mk("servoRange", 60,
        "SERVO travel: how far this servo turns end to end. 180 = normal hobby " +
        "servo, 270 = wide-angle. NOT the joint's range (that is min°/max° above).",

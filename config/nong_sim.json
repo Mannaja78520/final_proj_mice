@@ -1,5 +1,5 @@
 {
-  "_what": "The optional MuJoCo player for Nong sequences (tools/nong_sim, user 2026-10-27: see the dance in a 3D physics world, any number of robots). Nothing in the hub or Studio needs it. rig: a rig file Studio saved (or a settings backup) to move like THIS robot; null = the shipped rig_default.json. safeDps: the board's safety cap on peak joint speed; null = the firmware default. musicDps: the cap while a sequence says pace: music (PACE MUSIC); null = the firmware default (0 = only each servo's own max). physics: timestep s, density of the printed parts kg/m3 (no weighed parts yet, so arm sag is an estimate), jointDamping N.m.s/rad, armature kg.m2 (the servo's own gearbox inertia). servo: how a hobby servo follows the board's 50 Hz targets - it turns no faster than the rig's servoMaxDps, lags by lagMs (first order, a guess until measured on the bench), and gives its full stall torque (tools/make_urdf.py EFFORT_NM, times the joint's gear) once it is fullTorqueDeg away from its target; kvPerKp = damping per stiffness, s; shrugSlideKp = N/m holding each shoulder on its measured 4-bar height (a measured shrugCurve only). robots: how many robots stand in the world, spacingMm apart; vary.lagMs = each robot gets its own lag spread across this range so one run shows how much the servo's real lag would matter. report: nearMm = how close counts as a near miss; null = Studio's own safety gap (collisions.js CLEAR + rig extraClearanceMm). view: speed 1 = real time; loop = start again at the end. record (tools/nong_sim/record.py, user 2026-10-27: films of every angle with the song, at most 20 GB): folder = where the films go (git-ignored), maxGB = filming stops before the folder passes this, width/height/fps of each film, captionPx = the round and its numbers drawn on top, lookUpMm = the cameras aim this far above the base, cameras = name, azimuth deg (90 = in front, the robot faces -y), elevation deg (negative = looking down), distance m.",
+  "_what": "The optional MuJoCo player for Nong sequences (tools/nong_sim, user 2026-10-27: see the dance in a 3D physics world, any number of robots). Nothing in the hub or Studio needs it. rig: a rig file Studio saved (or a settings backup) to move like THIS robot; null = the shipped rig_default.json. safeDps: the board's safety cap on peak joint speed; null = the firmware default. musicDps: the cap while a sequence says pace: music (PACE MUSIC); null = the firmware default (0 = only each servo's own max). physics: timestep s, density of the printed parts kg/m3 (no weighed parts yet, so arm sag is an estimate), jointDamping N.m.s/rad, armature kg.m2 (the servo's own gearbox inertia). servo: how a hobby servo follows the board's 50 Hz targets - it answers late, speeds up and turns no faster than the rig says (Studio Setup > rig: servoLagMs, servoAccel, servoMaxDps - the same model as Studio's Play like the real servos; lag and speed-up are guesses until measured on the bench); lagScale stretches every joint's delay, and gives its full stall torque (tools/make_urdf.py EFFORT_NM, times the joint's gear) once it is fullTorqueDeg away from its target; kvPerKp = damping per stiffness, s; shrugSlideKp = N/m holding each shoulder on its measured 4-bar height (a measured shrugCurve only). robots: how many robots stand in the world, spacingMm apart; vary.lagScale = each robot gets its own lagScale spread across this range so one run shows how much the servo's real lag would matter. report: nearMm = how close counts as a near miss; null = Studio's own safety gap (collisions.js CLEAR + rig extraClearanceMm). view: speed 1 = real time; loop = start again at the end. record (tools/nong_sim/record.py, user 2026-10-27: films of every angle with the song, at most 20 GB): folder = where the films go (git-ignored), maxGB = filming stops before the folder passes this, width/height/fps of each film, captionPx = the round and its numbers drawn on top, lookUpMm = the cameras aim this far above the base, cameras = name, azimuth deg (90 = in front, the robot faces -y), elevation deg (negative = looking down), distance m.",
   "rig": null,
   "safeDps": null,
   "musicDps": null,
@@ -10,7 +10,7 @@
     "armature": 0.0005
   },
   "servo": {
-    "lagMs": 40,
+    "lagScale": 1.0,
     "fullTorqueDeg": 6,
     "kvPerKp": 0.03,
     "shrugSlideKp": 3000
@@ -19,9 +19,9 @@
     "count": 1,
     "spacingMm": 700,
     "vary": {
-      "lagMs": [
-        20,
-        80
+      "lagScale": [
+        0.5,
+        2.0
       ]
     }
   },

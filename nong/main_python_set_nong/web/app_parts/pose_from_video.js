@@ -522,8 +522,11 @@ function vidBuildAtPace(fit, picks, opts) {
   // body). safeKeys() drops a pose that hits and sends a hitting move round,
   // on this rig's sizes; each move keeps its time, so the music still fits.
   const safe = safeKeys(out, undefined, opts.music);
+  // each move's time on the song, after detours split it: what the speed
+  // limit with music is measured against later (music_pace.js)
+  if (opts.music) safe.keys.forEach((k, i) => { if (i) k.musicMs = k.t; });
   if (opts.music && safe.keys.length)            // the file keeps the pace
-    safe.keys[0].cues = (safe.keys[0].cues || []).filter(c => !/^pace:/i.test(c)).concat("pace: music");
+    safe.keys[0].cues = (safe.keys[0].cues || []).filter(c => !/^pace:/i.test(c)).concat(musicPace.cue());
   // start: the first kept move's moment, where these moves meet the video
   const made = { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, keepMusic: opts.music, quality: fit.quality || null };
   if (fit.targets) made.achieved = VideoRigFitter.assess(fit, made);

@@ -37,14 +37,17 @@ class NongWorld:
         near = config["report"].get("nearMm")
         self.near_mm = near if near is not None else facts.clear_mm + (rig.get("extraClearanceMm") or 0)
         count = max(1, int(config["robots"]["count"]), len(sequences))
-        lo, hi = config["robots"]["vary"].get("lagMs", [config["servo"]["lagMs"]] * 2)
+        # each joint's delay is the rig's (servoLagMs, Studio Setup > rig);
+        # lagScale stretches all of them, per robot when several stand
+        one = config["servo"].get("lagScale", 1.0)
+        lo, hi = config["robots"]["vary"].get("lagScale", [one, one])
         self.robots = []
         for k in range(count):
             clock = BoardClock(rig, facts, config.get("safeDps"), music_dps=config.get("musicDps"))
             moves = clock.plan(sequences[k % len(sequences)][1])
-            lag = config["servo"]["lagMs"] if count == 1 else lo + (hi - lo) * k / (count - 1)
+            scale = one if count == 1 else lo + (hi - lo) * k / (count - 1)
             self.robots.append({"name": sequences[k % len(sequences)][0], "moves": moves, "clock": clock,
-                                "lag": lag / 1000, "servo": None})
+                                "lagScale": scale, "servo": None, "vel": None})
         self.model = mujoco.MjModel.from_xml_string(self.xml())
         self.data = mujoco.MjData(self.model)
         self._index()
@@ -168,7 +171,7 @@ class NongWorld:
         self.mj.mj_resetData(self.model, self.data)
         for r in self.robots:
             start = r["moves"][0].start_pose if r["moves"] else self.rig["home"]
-            r["servo"] = list(start)
+            r["servo"], r["aim"], r["vel"] = list(start), list(start), [0.0] * 10
             for j, adr in r["qadr"].items():
                 self.data.qpos[adr] = math.radians(self.tree.delta(start, j))
             rise = self.tree.shrug_rise(start[9])
@@ -179,13 +182,18 @@ class NongWorld:
         self.t = 0.0
 
     def _servo_step(self, r, target, dt):
-        """Rate cap at servoMaxDps, then a first-order lag: what the horn does."""
-        out = r["servo"]
-        a = 1 - math.exp(-dt / max(1e-4, r["lag"]))
+        """What the horn does: answers late (rig servoLagMs), speeds up no
+        faster than servoAccel and turns no faster than its max. The same
+        model as Studio's servo_follow.js, so both show the same lag."""
+        out, aim, vel = r["servo"], r["aim"], r["vel"]
         for j in range(10):
-            want = out[j] + (target[j] - out[j]) * a
-            cap = r["clock"].max_dps[j] * dt
-            out[j] += max(-cap, min(cap, want - out[j]))
+            lag = max(1e-4, (self.rig["servoLagMs"][j] or 0) / 1000 * r["lagScale"])
+            aim[j] += (target[j] - aim[j]) * (1 - math.exp(-dt / lag))
+            top, acc = r["clock"].max_dps[j], max(1.0, self.rig["servoAccel"][j] or 1)
+            err = aim[j] - out[j]
+            want = math.copysign(min(top, math.sqrt(2 * acc * abs(err)), abs(err) / dt), err)
+            vel[j] += max(-acc * dt, min(acc * dt, want - vel[j]))
+            out[j] += vel[j] * dt
         return out
 
     def step_frame(self):

@@ -208,7 +208,9 @@ private:
     float speedDps_ = NONG_DEFAULT_SPEED_DPS;  // show speed (all joints)
     float safeDps_  = NONG_SAFE_DPS;           // safety cap on peak joint speed, any move
     float musicDps_ = NONG_MUSIC_DPS;          // the cap at PACE MUSIC; 0 = only max_dps
-    bool musicPace_ = false;                   // a show said PACE MUSIC; ends with it or STOP
+    bool musicPace_ = false;
+    float paceDps_ = -1.0f;   // this file's PACE MUSIC cap; -1 = music_dps
+    float paceCap() const;                   // a show said PACE MUSIC; ends with it or STOP
     bool link_ = false;              // leader: repeat pose cmds on RS485
     int peer_ = 0;                   // partner module id (0 = broadcast to all)
 

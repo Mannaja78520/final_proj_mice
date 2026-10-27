@@ -124,7 +124,7 @@
     "safety": true, "steps": [{"key": "stop"}], "help": "freeze mid-move; the pose holds" },
     { "name": "RELAX",   "scope": "nong", "args": "",                                   "motion": true, "steps": [{"key": "relax"}], "help": "unpower the servos so the arms can be posed by hand" },
     { "name": "ATTACH",  "scope": "nong", "args": "",                                   "motion": true, "steps": [{"key": "attach"}], "help": "power the servos again, holding the current pose" },
-    { "name": "PACE",    "scope": "nong", "args": "MUSIC|NORMAL",                       "steps": [{"key": "pace"}], "help": "a show that follows its music sets MUSIC: the peak-speed cap becomes music_dps (0 = the servos' own limit) until that show ends" },
+    { "name": "PACE",    "scope": "nong", "args": "MUSIC [deg/s]|NORMAL",                "steps": [{"key": "pace"}], "help": "a show that follows its music sets MUSIC: the peak-speed cap becomes the given deg/s, or music_dps (0 = the servos' own limit), until that show ends" },
     { "name": "PACE?",   "scope": "nong", "args": "",                   "query": true,  "help": "the pace in force and its speed cap" },
     { "name": "SPEED",   "scope": "nong", "args": "<deg_per_s>",                        "steps": [{"key": "speed"}], "help": "speed used when a POSE carries no T" },
     { "name": "SPEED?",  "scope": "nong", "args": "",                   "query": true,  "help": "the current speed in deg/s" },
