@@ -1,0 +1,54 @@
+{
+  "_what": "Separate experiment (tools/rl_compare, A50-1, user 2026-10-27: test RL against the planner Nong uses now, with videos). Nothing in the hub or Studio reads this. data: where the private cheer v2 files are (dir) and the source videos (sourceDir), relative to the code folder; dances = the <name>_analysis.json sets to compare. out: where every result goes (git-ignored .local, kept for the user). scenarios: the same speed rules for every contender; safeDps = the board's peak-speed cap (60 = today's firmware), null = only the servos' own limits. servo: how a servo follows the board's 50 Hz targets: first-order lag lagMs (a guess until measured; a rig servoLagMs list wins) and the rig's servoMaxDps. planner: Studio's vidBuild run headless, once per variant; music false = slow down to keep the shape (how v2 was made), true = keep the music and cut moves short. rl: the imitation policy; controlHz = how often it decides, envs = parallel robots on the GPU, horizonS = training episode length (random start in the song), lookaheadS = how far ahead it sees the dancer, rounds x updatesPerRound = training length (one video clip per round), reward weights below. metrics: collisionMm = any gap under this counts as a collision; null = Studio's own gap (safe_path.json clearMm + rig extraClearanceMm; user 2026-10-27: 5 mm for servo backlash), a number overrides it for this experiment only; the RL episode ends there and Studio's checker uses the same total gap, nearMm = where the RL reward starts pushing away; limitDeg = how close to a joint stop counts as hitting it. video: size, fps, camera angles (yaw/pitch deg), clip seconds per training round, and the budget the whole out folder must stay under.",
+  "data": {
+    "dir": ".local/cheer_rig_1027",
+    "sourceDir": ".local/cheer_rig_1026",
+    "dances": [
+      "come_and_cheer_left_v2",
+      "come_and_cheer_center_v2",
+      "witsawa_kriangkrai_left_v2",
+      "witsawa_kriangkrai_center_v2"
+    ]
+  },
+  "out": ".local/rl_compare",
+  "scenarios": [
+    {"id": "firmware", "label": "Board cap 60 deg/s (today)", "safeDps": 60},
+    {"id": "servo", "label": "Servo limits only (cap raised)", "safeDps": null}
+  ],
+  "servo": {"frameHz": 50, "lagMs": 40},
+  "planner": {
+    "repeats": 3,
+    "variants": [
+      {"id": "planner_shape", "label": "Planner, keeps the shape (v2)", "music": false},
+      {"id": "planner_music", "label": "Planner, keeps the music", "music": true}
+    ]
+  },
+  "rl": {
+    "id": "rl",
+    "label": "RL imitation policy",
+    "device": "auto",
+    "seed": 1,
+    "controlHz": 25,
+    "envs": 4096,
+    "horizonS": 4.0,
+    "lookaheadS": [0.0, 0.2, 0.4, 0.8],
+    "startNoiseDeg": 4.0,
+    "rounds": 20,
+    "updatesPerRound": 60,
+    "net": [256, 256],
+    "ppo": {"steps": 32, "epochs": 4, "minibatches": 4, "lr": 0.0003, "gamma": 0.97, "lam": 0.95,
+            "clip": 0.2, "valueCoef": 0.5, "entropyCoef": 0.0, "initLogStd": -1.0, "maxGradNorm": 1.0},
+    "reward": {"bone": 0.65, "boneSigmaDeg": 15, "body": 0.15, "bodySigmaDeg": 10,
+               "smooth": 0.2, "smoothScale": 4.0, "near": 0.5, "limit": 0.2, "touchEnds": true}
+  },
+  "metrics": {"collisionMm": null, "nearMm": 10, "limitDeg": 0.5},
+  "video": {
+    "width": 1920, "height": 1080, "fps": 30, "crf": 23,
+    "angles": [
+      {"id": "front", "label": "front", "yaw": 0, "pitch": 8},
+      {"id": "side", "label": "3/4 side", "yaw": 55, "pitch": 18}
+    ],
+    "roundClipS": 20,
+    "budgetGB": 20
+  }
+}
