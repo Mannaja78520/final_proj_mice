@@ -1,0 +1,31 @@
+{
+  "_what": "The optional MuJoCo player for Nong sequences (tools/nong_sim, user 2026-10-27: see the dance in a 3D physics world, any number of robots). Nothing in the hub or Studio needs it. rig: a rig file Studio saved (or a settings backup) to move like THIS robot; null = the shipped rig_default.json. safeDps: the board's safety cap on peak joint speed; null = the firmware default. physics: timestep s, density of the printed parts kg/m3 (no weighed parts yet, so arm sag is an estimate), jointDamping N.m.s/rad, armature kg.m2 (the servo's own gearbox inertia). servo: how a hobby servo follows the board's 50 Hz targets - it turns no faster than the rig's servoMaxDps, lags by lagMs (first order, a guess until measured on the bench), and gives its full stall torque (tools/make_urdf.py EFFORT_NM, times the joint's gear) once it is fullTorqueDeg away from its target; kvPerKp = damping per stiffness, s; shrugSlideKp = N/m holding each shoulder on its measured 4-bar height (a measured shrugCurve only). robots: how many robots stand in the world, spacingMm apart; vary.lagMs = each robot gets its own lag spread across this range so one run shows how much the servo's real lag would matter. report: nearMm = how close counts as a near miss; null = Studio's own safety gap (collisions.js CLEAR + rig extraClearanceMm). view: speed 1 = real time; loop = start again at the end.",
+  "rig": null,
+  "safeDps": null,
+  "physics": {
+    "timestep": 0.002,
+    "densityKgM3": 1250,
+    "jointDamping": 0.02,
+    "armature": 0.0005
+  },
+  "servo": {
+    "lagMs": 40,
+    "fullTorqueDeg": 6,
+    "kvPerKp": 0.03,
+    "shrugSlideKp": 3000
+  },
+  "robots": {
+    "count": 1,
+    "spacingMm": 700,
+    "vary": {
+      "lagMs": [20, 80]
+    }
+  },
+  "report": {
+    "nearMm": null
+  },
+  "view": {
+    "speed": 1.0,
+    "loop": true
+  }
+}

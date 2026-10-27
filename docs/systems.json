@@ -100,9 +100,14 @@
 
     {"id": "studio", "summary": "Nong Studio: pose editor, timeline, 3D monitor.",
      "files": ["nong/", "apps/studio/", "config/rig_presets.json",
-               "tools/make_urdf.py", "tools/step_preset.py", "docs/urdf_nong.md"],
+               "tools/make_urdf.py", "tools/urdf_parts.py", "tools/step_preset.py", "docs/urdf_nong.md"],
      "checks": ["check_studio_render_idle"],
      "depends": ["shared-web"]},
+
+    {"id": "nong-sim", "summary": "Optional MuJoCo world: any number of Nongs play Studio sequences with servo lag, gravity and the board's clock (tools/nong_sim, user 2026-10-27). Nothing else needs it.",
+     "files": ["tools/nong_sim/", "config/nong_sim.json"],
+     "checks": ["check_nong_sim"],
+     "depends": ["studio"]},
 
     {"id": "app-voice", "summary": "Voice helper: speech in, answers, speech out.",
      "files": ["apps/voice/", "config/voice.json", "config/voice_intents.json", "config/voice_providers.json", "config/voice_styles.json", "config/voice_profiles.json", "config/voice_profiles/", "config/voice_people.json", "llm/", "qc/data/voice_conversation.mjs"],

@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "subjectModes": [
+    {
+      "id": "auto",
+      "label": "Automatic — find people and dance groups"
+    },
+    {
+      "id": "single",
+      "label": "One performer"
+    },
+    {
+      "id": "group",
+      "label": "Group dance — keep different routines separate"
+    }
+  ],
+  "cameraModes": [
+    {
+      "id": "auto",
+      "label": "Automatic — check viewpoint changes"
+    },
+    {
+      "id": "fixed",
+      "label": "One camera view"
+    },
+    {
+      "id": "cuts",
+      "label": "Changing shots / viewpoints"
+    }
+  ],
+  "tracking": {
+    "people": 8,
+    "identityGap": 0.18,
+    "confidence": 0.55,
+    "styleDegrees": 24,
+    "missingSeconds": 0.4,
+    "cutDifference": 0.08,
+    "repeatSeconds": 20,
+    "seekTimeoutMs": 5000,
+    "crops": [
+      [
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        0,
+        0.1,
+        0.5,
+        1
+      ],
+      [
+        0.25,
+        0.1,
+        0.75,
+        1
+      ],
+      [
+        0.5,
+        0.1,
+        1,
+        1
+      ]
+    ],
+    "imageWidth": 256,
+    "imageHeight": 144
+  },
+  "body": {
+    "deadbandDegrees": 2,
+    "stillBonesDegrees": 6,
+    "stillBodyDegrees": 3,
+    "maxFrameDegrees": 20,
+    "uncertaintySeconds": 0.5
+  },
+  "fitting": {
+    "steps": [
+      16,
+      8,
+      4,
+      2,
+      1,
+      0.5
+    ],
+    "passes": 3,
+    "continuityWeight": 0.002,
+    "repairDegrees": [
+      5,
+      12,
+      24,
+      40
+    ]
+  },
+  "policy": {
+    "model": "video_motion_policy.json",
+    "minimumMargin": 0.5,
+    "enableAfterValidation": true
+  },
+  "smoothing": {
+    "windowMs": 350,
+    "outlierDegrees": 12,
+    "deadbandDegrees": 1.2,
+    "maxTargetDps": 240,
+    "maxTargetAccelDps2": 900
+  },
+  "routines": {
+    "minimumOverlap": 4,
+    "styleDegrees": 24,
+    "divergentFraction": 0.25,
+    "joinGapSeconds": 1.5,
+    "joinMarginDegrees": 8,
+    "signatureSeconds": 2.5,
+    "minimumSignatureSamples": 6,
+    "newRoutineCost": 50,
+    "appearanceWeight": 90,
+    "motionWeight": 0.3,
+    "minimumDistinctSeconds": 1.5,
+    "minimumDifferenceRunSeconds": 0.35,
+    "minimumDifferentFraction": 0.15,
+    "minimumSaveCoverage": 0.75,
+    "minimumSegmentSeconds": 1
+  }
+}

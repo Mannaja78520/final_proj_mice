@@ -223,6 +223,7 @@ def start_hub(fake=True):
     import webbrowser
     webbrowser.open = lambda *a, **k: None      # never pop a browser in QC
     import main
+    main.HOST = "127.0.0.1"  # isolated fake Hub; never expose a test listener to the LAN
     import socketserver
     main.Handler.log_message = lambda *a, **k: None   # QC output stays readable
     # A browser that navigates away mid-request leaves a half-written response,

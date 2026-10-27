@@ -29,6 +29,7 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `README.md`
 - `docs/systems.json`
 - `handoff/TEMPLATE.md`
+- `handoff/tasks/cheer-rig-1026.md`
 - `handoff/tasks/friend-face-server.md`
 - `handoff/tasks/gachapon.md`
 - `handoff/tasks/gemini-studio-tv-help-1024.md`
@@ -38,7 +39,6 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `handoff/tasks/person-tests.md`
 - `handoff/tasks/robot-hotspot-live.md`
 - `handoff/tasks/robot-tests.md`
-- `handoff/tasks/talk-gestures-make.md`
 - `handoff/tasks/ui-ux-overhaul-1025.md`
 - `handoff/tasks/voice-human-tone.md`
 - `handoff/tasks/voice-keys.md`
