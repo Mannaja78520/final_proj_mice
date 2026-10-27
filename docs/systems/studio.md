@@ -142,7 +142,7 @@ Nong Studio: the pose editor, timeline and live 3D monitor.
 
 ## Used by
 
-- nothing
+- [nong-sim](nong-sim.md)
 
 ## Checks that test it (29)
 

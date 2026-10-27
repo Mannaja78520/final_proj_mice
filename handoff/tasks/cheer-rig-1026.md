@@ -1,81 +1,64 @@
-# Group cheer video rig follow-up
+# Group cheer video dance + MuJoCo player
 
-Owner: codex:10270037-9c0d
-Updated: 2026-10-27T20:26:27.568089+07:00
-Branch: codex/cheer-video-1027; isolated tree .staging-cheer-video-1027-r2
-Last commit: this checkpoint; root HEAD023c644 and unrelated dirty work preserved
-Plan: A48-21, fixes rejected A48-20 v1
+Owner: claude:3z5k (took over from codex:10270037-9c0d, 2026-10-27)
+Updated: 2026-10-27T16:53Z
+Branch: claude/project-thread-3z5kgn (carries codex/cheer-video-1027 + PC staging r2)
+Last commit: this checkpoint
+Plan: A48-21 (Codex), A48-22
 
 ## Goal
-Follow two supplied group cheer videos with real waist/shrug, stable actor identity across camera changes, separate choreography, collision-aware paths and genuine supplementary RL. Deliver four checked editable rigs/previews and the Studio feature fix.
+User 2026-10-27: *ทำท่าเต้นของน้องให้หน่อย และ RL ขอจำลองในโลกจำลอง ฟิสิกส์ ได้ไหม*
+and *อยากเห็นตอนจำลองด้วยให้ดูเป็น visual*. Nong follows the two group cheer
+videos; answer whether RL/physics sim helps; optional sim the user can watch.
 
 ## Doing now
-Merged main023c644 into own r2 without conflicts. Affected587/0, native50/0, prerequisite firmware/network/fake checks236/0 passed; no QC driver active. Current TDD exposes2 association defects (49pass/2expectedfail): global uniqueness must compare complete assignments; ambiguous links cannot become trusted merely after.5s. Independent tracking review also found trusted holds freeze before filtered target settles and batch saves serialize wrong routine selection. Four regressions fixed; current native54/0 including bounded Hungarian solver. Strict association checks leave no full-clip eligible set in these uniform/cutting examples. Private OSNet x025 spike exported/verified (<1e-4 Torch/ONNX error),5872local descriptors; same-shot heldout matching high but cross-shot choreography remains ambiguous, so do NOT weaken trust or ship unproven model dependency. Implement automatic source-windowed scene-segment fallback for ambiguous/unqualified roles, with save/preview clocks and metadata aligned. Whole trustworthy routines still work for clearer future clips. Add polynomial global assignment to replace exponential search before final gate. User said continue; same scope, no abandonment. Review attempt hit next provider limit20:01; findings retained, no approval claimed. Source/rig outputs not final; no promotion/hardware/services.
+Merge to main after this checkpoint. Then only the PC-side Next items remain.
 
 ## File status
-Exact owned source paths below. Private v1 is rejected and preserved, not completion evidence; old inventory/status is .local/cheer_rig_1027/task_previous.md. Private v2 files stay local; full exact inventory will accompany final validation.
+Baseline: origin/main ecf48c2. Codex's committed work (681bc4c and earlier) is
+in the branch history; rows below are what this session changed on top.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| handoff/tasks/cheer-rig-1026.md | current handoff | doing | manually reconciled | this checkpoint |
-| nong/main_python_set_nong/web/app_parts/video_motion_smooth.js | general motion smoothing + quality | planned | not run | uncommitted |
-| nong/main_python_set_nong/web/app_parts/video_routines.js | automatic choreography discovery | planned | not run | uncommitted |
-| nong/main_python_set_nong/web/app_parts/video_appearance.js | anonymous appearance support, no gender classifier | implemented | native48/0, final pending | uncommitted |
-| main_python/web/help.html | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| main_python/web/help/parts/studio.html | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/train_video_policy.py | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/app.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/app_parts/collision_shapes.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/app_parts/collisions.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/app_parts/pose_from_video.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/app_parts/safe_path.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/app_parts/video_body_motion.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/app_parts/video_page.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/app_parts/video_rig_fit.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/app_parts/video_tracking.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/html_parts/video.html | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/video_follow.json | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/video_motion_policy.json | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| qc/checks/check_video_group.py | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| qc/checks/check_video_moves.py | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| qc/data/video_group.cjs | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| tools/web_build.json | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/app_parts/video_checked_playback.js | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| nong/main_python_set_nong/web/index.html | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| qc/checks/check_gestures.py | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-| qc/lib/qc.py | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
-
-| docs/systems/agents.md | regenerated current task count after baseline merge | done | build, final QC pending | uncommitted |
-| docs/systems/qc.md | regenerated QC ownership count | done | build, final QC pending | uncommitted |
-| docs/systems/studio.md | new source module ownership | done | build, final QC pending | uncommitted |
-
-| nong/main_python_set_nong/web/app_parts/video_routine_assignment.js | bounded global matching solver | planned | not run | uncommitted |
-
-| nong/main_python_set_nong/web/app_parts/video_routine_sections.js | automatically export source-windowed unambiguous scene sections | planned | not run | uncommitted |
+| nong/main_python_set_nong/web/app_parts/video_routine_sections.js + 13 files | Codex staging r2 (scene-section fallback) brought from PC | done | PC focused 1961/0; cloud full 8785/6 (6 = browser timeouts, same on main) | 61f54fd |
+| nong/main_python_set_nong/web/video_follow.json | "Group dance â€”" garbled label fixed | done | check_no_mojibake | this checkpoint |
+| config/resource_policy.json | Thai labels were cp1252-garbled | done | check_no_mojibake, broken-fix fails | this checkpoint |
+| qc/checks/check_no_mojibake.py | new: no UTF-8-read-as-cp1252 text in served files | done | sabotage: fails on old file | this checkpoint |
+| tools/nong_sim/*.py | new optional MuJoCo player | done | check_nong_sim 9/0 | this checkpoint |
+| config/nong_sim.json | sim settings (data, not code) | done | check_nong_sim | this checkpoint |
+| qc/checks/check_nong_sim.py | sim FK == Studio scene on bent rigs, clock == minTime, hit/home | done | sabotage: after-turn and sense breaks fail | this checkpoint |
+| docs/systems.json, docs/systems/*.md | nong-sim system; rebuilt | done | systems build | this checkpoint |
+| docs/PLAN.html, docs/plan_state.js | A48-22 | done | plan.py | this checkpoint |
 
 ## Facts found
-- v1 canonicalization destroyed raw hip/shoulder geometry; old reference previews bypassed full physical checks. All v2 previews use the exact checked exported sequence.
-- Full geometry includes hand OBBs, joint spheres, nonadjacent same-arm bars and actual SHRUG. Legacy fkPoints readout remains unchanged. Final rounded RRT* legs rechecked using the most recent waypoint.
-- Slow motion must map source time to checked robot time. Extremely slow sections frame-step the video; original unwarped song attachment is blocked. Private warped MP3s will be supplied.
-- Detector order is not identity; selected actor loss holds until plausible re-acquisition. No incompatible choreography averaging or gender inference. User explicitly requires automatic discovery for future videos; do not make manual positional labels the feature. Group choreography directly, not guessed gender.
-- Synthetic sequential Q-learning updates accepted pose and future states. Serialized/pruned table passes heldout400episodes and blind500episodes; improvement is small and does not prove real-video accuracy.
-- Root setup/view/style, tests, configs, spec/EXE and all other user work are protected. Source baseline HEAD versions of five unowned dirty inputs were restored ONLY in own staging; backups .local/cheer_rig_1027/protected_root_inputs.json. Never bulk promote/reset.
-- A48-19 stopped-without-handoff scoped software-QC/shared-output lease takeover recorded BRIDGE1006; its frozen tree/full8774/package and unrelated claims remain preserved.
+- Board timing: NongModule.cpp:271 minDuration = max(max_dps floor, safety floor);
+  NONG_SAFE_DPS 60 (firmware/config/esp32_hardware_nong_module.h:94) x pi/2 ease.
+  This is why the v2 dances run ~3.9x slower than the song (618 s for 158 s).
+- Studio tree: build_rig.js buildArm/applyPose: group = tilt * R(axis, delta) * after;
+  delta = (pose-zero)*BASE_DIR*(invert?-1:1) (rig_data.js:20,383). tools/nong_sim/kinematics.py mirrors it.
+- MuJoCo: explicit Euler blew up on stiff servos; `integrator="implicitfast"` is required.
+- Sim on the 4 v2 sequences: no lengthened steps (Studio already planned for 60 deg/s),
+  but L_hand/R_hand touch by 0.0-0.4 mm once per dance: servo lag + gravity sag use up
+  Studio's 4 mm gap. Sim hand = 16 mm sphere (Studio uses hand boxes), so a lead, not proof.
+- Cross-shot identity stays ambiguous in both clips (automatic_conservative.log: eligible []);
+  Codex's fix = scene sections, not a weaker trust gate. Do not weaken it.
+- Private v2 outputs on PC: code/.local/cheer_rig_1027/{come_and_cheer,witsawa_kriangkrai}_{left,center}_v2.{json,yaml,blend}.
 
 ## Done
-- Four new independent full retargetings: Come left567keys/RRT31, center569/RRT30; Witsawa left273/RRT10, center279/RRT17. Every final pose/leg/time and HOME entry checked. Arm mean7.5/7.8/9.9/8.9deg; residual limits remain.
-- Full raw YOLO+MediaPipe tracks retain waist/shoulders; 4 useful people in wide shots. Positional actor sets remain independent.
-- Four native Blender files built with 10 animated controls and actual checked curves. No final v2 video rendering/audio/package yet.
-- Native33/0 and affected185/0 passed (private .staging-final-focused.log); broader prior1736/2 failures diagnosed and fixed in focused run. Final full QC pending.
-- Review: collision_review approved geometry/path scope; tracking_review APPROVED after realistic seek-resume fix.
+- Codex staging work brought in, main merged, garbled labels fixed + check, review of
+  safe_path/collision changes (post-validation of shortened legs is sound).
+- RL answer to the user: no RL; deterministic checks + trajectory planning beat it here.
+- tools/nong_sim: `python -m tools.nong_sim.play SEQ.yaml [more.yaml] --robots N --view`.
 
 ## Next
-0. Merge latest main023c644 into fresh isolated r2; retain old failed full receipt and stage. Current fixtures now include reviewed loopback fixes from PR83; do not overwrite root dirty templates/spec/EXE.
-1. Full QC frozen gate; fix genuine failures without skipping assertions. Snapshot0117 saved privately.
-2. Delegate full QC under own loopback-only guard, frozen source, no heavy jobs.
-3. Render four checked sequences; compose time-matched video/audio; native/file/visual validation and ZIP. Install uniquely named projects without overwrite.
-4. Scoped review/integration only own files; preserve root user templates and regenerate their built outputs. Complete required source packaging/PR checks, no live restart or hardware.
+1. PC: `pip install mujoco`, then view the v2 dances:
+   `python -m tools.nong_sim.play .local/cheer_rig_1027/*_v2.yaml --view`.
+2. PC: retimed MP3s for the v2 yaml (`play:` names a file that does not exist yet) and
+   the Blender previews (Codex Next 3); copy v2 json/yaml into Studio with new names.
+3. Consider rig extraClearanceMm +3 for these dances (sim hand touch above).
+4. Lab day: measure servo lag (config/nong_sim.json servo.lagMs is a guess) and the
+   real safe_dps the user accepts; both decide how close to song speed the dance can run.
 
 ## Blocked
-Full-r1 failed18 baseline environment/firmware/loopback checks; diagnose after current motion fix. No source promotion before green. Reviewer quota unavailable; follow documented provider fallback.
- Hardware untested. Camera-only yaw ambiguity cannot always be resolved from one recording; conservative holds and quality reports remain visible.
+Cloud full QC: check_board_frame, check_link_states, check_studio_boot, check_tools_list,
+check_view time out in this container's browser on main too. Hardware untested.
