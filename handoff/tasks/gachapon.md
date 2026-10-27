@@ -36,6 +36,9 @@ nothing: A47-1..4 merged; only A47-5 (bench) left, owner free.
 - A47-2 hub app: main_python/gacha.py (brain), hub_api_gacha.py (routes /api/gacha/*), apps/gacha/index.html, config/gacha.json, docs/gacha/ (README API + webhooks, sample CSV = sheet layout, apps_script.gs write-back), help section. Rules + logs in .local/gacha/ (names, git-ignored).
 - A47-3 voice: hub voice_proxy -> hub_api_gacha.voice_after_ask -> voice_prizes.py: topic per question (config/voice_topics.json), CSV .local/voice/questions.csv, prize rules config/voice_prizes.json (off by default; switch on the Prize machines page), Voice > Questions tab charts (/api/questions).
 - A47-4: docs/gacha/friend_requests.md (+ copy in project files friend_api/).
+- A47-21 (PR #84): check_gacha_routes proves the hub reaches a machine on its own USB cable,
+  on the RS485 bus and over WiFi (login), and counts a bare stand-in ESP32's `timed` turn
+  (GCFG fallback <ms>) as given (config/gacha.json given_results). Fakes only; real RS485 untested.
 - check_gacha (24 asserts, fake boards ids 70/71 in fake_serial) proven by sabotage (fallback, auth).
 
 ## Next

@@ -24,7 +24,7 @@ Flashing a board: esptool over the cable, OTA over WiFi, chunks over the command
 
 - [hub](hub.md)
 
-## Checks that test it (16)
+## Checks that test it (17)
 
 - `check_board_auth`
 - `check_bus_flash`
@@ -33,6 +33,7 @@ Flashing a board: esptool over the cable, OTA over WiFi, chunks over the command
 - `check_flash_confirm`
 - `check_flash_remote`
 - `check_flash_type`
+- `check_gacha_routes`
 - `check_guards_armed`
 - `check_hub_auth`
 - `check_hub_nav`
@@ -43,4 +44,4 @@ Flashing a board: esptool over the cable, OTA over WiFi, chunks over the command
 - `check_self_update`
 - `check_usb_close`
 
-Run them: `python qc/run_qc.py --no-build check_board_auth check_bus_flash check_camera check_flash check_flash_confirm check_flash_remote check_flash_type check_guards_armed check_hub_auth check_hub_nav check_no_console_window check_ota check_ota_only check_race_guards check_self_update check_usb_close`
+Run them: `python qc/run_qc.py --no-build check_board_auth check_bus_flash check_camera check_flash check_flash_confirm check_flash_remote check_flash_type check_gacha_routes check_guards_armed check_hub_auth check_hub_nav check_no_console_window check_ota check_ota_only check_race_guards check_self_update check_usb_close`
