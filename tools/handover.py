@@ -34,11 +34,13 @@ import shutil
 import sys
 import time
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from layout import RepoLayout  # noqa: E402  one root rule for every tool (A51-1)
 
 WORK = Path(__file__).resolve().parent.parent
 # Save the working source, while the live note and authoritative histories
 # belong to main. Merely rebasing everything to main lost unpromoted edits.
-ROOT = WORK.parent if WORK.name.startswith(".staging") else WORK
+ROOT = RepoLayout(WORK).real
 NOTE = ROOT / "docs" / "HANDOVER.md"
 
 for _out in (sys.stdout, sys.stderr):

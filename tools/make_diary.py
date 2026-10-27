@@ -16,11 +16,13 @@ import re
 import sys
 from collections import OrderedDict
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from layout import RepoLayout  # noqa: E402  one root rule for every tool (A51-1)
 
 # Canonical logs stay on the PC. A Git worktree can also carry newer merged
 # history; include it without rewriting or dropping either set of records.
 WORK = Path(__file__).resolve().parent.parent
-CODE = WORK.parent if WORK.name.startswith(".staging") else WORK
+CODE = RepoLayout(WORK).real
 
 SOURCES = [
     ("studio", CODE / "nong" / "main_python_set_nong" / "PATCHES.md"),

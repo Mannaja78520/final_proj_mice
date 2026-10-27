@@ -21,9 +21,11 @@ import sys
 import time
 import uuid
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from layout import RepoLayout  # noqa: E402  one root rule for every tool (A51-1)
 
 HERE = Path(__file__).resolve().parent.parent
-REAL = HERE.parent if HERE.name.startswith(".staging") else HERE
+REAL = RepoLayout(HERE).real
 
 POLL, SETTLE, SWEEP = 2.0, 3.0, 300.0
 MAX_NAMES = 20

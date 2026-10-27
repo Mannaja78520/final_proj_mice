@@ -32,6 +32,8 @@ import sys
 import time
 
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from layout import RepoLayout  # noqa: E402  one root rule for every tool (A51-1)
 
 # THAI, OR ANY OTHER LANGUAGE, MUST NOT KILL A TOOL. Windows hands python a
 # cp1252 console here, which cannot encode Thai at all: printing one Thai word
@@ -76,8 +78,7 @@ def plan_path(page="robot"):
     if override:
         return Path(override)
     here = Path(__file__).resolve().parent.parent
-    if here.name.startswith(".staging"):
-        here = here.parent
+    here = RepoLayout(here).real
     return here / "docs" / PAGES.get(page, PAGES["robot"])
 
 
