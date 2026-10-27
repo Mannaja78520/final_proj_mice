@@ -31,6 +31,15 @@ nothing - waiting for the lab.
 - [ ] Gachapon hub: open /app/gacha/ and /app/all-jao/, spin the wheel, see the toast (gachapon.md Next 1).
 - [ ] Friend's face app + our faces watcher + Photobooth together; time a name per source
       (friend-face-server.md).
+- [ ] Cheer dances (A48-23/24): `pip install mujoco`; copy the private v5 dances from the project
+      files cheer/*_v5.{json,yaml} to code/.local/cheer_rig_1027/ (never git); open one in Studio,
+      tick "Play like the real servos", look at the "Speed limit with music" list. Watch in 3D:
+      `python -m tools.nong_sim.play .local/cheer_rig_1027/come_and_cheer_left_v5.yaml --robots 3 --view`.
+      Film rounds with the song (cut to the dance's part, 5 s in for come_and_cheer):
+      `python -m tools.nong_sim.record <v3.yaml> <v4.yaml> <v5.yaml> --music <song.mp3> --music-start 5`
+      (films in .local/sim_videos, stops at 20 GB). Results: docs/experiments/2026-10-27_music_pace.md.
+- [ ] Re-check the saved sequences with the PC's own rig at the new 10 mm gap (Studio marks them red):
+      VongSungKhwa, hello, NONO, WonderWomen, all_move, Looong flagged more at 10 mm on the default rig.
 
 ### 1. Gachapon board (A47-5, gachapon.md Next 2)
 - [ ] Flash `mice_gacha` (USB or OTA); PIN motor_a/motor_b if not 25/26; hall on GPIO33.
