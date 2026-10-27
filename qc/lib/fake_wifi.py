@@ -53,11 +53,16 @@ class _Module:
         self.stream_frames = 40
         self.frames_sent = 0
         self.streams_opened = 0
+        # A check sets a fake_serial._Gacha here and the board answers as that
+        # dispenser over WiFi (A47-21): same line protocol, same login gate.
+        self.gacha = None
 
     # the text command surface, mirroring fake_serial's module
     def cmd(self, c):
         c = c.strip()
         self.cmds.append(c)
+        if self.gacha is not None:
+            return self.gacha.line(c)
         head = c.split(" ", 1)[0].upper()
         if head == "INFO":
             return json.dumps(self.status())

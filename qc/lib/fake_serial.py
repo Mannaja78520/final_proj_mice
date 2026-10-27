@@ -131,7 +131,7 @@ def reset():
     del dummy_wire[:]
     DUMMY.reset()
     del gacha_wire[:]
-    for _g in GACHAS.values():
+    for _g in list(GACHAS.values()) + [USB_GACHA]:
         _g.reset()
 
 
@@ -637,11 +637,12 @@ class _Gacha:
         self.seq, self.who, self.result, self.last_forced = 0, "", "none", False
         self.until = 0.0
         self.jam = False                       # a check sets it: the next prize sticks
+        self.finish_as = "done"                # "timed" = the board's no-magnet fallback
 
     def _state(self):
         if self.until and time.time() >= self.until:
             self.until = 0.0
-            self.result = "jam" if self.jam else "done"
+            self.result = "jam" if self.jam else self.finish_as
         return "dispensing" if self.until else "idle"
 
     def status(self):
@@ -711,6 +712,14 @@ class _Gacha:
 
 GACHAS = {bid: _Gacha(bid) for bid in GACHA_IDS}
 
+# A dispenser on its OWN cable (A47-21, user 2026-10-23: a second ESP32 on USB
+# stands in as a machine). Plain lines on GACHA_PORT are its own, no bus id.
+# Listed only when a check asks, so the module census elsewhere is unchanged.
+GACHA_PORT = "COM96"
+USB_GACHA_ID = 72
+USB_GACHA = _Gacha(USB_GACHA_ID)
+gacha_port_listed = [False]
+
 
 class Serial:
     def __init__(self, *a, **k):
@@ -729,7 +738,7 @@ class Serial:
                 raise SerialException(
                     "could not open port '%s': PermissionError(13, "
                     "'Access is denied.', None, 5)" % self.port)
-            if self.port not in (PORT, FLOOD_PORT, DONGLE_PORT):
+            if self.port not in (PORT, FLOOD_PORT, DONGLE_PORT, GACHA_PORT):
                 raise SerialException("could not open port %r: no such device" % self.port)
             _open_holders.add(self.port)
             opens.append((self.port, time.time()))
@@ -808,7 +817,7 @@ class Serial:
                     # bus and no module owns it.
                     if self.port == DONGLE_PORT:
                         continue
-                    out = NONG.line(raw)
+                    out = (USB_GACHA if self.port == GACHA_PORT else NONG).line(raw)
                 with self._rxlock:
                     self._rx += b"[nong] tick\n"           # log noise between replies
                     # "\n<reply>\n", exactly like emitLine() on the board: the
@@ -864,6 +873,9 @@ def _comports():
     if dongle_listed[0]:
         ports.append(_Port(DONGLE_PORT, "USB-SERIAL CH340 (RS485 dongle)",
                            "USB VID:PID=1A86:7523"))
+    if gacha_port_listed[0]:
+        ports.append(_Port(GACHA_PORT, "Silicon Labs CP210x (fake dispenser)",
+                           "USB VID:PID=10C4:EA60"))
     return ports
 
 
