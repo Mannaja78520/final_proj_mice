@@ -42,9 +42,10 @@ def run(t):
     s, b = F.get(base + "/api/apps")
     listed = _json.loads(b).get("apps", []) if s == 200 else []
     helps = [a for a in listed if a.get("path", "").rstrip("/") == "/help"]
-    t.ok(helps, "the help page is offered by the hub", listed)
+    t.eq(helps, [], "Help has one global entry rather than a duplicate launcher card")
     s, b = F.get(base + "/")
     t.contains(b, "/api/apps", "the hub's main page renders that list")
+    t.contains(b, 'id="helpLink" href="/help"', "the global Help entry remains available")
 
     # ---- every command in COMMANDS.md is described ------------------
     cmds = (F.FIRMWARE / "COMMANDS.md").read_text(encoding="utf-8", errors="replace")

@@ -65,12 +65,19 @@ def test_showplayer(t, main):
         t.ok("finishing" in (st.get("error") or ""),
              "stop admits when it gave up waiting",
              str(st.get("error")))
-        t.eq(st["running"], False, "and still reports the show as stopped")
+        t.eq(st["running"], True, "an unresolved worker is still reported honestly")
+        t.eq(st["stop_ok"], False, "unresolved worker cannot confirm a successful Stop")
 
         # A NEW SHOW while A's thread is still stuck inside its command -
         # exactly the sequence that resurrected the old clock.
-        sp.start("usb:FAKE", _steps(50, 130, 170), name="B")
+        old_worker = sp.thread
+        refused = sp.start("usb:FAKE", _steps(50, 130, 170), name="B")
+        t.ok(refused.get("ok") is False and sp.thread is old_worker,
+             "a replacement is refused while the old worker still owns its command")
         release.set()
+        old_worker.join(5)
+        retry = sp.start("usb:FAKE", _steps(50, 130, 170), name="B")
+        t.ok(retry.get("running") is True, "an explicit retry starts after quiescence and STOP ack")
         sp.thread.join(5)
         time.sleep(1.0)         # let any zombie wake and hang itself
         with lock:

@@ -743,59 +743,44 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
     }
   }
 
-  startHealthPolling(){
-  if (this.pollTimer) return;
-  this.pollTimer = setInterval(async () => {
-    try {
-      const r = await fetch("/api/voice/health").then(res => res.json());
-      if (r && r.ok && r.parts) {
-        this.updateParts(r.parts);
-        const stillLoading = (r.parts.llm && r.parts.llm.includes("loading")) ||
-                             (r.parts.stt && r.parts.stt.includes("loading"));
-        if (!stillLoading) {
-          this.stopHealthPolling();
-        }
-      }
-    } catch(e) {
-      this.stopHealthPolling();
+  modelFailure(detail) {
+    this.stopHealthPolling();
+    for (const [id, label] of [["btnLoadModel", "Load the AI"], ["btnUnloadModel", "Unload the AI"]]) {
+      const button = this.$(id);
+      if (button) { button.disabled = false; button.textContent = label; }
     }
-  }, 1500);
-}
-
-  stopHealthPolling(){
-  if (this.pollTimer) {
-    clearInterval(this.pollTimer);
-    this.pollTimer = null;
+    this.say("อ่านหรือเปลี่ยนสถานะ AI ไม่สำเร็จ ลองอีกครั้ง", "err", detail);
   }
-}
 
-  async loadModel(){
-  const btnLoad = this.$("btnLoadModel");
-  if (btnLoad) {
-    btnLoad.disabled = true;
-    btnLoad.textContent = "Loading…";
+  startHealthPolling() {
+    if (this.pollTimer) return;
+    this.pollTimer = setInterval(async () => {
+      const result = await Mice.Api.get("/api/voice/health");
+      if (!result.ok || !result.data.parts) return this.modelFailure(result.says);
+      const parts = result.data.parts;
+      this.updateParts(parts);
+      if (![parts.llm, parts.stt].some(value => value && value.includes("loading"))) this.stopHealthPolling();
+    }, 1500);
   }
-  try {
-    await fetch("/api/voice/preload", {method: "POST"}).then(r => r.json());
-  } catch(e) {}
-  this.startHealthPolling();
-  const r = await fetch("/api/voice/health").then(res => res.json()).catch(() => null);
-  if (r && r.parts) this.updateParts(r.parts);
-}
 
-  async unloadModel(){
-  this.stopHealthPolling();
-  const btnUnload = this.$("btnUnloadModel");
-  if (btnUnload) {
-    btnUnload.disabled = true;
-    btnUnload.textContent = "Unloading…";
+  stopHealthPolling() {
+    if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
   }
-  try {
-    await fetch("/api/voice/unload", {method: "POST"}).then(r => r.json());
-  } catch(e) {}
-  const r = await fetch("/api/voice/health").then(res => res.json()).catch(() => null);
-  if (r && r.parts) this.updateParts(r.parts);
-}
+
+  async changeModel(unload) {
+    this.stopHealthPolling();
+    const button = this.$(unload ? "btnUnloadModel" : "btnLoadModel");
+    if (button) { button.disabled = true; button.textContent = unload ? "Unloading…" : "Loading…"; }
+    const result = await Mice.Api.post("/api/voice/" + (unload ? "unload" : "preload"), {});
+    if (!result.ok) return this.modelFailure(result.says);
+    const health = await Mice.Api.get("/api/voice/health");
+    if (!health.ok || !health.data.parts) return this.modelFailure(health.says);
+    this.updateParts(health.data.parts);
+    if (!unload) this.startHealthPolling();
+  }
+
+  async loadModel() { return this.changeModel(false); }
+  async unloadModel() { return this.changeModel(true); }
 
   down(why){
   this.say("the voice helper is off", "warn");

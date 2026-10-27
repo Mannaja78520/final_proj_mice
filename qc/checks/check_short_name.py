@@ -22,6 +22,7 @@ is the only way to test the case that matters.
 import socket
 import sys
 import threading
+from unittest.mock import patch
 
 import qc as F
 
@@ -32,6 +33,12 @@ TITLE = "the short name works, and never blocks the hub"
 def run(t):
     sys.path.insert(0, str(F.HUB))
     import main  # noqa: PLC0415 - the module under test
+
+    with patch.object(main, "HOST", "127.0.0.1"):
+        _run(t, main)
+
+
+def _run(t, main):
 
     t.ok(hasattr(main, "start_short_name"),
          "the hub can answer on the short name")
@@ -65,11 +72,11 @@ def run(t):
     # The case that matters. A socket is bound first, so the hub meets exactly
     # what IIS or Skype would do to it.
     hostage = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # No SO_REUSEADDR, and the wildcard address - exactly how another server
-    # holds a port. With SO_REUSEADDR set on BOTH sides, Windows lets the
+    # No SO_REUSEADDR, on the same isolated address as the listener. This
+    # preserves a real occupied-port collision without exposing test data. With SO_REUSEADDR set on BOTH sides, Windows lets the
     # second bind succeed and the two processes then fight over connections,
     # which is why the hub's redirect listener sets allow_reuse_address False.
-    hostage.bind(("0.0.0.0", 0))
+    hostage.bind(("127.0.0.1", 0))
     hostage.listen(1)
     port = hostage.getsockname()[1]
     try:

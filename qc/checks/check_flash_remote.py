@@ -253,7 +253,7 @@ def run(t):
              "esptool was handed files in: %r" % homes)
 
         # ---- 5. and a huge one is refused before it is read ----------
-        code, _b = _bare_post(base, "/api/flash/remote", b"{}",
+        code, _b = _bare_post(base, "/api/flash/remote", b"",
                               fake_len=900 * 1048576)
         t.ok(code >= 400, "a body far too big to be firmware is refused",
              "a hub that reads it anyway is one header away from being down")

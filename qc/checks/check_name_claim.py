@@ -11,7 +11,7 @@ first, and a hub that hears an answer takes `mice-<this-pc>.local` instead and
 says so. Every hub is still a front door - it forwards to whichever one owns the
 cable - so a name that lands on the "wrong" hub costs nothing.
 
-This check drives the probe for real over the network rather than reading the
+This check drives production packets over isolated loopback UDP rather than reading the
 source, because the first version of this feature PASSED a source check while
 being completely inert: the query was leaving on the Radmin VPN adapter, so
 nobody ever answered it and every hub cheerfully claimed the same name. What
@@ -20,6 +20,9 @@ had to be tested was that a name someone else holds is actually SEEN to be held.
 import os
 import sys
 import time
+import socket
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import qc as F
 
@@ -27,16 +30,65 @@ AREA = "hub"
 TITLE = "a second hub takes its own name instead of fighting for mice.local"
 
 
+class LoopbackMulticast:
+    """Map this fixture's single multicast holder to real local UDP only.
+
+    Adapter option bytes are recorded; no physical adapter or multicast group
+    is joined. check_mdns also exercises the unwrapped unicast reply path.
+    """
+    def __init__(self, module):
+        self.module = module
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as available:
+            available.bind(("127.0.0.1", 0))
+            self.destination = available.getsockname()
+        self.sockets, self.options, self.deliveries = [], [], []
+
+    def socket(self, *args):
+        network = self
+        class Datagram:
+            def __init__(self):
+                self.real = socket.socket(*args)
+                network.sockets.append(self.real)
+            def __getattr__(self, name):
+                return getattr(self.real, name)
+            def bind(self, address):
+                target = network.destination if address[1] == network.module.PORT else ("127.0.0.1", address[1])
+                return self.real.bind(target)
+            def setsockopt(self, level, option, value):
+                if level == socket.IPPROTO_IP and option in (socket.IP_ADD_MEMBERSHIP, socket.IP_MULTICAST_IF):
+                    network.options.append((self.real, option, value))
+                    return
+                return self.real.setsockopt(level, option, value)
+            def sendto(self, payload, address):
+                target = network.destination if address == (network.module.GROUP, network.module.PORT) else address
+                assert target[0] == "127.0.0.1", "fixture must never send outside loopback"
+                network.deliveries.append(target)
+                return self.real.sendto(payload, target)
+        return Datagram()
+
+    def proxy(self):
+        return SimpleNamespace(**{**vars(socket), "socket": self.socket})
+
+    def close(self):
+        for child in self.sockets:
+            child.close()
+
+
 def run(t):
     sys.path.insert(0, str(F.HUB))
-    import main   # noqa: PLC0415 - the modules under test
-    import mdns   # noqa: PLC0415
+    import main
+    import mdns
+    wire = LoopbackMulticast(mdns)
+    try:
+        with patch.object(mdns, "socket", wire.proxy()):
+            _run(t, main, mdns, wire)
+    finally:
+        wire.close()
 
-    ip = main.lan_ip()
-    if not t.ok(ip and not ip.startswith("127."),
-                "this PC is on a network the probe can use",
-                "lan_ip() said %r - mDNS needs a real address" % (ip,)):
-        return
+
+def _run(t, main, mdns, wire):
+    ip = "127.0.0.1"
+    t.eq(wire.destination[0], ip, "the probe fixture binds its transport only on loopback")
 
     # A name nothing else can be holding, so a real hub on this machine or on
     # the venue WiFi cannot make this pass or fail by accident.
@@ -66,6 +118,16 @@ def run(t):
         holder.stop.set()
         if holder.sock:
             holder.sock.close()
+
+    pins = [(child, value) for child, option, value in wire.options if option == socket.IP_MULTICAST_IF]
+    t.ok(any(child is holder.sock.real for child, _value in pins) and
+         any(child is not holder.sock.real for child, _value in pins) and
+         all(value == socket.inet_aton(ip) for _child, value in pins),
+         "both executed probe and responder pin the supplied adapter bytes")
+    t.ok(any(option == socket.IP_ADD_MEMBERSHIP and value == socket.inet_aton(mdns.GROUP) + socket.inet_aton(ip)
+             for _child, option, value in wire.options), "the responder requests the correct group and adapter")
+    t.ok(wire.deliveries and all(host == ip for host, _port in wire.deliveries),
+         "every real UDP datagram stayed inside the isolated local transport")
 
     # ---- and the hub acts on the answer -----------------------------
     src = F.hub_src()

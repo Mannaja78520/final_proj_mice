@@ -1,8 +1,8 @@
 # Group cheer video rig follow-up
 
 Owner: codex:10270037-9c0d
-Updated: 2026-10-27T16:44:41.149727+07:00
-Branch: codex/cheer-video-1027; isolated tree .staging-cheer-video-1027
+Updated: 2026-10-27T16:47:25.752984+07:00
+Branch: codex/cheer-video-1027; isolated tree .staging-cheer-video-1027-r2
 Last commit: this checkpoint; root HEAD023c644 and unrelated dirty work preserved
 Plan: A48-21, fixes rejected A48-20 v1
 
@@ -10,7 +10,7 @@ Plan: A48-21, fixes rejected A48-20 v1
 Follow two supplied group cheer videos with real waist/shrug, stable actor identity across camera changes, separate choreography, collision-aware paths and genuine supplementary RL. Deliver four checked editable rigs/previews and the Studio feature fix.
 
 ## Doing now
-User requires automatic reuse for NEW clips and smooth dancing. Current native48/0, full real-clip fit diagnostics show roughly half the short reversals and lower maximum per-sample change; automatic global appearance/motion grouping has80/90percent visible coverage in main groups, ambiguous links marked, not guaranteed identity/gender. New root main023c644 (#83) landed/released15:14 while own stage remained isolated. Checkpoint new source, then rebase into new .staging-cheer-video-1027-r2 using three-way merge, preserve root dirty/user bytes and all A48-19 changes. Retest combined source before final retarget/render/package. No active QC/heavy driver now; no hardware/services.
+User requires automatic reuse for NEW clips and smooth dancing. Current native48/0, full real-clip fit diagnostics show roughly half the short reversals and lower maximum per-sample change; automatic global appearance/motion grouping has80/90percent visible coverage in main groups, ambiguous links marked, not guaranteed identity/gender. New root main023c644 (#83) landed/released15:14 while own stage remained isolated. Checkpoint new source, then rebase into new .staging-cheer-video-1027-r2 using three-way merge (completed without conflicts; canonical web rebuilt), preserve root dirty/user bytes and all A48-19 changes. Retest combined source before final retarget/render/package. No active QC/heavy driver now; no hardware/services.
 
 ## File status
 Exact owned source paths below. Private v1 is rejected and preserved, not completion evidence; old inventory/status is .local/cheer_rig_1027/task_previous.md. Private v2 files stay local; full exact inventory will accompany final validation.
@@ -44,6 +44,10 @@ Exact owned source paths below. Private v1 is rejected and preserved, not comple
 | nong/main_python_set_nong/web/index.html | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
 | qc/checks/check_gestures.py | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
 | qc/lib/qc.py | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
+
+| docs/systems/agents.md | regenerated current task count after baseline merge | done | build, final QC pending | uncommitted |
+| docs/systems/qc.md | regenerated QC ownership count | done | build, final QC pending | uncommitted |
+| docs/systems/studio.md | new source module ownership | done | build, final QC pending | uncommitted |
 
 ## Facts found
 - v1 canonicalization destroyed raw hip/shoulder geometry; old reference previews bypassed full physical checks. All v2 previews use the exact checked exported sequence.

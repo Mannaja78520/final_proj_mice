@@ -90,9 +90,10 @@ def run(t):
                  "%s names a real help section (#%s)" % (a["id"], a["help"]),
                  "app.json can point anywhere; a wrong name is a dead link "
                  "that looks like a working one")
-    t.ok(re.search(r"if\s*\(\s*a\.help\s*\)\s*\{", hub),
-               "and the tool row only offers a link when there is one to offer",
-               )
+    t.contains(hub, 'id="helpLink"', "the global Help entry remains reachable")
+    tools = (F.CODE / "main_python/web/home/parts/tools.js").read_text(encoding="utf-8")
+    t.ok("a.help" not in tools and "'/help" not in tools,
+         "tool cards use the global Help entry without duplicate links")
 
     # ---- and the by-task way in reaches everything ------------------
     idx = help_html[help_html.find('<section id="bytask"'):]

@@ -93,8 +93,15 @@ class AllJaoApp extends Mice.App {
   }
 
   async openGames() {
-    if (await this.playHere()) return window.open(this.playPath, "_blank");
-    this.partner.open("open", this.$("openBtn"));
+    const tab = window.open("about:blank", "_blank");
+    if (!tab) return this.status.error("เปิดแท็บไม่ได้ อนุญาตป๊อปอัปแล้วกดลองอีกครั้ง");
+    try {
+      const where = await this.playHere() ? this.playPath : await this.partner.ensure();
+      if (!tab.closed) tab.location.href = where;
+    } catch (error) {
+      tab.close();
+      this.status.error("เปิดเกมไม่ได้ ลองอีกครั้ง", String(error));
+    }
   }
 
   async look() {

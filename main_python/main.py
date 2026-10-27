@@ -2107,6 +2107,11 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes, hub_api_
         f = (base / rel).resolve()
         if base not in f.parents and f != base:
             return self.send_err("forbidden", 403)
+        if path.startswith("/docs/shots/"):
+            # Read-only manual pictures also ship inside the one-file bundle.
+            f = asset("docs", rel).resolve()
+            if not any((root / "docs").resolve() in f.parents for root in _ROOTS):
+                return self.send_err("forbidden", 403)
         if not f.is_file():
             return self.send_err("not found: " + path, 404)
         self.send_bytes(f.read_bytes(), MIME.get(f.suffix.lower(), "application/octet-stream"))

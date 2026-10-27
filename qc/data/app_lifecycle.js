@@ -21,6 +21,9 @@ class Element {
   get textContent() { return this._html; }
   set textContent(v) { this._html = String(v); }
   appendChild(c) { this.children.push(c); return c; }
+  append(...nodes) { this.children.push(...nodes); }
+  replaceChildren(...nodes) { this._html = ""; this.children = [...nodes]; }
+  getAttribute(k) { return Object.prototype.hasOwnProperty.call(this, k) ? String(this[k]) : null; }
   setAttribute(k, v) { this[k] = v; }
   removeAttribute(k) { delete this[k]; }
   querySelectorAll() { return this.inputs; }
@@ -208,7 +211,7 @@ const machine = (id, label = id) => ({id, label, module: id, item: "gift", near:
     c.miceTheme.set("second"); c.fire("storage", {key: "mice_theme", newValue: null});
     ok(!c.document.documentElement["data-theme"] && a.value === "first", "removing a stored theme restores default and picker together");
   });
-  await test("Tools overlap, fallback and optional help", () => {
+  await test("Tools registry order, fallback and single global help", () => {
     const c = context(), src = read("main_python/web/home/parts/tools.js");
     vm.runInContext(src.slice(0, src.indexOf("window.MiceToolsManager")), c);
     const manager = vm.runInContext("new MiceToolsManager()", c), box = new Element();
@@ -216,16 +219,20 @@ const machine = (id, label = id) => ({id, label, module: id, item: "gift", near:
       {id: "new-addon", name: "New add-on", path: "/app/new-addon/"}];
     const rows = node => (node.className.split(" ").includes("tool-tile") ? [node] : []).concat(...node.children.map(rows));
     manager.render(box, apps);
-    let rendered = rows(box);
-    ok(rendered.length === 2 && rendered.filter(r => r.innerHTML.includes("Camera")).length === 1,
-      "a tool matching multiple groups appears exactly once");
-    ok(rendered.some(r => r.innerHTML.includes("New add-on")), "unmatched tools remain in Other Tools");
-    ok(rendered[0].children.filter(n => n.tag === "a").length === 1 &&
-      rendered[0].children.find(n => n.tag === "a").href === "/help#camera",
-      "declared Help produces the matching section link");
-    ok(rendered[1].children.every(n => n.tag !== "a"), "tools without Help do not receive a broken link");
+    const rendered = rows(box), names = rendered.map(row => row.children.find(n => n.className === "nm").textContent);
+    ok(rendered.length === apps.length && names.join("|") === apps.map(a => a.name).join("|"),
+      "registry order is preserved and each tool appears exactly once");
+    ok(names.includes("New add-on"), "unknown tools remain visible without a category catalog");
+    rendered.forEach((row, i) => {
+      const links = row.children.filter(n => n.tag === "a");
+      ok(links.length === 1 && links[0].href === new URL(apps[i].path, c.location.href).href,
+        "each tool has one native link to its registered destination");
+      ok(links[0].target === "_blank" && links[0].rel.includes("noopener") && links[0].getAttribute("aria-label").includes(apps[i].name),
+        "native new-tab links have a safe opener and accessible app label");
+      ok(!links.some(n => n.href.includes("/help#")), "per-tool Help is absent even when a manifest declares it");
+    });
     manager.render(box, apps);
-    ok(rows(box).length === 2, "redrawing categorized tools replaces rather than duplicates rows");
+    ok(rows(box).length === apps.length, "redrawing replaces rather than duplicates rows");
   });
   process.exitCode = failed ? 1 : 0;
 })().catch(error => { console.error(error); process.exitCode = 1; });

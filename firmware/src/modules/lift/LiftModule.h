@@ -63,6 +63,11 @@ private:
     int targetStage_ = -1;
     int pendingStage_ = -1; // GOTO issued before homing: run after HOME finishes
     bool homed_ = false;
+    const char* faultReason_ = nullptr;
+    uint32_t travelTimeoutMs_ = LIFT_TRAVEL_TIMEOUT_MS;
+    uint32_t homeTimeoutMs_ = LIFT_HOME_TIMEOUT_MS;
+    uint32_t motionStartedMs_ = 0, motionTimeoutMs_ = 0;
+    bool motionArmed_ = false;
 
     // settings (see /data/module.yaml and the CFG command)
     bool hasEnc_ = LIFT_HAS_ENCODER;      // no encoder: limits-only motion
@@ -96,6 +101,11 @@ private:
     float posMm() const;
     void deriveGeometry();
     void measureVelocity();
+    bool limitsValid() const;
+    bool motionReady(String& reply);
+    bool handleMotionCommand(String argv[], int argc, String& reply);
+    void startMotion(State next);
+    void latchFault(const char* reason);
     void stopMotor();
     void startGoto(int stage);
     void updateMotion();

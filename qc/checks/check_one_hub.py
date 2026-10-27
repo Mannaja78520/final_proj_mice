@@ -66,6 +66,7 @@ hub.__file__ = MAIN
 sys.argv = [MAIN]
 sys.modules["__main__"] = hub
 exec(compile(tree, MAIN, "exec"), hub.__dict__)
+hub.HOST = "127.0.0.1"
 hub.PORT = PORT
 threading.Thread(target=hub.main, daemon=True).start()
 

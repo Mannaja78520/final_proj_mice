@@ -1,4 +1,5 @@
 #include "core/ConfigStore.h"
+#include "esp32_hardware_lift_module.h"
 
 // yaml key -> NVS key (NVS keys are limited to 15 chars), plus the range the
 // value has to be inside.
@@ -11,6 +12,8 @@
 // should never be able to do that.
 struct KeyMap { const char* yaml; const char* nvs; float lo; float hi; };
 static const KeyMap MAP[] = {
+    {"travel_timeout_ms", "traveltmo", LIFT_TIMEOUT_MIN_MS, LIFT_TIMEOUT_MAX_MS},
+    {"home_timeout_ms", "hometmo", LIFT_TIMEOUT_MIN_MS, LIFT_TIMEOUT_MAX_MS},
     {"encoder", "encoder", 0, 1},          // 1 = encoder fitted, 0 = limits-only lift
     {"leds", "leds", 0, 1000},
     {"speed", "speed", 0, 255},            // travel PWM

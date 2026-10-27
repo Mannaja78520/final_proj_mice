@@ -6,7 +6,7 @@
   // main_python/hub_api_gacha.py. Settings: config/gacha.json. Rules and
   // logs (people's names) live in .local/gacha/, never in this folder.
   "name": "Prize machines",
-  "blurb": "give prizes from gachapon machines, with rules per event and per person",
+  "blurb": "จัดการเครื่องจ่ายรางวัลและกติกาของแต่ละงาน",
   "icon": "🎁",
   "order": 40,
   "help": "gacha"

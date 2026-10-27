@@ -3,7 +3,7 @@
   // An outside program like Reconize: config/partners.json says where it is
   // and how to start it; this page only starts it and opens it.
   "name": "Photobooth",
-  "blurb": "guests take photos with a frame and stickers, and scan a QR code to keep them",
+  "blurb": "ถ่ายภาพพร้อมกรอบและสติกเกอร์ รับภาพผ่าน QR code",
   "icon": "📸",
   "order": 35
 }

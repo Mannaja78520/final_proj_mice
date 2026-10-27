@@ -250,6 +250,14 @@ def _measure(t, base):
              # A23-1: both competitor versions answer the same floor.
              "/o/", "/o/rgb.html", "/o/studio/",
              "/g/", "/g/rgb.html", "/g/studio/"]
+    # App manifests are the launcher source; every newly added app is measured too.
+    status, app_body = F.get(base + "/api/apps")
+    t.eq(status, 200, "app routes are available for responsive coverage")
+    apps = json.loads(app_body).get("apps", [])
+    for app in apps:
+        path = app.get("path", "")
+        if path.startswith("/") and path not in pages:
+            pages.append(path)
     devs = [[w, h] for w, h, _ in DEVICES]
     label = {w: name for w, _, name in DEVICES}
 

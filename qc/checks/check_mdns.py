@@ -23,6 +23,7 @@ copy is the courtesy one.
 import socket
 import struct
 import sys
+from unittest.mock import patch
 
 import qc as F
 
@@ -138,11 +139,15 @@ def run(t):
     # ---- 4. the hub tells the page whether the name works ------------
     import json
     base, main = F.start_hub()
-    mine = json.loads(F.get(base + "/api/mine")[1])
+    # Advertisement uses a supplied adapter identity; actual HTTP stays local.
+    # Real adapter reachability is a separate physical acceptance check.
+    with patch.object(main, "lan_ip", return_value="192.0.2.20"):
+        mine = json.loads(F.get(base + "/api/mine")[1])
     t.ok("name_url" in mine, "the hub reports the name as well as the address",
          "the page cannot print mice.local honestly without being told")
     t.ok("url" in mine and "127.0.0.1" not in mine.get("url", ""),
-         "and the address it reports is one a phone could use",
+         "and it advertises the supplied adapter rather than loopback",
          "got %r - 127.0.0.1 is the one address that cannot work from a phone"
          % mine.get("url"))
+    t.ok("192.0.2.20" in mine.get("url", ""), "the HTTP route uses the configured adapter identity")
     t.eq(main.MDNS_NAME, "mice.local", "the name lives in one place")

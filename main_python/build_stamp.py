@@ -37,6 +37,7 @@ AREAS = (
     ("main_python", "*.py"),
     ("main_python", "nong.ico"),      # baked into the exe, so a change needs a build
     ("main_python/web", "**/*"),
+    ("docs/shots", "**/*"),
     ("shared/web", "**/*"),
     ("nong/main_python_set_nong/web", "**/*"),
     ("firmware/config", "**/*"),

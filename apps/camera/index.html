@@ -63,34 +63,30 @@ class CameraApp extends (window.Mice && window.Mice.App ? window.Mice.App : Obje
   }
 
   async load(force) {
-    this.$('stat').textContent = 'looking…';
-    this.foundCams.clear();
-
-    try {
-      const mine = await fetch('/api/mine').then(r => r.json());
-      (mine.modules || []).forEach(m => {
-        if (m.type === 'cam') {
-          this.foundCams.set(String(m.id), { id: m.id, name: m.name, dev: m.dev });
-        }
-      });
-    } catch (e) {
-      // the WiFi list may still answer
+    const generation = this.loadGeneration = (this.loadGeneration || 0) + 1;
+    this.$('stat').textContent = 'กำลังค้นหากล้อง…';
+    const found = new Map();
+    let failed = 0;
+    for (const url of ['/api/mine', '/api/scan' + (force ? '?force=1' : '')]) {
+      try {
+        const response = await fetch(url), data = await response.json();
+        if (!response.ok || data.ok === false || !Array.isArray(data.modules)) throw Error('scan failed');
+        data.modules.filter(m => m.type === 'cam').forEach(m => {
+          const wireless = url.startsWith('/api/scan');
+          found.set(String(m.chip || m.id), {id:m.id, name:m.name,
+            dev:wireless ? 'wifi:' + m.ip : m.dev, ip:wireless ? m.ip : undefined});
+        });
+      } catch (_) { failed++; }
     }
-    
-    try {
-      const url = '/api/scan' + (force ? '?force=1' : '');
-      const air = await fetch(url).then(r => r.json());
-      (air.modules || []).forEach(m => {
-        if (m.type === 'cam') {
-          // WiFi wins for the live view: a frame cannot come down the cable.
-          this.foundCams.set(String(m.id), { id: m.id, name: m.name, dev: 'wifi:' + m.ip, ip: m.ip });
-        }
-      });
-    } catch (e) {
-      // keep whatever the cables gave
-    }
-
+    if (generation !== this.loadGeneration) return;
+    if (failed < 2) this.foundCams = found;
     this.render();
+    if (failed) {
+      this.$('none').hidden = true;
+      this.$('stat').textContent = failed === 2
+        ? 'ค้นหากล้องไม่ได้ ข้อมูลที่แสดงอาจเก่า กด Look again เพื่อลองอีกครั้ง'
+        : 'ค้นหาได้บางส่วน อาจมีกล้องที่ยังไม่แสดง กด Look again เพื่อลองอีกครั้ง';
+    }
   }
 
   render() {
