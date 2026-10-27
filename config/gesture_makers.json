@@ -1,0 +1,61 @@
+{
+  // New talk gestures MADE for words no gesture in config/gestures.json has
+  // (A46-4, user 2026-10-27: *เจนท่ามาใหม่เอง* for "ด้านขวาครับ" / "ด้านซ้ายครับ").
+  // DATA only: a new direction, body part, word or language is an entry here.
+  //
+  // Words next to each other join into one move: "ข้างบนขวา" = up + right.
+  // Nong Studio fits every made move like a gesture (IK on the robot's sizes,
+  // joint limits, safe_path.js collision check + RRT detour) before showing
+  // it, and offers to keep a good one as a gesture.
+  //
+  // "side": whose right is "right": "robot" (its own right hand side) or
+  // "viewer" (the person facing it, so the robot points to its own left).
+  "side": "robot",
+  // words at most this many characters apart join into one move
+  "joinChars": 3,
+  // the arm used when no word says a side
+  "arm": "R",
+  // how far the hand reaches when it points, in arm lengths
+  "reach": 0.9,
+  // the move's timing: into the pose, then held
+  "t": 450, "hold": 400,
+  // DIRECTIONS: "to" = [left, up, forward] around the body, the robot's own
+  // frame ("left" + = its left). "arm": the hand that points that way.
+  "directions": {
+    "right": {"label": "Point right", "arm": "R", "to": [-1, 0.05, 0.35],
+      "words": {"th": ["ด้านขวา", "ทางขวา", "ข้างขวา", "ขวามือ", "ฝั่งขวา"],
+                "en": ["to the right", "on the right", "right side"],
+                "ja": ["右"], "zh": ["右边"]}},
+    "left": {"label": "Point left", "arm": "L", "to": [1, 0.05, 0.35],
+      "words": {"th": ["ด้านซ้าย", "ทางซ้าย", "ข้างซ้าย", "ซ้ายมือ", "ฝั่งซ้าย"],
+                "en": ["to the left", "on the left", "left side"],
+                "ja": ["左"], "zh": ["左边"]}},
+    "up": {"label": "Point up", "to": [0.15, 1, 0.3],
+      "words": {"th": ["ข้างบน", "ด้านบน", "บนฟ้า", "ขึ้นไป"],
+                "en": ["up there", "above", "upstairs"], "ja": ["上"], "zh": ["上面"]}},
+    "down": {"label": "Point down", "to": [0.2, -1, 0.5], "palm": "down",
+      "words": {"th": ["ข้างล่าง", "ด้านล่าง", "ลงไป", "พื้น"],
+                "en": ["down there", "below", "downstairs"], "ja": ["下"], "zh": ["下面"]}},
+    "back": {"label": "Point behind", "to": [0.35, 0.3, -0.4],
+      "words": {"th": ["ข้างหลัง", "ด้านหลัง", "ทางหลัง"], "en": ["behind"]}}
+  },
+  // BODY PARTS: the hand goes to that spot, [out, up, forward] from the
+  // shoulder in arm lengths (the format of config/gestures.json keys).
+  "parts": {
+    "head": {"label": "Hand to head", "at": [-0.1, 0.15, 0.3],
+      "words": {"th": ["หัว", "ศีรษะ", "สมอง"], "en": ["head", "brain"]}},
+    "heart": {"label": "Hand on heart", "arm": "R", "at": [-0.25, -0.45, 0.35],
+      "words": {"th": ["หัวใจ"], "en": ["heart"]}},
+    "belly": {"label": "Hand on belly", "at": [-0.15, -0.7, 0.35],
+      "words": {"th": ["ท้อง", "หิว", "อิ่ม"], "en": ["belly", "hungry", "full"]}},
+    "ear": {"label": "Hand to ear", "at": [0.05, 0.05, 0.15], "palm": "down",
+      "words": {"th": ["ได้ยิน", "ฟัง"], "en": ["hear", "listen"]}}
+  },
+  // The AI path (Studio's "Ask the AI" switch): the voice helper's own think
+  // chain (config/voice.json `use`), cloud or this PC, whichever answers.
+  // Its reply is cleaned (gestures.clean_made) and fitted like any other.
+  "ai": {
+    "maxKeys": 4,
+    "prompt": "You design arm gestures for a small humanoid robot that talks. Reply with ONLY one JSON object, no other text: {\"label\": short English name, \"word\": the word or phrase in the sentence the gesture belongs to, \"keys\": [up to 4 keys]}. A key places one or both hands: \"L\" and/or \"R\" = [out, up, forward] from that shoulder in arm lengths, each -1..1 (out = away from the body to that hand's side, [0,-1,0] = arm hanging down); optional \"palmL\"/\"palmR\" = \"up\" or \"down\"; \"t\" = ms to move there (200..1200); \"hold\" = ms to stay (0..1000). Right means the robot's own right hand side. Keep hands in front of the body. Pick the gesture that shows the meaning of the most visual word."
+  }
+}

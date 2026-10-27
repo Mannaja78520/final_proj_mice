@@ -90,9 +90,12 @@ def library(shipped, mine):
     """The shipped library with this PC's changes on top. A gesture set to
     null in `mine` is removed; one given as a dict replaces those fields."""
     lib = copy.deepcopy(shipped)
-    for k in ("on", "robot"):
+    for k in ("on", "robot", "restStyle"):
         if k in mine:
             lib[k] = mine[k]
+    # the chosen resting hands become `rest`: Studio fits it, plan() uses it
+    if lib.get("restStyle") in (lib.get("rests") or {}):
+        lib["rest"] = lib["rests"][lib["restStyle"]]
     lib["events"] = dict(lib.get("events") or {}, **(mine.get("events") or {}))
     gs = lib.setdefault("gestures", {})
     for gid, g in (mine.get("gestures") or {}).items():
@@ -106,7 +109,7 @@ def library(shipped, mine):
 def merge_mine(mine, change):
     """A Studio save: switches and gestures merged in, never the whole file."""
     out = dict(mine)
-    for k in ("on", "robot"):
+    for k in ("on", "robot", "restStyle"):
         if k in change:
             out[k] = change[k]
     for k in ("events", "gestures"):
@@ -166,15 +169,138 @@ def _hits(text, gestures):
     return kept
 
 
+def _unit(v, n):
+    """v scaled to length n (a pointing hand reaches the same distance)."""
+    m = sum(x * x for x in v) ** 0.5 or 1.0
+    return [round(x / m * n, 3) for x in v]
+
+
+def make(lib, makers, text):
+    """New gestures for words of `text` no library gesture has (A46-4).
+
+    Rules from config/gesture_makers.json: direction words point that way,
+    body-part words put a hand there, words next to each other join
+    ("ข้างบนขวา" = up + right). Returns [{id, label, word, words, keys,
+    mirror, by}] in the library's key format; Studio fits and checks each."""
+    text = str(text or "")
+    taken = [(p, p + len(w)) for p, _g, w in _hits(text, lib.get("gestures") or {})]
+    dirs, parts = makers.get("directions") or {}, makers.get("parts") or {}
+    pool = dict({"d:" + k: v for k, v in dirs.items()}, **{"p:" + k: v for k, v in parts.items()})
+    hits = [h for h in _hits(text, pool)
+            if not any(a < h[0] + len(h[2]) and h[0] < b for a, b in taken)]
+    groups = []
+    for h in hits:
+        if groups and h[0] - groups[-1][-1][1] <= int(makers.get("joinChars", 3)):
+            groups[-1].append((h[0], h[0] + len(h[2]), h[1]))
+        else:
+            groups.append([(h[0], h[0] + len(h[2]), h[1])])
+    viewer = makers.get("side") == "viewer"
+    flip = {"L": "R", "R": "L"}
+    out, seen = [], set()
+    for grp in groups:
+        ids = [g[2] for g in grp]
+        ents = [pool[i] for i in ids]
+        side = next((e["arm"] for e in ents if e.get("arm") in ("L", "R")), "")
+        if viewer and side:
+            side = flip[side]
+        arm = side or makers.get("arm", "R")
+        part = next((e for i, e in zip(ids, ents) if i.startswith("p:")), None)
+        if part:
+            vec = [float(x) for x in part["at"]]
+        else:
+            # [left, up, forward] in the robot's frame -> [out, up, forward]
+            # of that arm: out is +left for L, -left for R
+            to = [sum(float(e["to"][j]) for e in ents) for j in range(3)]
+            if viewer:
+                to[0] = -to[0]
+            vec = _unit([to[0] if arm == "L" else -to[0], to[1], to[2]],
+                        float(makers.get("reach", 0.9)))
+        key = {arm: vec, "t": int(makers.get("t", 450)), "hold": int(makers.get("hold", 400))}
+        palm = next((e["palm"] for e in ents if e.get("palm") in ("up", "down")), "")
+        if palm:
+            key["palm" + arm] = palm
+        gid = "made_" + "_".join(i[2:] for i in ids)
+        if gid in seen:
+            continue
+        seen.add(gid)
+        word = text[grp[0][0]:grp[-1][1]]
+        out.append({"id": gid, "label": " + ".join(e.get("label") or i for i, e in zip(ids, ents)),
+                    "word": word, "words": {"any": [word]}, "keys": [key],
+                    "mirror": not side, "by": "rules"})
+    return out
+
+
+def clean_made(got, makers, text=""):
+    """An AI's gesture reply -> one gesture in the library's format, or
+    (None, why). Only known fields; every number clipped to its range, so a
+    wild reply can at worst ask for a pose that Studio's fit then refuses."""
+    if isinstance(got, str):
+        m = re.search(r"\{.*\}", got, re.S)
+        try:
+            got = json.loads(m.group(0)) if m else None
+        except ValueError:
+            got = None
+    if not isinstance(got, dict) or not isinstance(got.get("keys"), list):
+        return None, "the AI did not answer with a gesture"
+    clip = lambda v, lo, hi: min(hi, max(lo, float(v)))  # noqa: E731
+    keys = []
+    for k in got["keys"][:int((makers.get("ai") or {}).get("maxKeys", 4))]:
+        if not isinstance(k, dict):
+            continue
+        key = {}
+        for a in ("L", "R"):
+            v = k.get(a)
+            if isinstance(v, list) and len(v) == 3 and all(isinstance(x, (int, float)) for x in v):
+                key[a] = [round(clip(x, -1, 1), 3) for x in v]
+                if sum(x * x for x in key[a]) > 1:
+                    key[a] = _unit(key[a], 1.0)
+                if k.get("palm" + a) in ("up", "down"):
+                    key["palm" + a] = k["palm" + a]
+        if not key:
+            continue
+        key["t"] = int(clip(k.get("t", 450) if isinstance(k.get("t"), (int, float)) else 450, 150, 1500))
+        key["hold"] = int(clip(k.get("hold", 0) if isinstance(k.get("hold"), (int, float)) else 0, 0, 1500))
+        keys.append(key)
+    if not keys:
+        return None, "the AI's gesture moved no hand"
+    label = re.sub(r"\s+", " ", str(got.get("label") or "Made move"))[:40]
+    word = str(got.get("word") or "").strip()[:40]
+    if not word or word.lower() not in str(text).lower():
+        word = str(text).strip()[:40]
+    gid = "made_ai_" + (re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_") or "move")
+    return {"id": gid, "label": label, "word": word, "words": {"any": [word]},
+            "keys": keys, "mirror": True, "by": "ai"}, None
+
+
 def _speed_floor(a, b, dps):
     """ms the biggest joint change needs at `dps` (the board floors T too)."""
     return max(abs(x - y) for x, y in zip(a, b)) / max(1.0, dps) * 1000.0
 
 
-def plan(lib, fit, text, lang="", manner="", event="", ms=0, seed=None):
+def with_extra(lib, fit, extra):
+    """(lib, fit) with Studio's unsaved MADE gestures added (A46-4): Show
+    tries a made move before anyone keeps it. Each extra is {label, words,
+    keys (the definition), fit {gestures: {vid: fitted}}}; Studio fitted it
+    on this robot like any gesture, so it goes through fitted() unchanged."""
+    if not isinstance(extra, dict) or not extra:
+        return lib, fit
+    lib, fit = copy.deepcopy(lib), copy.deepcopy(fit or {})
+    for gid, e in list(extra.items())[:8]:
+        if not isinstance(e, dict) or not isinstance(e.get("fit"), dict):
+            continue
+        lib.setdefault("gestures", {})[gid] = {k: e.get(k) for k in ("label", "words", "keys", "mirror")}
+        fit.setdefault("defs", {})[gid] = e.get("keys")
+        for vid, f in (e["fit"].get("gestures") or {}).items():
+            if vid in (gid, gid + "~m"):
+                fit.setdefault("gestures", {})[vid] = f
+    return lib, fit
+
+
+def plan(lib, fit, text, lang="", manner="", event="", ms=0, seed=None, extra=None):
     """Pick and time gestures for one spoken answer. Returns a dict: ok,
     steps (for /api/play), picks [{id,label,word,at,mirrored}], ms, total_ms;
     or ok False with `why` (and `off` when gestures are switched off)."""
+    lib, fit = with_extra(lib, fit, extra)
     text = str(text or "").strip()
     ev = (lib.get("events") or {}).get(event or "") or {}
     if not lib.get("on", True) or ev.get("on") is False:
@@ -265,6 +391,13 @@ def plan(lib, fit, text, lang="", manner="", event="", ms=0, seed=None):
         placed.sort(key=lambda p: p["at"])
         recent.append(gid)
         want -= 1
+    # A short line ("ด้านขวาครับ", 1 s) asks for round(0.35) = 0 beats and has no
+    # room for one: it stood still (user 2026-10-27). At least `atLeast`
+    # gestures move, the shortest beat from the start, running past the words.
+    if beats and len(placed) < int(lib.get("atLeast", 1)):
+        vids = [v for v in (variant(b) for b in beats) if v]
+        if vids:
+            placed.append({"at": 0.0, "vid": min(vids, key=length), "word": ""})
     if seed is None:
         with _lock:
             _recent[:] = (recent + [use[p["vid"]]["id"] for p in placed if p["word"]])[-8:]
