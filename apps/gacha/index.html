@@ -236,6 +236,7 @@ Examples: docs/gacha/README.md</pre>
 
 <div class="card" data-tab="log" data-needs-login="gacha">
   <h2>This event so far</h2>
+  <div id="logStat" class="statline" role="status"></div>
   <div id="stats" class="bars"></div>
   <h3>Every prize</h3>
   <div class="wrapx"><table class="gt" id="logT"><thead><tr><th>When</th><th>What</th><th>Machine</th><th>Kind</th><th>Person</th><th>From</th><th>Admin</th><th>Words</th></tr></thead><tbody></tbody></table></div>
@@ -733,13 +734,17 @@ class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Objec
   }
 
   async loadLog() {
-    const a = await Mice.Api.get("/api/gacha/log?limit=50");
-    if (a.ok) this.$("logT").tBodies[0].innerHTML = a.data.rows.slice().reverse().map(r =>
+    this.$("logStat").textContent = 'กำลังโหลดประวัติ…';
+    const [a, s] = await Promise.all([Mice.Api.get("/api/gacha/log?limit=50"), Mice.Api.get("/api/gacha/stats")]);
+    const logOk = a.ok && Array.isArray(a.data.rows);
+    const statsOk = s.ok && s.data.stats && typeof s.data.stats === 'object';
+    this.$("logStat").textContent = logOk && statsOk ? ''
+      : 'โหลดประวัติหรือสถิติไม่ได้ ข้อมูลที่แสดงอาจเก่า กด Refresh เพื่อลองอีกครั้ง';
+    if (logOk) this.$("logT").tBodies[0].innerHTML = a.data.rows.length ? a.data.rows.slice().reverse().map(r =>
       '<tr><td>' + this.esc(r.time) + '</td><td>' + this.esc(r.kind === "refused" ? "refused: " + r.reason : r.kind) + '</td><td>' + this.esc(r.machine) +
       '</td><td>' + this.esc(r.item) + '</td><td>' + this.esc(r.person) + '</td><td>' + this.esc(r.app) + '</td><td>' + (r.forced === "1" ? "yes" : "") +
-      '</td><td>' + this.esc(r.message) + '</td></tr>').join("");
-    const s = await Mice.Api.get("/api/gacha/stats");
-    if (!s.ok) return;
+      '</td><td>' + this.esc(r.message) + '</td></tr>').join("") : '<tr><td colspan="8">ยังไม่มีประวัติการจ่ายรางวัล</td></tr>';
+    if (!statsOk) return;
     const st = s.data.stats, parts = [["item", "per kind"], ["machine", "per machine"], ["person", "per person"], ["refused", "refused, why"]];
     this.$("stats").innerHTML = parts.map(([k, w]) => {
       const e = Object.entries(st[k] || {}).sort((a, b) => b[1] - a[1]);

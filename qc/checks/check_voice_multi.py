@@ -79,19 +79,6 @@ def _wait_health(port, host="127.0.0.1", secs=15):
     return False
 
 
-def _lan_ip():
-    """This PC's own LAN address, learned without sending a packet."""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        try:
-            s.connect(("10.255.255.255", 1))
-            return s.getsockname()[0]
-        finally:
-            s.close()
-    except OSError:
-        return ""
-
-
 def run(t):
     fake_serial.reset()
     base, _main = F.start_hub()
@@ -131,15 +118,15 @@ def run(t):
                  json.dumps(small)[:120])
 
             # ---- 3: the URL's address IS the listen address ---------------
-            ip = _lan_ip()
-            if not t.ok(ip, "this PC has a LAN address to share on"):
-                return
+            # A distinct loopback alias proves exact binding without a LAN
+            # route lookup or exposing the fixture on a physical adapter.
+            ip = "127.0.0.2"
             url2 = "http://%s:%d" % (ip, F._free_port())
             cfg2 = _cfg(tmp, url2)
             proc2, port2, logp2 = _helper(cfg2, _faq(tmp), url2)
             try:
                 t.ok(_wait_health(port2, host=ip),
-                     "pointed at the LAN address, it answers THERE")
+                     "pointed at a distinct loopback alias, it answers THERE")
                 refused = True
                 try:
                     F.get("http://127.0.0.1:%s/health" % port2, timeout=4)

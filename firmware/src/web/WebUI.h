@@ -216,13 +216,18 @@ a.peer:hover{border-color:var(--acc)}
 <!--#type lift-->
   <div class="card" data-tab="control" id="liftCard">
     <h2>Lift</h2>
+    <div id="liftFault" class="banner err" role="alert" hidden>
+      ลิฟต์หยุดเพราะพบปัญหา ตรวจกลไกและสวิตช์ก่อนล้างข้อผิดพลาด
+      <span id="liftFaultDetail" class="tech"></span>
+      <button onclick="liftCmd('FAULT CLEAR')">ล้างข้อผิดพลาด</button>
+    </div>
     <div class="stage"><span id="stg">-</span><small id="stgState">state: -</small></div>
     <div class="row" id="gotoBtns" style="justify-content:center"></div>
     <div class="row" style="justify-content:center">
-      <button onclick="liftCmd('UP')">&#9650; Up</button>
-      <button onclick="liftCmd('DOWN')">&#9660; Down</button>
+      <button data-lift-motion onclick="liftCmd('UP')">&#9650; Up</button>
+      <button data-lift-motion onclick="liftCmd('DOWN')">&#9660; Down</button>
       <button class="danger" onclick="liftCmd('STOP')">&#9632; Stop</button>
-      <button onclick="liftCmd('HOME')">&#8962; Home</button>
+      <button data-lift-motion onclick="liftCmd('HOME')">&#8962; Home</button>
     </div>
     <div class="row" style="justify-content:center">
       <span class="lbl">Speed</span>
@@ -540,6 +545,7 @@ a.peer:hover{border-color:var(--acc)}
       <button class="primary" onclick="runSel()">Run</button>
       <button onclick="cmd('MOVE STOP')">Stop</button>
     </div>
+    <div class="statline" id="moveRunStat" role="status"></div>
     <div class="statline" id="seqStat">idle</div>
   </div>
 
@@ -805,6 +811,10 @@ async function playSel(){
 //#type lift
 // ---- lift: stages, travel speed, RGB strip, speaker ------------------------
 function liftStatus(m){
+  const fault = !!m.fault;
+  $('liftFault').hidden = !fault;
+  $('liftFaultDetail').textContent = m.fault || '';
+
   $('stg').textContent=(m.stage===undefined||m.stage<0)?'?':m.stage;
   $('stgState').textContent='state: '+(m.state||'-')+(m.target>=0?' -> '+m.target:'');
   $('limT').textContent='top:'+(m.limit_top?'HIT':'-');
@@ -824,6 +834,7 @@ function liftStatus(m){
       const b=document.createElement('button');b.textContent=i;b.onclick=()=>liftCmd('GOTO '+i);g.appendChild(b);
     }
   }
+  document.querySelectorAll('#liftCard [data-lift-motion], #gotoBtns button').forEach(b => { b.disabled = fault; });
   if(m.rgb&&document.activeElement.id!=='rgbb'){$('rgbb').value=m.rgb.bright;}
   if(m.rgb&&document.activeElement.id!=='rgbe'){$('rgbe').value=m.rgb.effect;}
 }
@@ -1753,7 +1764,12 @@ async function loadList(dir,sel){
     s.appendChild(o);
   }
 }
-function runSel(){const v=$('moveSel').value;if(v)cmd('MOVE '+v);}
+async function runSel(){
+  const v=$('moveSel').value;if(!v)return;
+  $('moveRunStat').textContent='starting…';
+  const reply=await cmd('MOVE '+v);
+  if(!sayRefusal('moveRunStat',reply)) $('moveRunStat').textContent='start requested';
+}
 async function loadFiles(){
   const dir=$('dirSel').value;
   try{

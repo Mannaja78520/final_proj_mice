@@ -43,6 +43,11 @@ def run(t):
     (bundled / "shared" / "web" / "mice.css").write_text("bundled", encoding="utf-8")
     (bundled / "shared" / "web" / "only.css").write_text("bundled", encoding="utf-8")
 
+    (bundled / "docs/shots").mkdir(parents=True)
+    image = b"\x89PNG\r\n\x1a\nqc-frozen-only"
+    (bundled / "docs/shots/qc-frozen-only.png").write_bytes(image)
+    (beside / "docs/shots").mkdir(parents=True)
+    old_data = main.DATA
     was = main._ROOTS
     main._ROOTS = [beside, bundled]
     try:
@@ -52,6 +57,16 @@ def run(t):
         got = main.asset("shared", "web", "only.css")
         t.eq(got.read_text(encoding="utf-8"), "bundled",
              "and the bundled copy is used when there is nothing beside it")
+        # Execute the actual static route with no source-folder docs beside EXE.
+        main.DATA = beside
+        handler = object.__new__(main.Handler)
+        handler.path, handler.headers = "/docs/shots/qc-frozen-only.png", {}
+        handler.client_address = ("127.0.0.1", 0)
+        captured = []
+        handler.send_bytes = lambda data, *args, **kwargs: captured.append(data)
+        handler.send_err = lambda *args, **kwargs: captured.append(b"missing")
+        handler.route("GET")
+        t.eq(captured, [image], "the actual Help illustration route serves bundled-only image bytes")
         missing = main.asset("shared", "web", "nope.css")
         t.ok(str(missing).endswith("nope.css"),
              "a file that is in neither still names a real path",
@@ -59,6 +74,7 @@ def run(t):
              "frames away from the cause")
     finally:
         main._ROOTS = was
+        main.DATA = old_data
         import shutil
         shutil.rmtree(box, ignore_errors=True)
 
@@ -118,7 +134,7 @@ def run(t):
     t.ok(any("MiceHub.spec" in ln for ln in builds),
          "the documented command runs MiceHub.spec")
     joined = " ".join(listed).replace("\\", "/")
-    for folder in ("main_python/web", "shared/web",
+    for folder in ("docs/shots", "main_python/web", "shared/web",
                    "nong/main_python_set_nong/web", "firmware/config"):
         t.contains(joined, folder, "the build bundles %s" % folder)
 

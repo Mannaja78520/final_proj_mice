@@ -235,6 +235,7 @@ body.mode-tech .tv-grid {
   <span class="mini" id="statBadge">connecting…</span>
   <button onclick="app.refresh()" style="margin-left:auto;">⟳ Refresh</button>
 </header>
+<div id="actionStat" class="statline" role="status"></div>
 
 <div class="card" id="loginHere" style="margin-bottom:var(--sp-3)"></div>
 
@@ -335,6 +336,7 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
     this.modules = [];
     this.selectedSequence = "";
     this.pollBusy = false;
+    this.motionGeneration = 0;
   }
 
   init() {
@@ -500,18 +502,26 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
     document.querySelectorAll("[data-motion], .seq-pill").forEach(b => { b.disabled = !on; });
   }
 
+  invalidateMotion() {
+    this.motionGeneration = (this.motionGeneration || 0) + 1;
+    return this.motionGeneration;
+  }
+
   selectDevice(dev) {
+    this.invalidateMotion();
     this.activeDev = this.modules.some(m => m.dev === dev) ? dev : "";
     this.setMotionEnabled(!!this.activeDev);
   }
 
   updateHardwareState(st) {
+    const previousDev = this.activeDev;
     this.modules = ((st && st.modules) || []).map(m => ({...m,
       dev: m.best || m.dev || ((m.routes || []).find(r => !r.stale && r.dev) || {}).dev
     })).filter(m => m.type === "nong" && !m.stale &&
       typeof m.dev === "string" && /^(usb:|wifi:|hub:|auto:).+/.test(m.dev));
     if (!this.modules.some(m => m.dev === this.activeDev)) this.activeDev = "";
     if (!this.activeDev && this.modules.length === 1) this.activeDev = this.modules[0].dev;
+    if (previousDev !== this.activeDev) this.invalidateMotion();
     const select = this.$("targetDev");
     select.replaceChildren(new Option("Choose Nong", ""), ...this.modules.map(m => new Option(m.name || m.dev, m.dev)));
     select.value = this.activeDev;
@@ -534,35 +544,87 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
     });
   }
 
+  async checked(path, opts) {
+    const result = await Mice.Api.call(path, opts);
+    if (!result.ok) throw new Error(result.says || 'คำสั่งไม่สำเร็จ');
+    return result.data;
+  }
+
+  async boardCommand(dev, command) {
+    const result = await Mice.Api.get("/api/dev/cmd?dev=" + encodeURIComponent(dev) + "&c=" + encodeURIComponent(command), {text:true});
+    const reply = String(result.data.reply || '').trim();
+    if (!result.ok || !/^OK(?:\s|$)/.test(reply)) throw Error(reply || result.says || 'หุ่นยนต์ไม่ตอบรับคำสั่ง');
+    return reply;
+  }
+
+  actionError(error) {
+    const text = 'คำสั่งไม่สำเร็จ ตรวจสถานะแล้วลองอีกครั้ง';
+    this.$("actionStat").textContent = text;
+    const detail = document.createElement('span');
+    detail.className = 'tech'; detail.textContent = ' ' + String(error.message || error);
+    this.$("actionStat").appendChild(detail);
+    this.$("nowSeq").textContent = text;
+  }
+
   async playSequence(name) {
     const dev = this.activeDev;
     if (!dev || !this.modules.some(m => m.dev === dev)) return;
+    const generation = this.invalidateMotion();
     this.selectedSequence = name;
+    this.$("actionStat").textContent = '';
     try {
       this.$("nowSeq").textContent = "Starting " + name + "…";
-      const res = await fetch("/api/seqsteps?name=" + encodeURIComponent(name));
-      if (!res.ok) return;
-      const data = await res.json();
-      if (!Array.isArray(data.steps) || !data.steps.length || this.activeDev !== dev) return;
-      await fetch("/api/play", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dev,
-          name: name,
-          steps: data.steps,
-          loop: false
-        })
-      });
+      const data = await this.checked("/api/seqsteps?name=" + encodeURIComponent(name));
+      if (!Array.isArray(data.steps) || !data.steps.length) throw Error('ลำดับการแสดงไม่มีท่าทาง');
+      if (this.activeDev !== dev || generation !== this.motionGeneration) return false;
+      const stopping = this.stopRequest;
+      if (stopping && !await stopping) return false;
+      if (this.activeDev !== dev || generation !== this.motionGeneration) return false;
+      const previous = this.playRequest;
+      if (previous) await previous.catch(() => {});
+      if (this.activeDev !== dev || generation !== this.motionGeneration) return false;
+      const clock = await this.checked("/api/play");
+      if (this.activeDev !== dev || generation !== this.motionGeneration) return false;
+      if (!Number.isSafeInteger(clock.epoch)) throw Error('อ่านรุ่นคำสั่งไม่ได้ รีเฟรชแล้วลองใหม่');
+      const request = this.checked("/api/play", {method:"POST", body:{dev, name, steps:data.steps, loop:false, expected_epoch:clock.epoch}});
+      this.playRequest = request;
+      try { await request; }
+      finally { if (this.playRequest === request) this.playRequest = null; }
+      if (this.activeDev !== dev || generation !== this.motionGeneration) return false;
       this.poll();
-    } catch (e) {
-      console.error("Play failed:", e);
+      return true;
+    } catch (error) {
+      if (generation === this.motionGeneration && this.activeDev === dev) this.actionError(error);
+      return false;
     }
   }
 
   async stop() {
-    await fetch("/api/play/stop", { method: "POST" });
-    this.poll();
+    this.invalidateMotion();
+    const request = this.stopAction(this.activeDev);
+    this.stopRequest = request;
+    try { return await request; }
+    finally { if (this.stopRequest === request) this.stopRequest = null; }
+  }
+
+  async stopAction(dev) {
+    try {
+      // Neither failure may skip stopping the other target. Keep the barrier
+      // pending until the clock and the selected board have both answered.
+      const attempts = await Promise.allSettled([
+        this.checked("/api/play/stop", {method:"POST"}).then(status => {
+          if (!status || status.running !== false || status.stop_ok !== true || !!status.error)
+            throw Error(status && status.error || 'ยังไม่ได้รับคำตอบว่าหยุดการแสดงแล้ว');
+          return status;
+        }),
+        dev ? this.boardCommand(dev, "STOP") : Promise.resolve()
+      ]);
+      const failures = attempts.filter(a => a.status === 'rejected').map(a => String(a.reason.message || a.reason));
+      if (failures.length) throw Error(failures.join(' · '));
+      this.$("actionStat").textContent = '';
+      this.poll();
+      return true;
+    } catch (error) { this.actionError(error); return false; }
   }
 
   async resume() {
@@ -573,39 +635,40 @@ class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Ob
   async goHome() {
     const dev = this.activeDev;
     if (!dev || !this.modules.some(m => m.dev === dev)) return;
-    await this.stop();
-    if (this.activeDev !== dev) return;
-    const res = await fetch("/api/dev/cmd?dev=" + encodeURIComponent(dev) + "&c=HOME");
-    const reply = await res.text();
-    this.$("nowSeq").textContent = res.ok && reply.startsWith("OK") ? "Saved HOME requested" : reply;
-    this.poll();
+    const stopped = this.stop(), generation = this.motionGeneration;
+    if (!await stopped || generation !== this.motionGeneration || this.activeDev !== dev) return;
+    try {
+      const clock = await this.checked("/api/play");
+      if (generation !== this.motionGeneration || this.activeDev !== dev) return;
+      if (!Number.isSafeInteger(clock.epoch)) throw Error('อ่านรุ่นคำสั่งไม่ได้ รีเฟรชแล้วลองใหม่');
+      await this.checked("/api/play/home", {method:"POST", body:{dev, expected_epoch:clock.epoch}});
+      if (generation !== this.motionGeneration || this.activeDev !== dev) return;
+      this.$("nowSeq").textContent = "Saved HOME requested";
+      this.poll();
+    } catch (error) {
+      if (generation === this.motionGeneration && this.activeDev === dev) this.actionError(error);
+    }
   }
 
   async speak(text) {
-    if (!text) return;
+    if (!text) return false;
     try {
-      await fetch("/api/speak", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text })
-      });
-    } catch (e) {
-      console.warn("Speak error:", e);
-    }
+      await this.checked("/api/speak", {method:"POST", body:{text}});
+      this.$("actionStat").textContent = '';
+      return true;
+    } catch (error) { this.actionError(error); return false; }
   }
 
-  speakCustom() {
-    const inp = this.$("customSpeak");
-    const txt = inp.value.trim();
-    if (txt) {
-      this.speak(txt);
-      inp.value = "";
-    }
+  async speakCustom() {
+    const input = this.$("customSpeak"), draft = input.value;
+    if (draft.trim() && await this.speak(draft.trim()) && input.value === draft) input.value = '';
   }
 
   async stopAllSound() {
-    await fetch("/api/stream/stop", { method: "POST" });
+    try { await this.checked("/api/stream/stop", {method:"POST"}); }
+    catch (error) { this.actionError(error); }
   }
+
 }
 
 const app = new TVRemoteApp();

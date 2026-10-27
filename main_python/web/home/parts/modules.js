@@ -50,21 +50,27 @@ async function scan(force){
     // not reach" banner and the late answer wiped it (check_ui_states, red
     // when run alone, 2026-10-10).
     if(gen !== scanGen) return;
-    window.MODS = r.modules || [];
+    if(r.ok === false || !Array.isArray(r.modules)) throw new Error(r.error || "invalid module list");
+    window.MODS_ERROR = false;
+    window.HOME_SCANNED = true;
+    window.MODS = r.modules;
     repaintMods();
     if(!(r.modules||[]).length)
       el.innerHTML='<span class="mini">no modules found on '+ (r.lan||'?') +'/24 — are they powered and on the same WiFi? (⟳ Rescan)</span>';
     modsAt = Date.now(); modsHtml = el.innerHTML;
+    if(typeof paintHome === "function") paintHome();
   }catch(e){
-    // Keep the last good list rather than going blank — but mark it plainly as
-    // old, and give the one control that fixes it. A control panel that blanks
-    // when the network hiccups is worse than one that admits the data is old.
-    el.innerHTML =
-      '<div class="banner err" role="alert">Could not reach the hub just now — '+
+    if(gen !== scanGen) return;
+    window.MODS_ERROR = true;
+    el.replaceChildren();
+    if((window.MODS || []).length) repaintMods();
+    const warning = '<div class="banner err" role="alert">Could not reach the hub just now — '+
       esc(String(e && e.message || e))+
       ' <button onclick="scan(true)">Try again</button></div>' +
-      (modsHtml ? '<div class="stale">showing what was found '+agoText(modsAt)+
-                  ' — these may no longer be there</div>'+modsHtml : '');
+      ((window.MODS || []).length ? '<div class="stale">showing what was found '+agoText(modsAt)+
+        ' — these may no longer be there</div>' : '');
+    el.insertAdjacentHTML('afterbegin', warning);
+    if(typeof paintHome === 'function') paintHome();
     modsMeta();
     return;                       // nothing local to merge the far ones into
   }

@@ -33,6 +33,7 @@
          title="One name for both files: NAME.json to edit later, NAME.yaml, the file the robot plays.">
   <button class="primary" onclick="saveAll()" title="Saves the moves twice under this one name: NAME.json to edit later, and NAME.yaml, the file the robot plays.">💾 Save</button>
   <select id="projList" aria-label="Open saved moves" onchange="loadProject(this.value)"><option value="">Load…</option></select>
+  <button id="projRetry" hidden onclick="refreshProjects()">Retry saved moves</button>
 </header>
 <div id="main">
   <!-- The Video tab's stage (A44-8): the person, their music and the skeleton

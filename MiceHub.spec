@@ -30,6 +30,7 @@ datas = [
     *[(str(ROOT / "main_python" / name), "main_python") for name in
       ("resource_policy.py", "resource_hardware.py", "resource_settings.py")],
     (str(ROOT / "main_python" / "web"), "main_python/web"),
+    (str(ROOT / "docs" / "shots"), "docs/shots"),
     (str(ROOT / "shared" / "web"), "shared/web"),
     (str(ROOT / "nong" / "main_python_set_nong" / "web"),
      "nong/main_python_set_nong/web"),
