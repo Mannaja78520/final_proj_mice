@@ -9068,7 +9068,7 @@ class VideoBodyMotion {
         upper: local(E.at.clone().sub(S.at)), fore: local(W.at.clone().sub(E.at)),
         rawUpper: E.at.clone().sub(S.at).normalize(), rawFore: W.at.clone().sub(E.at).normalize() };
     });
-    return { arms, twist, roll, confidence, hipYaw: Math.atan2(front.x, front.z) };
+    return { arms, twist, roll, confidence, viewUp: up.clone(), viewLeft: left.clone(), hipYaw: Math.atan2(front.x, front.z) };
   }
   static difference(a, b, raw = false) {
     if (!a || !b) return 180;
@@ -9149,6 +9149,233 @@ class VideoTemporalPolicy {
       waist: this.heading + this.accepted.twist };
   }
 }
+// Offline, time-based denoising. Unknown frames remain holds, and an opening
+// pose never borrows a future observation. Recheck geometry after filtering.
+class VideoMotionSmoother {
+  constructor(config = VIDEO_FOLLOW.smoothing) { this.config = config; }
+  static quality(poses, times) {
+    let reversals = 0, travel = 0, largestStep = 0;
+    for (let i = 1; i < poses.length; i++) for (let j = 0; j < NJ; j++) {
+      const d = poses[i][j] - poses[i - 1][j];
+      travel += Math.abs(d); largestStep = Math.max(largestStep, Math.abs(d));
+      if (i > 1 && times[i] - times[i - 2] < 700) {
+        const previous = poses[i - 1][j] - poses[i - 2][j];
+        if (d * previous < 0 && Math.min(Math.abs(d), Math.abs(previous)) > 2) reversals++;
+      }
+    }
+    return { reversals, travel, largestStep };
+  }
+  apply(poses, times, frames) {
+    if (!poses.length) return { poses: [], before: null, after: null };
+    const cfg = this.config, before = VideoMotionSmoother.quality(poses, times);
+    const out = [poses[0].slice()], velocity = poses[0].map(() => 0);
+    const reliable = i => frames[i]?.trusted !== false && frames[i]?.action !== 'uncertain' && frames[i]?.action !== 'hold';
+    for (let i = 1; i < poses.length; i++) {
+      const previous = out[i - 1], dt = Math.max(.001, (times[i] - times[i - 1]) / 1000);
+      if (!reliable(i)) { out.push(previous.slice()); velocity.fill(0); continue; }
+      const samples = [];
+      for (let k = Math.max(1, i - 3); k < Math.min(poses.length, i + 4); k++) {
+        if (Math.abs(times[k] - times[i]) > cfg.windowMs || !reliable(k) || frames[k]?.shot !== frames[i]?.shot) continue;
+        // Do not smooth through an unknown interval, an actual hold or a cut.
+        let connected = true;
+        for (let n = Math.min(i, k); n <= Math.max(i, k); n++) if (!reliable(n) || frames[n]?.shot !== frames[i]?.shot) connected = false;
+        if (connected) samples.push({ pose: poses[k], weight: 1 - Math.abs(times[k] - times[i]) / (cfg.windowMs + 1) });
+      }
+      const next = poses[i].map((value, j) => {
+        const sorted = samples.map(s => s.pose[j]).sort((a, b) => a - b);
+        const median = sorted.length ? sorted[Math.floor(sorted.length / 2)] : value;
+        let sum = 0, weight = 0;
+        for (const s of samples) {
+          const w = s.weight * Math.min(1, cfg.outlierDegrees / Math.max(1, Math.abs(s.pose[j] - median)));
+          sum += s.pose[j] * w; weight += w;
+        }
+        const target = weight ? sum / weight : value;
+        let distance = target - previous[j];
+        // Continuous damping retains slow intentional motion; a hard deadband
+        // turns it into a series of small stops and jumps.
+        if (Math.abs(distance) < cfg.deadbandDegrees) distance *= Math.abs(distance) / cfg.deadbandDegrees;
+        let speed = Math.max(-cfg.maxTargetDps, Math.min(cfg.maxTargetDps, distance / dt));
+        speed = Math.max(velocity[j] - cfg.maxTargetAccelDps2 * dt, Math.min(velocity[j] + cfg.maxTargetAccelDps2 * dt, speed));
+        const delta = Math.sign(speed) === Math.sign(distance) ? Math.sign(distance) * Math.min(Math.abs(distance), Math.abs(speed * dt)) : 0;
+        velocity[j] = delta / dt; return clampJ(j, previous[j] + delta);
+      });
+      out.push(next);
+    }
+    return { poses: out, before, after: VideoMotionSmoother.quality(out, times) };
+  }
+}
+// Anonymous colour distributions support camera-cut association; these are
+// not a gender classifier and cannot establish a real person's identity.
+class VideoAppearanceDescriptor {
+  static measure(points, rgba, width, height) {
+    if (!rgba || !points?.[24] || width * height * 4 !== rgba.length) return null;
+    const shoulderY = (points[11].y + points[12].y) / 2, hipY = (points[23].y + points[24].y) / 2;
+    const cx = (points[11].x + points[12].x) / 2;
+    const half = Math.max(.01, Math.abs(points[11].x - points[12].x) * .4);
+    const noseY = points[0].y, torso = hipY - shoulderY;
+    if (!(torso > .025)) return null;
+    const bands = [[noseY - torso * .18, noseY + torso * .08, .7],
+      [noseY + torso * .08, shoulderY, .65], [shoulderY, shoulderY + torso * .55, 1], [shoulderY + torso * .55, hipY, .8]];
+    const result = [];
+    for (const [top, bottom, scale] of bands) {
+      const hist = Array(24).fill(0); let count = 0;
+      const x0 = Math.max(0, Math.floor((cx - half * scale) * width)), x1 = Math.min(width, Math.ceil((cx + half * scale) * width));
+      const y0 = Math.max(0, Math.floor(top * height)), y1 = Math.min(height, Math.ceil(bottom * height));
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+        const at = (y * width + x) * 4;
+        for (let channel = 0; channel < 3; channel++) hist[channel * 8 + Math.min(7, rgba[at + channel] >> 5)]++;
+        count++;
+      }
+      if (!count) return null;
+      result.push(...hist.map(v => v / count));
+    }
+    // Each of the 12 band/channel histograms has unit mass.
+    return result;
+  }
+  static distance(a, b) {
+    if (!a || !b || a.length !== b.length) return Infinity;
+    // L1 distance is at most 2 per histogram, hence 24 overall.
+    return a.reduce((sum, v, i) => sum + Math.abs(v - b[i]), 0) / 24;
+  }
+  static average(values) {
+    const valid = values.filter(Boolean); if (!valid.length) return null;
+    return valid[0].map((_, i) => valid.reduce((sum, row) => sum + row[i], 0) / valid.length);
+  }
+}
+// Discover motion groups from the whole clip, rather than a single still or
+// apparent gender. Uncertain cross-shot associations form separate fragments.
+class VideoRoutineDiscovery {
+  constructor(options, config = VIDEO_FOLLOW.routines) { this.options = options; this.config = config; this.frames = []; this.histories = new Map(); }
+  static distance(a, b) {
+    let sum = 0, count = 0;
+    for (let arm = 0; arm < 2; arm++) if (a.arms[arm].ok && b.arms[arm].ok) for (const bone of ['upper', 'fore']) {
+      sum += THREE.MathUtils.radToDeg(a.arms[arm][bone].angleTo(b.arms[arm][bone])); count++;
+    }
+    if (!count) return 180;
+    return Math.max(sum / count, THREE.MathUtils.radToDeg(Math.abs(VideoBodyMotion.wrap(a.twist - b.twist))), THREE.MathUtils.radToDeg(Math.abs(a.roll - b.roll)));
+  }
+  add(frame) {
+    if (frame.cut) this.histories.clear();
+    const actors = (frame.actors || []).map(actor => {
+      const history = this.histories.get(actor.id) || [];
+      history.push(actor.body); if (history.length > 3) history.shift(); this.histories.set(actor.id, history);
+      if (history.length < 3) return actor;
+      const median = values => values.sort((a, b) => a - b)[1], body = { ...actor.body, arms: actor.body.arms.map(a => ({ ...a })) };
+      for (const arm of [0, 1]) for (const bone of ['upper', 'fore']) body.arms[arm][bone] = new THREE.Vector3(...['x', 'y', 'z'].map(axis => median(history.map(b => b.arms[arm][bone][axis])))).normalize();
+      body.twist += median(history.map(b => VideoBodyMotion.wrap(b.twist - actor.body.twist)));
+      body.roll = median(history.map(b => b.roll)); return { ...actor, body };
+    });
+    this.frames.push({ ...frame, actors });
+  }
+  compatible(a, b) {
+    const other = new Map(b.map(r => [r.index, r])); let count = 0, sum = 0, different = 0;
+    for (const row of a) {
+      const match = other.get(row.index); if (!match) continue;
+      const error = VideoRoutineDiscovery.distance(row.actor.body, match.actor.body);
+      count++; sum += error; if (error > this.config.styleDegrees) different++;
+    }
+    if (!count) {
+      const first = a[0].t > b[0].t ? a[0] : b[0], last = a[0].t > b[0].t ? b.at(-1) : a.at(-1);
+      return first.t >= last.t && first.t - last.t <= this.config.joinGapSeconds && Math.abs(first.actor.cx - last.actor.cx) < .12 && VideoRoutineDiscovery.distance(first.actor.body, last.actor.body) < this.config.styleDegrees;
+    }
+    return count >= this.config.minimumOverlap && sum / count <= this.config.styleDegrees && different / count <= this.config.divergentFraction;
+  }
+  joinCost(rows, routine) {
+    const boundary = VideoRoutineDiscovery.distance(rows[0].actor.body, routine.last.actor.body);
+    const past = [...routine.observations].map(([index, actor]) => ({ t: this.frames[index].t, actor }));
+    const sample = rows.filter((r, i) => i % 2 === 0 && r.t - rows[0].t <= this.config.signatureSeconds);
+    const near = rows[0].t - routine.last.t <= this.config.joinGapSeconds;
+    if (sample.length < this.config.minimumSignatureSamples) return near ? boundary : Infinity;
+    let repeated = Infinity;
+    for (let k = 0; k < past.length; k += 3) {
+      if (past[k].t < rows[0].t - VIDEO_FOLLOW.tracking.repeatSeconds) continue;
+      let sum = 0, count = 0, cursor = k;
+      for (const row of sample) {
+        const target = past[k].t + row.t - rows[0].t;
+        while (cursor + 1 < past.length && Math.abs(past[cursor + 1].t - target) < Math.abs(past[cursor].t - target)) cursor++;
+        if (Math.abs(past[cursor].t - target) > .2) continue;
+        sum += VideoRoutineDiscovery.distance(row.actor.body, past[cursor].actor.body); count++;
+      }
+      if (count >= Math.max(this.config.minimumSignatureSamples, sample.length * .8)) repeated = Math.min(repeated, sum / count);
+    }
+    return Number.isFinite(repeated) ? (near ? boundary * .25 + repeated * .75 : repeated) : (near ? boundary : Infinity);
+  }
+  assign(groups, routines) {
+    const choices = groups.map(group => {
+      const rows = group.flat().sort((a, b) => a.index - b.index);
+      const appearance = VideoAppearanceDescriptor.average(rows.map(row => row.actor.appearance));
+      return routines.filter(r => rows[0].t >= r.last.t).map(r => {
+        const motion = this.joinCost(rows, r), look = VideoAppearanceDescriptor.distance(appearance, r.appearance);
+        const cost = Number.isFinite(look) ? Math.min(Number.isFinite(motion) ? motion : this.config.newRoutineCost, this.config.newRoutineCost) * this.config.motionWeight + look * this.config.appearanceWeight : motion;
+        return { routine: r, cost };
+      }).filter(c => c.cost < this.config.newRoutineCost).sort((a, b) => a.cost - b.cost).slice(0, 4)
+        .concat({ routine: null, cost: this.config.newRoutineCost });
+    });
+    let best = Infinity, picked = [];
+    const search = (i, cost, used, path) => {
+      if (cost >= best) return;
+      if (i === groups.length) { best = cost; picked = path.slice(); return; }
+      for (const choice of choices[i]) if (!choice.routine || !used.has(choice.routine)) {
+        const next = new Set(used); if (choice.routine) next.add(choice.routine);
+        search(i + 1, cost + choice.cost, next, [...path, choice]);
+      }
+    };
+    search(0, 0, new Set(), []);
+    return picked.map((choice, i) => ({ ...choice, ambiguous: !!choice.routine && choices[i].some(c => c.routine !== choice.routine && c.cost - choice.cost < this.config.joinMarginDegrees) }));
+  }
+  finish() {
+    const shots = new Map(), common = new Map();
+    this.frames.forEach((frame, index) => {
+      const visible = (frame.actors || []).filter(a => a.confidence >= VIDEO_FOLLOW.tracking.confidence);
+      if (visible.length > 1 && visible.every(a => visible.every(b => VideoRoutineDiscovery.distance(a.body, b.body) <= this.config.styleDegrees)))
+        common.set(index, visible.slice().sort((a, b) => b.confidence - a.confidence)[0]);
+      if (!shots.has(frame.shot)) shots.set(frame.shot, new Map());
+      const tracks = shots.get(frame.shot);
+      for (const actor of frame.actors || []) {
+        if (!tracks.has(actor.id)) tracks.set(actor.id, []);
+        tracks.get(actor.id).push({ index, t: frame.t, actor });
+      }
+    });
+    const routines = [];
+    for (const tracks of shots.values()) {
+      const groups = [];
+      for (const track of tracks.values()) {
+        if (track.length < this.config.minimumOverlap) continue;
+        const group = groups.find(g => g.every(member => this.compatible(track, member)));
+        if (group) group.push(track); else groups.push([track]);
+      }
+      const assignments = this.assign(groups, routines);
+      for (const [groupIndex, group] of groups.entries()) {
+        const rows = group.flat().sort((a, b) => a.index - b.index), first = rows[0];
+        const assignment = assignments[groupIndex];
+        let routine = assignment?.routine;
+        if (!routine) { routine = { id: routines.length + 1, observations: new Map(), people: new Set(), ambiguous: false }; routines.push(routine); }
+        routine.ambiguous ||= !!assignment?.ambiguous;
+        for (const row of rows) {
+          const old = routine.observations.get(row.index);
+          // Select a real observation, never average different people.
+          if (!old || row.actor.confidence > old.confidence) routine.observations.set(row.index, { ...row.actor,
+            associationUncertain: !!assignment?.ambiguous && row.t - first.t < this.config.cutHoldSeconds });
+          routine.people.add(row.actor.id);
+        }
+        routine.last = rows.at(-1);
+        routine.appearance = VideoAppearanceDescriptor.average([...routine.observations.values()].map(a => a.appearance));
+      }
+    }
+    return routines.map(r => {
+      const policy = new VideoTemporalPolicy(this.options.learned === false ? null : VIDEO_POLICY, this.options.cameraMode);
+      const frames = this.frames.map((f, i) => {
+        // Shared motion is supported by multiple people in THIS frame, not
+        // backfilled from a later pose or averaged over incompatible dancers.
+        const actor = r.observations.get(i) || common.get(i);
+        const state = policy.step(actor?.associationUncertain ? null : actor?.body || null, f.cut ? Math.max(.25, f.scene) : f.scene, f.cut, actor && actor.confidence >= VIDEO_FOLLOW.tracking.confidence ? 1 : 0);
+        return { ...f, ...state, w: actor?.w || null, p: actor?.p || null, track: actor?.id || null };
+      });
+      return { id: r.id, frames, coverage: frames.filter(f => f.w).length / Math.max(1, this.frames.length),
+        trustedCoverage: frames.filter(f => f.w && f.trusted).length / Math.max(1, this.frames.length), people: r.people.size, ambiguous: r.ambiguous };
+    }).sort((a, b) => b.coverage - a.coverage);
+  }
+}
 class VideoSubjectTracker {
   constructor(options, config = VIDEO_FOLLOW) {
     this.options = options; this.config = config.tracking; this.tracks = []; this.nextId = 1;
@@ -9165,22 +9392,23 @@ class VideoSubjectTracker {
     this.lastImage = new Uint8Array(image);
     return count ? difference / count / 255 : 0;
   }
-  candidates(result) {
+  candidates(result, image = null) {
     return (result.worldLandmarks || []).map((points, i) => {
       const w = points.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility ?? 1 }));
       const p = result.landmarks[i].map(v => ({ x: v.x, y: v.y, v: v.visibility ?? 1 }));
       const body = VideoBodyMotion.measure(w, false);
       const cx = (p[11].x + p[12].x + p[23].x + p[24].x) / 4, cy = (p[11].y + p[12].y + p[23].y + p[24].y) / 4;
       const size = Math.hypot(p[11].x - p[23].x, p[11].y - p[23].y) + Math.hypot(p[12].x - p[24].x, p[12].y - p[24].y);
-      return { w, p, body, cx, cy, size, confidence: body?.confidence || 0 };
+      const appearance = result.appearances?.[i] || VideoAppearanceDescriptor.measure(p, image, this.config.imageWidth, this.config.imageHeight);
+      return { w, p, body, cx, cy, size, appearance, confidence: body?.confidence || 0 };
     }).filter(p => p.body && p.size > 0.025);
   }
   step(result, t, image = null, sceneOverride = null) {
     const scene = sceneOverride ?? this.imageChange(image);
-    const candidates = this.candidates(result), used = new Set();
+    const candidates = this.candidates(result, image), used = new Set();
     const sameView = this.primary && candidates.some(c => Math.hypot(c.cx - this.primary.cx, c.cy - this.primary.cy) < 0.06 &&
-      Math.abs(Math.log(c.size / this.primary.size)) < 0.15 && VideoBodyMotion.difference(c.body, this.primary.body, true) < 10);
-    const cut = this.options.cameraMode === "cuts" && scene > this.config.cutDifference && !sameView;
+      Math.abs(Math.log(c.size / this.primary.size)) < 0.15 && c.body.viewUp.angleTo(this.primary.body.viewUp) < 0.5 && c.body.viewLeft.angleTo(this.primary.body.viewLeft) < 0.7);
+    const cut = this.options.cameraMode !== "fixed" && scene > this.config.cutDifference && !sameView;
     const policyScene = cut ? Math.max(0.25, scene) : scene;
     if (cut) { this.shot++; this.tracks = []; this.observations = []; }
     for (const c of candidates) {
@@ -9192,6 +9420,7 @@ class VideoSubjectTracker {
       }
       c.id = match ? match.id : this.nextId++; c.t = t; used.add(c.id);
     }
+    const actors = candidates.map(c => ({ id: c.id, body: c.body, w: c.w, p: c.p, cx: c.cx, size: c.size, appearance: c.appearance, confidence: c.confidence }));
     // An explicit person is always followed independently, regardless of sex
     // or apparent clothing. Different choreographies are never averaged.
     const explicit = this.options.dancer && this.options.dancer !== "auto";
@@ -9206,7 +9435,7 @@ class VideoSubjectTracker {
     }
     if (!chosen && (explicit || (this.primary && !cut && t - this.primary.t <= this.config.missingSeconds))) {
       const state = this.policy.step(null, policyScene, cut, 0);
-      return { t, w: null, p: null, shot: this.shot, cut, scene, ...state, candidates: candidates.length };
+      return { t, w: null, p: null, shot: this.shot, cut, scene, ...state, candidates: candidates.length, actors };
     }
     if (!chosen && candidates.length) {
       const previousBody = this.policy.accepted;
@@ -9216,7 +9445,7 @@ class VideoSubjectTracker {
       })[0];
     }
     this.tracks = candidates;
-    if (!chosen) return { t, w: null, p: null, shot: this.shot, cut, scene, ...this.policy.step(null, policyScene, cut, 0), candidates: 0 };
+    if (!chosen) return { t, w: null, p: null, shot: this.shot, cut, scene, ...this.policy.step(null, policyScene, cut, 0), candidates: 0, actors };
     this.primary = chosen;
     this.observations.push(chosen.body); this.observations = this.observations.slice(-3);
     if (this.observations.length === 3) {
@@ -9240,7 +9469,7 @@ class VideoSubjectTracker {
       VideoBodyMotion.styleDifference(chosen.body, old.body) < 3) { repeatAt = old.t; break; }
     this.history.push({ t, body: chosen.body }); this.history = this.history.filter(h => t - h.t <= this.config.repeatSeconds);
     return { t, w: chosen.w, p: chosen.p, shot: this.shot, cut, scene, ...state,
-      track: chosen.id, candidates: candidates.length, supporters: supporters.length, repeatAt,
+      actors, track: chosen.id, candidates: candidates.length, supporters: supporters.length, repeatAt,
       styles: styles.map(s => ({ people: s.people, x: s.leader.cx })),
       people: candidates.map(c => ({ id: c.id, x: c.cx, y: c.cy })) };
   }
@@ -9283,18 +9512,20 @@ class VideoRigFitter {
   }
   arm(arm, bones, first) {
     const before = pose.slice();
+    const objective = () => this.armCost(arm, bones) + this.settings.continuityWeight *
+      pose.slice(arm * 4, arm * 4 + 4).reduce((sum, v, k) => sum + (v - before[arm * 4 + k]) ** 2, 0) / 10000;
     // Existing solver is a seed; the objective below evaluates BOTH achieved
     // bone directions, so an unreachable elbow cannot redirect the forearm.
     vidFitArm(arm, bones, first);
-    let bestPose = pose.slice(), best = this.armCost(arm, bones);
-    const seeds = first ? [pose.slice(), before, RIG.neutral.map((v, j) => j >= arm * 4 && j < arm * 4 + 4 ? v : pose[j])] : [pose.slice()];
+    let bestPose = pose.slice(), best = objective();
+    const seeds = first ? [pose.slice(), before, RIG.neutral.map((v, j) => j >= arm * 4 && j < arm * 4 + 4 ? v : pose[j])] : [pose.slice(), before];
     for (const seed of seeds) {
       pose = seed.slice();
       for (const step of this.settings.steps) for (let pass = 0; pass < this.settings.passes; pass++) {
         let improved = false;
         for (let j = arm * 4; j < arm * 4 + 4; j++) {
           const old = pose[j]; let chosen = old;
-          const cost = () => this.armCost(arm, bones) + this.settings.continuityWeight * (pose[j] - before[j]) ** 2 / 10000;
+          const cost = objective;
           let score = cost();
           for (const sign of [-1, 1]) {
             pose[j] = clampJ(j, old + sign * step); const value = cost();
@@ -9304,10 +9535,10 @@ class VideoRigFitter {
         }
         if (!improved) break;
       }
-      const score = this.armCost(arm, bones);
+      const score = objective();
       if (score < best + 1e-8) { best = score; bestPose = pose.slice(); }
     }
-    pose = bestPose; applyPose(); return best;
+    pose = bestPose; applyPose(); return this.armCost(arm, bones);
   }
   repair(target, previous) {
     if (!collisionAt(target)) return { pose: target, repaired: false };
@@ -9334,7 +9565,7 @@ class VideoRigFitter {
     return best ? { pose: best, repaired: true } : null;
   }
   frames(frames) {
-    const saved = pose, poses = [], times = [], targets = [], quality = { repaired: 0, missing: 0, uncertain: 0, worstBoneDegrees: 0 };
+    const saved = pose, poses = [], times = [], targets = [], acceptedFrames = [], quality = { repaired: 0, missing: 0, uncertain: 0, worstBoneDegrees: 0 };
     let previous = null, shot = null;
     try {
       pose = RIG.neutral.map((v, j) => clampJ(j, v));
@@ -9361,7 +9592,18 @@ class VideoRigFitter {
         if (target.repaired) quality.repaired++;
         pose = target.pose.slice(); previous = pose.slice(); shot = frame.shot;
         poses.push(pose.slice()); times.push(frame.t * 1000);
-        targets.push(body && trusted ? body : null);
+        targets.push(body && trusted ? body : null); acceptedFrames.push(frame);
+      }
+      if (this.options.smooth !== false && VIDEO_FOLLOW.smoothing && poses.length > 1) {
+        const smoothed = new VideoMotionSmoother().apply(poses, times, acceptedFrames);
+        quality.smoothing = { before: smoothed.before, after: smoothed.after };
+        let previousSafe = poses[0];
+        for (let i = 0; i < poses.length; i++) {
+          const repaired = this.repair(smoothed.poses[i], previousSafe);
+          poses[i] = repaired ? repaired.pose.slice() : previousSafe.slice();
+          previousSafe = poses[i];
+        }
+        quality.smoothing.afterRepair = VideoMotionSmoother.quality(poses, times);
       }
     } finally { pose = saved; applyPose(); robot.updateMatrixWorld(true); }
     return poses.length ? { poses, times, targets, videoMs: Math.round(times.at(-1)), quality, mirror: this.options.mirror, waist: this.options.waist, shrug: this.options.shrug } : null;
@@ -9402,7 +9644,7 @@ class VideoRigFitter {
       const end = key.sourceHoldEnd ?? key.sourceMs;
       if (sourceMs < end) {
         const fraction = Math.max(0, Math.min(1, (sourceMs - key.sourceMs) / Math.max(1, end - key.sourceMs)));
-        return { ms: arrival + fraction * (key.hold || 0), rate: (end - key.sourceMs) / Math.max(1, key.hold || 0) || 1 };
+        return { ms: arrival + fraction * (key.hold || 0), rate: (end - key.sourceMs) / Math.max(1, key.hold || 0) };
       }
       clock = arrival + (key.hold || 0);
     }
@@ -9414,24 +9656,30 @@ class VideoRigFitter {
       const key = keys[i], arrival = i ? clock + key.t : 0;
       if (i && robotMs <= arrival) {
         const from = keys[i - 1].sourceHoldEnd ?? keys[i - 1].sourceMs;
-        return { sourceMs: from + (key.sourceMs - from) * Math.max(0, (robotMs - clock) / Math.max(1, key.t)), end: false };
+        return { sourceMs: from + (key.sourceMs - from) * Math.max(0, (robotMs - clock) / Math.max(1, key.t)), rate: (key.sourceMs - from) / Math.max(1, key.t), end: false };
       }
       const end = arrival + (key.hold || 0);
       if (robotMs <= end) return { sourceMs: key.sourceMs + ((key.sourceHoldEnd ?? key.sourceMs) - key.sourceMs) *
-        Math.max(0, (robotMs - arrival) / Math.max(1, key.hold || 0)), end: false };
+        Math.max(0, (robotMs - arrival) / Math.max(1, key.hold || 0)), rate: ((key.sourceHoldEnd ?? key.sourceMs) - key.sourceMs) / Math.max(1, key.hold || 0), end: false };
       clock = end;
     }
     const last = keys.at(-1);
-    return { sourceMs: last ? (last.sourceHoldEnd ?? last.sourceMs ?? robotMs) : 0, end: true };
+    return { sourceMs: last ? (last.sourceHoldEnd ?? last.sourceMs ?? robotMs) : 0, rate: 1, end: true };
   }
 }
 // Below the media element's minimum rate, advance source frames using the
 // checked robot clock. Never clamp a detour into an unchecked faster preview.
 class VideoCheckedPlayback {
-  constructor(now = () => performance.now()) { this.now = now; this.manual = null; this.notified = false; }
-  reset(video) { this.manual = null; this.notified = false; if (video) video.playbackRate = 1; }
+  constructor(now = () => performance.now()) { this.now = now; this.manual = null; this.notified = false; this.robotMs = null; this.pausedAt = null; }
+  reset(video) { this.manual = null; this.robotMs = null; this.pausedAt = null; this.notified = false; if (video) video.playbackRate = 1; }
   stop(video) { this.reset(video); video.pause(); }
+  pause(video) {
+    if (this.manual) this.pausedAt = { robotMs: this.manual.robotMs + Math.max(0, this.now() - this.manual.wallMs), sourceSeconds: video.currentTime };
+    this.manual = null; video.pause();
+  }
   start(video, robotMs) {
+    if (this.pausedAt && Math.abs(this.pausedAt.sourceSeconds - video.currentTime) < .001) robotMs = this.pausedAt.robotMs;
+    this.pausedAt = null;
     video.pause(); this.manual = { robotMs, wallMs: this.now() };
     if (!this.notified) {
       this.notified = true;
@@ -9442,9 +9690,10 @@ class VideoCheckedPlayback {
     if (!made?.keys.length || made.keepMusic !== false) return sourceMs;
     if (this.manual) {
       const robotMs = this.manual.robotMs + Math.max(0, this.now() - this.manual.wallMs);
+      this.robotMs = robotMs;
       const next = VideoRigFitter.sourceForClock(made.keys, robotMs);
       if (next.end || next.sourceMs >= endMs) { this.stop(video); return Math.min(endMs, next.sourceMs); }
-      const rate = VideoRigFitter.clockForSource(made.keys, next.sourceMs).rate;
+      const rate = next.rate;
       if (!video.seeking) {
         // Setting currentTime starts a new asynchronous seek. Decide whether
         // to resume before that assignment can invalidate the ready state.
@@ -9456,6 +9705,7 @@ class VideoCheckedPlayback {
       return next.sourceMs;
     }
     const mapped = VideoRigFitter.clockForSource(made.keys, sourceMs);
+    this.robotMs = mapped.ms;
     if (mapped.rate < 0.0625) {
       if (!video.paused) {
         this.start(video, mapped.ms);
@@ -9505,6 +9755,7 @@ const VID_USE = [
   { id: "moment", label: "Use another moment…" },
   { id: "drop", label: "Leave out" },
 ];
+let vidRoutines = [];
 let vidLib = null, vidLibMode = null, vidFrames = null, vidMade = null, vidStop = false, vidBusy = false, vidGeneration = 0, vidSeekCancel = null;
 let vidFit = null, vidPicks = null;   // fitted frames, and the moves made from them
 
@@ -9525,7 +9776,7 @@ async function vidLoadLib(mode = "single") {
   const files = await mp.FilesetResolver.forVisionTasks(VID_LIB + "/wasm");
   const base = model ? { modelAssetBuffer: model } : { modelAssetPath: VID_MODEL };
   const make = (delegate) => mp.PoseLandmarker.createFromOptions(files, {
-    baseOptions: { ...base, delegate }, runningMode: "VIDEO", numPoses: mode === "group" ? VIDEO_FOLLOW.tracking.people : 1 });
+    baseOptions: { ...base, delegate }, runningMode: "VIDEO", numPoses: mode !== "single" ? VIDEO_FOLLOW.tracking.people : 1 });
   // Some graphics drivers refuse the GPU path; the CPU one is slower, not wrong.
   try { vidLib = await make("GPU"); } catch (e) { vidLib = await make("CPU"); }
   vidLibMode = mode;
@@ -9542,7 +9793,7 @@ function vidOpts() {
   return { tol: det.tol, mirror: $("vidMirror").checked, waist: $("vidWaist").checked,
            hand: h.map(x => x.want || 0), force: h.map(x => !!x.force),
            music: $("vidMusic").checked,
-           subjectMode: $("vidSubject")?.value || "single", cameraMode: $("vidCamera")?.value || "fixed",
+           subjectMode: $("vidSubject")?.value || "auto", cameraMode: $("vidCamera")?.value || "auto",
            dancer: $("vidDancer")?.value || "auto", shrug: $("vidShrug")?.checked ?? false,
            learned: $("vidLearned")?.checked ?? true,
            anchorX: typeof vidSaved !== "undefined" && Number.isFinite(vidSaved?.anchorX) ? Math.max(0, Math.min(1, vidSaved.anchorX)) : 0.5 };
@@ -9559,8 +9810,8 @@ function vidFill() {        // the choices are built from the lists above
     fill($("vidHand" + a), VID_HAND, "video");
   });
   if (VIDEO_FOLLOW) {
-    fill($("vidSubject"), VIDEO_FOLLOW.subjectModes, "single");
-    fill($("vidCamera"), VIDEO_FOLLOW.cameraModes, "fixed");
+    fill($("vidSubject"), VIDEO_FOLLOW.subjectModes, "auto");
+    fill($("vidCamera"), VIDEO_FOLLOW.cameraModes, "auto");
   }
 }
 function vidModeChanged() {
@@ -9568,7 +9819,7 @@ function vidModeChanged() {
   if (vidSeekCancel) vidSeekCancel();
   if (typeof vidCheckedPlayback !== "undefined") vidCheckedPlayback.reset($("vidPlayer"));
   if (vidBusy) vidStop = true;
-  vidFrames = vidFit = vidMade = vidPicks = null;
+  vidFrames = vidFit = vidMade = vidPicks = null; vidRoutines = [];
   vidSay("Tracking choices changed. Press Make moves to read the performers again.");
 }
 
@@ -9627,13 +9878,14 @@ async function vidRead() {
   if (!v.src || !isFinite(v.duration)) { vidSay("Pick a video first.", true); return null; }
   vidSay("Loading the body finder (the first time needs the internet)…");
   let lib;
-  let tracker, picture;
+  let tracker, picture, discovery, readOptions;
   try {
     await videoFollowReady(); vidFill();
-    const options = vidOpts();
+    const options = vidOpts(); readOptions = options;
+    discovery = new VideoRoutineDiscovery(options);
     tracker = new VideoSubjectTracker({ ...options, mirror: false });
     if (!options.learned) tracker.policy.model = null;
-    picture = document.createElement("canvas"); picture.width = 64; picture.height = 36;
+    picture = document.createElement("canvas"); picture.width = VIDEO_FOLLOW.tracking.imageWidth; picture.height = VIDEO_FOLLOW.tracking.imageHeight;
     lib = await vidLoadLib(options.subjectMode);
   }
   catch (e) {
@@ -9652,18 +9904,27 @@ async function vidRead() {
       return null;
     }
     // timestamps must only grow, also on a second read of the same video
-    const r = vidDetectPerformers(lib, v, vidLibMode === "group");
+    const r = vidDetectPerformers(lib, v, vidLibMode !== "single");
     const context = picture.getContext("2d", { willReadFrequently: true });
-    context.drawImage(v, 0, 0, 64, 36);
-    const frame = tracker.step(r, t - from, context.getImageData(0, 0, 64, 36).data);
-    frames.push(frame);
+    context.drawImage(v, 0, 0, picture.width, picture.height);
+    const frame = tracker.step(r, t - from, context.getImageData(0, 0, picture.width, picture.height).data);
+    frames.push(frame); discovery.add(frame);
     const select = $("vidDancer");
     for (const person of frame.people || []) if (select && ![...select.options].some(o => o.value === String(person.id)))
       select.add(new Option("Performer " + person.id, String(person.id)));
     vidDraw(frame.p, frame.people);
     vidSay("Reading the video: " + Math.round(100 * (t - from) / Math.max(0.1, to - from)) + "%");
   }
-  return vidStop || generation !== vidGeneration ? null : frames;
+  if (vidStop || generation !== vidGeneration) return null;
+  vidRoutines = readOptions.subjectMode !== 'single' && readOptions.dancer === 'auto' ? discovery.finish() : [];
+  const select = $("vidRoutine"), previous = select?.value;
+  if (select) {
+    select.innerHTML = ''; select.add(new Option('Automatic main routine', 'auto'));
+    for (const routine of vidRoutines) select.add(new Option('Routine ' + routine.id + ' · ' + Math.round(routine.trustedCoverage * 100) + '% reliable' + (routine.ambiguous ? ' · check cut' : ''), String(routine.id)));
+    select.value = vidRoutines.some(r => String(r.id) === previous) ? previous : 'auto';
+  }
+  const selected = vidRoutines.find(r => String(r.id) === select?.value) || vidRoutines[0];
+  return selected ? selected.frames : frames;
 }
 // The skeleton over the video, so it is plain whether the person was found.
 // Points are fractions of the PICTURE, which the player letterboxes inside its
@@ -9995,9 +10256,41 @@ function vidHandNote(made) {
         + "“Keep, hand side forced” on those moves below, and the hand moves "
         + "just enough to show it.")).join("");
 }
+function vidChooseRoutine() {
+  if (vidBusy || !vidRoutines.length) return;
+  const selected = vidRoutines.find(r => String(r.id) === $("vidRoutine").value) || vidRoutines[0];
+  vidFrames = selected.frames; vidRemake('fit');
+  vidSay(vidSummary());
+}
+async function vidSaveRoutines() {
+  if (vidBusy) return;
+  if (!vidRoutines.length && !(await vidMake())) return;
+  if (!vidRoutines.length) return vidMakeAndSave();
+  const generation = vidGeneration, stamp = Date.now();
+  const original = $("vidRoutine").value;
+  if (!(await askUnsaved("save the discovered dance routines as separate projects")) || generation !== vidGeneration) return;
+  vidBusy = true; vidStop = false; $("vidGo").textContent = '■ Stop';
+  let saved = 0;
+  try {
+    for (const routine of vidRoutines) {
+      if (vidStop || generation !== vidGeneration) break;
+      vidFrames = routine.frames; vidRemake('fit');
+      if (!vidMade?.keys.length) continue;
+      setWorkName('video_' + stamp + '_routine_' + routine.id);
+      if (!(await vidUse('replace', { skipUnsaved: true })) || generation !== vidGeneration || vidStop) break;
+      if (!(await saveAll())) break;
+      saved++; await new Promise(resolve => setTimeout(resolve, 30));
+    }
+  } finally {
+    vidBusy = false; $("vidGo").textContent = '▶ Make moves';
+    if (generation === vidGeneration) { $("vidRoutine").value = original; vidChooseRoutine(); vidSay('Saved ' + saved + ' separate routine projects. Review uncertain cuts before use.'); }
+  }
+}
 function vidSummary() {
   const m = vidMade, opts = vidOpts();
   return m.keys.length + " moves from " + (m.videoMs / 1000).toFixed(1) + " s of video."
+    + (vidRoutines.length ? " " + vidRoutines.length + " routine groups/fragments found automatically; ambiguous cuts are marked for review. Choose one or save separately." : "")
+    + (m.quality?.smoothing ? " Short reversals: " + m.quality.smoothing.before.reversals + " → " + m.quality.smoothing.afterRepair.reversals + "." : "")
     + (m.safe && safeSay(m.safe) ? " " + safeSay(m.safe) : "")
     + (m.quality?.uncertain ? " " + m.quality.uncertain + " uncertain observations hold the last trustworthy pose." : "")
     + (opts.music && m.partial
@@ -10118,11 +10411,13 @@ function vidRebuild() {
   $("vidUseBox").hidden = !(vidMade && vidMade.keys.length >= 2);
   vidSay(vidSummary());
 }
-async function vidUse(how) {
+async function vidUse(how, options = {}) {
+  const generation = vidGeneration;
   if (!vidMade) return false;
   const add = JSON.parse(JSON.stringify(vidMade.keys));
   if (how === "replace") {
-    if (!(await askUnsaved("replace the time bar with the moves from the video"))) return false;
+    if (!options.skipUnsaved && !(await askUnsaved("replace the time bar with the moves from the video"))) return false;
+    if (generation !== vidGeneration || vidStop) return false;
     keys = add;
   } else {
     // the first video pose is a move like any other once it follows a move
@@ -10188,6 +10483,7 @@ function vidPage(on) {
     requestAnimationFrame(vidTick);
     return;
   }
+  vidGeneration++; if (vidBusy) vidStop = true;
   if (vidSeekCancel) vidSeekCancel();
   vidCheckedPlayback.reset(v);
   if (v && !v.paused) v.pause();
@@ -10209,7 +10505,7 @@ function vidSetSrc(url, src) {
   v.src = url;
   v.hidden = false;
   $("vidEmpty").hidden = true;
-  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null;
+  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null; vidRoutines = [];
   vidList();
   vidDraw(null);
   $("vidUseBox").hidden = true;
@@ -10280,7 +10576,7 @@ async function vidFetch() {
 function vidPlayBoth() {
   const v = $("vidPlayer");
   if (!v.src) return;
-  if (vidCheckedPlayback.manual) { vidCheckedPlayback.stop(v); return; }
+  if (vidCheckedPlayback.manual) { vidCheckedPlayback.pause(v); return; }
   if (!v.paused) { v.pause(); return; }
   const from = +$("vidFrom").value || 0, to = +$("vidTo").value || v.duration;
   if (v.currentTime < from || v.currentTime >= to - 0.05) v.currentTime = from;
@@ -10305,17 +10601,17 @@ function vidTick() {
   if (!v.paused && v.currentTime >= to) v.pause();
   let ms = Math.round((v.currentTime - from) * 1000);
   ms = vidCheckedPlayback.update(v, vidMade, ms, from, (to - from) * 1000);
-  if (ms === vidLastMs) return;
+  if (ms === vidLastMs && !vidCheckedPlayback.manual) return;
   vidLastMs = ms;
-  vidShowAt(ms);
+  vidShowAt(ms, vidCheckedPlayback.robotMs);
 }
-function vidShowAt(ms) {
+function vidShowAt(ms, checkedMs = null) {
   if (vidFrames && vidFrames.length) {
     const f = vidFrames[Math.max(0, Math.min(vidFrames.length - 1, Math.round(ms * VID_FPS / 1000)))];
     vidDraw($("vidSkel").checked && ms >= 0 ? f.p : null);
   }
   if (vidMade && vidMade.keys.length && ms >= 0) {
-    pose = easeKeys(vidMade.keys, VideoRigFitter.clockForSource(vidMade.keys, ms).ms).pose;
+    pose = easeKeys(vidMade.keys, checkedMs ?? VideoRigFitter.clockForSource(vidMade.keys, ms).ms).pose;
     applyPose();
   }
   $("vidClock").textContent = ms >= 0 ? (ms / 1000).toFixed(1) + " s" : "";
@@ -10386,7 +10682,8 @@ async function vidSound() {
 function vidSettings() {
   if (!vidSrc) return vidSaved;
   return { src: { kind: vidSrc.kind, name: vidSrc.name, url: vidSrc.url || "" },
-           subjectMode: $("vidSubject")?.value || "single", cameraMode: $("vidCamera")?.value || "fixed",
+           subjectMode: $("vidSubject")?.value || "auto", cameraMode: $("vidCamera")?.value || "auto",
+           routine: $("vidRoutine")?.value || "auto", routineSummary: typeof vidRoutines !== "undefined" ? vidRoutines.map(r => ({ id: r.id, coverage: r.coverage, trustedCoverage: r.trustedCoverage, ambiguous: r.ambiguous })) : [],
            dancer: $("vidDancer")?.value || "auto", shrug: !!$("vidShrug")?.checked,
            anchorX: Number.isFinite(vidSaved?.anchorX) ? vidSaved.anchorX : 0.5,
            analysis: vidMade?.achieved ? { meanBoneDegrees: vidMade.achieved.meanBoneDegrees,
@@ -10404,8 +10701,8 @@ function vidApplySettings(s) {
   vidFill();
   const pick = (sel, id) => { if (sel && [...sel.options].some(o => o.value === id)) sel.value = id; };
   pick($("vidDetail"), s.detail);
-  pick($("vidSubject"), s.subjectMode || "single");
-  pick($("vidCamera"), s.cameraMode || "fixed");
+  pick($("vidSubject"), s.subjectMode || "auto");
+  pick($("vidCamera"), s.cameraMode || "auto");
   if ($("vidShrug")) $("vidShrug").checked = !!s.shrug;
   if ($("vidLearned")) $("vidLearned").checked = s.learned !== false;
   if ($("vidDancer")) {
@@ -10413,6 +10710,10 @@ function vidApplySettings(s) {
       $("vidDancer").add(new Option("Performer " + s.dancer, s.dancer));
     $("vidDancer").value = s.dancer || "auto";
     if ($("vidDancer").options[0]) $("vidDancer").options[0].text = Number.isFinite(s.anchorX) && s.anchorX !== 0.5 ? "Saved reference" : "Main performer";
+  }
+  if ($("vidRoutine")) {
+    if (s.routine && ![...$("vidRoutine").options].some(o => o.value === s.routine)) $("vidRoutine").add(new Option("Saved routine " + s.routine, s.routine));
+    $("vidRoutine").value = s.routine || "auto";
   }
   (s.hand || []).forEach((h, a) => pick($("vidHand" + a), h));
   $("vidMirror").checked = !!s.mirror;

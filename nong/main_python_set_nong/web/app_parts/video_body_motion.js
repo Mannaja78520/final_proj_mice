@@ -38,7 +38,7 @@ class VideoBodyMotion {
         upper: local(E.at.clone().sub(S.at)), fore: local(W.at.clone().sub(E.at)),
         rawUpper: E.at.clone().sub(S.at).normalize(), rawFore: W.at.clone().sub(E.at).normalize() };
     });
-    return { arms, twist, roll, confidence, hipYaw: Math.atan2(front.x, front.z) };
+    return { arms, twist, roll, confidence, viewUp: up.clone(), viewLeft: left.clone(), hipYaw: Math.atan2(front.x, front.z) };
   }
   static difference(a, b, raw = false) {
     if (!a || !b) return 180;

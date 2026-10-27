@@ -14,22 +14,23 @@ class VideoSubjectTracker {
     this.lastImage = new Uint8Array(image);
     return count ? difference / count / 255 : 0;
   }
-  candidates(result) {
+  candidates(result, image = null) {
     return (result.worldLandmarks || []).map((points, i) => {
       const w = points.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility ?? 1 }));
       const p = result.landmarks[i].map(v => ({ x: v.x, y: v.y, v: v.visibility ?? 1 }));
       const body = VideoBodyMotion.measure(w, false);
       const cx = (p[11].x + p[12].x + p[23].x + p[24].x) / 4, cy = (p[11].y + p[12].y + p[23].y + p[24].y) / 4;
       const size = Math.hypot(p[11].x - p[23].x, p[11].y - p[23].y) + Math.hypot(p[12].x - p[24].x, p[12].y - p[24].y);
-      return { w, p, body, cx, cy, size, confidence: body?.confidence || 0 };
+      const appearance = result.appearances?.[i] || VideoAppearanceDescriptor.measure(p, image, this.config.imageWidth, this.config.imageHeight);
+      return { w, p, body, cx, cy, size, appearance, confidence: body?.confidence || 0 };
     }).filter(p => p.body && p.size > 0.025);
   }
   step(result, t, image = null, sceneOverride = null) {
     const scene = sceneOverride ?? this.imageChange(image);
-    const candidates = this.candidates(result), used = new Set();
+    const candidates = this.candidates(result, image), used = new Set();
     const sameView = this.primary && candidates.some(c => Math.hypot(c.cx - this.primary.cx, c.cy - this.primary.cy) < 0.06 &&
-      Math.abs(Math.log(c.size / this.primary.size)) < 0.15 && VideoBodyMotion.difference(c.body, this.primary.body, true) < 10);
-    const cut = this.options.cameraMode === "cuts" && scene > this.config.cutDifference && !sameView;
+      Math.abs(Math.log(c.size / this.primary.size)) < 0.15 && c.body.viewUp.angleTo(this.primary.body.viewUp) < 0.5 && c.body.viewLeft.angleTo(this.primary.body.viewLeft) < 0.7);
+    const cut = this.options.cameraMode !== "fixed" && scene > this.config.cutDifference && !sameView;
     const policyScene = cut ? Math.max(0.25, scene) : scene;
     if (cut) { this.shot++; this.tracks = []; this.observations = []; }
     for (const c of candidates) {
@@ -41,6 +42,7 @@ class VideoSubjectTracker {
       }
       c.id = match ? match.id : this.nextId++; c.t = t; used.add(c.id);
     }
+    const actors = candidates.map(c => ({ id: c.id, body: c.body, w: c.w, p: c.p, cx: c.cx, size: c.size, appearance: c.appearance, confidence: c.confidence }));
     // An explicit person is always followed independently, regardless of sex
     // or apparent clothing. Different choreographies are never averaged.
     const explicit = this.options.dancer && this.options.dancer !== "auto";
@@ -55,7 +57,7 @@ class VideoSubjectTracker {
     }
     if (!chosen && (explicit || (this.primary && !cut && t - this.primary.t <= this.config.missingSeconds))) {
       const state = this.policy.step(null, policyScene, cut, 0);
-      return { t, w: null, p: null, shot: this.shot, cut, scene, ...state, candidates: candidates.length };
+      return { t, w: null, p: null, shot: this.shot, cut, scene, ...state, candidates: candidates.length, actors };
     }
     if (!chosen && candidates.length) {
       const previousBody = this.policy.accepted;
@@ -65,7 +67,7 @@ class VideoSubjectTracker {
       })[0];
     }
     this.tracks = candidates;
-    if (!chosen) return { t, w: null, p: null, shot: this.shot, cut, scene, ...this.policy.step(null, policyScene, cut, 0), candidates: 0 };
+    if (!chosen) return { t, w: null, p: null, shot: this.shot, cut, scene, ...this.policy.step(null, policyScene, cut, 0), candidates: 0, actors };
     this.primary = chosen;
     this.observations.push(chosen.body); this.observations = this.observations.slice(-3);
     if (this.observations.length === 3) {
@@ -89,7 +91,7 @@ class VideoSubjectTracker {
       VideoBodyMotion.styleDifference(chosen.body, old.body) < 3) { repeatAt = old.t; break; }
     this.history.push({ t, body: chosen.body }); this.history = this.history.filter(h => t - h.t <= this.config.repeatSeconds);
     return { t, w: chosen.w, p: chosen.p, shot: this.shot, cut, scene, ...state,
-      track: chosen.id, candidates: candidates.length, supporters: supporters.length, repeatAt,
+      actors, track: chosen.id, candidates: candidates.length, supporters: supporters.length, repeatAt,
       styles: styles.map(s => ({ people: s.people, x: s.leader.cx })),
       people: candidates.map(c => ({ id: c.id, x: c.cx, y: c.cy })) };
   }

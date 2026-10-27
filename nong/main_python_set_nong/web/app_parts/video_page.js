@@ -33,6 +33,7 @@ function vidPage(on) {
     requestAnimationFrame(vidTick);
     return;
   }
+  vidGeneration++; if (vidBusy) vidStop = true;
   if (vidSeekCancel) vidSeekCancel();
   vidCheckedPlayback.reset(v);
   if (v && !v.paused) v.pause();
@@ -54,7 +55,7 @@ function vidSetSrc(url, src) {
   v.src = url;
   v.hidden = false;
   $("vidEmpty").hidden = true;
-  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null;
+  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null; vidRoutines = [];
   vidList();
   vidDraw(null);
   $("vidUseBox").hidden = true;
@@ -125,7 +126,7 @@ async function vidFetch() {
 function vidPlayBoth() {
   const v = $("vidPlayer");
   if (!v.src) return;
-  if (vidCheckedPlayback.manual) { vidCheckedPlayback.stop(v); return; }
+  if (vidCheckedPlayback.manual) { vidCheckedPlayback.pause(v); return; }
   if (!v.paused) { v.pause(); return; }
   const from = +$("vidFrom").value || 0, to = +$("vidTo").value || v.duration;
   if (v.currentTime < from || v.currentTime >= to - 0.05) v.currentTime = from;
@@ -150,17 +151,17 @@ function vidTick() {
   if (!v.paused && v.currentTime >= to) v.pause();
   let ms = Math.round((v.currentTime - from) * 1000);
   ms = vidCheckedPlayback.update(v, vidMade, ms, from, (to - from) * 1000);
-  if (ms === vidLastMs) return;
+  if (ms === vidLastMs && !vidCheckedPlayback.manual) return;
   vidLastMs = ms;
-  vidShowAt(ms);
+  vidShowAt(ms, vidCheckedPlayback.robotMs);
 }
-function vidShowAt(ms) {
+function vidShowAt(ms, checkedMs = null) {
   if (vidFrames && vidFrames.length) {
     const f = vidFrames[Math.max(0, Math.min(vidFrames.length - 1, Math.round(ms * VID_FPS / 1000)))];
     vidDraw($("vidSkel").checked && ms >= 0 ? f.p : null);
   }
   if (vidMade && vidMade.keys.length && ms >= 0) {
-    pose = easeKeys(vidMade.keys, VideoRigFitter.clockForSource(vidMade.keys, ms).ms).pose;
+    pose = easeKeys(vidMade.keys, checkedMs ?? VideoRigFitter.clockForSource(vidMade.keys, ms).ms).pose;
     applyPose();
   }
   $("vidClock").textContent = ms >= 0 ? (ms / 1000).toFixed(1) + " s" : "";
@@ -231,7 +232,8 @@ async function vidSound() {
 function vidSettings() {
   if (!vidSrc) return vidSaved;
   return { src: { kind: vidSrc.kind, name: vidSrc.name, url: vidSrc.url || "" },
-           subjectMode: $("vidSubject")?.value || "single", cameraMode: $("vidCamera")?.value || "fixed",
+           subjectMode: $("vidSubject")?.value || "auto", cameraMode: $("vidCamera")?.value || "auto",
+           routine: $("vidRoutine")?.value || "auto", routineSummary: typeof vidRoutines !== "undefined" ? vidRoutines.map(r => ({ id: r.id, coverage: r.coverage, trustedCoverage: r.trustedCoverage, ambiguous: r.ambiguous })) : [],
            dancer: $("vidDancer")?.value || "auto", shrug: !!$("vidShrug")?.checked,
            anchorX: Number.isFinite(vidSaved?.anchorX) ? vidSaved.anchorX : 0.5,
            analysis: vidMade?.achieved ? { meanBoneDegrees: vidMade.achieved.meanBoneDegrees,
@@ -249,8 +251,8 @@ function vidApplySettings(s) {
   vidFill();
   const pick = (sel, id) => { if (sel && [...sel.options].some(o => o.value === id)) sel.value = id; };
   pick($("vidDetail"), s.detail);
-  pick($("vidSubject"), s.subjectMode || "single");
-  pick($("vidCamera"), s.cameraMode || "fixed");
+  pick($("vidSubject"), s.subjectMode || "auto");
+  pick($("vidCamera"), s.cameraMode || "auto");
   if ($("vidShrug")) $("vidShrug").checked = !!s.shrug;
   if ($("vidLearned")) $("vidLearned").checked = s.learned !== false;
   if ($("vidDancer")) {
@@ -258,6 +260,10 @@ function vidApplySettings(s) {
       $("vidDancer").add(new Option("Performer " + s.dancer, s.dancer));
     $("vidDancer").value = s.dancer || "auto";
     if ($("vidDancer").options[0]) $("vidDancer").options[0].text = Number.isFinite(s.anchorX) && s.anchorX !== 0.5 ? "Saved reference" : "Main performer";
+  }
+  if ($("vidRoutine")) {
+    if (s.routine && ![...$("vidRoutine").options].some(o => o.value === s.routine)) $("vidRoutine").add(new Option("Saved routine " + s.routine, s.routine));
+    $("vidRoutine").value = s.routine || "auto";
   }
   (s.hand || []).forEach((h, a) => pick($("vidHand" + a), h));
   $("vidMirror").checked = !!s.mirror;

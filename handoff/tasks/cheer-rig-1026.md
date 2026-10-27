@@ -1,16 +1,16 @@
 # Group cheer video rig follow-up
 
 Owner: codex:10270037-9c0d
-Updated: 2026-10-27T05:58:12.227579
+Updated: 2026-10-27T16:44:41.149727+07:00
 Branch: codex/cheer-video-1027; isolated tree .staging-cheer-video-1027
-Last commit: this checkpoint; root HEAD3298e36 and unrelated dirty work preserved
+Last commit: this checkpoint; root HEAD023c644 and unrelated dirty work preserved
 Plan: A48-21, fixes rejected A48-20 v1
 
 ## Goal
 Follow two supplied group cheer videos with real waist/shrug, stable actor identity across camera changes, separate choreography, collision-aware paths and genuine supplementary RL. Deliver four checked editable rigs/previews and the Studio feature fix.
 
 ## Doing now
-User clarified automatic reusable routine discovery for future clips (no manual representative choice) and explicitly reports unsmooth thrashing. Preserve prior v2 outputs as provisional. Add reusable choreography discovery + quality/smoothing with measured reversal/jump regressions, stronger IK continuity and conservative handling of unsupported motion; re-run retargetings. Full-r1 finished8275/18, source hashes unchanged; baseline firmware/loopback fixture failures retained, no promotion. Two review agents hit usage limit after earlier approvals; failed calls are not approvals. No active QC driver now. No hardware/services.
+User requires automatic reuse for NEW clips and smooth dancing. Current native48/0, full real-clip fit diagnostics show roughly half the short reversals and lower maximum per-sample change; automatic global appearance/motion grouping has80/90percent visible coverage in main groups, ambiguous links marked, not guaranteed identity/gender. New root main023c644 (#83) landed/released15:14 while own stage remained isolated. Checkpoint new source, then rebase into new .staging-cheer-video-1027-r2 using three-way merge, preserve root dirty/user bytes and all A48-19 changes. Retest combined source before final retarget/render/package. No active QC/heavy driver now; no hardware/services.
 
 ## File status
 Exact owned source paths below. Private v1 is rejected and preserved, not completion evidence; old inventory/status is .local/cheer_rig_1027/task_previous.md. Private v2 files stay local; full exact inventory will accompany final validation.
@@ -20,6 +20,7 @@ Exact owned source paths below. Private v1 is rejected and preserved, not comple
 | handoff/tasks/cheer-rig-1026.md | current handoff | doing | manually reconciled | this checkpoint |
 | nong/main_python_set_nong/web/app_parts/video_motion_smooth.js | general motion smoothing + quality | planned | not run | uncommitted |
 | nong/main_python_set_nong/web/app_parts/video_routines.js | automatic choreography discovery | planned | not run | uncommitted |
+| nong/main_python_set_nong/web/app_parts/video_appearance.js | anonymous appearance support, no gender classifier | implemented | native48/0, final pending | uncommitted |
 | main_python/web/help.html | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
 | main_python/web/help/parts/studio.html | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
 | nong/main_python_set_nong/train_video_policy.py | group rig / physical checks / learning / Help | pending final | focused185/0; full pending | uncommitted |
@@ -61,6 +62,7 @@ Exact owned source paths below. Private v1 is rejected and preserved, not comple
 - Review: collision_review approved geometry/path scope; tracking_review APPROVED after realistic seek-resume fix.
 
 ## Next
+0. Merge latest main023c644 into fresh isolated r2; retain old failed full receipt and stage. Current fixtures now include reviewed loopback fixes from PR83; do not overwrite root dirty templates/spec/EXE.
 1. Full QC frozen gate; fix genuine failures without skipping assertions. Snapshot0117 saved privately.
 2. Delegate full QC under own loopback-only guard, frozen source, no heavy jobs.
 3. Render four checked sequences; compose time-matched video/audio; native/file/visual validation and ZIP. Install uniquely named projects without overwrite.

@@ -10,8 +10,11 @@
         <select id="vidSubject" style="flex:1" onchange="vidModeChanged()"></select></div>
       <div class="row"><label class="lbl" for="vidCamera">Camera</label>
         <select id="vidCamera" style="flex:1" onchange="vidModeChanged()"></select></div>
+      <div class="row"><label class="lbl" for="vidRoutine">Dance routine</label>
+        <select id="vidRoutine" style="flex:1" onchange="vidChooseRoutine()"><option value="auto">Find routines automatically</option></select></div>
+      <p class="mini">Groups are found from movement across the clip. Ambiguous camera cuts stay separate for review. Smoothing keeps still poses steady; all resulting paths are checked again.</p>
       <div class="row"><label class="lbl" for="vidDancer">Follow</label>
-        <select id="vidDancer" style="flex:1" onchange="vidModeChanged()"><option value="auto">Main performer</option></select></div>
+        <select id="vidDancer" style="flex:1" onchange="vidModeChanged()"><option value="auto">Automatic — discover dance groups</option></select></div>
       <p class="mini">Read the video once to see performer numbers. Choose a performer to keep
         their routine; people performing different moves are never averaged together.</p>
       <div class="row"><label class="lbl" for="vidFile">A file</label>
@@ -56,6 +59,7 @@
         <button class="primary" id="vidGo" onclick="vidMake()" disabled>▶ Make moves</button>
         <button id="vidGoSave" onclick="vidMakeAndSave()" disabled
                 title="One step: make the moves, keep them clear of the robot's own body, put them on the time bar and save them under the video's name.">▶ Make and save</button>
+        <button id="vidSaveRoutines" onclick="vidSaveRoutines()">💾 Save separate routines</button>
       </div>
       <div id="vidList" class="vidlist"></div>
       <div class="row" id="vidUseBox" hidden>

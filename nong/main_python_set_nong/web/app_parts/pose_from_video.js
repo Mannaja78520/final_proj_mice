@@ -38,6 +38,7 @@ const VID_USE = [
   { id: "moment", label: "Use another moment…" },
   { id: "drop", label: "Leave out" },
 ];
+let vidRoutines = [];
 let vidLib = null, vidLibMode = null, vidFrames = null, vidMade = null, vidStop = false, vidBusy = false, vidGeneration = 0, vidSeekCancel = null;
 let vidFit = null, vidPicks = null;   // fitted frames, and the moves made from them
 
@@ -58,7 +59,7 @@ async function vidLoadLib(mode = "single") {
   const files = await mp.FilesetResolver.forVisionTasks(VID_LIB + "/wasm");
   const base = model ? { modelAssetBuffer: model } : { modelAssetPath: VID_MODEL };
   const make = (delegate) => mp.PoseLandmarker.createFromOptions(files, {
-    baseOptions: { ...base, delegate }, runningMode: "VIDEO", numPoses: mode === "group" ? VIDEO_FOLLOW.tracking.people : 1 });
+    baseOptions: { ...base, delegate }, runningMode: "VIDEO", numPoses: mode !== "single" ? VIDEO_FOLLOW.tracking.people : 1 });
   // Some graphics drivers refuse the GPU path; the CPU one is slower, not wrong.
   try { vidLib = await make("GPU"); } catch (e) { vidLib = await make("CPU"); }
   vidLibMode = mode;
@@ -75,7 +76,7 @@ function vidOpts() {
   return { tol: det.tol, mirror: $("vidMirror").checked, waist: $("vidWaist").checked,
            hand: h.map(x => x.want || 0), force: h.map(x => !!x.force),
            music: $("vidMusic").checked,
-           subjectMode: $("vidSubject")?.value || "single", cameraMode: $("vidCamera")?.value || "fixed",
+           subjectMode: $("vidSubject")?.value || "auto", cameraMode: $("vidCamera")?.value || "auto",
            dancer: $("vidDancer")?.value || "auto", shrug: $("vidShrug")?.checked ?? false,
            learned: $("vidLearned")?.checked ?? true,
            anchorX: typeof vidSaved !== "undefined" && Number.isFinite(vidSaved?.anchorX) ? Math.max(0, Math.min(1, vidSaved.anchorX)) : 0.5 };
@@ -92,8 +93,8 @@ function vidFill() {        // the choices are built from the lists above
     fill($("vidHand" + a), VID_HAND, "video");
   });
   if (VIDEO_FOLLOW) {
-    fill($("vidSubject"), VIDEO_FOLLOW.subjectModes, "single");
-    fill($("vidCamera"), VIDEO_FOLLOW.cameraModes, "fixed");
+    fill($("vidSubject"), VIDEO_FOLLOW.subjectModes, "auto");
+    fill($("vidCamera"), VIDEO_FOLLOW.cameraModes, "auto");
   }
 }
 function vidModeChanged() {
@@ -101,7 +102,7 @@ function vidModeChanged() {
   if (vidSeekCancel) vidSeekCancel();
   if (typeof vidCheckedPlayback !== "undefined") vidCheckedPlayback.reset($("vidPlayer"));
   if (vidBusy) vidStop = true;
-  vidFrames = vidFit = vidMade = vidPicks = null;
+  vidFrames = vidFit = vidMade = vidPicks = null; vidRoutines = [];
   vidSay("Tracking choices changed. Press Make moves to read the performers again.");
 }
 
@@ -160,13 +161,14 @@ async function vidRead() {
   if (!v.src || !isFinite(v.duration)) { vidSay("Pick a video first.", true); return null; }
   vidSay("Loading the body finder (the first time needs the internet)…");
   let lib;
-  let tracker, picture;
+  let tracker, picture, discovery, readOptions;
   try {
     await videoFollowReady(); vidFill();
-    const options = vidOpts();
+    const options = vidOpts(); readOptions = options;
+    discovery = new VideoRoutineDiscovery(options);
     tracker = new VideoSubjectTracker({ ...options, mirror: false });
     if (!options.learned) tracker.policy.model = null;
-    picture = document.createElement("canvas"); picture.width = 64; picture.height = 36;
+    picture = document.createElement("canvas"); picture.width = VIDEO_FOLLOW.tracking.imageWidth; picture.height = VIDEO_FOLLOW.tracking.imageHeight;
     lib = await vidLoadLib(options.subjectMode);
   }
   catch (e) {
@@ -185,18 +187,27 @@ async function vidRead() {
       return null;
     }
     // timestamps must only grow, also on a second read of the same video
-    const r = vidDetectPerformers(lib, v, vidLibMode === "group");
+    const r = vidDetectPerformers(lib, v, vidLibMode !== "single");
     const context = picture.getContext("2d", { willReadFrequently: true });
-    context.drawImage(v, 0, 0, 64, 36);
-    const frame = tracker.step(r, t - from, context.getImageData(0, 0, 64, 36).data);
-    frames.push(frame);
+    context.drawImage(v, 0, 0, picture.width, picture.height);
+    const frame = tracker.step(r, t - from, context.getImageData(0, 0, picture.width, picture.height).data);
+    frames.push(frame); discovery.add(frame);
     const select = $("vidDancer");
     for (const person of frame.people || []) if (select && ![...select.options].some(o => o.value === String(person.id)))
       select.add(new Option("Performer " + person.id, String(person.id)));
     vidDraw(frame.p, frame.people);
     vidSay("Reading the video: " + Math.round(100 * (t - from) / Math.max(0.1, to - from)) + "%");
   }
-  return vidStop || generation !== vidGeneration ? null : frames;
+  if (vidStop || generation !== vidGeneration) return null;
+  vidRoutines = readOptions.subjectMode !== 'single' && readOptions.dancer === 'auto' ? discovery.finish() : [];
+  const select = $("vidRoutine"), previous = select?.value;
+  if (select) {
+    select.innerHTML = ''; select.add(new Option('Automatic main routine', 'auto'));
+    for (const routine of vidRoutines) select.add(new Option('Routine ' + routine.id + ' · ' + Math.round(routine.trustedCoverage * 100) + '% reliable' + (routine.ambiguous ? ' · check cut' : ''), String(routine.id)));
+    select.value = vidRoutines.some(r => String(r.id) === previous) ? previous : 'auto';
+  }
+  const selected = vidRoutines.find(r => String(r.id) === select?.value) || vidRoutines[0];
+  return selected ? selected.frames : frames;
 }
 // The skeleton over the video, so it is plain whether the person was found.
 // Points are fractions of the PICTURE, which the player letterboxes inside its
@@ -528,9 +539,41 @@ function vidHandNote(made) {
         + "“Keep, hand side forced” on those moves below, and the hand moves "
         + "just enough to show it.")).join("");
 }
+function vidChooseRoutine() {
+  if (vidBusy || !vidRoutines.length) return;
+  const selected = vidRoutines.find(r => String(r.id) === $("vidRoutine").value) || vidRoutines[0];
+  vidFrames = selected.frames; vidRemake('fit');
+  vidSay(vidSummary());
+}
+async function vidSaveRoutines() {
+  if (vidBusy) return;
+  if (!vidRoutines.length && !(await vidMake())) return;
+  if (!vidRoutines.length) return vidMakeAndSave();
+  const generation = vidGeneration, stamp = Date.now();
+  const original = $("vidRoutine").value;
+  if (!(await askUnsaved("save the discovered dance routines as separate projects")) || generation !== vidGeneration) return;
+  vidBusy = true; vidStop = false; $("vidGo").textContent = '■ Stop';
+  let saved = 0;
+  try {
+    for (const routine of vidRoutines) {
+      if (vidStop || generation !== vidGeneration) break;
+      vidFrames = routine.frames; vidRemake('fit');
+      if (!vidMade?.keys.length) continue;
+      setWorkName('video_' + stamp + '_routine_' + routine.id);
+      if (!(await vidUse('replace', { skipUnsaved: true })) || generation !== vidGeneration || vidStop) break;
+      if (!(await saveAll())) break;
+      saved++; await new Promise(resolve => setTimeout(resolve, 30));
+    }
+  } finally {
+    vidBusy = false; $("vidGo").textContent = '▶ Make moves';
+    if (generation === vidGeneration) { $("vidRoutine").value = original; vidChooseRoutine(); vidSay('Saved ' + saved + ' separate routine projects. Review uncertain cuts before use.'); }
+  }
+}
 function vidSummary() {
   const m = vidMade, opts = vidOpts();
   return m.keys.length + " moves from " + (m.videoMs / 1000).toFixed(1) + " s of video."
+    + (vidRoutines.length ? " " + vidRoutines.length + " routine groups/fragments found automatically; ambiguous cuts are marked for review. Choose one or save separately." : "")
+    + (m.quality?.smoothing ? " Short reversals: " + m.quality.smoothing.before.reversals + " → " + m.quality.smoothing.afterRepair.reversals + "." : "")
     + (m.safe && safeSay(m.safe) ? " " + safeSay(m.safe) : "")
     + (m.quality?.uncertain ? " " + m.quality.uncertain + " uncertain observations hold the last trustworthy pose." : "")
     + (opts.music && m.partial
@@ -651,11 +694,13 @@ function vidRebuild() {
   $("vidUseBox").hidden = !(vidMade && vidMade.keys.length >= 2);
   vidSay(vidSummary());
 }
-async function vidUse(how) {
+async function vidUse(how, options = {}) {
+  const generation = vidGeneration;
   if (!vidMade) return false;
   const add = JSON.parse(JSON.stringify(vidMade.keys));
   if (how === "replace") {
-    if (!(await askUnsaved("replace the time bar with the moves from the video"))) return false;
+    if (!options.skipUnsaved && !(await askUnsaved("replace the time bar with the moves from the video"))) return false;
+    if (generation !== vidGeneration || vidStop) return false;
     keys = add;
   } else {
     // the first video pose is a move like any other once it follows a move

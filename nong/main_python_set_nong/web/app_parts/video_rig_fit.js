@@ -36,18 +36,20 @@ class VideoRigFitter {
   }
   arm(arm, bones, first) {
     const before = pose.slice();
+    const objective = () => this.armCost(arm, bones) + this.settings.continuityWeight *
+      pose.slice(arm * 4, arm * 4 + 4).reduce((sum, v, k) => sum + (v - before[arm * 4 + k]) ** 2, 0) / 10000;
     // Existing solver is a seed; the objective below evaluates BOTH achieved
     // bone directions, so an unreachable elbow cannot redirect the forearm.
     vidFitArm(arm, bones, first);
-    let bestPose = pose.slice(), best = this.armCost(arm, bones);
-    const seeds = first ? [pose.slice(), before, RIG.neutral.map((v, j) => j >= arm * 4 && j < arm * 4 + 4 ? v : pose[j])] : [pose.slice()];
+    let bestPose = pose.slice(), best = objective();
+    const seeds = first ? [pose.slice(), before, RIG.neutral.map((v, j) => j >= arm * 4 && j < arm * 4 + 4 ? v : pose[j])] : [pose.slice(), before];
     for (const seed of seeds) {
       pose = seed.slice();
       for (const step of this.settings.steps) for (let pass = 0; pass < this.settings.passes; pass++) {
         let improved = false;
         for (let j = arm * 4; j < arm * 4 + 4; j++) {
           const old = pose[j]; let chosen = old;
-          const cost = () => this.armCost(arm, bones) + this.settings.continuityWeight * (pose[j] - before[j]) ** 2 / 10000;
+          const cost = objective;
           let score = cost();
           for (const sign of [-1, 1]) {
             pose[j] = clampJ(j, old + sign * step); const value = cost();
@@ -57,10 +59,10 @@ class VideoRigFitter {
         }
         if (!improved) break;
       }
-      const score = this.armCost(arm, bones);
+      const score = objective();
       if (score < best + 1e-8) { best = score; bestPose = pose.slice(); }
     }
-    pose = bestPose; applyPose(); return best;
+    pose = bestPose; applyPose(); return this.armCost(arm, bones);
   }
   repair(target, previous) {
     if (!collisionAt(target)) return { pose: target, repaired: false };
@@ -87,7 +89,7 @@ class VideoRigFitter {
     return best ? { pose: best, repaired: true } : null;
   }
   frames(frames) {
-    const saved = pose, poses = [], times = [], targets = [], quality = { repaired: 0, missing: 0, uncertain: 0, worstBoneDegrees: 0 };
+    const saved = pose, poses = [], times = [], targets = [], acceptedFrames = [], quality = { repaired: 0, missing: 0, uncertain: 0, worstBoneDegrees: 0 };
     let previous = null, shot = null;
     try {
       pose = RIG.neutral.map((v, j) => clampJ(j, v));
@@ -114,7 +116,18 @@ class VideoRigFitter {
         if (target.repaired) quality.repaired++;
         pose = target.pose.slice(); previous = pose.slice(); shot = frame.shot;
         poses.push(pose.slice()); times.push(frame.t * 1000);
-        targets.push(body && trusted ? body : null);
+        targets.push(body && trusted ? body : null); acceptedFrames.push(frame);
+      }
+      if (this.options.smooth !== false && VIDEO_FOLLOW.smoothing && poses.length > 1) {
+        const smoothed = new VideoMotionSmoother().apply(poses, times, acceptedFrames);
+        quality.smoothing = { before: smoothed.before, after: smoothed.after };
+        let previousSafe = poses[0];
+        for (let i = 0; i < poses.length; i++) {
+          const repaired = this.repair(smoothed.poses[i], previousSafe);
+          poses[i] = repaired ? repaired.pose.slice() : previousSafe.slice();
+          previousSafe = poses[i];
+        }
+        quality.smoothing.afterRepair = VideoMotionSmoother.quality(poses, times);
       }
     } finally { pose = saved; applyPose(); robot.updateMatrixWorld(true); }
     return poses.length ? { poses, times, targets, videoMs: Math.round(times.at(-1)), quality, mirror: this.options.mirror, waist: this.options.waist, shrug: this.options.shrug } : null;
@@ -155,7 +168,7 @@ class VideoRigFitter {
       const end = key.sourceHoldEnd ?? key.sourceMs;
       if (sourceMs < end) {
         const fraction = Math.max(0, Math.min(1, (sourceMs - key.sourceMs) / Math.max(1, end - key.sourceMs)));
-        return { ms: arrival + fraction * (key.hold || 0), rate: (end - key.sourceMs) / Math.max(1, key.hold || 0) || 1 };
+        return { ms: arrival + fraction * (key.hold || 0), rate: (end - key.sourceMs) / Math.max(1, key.hold || 0) };
       }
       clock = arrival + (key.hold || 0);
     }
@@ -167,14 +180,14 @@ class VideoRigFitter {
       const key = keys[i], arrival = i ? clock + key.t : 0;
       if (i && robotMs <= arrival) {
         const from = keys[i - 1].sourceHoldEnd ?? keys[i - 1].sourceMs;
-        return { sourceMs: from + (key.sourceMs - from) * Math.max(0, (robotMs - clock) / Math.max(1, key.t)), end: false };
+        return { sourceMs: from + (key.sourceMs - from) * Math.max(0, (robotMs - clock) / Math.max(1, key.t)), rate: (key.sourceMs - from) / Math.max(1, key.t), end: false };
       }
       const end = arrival + (key.hold || 0);
       if (robotMs <= end) return { sourceMs: key.sourceMs + ((key.sourceHoldEnd ?? key.sourceMs) - key.sourceMs) *
-        Math.max(0, (robotMs - arrival) / Math.max(1, key.hold || 0)), end: false };
+        Math.max(0, (robotMs - arrival) / Math.max(1, key.hold || 0)), rate: ((key.sourceHoldEnd ?? key.sourceMs) - key.sourceMs) / Math.max(1, key.hold || 0), end: false };
       clock = end;
     }
     const last = keys.at(-1);
-    return { sourceMs: last ? (last.sourceHoldEnd ?? last.sourceMs ?? robotMs) : 0, end: true };
+    return { sourceMs: last ? (last.sourceHoldEnd ?? last.sourceMs ?? robotMs) : 0, rate: 1, end: true };
   }
 }

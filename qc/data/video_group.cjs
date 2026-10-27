@@ -16,7 +16,7 @@ function context() {
     Option:function(label,value){this.label=label;this.value=value;}});
   const run=s=>vm.runInContext(s,c);
   run('const $=id=>document.getElementById(id);');
-  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','yaml_export','video_body_motion','video_tracking','video_rig_fit','video_checked_playback'])run(read(name));
+  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','yaml_export','video_body_motion','video_tracking','video_motion_smooth','video_appearance','video_routines','video_rig_fit','video_checked_playback'])run(read(name));
   const timeline=read('timeline');run(timeline.slice(timeline.indexOf('function easeKeys('),timeline.indexOf('\nfunction poseAt(')));
   const videoSource=read('pose_from_video');run(videoSource.slice(0,videoSource.lastIndexOf('\nvidFill();')));
   c.config=config;c.safe=safe;c.policy=policy;
@@ -62,6 +62,56 @@ if(require.main===module){
     tr.step(result([{x:.5,w:person(0,0)}]),0,null,0);
     const f=tr.step(result([{x:.5,w:person(0,.2)}]),2,null,0);
     return f.repeatAt===null;
+  })()`);
+  check('automatic routines use the whole new clip, not initial identical stance',`(()=>{
+    const options={subjectMode:'group',cameraMode:'fixed',dancer:'auto'},tr=new VideoSubjectTracker(options),discovery=new VideoRoutineDiscovery(options);
+    for(let i=0;i<24;i++)discovery.add(tr.step(result([{x:.3,w:person(0,0)},{x:.7,w:person(0,0,[0,0,0],i>=5)}]),i/10,null,0));
+    const groups=discovery.finish();
+    return groups.length===2&&groups.every(g=>g.coverage===1&&g.people===1)&&VideoBodyMotion.styleDifference(groups[0].frames[20].body,groups[1].frames[20].body)>24;
+  })()`);
+  check('new clip with matching dancers produces one routine without positional labels',`(()=>{
+    const options={subjectMode:'group',cameraMode:'cuts',dancer:'auto'},tr=new VideoSubjectTracker(options),discovery=new VideoRoutineDiscovery(options);
+    for(let i=0;i<15;i++)discovery.add(tr.step(result([{x:.2,w:person(.1,.02,[.3,.5,0],i>5)},{x:.8,w:person(.1,.02,[.3,.5,0],i>5)}]),i/10,null,0));
+    const groups=discovery.finish();return groups.length===1&&groups[0].people===2;
+  })()`);
+  check('smoothing removes noisy short reversals and preserves the opening pose',`(()=>{
+    const poses=Array.from({length:80},(_,i)=>RIG.home.map((v,j)=>j===0?v+(i?((i%2)?4:-4):0):v)),times=poses.map((_,i)=>i*100),frames=poses.map(()=>({trusted:true,action:'accept',shot:0}));
+    const smoothed=new VideoMotionSmoother().apply(poses,times,frames);
+    return smoothed.after.reversals<smoothed.before.reversals*.25&&smoothed.after.largestStep<smoothed.before.largestStep&&JSON.stringify(smoothed.poses[0])===JSON.stringify(poses[0]);
+  })()`);
+  check('smoothing retains real movement and never fills an unknown interval from the future',`(()=>{
+    const poses=Array.from({length:40},(_,i)=>RIG.home.map((v,j)=>j===0?v+Math.min(20,Math.max(0,i-8)*2):v)),times=poses.map((_,i)=>i*100),frames=poses.map((_,i)=>({trusted:i>3,action:i>3?'accept':'uncertain',shot:0}));
+    const smoothed=new VideoMotionSmoother().apply(poses,times,frames);
+    return smoothed.poses.slice(0,4).every(p=>p[0]===poses[0][0])&&Math.abs(smoothed.poses.at(-1)[0]-poses.at(-1)[0])<2;
+  })()`);
+  check('manual checked clock advances robot through a flat source-time detour',`(()=>{
+    let now=0;const video={paused:false,seeking:false,currentTime:0,playbackRate:1,pause(){this.paused=true;},play(){this.paused=false;return Promise.resolve();}};
+    const playback=new VideoCheckedPlayback(()=>now),made={keepMusic:false,keys:[{sourceMs:0,t:1000},{sourceMs:0,t:6000},{sourceMs:1000,t:1000}]};
+    playback.update(video,made,0,0,1000);now=3000;const source=playback.update(video,made,0,0,1000);
+    return source===0&&playback.robotMs===3000&&playback.manual&&video.paused&&VideoRigFitter.sourceForClock(made.keys,3000).rate===0;
+  })()`);
+  check('camera scene change from arm movement alone does not reset the shot',`(()=>{
+    const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'cuts',dancer:'auto'});
+    tr.step(result([{x:.5,w:person(0,0)}]),0,null,0);
+    const f=tr.step(result([{x:.5,w:person(0,0,[0,0,0],true)}]),.2,null,.3);
+    return !f.cut&&f.shot===0;
+  })()`);
+  check('global routine assignment avoids a greedy cross-role match',`(()=>{
+    const d=new VideoRoutineDiscovery({}),roles=[{id:0,last:{t:0}},{id:1,last:{t:0}}];
+    d.joinCost=(rows,role)=>rows[0].actor.costs[role.id];
+    const groups=[[[{t:1,index:1,actor:{costs:[3,4]}}]],[[{t:1,index:1,actor:{costs:[2,40]}}]]];
+    const found=d.assign(groups,roles);return found[0].routine===roles[1]&&found[1].routine===roles[0];
+  })()`);
+  check('appearance descriptor is anonymous normalized and bounded',`(()=>{
+    const p=Array.from({length:33},()=>({x:.5,y:.2}));p[11]={x:.3,y:.35};p[12]={x:.7,y:.35};p[23]={x:.3,y:.8};p[24]={x:.7,y:.8};
+    const red=new Uint8Array(64*64*4),blue=new Uint8Array(red.length);for(let i=0;i<red.length;i+=4){red[i]=255;blue[i+2]=255;red[i+3]=blue[i+3]=255;}
+    const a=VideoAppearanceDescriptor.measure(p,red,64,64),b=VideoAppearanceDescriptor.measure(p,blue,64,64),distance=VideoAppearanceDescriptor.distance(a,b);
+    return a.length===96&&VideoAppearanceDescriptor.distance(a,a)===0&&distance>0&&distance<=1;
+  })()`);
+  check('smoothing retains continuous slow intentional motion without deadband jumps',`(()=>{
+    const poses=Array.from({length:30},(_,i)=>RIG.home.map((v,j)=>j===0?v+i*.2:v)),times=poses.map((_,i)=>i*100),frames=poses.map(()=>({trusted:true,action:'accept',shot:0}));
+    const out=new VideoMotionSmoother().apply(poses,times,frames).poses;
+    return out.slice(10).every((p,k)=>p[0]>out[k+9][0])&&out.at(-1)[0]>poses[0][0]+4;
   })()`);
   check('explicit performer overrides auto subject',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'fixed',dancer:'2'});const f=tr.step(result([{x:.5,w:person(0,0)},{x:.8,w:person(0,0,[0,0,0],true)}]),0,null,0);return f.track===2;})()`);
   check('camera cut does not create waist jump',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'cuts',dancer:'auto'});const a=tr.step(result([{x:.5,w:person(.3,.05)}]),0,null,0),b=tr.step(result([{x:.4,w:person(.3,.05,[.7,1.2,.2])}]),.1,null,.8);return Math.abs(a.waist-b.waist)<.02;})()`);
@@ -143,6 +193,13 @@ if(require.main===module){
     video.seeking=false;now=6200;const source=playback.update(video,made,0,0,1100);
     return playback.manual===null&&played===1&&!video.paused&&source>100&&video.playbackRate===1;
   })()`);
+  check('pausing a flat-source detour resumes its checked clock rather than restarting',`(()=>{
+    let now=0;const video={currentTime:0,paused:true,seeking:false,playbackRate:1,pause(){this.paused=true;},play(){this.paused=false;return Promise.resolve();}};
+    const player=new VideoCheckedPlayback(()=>now),made={keepMusic:false,keys:[{sourceMs:0,t:1000},{sourceMs:0,t:6000},{sourceMs:1000,t:1000}]};
+    player.start(video,0);now=3000;player.update(video,made,0,0,1000);player.pause(video);
+    now=6000;player.start(video,0);now=6500;player.update(video,made,0,0,1000);
+    return player.robotMs===3500&&!!player.manual;
+  })()`);
   check('clearing analysis resets any inherited video slowdown',`(()=>{const p={playbackRate:.1};vidCheckedPlayback.reset(p);return p.playbackRate===1;})()`);
   async function checkAsync(name,code){try{if(!(await run(code)))throw Error('assertion false');passed++;console.log('PASS '+name);}catch(e){failed++;console.log('FAIL '+name+': '+e.message);}}
   (async()=>{
@@ -150,6 +207,21 @@ if(require.main===module){
       const listeners=new Map(),video={currentTime:0,readyState:2,seeking:false,addEventListener(k,v){listeners.set(k,v);},removeEventListener(k){listeners.delete(k);}};
       vidStop=false;const pending=vidSeek(video,1,vidGeneration);vidModeChanged();
       return (await pending)===false&&vidSeekCancel===null&&listeners.size===0;
+    })()`);
+    await checkAsync('routine batch cancels before saving a stale analysis',`(async()=>{
+      const oldUse=vidUse,oldRemake=vidRemake,oldSave=globalThis.saveAll,oldAsk=globalThis.askUnsaved,oldName=globalThis.setWorkName;
+      let saves=0,asks=0;
+      try{
+        vidBusy=false;vidStop=false;vidRoutines=[{id:1,frames:[]},{id:2,frames:[]}];
+        globalThis.askUnsaved=async()=>{asks++;return true;};globalThis.setWorkName=()=>{};globalThis.saveAll=async()=>{saves++;return true;};
+        vidRemake=()=>{vidMade={keys:[{pose:RIG.home,t:1000}]};};vidUse=async()=>{vidGeneration++;return true;};
+        await vidSaveRoutines();return saves===0&&asks===1&&!vidBusy;
+      }finally{vidUse=oldUse;vidRemake=oldRemake;globalThis.saveAll=oldSave;globalThis.askUnsaved=oldAsk;globalThis.setWorkName=oldName;vidRoutines=[];}
+    })()`);
+    await checkAsync('delayed unsaved prompt cannot replace timeline after modes change',`(async()=>{
+      const oldAsk=globalThis.askUnsaved;vidMade={keys:[{pose:RIG.home,t:1000}]};keys=[];vidStop=false;
+      try{globalThis.askUnsaved=async()=>{vidGeneration++;return true;};const used=await vidUse('replace');return used===false&&keys.length===0;}
+      finally{globalThis.askUnsaved=oldAsk;}
     })()`);
     await checkAsync('cancelled read cannot repopulate observations or fit new modes',`(async()=>{
       vidFrames=vidFit=vidMade=null;vidRead=async()=>{vidModeChanged();return[{t:0,w:person()}];};
