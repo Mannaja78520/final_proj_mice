@@ -13,7 +13,7 @@ User 2026-10-23 06:37Z: "help ดีแล้วแต่ทำ group ให้�
 พวก ช่องอื่นๆ ด้วยและ setting ขอให้มีแบบไม่ใส่รหัสสำหรับ setting ที่ไม่ซีเรียสกับหุ่นจริง ใส่รหัสกับที่ซีเรียสจริงๆ"
 
 ## Doing now
-A49-2 built + checked alone (check_studio_open_settings, sabotage 3/3); full QC, PR, merge. Then A49-3.
+A49-3 built + checked alone (check_studio_panels, sabotage 5/5); full QC, PR, merge, then delete this file.
 
 ## File status
 Baseline: origin/main 023c644
@@ -40,6 +40,9 @@ Baseline: origin/main 023c644
   Setting iframe src that differs only in #part does not reload (no onload).
 
 ## Done
+- A49-2 merged PR #86. A49-3: app_parts/panels.js (⧉ float, drag title, CSS resize, ⇲ dock, localStorage nong_panels,
+  desk only); notices.js showTab shows a floating card on every tab (login still applies); style.css tab band
+  on top, icon over word, 3 or 6 across. Studio trial preview dropped.
 - A49-2: nong/main_python_set_nong/web/settings_open.json lists card ids open without a login (Model, Saving);
   app_parts/notices.js showTab shows them beside the login card; login card text; Help studio.html note.
 - A49-1 Help groups: full QC 8752 pass; failing on main too (not ours, verified in a clean origin/main

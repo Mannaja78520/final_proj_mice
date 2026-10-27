@@ -56,8 +56,12 @@ function showTab(which) {
   $("tabMove").style.display = "";
   $("tabSetup").style.display = "";
   document.querySelectorAll("[data-stab]").forEach(el => {
-    const open = renderWhich === "login" && el.dataset.stab === which && OPEN_WITHOUT_LOGIN.includes(el.id);
-    el.style.display = (el.dataset.stab === renderWhich || open) ? "" : "none";
+    // a card taken out to its own window (panels.js) shows on every tab,
+    // still behind the login if its own tab needs one
+    const tab = el.classList.contains("floating") ? el.dataset.stab : which;
+    const shows = (!currentUser && (tab === "robot" || tab === "setup")) ? "login" : tab;
+    const open = shows === "login" && el.dataset.stab === tab && OPEN_WITHOUT_LOGIN.includes(el.id);
+    el.style.display = (el.dataset.stab === (el.classList.contains("floating") ? shows : renderWhich) || open) ? "" : "none";
   });
   
   const userCard = $("userManageCard");
