@@ -1,7 +1,7 @@
 # RL vs planner dance comparison (separate experiment)
 
 Owner: claude:v7zr
-Updated: 2026-10-27T19:55Z
+Updated: 2026-10-27T20:30Z
 Branch: claude/project-thread-v7zrsg
 Last commit: this checkpoint
 Plan: A50-1
@@ -16,7 +16,7 @@ training wall time per run and per round, the GPU, and the planner's compute tim
 Must NOT change the main dance pipeline. Dance thread (cmsg_...BZPUoy331) owns Studio files.
 
 ## Doing now
-Full QC on the branch, then draft PR; then PC run steps to the coordinator.
+Merging PR #92; then the PC runs it (steps sent to the coordinator, README_TH.md).
 
 ## File status
 Baseline: origin/main 4c230e0.
@@ -24,13 +24,14 @@ Baseline: origin/main 4c230e0.
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | handoff/tasks/rl-compare-1027.md | this task | done | n/a | this checkpoint |
-| docs/PLAN.html, docs/plan_state.js | A50-1 added, doing | done | plan.py | 1st WIP |
+| docs/PLAN.html, docs/plan_state.js | A50 heading + A50-1 doing | done | check_plan_areas 43/0 | this checkpoint |
 | tools/rl_compare/{reference,kin,servo,planner,metrics,env,ppo,rl,render,report,run}.py | new experiment package | done | check_rl_compare 14/0; cloud --quick run end to end (CPU) | this checkpoint |
 | tools/rl_compare/{planner,studio_eval}.cjs | Studio planner + Studio collision check headless | done | planner reproduces Studio 7.49 deg | this checkpoint |
 | tools/rl_compare/README_TH.md, run_compare.bat | Thai guide, one-click run | done | read through | this checkpoint |
 | config/rl_compare.json | all settings (data) | done | check_rl_compare | this checkpoint |
 | qc/checks/check_rl_compare.py | FK, clearance vs Studio, warp, servo, caps, board clock | done | sabotage 6/6 caught | this checkpoint |
 | docs/systems.json, docs/systems/*.md | rl-compare system; rebuilt | done | systems build | this checkpoint |
+| docs/experiments/{rl_compare.md,rl_compare_references.bib} | method, literature, refs | done | read through | this checkpoint |
 
 ## Facts found
 - Reference = `<name>_analysis.json` (PC .local/cheer_rig_1027): `fit.times` ms (6 fps, 951),
@@ -54,6 +55,10 @@ Baseline: origin/main 4c230e0.
 
 ## Done
 - Package + QC + Thai guide; --quick pipeline ran end to end in the cloud (no source video here).
+- Experiment record (experiments.jsonl + docs/experiments/rl_compare_results.md), references .bib,
+  literature comparison docs/experiments/rl_compare.md (user 2026-10-27: keep everything for a thesis).
+- Full QC 8804/12: 4 = PlatformIO "download limit exceeded" (cloud), 6 browser timeouts + bus-scan
+  timing (red on main here too), 2 = A50 plan heading (fixed, check_plan_areas 43/0).
 
 ## Next
 1. PC: `pip install torch --index-url https://download.pytorch.org/whl/cu128` + opencv-python pillow;
