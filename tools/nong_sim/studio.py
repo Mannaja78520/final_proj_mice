@@ -52,7 +52,7 @@ class StudioFacts:
     def __init__(self):
         self.joint_names = js_value("rig_data.js", "JOINT_NAMES")
         self.base_dir = js_value("rig_data.js", "BASE_DIR")
-        self.clear_mm = js_value("collisions.js", "CLEAR")
+        self.clear_mm = json.loads(_read(STUDIO / "web/safe_path.json"))["clearMm"]   # Studio CLEAR
         self.wrist_r = js_value("collisions.js", "R_WRIST")
         self.head_r = js_value("collisions.js", "R_HEAD")
         self.hand_size, self.hand_y = hand_box()

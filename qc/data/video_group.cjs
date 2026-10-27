@@ -16,7 +16,7 @@ function context() {
     Option:function(label,value){this.label=label;this.value=value;}});
   const run=s=>vm.runInContext(s,c);
   run('const $=id=>document.getElementById(id);');
-  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','music_pace','yaml_export','video_body_motion','video_tracking','video_motion_smooth','video_appearance','video_routine_assignment','video_routine_sections','video_routines','video_rig_fit','video_checked_playback'])run(read(name));
+  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','music_pace','servo_follow','yaml_export','video_body_motion','video_tracking','video_motion_smooth','video_appearance','video_routine_assignment','video_routine_sections','video_routines','video_rig_fit','video_checked_playback'])run(read(name));
   const timeline=read('timeline');run(timeline.slice(timeline.indexOf('function easeKeys('),timeline.indexOf('\nfunction poseAt(')));
   // keyCue/setKeyCue: planPace() reads a sequence's play:/pace: cues
   const cues=read('music_on_a_keyframe'),at=cues.indexOf('function keyCue(');run(cues.slice(at,cues.indexOf('\n}\n',cues.indexOf('function setKeyCue(',at))+3));

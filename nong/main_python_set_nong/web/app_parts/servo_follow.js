@@ -35,7 +35,9 @@ class ServoFollow {
   }
   // The whole list K played at the board's frame: for every move, how far the
   // horns trailed the timeline at worst, and on which joint.
-  static trace(K) {
+  // opts.hits: also check the HORNS' pose for touching (every other frame,
+  // ~0.3 ms a check): the plan can be clear while the lagging arm is not.
+  static trace(K, opts = {}) {
     if (!K.length) return { moves: [], worst: null };
     const f = new ServoFollow(K[0].pose), dt = SERVO_VIEW.frameMs;
     const end = easeKeys(K, Infinity).end || 0, starts = [];
@@ -51,8 +53,27 @@ class ServoFollow {
         if (e > mv.deg) { mv.deg = e; mv.joint = j; }
         if (!worst || e > worst.deg) worst = { deg: e, joint: j, move: m + 1, ms };
       }
+      const mv = moves[Math.min(m + 1, K.length - 1)];
+      if (opts.hits && !mv.hitMs && (ms / dt) % 2 === 0 && collisionAt(got)) mv.hitMs = ms;
     }
     return { moves, worst };
+  }
+  // A show that follows its song may move faster than the real arm can follow
+  // without its hands meeting (nong_sim found 0-4 touches per cheer dance,
+  // 2026-10-27). Lengthen each move where the HORNS touch, a little at a
+  // time, until none does; k.servoMs keeps that floor so later re-timing
+  // (music_pace.js) honours it. Returns how many moves it lengthened.
+  static settle(K, tries = 6) {
+    const longer = new Set();
+    for (let n = 0; n < tries; n++) {
+      const hit = ServoFollow.trace(K, { hits: true }).moves
+        .map((mv, i) => (mv.hitMs ? i : -1)).filter(i => i > 0);
+      if (!hit.length) break;
+      for (const i of hit) {
+        K[i].t = Math.round(K[i].t * 1.3); K[i].servoMs = K[i].t; longer.add(i);
+      }
+    }
+    return longer.size;
   }
 }
 

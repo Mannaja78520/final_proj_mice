@@ -12,10 +12,8 @@ and *อยากเห็นตอนจำลองด้วยให้ดู
 videos; answer whether RL/physics sim helps; optional sim the user can watch.
 
 ## Doing now
-Phase 2 (WIP on branch, base main 4c230e0): music-sync pace (firmware PACE MUSIC/NORMAL,
-music_dps; Studio planPace/minTime(atPace); musicGapMm), sim recorder record.py. Next:
-per-sequence adjustable music speed in Studio + list of moves that can't keep up, then
-servo model in Studio view (A48-24), waist/shrug from video, clearance rounds, QC, help.
+Clearance rounds: scratchpad cheer/rounds.sh re-makes the 4 v3 dances at SAFE.musicGapMm
+0/6/12/18 and runs the sim (3 robots, lagScale 0.5-2). Then: pick musicGapMm, full QC, PR.
 
 ## File status
 Baseline: origin/main ecf48c2. Codex's committed work (681bc4c and earlier) is
@@ -34,6 +32,17 @@ in the branch history; rows below are what this session changed on top.
 | docs/PLAN.html, docs/plan_state.js | A48-22 | done | plan.py | this checkpoint |
 
 ## Facts found
+- A48-23 pace: firmware NongModule PACE MUSIC [N] / NORMAL, paceCap() (NongModule.cpp ~271),
+  ends on showRunning(false) / STOP. Studio music_pace.js (box "Speed limit with music",
+  project musicDps, cue `pace: music N`, late() list), timing.js paceCapDps -> musicPace.cap().
+  Video keys carry musicMs (pose_from_video.js after safeKeys) = the song's time per move.
+- A48-24 servo model: servo_follow.js ServoFollow (lag filter -> accel-limited speed -> top speed),
+  rig servoLagMs/servoAccel (guesses); tools/nong_sim/world.py _servo_step is the same model
+  (check_nong_sim compares them). config/nong_sim.json servo.lagScale + robots.vary.lagScale.
+- Waist/shrug from video already exist (video_rig_fit.js setBody(8 twist)/(9 roll), boxes ticked
+  by default); v3 dances use waist 30-150 and shrug 80-100 (full ranges).
+- Sim on v3 at music pace with the accel model: 0-4 hand hits per dance, worst follow 27-63 deg
+  (elbows): servos cut corners at full speed. Clearance rounds decide musicGapMm.
 - Board timing: NongModule.cpp:271 minDuration = max(max_dps floor, safety floor);
   NONG_SAFE_DPS 60 (firmware/config/esp32_hardware_nong_module.h:94) x pi/2 ease.
   This is why the v2 dances run ~3.9x slower than the song (618 s for 158 s).

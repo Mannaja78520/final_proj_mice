@@ -96,6 +96,22 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     o.hornBehind = (far[2] - horn[2]).toFixed(1);
     document.getElementById("servoView").checked = false;
     o.offPlain = servoPlayPose(far, 20)[2] === far[2];
+    // settle: the plan turns a corner, the lagging horns cut it into a part
+    // of the robot (a stand-in obstacle where only the cut corner passes)
+    var A = RIG.home.slice(), B = A.slice(), C = A.slice();
+    B[2] = clampJ(2, A[2] + 60); C[2] = B[2]; C[3] = clampJ(3, A[3] + 60);
+    var d2 = B[2] - A[2], d3 = C[3] - A[3], realHit = collisionAt;
+    collisionAt = function(p){ var u = (p[2] - A[2]) / d2, v = (p[3] - A[3]) / d3;
+      return u > 0.85 && u < 0.985 && v > 0.02 && v < 0.15; };
+    var K = [{pose: A, t: 0, hold: 0}, {pose: B, t: 200, hold: 0}, {pose: C, t: 200, hold: 0}];
+    o.planClear = [0.25, 0.5, 0.75].every(function(f){
+      return !collisionAt(A.map(function(x, j){ return x + (B[j] - x) * f; })) &&
+             !collisionAt(B.map(function(x, j){ return x + (C[j] - x) * f; })); });
+    o.cutHits = ServoFollow.trace(K, {hits: true}).moves.some(function(m){ return m.hitMs; });
+    o.settled = ServoFollow.settle(K);
+    o.afterHits = ServoFollow.trace(K, {hits: true}).moves.some(function(m){ return m.hitMs; });
+    o.longer = K[1].t + K[2].t > 400;
+    collisionAt = realHit;
     report(Object.keys(o).map(function(k){ return k + "=" + o[k]; }).join("~"));
     report("done");
   }catch(e){ report("ERR-" + String(e && e.stack || e).slice(0,160).replace(/~/g, "_")); report("done"); }
@@ -142,3 +158,7 @@ def run(t):
          "the fast move's chip is marked and the status line says the servos fall behind", v)
     t.ok(float(v["hornBehind"]) > 10, "Play like the real servos shows the horn %s deg behind" % v["hornBehind"], v)
     t.ok(v["offPlain"] == "true", "and unticked it shows the plan itself", v)
+    t.ok(v["planClear"] == "true" and v["cutHits"] == "true",
+         "a corner the plan turns cleanly is cut by the lagging horns into the robot", v)
+    t.ok(int(v["settled"]) > 0 and v["afterHits"] == "false" and v["longer"] == "true",
+         "settle lengthens those moves until the horns pass clear (%s moves)" % v["settled"], v)

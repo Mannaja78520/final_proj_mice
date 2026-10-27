@@ -51,6 +51,18 @@ nothing - waiting for the lab.
 - [ ] A26-92: RELAX not releasing TD8135MG (user: diagnose only, do not fix yet).
 - [ ] A16-1: the 4-bar's own curve with a ruler.
 - [ ] A20-3: one nong on two ESP32 boards (link + peer), needs 2 boards + RS485 pair.
+- [ ] A48-23 fast moves with music (user 2026-10-27: the 60 deg/s cap came after the arm hit
+      something on 2026-09-17; start slow, raise step by step). Flash the A48-23 firmware first.
+      Hand on STOP the whole time (Studio Stop, or type `STOP`: it also ends the fast pace).
+      In Studio's Timing card set "Speed limit with music" for one cheer dance (cheer v3), then
+      Save to robot and play it, at each step: 90, 180, 270 deg/s, then 0 (the servos' top speed).
+      `PACE?` during the song must say `PACE MUSIC cap=...`, and after it `PACE NORMAL cap=60`.
+      Watch the hands passing each other and the elbows; stop at the first knock, buzz or
+      brown-out and write the last good number here. That number is the user's choice for
+      music_dps (`CFG music_dps N`), never higher than that.
+- [ ] A48-24: measure servo delay and speed-up per joint (film a 90 deg step at 240 fps, or
+      read the board's position if it has one) and put them in Setup > rig (delay ms,
+      speed-up deg/s2); Studio's "Play like the real servos" and tools/nong_sim use them.
 
 ### 3. Lift board
 - [ ] A7-8 / A24-10: RGB strip (RGB 255 0 0, RGB EFFECT rainbow) and speaker (PLAY, VOL).

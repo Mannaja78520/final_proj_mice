@@ -3,7 +3,9 @@
 // Bodies are capsules along the arm segments (radii from the built-in
 // shapes) with a small safety margin. Checked for every keyframe AND along
 // the interpolated path between keyframes (collisions often happen mid-move).
-const CLEAR = 4;         // safety margin (mm)
+// Safety margin (mm): anything closer counts as a hit. 5 mm for servo
+// backlash (user 2026-10-27); the value is DATA, safe_path.json clearMm.
+let CLEAR = 5;
 const R_ARM = 14, R_WRIST = 16, R_HEAD = 46;
 
 function distToBox(p, hx, hy, hz) { // 0 = inside the torso box

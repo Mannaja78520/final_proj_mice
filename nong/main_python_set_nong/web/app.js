@@ -3033,7 +3033,9 @@ class StudioCollisionGeometry {
 // Bodies are capsules along the arm segments (radii from the built-in
 // shapes) with a small safety margin. Checked for every keyframe AND along
 // the interpolated path between keyframes (collisions often happen mid-move).
-const CLEAR = 4;         // safety margin (mm)
+// Safety margin (mm): anything closer counts as a hit. 5 mm for servo
+// backlash (user 2026-10-27); the value is DATA, safe_path.json clearMm.
+let CLEAR = 5;
 const R_ARM = 14, R_WRIST = 16, R_HEAD = 46;
 
 function distToBox(p, hx, hy, hz) { // 0 = inside the torso box
@@ -3162,6 +3164,7 @@ function checkCollisions(showAlert) {
 // in qc/checks/check_safe_path.py.
 let SAFE = {
   planner: "rrt-star",      // "straight" refuses; rrt-connect remains available
+  clearMm: 5,               // every check: closer than this is a hit (CLEAR)
   musicGapMm: 0,            // extra gap at the music pace: fast moves cut corners (nong_sim)
   checkDeg: 1,              // biggest joint change between two checked points
   stepDeg: 12,              // how far a tree grows per try
@@ -3181,7 +3184,7 @@ function loadSafeSettings(j) {
   const bounds = { checkDeg: [0.05, 10], stepDeg: [0.1, 180], goalBias: [0, 1],
     budgetMs: [1, 30000], liveBudgetMs: [1, 5000], shortcuts: [0, 500],
     seed: [0, 4294967295], seedBudgetMs: [0, 100], optimizeMs: [0, 1000],
-    sliceMs: [1, 50], maxNodes: [2, 10000], rewireFactor: [1, 5], musicGapMm: [0, 100] };
+    sliceMs: [1, 50], maxNodes: [2, 10000], rewireFactor: [1, 5], musicGapMm: [0, 100], clearMm: [0, 50] };
   if (!j || typeof j !== "object") { SAFE_ERROR = "invalid path settings"; return false; }
   const next = { ...SAFE };
   for (const key of Object.keys(SAFE)) if (key in j) next[key] = j[key];
@@ -3194,7 +3197,7 @@ function loadSafeSettings(j) {
       SAFE_ERROR = "invalid path setting: " + key; return false;
     }
   }
-  Object.assign(SAFE, next); SAFE_ERROR = ""; return true;
+  Object.assign(SAFE, next); SAFE_ERROR = ""; CLEAR = SAFE.clearMm; return true;
 }
 fetch("safe_path.json").then(r => r.json()).then(loadSafeSettings).catch(() => {});
 function safeRevision() { return JSON.stringify([SAFE, SAFE_ERROR, RIG]); }
@@ -4461,7 +4464,11 @@ const musicPace = {
   // it, and only as much more as the servos need when it does not.
   retime() {
     bumpKeys();
-    keys.forEach((k, i) => { if (k.musicMs > 0) k.t = Math.max(k.musicMs, keyMin(i)); });
+    keys.forEach((k, i) => {
+      if (k.musicMs > 0) { delete k.servoMs; k.t = Math.max(k.musicMs, keyMin(i)); }
+    });
+    // faster moves may now let the lagging arm touch: lengthen those again
+    if (planPace() === "music") ServoFollow.settle(keys.filter(k => !k.off));
   },
   // the moves that cannot keep up at this cap: [{i, behindMs, why}]
   late() {
@@ -4472,7 +4479,9 @@ const musicPace = {
       const want = k.musicMs > 0 ? k.musicMs : null;
       if (want == null) return;
       const w = minTimeWhy(keys[i - 1].pose, k.pose);
-      if (w.ms > want + 10) out.push({ i, behindMs: w.ms - want, why: w.why });
+      if (k.servoMs > Math.max(want, w.ms) + 10)
+        out.push({ i, behindMs: k.servoMs - want, why: "the real servos: at full speed the hands would touch" });
+      else if (w.ms > want + 10) out.push({ i, behindMs: w.ms - want, why: w.why });
     });
     return out;
   },
@@ -4542,7 +4551,9 @@ class ServoFollow {
   }
   // The whole list K played at the board's frame: for every move, how far the
   // horns trailed the timeline at worst, and on which joint.
-  static trace(K) {
+  // opts.hits: also check the HORNS' pose for touching (every other frame,
+  // ~0.3 ms a check): the plan can be clear while the lagging arm is not.
+  static trace(K, opts = {}) {
     if (!K.length) return { moves: [], worst: null };
     const f = new ServoFollow(K[0].pose), dt = SERVO_VIEW.frameMs;
     const end = easeKeys(K, Infinity).end || 0, starts = [];
@@ -4558,8 +4569,27 @@ class ServoFollow {
         if (e > mv.deg) { mv.deg = e; mv.joint = j; }
         if (!worst || e > worst.deg) worst = { deg: e, joint: j, move: m + 1, ms };
       }
+      const mv = moves[Math.min(m + 1, K.length - 1)];
+      if (opts.hits && !mv.hitMs && (ms / dt) % 2 === 0 && collisionAt(got)) mv.hitMs = ms;
     }
     return { moves, worst };
+  }
+  // A show that follows its song may move faster than the real arm can follow
+  // without its hands meeting (nong_sim found 0-4 touches per cheer dance,
+  // 2026-10-27). Lengthen each move where the HORNS touch, a little at a
+  // time, until none does; k.servoMs keeps that floor so later re-timing
+  // (music_pace.js) honours it. Returns how many moves it lengthened.
+  static settle(K, tries = 6) {
+    const longer = new Set();
+    for (let n = 0; n < tries; n++) {
+      const hit = ServoFollow.trace(K, { hits: true }).moves
+        .map((mv, i) => (mv.hitMs ? i : -1)).filter(i => i > 0);
+      if (!hit.length) break;
+      for (const i of hit) {
+        K[i].t = Math.round(K[i].t * 1.3); K[i].servoMs = K[i].t; longer.add(i);
+      }
+    }
+    return longer.size;
   }
 }
 
@@ -10781,10 +10811,12 @@ function vidBuildAtPace(fit, picks, opts) {
   // each move's time on the song, after detours split it: what the speed
   // limit with music is measured against later (music_pace.js)
   if (opts.music) safe.keys.forEach((k, i) => { if (i) k.musicMs = k.t; });
+  // then give the real, lagging servos room where the hands would meet
+  const settled = opts.music ? ServoFollow.settle(safe.keys) : 0;
   if (opts.music && safe.keys.length)            // the file keeps the pace
     safe.keys[0].cues = (safe.keys[0].cues || []).filter(c => !/^pace:/i.test(c)).concat(musicPace.cue());
   // start: the first kept move's moment, where these moves meet the video
-  const made = { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, keepMusic: opts.music, quality: fit.quality || null };
+  const made = { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, settled, keepMusic: opts.music, quality: fit.quality || null };
   if (fit.targets) made.achieved = VideoRigFitter.assess(fit, made);
   if (made.achieved && made.quality) made.quality.worstBoneDegrees = made.achieved.worstBoneDegrees;
   return made;

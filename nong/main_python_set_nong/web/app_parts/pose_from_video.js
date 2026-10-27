@@ -525,10 +525,12 @@ function vidBuildAtPace(fit, picks, opts) {
   // each move's time on the song, after detours split it: what the speed
   // limit with music is measured against later (music_pace.js)
   if (opts.music) safe.keys.forEach((k, i) => { if (i) k.musicMs = k.t; });
+  // then give the real, lagging servos room where the hands would meet
+  const settled = opts.music ? ServoFollow.settle(safe.keys) : 0;
   if (opts.music && safe.keys.length)            // the file keeps the pace
     safe.keys[0].cues = (safe.keys[0].cues || []).filter(c => !/^pace:/i.test(c)).concat(musicPace.cue());
   // start: the first kept move's moment, where these moves meet the video
-  const made = { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, keepMusic: opts.music, quality: fit.quality || null };
+  const made = { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, settled, keepMusic: opts.music, quality: fit.quality || null };
   if (fit.targets) made.achieved = VideoRigFitter.assess(fit, made);
   if (made.achieved && made.quality) made.quality.worstBoneDegrees = made.achieved.worstBoneDegrees;
   return made;

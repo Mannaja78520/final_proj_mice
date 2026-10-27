@@ -36,7 +36,11 @@ const musicPace = {
   // it, and only as much more as the servos need when it does not.
   retime() {
     bumpKeys();
-    keys.forEach((k, i) => { if (k.musicMs > 0) k.t = Math.max(k.musicMs, keyMin(i)); });
+    keys.forEach((k, i) => {
+      if (k.musicMs > 0) { delete k.servoMs; k.t = Math.max(k.musicMs, keyMin(i)); }
+    });
+    // faster moves may now let the lagging arm touch: lengthen those again
+    if (planPace() === "music") ServoFollow.settle(keys.filter(k => !k.off));
   },
   // the moves that cannot keep up at this cap: [{i, behindMs, why}]
   late() {
@@ -47,7 +51,9 @@ const musicPace = {
       const want = k.musicMs > 0 ? k.musicMs : null;
       if (want == null) return;
       const w = minTimeWhy(keys[i - 1].pose, k.pose);
-      if (w.ms > want + 10) out.push({ i, behindMs: w.ms - want, why: w.why });
+      if (k.servoMs > Math.max(want, w.ms) + 10)
+        out.push({ i, behindMs: k.servoMs - want, why: "the real servos: at full speed the hands would touch" });
+      else if (w.ms > want + 10) out.push({ i, behindMs: w.ms - want, why: w.why });
     });
     return out;
   },
