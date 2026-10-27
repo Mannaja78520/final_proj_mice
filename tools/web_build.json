@@ -53,7 +53,8 @@
       "distances.js",
       "talk_gestures.js",
       "main_loop.js",
-      "boot.js"
+      "boot.js",
+      "panels.js"
     ]
   },
   "pages": [
@@ -88,6 +89,7 @@
       "path": "main_python/web/help",
       "out": "main_python/web/help.html",
       "js": [
+        "topics.js",
         "search.js"
       ]
     }

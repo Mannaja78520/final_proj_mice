@@ -21,6 +21,10 @@ def run(t):
     reg = json.loads((F.CODE / "main_python" / "web" / "previews" / "previews.json").read_text(encoding="utf-8"))
     base, main = F.start_hub()
     roots = {"studio": F.CODE / "nong" / "main_python_set_nong" / "web", "hub": F.CODE / "main_python" / "web"}
+    # No trial open right now is fine (Help and Studio were kept, A49-1/A49-3);
+    # the shared strip stays for the next one.
+    t.ok(isinstance(reg.get("previews"), list) and (F.CODE / "main_python" / "web" / "previews" / "trial_bar.js").is_file(),
+         "the list of trials reads, and the shared trial strip is there for the next one", reg.get("previews"))
     for p in reg["previews"]:
         code, page = F.get(base + p["path"])
         added = all(("/hubweb/previews/" + f) in page for f in p["add"])

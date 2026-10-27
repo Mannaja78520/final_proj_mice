@@ -23,7 +23,9 @@ window.addEventListener('load',async()=>{
    await mark('camera_empty_after_success',!d.getElementById('none').hidden);
   }
   {
-   const {w,d}=await frame('/app/tv/',w=>w.app);
+   // Wait out the page's first poll: still in flight, it met the fakes below,
+   // cleared activeDev and playSequence returned before asking (~1 run in 4).
+   const {w,d}=await frame('/app/tv/',w=>w.app&&w.app.pollTimer&&!w.app.pollBusy);
    const a=w.app;clearInterval(a.pollTimer);a.poll=()=>{};a.activeDev='usb:COM99';a.modules=[{dev:a.activeDev}];
    let homes=0;w.fetch=async url=>{if(url.includes('c=HOME'))homes++;return new w.Response(JSON.stringify({running:false,error:'serial port disconnected'}));};
    await a.goHome();await mark('tv_stop_error_blocks_home',homes===0&&d.getElementById('actionStat').textContent.length>0);
@@ -49,7 +51,12 @@ window.addEventListener('load',async()=>{
    await mark('log_empty_after_success',body.textContent.includes('ยังไม่มี'));
   }
   {
-   const {w,d}=await frame('/mod?dev=usb%3ACOM99',w=>typeof w.liftStatus==='function'&&typeof w.runSel==='function');
+   // The fake board on COM99 is a nong: a status that lands after the fault
+   // below (the first /api/status fetch, or the twice-a-second push) says "no
+   // fault" and re-enabled the buttons, ~1 run in 3. Wait for the first status,
+   // then stop the push, so the fault is the last thing the "board" said.
+   const {w,d}=await frame('/mod?dev=usb%3ACOM99',w=>typeof w.liftStatus==='function'&&typeof w.runSel==='function'&&w.eval('lastHeard!==null'));
+   w.eval('if(W){W.onclose=null;W.onmessage=null;W.close();}');
    const fault={state:'fault',fault:'home_timeout',stage:-1,stages:4,enc:false,homed:false};w.liftStatus(fault);
    await mark('lift_fault_visible',!d.getElementById('liftFault').hidden&&d.getElementById('stg').textContent==='?');
    const moves=[...d.querySelectorAll('#liftCard [data-lift-motion],#gotoBtns button')];

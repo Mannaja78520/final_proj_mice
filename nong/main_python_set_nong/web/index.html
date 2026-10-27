@@ -143,7 +143,7 @@
 
     <div class="card" data-stab="login" id="loginCard" style="display:none;">
       <h2>Login Required</h2>
-      <div class="mini">You must log in to configure or control the robot. Posing and sequencing are available without login.</div>
+      <div class="mini">Log in for the settings that move or change the real robot. Posing, sequencing and the settings below this box need no login.</div>
       <div class="row" style="margin-top:12px;">
         <span class="lbl">Username</span><input id="loginUser" style="flex:1">
       </div>
@@ -601,7 +601,7 @@
     </div><!-- /tabMove -->
 
     <div id="tabSetup" style="display:none">
-    <div class="card" data-stab="setup">
+    <div class="card" data-stab="setup" id="setupModelCard">
       <h2>Model (STL + texture)</h2>
       <div class="mini">Export STL from SolidWorks (mm) into <b>models/</b> and press ⟳,
         or pick a file here and press Import (also accepts <b>PNG/JPG textures</b> —
@@ -723,7 +723,7 @@
       <div class="statline" id="trimStat"></div>
     </div>
 
-    <div class="card" data-stab="setup">
+    <div class="card" data-stab="setup" id="setupSavingCard">
       <h2>Saving</h2>
       <div class="mini">One Save writes both files under one name: the .yaml the robot
         plays and the .json you edit later.</div>

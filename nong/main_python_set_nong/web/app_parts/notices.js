@@ -32,6 +32,14 @@ function clearNotice() {
   if (box) box.hidden = true;      // noticeSaid is kept: see notice()
 }
 
+// Cards that open without a login: ids listed in settings_open.json beside
+// this page (A49-2). Only cards that never reach the real robot are listed.
+let OPEN_WITHOUT_LOGIN = [];
+fetch("settings_open.json").then(r => r.json()).then(j => {
+  OPEN_WITHOUT_LOGIN = Array.isArray(j.open) ? j.open : [];
+  if (!currentUser) showTab(sideTab);
+}).catch(() => {});        // no file: every robot/setup card needs the login
+
 function showTab(which) {
   if (which === "move") which = "pose";          // the old name
   if (!STAB_BTN[which]) which = "pose";
@@ -48,7 +56,12 @@ function showTab(which) {
   $("tabMove").style.display = "";
   $("tabSetup").style.display = "";
   document.querySelectorAll("[data-stab]").forEach(el => {
-    el.style.display = el.dataset.stab === renderWhich ? "" : "none";
+    // a card taken out to its own window (panels.js) shows on every tab,
+    // still behind the login if its own tab needs one
+    const tab = el.classList.contains("floating") ? el.dataset.stab : which;
+    const shows = (!currentUser && (tab === "robot" || tab === "setup")) ? "login" : tab;
+    const open = shows === "login" && el.dataset.stab === tab && OPEN_WITHOUT_LOGIN.includes(el.id);
+    el.style.display = (el.dataset.stab === (el.classList.contains("floating") ? shows : renderWhich) || open) ? "" : "none";
   });
   
   const userCard = $("userManageCard");
