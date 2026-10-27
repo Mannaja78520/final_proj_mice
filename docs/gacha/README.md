@@ -125,3 +125,20 @@ result, reason, message, event, time`.
 
 `firmware/COMMANDS.md` ▸ gacha module: `GDISPENSE`, `G?`, `GSTOCK`, `GEVENT`,
 `GCFG`... over HTTP `/api/cmd` or RS485 `#<id> ...`.
+
+### USB, RS485 and WiFi: the same commands, the same update (A47-19)
+
+A gacha board is a normal module: USB serial, the RS485 bus (`#<id> ...`) and
+WiFi (`/api/cmd`, login first) all feed the one command router, so every
+command above works on all three. Firmware updates too: the hub's firmware
+page sends `mice_gacha` by cable (esptool), over WiFi (`/api/ota`) or as
+`FWBEGIN/FWDATA/FWEND` commands over the bus or a cable (`firmware/src/core/BusUpdate.h`).
+A machine row is found by its module name over the fastest live route; set
+`dev` (`usb:COM5`, `usb:COM21:70`, `wifi:192.168.137.40`) only to pin one.
+QC: `check_gacha_routes`.
+
+**A bare ESP32 standing in for a machine** (no motor, no hall): flash
+`mice_gacha`, then `GCFG fallback 800` - it turns by time instead of waiting for
+a magnet and reports `timed`. `given_results` in `config/gacha.json` counts
+`timed` as a prize given; `GCFG fallback 0` on a real machine (the default),
+where only a magnet may decide.
