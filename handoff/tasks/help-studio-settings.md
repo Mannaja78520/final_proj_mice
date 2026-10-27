@@ -13,7 +13,7 @@ User 2026-10-23 06:37Z: "help ดีแล้วแต่ทำ group ให้�
 พวก ช่องอื่นๆ ด้วยและ setting ขอให้มีแบบไม่ใส่รหัสสำหรับ setting ที่ไม่ซีเรียสกับหุ่นจริง ใส่รหัสกับที่ซีเรียสจริงๆ"
 
 ## Doing now
-A49-1 Help groups: built and QC'd alone; full QC, PR, merge next.
+A49-2 Settings split next (Studio Setup tab): data file of cards that open without a login.
 
 ## File status
 Baseline: origin/main 023c644
@@ -40,7 +40,9 @@ Baseline: origin/main 023c644
   Setting iframe src that differs only in #part does not reload (no onload).
 
 ## Done
-- (none merged yet)
+- A49-1 Help groups: full QC 8752 pass; failing on main too (not ours, verified in a clean origin/main
+  worktree 2026-10-27): check_race_guards "abandoned clock" (2 asserts) and check_responsive /app/tv/ at
+  320px (#btnModeTech 42px too wide). Flaky in crowd, green alone: check_safe_motion, check_loop_return.
 
 ## Next
 1. Full QC, PR, merge A49-1. 2. A49-2 settings split (data file of open cards). 3. A49-3 Studio panels.

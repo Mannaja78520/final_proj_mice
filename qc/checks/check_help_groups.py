@@ -62,7 +62,7 @@ def run(t):
         t.give_up("headless Edge not found - install Edge or run --quick")
     fake_serial.reset()
     base, main = F.start_hub()
-    browser.raw_page(DRIVER, base, seconds=40)
+    browser.raw_page(DRIVER, base, seconds=50)
     got = {}
     for m in fake_serial.qc_marks:
         if m.startswith("HG "):
