@@ -19,8 +19,8 @@ HERE = Path(__file__).resolve().parent
 
 
 class PlannerRun:
-    def __init__(self, variant, scenario, facts):
-        self.variant, self.scenario, self.facts = variant, scenario, facts
+    def __init__(self, variant, scenario, facts, extra_mm):
+        self.variant, self.scenario, self.facts, self.extra_mm = variant, scenario, facts, extra_mm
         self.safe_dps = scenario["safeDps"] or facts.max_dps
 
     def make_keys(self, folder, dance, out_path, repeats):
@@ -30,7 +30,7 @@ class PlannerRun:
             out_path.parent.mkdir(parents=True, exist_ok=True)
             subprocess.run(["node", str(HERE / "planner.cjs"), str(Path(folder) / f"{dance}_analysis.json"),
                             str(Path(folder) / f"{dance}.json"), str(out_path), str(self.safe_dps),
-                            "1" if self.variant["music"] else "0", str(repeats)], check=True)
+                            "1" if self.variant["music"] else "0", str(self.extra_mm), str(repeats)], check=True)
         return json.loads(out_path.read_text(encoding="utf-8"))
 
     @staticmethod

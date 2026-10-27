@@ -127,7 +127,7 @@ class TorchRig:
         self.clear = f.clear_mm + (r.get("extraClearanceMm") or 0)
         self.torso = (torch.tensor([0, -d["torsoH"] / 2, 0.0], device=self.device, dtype=self.dtype),
                       torch.tensor([0, d["torsoH"] / 2, 0.0], device=self.device, dtype=self.dtype),
-                      max(d["torsoW"], d["torsoD"]) / 2)
+                      math.hypot(d["torsoW"], d["torsoD"]) / 2)   # the box corner: never thinner than Studio
         self.head = (torch.tensor([0, d["torsoH"] / 2 + 68, 0.0], device=self.device, dtype=self.dtype), f.head_r)
 
     def _parts(self, pts, side):

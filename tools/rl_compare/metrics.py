@@ -17,11 +17,12 @@ import numpy as np
 import torch
 
 from .kin import angle_deg
+from .reference import DenseReference
 
 
 class Scorer:
-    def __init__(self, dance, rig, kin, cfg, hz):
-        self.dance, self.rig, self.kin, self.cfg, self.hz = dance, rig, kin, cfg, hz
+    def __init__(self, dance, rig, kin, cfg, hz, gap_mm):
+        self.dance, self.rig, self.kin, self.cfg, self.hz, self.gap = dance, rig, kin, cfg, hz, gap_mm
         inside = dance.times <= dance.length + 1e-9
         self.t = dance.times[inside]
         self.want = torch.tensor(dance.bones[inside], dtype=kin.dtype, device=kin.device)
@@ -58,6 +59,17 @@ class Scorer:
         for i in range(n - 1, 0, -1):
             path[i - 1] = arg[i, path[i]]
         return path
+
+    def per_frame(self, q):
+        """Mean seen-bone error at every board frame (for the video overlay)."""
+        dense = DenseReference(self.dance, self.hz, pad_s=0)
+        q = q.to(self.kin.device, self.kin.dtype)
+        n = min(len(q), len(dense.bones))
+        got = self._bones(q[:n])
+        want = torch.as_tensor(dense.bones[:n], dtype=got.dtype)
+        ok = torch.as_tensor(dense.arm_ok[:n])[..., None].expand(n, 2, 2).to(got.dtype)
+        err = (angle_deg(got, want) * ok).sum((1, 2)) / ok.sum((1, 2)).clamp_min(1)
+        return err.cpu().numpy()
 
     def score(self, q, c):
         """q, c: (F, 10) tensors at self.hz from music time 0."""
@@ -104,7 +116,8 @@ class Scorer:
             "limitHits": int(np.count_nonzero(np.diff(on_stop.astype(int)) == 1) + int(on_stop[0])),
             "minGapMmApprox": float(gaps.min()),
             "touchFramesApprox": int((gaps < 0).sum()),
-            "collisionFramesApprox": int((gaps < (self.cfg.get("collisionMm") or self.kin.clear)).sum()),
+            "collisionFramesApprox": int((gaps < self.gap).sum()),
+            "gapMm": self.gap,
             "curve": {"t": self.t.round(3).tolist(), "boneMusic": (now * w).sum((-1, -2)).div(w.sum((-1, -2)).clamp_min(1)).cpu().numpy().round(2).tolist(),
                       "driftS": drift.round(3).tolist()},
         }

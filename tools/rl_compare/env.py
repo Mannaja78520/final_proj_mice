@@ -35,7 +35,7 @@ class DanceEnv:
         self.mid, self.half = (self.lo + self.hi) / 2, (self.hi - self.lo) / 2
         self.w = cfg["reward"]
         self.near = cfg.get("nearMm", 10.0)
-        self.collision = cfg.get("collisionMm") or kin.clear     # user 2026-10-27: 5 mm for servo backlash
+        self.collision = cfg["collisionMm"]          # the scenario's gap (user 2026-10-27: servo backlash)
         self.obs_dim = self.observe_dim()
 
     # ---- state ---------------------------------------------------------
@@ -90,7 +90,7 @@ class DanceEnv:
         return self.observe(pts), reward, done, trunc & ~done
 
     def _reward(self, pts, a, c):
-        w, i = self.w, self.t
+        w, i = self.w, self.t.clamp(max=self.bones.shape[0] - 1)
         ang = torch.deg2rad(angle_deg(self.kin.bones(pts), self.bones[i]))            # (n, 2, 2)
         seen = self.arm_ok[i][..., None].expand_as(ang).to(ang.dtype)
         mse = (ang ** 2 * seen).sum((1, 2)) / seen.sum((1, 2)).clamp_min(1)
@@ -100,7 +100,7 @@ class DanceEnv:
         body = torch.where(self.body_ok[i], torch.exp(-berr / (2 * w["bodySigmaDeg"] ** 2)), torch.ones_like(berr))
         smooth = torch.exp(-w["smoothScale"] * ((a - self.prev_a) ** 2).mean(1))
         gap = self.kin.clearance(pts)
-        near = ((self.near - gap) / (self.near - self.collision)).clamp(0, 1)
+        near = ((self.near - gap) / (max(1e-6, self.near - self.collision))).clamp(0, 1)
         on_stop = ((c <= self.lo + 0.5) | (c >= self.hi - 0.5)).to(c.dtype).mean(1)
         r = w["bone"] * bone + w["body"] * body + w["smooth"] * smooth - w["near"] * near - w["limit"] * on_stop
         return r, gap < self.collision
