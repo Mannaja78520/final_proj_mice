@@ -13,25 +13,26 @@ fitted"; can it generate new moves itself for words with no gesture
 (ด้านขวา / ด้านซ้าย / ข้างบน), fitted, collision-checked, keepable.
 
 ## Doing now
-Step 1: gestures.py at-least-one-beat + make() rules (config/gesture_makers.json),
-hub routes /api/gestures/make (open) and /api/gestures/think (gated, AI via
-voice helper /gesture), plan accepts `extra` (unsaved made gestures).
+Quick QC, then full QC, PR, merge, tell coordinator (PC rebuild).
 
 ## File status
 Baseline: ecf48c2
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| `main_python/gestures.py` | at-least-one beat; make(); clean_keys(); extra in plan | pending | not run | uncommitted |
-| `config/gesture_makers.json` | rules for directions/body parts + AI prompt | pending | not run | uncommitted |
-| `main_python/hub_api_studio.py` | /api/gestures/make, /think, plan extra | pending | not run | uncommitted |
-| `main_python/hub_auth.py` | gate /api/gestures/think | pending | not run | uncommitted |
-| `apps/voice/service.py` | /gesture route: think chain with given prompt | pending | not run | uncommitted |
-| `nong/main_python_set_nong/web/app_parts/talk_gestures.js` | Show speaks + plays; made moves offer | pending | not run | uncommitted |
-| `nong/main_python_set_nong/web/html_parts/talk.html` | AI switch, made-moves box | pending | not run | uncommitted |
-| `nong/main_python_set_nong/web/app_parts/timeline.js` | togglePlay({previewOnly}) | pending | not run | uncommitted |
-| `qc/checks/check_gestures.py` | new cases | pending | not run | uncommitted |
-| help parts | Studio talk card help | pending | not run | uncommitted |
+| `main_python/gestures.py` | atLeast beat; make(); clean_made(); with_extra(); rests/restStyle | done | check_gesture_make 16/16 + sabotage 7/7 caught (simulated) | this checkpoint |
+| `config/gesture_makers.json` | new: rules for directions/body parts + AI prompt | done | check_gesture_make | this checkpoint |
+| `config/gestures.json` | rests.straight, restStyle, atLeast | done | check_gesture_make | this checkpoint |
+| `main_python/hub_api_studio.py` | /api/gestures/make, /think, plan extra | done | check_gesture_make | this checkpoint |
+| `main_python/hub_auth.py` | gate /think, never-gate /make | done | check_gesture_make (401 logged out) | this checkpoint |
+| `apps/voice/service.py` | /gesture route + Brain.free_think (think chain) | done | faked helper only; real helper not run | this checkpoint |
+| `nong/main_python_set_nong/web/app_parts/talk_gestures.js` | Show speaks + previews; made moves; rest select; AI switch | done | check_gesture_make (headless browser) | this checkpoint |
+| `nong/main_python_set_nong/web/html_parts/talk.html` | rest select, AI switch, #talkMade | done | check_gesture_make | this checkpoint |
+| `nong/main_python_set_nong/web/app_parts/timeline.js` | togglePlay({previewOnly}) skips robot | done | check_gesture_make | this checkpoint |
+| `nong/main_python_set_nong/web/index.html`, `app.js` | built | done | build_web | this checkpoint |
+| `qc/checks/check_gesture_make.py` | new check | done | 16 pass | this checkpoint |
+| `main_python/web/help/parts/studio.html`, `main_python/web/help.html` | help section 7 | done | quick QC pending | this checkpoint |
+| `docs/systems.json`, `docs/systems/*` | gesture_makers.json owned by hub-studio | done | systems build | this checkpoint |
 
 ## Facts found
 - main_python/gestures.py plan(): total = max(800, len/cps*1000); beats
@@ -53,7 +54,7 @@ Baseline: ecf48c2
   stops live sends.
 
 ## Done
-- nothing yet
+- all code + check; quick/full QC pending
 
 ## Next
 1. Step 1 above, then Studio JS, help, QC, PR.

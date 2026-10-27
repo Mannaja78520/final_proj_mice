@@ -847,7 +847,8 @@ function keepAwake(on) {
   } catch (e) { /* never let this break playback */ }
 }
 
-async function togglePlay() {
+// opts.previewOnly: draw only, never drive the arm (the talk card's Show, A46-4)
+async function togglePlay(opts = {}) {
   if (timelinePreparing) { timelinePreparing=false;cancelSafeMotion("planning cancelled");return; }
   if (!playing) {
     const epoch=safeMotionEpoch;
@@ -870,7 +871,8 @@ async function togglePlay() {
   // question, and it is asked only when something is actually connected.
   if (!playing) {
     previewOnly = !checkedTimeline();
-    if (checkCollisions(false).length && (liveLinked() || hubDriven())) {
+    if (opts.previewOnly) previewOnly = true;
+    else if (checkCollisions(false).length && (liveLinked() || hubDriven())) {
       previewOnly = !crashGate("PLAY it on the robot");
       if (previewOnly) {
         const st = $("tlStat");
@@ -899,7 +901,7 @@ async function togglePlay() {
   //
   // So: taking control here always stops the module first, and giving up
   // control always stops the module too. Never two clocks on one robot.
-  stopRobotSequence();
+  if (!opts.previewOnly) stopRobotSequence();   // a preview leaves the robot alone
   if (!playing) { livePause(); return; }
   // The HUB plays it when the link goes through the hub: a native process,
   // never throttled, so the show survives this page being hidden or closed —

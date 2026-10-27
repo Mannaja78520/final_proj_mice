@@ -11,8 +11,8 @@
   // "side": whose right is "right": "robot" (its own right hand side) or
   // "viewer" (the person facing it, so the robot points to its own left).
   "side": "robot",
-  // words at most this many characters apart join into one move
-  "joinChars": 3,
+  // words at most this many characters apart join into one move (a space)
+  "joinChars": 1,
   // the arm used when no word says a side
   "arm": "R",
   // how far the hand reaches when it points, in arm lengths

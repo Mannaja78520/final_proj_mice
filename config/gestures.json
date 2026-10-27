@@ -63,9 +63,9 @@
   ]},
   // Other resting hands Studio offers (A46-4, user 2026-10-27: *ทำตัวเลือก*,
   // Home/Neutral is standing straight). "restStyle" picks one; "" = "rest".
-  // A key {"home": true} is the rig's own Home pose, exactly.
+  // A key with no hand in it holds both arms at the rig's own Home.
   "rests": {
-    "straight": {"label": "Standing straight (Home)", "keys": [{"home": true, "t": 600}]}
+    "straight": {"label": "Standing straight (Home)", "keys": [{"t": 600}]}
   },
   "restStyle": "",
   // A line too short for any beat still gets this many gestures (A46-4).

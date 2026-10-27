@@ -4917,7 +4917,8 @@ function keepAwake(on) {
   } catch (e) { /* never let this break playback */ }
 }
 
-async function togglePlay() {
+// opts.previewOnly: draw only, never drive the arm (the talk card's Show, A46-4)
+async function togglePlay(opts = {}) {
   if (timelinePreparing) { timelinePreparing=false;cancelSafeMotion("planning cancelled");return; }
   if (!playing) {
     const epoch=safeMotionEpoch;
@@ -4940,7 +4941,8 @@ async function togglePlay() {
   // question, and it is asked only when something is actually connected.
   if (!playing) {
     previewOnly = !checkedTimeline();
-    if (checkCollisions(false).length && (liveLinked() || hubDriven())) {
+    if (opts.previewOnly) previewOnly = true;
+    else if (checkCollisions(false).length && (liveLinked() || hubDriven())) {
       previewOnly = !crashGate("PLAY it on the robot");
       if (previewOnly) {
         const st = $("tlStat");
@@ -4969,7 +4971,7 @@ async function togglePlay() {
   //
   // So: taking control here always stops the module first, and giving up
   // control always stops the module too. Never two clocks on one robot.
-  stopRobotSequence();
+  if (!opts.previewOnly) stopRobotSequence();   // a preview leaves the robot alone
   if (!playing) { livePause(); return; }
   // The HUB plays it when the link goes through the hub: a native process,
   // never throttled, so the show survives this page being hidden or closed —
@@ -10345,6 +10347,14 @@ function talkRender() {
     const o = document.createElement("option"); o.value = o.textContent = m; sel.appendChild(o);
   });
   sel.value = keep || "friendly";
+  // the resting hands to choose from (config/gestures.json rests; "" = rest)
+  const rs = $("talkRest");
+  rs.textContent = "";
+  Object.entries(L.rests || {}).forEach(([id, r]) => {
+    const o = document.createElement("option"); o.value = id; o.textContent = (r || {}).label || id; rs.appendChild(o);
+  });
+  rs.value = L.restStyle || "";
+  try { $("talkAi").checked = localStorage.getItem("talkAi") === "1"; } catch (e) { /* no storage: off */ }
   const n = Object.keys(F.gestures || {}).length, bad = Object.keys(F.bad || {});
   talkSay(talkStale() ? "The gestures are not fitted to this robot as it is now. They will be in a moment."
     : n + " gestures fitted to this robot and kept clear of its body."
@@ -10416,26 +10426,133 @@ async function talkToBar(steps, what) {
   selKey = 0; pose = [...keys[0].pose]; poseChanged(false); renderTimeline();
   return true;
 }
+function talkAiSwitch() {
+  try { localStorage.setItem("talkAi", $("talkAi").checked ? "1" : "0"); } catch (e) { /* per-viewer only */ }
+}
+const talkPost = (url, body) => fetch(url, { method: "POST", body: JSON.stringify(body) })
+  .then(async r => Object.assign({ status: r.status }, await r.json().catch(() => ({}))));
+// A made gesture (or any definition) fitted on this robot like the library
+// is: IK, joint limits, poseHit, safeKeys + planSafe (RRT) from the resting
+// hands. {vid: fit} for the arm(s) that came out safe, or {bad} when none.
+function talkFitDef(id, def, mirror) {
+  const rest = (TALK.fit || {}).rest;
+  if (!rest || !robot) return { bad: "the gestures are not fitted yet" };
+  const restPose = rest.keys[rest.keys.length - 1].pose, saved = pose.slice();
+  const out = {}; let bad = "";
+  try {
+    for (const m of mirror ? [false, true] : [false]) {
+      const one = talkFitOne(def, m, restPose);
+      if (one.bad) bad = one.bad; else out[id + (m ? "~m" : "")] = one;
+    }
+  } finally { pose = saved; applyPose(); }
+  return Object.keys(out).length ? { fit: out } : { bad: bad || "it does not fit this robot" };
+}
+// New moves for the words no gesture has: rules first, then (switch on) the AI.
+async function talkMake(text) {
+  let made = [], why = "";
+  const r = await talkPost("/api/gestures/make", { text }).catch(e => ({ error: String(e) }));
+  if (r.ok) made = r.made || [];
+  if (!made.length && $("talkAi").checked) {
+    talkSay("Asking the AI for a move…");
+    const a = await talkPost("/api/gestures/think", { text }).catch(e => ({ error: String(e) }));
+    if (a.status === 401 || a.need_login) why = "Log in (Robot tab) to ask the AI for moves.";
+    else if (a.ok) made = a.made || [];
+    else why = "The AI made no move: " + (a.why || a.error || "no answer");
+  }
+  for (const m of made) Object.assign(m, talkFitDef(m.id, m.keys, m.mirror));
+  return { made, why };
+}
+// The sentence said in the chosen manner by the Voice page's own voice.
+// {audio, url, ms} or {why}; the moves still show without it.
+async function talkSound(text, manner) {
+  try {
+    const r = await fetch("/api/voice/say", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, lang: "", style: manner }) });
+    if (r.status === 401) return { why: "log in (Robot tab) to hear the voice" };
+    if (!r.ok) return { why: ((await r.json().catch(() => ({}))).error) || "the voice did not answer" };
+    const url = URL.createObjectURL(await r.blob()), audio = new Audio(url);
+    await new Promise((ok, no) => { audio.onloadedmetadata = ok; audio.onerror = no; });
+    return { audio, url, ms: isFinite(audio.duration) ? audio.duration * 1000 : 0 };
+  } catch (e) { return { why: "the voice could not play here" }; }
+}
 async function talkTry() {
   const text = $("talkText").value.trim();
   if (!text) { talkSay("Type something the robot might say."); return; }
+  if (TALK.audio) { TALK.audio.pause(); TALK.audio = null; }
   await talkCheckFit();
-  const j = await fetch("/api/gestures/plan", { method: "POST", body: JSON.stringify({
-    text, manner: $("talkManner").value, seed: Math.floor(Math.random() * 1e9) }) }).then(r => r.json()).catch(e => ({ why: String(e) }));
+  const manner = $("talkManner").value;
+  talkSay("Getting the voice and the moves…");
+  const [mk, snd] = await Promise.all([talkMake(text), talkSound(text, manner)]);
+  const extra = {};
+  mk.made.filter(m => m.fit).forEach(m => {
+    extra[m.id] = { label: m.label, words: m.words, keys: m.keys, mirror: m.mirror, fit: { gestures: m.fit } };
+  });
+  TALK.made = mk.made;
+  talkMadeRender(mk.why);
+  const j = await talkPost("/api/gestures/plan", { text, manner, ms: snd.ms || 0, extra,
+    seed: Math.floor(Math.random() * 1e9) }).catch(e => ({ why: String(e) }));
   if (!j.ok) { talkSay(j.why || j.error || "No gestures for that."); return; }
   if (!(await talkToBar(j.steps, "put these gestures on the time bar"))) return;
   $("talkPicks").textContent = j.picks.length
     ? j.picks.map(p => (p.at / 1000).toFixed(1) + " s " + p.label + (p.mirrored ? " (other arm)" : "") + (p.word ? " ← “" + p.word + "”" : "")).join(" · ")
-    : "No word asked for a gesture and no beat fitted.";
-  $("tlStat").textContent = "Gestures for " + (j.ms / 1000).toFixed(1) + " s of talk are on the time bar. Press Play to watch; press Show again for another random pick.";
+    : "No gesture fitted this robot for that.";
+  talkSay(snd.audio ? "Saying it with the arms." : "The moves show without sound: " + snd.why + ".");
+  // the preview plays with the sound; it never drives the robot from here
+  if (playing) await togglePlay();
+  playT = 0;
+  await togglePlay({ previewOnly: true });
+  if (snd.audio && playing) {
+    TALK.audio = snd.audio;
+    snd.audio.ontimeupdate = () => { if (!playing) snd.audio.pause(); };
+    snd.audio.onended = () => URL.revokeObjectURL(snd.url);
+    snd.audio.play().catch(() => talkSay("The browser held the sound back: press Show again."));
+  }
+  $("tlStat").textContent = "Gestures for " + (j.ms / 1000).toFixed(1) + " s of talk. Show again for another random pick; Play repeats the moves without sound.";
+}
+// The made moves: what they are for, whether they fit, ▶ and ＋ Keep.
+function talkMadeRender(why) {
+  const box = $("talkMade");
+  box.textContent = "";
+  const made = TALK.made || [];
+  if (why) { const p = document.createElement("div"); p.className = "mini"; p.textContent = why; box.appendChild(p); }
+  if (!made.length) return;
+  const h = document.createElement("div"); h.className = "mini";
+  h.textContent = "New moves made for words no gesture has:";
+  box.appendChild(h);
+  made.forEach(m => {
+    const row = document.createElement("div"); row.className = "row";
+    const name = document.createElement("span"); name.className = "lbl";
+    name.textContent = m.label + " ← “" + m.word + "”" + (m.by === "ai" ? " (AI)" : "");
+    row.appendChild(name);
+    if (!m.fit) {
+      const no = document.createElement("span"); no.className = "mini";
+      no.textContent = "not safe on this robot: " + m.bad;
+      row.appendChild(no);
+    } else {
+      const show = document.createElement("button");
+      show.textContent = "▶"; show.title = "Put this move on the time bar, fitted to this robot";
+      show.onclick = () => talkShowFitted(m.label, m.fit[Object.keys(m.fit)[0]]);
+      const keep = document.createElement("button");
+      keep.textContent = "＋ Keep"; keep.title = "Keep it as a gesture: the Voice page then uses it for these words";
+      keep.onclick = () => talkSave({ gestures: { [m.id]: { label: m.label, mine: true, made: m.by,
+        mirror: m.mirror, words: m.words, keys: m.keys } } });
+      row.append(show, keep);
+    }
+    box.appendChild(row);
+  });
 }
 async function talkShowOne(id) {
   await talkCheckFit();
-  const F = TALK.fit || {}, g = (F.gestures || {})[id], rest = F.rest;
-  if (!g || !rest) { talkSay(talkName(id) + " is not fitted to this robot: " + ((F.bad || {})[id] || "fit it first")); return; }
+  const F = TALK.fit || {}, g = (F.gestures || {})[id];
+  if (!g || !F.rest) { talkSay(talkName(id) + " is not fitted to this robot: " + ((F.bad || {})[id] || "fit it first")); return; }
+  talkShowFitted(talkName(id), g);
+}
+async function talkShowFitted(name, g) {
+  const rest = (TALK.fit || {}).rest;
+  if (!rest) return;
   const steps = [{ pose: rest.keys[rest.keys.length - 1].pose, t: 0, hold: 300 }]
     .concat(g.in, g.keys, g.out, [{ pose: rest.keys[rest.keys.length - 1].pose, t: 500, hold: 0 }]);
-  if (await talkToBar(steps, "show this gesture on the time bar")) $("tlStat").textContent = talkName(id) + " is on the time bar. Press Play to watch.";
+  if (await talkToBar(steps, "show this gesture on the time bar")) $("tlStat").textContent = name + " is on the time bar. Press Play to watch.";
 }
 // The time bar as a new gesture: its poses as they are (made on this robot),
 // checked like every other gesture when it is fitted.

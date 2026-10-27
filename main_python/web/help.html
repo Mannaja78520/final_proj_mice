@@ -921,6 +921,48 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       </div>
     </div>
   </div>
+
+  <!-- SUB-SECTION 7: MOVES WHILE TALKING (A46-1, A46-4) -->
+  <div class="info-box" id="studio-talk">
+    <div class="info-header">
+      <b>จุดที่ 7: แขนขยับตอนพูด (Moves while talking)</b>
+      <span class="info-badge">Sequence</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ลองประโยค (▶ Show)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์ประโยคที่หุ่นจะพูด เลือกสไตล์การพูด (friendly, polite, …) แล้วกด <b>▶ Show</b></div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หน้านี้พูดประโยคด้วยเสียงเดียวกับหน้า Voice และแขนในภาพ 3D ขยับพร้อมเสียง เป็นการดูตัวอย่างเท่านั้น ตัวหุ่นจริงไม่ขยับ
+          ท่าจะอยู่บน time bar ต่อ กด Play ดูซ้ำได้ (ไม่มีเสียง) ถ้ายังไม่ได้ล็อกอิน จะเห็นแค่ท่าโดยไม่มีเสียง
+          ประโยคสั้นแค่ไหนก็ได้ท่าอย่างน้อยหนึ่งท่า
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> ท่าใหม่สำหรับคำที่ยังไม่มีท่า</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์คำบอกทิศหรือส่วนของร่างกาย เช่น "ด้านขวาครับ", "ข้างบน", "หัวใจ" แล้วกด Show
+          ติ๊ก <b>Ask the AI for new moves</b> ถ้าอยากให้ AI ตัวเดียวกับหน้า Voice คิดท่าให้ เมื่อไม่มีกฎไหนเข้า (ต้องล็อกอิน)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ท่าที่สร้างขึ้นจะถูกปรับตามขนาดหุ่น ลิมิตข้อต่อ และเช็กไม่ให้ชนตัวเอง (หาทางอ้อมถ้าจำเป็น) ท่าที่ทำให้ปลอดภัยไม่ได้จะบอกเหตุผลและไม่ถูกใช้
+          กด <b>＋ Keep</b> เพื่อเก็บเป็นท่าถาวร แล้วหน้า Voice จะใช้ท่านี้กับคำนั้น คำและกฎทั้งหมดอยู่ใน <code>config/gesture_makers.json</code>
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">3</span> ท่าพักแขน (Hands between gestures)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือก <b>Hands ready</b> (ศอกงอ มืออยู่หน้าตัว) หรือ <b>Standing straight (Home)</b> (ยืนตรงแขนลง)</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          ระหว่างท่าตอนพูด แขนจะกลับมาพักที่ท่านี้ แบบพร้อมขยับได้ไวกว่า แบบยืนตรงดูนิ่งกว่า
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">4</span> รายการท่าและ Events</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> แก้คำที่เรียกแต่ละท่า กด ▶ ดูท่าเดียว หรือจัดท่าเองบน time bar แล้วกด <b>＋ Keep as a gesture</b> ติ๊ก Events ออกเพื่อปิดท่าใน event นั้น</div>
+        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
+          หน้า Voice เลือกท่าตามคำที่พูด และเติมท่าเล็ก ๆ แบบสุ่มในช่องว่าง
+        </div>
+      </div>
+    </div>
+  </div>
 <p class="mini">ภาพ 3D หยุดวาดเมื่ออยู่นิ่ง และวาดใหม่เมื่อท่าจากตัวแก้ไขหรือ Monitor เปลี่ยน เมื่อเปิด/ปิดกริดหรือเครื่องหมายมือ โหลดโมเดลเพิ่ม หรือปรับขนาดหน้าจอ</p>
   <p>ถ้าอ่านรายการโปรเจกต์ที่บันทึกไว้ไม่ได้ Studio จะเก็บตัวเลือกเดิมและแจ้งข้อผิดพลาดทั้งแถบสถานะและแถบแจ้งเตือนกลาง จึงเห็นได้จากทุกแท็บ กด Retry saved moves เพื่อลองอ่านอีกครั้ง งานในหน้ายังคงอยู่</p>
 </section>

@@ -94,7 +94,8 @@ def library(shipped, mine):
         if k in mine:
             lib[k] = mine[k]
     # the chosen resting hands become `rest`: Studio fits it, plan() uses it
-    if lib.get("restStyle") in (lib.get("rests") or {}):
+    lib["rests"] = dict({"": lib.get("rest") or {}}, **(lib.get("rests") or {}))
+    if lib.get("restStyle") in lib["rests"]:
         lib["rest"] = lib["rests"][lib["restStyle"]]
     lib["events"] = dict(lib.get("events") or {}, **(mine.get("events") or {}))
     gs = lib.setdefault("gestures", {})
@@ -251,8 +252,8 @@ def clean_made(got, makers, text=""):
         for a in ("L", "R"):
             v = k.get(a)
             if isinstance(v, list) and len(v) == 3 and all(isinstance(x, (int, float)) for x in v):
-                key[a] = [round(clip(x, -1, 1), 3) for x in v]
-                if sum(x * x for x in key[a]) > 1:
+                key[a] = [round(float(x), 3) for x in v]
+                if sum(x * x for x in key[a]) > 1:          # beyond reach: to its edge
                     key[a] = _unit(key[a], 1.0)
                 if k.get("palm" + a) in ("up", "down"):
                     key["palm" + a] = k["palm" + a]
