@@ -78,9 +78,15 @@ def run(t):
              "same safety speed cap both sides")
     floor = re.search(r"NongModule::minDuration\([^)]*\)[^{]*\{(.*?)\n\}", nong_c, re.S)
     body = floor.group(1) if floor else ""
-    t.ok("safeDuration(cur_" in body and re.search(r"return\s+max\(\s*phys\s*,\s*safe\s*\)", body),
+    # A48-23: the floor is nongmath::moveFloor, whose cap is safe_dps outside
+    # a music show (PACE MUSIC swaps in the music cap, 0 = physical only)
+    nm = (F.FIRMWARE / "src/modules/nong/NongMath.h").read_text(encoding="utf-8", errors="replace")
+    mf = re.search(r"inline uint32_t moveFloor\([^)]*\)\s*\{(.*?)\}", nm, re.S)
+    mfb = mf.group(1) if mf else ""
+    t.ok(re.search(r"moveFloor\(cur_,[^;]*musicPace_\s*\?\s*paceCap\(\)\s*:\s*safeDps_", body, re.S)
+         and "safeDuration(from, to" in mfb and re.search(r"return\s+safe\s*>\s*phys\s*\?\s*safe\s*:\s*phys", mfb),
          "firmware move floor uses the safety cap",
-         "NongModule::minDuration no longer returns the larger of physical and safe: %r" % body)
+         "NongModule::minDuration no longer returns the larger of physical and safe: %r / %r" % (body, mfb))
     t.ok(re.search(r"function minTime[\s\S]{0,400}SAFE_DPS", app),
          "studio move floor uses the safety cap", "minTime() ignores SAFE_DPS")
 

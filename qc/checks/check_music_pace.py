@@ -56,7 +56,7 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     box.value = "60"; musicPace.changed();
     o.at60 = keys[1].t; o.late60 = musicPace.late().length;
     o.buttons = document.querySelectorAll("#musicFitList button").length;
-    o.stat60 = /cannot keep up/.test(document.getElementById("musicFitStat").textContent);
+    o.stat60 = /behind the song/.test(document.getElementById("musicFitStat").textContent);
     var btn = document.querySelector("#musicFitList button");
     if (btn) btn.click();
     o.selected = selKey;

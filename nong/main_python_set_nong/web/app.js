@@ -3165,7 +3165,7 @@ function checkCollisions(showAlert) {
 let SAFE = {
   planner: "rrt-star",      // "straight" refuses; rrt-connect remains available
   clearMm: 5,               // every check: closer than this is a hit (CLEAR)
-  musicGapMm: 0,            // extra gap at the music pace: fast moves cut corners (nong_sim)
+  musicGapMm: 12,           // extra gap at the music pace: fast moves cut corners (nong_sim)
   checkDeg: 1,              // biggest joint change between two checked points
   stepDeg: 12,              // how far a tree grows per try
   goalBias: 0.2,
@@ -4501,7 +4501,7 @@ const musicPace = {
     const at = cap > 0 ? `${cap} °/s` : "the servos' top speed";
     if (!late.length) { $("musicFitStat").textContent = `Every move keeps up with the song at ${at}.`; return; }
     const behind = late.reduce((s, x) => s + x.behindMs, 0);
-    $("musicFitStat").textContent = `${late.length} move(s) cannot keep up with the song at ${at}; ` +
+    $("musicFitStat").textContent = `${late.length} move(s) fall behind the song at ${at}; ` +
       `the show ends ${(behind / 1000).toFixed(1)} s after the music. Raise the limit, or click a move to ` +
       "shorten, change or remove it.";
     late.slice(0, 40).forEach(x => {

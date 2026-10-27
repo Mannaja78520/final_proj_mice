@@ -1,5 +1,5 @@
 {
-  "_what": "Studio checks each motion against its rig. A blocked straight path uses a quick connect seed and RRT* parent selection/rewiring, then checked shortcuts. Final wire-rounded legs and endpoints are rechecked. Budgets bound search; failure holds instead of sending an unchecked path. Data settings also control the yielding live planner. musicGapMm: extra clearance for sequences at the music pace (no speed cap, user 2026-10-27): at full servo speed the real arm lags and cuts corners, so the simulator (tools/nong_sim) found hands meeting that Studio passed with the normal gap; the value is the one the sim's rounds needed. clearMm: the gap every collision check keeps between two parts (Studio, its RRT* paths, video and gesture moves, and tools/nong_sim near misses); 5 mm allows for servo backlash (user 2026-10-27). A rig's extraClearanceMm adds to it, and musicGapMm on top at the music pace.",
+  "_what": "Studio checks each motion against its rig. A blocked straight path uses a quick connect seed and RRT* parent selection/rewiring, then checked shortcuts. Final wire-rounded legs and endpoints are rechecked. Budgets bound search; failure holds instead of sending an unchecked path. Data settings also control the yielding live planner. musicGapMm: extra clearance for sequences at the music pace (no speed cap, user 2026-10-27): at full servo speed the real arm lags and cuts corners, so the simulator (tools/nong_sim) found hands meeting that Studio passed with the normal gap; the value is the one the sim's rounds needed (2026-10-27, 4 cheer dances x lag 0.5-2x: extra 0 mm -> 0-4 hand touches per dance, 6 mm -> 0-2, 12 mm -> 0). clearMm: the gap every collision check keeps between two parts (Studio, its RRT* paths, video and gesture moves, and tools/nong_sim near misses); 5 mm allows for servo backlash (user 2026-10-27). A rig's extraClearanceMm adds to it, and musicGapMm on top at the music pace.",
   "planner": "rrt-star",
   "checkDeg": 1,
   "stepDeg": 12,
@@ -14,5 +14,5 @@
   "maxNodes": 2000,
   "rewireFactor": 1.1,
   "clearMm": 5,
-  "musicGapMm": 0
+  "musicGapMm": 12
 }

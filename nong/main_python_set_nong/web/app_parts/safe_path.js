@@ -10,7 +10,7 @@
 let SAFE = {
   planner: "rrt-star",      // "straight" refuses; rrt-connect remains available
   clearMm: 5,               // every check: closer than this is a hit (CLEAR)
-  musicGapMm: 0,            // extra gap at the music pace: fast moves cut corners (nong_sim)
+  musicGapMm: 12,           // extra gap at the music pace: fast moves cut corners (nong_sim)
   checkDeg: 1,              // biggest joint change between two checked points
   stepDeg: 12,              // how far a tree grows per try
   goalBias: 0.2,

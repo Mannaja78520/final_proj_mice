@@ -73,7 +73,7 @@ const musicPace = {
     const at = cap > 0 ? `${cap} °/s` : "the servos' top speed";
     if (!late.length) { $("musicFitStat").textContent = `Every move keeps up with the song at ${at}.`; return; }
     const behind = late.reduce((s, x) => s + x.behindMs, 0);
-    $("musicFitStat").textContent = `${late.length} move(s) cannot keep up with the song at ${at}; ` +
+    $("musicFitStat").textContent = `${late.length} move(s) fall behind the song at ${at}; ` +
       `the show ends ${(behind / 1000).toFixed(1)} s after the music. Raise the limit, or click a move to ` +
       "shorten, change or remove it.";
     late.slice(0, 40).forEach(x => {
