@@ -110,7 +110,7 @@
      "depends": ["studio"]},
 
     {"id": "rl-compare", "summary": "Separate experiment: RL imitation policy vs Studio's video planner on the cheer v2 dances, same servo model and collision gap, scores + side-by-side videos (tools/rl_compare, user 2026-10-27). Nothing else needs it.",
-     "files": ["tools/rl_compare/", "config/rl_compare.json"],
+     "files": ["tools/rl_compare/", "config/rl_compare.json", "docs/experiments/"],
      "checks": ["check_rl_compare"],
      "depends": ["studio", "nong-sim"]},
 

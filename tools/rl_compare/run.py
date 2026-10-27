@@ -59,6 +59,7 @@ class Case:
         self.scorer = Scorer(self.dance, exp.rig, self.kin, self.cfg["metrics"], self.cfg["servo"]["frameHz"], self.gap)
         self.hz = self.cfg["servo"]["frameHz"]
         self.rows = []
+        self.started = time.time()
 
     # ---- shared scoring ----------------------------------------------
     def studio_check(self, q, name):
@@ -169,7 +170,10 @@ class Case:
         for c in out["contenders"]:
             c["score"] = {k: v for k, v in c["score"].items() if k != "curve"}
             c["color"] = list(c["color"])
+        out["record"] = self.exp.record(self.started)
         save_json(self.out / "summary.json", out)
+        with open(self.exp.out / "experiments.jsonl", "a", encoding="utf-8") as log:   # every run, never overwritten
+            log.write(json.dumps(out, ensure_ascii=False, default=str) + "\n")
         return out
 
 
@@ -187,6 +191,22 @@ class Experiment:
         self.dances = args.dance or self.cfg["data"]["dances"]
         self.scenarios = [s for s in self.cfg["scenarios"] if not args.scenario or s["id"] in args.scenario]
         self.args = args
+
+    def report(self):
+        return Report(self.out, self.cfg, None if self.quick else ROOT / self.cfg["repoSummary"])
+
+    def record(self, started):
+        """What a later reader (or a thesis) needs to repeat this run exactly."""
+        git = lambda *a: subprocess.run(["git", *a], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+        import cv2
+        return {"startedUtc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(started)),
+                "wallS": time.time() - started, "gitCommit": git("rev-parse", "HEAD"),
+                "gitDirty": bool(git("status", "--porcelain", "--", "tools/rl_compare", "config/rl_compare.json")),
+                "config": self.cfg, "quick": self.quick, "device": self.device, "gpu": self.gpu,
+                "cpu": platform.processor(), "os": platform.platform(), "python": platform.python_version(),
+                "torch": torch.__version__, "cuda": torch.version.cuda, "opencv": cv2.__version__,
+                "node": subprocess.run(["node", "--version"], capture_output=True, text=True).stdout.strip(),
+                "studioGapMm": self.facts.clear_mm, "safeDpsFirmware": self.facts.safe_dps}
 
     def make(self, device):
         return TorchRig(self.rig, self.facts, device), ServoModel(self.rig, self.facts, self.cfg["servo"], device)
@@ -211,7 +231,7 @@ class Experiment:
                 case.summary()
                 if not self.args.no_video:
                     case.videos()
-        Report(self.out, self.cfg).write()
+        self.report().write()
         print(f"done in {time.time() - t0:.0f} s -> {self.out / 'index.html'}", flush=True)
 
 
@@ -226,7 +246,7 @@ def main(argv=None):
     args = ap.parse_args(argv)
     exp = Experiment(args)
     if args.report:
-        Report(exp.out, exp.cfg).write()
+        exp.report().write()
         return 0
     exp.run()
     return 0

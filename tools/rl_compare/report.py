@@ -49,8 +49,10 @@ def _best(values, how):
 
 
 class Report:
-    def __init__(self, out, cfg):
-        self.out, self.cfg = Path(out), cfg
+    def __init__(self, out, cfg, publish_to=None):
+        """publish_to: a repo file that gets the tables only (no private data:
+        angles, seconds and settings), so the numbers are kept in git too."""
+        self.out, self.cfg, self.publish_to = Path(out), cfg, publish_to
 
     def cases(self):
         found = []
@@ -106,7 +108,16 @@ class Report:
                 html.escape(head), "".join("<th>%s</th>" % html.escape(c["label"]) for c in case["contenders"]),
                 "".join(rows), links, rounds))
         size = self.size_gb()
-        (self.out / "results.md").write_text("# RL vs planner\n\n" + "\n".join(md), encoding="utf-8")
+        text = "# RL vs planner\n\n" + "\n".join(md)
+        (self.out / "results.md").write_text(text, encoding="utf-8")
+        if self.publish_to and cases:
+            rec = cases[-1].get("record") or {}
+            stamp = "\n".join(["", "## Run record", "",
+                               f"- commit {rec.get('gitCommit')} (dirty: {rec.get('gitDirty')}), {rec.get('startedUtc')}",
+                               f"- {rec.get('gpu')} · torch {rec.get('torch')} · CUDA {rec.get('cuda')} · {rec.get('os')}",
+                               "- every run's full record: .local/rl_compare/experiments.jsonl on the PC", ""])
+            Path(self.publish_to).parent.mkdir(parents=True, exist_ok=True)
+            Path(self.publish_to).write_text(text + stamp, encoding="utf-8")
         (self.out / "results.json").write_text(json.dumps([{k: v for k, v in c.items() if k != "folder"} for c in cases],
                                                           indent=1, ensure_ascii=False, default=str), encoding="utf-8")
         page = PAGE.replace("{{BODY}}", "\n".join(body) or "<p>ยังไม่มีผล</p>").replace(
