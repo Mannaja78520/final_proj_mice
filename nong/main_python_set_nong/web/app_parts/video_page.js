@@ -50,12 +50,20 @@ function vidSetSrc(url, src) {
   if (vidBusy) vidStop = true;
   const v = $("vidPlayer");
   vidCheckedPlayback.reset(v);
+  const keepSaved = !!(vidSaved?.src?.url && src.url && vidSaved.src.url === src.url);
+  if (!keepSaved) {
+    vidSaved = null;
+    $("vidRoutine").innerHTML = '<option value="auto">Find routines automatically</option>';
+    $("vidRoutine").value = "auto";
+    $("vidDancer").innerHTML = '<option value="auto">Automatic — discover dance groups</option>';
+    $("vidDancer").value = "auto";
+  }
   if (v.src && v.src.startsWith("blob:")) URL.revokeObjectURL(v.src);
   vidSrc = src;
   v.src = url;
   v.hidden = false;
   $("vidEmpty").hidden = true;
-  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null; vidRoutines = [];
+  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null; vidRoutines = []; vidRoutineRange = null;
   vidList();
   vidDraw(null);
   $("vidUseBox").hidden = true;
@@ -67,7 +75,7 @@ function vidSetSrc(url, src) {
   vidLastMs = -1;
   v.onloadedmetadata = () => {
     // a reopened project's part of the video is kept; a new video uses all of it
-    const keep = vidSaved && vidSaved.src && src.url && vidSaved.src.url === src.url;
+    const keep = keepSaved && vidSaved;
     $("vidFrom").value = keep ? String(vidSaved.from || 0) : "0";
     $("vidTo").value = keep && vidSaved.to ? String(vidSaved.to) : v.duration.toFixed(1);
     vidSay("Ready: " + v.duration.toFixed(1) + " s of video. Press Make moves.");
@@ -233,7 +241,7 @@ function vidSettings() {
   if (!vidSrc) return vidSaved;
   return { src: { kind: vidSrc.kind, name: vidSrc.name, url: vidSrc.url || "" },
            subjectMode: $("vidSubject")?.value || "auto", cameraMode: $("vidCamera")?.value || "auto",
-           routine: $("vidRoutine")?.value || "auto", routineSummary: typeof vidRoutines !== "undefined" ? vidRoutines.map(r => ({ id: r.id, kind: r.kind, coverage: r.coverage, trustedCoverage: r.trustedCoverage, ambiguous: r.ambiguous })) : [],
+           routine: $("vidRoutine")?.value || "auto", routineSummary: typeof vidRoutines !== "undefined" ? vidRoutines.map(r => ({ id: r.id, kind: r.kind, sourceStart: r.sourceStart, sourceEnd: r.sourceEnd, coverage: r.coverage, trustedCoverage: r.trustedCoverage, ambiguous: r.ambiguous })) : [],
            dancer: $("vidDancer")?.value || "auto", shrug: !!$("vidShrug")?.checked,
            anchorX: Number.isFinite(vidSaved?.anchorX) ? vidSaved.anchorX : 0.5,
            analysis: vidMade?.achieved ? { meanBoneDegrees: vidMade.achieved.meanBoneDegrees,
@@ -267,7 +275,7 @@ function vidApplySettings(s) {
   }
   (s.hand || []).forEach((h, a) => pick($("vidHand" + a), h));
   $("vidMirror").checked = !!s.mirror;
-  $("vidMusic").checked = s.music !== false;
+  $("vidMusic").checked = s.music === true;
   $("vidWaist").checked = !!s.waist;
   $("vidFrom").value = String(s.from || 0);
   if (s.to) $("vidTo").value = String(s.to);

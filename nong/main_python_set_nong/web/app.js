@@ -9288,6 +9288,40 @@ class VideoRoutineAssignment {
     return { cost: cost >= large / 2 ? Infinity : cost, columns: result };
   }
 }
+// When a camera cut cannot be linked reliably, keep the observed local dance
+// as a separate, source-windowed project instead of inventing a person match.
+class VideoRoutineSections {
+  static observations(group) {
+    const leader = group.slice().sort((a, b) => b.reduce((sum, row) => sum + row.actor.confidence, 0) - a.reduce((sum, row) => sum + row.actor.confidence, 0))[0]?.[0]?.actor.id;
+    const selected = new Map();
+    for (const row of group.flat()) {
+      const old = selected.get(row.index);
+      if (!old || row.actor.id === leader || (old.id !== leader && row.actor.confidence > old.confidence)) selected.set(row.index, row.actor);
+    }
+    return selected;
+  }
+  static build(units, frames, options, config, qualified) {
+    const sections = [];
+    for (const unit of units) {
+      if (qualified.has(unit.parentId) && !unit.ambiguous) continue;
+      const indexes = [...unit.observations.keys()].sort((a, b) => a - b), first = indexes[0], last = indexes.at(-1);
+      const from = frames[first].t, to = frames[last].t;
+      if (to - from < config.minimumSegmentSeconds) continue;
+      const policy = new VideoTemporalPolicy(options.learned === false ? null : VIDEO_POLICY, options.cameraMode);
+      const local = frames.slice(first, last + 1).map((frame, offset) => {
+        const actor = unit.observations.get(first + offset);
+        const state = policy.step(actor?.body || null, frame.scene, offset === 0, actor && actor.confidence >= VIDEO_FOLLOW.tracking.confidence ? 1 : 0);
+        return { ...frame, ...state, t: frame.t - from, w: actor?.w || null, p: actor?.p || null, track: actor?.id || null };
+      });
+      sections.push({ id: 'scene_' + unit.shot + '_' + unit.ordinal, kind: 'segment', parentId: unit.parentId,
+        sourceStart: from, sourceEnd: to, frames: local, crossShotUncertain: unit.ambiguous,
+        ambiguous: false, people: unit.people,
+        coverage: local.filter(f => f.w).length / local.length,
+        trustedCoverage: local.filter(f => f.w && f.trusted).length / local.length });
+    }
+    return sections.sort((a, b) => a.sourceStart - b.sourceStart || b.trustedCoverage - a.trustedCoverage);
+  }
+}
 // Discover motion groups from the whole clip, rather than a single still or
 // apparent gender. Uncertain cross-shot associations form separate fragments.
 class VideoRoutineDiscovery {
@@ -9389,7 +9423,7 @@ class VideoRoutineDiscovery {
     return routines.sort((a, b) => (a.kind === 'fragment') - (b.kind === 'fragment') || b.trustedCoverage - a.trustedCoverage);
   }
   finish() {
-    const shots = new Map(), common = new Map();
+    const shots = new Map(), common = new Map(), units = [];
     this.frames.forEach((frame, index) => {
       const visible = (frame.actors || []).filter(a => a.confidence >= VIDEO_FOLLOW.tracking.confidence);
       if (visible.length > 1 && visible.every(a => visible.every(b => VideoRoutineDiscovery.distance(a.body, b.body) <= this.config.styleDegrees)))
@@ -9416,12 +9450,13 @@ class VideoRoutineDiscovery {
         let routine = assignment?.routine;
         if (!routine) { routine = { id: routines.length + 1, observations: new Map(), people: new Set(), ambiguous: false }; routines.push(routine); }
         routine.ambiguous ||= !!assignment?.ambiguous;
-        for (const row of rows) {
-          const old = routine.observations.get(row.index);
-          // Select a real observation, never average different people.
-          if (!old || row.actor.confidence > old.confidence) routine.observations.set(row.index, { ...row.actor,
-            associationUncertain: !!assignment?.ambiguous });
-          routine.people.add(row.actor.id);
+        const observations = VideoRoutineSections.observations(group);
+        units.push({ shot: this.frames[first.index].shot, ordinal: groupIndex + 1, parentId: routine.id,
+          ambiguous: !!assignment?.ambiguous, people: new Set(rows.map(row => row.actor.id)).size, observations });
+        for (const row of rows) routine.people.add(row.actor.id);
+        for (const [index, actor] of observations) {
+          routine.observations.set(index, { ...actor, associationUncertain: !!assignment?.ambiguous });
+          routine.people.add(actor.id);
         }
         routine.last = rows.at(-1);
         routine.appearance = VideoAppearanceDescriptor.average([...routine.observations.values()].map(a => a.appearance));
@@ -9437,10 +9472,13 @@ class VideoRoutineDiscovery {
         const state = policy.step(actor?.associationUncertain ? null : actor?.body || null, f.cut ? Math.max(.25, f.scene) : f.scene, f.cut, actor && actor.confidence >= VIDEO_FOLLOW.tracking.confidence ? 1 : 0);
         return { ...f, ...state, w: actor?.w || null, p: actor?.p || null, track: actor?.id || null };
       });
-      return { id: r.id, frames, coverage: frames.filter(f => f.w).length / Math.max(1, this.frames.length),
+      return { id: r.id, frames, sourceStart: 0, sourceEnd: this.frames.at(-1)?.t || 0, coverage: frames.filter(f => f.w).length / Math.max(1, this.frames.length),
         trustedCoverage: frames.filter(f => f.w && f.trusted).length / Math.max(1, this.frames.length), people: r.people.size, ambiguous: r.ambiguous };
     }).sort((a, b) => b.coverage - a.coverage);
-    return this.classify(results);
+    const ranked = this.classify(results);
+    const qualified = new Set(ranked.filter(r => r.kind === 'routine' && r.trustedCoverage >= this.config.minimumSaveCoverage).map(r => r.id));
+    const sections = VideoRoutineSections.build(units, this.frames, this.options, this.config, qualified);
+    return qualified.size ? [...ranked, ...sections] : [...sections, ...ranked];
   }
 }
 class VideoSubjectTracker {
@@ -9822,7 +9860,7 @@ const VID_USE = [
   { id: "moment", label: "Use another moment…" },
   { id: "drop", label: "Leave out" },
 ];
-let vidRoutines = [];
+let vidRoutines = [], vidRoutineRange = null;
 let vidLib = null, vidLibMode = null, vidFrames = null, vidMade = null, vidStop = false, vidBusy = false, vidGeneration = 0, vidSeekCancel = null;
 let vidFit = null, vidPicks = null;   // fitted frames, and the moves made from them
 
@@ -9886,8 +9924,8 @@ function vidModeChanged() {
   if (vidSeekCancel) vidSeekCancel();
   if (typeof vidCheckedPlayback !== "undefined") vidCheckedPlayback.reset($("vidPlayer"));
   if (vidBusy) vidStop = true;
-  vidFrames = vidFit = vidMade = vidPicks = null; vidRoutines = [];
-  vidSay("Tracking choices changed. Press Make moves to read the performers again.");
+  vidFrames = vidFit = vidMade = vidPicks = null; vidRoutines = []; vidRoutineRange = null;
+  vidSay("Video choices or range changed. Press Make moves to read the performers again.");
 }
 
 // A picked file goes on the stage like a fetched link (video_page.js).
@@ -9984,14 +10022,18 @@ async function vidRead() {
   }
   if (vidStop || generation !== vidGeneration) return null;
   vidRoutines = readOptions.subjectMode !== 'single' && readOptions.dancer === 'auto' ? discovery.finish() : [];
+  vidRoutineRange = { from, to };
   const select = $("vidRoutine"), previous = select?.value;
   if (select) {
     select.innerHTML = ''; select.add(new Option('Automatic main routine', 'auto'));
-    for (const routine of vidRoutines) select.add(new Option((routine.kind === 'fragment' ? 'Fragment ' : 'Routine ') + routine.id + ' · ' + Math.round(routine.trustedCoverage * 100) + '% reliable' + (routine.ambiguous ? ' · check cut' : ''), String(routine.id)));
+    vidRoutines.forEach((routine, i) => {
+      const label = routine.kind === 'segment' ? 'Scene segment ' + (i + 1) + ' · ' + (routine.sourceEnd - routine.sourceStart).toFixed(1) + ' s' : (routine.kind === 'fragment' ? 'Partial routine ' : 'Routine ') + routine.id;
+      select.add(new Option(label + ' · ' + Math.round(routine.trustedCoverage * 100) + '% reliable' + (routine.ambiguous ? ' · check cut' : ''), String(routine.id)));
+    });
     select.value = vidRoutines.some(r => String(r.id) === previous) ? previous : 'auto';
   }
   const selected = vidRoutines.find(r => String(r.id) === select?.value) || vidRoutines[0];
-  return selected ? selected.frames : frames;
+  return selected ? vidSelectFrames(selected) : frames;
 }
 // The skeleton over the video, so it is plain whether the person was found.
 // Points are fractions of the PICTURE, which the player letterboxes inside its
@@ -10323,10 +10365,24 @@ function vidHandNote(made) {
         + "“Keep, hand side forced” on those moves below, and the hand moves "
         + "just enough to show it.")).join("");
 }
+function vidSelectFrames(routine) {
+  if (vidRoutineRange && Number.isFinite(routine.sourceStart) && Number.isFinite(routine.sourceEnd)) {
+    $("vidFrom").value = (vidRoutineRange.from + routine.sourceStart).toFixed(3);
+    $("vidTo").value = Math.min(vidRoutineRange.to, vidRoutineRange.from + routine.sourceEnd).toFixed(3);
+  }
+  return routine.frames;
+}
+function vidEligibleRoutines() {
+  return vidRoutines.filter(r => (r.kind === 'routine' || r.kind === 'segment') && r.trustedCoverage >= VIDEO_FOLLOW.routines.minimumSaveCoverage);
+}
 function vidChooseRoutine() {
   if (vidBusy || !vidRoutines.length) return;
   const selected = vidRoutines.find(r => String(r.id) === $("vidRoutine").value) || vidRoutines[0];
-  vidFrames = selected.frames; vidRemake('fit');
+  vidFrames = vidSelectFrames(selected); vidRemake('fit');
+  vidLastMs = -1;
+  const video = $("vidPlayer"); vidCheckedPlayback.reset(video);
+  if (video?.pause) video.pause();
+  if (video?.src && Number.isFinite(video.duration)) video.currentTime = +$("vidFrom").value || 0;
   vidSay(vidSummary());
 }
 async function vidSaveRoutines() {
@@ -10339,10 +10395,10 @@ async function vidSaveRoutines() {
   vidBusy = true; vidStop = false; $("vidGo").textContent = '■ Stop';
   let saved = 0;
   try {
-    for (const routine of vidRoutines.filter(r => r.kind === 'routine' && r.trustedCoverage >= VIDEO_FOLLOW.routines.minimumSaveCoverage)) {
+    for (const routine of vidEligibleRoutines()) {
       if (vidStop || generation !== vidGeneration) break;
       $("vidRoutine").value = String(routine.id);
-      vidFrames = routine.frames; vidRemake('fit');
+      vidFrames = vidSelectFrames(routine); vidRemake('fit');
       if (!vidMade?.keys.length) continue;
       setWorkName('video_' + stamp + '_routine_' + routine.id);
       if (!(await vidUse('replace', { skipUnsaved: true })) || generation !== vidGeneration || vidStop) break;
@@ -10357,7 +10413,7 @@ async function vidSaveRoutines() {
 function vidSummary() {
   const m = vidMade, opts = vidOpts();
   return m.keys.length + " moves from " + (m.videoMs / 1000).toFixed(1) + " s of video."
-    + (vidRoutines.length ? " " + vidRoutines.length + " routine groups/fragments found automatically; ambiguous cuts are marked for review. Choose one or save separately." : "")
+    + (vidRoutines.length ? " " + vidRoutines.length + " routine groups / scene sections found automatically. Uncertain camera links are split rather than stitched into another dance." : "")
     + (m.quality?.smoothing ? " Short reversals: " + m.quality.smoothing.before.reversals + " → " + m.quality.smoothing.afterRepair.reversals + "." : "")
     + (m.safe && safeSay(m.safe) ? " " + safeSay(m.safe) : "")
     + (m.quality?.uncertain ? " " + m.quality.uncertain + " uncertain observations hold the last trustworthy pose." : "")
@@ -10423,6 +10479,7 @@ async function vidMakeAndSave() {
   const generation = vidGeneration;
   if (!(await vidMake()) || generation !== vidGeneration) return;
   if (!vidMade || vidMade.keys.length < 2) return;
+  if (vidEligibleRoutines().length > 1) { await vidSaveRoutines(); return; }
   const base = ((vidSrc && (vidSrc.name || vidSrc.url)) || "video").split(/[\\/?#]/).filter(Boolean).pop();
   setWorkName("video_" + base.replace(/\.[^.]*$/, ""));
   if (!(await vidUse("replace"))) return;
@@ -10568,12 +10625,20 @@ function vidSetSrc(url, src) {
   if (vidBusy) vidStop = true;
   const v = $("vidPlayer");
   vidCheckedPlayback.reset(v);
+  const keepSaved = !!(vidSaved?.src?.url && src.url && vidSaved.src.url === src.url);
+  if (!keepSaved) {
+    vidSaved = null;
+    $("vidRoutine").innerHTML = '<option value="auto">Find routines automatically</option>';
+    $("vidRoutine").value = "auto";
+    $("vidDancer").innerHTML = '<option value="auto">Automatic — discover dance groups</option>';
+    $("vidDancer").value = "auto";
+  }
   if (v.src && v.src.startsWith("blob:")) URL.revokeObjectURL(v.src);
   vidSrc = src;
   v.src = url;
   v.hidden = false;
   $("vidEmpty").hidden = true;
-  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null; vidRoutines = [];
+  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null; vidRoutines = []; vidRoutineRange = null;
   vidList();
   vidDraw(null);
   $("vidUseBox").hidden = true;
@@ -10585,7 +10650,7 @@ function vidSetSrc(url, src) {
   vidLastMs = -1;
   v.onloadedmetadata = () => {
     // a reopened project's part of the video is kept; a new video uses all of it
-    const keep = vidSaved && vidSaved.src && src.url && vidSaved.src.url === src.url;
+    const keep = keepSaved && vidSaved;
     $("vidFrom").value = keep ? String(vidSaved.from || 0) : "0";
     $("vidTo").value = keep && vidSaved.to ? String(vidSaved.to) : v.duration.toFixed(1);
     vidSay("Ready: " + v.duration.toFixed(1) + " s of video. Press Make moves.");
@@ -10751,7 +10816,7 @@ function vidSettings() {
   if (!vidSrc) return vidSaved;
   return { src: { kind: vidSrc.kind, name: vidSrc.name, url: vidSrc.url || "" },
            subjectMode: $("vidSubject")?.value || "auto", cameraMode: $("vidCamera")?.value || "auto",
-           routine: $("vidRoutine")?.value || "auto", routineSummary: typeof vidRoutines !== "undefined" ? vidRoutines.map(r => ({ id: r.id, kind: r.kind, coverage: r.coverage, trustedCoverage: r.trustedCoverage, ambiguous: r.ambiguous })) : [],
+           routine: $("vidRoutine")?.value || "auto", routineSummary: typeof vidRoutines !== "undefined" ? vidRoutines.map(r => ({ id: r.id, kind: r.kind, sourceStart: r.sourceStart, sourceEnd: r.sourceEnd, coverage: r.coverage, trustedCoverage: r.trustedCoverage, ambiguous: r.ambiguous })) : [],
            dancer: $("vidDancer")?.value || "auto", shrug: !!$("vidShrug")?.checked,
            anchorX: Number.isFinite(vidSaved?.anchorX) ? vidSaved.anchorX : 0.5,
            analysis: vidMade?.achieved ? { meanBoneDegrees: vidMade.achieved.meanBoneDegrees,
@@ -10785,7 +10850,7 @@ function vidApplySettings(s) {
   }
   (s.hand || []).forEach((h, a) => pick($("vidHand" + a), h));
   $("vidMirror").checked = !!s.mirror;
-  $("vidMusic").checked = s.music !== false;
+  $("vidMusic").checked = s.music === true;
   $("vidWaist").checked = !!s.waist;
   $("vidFrom").value = String(s.from || 0);
   if (s.to) $("vidTo").value = String(s.to);

@@ -117,6 +117,7 @@
     "minimumDistinctSeconds": 1.5,
     "minimumDifferenceRunSeconds": 0.35,
     "minimumDifferentFraction": 0.15,
-    "minimumSaveCoverage": 0.5
+    "minimumSaveCoverage": 0.75,
+    "minimumSegmentSeconds": 1
   }
 }

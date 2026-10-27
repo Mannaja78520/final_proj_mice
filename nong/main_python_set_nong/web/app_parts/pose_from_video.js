@@ -38,7 +38,7 @@ const VID_USE = [
   { id: "moment", label: "Use another moment…" },
   { id: "drop", label: "Leave out" },
 ];
-let vidRoutines = [];
+let vidRoutines = [], vidRoutineRange = null;
 let vidLib = null, vidLibMode = null, vidFrames = null, vidMade = null, vidStop = false, vidBusy = false, vidGeneration = 0, vidSeekCancel = null;
 let vidFit = null, vidPicks = null;   // fitted frames, and the moves made from them
 
@@ -102,8 +102,8 @@ function vidModeChanged() {
   if (vidSeekCancel) vidSeekCancel();
   if (typeof vidCheckedPlayback !== "undefined") vidCheckedPlayback.reset($("vidPlayer"));
   if (vidBusy) vidStop = true;
-  vidFrames = vidFit = vidMade = vidPicks = null; vidRoutines = [];
-  vidSay("Tracking choices changed. Press Make moves to read the performers again.");
+  vidFrames = vidFit = vidMade = vidPicks = null; vidRoutines = []; vidRoutineRange = null;
+  vidSay("Video choices or range changed. Press Make moves to read the performers again.");
 }
 
 // A picked file goes on the stage like a fetched link (video_page.js).
@@ -200,14 +200,18 @@ async function vidRead() {
   }
   if (vidStop || generation !== vidGeneration) return null;
   vidRoutines = readOptions.subjectMode !== 'single' && readOptions.dancer === 'auto' ? discovery.finish() : [];
+  vidRoutineRange = { from, to };
   const select = $("vidRoutine"), previous = select?.value;
   if (select) {
     select.innerHTML = ''; select.add(new Option('Automatic main routine', 'auto'));
-    for (const routine of vidRoutines) select.add(new Option((routine.kind === 'fragment' ? 'Fragment ' : 'Routine ') + routine.id + ' · ' + Math.round(routine.trustedCoverage * 100) + '% reliable' + (routine.ambiguous ? ' · check cut' : ''), String(routine.id)));
+    vidRoutines.forEach((routine, i) => {
+      const label = routine.kind === 'segment' ? 'Scene segment ' + (i + 1) + ' · ' + (routine.sourceEnd - routine.sourceStart).toFixed(1) + ' s' : (routine.kind === 'fragment' ? 'Partial routine ' : 'Routine ') + routine.id;
+      select.add(new Option(label + ' · ' + Math.round(routine.trustedCoverage * 100) + '% reliable' + (routine.ambiguous ? ' · check cut' : ''), String(routine.id)));
+    });
     select.value = vidRoutines.some(r => String(r.id) === previous) ? previous : 'auto';
   }
   const selected = vidRoutines.find(r => String(r.id) === select?.value) || vidRoutines[0];
-  return selected ? selected.frames : frames;
+  return selected ? vidSelectFrames(selected) : frames;
 }
 // The skeleton over the video, so it is plain whether the person was found.
 // Points are fractions of the PICTURE, which the player letterboxes inside its
@@ -539,10 +543,24 @@ function vidHandNote(made) {
         + "“Keep, hand side forced” on those moves below, and the hand moves "
         + "just enough to show it.")).join("");
 }
+function vidSelectFrames(routine) {
+  if (vidRoutineRange && Number.isFinite(routine.sourceStart) && Number.isFinite(routine.sourceEnd)) {
+    $("vidFrom").value = (vidRoutineRange.from + routine.sourceStart).toFixed(3);
+    $("vidTo").value = Math.min(vidRoutineRange.to, vidRoutineRange.from + routine.sourceEnd).toFixed(3);
+  }
+  return routine.frames;
+}
+function vidEligibleRoutines() {
+  return vidRoutines.filter(r => (r.kind === 'routine' || r.kind === 'segment') && r.trustedCoverage >= VIDEO_FOLLOW.routines.minimumSaveCoverage);
+}
 function vidChooseRoutine() {
   if (vidBusy || !vidRoutines.length) return;
   const selected = vidRoutines.find(r => String(r.id) === $("vidRoutine").value) || vidRoutines[0];
-  vidFrames = selected.frames; vidRemake('fit');
+  vidFrames = vidSelectFrames(selected); vidRemake('fit');
+  vidLastMs = -1;
+  const video = $("vidPlayer"); vidCheckedPlayback.reset(video);
+  if (video?.pause) video.pause();
+  if (video?.src && Number.isFinite(video.duration)) video.currentTime = +$("vidFrom").value || 0;
   vidSay(vidSummary());
 }
 async function vidSaveRoutines() {
@@ -555,10 +573,10 @@ async function vidSaveRoutines() {
   vidBusy = true; vidStop = false; $("vidGo").textContent = '■ Stop';
   let saved = 0;
   try {
-    for (const routine of vidRoutines.filter(r => r.kind === 'routine' && r.trustedCoverage >= VIDEO_FOLLOW.routines.minimumSaveCoverage)) {
+    for (const routine of vidEligibleRoutines()) {
       if (vidStop || generation !== vidGeneration) break;
       $("vidRoutine").value = String(routine.id);
-      vidFrames = routine.frames; vidRemake('fit');
+      vidFrames = vidSelectFrames(routine); vidRemake('fit');
       if (!vidMade?.keys.length) continue;
       setWorkName('video_' + stamp + '_routine_' + routine.id);
       if (!(await vidUse('replace', { skipUnsaved: true })) || generation !== vidGeneration || vidStop) break;
@@ -573,7 +591,7 @@ async function vidSaveRoutines() {
 function vidSummary() {
   const m = vidMade, opts = vidOpts();
   return m.keys.length + " moves from " + (m.videoMs / 1000).toFixed(1) + " s of video."
-    + (vidRoutines.length ? " " + vidRoutines.length + " routine groups/fragments found automatically; ambiguous cuts are marked for review. Choose one or save separately." : "")
+    + (vidRoutines.length ? " " + vidRoutines.length + " routine groups / scene sections found automatically. Uncertain camera links are split rather than stitched into another dance." : "")
     + (m.quality?.smoothing ? " Short reversals: " + m.quality.smoothing.before.reversals + " → " + m.quality.smoothing.afterRepair.reversals + "." : "")
     + (m.safe && safeSay(m.safe) ? " " + safeSay(m.safe) : "")
     + (m.quality?.uncertain ? " " + m.quality.uncertain + " uncertain observations hold the last trustworthy pose." : "")
@@ -639,6 +657,7 @@ async function vidMakeAndSave() {
   const generation = vidGeneration;
   if (!(await vidMake()) || generation !== vidGeneration) return;
   if (!vidMade || vidMade.keys.length < 2) return;
+  if (vidEligibleRoutines().length > 1) { await vidSaveRoutines(); return; }
   const base = ((vidSrc && (vidSrc.name || vidSrc.url)) || "video").split(/[\\/?#]/).filter(Boolean).pop();
   setWorkName("video_" + base.replace(/\.[^.]*$/, ""));
   if (!(await vidUse("replace"))) return;

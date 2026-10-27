@@ -16,7 +16,7 @@ function context() {
     Option:function(label,value){this.label=label;this.value=value;}});
   const run=s=>vm.runInContext(s,c);
   run('const $=id=>document.getElementById(id);');
-  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','yaml_export','video_body_motion','video_tracking','video_motion_smooth','video_appearance','video_routine_assignment','video_routines','video_rig_fit','video_checked_playback'])run(read(name));
+  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','yaml_export','video_body_motion','video_tracking','video_motion_smooth','video_appearance','video_routine_assignment','video_routine_sections','video_routines','video_rig_fit','video_checked_playback'])run(read(name));
   const timeline=read('timeline');run(timeline.slice(timeline.indexOf('function easeKeys('),timeline.indexOf('\nfunction poseAt(')));
   const videoSource=read('pose_from_video');run(videoSource.slice(0,videoSource.lastIndexOf('\nvidFill();')));
   c.config=config;c.safe=safe;c.policy=policy;
@@ -124,7 +124,7 @@ if(require.main===module){
     d.joinCost=()=>5;
     for(let i=0;i<16;i++)d.add({t:i*.2,shot:i<8?0:1,cut:i===8,scene:i===8?.8:0,actors:[
       {id:i<8?1:3,confidence:1,cx:.3,w:person(),body:a},{id:i<8?2:4,confidence:1,cx:.7,w:person(0,0,[0,0,0],true),body:b}]});
-    const roles=d.finish();return roles.length===2&&roles.every(r=>r.frames.slice(8).every(f=>!f.trusted&&f.action==='uncertain'));
+    const roles=d.finish().filter(r=>typeof r.id==='number');return roles.length===2&&roles.every(r=>r.frames.slice(8).every(f=>!f.trusted&&f.action==='uncertain'));
   })()`);
   check('trusted still observations let the smoothed rig finish reaching the accepted target',`(()=>{
     const start=RIG.home.slice(),target=start.slice();target[0]+=20;
@@ -136,6 +136,16 @@ if(require.main===module){
     const matrix=Array.from({length:30},(_,i)=>Array.from({length:60},(_,j)=>j===i?10:j===i+30?11:Infinity));
     const best=VideoRoutineAssignment.solve(matrix),alternate=VideoRoutineAssignment.solve(matrix,0,0);
     return best.cost===300&&best.columns.every((column,row)=>column===row)&&alternate.cost===301;
+  })()`);
+  check('unresolved cuts automatically yield usable local scene sections with rebased time',`(()=>{
+    const d=new VideoRoutineDiscovery({learned:false,cameraMode:'cuts'}),a=VideoBodyMotion.measure(person()),b=VideoBodyMotion.measure(person(0,0,[0,0,0],true));d.joinCost=()=>5;
+    for(let i=0;i<16;i++)d.add({t:i*.2,shot:i<8?0:1,cut:i===8,scene:i===8?.8:0,actors:[{id:i<8?1:3,confidence:1,cx:.3,w:person(),body:a},{id:i<8?2:4,confidence:1,cx:.7,w:person(0,0,[0,0,0],true),body:b}]});
+    const sections=d.finish().filter(r=>r.kind==='segment'&&r.sourceStart>1);
+    return sections.length===2&&sections.every(r=>Math.abs(r.sourceStart-1.6)<1e-6&&Math.abs(r.sourceEnd-3)<1e-6&&r.frames[0].t===0&&r.trustedCoverage===1&&r.frames.every(f=>f.w));
+  })()`);
+  check('group representation keeps one stable leader rather than confidence flicker',`(()=>{
+    const group=[1,2].map(id=>Array.from({length:12},(_,index)=>({index,t:index/10,actor:{id,confidence:(index%2===id%2)?1:.6}})));
+    const selected=VideoRoutineSections.observations(group);return selected.size===12&&new Set([...selected.values()].map(a=>a.id)).size===1;
   })()`);
   check('explicit performer overrides auto subject',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'fixed',dancer:'2'});const f=tr.step(result([{x:.5,w:person(0,0)},{x:.8,w:person(0,0,[0,0,0],true)}]),0,null,0);return f.track===2;})()`);
   check('camera cut does not create waist jump',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'cuts',dancer:'auto'});const a=tr.step(result([{x:.5,w:person(.3,.05)}]),0,null,0),b=tr.step(result([{x:.4,w:person(.3,.05,[.7,1.2,.2])}]),.1,null,.8);return Math.abs(a.waist-b.waist)<.02;})()`);
@@ -259,6 +269,26 @@ if(require.main===module){
         vidRemake=()=>{vidMade={keys:[{pose:RIG.home,t:1000}],videoMs:1000,handMiss:[0,0],kept:1};};vidUse=async()=>true;
         await vidSaveRoutines();return selected.join(',')==='1,2'&&$('vidRoutine').value==='auto';
       }finally{vidUse=oldUse;vidRemake=oldRemake;globalThis.saveAll=oldSave;globalThis.askUnsaved=oldAsk;globalThis.setWorkName=oldName;vidSrc=oldSrc;vidRoutines=[];}
+    })()`);
+    await checkAsync('scene batch saves the matching original video windows without double offsets',`(async()=>{
+      const oldUse=vidUse,oldRemake=vidRemake,oldSave=globalThis.saveAll,oldAsk=globalThis.askUnsaved,oldName=globalThis.setWorkName,oldSrc=vidSrc,oldRange=vidRoutineRange;
+      const selected=[];
+      try{
+        vidBusy=false;vidStop=false;vidSrc={kind:'file',name:'new_clip.mp4'};$('vidRoutine').value='auto';vidRoutineRange={from:5,to:60};
+        vidRoutines=[{id:'scene_1_1',kind:'segment',trustedCoverage:1,sourceStart:10,sourceEnd:20,frames:[]},{id:'scene_2_1',kind:'segment',trustedCoverage:1,sourceStart:30,sourceEnd:40,frames:[]}];
+        globalThis.askUnsaved=async()=>true;globalThis.setWorkName=()=>{};globalThis.saveAll=async()=>{const x=vidSettings();selected.push([x.routine,x.from,x.to]);return true;};
+        vidRemake=()=>{vidMade={keys:[{pose:RIG.home,t:1000}],videoMs:1000,handMiss:[0,0],kept:1};};vidUse=async()=>true;
+        await vidSaveRoutines();return JSON.stringify(selected)===JSON.stringify([['scene_1_1',15,25],['scene_2_1',35,45]])&&vidRoutineRange.from===5;
+      }finally{vidUse=oldUse;vidRemake=oldRemake;globalThis.saveAll=oldSave;globalThis.askUnsaved=oldAsk;globalThis.setWorkName=oldName;vidSrc=oldSrc;vidRoutines=[];vidRoutineRange=oldRange;}
+    })()`);
+    await checkAsync('a different clip resets old performer and scene identities to automatic',`(async()=>{
+      const oldList=vidList,oldDraw=vidDraw,oldSaved=vidSaved;
+      try{
+        vidList=()=>{};vidDraw=()=>{};vidSaved={src:{url:'https://old.example/clip'},anchorX:.13};vidBusy=false;
+        $('vidPlayer').src='old.mp4';$('vidRoutine').value='scene_8_3';$('vidDancer').value='99';
+        vidSetSrc('/new.mp4',{kind:'link',url:'https://new.example/clip',name:'new'});
+        return vidSaved===null&&vidRoutines.length===0&&vidRoutineRange===null&&$('vidRoutine').value==='auto'&&$('vidDancer').value==='auto';
+      }finally{vidList=oldList;vidDraw=oldDraw;vidSaved=oldSaved;}
     })()`);
     await checkAsync('cancelled read cannot repopulate observations or fit new modes',`(async()=>{
       vidFrames=vidFit=vidMade=null;vidRead=async()=>{vidModeChanged();return[{t:0,w:person()}];};

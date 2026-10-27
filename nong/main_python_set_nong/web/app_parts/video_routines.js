@@ -99,7 +99,7 @@ class VideoRoutineDiscovery {
     return routines.sort((a, b) => (a.kind === 'fragment') - (b.kind === 'fragment') || b.trustedCoverage - a.trustedCoverage);
   }
   finish() {
-    const shots = new Map(), common = new Map();
+    const shots = new Map(), common = new Map(), units = [];
     this.frames.forEach((frame, index) => {
       const visible = (frame.actors || []).filter(a => a.confidence >= VIDEO_FOLLOW.tracking.confidence);
       if (visible.length > 1 && visible.every(a => visible.every(b => VideoRoutineDiscovery.distance(a.body, b.body) <= this.config.styleDegrees)))
@@ -126,12 +126,13 @@ class VideoRoutineDiscovery {
         let routine = assignment?.routine;
         if (!routine) { routine = { id: routines.length + 1, observations: new Map(), people: new Set(), ambiguous: false }; routines.push(routine); }
         routine.ambiguous ||= !!assignment?.ambiguous;
-        for (const row of rows) {
-          const old = routine.observations.get(row.index);
-          // Select a real observation, never average different people.
-          if (!old || row.actor.confidence > old.confidence) routine.observations.set(row.index, { ...row.actor,
-            associationUncertain: !!assignment?.ambiguous });
-          routine.people.add(row.actor.id);
+        const observations = VideoRoutineSections.observations(group);
+        units.push({ shot: this.frames[first.index].shot, ordinal: groupIndex + 1, parentId: routine.id,
+          ambiguous: !!assignment?.ambiguous, people: new Set(rows.map(row => row.actor.id)).size, observations });
+        for (const row of rows) routine.people.add(row.actor.id);
+        for (const [index, actor] of observations) {
+          routine.observations.set(index, { ...actor, associationUncertain: !!assignment?.ambiguous });
+          routine.people.add(actor.id);
         }
         routine.last = rows.at(-1);
         routine.appearance = VideoAppearanceDescriptor.average([...routine.observations.values()].map(a => a.appearance));
@@ -147,9 +148,12 @@ class VideoRoutineDiscovery {
         const state = policy.step(actor?.associationUncertain ? null : actor?.body || null, f.cut ? Math.max(.25, f.scene) : f.scene, f.cut, actor && actor.confidence >= VIDEO_FOLLOW.tracking.confidence ? 1 : 0);
         return { ...f, ...state, w: actor?.w || null, p: actor?.p || null, track: actor?.id || null };
       });
-      return { id: r.id, frames, coverage: frames.filter(f => f.w).length / Math.max(1, this.frames.length),
+      return { id: r.id, frames, sourceStart: 0, sourceEnd: this.frames.at(-1)?.t || 0, coverage: frames.filter(f => f.w).length / Math.max(1, this.frames.length),
         trustedCoverage: frames.filter(f => f.w && f.trusted).length / Math.max(1, this.frames.length), people: r.people.size, ambiguous: r.ambiguous };
     }).sort((a, b) => b.coverage - a.coverage);
-    return this.classify(results);
+    const ranked = this.classify(results);
+    const qualified = new Set(ranked.filter(r => r.kind === 'routine' && r.trustedCoverage >= this.config.minimumSaveCoverage).map(r => r.id));
+    const sections = VideoRoutineSections.build(units, this.frames, this.options, this.config, qualified);
+    return qualified.size ? [...ranked, ...sections] : [...sections, ...ranked];
   }
 }

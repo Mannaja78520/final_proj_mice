@@ -51,6 +51,8 @@ Exact owned source paths below. Private v1 is rejected and preserved, not comple
 
 | nong/main_python_set_nong/web/app_parts/video_routine_assignment.js | bounded global matching solver | planned | not run | uncommitted |
 
+| nong/main_python_set_nong/web/app_parts/video_routine_sections.js | automatically export source-windowed unambiguous scene sections | planned | not run | uncommitted |
+
 ## Facts found
 - v1 canonicalization destroyed raw hip/shoulder geometry; old reference previews bypassed full physical checks. All v2 previews use the exact checked exported sequence.
 - Full geometry includes hand OBBs, joint spheres, nonadjacent same-arm bars and actual SHRUG. Legacy fkPoints readout remains unchanged. Final rounded RRT* legs rechecked using the most recent waypoint.
