@@ -143,6 +143,28 @@
     "cad": "root",
     "gapMm": 0
   },
+  "pieces": {
+    "_what": "A48-19 (user 2026-10-27): a SolidWorks export puts a joint's bolts in the PARENT link's STL, so they stayed behind when the joint turned. Each mesh is split into its separate pieces. links: a whole link rides on another (the shoulder ring L/R_sh_mid is fixed to the body, not turned by the roll). lock: a piece no bigger than smallMm follows the big piece its corners touch (within touchMm, points sampled). pick: [{link, pieces: [numbers], to}] puts named pieces on a link, over both. tools/urdf_parts.py <urdf> --assign <this file> prints the piece numbers and what rides where. The URDF is never changed.",
+    "links": [
+      {
+        "link": "L_sh_mid",
+        "to": "shrug_link"
+      },
+      {
+        "link": "R_sh_mid",
+        "to": "shrug_link"
+      }
+    ],
+    "lock": {
+      "on": true,
+      "smallMm": 12,
+      "touchMm": 0.3,
+      "points": 120,
+      "cellMm": 4,
+      "weldMm": 0.01
+    },
+    "pick": []
+  },
   "sizes": {
     "shoulderX": {
       "from": "R_SH_P",
