@@ -203,7 +203,7 @@ async function vidRead() {
   const select = $("vidRoutine"), previous = select?.value;
   if (select) {
     select.innerHTML = ''; select.add(new Option('Automatic main routine', 'auto'));
-    for (const routine of vidRoutines) select.add(new Option('Routine ' + routine.id + ' · ' + Math.round(routine.trustedCoverage * 100) + '% reliable' + (routine.ambiguous ? ' · check cut' : ''), String(routine.id)));
+    for (const routine of vidRoutines) select.add(new Option((routine.kind === 'fragment' ? 'Fragment ' : 'Routine ') + routine.id + ' · ' + Math.round(routine.trustedCoverage * 100) + '% reliable' + (routine.ambiguous ? ' · check cut' : ''), String(routine.id)));
     select.value = vidRoutines.some(r => String(r.id) === previous) ? previous : 'auto';
   }
   const selected = vidRoutines.find(r => String(r.id) === select?.value) || vidRoutines[0];
@@ -555,7 +555,7 @@ async function vidSaveRoutines() {
   vidBusy = true; vidStop = false; $("vidGo").textContent = '■ Stop';
   let saved = 0;
   try {
-    for (const routine of vidRoutines) {
+    for (const routine of vidRoutines.filter(r => r.kind === 'routine' && r.trustedCoverage >= VIDEO_FOLLOW.routines.minimumSaveCoverage)) {
       if (vidStop || generation !== vidGeneration) break;
       vidFrames = routine.frames; vidRemake('fit');
       if (!vidMade?.keys.length) continue;
@@ -566,7 +566,7 @@ async function vidSaveRoutines() {
     }
   } finally {
     vidBusy = false; $("vidGo").textContent = '▶ Make moves';
-    if (generation === vidGeneration) { $("vidRoutine").value = original; vidChooseRoutine(); vidSay('Saved ' + saved + ' separate routine projects. Review uncertain cuts before use.'); }
+    if (generation === vidGeneration) { $("vidRoutine").value = original; vidChooseRoutine(); vidSay('Saved ' + saved + ' separate routine projects. Short or uncertain fragments remain available for review.'); }
   }
 }
 function vidSummary() {

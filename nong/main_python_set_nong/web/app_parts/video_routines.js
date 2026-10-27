@@ -79,6 +79,26 @@ class VideoRoutineDiscovery {
     search(0, 0, new Set(), []);
     return picked.map((choice, i) => ({ ...choice, ambiguous: !!choice.routine && choices[i].some(c => c.routine !== choice.routine && c.cost - choice.cost < this.config.joinMarginDegrees) }));
   }
+  classify(routines) {
+    const distinct = [];
+    for (const routine of routines) {
+      routine.kind = distinct.every(other => {
+        let observed = 0, different = 0, persistent = 0, run = 0;
+        const flush = () => { if (run >= this.config.minimumDifferenceRunSeconds) persistent += run; run = 0; };
+        for (let i = 1; i < routine.frames.length; i++) {
+          const a = routine.frames[i], b = other.frames[i];
+          if (!a.w || !b?.w || !a.trusted || !b.trusted) { flush(); continue; }
+          const dt = Math.min(.5, Math.max(0, a.t - routine.frames[i - 1].t)); observed += dt;
+          if (VideoRoutineDiscovery.distance(a.body, b.body) > this.config.styleDegrees) { different += dt; run += dt; }
+          else flush();
+        }
+        flush();
+        return persistent >= this.config.minimumDistinctSeconds && different / Math.max(.001, observed) >= this.config.minimumDifferentFraction;
+      }) ? 'routine' : 'fragment';
+      if (routine.kind === 'routine') distinct.push(routine);
+    }
+    return routines.sort((a, b) => (a.kind === 'fragment') - (b.kind === 'fragment') || b.trustedCoverage - a.trustedCoverage);
+  }
   finish() {
     const shots = new Map(), common = new Map();
     this.frames.forEach((frame, index) => {
@@ -118,7 +138,7 @@ class VideoRoutineDiscovery {
         routine.appearance = VideoAppearanceDescriptor.average([...routine.observations.values()].map(a => a.appearance));
       }
     }
-    return routines.map(r => {
+    const results = routines.map(r => {
       const policy = new VideoTemporalPolicy(this.options.learned === false ? null : VIDEO_POLICY, this.options.cameraMode);
       const frames = this.frames.map((f, i) => {
         // Shared motion is supported by multiple people in THIS frame, not
@@ -130,5 +150,6 @@ class VideoRoutineDiscovery {
       return { id: r.id, frames, coverage: frames.filter(f => f.w).length / Math.max(1, this.frames.length),
         trustedCoverage: frames.filter(f => f.w && f.trusted).length / Math.max(1, this.frames.length), people: r.people.size, ambiguous: r.ambiguous };
     }).sort((a, b) => b.coverage - a.coverage);
+    return this.classify(results);
   }
 }

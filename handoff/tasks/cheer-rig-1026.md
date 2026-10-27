@@ -1,7 +1,7 @@
 # Group cheer video rig follow-up
 
 Owner: codex:10270037-9c0d
-Updated: 2026-10-27T16:47:25.752984+07:00
+Updated: 2026-10-27T20:26:27.568089+07:00
 Branch: codex/cheer-video-1027; isolated tree .staging-cheer-video-1027-r2
 Last commit: this checkpoint; root HEAD023c644 and unrelated dirty work preserved
 Plan: A48-21, fixes rejected A48-20 v1
@@ -10,7 +10,7 @@ Plan: A48-21, fixes rejected A48-20 v1
 Follow two supplied group cheer videos with real waist/shrug, stable actor identity across camera changes, separate choreography, collision-aware paths and genuine supplementary RL. Deliver four checked editable rigs/previews and the Studio feature fix.
 
 ## Doing now
-User requires automatic reuse for NEW clips and smooth dancing. Current native48/0, full real-clip fit diagnostics show roughly half the short reversals and lower maximum per-sample change; automatic global appearance/motion grouping has80/90percent visible coverage in main groups, ambiguous links marked, not guaranteed identity/gender. New root main023c644 (#83) landed/released15:14 while own stage remained isolated. Checkpoint new source, then rebase into new .staging-cheer-video-1027-r2 using three-way merge (completed without conflicts; canonical web rebuilt), preserve root dirty/user bytes and all A48-19 changes. Retest combined source before final retarget/render/package. No active QC/heavy driver now; no hardware/services.
+Merged main023c644 into own r2 without conflicts. Affected587/0, native50/0, prerequisite firmware/network/fake checks236/0 passed; no QC driver active. Current TDD exposes2 association defects (49pass/2expectedfail): global uniqueness must compare complete assignments; ambiguous links cannot become trusted merely after.5s. Independent tracking review also found trusted holds freeze before filtered target settles and batch saves serialize wrong routine selection. Fix all four with regressions, then new affected/review/full gate. User said continue; same scope, no abandonment. Review attempt hit next provider limit20:01; findings retained, no approval claimed. Source/rig outputs not final; no promotion/hardware/services.
 
 ## File status
 Exact owned source paths below. Private v1 is rejected and preserved, not completion evidence; old inventory/status is .local/cheer_rig_1027/task_previous.md. Private v2 files stay local; full exact inventory will accompany final validation.

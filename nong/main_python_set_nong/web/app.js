@@ -9329,6 +9329,26 @@ class VideoRoutineDiscovery {
     search(0, 0, new Set(), []);
     return picked.map((choice, i) => ({ ...choice, ambiguous: !!choice.routine && choices[i].some(c => c.routine !== choice.routine && c.cost - choice.cost < this.config.joinMarginDegrees) }));
   }
+  classify(routines) {
+    const distinct = [];
+    for (const routine of routines) {
+      routine.kind = distinct.every(other => {
+        let observed = 0, different = 0, persistent = 0, run = 0;
+        const flush = () => { if (run >= this.config.minimumDifferenceRunSeconds) persistent += run; run = 0; };
+        for (let i = 1; i < routine.frames.length; i++) {
+          const a = routine.frames[i], b = other.frames[i];
+          if (!a.w || !b?.w || !a.trusted || !b.trusted) { flush(); continue; }
+          const dt = Math.min(.5, Math.max(0, a.t - routine.frames[i - 1].t)); observed += dt;
+          if (VideoRoutineDiscovery.distance(a.body, b.body) > this.config.styleDegrees) { different += dt; run += dt; }
+          else flush();
+        }
+        flush();
+        return persistent >= this.config.minimumDistinctSeconds && different / Math.max(.001, observed) >= this.config.minimumDifferentFraction;
+      }) ? 'routine' : 'fragment';
+      if (routine.kind === 'routine') distinct.push(routine);
+    }
+    return routines.sort((a, b) => (a.kind === 'fragment') - (b.kind === 'fragment') || b.trustedCoverage - a.trustedCoverage);
+  }
   finish() {
     const shots = new Map(), common = new Map();
     this.frames.forEach((frame, index) => {
@@ -9368,7 +9388,7 @@ class VideoRoutineDiscovery {
         routine.appearance = VideoAppearanceDescriptor.average([...routine.observations.values()].map(a => a.appearance));
       }
     }
-    return routines.map(r => {
+    const results = routines.map(r => {
       const policy = new VideoTemporalPolicy(this.options.learned === false ? null : VIDEO_POLICY, this.options.cameraMode);
       const frames = this.frames.map((f, i) => {
         // Shared motion is supported by multiple people in THIS frame, not
@@ -9380,6 +9400,7 @@ class VideoRoutineDiscovery {
       return { id: r.id, frames, coverage: frames.filter(f => f.w).length / Math.max(1, this.frames.length),
         trustedCoverage: frames.filter(f => f.w && f.trusted).length / Math.max(1, this.frames.length), people: r.people.size, ambiguous: r.ambiguous };
     }).sort((a, b) => b.coverage - a.coverage);
+    return this.classify(results);
   }
 }
 class VideoSubjectTracker {
@@ -9926,7 +9947,7 @@ async function vidRead() {
   const select = $("vidRoutine"), previous = select?.value;
   if (select) {
     select.innerHTML = ''; select.add(new Option('Automatic main routine', 'auto'));
-    for (const routine of vidRoutines) select.add(new Option('Routine ' + routine.id + ' · ' + Math.round(routine.trustedCoverage * 100) + '% reliable' + (routine.ambiguous ? ' · check cut' : ''), String(routine.id)));
+    for (const routine of vidRoutines) select.add(new Option((routine.kind === 'fragment' ? 'Fragment ' : 'Routine ') + routine.id + ' · ' + Math.round(routine.trustedCoverage * 100) + '% reliable' + (routine.ambiguous ? ' · check cut' : ''), String(routine.id)));
     select.value = vidRoutines.some(r => String(r.id) === previous) ? previous : 'auto';
   }
   const selected = vidRoutines.find(r => String(r.id) === select?.value) || vidRoutines[0];
@@ -10278,7 +10299,7 @@ async function vidSaveRoutines() {
   vidBusy = true; vidStop = false; $("vidGo").textContent = '■ Stop';
   let saved = 0;
   try {
-    for (const routine of vidRoutines) {
+    for (const routine of vidRoutines.filter(r => r.kind === 'routine' && r.trustedCoverage >= VIDEO_FOLLOW.routines.minimumSaveCoverage)) {
       if (vidStop || generation !== vidGeneration) break;
       vidFrames = routine.frames; vidRemake('fit');
       if (!vidMade?.keys.length) continue;
@@ -10289,7 +10310,7 @@ async function vidSaveRoutines() {
     }
   } finally {
     vidBusy = false; $("vidGo").textContent = '▶ Make moves';
-    if (generation === vidGeneration) { $("vidRoutine").value = original; vidChooseRoutine(); vidSay('Saved ' + saved + ' separate routine projects. Review uncertain cuts before use.'); }
+    if (generation === vidGeneration) { $("vidRoutine").value = original; vidChooseRoutine(); vidSay('Saved ' + saved + ' separate routine projects. Short or uncertain fragments remain available for review.'); }
   }
 }
 function vidSummary() {
@@ -10689,7 +10710,7 @@ function vidSettings() {
   if (!vidSrc) return vidSaved;
   return { src: { kind: vidSrc.kind, name: vidSrc.name, url: vidSrc.url || "" },
            subjectMode: $("vidSubject")?.value || "auto", cameraMode: $("vidCamera")?.value || "auto",
-           routine: $("vidRoutine")?.value || "auto", routineSummary: typeof vidRoutines !== "undefined" ? vidRoutines.map(r => ({ id: r.id, coverage: r.coverage, trustedCoverage: r.trustedCoverage, ambiguous: r.ambiguous })) : [],
+           routine: $("vidRoutine")?.value || "auto", routineSummary: typeof vidRoutines !== "undefined" ? vidRoutines.map(r => ({ id: r.id, kind: r.kind, coverage: r.coverage, trustedCoverage: r.trustedCoverage, ambiguous: r.ambiguous })) : [],
            dancer: $("vidDancer")?.value || "auto", shrug: !!$("vidShrug")?.checked,
            anchorX: Number.isFinite(vidSaved?.anchorX) ? vidSaved.anchorX : 0.5,
            analysis: vidMade?.achieved ? { meanBoneDegrees: vidMade.achieved.meanBoneDegrees,

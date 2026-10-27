@@ -100,7 +100,7 @@ if(require.main===module){
     const d=new VideoRoutineDiscovery({}),roles=[{id:0,last:{t:0}},{id:1,last:{t:0}}];
     d.joinCost=(rows,role)=>rows[0].actor.costs[role.id];
     const groups=[[[{t:1,index:1,actor:{costs:[3,4]}}]],[[{t:1,index:1,actor:{costs:[2,40]}}]]];
-    const found=d.assign(groups,roles);return found[0].routine===roles[1]&&found[1].routine===roles[0];
+    const found=d.assign(groups,roles);return found[0].routine===roles[1]&&found[1].routine===roles[0]&&found.every(c=>!c.ambiguous);
   })()`);
   check('appearance descriptor is anonymous normalized and bounded',`(()=>{
     const p=Array.from({length:33},()=>({x:.5,y:.2}));p[11]={x:.3,y:.35};p[12]={x:.7,y:.35};p[23]={x:.3,y:.8};p[24]={x:.7,y:.8};
@@ -112,6 +112,19 @@ if(require.main===module){
     const poses=Array.from({length:30},(_,i)=>RIG.home.map((v,j)=>j===0?v+i*.2:v)),times=poses.map((_,i)=>i*100),frames=poses.map(()=>({trusted:true,action:'accept',shot:0}));
     const out=new VideoMotionSmoother().apply(poses,times,frames).poses;
     return out.slice(10).every((p,k)=>p[0]>out[k+9][0])&&out.at(-1)[0]>poses[0][0]+4;
+  })()`);
+  check('automatic routine qualification rejects isolated noise as a new dance',`(()=>{
+    const a=VideoBodyMotion.measure(person(0,0)),b=VideoBodyMotion.measure(person(0,0,[0,0,0],true));
+    const make=(id,raised)=>({id,coverage:1,trustedCoverage:1,frames:Array.from({length:80},(_,i)=>({t:i/10,w:[1],trusted:true,body:raised(i)?b:a}))});
+    const discovery=new VideoRoutineDiscovery({}),roles=discovery.classify([make(1,()=>false),make(2,i=>i===20),make(3,i=>i>=20&&i<=60)]);
+    return roles.find(r=>r.id===2).kind==='fragment'&&roles.find(r=>r.id===3).kind==='routine';
+  })()`);
+  check('ambiguous camera association remains uncertain beyond a fixed timeout',`(()=>{
+    const d=new VideoRoutineDiscovery({learned:false,cameraMode:'cuts'}),a=VideoBodyMotion.measure(person()),b=VideoBodyMotion.measure(person(0,0,[0,0,0],true));
+    d.joinCost=()=>5;
+    for(let i=0;i<16;i++)d.add({t:i*.2,shot:i<8?0:1,cut:i===8,scene:i===8?.8:0,actors:[
+      {id:i<8?1:3,confidence:1,cx:.3,w:person(),body:a},{id:i<8?2:4,confidence:1,cx:.7,w:person(0,0,[0,0,0],true),body:b}]});
+    const roles=d.finish();return roles.length===2&&roles.every(r=>r.frames.slice(8).every(f=>!f.trusted&&f.action==='uncertain'));
   })()`);
   check('explicit performer overrides auto subject',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'fixed',dancer:'2'});const f=tr.step(result([{x:.5,w:person(0,0)},{x:.8,w:person(0,0,[0,0,0],true)}]),0,null,0);return f.track===2;})()`);
   check('camera cut does not create waist jump',`(()=>{const tr=new VideoSubjectTracker({subjectMode:'group',cameraMode:'cuts',dancer:'auto'});const a=tr.step(result([{x:.5,w:person(.3,.05)}]),0,null,0),b=tr.step(result([{x:.4,w:person(.3,.05,[.7,1.2,.2])}]),.1,null,.8);return Math.abs(a.waist-b.waist)<.02;})()`);
@@ -212,7 +225,7 @@ if(require.main===module){
       const oldUse=vidUse,oldRemake=vidRemake,oldSave=globalThis.saveAll,oldAsk=globalThis.askUnsaved,oldName=globalThis.setWorkName;
       let saves=0,asks=0;
       try{
-        vidBusy=false;vidStop=false;vidRoutines=[{id:1,frames:[]},{id:2,frames:[]}];
+        vidBusy=false;vidStop=false;vidRoutines=[{id:1,kind:'routine',trustedCoverage:1,frames:[]},{id:2,kind:'routine',trustedCoverage:1,frames:[]}];
         globalThis.askUnsaved=async()=>{asks++;return true;};globalThis.setWorkName=()=>{};globalThis.saveAll=async()=>{saves++;return true;};
         vidRemake=()=>{vidMade={keys:[{pose:RIG.home,t:1000}]};};vidUse=async()=>{vidGeneration++;return true;};
         await vidSaveRoutines();return saves===0&&asks===1&&!vidBusy;
@@ -232,6 +245,18 @@ if(require.main===module){
       await vidMakeAndSave();return saves===0;
     })()`);
     run(read('video_page'));
+    await checkAsync('video tick displays a moving checked rig while source time remains flat',`(async()=>{
+      const oldNow=vidCheckedPlayback.now,oldRaf=globalThis.requestAnimationFrame;
+      const player=$('vidPlayer'),start=RIG.home.slice(),target=RIG.home.slice();target[0]+=10;
+      try{
+        globalThis.requestAnimationFrame=()=>{};vidOn=true;vidBusy=false;playing=false;vidFrames=null;
+        Object.assign(player,{src:'test.mp4',duration:20,currentTime:0,paused:true,seeking:false,pause(){this.paused=true;},play(){this.paused=false;return Promise.resolve();}});
+        $('vidFrom').value='0';$('vidTo').value='20';vidLastMs=0;
+        vidMade={keepMusic:false,keys:[{sourceMs:0,pose:start,t:1000},{sourceMs:0,pose:target,t:6000},{sourceMs:1000,pose:target,t:1000}]};
+        let now=0;vidCheckedPlayback.now=()=>now;vidCheckedPlayback.start(player,0);now=3000;vidTick();
+        return Math.abs(pose[0]-start[0]-5)<1e-5;
+      }finally{vidOn=false;vidCheckedPlayback.reset(player);vidCheckedPlayback.now=oldNow;globalThis.requestAnimationFrame=oldRaf;pose=RIG.home.slice();applyPose();}
+    })()`);
     await checkAsync('retimed show cannot attach original unwarped audio',`(async()=>{
       vidMade={keepMusic:false,keys:[{sourceMs:0,sourceHoldEnd:0,hold:0,t:1000},{sourceMs:1000,sourceHoldEnd:1000,hold:0,t:4000}]};
       let calls=0;fetch=async()=>{calls++;throw Error('must not upload');};

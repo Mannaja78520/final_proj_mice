@@ -233,7 +233,7 @@ function vidSettings() {
   if (!vidSrc) return vidSaved;
   return { src: { kind: vidSrc.kind, name: vidSrc.name, url: vidSrc.url || "" },
            subjectMode: $("vidSubject")?.value || "auto", cameraMode: $("vidCamera")?.value || "auto",
-           routine: $("vidRoutine")?.value || "auto", routineSummary: typeof vidRoutines !== "undefined" ? vidRoutines.map(r => ({ id: r.id, coverage: r.coverage, trustedCoverage: r.trustedCoverage, ambiguous: r.ambiguous })) : [],
+           routine: $("vidRoutine")?.value || "auto", routineSummary: typeof vidRoutines !== "undefined" ? vidRoutines.map(r => ({ id: r.id, kind: r.kind, coverage: r.coverage, trustedCoverage: r.trustedCoverage, ambiguous: r.ambiguous })) : [],
            dancer: $("vidDancer")?.value || "auto", shrug: !!$("vidShrug")?.checked,
            anchorX: Number.isFinite(vidSaved?.anchorX) ? vidSaved.anchorX : 0.5,
            analysis: vidMade?.achieved ? { meanBoneDegrees: vidMade.achieved.meanBoneDegrees,
