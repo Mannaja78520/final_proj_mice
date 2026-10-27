@@ -149,38 +149,28 @@ class TorchRig:
         return parts
 
     def clearance(self, pts):
-        """(B,) smallest surface gap in mm over the pairs Studio checks (approx)."""
+        """(B,) smallest surface gap in mm over the pairs Studio checks (approx).
+        All pairs go through ONE batched distance call: on a GPU the cost is the
+        number of kernel launches, not the number of robots."""
         L, R = self._parts(pts, "L"), self._parts(pts, "R")
         B = pts["shL"].shape[0]
-        gaps = []
         ta, tb, tr = self.torso
         ha, hr = self.head
-        for a in L.values():
-            for b in R.values():
-                gaps.append(_seg_dist(a[0], a[1], b[0], b[1]) - a[2] - b[2])
+        torso = (ta.expand(B, 3), tb.expand(B, 3), tr)
+        head = (ha.expand(B, 3), ha.expand(B, 3), hr)
+        pairs = [(a, b) for a in L.values() for b in R.values()]
         for arm in (L, R):
-            for key in [k for k in arm if k not in ("shoulder",)]:
-                a0, a1, ar = arm[key]
-                gaps.append(_seg_dist(a0, a1, ta.expand(B, 3), tb.expand(B, 3)) - ar - tr)
-                gaps.append(_seg_dist(a0, a1, ha.expand(B, 3), ha.expand(B, 3)) - ar - hr)
-            s0, _, sr = arm["shoulder"]
-            gaps.append(_seg_dist(s0, s0, ha.expand(B, 3), ha.expand(B, 3)) - sr - hr)
-            f0, f1, fr = arm["fore"]
-            gaps.append(_seg_dist(f0, f1, s0, s0) - fr - sr)
-            u0, u1, ur = arm["upper"]
+            for key in [k for k in arm if k != "shoulder"]:
+                pairs += [(arm[key], torso), (arm[key], head)]
+            s = arm["shoulder"]
+            pairs += [(s, head), (arm["fore"], s)]
             for k in range(len(self.PADDLE)):
-                h0, h1, hr2 = arm["hand%d" % k]
-                gaps.append(_seg_dist(h0, h1, s0, s0) - hr2 - sr)
-                gaps.append(_seg_dist(h0, h1, u0, u1) - hr2 - ur)
-        return torch.stack(gaps, 1).min(1).values
+                pairs += [(arm["hand%d" % k], s), (arm["hand%d" % k], arm["upper"])]
+        st = lambda i, side: torch.stack([p[side][i] for p in pairs], 1)
+        radii = torch.tensor([a[2] + b[2] for a, b in pairs], device=self.device, dtype=self.dtype)
+        return (_seg_dist(st(0, 0), st(1, 0), st(0, 1), st(1, 1)) - radii).min(1).values
 
 
 def angle_deg(a, b):
     """Angle between unit vectors, deg, safe at 0 and 180."""
     return torch.rad2deg(torch.atan2(torch.cross(a, b, dim=-1).norm(dim=-1), (a * b).sum(-1)))
-
-
-def wrap180(x):
-    return (x + 180) % 360 - 180
-
-

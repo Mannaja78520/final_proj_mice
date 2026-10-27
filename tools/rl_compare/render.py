@@ -104,8 +104,8 @@ class RobotPainter:
         cv2.rectangle(img, (x0, y0), (x0 + w, y0 + h), PANEL, -1)
         yaw, pitch = math.radians(angle["yaw"]), math.radians(angle["pitch"])
         cy, sy, cp, sp = math.cos(yaw), math.sin(yaw), math.cos(pitch), math.sin(pitch)
-        scale = min(w / 900.0, h / 820.0)
-        ox, oy = x0 + w / 2, y0 + h * 0.62
+        scale = min(w / 760.0, h / 720.0)               # arms up reach ~500 mm, the base is at -240
+        ox, oy = x0 + w / 2, y0 + h * 0.66
 
         def proj(p):
             x, y, z = p[..., 0], p[..., 1], p[..., 2]
@@ -180,7 +180,7 @@ class VideoWriter:
         w, h = size
         cmd = ["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{w}x{h}",
                "-r", str(fps), "-i", "-"]
-        if audio and Path(audio[0]).exists():
+        if audio and audio[0] and Path(audio[0]).exists():
             cmd += ["-ss", "%.3f" % audio[1], "-t", "%.3f" % audio[2], "-i", str(audio[0]),
                     "-map", "0:v", "-map", "1:a", "-c:a", "aac", "-b:a", "160k"]
         cmd += ["-c:v", "libx264", "-preset", "medium", "-crf", str(crf), "-pix_fmt", "yuv420p",
@@ -245,18 +245,20 @@ class ComparisonVideo:
                         rect = (left + a * cw + 4, head + r * rh + 4, cw - 8, rh - 8)
                         self.p.draw(img, rect, shapes[r], f, ang, row["color"], ghost)
                         cv2.rectangle(img, rect[:2], (rect[0] + rect[2], rect[1] + rect[3]), GRID, 1)
-                    self._stats(img, (16, head + vid_h + 50 + r * 46), row, f, t)
-                cv2.putText(img, "%5.1f s" % t, (W - 170, int(head * 0.62)), cv2.FONT_HERSHEY_SIMPLEX, 1.0, TEXT, 2, cv2.LINE_AA)
+                    self._stats(img, (16, head + vid_h + int(H * 0.05) + r * int(H * 0.045)), row, f, t, H / 1080)
+                cv2.putText(img, "%5.1f s" % t, (W - int(W * 0.09), int(head * 0.62)), cv2.FONT_HERSHEY_SIMPLEX, H / 1080,
+                            TEXT, max(1, int(2 * H / 1080)), cv2.LINE_AA)
                 out.write(img)
         finally:
             out.close()
 
     @staticmethod
-    def _stats(img, xy, row, f, t):
+    def _stats(img, xy, row, f, t, k):
         x, y = xy
-        cv2.circle(img, (x + 8, y + 10), 7, row["color"], -1, cv2.LINE_AA)
+        cv2.circle(img, (x + int(8 * k), y + int(10 * k)), max(3, int(7 * k)), row["color"], -1, cv2.LINE_AA)
         err = row.get("err")
         e = "" if err is None else "err %4.1f deg" % err[min(len(err) - 1, f)]
         lag = row.get("lag")
         lg = "" if lag is None else "  late %+5.1f s" % lag(t)
-        cv2.putText(img, "%s  %s%s" % (row["tag"], e, lg), (x + 24, y + 17), cv2.FONT_HERSHEY_SIMPLEX, 0.55, TEXT, 1, cv2.LINE_AA)
+        cv2.putText(img, "%s  %s%s" % (row["tag"], e, lg), (x + int(24 * k), y + int(17 * k)), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7 * k, TEXT, max(1, int(1.5 * k)), cv2.LINE_AA)

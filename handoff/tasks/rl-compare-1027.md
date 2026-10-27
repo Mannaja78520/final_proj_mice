@@ -1,7 +1,7 @@
 # RL vs planner dance comparison (separate experiment)
 
 Owner: claude:v7zr
-Updated: 2026-10-27T19:30Z
+Updated: 2026-10-27T19:55Z
 Branch: claude/project-thread-v7zrsg
 Last commit: this checkpoint
 Plan: A50-1
@@ -16,7 +16,7 @@ training wall time per run and per round, the GPU, and the planner's compute tim
 Must NOT change the main dance pipeline. Dance thread (cmsg_...BZPUoy331) owns Studio files.
 
 ## Doing now
-Writing tools/rl_compare/ (reference loader, torch kinematics + servo env, metrics).
+Full QC on the branch, then draft PR; then PC run steps to the coordinator.
 
 ## File status
 Baseline: origin/main 4c230e0.
@@ -24,10 +24,13 @@ Baseline: origin/main 4c230e0.
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | handoff/tasks/rl-compare-1027.md | this task | done | n/a | this checkpoint |
-| docs/PLAN.html, docs/plan_state.js | A50-1 added, doing | done | plan.py | this checkpoint |
-| tools/rl_compare/* | new experiment package | pending | not run | uncommitted |
-| config/rl_compare.json | settings (data) | pending | not run | uncommitted |
-| qc/checks/check_rl_compare.py | FK/metrics/servo checks | pending | not run | uncommitted |
+| docs/PLAN.html, docs/plan_state.js | A50-1 added, doing | done | plan.py | 1st WIP |
+| tools/rl_compare/{reference,kin,servo,planner,metrics,env,ppo,rl,render,report,run}.py | new experiment package | done | check_rl_compare 14/0; cloud --quick run end to end (CPU) | this checkpoint |
+| tools/rl_compare/{planner,studio_eval}.cjs | Studio planner + Studio collision check headless | done | planner reproduces Studio 7.49 deg | this checkpoint |
+| tools/rl_compare/README_TH.md, run_compare.bat | Thai guide, one-click run | done | read through | this checkpoint |
+| config/rl_compare.json | all settings (data) | done | check_rl_compare | this checkpoint |
+| qc/checks/check_rl_compare.py | FK, clearance vs Studio, warp, servo, caps, board clock | done | sabotage 6/6 caught | this checkpoint |
+| docs/systems.json, docs/systems/*.md | rl-compare system; rebuilt | done | systems build | this checkpoint |
 
 ## Facts found
 - Reference = `<name>_analysis.json` (PC .local/cheer_rig_1027): `fit.times` ms (6 fps, 951),
@@ -43,11 +46,18 @@ Baseline: origin/main 4c230e0.
 - Source video + audio: PC .local/cheer_rig_1026/{I0lCxX8373M,CLG7VdVhhLM}.mp4; v2 source.from/to.
 - PC VM (device_bash) has no torch and no GPU: training must go through Remote Control on Windows.
 
+- Collision gap (user 2026-10-27): 4 mm flags 0/567 v2 keys, 5 mm 23, 8 mm 56, 10 mm 70 (left v2,
+  Studio checker); user chose 10 mm as Studio default (dance thread owns safe_path.json clearMm).
+- Studio boxesHit inflates corners: approx clearance agrees with Studio on 3000 random poses within 1.5 mm.
+- RRT is random: planner results vary a little run to run (7.49 vs 7.59 deg).
+- CPU sanity (servo scenario, 1024 envs): RL song-clock error 26 -> 19 deg in 3 rounds; planner_music 26, planner_shape 46.
+
 ## Done
-- Read handoff, nong_sim, v2 files on the PC.
+- Package + QC + Thai guide; --quick pipeline ran end to end in the cloud (no source video here).
 
 ## Next
-1. Package + QC check, then PC run steps.
+1. PC: `pip install torch --index-url https://download.pytorch.org/whl/cu128` + opencv-python pillow;
+   `python -m tools.rl_compare.run --quick`, then the full run (README_TH.md). Report verdict.
 
 ## Blocked
 - Training/videos need the PC (RTX 5070 Ti) via the coordinator's Remote Control session.
