@@ -42,8 +42,15 @@
       this.lastFrame = null;
       if (root.dispatchEvent && root.CustomEvent) root.dispatchEvent(new root.CustomEvent("mice-resource-change"));
     }
-    frameDue(now) { return this.lastFrame === null || now - this.lastFrame >= 1000 / this.display().fps; }
-    rendered(now) { this.lastFrame = now; }
+    frameDue(now) { return this.lastFrame === null || now >= this.lastFrame + 1000 / this.display().fps; }
+    // The next frame is due one interval after the last DUE time, not after the
+    // vsync it landed on: "now - last >= 25 ms" on a 60 Hz screen drew every
+    // second vsync, 30 fps for a 40 fps profile (2026-10-27). A late frame
+    // never borrows more than one interval, so a stall does not cause a burst.
+    rendered(now) {
+      const gap = 1000 / this.display().fps;
+      this.lastFrame = this.lastFrame === null ? now : Math.max(this.lastFrame + gap, now - gap);
+    }
     applyRenderer(renderer, ratio) {
       renderer.setPixelRatio(Math.min(ratio || 1, this.display().pixelRatio));
       this.lastFrame = null;
