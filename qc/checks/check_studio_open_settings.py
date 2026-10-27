@@ -31,7 +31,7 @@ DRIVER = """
 function say(k, v){ return qcMark("SO " + k + "=" + String(v).replace(/[\\s|=]+/g, "~")); }
 function shown(d){
   return [...d.querySelectorAll("[data-stab]")].filter(c => c.offsetParent !== null)
-    .map(c => (c.querySelector("h2") || {}).textContent.split("(")[0].split(" \\u2014")[0].trim()).join(";");
+    .map(c => { var h = c.querySelector("h2"); return h ? h.firstChild.textContent.split("(")[0].split(" \\u2014")[0].trim() : ""; }).join(";");
 }
 window.addEventListener("load", async function(){
   try{

@@ -43,7 +43,8 @@
       "distances.js",
       "talk_gestures.js",
       "main_loop.js",
-      "boot.js"
+      "boot.js",
+      "panels.js"
     ]
   },
   "pages": [
