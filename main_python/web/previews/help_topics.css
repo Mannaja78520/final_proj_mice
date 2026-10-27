@@ -1,4 +1,0 @@
-/* Help, one topic at a time (A47-17 trial): the sidebar picks the topic, the
-   page shows only that one. A search shows every topic that matches again. */
-main > section.pv-off{display:none!important}
-nav a.on{font-weight:700;color:var(--acc)}

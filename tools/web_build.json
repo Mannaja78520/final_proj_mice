@@ -78,6 +78,7 @@
       "path": "main_python/web/help",
       "out": "main_python/web/help.html",
       "js": [
+        "topics.js",
         "search.js"
       ]
     }

@@ -2,8 +2,6 @@
   "_why": "TRIAL looks the user opens next to the real page to decide keep or drop (A47-17, user 2026-10-23: ลองทำดูหน่อยแล้วเปิดเป็น dummy เดี่ยวเข้าไปดูแยกว่าจะเอาไม่เอา). The hub serves `from` (a real built page) at `path` with `add` files put in; the real page never changes. A new trial is one entry here plus its files in this folder. Dropping a trial is deleting its entry and files.",
   "previews": [
     {"path": "/studio/preview.html", "root": "studio", "from": "index.html", "real": "/studio/",
-     "add": ["trial_bar.css", "studio_rail.css", "trial_bar.js", "studio_rail.js"]},
-    {"path": "/help-preview", "root": "hub", "from": "help.html", "real": "/help",
-     "add": ["trial_bar.css", "help_topics.css", "trial_bar.js", "help_topics.js"]}
+     "add": ["trial_bar.css", "studio_rail.css", "trial_bar.js", "studio_rail.js"]}
   ]
 }

@@ -25,8 +25,16 @@
         border-radius:6px;border-left:2px solid transparent}
   nav a:hover{color:var(--txt);background:var(--acc-soft)}
   nav a.on{color:var(--acc);border-left-color:var(--acc);background:var(--acc-soft);font-weight:600}
-  nav .grp{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
-           color:var(--mut);margin:var(--sp-4) 0 5px 10px;opacity:.72}
+  nav .grp{display:flex;justify-content:space-between;align-items:center;width:100%;
+           background:none;border:0;cursor:pointer;font:inherit;font-size:10.5px;
+           text-transform:uppercase;letter-spacing:.09em;color:var(--mut);
+           margin:var(--sp-4) 0 5px;padding:2px 10px;min-height:0}
+  nav .grp::after{content:"▾";font-size:12px}
+  nav .grp-box.shut .grp::after{content:"▸"}
+  nav .grp-n{margin-left:auto;margin-right:var(--sp-2);opacity:.7}
+  nav .grp-box:not(.shut) .grp-n{display:none}
+  nav .grp-links{display:flex;flex-direction:column;gap:2px}
+  nav .grp-box.shut .grp-links{display:none}
   main{padding:34px 0 96px;min-width:0}
   header.top{margin-bottom:30px}
   /* the shared head sits over both columns, at the document's width */
@@ -89,7 +97,8 @@
     .wrap{grid-template-columns:1fr;gap:0;padding:0 18px}
     nav{position:static;height:auto;flex-direction:row;flex-wrap:wrap;gap:5px;
         padding:20px 0 6px;border-bottom:1px solid var(--line)}
-    nav .grp{display:none}
+    nav .grp-box{width:100%}
+    nav .grp-links{flex-direction:row;flex-wrap:wrap;gap:5px}
     body>.topbar{padding:var(--sp-3) 18px 0}
     main{padding-top:var(--sp-6)}
   }
@@ -98,7 +107,7 @@
   .tasks .f{margin:0;padding:var(--sp-4);border-radius:var(--r-md)}
   .f{border-radius:var(--r-md);padding:var(--sp-4);margin-bottom:var(--sp-3)}
   #bytask{margin-top:var(--sp-6)}
-  nav .grp{font-size:11px;opacity:1}
+  nav .grp{font-size:11px}
 
 /* Topic-by-topic Help Navigation (A47-17 / Decoupled View) */
 main > section.pv-off { display: none !important; }
@@ -281,30 +290,9 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 <div class="wrap">
 <!-- GROUPED BY WHAT YOU ARE DOING (A41-6), not by where the code runs: the
      day-to-day screens first, building a board second, reference last.
-     A new section is a part file, one line below and one link here. -->
-<nav>
-  <a href="#bytask">Start with a task</a>
-  <div class="grp">Use it</div>
-  <a href="#hub">Mice Hub</a>
-  <a href="#modsite">A module's own page</a>
-  <a href="#studio">Nong Studio</a>
-  <a href="#tv">TV Remote</a>
-  <a href="#camera">Cameras</a>
-  <a href="#voice">Voice</a>
-  <a href="#faces">Reconize</a>
-  <a href="#gacha">Prize machines</a>
-  <a href="#all-jao">All-Jao Games</a>
-  <a href="#accounts">Accounts</a>
-  <div class="grp">Build and set up</div>
-  <a href="#firmware">Board setup</a>
-  <a href="#lift">Lift module</a>
-  <a href="#nong">Nong module</a>
-  <div class="grp">When something is wrong</div>
-  <a href="#qc">QC suite</a>
-  <a href="#transports">Transports</a>
-  <a href="#commands">Command language</a>
-  <a href="#files">Files &amp; formats</a>
-</nav>
+     A new section is a part file, one line below and one [id, words] line
+     in parts/topics.js (HELP_GROUPS), which draws this list. -->
+<nav id="helpNav" aria-label="Help topics"></nav>
 
 <main>
 <header class="top">
@@ -2512,6 +2500,58 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 </div>
 
 <script>
+// THE SIDEBAR, from data (A47-18, user 2026-10-23: "ทำ group ให้หน่อย ... โชว์ได้
+// หรือเก็บได้ตาม group เผื่อมีแอพและอย่างอื่นเพิ่มในอนาคต"). Each group opens and
+// closes and the page remembers which (localStorage); the open topic's group
+// always opens. Runs before search.js, which reads these links and adds
+// Previous / Next. A new app = one [id, words] line here + its part file.
+const HELP_GROUPS = [
+  {id: "start", label: "Start here", topics: [["bytask", "Start with a task"]]},
+  {id: "use", label: "Use it", topics: [
+    ["hub", "Mice Hub"], ["modsite", "A module's own page"], ["studio", "Nong Studio"],
+    ["tv", "TV Remote"], ["camera", "Cameras"], ["voice", "Voice"], ["faces", "Reconize"],
+    ["gacha", "Prize machines"], ["all-jao", "All-Jao Games"], ["accounts", "Accounts"]]},
+  {id: "build", label: "Build and set up", topics: [
+    ["firmware", "Board setup"], ["lift", "Lift module"], ["nong", "Nong module"]]},
+  {id: "wrong", label: "When something is wrong", topics: [
+    ["qc", "QC suite"], ["transports", "Transports"], ["commands", "Command language"],
+    ["files", "Files &amp; formats"]]},
+];
+
+(function(){
+  var nav = document.getElementById("helpNav");
+  if (!nav) return;
+  var closed = {};
+  try { closed = JSON.parse(localStorage.getItem("help_groups_closed") || "{}"); } catch (e) {}
+  function keep(){ try { localStorage.setItem("help_groups_closed", JSON.stringify(closed)); } catch (e) {} }
+  nav.innerHTML = HELP_GROUPS.map(function(g){
+    return '<div class="grp-box" data-grp="' + g.id + '"><button type="button" class="grp">' +
+      g.label + '<span class="grp-n">' + g.topics.length + '</span></button><div class="grp-links">' +
+      g.topics.map(function(t){ return '<a href="#' + t[0] + '">' + t[1] + '</a>'; }).join("") + '</div></div>';
+  }).join("");
+  function draw(){
+    nav.querySelectorAll(".grp-box").forEach(function(box){
+      var shut = !!closed[box.dataset.grp];
+      box.classList.toggle("shut", shut);
+      box.querySelector(".grp").setAttribute("aria-expanded", String(!shut));
+    });
+  }
+  nav.querySelectorAll(".grp").forEach(function(b){
+    b.addEventListener("click", function(){
+      var id = b.parentNode.dataset.grp;
+      closed[id] = !closed[id]; keep(); draw();
+    });
+  });
+  function openFor(hash){
+    var a = nav.querySelector('a[href="#' + hash + '"]');
+    var id = a && a.closest(".grp-box").dataset.grp;
+    if (id && closed[id]) { closed[id] = false; keep(); draw(); }
+  }
+  window.addEventListener("hashchange", function(){ openFor(location.hash.slice(1)); });
+  draw();
+  openFor(location.hash.slice(1));
+})();
+
 (function(){
   // OOP MiceHelpNavigator (A48-17) - encapsulated topic navigation, live search, and dynamic routing
   class MiceHelpNavigator {

@@ -30,10 +30,10 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `docs/systems.json`
 - `handoff/TEMPLATE.md`
 - `handoff/tasks/friend-face-server.md`
-- `handoff/tasks/gacha-links.md`
 - `handoff/tasks/gachapon.md`
 - `handoff/tasks/gemini-studio-tv-help-1024.md`
 - `handoff/tasks/handoff-file-status-1025.md`
+- `handoff/tasks/help-studio-settings.md`
 - `handoff/tasks/help-ui-1024.md`
 - `handoff/tasks/lab-day.md`
 - `handoff/tasks/person-tests.md`
