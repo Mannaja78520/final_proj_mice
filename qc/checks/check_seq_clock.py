@@ -62,6 +62,13 @@ def run(t):
     t.ok(re.search(r"millis\(\) - due_\) > \(int32_t\)CATCH_UP_MS\) due_ = millis\(\);", src),
          "past CATCH_UP_MS late, the clock starts again from now", "")
     t.contains(head, "CATCH_UP_MS", "the stall limit is named once")
-    # every way a run starts sets the clock, or the first deadline is stale
-    t.eq(len(re.findall(r"due_ = waitUntil_;", src)), 2,
-         "both ways to start a run (card and memory) start the clock")
+    # every way a run starts sets the clock, or the first deadline is stale.
+    # Since A52-1 (2026-10-28) the card and memory share begin_(), which sets it.
+    begin = src[src.find("bool SequencePlayer::begin_("):]
+    begin = begin[:begin.find("\n}\n")]
+    starts = [src[src.find(n):][:src[src.find(n):].find("\n}\n")] for n in
+              ("bool SequencePlayer::startText(", "bool SequencePlayer::startAt(")]
+    t.ok("due_ = waitUntil_;" in begin and all("return begin_(" in b for b in starts),
+         "both ways to start a run (card and memory) start the clock",
+         "begin_ sets the clock: %s; starts call it: %s" % ("due_ = waitUntil_;" in begin,
+                                                            ["return begin_(" in b for b in starts]))
