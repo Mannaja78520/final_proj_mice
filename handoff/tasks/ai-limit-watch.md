@@ -32,7 +32,7 @@ Baseline: e4b2069 (origin/main)
 | `tools/limitwatch/jobs.py` | detached launcher | done | check_ai_watch (fake workers) | this checkpoint |
 | `tools/limitwatch/brief.py` | handoff task discovery, done/stall test | done | check_ai_watch | this checkpoint |
 | `tools/limitwatch/watcher.py` | decision loop + state | done | check_ai_watch; sabotage of +60 s caught | this checkpoint |
-| `tools/ai_watch.py` | CLI run/tick/status/parse/install | done | parse on real texts; install pending | this checkpoint |
+| `tools/ai_watch.py` | CLI; install writes a launcher that tries mice_system, code, then the copy | done | check_ai_watch 19 PASS; install not run (blocked) | this checkpoint |
 | `qc/checks/check_ai_watch.py` | QC check, 18 asserts | done | PASS (quick, simulated) | this checkpoint |
 | `config/layout.json` | out kind ai_watch | done | check_root_tidy PASS | this checkpoint |
 | `docs/systems.json`, `docs/systems/ai-watch.md`, `docs/systems/{README,agents,qc}.md`, `docs/LAYOUT.md` | system entry + generated | done | check_systems PASS | this checkpoint |
@@ -53,7 +53,7 @@ Baseline: e4b2069 (origin/main)
 - Watcher, config, CLI, QC check (quick run: check_ai_watch check_systems check_root_tidy check_handoff_first, 116 PASS, simulated).
 
 ## Next
-1. `python tools/ai_watch.py install` (logon start) and `status`; after the repo rename or merge, run install again from the real tree.
+1. `python tools/ai_watch.py install` (logon start) and `status`; the launcher survives the rename and the merge; no second install.
 2. Full QC + PR/merge: cloud thread.
 
 ## Blocked

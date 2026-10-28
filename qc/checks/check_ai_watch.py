@@ -8,6 +8,7 @@ handoff/tasks, round after round until the task files say done.
 
 Held here on fakes in a temp home (the same file formats as the real PC,
 samples copied 2026-10-29 from ~/.codex/sessions and ~/.claude/projects):
+- the logon launcher finds the watcher after the code -> mice_system rename;
 - the reset time of every real wording (Codex "try again at 3:26 AM", Claude
   "resets 11:50am (Asia/Bangkok)" and "resets Nov 3, 9am", Gemini "retry in
   1h2m3.5s") is read right, without tzdata (the PC has none);
@@ -92,6 +93,14 @@ def run(t):
             ("RESOURCE_EXHAUSTED: Quota exceeded. Please retry in 1h2m3.5s.", at + dt.timedelta(seconds=3723.5))]:
         got = clk.parse(text, at)
         t.ok(got == want, "reset read from %r" % text[:48], "got %s want %s" % (got, want))
+    import ai_watch
+    from types import SimpleNamespace
+    pc = Path("E:/p")
+    lay = SimpleNamespace(data={"pc": {"rename": {"from": "code", "to": "mice_system"}}},
+                          real=pc / "code", work=pc / "code" / ".staging" / "ai-watch")
+    t.eq(ai_watch.roots(lay), [str(pc / "mice_system"), str(pc / "code"),
+                               str(pc / "mice_system" / ".staging" / "ai-watch"), str(lay.work)],
+         "the logon launcher tries the renamed repo, the old name, then the copy (survives rename/merge)")
     codex = real["providers"]["codex"]["resume"]["argv"]
     t.ok("resume" in codex and "{session}" in codex and "{cwd}" in codex,
          "the real Codex resume command resumes the same session in its folder", " ".join(codex))

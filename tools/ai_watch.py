@@ -10,8 +10,9 @@
 User 2026-10-29: Codex and Gemini stop at a usage limit and never come back by
 themselves; Claude does, but a weekly limit leaves its work stuck for days.
 Rules and commands are in config/ai_watch.json; state and logs in _out/ai_watch/.
-After the repo folder is renamed (code -> mice_system), run install again: the
-logon entry holds the script's absolute path.
+The logon entry runs a small launcher (%LOCALAPPDATA%/MiceAIWatch/launch.py)
+that tries the renamed repo, the old name, then the copy install ran from, so
+the code -> mice_system rename and the merge need no new install.
 """
 import argparse
 import datetime as dt
@@ -108,8 +109,36 @@ def _pythonw():
     return str(pw if pw.exists() else sys.executable)
 
 
+def roots(layout=LAYOUT):
+    """Where the watcher may live, best first: the renamed repo, the old name,
+    then this copy. The logon entry tries them in order at every start, so the
+    code -> mice_system rename, the merge to main and a cleaned .staging need no
+    second install (coordinator 2026-10-29)."""
+    rename = layout.data.get("pc", {}).get("rename", {})
+    parent = layout.real.parent
+    bases = [parent / rename[k] for k in ("to", "from") if rename.get(k)] + [layout.real]
+    try:  # the copy install ran from, also where it sits after the rename
+        rel = Path(layout.work).relative_to(layout.real)
+    except ValueError:
+        rel = None
+    found = bases + ([b / rel for b in bases] if rel and rel.parts else []) + [layout.work]
+    return [str(p) for p in dict.fromkeys(found)]
+
+
+LAUNCHER = '''import os, subprocess, sys
+# Written by tools/ai_watch.py install. Starts the first watcher found.
+for root in %r:
+    script = os.path.join(root, "tools", "ai_watch.py")
+    if os.path.isfile(script):
+        sys.exit(subprocess.call([sys.executable, script, "run"], cwd=root))
+'''
+LAUNCH_FILE = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / TASK / "launch.py"
+
+
 def cmd_install(args):
-    line = '"%s" "%s" run' % (_pythonw(), Path(__file__).resolve())
+    LAUNCH_FILE.parent.mkdir(parents=True, exist_ok=True)
+    LAUNCH_FILE.write_text(LAUNCHER % roots(), encoding="utf-8")
+    line = '"%s" "%s"' % (_pythonw(), LAUNCH_FILE)
     r = subprocess.run(["schtasks", "/Create", "/TN", TASK, "/SC", "ONLOGON", "/RL", "LIMITED",
                         "/TR", line, "/F"], capture_output=True, text=True)
     if r.returncode == 0:
@@ -118,7 +147,8 @@ def cmd_install(args):
         STARTUP.write_text('CreateObject("WScript.Shell").Run "%s", 0, False\r\n'
                            % line.replace('"', '""'), encoding="utf-8")
         print("Task Scheduler refused (%s); startup entry %s" % (r.stderr.strip()[:120], STARTUP))
-    subprocess.Popen([_pythonw(), str(Path(__file__).resolve()), "run"], cwd=str(LAYOUT.work),
+    print("tries, in order: " + " | ".join(roots()))
+    subprocess.Popen([_pythonw(), str(LAUNCH_FILE)], cwd=str(LAYOUT.work),
                      creationflags=0x00000008 | 0x00000200 if os.name == "nt" else 0)
     print("started")
     return 0
@@ -126,8 +156,9 @@ def cmd_install(args):
 
 def cmd_uninstall(args):
     subprocess.run(["schtasks", "/Delete", "/TN", TASK, "/F"], capture_output=True)
-    if STARTUP.exists():
-        STARTUP.unlink()
+    for f in (STARTUP, LAUNCH_FILE):
+        if f.exists():
+            f.unlink()
     print("removed the logon entry (a running watcher keeps going until the PC restarts or it is killed)")
     return 0
 
