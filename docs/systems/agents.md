@@ -67,8 +67,9 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 
 - nothing
 
-## Checks that test it (24)
+## Checks that test it (25)
 
+- `check_ai_watch`
 - `check_branch`
 - `check_designer_first`
 - `check_dev_tools`
@@ -94,4 +95,4 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `check_tidy_pc`
 - `check_translate`
 
-Run them: `python qc/run_qc.py --no-build check_branch check_designer_first check_dev_tools check_faces_count check_handoff_first check_history check_livedoc check_local_panel check_onefile check_packing_list check_panel check_plan_areas check_plan_live check_plan_owner check_plan_updates check_promote_ask check_qc_probe_integrity check_read_rules check_readme_routes check_root_tidy check_stale_build check_systems check_tidy_pc check_translate`
+Run them: `python qc/run_qc.py --no-build check_ai_watch check_branch check_designer_first check_dev_tools check_faces_count check_handoff_first check_history check_livedoc check_local_panel check_onefile check_packing_list check_panel check_plan_areas check_plan_live check_plan_owner check_plan_updates check_promote_ask check_qc_probe_integrity check_read_rules check_readme_routes check_root_tidy check_stale_build check_systems check_tidy_pc check_translate`
