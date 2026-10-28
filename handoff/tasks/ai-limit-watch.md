@@ -17,7 +17,7 @@ Config-driven (providers, commands, thresholds). Test with a fake limit message 
 with the running Codex CAD job. Never edit the friend's folders; never stop RL/YOLO.
 
 ## Doing now
-Installing the watcher on the PC (logon start) from this clone and checking it on the real logs (the running Codex CAD job).
+Waiting for the user to start the watcher (see Blocked).
 
 ## File status
 Baseline: e4b2069 (origin/main)
@@ -57,4 +57,7 @@ Baseline: e4b2069 (origin/main)
 2. Full QC + PR/merge: cloud thread.
 
 ## Blocked
-- nothing
+- Starting the watcher (`install` = logon entry, or `run`) was refused by Claude's auto-mode safety check
+  (persistence / starting autonomous agents). The user runs `python tools/ai_watch.py install` once, or allows it.
+- Dry tick on the real logs 2026-10-29 03:50: found the CAD Codex limit (session 01a1842a-5b15..., reset 03:26 local, right)
+  and skipped it because that session was already resumed by hand. No Claude limit in the last 12 h.
