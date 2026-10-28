@@ -66,6 +66,90 @@
     "azimuthDeg": [0, 360], "elevationDeg": [-15, 35], "distanceMm": [900, 2600],
     "fovDeg": [45, 75], "lookJitterMm": 120, "seed": 1
   },
+  "render": {
+    "cad": {
+      "enabled": true,
+      "source": "nong/main_python_set_nong/models/nong_description/meshes",
+      "gridMm": 1.5,
+      "waistTopMm": 464.6,
+      "unlabelled": [
+        "base",
+        "head",
+        "neck",
+        "chest_front",
+        "L_hand_tip",
+        "R_hand_tip",
+        "L_hand_edge",
+        "R_hand_edge"
+      ],
+      "links": {
+        "waist": "waist_link",
+        "shrug": "shrug_link",
+        "L_sh": "L_sh_mid",
+        "L_upper": "L_upper_link",
+        "L_el": "L_el_mid",
+        "L_fore": "L_fore_link",
+        "R_sh": "R_sh_mid",
+        "R_upper": "R_upper_link",
+        "R_el": "R_el_mid",
+        "R_fore": "R_fore_link"
+      },
+      "shrugLiftMm": 63.329,
+      "keypointRadiusMm": {
+        "L_shoulder": 40,
+        "R_shoulder": 40,
+        "L_elbow": 40,
+        "R_elbow": 40
+      }
+    },
+    "minVisibleKeypoints": 3,
+    "boundsLandmarks": ["base"],
+    "seed": 1028,
+    "colour": [
+      0.35,
+      0.95
+    ],
+    "light": [
+      0.45,
+      0.95
+    ],
+    "lightMin": [
+      -1,
+      0.5,
+      -2
+    ],
+    "lightMax": [
+      1,
+      2,
+      2
+    ],
+    "textureRepeat": [
+      2,
+      12
+    ],
+    "blurSigma": [
+      0.2,
+      1.4
+    ],
+    "noiseSigma": [
+      0,
+      9
+    ],
+    "depthMarginMm": 5,
+    "keypointRadiusMm": {
+      "head": "headR",
+      "neck": 5,
+      "base": 5,
+      "chest_front": 0,
+      "L_hand_tip": 8,
+      "R_hand_tip": 8,
+      "L_hand_edge": 8,
+      "R_hand_edge": 8
+    },
+    "backgroundDepthMm": 5000,
+    "jpegQuality": 90
+  },
+  "labLabels": {"minAnchors": 4, "maxAnchorPx": 3, "stillMeanAbs": 3.5},
   "detector": {
     "_about": "a YOLO pose model trained on synth + lab frames (handoff/tasks/robot-pose-data.md); optional: needs `pip install ultralytics`",
     "model": ".local/robot_pose/model/best.pt", "conf": 0.25
