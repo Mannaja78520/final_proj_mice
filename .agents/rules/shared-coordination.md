@@ -5,7 +5,7 @@ trigger: always_on
 # Shared Mice workspace
 
 Before any edits, read AGENTS.md, CLAUDE.md, docs/COORDINATION.md and the newest
-docs/BRIDGE.md entries from E:/final_proj/mice/code. Follow their ownership,
+docs/BRIDGE.md entries from <root>. Follow their ownership,
 shared mutex, staging, QC and handoff rules. These paths refer to the real
 project root, including when your working tree is a staging copy.
 

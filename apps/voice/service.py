@@ -553,7 +553,7 @@ class Brain:
         # Missing model keys mean the SAME defaults the loaders would pick -
         # comparing against None here would drop a healthy model on every
         # save that did not name one.
-        defaults = {"stt": "small", "llm": r"E:\final_proj\mice\code\llm"}
+        defaults = {"stt": "small", "llm": str(CODE / "llm")}
         drop = []
         for kind in ("stt", "llm"):
             want = ((fresh.get(kind) or {}).get("model")
@@ -2003,7 +2003,7 @@ class Brain:
         try:
             import torch                                    # noqa: F401
             from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
-            mid = self.cfg.get("llm", {}).get("model", r"E:\final_proj\mice\code\llm")
+            mid = self.cfg.get("llm", {}).get("model", str(CODE / "llm"))
             tok = AutoTokenizer.from_pretrained(mid, trust_remote_code=True)
             mdl = None
             resource_plan, memory_budget = self._resources.torch_plan(torch)

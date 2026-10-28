@@ -224,7 +224,7 @@ def save(what):
               "python qc/run_qc.py --quick                    ~90 s, is it green now",
               "python firmware/tools/gen_tables.py            after editing WebUI.h or mice.css",
               "python qc/run_qc.py                            full, real browser",
-              "python E:/final_proj/mice/code/promote.py      gate + promote, absolute path",
+              "python <root>/promote.py      gate + promote, absolute path",
               "python tools/plan.py show                      what the plan says",
               "python tools/handover.py save \"<next step>\"     checkpoint again",
               "```", "",

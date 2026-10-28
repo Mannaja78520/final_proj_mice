@@ -79,7 +79,7 @@ not the state: the state is your task file.
 ## Where things are
 
 
-- Repo: https://github.com/Mannaja78520/final_proj_mice (PUBLIC). PC copy: `E:\final_proj\mice\code`.
+- Repo: https://github.com/Mannaja78520/final_proj_mice (PUBLIC). PC copy: `E:\final_proj\mice\mice_system` (the folder was `code` until A51-3 renames it). Docs write it `<root>`; `python tools/layout.py where` prints it.
 - Folder map: [docs/LAYOUT.md](docs/LAYOUT.md) (from `config/layout.json`; paths in code via `tools/layout.py` RepoLayout). Working copies `.staging/<task>`, tool output `_out/`; nothing new loose at the root (check_root_tidy).
 - Apps per PC (extensions): [docs/extensions.md](docs/extensions.md) (`mice-app.json`, add/remove/update, code `main_python/extensions.py`); client-PC install guide [docs/INSTALL.md](docs/INSTALL.md).
 - Hub (MiceHub) http://127.0.0.1:8642, log in as admin yourself. Exe: `python -m PyInstaller --clean --noconfirm MiceHub.spec` (always the spec). After a pull: `python tools/systems.py build`.

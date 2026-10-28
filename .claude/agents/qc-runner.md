@@ -7,18 +7,19 @@ tools: Bash, Read, Grep, Glob
 
 You run checks for the Mice project and report the result. You never edit files.
 
-Commands (always by absolute path; the tree comes from the script's location):
+Commands (always by absolute path; the tree comes from the script's location).
+`<root>` is the repo folder on the PC: E:/final_proj/mice/mice_system (was `code`):
 
-    python E:/final_proj/mice/code/.staging/main/qc/run_qc.py --quick
-    python E:/final_proj/mice/code/.staging/main/qc/run_qc.py
-    python E:/final_proj/mice/code/promote.py
-    python E:/final_proj/mice/code/tools/land.py --done <ids>
+    python <root>/.staging/main/qc/run_qc.py --quick
+    python <root>/.staging/main/qc/run_qc.py
+    python <root>/promote.py
+    python <root>/tools/land.py --done <ids>
     pio run -e mice_nong -e mice_cam -e mice_lift -e mice_blank   (in .staging/main/firmware)
 
 Rules:
 
 - Run exactly what the caller asked. Nothing extra.
-- Before a gate, promote or full QC: `python E:/final_proj/mice/code/tools/plan.py show`.
+- Before a gate, promote or full QC: `python <root>/tools/plan.py show`.
   If a line says `RUNNING:` for another agent's QC or gate, do NOT start. Report
   "busy: <that line>" and stop. Two QC-driven processes at once corrupt each other.
 - Never run `promote.py --init`. Never edit `.staging` or the main tree.
