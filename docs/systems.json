@@ -206,7 +206,7 @@
                "tools/branch.py", "tools/make_app_branch.py", "tools/livedoc.py",
                "tools/reports.py", "tools/make_diary.py", "tools/systems.py",
                "CLAUDE.md", "AGENTS.md", "GEMINI.md", "README.md",
-               "docs/systems.json", "config/layout.json", "tools/layout.py", "docs/LAYOUT.md",
+               "docs/systems.json", "config/layout.json", "tools/layout.py", "tools/tidy_pc.py", "docs/LAYOUT.md",
                "tools/handoff.py", "HANDOFF.md", "handoff/"],
      "depends": []},
 

@@ -13,8 +13,8 @@ QC suite. This is the same machinery `qc/run_qc.py` uses; nothing new to install
 
 ```python
 import sys
-sys.path.insert(0, r"E:\final_proj\mice\code\.staging\qc")
-sys.path.insert(0, r"E:\final_proj\mice\code\.staging\qc\lib")
+sys.path.insert(0, r"<root>\.staging\main\qc")
+sys.path.insert(0, r"<root>\.staging\main\qc\lib")
 
 import browser, fake_serial, qc as F
 

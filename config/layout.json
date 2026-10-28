@@ -26,6 +26,30 @@
     }
   },
 
+  "pc": {
+    "_why": "The PC folder around the repo (A51-3, user 2026-10-27/28): rename the repo folder and tidy the parent. tools/tidy_pc.py reads this; it only MOVES, never deletes, and does an entry only when its ok names who approved it. Folder access, the hub and the friend's apps keep working: config/partners.json uses {parent}/..., and the friend's repos stay git repos wherever they sit. Add a move = add one entry; approve = fill ok.",
+    "rename": { "from": "code", "to": "mice_system", "ok": "user 2026-10-27 (mice_system ได้)" },
+    "moves": [
+      { "from": ["Photobooth"], "to": "photobooth/Photobooth", "ok": "user 2026-10-27",
+        "why": "the friend's git repo (ChocolateOwO/Photobooth); a moved repo still pulls" },
+      { "from": ["Photobooth-run"], "to": "photobooth/run", "ok": "user 2026-10-27",
+        "why": "run data of the booth, kept beside the repo, never inside it" },
+      { "from": ["ตู้มหัสจรรย์_*.docx", "ตู้มหัสจรรย์_*.pdf", "A26-109_*", "HANDOFF_THESIS_*.md",
+                 "THESIS_X1_*.json", "thesis_v326_claude", "v326_claude_render", "_review_word_images"],
+        "to": "thesis_archive", "ok": "", "why": "old thesis versions and their renders in one place; thesis/ itself stays" },
+      { "from": ["electric"], "to": "hardware/electric", "ok": "", "why": "circuit files" },
+      { "from": ["servo_chest_holder.3mf", "infill_sf15"], "to": "hardware/print", "ok": "", "why": "3D print files" },
+      { "from": ["shrug_sheet.csv", "waist_sheet.csv"], "to": "hardware/servo_tables", "ok": "", "why": "servo tables" },
+      { "from": ["friend_api_handoff"], "to": "to_friend", "ok": "", "why": "documents sent to the friend" },
+      { "from": ["build", "dist", "build.bat"], "to": "_to_delete", "ok": "",
+        "why": "made by running build.bat in the wrong folder; deleting _to_delete later needs the user's ลบ" }
+    ],
+    "keep": ["code", "mice_system", "Face_Regonize", "All-Jao-Games", "model", "thesis",
+             "photobooth", "thesis_archive", "hardware", "to_friend", "_to_delete"],
+    "fix_text": [".json", ".bat", ".ps1", ".yaml", ".yml", ".cfg", ".ini"],
+    "rc_start": "Set-Location \"{root}\"; & \"$env:USERPROFILE\\.local\\bin\\claude.exe\" remote-control --permission-mode bypassPermissions --spawn same-dir"
+  },
+
   "root": {
     "files": {
       "README.md": "what this project is, how to start",

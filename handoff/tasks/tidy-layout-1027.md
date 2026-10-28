@@ -4,7 +4,7 @@ Owner: claude:10271959-0190
 Updated: 2026-10-28 00:40 +0000
 Branch: claude/project-thread-9y1rwe
 Last commit: this checkpoint
-Plan: A51-1 (PR #93 merged e1eaefd), A51-2 (PR #95 merged b7005d8) - both done
+Plan: A51-1 (PR #93 merged e1eaefd), A51-2 (PR #95 merged b7005d8) - both done; A51-3 doing
 
 ## Goal
 User 2026-10-27: the code folder is cluttered; put .staging copies in their own
@@ -13,7 +13,9 @@ folder so they stop piling up at the root; tidy the other folders; rename
 header map of what lives where. Plan: /mnt/project-files/layout/layout_plan_2026-10-27.md
 
 ## Doing now
-Nothing running. Code for A51-1 and A51-2 is merged. What is left waits on the PC or the user (Next).
+A51-3 (user 2026-10-28): rename code -> mice_system + parent moves. tools/tidy_pc.py (class PcTidy) reads config/layout.json "pc";
+check_tidy_pc (sabotage 4/4); hooks use $env:CLAUDE_PROJECT_DIR (worktree/.staging part stripped), voice llm default = CODE/llm,
+docs say <root>. PC run = pc_steps_A51-1.md section 5, only after RL + YOLO training end. Thesis/hardware/to_friend/_to_delete moves wait for the user's OK (fill "ok").
 
 ## File status
 Baseline: e1eaefd (PR #93 merged). PR 2 = A51-2.

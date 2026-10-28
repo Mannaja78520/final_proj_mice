@@ -20,7 +20,7 @@
           {
             "type": "command",
             "shell": "powershell",
-            "command": "$in = [Console]::In.ReadToEnd() | ConvertFrom-Json; Add-Content -Encoding utf8 -Path 'E:\\final_proj\\mice\\code\\firmware\\promt.md' -Value (\"`n### \" + (Get-Date -Format 'yyyy-MM-dd HH:mm') + \"`n\" + $in.prompt)"
+            "command": "$in = [Console]::In.ReadToEnd() | ConvertFrom-Json; Add-Content -Encoding utf8 -Path (Join-Path $env:CLAUDE_PROJECT_DIR 'promt.md') -Value (\"`n### \" + (Get-Date -Format 'yyyy-MM-dd HH:mm') + \"`n\" + $in.prompt)"
           }
         ]
       }

@@ -24,7 +24,7 @@ must be told to reload it; creating this file does not notify them.
    outputs and tests that your commands write, not just hand-edited files.
    Directory claims overlap every file beneath that directory.
 
-All coordination uses the real root E:/final_proj/mice/code, even when source
+All coordination uses the real root <root> (the repo folder on the PC, E:/final_proj/mice/mice_system, was `code`; `python tools/layout.py where`), even when source
 work is in a staging copy. BRIDGE is the append-only ownership and handoff
 log; PLAN remains the task progress record and handoff/tasks/ the handoff
 state. HANDOVER is an old checkpoint, not proof of present ownership. Old timestamps do not release a claim.
@@ -84,13 +84,13 @@ agent can hand off ... for the hit limit one*. tools/plan.py enforces it:
 
 ## Serialize claims and shared bookkeeping
 
-Use E:/final_proj/mice/code/.staging-coordination.lock as a SHORT mutex for
+Use <root>/.staging-coordination.lock as a SHORT mutex for
 BRIDGE appends and tools/plan.py calls. It is a directory; the .staging prefix
 keeps it out of source promotion and Git through existing rules.
 
 - Acquire by creating the directory exclusively, without -Force. In
   PowerShell: New-Item -ItemType Directory -Path
-  'E:/final_proj/mice/code/.staging-coordination.lock' -ErrorAction Stop.
+  '<root>/.staging-coordination.lock' -ErrorAction Stop.
   Run that as one command. If it fails, do not perform dependent writes.
 - Write owner.txt inside it with your session and the machine timestamp.
   Re-read BRIDGE AFTER acquiring the mutex. If an overlapping claim exists,
@@ -180,7 +180,7 @@ work, record corrections, deduplicate sources and verify the rendered page.
 
 ```text
 Read AGENTS.md, CLAUDE.md, docs/COORDINATION.md and the newest docs/BRIDGE.md
-entries in E:/final_proj/mice/code before your next edit. Identify your
+entries in <root> before your next edit. Identify your
 assistant/session and claim your exact files and resources using the shared
 mutex. Preserve other assistants' changes. Work only on your assigned task;
 one owner per file, one owner for shared staging, one QC driver at a time.
@@ -284,7 +284,7 @@ The current paste-in prompt is at the top of HANDOFF.md's pick-up steps:
 The older long prompt below is kept for agents sharing one live tree.
 
 ```text
-Continue the current handed-off task in E:/final_proj/mice/code. Read
+Continue the current handed-off task in <root>. Read
 HANDOFF.md and the named task file in handoff/tasks/, AGENTS.md, CLAUDE.md,
 docs/COORDINATION.md and latest relevant docs/BRIDGE.md claims, then the
 named task in the real plan (robot/system page explicitly).
