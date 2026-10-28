@@ -190,6 +190,7 @@ def run(t):
         syntax = ast.parse((F.CODE/"apps/voice/service.py").read_text(encoding="utf-8"))
         methods = {n.name:n for n in ast.walk(syntax) if isinstance(n,ast.FunctionDef) and n.name in ("maybe_reload","translate_all","do_translate")}
         def production(name, namespace):
+            namespace.setdefault("CODE", F.CODE)   # service.py's module constant (its default llm/ folder)
             exec(compile(ast.Module(body=[methods[name]],type_ignores=[]),str(F.CODE/"apps/voice/service.py"),"exec"),namespace)
             return namespace[name]
         fresh_file=Path(folder)/"voice.json";fresh_file.write_text("{}")

@@ -94,7 +94,7 @@ New file or system: add it to `docs/systems.json`, then `python tools/systems.py
 ## Rules that already cost real work
 
 1. The code is the source of truth — not the plan, a comment, or the user's description.
-2. Work in `.staging/<task>` (default `.staging/main`; map: docs/LAYOUT.md). Promote with `python E:/final_proj/mice/code/promote.py`
+2. Work in `.staging/<task>` (default `.staging/main`; map: docs/LAYOUT.md). Promote with `python <root>/promote.py` (`<root>` = the repo folder on the PC, E:/final_proj/mice/mice_system, was `code`)
    (runs full QC, copies back only when green). Always the absolute path.
 3. NEVER run `promote.py --init` while staging holds unpromoted work.
 4. Every fix needs a QC check, proven by breaking the fix:
@@ -135,7 +135,7 @@ Gemini designs visible surfaces; Claude builds and verifies logic.
 python qc/run_qc.py --quick        while iterating (~10 s)
 pio run -e mice_nong -e mice_cam -e mice_lift -e mice_blank
 python qc/run_qc.py                full, real browser (~8 min)
-python E:/final_proj/mice/code/promote.py
+python <root>/promote.py
 ```
 
 Rebuild the exe when `main_python/` or `config/` changed:

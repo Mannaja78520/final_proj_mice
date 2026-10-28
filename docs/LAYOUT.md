@@ -52,6 +52,7 @@ Where things live. Edit `config/layout.json`, then `python tools/layout.py build
 
 ## Tool output (git-ignored)
 
+- `_out/ai_watch/`: the AI usage-limit watcher's state, events and worker logs (tools/ai_watch.py)
 - `_out/runs/`: results of long experiments (RL, benchmarks) a tool saves
 - `_out/scratch/`: experiments and samples (was scratch/)
 - `_out/test_media/`: photos and videos for face/video tests (was _photo_test/, _video_test/)
