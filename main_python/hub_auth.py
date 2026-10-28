@@ -112,8 +112,10 @@ CODE_GATED = {"/api/pair/claim"}
 # Paths that READ on GET and CHANGE on POST. Gating the whole path would take
 # away the status the pages poll for, so only the writing half is gated.
 GATED_POST = {
+    "/api/resources",
     "/api/settings",      # GET reads the shared settings, POST writes them
     "/api/play",          # GET reports the show, POST starts it
+    "/api/play/home",     # epoch-fenced selected-robot HOME
     # Live audio out of a robot standing in a room full of people: starting it
     # is as much "make the rig do something" as starting a show. Reading where
     # it is up to stays open, like every other status.

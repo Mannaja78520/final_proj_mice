@@ -45,8 +45,6 @@ TITLE = "the face watcher answers on this PC only, and says what it cannot see"
 # over it, and the failure would look like the code rather than the schedule.
 SOLO = True
 
-PORT = 8769
-BASE = "http://127.0.0.1:%d" % PORT
 CFG = "config/faces.json"
 
 
@@ -122,7 +120,7 @@ def run(t):
     path = F.CODE / CFG
     before = path.read_bytes()
     try:
-        path.write_text('{"service": "http://0.0.0.0:%d"}' % PORT,
+        path.write_text('{"service": "http://0.0.0.0:%d"}' % port,
                         encoding="utf-8")
         # A helper that IGNORES the rule does not exit - it serves the world
         # and sits there. So the timeout is the interesting outcome, not an
@@ -131,7 +129,7 @@ def run(t):
         served_anyway = False
         said, code = "", 0
         try:
-            r = subprocess.run([sys.executable, str(svc)], env=child_env, cwd=str(F.CODE),
+            r = subprocess.run([sys.executable, str(svc), "--port", str(port)], env=child_env, cwd=str(F.CODE),
                                capture_output=True, text=True, timeout=25,
                                encoding="utf-8", errors="replace")
             said = (r.stdout or "") + (r.stderr or "")
@@ -142,6 +140,8 @@ def run(t):
             if isinstance(out, bytes):
                 out = out.decode("utf-8", "replace")
             said = out
+        t.ok("USER-NOTREADY" not in said,
+             "the refusal comes from production policy, not the test envelope", said[:300])
         t.ok(not served_anyway,
              "a non-loopback address does not start a server at all",
              "it kept listening on 0.0.0.0 - it holds a login for the face "

@@ -4,8 +4,9 @@
     <span class="where tech">code/apps/tv · served at /tv, /monitor, and /app/tv/</span>
     <h2>📺 TV Remote &amp; Monitor — หน้าจอควบคุมสำหรับ Smart TV และมือถือ</h2>
     <p>หน้าเว็บควบคุมและตรวจสอบสถานะแบบบางเฉียบ (Thin Client) ออกแบบตามสถาปัตยกรรม Centralized Server
-       ตัดการประมวลผล 3D Three.js ออก 100% ทำให้เปิดได้รวดเร็ว ลื่นไหล ไม่กินสเปก และไม่มีอาการค้างบน Smart TV หรือสมาร์ทโฟน</p>
+       หน้านี้ไม่มีตัวแสดงผล 3D ความเร็วในการแสดงสถานะขึ้นกับเครือข่ายและอุปกรณ์ที่ใช้</p>
   </div>
+  <p class="mini">เมื่อซ่อนแท็บ หน้านี้พักการถามสถานะและกลับมาตรวจเมื่อเปิดแท็บอีกครั้ง หากเบราว์เซอร์ไม่อนุญาตให้จำโหมด ระบบยังเปิดหน้าได้โดยเลือกโหมดตามขนาดจอ</p>
 
   <!-- SECTION 1: REMOTE CONTROLS -->
   <div class="info-box">
@@ -15,23 +16,23 @@
     </div>
     <div class="info-visual-wrapper">
       <img src="/docs/shots/tv-controls-box.png" alt="TV Controls Box" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 50%;" title="1. ปุ่ม Play / Pause / Stop / Home">1</div>
+      <div class="callout-pin" style="top: 30%; left: 50%;" title="1. ปุ่ม Restart selected / Stop / Home">1</div>
       <div class="callout-pin" style="top: 55%; left: 50%;" title="2. รายการเลือก Sequence">2</div>
       <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่มสั่งพูดด่วน Quick Speech">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมหลัก (Play, Pause, Stop, Home)</div>
+        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมหลัก (Restart selected, Stop, Home)</div>
         <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่มสัมผัสขนาดใหญ่บนหน้าจอ หรือกดผ่านรีโมททีวี</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>Play / Pause:</b> สั่งเริ่มหรือหยุดการขยับท่าทางชั่วคราว<br>
-          • <b>Stop:</b> สั่งหยุดหุ่นยนต์ฉุกเฉินทันที มอเตอร์จะล็อคตำแหน่งปัจจุบัน<br>
-          • <b>Home:</b> คืนแขนและคอหุ่นยนต์กลับสู่ท่าเริ่มต้นที่ปลอดภัย (Neutral Pose)
+          • <b>Restart selected:</b> เริ่มคลิปที่เลือกล่าสุดใหม่จากต้น; ต้องเลือกคลิปก่อน<br>
+          • <b>Stop:</b> หยุดโชว์ที่ Hub กำลังเล่น<br>
+          • <b>Home:</b> หยุดโชว์แล้วส่ง HOME ให้ Nong ที่เลือก ใช้ท่าที่บอร์ดบันทึกไว้ ไม่ตั้งทุกข้อเป็น 90°
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">2</span> รายการท่าทาง (Sequence Launcher)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกท่าทางจากกล่องดรอปดาวน์ แล้วกด <b>▶ Play Sequence</b></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือก Nong จากรายการ Robot แล้วกดปุ่มชื่อคลิป; ถ้ามีหลายเครื่องต้องเลือกเป้าหมายก่อน</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           ระบบจะดึงไฟล์ท่าทางจาก Hub กลาง (<code>/api/list?kind=sequences</code>) และสั่งให้หุ่นรันชุดท่าทางนั้นทันที เจ้าหน้าที่หลังเวทีสามารถใช้มือถือกดเลือกโชว์ได้สะดวก
         </div>
@@ -65,4 +66,29 @@
     <p>ในสถาปัตยกรรมแบบเดิม หากเปิดหน้า 3D (Three.js) บน Web Browser ของ Smart TV หรือมือถือรุ่นเก่า
        เบราว์เซอร์จะต้องคอมไพล์ WebGL Shaders และรันลูปคำนวณ 60 รอบต่อวินาที ซึ่งชิปประมวลผลของสมาร์ททีวีไม่ได้ออกแบบมาเพื่อรองรับ
        ส่งผลให้เบราว์เซอร์ทีวีปิดตัวเองหรือเครื่องค้าง</p></div>
+  <!-- SECTION 3: DUAL-MODE CONTROLLER -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 3: สลับโหมดการใช้งาน Dual-Mode (Mobile Remote vs Stage Display)</b>
+      <span class="info-badge">Dual-Mode</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> โหมด 📱 รีโมทมือถือ (Mobile Controller)</div>
+        <div class="action-step"><b>การใช้งาน:</b> เหมาะสำหรับเจ้าหน้าที่หรือผู้บังคับหุ่นถือใช้งานผ่านสมาร์ทโฟน</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          ปุ่มสัมผัสขนาดใหญ่พิเศษ กดง่ายด้วยนิ้วโป้ง มีปุ่มหยุดฉุกเฉิน ⏹ STOP, ท่าเริ่มต้น 🏠 HOME, แผ่นป้ายเลือกท่าทางสัมผัสขนาดใหญ่ และปุ่มสั่งพูดทักทายด่วน พร้อมซ่อนข้อมูลเซอร์โวเชิงเทคนิคเพื่อประหยัดพื้นที่หน้าจอ
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> โหมด 📺 จอแสดงเวที (10-Foot Stage Display)</div>
+        <div class="action-step"><b>การใช้งาน:</b> เปิดแสดงบนจอทีวีขนาดใหญ่บนเวทีสำหรับผู้ชมและผู้จัดงาน</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          แสดงชื่อการแสดงปัจจุบัน (Now Playing) และหลอดความคืบหน้าด้วยตัวหนังสือขนาดใหญ่พิเศษ มองเห็นได้ชัดเจนจากระยะ 3-5 เมตร พร้อมสถานะ 🟢 กำลังแสดง (PLAYING) โดยซ่อนเมนูตั้งค่าและเซอร์โวไม่ให้รกสายตา
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>หากเล่น หยุด หรือพูดไม่สำเร็จ จะเห็นข้อความใต้แถบด้านบน HOME จะส่งต่อเมื่อได้รับคำตอบหยุดสำเร็จและหุ่นยนต์ตอบรับ STOP โดยไม่มีข้อผิดพลาดแล้วเท่านั้น หากการหยุดงานเดิมล้มเหลว ระบบยังจะพยายามส่ง STOP ไปยังหุ่นยนต์ที่เลือก และแจ้งผลรวม กด Stop หรือเปลี่ยนหุ่นยนต์ระหว่างโหลดรายการ จะยกเลิกการเริ่มเล่นที่ยังรออยู่ รวมคำขอเล่นหรือ HOME ที่ส่งไปแล้วแต่มาถึง Hub ช้า ข้อความที่พิมพ์ไว้จะคงอยู่เมื่อส่งเสียงพูดไม่สำเร็จ</p>
 </section>

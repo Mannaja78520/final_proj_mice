@@ -23,6 +23,7 @@ happens when a palette is chosen to look cheerful:
     first version of this asked the wrong question and called the shipped
     palette broken.
 """
+from contextlib import contextmanager
 import itertools
 import math
 import re
@@ -141,6 +142,16 @@ setTimeout(async function(){
 """
 
 
+@contextmanager
+def temporary_theme(path, probe):
+    original = path.read_bytes()
+    try:
+        path.write_bytes(probe.encode("utf-8"))
+        yield original
+    finally:
+        path.write_bytes(original)
+
+
 def run(t):
     css_file = F.CODE / "shared" / "web" / "themes.css"
     if not t.ok(css_file.is_file(), "shared/web/themes.css is where colour lives",
@@ -216,7 +227,6 @@ def run(t):
     # ---- adding one is ONE block -----------------------------------
     if not browser.available():
         t.give_up("headless Edge not found - install Edge or run --quick")
-    keep = css
     probe = css + """
 :root[data-theme="qcprobe"]{
   --theme-name:"QC Probe";
@@ -229,13 +239,11 @@ def run(t):
   color-scheme:dark;
 }
 """
-    try:
-        css_file.write_text(probe, encoding="utf-8", newline="")
+    with temporary_theme(css_file, probe) as keep:
         fake_serial.reset()
         base, _main = F.start_hub()
         browser.raw_page(DRIVER, base, seconds=30)
-    finally:
-        css_file.write_text(keep, encoding="utf-8", newline="")
+    t.eq(css_file.read_bytes(), keep, "theme probe restores exact original bytes")
 
     got = {}
     for m in fake_serial.qc_marks:

@@ -24,6 +24,22 @@
 
 <div class="card" id="loginHere"></div>
 
+<!-- Quick Event Presets (A48-17) -->
+<div class="card preset-card" style="background:var(--sunk);border:1px solid var(--line);margin-bottom:var(--sp-3)">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div>
+      <h3 style="margin:0;font-size:15px;color:var(--txt)">⚡ พรีเซตงานกิจกรรมเริ่มต้น (Quick Event Presets)</h3>
+      <p class="mini" style="margin:2px 0 0">คลิกเลือกพรีเซตเพื่อกรอกตารางให้อัตโนมัติ ปรับแต่งชื่อหรือจำนวนรางวัลตามต้องการ แล้วกด Save</p>
+    </div>
+    <div style="display:flex;gap:var(--sp-2);flex-wrap:wrap">
+      <button class="secondary" onclick="applyPreset('giveaway')">🎁 งานกิจกรรมทั่วไป</button>
+      <button class="secondary" onclick="applyPreset('unlimited')">🍀 ลุ้นโชคไม่อั้น (บูธเกม)</button>
+      <button class="secondary" onclick="applyPreset('vip')">🏆 รางวัลใหญ่ VIP</button>
+    </div>
+  </div>
+  <div id="presetNotice" class="statline" style="margin-top:var(--sp-2);background:var(--ok-soft);color:var(--ok);padding:6px 10px;border-radius:var(--r-sm)" hidden></div>
+</div>
+
 <!-- One tab per job (user 2026-10-23: tabs, not one long scroll). Mice.Tabs
      draws the list from TABS in the script; each card names its tab in data-tab. -->
 <div class="tabbed"><nav id="tabs"></nav><div>
@@ -220,6 +236,7 @@ Examples: docs/gacha/README.md</pre>
 
 <div class="card" data-tab="log" data-needs-login="gacha">
   <h2>This event so far</h2>
+  <div id="logStat" class="statline" role="status"></div>
   <div id="stats" class="bars"></div>
   <h3>Every prize</h3>
   <div class="wrapx"><table class="gt" id="logT"><thead><tr><th>When</th><th>What</th><th>Machine</th><th>Kind</th><th>Person</th><th>From</th><th>Admin</th><th>Words</th></tr></thead><tbody></tbody></table></div>
@@ -228,14 +245,10 @@ Examples: docs/gacha/README.md</pre>
 
 </div></div>
 
+<script src="motion.js"></script>
+<script src="presets.js"></script>
 <script>
-// Everything goes through the hub (/api/gacha/*, main_python/hub_api_gacha.py);
-// the hub talks to the boards. Words for people on the surface, details behind
-// the technical switch.
-const $ = id => document.getElementById(id);
-const val = id => ($(id).value || "").trim();
-const stat = new Mice.Status("stat");
-let S = {machines: [], items: {}, event: {}, rules: {}, messages: {}};
+// OOP GachaApp (A48-17) - encapsulated application lifecycle
 const HOOKS = [["dispensed", "a prize fell"], ["empty", "a machine ran out"], ["out", "a kind ran out everywhere"],
                ["low", "few balls left"], ["refused", "a prize was refused"], ["jam", "a machine got stuck"]];
 const MSG_KEYS = [["here", "prize ready here"], ["go_to", "this one is empty, go to another"],
@@ -243,483 +256,681 @@ const MSG_KEYS = [["here", "prize ready here"], ["go_to", "this one is empty, go
                   ["refused_item_used_up_for_this_event", "kind used up"], ["refused_out_everywhere", "out everywhere"],
                   ["refused_no_machine", "no machine holds it"], ["refused_busy", "machine still giving the last one"], ["instead", "ran out, another kind given instead"]];
 const STATE = {idle: "ready", turning: "turning", homing: "finding the loading place", dispensing: "giving"};
-
-function say(id, a, okWords) {
-  const w = a.ok ? (okWords || "done") : (a.says || (a.data && (a.data.message || a.data.error)) || "it did not work");
-  $(id).textContent = a.ok && a.data && a.data.message ? a.data.message : w;
-}
-
-async function load() {
-  stat.loading("asking the machines…");
-  const a = await Mice.Api.get("/api/gacha", {timeout: 15000});
-  if (!a.ok) return stat.error(a.says, a.tech);
-  S = a.data;
-  const items = Object.keys(S.items || {});
-  $("gItem").innerHTML = items.map(k => '<option value="' + esc(k) + '">' + esc(S.items[k].label || k) + '</option>').join("");
-  $("gMachine").innerHTML = '<option value="">any machine with that kind</option>' +
-    S.machines.map(m => '<option value="' + esc(m.id) + '">' + esc(m.label || m.id) + '</option>').join("");
-  $("evName").value = S.event.name || "";
-  $("evOpen").textContent = S.event.open ? "open" : "closed";
-  drawMachines(); drawItems(); drawMsgs();
-  $("lowN").value = S.low_stock || 0;
-  const live = S.machines.filter(m => !m.live.error).length;
-  stat.ready(live + " of " + S.machines.length + " machines answering", "GET /api/gacha");
-  gmDraw(); keysLoad();
-  loadRules(); loadLog();
-}
-
-function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c])); }
-function cell(v, key) { return '<td><input data-k="' + key + '" value="' + esc(v) + '"></td>'; }
-
-let openTuning = {};
-
-function drawMachines() {
-  $("mTable").tBodies[0].innerHTML = S.machines.map((m, i) => {
-    const L = m.live || {};
-    const c = L.cfg || {};
-    let statusHtml = "";
-    if (L.error) {
-      statusHtml = '<span class="tech mini danger">' + esc(L.error) + '</span>';
-    } else {
-      const stText = (STATE[L.state] || L.state || "ready");
-      const phaseBadge = L.phase ? '<span class="badge" style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:4px">' + esc(L.phase) + '</span>' : '';
-      const hallBadge = L.at_hall 
-        ? '<span style="color:#16a34a;font-weight:bold;font-size:12px">🟢 Center</span>' 
-        : '<span style="color:#94a3b8;font-size:12px">⚪ Off-center</span>';
-      const pocketInfo = L.pos !== undefined ? '<span style="font-size:12px;color:#475569"> (P' + (L.pos + 1) + '/' + (c.slots || 4) + ')</span>' : '';
-      statusHtml = '<div><b>' + esc(stText) + '</b>' + phaseBadge + '</div><div>' + hallBadge + pocketInfo + (L.open === false ? ' <span class="mini danger">closed</span>' : '') + '</div>';
-    }
-
-    let tr = '<tr data-i="' + i + '">' + cell(m.label, "label") + cell(m.module || m.id, "module") +
-      cell(m.item, "item") + cell(m.place, "place") + cell((m.near || []).join(" "), "near") +
-      '<td>' + (L.error ? "-" : (L.stock < 0 ? "not counted" : L.stock)) + '</td><td>' + (L.given == null ? "-" : L.given) + '</td>' +
-      '<td>' + statusHtml + '</td>' +
-      '<td><div style="display:flex;gap:4px;flex-wrap:wrap">' +
-      '<button onclick="mcmd(' + i + ','GSTOCK ADD '+val('ballN'))">add balls</button>' +
-      '<button onclick="mcmd(' + i + ','GSTOCK '+val('ballN'))">set balls</button>' +
-      '<button onclick="mcmd(' + i + ','GHOME')">to loading</button>' +
-      '<button onclick="forceDrop(' + i + ')" style="background:#fee2e2;border-color:#ef4444;color:#991b1b;font-weight:600" title="Force dispense 1 prize immediately (bypasses empty/closed limits for testing)">&#9889; Force Drop</button>' +
-      '<button onclick="toggleDrain(' + i + ')" id="drainBtn_' + i + '" style="background:#fef9c3;border-color:#eab308;font-weight:600" title="Continuously dispense until out of stock or stopped">&#127744; Drain Machine</button>' +
-      '<button onclick="mcmd(' + i + ','GCALIB')" style="background:#fef3c7;border-color:#f59e0b;font-weight:600" title="Auto-detect mass and calibrate dead-center">&#9889; Auto Detect</button>' +
-      '<button onclick="testMachine(' + i + ')" style="background:#e0e7ff;border-color:#6366f1" title="Test 1 pocket step">&#129514; Test 1 Pocket</button>' +
-      '<button onclick="testAllSlots(' + i + ')" title="Cycle all 4 pockets and verify dead-center">&#128260; Test 4 Pockets</button>' +
-      '<button onclick="toggleTuning(' + i + ')" title="Tune speeds, timing & drop count">&#9881;&#65039; Tune</button>' +
-      (m.at ? '<a class="btn" target="_blank" href="/mod?dev=' + encodeURIComponent(m.at) + '&name=' + encodeURIComponent(m.module || m.id) +
-        '" title="magnets, speed, timing: the machine's own page">page &nearr;</a>' : '') +
-      '<button onclick="S.machines.splice(' + i + ',1);drawMachines()">remove</button></div></td></tr>';
-
-    if (openTuning[i]) {
-      tr += '<tr style="background:#f8fafc"><td colspan="9" style="padding:12px 16px;border-bottom:2px solid #cbd5e1">' +
-        '<div style="font-weight:600;margin-bottom:8px">&#9881;&#65039; Tuning for ' + esc(m.label || m.id) + '</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;font-size:13px">' +
-        '<div><label style="display:block;margin-bottom:2px"><b>Pockets per dispense (drop):</b></label>' +
-        '<input type="number" id="t_drop_' + i + '" value="' + (c.drop || 1) + '" style="width:70px"> ' +
-        '<button onclick="document.getElementById(\'t_drop_' + i + '\').value=1;setCfg(' + i + ',\'drop\',1)">1 (Normal)</button> ' +
-        '<button onclick="document.getElementById(\'t_drop_' + i + '\').value=2;setCfg(' + i + ',\'drop\',2)">2 (Prime)</button></div>' +
-        '<div><label style="display:block;margin-bottom:2px"><b>Intake dwell gravity pause (ms):</b></label>' +
-        '<input type="number" id="t_intake_' + i + '" value="' + (c.intake !== undefined ? c.intake : 300) + '" style="width:70px"> ' +
-        '<button onclick="document.getElementById(\'t_intake_' + i + '\').value=0;setCfg(' + i + ',\'intake\',0)">0ms</button> ' +
-        '<button onclick="document.getElementById(\'t_intake_' + i + '\').value=300;setCfg(' + i + ',\'intake\',300)">300ms</button> ' +
-        '<button onclick="document.getElementById(\'t_intake_' + i + '\').value=600;setCfg(' + i + ',\'intake\',600)">600ms</button> ' +
-        '<button onclick="setCfg(' + i + ',\'intake\',val(\'t_intake_' + i + '\'))">Save</button></div>' +
-        '<div><label style="display:block;margin-bottom:2px"><b>Pause at center (ms):</b></label>' +
-        '<input type="number" id="t_pause_' + i + '" value="' + (c.pause || 5000) + '" style="width:80px"> ' +
-        '<button onclick="document.getElementById(\'t_pause_' + i + '\').value=2000;setCfg(' + i + ',\'pause\',2000)">2s</button> ' +
-        '<button onclick="document.getElementById(\'t_pause_' + i + '\').value=5000;setCfg(' + i + ',\'pause\',5000)">5s</button></div>' +
-        '<div><label style="display:block;margin-bottom:2px"><b>Travel speed (50-1023):</b></label>' +
-        '<input type="number" id="t_speed_' + i + '" value="' + (c.speed || 500) + '" style="width:80px"> ' +
-        '<button onclick="setCfg(' + i + ',\'speed\',val(\'t_speed_' + i + '\'))">Save</button></div>' +
-        '<div><label style="display:block;margin-bottom:2px"><b>Overshoot lip (ms / speed):</b></label>' +
-        '<input type="number" id="t_over_' + i + '" value="' + (c.overshoot || 180) + '" style="width:65px"> ' +
-        '<input type="number" id="t_overspeed_' + i + '" value="' + (c.overshoot_speed || 380) + '" style="width:65px"> ' +
-        '<button onclick="setCfg(' + i + ',\'overshoot\',val(\'t_over_' + i + '\'));setCfg(' + i + ',\'overshoot_speed\',val(\'t_overspeed_' + i + '\'))">Save</button></div>' +
-        '<div><label style="display:block;margin-bottom:2px"><b>Reverse shake (ms / speed):</b></label>' +
-        '<input type="number" id="t_ret_' + i + '" value="' + (c.return || 250) + '" style="width:65px"> ' +
-        '<input type="number" id="t_retspeed_' + i + '" value="' + (c.return_speed || 360) + '" style="width:65px"> ' +
-        '<button onclick="setCfg(' + i + ',\'return\',val(\'t_ret_' + i + '\'));setCfg(' + i + ',\'return_speed\',val(\'t_retspeed_' + i + '\'))">Save</button></div>' +
-        '<div><label style="display:block;margin-bottom:2px"><b>Center crawl speed (50-1023):</b></label>' +
-        '<input type="number" id="t_cspeed_' + i + '" value="' + (c.center_speed || 260) + '" style="width:80px"> ' +
-        '<button onclick="setCfg(' + i + ',\'center_speed\',val(\'t_cspeed_' + i + '\'))">Save</button></div>' +
-        '</div>' +
-        '<div style="margin-top:10px;display:flex;gap:8px">' +
-        '<button class="primary" onclick="saveAllTuning(' + i + ')">Save All Tuning</button>' +
-        '<button onclick="mcmd(' + i + ','GCALIB')">&#9889; Auto Detect Mass Now</button>' +
-        '<button onclick="toggleTuning(' + i + ')">Close</button></div>' +
-        '</td></tr>';
-    }
-    return tr;
-  }).join("");
-}
-
-function toggleTuning(i) {
-  openTuning[i] = !openTuning[i];
-  drawMachines();
-}
-
-async function setCfg(i, key, val) {
-  await mcmd(i, 'GCFG ' + key + ' ' + val);
-}
-
-async function saveAllTuning(i) {
-  const fields = [
-    ['drop', val('t_drop_' + i)],
-    ['intake', val('t_intake_' + i)],
-    ['pause', val('t_pause_' + i)],
-    ['speed', val('t_speed_' + i)],
-    ['overshoot', val('t_over_' + i)],
-    ['overshoot_speed', val('t_overspeed_' + i)],
-    ['return', val('t_ret_' + i)],
-    ['return_speed', val('t_retspeed_' + i)],
-    ['center_speed', val('t_cspeed_' + i)]
-  ];
-  for (const [k, v] of fields) {
-    if (v) await Mice.Api.post("/api/gacha/machine", {machine: S.machines[i].id, cmd: 'GCFG ' + k + ' ' + v});
-  }
-  say("mStat", {ok: true}, "All tuning saved to NVS");
-  load();
-}
-
-async function forceDrop(i) {
-  $("mStat").textContent = "⚡ Force dropping on machine " + S.machines[i].id + "...";
-  const a = await Mice.Api.post("/api/gacha/machine", {machine: S.machines[i].id, cmd: "GDISPENSE FORCE ManualTest"});
-  if (!a.ok) {
-    say("mStat", a);
-    return;
-  }
-  say("mStat", {ok: true}, "⚡ Force drop running with 4-phase settle");
-  load();
-}
-
-let activeDrains = {};
-async function toggleDrain(i) {
-  const m = S.machines[i];
-  if (activeDrains[i]) {
-    activeDrains[i] = false;
-    await Mice.Api.post("/api/gacha/machine", {machine: m.id, cmd: "STOP"});
-    $("mStat").textContent = "⏹️ Drain stopped on machine " + m.id;
-    const btn = $("drainBtn_" + i);
-    if (btn) { btn.innerHTML = "&#127744; Drain Machine"; btn.style.background = "#fef9c3"; }
-    load();
-    return;
-  }
-
-  activeDrains[i] = true;
-  const btn = $("drainBtn_" + i);
-  if (btn) { btn.innerHTML = "&#9209;&#65039; Stop Drain"; btn.style.background = "#fee2e2"; }
-  $("mStat").textContent = "🌀 Starting continuous drain on machine " + m.id + "...";
-  
-  await Mice.Api.post("/api/gacha/machine", {machine: m.id, cmd: "GDRAIN"});
-  load();
-
-  let drainPoll = setInterval(async () => {
-    if (!activeDrains[i]) {
-      clearInterval(drainPoll);
-      return;
-    }
-    await load();
-    const cur = S.machines[i].live || {};
-    if (cur.stock === 0 || (!cur.draining && cur.state === "idle")) {
-      activeDrains[i] = false;
-      clearInterval(drainPoll);
-      const b = $("drainBtn_" + i);
-      if (b) { b.innerHTML = "&#127744; Drain Machine"; b.style.background = "#fef9c3"; }
-      $("mStat").innerHTML = "✅ <b>Drain completed:</b> Machine " + m.id + " is empty (stock=" + cur.stock + ")!";
-    } else {
-      $("mStat").innerHTML = "🌀 <b>Draining:</b> Given: " + cur.given + ", Stock left: " + cur.stock + " (<a href='javascript:void(0)' onclick='toggleDrain(" + i + ")'>Stop</a>)";
-    }
-  }, 1000);
-}
-
-async function testMachine(i) {
-  $("mStat").textContent = "🧪 Testing machine " + S.machines[i].id + ": stepping 1 pocket...";
-  const a = await Mice.Api.post("/api/gacha/machine", {machine: S.machines[i].id, cmd: "GSPIN 1 MAG"});
-  if (!a.ok) {
-    say("mStat", a);
-    return;
-  }
-  let tries = 0;
-  const poll = setInterval(async () => {
-    tries++;
-    await load();
-    const cur = S.machines[i].live || {};
-    if (cur.state === "idle" || tries > 25) {
-      clearInterval(poll);
-      const ok = cur.at_hall;
-      $("mStat").innerHTML = ok 
-        ? "✅ <b>Test PASSED:</b> Pocket " + (cur.pos + 1) + " stopped DEAD CENTER on Hall sensor!" 
-        : "⚠️ Test completed: at_hall=" + cur.at_hall + " (pos=" + cur.pos + ")";
-    }
-  }, 500);
-}
-
-async function testAllSlots(i) {
-  $("mStat").textContent = "🔄 Running full 4-pocket cycle test...";
-  let passed = 0;
-  for (let step = 1; step <= 4; step++) {
-    $("mStat").textContent = "🔄 Testing Pocket " + step + "/4: GSPIN 1 MAG...";
-    await Mice.Api.post("/api/gacha/machine", {machine: S.machines[i].id, cmd: "GSPIN 1 MAG"});
-    await new Promise(r => setTimeout(r, 7000));
-    await load();
-    const cur = S.machines[i].live || {};
-    if (cur.at_hall) passed++;
-  }
-  $("mStat").innerHTML = (passed === 4)
-    ? "🎉 <b>FULL CYCLE TEST PASSED:</b> 4/4 pockets stopped 100% DEAD CENTER on Hall sensor!"
-    : "⚠️ Full cycle test: " + passed + "/4 pockets at dead center.";
-}
-
-function readMachines() {
-  return [...$("mTable").tBodies[0].rows].map(r => {
-    const old = S.machines[+r.dataset.i] || {};
-    const g = k => (r.querySelector('[data-k="' + k + '"]').value || "").trim();
-    const board = g("module");
-    const m = {id: old.id || board || ("machine" + Date.now() % 10000), module: board, label: g("label"),
-               item: g("item"), place: g("place"), near: g("near").split(/[\s,]+/).filter(Boolean)};
-    if (old.dev) m.dev = old.dev;
-    return m;
-  });
-}
-function addMachine() { S.machines = readMachines(); S.machines.push({id: "", module: "", label: "", item: "", near: [], live: {}}); drawMachines(); }
-async function saveMachines() { say("mStat", await Mice.Api.post("/api/gacha/config", {machines: readMachines()}), "machines saved"); load(); }
-async function mcmd(i, c) {
-  const m = S.machines[i];
-  const a = await Mice.Api.post("/api/gacha/machine", {machine: m.id, cmd: c});
-  $("mStat").textContent = a.ok ? "done" : (a.says || (a.data && a.data.reply) || "it did not work");
-  load();
-}
-
-function drawItems() {
-  $("iTable").tBodies[0].innerHTML = Object.entries(S.items || {}).map(([k, v]) =>
-    '<tr>' + cell(k, "id") + cell(v.label, "label") + cell((v.instead || []).join(" "), "instead") +
-    '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>').join("");
-}
-function addItem() { $("iTable").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' + cell("", "id") + cell("", "label") + cell("", "instead") + '<td></td></tr>'); }
-async function saveItems() {
-  const items = {};
-  [...$("iTable").tBodies[0].rows].forEach(r => {
-    const id = r.querySelector('[data-k="id"]').value.trim();
-    const instead = r.querySelector('[data-k="instead"]').value.split(/[\s,]+/).filter(Boolean);
-    if (id) items[id] = Object.assign({label: r.querySelector('[data-k="label"]').value.trim()}, instead.length ? {instead} : {});
-  });
-  say("iStat", await Mice.Api.post("/api/gacha/config", {items}), "kinds saved"); load();
-}
-
-async function give(force) {
-  $("gStat").textContent = "asking…";
-  const a = await Mice.Api.post("/api/gacha/dispense", {item: $("gItem").value, person: val("gPerson"),
-    machine: $("gMachine").value, force, app: "hub page"}, {timeout: 20000});
-  if (a.needLogin && window.miceLogin) miceLogin.required();
-  say("gStat", a); setTimeout(load, 2500);
-}
-async function can() {
-  const a = await Mice.Api.post("/api/gacha/can", {item: $("gItem").value, person: val("gPerson")});
-  const d = a.data || {};
-  $("gStat").textContent = !a.ok ? (a.says || "could not ask") : d.ok
-    ? "yes" + (d.limit ? " (" + d.had + " of " + d.limit + " so far)" : "") + (d.special ? ", special guest" : "")
-    : "no: " + d.reason;
-}
-async function event_(body) { const a = await Mice.Api.post("/api/gacha/event", body); say("evStat", a, "sent to every machine"); load(); }
-
 const RCOLS = {rItems: ["event", "item", "total", "per_person", "note"],
                rPeople: ["event", "person", "item", "times", "special", "note"]};
-function addRow(t, r) {
-  $(t).tBodies[0].insertAdjacentHTML("beforeend", '<tr>' + RCOLS[t].map(k => cell(r[k], k)).join("") +
-    '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
-}
-function readRows(t) {
-  return [...$(t).tBodies[0].rows].map(r => Object.fromEntries(RCOLS[t].map(k => [k, r.querySelector('[data-k="' + k + '"]').value.trim()])));
-}
-async function loadRules() {
-  const a = await Mice.Api.get("/api/gacha/rules");
-  if (!a.ok) return;
-  $("rItems").tBodies[0].innerHTML = ""; $("rPeople").tBodies[0].innerHTML = "";
-  (a.data.rules.items || []).forEach(r => addRow("rItems", r));
-  (a.data.rules.people || []).forEach(r => addRow("rPeople", r));
-  $("dlItems").href = "data:text/csv;charset=utf-8," + encodeURIComponent(a.data.csv.items);
-  $("dlPeople").href = "data:text/csv;charset=utf-8," + encodeURIComponent(a.data.csv.people);
-  HOOKS.forEach(([k]) => { const e = $("hk_" + k); if (e && document.activeElement !== e) e.value = ((a.data.webhooks || {})[k] || []).join("\n"); });
-}
-async function saveRules() { say("rStat", await Mice.Api.post("/api/gacha/rules", {items: readRows("rItems"), people: readRows("rPeople")}), "rules saved"); loadRules(); }
-async function pull() { say("rStat", await Mice.Api.post("/api/gacha/rules/pull", {}, {timeout: 20000}), "taken from the sheet"); loadRules(); }
-async function push() { say("rStat", await Mice.Api.post("/api/gacha/rules/push", {}, {timeout: 20000}), "sent to the sheet"); }
-
-// ---- Google Sheet tab (A47-15; the ways are main_python/gacha_sheet.py) ----
 const WAY_WORDS = {script: "through the sheet's own script", service: "through a service account", link: "the shared link"};
-async function shLoad() {
-  const a = await Mice.Api.get("/api/gacha/sheet", {timeout: 25000});
-  if (!a.ok) { $("shStat").textContent = a.says || "could not ask"; return; }
-  const d = a.data, n = d.names || {};
-  $("shLink").value = d.link || ""; $("shWay").value = d.chosen || "auto";
-  $("shItems").value = d.items_csv || ""; $("shPeople").value = d.people_csv || "";
-  $("shAuto").checked = !!d.auto_push; $("shLog").checked = !!d.log;
-  $("shTabItems").value = n.items || ""; $("shTabPeople").value = n.people || ""; $("shTabLog").value = n.log || "";
-  $("shScript").placeholder = d.script_set ? "set (hidden); type a new one to change it" : "the Web app URL from step 5 (empty = read only)";
-  $("shOpen").hidden = !d.open; if (d.open) $("shOpen").href = d.open;
-  $("edTabs").innerHTML = (d.tabs || []).map(t => '<option value="' + esc(t) + '">').join("");
-  $("shHow").open = !d.writes;
-  $("shStat").innerHTML = !d.way ? "no sheet yet: paste its link" :
-    esc(d.writes ? "can read and write, " : "can only read, ") + esc(WAY_WORDS[d.way] || d.way) +
-    (d.error ? esc("; the sheet did not answer") + ' <span class="tech">' + esc(d.error) + '</span>'
-             : (d.tabs.length ? esc(" · tabs: " + d.tabs.join(", ")) : ""));
-}
-async function shSave() {
-  const rules = {sheet_link: val("shLink"), sheet_way: $("shWay").value, sheet_auto_push: $("shAuto").checked,
-                 sheet_log: $("shLog").checked, sheet_items_csv: val("shItems"), sheet_people_csv: val("shPeople"),
-                 sheet_tabs: {items: val("shTabItems"), people: val("shTabPeople"), log: val("shTabLog")}};
-  if (val("shScript")) rules.sheet_write_url = val("shScript");
-  const a = await Mice.Api.post("/api/gacha/config", {rules});
-  say("shStat", a, "saved"); if (a.ok) { $("shScript").value = ""; S.rules = Object.assign(S.rules, rules); shLoad(); }
-}
-async function shCopyScript() {
-  const a = await Mice.Api.get("/api/gacha/sheet/script");
-  if (!a.ok) { $("shStat").textContent = a.says || "the script could not be made"; return; }
-  const box = $("shScriptText");
-  box.value = a.data.script; box.hidden = false; box.select();
-  try { await navigator.clipboard.writeText(a.data.script); $("shStat").textContent = "copied: paste it in the sheet's Apps Script (step 3)"; }
-  catch (e) { $("shStat").textContent = "select all in the box below and copy it"; }
-}
-// the tab editor: row 0 is the sheet's header row, every cell an input
-let ED = [];
-function edDraw() {
-  $("edT").tBodies[0].innerHTML = ED.map((r, i) => '<tr>' + r.map((c, j) =>
-    '<td><input data-r="' + i + '" data-c="' + j + '" value="' + esc(c) + '"' + (i ? '' : ' style="font-weight:600"') + '></td>').join("") +
-    '<td><button onclick="edRead();ED.splice(' + i + ',1);edDraw()">remove</button></td></tr>').join("");
-}
-function edRead() { $("edT").querySelectorAll("input").forEach(e => { ED[+e.dataset.r][+e.dataset.c] = e.value; }); }
-function edAdd(what) {
-  edRead();
-  const w = Math.max(1, ...ED.map(r => r.length));
-  if (what === "col" || !ED.length) ED = (ED.length ? ED : [[]]).map(r => r.concat(Array(w - r.length + (what === "col" ? 1 : 0)).fill("")));
-  if (what === "row") ED.push(Array(w).fill(""));
-  edDraw();
-}
-async function edOpen() {
-  const tab = val("edTab") || "items";
-  $("edStat").textContent = "reading…";
-  const a = await Mice.Api.get("/api/gacha/sheet/read?tab=" + encodeURIComponent(tab), {timeout: 25000});
-  if (!a.ok) { $("edStat").textContent = a.says || "could not read it"; return; }
-  ED = a.data.rows || []; edDraw();
-  $("edStat").textContent = ED.length ? ED.length + " rows in " + tab : tab + " is empty: add rows and save";
-}
-async function edSave() {
-  edRead();
-  const tab = val("edTab") || "items";
-  const rows = ED.filter((r, i) => i === 0 || r.some(c => String(c).trim()));
-  $("edStat").textContent = "writing…";
-  const a = await Mice.Api.post("/api/gacha/sheet/write", {tab, rows}, {timeout: 25000});
-  say("edStat", a, "saved in the sheet: " + tab);
+const PRESETS = {
+  giveaway: {
+    name: "งานกิจกรรมทั่วไป (Standard Giveaway)",
+    event: "กิจกรรมแจกของที่ระลึก",
+    machines: [
+      {id: "m1", module: "m1", label: "ตู้กาชาปองหลัก", item: "keychain", near: [], place: "เวทีกลาง", live: {stock: 50, given: 0}}
+    ],
+    items: {
+      "keychain": {label: "พวงกุญแจที่ระลึก", instead: ["sticker"]},
+      "sticker": {label: "สติกเกอร์น้อง"}
+    },
+    rules: [
+      {event: "กิจกรรมแจกของที่ระลึก", item: "keychain", total: "50", per_person: "1", note: "จำกัดคนละ 1 ชิ้น"},
+      {event: "กิจกรรมแจกของที่ระลึก", item: "sticker", total: "100", per_person: "2", note: "จำกัดคนละ 2 ชิ้น"}
+    ]
+  },
+  unlimited: {
+    name: "ลุ้นโชคไม่อั้น / บูธเกม (Unlimited Fun)",
+    event: "บูธเล่นเกมลุ้นโชค",
+    machines: [
+      {id: "m1", module: "m1", label: "ตู้ลุ้นโชค A", item: "snack", near: ["m2"], place: "บูธ 1", live: {stock: 100, given: 0}},
+      {id: "m2", module: "m2", label: "ตู้ลุ้นโชค B", item: "souvenir", near: ["m1"], place: "บูธ 2", live: {stock: 100, given: 0}}
+    ],
+    items: {
+      "snack": {label: "ขนม / ของว่าง", instead: ["souvenir"]},
+      "souvenir": {label: "ของที่ระลึกพิเศษ"}
+    },
+    rules: [
+      {event: "บูธเล่นเกมลุ้นโชค", item: "snack", total: "200", per_person: "0", note: "ไม่จำกัดจำนวน"},
+      {event: "บูธเล่นเกมลุ้นโชค", item: "souvenir", total: "50", per_person: "1", note: "คนละ 1 ชิ้น"}
+    ]
+  },
+  vip: {
+    name: "รางวัลใหญ่จำกัดสิทธิ์ (VIP & Limited Event)",
+    event: "งานแจกรางวัลใหญ่ VIP",
+    machines: [
+      {id: "m1", module: "m1", label: "ตู้ทองคำ VIP", item: "doll", near: ["m2"], place: "เวทีหลัก", live: {stock: 10, given: 0}},
+      {id: "m2", module: "m2", label: "ตู้รางวัลปลอบใจ", item: "pin", near: ["m1"], place: "ซุ้มลงทะเบียน", live: {stock: 80, given: 0}}
+    ],
+    items: {
+      "doll": {label: "ตุ๊กตาลิมิเต็ด VIP", instead: ["pin"]},
+      "pin": {label: "เข็มกลัดที่ระลึก"}
+    },
+    rules: [
+      {event: "งานแจกรางวัลใหญ่ VIP", item: "doll", total: "10", per_person: "1", note: "จำกัดสิทธิ์ 1 ชิ้นเท่านั้น"},
+      {event: "งานแจกรางวัลใหญ่ VIP", item: "pin", total: "80", per_person: "2", note: "รับได้สูงสุด 2 ชิ้น"}
+    ]
+  }
+};
+
+class GachaApp extends (window.Mice && window.Mice.App ? window.Mice.App : Object) {
+  constructor() {
+    super("gacha", {statusId: "stat"});
+    this.$ = id => document.getElementById(id);
+    this.val = id => (this.$(id).value || "").trim();
+    this.stat = new Mice.Status("stat");
+    this.S = {machines: [], items: {}, event: {}, rules: {}, messages: {}};
+    this.openTuning = {};
+    this.ED = [];
+    this.motion = new GachaMotion({
+      machine: i => this.S.machines[i],
+      refresh: () => this.load(),
+      post: body => Mice.Api.post("/api/gacha/machine", body),
+      tell: text => { const el = this.$("mStat"); if (el) el.textContent = text; }
+    });
+    this.preset = new GachaPreset({
+      post: (path, body) => Mice.Api.post(path, body),
+      read: () => ({name: this.val("evName"), machines: this.readMachines(), items: this.readItems(),
+        rules: {items: this.readRows("rItems"), people: this.readRows("rPeople")}}),
+      refresh: () => this.load(),
+      setBusy: busy => document.querySelectorAll('[data-preset-start],button[onclick^="applyPreset"]').forEach(b => { b.disabled = busy; }),
+      tell: (kind, text) => {
+        const notice = this.$("presetNotice");
+        notice.hidden = false;
+        notice.textContent = text;
+        if (kind === "ready") notice.innerHTML += ' <button class="primary" onclick="showTab(\'give\')">ไปหน้าแจกรางวัล</button>';
+        if (kind === "error") notice.innerHTML += ' <button class="primary" data-preset-start onclick="saveAllPreset()">ลองบันทึกและเปิดงานอีกครั้ง</button>';
+      }
+    });
+    this.tabs = null;
+  }
+
+  esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+  }
+
+  cell(v, key) {
+    return '<td><input data-k="' + key + '" value="' + this.esc(v) + '"></td>';
+  }
+
+  say(id, a, okWords) {
+    const w = a.ok ? (okWords || "done") : (a.says || (a.data && (a.data.message || a.data.error)) || "it did not work");
+    const el = this.$(id);
+    if (el) el.textContent = a.ok && a.data && a.data.message ? a.data.message : w;
+  }
+
+  async load() {
+    this.stat.loading("asking the machines…");
+    const a = await Mice.Api.get("/api/gacha", {timeout: 15000});
+    if (!a.ok) { this.stat.error(a.says, a.tech); return false; }
+    this.S = a.data;
+    window.S = this.S;
+    const items = Object.keys(this.S.items || {});
+    this.$("gItem").innerHTML = items.map(k => '<option value="' + this.esc(k) + '">' + this.esc(this.S.items[k].label || k) + '</option>').join("");
+    this.$("gMachine").innerHTML = '<option value="">any machine with that kind</option>' +
+      this.S.machines.map(m => '<option value="' + this.esc(m.id) + '">' + this.esc(m.label || m.id) + '</option>').join("");
+    this.$("evName").value = this.S.event.name || "";
+    this.$("evOpen").textContent = this.S.event.open ? "open" : "closed";
+    this.drawMachines(); this.drawItems(); this.drawMsgs();
+    this.$("lowN").value = this.S.low_stock || 0;
+    const live = this.S.machines.filter(m => !m.live.error).length;
+    this.stat.ready(live + " of " + this.S.machines.length + " machines answering", "GET /api/gacha");
+    this.gmDraw(); this.keysLoad();
+    this.loadRules(); this.loadLog();
+    return true;
+  }
+
+  drawMachines() {
+    this.$("mTable").tBodies[0].innerHTML = this.S.machines.map((m, i) => {
+      const L = m.live || {};
+      const c = L.cfg || {};
+      let statusHtml = "";
+      if (L.error) {
+        statusHtml = '<span class="tech mini danger">' + this.esc(L.error) + '</span>';
+      } else {
+        const stText = L.state === 'idle' && L.motion_result && !['done', 'idle'].includes(L.motion_result) ? L.motion_result : (STATE[L.state] || L.state || 'ready');
+        const phaseBadge = L.phase ? '<span class="badge" style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:4px;font-size:11px;margin-left:4px">' + this.esc(L.phase) + '</span>' : '';
+        const hallBadge = L.at_hall 
+          ? '<span style="color:#16a34a;font-weight:bold;font-size:12px">🟢 Hall detected</span>' 
+          : '<span style="color:#94a3b8;font-size:12px">⚪ Hall clear</span>';
+        const pocketInfo = L.pos_known && L.pos !== undefined ? '<span style="font-size:12px;color:#475569"> (P' + (L.pos + 1) + '/' + (c.slots || 4) + ')</span>' : '';
+        statusHtml = '<div><b>' + this.esc(stText) + '</b>' + phaseBadge + '</div><div>' + hallBadge + pocketInfo + (L.open === false ? ' <span class="mini danger">closed</span>' : '') + '</div>';
+      }
+
+      let tr = '<tr data-i="' + i + '">' + this.cell(m.label, "label") + this.cell(m.module || m.id, "module") +
+        this.cell(m.item, "item") + this.cell(m.place, "place") + this.cell((m.near || []).join(" "), "near") +
+        '<td>' + (L.error ? "-" : (L.stock < 0 ? "not counted" : L.stock)) + '</td><td>' + (L.given == null ? "-" : L.given) + '</td>' +
+        '<td>' + statusHtml + '</td>' +
+        '<td><div style="display:flex;gap:4px;flex-wrap:wrap">' +
+        '<button onclick="mcmd(' + i + ',\'GSTOCK ADD \'+val(\'ballN\'))">add balls</button>' +
+        '<button onclick="mcmd(' + i + ',\'GSTOCK \'+val(\'ballN\'))">set balls</button>' +
+        '<button onclick="mcmd(' + i + ',\'GHOME\')">to loading</button>' +
+        '<button onclick="motion.stop(' + i + ')">Stop motion</button>' +
+        '<button onclick="forceDrop(' + i + ')" style="background:#fee2e2;border-color:#ef4444;color:#991b1b;font-weight:600" title="Force dispense 1 prize immediately (bypasses empty/closed limits for testing)">&#9889; Force Drop</button>' +
+        '<button onclick="toggleDrain(' + i + ')" id="drainBtn_' + i + '" style="background:#fef9c3;border-color:#eab308;font-weight:600" title="Continuously dispense until out of stock or stopped">&#127744; Drain Machine</button>' +
+        '<button onclick="mcmd(' + i + ',\'GCALIB\')" style="background:#fef3c7;border-color:#f59e0b;font-weight:600" title="Estimate advance from the Hall band; verify the machine afterwards">&#9889; Estimate Hall Advance</button>' +
+        '<button onclick="testMachine(' + i + ')" style="background:#e0e7ff;border-color:#6366f1" title="Test 1 pocket step">&#129514; Test 1 Pocket</button>' +
+        '<button onclick="testAllSlots(' + i + ')" title="Test each configured pocket and report Hall verification">&#128260; Test All Pockets</button>' +
+        '<button onclick="toggleTuning(' + i + ')" title="Tune speeds, timing & drop count">&#9881;&#65039; Tune</button>' +
+        (m.at ? '<a class="btn" target="_blank" href="/mod?dev=' + encodeURIComponent(m.at) + '&name=' + encodeURIComponent(m.module || m.id) +
+          '" title="magnets, speed, timing: the machine page">page &nearr;</a>' : '') +
+        '<button onclick="removeMachine(' + i + ')">remove</button></div></td></tr>';
+
+      if (this.openTuning[i]) {
+        tr += '<tr style="background:#f8fafc"><td colspan="9" style="padding:12px 16px;border-bottom:2px solid #cbd5e1">' +
+          '<div style="font-weight:600;margin-bottom:8px">&#9881;&#65039; Tuning for ' + this.esc(m.label || m.id) + '</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;font-size:13px">' +
+          '<div><label style="display:block;margin-bottom:2px"><b>Pockets per dispense (drop):</b></label>' +
+          '<input type="number" id="t_drop_' + i + '" value="' + (c.drop || 1) + '" style="width:70px"> ' +
+          '<button onclick="document.getElementById(\'t_drop_' + i + '\').value=1;setCfg(' + i + ',\'drop\',1)">1 (Normal)</button> ' +
+          '<button onclick="document.getElementById(\'t_drop_' + i + '\').value=2;setCfg(' + i + ',\'drop\',2)">2 (Prime)</button></div>' +
+          '<div><label style="display:block;margin-bottom:2px"><b>Intake dwell gravity pause (ms):</b></label>' +
+          '<input type="number" id="t_intake_' + i + '" value="' + (c.intake !== undefined ? c.intake : 300) + '" style="width:70px"> ' +
+          '<button onclick="document.getElementById(\'t_intake_' + i + '\').value=0;setCfg(' + i + ',\'intake\',0)">0ms</button> ' +
+          '<button onclick="document.getElementById(\'t_intake_' + i + '\').value=300;setCfg(' + i + ',\'intake\',300)">300ms</button> ' +
+          '<button onclick="document.getElementById(\'t_intake_' + i + '\').value=600;setCfg(' + i + ',\'intake\',600)">600ms</button> ' +
+          '<button onclick="setCfg(' + i + ',\'intake\',val(\'t_intake_' + i + '\'))">Save</button></div>' +
+          '<div><label style="display:block;margin-bottom:2px"><b>Pause at center (ms):</b></label>' +
+          '<input type="number" id="t_pause_' + i + '" value="' + (c.pause ?? 5000) + '" style="width:80px"> ' +
+          '<button onclick="document.getElementById(\'t_pause_' + i + '\').value=2000;setCfg(' + i + ',\'pause\',2000)">2s</button> ' +
+          '<button onclick="document.getElementById(\'t_pause_' + i + '\').value=5000;setCfg(' + i + ',\'pause\',5000)">5s</button></div>' +
+          '<div><label style="display:block;margin-bottom:2px"><b>Travel speed (50-1023):</b></label>' +
+          '<input type="number" id="t_speed_' + i + '" value="' + (c.speed || 500) + '" style="width:80px"> ' +
+          '<button onclick="setCfg(' + i + ',\'speed\',val(\'t_speed_' + i + '\'))">Save</button></div>' +
+          '<div><label style="display:block;margin-bottom:2px"><b>Overshoot lip (ms / speed):</b></label>' +
+          '<input type="number" id="t_over_' + i + '" value="' + (c.overshoot ?? 180) + '" style="width:65px"> ' +
+          '<input type="number" id="t_overspeed_' + i + '" value="' + (c.overshoot_speed || 380) + '" style="width:65px"> ' +
+          '<button onclick="setCfg(' + i + ',\'overshoot\',val(\'t_over_' + i + '\'));setCfg(' + i + ',\'overshoot_speed\',val(\'t_overspeed_' + i + '\'))">Save</button></div>' +
+          '<div><label style="display:block;margin-bottom:2px"><b>Reverse shake (ms / speed):</b></label>' +
+          '<input type="number" id="t_ret_' + i + '" value="' + (c.return ?? 280) + '" style="width:65px"> ' +
+          '<input type="number" id="t_retspeed_' + i + '" value="' + (c.return_speed || 360) + '" style="width:65px"> ' +
+          '<button onclick="setCfg(' + i + ',\'return\',val(\'t_ret_' + i + '\'));setCfg(' + i + ',\'return_speed\',val(\'t_retspeed_' + i + '\'))">Save</button></div>' +
+          '<div><label style="display:block;margin-bottom:2px"><b>Advance after Hall (ms):</b></label>' +
+          '<input type="number" min="0" max="100" id="t_advance_' + i + '" value="' + (c.advance ?? 18) + '" style="width:80px"> ' +
+          '<button onclick="setCfg(' + i + ',\'advance\',val(\'t_advance_' + i + '\'))">Save</button></div>' +
+          '<div><label style="display:block;margin-bottom:2px"><b>Center crawl speed (50-1023):</b></label>' +
+          '<input type="number" id="t_cspeed_' + i + '" value="' + (c.center_speed || 260) + '" style="width:80px"> ' +
+          '<button onclick="setCfg(' + i + ',\'center_speed\',val(\'t_cspeed_' + i + '\'))">Save</button></div>' +
+          '</div>' +
+          '<div style="margin-top:10px;display:flex;gap:8px">' +
+          '<button class="primary" onclick="saveAllTuning(' + i + ')">Save All Tuning</button>' +
+          '<button onclick="mcmd(' + i + ',\'GCALIB\')">&#9889; Estimate Hall Advance Now</button>' +
+          '<button onclick="toggleTuning(' + i + ')">Close</button></div>' +
+          '</td></tr>';
+      }
+      return tr;
+    }).join("");
+  }
+
+  toggleTuning(i) {
+    this.openTuning[i] = !this.openTuning[i];
+    this.drawMachines();
+  }
+
+  async setCfg(i, key, val) {
+    await this.mcmd(i, 'GCFG ' + key + ' ' + val);
+  }
+
+  async saveAllTuning(i) {
+    const fields = [
+      ['drop', this.val('t_drop_' + i)],
+      ['intake', this.val('t_intake_' + i)],
+      ['pause', this.val('t_pause_' + i)],
+      ['advance', this.val('t_advance_' + i)],
+      ['speed', this.val('t_speed_' + i)],
+      ['overshoot', this.val('t_over_' + i)],
+      ['overshoot_speed', this.val('t_overspeed_' + i)],
+      ['return', this.val('t_ret_' + i)],
+      ['return_speed', this.val('t_retspeed_' + i)],
+      ['center_speed', this.val('t_cspeed_' + i)]
+    ];
+    for (const [k, v] of fields) {
+      if (v !== "") {
+        const a = await Mice.Api.post("/api/gacha/machine", {machine: this.S.machines[i].id, cmd: 'GCFG ' + k + ' ' + v});
+        if (!a.ok) { this.say("mStat", a); return; }
+      }
+    }
+    this.say("mStat", {ok: true}, "All tuning saved to NVS");
+    this.load();
+  }
+
+  forceDrop(i) { return this.motion.run(i, "GDISPENSE FORCE ManualTest", "Force drop"); }
+
+  toggleDrain(i) {
+    const m = this.S.machines[i], live = m.live || {};
+    if (this.motion.jobs.has(m.id) || live.draining) return this.motion.stop(i);
+    if (!Number.isInteger(live.stock) || live.stock <= 0) {
+      this.$("mStat").textContent = "Set a positive stock count before draining";
+      return;
+    }
+    return this.motion.run(i, "GDRAIN " + Math.min(live.stock, 999), "Drain");
+  }
+
+  testMachine(i) { return this.motion.run(i, "GSPIN 1", "One pocket"); }
+
+  testAllSlots(i) {
+    const slots = (this.S.machines[i].live.cfg || {}).slots || 4;
+    return this.motion.run(i, "GTEST " + slots, "Pocket test", {test: true});
+  }
+
+  readMachines() {
+    return [...this.$("mTable").tBodies[0].querySelectorAll("tr[data-i]")].map(r => {
+      const old = this.S.machines[+r.dataset.i] || {};
+      const g = k => (r.querySelector('[data-k="' + k + '"]').value || "").trim();
+      const board = g("module");
+      const m = {id: old.id || board || ("machine" + Date.now() % 10000), module: board, label: g("label"),
+                 item: g("item"), place: g("place"), near: g("near").split(/[\s,]+/).filter(Boolean)};
+      if (old.dev) m.dev = old.dev;
+      return m;
+    });
+  }
+
+  addMachine() {
+    this.S.machines = this.editedMachines();
+    this.S.machines.push({id: "", module: "", label: "", item: "", near: [], live: {}});
+    this.drawMachines();
+  }
+
+  removeMachine(i) {
+    this.S.machines = this.editedMachines();
+    this.S.machines.splice(i, 1);
+    this.drawMachines();
+  }
+
+  editedMachines() {
+    return this.readMachines().map((edited, i) => Object.assign({}, this.S.machines[i], edited));
+  }
+
+  async saveMachines() {
+    this.say("mStat", await Mice.Api.post("/api/gacha/config", {machines: this.readMachines()}), "machines saved");
+    this.load();
+  }
+
+  async mcmd(i, c) {
+    if (c === "GHOME" || c === "GCALIB") return this.motion.run(i, c, c === "GHOME" ? "Loading position" : "Hall advance estimate");
+    const m = this.S.machines[i];
+    const a = await Mice.Api.post("/api/gacha/machine", {machine: m.id, cmd: c});
+    this.$("mStat").textContent = a.ok ? "done" : (a.says || (a.data && a.data.reply) || "it did not work");
+    await this.load();
+    return a;
+  }
+
+  drawItems() {
+    this.$("iTable").tBodies[0].innerHTML = Object.entries(this.S.items || {}).map(([k, v]) =>
+      '<tr>' + this.cell(k, "id") + this.cell(v.label, "label") + this.cell((v.instead || []).join(" "), "instead") +
+      '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>').join("");
+  }
+
+  addItem() {
+    this.$("iTable").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' + this.cell("", "id") + this.cell("", "label") + this.cell("", "instead") + '<td></td></tr>');
+  }
+
+  readItems() {
+    const items = {};
+    [...this.$("iTable").tBodies[0].rows].forEach(r => {
+      const id = r.querySelector('[data-k="id"]').value.trim();
+      const instead = r.querySelector('[data-k="instead"]').value.split(/[\s,]+/).filter(Boolean);
+      if (id) items[id] = Object.assign({label: r.querySelector('[data-k="label"]').value.trim()}, instead.length ? {instead} : {});
+    });
+    return items;
+  }
+
+  async saveItems() {
+    this.say("iStat", await Mice.Api.post("/api/gacha/config", {items: this.readItems()}), "kinds saved");
+    this.load();
+  }
+
+  async give(force) {
+    this.$("gStat").textContent = "asking…";
+    const a = await Mice.Api.post("/api/gacha/dispense", {item: this.$("gItem").value, person: this.val("gPerson"),
+      machine: this.$("gMachine").value, force, app: "hub page"}, {timeout: 20000});
+    if (a.needLogin && window.miceLogin) miceLogin.required();
+    this.say("gStat", a); setTimeout(() => this.load(), 2500);
+  }
+
+  async can() {
+    const a = await Mice.Api.post("/api/gacha/can", {item: this.$("gItem").value, person: this.val("gPerson")});
+    const d = a.data || {};
+    this.$("gStat").textContent = !a.ok ? (a.says || "could not ask") : d.ok
+      ? "yes" + (d.limit ? " (" + d.had + " of " + d.limit + " so far)" : "") + (d.special ? ", special guest" : "")
+      : "no: " + d.reason;
+  }
+
+  async event_(body) {
+    const a = await Mice.Api.post("/api/gacha/event", body);
+    this.say("evStat", a, "sent to every machine");
+    this.load();
+  }
+
+  addRow(t, r) {
+    this.$(t).tBodies[0].insertAdjacentHTML("beforeend", '<tr>' + RCOLS[t].map(k => this.cell(r[k], k)).join("") +
+      '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
+  }
+
+  readRows(t) {
+    return [...this.$(t).tBodies[0].rows].map(r => Object.fromEntries(RCOLS[t].map(k => [k, r.querySelector('[data-k="' + k + '"]').value.trim()])));
+  }
+
+  async loadRules() {
+    const a = await Mice.Api.get("/api/gacha/rules");
+    if (!a.ok) return;
+    this.$("rItems").tBodies[0].innerHTML = ""; this.$("rPeople").tBodies[0].innerHTML = "";
+    (a.data.rules.items || []).forEach(r => this.addRow("rItems", r));
+    (a.data.rules.people || []).forEach(r => this.addRow("rPeople", r));
+    this.$("dlItems").href = "data:text/csv;charset=utf-8," + encodeURIComponent(a.data.csv.items);
+    this.$("dlPeople").href = "data:text/csv;charset=utf-8," + encodeURIComponent(a.data.csv.people);
+    HOOKS.forEach(([k]) => { const e = this.$("hk_" + k); if (e && document.activeElement !== e) e.value = ((a.data.webhooks || {})[k] || []).join("\n"); });
+  }
+
+  async saveRules() {
+    this.say("rStat", await Mice.Api.post("/api/gacha/rules", {items: this.readRows("rItems"), people: this.readRows("rPeople")}), "rules saved");
+    this.loadRules();
+  }
+
+  async pull() {
+    this.say("rStat", await Mice.Api.post("/api/gacha/rules/pull", {}, {timeout: 20000}), "taken from the sheet");
+    this.loadRules();
+  }
+
+  async push() {
+    this.say("rStat", await Mice.Api.post("/api/gacha/rules/push", {}, {timeout: 20000}), "sent to the sheet");
+  }
+
+  async shLoad() {
+    const a = await Mice.Api.get("/api/gacha/sheet", {timeout: 25000});
+    if (!a.ok) { this.$("shStat").textContent = a.says || "could not ask"; return; }
+    const d = a.data, n = d.names || {};
+    this.$("shLink").value = d.link || ""; this.$("shWay").value = d.chosen || "auto";
+    this.$("shItems").value = d.items_csv || ""; this.$("shPeople").value = d.people_csv || "";
+    this.$("shAuto").checked = !!d.auto_push; this.$("shLog").checked = !!d.log;
+    this.$("shTabItems").value = n.items || ""; this.$("shTabPeople").value = n.people || ""; this.$("shTabLog").value = n.log || "";
+    this.$("shScript").placeholder = d.script_set ? "set (hidden); type a new one to change it" : "the Web app URL from step 5 (empty = read only)";
+    this.$("shOpen").hidden = !d.open; if (d.open) this.$("shOpen").href = d.open;
+    this.$("edTabs").innerHTML = (d.tabs || []).map(t => '<option value="' + this.esc(t) + '">').join("");
+    this.$("shHow").open = !d.writes;
+    this.$("shStat").innerHTML = !d.way ? "no sheet yet: paste its link" :
+      this.esc(d.writes ? "can read and write, " : "can only read, ") + this.esc(WAY_WORDS[d.way] || d.way) +
+      (d.error ? this.esc("; the sheet did not answer") + ' <span class="tech">' + this.esc(d.error) + '</span>'
+               : (d.tabs.length ? this.esc(" · tabs: " + d.tabs.join(", ")) : ""));
+  }
+
+  async shSave() {
+    const rules = {sheet_link: this.val("shLink"), sheet_way: this.$("shWay").value, sheet_auto_push: this.$("shAuto").checked,
+                   sheet_log: this.$("shLog").checked, sheet_items_csv: this.val("shItems"), sheet_people_csv: this.val("shPeople"),
+                   sheet_tabs: {items: this.val("shTabItems"), people: this.val("shTabPeople"), log: this.val("shTabLog")}};
+    if (this.val("shScript")) rules.sheet_write_url = this.val("shScript");
+    const a = await Mice.Api.post("/api/gacha/config", {rules});
+    this.say("shStat", a, "saved");
+    if (a.ok) { this.$("shScript").value = ""; this.S.rules = Object.assign(this.S.rules, rules); this.shLoad(); }
+  }
+
+  async shCopyScript() {
+    const a = await Mice.Api.get("/api/gacha/sheet/script");
+    if (!a.ok) { this.$("shStat").textContent = a.says || "the script could not be made"; return; }
+    const box = this.$("shScriptText");
+    box.value = a.data.script; box.hidden = false; box.select();
+    try { await navigator.clipboard.writeText(a.data.script); this.$("shStat").textContent = "copied: paste it in the sheet's Apps Script (step 3)"; }
+    catch (e) { this.$("shStat").textContent = "select all in the box below and copy it"; }
+  }
+
+  edDraw() {
+    this.$("edT").tBodies[0].innerHTML = this.ED.map((r, i) => '<tr>' + r.map((c, j) =>
+      '<td><input data-r="' + i + '" data-c="' + j + '" value="' + this.esc(c) + '"' + (i ? '' : ' style="font-weight:600"') + '></td>').join("") +
+      '<td><button onclick="edRemove(' + i + ')">remove</button></td></tr>').join("");
+  }
+
+  edRead() {
+    this.$("edT").querySelectorAll("input").forEach(e => { this.ED[+e.dataset.r][+e.dataset.c] = e.value; });
+  }
+
+  edRemove(i) {
+    this.edRead();
+    this.ED.splice(i, 1);
+    this.edDraw();
+  }
+
+  edAdd(what) {
+    this.edRead();
+    const w = Math.max(1, ...this.ED.map(r => r.length));
+    if (what === "col" || !this.ED.length) this.ED = (this.ED.length ? this.ED : [[]]).map(r => r.concat(Array(w - r.length + (what === "col" ? 1 : 0)).fill("")));
+    if (what === "row") this.ED.push(Array(w).fill(""));
+    this.edDraw();
+  }
+
+  async edOpen() {
+    const tab = this.val("edTab") || "items";
+    this.$("edStat").textContent = "reading…";
+    const a = await Mice.Api.get("/api/gacha/sheet/read?tab=" + encodeURIComponent(tab), {timeout: 25000});
+    if (!a.ok) { this.$("edStat").textContent = a.says || "could not read it"; return; }
+    this.ED = a.data.rows || []; this.edDraw();
+    this.$("edStat").textContent = this.ED.length ? this.ED.length + " rows in " + tab : tab + " is empty: add rows and save";
+  }
+
+  async edSave() {
+    this.edRead();
+    const tab = this.val("edTab") || "items";
+    const rows = this.ED.filter((r, i) => i === 0 || r.some(c => String(c).trim()));
+    this.$("edStat").textContent = "writing…";
+    const a = await Mice.Api.post("/api/gacha/sheet/write", {tab, rows}, {timeout: 25000});
+    this.say("edStat", a, "saved in the sheet: " + tab);
+  }
+
+  drawHooks(full) {
+    this.$("hooks").innerHTML = HOOKS.map(([k, w]) => '<div class="row"><span class="lbl">When ' + w + '</span>' +
+      '<textarea id="hk_' + k + '" rows="1" style="flex:1" placeholder="none"></textarea></div>').join("");
+  }
+
+  async saveHooks() {
+    const webhooks = {};
+    HOOKS.forEach(([k]) => { webhooks[k] = this.$("hk_" + k).value.split(/\s+/).filter(Boolean); });
+    this.say("hStat", await Mice.Api.post("/api/gacha/config", {webhooks, low_stock: +this.val("lowN") || 0}), "saved");
+  }
+
+  drawMsgs() {
+    this.$("msgs").innerHTML = MSG_KEYS.map(([k, w]) => '<div class="row"><span class="lbl">' + w + '</span>' +
+      '<input id="ms_' + k + '" style="flex:1" value="' + this.esc((this.S.messages || {})[k] || "") + '" placeholder="the built-in words"></div>').join("");
+  }
+
+  async saveMsgs() {
+    const messages = {};
+    MSG_KEYS.forEach(([k]) => { if (this.val("ms_" + k)) messages[k] = this.val("ms_" + k); });
+    this.say("sStat", await Mice.Api.post("/api/gacha/config", {messages}), "words saved");
+  }
+
+  async loadLog() {
+    this.$("logStat").textContent = 'กำลังโหลดประวัติ…';
+    const [a, s] = await Promise.all([Mice.Api.get("/api/gacha/log?limit=50"), Mice.Api.get("/api/gacha/stats")]);
+    const logOk = a.ok && Array.isArray(a.data.rows);
+    const statsOk = s.ok && s.data.stats && typeof s.data.stats === 'object';
+    this.$("logStat").textContent = logOk && statsOk ? ''
+      : 'โหลดประวัติหรือสถิติไม่ได้ ข้อมูลที่แสดงอาจเก่า กด Refresh เพื่อลองอีกครั้ง';
+    if (logOk) this.$("logT").tBodies[0].innerHTML = a.data.rows.length ? a.data.rows.slice().reverse().map(r =>
+      '<tr><td>' + this.esc(r.time) + '</td><td>' + this.esc(r.kind === "refused" ? "refused: " + r.reason : r.kind) + '</td><td>' + this.esc(r.machine) +
+      '</td><td>' + this.esc(r.item) + '</td><td>' + this.esc(r.person) + '</td><td>' + this.esc(r.app) + '</td><td>' + (r.forced === "1" ? "yes" : "") +
+      '</td><td>' + this.esc(r.message) + '</td></tr>').join("") : '<tr><td colspan="8">ยังไม่มีประวัติการจ่ายรางวัล</td></tr>';
+    if (!statsOk) return;
+    const st = s.data.stats, parts = [["item", "per kind"], ["machine", "per machine"], ["person", "per person"], ["refused", "refused, why"]];
+    this.$("stats").innerHTML = parts.map(([k, w]) => {
+      const e = Object.entries(st[k] || {}).sort((a, b) => b[1] - a[1]);
+      const top = e.length ? e[0][1] : 1;
+      return '<h3>' + w + '</h3>' + (e.length ? e.map(([n, c]) => '<div><span class="lbl">' + this.esc(n) +
+        '</span><b style="width:' + Math.max(4, 200 * c / top) + 'px"></b>' + c + '</div>').join("") : '<p class="mini">none yet</p>');
+    }).join("") + this.hours(st.hour || {});
+  }
+
+  hours(h) {
+    const e = Object.entries(h).map(([k, c]) => [+k, c]).sort((a, b) => a[0] - b[0]);
+    const top = Math.max(1, ...e.map(x => x[1]));
+    return '<h3>per hour</h3>' + (e.length ? e.map(([k, c]) => '<div><span class="lbl">' + k + ':00</span><b style="width:' +
+      Math.max(4, 200 * c / top) + 'px"></b>' + c + '</div>').join("") : '<p class="mini">none yet</p>');
+  }
+
+  gmRow(r) {
+    this.$("gmT").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' +
+      '<td><input data-k="game" list="gmNames" value="' + this.esc(r.game) + '" placeholder="any game"></td>' +
+      '<td><input data-k="result" value="' + this.esc(r.result) + '" placeholder="any win"></td>' +
+      '<td><input data-k="item" value="' + this.esc(r.item) + '"></td>' +
+      '<td><input data-k="machine" value="' + this.esc(r.machine) + '" placeholder="any"></td>' +
+      '<td><input data-k="person" value="' + this.esc(r.person) + '" placeholder="the camera"></td>' +
+      '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
+  }
+
+  gmDraw() {
+    this.$("gmNames").innerHTML = (this.S.game_names || []).map(n => '<option value="' + this.esc(n) + '">').join("");
+    this.$("gmT").tBodies[0].innerHTML = ""; (this.S.games || []).forEach(r => this.gmRow(r));
+  }
+
+  async gmSave() {
+    const games = [...this.$("gmT").tBodies[0].rows].map(r => {
+      const o = {};
+      r.querySelectorAll("[data-k]").forEach(i => { if (i.value.trim()) o[i.dataset.k] = i.value.trim(); });
+      return o;
+    }).filter(o => o.item);
+    this.say("gmStat", await Mice.Api.post("/api/gacha/config", {games}), "saved");
+    this.load();
+  }
+
+  async keysLoad() {
+    const a = await Mice.Api.get("/api/gacha/keys");
+    if (!a.ok) return;
+    this.$("kT").tBodies[0].innerHTML = a.data.keys.map(k => '<tr><td>' + this.esc(k.name) + '</td><td>' + this.esc(k.made) +
+      '</td><td>…' + this.esc(k.end) + '</td><td><button data-n="' + this.esc(k.name) + '" onclick="keyDrop(this.dataset.n)">remove</button></td></tr>').join("")
+      || '<tr><td colspan="4" class="mini">no keys yet</td></tr>';
+  }
+
+  async keyMake() {
+    const a = await Mice.Api.post("/api/gacha/keys", {make: this.val("kName") || "app"});
+    this.say("kStat", a, "key made");
+    if (a.ok) { this.$("kVal").textContent = a.data.key; this.$("kNew").hidden = false; }
+    this.keysLoad();
+  }
+
+  async keyDrop(name) {
+    this.say("kStat", await Mice.Api.post("/api/gacha/keys", {drop: name}), "key removed");
+    this.keysLoad();
+  }
+
+  vpRow(r) {
+    const w = r.when || {};
+    this.$("vpT").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' +
+      '<td><input data-k="topic" list="vpTopics" value="' + this.esc(w.topic) + '"></td>' +
+      '<td><input data-k="question" value="' + this.esc([].concat(w.question || []).join("|")) + '"></td>' +
+      '<td><select data-k="source">' + ["", "faq", "model", "verse", "read"].map(v => '<option' + (v === (w.source || "") ? " selected" : "") +
+        ' value="' + v + '">' + ({"": "any", faq: "saved answers", model: "the model", verse: "a new poem", read: "reading aloud"}[v]) + '</option>').join("") + '</select></td>' +
+      '<td><input data-k="event" value="' + this.esc(w.event) + '" placeholder="every event"></td>' +
+      '<td><input data-k="item" value="' + this.esc(r.item) + '"></td>' +
+      '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
+  }
+
+  async vpLoad() {
+    const a = await Mice.Api.get("/api/gacha/voice");
+    if (!a.ok) return;
+    this.$("vpOn").checked = !!a.data.enabled; this.$("vpSay").checked = a.data.say !== false;
+    this.$("vpTopics").innerHTML = (a.data.topics || []).map(t => '<option value="' + this.esc(t) + '">').join("");
+    this.$("vpT").tBodies[0].innerHTML = ""; (a.data.rules || []).forEach(r => this.vpRow(r));
+  }
+
+  async vpSave() {
+    const rules = [...this.$("vpT").tBodies[0].rows].map(r => {
+      const g = k => r.querySelector('[data-k="' + k + '"]').value.trim(), when = {};
+      if (g("topic")) when.topic = g("topic");
+      if (g("question")) when.question = g("question");
+      if (g("source")) when.source = g("source");
+      if (g("event")) when.event = g("event");
+      return {when, item: g("item")};
+    }).filter(r => r.item);
+    this.say("vpStat", await Mice.Api.post("/api/gacha/voice", {enabled: this.$("vpOn").checked, say: this.$("vpSay").checked, rules}), "saved");
+  }
+
+  saveAllPreset() { return this.preset.run(); }
+
+  applyPreset(key) {
+    if (this.preset.busy) return;
+    const p = PRESETS[key];
+    if (!p) return;
+    this.$("evName").value = p.event;
+    this.S.machines = JSON.parse(JSON.stringify(p.machines));
+    this.drawMachines();
+    this.S.items = JSON.parse(JSON.stringify(p.items));
+    this.drawItems();
+    this.$("rItems").tBodies[0].innerHTML = "";
+    p.rules.forEach(r => this.addRow("rItems", r));
+    this.$("presetNotice").innerHTML = "⚡ <b>นำเข้าพรีเซต: " + this.esc(p.name) + " เรียบร้อย!</b> " +
+      '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+      '<button class="primary" data-preset-start onclick="saveAllPreset()" style="font-weight:700">💾 บันทึกทุกตารางและเริ่มงานทันที</button>' +
+      '<button class="secondary" onclick="showTab(\'machines\')">🛠️ ดู/แก้ตารางเครื่องและของรางวัล</button>' +
+      '<button class="secondary" onclick="showTab(\'rules\')">📋 ดู/แก้ตารางกฎสิทธิ์</button>' +
+      '</div>';
+    this.$("presetNotice").hidden = false;
+  }
+
+  init() {
+    this.drawHooks();
+    this.vpLoad();
+    if (window.miceLogin) miceLogin.mount(this.$("loginHere"));
+    this.load();
+  }
 }
 
-function drawHooks(full) {
-  $("hooks").innerHTML = HOOKS.map(([k, w]) => '<div class="row"><span class="lbl">When ' + w + '</span>' +
-    '<textarea id="hk_' + k + '" rows="1" style="flex:1" placeholder="none"></textarea></div>').join("");
-}
-async function saveHooks() {
-  const webhooks = {};
-  HOOKS.forEach(([k]) => { webhooks[k] = $("hk_" + k).value.split(/\s+/).filter(Boolean); });
-  say("hStat", await Mice.Api.post("/api/gacha/config", {webhooks, low_stock: +val("lowN") || 0}), "saved");
-}
-
-function drawMsgs() {
-  $("msgs").innerHTML = MSG_KEYS.map(([k, w]) => '<div class="row"><span class="lbl">' + w + '</span>' +
-    '<input id="ms_' + k + '" style="flex:1" value="' + esc((S.messages || {})[k] || "") + '" placeholder="the built-in words"></div>').join("");
-}
-async function saveMsgs() {
-  const messages = {};
-  MSG_KEYS.forEach(([k]) => { if (val("ms_" + k)) messages[k] = val("ms_" + k); });
-  say("sStat", await Mice.Api.post("/api/gacha/config", {messages}), "words saved");
-}
-
-async function loadLog() {
-  const a = await Mice.Api.get("/api/gacha/log?limit=50");
-  if (a.ok) $("logT").tBodies[0].innerHTML = a.data.rows.slice().reverse().map(r =>
-    '<tr><td>' + esc(r.time) + '</td><td>' + esc(r.kind === "refused" ? "refused: " + r.reason : r.kind) + '</td><td>' + esc(r.machine) +
-    '</td><td>' + esc(r.item) + '</td><td>' + esc(r.person) + '</td><td>' + esc(r.app) + '</td><td>' + (r.forced === "1" ? "yes" : "") +
-    '</td><td>' + esc(r.message) + '</td></tr>').join("");
-  const s = await Mice.Api.get("/api/gacha/stats");
-  if (!s.ok) return;
-  const st = s.data.stats, parts = [["item", "per kind"], ["machine", "per machine"], ["person", "per person"], ["refused", "refused, why"]];
-  $("stats").innerHTML = parts.map(([k, w]) => {
-    const e = Object.entries(st[k] || {}).sort((a, b) => b[1] - a[1]);
-    const top = e.length ? e[0][1] : 1;
-    return '<h3>' + w + '</h3>' + (e.length ? e.map(([n, c]) => '<div><span class="lbl">' + esc(n) +
-      '</span><b style="width:' + Math.max(4, 200 * c / top) + 'px"></b>' + c + '</div>').join("") : '<p class="mini">none yet</p>');
-  }).join("") + hours(st.hour || {});
-}
-// prizes per hour of the day: one bar per hour that had any
-function hours(h) {
-  const e = Object.entries(h).map(([k, c]) => [+k, c]).sort((a, b) => a[0] - b[0]);
-  const top = Math.max(1, ...e.map(x => x[1]));
-  return '<h3>per hour</h3>' + (e.length ? e.map(([k, c]) => '<div><span class="lbl">' + k + ':00</span><b style="width:' +
-    Math.max(4, 200 * c / top) + 'px"></b>' + c + '</div>').join("") : '<p class="mini">none yet</p>');
-}
-
-function gmRow(r) {
-  $("gmT").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' +
-    '<td><input data-k="game" list="gmNames" value="' + esc(r.game) + '" placeholder="any game"></td>' +
-    '<td><input data-k="result" value="' + esc(r.result) + '" placeholder="any win"></td>' +
-    '<td><input data-k="item" value="' + esc(r.item) + '"></td>' +
-    '<td><input data-k="machine" value="' + esc(r.machine) + '" placeholder="any"></td>' +
-    '<td><input data-k="person" value="' + esc(r.person) + '" placeholder="the camera"></td>' +
-    '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
-}
-function gmDraw() {
-  $("gmNames").innerHTML = (S.game_names || []).map(n => '<option value="' + esc(n) + '">').join("");
-  $("gmT").tBodies[0].innerHTML = ""; (S.games || []).forEach(gmRow);
-}
-async function gmSave() {
-  const games = [...$("gmT").tBodies[0].rows].map(r => {
-    const o = {};
-    r.querySelectorAll("[data-k]").forEach(i => { if (i.value.trim()) o[i.dataset.k] = i.value.trim(); });
-    return o;
-  }).filter(o => o.item);
-  say("gmStat", await Mice.Api.post("/api/gacha/config", {games}), "saved"); load();
-}
-
-async function keysLoad() {
-  const a = await Mice.Api.get("/api/gacha/keys");
-  if (!a.ok) return;
-  $("kT").tBodies[0].innerHTML = a.data.keys.map(k => '<tr><td>' + esc(k.name) + '</td><td>' + esc(k.made) +
-    '</td><td>…' + esc(k.end) + '</td><td><button data-n="' + esc(k.name) + '" onclick="keyDrop(this.dataset.n)">remove</button></td></tr>').join("")
-    || '<tr><td colspan="4" class="mini">no keys yet</td></tr>';
-}
-async function keyMake() {
-  const a = await Mice.Api.post("/api/gacha/keys", {make: val("kName") || "app"});
-  say("kStat", a, "key made");
-  if (a.ok) { $("kVal").textContent = a.data.key; $("kNew").hidden = false; }
-  keysLoad();
-}
-async function keyDrop(name) { say("kStat", await Mice.Api.post("/api/gacha/keys", {drop: name}), "key removed"); keysLoad(); }
-
-function vpRow(r) {
-  const w = r.when || {};
-  $("vpT").tBodies[0].insertAdjacentHTML("beforeend", '<tr>' +
-    '<td><input data-k="topic" list="vpTopics" value="' + esc(w.topic) + '"></td>' +
-    '<td><input data-k="question" value="' + esc([].concat(w.question || []).join("|")) + '"></td>' +
-    '<td><select data-k="source">' + ["", "faq", "model", "verse", "read"].map(v => '<option' + (v === (w.source || "") ? " selected" : "") +
-      ' value="' + v + '">' + ({"": "any", faq: "saved answers", model: "the model", verse: "a new poem", read: "reading aloud"}[v]) + '</option>').join("") + '</select></td>' +
-    '<td><input data-k="event" value="' + esc(w.event) + '" placeholder="every event"></td>' +
-    '<td><input data-k="item" value="' + esc(r.item) + '"></td>' +
-    '<td><button onclick="this.closest(\'tr\').remove()">remove</button></td></tr>');
-}
-async function vpLoad() {
-  const a = await Mice.Api.get("/api/gacha/voice");
-  if (!a.ok) return;
-  $("vpOn").checked = !!a.data.enabled; $("vpSay").checked = a.data.say !== false;
-  $("vpTopics").innerHTML = (a.data.topics || []).map(t => '<option value="' + esc(t) + '">').join("");
-  $("vpT").tBodies[0].innerHTML = ""; (a.data.rules || []).forEach(vpRow);
-}
-async function vpSave() {
-  const rules = [...$("vpT").tBodies[0].rows].map(r => {
-    const g = k => r.querySelector('[data-k="' + k + '"]').value.trim(), when = {};
-    if (g("topic")) when.topic = g("topic");
-    if (g("question")) when.question = g("question");
-    if (g("source")) when.source = g("source");
-    if (g("event")) when.event = g("event");
-    return {when, item: g("item")};
-  }).filter(r => r.item);
-  say("vpStat", await Mice.Api.post("/api/gacha/voice", {enabled: $("vpOn").checked, say: $("vpSay").checked, rules}), "saved");
-}
+window.GachaApp = GachaApp;
+const gachaApp = new GachaApp();
+window.gachaApp = gachaApp;
+window.motion = gachaApp.motion;
+window.S = gachaApp.S;
+const $ = id => gachaApp.$(id);
+const val = id => gachaApp.val(id);
+const stat = gachaApp.stat;
+const esc = s => gachaApp.esc(s);
+const cell = (v, k) => gachaApp.cell(v, k);
+const say = (id, a, ok) => gachaApp.say(id, a, ok);
+const load = () => gachaApp.load();
+const drawMachines = () => gachaApp.drawMachines();
+const toggleTuning = i => gachaApp.toggleTuning(i);
+const setCfg = (i, k, v) => gachaApp.setCfg(i, k, v);
+const saveAllTuning = i => gachaApp.saveAllTuning(i);
+const forceDrop = i => gachaApp.forceDrop(i);
+const toggleDrain = i => gachaApp.toggleDrain(i);
+const testMachine = i => gachaApp.testMachine(i);
+const testAllSlots = i => gachaApp.testAllSlots(i);
+const readMachines = () => gachaApp.readMachines();
+const addMachine = () => gachaApp.addMachine();
+const saveMachines = () => gachaApp.saveMachines();
+const removeMachine = i => gachaApp.removeMachine(i);
+const mcmd = (i, c) => gachaApp.mcmd(i, c);
+const drawItems = () => gachaApp.drawItems();
+const addItem = () => gachaApp.addItem();
+const saveItems = () => gachaApp.saveItems();
+const give = force => gachaApp.give(force);
+const can = () => gachaApp.can();
+const event_ = body => gachaApp.event_(body);
+const addRow = (t, r) => gachaApp.addRow(t, r);
+const readRows = t => gachaApp.readRows(t);
+const loadRules = () => gachaApp.loadRules();
+const saveRules = () => gachaApp.saveRules();
+const pull = () => gachaApp.pull();
+const push = () => gachaApp.push();
+const shLoad = () => gachaApp.shLoad();
+const shSave = () => gachaApp.shSave();
+const shCopyScript = () => gachaApp.shCopyScript();
+const edDraw = () => gachaApp.edDraw();
+const edRead = () => gachaApp.edRead();
+const edAdd = what => gachaApp.edAdd(what);
+const edRemove = i => gachaApp.edRemove(i);
+const edOpen = () => gachaApp.edOpen();
+const edSave = () => gachaApp.edSave();
+const drawHooks = full => gachaApp.drawHooks(full);
+const saveHooks = () => gachaApp.saveHooks();
+const drawMsgs = () => gachaApp.drawMsgs();
+const saveMsgs = () => gachaApp.saveMsgs();
+const loadLog = () => gachaApp.loadLog();
+const hours = h => gachaApp.hours(h);
+const gmRow = r => gachaApp.gmRow(r);
+const gmDraw = () => gachaApp.gmDraw();
+const gmSave = () => gachaApp.gmSave();
+const keysLoad = () => gachaApp.keysLoad();
+const keyMake = () => gachaApp.keyMake();
+const keyDrop = name => gachaApp.keyDrop(name);
+const vpRow = r => gachaApp.vpRow(r);
+const vpLoad = () => gachaApp.vpLoad();
+const vpSave = () => gachaApp.vpSave();
+const applyPreset = key => gachaApp.applyPreset(key);
+const saveAllPreset = () => gachaApp.saveAllPreset();
 
 // ---- tabs: one job each; the open one is kept in the address (#sheet) ----
 const TABS = [["give", "Give a prize", "🎁"], ["machines", "Machines and kinds", "🧰"], ["rules", "Rules", "📋"],
@@ -729,8 +940,5 @@ const TAB_LOAD = {sheet: () => shLoad(), log: () => loadLog()};
 const tabs = new Mice.Tabs("tabs", TABS.map(([id, label, icon]) => ({id, label, icon, load: TAB_LOAD[id]})));
 const showTab = id => tabs.show(id);
 
-drawHooks();
-vpLoad();
-if (window.miceLogin) miceLogin.mount($("loginHere"));
-load();
+gachaApp.init();
 </script>

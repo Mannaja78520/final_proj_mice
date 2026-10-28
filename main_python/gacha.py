@@ -624,20 +624,23 @@ class Gacha:
         return out
 
     def set_event(self, name=None, open_=None, reset=False):
-        cfg = read_json(self.cfg_path, {})
-        ev = dict(DEFAULT_CFG["event"], **(cfg.get("event") or {}))
-        sent = {}
-        if name is not None:
-            ev["name"] = str(name).strip()[:40]
-            sent["name"] = self.all_machines("GEVENT NAME " + ev["name"])
-        if open_ is not None:
-            ev["open"] = bool(open_)
-            sent["open"] = self.all_machines("GEVENT " + ("OPEN" if open_ else "CLOSE"))
-        if reset:
-            sent["reset"] = self.all_machines("GEVENT RESET")
-        cfg["event"] = ev
-        write_json(self.cfg_path, cfg)
-        return sent
+        # Serialize with config writes and other event operations. A close after
+        # a timed-out open must run after that open, never race its final write.
+        with self.lock:
+            cfg = read_json(self.cfg_path, {})
+            ev = dict(DEFAULT_CFG["event"], **(cfg.get("event") or {}))
+            sent = {}
+            if name is not None:
+                ev["name"] = str(name).strip()[:40]
+                sent["name"] = self.all_machines("GEVENT NAME " + ev["name"])
+            if open_ is not None:
+                ev["open"] = bool(open_)
+                sent["open"] = self.all_machines("GEVENT " + ("OPEN" if open_ else "CLOSE"))
+            if reset:
+                sent["reset"] = self.all_machines("GEVENT RESET")
+            cfg["event"] = ev
+            write_json(self.cfg_path, cfg)
+            return sent
 
     def stats(self):
         """Counts for the page: per item, machine, person, app, hour, this event."""

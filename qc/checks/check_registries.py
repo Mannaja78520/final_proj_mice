@@ -57,8 +57,11 @@ def run(t):
     t.eq(s, 200, "the hub lists its apps")
     listed = json.loads(b).get("apps", [])
     by_id = {a["id"]: a for a in listed}
-    for want in ("studio", "help"):
+    for want in ("studio",):
         t.ok(want in by_id, "%s is registered" % want, sorted(by_id))
+    t.ok("help" not in by_id, "Help is absent from the launcher, with one global entry")
+    t.ok(registry.app_by_id("help"), "Help remains registered for routing")
+    t.eq(F.get(base + "/help")[0], 200, "the global Help destination is still served")
     # A tile points at THIS hub, always. `url` exists to keep a historic path
     # (registry.py:91), and it overrides `path` with whatever it says - so an
     # absolute address there sends the whole gate at a foreign host, and the

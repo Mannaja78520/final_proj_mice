@@ -134,19 +134,26 @@
     <!-- ANSWERS: a sheet. Every cell is typed into where it stands; one Save
          sends them all. Nothing jumps to a form somewhere else. -->
     <div class="card" data-pane="answers" hidden>
+      <div class="row" style="margin-bottom:var(--sp-2)">
+        <h2 style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px">💬 ตารางคำตอบของหุ่นยนต์ (Robot Answers & FAQ)</h2>
+      </div>
       <div class="row">
-        <input id="ansFind" type="search" placeholder="Find an answer…" oninput="findAnswers()">
-        <button onclick="addAnswerRow()">＋ Add a row</button>
-        <button class="primary" id="ansSave" onclick="saveAnswers()" disabled>Save answers</button>
-        <button id="ansUndo" onclick="undoAnswers()" disabled>Undo changes</button>
+        <input id="ansFind" type="search" placeholder="🔍 ค้นหาคำตอบ (Find an answer)…" oninput="findAnswers()" style="min-width:220px">
+        <button onclick="addAnswerRow()">＋ เพิ่มแถวคำตอบ (+ Add Row)</button>
+        <button class="primary" id="ansSave" onclick="saveAnswers()" disabled>💾 บันทึกคำตอบ (Save)</button>
+        <button id="ansUndo" onclick="undoAnswers()" disabled>↩ ยกเลิกที่แก้ (Undo)</button>
         <span class="mini" id="ansStat" aria-live="polite"></span>
       </div>
-      <p class="mini">Click a cell to change it. Each language has its own
-         column: on top, <b>how people ask it</b> (one per line); under it,
-         <b>what the rig says</b>. A reply left empty is translated for you
-         when you save. ▶ plays that reply.</p>
-      <p class="mini" id="ansEmpty" hidden>No answers yet. Add what people ask,
-         and what the rig replies.</p>
+      <p class="mini" style="margin-top:var(--sp-2)">คลิกในช่องเพื่อแก้ไข: แต่ละภาษามีคอลัมน์ของตัวเอง ด้านบนคือ <b>คำถามที่คนถาม</b> (พิมพ์ 1 คำถามต่อ 1 บรรทัด); ด้านล่างคือ <b>คำตอบที่หุ่นยนต์จะพูด</b> หากเว้นคำตอบภาษาอื่นว่างไว้ ระบบจะแปลภาษาให้อัตโนมัติเมื่อกดบันทึก (▶ เพื่อทดลองฟังเสียง)</p>
+      <p class="mini" id="ansEmpty" hidden>ยังไม่มีคำตอบในระบบ — กดปุ่ม "+ เพิ่มแถวคำตอบ" เพื่อเริ่มต้นเพิ่มบทสนทนา</p>
+      <div class="lang-filter-bar">
+        <span>👁️ กรองมุมมองภาษา (View Language):</span>
+        <button type="button" class="lang-pill active" onclick="voiceApp.setLangFilter('all')">🌐 แสดงทุกภาษา (All)</button>
+        <button type="button" class="lang-pill" onclick="voiceApp.setLangFilter('th')">🇹🇭 ภาษาไทย (TH)</button>
+        <button type="button" class="lang-pill" onclick="voiceApp.setLangFilter('en')">🇬🇧 English (EN)</button>
+        <button type="button" class="lang-pill" onclick="voiceApp.setLangFilter('ja')">🇯🇵 日本語 (JA)</button>
+        <button type="button" class="lang-pill" onclick="voiceApp.setLangFilter('zh')">🇨🇳 中文 (ZH)</button>
+      </div>
       <div class="sheet-wrap">
         <table class="sheet" id="ansTable">
           <thead><tr id="ansHead"></tr></thead>
@@ -346,30 +353,48 @@
     <!-- What people asked (A47-3): every question is logged with a topic
          (config/voice_topics.json) by the hub; the charts read /api/questions. -->
     <div class="card" data-pane="questions" hidden data-needs-login="gacha">
-      <div class="row"><span class="lbl">Day</span><select id="qDay" onchange="voiceApp.loadQuestions()"></select>
-        <button onclick="voiceApp.loadQuestions()">Refresh</button>
-        <a href="/api/questions?csv=1" download="voice_questions.csv">Download every question</a></div>
-      <p class="mini" id="qTotal"></p>
-      <div class="qcharts">
-        <div><h3>About what</h3><div id="qTopic" class="qbars"></div></div>
-        <div><h3>When (hour of the day)</h3><div id="qHour" class="qhist"></div></div>
-        <div><h3>Answered from</h3><div id="qSource" class="qbars"></div></div>
-        <div><h3>Language</h3><div id="qLang" class="qbars"></div></div>
-        <div><h3>Prizes given</h3><div id="qPrize" class="qbars"></div></div>
-        <div><h3>Asked most</h3><div id="qTop" class="qbars"></div></div>
+      <!-- Section 1: Analytics & Statistics -->
+      <div class="qsec-head">
+        <h2 style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px">📊 ภาพรวมและสถิติคำถาม (Question Analytics)</h2>
       </div>
-      <h3>Asked often, no saved answer yet</h3>
-      <p class="mini">Answered by the model or not at all. Press <b>Make an answer</b> to write the answer once;
-        the robot then says it every time.</p>
-      <div id="qUnsaved"></div>
-      <h3>Topics</h3>
-      <p class="mini">Each question gets the first topic whose words fit. <b>Words</b>: one way of saying it per line,
-        <code>|</code> between choices. Answers that give a prize are set on the
-        <a href="/app/gacha/">Prize machines</a> page.</p>
-      <div class="wrapx"><table class="qtopics" id="qTopicsT"><thead><tr><th>Short name</th><th>Shown as</th><th>Words</th><th></th></tr></thead><tbody></tbody></table></div>
-      <div class="row"><button onclick="voiceApp.topicRow({})">＋ Topic</button>
-        <button class="primary" onclick="voiceApp.saveTopics()">Save topics</button></div>
-      <div class="statline" id="qTopicsStat"></div>
+      <div class="row" style="margin-bottom:var(--sp-3)">
+        <span class="lbl">วันที่ (Day)</span><select id="qDay" onchange="voiceApp.loadQuestions()"></select>
+        <button onclick="voiceApp.loadQuestions()">⟳ รีเฟรช (Refresh)</button>
+        <a href="/api/questions?csv=1" download="voice_questions.csv" class="btn" style="text-decoration:none">📥 ดาวน์โหลดประวัติทั้งหมด (CSV)</a>
+      </div>
+      <p class="mini" id="qTotal" style="font-weight:600;color:var(--txt);margin-bottom:var(--sp-3)"></p>
+      
+      <div class="qcharts">
+        <div class="qchart-box"><h3>📌 หัวข้อคำถาม (Topics Breakdown)</h3><div id="qTopic" class="qbars"></div></div>
+        <div class="qchart-box"><h3>⏰ ช่วงเวลาที่ถาม (Peak Hours)</h3><div id="qHour" class="qhist"></div></div>
+        <div class="qchart-box"><h3>🤖 ที่มาของคำตอบ (Answer Source)</h3><div id="qSource" class="qbars"></div></div>
+        <div class="qchart-box"><h3>🗣️ ภาษาที่ใช้ถาม (Languages)</h3><div id="qLang" class="qbars"></div></div>
+        <div class="qchart-box"><h3>🎁 รางวัลที่แจก (Prizes Awarded)</h3><div id="qPrize" class="qbars"></div></div>
+        <div class="qchart-box"><h3>🔥 คำถามยอดนิยม (Top Questions)</h3><div id="qTop" class="qbars"></div></div>
+      </div>
+
+      <!-- Section 2: Unanswered / Frequent questions needing pre-set answers -->
+      <div class="qsec-card">
+        <div class="qsec-head">
+          <h3>💡 คำถามที่พบบ่อยแต่ยังไม่มีคำตอบตายตัว (Frequently Asked — Needs Answer)</h3>
+        </div>
+        <p class="mini">คำถามเหล่านี้ผู้คนถามเข้ามาบ่อย แต่หุ่นยนต์ยังไม่มีคำตอบในตาราง (ใช้ AI คิดสดหรือยังตอบไม่ได้) — กดปุ่ม <b>Make an answer</b> เพื่อสร้างคำตอบลงในตาราง หุ่นยนต์จะจำและตอบแบบนี้ทุกครั้ง</p>
+        <div id="qUnsaved" style="margin-top:var(--sp-2)"></div>
+      </div>
+
+      <!-- Section 3: Topic Keyword Matching -->
+      <div class="qsec-card">
+        <div class="qsec-head">
+          <h3>🏷️ การจัดกลุ่มหัวข้อและคำสำคัญ (Topic Categorization & Keywords)</h3>
+        </div>
+        <p class="mini">ระบบจะจัดหมวดหมู่คำถามตามคำสำคัญที่ระบุไว้ด้านล่าง เพื่อนำไปวิเคราะห์สถิติหรือผูกกับการแจกของรางวัลกาชาปอง (พิมพ์ 1 คำต่อ 1 บรรทัด หรือใช้ <code>|</code> คั่นระหว่างตัวเลือก)</p>
+        <div class="wrapx" style="margin:var(--sp-3) 0"><table class="qtopics" id="qTopicsT"><thead><tr><th>รหัสย่อ (Short name)</th><th>ชื่อที่แสดง (Display name)</th><th>คำสำคัญที่ตรวจจับ (Trigger Words)</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="row">
+          <button onclick="voiceApp.topicRow({})">＋ เพิ่มหมวดหมู่ (+ Topic)</button>
+          <button class="primary" onclick="voiceApp.saveTopics()">💾 บันทึกหมวดหมู่ (Save topics)</button>
+        </div>
+        <div class="statline" id="qTopicsStat" style="margin-top:var(--sp-2)"></div>
+      </div>
     </div>
 
     <!-- Shown only with "Show technical details" on, like every page. -->

@@ -51,7 +51,7 @@
       try {
         const r = await fetch(path, init);
         let data = {};
-        try { data = await r.json(); } catch (e) { /* not JSON: keep {} */ }
+        try { data = opts.text ? {reply: await r.text()} : await r.json(); } catch (e) { /* not JSON: keep {} */ }
         const ok = r.ok && data.ok !== false;
         return {ok, data, status: r.status,
                 needLogin: r.status === 401 || !!data.need_login,
@@ -296,7 +296,42 @@
     }
   }
 
-  window.Mice = {Api, Status, TopBar, Partner, Tabs, here};
+    /* ---------------------------------------------------------------- App */
+  // Base class for all Mice applications providing unified DOM access,
+  // lifecycle management, status reporting, and event handling.
+  class App {
+    constructor(name, opts = {}) {
+      this.name = name || "app";
+      this.opts = opts;
+      this.$ = id => document.getElementById(id);
+      this._status = opts.statusId ? new Status(opts.statusId) : null;
+      this._events = new Map();
+    }
+    get status() { return this._status; }
+    esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+    }
+    on(event, handler) {
+      if (!this._events.has(event)) this._events.set(event, new Set());
+      this._events.get(event).add(handler);
+      return () => this.off(event, handler);
+    }
+    off(event, handler) {
+      if (this._events.has(event)) this._events.get(event).delete(handler);
+    }
+    emit(event, data) {
+      if (this._events.has(event)) {
+        this._events.get(event).forEach(fn => {
+          try { fn(data); } catch(e) { console.error(`[${this.name}] Event ${event} error:`, e); }
+        });
+      }
+    }
+    init() {}
+  }
+
+  window.Mice = {Api, Status, TopBar, Partner, Tabs, App, here};
+  if (window.miceTheme) window.Mice.theme = window.miceTheme;
+  if (window.MiceThemeManager) window.Mice.ThemeManager = window.MiceThemeManager;
 
   if (document.readyState === "loading")
     document.addEventListener("DOMContentLoaded", TopBar.mountAll);

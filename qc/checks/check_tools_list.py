@@ -16,6 +16,7 @@ what `/api/apps` returned. That is the only way the two can be told apart: the
 registry being right is exactly what the old checks proved while the screen
 showed nothing.
 """
+from contextlib import contextmanager
 import json
 import re
 import urllib.request
@@ -26,6 +27,16 @@ import qc as F
 AREA = "hub"
 TITLE = "the Tools list draws one row per tool, and knows when there are none"
 SLOW = True
+
+
+@contextmanager
+def broken_manifest(path):
+    original = path.read_bytes()
+    try:
+        path.write_bytes(original.replace(b"{", b"{,", 1))
+        yield original
+    finally:
+        path.write_bytes(original)
 
 
 def run(t):
@@ -74,11 +85,10 @@ def run(t):
     # can never say "no tools yet" then the message is decoration, and if the
     # list breaks again it will look like this instead.
     src = (F.HUB / "web" / "hub.html").read_text(encoding="utf-8")
-    fn = src[src.find("async function loadApps"):]
-    fn = fn[:fn.find("\nasync function", 10)]
-    t.contains(fn, "No tools yet",
+    fn = (F.CODE / "main_python/web/home/parts/tools.js").read_text(encoding="utf-8")
+    t.contains(fn, "ยังไม่มีเครื่องมือ",
                "the card can say that there are none")
-    t.ok("!apps.length" in fn,
+    t.ok("!data.apps.length" in fn,
          "and says it only when there really are none",
          "an empty state that shows on an error is how a broken list hides")
 
@@ -90,9 +100,7 @@ def run(t):
     # is false and throws away the file and line that RegistryError already
     # knew. Both hid a real fault behind a tidy state.
     man = F.CODE / "apps" / "help" / "app.json"
-    keep = man.read_text(encoding="utf-8")
-    try:
-        man.write_text(keep.replace("{", "{,", 1), encoding="utf-8")
+    with broken_manifest(man) as keep:
         with urllib.request.urlopen(base + "/api/apps", timeout=10) as r:
             broke = json.loads(r.read())
             code = r.status
@@ -109,27 +117,28 @@ def run(t):
         dom2 = _load(base + "/")
         card2 = dom2[dom2.find('id="tools"'):]
         card2 = card2[:card2.find("</div>", card2.find("</div>") + 6) + 6]
-        t.ok("could not be read" in card2,
+        t.ok("โหลดรายการเครื่องมือไม่ได้" in card2,
              "the page says the list could not be read")
-        t.ok("No tools yet" not in card2,
+        t.ok("ยังไม่มีเครื่องมือ" not in card2,
              "and does NOT tell the operator to go and add one",
              "that is advice for a different situation, and it hides a fault "
              "somebody could fix in ten seconds if they were told which file")
-    finally:
-        man.write_text(keep, encoding="utf-8", newline="")
+    t.eq(man.read_bytes(), keep, "broken manifest probe restores exact original bytes")
 
-    # The specific mistake, kept out by name: the loop variable is `a`, and
-    # anything reaching for a module's fields here is the same bug again.
-    body = fn[fn.find("apps.forEach"):]
-    body = body[:body.find("});") + 3]
-    # Comments stripped first: the fix's own comment EXPLAINS the m.type
-    # that used to be there, and the first version of this assertion failed
-    # on that explanation - the same trap as three other checks here.
-    body = re.sub(r"//[^\n]*", "", body)
-    t.ok(not re.search(r"\bm\.", body),
-         "the row builder does not reach for a module's fields",
-         "`m.type` here was undefined and threw, which drew no rows at all: %s"
-         % re.findall(r"\bm\.\w+", body))
+    # Drive native link destinations, retry/focus, unfamiliar apps and layout in Edge.
+    import fake_serial
+    driver = (F.CODE / "qc/data/tools_launcher.js").read_text(encoding="utf-8")
+    themes = re.findall(r'\[data-theme="([^"]+)"\]',
+                        (F.CODE / "shared/web/themes.css").read_text(encoding="utf-8"))
+    fake_serial.reset()
+    browser.raw_page('<iframe id="hub"></iframe><script>const THEMES=' +
+                     json.dumps(list(dict.fromkeys(themes))) + ';' + driver.replace("</script", "<\\/script") + '</script>',
+                     base, seconds=60)
+    marks = [m[6:] for m in fake_serial.qc_marks if m.startswith("TOOLS~")]
+    t.ok(len(marks) >= 15, "all launcher browser journeys reported", marks)
+    for mark in marks:
+        key, _, value = mark.partition("=")
+        t.eq(value, "true", key)
 
 
 def _load(url):

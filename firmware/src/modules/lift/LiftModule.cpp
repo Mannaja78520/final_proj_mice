@@ -2,9 +2,18 @@
 #include "core/SDStore.h"
 #include "core/HwConfig.h"
 #include "core/Util.h"
+#include <driver/gpio.h>
 
 void LiftModule::applySettings(JsonVariant s) {
     if (s.isNull()) return;
+    // Validate before casting: zero/negative/NaN/overflow never disable the guard.
+    for (const char* key : {"travel_timeout_ms", "home_timeout_ms"}) {
+        if (s[key].isNull()) continue;
+        const double value = s[key].as<double>();
+        if (!(value >= LIFT_TIMEOUT_MIN_MS && value <= LIFT_TIMEOUT_MAX_MS)) continue;
+        if (String(key) == "travel_timeout_ms") travelTimeoutMs_ = (uint32_t)value;
+        else homeTimeoutMs_ = (uint32_t)value;
+    }
     hasEnc_        = s["encoder"] | hasEnc_;
     speed_         = s["speed"] | speed_;
     speedMms_      = s["speed_mms"] | speedMms_;
@@ -56,8 +65,8 @@ void LiftModule::deriveGeometry() {
 }
 
 void LiftModule::begin() {
-    pinMode(hw.pins.limitTop, INPUT_PULLUP);
-    pinMode(hw.pins.limitDown, INPUT_PULLUP);
+    if (hw.pins.limitTop >= 0 && HwConfig::pinUsable(hw.pins.limitTop, false)) pinMode(hw.pins.limitTop, INPUT_PULLUP);
+    if (hw.pins.limitDown >= 0 && HwConfig::pinUsable(hw.pins.limitDown, false)) pinMode(hw.pins.limitDown, INPUT_PULLUP);
 
     if (hasEnc_) {
         ESP32Encoder::useInternalWeakPullResistors = puType::up;
@@ -82,6 +91,7 @@ long LiftModule::counts() const {
 }
 
 int LiftModule::currentStage() const {
+    if (faultReason_) return -1;
     if (!hasEnc_) {
         // without an encoder the position is only known at the endpoints
         if (limitDown()) return 0;
@@ -97,6 +107,7 @@ int LiftModule::currentStage() const {
 }
 
 const char* LiftModule::stateName() const {
+    if (faultReason_) return "fault";
     switch (state_) {
         case MOVE_UP:   return "up";
         case MOVE_DOWN: return "down";
@@ -107,81 +118,107 @@ const char* LiftModule::stateName() const {
 }
 
 bool LiftModule::busy() {
-    return state_ != IDLE;
+    return faultReason_ || state_ != IDLE;
 }
 
 void LiftModule::stopMotor() {
-    motor_->spin(0);
+    if (motor_) motor_->spin(0);
+    motionArmed_ = false;
     state_ = IDLE;
     targetStage_ = -1;
 }
 
 void LiftModule::startGoto(int stage) {
+    startMotion(MOVE_GOTO);
     targetStage_ = stage;
     targetCounts_ = (long)stage * countsPerStage_;
-    state_ = MOVE_GOTO;
 }
 
-bool LiftModule::handleCommand(String argv[], int argc, String& reply) {
-    String& cmd = argv[0]; // already uppercased by the router
+bool LiftModule::limitsValid() const {
+    return hw.pins.limitTop >= 0 && hw.pins.limitDown >= 0 &&
+        hw.pins.limitTop != hw.pins.limitDown &&
+        GPIO_IS_VALID_GPIO(hw.pins.limitTop) && GPIO_IS_VALID_GPIO(hw.pins.limitDown) &&
+        HwConfig::pinUsable(hw.pins.limitTop, false) && HwConfig::pinUsable(hw.pins.limitDown, false);
+}
 
-    if (cmd == "UP") {
-        pendingStage_ = -1;
-        state_ = MOVE_UP;
-        reply = "OK up";
-        return true;
-    }
-    if (cmd == "DOWN") {
-        pendingStage_ = -1;
-        state_ = MOVE_DOWN;
-        reply = "OK down";
+void LiftModule::startMotion(State next) {
+    state_ = next;
+    targetStage_ = -1;
+    motionStartedMs_ = millis();
+    motionTimeoutMs_ = next == HOMING ? homeTimeoutMs_ : travelTimeoutMs_;
+    motionArmed_ = true;
+}
+
+void LiftModule::latchFault(const char* reason) {
+    stopMotor();
+    pendingStage_ = -1;
+    targetCounts_ = 0;
+    homed_ = false;
+    faultReason_ = reason;
+}
+
+bool LiftModule::motionReady(String& reply) {
+    if (!faultReason_ && !motor_) latchFault("not_ready");
+    if (!faultReason_ && !limitsValid()) latchFault("limits_missing");
+    if (!faultReason_ && limitTop() && limitDown()) latchFault("limits_conflict");
+    if (faultReason_) { reply = String("ERR lift fault ") + faultReason_ + "; inspect, STOP, then FAULT CLEAR"; return false; }
+    if (state_ != IDLE) { reply = "ERR lift moving; STOP before a new motion"; return false; }
+    return true;
+}
+
+bool LiftModule::handleMotionCommand(String argv[], int argc, String& reply) {
+    if (argc < 1) return false;
+    const String& cmd = argv[0];
+    if (cmd == "FAULT?") {
+        reply = faultReason_ ? String("FAULT ") + faultReason_ : String("OK no fault");
         return true;
     }
     if (cmd == "STOP") {
         pendingStage_ = -1;
         stopMotor();
-        silence();          // A24-18: still AND quiet
+        silence();
         reply = "OK stopped";
         return true;
     }
-    if (cmd == "HOME") {
-        pendingStage_ = -1;
-        state_ = HOMING;
-        reply = "OK homing";
+    if (cmd == "FAULT") {
+        if (argc != 2 || !argv[1].equalsIgnoreCase("CLEAR")) { reply = "ERR usage: FAULT CLEAR"; return true; }
+        if (state_ != IDLE) { reply = "ERR STOP before FAULT CLEAR"; return true; }
+        if (!motor_ || !limitsValid()) { latchFault("limits_missing"); reply = "ERR limit inputs not configured"; return true; }
+        if (limitTop() && limitDown()) { latchFault("limits_conflict"); reply = "ERR both limits asserted; inspect before clearing"; return true; }
+        stopMotor(); pendingStage_ = -1; homed_ = false;
+        faultReason_ = nullptr;
+        reply = "OK fault cleared; HOME required for position reference";
         return true;
     }
+    if (cmd != "UP" && cmd != "DOWN" && cmd != "HOME" && cmd != "GOTO") return false;
+    if (!motionReady(reply)) return true;
     if (cmd == "GOTO") {
-        if (argc < 2) { reply = "ERR usage: GOTO <stage>"; return true; }
-        int stage = argv[1].toInt();
-        if (stage < 0 || stage > stages_ - 1) {
-            reply = "ERR stage 0-" + String(stages_ - 1);
+        char* end = nullptr;
+        const long stage = argc == 2 ? strtol(argv[1].c_str(), &end, 10) : -1;
+        if (argc != 2 || !argv[1].length() || !end || *end || stage < 0 || stage >= stages_) {
+            reply = "ERR usage: GOTO <stage 0-" + String(stages_ - 1) + ">";
             return true;
         }
+        pendingStage_ = -1;
         if (!hasEnc_) {
-            // no encoder: only the endpoints are reachable (limit switches)
-            pendingStage_ = -1;
-            if (stage == 0) {
-                state_ = MOVE_DOWN; // travel speed; bottom limit stops + homes
-                reply = "OK going down to the bottom limit";
-            } else if (stage == stages_ - 1) {
-                state_ = MOVE_UP;
-                reply = "OK going up to the top limit";
-            } else {
-                reply = "ERR no encoder: only stage 0 or " + String(stages_ - 1);
-            }
-            return true;
-        }
-        if (!homed_) {
-            // no position reference yet: home first, then run the goto
-            pendingStage_ = stage;
-            state_ = HOMING;
-            reply = "OK homing first, then goto " + String(stage);
-        } else {
-            startGoto(stage);
-            reply = "OK goto " + String(stage);
-        }
+            if (stage != 0 && stage != stages_ - 1) { reply = "ERR no encoder: only endpoint stages"; return true; }
+            startMotion(stage == 0 ? MOVE_DOWN : MOVE_UP);
+        } else if (!homed_) {
+            pendingStage_ = (int)stage;
+            startMotion(HOMING);
+        } else startGoto((int)stage);
+        reply = "OK goto " + String(stage);
         return true;
     }
+    pendingStage_ = -1;
+    startMotion(cmd == "UP" ? MOVE_UP : cmd == "DOWN" ? MOVE_DOWN : HOMING);
+    reply = "OK " + String(cmd == "HOME" ? "homing" : cmd == "UP" ? "up" : "down");
+    return true;
+}
+
+bool LiftModule::handleCommand(String argv[], int argc, String& reply) {
+    if (handleMotionCommand(argv, argc, reply)) return true;
+    String& cmd = argv[0];
     if (cmd == "STAGE?" || cmd == "STAGE") {
         reply = String(currentStage());
         return true;
@@ -272,6 +309,15 @@ bool LiftModule::handleCommand(String argv[], int argc, String& reply) {
 }
 
 void LiftModule::updateMotion() {
+    if (faultReason_) { if (motor_) motor_->spin(0); return; }
+    // Timeout wins even if a switch changes exactly at the deadline; unsigned
+    // subtraction handles millis wrap and a move that started at zero.
+    if (state_ != IDLE && (!motionArmed_ || (uint32_t)(millis() - motionStartedMs_) >= motionTimeoutMs_)) {
+        latchFault(state_ == HOMING ? "home_timeout" : "travel_timeout");
+        return;
+    }
+    if (!limitsValid()) { latchFault("limits_missing"); return; }
+    if (limitTop() && limitDown()) { latchFault("limits_conflict"); return; }
     switch (state_) {
         case MOVE_UP:
             if (limitTop()) stopMotor();
@@ -355,6 +401,10 @@ void LiftModule::addCapabilities(JsonArray caps) {
 
 void LiftModule::status(JsonObject o) {
     o["state"] = stateName();
+    o["fault"] = faultReason_ ? faultReason_ : "";
+    o["travel_timeout_ms"] = travelTimeoutMs_;
+    o["home_timeout_ms"] = homeTimeoutMs_;
+    o["motion_timeout_ms"] = motionArmed_ ? motionTimeoutMs_ : 0;
     o["stage"] = currentStage();
     o["target"] = targetStage_;
     o["stages"] = stages_;

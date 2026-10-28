@@ -155,13 +155,16 @@
 .pbar i{display:block;height:100%;width:0;background:var(--acc);transition:width 150ms}
 @media (max-width:430px){.flash{margin-left:0}.flash select{flex:1 1 100%}}
 @media (pointer:coarse){.flash select{padding:9px 10px}}
-/* A tool is a destination: its description gets room and its action stays quiet. */
+/* A single grid preserves registry order without empty category columns. */
 .js-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:var(--sp-3);margin-top:var(--sp-4)}
-.mod.tool-tile{display:grid;grid-template-columns:1fr auto;border-left:1px solid var(--line);padding:var(--sp-4);margin:0;gap:var(--sp-2)}
-.tool-tile .nm{grid-column:1/-1}
-.tool-tile .ip{grid-column:1/-1;white-space:normal;overflow:visible;line-height:1.5;min-height:3em}
-.tool-tile button{text-align:left}
-.tool-tile .tab-link{font-size:12px;padding:var(--sp-2);border:0}
+.mod.tool-tile{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;padding:var(--sp-4);margin:0;gap:var(--sp-2);min-width:0}
+.tool-tile .nm,.tool-tile .ip{white-space:normal;overflow:visible;overflow-wrap:anywhere}
+.tool-tile .ip{line-height:1.5}
+.tool-open{display:flex;align-items:center;justify-content:center;min-height:44px;text-decoration:none;margin-top:var(--sp-1);background:var(--btn);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--txt);font-weight:600}
+.tool-open:hover{border-color:var(--acc)}
+.tool-state{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3)}
+.tool-state .tech{flex-basis:100%;overflow-wrap:anywhere}
+.tool-state button{min-height:44px}
 #tabs{padding:var(--sp-2);background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg);margin:var(--sp-4) 0 var(--sp-6);
   flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}
 /* ONE line of tabs (A41-3). Seven fit at 1280 px; a phone slides the row
@@ -194,6 +197,7 @@
 <div class="banner warn" id="staleExe" hidden role="alert">
   <span id="staleExeWhy"></span>
   <span class="mono" id="staleExeFix"></span>
+  <span class="tech" style="font-size:12px;opacity:0.85" title="MiceHub.spec auto-terminates running instances during build, or run taskkill /F /IM MiceHub.exe manually">(auto-kills running app on build, or: <code>taskkill /F /IM MiceHub.exe</code>)</span>
 </div>
 <!-- STOP, FROM ANYWHERE. There was no stop control on this page at all: the
      only one was inside Nong Studio, on another screen, behind a tab. Somebody
@@ -223,7 +227,7 @@
     <button class="secondary" id="keysOpen" title="Keyboard shortcuts"
             onclick="toggleKeys(true)" aria-haspopup="dialog">⌨ Shortcuts</button>
     <!-- Help LEAVES the page, so it is a link and looks like one. -->
-    <a class="tab tab-link" id="helpLink" href="/help">Help ↗</a>
+    <a class="tab tab-link" id="helpLink" href="/help" target="_blank" rel="noopener" title="คู่มือการใช้งานและเอกสารอ้างอิงระบบ (System Help)" style="font-weight:600">📖 คู่มือ Help ↗</a>
   </span>
   <span class="sub">A little space for your whole rig. Open a module to move it,
     or start a sequence in Nong Studio. Your modules appear here when they connect.</span>
@@ -388,10 +392,9 @@
        login gate anyway, so the Home tab showed "Sign in to use this" under
        the login card - two login boxes on one screen (audit, 2026-10-14). -->
   <div class="card" data-tab="home" style="grid-column:1/-1">
-    <h2>Make something move</h2>
-    <div class="mini">These work whether or not a robot is here — build a
-      sequence now, send it to a module later.</div>
-    <div class="js-tools" id="homeTools">loading…</div>
+    <h2>เครื่องมือ</h2>
+    <div class="mini">เลือกเครื่องมือที่ต้องการ เปิดในแท็บใหม่ การควบคุมอุปกรณ์ต้องเข้าสู่ระบบ</div>
+    <div class="js-tools" id="homeTools" aria-busy="true">กำลังโหลดเครื่องมือ…</div>
   </div>
 
   <div class="card" data-tab="home" style="grid-column:1/-1">
@@ -530,6 +533,21 @@
         on the PC.</div>
     </div>
 
+    <h2 style="margin-top:var(--sp-4)">⚡ ประสิทธิภาพของเครื่อง Hub</h2>
+    <p class="mini">อัตโนมัติเลือกให้เหมาะกับเครื่องนี้ เปลี่ยนคอมพิวเตอร์แล้วจะตรวจใหม่ โดยคงโมเดลและตัวละครที่คุณเลือกไว้</p>
+    <div id="resourceSummary" class="mini" aria-live="polite"></div>
+    <div class="row">
+      <label>โหมด <select id="resourceMode"></select></label>
+      <label>หน่วยประมวลผล <select id="resourceDevice"></select></label>
+      <button id="resourceSave" onclick="resourceView.save()">บันทึกประสิทธิภาพ</button>
+      <button onclick="resourceView.load()">โหลดค่าปัจจุบัน</button>
+    </div>
+    <div class="tech" id="resourceAdvanced"></div>
+    <p class="mini" id="resourceNotice"></p>
+    <p class="mini" id="resourceStatus" role="status"></p>
+    <h3>ภาพ 3D บนอุปกรณ์ที่เปิดหน้านี้</h3>
+    <div class="row"><label>คุณภาพภาพ <select id="resourceDisplay"></select></label></div>
+    <p class="mini">เลือกตามอุปกรณ์ที่เปิดเว็บ ไม่ใช้สเปก Hub แทนโทรศัพท์หรือคอมพิวเตอร์อีกเครื่อง ปรับความละเอียดและความลื่นได้ทันที ส่วนขอบภาพจะเปลี่ยนเมื่อโหลดหน้าใหม่</p>
     <div class="mini">The first password is generated on the PC that runs the hub
       and written next to it, so it cannot be lost. It is never shown on a page.</div>
   </div>
@@ -721,14 +739,15 @@
       the same room cannot join yours, and yours cannot join theirs, because a
       module's own hotspot password is derived from its group name.</div>
     <div id="netlist" class="spin" aria-live="polite" style="margin-top:12px">Looking for modules…</div>
+    <div id="netNotice" class="mini" role="status"></div>
+    <div id="grpout" class="mini" role="status" style="margin-top:8px"></div>
     <div id="netact" style="margin-top:12px"></div>
   </div>
 
   <div class="card" data-tab="tools">
-    <h2>🧰 Apps &amp; tools</h2>
-    <div id="tools" class="js-tools mini">loading…</div>
-    <div class="mini">tip: use the “Studio + monitor” button on a nong module above —
-      it opens the editor already connected, showing the real robot moving in 3D.</div>
+    <h2>เครื่องมือ</h2>
+    <p class="mini">เลือกเครื่องมือที่ต้องการ เปิดในแท็บใหม่</p>
+    <div id="tools" class="js-tools" aria-busy="true">กำลังโหลดเครื่องมือ…</div>
   </div>
 
   <!-- Complaints screen — reads reports from /api/reports, newest first.
@@ -819,6 +838,16 @@ function filterMods(){
     none.hidden = true;
   }
 }
+
+
+window.addEventListener('DOMContentLoaded', function(){
+  var h = (location.hash || '').replace('#', '');
+  if(h && document.querySelector('#tabs [data-go="' + h + '"]')) showTab(h);
+});
+window.addEventListener('hashchange', function(){
+  var h = (location.hash || '').replace('#', '');
+  if(h && document.querySelector('#tabs [data-go="' + h + '"]')) showTab(h);
+});
 
 // ---- pinned modules --------------------------------------------------
 // A venue rig has four modules that matter and a shelf of spares that do not,
@@ -1238,32 +1267,36 @@ async function loadNet(){
   netBusy = true;
   box.className = 'spin'; box.textContent = 'looking for modules…';
   var out = [], failed = 0;
+  const read = async function(url){
+    const response = await fetch(url), data = await response.json();
+    if(!response.ok || data.ok === false) throw new Error(data.error || 'scan failed');
+    return data;
+  };
   try{
-    var r = await fetch('/api/scan').then(x=>x.json());
+    var r = await read('/api/scan');
     (r.modules||[]).forEach(function(m){
-      out.push({dev:'wifi:'+m.ip, label:m.name, type:m.type, via:m.ip, group:m.group||''});
+      out.push({chip:m.chip, dev:'wifi:'+m.ip, label:m.name, type:m.type, via:m.ip, group:m.group||''});
     });
   }catch(e){ failed++; }
   try{
     // /api/ports is only the TYPED port list — it carries no identity until a
     // port is actually probed, so reading it alone showed every module as
     // unnamed and ungrouped. /api/scanusb is what opens the cable and asks.
-    var p = await fetch('/api/ports').then(x=>x.json());
+    var p = await read('/api/ports');
     var real = (p.ports||[]).filter(function(x){ return !x.bt; });
     var probes = real.map(function(x){
-      return fetch('/api/scanusb?port='+encodeURIComponent(x.port))
-        .then(function(r){ return r.json(); })
+      return read('/api/scanusb?port='+encodeURIComponent(x.port))
         .then(function(r){ return (r.usb&&r.usb[0])||null; })
-        .catch(function(){ return null; });
+        .catch(function(){ failed++; return null; });
     });
     (await Promise.all(probes)).forEach(function(u){
       if(!u || !u.module) return;
-      out.push({dev:'usb:'+u.port, label:u.module.name||u.port,
+      out.push({chip:u.module.chip, dev:'usb:'+u.port, label:u.module.name||u.port,
                 type:u.module.type||'', via:u.port,
                 group:u.module.group||''});
       // modules living BEHIND this one on RS485 count too
       (u.rs485||[]).forEach(function(b){
-        out.push({dev:'usb:'+u.port+':'+b.id, label:b.name||('id '+b.id),
+        out.push({chip:b.chip, dev:'usb:'+u.port+':'+b.id, label:b.name||('id '+b.id),
                   type:b.type||'', via:u.port+' #'+b.id, group:b.group||''});
       });
     });
@@ -1272,7 +1305,7 @@ async function loadNet(){
   // the same module can answer on WiFi AND on its cable — show it once
   var seen = {}, uniq = [];
   out.forEach(function(m){
-    var k = m.label + '|' + m.type;
+    var k = m.chip ? 'chip:' + m.chip : m.dev;
     if(seen[k]) return;
     seen[k] = 1; uniq.push(m);
   });
@@ -1282,7 +1315,7 @@ async function loadNet(){
     // "Nothing found" and "could not look" are different facts, and saying the
     // first when the second is true is the page lying to the reader. Both
     // scans failing used to render as a confident empty list.
-    if(failed >= 2){
+    if(failed > 0){
       box.setAttribute('role','alert');
       box.innerHTML = 'Could not look for modules — the hub did not answer. '
         + 'Please check if it is running. '
@@ -1295,6 +1328,8 @@ async function loadNet(){
     return;
   }
   box.removeAttribute('role');
+  const notice = document.getElementById('netNotice');
+  if(notice) notice.textContent = failed ? 'Some modules could not be checked. Press Refresh to try again.' : '';
   box.className = '';
   box.innerHTML = uniq.map(function(m,i){
     return '<label class="netrow" id="netrow'+i+'">'+
@@ -1330,7 +1365,7 @@ function netPick(){
       '<button onclick="linkSel()">🔗 Link these</button>'+
       '<button class="danger" onclick="unlinkSel()" title="Remove the ticked modules from their '+
       'group. They go back to the shared fallback password.">✂ Unlink the ticked modules</button>'+
-    '</div><div id="grpout" class="mini" style="margin-top:8px"></div>';
+    '</div>';
 }
 
 async function groupCmd(dev, cmd){
@@ -1420,88 +1455,99 @@ onTab('network', paintQr);
 function esc(t){ return String(t==null?'':t).replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
-// The tool list comes from the app registry (code/apps/*/app.json), so a new
-// web app appears here by dropping a folder in — no button to hand-write.
-// Drawn into EVERY tools container - the Tools tab and the card on Home -
-// from one answer, so the two lists cannot say different things.
-function toolBoxes(){
-  return [].slice.call(document.querySelectorAll('.js-tools'));
-}
-function toolsSay(html){
-  toolBoxes().forEach(function(b){ b.innerHTML = html; });
-}
-// One row for one tool.
-//
-// A TOOL IS NOT A MODULE. This was copied from the module list and still read
-// `m.type` - but the loop variable is `a`, and an app has no module type at
-// all. `m` was undefined, the exception left loadApps half-finished, and the
-// Tools list rendered NOTHING. It looked like there were no tools rather than
-// like a broken page, which is why it survived: an empty list is a plausible
-// state. The user met the same exception again on 2026-08-21 from an exe built
-// nine hours before the fix.
-function toolRow(a){
-  const d=document.createElement('div');
-  d.className='mod tool-tile';
-  d.innerHTML='<span class="nm">'+(a.icon?a.icon+' ':'')+esc(a.name||'?')+'</span>'+
-              '<span class="ip">'+esc(a.blurb||'')+'</span>';
-  const b=document.createElement('button');b.textContent='Open';
-  b.title='open '+(a.name||'this tool')+' in a new tab';
-  b.onclick=()=>window.open(a.path,'_blank');
-  d.appendChild(b);
-  // Help about THIS tool, when the tool says which section is about it
-  // (app.json -> help). No section, no link: one pointing at the top of the
-  // help page is not help, it is a thousand lines and a scrollbar.
-  if(a.help){
-    const h=document.createElement('a');
-    h.className='tab tab-link'; h.href='/help#'+encodeURIComponent(a.help);
-    h.textContent='Help ↗'; h.title='Help about '+a.name;
-    d.appendChild(h);
+// Both launchers use the registry's order and metadata; no second app catalog.
+class MiceToolsManager {
+  constructor() { this.revision = 0; }
+  boxes() { return Array.from(document.querySelectorAll('.js-tools')); }
+  destination(app) {
+    if (!app || typeof app.path !== 'string' || !app.path.trim())
+      throw new Error('app path is missing');
+    const url = new URL(app.path, location.href);
+    if (!['http:', 'https:'].includes(url.protocol))
+      throw new Error('unsupported app destination');
+    return url.href;
   }
-  return d;
-}
-async function loadApps(){
-  try{
-    const r=await fetch('/api/apps').then(r=>r.json());
-    const apps=r.apps||[];
-    // BROKEN IS NOT EMPTY. When the registry cannot be read the hub answers
-    // 200 with {ok:false, apps:[], error:...} - so this never reached the
-    // catch below, and the page told the operator to go and ADD a tool when
-    // the truth was that the list could not be read at all. Wrong advice, and
-    // it hid a real fault behind a tidy empty state.
-    if(r.ok===false||r.error){
-      toolsSay('<span class="mini">The tool list could not be read. Your tools are still there. '
-        +'Try again; if it keeps happening, restart the hub on this PC. '
-        +'<span class="tech">'+esc(String(r.error||'unknown'))+' — check '
-        +'<code>code/apps/*/app.json</code> in the hub window.</span></span> '
-        +'<button onclick="loadApps()">Try again</button>');
-      return;
-    }
-    // An empty state teaches: say what goes here and how one gets here. It is
-    // only reached when the hub really did read the registry and found none.
-    if(!apps.length){toolsSay('<div class="empty-state"><b>No tools yet.</b>'
-      +'Open Help to get started, or try again after adding your tools. '
-      +'<a href="/help">Open Help</a> '
-      +'<button onclick="loadApps()">Try again</button>'
-      +'<span class="tech">Tools live in code/apps/, each with an app.json.</span></div>');return;}
-    toolsSay('');
-    // A FRESH row per list, never a clone: cloneNode copies the markup and
-    // drops every handler, so the copy on Home would have looked identical and
-    // done nothing when pressed.
-    toolBoxes().forEach(function(box){
-      apps.forEach(function(a){ box.appendChild(toolRow(a)); });
+  createToolRow(app) {
+    const row = document.createElement('div');
+    row.className = 'mod tool-tile';
+    const name = document.createElement('span');
+    name.className = 'nm';
+    name.textContent = (app.icon ? app.icon + ' ' : '') + (app.name || app.id || 'เครื่องมือ');
+    const description = document.createElement('span');
+    description.className = 'ip';
+    description.textContent = app.blurb || '';
+    const open = document.createElement('a');
+    open.className = 'btn tool-open';
+    open.href = this.destination(app);
+    open.target = '_blank';
+    open.rel = 'noopener';
+    open.textContent = 'เปิด ↗';
+    open.setAttribute('aria-label', 'เปิด ' + (app.name || app.id || 'เครื่องมือ') + ' (แท็บใหม่)');
+    open.title = open.getAttribute('aria-label');
+    row.append(name, description, open);
+    return row;
+  }
+  render(box, apps) {
+    box.replaceChildren(...apps.map(app => this.createToolRow(app)));
+    box.setAttribute('aria-busy', 'false');
+  }
+  state(kind, text, detail) {
+    this.boxes().forEach(box => {
+      const state = document.createElement('div');
+      state.className = 'tool-state empty-state';
+      state.dataset.state = kind;
+      const message = document.createElement('span');
+      message.setAttribute('role', 'status');
+      message.textContent = text;
+      state.appendChild(message);
+      if (kind !== 'loading') {
+        const retry = document.createElement('button');
+        retry.textContent = 'ลองอีกครั้ง';
+        retry.onclick = () => this.load(box);
+        state.appendChild(retry);
+      }
+      if (detail) {
+        const tech = document.createElement('span');
+        tech.className = 'tech';
+        tech.textContent = detail;
+        state.appendChild(tech);
+      }
+      box.replaceChildren(state);
+      box.setAttribute('aria-busy', String(kind === 'loading'));
     });
-  }catch(e){
-    // An error says what to DO, and offers the control that does it - and
-    // WHICH BUILD said it. On 2026-08-21 this exact box read "m is not
-    // defined": a ReferenceError fixed nine hours before the exe that was
-    // running had been built. Without the build date the message sends people
-    // to look for a bug in code that was already correct.
-    toolsSay('<span class="mini">Could not read the tool list. Check the hub is still '
-      +'running on this PC, then try again. <span class="tech">'+esc(String(e.message||e))
-      +(window.HUB_BUILT?' — hub build '+esc(window.HUB_BUILT):'')+'</span></span> '
-      +'<button onclick="loadApps()">Try again</button>');
+  }
+  async load(focusBox) {
+    const revision = ++this.revision;
+    const keepFocus = focusBox && focusBox.contains(document.activeElement);
+    this.state('loading', 'กำลังโหลดเครื่องมือ…');
+    try {
+      const result = await Mice.Api.get('/api/apps');
+      if (revision !== this.revision) return;
+      const data = result.data;
+      if (!result.ok || !data || data.error || !Array.isArray(data.apps))
+        throw new Error(result.says || (data && data.error) || 'invalid app registry response');
+      // Validate every destination before drawing either list. Malformed is not empty.
+      data.apps.forEach(app => this.destination(app));
+      if (!data.apps.length)
+        this.state('empty', 'ยังไม่มีเครื่องมือในรายการ เพิ่มเครื่องมือแล้วลองอีกครั้ง');
+      else this.boxes().forEach(box => this.render(box, data.apps));
+    } catch (error) {
+      if (revision !== this.revision) return;
+      this.state('error', 'โหลดรายการเครื่องมือไม่ได้ ตรวจว่า Hub ยังทำงานอยู่ แล้วลองอีกครั้ง',
+        String(error.message || error) + (window.HUB_BUILT ? ' — hub build ' + window.HUB_BUILT : ''));
+    }
+    // A retry replaces its button. Move focus to the new result instead of losing it.
+    if (keepFocus && focusBox.isConnected) {
+      const target = focusBox.querySelector('a, button');
+      if (target) target.focus();
+    }
   }
 }
+window.MiceToolsManager = MiceToolsManager;
+window.miceTools = new MiceToolsManager();
+function toolBoxes(){ return window.miceTools.boxes(); }
+function toolRow(app){ return window.miceTools.createToolRow(app); }
+async function loadApps(){ return window.miceTools.load(); }
 loadApps();
 
 // ---- is this page still the one the hub is serving? ------------------
@@ -1602,21 +1648,27 @@ async function scan(force){
     // not reach" banner and the late answer wiped it (check_ui_states, red
     // when run alone, 2026-10-10).
     if(gen !== scanGen) return;
-    window.MODS = r.modules || [];
+    if(r.ok === false || !Array.isArray(r.modules)) throw new Error(r.error || "invalid module list");
+    window.MODS_ERROR = false;
+    window.HOME_SCANNED = true;
+    window.MODS = r.modules;
     repaintMods();
     if(!(r.modules||[]).length)
       el.innerHTML='<span class="mini">no modules found on '+ (r.lan||'?') +'/24 — are they powered and on the same WiFi? (⟳ Rescan)</span>';
     modsAt = Date.now(); modsHtml = el.innerHTML;
+    if(typeof paintHome === "function") paintHome();
   }catch(e){
-    // Keep the last good list rather than going blank — but mark it plainly as
-    // old, and give the one control that fixes it. A control panel that blanks
-    // when the network hiccups is worse than one that admits the data is old.
-    el.innerHTML =
-      '<div class="banner err" role="alert">Could not reach the hub just now — '+
+    if(gen !== scanGen) return;
+    window.MODS_ERROR = true;
+    el.replaceChildren();
+    if((window.MODS || []).length) repaintMods();
+    const warning = '<div class="banner err" role="alert">Could not reach the hub just now — '+
       esc(String(e && e.message || e))+
       ' <button onclick="scan(true)">Try again</button></div>' +
-      (modsHtml ? '<div class="stale">showing what was found '+agoText(modsAt)+
-                  ' — these may no longer be there</div>'+modsHtml : '');
+      ((window.MODS || []).length ? '<div class="stale">showing what was found '+agoText(modsAt)+
+        ' — these may no longer be there</div>' : '');
+    el.insertAdjacentHTML('afterbegin', warning);
+    if(typeof paintHome === 'function') paintHome();
     modsMeta();
     return;                       // nothing local to merge the far ones into
   }
@@ -2225,14 +2277,15 @@ function flashBusy(on){ flashActive=Math.max(0,flashActive+(on?1:-1)); }
 let autoUsbTimer=null;
 function autoUsbChanged(){
   const on=document.getElementById('autoUsb').checked;
-  localStorage.setItem('hub_autousb',on?'1':'0');
+  try { localStorage.setItem('hub_autousb',on?'1':'0'); } catch (_) {}
   clearInterval(autoUsbTimer);autoUsbTimer=null;
   if(on)autoUsbTimer=setInterval(()=>{
 
     if(!document.hidden&&!flashActive)scanUsb();
   },12000);
 }
-document.getElementById('autoUsb').checked=localStorage.getItem('hub_autousb')==='1';
+try { document.getElementById('autoUsb').checked=localStorage.getItem('hub_autousb')==='1'; }
+catch (_) { document.getElementById('autoUsb').checked=false; }
 autoUsbChanged();
 // Start on the tab you were last on. Defaults to Modules, so a fresh browser
 // opens exactly the page it always did.
@@ -2709,7 +2762,9 @@ function paintHome(){
     $('homeGo').innerHTML = '';
     return;
   }
-  if (!total){
+  if (!total && window.MODS_ERROR){
+    sum.textContent = 'Could not check modules. Press Look again to retry.';
+  } else if (!total){
     // EMPTY, not blank: say what it means and what to do about it.
     sum.textContent = 'No modules found yet. Plug a board into this PC with a '
       + 'USB cable, or put one on this WiFi, and it appears here by itself.';
@@ -3020,7 +3075,10 @@ async function fwBoards(){
     const me = await whoAmI();
     (all.modules || []).forEach(function(m){
       if (!m.host || m.host === me) return;      // this PC's own cables
-      const port = (String(m.dev || '').split('usb:')[1] || '').split(':')[0];
+      const route = (String(m.dev || '').split('usb:')[1] || '').split(':');
+      // Remote cable flashing cannot address a bus child; never flash its gateway.
+      if(route.length > 1 && Number(route[1]) !== 0) return;
+      const port = route[0];
       if (!port) return;                          // only a cable can be written
       const k = key(m, 'far' + m.host + port);
       out.set(k, Object.assign({name: m.name || port, id: m.id, type: m.type},
@@ -3324,6 +3382,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 function paintSettings(){
   loadUsers();
+  if (authed) resourceView.load();
   $('setWho').textContent = authed
     ? ('Logged in on ' + (MY_PC || 'this PC') + ' — you can move, flash and delete.')
     : ('Not logged in' + (MY_PC ? ' on ' + MY_PC : '') + ' — you can look at '
@@ -3331,6 +3390,69 @@ function paintSettings(){
 }
 
 onTab('settings', paintSettings);
+
+class ResourceSettingsView {
+  constructor() {
+    this.revision = null; this.loading = false;
+    window.addEventListener('mice-resource-change', () => {
+      const select = document.getElementById('resourceDisplay');
+      if (select && window.MiceResources) select.value = window.MiceResources.mode;
+    });
+  }
+  async request(options) {
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 6000);
+    try {
+      const response = await fetch('/api/resources', Object.assign({signal: controller.signal}, options));
+      const data = await response.json();
+      if (!response.ok || data.ok === false) throw Error(data.error || 'อ่านหรือบันทึกค่าไม่ได้');
+      return data;
+    } finally { clearTimeout(timer); }
+  }
+  select(id, choices, value) {
+    const box = document.getElementById(id); box.textContent = '';
+    choices.forEach(p => { const option = document.createElement('option'); option.value = p.id; option.textContent = p.label; box.appendChild(option); });
+    box.value = value;
+  }
+  async load() {
+    if (this.loading) return; this.loading = true;
+    try {
+      const data = await this.request(); this.revision = data.revision;
+      this.select('resourceMode', [{id:'auto',label:'อัตโนมัติ'}].concat(data.choices.profiles), data.settings.mode);
+      this.select('resourceDevice', data.choices.devices, data.settings.device);
+      const advanced = document.getElementById('resourceAdvanced'); advanced.textContent = '';
+      const labels = {cpuThreads:'จำนวนเธรด (0 = อัตโนมัติ)', workers:'งานแปลพร้อมกัน / งานฟังต่อโมเดล (0 = อัตโนมัติ)', ramReserveMiB:'RAM ที่เว้นไว้ (MiB)', vramReserveMiB:'VRAM ที่เว้นไว้ (MiB)'};
+      Object.keys(data.choices.limits).forEach(key => {
+        const label = document.createElement('label'), input = document.createElement('input');
+        label.textContent = labels[key] || key; input.type = 'number'; input.id = 'resource_' + key;
+        input.min = data.choices.limits[key][0]; input.max = data.choices.limits[key][1]; input.step = '1';
+        input.value = data.settings[key]; label.appendChild(input); advanced.appendChild(label);
+      });
+      this.settings = data.settings;
+      document.getElementById('resourceSummary').textContent = 'ค่าที่จะใช้กับการโหลดใหม่: ' + data.effective.label + ' · ' + data.effective.device.toUpperCase() + ' · ' + data.effective.cpuThreads + ' เธรด · ' + data.effective.workers + ' งานแปล / งานฟังต่อโมเดล';
+      document.getElementById('resourceNotice').textContent = data.notice;
+      document.getElementById('resourceStatus').textContent = data.effective.warning || 'พร้อมใช้กับการโหลดงานครั้งถัดไป';
+      const client = window.MiceResources;
+      if (client) {
+        this.select('resourceDisplay', [{id:'auto',label:'อัตโนมัติ'}].concat(client.registry.profiles || []), client.mode);
+        document.getElementById('resourceDisplay').onchange = event => client.setMode(event.target.value);
+      }
+    } catch (error) { document.getElementById('resourceStatus').textContent = 'อ่านค่าไม่ได้ ลองโหลดค่าปัจจุบันอีกครั้ง: ' + error.message; }
+    finally { this.loading = false; }
+  }
+  async save() {
+    if (!this.settings || !this.revision || this.saving) return;
+    this.saving = true; document.getElementById('resourceSave').disabled = true;
+    try {
+      const settings = Object.assign({}, this.settings, {mode: document.getElementById('resourceMode').value, device: document.getElementById('resourceDevice').value});
+      Object.keys(settings).filter(k => k !== 'mode' && k !== 'device').forEach(k => { settings[k] = Number(document.getElementById('resource_' + k).value); });
+      await this.request({method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({settings,revision:this.revision})});
+      await this.load();
+      document.getElementById('resourceStatus').textContent += ' · บันทึกแล้ว งานที่เปิดอยู่ยังใช้ค่าเดิม';
+    } catch (error) { document.getElementById('resourceStatus').textContent = 'ยังไม่ได้บันทึก ค่าที่กรอกยังอยู่: ' + error.message; }
+    finally { this.saving = false; document.getElementById('resourceSave').disabled = false; }
+  }
+}
+const resourceView = new ResourceSettingsView();
 
 // ---- last: what runs once every part is in --------------------------
 // Home repaints on its own timer while it is the tab on screen.

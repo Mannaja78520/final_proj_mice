@@ -7,6 +7,7 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 
 | system | what it is |
 |---|---|
+| [hub-resources](hub-resources.md) | Machine-local configurable CPU/GPU/RAM policy, bounded capability discovery, next-load Voice budgets and independent client display choices. |
 | [hub](hub.md) | The hub program: HTTP server, the device routes (dev, modules, USB proxy, pairing, robot proxy), startup. Split into hub-* systems (A26-76, A26-93). |
 | [hub-usb](hub-usb.md) | The hub's USB serial manager (one owner of every cable) and the port probe that finds which module is on which cable. |
 | [hub-flash](hub-flash.md) | Flashing a board: esptool over the cable, OTA over WiFi, chunks over the command channel, and images sent from another PC. |

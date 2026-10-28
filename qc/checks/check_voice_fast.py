@@ -69,6 +69,15 @@ def run(t):
         b._stt_own = {"thai-model": Model("thai", "ไทย")}
         b._stt_err = None
         b._lock = threading.Lock()
+        # __new__ bypasses Brain.__init__; use the real adapter with a fixed
+        # CPU budget so lazy CUDA recovery/unload still exercise production code.
+        from resources import VoiceResources
+        b._resources = VoiceResources.__new__(VoiceResources)
+        b._resources.resident = {}
+        b._resources.policy = SimpleNamespace(registry=json.loads(
+            (F.CODE / "config/resource_policy.json").read_text(encoding="utf-8")))
+        b._resources.plan = lambda fresh=False: {"revision":"fixture", "device":"cpu",
+            "deviceIndex":0, "cpuThreads":2, "workers":1, "ramBudgetMiB":4096, "gpus":[]}
         return b
 
     fake = SimpleNamespace(BatchedInferencePipeline=Batch, WhisperModel=cpu)
@@ -100,6 +109,8 @@ def run(t):
              "a lazy CUDA failure recovers and actually hears the Thai clip", repr((got, why)))
         t.ok(loaded and loaded[-1][0] == "thai-model" and loaded[-1][1].get("device") == "cpu",
              "the failing byLanguage model is reloaded on CPU", repr(loaded))
+        t.ok(loaded[-1][1].get("cpu_threads") == 2 and loaded[-1][1].get("num_workers") == 1,
+             "lazy specialist CPU recovery receives the actual resource thread and worker budget", repr(loaded))
         t.ok(b._stt is general and not b._stt_own["thai-model"].fail,
              "CPU recovery replaces the own model and preserves the general model")
         t.ok(all(not m.fail for m in (batch.model for batch in b._stt_batches.values())),
@@ -134,8 +145,10 @@ def run(t):
 
         b = brain()
         b._whisper("cached.wav", "th", b.cfg["stt"])
+        b._resources.mark("stt:cached", b._resources.plan(), "cpu")
         with patch.dict(sys.modules, {"torch": SimpleNamespace(cuda=SimpleNamespace(is_available=lambda: False))}):
             b.unload()
+        t.ok(not b._resources.resident, "unload also clears actual resident resource records")
         t.ok(not b._stt_batches and not b._stt_own and b._stt_attempt_model is None,
              "unload releases batch wrappers and their model references")
 

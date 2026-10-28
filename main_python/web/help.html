@@ -105,36 +105,52 @@ main > section.pv-off { display: none !important; }
 nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--acc-soft); font-weight: 600; }
 
 .sec-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--sp-3);
   margin-top: 48px;
   padding-top: 24px;
   border-top: 1px solid var(--line);
 }
 .sec-nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 18px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   color: var(--txt);
   text-decoration: none;
   font-size: 13.5px;
-  font-weight: 600;
-  transition: border-color .15s, background .15s;
+  transition: border-color .15s, background .15s, transform .1s;
+  box-sizing: border-box;
 }
 .sec-nav-btn:hover {
   background: var(--acc-soft);
   border-color: var(--acc);
   color: var(--acc);
+  transform: translateY(-1px);
 }
-.sec-nav-prev { margin-right: auto; }
-.sec-nav-next { margin-left: auto; }
+.sec-nav-prev { text-align: left; }
+.sec-nav-next { text-align: right; }
+.sec-nav-spacer { display: block; }
+.sec-nav-lbl {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--mut);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.sec-nav-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+}
+@media (max-width: 600px) {
+  .sec-nav { grid-template-columns: 1fr; }
+  .sec-nav-next { text-align: left; }
+  .sec-nav-spacer { display: none; }
+}
 
 /* Interactive Infographics & Visual Setting Annotations */
 .info-box {
@@ -372,12 +388,16 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 
 <!-- ===================== HUB ===================== -->
 <section id="hub">
+  <div class="info-box"><h3>ประสิทธิภาพตามเครื่องที่ใช้</h3><p>Settings → ประสิทธิภาพของเครื่อง Hub มีอัตโนมัติ ประหยัด สมดุล และเร็วขึ้น ตั้งหน่วยประมวลผล จำนวนเธรด งานพร้อมกัน และหน่วยความจำที่เว้นไว้ได้ในรายละเอียดทางเทคนิค ค่าแต่ละเครื่องแยกกันและยังคงโมเดลที่เลือกไว้ การบันทึกมีผลต่อการโหลดงานครั้งถัดไป ส่วนเธรดและชุดงานแปลที่เปิดแล้วต้องเปิดตัวช่วยเสียงใหม่ ไม่ปิดงานที่กำลังรัน</p><p>ภาพ 3D เลือกตามอุปกรณ์ที่เปิดเว็บและปรับเองได้ ภาพประหยัดลดความละเอียดและจำนวนภาพที่วาด โดยคงการเคลื่อนไหวและการตรวจชนเดิมไว้ ขอบภาพใช้ค่าใหม่เมื่อโหลดหน้าใหม่</p><p>งบ RAM/VRAM ใช้ช่วยเลือกวิธีโหลด ไม่รับประกันเพดานการใช้ทั้งหมด GPU ที่ตรวจพบยังต้องมีไลบรารีพร้อมใช้ หากใช้ไม่ได้จะกลับมาใช้ CPU</p></div>
   <div class="shead">
     <span class="where tech">code/main_python · MiceHub.exe · port 8642</span>
     <h2>Mice Hub — ศูนย์กลางควบคุมและปรับแต่งทุกระบบ</h2>
     <p>โปรแกรมเซิร์ฟเวอร์หลักของระบบ ค้นหาโมดูลและบอร์ด ESP32 ทุกตัวบนเครือข่ายและพอร์ต USB อัตโนมัติ
        พร้อมเป็นตัวกลางแชร์พอร์ตและกระจายคำสั่งให้กับทุกแอปพลิเคชัน</p>
   </div>
+  <p class="mini">ธีมและตัวเลือกธีมซิงก์ระหว่างหน้าและแท็บที่เปิดบน Hub เดียวกัน หากล้างค่าธีม สีและตัวเลือกจะกลับค่าเริ่มต้นพร้อมกัน</p>
+
+  <p class="mini">เครื่องมือแต่ละรายการแสดงเพียงครั้งเดียวในหมวดแรกที่ตรงกัน หากยังไม่มีหมวดที่ตรง จะแสดงในเครื่องมือเพิ่มเติม (Other Tools)</p>
 
   <!-- SECTION 1: HOME & MODULES -->
   <div class="info-box">
@@ -425,21 +445,18 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     </div>
     <div class="info-visual-wrapper">
       <img src="/docs/shots/hub-tools-card.png" alt="Hub Tools Card" class="info-img">
-      <div class="callout-pin" style="top: 25%; left: 50%;" title="1. แอป Nong Studio">1</div>
-      <div class="callout-pin" style="top: 50%; left: 50%;" title="2. แอป TV Remote">2</div>
-      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. แอป Voice, Camera, Faces, Gacha">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ทางลัดเปิด Nong Studio &amp; TV Remote</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกการ์ดแอปเพื่อเปิดใช้งาน</div>
+        <div class="action-card-title"><span class="num">1</span> เปิดเครื่องมือจากหน้าแรกหรือ Tools</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> หน้าแรกและแท็บ Tools แสดงเครื่องมือชุดเดียวกันเป็นการ์ดเรียงต่อกัน กด <b>เปิด ↗</b> เพื่อเปิดเครื่องมือในแท็บใหม่ ใช้ Tab และ Enter ได้</div>
         <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
-          ระบบจะเปิดหน้าเว็บโดยแนบพารามิเตอร์ Bus ID และเส้นทางเชื่อมต่อให้อัตโนมัติ ไม่ต้องมานั่งกรอก IP ใหม่
+          รายการปรับตามขนาดหน้าจอ ไม่มีคอลัมน์หมวดที่เว้นพื้นที่ว่างหรือปุ่มคู่มือซ้ำในการ์ด เปิดคู่มือได้จากลิงก์ <b>📖 คู่มือ Help ↗</b> เด่นชัดบนแถบเมนูด้านบนของ Hub เปิดคู่มือในแท็บใหม่ เมื่อรายการโหลดไม่ได้จะแจ้งข้อผิดพลาดและมีปุ่ม <b>ลองอีกครั้ง</b> ส่วนรายการว่างจะแจ้งว่ายังไม่มีเครื่องมือ
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">2</span> การเพิ่มแอปใหม่ในอนาคต (Extensibility)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> สร้างโฟลเดอร์ใน <code>code/apps/&lt;name&gt;</code> พร้อมไฟล์ <code>app.json</code></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> สร้างโฟลเดอร์ใน <code>code/apps/&lt;name&gt;</code> พร้อมไฟล์ <code>app.json</code> <span class="tech">ชื่อ คำอธิบาย ไอคอน และลำดับอ่านจากทะเบียนนี้; <code>show: false</code> ซ่อนจากรายการโดยยังเปิดหน้าผ่านลิงก์ได้</span></div>
         <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
           Hub จะตรวจพบแอปใหม่และนำมาแสดงผลบนหน้านี้ให้อัตโนมัติทันที ไม่ต้องแก้โค้ดหลังบ้านแม้แต่บรรทัดเดียว
         </div>
@@ -607,6 +624,9 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        <code>PermissionError: [WinError 5] Access is denied</code>. You can also stop running instances manually with:
        <code>taskkill /F /IM MiceHub.exe</code> (or <code>python main.py --kill</code>).</p></div>
 
+  <p>เมื่อค้นหาอุปกรณ์ไม่สำเร็จ หน้าแรกจะแจ้งให้ลองใหม่ รายการเดิมใน Modules ยังใช้ปุ่มได้แต่ระบุว่าอาจเก่า Network แยกบอร์ดชื่อซ้ำตามตัวอุปกรณ์ และเก็บผลคำสั่งจัดกลุ่มไว้หลังรีเฟรช</p>
+  <p class="tech">Show API: <code>GET /api/play</code> includes <code>epoch</code>. A participating caller supplies <code>expected_epoch</code> with its next play request; Stop changes the epoch and rejects older stamped requests, including ones arriving later. Legacy unstamped requests that have not entered the player when Stop finishes remain outside this transport-order guarantee. <code>POST /api/play/home</code> requires login and an integer <code>expected_epoch</code>, and shares the cancellation fence. Ambiguous HOME dispatch retains device ownership until acknowledged Stop; confirmed historical devices are released. Stop responses expose <code>stop_dev</code> plus fresh <code>stop_ok</code> and <code>stop_reply</code>; an unresolved worker or refused/missing STOP prevents confirmed success.</p>
+  <p>ภาพประกอบคู่มือรวมมากับ Hub ใช้ได้โดยไม่ต้องเชื่อมต่ออินเทอร์เน็ตหรือคัดลอกโฟลเดอร์ภาพแยก เมื่อภาพต้นฉบับเปลี่ยน ระบบตรวจรุ่นจะแจ้งให้สร้างโปรแกรมใหม่ด้วย</p>
 </section>
 
 <!-- ===================== MODULE SITE ===================== -->
@@ -639,10 +659,12 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
   <div class="f"><h3>Sequences &amp; files</h3>
     <p>List <code>/moves</code>, run any sequence, upload, download and delete SD files —
        over WiFi, USB or RS485 alike.</p></div>
+  <p>เมื่อกด Run เพื่อเล่นไฟล์ที่บันทึกไว้ จะเห็นผลคำขอหรือเหตุที่ปฏิเสธใต้รายการไฟล์ แม้ข้อความสถานะการเล่นสดจะเปลี่ยนไปแล้ว</p>
 </section>
 
 <!-- ===================== STUDIO ===================== -->
 <section id="studio">
+  <p class="mini">คุณภาพภาพ 3D เลือกอัตโนมัติจากอุปกรณ์ที่เปิดเว็บ เปลี่ยนได้ที่ Hub → Settings → ภาพ 3D โหมดประหยัดลดจำนวนภาพและความละเอียด โดยยังคงจังหวะการเล่นและการตรวจชนเดิม ขอบภาพใช้ค่าใหม่หลังโหลดหน้าใหม่</p>
   <div class="shead">
     <span class="where tech">code/nong/main_python_set_nong · served at /studio/</span>
     <h2>Nong Studio — คู่มือการใช้งานและจุดปรับแต่งอย่างละเอียดทุกส่วน</h2>
@@ -680,7 +702,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <div class="action-impact-grid">
       <div class="action-card">
         <div class="action-card-title"><span class="num">1</span> สไลเดอร์แขนซ้าย (L_SH_P, L_SH_R, L_EL_P, L_EL_R)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือพิมพ์องศา (ช่วง 10° – 170°, กลาง 90°)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือพิมพ์องศา (ช่วงที่ตั้งไว้สำหรับข้อนั้น; HOME และจุดศูนย์อาจต่างกัน)</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           • <b>L_SH_P / L_SH_R:</b> ไหล่ซ้ายก้ม-เงย (Pitch) และกางออก-หุบเข้า (Roll)<br>
           • <b>L_EL_P / L_EL_R:</b> ข้อศอกซ้ายงอพับและหมุนบิดท่อนแขน<br>
@@ -706,8 +728,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
         <div class="action-card-title"><span class="num">4</span> ปุ่มลัดความปลอดภัย (Home / Relax / Zero Lock)</div>
         <div class="action-step"><b>ปรับอย่างไร:</b> คลิกปุ่ม Home, Relax หรือ Zero Lock ด้านล่าง</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>Home:</b> คืนแขนทุกข้างกลับท่า 90° ปลอดภัย<br>
-          • <b>Relax:</b> ตัดไฟเลี้ยงเซอร์โว แขนจะอ่อนลง สามารถใช้มือจับดัดท่าจริงได้<br>
+          • <b>Home:</b> กลับท่า HOME ที่ตั้งไว้ องศาแต่ละข้ออาจไม่ใช่ 90°; ตรวจท่าจริงและค่าที่บันทึกไว้<br>
+          • <b>Relax:</b> หยุดส่งพัลส์ควบคุมเซอร์โว; ไม่ได้ตัดไฟเลี้ยง และการคลายแรงยึดขึ้นกับเซอร์โว<br>
           • <b>Zero Lock:</b> ล็อคพิกัดจุดศูนย์ ป้องกันคนกดเลื่อนตำแหน่งโดยไม่ตั้งใจ
         </div>
       </div>
@@ -906,6 +928,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       </div>
     </div>
   </div>
+<p class="mini">ภาพ 3D หยุดวาดเมื่ออยู่นิ่ง และวาดใหม่เมื่อท่าจากตัวแก้ไขหรือ Monitor เปลี่ยน เมื่อเปิด/ปิดกริดหรือเครื่องหมายมือ โหลดโมเดลเพิ่ม หรือปรับขนาดหน้าจอ</p>
+  <p>ถ้าอ่านรายการโปรเจกต์ที่บันทึกไว้ไม่ได้ Studio จะเก็บตัวเลือกเดิมและแจ้งข้อผิดพลาดทั้งแถบสถานะและแถบแจ้งเตือนกลาง จึงเห็นได้จากทุกแท็บ กด Retry saved moves เพื่อลองอ่านอีกครั้ง งานในหน้ายังคงอยู่</p>
 </section>
 
 <!-- ===================== TV REMOTE ===================== -->
@@ -914,8 +938,9 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <span class="where tech">code/apps/tv · served at /tv, /monitor, and /app/tv/</span>
     <h2>📺 TV Remote &amp; Monitor — หน้าจอควบคุมสำหรับ Smart TV และมือถือ</h2>
     <p>หน้าเว็บควบคุมและตรวจสอบสถานะแบบบางเฉียบ (Thin Client) ออกแบบตามสถาปัตยกรรม Centralized Server
-       ตัดการประมวลผล 3D Three.js ออก 100% ทำให้เปิดได้รวดเร็ว ลื่นไหล ไม่กินสเปก และไม่มีอาการค้างบน Smart TV หรือสมาร์ทโฟน</p>
+       หน้านี้ไม่มีตัวแสดงผล 3D ความเร็วในการแสดงสถานะขึ้นกับเครือข่ายและอุปกรณ์ที่ใช้</p>
   </div>
+  <p class="mini">เมื่อซ่อนแท็บ หน้านี้พักการถามสถานะและกลับมาตรวจเมื่อเปิดแท็บอีกครั้ง หากเบราว์เซอร์ไม่อนุญาตให้จำโหมด ระบบยังเปิดหน้าได้โดยเลือกโหมดตามขนาดจอ</p>
 
   <!-- SECTION 1: REMOTE CONTROLS -->
   <div class="info-box">
@@ -925,23 +950,23 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     </div>
     <div class="info-visual-wrapper">
       <img src="/docs/shots/tv-controls-box.png" alt="TV Controls Box" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 50%;" title="1. ปุ่ม Play / Pause / Stop / Home">1</div>
+      <div class="callout-pin" style="top: 30%; left: 50%;" title="1. ปุ่ม Restart selected / Stop / Home">1</div>
       <div class="callout-pin" style="top: 55%; left: 50%;" title="2. รายการเลือก Sequence">2</div>
       <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่มสั่งพูดด่วน Quick Speech">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมหลัก (Play, Pause, Stop, Home)</div>
+        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมหลัก (Restart selected, Stop, Home)</div>
         <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่มสัมผัสขนาดใหญ่บนหน้าจอ หรือกดผ่านรีโมททีวี</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>Play / Pause:</b> สั่งเริ่มหรือหยุดการขยับท่าทางชั่วคราว<br>
-          • <b>Stop:</b> สั่งหยุดหุ่นยนต์ฉุกเฉินทันที มอเตอร์จะล็อคตำแหน่งปัจจุบัน<br>
-          • <b>Home:</b> คืนแขนและคอหุ่นยนต์กลับสู่ท่าเริ่มต้นที่ปลอดภัย (Neutral Pose)
+          • <b>Restart selected:</b> เริ่มคลิปที่เลือกล่าสุดใหม่จากต้น; ต้องเลือกคลิปก่อน<br>
+          • <b>Stop:</b> หยุดโชว์ที่ Hub กำลังเล่น<br>
+          • <b>Home:</b> หยุดโชว์แล้วส่ง HOME ให้ Nong ที่เลือก ใช้ท่าที่บอร์ดบันทึกไว้ ไม่ตั้งทุกข้อเป็น 90°
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">2</span> รายการท่าทาง (Sequence Launcher)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกท่าทางจากกล่องดรอปดาวน์ แล้วกด <b>▶ Play Sequence</b></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือก Nong จากรายการ Robot แล้วกดปุ่มชื่อคลิป; ถ้ามีหลายเครื่องต้องเลือกเป้าหมายก่อน</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           ระบบจะดึงไฟล์ท่าทางจาก Hub กลาง (<code>/api/list?kind=sequences</code>) และสั่งให้หุ่นรันชุดท่าทางนั้นทันที เจ้าหน้าที่หลังเวทีสามารถใช้มือถือกดเลือกโชว์ได้สะดวก
         </div>
@@ -975,6 +1000,31 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <p>ในสถาปัตยกรรมแบบเดิม หากเปิดหน้า 3D (Three.js) บน Web Browser ของ Smart TV หรือมือถือรุ่นเก่า
        เบราว์เซอร์จะต้องคอมไพล์ WebGL Shaders และรันลูปคำนวณ 60 รอบต่อวินาที ซึ่งชิปประมวลผลของสมาร์ททีวีไม่ได้ออกแบบมาเพื่อรองรับ
        ส่งผลให้เบราว์เซอร์ทีวีปิดตัวเองหรือเครื่องค้าง</p></div>
+  <!-- SECTION 3: DUAL-MODE CONTROLLER -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 3: สลับโหมดการใช้งาน Dual-Mode (Mobile Remote vs Stage Display)</b>
+      <span class="info-badge">Dual-Mode</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> โหมด 📱 รีโมทมือถือ (Mobile Controller)</div>
+        <div class="action-step"><b>การใช้งาน:</b> เหมาะสำหรับเจ้าหน้าที่หรือผู้บังคับหุ่นถือใช้งานผ่านสมาร์ทโฟน</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          ปุ่มสัมผัสขนาดใหญ่พิเศษ กดง่ายด้วยนิ้วโป้ง มีปุ่มหยุดฉุกเฉิน ⏹ STOP, ท่าเริ่มต้น 🏠 HOME, แผ่นป้ายเลือกท่าทางสัมผัสขนาดใหญ่ และปุ่มสั่งพูดทักทายด่วน พร้อมซ่อนข้อมูลเซอร์โวเชิงเทคนิคเพื่อประหยัดพื้นที่หน้าจอ
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> โหมด 📺 จอแสดงเวที (10-Foot Stage Display)</div>
+        <div class="action-step"><b>การใช้งาน:</b> เปิดแสดงบนจอทีวีขนาดใหญ่บนเวทีสำหรับผู้ชมและผู้จัดงาน</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          แสดงชื่อการแสดงปัจจุบัน (Now Playing) และหลอดความคืบหน้าด้วยตัวหนังสือขนาดใหญ่พิเศษ มองเห็นได้ชัดเจนจากระยะ 3-5 เมตร พร้อมสถานะ 🟢 กำลังแสดง (PLAYING) โดยซ่อนเมนูตั้งค่าและเซอร์โวไม่ให้รกสายตา
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>หากเล่น หยุด หรือพูดไม่สำเร็จ จะเห็นข้อความใต้แถบด้านบน HOME จะส่งต่อเมื่อได้รับคำตอบหยุดสำเร็จและหุ่นยนต์ตอบรับ STOP โดยไม่มีข้อผิดพลาดแล้วเท่านั้น หากการหยุดงานเดิมล้มเหลว ระบบยังจะพยายามส่ง STOP ไปยังหุ่นยนต์ที่เลือก และแจ้งผลรวม กด Stop หรือเปลี่ยนหุ่นยนต์ระหว่างโหลดรายการ จะยกเลิกการเริ่มเล่นที่ยังรออยู่ รวมคำขอเล่นหรือ HOME ที่ส่งไปแล้วแต่มาถึง Hub ช้า ข้อความที่พิมพ์ไว้จะคงอยู่เมื่อส่งเสียงพูดไม่สำเร็จ</p>
 </section>
 
 <section id="camera">
@@ -1051,15 +1101,18 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
      tear each other's pictures. The hub therefore holds <b>one</b> connection
      to each camera and feeds every viewer from it. Open this page on as many
      screens as you like.</p>
+  <p>เมื่อการค้นหาล้มเหลว จะแจ้งให้กด Look again แทนการบอกว่าไม่มีกล้อง ข้อมูลที่เก็บไว้จะระบุว่าอาจเก่า; หากค้นหาได้บางส่วน อาจมีกล้องที่ยังไม่แสดง</p>
 </section>
 
 <section id="voice">
+  <p class="mini">Voice และตัวสร้างเสียงแบบมีอารมณ์ที่ Hub จัดการ ใช้ค่าประสิทธิภาพของเครื่อง Hub ร่วมกัน การฟังหลัก การฟังเฉพาะภาษา และการกลับมาใช้ CPU ใช้งบเธรดและงานพร้อมกันเดียวกัน โมเดลที่เปิดอยู่จะเก็บค่าเดิมไว้ งานแปลจากหลายคำขอใช้ชุดงานเดียวกัน บางค่าเธรดต้องเปิดตัวช่วยเสียงใหม่ สถานะ Voice แสดงรุ่นค่าที่โหลดและแจ้งเมื่อมีค่ารอใช้ครั้งถัดไป โดยไม่เปลี่ยนโมเดล ตัวละคร หรือบริการที่คุณเลือกไว้</p>
   <div class="shead">
     <span class="where tech">code/apps/voice · served at /app/voice/</span>
     <h2>🎤 Voice — สนทนาและสั่งงานด้วยเสียงพูด</h2>
     <p>ระบบถาม-ตอบอัจฉริยะ (Q&amp;A) และแปลงข้อความเป็นเสียงพูด (Text-to-Speech)
        พร้อมการสลับไปมาระหว่างลำโพงบนคอมพิวเตอร์ และลำโพงติดตัวหุ่นยนต์ Nong อย่างราบรื่น</p>
   </div>
+  <p class="mini">อ่านสถานะด้านบนก่อนเริ่มพูดหรือฟังเสียง หากระบบแจ้งว่าผู้ช่วยเสียงหรือการเชื่อมต่อไม่พร้อม ให้ตรวจการเชื่อมต่อแล้วลองใหม่ สถานะบนเว็บไม่ได้ยืนยันว่าลำโพงหุ่นส่งเสียงจริง</p>
 
   <!-- SECTION 1: CHAT & STT -->
   <div class="info-box">
@@ -1148,6 +1201,31 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        <b>waits its turn</b> or is <b>skipped</b> — whoever asked chooses — and
        a greeting that waited too long is dropped, because the person has
        walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p></div>
+  <!-- SECTION 3: ANSWERS SHEET & QUESTIONS ANALYTICS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 3: ตารางคำตอบแบบขยายและแดชบอร์ดสถิติคำถาม (Answers Sheet &amp; Questions Analytics)</b>
+      <span class="info-badge">Answers &amp; Analytics</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ตารางคำตอบโปร่งสบาย (Comfortable Answers Sheet)</div>
+        <div class="action-step"><b>การใช้งาน:</b> แท็บ Answers — พิมพ์คำถามที่คนถามด้านบน และคำตอบของหุ่นยนต์ด้านล่าง</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          ช่องข้อความปรับขนาดได้อิสระ ไม่บีบอัด ไม่เกิดแถบเลื่อนซ้อนซ้ำซ้อนในช่อง พร้อมระบบแปลภาษาอัตโนมัติสำหรับภาษาที่เว้นว่างไว้เมื่อกด Save
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> แดชบอร์ดคำถามและคำถามค้างตอบ (Questions &amp; Unanswered)</div>
+        <div class="action-step"><b>การใช้งาน:</b> แท็บ Questions — ดูกราฟวิเคราะห์และคำถามที่พบบ่อย</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          แสดงสถิติ 6 มิติ (หัวข้อ, ช่วงเวลา, แหล่งคำตอบ, ภาษา, รางวัล, คำถามยอดฮิต) และกล่องรวมคำถามที่คนถามบ่อยแต่ยังไม่มีคำตอบตายตัว พร้อมปุ่ม <b>+ Make an answer</b> เพื่อเพิ่มลงตารางคำตอบได้ในคลิกเดียว
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>หาก Load the AI, Unload the AI หรือการอ่านสถานะล้มเหลว ปุ่มจะกลับมากดเพื่อลองใหม่ พร้อมข้อความข้อผิดพลาด การโหลดโมเดลจริงอาจใช้เวลาตามเครื่อง</p>
 </section>
 
 <section id="faces">
@@ -1191,6 +1269,11 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <p>ถ้าต้องการประกาศเมื่อยอดคนถึงจำนวนที่กำหนด ใช้ <b>Celebrations</b> ส่วนคำเรียกเฉพาะบุคคลอยู่ใน <b>Titles for particular people</b></p>
   </div>
   <p class="tech">ที่อยู่โปรแกรมภายนอกอ่านจาก config/partners.json</p>
+  <div class="info-box">
+    <div class="info-header"><b>4. ระบบสีและการสืบทอดธีมแบบไดนามิก (Universal Dynamic Theme Sync)</b></div>
+    <p>หน้า Reconize สืบทอดธีมสีจาก Hub กลางอัตโนมัติผ่าน <code>MiceThemeManager</code> (เช่น โหมดมืด Midnight) ไม่บังคับแสดงผลพื้นหลังขาวจ้า แสบตา หรือกระพริบเปลี่ยนสี เมื่อผู้ใช้เปลี่ยนธีมใน Hub ทุกแท็บและแอปจะปรับสีตามทันทีแบบเรียลไทม์</p>
+  </div>
+
 </section>
 <section id="gacha">
   <div class="shead">
@@ -1198,11 +1281,26 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <h2>🎁 แจกของรางวัล — Prize machines</h2>
     <p>เตรียมเครื่องและชนิดของรางวัล ตั้งกติกาของงาน แล้วจึงแจกและดูประวัติ</p>
   </div>
+  <p><b>บันทึกและเปิดงาน:</b> ตรวจชื่อเครื่องและตารางของพรีเซตก่อนกดเริ่ม ระบบจะปิดงานระหว่างบันทึก แล้วเปิดเมื่อบันทึกครบและทุกเครื่องตอบรับเท่านั้น หากขั้นใดล้มเหลว หน้าจอจะแจ้งจุดที่ผิดและไม่รายงานว่าพร้อมแจก กดเริ่มซ้ำระหว่างบันทึกจะไม่ส่งงานซ้ำ ปุ่ม remove เก็บการแก้ไขแถวอื่นไว้ก่อนลบแถวที่เลือก</p>
   <div class="f">
     <h3>เริ่มใช้งานที่ไหน</h3>
     <p><a href="/app/gacha/">เปิดระบบแจกของ</a> แล้วเลือกแท็บตามงาน ชื่อภาษาอังกฤษด้านล่างตรงกับชื่อบนหน้าจอ</p>
     <p>ถ้าไม่เห็นแท็บและสถานะค้างที่ <b>checking…</b> แสดงว่าหน้าแอปยังโหลดไม่สำเร็จ จึงยังทำตามขั้นตอนต่อไปไม่ได้</p>
   </div>
+    <div class="info-box">
+    <div class="info-header">
+      <b>⚡ พรีเซตงานกิจกรรมเริ่มต้น (Quick Event Presets)</b>
+      <span class="info-badge">1-Click Setup</span>
+    </div>
+    <p>สำหรับผู้ดูแลงานอีเวนต์ที่ต้องการเริ่มใช้งานทันทีโดยไม่ต้องตั้งค่าตารางเอง สามารถกดเลือกพรีเซต 3 รูปแบบด้านบนของหน้ากาชาปอง:</p>
+    <ul>
+      <li><b>🎁 งานกิจกรรมทั่วไป (Standard Giveaway):</b> 1 ตู้กาชาปอง (พวงกุญแจ 50 ชิ้น สำรองสติกเกอร์ 100 ชิ้น) จำกัดสิทธิ์คนละ 1 ชิ้น</li>
+      <li><b>🍀 ลุ้นโชคไม่อั้น / บูธเกม (Unlimited Fun):</b> 2 ตู้ลุ้นโชค A/B (ขนม 200 ชิ้น และของที่ระลึก 50 ชิ้น) เล่นได้ไม่จำกัดจำนวนต่อคน</li>
+      <li><b>🏆 รางวัลใหญ่ VIP (VIP &amp; Limited Event):</b> ตู้ทองคำรางวัลใหญ่ 10 ชิ้น (คนละ 1 สิทธิ์) + ตู้รางวัลปลอบใจ 80 ชิ้น (คนละ 2 สิทธิ์)</li>
+    </ul>
+    <p class="mini">เมื่อกดพรีเซต ระบบจะกรอกชื่อเครื่อง รหัสของรางวัล และกฎให้ทันที ผู้จัดงานเพียงแก้ไขชื่อของรางวัลตามจริง แล้วกด <b>Save</b> ในแต่ละตารางเพื่อเริ่มใช้งานได้เลย</p>
+  </div>
+
   <div class="scroll"><table>
     <thead><tr><th>ต้องการทำอะไร</th><th>เลือกแท็บ</th><th>ทำอย่างไร / ผลที่ได้</th></tr></thead>
     <tbody>
@@ -1291,6 +1389,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     </div>
   </details>
   <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · Google Form: docs/gacha/form_sample.gs · sheet script: apps/gacha/sheet_script.gs · API: docs/gacha/README.md</p>
+  <p>หน้าประวัติแยกกรณียังไม่มีรายการจากกรณีโหลดไม่ได้ เมื่อรีเฟรชล้มเหลวจะเก็บข้อมูลเดิมพร้อมข้อความว่าอาจเก่า กด Refresh เพื่อลองใหม่</p>
 </section>
 
 <!-- ===================== ALL-JAO ===================== -->
@@ -1341,6 +1440,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <p>Played inside the hub, a win in the wheel, claw, quiz or memory game can make a prize
        machine give a prize and tells the player where to collect it. Which result gives what is
        set on <a href="#gacha">Prize machines</a> ▸ Games that give a prize.</p></div>
+  <p>ปุ่มเปิดเกมจะเปิดแท็บไว้ก่อนตรวจความพร้อม เพื่อไม่ให้เบราว์เซอร์บล็อกหลังรอเครือข่าย หากเปิดแท็บไม่ได้ ให้อนุญาตป๊อปอัปแล้วกดลองอีกครั้ง</p>
 </section>
 
 <section id="accounts">
@@ -2027,6 +2127,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
   <div class="f"><h3>YAML sequence player</h3>
     <p><code>MOVE &lt;file&gt;</code> runs a sequence from <code>/moves</code>; steps that
        travel wait for arrival, others fire and continue. <code>MOVE STOP</code> ends it.</p></div>
+  <p>บอร์ดลูก RS485 ที่ต่อผ่าน Hub อีกเครื่องจะไม่แสดงตัวเลือกเขียนผ่านสายของบอร์ดแม่ หากต้องอัปเดต ให้ใช้เส้นทางที่หน้า Hub ของเครื่องนั้นรองรับ หรือ WiFi ของบอร์ดลูกเมื่อเชื่อมต่อได้</p>
 </section>
 
 <!-- ===================== LIFT ===================== -->
@@ -2066,6 +2167,12 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        line input cannot read the digital kind of signal.
        (<code>AMP</code> sets it from the command line, <code>AMP?</code> says
        what is set.)</p></div>
+  <div class="f"><h3>หยุดเมื่อวิ่งเกินเวลา และล้างข้อผิดพลาดอย่างชัดเจน</h3>
+    <p>UP, DOWN, HOME และ GOTO มีเวลาตัดมอเตอร์อิสระทุกช่วง หากถึงกำหนดจะหยุด ยกเลิกงานที่ค้าง และแสดงข้อผิดพลาด ปุ่มเคลื่อนที่จะปิดไว้ แต่ STOP ยังใช้ได้</p>
+    <p>ตรวจกลไกและสวิตช์ กด STOP แล้วกด <b>ล้างข้อผิดพลาด</b> การล้างไม่ทำให้ลิฟต์เคลื่อนและไม่เล่นการแสดงเดิมต่อ ต้องสั่ง HOME ใหม่เมื่อต้องการอ้างอิงตำแหน่ง</p>
+    <p>ตั้งเวลาขึ้นลงและหา HOME แยกกันได้ ค่าเริ่มต้นอย่างละ 30 วินาที ช่วงที่ตั้งได้ 1–600000 มิลลิวินาที ตั้งศูนย์เพื่อปิดการป้องกันไม่ได้ ค่าเริ่มต้นยังไม่ผ่านการยืนยันกับลิฟต์จริง ต้องปรับให้เหมาะกับกลไก</p>
+    <p class="tech"><code>CFG travel_timeout_ms &lt;ms&gt;</code>, <code>CFG home_timeout_ms &lt;ms&gt;</code>; <code>FAULT?</code> อ่านเหตุ และ <code>FAULT CLEAR</code> ล้างเมื่อหยุดและอินพุตไม่ขัดแย้ง สวิตช์ค้าง LOW เพียงตัวเดียวยังแยกจากปลายทางจริงไม่ได้</p>
+  </div>
 </section>
 
 <!-- ===================== NONG ===================== -->
@@ -2406,97 +2513,118 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 
 <script>
 (function(){
-  // Topic-by-topic presentation with Next / Previous navigation, plus live search.
-  var q = document.getElementById("q"), none = document.getElementById("none");
-  var secs = Array.prototype.slice.call(document.querySelectorAll("main > section[id]"));
-  var links = Array.prototype.slice.call(document.querySelectorAll("nav a[href^='#']"));
-  var byId = {};
-  // Capture topic text before adding Previous/Next links, which name neighbours.
-  var topicText = new Map(secs.map(function(s){ return [s, s.textContent.toLowerCase()]; }));
-  links.forEach(function(a){ byId[a.getAttribute("href").slice(1)] = a; });
-
-  // 1. Build Next / Previous navigation at the foot of each section
-  secs.forEach(function(s, idx){
-    if (s.querySelector(".sec-nav")) return;
-    var nav = document.createElement("div");
-    nav.className = "sec-nav";
-    var prev = secs[idx - 1];
-    var next = secs[idx + 1];
-    if (prev) {
-      var prevHead = prev.querySelector(".shead h2");
-      var prevTitle = (prevHead ? prevHead.textContent : prev.id).replace(/^[—\s]+|[—\s]+$/g, "");
-      var aPrev = document.createElement("a");
-      aPrev.className = "sec-nav-btn sec-nav-prev";
-      aPrev.href = "#" + prev.id;
-      aPrev.innerHTML = "← ก่อนหน้า: " + prevTitle;
-      nav.appendChild(aPrev);
+  // OOP MiceHelpNavigator (A48-17) - encapsulated topic navigation, live search, and dynamic routing
+  class MiceHelpNavigator {
+    constructor() {
+      this.q = document.getElementById("q");
+      this.none = document.getElementById("none");
+      this.secs = Array.prototype.slice.call(document.querySelectorAll("main > section[id]"));
+      this.links = Array.prototype.slice.call(document.querySelectorAll("nav a[href^='#']"));
+      this.byId = {};
+      this.topicText = new Map(this.secs.map(function(s){ return [s, s.textContent.toLowerCase()]; }));
+      var self = this;
+      this.links.forEach(function(a){ self.byId[a.getAttribute("href").slice(1)] = a; });
     }
-    if (next) {
-      var nextHead = next.querySelector(".shead h2");
-      var nextTitle = (nextHead ? nextHead.textContent : next.id).replace(/^[—\s]+|[—\s]+$/g, "");
-      var aNext = document.createElement("a");
-      aNext.className = "sec-nav-btn sec-nav-next";
-      aNext.href = "#" + next.id;
-      aNext.innerHTML = "ถัดไป: " + nextTitle + " →";
-      nav.appendChild(aNext);
-    }
-    s.appendChild(nav);
-  });
 
-  // 2. Topic-by-Topic mode: display only the chosen section when not searching
-  function showTopic(id){
-    var searching = q && q.value.trim().length > 0;
-    if (!searching) {
-      if (!id || !secs.some(function(s){ return s.id === id; })) {
-        id = secs.length ? secs[0].id : "";
-      }
-      secs.forEach(function(s){
-        var active = s.id === id;
-        s.classList.toggle("pv-off", !active);
-        if (active) {
-          s.style.display = "";
-          s.querySelectorAll(".f, tbody tr, .scroll").forEach(function(el){
-            el.style.display = "";
-          });
+    // 1. Build Next / Previous navigation at the foot of each section
+    buildNav() {
+      var secs = this.secs;
+      secs.forEach(function(s, idx){
+        if (s.querySelector(".sec-nav")) return;
+        var nav = document.createElement("div");
+        nav.className = "sec-nav";
+        var prev = secs[idx - 1];
+        var next = secs[idx + 1];
+        if (prev) {
+          var prevHead = prev.querySelector(".shead h2");
+          var prevTitle = (prevHead ? prevHead.textContent : prev.id).replace(/^[—\s]+|[—\s]+$/g, "");
+          var aPrev = document.createElement("a");
+          aPrev.className = "sec-nav-btn sec-nav-prev";
+          aPrev.href = "#" + prev.id;
+          aPrev.innerHTML = "<span class='sec-nav-lbl'>← ก่อนหน้า (Previous)</span><span class='sec-nav-title'>" + prevTitle + "</span>";
+          nav.appendChild(aPrev);
+        } else {
+          var dummy = document.createElement("div");
+          dummy.className = "sec-nav-spacer";
+          nav.appendChild(dummy);
         }
-      });
-      links.forEach(function(a){
-        a.classList.toggle("on", a.getAttribute("href") === "#" + id);
-      });
-      window.scrollTo(0, 0);
-    } else {
-      secs.forEach(function(s){
-        s.classList.remove("pv-off");
+        if (next) {
+          var nextHead = next.querySelector(".shead h2");
+          var nextTitle = (nextHead ? nextHead.textContent : next.id).replace(/^[—\s]+|[—\s]+$/g, "");
+          var aNext = document.createElement("a");
+          aNext.className = "sec-nav-btn sec-nav-next";
+          aNext.href = "#" + next.id;
+          aNext.innerHTML = "<span class='sec-nav-lbl'>ถัดไป (Next) →</span><span class='sec-nav-title'>" + nextTitle + "</span>";
+          nav.appendChild(aNext);
+        }
+        s.appendChild(nav);
       });
     }
-  }
 
-  window.addEventListener("hashchange", function(){
-    showTopic(location.hash.slice(1));
-  });
+    // 2. Topic-by-Topic mode: display only the chosen section when not searching
+    showTopic(id) {
+      var searching = this.q && this.q.value.trim().length > 0;
+      var secs = this.secs, links = this.links;
+      if (!searching) {
+        if (!id || !secs.some(function(s){ return s.id === id; })) {
+          id = secs.length ? secs[0].id : "";
+        }
+        secs.forEach(function(s){
+          var active = s.id === id;
+          s.classList.toggle("pv-off", !active);
+          if (active) {
+            s.style.display = "";
+            s.querySelectorAll(".f, tbody tr, .scroll").forEach(function(el){
+              el.style.display = "";
+            });
+          }
+        });
+        links.forEach(function(a){
+          a.classList.toggle("on", a.getAttribute("href") === "#" + id);
+        });
+        window.scrollTo(0, 0);
+      } else {
+        secs.forEach(function(s){
+          s.classList.remove("pv-off");
+        });
+      }
+    }
 
-  // 3. Search: reveal all sections to filter matches, or return to topic view when cleared
-  if (q) {
-    q.addEventListener("input", function(){
-      var term = q.value.trim().toLowerCase(), any = false;
+    search(term) {
+      term = (term || "").trim().toLowerCase();
+      var any = false, secs = this.secs, topicText = this.topicText;
       if (!term) {
-        showTopic(location.hash.slice(1));
-        if (none) none.style.display = "none";
+        this.showTopic(location.hash.slice(1));
+        if (this.none) this.none.style.display = "none";
         return;
       }
       secs.forEach(function(s){
         s.classList.remove("pv-off");
-        // Match the complete topic, including illustrated cards and paragraphs.
         var keep = topicText.get(s).indexOf(term) >= 0;
         s.style.display = keep ? "" : "none";
         if (keep) any = true;
       });
-      if (none) none.style.display = any ? "none" : "block";
-    });
+      if (this.none) this.none.style.display = any ? "none" : "block";
+    }
+
+    init() {
+      this.buildNav();
+      var self = this;
+      window.addEventListener("hashchange", function(){
+        self.showTopic(location.hash.slice(1));
+      });
+      if (this.q) {
+        this.q.addEventListener("input", function(){
+          self.search(self.q.value);
+        });
+      }
+      this.showTopic(location.hash.slice(1));
+    }
   }
 
-  // Initial show on load
-  showTopic(location.hash.slice(1));
+  window.MiceHelpNavigator = MiceHelpNavigator;
+  window.miceHelp = new MiceHelpNavigator();
+  window.miceHelp.init();
 })();
 </script>
 </body></html>

@@ -4,8 +4,12 @@
 # (works without SD card; CFG values override this file).
 
 # lift module settings
-encoder: 1               # 0 = no encoder fitted: only up/down to the limit
+encoder: 0               # 0 = no encoder fitted: only up/down to the limit
                          # switches, GOTO limited to stage 0 and the top stage
+# Independent phase deadlines; finite ms 1..600000, zero cannot disable.
+# Defaults are unverified on the physical lift; tune for the mechanism.
+travel_timeout_ms: 30000
+home_timeout_ms: 30000
 stages: 4                # number of stops the lift knows
 stage_mm: 500            # rack travel between stages (mm)
 

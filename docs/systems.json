@@ -10,11 +10,15 @@
               "hub_auth.json."],
   "excludeNames": ["promt.md", "PATCHES.md", "hub_auth.json", "hub_password.txt",
                    "faces_login.json", "known_hubs.json", "settings_shared.json",
-                   ".qc-receipt.json", ".gitignore", "MiceHub.exe"],
+                   ".qc-receipt.json", ".gitignore", "MiceHub.exe", "_urdf_real.json"],
   "excludeExt": [".pyc", ".bin", ".exe", ".log", ".wav", ".mp3", ".png", ".jpg",
                  ".ico", ".onnx", ".bak", ".tmp"],
 
   "systems": [
+    {"id": "hub-resources", "summary": "Machine-local configurable CPU/GPU/RAM policy, bounded capability discovery, next-load Voice budgets and independent client display choices.",
+     "files": ["main_python/resource_policy.py", "main_python/resource_hardware.py", "main_python/resource_settings.py", "main_python/hub_api_resources.py", "config/resource_policy.json"],
+     "names": ["/api/resources", "ResourcePolicy", "VoiceResources", "MiceResources"],
+     "checks": ["check_resource_policy*"], "depends": ["hub-auth"]},
     {"id": "hub", "summary": "The hub program: HTTP server, the device routes (dev, modules, USB proxy, pairing, robot proxy), startup. Split into hub-* systems (A26-76, A26-93).",
      "files": ["main_python/main.py", "main_python/app_window.py", "main_python/build_stamp.py",
                "main_python/partner_launch.py", "main_python/partner_version.py", "main_python/run_hub.*", "main_python/README.md",
@@ -97,6 +101,7 @@
     {"id": "studio", "summary": "Nong Studio: pose editor, timeline, 3D monitor.",
      "files": ["nong/", "apps/studio/", "config/rig_presets.json",
                "tools/make_urdf.py", "tools/step_preset.py", "docs/urdf_nong.md"],
+     "checks": ["check_studio_render_idle"],
      "depends": ["shared-web"]},
 
     {"id": "app-voice", "summary": "Voice helper: speech in, answers, speech out.",
@@ -108,7 +113,7 @@
      "files": ["apps/gacha/", "config/gacha.json", "config/voice_topics.json", "config/voice_prizes.json",
                "main_python/gacha.py", "main_python/gacha_sheet.py", "main_python/hub_api_gacha.py", "main_python/voice_prizes.py",
                "docs/gacha/", "apps/all-jao/link.js"],
-     "checks": ["check_gacha*", "check_game_prize"],
+     "checks": ["check_gacha*", "check_game_prize", "check_remote_scripts"],
      "depends": ["fw-gacha", "app-voice", "app-faces"]},
 
     {"id": "app-faces", "summary": "Face recognition app.",
@@ -122,6 +127,7 @@
 
     {"id": "app-small", "summary": "Small apps: help, All-Jao, Photobooth, TV Remote.",
      "files": ["apps/help/", "apps/all-jao/", "apps/photobooth/", "apps/tv/"],
+     "checks": ["check_tv_remote", "check_remote_scripts"],
      "depends": ["shared-web"]},
 
     {"id": "fw-core", "summary": "Firmware shared by every board: identity, commands, RS485, WiFi/web portal, SD, OTA, PERF?.",
@@ -133,6 +139,7 @@
 
     {"id": "fw-web", "summary": "The board's own website (WebUI.h).",
      "files": ["firmware/src/web/"],
+     "checks": ["check_gacha_ui"],
      "depends": ["fw-core"]},
 
     {"id": "fw-nong", "summary": "The nong (humanoid) module: servos, joints, poses.",

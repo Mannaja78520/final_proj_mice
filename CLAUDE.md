@@ -7,6 +7,11 @@ your own task file and push a WIP commit around EVERY step, not only at the
 end: `## Doing now` before it, Done/Next/Last commit after it (user
 2026-10-22: any AI can run out mid-task). One file per task, so parallel
 agents never clash. Do not create any other handoff file.
+Per-file handoff (all AIs, user 2026-10-25): maintain `## File status` in your
+task with one latest row per owned changed file: File | Change | State |
+Verification | Commit. Include generated/tests/config/docs; mark uncommitted
+and not run explicitly. Reconcile owned Git changes before each checkpoint;
+keep it short and link evidence. Read HANDOFF.md for the full contract.
 Tokens: run QC as `python qc/run_qc.py --quiet <check names>` for the files
 you touched (full log in qc/last_run.log), full QC once before merge; grep or
 tail big files (BRIDGE, PLAN.html, app.js, reports/), never read them whole.
@@ -110,6 +115,7 @@ New file or system: add it to `docs/systems.json`, then `python tools/systems.py
 * Shallow beats clever. No layers that exist only to be layers.
 * Web pages: read `docs/web_style.md` first; build from `shared/web/mice-ui.js` parts.
 * Strict OOP & modularity (user 2026-10-24): code MUST follow OOP and modularity. Do not dump code into monolithic files (main.py) — use classes/modules. Never edit built files (hub.html, help.html, app.js) directly; edit parts/ and run `tools/build_web.py`.
+* Rule 11 Mandatory Help Parity & Sync (user 2026-10-25, all AIs): whenever any feature, UI, or setting is modified, `help.html` and its sources in `main_python/web/help/parts/` MUST be updated in the exact same step.
 * Every formula has an entry in `docs/ref_data.js` (`check_ref` enforces it).
 * Replies to the user: short, except warnings, destructive steps, and "why".
 

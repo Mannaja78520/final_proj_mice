@@ -22,10 +22,11 @@ The prize dispenser module (gachapon): one motor, one hall sensor at the loading
 
 - [app-gacha](app-gacha.md)
 
-## Checks that test it (3)
+## Checks that test it (4)
 
 - `check_build_split`
 - `check_firmware_build`
+- `check_gacha_motion`
 - `check_no_encoder`
 
-Run them: `python qc/run_qc.py --no-build check_build_split check_firmware_build check_no_encoder`
+Run them: `python qc/run_qc.py --no-build check_build_split check_firmware_build check_gacha_motion check_no_encoder`

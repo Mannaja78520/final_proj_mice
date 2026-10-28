@@ -107,8 +107,9 @@ Over the website console, `GET /api/cmd?c=...`, USB serial, or RS485
 | `SET ID <1-247>` / `SET NAME <name>` / `SET TYPE <lift\|nong\|blank>` | change identity, saved to chip |
 | `SET WIFI <ssid> <pass>` | stored WiFi override (reboot to apply) |
 | `SET WIFI ON\|OFF\|AP` | radio mode — `OFF` = USB/RS485 only, `AP` = own hotspot only |
-| `UP` / `DOWN` / `STOP` / `HOME` | manual motion (limits always win) |
+| `UP` / `DOWN` / `STOP` / `HOME` | manual motion bounded by limits, finite phase deadline or STOP |
 | `GOTO <stage>` | move to a stage; auto-homes first if needed (no encoder: endpoints only) |
+| `FAULT?` / `FAULT CLEAR` | inspect / clear a stopped lift fault; clearing never moves or resumes a show |
 | `STAGE?` | current stage (`-1` = not homed yet) |
 | `SPEED <pwm>` / `SPEED <v> MS` / `SPEED?` | travel speed as PWM or m/s (rack module 2 + 25T pinion = 157.08 mm/rev) |
 | `TIME? [stage]` | estimated travel time at the current speed |

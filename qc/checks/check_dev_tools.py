@@ -46,9 +46,9 @@ def run(t):
     src = sab.read_text(encoding="utf-8")
     t.contains(src, "finally:",
                "the file is put back even when the check crashes")
-    t.ok("f.write_text(was" in src,
-         "restoring writes the ORIGINAL text back",
-         "restoring from anything but the text read before the patch is a "
+    t.ok("f.write_bytes(was" in src,
+         "restoring writes the ORIGINAL bytes back",
+         "restoring from anything but the bytes read before the patch is a "
          "guess, and a wrong guess silently edits the tree")
 
     # ---- a sabotage that does not apply is an ERROR ------------------
@@ -60,7 +60,7 @@ def run(t):
 
     # ---- and it really restores, driven for real --------------------
     target = F.CODE / "tools" / "ai_panel.py"
-    before = target.read_text(encoding="utf-8")
+    before = target.read_bytes()
     spec = ('[{"file": "tools/ai_panel.py", '
             '"find": "PANEL = [", "replace": "PANEL = [] or [", '
             '"why": "qc self-test"}]')
@@ -70,7 +70,7 @@ def run(t):
                        encoding="utf-8", errors="replace", timeout=300,
                        cwd=str(F.CODE))
     out = (r.stdout or "") + (r.stderr or "")
-    t.eq(target.read_text(encoding="utf-8"), before,
+    t.eq(target.read_bytes(), before,
          "the file is byte-identical after a real sabotage run")
     t.contains(out, "caught",
                "and the sabotage it ran was caught by the check")

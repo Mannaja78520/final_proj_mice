@@ -171,10 +171,15 @@ URDF as well would count it twice.
 
 1. Open `nong_assembly.SLDASM`. Close anything the structural session left open
    — two sessions in one assembly is how work gets lost.
-2. Put the assembly in its **neutral pose**: every joint at Studio's 90°, arms
-   hanging straight. The URDF's zero is whatever the assembly is mated to when
-   you export, and a URDF exported mid-gesture is one whose every angle is
-   offset by that gesture.
+2. Choose and record the assembly's **physical reference pose** and the matching
+   robot configuration before exporting. For this export, URDF zero describes
+   the saved native assembly pose. Studio's zero, a command of 90 degrees and
+   the robot's saved HOME are separate references; 90 does not imply arms
+   hanging straight. Record the device's actual saved HOME angles alongside
+   that reference, rather than replacing them with 90. The display mapping in
+   `web/urdf_view.json` relates those references; changing it does not calibrate
+   the board or measure where a real servo is pointing. Do not change the
+   native CAD or the robot's saved calibration to make a drawing agree.
 3. **Tools ▸ Export as URDF.**
 4. Build the tree from section 2. For each joint, sw2urdf asks for a reference
    **axis** and a reference **coordinate system** — make them in the assembly

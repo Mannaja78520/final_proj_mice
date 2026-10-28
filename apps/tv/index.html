@@ -140,6 +140,93 @@
   background: var(--acc);
 }
 .joint-val { width: 34px; text-align: right; color: var(--txt); }
+
+/* Dual-Mode TV Remote & 10-Foot Stage Display (A48-17) */
+.mode-bar {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  background: var(--sunk);
+  padding: 4px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  overflow-x: auto;
+}
+.mode-btn {
+  flex: 1;
+  min-height: 38px;
+  border: 0;
+  background: transparent;
+  color: var(--mut);
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  padding: 6px 14px;
+}
+.mode-btn.active {
+  background: var(--card);
+  color: var(--txt);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.mode-btn:hover:not(.active) {
+  color: var(--txt);
+  background: var(--acc-soft);
+}
+
+/* Mobile Remote Mode (Default on narrow screens) */
+body.mode-mobile .tv-grid {
+  grid-template-columns: 1fr;
+}
+body.mode-mobile #cardJoints {
+  display: none;
+}
+body.mode-mobile .tv-btn {
+  min-height: 52px;
+  font-size: 16px;
+}
+body.mode-mobile .seq-pill {
+  padding: 14px 16px;
+  font-size: 15px;
+  min-height: 48px;
+}
+
+/* TV Stage Display Mode (10-Foot UI for big screen on stage) */
+body.mode-stage .tv-grid {
+  grid-template-columns: 1fr;
+  max-width: 900px;
+  margin: 0 auto;
+}
+body.mode-stage #cardDev,
+body.mode-stage #cardJoints,
+body.mode-stage #cardSpeech {
+  display: none;
+}
+body.mode-stage .now-playing-box {
+  padding: var(--sp-6) var(--sp-4);
+  background: var(--card);
+}
+body.mode-stage .now-playing-title {
+  font-size: 34px;
+  letter-spacing: -0.02em;
+  margin: 12px 0 16px;
+  color: var(--txt);
+}
+body.mode-stage .progress-bar-bg {
+  height: 22px;
+  margin: 20px 0 12px;
+}
+body.mode-stage .mini {
+  font-size: 16px;
+}
+
+/* Tech Monitor Mode: shows all 4 cards */
+body.mode-tech .tv-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+}
+
 </style>
 </head>
 <body class="page">
@@ -148,12 +235,19 @@
   <span class="mini" id="statBadge">connecting…</span>
   <button onclick="app.refresh()" style="margin-left:auto;">⟳ Refresh</button>
 </header>
+<div id="actionStat" class="statline" role="status"></div>
 
-<div class="card" id="loginHere" style="margin-bottom:var(--sp-4)"></div>
+<div class="card" id="loginHere" style="margin-bottom:var(--sp-3)"></div>
+
+<div class="mode-bar">
+  <button class="mode-btn active" id="btnModeMobile" onclick="app.setMode('mobile')">📱 รีโมทมือถือ (Mobile Controller)</button>
+  <button class="mode-btn" id="btnModeStage" onclick="app.setMode('stage')">📺 จอแสดงเวที (Stage Display)</button>
+  <button class="mode-btn" id="btnModeTech" onclick="app.setMode('tech')">🛠️ มอนิเตอร์เซอร์โว (Tech Monitor)</button>
+</div>
 
 <div class="tv-grid">
   <!-- Card 1: Player & Now Playing -->
-  <div class="tv-card" style="grid-column: span 1;">
+  <div class="tv-card" id="cardPlayer" style="grid-column: span 1;">
     <h2>
       <span>🎮 Show &amp; Move Controller</span>
       <span class="tv-badge badge-idle" id="playBadge">IDLE</span>
@@ -171,16 +265,17 @@
       </div>
     </div>
 
+    <label for="targetDev">Robot</label>
+    <select id="targetDev" onchange="app.selectDevice(this.value)"><option value="">Waiting for Nong</option></select>
     <div class="btn-row">
-      <button class="tv-btn tv-btn-primary" onclick="app.resume()">▶ Play</button>
-      <button class="tv-btn" onclick="app.pause()">⏸ Pause</button>
+      <button class="tv-btn tv-btn-primary" data-motion onclick="app.resume()" disabled>▶ Restart selected</button>
       <button class="tv-btn tv-btn-danger" onclick="app.stop()">⏹ Stop</button>
-      <button class="tv-btn" onclick="app.goHome()">🏠 Home</button>
+      <button class="tv-btn" data-motion onclick="app.goHome()" disabled>🏠 Home</button>
     </div>
   </div>
 
   <!-- Card 2: Quick Sequence Picker -->
-  <div class="tv-card">
+  <div class="tv-card" id="cardSeqs">
     <h2>
       <span>📂 Saved Sequences</span>
       <span class="mini" id="seqCount" style="color:var(--mut); font-weight:normal;">0 items</span>
@@ -191,7 +286,7 @@
   </div>
 
   <!-- Card 3: Quick Voice & Sound -->
-  <div class="tv-card">
+  <div class="tv-card" id="cardSpeech">
     <h2>
       <span>🗣️ Quick Speech &amp; Actions</span>
       <button class="tv-btn-danger" onclick="app.stopAllSound()" style="font-size:12px; padding:2px 8px; border-radius:4px;">Silenced All</button>
@@ -209,7 +304,7 @@
   </div>
 
   <!-- Card 4: 10-Joint Monitor (Zero 3D) -->
-  <div class="tv-card">
+  <div class="tv-card" id="cardJoints">
     <h2>
       <span>🦾 Joint Monitor (Real-time)</span>
       <span class="mini" style="color:var(--mut); font-weight:normal;">10 Servos</span>
@@ -231,32 +326,66 @@ const JOINTS = [
   "WAIST", "SHRUG"
 ];
 
-class TVRemoteApp {
+class TVRemoteApp extends (window.Mice && window.Mice.App ? window.Mice.App : Object) {
   constructor() {
+    super("tv");
     this.$ = id => document.getElementById(id);
     this.pollTimer = null;
     this.sequences = [];
     this.activeDev = "";
+    this.modules = [];
+    this.selectedSequence = "";
+    this.pollBusy = false;
+    this.motionGeneration = 0;
   }
 
   init() {
+    const defaultMode = window.innerWidth < 768 ? "mobile" : "tech";
+    let savedMode = "";
+    try { savedMode = localStorage.getItem("mice_tv_mode") || ""; } catch (e) {}
+    this.currentMode = ["mobile", "stage", "tech"].includes(savedMode) ? savedMode : defaultMode;
+    this.applyMode(this.currentMode);
     this.buildJointRows();
     if (window.miceLogin) {
       window.miceLogin.mount(this.$("loginHere"));
     }
     this.loadSequences();
     this.poll();
-    this.pollTimer = setInterval(() => this.poll(), 900);
+    this.resetPollTimer(900);
 
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
-        clearInterval(this.pollTimer);
-        this.pollTimer = null;
+        if (this.pollTimer) {
+          clearInterval(this.pollTimer);
+          this.pollTimer = null;
+        }
       } else {
         this.poll();
-        if (!this.pollTimer) this.pollTimer = setInterval(() => this.poll(), 900);
+        this.resetPollTimer(900);
       }
     });
+  }
+
+  setMode(mode) {
+    this.currentMode = mode;
+    try { localStorage.setItem("mice_tv_mode", mode); } catch (e) {}
+    this.applyMode(mode);
+  }
+
+  applyMode(mode) {
+    document.body.classList.remove("mode-mobile", "mode-stage", "mode-tech");
+    document.body.classList.add("mode-" + mode);
+    ["mobile", "stage", "tech"].forEach(m => {
+      const btn = this.$("btnMode" + m.charAt(0).toUpperCase() + m.slice(1));
+      if (btn) btn.classList.toggle("active", m === mode);
+    });
+  }
+
+  resetPollTimer(intervalMs) {
+    if (this.pollTimer) clearInterval(this.pollTimer);
+    this.pollTimer = null;
+    this.pollInterval = intervalMs;
+    if (!document.hidden) this.pollTimer = setInterval(() => this.poll(), intervalMs);
   }
 
   buildJointRows() {
@@ -308,29 +437,36 @@ class TVRemoteApp {
       btn.className = "seq-pill";
       btn.textContent = name.replace(/\.yaml$/, "");
       btn.title = name;
+      btn.disabled = !this.activeDev;
       btn.onclick = () => this.playSequence(name);
       box.appendChild(btn);
     });
   }
 
   async poll() {
+    if (document.hidden || this.pollBusy) return;
+    this.pollBusy = true;
     try {
-      // 1. Play status
+      const stRes = await fetch("/api/modules");
+      if (!stRes.ok) throw new Error("Module list unavailable");
+      this.updateHardwareState(await stRes.json());
+      const dev = this.activeDev;
+      if (dev) {
+        const res = await fetch("/api/dev/status?dev=" + encodeURIComponent(dev));
+        if (!res.ok) throw new Error("Robot did not answer");
+        const status = await res.json();
+        if (dev === this.activeDev) {
+          if (status.type !== "nong") throw new Error("Selected module is not Nong");
+          this.updateJoints((status.module || {}).joints || []);
+        }
+      }
       const playRes = await fetch("/api/play");
-      if (playRes.ok) {
-        const p = await playRes.json();
-        this.updatePlayState(p);
-      }
-
-      // 2. Hardware / Modules status
-      const stRes = await fetch("/api/status");
-      if (stRes.ok) {
-        const st = await stRes.json();
-        this.updateHardwareState(st);
-      }
+      if (playRes.ok) this.updatePlayState(await playRes.json());
     } catch (e) {
-      this.$("statBadge").textContent = "offline";
-    }
+      this.activeDev = "";
+      this.setMotionEnabled(false);
+      this.$("statBadge").textContent = e.message;
+    } finally { this.pollBusy = false; }
   }
 
   updatePlayState(p) {
@@ -341,37 +477,58 @@ class TVRemoteApp {
     const tot = this.$("totTime");
 
     if (p && p.running) {
-      badge.textContent = "PLAYING";
+      badge.textContent = p.entering ? "ENTERING" : "PLAYING";
       badge.className = "tv-badge badge-busy";
       title.textContent = p.name ? p.name.replace(/\.yaml$/, "") : "Active Move";
-      const total = p.total || 1;
-      const ms = p.ms || 0;
-      const pct = Math.min(100, Math.round((ms / total) * 100));
+      const total = Math.max(0, Number(p.total_ms) || 0);
+      const ms = Math.max(0, Number(p.at_ms) || 0);
+      const pct = Math.min(100, Math.round((ms / (total || 1)) * 100));
       fill.style.width = pct + "%";
       cur.textContent = (ms / 1000).toFixed(1) + "s";
       tot.textContent = (total / 1000).toFixed(1) + "s";
+      if (this.pollInterval !== 600) this.resetPollTimer(600);
     } else {
-      badge.textContent = "IDLE";
+      badge.textContent = p && p.error ? "ERROR" : "IDLE";
+      if (p && p.error) title.textContent = p.error;
       badge.className = "tv-badge badge-idle";
       if (title.textContent !== "Ready") {
         fill.style.width = "0%";
       }
+      if (this.pollInterval !== 1500) this.resetPollTimer(1500);
     }
   }
 
+  setMotionEnabled(on) {
+    document.querySelectorAll("[data-motion], .seq-pill").forEach(b => { b.disabled = !on; });
+  }
+
+  invalidateMotion() {
+    this.motionGeneration = (this.motionGeneration || 0) + 1;
+    return this.motionGeneration;
+  }
+
+  selectDevice(dev) {
+    this.invalidateMotion();
+    this.activeDev = this.modules.some(m => m.dev === dev) ? dev : "";
+    this.setMotionEnabled(!!this.activeDev);
+  }
+
   updateHardwareState(st) {
-    if (!st) return;
-    const mods = st.modules || [];
-    const nong = mods.find(m => m.type === "nong") || mods[0];
-    if (nong) {
-      this.activeDev = nong.dev || ("usb:" + nong.port);
-      this.$("statBadge").textContent = "🟢 " + (nong.name || "Nong") + " (" + (nong.ip || nong.dev || "online") + ")";
-      if (nong.pose && Array.isArray(nong.pose)) {
-        this.updateJoints(nong.pose);
-      }
-    } else {
-      this.$("statBadge").textContent = "⚪ Waiting for modules";
-    }
+    const previousDev = this.activeDev;
+    this.modules = ((st && st.modules) || []).map(m => ({...m,
+      dev: m.best || m.dev || ((m.routes || []).find(r => !r.stale && r.dev) || {}).dev
+    })).filter(m => m.type === "nong" && !m.stale &&
+      typeof m.dev === "string" && /^(usb:|wifi:|hub:|auto:).+/.test(m.dev));
+    if (!this.modules.some(m => m.dev === this.activeDev)) this.activeDev = "";
+    if (!this.activeDev && this.modules.length === 1) this.activeDev = this.modules[0].dev;
+    if (previousDev !== this.activeDev) this.invalidateMotion();
+    const select = this.$("targetDev");
+    select.replaceChildren(new Option("Choose Nong", ""), ...this.modules.map(m => new Option(m.name || m.dev, m.dev)));
+    select.value = this.activeDev;
+    const nong = this.modules.find(m => m.dev === this.activeDev);
+    this.$("statBadge").textContent = nong ? "🟢 " + (nong.name || "Nong") : "Choose an available Nong";
+    this.setMotionEnabled(!!nong);
+    if (!nong) this.updateJoints(new Array(10).fill(null));
   }
 
   updateJoints(pose) {
@@ -379,6 +536,7 @@ class TVRemoteApp {
       const bar = this.$("jbar_" + i);
       const val = this.$("jval_" + i);
       if (bar && val) {
+        if (!Number.isFinite(deg)) { bar.style.width = "0%"; val.textContent = "—"; return; }
         const pct = Math.max(0, Math.min(100, Math.round((deg / 180) * 100)));
         bar.style.width = pct + "%";
         val.textContent = Math.round(deg) + "°";
@@ -386,87 +544,131 @@ class TVRemoteApp {
     });
   }
 
+  async checked(path, opts) {
+    const result = await Mice.Api.call(path, opts);
+    if (!result.ok) throw new Error(result.says || 'คำสั่งไม่สำเร็จ');
+    return result.data;
+  }
+
+  async boardCommand(dev, command) {
+    const result = await Mice.Api.get("/api/dev/cmd?dev=" + encodeURIComponent(dev) + "&c=" + encodeURIComponent(command), {text:true});
+    const reply = String(result.data.reply || '').trim();
+    if (!result.ok || !/^OK(?:\s|$)/.test(reply)) throw Error(reply || result.says || 'หุ่นยนต์ไม่ตอบรับคำสั่ง');
+    return reply;
+  }
+
+  actionError(error) {
+    const text = 'คำสั่งไม่สำเร็จ ตรวจสถานะแล้วลองอีกครั้ง';
+    this.$("actionStat").textContent = text;
+    const detail = document.createElement('span');
+    detail.className = 'tech'; detail.textContent = ' ' + String(error.message || error);
+    this.$("actionStat").appendChild(detail);
+    this.$("nowSeq").textContent = text;
+  }
+
   async playSequence(name) {
+    const dev = this.activeDev;
+    if (!dev || !this.modules.some(m => m.dev === dev)) return;
+    const generation = this.invalidateMotion();
+    this.selectedSequence = name;
+    this.$("actionStat").textContent = '';
     try {
       this.$("nowSeq").textContent = "Starting " + name + "…";
-      const res = await fetch("/api/seqsteps?name=" + encodeURIComponent(name));
-      if (!res.ok) return;
-      const data = await res.json();
-      if (!data.steps) return;
-      await fetch("/api/play", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dev: this.activeDev || "auto",
-          name: name,
-          steps: data.steps,
-          loop: false
-        })
-      });
+      const data = await this.checked("/api/seqsteps?name=" + encodeURIComponent(name));
+      if (!Array.isArray(data.steps) || !data.steps.length) throw Error('ลำดับการแสดงไม่มีท่าทาง');
+      if (this.activeDev !== dev || generation !== this.motionGeneration) return false;
+      const stopping = this.stopRequest;
+      if (stopping && !await stopping) return false;
+      if (this.activeDev !== dev || generation !== this.motionGeneration) return false;
+      const previous = this.playRequest;
+      if (previous) await previous.catch(() => {});
+      if (this.activeDev !== dev || generation !== this.motionGeneration) return false;
+      const clock = await this.checked("/api/play");
+      if (this.activeDev !== dev || generation !== this.motionGeneration) return false;
+      if (!Number.isSafeInteger(clock.epoch)) throw Error('อ่านรุ่นคำสั่งไม่ได้ รีเฟรชแล้วลองใหม่');
+      const request = this.checked("/api/play", {method:"POST", body:{dev, name, steps:data.steps, loop:false, expected_epoch:clock.epoch}});
+      this.playRequest = request;
+      try { await request; }
+      finally { if (this.playRequest === request) this.playRequest = null; }
+      if (this.activeDev !== dev || generation !== this.motionGeneration) return false;
       this.poll();
-    } catch (e) {
-      console.error("Play failed:", e);
+      return true;
+    } catch (error) {
+      if (generation === this.motionGeneration && this.activeDev === dev) this.actionError(error);
+      return false;
     }
   }
 
   async stop() {
-    await fetch("/api/play/stop", { method: "POST" });
-    this.poll();
+    this.invalidateMotion();
+    const request = this.stopAction(this.activeDev);
+    this.stopRequest = request;
+    try { return await request; }
+    finally { if (this.stopRequest === request) this.stopRequest = null; }
   }
 
-  async pause() {
-    await fetch("/api/play/stop", { method: "POST" });
-    this.poll();
+  async stopAction(dev) {
+    try {
+      // Neither failure may skip stopping the other target. Keep the barrier
+      // pending until the clock and the selected board have both answered.
+      const attempts = await Promise.allSettled([
+        this.checked("/api/play/stop", {method:"POST"}).then(status => {
+          if (!status || status.running !== false || status.stop_ok !== true || !!status.error)
+            throw Error(status && status.error || 'ยังไม่ได้รับคำตอบว่าหยุดการแสดงแล้ว');
+          return status;
+        }),
+        dev ? this.boardCommand(dev, "STOP") : Promise.resolve()
+      ]);
+      const failures = attempts.filter(a => a.status === 'rejected').map(a => String(a.reason.message || a.reason));
+      if (failures.length) throw Error(failures.join(' · '));
+      this.$("actionStat").textContent = '';
+      this.poll();
+      return true;
+    } catch (error) { this.actionError(error); return false; }
   }
 
   async resume() {
-    if (this.sequences.length) {
-      this.playSequence(this.sequences[0]);
-    }
+    if (this.selectedSequence) return this.playSequence(this.selectedSequence);
+    this.$("nowSeq").textContent = "Choose a sequence first";
   }
 
   async goHome() {
-    await this.stop();
-    // Default neutral 90 degrees
-    const flat90 = new Array(10).fill(90);
-    await fetch("/api/play", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        dev: this.activeDev || "auto",
-        name: "Home",
-        steps: [{ pose: flat90, t: 1500, hold: 0 }],
-        loop: false
-      })
-    });
-    this.poll();
+    const dev = this.activeDev;
+    if (!dev || !this.modules.some(m => m.dev === dev)) return;
+    const stopped = this.stop(), generation = this.motionGeneration;
+    if (!await stopped || generation !== this.motionGeneration || this.activeDev !== dev) return;
+    try {
+      const clock = await this.checked("/api/play");
+      if (generation !== this.motionGeneration || this.activeDev !== dev) return;
+      if (!Number.isSafeInteger(clock.epoch)) throw Error('อ่านรุ่นคำสั่งไม่ได้ รีเฟรชแล้วลองใหม่');
+      await this.checked("/api/play/home", {method:"POST", body:{dev, expected_epoch:clock.epoch}});
+      if (generation !== this.motionGeneration || this.activeDev !== dev) return;
+      this.$("nowSeq").textContent = "Saved HOME requested";
+      this.poll();
+    } catch (error) {
+      if (generation === this.motionGeneration && this.activeDev === dev) this.actionError(error);
+    }
   }
 
   async speak(text) {
-    if (!text) return;
+    if (!text) return false;
     try {
-      await fetch("/api/speak", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text })
-      });
-    } catch (e) {
-      console.warn("Speak error:", e);
-    }
+      await this.checked("/api/speak", {method:"POST", body:{text}});
+      this.$("actionStat").textContent = '';
+      return true;
+    } catch (error) { this.actionError(error); return false; }
   }
 
-  speakCustom() {
-    const inp = this.$("customSpeak");
-    const txt = inp.value.trim();
-    if (txt) {
-      this.speak(txt);
-      inp.value = "";
-    }
+  async speakCustom() {
+    const input = this.$("customSpeak"), draft = input.value;
+    if (draft.trim() && await this.speak(draft.trim()) && input.value === draft) input.value = '';
   }
 
   async stopAllSound() {
-    await fetch("/api/stream/stop", { method: "POST" });
+    try { await this.checked("/api/stream/stop", {method:"POST"}); }
+    catch (error) { this.actionError(error); }
   }
+
 }
 
 const app = new TVRemoteApp();

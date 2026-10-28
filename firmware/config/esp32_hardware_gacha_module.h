@@ -21,9 +21,34 @@
 
     #define GACHA_MAGNETS          4      // magnets around the holder (one turn)
     #define GACHA_SLOTS            4      // pockets; magnets must be a multiple of this
-    #define GACHA_DROP_SLOTS       2      // pockets from receive to drop - measure on the bench (A47-5)
-    #define GACHA_SPEED            600    // motor PWM 0-1023
-    #define GACHA_SLOT_TIMEOUT_MS  4000   // no magnet for this long while turning = jammed
+    #define GACHA_DROP_SLOTS       1      // pockets per dispense (1 = normal vending; 2 = initial empty wheel prime)
+    #define GACHA_INTAKE_DWELL_MS  300    // dwell time at receive position before rotating to let gravity feed capsule (ms)
+    #define GACHA_SPEED            500    // travel speed between pockets (0-1023)
+    #define GACHA_SLOT_TIMEOUT_MS  5000   // no magnet for this long while turning = jammed
     #define GACHA_DEBOUNCE_MS      5      // hall must read the same this long to count
     #define GACHA_SETTLE_MS        0      // keep turning this long after a magnet, to centre the pocket
+    #define GACHA_OVERSHOOT_MS     180    // 1. forward overshoot past drop lip (ms)
+    #define GACHA_OVERSHOOT_SPEED  380    // gentle forward overshoot speed (0-1023)
+    #define GACHA_RETURN_MS        250    // 2. reverse rock duration past magnet to agitate prize (ms)
+    #define GACHA_RETURN_SPEED     360    // gentle reverse rock speed (0-1023)
+    #define GACHA_CENTER_SPEED     260    // 3. gentle forward steps to a debounced Hall stop (0-1023)
+    #define GACHA_CENTER_PULSE_MS   15    // motor-on step; loop stays responsive to Hall and STOP
+    #define GACHA_CENTER_REST_MS    35    // motor-off rest between steps
+    #define GACHA_CENTER_WAIT_MS    40    // settle before accepting debounced Hall
+    #define GACHA_REVERSE_REST_MS   60    // additional nonblocking rest after reversing
+    #define GACHA_CENTER_ADVANCE_MS 18    // estimate into Hall band; GCALIB may update it
+    #define GACHA_ADVANCE_MAX_MS    100   // cap learned/manual advance
+    #define GACHA_NUDGE_MAX_MS      1000  // maximum duration of one manual GNUDGE
+    #define GACHA_MAX_PASSES        100   // maximum arrivals in one GSPIN/GTEST
+    #define GACHA_DRAIN_MAX         999   // cap on one drain request
+    #define GACHA_CALIB_MAX_MS      5000  // deadline for the entire calibration
+    #define GACHA_CALIB_REVERSE_MS  260
+    #define GACHA_CALIB_REVERSE_PWM 320
+    #define GACHA_CALIB_REST_MS     100
+    #define GACHA_CALIB_FIND_STEPS  50
+    #define GACHA_CALIB_SPAN_STEPS  20
+    #define GACHA_CALIB_SPAN_MS     10
+    #define GACHA_PAUSE_MS         5000   // 4. stationary pause after Hall found (ms, user requested 5s)
+    #define GACHA_FALLBACK_SLOT_MS 0      // timed slot backup if sensor fails (0 = disable, ms per slot)
+    // Hardware note: Motor has anti-back-EMF Schottky diode (drop ~0.187V). Future INA219 sensor on I2C.
 #endif

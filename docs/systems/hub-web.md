@@ -108,7 +108,7 @@ The pages the hub serves: Home/Modules, help, login, and their patch snapshots.
 
 - nothing
 
-## Checks that test it (26)
+## Checks that test it (28)
 
 - `check_board_frame`
 - `check_build_web`
@@ -132,9 +132,11 @@ The pages the hub serves: Home/Modules, help, login, and their patch snapshots.
 - `check_page_version`
 - `check_pinout`
 - `check_previews`
+- `check_resource_policy`
 - `check_shared_modules`
 - `check_stale_build`
+- `check_tools_list`
 - `check_ui_states`
 - `check_voice_identify`
 
-Run them: `python qc/run_qc.py --no-build check_board_frame check_build_web check_camera check_design_system check_dev_tools check_docs check_faces_login check_faces_poll check_friend_api check_help_links check_help_topics check_history check_hub_api check_login_anywhere check_no_data_loss check_no_rainbow check_one_cable check_page_frame check_page_login check_page_version check_pinout check_previews check_shared_modules check_stale_build check_ui_states check_voice_identify`
+Run them: `python qc/run_qc.py --no-build check_board_frame check_build_web check_camera check_design_system check_dev_tools check_docs check_faces_login check_faces_poll check_friend_api check_help_links check_help_topics check_history check_hub_api check_login_anywhere check_no_data_loss check_no_rainbow check_one_cable check_page_frame check_page_login check_page_version check_pinout check_previews check_resource_policy check_shared_modules check_stale_build check_tools_list check_ui_states check_voice_identify`

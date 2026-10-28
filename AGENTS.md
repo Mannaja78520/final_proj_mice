@@ -2,11 +2,17 @@
 
 ## Start here: HANDOFF.md (user 2026-10-21)
 
-Read `HANDOFF.md` first, then your one task file in `handoff/tasks/`. Update
-your own task file and push a WIP commit around EVERY step, not only at the
-end: `## Doing now` before it, Done/Next/Last commit after it (user
-2026-10-22: any AI can run out mid-task). One file per task, so parallel
-agents never clash. Do not create any other handoff file.
+Read `HANDOFF.md` first, then your one task file in `handoff/tasks/`.
+Mandatory Handoff-First & Force-Queue Reconciliation (user 2026-10-25, all AIs):
+never write code without an active task in `handoff/tasks/` (`tools/handoff.py take/new`).
+Update `## Doing now` before each step, `## Done`/`## Next` after each step, and
+commit WIP around EVERY step. If interrupted or force-queued, check the task file,
+compare and pair old work with the new demand — never blindly abandon in-flight tasks.
+Per-file handoff (all AIs, user 2026-10-25): maintain `## File status` in your
+task with one latest row per owned changed file: File | Change | State |
+Verification | Commit. Include generated/tests/config/docs; mark uncommitted
+and not run explicitly. Reconcile owned Git changes before each checkpoint;
+keep it short and link evidence. Read HANDOFF.md for the full contract.
 Tokens: run QC as `python qc/run_qc.py --quiet <check names>` for the files
 you touched (full log in qc/last_run.log), full QC once before merge; grep or
 tail big files (BRIDGE, PLAN.html, app.js, reports/), never read them whole.
@@ -28,6 +34,7 @@ add it to `docs/systems.json`, then `python tools/systems.py build`.
 - Logs: print the failing line only (tail / grep), never the full run.
 - Moving code: write a script that moves exact lines; do not retype it.
 - Strict OOP & modularity (user 2026-10-24, all AIs): code MUST follow OOP and modularity. Never dump features into monolithic main files (e.g. main.py) — create small, focused classes and modules (token-friendly). Never edit built web files (hub.html, help.html, app.js) directly; edit their sources in parts/ and run `tools/build_web.py`.
+- Rule 11 Mandatory Help Parity & Sync (user 2026-10-25, all AIs): whenever any feature, UI, or setting is modified, `help.html` and its sources in `main_python/web/help/parts/` MUST be updated in the exact same step.
 
 For simultaneous Codex, Antigravity and Claude sessions, read
 `docs/COORDINATION.md` and the newest `docs/BRIDGE.md` entries before editing.

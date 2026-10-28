@@ -8,8 +8,10 @@ const VOICE_TABS = [
   {id: "faces", label: "Faces", icon: "👤"}, {id: "questions", label: "Questions", icon: "📊"},
   {id: "adv", label: "Advanced", icon: "⚙", tech: true}];
 
-class VoiceApp {
+class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Object) {
   constructor() {
+    // The bundle is loaded in <head>; create Status lazily after the DOM exists.
+    super('voice');
     this.$ = id => document.getElementById(id);
     this.rec = null;
     this.ch = null;
@@ -50,8 +52,8 @@ class VoiceApp {
   say(msg, kind = "ready", tech = ""){
     const M = globalThis.Mice;
     if (M && M.Status) {
-      this.status = this.status || new M.Status("stat");
-      return (this.status[kind] || this.status.ready).call(this.status, msg, tech);
+      const status = this.status || this._status || (this._status = new M.Status("stat"));
+      return (status[kind] || status.ready).call(status, msg, tech);
     }
     this.$("stat").textContent = msg;
   }
@@ -741,59 +743,44 @@ class VoiceApp {
     }
   }
 
-  startHealthPolling(){
-  if (this.pollTimer) return;
-  this.pollTimer = setInterval(async () => {
-    try {
-      const r = await fetch("/api/voice/health").then(res => res.json());
-      if (r && r.ok && r.parts) {
-        this.updateParts(r.parts);
-        const stillLoading = (r.parts.llm && r.parts.llm.includes("loading")) ||
-                             (r.parts.stt && r.parts.stt.includes("loading"));
-        if (!stillLoading) {
-          this.stopHealthPolling();
-        }
-      }
-    } catch(e) {
-      this.stopHealthPolling();
+  modelFailure(detail) {
+    this.stopHealthPolling();
+    for (const [id, label] of [["btnLoadModel", "Load the AI"], ["btnUnloadModel", "Unload the AI"]]) {
+      const button = this.$(id);
+      if (button) { button.disabled = false; button.textContent = label; }
     }
-  }, 1500);
-}
-
-  stopHealthPolling(){
-  if (this.pollTimer) {
-    clearInterval(this.pollTimer);
-    this.pollTimer = null;
+    this.say("อ่านหรือเปลี่ยนสถานะ AI ไม่สำเร็จ ลองอีกครั้ง", "err", detail);
   }
-}
 
-  async loadModel(){
-  const btnLoad = this.$("btnLoadModel");
-  if (btnLoad) {
-    btnLoad.disabled = true;
-    btnLoad.textContent = "Loading…";
+  startHealthPolling() {
+    if (this.pollTimer) return;
+    this.pollTimer = setInterval(async () => {
+      const result = await Mice.Api.get("/api/voice/health");
+      if (!result.ok || !result.data.parts) return this.modelFailure(result.says);
+      const parts = result.data.parts;
+      this.updateParts(parts);
+      if (![parts.llm, parts.stt].some(value => value && value.includes("loading"))) this.stopHealthPolling();
+    }, 1500);
   }
-  try {
-    await fetch("/api/voice/preload", {method: "POST"}).then(r => r.json());
-  } catch(e) {}
-  this.startHealthPolling();
-  const r = await fetch("/api/voice/health").then(res => res.json()).catch(() => null);
-  if (r && r.parts) this.updateParts(r.parts);
-}
 
-  async unloadModel(){
-  this.stopHealthPolling();
-  const btnUnload = this.$("btnUnloadModel");
-  if (btnUnload) {
-    btnUnload.disabled = true;
-    btnUnload.textContent = "Unloading…";
+  stopHealthPolling() {
+    if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
   }
-  try {
-    await fetch("/api/voice/unload", {method: "POST"}).then(r => r.json());
-  } catch(e) {}
-  const r = await fetch("/api/voice/health").then(res => res.json()).catch(() => null);
-  if (r && r.parts) this.updateParts(r.parts);
-}
+
+  async changeModel(unload) {
+    this.stopHealthPolling();
+    const button = this.$(unload ? "btnUnloadModel" : "btnLoadModel");
+    if (button) { button.disabled = true; button.textContent = unload ? "Unloading…" : "Loading…"; }
+    const result = await Mice.Api.post("/api/voice/" + (unload ? "unload" : "preload"), {});
+    if (!result.ok) return this.modelFailure(result.says);
+    const health = await Mice.Api.get("/api/voice/health");
+    if (!health.ok || !health.data.parts) return this.modelFailure(health.says);
+    this.updateParts(health.data.parts);
+    if (!unload) this.startHealthPolling();
+  }
+
+  async loadModel() { return this.changeModel(false); }
+  async unloadModel() { return this.changeModel(true); }
 
   down(why){
   this.say("the voice helper is off", "warn");
@@ -2054,12 +2041,31 @@ static langName(code){
   this.drawSheet();
 }
 
+  
+  setLangFilter(lang) {
+    this.currentLangFilter = lang;
+    const table = this.$("ansTable");
+    if (!table) return;
+    table.classList.remove("view-all", "view-th", "view-en", "view-ja", "view-zh");
+    if (lang !== "all") {
+      table.classList.add("view-" + lang);
+    }
+    document.querySelectorAll(".lang-pill").forEach(b => {
+      b.classList.toggle("active", b.getAttribute("onclick") && b.getAttribute("onclick").includes("'" + lang + "'"));
+    });
+  }
+
   drawSheet(){
   const head = this.$("ansHead"), body = this.$("ansRows");
   head.textContent = "";
   const th = t => { const e = document.createElement("th"); e.textContent = t; head.appendChild(e); };
   ["#"].forEach(th);
-  VoiceApp.ANSWER_KEYS.forEach(([l]) => th(VoiceApp.langName(l)));
+  VoiceApp.ANSWER_KEYS.forEach(([l]) => {
+    const e = document.createElement("th");
+    e.textContent = VoiceApp.langName(l);
+    e.dataset.lang = l;
+    head.appendChild(e);
+  });
   ["Robot move", ""].forEach(th);
   body.textContent = "";
   this.sheet.forEach((row, i) => body.appendChild(this.sheetRow(row, i)));
@@ -2093,6 +2099,7 @@ static langName(code){
   };
   VoiceApp.ANSWER_KEYS.forEach(([lang, key]) => {
     const c = td();
+    c.dataset.lang = lang;
     const ask = this.cell(this.asksIn(row.item.questions, lang).join("\n"),
                           "people ask… (one per line)", joinAsks);
     ask.classList.add("ask");

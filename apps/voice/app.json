@@ -12,7 +12,7 @@
   // Settings live in config/voice.json; the answers live in qa_data.json
   // beside this file. Both are data a person edits, not code.
   "name": "Voice",
-  "blurb": "ask the rig a question - FAQ answers instantly, a local model for the rest",
+  "blurb": "ถามคำถามและฟังคำตอบ ตั้งค่าการฟัง คิด และพูด",
   "icon": "🎤",
   "order": 25,
   "help": "voice"

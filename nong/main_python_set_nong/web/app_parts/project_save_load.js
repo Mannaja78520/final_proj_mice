@@ -287,7 +287,13 @@ function syncAskUnsavedBox() {
 syncAskUnsavedBox();
 async function refreshProjects() {
   const a = await Mice.Api.get("/api/list?kind=projects");
-  if (!a.ok) return;                     // keep the list it already shows
+  const retry = $("projRetry");
+  if (retry) retry.hidden = a.ok;
+  if (!a.ok) {
+    $("tlStat").textContent = "Could not read saved moves. Your choices are kept. Press Retry saved moves.";
+    notice($("tlStat").textContent);
+    return;
+  }
   const r = a.data;
   const sel = $("projList");
   sel.innerHTML = "<option value=''>Load…</option>";
