@@ -28,7 +28,8 @@
 
     {"id": "hub-extensions", "summary": "This PC's apps as extensions (A51-2): which apps are installed here and where, add by folder (mice-app.json, app.json or a partner template), remove/restore, update; apps whose partner is missing are hidden.",
      "files": ["main_python/extensions.py", "main_python/hub_api_extensions.py",
-               "docs/extensions.md", "docs/INSTALL.md", "main_python/web/home/parts/apps_manage.*"],
+               "docs/extensions.md", "docs/INSTALL.md", "main_python/web/home/parts/apps_manage.*",
+               "tools/add_app.py"],
      "names": ["/api/extensions", "Extensions", "mice-app.json", "MICE_EXTENSIONS"],
      "checks": ["check_extensions"], "depends": ["hub-apps"]},
 

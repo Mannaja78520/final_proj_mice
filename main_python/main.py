@@ -290,8 +290,8 @@ def read_partners():
     # This PC's folder for each ({parent}/... expanded), and whether it is
     # installed here at all; then where each one REALLY answered last time it
     # was started - their ports can change with any update of theirs.
-    cfg = {k: partner_launch.live(k, EXT.partner(k, v)) if isinstance(v, dict) else v
-           for k, v in cfg.items()}
+    cfg = {k: partner_launch.live(k, v) if isinstance(v, dict) else v
+           for k, v in EXT.partners_here(cfg).items()}
     return {"ok": True, "partners": cfg}
 
 

@@ -118,6 +118,15 @@ def run(t):
         t.ok("lucky-draw" not in stored["added"] and "reconize" in stored["added"],
              "the list is one file of this PC's", stored)
 
+        # ---- their own file makes a partner official ---------------------------
+        _write(moved / X.MANIFEST, json.dumps({"id": "reconize", "kind": "partner",
+                                               "open": "http://127.0.0.1:5999"}))
+        here = E.partners_here(templates)
+        t.ok(here["reconize"].get("open") == "http://127.0.0.1:5999"
+             and here["reconize"].get("detect") == templates["reconize"]["detect"],
+             "a friend's own mice-app.json overrides our template field by field",
+             here["reconize"])
+
         # ---- update ---------------------------------------------------------------
         E.add(str(theirs))
         up = E.update("lucky-draw")

@@ -33,6 +33,9 @@ The full map of every root folder is [docs/LAYOUT.md](docs/LAYOUT.md), generated
 from `config/layout.json`. Nothing new goes loose at the root: working copies
 live in `.staging/<task>`, tool output in `_out/` (QC check_root_tidy).
 
+Installing on another PC, with only some of the apps: [docs/INSTALL.md](docs/INSTALL.md).
+Adding, removing or updating an app without code: [docs/extensions.md](docs/extensions.md).
+
 Each folder has its own README with the full detail. Start with the one you
 need:
 

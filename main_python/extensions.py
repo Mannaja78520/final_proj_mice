@@ -144,6 +144,22 @@ class Extensions:
                             and bool(out["folder"]) and Path(out["folder"]).is_dir())
         return out
 
+    def partners_here(self, templates):
+        """config/partners.json as THIS PC has it: an added folder whose own
+        mice-app.json says kind "partner" overrides our template field by
+        field, or adds a partner we never had a template for."""
+        out = {k: v for k, v in (templates or {}).items()}
+        for pid, e in self.state()["added"].items():
+            if e.get("kind") != "partner":
+                continue
+            got = self.detect(e.get("folder")) or {}
+            man = got.get("manifest") or {}
+            if man:
+                merged = dict(out.get(pid) or {})
+                merged.update({k: v for k, v in man.items() if k not in ("id", "kind")})
+                out[pid] = merged
+        return {k: self.partner(k, v) for k, v in out.items()}
+
     def visible(self, app, partners):
         """An app is listed unless this PC removed it, or the partner it
         needs ("needs" in its app.json) is not installed here."""
