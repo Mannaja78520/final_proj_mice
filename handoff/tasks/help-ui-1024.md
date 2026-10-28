@@ -1,67 +1,65 @@
 # Help matches the actual prize and recognition screens
 
 Owner: codex:10281554-9dc6
-Updated: 2026-10-28 15:59 +0700
+Updated: 2026-10-28 16:08 +0700
 Branch: codex/help-ui-1024
 Tree: E:/final_proj/mice/code/.staging-help-ui-1024
-Last commit: 8064292 (HEAD and local origin tracking ref; this continuation is uncommitted, push failed)
+Last commit: e2d0346 (HEAD and local origin/codex/help-ui-1024; last pushed by coordinator; Round 2 changes uncommitted)
 Plan: A48-15
 
 ## Goal
 Human: Help is broken and confusing; prize app and FaceReg differ from Help.
 Human correction: ONE fixed Hall at Receive; FOUR magnets on wheel; Drop has no Hall; Receive and Drop are on the same side.
+Round 2: finish remaining offline work in this tree only; coordinator owns Git writes and publication.
 
 ## Doing now
-Stopped at recorded merge/commit/push blockers after offline verification and final diff inspection. No task process is running and no QC, service or hardware claim was taken. This task file is saved locally but uncommitted.
+Round 2 offline work and final diff inspection finished; awaiting coordinator review/commit/push. No service, browser, hardware or full QC driver was run. No shared resource claim taken or released. All Round 2 edits remain uncommitted as instructed.
 
 ## File status
-Baseline: 2bd3299. Owned b41604f metadata and e79ea8a source. Final baseline diff has exactly the nine paths below; source unchanged; this handoff is the only tracked edit and cannot be committed in this session. Other root/owner source not ours.
+Historical source baseline: 2bd3299; original Help implementation e79ea8a is included in merged main. Round 2 baseline: e2d0346, initially clean. main...HEAD differs only in this task file. Round 2 tracked edits are exactly docs/systems/agents.md and this task; earlier source rows below are retained for continuity. No other owner's source edited.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| main_python/web/help/parts/gacha.html | Actual tabs, one Receive Hall/four magnets; bounded command facts retained from A47-20 | review/QC pending | static browser diagram inspected; preview-evidence.json; no hardware | e79ea8a |
-| main_python/web/help/parts/faces.html | Actual three tabs and greeting steps | review/QC pending | latest browser card search and topic navigation pass | e79ea8a |
-| main_python/web/help/parts/search.js | Search full topic without neighbour links | review/QC pending | latest card search, no-result, clear, navigation pass manually | e79ea8a |
-| main_python/web/help/style.css | Hide technical paths; contain phone overflow | review/QC pending | latest wide hidden paths; phone faces/gacha375px scroll375px | e79ea8a |
-| main_python/web/help.html | Builder output | unchanged; review/QC pending | offline source/output equality 1/1; Help links 25/25; builder 14/14 | e79ea8a |
-| qc/checks/check_help_topics.py | Permanent content/browser regressions | browser execution blocked | Python syntax 1/1; full check requires hub/browser | e79ea8a |
-| docs/systems/hub-web.md | Generated check index | unchanged | not reported stale by check_systems | e79ea8a |
-| docs/systems/qc.md | Generated file index | stale; merge first | check_systems 10 passed / 1 failed overall | e79ea8a |
-| handoff/tasks/help-ui-1024.md | Current evidence and next actions | local only | handoff 32/32; diff check clean; commit/push blocked | uncommitted |
+| main_python/web/help/parts/gacha.html | Actual tabs; one Receive Hall/four magnets; bounded commands | merged; no Round 2 edit | current Help output equality; earlier static preview is historical, no hardware | e2d0346 (merged) |
+| main_python/web/help/parts/faces.html | Actual three tabs and greeting steps | merged; no Round 2 edit | current Help output equality; browser regression not run this round | e2d0346 (merged) |
+| main_python/web/help/parts/search.js | Search full topic without neighbour links | merged; no Round 2 edit | output equality; browser/search sabotage pending | e2d0346 (merged) |
+| main_python/web/help/style.css | Hide technical paths; contain phone overflow | merged; no Round 2 edit | output equality; current browser/layout checks pending | e2d0346 (merged) |
+| main_python/web/help.html | Built Help | unchanged | source/output equality 1/1; Help links 26/26; builder 14/14 | e2d0346 (merged) |
+| qc/checks/check_help_topics.py | Content/browser regressions | unchanged; full execution blocked | Python syntax 1/1; hub/browser portion not run | e2d0346 (merged) |
+| docs/systems/hub-web.md | Generated check index | unchanged | check_systems 13/13 | e2d0346 (merged) |
+| docs/systems/qc.md | Generated file index | unchanged; main resolved stale index | check_systems 13/13 | e2d0346 (merged) |
+| docs/systems/agents.md | Remove missing task from generated inventory; 38 to 37 files | done; coordinator review pending | check_systems 13/13; generated-only diff; authored text/line endings preserved | uncommitted |
+| handoff/tasks/help-ui-1024.md | Round 2 scope, current evidence and remaining boundaries | done | check_handoff_first 45/45; git diff --check clean | uncommitted |
+| scratch/help-ui-1024/offline-round2.log | Current offline evidence, ignored | done | 100 passed, 0 failed, 0 crashes | uncommitted; do not commit |
 
-Historical preview evidence is in ignored root scratch/help-ui-1024; it was not accessed this round. Current evidence is in this tree's ignored scratch/help-ui-1024/offline-checks.log. Root PLAN/BRIDGE and runtime sources were not edited.
+Evidence stays in this tree's ignored scratch/help-ui-1024/offline-round2.log. Earlier offline-checks.log and root preview evidence are historical and do not cover the merged tree. Root PLAN/BRIDGE, runtime data and private files were not edited.
 
 ## Facts found
-- qc/checks/check_systems.py:37 verifies generated subsystem headers; current unmerged tree reports studio.md, app-voice.md, qc.md and agents.md stale. None was changed this round. Reconcile main before generating them.
-- qc/checks/check_help_links.py:35 and qc/checks/check_build_web.py:12 provide offline checks; qc/lib/qc.py:383 runs a selected check without the full driver.
-- tools/plan.py:62-79 redirects staging plan writes to the root checkout unless MICE_PLAN is set; root writes are forbidden this round. Plan update deferred until merge can reconcile current task state.
-- qc/checks/check_help_topics.py:41-43 starts a hub and uses a browser; the complete check and its sabotage proof cannot run under current restrictions.
-- tools/build_web.py:38-55 renders one page in memory; this permits a source/output comparison without rewriting other generated pages.
-- apps/gacha/index.html:303,346 contain unescaped GCALIB quotes, preventing all script execution; live app has blank tabs and checking status. A47-20 already owns this source.
-- Help faces screenshots show Open it while captions claim greeting/rules fields. Actual greeting tab is What the rig says; Move/on selectors belong to each camera row (apps/faces/index.html:296,372).
-- Help gacha diagram puts Hall #1/#3 on wheel and Receive opposite Drop, contradicting human hardware correction. Drop mode and guaranteed centering claims are unsupported.
-- Help search filters only .f and table rows, ignoring new .info-box content.
-- Help .where display:block overrides shared hidden technical labels.
+- docs/systems/agents.md:19 now indexes 37 existing files. The generated list still named absent handoff/tasks/usability-review-1026.md after merge; removing that stale entry fixes the sole remaining map error.
+- tools/systems.py:164 validates source ownership/header freshness; :214 rebuilds headers from docs/systems.json while preserving authored prefixes. Builder emits LF, so original per-file line endings were restored afterward.
+- qc/checks/check_help_links.py:35 checks Help anchors offline; qc/checks/check_build_web.py:12 uses temporary build fixtures. qc/lib/qc.py:384 runs selected checks without the full driver.
+- qc/checks/check_help_topics.py:38-40 requires a browser and starts a hub. Its complete regression and search sabotage need a separately authorized round; Python parsing is not behavior proof.
+- tools/build_web.py:38-55 renders Help in memory, allowing source/output equality without rewriting other web pages.
+- main_python/web/help/parts/gacha.html:51-66 documents one fixed Receive Hall, no Drop Hall, same-side stations and four magnets. The original misleading diagram was corrected before this round.
+- main_python/web/help/parts/faces.html:14-33 names Open it and What the rig says and places Move/on on each camera row. Earlier incorrect captions are historical, not current findings.
+- tools/plan.py:62-79 redirects staging progress writes to the root unless MICE_PLAN is overridden. Root writes are forbidden; local merged PLAN has no A48-15. Coordinator must reconcile the real plan, not create a duplicate staging plan.
 
 ## Done
-- Final diff inspection: only this task file changed; CRLF preserved; git diff --check passed. No new commit was possible.
-- Offline checks on unmerged HEAD 8064292: check_help_links 25/25, check_build_web 14/14, check_handoff_first 32/32; check_systems 10 passed and 1 failed (four stale headers). Help source/output equality 1/1 and check_help_topics Python syntax 1/1. Total 83 passed, 1 failed, no crashes. Existing builder/system checks include their own negative fixtures; Help search sabotage was not run.
-- Invoked these four existing run(t) checks directly through qc.run_check, without run_qc.py. All test temporary files stayed under this tree's ignored scratch/help-ui-1024. Evidence: scratch/help-ui-1024/offline-checks.log. No hub, browser, services, hardware, package build or source edits.
-- 2026-10-28: read HANDOFF, AGENTS (Codex entry), task, CLAUDE and coordination. User-authorized takeover by codex:10281554-9dc6 in this tree only. Attempted WIP add/commit/push and git merge main; all blocked before any merge or new commit.
-- Read-only live browser reproduction for prize page and Help faces.
-- Source e79ea8a built and manually inspected in static preview; original running app/Help untouched. Own generated Hub/Studio/camera/voice output side effects restored before commit.
-- Human geometry retained without inferred angular placement. A47-20 bounded GCALIB/GTEST/GNUDGE/GDRAIN wording retained under technical detail; do not restore old mass/100percent claims.
-- Evidence: E:/final_proj/mice/code/scratch/help-ui-1024/preview-evidence.json and corrected-mechanism.png. Private evidence ignored; no keys/photos/hardware commands.
+- Final diff inspected: exactly two tracked edits (agents.md and this task), no untracked source, no whitespace errors. Scratch evidence remains ignored. No Git metadata writes; all changes left uncommitted.
+- Round 2 read HANDOFF, Codex entry AGENTS, this task, CLAUDE, coordination and relevant skills. Retained the existing named task owner under the user's continuation authority.
+- Read-only Git reconciliation: main 023c644 is an ancestor of HEAD e2d0346, matching local origin/codex/help-ui-1024. Coordinator committed the earlier handoff as fe206c9 and merged/pushed main. No merge/add/commit/push attempted this round.
+- Diagnosed the remaining stale header with tools/systems.py verify. Ran python tools/systems.py build; only agents.md content changed. All 35 other header/index files remained byte-identical. Authored prefixes and original line endings were preserved.
+- Current merged-tree focused results: check_help_links 26/26, check_build_web 14/14, check_handoff_first 45/45, check_systems 13/13. Help source/output equality 1/1 and regression Python syntax 1/1. Total 100 passed, 0 failed, 0 crashes; direct qc.run_check only. Evidence: scratch/help-ui-1024/offline-round2.log.
+- Test temporary files stayed inside this tree's ignored scratch/help-ui-1024. Existing builder/system negative fixtures passed. No test was disabled; full browser/search sabotage was not run.
+- Prior implementation e79ea8a corrected menus, geometry, full-topic search and hidden technical paths. It had manual static preview evidence; that historical evidence is not a current browser gate. Source is already included in main and was not changed this round.
 
 ## Next
-1. Restore authorized Git metadata access and GitHub authentication, commit/push this task checkpoint, then git merge main (currently 023c644); preserve newer owners' work.
-2. Repeat allowed focused checks on the merged branch. Obtain existing-main independent review, then coordinated browser/sabotage/full QC only in a separately authorized round.
-3. Coordinate original prize-app usability repair with A47-20 owner; Help-only work does not complete that request.
+1. Coordinator reviews and commits/pushes only docs/systems/agents.md and handoff/tasks/help-ui-1024.md. Keep scratch evidence ignored. Do not reapply already merged Help source.
+2. Coordinator reconciles A48-15 in the real plan and existing independent-review status for the merged source.
+3. In a separately authorized round, run complete check_help_topics, browser/search sabotage and required full QC; coordinate any remaining prize-app usability work with its owner.
 
 ## Blocked
-- Git add/commit: cannot create this worktree's index.lock (Permission denied). git merge main: cannot create ORIG_HEAD.lock (Permission denied). No new commit or merge exists.
-- git push -u origin codex/help-ui-1024: schannel AcquireCredentialsHandle failed, SEC_E_NO_CREDENTIALS (0x8009030e). Last locally recorded remote commit remains 8064292; remote could not be refreshed.
-- Complete check_help_topics, browser regression/sabotage, full QC, hardware, live services, MiceHub.exe rebuild and deployment are outside current user authorization. Existing other-owner QC claim is not released by this task.
-- Root PLAN/BRIDGE/shared mutex writes are forbidden. Branch-local plan is older than main and does not contain A48-15; avoid inventing a duplicate before merge.
-- Existing-main independent review and original app usability work require their owners. No review, integration, gate or deployment approval claimed.
-- check_systems is red: four existing generated subsystem headers are stale. No header regeneration before the required merge; other owners' headers must be preserved.
+- Git merge/add/commit/push prohibited by Round 2 instructions; coordinator handles publication. Earlier lock/credential failures were not retried. Last pushed commit recorded locally is e2d0346.
+- Complete Help browser regression/sabotage and full QC are outside current authorization. Hardware, robot, ESP32/USB, camera/person checks, live services, MiceHub.exe rebuild and deployment also remain out of scope; no such evidence claimed.
+- Root PLAN/BRIDGE/shared mutex writes are forbidden. A48-15 reconciliation and shared coordination bookkeeping remain with the coordinator.
+- Existing independent review and original prize-app usability acceptance need their owners. No new review, full gate, integration or deployment approval claimed.
