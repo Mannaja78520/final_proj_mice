@@ -2014,7 +2014,17 @@ let safeMotionEpoch = 0, safeGoalRevision = 0;
 let safeMotionTail = Promise.resolve(), safeCancelTail = Promise.resolve(), lastSafeMove = Promise.resolve(true);
 let safeTimelineCache = null, timelinePreparing = false;
 let safeActiveDevice = null;
-function safeDevice() { return {dev:moduleDev(), port:serialPort, bus:busId(), target:safeTarget()}; }
+const safeDispatches=new Set();
+async function safeWrite(device,c,epoch) {
+  if(epoch!==safeMotionEpoch)throw new Error('movement cancelled before dispatch');
+  const pending=safeDeviceCmd(device,c);
+  safeDispatches.add(pending);
+  try{return await pending;}finally{safeDispatches.delete(pending);}
+}
+function safeDevice() {
+  return {dev:haveAuto() ? moduleDev() : usbDirect() ? '' : moduleDev(),
+    port:serialPort,bus:busId(),target:safeTarget()};
+}
 async function safeDeviceCmd(device,c) {
   if (device.dev) {
     const q=new URLSearchParams({dev:device.dev,c});
@@ -2029,7 +2039,9 @@ function withSafeMotion(work) {
   safeMotionTail = result.catch(() => {});
   return result;
 }
-function safeTarget() { return moduleDev() + "|" + (boardSafeIdentity || ""); }
+function safeTarget() {
+  return (haveAuto() ? moduleDev() : usbDirect() ? 'serial:'+busId() : moduleDev())+'|'+(boardSafeIdentity || '');
+}
 function safeMotionNote(text, warning = false) {
   if ($("robotStat")) $("robotStat").textContent = text;
   if ($("tlStat")) $("tlStat").textContent = text;
@@ -2037,6 +2049,8 @@ function safeMotionNote(text, warning = false) {
 }
 function cancelSafeMotion(reason) {
   const device=safeActiveDevice || (haveRobot() ? safeDevice() : null);
+  safeActiveDevice=null; // future Stop targets the newly selected robot after a route change
+  const pending=Array.from(safeDispatches);
   liveAbort();
   if(reason!=='sequence takeover') {
     playing=false;entryHold=false;seekToken++;
@@ -2044,9 +2058,21 @@ function cancelSafeMotion(reason) {
   }
   if (!currentUser || !device) return Promise.resolve(false);
   const stop=safeCancelTail.catch(()=>{}).then(async () => {
+    let confirmed=true;
+    const stopBoard=async()=>{
+      const reply=await safeDeviceCmd(device,'STOP');
+      if(!/^OK\b/.test(reply))throw new Error(reply || 'Stop was not acknowledged');
+    };
     await hubStop();
-    try { await safeDeviceCmd(device,"STOP"); } catch (e) { safeMotionNote("Could not confirm Stop: " + e.message, true); }
-    return false;
+    try { await stopBoard(); } catch (e) { confirmed=false;safeMotionNote("Could not confirm Stop: " + e.message, true); }
+    if(pending.length) {
+      // A delayed HTTP write can arrive after the prompt Stop. Finish with
+      // another Stop after every already-dispatched write has settled.
+      await Promise.allSettled(pending);
+      await hubStop();
+      try {await stopBoard();}catch(e){confirmed=false;safeMotionNote('Could not confirm final Stop: '+e.message,true);}
+    }
+    return confirmed;
   });
   safeCancelTail=stop;return stop;
 }
@@ -2108,6 +2134,7 @@ function safeLegKeys(path, key) {
 }
 async function checkedPoseUnlocked(goal, requestedMs, epoch, goalRevision, initial, progress) {
   const device = safeTarget(), revision = safeRevision();
+  const endpoint=safeDevice();
   const hardStale = () => safeStale(epoch,device,revision);
   const replaced = () => goalRevision !== null && goalRevision !== safeGoalRevision;
   const stale = () => hardStale() || replaced();
@@ -2129,10 +2156,10 @@ async function checkedPoseUnlocked(goal, requestedMs, epoch, goalRevision, initi
     if (safePoseError(actual) || pathHit(actual,leg.pose))
       throw new Error("the reported pose does not have a clear route to the next waypoint");
     const started = performance.now();
-    const reply = await rawCmd("POSE " + leg.pose.map(fmtA).join(" ") + " T " + leg.t);
+    const reply = await safeWrite(endpoint,"POSE " + leg.pose.map(fmtA).join(" ") + " T " + leg.t,epoch);
     liveRtt += ((performance.now()-started)-liveRtt)*0.25;
-    if (!/^OK\b/.test(reply)) throw new Error(reply || "the robot refused the move");
     if (hardStale()) return false;
+    if (!/^OK\b/.test(reply)) throw new Error(reply || "the robot refused the move");
     // A newer drag finishes this checked leg, then replaces the remaining
     // route. Stop/Live-off/settings changes cancel immediately after an await.
     const arrived = await safeIdle(hardStale,leg.pose,progress);
@@ -2148,6 +2175,7 @@ async function checkedPose(goal,ms,epoch,goalRevision,target) {
     const device=safeDevice();
     try { return await checkedPoseUnlocked(goal,ms,epoch,goalRevision); }
     catch (e) {
+      if(epoch!==safeMotionEpoch)return false; // retain a newer request made after Stop
       liveAbort();
       try { await safeDeviceCmd(device,"STOP"); } catch (_) {}
       safeMotionNote("Movement stopped: " + e.message,true);
@@ -2198,7 +2226,7 @@ async function startCheckedSequence(fromMs, keepCopy = true) {
   const file=(part ? name+'.part' : name)+'.yaml';
   return withSafeMotion(async()=>{
     if(stale())return null;
-    safeActiveDevice=safeDevice();
+    const endpoint=safeDevice();safeActiveDevice=endpoint;
     // A partial file starts at its retained keyframe. Its original loop
     // closure belongs to the complete show, so a partial run plays once.
     const nativeYaml=part ? yaml.replace(/^loop:\s*true\s*$/m,'loop: false') : yaml;
@@ -2209,8 +2237,8 @@ async function startCheckedSequence(fromMs, keepCopy = true) {
     const initial=await safeTakeover(stale);
     if(!initial || stale())return null;
     if(!(await checkedPoseUnlocked(destination,0,epoch,null,initial)) || stale())return null;
-    const reply=await rawCmd('MOVE '+file);
-    if(stale()) {await safeDeviceCmd(safeActiveDevice,'STOP');return null;}
+    const reply=await safeWrite(endpoint,'MOVE '+file,epoch);
+    if(stale()) {await safeDeviceCmd(endpoint,'STOP');return null;}
     if(!/^OK\b/.test(reply))throw new Error(reply || 'the robot did not start the sequence');
     return {file,name,part,kept};
   });
@@ -6607,7 +6635,8 @@ async function serialReadLoop() {
 let serialChain = Promise.resolve();
 function serialCmd(c, connection = {port:serialPort,id:busId()}) {
   const epoch=safeMotionEpoch;
-  const run = serialChain.then(() => /^POSE\s/i.test(c) && epoch!==safeMotionEpoch
+  const motion=/^POSE\s|^MOVE\s+(?!STOP(?:\s|$)|QCMARK(?:\s|$))/i.test(c);
+  const run = serialChain.then(() => motion && epoch!==safeMotionEpoch
     ? 'ERR movement cancelled' : serialCmdNow(c,connection));
   serialChain = run.catch(() => {});
   return run;
@@ -6766,7 +6795,7 @@ function openModule() {
 async function robotCmd(c) {
   if (!currentUser) return "";
   if (/^POSE\s/i.test(c)) return (await liveSend(c)) ? "OK checked movement finished" : "";
-  if (/^(?:MOVE\s+)?STOP\s*$/i.test(c)) { await cancelSafeMotion("Stop"); return "OK stopped"; }
+  if (/^(?:MOVE\s+)?STOP\s*$/i.test(c)) return (await cancelSafeMotion("Stop")) ? 'OK stopped' : '';
   try {
     const t = await rawCmd(c);
     $("robotStat").textContent = "> " + c.slice(0, 60) + "  →  " + t.slice(0, 120);
@@ -7314,7 +7343,10 @@ async function handOffToRobot() {
     // tab half way through used to send the arm back to keyframe 0 first —
     // the same sweep as Run, but nobody pressed anything to cause it.
     const fromMs=playT;
-    await cancelSafeMotion('handover');
+    const stopping=cancelSafeMotion('handover');
+    const generation=safeMotionEpoch,device=safeTarget();
+    await stopping;
+    if(generation!==safeMotionEpoch || device!==safeTarget()) {handedOff=false;return;}
     entryHold=true;
     const started=await startCheckedSequence(fromMs,false);
     if(!started) {handedOff=false;return;}
@@ -7379,7 +7411,9 @@ async function keepLastRun(yaml, file) {
 // first is what makes the check mean anything.
 async function robotRun() {
   if (nothingToWrite("sdStat")) return;     // a file with no moves does nothing
-  if (!(await ensureSafeTimeline())) return;
+  const epoch=safeMotionEpoch,device=safeTarget(),revision=safeRevision(),sig=safeTimelineSignature();
+  const stale=()=>safeStale(epoch,device,revision) || sig!==safeTimelineSignature();
+  if (!(await ensureSafeTimeline(stale)) || stale()) return;
   if (!crashGate("RUN it on the robot")) return;
   // Run from where the clock is parked. Clicking a keyframe parks it there, so
   // Run continues the show from the pose on screen instead of sweeping back to

@@ -206,7 +206,8 @@ async function serialReadLoop() {
 let serialChain = Promise.resolve();
 function serialCmd(c, connection = {port:serialPort,id:busId()}) {
   const epoch=safeMotionEpoch;
-  const run = serialChain.then(() => /^POSE\s/i.test(c) && epoch!==safeMotionEpoch
+  const motion=/^POSE\s|^MOVE\s+(?!STOP(?:\s|$)|QCMARK(?:\s|$))/i.test(c);
+  const run = serialChain.then(() => motion && epoch!==safeMotionEpoch
     ? 'ERR movement cancelled' : serialCmdNow(c,connection));
   serialChain = run.catch(() => {});
   return run;
@@ -365,7 +366,7 @@ function openModule() {
 async function robotCmd(c) {
   if (!currentUser) return "";
   if (/^POSE\s/i.test(c)) return (await liveSend(c)) ? "OK checked movement finished" : "";
-  if (/^(?:MOVE\s+)?STOP\s*$/i.test(c)) { await cancelSafeMotion("Stop"); return "OK stopped"; }
+  if (/^(?:MOVE\s+)?STOP\s*$/i.test(c)) return (await cancelSafeMotion("Stop")) ? 'OK stopped' : '';
   try {
     const t = await rawCmd(c);
     $("robotStat").textContent = "> " + c.slice(0, 60) + "  →  " + t.slice(0, 120);
@@ -913,7 +914,10 @@ async function handOffToRobot() {
     // tab half way through used to send the arm back to keyframe 0 first —
     // the same sweep as Run, but nobody pressed anything to cause it.
     const fromMs=playT;
-    await cancelSafeMotion('handover');
+    const stopping=cancelSafeMotion('handover');
+    const generation=safeMotionEpoch,device=safeTarget();
+    await stopping;
+    if(generation!==safeMotionEpoch || device!==safeTarget()) {handedOff=false;return;}
     entryHold=true;
     const started=await startCheckedSequence(fromMs,false);
     if(!started) {handedOff=false;return;}
@@ -978,7 +982,9 @@ async function keepLastRun(yaml, file) {
 // first is what makes the check mean anything.
 async function robotRun() {
   if (nothingToWrite("sdStat")) return;     // a file with no moves does nothing
-  if (!(await ensureSafeTimeline())) return;
+  const epoch=safeMotionEpoch,device=safeTarget(),revision=safeRevision(),sig=safeTimelineSignature();
+  const stale=()=>safeStale(epoch,device,revision) || sig!==safeTimelineSignature();
+  if (!(await ensureSafeTimeline(stale)) || stale()) return;
   if (!crashGate("RUN it on the robot")) return;
   // Run from where the clock is parked. Clicking a keyframe parks it there, so
   // Run continues the show from the pose on screen instead of sweeping back to

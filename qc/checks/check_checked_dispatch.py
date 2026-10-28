@@ -14,7 +14,7 @@ DRIVER = r"""
   let original;
   try {
     await qcStudioReady();await qcWaitFor(()=>!!boardSafeIdentity);
-    original={rawCmd,getStatus,sdUpload,fetch,hubStop};
+    original={rawCmd,getStatus,sdUpload,fetch,hubStop,safeDeviceCmd,ensureSafeTimeline,startCheckedSequence,hubDriven,serialChain};
     const rng=safeRng(67),clear=[];let pair;
     for(let n=0;n<800 && !pair;n++) {
       const q=RIG.min.map((lo,j)=>+(lo+rng()*(RIG.max[j]-lo)).toFixed(1));
@@ -33,7 +33,7 @@ DRIVER = r"""
         moving:missing ? undefined : moving,min:RIG.min.slice(),max:RIG.max.slice(),speed_dps:120}};
     };
     rawCmd=async c=>{
-      if(c==='STOP'){moving=false;target=null;return 'OK stopped';}
+      if(c==='STOP'){moving=false;target=null;return original.rawCmd(c);}
       if(c.startsWith('POSE ')) {
         const q=c.split(/\s+/).slice(1,NJ+1).map(Number);
         overlap=overlap || moving;dirty=dirty || !!pathHit(actual,q);
@@ -43,6 +43,7 @@ DRIVER = r"""
       }
       return original.rawCmd(c);
     };
+    safeDeviceCmd=async(device,c)=>rawCmd(c);
     await original.rawCmd('POSE '+actual.join(' '));
     const ok=await liveSend('POSE '+pair[1].join(' ')+' T 800');
     await mark('arrival',ok && sent.length>=2 && !overlap && !dirty && safeGap(actual,pair[1])<0.11);
@@ -112,10 +113,59 @@ DRIVER = r"""
     rawCmd=async c=>/^MOVE\s/.test(c) ? 'OK MOVE' : guardedRaw(c);
     const partial=await startCheckedSequence(1,false);
     await mark('partialLoop',partial && /^loop: false$/m.test(saved) && !/^loop: true$/m.test(saved));
+    // A POSE accepted after prompt STOP must be followed by a terminal STOP.
+    moving=false;actual=pair[0].slice();sent=[];let ackRelease;const delivery=[];
+    rawCmd=async c=>{
+      if(c.startsWith('POSE ')){await new Promise(r=>ackRelease=r);delivery.push('POSE');}
+      if(c==='STOP')delivery.push('STOP');
+      return guardedRaw(c);
+    };
+    const delayed=liveSend('POSE '+pair[1].join(' '));
+    await qcWaitFor(()=>!!ackRelease);
+    delivery.length=0; // discard takeover STOP; require a new prompt STOP before late delivery
+    const cancelled=cancelSafeMotion('QC HTTP stop race');
+    await qcWaitFor(()=>delivery.includes('STOP'));
+    ackRelease();await delayed;await cancelled;
+    await mark('terminalStop',delivery.includes('POSE') && delivery[delivery.length-1]==='STOP' && !moving && sent.length===1);
+    rawCmd=guardedRaw;
+    // Stop during Run's initial planner must not establish a new generation.
+    let planRelease,starts=0;
+    ensureSafeTimeline=async()=>new Promise(r=>planRelease=r);
+    startCheckedSequence=async()=>{starts++;return null;};
+    const run=robotRun();await qcWaitFor(()=>!!planRelease);
+    await cancelSafeMotion('QC initial planning stop');planRelease(true);await run;
+    await mark('runPlanningStop',starts===0);
+    ensureSafeTimeline=original.ensureSafeTimeline;
+    // A second Stop takes precedence while handoff awaits its own Stop.
+    let handRelease,handStops=0;
+    hubStop=async()=>{if(++handStops===1)await new Promise(r=>handRelease=r);};
+    hubDriven=()=>false;playing=true;previewOnly=false;handedOff=false;$('liveChk').checked=true;
+    const hand=handOffToRobot();await qcWaitFor(()=>!!handRelease);
+    const newerStop=cancelSafeMotion('QC stop during handoff');
+    handRelease();await hand;await newerStop;
+    await mark('handoffStop',starts===0);
+    hubStop=async()=>{};hubDriven=original.hubDriven;startCheckedSequence=original.startCheckedSequence;
+    // A queued native MOVE is cancelled before touching the serial writer.
+    let serialRelease;const writes=[];
+    const port={writable:{getWriter:()=>({write:async bytes=>{
+      writes.push(new TextDecoder().decode(bytes));
+      setTimeout(()=>{for(const w of serialWaiters.splice(0)){const v=w.filter('@7 OK stopped');if(v!==null)w.res(v);}},0);
+    },releaseLock(){}})}};
+    const previousPort=serialPort;serialPort=port;
+    const captured=safeDevice();serialPort=previousPort;
+    await mark('directCapture',captured.dev==='' && captured.port===port && captured.target.startsWith('serial:'));
+    serialChain=new Promise(r=>serialRelease=r);
+    const native=serialCmd('MOVE queued.yaml',{port,id:7});
+    await cancelSafeMotion('QC queued native stop');serialRelease();
+    const result=await native;
+    await serialCmd('MOVE STOP',{port,id:7});
+    await mark('serialQueuedStop',result.startsWith('ERR') && writes.length===1 && writes[0]==='#7 MOVE STOP\n');
+    rawCmd=async c=>c==='STOP' ? 'ERR unavailable' : guardedRaw(c);
+    await mark('stopAcknowledged',(await robotCmd('STOP'))==='' && $('robotStat').textContent.includes('Could not confirm Stop'));
   }catch(e){await qcMark('DISPATCH~error='+String(e).replace(/[^a-z0-9]/gi,'_').slice(0,100));}
   finally {
     liveAbort();
-    if(original){rawCmd=original.rawCmd;getStatus=original.getStatus;sdUpload=original.sdUpload;fetch=original.fetch;hubStop=original.hubStop;}
+    if(original){rawCmd=original.rawCmd;getStatus=original.getStatus;sdUpload=original.sdUpload;fetch=original.fetch;hubStop=original.hubStop;safeDeviceCmd=original.safeDeviceCmd;ensureSafeTimeline=original.ensureSafeTimeline;startCheckedSequence=original.startCheckedSequence;hubDriven=original.hubDriven;serialChain=original.serialChain;}
     await qcMark('done');
   }
 })();
@@ -144,5 +194,11 @@ def run(t):
         ("partialLoop", "a partial native run cannot loop over an omitted checked prefix"),
         ("detourClock", "selecting a detoured keyframe parks after all of its checked legs"),
         ("detourClockExtras", "detour selection excludes destination hold and loop return after a suspended key"),
+        ("terminalStop", "a late HTTP POSE is followed by a final Stop before new movement"),
+        ("runPlanningStop", "Stop during Run planning prevents a fresh startup generation"),
+        ("handoffStop", "Stop while handoff waits prevents native startup"),
+        ("serialQueuedStop", "queued native serial MOVE is cancelled while addressed Stop still writes"),
+        ("directCapture", "direct serial keeps its actual port even when hub or WiFi fields remain set"),
+        ("stopAcknowledged", "an unacknowledged Stop is reported as failure"),
     ]:
         t.ok(results.get(key) == "true", label, results)
