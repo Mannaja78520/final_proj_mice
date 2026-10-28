@@ -37,7 +37,16 @@ Local only (never git): `.local/visuals/make_charts.py` (rerun from code/: `pyth
 - Planner on the board at safeDps 60 (left_v2): music variant 475 s, shape variant 646 s for a 158 s song,
   so on the music clock its bone error is ~45 deg while RL is ~19 deg; on shape only the planner wins (8.7-11.2 vs 17.5).
 
+- TIMING CAVEAT: nong_sim record ran on the CPU at the same time (19:57-21:30), so RL rounds in
+  that window took ~143 s instead of ~115 s (left_v2/firmware_10mm: 3448 s wall). Do not compare
+  those round times with clean ones.
+- nong_sim record with music died when the dance outlasts the song (ffmpeg -shortest); fixed in
+  tools/nong_sim/record.py (apad=whole_dur), check_nong_sim + sabotage 1/1 (commits 9dfafd4, 701a7c9).
+
 ## Done
+- Sim videos (MuJoCo, 6 cameras, music from 5 s): `.local/sim_videos/round01_come_and_cheer_left_v2_*.mp4`
+  (board 620 s, 0 hits) vs `round02_come_and_cheer_left_v5_*.mp4` (159.4 s, 0 hits). Center pair in
+  `.local/sim_videos/center/`. `.local/sim_videos/_broken_1028/` = the failed first try (safe to delete with the user's ok).
 - A51-1 sections 2-3 (moves only, nothing deleted): flat `.staging` -> `.staging\main`, 21 `.staging-X` -> `.staging\X`,
   landed.jsonl + trees.txt moved, build.bat/scratch/_photo_test/_video_test -> `_out\`. No write in any tree for 3 h before.
   `.staging-watch.lock` left at the root on purpose. `tools/layout.py check`: only local-only items left.
