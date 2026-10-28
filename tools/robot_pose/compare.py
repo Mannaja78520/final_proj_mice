@@ -25,7 +25,11 @@ class MoveCheck:
         times, seen = np.asarray(times, float), np.asarray(seen, float)
         cmd = lambda shift: np.array([commanded(t - shift) for t in times], float)
         lags = np.arange(-self.c["lagSearchS"], self.c["lagSearchS"] + 1e-9, self.c["lagStepS"])
-        err_by_lag = np.array([np.abs(seen - cmd(L)).mean(0) for L in lags])      # (lags, J)
+        # the lag is found with each joint's own bias taken out, or a shift would
+        # be "found" that cancels part of an offset (a 9 deg offset read as 0.3 s)
+        def spread(e):
+            return np.abs(e - np.median(e, 0)).mean(0)
+        err_by_lag = np.array([spread(seen - cmd(L)) for L in lags])      # (lags, J)
         c0 = cmd(0.0)
         joints = []
         for j, name in enumerate(self.names):
