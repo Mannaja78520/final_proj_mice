@@ -22,7 +22,8 @@
     "kinds": {
       "scratch": "experiments and samples (was scratch/)",
       "test_media": "photos and videos for face/video tests (was _photo_test/, _video_test/)",
-      "runs": "results of long experiments (RL, benchmarks) a tool saves"
+      "runs": "results of long experiments (RL, benchmarks) a tool saves",
+      "ai_watch": "the AI usage-limit watcher's state, events and worker logs (tools/ai_watch.py)"
     }
   },
 

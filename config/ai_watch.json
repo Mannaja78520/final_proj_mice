@@ -1,0 +1,64 @@
+{
+  "_why": "AI usage-limit watcher (tools/ai_watch.py, user 2026-10-29): watch every AI worker, read the reset time from its limit message, send the continue command resume_delay_seconds after the reset; a weekly limit or a reset further away than handoff_if_reset_over_hours hands the unfinished work to the next AI in handoff_order. Add a provider = add one entry under providers; no code edit.",
+
+  "poll_seconds": 30,
+  "resume_delay_seconds": 60,
+  "handoff_if_reset_over_hours": 7,
+  "unknown_reset_retry_minutes": 30,
+  "ignore_hits_older_than_hours": 12,
+  "handoff_order": ["codex", "gemini"],
+  "handoff_max_rounds": 20,
+  "handoff_task_glob": "handoff/tasks/*.md",
+  "handoff_agent_id": "{provider}:ai-watch",
+  "task_scope_hours": 48,
+  "timezones": {
+    "_why": "The PC's Python has no tzdata (2026-10-29), so named zones in limit messages fall back to these fixed offsets, then to the PC clock.",
+    "Asia/Bangkok": "+07:00", "UTC": "+00:00", "GMT": "+00:00"
+  },
+  "reset_patterns": {
+    "_why": "Tried in order on the limit text. abs = a clock time (maybe with a date and a zone in brackets); rel = a duration from when the message was written.",
+    "abs": "(?:try again at|resets? at|resets|reset at|available at|until)\\s+(?:(?P<mon>[A-Za-z]{3,9})\\.?\\s+(?P<day>\\d{1,2})(?:st|nd|rd|th)?,?\\s+(?:at\\s+)?)?(?P<h>\\d{1,2})(?::(?P<m>\\d{2}))?\\s*(?P<ap>[aApP]\\.?[mM]\\.?)?(?:\\s*\\((?P<tz>[A-Za-z_/+\\-0-9]+)\\))?",
+    "rel": "(?:try again in|retry in|retry after|resets? in|reset after|again in)\\s+(?P<dur>(?:\\d+(?:\\.\\d+)?\\s*(?:days?|d|hours?|hrs?|h|minutes?|mins?|m|seconds?|secs?|s)(?![a-zA-Z])\\s*,?\\s*(?:and\\s+)?)+)"
+  },
+
+  "prompts": {
+    "resume": "Your previous run stopped at a usage limit, which has now reset. Continue the same task from where you stopped. Follow HANDOFF.md and your task file in handoff/tasks/ (Doing now / Next); update it and keep the same rules as before.",
+    "handoff": "{from_provider} hit a usage limit ({reason}; resets {reset}) and cannot continue for a long time, so you take over its unfinished work in {repo}. Read {repo}/HANDOFF.md first, then these task files: {tasks}. Claim each one with: python tools/handoff.py take <name> {agent}. Work from Doing now / Next, write Doing now before each step, update File status, Facts found, Done and Next after it, and commit WIP to the task's branch. Never edit folders outside the repo (the friend's repos), never stop running training jobs (train.py, RL, YOLO). When a task is fully done, add the line Status: done to its file. Last thing {from_provider} said: {last_text}",
+    "handoff_round": "Keep going on the same handed-off work: {tasks}. Re-read each task file's Doing now / Next and continue until every one is done. Same rules as before."
+  },
+
+  "providers": {
+    "codex": {
+      "auto_resume": false,
+      "sources": [
+        {"kind": "codex_rollout", "glob": "~/.codex/sessions/*/*/*/rollout-*.jsonl", "prefilter": ["usage_limit", "usage limit"]}
+      ],
+      "limit_patterns": ["usage_limit_exceeded", "hit your usage limit", "usage limit"],
+      "long_patterns": ["weekly"],
+      "resume": {"argv": ["codex", "exec", "--skip-git-repo-check", "-m", "gpt-6.1-sol", "-C", "{cwd}", "-s", "workspace-write", "-c", "sandbox_workspace_write.network_access=true", "resume", "{session}", "-"], "stdin": "{prompt}"},
+      "start": {"argv": ["codex", "exec", "--skip-git-repo-check", "-m", "gpt-6.1-sol", "-C", "{cwd}", "-s", "workspace-write", "-c", "sandbox_workspace_write.network_access=true", "-"], "stdin": "{prompt}"},
+      "session_from_log": "session id:\\s*([0-9a-fA-F-]{36})"
+    },
+    "gemini": {
+      "auto_resume": false,
+      "sources": [
+        {"kind": "text_log", "glob": "{out}/logs/gemini-*.log"}
+      ],
+      "_why": "Only error wordings: a plain-text log also holds the model's own words, which may talk about limits.",
+      "limit_patterns": ["RESOURCE_EXHAUSTED", "[Qq]uota exceeded", "exhausted your [a-z ]*quota", "Error: .*usage limit"],
+      "long_patterns": ["daily", "[Pp]er day", "weekly"],
+      "_why_stdin": "The prompt goes on stdin (gemini appends -p to it): gemini is a .cmd shim, and cmd.exe mangles quotes, % and & inside a long -p argument.",
+      "resume": {"argv": ["gemini", "-r", "latest", "-m", "gemini-3.8-flash-high", "--approval-mode", "yolo", "-p", "Do what the text above says."], "stdin": "{prompt}"},
+      "start": {"argv": ["gemini", "-m", "gemini-3.8-flash-high", "--approval-mode", "yolo", "-p", "Do what the text above says."], "stdin": "{prompt}"}
+    },
+    "claude": {
+      "_why": "Claude Code resumes by itself after a short limit; only a weekly or far-away reset needs a handoff. Only the <synthetic> assistant line is the real notice: the same words also appear quoted inside tool results.",
+      "auto_resume": true,
+      "sources": [
+        {"kind": "claude_transcript", "glob": "~/.claude/projects/*/*.jsonl", "prefilter": ["<synthetic>"]}
+      ],
+      "limit_patterns": ["hit your [a-zA-Z ]*limit", "limit reached", "usage limit"],
+      "long_patterns": ["weekly"]
+    }
+  }
+}
