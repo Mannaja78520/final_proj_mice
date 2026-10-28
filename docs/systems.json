@@ -118,7 +118,7 @@
 
     {"id": "robot-pose", "summary": "nong's own skeleton from a camera (A52-3, user 2026-10-28): keypoints on Studio's rig, camera + joint-angle fit, front/back/left/right, seen-vs-commanded check, calibration suggestions, synthetic YOLO-pose labels (tools/robot_pose). Nothing else needs it.",
      "files": ["tools/robot_pose/", "config/robot_pose.json"],
-     "checks": ["check_robot_pose"],
+     "checks": ["check_robot_pose", "check_robot_pose_render", "check_robot_pose_lab"],
      "depends": ["studio", "nong-sim"]},
 
     {"id": "rl-compare", "summary": "Separate experiment: RL imitation policy vs Studio's video planner on the cheer v2 dances, same servo model and collision gap, scores + side-by-side videos (tools/rl_compare, user 2026-10-27). Nothing else needs it.",
