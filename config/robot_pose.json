@@ -1,0 +1,74 @@
+{
+  "_about": "A52-3 (user 2026-10-28): nong's own skeleton from a camera, like YOLO pose. Keypoints sit on Studio's rig bodies (tools/nong_sim NongTree), so a rig change moves them. Offsets are mm in the body's frame (Studio frame: Y up, robot's left +X, front +Z) and may use the rig's dims and headR/handY/handH/handW. Read by tools/robot_pose.",
+  "keypoints": [
+    {"name": "head", "body": "waist", "offset": [0, "torsoH/2+68", 0]},
+    {"name": "neck", "body": "waist", "offset": [0, "torsoH/2", 0]},
+    {"name": "chest_front", "body": "waist", "offset": [0, "shoulderY-60", 40], "seenFrom": "front", "why": "front marker: only seen from the front, tells front from back"},
+    {"name": "base", "body": "waist", "offset": [0, "-torsoH/2", 0]},
+    {"name": "L_shoulder", "body": "L_anchor", "offset": [0, 0, 0]},
+    {"name": "R_shoulder", "body": "R_anchor", "offset": [0, 0, 0]},
+    {"name": "L_elbow", "body": "L_elbow", "offset": [0, 0, 0]},
+    {"name": "R_elbow", "body": "R_elbow", "offset": [0, 0, 0]},
+    {"name": "L_wrist", "body": "L_wrist", "offset": [0, 0, 0]},
+    {"name": "R_wrist", "body": "R_wrist", "offset": [0, 0, 0]},
+    {"name": "L_hand_tip", "body": "L_hand", "offset": [0, "handY-handH/2", 0]},
+    {"name": "R_hand_tip", "body": "R_hand", "offset": [0, "handY-handH/2", 0]},
+    {"name": "L_hand_edge", "body": "L_hand", "offset": ["handW/2", "handY", 0], "why": "the paddle's outer edge: shows the forearm roll (EL_R), which the tip alone cannot"},
+    {"name": "R_hand_edge", "body": "R_hand", "offset": ["-handW/2", "handY", 0]}
+  ],
+  "skeleton": [["head", "neck"], ["neck", "base"], ["neck", "chest_front"],
+               ["L_shoulder", "R_shoulder"], ["L_shoulder", "L_elbow"], ["L_elbow", "L_wrist"], ["L_wrist", "L_hand_tip"],
+               ["R_shoulder", "R_elbow"], ["R_elbow", "R_wrist"], ["R_wrist", "R_hand_tip"],
+               ["L_hand_tip", "L_hand_edge"], ["R_hand_tip", "R_hand_edge"]],
+  "leftRight": "L_/R_ name prefixes are swapped for a mirrored image (YOLO flip_idx) and tried swapped by the fitter",
+  "facing": {
+    "_about": "yaw of the robot's front seen from the camera, degrees: 0 = faces the camera",
+    "labels": [{"id": "front", "th": "หันหน้า", "from": -45, "to": 45},
+               {"id": "left", "th": "หันซ้ายให้กล้อง", "from": 45, "to": 135},
+               {"id": "back", "th": "หันหลัง", "from": 135, "to": 225},
+               {"id": "right", "th": "หันขวาให้กล้อง", "from": 225, "to": 315}]
+  },
+  "camera": {
+    "_about": "first guess for a camera never calibrated; the fit refines it. lab 2026-10-28: PC webcam 0, 640x480 ~30 fps",
+    "width": 640, "height": 480, "fovDeg": 60, "distanceMm": 1500, "heightMm": 100
+  },
+  "fit": {
+    "minConf": 0.3,
+    "priorWeight": 0.05,
+    "_priorWeight": "pull (per degree, in pixels) toward the start pose, so a joint the view cannot see stays put",
+    "iterations": 60,
+    "yawStarts": [0, 90, 180, 270],
+    "swapMargin": 0.7,
+    "_swapMargin": "left/right swapped is believed only when its error is below this share of the unswapped",
+    "seenWeight": 30,
+    "_seenWeight": "pixels of penalty per mm a seenFrom:front keypoint is more than seenMarginMm on the wrong side of the neck (seen but behind, or unseen inside the picture but in front)",
+    "seenMarginMm": 10,
+    "restartPx": 4,
+    "restarts": 6,
+    "_restarts": "a frame whose fit is worse than restartPx (rms) is fitted again from this many random poses; the best wins",
+    "swapTryPx": 6
+  },
+  "compare": {
+    "okDeg": 6, "warnDeg": 12,
+    "lagSearchS": 0.6, "lagStepS": 0.02,
+    "stuckMoveDeg": 15, "stuckSeenDeg": 3
+  },
+  "calibrate": {
+    "lengths": ["upperLenL", "upperLenR", "foreLenL", "foreLenR", "shoulderX", "shoulderY"],
+    "lengthRangeMm": 60, "zeroRangeDeg": 20,
+    "zeroFixed": ["WAIST"],
+    "_zeroFixed": "a waist zero error looks exactly like the camera standing elsewhere (nothing else on the robot is fixed to the floor), so it is not fitted",
+    "priorPx": 0.5,
+    "_about": "suggestions only: nothing is written to the rig (user 2026-10-23: axes, senses, zero and home are tuned to the real robot)"
+  },
+  "synth": {
+    "out": ".local/robot_pose/synth",
+    "azimuthDeg": [0, 360], "elevationDeg": [-15, 35], "distanceMm": [900, 2600],
+    "fovDeg": [45, 75], "lookJitterMm": 120, "seed": 1
+  },
+  "detector": {
+    "_about": "a YOLO pose model trained on synth + lab frames (handoff/tasks/robot-pose-data.md); optional: needs `pip install ultralytics`",
+    "model": ".local/robot_pose/model/best.pt", "conf": 0.25
+  },
+  "reports": ".local/robot_pose/reports"
+}
