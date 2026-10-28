@@ -56,14 +56,22 @@ class Caption:
 class Film:
     """One ffmpeg process per camera, fed raw RGB frames on stdin."""
 
-    def __init__(self, path, w, h, fps, music=None, music_at=0.0, music_start=0.0):
+    def __init__(self, path, w, h, fps, length, music=None, music_at=0.0, music_start=0.0):
+        self.proc = subprocess.Popen(self.command(path, w, h, fps, length, music, music_at, music_start),
+                                     stdin=subprocess.PIPE)
+
+    @staticmethod
+    def command(path, w, h, fps, length, music=None, music_at=0.0, music_start=0.0):
         cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
                "-s", "%dx%d" % (w, h), "-r", str(fps), "-i", "-"]
         if music:
+            # Pad the song to the film's length: a slowed dance outlasts it, and -shortest then
+            # ended ffmpeg mid-film (Errno 22, cheer v2 at safe 60, 2026-10-28). A bare apad is
+            # endless and broke six 1080p films at once (ENOSPC queue), so it is bounded.
             cmd += ["-ss", "%.3f" % music_start, "-itsoffset", "%.3f" % music_at, "-i", str(music),
-                    "-map", "0:v", "-map", "1:a", "-c:a", "aac", "-shortest"]
-        cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", str(path)]
-        self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+                    "-map", "0:v", "-map", "1:a", "-af", "apad=whole_dur=%.3f" % length,
+                    "-c:a", "aac", "-shortest"]
+        return cmd + ["-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", str(path)]
 
     def write(self, frame):
         self.proc.stdin.write(frame.tobytes())
@@ -94,14 +102,14 @@ def film_round(n, label, seq, args, cfg, rig, facts, out):
     lookat[2] += rec["lookUpMm"] / 1000
     cams = {c["name"]: camera(mujoco, c, lookat) for c in rec["cameras"]}
     music_at = world.robots[0]["clock"].music_at or 0.0
-    films = {name: Film(out / ("round%02d_%s_%s.mp4" % (n, label, name)), w, h, fps,
+    end, step, shot = world.length() + 0.5, 1.0 / fps, 0.0
+    films = {name: Film(out / ("round%02d_%s_%s.mp4" % (n, label, name)), w, h, fps, end,
                         args.music, music_at, args.music_start) for name in cams}
     caption = Caption(rec["captionPx"])
     head = ["Round %d: %s" % (n, label),
             "board %.1f s / music %.1f s | hits %d | closest %s mm | worst follow %.1f deg"
             % (report["boardSeconds"], report["musicSeconds"], len(report["hits"]),
                report["closestMm"], report["worstFollowDeg"])]
-    end, step, shot = world.length() + 0.5, 1.0 / fps, 0.0
     try:
         while world.t < end:
             world.step_frame()
