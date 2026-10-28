@@ -155,6 +155,9 @@
 .pbar i{display:block;height:100%;width:0;background:var(--acc);transition:width 150ms}
 @media (max-width:430px){.flash{margin-left:0}.flash select{flex:1 1 100%}}
 @media (pointer:coarse){.flash select{padding:9px 10px}}
+/* The Tools tab has two cards since A51-2: side by side each got half the
+   page and every tool tile stacked alone (check_tools_list, 2026-10-28). */
+.card[data-tab="tools"]{grid-column:1/-1}
 /* A single grid preserves registry order without empty category columns. */
 .js-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:var(--sp-3);margin-top:var(--sp-4)}
 .mod.tool-tile{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;padding:var(--sp-4);margin:0;gap:var(--sp-2);min-width:0}
