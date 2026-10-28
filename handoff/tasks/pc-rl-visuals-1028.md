@@ -21,7 +21,9 @@ Ends with the line `ALL DONE`. Started 19:47 Bangkok; sets take 56-77 min (CPU/G
 YOLO pose (A52-3 step 3) on the same GPU: `.local/robot_pose/train/train.py n 16` in the venv
 `.local/yolo_venv` (system CUDA torch 2.11 + torchvision 0.26 cu128 + ultralytics 8.4.191),
 train = 20k renders, val = 36 LAB frames (`dataset_labval.yaml`), ~3 min/epoch, log train_n.log,
-result_yolo11n.json. Then `train.py s`, then step 4 on `.local/lab_1028/ccl_v5_cap060.mp4`
+result_yolo11n.json. The first n leg was killed at epoch 47 (shell 2 h limit); now detached:
+`.local/robot_pose/train/run_all.ps1` (n --resume from last.pt, then s; legs.log, train_n_resume.log
+UTF-16, train_s.log; best -> .local/robot_pose/model/best_{n,s}.pt). Then `train.py s`, then step 4 on `.local/lab_1028/ccl_v5_cap060.mp4`
 (ccl_v5_p060.mp4 is only the aborted crash clip, not the cap-60 run).
 
 Queued after RL + YOLO (coordinator 2026-10-29): pull main once PR #104 merged, close every program
