@@ -11,13 +11,15 @@ from pathlib import Path
 
 import numpy as np
 
+from tools.layout import RepoLayout
+
 
 class CadAppearance:
     def __init__(self, kp):
         self.cfg = kp.cfg["render"]["cad"]
-        code = next((p for p in Path(__file__).resolve().parents if p.name == "code"), None)
-        self.root = code / self.cfg["source"] if code else Path(self.cfg["source"])
-        self.cache = code / ".local/robot_pose/mesh_cache" if code else None
+        code = RepoLayout(__file__).real          # meshes are git-ignored: the real tree has them
+        self.root = code / self.cfg["source"]
+        self.cache = code / ".local/robot_pose/mesh_cache"
         self.enabled = bool(self.cfg["enabled"] and self.cache and all(
             (self.root / (v + ".STL")).is_file() for v in self.cfg["links"].values()))
         self.kp = kp

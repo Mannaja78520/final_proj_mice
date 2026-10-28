@@ -54,7 +54,8 @@ def run(t):
                 t.ok(False, "non-private output refused", str(path))
             except ValueError:
                 t.ok(True, "non-private output refused", str(path))
-        code = next(p for p in Path(__file__).resolve().parents if p.name == "code")
+        from tools.robot_pose.render_mujoco import REAL as code
+        (code / ".local").mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=code / ".local", prefix="robot_pose_qc_") as temp:
             root = Path(temp)
             rows = [{"name": f"test{i}", "split": "train", "pose": kp.rig["home"], "camera": cam.to_json()}

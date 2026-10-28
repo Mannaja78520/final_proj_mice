@@ -9,18 +9,22 @@ from pathlib import Path
 
 import numpy as np
 
+from tools.layout import RepoLayout
+
 from .camera import Camera
 from .keypoints import RobotKeypoints
 from .render_scene import RenderScene
 from .synth import SynthViews, V_HIDDEN, V_OFF, V_SEEN
 
+# The real repo root, also from a .staging copy (the copy has no .local of its own).
+# Was "the folder named code": that name exists only on the PC.
+REAL = RepoLayout(__file__).real
+
 
 def private_path(value):
     """Dataset/media destinations must be explicit and under this PC's private root."""
     path = Path(value)
-    private = Path(__file__).resolve().parents[4] / ".local"
-    # A git worktree can sit several levels below code; use the code ancestor.
-    private = next((p / ".local" for p in Path(__file__).resolve().parents if p.name == "code"), private)
+    private = REAL / ".local"
     if not path.is_absolute() or not path.resolve().is_relative_to(private.resolve()):
         raise ValueError(f"use an absolute path inside {private}")
     return path

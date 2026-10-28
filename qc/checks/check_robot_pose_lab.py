@@ -25,7 +25,8 @@ def run(t):
     uv, _ = camera.project(kp.points3d(kp.rig["home"]))
     names = ["L_shoulder", "R_shoulder", "L_elbow", "R_elbow"]
     anchors = {n: uv[kp.index[n]].tolist() for n in names}
-    code = next(p for p in Path(__file__).resolve().parents if p.name == "code")
+    from tools.robot_pose.render_mujoco import REAL as code
+    (code / ".local").mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=code / ".local", prefix="robot_pose_lab_qc_") as temp:
         root = Path(temp)
         (root / "home.log").write_text("HOME OK home T=2000ms\n", encoding="utf-8")

@@ -1,4 +1,6 @@
 """Static MuJoCo geometry from Studio's NongTree; no simulation or GPU tensors."""
+import os
+import sys
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -14,6 +16,10 @@ class RenderScene:
     """One compiled scene, moved to exact tree frames for each labelled pose."""
 
     def __init__(self, kp, width, height):
+        # A Linux box with no screen (the cloud QC) has no GL window: render
+        # off-screen with OSMesa there. Windows and a desktop keep MuJoCo's default.
+        if sys.platform.startswith("linux") and not os.environ.get("DISPLAY"):
+            os.environ.setdefault("MUJOCO_GL", "osmesa")
         import mujoco
         self.mj, self.kp = mujoco, kp
         root = ET.Element("mujoco", model="nong_pose")
