@@ -123,6 +123,11 @@ def generated(rel=""):
 # after one which happened to insert the path, and the suite passes or fails
 # depending on the order the files are discovered in.
 sys.path.insert(0, str(CODE / "tools"))
+# The REAL tree (main), seen from a working copy in .staging/<task> or from
+# main itself. One rule, config/layout.json (A51-1): never CODE.parent.
+from layout import RepoLayout  # noqa: E402
+LAYOUT = RepoLayout(CODE)
+REAL = LAYOUT.real
 
 
 # ---------------------------------------------------------------- hub

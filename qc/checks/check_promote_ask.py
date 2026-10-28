@@ -90,7 +90,7 @@ def run(t):
     said = (main / "docs" / "BRIDGE.md").read_text(encoding="utf-8")
     t.ok("REQUEST" in said and "theirs.txt" in said,
          "the refusal is asked in BRIDGE, where every agent reads", said[-300:])
-    t.ok(not (main / ".staging-coordination.lock").exists(),
+    t.ok(not P._book("coordination_lock", "").exists(),
          "and the shared BRIDGE lock is released afterwards")
 
     # tools/bridge.py is the one-command way to the same log and lock

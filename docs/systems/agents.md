@@ -19,14 +19,12 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 ## Files (38)
 
 - `AGENTS.md`
-- `CHANGELOG.md`
 - `CLAUDE.md`
 - `GEMINI.md`
 - `HANDOFF.md`
-- `NEXT_SESSION.doc.js`
-- `NEXT_SESSION.html`
-- `NEXT_SESSION.md`
 - `README.md`
+- `config/layout.json`
+- `docs/LAYOUT.md`
 - `docs/systems.json`
 - `handoff/TEMPLATE.md`
 - `handoff/tasks/friend-face-server.md`
@@ -39,6 +37,7 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `handoff/tasks/rl-compare-1027.md`
 - `handoff/tasks/robot-hotspot-live.md`
 - `handoff/tasks/robot-tests.md`
+- `handoff/tasks/tidy-layout-1027.md`
 - `handoff/tasks/ui-ux-overhaul-1025.md`
 - `handoff/tasks/voice-human-tone.md`
 - `handoff/tasks/voice-keys.md`
@@ -48,6 +47,7 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `tools/bridge.py`
 - `tools/handoff.py`
 - `tools/handover.py`
+- `tools/layout.py`
 - `tools/livedoc.py`
 - `tools/local_panel.py`
 - `tools/make_app_branch.py`
@@ -65,7 +65,7 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 
 - nothing
 
-## Checks that test it (22)
+## Checks that test it (23)
 
 - `check_branch`
 - `check_designer_first`
@@ -86,8 +86,9 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `check_qc_probe_integrity`
 - `check_read_rules`
 - `check_readme_routes`
+- `check_root_tidy`
 - `check_stale_build`
 - `check_systems`
 - `check_translate`
 
-Run them: `python qc/run_qc.py --no-build check_branch check_designer_first check_dev_tools check_faces_count check_handoff_first check_history check_livedoc check_local_panel check_onefile check_packing_list check_panel check_plan_areas check_plan_live check_plan_owner check_plan_updates check_promote_ask check_qc_probe_integrity check_read_rules check_readme_routes check_stale_build check_systems check_translate`
+Run them: `python qc/run_qc.py --no-build check_branch check_designer_first check_dev_tools check_faces_count check_handoff_first check_history check_livedoc check_local_panel check_onefile check_packing_list check_panel check_plan_areas check_plan_live check_plan_owner check_plan_updates check_promote_ask check_qc_probe_integrity check_read_rules check_readme_routes check_root_tidy check_stale_build check_systems check_translate`

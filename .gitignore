@@ -116,3 +116,6 @@ nong/main_python_set_nong/rig_cad.json
 
 # A48: the real CAD joints dumped by check_urdf_look (PC only)
 qc/_urdf_real.json
+
+# A51-1: what tools and tests write on one PC (config/layout.json "out")
+/_out/

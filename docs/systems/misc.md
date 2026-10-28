@@ -13,7 +13,7 @@ One-off scripts and experiments kept for reference. Move a file out of here when
 Everything matching:
 
 - `scient_test/`
-- `auto_click/`
+- `tools/auto_click/`
 - `*`
 
 ## Depends on

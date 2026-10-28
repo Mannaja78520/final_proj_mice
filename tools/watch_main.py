@@ -21,9 +21,11 @@ import sys
 import time
 import uuid
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from layout import RepoLayout  # noqa: E402  one root rule for every tool (A51-1)
 
 HERE = Path(__file__).resolve().parent.parent
-REAL = HERE.parent if HERE.name.startswith(".staging") else HERE
+REAL = RepoLayout(HERE).real
 
 POLL, SETTLE, SWEEP = 2.0, 3.0, 300.0
 MAX_NAMES = 20
@@ -63,11 +65,12 @@ def read_hash(P, path):
 
 def landed(P, main):
     """Every (path, hash) a promote wrote."""
-    seen = set()
-    try:
-        lines = (main / P.LANDED_LOG).read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return seen
+    seen, lines = set(), []
+    for log in RepoLayout(REAL).rooted(main).books("landed"):   # new home, then old
+        try:
+            lines += log.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
     for line in lines:
         try:
             seen.update(json.loads(line).get("files", {}).items())
@@ -77,12 +80,14 @@ def landed(P, main):
 
 
 def trees(P, main):
-    """Working copies with a base record: the listed ones and any .staging* folder."""
+    """Working copies with a base record: the listed ones and every copy
+    folder, .staging/<task> and the old .staging-xxx alike (A51-1)."""
     found = set()
-    listed = main / P.TREES_LIST
-    if listed.is_file():
-        found.update(Path(x) for x in listed.read_text(encoding="utf-8").split("\n") if x.strip())
-    found.update(d for d in main.glob(".staging*") if d.is_dir())
+    L = RepoLayout(REAL).rooted(main)
+    for listed in L.books("trees"):
+        if listed.is_file():
+            found.update(Path(x) for x in listed.read_text(encoding="utf-8").split("\n") if x.strip())
+    found.update(L.trees())
     return sorted(t for t in found if (t / P.BASE_NAME).is_file())
 
 
@@ -167,7 +172,7 @@ def single_instance(main):
     """Lock dir holding pid + process start time. A dead or different process
     with that pid is proof of a stale lock; age alone never is."""
     import psutil
-    lock = main / ".staging-watch.lock"
+    lock = RepoLayout(REAL).rooted(main).book("watch_lock")
     me = psutil.Process()
     token = {"pid": me.pid, "created": me.create_time(), "token": uuid.uuid4().hex,
              "agent": os.environ.get("MICE_AGENT", "")}

@@ -1,0 +1,73 @@
+{
+  "_why": "Where things live in this repo, as DATA (A51-1, user 2026-10-27: the root kept filling up with working copies and one-off scripts). tools/layout.py (RepoLayout) reads it; docs/LAYOUT.md is generated from it (python tools/layout.py build); check_root_tidy fails on a root entry not listed here. Add a folder = add one line here.",
+
+  "staging": {
+    "_why": "Every working copy promote.py --init makes lives INSIDE home, e.g. .staging/main. The prefix still marks a working copy anywhere (old .staging-xxx trees keep working), so skip rules and root detection match by prefix.",
+    "prefix": ".staging",
+    "home": ".staging",
+    "default": "main",
+    "books": {
+      "_why": "Paths from the real root. The two lasting files live in the home; the three LOCKS stay at the root on purpose: they exist only while held, and agents, old branches and docs/COORDINATION.md take the coordination lock by that exact path - moving it would let two writers in at once.",
+      "landed": ".staging/.staging-landed.jsonl",
+      "trees": ".staging/.staging-trees.txt",
+      "promotion_lock": ".staging-promotion.lock",
+      "coordination_lock": ".staging-coordination.lock",
+      "watch_lock": ".staging-watch.lock"
+    }
+  },
+
+  "out": {
+    "_why": "Everything a tool or a test writes for one PC goes under here. Git-ignored; deleting it loses nothing that is in git.",
+    "home": "_out",
+    "kinds": {
+      "scratch": "experiments and samples (was scratch/)",
+      "test_media": "photos and videos for face/video tests (was _photo_test/, _video_test/)",
+      "runs": "results of long experiments (RL, benchmarks) a tool saves"
+    }
+  },
+
+  "root": {
+    "files": {
+      "README.md": "what this project is, how to start",
+      "HANDOFF.md": "first file any AI reads: rules, where things are, how to hand off",
+      "CLAUDE.md": "Claude's short rules (read on every turn)",
+      "AGENTS.md": "Codex/GPT's rules",
+      "GEMINI.md": "Gemini's rules",
+      "promote.py": "staging -> real tree, only when QC is green",
+      "MiceHub.spec": "the ONE way to build MiceHub.exe",
+      "requirements.txt": "Python packages",
+      "PATCHES.md": "index of the numbered code patches (tools/save_code_patch.py)",
+      "promt.md": "the user's prompt log, written by the .claude hook",
+      ".gitignore": "what git never keeps",
+      ".qc-receipt.json": "this PC's last green QC (git-ignored)"
+    },
+    "dirs": {
+      "main_python": "the hub (MiceHub): server, device routes, web pages",
+      "nong": "Nong Studio (nong/main_python_set_nong): moves, sequences, simulator UI",
+      "firmware": "ESP32 firmware for every module (PlatformIO)",
+      "apps": "apps the hub serves: voice, faces, gacha, camera, photobooth, tv",
+      "shared": "web parts every page uses (shared/web/mice-ui.js)",
+      "config": "settings and registries (JSON), one file per subject",
+      "tools": "developer tools: plan, handoff, build, bench, layout",
+      "qc": "the QC suite (qc/run_qc.py, qc/checks/)",
+      "docs": "plan, architecture, system headers, references",
+      "handoff": "one task file per open task (handoff/tasks/)",
+      "llm": "the voice helper's local model data",
+      "scient_test": "measured experiments (results + scripts)",
+      "dist": "the built MiceHub.exe and its shortcuts",
+      ".staging": "working copies (git-ignored), one folder per task",
+      "_out": "what tools and tests write on this PC (git-ignored)",
+      ".claude": "Claude Code project settings and agents",
+      ".agents": "shared agent rules and skills",
+      ".vscode": "editor settings",
+      ".unsnooze": "update-check state",
+      ".local": "this PC's local installs (git-ignored)",
+      ".git": "git"
+    },
+    "tolerated": {
+      "_why": "Git-ignored things tools still make at the root. Reported, never a failure: they are on one PC only. The PC steps move them into _out/ or .staging/.",
+      "names": ["build", "__pycache__", ".pio", "patches_code", "scratch",
+                "_photo_test", "_video_test", ".qc-receipt.json"]
+    }
+  }
+}

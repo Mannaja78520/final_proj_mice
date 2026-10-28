@@ -1,3 +1,4 @@
+from pathlib import Path
 import argparse
 import time
 from datetime import datetime
@@ -13,7 +14,8 @@ DEFAULT_MINUTE = 15
 DEFAULT_SECOND = 0
 
 # Image to search
-DEFAULT_IMAGE = r"E:\\final_proj\\mice\\code\\auto_click\\chat_send_button_orange.png"
+# beside this script, wherever the repo is (A51-1: no fixed E:\\ path)
+DEFAULT_IMAGE = str(Path(__file__).resolve().parent / "chat_send_button_orange.png")
 
 # Confidence (0.0 - 1.0)
 DEFAULT_CONFIDENCE = 0.85
