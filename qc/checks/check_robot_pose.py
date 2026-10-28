@@ -104,10 +104,14 @@ def run(t):
     t.ok(all(w == g for w, g in ok), "front / left / back / right are told from every side", str(ok))
     t.ok(all(s and e < 2 for _, s, e in swaps), "keypoints with left and right swapped are noticed and undone",
          str(swaps))
-    blind = fit.fit_view(*(lambda v: (v["uv"], (v["vis"] == 2) * 1.0))(
-        sv.view(home, Camera.orbit(180, 10, 1500, (0, 100, 0), 60, 640, 480))))
-    t.ok(blind.facing == "back", "a photo from an unknown camera behind the robot says back", blind.facing)
-
+    # a photo from an unknown camera far behind (telephoto: almost no
+    # perspective), arms named by image side: only the chest marker NOT being
+    # seen says "back" - without it the mirrored front view fits as well
+    tele = Camera.orbit(180, 10, 8000, (0, 100, 0), 8, 640, 480)
+    v = sv.view(home, tele)
+    blind = fit.fit_view(v["uv"][kp.flip], ((v["vis"] == 2) * 1.0)[kp.flip])
+    t.ok(blind.facing == "back", "an unknown camera far behind the robot says back (the chest marker)",
+         blind.facing)
     # compare: lag, bias, stuck
     names = list(facts.joint_names)
     cmd = lambda tt: [90 + 40 * np.sin(tt + j) for j in range(10)]
