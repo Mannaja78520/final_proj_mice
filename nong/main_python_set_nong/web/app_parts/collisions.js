@@ -3,7 +3,9 @@
 // Bodies are capsules along the arm segments (radii from the built-in
 // shapes) with a small safety margin. Checked for every keyframe AND along
 // the interpolated path between keyframes (collisions often happen mid-move).
-const CLEAR = 4;         // safety margin (mm)
+// Safety margin (mm): anything closer counts as a hit. 10 mm for servo
+// backlash over shoulder + elbow (user 2026-10-27); DATA: safe_path.json clearMm.
+let CLEAR = 10;
 const R_ARM = 14, R_WRIST = 16, R_HEAD = 46;
 
 function distToBox(p, hx, hy, hz) { // 0 = inside the torso box
@@ -57,36 +59,7 @@ function fkPoints(p) {
 
 // returns null (safe) or a short reason string
 function collisionAt(p) {
-  const extra = RIG.extraClearanceMm ?? 0;
-  if (!Number.isFinite(extra) || extra < 0) return "the extra safety gap is invalid";
-  const clearance = CLEAR + extra;
-  const d = RIG.dims, k = fkPoints(p);
-  const hx = d.torsoW / 2, hy = d.torsoH / 2, hz = d.torsoD / 2;
-  const headC = new THREE.Vector3(0, hy + 68, 0);
-  const segs = [ // upper arms start next to the torso, so skip their first part
-    // radii come from the per-bar sizes in the rig (0=L upper, 1=L fore, 2=R upper, 3=R fore)
-    { n: "left upper arm",  a: k.shL, b: k.elL, r: RIG.barR[0] || R_ARM, t0: 0.4 },
-    { n: "left forearm",    a: k.elL, b: k.wrL, r: RIG.barR[1] || R_ARM, t0: 0.1 },
-    { n: "right upper arm", a: k.shR, b: k.elR, r: RIG.barR[2] || R_ARM, t0: 0.4 },
-    { n: "right forearm",   a: k.elR, b: k.wrR, r: RIG.barR[3] || R_ARM, t0: 0.1 },
-  ];
-  for (const s of segs) {
-    for (let i = 0; i <= 6; i++) {
-      const t = s.t0 + (1 - s.t0) * i / 6;
-      const pt = segPoint(s.a, s.b, t);
-      const r = t > 0.9 && s.n.includes("forearm") ? R_WRIST : s.r; // wrist ball
-      if (distToBox(pt, hx, hy, hz) < r + clearance) return s.n + " is too close to the body";
-      if (pt.distanceTo(headC) < r + R_HEAD + clearance) return s.n + " is too close to the head";
-    }
-  }
-  // left arm vs right arm (all segment pairs)
-  const L = [segs[0], segs[1]], R = [segs[2], segs[3]];
-  for (const sl of L)
-    for (const sr of R)
-      if (segSegDist(sl.a, sl.b, sr.a, sr.b) < sl.r + sr.r + clearance)
-        return sl.n + " is too close to the " + sr.n;
-  if (k.wrL.distanceTo(k.wrR) < 2 * R_WRIST + clearance) return "the hands are too close to each other";
-  return null;
+  return StudioCollisionGeometry.hit(p);
 }
 
 function clearBadMarks() { keys.forEach(k => delete k.bad); }

@@ -9,6 +9,8 @@
 // in qc/checks/check_safe_path.py.
 let SAFE = {
   planner: "rrt-star",      // "straight" refuses; rrt-connect remains available
+  clearMm: 10,              // every check: closer than this is a hit (CLEAR)
+  musicGapMm: 7,            // extra gap at the music pace: fast moves cut corners (nong_sim)
   checkDeg: 1,              // biggest joint change between two checked points
   stepDeg: 12,              // how far a tree grows per try
   goalBias: 0.2,
@@ -27,7 +29,7 @@ function loadSafeSettings(j) {
   const bounds = { checkDeg: [0.05, 10], stepDeg: [0.1, 180], goalBias: [0, 1],
     budgetMs: [1, 30000], liveBudgetMs: [1, 5000], shortcuts: [0, 500],
     seed: [0, 4294967295], seedBudgetMs: [0, 100], optimizeMs: [0, 1000],
-    sliceMs: [1, 50], maxNodes: [2, 10000], rewireFactor: [1, 5] };
+    sliceMs: [1, 50], maxNodes: [2, 10000], rewireFactor: [1, 5], musicGapMm: [0, 100], clearMm: [0, 50] };
   if (!j || typeof j !== "object") { SAFE_ERROR = "invalid path settings"; return false; }
   const next = { ...SAFE };
   for (const key of Object.keys(SAFE)) if (key in j) next[key] = j[key];
@@ -40,7 +42,7 @@ function loadSafeSettings(j) {
       SAFE_ERROR = "invalid path setting: " + key; return false;
     }
   }
-  Object.assign(SAFE, next); SAFE_ERROR = ""; return true;
+  Object.assign(SAFE, next); SAFE_ERROR = ""; CLEAR = SAFE.clearMm; return true;
 }
 fetch("safe_path.json").then(r => r.json()).then(loadSafeSettings).catch(() => {});
 function safeRevision() { return JSON.stringify([SAFE, SAFE_ERROR, RIG]); }
@@ -141,31 +143,31 @@ function* safeSearch(a, b, budgetMs, seed) {
 // A short connect search supplies an initial answer; rewiring can improve it.
 function* rrtStar(a, b, budgetMs, rnd, t0, stats) {
   const end = t0 + budgetMs;
-  const body = (q, f = 0.5) => q.concat([a[8] + (b[8] - a[8]) * f, a[9] + (b[9] - a[9]) * f]);
+  const body = q => q.slice();
   const distance = (p, q) => Math.hypot(...p.map((v, j) => v - q[j]));
   const free = (p, q) => !pathHit(body(p), body(q));
-  const goal = b.slice(0, ARMJ), nodes = [], goals = new Set();
+  const goal = b.slice(0, NJ), nodes = [], goals = new Set();
   const add = (q, up) => {
     const n = { q, up, children: new Set(), cost: up < 0 ? 0 : nodes[up].cost + distance(nodes[up].q, q) };
     nodes.push(n);
     if (up >= 0) nodes[up].children.add(nodes.length - 1);
     return nodes.length - 1;
   };
-  add(a.slice(0, ARMJ), -1);
+  add(a.slice(0, NJ), -1);
   const seeded = rrtConnect(a, b, Math.min(budgetMs * 0.25, SAFE.seedBudgetMs), rnd, t0);
-  if (seeded) for (let i = 1; i < seeded.length; i++) add(seeded[i].slice(0, ARMJ), nodes.length - 1);
+  if (seeded) for (let i = 1; i < seeded.length; i++) add(seeded[i].slice(0, NJ), nodes.length - 1);
   if (seeded) goals.add(nodes.length - 1);
   let best = seeded ? nodes.length - 1 : -1;
   let bestCost = best < 0 ? Infinity : nodes[best].cost;
   let improveUntil = seeded ? Math.min(end, performance.now() + SAFE.optimizeMs) : end;
   while (performance.now() < improveUntil && nodes.length < SAFE.maxNodes) {
-    const sample = rnd() < SAFE.goalBias ? goal : RIG.min.slice(0, ARMJ).map((l, j) => l + rnd() * (RIG.max[j] - l));
+    const sample = rnd() < SAFE.goalBias ? goal : RIG.min.slice(0, NJ).map((l, j) => l + rnd() * (RIG.max[j] - l));
     const ranked = nodes.map((n, i) => ({ i, d: distance(n.q, sample) })).sort((x, y) => x.d - y.d);
     const nearest = nodes[ranked[0].i].q;
     const gap = Math.max(...sample.map((v, j) => Math.abs(v - nearest[j])));
     if (gap < 1e-6) { yield; continue; }
     const q = nearest.map((v, j) => v + (sample[j] - v) * Math.min(1, SAFE.stepDeg / gap));
-    const k = Math.min(nodes.length, Math.ceil(SAFE.rewireFactor * Math.E * (1 + 1 / ARMJ) * Math.log(nodes.length + 1)));
+    const k = Math.min(nodes.length, Math.ceil(SAFE.rewireFactor * Math.E * (1 + 1 / NJ) * Math.log(nodes.length + 1)));
     const near = nodes.map((n, i) => ({ i, d: distance(n.q, q) })).sort((x, y) => x.d - y.d).slice(0, k);
     const parents = near.slice().sort((x, y) => nodes[x.i].cost + x.d - nodes[y.i].cost - y.d);
     let parent = -1;
@@ -205,21 +207,18 @@ function* rrtStar(a, b, budgetMs, rnd, t0, stats) {
   qs.reverse();
   return qs.map((q, i) => body(q, i / (qs.length - 1)));
 }
-// Two trees, one from each end, each try reaching for the other. Only the 8
-// ARM joints are searched: the waist and shrug turn the body and arms
-// together, so they cannot cause a hit (fkPoints holds them still) and they
-// simply glide from a to b along the path.
+// Search all joints: shoulder lift changes physical clearances too.
 function rrtConnect(a, b, budgetMs, rnd, t0) {
-  const lo = RIG.min.slice(0, ARMJ), hi = RIG.max.slice(0, ARMJ);
-  const body = (q, f) => q.concat([a[8] + (b[8] - a[8]) * f, a[9] + (b[9] - a[9]) * f]);
-  const arm = p => p.slice(0, ARMJ);
+  const lo = RIG.min.slice(0, NJ), hi = RIG.max.slice(0, NJ);
+  const body = q => q.slice();
+  const arm = p => p.slice(0, NJ);
   const free = (p, q) => !pathHit(body(p, 0.5), body(q, 0.5));
   const A = [{ q: arm(a), up: -1 }], B = [{ q: arm(b), up: -1 }];
   const near = (T, q) => {
     let best = 0, bd = Infinity;
     for (let i = 0; i < T.length; i++) {
       let d = 0;
-      for (let j = 0; j < ARMJ; j++) d += (T[i].q[j] - q[j]) ** 2;
+      for (let j = 0; j < NJ; j++) d += (T[i].q[j] - q[j]) ** 2;
       if (d < bd) { bd = d; best = i; }
     }
     return best;
@@ -292,6 +291,7 @@ function safeKeys(K, budgetMs, keepTime) {
     const plan = planSafe(prev.pose, k.pose, budgetMs);
     if (plan.fail) {
       prev.hold = (prev.hold || 0) + (k.t || 0) + (k.hold || 0);
+      if (Number.isFinite(k.sourceMs)) prev.sourceHoldEnd = k.sourceHoldEnd ?? k.sourceMs;
       tally[poseHit(k.pose) ? "dropped" : "failed"]++;
       continue;
     }
@@ -302,18 +302,41 @@ function safeKeys(K, budgetMs, keepTime) {
       const spare = (k.t || 0) - need.reduce((s, v) => s + v, 0);
       if (keepTime && spare < 0) {
         prev.hold = (prev.hold || 0) + (k.t || 0) + (k.hold || 0);
+        if (Number.isFinite(k.sourceMs)) prev.sourceHoldEnd = k.sourceHoldEnd ?? k.sourceMs;
         tally.failed++;
         continue;
       }
       tally.around++;
       const legT = i => Math.round(need[i] + Math.max(0, spare) * legs[i] / all);
-      plan.path.slice(1, -1).forEach((q, i) => out.push({ pose: q, hold: 0, tset: k.tset, via: true, t: legT(i) }));
+      const total = legs.reduce((s, _, i) => s + legT(i), 0), sourceFrom = prev.sourceHoldEnd ?? prev.sourceMs;
+      let elapsed = 0;
+      plan.path.slice(1, -1).forEach((q, i) => {
+        elapsed += legT(i);
+        const sourceMs = Number.isFinite(k.sourceMs) ? sourceFrom + (k.sourceMs - sourceFrom) * elapsed / total : undefined;
+        out.push({ pose: q, hold: 0, tset: k.tset, via: true, t: legT(i), sourceMs, sourceHoldEnd: sourceMs });
+      });
       k.t = legT(legs.length - 1);
     } else if (keepTime && minTime(prev.pose, k.pose) > (k.t || 0) + 1) {
       // a dropped pose before it made this move longer: go as far as the time
       // allows, along the line just checked clear (like vidReachSide)
       const f = Math.max(0, Math.min(1, ((k.t || 0) - 1) / minTime(prev.pose, k.pose)));
       k.pose = safeLerp(prev.pose, k.pose, f).map((v, j) => clampJ(j, v));
+    }
+    // Validate the actual shortened/rounded motion, including body joints.
+    const actualPrev = out[out.length - 1];
+    if (!keepTime) k.t = Math.max(k.t || 0, minTime(actualPrev.pose, k.pose));
+    if (keepTime && minTime(actualPrev.pose, k.pose) > k.t) {
+      const target = k.pose.slice(); let lo = 0, hi = 1, best = actualPrev.pose.slice();
+      for (let z = 0; z < 18; z++) {
+        const f = (lo + hi) / 2, q = safeLerp(actualPrev.pose, target, f).map((v, j) => clampJ(j, v));
+        if (minTime(actualPrev.pose, q) <= k.t) { best = q; lo = f; } else hi = f;
+      }
+      k.pose = best;
+    }
+    if (poseHit(k.pose) || pathHit(actualPrev.pose, k.pose)) {
+      actualPrev.hold = (actualPrev.hold || 0) + (k.t || 0) + (k.hold || 0);
+      if (Number.isFinite(k.sourceMs)) actualPrev.sourceHoldEnd = k.sourceHoldEnd ?? k.sourceMs;
+      tally.failed++; continue;
     }
     out.push(k);
   }

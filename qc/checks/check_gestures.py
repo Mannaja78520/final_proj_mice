@@ -131,7 +131,9 @@ def run(t):
     t.ok(v.get("A") == "true" and len(((fit.get("gestures") or {}).get("qc_round") or {}).get("in") or []) >= 1,
          "a gesture whose straight move from the resting hands hits the body is fitted with a way round",
          ((fit.get("gestures") or {}).get("qc_round") or {}).get("in"))
-    mix = _plan(base, text="qchit hello qcround", lang="en", ms=5000, seed=2)
+    # Larger physical envelopes can require longer RRT routes; give the word-selection
+    # fixture enough speech time without changing any runtime timing limit.
+    mix = _plan(base, text="qchit hello qcround", lang="en", ms=20000, seed=2)
     t.ok(mix.get("ok") and "qc_round" in [x["id"] for x in mix["picks"]]
          and "qc_hit" not in [x["id"] for x in mix["picks"]],
          "a gesture left out is never played; the one that goes round is", mix.get("picks"))

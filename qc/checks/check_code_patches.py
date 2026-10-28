@@ -38,8 +38,8 @@ TITLE = "every area of the project keeps numbered patches, restorable by number"
 
 
 def run(t):
-    code = F.CODE / ".staging"
-    if not code.is_dir():
+    code = F.LAYOUT.tree()                 # the default working copy, if there is one
+    if not (code / "tools").is_dir():
         code = F.CODE                      # checking the promoted tree works too
     saver = code / "tools" / "save_code_patch.py"
     t.ok(saver.is_file(), "there is one patcher for the project's code")

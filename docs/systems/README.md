@@ -9,6 +9,7 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 |---|---|
 | [hub-resources](hub-resources.md) | Machine-local configurable CPU/GPU/RAM policy, bounded capability discovery, next-load Voice budgets and independent client display choices. |
 | [hub](hub.md) | The hub program: HTTP server, the device routes (dev, modules, USB proxy, pairing, robot proxy), startup. Split into hub-* systems (A26-76, A26-93). |
+| [hub-extensions](hub-extensions.md) | This PC's apps as extensions (A51-2): which apps are installed here and where, add by folder (mice-app.json, app.json or a partner template), remove/restore, update; apps whose partner is missing are hidden. |
 | [hub-usb](hub-usb.md) | The hub's USB serial manager (one owner of every cable) and the port probe that finds which module is on which cable. |
 | [hub-flash](hub-flash.md) | Flashing a board: esptool over the cable, OTA over WiFi, chunks over the command channel, and images sent from another PC. |
 | [hub-show](hub-show.md) | The hub as the show clock: the show player, live audio to a speaker, the rig's one speaking queue and its speakers, saved shows by name, stop-all. |
@@ -23,6 +24,8 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 | [hub-web](hub-web.md) | The pages the hub serves: Home/Modules, help, login, and their patch snapshots. |
 | [shared-web](shared-web.md) | One stylesheet and theme set for every page (mice.css, themes), and the page parts every hub page is built from (mice-ui.js; guide docs/web_style.md). |
 | [studio](studio.md) | Nong Studio: pose editor, timeline, 3D monitor. |
+| [nong-sim](nong-sim.md) | Optional MuJoCo world: any number of Nongs play Studio sequences with servo lag, gravity and the board's clock (tools/nong_sim, user 2026-10-27). Nothing else needs it. |
+| [rl-compare](rl-compare.md) | Separate experiment: RL imitation policy vs Studio's video planner on the cheer v2 dances, same servo model and collision gap, scores + side-by-side videos (tools/rl_compare, user 2026-10-27). Nothing else needs it. |
 | [app-voice](app-voice.md) | Voice helper: speech in, answers, speech out. |
 | [app-gacha](app-gacha.md) | Prize machines (gachapon): several gacha boards, kinds, hand-over when one is empty, rules per event and person (local or Google Sheet), webhooks, the prize log; and which Voice answers give a prize plus the Voice question log (A47-2, A47-3); wins in the friend's games (/play/<id>/ + apps/all-jao/link.js) and app keys for other PCs (A47-6, A47-7). |
 | [app-faces](app-faces.md) | Face recognition app. |

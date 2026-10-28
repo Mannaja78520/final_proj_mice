@@ -37,6 +37,8 @@ import argparse
 import re
 import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from layout import RepoLayout  # noqa: E402  one root rule for every tool (A51-1)
 
 def _plan_path():
     """The REAL tree's plan, even when this file is running from .staging.
@@ -47,8 +49,7 @@ def _plan_path():
     todo and every annotation as missing.
     """
     here = Path(__file__).resolve().parent.parent
-    if here.name.startswith(".staging"):
-        here = here.parent
+    here = RepoLayout(here).real
     return here / "docs" / "PLAN.html"
 
 

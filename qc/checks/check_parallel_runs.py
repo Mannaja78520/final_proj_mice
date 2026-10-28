@@ -108,9 +108,13 @@ def run(t):
     spec.loader.exec_module(pr)
     t.ok(hasattr(pr, "_pick_staging"), "promote.py can be pointed at a tree")
     if hasattr(pr, "_pick_staging"):
-        t.eq(pr._pick_staging(".staging").name, ".staging",
-             "the default is still .staging")
+        home = F.LAYOUT.staging_home
+        flat = F.LAYOUT.flat_home          # an old flat .staging is still the default
+        t.eq(pr._pick_staging(None), home if flat else home / "main",
+             "the default is .staging/main (or an old flat .staging)")
         t.eq(pr._pick_staging(".staging-ui").name, ".staging-ui",
-             "and a second tree can be named")
+             "an old second tree can still be named")
+        t.eq(pr._pick_staging("ui"), F.REAL / ".staging-ui" if flat else home / "ui",
+             "and a new one lives INSIDE .staging, not beside the root (A51-1)")
         t.ok(pr._pick_staging(r"E:/somewhere/else").as_posix().endswith("somewhere/else"),
              "including one outside the repo")

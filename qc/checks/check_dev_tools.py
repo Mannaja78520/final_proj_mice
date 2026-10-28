@@ -156,7 +156,7 @@ def run(t):
     import shutil
     import tempfile
     from pathlib import Path
-    plan_src = F.CODE.parent / "docs" / "PLAN.html"
+    plan_src = F.REAL / "docs" / "PLAN.html"
     if not plan_src.is_file():
         plan_src = F.CODE / "docs" / "PLAN.html"
     work = Path(tempfile.mkdtemp(prefix="qc_thai_")) / "PLAN.html"
@@ -206,8 +206,10 @@ def run(t):
         (box / "qc").mkdir()
         (box / ".staging" / "qc").mkdir(parents=True)
         shutil.copy(F.CODE / "promote.py", box / "promote.py")
-        for tool in ("land.py", "plan.py"):
+        for tool in ("land.py", "plan.py", "layout.py"):
             shutil.copy(F.CODE / "tools" / tool, box / "tools" / tool)
+        (box / "config").mkdir()
+        shutil.copy(F.CODE / "config" / "layout.json", box / "config" / "layout.json")
         stub = ('import sys\nif __name__ == "__main__":\n'
                 '    print("QC PASS  5 passed, 0 failed in 0.1s")\n'
                 '    sys.exit(0)\n')
@@ -285,7 +287,8 @@ def run(t):
     # Drive both entry points, a stale history, and the unchanged Studio saver.
     box = Path(tempfile.mkdtemp(prefix="qc_handover_"))
     try:
-        scripts = ("tools/handover.py", "tools/snapshot.py",
+        scripts = ("tools/handover.py", "tools/snapshot.py", "tools/layout.py",
+                   "config/layout.json",
                    "tools/save_code_patch.py",
                    "nong/main_python_set_nong/save_patch.py",
                    "firmware/save_fw_patch.py")
@@ -326,14 +329,14 @@ def run(t):
                 shutil.copy2(child, stage / child.name)
 
         histories = ("patches_code", "nong/main_python_set_nong/patches", "firmware/patches")
-        for script in (scripts[2], scripts[3], scripts[4]):
+        for script in (scripts[4], scripts[5], scripts[6]):
             r = invoke(box, script, "main newer")
             t.eq(r.returncode, 0, "a direct patcher can advance main history")
         for rel in sources:
             (stage / rel).write_text("draft " + rel, encoding="utf-8")
         r = invoke(stage, "tools/handover.py", "sync")
         t.ok(r.returncode == 0, "sync reconciles newer main history", r.stderr[-300:])
-        r = invoke(stage, scripts[3], "standalone Studio draft")
+        r = invoke(stage, scripts[5], "standalone Studio draft")
         t.eq(r.returncode, 0, "Studio save_patch.py remains usable after sync")
         r = invoke(stage, "tools/handover.py", "save", "draft " + thai)
         t.ok(r.returncode == 0, "staging checkpoint saves the actual draft", r.stderr[-300:])

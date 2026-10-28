@@ -14,16 +14,20 @@
       "scene.js",
       "build_rig.js",
       "urdf_view.js",
+      "urdf_pieces.js",
       "rig_from_cad.js",
       "gizmo_rings.js",
       "picking_drag.js",
       "ik_4_dof_arm.js",
+      "collision_shapes.js",
       "collisions.js",
       "safe_path.js",
       "checked_motion.js",
       "sliders.js",
       "hand_hold.js",
       "timing.js",
+      "music_pace.js",
+      "servo_follow.js",
       "timeline.js",
       "yaml_export.js",
       "rig_setup_ui.js",
@@ -36,6 +40,15 @@
       "urdf_import.js",
       "robot_link.js",
       "robot_settings.js",
+      "video_body_motion.js",
+      "video_motion_smooth.js",
+      "video_appearance.js",
+      "video_routine_assignment.js",
+      "video_routine_sections.js",
+      "video_routines.js",
+      "video_tracking.js",
+      "video_rig_fit.js",
+      "video_checked_playback.js",
       "pose_from_video.js",
       "video_page.js",
       "dummy_link.js",
@@ -43,7 +56,8 @@
       "distances.js",
       "talk_gestures.js",
       "main_loop.js",
-      "boot.js"
+      "boot.js",
+      "panels.js"
     ]
   },
   "pages": [
@@ -57,6 +71,7 @@
         "complaints.js",
         "network.js",
         "tools.js",
+        "apps_manage.js",
         "page_version.js",
         "modules.js",
         "usb.js",
@@ -78,6 +93,7 @@
       "path": "main_python/web/help",
       "out": "main_python/web/help.html",
       "js": [
+        "topics.js",
         "search.js"
       ]
     }

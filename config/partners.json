@@ -18,7 +18,12 @@
     "open": "http://127.0.0.1:8080",
     "api": "http://127.0.0.1:8080",
     "health": "/",
-    "folder": "E:/final_proj/mice/All-Jao-Games",
+    // {parent} = the folder the hub's tree sits in (A51-2): survives the
+    // tree being moved or renamed. A PC that keeps it elsewhere picks the
+    // folder in Tools > Add app (this PC's extensions.json wins).
+    "folder": "{parent}/All-Jao-Games",
+    // how Add app knows a folder is this app without a file of ours in it
+    "detect": ["index.html", "claw-game.js", "wheel-engine.js"],
     "start": "python -m http.server 8080",
     "login": { "kind": "none", "path": "" },
     // A WIN GIVES A PRIZE (A47-6). The hub serves this folder read-only at
@@ -70,6 +75,7 @@
     "api": "http://127.0.0.1:8121",
     "health": "/api/health",
     "folder": "C:/Photobooth/Main/app",
+    "detect": ["scripts/run-main.ps1"],
     "refuseFolders": ["dummy"],
     "launch": [
       { "name": "booth", "cwd": "",
@@ -128,7 +134,8 @@
     },
     // MAIN, never the Dummy copy (user 2026-09-16: *run only main not
     // dummy*). The hub refuses a folder whose path holds a word listed here.
-    "folder": "E:/final_proj/mice/Face_Regonize",
+    "folder": "{parent}/Face_Regonize",
+    "detect": ["Start Reconize.vbs", "backend", "frontend"],
     // The commit of theirs Mice was last checked against: the folder was put
     // back on it on 2026-09-29 (thread "Fix Face_Regonize git pull"). A newer
     // one is only REPORTED on the Reconize screen (A9) - nothing turns off.

@@ -130,6 +130,7 @@ function selectKey(i) {
     livePause(); stopRobotSequence(); keepAwake(false);
   }
   token=seekToken;
+  servoPlay = null;          // the real-servo picture starts again where the clock lands
   selKey = i;
   let travel = 0;
   if (keys[i]) {
@@ -444,6 +445,11 @@ function renderTimeline() {
     mn.appendChild(mus);
     el.append(bar, idx, pv, tr, mn);
     if (musOpen.has(i) || keyCue(k, "play")) el.append(musicRow(k, i));
+    const lag = servoLag.forKey(i);   // the real servos trail this move (servo_follow.js)
+    if (lag && lag.level) {
+      el.classList.add("lag" + lag.level);
+      el.title = `the real servos fall ${Math.round(lag.deg)}° behind here (${JOINT_LABELS[lag.joint] || "joint " + (lag.joint + 1)})`;
+    }
     if (k.bad) { // collision found by checkCollisions(): mark the chip red
       el.classList.add("bad");
       const b = document.createElement("div");
@@ -454,6 +460,8 @@ function renderTimeline() {
     box.appendChild(el);
   });
   $("tlTime").textContent = (playT / 1000).toFixed(1) + "s / " + (totalMs() / 1000).toFixed(1) + "s";
+  musicPace.render();
+  if ($("servoStat")) $("servoStat").textContent = servoLag.summary();
   renderTimeBar();
 }
 
@@ -847,7 +855,8 @@ function keepAwake(on) {
   } catch (e) { /* never let this break playback */ }
 }
 
-async function togglePlay() {
+// opts.previewOnly: draw only, never drive the arm (the talk card's Show, A46-4)
+async function togglePlay(opts = {}) {
   if (timelinePreparing) { timelinePreparing=false;cancelSafeMotion("planning cancelled");return; }
   if (!playing) {
     const epoch=safeMotionEpoch;
@@ -870,7 +879,8 @@ async function togglePlay() {
   // question, and it is asked only when something is actually connected.
   if (!playing) {
     previewOnly = !checkedTimeline();
-    if (checkCollisions(false).length && (liveLinked() || hubDriven())) {
+    if (opts.previewOnly) previewOnly = true;
+    else if (checkCollisions(false).length && (liveLinked() || hubDriven())) {
       previewOnly = !crashGate("PLAY it on the robot");
       if (previewOnly) {
         const st = $("tlStat");
@@ -899,7 +909,7 @@ async function togglePlay() {
   //
   // So: taking control here always stops the module first, and giving up
   // control always stops the module too. Never two clocks on one robot.
-  stopRobotSequence();
+  if (!opts.previewOnly) stopRobotSequence();   // a preview leaves the robot alone
   if (!playing) { livePause(); return; }
   // The HUB plays it when the link goes through the hub: a native process,
   // never throttled, so the show survives this page being hidden or closed —

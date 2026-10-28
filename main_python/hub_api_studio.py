@@ -40,6 +40,35 @@ def gesture_library(store_path=None):
     return gestures.library(shipped, mine), mine
 
 
+def gesture_makers():
+    """config/gesture_makers.json: the rules and AI prompt that MAKE new
+    talk gestures (A46-4). Read per call, like the library."""
+    path = _hub.asset("config", "gesture_makers.json")
+    return (_hub.registry.load(path) if _hub.registry
+            else json.loads(path.read_text(encoding="utf-8")))
+
+
+def ask_ai_gesture(makers, text):
+    """(gesture, why-not) from the voice helper's think chain (cloud or this
+    PC, config/voice.json `use`): the helper only relays the reply, this
+    side cleans it to the library's format."""
+    base, why_not = _hub.voice_service_url()
+    if not base:
+        return None, "the voice helper has no address - %s" % why_not
+    body = json.dumps({"prompt": (makers.get("ai") or {}).get("prompt") or "",
+                       "text": text}).encode("utf-8")
+    req = urllib.request.Request(base + "/gesture", data=body, method="POST",
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            got = json.loads(r.read().decode("utf-8"))
+    except Exception as e:                  # noqa: BLE001 - helper off, old, slow
+        return None, "the voice helper did not answer (%s)" % e
+    if not got.get("ok"):
+        return None, got.get("error") or "no service answered"
+    return gestures.clean_made(got.get("text") or "", makers, text)
+
+
 class StudioRoutes:
     def api_gestures(self, method, path, q):
         # ---- talk gestures (A46-1): the library, Studio's fit, a plan, play ----
@@ -68,10 +97,25 @@ class StudioRoutes:
                 mine = gestures.merge_mine(gesture_library(store_path)[1], change)
                 _hub.write_atomic(store_path, json.dumps(mine, indent=1))
             return self.send_json({"ok": True, "lib": gesture_library(store_path)[0], **gestures.character_state(_hub.STUDIO, store_path)})
+        # New gestures for words no gesture has (A46-4): rules are open like
+        # plan; asking an AI spends a service's allowance, so /think is gated.
+        if path in ("/api/gestures/make", "/api/gestures/think") and method == "POST":
+            try:
+                makers = gesture_makers()
+            except Exception as e:          # noqa: BLE001
+                return self.send_err("config/gesture_makers.json could not be read: %s" % e)
+            text = str(data.get("text") or "").strip()[:500]
+            if not text:
+                return self.send_err("type something the robot might say")
+            if path.endswith("/make"):
+                return self.send_json({"ok": True, "made": gestures.make(lib, makers, text)})
+            made, why = ask_ai_gesture(makers, text)
+            return self.send_json({"ok": bool(made), "made": [made] if made else [], "why": why or ""})
         if path in ("/api/gestures/plan", "/api/gestures/play") and method == "POST":
             got = gestures.plan(lib, mine.get("fit"), data.get("text"), data.get("lang") or "",
                                 data.get("manner") or "", data.get("event") or "",
-                                data.get("ms") or 0, data.get("seed"))
+                                data.get("ms") or 0, data.get("seed"),
+                                data.get("extra") if path.endswith("/plan") else None)
             if path.endswith("/plan") or not got.get("ok"):
                 return self.send_json(got)
             dev = str(data.get("dev") or "")

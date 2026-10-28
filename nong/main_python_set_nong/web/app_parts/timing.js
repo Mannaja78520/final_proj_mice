@@ -28,7 +28,17 @@ function deltaDeg(from, to) {
 // so any speed above about 38 °/s produces the identical time. The number was
 // never wrong; it was invisible. Every caller that shows a time to a person
 // asks for the reason too.
-function minTimeWhy(from, to) {
+// The pace a sequence is planned and played at. One that plays a song (a
+// `play:` cue) or says `pace: music` follows its music: the board drops the
+// peak-speed cap to music_dps for that file (PACE MUSIC), and Studio plans the
+// same. Everything else keeps SAFE_DPS. Collisions, limits and servo max hold
+// in both.
+function planPace(K = keys) {
+  if (PACE_OVERRIDE) return PACE_OVERRIDE;
+  return K.some(k => keyCue(k, "play") || /^music\b/i.test(keyCue(k, "pace") || "")) ? "music" : "normal";
+}
+function paceCapDps(pace = planPace()) { return pace === "music" ? musicPace.cap() : SAFE_DPS; }
+function minTimeWhy(from, to, atPace) {
   // per joint (the slow WAIST servo counts too), the slowest joint wins
   let servo = 0, slowest = 0;
   for (let i = 0; i < NJ; i++) {
@@ -36,15 +46,18 @@ function minTimeWhy(from, to) {
     if (need > servo) { servo = need; slowest = i; }
   }
   // safety floor, same as firmware nongmath::safeDuration (ease peaks at pi/2 x average)
-  const peak = deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, SAFE_DPS);
+  const pace = atPace || planPace(), cap = paceCapDps(pace);
+  const peak = cap > 0 ? deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, cap) : 0;
   const need = Math.max(servo, peak);
   const ms = Math.max(MIN_MOVE_MS, Math.ceil(need * 1000));
   let why = "the 80 ms shortest-move floor", fix = "";
   if (need * 1000 > MIN_MOVE_MS) {
     if (peak >= servo) {
-      why = `the robot's peak speed limit, ${SAFE_DPS} °/s`;
-      fix = `Above about ${flatDps()} °/s nothing gets faster. Raise ` +
-            `Peak speed limit (Timing) to shorten it.`;
+      why = pace === "music" ? `the speed limit with music, ${cap} °/s`
+                             : `the robot's peak speed limit, ${SAFE_DPS} °/s`;
+      fix = pace === "music" ? "Raise Speed limit with music (Timing), or 0 for the servos' top speed."
+                             : `Above about ${flatDps()} °/s nothing gets faster. Raise ` +
+                               `Peak speed limit (Timing) to shorten it.`;
     } else {
       why = `${JOINT_LABELS[slowest] || ("joint " + (slowest + 1))} at its ` +
             `servo max, ${Math.round(jointMaxDps(slowest))} °/s`;
@@ -53,7 +66,8 @@ function minTimeWhy(from, to) {
   }
   return { ms, why, fix };
 }
-function minTime(from, to) { return minTimeWhy(from, to).ms; }
+// atPace: a list being planned that is not the open sequence (planPace(list))
+function minTime(from, to, atPace) { return minTimeWhy(from, to, atPace).ms; }
 // The show speed above which the peak limit decides every safety-limited move.
 // pi/2 is the ease curve's peak-to-average ratio, the same one the firmware uses.
 function flatDps() { return Math.floor(SAFE_DPS * 2 / Math.PI); }
@@ -170,8 +184,10 @@ function adoptBoardSafety(module) {
   // choice and must not be silently replaced after reconnecting to a board.
   const wasAuto = keys.map((k, i) => i > 0 && !timePinned(i) && k.t ===
     autoTime(keys[i - 1].pose, k.pose, keyDps(i)));
-  const changed = safe !== SAFE_DPS;
+  const music = Number(module.music_dps);
+  const changed = safe !== SAFE_DPS || (Number.isFinite(music) && music !== MUSIC_DPS);
   SAFE_DPS = safe;
+  if (Number.isFinite(music) && music >= 0) MUSIC_DPS = music;   // older boards: keep 0
   boardSafeDpsMax = max;
   boardSafePeer = module.link ? Number(module.peer) || 0 : 0;
   input.disabled = button.disabled = false;

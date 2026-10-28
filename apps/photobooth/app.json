@@ -5,5 +5,7 @@
   "name": "Photobooth",
   "blurb": "ถ่ายภาพพร้อมกรอบและสติกเกอร์ รับภาพผ่าน QR code",
   "icon": "📸",
-  "order": 35
+  "order": 35,
+  // listed only on a PC where this partner is installed (A51-2)
+  "needs": "photobooth"
 }

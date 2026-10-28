@@ -63,6 +63,9 @@ main_python/hub_password.txt
 main_python/voice_keys.json
 main_python/voice_keys.part
 main_python/faces_login.json
+# This PC's installed apps and where they are (A51-2): one per machine
+main_python/extensions.json
+main_python/extensions.json.tmp
 .qc-receipt.json
 
 # External partner game assets (code stays in All-Jao-Games repo, launcher only)
@@ -116,3 +119,6 @@ nong/main_python_set_nong/rig_cad.json
 
 # A48: the real CAD joints dumped by check_urdf_look (PC only)
 qc/_urdf_real.json
+
+# A51-1: what tools and tests write on one PC (config/layout.json "out")
+/_out/

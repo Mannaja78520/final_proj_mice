@@ -263,6 +263,9 @@ def run(t):
     (two / "tools").mkdir()
     (two / "docs").mkdir()
     _sh.copy(F.CODE / "tools" / "plan.py", two / "tools" / "plan.py")
+    _sh.copy(F.CODE / "tools" / "layout.py", two / "tools" / "layout.py")
+    (two / "config").mkdir()
+    _sh.copy(F.CODE / "config" / "layout.json", two / "config" / "layout.json")
     both = "<pre id='state'><code>STATE\n# RUNNING: nothing\n%s\n</code></pre>"
     (two / "docs" / "PLAN.html").write_text(
         both % "A1-1: todo   - on both plans\nA25-5: todo   - robot only",

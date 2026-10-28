@@ -34,10 +34,10 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from layout import RepoLayout  # noqa: E402  one root rule for every tool (A51-1)
 
-ROOT = Path(__file__).resolve().parent.parent
-if ROOT.name.startswith(".staging"):
-    ROOT = ROOT.parent
+ROOT = RepoLayout(Path(__file__).resolve().parent.parent).real
 BRANCH = "app"
 
 # (source, destination-in-branch). Directories are copied whole.

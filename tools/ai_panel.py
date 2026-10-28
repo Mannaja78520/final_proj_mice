@@ -74,12 +74,11 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from layout import RepoLayout  # noqa: E402  one root rule for every tool (A51-1)
 
 ROOT = Path(__file__).resolve().parent.parent
-if ROOT.name.startswith(".staging"):
-    REAL = ROOT.parent
-else:
-    REAL = ROOT
+REAL = RepoLayout(ROOT).real
 BRIEF = ROOT / "tools" / "ai_brief.txt"
 
 # The panel. Different FAMILIES, deliberately: two models from one family tend
