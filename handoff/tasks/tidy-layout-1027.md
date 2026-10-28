@@ -1,7 +1,7 @@
 # Tidy the code folder layout
 
 Owner: claude:10271959-0190
-Updated: 2026-10-27 20:20 +0000
+Updated: 2026-10-28 00:40 +0000
 Branch: claude/project-thread-9y1rwe
 Last commit: this checkpoint
 Plan: A51-1
@@ -13,7 +13,7 @@ folder so they stop piling up at the root; tidy the other folders; rename
 header map of what lives where. Plan: /mnt/project-files/layout/layout_plan_2026-10-27.md
 
 ## Doing now
-Full QC on the layout PR (pio build first), then PR + tell coordinator before merge.
+Merging PR #93; next PR 2 (apps as extensions).
 
 ## File status
 Baseline: 4c230e0
@@ -43,10 +43,11 @@ Baseline: 4c230e0
 
 ## Done
 - Survey + plan posted to the user.
-- Quick QC 6400/6: 3 need the pio firmware build (flash/OTA), plan-area heading fixed.
+- Quick QC 6400/6: 3 need the pio firmware build (flash/OTA, PlatformIO download limit in the container), plan-area heading fixed.
+- PR #93 full QC (after merging main f78ace9): 8922 passed, 6 failed; systems header fixed; the other 5 (check_link_states x2, check_studio_boot, check_tools_list, check_view: headless chromium dump-dom timeouts) fail the same on origin/main in this container (run alone, 2026-10-28).
 
 ## Next
-1. Full QC (`pio run -e mice_nong` in firmware/ first), open PR, tell coordinator before merge.
+1. PC steps after #93 merges, ONLY when coordinator says the PC is quiet (RL running): pull; move the 20 `.staging-*` trees into `.staging/<name>` (move, no delete); move build.bat to _out/.
 2. PR 2: per-PC app registry (extensions): hub Add app / remove, hide missing parts, partner folders relative + per-PC override, install guide for client PCs.
 3. Later with user OK: rename code -> mice_system, move parent-folder items (plan file section 3).
 
