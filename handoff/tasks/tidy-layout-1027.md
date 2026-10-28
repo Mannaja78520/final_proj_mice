@@ -4,7 +4,7 @@ Owner: claude:10271959-0190
 Updated: 2026-10-28 00:40 +0000
 Branch: claude/project-thread-9y1rwe
 Last commit: this checkpoint
-Plan: A51-1 (PR #93 merged e1eaefd), A51-2
+Plan: A51-1 (PR #93 merged e1eaefd), A51-2 (PR #95 merged b7005d8) - both done
 
 ## Goal
 User 2026-10-27: the code folder is cluttered; put .staging copies in their own
@@ -13,12 +13,7 @@ folder so they stop piling up at the root; tidy the other folders; rename
 header map of what lives where. Plan: /mnt/project-files/layout/layout_plan_2026-10-27.md
 
 ## Doing now
-A51-2 (PR 2): apps as extensions. main_python/extensions.py (class Extensions:
-per-PC store extensions.json beside hub_auth.json; detect mice-app.json / app.json /
-partners.json "detect"; add/remove(hide)/restore/update; {data}/{parent} folder
-tokens), hub_api_extensions.py routes, /api/apps hides apps whose "needs" partner
-is missing, Tools tab add/remove UI, help part, docs/extensions.md + docs/INSTALL.md,
-check_extensions.
+Nothing running. Code for A51-1 and A51-2 is merged. What is left waits on the PC or the user (Next).
 
 ## File status
 Baseline: e1eaefd (PR #93 merged). PR 2 = A51-2.
@@ -47,9 +42,9 @@ Baseline: e1eaefd (PR #93 merged). PR 2 = A51-2.
 - PR #93 full QC (after merging main f78ace9): 8922 passed, 6 failed; systems header fixed; the other 5 (check_link_states x2, check_studio_boot, check_tools_list, check_view: headless chromium dump-dom timeouts) fail the same on origin/main in this container (run alone, 2026-10-28).
 
 ## Next
-1. PC steps after #93 merges, ONLY when coordinator says the PC is quiet (RL running): pull; move the 20 `.staging-*` trees into `.staging/<name>` (move, no delete); move build.bat to _out/.
-2. PR 2 (A51-2) = PR #95, full QC 8887/6 (5 = main container chromium timeouts, rs485_census green alone). After merge the PC must pull + rebuild MiceHub.exe.
-3. Later with user OK: rename code -> mice_system, move parent-folder items (plan file section 3).
+1. PC steps: /mnt/project-files/layout/pc_steps_A51-1.md. Section 4 (#95 pull + exe rebuild) is queued by the coordinator in the PC session. Sections 2-3 (.staging moves) run only after RL training ends. The coordinator sends them; this thread never does.
+2. At the end: one combined list of asks for the friend (old pending asks + mice-app.json in their repos, docs/extensions.md "official" example). Sources: /mnt/project-files/friend_api/*.md, docs/gacha/friend_requests.md.
+3. Later, with the user's OK: rename code -> mice_system (RC start command, device folder, .claude hooks, dist/Apps/*.lnk via tools/make_app_shortcuts.py, docs, memory); moves in the parent folder (photobooth/ is OK'd).
 
 ## Blocked
 - Rename code -> mice_system and parent-folder moves: after other threads merge, user OK.
