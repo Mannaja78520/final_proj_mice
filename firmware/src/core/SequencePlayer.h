@@ -1,6 +1,8 @@
 #pragma once
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include "core/SeqScan.h"
+#include "core/SDStore.h"
 
 class CommandRouter;
 class SDStore;
@@ -67,10 +69,24 @@ public:
 private:
     SDStore* sd_ = nullptr;
     CommandRouter* router_ = nullptr;
-    JsonDocument* doc_ = nullptr;
+    // A card file through SDStore::readChunk: one short locked read per refill,
+    // so an upload or a FILES listing never waits behind a whole show.
+    struct SdSource : SeqSource {
+        SDStore* sd = nullptr;
+        String path;
+        int read(uint32_t off, uint8_t* buf, size_t len) override {
+            return sd->readChunk(path.c_str(), off, buf, len);
+        }
+    };
+    SdSource sdSrc_;
+    SeqTextSource textSrc_;
+    String playText_;            // the RAM show being played (startText)
+    SeqSource* src_ = nullptr;   // which one is playing
+    SeqScan scan_;
+    JsonDocument* head_ = nullptr;   // name/loop/next: the header only
+    JsonDocument step_;              // the step being played
     bool running_ = false;
     bool loopSeq_ = false;
-    size_t idx_ = 0;
     String file_;
     uint32_t waitUntil_ = 0;
     uint32_t due_ = 0;   // when the last timed step ENDS on the file's clock
@@ -82,6 +98,7 @@ private:
     String ramName_;     // the name it arrived under, for MOVE to check
 
     bool startAt(const String& path, String& err, int depth);
+    bool begin_(const String& name, int depth, String& err);
     void execStep(JsonVariant step);
     void endOfShow();   // the show ended by itself: end a REPEATING track too
 };

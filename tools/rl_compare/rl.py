@@ -93,12 +93,70 @@ class RLRun:
             obs = env.observe()
         return torch.stack(cs), torch.stack(qs)
 
-    def train(self, on_round=None):
-        cfg, rounds = self.cfg, []
+    # ---- resume (lab 2026-10-28: the full run stopped at round 12/20 by hand
+    # and a rerun began at round 1 again, ~115 s a round thrown away) ----------
+    SAME_RUN_IGNORES = ("rounds",)   # more rounds asked = the same run, longer
+
+    def _same_config(self):
+        saved = self.out / "config.json"
+        if not saved.exists():
+            return True, "no config.json (a run from before resume existed): assumed the same"
+        old = json.loads(saved.read_text(encoding="utf-8"))
+        strip = lambda c: {k: v for k, v in c.items() if k not in self.SAME_RUN_IGNORES}
+        if strip(old) != strip(json.loads(json.dumps(self.cfg))):
+            return False, "the config changed since those rounds were trained"
+        return True, ""
+
+    def saved_rounds(self):
+        """Rounds 1..k that finished (round.json and policy.pt both written), in order."""
+        rounds = []
+        for r in range(1, self.cfg["rounds"] + 1):
+            folder = self.out / ("round_%02d" % r)
+            if not ((folder / "round.json").exists() and (folder / "policy.pt").exists()):
+                break
+            rounds.append(json.loads((folder / "round.json").read_text(encoding="utf-8")))
+        return rounds
+
+    def resume(self):
+        """Load the last finished round's weights (and optimizer, if saved). -> rounds so far."""
+        rounds = self.saved_rounds()
+        if not rounds:
+            return []
+        same, why = self._same_config()
+        if not same:
+            print("  not resuming: %s (use --fresh to start over)" % why, flush=True)
+            raise SystemExit(2)
+        last = self.out / ("round_%02d" % rounds[-1]["round"])
+        self.model.load_state_dict(torch.load(last / "policy.pt", map_location=self.device))
+        state = last / "train_state.pt"
+        if state.exists():
+            st = torch.load(state, map_location="cpu", weights_only=False)
+            self.ppo.opt.load_state_dict(st["opt"])
+            torch.set_rng_state(st["rng"])
+            if self.device == "cuda" and st.get("cudaRng") is not None:
+                torch.cuda.set_rng_state_all(st["cudaRng"])
+            note = "weights + optimizer"
+        else:
+            note = "weights only (optimizer starts fresh: rounds saved before resume existed)"
+        print("  resuming after round %d/%d: %s %s" % (rounds[-1]["round"], self.cfg["rounds"], note, why),
+              flush=True)
+        return rounds
+
+    def _save_state(self, folder):
+        torch.save({"opt": self.ppo.opt.state_dict(), "rng": torch.get_rng_state(),
+                    "cudaRng": torch.cuda.get_rng_state_all() if self.device == "cuda" else None},
+                   folder / "train_state.pt")
+
+    def train(self, on_round=None, resume=True):
+        cfg = self.cfg
+        rounds = self.resume() if resume else []
+        self.out.mkdir(parents=True, exist_ok=True)
+        (self.out / "config.json").write_text(json.dumps(cfg, indent=1), encoding="utf-8")
         obs = self.env.reset()
         sync = (lambda: torch.cuda.synchronize()) if self.device == "cuda" else (lambda: None)
-        total = 0.0
-        for r in range(1, cfg["rounds"] + 1):
+        total = rounds[-1]["totalTrainS"] if rounds else 0.0
+        first = len(rounds) + 1
+        for r in range(first, cfg["rounds"] + 1):
             sync()
             t0 = time.perf_counter()
             log = []
@@ -116,10 +174,12 @@ class RLRun:
                     "samples": cfg["updatesPerRound"] * cfg["ppo"]["steps"] * cfg["envs"] * r,
                     "reward": float(np.mean([x["reward"] for x in log])),
                     "touchEnds": float(np.mean([x["touchEnds"] for x in log])),
-                    "kl": float(np.mean([x["kl"] for x in log]))}
+                    "kl": float(np.mean([x["kl"] for x in log])),
+                    "resumedAt": first if first > 1 else None}
             folder = self.out / ("round_%02d" % r)
             folder.mkdir(parents=True, exist_ok=True)
             torch.save(self.model.state_dict(), folder / "policy.pt")
+            self._save_state(folder)
             np.savez_compressed(folder / "motion.npz", c=c.cpu().numpy(), q=q.cpu().numpy())
             if on_round:
                 info.update(on_round(r, c, q) or {})
