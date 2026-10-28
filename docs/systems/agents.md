@@ -31,7 +31,6 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `handoff/tasks/gachapon.md`
 - `handoff/tasks/gemini-studio-tv-help-1024.md`
 - `handoff/tasks/handoff-file-status-1025.md`
-- `handoff/tasks/help-ui-1024.md`
 - `handoff/tasks/lab-day.md`
 - `handoff/tasks/person-tests.md`
 - `handoff/tasks/rl-compare-1027.md`
