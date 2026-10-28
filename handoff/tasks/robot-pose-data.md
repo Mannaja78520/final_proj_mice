@@ -2,7 +2,7 @@
 
 Owner:
 Updated: 2026-10-28 21:10 (Bangkok)
-Branch: (new branch from main after PR "No-robot 2026-10-28" merges)
+Branch: (new branch from main)
 Last commit: -
 Plan: A52-3
 
@@ -62,7 +62,12 @@ No edits yet.
 - Lab: camera 0 640x480 ~30 fps, WAIST 50 faces it (lab-robot-1028.md).
 
 ## Done
-- (cloud, 2026-10-28) tools/robot_pose + check_robot_pose + experiment doc.
+- (cloud, 2026-10-28) tools/robot_pose + check_robot_pose + experiment doc
+  (full QC: only the 4 browser checks that never load in the cloud failed).
+- Same PR: firmware MOVE streams one step at a time (SeqScan.h, check_seq_stream;
+  `pio run` all envs OK, NOT flashed: next lab day `MOVE` a whole v5 file), RL
+  resume (rl.py, check_rl_compare). PC after merge: pull, `python tools/systems.py build`,
+  rebuild MiceHub.exe, rerun `python -m tools.rl_compare.run` (resumes).
 
 ## Next
 1. Step 1 or 2 above, whichever the PC can start first.
