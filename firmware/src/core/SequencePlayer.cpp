@@ -2,7 +2,8 @@
 #include "core/CommandRouter.h"
 #include "core/Log.h"            // LOGF: the skipped-step trace
 #include "core/SDStore.h"
-#include "core/SeqSteps.h"      // generated from config/commands.json
+#include "core/SeqSteps.h"
+#include <YAMLDuino.h>          // deserializeYml: one step at a time      // generated from config/commands.json
 #include "modules/Module.h"
 
 void SequencePlayer::begin(SDStore* sd, CommandRouter* router) {
@@ -17,28 +18,12 @@ bool SequencePlayer::startText(const String& yaml, String& err) {
     stop();
     ramYaml_ = yaml;
     if (!yaml.length()) { err = "no sequence in memory"; return false; }
-    doc_ = new JsonDocument();
-    if (!SDStore::parseYaml(yaml, *doc_)) {
-        err = "cannot parse the sequence";
-        stop();
-        return false;
-    }
-    JsonArray steps = (*doc_)["steps"].as<JsonArray>();
-    if (steps.isNull() || steps.size() == 0) {
-        err = "no steps in the sequence";
-        stop();
-        return false;
-    }
-    loopSeq_ = (*doc_)["loop"] | false;
-    idx_ = 0;
-    waitUntil_ = millis();
-    due_ = waitUntil_;
-    waitBusy_ = false;
-    file_ = "(memory)";
-    chain_ = 0;
-    running_ = true;
-    if (router_->module()) router_->module()->showRunning(true);
-    return true;
+    // its own copy: a new FBEGIN/FEND may replace ramYaml_ mid-show
+    playText_ = yaml;
+    textSrc_.text = playText_.c_str();
+    textSrc_.len = playText_.length();
+    src_ = &textSrc_;
+    return begin_("(memory)", 0, err);
 }
 
 bool SequencePlayer::start(const String& path, String& err) {
@@ -51,24 +36,39 @@ bool SequencePlayer::startAt(const String& path, String& err, int depth) {
         err = "no sd card";
         return false;
     }
-    doc_ = new JsonDocument();
-    if (!sd_->loadYaml(path.c_str(), *doc_)) {
-        err = "cannot read/parse " + path;
+    sdSrc_.sd = sd_;
+    sdSrc_.path = path;
+    src_ = &sdSrc_;
+    return begin_(path, depth, err);
+}
+
+// Shared by the card and RAM: scan once, read the header, play from step 0.
+// The steps themselves are parsed one at a time in loop() (SeqScan.h says why).
+bool SequencePlayer::begin_(const String& name, int depth, String& err) {
+    std::string header, why;
+    if (!scan_.index(*src_, header, why)) {
+        err = "cannot read " + name + ": " + why.c_str();
+        src_ = nullptr;
+        return false;
+    }
+    if (scan_.count() == 0) {
+        err = "no steps in " + name;
+        src_ = nullptr;
+        return false;
+    }
+    head_ = new JsonDocument();
+    // a file with only `steps:` has no header text, and that is fine
+    if (header.find_first_not_of(" \n#") != std::string::npos &&
+        !SDStore::parseYaml(String(header.c_str()), *head_)) {
+        err = "cannot parse " + name;
         stop();
         return false;
     }
-    JsonArray steps = (*doc_)["steps"].as<JsonArray>();
-    if (steps.isNull() || steps.size() == 0) {
-        err = "no steps in " + path;
-        stop();
-        return false;
-    }
-    loopSeq_ = (*doc_)["loop"] | false;
-    idx_ = 0;
+    loopSeq_ = (*head_)["loop"] | false;
     waitUntil_ = millis(); // must be a recent reading for the signed-diff gate
     due_ = waitUntil_;
     waitBusy_ = false;
-    file_ = path;
+    file_ = name;
     chain_ = depth;
     running_ = true;
     if (router_->module()) router_->module()->showRunning(true);
@@ -81,8 +81,9 @@ void SequencePlayer::stop() {
     running_ = false;
     if (router_ && router_->module()) router_->module()->showRunning(false);
     file_ = "";
-    delete doc_;
-    doc_ = nullptr;
+    delete head_;
+    head_ = nullptr;
+    src_ = nullptr;
 }
 
 // The show reached its own end. MOVE STOP silences everything; this path must
@@ -104,23 +105,36 @@ void SequencePlayer::loop() {
         waitBusy_ = false;
         due_ = millis();           // an untimed step: the clock starts again here
     }
-    JsonArray steps = (*doc_)["steps"].as<JsonArray>();
-    if (idx_ >= steps.size()) {
-        if (loopSeq_) {
-            idx_ = 0;              // a looping sequence never reaches its end,
-        } else {                   // so "next" only applies when it does
-            // Copy the name BEFORE starting the next file: startAt() calls
-            // stop(), which deletes the document this string points into.
-            String next = (*doc_)["next"] | "";
-            int depth = chain_ + 1;
-            if (!next.length() || depth >= MAX_CHAIN) { endOfShow(); return; }
-            if (!next.startsWith("/")) next = "/moves/" + next;
-            String err;
-            if (!startAt(next, err, depth)) { endOfShow(); return; }
-            return;                // the next file runs from the following tick
-        }
+    std::string item;
+    bool more = scan_.next(*src_, item);
+    if (!more && !scan_.failed() && loopSeq_) {
+        scan_.rewind();            // a looping sequence never reaches its end,
+        more = scan_.next(*src_, item);   // so "next" only applies when it does
     }
-    execStep(steps[idx_++]);
+    if (!more && scan_.failed()) {
+        LOGF(seq, "read error in %s - stopped", file_.c_str());
+        endOfShow();
+        return;
+    }
+    if (!more) {
+        // Copy the name BEFORE starting the next file: startAt() calls
+        // stop(), which deletes the header this string points into.
+        String next = (*head_)["next"] | "";
+        int depth = chain_ + 1;
+        if (!next.length() || depth >= MAX_CHAIN) { endOfShow(); return; }
+        if (!next.startsWith("/")) next = "/moves/" + next;
+        String err;
+        if (!startAt(next, err, depth)) { endOfShow(); return; }
+        return;                    // the next file runs from the following tick
+    }
+    // One small document for one step, reused: a 447-pose show costs what a
+    // 1-pose show costs.
+    step_.clear();
+    if (deserializeYml(step_, item.c_str())) {
+        LOGF(seq, "step not readable in %s - skipped", file_.c_str());
+        return;
+    }
+    execStep(step_[0]);
 }
 
 // A real stall (an SD read, a slow WiFi request holding the router lock) is not
