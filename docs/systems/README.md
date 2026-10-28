@@ -25,6 +25,7 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 | [shared-web](shared-web.md) | One stylesheet and theme set for every page (mice.css, themes), and the page parts every hub page is built from (mice-ui.js; guide docs/web_style.md). |
 | [studio](studio.md) | Nong Studio: pose editor, timeline, 3D monitor. |
 | [nong-sim](nong-sim.md) | Optional MuJoCo world: any number of Nongs play Studio sequences with servo lag, gravity and the board's clock (tools/nong_sim, user 2026-10-27). Nothing else needs it. |
+| [robot-pose](robot-pose.md) | nong's own skeleton from a camera (A52-3, user 2026-10-28): keypoints on Studio's rig, camera + joint-angle fit, front/back/left/right, seen-vs-commanded check, calibration suggestions, synthetic YOLO-pose labels (tools/robot_pose). Nothing else needs it. |
 | [rl-compare](rl-compare.md) | Separate experiment: RL imitation policy vs Studio's video planner on the cheer v2 dances, same servo model and collision gap, scores + side-by-side videos (tools/rl_compare, user 2026-10-27). Nothing else needs it. |
 | [app-voice](app-voice.md) | Voice helper: speech in, answers, speech out. |
 | [app-gacha](app-gacha.md) | Prize machines (gachapon): several gacha boards, kinds, hand-over when one is empty, rules per event and person (local or Google Sheet), webhooks, the prize log; and which Voice answers give a prize plus the Voice question log (A47-2, A47-3); wins in the friend's games (/play/<id>/ + apps/all-jao/link.js) and app keys for other PCs (A47-6, A47-7). |

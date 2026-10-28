@@ -25,11 +25,13 @@ Optional MuJoCo world: any number of Nongs play Studio sequences with servo lag,
 
 ## Used by
 
+- [robot-pose](robot-pose.md)
 - [rl-compare](rl-compare.md)
 
-## Checks that test it (2)
+## Checks that test it (3)
 
 - `check_nong_sim`
 - `check_rl_compare`
+- `check_robot_pose`
 
-Run them: `python qc/run_qc.py --no-build check_nong_sim check_rl_compare`
+Run them: `python qc/run_qc.py --no-build check_nong_sim check_rl_compare check_robot_pose`
