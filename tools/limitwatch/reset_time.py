@@ -26,6 +26,10 @@ class ResetClock:
         self.abs = re.compile(pats["abs"], re.I) if pats.get("abs") else None
         self.rel = re.compile(pats["rel"], re.I) if pats.get("rel") else None
         self.zones = {k: v for k, v in cfg.get("timezones", {}).items() if not k.startswith("_")}
+        # A clock time with no zone ("try again at 3:26 AM") is the PC's own clock:
+        # the CLI prints it in local time while its log stamps are UTC (2026-10-29).
+        name = cfg.get("default_timezone", "local")
+        self.default = None if name == "local" else self.zone(name, None)
 
     def zone(self, name, fallback):
         """A named zone: zoneinfo if the PC has tzdata, else the config offset
@@ -72,8 +76,8 @@ class ResetClock:
             return None  # a bare number ("until 3") is not a time
         if h > 23 or mi > 59:
             return None
-        tz = self.zone(m.group("tz"), written_at.tzinfo)
-        base = written_at.astimezone(tz)
+        tz = self.zone(m.group("tz"), self.default)
+        base = written_at.astimezone(tz)  # tz None = the PC's local zone
         mon = (m.group("mon") or "")[:3].lower()
         if mon:
             if mon not in MONTHS:

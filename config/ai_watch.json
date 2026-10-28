@@ -11,6 +11,7 @@
   "handoff_task_glob": "handoff/tasks/*.md",
   "handoff_agent_id": "{provider}:ai-watch",
   "task_scope_hours": 48,
+  "default_timezone": "local",
   "timezones": {
     "_why": "The PC's Python has no tzdata (2026-10-29), so named zones in limit messages fall back to these fixed offsets, then to the PC clock.",
     "Asia/Bangkok": "+07:00", "UTC": "+00:00", "GMT": "+00:00"

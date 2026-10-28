@@ -126,6 +126,11 @@
      "checks": ["check_rl_compare"],
      "depends": ["studio", "nong-sim"]},
 
+    {"id": "ai-watch", "summary": "PC helper (user 2026-10-29): watches Codex, Gemini and Claude logs for a usage limit, resumes the worker 1 minute after the reset, and on a weekly or far-away limit hands the open handoff/tasks to the next AI until they say done (tools/ai_watch.py, tools/limitwatch). Nothing else needs it.",
+     "files": ["tools/ai_watch.py", "tools/limitwatch/", "config/ai_watch.json"],
+     "checks": ["check_ai_watch"],
+     "depends": []},
+
     {"id": "app-voice", "summary": "Voice helper: speech in, answers, speech out.",
      "files": ["apps/voice/", "config/voice.json", "config/voice_intents.json", "config/voice_providers.json", "config/voice_styles.json", "config/voice_profiles.json", "config/voice_profiles/", "config/voice_people.json", "llm/", "qc/data/voice_conversation.mjs"],
      "checks": ["check_voice*"],
