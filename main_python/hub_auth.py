@@ -293,6 +293,11 @@ OPEN = {
     # website open on this PC, to log in - and takes POST only.
     "/api/all-jao/start", "/api/reconize/start",
     "/api/partners/start",
+    # This PC's apps (A51-2): the list is open like /api/apps; changing it
+    # goes through the same start_refused (login, or this PC's own page or
+    # program - an app's installer calls /api/extensions/add itself).
+    "/api/extensions", "/api/extensions/add", "/api/extensions/remove",
+    "/api/extensions/restore", "/api/extensions/update", "/api/extensions/pick",
     # Reconize and our face watcher together, by the same rule (A11-1).
     "/api/faces/start",
     # A report is a complaint, not a command: it changes nothing on any

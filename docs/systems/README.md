@@ -9,6 +9,7 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 |---|---|
 | [hub-resources](hub-resources.md) | Machine-local configurable CPU/GPU/RAM policy, bounded capability discovery, next-load Voice budgets and independent client display choices. |
 | [hub](hub.md) | The hub program: HTTP server, the device routes (dev, modules, USB proxy, pairing, robot proxy), startup. Split into hub-* systems (A26-76, A26-93). |
+| [hub-extensions](hub-extensions.md) | This PC's apps as extensions (A51-2): which apps are installed here and where, add by folder (mice-app.json, app.json or a partner template), remove/restore, update; apps whose partner is missing are hidden. |
 | [hub-usb](hub-usb.md) | The hub's USB serial manager (one owner of every cable) and the port probe that finds which module is on which cable. |
 | [hub-flash](hub-flash.md) | Flashing a board: esptool over the cable, OTA over WiFi, chunks over the command channel, and images sent from another PC. |
 | [hub-show](hub-show.md) | The hub as the show clock: the show player, live audio to a speaker, the rig's one speaking queue and its speakers, saved shows by name, stop-all. |

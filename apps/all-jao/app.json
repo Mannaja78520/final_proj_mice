@@ -3,5 +3,7 @@
   "blurb": "เปิดเกมคีบจับคู่ ตอบคำถาม และวงล้อรางวัล",
   "icon": "🎮",
   "order": 30,
-  "help": "all-jao"
+  "help": "all-jao",
+  // listed only on a PC where this partner is installed (A51-2)
+  "needs": "all-jao"
 }

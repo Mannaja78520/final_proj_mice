@@ -58,9 +58,12 @@ class AppRoutes:
             # false, and throws away the only detail that fixes it. Answer with
             # the reason instead, so the screen can print the file and line.
             try:
-                out = [{k: a[k] for k in ("id", "name", "blurb", "icon",
-                                          "path", "order", "help")}
-                       for a in _hub.registry.apps() if a.get("show", True)]
+                # this PC's list (A51-2): removed ones and ones whose
+                # partner is not installed here are left out
+                out = [{k: a.get(k) for k in ("id", "name", "blurb", "icon",
+                                              "path", "order", "help")}
+                       for a in _hub.hub_apps() if a.get("show", True)]
+                out.sort(key=lambda a: (a["order"], (a["name"] or "").lower()))
             except Exception as e:                          # noqa: BLE001
                 return self.send_json({"ok": False, "apps": [],
                                        "error": str(e)[:300]})

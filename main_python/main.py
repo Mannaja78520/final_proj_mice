@@ -117,6 +117,7 @@ except Exception as _e:            # a broken registry must not stop the hub
 import app_window                                          # noqa: E402
 import build_stamp                                         # noqa: E402
 import cam_relay                                           # noqa: E402
+import extensions                                          # noqa: E402
 import hub_auth                                            # noqa: E402
 import hub_pair                                            # noqa: E402
 import partner_launch                                      # noqa: E402
@@ -265,20 +266,47 @@ def read_page_access():
 #
 # It holds ADDRESSES, never a login. Logins live beside hub_auth.json, out of
 # the served tree, out of promotion and out of the exe.
-def read_partners():
+def _partner_templates():
     path = Path(os.environ.get("MICE_PARTNERS")
                 or asset("config", "partners.json"))
+    return (registry.load(path) if registry
+            else json.loads(path.read_text(encoding="utf-8")))
+
+
+# This PC's apps (A51-2): which are installed here and where. Written at
+# runtime beside hub_auth.json, like it never promoted and never in git.
+EXT = extensions.Extensions(
+    os.environ.get("MICE_EXTENSIONS") or (HERE / "extensions.json"), DATA,
+    partners=lambda: _partner_templates(),
+    apps=lambda: registry.apps() if registry else [])
+
+
+def read_partners():
     try:
-        cfg = (registry.load(path) if registry
-               else json.loads(path.read_text(encoding="utf-8")))
+        cfg = _partner_templates()
     except Exception as e:                                  # noqa: BLE001
         return {"ok": False, "partners": {},
                 "error": "config/partners.json could not be read (%s)" % e}
-    # Where each one REALLY answered last time it was started - their ports
-    # can change with any update of theirs (partner_launch.live).
-    cfg = {k: partner_launch.live(k, v) if isinstance(v, dict) else v
+    # This PC's folder for each ({parent}/... expanded), and whether it is
+    # installed here at all; then where each one REALLY answered last time it
+    # was started - their ports can change with any update of theirs.
+    cfg = {k: partner_launch.live(k, EXT.partner(k, v)) if isinstance(v, dict) else v
            for k, v in cfg.items()}
     return {"ok": True, "partners": cfg}
+
+
+def hub_apps(everything=False):
+    """The shipped apps plus the ones this PC added from other folders.
+    Without everything: only those this PC shows (A51-2)."""
+    apps = (registry.apps() if registry else []) + EXT.extra_apps()
+    if everything:
+        return apps
+    partners = read_partners().get("partners") or {}
+    return [a for a in apps if EXT.visible(a, partners)]
+
+
+def app_by_id(app_id):
+    return next((a for a in hub_apps(everything=True) if a.get("id") == app_id), None)
 
 
 def resume_partners():
@@ -1498,6 +1526,8 @@ flasher = Flasher()
 # Groups of api() routes, one file per area (A26-93). Handler inherits them.
 import hub_api_apps  # noqa: E402
 hub_api_apps.bind(sys.modules[__name__])
+import hub_api_extensions  # noqa: E402
+hub_api_extensions.bind(sys.modules[__name__])
 import hub_api_resources  # noqa: E402
 hub_api_resources.bind(sys.modules[__name__])
 import hub_api_support  # noqa: E402
@@ -1517,7 +1547,8 @@ hub_api_gacha.bind(sys.modules[__name__])
 
 
 # ---------------------------------------------------------------- handler
-class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, BaseHTTPRequestHandler):
+class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
+              hub_api_extensions.ExtensionRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, BaseHTTPRequestHandler):
     # HTTP/1.1, so a browser can KEEP ITS CONNECTION.
     #
     # BaseHTTPRequestHandler defaults to HTTP/1.0, which means every response
@@ -1965,7 +1996,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes, hub_api_
         if path.startswith("/app/") and registry:
             rest = path[len("/app/"):]
             app_id, _, rel = rest.partition("/")
-            app = registry.app_by_id(app_id)
+            app = app_by_id(app_id)
             if not app:
                 return self.send_err("no such app: " + app_id, 404)
             base = Path(app["dir"]).resolve()
@@ -2376,6 +2407,9 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes, hub_api_
                 return self.send_json({"ok": False, "servos": {}})
             return self.send_json({"ok": True, "servos": registry.servos()})
 
+        r = self.api_extensions(method, path, q)   # hub_api_extensions.py
+        if r is not hub_api_extensions.NOT_MINE:
+            return r
         r = self.api_apps(method, path, q)   # hub_api_apps.py
         if r is not hub_api_apps.NOT_MINE:
             return r
