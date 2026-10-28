@@ -1,0 +1,4 @@
+{
+  "_why": "Studio cards that open WITHOUT a login (A49-2, user 2026-10-23: setting ขอให้มีแบบไม่ใส่รหัสสำหรับ setting ที่ไม่ซีเรียสกับหุ่นจริง ใส่รหัสกับที่ซีเรียสจริงๆ). Only cards that never reach the real robot: the 3D model's look and this browser's save prompt. Anything that talks to the robot or changes the rig it is tuned to (Robot link, Dummy, Zero, Movement safety, Rig setup, URDF, Servo offset, This robot, Move setup) stays behind the login. To open another card: give it an id and add the id here.",
+  "open": ["setupModelCard", "setupSavingCard"]
+}

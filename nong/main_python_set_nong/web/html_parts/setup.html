@@ -1,4 +1,4 @@
-    <div class="card" data-stab="setup">
+    <div class="card" data-stab="setup" id="setupModelCard">
       <h2>Model (STL + texture)</h2>
       <div class="mini">Export STL from SolidWorks (mm) into <b>models/</b> and press ⟳,
         or pick a file here and press Import (also accepts <b>PNG/JPG textures</b> —
@@ -63,7 +63,7 @@
           onchange="setSafetyClearance(this.value)" style="width:90px">
         <span>mm</span>
       </div>
-      <div class="mini">Added to the usual 4 mm gap between arms, body, head and hands.
+      <div class="mini">Added to the usual 10 mm gap between arms, body, head and hands (room for servo backlash).
         Increase this for clothing, allowing for both layers where parts approach.
         The planner refuses a move if it cannot keep the gap.</div>
       <div id="clearanceStat" class="statline" role="status"></div>
@@ -120,7 +120,7 @@
       <div class="statline" id="trimStat"></div>
     </div>
 
-    <div class="card" data-stab="setup">
+    <div class="card" data-stab="setup" id="setupSavingCard">
       <h2>Saving</h2>
       <div class="mini">One Save writes both files under one name: the .yaml the robot
         plays and the .json you edit later.</div>

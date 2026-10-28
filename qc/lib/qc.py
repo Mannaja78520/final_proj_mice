@@ -123,6 +123,11 @@ def generated(rel=""):
 # after one which happened to insert the path, and the suite passes or fails
 # depending on the order the files are discovered in.
 sys.path.insert(0, str(CODE / "tools"))
+# The REAL tree (main), seen from a working copy in .staging/<task> or from
+# main itself. One rule, config/layout.json (A51-1): never CODE.parent.
+from layout import RepoLayout  # noqa: E402
+LAYOUT = RepoLayout(CODE)
+REAL = LAYOUT.real
 
 
 # ---------------------------------------------------------------- hub
@@ -215,6 +220,9 @@ def start_hub(fake=True):
                                                     / ("mice_qc_gestures_%d.json" % os.getpid())))
     os.environ["MICE_HUB_AUTH"] = str(Path(tempfile.gettempdir())
                                       / ("mice_qc_auth_%d.json" % _hub_port[0]))
+    # This PC's app list (A51-2) is the machine's, like the password
+    os.environ["MICE_EXTENSIONS"] = str(Path(tempfile.gettempdir())
+                                        / ("mice_qc_ext_%d.json" % _hub_port[0]))
     if fake:
         sys.path.insert(0, str(QC / "lib"))
         import fake_serial
@@ -223,6 +231,7 @@ def start_hub(fake=True):
     import webbrowser
     webbrowser.open = lambda *a, **k: None      # never pop a browser in QC
     import main
+    main.HOST = "127.0.0.1"  # isolated fake Hub; never expose a test listener to the LAN
     import socketserver
     main.Handler.log_message = lambda *a, **k: None   # QC output stays readable
     # A browser that navigates away mid-request leaves a half-written response,

@@ -94,6 +94,10 @@
     #define NONG_SAFE_DPS          60.0f  // SAFETY cap: no joint's PEAK speed goes past this,
                                           // whatever T a move asks for (user 2026-09-17,
                                           // arm hit something). CFG safe_dps to change.
+    #define NONG_MUSIC_DPS         0.0f   // the same cap while a show runs at PACE MUSIC
+                                          // (user 2026-10-27: no cap when following the
+                                          // music). 0 = none: only max_dps holds the arm.
+                                          // CFG music_dps to bring one back (lab ramp-up).
     #define NONG_MIN_MOVE_MS       80     // shortest interpolated move
     #define NONG_DEFAULT_NEUTRAL   90.0f  // neutral angle for every joint
     // Per-servo travel limits (deg). The universal joint cannot reach the

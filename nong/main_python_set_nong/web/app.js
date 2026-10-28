@@ -57,6 +57,14 @@ function clearNotice() {
   if (box) box.hidden = true;      // noticeSaid is kept: see notice()
 }
 
+// Cards that open without a login: ids listed in settings_open.json beside
+// this page (A49-2). Only cards that never reach the real robot are listed.
+let OPEN_WITHOUT_LOGIN = [];
+fetch("settings_open.json").then(r => r.json()).then(j => {
+  OPEN_WITHOUT_LOGIN = Array.isArray(j.open) ? j.open : [];
+  if (!currentUser) showTab(sideTab);
+}).catch(() => {});        // no file: every robot/setup card needs the login
+
 function showTab(which) {
   if (which === "move") which = "pose";          // the old name
   if (!STAB_BTN[which]) which = "pose";
@@ -73,7 +81,12 @@ function showTab(which) {
   $("tabMove").style.display = "";
   $("tabSetup").style.display = "";
   document.querySelectorAll("[data-stab]").forEach(el => {
-    el.style.display = el.dataset.stab === renderWhich ? "" : "none";
+    // a card taken out to its own window (panels.js) shows on every tab,
+    // still behind the login if its own tab needs one
+    const tab = el.classList.contains("floating") ? el.dataset.stab : which;
+    const shows = (!currentUser && (tab === "robot" || tab === "setup")) ? "login" : tab;
+    const open = shows === "login" && el.dataset.stab === tab && OPEN_WITHOUT_LOGIN.includes(el.id);
+    el.style.display = (el.dataset.stab === (el.classList.contains("floating") ? shows : renderWhich) || open) ? "" : "none";
   });
   
   const userCard = $("userManageCard");
@@ -339,6 +352,11 @@ const DEFAULT_RIG = {
   pulseMin:   [500, 500, 500, 500, 500, 500, 500, 500, 500, 500],
   pulseMax:   [2500, 2500, 2400, 2400, 2500, 2500, 2400, 2400, 2500, 2400],
   servoMaxDps:[375, 375, 400, 400, 375, 375, 400, 400, 200, 400],
+  // How the horn FOLLOWS a target (servo_follow.js, A48-24): its answer delay
+  // in ms and its acceleration in °/s² of the joint. Guesses until measured on
+  // the bench (lab-day.md); they only change Studio's picture and the sim.
+  servoLagMs: [40, 40, 40, 40, 40, 40, 40, 40, 60, 40],
+  servoAccel: [3000, 3000, 4000, 4000, 3000, 3000, 4000, 4000, 1500, 4000],
   // SERVO travel per joint: how far the SERVO turns end to end. 180 for a
   // normal hobby servo, 270 for a wide-angle one. This is NOT the joint's
   // range (that is min/max above) — fitting a 270 servo is this one number,
@@ -404,7 +422,7 @@ function mergeRig(saved) {
   if (!Array.isArray(r.home) && Array.isArray(r.neutral)) r.home = [...r.neutral];
   ["zero", "min", "max", "axis", "invert", "neutral", "home", "offset",
    "gearPinion", "gearGear", "pulseMin", "pulseMax", "servoMaxDps", "servoRange",
-   "frameHz"].forEach(fixLen);
+   "frameHz", "servoLagMs", "servoAccel"].forEach(fixLen);
   // The SHRUG 4-bar calibration. An empty list means "not measured", which is
   // the old symmetric behaviour — so every rig saved before this keeps looking
   // exactly as it did until you actually measure the linkage.
@@ -701,6 +719,11 @@ const MIN_MOVE_MS = 80;                  // same floor as the firmware
 // Safety cap on PEAK joint speed, firmware NONG_SAFE_DPS; the board's own
 // value (INFO safe_dps) replaces it on connect so both sides time moves alike.
 let SAFE_DPS = 60;
+// The cap while a show follows its music (firmware NONG_MUSIC_DPS, INFO
+// music_dps; user 2026-10-27: no cap then). 0 = only each servo's own max.
+let MUSIC_DPS = 0;
+let PACE_OVERRIDE = null;
+let SEQ_MUSIC_DPS = null;  // this sequence's own speed limit with music (music_pace.js); null = MUSIC_DPS   // "music" while the Video page builds a stay-with-the-music show
 let boardSafeDpsMax = 0;    // from INFO max_dps; 0 means this board cannot be configured here
 let boardSafePeer = 0;      // linked board needs the same cap for synchronized moves
 let boardSafeIdentity = ""; // never save a persistent setting to a different board
@@ -1523,7 +1546,17 @@ function urdfBuildInto(root) {
     return -1;
   };
   const PAIR_PART = ["L_upper", "L_fore", "R_upper", "R_fore"];
+  const matOf = (pair) => partMat(pair >= 0 ? PAIR_PART[pair] : "torso");
   const gen = ++urdfBuildGen;
+  // every link's frame at zero (nothing turned yet): CAD pieces move between links by it
+  const linkZero = {};
+  root.updateMatrixWorld(true);
+  Object.keys(linkG).forEach(n => { linkZero[n] = linkG[n].matrixWorld.clone(); });
+  const meshPut = [], piecesOn = urdfPiecesOn();
+  let meshWant = 0, meshLate = 0, meshGone = 0;
+  const meshDone = () => {        // the last mesh in after the build: build again, all cached now
+    if (piecesOn && (meshLate || meshGone) && meshPut.length + meshGone === meshWant && gen === urdfBuildGen) buildRobot();
+  };
   Object.entries(f.links).forEach(([name, l]) => {
     const pair = pairOfLink(name);
     l.visuals.forEach(v => {
@@ -1531,7 +1564,9 @@ function urdfBuildInto(root) {
       holder.position.set(v.xyz[0] * U, v.xyz[1] * U, v.xyz[2] * U);
       urdfRpyQuat(v.rpy, holder.quaternion);
       linkG[name].add(holder);
-      const mat = partMat(pair >= 0 ? PAIR_PART[pair] : "torso");
+      holder.updateMatrixWorld(true);
+      holder.userData.zero = holder.matrixWorld.clone();
+      const mat = matOf(pair);
       const put = (geo, sc) => {
         const m = new THREE.Mesh(geo, mat);
         m.scale.set(sc[0], sc[1], sc[2]);
@@ -1544,18 +1579,27 @@ function urdfBuildInto(root) {
       else if (v.cyl) put(new THREE.CylinderGeometry(v.cyl[0], v.cyl[0], v.cyl[1], 20), [U, U, U]).rotation.x = Math.PI / 2;
       else if (v.sphere) put(new THREE.SphereGeometry(v.sphere, 20, 14), [U, U, U]);
       else if (urdfMissing.has(f.path + "|" + v.mesh)) warn.push("the shape " + v.mesh.split(/[\\/]/).pop() + " is missing");
-      else urdfMesh(urdfMeshUrls(v.mesh, f.path), geo => {
-        if (gen !== urdfBuildGen || holder.parent !== linkG[name]) return;   // a rebuild came first
-        put(geo, v.scale.map(s => s * U));
-        if (typeof markDirty3d === "function") markDirty3d(5);
-        if (name === urdfRootLink) viewFloor();
-        urdfMeshArrived(name);
-      }, () => {
-        urdfMissing.add(f.path + "|" + v.mesh);
-        if (gen === urdfBuildGen) { urdfLast.warn.push("the shape " + v.mesh.split(/[\\/]/).pop() + " is missing"); renderLookUI(); }
-      });
+      else {
+        meshWant++;
+        let sync = true;
+        urdfMesh(urdfMeshUrls(v.mesh, f.path), geo => {
+          if (gen !== urdfBuildGen || holder.parent !== linkG[name]) return;   // a rebuild came first
+          meshPut.push({ name, holder, mesh: put(geo, v.scale.map(s => s * U)) });
+          if (!sync) meshLate++;
+          if (typeof markDirty3d === "function") markDirty3d(5);
+          if (name === urdfRootLink) viewFloor();
+          if (!sync) { urdfMeshArrived(name); meshDone(); }
+        }, () => {
+          urdfMissing.add(f.path + "|" + v.mesh);
+          meshGone++;
+          if (gen === urdfBuildGen) { urdfLast.warn.push("the shape " + v.mesh.split(/[\\/]/).pop() + " is missing"); renderLookUI(); meshDone(); }
+        });
+        sync = false;
+      }
     });
   });
+  // every mesh already in: split them and hang each bolt on its part (urdf_pieces.js)
+  if (piecesOn && meshPut.length === meshWant) urdfPieces(meshPut, linkG, linkZero, matOf, pairOfLink);
 
   // skeleton balls on every arm joint (pick a pair, see the centres)
   for (let i = 0; i < ARMJ; i++) {
@@ -2110,6 +2154,182 @@ function askLookSizes() {
     dlg.oncancel = (e) => { e.preventDefault(); done(null); };
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
   });
+}
+// ===================== CAD PIECES: WHICH PART EACH BOLT RIDES ON =====================
+// A48-19 (user 2026-10-27): "why aren't the bolts locked to their axes" and
+// "the ring fixed to the body must not turn with the shoulder roll". A
+// SolidWorks export puts every link in one STL, and the bolts of a joint sit
+// in the PARENT's file (PC run: shrug_link holds the shoulder bolts, waist_link
+// the shrug's), so they stayed behind when the joint turned. Here each mesh is
+// split into its separate pieces and, from urdf_view.json "pieces":
+//   links: a whole link rides on another (the shoulder ring on the body);
+//   lock:  a small piece follows the big piece its corners touch most;
+//   pick:  a named piece rides where it says (wins over both).
+// The URDF is never changed. tools/urdf_parts.py --assign prints the same
+// numbers and choices for a real file, to write "pick" from.
+
+const urdfSplitDone = new WeakMap();    // geometry -> its pieces, kept across rebuilds
+let urdfPieceInfo = null;               // the last pass: {pieces, moved} (QC and the tech line)
+
+function urdfPiecesCfg() { return (URDF_CFG && URDF_CFG.pieces) || null; }
+function urdfPiecesOn() {
+  const c = urdfPiecesCfg();
+  return !!c && (!!(c.links || []).length || !!(c.pick || []).length || (c.lock || {}).on !== false);
+}
+
+// Triangles sharing a corner (welded to q mm) are one piece; biggest first,
+// ties in file order - the numbering tools/urdf_parts.py prints.
+function urdfSplit(geo, mm, q) {
+  const key = mm + "|" + q, had = urdfSplitDone.get(geo);
+  if (had && had.key === key) return had.pieces;
+  const pos = geo.attributes.position.array, nt = Math.floor(pos.length / 9);
+  const ids = new Map(), par = [], first = new Int32Array(nt);
+  const find = (x) => { while (par[x] !== x) { par[x] = par[par[x]]; x = par[x]; } return x; };
+  const r = (v) => Math.floor(v * mm / q + 0.5);
+  for (let t = 0; t < nt; t++) {
+    let a = -1;
+    for (let c = 0; c < 3; c++) {
+      const o = t * 9 + c * 3, k = r(pos[o]) + "," + r(pos[o + 1]) + "," + r(pos[o + 2]);
+      let n = ids.get(k);
+      if (n === undefined) { n = par.length; par.push(n); ids.set(k, n); }
+      if (c === 0) { first[t] = n; a = find(n); } else { const b = find(n); if (a !== b) par[b] = a; }
+    }
+  }
+  const groups = new Map();
+  for (let t = 0; t < nt; t++) {
+    const g = find(first[t]);
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(t);
+  }
+  const pieces = [...groups.values()].sort((x, y) => y.length - x.length);
+  urdfSplitDone.set(geo, { key, pieces });
+  return pieces;
+}
+
+// mm from point p to triangle abc (closest point, Ericson 5.1.5)
+const _pA = new THREE.Vector3(), _pB = new THREE.Vector3(), _pC = new THREE.Vector3(), _pT = new THREE.Triangle();
+function urdfTriDist(p, t) {
+  _pT.set(_pA.fromArray(t, 0), _pB.fromArray(t, 3), _pC.fromArray(t, 6));
+  return _pT.closestPointToPoint(p, new THREE.Vector3()).distanceTo(p);
+}
+
+// Which link each piece rides on: the twin of tools/urdf_parts.py assign().
+function urdfAssign(P, cfg) {
+  const owner = P.map(pc => pc.link);
+  (cfg.links || []).forEach(r => P.forEach((pc, k) => { if (pc.link === r.link) owner[k] = r.to; }));
+  const lock = cfg.lock || {};
+  if (lock.on !== false) {
+    const smallMm = +lock.smallMm || 12, touch = +lock.touchMm || 0.3, nPts = +lock.points || 120, cell = +lock.cellMm || 4;
+    const size = (pc) => Math.max(pc.hi[0] - pc.lo[0], pc.hi[1] - pc.lo[1], pc.hi[2] - pc.lo[2]);
+    const big = P.map((pc, k) => k).filter(k => size(P[k]) > smallMm);
+    const grids = {};
+    const cellOf = (x, y, z) => Math.floor(x / cell) + "," + Math.floor(y / cell) + "," + Math.floor(z / cell);
+    const grid = (k) => {
+      if (grids[k]) return grids[k];
+      const g = new Map(), w = P[k].w;
+      for (let o = 0; o < w.length; o += 9) {
+        const t = w.subarray(o, o + 9);
+        const lo = [0, 1, 2].map(a => Math.floor((Math.min(t[a], t[a + 3], t[a + 6]) - touch) / cell));
+        const hi = [0, 1, 2].map(a => Math.floor((Math.max(t[a], t[a + 3], t[a + 6]) + touch) / cell));
+        for (let x = lo[0]; x <= hi[0]; x++) for (let y = lo[1]; y <= hi[1]; y++) for (let z = lo[2]; z <= hi[2]; z++) {
+          const c = x + "," + y + "," + z;
+          if (!g.has(c)) g.set(c, []);
+          g.get(c).push(t);
+        }
+      }
+      return (grids[k] = g);
+    };
+    const p = new THREE.Vector3();
+    P.forEach((s, si) => {
+      if (size(s) > smallMm) return;
+      const nv = s.w.length / 3, step = Math.max(1, Math.floor(nv / nPts));
+      let best = -1, score = 0;
+      big.forEach(bk => {
+        const b = P[bk];
+        for (let a = 0; a < 3; a++) if (s.lo[a] > b.hi[a] + touch || s.hi[a] < b.lo[a] - touch) return;
+        const g = grid(bk);
+        let n = 0;
+        for (let v = 0; v < nv; v += step) {
+          p.fromArray(s.w, v * 3);
+          const near = g.get(cellOf(p.x, p.y, p.z));
+          if (near && near.some(t => urdfTriDist(p, t) <= touch)) n++;
+        }
+        if (n > score || (n === score && n && owner[bk] === owner[si])) { best = bk; score = n; }
+      });
+      s.touch = best >= 0 ? [P[best].link, P[best].i, score] : null;
+      if (best >= 0) owner[si] = owner[best];
+    });
+  }
+  (cfg.pick || []).forEach(r => P.forEach((pc, k) => {
+    if (pc.link === r.link && (r.pieces || []).includes(pc.i)) owner[k] = r.to;
+  }));
+  return owner;
+}
+
+// Called by urdfBuildInto once every mesh is in (all joints still at zero):
+// split, decide, then hang each piece on its link. put: [{name, holder, mesh}]
+// with holder.userData.zero = its world matrix at zero; linkG/zeroOf per link.
+function urdfPieces(put, linkG, linkZero, matOf, pairOf) {
+  urdfPieceInfo = null;
+  const cfg = urdfPiecesCfg();
+  if (!urdfPiecesOn() || !put.length) return;
+  const q = +((cfg.lock || {}).weldMm) || 0.01;
+  const P = [], perLink = {};
+  put.forEach((u, vi) => {
+    const geo = u.mesh.geometry, mm = u.mesh.scale.x;
+    const M = new THREE.Matrix4().copy(u.holder.userData.zero).multiply(new THREE.Matrix4().makeScale(u.mesh.scale.x, u.mesh.scale.y, u.mesh.scale.z));
+    const pos = geo.attributes.position.array;
+    urdfSplit(geo, mm, q).forEach(tris => {
+      const w = new Float32Array(tris.length * 9), v = new THREE.Vector3();
+      const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+      tris.forEach((t, j) => {
+        for (let c = 0; c < 3; c++) {
+          v.fromArray(pos, t * 9 + c * 3).applyMatrix4(M).toArray(w, j * 9 + c * 3);
+          for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], w[j * 9 + c * 3 + a]); hi[a] = Math.max(hi[a], w[j * 9 + c * 3 + a]); }
+        }
+      });
+      perLink[u.name] = (perLink[u.name] || 0);
+      P.push({ link: u.name, i: perLink[u.name]++, vi, tris, w, lo, hi });
+    });
+  });
+  const owner = urdfAssign(P, cfg);
+  const moved = [];
+  put.forEach((u, vi) => {
+    const src = u.mesh.geometry, pos = src.attributes.position.array, nor = src.attributes.normal && src.attributes.normal.array;
+    const byOwner = {};
+    P.forEach((pc, k) => { if (pc.vi === vi) (byOwner[owner[k]] = byOwner[owner[k]] || []).push(pc); });
+    if (Object.keys(byOwner).length === 1 && byOwner[u.name]) return;      // nothing leaves this mesh
+    u.holder.remove(u.mesh);
+    const at = pickMeshes.indexOf(u.mesh); if (at >= 0) pickMeshes.splice(at, 1);
+    Object.entries(byOwner).forEach(([to, pcs]) => {
+      if (!linkG[to]) to = u.name;                     // data naming a part the file lacks: stays
+      const n = pcs.reduce((s, pc) => s + pc.tris.length, 0);
+      const ps = new Float32Array(n * 9), ns = nor ? new Float32Array(n * 9) : null;
+      let o = 0;
+      pcs.forEach(pc => pc.tris.forEach(t => {
+        ps.set(pos.subarray(t * 9, t * 9 + 9), o);
+        if (ns) ns.set(nor.subarray(t * 9, t * 9 + 9), o);
+        o += 9;
+      }));
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(ps, 3));
+      if (ns) g.setAttribute("normal", new THREE.BufferAttribute(ns, 3)); else g.computeVertexNormals();
+      const pair = pairOf(to);
+      const m = new THREE.Mesh(g, matOf(pair));
+      m.scale.copy(u.mesh.scale);
+      m.userData.pair = pair; m.userData.urdfLink = to; m.userData.urdfFrom = u.name;
+      if (pair >= 0) pickMeshes.push(m);
+      if (to === u.name) { u.holder.add(m); return; }
+      // hung on the other link where it is drawn: that link's zero frame -> the holder's
+      const h = new THREE.Group(); h.name = "pieces_from_" + u.name;
+      new THREE.Matrix4().copy(linkZero[to]).invert().multiply(u.holder.userData.zero)
+        .decompose(h.position, h.quaternion, h.scale);
+      h.add(m); linkG[to].add(h);
+      pcs.forEach(pc => moved.push(u.name + "#" + pc.i + "->" + to));
+    });
+  });
+  urdfPieceInfo = { pieces: P.map((pc, k) => ({ link: pc.link, i: pc.i, to: owner[k], touch: pc.touch || null,
+                    lo: pc.lo, hi: pc.hi })), moved };
 }
 // --- the simple shapes made from the CAD (A48-6) ---
 //
@@ -2673,12 +2893,149 @@ function solve3(A, b) { // gaussian elimination, 3x3
   }
   return [M[0][3] / M[0][0], M[1][3] / M[1][1], M[2][3] / M[2][2]];
 }
+// Physical envelopes, independent of helper visibility. FK uses the full pose;
+// only the rigid waist frame is removed. SHRUG really changes clearances.
+class StudioCollisionGeometry {
+  static clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+  static box(center, axes, half, name, arm = -1) { return { center, axes, half, name, arm }; }
+  static local(p, box) {
+    const d = p.clone().sub(box.center);
+    return box.axes.map(a => d.dot(a));
+  }
+  static pointBox(p, box) {
+    return Math.hypot(...this.local(p, box).map((v, i) => Math.max(0, Math.abs(v) - box.half[i])));
+  }
+  // Exact minimum on the piecewise-quadratic segment-to-AABB distance.
+  static segmentBox(a, b, box) {
+    const p = this.local(a, box), q = this.local(b, box), d = q.map((v, i) => v - p[i]);
+    const ts = [0, 1];
+    for (let i = 0; i < 3; i++) if (Math.abs(d[i]) > 1e-10)
+      for (const sign of [-1, 1]) { const t = (sign * box.half[i] - p[i]) / d[i]; if (t > 0 && t < 1) ts.push(t); }
+    ts.sort((x, y) => x - y);
+    const sq = t => p.reduce((s, v, i) => s + Math.max(0, Math.abs(v + d[i] * t) - box.half[i]) ** 2, 0);
+    let best = Math.min(sq(0), sq(1));
+    for (let k = 1; k < ts.length; k++) {
+      const lo = ts[k - 1], hi = ts[k], mid = (lo + hi) / 2;
+      let aa = 0, bb = 0;
+      for (let i = 0; i < 3; i++) {
+        const v = p[i] + d[i] * mid;
+        if (Math.abs(v) > box.half[i]) { aa += d[i] ** 2; bb += d[i] * (p[i] - Math.sign(v) * box.half[i]); }
+      }
+      const t = aa ? this.clamp(-bb / aa, lo, hi) : mid;
+      best = Math.min(best, sq(lo), sq(hi), sq(t));
+    }
+    return Math.sqrt(best);
+  }
+  static boxesHit(a, b, gap) {
+    const axes = [...a.axes, ...b.axes];
+    for (const x of a.axes) for (const y of b.axes) {
+      const c = x.clone().cross(y); if (c.lengthSq() > 1e-12) axes.push(c.normalize());
+    }
+    const delta = b.center.clone().sub(a.center);
+    for (const axis of axes) {
+      const ra = a.axes.reduce((s, x, i) => s + (a.half[i] + gap / 2) * Math.abs(axis.dot(x)), 0);
+      const rb = b.axes.reduce((s, x, i) => s + (b.half[i] + gap / 2) * Math.abs(axis.dot(x)), 0);
+      if (Math.abs(delta.dot(axis)) >= ra + rb) return false;
+    }
+    return true;
+  }
+  static snapshot(p) {
+    const saved = pose;
+    try {
+      pose = p.slice(); applyPose(); robot.updateMatrixWorld(true);
+      const inv = bodyGroup.matrixWorld.clone().invert();
+      const at = o => o.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv);
+      const basis = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)];
+      const d = RIG.dims;
+      const torso = this.box(new THREE.Vector3(), basis, [d.torsoW / 2, d.torsoH / 2, d.torsoD / 2], "body");
+      const head = { at: new THREE.Vector3(0, d.torsoH / 2 + 68, 0), r: R_HEAD, name: "head" };
+      const arms = [0, 1].map(arm => {
+        const label = arm ? "right" : "left", j = arm * 4;
+        const s = at(jointGroups[j]), e = at(elbowBalls[arm]), w = at(wristBalls[arm]);
+        const sr = RIG.jointR[arm * 2], er = RIG.jointR[arm * 2 + 1];
+        const start = segPoint(s, e, Math.min(0.8, (sr + CLEAR) / Math.max(1, s.distanceTo(e))));
+        const bars = [{ a: start, b: e, r: RIG.barR[arm * 2], name: label + " upper arm" },
+                      { a: e, b: w, r: RIG.barR[arm * 2 + 1], name: label + " forearm" }];
+        let hand = null;
+        // BoxGeometry is the physical paddle; helper balls and visibility are irrelevant.
+        palmMarks[arm].traverse(o => {
+          if (hand || !o.geometry || o.geometry.type !== "BoxGeometry") return;
+          o.geometry.computeBoundingBox(); const bb = o.geometry.boundingBox;
+          const matrix = inv.clone().multiply(o.matrixWorld), el = matrix.elements;
+          const center = bb.getCenter(new THREE.Vector3()).applyMatrix4(matrix);
+          const axes = [new THREE.Vector3(el[0], el[1], el[2]), new THREE.Vector3(el[4], el[5], el[6]), new THREE.Vector3(el[8], el[9], el[10])];
+          const size = bb.getSize(new THREE.Vector3()).toArray();
+          const half = axes.map((a, i) => size[i] * a.length() / 2); axes.forEach(a => a.normalize());
+          hand = this.box(center, axes, half, label + " hand", arm);
+        });
+        return { s, e, w, sr, er, bars, hand, label };
+      });
+      return { torso, head, arms };
+    } finally { pose = saved; applyPose(); robot.updateMatrixWorld(true); }
+  }
+  static hit(p) {
+    if (!Array.isArray(p) || p.length !== NJ || !p.every(Number.isFinite)) return "the pose is invalid";
+    if (![...RIG.jointR, ...RIG.barR, RIG.dims.torsoW, RIG.dims.torsoH, RIG.dims.torsoD].every(v => Number.isFinite(v) && v > 0))
+      return "the physical collision sizes are invalid";
+    const extra = RIG.extraClearanceMm ?? 0;
+    if (!Number.isFinite(extra) || extra < 0) return "the extra safety gap is invalid";
+    // the music pace (no speed cap) lets servo lag cut corners: SAFE.musicGapMm
+    const gap = CLEAR + extra + (planPace() === "music" ? SAFE.musicGapMm : 0), { torso, head, arms } = this.snapshot(p);
+    const sphereBox = (s, box) => this.pointBox(s.at, box) < s.r + gap;
+    const sphereBar = (s, bar) => segSegDist(s.at, s.at, bar.a, bar.b) < s.r + bar.r + gap;
+    for (const a of arms) {
+      if (sphereBar({ at: a.s, r: a.sr }, a.bars[1])) return a.label + " forearm is too close to its shoulder joint";
+      const upper = a.bars[0], fore = a.bars[1];
+      const upperEnd = segPoint(a.e, upper.a, Math.min(1, (a.er + upper.r + gap) / Math.max(1, a.e.distanceTo(upper.a))));
+      const foreStart = segPoint(a.e, a.w, Math.min(1, (a.er + fore.r + gap) / Math.max(1, a.e.distanceTo(a.w))));
+      if (segSegDist(upper.a, upperEnd, foreStart, a.w) < upper.r + fore.r + gap)
+        return a.label + " forearm is too close to its upper arm";
+      if (a.s.distanceTo(head.at) < a.sr + head.r + gap) return a.label + " shoulder joint is too close to the head";
+      for (const bar of a.bars) {
+        if (this.segmentBox(bar.a, bar.b, torso) < bar.r + gap) return bar.name + " is too close to the body";
+        if (sphereBar(head, bar)) return bar.name + " is too close to the head";
+      }
+      const elbow = { at: a.e, r: a.er };
+      if (sphereBox(elbow, torso)) return a.label + " elbow joint is too close to the body";
+      if (a.e.distanceTo(head.at) < a.er + head.r + gap) return a.label + " elbow joint is too close to the head";
+      if (a.hand) {
+        if (this.pointBox(a.e, a.hand) < a.er + gap) return a.hand.name + " is too close to its elbow joint";
+        if (this.boxesHit(a.hand, torso, gap)) return a.hand.name + " is too close to the body";
+        if (sphereBox(head, a.hand)) return a.hand.name + " is too close to the head";
+        if (this.segmentBox(a.bars[0].a, a.bars[0].b, a.hand) < a.bars[0].r + gap)
+          return a.hand.name + " is too close to its upper arm";
+        if (this.pointBox(a.s, a.hand) < a.sr + gap) return a.hand.name + " is too close to its shoulder joint";
+      }
+    }
+    const [l, r] = arms;
+    for (const a of [l, r]) {
+      const other = a === l ? r : l;
+      for (const bar of a.bars) {
+        for (const ob of other.bars)
+          if (segSegDist(bar.a, bar.b, ob.a, ob.b) < bar.r + ob.r + gap) return bar.name + " is too close to the opposite arm";
+        for (const s of [{ at: other.s, r: other.sr }, { at: other.e, r: other.er }])
+          if (sphereBar(s, bar)) return bar.name + " is too close to the opposite joint";
+        if (other.hand && this.segmentBox(bar.a, bar.b, other.hand) < bar.r + gap)
+          return bar.name + " is too close to the opposite hand";
+      }
+      if (a.hand) for (const s of [{ at: other.s, r: other.sr }, { at: other.e, r: other.er }])
+        if (sphereBox(s, a.hand)) return a.hand.name + " is too close to the opposite joint";
+    }
+    for (const a of [{ at: l.s, r: l.sr }, { at: l.e, r: l.er }])
+      for (const b of [{ at: r.s, r: r.sr }, { at: r.e, r: r.er }])
+        if (a.at.distanceTo(b.at) < a.r + b.r + gap) return "the opposite joint balls are too close";
+    if (l.hand && r.hand && this.boxesHit(l.hand, r.hand, gap)) return "the hands are too close to each other";
+    return null;
+  }
+}
 // --- collisions ---
 // Self-collision check: arms vs torso box, head sphere, and each other.
 // Bodies are capsules along the arm segments (radii from the built-in
 // shapes) with a small safety margin. Checked for every keyframe AND along
 // the interpolated path between keyframes (collisions often happen mid-move).
-const CLEAR = 4;         // safety margin (mm)
+// Safety margin (mm): anything closer counts as a hit. 10 mm for servo
+// backlash over shoulder + elbow (user 2026-10-27); DATA: safe_path.json clearMm.
+let CLEAR = 10;
 const R_ARM = 14, R_WRIST = 16, R_HEAD = 46;
 
 function distToBox(p, hx, hy, hz) { // 0 = inside the torso box
@@ -2732,36 +3089,7 @@ function fkPoints(p) {
 
 // returns null (safe) or a short reason string
 function collisionAt(p) {
-  const extra = RIG.extraClearanceMm ?? 0;
-  if (!Number.isFinite(extra) || extra < 0) return "the extra safety gap is invalid";
-  const clearance = CLEAR + extra;
-  const d = RIG.dims, k = fkPoints(p);
-  const hx = d.torsoW / 2, hy = d.torsoH / 2, hz = d.torsoD / 2;
-  const headC = new THREE.Vector3(0, hy + 68, 0);
-  const segs = [ // upper arms start next to the torso, so skip their first part
-    // radii come from the per-bar sizes in the rig (0=L upper, 1=L fore, 2=R upper, 3=R fore)
-    { n: "left upper arm",  a: k.shL, b: k.elL, r: RIG.barR[0] || R_ARM, t0: 0.4 },
-    { n: "left forearm",    a: k.elL, b: k.wrL, r: RIG.barR[1] || R_ARM, t0: 0.1 },
-    { n: "right upper arm", a: k.shR, b: k.elR, r: RIG.barR[2] || R_ARM, t0: 0.4 },
-    { n: "right forearm",   a: k.elR, b: k.wrR, r: RIG.barR[3] || R_ARM, t0: 0.1 },
-  ];
-  for (const s of segs) {
-    for (let i = 0; i <= 6; i++) {
-      const t = s.t0 + (1 - s.t0) * i / 6;
-      const pt = segPoint(s.a, s.b, t);
-      const r = t > 0.9 && s.n.includes("forearm") ? R_WRIST : s.r; // wrist ball
-      if (distToBox(pt, hx, hy, hz) < r + clearance) return s.n + " is too close to the body";
-      if (pt.distanceTo(headC) < r + R_HEAD + clearance) return s.n + " is too close to the head";
-    }
-  }
-  // left arm vs right arm (all segment pairs)
-  const L = [segs[0], segs[1]], R = [segs[2], segs[3]];
-  for (const sl of L)
-    for (const sr of R)
-      if (segSegDist(sl.a, sl.b, sr.a, sr.b) < sl.r + sr.r + clearance)
-        return sl.n + " is too close to the " + sr.n;
-  if (k.wrL.distanceTo(k.wrR) < 2 * R_WRIST + clearance) return "the hands are too close to each other";
-  return null;
+  return StudioCollisionGeometry.hit(p);
 }
 
 function clearBadMarks() { keys.forEach(k => delete k.bad); }
@@ -2836,6 +3164,8 @@ function checkCollisions(showAlert) {
 // in qc/checks/check_safe_path.py.
 let SAFE = {
   planner: "rrt-star",      // "straight" refuses; rrt-connect remains available
+  clearMm: 10,              // every check: closer than this is a hit (CLEAR)
+  musicGapMm: 7,            // extra gap at the music pace: fast moves cut corners (nong_sim)
   checkDeg: 1,              // biggest joint change between two checked points
   stepDeg: 12,              // how far a tree grows per try
   goalBias: 0.2,
@@ -2854,7 +3184,7 @@ function loadSafeSettings(j) {
   const bounds = { checkDeg: [0.05, 10], stepDeg: [0.1, 180], goalBias: [0, 1],
     budgetMs: [1, 30000], liveBudgetMs: [1, 5000], shortcuts: [0, 500],
     seed: [0, 4294967295], seedBudgetMs: [0, 100], optimizeMs: [0, 1000],
-    sliceMs: [1, 50], maxNodes: [2, 10000], rewireFactor: [1, 5] };
+    sliceMs: [1, 50], maxNodes: [2, 10000], rewireFactor: [1, 5], musicGapMm: [0, 100], clearMm: [0, 50] };
   if (!j || typeof j !== "object") { SAFE_ERROR = "invalid path settings"; return false; }
   const next = { ...SAFE };
   for (const key of Object.keys(SAFE)) if (key in j) next[key] = j[key];
@@ -2867,7 +3197,7 @@ function loadSafeSettings(j) {
       SAFE_ERROR = "invalid path setting: " + key; return false;
     }
   }
-  Object.assign(SAFE, next); SAFE_ERROR = ""; return true;
+  Object.assign(SAFE, next); SAFE_ERROR = ""; CLEAR = SAFE.clearMm; return true;
 }
 fetch("safe_path.json").then(r => r.json()).then(loadSafeSettings).catch(() => {});
 function safeRevision() { return JSON.stringify([SAFE, SAFE_ERROR, RIG]); }
@@ -2968,31 +3298,31 @@ function* safeSearch(a, b, budgetMs, seed) {
 // A short connect search supplies an initial answer; rewiring can improve it.
 function* rrtStar(a, b, budgetMs, rnd, t0, stats) {
   const end = t0 + budgetMs;
-  const body = (q, f = 0.5) => q.concat([a[8] + (b[8] - a[8]) * f, a[9] + (b[9] - a[9]) * f]);
+  const body = q => q.slice();
   const distance = (p, q) => Math.hypot(...p.map((v, j) => v - q[j]));
   const free = (p, q) => !pathHit(body(p), body(q));
-  const goal = b.slice(0, ARMJ), nodes = [], goals = new Set();
+  const goal = b.slice(0, NJ), nodes = [], goals = new Set();
   const add = (q, up) => {
     const n = { q, up, children: new Set(), cost: up < 0 ? 0 : nodes[up].cost + distance(nodes[up].q, q) };
     nodes.push(n);
     if (up >= 0) nodes[up].children.add(nodes.length - 1);
     return nodes.length - 1;
   };
-  add(a.slice(0, ARMJ), -1);
+  add(a.slice(0, NJ), -1);
   const seeded = rrtConnect(a, b, Math.min(budgetMs * 0.25, SAFE.seedBudgetMs), rnd, t0);
-  if (seeded) for (let i = 1; i < seeded.length; i++) add(seeded[i].slice(0, ARMJ), nodes.length - 1);
+  if (seeded) for (let i = 1; i < seeded.length; i++) add(seeded[i].slice(0, NJ), nodes.length - 1);
   if (seeded) goals.add(nodes.length - 1);
   let best = seeded ? nodes.length - 1 : -1;
   let bestCost = best < 0 ? Infinity : nodes[best].cost;
   let improveUntil = seeded ? Math.min(end, performance.now() + SAFE.optimizeMs) : end;
   while (performance.now() < improveUntil && nodes.length < SAFE.maxNodes) {
-    const sample = rnd() < SAFE.goalBias ? goal : RIG.min.slice(0, ARMJ).map((l, j) => l + rnd() * (RIG.max[j] - l));
+    const sample = rnd() < SAFE.goalBias ? goal : RIG.min.slice(0, NJ).map((l, j) => l + rnd() * (RIG.max[j] - l));
     const ranked = nodes.map((n, i) => ({ i, d: distance(n.q, sample) })).sort((x, y) => x.d - y.d);
     const nearest = nodes[ranked[0].i].q;
     const gap = Math.max(...sample.map((v, j) => Math.abs(v - nearest[j])));
     if (gap < 1e-6) { yield; continue; }
     const q = nearest.map((v, j) => v + (sample[j] - v) * Math.min(1, SAFE.stepDeg / gap));
-    const k = Math.min(nodes.length, Math.ceil(SAFE.rewireFactor * Math.E * (1 + 1 / ARMJ) * Math.log(nodes.length + 1)));
+    const k = Math.min(nodes.length, Math.ceil(SAFE.rewireFactor * Math.E * (1 + 1 / NJ) * Math.log(nodes.length + 1)));
     const near = nodes.map((n, i) => ({ i, d: distance(n.q, q) })).sort((x, y) => x.d - y.d).slice(0, k);
     const parents = near.slice().sort((x, y) => nodes[x.i].cost + x.d - nodes[y.i].cost - y.d);
     let parent = -1;
@@ -3032,21 +3362,18 @@ function* rrtStar(a, b, budgetMs, rnd, t0, stats) {
   qs.reverse();
   return qs.map((q, i) => body(q, i / (qs.length - 1)));
 }
-// Two trees, one from each end, each try reaching for the other. Only the 8
-// ARM joints are searched: the waist and shrug turn the body and arms
-// together, so they cannot cause a hit (fkPoints holds them still) and they
-// simply glide from a to b along the path.
+// Search all joints: shoulder lift changes physical clearances too.
 function rrtConnect(a, b, budgetMs, rnd, t0) {
-  const lo = RIG.min.slice(0, ARMJ), hi = RIG.max.slice(0, ARMJ);
-  const body = (q, f) => q.concat([a[8] + (b[8] - a[8]) * f, a[9] + (b[9] - a[9]) * f]);
-  const arm = p => p.slice(0, ARMJ);
+  const lo = RIG.min.slice(0, NJ), hi = RIG.max.slice(0, NJ);
+  const body = q => q.slice();
+  const arm = p => p.slice(0, NJ);
   const free = (p, q) => !pathHit(body(p, 0.5), body(q, 0.5));
   const A = [{ q: arm(a), up: -1 }], B = [{ q: arm(b), up: -1 }];
   const near = (T, q) => {
     let best = 0, bd = Infinity;
     for (let i = 0; i < T.length; i++) {
       let d = 0;
-      for (let j = 0; j < ARMJ; j++) d += (T[i].q[j] - q[j]) ** 2;
+      for (let j = 0; j < NJ; j++) d += (T[i].q[j] - q[j]) ** 2;
       if (d < bd) { bd = d; best = i; }
     }
     return best;
@@ -3119,6 +3446,7 @@ function safeKeys(K, budgetMs, keepTime) {
     const plan = planSafe(prev.pose, k.pose, budgetMs);
     if (plan.fail) {
       prev.hold = (prev.hold || 0) + (k.t || 0) + (k.hold || 0);
+      if (Number.isFinite(k.sourceMs)) prev.sourceHoldEnd = k.sourceHoldEnd ?? k.sourceMs;
       tally[poseHit(k.pose) ? "dropped" : "failed"]++;
       continue;
     }
@@ -3129,18 +3457,41 @@ function safeKeys(K, budgetMs, keepTime) {
       const spare = (k.t || 0) - need.reduce((s, v) => s + v, 0);
       if (keepTime && spare < 0) {
         prev.hold = (prev.hold || 0) + (k.t || 0) + (k.hold || 0);
+        if (Number.isFinite(k.sourceMs)) prev.sourceHoldEnd = k.sourceHoldEnd ?? k.sourceMs;
         tally.failed++;
         continue;
       }
       tally.around++;
       const legT = i => Math.round(need[i] + Math.max(0, spare) * legs[i] / all);
-      plan.path.slice(1, -1).forEach((q, i) => out.push({ pose: q, hold: 0, tset: k.tset, via: true, t: legT(i) }));
+      const total = legs.reduce((s, _, i) => s + legT(i), 0), sourceFrom = prev.sourceHoldEnd ?? prev.sourceMs;
+      let elapsed = 0;
+      plan.path.slice(1, -1).forEach((q, i) => {
+        elapsed += legT(i);
+        const sourceMs = Number.isFinite(k.sourceMs) ? sourceFrom + (k.sourceMs - sourceFrom) * elapsed / total : undefined;
+        out.push({ pose: q, hold: 0, tset: k.tset, via: true, t: legT(i), sourceMs, sourceHoldEnd: sourceMs });
+      });
       k.t = legT(legs.length - 1);
     } else if (keepTime && minTime(prev.pose, k.pose) > (k.t || 0) + 1) {
       // a dropped pose before it made this move longer: go as far as the time
       // allows, along the line just checked clear (like vidReachSide)
       const f = Math.max(0, Math.min(1, ((k.t || 0) - 1) / minTime(prev.pose, k.pose)));
       k.pose = safeLerp(prev.pose, k.pose, f).map((v, j) => clampJ(j, v));
+    }
+    // Validate the actual shortened/rounded motion, including body joints.
+    const actualPrev = out[out.length - 1];
+    if (!keepTime) k.t = Math.max(k.t || 0, minTime(actualPrev.pose, k.pose));
+    if (keepTime && minTime(actualPrev.pose, k.pose) > k.t) {
+      const target = k.pose.slice(); let lo = 0, hi = 1, best = actualPrev.pose.slice();
+      for (let z = 0; z < 18; z++) {
+        const f = (lo + hi) / 2, q = safeLerp(actualPrev.pose, target, f).map((v, j) => clampJ(j, v));
+        if (minTime(actualPrev.pose, q) <= k.t) { best = q; lo = f; } else hi = f;
+      }
+      k.pose = best;
+    }
+    if (poseHit(k.pose) || pathHit(actualPrev.pose, k.pose)) {
+      actualPrev.hold = (actualPrev.hold || 0) + (k.t || 0) + (k.hold || 0);
+      if (Number.isFinite(k.sourceMs)) actualPrev.sourceHoldEnd = k.sourceHoldEnd ?? k.sourceMs;
+      tally.failed++; continue;
     }
     out.push(k);
   }
@@ -3410,9 +3761,12 @@ async function directSafePlay(fromMs) {
     }
   };
   entryHold=true;
+  // no board show here, so the music pace is asked for by hand and handed back
+  const music=planPace(K)==='music';
   return withSafeMotion(async()=>{try {
     let status=await safeTakeover(stale);
     if(!status || stale())return false;
+    if(music) await rawCmd('PACE '+musicPace.cue().replace(/^pace:\s*/i,'').toUpperCase()).catch(()=>'');   // an older board: moves just run slower
     if(!(await checkedPoseUnlocked(poseAt(fromMs),0,epoch,null,status,s=>draw(s.module.joints,fromMs))) || stale())return false;
     let cursor=fromMs;
     do {
@@ -3435,6 +3789,7 @@ async function directSafePlay(fromMs) {
     return !stale();
   }catch(e){await cancelSafeMotion('direct playback failed');safeMotionNote('Playback stopped: '+e.message,true);return false;}
   finally {
+    if(music) await rawCmd('PACE NORMAL').catch(()=>'');
     if(epoch===safeMotionEpoch) {playing=false;entryHold=false;$('playBtn').textContent='▶ Play';keepAwake(false);}
   }});
 }
@@ -3856,7 +4211,17 @@ function deltaDeg(from, to) {
 // so any speed above about 38 °/s produces the identical time. The number was
 // never wrong; it was invisible. Every caller that shows a time to a person
 // asks for the reason too.
-function minTimeWhy(from, to) {
+// The pace a sequence is planned and played at. One that plays a song (a
+// `play:` cue) or says `pace: music` follows its music: the board drops the
+// peak-speed cap to music_dps for that file (PACE MUSIC), and Studio plans the
+// same. Everything else keeps SAFE_DPS. Collisions, limits and servo max hold
+// in both.
+function planPace(K = keys) {
+  if (PACE_OVERRIDE) return PACE_OVERRIDE;
+  return K.some(k => keyCue(k, "play") || /^music\b/i.test(keyCue(k, "pace") || "")) ? "music" : "normal";
+}
+function paceCapDps(pace = planPace()) { return pace === "music" ? musicPace.cap() : SAFE_DPS; }
+function minTimeWhy(from, to, atPace) {
   // per joint (the slow WAIST servo counts too), the slowest joint wins
   let servo = 0, slowest = 0;
   for (let i = 0; i < NJ; i++) {
@@ -3864,15 +4229,18 @@ function minTimeWhy(from, to) {
     if (need > servo) { servo = need; slowest = i; }
   }
   // safety floor, same as firmware nongmath::safeDuration (ease peaks at pi/2 x average)
-  const peak = deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, SAFE_DPS);
+  const pace = atPace || planPace(), cap = paceCapDps(pace);
+  const peak = cap > 0 ? deltaDeg(from, to) * (Math.PI / 2) / Math.max(1, cap) : 0;
   const need = Math.max(servo, peak);
   const ms = Math.max(MIN_MOVE_MS, Math.ceil(need * 1000));
   let why = "the 80 ms shortest-move floor", fix = "";
   if (need * 1000 > MIN_MOVE_MS) {
     if (peak >= servo) {
-      why = `the robot's peak speed limit, ${SAFE_DPS} °/s`;
-      fix = `Above about ${flatDps()} °/s nothing gets faster. Raise ` +
-            `Peak speed limit (Timing) to shorten it.`;
+      why = pace === "music" ? `the speed limit with music, ${cap} °/s`
+                             : `the robot's peak speed limit, ${SAFE_DPS} °/s`;
+      fix = pace === "music" ? "Raise Speed limit with music (Timing), or 0 for the servos' top speed."
+                             : `Above about ${flatDps()} °/s nothing gets faster. Raise ` +
+                               `Peak speed limit (Timing) to shorten it.`;
     } else {
       why = `${JOINT_LABELS[slowest] || ("joint " + (slowest + 1))} at its ` +
             `servo max, ${Math.round(jointMaxDps(slowest))} °/s`;
@@ -3881,7 +4249,8 @@ function minTimeWhy(from, to) {
   }
   return { ms, why, fix };
 }
-function minTime(from, to) { return minTimeWhy(from, to).ms; }
+// atPace: a list being planned that is not the open sequence (planPace(list))
+function minTime(from, to, atPace) { return minTimeWhy(from, to, atPace).ms; }
 // The show speed above which the peak limit decides every safety-limited move.
 // pi/2 is the ease curve's peak-to-average ratio, the same one the firmware uses.
 function flatDps() { return Math.floor(SAFE_DPS * 2 / Math.PI); }
@@ -3998,8 +4367,10 @@ function adoptBoardSafety(module) {
   // choice and must not be silently replaced after reconnecting to a board.
   const wasAuto = keys.map((k, i) => i > 0 && !timePinned(i) && k.t ===
     autoTime(keys[i - 1].pose, k.pose, keyDps(i)));
-  const changed = safe !== SAFE_DPS;
+  const music = Number(module.music_dps);
+  const changed = safe !== SAFE_DPS || (Number.isFinite(music) && music !== MUSIC_DPS);
   SAFE_DPS = safe;
+  if (Number.isFinite(music) && music >= 0) MUSIC_DPS = music;   // older boards: keep 0
   boardSafeDpsMax = max;
   boardSafePeer = module.link ? Number(module.peer) || 0 : 0;
   input.disabled = button.disabled = false;
@@ -4054,6 +4425,206 @@ function retimeAt(i) {
 function clampKeyTimes() { // raise any hand-edited time that fell below the floor
   bumpKeys();
   for (let i = 0; i < keys.length; i++) keys[i].t = Math.max(keys[i].t, keyMin(i));
+}
+// --- speed limit with music (A48-23) ---
+// User 2026-10-27: a show that follows its song may run faster than the 60 °/s
+// safety cap, set PER SEQUENCE and tuned by the user, who then cuts, adds or
+// changes the moves that still cannot keep up. One number per sequence:
+// empty = the robot's own music_dps, 0 = only the servos' top speed. It is
+// saved in the project and written into the file as `pace: music N`, which
+// the board obeys for that file only (PACE MUSIC N, NongModule.cpp).
+const musicPace = {
+  // the cap a list K follows its music at
+  cap(K = keys) {
+    const own = this.own(K);
+    return own != null ? own : MUSIC_DPS;
+  },
+  // the sequence's own number: the box, else a file's `pace: music N`; null = the robot's
+  own(K = keys) {
+    if (SEQ_MUSIC_DPS != null) return SEQ_MUSIC_DPS;
+    for (const k of K) {
+      const m = /^music\s+(\d+(?:\.\d+)?)/i.exec(keyCue(k, "pace") || "");
+      if (m) return +m[1];
+    }
+    return null;
+  },
+  cue(K = keys) { const own = this.own(K); return "pace: music" + (own != null ? " " + own : ""); },
+  // the value in the box, then every pace cue and every music-timed move follow it
+  changed() {
+    const raw = ($("musicDpsSeq").value || "").trim(), v = Math.round(+raw);
+    SEQ_MUSIC_DPS = raw === "" || !(v >= 0) ? null : v > 0 && v < 5 ? 5 : Math.min(v, Math.round(slowestDps()));
+    $("musicDpsSeq").value = SEQ_MUSIC_DPS == null ? "" : SEQ_MUSIC_DPS;
+    keys.forEach(k => {
+      if (k.cues) k.cues = k.cues.map(c => /^pace:\s*music/i.test(c) ? this.cue() : c);
+    });
+    this.retime();
+    renderTimeline();
+  },
+  // A move timed by the song gets back the song's time when the cap allows
+  // it, and only as much more as the servos need when it does not.
+  retime() {
+    bumpKeys();
+    keys.forEach((k, i) => {
+      if (k.musicMs > 0) { delete k.servoMs; k.t = Math.max(k.musicMs, keyMin(i)); }
+    });
+    // faster moves may now let the lagging arm touch: lengthen those again
+    if (planPace() === "music") ServoFollow.settle(keys.filter(k => !k.off));
+  },
+  // the moves that cannot keep up at this cap: [{i, behindMs, why}]
+  late() {
+    if (planPace() !== "music") return [];
+    const out = [];
+    keys.forEach((k, i) => {
+      if (k.off || !(i > 0)) return;
+      const want = k.musicMs > 0 ? k.musicMs : null;
+      if (want == null) return;
+      const w = minTimeWhy(keys[i - 1].pose, k.pose);
+      if (k.servoMs > Math.max(want, w.ms) + 10)
+        out.push({ i, behindMs: k.servoMs - want, why: "the real servos: at full speed the hands would touch" });
+      else if (w.ms > want + 10) out.push({ i, behindMs: w.ms - want, why: w.why });
+    });
+    return out;
+  },
+  render() {
+    const row = $("musicPaceRow");
+    if (!row) return;
+    const music = planPace() === "music";
+    row.hidden = !music;
+    $("musicFitStat").hidden = !music;
+    const list = $("musicFitList");
+    list.innerHTML = "";
+    if (!music) return;
+    if (document.activeElement !== $("musicDpsSeq"))
+      $("musicDpsSeq").value = SEQ_MUSIC_DPS == null ? "" : SEQ_MUSIC_DPS;
+    $("musicDpsSeq").placeholder = MUSIC_DPS > 0 ? String(MUSIC_DPS) : "robot";
+    const cap = this.cap(), late = this.late();
+    const at = cap > 0 ? `${cap} °/s` : "the servos' top speed";
+    if (!late.length) { $("musicFitStat").textContent = `Every move keeps up with the song at ${at}.`; return; }
+    const behind = late.reduce((s, x) => s + x.behindMs, 0);
+    $("musicFitStat").textContent = `${late.length} move(s) fall behind the song at ${at}; ` +
+      `the show ends ${(behind / 1000).toFixed(1)} s after the music. Raise the limit, or click a move to ` +
+      "shorten, change or remove it.";
+    late.slice(0, 40).forEach(x => {
+      const b = document.createElement("button");
+      b.className = "secondary mini";
+      b.textContent = `${keys[x.i].name || "move " + x.i} +${(x.behindMs / 1000).toFixed(2)} s`;
+      b.title = "held back by " + x.why;
+      b.onclick = () => selectKey(x.i);
+      list.appendChild(b);
+    });
+  },
+};
+// --- the real servos (A48-24) ---
+// User 2026-10-27: see in Studio where the real robot falls behind the timing.
+// The board sends a target every frame; a hobby servo reaches it late: it
+// answers after a delay (lag), speeds up no faster than its acceleration and
+// turns no faster than its top speed. All three are per joint on the RIG
+// (Setup > rig), so they follow this robot's servos; lag and acceleration are
+// guesses until measured on the bench (lab-day.md). The warn/bad lines and the
+// frame are DATA in servo_follow.json. tools/nong_sim/world.py uses the same
+// model (_servo_step), so Studio and the physics player agree.
+let SERVO_VIEW = { frameMs: 20, warnDeg: 8, badDeg: 20 };
+fetch("servo_follow.json").then(r => r.json()).then(j => {
+  for (const k of Object.keys(SERVO_VIEW)) if (Number.isFinite(j[k]) && j[k] > 0) SERVO_VIEW[k] = j[k];
+}).catch(() => {});
+
+class ServoFollow {
+  constructor(start) { this.reset(start); }
+  reset(start) {
+    this.pos = [...start]; this.aim = [...start]; this.vel = new Array(NJ).fill(0);
+  }
+  // one step of dt ms toward target; returns where the horns are
+  step(target, dt) {
+    const s = dt / 1000;
+    for (let j = 0; j < NJ; j++) {
+      const lag = Math.max(0.1, +RIG.servoLagMs[j] || 0) / 1000;
+      this.aim[j] += (target[j] - this.aim[j]) * (1 - Math.exp(-s / lag));
+      const top = jointMaxDps(j), acc = Math.max(1, +RIG.servoAccel[j] || 1);
+      const err = this.aim[j] - this.pos[j];
+      // the fastest speed that can still stop on the aim: no overshoot
+      const want = Math.sign(err) * Math.min(top, Math.sqrt(2 * acc * Math.abs(err)), Math.abs(err) / s);
+      const dv = Math.max(-acc * s, Math.min(acc * s, want - this.vel[j]));
+      this.vel[j] += dv;
+      this.pos[j] += this.vel[j] * s;
+    }
+    return this.pos;
+  }
+  // The whole list K played at the board's frame: for every move, how far the
+  // horns trailed the timeline at worst, and on which joint.
+  // opts.hits: also check the HORNS' pose for touching (every other frame,
+  // ~0.3 ms a check): the plan can be clear while the lagging arm is not.
+  static trace(K, opts = {}) {
+    if (!K.length) return { moves: [], worst: null };
+    const f = new ServoFollow(K[0].pose), dt = SERVO_VIEW.frameMs;
+    const end = easeKeys(K, Infinity).end || 0, starts = [];
+    let t = K[0].hold || 0;
+    for (let i = 1; i < K.length; i++) { starts.push(t); t += K[i].t + (K[i].hold || 0); }
+    const moves = K.map(() => ({ deg: 0, joint: -1 }));
+    let worst = null, m = 0;
+    for (let ms = 0; ms <= end + 500; ms += dt) {
+      while (m < starts.length - 1 && ms >= starts[m + 1]) m++;
+      const want = easeKeys(K, ms).pose, got = f.step(want, dt);
+      for (let j = 0; j < NJ; j++) {
+        const e = Math.abs(want[j] - got[j]), mv = moves[Math.min(m + 1, K.length - 1)];
+        if (e > mv.deg) { mv.deg = e; mv.joint = j; }
+        if (!worst || e > worst.deg) worst = { deg: e, joint: j, move: m + 1, ms };
+      }
+      const mv = moves[Math.min(m + 1, K.length - 1)];
+      if (opts.hits && !mv.hitMs && (ms / dt) % 2 === 0 && collisionAt(got)) mv.hitMs = ms;
+    }
+    return { moves, worst };
+  }
+  // A show that follows its song may move faster than the real arm can follow
+  // without its hands meeting (nong_sim found 0-4 touches per cheer dance,
+  // 2026-10-27). Lengthen each move where the HORNS touch, a little at a
+  // time, until none does; k.servoMs keeps that floor so later re-timing
+  // (music_pace.js) honours it. Returns how many moves it lengthened.
+  static settle(K, tries = 6) {
+    const longer = new Set();
+    for (let n = 0; n < tries; n++) {
+      const hit = ServoFollow.trace(K, { hits: true }).moves
+        .map((mv, i) => (mv.hitMs ? i : -1)).filter(i => i > 0);
+      if (!hit.length) break;
+      for (const i of hit) {
+        K[i].t = Math.round(K[i].t * 1.3); K[i].servoMs = K[i].t; longer.add(i);
+      }
+    }
+    return longer.size;
+  }
+}
+
+// What the time bar and the status line show: cached per edit of the moves.
+const servoLag = {
+  sig: "", res: null,
+  of() {
+    const sig = keysSignature() + "|" + RIG.servoLagMs + "|" + RIG.servoAccel + "|" + RIG.servoMaxDps + "|" + maxDps();
+    if (sig !== this.sig) { this.sig = sig; this.res = ServoFollow.trace(playKeys()); }
+    return this.res;
+  },
+  // for bar chip i: {deg, joint, level: "" | "warn" | "bad"}; a suspended
+  // chip is not played, so the played list counts only the others
+  forKey(i) {
+    if (!keys[i] || keys[i].off) return null;
+    let p = 0;
+    for (let n = 0; n < i; n++) if (!keys[n].off) p++;
+    const mv = this.of().moves[p];
+    if (!p || !mv) return null;
+    const level = mv.deg >= SERVO_VIEW.badDeg ? "bad" : mv.deg >= SERVO_VIEW.warnDeg ? "warn" : "";
+    return { ...mv, level };
+  },
+  summary() {
+    const w = this.of().worst;
+    if (!w || w.deg < SERVO_VIEW.warnDeg) return "The real servos keep up with every move.";
+    return `The real servos fall up to ${Math.round(w.deg)}° behind (${JOINT_LABELS[w.joint] || "joint " + (w.joint + 1)}, ` +
+           `move ${w.move}). Marked moves on the bar; slow them or tick “Play like the real servos” to watch it.`;
+  },
+};
+// "Play like the real servos": the 3D robot shows the horns, not the plan.
+let servoPlay = null;
+function servoPlayPose(target, dt) {
+  if (!$("servoView") || !$("servoView").checked) { servoPlay = null; return target; }
+  if (!servoPlay) servoPlay = new ServoFollow(target);
+  return [...servoPlay.step(target, dt)];
 }
 // --- timeline ---
 function addKey() {
@@ -4187,6 +4758,7 @@ function selectKey(i) {
     livePause(); stopRobotSequence(); keepAwake(false);
   }
   token=seekToken;
+  servoPlay = null;          // the real-servo picture starts again where the clock lands
   selKey = i;
   let travel = 0;
   if (keys[i]) {
@@ -4501,6 +5073,11 @@ function renderTimeline() {
     mn.appendChild(mus);
     el.append(bar, idx, pv, tr, mn);
     if (musOpen.has(i) || keyCue(k, "play")) el.append(musicRow(k, i));
+    const lag = servoLag.forKey(i);   // the real servos trail this move (servo_follow.js)
+    if (lag && lag.level) {
+      el.classList.add("lag" + lag.level);
+      el.title = `the real servos fall ${Math.round(lag.deg)}° behind here (${JOINT_LABELS[lag.joint] || "joint " + (lag.joint + 1)})`;
+    }
     if (k.bad) { // collision found by checkCollisions(): mark the chip red
       el.classList.add("bad");
       const b = document.createElement("div");
@@ -4511,6 +5088,8 @@ function renderTimeline() {
     box.appendChild(el);
   });
   $("tlTime").textContent = (playT / 1000).toFixed(1) + "s / " + (totalMs() / 1000).toFixed(1) + "s";
+  musicPace.render();
+  if ($("servoStat")) $("servoStat").textContent = servoLag.summary();
   renderTimeBar();
 }
 
@@ -4904,7 +5483,8 @@ function keepAwake(on) {
   } catch (e) { /* never let this break playback */ }
 }
 
-async function togglePlay() {
+// opts.previewOnly: draw only, never drive the arm (the talk card's Show, A46-4)
+async function togglePlay(opts = {}) {
   if (timelinePreparing) { timelinePreparing=false;cancelSafeMotion("planning cancelled");return; }
   if (!playing) {
     const epoch=safeMotionEpoch;
@@ -4927,7 +5507,8 @@ async function togglePlay() {
   // question, and it is asked only when something is actually connected.
   if (!playing) {
     previewOnly = !checkedTimeline();
-    if (checkCollisions(false).length && (liveLinked() || hubDriven())) {
+    if (opts.previewOnly) previewOnly = true;
+    else if (checkCollisions(false).length && (liveLinked() || hubDriven())) {
       previewOnly = !crashGate("PLAY it on the robot");
       if (previewOnly) {
         const st = $("tlStat");
@@ -4956,7 +5537,7 @@ async function togglePlay() {
   //
   // So: taking control here always stops the module first, and giving up
   // control always stops the module too. Never two clocks on one robot.
-  stopRobotSequence();
+  if (!opts.previewOnly) stopRobotSequence();   // a preview leaves the robot alone
   if (!playing) { livePause(); return; }
   // The HUB plays it when the link goes through the hub: a native process,
   // never throttled, so the show survives this page being hidden or closed —
@@ -5181,6 +5762,10 @@ function buildYaml(fromMs) {
   let cur = seqDps;
   for (let s = 0; s < from && s < K0.length; s++) cur = Math.round(K0[s].dps || seqDps);
   lines.push(`  - speed: ${cur}`);
+  // A sequence that follows its music says so first and puts the pace back
+  // last, so inside a longer show it never speeds up the sequence after it.
+  const music = planPace(K0) === "music";
+  if (music && !K0.some(k => keyCue(k, "pace"))) lines.push("  - " + musicPace.cue());
   // suspended keyframes are left out entirely — the robot never sees them
   playKeys().forEach((k, i) => {
     if (i < from) return;      // walked for state above, never written as motion
@@ -5199,7 +5784,7 @@ function buildYaml(fromMs) {
     // The cues this keyframe carried in, written back where they came from —
     // before the move, the same order the file had them in. Without this an
     // edit-and-export silently threw the show's music away.
-    (k.cues || []).forEach(c => lines.push(`  - ${c}`));
+    (k.cues || []).forEach(c => lines.push(`  - ${/^pace:\s*music/i.test(c) ? musicPace.cue() : c}`));
     // The FIRST move written is the only one whose starting point the file
     // cannot know — the robot is wherever it is standing, not where the
     // timeline says. Give it at least the time that distance really needs, so
@@ -5211,6 +5796,7 @@ function buildYaml(fromMs) {
     if (k.hold > 0) lines.push(`  - wait: ${k.hold}`);
     (k.cuesAfter || []).forEach(c => lines.push(`  - ${c}`));
   });
+  if (music) lines.push("  - pace: normal");
   const next = ($("seqNext").value || "").trim().replace(/[^\w.-]+/g, "");
   if (next) {
     // chain: when this sequence ends the module starts that one, so a show can
@@ -5374,7 +5960,7 @@ function renderRigUI() {
   // PER-JOINT servo + gear (each joint can use a different servo)
   const svh = document.createElement("div"); svh.className = "tlabel";
   svh.style.marginTop = "8px";
-  svh.textContent = "servo & gear per joint (pinion:gear, pulse µs, max °/s, travel°, Hz):";
+  svh.textContent = "servo & gear per joint (pinion:gear, pulse µs, max °/s, delay ms, speed-up °/s², travel°, Hz):";
   jb.appendChild(svh);
   const presetRow = document.createElement("div"); presetRow.className = "row";
   const pl = document.createElement("span"); pl.className = "lbl"; pl.textContent = "preset";
@@ -5394,7 +5980,7 @@ function renderRigUI() {
   jb.appendChild(presetRow);
   JOINT_LABELS.forEach((label, i) => {
     const row = document.createElement("div"); row.className = "rigjrow";
-    row.style.gridTemplateColumns = "78px 38px 38px 50px 50px 44px 44px 44px";
+    row.style.gridTemplateColumns = "78px 38px 38px 50px 50px 44px 40px 52px 44px 44px";
     const name = document.createElement("span");
     name.className = "jname"; name.textContent = label;
     row.appendChild(name);
@@ -5418,6 +6004,8 @@ function renderRigUI() {
     mk("pulseMin", 100, "servo pulse minimum (µs)");
     mk("pulseMax", 200, "servo pulse maximum (µs)");
     mk("servoMaxDps", 30, "this servo's physical speed limit (°/s of the joint)");
+    mk("servoLagMs", 0, "how late this servo answers a new target (ms). A guess until measured; only Studio's picture of the real servos uses it.");
+    mk("servoAccel", 100, "how fast this servo can speed up (°/s² of the joint). A guess until measured; only Studio's picture of the real servos uses it.", 100000);
     mk("servoRange", 60,
        "SERVO travel: how far this servo turns end to end. 180 = normal hobby " +
        "servo, 270 = wide-angle. NOT the joint's range (that is min°/max° above).",
@@ -6855,6 +7443,7 @@ async function saveProject(opts) {
     // project re-times every automatic move against a different 60 °/s default
     // and the show quietly got slower (A31-4).
     safeDps: SAFE_DPS,
+    musicDps: SEQ_MUSIC_DPS,   // speed limit with music, this sequence only (A48-23)
     meshes: meshCfg, addons,
     robotIp: $("robotIp").value, seqName: $("projName").value,   // kept: older Studios read it
     // The chain is part of the show: a project saved with one and reopened
@@ -6956,6 +7545,7 @@ async function loadProject(file) {
   bumpKeys();
   $("speedDps").value = p.speedDps || 120;
   $("maxDps").value = p.maxDps || 400;
+  SEQ_MUSIC_DPS = Number.isFinite(p.musicDps) && p.musicDps >= 0 ? p.musicDps : null;
   // A connected board's own limit still wins: adoptBoardSafety runs on connect
   // and overwrites this. Saved projects only decide what Studio plans with
   // while no robot is telling it otherwise.
@@ -8908,6 +9498,792 @@ async function saveRobotSetting(def) {
   }
 }
 renderRobotSettings();
+// Keep observation geometry and inferred movement separate: a camera cut is
+// not a robot command. Hip-relative measurements also preserve an opening twist.
+let VIDEO_FOLLOW = null, VIDEO_POLICY = null, VIDEO_READY = null;
+function videoFollowReady() {
+  if (!VIDEO_READY) VIDEO_READY = (async () => {
+    const config = await fetch("video_follow.json").then(r => r.json());
+    if (!config.tracking || !config.fitting || config.version !== 1) throw new Error("Video follow settings could not be read");
+    let policy = null;
+    try { policy = await fetch(config.policy.model).then(r => r.json()); } catch (_) { /* conservative geometry fallback */ }
+    VIDEO_POLICY = policy; VIDEO_FOLLOW = config; return config;
+  })().catch(error => { VIDEO_READY = null; throw error; });
+  return VIDEO_READY;
+}
+class VideoBodyMotion {
+  static wrap(v) { return Math.atan2(Math.sin(v), Math.cos(v)); }
+  static measure(w, mirror = false) {
+    if (!w || w.length < 25) return null;
+    const point = i => {
+      const j = mirror ? (i % 2 ? i + 1 : i - 1) : i, p = w[j];
+      return { at: new THREE.Vector3(mirror ? -p.x : p.x, -p.y, -p.z), seen: p.v ?? p.visibility ?? 1 };
+    };
+    const sl = point(11), sr = point(12), hl = point(23), hr = point(24);
+    const confidence = Math.min(sl.seen, sr.seen, hl.seen, hr.seen);
+    if (confidence < (VIDEO_FOLLOW?.tracking.confidence ?? 0.55)) return null;
+    const left = hl.at.clone().sub(hr.at), spine = sl.at.clone().add(sr.at).sub(hl.at).sub(hr.at);
+    if (left.length() < 0.025 || spine.length() < 0.05) return null;
+    left.normalize();
+    const up = spine.clone().addScaledVector(left, -spine.dot(left)).normalize();
+    const front = left.clone().cross(up).normalize();
+    const shoulder = sl.at.clone().sub(sr.at), sx = shoulder.dot(left), sz = shoulder.dot(front);
+    const twist = Math.atan2(-sz, sx), roll = Math.atan2(shoulder.dot(up), Math.hypot(sx, sz));
+    const torsoLeft = shoulder.clone().addScaledVector(up, -shoulder.dot(up)).normalize();
+    const torsoFront = torsoLeft.clone().cross(up).normalize();
+    const arms = [0, 1].map(a => {
+      const S = point(11 + a), E = point(13 + a), W = point(15 + a);
+      const local = v => new THREE.Vector3(v.dot(torsoLeft), v.dot(up), v.dot(torsoFront)).normalize();
+      return { ok: Math.min(S.seen, E.seen, W.seen) >= (VIDEO_FOLLOW?.tracking.confidence ?? 0.55),
+        upper: local(E.at.clone().sub(S.at)), fore: local(W.at.clone().sub(E.at)),
+        rawUpper: E.at.clone().sub(S.at).normalize(), rawFore: W.at.clone().sub(E.at).normalize() };
+    });
+    return { arms, twist, roll, confidence, viewUp: up.clone(), viewLeft: left.clone(), hipYaw: Math.atan2(front.x, front.z) };
+  }
+  static difference(a, b, raw = false) {
+    if (!a || !b) return 180;
+    let error = 0;
+    for (let i = 0; i < 2; i++) if (a.arms[i].ok && b.arms[i].ok)
+      for (const key of raw ? ["rawUpper", "rawFore"] : ["upper", "fore"])
+        error = Math.max(error, THREE.MathUtils.radToDeg(a.arms[i][key].angleTo(b.arms[i][key])));
+    return error;
+  }
+  static styleDifference(a, b) {
+    if (!a || !b) return 180;
+    return Math.max(this.difference(a, b), THREE.MathUtils.radToDeg(Math.max(
+      Math.abs(this.wrap(a.twist - b.twist)), Math.abs(a.roll - b.roll))));
+  }
+  static blend(previous, observed, weight = 0.6) {
+    return { ...observed,
+      twist: previous.twist + this.wrap(observed.twist - previous.twist) * weight,
+      roll: previous.roll + (observed.roll - previous.roll) * weight,
+      arms: observed.arms.map((a, i) => ({ ...a,
+        upper: previous.arms[i].upper.clone().lerp(a.upper, weight).normalize(),
+        fore: previous.arms[i].fore.clone().lerp(a.fore, weight).normalize() })) };
+  }
+}
+class VideoTemporalPolicy {
+  constructor(model = VIDEO_POLICY, cameraMode = "fixed") {
+    this.model = model; this.cameraMode = cameraMode; this.accepted = null; this.previous = null;
+    this.headingBaseline = null; this.held = 0; this.heading = 0;
+  }
+  static bin(value, edges) { let n = 0; while (n < edges.length && value >= edges[n]) n++; return n; }
+  static state(features, model) {
+    return model.features.map((name, i) => VideoTemporalPolicy.bin(features[name], model.bins[i])).join(":");
+  }
+  step(body, scene, shot, groupTrust = 1) {
+    if (!body) { this.held++; return { body: this.accepted, action: "uncertain", trusted: false, waist: this.accepted ? this.heading + this.accepted.twist : null }; }
+    if (!this.accepted) {
+      this.accepted = body; this.previous = body; this.headingBaseline = body.hipYaw;
+      return { body, action: "initial", trusted: true, waist: body.twist };
+    }
+    const features = {
+      invariant: VideoBodyMotion.difference(body, this.accepted), raw: VideoBodyMotion.difference(body, this.previous, true),
+      body: THREE.MathUtils.radToDeg(Math.max(Math.abs(VideoBodyMotion.wrap(body.twist - this.accepted.twist)), Math.abs(body.roll - this.accepted.roll))),
+      scene, confidence: body.confidence * groupTrust, held: this.held,
+      heading: THREE.MathUtils.radToDeg(Math.abs(VideoBodyMotion.wrap(body.hipYaw - this.headingBaseline)))
+    };
+    let action = "uncertain", learned = false;
+    const model = this.model;
+    if (model?.enabled && model.schema === "mice-video-q-v1") {
+      const row = model.q[VideoTemporalPolicy.state(features, model)];
+      if (row && row.every(Number.isFinite)) {
+        const ranks = row.map((q, i) => ({ q, i })).sort((a, b) => b.q - a.q);
+        if (ranks[0].q - ranks[1].q >= (VIDEO_FOLLOW?.policy.minimumMargin ?? 0.5)) {
+          action = model.actions[ranks[0].i]; learned = true;
+        }
+      }
+    }
+    // Explicit geometry fallback for unseen states or a policy that did not
+    // meet held-out acceptance. Missing identity never authorizes a pose jump.
+    if (!learned && features.confidence >= 0.55) {
+      if (scene > 0.18 && features.invariant < 12 && features.body < 8) action = "compensate";
+      else if (scene <= 0.18 && (features.invariant > 3 || features.body > 2 || features.heading > 3)) action = "accept";
+      else if (features.invariant <= 3 && features.body <= 2) action = "hold";
+    }
+    if (groupTrust < 0.5 || (scene > 0.18 && (features.invariant > 45 || features.body > 35))) action = "uncertain";
+    if (features.confidence >= 0.55 && features.invariant < (VIDEO_FOLLOW?.body.stillBonesDegrees ?? 6) &&
+        features.body < (VIDEO_FOLLOW?.body.stillBodyDegrees ?? 3) && features.heading < 3 && scene < 0.1) action = "hold";
+    const headingObservable = this.cameraMode === "fixed" || scene < 0.01;
+    if (features.confidence >= 0.55 && features.heading >= 3 && !shot && scene <= 0.18 && headingObservable) {
+      this.heading += VideoBodyMotion.wrap(body.hipYaw - this.headingBaseline);
+      this.headingBaseline = body.hipYaw;
+    }
+    if (shot || scene > 0.18 || !headingObservable) this.headingBaseline = body.hipYaw;
+    if (action === "accept" || action === "compensate") {
+      this.accepted = action === "compensate" ? VideoBodyMotion.blend(this.accepted, body) : body; this.held = 0;
+    }
+    else this.held++;
+    this.previous = body;
+    return { body: this.accepted, action, learned, trusted: action !== "uncertain", features,
+      waist: this.heading + this.accepted.twist };
+  }
+}
+// Offline, time-based denoising. Unknown frames remain holds, and an opening
+// pose never borrows a future observation. Recheck geometry after filtering.
+class VideoMotionSmoother {
+  constructor(config = VIDEO_FOLLOW.smoothing) { this.config = config; }
+  static quality(poses, times) {
+    let reversals = 0, travel = 0, largestStep = 0;
+    for (let i = 1; i < poses.length; i++) for (let j = 0; j < NJ; j++) {
+      const d = poses[i][j] - poses[i - 1][j];
+      travel += Math.abs(d); largestStep = Math.max(largestStep, Math.abs(d));
+      if (i > 1 && times[i] - times[i - 2] < 700) {
+        const previous = poses[i - 1][j] - poses[i - 2][j];
+        if (d * previous < 0 && Math.min(Math.abs(d), Math.abs(previous)) > 2) reversals++;
+      }
+    }
+    return { reversals, travel, largestStep };
+  }
+  apply(poses, times, frames) {
+    if (!poses.length) return { poses: [], before: null, after: null };
+    const cfg = this.config, before = VideoMotionSmoother.quality(poses, times);
+    const out = [poses[0].slice()], velocity = poses[0].map(() => 0);
+    const reliable = i => frames[i]?.trusted !== false && frames[i]?.action !== 'uncertain' &&
+      (frames[i]?.trusted === true || frames[i]?.body || frames[i]?.w);
+    for (let i = 1; i < poses.length; i++) {
+      const previous = out[i - 1], dt = Math.max(.001, (times[i] - times[i - 1]) / 1000);
+      if (!reliable(i)) { out.push(previous.slice()); velocity.fill(0); continue; }
+      const samples = [];
+      for (let k = Math.max(1, i - 3); k < Math.min(poses.length, i + 4); k++) {
+        if (Math.abs(times[k] - times[i]) > cfg.windowMs || !reliable(k) || frames[k]?.shot !== frames[i]?.shot) continue;
+        // Do not smooth through an unknown interval, an actual hold or a cut.
+        let connected = true;
+        for (let n = Math.min(i, k); n <= Math.max(i, k); n++) if (!reliable(n) || frames[n]?.shot !== frames[i]?.shot) connected = false;
+        if (connected) samples.push({ pose: poses[k], weight: 1 - Math.abs(times[k] - times[i]) / (cfg.windowMs + 1) });
+      }
+      const next = poses[i].map((value, j) => {
+        const sorted = samples.map(s => s.pose[j]).sort((a, b) => a - b);
+        const median = sorted.length ? sorted[Math.floor(sorted.length / 2)] : value;
+        let sum = 0, weight = 0;
+        for (const s of samples) {
+          const w = s.weight * Math.min(1, cfg.outlierDegrees / Math.max(1, Math.abs(s.pose[j] - median)));
+          sum += s.pose[j] * w; weight += w;
+        }
+        // A trusted observed hold is a target to settle toward, not a command
+        // to freeze a partially filtered output before it arrives.
+        const target = frames[i]?.action === 'hold' ? value : weight ? sum / weight : value;
+        let distance = target - previous[j];
+        // Continuous damping retains slow intentional motion; a hard deadband
+        // turns it into a series of small stops and jumps.
+        if (Math.abs(distance) < cfg.deadbandDegrees) distance *= Math.abs(distance) / cfg.deadbandDegrees;
+        let speed = Math.max(-cfg.maxTargetDps, Math.min(cfg.maxTargetDps, distance / dt));
+        speed = Math.max(velocity[j] - cfg.maxTargetAccelDps2 * dt, Math.min(velocity[j] + cfg.maxTargetAccelDps2 * dt, speed));
+        const delta = Math.sign(speed) === Math.sign(distance) ? Math.sign(distance) * Math.min(Math.abs(distance), Math.abs(speed * dt)) : 0;
+        velocity[j] = delta / dt; return clampJ(j, previous[j] + delta);
+      });
+      out.push(next);
+    }
+    return { poses: out, before, after: VideoMotionSmoother.quality(out, times) };
+  }
+}
+// Anonymous colour distributions support camera-cut association; these are
+// not a gender classifier and cannot establish a real person's identity.
+class VideoAppearanceDescriptor {
+  static measure(points, rgba, width, height) {
+    if (!rgba || !points?.[24] || width * height * 4 !== rgba.length) return null;
+    const shoulderY = (points[11].y + points[12].y) / 2, hipY = (points[23].y + points[24].y) / 2;
+    const cx = (points[11].x + points[12].x) / 2;
+    const half = Math.max(.01, Math.abs(points[11].x - points[12].x) * .4);
+    const noseY = points[0].y, torso = hipY - shoulderY;
+    if (!(torso > .025)) return null;
+    const bands = [[noseY - torso * .18, noseY + torso * .08, .7],
+      [noseY + torso * .08, shoulderY, .65], [shoulderY, shoulderY + torso * .55, 1], [shoulderY + torso * .55, hipY, .8]];
+    const result = [];
+    for (const [top, bottom, scale] of bands) {
+      const hist = Array(24).fill(0); let count = 0;
+      const x0 = Math.max(0, Math.floor((cx - half * scale) * width)), x1 = Math.min(width, Math.ceil((cx + half * scale) * width));
+      const y0 = Math.max(0, Math.floor(top * height)), y1 = Math.min(height, Math.ceil(bottom * height));
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+        const at = (y * width + x) * 4;
+        for (let channel = 0; channel < 3; channel++) hist[channel * 8 + Math.min(7, rgba[at + channel] >> 5)]++;
+        count++;
+      }
+      if (!count) return null;
+      result.push(...hist.map(v => v / count));
+    }
+    // Each of the 12 band/channel histograms has unit mass.
+    return result;
+  }
+  static distance(a, b) {
+    if (!a || !b || a.length !== b.length) return Infinity;
+    // L1 distance is at most 2 per histogram, hence 24 overall.
+    return a.reduce((sum, v, i) => sum + Math.abs(v - b[i]), 0) / 24;
+  }
+  static average(values) {
+    const valid = values.filter(Boolean); if (!valid.length) return null;
+    return valid[0].map((_, i) => valid.reduce((sum, row) => sum + row[i], 0) / valid.length);
+  }
+}
+// Rectangular Hungarian assignment: bounded polynomial work even when many
+// similar dancers and camera fragments make every local match ambiguous.
+class VideoRoutineAssignment {
+  static solve(matrix, forbiddenRow = -1, forbiddenColumn = -1) {
+    const rows = matrix.length, columns = matrix[0]?.length || 0, large = 1e12;
+    if (!rows) return { cost: 0, columns: [] };
+    if (columns < rows || matrix.some(row => row.length !== columns)) throw new Error('Incomplete routine assignment matrix');
+    const u = new Float64Array(rows + 1), v = new Float64Array(columns + 1);
+    const matched = new Int32Array(columns + 1), way = new Int32Array(columns + 1);
+    const value = (i, j) => (i === forbiddenRow && j === forbiddenColumn) || !Number.isFinite(matrix[i][j]) ? large : matrix[i][j];
+    for (let row = 1; row <= rows; row++) {
+      matched[0] = row;
+      const minimum = new Float64Array(columns + 1).fill(large), used = new Uint8Array(columns + 1);
+      let column = 0;
+      do {
+        used[column] = 1;
+        const current = matched[column]; let delta = large, next = 0;
+        for (let j = 1; j <= columns; j++) if (!used[j]) {
+          const cost = value(current - 1, j - 1) - u[current] - v[j];
+          if (cost < minimum[j]) { minimum[j] = cost; way[j] = column; }
+          if (minimum[j] < delta) { delta = minimum[j]; next = j; }
+        }
+        if (delta >= large / 2) return { cost: Infinity, columns: [] };
+        for (let j = 0; j <= columns; j++) {
+          if (used[j]) { u[matched[j]] += delta; v[j] -= delta; }
+          else minimum[j] -= delta;
+        }
+        column = next;
+      } while (matched[column]);
+      do { const previous = way[column]; matched[column] = matched[previous]; column = previous; } while (column);
+    }
+    const result = Array(rows).fill(-1);
+    for (let j = 1; j <= columns; j++) if (matched[j]) result[matched[j] - 1] = j - 1;
+    const cost = result.reduce((sum, column, row) => sum + value(row, column), 0);
+    return { cost: cost >= large / 2 ? Infinity : cost, columns: result };
+  }
+}
+// When a camera cut cannot be linked reliably, keep the observed local dance
+// as a separate, source-windowed project instead of inventing a person match.
+class VideoRoutineSections {
+  static observations(group) {
+    const leader = group.slice().sort((a, b) => b.reduce((sum, row) => sum + row.actor.confidence, 0) - a.reduce((sum, row) => sum + row.actor.confidence, 0))[0]?.[0]?.actor.id;
+    const selected = new Map();
+    for (const row of group.flat()) {
+      const old = selected.get(row.index);
+      if (!old || row.actor.id === leader || (old.id !== leader && row.actor.confidence > old.confidence)) selected.set(row.index, row.actor);
+    }
+    return selected;
+  }
+  static build(units, frames, options, config, qualified) {
+    const sections = [];
+    for (const unit of units) {
+      if (qualified.has(unit.parentId) && !unit.ambiguous) continue;
+      const indexes = [...unit.observations.keys()].sort((a, b) => a - b), first = indexes[0], last = indexes.at(-1);
+      const from = frames[first].t, to = frames[last].t;
+      if (to - from < config.minimumSegmentSeconds) continue;
+      const policy = new VideoTemporalPolicy(options.learned === false ? null : VIDEO_POLICY, options.cameraMode);
+      const local = frames.slice(first, last + 1).map((frame, offset) => {
+        const actor = unit.observations.get(first + offset);
+        const state = policy.step(actor?.body || null, frame.scene, offset === 0, actor && actor.confidence >= VIDEO_FOLLOW.tracking.confidence ? 1 : 0);
+        return { ...frame, ...state, t: frame.t - from, w: actor?.w || null, p: actor?.p || null, track: actor?.id || null };
+      });
+      sections.push({ id: 'scene_' + unit.shot + '_' + unit.ordinal, kind: 'segment', parentId: unit.parentId,
+        sourceStart: from, sourceEnd: to, frames: local, crossShotUncertain: unit.ambiguous,
+        ambiguous: false, people: unit.people,
+        coverage: local.filter(f => f.w).length / local.length,
+        trustedCoverage: local.filter(f => f.w && f.trusted).length / local.length });
+    }
+    return sections.sort((a, b) => a.sourceStart - b.sourceStart || b.trustedCoverage - a.trustedCoverage);
+  }
+}
+// Discover motion groups from the whole clip, rather than a single still or
+// apparent gender. Uncertain cross-shot associations form separate fragments.
+class VideoRoutineDiscovery {
+  constructor(options, config = VIDEO_FOLLOW.routines) { this.options = options; this.config = config; this.frames = []; this.histories = new Map(); }
+  static distance(a, b) {
+    let sum = 0, count = 0;
+    for (let arm = 0; arm < 2; arm++) if (a.arms[arm].ok && b.arms[arm].ok) for (const bone of ['upper', 'fore']) {
+      sum += THREE.MathUtils.radToDeg(a.arms[arm][bone].angleTo(b.arms[arm][bone])); count++;
+    }
+    if (!count) return 180;
+    return Math.max(sum / count, THREE.MathUtils.radToDeg(Math.abs(VideoBodyMotion.wrap(a.twist - b.twist))), THREE.MathUtils.radToDeg(Math.abs(a.roll - b.roll)));
+  }
+  add(frame) {
+    if (frame.cut) this.histories.clear();
+    const actors = (frame.actors || []).map(actor => {
+      const history = this.histories.get(actor.id) || [];
+      history.push(actor.body); if (history.length > 3) history.shift(); this.histories.set(actor.id, history);
+      if (history.length < 3) return actor;
+      const median = values => values.sort((a, b) => a - b)[1], body = { ...actor.body, arms: actor.body.arms.map(a => ({ ...a })) };
+      for (const arm of [0, 1]) for (const bone of ['upper', 'fore']) body.arms[arm][bone] = new THREE.Vector3(...['x', 'y', 'z'].map(axis => median(history.map(b => b.arms[arm][bone][axis])))).normalize();
+      body.twist += median(history.map(b => VideoBodyMotion.wrap(b.twist - actor.body.twist)));
+      body.roll = median(history.map(b => b.roll)); return { ...actor, body };
+    });
+    this.frames.push({ ...frame, actors });
+  }
+  compatible(a, b) {
+    const other = new Map(b.map(r => [r.index, r])); let count = 0, sum = 0, different = 0;
+    for (const row of a) {
+      const match = other.get(row.index); if (!match) continue;
+      const error = VideoRoutineDiscovery.distance(row.actor.body, match.actor.body);
+      count++; sum += error; if (error > this.config.styleDegrees) different++;
+    }
+    if (!count) {
+      const first = a[0].t > b[0].t ? a[0] : b[0], last = a[0].t > b[0].t ? b.at(-1) : a.at(-1);
+      return first.t >= last.t && first.t - last.t <= this.config.joinGapSeconds && Math.abs(first.actor.cx - last.actor.cx) < .12 && VideoRoutineDiscovery.distance(first.actor.body, last.actor.body) < this.config.styleDegrees;
+    }
+    return count >= this.config.minimumOverlap && sum / count <= this.config.styleDegrees && different / count <= this.config.divergentFraction;
+  }
+  joinCost(rows, routine) {
+    const boundary = VideoRoutineDiscovery.distance(rows[0].actor.body, routine.last.actor.body);
+    const past = [...routine.observations].map(([index, actor]) => ({ t: this.frames[index].t, actor }));
+    const sample = rows.filter((r, i) => i % 2 === 0 && r.t - rows[0].t <= this.config.signatureSeconds);
+    const near = rows[0].t - routine.last.t <= this.config.joinGapSeconds;
+    if (sample.length < this.config.minimumSignatureSamples) return near ? boundary : Infinity;
+    let repeated = Infinity;
+    for (let k = 0; k < past.length; k += 3) {
+      if (past[k].t < rows[0].t - VIDEO_FOLLOW.tracking.repeatSeconds) continue;
+      let sum = 0, count = 0, cursor = k;
+      for (const row of sample) {
+        const target = past[k].t + row.t - rows[0].t;
+        while (cursor + 1 < past.length && Math.abs(past[cursor + 1].t - target) < Math.abs(past[cursor].t - target)) cursor++;
+        if (Math.abs(past[cursor].t - target) > .2) continue;
+        sum += VideoRoutineDiscovery.distance(row.actor.body, past[cursor].actor.body); count++;
+      }
+      if (count >= Math.max(this.config.minimumSignatureSamples, sample.length * .8)) repeated = Math.min(repeated, sum / count);
+    }
+    return Number.isFinite(repeated) ? (near ? boundary * .25 + repeated * .75 : repeated) : (near ? boundary : Infinity);
+  }
+  assign(groups, routines) {
+    const choices = groups.map(group => {
+      const rows = group.flat().sort((a, b) => a.index - b.index);
+      const appearance = VideoAppearanceDescriptor.average(rows.map(row => row.actor.appearance));
+      return routines.filter(r => rows[0].t >= r.last.t).map(r => {
+        const motion = this.joinCost(rows, r), look = VideoAppearanceDescriptor.distance(appearance, r.appearance);
+        const cost = Number.isFinite(look) ? Math.min(Number.isFinite(motion) ? motion : this.config.newRoutineCost, this.config.newRoutineCost) * this.config.motionWeight + look * this.config.appearanceWeight : motion;
+        return { routine: r, cost };
+      }).filter(c => c.cost < this.config.newRoutineCost).sort((a, b) => a.cost - b.cost)
+        .concat({ routine: null, cost: this.config.newRoutineCost });
+    });
+    const slots = new Map(routines.map((routine, i) => [routine, i]));
+    const matrix = choices.map((row, i) => {
+      const costs = Array(routines.length + groups.length).fill(Infinity);
+      for (const choice of row) costs[choice.routine ? slots.get(choice.routine) : routines.length + i] = choice.cost;
+      return costs;
+    });
+    const best = VideoRoutineAssignment.solve(matrix);
+    return best.columns.map((column, row) => ({ routine: routines[column] || null, cost: matrix[row][column],
+      ambiguous: column < routines.length && VideoRoutineAssignment.solve(matrix, row, column).cost - best.cost < this.config.joinMarginDegrees }));
+  }
+
+  classify(routines) {
+    const distinct = [];
+    for (const routine of routines) {
+      routine.kind = distinct.every(other => {
+        let observed = 0, different = 0, persistent = 0, run = 0;
+        const flush = () => { if (run >= this.config.minimumDifferenceRunSeconds) persistent += run; run = 0; };
+        for (let i = 1; i < routine.frames.length; i++) {
+          const a = routine.frames[i], b = other.frames[i];
+          if (!a.w || !b?.w || !a.trusted || !b.trusted) { flush(); continue; }
+          const dt = Math.min(.5, Math.max(0, a.t - routine.frames[i - 1].t)); observed += dt;
+          if (VideoRoutineDiscovery.distance(a.body, b.body) > this.config.styleDegrees) { different += dt; run += dt; }
+          else flush();
+        }
+        flush();
+        return persistent >= this.config.minimumDistinctSeconds && different / Math.max(.001, observed) >= this.config.minimumDifferentFraction;
+      }) ? 'routine' : 'fragment';
+      if (routine.kind === 'routine') distinct.push(routine);
+    }
+    return routines.sort((a, b) => (a.kind === 'fragment') - (b.kind === 'fragment') || b.trustedCoverage - a.trustedCoverage);
+  }
+  finish() {
+    const shots = new Map(), common = new Map(), units = [];
+    this.frames.forEach((frame, index) => {
+      const visible = (frame.actors || []).filter(a => a.confidence >= VIDEO_FOLLOW.tracking.confidence);
+      if (visible.length > 1 && visible.every(a => visible.every(b => VideoRoutineDiscovery.distance(a.body, b.body) <= this.config.styleDegrees)))
+        common.set(index, visible.slice().sort((a, b) => b.confidence - a.confidence)[0]);
+      if (!shots.has(frame.shot)) shots.set(frame.shot, new Map());
+      const tracks = shots.get(frame.shot);
+      for (const actor of frame.actors || []) {
+        if (!tracks.has(actor.id)) tracks.set(actor.id, []);
+        tracks.get(actor.id).push({ index, t: frame.t, actor });
+      }
+    });
+    const routines = [];
+    for (const tracks of shots.values()) {
+      const groups = [];
+      for (const track of tracks.values()) {
+        if (track.length < this.config.minimumOverlap) continue;
+        const group = groups.find(g => g.every(member => this.compatible(track, member)));
+        if (group) group.push(track); else groups.push([track]);
+      }
+      const assignments = this.assign(groups, routines);
+      for (const [groupIndex, group] of groups.entries()) {
+        const rows = group.flat().sort((a, b) => a.index - b.index), first = rows[0];
+        const assignment = assignments[groupIndex];
+        let routine = assignment?.routine;
+        if (!routine) { routine = { id: routines.length + 1, observations: new Map(), people: new Set(), ambiguous: false }; routines.push(routine); }
+        routine.ambiguous ||= !!assignment?.ambiguous;
+        const observations = VideoRoutineSections.observations(group);
+        units.push({ shot: this.frames[first.index].shot, ordinal: groupIndex + 1, parentId: routine.id,
+          ambiguous: !!assignment?.ambiguous, people: new Set(rows.map(row => row.actor.id)).size, observations });
+        for (const row of rows) routine.people.add(row.actor.id);
+        for (const [index, actor] of observations) {
+          routine.observations.set(index, { ...actor, associationUncertain: !!assignment?.ambiguous });
+          routine.people.add(actor.id);
+        }
+        routine.last = rows.at(-1);
+        routine.appearance = VideoAppearanceDescriptor.average([...routine.observations.values()].map(a => a.appearance));
+      }
+    }
+    const results = routines.map(r => {
+      const policy = new VideoTemporalPolicy(this.options.learned === false ? null : VIDEO_POLICY, this.options.cameraMode);
+      const frames = this.frames.map((f, i) => {
+        // Shared motion is supported by multiple people in THIS frame, not
+        // backfilled from a later pose or averaged over incompatible dancers.
+        const own = r.observations.get(i);
+        const actor = own?.associationUncertain ? common.get(i) || own : own || common.get(i);
+        const state = policy.step(actor?.associationUncertain ? null : actor?.body || null, f.cut ? Math.max(.25, f.scene) : f.scene, f.cut, actor && actor.confidence >= VIDEO_FOLLOW.tracking.confidence ? 1 : 0);
+        return { ...f, ...state, w: actor?.w || null, p: actor?.p || null, track: actor?.id || null };
+      });
+      return { id: r.id, frames, sourceStart: 0, sourceEnd: this.frames.at(-1)?.t || 0, coverage: frames.filter(f => f.w).length / Math.max(1, this.frames.length),
+        trustedCoverage: frames.filter(f => f.w && f.trusted).length / Math.max(1, this.frames.length), people: r.people.size, ambiguous: r.ambiguous };
+    }).sort((a, b) => b.coverage - a.coverage);
+    const ranked = this.classify(results);
+    const qualified = new Set(ranked.filter(r => r.kind === 'routine' && r.trustedCoverage >= this.config.minimumSaveCoverage).map(r => r.id));
+    const sections = VideoRoutineSections.build(units, this.frames, this.options, this.config, qualified);
+    return qualified.size ? [...ranked, ...sections] : [...sections, ...ranked];
+  }
+}
+class VideoSubjectTracker {
+  constructor(options, config = VIDEO_FOLLOW) {
+    this.options = options; this.config = config.tracking; this.tracks = []; this.nextId = 1;
+    this.primary = null; this.shot = 0; this.lastImage = null; this.history = [];
+    this.policy = new VideoTemporalPolicy(VIDEO_POLICY, options.cameraMode); this.observations = [];
+  }
+  imageChange(image) {
+    if (!image) return 0;
+    let difference = 0, count = 0;
+    if (this.lastImage && this.lastImage.length === image.length)
+      for (let i = 0; i < image.length; i += 4) {
+        difference += Math.abs(image[i] - this.lastImage[i]) + Math.abs(image[i + 1] - this.lastImage[i + 1]) + Math.abs(image[i + 2] - this.lastImage[i + 2]); count += 3;
+      }
+    this.lastImage = new Uint8Array(image);
+    return count ? difference / count / 255 : 0;
+  }
+  candidates(result, image = null) {
+    return (result.worldLandmarks || []).map((points, i) => {
+      const w = points.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility ?? 1 }));
+      const p = result.landmarks[i].map(v => ({ x: v.x, y: v.y, v: v.visibility ?? 1 }));
+      const body = VideoBodyMotion.measure(w, false);
+      const cx = (p[11].x + p[12].x + p[23].x + p[24].x) / 4, cy = (p[11].y + p[12].y + p[23].y + p[24].y) / 4;
+      const size = Math.hypot(p[11].x - p[23].x, p[11].y - p[23].y) + Math.hypot(p[12].x - p[24].x, p[12].y - p[24].y);
+      const appearance = result.appearances?.[i] || VideoAppearanceDescriptor.measure(p, image, this.config.imageWidth, this.config.imageHeight);
+      return { w, p, body, cx, cy, size, appearance, confidence: body?.confidence || 0 };
+    }).filter(p => p.body && p.size > 0.025);
+  }
+  step(result, t, image = null, sceneOverride = null) {
+    const scene = sceneOverride ?? this.imageChange(image);
+    const candidates = this.candidates(result, image), used = new Set();
+    const sameView = this.primary && candidates.some(c => Math.hypot(c.cx - this.primary.cx, c.cy - this.primary.cy) < 0.06 &&
+      Math.abs(Math.log(c.size / this.primary.size)) < 0.15 && c.body.viewUp.angleTo(this.primary.body.viewUp) < 0.5 && c.body.viewLeft.angleTo(this.primary.body.viewLeft) < 0.7);
+    const cut = this.options.cameraMode !== "fixed" && scene > this.config.cutDifference && !sameView;
+    const policyScene = cut ? Math.max(0.25, scene) : scene;
+    if (cut) { this.shot++; this.tracks = []; this.observations = []; }
+    for (const c of candidates) {
+      let match = null, cost = Infinity;
+      for (const previous of this.tracks) if (!used.has(previous.id) && t - previous.t <= this.config.missingSeconds) {
+        const spatial = Math.hypot(c.cx - previous.cx, c.cy - previous.cy);
+        const distance = spatial + 0.15 * Math.abs(Math.log(c.size / previous.size)) + VideoBodyMotion.difference(c.body, previous.body) / 180 * 0.04;
+        if (spatial < this.config.identityGap && distance < cost) { match = previous; cost = distance; }
+      }
+      c.id = match ? match.id : this.nextId++; c.t = t; used.add(c.id);
+    }
+    const actors = candidates.map(c => ({ id: c.id, body: c.body, w: c.w, p: c.p, cx: c.cx, size: c.size, appearance: c.appearance, confidence: c.confidence }));
+    // An explicit person is always followed independently, regardless of sex
+    // or apparent clothing. Different choreographies are never averaged.
+    const explicit = this.options.dancer && this.options.dancer !== "auto";
+    let chosen = candidates.find(c => String(c.id) === String(this.options.dancer));
+    if (!chosen && this.primary && (!explicit || String(this.primary.id) === String(this.options.dancer))) chosen = candidates.find(c => c.id === this.primary.id);
+    if (!chosen && this.primary && (cut || t - this.primary.t > this.config.missingSeconds)) {
+      const ranked = candidates.map(c => ({ c, score: VideoBodyMotion.difference(c.body, this.primary.body) +
+        THREE.MathUtils.radToDeg(Math.abs(VideoBodyMotion.wrap(c.body.twist - this.primary.body.twist))) })).sort((a, b) => a.score - b.score);
+      if (ranked.length && ranked[0].score < this.config.styleDegrees && (ranked.length === 1 || ranked[1].score - ranked[0].score > 8)) {
+        chosen = ranked[0].c; chosen.id = this.primary.id;
+      }
+    }
+    if (!chosen && (explicit || (this.primary && !cut && t - this.primary.t <= this.config.missingSeconds))) {
+      const state = this.policy.step(null, policyScene, cut, 0);
+      return { t, w: null, p: null, shot: this.shot, cut, scene, ...state, candidates: candidates.length, actors };
+    }
+    if (!chosen && candidates.length) {
+      const previousBody = this.policy.accepted;
+      chosen = candidates.slice().sort((a, b) => {
+        const score = c => (previousBody ? VideoBodyMotion.difference(c.body, previousBody) / 90 : 0) + Math.abs(c.cx - (this.options.anchorX ?? 0.5)) - c.size;
+        return score(a) - score(b);
+      })[0];
+    }
+    this.tracks = candidates;
+    if (!chosen) return { t, w: null, p: null, shot: this.shot, cut, scene, ...this.policy.step(null, policyScene, cut, 0), candidates: 0, actors };
+    this.primary = chosen;
+    this.observations.push(chosen.body); this.observations = this.observations.slice(-3);
+    if (this.observations.length === 3) {
+      const median = values => values.sort((a, b) => a - b)[1];
+      const smooth = { ...chosen.body, arms: chosen.body.arms.map(a => ({ ...a })) };
+      for (const arm of [0, 1]) for (const key of ["upper", "fore"])
+        smooth.arms[arm][key] = new THREE.Vector3(...["x", "y", "z"].map(axis => median(this.observations.map(b => b.arms[arm][key][axis])))).normalize();
+      smooth.twist = chosen.body.twist + median(this.observations.map(b => VideoBodyMotion.wrap(b.twist - chosen.body.twist)));
+      smooth.roll = median(this.observations.map(b => b.roll)); chosen.body = smooth;
+      smooth.hipYaw = chosen.body.hipYaw + median(this.observations.map(b => VideoBodyMotion.wrap(b.hipYaw - chosen.body.hipYaw)));
+    }
+    const supporters = candidates.filter(c => VideoBodyMotion.styleDifference(c.body, chosen.body) <= this.config.styleDegrees);
+    const styles = [];
+    for (const c of candidates) {
+      const group = styles.find(s => VideoBodyMotion.styleDifference(c.body, s.leader.body) <= this.config.styleDegrees);
+      if (group) group.people.push(c.id); else styles.push({ leader: c, people: [c.id] });
+    }
+    const state = this.policy.step(chosen.body, policyScene, cut, chosen.confidence >= this.config.confidence ? 1 : 0);
+    let repeatAt = null;
+    for (const old of this.history) if (t - old.t > 1 && t - old.t <= this.config.repeatSeconds &&
+      VideoBodyMotion.styleDifference(chosen.body, old.body) < 3) { repeatAt = old.t; break; }
+    this.history.push({ t, body: chosen.body }); this.history = this.history.filter(h => t - h.t <= this.config.repeatSeconds);
+    return { t, w: chosen.w, p: chosen.p, shot: this.shot, cut, scene, ...state,
+      actors, track: chosen.id, candidates: candidates.length, supporters: supporters.length, repeatAt,
+      styles: styles.map(s => ({ people: s.people, x: s.leader.cx })),
+      people: candidates.map(c => ({ id: c.id, x: c.cx, y: c.cy })) };
+  }
+}
+class VideoRigFitter {
+  constructor(options) { this.options = options; this.settings = VIDEO_FOLLOW.fitting; this.tables = {}; }
+  bodyTable(joint) {
+    if (this.tables[joint]) return this.tables[joint];
+    const saved = pose, rows = [];
+    try {
+      pose = RIG.neutral.slice();
+      for (let v = RIG.min[joint]; v <= RIG.max[joint]; v += 0.5) {
+        pose[joint] = v; applyPose(); robot.updateMatrixWorld(true);
+        let angle;
+        if (joint === 8) {
+          const front = new THREE.Vector3(0, 0, 1).applyQuaternion(bodyGroup.getWorldQuaternion(new THREE.Quaternion()));
+          angle = Math.atan2(front.x, front.z);
+        } else {
+          const local = o => bodyGroup.worldToLocal(o.getWorldPosition(new THREE.Vector3()));
+          const line = local(jointGroups[0]).sub(local(jointGroups[4]));
+          angle = Math.atan2(line.y, Math.hypot(line.x, line.z));
+        }
+        rows.push({ v, angle });
+      }
+    } finally { pose = saved; applyPose(); robot.updateMatrixWorld(true); }
+    const base = rows.reduce((a, b) => Math.abs(b.v - RIG.neutral[joint]) < Math.abs(a.v - RIG.neutral[joint]) ? b : a).angle;
+    return (this.tables[joint] = { rows, base });
+  }
+  setBody(joint, target) {
+    const table = this.bodyTable(joint);
+    const best = table.rows.reduce((a, b) => Math.abs(VideoBodyMotion.wrap(b.angle - table.base - target)) < Math.abs(VideoBodyMotion.wrap(a.angle - table.base - target)) ? b : a);
+    pose[joint] = clampJ(joint, best.v);
+  }
+  armCost(arm, bones) {
+    applyPose(); robot.updateMatrixWorld(true);
+    const local = o => bodyGroup.worldToLocal(o.getWorldPosition(new THREE.Vector3()));
+    const s = local(jointGroups[arm * 4]), e = local(elbowBalls[arm]), w = local(wristBalls[arm]);
+    const upper = e.clone().sub(s).normalize(), fore = w.clone().sub(e).normalize();
+    return 1 - upper.dot(bones.upper) + 1 - fore.dot(bones.fore);
+  }
+  arm(arm, bones, first) {
+    const before = pose.slice();
+    const objective = () => this.armCost(arm, bones) + this.settings.continuityWeight *
+      pose.slice(arm * 4, arm * 4 + 4).reduce((sum, v, k) => sum + (v - before[arm * 4 + k]) ** 2, 0) / 10000;
+    // Existing solver is a seed; the objective below evaluates BOTH achieved
+    // bone directions, so an unreachable elbow cannot redirect the forearm.
+    vidFitArm(arm, bones, first);
+    let bestPose = pose.slice(), best = objective();
+    const seeds = first ? [pose.slice(), before, RIG.neutral.map((v, j) => j >= arm * 4 && j < arm * 4 + 4 ? v : pose[j])] : [pose.slice(), before];
+    for (const seed of seeds) {
+      pose = seed.slice();
+      for (const step of this.settings.steps) for (let pass = 0; pass < this.settings.passes; pass++) {
+        let improved = false;
+        for (let j = arm * 4; j < arm * 4 + 4; j++) {
+          const old = pose[j]; let chosen = old;
+          const cost = objective;
+          let score = cost();
+          for (const sign of [-1, 1]) {
+            pose[j] = clampJ(j, old + sign * step); const value = cost();
+            if (value < score - 1e-8) { score = value; chosen = pose[j]; improved = true; }
+          }
+          pose[j] = chosen;
+        }
+        if (!improved) break;
+      }
+      const score = objective();
+      if (score < best + 1e-8) { best = score; bestPose = pose.slice(); }
+    }
+    pose = bestPose; applyPose(); return this.armCost(arm, bones);
+  }
+  repair(target, previous) {
+    if (!collisionAt(target)) return { pose: target, repaired: false };
+    let best = previous && !collisionAt(previous) ? previous.slice() : null;
+    let distance = best ? Math.hypot(...best.map((v, j) => v - target[j])) : Infinity;
+    const consider = candidate => {
+      if (collisionAt(candidate)) return;
+      const d = Math.hypot(...candidate.map((v, j) => v - target[j]));
+      if (d < distance) { best = candidate.slice(); distance = d; }
+    };
+    consider(RIG.neutral.map((v, j) => clampJ(j, v)));
+    for (const step of this.settings.repairDegrees) {
+      for (let j = 0; j < NJ; j++) for (const sign of [-1, 1]) {
+        const candidate = target.slice(); candidate[j] = clampJ(j, candidate[j] + sign * step); consider(candidate);
+      }
+      if (best && distance < step) break;
+    }
+    // A deterministic local search can adjust two interacting hands together.
+    const random = safeRng(17);
+    for (let k = 0; k < 64; k++) {
+      const candidate = target.map((v, j) => clampJ(j, v + (random() - 0.5) * (k < 32 ? 24 : 60)));
+      consider(candidate);
+    }
+    return best ? { pose: best, repaired: true } : null;
+  }
+  frames(frames) {
+    const saved = pose, poses = [], times = [], targets = [], acceptedFrames = [], quality = { repaired: 0, missing: 0, uncertain: 0, worstBoneDegrees: 0 };
+    let previous = null, shot = null;
+    try {
+      pose = RIG.neutral.map((v, j) => clampJ(j, v));
+      for (const frame of frames) {
+        let body = frame.body;
+        if (body) body = { ...body, arms: body.arms.map(a => ({ ...a,
+          upper: new THREE.Vector3(a.upper.x, a.upper.y, a.upper.z), fore: new THREE.Vector3(a.fore.x, a.fore.y, a.fore.z) })) };
+        else body = VideoBodyMotion.measure(frame.w, false);
+        if (body && this.options.mirror) body = { ...body, twist: -body.twist, roll: -body.roll,
+          arms: [body.arms[1], body.arms[0]].map(a => ({ ...a,
+            upper: new THREE.Vector3(-a.upper.x, a.upper.y, a.upper.z), fore: new THREE.Vector3(-a.fore.x, a.fore.y, a.fore.z) })) };
+        const trusted = frame.trusted !== false;
+        if (!body || !trusted) { quality[body ? "uncertain" : "missing"]++; }
+        else if (!(previous && frame.action === "hold")) {
+          if (this.options.waist) this.setBody(8, frame.waist == null ? body.twist : frame.waist * (this.options.mirror ? -1 : 1));
+          if (this.options.shrug) this.setBody(9, body.roll);
+          applyPose();
+          for (const a of [0, 1]) if (body.arms[a].ok) {
+            this.arm(a, body.arms[a], previous === null || shot !== frame.shot);
+          }
+        }
+        const target = this.repair(pose.map((v, j) => clampJ(j, v)), previous);
+        if (!target) { quality.uncertain++; continue; }
+        if (target.repaired) quality.repaired++;
+        pose = target.pose.slice(); previous = pose.slice(); shot = frame.shot;
+        poses.push(pose.slice()); times.push(frame.t * 1000);
+        targets.push(body && trusted ? body : null); acceptedFrames.push(frame);
+      }
+      if (this.options.smooth !== false && VIDEO_FOLLOW.smoothing && poses.length > 1) {
+        const smoothed = new VideoMotionSmoother().apply(poses, times, acceptedFrames);
+        quality.smoothing = { before: smoothed.before, after: smoothed.after };
+        let previousSafe = poses[0];
+        for (let i = 0; i < poses.length; i++) {
+          const repaired = this.repair(smoothed.poses[i], previousSafe);
+          poses[i] = repaired ? repaired.pose.slice() : previousSafe.slice();
+          previousSafe = poses[i];
+        }
+        quality.smoothing.afterRepair = VideoMotionSmoother.quality(poses, times);
+      }
+    } finally { pose = saved; applyPose(); robot.updateMatrixWorld(true); }
+    return poses.length ? { poses, times, targets, videoMs: Math.round(times.at(-1)), quality, mirror: this.options.mirror, waist: this.options.waist, shrug: this.options.shrug } : null;
+  }
+  static assess(fit, made) {
+    if (!fit.targets || !made.keys.length) return null;
+    const saved = pose, errors = []; let sum = 0, worst = 0, count = 0;
+    try {
+      fit.targets.forEach((body, i) => {
+        if (!body) return;
+        pose = easeKeys(made.keys, this.clockForSource(made.keys, fit.times[i]).ms).pose;
+        applyPose(); robot.updateMatrixWorld(true);
+        const local = o => bodyGroup.worldToLocal(o.getWorldPosition(new THREE.Vector3()));
+        let error = 0;
+        for (const a of [0, 1]) if (body.arms[a].ok) {
+          const s = local(jointGroups[a * 4]), e = local(elbowBalls[a]), w = local(wristBalls[a]);
+          for (const [got, wanted] of [[e.clone().sub(s).normalize(), body.arms[a].upper], [w.clone().sub(e).normalize(), body.arms[a].fore]]) {
+            const angle = THREE.MathUtils.radToDeg(got.angleTo(wanted)); error = Math.max(error, angle); sum += angle; count++;
+          }
+        }
+        worst = Math.max(worst, error); errors.push({ t: fit.times[i], degrees: Math.round(error * 10) / 10 });
+      });
+    } finally { pose = saved; applyPose(); robot.updateMatrixWorld(true); }
+    return { meanBoneDegrees: count ? sum / count : null, worstBoneDegrees: worst, samples: errors,
+      measuredAfterCollisionAndTiming: true, limitedTransitions: made.partial,
+      pathCorrections: { around: made.safe.around, dropped: made.safe.dropped, failed: made.safe.failed } };
+  }
+  static clockForSource(keys, sourceMs) {
+    if (!keys.length || !Number.isFinite(keys[0].sourceMs)) return { ms: Math.max(0, sourceMs), rate: 1 };
+    let clock = 0;
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i], arrival = i ? clock + key.t : 0;
+      if (i && sourceMs <= key.sourceMs) {
+        const previous = keys[i - 1], from = previous.sourceHoldEnd ?? previous.sourceMs;
+        const fraction = Math.max(0, Math.min(1, (sourceMs - from) / Math.max(1, key.sourceMs - from)));
+        return { ms: clock + fraction * key.t, rate: (key.sourceMs - from) / Math.max(1, key.t) };
+      }
+      const end = key.sourceHoldEnd ?? key.sourceMs;
+      if (sourceMs < end) {
+        const fraction = Math.max(0, Math.min(1, (sourceMs - key.sourceMs) / Math.max(1, end - key.sourceMs)));
+        return { ms: arrival + fraction * (key.hold || 0), rate: (end - key.sourceMs) / Math.max(1, key.hold || 0) };
+      }
+      clock = arrival + (key.hold || 0);
+    }
+    return { ms: clock, rate: 1 };
+  }
+  static sourceForClock(keys, robotMs) {
+    let clock = 0;
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i], arrival = i ? clock + key.t : 0;
+      if (i && robotMs <= arrival) {
+        const from = keys[i - 1].sourceHoldEnd ?? keys[i - 1].sourceMs;
+        return { sourceMs: from + (key.sourceMs - from) * Math.max(0, (robotMs - clock) / Math.max(1, key.t)), rate: (key.sourceMs - from) / Math.max(1, key.t), end: false };
+      }
+      const end = arrival + (key.hold || 0);
+      if (robotMs <= end) return { sourceMs: key.sourceMs + ((key.sourceHoldEnd ?? key.sourceMs) - key.sourceMs) *
+        Math.max(0, (robotMs - arrival) / Math.max(1, key.hold || 0)), rate: ((key.sourceHoldEnd ?? key.sourceMs) - key.sourceMs) / Math.max(1, key.hold || 0), end: false };
+      clock = end;
+    }
+    const last = keys.at(-1);
+    return { sourceMs: last ? (last.sourceHoldEnd ?? last.sourceMs ?? robotMs) : 0, rate: 1, end: true };
+  }
+}
+// Below the media element's minimum rate, advance source frames using the
+// checked robot clock. Never clamp a detour into an unchecked faster preview.
+class VideoCheckedPlayback {
+  constructor(now = () => performance.now()) { this.now = now; this.manual = null; this.notified = false; this.robotMs = null; this.pausedAt = null; }
+  reset(video) { this.manual = null; this.robotMs = null; this.pausedAt = null; this.notified = false; if (video) video.playbackRate = 1; }
+  stop(video) { this.reset(video); video.pause(); }
+  pause(video) {
+    if (this.manual) this.pausedAt = { robotMs: this.manual.robotMs + Math.max(0, this.now() - this.manual.wallMs), sourceSeconds: video.currentTime };
+    this.manual = null; video.pause();
+  }
+  start(video, robotMs) {
+    if (this.pausedAt && Math.abs(this.pausedAt.sourceSeconds - video.currentTime) < .001) robotMs = this.pausedAt.robotMs;
+    this.pausedAt = null;
+    video.pause(); this.manual = { robotMs, wallMs: this.now() };
+    if (!this.notified) {
+      this.notified = true;
+      vidSay("Very slow detours play frame by frame; sound pauses. Play both pauses or resumes.");
+    }
+  }
+  update(video, made, sourceMs, fromSeconds, endMs) {
+    if (!made?.keys.length || made.keepMusic !== false) return sourceMs;
+    if (this.manual) {
+      const robotMs = this.manual.robotMs + Math.max(0, this.now() - this.manual.wallMs);
+      this.robotMs = robotMs;
+      const next = VideoRigFitter.sourceForClock(made.keys, robotMs);
+      if (next.end || next.sourceMs >= endMs) { this.stop(video); return Math.min(endMs, next.sourceMs); }
+      const rate = next.rate;
+      if (!video.seeking) {
+        // Setting currentTime starts a new asynchronous seek. Decide whether
+        // to resume before that assignment can invalidate the ready state.
+        video.currentTime = fromSeconds + next.sourceMs / 1000;
+        if (rate >= 0.0625) {
+          this.manual = null; video.playbackRate = Math.min(4, rate); video.play().catch(() => {});
+        }
+      }
+      return next.sourceMs;
+    }
+    const mapped = VideoRigFitter.clockForSource(made.keys, sourceMs);
+    this.robotMs = mapped.ms;
+    if (mapped.rate < 0.0625) {
+      if (!video.paused) {
+        this.start(video, mapped.ms);
+      }
+    } else video.playbackRate = Math.min(4, mapped.rate);
+    return sourceMs;
+  }
+}
+const vidCheckedPlayback = new VideoCheckedPlayback();
 // --- moves from a video of a person (A44-4) ---
 // User 2026-10-19: make the robot's moves from a video of a person, as close
 // as the robot's joints allow. The browser finds the person's skeleton in each
@@ -8948,14 +10324,16 @@ const VID_USE = [
   { id: "moment", label: "Use another moment…" },
   { id: "drop", label: "Leave out" },
 ];
-let vidLib = null, vidFrames = null, vidMade = null, vidStop = false, vidBusy = false;
+let vidRoutines = [], vidRoutineRange = null;
+let vidLib = null, vidLibMode = null, vidFrames = null, vidMade = null, vidStop = false, vidBusy = false, vidGeneration = 0, vidSeekCancel = null;
 let vidFit = null, vidPicks = null;   // fitted frames, and the moves made from them
 
 // The person's skeleton finder. Loaded the first time it is used; the model
 // file is then kept in the browser's own store, as its server lets a cache
 // hold it for only an hour and the hub must not need the internet every time.
-async function vidLoadLib() {
-  if (vidLib) return vidLib;
+async function vidLoadLib(mode = "single") {
+  if (vidLib && vidLibMode === mode) return vidLib;
+  if (vidLib) { vidLib.close(); vidLib = null; }
   const mp = await import(VID_LIB + "/vision_bundle.mjs");
   let model = null;
   try {
@@ -8967,9 +10345,10 @@ async function vidLoadLib() {
   const files = await mp.FilesetResolver.forVisionTasks(VID_LIB + "/wasm");
   const base = model ? { modelAssetBuffer: model } : { modelAssetPath: VID_MODEL };
   const make = (delegate) => mp.PoseLandmarker.createFromOptions(files, {
-    baseOptions: { ...base, delegate }, runningMode: "VIDEO", numPoses: 1 });
+    baseOptions: { ...base, delegate }, runningMode: "VIDEO", numPoses: mode !== "single" ? VIDEO_FOLLOW.tracking.people : 1 });
   // Some graphics drivers refuse the GPU path; the CPU one is slower, not wrong.
   try { vidLib = await make("GPU"); } catch (e) { vidLib = await make("CPU"); }
+  vidLibMode = mode;
   return vidLib;
 }
 
@@ -8982,7 +10361,11 @@ function vidOpts() {
   const h = [0, 1].map(a => VID_HAND.find(x => x.id === $("vidHand" + a).value) || {});
   return { tol: det.tol, mirror: $("vidMirror").checked, waist: $("vidWaist").checked,
            hand: h.map(x => x.want || 0), force: h.map(x => !!x.force),
-           music: $("vidMusic").checked };
+           music: $("vidMusic").checked,
+           subjectMode: $("vidSubject")?.value || "auto", cameraMode: $("vidCamera")?.value || "auto",
+           dancer: $("vidDancer")?.value || "auto", shrug: $("vidShrug")?.checked ?? false,
+           learned: $("vidLearned")?.checked ?? true,
+           anchorX: typeof vidSaved !== "undefined" && Number.isFinite(vidSaved?.anchorX) ? Math.max(0, Math.min(1, vidSaved.anchorX)) : 0.5 };
 }
 function vidFill() {        // the choices are built from the lists above
   const fill = (sel, list, pick) => {
@@ -8995,6 +10378,18 @@ function vidFill() {        // the choices are built from the lists above
     if (lbl) lbl.textContent = h.label;
     fill($("vidHand" + a), VID_HAND, "video");
   });
+  if (VIDEO_FOLLOW) {
+    fill($("vidSubject"), VIDEO_FOLLOW.subjectModes, "auto");
+    fill($("vidCamera"), VIDEO_FOLLOW.cameraModes, "auto");
+  }
+}
+function vidModeChanged() {
+  vidGeneration++;
+  if (vidSeekCancel) vidSeekCancel();
+  if (typeof vidCheckedPlayback !== "undefined") vidCheckedPlayback.reset($("vidPlayer"));
+  if (vidBusy) vidStop = true;
+  vidFrames = vidFit = vidMade = vidPicks = null; vidRoutines = []; vidRoutineRange = null;
+  vidSay("Video choices or range changed. Press Make moves to read the performers again.");
 }
 
 // A picked file goes on the stage like a fetched link (video_page.js).
@@ -9003,15 +10398,65 @@ function vidPick(file) {
   if (!file) return;
   vidSetSrc(URL.createObjectURL(file), { kind: "file", name: file.name, file });
 }
+function vidDetectPerformers(lib, video, group) {
+  if (!group) return lib.detectForVideo(video, performance.now());
+  const people = [], canvas = document.createElement("canvas");
+  for (const [x0, y0, x1, y1] of VIDEO_FOLLOW.tracking.crops) {
+    canvas.width = Math.max(1, Math.round(video.videoWidth * (x1 - x0)));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * (y1 - y0)));
+    canvas.getContext("2d").drawImage(video, video.videoWidth * x0, video.videoHeight * y0,
+      canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+    const result = lib.detectForVideo(canvas, performance.now());
+    for (let i = 0; i < (result.landmarks || []).length; i++) {
+      const p = result.landmarks[i].map(v => ({ ...v, x: x0 + v.x * (x1 - x0), y: y0 + v.y * (y1 - y0) }));
+      const center = [11, 12, 23, 24].reduce((s, j) => [s[0] + p[j].x / 4, s[1] + p[j].y / 4], [0, 0]);
+      const quality = [11, 12, 13, 14, 15, 16, 23, 24].reduce((s, j) => s + (p[j].visibility ?? 1), 0);
+      const old = people.findIndex(q => Math.hypot(q.center[0] - center[0], q.center[1] - center[1]) < 0.028);
+      const candidate = { p, w: result.worldLandmarks[i], center, quality };
+      if (old < 0) people.push(candidate); else if (quality > people[old].quality) people[old] = candidate;
+    }
+  }
+  people.sort((a, b) => a.center[0] - b.center[0]);
+  return { landmarks: people.map(p => p.p), worldLandmarks: people.map(p => p.w) };
+}
 
 // Seek through the video and find the person in each frame. Seeking, not
 // playing, so every frame is read however slow the PC is.
+function vidSeek(video, seconds, generation) {
+  return new Promise(resolve => {
+    let settled = false, timer = 0;
+    const cancel = () => finish(false), done = () => finish(generation === vidGeneration && !vidStop), error = () => finish(false);
+    function finish(ok) {
+      if (settled) return; settled = true; clearTimeout(timer);
+      video.removeEventListener("seeked", done); video.removeEventListener("error", error); video.removeEventListener("loadeddata", ready);
+      if (vidSeekCancel === cancel) vidSeekCancel = null;
+      resolve(ok);
+    }
+    function ready() { if (!video.seeking && Math.abs(video.currentTime - seconds) < 0.001) done(); }
+    vidSeekCancel = cancel;
+    video.addEventListener("seeked", done); video.addEventListener("error", error); video.addEventListener("loadeddata", ready);
+    timer = setTimeout(error, VIDEO_FOLLOW?.tracking.seekTimeoutMs ?? 5000);
+    if (generation !== vidGeneration || vidStop) return cancel();
+    if (video.readyState >= 2 && !video.seeking && Math.abs(video.currentTime - seconds) < 0.001) return done();
+    video.currentTime = seconds;
+  });
+}
 async function vidRead() {
+  const generation = vidGeneration;
   const v = $("vidPlayer");
   if (!v.src || !isFinite(v.duration)) { vidSay("Pick a video first.", true); return null; }
   vidSay("Loading the body finder (the first time needs the internet)…");
   let lib;
-  try { lib = await vidLoadLib(); }
+  let tracker, picture, discovery, readOptions;
+  try {
+    await videoFollowReady(); vidFill();
+    const options = vidOpts(); readOptions = options;
+    discovery = new VideoRoutineDiscovery(options);
+    tracker = new VideoSubjectTracker({ ...options, mirror: false });
+    if (!options.learned) tracker.policy.model = null;
+    picture = document.createElement("canvas"); picture.width = VIDEO_FOLLOW.tracking.imageWidth; picture.height = VIDEO_FOLLOW.tracking.imageHeight;
+    lib = await vidLoadLib(options.subjectMode);
+  }
   catch (e) {
     vidSay("Could not load the body finder. It needs the internet the first time; "
            + "check the connection and press Make moves again.", true);
@@ -9022,25 +10467,44 @@ async function vidRead() {
   const to = Math.min(v.duration, +$("vidTo").value || v.duration);
   const frames = [];
   v.pause();
-  for (let t = from; t <= to + 1e-6 && !vidStop; t += 1 / VID_FPS) {
-    await new Promise(res => { v.onseeked = res; v.currentTime = Math.min(t, v.duration - 0.001); });
+  for (let t = from; t <= to + 1e-6 && !vidStop && generation === vidGeneration; t += 1 / VID_FPS) {
+    if (!(await vidSeek(v, Math.min(t, v.duration - 0.001), generation))) {
+      if (!vidStop && generation === vidGeneration) vidSay("The video could not reach that moment. Try reading it again.", true);
+      return null;
+    }
     // timestamps must only grow, also on a second read of the same video
-    const r = lib.detectForVideo(v, performance.now());
-    const w = r.worldLandmarks && r.worldLandmarks[0], s = r.landmarks && r.landmarks[0];
-    // p: the same points on the picture, so the skeleton plays along later
-    frames.push({ t: t - from, w: w ? w.map(p => ({ x: p.x, y: p.y, z: p.z, v: p.visibility })) : null,
-                  p: s ? s.map(p => ({ x: p.x, y: p.y, v: p.visibility })) : null });
-    vidDraw(frames[frames.length - 1].p);
+    const r = vidDetectPerformers(lib, v, vidLibMode !== "single");
+    const context = picture.getContext("2d", { willReadFrequently: true });
+    context.drawImage(v, 0, 0, picture.width, picture.height);
+    const frame = tracker.step(r, t - from, context.getImageData(0, 0, picture.width, picture.height).data);
+    frames.push(frame); discovery.add(frame);
+    const select = $("vidDancer");
+    for (const person of frame.people || []) if (select && ![...select.options].some(o => o.value === String(person.id)))
+      select.add(new Option("Performer " + person.id, String(person.id)));
+    vidDraw(frame.p, frame.people);
     vidSay("Reading the video: " + Math.round(100 * (t - from) / Math.max(0.1, to - from)) + "%");
   }
-  return frames;
+  if (vidStop || generation !== vidGeneration) return null;
+  vidRoutines = readOptions.subjectMode !== 'single' && readOptions.dancer === 'auto' ? discovery.finish() : [];
+  vidRoutineRange = { from, to };
+  const select = $("vidRoutine"), previous = select?.value;
+  if (select) {
+    select.innerHTML = ''; select.add(new Option('Automatic main routine', 'auto'));
+    vidRoutines.forEach((routine, i) => {
+      const label = routine.kind === 'segment' ? 'Scene segment ' + (i + 1) + ' · ' + (routine.sourceEnd - routine.sourceStart).toFixed(1) + ' s' : (routine.kind === 'fragment' ? 'Partial routine ' : 'Routine ') + routine.id;
+      select.add(new Option(label + ' · ' + Math.round(routine.trustedCoverage * 100) + '% reliable' + (routine.ambiguous ? ' · check cut' : ''), String(routine.id)));
+    });
+    select.value = vidRoutines.some(r => String(r.id) === previous) ? previous : 'auto';
+  }
+  const selected = vidRoutines.find(r => String(r.id) === select?.value) || vidRoutines[0];
+  return selected ? vidSelectFrames(selected) : frames;
 }
 // The skeleton over the video, so it is plain whether the person was found.
 // Points are fractions of the PICTURE, which the player letterboxes inside its
 // box: they are placed on the picture, not on the box.
 const VID_BONES = [[11, 12], [11, 23], [12, 24], [23, 24],
                    [11, 13], [13, 15], [12, 14], [14, 16]];
-function vidDraw(pts) {
+function vidDraw(pts, people) {
   const v = $("vidPlayer"), c = $("vidOverlay");
   c.width = v.clientWidth; c.height = v.clientHeight;
   c.style.left = v.offsetLeft + "px"; c.style.top = v.offsetTop + "px";
@@ -9060,6 +10524,8 @@ function vidDraw(pts) {
   for (const i of [11, 12, 13, 14, 15, 16]) if (seen(i)) {
     g.beginPath(); g.arc(...P(i), 4, 0, 2 * Math.PI); g.fill();
   }
+  g.font = "14px sans-serif";
+  for (const person of people || []) g.fillText(String(person.id), ox + person.x * w, oy + person.y * h);
 }
 
 // ---- skeleton -> the robot's two bone directions per arm --------------------
@@ -9148,7 +10614,10 @@ function vidFitArm(arm, bones, first) {
   const eW = bodyGroup.localToWorld(e), hW = bodyGroup.localToWorld(h);
   if (first) solveElbowIK(arm, eW);
   else if (ccdChain(sh, elbowBalls[arm], eW, 6) > 15) solveElbowIK(arm, eW);
-  ccdChain(el, wristBalls[arm], hW, first ? 24 : 8);
+  robot.updateMatrixWorld(true);
+  const achievedElbow = bodyGroup.worldToLocal(W(elbowBalls[arm]));
+  const achievedHand = bodyGroup.localToWorld(achievedElbow.addScaledVector(bones.fore, foreLen));
+  ccdChain(el, wristBalls[arm], achievedHand, first ? 24 : 8);
   applyPose();             // ccdChain leaves its last rejected try drawn
 }
 // Douglas-Peucker on the joint angles: keep the frame that strays furthest from
@@ -9174,6 +10643,7 @@ function vidThin(times, poses, tol) {
 // ---- frames -> moves, in three steps (A44-6) --------------------------------
 // 1. Fit every frame: the slow part, done again only when Mirror or Waist change.
 function vidFitFrames(frames, opts) {
+  if (opts.subjectMode && VIDEO_FOLLOW) return new VideoRigFitter(opts).frames(frames);
   const bones = vidBones(frames, opts.mirror);
   if (!bones.some(b => b.arms[0] || b.arms[1])) return null;
   const saved = pose;
@@ -9297,7 +10767,14 @@ function vidReachSide(from, to, ms, pk, opts) {
     && opts.hand[a] * palmUpnessOf(plain, a) <= 0.5) };
 }
 // 3. The moves, from the picks and the choices.
+// Stay with the music = the show follows its song, so it is planned AND
+// played at the music pace (PACE MUSIC, user 2026-10-27), not the safe cap.
 function vidBuild(fit, picks, opts) {
+  const before = PACE_OVERRIDE;
+  PACE_OVERRIDE = opts.music ? "music" : null;
+  try { return vidBuildAtPace(fit, picks, opts); } finally { PACE_OVERRIDE = before; }
+}
+function vidBuildAtPace(fit, picks, opts) {
   const out = [], handMiss = [0, 0];
   let kept = 0, partial = 0, last = 0, start = 0;
   for (const pk of picks) {
@@ -9309,9 +10786,9 @@ function vidBuild(fit, picks, opts) {
     const prev = out[out.length - 1];
     const gap = t - last;
     last = t;
-    if (!prev) { out.push({ pose: s.pose, t: 1000, hold: 0 }); start = t; }
+    if (!prev) { out.push({ pose: s.pose, t: 1000, hold: 0, sourceMs: t, sourceHoldEnd: t }); start = t; }
     // the same pose again is a pause on the last move, not a move of no length
-    else if (deltaDeg(prev.pose, s.pose) < 1) prev.hold += gap;
+    else if (deltaDeg(prev.pose, s.pose) < 1) { prev.hold += gap; prev.sourceHoldEnd = t; }
     else {
       if (opts.music && minTime(prev.pose, s.pose) > gap) {
         s = vidReachSide(prev.pose, s.pose, gap, pk, opts);
@@ -9319,8 +10796,9 @@ function vidBuild(fit, picks, opts) {
       }
       // Pinned, so Show speed does not re-time the video's rhythm. Without
       // "stay with the music" a move too fast for the servos is slowed instead.
-      if (deltaDeg(prev.pose, s.pose) < 1) prev.hold += gap;
-      else out.push({ pose: s.pose, t: Math.round(gap), hold: 0, tset: true });
+      if (deltaDeg(prev.pose, s.pose) < 1) { prev.hold += gap; prev.sourceHoldEnd = t; }
+      else out.push({ pose: s.pose, t: opts.music ? Math.round(gap) : Math.max(Math.round(gap), minTime(prev.pose, s.pose)),
+        hold: 0, tset: true, sourceMs: t, sourceHoldEnd: t });
     }
     // counted on the pose that went on the bar, after any part-way cut
     for (const a of [0, 1]) if (s.miss[a]) { handMiss[a]++; pk.missHand[a] = true; }
@@ -9330,8 +10808,18 @@ function vidBuild(fit, picks, opts) {
   // body). safeKeys() drops a pose that hits and sends a hitting move round,
   // on this rig's sizes; each move keeps its time, so the music still fits.
   const safe = safeKeys(out, undefined, opts.music);
+  // each move's time on the song, after detours split it: what the speed
+  // limit with music is measured against later (music_pace.js)
+  if (opts.music) safe.keys.forEach((k, i) => { if (i) k.musicMs = k.t; });
+  // then give the real, lagging servos room where the hands would meet
+  const settled = opts.music ? ServoFollow.settle(safe.keys) : 0;
+  if (opts.music && safe.keys.length)            // the file keeps the pace
+    safe.keys[0].cues = (safe.keys[0].cues || []).filter(c => !/^pace:/i.test(c)).concat(musicPace.cue());
   // start: the first kept move's moment, where these moves meet the video
-  return { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe };
+  const made = { keys: safe.keys, videoMs: fit.videoMs, handMiss, kept, partial, start, safe, settled, keepMusic: opts.music, quality: fit.quality || null };
+  if (fit.targets) made.achieved = VideoRigFitter.assess(fit, made);
+  if (made.achieved && made.quality) made.quality.worstBoneDegrees = made.achieved.worstBoneDegrees;
+  return made;
 }
 // frames -> timeline keys in one go. No video needed, so QC hands it a skeleton.
 // opts: { tol, mirror, waist, hand: [want L, R] (0 = as in the video),
@@ -9355,10 +10843,58 @@ function vidHandNote(made) {
         + "“Keep, hand side forced” on those moves below, and the hand moves "
         + "just enough to show it.")).join("");
 }
+function vidSelectFrames(routine) {
+  if (vidRoutineRange && Number.isFinite(routine.sourceStart) && Number.isFinite(routine.sourceEnd)) {
+    $("vidFrom").value = (vidRoutineRange.from + routine.sourceStart).toFixed(3);
+    $("vidTo").value = Math.min(vidRoutineRange.to, vidRoutineRange.from + routine.sourceEnd).toFixed(3);
+  }
+  return routine.frames;
+}
+function vidEligibleRoutines() {
+  return vidRoutines.filter(r => (r.kind === 'routine' || r.kind === 'segment') && r.trustedCoverage >= VIDEO_FOLLOW.routines.minimumSaveCoverage);
+}
+function vidChooseRoutine() {
+  if (vidBusy || !vidRoutines.length) return;
+  const selected = vidRoutines.find(r => String(r.id) === $("vidRoutine").value) || vidRoutines[0];
+  vidFrames = vidSelectFrames(selected); vidRemake('fit');
+  vidLastMs = -1;
+  const video = $("vidPlayer"); vidCheckedPlayback.reset(video);
+  if (video?.pause) video.pause();
+  if (video?.src && Number.isFinite(video.duration)) video.currentTime = +$("vidFrom").value || 0;
+  vidSay(vidSummary());
+}
+async function vidSaveRoutines() {
+  if (vidBusy) return;
+  if (!vidRoutines.length && !(await vidMake())) return;
+  if (!vidRoutines.length) return vidMakeAndSave();
+  const generation = vidGeneration, stamp = Date.now();
+  const original = $("vidRoutine").value;
+  if (!(await askUnsaved("save the discovered dance routines as separate projects")) || generation !== vidGeneration) return;
+  vidBusy = true; vidStop = false; $("vidGo").textContent = '■ Stop';
+  let saved = 0;
+  try {
+    for (const routine of vidEligibleRoutines()) {
+      if (vidStop || generation !== vidGeneration) break;
+      $("vidRoutine").value = String(routine.id);
+      vidFrames = vidSelectFrames(routine); vidRemake('fit');
+      if (!vidMade?.keys.length) continue;
+      setWorkName('video_' + stamp + '_routine_' + routine.id);
+      if (!(await vidUse('replace', { skipUnsaved: true })) || generation !== vidGeneration || vidStop) break;
+      if (!(await saveAll())) break;
+      saved++; await new Promise(resolve => setTimeout(resolve, 30));
+    }
+  } finally {
+    vidBusy = false; $("vidGo").textContent = '▶ Make moves';
+    if (generation === vidGeneration) { $("vidRoutine").value = original; vidChooseRoutine(); vidSay('Saved ' + saved + ' separate routine projects. Short or uncertain fragments remain available for review.'); }
+  }
+}
 function vidSummary() {
   const m = vidMade, opts = vidOpts();
   return m.keys.length + " moves from " + (m.videoMs / 1000).toFixed(1) + " s of video."
+    + (vidRoutines.length ? " " + vidRoutines.length + " routine groups / scene sections found automatically. Uncertain camera links are split rather than stitched into another dance." : "")
+    + (m.quality?.smoothing ? " Short reversals: " + m.quality.smoothing.before.reversals + " → " + m.quality.smoothing.afterRepair.reversals + "." : "")
     + (m.safe && safeSay(m.safe) ? " " + safeSay(m.safe) : "")
+    + (m.quality?.uncertain ? " " + m.quality.uncertain + " uncertain observations hold the last trustworthy pose." : "")
     + (opts.music && m.partial
       ? " To stay with the music, " + m.partial + " of them go only part of the way: "
         + "the person moved faster than the robot can."
@@ -9410,7 +10946,7 @@ function vidSee(pk) {
     v.pause();
     v.currentTime = Math.min(v.duration, (+$("vidFrom").value || 0) + ms / 1000);
   }
-  pose = vidPoseAt(vidFit, ms).slice();
+  pose = vidMade?.keys.length ? easeKeys(vidMade.keys, VideoRigFitter.clockForSource(vidMade.keys, ms).ms).pose : vidPoseAt(vidFit, ms).slice();
   poseChanged(false);
 }
 // One step (user 2026-10-22: *drop a video, the robot does it*): make the
@@ -9418,21 +10954,25 @@ function vidSee(pk) {
 // safety pass is in vidBuild, so what is saved is what was checked.
 async function vidMakeAndSave() {
   if (vidBusy) return;
-  await vidMake();
+  const generation = vidGeneration;
+  if (!(await vidMake()) || generation !== vidGeneration) return;
   if (!vidMade || vidMade.keys.length < 2) return;
+  if (vidEligibleRoutines().length > 1) { await vidSaveRoutines(); return; }
   const base = ((vidSrc && (vidSrc.name || vidSrc.url)) || "video").split(/[\\/?#]/).filter(Boolean).pop();
   setWorkName("video_" + base.replace(/\.[^.]*$/, ""));
   if (!(await vidUse("replace"))) return;
+  if (generation !== vidGeneration) return;
   if (await saveAll()) vidSay($("tlStat").textContent);
 }
 async function vidMake() {
-  if (vidBusy) { vidStop = true; return; }
+  if (vidBusy) { vidStop = true; if (vidSeekCancel) vidSeekCancel(); return false; }
   vidBusy = true; vidStop = false;
+  const generation = vidGeneration;
   $("vidGo").textContent = "■ Stop";
   $("vidUseBox").hidden = true;
   try {
     const frames = await vidRead();
-    if (!frames) return;
+    if (!frames || vidStop || generation !== vidGeneration) return false;
     if (!frames.some(f => f.w)) {
       vidSay("No person was found in the video. Use a video where one person's "
              + "upper body and arms are in the picture.", true);
@@ -9451,6 +10991,7 @@ async function vidMake() {
     const seen = frames.filter(f => f.w).length;
     vidSay("The person was found in " + Math.round(100 * seen / frames.length)
            + "% of the video. " + vidSummary());
+    return true;
   } finally {
     vidBusy = false;
     $("vidGo").textContent = "▶ Make moves";
@@ -9473,11 +11014,13 @@ function vidRebuild() {
   $("vidUseBox").hidden = !(vidMade && vidMade.keys.length >= 2);
   vidSay(vidSummary());
 }
-async function vidUse(how) {
+async function vidUse(how, options = {}) {
+  const generation = vidGeneration;
   if (!vidMade) return false;
   const add = JSON.parse(JSON.stringify(vidMade.keys));
   if (how === "replace") {
-    if (!(await askUnsaved("replace the time bar with the moves from the video"))) return false;
+    if (!options.skipUnsaved && !(await askUnsaved("replace the time bar with the moves from the video"))) return false;
+    if (generation !== vidGeneration || vidStop) return false;
     keys = add;
   } else {
     // the first video pose is a move like any other once it follows a move
@@ -9504,6 +11047,10 @@ async function vidUse(how) {
   return true;
 }
 vidFill();
+videoFollowReady().then(() => {
+  vidFill();
+  if (typeof vidSaved !== "undefined" && vidSaved) vidApplySettings(vidSaved);
+}).catch(() => {});
 // --- the Video page (A44-8) ---
 // User 2026-10-19: a page of its own for moves from a video - the person with
 // their music, the skeleton found on them and the robot moving beside them,
@@ -9539,6 +11086,9 @@ function vidPage(on) {
     requestAnimationFrame(vidTick);
     return;
   }
+  vidGeneration++; if (vidBusy) vidStop = true;
+  if (vidSeekCancel) vidSeekCancel();
+  vidCheckedPlayback.reset(v);
   if (v && !v.paused) v.pause();
   // The page drew the video's poses on the editor's robot; give it back.
   if (vidHeld) { pose = vidHeld; applyPose(); renderSliders(); }
@@ -9548,13 +11098,25 @@ function vidPage(on) {
 
 // A video for the stage, from a file or a fetched link.
 function vidSetSrc(url, src) {
+  vidGeneration++;
+  if (vidSeekCancel) vidSeekCancel();
+  if (vidBusy) vidStop = true;
   const v = $("vidPlayer");
+  vidCheckedPlayback.reset(v);
+  const keepSaved = !!(vidSaved?.src?.url && src.url && vidSaved.src.url === src.url);
+  if (!keepSaved) {
+    vidSaved = null;
+    $("vidRoutine").innerHTML = '<option value="auto">Find routines automatically</option>';
+    $("vidRoutine").value = "auto";
+    $("vidDancer").innerHTML = '<option value="auto">Automatic — discover dance groups</option>';
+    $("vidDancer").value = "auto";
+  }
   if (v.src && v.src.startsWith("blob:")) URL.revokeObjectURL(v.src);
   vidSrc = src;
   v.src = url;
   v.hidden = false;
   $("vidEmpty").hidden = true;
-  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null;
+  vidFrames = null; vidMade = null; vidFit = null; vidPicks = null; vidRoutines = []; vidRoutineRange = null;
   vidList();
   vidDraw(null);
   $("vidUseBox").hidden = true;
@@ -9566,7 +11128,7 @@ function vidSetSrc(url, src) {
   vidLastMs = -1;
   v.onloadedmetadata = () => {
     // a reopened project's part of the video is kept; a new video uses all of it
-    const keep = vidSaved && vidSaved.src && src.url && vidSaved.src.url === src.url;
+    const keep = keepSaved && vidSaved;
     $("vidFrom").value = keep ? String(vidSaved.from || 0) : "0";
     $("vidTo").value = keep && vidSaved.to ? String(vidSaved.to) : v.duration.toFixed(1);
     vidSay("Ready: " + v.duration.toFixed(1) + " s of video. Press Make moves.");
@@ -9625,10 +11187,16 @@ async function vidFetch() {
 function vidPlayBoth() {
   const v = $("vidPlayer");
   if (!v.src) return;
+  if (vidCheckedPlayback.manual) { vidCheckedPlayback.pause(v); return; }
   if (!v.paused) { v.pause(); return; }
   const from = +$("vidFrom").value || 0, to = +$("vidTo").value || v.duration;
   if (v.currentTime < from || v.currentTime >= to - 0.05) v.currentTime = from;
   v.muted = false;
+  if (vidMade?.keepMusic === false && vidMade.keys.length) {
+    const mapped = VideoRigFitter.clockForSource(vidMade.keys, (v.currentTime - from) * 1000);
+    if (mapped.rate < 0.0625) { vidCheckedPlayback.start(v, mapped.ms); return; }
+    v.playbackRate = Math.min(4, mapped.rate);
+  }
   v.play().catch(e => vidSay("The video would not play: " + (e.message || e), true));
 }
 // Every frame while the page is open: the robot takes the made moves' pose at
@@ -9642,18 +11210,19 @@ function vidTick() {
   if (!v.src || !isFinite(v.duration) || vidBusy || playing) return;
   const from = +$("vidFrom").value || 0, to = +$("vidTo").value || v.duration;
   if (!v.paused && v.currentTime >= to) v.pause();
-  const ms = Math.round((v.currentTime - from) * 1000);
-  if (ms === vidLastMs) return;
+  let ms = Math.round((v.currentTime - from) * 1000);
+  ms = vidCheckedPlayback.update(v, vidMade, ms, from, (to - from) * 1000);
+  if (ms === vidLastMs && !vidCheckedPlayback.manual) return;
   vidLastMs = ms;
-  vidShowAt(ms);
+  vidShowAt(ms, vidCheckedPlayback.robotMs);
 }
-function vidShowAt(ms) {
+function vidShowAt(ms, checkedMs = null) {
   if (vidFrames && vidFrames.length) {
     const f = vidFrames[Math.max(0, Math.min(vidFrames.length - 1, Math.round(ms * VID_FPS / 1000)))];
     vidDraw($("vidSkel").checked && ms >= 0 ? f.p : null);
   }
   if (vidMade && vidMade.keys.length && ms >= 0) {
-    pose = easeKeys(vidMade.keys, Math.max(0, ms - vidMade.start)).pose;
+    pose = easeKeys(vidMade.keys, checkedMs ?? VideoRigFitter.clockForSource(vidMade.keys, ms).ms).pose;
     applyPose();
   }
   $("vidClock").textContent = ms >= 0 ? (ms / 1000).toFixed(1) + " s" : "";
@@ -9670,6 +11239,14 @@ function vidOnBar(first) {
 // card the way any track does (uploadMusicFile). A picked file is copied to
 // the hub first; a link is already there.
 async function vidSound() {
+  if (vidMade?.keepMusic === false && vidMade.keys.length) {
+    const last = vidMade.keys.at(-1), end = last.sourceHoldEnd ?? last.sourceMs;
+    const timed = VideoRigFitter.clockForSource(vidMade.keys, end).ms;
+    if (Number.isFinite(end) && timed > end - (vidMade.keys[0].sourceMs || 0) + 2) {
+      vidSay("These moves use a slower clock. The original sound would be out of step; use a retimed music file for this show.", true);
+      return;
+    }
+  }
   const k = keys[vidFirstKey];
   if (!vidSrc || !k) return;
   if (!haveRobot()) {
@@ -9716,6 +11293,14 @@ async function vidSound() {
 function vidSettings() {
   if (!vidSrc) return vidSaved;
   return { src: { kind: vidSrc.kind, name: vidSrc.name, url: vidSrc.url || "" },
+           subjectMode: $("vidSubject")?.value || "auto", cameraMode: $("vidCamera")?.value || "auto",
+           routine: $("vidRoutine")?.value || "auto", routineSummary: typeof vidRoutines !== "undefined" ? vidRoutines.map(r => ({ id: r.id, kind: r.kind, sourceStart: r.sourceStart, sourceEnd: r.sourceEnd, coverage: r.coverage, trustedCoverage: r.trustedCoverage, ambiguous: r.ambiguous })) : [],
+           dancer: $("vidDancer")?.value || "auto", shrug: !!$("vidShrug")?.checked,
+           anchorX: Number.isFinite(vidSaved?.anchorX) ? vidSaved.anchorX : 0.5,
+           analysis: vidMade?.achieved ? { meanBoneDegrees: vidMade.achieved.meanBoneDegrees,
+             worstBoneDegrees: vidMade.achieved.worstBoneDegrees, corrected: vidMade.safe.around,
+             uncertain: vidMade.quality?.uncertain || 0, limited: vidMade.partial } : null,
+           learned: $("vidLearned")?.checked !== false,
            detail: $("vidDetail").value, mirror: $("vidMirror").checked,
            music: $("vidMusic").checked, waist: $("vidWaist").checked,
            hand: [$("vidHand0").value, $("vidHand1").value],
@@ -9727,9 +11312,23 @@ function vidApplySettings(s) {
   vidFill();
   const pick = (sel, id) => { if (sel && [...sel.options].some(o => o.value === id)) sel.value = id; };
   pick($("vidDetail"), s.detail);
+  pick($("vidSubject"), s.subjectMode || "auto");
+  pick($("vidCamera"), s.cameraMode || "auto");
+  if ($("vidShrug")) $("vidShrug").checked = !!s.shrug;
+  if ($("vidLearned")) $("vidLearned").checked = s.learned !== false;
+  if ($("vidDancer")) {
+    if (s.dancer && ![...$("vidDancer").options].some(o => o.value === s.dancer))
+      $("vidDancer").add(new Option("Performer " + s.dancer, s.dancer));
+    $("vidDancer").value = s.dancer || "auto";
+    if ($("vidDancer").options[0]) $("vidDancer").options[0].text = Number.isFinite(s.anchorX) && s.anchorX !== 0.5 ? "Saved reference" : "Main performer";
+  }
+  if ($("vidRoutine")) {
+    if (s.routine && ![...$("vidRoutine").options].some(o => o.value === s.routine)) $("vidRoutine").add(new Option("Saved routine " + s.routine, s.routine));
+    $("vidRoutine").value = s.routine || "auto";
+  }
   (s.hand || []).forEach((h, a) => pick($("vidHand" + a), h));
   $("vidMirror").checked = !!s.mirror;
-  $("vidMusic").checked = s.music !== false;
+  $("vidMusic").checked = s.music === true;
   $("vidWaist").checked = !!s.waist;
   $("vidFrom").value = String(s.from || 0);
   if (s.to) $("vidTo").value = String(s.to);
@@ -10332,6 +11931,14 @@ function talkRender() {
     const o = document.createElement("option"); o.value = o.textContent = m; sel.appendChild(o);
   });
   sel.value = keep || "friendly";
+  // the resting hands to choose from (config/gestures.json rests; "" = rest)
+  const rs = $("talkRest");
+  rs.textContent = "";
+  Object.entries(L.rests || {}).forEach(([id, r]) => {
+    const o = document.createElement("option"); o.value = id; o.textContent = (r || {}).label || id; rs.appendChild(o);
+  });
+  rs.value = L.restStyle || "";
+  try { $("talkAi").checked = localStorage.getItem("talkAi") === "1"; } catch (e) { /* no storage: off */ }
   const n = Object.keys(F.gestures || {}).length, bad = Object.keys(F.bad || {});
   talkSay(talkStale() ? "The gestures are not fitted to this robot as it is now. They will be in a moment."
     : n + " gestures fitted to this robot and kept clear of its body."
@@ -10403,26 +12010,133 @@ async function talkToBar(steps, what) {
   selKey = 0; pose = [...keys[0].pose]; poseChanged(false); renderTimeline();
   return true;
 }
+function talkAiSwitch() {
+  try { localStorage.setItem("talkAi", $("talkAi").checked ? "1" : "0"); } catch (e) { /* per-viewer only */ }
+}
+const talkPost = (url, body) => fetch(url, { method: "POST", body: JSON.stringify(body) })
+  .then(async r => Object.assign({ status: r.status }, await r.json().catch(() => ({}))));
+// A made gesture (or any definition) fitted on this robot like the library
+// is: IK, joint limits, poseHit, safeKeys + planSafe (RRT) from the resting
+// hands. {vid: fit} for the arm(s) that came out safe, or {bad} when none.
+function talkFitDef(id, def, mirror) {
+  const rest = (TALK.fit || {}).rest;
+  if (!rest || !robot) return { bad: "the gestures are not fitted yet" };
+  const restPose = rest.keys[rest.keys.length - 1].pose, saved = pose.slice();
+  const out = {}; let bad = "";
+  try {
+    for (const m of mirror ? [false, true] : [false]) {
+      const one = talkFitOne(def, m, restPose);
+      if (one.bad) bad = one.bad; else out[id + (m ? "~m" : "")] = one;
+    }
+  } finally { pose = saved; applyPose(); }
+  return Object.keys(out).length ? { fit: out } : { bad: bad || "it does not fit this robot" };
+}
+// New moves for the words no gesture has: rules first, then (switch on) the AI.
+async function talkMake(text) {
+  let made = [], why = "";
+  const r = await talkPost("/api/gestures/make", { text }).catch(e => ({ error: String(e) }));
+  if (r.ok) made = r.made || [];
+  if (!made.length && $("talkAi").checked) {
+    talkSay("Asking the AI for a move…");
+    const a = await talkPost("/api/gestures/think", { text }).catch(e => ({ error: String(e) }));
+    if (a.status === 401 || a.need_login) why = "Log in (Robot tab) to ask the AI for moves.";
+    else if (a.ok) made = a.made || [];
+    else why = "The AI made no move: " + (a.why || a.error || "no answer");
+  }
+  for (const m of made) Object.assign(m, talkFitDef(m.id, m.keys, m.mirror));
+  return { made, why };
+}
+// The sentence said in the chosen manner by the Voice page's own voice.
+// {audio, url, ms} or {why}; the moves still show without it.
+async function talkSound(text, manner) {
+  try {
+    const r = await fetch("/api/voice/say", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, lang: "", style: manner }) });
+    if (r.status === 401) return { why: "log in (Robot tab) to hear the voice" };
+    if (!r.ok) return { why: ((await r.json().catch(() => ({}))).error) || "the voice did not answer" };
+    const url = URL.createObjectURL(await r.blob()), audio = new Audio(url);
+    await new Promise((ok, no) => { audio.onloadedmetadata = ok; audio.onerror = no; });
+    return { audio, url, ms: isFinite(audio.duration) ? audio.duration * 1000 : 0 };
+  } catch (e) { return { why: "the voice could not play here" }; }
+}
 async function talkTry() {
   const text = $("talkText").value.trim();
   if (!text) { talkSay("Type something the robot might say."); return; }
+  if (TALK.audio) { TALK.audio.pause(); TALK.audio = null; }
   await talkCheckFit();
-  const j = await fetch("/api/gestures/plan", { method: "POST", body: JSON.stringify({
-    text, manner: $("talkManner").value, seed: Math.floor(Math.random() * 1e9) }) }).then(r => r.json()).catch(e => ({ why: String(e) }));
+  const manner = $("talkManner").value;
+  talkSay("Getting the voice and the moves…");
+  const [mk, snd] = await Promise.all([talkMake(text), talkSound(text, manner)]);
+  const extra = {};
+  mk.made.filter(m => m.fit).forEach(m => {
+    extra[m.id] = { label: m.label, words: m.words, keys: m.keys, mirror: m.mirror, fit: { gestures: m.fit } };
+  });
+  TALK.made = mk.made;
+  talkMadeRender(mk.why);
+  const j = await talkPost("/api/gestures/plan", { text, manner, ms: snd.ms || 0, extra,
+    seed: Math.floor(Math.random() * 1e9) }).catch(e => ({ why: String(e) }));
   if (!j.ok) { talkSay(j.why || j.error || "No gestures for that."); return; }
   if (!(await talkToBar(j.steps, "put these gestures on the time bar"))) return;
   $("talkPicks").textContent = j.picks.length
     ? j.picks.map(p => (p.at / 1000).toFixed(1) + " s " + p.label + (p.mirrored ? " (other arm)" : "") + (p.word ? " ← “" + p.word + "”" : "")).join(" · ")
-    : "No word asked for a gesture and no beat fitted.";
-  $("tlStat").textContent = "Gestures for " + (j.ms / 1000).toFixed(1) + " s of talk are on the time bar. Press Play to watch; press Show again for another random pick.";
+    : "No gesture fitted this robot for that.";
+  talkSay(snd.audio ? "Saying it with the arms." : "The moves show without sound: " + snd.why + ".");
+  // the preview plays with the sound; it never drives the robot from here
+  if (playing) await togglePlay();
+  playT = 0;
+  await togglePlay({ previewOnly: true });
+  if (snd.audio && playing) {
+    TALK.audio = snd.audio;
+    snd.audio.ontimeupdate = () => { if (!playing) snd.audio.pause(); };
+    snd.audio.onended = () => URL.revokeObjectURL(snd.url);
+    snd.audio.play().catch(() => talkSay("The browser held the sound back: press Show again."));
+  }
+  $("tlStat").textContent = "Gestures for " + (j.ms / 1000).toFixed(1) + " s of talk. Show again for another random pick; Play repeats the moves without sound.";
+}
+// The made moves: what they are for, whether they fit, ▶ and ＋ Keep.
+function talkMadeRender(why) {
+  const box = $("talkMade");
+  box.textContent = "";
+  const made = TALK.made || [];
+  if (why) { const p = document.createElement("div"); p.className = "mini"; p.textContent = why; box.appendChild(p); }
+  if (!made.length) return;
+  const h = document.createElement("div"); h.className = "mini";
+  h.textContent = "New moves made for words no gesture has:";
+  box.appendChild(h);
+  made.forEach(m => {
+    const row = document.createElement("div"); row.className = "row";
+    const name = document.createElement("span"); name.className = "lbl";
+    name.textContent = m.label + " ← “" + m.word + "”" + (m.by === "ai" ? " (AI)" : "");
+    row.appendChild(name);
+    if (!m.fit) {
+      const no = document.createElement("span"); no.className = "mini";
+      no.textContent = "not safe on this robot: " + m.bad;
+      row.appendChild(no);
+    } else {
+      const show = document.createElement("button");
+      show.textContent = "▶"; show.title = "Put this move on the time bar, fitted to this robot";
+      show.onclick = () => talkShowFitted(m.label, m.fit[Object.keys(m.fit)[0]]);
+      const keep = document.createElement("button");
+      keep.textContent = "＋ Keep"; keep.title = "Keep it as a gesture: the Voice page then uses it for these words";
+      keep.onclick = () => talkSave({ gestures: { [m.id]: { label: m.label, mine: true, made: m.by,
+        mirror: m.mirror, words: m.words, keys: m.keys } } });
+      row.append(show, keep);
+    }
+    box.appendChild(row);
+  });
 }
 async function talkShowOne(id) {
   await talkCheckFit();
-  const F = TALK.fit || {}, g = (F.gestures || {})[id], rest = F.rest;
-  if (!g || !rest) { talkSay(talkName(id) + " is not fitted to this robot: " + ((F.bad || {})[id] || "fit it first")); return; }
+  const F = TALK.fit || {}, g = (F.gestures || {})[id];
+  if (!g || !F.rest) { talkSay(talkName(id) + " is not fitted to this robot: " + ((F.bad || {})[id] || "fit it first")); return; }
+  talkShowFitted(talkName(id), g);
+}
+async function talkShowFitted(name, g) {
+  const rest = (TALK.fit || {}).rest;
+  if (!rest) return;
   const steps = [{ pose: rest.keys[rest.keys.length - 1].pose, t: 0, hold: 300 }]
     .concat(g.in, g.keys, g.out, [{ pose: rest.keys[rest.keys.length - 1].pose, t: 500, hold: 0 }]);
-  if (await talkToBar(steps, "show this gesture on the time bar")) $("tlStat").textContent = talkName(id) + " is on the time bar. Press Play to watch.";
+  if (await talkToBar(steps, "show this gesture on the time bar")) $("tlStat").textContent = name + " is on the time bar. Press Play to watch.";
 }
 // The time bar as a new gesture: its poses as they are (made on this robot),
 // checked like every other gesture when it is fitted.
@@ -10521,7 +12235,7 @@ function playTick() {
       keepAwake(false);                    // the show is over: let the tab idle
     }
   }
-  pose = poseAt(playT).map((v, i) => clampJ(i, v));
+  pose = servoPlayPose(poseAt(playT), dt).map((v, i) => clampJ(i, v));
   // DRAW only from the animation frame. Both rAF and the keep-awake interval
   // call this, so the picture was being redrawn ~76 times a second when the
   // screen can only show 60 — the extra passes were pure cost. Time still
@@ -11002,3 +12716,141 @@ function muDelete() {
     $("muPass").value = "";
   }
 }
+// --- take a side card out to its own window (A49-3) ---
+// User 2026-10-23: Studio's tabs back on top in their own area, and the cards
+// "ปิดเปิดได้หรือลากออกไปด้านนอก" - fold (card_fold.js) or drag out. ⧉ in a
+// card's title floats it over the page (position:fixed, still inside #side so
+// every rule and id keeps working); drag its title to move it, its corner to
+// size it, ⇲ puts it back. Where each one floats is kept per browser under
+// PANEL_KEY, by the same tab:title key card_fold uses. Desk screens only: on a
+// phone the page is one column and a window over it would hide the rest.
+const PANEL_KEY = "nong_panels";
+const PANEL_DESK = "(min-width:861px)";
+let panelSaved = {};
+
+function panelKey(card) {
+  const h = card.querySelector(":scope > h2");
+  return card.dataset.stab + ":" + (h ? h.firstChild.textContent.trim() : card.id);
+}
+function panelKeep() {
+  try { localStorage.setItem(PANEL_KEY, JSON.stringify(panelSaved)); } catch (e) {}
+}
+// a window never ends up where its title cannot be grabbed again
+function panelClamp(card) {
+  if (!card.offsetWidth) return;     // hidden (another tab, no login): it measures 0 x 0
+  const r = card.getBoundingClientRect();
+  const x = Math.min(Math.max(0, r.left), Math.max(0, innerWidth - 120));
+  const y = Math.min(Math.max(0, r.top), Math.max(0, innerHeight - 40));
+  card.style.left = x + "px";
+  card.style.top = y + "px";
+}
+function panelFloat(card, at, remember) {
+  const r = card.getBoundingClientRect();
+  at = at || {x: r.left - 40, y: r.top + 20, w: r.width};
+  card.classList.add("floating");
+  card.style.left = at.x + "px";
+  card.style.top = at.y + "px";
+  card.style.width = (at.w || r.width) + "px";
+  if (at.h) card.style.height = at.h + "px";
+  showTab(sideTab);                  // a floating card shows on every tab: measure it shown
+  panelClamp(card);
+  card.querySelector(".popout").textContent = "⇲";
+  card.querySelector(".popout").title = "Put this panel back in the side panel";
+  if (remember) { panelSaved[panelKey(card)] = panelWhere(card); panelKeep(); }
+}
+function panelDock(card) {
+  card.classList.remove("floating");
+  ["left", "top", "width", "height"].forEach(k => card.style[k] = "");
+  card.querySelector(".popout").textContent = "⧉";
+  card.querySelector(".popout").title = "Take this panel out: drag it anywhere, it stays open on every tab";
+  delete panelSaved[panelKey(card)];
+  panelKeep();
+  showTab(sideTab);
+}
+function panelWhere(card) {
+  const r = card.getBoundingClientRect();
+  return {x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height)};
+}
+function panelDrag(card, h) {
+  let start = null, moved = false;
+  h.addEventListener("pointerdown", e => {
+    if (!card.classList.contains("floating") || e.target.closest("label, input, button, select, a")) return;
+    const r = card.getBoundingClientRect();
+    start = {x: e.clientX - r.left, y: e.clientY - r.top, cx: e.clientX, cy: e.clientY};
+    moved = false;
+    try { h.setPointerCapture(e.pointerId); } catch (err) {}   // keeps the drag when the pointer outruns the title
+  });
+  h.addEventListener("pointermove", e => {
+    if (!start) return;
+    if (Math.abs(e.clientX - start.cx) + Math.abs(e.clientY - start.cy) > 4) moved = true;
+    card.style.left = (e.clientX - start.x) + "px";
+    card.style.top = (e.clientY - start.y) + "px";
+  });
+  h.addEventListener("pointerup", () => {
+    if (!start) return;
+    start = null;
+    panelClamp(card);
+    panelSaved[panelKey(card)] = panelWhere(card);
+    panelKeep();
+  });
+  // a drag is not a click: the title would fold the card as it is let go
+  card.addEventListener("click", e => {
+    if (moved && e.target.closest(":scope > h2")) { e.stopPropagation(); moved = false; }
+  }, true);
+}
+
+function initPanels() {
+  try { panelSaved = JSON.parse(localStorage.getItem(PANEL_KEY)) || {}; } catch (e) {}
+  const desk = window.matchMedia(PANEL_DESK);
+  document.querySelectorAll("#side div.card[data-stab]").forEach(card => {
+    const h = card.querySelector(":scope > h2");
+    if (!h || card.dataset.stab === "login" || card.id === "userManageCard") return;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "popout";
+    b.textContent = "⧉";
+    b.title = "Take this panel out: drag it anywhere, it stays open on every tab";
+    b.addEventListener("click", e => {
+      e.stopPropagation();
+      if (card.classList.contains("floating")) panelDock(card);
+      else panelFloat(card, null, true);
+    });
+    h.appendChild(b);
+    panelDrag(card, h);
+    const at = panelSaved[panelKey(card)];
+    if (at && desk.matches) panelFloat(card, at, false);
+  });
+  // the size is the window's own corner (CSS resize): keep it when let go
+  if ("ResizeObserver" in window) {
+    let soon = null;
+    const ro = new ResizeObserver(() => {
+      clearTimeout(soon);
+      soon = setTimeout(() => {
+        // a hidden window measures 0 x 0: keep where it was instead
+        document.querySelectorAll("#side .card.floating").forEach(c => {
+          if (c.offsetWidth) panelSaved[panelKey(c)] = panelWhere(c);
+        });
+        panelKeep();
+      }, 300);
+    });
+    document.querySelectorAll("#side div.card[data-stab]").forEach(c => ro.observe(c));
+  }
+  // a phone-narrow window docks every floating card back (nothing is forgotten)
+  desk.addEventListener("change", () => {
+    document.querySelectorAll("#side .card.floating").forEach(c => {
+      c.classList.remove("floating");
+      ["left", "top", "width", "height"].forEach(k => c.style[k] = "");
+    });
+    if (desk.matches) document.querySelectorAll("#side div.card[data-stab]").forEach(c => {
+      const at = panelSaved[panelKey(c)];
+      if (at && c.querySelector(".popout")) panelFloat(c, at, false);
+    });
+    showTab(sideTab);
+  });
+  window.addEventListener("resize", () => document.querySelectorAll("#side .card.floating").forEach(panelClamp));
+  // the tab row: three across when the panel is narrow, all six when there is room
+  const tabs = $("sideTabs"), side = $("side");
+  if (tabs && side && "ResizeObserver" in window)
+    new ResizeObserver(() => tabs.classList.toggle("narrow", side.clientWidth < 420)).observe(side);
+}
+initPanels();

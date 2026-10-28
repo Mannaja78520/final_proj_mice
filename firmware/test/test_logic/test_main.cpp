@@ -108,6 +108,21 @@ void test_bad_speed_is_survivable(void) {
     TEST_ASSERT_TRUE(minDuration(from, to, dps, 1, MIN_MS) >= MIN_MS);
 }
 
+// PACE MUSIC (user 2026-10-27): with no music cap a move gets only the servos'
+// floor, so a 90 deg move at 400 deg/s takes 225 ms instead of 2356 ms; with a
+// cap back on (lab ramp-up, music_dps 120) the cap decides again.
+void test_move_floor_music_pace(void) {
+    float from[2] = {90, 90};
+    float to[2]   = {90, 180};
+    float dps[2]  = {400, 400};
+    TEST_ASSERT_EQUAL_UINT32(minDuration(from, to, dps, 2, MIN_MS), moveFloor(from, to, dps, 2, MIN_MS, 0));
+    TEST_ASSERT_UINT32_WITHIN(1, 225, moveFloor(from, to, dps, 2, MIN_MS, 0));
+    TEST_ASSERT_EQUAL_UINT32(safeDuration(from, to, 2, 60.0f, MIN_MS), moveFloor(from, to, dps, 2, MIN_MS, 60));
+    TEST_ASSERT_UINT32_WITHIN(2, 1178, moveFloor(from, to, dps, 2, MIN_MS, 120));
+    float slow[2] = {30, 30};          // a servo slower than the cap still wins
+    TEST_ASSERT_EQUAL_UINT32(3000, moveFloor(from, to, slow, 2, MIN_MS, 120));
+}
+
 // Safety cap (2026-09-17): no joint's PEAK speed on the cosine ease may pass
 // safeDps. A 90 deg jump at 60 deg/s needs 90 * pi/2 / 60 = 2.356 s.
 void test_safe_duration_caps_peak_speed(void) {
@@ -501,6 +516,7 @@ int main(int, char **) {
     RUN_TEST(test_duration_scales_with_speed);
     RUN_TEST(test_bad_speed_is_survivable);
     RUN_TEST(test_safe_duration_caps_peak_speed);
+    RUN_TEST(test_move_floor_music_pace);
     RUN_TEST(test_ease_is_smooth_and_bounded);
     RUN_TEST(test_quoted_ssid_keeps_its_spaces);
     RUN_TEST(test_quoted_password_loses_its_quotes);

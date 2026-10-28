@@ -339,7 +339,7 @@ interchangeably.
 | `WIFI CLEAR` | `OK forgot the stored network, now using "manny" from the firmware` | forget credentials set on this board and fall back to the one compiled into `config/conf_network.h`. The way back after pointing a module at a bench hotspot |
 | `WIFI RETRY` | `OK retrying "manny" now` | try the stored network again without waiting for the 60 s clock |
 | `WIFI SCAN` | `OK 4 network(s): "manny"(-48dBm) ...` | which 2.4GHz networks this board can actually see. Asynchronous — ask again a moment later for the result |
-| `CFG <key> <value>` | `OK ... (reboot to apply)` | keys: `encoder leds speed speed_mms stages stage_mm mm_per_rev counts_per_rev max_rpm counts_per_stage volume speed_dps max_dps safe_dps link` — works without SD card, overrides module.yaml |
+| `CFG <key> <value>` | `OK ... (reboot to apply)` | keys: `encoder leds speed speed_mms stages stage_mm mm_per_rev counts_per_rev max_rpm counts_per_stage volume speed_dps max_dps safe_dps music_dps link` — works without SD card, overrides module.yaml |
 | `CFG CLEAR [key]` | `OK cleared ...` | remove one / all stored settings |
 | `PIN?` | `{"motor_a":{"gpio":33,...},...}` | current hardware pin map (JSON) |
 | `PINS` / `PINS?` | same as `PIN?` | aliases, so either spelling works |
@@ -599,8 +599,19 @@ in, and it caps the PEAK speed of the cosine ease: `T >= largest delta × π/2 �
 safe_dps`. An explicit `T` never goes past it. Added 2026-09-17 after the arm
 hit something on a fast jump.
 
+**A show that follows its song may lift that cap, for that file only**
+(A48-23, user 2026-10-27). The file says `- pace: music [N]` and the board runs
+`PACE MUSIC [N]`: the cap becomes N deg/s, or `music_dps` when no N is given
+(`CFG music_dps <0-1000>`, default 0 = only each servo's own `max_dps`). It ends
+when that show ends, on `STOP`, or at a restart; `- pace: normal` ends it early.
+Collision, joint-limit and the gap checks in Studio still run at the faster
+timing. Raise it on the real robot step by step (handoff/tasks/lab-day.md).
+
 | Command | Reply | Notes |
 |---|---|---|
+| `PACE MUSIC [deg/s]` | `OK PACE MUSIC cap=120 deg/s` | the music cap until the show ends, `STOP` or a restart; forwarded to the partner board |
+| `PACE NORMAL` | `OK PACE NORMAL cap=60 deg/s` | back to `safe_dps` |
+| `PACE?` | `PACE MUSIC cap=servo max only` | the pace in force and its cap |
 | `POSE <a1..a10> [T <ms>]` | `OK pose T=800ms` | all 10 joints; `-` keeps a joint; a shorter list (e.g. an old 8-joint pose) leaves the rest untouched; no `T` = duration from speed; `T` below the physical minimum is raised |
 | `POSE?` | `90.0 45.0 ...` | current 10 angles |
 | `JOINT <1-10\|name> <deg> [T <ms>]` | `OK L_EL_P=120.0 T=500ms` | one joint, e.g. `JOINT WAIST 60` |
@@ -699,6 +710,7 @@ speed_dps: 120                                # deg/s when a POSE has no T
 max_dps: [375,375,400,400,375,375,400,400,200,400] # per-joint speed limit (floor
                                               # for move times); WAIST is slower
 safe_dps: 60                                  # safety cap on peak joint speed, every move
+music_dps: 0                                  # cap while a show follows its song (PACE MUSIC); 0 = servo max only
 link: 0                                       # 1 on the LEADER only (2-ESP humanoid, below)
 peer: 0                                       # partner module id (0 = broadcast to all)
 ```

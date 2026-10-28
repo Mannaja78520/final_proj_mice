@@ -46,7 +46,7 @@ def run(t):
     stage = main / ".staging-qc"
     P.STAGING = stage
     P.init()
-    t.ok((stage / P.BASE_NAME).is_file() and str(stage) in (main / P.TREES_LIST).read_text(encoding="utf-8"),
+    t.ok((stage / P.BASE_NAME).is_file() and str(stage) in P._book("trees", P.TREES_LIST).read_text(encoding="utf-8"),
          "--init records the base and lists the tree", "")
 
     w = W.Watcher(P, main)
@@ -102,4 +102,4 @@ def run(t):
     t.ok(held is not None, "the first watcher takes the lock", "")
     t.ok(W.single_instance(main) is None, "a second one leaves a live owner's lock alone", "")
     W.release(*held)
-    t.ok(not (main / ".staging-watch.lock").exists(), "and the lock is released on exit", "")
+    t.ok(not held[0].exists(), "and the lock is released on exit", "")

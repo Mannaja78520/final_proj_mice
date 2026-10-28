@@ -6,5 +6,7 @@
   "blurb": "ดูผลการรู้จำใบหน้าและตั้งค่าการตอบสนองของหุ่นยนต์",
   "icon": "👋",
   "order": 45,
-  "help": "faces"
+  "help": "faces",
+  // listed only on a PC where this partner is installed (A51-2)
+  "needs": "reconize"
 }

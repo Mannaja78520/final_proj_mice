@@ -26,6 +26,8 @@ import subprocess
 import sys
 
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from layout import RepoLayout  # noqa: E402  one root rule for every tool (A51-1)
 
 # THAI, OR ANY OTHER LANGUAGE, MUST NOT KILL A TOOL. Windows hands python a
 # cp1252 console here, which cannot encode Thai at all: printing one Thai word
@@ -121,9 +123,10 @@ def main(argv=None):
          else "landing - no task ids given")
 
     plan("running", "full gate, then promote")
-    code, out = run([sys.executable, str(ROOT.parent / "promote.py")]
-                    if (ROOT.parent / "promote.py").is_file()
-                    else [sys.executable, str(ROOT / "promote.py")])
+    # main's promote.py, told which copy this is (.staging/<task>, A51-1)
+    real = RepoLayout(ROOT).real
+    code, out = run([sys.executable, str(real / "promote.py")]
+                    + (["--staging", str(ROOT)] if real != ROOT else []))
     ok, lines = verdict(out)
     print("gate:  " + (lines[0] if lines else "?"))
     for l in lines[1:]:

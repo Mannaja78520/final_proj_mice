@@ -214,6 +214,11 @@ input[type=checkbox]{accent-color:var(--acc)}
          background:color-mix(in srgb,var(--err) 12%,var(--bg))}
 .key.bad .kbar{background:var(--err)}
 .key .kbad{font-size:11px;color:var(--err);white-space:normal;max-width:150px}
+/* the real servos trail this move (servo_follow.js): a dashed edge, so it
+   never reads as a collision (solid red) or the selection */
+.key.lagwarn{border-style:dashed;border-color:var(--warn)}
+.key.lagbad{border-style:dashed;border-color:var(--err)}
+#musicFitList button{margin:2px 4px 2px 0}
 #collideWarn{
   display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);
   background:color-mix(in srgb,var(--err) 18%,var(--bg));
@@ -483,3 +488,25 @@ body.vidpage #viewCube:not(.open) .vcRow{display:none}
 .vidrow{flex-wrap:wrap;margin:3px 0}
 .vidrow select{flex:1;min-width:0}
 .vidrow input{width:64px}
+/* A49-3 (user 2026-10-23): the tabs keep the top of the panel, in a band of
+   their own that stays put while the cards scroll, icon over word. Six across
+   when the panel is wide, three when narrow (panels.js sets .narrow). */
+#sideTabs{position:sticky;top:calc(-1 * var(--sp-4));z-index:5;margin:calc(-1 * var(--sp-4)) calc(-1 * var(--sp-4)) 0;
+  padding:var(--sp-3) var(--sp-4);background:var(--card);border-bottom:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(6,1fr);gap:var(--sp-1)}
+#sideTabs.narrow{grid-template-columns:repeat(3,1fr)}
+#sideTabs .tab{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;
+  padding:var(--sp-2) 2px;font-size:12px;white-space:nowrap}
+#sideTabs .tab::before{font-size:18px;line-height:1}
+#tabBtnMove::before{content:"🧍"} #tabBtnSeq::before{content:"🎞"} #tabBtnVideo::before{content:"🎥"}
+#tabBtnShows::before{content:"🎭"} #tabBtnRobot::before{content:"🤖"} #tabBtnSetup::before{content:"⚙"}
+/* ⧉ takes a card out; floating, it is its own window over the page */
+#side .card>h2 .popout{float:right;min-height:0;padding:0 7px;font-size:13px;line-height:22px;
+  background:none;border:1px solid var(--line);border-radius:var(--r-sm);color:var(--mut);cursor:pointer}
+#side .card>h2 .popout:hover{color:var(--acc);border-color:var(--acc)}
+#side .card.floating{position:fixed;z-index:40;margin:0;overflow:auto;resize:both;
+  max-height:calc(100vh - 16px);min-width:220px;min-height:48px;
+  background:var(--card);box-shadow:0 10px 30px rgba(0,0,0,.28);border-color:var(--acc)}
+#side .card.floating>h2{cursor:move;user-select:none}
+#side .card.floating.folded{height:auto!important;resize:none}
+@media (max-width:860px){ #side .card>h2 .popout{display:none} }

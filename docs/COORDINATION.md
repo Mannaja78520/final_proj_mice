@@ -70,7 +70,7 @@ agent can hand off ... for the hit limit one*. tools/plan.py enforces it:
   The plan, BRIDGE, prompt logs and user saves are still written live in
   main; `live` commits them. Roll a land back with `git revert -m 1 <sha>`.
 - Each session may keep its OWN tree: `python promote.py --staging
-  .staging-<session> --init`. --init records what main held per file
+  <session> --init` (it lives in .staging/<session>, A51-1). --init records what main held per file
   (.staging-base.json); a promote refuses any file main changed since then,
   by content hash. After merging main's version: `--accept-main PATH`.
   --init refresh never overwrites a file the tree edited.

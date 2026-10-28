@@ -37,18 +37,21 @@ def _steps(*angles):
 def test_showplayer(t, main):
     sp = main.ShowPlayer()
     lock = threading.Lock()
-    calls = []              # (thread ident, command)
-    stuck = []              # ident of the POSE we are holding
+    # Threads by OBJECT, not get_ident(): Python reuses an ident once its
+    # thread ends, so show B's clock (started after A was joined) took A's
+    # ident and its poses were blamed on A (seen 2026-10-27 on main).
+    calls = []              # (thread, command); holding the object keeps it unique
+    stuck = []              # the thread whose POSE we are holding
     release = threading.Event()
 
     def fake_dev_cmd(dev, c):
-        ident = threading.get_ident()
+        who = threading.current_thread()
         with lock:
-            calls.append((ident, c))
+            calls.append((who, c))
         # Hold the FIRST pose past stop()'s 3 s join - what a busy cable
         # does without needing one.
         if c.startswith("POSE") and not stuck:
-            stuck.append(ident)
+            stuck.append(who)
             release.wait(8.0)
         return "OK"
 

@@ -1,0 +1,6 @@
+{
+  "_what": "Studio's picture of the real servos (servo_follow.js, user 2026-10-27: see where the real robot falls behind). Each joint's delay, speed-up and top speed live on the rig (Setup > rig: delay ms, speed-up deg/s2, max deg/s). frameMs: how often the board sends a target (50 Hz). warnDeg / badDeg: how far behind the timeline a joint may trail before a move is marked (dashed amber / dashed red on the time bar).",
+  "frameMs": 20,
+  "warnDeg": 8,
+  "badDeg": 20
+}

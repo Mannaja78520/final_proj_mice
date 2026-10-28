@@ -106,6 +106,40 @@ window.REF = [
          "the arithmetic was right and silent. Studio now names the binding limit on the move."
 },
 {
+  id: "music-pace",
+  group: "Nong — the humanoid",
+  name: "The speed cap while a show follows its song",
+  where: [{file: "firmware/src/modules/nong/NongMath.h", line: 110,
+           what: "moveFloor() — the floor with the cap in force"},
+          {file: "nong/main_python_set_nong/web/app_parts/timing.js", line: 41,
+           what: "minTimeWhy() — the same floor at the sequence's pace"}],
+  eq: "t = max(biggest change &divide; servo max &deg;/s,  biggest change &times; &pi;/2 &divide; cap),  floor 80 ms\n" +
+      "cap = safe_dps normally; with PACE MUSIC N: N, else music_dps; cap 0 = servo max only",
+  why: "The cheer dances ran 3.9&times; slower than their songs under the 60 &deg;/s cap " +
+       "(user 2026-10-27: no cap when following the music). Only a file that says " +
+       "pace: music gets it, and only until that show ends, STOP, or a restart.",
+  from: "Same raised-cosine peak as the safety speed cap above; the physical floor from each servo's datasheet speed.",
+  watch: "Collision, joint-limit and gap checks still run; the music gap (safe_path.json musicGapMm) " +
+         "is added because the real arm lags at full speed. Raise it on the robot step by step."
+},
+{
+  id: "servo-follow",
+  group: "Nong — the humanoid",
+  name: "How far the real servos trail the plan",
+  where: [{file: "nong/main_python_set_nong/web/app_parts/servo_follow.js", line: 21,
+           what: "ServoFollow.step() — one board frame of a servo horn"},
+          {file: "tools/nong_sim/world.py", line: 184,
+           what: "_servo_step() — the same model in the physics player"}],
+  eq: "aim += (target &minus; aim)(1 &minus; e^(&minus;dt/lag))\n" +
+      "v &rarr; sign(aim &minus; pos) &middot; min(top, &radic;(2&middot;accel&middot;|aim &minus; pos|)),  |&Delta;v| &le; accel&middot;dt\n" +
+      "pos += v&middot;dt",
+  why: "A hobby servo answers late, speeds up gradually and has a top speed, so at the " +
+       "music pace the arm cuts corners (nong_sim: 27-63&deg; behind on the elbows). " +
+       "The square-root speed is the fastest that can still stop on the aim, so it never overshoots.",
+  from: "First-order lag plus a trapezoidal (bang-bang) speed profile; lag and accel per joint on the rig are guesses until measured (lab-day.md).",
+  watch: "Studio and the sim must keep the same model (check_nong_sim compares them)."
+},
+{
   id: "show-link-time",
   group: "Nong — the humanoid",
   name: "The move from one sequence into the next, in a show",

@@ -49,6 +49,11 @@ const MIN_MOVE_MS = 80;                  // same floor as the firmware
 // Safety cap on PEAK joint speed, firmware NONG_SAFE_DPS; the board's own
 // value (INFO safe_dps) replaces it on connect so both sides time moves alike.
 let SAFE_DPS = 60;
+// The cap while a show follows its music (firmware NONG_MUSIC_DPS, INFO
+// music_dps; user 2026-10-27: no cap then). 0 = only each servo's own max.
+let MUSIC_DPS = 0;
+let PACE_OVERRIDE = null;
+let SEQ_MUSIC_DPS = null;  // this sequence's own speed limit with music (music_pace.js); null = MUSIC_DPS   // "music" while the Video page builds a stay-with-the-music show
 let boardSafeDpsMax = 0;    // from INFO max_dps; 0 means this board cannot be configured here
 let boardSafePeer = 0;      // linked board needs the same cap for synchronized moves
 let boardSafeIdentity = ""; // never save a persistent setting to a different board

@@ -20,6 +20,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
+  min-width: 0;          /* a grid item may shrink below its widest word */
 }
 .tv-card h2 {
   font-size: 16px;
@@ -82,6 +83,9 @@
   gap: 6px;
   border-radius: var(--r-sm);
   cursor: pointer;
+  min-width: 0;          /* long labels wrap on a 320px phone (check_responsive) */
+  white-space: normal;
+  text-align: center;
 }
 .tv-btn-primary { background: var(--acc); color: #fff; border: 0; }
 .tv-btn-primary:hover { opacity: 0.9; }

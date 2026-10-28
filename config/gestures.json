@@ -56,10 +56,20 @@
   // there; "manner" moves like that manner whatever the voice uses.
   // Nong Studio's "Moves while talking" card edits this list.
   "events": {},
-  // Where the hands wait between gestures while talking.
+  // Where the hands wait between gestures while talking: elbows bent, hands
+  // a little in front, so the next gesture starts quickly and clear of the body.
   "rest": {"label": "Hands ready", "keys": [
     {"L": [0.05, -0.8, 0.3], "R": [0.05, -0.8, 0.3], "t": 600}
   ]},
+  // Other resting hands Studio offers (A46-4, user 2026-10-27: *ทำตัวเลือก*,
+  // Home/Neutral is standing straight). "restStyle" picks one; "" = "rest".
+  // A key with no hand in it holds both arms at the rig's own Home.
+  "rests": {
+    "straight": {"label": "Standing straight (Home)", "keys": [{"t": 600}]}
+  },
+  "restStyle": "",
+  // A line too short for any beat still gets this many gestures (A46-4).
+  "atLeast": 1,
   "gestures": {
     "wave": {"label": "Wave", "mirror": true,
       "words": {"th": ["สวัสดี", "หวัดดี", "บ๊ายบาย", "บายบาย", "ลาก่อน"],

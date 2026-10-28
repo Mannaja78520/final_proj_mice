@@ -67,7 +67,7 @@ DRIVER = r"""
     applySettings(JSON.parse(JSON.stringify(bundle)),'QC');
     await mark('gapRoundtrip', accepted && RIG.extraClearanceMm===14 &&
       JSON.parse(localStorage.getItem('nong_rig')).extraClearanceMm===14 &&
-      document.getElementById('clearanceStat').textContent.includes('18 mm'));
+      document.getElementById('clearanceStat').textContent.includes((CLEAR+14)+' mm'));
     await mark('invalidInput', !setSafetyClearance('-5') && RIG.extraClearanceMm===14);
     await mark('emptyInput', !setSafetyClearance('') && RIG.extraClearanceMm===14);
   } catch(error) {

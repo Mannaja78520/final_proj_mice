@@ -49,6 +49,7 @@ DEFAULT_CFG = {
     "low_stock": 2,
     "wait_s": 20,
     "busy_wait_s": 8,
+    "given_results": ["done", "timed"],
     "messages": {},
     # games that give a prize (A47-6): [{game, result (pattern), item, person}]
     "games": [],
@@ -601,10 +602,11 @@ class Gacha:
                 res = last["result"]
                 break
             self.sleep(0.25)
-        row = self.log_event({"kind": "done" if res == "done" else "jam", "machine": m["id"],
+        given = res in (self.cfg().get("given_results") or ["done"])
+        row = self.log_event({"kind": "done" if given else "jam", "machine": m["id"],
                               "seq": seq, "result": res, "item": m.get("item", ""),
                               "person": (self.status_of(m).get("last") or {}).get("who", "")})
-        self.hook("dispensed" if res == "done" else "jam", row)
+        self.hook("dispensed" if given else "jam", row)
         return res
 
     def item_label(self, item):

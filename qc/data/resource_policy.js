@@ -39,6 +39,13 @@ function context(hints, denied) {
   vm.runInContext('let _dirty3d=2;'+tick,c);
   c.tick(0);c.tick(10);ok(vm.runInContext('_dirty3d',c)===1,'a skipped visual frame does not consume the pending redraw');
   c.tick(50);ok(moves===3 && draws===2,'playback/control ticks continue while only visual frames are limited');
+  // A 40 fps profile on a 60 Hz screen paints ~40 times a second, not every
+  // second vsync (30): the next frame is due from the last DUE time.
+  const pace=new strong.MiceResourceClient({profiles:[{id:'p',fps:40,pixelRatio:1,minCpus:0,minMemoryGiB:0}]},{},null);
+  let painted=0;for(let i=0;i<600;i++){const now=i*1000/60;if(pace.frameDue(now)){pace.rendered(now);painted++;}}
+  ok(painted>=390&&painted<=401,'a 40 fps profile paints 40 frames a second on a 60 Hz screen ('+painted+' in 10 s)');
+  let after=0;for(let i=0;i<60;i++){const now=60000+i*1000/60;if(pace.frameDue(now)){pace.rendered(now);after++;}}
+  ok(after<=41,'a long pause does not cause a burst of catch-up frames ('+after+' in 1 s)');
   // Execute actual Hub boot with storage denied: initial scans still start.
   const boot=vm.createContext({console,Promise,document:{hidden:false,getElementById(){return {checked:false};}},
     setInterval(){return 1;},clearInterval(){},showTab(){},scan(){return Promise.resolve();},scanUsb(){return Promise.resolve();},loadShared(){return Promise.resolve();}});
