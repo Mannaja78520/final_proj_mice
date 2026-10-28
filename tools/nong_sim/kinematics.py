@@ -135,6 +135,12 @@ class NongTree:
 
     def forward(self, pose):
         """World (Studio frame, mm) position of every named point at a pose."""
+        frames = self.frames(pose)
+        return {k: frames[v][0] for k, v in self.points.items()}
+
+    def frames(self, pose):
+        """Every body's (position mm, quaternion) at a pose: tools/robot_pose puts
+        its keypoints (head, chest, hand tip) on these."""
         frames = {"world": (np.zeros(3), np.array([1.0, 0, 0, 0]))}
         rise = self.shrug_rise(pose[SHRUG])
         for b in self.bodies:
@@ -146,4 +152,4 @@ class NongTree:
             if b.joint is not None:
                 q = quat_mul(q, quat_axis(b.axis, math.radians(self.delta(pose, b.joint))))
             frames[b.name] = (p0 + quat_rotate(q0, pos), q)
-        return {k: frames[v][0] for k, v in self.points.items()}
+        return frames

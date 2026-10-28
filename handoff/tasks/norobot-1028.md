@@ -15,9 +15,11 @@ User 2026-10-28 (back at the dorm): do all the work that needs no robot.
    health checks. Config-driven from Studio's rig. Split pieces for Codex.
 
 ## Doing now
-A52-1: new `firmware/src/core/SeqScan.h` (pure C++ line scanner: header keys +
-one step at a time), SequencePlayer streams steps instead of parsing the whole
-file; QC `qc/checks/check_seq_stream.py` (g++ host test with a 30 KB show).
+A52-3 first slice: tools/robot_pose (keypoints from Studio's rig via NongTree.frames,
+pinhole camera, numpy LM solver, camera/pose fit with facing + left/right swap,
+compare with BoardClock, calibration suggestions, synthetic YOLO-pose labels),
+config/robot_pose.json, qc/checks/check_robot_pose.py. A52-1/A52-2 code is in
+(WIP commits), host checks pass; sabotage + full QC still to do.
 
 ## File status
 Baseline: 14fa8fc (origin/main).
