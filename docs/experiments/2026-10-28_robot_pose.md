@@ -72,6 +72,26 @@ back; calibration recovers +15 mm upper arm and +4 deg elbow offset (2 cams).
 - Numbers on real video to compare with those papers' real-image results:
   not available yet (needs the trained model and a lab film).
 
+## First trained detector on LAB frames (PC, 2026-10-29)
+Setup: ultralytics 8.4.191, torch 2.11.0+cu128, RTX 5070 Ti Laptop GPU (shared with the RL run all the time),
+`yolo11n-pose.pt`, imgsz 640, batch 16, 100 epochs, seed 0. Train = 18,661 MuJoCo/CAD renders
+(16,802 + 1,859, all used for training). Val = the 36 auto-labelled LAB frames only (one HOME pose,
+4 visible keypoints each: both shoulders and elbows). Weights and frames stay in `.local/robot_pose`.
+
+| model | train wall | LAB box mAP50 | LAB box mAP50-95 | LAB pose mAP50 | LAB pose mAP50-95 |
+| --- | --- | --- | --- | --- | --- |
+| yolo11n-pose | 7,850 s (2 legs: killed at epoch 47 by a shell time limit, resumed from last.pt) | 0.077 | 0.032 | 0.000 | 0.000 |
+| yolo11s-pose | running | | | | |
+
+- Box recall on LAB is 1.0 but precision 0.037: on a lab frame it puts 10+ "nong" boxes on furniture,
+  the cabinet and the PC with confidence up to 0.87, while the real robot gets 0.06. On a render it
+  finds the robot alone at 0.91. This is the sim-to-real gap DREAM and Tobin et al. warn about: the
+  renders' backgrounds and lighting do not cover a cluttered lab.
+- Pose mAP is 0 because no box with the right keypoints passes the OKS bar; the 36 LAB labels have only
+  4 of 14 keypoints, so OKS is computed on those 4.
+- Next, in order: real backgrounds behind the renders (random lab photos, COCO-style images), real
+  lab frames in TRAIN (fresh holds next lab day, step 5), a coloured marker per arm; then train again.
+
 ## References
 - D. Maji, S. Nagori, M. Mathew, D. Poddar. YOLO-Pose: Enhancing YOLO for Multi Person Pose Estimation Using Object Keypoint Similarity Loss. CVPR Workshops 2022.
 - T. E. Lee, J. Tremblay, T. To, J. Cheng, T. Mosier, O. Kroemer, D. Fox, S. Birchfield. Camera-to-Robot Pose Estimation from a Single Image. ICRA 2020.
