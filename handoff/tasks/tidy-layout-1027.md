@@ -4,7 +4,7 @@ Owner: claude:10271959-0190
 Updated: 2026-10-28 00:40 +0000
 Branch: claude/project-thread-9y1rwe
 Last commit: this checkpoint
-Plan: A51-1
+Plan: A51-1 (PR #93 merged e1eaefd), A51-2
 
 ## Goal
 User 2026-10-27: the code folder is cluttered; put .staging copies in their own
@@ -13,7 +13,12 @@ folder so they stop piling up at the root; tidy the other folders; rename
 header map of what lives where. Plan: /mnt/project-files/layout/layout_plan_2026-10-27.md
 
 ## Doing now
-Merging PR #93; next PR 2 (apps as extensions).
+A51-2 (PR 2): apps as extensions. main_python/extensions.py (class Extensions:
+per-PC store extensions.json beside hub_auth.json; detect mice-app.json / app.json /
+partners.json "detect"; add/remove(hide)/restore/update; {data}/{parent} folder
+tokens), hub_api_extensions.py routes, /api/apps hides apps whose "needs" partner
+is missing, Tools tab add/remove UI, help part, docs/extensions.md + docs/INSTALL.md,
+check_extensions.
 
 ## File status
 Baseline: 4c230e0
