@@ -4,6 +4,7 @@
     python -m tools.rl_compare.run --dance come_and_cheer_left_v2 --scenario firmware
     python -m tools.rl_compare.run --quick         tiny run: proves the pipeline only
     python -m tools.rl_compare.run --fresh         train again even if a run exists
+    (a stopped run carries on from its last finished round_NN; --fresh starts over)
     python -m tools.rl_compare.run --report        only rebuild the index from saved results
 
 Per dance and scenario: Studio's planner (each variant) and the RL policy are
@@ -112,7 +113,7 @@ class Case:
                 s = self.scorer.score(q.cpu(), c.cpu())
                 return {k: s[k] for k in ("boneMusicDeg", "boneShapeDeg", "jerkRms", "driftMedianS",
                                           "minGapMmApprox", "collisionFramesApprox", "limitFramesPct")}
-            rounds = run.train(on_round)
+            rounds = run.train(on_round, resume=not fresh)
             save_json(folder / "training.json", {"device": self.exp.device, "gpu": self.exp.gpu, "rounds": rounds,
                                                  "totalTrainS": rounds[-1]["totalTrainS"], "config": rc})
         training = json.loads((folder / "training.json").read_text(encoding="utf-8"))

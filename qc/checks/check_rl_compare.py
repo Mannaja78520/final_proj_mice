@@ -147,3 +147,38 @@ def run(t):
         obs, rew, done, trunc = env.step(torch.ones(64, 10, dtype=torch.float64))
     t.ok(bool(((env.c >= kin.lo - 1e-9) & (env.c <= kin.hi + 1e-9)).all()), "commands never leave the joint range", "")
     t.ok(bool(torch.isfinite(obs).all() and torch.isfinite(rew).all()), "observations and rewards stay finite", "")
+
+    # A stopped run carries on (lab 2026-10-28: stopped at 12/20, a rerun began
+    # at round 1). Two rounds, then the same run asked for three: only round 3
+    # trains, it starts from round 2's weights, and rounds 1-2 are kept as saved.
+    import shutil
+    from tools.rl_compare.rl import RLRun
+    make = lambda dev: (TorchRig(rig, facts, dev), ServoModel(rig, facts, cfg["servo"], dev))
+    tiny = dict(rc, envs=4, rounds=2, updatesPerRound=1, ppo=dict(rc["ppo"], steps=8, epochs=1))
+    scen = {"id": "qc", "safeDps": 60}
+    folder = Path(tempfile.mkdtemp(prefix="mice_rl_resume_"))
+    try:
+        first = RLRun(dance, make, scen, tiny, "cpu", folder).train()
+        saved = torch.load(folder / "round_02" / "policy.pt")
+        more = RLRun(dance, make, scen, dict(tiny, rounds=3), "cpu", folder)
+        trained = []
+        more.ppo.update = (lambda real: lambda b: trained.append(1) or real(b))(more.ppo.update)
+        kept = more.resume()
+        same_w = all(torch.equal(saved[k], v) for k, v in more.model.state_dict().items())
+        t.ok(len(kept) == 2 and same_w, "a stopped run reloads its last finished round's weights",
+             f"{len(kept)} rounds kept, weights equal {same_w}")
+        rounds = more.train()
+        t.ok([r["round"] for r in rounds] == [1, 2, 3] and len(trained) == 1 and rounds[:2] == first,
+             "the rerun trains only the missing round and keeps the saved ones",
+             f"rounds {[r['round'] for r in rounds]}, updates run {len(trained)}")
+        t.ok((folder / "round_02" / "train_state.pt").exists() and rounds[2].get("resumedAt") == 3,
+             "each round saves the optimizer too, and the resumed round says so", str(rounds[2].get("resumedAt")))
+        changed = RLRun(dance, make, scen, dict(tiny, rounds=3, seed=tiny["seed"] + 1), "cpu", folder)
+        try:
+            changed.resume()
+            refused = False
+        except SystemExit:
+            refused = True
+        t.ok(refused, "a changed config is not resumed into the old rounds (needs --fresh)", "")
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
