@@ -1,12 +1,12 @@
 # Robot pose data: MuJoCo pictures and still lab labels
 
-Owner: codex:10282227-0261
+Owner: (free: step 3 is for the PC)
 Updated: 2026-10-28T23:33:50+07:00
 Branch: codex/robot-pose-data
 Tree: E:/final_proj/mice/code/.claude/worktrees/codex-robot-pose
 Baseline / local HEAD: 7f171e3eef83dfbe05f8c27f4783846e2881c0b1
-Last commit: 7f171e3 (baseline; local/remote mutations blocked)
-Plan: A52-3 (steps 1 and 2 only)
+Last commit: a02c5f5 (cloud fixes on top of e085d37)
+Plan: A52-3 (steps 1-2 done; step 3 next)
 
 ## Goal
 Find nong joints from a camera. This round: rendered training views and conservative
@@ -15,26 +15,25 @@ Private inputs/outputs ONLY E:/final_proj/mice/code/.local (absolute paths).
 Never stage media/weights/.local; preserve RL PID 39888 and all .staging work.
 
 ## Doing now
-Final corrected source: selected526/0, five render faults caught/restored; lab four
-faults already caught. Repaired dataset verified/reviewed. Start full QC now with
-fresh private qc_temp/final_full; freeze source until it exits. Commit/push blocked.
+Nothing. Steps 1-2 merged (cloud, 2026-10-28). Step 3 (train) is next, on the PC.
+
 
 ## File status
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| tools/robot_pose/render_scene.py | Shared rig + exact OpenCV camera/GL scene | done | corrected selected526/0; camera/depth/CAD | uncommitted |
-| tools/robot_pose/render_meshes.py | Private reduced CAD mesh adapter | done | collar source anchors <5mm; sabotage caught | uncommitted |
-| tools/robot_pose/render_mujoco.py | Randomised RGB/depth YOLO dataset | done; 18,661usable/20,000rendered | selected526/0; five mutations caught | uncommitted |
-| tools/robot_pose/lab_labels.py | Observed holds, fit, rejection and partial labels | done | lab QC 12/0; four mutations caught | uncommitted |
-| qc/checks/check_robot_pose_render.py | Real GL/camera/depth/CAD regression | done | five mutations caught/restored; base/bounds/minvisible | uncommitted |
-| qc/checks/check_robot_pose_lab.py | Holds/motion/pose/split regression | done | four mutations caught/restored | uncommitted |
-| config/robot_pose.json | Render/CAD/lab quality settings | done | corrected selected526/0; independent review | uncommitted |
-| docs/systems.json | Register modules/checks | done | build + check_systems green | uncommitted |
-| docs/systems/robot-pose.md | Generated file/check ownership | done | check_systems green | uncommitted |
-| docs/systems/qc.md | Generated new-check ownership | done | check_systems green | uncommitted |
-| main_python/web/help/parts/studio.html | Renderer and lab-label help parity | done | selected docs/build/links green | uncommitted |
-| main_python/web/help.html | Generated Help | done | build_web + selected checks green | uncommitted |
-| handoff/tasks/robot-pose-data.md | This checkpoint and exact evidence | active | reconciled diff/new files; no media staged | uncommitted |
+| tools/robot_pose/render_scene.py | Shared rig + exact OpenCV camera/GL scene | done | corrected selected526/0; camera/depth/CAD | e085d37 |
+| tools/robot_pose/render_meshes.py | Private reduced CAD mesh adapter | done | collar source anchors <5mm; sabotage caught | e085d37 |
+| tools/robot_pose/render_mujoco.py (cloud: .local from RepoLayout) | Randomised RGB/depth YOLO dataset | done; 18,661usable/20,000rendered | selected526/0; five mutations caught | e085d37 |
+| tools/robot_pose/lab_labels.py | Observed holds, fit, rejection and partial labels | done | lab QC 12/0; four mutations caught | e085d37 |
+| qc/checks/check_robot_pose_render.py | Real GL/camera/depth/CAD regression | done | five mutations caught/restored; base/bounds/minvisible | e085d37 |
+| qc/checks/check_robot_pose_lab.py | Holds/motion/pose/split regression | done | four mutations caught/restored | e085d37 |
+| config/robot_pose.json | Render/CAD/lab quality settings | done | corrected selected526/0; independent review | e085d37 |
+| docs/systems.json | Register modules/checks | done | build + check_systems green | e085d37 |
+| docs/systems/robot-pose.md | Generated file/check ownership | done | check_systems green | e085d37 |
+| docs/systems/qc.md | Generated new-check ownership | done | check_systems green | e085d37 |
+| main_python/web/help/parts/studio.html | Renderer and lab-label help parity | done | selected docs/build/links green | e085d37 |
+| main_python/web/help.html | Generated Help | done | build_web + selected checks green | e085d37 |
+| handoff/tasks/robot-pose-data.md | Step 3 handoff | done | - | this PR |
 
 ## Facts found
 - `kinematics.py:65` is Studio's shared NongTree: mm, Y up, robot left +X, front +Z.
@@ -100,13 +99,23 @@ fresh private qc_temp/final_full; freeze source until it exits. Commit/push bloc
   failed SEC_E_NO_CREDENTIALS. Connected GitHub create_branch also rejected: tool requires
   approval but policy is never. NO new commit/remote branch/checkpoint exists.
 
+- (cloud, 2026-10-28) PC full QC listed 21 failures. Cloud full QC on a02c5f5:
+  8988 pass, 5 fail, all the cloud browser checks that fail even on a docs-only PR
+  (check_link_states x2, check_studio_boot, check_view, check_tools_list); 4 load-only
+  flakes pass alone. Fixed: the two new checks looked for a folder named `code`
+  (now RepoLayout.real) and needed a display (OSMesa on headless Linux).
+  Diff reviewed: no images, video, frames, labels, meshes or weights.
+
 ## Next
-1. Complete current final-source full QC; preserve failures and restore only proven QC side effects.
-2. Final scoped13-file patch + verification JSON after task update; no full-green claim unless actual.
-3. Final task checkpoint on disk; retain commit-ready patch; verify no private artifacts in diff.
-4. Later separate request: train YOLO11n-pose (try s),640px,100epochs; record source
-   counts/time and held-out LAB mAP50/mAP50-95/per-keypoint; private model/best.pt.
-   Then detect/check cap60 video, record joint mean/p95/lag/facing in the experiment doc.
+1. Step 3 on the PC (GPU): `pip install ultralytics` into code\.local, then
+   `yolo pose train data=.local/robot_pose/render/dataset.yaml model=yolo11n-pose.pt
+   imgsz=640 epochs=100` (then yolo11s-pose). Hold out the LAB labels (36 kept) as
+   the val set, not synthetic. Copy best.pt to `.local/robot_pose/model/best.pt`.
+   Record in docs/experiments/2026-10-28_robot_pose.md: images per source, epochs,
+   wall time, LAB mAP50 / mAP50-95, per keypoint. Weights and frames stay in .local.
+2. Step 4: detect + check on the ccl_v5 cap 60 video (re-copy it: ccl_v5_p060.mp4 is corrupt).
+3. Lab labels are thin (one HOME pose, four joints): film fresh holds next lab day.
+
 
 ## Blocked
 - New shell launches also fail CreateProcessWithLogonW error1909. Existing render
