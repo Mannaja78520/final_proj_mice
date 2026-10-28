@@ -57,13 +57,19 @@ class Film:
     """One ffmpeg process per camera, fed raw RGB frames on stdin."""
 
     def __init__(self, path, w, h, fps, music=None, music_at=0.0, music_start=0.0):
+        self.proc = subprocess.Popen(self.command(path, w, h, fps, music, music_at, music_start),
+                                     stdin=subprocess.PIPE)
+
+    @staticmethod
+    def command(path, w, h, fps, music=None, music_at=0.0, music_start=0.0):
         cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
                "-s", "%dx%d" % (w, h), "-r", str(fps), "-i", "-"]
         if music:
+            # apad: a slowed dance outlasts the song; without it -shortest ends ffmpeg at the
+            # song's end and the next frame write fails (Errno 22, cheer v2 at safe 60, 2026-10-28).
             cmd += ["-ss", "%.3f" % music_start, "-itsoffset", "%.3f" % music_at, "-i", str(music),
-                    "-map", "0:v", "-map", "1:a", "-c:a", "aac", "-shortest"]
-        cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", str(path)]
-        self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+                    "-map", "0:v", "-map", "1:a", "-af", "apad", "-c:a", "aac", "-shortest"]
+        return cmd + ["-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", str(path)]
 
     def write(self, frame):
         self.proc.stdin.write(frame.tobytes())

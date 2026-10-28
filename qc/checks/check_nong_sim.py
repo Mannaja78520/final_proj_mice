@@ -15,6 +15,10 @@ Studio draws must match tools/nong_sim within 0.05 mm. The board clock is
 held to Studio's minTime() (itself held to the firmware by other checks).
 With MuJoCo installed, the built world must put those same points in the same
 place, and a hands-crossed pose must be reported as a hit while home is clear.
+
+2026-10-28: filming cheer v2 (safe 60, 646 s board time) with its 158 s song died
+at the song's end: ffmpeg -shortest stopped on the audio and the frame pipe broke
+(OSError Errno 22). The music is now padded (apad) so the video sets the length.
 """
 import json
 import math
@@ -81,6 +85,10 @@ def poses(rig, n, seed):
 
 
 def run(t):
+    from tools.nong_sim.record import Film
+    cmd = Film.command("x.mp4", 64, 36, 30, music="song.mp3")
+    t.ok("apad" in cmd and cmd.index("apad") < cmd.index("-shortest"),
+         "a film with music pads the song, so a dance longer than the song is filmed to its end", cmd)
     facts = StudioFacts()
     cases = [{"rig": bent_rig(c), "poses": poses(load_rig(), 8, 11 + c)} for c in (0, 1)]
     want = {}
