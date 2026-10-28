@@ -71,6 +71,7 @@
         "complaints.js",
         "network.js",
         "tools.js",
+        "apps_manage.js",
         "page_version.js",
         "modules.js",
         "usb.js",

@@ -220,6 +220,9 @@ def start_hub(fake=True):
                                                     / ("mice_qc_gestures_%d.json" % os.getpid())))
     os.environ["MICE_HUB_AUTH"] = str(Path(tempfile.gettempdir())
                                       / ("mice_qc_auth_%d.json" % _hub_port[0]))
+    # This PC's app list (A51-2) is the machine's, like the password
+    os.environ["MICE_EXTENSIONS"] = str(Path(tempfile.gettempdir())
+                                        / ("mice_qc_ext_%d.json" % _hub_port[0]))
     if fake:
         sys.path.insert(0, str(QC / "lib"))
         import fake_serial
