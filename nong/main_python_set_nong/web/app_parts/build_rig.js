@@ -274,7 +274,6 @@ function applyPose() {
       shoulderMount.rotation.set(0, 0, THREE.MathUtils.degToRad(jointDelta(9)));
     }
   }
-  if (typeof markDirty3d === "function") markDirty3d(5);
 }
 
 // The measurement table. Rows are "at this SHRUG angle, the left shoulder rose

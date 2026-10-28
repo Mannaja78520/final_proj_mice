@@ -26,8 +26,9 @@ Small apps: help, All-Jao.
 
 - nothing
 
-## Checks that test it (0)
+## Checks that test it (2)
 
-- none name its files yet - add one
+- `check_remote_scripts`
+- `check_tv_remote`
 
-
+Run them: `python qc/run_qc.py --no-build check_remote_scripts check_tv_remote`

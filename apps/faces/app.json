@@ -3,7 +3,7 @@
   // case: config/partners.json describes each one, so the next app is an entry
   // and no code (asked 2026-09-08).
   "name": "Reconize",
-  "blurb": "the face app: who it recognises, and what the rig does about it",
+  "blurb": "ดูผลการรู้จำใบหน้าและตั้งค่าการตอบสนองของหุ่นยนต์",
   "icon": "👋",
   "order": 45,
   "help": "faces"

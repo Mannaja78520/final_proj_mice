@@ -49,7 +49,9 @@ function paintHome(){
     $('homeGo').innerHTML = '';
     return;
   }
-  if (!total){
+  if (!total && window.MODS_ERROR){
+    sum.textContent = 'Could not check modules. Press Look again to retry.';
+  } else if (!total){
     // EMPTY, not blank: say what it means and what to do about it.
     sum.textContent = 'No modules found yet. Plug a board into this PC with a '
       + 'USB cable, or put one on this WiFi, and it appears here by itself.';

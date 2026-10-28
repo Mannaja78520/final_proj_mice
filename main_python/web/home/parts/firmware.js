@@ -66,7 +66,10 @@ async function fwBoards(){
     const me = await whoAmI();
     (all.modules || []).forEach(function(m){
       if (!m.host || m.host === me) return;      // this PC's own cables
-      const port = (String(m.dev || '').split('usb:')[1] || '').split(':')[0];
+      const route = (String(m.dev || '').split('usb:')[1] || '').split(':');
+      // Remote cable flashing cannot address a bus child; never flash its gateway.
+      if(route.length > 1 && Number(route[1]) !== 0) return;
+      const port = route[0];
       if (!port) return;                          // only a cable can be written
       const k = key(m, 'far' + m.host + port);
       out.set(k, Object.assign({name: m.name || port, id: m.id, type: m.type},

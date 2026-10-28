@@ -9,14 +9,15 @@ function flashBusy(on){ flashActive=Math.max(0,flashActive+(on?1:-1)); }
 let autoUsbTimer=null;
 function autoUsbChanged(){
   const on=document.getElementById('autoUsb').checked;
-  localStorage.setItem('hub_autousb',on?'1':'0');
+  try { localStorage.setItem('hub_autousb',on?'1':'0'); } catch (_) {}
   clearInterval(autoUsbTimer);autoUsbTimer=null;
   if(on)autoUsbTimer=setInterval(()=>{
 
     if(!document.hidden&&!flashActive)scanUsb();
   },12000);
 }
-document.getElementById('autoUsb').checked=localStorage.getItem('hub_autousb')==='1';
+try { document.getElementById('autoUsb').checked=localStorage.getItem('hub_autousb')==='1'; }
+catch (_) { document.getElementById('autoUsb').checked=false; }
 autoUsbChanged();
 // Start on the tab you were last on. Defaults to Modules, so a fresh browser
 // opens exactly the page it always did.

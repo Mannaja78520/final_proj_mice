@@ -1498,6 +1498,8 @@ flasher = Flasher()
 # Groups of api() routes, one file per area (A26-93). Handler inherits them.
 import hub_api_apps  # noqa: E402
 hub_api_apps.bind(sys.modules[__name__])
+import hub_api_resources  # noqa: E402
+hub_api_resources.bind(sys.modules[__name__])
 import hub_api_support  # noqa: E402
 hub_api_support.bind(sys.modules[__name__])
 import hub_api_flash  # noqa: E402
@@ -1515,7 +1517,7 @@ hub_api_gacha.bind(sys.modules[__name__])
 
 
 # ---------------------------------------------------------------- handler
-class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, BaseHTTPRequestHandler):
+class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_flash.FlashRoutes, hub_api_play.PlayRoutes, hub_api_studio.StudioRoutes, hub_api_speak.SpeakRoutes, hub_api_faces.FacesRoutes, hub_api_gacha.GachaRoutes, BaseHTTPRequestHandler):
     # HTTP/1.1, so a browser can KEEP ITS CONNECTION.
     #
     # BaseHTTPRequestHandler defaults to HTTP/1.0, which means every response
@@ -2009,8 +2011,11 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
         # whose /app.js is served below.
         if (path.count("/") == 1 and path.endswith(".js")
                 and (SHARED_WEB / path[1:]).is_file()):
-            return self.send_bytes((SHARED_WEB / path[1:]).read_bytes(),
-                                   "text/javascript; charset=utf-8")
+            source = (SHARED_WEB / path[1:]).read_bytes()
+            if path == "/mice.js":
+                source = hub_api_resources.browser_bootstrap() + source
+            return self.send_bytes(source, "text/javascript; charset=utf-8",
+                                   headers=[("Cache-Control", "no-store")])
 
         if path == "/mice.css":
             # One design system for every surface. This route must stay ABOVE
@@ -2102,6 +2107,11 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
         f = (base / rel).resolve()
         if base not in f.parents and f != base:
             return self.send_err("forbidden", 403)
+        if path.startswith("/docs/shots/"):
+            # Read-only manual pictures also ship inside the one-file bundle.
+            f = asset("docs", rel).resolve()
+            if not any((root / "docs").resolve() in f.parents for root in _ROOTS):
+                return self.send_err("forbidden", 403)
         if not f.is_file():
             return self.send_err("not found: " + path, 404)
         self.send_bytes(f.read_bytes(), MIME.get(f.suffix.lower(), "application/octet-stream"))
@@ -2376,6 +2386,9 @@ class Handler(hub_api_apps.AppRoutes, hub_api_support.SupportRoutes, hub_api_fla
                                    "modules": scan_modules(force),
                                    "ports": serial_ports()})
 
+        r = self.api_resources(method, path, q)
+        if r is not hub_api_resources.NOT_MINE:
+            return r
         r = self.api_support(method, path, q)   # hub_api_support.py
         if r is not hub_api_support.NOT_MINE:
             return r

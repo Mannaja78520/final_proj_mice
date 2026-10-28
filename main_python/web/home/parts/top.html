@@ -21,6 +21,7 @@
 <div class="banner warn" id="staleExe" hidden role="alert">
   <span id="staleExeWhy"></span>
   <span class="mono" id="staleExeFix"></span>
+  <span class="tech" style="font-size:12px;opacity:0.85" title="MiceHub.spec auto-terminates running instances during build, or run taskkill /F /IM MiceHub.exe manually">(auto-kills running app on build, or: <code>taskkill /F /IM MiceHub.exe</code>)</span>
 </div>
 <!-- STOP, FROM ANYWHERE. There was no stop control on this page at all: the
      only one was inside Nong Studio, on another screen, behind a tab. Somebody
@@ -50,7 +51,7 @@
     <button class="secondary" id="keysOpen" title="Keyboard shortcuts"
             onclick="toggleKeys(true)" aria-haspopup="dialog">⌨ Shortcuts</button>
     <!-- Help LEAVES the page, so it is a link and looks like one. -->
-    <a class="tab tab-link" id="helpLink" href="/help">Help ↗</a>
+    <a class="tab tab-link" id="helpLink" href="/help" target="_blank" rel="noopener" title="คู่มือการใช้งานและเอกสารอ้างอิงระบบ (System Help)" style="font-weight:600">📖 คู่มือ Help ↗</a>
   </span>
   <span class="sub">A little space for your whole rig. Open a module to move it,
     or start a sequence in Nong Studio. Your modules appear here when they connect.</span>

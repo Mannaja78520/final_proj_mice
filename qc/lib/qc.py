@@ -146,7 +146,7 @@ def _free_port():
     its own listening port from - and Chromium binds with exclusive use, so
     the hub then died on WinError 10013, a few times per gate on the PC. A
     random number below that pool, checked on the address the hub really
-    binds (0.0.0.0, no reuse flag, so a port somebody listens on is refused),
+    binds (127.0.0.1, no reuse flag, so a port somebody listens on is refused),
     is never handed to anyone else by the OS.
     """
     import random
@@ -155,7 +155,7 @@ def _free_port():
         port = random.randint(20000, 45000)
         s = socket.socket()
         try:
-            s.bind(("0.0.0.0", port))
+            s.bind(("127.0.0.1", port))
             return port
         except OSError:
             continue                 # in use, or in a reserved range: next
@@ -241,6 +241,7 @@ def start_hub(fake=True):
     base = ""
     for attempt in range(4):
         _hub_port[0] = _free_port()
+        main.HOST = "127.0.0.1"  # fake Hub never listens on physical adapters
         main.PORT = _hub_port[0]
         th = threading.Thread(target=main.main, daemon=True)
         th.start()

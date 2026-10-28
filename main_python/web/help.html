@@ -8,7 +8,10 @@
 <script src="/mice.js"></script>
 <script src="/mice-ui.js"></script>
 <style>
-/* Only what is the HELP page's own. Tokens, the reset, the focus ring,
+.mechanism-figure{margin:var(--sp-4) 0;overflow-x:auto}
+  .mechanism-figure svg{display:block;width:100%;height:auto;min-width:480px}
+  .mechanism-figure figcaption{color:var(--mut);font-size:13px;margin-top:var(--sp-2)}
+  /* Only what is the HELP page's own. Tokens, the reset, the focus ring,
      reduced motion and touch targets all come from /mice.css above.
      This page is a document, not a control panel: it is the one surface with
      its own type scale, and its own big section heads instead of the small
@@ -47,7 +50,8 @@
   .shead h2{margin:0;font-size:21px;letter-spacing:-.015em;font-weight:700;
             color:var(--txt);text-transform:none}
   .where{font-family:var(--mono);font-size:11.5px;color:var(--acc);
-         text-transform:none;letter-spacing:0;display:block;margin-bottom:5px}
+         text-transform:none;letter-spacing:0;margin-bottom:5px}
+  body.adv .where{display:block}
   .shead p{margin:7px 0 0;color:var(--mut);font-size:14px;max-width:70ch}
   .grp2{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--mut);
         margin:26px 0 9px;font-weight:600}
@@ -101,36 +105,52 @@ main > section.pv-off { display: none !important; }
 nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--acc-soft); font-weight: 600; }
 
 .sec-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--sp-3);
   margin-top: 48px;
   padding-top: 24px;
   border-top: 1px solid var(--line);
 }
 .sec-nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 18px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   color: var(--txt);
   text-decoration: none;
   font-size: 13.5px;
-  font-weight: 600;
-  transition: border-color .15s, background .15s;
+  transition: border-color .15s, background .15s, transform .1s;
+  box-sizing: border-box;
 }
 .sec-nav-btn:hover {
   background: var(--acc-soft);
   border-color: var(--acc);
   color: var(--acc);
+  transform: translateY(-1px);
 }
-.sec-nav-prev { margin-right: auto; }
-.sec-nav-next { margin-left: auto; }
+.sec-nav-prev { text-align: left; }
+.sec-nav-next { text-align: right; }
+.sec-nav-spacer { display: block; }
+.sec-nav-lbl {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--mut);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.sec-nav-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+}
+@media (max-width: 600px) {
+  .sec-nav { grid-template-columns: 1fr; }
+  .sec-nav-next { text-align: left; }
+  .sec-nav-spacer { display: none; }
+}
 
 /* Interactive Infographics & Visual Setting Annotations */
 .info-box {
@@ -194,7 +214,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 }
 .action-impact-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: var(--sp-3);
 }
 .action-card {
@@ -368,12 +388,16 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 
 <!-- ===================== HUB ===================== -->
 <section id="hub">
+  <div class="info-box"><h3>ประสิทธิภาพตามเครื่องที่ใช้</h3><p>Settings → ประสิทธิภาพของเครื่อง Hub มีอัตโนมัติ ประหยัด สมดุล และเร็วขึ้น ตั้งหน่วยประมวลผล จำนวนเธรด งานพร้อมกัน และหน่วยความจำที่เว้นไว้ได้ในรายละเอียดทางเทคนิค ค่าแต่ละเครื่องแยกกันและยังคงโมเดลที่เลือกไว้ การบันทึกมีผลต่อการโหลดงานครั้งถัดไป ส่วนเธรดและชุดงานแปลที่เปิดแล้วต้องเปิดตัวช่วยเสียงใหม่ ไม่ปิดงานที่กำลังรัน</p><p>ภาพ 3D เลือกตามอุปกรณ์ที่เปิดเว็บและปรับเองได้ ภาพประหยัดลดความละเอียดและจำนวนภาพที่วาด โดยคงการเคลื่อนไหวและการตรวจชนเดิมไว้ ขอบภาพใช้ค่าใหม่เมื่อโหลดหน้าใหม่</p><p>งบ RAM/VRAM ใช้ช่วยเลือกวิธีโหลด ไม่รับประกันเพดานการใช้ทั้งหมด GPU ที่ตรวจพบยังต้องมีไลบรารีพร้อมใช้ หากใช้ไม่ได้จะกลับมาใช้ CPU</p></div>
   <div class="shead">
     <span class="where tech">code/main_python · MiceHub.exe · port 8642</span>
     <h2>Mice Hub — ศูนย์กลางควบคุมและปรับแต่งทุกระบบ</h2>
     <p>โปรแกรมเซิร์ฟเวอร์หลักของระบบ ค้นหาโมดูลและบอร์ด ESP32 ทุกตัวบนเครือข่ายและพอร์ต USB อัตโนมัติ
        พร้อมเป็นตัวกลางแชร์พอร์ตและกระจายคำสั่งให้กับทุกแอปพลิเคชัน</p>
   </div>
+  <p class="mini">ธีมและตัวเลือกธีมซิงก์ระหว่างหน้าและแท็บที่เปิดบน Hub เดียวกัน หากล้างค่าธีม สีและตัวเลือกจะกลับค่าเริ่มต้นพร้อมกัน</p>
+
+  <p class="mini">เครื่องมือแต่ละรายการแสดงเพียงครั้งเดียวในหมวดแรกที่ตรงกัน หากยังไม่มีหมวดที่ตรง จะแสดงในเครื่องมือเพิ่มเติม (Other Tools)</p>
 
   <!-- SECTION 1: HOME & MODULES -->
   <div class="info-box">
@@ -421,21 +445,18 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     </div>
     <div class="info-visual-wrapper">
       <img src="/docs/shots/hub-tools-card.png" alt="Hub Tools Card" class="info-img">
-      <div class="callout-pin" style="top: 25%; left: 50%;" title="1. แอป Nong Studio">1</div>
-      <div class="callout-pin" style="top: 50%; left: 50%;" title="2. แอป TV Remote">2</div>
-      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. แอป Voice, Camera, Faces, Gacha">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ทางลัดเปิด Nong Studio &amp; TV Remote</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> คลิกการ์ดแอปเพื่อเปิดใช้งาน</div>
+        <div class="action-card-title"><span class="num">1</span> เปิดเครื่องมือจากหน้าแรกหรือ Tools</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> หน้าแรกและแท็บ Tools แสดงเครื่องมือชุดเดียวกันเป็นการ์ดเรียงต่อกัน กด <b>เปิด ↗</b> เพื่อเปิดเครื่องมือในแท็บใหม่ ใช้ Tab และ Enter ได้</div>
         <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
-          ระบบจะเปิดหน้าเว็บโดยแนบพารามิเตอร์ Bus ID และเส้นทางเชื่อมต่อให้อัตโนมัติ ไม่ต้องมานั่งกรอก IP ใหม่
+          รายการปรับตามขนาดหน้าจอ ไม่มีคอลัมน์หมวดที่เว้นพื้นที่ว่างหรือปุ่มคู่มือซ้ำในการ์ด เปิดคู่มือได้จากลิงก์ <b>📖 คู่มือ Help ↗</b> เด่นชัดบนแถบเมนูด้านบนของ Hub เปิดคู่มือในแท็บใหม่ เมื่อรายการโหลดไม่ได้จะแจ้งข้อผิดพลาดและมีปุ่ม <b>ลองอีกครั้ง</b> ส่วนรายการว่างจะแจ้งว่ายังไม่มีเครื่องมือ
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">2</span> การเพิ่มแอปใหม่ในอนาคต (Extensibility)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> สร้างโฟลเดอร์ใน <code>code/apps/&lt;name&gt;</code> พร้อมไฟล์ <code>app.json</code></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> สร้างโฟลเดอร์ใน <code>code/apps/&lt;name&gt;</code> พร้อมไฟล์ <code>app.json</code> <span class="tech">ชื่อ คำอธิบาย ไอคอน และลำดับอ่านจากทะเบียนนี้; <code>show: false</code> ซ่อนจากรายการโดยยังเปิดหน้าผ่านลิงก์ได้</span></div>
         <div class="action-impact"><b>ระบบเปลี่ยนไปยังไง:</b>
           Hub จะตรวจพบแอปใหม่และนำมาแสดงผลบนหน้านี้ให้อัตโนมัติทันที ไม่ต้องแก้โค้ดหลังบ้านแม้แต่บรรทัดเดียว
         </div>
@@ -603,6 +624,9 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        <code>PermissionError: [WinError 5] Access is denied</code>. You can also stop running instances manually with:
        <code>taskkill /F /IM MiceHub.exe</code> (or <code>python main.py --kill</code>).</p></div>
 
+  <p>เมื่อค้นหาอุปกรณ์ไม่สำเร็จ หน้าแรกจะแจ้งให้ลองใหม่ รายการเดิมใน Modules ยังใช้ปุ่มได้แต่ระบุว่าอาจเก่า Network แยกบอร์ดชื่อซ้ำตามตัวอุปกรณ์ และเก็บผลคำสั่งจัดกลุ่มไว้หลังรีเฟรช</p>
+  <p class="tech">Show API: <code>GET /api/play</code> includes <code>epoch</code>. A participating caller supplies <code>expected_epoch</code> with its next play request; Stop changes the epoch and rejects older stamped requests, including ones arriving later. Legacy unstamped requests that have not entered the player when Stop finishes remain outside this transport-order guarantee. <code>POST /api/play/home</code> requires login and an integer <code>expected_epoch</code>, and shares the cancellation fence. Ambiguous HOME dispatch retains device ownership until acknowledged Stop; confirmed historical devices are released. Stop responses expose <code>stop_dev</code> plus fresh <code>stop_ok</code> and <code>stop_reply</code>; an unresolved worker or refused/missing STOP prevents confirmed success.</p>
+  <p>ภาพประกอบคู่มือรวมมากับ Hub ใช้ได้โดยไม่ต้องเชื่อมต่ออินเทอร์เน็ตหรือคัดลอกโฟลเดอร์ภาพแยก เมื่อภาพต้นฉบับเปลี่ยน ระบบตรวจรุ่นจะแจ้งให้สร้างโปรแกรมใหม่ด้วย</p>
 </section>
 
 <!-- ===================== MODULE SITE ===================== -->
@@ -635,10 +659,12 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
   <div class="f"><h3>Sequences &amp; files</h3>
     <p>List <code>/moves</code>, run any sequence, upload, download and delete SD files —
        over WiFi, USB or RS485 alike.</p></div>
+  <p>เมื่อกด Run เพื่อเล่นไฟล์ที่บันทึกไว้ จะเห็นผลคำขอหรือเหตุที่ปฏิเสธใต้รายการไฟล์ แม้ข้อความสถานะการเล่นสดจะเปลี่ยนไปแล้ว</p>
 </section>
 
 <!-- ===================== STUDIO ===================== -->
 <section id="studio">
+  <p class="mini">คุณภาพภาพ 3D เลือกอัตโนมัติจากอุปกรณ์ที่เปิดเว็บ เปลี่ยนได้ที่ Hub → Settings → ภาพ 3D โหมดประหยัดลดจำนวนภาพและความละเอียด โดยยังคงจังหวะการเล่นและการตรวจชนเดิม ขอบภาพใช้ค่าใหม่หลังโหลดหน้าใหม่</p>
   <div class="shead">
     <span class="where tech">code/nong/main_python_set_nong · served at /studio/</span>
     <h2>Nong Studio — คู่มือการใช้งานและจุดปรับแต่งอย่างละเอียดทุกส่วน</h2>
@@ -676,7 +702,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <div class="action-impact-grid">
       <div class="action-card">
         <div class="action-card-title"><span class="num">1</span> สไลเดอร์แขนซ้าย (L_SH_P, L_SH_R, L_EL_P, L_EL_R)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือพิมพ์องศา (ช่วง 10° – 170°, กลาง 90°)</div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> ลากสไลเดอร์หรือพิมพ์องศา (ช่วงที่ตั้งไว้สำหรับข้อนั้น; HOME และจุดศูนย์อาจต่างกัน)</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           • <b>L_SH_P / L_SH_R:</b> ไหล่ซ้ายก้ม-เงย (Pitch) และกางออก-หุบเข้า (Roll)<br>
           • <b>L_EL_P / L_EL_R:</b> ข้อศอกซ้ายงอพับและหมุนบิดท่อนแขน<br>
@@ -702,8 +728,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
         <div class="action-card-title"><span class="num">4</span> ปุ่มลัดความปลอดภัย (Home / Relax / Zero Lock)</div>
         <div class="action-step"><b>ปรับอย่างไร:</b> คลิกปุ่ม Home, Relax หรือ Zero Lock ด้านล่าง</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>Home:</b> คืนแขนทุกข้างกลับท่า 90° ปลอดภัย<br>
-          • <b>Relax:</b> ตัดไฟเลี้ยงเซอร์โว แขนจะอ่อนลง สามารถใช้มือจับดัดท่าจริงได้<br>
+          • <b>Home:</b> กลับท่า HOME ที่ตั้งไว้ องศาแต่ละข้ออาจไม่ใช่ 90°; ตรวจท่าจริงและค่าที่บันทึกไว้<br>
+          • <b>Relax:</b> หยุดส่งพัลส์ควบคุมเซอร์โว; ไม่ได้ตัดไฟเลี้ยง และการคลายแรงยึดขึ้นกับเซอร์โว<br>
           • <b>Zero Lock:</b> ล็อคพิกัดจุดศูนย์ ป้องกันคนกดเลื่อนตำแหน่งโดยไม่ตั้งใจ
         </div>
       </div>
@@ -902,6 +928,8 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
       </div>
     </div>
   </div>
+<p class="mini">ภาพ 3D หยุดวาดเมื่ออยู่นิ่ง และวาดใหม่เมื่อท่าจากตัวแก้ไขหรือ Monitor เปลี่ยน เมื่อเปิด/ปิดกริดหรือเครื่องหมายมือ โหลดโมเดลเพิ่ม หรือปรับขนาดหน้าจอ</p>
+  <p>ถ้าอ่านรายการโปรเจกต์ที่บันทึกไว้ไม่ได้ Studio จะเก็บตัวเลือกเดิมและแจ้งข้อผิดพลาดทั้งแถบสถานะและแถบแจ้งเตือนกลาง จึงเห็นได้จากทุกแท็บ กด Retry saved moves เพื่อลองอ่านอีกครั้ง งานในหน้ายังคงอยู่</p>
 </section>
 
 <!-- ===================== TV REMOTE ===================== -->
@@ -910,8 +938,9 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <span class="where tech">code/apps/tv · served at /tv, /monitor, and /app/tv/</span>
     <h2>📺 TV Remote &amp; Monitor — หน้าจอควบคุมสำหรับ Smart TV และมือถือ</h2>
     <p>หน้าเว็บควบคุมและตรวจสอบสถานะแบบบางเฉียบ (Thin Client) ออกแบบตามสถาปัตยกรรม Centralized Server
-       ตัดการประมวลผล 3D Three.js ออก 100% ทำให้เปิดได้รวดเร็ว ลื่นไหล ไม่กินสเปก และไม่มีอาการค้างบน Smart TV หรือสมาร์ทโฟน</p>
+       หน้านี้ไม่มีตัวแสดงผล 3D ความเร็วในการแสดงสถานะขึ้นกับเครือข่ายและอุปกรณ์ที่ใช้</p>
   </div>
+  <p class="mini">เมื่อซ่อนแท็บ หน้านี้พักการถามสถานะและกลับมาตรวจเมื่อเปิดแท็บอีกครั้ง หากเบราว์เซอร์ไม่อนุญาตให้จำโหมด ระบบยังเปิดหน้าได้โดยเลือกโหมดตามขนาดจอ</p>
 
   <!-- SECTION 1: REMOTE CONTROLS -->
   <div class="info-box">
@@ -921,23 +950,23 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     </div>
     <div class="info-visual-wrapper">
       <img src="/docs/shots/tv-controls-box.png" alt="TV Controls Box" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 50%;" title="1. ปุ่ม Play / Pause / Stop / Home">1</div>
+      <div class="callout-pin" style="top: 30%; left: 50%;" title="1. ปุ่ม Restart selected / Stop / Home">1</div>
       <div class="callout-pin" style="top: 55%; left: 50%;" title="2. รายการเลือก Sequence">2</div>
       <div class="callout-pin" style="top: 80%; left: 50%;" title="3. ปุ่มสั่งพูดด่วน Quick Speech">3</div>
     </div>
     <div class="action-impact-grid">
       <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมหลัก (Play, Pause, Stop, Home)</div>
+        <div class="action-card-title"><span class="num">1</span> ปุ่มควบคุมหลัก (Restart selected, Stop, Home)</div>
         <div class="action-step"><b>ปรับอย่างไร:</b> กดปุ่มสัมผัสขนาดใหญ่บนหน้าจอ หรือกดผ่านรีโมททีวี</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          • <b>Play / Pause:</b> สั่งเริ่มหรือหยุดการขยับท่าทางชั่วคราว<br>
-          • <b>Stop:</b> สั่งหยุดหุ่นยนต์ฉุกเฉินทันที มอเตอร์จะล็อคตำแหน่งปัจจุบัน<br>
-          • <b>Home:</b> คืนแขนและคอหุ่นยนต์กลับสู่ท่าเริ่มต้นที่ปลอดภัย (Neutral Pose)
+          • <b>Restart selected:</b> เริ่มคลิปที่เลือกล่าสุดใหม่จากต้น; ต้องเลือกคลิปก่อน<br>
+          • <b>Stop:</b> หยุดโชว์ที่ Hub กำลังเล่น<br>
+          • <b>Home:</b> หยุดโชว์แล้วส่ง HOME ให้ Nong ที่เลือก ใช้ท่าที่บอร์ดบันทึกไว้ ไม่ตั้งทุกข้อเป็น 90°
         </div>
       </div>
       <div class="action-card">
         <div class="action-card-title"><span class="num">2</span> รายการท่าทาง (Sequence Launcher)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกท่าทางจากกล่องดรอปดาวน์ แล้วกด <b>▶ Play Sequence</b></div>
+        <div class="action-step"><b>ปรับอย่างไร:</b> เลือก Nong จากรายการ Robot แล้วกดปุ่มชื่อคลิป; ถ้ามีหลายเครื่องต้องเลือกเป้าหมายก่อน</div>
         <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
           ระบบจะดึงไฟล์ท่าทางจาก Hub กลาง (<code>/api/list?kind=sequences</code>) และสั่งให้หุ่นรันชุดท่าทางนั้นทันที เจ้าหน้าที่หลังเวทีสามารถใช้มือถือกดเลือกโชว์ได้สะดวก
         </div>
@@ -971,6 +1000,31 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <p>ในสถาปัตยกรรมแบบเดิม หากเปิดหน้า 3D (Three.js) บน Web Browser ของ Smart TV หรือมือถือรุ่นเก่า
        เบราว์เซอร์จะต้องคอมไพล์ WebGL Shaders และรันลูปคำนวณ 60 รอบต่อวินาที ซึ่งชิปประมวลผลของสมาร์ททีวีไม่ได้ออกแบบมาเพื่อรองรับ
        ส่งผลให้เบราว์เซอร์ทีวีปิดตัวเองหรือเครื่องค้าง</p></div>
+  <!-- SECTION 3: DUAL-MODE CONTROLLER -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 3: สลับโหมดการใช้งาน Dual-Mode (Mobile Remote vs Stage Display)</b>
+      <span class="info-badge">Dual-Mode</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> โหมด 📱 รีโมทมือถือ (Mobile Controller)</div>
+        <div class="action-step"><b>การใช้งาน:</b> เหมาะสำหรับเจ้าหน้าที่หรือผู้บังคับหุ่นถือใช้งานผ่านสมาร์ทโฟน</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          ปุ่มสัมผัสขนาดใหญ่พิเศษ กดง่ายด้วยนิ้วโป้ง มีปุ่มหยุดฉุกเฉิน ⏹ STOP, ท่าเริ่มต้น 🏠 HOME, แผ่นป้ายเลือกท่าทางสัมผัสขนาดใหญ่ และปุ่มสั่งพูดทักทายด่วน พร้อมซ่อนข้อมูลเซอร์โวเชิงเทคนิคเพื่อประหยัดพื้นที่หน้าจอ
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> โหมด 📺 จอแสดงเวที (10-Foot Stage Display)</div>
+        <div class="action-step"><b>การใช้งาน:</b> เปิดแสดงบนจอทีวีขนาดใหญ่บนเวทีสำหรับผู้ชมและผู้จัดงาน</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          แสดงชื่อการแสดงปัจจุบัน (Now Playing) และหลอดความคืบหน้าด้วยตัวหนังสือขนาดใหญ่พิเศษ มองเห็นได้ชัดเจนจากระยะ 3-5 เมตร พร้อมสถานะ 🟢 กำลังแสดง (PLAYING) โดยซ่อนเมนูตั้งค่าและเซอร์โวไม่ให้รกสายตา
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>หากเล่น หยุด หรือพูดไม่สำเร็จ จะเห็นข้อความใต้แถบด้านบน HOME จะส่งต่อเมื่อได้รับคำตอบหยุดสำเร็จและหุ่นยนต์ตอบรับ STOP โดยไม่มีข้อผิดพลาดแล้วเท่านั้น หากการหยุดงานเดิมล้มเหลว ระบบยังจะพยายามส่ง STOP ไปยังหุ่นยนต์ที่เลือก และแจ้งผลรวม กด Stop หรือเปลี่ยนหุ่นยนต์ระหว่างโหลดรายการ จะยกเลิกการเริ่มเล่นที่ยังรออยู่ รวมคำขอเล่นหรือ HOME ที่ส่งไปแล้วแต่มาถึง Hub ช้า ข้อความที่พิมพ์ไว้จะคงอยู่เมื่อส่งเสียงพูดไม่สำเร็จ</p>
 </section>
 
 <section id="camera">
@@ -1047,15 +1101,18 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
      tear each other's pictures. The hub therefore holds <b>one</b> connection
      to each camera and feeds every viewer from it. Open this page on as many
      screens as you like.</p>
+  <p>เมื่อการค้นหาล้มเหลว จะแจ้งให้กด Look again แทนการบอกว่าไม่มีกล้อง ข้อมูลที่เก็บไว้จะระบุว่าอาจเก่า; หากค้นหาได้บางส่วน อาจมีกล้องที่ยังไม่แสดง</p>
 </section>
 
 <section id="voice">
+  <p class="mini">Voice และตัวสร้างเสียงแบบมีอารมณ์ที่ Hub จัดการ ใช้ค่าประสิทธิภาพของเครื่อง Hub ร่วมกัน การฟังหลัก การฟังเฉพาะภาษา และการกลับมาใช้ CPU ใช้งบเธรดและงานพร้อมกันเดียวกัน โมเดลที่เปิดอยู่จะเก็บค่าเดิมไว้ งานแปลจากหลายคำขอใช้ชุดงานเดียวกัน บางค่าเธรดต้องเปิดตัวช่วยเสียงใหม่ สถานะ Voice แสดงรุ่นค่าที่โหลดและแจ้งเมื่อมีค่ารอใช้ครั้งถัดไป โดยไม่เปลี่ยนโมเดล ตัวละคร หรือบริการที่คุณเลือกไว้</p>
   <div class="shead">
     <span class="where tech">code/apps/voice · served at /app/voice/</span>
     <h2>🎤 Voice — สนทนาและสั่งงานด้วยเสียงพูด</h2>
     <p>ระบบถาม-ตอบอัจฉริยะ (Q&amp;A) และแปลงข้อความเป็นเสียงพูด (Text-to-Speech)
        พร้อมการสลับไปมาระหว่างลำโพงบนคอมพิวเตอร์ และลำโพงติดตัวหุ่นยนต์ Nong อย่างราบรื่น</p>
   </div>
+  <p class="mini">อ่านสถานะด้านบนก่อนเริ่มพูดหรือฟังเสียง หากระบบแจ้งว่าผู้ช่วยเสียงหรือการเชื่อมต่อไม่พร้อม ให้ตรวจการเชื่อมต่อแล้วลองใหม่ สถานะบนเว็บไม่ได้ยืนยันว่าลำโพงหุ่นส่งเสียงจริง</p>
 
   <!-- SECTION 1: CHAT & STT -->
   <div class="info-box">
@@ -1144,464 +1201,195 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        <b>waits its turn</b> or is <b>skipped</b> — whoever asked chooses — and
        a greeting that waited too long is dropped, because the person has
        walked on (<code>maxAgeSeconds</code>, 30 seconds unless changed).</p></div>
+  <!-- SECTION 3: ANSWERS SHEET & QUESTIONS ANALYTICS -->
+  <div class="info-box">
+    <div class="info-header">
+      <b>จุดที่ 3: ตารางคำตอบแบบขยายและแดชบอร์ดสถิติคำถาม (Answers Sheet &amp; Questions Analytics)</b>
+      <span class="info-badge">Answers &amp; Analytics</span>
+    </div>
+    <div class="action-impact-grid">
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">1</span> ตารางคำตอบโปร่งสบาย (Comfortable Answers Sheet)</div>
+        <div class="action-step"><b>การใช้งาน:</b> แท็บ Answers — พิมพ์คำถามที่คนถามด้านบน และคำตอบของหุ่นยนต์ด้านล่าง</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          ช่องข้อความปรับขนาดได้อิสระ ไม่บีบอัด ไม่เกิดแถบเลื่อนซ้อนซ้ำซ้อนในช่อง พร้อมระบบแปลภาษาอัตโนมัติสำหรับภาษาที่เว้นว่างไว้เมื่อกด Save
+        </div>
+      </div>
+      <div class="action-card">
+        <div class="action-card-title"><span class="num">2</span> แดชบอร์ดคำถามและคำถามค้างตอบ (Questions &amp; Unanswered)</div>
+        <div class="action-step"><b>การใช้งาน:</b> แท็บ Questions — ดูกราฟวิเคราะห์และคำถามที่พบบ่อย</div>
+        <div class="action-impact"><b>ความสามารถ:</b>
+          แสดงสถิติ 6 มิติ (หัวข้อ, ช่วงเวลา, แหล่งคำตอบ, ภาษา, รางวัล, คำถามยอดฮิต) และกล่องรวมคำถามที่คนถามบ่อยแต่ยังไม่มีคำตอบตายตัว พร้อมปุ่ม <b>+ Make an answer</b> เพื่อเพิ่มลงตารางคำตอบได้ในคลิกเดียว
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>หาก Load the AI, Unload the AI หรือการอ่านสถานะล้มเหลว ปุ่มจะกลับมากดเพื่อลองใหม่ พร้อมข้อความข้อผิดพลาด การโหลดโมเดลจริงอาจใช้เวลาตามเครื่อง</p>
 </section>
 
 <section id="faces">
   <div class="shead">
-    <span class="where tech">code/apps/faces · served at /app/faces/</span>
-    <h2>👋 Reconize — ตรวจจับใบหน้าและผูกท่าทางทักทาย</h2>
-    <p>Reconize เป็นโปรแกรมตรวจจับและจำแนกใบหน้าผู้คน ทำงานเคียงคู่กับ Mice บนคอมพิวเตอร์เครื่องเดียวกัน
-       หน้านี้ใช้สำหรับเปิดโปรแกรมและกำหนดว่าเมื่อหุ่นยนต์เห็นใคร จะให้พูดและแสดงท่าทางอย่างไร</p>
+    <span class="where tech">code/apps/faces · /app/faces/</span>
+    <h2>👋 FaceReg / Reconize — ใบหน้าและการทักทาย</h2>
+    <p>เปิดโปรแกรมใบหน้า ตรวจว่าหุ่นรับข้อมูลได้ แล้วตั้งคำพูดและท่าทางเมื่อพบคน</p>
   </div>
-
-  <!-- SECTION 1: GREET WORDS -->
+  <div class="f">
+    <h3>เลือกหน้าที่ตรงกับงาน</h3>
+    <p><a href="/app/faces/">เปิดหน้า Reconize ของ Mice</a> หน้านี้มี 3 แท็บ ส่วนโปรแกรมจัดการใบหน้าจะเปิดผ่านปุ่ม Open Reconize</p>
+  </div>
+  <div class="scroll"><table>
+    <thead><tr><th>ต้องการทำอะไร</th><th>เลือกแท็บ</th><th>ทำอย่างไร / ผลที่ได้</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap2">เปิดโปรแกรมใบหน้า</td><td>Open it</td><td>กด Open Reconize เพื่อเปิดโปรแกรม ใช้ Check it is running เพื่อตรวจว่าโปรแกรมทำงานหรือยัง</td></tr>
+      <tr><td class="wrap2">ตรวจการรับข้อมูลของหุ่น</td><td>Is the rig following it?</td><td>ดูสถานะตัวติดตามข้อมูล ถ้ายังไม่เริ่ม จะมีปุ่ม Start following Reconize</td></tr>
+      <tr><td class="wrap2">เปลี่ยนคำทักและท่าทาง</td><td>What the rig says</td><td>ตั้งคำพูด ผู้พูด เวลาเว้นการทัก และพฤติกรรมแยกตามกล้อง แล้วกด Save</td></tr>
+    </tbody>
+  </table></div>
   <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 1: กำหนดคำพูดทักทายแยกตามบุคคล (Greet Words Editor)</b>
-      <span class="info-badge">Greet Words</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img src="/docs/shots/faces-words-box.png" alt="Faces Greet Words Box" class="info-img">
-      <div class="callout-pin" style="top: 30%; left: 30%;" title="1. คำทักคนที่มาครั้งแรกของวัน">1</div>
-      <div class="callout-pin" style="top: 55%; left: 30%;" title="2. คำทักคนที่เดินกลับมาอีกครั้ง">2</div>
-      <div class="callout-pin" style="top: 80%; left: 30%;" title="3. คำทักคนแปลกหน้า (Stranger)">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> คำพูดคนรู้จัก (Known Person: First visit &amp; Return)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> ใส่แท็ก <code>{title}</code> (เช่น อาจารย์) และ <code>{name}</code> (ชื่อคน)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          เมื่อคนรู้จักเดินผ่าน หุ่นยนต์จะเอ่ยชื่อคนนั้นอย่างถูกต้องเป็นธรรมชาติ เช่น "สวัสดีครับ {title} {name} ยินดีต้อนรับครับ"
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> คำทักคนแปลกหน้า (Stranger Words)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> พิมพ์คำทักทายทั่วไป (ห้ามใส่ <code>{name}</code> เด็ดขาด)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          หากเป็นใบหน้าที่ยังไม่เคยบันทึกในฐานข้อมูล หุ่นยนต์จะใช้ประโยคสุภาพทั่วไป เช่น "สวัสดีครับ ยินดีต้อนรับสู่บูธของเราครับ"
-        </div>
-      </div>
-    </div>
+    <div class="info-header"><b>1. เปิดการทักทายและเลือกผู้พูด</b></div>
+    <p>ใน <b>What the rig says</b> เปิด <b>Greet people the face app sees</b> แล้วเลือก <b>Speaker</b> ว่าจะให้เสียงออกที่ไหน</p>
+    <p>ช่อง <b>Polite word before a name</b> เป็นคำเรียกนำหน้าชื่อ ส่วน <b>If the rig is already talking or playing</b> เลือก <b>skip this hello</b> เพื่อข้าม หรือ <b>wait its turn</b> เพื่อรอ</p>
   </div>
-
-  <!-- SECTION 2: CAMERA TO MOVE BINDING & COOLDOWN -->
   <div class="info-box">
-    <div class="info-header">
-      <b>จุดที่ 2: ผูกท่าทางแอนิเมชันและการป้องกันทักซ้ำ (Move Binding &amp; Cooldown)</b>
-      <span class="info-badge">Rules &amp; Cooldown</span>
-    </div>
-    <div class="info-visual-wrapper">
-      <img src="/docs/shots/faces-rules-box.png" alt="Faces Rules Box" class="info-img">
-      <div class="callout-pin" style="top: 40%; left: 30%;" title="1. เลือกท่าทาง wai.yaml / wave.yaml">1</div>
-      <div class="callout-pin" style="top: 40%; left: 70%;" title="2. ตั้งเวลา Cooldown ป้องกันทักซ้ำ">2</div>
-      <div class="callout-pin" style="top: 75%; left: 50%;" title="3. เงื่อนไข Skip if busy">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ผูกท่าทางหุ่นยนต์ (Move Binding)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> เลือกท่า <code>wai.yaml</code> (ไหว้) หรือ <code>wave.yaml</code> (โบกมือ)</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          หุ่นยนต์ Nong จะแสดงท่าทางพร้อมเปล่งเสียงทักทายพร้อมกัน เพิ่มความมีชีวิตชีวาและดึงดูดผู้เข้าชมงาน
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> คูลดาวน์และป้องกันขัดจังหวะ (Cooldown &amp; Busy Guard)</div>
-        <div class="action-step"><b>ปรับอย่างไร:</b> กำหนด Cooldown (เช่น 10 นาที) และเลือก Skip if busy</div>
-        <div class="action-impact"><b>หุ่นยนต์เปลี่ยนไปยังไง:</b>
-          คนเดิมที่ยืนคุยหน้ากล้องจะไม่โดนทักซ้ำๆ ทุก 5 วินาที และถ้าหุ่นกำลังแสดงโชว์อยู่ จะไม่ถูกขัดจังหวะ
-        </div>
-      </div>
-    </div>
+    <div class="info-header"><b>2. เขียนคำทักทายและเว้นระยะการทักซ้ำ</b></div>
+    <p>ตั้งเวลาใน <b>Greet the same person at most once every</b> เป็นนาที และเวลาของคนที่ยังไม่รู้จักเป็นวินาทีต่อกล้อง</p>
+    <p>ในส่วน <b>When they arrive</b> และ <b>When they leave</b> ใส่คำพูดแยกตามคนที่มาครั้งแรก กลับมาอีก และคนที่ยังไม่รู้จัก</p>
+    <p><code>{title}</code> แทนคำเรียก และ <code>{name}</code> แทนชื่อ คนที่ยังไม่รู้จักไม่มีชื่อให้แทน ใช้คำทักทั่วไป เช่น “สวัสดีครับ ยินดีต้อนรับครับ”</p>
+  </div>
+  <div class="info-box">
+    <div class="info-header"><b>3. เลือกพฤติกรรมและท่าทางของแต่ละกล้อง</b></div>
+    <p>ในหัวข้อ <b>Cameras</b> เลือกว่ากล้องนั้นจะทักตอนพบคน (<b>says hello</b>) บอกลา (<b>says goodbye</b>) หรือนับคนอย่างเดียว (<b>only counts</b>)</p>
+    <p>เลือก <b>Move</b> และหุ่นในช่อง <b>on</b> ของกล้องนั้น รายการท่ามาจากไฟล์ที่บันทึกไว้จริง ถ้าต้องการพูดอย่างเดียวให้เลือก <b>none</b></p>
+    <p>ถ้ากล้องยังไม่ปรากฏ ใช้ <b>Add a camera by name</b> ชื่อกล้องต้องตรงกับข้อมูลที่โปรแกรมใบหน้าส่งมา</p>
+  </div>
+  <div class="f">
+    <h3>บันทึกและตรวจผล</h3>
+    <p>กด <b>Save</b> ด้านล่างและรอข้อความยืนยันการบันทึก การเปลี่ยนค่ามีผลเมื่อระบบพบคนตามเงื่อนไขครั้งถัดไป <b>Undo my changes</b> โหลดค่าที่บันทึกไว้กลับมา</p>
+    <p>ถ้าต้องการประกาศเมื่อยอดคนถึงจำนวนที่กำหนด ใช้ <b>Celebrations</b> ส่วนคำเรียกเฉพาะบุคคลอยู่ใน <b>Titles for particular people</b></p>
+  </div>
+  <p class="tech">ที่อยู่โปรแกรมภายนอกอ่านจาก config/partners.json</p>
+  <div class="info-box">
+    <div class="info-header"><b>4. ระบบสีและการสืบทอดธีมแบบไดนามิก (Universal Dynamic Theme Sync)</b></div>
+    <p>หน้า Reconize สืบทอดธีมสีจาก Hub กลางอัตโนมัติผ่าน <code>MiceThemeManager</code> (เช่น โหมดมืด Midnight) ไม่บังคับแสดงผลพื้นหลังขาวจ้า แสบตา หรือกระพริบเปลี่ยนสี เมื่อผู้ใช้เปลี่ยนธีมใน Hub ทุกแท็บและแอปจะปรับสีตามทันทีแบบเรียลไทม์</p>
   </div>
 
-  <h3>Where Reconize lives, and how to move it</h3>
-  <p>Its addresses are written in <b>config/partners.json</b> — one entry for
-     each outside program Mice follows. Change the address there and the button
-     follows on the next refresh.</p>
 </section>
 <section id="gacha">
   <div class="shead">
-    <span class="where tech">code/apps/gacha · served at /app/gacha/ and /mod?dev=COM9 · firmware type gacha</span>
-    <h2>🎁 Prize machines — gachapon (เครื่องแจกของรางวัล / กาชาปอง)</h2>
-    <p>เครื่องแจกของรางวัลอัตโนมัติแบบ Revolver Carousel 4 ช่อง พร้อมระบบ 4-Phase Safety Centering หยุดกึ่งกลาง Hall เซนเซอร์ 100% และระบบ Auto Detect ปรับจูนตามมวลของรางวัล</p>
+    <span class="where tech">code/apps/gacha · /app/gacha/ · firmware type gacha</span>
+    <h2>🎁 แจกของรางวัล — Prize machines</h2>
+    <p>เตรียมเครื่องและชนิดของรางวัล ตั้งกติกาของงาน แล้วจึงแจกและดูประวัติ</p>
   </div>
-  <!-- Real Screenshot & Visual Callout Guide -->
-  <div class="info-box">
+  <p><b>บันทึกและเปิดงาน:</b> ตรวจชื่อเครื่องและตารางของพรีเซตก่อนกดเริ่ม ระบบจะปิดงานระหว่างบันทึก แล้วเปิดเมื่อบันทึกครบและทุกเครื่องตอบรับเท่านั้น หากขั้นใดล้มเหลว หน้าจอจะแจ้งจุดที่ผิดและไม่รายงานว่าพร้อมแจก กดเริ่มซ้ำระหว่างบันทึกจะไม่ส่งงานซ้ำ ปุ่ม remove เก็บการแก้ไขแถวอื่นไว้ก่อนลบแถวที่เลือก</p>
+  <div class="f">
+    <h3>เริ่มใช้งานที่ไหน</h3>
+    <p><a href="/app/gacha/">เปิดระบบแจกของ</a> แล้วเลือกแท็บตามงาน ชื่อภาษาอังกฤษด้านล่างตรงกับชื่อบนหน้าจอ</p>
+    <p>ถ้าไม่เห็นแท็บและสถานะค้างที่ <b>checking…</b> แสดงว่าหน้าแอปยังโหลดไม่สำเร็จ จึงยังทำตามขั้นตอนต่อไปไม่ได้</p>
+  </div>
+    <div class="info-box">
     <div class="info-header">
-      <b>ภาพหน้าจอจริงของ Prize Machines (Gacha) และการตั้งค่าล้อหมุน</b>
-      <span class="info-badge">Real UI · Callouts</span>
+      <b>⚡ พรีเซตงานกิจกรรมเริ่มต้น (Quick Event Presets)</b>
+      <span class="info-badge">1-Click Setup</span>
     </div>
-    <div class="info-visual-wrapper">
-      <img src="/docs/shots/gacha-current.png" alt="Gacha Real UI" class="info-img">
-      <div class="callout-pin" style="top: 25%; left: 30%;" title="1. สถานะช่องล้อหมุน 4 ช่อง">1</div>
-      <div class="callout-pin" style="top: 25%; left: 80%;" title="2. ปุ่มสั่งจ่ายของรางวัล Drop Prize">2</div>
-      <div class="callout-pin" style="top: 60%; left: 50%;" title="3. เซนเซอร์ Hall และการจูนแรงขับ">3</div>
-    </div>
-    <div class="action-impact-grid">
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">1</span> ตรวจสอบความพร้อมของช่อง (Slot Status)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ดูไฟสถานะ 4 ช่องบนหน้าจอ (เขียว = มีของ, เทา = ว่าง)</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          ระบบจะเช็คว่าช่องใดมีของรางวัลอยู่ หากช่องปัจจุบันว่าง จะหมุนข้ามไปช่องถัดไปอัตโนมัติ ไม่ปล่อยให้ผู้เล่นได้ช่องว่าง
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">2</span> สั่งแจกของรางวัล (Drop Prize / Vending)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> กดปุ่ม <b>Drop prize</b> หรือรับคำสั่ง Event อัตโนมัติจากเกม</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          มอเตอร์ Revolver จะหมุน 90° แคปซูลหล่นลงรางรับของ พร้อมไฟ RGB กะพริบยินดีและเสียงเอฟเฟกต์
-        </div>
-      </div>
-      <div class="action-card">
-        <div class="action-card-title"><span class="num">3</span> ระบบหยุดกึ่งกลางอัตโนมัติ (4-Phase Hall Centering)</div>
-        <div class="action-step"><b>ทำอย่างไร:</b> ทำงานอัตโนมัติผ่านแม่เหล็กและ Hall Sensor บนบอร์ด ESP32</div>
-        <div class="action-impact"><b>ตั้งแล้วเกิดอะไรขึ้น:</b>
-          เมื่อหมุนเข้าใกล้ตำแหน่ง แม่เหล็กจะดูดเข้าพิกัดและตัดกระแสมอเตอร์ทันที หยุดกึ่งกลางช่อง 100% ไม่ติดขัด
-        </div>
-      </div>
-    </div>
+    <p>สำหรับผู้ดูแลงานอีเวนต์ที่ต้องการเริ่มใช้งานทันทีโดยไม่ต้องตั้งค่าตารางเอง สามารถกดเลือกพรีเซต 3 รูปแบบด้านบนของหน้ากาชาปอง:</p>
+    <ul>
+      <li><b>🎁 งานกิจกรรมทั่วไป (Standard Giveaway):</b> 1 ตู้กาชาปอง (พวงกุญแจ 50 ชิ้น สำรองสติกเกอร์ 100 ชิ้น) จำกัดสิทธิ์คนละ 1 ชิ้น</li>
+      <li><b>🍀 ลุ้นโชคไม่อั้น / บูธเกม (Unlimited Fun):</b> 2 ตู้ลุ้นโชค A/B (ขนม 200 ชิ้น และของที่ระลึก 50 ชิ้น) เล่นได้ไม่จำกัดจำนวนต่อคน</li>
+      <li><b>🏆 รางวัลใหญ่ VIP (VIP &amp; Limited Event):</b> ตู้ทองคำรางวัลใหญ่ 10 ชิ้น (คนละ 1 สิทธิ์) + ตู้รางวัลปลอบใจ 80 ชิ้น (คนละ 2 สิทธิ์)</li>
+    </ul>
+    <p class="mini">เมื่อกดพรีเซต ระบบจะกรอกชื่อเครื่อง รหัสของรางวัล และกฎให้ทันที ผู้จัดงานเพียงแก้ไขชื่อของรางวัลตามจริง แล้วกด <b>Save</b> ในแต่ละตารางเพื่อเริ่มใช้งานได้เลย</p>
   </div>
 
-
-  <!-- ==================== INFOGRAPHIC 1: ARCHITECTURE ==================== -->
-  <div class="f" style="border: 2px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4); background: var(--card); margin-bottom: 24px;">
-    <h3 style="font-size: 17px; margin-bottom: 12px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
-      <span>📐</span> 1. สถาปัตยกรรมล้อหมุน 4 ช่อง (Revolver Mechanism)
-    </h3>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-items: center;">
-      <!-- Visual SVG Wheel -->
-      <div style="text-align: center; background: var(--code-bg); padding: 18px; border-radius: var(--r-sm); border: 1px solid var(--line);">
-        <svg viewBox="0 0 280 280" width="220" height="220" style="margin: 0 auto; display: block;">
-          <!-- Outer circle -->
-          <circle cx="140" cy="140" r="115" fill="none" stroke="var(--line)" stroke-width="4" stroke-dasharray="6,4"/>
-          <circle cx="140" cy="140" r="95" fill="none" stroke="var(--acc)" stroke-width="3" opacity="0.4"/>
-          <!-- 4 Pockets -->
-          <!-- Pocket 0 (Top, 0 deg) -->
-          <circle cx="140" cy="45" r="28" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
-          <text x="140" y="42" text-anchor="middle" font-size="12" font-weight="bold" fill="#0369a1">Slot 1</text>
-          <text x="140" y="56" text-anchor="middle" font-size="9" fill="#0284c7">🧲 Hall #1</text>
-
-          <!-- Pocket 1 (Right, 90 deg) -->
-          <circle cx="235" cy="140" r="28" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
-          <text x="235" y="137" text-anchor="middle" font-size="12" font-weight="bold" fill="#b45309">Slot 2</text>
-          <text x="235" y="151" text-anchor="middle" font-size="9" fill="#d97706">📥 Receive</text>
-
-          <!-- Pocket 2 (Bottom, 180 deg) -->
-          <circle cx="140" cy="235" r="28" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
-          <text x="140" y="232" text-anchor="middle" font-size="12" font-weight="bold" fill="#0369a1">Slot 3</text>
-          <text x="140" y="246" text-anchor="middle" font-size="9" fill="#0284c7">🧲 Hall #3</text>
-
-          <!-- Pocket 3 (Left, 270 deg) -->
-          <circle cx="45" cy="140" r="28" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
-          <text x="45" y="137" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">Slot 4</text>
-          <text x="45" y="151" text-anchor="middle" font-size="9" fill="#16a34a">🎁 Drop Chute</text>
-
-          <!-- Center Motor & Direction Arrow -->
-          <circle cx="140" cy="140" r="22" fill="var(--acc)" opacity="0.9"/>
-          <text x="140" y="144" text-anchor="middle" font-size="16" fill="#fff">⚙️</text>
-          <!-- Curved rotation arrow -->
-          <path d="M 120 105 A 40 40 0 0 1 175 125" fill="none" stroke="var(--txt)" stroke-width="2.5" marker-end="url(#arrow)"/>
-        </svg>
-        <div style="font-size: 11.5px; color: var(--mut); margin-top: 8px;">
-          หมุนทิศทางตามเข็มนาฬิกา (CW, <code>dir: 1</code>)
-        </div>
-      </div>
-
-      <!-- Explanatory Cards -->
-      <div style="display: flex; flex-direction: column; gap: 12px;">
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: var(--r-sm);">
-          <b style="color: #15803d; font-size: 14px;">🟢 Continuous Vending (โหมดแจกปกติ: <code>drop: 1</code>)</b>
-          <p style="margin: 4px 0 0; font-size: 13px; color: #166534;">
-            เมื่อมีแคปซูลบรรจุพร้อมทั้ง 4 ช่อง การแจกของแต่ละครั้ง <b>หมุนเพียง 1 แม่เหล็ก (90° / 1 ช่อง)</b> แคปซูลในช่องถัดไปจะหล่นลงรางทันที ทำงานรวดเร็ว กระชับ ไม่เสียเวลาหมุนฟรี
-          </p>
-        </div>
-
-        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: var(--r-sm);">
-          <b style="color: #1d4ed8; font-size: 14px;">🔵 Initial Prime Mode (โหมดโหลดตู้ครั้งแรก: <code>drop: 2</code>)</b>
-          <p style="margin: 4px 0 0; font-size: 13px; color: #1e40af;">
-            ตามระยะใน CAD ระหว่างจุดรับของ (ช่อง 2) กับปากรางปล่อย (ช่อง 4) ห่างกัน 180° (2 ช่อง) ใช้เฉพาะตอนเริ่มโหลดลูกแรกเข้าตู้ว่างให้พร้อมแจก
-          </p>
-        </div>
-
-        <div style="background: var(--code-bg); border: 1px solid var(--line); padding: 10px 14px; border-radius: var(--r-sm); font-size: 12.5px; color: var(--mut);">
-          💡 <b>ฮาร์ดแวร์:</b> บอร์ด ESP32 คุม H-bridge 2 ขา (GPIO 25 & 26, <code>Drive2pin</code>), เซนเซอร์ Hall GPIO 33 (Active-Low), มอเตอร์มี Schottky Diode (0.187V drop) กันไฟย้อน
-        </div>
-      </div>
-    </div>
+  <div class="scroll"><table>
+    <thead><tr><th>ต้องการทำอะไร</th><th>เลือกแท็บ</th><th>ทำอย่างไร / ผลที่ได้</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap2">เตรียมเครื่องและของ</td><td>Machines and kinds</td><td>กำหนดเครื่อง ชนิดของรางวัล และจำนวนของที่เติม บันทึกก่อนเริ่มแจก</td></tr>
+      <tr><td class="wrap2">ตั้งสิทธิ์รับของ</td><td>Rules</td><td>กำหนดจำนวนรวมของงานและจำนวนต่อคน แยกตามชนิดของรางวัล หรือกำหนดให้บุคคลเฉพาะ</td></tr>
+      <tr><td class="wrap2">แจกให้ผู้ร่วมงาน</td><td>Give a prize</td><td>เลือก Kind ผู้รับ และ Machine กด Can they have one? เพื่อตรวจสิทธิ์ หรือ Give เพื่อสั่งแจกจริง</td></tr>
+      <tr><td class="wrap2">ดูว่าแจกให้ใครแล้ว</td><td>Prizes given</td><td>ดูประวัติการแจกและจำนวนที่แจกไป</td></tr>
+      <tr><td class="wrap2">ใช้กติกาจากชีต</td><td>Google Sheet</td><td>วางลิงก์ชีตและทำตามวิธีตั้งค่าในแท็บนี้ หากต้องการเขียนกลับชีตต้องตั้งค่าส่วนการเขียนด้วย</td></tr>
+      <tr><td class="wrap2">ให้เกมหรือเสียงเรียกแจก</td><td>Games and Voice</td><td>กำหนดเกมหรือหัวข้อคำถามที่มีสิทธิ์ขอรางวัล</td></tr>
+      <tr><td class="wrap2">เชื่อมแอปอื่น</td><td>Other apps</td><td>กำหนดการเชื่อมต่อของแอปที่ขอแจกของ</td></tr>
+      <tr><td class="wrap2">เปลี่ยนคำพูด</td><td>Words</td><td>แก้ข้อความที่ใช้ประกอบการแจกและแจ้งผล</td></tr>
+    </tbody>
+  </table></div>
+  <div class="f">
+    <h3>แจกของหนึ่งครั้ง</h3>
+    <ol>
+      <li>ใน <b>Give a prize</b> เลือก <b>Kind</b> ให้ตรงกับของที่เตรียมไว้</li>
+      <li>ระบุชื่อผู้รับ หรือเลือก <b>the person in front of the camera</b> เพื่อใช้คนที่ระบบใบหน้าเห็น</li>
+      <li>เลือก <b>Machine</b> หรือให้ระบบเลือกเครื่องที่มีของชนิดนั้น</li>
+      <li>กด <b>Can they have one?</b> เพื่อตรวจสิทธิ์ก่อน จากนั้นกด <b>Give</b> เมื่อต้องการแจกจริง</li>
+    </ol>
+    <p><b>Give one anyway (admin)</b> ข้ามข้อจำกัดสิทธิ์ของผู้รับและยังนับการแจก ใช้เมื่อตั้งใจให้เกินกติกา</p>
   </div>
-
-  <!-- ==================== INFOGRAPHIC 2: 4-PHASE SAFETY CYCLE ==================== -->
-  <div class="f" style="border: 2px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4); background: var(--card); margin-bottom: 24px;">
-    <h3 style="font-size: 17px; margin-bottom: 6px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
-      <span>🔄</span> 2. วงรอบการแจกของ 4 ขั้นตอน (4-Phase Safety Settle Cycle)
-    </h3>
-    <p style="color: var(--mut); font-size: 13.5px; margin-bottom: 16px;">
-      ออกแบบพิเศษป้องกันของติดคาปากราง (Dual-Rocking Agitation) และดูดกลับเข้ากึ่งกลาง Hall แม่นยำ 100%
-    </p>
-
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
-      <!-- Phase 1 -->
-      <div style="background: var(--code-bg); border-top: 4px solid #0284c7; padding: 14px; border-radius: var(--r-sm); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #0284c7;">Phase 1</span>
-          <span style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 4px; font-family: var(--mono);">180 ms</span>
-        </div>
-        <b style="font-size: 14px; display: block; margin-bottom: 4px;">⏩ Forward Overshoot</b>
-        <p style="font-size: 12.5px; color: var(--mut); margin: 0;">
-          หมุนเลยปากรางปล่อยช้าๆ (ความเร็ว <code>overshoot_speed: 380</code>) เพื่อให้แรงโน้มถ่วงเริ่มดึงแคปซูลให้ลื่นไหลลงราง
-        </p>
-      </div>
-
-      <!-- Phase 2 -->
-      <div style="background: var(--code-bg); border-top: 4px solid #f59e0b; padding: 14px; border-radius: var(--r-sm); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #f59e0b;">Phase 2</span>
-          <span style="font-size: 11px; background: #fef3c7; color: #b45309; padding: 1px 6px; border-radius: 4px; font-family: var(--mono);">250 ms</span>
-        </div>
-        <b style="font-size: 14px; display: block; margin-bottom: 4px;">🔁 Reverse Agitation</b>
-        <p style="font-size: 12.5px; color: var(--mut); margin: 0;">
-          โยกถอยหลังข้ามแม่เหล็กไปอีกฝั่ง (ความเร็ว <code>return_speed: 360</code>) เขย่าสะบัดให้แคปซูลที่ติดหลุดลงไป แล้วหยุดพัก 60 ms ตัดแรงเฉื่อย
-        </p>
-      </div>
-
-      <!-- Phase 3 -->
-      <div style="background: var(--code-bg); border-top: 4px solid #16a34a; padding: 14px; border-radius: var(--r-sm); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #16a34a;">Phase 3</span>
-          <span style="font-size: 11px; background: #dcfce7; color: #15803d; padding: 1px 6px; border-radius: 4px; font-family: var(--mono);">Micro-Step</span>
-        </div>
-        <b style="font-size: 14px; display: block; margin-bottom: 4px;">🎯 Dead-Center Alignment</b>
-        <p style="font-size: 12.5px; color: var(--mut); margin: 0;">
-          ย่องก้าวสั้นๆ (15 ms ที่ <code>center_speed: 260</code>) เข้าหาแม่เหล็ก พอเซนเซอร์แตะขอบ จะแทงเข้า Sweet Spot 18 ms แล้วล็อกเบรกตรงกลางทันที
-        </p>
-      </div>
-
-      <!-- Phase 4 -->
-      <div style="background: var(--code-bg); border-top: 4px solid #8b5cf6; padding: 14px; border-radius: var(--r-sm); border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #8b5cf6;">Phase 4</span>
-          <span style="font-size: 11px; background: #ede9fe; color: #6d28d9; padding: 1px 6px; border-radius: 4px; font-family: var(--mono);">5,000 ms</span>
-        </div>
-        <b style="font-size: 14px; display: block; margin-bottom: 4px;">⏸️ Observation Pause</b>
-        <p style="font-size: 12.5px; color: var(--mut); margin: 0;">
-          หยุดนิ่งตรงกลาง 5 วินาที (ปรับลดได้ 2s/5s) เพื่อให้แอดมินหรือผู้รับของมองเห็นสถานะของหล่นชัดเจน ไฟ <code>at_hall</code> ขึ้นเขียวเสถียร 100%
-        </p>
-      </div>
-    </div>
+  <div class="f" id="gacha-mechanism">
+    <h3>กลไกจริง: Hall 1 ตัว กับแม่เหล็ก 4 ตัว</h3>
+    <p>จุดรับของ (Receive) และจุดปล่อยของ (Drop) อยู่ด้านเดียวกัน Hall ติดอยู่กับที่ตรงจุดรับของเพียงตัวเดียว ส่วนแม่เหล็กทั้ง 4 ตัวติดไปกับล้อหมุน ฝั่งปล่อยของไม่มี Hall</p>
+    <figure class="mechanism-figure">
+      <svg viewBox="0 0 680 300" role="img" aria-labelledby="gacha-mechanism-title gacha-mechanism-desc">
+        <title id="gacha-mechanism-title">แม่เหล็ก 4 ตัวบนล้อ และ Hall ตัวเดียวที่จุดรับของ</title>
+        <desc id="gacha-mechanism-desc">ซ้ายแสดงล้อพร้อมแม่เหล็กสี่ตัว ขวาแสดงจุดรับและจุดปล่อยด้านเดียวกัน Hall อยู่ที่ Receive เท่านั้น Drop ไม่มี Hall ผังนี้ไม่ระบุมุมหรือระยะจริง</desc>
+        <g fill="var(--card)" stroke="var(--line)" stroke-width="2">
+          <circle cx="155" cy="150" r="105"/><circle cx="155" cy="150" r="27"/>
+        </g>
+        <g fill="var(--acc-soft)" stroke="var(--acc)" stroke-width="2">
+          <circle cx="155" cy="57" r="26"/><circle cx="248" cy="150" r="26"/>
+          <circle cx="155" cy="243" r="26"/><circle cx="62" cy="150" r="26"/>
+        </g>
+        <g fill="var(--txt)" text-anchor="middle" font-size="15" font-weight="600">
+          <text x="155" y="62">M1</text><text x="248" y="155">M2</text>
+          <text x="155" y="248">M3</text><text x="62" y="155">M4</text>
+          <text x="155" y="155" font-size="12">ล้อหมุน</text>
+        </g>
+        <g fill="var(--card)" stroke="var(--line)" stroke-width="2">
+          <rect x="330" y="28" width="332" height="244" rx="14"/>
+          <rect x="348" y="74" width="296" height="88" rx="8"/>
+          <rect x="348" y="179" width="296" height="70" rx="8"/>
+        </g>
+        <g fill="var(--txt)" font-size="17" text-anchor="middle">
+          <text x="496" y="55" font-weight="700">จุดรับและปล่อยอยู่ด้านเดียวกัน</text>
+          <text x="496" y="104" font-weight="700">Receive · จุดรับของ</text>
+          <text x="496" y="140" fill="var(--acc)">● Hall 1 ตัว อยู่กับที่</text>
+          <text x="496" y="207" font-weight="700">Drop · จุดปล่อยของ</text>
+          <text x="496" y="233">ไม่มี Hall</text>
+        </g>
+      </svg>
+      <figcaption>M1–M4 คือแม่เหล็กที่หมุนไปกับล้อ ผังแยกส่วนประกอบเพื่ออธิบาย ไม่ใช่แบบระบุตำแหน่ง มุม หรือระยะจริง</figcaption>
+    </figure>
+    <p><b>Hall บอกว่าแม่เหล็กอยู่ตรงจุดรับของ</b> สัญญาณนี้ไม่ได้วัดว่าของตกออกจากรางแล้ว และไม่ได้วัดว่าล้ออยู่กึ่งกลางแม่เหล็กพอดี</p>
   </div>
-
-  <!-- ==================== INFOGRAPHIC 3: PARAMETERS ==================== -->
-  <div class="f" style="border: 2px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4); background: var(--card); margin-bottom: 24px;">
-    <h3 style="font-size: 17px; margin-bottom: 12px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
-      <span>⚙️</span> 3. ตารางพารามิเตอร์ทุกตัว ทุกจุด ทุกการตั้งค่า (Parameters Reference)
-    </h3>
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Key (GCFG)</th>
-            <th>ชื่อภาษาไทย</th>
-            <th>ค่ามาตรฐาน</th>
-            <th>ช่วงค่าที่ตั้งได้</th>
-            <th class="wrap2">หน้าที่เชิงกลและผลลัพธ์</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>drop</code></td>
-            <td>จำนวนช่องที่หมุนปล่อย</td>
-            <td><b>1</b></td>
-            <td>1 - 64</td>
-            <td class="wrap2">1 สำหรับการแจกของปกติเมื่อล้อเต็ม, 2 สำหรับโหลดลูกแรกตอนตู้ว่าง</td>
-          </tr>
-          <tr>
-            <td><code>intake</code></td>
-            <td>หน่วงเวลารอของหล่นลงช่อง (ms)</td>
-            <td><b>300</b></td>
-            <td>0 - 5000</td>
-            <td class="wrap2">หยุดรอให้แรงโน้มถ่วงดึงลูกจากท่อด้านบนตกลง Slot 2 ให้สนิทก่อนเริ่มหมุน ป้องกันลูกติดขัดหรือตกไม่ทัน</td>
-          </tr>
-          <tr>
-            <td><code>speed</code></td>
-            <td>ความเร็วหมุนเดินทาง</td>
-            <td><b>500</b></td>
-            <td>50 - 1023</td>
-            <td class="wrap2">ความเร็วในการหมุนระหว่างช่อง (PWM duty: 500 ≈ 49% power) นุ่มนวล ไม่กระชาก</td>
-          </tr>
-          <tr>
-            <td><code>overshoot</code></td>
-            <td>ระยะเวลาเลยปากราง (ms)</td>
-            <td><b>180</b></td>
-            <td>0 - 3000</td>
-            <td class="wrap2">เวลาที่ปล่อยให้หมุนเกินจุดจ่ายของช้าๆ เพื่อให้ของตกลงราง</td>
-          </tr>
-          <tr>
-            <td><code>overshoot_speed</code></td>
-            <td>ความเร็วตอนเลยปากราง</td>
-            <td><b>380</b></td>
-            <td>50 - 1023</td>
-            <td class="wrap2">ความเร็วช้าพิเศษใน Phase 1 ป้องกันของกระเด็น</td>
-          </tr>
-          <tr>
-            <td><code>return</code></td>
-            <td>ระยะเวลาโยกถอยหลัง (ms)</td>
-            <td><b>250</b></td>
-            <td>0 - 3000</td>
-            <td class="wrap2">เวลาที่หมุนถอยหลังเพื่อเขย่าคลายของที่อาจติดขอบราง</td>
-          </tr>
-          <tr>
-            <td><code>return_speed</code></td>
-            <td>ความเร็วตอนโยกถอยหลัง</td>
-            <td><b>360</b></td>
-            <td>50 - 1023</td>
-            <td class="wrap2">ความเร็วตอนถอยหลังเขย่าใน Phase 2</td>
-          </tr>
-          <tr>
-            <td><code>center_speed</code></td>
-            <td>ความเร็วคลานเข้าเซนเซอร์</td>
-            <td><b>260</b></td>
-            <td>50 - 1023</td>
-            <td class="wrap2">ความเร็วย่องแบบ Micro-Step ใน Phase 3 เพื่อหยุดตรงกลางพอดี ไม่เลยขอบ</td>
-          </tr>
-          <tr>
-            <td><code>pause</code></td>
-            <td>เวลาหยุดสังเกตของ (ms)</td>
-            <td><b>5000</b></td>
-            <td>0 - 30000</td>
-            <td class="wrap2">เวลาหยุดนิ่งที่จุดกึ่งกลาง (5 วินาที) ก่อนจบสถานะ ปรับเป็น 2000 ได้ถ้าต้องการไวขึ้น</td>
-          </tr>
-          <tr>
-            <td><code>slots</code></td>
-            <td>จำนวนช่องบนล้อ</td>
-            <td><b>4</b></td>
-            <td>1 - 64</td>
-            <td class="wrap2">จำนวนหลุมใส่แคปซูลของล้อหมุน (ตามโมเดล 3D/CAD ปัจจุบันคือ 4 ช่อง)</td>
-          </tr>
-          <tr>
-            <td><code>magnets</code></td>
-            <td>จำนวนแม่เหล็ก</td>
-            <td><b>4</b></td>
-            <td>1 - 64</td>
-            <td class="wrap2">แม่เหล็กที่ฝังใต้ช่อง (ต้องเป็นจำนวนเท่าของ slots)</td>
-          </tr>
-          <tr>
-            <td><code>timeout</code></td>
-            <td>เวลาแจ้งเครื่องติด (ms)</td>
-            <td><b>5000</b></td>
-            <td>200 - 60000</td>
-            <td class="wrap2">หากหมุนแล้วไม่เจอแม่เหล็กในเวลานี้ มอเตอร์จะตัดเพื่อความปลอดภัย (แจ้งสถานะ <code>jam</code>)</td>
-          </tr>
-          <tr>
-            <td><code>debounce</code></td>
-            <td>เวลาหน่วง Hall เซนเซอร์ (ms)</td>
-            <td><b>5</b></td>
-            <td>0 - 200</td>
-            <td class="wrap2">เวลากรองสัญญาณแม่เหล็กให้นิ่ง ป้องกันการนับเบิ้ลจากสัญญาณรบกวน</td>
-          </tr>
-          <tr>
-            <td><code>active_low</code></td>
-            <td>ขั้วสัญญาณเซนเซอร์</td>
-            <td><b>1</b></td>
-            <td>0 หรือ 1</td>
-            <td class="wrap2">1 = ดึง LOW เมื่อมีแม่เหล็ก (สำหรับเซนเซอร์ A3144 / US1881)</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+  <div class="f">
+    <h3>จำนวนช่องที่หมุนต่อการแจก (drop)</h3>
+    <p>ค่านี้กำหนดจำนวนช่องที่เครื่องหมุนในการแจกหนึ่งครั้ง <b>drop = 1</b> คือหนึ่งช่อง และ <b>drop = 2</b> คือสองช่อง ต้องเลือกตามกลไกและการทดสอบการจ่ายจริงของเครื่อง</p>
+    <p>จำนวนแม่เหล็กไม่ได้บอกระยะจากจุดรับถึงจุดปล่อยโดยลำพัง รูปนี้จึงใช้สรุปไม่ได้ว่าต้องตั้ง 1 หรือ 2 และไม่ได้กำหนดว่า 2 ใช้เฉพาะตอนโหลดของครั้งแรก</p>
   </div>
-
-  <!-- ==================== INFOGRAPHIC 4: FEATURES & MODES ==================== -->
-  <div class="f" style="border: 2px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4); background: var(--card); margin-bottom: 24px;">
-    <h3 style="font-size: 17px; margin-bottom: 12px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
-      <span>🧪</span> 4. โหมดพิเศษและการใช้งานจริง (Special Modes & Tools)
-    </h3>
-
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
-      <!-- Auto Detect -->
-      <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 14px; border-radius: var(--r-sm);">
-        <b style="color: #b45309; font-size: 14px; display: block; margin-bottom: 4px;">⚡ Auto Detect Mass (`GCALIB`)</b>
-        <p style="font-size: 12.5px; color: #92400e; margin: 0 0 8px;">
-          <b>แก้ปัญหามวลของแต่ละชิ้นไม่เท่ากัน:</b> เมื่อเปลี่ยนของรางวัลใหม่ (เช่น พวงกุญแจเหล็ก vs แคปซูลพลาสติกเบา) ให้กดปุ่มนี้ เครื่องจะหมุนสแกนหาขอบแม่เหล็กและวัดระยะเฉื่อยของมวลจริง แล้วคำนวณจุดหยุดกึ่งกลาง Hall พร้อมบันทึกลง NVS ให้อัตโนมัติทันที
-        </p>
-        <code style="font-size: 11px; background: #fef3c7; color: #78350f;">คำสั่ง: GCALIB -> OK CALIBRATED span_ms=50</code>
-      </div>
-
-      <!-- Test Machine -->
-      <div style="background: #eef2ff; border: 1px solid #c7d2fe; padding: 14px; border-radius: var(--r-sm);">
-        <b style="color: #4338ca; font-size: 14px; display: block; margin-bottom: 4px;">🧪 Machine Self-Test (`GTEST`)</b>
-        <p style="font-size: 12.5px; color: #3730a3; margin: 0 0 8px;">
-          <b>ทดสอบเครื่องก่อนเริ่มงาน:</b>
-          <br>• <b>Test 1 Pocket:</b> หมุนทดสอบ 1 ช่องพร้อมตรวจเช็กการหยุด Dead-Center
-          <br>• <b>Test 4 Pockets:</b> รันวนทดสอบรอบล้อทั้ง 4 ช่องต่อเนื่อง เพื่อยืนยันว่าทุกลูกหยุดตรงกลางแม่เหล็ก 100%
-        </p>
-        <code style="font-size: 11px; background: #e0e7ff; color: #312e81;">คำสั่ง: GTEST 1 หรือ GTEST 4</code>
-      </div>
-
-      <!-- Force Drop -->
-      <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 14px; border-radius: var(--r-sm);">
-        <b style="color: #991b1b; font-size: 14px; display: block; margin-bottom: 4px;">&#9889; Force Drop (บังคับปล่อยเพื่อทดสอบ)</b>
-        <p style="font-size: 12.5px; color: #7f1d1d; margin: 0 0 8px;">
-          <b>ทดสอบระบบได้ทุกสถานะ:</b> สั่งหมุนปล่อยของ 1 ช่องพร้อมระบบ 4-phase ทันที แม้ในกรณีที่ไม่มีของ สต็อกเป็น 0 หรือปิดอีเวนต์อยู่ เหมาะสำหรับแอดมินหรือช่างทดสอบความพร้อมของกลไก
-        </p>
-        <code style="font-size: 11px; background: #fee2e2; color: #991b1b;">คำสั่ง: GDISPENSE FORCE &lt;who&gt;</code>
-      </div>
-
-      <!-- Pulse Motor Nudge -->
-      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px; border-radius: var(--r-sm);">
-        <b style="color: #166534; font-size: 14px; display: block; margin-bottom: 4px;">Motor Diagnostic Pulse (<code>GNUDGE</code>)</b>
-        <p style="font-size: 12.5px; color: #14532d; margin: 0 0 8px;">
-          ทดสอบสั่งหมุนสั้นๆ: ส่งสัญญาณ PWM และระยะเวลา ms เพื่อขยับมอเตอร์ดูความพร้อมของกลไก
-        </p>
-        <code style="font-size: 11px; background: #dcfce7; color: #166534;">คำสั่ง: GNUDGE &lt;pwm&gt; &lt;ms&gt;</code>
-      </div>
-
-      <!-- Drain Machine -->
-      <div style="background: #fefce8; border: 1px solid #fef08a; padding: 14px; border-radius: var(--r-sm);">
-        <b style="color: #854d0e; font-size: 14px; display: block; margin-bottom: 4px;">&#127744; Drain Machine (โหมดวนปล่อยจนของหมด)</b>
-        <p style="font-size: 12.5px; color: #713f12; margin: 0 0 8px;">
-          <b>วนปล่อยต่อเนื่องอัตโนมัติ:</b> เครื่องจะแจกของทีละลูกต่อเนื่องตามลำดับ พร้อมรอบเขย่า 4-phase ในทุกลูก จนกระทั่งของในสต็อกหมดลง (Stock = 0) หรือกดปุ่ม <b>&#9209;&#65039; Stop Drain</b> เพื่อหยุดกลางคัน
-        </p>
-        <code style="font-size: 11px; background: #fef9c3; color: #854d0e;">คำสั่ง: GDRAIN [&lt;max&gt;] | STOP เพื่อยกเลิก</code>
-      </div>
-
-      <!-- Real-time Web UI -->
-      <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px; border-radius: var(--r-sm);">
-        <b style="color: #0f172a; font-size: 14px; display: block; margin-bottom: 4px;">📊 หน้าเว็บ Real-Time Status & Tuning</b>
-        <p style="font-size: 12.5px; color: #475569; margin: 0 0 8px;">
-          บนหน้าเว็บ <code>/app/gacha</code> จะมีไฟสถานะสด:
-          <br>• <b>🟢 Center:</b> ล้อหยุดตรงกลางแม่เหล็กพอดี
-          <br>• <b>Phase:</b> แสดงขั้นตอนปัจจุบัน <code>[turning]</code>, <code>[center]</code>, <code>[pause]</code>
-          <br>• <b>Pocket:</b> ตำแหน่งช่องปัจจุบัน (เช่น <code>P1/4</code>)
-          <br>• <b>⚙️ Tune:</b> แถบปรับค่าความเร็ว/เวลาได้ทันที
-        </p>
-      </div>
+  <details class="f">
+    <summary>ตั้งค่าและทดสอบกลไกของเครื่อง</summary>
+    <p>เปิด <b>Machines and kinds</b> แล้วดูเครื่องที่ต้องการ ปุ่มทดสอบและปรับจูนทำให้มอเตอร์หมุนจริง ควรตรวจพื้นที่และเตรียมรับของก่อนใช้</p>
+    <ul>
+      <li><b>ความเร็วและทิศหมุน:</b> ใช้กำหนดการขับมอเตอร์</li>
+      <li><b>ช่วงโยกไป–กลับและการเข้า Hall:</b> ใช้ปรับการหยุดหลังหมุน ต้องดูการหยุดจริงประกอบ</li>
+      <li><b>เวลาพัก:</b> ระยะรอหลังการหมุนแต่ละครั้ง</li>
+      <li><b>จำนวนช่อง / จำนวนแม่เหล็ก:</b> ตั้งให้ตรงกับชุดกลไกนี้ซึ่งมี 4 ช่องและแม่เหล็ก 4 ตัว</li>
+      <li><b>Auto Detect / Estimate Hall Advance:</b> ประเมินระยะข้ามแถบ Hall ไม่ได้วัดน้ำหนักของรางวัล</li>
+      <li><b>Test 1 Pocket, Test 4 Pockets / Test All Pockets:</b> ทดสอบทีละช่องและดูผลเมื่อเครื่องหยุด สัญญาณ Hall อย่างเดียวไม่ยืนยันความแม่นยำของจุดหยุดหรือการตกของรางวัล</li>
+      <li><b>Drain Machine:</b> ใช้วนจ่ายของออกจากเครื่อง ต้องเตรียมรับของและเฝ้าดูการทำงาน</li>
+    </ul>
+    <p>ถ้าสถานะหรือปุ่มไม่โหลด ให้แก้ปัญหาหน้าแอปก่อน ไม่ควรเปลี่ยนค่าตัวเครื่องเพื่อแก้หน้าจอ</p>
+    <div class="tech">
+      <p>สัญญาของชุดแก้ไข A47-20 ที่ต้องตรวจรวมก่อนใช้งาน:</p>
+      <ul>
+        <li><code>GCALIB</code> สแกนแถบ Hall แบบมีขีดจำกัดเวลาไม่เกิน 5 วินาที ถอยครึ่งเวลาที่วัดแล้วตรวจ Hall ขณะหยุด บันทึก advance เฉพาะเมื่อสำเร็จ ตอบรับ <code>OK calibrating</code> ไม่ใช่ผลสำเร็จสุดท้าย ดู <code>G? motion_result</code> เป็น done / jam / stopped</li>
+        <li><code>GTEST 1</code> หรือ <code>GTEST 4</code> ทดสอบทีละช่อง ดู <code>test_done / test_total</code> และผลสุดท้ายจากบอร์ด</li>
+        <li><code>GNUDGE &lt;pwm&gt; &lt;ms&gt;</code> รับเมื่อเครื่องว่าง เวลา 1–1000 ms ทำงานโดยไม่บล็อก และใช้ STOP ยกเลิกได้</li>
+        <li><code>GDRAIN [&lt;max&gt;]</code> ไม่เกิน 999 ครั้ง หยุดเมื่อถึงขีดจำกัด ของหมด ปิดงาน ติดขัด หรือ STOP หน้าเว็บต้องมีสต็อกบวกที่นับไว้ หากไม่นับสต็อกต้องระบุ max</li>
+      </ul>
     </div>
-  </div>
-
-  <!-- ==================== EXISTING SECTIONS ==================== -->
-  <h3>Several machines</h3>
-  <p>Add each machine with its board name, the kind it holds and where it stands. Machines with
-     the same kind stand in for each other: when the one asked for is empty, the next one gives
-     the prize and the robot tells the person where to go. <b>Next to</b> says which to try
-     first. A machine next to it may hold a different kind: <b>When it runs out, give instead</b>
-     (Kinds) names what a person gets in its place. <b>its own page</b> opens the machine's own
-     settings (magnets, pockets until it falls, speed) from here.</p>
-
-  <h3>Rules for an event</h3>
-  <p><b>Per kind</b>: how many there are and how many times one person may get one.
-     <b>People</b>: a person's own limit or a special guest, by the name the face app knows.
-     <b>Give one anyway</b> is for the admin: it works past the limits and is still counted.
-     The rules can come from a Google Sheet with two tabs, <b>items</b> and <b>people</b>.
-     Paste the sheet's link in the <b>Google Sheet</b> tab of the page; with the sheet's own script set up once
-     (the steps are on that tab, in Thai) the hub also writes the sheet: the rules, any tab as a table, and a row per prize.</p>
-  <div class="scroll"><table><thead><tr><th>items</th><th>people</th></tr></thead><tbody>
-    <tr><td>event, item, total, per_person, note</td><td>event, person, item, times, special, note</td></tr>
-  </tbody></table></div>
-  <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · Google Form: docs/gacha/form_sample.gs · the sheet's script: apps/gacha/sheet_script.gs ·
-     API for other apps and webhooks: docs/gacha/README.md · POST /api/gacha/dispense {item, person, app}</p>
-
-  <h3>Voice & Games Integration</h3>
-  <p>Voice ▸ Questions can trigger prizes based on question topic. All-Jao Games (wheel, quiz, claw) automatically request prizes upon win via <code>POST /api/gacha/game</code>.</p>
+  </details>
+  <p class="tech">Samples: docs/gacha/items.sample.csv, people.sample.csv · Google Form: docs/gacha/form_sample.gs · sheet script: apps/gacha/sheet_script.gs · API: docs/gacha/README.md</p>
+  <p>หน้าประวัติแยกกรณียังไม่มีรายการจากกรณีโหลดไม่ได้ เมื่อรีเฟรชล้มเหลวจะเก็บข้อมูลเดิมพร้อมข้อความว่าอาจเก่า กด Refresh เพื่อลองใหม่</p>
 </section>
 
 <!-- ===================== ALL-JAO ===================== -->
@@ -1652,6 +1440,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
     <p>Played inside the hub, a win in the wheel, claw, quiz or memory game can make a prize
        machine give a prize and tells the player where to collect it. Which result gives what is
        set on <a href="#gacha">Prize machines</a> ▸ Games that give a prize.</p></div>
+  <p>ปุ่มเปิดเกมจะเปิดแท็บไว้ก่อนตรวจความพร้อม เพื่อไม่ให้เบราว์เซอร์บล็อกหลังรอเครือข่าย หากเปิดแท็บไม่ได้ ให้อนุญาตป๊อปอัปแล้วกดลองอีกครั้ง</p>
 </section>
 
 <section id="accounts">
@@ -2338,6 +2127,7 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
   <div class="f"><h3>YAML sequence player</h3>
     <p><code>MOVE &lt;file&gt;</code> runs a sequence from <code>/moves</code>; steps that
        travel wait for arrival, others fire and continue. <code>MOVE STOP</code> ends it.</p></div>
+  <p>บอร์ดลูก RS485 ที่ต่อผ่าน Hub อีกเครื่องจะไม่แสดงตัวเลือกเขียนผ่านสายของบอร์ดแม่ หากต้องอัปเดต ให้ใช้เส้นทางที่หน้า Hub ของเครื่องนั้นรองรับ หรือ WiFi ของบอร์ดลูกเมื่อเชื่อมต่อได้</p>
 </section>
 
 <!-- ===================== LIFT ===================== -->
@@ -2377,6 +2167,12 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
        line input cannot read the digital kind of signal.
        (<code>AMP</code> sets it from the command line, <code>AMP?</code> says
        what is set.)</p></div>
+  <div class="f"><h3>หยุดเมื่อวิ่งเกินเวลา และล้างข้อผิดพลาดอย่างชัดเจน</h3>
+    <p>UP, DOWN, HOME และ GOTO มีเวลาตัดมอเตอร์อิสระทุกช่วง หากถึงกำหนดจะหยุด ยกเลิกงานที่ค้าง และแสดงข้อผิดพลาด ปุ่มเคลื่อนที่จะปิดไว้ แต่ STOP ยังใช้ได้</p>
+    <p>ตรวจกลไกและสวิตช์ กด STOP แล้วกด <b>ล้างข้อผิดพลาด</b> การล้างไม่ทำให้ลิฟต์เคลื่อนและไม่เล่นการแสดงเดิมต่อ ต้องสั่ง HOME ใหม่เมื่อต้องการอ้างอิงตำแหน่ง</p>
+    <p>ตั้งเวลาขึ้นลงและหา HOME แยกกันได้ ค่าเริ่มต้นอย่างละ 30 วินาที ช่วงที่ตั้งได้ 1–600000 มิลลิวินาที ตั้งศูนย์เพื่อปิดการป้องกันไม่ได้ ค่าเริ่มต้นยังไม่ผ่านการยืนยันกับลิฟต์จริง ต้องปรับให้เหมาะกับกลไก</p>
+    <p class="tech"><code>CFG travel_timeout_ms &lt;ms&gt;</code>, <code>CFG home_timeout_ms &lt;ms&gt;</code>; <code>FAULT?</code> อ่านเหตุ และ <code>FAULT CLEAR</code> ล้างเมื่อหยุดและอินพุตไม่ขัดแย้ง สวิตช์ค้าง LOW เพียงตัวเดียวยังแยกจากปลายทางจริงไม่ได้</p>
+  </div>
 </section>
 
 <!-- ===================== NONG ===================== -->
@@ -2717,109 +2513,118 @@ nav a.on { color: var(--acc); border-left-color: var(--acc); background: var(--a
 
 <script>
 (function(){
-  // Topic-by-topic presentation with Next / Previous navigation, plus live search.
-  var q = document.getElementById("q"), none = document.getElementById("none");
-  var secs = Array.prototype.slice.call(document.querySelectorAll("main > section[id]"));
-  var links = Array.prototype.slice.call(document.querySelectorAll("nav a[href^='#']"));
-  var byId = {};
-  links.forEach(function(a){ byId[a.getAttribute("href").slice(1)] = a; });
-
-  // 1. Build Next / Previous navigation at the foot of each section
-  secs.forEach(function(s, idx){
-    if (s.querySelector(".sec-nav")) return;
-    var nav = document.createElement("div");
-    nav.className = "sec-nav";
-    var prev = secs[idx - 1];
-    var next = secs[idx + 1];
-    if (prev) {
-      var prevHead = prev.querySelector(".shead h2");
-      var prevTitle = (prevHead ? prevHead.textContent : prev.id).replace(/^[—\s]+|[—\s]+$/g, "");
-      var aPrev = document.createElement("a");
-      aPrev.className = "sec-nav-btn sec-nav-prev";
-      aPrev.href = "#" + prev.id;
-      aPrev.innerHTML = "← ก่อนหน้า: " + prevTitle;
-      nav.appendChild(aPrev);
+  // OOP MiceHelpNavigator (A48-17) - encapsulated topic navigation, live search, and dynamic routing
+  class MiceHelpNavigator {
+    constructor() {
+      this.q = document.getElementById("q");
+      this.none = document.getElementById("none");
+      this.secs = Array.prototype.slice.call(document.querySelectorAll("main > section[id]"));
+      this.links = Array.prototype.slice.call(document.querySelectorAll("nav a[href^='#']"));
+      this.byId = {};
+      this.topicText = new Map(this.secs.map(function(s){ return [s, s.textContent.toLowerCase()]; }));
+      var self = this;
+      this.links.forEach(function(a){ self.byId[a.getAttribute("href").slice(1)] = a; });
     }
-    if (next) {
-      var nextHead = next.querySelector(".shead h2");
-      var nextTitle = (nextHead ? nextHead.textContent : next.id).replace(/^[—\s]+|[—\s]+$/g, "");
-      var aNext = document.createElement("a");
-      aNext.className = "sec-nav-btn sec-nav-next";
-      aNext.href = "#" + next.id;
-      aNext.innerHTML = "ถัดไป: " + nextTitle + " →";
-      nav.appendChild(aNext);
-    }
-    s.appendChild(nav);
-  });
 
-  // 2. Topic-by-Topic mode: display only the chosen section when not searching
-  function showTopic(id){
-    var searching = q && q.value.trim().length > 0;
-    if (!searching) {
-      if (!id || !secs.some(function(s){ return s.id === id; })) {
-        id = secs.length ? secs[0].id : "";
-      }
-      secs.forEach(function(s){
-        var active = s.id === id;
-        s.classList.toggle("pv-off", !active);
-        if (active) {
-          s.style.display = "";
-          s.querySelectorAll(".f, tbody tr, .scroll").forEach(function(el){
-            el.style.display = "";
-          });
+    // 1. Build Next / Previous navigation at the foot of each section
+    buildNav() {
+      var secs = this.secs;
+      secs.forEach(function(s, idx){
+        if (s.querySelector(".sec-nav")) return;
+        var nav = document.createElement("div");
+        nav.className = "sec-nav";
+        var prev = secs[idx - 1];
+        var next = secs[idx + 1];
+        if (prev) {
+          var prevHead = prev.querySelector(".shead h2");
+          var prevTitle = (prevHead ? prevHead.textContent : prev.id).replace(/^[—\s]+|[—\s]+$/g, "");
+          var aPrev = document.createElement("a");
+          aPrev.className = "sec-nav-btn sec-nav-prev";
+          aPrev.href = "#" + prev.id;
+          aPrev.innerHTML = "<span class='sec-nav-lbl'>← ก่อนหน้า (Previous)</span><span class='sec-nav-title'>" + prevTitle + "</span>";
+          nav.appendChild(aPrev);
+        } else {
+          var dummy = document.createElement("div");
+          dummy.className = "sec-nav-spacer";
+          nav.appendChild(dummy);
         }
-      });
-      links.forEach(function(a){
-        a.classList.toggle("on", a.getAttribute("href") === "#" + id);
-      });
-      window.scrollTo(0, 0);
-    } else {
-      secs.forEach(function(s){
-        s.classList.remove("pv-off");
+        if (next) {
+          var nextHead = next.querySelector(".shead h2");
+          var nextTitle = (nextHead ? nextHead.textContent : next.id).replace(/^[—\s]+|[—\s]+$/g, "");
+          var aNext = document.createElement("a");
+          aNext.className = "sec-nav-btn sec-nav-next";
+          aNext.href = "#" + next.id;
+          aNext.innerHTML = "<span class='sec-nav-lbl'>ถัดไป (Next) →</span><span class='sec-nav-title'>" + nextTitle + "</span>";
+          nav.appendChild(aNext);
+        }
+        s.appendChild(nav);
       });
     }
-  }
 
-  window.addEventListener("hashchange", function(){
-    showTopic(location.hash.slice(1));
-  });
+    // 2. Topic-by-Topic mode: display only the chosen section when not searching
+    showTopic(id) {
+      var searching = this.q && this.q.value.trim().length > 0;
+      var secs = this.secs, links = this.links;
+      if (!searching) {
+        if (!id || !secs.some(function(s){ return s.id === id; })) {
+          id = secs.length ? secs[0].id : "";
+        }
+        secs.forEach(function(s){
+          var active = s.id === id;
+          s.classList.toggle("pv-off", !active);
+          if (active) {
+            s.style.display = "";
+            s.querySelectorAll(".f, tbody tr, .scroll").forEach(function(el){
+              el.style.display = "";
+            });
+          }
+        });
+        links.forEach(function(a){
+          a.classList.toggle("on", a.getAttribute("href") === "#" + id);
+        });
+        window.scrollTo(0, 0);
+      } else {
+        secs.forEach(function(s){
+          s.classList.remove("pv-off");
+        });
+      }
+    }
 
-  // 3. Search: reveal all sections to filter matches, or return to topic view when cleared
-  if (q) {
-    q.addEventListener("input", function(){
-      var term = q.value.trim().toLowerCase(), any = false;
+    search(term) {
+      term = (term || "").trim().toLowerCase();
+      var any = false, secs = this.secs, topicText = this.topicText;
       if (!term) {
-        showTopic(location.hash.slice(1));
-        if (none) none.style.display = "none";
+        this.showTopic(location.hash.slice(1));
+        if (this.none) this.none.style.display = "none";
         return;
       }
       secs.forEach(function(s){
         s.classList.remove("pv-off");
-        var head = s.querySelector(".shead") ? s.querySelector(".shead").textContent.toLowerCase() : "";
-        var headHit = !!term && head.indexOf(term) >= 0;
-        var hits = 0;
-        s.querySelectorAll(".f, tbody tr").forEach(function(el){
-          var show = !term || headHit ||
-                     el.textContent.toLowerCase().indexOf(term) >= 0;
-          el.style.display = show ? "" : "none";
-          if (show) hits++;
-        });
-        var keep = hits > 0 || headHit;
+        var keep = topicText.get(s).indexOf(term) >= 0;
         s.style.display = keep ? "" : "none";
-        s.querySelectorAll(".scroll").forEach(function(box){
-          var rows = box.querySelectorAll("tbody tr");
-          var live = Array.prototype.filter.call(rows, function(r){
-            return r.style.display !== "none"; }).length;
-          box.style.display = live ? "" : "none";
-        });
         if (keep) any = true;
       });
-      if (none) none.style.display = any ? "none" : "block";
-    });
+      if (this.none) this.none.style.display = any ? "none" : "block";
+    }
+
+    init() {
+      this.buildNav();
+      var self = this;
+      window.addEventListener("hashchange", function(){
+        self.showTopic(location.hash.slice(1));
+      });
+      if (this.q) {
+        this.q.addEventListener("input", function(){
+          self.search(self.q.value);
+        });
+      }
+      this.showTopic(location.hash.slice(1));
+    }
   }
 
-  // Initial show on load
-  showTopic(location.hash.slice(1));
+  window.MiceHelpNavigator = MiceHelpNavigator;
+  window.miceHelp = new MiceHelpNavigator();
+  window.miceHelp.init();
 })();
 </script>
 </body></html>

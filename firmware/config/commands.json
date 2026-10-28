@@ -84,12 +84,14 @@
     { "name": "PERF?",   "scope": "core", "args": "",                   "query": true,  "help": "is the board keeping up: loop time, servo frame gap, free memory, resets since power-on and why the last one happened" },
 
     // ---------------- lift ----------------
-    { "name": "UP",     "scope": "lift", "args": "",                                    "motion": true, "steps": [{"key": "up", "wait": true}], "help": "run up until the limit switch or STOP" },
-    { "name": "DOWN",   "scope": "lift", "args": "",                                    "motion": true, "steps": [{"key": "down", "wait": true}], "help": "run down until the limit switch or STOP" },
+    { "name": "UP",     "scope": "lift", "args": "",                                    "motion": true, "steps": [{"key": "up", "wait": true}], "help": "run up until the limit, deadline or STOP" },
+    { "name": "DOWN",   "scope": "lift", "args": "",                                    "motion": true, "steps": [{"key": "down", "wait": true}], "help": "run down until the limit, deadline or STOP" },
     { "name": "STOP",   "scope": "lift", "args": "",                                    "motion": true,
     "safety": true, "steps": [{"key": "stop"}], "help": "stop, and cancel any GOTO" },
     { "name": "HOME",   "scope": "lift", "args": "",                                    "motion": true, "steps": [{"key": "home", "wait": true}], "help": "seek the bottom limit and zero the encoder" },
     { "name": "GOTO",   "scope": "lift", "args": "<stage>",                             "motion": true, "steps": [{"key": "goto", "wait": true}], "help": "go to a stage, homing first if the position is unknown" },
+    { "name": "FAULT?", "scope": "lift", "args": "", "query": true, "help": "latched motion fault; inspect inputs before clearing" },
+    { "name": "FAULT", "scope": "lift", "args": "CLEAR", "motion": true, "help": "clear a stopped lift fault without moving; cancels a waiting sequence" },
     { "name": "STAGE",  "scope": "lift", "args": "",                    "query": true,  "help": "alias of STAGE?" },
     { "name": "STAGE?", "scope": "lift", "args": "",                    "query": true,  "help": "which stage it is at, or -1 if not homed" },
     { "name": "SPEED",  "scope": "lift", "args": "<pwm>|<v> MS|MMS",                    "steps": [{"key": "speed"}], "help": "travel speed as PWM, or in real units" },
@@ -165,7 +167,11 @@
     { "name": "GSTOCK",    "scope": "gacha", "args": "<n>|ADD <n>|OFF",                   "help": "balls in the machine: set, add more, or stop counting" },
     { "name": "GEVENT",    "scope": "gacha", "args": "NAME <text>|OPEN|CLOSE|RESET",      "help": "the event: its name, open or closed, or clear this event's counts" },
     { "name": "GITEM",     "scope": "gacha", "args": "[<item type>]",                     "help": "which item type this machine holds (the hub matches requests to it)" },
-    { "name": "GCFG",      "scope": "gacha", "args": "<key> <value>|CLEAR",               "help": "magnets slots drop speed dir timeout debounce settle active_low; CLEAR = defaults" },
-    { "name": "GCOUNT",    "scope": "gacha", "args": "RESET",                             "help": "clear the lifetime magnet and prize counts" }
+    { "name": "GCFG",      "scope": "gacha", "args": "<key> <value>|CLEAR",               "help": "magnets slots drop speed dir timeout debounce settle active_low intake overshoot overshoot_speed return return_speed center_speed advance pause fallback; CLEAR = all defaults" },
+    { "name": "GCOUNT",    "scope": "gacha", "args": "RESET",                             "help": "clear the lifetime magnet and prize counts" },
+    { "name": "GCALIB",    "scope": "gacha", "args": "",                                  "motion": true, "help": "asynchronous bounded Hall-band advance estimate; poll G? motion_result; no mass measurement" },
+    { "name": "GTEST",     "scope": "gacha", "args": "[<pockets>]",                       "motion": true, "help": "separate settle and resting Hall verification per pocket; poll G? test_done/test_total and motion_result" },
+    { "name": "GDRAIN",    "scope": "gacha", "args": "[<max>]",                           "motion": true, "help": "bounded counted dispenses until limit, empty, closure, STOP or fault; max 1-999, explicit max for uncounted stock" },
+    { "name": "GNUDGE",    "scope": "gacha", "args": "<pwm> <ms>",                        "motion": true, "help": "idle-only asynchronous signed motor pulse, 1-1000 ms; STOP cancels; poll G? motion_result" }
   ]
 }

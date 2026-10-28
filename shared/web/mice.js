@@ -14,18 +14,34 @@
  * command and servo registries already keep. A list in this file would be a
  * second place to update, and second places do not get updated.
  */
-(function () {
-  var KEY = "mice_theme";
+class MiceThemeManager {
+  constructor(storageKey = "mice_theme") {
+    this.key = storageKey;
+    this._listeners = new Set();
+    this.init();
+  }
 
-  function themes() {
-    // Every `:root[data-theme="x"]` rule in the loaded stylesheets, in the
-    // order they are written. --theme-name and --theme-note come from inside
-    // the block itself, so a theme names itself.
+  init() {
+    var saved = this.get();
+    if (saved) {
+      document.documentElement.setAttribute("data-theme", saved);
+    }
+    // Dynamic cross-window / cross-tab theme synchronization
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", (e) => {
+        if (e.key === this.key || e.key === null) {
+          this.apply(e.newValue || "", false);
+        }
+      });
+    }
+  }
+
+  list() {
     var out = [], seen = {};
     var sheets = document.styleSheets;
     for (var i = 0; i < sheets.length; i++) {
       var rules;
-      try { rules = sheets[i].cssRules; } catch (e) { continue; }  // cross-origin
+      try { rules = sheets[i].cssRules; } catch (e) { continue; }
       if (!rules) continue;
       for (var j = 0; j < rules.length; j++) {
         var sel = rules[j].selectorText || "";
@@ -44,32 +60,36 @@
     return out;
   }
 
-  function get() {
-    try { return localStorage.getItem(KEY) || ""; } catch (e) { return ""; }
+  get() {
+    try { return localStorage.getItem(this.key) || ""; } catch (e) { return ""; }
   }
 
-  function set(id) {
-    // The attribute goes on <html>, not <body>: the page background is painted
-    // from the root element, and a theme applied to body leaves the margins
-    // and the overscroll area wearing the old one.
+  apply(id, persist = true) {
     if (id) document.documentElement.setAttribute("data-theme", id);
     else document.documentElement.removeAttribute("data-theme");
-    try { localStorage.setItem(KEY, id || ""); } catch (e) { /* private mode */ }
-    document.dispatchEvent(new CustomEvent("micetheme", { detail: { id: id } }));
+    if (persist) {
+      try { localStorage.setItem(this.key, id || ""); } catch (e) { /* private mode */ }
+    }
+    const evt = new CustomEvent("micetheme", { detail: { id: id } });
+    document.dispatchEvent(evt);
+    this._listeners.forEach(fn => {
+      try { fn(id); } catch (err) { console.error("Theme listener error:", err); }
+    });
   }
 
-  // Applied as early as this file runs, before anything is painted. A theme
-  // that arrives after the first paint is a flash of the wrong colours, which
-  // is worse than not having themes.
-  var saved = get();
-  if (saved) document.documentElement.setAttribute("data-theme", saved);
+  set(id) {
+    this.apply(id, true);
+  }
 
-  /* Build a picker wherever a page wants one. The page provides the element;
-     this fills it, because the LIST is not the page's business. */
-  function picker(el) {
+  onChange(fn) {
+    if (typeof fn === "function") this._listeners.add(fn);
+    return () => this._listeners.delete(fn);
+  }
+
+  picker(el) {
     if (!el) return null;
-    var all = themes();
-    var now = get();
+    var all = this.list();
+    var now = this.get();
     el.innerHTML = "";
     var sel = document.createElement("select");
     sel.setAttribute("aria-label", "Colour theme");
@@ -77,27 +97,29 @@
       var o = document.createElement("option");
       o.value = t.id;
       o.textContent = t.name;
-      // The DEFAULT is the first block in the file, not a name written here.
-      // Naming it meant renaming the default theme silently preselected
-      // nothing - which is the one thing this file promised could not happen.
       if (t.id === now || (!now && t === all[0])) o.selected = true;
       sel.appendChild(o);
     });
     var note = document.createElement("span");
     note.className = "mini";
-    function say() {
+    var say = () => {
       var t = all.filter(function (x) { return x.id === sel.value; })[0];
       note.textContent = t && t.note ? t.note : "";
-    }
-    sel.onchange = function () { set(sel.value); say(); };
+    };
+    sel.onchange = () => { this.set(sel.value); say(); };
     el.appendChild(sel);
     el.appendChild(note);
+    this.onChange(id => {
+      sel.value = id || (all[0] && all[0].id) || "";
+      say();
+    });
     say();
     return sel;
   }
+}
 
-  window.miceTheme = { list: themes, get: get, set: set, picker: picker };
-})();
+window.MiceThemeManager = MiceThemeManager;
+window.miceTheme = new MiceThemeManager();
 
 
 /* ONE ANSWER TO -CAN I DRIVE THE ROBOT- , FOR ALL THREE SCREENS.

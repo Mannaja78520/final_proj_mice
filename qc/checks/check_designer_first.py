@@ -55,26 +55,28 @@ class VisibleText(HTMLParser):
 
     SKIP_TAGS = {"script", "style"}
 
+    VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input",
+                 "link", "meta", "param", "source", "track", "wbr"}
+
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.parts = []
-        self.skip = 0
+        self.stack = []
 
     def handle_starttag(self, tag, attrs):
-        if tag in self.SKIP_TAGS:
-            self.skip += 1
-            return
-        cls = dict(attrs).get("class", "").split()
-        if "tech" in cls:
-            self.skip += 1
+        hidden = bool(self.stack and self.stack[-1][1])
+        hidden = hidden or tag in self.SKIP_TAGS or "tech" in dict(attrs).get("class", "").split()
+        if tag not in self.VOID_TAGS:
+            self.stack.append((tag, hidden))
 
     def handle_endtag(self, tag):
-        if tag in self.SKIP_TAGS and self.skip:
-            # void-tag paranoia is unneeded: these two are always paired here
-            self.skip -= 1
+        for i in range(len(self.stack) - 1, -1, -1):
+            if self.stack[i][0] == tag:
+                del self.stack[i:]
+                break
 
     def handle_data(self, data):
-        if not self.skip:
+        if not self.stack or not self.stack[-1][1]:
             self.parts.append(data)
 
 
@@ -84,13 +86,36 @@ def visible_text(path):
     return " ".join(p.parts).lower()
 
 
+def literal_text(src):
+    # A typeof operand names a JS type, never visitor-facing copy. Keep all
+    # other string literals (including notices that say "undefined").
+    found = re.finditer(r'"([^"\n]*)"|\'([^\'\n]*)\'|`([^`\n]*)`', src)
+    parts = []
+    for match in found:
+        value = next(v for v in match.groups() if v is not None)
+        prefix = src[max(0, match.start() - 160):match.start()]
+        if value == "undefined" and re.search(
+                r"\btypeof\s+[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\s*(?:===?|!==?)\s*$", prefix):
+            continue
+        parts.append(value)
+    return " ".join(parts).lower()
+
+
 def js_strings(path):
-    src = io.open(path, encoding="utf-8", newline="").read()
-    found = re.findall(r'"([^"\n]*)"|\'([^\'\n]*)\'|`([^`\n]*)`', src)
-    return " ".join(a or b or c for a, b, c in found).lower()
+    return literal_text(io.open(path, encoding="utf-8", newline="").read())
 
 
 def run(t):
+    parser = VisibleText()
+    parser.feed('<div class="tech">hidden <b>undefined</b><input><br></div>'
+                '<p>visible undefined <span>after</span></p>'
+                '<script>hidden script</script><p>last</p>')
+    t.eq(" ".join(parser.parts).split(), ["visible", "undefined", "after", "last"],
+         "technical subtrees and void tags cannot hide later visitor text")
+    t.eq(literal_text("typeof Mice !== 'undefined' && typeof window.Mice == \"undefined\""), "",
+         "JS type operands are not visitor messages")
+    t.eq(literal_text("notice('undefined'); const hint = 'undefined';"), "undefined undefined",
+         "actual message literals remain subject to the banned-word check")
     store = json.loads(WORDS_PATH.read_text(encoding="utf-8"))
     banned = [w.lower() for w in store.get("banned", [])]
     t.ok(len(banned) >= 5, "the word list has real words in it")

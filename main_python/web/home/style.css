@@ -143,13 +143,16 @@
 .pbar i{display:block;height:100%;width:0;background:var(--acc);transition:width 150ms}
 @media (max-width:430px){.flash{margin-left:0}.flash select{flex:1 1 100%}}
 @media (pointer:coarse){.flash select{padding:9px 10px}}
-/* A tool is a destination: its description gets room and its action stays quiet. */
+/* A single grid preserves registry order without empty category columns. */
 .js-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:var(--sp-3);margin-top:var(--sp-4)}
-.mod.tool-tile{display:grid;grid-template-columns:1fr auto;border-left:1px solid var(--line);padding:var(--sp-4);margin:0;gap:var(--sp-2)}
-.tool-tile .nm{grid-column:1/-1}
-.tool-tile .ip{grid-column:1/-1;white-space:normal;overflow:visible;line-height:1.5;min-height:3em}
-.tool-tile button{text-align:left}
-.tool-tile .tab-link{font-size:12px;padding:var(--sp-2);border:0}
+.mod.tool-tile{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto;padding:var(--sp-4);margin:0;gap:var(--sp-2);min-width:0}
+.tool-tile .nm,.tool-tile .ip{white-space:normal;overflow:visible;overflow-wrap:anywhere}
+.tool-tile .ip{line-height:1.5}
+.tool-open{display:flex;align-items:center;justify-content:center;min-height:44px;text-decoration:none;margin-top:var(--sp-1);background:var(--btn);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--txt);font-weight:600}
+.tool-open:hover{border-color:var(--acc)}
+.tool-state{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3)}
+.tool-state .tech{flex-basis:100%;overflow-wrap:anywhere}
+.tool-state button{min-height:44px}
 #tabs{padding:var(--sp-2);background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-lg);margin:var(--sp-4) 0 var(--sp-6);
   flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}
 /* ONE line of tabs (A41-3). Seven fit at 1280 px; a phone slides the row

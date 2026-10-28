@@ -92,32 +92,36 @@ async function loadNet(){
   netBusy = true;
   box.className = 'spin'; box.textContent = 'looking for modules…';
   var out = [], failed = 0;
+  const read = async function(url){
+    const response = await fetch(url), data = await response.json();
+    if(!response.ok || data.ok === false) throw new Error(data.error || 'scan failed');
+    return data;
+  };
   try{
-    var r = await fetch('/api/scan').then(x=>x.json());
+    var r = await read('/api/scan');
     (r.modules||[]).forEach(function(m){
-      out.push({dev:'wifi:'+m.ip, label:m.name, type:m.type, via:m.ip, group:m.group||''});
+      out.push({chip:m.chip, dev:'wifi:'+m.ip, label:m.name, type:m.type, via:m.ip, group:m.group||''});
     });
   }catch(e){ failed++; }
   try{
     // /api/ports is only the TYPED port list — it carries no identity until a
     // port is actually probed, so reading it alone showed every module as
     // unnamed and ungrouped. /api/scanusb is what opens the cable and asks.
-    var p = await fetch('/api/ports').then(x=>x.json());
+    var p = await read('/api/ports');
     var real = (p.ports||[]).filter(function(x){ return !x.bt; });
     var probes = real.map(function(x){
-      return fetch('/api/scanusb?port='+encodeURIComponent(x.port))
-        .then(function(r){ return r.json(); })
+      return read('/api/scanusb?port='+encodeURIComponent(x.port))
         .then(function(r){ return (r.usb&&r.usb[0])||null; })
-        .catch(function(){ return null; });
+        .catch(function(){ failed++; return null; });
     });
     (await Promise.all(probes)).forEach(function(u){
       if(!u || !u.module) return;
-      out.push({dev:'usb:'+u.port, label:u.module.name||u.port,
+      out.push({chip:u.module.chip, dev:'usb:'+u.port, label:u.module.name||u.port,
                 type:u.module.type||'', via:u.port,
                 group:u.module.group||''});
       // modules living BEHIND this one on RS485 count too
       (u.rs485||[]).forEach(function(b){
-        out.push({dev:'usb:'+u.port+':'+b.id, label:b.name||('id '+b.id),
+        out.push({chip:b.chip, dev:'usb:'+u.port+':'+b.id, label:b.name||('id '+b.id),
                   type:b.type||'', via:u.port+' #'+b.id, group:b.group||''});
       });
     });
@@ -126,7 +130,7 @@ async function loadNet(){
   // the same module can answer on WiFi AND on its cable — show it once
   var seen = {}, uniq = [];
   out.forEach(function(m){
-    var k = m.label + '|' + m.type;
+    var k = m.chip ? 'chip:' + m.chip : m.dev;
     if(seen[k]) return;
     seen[k] = 1; uniq.push(m);
   });
@@ -136,7 +140,7 @@ async function loadNet(){
     // "Nothing found" and "could not look" are different facts, and saying the
     // first when the second is true is the page lying to the reader. Both
     // scans failing used to render as a confident empty list.
-    if(failed >= 2){
+    if(failed > 0){
       box.setAttribute('role','alert');
       box.innerHTML = 'Could not look for modules — the hub did not answer. '
         + 'Please check if it is running. '
@@ -149,6 +153,8 @@ async function loadNet(){
     return;
   }
   box.removeAttribute('role');
+  const notice = document.getElementById('netNotice');
+  if(notice) notice.textContent = failed ? 'Some modules could not be checked. Press Refresh to try again.' : '';
   box.className = '';
   box.innerHTML = uniq.map(function(m,i){
     return '<label class="netrow" id="netrow'+i+'">'+
@@ -184,7 +190,7 @@ function netPick(){
       '<button onclick="linkSel()">🔗 Link these</button>'+
       '<button class="danger" onclick="unlinkSel()" title="Remove the ticked modules from their '+
       'group. They go back to the shared fallback password.">✂ Unlink the ticked modules</button>'+
-    '</div><div id="grpout" class="mini" style="margin-top:8px"></div>';
+    '</div>';
 }
 
 async function groupCmd(dev, cmd){

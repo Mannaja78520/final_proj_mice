@@ -68,6 +68,13 @@ def run(t):
         s.build(tmp)
         t.ok(not [b for b in s.verify(tmp) if "nobody owns" in b],
              "a scratch tree built from the map starts sound")
+        before = s.files(tmp, s.load(tmp))
+        problems_before = s.verify(tmp)
+        artifact = tmp / "qc" / "_urdf_real.json"
+        artifact.write_text("{}")
+        t.eq(s.files(tmp, s.load(tmp)), before,
+             "the generated private URDF diagnostic is not source inventory")
+        t.eq(s.verify(tmp), problems_before, "a QC-generated diagnostic cannot stale system headers")
         (tmp / "brand_new_thing").mkdir()
         (tmp / "brand_new_thing" / "x.py").write_text("")
         t.ok(any("nobody owns brand_new_thing/x.py" in b for b in s.verify(tmp)),
