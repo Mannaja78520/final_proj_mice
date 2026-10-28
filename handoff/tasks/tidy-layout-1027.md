@@ -48,7 +48,7 @@ Baseline: e1eaefd (PR #93 merged). PR 2 = A51-2.
 
 ## Next
 1. PC steps after #93 merges, ONLY when coordinator says the PC is quiet (RL running): pull; move the 20 `.staging-*` trees into `.staging/<name>` (move, no delete); move build.bat to _out/.
-2. PR 2 (A51-2): code done, quick QC green; open draft PR, full QC, tell coordinator, merge. After merge the PC must rebuild MiceHub.exe.
+2. PR 2 (A51-2) = PR #95, full QC 8887/6 (5 = main container chromium timeouts, rs485_census green alone). After merge the PC must pull + rebuild MiceHub.exe.
 3. Later with user OK: rename code -> mice_system, move parent-folder items (plan file section 3).
 
 ## Blocked
