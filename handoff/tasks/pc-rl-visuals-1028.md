@@ -17,7 +17,21 @@ RL full run in the background (detached PowerShell, survives this session):
 `.local/rl_compare/run_rest.ps1`, log `.local/rl_compare/rl_rest.log` (UTF-16; read with
 `Get-Content -Encoding Unicode`). Order: the 11 unfinished sets, then
 come_and_cheer_left_v2/firmware_5mm last (restarts from round 1: no resume yet), then `--report`.
-Ends with the line `ALL DONE`. Started 19:47 Bangkok, ~40 min per set, expect ~03:30.
+Ends with the line `ALL DONE`. Started 19:47 Bangkok; sets take 56-77 min (CPU/GPU shared), 6/11 done at 02:50.
+YOLO pose (A52-3 step 3) on the same GPU: `.local/robot_pose/train/train.py n 16` in the venv
+`.local/yolo_venv` (system CUDA torch 2.11 + torchvision 0.26 cu128 + ultralytics 8.4.191),
+train = 20k renders, val = 36 LAB frames (`dataset_labval.yaml`), ~3 min/epoch, log train_n.log,
+result_yolo11n.json. Then `train.py s`, then step 4 on `.local/lab_1028/ccl_v5_cap060.mp4`
+(ccl_v5_p060.mp4 is only the aborted crash clip, not the cap-60 run).
+
+Queued after RL + YOLO (coordinator 2026-10-29): pull main once PR #104 merged, close every program
+in code, run section 5 of layout/pc_steps_A51-1.md (tools/tidy_pc.py from E:\final_proj\mice, fresh
+PowerShell; user approved code->mice_system rename + photobooth moves). First check the gachapon
+back-wall-cover thread has finished in E:\final_proj\mice\model. Report the new RC start command.
+
+.staging tidy 2026-10-29: 12 merged trees moved to `_out\staging_merged\` (worktree links repaired);
+unique work pushed to rescue/voice-speed-unpushed-1029 and rescue/profiles-uncommitted-1029.
+Left in .staging: main + 9 for the user (audit: .local/staging_audit_1029.txt).
 
 ## File status
 Baseline: origin/claude/lab-robot-1028 0266cec.
