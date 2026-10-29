@@ -74,6 +74,7 @@ class Case:
         poses.unlink()
         v = json.loads(verdict.read_text(encoding="utf-8"))
         flags = np.array(v.pop("flags"), bool)
+        self.last_flags = np.repeat(flags, 2)[:len(q)]          # per board frame, for to_sequence's refine
         v["flaggedS"] = float(flags.sum() * 2 / self.hz)
         v["gapMm"] = self.gap
         verdict.write_text(json.dumps(v, ensure_ascii=False), encoding="utf-8")

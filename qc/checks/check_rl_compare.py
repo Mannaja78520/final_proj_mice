@@ -21,7 +21,11 @@ the yardstick, on synthetic dances (the real cheer data is private on the PC):
   2026-10-29), a longer run stays held and weight 0, and scores still count
   trusted samples only;
 - the shared smoothing stage keeps a move on the music clock (zero phase) and
-  takes the jitter out.
+  takes the jitter out;
+- to_sequence thins the sim motion to keys within tolDeg, keeps each key's
+  time, and splits the board file into chained files that each re-ask the
+  pace, no more than the board follows (MAX_CHAIN) (user 2026-10-29: run RL
+  on the robot; a 30 KB file crashed MOVE on 2026-10-28).
 Without torch installed (the PC before `pip install torch`) only the parts
 that need no torch are run, and that is said.
 """
@@ -79,6 +83,34 @@ def gaps_and_smoothing(t, np):
          f"midpoint frame {half(sm)} vs {half(move)}, jerk {jerk(sm):.2f} vs {jerk(noisy):.2f}")
 
 
+def sequence_export(t, np, cfg):
+    from types import SimpleNamespace
+    from tools.rl_compare.to_sequence import SequenceExport, thin
+    hz = 50
+    k = np.arange(10 * hz) / hz
+    c = np.stack([60 + 30 * np.sin(2 * np.pi * 0.7 * k + j) for j in range(10)], 1)
+    sc = cfg["sequence"]
+    idx = thin(c, sc["tolDeg"], 2)
+    line = np.concatenate([c[a] + (c[b] - c[a]) * np.linspace(0, 1, b - a + 1)[:-1, None] for a, b in zip(idx, idx[1:])] + [c[-1:]])
+    miss = float(np.abs(line - c).max())
+    t.ok(idx[0] == 0 and idx[-1] == len(c) - 1 and miss <= sc["tolDeg"] + 1e-9 and len(idx) < len(c) / 3,
+         "the sim motion is thinned to keys that stay within tolDeg", f"{len(idx)} keys, worst {miss:.2f} deg")
+    ex = SequenceExport(SimpleNamespace(hz=hz), sc)
+    keys = ex.keys(c, idx)
+    t.ok(sum(x["t"] for x in keys[1:]) == round((len(c) - 1) * 1000 / hz), "every key keeps its time on the music clock",
+         str(sum(x["t"] for x in keys[1:])))
+    many = keys + keys * 10                                  # longer than one file can hold
+    files = ex.chunks("x_", ex.steps(many, "x.mp3"), "music 0")
+    names = sorted(files)
+    chained = all(("next: %s" % b) in files[a] for a, b in zip(names, names[1:])) and "next:" not in files[names[-1]]
+    paced = all("  - pace: music 0\n" in f for f in files.values())
+    poses = sum(f.count("- pose:") for f in files.values())
+    t.ok(len(files) <= min(sc["maxFiles"], 16) and chained and paced and poses == len(many)
+         and files[names[0]].count("- play:") == 1,
+         "the board file is split into chained files that each ask the pace, within MAX_CHAIN",
+         f"{len(files)} files, chained {chained}, paced {paced}, {poses}/{len(many)} poses")
+
+
 def run(t):
     import numpy as np
     from tools.nong_sim.board_clock import BoardClock
@@ -89,6 +121,7 @@ def run(t):
     t.ok(len(set(ids)) == len(ids), "every contender has its own id", str(ids))
     t.ok(cfg["out"].startswith(".local"), "results go to the git-ignored .local folder", cfg["out"])
     gaps_and_smoothing(t, np)
+    sequence_export(t, np, cfg)
     rig, facts = load_rig(), StudioFacts()
     rnd = random.Random(7)
     poses = [[rnd.uniform(rig["min"][i], rig["max"][i]) for i in range(10)] for _ in range(400)]

@@ -47,6 +47,7 @@
                "smooth": 0.2, "smoothScale": 4.0, "near": 0.5, "limit": 0.2, "touchEnds": true}
   },
   "hybrid": {"_what": "RL with the planner spliced in where its per-frame bone error (mean over windowS) is lower by more than marginDeg; cross-fade rampS (user 2026-10-29)", "id": "hybrid", "label": "Hybrid: RL + planner where it matches better", "color": [200, 120, 230], "from": ["rl", "planner_music"], "windowS": 0.5, "marginDeg": 5, "rampS": 0.3},
+  "sequence": {"_what": "to_sequence.py: sim motion -> board sequence (user 2026-10-29: run RL on the robot). tolDeg = how far the straight line between kept keys may miss the motion, minKeyMs = shortest step, entryMs = the move into the start pose before the music, marginMm/refineRounds = where the played file comes closer than gap + marginMm, the sim key there is kept too, up to refineRounds replays; perFile/maxFiles = chained files for the board (a 30 KB file crashed MOVE 2026-10-28; MAX_CHAIN 16)", "tolDeg": 3.0, "minKeyMs": 120, "entryMs": 2000, "marginMm": 2.0, "refineRounds": 6, "perFile": 30, "maxFiles": 15},
   "smooth": {"_what": "one shared smoothing stage after every contender (user 2026-10-29): zero-phase Savitzky-Golay on the board commands, windowS long, polynomial order; scored and filmed as <id>_smooth", "windowS": 0.24, "order": 3},
   "metrics": {"nearMm": 10, "limitDeg": 0.5},
   "video": {
