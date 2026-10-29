@@ -26,8 +26,6 @@
   "samples": 24,
   "minViaDps": 2,
   "_minViaDps": "a via speed below this is treated as a stop (0), so a joint that barely moves is not sent noise",
-  "boardLeadMs": 40,
-  "_boardLeadMs": "the hub sends a smoothed pose this much before the move in front of it ends; a board that knows VIA queues it and starts it exactly at that end, so the arm never waits for the cable",
-  "graceMs": 60,
-  "_graceMs": "mirror of NONG_VIA_GRACE_MS: a smoothed pose that arrives this late after the move before it still continues from that move's end time"
+  "boardLeadMs": 60,
+  "_boardLeadMs": "the hub sends a smoothed move this much before the move in front of it ends (PASS then POSE); a board that knows PASS waits and starts it exactly at that end, so the arm never waits for the cable. Must stay under the board's NONG_PASS_LEAD_MS (150)"
 }

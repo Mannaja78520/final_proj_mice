@@ -19,13 +19,20 @@ them); the firmware plays the result (NongMath.h curve, `VIA`).
 """
 import json
 import math
+import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-CONFIG = ROOT / "nong" / "main_python_set_nong" / "web" / "motion_smooth.json"
+PART = ("nong", "main_python_set_nong", "web", "motion_smooth.json")
+# the code tree, then (MiceHub.exe) beside the exe, its code tree, the bundle
+_ROOTS = [Path(__file__).resolve().parent.parent]
+if getattr(sys, "frozen", False):
+    _exe = Path(sys.executable).resolve().parent
+    _ROOTS = [_exe, _exe.parent, Path(getattr(sys, "_MEIPASS", "") or _exe)]
+CONFIG = next((r.joinpath(*PART) for r in _ROOTS if r.joinpath(*PART).is_file()), _ROOTS[0].joinpath(*PART))
 
 
 def load_config(path=None):
+    """motion_smooth.json; unreadable = off (every move as before)."""
     try:
         return json.loads(Path(path or CONFIG).read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -115,14 +122,14 @@ class Smoother:
         a = float(self.acc[j]) if j < len(self.acc) and self.acc[j] else 0.0
         return a * float(self.cfg.get("accScale", 1.0)) if a > 0 else math.inf
 
-    def first_guess(self, keys):
+    def first_guess(self, keys, rest=None):
         """Monotone tangents (Fritsch-Carlson, uneven spacing): 0 where a joint
         turns back, holds, stands still or at the ends."""
         n, nj = len(keys), len(keys[0]["pose"]) if keys else 0
         V = [[0.0] * nj for _ in range(n)]
         floor = float(self.cfg.get("minViaDps", 2))
         for i in range(1, n - 1):
-            if (keys[i].get("hold") or 0) > 0:
+            if (keys[i].get("hold") or 0) > 0 or (rest and rest(keys[i])):
                 continue
             h0, h1 = float(keys[i]["t"]) / 1000, float(keys[i + 1]["t"]) / 1000
             if h0 <= 0 or h1 <= 0:
@@ -185,13 +192,14 @@ class Smoother:
         big = max(abs(y - x) for x, y in zip(a, b))
         return self.cap > 0 and big * math.pi / 2 / self.cap > T
 
-    def vias(self, keys, touches=None):
+    def vias(self, keys, touches=None, rest=None):
+        """rest(key) -> True where the arm must stop anyway."""
         # without a collision check on the smoothed path it may barely leave
         # the line the checks passed (uncheckedOffLineDeg)
         self._off = float(self.cfg.get("maxOffLineDeg" if touches else "uncheckedOffLineDeg", 1))
         if len(keys) < 3:
             return [[0.0] * (len(keys[0]["pose"]) if keys else 0) for _ in keys]
-        V = self.first_guess(keys)
+        V = self.first_guess(keys, rest)
         shrink, tries = float(self.cfg.get("shrink", 0.5)), int(self.cfg.get("tries", 6))
         used = [0] * len(keys)
         # A key's via speed is shared by the move before and after it, so a
@@ -275,6 +283,33 @@ def jerk_report(keys, V=None, frame_ms=20.0):
             "keys": len(keys), "seconds": round(end / 1000, 1)}
 
 
-def via_line(v):
-    """The `via:` step value / VIA command arguments for one keyframe."""
-    return " ".join("%g" % round(x, 1) for x in v)
+def pass_values(V, i):
+    """PASS for the move INTO key i: the speeds it starts with, then the
+    speeds it ends with (deg/s, 2 x joints). The board plays the curve only
+    when the arm really is moving at the start speeds (the move before ended
+    as planned); otherwise the old cosine from rest, so a lengthened or
+    resumed move can never start off its curve. None when the move rests at
+    both ends."""
+    if not V or i <= 0 or not (any(V[i - 1]) or any(V[i])):
+        return None
+    return [float(x) for x in list(V[i - 1]) + list(V[i])]
+
+
+def pass_line(values):
+    """The `pass:` step value / PASS command arguments."""
+    return " ".join("%g" % (round(x, 1) + 0.0) for x in values)
+
+
+def add_pass(steps, rig=None, source="hub", cfg=None, cap_dps=0.0):
+    """Give every step a `pass` (the hub's shape) when this source is smoothed.
+    For makers with no collision check of their own on the curve (the hub's
+    gestures): the path leaves the checked line by at most uncheckedOffLineDeg."""
+    cfg = cfg if cfg is not None else load_config()
+    if not enabled(cfg, source) or len(steps) < 3:
+        return steps
+    V = Smoother(cfg, rig, cap_dps).vias(steps)
+    for i, s in enumerate(steps):
+        p = pass_values(V, i)
+        if p:
+            s["pass"] = p
+    return steps

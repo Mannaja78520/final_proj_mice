@@ -296,6 +296,7 @@ uint32_t NongModule::minDuration(const float tgt[N]) const {
 }
 
 void NongModule::startMove(const float tgt[N], uint32_t ms) {
+    forgetPass();
     float clamped[N];
     for (int i = 0; i < N; i++) clamped[i] = clampJoint(i, tgt[i]);
     uint32_t minMs = minDuration(clamped);
@@ -304,7 +305,57 @@ void NongModule::startMove(const float tgt[N], uint32_t ms) {
         target_[i] = clamped[i];
     }
     moveStart_ = millis();
-    moveDur_ = max(ms, minMs);
+    moveDur_ = askedDur_ = max(ms, minMs);
+    moving_ = true;
+}
+
+void NongModule::forgetPass() {
+    passPending_ = queued_ = false;
+    for (int i = 0; i < N; i++) v0_[i] = v1_[i] = 0.0f;
+}
+
+// A pose that came after PASS (A54-1): played as the planned curve only when
+// it really continues the move in front of it - it starts where and when that
+// one ends, at the speeds that one ends with - takes exactly the time asked
+// (no floor lengthened it) and keeps every joint under its speed limits.
+// Anything else returns false and the caller plays the plain cosine from
+// rest, exactly the move an old board makes.
+bool NongModule::passMove(const float tgt[N], uint32_t ms) {
+    passPending_ = false;
+    const uint32_t now = millis(), endAt = moveStart_ + moveDur_;
+    const long left = (long)(endAt - now);              // > 0: still moving
+    if (moving_ ? (queued_ || left > NONG_PASS_LEAD_MS) : -left > NONG_PASS_GRACE_MS)
+        return false;
+    float clamped[N];
+    for (int i = 0; i < N; i++) clamped[i] = clampJoint(i, tgt[i]);
+    // v1_: the speeds the move in front ends with (0 for a cosine one)
+    if (!nongmath::passStarts(v1_, passFrom_, N, NONG_PASS_TOL_DPS)) return false;
+    // measured from where THIS move starts: the end of the one in front
+    const float cap = musicPace_ ? paceCap() : safeDps_;
+    if (ms < nongmath::moveFloor(target_, clamped, maxDps_, N, NONG_MIN_MOVE_MS, cap)) return false;
+    if (!nongmath::passFits(target_, clamped, passFrom_, passTo_, N, ms / 1000.0f, maxDps_, cap))
+        return false;
+    for (int i = 0; i < N; i++) {
+        qTarget_[i] = clamped[i]; qV0_[i] = passFrom_[i]; qV1_[i] = passTo_[i];
+    }
+    qDur_ = ms;
+    queued_ = true;
+    askedDur_ = ms;
+    // up to GRACE late: it continues from the end time, as if it came on time
+    if (!moving_) beginQueued(endAt);
+    return true;
+}
+
+// the waiting pose starts exactly where and when the move in front ended
+void NongModule::beginQueued(uint32_t at) {
+    for (int i = 0; i < N; i++) {
+        from_[i] = target_[i];
+        target_[i] = qTarget_[i];
+        v0_[i] = qV0_[i]; v1_[i] = qV1_[i];
+    }
+    moveStart_ = at;
+    moveDur_ = qDur_;
+    queued_ = false;
     moving_ = true;
 }
 
@@ -349,6 +400,11 @@ void NongModule::loop() {
             if (now - moveStart_ >= 20) perf::frame(now - lastTick_);
             lastTick_ = now;
             float t = (float)(now - moveStart_) / (float)moveDur_;
+            // a PASS pose waiting behind this move starts on its end time
+            if (t >= 1.0f && queued_) {
+                beginQueued(moveStart_ + moveDur_);
+                t = (float)(now - moveStart_) / (float)moveDur_;
+            }
             if (t >= 1.0f) { t = 1.0f; moving_ = false; }
             // The SHAPE OF EVERY MOVE, from the one place that defines it.
             // This was the same cosine written out again - and without the
@@ -356,9 +412,10 @@ void NongModule::loop() {
             // (a move whose start time is in the future, which a show clock
             // can produce) would have driven the joint backwards past where
             // it started.
-            float e = nongmath::ease(t);
+            // the cosine, or the PASS curve through its start/end speeds
+            const float Tsec = moveDur_ / 1000.0f;
             for (int i = 0; i < N; i++)
-                cur_[i] = from_[i] + (target_[i] - from_[i]) * e;
+                cur_[i] = nongmath::curve(from_[i], target_[i], v0_[i], v1_[i], Tsec, t);
             writeServos();
         }
     }
@@ -400,13 +457,14 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
             tgt[i] = (tok == "-" || tok == "~") ? target_[i] : clampJoint(i, tok.toFloat());
         }
         uint32_t dur = ms > 0 ? (uint32_t)ms : durationFor(tgt);
-        startMove(tgt, dur);
+        // after PASS: the curve through the keyframe when it may (passMove)
+        if (!(passPending_ && passMove(tgt, dur))) startMove(tgt, dur);
         // forward the RESOLVED full pose so every linked board uses the same
         // values and duration (and gets all N joints even from a short command)
         String fwd = "POSE";
         for (int i = 0; i < N; i++) fwd += " " + String(tgt[i], 1);
-        forward(fwd + " T " + String(moveDur_));
-        reply = "OK pose T=" + String(moveDur_) + "ms";
+        forward(fwd + " T " + String(askedDur_));
+        reply = "OK pose T=" + String(askedDur_) + "ms";
         return true;
     }
     if (cmd == "JOINT") {
@@ -423,8 +481,8 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
             if (u == "T") ms = argv[4].toInt();
         }
         startMove(tgt, ms > 0 ? (uint32_t)ms : durationFor(tgt));
-        forward("JOINT " + String(j + 1) + " " + String(tgt[j], 1) + " T " + String(moveDur_));
-        reply = "OK " + String(JOINT_NAMES[j]) + "=" + String(tgt[j], 1) + " T=" + String(moveDur_) + "ms";
+        forward("JOINT " + String(j + 1) + " " + String(tgt[j], 1) + " T " + String(askedDur_));
+        reply = "OK " + String(JOINT_NAMES[j]) + "=" + String(tgt[j], 1) + " T=" + String(askedDur_) + "ms";
         return true;
     }
     if (cmd == "HOME" || cmd == "ZERO") {  // ZERO = move to the zero position
@@ -435,8 +493,8 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
             if (u == "T") ms = argv[2].toInt();
         }
         startMove(neutral_, ms > 0 ? (uint32_t)ms : durationFor(neutral_));
-        forward("HOME T " + String(moveDur_));
-        reply = "OK home T=" + String(moveDur_) + "ms";
+        forward("HOME T " + String(askedDur_));
+        reply = "OK home T=" + String(askedDur_) + "ms";
         return true;
     }
     // NEUTRAL [<1-10|name|ALL> <deg>] | <a1..a10> — the pose the arm goes to on
@@ -547,6 +605,7 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
             cur_[i] = from_[i] = target_[i] = neutral_[i];
         }
         moving_ = false;
+        forgetPass();
         writeServos();  // holds the same physical position (trim compensates)
         saveCal();
         forward("SETZERO");
@@ -574,6 +633,7 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
         }
         attached_ = false;
         moving_ = false;
+        forgetPass();
         forward("RELAX");
         reply = "OK relaxed (servos limp)";
         return true;
@@ -669,10 +729,29 @@ bool NongModule::handleCommand(String argv[], int argc, String& reply) {
         // freeze mid-move: current interpolated pose becomes the target
         for (int i = 0; i < N; i++) target_[i] = cur_[i];
         moving_ = false;
+        forgetPass();
         musicPace_ = false; paceDps_ = -1.0f; // the panic button also ends a fast music pace
         silence();          // A24-18: still AND quiet
         forward("STOP");    // the partner board stops and goes quiet too
         reply = "OK stopped";
+        return true;
+    }
+    if (cmd == "PASS") {
+        // A54-1: the next POSE starts at the first N speeds and ends at the
+        // last N (deg/s per joint), passing its keyframe instead of stopping
+        // on it. Bare PASS forgets them. A pose that cannot follow the curve
+        // safely is played as the ordinary cosine (passMove).
+        if (argc == 1) { passPending_ = false; reply = "OK pass off"; forward("PASS"); return true; }
+        if (argc != 2 * N + 1) { reply = "ERR usage: PASS <start a1..a10> <end a1..a10> (deg/s)"; return true; }
+        String fwd = "PASS";
+        for (int i = 0; i < N; i++) {
+            passFrom_[i] = argv[1 + i].toFloat();
+            passTo_[i] = argv[1 + N + i].toFloat();
+        }
+        for (int i = 1; i < argc; i++) fwd += " " + argv[i];
+        passPending_ = true;
+        forward(fwd);
+        reply = "OK pass";
         return true;
     }
     if (cmd == "PACE" || cmd == "PACE?") {
@@ -964,6 +1043,7 @@ void NongModule::addCapabilities(JsonArray caps) {
     caps.add("servos");       // per-joint servo type, gear, pulse, travel, rate
     caps.add("calibration");  // SETZERO / CAL
     caps.add("audio");        // the speaker card (A7-9), same as lift
+    caps.add("pass");         // PASS: moves pass through keyframes (A54-1)
     if (link_) caps.add("link");
 }
 
