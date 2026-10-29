@@ -25,7 +25,11 @@ the yardstick, on synthetic dances (the real cheer data is private on the PC):
 - to_sequence thins the sim motion to keys within tolDeg, keeps each key's
   time, and splits the board file into chained files that each re-ask the
   pace, no more than the board follows (MAX_CHAIN) (user 2026-10-29: run RL
-  on the robot; a 30 KB file crashed MOVE on 2026-10-28).
+  on the robot; a 30 KB file crashed MOVE on 2026-10-28);
+- reach fitting (user 2026-10-29: look like the dancer's lift, the shoulder
+  stop keeps an exact copy out of reach) leaves low arms alone, brings every
+  lift within the robot's reach, keeps lifts ordered by height and keeps the
+  elbow bend.
 Without torch installed (the PC before `pip install torch`) only the parts
 that need no torch are run, and that is said.
 """
@@ -111,6 +115,39 @@ def sequence_export(t, np, cfg):
          f"{len(files)} files, chained {chained}, paced {paced}, {poses}/{len(many)} poses")
 
 
+def reach_fitting(t, np, kin, rig, cfg):
+    from tools.rl_compare.reach import ArmReach, azimuth, elevation
+    from tools.rl_compare.reference import Dance
+    rc = dict(cfg["reach"], samples=100000)
+    reach = ArmReach(kin, rig, rc)
+    n = 72
+    e = np.radians(np.linspace(-80, 85, n))                     # every height, every direction
+    az = np.radians(np.linspace(-180, 175, n) * 7 % 360 - 180)
+    up = np.stack([np.cos(e) * np.sin(az), np.sin(e), np.cos(e) * np.cos(az)], -1)
+    fore = up * 0.6 + np.array([0, -0.8, 0])                       # a bent elbow
+    fore /= np.linalg.norm(fore, axis=-1, keepdims=True)
+    bones = np.stack([np.stack([up, fore], 1)] * 2, 1)            # (n, 2 arms, 2 bones, 3)
+    d = Dance(name="reach", times=np.arange(n) / 10, bones=bones, arm_ok=np.ones((n, 2), bool), arm_fill=np.zeros((n, 2), bool),
+              body=np.zeros((n, 2)), body_ok=np.ones(n, bool), ik=np.zeros((n, 10)), start_pose=[90] * 10, project={}, source={})
+    out, _ = reach.remap(d)
+    new_e, new_up = elevation(out.bones[:, :, 0]), out.bones[:, :, 0]
+    top = np.array([reach.top[a][reach.bin(azimuth(new_up[:, a]))] for a in range(2)]).T
+    low = elevation(up) <= rc["kneeDeg"]
+    kept_low = np.abs(new_e[low] - elevation(up)[low, None]).max() if low.any() else 0
+    over = float((new_e - np.maximum(top - rc["marginDeg"], rc["kneeDeg"]))[~low].max())   # never pushed below the knee
+    bend = lambda b: np.degrees(np.arccos(np.clip((b[:, :, 0] * b[:, :, 1]).sum(-1), -1, 1)))
+    hi = ~low
+    t.ok(over <= 1e-6, "every fitted lift is within the robot's reach", f"worst {over:.2f} deg above reach - margin")
+    t.ok(float(np.abs(bend(out.bones) - bend(bones)).max()) < 1e-6, "the elbow bend is kept", "")
+    # a lift the robot can show in its own direction stays a lift (one across the body may flatten:
+    # swinging it to the other side would not look like the dancer either)
+    own = np.array([reach.top[a][reach.bin(azimuth(up))] for a in range(2)]).T
+    big = (elevation(up)[:, None].repeat(2, 1) >= rc["kneeDeg"] + 30) & (own - rc["marginDeg"] >= rc["kneeDeg"] + 10)
+    t.ok(big.any() and new_e[hi].min() > rc["kneeDeg"] - 1e-6 and (new_e[big] > rc["kneeDeg"] + 5).all(),
+         "a lift stays a lift after fitting (30 deg+ lifts the robot can show end above knee + 5 deg)",
+         f"lowest fitted big lift {new_e[big].min():.1f} deg; low arms moved at most {kept_low:.1f} deg where reachable")
+
+
 def run(t):
     import numpy as np
     from tools.nong_sim.board_clock import BoardClock
@@ -175,6 +212,7 @@ def run(t):
          f"{int(missed.sum())} missed; worst approx gap there {float(approx[flags].max()):.1f} mm, gap {gap} mm")
     home = kin.clearance(kin.points(torch.tensor([rig["home"]], dtype=torch.float64))).item()
     t.ok(home > gap, "home is clear", f"{home:.1f} mm")
+    reach_fitting(t, np, kin, rig, cfg)
 
     # a synthetic dance: a smooth wander through safe poses, the dancer = the rig itself
     safe = [p for p, f in zip(poses, flags) if not f][:8]

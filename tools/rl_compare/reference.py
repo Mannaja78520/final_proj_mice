@@ -29,6 +29,7 @@ class Dance:
     start_pose: list         # the first key: both contenders start the song here
     project: dict            # the Studio project (video options, rig)
     source: dict             # video id, from/to s in the source video
+    raw_bones: np.ndarray = None   # the dancer's own bones when `bones` was fitted to the reach (reach.py)
 
     @property
     def length(self):
