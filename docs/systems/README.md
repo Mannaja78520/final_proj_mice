@@ -24,6 +24,7 @@ Generated from `docs/systems.json` by `tools/systems.py build`.
 | [hub-web](hub-web.md) | The pages the hub serves: Home/Modules, help, login, and their patch snapshots. |
 | [shared-web](shared-web.md) | One stylesheet and theme set for every page (mice.css, themes), and the page parts every hub page is built from (mice-ui.js; guide docs/web_style.md). |
 | [studio](studio.md) | Nong Studio: pose editor, timeline, 3D monitor. |
+| [motion-smooth](motion-smooth.md) | One smoothing stage for every move (A54-1): pass through keyframes instead of stopping on each. Python core, Studio's twin (nong/.../app_parts/motion_smooth.js, motion_smooth.json), the board's PASS (fw-nong), the tool for files made elsewhere. |
 | [nong-sim](nong-sim.md) | Optional MuJoCo world: any number of Nongs play Studio sequences with servo lag, gravity and the board's clock (tools/nong_sim, user 2026-10-27). Nothing else needs it. |
 | [robot-pose](robot-pose.md) | nong's own skeleton from a camera (A52-3, user 2026-10-28): keypoints on Studio's rig, camera + joint-angle fit, front/back/left/right, seen-vs-commanded check, calibration suggestions, synthetic YOLO-pose labels (tools/robot_pose). Nothing else needs it. |
 | [rl-compare](rl-compare.md) | Separate experiment: RL imitation policy vs Studio's video planner on the cheer v2 dances, same servo model and collision gap, scores + side-by-side videos (tools/rl_compare, user 2026-10-27). Nothing else needs it. |
