@@ -1194,6 +1194,7 @@ def seq_steps(text):
     cur_speed, seq_speed = 0.0, 0.0
     name, nxt = "", ""
     pending = []                          # cues waiting for the next keyframe
+    pass_next = []                        # PASS speeds for the next keyframe
     for raw in text.splitlines():
         s = re.sub(r"#.*$", "", raw).strip()
         m = re.match(r"^name:\s*(.+)$", s)
@@ -1218,6 +1219,12 @@ def seq_steps(text):
         if m:
             if steps:
                 steps[-1]["hold"] = int(m.group(1))
+            continue
+        m = re.match(r'^-\s*pass:\s*"?([-\d.\s]+?)"?\s*$', s)
+        if m:
+            # the speeds the next move starts and ends with (A54-1): the
+            # hub's ShowPlayer sends them as PASS right before that move
+            pass_next = [float(v) for v in m.group(1).split()]
             continue
         m = re.match(r'^-\s*pose:\s*"?([\d.\s]+?)(?:\s+T\s+(\d+))?"?\s*$', s)
         if not m:
@@ -1251,7 +1258,9 @@ def seq_steps(text):
                 t = max(ShowPlayer.MIN_T,
                         int(delta / (cur_speed or seq_speed or 60.0) * 1000))
         steps.append({"pose": nums, "t": t, "hold": 0, "cues": pending})
-        pending = []
+        if len(pass_next) == 20:
+            steps[-1]["pass"] = pass_next
+        pending, pass_next = [], []
     if steps and pending:
         # cues after the last keyframe: they fire when the show ends
         steps[-1]["cues_after"] = pending
@@ -1530,6 +1539,26 @@ import hub_api_extensions  # noqa: E402
 hub_api_extensions.bind(sys.modules[__name__])
 import hub_api_resources  # noqa: E402
 hub_api_resources.bind(sys.modules[__name__])
+import voice_helper  # noqa: E402
+
+
+def voice_helper_settings():
+    """config/voice_helper.json, read per call; MICE_VOICE_AUTOSTART=0 (QC) wins."""
+    try:
+        got = registry.load(asset("config", "voice_helper.json")) if registry else {}
+    except Exception:                       # noqa: BLE001 - a broken file = defaults
+        got = {}
+    if os.environ.get("MICE_VOICE_AUTOSTART") == "0":
+        got = dict(got, autoStart=False)
+    return got
+
+
+# The one owner of the helper's process (A55-1): page, rig speech and Studio
+# all start it through here, so two never race for port 8767.
+VOICE_HELPER = voice_helper.VoiceHelper(
+    voice_service_url, voice_helper_settings,
+    root=asset("apps", "voice", "service.py").parents[2], data=DATA,
+    env=hub_api_resources.child_environment)
 import hub_api_support  # noqa: E402
 hub_api_support.bind(sys.modules[__name__])
 import hub_api_flash  # noqa: E402
@@ -1627,19 +1656,35 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
             # Built INSIDE the try: a bad saved address (no scheme) raises
             # here, and outside it killed the request thread with no answer.
             sent = self.body() if method == "POST" else None
-            req = urllib.request.Request(target, data=sent, method=method)
-            req.add_header("Content-Type",
-                           self.headers.get("Content-Type") or "application/json")
-            with urllib.request.urlopen(req, timeout=180) as r:
-                got = r.read()
-                if path == "/api/voice/ask":
-                    # topic log + prize for this answer (A47-3, hub_api_gacha)
-                    got = hub_api_gacha.voice_after_ask(sent, got)
-                # The helper names its own type - /say answers audio/wav,
-                # everything else json. Forcing a MIME here would turn the
-                # sound into a download the browser refuses to play.
-                return self.send_bytes(
-                    got, r.headers.get("Content-Type") or MIME[".json"])
+            ctype = self.headers.get("Content-Type") or "application/json"
+
+            def forward():
+                req = urllib.request.Request(target, data=sent, method=method)
+                req.add_header("Content-Type", ctype)
+                with urllib.request.urlopen(req, timeout=180) as r:
+                    return r.read(), r.headers.get("Content-Type")
+            try:
+                got, kind = forward()
+            except (urllib.error.URLError, OSError) as e:
+                # Nobody on the port (A55-1): start the helper. A look (GET)
+                # answers at once so the page can show "starting"; a question,
+                # a line to speak or a save waits for it and goes through.
+                if not voice_helper.refused(e) or not VOICE_HELPER.auto():
+                    raise
+                if method == "GET":
+                    started = VOICE_HELPER.start()
+                    return self.send_json({
+                        "ok": False, "starting": bool(started.get("ok")),
+                        "error": ("the voice helper was not running - starting it now"
+                                  if started.get("ok") else started.get("error"))}, 503)
+                got, kind = VOICE_HELPER.call(forward)
+            if path == "/api/voice/ask":
+                # topic log + prize for this answer (A47-3, hub_api_gacha)
+                got = hub_api_gacha.voice_after_ask(sent, got)
+            # The helper names its own type - /say answers audio/wav,
+            # everything else json. Forcing a MIME here would turn the
+            # sound into a download the browser refuses to play.
+            return self.send_bytes(got, kind or MIME[".json"])
         except urllib.error.HTTPError as e:
             # The helper's own honest error passes through with its code.
             return self.send_bytes(e.read(), MIME[".json"], e.code)
@@ -1659,9 +1704,9 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                     "it may still be loading a model. Try again in a moment.",
                     504)
             return self.send_err(
-                "the voice helper is not running on this PC (%s). Start it "
-                "from the code folder:  python apps\\voice\\service.py" % e,
-                503)
+                "the voice helper is not running on this PC (%s). Press Start "
+                "the voice helper on the Voice page, or from the code folder:  "
+                "python apps\\voice\\service.py" % e, 503)
 
     def body(self, limit=0) -> bytes:
         """The request body, optionally with a ceiling.

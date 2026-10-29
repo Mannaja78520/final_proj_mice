@@ -660,7 +660,7 @@ function vidSee(pk) {
     v.pause();
     v.currentTime = Math.min(v.duration, (+$("vidFrom").value || 0) + ms / 1000);
   }
-  pose = vidMade?.keys.length ? easeKeys(vidMade.keys, VideoRigFitter.clockForSource(vidMade.keys, ms).ms).pose : vidPoseAt(vidFit, ms).slice();
+  pose = vidMade?.keys.length ? easeKeys(vidMade.keys, VideoRigFitter.clockForSource(vidMade.keys, ms).ms, "video").pose : vidPoseAt(vidFit, ms).slice();
   poseChanged(false);
 }
 // One step (user 2026-10-22: *drop a video, the robot does it*): make the

@@ -59,9 +59,11 @@ def ask_ai_gesture(makers, text):
                        "text": text}).encode("utf-8")
     req = urllib.request.Request(base + "/gesture", data=body, method="POST",
                                  headers={"Content-Type": "application/json"})
-    try:
+    def fetch():
         with urllib.request.urlopen(req, timeout=60) as r:
-            got = json.loads(r.read().decode("utf-8"))
+            return json.loads(r.read().decode("utf-8"))
+    try:
+        got = _hub.VOICE_HELPER.call(fetch)     # not running = started (A55-1)
     except Exception as e:                  # noqa: BLE001 - helper off, old, slow
         return None, "the voice helper did not answer (%s)" % e
     if not got.get("ok"):

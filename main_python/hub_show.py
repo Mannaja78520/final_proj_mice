@@ -13,6 +13,8 @@ import re
 import threading
 import time
 
+import motion_smooth
+
 _hub = None           # the main module, set by bind()
 
 
@@ -68,6 +70,7 @@ class ShowPlayer:
         # 2026-09-27): a timer stops it at music_stop_ms on the show's clock.
         self.music_stop_ms = None
         self._music_timer = None
+        self._pass_ok = False    # this run sends PASS (A54-1): config on, board knows it
         self._misses = 0         # poses in a row with no reply, this run
 
     def _get_cmd(self):
@@ -139,7 +142,9 @@ class ShowPlayer:
                   # (`play: song.mp3`), so an editor can carry steps it does
                   # not understand; they become commands here, once.
                   "cues": cues_fn(s.get("cues")),
-                  "cues_after": cues_fn(s.get("cues_after"))}
+                  "cues_after": cues_fn(s.get("cues_after")),
+                  # the speeds this move starts and ends with (A54-1, PASS)
+                  "pass": self._pass_of(s)}
                  for s in steps]
         if len(steps) < 2:
             raise ValueError("a show needs at least two keyframes")
@@ -325,6 +330,31 @@ class ShowPlayer:
                 self.error = str(e)
             self._quiet_after_failure(flag)
 
+    @staticmethod
+    def _pass_of(step):
+        """A step's PASS speeds (start then end, 10 + 10 deg/s), or None."""
+        v = step.get("pass")
+        if not isinstance(v, (list, tuple)) or len(v) != 20:
+            return None
+        try:
+            v = [float(x) for x in v]
+        except (TypeError, ValueError):
+            return None
+        return v if any(v) and all(abs(x) < 2000 for x in v) else None
+
+    def _pass_cmd(self, step):
+        """Send PASS before this move when it has speeds and the board knows
+        PASS. An old board answers ERR to the unknown word: the run then
+        stops sending it and the moves stop on their keys as before."""
+        if not step.get("pass") or not self._pass_ok:
+            return
+        try:
+            reply = self._say("PASS " + motion_smooth.pass_line(step["pass"]))
+        except OSError:
+            return
+        if not str(reply or "").startswith("OK"):
+            self._pass_ok = False
+
     def _move(self, flag, pose, t):
         """Send one pose; a missing reply is counted, not fatal (MAX_MISSES)."""
         try:
@@ -355,6 +385,11 @@ class ShowPlayer:
 
     def _play_once(self, flag):
         """One pass through the steps, from self.at_ms. False = stopped."""
+        cfg = motion_smooth.load_config()
+        self._pass_ok = motion_smooth.enabled(cfg, "hub")
+        # a PASS move goes out this early: the board waits for the move in
+        # front to end and starts it exactly there (NONG_PASS_LEAD_MS)
+        lead_s = max(0.0, float(cfg.get("boardLeadMs", 60))) / 1000.0
         # where in the show at_ms lands: which step, and how much of it is left
         start_i, into, hold_left = 1, 0, 0
         clock = self.steps[0].get("hold", 0)
@@ -415,6 +450,8 @@ class ShowPlayer:
             t.daemon = True
             self._music_timer = t
             t.start()
+        # a move resumed half way is not the move its speeds were planned for
+        into_resumed = bool(into)
         for i in range(start_i, len(self.steps)):
             s = self.steps[i]
             # A resumed move gets the time it has LEFT, not the whole time, or
@@ -430,9 +467,14 @@ class ShowPlayer:
             # restarts from now. Small round trips are still paid back.
             if time.monotonic() - due > self.CATCH_UP_S:
                 due = time.monotonic()
+            if not into_resumed:
+                self._pass_cmd(s)
+            into_resumed = False
             took = self._took(self._move(flag, s["pose"], left), left)
             due += took / 1000.0
-            if not self._sleep(flag, due - time.monotonic()):
+            nxt = self.steps[i + 1] if i + 1 < len(self.steps) else None
+            early = lead_s if nxt and nxt.get("pass") and self._pass_ok and not s["hold"] else 0.0
+            if not self._sleep(flag, due - early - time.monotonic()):
                 return False
             if s["hold"]:
                 due += s["hold"] / 1000.0

@@ -129,41 +129,21 @@ class AppRoutes:
             return self.send_json(_hub.partner_launch.start(pid, entry))
 
         if path == "/api/voice/start" and method == "POST":
-            base, _ = _hub.voice_service_url()
-            if base:
-                try:
-                    with urllib.request.urlopen(base + "/health", timeout=0.8) as r:
-                        if r.getcode() == 200:
-                            return self.send_json({"ok": True, "already_running": True,
-                                                   "message": "voice service is already running"})
-                except Exception:
-                    pass
-            py = sys.executable if not getattr(sys, "frozen", False) else (
-                shutil.which("python") or shutil.which("python3") or r"C:\Program Files\Python312\python.exe" or "python")
-            if getattr(sys, "frozen", False):
-                root_dir = Path(sys.executable).parent.parent
-            else:
-                root_dir = _hub.HERE.parent
-            script = root_dir / "apps" / "voice" / "service.py"
-            if not script.is_file():
-                script = Path("apps/voice/service.py").resolve()
-                root_dir = script.parent.parent.parent
-            if not script.is_file():
-                return self.send_err("apps/voice/service.py not found on disk", 404)
-            try:
-                flags = 0
-                if os.name == "nt":
-                    flags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
-                subprocess.Popen(
-                    [py, str(script)],
-                    cwd=str(root_dir),
-                    env=hub_api_resources.child_environment(),
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    creationflags=flags)
-                return self.send_json({"ok": True, "message": "voice service started"})
-            except Exception as e:
-                return self.send_err("could not start voice service: %s" % e, 500)
+            # One owner of the helper's process (main_python/voice_helper.py):
+            # a second press while it starts is "starting", never a second copy.
+            got = _hub.VOICE_HELPER.start()
+            if not got.get("ok"):
+                return self.send_err(got.get("error") or "could not start voice service", 500)
+            return self.send_json(got)
+
+        if path == "/api/voice/helper" and method == "GET":
+            # Is it running, starting (for how long), or did it stop - and its
+            # last printed lines, which can hold what someone said: login only.
+            got = _hub.VOICE_HELPER.state()
+            if not self.logged_in():
+                got.pop("tail", None)
+                got.pop("log", None)
+            return self.send_json(dict(got, ok=True))
 
         if path == "/api/voice/stop" and method == "POST":
             base, _ = _hub.voice_service_url()
