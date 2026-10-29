@@ -31,9 +31,23 @@ Held here:
 * tools/smooth_sequence.py adds `pass:` lines for files made elsewhere (RL)
   and replaces old ones instead of piling them up;
 * PASS is a sequence step key the board knows (commands.json) and a
-  capability it declares.
+  capability it declares;
+* never rougher than the cosine (2026-10-30): the jerk guard, in Python and
+  in Studio's copy, takes the speeds off a key whose curve is rougher than
+  the cosine over its two moves (three keys found by a 20000-case search,
+  337 vs 313 rms jerk without the guard);
+* keys thinned from a dense motion (RL, 50 Hz) are passed at that motion's
+  own speed and held near that motion, not the straight line: 2026-10-30
+  the shared smoother made keyed RL ROUGHER than the policy (come_and_cheer
+  center 25033 -> 33168, witsawa center 29813 -> 39922) because the 1 deg
+  off-line limit shrank 98 % of the via speeds to 0, so the arm stopped at
+  almost every key every ~160 ms. Held here on a made-up 50 Hz dance with
+  policy jitter and a 240 ms flick: keyed + smoothed is smoother than the
+  dense commands, the flick keeps its peak, and the key times stay on the
+  dense frames (music).
 """
 import json
+import math
 import sys
 
 import browser
@@ -115,6 +129,78 @@ def test_core(t, cfg, R):
     t.ok("19.4147f" in fw and "RUN_TEST(test_pass_curve_matches_studio)" in fw,
          "and the firmware test asserts it (pio test -e native)")
     return K, V
+
+
+# Three keys where, without the guard, the curve is rougher than the cosine
+# (search over 20000 random cases, 2026-10-30: rms jerk 313 cosine, 337).
+GUARD_KEYS = [
+    {"pose": [90.0] * 10, "t": 0, "hold": 0},
+    {"pose": [86.0, 92.6, 80.6, 91.8, 89.6, 89.7, 89.9, 121.3, 94.2, 89.6], "t": 700, "hold": 0},
+    {"pose": [85.1, 94.2, 89.5, 111.4, 88.5, 90.0, 96.3, 124.1, 93.2, 88.4], "t": 3000, "hold": 0},
+]
+
+
+def test_guard(t, cfg, R):
+    plain = M.jerk_report(GUARD_KEYS)["rmsJerk"]
+    off = M.Smoother(dict(cfg, jerkGuard=False), R).vias(GUARD_KEYS, touches=lambda p: False)
+    on = M.Smoother(cfg, R).vias(GUARD_KEYS, touches=lambda p: False)
+    rough, kept = M.jerk_report(GUARD_KEYS, off)["rmsJerk"], M.jerk_report(GUARD_KEYS, on)["rmsJerk"]
+    t.ok(rough > plain, "without the guard these keys are rougher than the cosine (%d vs %d)" % (rough, plain))
+    t.ok(kept <= plain, "with it they are never rougher than the cosine (%d vs %d)" % (kept, plain), on)
+    return on
+
+
+def dense_dance(seconds=20, hz=50):
+    """A made-up 50 Hz policy output: slow sines on every joint, jitter like a
+    policy's, and a 240 ms 30 deg flick on joint 0 at 10 s."""
+    import random   # noqa: PLC0415
+    r = random.Random(7)
+    waves = [[(r.uniform(0.2, 1.4), r.uniform(0, 6), r.uniform(4, 12)) for _ in range(3)] for _ in range(10)]
+    jit = [0.0] * 10
+    out = []
+    for k in range(int(seconds * hz)):
+        x = k / hz
+        jit = [0.5 * j + 0.5 * r.gauss(0, 0.05) for j in jit]
+        p = [90 + sum(a * math.sin(2 * math.pi * f * x + ph) for f, ph, a in w) + jit[j] for j, w in enumerate(waves)]
+        d = abs(x - 10.12)
+        p[0] += 30 * max(0.0, 1 - d / 0.12)
+        out.append(p)
+    return out
+
+
+def jerk_rms(P, hz=50):
+    js = [(P[k][j] - 3 * P[k - 1][j] + 3 * P[k - 2][j] - P[k - 3][j]) * hz ** 3
+          for k in range(3, len(P)) for j in range(len(P[0]))]
+    return math.sqrt(sum(x * x for x in js) / len(js))
+
+
+def test_dense(t, cfg, R):
+    import numpy as np   # noqa: PLC0415
+    from tools.rl_compare.smooth import keys_of, thin   # noqa: PLC0415
+    hz = 50
+    c = np.array(dense_dance())
+    idx = thin(c, 3.0, 6)
+    K = keys_of(c, idx, hz)
+    path = M.DensePath(c, idx, hz)
+    play = lambda V: [M.pose_at(K, V, k * 1000 / hz) for k in range(len(c))]   # noqa: E731
+    dense = jerk_rms(c.tolist())
+    V = M.Smoother(cfg, R).vias(K, path=path)
+    old = M.Smoother(dict(cfg, followDensePath=False), R).vias(K, path=path)
+    got, line, plain = jerk_rms(play(V)), jerk_rms(play(old)), jerk_rms(play(None))
+    print("   dense 50 Hz: rms jerk dense %d, keyed+path %d, keyed+line %d, cosine %d (%d keys)"
+          % (dense, got, line, plain, len(K)))
+    t.ok(line > dense, "held to the straight line (before), keyed RL is rougher than the policy (%d vs %d)"
+         % (line, dense))
+    t.ok(got < dense and got <= plain, "passed at the motion's own speed it is smoother than the policy "
+         "(%d vs %d) and than the cosine (%d)" % (got, dense, plain))
+    moving = sum(1 for row in V[1:-1] for v in row if v) / max(1, 10 * (len(K) - 2))
+    t.ok(moving > 0.5, "most keys are passed through, not stopped on (%.0f %% of via speeds)" % (100 * moving))
+    peak = max(p[0] for p in play(V)[480:530])
+    t.ok(peak >= c[480:530, 0].max() - 3.0, "the 240 ms flick keeps its peak (%.1f of %.1f deg)"
+         % (peak, c[480:530, 0].max()))
+    starts, _ = M._times(K)
+    t.ok(all(abs(starts[i] + K[i]["t"] - idx[i] * 1000 / hz) < 1 for i in range(1, len(K))),
+         "every key stays at its own frame's time (music)")
 
 
 def test_board(t, cfg, R, K, V):
@@ -221,6 +307,8 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
     var P = __PARITY__;
     o.parity = JSON.stringify(new MotionSmooth({cfg: P.cfg, maxDps: P.maxDps, acc: P.acc, cap: 0,
                                                 touches: function(){ return false; }}).vias(P.keys));
+    o.guard = JSON.stringify(new MotionSmooth({cfg: P.cfg, maxDps: P.maxDps, acc: P.acc, cap: 0,
+                                               touches: function(){ return false; }}).vias(P.guard));
     // Studio: a sweep of joint 2 that keeps rising, at the music pace (no cap)
     MUSIC_DPS = 0; SEQ_MUSIC_DPS = null;
     var a = RIG.home.slice();
@@ -267,10 +355,10 @@ window.addEventListener("load", function(){ qcWaitFor(function(){
 """
 
 
-def test_studio(t, cfg, R, K, V):
+def test_studio(t, cfg, R, K, V, G):
     if not browser.available():
         t.give_up("headless Edge not found - this needs a real browser")
-    parity = {"cfg": cfg, "maxDps": R["servoMaxDps"], "acc": R["servoAccel"], "keys": K}
+    parity = {"cfg": cfg, "maxDps": R["servoMaxDps"], "acc": R["servoAccel"], "keys": K, "guard": GUARD_KEYS}
     fake_serial.reset()
     base, _main = F.start_hub()
     browser.page(DRIVER.replace("__PARITY__", json.dumps(parity)),
@@ -283,12 +371,15 @@ def test_studio(t, cfg, R, K, V):
     if not t.ok(got, "the driver measured the page", marks):
         return
     v = dict(kv.split("=", 1) for kv in got.split("~"))
-    print("   measured:", {k: x for k, x in v.items() if k != "parity"})
+    print("   measured:", {k: x for k, x in v.items() if k not in ("parity", "guard")})
     js = json.loads(v["parity"])
     py = M.Smoother(cfg, R).vias(K, touches=lambda p: False)
     worst = max(abs(a - b) for ra, rb in zip(js, py) for a, b in zip(ra, rb))
     t.ok(worst <= 0.15, "Studio's motion_smooth.js gives the same speeds as the Python one "
          "(worst %.2f deg/s)" % worst, (js, py))
+    jg = json.loads(v["guard"])
+    t.ok(max(abs(a - b) for ra, rb in zip(jg, G) for a, b in zip(ra, rb)) <= 0.15,
+         "and Studio's jerk guard takes the same speeds off as Python's", (jg, G))
     t.ok(float(v["passSpeed"]) > 10, "the Studio preview passes key 2 at %s deg/s" % v["passSpeed"], v)
     t.ok(int(v["yamlPass"]) >= 2 and v["passBeforePose"] == "true",
          "the file carries pass: lines right before their poses (%s)" % v["yamlPass"], v)
@@ -307,8 +398,10 @@ def run(t):
     cfg, R = M.load_config(), rig()
     t.ok(cfg.get("on") is True, "motion_smooth.json is read and on", cfg.get("on"))
     K, V = test_core(t, cfg, R)
+    G = test_guard(t, cfg, R)
+    test_dense(t, cfg, R)
     test_board(t, cfg, R, K, V)
     test_hub(t, cfg, K, V)
     test_tool(t)
     test_firmware(t)
-    test_studio(t, cfg, R, K, V)
+    test_studio(t, cfg, R, K, V, G)

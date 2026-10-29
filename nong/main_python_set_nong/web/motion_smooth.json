@@ -26,6 +26,11 @@
   "samples": 24,
   "minViaDps": 2,
   "_minViaDps": "a via speed below this is treated as a stop (0), so a joint that barely moves is not sent noise",
+  "jerkGuard": true,
+  "_jerkGuard": "never rougher than the plain cosine on the same keys: per key, the jerk over the two moves it joins (sampled every jerkFrameMs, the board's 50 Hz) is compared with the cosine's and a rougher key's speeds shrink like a broken rule; then the whole dance. 2026-10-30: a cubic's speed-up jumps at each key, so a via beside a stop could add jerk",
+  "jerkFrameMs": 20,
+  "followDensePath": true,
+  "_followDensePath": "keys thinned from a dense motion (the RL policy's 50 Hz commands, sim motion): each key is passed at that motion's own speed, and the curve is held near that motion (it was what got scored and collision-checked) instead of near the straight line: no farther from it than the plain cosine move, or than the off-line limit. 2026-10-30: from the line, 98 % of the via speeds were shrunk to 0 on dense RL motion and the keyed file was rougher than the policy (rl 25033 -> rl_smooth 33168)",
   "boardLeadMs": 60,
   "_boardLeadMs": "the hub sends a smoothed move this much before the move in front of it ends (PASS then POSE); a board that knows PASS waits and starts it exactly at that end, so the arm never waits for the cable. Must stay under the board's NONG_PASS_LEAD_MS (150)"
 }
