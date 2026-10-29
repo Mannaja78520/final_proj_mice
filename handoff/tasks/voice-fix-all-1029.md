@@ -3,7 +3,7 @@
 Owner: claude:jf5f (cloud thread)
 Updated: 2026-10-29 19:10 (UTC)
 Branch: claude/project-thread-jf5f5g
-Last commit: this checkpoint
+Last commit: 8658d42 (PR #111 merge)
 Plan: A55-1
 
 ## Goal
@@ -11,9 +11,7 @@ User 2026-10-29: "แก้พวกเรื่องเสียง voice ต�
 (fix every voice/sound problem everywhere, including the Voice app that hangs).
 
 ## Doing now
-Full QC done (9072 passed, 11 failed: env-only, see Done); rechecking
-check_rs485_census + check_tools_list alone, then PR + merge, then PC rebuild
-and a real Voice app test through the RC session.
+Nothing: merged (PR #111) and tested on the PC from a worktree. Only the deploy into the main PC tree is left (Next 1).
 
 ## File status
 Baseline: c67e631.
@@ -44,13 +42,14 @@ Baseline: c67e631.
 - service.py:2045 preload() worker loads models WITHOUT `_lock`; `_load_stt`/`_load_llm` (927, 1997) set `*_loading` but never check it: a question during preload loads a 2nd copy.
 
 ## Done
+- PC 2026-10-30 03:08 (UTC+7), worktree at 8658d42 run from source: page opened -> /api/voice/health 503 starting at 6 s -> helper (C:\Program Files\Python312) answered at 12 s, health 200; helper stopped -> back by itself in ~2 s; helper.log clean. /say and /ask through the hub still need the hub login (user rule 2026-09-14, kept).
 - PC repro 2026-10-29 (RC, read/launch only): `Mice Voice.lnk` = `dist\MiceHub.exe --open voice`; hub up in 5 s, 8767 never came up in 180 s; /api/voice/start = 401 without login. Helper by hand (C:\Program Files\Python312): /health 200 in 3 s; first model answer 25.4 s (models loading), warm 7.2 s on cuda; FAQ 0.03 s; Edge /say 6.6-6.8 s per new line, 0.02 s cached; GPU 7.7 GB after.
 - Fix: hub owns and auto-starts the helper; page waits with a clock; one model load at a time.
 - QC: voice suite 1194/0; full 9072/11 - failures are cloud env (other pio envs not built, no torch/cv2, browser checks time out in the cloud, census timing under load).
 
 ## Next
-1. Merge PR, then on the PC: git pull --ff-only (PC tree has local edits!), rebuild `python -m PyInstaller --clean --noconfirm MiceHub.spec`, open Mice Voice.lnk, ask by text, check rig speech.
-2. Ideas not done: Edge ~6.7 s per new line (stream audio to the rig instead of waiting the whole clip); the 0.5B model invents facts (coffee shop) - a bigger model or a cloud key.
+1. Deploy into E:\final_proj\mice\mice_system once the RL job there is done: that tree has diverged from main (3 local commits, 72 local edits, 12 overlap incoming RL files) - commit its work, merge origin/main, rebuild `python -m PyInstaller --clean --noconfirm MiceHub.spec`. Then remove the test worktree `.claude\worktrees\voice-test` (its hub 26664 + helper 13744 run now).
+2. Ideas not done: Edge ~6.7 s per new line (stream audio to the rig instead of the whole clip); the 0.5B model invents facts (coffee shop) - a bigger model or a cloud key.
 
 ## Blocked
 - nothing
