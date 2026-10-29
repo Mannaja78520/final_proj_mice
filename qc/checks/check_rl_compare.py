@@ -15,7 +15,24 @@ the yardstick, on synthetic dances (the real cheer data is private on the PC):
   not mistaken for an accurate one, and the warp really finds the shape);
 - the servo model never exceeds the servo's speed, and the policy's command
   never moves faster than the scenario cap or leaves the joint range;
-- the board-clock sampler matches tools/nong_sim BoardClock.target.
+- the board-clock sampler matches tools/nong_sim BoardClock.target;
+- an untrusted arm run up to fillGapS is bridged between the trusted samples
+  (it used to be held, unscored, and the policy let the arm fall: user
+  2026-10-29), a longer run stays held and weight 0, and scores still count
+  trusted samples only;
+- the shared smoothing stage keeps a move on the music clock (zero phase) and
+  takes the jitter out; it is the project smoother (main_python/motion_smooth,
+  A54-1) the board plays with `pass:`, so a joint that keeps going is passed
+  through its keys, a flick keeps its peak, and to_sequence writes `pass:`
+  steps that BoardClock plays as the curve;
+- to_sequence thins the sim motion to keys within tolDeg, keeps each key's
+  time, and splits the board file into chained files that each re-ask the
+  pace, no more than the board follows (MAX_CHAIN) (user 2026-10-29: run RL
+  on the robot; a 30 KB file crashed MOVE on 2026-10-28);
+- reach fitting (user 2026-10-29: look like the dancer's lift, the shoulder
+  stop keeps an exact copy out of reach) leaves low arms alone, brings every
+  lift within the robot's reach, keeps lifts ordered by height and keeps the
+  elbow bend.
 Without torch installed (the PC before `pip install torch`) only the parts
 that need no torch are run, and that is said.
 """
@@ -36,6 +53,133 @@ SLOW = False
 sys.path.insert(0, str(F.CODE))
 
 
+def gaps_and_smoothing(t, np):
+    from tools.rl_compare.reference import Dance, DenseReference, fill_gaps
+    from tools.rl_compare.smooth import CommandSmoother
+    n, hz = 31, 10
+    times = np.arange(n) / hz
+    ang = np.radians(np.linspace(0, 90, n))                    # the arm sweeps 90 deg in 3 s
+    v = np.stack([np.sin(ang), -np.cos(ang), 0 * ang], 1)
+    bones = np.repeat(v[:, None, None, :], 2, 1).repeat(2, 2)
+    ok = np.ones((n, 2), bool)
+    ok[10:15, 0] = False                                       # 0.5 s unseen: bridged
+    ok[5:25, 1] = False                                        # 2 s unseen: held
+    seen = bones.copy()
+    seen[~ok] = 0
+    out, fill = fill_gaps(times, seen, ok, 1.0)
+    err = np.degrees(np.arccos(np.clip((out[10:15, 0] * bones[10:15, 0]).sum(-1), -1, 1))).max()
+    t.ok(fill[10:15, 0].all() and err < 1.0, "a short unseen arm run follows the sweep between trusted samples",
+         f"worst {err:.2f} deg from the true sweep")
+    t.ok(not fill[:, 1].any(), "a run longer than fillGapS is not bridged", f"{int(fill[:, 1].sum())} bridged")
+    d = Dance(name="gap", times=times, bones=out, arm_ok=ok, arm_fill=fill, body=np.zeros((n, 2)), body_ok=np.ones(n, bool),
+              ik=np.zeros((n, 10)), start_pose=[0] * 10, project={}, source={})
+    dense = DenseReference(d, hz, pad_s=0, fill_weight=0.5)
+    t.ok(dense.arm_w[12, 0] == 0.5 and dense.arm_w[15, 1] == 0 and dense.arm_w[2, 1] == 1 and not dense.arm_ok[12, 0],
+         "bridged frames weigh fillWeight in the reward, held ones 0, and stay out of the score",
+         f"{dense.arm_w[12, 0]}, {dense.arm_w[15, 1]}, {dense.arm_w[2, 1]}")
+    hz = 50
+    k = np.arange(5 * hz)
+    step = np.clip((k - 2 * hz) / (0.5 * hz), 0, 1)
+    move = (0.5 - 0.5 * np.cos(np.pi * step))[:, None] * np.full((1, 10), 40.0)
+    noisy = move + np.where(k % 2, 1.0, -1.0)[:, None]          # 1 deg jitter every frame
+    from tools.nong_sim.studio import load_rig
+    rig = load_rig()
+    smooth = CommandSmoother({"tolDeg": 3.0, "minKeyMs": 120}, hz, [-90] * 10, [90] * 10, rig)
+    sm = smooth(noisy)
+    half = lambda c: int(np.argmax(c[:, 0] >= 20))
+    jerk = lambda c: float(np.sqrt((np.diff(c[:, 0], 3) ** 2).mean()))
+    t.ok(abs(half(sm) - half(move)) <= 1 and jerk(sm) < 0.2 * jerk(noisy),
+         "smoothing keeps the move on the music clock and takes the jitter out",
+         f"midpoint frame {half(sm)} vs {half(move)}, jerk {jerk(sm):.2f} vs {jerk(noisy):.2f}")
+    # the shared smoother (A54-1), not a second one: a 40 deg/s ramp
+    # thinned to keys is passed through, not stopped on at every key; a flick
+    # there and back keeps its peak
+    ramp = np.zeros((3 * hz, 10))
+    ramp[:, 0] = -60 + 40 * k[:3 * hz] / hz
+    ramp[:, 0] += 4 * np.sin(2 * np.pi * k[:3 * hz] / hz)      # wavy (never back): RDP keeps keys
+    r = smooth(ramp)
+    speed = np.abs(np.diff(r[:, 0])) * hz
+    # the motion itself never goes under 15 deg/s; stopping at a key drops a
+    # frame to ~2 (measured 2026-10-29: 2.4 stopping, 17.9 passing through)
+    t.ok(speed[5:-5].min() > 10, "a joint that keeps going the same way passes through its keys (no stop at each key)",
+         f"slowest {speed[5:-5].min():.1f} deg/s between the ends")
+    flick = np.zeros((2 * hz, 10))
+    flick[:, 0] = 30 * np.clip(1 - np.abs(k[:2 * hz] - hz) / (0.15 * hz), 0, 1)
+    f = smooth(flick)
+    t.ok(f[:, 0].max() >= 29, "a flick keeps its peak", f"peak {f[:, 0].max():.1f} of 30")
+
+
+def sequence_export(t, np, cfg):
+    from types import SimpleNamespace
+    from tools.rl_compare.to_sequence import SequenceExport, thin
+    hz = 50
+    k = np.arange(10 * hz) / hz
+    c = np.stack([60 + 30 * np.sin(2 * np.pi * 0.7 * k + j) for j in range(10)], 1)
+    sc = cfg["sequence"]
+    idx = thin(c, sc["tolDeg"], 2)
+    line = np.concatenate([c[a] + (c[b] - c[a]) * np.linspace(0, 1, b - a + 1)[:-1, None] for a, b in zip(idx, idx[1:])] + [c[-1:]])
+    miss = float(np.abs(line - c).max())
+    t.ok(idx[0] == 0 and idx[-1] == len(c) - 1 and miss <= sc["tolDeg"] + 1e-9 and len(idx) < len(c) / 3,
+         "the sim motion is thinned to keys that stay within tolDeg", f"{len(idx)} keys, worst {miss:.2f} deg")
+    ex = SequenceExport(SimpleNamespace(hz=hz), sc)
+    keys = ex.keys(c, idx)
+    t.ok(sum(x["t"] for x in keys[1:]) == round((len(c) - 1) * 1000 / hz), "every key keeps its time on the music clock",
+         str(sum(x["t"] for x in keys[1:])))
+    many = keys + keys * 10                                  # longer than one file can hold
+    files = ex.chunks("x_", ex.steps(many, "x.mp3"), "music 0")
+    names = sorted(files)
+    chained = all(("next: %s" % b) in files[a] for a, b in zip(names, names[1:])) and "next:" not in files[names[-1]]
+    paced = all("  - pace: music 0\n" in f for f in files.values())
+    poses = sum(f.count("- pose:") for f in files.values())
+    t.ok(len(files) <= min(sc["maxFiles"], 16) and chained and paced and poses == len(many)
+         and files[names[0]].count("- play:") == 1,
+         "the board file is split into chained files that each ask the pace, within MAX_CHAIN",
+         f"{len(files)} files, chained {chained}, paced {paced}, {poses}/{len(many)} poses")
+    from tools.nong_sim.board_clock import BoardClock
+    from tools.nong_sim.studio import StudioFacts, load_rig
+    steps = ex.steps(keys, "x.mp3")
+    passes = sum(1 for k_, _ in steps if k_ == "pass")
+    moves = BoardClock(load_rig(), StudioFacts()).plan([(k_, v.split("#")[0].strip().strip('"')) for k_, v in steps])
+    curved = sum(1 for m in moves if m.v0 or m.v1)
+    split = all(not f.rstrip().endswith('"') or "- pass:" not in f.rstrip().splitlines()[-1] for f in files.values())
+    t.ok(passes > len(keys) // 3 and curved >= passes // 2 and split,
+         "the board file passes through keys (shared smoother `pass:`), the board clock plays them as the curve, and no file ends on a pass",
+         f"{passes} pass steps, {curved} curved moves of {len(moves)}, split ok {split}")
+
+
+def reach_fitting(t, np, kin, rig, cfg):
+    from tools.rl_compare.reach import ArmReach, azimuth, elevation
+    from tools.rl_compare.reference import Dance
+    rc = dict(cfg["reach"], samples=100000)
+    reach = ArmReach(kin, rig, rc)
+    n = 72
+    e = np.radians(np.linspace(-80, 85, n))                     # every height, every direction
+    az = np.radians(np.linspace(-180, 175, n) * 7 % 360 - 180)
+    up = np.stack([np.cos(e) * np.sin(az), np.sin(e), np.cos(e) * np.cos(az)], -1)
+    fore = up * 0.6 + np.array([0, -0.8, 0])                       # a bent elbow
+    fore /= np.linalg.norm(fore, axis=-1, keepdims=True)
+    bones = np.stack([np.stack([up, fore], 1)] * 2, 1)            # (n, 2 arms, 2 bones, 3)
+    d = Dance(name="reach", times=np.arange(n) / 10, bones=bones, arm_ok=np.ones((n, 2), bool), arm_fill=np.zeros((n, 2), bool),
+              body=np.zeros((n, 2)), body_ok=np.ones(n, bool), ik=np.zeros((n, 10)), start_pose=[90] * 10, project={}, source={})
+    out, _ = reach.remap(d)
+    new_e, new_up = elevation(out.bones[:, :, 0]), out.bones[:, :, 0]
+    top = np.array([reach.top[a][reach.bin(azimuth(new_up[:, a]))] for a in range(2)]).T
+    low = elevation(up) <= rc["kneeDeg"]
+    kept_low = np.abs(new_e[low] - elevation(up)[low, None]).max() if low.any() else 0
+    over = float((new_e - np.maximum(top - rc["marginDeg"], rc["kneeDeg"]))[~low].max())   # never pushed below the knee
+    bend = lambda b: np.degrees(np.arccos(np.clip((b[:, :, 0] * b[:, :, 1]).sum(-1), -1, 1)))
+    hi = ~low
+    t.ok(over <= 1e-6, "every fitted lift is within the robot's reach", f"worst {over:.2f} deg above reach - margin")
+    t.ok(float(np.abs(bend(out.bones) - bend(bones)).max()) < 1e-6, "the elbow bend is kept", "")
+    # a lift the robot can show in its own direction stays a lift (one across the body may flatten:
+    # swinging it to the other side would not look like the dancer either)
+    own = np.array([reach.top[a][reach.bin(azimuth(up))] for a in range(2)]).T
+    big = (elevation(up)[:, None].repeat(2, 1) >= rc["kneeDeg"] + 30) & (own - rc["marginDeg"] >= rc["kneeDeg"] + 10)
+    t.ok(big.any() and new_e[hi].min() > rc["kneeDeg"] - 1e-6 and (new_e[big] > rc["kneeDeg"] + 5).all(),
+         "a lift stays a lift after fitting (30 deg+ lifts the robot can show end above knee + 5 deg)",
+         f"lowest fitted big lift {new_e[big].min():.1f} deg; low arms moved at most {kept_low:.1f} deg where reachable")
+
+
 def run(t):
     import numpy as np
     from tools.nong_sim.board_clock import BoardClock
@@ -45,6 +189,8 @@ def run(t):
     ids = [v["id"] for v in cfg["planner"]["variants"]] + [cfg["rl"]["id"]]
     t.ok(len(set(ids)) == len(ids), "every contender has its own id", str(ids))
     t.ok(cfg["out"].startswith(".local"), "results go to the git-ignored .local folder", cfg["out"])
+    gaps_and_smoothing(t, np)
+    sequence_export(t, np, cfg)
     rig, facts = load_rig(), StudioFacts()
     rnd = random.Random(7)
     poses = [[rnd.uniform(rig["min"][i], rig["max"][i]) for i in range(10)] for _ in range(400)]
@@ -98,6 +244,7 @@ def run(t):
          f"{int(missed.sum())} missed; worst approx gap there {float(approx[flags].max()):.1f} mm, gap {gap} mm")
     home = kin.clearance(kin.points(torch.tensor([rig["home"]], dtype=torch.float64))).item()
     t.ok(home > gap, "home is clear", f"{home:.1f} mm")
+    reach_fitting(t, np, kin, rig, cfg)
 
     # a synthetic dance: a smooth wander through safe poses, the dancer = the rig itself
     safe = [p for p, f in zip(poses, flags) if not f][:8]
@@ -113,6 +260,7 @@ def run(t):
     bones = kin.bones(kin.points(sample)).numpy()
     n = len(sample)
     dance = Dance(name="synthetic", times=np.arange(n) * step / hz, bones=bones, arm_ok=np.ones((n, 2), bool),
+                  arm_fill=np.zeros((n, 2), bool),
                   body=sample[:, 8:].numpy(), body_ok=np.ones(n, bool), ik=sample.numpy(), start_pose=safe[0],
                   project={}, source={"id": "none", "from": 0})
     scorer = Scorer(dance, rig, kin, {"limitDeg": 0.5}, hz, gap)

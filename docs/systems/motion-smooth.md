@@ -23,7 +23,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 
 - nothing
 
-## Checks that test it (177)
+## Checks that test it (178)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -150,6 +150,7 @@ One smoothing stage for every move (A54-1): pass through keyframes instead of st
 - `check_report_button`
 - `check_resource_policy`
 - `check_responsive`
+- `check_rl_compare`
 - `check_route_latency`
 - `check_rs485_census`
 - `check_safe_path`
