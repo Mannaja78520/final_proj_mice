@@ -351,6 +351,9 @@ function parseSeqYaml(text) {
       // the move that follows them. Neither is an unsupported step.
       curSpeed = +m[1];
       if (!out.speed) out.speed = curSpeed;
+    } else if (/^\s*-\s*pass\s*:/.test(line)) {
+      // a `pass:` step is derived from the moves (motion_smooth.js) and is
+      // written again on export: carried as a cue it would go stale
     } else if ((m = line.match(/^\s*-\s*([A-Za-z_][\w-]*):\s*"?(.*?)"?\s*$/))) {
       pend.push((m[1].toLowerCase() + ": " + m[2]).trim());
     } else if (/^\s*-\s/.test(line)) out.skipped++;   // not a step we can read

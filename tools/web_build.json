@@ -27,7 +27,7 @@
       "hand_hold.js",
       "timing.js",
       "music_pace.js",
-      "servo_follow.js",
+      "servo_follow.js", "motion_smooth.js",
       "timeline.js",
       "yaml_export.js",
       "rig_setup_ui.js",

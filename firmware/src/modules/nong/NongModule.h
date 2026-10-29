@@ -218,7 +218,21 @@ private:
     // the ones on other boards, so the leader always knows the full pose)
     float cur_[N], from_[N], target_[N];
     uint32_t moveStart_ = 0, moveDur_ = 0, lastTick_ = 0;
+    uint32_t askedDur_ = 0;          // the time the last POSE/JOINT/HOME takes (its reply's T=)
     bool moving_ = false;
+    // PASS (A54-1): the move's start/end speeds (deg/s; 0 = the cosine), the
+    // speeds the NEXT pose was planned with, and one pose waiting for the
+    // move in front of it to end (sent early so the arm never waits)
+    float v0_[N] = {}, v1_[N] = {};
+    float passFrom_[N] = {}, passTo_[N] = {};
+    bool passPending_ = false;
+    bool queued_ = false;
+    float qTarget_[N] = {};
+    uint32_t qDur_ = 0;
+    float qV0_[N] = {}, qV1_[N] = {};
+    void forgetPass();                       // STOP, RELAX, any plain move
+    bool passMove(const float tgt[N], uint32_t ms);   // true = taken as PASS
+    void beginQueued(uint32_t at);
     bool attached_ = false;
     bool calDirty_ = false;          // settings changed, YAML not written yet
     uint32_t calDirtyAt_ = 0;        // when — the write happens once it goes quiet
