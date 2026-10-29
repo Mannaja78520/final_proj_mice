@@ -8,7 +8,12 @@ handoff/tasks, round after round until the task files say done.
 
 Held here on fakes in a temp home (the same file formats as the real PC,
 samples copied 2026-10-29 from ~/.codex/sessions and ~/.claude/projects):
-- the logon launcher finds the watcher after the code -> mice_system rename;
+- the desktop launcher finds the watcher after the code -> mice_system rename;
+- on/off by hand (user 2026-10-29, later: a logon start wastes RAM and heat
+  while gaming): install only puts the ON / OFF shortcuts on the desktop,
+  removes the old logon entry and starts nothing; start runs ONE watcher at a
+  low priority, stop turns it OFF within seconds; the loop wakes at a due
+  resume instead of polling fast;
 - the reset time of every real wording (Codex "try again at 3:26 AM", Claude
   "resets 11:50am (Asia/Bangkok)" and "resets Nov 3, 9am", Gemini "retry in
   1h2m3.5s") is read right, without tzdata (the PC has none);
@@ -22,6 +27,7 @@ samples copied 2026-10-29 from ~/.codex/sessions and ~/.claude/projects):
 """
 import datetime as dt
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -78,6 +84,77 @@ def _settle(w, clock, t, pred, label):
     return False
 
 
+def _on_off(t, ai_watch):
+    from limitwatch.watcher import Watcher
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
+        tmp = Path(d)
+        cfg = json.loads((F.CODE / "config" / "ai_watch.json").read_text(encoding="utf-8"))
+        cfg["providers"] = {}  # never read the real ~/.codex or ~/.claude from a check
+        cfg["control"]["desktop_dir"] = str(tmp / "desk")
+        (tmp / "cfg.json").write_text(json.dumps(cfg), encoding="utf-8")
+        out = tmp / "out"
+        common = ["--config", str(tmp / "cfg.json"), "--out", str(out)]
+        old = (ai_watch.LAUNCH_FILE, ai_watch.STARTUP, subprocess.run)
+        calls = []
+
+        def spy(argv, *a, **k):
+            calls.append(list(argv))
+            if argv[0] == "schtasks":  # never touch the PC's real Task Scheduler
+                return subprocess.CompletedProcess(argv, 0, "", "")
+            return old[2](argv, *a, **k)
+        ai_watch.LAUNCH_FILE, ai_watch.STARTUP = tmp / "app" / "launch.py", tmp / "Startup" / "MiceAIWatch.vbs"
+        ai_watch.STARTUP.parent.mkdir()
+        ai_watch.STARTUP.write_text("old logon entry from PR #105", encoding="utf-8")
+        ai_watch.subprocess.run = spy
+        try:
+            ai_watch.main(common + ["install"])
+        finally:
+            ai_watch.LAUNCH_FILE, ai_watch.STARTUP, ai_watch.subprocess.run = old
+        t.ok(not any("/Create" in c or "ONLOGON" in c for c in calls), "install makes no logon task",
+             str([c for c in calls if c[0] == "schtasks"]))
+        t.ok(["schtasks", "/Delete", "/TN", ai_watch.TASK, "/F"] in calls
+             and not (tmp / "Startup" / "MiceAIWatch.vbs").exists(),
+             "install removes the old logon task and Startup entry", str(calls))
+        names = [sc["name"] for sc in cfg["control"]["shortcuts"]]
+        made = sorted(f.stem for f in (tmp / "desk").iterdir())
+        t.ok(made == sorted(names) and {"start", "stop"} <= {sc["action"] for sc in cfg["control"]["shortcuts"]},
+             "install puts the ON and OFF shortcuts on the desktop", "made %s want %s" % (made, names))
+        t.ok(not (out / "watcher.pid").exists(), "install starts nothing", str(list(out.glob("*"))))
+        launch = subprocess.run([sys.executable, str(tmp / "app" / "launch.py")] + common + ["status"],
+                                capture_output=True, text=True, timeout=60)
+        t.ok("AI Watch: OFF" in launch.stdout, "a shortcut's words reach the watcher through the launcher",
+             launch.stdout[-300:] + launch.stderr[-300:])
+
+        cli = [sys.executable, str(F.CODE / "tools" / "ai_watch.py")] + common
+        sh = lambda *a: subprocess.run(cli + list(a), capture_output=True, text=True, timeout=90,
+                                       encoding="utf-8", errors="replace", env=dict(os.environ, PYTHONIOENCODING="utf-8"))
+        sh("start")
+        sh("start")
+        w = Watcher(cfg, out, str(tmp))
+        pid = ai_watch.watcher_pid(w)
+        st = sh("status").stdout
+        t.ok(pid and ("AI Watch: ON (pid %d)" % pid) in st, "start turns it ON; status says so", st[:200])
+        procs = [l for l in sh("status", "--events", "50").stdout.splitlines() if "WATCHER START" in l]
+        t.eq(len(procs), 1, "a second start does not run a second watcher")
+        if os.name == "nt":
+            import psutil
+            pri = psutil.Process(pid).nice() if pid else None
+            low = pri in (psutil.IDLE_PRIORITY_CLASS, psutil.BELOW_NORMAL_PRIORITY_CLASS)
+        else:
+            pri = os.getpriority(os.PRIO_PROCESS, pid) if pid else None
+            low = pri is not None and pri >= 10
+        t.ok(pid and low, "the watcher runs at a low priority (games come first)", str(pri))
+        t0 = time.time()
+        off = sh("stop")
+        took = time.time() - t0
+        t.ok("AI Watch: OFF" in sh("status").stdout and not ai_watch.pid_alive(pid) and took < 15,
+             "stop turns it OFF and the process is gone within seconds", "%.1f s %s" % (took, off.stdout[-200:]))
+
+        w.state["jobs"] = [{"status": "pending", "due": (w.now() + dt.timedelta(seconds=40)).isoformat()}]
+        t.ok(35 < ai_watch.wake_in(w) < 45 and cfg["poll_seconds"] >= 120,
+             "a long poll, but the loop wakes when a resume falls due", "%s s, poll %s" % (ai_watch.wake_in(w), cfg["poll_seconds"]))
+
+
 def run(t):
     from limitwatch.watcher import Watcher
     from limitwatch.reset_time import ResetClock
@@ -100,7 +177,8 @@ def run(t):
                           real=pc / "code", work=pc / "code" / ".staging" / "ai-watch")
     t.eq(ai_watch.roots(lay), [str(pc / "mice_system"), str(pc / "code"),
                                str(pc / "mice_system" / ".staging" / "ai-watch"), str(lay.work)],
-         "the logon launcher tries the renamed repo, the old name, then the copy (survives rename/merge)")
+         "the desktop launcher tries the renamed repo, the old name, then the copy (survives rename/merge)")
+    _on_off(t, ai_watch)
     codex = real["providers"]["codex"]["resume"]["argv"]
     t.ok("resume" in codex and "{session}" in codex and "{cwd}" in codex,
          "the real Codex resume command resumes the same session in its folder", " ".join(codex))

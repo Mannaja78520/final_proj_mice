@@ -1,7 +1,25 @@
 {
   "_why": "AI usage-limit watcher (tools/ai_watch.py, user 2026-10-29): watch every AI worker, read the reset time from its limit message, send the continue command resume_delay_seconds after the reset; a weekly limit or a reset further away than handoff_if_reset_over_hours hands the unfinished work to the next AI in handoff_order. Add a provider = add one entry under providers; no code edit.",
 
-  "poll_seconds": 30,
+  "poll_seconds": 180,
+  "control": {
+    "_why": "User 2026-10-29: no logon start, it costs RAM and heat while gaming or when no AI runs. install only puts these shortcuts on the desktop and removes the old logon entry; the user turns the watcher on and off. poll_seconds was 30: 180 cuts the log scans 6x, and a due resume still fires on time because the loop wakes at the next due job. stop_check_seconds = how often the sleeping loop looks for the OFF flag (one file stat).",
+    "priority": "idle",
+    "stop_check_seconds": 2,
+    "stop_wait_seconds": 20,
+    "desktop_dir": "",
+    "shortcuts": [
+      {"name": "AI Watch ON", "action": "start"},
+      {"name": "AI Watch OFF", "action": "stop"}
+    ],
+    "messages": {
+      "on": "AI Watch เปิดอยู่ (ON)\nคอยดู Codex / Gemini / Claude ติดลิมิต แล้วสั่งทำต่อให้เอง\nปิดด้วยไอคอน AI Watch OFF บน desktop",
+      "already_on": "AI Watch เปิดอยู่แล้ว (ON)",
+      "off": "AI Watch ปิดแล้ว (OFF)\nไม่กิน RAM / CPU แล้ว",
+      "already_off": "AI Watch ปิดอยู่แล้ว (OFF)",
+      "stuck": "AI Watch ยังไม่ยอมปิด ลองกด OFF อีกครั้ง"
+    }
+  },
   "resume_delay_seconds": 60,
   "handoff_if_reset_over_hours": 7,
   "unknown_reset_retry_minutes": 30,
