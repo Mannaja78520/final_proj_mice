@@ -34,6 +34,7 @@ from .report import Report
 from .rl import RLRun, pick_device
 from .servo import ServoModel
 from .smooth import CommandSmoother
+from .reach import ArmReach
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
@@ -55,6 +56,10 @@ class Case:
         self.dance = load_dance(exp.data_dir, dance_name, self.cfg["data"].get("fillGapS", 0.0))
         self.out = exp.out / dance_name / scenario["id"]
         self.kin, self.servo = exp.make("cpu")
+        rc = self.cfg.get("reach") or {}
+        if rc.get("on"):
+            self.dance, self.reach_info = ArmReach(self.kin, exp.rig, rc).remap(self.dance)
+            print("  reach:", self.reach_info, flush=True)
         # the scenario's collision gap: Studio adds rig extraClearanceMm to its own base gap
         base = exp.facts.clear_mm
         self.gap = scenario.get("gapMm") or base + (exp.rig.get("extraClearanceMm") or 0)
