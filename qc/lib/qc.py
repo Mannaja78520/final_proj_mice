@@ -223,6 +223,9 @@ def start_hub(fake=True):
     # This PC's app list (A51-2) is the machine's, like the password
     os.environ["MICE_EXTENSIONS"] = str(Path(tempfile.gettempdir())
                                         / ("mice_qc_ext_%d.json" % _hub_port[0]))
+    # A hub in QC never starts a real voice helper (A55-1): a check that points
+    # the helper at a dead port expects "not running", not a model loading.
+    os.environ["MICE_VOICE_AUTOSTART"] = "0"
     if fake:
         sys.path.insert(0, str(QC / "lib"))
         import fake_serial
