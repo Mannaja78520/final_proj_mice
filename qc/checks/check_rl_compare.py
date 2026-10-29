@@ -15,7 +15,13 @@ the yardstick, on synthetic dances (the real cheer data is private on the PC):
   not mistaken for an accurate one, and the warp really finds the shape);
 - the servo model never exceeds the servo's speed, and the policy's command
   never moves faster than the scenario cap or leaves the joint range;
-- the board-clock sampler matches tools/nong_sim BoardClock.target.
+- the board-clock sampler matches tools/nong_sim BoardClock.target;
+- an untrusted arm run up to fillGapS is bridged between the trusted samples
+  (it used to be held, unscored, and the policy let the arm fall: user
+  2026-10-29), a longer run stays held and weight 0, and scores still count
+  trusted samples only;
+- the shared smoothing stage keeps a move on the music clock (zero phase) and
+  takes the jitter out.
 Without torch installed (the PC before `pip install torch`) only the parts
 that need no torch are run, and that is said.
 """
@@ -36,6 +42,43 @@ SLOW = False
 sys.path.insert(0, str(F.CODE))
 
 
+def gaps_and_smoothing(t, np):
+    from tools.rl_compare.reference import Dance, DenseReference, fill_gaps
+    from tools.rl_compare.smooth import CommandSmoother
+    n, hz = 31, 10
+    times = np.arange(n) / hz
+    ang = np.radians(np.linspace(0, 90, n))                    # the arm sweeps 90 deg in 3 s
+    v = np.stack([np.sin(ang), -np.cos(ang), 0 * ang], 1)
+    bones = np.repeat(v[:, None, None, :], 2, 1).repeat(2, 2)
+    ok = np.ones((n, 2), bool)
+    ok[10:15, 0] = False                                       # 0.5 s unseen: bridged
+    ok[5:25, 1] = False                                        # 2 s unseen: held
+    seen = bones.copy()
+    seen[~ok] = 0
+    out, fill = fill_gaps(times, seen, ok, 1.0)
+    err = np.degrees(np.arccos(np.clip((out[10:15, 0] * bones[10:15, 0]).sum(-1), -1, 1))).max()
+    t.ok(fill[10:15, 0].all() and err < 1.0, "a short unseen arm run follows the sweep between trusted samples",
+         f"worst {err:.2f} deg from the true sweep")
+    t.ok(not fill[:, 1].any(), "a run longer than fillGapS is not bridged", f"{int(fill[:, 1].sum())} bridged")
+    d = Dance(name="gap", times=times, bones=out, arm_ok=ok, arm_fill=fill, body=np.zeros((n, 2)), body_ok=np.ones(n, bool),
+              ik=np.zeros((n, 10)), start_pose=[0] * 10, project={}, source={})
+    dense = DenseReference(d, hz, pad_s=0, fill_weight=0.5)
+    t.ok(dense.arm_w[12, 0] == 0.5 and dense.arm_w[15, 1] == 0 and dense.arm_w[2, 1] == 1 and not dense.arm_ok[12, 0],
+         "bridged frames weigh fillWeight in the reward, held ones 0, and stay out of the score",
+         f"{dense.arm_w[12, 0]}, {dense.arm_w[15, 1]}, {dense.arm_w[2, 1]}")
+    hz = 50
+    k = np.arange(5 * hz)
+    step = np.clip((k - 2 * hz) / (0.5 * hz), 0, 1)
+    move = (0.5 - 0.5 * np.cos(np.pi * step))[:, None] * np.full((1, 10), 40.0)
+    noisy = move + np.where(k % 2, 1.0, -1.0)[:, None]          # 1 deg jitter every frame
+    sm = CommandSmoother({"windowS": 0.24, "order": 3}, hz, [-90] * 10, [90] * 10)(noisy)
+    half = lambda c: int(np.argmax(c[:, 0] >= 20))
+    jerk = lambda c: float(np.sqrt((np.diff(c[:, 0], 3) ** 2).mean()))
+    t.ok(abs(half(sm) - half(move)) <= 1 and jerk(sm) < 0.2 * jerk(noisy),
+         "smoothing keeps the move on the music clock and takes the jitter out",
+         f"midpoint frame {half(sm)} vs {half(move)}, jerk {jerk(sm):.2f} vs {jerk(noisy):.2f}")
+
+
 def run(t):
     import numpy as np
     from tools.nong_sim.board_clock import BoardClock
@@ -45,6 +88,7 @@ def run(t):
     ids = [v["id"] for v in cfg["planner"]["variants"]] + [cfg["rl"]["id"]]
     t.ok(len(set(ids)) == len(ids), "every contender has its own id", str(ids))
     t.ok(cfg["out"].startswith(".local"), "results go to the git-ignored .local folder", cfg["out"])
+    gaps_and_smoothing(t, np)
     rig, facts = load_rig(), StudioFacts()
     rnd = random.Random(7)
     poses = [[rnd.uniform(rig["min"][i], rig["max"][i]) for i in range(10)] for _ in range(400)]
@@ -113,6 +157,7 @@ def run(t):
     bones = kin.bones(kin.points(sample)).numpy()
     n = len(sample)
     dance = Dance(name="synthetic", times=np.arange(n) * step / hz, bones=bones, arm_ok=np.ones((n, 2), bool),
+                  arm_fill=np.zeros((n, 2), bool),
                   body=sample[:, 8:].numpy(), body_ok=np.ones(n, bool), ik=sample.numpy(), start_pose=safe[0],
                   project={}, source={"id": "none", "from": 0})
     scorer = Scorer(dance, rig, kin, {"limitDeg": 0.5}, hz, gap)

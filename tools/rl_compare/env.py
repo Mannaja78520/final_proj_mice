@@ -22,6 +22,7 @@ class DanceEnv:
         T = lambda a: torch.as_tensor(a, device=device, dtype=dt)
         self.bones = T(dense.bones)                    # (S, 2, 2, 3)
         self.arm_ok = torch.as_tensor(dense.arm_ok, device=device)
+        self.arm_w = T(dense.arm_w)                    # 1 trusted, fillWeight bridged, 0 unseen
         self.body = T(dense.body)
         self.body_ok = torch.as_tensor(dense.body_ok, device=device)
         self.ik = T(dense.ik)
@@ -69,7 +70,7 @@ class DanceEnv:
         for d in self.look:
             i = (self.t + d).clamp(max=last)
             parts += [self.bones[i].reshape(-1, 12), (self.body[i] - self.mid[8:]) / self.half[8:],
-                      self.arm_ok[i].to(self.q.dtype), self.body_ok[i, None].to(self.q.dtype)]
+                      self.arm_w[i], self.body_ok[i, None].to(self.q.dtype)]
         return torch.cat(parts, 1)
 
     # ---- one decision ---------------------------------------------------
@@ -92,7 +93,7 @@ class DanceEnv:
     def _reward(self, pts, a, c):
         w, i = self.w, self.t.clamp(max=self.bones.shape[0] - 1)
         ang = torch.deg2rad(angle_deg(self.kin.bones(pts), self.bones[i]))            # (n, 2, 2)
-        seen = self.arm_ok[i][..., None].expand_as(ang).to(ang.dtype)
+        seen = self.arm_w[i][..., None].expand_as(ang)
         mse = (ang ** 2 * seen).sum((1, 2)) / seen.sum((1, 2)).clamp_min(1)
         bone = torch.exp(-mse / (2 * math.radians(w["boneSigmaDeg"]) ** 2))
         bone = torch.where(seen.sum((1, 2)) > 0, bone, torch.ones_like(bone))

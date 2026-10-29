@@ -33,10 +33,12 @@ from .render import ComparisonVideo, RobotPainter
 from .report import Report
 from .rl import RLRun, pick_device
 from .servo import ServoModel
+from .smooth import CommandSmoother
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 CONFIG = ROOT / "config" / "rl_compare.json"
+SMOOTH = "_smooth"                               # id suffix of a smoothed contender
 
 
 def save_json(path, data):
@@ -50,7 +52,7 @@ class Case:
     def __init__(self, exp, dance_name, scenario):
         self.exp, self.scenario = exp, scenario
         self.cfg = exp.cfg
-        self.dance = load_dance(exp.data_dir, dance_name)
+        self.dance = load_dance(exp.data_dir, dance_name, self.cfg["data"].get("fillGapS", 0.0))
         self.out = exp.out / dance_name / scenario["id"]
         self.kin, self.servo = exp.make("cpu")
         # the scenario's collision gap: Studio adds rig extraClearanceMm to its own base gap
@@ -83,7 +85,40 @@ class Case:
         s.update(extra)
         save_json(self.out / f"{cid}_score.json", s)
         np.savez_compressed(self.out / f"{cid}_motion.npz", c=np.asarray(c), q=np.asarray(q))
-        return {"id": cid, "label": label, "color": tuple(color), "q": np.asarray(q), "score": s}
+        return {"id": cid, "label": label, "color": tuple(color), "c": np.asarray(c), "q": np.asarray(q), "score": s}
+
+    def hybrid(self):
+        """RL, with planner_music spliced in where it follows the dancer clearly
+        better (user 2026-10-29: 43-45 s the planner matched, RL mostly better).
+        Picked offline on the per-frame error, cross-faded so nothing jumps."""
+        hc = self.cfg.get("hybrid")
+        rows = {r["id"]: r for r in self.rows}
+        if not hc or not all(k in rows for k in hc["from"]):
+            return
+        base, alt = (rows[k] for k in hc["from"])
+        n = min(len(base["c"]), len(alt["c"]))
+        e = [np.asarray(self.scorer.per_frame(torch.as_tensor(r["q"][:n]))) for r in (base, alt)]
+        k = max(1, int(hc["windowS"] * self.hz))
+        mean = lambda x: np.convolve(np.nan_to_num(x), np.ones(k) / k, mode="same")
+        use = (mean(e[0]) - mean(e[1]) > hc["marginDeg"]).astype(float)
+        r = max(1, int(hc["rampS"] * self.hz))
+        w = np.clip(np.convolve(use, np.ones(r) / r, mode="same"), 0, 1)[:, None]
+        c = base["c"][:n] * (1 - w) + alt["c"][:n] * w
+        q = self.servo.follow(torch.as_tensor(c, dtype=self.kin.dtype)).numpy()
+        extra = {"altShare": float(w.mean()), "trainS": base["score"].get("trainS")}
+        self.rows.append(self.scored(hc["id"], hc["label"], hc["color"], c, q, extra))
+
+    def smoothed(self):
+        """Every contender again through the one shared smoothing stage."""
+        sc = self.cfg.get("smooth")
+        if not sc:
+            return
+        smooth = CommandSmoother(sc, self.hz, self.exp.rig["min"], self.exp.rig["max"])
+        for r in [r for r in self.rows if not r["id"].endswith(SMOOTH)]:
+            c = smooth(r["c"])
+            q = self.servo.follow(torch.as_tensor(c, dtype=self.kin.dtype)).numpy()
+            extra = {k: v for k, v in r["score"].items() if k in ("trainS", "performS", "rounds", "computeS", "boardLengthS")}
+            self.rows.append(self.scored(r["id"] + SMOOTH, r["label"] + " + smoothed", r["color"], c, q, extra))
 
     # ---- contenders ----------------------------------------------------
     def planners(self):
@@ -142,8 +177,12 @@ class Case:
                          "lag": (lambda t, c=curve: float(np.interp(t, c["t"], c["driftS"])))})
         size = self.cfg["quick"]["size"] if q else None
         length = self.cfg["quick"]["videoS"] if q else None
-        vid.make(self.out / "comparison.mp4", rows, src, length, size,
-                 note="ม่วง = ท่าของคนที่หุ่นควรทำ · late = หุ่นช้ากว่าเพลงกี่วินาที")
+        note = "ม่วง = ท่าของคนที่หุ่นควรทำ · late = หุ่นช้ากว่าเพลงกี่วินาที"
+        vid.make(self.out / "comparison.mp4", [r for r in rows if not r["tag"].endswith(SMOOTH)], src, length, size, note=note)
+        smooth = [r for r in rows if r["tag"].endswith(SMOOTH)]
+        if smooth:
+            ComparisonVideo(painter, self.dance, vcfg, title, "smoothed (Savitzky-Golay) · same dancer, same servo model, same song clock"
+                            ).make(self.out / "comparison_smooth.mp4", smooth, src, length, size, note=note)
         rl = [r for r in rows if r["tag"] == self.cfg["rl"]["id"]]
         if not rl:
             return
@@ -167,7 +206,7 @@ class Case:
 
     def summary(self):
         out = {"dance": self.dance.name, "scenario": self.scenario, "songS": self.dance.length,
-               "contenders": [{k: v for k, v in r.items() if k not in ("q",)} for r in self.rows]}
+               "contenders": [{k: v for k, v in r.items() if k not in ("q", "c")} for r in self.rows]}
         for c in out["contenders"]:
             c["score"] = {k: v for k, v in c["score"].items() if k != "curve"}
             c["color"] = list(c["color"])
@@ -182,9 +221,9 @@ class Experiment:
     def __init__(self, args):
         self.cfg = json.loads(CONFIG.read_text(encoding="utf-8"))
         self.quick = args.quick
-        self.data_dir = ROOT / self.cfg["data"]["dir"]
+        self.data_dir = ROOT / (args.data_dir or self.cfg["data"]["dir"])
         self.source_dir = ROOT / self.cfg["data"]["sourceDir"]
-        self.out = ROOT / self.cfg["out"] / ("quick" if self.quick else "")
+        self.out = ROOT / (args.out or self.cfg["out"]) / ("quick" if self.quick else "")
         self.facts = StudioFacts()
         self.rig = load_rig()
         self.device = pick_device(self.cfg["rl"]["device"])
@@ -229,6 +268,8 @@ class Experiment:
                 case = Case(self, name, sc)
                 case.planners()
                 case.rl(self.args.fresh)
+                case.hybrid()
+                case.smoothed()
                 case.summary()
                 if not self.args.no_video:
                     case.videos()
@@ -240,6 +281,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--dance", action="append", help="one dance name (repeatable); default: all in the config")
     ap.add_argument("--scenario", action="append", help="one scenario id (repeatable); default: all")
+    ap.add_argument("--data-dir", help="folder of the <dance>_analysis.json sets, relative to the code folder (default: config data.dir)")
+    ap.add_argument("--out", help="results folder, relative to the code folder (default: config out)")
     ap.add_argument("--quick", action="store_true", help="tiny run that only proves the pipeline")
     ap.add_argument("--fresh", action="store_true", help="train RL again even if a finished run is saved")
     ap.add_argument("--no-video", action="store_true", help="scores only")

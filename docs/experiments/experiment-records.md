@@ -107,3 +107,67 @@ TIMING CAVEAT: the GPU/CPU was shared all night (nong_sim record 19:57-21:30, Co
 
 "music deg" = bone error on the song's own clock; "shape deg" = bone error ignoring timing.
 Songs: come_and_cheer 158 s; board s = how long the planner's show runs on the board.
+
+## 2026-10-29 lab (PC): 30 FPS pose, gap bridging, hybrid, smoothing
+
+User 2026-10-29: arms drop and miss the flicks; 43-45 s the planner matched better than RL; 45-46 s the
+dancer's arm swings behind the body; asked for 30 FPS measurement, no speed cap ("if the song is fast,
+move fast"), one smoothing stage for every method, and a record of RL's training cost against its gain.
+
+### Causes found (come_and_cheer_center_v2, 6 FPS)
+- Pose sampled at 6 FPS (951 samples / 158 s): a swing shorter than ~0.2 s falls between samples.
+- Untrusted arm samples: arm 0 18.1 %, arm 1 17.0 % of the song (e.g. 43.83-44.83 s, 45.17-47.17 s).
+  The reference held the last trusted direction there and the RL reward gave those frames weight 0,
+  so the policy was free to let the arm fall.
+- Studio's pose smoother (video_follow.json smoothing, maxTargetDps/accel limits, reversal removal)
+  feeds the planner only: 30 FPS full song reversals 1112 -> 0 (90 after repair), largest step 130 -> 8 deg.
+  Not separated into noise vs real flicks. The smoother thread (A54) reports fixing this config.
+
+### Changes (tools/rl_compare, config/rl_compare.json)
+- Pose re-measured at 29.97 FPS (every 2nd frame of the 59.94 FPS source; same YOLO + MediaPipe crops,
+  appearance and re-id as cheer_rig_1027) -> 5044 frames, CPU, ~16 min; Studio retarget (current
+  qc/data/video_group.cjs) -> 4751 samples, 2 min. Private: .local/cheer_rig_1029_30fps.
+- `data.fillGapS` 1.0: untrusted runs up to 1 s are bridged between the trusted samples on both sides;
+  `rl.fillWeight` 0.5 = weight of a bridged arm in the RL reward. Scores still use trusted samples only.
+  30 FPS: trusted arm 0 83.5 % / arm 1 78.0 %, bridged 9.1 % / 18.1 %; 42-48 s fully covered on arm 0.
+- `hybrid`: RL with planner_music spliced in where its 0.5 s mean per-frame error is > 5 deg lower,
+  0.3 s cross-fade.
+- `smooth` (prototype): zero-phase Savitzky-Golay, 0.24 s window, order 3, on the 50 Hz board commands,
+  then the same servo model. To be replaced by the shared A54 smoother once merged.
+- run.py `--data-dir`, `--out` to run a second data set without touching the v2 results.
+
+### Results: come_and_cheer_center, servo_5mm (no board cap, servo max ~375-400 deg/s, 5 mm gap)
+Same GPU (RTX 5070 Ti Laptop, cuda), nothing else running: RL 20 rounds x 60 updates = 2417 s train
+(121 s/round), 18.5 s to perform the song. Wall 3151 s for the whole set incl. planners and videos.
+
+| reference | contender | music deg | P95 deg | shape deg | jerk RMS deg/s^3 | drift end s | min gap mm | Studio flags | compute |
+|---|---|---|---|---|---|---|---|---|---|
+| 6 FPS v2 | planner_shape | 44.0 | 122.1 | 9.3 | 15125 | 32.9 | 6.0 | 1 | 18.4 s plan |
+| 6 FPS v2 | planner_music | 42.2 | 122.1 | 13.0 | 16835 | 8.7 | 24.2 | 0 | 12.9 s plan |
+| 6 FPS v2 | rl | 12.8 | 71.0 | 11.1 | 17437 | -0.1 | 13.0 | 0 | 3321 s train (shared GPU) |
+| 30 FPS | planner_shape | 38.7 | 114.5 | 12.7 | 34116 | 9.5 | 10.2 | 2 | 12.3 s plan |
+| 30 FPS | planner_music | 28.1 | 97.4 | 14.9 | 25691 | 1.9 | 15.2 | 0 | 15.3 s plan |
+| 30 FPS | rl | 15.1 | 68.9 | 12.9 | 25626 | 0.0 | 17.6 | 0 | 2417 s train |
+| 30 FPS | hybrid (3 % planner) | 14.5 | 61.3 | - | 26369 | 0.0 | 17.6 | 0 | rl + plan |
+| 30 FPS | planner_shape + smooth | 38.7 | 114.6 | 12.7 | 11482 | 9.5 | 9.3 | 1 | +<1 s |
+| 30 FPS | planner_music + smooth | 28.1 | 97.2 | 15.0 | 10244 | 1.9 | 14.1 | 0 | +<1 s |
+| 30 FPS | rl + smooth | 15.1 | 68.9 | 13.0 | 9638 | 0.0 | 17.5 | 0 | +<1 s |
+| 30 FPS | hybrid + smooth | 14.5 | 61.4 | - | 10121 | 0.0 | 15.6 | 0 | +<1 s |
+
+Per-second music error, 30 FPS (deg): 42-43 / 43-44 / 44-45 / 45-46 / 46-47 / 47-48 s
+- planner_music: 19 / 31 / 28 / 31 / 38 / 30
+- rl:            19 / 52 / 30 / 21 / 10 / 5
+
+Notes
+- 6 FPS and 30 FPS rows score against different references (30 FPS holds faster, more detailed
+  motion and more trusted samples), so "music deg" is not comparable across the two blocks. The
+  30 FPS RL also had gap bridging on; the two changes were not run apart (no time at the lab).
+- Cost vs gain at 30 FPS: RL needs ~40 min GPU training per dance and setting once, then 18 s per
+  performance; the planner needs ~15 s. RL halves the music error (15.1 vs 28.1 deg) and is on the beat
+  (0.0 vs 1.9 s late). Same direction as motion-imitation RL work (peng2018deepmimic,
+  peng2020imitating in rl_compare_references.bib), where a tracking policy beats keyframe
+  retargeting on timing at the cost of per-clip training.
+- Smoothing cut jerk 59-66 % on every method with music error unchanged to 0.1 deg; planner_shape
+  Studio flags 2 -> 1, min gap 10.2 -> 9.3 mm (still above the 5 mm gap).
+- 43-44 s is still RL's worst second (52 deg); the hybrid takes the planner there.
+- Sim only. Not run on the robot. RL output is 50 Hz sim commands, not yet a board sequence.
