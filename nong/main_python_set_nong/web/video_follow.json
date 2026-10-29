@@ -97,11 +97,11 @@
     "enableAfterValidation": true
   },
   "smoothing": {
-    "windowMs": 350,
-    "outlierDegrees": 12,
+    "_what": "Video pose clean-up before the moves are made (video_motion_smooth.js). windowMs: frames this close are medianed (40 = one frame each side at 30 fps, two at 60 fps: a one-frame tracker spike goes, a flick of two frames or more stays). speedScale/accelScale: share of each joint's servo max deg/s and speed-up (rig) a target may ask; the old fixed 240 deg/s and 900 deg/s2 erased every flick (A54-1, 2026-10-29). Smoothness between the moves is motion_smooth.json's job.",
+    "windowMs": 40,
     "deadbandDegrees": 1.2,
-    "maxTargetDps": 240,
-    "maxTargetAccelDps2": 900
+    "speedScale": 1,
+    "accelScale": 1
   },
   "routines": {
     "minimumOverlap": 4,

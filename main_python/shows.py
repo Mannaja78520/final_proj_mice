@@ -141,6 +141,7 @@ def cut_to_budget(out, first, began_at, budget, next_pose, speed, marks=None,
         s = out[keep]
         s["hold"] = 0                       # the pause goes before the move does
         s["t"] = max(MIN_T, min(s["t"], budget - hand))
+        s.pop("pass", None)                 # a cut move is not the planned curve
         running = began_at + s["t"]
     return max(0, end - running)
 
@@ -394,6 +395,9 @@ class Shows:
                 if pct != 1.0:
                     for st in pass_steps[1:]:
                         st["t"] = max(MIN_T, int(round(st["t"] / pct)))
+                        # PASS speeds (A54-1) follow the time: same curve, faster
+                        if st.get("pass"):
+                            st["pass"] = [v * pct for v in st["pass"]]
                 # THE GAP THAT LOOKED LIKE A STOP. Every sequence's first step
                 # is its start pose, timed for travel from wherever the robot
                 # happened to be - yakyai carries T 3273. Chained, the arm is
@@ -421,8 +425,11 @@ class Shows:
                 # Inside the sequence too: a file saved under a faster limit
                 # than the board has now is lengthened by the board, unseen.
                 for j in range(1, len(pass_steps)):
+                    asked = pass_steps[j]["t"]
                     pass_steps[j]["t"] = max(pass_steps[j]["t"], move_floor(
                         pass_steps[j - 1]["pose"], pass_steps[j]["pose"], limits))
+                    if pass_steps[j]["t"] != asked:
+                        pass_steps[j].pop("pass", None)     # not the move it was planned for
                 if marks is not None:
                     # `handover`: this step's move is paid from the CUT item's
                     # budget, so Studio draws it as the end of that item and the

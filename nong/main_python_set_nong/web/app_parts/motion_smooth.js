@@ -44,6 +44,7 @@ class MotionSmooth {
   constructor(opts) {
     this.cfg = opts.cfg || {}; this.maxDps = opts.maxDps || []; this.acc = opts.acc || [];
     this.cap = +opts.cap || 0; this.touches = opts.touches || null; this.rest = opts.rest || null;
+    this.memo = opts.memo || null;     // segment -> touches?, kept across edits by the caller
     this.off = +(this.touches ? this.cfg.maxOffLineDeg : this.cfg.uncheckedOffLineDeg) || 1;
   }
   num(k, d) { const v = this.cfg[k]; return Number.isFinite(+v) && v !== null && v !== "" ? +v : d; }
@@ -109,6 +110,13 @@ class MotionSmooth {
   // collision check on the smoothed path, as finely as Studio's straight
   // checks (SAFE.checkDeg), never coarser than `samples`
   touching(a, b, va, vb, T) {
+    const key = this.memo && a.join() + "|" + b.join() + "|" + va.join() + "|" + vb.join() + "|" + T;
+    if (key && this.memo.has(key)) return this.memo.get(key);
+    const hit = this.touchingNow(a, b, va, vb, T);
+    if (key) { if (this.memo.size > 20000) this.memo.clear(); this.memo.set(key, hit); }
+    return hit;
+  }
+  touchingNow(a, b, va, vb, T) {
     let big = 0;
     for (let j = 0; j < a.length; j++) big = Math.max(big, Math.abs(b[j] - a[j]));
     const step = Math.max(0.05, Math.min(1, +this.cfg.checkDeg || 1));
@@ -151,8 +159,12 @@ class MotionSmooth {
 // cache so a list is smoothed once per edit, not once per frame.
 const motionSmooth = {
   cache: new WeakMap(),
+  // collision answers per curved move: checking a 485-key dance's curves
+  // took 2-7 s (2026-10-29, headless); after an edit only the moves next to
+  // it are checked again. Forgotten when the rig, the gap or the pace changes.
+  memo: new Map(), memoSig: "",
   on(source) { return !!SMOOTH.on && (SMOOTH.sources || {})[source] !== false; },
-  forget() { this.cache = new WeakMap(); },
+  forget() { this.cache = new WeakMap(); this.memo = new Map(); },
   sig(K) {
     let s = K.length;
     for (const k of K) { s = s * 31 + (+k.t || 0) + (+k.hold || 0) * 7; for (const v of k.pose) s = (s * 1.000001 + v) % 1e12; }
@@ -163,11 +175,13 @@ const motionSmooth = {
     if (!K || K.length < 3 || !this.on(source)) return null;
     const sig = this.sig(K), got = this.cache.get(K);
     if (got && got.sig === sig) return got.V;
+    const world = safeRevision() + "|" + CLEAR + "|" + planPace();
+    if (world !== this.memoSig) { this.memo = new Map(); this.memoSig = world; }
     const sm = new MotionSmooth({
       cfg: { ...SMOOTH, checkDeg: SAFE.checkDeg },
       maxDps: Array.from({ length: NJ }, (_, j) => jointMaxDps(j)),
       acc: RIG.servoAccel, cap: planPace(K) === "music" ? musicPace.cap(K) : SAFE_DPS,
-      touches: p => !!collisionAt(p),
+      touches: p => !!collisionAt(p), memo: this.memo,
       // planner detours (safe_path.js marks them k.via) are corners the RRT
       // chose; with "planner" off the arm rests on them exactly as before
       rest: k => !!k.via && !this.on("planner"),

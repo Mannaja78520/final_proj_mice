@@ -4672,6 +4672,7 @@ class MotionSmooth {
   constructor(opts) {
     this.cfg = opts.cfg || {}; this.maxDps = opts.maxDps || []; this.acc = opts.acc || [];
     this.cap = +opts.cap || 0; this.touches = opts.touches || null; this.rest = opts.rest || null;
+    this.memo = opts.memo || null;     // segment -> touches?, kept across edits by the caller
     this.off = +(this.touches ? this.cfg.maxOffLineDeg : this.cfg.uncheckedOffLineDeg) || 1;
   }
   num(k, d) { const v = this.cfg[k]; return Number.isFinite(+v) && v !== null && v !== "" ? +v : d; }
@@ -4737,6 +4738,13 @@ class MotionSmooth {
   // collision check on the smoothed path, as finely as Studio's straight
   // checks (SAFE.checkDeg), never coarser than `samples`
   touching(a, b, va, vb, T) {
+    const key = this.memo && a.join() + "|" + b.join() + "|" + va.join() + "|" + vb.join() + "|" + T;
+    if (key && this.memo.has(key)) return this.memo.get(key);
+    const hit = this.touchingNow(a, b, va, vb, T);
+    if (key) { if (this.memo.size > 20000) this.memo.clear(); this.memo.set(key, hit); }
+    return hit;
+  }
+  touchingNow(a, b, va, vb, T) {
     let big = 0;
     for (let j = 0; j < a.length; j++) big = Math.max(big, Math.abs(b[j] - a[j]));
     const step = Math.max(0.05, Math.min(1, +this.cfg.checkDeg || 1));
@@ -4779,8 +4787,12 @@ class MotionSmooth {
 // cache so a list is smoothed once per edit, not once per frame.
 const motionSmooth = {
   cache: new WeakMap(),
+  // collision answers per curved move: checking a 485-key dance's curves
+  // took 2-7 s (2026-10-29, headless); after an edit only the moves next to
+  // it are checked again. Forgotten when the rig, the gap or the pace changes.
+  memo: new Map(), memoSig: "",
   on(source) { return !!SMOOTH.on && (SMOOTH.sources || {})[source] !== false; },
-  forget() { this.cache = new WeakMap(); },
+  forget() { this.cache = new WeakMap(); this.memo = new Map(); },
   sig(K) {
     let s = K.length;
     for (const k of K) { s = s * 31 + (+k.t || 0) + (+k.hold || 0) * 7; for (const v of k.pose) s = (s * 1.000001 + v) % 1e12; }
@@ -4791,11 +4803,13 @@ const motionSmooth = {
     if (!K || K.length < 3 || !this.on(source)) return null;
     const sig = this.sig(K), got = this.cache.get(K);
     if (got && got.sig === sig) return got.V;
+    const world = safeRevision() + "|" + CLEAR + "|" + planPace();
+    if (world !== this.memoSig) { this.memo = new Map(); this.memoSig = world; }
     const sm = new MotionSmooth({
       cfg: { ...SMOOTH, checkDeg: SAFE.checkDeg },
       maxDps: Array.from({ length: NJ }, (_, j) => jointMaxDps(j)),
       acc: RIG.servoAccel, cap: planPace(K) === "music" ? musicPace.cap(K) : SAFE_DPS,
-      touches: p => !!collisionAt(p),
+      touches: p => !!collisionAt(p), memo: this.memo,
       // planner detours (safe_path.js marks them k.via) are corners the RRT
       // chose; with "planner" off the arm rests on them exactly as before
       rest: k => !!k.via && !this.on("planner"),
@@ -7472,6 +7486,9 @@ function parseSeqYaml(text) {
       // the move that follows them. Neither is an unsupported step.
       curSpeed = +m[1];
       if (!out.speed) out.speed = curSpeed;
+    } else if (/^\s*-\s*pass\s*:/.test(line)) {
+      // a `pass:` step is derived from the moves (motion_smooth.js) and is
+      // written again on export: carried as a cue it would go stale
     } else if ((m = line.match(/^\s*-\s*([A-Za-z_][\w-]*):\s*"?(.*?)"?\s*$/))) {
       pend.push((m[1].toLowerCase() + ": " + m[2]).trim());
     } else if (/^\s*-\s/.test(line)) out.skipped++;   // not a step we can read
@@ -9843,25 +9860,29 @@ class VideoMotionSmoother {
         // Do not smooth through an unknown interval, an actual hold or a cut.
         let connected = true;
         for (let n = Math.min(i, k); n <= Math.max(i, k); n++) if (!reliable(n) || frames[n]?.shot !== frames[i]?.shot) connected = false;
-        if (connected) samples.push({ pose: poses[k], weight: 1 - Math.abs(times[k] - times[i]) / (cfg.windowMs + 1) });
+        if (connected) samples.push(poses[k]);
       }
       const next = poses[i].map((value, j) => {
-        const sorted = samples.map(s => s.pose[j]).sort((a, b) => a - b);
+        // A54-1 (PC thread 2026-10-29: this filter dropped all 19 flicks of a
+        // 12 s clip). It averaged 350 ms around each frame and capped the
+        // target at 240 deg/s and 900 deg/s2, so a 300 ms flick there and back
+        // could never form. Now: the MEDIAN of the frames within windowMs
+        // (one frame each side at 30 fps), which removes a one-frame tracker
+        // spike and keeps anything two frames long; and the limits are the
+        // servo's own (rig max deg/s and speed-up, x the scales), so a flick is
+        // kept as fast as the arm can really do it. Smoothness between the
+        // moves is motion_smooth.js's job.
+        const sorted = samples.map(p => p[j]).sort((a, b) => a - b);
         const median = sorted.length ? sorted[Math.floor(sorted.length / 2)] : value;
-        let sum = 0, weight = 0;
-        for (const s of samples) {
-          const w = s.weight * Math.min(1, cfg.outlierDegrees / Math.max(1, Math.abs(s.pose[j] - median)));
-          sum += s.pose[j] * w; weight += w;
-        }
-        // A trusted observed hold is a target to settle toward, not a command
-        // to freeze a partially filtered output before it arrives.
-        const target = frames[i]?.action === 'hold' ? value : weight ? sum / weight : value;
+        const target = frames[i]?.action === 'hold' ? value : median;
         let distance = target - previous[j];
         // Continuous damping retains slow intentional motion; a hard deadband
         // turns it into a series of small stops and jumps.
         if (Math.abs(distance) < cfg.deadbandDegrees) distance *= Math.abs(distance) / cfg.deadbandDegrees;
-        let speed = Math.max(-cfg.maxTargetDps, Math.min(cfg.maxTargetDps, distance / dt));
-        speed = Math.max(velocity[j] - cfg.maxTargetAccelDps2 * dt, Math.min(velocity[j] + cfg.maxTargetAccelDps2 * dt, speed));
+        const top = jointMaxDps(j) * (+cfg.speedScale || 1);
+        const accel = (+RIG.servoAccel[j] || 3000) * (+cfg.accelScale || 1);
+        let speed = Math.max(-top, Math.min(top, distance / dt));
+        speed = Math.max(velocity[j] - accel * dt, Math.min(velocity[j] + accel * dt, speed));
         const delta = Math.sign(speed) === Math.sign(distance) ? Math.sign(distance) * Math.min(Math.abs(distance), Math.abs(speed * dt)) : 0;
         velocity[j] = delta / dt; return clampJ(j, previous[j] + delta);
       });
