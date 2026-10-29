@@ -28,8 +28,9 @@ though the policy's own speed at each key is known.
 - `followDensePath` (true): when keys come from a dense motion (`DensePath(frames, idx, hz)`, used by
   `tools/rl_compare/smooth.py` and `to_sequence.py`), each key is passed at that motion's own speed,
   and the curve is measured against that motion (it was what got scored and collision-checked), not
-  the straight line: it may be no farther from it than the plain cosine move is, or than the off-line
-  limit, and may go at most that limit past where the motion itself went. `to_sequence` still replays
+  the straight line: its worst distance from it may be at most the off-line limit more than the
+  plain cosine move's (the line rule's own bound, measured on the motion), and it may go at most that
+  limit past where the motion itself went. `to_sequence` still replays
   the file and re-checks collisions.
 - `jerkGuard` (true, `jerkFrameMs` 20): for every source, per key, the jerk over the two moves it
   joins is compared with the cosine's at the board's 50 Hz; rougher shrinks that key's speeds; then the
@@ -44,13 +45,13 @@ Commanded = what is sent; servo = after `tools/rl_compare/servo.py` (40 ms lag, 
 
 | jitter σ | dense policy cmd / servo | keyed, before cmd / servo | keyed, after cmd / servo | keys |
 |---|---|---|---|---|
-| 0.0 | 5225 / 5000 | 58972 / 29178 | 6081 / 5204 | 371 |
-| 0.3 | 32617 / 11544 | 59517 / 29352 | 7208 / 5535 | 372 |
-| 0.6 | 64605 / 21405 | 59873 / 29552 | 16584 / 9140 | 372 |
+| 0.0 | 5225 / 5000 | 58972 / 29178 | 5939 / 5167 | 371 |
+| 0.3 | 32617 / 11544 | 59517 / 29352 | 7100 / 5504 | 372 |
+| 0.6 | 64605 / 21405 | 59873 / 29552 | 13944 / 8085 | 372 |
 
 Keyed after the fix is 5–8x smoother than before. Against the dense policy it is smoother whenever the
 policy has jitter (as real RL does: 23096–30275 after the servo model). On a perfectly smooth source
-(σ 0) keying at 3 deg costs +4 % (servo) / +16 % (commanded): a cubic between keys has a speed-up step
+(σ 0) keying at 3 deg costs +3 % (servo) / +14 % (commanded): a cubic between keys has a speed-up step
 at each key that the dense sines did not. Fewer of those need more keys (tolDeg / minKeyMs), not a
 different smoother; left as is (board file size, 30 KB crash 2026-10-28).
 
@@ -67,7 +68,7 @@ off the few keys where they added jerk, which can add a stop). Studio results ar
 
 ### Regression (check_motion_smooth, made-up data, in the public repo)
 - 20 s dense dance, σ 0.05, a 240 ms 30 deg flick: dense 24008, keyed held to the line (before) 39632,
-  keyed following the motion 12293, cosine 44595; 94 % of via speeds kept; flick peak kept exactly.
+  keyed following the motion 11819, cosine 44595; 95 % of via speeds kept; flick peak kept exactly.
 - Guard case (3 keys from a 20000-case search): cosine 313, without guard 337, with guard 313.
 
 ## Compared with the literature

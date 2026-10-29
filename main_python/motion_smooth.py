@@ -155,8 +155,10 @@ class Smoother:
         """Does the move a->b with these via speeds break a rule? (no
         overshoot, near the straight line, under the servo speed and speed-up)
         ref(s) -> pose: the dense motion this move was thinned from; then the
-        curve may go where that motion went, and may be no farther from it
-        than the plain cosine move is (or off), instead of near the line."""
+        curve may go where that motion went, and its worst distance from it
+        may be at most off more than the plain cosine move's, instead of near
+        the line. Worst over the move, not per sample: a move that starts at
+        rest lags a motion that does not, early, whatever its speeds."""
         nj, ns = len(a), int(self.cfg.get("samples", 24))
         off = self._off
         u = [b[j] - a[j] for j in range(nj)]
@@ -165,6 +167,7 @@ class Smoother:
         m = off if R else 1e-6                     # past where the motion went: at most off
         box = [(min([a[j], b[j]] + [r[j] for r in R or []]) - m,
                 max([a[j], b[j]] + [r[j] for r in R or []]) + m) for j in range(nj)]
+        worst = was = 0.0
         for k in range(1, ns):
             s = k / ns
             p = [curve(a[j], b[j], va[j], vb[j], T, s) for j in range(nj)]
@@ -180,17 +183,17 @@ class Smoother:
                     return True
             if R:
                 r, e = R[k - 1], 0.5 - 0.5 * math.cos(math.pi * s)
-                dist = math.sqrt(sum((p[j] - r[j]) ** 2 for j in range(nj)))
-                was = math.sqrt(sum((a[j] + (b[j] - a[j]) * e - r[j]) ** 2 for j in range(nj)))
-                if dist > max(was, off):
-                    return True
+                worst = max(worst, math.sqrt(sum((p[j] - r[j]) ** 2 for j in range(nj))))
+                was = max(was, math.sqrt(sum((a[j] + (b[j] - a[j]) * e - r[j]) ** 2 for j in range(nj))))
             elif uu > 0:
                 w = sum((p[j] - a[j]) * u[j] for j in range(nj)) / uu
                 w = min(1.0, max(0.0, w))
                 dist = math.sqrt(sum((p[j] - a[j] - w * u[j]) ** 2 for j in range(nj)))
                 if dist > off:
                     return True
-        return False
+        # with the dense motion: its worst distance from it at most off more than the
+        # plain move's (which the line rule allowed off from: the same bound, measured on the motion)
+        return bool(R) and worst > was + off
 
     def _touches(self, a, b, va, vb, T, touches):
         ns = int(self.cfg.get("samples", 24))

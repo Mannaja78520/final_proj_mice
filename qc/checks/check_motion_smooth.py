@@ -191,8 +191,9 @@ def test_dense(t, cfg, R):
           % (dense, got, line, plain, len(K)))
     t.ok(line > dense, "held to the straight line (before), keyed RL is rougher than the policy (%d vs %d)"
          % (line, dense))
-    t.ok(got < dense and got <= plain, "passed at the motion's own speed it is smoother than the policy "
-         "(%d vs %d) and than the cosine (%d)" % (got, dense, plain))
+    # 2026-10-30: 11819 at the motion's own speeds, 17191 with slopes from the keys alone
+    t.ok(got < 0.6 * dense and got <= plain, "passed at the motion's own speed it is well under the policy's "
+         "jerk (%d vs %d) and the cosine's (%d)" % (got, dense, plain))
     moving = sum(1 for row in V[1:-1] for v in row if v) / max(1, 10 * (len(K) - 2))
     t.ok(moving > 0.5, "most keys are passed through, not stopped on (%.0f %% of via speeds)" % (100 * moving))
     peak = max(p[0] for p in play(V)[480:530])
