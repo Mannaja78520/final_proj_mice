@@ -17,7 +17,7 @@ RL full run in the background (detached PowerShell, survives this session):
 `.local/rl_compare/run_rest.ps1`, log `.local/rl_compare/rl_rest.log` (UTF-16; read with
 `Get-Content -Encoding Unicode`). Order: the 11 unfinished sets, then
 come_and_cheer_left_v2/firmware_5mm last (restarts from round 1: no resume yet), then `--report`.
-Ends with the line `ALL DONE`. Started 19:47 Bangkok; sets take 56-77 min (CPU/GPU shared), 6/11 done at 02:50.
+RL run FINISHED 2026-10-29 12:49 (ALL DONE); results in experiment-records.md + rl_compare_results.md.
 YOLO pose (A52-3 step 3) on the same GPU: `.local/robot_pose/train/train.py n 16` in the venv
 `.local/yolo_venv` (system CUDA torch 2.11 + torchvision 0.26 cu128 + ultralytics 8.4.191),
 train = 20k renders, val = 36 LAB frames (`dataset_labval.yaml`), ~3 min/epoch, log train_n.log,
