@@ -57,6 +57,14 @@ def pid_alive(pid):
         import psutil
         return psutil.pid_exists(int(pid))
     except ImportError:
+        if os.name != "nt":
+            try:
+                os.kill(int(pid), 0)
+                return True
+            except ProcessLookupError:
+                return False
+            except PermissionError:
+                return True
         out = subprocess.run(["tasklist", "/FI", "PID eq %d" % int(pid), "/NH"],
                              capture_output=True, text=True).stdout
         return str(pid) in out

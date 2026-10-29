@@ -12,15 +12,19 @@ User 2026-10-29: "ห๊ะทำไมถึงเป็นฝังในเ�
 install removes the old logon task/Startup entry, watcher light (long sleep, low priority), settings in config/ai_watch.json.
 
 ## Doing now
-Editing tools/ai_watch.py (start/stop/install shortcuts), config/ai_watch.json ("control" block), qc/checks/check_ai_watch.py.
+Full QC (`python qc/run_qc.py --quiet`), then PR + merge.
 
 ## File status
 Baseline: e8f51c3
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| `handoff/tasks/ai-watch-onoff.md` | this task | in progress | n/a | this checkpoint |
-| `docs/PLAN.html` | A53-1 added, doing | done | plan.py | this checkpoint |
+| `tools/ai_watch.py` | start/stop/--popup, install = desktop shortcuts + remove logon, idle priority, wake_in | done | check_ai_watch 29/29 + 4 sabotages caught | this checkpoint |
+| `tools/limitwatch/jobs.py` | pid_alive works without psutil off Windows | done | check_ai_watch | this checkpoint |
+| `config/ai_watch.json` | poll 180 s, `control` block (priority, shortcuts, Thai messages) | done | check_ai_watch | this checkpoint |
+| `qc/checks/check_ai_watch.py` | _on_off(): install/start/stop/priority/wake | done | sabotage x4 | this checkpoint |
+| `docs/systems/ai-watch.md`, `docs/systems/agents.md` | rules + rebuilt | done | systems.py build | this checkpoint |
+| `handoff/tasks/ai-watch-onoff.md`, `docs/PLAN.html`, `docs/plan_state.js` | task + A53-1 | done | n/a | this checkpoint |
 
 ## Facts found
 - tools/ai_watch.py cmd_install: schtasks ONLOGON task "MiceAIWatch", else Startup\MiceAIWatch.vbs; launcher %LOCALAPPDATA%/MiceAIWatch/launch.py tries roots() (rename-safe).
@@ -28,10 +32,10 @@ Baseline: e8f51c3
 - tools/limitwatch/watcher.py:198 _fire_due fires jobs whose "due" <= now, so sleep can be cut to the next due job.
 
 ## Done
-- nothing yet
+- Code + check: `python qc/run_qc.py --quiet --no-build check_ai_watch check_resource_policy` 108/108 (cloud, Linux; Windows .lnk path untested here).
 
 ## Next
-1. Implement, run `python qc/run_qc.py --quiet --no-build check_ai_watch check_resource_policy`.
+1. Full QC, PR, merge; PC: git pull --ff-only in E:\\final_proj\\mice\\code, then `python tools/ai_watch.py install` (makes the desktop shortcuts).
 
 ## Blocked
 - nothing
