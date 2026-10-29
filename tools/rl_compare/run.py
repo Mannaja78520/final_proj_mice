@@ -226,6 +226,13 @@ class Case:
 class Experiment:
     def __init__(self, args):
         self.cfg = json.loads(CONFIG.read_text(encoding="utf-8"))
+        for item in getattr(args, "set", None) or []:    # --set rl.reward.lift=0.3: one experiment, config file untouched
+            path, value = item.split("=", 1)
+            *parents, leaf = path.split(".")
+            node = self.cfg
+            for k in parents:
+                node = node[k]
+            node[leaf] = json.loads(value)
         self.quick = args.quick
         self.data_dir = ROOT / (args.data_dir or self.cfg["data"]["dir"])
         self.source_dir = ROOT / self.cfg["data"]["sourceDir"]
@@ -289,6 +296,7 @@ def main(argv=None):
     ap.add_argument("--scenario", action="append", help="one scenario id (repeatable); default: all")
     ap.add_argument("--data-dir", help="folder of the <dance>_analysis.json sets, relative to the code folder (default: config data.dir)")
     ap.add_argument("--out", help="results folder, relative to the code folder (default: config out)")
+    ap.add_argument("--set", action="append", help="override one config value for this run, e.g. rl.reward.lift=0.3 (JSON value)")
     ap.add_argument("--quick", action="store_true", help="tiny run that only proves the pipeline")
     ap.add_argument("--fresh", action="store_true", help="train RL again even if a finished run is saved")
     ap.add_argument("--no-video", action="store_true", help="scores only")

@@ -97,13 +97,21 @@ class DanceEnv:
         mse = (ang ** 2 * seen).sum((1, 2)) / seen.sum((1, 2)).clamp_min(1)
         bone = torch.exp(-mse / (2 * math.radians(w["boneSigmaDeg"]) ** 2))
         bone = torch.where(seen.sum((1, 2)) > 0, bone, torch.ones_like(bone))
-        berr = ((self.q[:, 8:] - self.body[i]) ** 2).sum(1)
+        joints = slice(8, 9) if w.get("shrugFree") else slice(8, 10)     # shrugFree: the shoulder bar may help a lift
+        berr = ((self.q[:, joints] - self.body[i][:, :joints.stop - 8]) ** 2).sum(1)
         body = torch.where(self.body_ok[i], torch.exp(-berr / (2 * w["bodySigmaDeg"] ** 2)), torch.ones_like(berr))
         smooth = torch.exp(-w["smoothScale"] * ((a - self.prev_a) ** 2).mean(1))
+        # lift: the upper arm's height alone, so going up and down with the dancer pays even
+        # where the full direction cannot match (user 2026-10-29: follow the lifts more)
+        lifted = torch.rad2deg(torch.asin(self.kin.bones(pts)[:, :, 0, 1].clamp(-1, 1)))
+        wanted = torch.rad2deg(torch.asin(self.bones[i][:, :, 0, 1].clamp(-1, 1)))
+        lw = seen[:, :, 0]
+        lerr = ((lifted - wanted) ** 2 * lw).sum(1) / lw.sum(1).clamp_min(1)
+        lift = torch.where(lw.sum(1) > 0, torch.exp(-lerr / (2 * w.get("liftSigmaDeg", 10) ** 2)), torch.ones_like(lerr))
         gap = self.kin.clearance(pts)
         near = ((self.near - gap) / (max(1e-6, self.near - self.collision))).clamp(0, 1)
         on_stop = ((c <= self.lo + 0.5) | (c >= self.hi - 0.5)).to(c.dtype).mean(1)
-        r = w["bone"] * bone + w["body"] * body + w["smooth"] * smooth - w["near"] * near - w["limit"] * on_stop
+        r = w["bone"] * bone + w.get("lift", 0.0) * lift + w["body"] * body + w["smooth"] * smooth - w["near"] * near - w["limit"] * on_stop
         return r, gap < self.collision
 
 

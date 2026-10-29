@@ -295,6 +295,27 @@ def run(t):
         obs, rew, done, trunc = env.step(torch.ones(64, 10, dtype=torch.float64))
     t.ok(bool(((env.c >= kin.lo - 1e-9) & (env.c <= kin.hi + 1e-9)).all()), "commands never leave the joint range", "")
     t.ok(bool(torch.isfinite(obs).all() and torch.isfinite(rew).all()), "observations and rewards stay finite", "")
+    # lift reward (user 2026-10-29: follow the lifts more): with only the lift term on, an arm at the
+    # dancer's height earns more than the same arm 40 deg lower, and lift 0 changes nothing
+    only = {k: 0.0 for k in ("bone", "body", "smooth", "near", "limit")}
+    lw = dict(rc, reward=dict(rc["reward"], **only, lift=1.0, liftSigmaDeg=10))
+    le = DanceEnv(DenseReference(dance, rc["controlHz"]), kin, servo, 60, lw, "cpu")
+    le.reset()
+    le.t = torch.zeros_like(le.t)                                  # every robot at the song's first sample
+    q0 = torch.as_tensor(dance.ik[0], dtype=torch.float64).repeat(64, 1)
+    def lift_reward(q):
+        le.q = q
+        r, _ = le._reward(kin.points(q), torch.zeros_like(q), q)
+        return r
+    at = lift_reward(q0).mean().item()
+    low = q0.clone(); low[:, [0, 4]] = torch.where(low[:, [0, 4]] > 90, low[:, [0, 4]] - 50, low[:, [0, 4]] + 50)  # the arm 50 deg off its pitch
+    t.ok(at > lift_reward(low).mean().item(), "the lift reward pays an arm at the dancer's height more",
+         f"{at:.3f} vs {lift_reward(low).mean().item():.3f}")
+    le.w = dict(rc["reward"], lift=0.0)
+    base = lift_reward(q0)
+    le.w = dict(rc["reward"])
+    t.ok(bool(torch.allclose(base, lift_reward(q0))) or rc["reward"].get("lift", 0) != 0,
+         "lift 0 (the default) leaves the reward as it was", "")
 
     # A stopped run carries on (lab 2026-10-28: stopped at 12/20, a rerun began
     # at round 1). Two rounds, then the same run asked for three: only round 3

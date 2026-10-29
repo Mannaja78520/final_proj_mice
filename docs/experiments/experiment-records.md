@@ -216,3 +216,40 @@ nong/main_python_set_nong/web/motion_smooth.json (maxOffLineDeg 6, unchecked 1, 
   (5.77 vs 4.93 x D/T^2) and measured rougher here.
 - NOT run on hardware: firmware PASS builds (`pio run -e mice_nong`) and passes `pio test -e native`
   (48 cases) only.
+
+## 2026-10-29/30 night (PC): following the dancer's lifts, reach fitting and five ideas
+
+User 2026-10-29: the robot stays low when the dancer lifts an arm. Cause measured: shoulder pitch at its
+25 deg stop (180 deg servo through 14:19 gears = ~132 deg joint). Static best fit of the missed frames
+reached the dancer's height in 28 % of them, every fit at a joint limit (L_SH_P min 95 %, R_SH_P min 77 %).
+A copied-rig sim of the gears turned 40 deg (SH_P -15..115): mean bone error 7.6 -> 4.0 deg, lifts
+reached 38 -> 81 %, Studio flags 74 -> 90 of 1585 (static per-frame fits, not collision-avoiding). The user
+chose NOT to change the gears and asked for lifts that look like the dancer's: reach.py (reach fitting).
+
+Yardstick for every row below: come_and_cheer_center_30fps, servo_5mm, scored against the dancer's own
+arms (rawMusicDeg), liftCorr = correlation of upper-arm height robot vs dancer, "lift follow" = share of
+dancer samples with the upper arm > 30 deg up where the robot's is > 15 deg up. All rows: 0 Studio flags,
+drift at the end within 0.13 s. jerk = RMS 3rd derivative of servo angles, deg/s^3.
+
+| run | change | lift follow % | liftCorr | vs dancer deg | jerk | rl_smooth jerk | train s |
+|---|---|---|---|---|---|---|---|
+| 30 FPS, no reach | - | 57 | 0.903 | 15.1 | 25626 | 9638 | 2417 |
+| reach (default) | reach fitting on | 89 | 0.961 | 15.2 | 27297 | 10306 | 2585 |
+| 1 lead | commands sent 20 / 40 / 60 ms early (post-hoc) | 86.9 / 84.6 / 81.5 | 0.958 / 0.952 / 0.943 | 15.3 / 15.7 / 16.3 | - | - | 0 |
+| A_lift03 | rl.reward.lift 0.3 (upper-arm height term) | 92 | 0.979 | 15.9 | 29797 | 11297 | 7916* |
+| B_reach95m2 | reach.dancerTopPct 95, marginDeg 2 | 97 | 0.960 | 15.2 | 28476 | 10905 | 8001* |
+| C_shrugfree | shrug left out of the body reward | 86 | 0.961 | 15.3 | 27250 | 10363 | 8059* |
+| D_fill2s | data.fillGapS 2.0 | 90 | 0.952 | 15.5 | 27280 | 10444 | 8065* |
+| E_smooth05 | rl.reward.smooth 0.5 | 92 | 0.950 | 15.9 | 21041 | 7837 | 8075* |
+
+\* A-E ran six at once on one GPU (plus come_and_cheer_left): 355 s/round instead of ~120 s alone; GPU 83 %,
+4.7 of 12 GB, 79 C; RAM was the limit (3.1 of 31 GB free). The PC rebooted at 23:03 mid-run; runs resumed
+from their saved rounds.
+
+Notes
+- Lead hurts: the policy already looks 0.2-0.8 s ahead and was trained through the servo model's lag.
+- A's hybrid touched (min gap -21.8 mm approx): the splice between RL and planner_music is not
+  collision-aware. to_sequence refuses such a file; use rl there.
+- Best for the user's goal (follow AND smooth): B + A + E together -> the final run below.
+- Commands: `python -m tools.rl_compare.run --set <key>=<json>` (new) for each variant; scripts in the
+  private .local/cheer_rig_1029_30fps (lead_check.py, compare_reach.py, lift_exps.sh).
