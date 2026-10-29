@@ -16,9 +16,40 @@ missing file.
 
 Build:  python -m PyInstaller --clean MiceHub.spec
 """
+import os
+import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
+
+
+def _kill_running_exe():
+    """Terminate running MiceHub.exe instances to prevent PermissionError WinError 5 on dist/MiceHub.exe."""
+    if os.name != "nt":
+        return
+    target = "MiceHub.exe"
+    try:
+        r = subprocess.run(["tasklist", "/FI", "IMAGENAME eq %s" % target],
+                           capture_output=True, text=True, check=False)
+        if target.lower() in (r.stdout or "").lower():
+            print("[MiceHub.spec] %s is currently running." % target)
+            print("[MiceHub.spec] Terminating running instances automatically to avoid PermissionError...")
+            subprocess.run(["taskkill", "/F", "/T", "/IM", target],
+                           capture_output=True, text=True, check=False)
+            for _ in range(30):
+                time.sleep(0.1)
+                chk = subprocess.run(["tasklist", "/FI", "IMAGENAME eq %s" % target],
+                                     capture_output=True, text=True, check=False)
+                if target.lower() not in (chk.stdout or "").lower():
+                    break
+            print("[MiceHub.spec] Successfully terminated running %s." % target)
+    except Exception as e:
+        print("[MiceHub.spec] Warning: could not auto-kill %s: %s" % (target, e))
+        print("[MiceHub.spec] If build fails with PermissionError, run: taskkill /F /IM %s" % target)
+
+
+_kill_running_exe()
 
 ROOT = Path(SPECPATH)                                    # noqa: F821 - code/
 sys.path.insert(0, str(ROOT / "main_python"))
@@ -76,6 +107,7 @@ a = Analysis(                                            # noqa: F821
 a.datas = [d for d in a.datas if not build_stamp.skipped(d[0], names=False)]
 pyz = PYZ(a.pure)                                        # noqa: F821
 
+_kill_running_exe()
 exe = EXE(                                               # noqa: F821
     pyz, a.scripts, a.binaries, a.datas, [],
     name="MiceHub",

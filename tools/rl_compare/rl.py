@@ -32,7 +32,8 @@ class RLRun:
         self.kin, self.servo = make(device)
         self.kin_cpu, self.servo_cpu = make("cpu")
         self.device, self.out = device, Path(out_dir)
-        self.dense = DenseReference(dance, cfg["controlHz"], pad_s=max(cfg["lookaheadS"]) + 1)
+        self.dense = DenseReference(dance, cfg["controlHz"], pad_s=max(cfg["lookaheadS"]) + 1,
+                                    fill_weight=cfg.get("fillWeight", 0.0))
         self.env = DanceEnv(self.dense, self.kin, self.servo, scenario["safeDps"], cfg, device)
         torch.manual_seed(cfg["seed"])
         self.model = ActorCritic(self.env.obs_dim, 10, cfg["net"], cfg["ppo"]["initLogStd"]).to(device)

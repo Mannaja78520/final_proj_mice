@@ -3,7 +3,6 @@
  "faqThreshold": 0.75,
  "faqAskAgain": 0,
  "scenario": "Mall greeter",
- "googleApiKey": "",
  "presence": {
   "on": false,
   "seconds": 60,
@@ -29,7 +28,12 @@
   },
   "fallback": {
    "language": "th",
-   "when_not_in": ["th", "en", "ja", "zh"],
+   "when_not_in": [
+    "th",
+    "en",
+    "ja",
+    "zh"
+   ],
    "min_probability": 0.75
   }
  },
@@ -90,11 +94,19 @@
    "zh": "zh-CN-XiaoxiaoNeural"
   },
   "oneVoice": "",
-  "mixedVoice": ""
+  "mixedVoice": "",
+  "style": "friendly"
  },
  "face": {
   "on": true,
-  "addressWords": ["คุณ", "พี่", "น้อง", "อาจารย์", "ครู", "ดร."],
+  "addressWords": [
+   "คุณ",
+   "พี่",
+   "น้อง",
+   "อาจารย์",
+   "ครู",
+   "ดร."
+  ],
   "autoSeconds": 5,
   "cameraLabel": "",
   "rememberSeconds": 15
@@ -105,7 +117,20 @@
    "prompt": "พนักงานต้อนรับในศูนย์การค้า สุภาพและยิ้มแย้ม",
    "voice": "",
    "rate": "",
-   "pitch": ""
+   "pitch": "",
+   "language": ""
   }
- ]
+ ],
+ "use": {
+  "hear": [
+   "local"
+  ],
+  "think": [
+   "local"
+  ],
+  "speak": [
+   "edge",
+   "local"
+  ]
+ }
 }

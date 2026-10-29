@@ -26,6 +26,7 @@ class Scorer:
         inside = dance.times <= dance.length + 1e-9
         self.t = dance.times[inside]
         self.want = torch.tensor(dance.bones[inside], dtype=kin.dtype, device=kin.device)
+        self.raw = None if dance.raw_bones is None else torch.tensor(dance.raw_bones[inside], dtype=kin.dtype, device=kin.device)
         self.ok = torch.tensor(dance.arm_ok[inside], device=kin.device)
         self.body = dance.body[inside]
         self.body_ok = dance.body_ok[inside]
@@ -100,9 +101,18 @@ class Scorer:
         lo, hi = np.array(self.rig["min"]), np.array(self.rig["max"])
         margin = self.cfg["limitDeg"]
         on_stop = ((cn <= lo + margin) | (cn >= hi - margin)).any(1)
+        # lift: does the arm go up and down WITH the dancer (height over time, not the exact angle)
+        raw = self.raw if self.raw is not None else self.want
+        e_h = torch.rad2deg(torch.asin(raw[:, :, 0, 1].clamp(-1, 1))).cpu().numpy()
+        e_r = torch.rad2deg(torch.asin(got_now[:, :, 0, 1].clamp(-1, 1))).cpu().numpy()
+        okn = self.ok.cpu().numpy()
+        lift = [float(np.corrcoef(e_h[okn[:, a], a], e_r[okn[:, a], a])[0, 1]) for a in range(2) if okn[:, a].sum() > 2]
+        raw_err = angle_deg(raw, got_now)
         gaps = torch.cat([self.kin.clearance(self.kin.points(ch)) for ch in torch.split(q, 8192)]).cpu().numpy()
         return {
             "boneMusicDeg": bone_music,
+            "rawMusicDeg": float(raw_err[w].mean()) if w.any() else float("nan"),
+            "liftCorr": float(np.mean(lift)) if lift else float("nan"),
             "boneMusicWorstP95Deg": float(np.percentile(worst, 95)),
             "boneShapeDeg": float(matched[seen_rows].mean()),
             "waistErrDeg": float(body_err[:, 0].mean()) if len(body_err) else None,
