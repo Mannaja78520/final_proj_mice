@@ -925,6 +925,15 @@ class Brain:
         return "loads when first needed"
 
     def _load_stt(self):
+        # One load per model at a time (A55-1): the boot preload runs without
+        # the GPU lock, so a first question used to load a SECOND copy beside
+        # it - double VRAM on a 12 GB card the face app shares. A waiter finds
+        # it loaded (or its error) and returns.
+        lock = self.__dict__.setdefault("_load_lock_stt", threading.Lock())
+        with lock:
+            return self._load_stt_now()
+
+    def _load_stt_now(self):
         scfg = self.cfg.get("stt", {})
         if not scfg.get("enabled"):
             return                      # switched off is a decision, not a fault
@@ -1995,6 +2004,15 @@ class Brain:
 
 
     def _load_llm(self):
+        # One load per model at a time (A55-1): the boot preload runs without
+        # the GPU lock, so a first question used to load a SECOND copy beside
+        # it - double VRAM on a 12 GB card the face app shares. A waiter finds
+        # it loaded (or its error) and returns.
+        lock = self.__dict__.setdefault("_load_lock_llm", threading.Lock())
+        with lock:
+            return self._load_llm_now()
+
+    def _load_llm_now(self):
         if not self.cfg.get("llm", {}).get("enabled"):
             return                      # switched off is a decision, not a fault
         if self._llm or self._llm_err:

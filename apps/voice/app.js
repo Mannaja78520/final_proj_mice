@@ -617,7 +617,12 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
   try {
     r = await fetch("/api/voice/health").then(r => r.json());
   } catch(e) { return this.down("The hub did not answer."); }
-  if (!r.ok) return this.down(this.human(r.error));
+  if (!r.ok) {
+    this.down(this.human(r.error));
+    // The hub started it for us (A55-1): wait with a clock, not a dead end.
+    if (r.starting) return this.waitForHelper();
+    return;
+  }
   this.$("down").hidden = true;
   this.$("ready").hidden = false;
   this.$("settings").hidden = false;        // settings exist only while helper runs
@@ -714,32 +719,55 @@ class VoiceApp extends (typeof Mice !== 'undefined' && Mice.App ? Mice.App : Obj
   }
 }
 
+  // Start the helper and WAIT for it with a visible clock (A55-1, user
+  // 2026-10-29: the Voice app hung). The hub owns the process: it reports
+  // starting / running / stopped, and a helper that died says why (its last
+  // printed lines, behind the technical switch). Before, this waited 10 s and
+  // then showed "connecting…" forever.
   async startVoiceService(){
     const btn = this.$("btnStartVoice");
-    const stat = this.$("downStat");
     if (btn) btn.disabled = true;
-    if (stat) stat.textContent = "starting helper…";
+    this.downStat("starting the voice helper…");
     try {
-      const r = await fetch("/api/voice/start", {method: "POST"}).then(res => res.json());
-      if (r && r.ok) {
-        if (stat) stat.textContent = "helper started, connecting…";
-        for (let i = 0; i < 10; i++) {
-          await new Promise(res => setTimeout(res, 1000));
-          try {
-            const h = await fetch("/api/voice/health").then(res => res.json());
-            if (h && h.ok) {
-              this.load();
-              return;
-            }
-          } catch(e) {}
-        }
-      } else {
-        if (stat) stat.textContent = (r && r.error) ? r.error : "could not start helper";
-      }
-    } catch(e) {
-      if (stat) stat.textContent = "could not reach hub to start helper";
+      const r = await Mice.Api.post("/api/voice/start", {});
+      if (!r.ok) return this.downStat(r.says || "the voice helper could not start", "");
+      await this.waitForHelper();
     } finally {
       if (btn) btn.disabled = false;
+    }
+  }
+
+  async waitForHelper(){
+    if (this.helperWait) return this.helperWait;
+    this.helperWait = (async () => {
+      const t0 = Date.now();
+      let misses = 0;
+      for (;;) {
+        const r = await Mice.Api.get("/api/voice/helper");
+        const st = r.ok ? r.data : {};
+        if (!r.ok && ++misses > 5) return this.downStat(r.says, r.tech);
+        if (st.running) { this.downStat(""); return this.load(); }
+        const secs = Math.round((Date.now() - t0) / 1000);
+        if (r.ok && !st.starting) {
+          return this.downStat("The voice helper did not start: " + (st.why || "it stopped")
+                               + ". Press Start again.", st.tail || "");
+        }
+        this.downStat("starting the voice helper… " + secs + " s");
+        await new Promise(res => setTimeout(res, 1000));
+      }
+    })();
+    try { return await this.helperWait; } finally { this.helperWait = null; }
+  }
+
+  downStat(text, tech){
+    const stat = this.$("downStat");
+    if (!stat) return;
+    stat.textContent = text || "";
+    if (tech) {
+      const t = document.createElement("pre");
+      t.className = "tech mini";
+      t.textContent = tech;
+      stat.appendChild(t);
     }
   }
 

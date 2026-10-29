@@ -34,6 +34,10 @@ function buildYaml(fromMs) {
   // last, so inside a longer show it never speeds up the sequence after it.
   const music = planPace(K0) === "music";
   if (music && !K0.some(k => keyCue(k, "pace"))) lines.push("  - " + musicPace.cue());
+  // the speeds each move starts and ends with (motion_smooth.js): a `pass:`
+  // step right before its pose. A board without PASS skips the unknown step (and
+  // logs it), so an old board plays the file exactly as before.
+  const V = motionSmooth.of(K0);
   // suspended keyframes are left out entirely — the robot never sees them
   playKeys().forEach((k, i) => {
     if (i < from) return;      // walked for state above, never written as motion
@@ -58,6 +62,8 @@ function buildYaml(fromMs) {
     // timeline says. Give it at least the time that distance really needs, so
     // a resumed show can never begin with a lunge. Never faster, only slower.
     const t = (i === from && from > 0) ? Math.max(k.t, minTime(pose, k.pose)) : k.t;
+    const pass = i > from ? MotionSmooth.passFor(V, i) : null;
+    if (pass) lines.push(`  - pass: "${pass.map(fmtA).join(" ")}"`);
     lines.push(`  - pose: "${k.pose.map(fmtA).join(" ")} T ${t}"` +
                (i === 0 ? "    # start pose"
                         : i === from ? "    # resumed from here" : ""));

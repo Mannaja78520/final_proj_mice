@@ -18,6 +18,8 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+# Hubs a check starts never launch a real voice helper (A55-1, main_python/voice_helper.py).
+os.environ.setdefault("MICE_VOICE_AUTOSTART", "0")
 
 QC = Path(__file__).resolve().parent
 CODE = QC.parent

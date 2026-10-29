@@ -44,8 +44,12 @@ def run(t):
          "show clock can produce one when a move starts in the future")
 
     code = re.sub(r"//[^\n]*", "", nong)
-    t.contains(code, "nongmath::ease(",
-               "the move loop calls it")
+    # since A54-1 the loop calls nongmath::curve, which IS the ease for a
+    # move that rests at both ends (PASS moves add speeds to it)
+    curve = math_h[math_h.find("inline float curve("):]
+    curve = curve[:curve.find("\n}") + 2]
+    t.ok("nongmath::curve(" in code and "ease(s)" in curve,
+         "the move loop calls it (through nongmath::curve)", curve[:200])
     t.ok("0.5f - 0.5f * cosf" not in code,
          "and does not write the same cosine out again",
          "the copy had no clamp, which is what made it worse than duplication")

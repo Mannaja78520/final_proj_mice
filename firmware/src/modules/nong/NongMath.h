@@ -122,4 +122,55 @@ inline float ease(float t) {
     return 0.5f - 0.5f * cosf(NONG_PI * t);
 }
 
+// ---- passing THROUGH a keyframe (PASS, A54-1) ---------------------------
+// User 2026-10-29: the moves stutter. ease() starts and STOPS every move, so
+// a dance with a key every 167-500 ms stopped at every key. A move that came
+// with PASS starts and ends at given speeds (deg/s) instead: a cubic Hermite
+// between them. Rest to rest a joint keeps the cosine. The same polynomial is
+// main_python/motion_smooth.py curve() and Studio's MotionSmooth.curve
+// (check_motion_smooth), so the preview, the sim and the arm agree.
+inline float curve(float q0, float q1, float v0, float v1, float Tsec, float s) {
+    if (s <= 0.0f) s = 0.0f;
+    if (s >= 1.0f) s = 1.0f;
+    if (v0 == 0.0f && v1 == 0.0f) return q0 + (q1 - q0) * ease(s);
+    const float s2 = s * s, s3 = s2 * s;
+    return q0 + (q1 - q0) * (3.0f * s2 - 2.0f * s3) +
+           Tsec * (v0 * (s3 - 2.0f * s2 + s) + v1 * (s3 - s2));
+}
+
+// the curve's speed (deg/s) at s
+inline float curveSpeed(float q0, float q1, float v0, float v1, float Tsec, float s) {
+    const float d = q1 - q0;
+    if (v0 == 0.0f && v1 == 0.0f) return d * NONG_PI * 0.5f * sinf(NONG_PI * s) / Tsec;
+    return d * (6.0f * s - 6.0f * s * s) / Tsec + v0 * (3.0f * s * s - 4.0f * s + 1.0f) +
+           v1 * (3.0f * s * s - 2.0f * s);
+}
+
+// May this PASS move run as asked? Every joint stays under its own top speed
+// and under the cap (capDps <= 0 = none) all the way, checked at 16 points.
+// No: the board plays the plain cosine instead (the old move).
+inline bool passFits(const float from[], const float to[], const float v0[], const float v1[],
+                     int n, float Tsec, const float maxDps[], float capDps) {
+    if (!(Tsec > 0.0f)) return false;
+    for (int i = 0; i < n; i++) {
+        float top = maxDps[i] > 1.0f ? maxDps[i] : 1.0f;
+        if (capDps > 0.0f && capDps < top) top = capDps;
+        if (fabsf(v0[i]) > top || fabsf(v1[i]) > top) return false;
+        for (int k = 1; k < 16; k++)
+            if (fabsf(curveSpeed(from[i], to[i], v0[i], v1[i], Tsec, k / 16.0f)) > top * 1.01f)
+                return false;
+    }
+    return true;
+}
+
+// Does the arm really move at the speeds this move was planned to start with?
+// It does when the move before ended as planned (its PASS end speeds); a move
+// the board lengthened, one that came late, or a resumed file starts at rest,
+// and then the planned curve would start with a jump: play the cosine.
+inline bool passStarts(const float carried[], const float planned[], int n, float tolDps) {
+    for (int i = 0; i < n; i++)
+        if (fabsf(carried[i] - planned[i]) > tolDps) return false;
+    return true;
+}
+
 } // namespace nongmath

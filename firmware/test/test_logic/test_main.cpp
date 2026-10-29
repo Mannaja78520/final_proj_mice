@@ -158,6 +158,33 @@ void test_ease_is_smooth_and_bounded(void) {
     }
 }
 
+// ------------------------------------------------- PASS: through a keyframe
+// A54-1 (user 2026-10-29: the moves stutter). The same numbers as
+// main_python/motion_smooth.py curve(10, 40, 50, 80, 0.3, 0.37) = 19.4147, so
+// the board plays exactly the curve Studio drew and checked.
+void test_pass_curve_matches_studio(void) {
+    TEST_ASSERT_FLOAT_WITHIN(0.002f, 19.4147f, curve(10, 40, 50, 80, 0.3f, 0.37f));
+    // rest to rest it IS the old cosine, so a file without PASS plays as before
+    TEST_ASSERT_FLOAT_WITHIN(0.002f, 10 + 30 * ease(0.37f), curve(10, 40, 0, 0, 0.3f, 0.37f));
+    // it leaves at the start speed and arrives at the end speed: no stop
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 50.0f, curveSpeed(10, 40, 50, 80, 0.3f, 0.0f));
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 80.0f, curveSpeed(10, 40, 50, 80, 0.3f, 1.0f));
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 10.0f, curve(10, 40, 50, 80, 0.3f, -1.0f));   // clamped
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 40.0f, curve(10, 40, 50, 80, 0.3f, 2.0f));
+}
+void test_pass_needs_its_start_speed_and_limits(void) {
+    const float a[2] = {10, 90}, b[2] = {40, 90}, v0[2] = {50, 0}, v1[2] = {80, 0};
+    const float fast[2] = {400, 400}, slow[2] = {60, 60};
+    TEST_ASSERT_TRUE(passFits(a, b, v0, v1, 2, 0.3f, fast, 0.0f));
+    TEST_ASSERT_FALSE(passFits(a, b, v0, v1, 2, 0.3f, slow, 0.0f));   // a servo too slow
+    TEST_ASSERT_FALSE(passFits(a, b, v0, v1, 2, 0.3f, fast, 60.0f));  // the cap in force
+    TEST_ASSERT_FALSE(passFits(a, b, v0, v1, 2, 0.0f, fast, 0.0f));
+    // the arm at rest (a lengthened or resumed move before) cannot start at 50 deg/s
+    const float rest[2] = {0, 0}, moving[2] = {50.4f, 0};
+    TEST_ASSERT_FALSE(passStarts(rest, v0, 2, 1.0f));
+    TEST_ASSERT_TRUE(passStarts(moving, v0, 2, 1.0f));
+}
+
 // ------------------------------------------------------------ SET WIFI args
 // Both of these were found by flashing a board and watching it refuse to join
 // a network that was working. Neither crashes; both just quietly never
@@ -518,6 +545,8 @@ int main(int, char **) {
     RUN_TEST(test_safe_duration_caps_peak_speed);
     RUN_TEST(test_move_floor_music_pace);
     RUN_TEST(test_ease_is_smooth_and_bounded);
+    RUN_TEST(test_pass_curve_matches_studio);
+    RUN_TEST(test_pass_needs_its_start_speed_and_limits);
     RUN_TEST(test_quoted_ssid_keeps_its_spaces);
     RUN_TEST(test_quoted_password_loses_its_quotes);
     RUN_TEST(test_unquoted_still_works);

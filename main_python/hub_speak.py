@@ -416,9 +416,14 @@ class Speech:
                            "format": "wav", "rate": rate, **({"clip": clip, "profile": profile} if clip else {})}).encode("utf-8")
         req = urllib.request.Request(base + "/say", data=body,
                                      headers={"Content-Type": "application/json"})
-        try:
+        def fetch():
             with urllib.request.urlopen(req, timeout=45) as r:
-                got = r.read()
+                return r.read()
+        try:
+            # Helper not running = the hub starts it and the line still gets
+            # spoken (A55-1); before, every rig line failed until a person
+            # pressed Start on the Voice page.
+            got = _hub.VOICE_HELPER.call(fetch)
         except urllib.error.HTTPError as e:
             try:
                 return None, json.loads(e.read().decode("utf-8")).get("error") or str(e)

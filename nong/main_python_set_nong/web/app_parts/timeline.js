@@ -767,16 +767,20 @@ function turnKeyPalm(i, arm, want) {
   if (want * r.upness <= 0.5) notice($("tlStat").textContent);
 }
 
-// ------- playback preview (cosine ease per segment — same as the firmware)
+// ------- playback preview (the board's own curve, motion_smooth.js)
 // The pose `ms` into the moves K: { pose }, or past the last one { pose, end }
 // with end = when it ended. Shared with the video page (A44-8), which plays
 // its made moves beside the video without putting them on the time bar.
-function easeKeys(K, ms) {
+// source: which maker of moves K is (motion_smooth.json sources); smoothed,
+// a key is passed through at its pass speed, else the cosine stops on it.
+function easeKeys(K, ms, source = "studio") {
   let t = K[0].hold || 0;
   if (ms <= t) return { pose: [...K[0].pose] };
+  const V = motionSmooth.of(K, source);
   for (let i = 1; i < K.length; i++) {
     const seg = K[i].t;
     if (ms < t + seg) {
+      if (V) return { pose: MotionSmooth.pose(K[i - 1].pose, K[i].pose, V[i - 1], V[i], seg, (ms - t) / seg) };
       const f = 0.5 - 0.5 * Math.cos(Math.PI * (ms - t) / seg);
       return { pose: K[i - 1].pose.map((a, j) => a + (K[i].pose[j] - a) * f) };
     }
@@ -967,10 +971,14 @@ function hubDriven() {
 function hubShowSteps() {
   const K = playKeys();
   if (K.length < 2) return null;
+  const V = motionSmooth.of(K);
   const steps = K.map((k, i) => ({
     pose: k.pose.map(v => +fmtA(v)),
     t: i === 0 ? minTime(pose, K[0].pose) : k.t,
     hold: k.hold || 0,
+    // the speeds this move starts and ends with (PASS); the hub sends them
+    // only to a board that knows PASS
+    ...(MotionSmooth.passFor(V, i) ? { pass: MotionSmooth.passFor(V, i) } : {}),
     // the hub decides which cue is a command it may send (main.py cue_lines),
     // so the editor passes the file's own words straight through
     cues: k.cues || [],

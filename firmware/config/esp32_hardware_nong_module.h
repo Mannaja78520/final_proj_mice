@@ -99,6 +99,13 @@
                                           // music). 0 = none: only max_dps holds the arm.
                                           // CFG music_dps to bring one back (lab ramp-up).
     #define NONG_MIN_MOVE_MS       80     // shortest interpolated move
+    // PASS (A54-1): a smoothed pose that arrives up to LEAD ms before the move
+    // in front of it ends waits and starts exactly at that end (the hub sends
+    // it early, motion_smooth.json boardLeadMs); one up to GRACE ms late still
+    // continues from that end. Outside both it is an ordinary move from rest.
+    #define NONG_PASS_LEAD_MS      150
+    #define NONG_PASS_GRACE_MS     25
+    #define NONG_PASS_TOL_DPS      1.0f   // start speeds this close count as "as planned"
     #define NONG_DEFAULT_NEUTRAL   90.0f  // neutral angle for every joint
     // Per-servo travel limits (deg). The universal joint cannot reach the
     // full 0..180 — the middle of a 2-servo universal joint binds — so each

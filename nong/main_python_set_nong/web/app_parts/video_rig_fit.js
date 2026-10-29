@@ -138,7 +138,7 @@ class VideoRigFitter {
     try {
       fit.targets.forEach((body, i) => {
         if (!body) return;
-        pose = easeKeys(made.keys, this.clockForSource(made.keys, fit.times[i]).ms).pose;
+        pose = easeKeys(made.keys, this.clockForSource(made.keys, fit.times[i]).ms, "video").pose;
         applyPose(); robot.updateMatrixWorld(true);
         const local = o => bodyGroup.worldToLocal(o.getWorldPosition(new THREE.Vector3()));
         let error = 0;

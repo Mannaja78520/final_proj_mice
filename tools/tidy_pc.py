@@ -19,7 +19,12 @@ Why each step is here (each one broke something once, or would):
   * git-ignored files of this PC (voice settings, logs) and Windows
     shortcuts (Desktop, Start menu, Startup, dist/Apps) may hold the old
     path: rewritten (a .bak beside each file), shortcuts re-pointed;
-  * the Remote Control start command names the folder: printed new.
+  * the Remote Control start command names the folder: printed new;
+  * Windows names ignore case, so Photobooth -> photobooth/Photobooth is a
+    move INTO ITSELF there. 2026-10-29 shutil.move then fell back to
+    copy + delete and half-deleted the friend's repo (recovered). So moves
+    are os.rename only, a same-name move goes through a temp name, and the
+    first failure stops everything and names the folder (MoveStopped).
 """
 import argparse
 import fnmatch
@@ -33,6 +38,20 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
+
+
+class MoveStopped(RuntimeError):
+    """A move failed: everything after it waits. .done = what did move."""
+
+    def __init__(self, msg, done):
+        super().__init__(msg)
+        self.done = done
+
+
+def _key(p):
+    # Windows treats Photobooth and photobooth as ONE folder; compare that way
+    # everywhere, so the same plan is safe on any disk
+    return str(p).replace("\\", "/").rstrip("/").casefold()
 
 
 def _load(path):
@@ -56,7 +75,9 @@ class PcTidy:
         return self.repo
 
     def matches(self, pattern):
-        return sorted(p for p in self.parent.iterdir() if fnmatch.fnmatch(p.name, pattern)
+        # fnmatchcase: on Windows plain fnmatch ignores case, and "Photobooth"
+        # then also matched the new photobooth/ folder it was moved into
+        return sorted(p for p in self.parent.iterdir() if fnmatch.fnmatchcase(p.name, pattern)
                       and p.resolve() != self.repo)
 
     def plan(self):
@@ -110,19 +131,83 @@ class PcTidy:
 
     # ---- doing it ---------------------------------------------------------------
     def move_all(self, dry=False):
+        """Do the OK'd moves; the first one that fails raises MoveStopped."""
+        pairs = [pr for _, prs, ok in self.plan() if ok for pr in prs]
+        # a move into a folder of its own name first: until it is done, its
+        # name is the only "photobooth" there, and photobooth/run would land
+        # inside the friend's repo
+        pairs.sort(key=lambda pr: not self._within(pr[1], pr[0]))
         done = []
-        for e, pairs, ok in self.plan():
-            if not ok:
+        for src, dst in pairs:
+            nested = self._within(dst, src)
+            if not nested and self._exists(dst):
+                self.say.append("skip %s: %s already exists" % (src.name, dst))
                 continue
-            for src, dst in pairs:
-                if dst.exists():
-                    self.say.append("skip %s: %s already exists" % (src.name, dst))
-                    continue
-                if not dry:
-                    dst.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.move(str(src), str(dst))
-                done.append((src, dst))
+            other = self._clash(src, dst)
+            if other is not None:
+                raise MoveStopped("stopped before %s: on Windows %s is the folder %s, so it "
+                                  "would land inside that - nothing after it moved"
+                                  % (src.name, dst.relative_to(self.parent), other.name), done)
+            if not dry:
+                self._move(src, dst, nested, done)
+            done.append((src, dst))
         return done
+
+    def _move(self, src, dst, nested, done):
+        tmp = src.with_name(".tidy_tmp_" + src.name) if nested else None
+        step = "rename"
+        try:
+            if tmp is not None:
+                if self._exists(tmp):
+                    raise OSError("%s is in the way" % tmp.name)
+                self._rename(src, tmp)
+            step = "make " + str(dst.parent)
+            self._mkdir(dst.parent)
+            step = "rename"
+            self._rename(tmp or src, dst)
+        except OSError as e:
+            where = src
+            if tmp is not None and self._exists(tmp):
+                try:
+                    self._rename(tmp, src)
+                except OSError:
+                    where = tmp
+            raise MoveStopped("could not move %s (%s: %s). It is still whole at %s; "
+                              "nothing after it moved and nothing was deleted"
+                              % (src.name, step, e, where), done)
+
+    @staticmethod
+    def _within(path, folder):
+        """path is folder or inside it, ignoring case (as Windows does)."""
+        a, b = _key(path), _key(folder)
+        return a == b or a.startswith(b + "/")
+
+    # the disk calls a move makes; QC swaps them for a disk that
+    # ignores case like Windows. os.rename never copies, so a failure leaves
+    # the folder whole - no shutil.move, whose fallback copies then deletes
+    def _exists(self, p):
+        return os.path.lexists(p)
+
+    def _clash(self, src, dst):
+        """A folder above dst that Windows would take for it: same name in
+        another case (photobooth/run -> the Photobooth repo). None if clear."""
+        cur = self.parent
+        for part in dst.relative_to(self.parent).parts[:-1]:
+            names = os.listdir(cur) if os.path.isdir(cur) else []
+            if part in names:
+                cur = cur / part
+                continue
+            same = [n for n in names if n.casefold() == part.casefold()]
+            if same and cur / same[0] != src:
+                return cur / same[0]
+            return None
+        return None
+
+    def _mkdir(self, p):
+        os.makedirs(p, exist_ok=True)
+
+    def _rename(self, a, b):
+        os.rename(a, b)
 
     def rename(self, dry=False):
         new = self.target_root()
@@ -246,7 +331,14 @@ def _apply(t, args):
         print("still running inside these folders - close them first:\n  " + "\n  ".join(running))
         return 2
     old = t.repo
-    for src, dst in t.move_all():
+    try:
+        moved = t.move_all()
+    except MoveStopped as e:
+        for src, dst in e.done:
+            print("moved %s -> %s" % (src.name, dst.relative_to(t.parent)))
+        print("STOPPED: %s\nthe repo was not renamed" % e)
+        return 2
+    for src, dst in moved:
         print("moved %s -> %s" % (src.name, dst.relative_to(t.parent)))
     new = t.rename()
     if new:

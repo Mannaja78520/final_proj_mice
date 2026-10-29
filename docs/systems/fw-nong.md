@@ -28,9 +28,10 @@ The nong (humanoid): 10 joints (8 arm + WAIST + SHRUG), poses, speed, limits.
 
 ## Used by
 
+- [motion-smooth](motion-smooth.md)
 - [fw-dummy](fw-dummy.md)
 
-## Checks that test it (16)
+## Checks that test it (17)
 
 - `check_calibration`
 - `check_contracts`
@@ -40,6 +41,7 @@ The nong (humanoid): 10 joints (8 arm + WAIST + SHRUG), poses, speed, limits.
 - `check_joint_rules`
 - `check_joint_select`
 - `check_line_protocol`
+- `check_motion_smooth`
 - `check_neutral`
 - `check_nong_dupes`
 - `check_offset`
@@ -49,4 +51,4 @@ The nong (humanoid): 10 joints (8 arm + WAIST + SHRUG), poses, speed, limits.
 - `check_relax`
 - `check_sendrig`
 
-Run them: `python qc/run_qc.py --no-build check_calibration check_contracts check_docs check_home_pose_board check_joint_fields check_joint_rules check_joint_select check_line_protocol check_neutral check_nong_dupes check_offset check_perf check_ref check_registries check_relax check_sendrig`
+Run them: `python qc/run_qc.py --no-build check_calibration check_contracts check_docs check_home_pose_board check_joint_fields check_joint_rules check_joint_select check_line_protocol check_motion_smooth check_neutral check_nong_dupes check_offset check_perf check_ref check_registries check_relax check_sendrig`

@@ -601,7 +601,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: QC finished: 96 passed, 0 failed, started 2026-10-29 06:38
+# RUNNING: QC finished: 9072 passed, 11 failed, started 2026-10-29 20:00
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1668,6 +1668,11 @@ A51-3: doing  2026-10-28 19:40  agent=claude:10271959-0190  — user 2026-10-28:
 # A53  PC helpers: AI usage-limit watcher, turned on and off by hand
 A53-1: done   2026-10-29 06:39  agent=claude:ai-watch-onoff  — user 2026-10-29: ห๊ะทำไมถึงเป็นฝังในเครื่อง เอาแบบเปิดปิดได้ เก็บไว้ใน desktop เปิดปิดเอง (AI watch: no logon start, desktop ON/OFF, light on RAM/CPU)
 A50-2: doing 2026-10-30 02:31  agent=codex:rl-1030-01a1891f  — Audit every RL output against source humans; improve and benchmark algorithms; after quality passes rig all six cheerleader clips in PLp0S6kSqcUg_V2y6azyYTEjBmJuQ-vfQN. Active monitoring; do not disturb Claude training. handoff/tasks/rl-quality-playlist-1030.md User correction: evaluate all SIX lead clips together now; no old-clips-first prerequisite. Staged training budgets, per-clip measured cost and quality, held-out cross-clip validation, and regressions across every clip after shared algorithm changes. Heartbeat updated.
+A51-4: done   2026-10-29 08:58  agent=claude:16wdox  — Fix tidy_pc move for same-name folders (user PC 2026-10-29: Photobooth -> photobooth/Photobooth half-deleted the friend's repo via shutil.move fallback)
+# A54  Motion: one smoother for every move (pass through keyframes)
+A54-1: done   2026-10-29 09:41  agent=claude:10290804-014c  — User 2026-10-29: non-RL moves are jerky too; is there a smoother to use, like a plugin; make every move not jerky. One shared smoothing stage (Python+JS+firmware PASS) every motion source passes through
+# A55  Voice: the helper starts by itself, no hanging Voice app
+A55-1: done   2026-10-29 20:09  agent=claude:jf5f  — user 2026-10-29: แก้พวกเรื่องเสียง voice ต่างๆของทุกจุดด้วยนะรวมแอพ voice ที่ค้าง (fix voice everywhere, incl. the hanging voice app)
 
 END</code></pre>
 </details>
