@@ -81,6 +81,15 @@
        answers come from a helper program that runs on this PC next to the
        hub (the hub itself never carries an AI — it only passes the question
        along and the answer back).</p></div>
+  <div class="f"><h3>The helper starts by itself<span class="tag t-new">new</span></h3>
+    <p>If the helper is not running, the hub starts it the moment anything
+       needs a voice: opening the Voice app, a line the rig must say, or a talk
+       gesture in Studio. The Voice page shows <b>starting the voice helper…</b>
+       with the seconds counting; a question asked meanwhile waits and is then
+       answered. If it cannot start, the page says why (its last lines are
+       behind the technical switch, the full log is in
+       <code>.local/voice/helper.log</code>). Which Python it uses and how long
+       it may take are in <code>config/voice_helper.json</code>.</p></div>
   <div class="f"><h3>Speak instead of typing<span class="tag t-new">new</span></h3>
     <p>The Voice page has a <b>Press to talk</b> button: press it, speak, press
        again to stop, and your words appear in the box ready to send. The
