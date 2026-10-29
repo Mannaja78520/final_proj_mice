@@ -253,3 +253,39 @@ Notes
 - Best for the user's goal (follow AND smooth): B + A + E together -> the final run below.
 - Commands: `python -m tools.rl_compare.run --set <key>=<json>` (new) for each variant; scripts in the
   private .local/cheer_rig_1029_30fps (lead_check.py, compare_reach.py, lift_exps.sh).
+
+### Final: B + A + E on all four dances (PC, 2026-10-30 02:06-04:01 Bangkok)
+`--set reach.dancerTopPct=95 --set reach.marginDeg=2 --set rl.reward.lift=0.3 --set rl.reward.smooth=0.5`,
+main c67e631 + this branch, four runs at once on the RTX 5070 Ti Laptop (~320 s/round, 6273-6333 s train each).
+Same yardstick as above (vs the dancer's own arms). "before" = reach default (.local/rl_compare_30fps_reach).
+
+| dance | method | lift follow % | liftCorr | vs dancer deg | jerk | Studio flags |
+|---|---|---|---|---|---|---|
+| come_and_cheer center | planner_music | 44 | 0.668 | 28.8 | 25798 | 0 |
+| come_and_cheer center | rl before | 89 | 0.961 | 15.2 | 27297 | 0 |
+| come_and_cheer center | rl final | 98 | 0.979 | 15.8 | 25033 | 0 |
+| come_and_cheer left | planner_music | 57 | 0.623 | 30.7 | 27357 | 0 |
+| come_and_cheer left | rl before | 96 | 0.967 | 13.2 | 27229 | 0 |
+| come_and_cheer left | rl final | 100 | 0.985 | 16.6 | 23096 | 0 |
+| witsawa center | planner_music | 44 | 0.677 | 36.9 | 31270 | 0 |
+| witsawa center | rl before | 84 | 0.968 | 15.8 | 33324 | 0 |
+| witsawa center | rl final | 98 | 0.981 | 16.0 | 29813 | 0 |
+| witsawa left | planner_music | 58 | 0.695 | 32.0 | 30552 | 0 |
+| witsawa left | rl before | 95 | 0.976 | 14.9 | 32402 | 0 |
+| witsawa left | rl final | 99 | 0.984 | 15.2 | 30275 | 0 |
+
+Notes
+- Lift follow 84-96 % -> 98-100 %, liftCorr 0.961-0.976 -> 0.979-0.985, policy jerk down 6-15 %, at a cost of
+  +0.2 to +3.4 deg vs the dancer (largest on come_and_cheer left).
+- The hybrid touched on three of four dances (Studio flags 5-8; min gap approx down to -21.7 mm): the
+  RL/planner splice is not collision-aware. to_sequence refused those and the board files use rl;
+  witsawa center's hybrid was clear and is used.
+- The shared smoother (main, keys + pass vias) RAISED jerk on these dense RL motions: rl 25033 -> rl_smooth
+  33168 (come_and_cheer center), 29813 -> 39922 (witsawa center). Thinning to keys every ~190 ms and
+  stopping where a joint turns back adds stops the 50 Hz policy did not have. The SG prototype gave
+  27297 -> 10306 on the same kind of motion. The board files are this keyed, pass-smoothed motion
+  (board jerk 31753-40010 in sim). Open question for the smoother thread: a denser key budget for RL.
+- witsawa left drift end -4.97 s is the DTW tail (music-clock error 15.2 deg is normal); not a timing slip.
+- Board files (private): .local/robot_1030/{moves,music} + README_TH.md; prefixes fc/fl/wc/wl, caps 120/240/0,
+  14-15 chained files each, largest 8.1 KB (come_and_cheer). Studio 0 flags at 5 mm for every file set.
+- Sim only. Nothing run on the robot.
