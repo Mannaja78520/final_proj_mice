@@ -1,0 +1,33 @@
+{
+  "_what": "The one smoothing stage every move passes through (user 2026-10-29: the moves stutter, make every move smooth like a plugin). Before it, every move was a cosine ease that STOPS at its keyframe, so a dance with a key every 167-500 ms stopped and started again at every key. Smoothed, the arm passes THROUGH a keyframe at a speed (its via speed) when the joint keeps going the same way; it still stops where the joint turns back (a flick keeps its peak), at a hold, and at the ends. Each such move is a cubic Hermite curve between the two via speeds (monotone: never past either keyframe); a joint resting at both ends keeps the old cosine. Times are never changed, so music stays on the beat. Read by main_python/motion_smooth.py and Studio's motion_smooth.js (same maths, checked by check_motion_smooth).",
+  "on": true,
+  "sources": {
+    "_what": "which makers of moves are smoothed; false = that source plays exactly as before (cosine, stopping at every key)",
+    "studio": true,
+    "video": true,
+    "planner": true,
+    "rl": true,
+    "gestures": true,
+    "hub": true,
+    "sim": true
+  },
+  "velScale": 0.85,
+  "_velScale": "a via speed may use at most this share of the joint's servo max deg/s (rig servoMaxDps), and at most capDps when a speed cap is in force",
+  "accScale": 1.0,
+  "_accScale": "a smoothed move may need at most this share of the joint's speed-up (rig servoAccel, deg/s2) more than the plain move needed; past it the via speeds shrink",
+  "maxOffLineDeg": 6,
+  "_maxOffLineDeg": "how far (joint degrees, all joints together) the smoothed path may leave the straight line between two keyframes, where Studio re-checks touching with the full gap (clearMm) on the smoothed path and rests the keyframes of any move that touches. Cheer v5 sweep 2026-10-29: 3 -> 136 stops left, 6 -> 100, 12 -> 98 (of 429)",
+  "uncheckedOffLineDeg": 1,
+  "_uncheckedOffLineDeg": "the same limit where no collision check runs on the smoothed path (the hub's talking gestures, the sequence tool): the path stays within this of the line the collision checks passed, at most 5.4 mm at the hand per degree (shoulder, docs/experiments/2026-10-27_music_pace.md), so 1 keeps half of the 10 mm gap",
+  "shrink": 0.5,
+  "tries": 6,
+  "minMoveMs": 80,
+  "_minMoveMs": "mirror of NONG_MIN_MOVE_MS: a move shorter than the board allows is lengthened by the board, so it rests at both ends",
+  "samples": 24,
+  "minViaDps": 2,
+  "_minViaDps": "a via speed below this is treated as a stop (0), so a joint that barely moves is not sent noise",
+  "boardLeadMs": 40,
+  "_boardLeadMs": "the hub sends a smoothed pose this much before the move in front of it ends; a board that knows VIA queues it and starts it exactly at that end, so the arm never waits for the cable",
+  "graceMs": 60,
+  "_graceMs": "mirror of NONG_VIA_GRACE_MS: a smoothed pose that arrives this late after the move before it still continues from that move's end time"
+}
