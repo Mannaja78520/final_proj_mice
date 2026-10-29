@@ -10,7 +10,7 @@ Plan: A50-2; A50-1 remains owned by Claude
 User 2026-10-30: check ALL RL outputs actually follow source humans, whether each improves; improve algorithms as far as practical. Use ALL SIX cheerleader videos as a joint development/evaluation set from the start; do not wait for the existing clips to pass before preparing the other four. Continue autonomously after Claude hits limit.
 
 ## Doing now
-Four RL jobs healthy, latest completed round16-17/20. Interim checkpoint/near-boundary diagnostics saved privately; not final human-fidelity evidence. Retarget adapter and backend lock prepared; syntax/inspect passed all four new clip configurations. Wait for timing resources before bounded inference smoke check and dense new-clip extraction; no takeover inferred.
+Dense CPU extraction PID4228 active. Initial comparison review shows original-human pane blank in all4 worst frames; create private repaired comparison copies with actual time-aligned original source/audio, preserving existing files. Original3 hybrid exports rejected collisions; final quality not approved. No shared source/hardware changes.
 ## File status
 Baseline: 1283955d9b3b6543c41221f55ab864ca89125a03; pre-existing dirty files belong to others and are preserved.
 
@@ -46,6 +46,19 @@ No product source changes, tests, retraining or hardware actions performed by th
 | .local/rl_playlist_1030/retarget_playlist.cjs | explicit private retarget names/paths; no old CLI | prepared; fitting pending | node --check + --inspect 4 new IDs pass; no fitting | git-ignored |
 | .local/rl_playlist_1030/backend_lock.json | 5 exact shared-backend hashes | prepared | retarget lock verified; extractor inference pending | git-ignored |
 | .local/rl_playlist_1030/interim_training.json | checkpoint trends and near-boundary diagnostics | done interim | read completed round JSON/NPZ for 4 sets | git-ignored |
+
+| .local/rl_playlist_1030/inference_smoke.json | four actual CPU frame checks | done | 4people/4embeddings/4appearances each | git-ignored |
+| .local/rl_playlist_1030/references/9xOEOfDo7NA_raw.json | dense source observations | pending | not run | git-ignored |
+| .local/rl_playlist_1030/references/hgB_vo7PEdw_raw.json | dense source observations | pending | not run | git-ignored |
+| .local/rl_playlist_1030/references/YJwyYWiMWHI_raw.json | dense source observations | pending | not run | git-ignored |
+| .local/rl_playlist_1030/references/ctfNcvYev_U_raw.json | dense source observations | pending | not run | git-ignored |
+| .local/rl_playlist_1030/extraction.log | detached CPU extraction evidence | pending | launch next | git-ignored |
+| .local/rl_playlist_1030/extraction.err.log | detached CPU extraction evidence | pending | launch next | git-ignored |
+| .local/rl_playlist_1030/extraction_process.json | detached CPU extraction evidence | pending | launch next | git-ignored |
+
+| .local/rl_playlist_1030/compose_previews.py | private source-pane/audio repair | pending | not run | git-ignored |
+| .local/rl_playlist_1030/quality_audit_initial.json | original final simulation score inventory | done initial | results SHA stored; not visual approval | git-ignored |
+| .local/rl_playlist_1030/video_review_initial.json | 4 full-video duration/worst-sample index | done initial | original pane visibly blank in4samples | git-ignored |
 
 ## Facts found
 - Interim round16-17: last checkpoint is not always best music-error checkpoint. Keep best by separate selection criteria, never blindly ship round20. Scores use reach-remapped reference; raw-human fidelity is a separate final audit.
