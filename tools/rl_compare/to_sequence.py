@@ -52,6 +52,7 @@ class SequenceExport:
         idx = set(thin(c, self.cfg["tolDeg"], max(1, int(self.cfg["minKeyMs"] / 1000 * self.hz))))
         for attempt in range(self.cfg["refineRounds"] + 1):
             keys = self.keys(c, sorted(idx))
+            self.dense = (c, sorted(idx), self.hz)      # what the keys came from: their pass speeds
             steps = self.steps(keys, music)
             played, info = self.play(steps)
             q = self.case.servo.follow(torch.as_tensor(played, dtype=self.case.kin.dtype)).numpy()
@@ -77,8 +78,12 @@ class SequenceExport:
 
     def steps(self, keys, music, cap=0):
         """The board steps; a `pass:` before a pose the arm goes through (the
-        shared smoother, A54-1), worked out for the pace cap the file asks."""
-        V = vias(keys, getattr(getattr(self.case, "exp", None), "rig", None), cap)
+        shared smoother, A54-1), worked out for the pace cap the file asks,
+        at the speeds of the sim motion the keys came from (build)."""
+        dense = getattr(self, "dense", None)
+        if dense is not None and len(dense[1]) != len(keys):
+            dense = None
+        V = vias(keys, getattr(getattr(self.case, "exp", None), "rig", None), cap, dense=dense)
         out = [("pace", "music %d" % cap), ("pose", self.pose(keys[0]) + "    # start pose"), ("play", music)]
         for i, k in enumerate(keys[1:], 1):
             p = motion_smooth.pass_values(V, i)

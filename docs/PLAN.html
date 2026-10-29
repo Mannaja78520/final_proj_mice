@@ -601,7 +601,7 @@ The timestamp is when the status last changed — when a task was picked up, or
 when it landed.</p>
 
 <pre id="state"><code>STATE
-# RUNNING: QC finished: 9072 passed, 11 failed, started 2026-10-29 20:00
+# RUNNING: QC finished: 6619 passed, 4 failed, started 2026-10-29 22:42
 
 # A0  Groundwork — the duplication that makes every later area harder
 A0-1: done 2026-08-18  — this file
@@ -1673,6 +1673,7 @@ A51-4: done   2026-10-29 08:58  agent=claude:16wdox  — Fix tidy_pc move for sa
 A54-1: done   2026-10-29 09:41  agent=claude:10290804-014c  — User 2026-10-29: non-RL moves are jerky too; is there a smoother to use, like a plugin; make every move not jerky. One shared smoothing stage (Python+JS+firmware PASS) every motion source passes through
 # A55  Voice: the helper starts by itself, no hanging Voice app
 A55-1: done   2026-10-29 20:09  agent=claude:jf5f  — user 2026-10-29: แก้พวกเรื่องเสียง voice ต่างๆของทุกจุดด้วยนะรวมแอพ voice ที่ค้าง (fix voice everywhere, incl. the hanging voice app)
+A54-2: done   2026-10-29 22:37  agent=claude:yinmmk  — coordinator 2026-10-30: the shared smoother RAISES jerk on dense RL motion (rl 25033 -> rl_smooth 33168); fix so smoothing never increases jerk for any source, keep music timing and real flicks, config-driven
 
 END</code></pre>
 </details>
