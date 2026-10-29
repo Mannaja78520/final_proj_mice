@@ -79,3 +79,31 @@ tested, the waist speed was NOT. Re-run without the offset below.
   Estimate for the full config (4 dances x 3 scenarios x 20 rounds): ~8 h.
 - Saved per round: .local/rl_compare/come_and_cheer_left_v2/firmware_5mm/round_NN/{policy.pt,motion.npz,round.json}.
   run.py only skips a run whose round_20/round.json exists, so this run restarts from round 1 (no resume yet).
+
+### RL compare full run (PC, 2026-10-28 19:47 to 2026-10-29 12:49 Bangkok)
+Same GPU, cuda, torch 2.11.0+cu128; 4 dances x 3 scenarios x 20 rounds x 60 updates. Detached driver
+`.local/rl_compare/run_rest.ps1`; come_and_cheer_left_v2/firmware_5mm ran last and RESUMED from round 12
+(PR #102 resume), so its set wall is the second leg only. Full tables per set (all metrics, both planner
+variants): docs/experiments/rl_compare_results.md. Curves: docs/experiments/figures/rl_curve_*.png.
+
+TIMING CAVEAT: the GPU/CPU was shared all night (nong_sim record 19:57-21:30, Codex MuJoCo renders
+22:30-23:55, YOLO training 01:50-11:35), so s/round ranges 137-438 s; the clean rate on this GPU is
+~115 s/round (2026-10-28 19:07 run). Use RL train seconds only as an upper bound.
+
+| dance | scenario | set wall s | RL train s | s/round | RL music deg | RL shape deg | planner_music music deg | planner_music shape deg | planner_music plan s / board s |
+|---|---|---|---|---|---|---|---|---|---|
+| come_and_cheer_center_v2 | firmware_10mm | 4613 | 3578 | 179 | 19.0 | 17.1 | 50.1 | 12.3 | 11.5 / 467 |
+| come_and_cheer_center_v2 | firmware_5mm | 3354 | 2779 | 139 | 18.9 | 16.8 | 50.1 | 12.3 | 11.7 / 467 |
+| come_and_cheer_center_v2 | servo_5mm | 4172 | 3321 | 166 | 12.8 | 11.1 | 42.2 | 13.0 | 12.9 / 167 |
+| come_and_cheer_left_v2 | firmware_10mm | 3448 | 2871 | 144 | 18.8 | 17.3 | 45.4 | 11.2 | 12.8 / 475 |
+| come_and_cheer_left_v2 | firmware_5mm | 1696+1843 (2 legs) | 2744 | 137 | 19.0 | 17.4 | 45.4 | 11.2 | 10.2 / 475 |
+| come_and_cheer_left_v2 | servo_5mm | 3477 | 2915 | 146 | 11.8 | 10.8 | 40.3 | 11.9 | 12.7 / 169 |
+| witsawa_kriangkrai_center_v2 | firmware_10mm | 9703 | 8763 | 438 | 19.5 | 18.3 | 51.1 | 12.7 | 6.8 / 272 |
+| witsawa_kriangkrai_center_v2 | firmware_5mm | 7636 | 6932 | 347 | 18.9 | 18.0 | 51.1 | 12.7 | 6.5 / 272 |
+| witsawa_kriangkrai_center_v2 | servo_5mm | 6128 | 5521 | 276 | 13.2 | 12.8 | 46.7 | 13.4 | 7.3 / 92 |
+| witsawa_kriangkrai_left_v2 | firmware_10mm | 6421 | 5621 | 281 | 23.3 | 20.4 | 47.4 | 12.4 | 8.4 / 280 |
+| witsawa_kriangkrai_left_v2 | firmware_5mm | 3883 | 3321 | 166 | 20.4 | 18.5 | 47.4 | 12.4 | 7.3 / 280 |
+| witsawa_kriangkrai_left_v2 | servo_5mm | 6139 | 5389 | 269 | 13.0 | 12.6 | 44.5 | 13.1 | 9.0 / 92 |
+
+"music deg" = bone error on the song's own clock; "shape deg" = bone error ignoring timing.
+Songs: come_and_cheer 158 s; board s = how long the planner's show runs on the board.
