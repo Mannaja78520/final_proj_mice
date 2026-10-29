@@ -81,7 +81,15 @@ Setup: ultralytics 8.4.191, torch 2.11.0+cu128, RTX 5070 Ti Laptop GPU (shared w
 | model | train wall | LAB box mAP50 | LAB box mAP50-95 | LAB pose mAP50 | LAB pose mAP50-95 |
 | --- | --- | --- | --- | --- | --- |
 | yolo11n-pose | 7,850 s (2 legs: killed at epoch 47 by a shell time limit, resumed from last.pt) | 0.077 | 0.032 | 0.000 | 0.000 |
-| yolo11s-pose | running | | | | |
+| yolo11s-pose | 18,664 s (one leg, GPU shared with RL) | 0.316 | 0.134 | 0.000 | 0.000 |
+
+yolo11s best.pt is now `.local/robot_pose/model/best.pt` (config detector.model).
+
+Step 4 first look (yolo11s, `detect .local/lab_1028/ccl_v5_cap060.mp4 --every 0.5`, 43 s wall):
+1,356 of 1,357 sampled frames got a pose, but the shoulder midpoint lands at median (183, 274) px
+(x p10-p90 152-227) while the lab labels put the shoulders at about (205, 187) px: ~90 px too low, on the
+chest/box area. `check` against the sequence was NOT run: with keypoints this far off, joint errors
+would measure the detector, not the robot. Rerun step 4 after the next training round.
 
 - Box recall on LAB is 1.0 but precision 0.037: on a lab frame it puts 10+ "nong" boxes on furniture,
   the cabinet and the PC with confidence up to 0.87, while the real robot gets 0.06. On a render it
