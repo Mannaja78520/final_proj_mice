@@ -123,6 +123,26 @@ window.REF = [
          "is added because the real arm lags at full speed. Raise it on the robot step by step."
 },
 {
+  id: "motion-pass",
+  group: "Nong — the humanoid",
+  name: "Passing through a keyframe instead of stopping on it",
+  where: [{file: "main_python/motion_smooth.py", line: 56,
+           what: "curve() and Smoother.first_guess() — the shared smoother"},
+          {file: "nong/main_python_set_nong/web/app_parts/motion_smooth.js", line: 57,
+           what: "MotionSmooth.firstGuess() — the same in Studio"},
+          {file: "firmware/src/modules/nong/NongMath.h", line: 132,
+           what: "curve(), curveSpeed(), passFits(), passStarts() — what the board plays"}],
+  eq: "v_i = (w1 + w2) &divide; (w1/d0 + w2/d1),  w1 = 2h1 + h0,  w2 = h1 + 2h0   (0 if d0&middot;d1 &le; 0, at a hold, at the ends)\n" +
+      "q(s) = q0 + (q1 &minus; q0)(3s&sup2; &minus; 2s&sup3;) + T(v0(s&sup3; &minus; 2s&sup2; + s) + v1(s&sup3; &minus; s&sup2;));  v0 = v1 = 0: the cosine ease\n" +
+      "the board plays it only if |carried &minus; v0| &le; 1 &deg;/s, T is not lengthened, and |q&prime;(s)| &le; min(servo max, cap) at 16 points",
+  why: "Every move used to stop on its keyframe, so a dance with a key every 167-500 ms stopped " +
+       "hundreds of times (user 2026-10-29: the moves stutter). Cheer v5 in Studio: 429 &rarr; 101 stops, " +
+       "RMS jerk 37349 &rarr; 28792 &deg;/s&sup3; (docs/experiments/experiment-records.md).",
+  from: "Fritsch &amp; Carlson (1980) monotone cubic tangents (d0, d1 = the slopes either side, h0, h1 = the move times): no joint passes a keyframe.",
+  watch: "The curve may leave the straight line between two keys by maxOffLineDeg (motion_smooth.json); " +
+         "Studio re-checks touching on it. Not yet run on a real board."
+},
+{
   id: "servo-follow",
   group: "Nong — the humanoid",
   name: "How far the real servos trail the plan",
