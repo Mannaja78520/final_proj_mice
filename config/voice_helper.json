@@ -1,0 +1,33 @@
+{
+  // How the hub starts the voice helper (apps/voice/service.py) by itself
+  // (A55-1). User 2026-10-29: the Voice app "hangs" - the helper was simply
+  // not running, the page waited, and the rig's speech failed with it.
+  // The hub now starts it the first time anything needs a voice.
+  //
+  // python: tried in order when the hub is MiceHub.exe (a plain `python`
+  //   hub uses its own interpreter). %NAME% is an environment variable; an
+  //   entry is a command, so ["py", "-3"] is the Windows launcher. The
+  //   Microsoft Store stub (WindowsApps\python.exe) is skipped: it opens the
+  //   Store and never runs the helper. PC 2026-10-29: Python312 has the
+  //   voice packages (edge_tts, faster-whisper); `py -3` there is 3.13
+  //   without them, so it comes last.
+  // startSeconds: how long a start may take before the page says it failed
+  //   (the helper answers /health before any model loads).
+  // waitSeconds: how long a spoken line or an answer waits for a helper the
+  //   hub just started, before it says the helper is not running.
+  // log: what the helper prints, under the data folder (.local is never in
+  //   Git); past logBytes the old log moves to <log>.1.
+  "autoStart": true,
+  "python": [
+    "%LOCALAPPDATA%\\Programs\\Python\\Python312\\python.exe",
+    "%ProgramFiles%\\Python312\\python.exe",
+    "python",
+    "python3",
+    ["py", "-3.12"],
+    ["py", "-3"]
+  ],
+  "startSeconds": 60,
+  "waitSeconds": 30,
+  "log": ".local/voice/helper.log",
+  "logBytes": 1000000
+}
