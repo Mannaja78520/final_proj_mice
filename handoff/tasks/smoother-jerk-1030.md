@@ -1,6 +1,6 @@
 # Shared smoother never raises jerk (RL keyed rougher than policy)
 
-Owner: claude:yinmmk
+Owner: 
 Updated: 2026-10-30 (cloud thread "Merge RL lift work and fix smoother jerk")
 Branch: claude/project-thread-yinmmk
 Last commit: this checkpoint
@@ -13,9 +13,7 @@ keep music timing and real flicks, config-driven; before/after numbers in docs/e
 test, full QC, merge. Say what is untested on hardware (board PASS).
 
 ## Doing now
-Full QC ran once on main + #113 + #114 + this branch (9151 passed, 8 failed): fixed the two real ones
-(check_rl_compare ramp: dense check now compares the WORST distance, +off over the plain move's;
-system headers). Checking the other five against main (cloud browser/OpenGL), then PR + merge.
+Nothing. Fix merged (PR #115). Left: the PC re-run in Next 3 (needs the private RL data).
 
 ## File status
 Baseline: 69898b5 (claude/rl-lift-1030 merged with main 4c25306)
@@ -32,7 +30,7 @@ Baseline: 69898b5 (claude/rl-lift-1030 merged with main 4c25306)
 | `main_python/web/help/parts/studio.html` + `main_python/web/help.html` | help: jerkGuard, followDensePath | done | build_web.py | this checkpoint |
 | `docs/systems/motion-smooth.md`, `docs/systems/rl-compare.md`, `docs/systems/agents.md` | rules and traps; rebuilt headers | done | check_systems 13/13 | this checkpoint |
 | `docs/experiments/2026-10-30_smoother_jerk.md` | cause, fix, numbers, refs | done | - | this checkpoint |
-| `docs/PLAN.html`, `docs/plan_state.js` | A54-2 doing | done | plan.py | this checkpoint |
+| `docs/PLAN.html`, `docs/plan_state.js` | A54-2 done | done | plan.py | this checkpoint |
 
 ## Facts found
 - main_python/motion_smooth.py vias(): with touches=None the off-line limit is uncheckedOffLineDeg (1 deg);
@@ -49,7 +47,7 @@ Baseline: 69898b5 (claude/rl-lift-1030 merged with main 4c25306)
 
 ## Next
 1. DONE quick checks + sabotage 4/4.
-2. Full QC, PR, merge; tell the coordinator so the PC pulls + rebuilds.
+2. DONE full QC on main + #113 + #114 + this branch (the 6 left red fail the same on plain main in the cloud: browser/OpenGL/PlatformIO); merged.
 3. PC: re-run rl_compare (rl_smooth) and to_sequence on the four dances for the real before/after.
 
 ## Blocked
