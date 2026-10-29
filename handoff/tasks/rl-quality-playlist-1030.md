@@ -1,7 +1,7 @@
 # RL quality audit, improvement and CMU cheer playlist
 
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-30T02:38:13+07:00
+Updated: 2026-10-30T03:11:18+07:00
 Branch: main (bookkeeping only; isolate any future source changes)
 Last commit: this checkpoint
 Plan: A50-2; A50-1 remains owned by Claude
@@ -10,7 +10,7 @@ Plan: A50-2; A50-1 remains owned by Claude
 User 2026-10-30: check ALL RL outputs actually follow source humans, whether each improves; improve algorithms as far as practical. Use ALL SIX cheerleader videos as a joint development/evaluation set from the start; do not wait for the existing clips to pass before preparing the other four. Continue autonomously after Claude hits limit.
 
 ## Doing now
-Four new source downloads completed; six source videos available, decoded and sampled visually (six stills each). Private manifest records evidence and limitations. Existing four RL jobs remain active; no takeover. Next prepare extraction adapter in own private tree and full temporal reference review while respecting training/timing leases.
+Heartbeat interval is 30 minutes per latest user request. Four training jobs healthy, latest rounds 10-11/20. Private extraction adapter prepared and metadata-only inspection passes all six clips; dense inference is NOT verified or started. Next run bounded CPU inference smoke check and four new dense extractions when timing resources are free, then retarget in own private paths.
 ## File status
 Baseline: 1283955d9b3b6543c41221f55ab864ca89125a03; pre-existing dirty files belong to others and are preserved.
 
@@ -41,6 +41,8 @@ Baseline: 1283955d9b3b6543c41221f55ab864ca89125a03; pre-existing dirty files bel
 
 No product source changes, tests, retraining or hardware actions performed by this chat.
 
+| .local/rl_playlist_1030/extract_playlist.py | parameterized private extraction adapter | prepared; inference pending | AST parse + --inspect all 6 pass; no inference | git-ignored |
+
 ## Facts found
 - Private .local/rl_playlist_1030/manifest.json is six-clip inventory with source paths, actual decoded durations/FPS, contacts and sampled review scope. download.log complete exit 0; no missing sources.
 - Reuse trap: .local/cheer_rig_1029_30fps/extract_30fps.py hardcodes SOURCE and output HERE; retarget_30fps.cjs maps every unknown ID to witsawa and has fixed batch selection. DO NOT run unchanged for new IDs. Import/reuse classes into a private parameterized adapter, inspect association per new clip; do not mutate active shared scripts.
@@ -70,6 +72,8 @@ No product source changes, tests, retraining or hardware actions performed by th
 6. Deliver per-clip editable rig/project, checked sequence, synchronized preview with music, comparison figures/timing and index. Reuse passing existing clips; preserve original user projects. Record inaccessible clips as pending with reason.
 
 ## Done
+- 2026-10-30 heartbeat: RL logs advanced to round10/11 with no observed errors, processes alive. No evidence of Claude quota stop obtained; no takeover inferred.
+- Prepared private extract_playlist.py composing the old CPU detector/appearance/re-id. --inspect validates all six source files and reports 29.97 FPS planned sampling; AST parse passed. Backend construction/inference NOT tested and no claim of final code verification. Private output refusal prevents accidental overwrite.
 - Heartbeat 2026-10-30: downloaded all four new source MP4s with info JSON; exit 0; original 59.94 FPS retained. Reused two existing original sources. Prepared six contact sheets and manifest.json; inspected 36 sampled stills, not full videos. All six sampled clips show lead performances.
 - Entaneer the First includes crouches and differing body levels around 94.8s: report missing robot leg DOFs; do not score away the mismatch or erase arm/torso semantics. All sampled clips have viewpoint/group-association challenges.
 - Confirmed active training and log progress; left jobs untouched.
@@ -78,6 +82,7 @@ No product source changes, tests, retraining or hardware actions performed by th
 - Recorded A50-2 in real plan; no takeover of Claude's task/source claims.
 
 ## Next
+0. When training/timing leases permit: smoke-test backend on a bounded source before full extraction. Then run python .local/rl_playlist_1030/extract_playlist.py --ids 9xOEOfDo7NA hgB_vo7PEdw YJwyYWiMWHI ctfNcvYev_U (CPU, no GPU). Do not re-extract existing two sources unless reference audit justifies it. Before dense inference, check shared modules have not changed; record hashes/concurrency and verification. Build a separate retarget adapter with explicit video/name/output/style config; old hardcoded runner is unsafe for new IDs.
 1. On heartbeat inspect current Claude status plus logs/checkpoints and current task handoffs. If verified limit, user already authorizes takeover; record exact transferred claims before editing. Do independent read-only audit while other work remains active.
 2. When trained, execute full quality gate above and improve failed aspects with controlled comparisons. No new heavy jobs alongside conflicting training/QC leases.
 3. Prepare references/rig baselines for all six entries now in disjoint private outputs; schedule heavy work around active GPU/QC leases. Use diverse choreography to find defects and retest improvements across all six. Keep models/media private.
