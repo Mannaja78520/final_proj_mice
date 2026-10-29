@@ -1,5 +1,11 @@
 # RL: follow the dancer's lifts + smooth, all four dances (2026-10-30)
 
+Owner: claude:yinmmk (merging; work by the PC thread "Show RL dance with music and original")
+Updated: 2026-10-30
+Branch: claude/rl-lift-1030
+Last commit: this checkpoint
+Plan: A50-1
+
 ## Doing now
 Final run done (04:01). Board files done (.local/robot_1030). Next: the queued deploy step 5.
 

@@ -25,6 +25,7 @@ import qc as F
 
 AREA = "hub"
 TITLE = "a win in the friend's game (served by the hub, watched by link.js) turns a prize machine"
+SLOW = True
 
 GAME = """<!doctype html><meta charset="utf-8"><title>fake game</title>
 <script>localStorage.setItem("w", JSON.stringify({logs: [{id: "old", label: "ตุ๊กตาหมี"}]}));</script>

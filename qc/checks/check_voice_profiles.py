@@ -21,6 +21,7 @@ import qc as F
 
 AREA = "tools"
 TITLE = "character folders keep defaults and other characters safe"
+SLOW = True
 
 
 def run(t):
