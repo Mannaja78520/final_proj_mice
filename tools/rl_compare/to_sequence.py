@@ -6,7 +6,9 @@ its key, and a long file crashed MOVE on 2026-10-28. So the commands are
 thinned to keys (Ramer-Douglas-Peucker: a key wherever the straight line
 between kept keys misses the motion by more than tolDeg), every key keeps its
 own time on the music clock, and the file asks `pace: music 0` (servo limits
-only, NongModule PACE) so the board does not stretch it.
+only, NongModule PACE) so the board does not stretch it. A `pass:` before a
+pose lets the arm go through that key instead of stopping (the shared
+smoother, tools/rl_compare/smooth.py); a board without PASS skips it.
 
 The file is then played back exactly as the board would (BoardClock + servo
 model) and scored and collision-checked like every contender, as
@@ -25,25 +27,7 @@ import torch
 from tools.nong_sim.board_clock import BoardClock
 
 from . import run as R
-
-
-def thin(c, tol, min_gap):
-    """Indices of the keys kept (RDP on all 10 joints, max abs deviation)."""
-    keep = {0, len(c) - 1}
-    stack = [(0, len(c) - 1)]
-    while stack:
-        a, b = stack.pop()
-        if b - a < 2 * min_gap:
-            continue
-        f = np.linspace(0, 1, b - a + 1)[:, None]
-        line = c[a] + (c[b] - c[a]) * f
-        dev = np.abs(c[a:b + 1] - line).max(1)
-        dev[:min_gap] = dev[-min_gap:] = 0
-        i = int(dev.argmax())
-        if dev[i] > tol:
-            keep.add(a + i)
-            stack += [(a, a + i), (a + i, b)]
-    return sorted(keep)
+from .smooth import keys_of, motion_smooth, thin, vias
 
 
 class SequenceExport:
@@ -52,10 +36,7 @@ class SequenceExport:
         self.hz = case.hz
 
     def keys(self, c, idx):
-        keys = [{"pose": np.round(c[0], 1).tolist(), "t": self.cfg["entryMs"], "hold": 0}]
-        for a, b in zip(idx, idx[1:]):
-            keys.append({"pose": np.round(c[b], 1).tolist(), "t": round((b - a) * 1000 / self.hz), "hold": 0})
-        return keys
+        return keys_of(c, idx, self.hz, self.cfg["entryMs"])
 
     def close_frames(self, q):
         """Board frames closer than the scenario gap + marginMm (kin's fast approx)."""
@@ -94,9 +75,17 @@ class SequenceExport:
             idx |= added
         return keys, steps, played, q, info
 
-    def steps(self, keys, music):
-        out = [("pace", "music 0"), ("pose", self.pose(keys[0]) + "    # start pose"), ("play", music)]
-        return out + [("pose", self.pose(k)) for k in keys[1:]]
+    def steps(self, keys, music, cap=0):
+        """The board steps; a `pass:` before a pose the arm goes through (the
+        shared smoother, A54-1), worked out for the pace cap the file asks."""
+        V = vias(keys, getattr(getattr(self.case, "exp", None), "rig", None), cap)
+        out = [("pace", "music %d" % cap), ("pose", self.pose(keys[0]) + "    # start pose"), ("play", music)]
+        for i, k in enumerate(keys[1:], 1):
+            p = motion_smooth.pass_values(V, i)
+            if p:
+                out.append(("pass", '"%s"' % motion_smooth.pass_line(p)))
+            out.append(("pose", self.pose(k)))
+        return out
 
     @staticmethod
     def pose(k):
@@ -116,9 +105,14 @@ class SequenceExport:
         """The same steps as chained files (`next:`), each re-asking the pace: a
         30 KB file crashed MOVE on 2026-10-28 and the board follows at most
         SequencePlayer MAX_CHAIN (16) files, so at most maxFiles of them."""
-        head, poses = steps[:3], steps[3:]
+        head, poses = steps[:3], []
+        for s in steps[3:]:                          # a pass stays with the pose it is for
+            if poses and poses[-1][-1][0] == "pass":
+                poses[-1].append(s)
+            else:
+                poses.append([s])
         per = max(self.cfg["perFile"], -(-len(poses) // self.cfg["maxFiles"]))
-        parts = [poses[i:i + per] for i in range(0, len(poses), per)]
+        parts = [[s for g in poses[i:i + per] for s in g] for i in range(0, len(poses), per)]
         out = {}
         for i, part in enumerate(parts):
             name = "%s%02d" % (prefix, i)
@@ -175,7 +169,7 @@ def main(argv=None):
     for old in folder.glob("*.yaml"):
         old.unlink()
     for cap in [int(x) for x in a.ramp.split(",")]:
-        files = ex.chunks("%s%03d_" % (a.prefix, cap), steps, "music %d" % cap)
+        files = ex.chunks("%s%03d_" % (a.prefix, cap), ex.steps(keys, steps[2][1], cap), "music %d" % cap)
         for fname, text in files.items():
             (folder / fname).write_bytes(text.encode("utf-8"))
         print("   cap %d: %s ... %d files, largest %d bytes" % (cap, min(files), len(files), max(map(len, files.values()))), flush=True)

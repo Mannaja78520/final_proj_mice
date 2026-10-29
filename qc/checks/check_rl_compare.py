@@ -21,7 +21,10 @@ the yardstick, on synthetic dances (the real cheer data is private on the PC):
   2026-10-29), a longer run stays held and weight 0, and scores still count
   trusted samples only;
 - the shared smoothing stage keeps a move on the music clock (zero phase) and
-  takes the jitter out;
+  takes the jitter out; it is the project smoother (main_python/motion_smooth,
+  A54-1) the board plays with `pass:`, so a joint that keeps going is passed
+  through its keys, a flick keeps its peak, and to_sequence writes `pass:`
+  steps that BoardClock plays as the curve;
 - to_sequence thins the sim motion to keys within tolDeg, keeps each key's
   time, and splits the board file into chained files that each re-ask the
   pace, no more than the board follows (MAX_CHAIN) (user 2026-10-29: run RL
@@ -75,12 +78,31 @@ def gaps_and_smoothing(t, np):
     step = np.clip((k - 2 * hz) / (0.5 * hz), 0, 1)
     move = (0.5 - 0.5 * np.cos(np.pi * step))[:, None] * np.full((1, 10), 40.0)
     noisy = move + np.where(k % 2, 1.0, -1.0)[:, None]          # 1 deg jitter every frame
-    sm = CommandSmoother({"windowS": 0.24, "order": 3}, hz, [-90] * 10, [90] * 10)(noisy)
+    from tools.nong_sim.studio import load_rig
+    rig = load_rig()
+    smooth = CommandSmoother({"tolDeg": 3.0, "minKeyMs": 120}, hz, [-90] * 10, [90] * 10, rig)
+    sm = smooth(noisy)
     half = lambda c: int(np.argmax(c[:, 0] >= 20))
     jerk = lambda c: float(np.sqrt((np.diff(c[:, 0], 3) ** 2).mean()))
     t.ok(abs(half(sm) - half(move)) <= 1 and jerk(sm) < 0.2 * jerk(noisy),
          "smoothing keeps the move on the music clock and takes the jitter out",
          f"midpoint frame {half(sm)} vs {half(move)}, jerk {jerk(sm):.2f} vs {jerk(noisy):.2f}")
+    # the shared smoother (A54-1), not a second one: a 40 deg/s ramp
+    # thinned to keys is passed through, not stopped on at every key; a flick
+    # there and back keeps its peak
+    ramp = np.zeros((3 * hz, 10))
+    ramp[:, 0] = -60 + 40 * k[:3 * hz] / hz
+    ramp[:, 0] += 4 * np.sin(2 * np.pi * k[:3 * hz] / hz)      # wavy (never back): RDP keeps keys
+    r = smooth(ramp)
+    speed = np.abs(np.diff(r[:, 0])) * hz
+    # the motion itself never goes under 15 deg/s; stopping at a key drops a
+    # frame to ~2 (measured 2026-10-29: 2.4 stopping, 17.9 passing through)
+    t.ok(speed[5:-5].min() > 10, "a joint that keeps going the same way passes through its keys (no stop at each key)",
+         f"slowest {speed[5:-5].min():.1f} deg/s between the ends")
+    flick = np.zeros((2 * hz, 10))
+    flick[:, 0] = 30 * np.clip(1 - np.abs(k[:2 * hz] - hz) / (0.15 * hz), 0, 1)
+    f = smooth(flick)
+    t.ok(f[:, 0].max() >= 29, "a flick keeps its peak", f"peak {f[:, 0].max():.1f} of 30")
 
 
 def sequence_export(t, np, cfg):
@@ -109,6 +131,16 @@ def sequence_export(t, np, cfg):
          and files[names[0]].count("- play:") == 1,
          "the board file is split into chained files that each ask the pace, within MAX_CHAIN",
          f"{len(files)} files, chained {chained}, paced {paced}, {poses}/{len(many)} poses")
+    from tools.nong_sim.board_clock import BoardClock
+    from tools.nong_sim.studio import StudioFacts, load_rig
+    steps = ex.steps(keys, "x.mp3")
+    passes = sum(1 for k_, _ in steps if k_ == "pass")
+    moves = BoardClock(load_rig(), StudioFacts()).plan([(k_, v.split("#")[0].strip().strip('"')) for k_, v in steps])
+    curved = sum(1 for m in moves if m.v0 or m.v1)
+    split = all(not f.rstrip().endswith('"') or "- pass:" not in f.rstrip().splitlines()[-1] for f in files.values())
+    t.ok(passes > len(keys) // 3 and curved >= passes // 2 and split,
+         "the board file passes through keys (shared smoother `pass:`), the board clock plays them as the curve, and no file ends on a pass",
+         f"{passes} pass steps, {curved} curved moves of {len(moves)}, split ok {split}")
 
 
 def run(t):

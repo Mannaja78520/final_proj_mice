@@ -172,6 +172,17 @@ Notes
 - 43-44 s is still RL's worst second (52 deg); the hybrid takes the planner there.
 - Sim only. Not run on the robot. RL output is 50 Hz sim commands, not yet a board sequence.
 
+### Smoothing stage swapped for the shared smoother (cloud, 2026-10-29)
+
+The Savitzky-Golay prototype (tools/rl_compare/smooth.py, windowS 0.24, order 3)
+was replaced by the project smoother (main_python/motion_smooth.py, A54-1):
+commands thinned to keys within tolDeg 3 (minKeyMs 120), keys on their music
+time, the arm passing through a key where a joint keeps going. to_sequence now
+writes `pass:` steps, worked out per ramp cap. The `_smooth` rows above were
+made with Savitzky-Golay; they need a PC re-run (private 30 FPS data) to get
+numbers for the shared smoother. Cloud QC only (synthetic): a 40 deg/s ramp's
+slowest frame 17.9 deg/s passing through vs 2.4 stopping at each key.
+
 ## 2026-10-29 shared smoother, A54-1 (cloud, no hardware)
 
 Cheer v5 dances (`/mnt/project-files/cheer/*_v5.json`, 158/87 s, their own rig), commanded path

@@ -114,7 +114,7 @@ class Case:
         sc = self.cfg.get("smooth")
         if not sc:
             return
-        smooth = CommandSmoother(sc, self.hz, self.exp.rig["min"], self.exp.rig["max"])
+        smooth = CommandSmoother(sc, self.hz, self.exp.rig["min"], self.exp.rig["max"], self.exp.rig)
         for r in [r for r in self.rows if not r["id"].endswith(SMOOTH)]:
             c = smooth(r["c"])
             q = self.servo.follow(torch.as_tensor(c, dtype=self.kin.dtype)).numpy()
@@ -182,7 +182,7 @@ class Case:
         vid.make(self.out / "comparison.mp4", [r for r in rows if not r["tag"].endswith(SMOOTH)], src, length, size, note=note)
         smooth = [r for r in rows if r["tag"].endswith(SMOOTH)]
         if smooth:
-            ComparisonVideo(painter, self.dance, vcfg, title, "smoothed (Savitzky-Golay) · same dancer, same servo model, same song clock"
+            ComparisonVideo(painter, self.dance, vcfg, title, "smoothed (shared smoother: passes through keys) · same dancer, same servo model, same song clock"
                             ).make(self.out / "comparison_smooth.mp4", smooth, src, length, size, note=note)
         rl = [r for r in rows if r["tag"] == self.cfg["rl"]["id"]]
         if not rl:
