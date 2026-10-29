@@ -151,7 +151,57 @@ class MotionSmooth {
         changed = true;
       }
     }
+    if (this.cfg.jerkGuard !== false) this.guard(K, V, shrink, tries);
     return V.map(r => r.map(v => Math.round(v * 10) / 10 || 0));
+  }
+  // Never rougher than the plain cosine on the same keys (motion_smooth.py
+  // _guard, 2026-10-30: a cubic's speed-up jumps at every key). Per key, the
+  // jerk over the two moves it joins vs the cosine's; then the whole dance.
+  guard(K, V, shrink, tries) {
+    const frame = this.num("jerkFrameMs", 20), base = MotionSmooth.moveJerk(K, null, frame);
+    const used = new Array(K.length).fill(0), worse = (a, b) => a > b * (1 + 1e-9) + 1e-9;
+    let changed = true;
+    while (changed) {
+      changed = false;
+      const got = MotionSmooth.moveJerk(K, V, frame);
+      for (let i = 1; i < K.length - 1; i++) {
+        if (!V[i].some(v => v !== 0) || !worse(got[i] + got[i + 1], base[i] + base[i + 1])) continue;
+        used[i]++;
+        const f = used[i] < tries ? shrink : 0;
+        V[i] = V[i].map(v => v * f);
+        changed = true;
+      }
+    }
+    const sum = a => a.reduce((x, y) => x + y, 0);
+    for (let k = 0; k <= tries; k++) {
+      if (!worse(sum(MotionSmooth.moveJerk(K, V, frame)), sum(base))) return;
+      const f = k < tries ? shrink : 0;
+      for (let i = 0; i < V.length; i++) V[i] = V[i].map(v => v * f);
+    }
+  }
+  // Per move (index of the key it goes into): sum of squared jerk of every
+  // joint at the frames of that move and the hold after it. V null = cosine.
+  static moveJerk(K, V, frameMs) {
+    const n = K.length, starts = new Array(n).fill(0);
+    let t = +K[0].hold || 0;
+    for (let i = 1; i < n; i++) { starts[i] = t; t += +K[i].t + (+K[i].hold || 0); }
+    const out = new Array(n).fill(0), P = [], nj = K[0].pose.length;
+    let i = 1;
+    for (let k = 0; k < Math.floor(t / frameMs) + 2; k++) {
+      const ms = k * frameMs;
+      while (i + 1 < n && ms >= starts[i + 1]) i++;
+      const seg = +K[i].t, s = seg > 0 ? (ms - starts[i]) / seg : 1;
+      let p;
+      if (s < 0) p = K[0].pose;
+      else if (s >= 1) p = K[i].pose;
+      else if (!V) { const e = 0.5 - 0.5 * Math.cos(Math.PI * s); p = K[i - 1].pose.map((x, j) => x + (K[i].pose[j] - x) * e); }
+      else p = MotionSmooth.pose(K[i - 1].pose, K[i].pose, V[i - 1], V[i], seg, s);
+      P.push(p);
+      if (k < 3) continue;
+      const a = P[k], b = P[k - 1], c = P[k - 2], d = P[k - 3];
+      for (let j = 0; j < nj; j++) out[i] += (a[j] - 3 * b[j] + 3 * c[j] - d[j]) ** 2;
+    }
+    return out;
   }
 }
 

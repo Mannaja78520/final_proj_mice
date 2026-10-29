@@ -216,3 +216,76 @@ nong/main_python_set_nong/web/motion_smooth.json (maxOffLineDeg 6, unchecked 1, 
   (5.77 vs 4.93 x D/T^2) and measured rougher here.
 - NOT run on hardware: firmware PASS builds (`pio run -e mice_nong`) and passes `pio test -e native`
   (48 cases) only.
+
+## 2026-10-29/30 night (PC): following the dancer's lifts, reach fitting and five ideas
+
+User 2026-10-29: the robot stays low when the dancer lifts an arm. Cause measured: shoulder pitch at its
+25 deg stop (180 deg servo through 14:19 gears = ~132 deg joint). Static best fit of the missed frames
+reached the dancer's height in 28 % of them, every fit at a joint limit (L_SH_P min 95 %, R_SH_P min 77 %).
+A copied-rig sim of the gears turned 40 deg (SH_P -15..115): mean bone error 7.6 -> 4.0 deg, lifts
+reached 38 -> 81 %, Studio flags 74 -> 90 of 1585 (static per-frame fits, not collision-avoiding). The user
+chose NOT to change the gears and asked for lifts that look like the dancer's: reach.py (reach fitting).
+
+Yardstick for every row below: come_and_cheer_center_30fps, servo_5mm, scored against the dancer's own
+arms (rawMusicDeg), liftCorr = correlation of upper-arm height robot vs dancer, "lift follow" = share of
+dancer samples with the upper arm > 30 deg up where the robot's is > 15 deg up. All rows: 0 Studio flags,
+drift at the end within 0.13 s. jerk = RMS 3rd derivative of servo angles, deg/s^3.
+
+| run | change | lift follow % | liftCorr | vs dancer deg | jerk | rl_smooth jerk | train s |
+|---|---|---|---|---|---|---|---|
+| 30 FPS, no reach | - | 57 | 0.903 | 15.1 | 25626 | 9638 | 2417 |
+| reach (default) | reach fitting on | 89 | 0.961 | 15.2 | 27297 | 10306 | 2585 |
+| 1 lead | commands sent 20 / 40 / 60 ms early (post-hoc) | 86.9 / 84.6 / 81.5 | 0.958 / 0.952 / 0.943 | 15.3 / 15.7 / 16.3 | - | - | 0 |
+| A_lift03 | rl.reward.lift 0.3 (upper-arm height term) | 92 | 0.979 | 15.9 | 29797 | 11297 | 7916* |
+| B_reach95m2 | reach.dancerTopPct 95, marginDeg 2 | 97 | 0.960 | 15.2 | 28476 | 10905 | 8001* |
+| C_shrugfree | shrug left out of the body reward | 86 | 0.961 | 15.3 | 27250 | 10363 | 8059* |
+| D_fill2s | data.fillGapS 2.0 | 90 | 0.952 | 15.5 | 27280 | 10444 | 8065* |
+| E_smooth05 | rl.reward.smooth 0.5 | 92 | 0.950 | 15.9 | 21041 | 7837 | 8075* |
+
+\* A-E ran six at once on one GPU (plus come_and_cheer_left): 355 s/round instead of ~120 s alone; GPU 83 %,
+4.7 of 12 GB, 79 C; RAM was the limit (3.1 of 31 GB free). The PC rebooted at 23:03 mid-run; runs resumed
+from their saved rounds.
+
+Notes
+- Lead hurts: the policy already looks 0.2-0.8 s ahead and was trained through the servo model's lag.
+- A's hybrid touched (min gap -21.8 mm approx): the splice between RL and planner_music is not
+  collision-aware. to_sequence refuses such a file; use rl there.
+- Best for the user's goal (follow AND smooth): B + A + E together -> the final run below.
+- Commands: `python -m tools.rl_compare.run --set <key>=<json>` (new) for each variant; scripts in the
+  private .local/cheer_rig_1029_30fps (lead_check.py, compare_reach.py, lift_exps.sh).
+
+### Final: B + A + E on all four dances (PC, 2026-10-30 02:06-04:01 Bangkok)
+`--set reach.dancerTopPct=95 --set reach.marginDeg=2 --set rl.reward.lift=0.3 --set rl.reward.smooth=0.5`,
+main c67e631 + this branch, four runs at once on the RTX 5070 Ti Laptop (~320 s/round, 6273-6333 s train each).
+Same yardstick as above (vs the dancer's own arms). "before" = reach default (.local/rl_compare_30fps_reach).
+
+| dance | method | lift follow % | liftCorr | vs dancer deg | jerk | Studio flags |
+|---|---|---|---|---|---|---|
+| come_and_cheer center | planner_music | 44 | 0.668 | 28.8 | 25798 | 0 |
+| come_and_cheer center | rl before | 89 | 0.961 | 15.2 | 27297 | 0 |
+| come_and_cheer center | rl final | 98 | 0.979 | 15.8 | 25033 | 0 |
+| come_and_cheer left | planner_music | 57 | 0.623 | 30.7 | 27357 | 0 |
+| come_and_cheer left | rl before | 96 | 0.967 | 13.2 | 27229 | 0 |
+| come_and_cheer left | rl final | 100 | 0.985 | 16.6 | 23096 | 0 |
+| witsawa center | planner_music | 44 | 0.677 | 36.9 | 31270 | 0 |
+| witsawa center | rl before | 84 | 0.968 | 15.8 | 33324 | 0 |
+| witsawa center | rl final | 98 | 0.981 | 16.0 | 29813 | 0 |
+| witsawa left | planner_music | 58 | 0.695 | 32.0 | 30552 | 0 |
+| witsawa left | rl before | 95 | 0.976 | 14.9 | 32402 | 0 |
+| witsawa left | rl final | 99 | 0.984 | 15.2 | 30275 | 0 |
+
+Notes
+- Lift follow 84-96 % -> 98-100 %, liftCorr 0.961-0.976 -> 0.979-0.985, policy jerk down 6-15 %, at a cost of
+  +0.2 to +3.4 deg vs the dancer (largest on come_and_cheer left).
+- The hybrid touched on three of four dances (Studio flags 5-8; min gap approx down to -21.7 mm): the
+  RL/planner splice is not collision-aware. to_sequence refused those and the board files use rl;
+  witsawa center's hybrid was clear and is used.
+- The shared smoother (main, keys + pass vias) RAISED jerk on these dense RL motions: rl 25033 -> rl_smooth
+  33168 (come_and_cheer center), 29813 -> 39922 (witsawa center). Thinning to keys every ~190 ms and
+  stopping where a joint turns back adds stops the 50 Hz policy did not have. The SG prototype gave
+  27297 -> 10306 on the same kind of motion. The board files are this keyed, pass-smoothed motion
+  (board jerk 31753-40010 in sim). Open question for the smoother thread: a denser key budget for RL.
+- witsawa left drift end -4.97 s is the DTW tail (music-clock error 15.2 deg is normal); not a timing slip.
+- Board files (private): .local/robot_1030/{moves,music} + README_TH.md; prefixes fc/fl/wc/wl, caps 120/240/0,
+  14-15 chained files each, largest 8.1 KB (come_and_cheer). Studio 0 flags at 5 mm for every file set.
+- Sim only. Nothing run on the robot.

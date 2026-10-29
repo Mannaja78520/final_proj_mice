@@ -49,12 +49,17 @@ def keys_of(c, idx, hz, first_ms=0):
     return keys
 
 
-def vias(keys, rig, cap_dps=0.0, cfg=None):
-    """Pass speeds per key (motion_smooth), None when "rl" is switched off."""
+def vias(keys, rig, cap_dps=0.0, cfg=None, dense=None):
+    """Pass speeds per key (motion_smooth), None when "rl" is switched off.
+    dense: (frames, kept indices, hz) the keys were thinned from: the arm
+    passes each key at the motion's own speed and the curve is held near that
+    motion (2026-10-30: from the line instead, almost every key rested and
+    keyed RL came out rougher than the policy, 25033 -> 33168)."""
     cfg = cfg if cfg is not None else motion_smooth.load_config()
     if not motion_smooth.enabled(cfg, "rl") or len(keys) < 3:
         return None
-    return motion_smooth.Smoother(cfg, rig, cap_dps).vias(keys)
+    path = motion_smooth.DensePath(*dense) if dense is not None else None
+    return motion_smooth.Smoother(cfg, rig, cap_dps).vias(keys, path=path)
 
 
 class CommandSmoother:
@@ -71,6 +76,6 @@ class CommandSmoother:
             return c.copy()
         idx = thin(c, self.tol, self.gap)
         keys = keys_of(c, idx, self.hz)
-        V = vias(keys, self.rig)
+        V = vias(keys, self.rig, dense=(c, idx, self.hz))
         out = np.array([motion_smooth.pose_at(keys, V, k * 1000 / self.hz) for k in range(len(c))])
         return np.clip(out, self.lo, self.hi)
