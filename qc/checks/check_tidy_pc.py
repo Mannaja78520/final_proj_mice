@@ -15,10 +15,19 @@ against a throwaway parent folder:
     name the new one, with the old copy kept as .bak;
   * no live file in git names the PC's absolute repo path, so the rename
     needs no code change (hooks use CLAUDE_PROJECT_DIR, voice finds llm/
-    from its own file).
+    from its own file);
+  * same-name moves on a disk that ignores case (2026-10-29, the real PC):
+    Photobooth -> photobooth/Photobooth is a move into itself on Windows;
+    shutil.move then fell back to copy + delete and half-deleted the
+    friend's repo. Driven here on a fake disk that ignores case like
+    Windows (NoCase): the move goes through a temp name, photobooth/run
+    never lands inside the repo whatever the order, a failed rename stops
+    everything and leaves the folder whole, and the tool has no
+    copy-then-delete call at all.
 """
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -44,9 +53,127 @@ def _files(root):
                   if p.is_file() and ".git" not in p.parts)
 
 
+def _nocase(T):
+    class NoCase(T.PcTidy):
+        """The disk calls of a move, ignoring case the way Windows does."""
+        fail_into = None        # a name whose final rename fails, to test stopping
+
+        def _real(self, p):
+            cur = Path(p.anchor)
+            for part in Path(p).parts[1:]:
+                if (cur / part).exists() or not cur.is_dir():
+                    cur = cur / part
+                    continue
+                same = [n for n in os.listdir(cur) if n.casefold() == part.casefold()]
+                cur = cur / (same[0] if same else part)
+            return cur
+
+        def _exists(self, p):
+            return os.path.lexists(self._real(p))
+
+        def _mkdir(self, p):
+            os.makedirs(self._real(p), exist_ok=True)
+
+        def _rename(self, a, b):
+            ra, rb = self._real(a), self._real(b.parent) / b.name
+            if b.name == self.fail_into:
+                raise OSError(5, "Access is denied (QC)")
+            if T.PcTidy._within(rb, ra):
+                raise OSError(22, "The process cannot move a folder into itself")
+            if self._exists(rb):
+                raise FileExistsError(183, "Cannot create a file when that file already exists")
+            os.rename(ra, rb)
+    return NoCase
+
+
+def _booth(box):
+    (box / "Photobooth" / ".git").mkdir(parents=True)
+    (box / "Photobooth" / "app.py").write_text("x", encoding="utf-8")
+    (box / "Photobooth-run" / "Dummy").mkdir(parents=True)
+    (box / "Photobooth-run" / "Dummy" / "shot.jpg").write_bytes(b"jpg")
+
+
+def _same_name(t, T):
+    NoCase = _nocase(T)
+    cfg = json.loads(T.re.sub(r"(?m)^\s*//.*$", "", (F.CODE / "config" / "layout.json")
+                              .read_text(encoding="utf-8")))["pc"]
+    booth = [e for e in cfg["moves"] if e["to"].startswith("photobooth/")]
+    for order, moves in (("repo first", booth), ("run first", booth[::-1])):
+        box = Path(tempfile.mkdtemp(prefix="qc_tidy_case_"))
+        try:
+            (box / "code").mkdir()
+            _booth(box)
+            before = _files(box)
+            tp = NoCase(box / "code", dict(cfg, moves=moves))
+            try:
+                tp.move_all()
+                err = ""
+            except T.MoveStopped as e:
+                err = str(e)
+            t.ok((box / "photobooth" / "Photobooth" / ".git").is_dir()
+                 and (box / "photobooth" / "Photobooth" / "app.py").is_file()
+                 and (box / "photobooth" / "run" / "Dummy" / "shot.jpg").is_file(),
+                 "Windows case: Photobooth -> photobooth/Photobooth and run beside it (%s)" % order,
+                 err or sorted(_files(box)))
+            t.ok(not (box / "photobooth" / "Photobooth" / "run").exists()
+                 and not list(box.glob(".tidy_tmp_*")),
+                 "run is not inside the friend's repo and no temp name is left (%s)" % order,
+                 sorted(_files(box)))
+            lost = sorted({Path(f).name for f in before} - {Path(f).name for f in _files(box)})
+            t.ok(not lost, "Windows case: nothing deleted (%s)" % order, lost)
+        finally:
+            shutil.rmtree(box, ignore_errors=True)
+
+    # the final rename fails (a file open in the repo): stop, keep it whole
+    box = Path(tempfile.mkdtemp(prefix="qc_tidy_fail_"))
+    try:
+        (box / "code").mkdir()
+        _booth(box)
+        tp = NoCase(box / "code", dict(cfg, moves=booth[::-1]))
+        tp.fail_into = "Photobooth"
+        try:
+            tp.move_all()
+            err = None
+        except T.MoveStopped as e:
+            err = str(e)
+        t.ok(err is not None and "Photobooth" in err, "a failed rename stops and names the folder", err)
+        whole = [d for d in (box / "Photobooth", box / ".tidy_tmp_Photobooth")
+                 if (d / ".git").is_dir() and (d / "app.py").is_file()]
+        t.ok(len(whole) == 1 and str(whole[0].name) in (err or ""),
+             "the friend's repo is still whole and the message says where", (err, _files(box)))
+        t.ok((box / "Photobooth-run" / "Dummy" / "shot.jpg").is_file(),
+             "nothing after the failed move moved", _files(box))
+    finally:
+        shutil.rmtree(box, ignore_errors=True)
+
+    # only an approved run move while the repo sits under its old name: the
+    # repo's name is "photobooth" on Windows, so run would land inside it
+    box = Path(tempfile.mkdtemp(prefix="qc_tidy_clash_"))
+    try:
+        (box / "code").mkdir()
+        _booth(box)
+        run_only = [e for e in booth if e["to"] == "photobooth/run"]
+        try:
+            NoCase(box / "code", dict(cfg, moves=run_only)).move_all()
+            err = None
+        except T.MoveStopped as e:
+            err = str(e)
+        t.ok(err is not None and not (box / "Photobooth" / "run").exists()
+             and (box / "Photobooth-run" / "Dummy" / "shot.jpg").is_file(),
+             "photobooth/run never lands inside the Photobooth repo", (err, _files(box)))
+    finally:
+        shutil.rmtree(box, ignore_errors=True)
+
+    src = (F.CODE / "tools" / "tidy_pc.py").read_text(encoding="utf-8")
+    code = "\n".join(l.split("#")[0] for l in src.splitlines())
+    bad = [w for w in ("shutil.move(", "copytree(", "rmtree(") if w in code]
+    t.ok(not bad, "tidy_pc never copies-then-deletes (os.rename only)", bad)
+
+
 def run(t):
     sys.path.insert(0, str(F.CODE / "tools"))
     import tidy_pc as T
+    _same_name(t, T)
 
     box = Path(tempfile.mkdtemp(prefix="qc_tidy_"))
     sleeper = None
