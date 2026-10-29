@@ -86,7 +86,11 @@
        needs a voice: opening the Voice app, a line the rig must say, or a talk
        gesture in Studio. The Voice page shows <b>starting the voice helper…</b>
        with the seconds counting; a question asked meanwhile waits and is then
-       answered. If it cannot start, the page says why (its last lines are
+       answered. If startup takes too long, the page says why. The hub keeps
+       the same helper while it is still running, so another request cannot
+       open a second copy. A late healthy reply lets the app continue; a
+       helper that has stopped can be started again. If it cannot start,
+       the page says why (its last lines are
        behind the technical switch, the full log is in
        <code>.local/voice/helper.log</code>). Which Python it uses and how long
        it may take are in <code>config/voice_helper.json</code>.</p></div>
