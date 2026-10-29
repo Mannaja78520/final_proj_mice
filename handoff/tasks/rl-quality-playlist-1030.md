@@ -1,16 +1,16 @@
 # RL quality audit, improvement and CMU cheer playlist
 
 Owner: codex:rl-1030-01a1891f
-Updated: 2569-10-30 02:32:42 +07:00
+Updated: 2026-10-30 02:34:45 +07:00
 Branch: main (bookkeeping only; isolate any future source changes)
 Last commit: this checkpoint
 Plan: A50-2; A50-1 remains owned by Claude
 
 ## Goal
-User 2026-10-30: check ALL RL outputs actually follow source humans, whether each improves; improve algorithms as far as practical. Once existing sets pass, rig ALL cheerleader videos in the supplied CMU engineering playlist. Continue autonomously after Claude hits limit.
+User 2026-10-30: check ALL RL outputs actually follow source humans, whether each improves; improve algorithms as far as practical. Use ALL SIX cheerleader videos as a joint development/evaluation set from the start; do not wait for the existing clips to pass before preparing the other four. Continue autonomously after Claude hits limit.
 
 ## Doing now
-Heartbeat rl-claude ACTIVE every 5 minutes in chat 01a1891f-fced-7281-8f73-6920de2e30d9. Waiting for four active training jobs; no source or GPU claim taken. Expanded audit/playlist instructions saved in automation. No quality approval yet.
+Heartbeat rl-claude ACTIVE every 5 minutes in chat 01a1891f-fced-7281-8f73-6920de2e30d9. Monitor current training while preparing the six-clip evaluation; no source or GPU claim taken. Updated heartbeat removes old-clips-first prerequisite. No quality approval yet.
 
 ## File status
 Baseline: 1283955d9b3b6543c41221f55ab864ca89125a03; pre-existing dirty files belong to others and are preserved.
@@ -35,14 +35,14 @@ No source changes, tests, retraining or hardware actions performed by this chat.
 ## Playlist inventory
 | Video ID | Title | Duration s | Status |
 | --- | --- | --- | --- |
-| 9xOEOfDo7NA | เลือดเอ็นทาเนียร์ (หลีด) | 94 | queued after quality gate |
-| hgB_vo7PEdw | เชียร์เรามาเชียร์ (หลีด) | 101 | queued after quality gate |
-| YJwyYWiMWHI | Entaneer the Great (หลีด) | 101 | queued after quality gate |
+| 9xOEOfDo7NA | เลือดเอ็นทาเนียร์ (หลีด) | 94 | baseline/reference preparation eligible now |
+| hgB_vo7PEdw | เชียร์เรามาเชียร์ (หลีด) | 101 | baseline/reference preparation eligible now |
+| YJwyYWiMWHI | Entaneer the Great (หลีด) | 101 | baseline/reference preparation eligible now |
 | I0lCxX8373M | Come and Cheer (หลีด) | 169 | existing center/left outputs require audit |
-| ctfNcvYev_U | Entaneer the First (หลีด) | 190 | queued after quality gate |
+| ctfNcvYev_U | Entaneer the First (หลีด) | 190 | baseline/reference preparation eligible now |
 | CLG7VdVhhLM | วิศวะเกรียงไกร (หลีด) | 95 | existing center/left outputs require audit |
 
-## Quality gate before playlist processing
+## Quality gate for final delivery of every clip
 1. Validate source poses and stable dancer/choreography selection against actual full source footage. Mark occlusion/fill/ambiguity; do not reward a wrong reference or average different routines.
 2. Review every output for the full song side by side at original timestamps, including worst segments, fast flicks, raised arms, waist/shrug and camera cuts. Report per-arm/per-clip mean, P95, worst windows, beat/phase drift, coverage/confidence and jerk.
 3. Validate the actual exported sequence through joint/servo limits and continuous collision checks, including HOME and after smoothing. Preserve real flicks. Simulation is not a hardware measurement.
@@ -53,14 +53,22 @@ No source changes, tests, retraining or hardware actions performed by this chat.
 ## Done
 - Confirmed active training and log progress; left jobs untouched.
 - Read playlist metadata and separated six lead videos from nine clapping/MV entries.
-- Expanded existing heartbeat (not a duplicate) to audit/improve all sets then process all eligible playlist clips; completion now requires both phases.
+- Expanded existing heartbeat (not a duplicate) to evaluate/improve all six clips together; final delivery requires every eligible clip to be checked.
 - Recorded A50-2 in real plan; no takeover of Claude's task/source claims.
 
 ## Next
 1. On heartbeat inspect current Claude status plus logs/checkpoints and current task handoffs. If verified limit, user already authorizes takeover; record exact transferred claims before editing. Do independent read-only audit while other work remains active.
 2. When trained, execute full quality gate above and improve failed aspects with controlled comparisons. No new heavy jobs alongside conflicting training/QC leases.
-3. Only when existing sets pass, process all six playlist entries and each distinct useful choreography; inventory every artifact/status. Keep models/media private.
-4. Follow source staging, Help parity, verification/review and claims rules for future implementation. Persist evidence/next steps here every stop. Notify meaningful changes only; close heartbeat after BOTH phases complete.
+3. Prepare references/rig baselines for all six entries now in disjoint private outputs; schedule heavy work around active GPU/QC leases. Use diverse choreography to find defects and retest improvements across all six. Keep models/media private.
+4. Follow source staging, Help parity, verification/review and claims rules for future implementation. Persist evidence/next steps here every stop. Notify meaningful changes only; close heartbeat only after the full six-clip scope completes.
 
 ## Blocked
-- Training still running. Final human-following quality, winner and exported playback remain unverified. No user action needed now.
+- Training/quality state must be checked fresh; active jobs restrict concurrent heavy work, not independent source inspection/preparation. Final human-following quality, winners and exported playback remain unverified. No user action needed now.
+
+## Cross-clip experiments (latest user correction, overrides old order)
+- All six clips are development/evaluation inputs now. Different choreography exposes different tracking/control failures and training cost; do not optimize only the existing two.
+- Stage budgets: reference/baseline for every clip; short candidate trials across clips; expand only justified candidates and difficult segments; final audit of every clip.
+- Record clip x method quality and measured preprocessing/retarget/train/inference/render time, GPU-hours/peak VRAM where observable. Label concurrency and estimates honestly.
+- When a fix helps one clip, re-evaluate all six for regressions. Compare mean and worst-clip outcomes, preserving the best version of each clip.
+- Keep tuning/evaluation separate using held-out segments and cross-clip validation (leave-one-video-out where feasible). Distinguish generic transfer from per-clip tuning. Do not claim transfer from retesting the tuning examples.
+- A per-clip winner is acceptable when justified; one universal method is not required. The quality gate controls final delivery, not when other clips may be prepared/tested.
