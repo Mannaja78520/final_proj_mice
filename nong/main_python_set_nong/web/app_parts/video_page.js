@@ -169,7 +169,7 @@ function vidShowAt(ms, checkedMs = null) {
     vidDraw($("vidSkel").checked && ms >= 0 ? f.p : null);
   }
   if (vidMade && vidMade.keys.length && ms >= 0) {
-    pose = easeKeys(vidMade.keys, checkedMs ?? VideoRigFitter.clockForSource(vidMade.keys, ms).ms).pose;
+    pose = easeKeys(vidMade.keys, checkedMs ?? VideoRigFitter.clockForSource(vidMade.keys, ms).ms, "video").pose;
     applyPose();
   }
   $("vidClock").textContent = ms >= 0 ? (ms / 1000).toFixed(1) + " s" : "";

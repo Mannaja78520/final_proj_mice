@@ -26,6 +26,8 @@ import re
 import threading
 from pathlib import Path
 
+import motion_smooth
+
 _lock = threading.Lock()
 _recent = []                 # ids picked lately, across answers (keepRecent)
 LATIN = re.compile(r"[a-z]", re.I)
@@ -458,5 +460,8 @@ def plan(lib, fit, text, lang="", manner="", event="", ms=0, seed=None, extra=No
     picks = [{"id": use[p["vid"]]["id"], "label": use[p["vid"]]["label"],
               "mirrored": use[p["vid"]]["mirrored"], "word": p["word"], "at": p["at"]}
              for p in done]
+    # one smoother for every move (A54-1): the arm passes through a gesture's
+    # keys instead of stopping on each; the board still checks its own caps
+    motion_smooth.add_pass(steps, rig, "gestures", cap_dps=dps)
     return {"ok": True, "steps": steps, "picks": picks, "ms": int(round(total)),
             "total_ms": int(round(now))}

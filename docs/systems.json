@@ -111,6 +111,7 @@
      "checks": ["check_studio_render_idle"],
      "depends": ["shared-web"]},
 
+    {"id": "motion-smooth", "summary": "One smoothing stage for every move (A54-1): pass through keyframes instead of stopping on each. Python core, Studio's twin (nong/.../app_parts/motion_smooth.js, motion_smooth.json), the board's PASS (fw-nong), the tool for files made elsewhere.", "files": ["main_python/motion_smooth.py", "tools/smooth_sequence.py"], "names": ["PASS", "pass:", "motion_smooth", "MotionSmooth"], "checks": ["check_motion_smooth"], "depends": ["studio", "fw-nong", "hub-show"]},
     {"id": "nong-sim", "summary": "Optional MuJoCo world: any number of Nongs play Studio sequences with servo lag, gravity and the board's clock (tools/nong_sim, user 2026-10-27). Nothing else needs it.",
      "files": ["tools/nong_sim/", "config/nong_sim.json"],
      "checks": ["check_nong_sim"],

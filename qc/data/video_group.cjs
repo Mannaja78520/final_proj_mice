@@ -12,11 +12,11 @@ function context() {
     localStorage:{getItem:()=>null,setItem:()=>{}},document:{getElementById:id=>{
       if(!elements.has(id))elements.set(id,{value:id==='speedDps'?38:id==='maxDps'?400:'',checked:false,options:[],add(o){this.options.push(o);}});
       return elements.get(id);
-    }},fetch:async file=>({json:async()=>file==='safe_path.json'?safe:file==='video_follow.json'?config:policy}),
+    }},fetch:async file=>({json:async()=>file==='safe_path.json'?safe:file==='video_follow.json'?config:file==='motion_smooth.json'?JSON.parse(fs.readFileSync(path.join(STUDIO,'web/motion_smooth.json'))):policy}),
     Option:function(label,value){this.label=label;this.value=value;}});
   const run=s=>vm.runInContext(s,c);
   run('const $=id=>document.getElementById(id);');
-  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','music_pace','servo_follow','yaml_export','video_body_motion','video_tracking','video_motion_smooth','video_appearance','video_routine_assignment','video_routine_sections','video_routines','video_rig_fit','video_checked_playback'])run(read(name));
+  for(const name of ['rig_data','build_rig','ik_4_dof_arm','collision_shapes','collisions','safe_path','timing','music_pace','servo_follow','motion_smooth','yaml_export','video_body_motion','video_tracking','video_motion_smooth','video_appearance','video_routine_assignment','video_routine_sections','video_routines','video_rig_fit','video_checked_playback'])run(read(name));
   const timeline=read('timeline');run(timeline.slice(timeline.indexOf('function easeKeys('),timeline.indexOf('\nfunction poseAt(')));
   // keyCue/setKeyCue: planPace() reads a sequence's play:/pace: cues
   const cues=read('music_on_a_keyframe'),at=cues.indexOf('function keyCue(');run(cues.slice(at,cues.indexOf('\n}\n',cues.indexOf('function setKeyCue(',at))+3));
@@ -129,7 +129,9 @@ if(require.main===module){
     const roles=d.finish().filter(r=>typeof r.id==='number');return roles.length===2&&roles.every(r=>r.frames.slice(8).every(f=>!f.trusted&&f.action==='uncertain'));
   })()`);
   check('trusted still observations let the smoothed rig finish reaching the accepted target',`(()=>{
-    const start=RIG.home.slice(),target=start.slice();target[0]+=20;
+    // A54-1: the filter is limited by the servo (rig speed-up), not a fixed
+    // 900 deg/s2, so the jump must be bigger than one frame's reach (~30 deg)
+    const start=RIG.home.slice(),target=start.slice();target[0]=clampJ(0,target[0]+40);
     const poses=Array.from({length:15},(_,i)=>(i?target:start).slice()),times=poses.map((_,i)=>i*100),frames=poses.map((_,i)=>({trusted:true,shot:0,action:i===0?'initial':i===1?'accept':'hold'}));
     const output=new VideoMotionSmoother().apply(poses,times,frames).poses;
     return Math.abs(output.at(-1)[0]-target[0])<.5&&output[1][0]<target[0];

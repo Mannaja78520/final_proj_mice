@@ -171,3 +171,37 @@ Notes
   Studio flags 2 -> 1, min gap 10.2 -> 9.3 mm (still above the 5 mm gap).
 - 43-44 s is still RL's worst second (52 deg); the hybrid takes the planner there.
 - Sim only. Not run on the robot. RL output is 50 Hz sim commands, not yet a board sequence.
+
+## 2026-10-29 shared smoother, A54-1 (cloud, no hardware)
+
+Cheer v5 dances (`/mnt/project-files/cheer/*_v5.json`, 158/87 s, their own rig), commanded path
+sampled at the board's 50 Hz, finite differences over all 10 joints. "stops" = keyframes where a
+joint keeps its direction (> 0.25 deg each side) yet every such joint stops (the stutter).
+Script + raw JSON: `/mnt/project-files/experiments/2026-10-29_motion_smooth/` (measure.py,
+results.json); Studio column from headless Studio with the real collision check (`collisionAt`,
+clearMm 10 + musicGapMm 7) via a QC driver. main_python/motion_smooth.py, config
+nong/main_python_set_nong/web/motion_smooth.json (maxOffLineDeg 6, unchecked 1, velScale 0.85).
+
+| dance | keys | stops cosine | stops Studio | stops tool (1 deg) | RMS acc deg/s2 cosine / Studio | RMS jerk deg/s3 cosine / Studio | p95 jerk cosine / Studio | Studio compute s |
+|---|---|---|---|---|---|---|---|---|
+| come_and_cheer_center_v5 | 485 | 429 | 101 | 275 | 978 / 782 | 37349 / 28792 | 69916 / 46906 | 6.1 |
+| come_and_cheer_left_v5 | 447 | 397 | 71 | 255 | 968 / 745 | 36069 / 25877 | 68757 / 43769 | 7.0 |
+| witsawa_kriangkrai_center_v5 | 253 | 226 | 45 | 163 | 910 / 687 | 33241 / 22721 | 67411 / 42159 | 2.2 |
+| witsawa_kriangkrai_left_v5 | 260 | 238 | 35 | 179 | 973 / 681 | 36376 / 22785 | 73058 / 43523 | 3.0 |
+
+- Studio (collision-checked) = within 1 stop of the no-collision bound (100/71/45/35): the curves almost never touch.
+- Peak speed and peak speed-up are unchanged (618.6 deg/s, 13639 deg/s2 on center): the fastest moves are
+  rest-to-rest flicks and stay the cosine. Keyframe times unchanged (music).
+- Board model (tools/nong_sim/board_clock, pass rules of NongModule::passMove), tool output: 207/485,
+  191/447, 85/253, 83/260 moves played as the curve; board length unchanged (159.4 s center).
+- Shape choice (center, before the final rules): quintic with speed-up 0 at keys RMS jerk 40571 (worse than
+  the cosine's 37349: it overshoots and its vias shrink), cubic Hermite 28421. Off-line limit sweep:
+  3 deg -> 136 stops, 6 -> 100, 12 -> 98.
+- Video clean-up (QC, synthetic 30 fps): a 230 ms 22 deg flick kept at 20 deg (the old 240 deg/s,
+  900 deg/s2 limits stall it at about 10); a one-frame 20 deg spike drops to 0.
+- Paper comparison: the via speeds are Fritsch & Carlson (1980) monotone tangents, so no joint passes a
+  keyframe (no overshoot into the 5 mm gap); rest to rest the cosine is kept rather than Flash & Hogan's
+  (1985) minimum-jerk quintic, because at fixed music times the quintic needs 17% more peak speed-up
+  (5.77 vs 4.93 x D/T^2) and measured rougher here.
+- NOT run on hardware: firmware PASS builds (`pio run -e mice_nong`) and passes `pio test -e native`
+  (48 cases) only.

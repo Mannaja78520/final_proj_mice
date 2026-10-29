@@ -111,7 +111,7 @@ WiFi and the board's web portal, SD, OTA, and `PERF?`.
 - [fw-cam](fw-cam.md)
 - [bench](bench.md)
 
-## Checks that test it (73)
+## Checks that test it (74)
 
 - `check_accounts`
 - `check_accounts_firmware`
@@ -153,6 +153,7 @@ WiFi and the board's web portal, SD, OTA, and `PERF?`.
 - `check_logging`
 - `check_loop_realtime`
 - `check_modsite_back`
+- `check_motion_smooth`
 - `check_music_loop`
 - `check_no_data_loss`
 - `check_no_encoder`

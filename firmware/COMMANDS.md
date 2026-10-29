@@ -607,8 +607,23 @@ when that show ends, on `STOP`, or at a restart; `- pace: normal` ends it early.
 Collision, joint-limit and the gap checks in Studio still run at the faster
 timing. Raise it on the real robot step by step (handoff/tasks/lab-day.md).
 
+**Passing through a keyframe** (A54-1, user 2026-10-29: the moves stutter).
+Every move used to start and stop on its keyframe. `PASS <start a1..a10> <end
+a1..a10>` (deg/s per joint) makes the NEXT `POSE` a cubic Hermite from the
+start speeds to the end speeds instead (a joint at 0 and 0 keeps the cosine).
+It is played only when the arm really moves at the start speeds (the move in
+front ended as planned, at most `NONG_PASS_GRACE_MS` ago), the pose keeps its
+asked `T` (no floor lengthened it) and no joint passes its `max_dps` or the cap
+in force; otherwise it is the ordinary move. A PASS pose that arrives up to
+`NONG_PASS_LEAD_MS` before the move in front ends waits and starts exactly at
+its end (the hub sends it early). Files say `- pass: "..."` right before the
+pose; a board without PASS skips that step (logged) and stops on every key as
+before. Studio, the hub, `tools/nong_sim` and `tools/smooth_sequence.py` share
+the curve (`main_python/motion_smooth.py`). Not yet run on a real board.
+
 | Command | Reply | Notes |
 |---|---|---|
+| `PASS <start a1..a10> <end a1..a10>` | `OK pass` | speeds for the next `POSE`; bare `PASS` forgets them; forwarded to the partner board |
 | `PACE MUSIC [deg/s]` | `OK PACE MUSIC cap=120 deg/s` | the music cap until the show ends, `STOP` or a restart; forwarded to the partner board |
 | `PACE NORMAL` | `OK PACE NORMAL cap=60 deg/s` | back to `safe_dps` |
 | `PACE?` | `PACE MUSIC cap=servo max only` | the pace in force and its cap |

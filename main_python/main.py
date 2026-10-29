@@ -1194,6 +1194,7 @@ def seq_steps(text):
     cur_speed, seq_speed = 0.0, 0.0
     name, nxt = "", ""
     pending = []                          # cues waiting for the next keyframe
+    pass_next = []                        # PASS speeds for the next keyframe
     for raw in text.splitlines():
         s = re.sub(r"#.*$", "", raw).strip()
         m = re.match(r"^name:\s*(.+)$", s)
@@ -1218,6 +1219,12 @@ def seq_steps(text):
         if m:
             if steps:
                 steps[-1]["hold"] = int(m.group(1))
+            continue
+        m = re.match(r'^-\s*pass:\s*"?([-\d.\s]+?)"?\s*$', s)
+        if m:
+            # the speeds the next move starts and ends with (A54-1): the
+            # hub's ShowPlayer sends them as PASS right before that move
+            pass_next = [float(v) for v in m.group(1).split()]
             continue
         m = re.match(r'^-\s*pose:\s*"?([\d.\s]+?)(?:\s+T\s+(\d+))?"?\s*$', s)
         if not m:
@@ -1251,7 +1258,9 @@ def seq_steps(text):
                 t = max(ShowPlayer.MIN_T,
                         int(delta / (cur_speed or seq_speed or 60.0) * 1000))
         steps.append({"pose": nums, "t": t, "hold": 0, "cues": pending})
-        pending = []
+        if len(pass_next) == 20:
+            steps[-1]["pass"] = pass_next
+        pending, pass_next = [], []
     if steps and pending:
         # cues after the last keyframe: they fire when the show ends
         steps[-1]["cues_after"] = pending
