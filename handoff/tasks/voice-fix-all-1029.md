@@ -11,26 +11,28 @@ User 2026-10-29: "แก้พวกเรื่องเสียง voice ต�
 (fix every voice/sound problem everywhere, including the Voice app that hangs).
 
 ## Doing now
-Writing qc/checks/check_voice_helper.py (fake helper script on a free port:
-one start only, early exit reported with log tail, Store stub skipped, call()
-retries after refused); then the Voice page start/wait UI.
+Full QC done (9072 passed, 11 failed: env-only, see Done); rechecking
+check_rs485_census + check_tools_list alone, then PR + merge, then PC rebuild
+and a real Voice app test through the RC session.
 
 ## File status
 Baseline: c67e631.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
-| `main_python/voice_helper.py` | NEW: VoiceHelper start/state/ensure/call, log, python list | done | not run | this checkpoint |
-| `config/voice_helper.json` | NEW: autoStart, python list, startSeconds, waitSeconds, log | done | not run | this checkpoint |
-| `main_python/main.py` | VOICE_HELPER instance; proxy starts helper when refused | done | not run | this checkpoint |
-| `main_python/hub_api_apps.py` | /api/voice/start via VOICE_HELPER; GET /api/voice/helper | done | not run | this checkpoint |
-| `main_python/hub_speak.py` | rig line starts helper via call() | done | not run | this checkpoint |
-| `main_python/hub_api_studio.py` | AI gesture starts helper via call() | done | not run | this checkpoint |
-| `qc/lib/qc.py`, `qc/run_qc.py` | MICE_VOICE_AUTOSTART=0 in QC | done | not run | this checkpoint |
-| `apps/voice/app.js` | start: wait with seconds, show exit/log | pending | not run | uncommitted |
-| `qc/checks/check_voice_helper.py` | NEW check | pending | not run | uncommitted |
-| `docs/systems.json`, help parts | register files, help text | pending | not run | uncommitted |
-| `docs/PLAN.html`, `docs/plan_state.js` | A55-1 row | done | plan.py | 1st checkpoint |
+| `main_python/voice_helper.py` | NEW: VoiceHelper start/state/ensure/call, log, python list | done | check_voice_helper 16/0, sabotage 6/6 | pushed |
+| `config/voice_helper.json` | NEW: autoStart, python list, startSeconds, waitSeconds, log | done | check_voice_helper | pushed |
+| `main_python/main.py` | VOICE_HELPER; proxy starts helper when refused (GET 503 starting, POST waits) | done | check_voice_helper, check_voice | pushed |
+| `main_python/hub_api_apps.py` | /api/voice/start via VOICE_HELPER; GET /api/voice/helper | done | check_voice_helper | pushed |
+| `main_python/hub_speak.py` | rig line starts helper via call() | done | check_voice_helper, check_speak | pushed |
+| `main_python/hub_api_studio.py` | AI gesture starts helper via call() | done | voice suite | pushed |
+| `apps/voice/service.py` | one load per model (_load_lock_stt/_llm) | done | check_voice_helper part 7 | pushed |
+| `apps/voice/app.js`, `index.template.html`, `index.html` | wait for helper with seconds, show why + log tail | done | voice suite (cloud browser) | pushed |
+| `main_python/web/help/parts/voice.html`, `help.html` | help: helper starts by itself | done | build_web | pushed |
+| `qc/lib/qc.py`, `qc/run_qc.py` | MICE_VOICE_AUTOSTART=0 in QC | done | full QC | pushed |
+| `qc/checks/check_voice_helper.py` | NEW check | done | 16/0 | pushed |
+| `docs/systems.json`, `docs/systems/*` | files registered, A55-1 trap note | done | systems build | pushed |
+| `docs/PLAN.html`, `docs/plan_state.js` | A55 heading, A55-1 | done | check_plan_areas | pushed |
 
 ## Facts found
 - PC 2026-10-29 19:05Z (read-only, RC): NO hub, NO helper running; 8642/8767/8779 refused; GPU 0 MiB. PC HEAD 1283955 (#106, behind main). Live voice.json: hear [local], think [local], speak [edge, local], stt small, llm Qwen2.5-0.5B. tts_spark/server.log last 2026-10-22.
@@ -42,10 +44,13 @@ Baseline: c67e631.
 - service.py:2045 preload() worker loads models WITHOUT `_lock`; `_load_stt`/`_load_llm` (927, 1997) set `*_loading` but never check it: a question during preload loads a 2nd copy.
 
 ## Done
-- Hub-side helper owner + autostart (files above), not yet tested.
+- PC repro 2026-10-29 (RC, read/launch only): `Mice Voice.lnk` = `dist\MiceHub.exe --open voice`; hub up in 5 s, 8767 never came up in 180 s; /api/voice/start = 401 without login. Helper by hand (C:\Program Files\Python312): /health 200 in 3 s; first model answer 25.4 s (models loading), warm 7.2 s on cuda; FAQ 0.03 s; Edge /say 6.6-6.8 s per new line, 0.02 s cached; GPU 7.7 GB after.
+- Fix: hub owns and auto-starts the helper; page waits with a clock; one model load at a time.
+- QC: voice suite 1194/0; full 9072/11 - failures are cloud env (other pio envs not built, no torch/cv2, browser checks time out in the cloud, census timing under load).
 
 ## Next
-1. Read the PC diagnosis, find the hang, fix with a QC check, sabotage-prove it.
+1. Merge PR, then on the PC: git pull --ff-only (PC tree has local edits!), rebuild `python -m PyInstaller --clean --noconfirm MiceHub.spec`, open Mice Voice.lnk, ask by text, check rig speech.
+2. Ideas not done: Edge ~6.7 s per new line (stream audio to the rig instead of waiting the whole clip); the 0.5B model invents facts (coffee shop) - a bigger model or a cloud key.
 
 ## Blocked
 - nothing
