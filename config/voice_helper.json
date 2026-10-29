@@ -8,20 +8,23 @@
   //   hub uses its own interpreter). %NAME% is an environment variable; an
   //   entry is a command, so ["py", "-3"] is the Windows launcher. The
   //   Microsoft Store stub (WindowsApps\python.exe) is skipped: it opens the
-  //   Store and never runs the helper.
+  //   Store and never runs the helper. PC 2026-10-29: Python312 has the
+  //   voice packages (edge_tts, faster-whisper); `py -3` there is 3.13
+  //   without them, so it comes last.
   // startSeconds: how long a start may take before the page says it failed
   //   (the helper answers /health before any model loads).
   // waitSeconds: how long a spoken line or an answer waits for a helper the
   //   hub just started, before it says the helper is not running.
   // log: what the helper prints, under the data folder (.local is never in
-  //   Git); kept to logBytes, the older half moves to <log>.1.
+  //   Git); past logBytes the old log moves to <log>.1.
   "autoStart": true,
   "python": [
     "%LOCALAPPDATA%\\Programs\\Python\\Python312\\python.exe",
     "%ProgramFiles%\\Python312\\python.exe",
-    ["py", "-3"],
     "python",
-    "python3"
+    "python3",
+    ["py", "-3.12"],
+    ["py", "-3"]
   ],
   "startSeconds": 60,
   "waitSeconds": 30,

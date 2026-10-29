@@ -1669,7 +1669,7 @@ class Handler(hub_api_resources.ResourceRoutes, hub_api_apps.AppRoutes,
                 # Nobody on the port (A55-1): start the helper. A look (GET)
                 # answers at once so the page can show "starting"; a question,
                 # a line to speak or a save waits for it and goes through.
-                if not voice_helper.refused(e) or not voice_helper_settings().get("autoStart", True):
+                if not voice_helper.refused(e) or not VOICE_HELPER.auto():
                     raise
                 if method == "GET":
                     started = VOICE_HELPER.start()

@@ -61,6 +61,10 @@ class VoiceHelper:
         except Exception:                                    # noqa: BLE001
             return False
 
+    def auto(self):
+        """May the hub start it without a press? (config `autoStart`, QC says no)."""
+        return bool(self.settings().get("autoStart", True))
+
     def log_path(self):
         return self.data / str(self.settings().get("log") or ".local/voice/helper.log")
 
@@ -164,7 +168,7 @@ class VoiceHelper:
         """Start if needed and wait until /health answers. -> (ok, why-not)."""
         if self.alive():
             return True, ""
-        if not self.settings().get("autoStart", True):
+        if not self.auto():
             return False, "the voice helper is not running and autoStart is off in config/voice_helper.json"
         got = self.start()
         if not got.get("ok"):
