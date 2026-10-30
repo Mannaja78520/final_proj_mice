@@ -1,7 +1,7 @@
 # Independent Voice acceptance audit and duplicate-start fix
 
 Owner: codex:voice-1030-01a1891e
-Updated: 2026-10-30 05:18 +0700
+Updated: 2026-10-30 07:41 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
@@ -11,21 +11,22 @@ User: check all Voice features requested from Claude, fix remaining bugs and
 verify actual results until complete. Do not disturb other work or live services.
 
 ## Doing now
-Runtime guard and same-step Help update complete; independent review approved.
-QC runner owns bounded sabotage + affected Voice/Help checks in this isolated tree.
-Full gate deferred while other-chat CPU pilot17580 runs; live Voice untouched.
+Resume after reviewer usage-limit interruption. Affected suite1237/1: only stale
+agents subsystem header after adding own handoff file. Regenerate that metadata,
+verify it, then complete quick/full gate after fresh process/lease preflight.
 
 ## File status
-Baseline: 4c25306 (origin/main, PR112); task/test edits only.
+Baseline: 4c25306 (origin/main, PR112); runtime/test/Help changes committed b4faef5.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | `handoff/tasks/voice-helper-audit-1030.md` | own audit/checkpoint | active | task claimed | this checkpoint |
-| `main_python/voice_helper.py` | retain alive timed-out child, report error | fixed | check_voice_helper22/0; independent review approved | this checkpoint |
-| `qc/checks/check_voice_helper.py` | timeout boundary/concurrency/recovery regression | added | baseline 19/3 as expected; _out/voice-helper-audit/baseline.log | this checkpoint |
-| `main_python/web/help/parts/voice.html` | document no duplicate helper while slow | fixed | rebuilt Help; independent review approved | this checkpoint |
-| `main_python/web/help.html` | rebuild Help from source | fixed | only expected6line content diff | this checkpoint |
-| `docs/systems/app-voice.md` | record lifecycle trap | fixed | independent review approved | this checkpoint |
+| `main_python/voice_helper.py` | retain alive timed-out child, report error | fixed | 22/0, sabotage/restoration exact, review approved | b4faef5 |
+| `qc/checks/check_voice_helper.py` | timeout boundary/concurrency/recovery regression | verified | baseline19/3; fixed22/0; sabotage caught | 88e9884 |
+| `main_python/web/help/parts/voice.html` | document no duplicate helper while slow | verified | affected docs/Help passed | b4faef5 |
+| `main_python/web/help.html` | rebuild Help from source | verified | affected docs/Help passed | b4faef5 |
+| `docs/systems/agents.md` | regenerate header for own handoff file | rebuilt | only own handoff added; verification next | this checkpoint |
+| `docs/systems/app-voice.md` | record lifecycle trap | verified | independent review approved | b4faef5 |
 
 | `_out/voice-helper-audit/baseline.log` | baseline regression evidence (ignored) | saved | 19/3 expected | not committed |
 | `_out/voice-helper-audit/fixed-helper.log` | fixed focused result (ignored) | saved | 22/0, exit0 | not committed |
@@ -33,6 +34,20 @@ Baseline: 4c25306 (origin/main, PR112); task/test edits only.
 | `docs/PLAN.html` | root-only A55-2 row | active | plan tool add/doing succeeded | uncommitted root bookkeeping |
 | `docs/plan_state.js` | root-only generated plan | active | plan tool sync | uncommitted root bookkeeping |
 | `docs/BRIDGE.md` | root-only exact claims/provenance notice | active | mutex append | uncommitted root bookkeeping |
+
+| `_out/voice-helper-audit/acceptance.md` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/affected-console.log` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/affected-exit.txt` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/affected-full.log` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/agents-header-diff.txt` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/review.md` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/run_sabotage.py` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/sabotage-baseline.log` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/sabotage-evidence.json` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/sabotage-mutated.log` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/sabotage-restored.log` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/sabotage-spec.json` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/sabotage.log` | ignored verification evidence | saved | actual results preserved | not committed |
 
 ## Facts found
 - A55-1 is explicitly done in main's plan; PR111 merged8658d42. Its source is stable;
@@ -45,6 +60,10 @@ Baseline: 4c25306 (origin/main, PR112); task/test edits only.
 - Root main has unrelated RL changes; this isolated worktree starts clean origin/main4c25306.
 
 ## Done
+- Sabotage exit0: baseline22/0, mutation19/3 exit1, restored22/0 exit0;
+  runtime SHA256 a6609c67cdcfd6705d0436b3e086ff7f0fa0e9c070db6741f65d637a67862763 identical.
+- Affected Voice/Help1237/1 exit1 in278.4s; only check_systems stale agents header.
+- QC runner hit provider usage limit after reporting actual results; not a final gate approval.
 - Fixed focused check22/0 exit0 (35.5s), not full gate; preserved _out evidence.
 - Independent Codex review gpt-6-astra high approved exact final runtime/test/Help diff;
   no drivers/source edits by reviewer. UI may need Start/retry after a timeout.
@@ -54,11 +73,12 @@ Baseline: 4c25306 (origin/main, PR112); task/test edits only.
 - Read project debugging, verification, communication and subsystem instructions.
 
 ## Next
-1. Finish sabotage and affected suite, preserve actual result; then full/quick gate after resource clearance.
+1. Regenerate systems header, verify systems/handoff/build/Help and run required quick/full gate.
 2. Full gate only after QC lease and heavy-job constraints are satisfied; do not skip failures.
 3. Continue feature acceptance: packaged launch, authenticated ask/say, STT, fallback,
    conversation/Stop and physical audio evidence; source/fakes are not hardware proof.
 
 ## Blocked
 - Deployment/authenticated end-to-end and physical microphone/speaker checks are unverified.
-- Full gate not started; another chat owns CPU pose extraction. No QC lease takeover.
+- Quick/full gate not started. Old pilot17580 ended05:35 per reports/process inventory;
+  other-chat source/GPU claims remain, new quiet-window preflight required.
