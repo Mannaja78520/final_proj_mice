@@ -4,6 +4,8 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 
 ## Rules and traps
 
+- Promotion initializes MAIN to RepoLayout.real even when imported from a staging copy; explicit later MAIN overrides still control test fixtures.
+
 - Every request goes into `docs/PLAN.html` via `tools/plan.py` the moment it is
   asked; mark `doing` when picked up, `done` when landed.
 - To find where a change belongs: `python tools/systems.py which <path>`, then
@@ -80,7 +82,7 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 
 - nothing
 
-## Checks that test it (25)
+## Checks that test it (26)
 
 - `check_ai_watch`
 - `check_branch`
@@ -94,6 +96,7 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `check_onefile`
 - `check_packing_list`
 - `check_panel`
+- `check_parallel_runs`
 - `check_plan_areas`
 - `check_plan_live`
 - `check_plan_owner`
@@ -108,4 +111,4 @@ The plan, handoffs, the multi-AI review panel and the files every AI reads first
 - `check_tidy_pc`
 - `check_translate`
 
-Run them: `python qc/run_qc.py --no-build check_ai_watch check_branch check_designer_first check_dev_tools check_faces_count check_handoff_first check_history check_livedoc check_local_panel check_onefile check_packing_list check_panel check_plan_areas check_plan_live check_plan_owner check_plan_updates check_promote_ask check_qc_probe_integrity check_read_rules check_readme_routes check_root_tidy check_stale_build check_systems check_tidy_pc check_translate`
+Run them: `python qc/run_qc.py --no-build check_ai_watch check_branch check_designer_first check_dev_tools check_faces_count check_handoff_first check_history check_livedoc check_local_panel check_onefile check_packing_list check_panel check_parallel_runs check_plan_areas check_plan_live check_plan_owner check_plan_updates check_promote_ask check_qc_probe_integrity check_read_rules check_readme_routes check_root_tidy check_stale_build check_systems check_tidy_pc check_translate`

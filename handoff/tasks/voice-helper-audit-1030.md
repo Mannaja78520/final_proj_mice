@@ -1,14 +1,14 @@
 # Independent Voice acceptance audit and duplicate-start fix
 Owner: codex:voice-1030-01a1891e
-Updated: 2026-10-30 18:09 +0700
+Updated: 2026-10-30 18:13 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
 ## Goal
 Check all requested Voice behavior, fix bugs and verify actual results; preserve other work.
 ## Doing now
-Read-only independent design confirms promote MAIN must initialize to LAYOUT.real;
-keep later explicit temp MAIN overrides/fallback. Add topology regression + Help.
+Two-line promote MAIN fix and topology regression/Help implemented; independent
+final gpt-6-astra high review APPROVED exact hashes. New tests not run yet.
 Canonicalize generated LF before freeze, keep bytes through nested generator tests.
 Peer20min heavy block active until18:26:14; no QC/compile until explicit release.
 ## File status
@@ -19,8 +19,8 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 | `main_python/voice_helper.py` | retain alive timed-out child, report error | fixed | 22/0, sabotage/restoration exact, review approved | 29c9f1a |
 | `qc/checks/check_voice_helper.py` | timeout boundary/concurrency/recovery regression | verified | baseline19/3; fixed22/0; sabotage caught | bddff00 |
 | `main_python/web/help/parts/voice.html` | document no duplicate helper while slow | verified | affected docs/Help passed | 29c9f1a |
-| `main_python/web/help.html` | Windows gate prerequisite repair/Help | pending | review approved; focused190/0; full pending | uncommitted |
-| `docs/systems/agents.md` | regenerate header for own handoff file | pending | metadata84/0; own task only | 83e53b9 |
+| `main_python/web/help.html` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | uncommitted |
+| `docs/systems/agents.md` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | uncommitted |
 | `docs/systems/app-voice.md` | record lifecycle trap | verified | independent review approved | 29c9f1a |
 | `_out/voice-helper-audit/baseline.log` | baseline regression evidence (ignored) | saved | 19/3 expected | not committed |
 | `_out/voice-helper-audit/fixed-helper.log` | fixed focused result (ignored) | saved | 22/0, exit0 | not committed |
@@ -57,7 +57,7 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 | `qc/checks/check_extensions.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `main_python/gacha.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `qc/checks/check_gacha_config_concurrency.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
-| `main_python/web/help/parts/hub.html` | Windows gate prerequisite repair/Help | pending | review approved; focused190/0; full pending | uncommitted |
+| `main_python/web/help/parts/hub.html` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | uncommitted |
 | `main_python/web/help/parts/gacha.html` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `docs/systems/app-gacha.md` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `docs/systems/qc.md` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
@@ -102,16 +102,16 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 | `_out/voice-helper-audit/video-sabotage-baseline.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
 | `_out/voice-helper-audit/video-sabotage-mutated.log` | isolated QC evidence | saved | expected regression failure caught | not committed |
 | `_out/voice-helper-audit/video-sabotage-restored.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
-| `promote.py` | remaining gate blocker diagnosis/repair | pending | not run | uncommitted |
-| `qc/checks/check_parallel_runs.py` | remaining gate blocker diagnosis/repair | pending | not run | uncommitted |
+| `promote.py` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | uncommitted |
+| `qc/checks/check_parallel_runs.py` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | uncommitted |
 | `qc/checks/check_build_web.py` | diagnosis only; temp fixture not drift cause | unchanged | no repair needed | no change |
-| `apps/camera/index.html` | canonical LF generator preparation | pending | normalized HEAD identity required | uncommitted byte-only |
-| `apps/voice/index.html` | canonical LF generator preparation | pending | normalized HEAD identity required | uncommitted byte-only |
-| `main_python/web/hub.html` | canonical LF generator preparation | pending | normalized HEAD identity required | uncommitted byte-only |
-| `nong/main_python_set_nong/web/app.js` | canonical LF generator preparation | pending | normalized HEAD identity required | uncommitted byte-only |
-| `nong/main_python_set_nong/web/index.html` | canonical LF generator preparation | pending | normalized HEAD identity required | uncommitted byte-only |
-| `_out/voice-helper-audit/layout-design-review.md` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/layout-final-review.md` | current layout/gate evidence | pending | not run | not committed |
+| `apps/camera/index.html` | canonical LF generator preparation | prepared | canonical LF; normalized HEAD identity verified | 5bc6d2e byte-only |
+| `apps/voice/index.html` | canonical LF generator preparation | prepared | canonical LF; normalized HEAD identity verified | 5bc6d2e byte-only |
+| `main_python/web/hub.html` | canonical LF generator preparation | prepared | canonical LF; normalized HEAD identity verified | 5bc6d2e byte-only |
+| `nong/main_python_set_nong/web/app.js` | canonical LF generator preparation | prepared | canonical LF; normalized HEAD identity verified | 5bc6d2e byte-only |
+| `nong/main_python_set_nong/web/index.html` | canonical LF generator preparation | prepared | canonical LF; normalized HEAD identity verified | 5bc6d2e byte-only |
+| `_out/voice-helper-audit/layout-design-review.md` | current layout/gate evidence | saved | independent read-only review | not committed |
+| `_out/voice-helper-audit/layout-final-review.md` | current layout/gate evidence | saved | independent read-only review | not committed |
 | `_out/voice-helper-audit/layout-focused-console.log` | current layout/gate evidence | pending | not run | not committed |
 | `_out/voice-helper-audit/layout-focused-full.log` | current layout/gate evidence | pending | not run | not committed |
 | `_out/voice-helper-audit/layout-focused-exit.txt` | current layout/gate evidence | pending | not run | not committed |

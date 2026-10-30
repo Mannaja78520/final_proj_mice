@@ -118,3 +118,80 @@ def run(t):
              "and a new one lives INSIDE .staging, not beside the root (A51-1)")
         t.ok(pr._pick_staging(r"E:/somewhere/else").as_posix().endswith("somewhere/else"),
              "including one outside the repo")
+
+    _promote_topologies(t)
+
+
+def _promote_topologies(t):
+    """Import actual promotion code from private root/copy layouts; never promote."""
+    import builtins
+    import importlib.util
+    from pathlib import Path
+    import tempfile
+    from unittest import mock
+
+    source = (F.CODE / "promote.py").read_bytes()
+    layout = (F.CODE / "tools/layout.py").read_bytes()
+    config = (F.CODE / "config/layout.json").read_bytes()
+    staging = F.LAYOUT.data["staging"]
+
+    def load(folder, unavailable=False):
+        target = folder / "promote.py"
+        target.write_bytes(source)
+        spec = importlib.util.spec_from_file_location("topology_promote", target)
+        module = importlib.util.module_from_spec(spec)
+        old_path = sys.path[:]
+        real_import = builtins.__import__
+
+        def import_without_layout(name, *args, **kwargs):
+            if name == "layout":
+                raise ImportError("layout unavailable in this fixture")
+            return real_import(name, *args, **kwargs)
+
+        try:
+            if unavailable:
+                with mock.patch("builtins.__import__", side_effect=import_without_layout):
+                    spec.loader.exec_module(module)
+            else:
+                spec.loader.exec_module(module)
+        finally:
+            sys.path[:] = old_path
+        return module
+
+    def install(folder):
+        (folder / "tools").mkdir(parents=True)
+        (folder / "config").mkdir()
+        (folder / "tools/layout.py").write_bytes(layout)
+        (folder / "config/layout.json").write_bytes(config)
+
+    with tempfile.TemporaryDirectory(prefix="qc_promote_layout_") as box:
+        cases = (("root", None), ("nested", Path(staging["home"]) / "task"),
+                 ("legacy", Path(staging["prefix"] + "-task")),
+                 ("flat", Path(staging["home"])))
+        for label, relative in cases:
+            root = Path(box) / label
+            install(root)
+            copy = root if relative is None else root / relative
+            if copy != root:
+                install(copy)
+            module = load(copy)
+            t.eq(module.MAIN, root, label + ": promotion destination is the real root")
+            home = root / staging["home"]
+            expected = home if module.LAYOUT.flat_home else home / staging["default"]
+            t.eq(module._pick_staging(None), expected, label + ": default copy is rooted once")
+            t.eq(module._book("landed", "legacy.json"), root / staging["books"]["landed"],
+                 label + ": shared bookkeeping is rooted once")
+            override = Path(box) / (label + "-override")
+            module.MAIN = override
+            t.eq(module._pick_staging("task"), override / staging["home"] / "task",
+                 label + ": explicit MAIN override still chooses the test tree")
+            t.eq(module._book("landed", "legacy.json"), override / staging["books"]["landed"],
+                 label + ": explicit MAIN override also controls bookkeeping")
+        bare = Path(box) / "bare"
+        bare.mkdir()
+        module = load(bare, unavailable=True)
+        t.eq(module.LAYOUT, None, "missing layout retains the bare-tool fallback")
+        t.eq(module.MAIN, bare, "fallback import keeps its original source directory")
+        t.eq(module._pick_staging(None), bare / ".staging", "fallback default remains flat")
+        t.eq(module._book("landed", "legacy.json"), bare / "legacy.json",
+             "fallback bookkeeping retains its explicit legacy path")
