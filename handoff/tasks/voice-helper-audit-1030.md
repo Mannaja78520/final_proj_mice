@@ -1,31 +1,26 @@
 # Independent Voice acceptance audit and duplicate-start fix
-
 Owner: codex:voice-1030-01a1891e
-Updated: 2026-10-30 18:06 +0700
+Updated: 2026-10-30 18:09 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
-
 ## Goal
-User: check all Voice features requested from Claude, fix remaining bugs and
-verify actual results until complete. Do not disturb other work or live services.
-
+Check all requested Voice behavior, fix bugs and verify actual results; preserve other work.
 ## Doing now
-Quick-r2 RED6751/2 exit1; full held. Diagnose promote staging-root selection
-and generated-output newline drift. Read-only independent design pending.
-Own gate stopped; peer granted20min heavy block, require explicit release nextQC.
-Only verified own newline-only output drift restored; no source repair yet.
-
+Read-only independent design confirms promote MAIN must initialize to LAYOUT.real;
+keep later explicit temp MAIN overrides/fallback. Add topology regression + Help.
+Canonicalize generated LF before freeze, keep bytes through nested generator tests.
+Peer20min heavy block active until18:26:14; no QC/compile until explicit release.
 ## File status
-Baseline: 5bc6d2e (origin/main, PR115); own scoped delta only.
+Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distinguish fakes/hardware.
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | `handoff/tasks/voice-helper-audit-1030.md` | own audit/checkpoint | active | task claimed | this checkpoint |
 | `main_python/voice_helper.py` | retain alive timed-out child, report error | fixed | 22/0, sabotage/restoration exact, review approved | 29c9f1a |
 | `qc/checks/check_voice_helper.py` | timeout boundary/concurrency/recovery regression | verified | baseline19/3; fixed22/0; sabotage caught | bddff00 |
 | `main_python/web/help/parts/voice.html` | document no duplicate helper while slow | verified | affected docs/Help passed | 29c9f1a |
-| `main_python/web/help.html` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
-| `docs/systems/agents.md` | regenerate header for own handoff file | verified | metadata84/0; own task only | 83e53b9 |
+| `main_python/web/help.html` | Windows gate prerequisite repair/Help | pending | review approved; focused190/0; full pending | uncommitted |
+| `docs/systems/agents.md` | regenerate header for own handoff file | pending | metadata84/0; own task only | 83e53b9 |
 | `docs/systems/app-voice.md` | record lifecycle trap | verified | independent review approved | 29c9f1a |
 | `_out/voice-helper-audit/baseline.log` | baseline regression evidence (ignored) | saved | 19/3 expected | not committed |
 | `_out/voice-helper-audit/fixed-helper.log` | fixed focused result (ignored) | saved | 22/0, exit0 | not committed |
@@ -62,7 +57,7 @@ Baseline: 5bc6d2e (origin/main, PR115); own scoped delta only.
 | `qc/checks/check_extensions.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `main_python/gacha.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `qc/checks/check_gacha_config_concurrency.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
-| `main_python/web/help/parts/hub.html` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
+| `main_python/web/help/parts/hub.html` | Windows gate prerequisite repair/Help | pending | review approved; focused190/0; full pending | uncommitted |
 | `main_python/web/help/parts/gacha.html` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `docs/systems/app-gacha.md` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `docs/systems/qc.md` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
@@ -107,41 +102,39 @@ Baseline: 5bc6d2e (origin/main, PR115); own scoped delta only.
 | `_out/voice-helper-audit/video-sabotage-baseline.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
 | `_out/voice-helper-audit/video-sabotage-mutated.log` | isolated QC evidence | saved | expected regression failure caught | not committed |
 | `_out/voice-helper-audit/video-sabotage-restored.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
-
 | `promote.py` | remaining gate blocker diagnosis/repair | pending | not run | uncommitted |
 | `qc/checks/check_parallel_runs.py` | remaining gate blocker diagnosis/repair | pending | not run | uncommitted |
-| `qc/checks/check_build_web.py` | remaining gate blocker diagnosis/repair | pending | not run | uncommitted |
-
+| `qc/checks/check_build_web.py` | diagnosis only; temp fixture not drift cause | unchanged | no repair needed | no change |
+| `apps/camera/index.html` | canonical LF generator preparation | pending | normalized HEAD identity required | uncommitted byte-only |
+| `apps/voice/index.html` | canonical LF generator preparation | pending | normalized HEAD identity required | uncommitted byte-only |
+| `main_python/web/hub.html` | canonical LF generator preparation | pending | normalized HEAD identity required | uncommitted byte-only |
+| `nong/main_python_set_nong/web/app.js` | canonical LF generator preparation | pending | normalized HEAD identity required | uncommitted byte-only |
+| `nong/main_python_set_nong/web/index.html` | canonical LF generator preparation | pending | normalized HEAD identity required | uncommitted byte-only |
+| `_out/voice-helper-audit/layout-design-review.md` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/layout-final-review.md` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/layout-focused-console.log` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/layout-focused-full.log` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/layout-focused-exit.txt` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/run-layout-sabotage.py` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/layout-sabotage-spec.json` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/layout-sabotage.log` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/layout-sabotage-evidence.json` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/layout-sabotage-baseline.log` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/layout-sabotage-mutated.log` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/layout-sabotage-restored.log` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/before-r3-gates-manifest.json` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/quick-r3-console.log` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/quick-r3-full.log` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/quick-r3-exit.txt` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/after-quick-r3-manifest.json` | current layout/gate evidence | pending | not run | not committed |
 ## Facts found
-- A55-1 is explicitly done in main's plan; PR111 merged8658d42. Its source is stable;
-  remaining deployment and real app checks remain separate, not claimed from Claude.
-- `main_python/voice_helper.py:139`: after60s start() replaces _proc although
-  poll() is still None. Read-only fake Popen+clock at0/61 produced2 alive children.
-- Claude full9072/11 is RED; independent current full required.
-- Live helper13744 and Hub26664 belong to Claude's voice-test tree. Do not touch.
-- Own tree based on origin/main5bc6d2e; unrelated root RL source/history excluded.
-
+- promote.py:58/90/98 rooted MAIN back into the copy; fixing MAIN also corrects promotion destination/bookkeeping.
+- check_dev_tools.py:67 nested sabotage->QC rebuilds real web outputs despite outer--no-build; prepare canonical LF before freeze.
+- MiceHub.spec global kill calls prohibit direct build while live EXEs exist; private safe recipe needed later (acceptance.md).
 ## Done
-- Quick-r2@8d79fff6751/2 exit1 968.8s, only parallel-run staging selection.
-  Five generated newline-only byte drifts changed QCfingerprint; full not run.
-- Isolated nong compile-only78.89s exit0,1643232-byte firmware.bin; tracked drift[].
-- Focused prerequisites190/0 exit0 63.2s; map/Help and all four repaired failure groups pass.
-- Four sabotage cycles exit0 154.17s: gacha7/0->6/1->7/0;
-  priority29/0->28/1->29/0; extensions28/0->26/2->28/0; video60/0->58/2->60/0.
-  All tracked-byte drift arrays empty. Last two are fixture proof only.
-- Voice timeout fixed22/0; sabotage22/0->19/3->22/0 byte-exact; review approved.
-- Windows/config/fixture source and same-step Help e194b12 independently approved;
-  reviewed regression fixture corrected to production event dict before focused check.
-- Earlier quick6659/11 red and affected1237/1 (stale agents header) preserved;
-  metadata header correction84/0. No failures waived; no current full yet.
-- Own checkout moved to supported .staging path; layout behavior awaits quick recheck.
-
+- Sourcee194b12 independently approved; focused190/0, four sabotage cycles caught/restored exact; nong compile0/78.89s.
+- Quick-r2@8d79fff6751/2 exit1/968.8s, five newline drifts; full NOT run. Earlier red/Voice receipts preserved.
 ## Next
-1. Fix remaining layout/default/named staging + generated fixture restoration; focused/review/mutation then re-freeze quick/full.
-2. Full gate only after QC lease and heavy-job constraints are satisfied; do not skip failures.
-3. Continue feature acceptance: packaged launch, authenticated ask/say, STT, fallback,
-   conversation/Stop and physical audio evidence; source/fakes are not hardware proof.
-
+Fix/review layout, focused+sabotage, then stable canonical-LF quick/full; PR/integration/package/real Voice acceptance after green.
 ## Blocked
-- Deployment/authenticated end-to-end and physical microphone/speaker checks are unverified.
-- Quick-r2 red, no full; peer20min heavy grant during diagnosis. NextQC needs explicit release.
+Peer resource release required next QC; authenticated real STT/ask/say/mic/speaker/rig/package still unverified.
