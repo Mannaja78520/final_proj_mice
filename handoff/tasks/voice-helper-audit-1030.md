@@ -1,7 +1,7 @@
 # Independent Voice acceptance audit and duplicate-start fix
 
 Owner: codex:voice-1030-01a1891e
-Updated: 2026-10-30 14:44 +0700
+Updated: 2026-10-30 18:06 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
@@ -11,10 +11,10 @@ User: check all Voice features requested from Claude, fix remaining bugs and
 verify actual results until complete. Do not disturb other work or live services.
 
 ## Doing now
-Own nong compile exit0 78.89s; firmware.bin exists, all tracked bytes unchanged.
-Freeze all tracked/QC inputs for serial quick-r2 then full; no input edits between
-these gates. Prior web generation e194b12 current, use --no-build (assets only).
-QC runner reports at boundaries; parent root-bookkeeping only until full ends.
+Quick-r2 RED6751/2 exit1; full held. Diagnose promote staging-root selection
+and generated-output newline drift. Read-only independent design pending.
+Own gate stopped; peer granted20min heavy block, require explicit release nextQC.
+Only verified own newline-only output drift restored; no source repair yet.
 
 ## File status
 Baseline: 5bc6d2e (origin/main, PR115); own scoped delta only.
@@ -86,12 +86,12 @@ Baseline: 5bc6d2e (origin/main, PR115); own scoped delta only.
 | `_out/voice-helper-audit/video-sabotage-spec.json` | isolated QC evidence | saved | phase results in prerequisite-sabotage-evidence.json | not committed |
 | `_out/voice-helper-audit/firmware-prepare-console.log` | isolated QC evidence | saved | compile exit0; tracked bytes unchanged | not committed |
 | `_out/voice-helper-audit/firmware-prepare-exit.txt` | isolated QC evidence | saved | compile exit0; tracked bytes unchanged | not committed |
-| `_out/voice-helper-audit/before-final-gates-manifest.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/after-quick-r2-manifest.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/before-final-gates-manifest.json` | isolated QC evidence | saved | quick6751/2 exit1; five newline drifts preserved | not committed |
+| `_out/voice-helper-audit/after-quick-r2-manifest.json` | isolated QC evidence | saved | quick6751/2 exit1; five newline drifts preserved | not committed |
 | `_out/voice-helper-audit/after-full-manifest.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/quick-r2-console.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/quick-r2-full.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/quick-r2-exit.txt` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/quick-r2-console.log` | isolated QC evidence | saved | quick6751/2 exit1; five newline drifts preserved | not committed |
+| `_out/voice-helper-audit/quick-r2-full.log` | isolated QC evidence | saved | quick6751/2 exit1; five newline drifts preserved | not committed |
+| `_out/voice-helper-audit/quick-r2-exit.txt` | isolated QC evidence | saved | quick6751/2 exit1; five newline drifts preserved | not committed |
 | `_out/voice-helper-audit/full-console.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
 | `_out/voice-helper-audit/full-full.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
 | `_out/voice-helper-audit/full-exit.txt` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
@@ -108,6 +108,10 @@ Baseline: 5bc6d2e (origin/main, PR115); own scoped delta only.
 | `_out/voice-helper-audit/video-sabotage-mutated.log` | isolated QC evidence | saved | expected regression failure caught | not committed |
 | `_out/voice-helper-audit/video-sabotage-restored.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
 
+| `promote.py` | remaining gate blocker diagnosis/repair | pending | not run | uncommitted |
+| `qc/checks/check_parallel_runs.py` | remaining gate blocker diagnosis/repair | pending | not run | uncommitted |
+| `qc/checks/check_build_web.py` | remaining gate blocker diagnosis/repair | pending | not run | uncommitted |
+
 ## Facts found
 - A55-1 is explicitly done in main's plan; PR111 merged8658d42. Its source is stable;
   remaining deployment and real app checks remain separate, not claimed from Claude.
@@ -118,6 +122,8 @@ Baseline: 5bc6d2e (origin/main, PR115); own scoped delta only.
 - Own tree based on origin/main5bc6d2e; unrelated root RL source/history excluded.
 
 ## Done
+- Quick-r2@8d79fff6751/2 exit1 968.8s, only parallel-run staging selection.
+  Five generated newline-only byte drifts changed QCfingerprint; full not run.
 - Isolated nong compile-only78.89s exit0,1643232-byte firmware.bin; tracked drift[].
 - Focused prerequisites190/0 exit0 63.2s; map/Help and all four repaired failure groups pass.
 - Four sabotage cycles exit0 154.17s: gacha7/0->6/1->7/0;
@@ -131,12 +137,11 @@ Baseline: 5bc6d2e (origin/main, PR115); own scoped delta only.
 - Own checkout moved to supported .staging path; layout behavior awaits quick recheck.
 
 ## Next
-1. Frozen quick-r2 then full if quick green and byte-stable; no tracked edits until gate end.
+1. Fix remaining layout/default/named staging + generated fixture restoration; focused/review/mutation then re-freeze quick/full.
 2. Full gate only after QC lease and heavy-job constraints are satisfied; do not skip failures.
 3. Continue feature acceptance: packaged launch, authenticated ask/say, STT, fallback,
    conversation/Stop and physical audio evidence; source/fakes are not hardware proof.
 
 ## Blocked
 - Deployment/authenticated end-to-end and physical microphone/speaker checks are unverified.
-- Quick/full pending; peer heavy block explicitly released13:44, inventory clear.
-  Own exclusive software timing/build lease re-claimed for verification.
+- Quick-r2 red, no full; peer20min heavy grant during diagnosis. NextQC needs explicit release.
