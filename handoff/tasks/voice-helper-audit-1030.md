@@ -1,16 +1,16 @@
 # Independent Voice acceptance audit and duplicate-start fix
 Owner: codex:voice-1030-01a1891e
-Updated: 2026-10-30 18:20 +0700
+Updated: 2026-10-30 18:22 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
 ## Goal
 Check all requested Voice behavior, fix bugs and verify actual results; preserve other work.
 ## Doing now
-Peer explicit18:20 heavy release +clear inventory; exclusive own QC reclaimed.
-Run focused layout/promotion/Help then mutation/restoration; checkpoint before
-canonical-LF manifest quick-r3/full. Source9641ce0 review approved, tests pending.
-No input edits while drivers run; preserve five canonical-LF outputs.
+Focused177/0 and layout sabotage40/0->29/11->40/0 passed;3894byte hashes invariant.
+QC runner now freezes canonical-LF tracked/QC manifest for quick-r3 then full
+ONLY if quick green/stable; no own-tree edits through BOTH gates. Root bookkeeping
+only at quick boundary; exclusive software lease held, no live/hardware/neural work.
 ## File status
 Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distinguish fakes/hardware.
 | File | Change | State | Verification | Commit |
@@ -19,8 +19,8 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 | `main_python/voice_helper.py` | retain alive timed-out child, report error | fixed | 22/0, sabotage/restoration exact, review approved | 29c9f1a |
 | `qc/checks/check_voice_helper.py` | timeout boundary/concurrency/recovery regression | verified | baseline19/3; fixed22/0; sabotage caught | bddff00 |
 | `main_python/web/help/parts/voice.html` | document no duplicate helper while slow | verified | affected docs/Help passed | 29c9f1a |
-| `main_python/web/help.html` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | 9641ce0 |
-| `docs/systems/agents.md` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | 9641ce0 |
+| `main_python/web/help.html` | promotion root/fixture/Help repair | verified | review approved; focused177/0; mutation caught/restored | 9641ce0 |
+| `docs/systems/agents.md` | promotion root/fixture/Help repair | verified | review approved; focused177/0; mutation caught/restored | 9641ce0 |
 | `docs/systems/app-voice.md` | record lifecycle trap | verified | independent review approved | 29c9f1a |
 | `_out/voice-helper-audit/baseline.log` | baseline regression evidence (ignored) | saved | 19/3 expected | not committed |
 | `_out/voice-helper-audit/fixed-helper.log` | fixed focused result (ignored) | saved | 22/0, exit0 | not committed |
@@ -57,7 +57,7 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 | `qc/checks/check_extensions.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `main_python/gacha.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `qc/checks/check_gacha_config_concurrency.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
-| `main_python/web/help/parts/hub.html` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | 9641ce0 |
+| `main_python/web/help/parts/hub.html` | promotion root/fixture/Help repair | verified | review approved; focused177/0; mutation caught/restored | 9641ce0 |
 | `main_python/web/help/parts/gacha.html` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `docs/systems/app-gacha.md` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `docs/systems/qc.md` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
@@ -102,8 +102,8 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 | `_out/voice-helper-audit/video-sabotage-baseline.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
 | `_out/voice-helper-audit/video-sabotage-mutated.log` | isolated QC evidence | saved | expected regression failure caught | not committed |
 | `_out/voice-helper-audit/video-sabotage-restored.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
-| `promote.py` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | 9641ce0 |
-| `qc/checks/check_parallel_runs.py` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | 9641ce0 |
+| `promote.py` | promotion root/fixture/Help repair | verified | review approved; focused177/0; mutation caught/restored | 9641ce0 |
+| `qc/checks/check_parallel_runs.py` | promotion root/fixture/Help repair | verified | review approved; focused177/0; mutation caught/restored | 9641ce0 |
 | `qc/checks/check_build_web.py` | diagnosis only; temp fixture not drift cause | unchanged | no repair needed | no change |
 | `apps/camera/index.html` | canonical LF generator preparation | prepared | canonical LF; normalized HEAD identity verified | 5bc6d2e byte-only |
 | `apps/voice/index.html` | canonical LF generator preparation | prepared | canonical LF; normalized HEAD identity verified | 5bc6d2e byte-only |
@@ -112,16 +112,16 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 | `nong/main_python_set_nong/web/index.html` | canonical LF generator preparation | prepared | canonical LF; normalized HEAD identity verified | 5bc6d2e byte-only |
 | `_out/voice-helper-audit/layout-design-review.md` | current layout/gate evidence | saved | independent read-only review | not committed |
 | `_out/voice-helper-audit/layout-final-review.md` | current layout/gate evidence | saved | independent read-only review | not committed |
-| `_out/voice-helper-audit/layout-focused-console.log` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/layout-focused-full.log` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/layout-focused-exit.txt` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/run-layout-sabotage.py` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/layout-sabotage-spec.json` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/layout-sabotage.log` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/layout-sabotage-evidence.json` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/layout-sabotage-baseline.log` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/layout-sabotage-mutated.log` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/layout-sabotage-restored.log` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/layout-focused-console.log` | current layout/gate evidence | saved | focused177/0 exit0 | not committed |
+| `_out/voice-helper-audit/layout-focused-full.log` | current layout/gate evidence | saved | focused177/0 exit0 | not committed |
+| `_out/voice-helper-audit/layout-focused-exit.txt` | current layout/gate evidence | saved | focused177/0 exit0 | not committed |
+| `_out/voice-helper-audit/run-layout-sabotage.py` | current layout/gate evidence | saved | layout40/0->29/11->40/0; exact bytes restored | not committed |
+| `_out/voice-helper-audit/layout-sabotage-spec.json` | current layout/gate evidence | saved | layout40/0->29/11->40/0; exact bytes restored | not committed |
+| `_out/voice-helper-audit/layout-sabotage.log` | current layout/gate evidence | saved | layout40/0->29/11->40/0; exact bytes restored | not committed |
+| `_out/voice-helper-audit/layout-sabotage-evidence.json` | current layout/gate evidence | saved | layout40/0->29/11->40/0; exact bytes restored | not committed |
+| `_out/voice-helper-audit/layout-sabotage-baseline.log` | current layout/gate evidence | saved | layout40/0->29/11->40/0; exact bytes restored | not committed |
+| `_out/voice-helper-audit/layout-sabotage-mutated.log` | current layout/gate evidence | saved | layout40/0->29/11->40/0; exact bytes restored | not committed |
+| `_out/voice-helper-audit/layout-sabotage-restored.log` | current layout/gate evidence | saved | layout40/0->29/11->40/0; exact bytes restored | not committed |
 | `_out/voice-helper-audit/before-r3-gates-manifest.json` | current layout/gate evidence | pending | not run | not committed |
 | `_out/voice-helper-audit/quick-r3-console.log` | current layout/gate evidence | pending | not run | not committed |
 | `_out/voice-helper-audit/quick-r3-full.log` | current layout/gate evidence | pending | not run | not committed |
@@ -132,9 +132,10 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 - check_dev_tools.py:67 nested sabotage->QC rebuilds real web outputs despite outer--no-build; prepare canonical LF before freeze.
 - MiceHub.spec global kill calls prohibit direct build while live EXEs exist; private safe recipe needed later (acceptance.md).
 ## Done
+- Layout focused177/0; sabotage40/0->29/11->40/0 exact restoration;3894tracked bytes invariant.
 - Sourcee194b12 independently approved; focused190/0, four sabotage cycles caught/restored exact; nong compile0/78.89s.
 - Quick-r2@8d79fff6751/2 exit1/968.8s, five newline drifts; full NOT run. Earlier red/Voice receipts preserved.
 ## Next
-Fix/review layout, focused+sabotage, then stable canonical-LF quick/full; PR/integration/package/real Voice acceptance after green.
+Frozen canonical-LF quick-r3 then full only if green/stable; PR/integration/package/real Voice acceptance after current full green.
 ## Blocked
 No resource blocker now; authenticated real STT/ask/say/mic/speaker/rig/package still unverified.
