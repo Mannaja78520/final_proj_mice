@@ -1,7 +1,7 @@
 # Independent Voice acceptance audit and duplicate-start fix
 
 Owner: codex:voice-1030-01a1891e
-Updated: 2026-10-30 13:32 +0700
+Updated: 2026-10-30 14:04 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
@@ -11,9 +11,10 @@ User: check all Voice features requested from Claude, fix remaining bugs and
 verify actual results until complete. Do not disturb other work or live services.
 
 ## Doing now
-Checkpoint while peer uses granted heavy block (through13:55:29 Bangkok).
-Source e194b12 and Help generated; independent review approved. No new tests.
-Resume from Next after explicit peer release/inventory; no own active driver.
+Peer heavy block explicitly released13:44; fresh inventory no QC/heavy drivers.
+Own exclusive QC/build/timing re-claimed. Run focused Windows/gacha/fixture checks,
+sabotage restoration, compile-only nong prerequisite, then frozen quick/full.
+No source edits during drivers; no live services/models/hardware.
 
 ## File status
 Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
@@ -123,5 +124,5 @@ Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
 
 ## Blocked
 - Deployment/authenticated end-to-end and physical microphone/speaker checks are unverified.
-- Quick/full gate pending; own quiet lease released for bounded peer heavy window.
-  Require peer completion/release and fresh inventory before timing checks.
+- Quick/full pending; peer heavy block explicitly released13:44, inventory clear.
+  Own exclusive software timing/build lease re-claimed for verification.
