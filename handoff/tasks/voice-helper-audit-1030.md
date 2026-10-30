@@ -1,13 +1,13 @@
 # Independent Voice acceptance audit
 Owner: codex:voice-1030-01a1891e
-Updated: 2026-10-30 20:09 +0700
+Updated: 2026-10-30 23:46 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
 ## Goal
 Finish requested Voice acceptance/fixes, preserving other work; no fake hardware claims.
 ## Doing now
-Full1 archived89entries; exact2fixturedata baselines restored. Run one bounded instrumented diagnostic of3UI failures (unchanged assertions); capture Gacha completion/status, Home apps readiness and fractional panel geometry. No production fix yet; no source edits while probe active.
+PAUSED by explicit user priority: RL first, then Voice; minimize duplicate context/model calls without reducing required QC. No driver remains. Timing/CSS followup saved; all3894tracked hashes stable, no source fixes yet. Heartbeat voice-claude PAUSED. Resume only after RL completion and fresh claims/inventory.
 ## File status
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
@@ -100,7 +100,6 @@ Full1 archived89entries; exact2fixturedata baselines restored. Run one bounded i
 | `_out/voice-helper-audit/video-sabotage-restored.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
 | `promote.py` | promotion root/fixture/Help repair | verified | review approved; focused177/0; mutation caught/restored | 9641ce0 |
 | `qc/checks/check_parallel_runs.py` | promotion root/fixture/Help repair | verified | review approved; focused177/0; mutation caught/restored | 9641ce0 |
-| `qc/checks/check_build_web.py` | diagnosis only; temp fixture not drift cause | unchanged | no repair needed | no change |
 | `apps/camera/index.html` | canonical LF generator preparation | prepared | canonical LF; normalized HEAD identity verified | 5bc6d2e byte-only |
 | `apps/voice/index.html` | canonical LF generator preparation | prepared | canonical LF; normalized HEAD identity verified | 5bc6d2e byte-only |
 | `main_python/web/hub.html` | canonical LF generator preparation | prepared | canonical LF; normalized HEAD identity verified | 5bc6d2e byte-only |
@@ -128,19 +127,19 @@ Full1 archived89entries; exact2fixturedata baselines restored. Run one bounded i
 | `main_python/reports/2026-10-30T12-17-19.211Z_1700de7b8a49.json` | full-run diagnosis/archive/data preservation | saved | own QC output; archived, untracked retained | not committed |
 | `main_python/reports/2026-10-30T12-33-07.053Z_b59f931f9d91.json` | full-run diagnosis/archive/data preservation | saved | own QC output; archived, untracked retained | not committed |
 | `_out/voice-helper-audit/full-r1-bb75299-20261030.zip` | full-run diagnosis/archive/data preservation | saved | 89entries SHA-verified; all receipts/postdata | not committed |
-| `_out/voice-helper-audit/full-diagnosis.md` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
-| `qc/checks/check_gacha_ui.py` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
-| `qc/checks/check_one_module_list.py` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
-| `qc/checks/check_studio_panels.py` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
-| `qc/checks/check_studio_edits.py` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
-| `qc/checks/check_settings_transfer.py` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
-| `_out/voice-helper-audit/full-followup-driver.py` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
-| `_out/voice-helper-audit/full-followup-proof.json` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
+| `_out/voice-helper-audit/full-diagnosis.md` | full-run diagnosis/archive/data preservation | saved | 5.05s health probes; Home readiness; panel transition evidence | not committed |
+| `qc/checks/check_gacha_ui.py` | deferred gate prerequisite repair | unchanged | user pause; no source edits/tests yet | no change |
+| `qc/checks/check_one_module_list.py` | deferred gate prerequisite repair | unchanged | user pause; no source edits/tests yet | no change |
+| `qc/checks/check_studio_panels.py` | deferred gate prerequisite repair | unchanged | user pause; no source edits/tests yet | no change |
+| `qc/checks/check_studio_edits.py` | deferred gate prerequisite repair | unchanged | user pause; no source edits/tests yet | no change |
+| `qc/checks/check_settings_transfer.py` | deferred gate prerequisite repair | unchanged | user pause; no source edits/tests yet | no change |
+| `_out/voice-helper-audit/full-followup-driver.py` | bounded diagnostic evidence | saved | followup complete; all3894tracked hashes stable | not committed |
+| `_out/voice-helper-audit/full-followup-proof.json` | bounded diagnostic evidence | saved | followup complete; all3894tracked hashes stable | not committed |
 ## Facts found
-promote MAIN normalized to real root; nested dev-tools sabotage regenerates web so canonical LF must remain. MiceHub.spec global kill calls require private safe recipe later. Peer-reported19:18 two-core Node overlap is not established failure cause/human instruction here.
+promote MAIN normalized to real root; nested dev-tools sabotage regenerates web so canonical LF must remain. MiceHub.spec global kill calls require private safe recipe later. Actual human RLchat userturn01a18cbd-b220-7b53-b40b-2f44d6ca9c9c authorizes peerCPU22/23; overlap not established failure cause.
 ## Done
 Quick6777/0 byte-stable; full9323/11 red,1144QC inputs stable,2private data drifts. Voice22/0, prerequisites190/0/layout177/0 and all mutation receipts/reviews preserved.
 ## Next
-Diagnose and fix only proven gate prerequisites with retained assertions/Help/review; full rerun only after focused evidence. Then PR/integration/package/authenticated real Voice acceptance.
+After RL completes: re-claim resources/files; implement proved metadata-only Gacha game names, Home readiness, realistic panel drag/persistence and2temporary data fixtures. Focus/sabotage/review, then fresh quick/full stable manifests; PR/package/authenticated real Voice acceptance remain later.
 ## Blocked
 Full not green; actual STT/ask/say/mic/speaker/rig/package unverified. No source/QC conflict allowed.
