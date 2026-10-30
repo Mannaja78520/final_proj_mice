@@ -19,8 +19,8 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 | `main_python/voice_helper.py` | retain alive timed-out child, report error | fixed | 22/0, sabotage/restoration exact, review approved | 29c9f1a |
 | `qc/checks/check_voice_helper.py` | timeout boundary/concurrency/recovery regression | verified | baseline19/3; fixed22/0; sabotage caught | bddff00 |
 | `main_python/web/help/parts/voice.html` | document no duplicate helper while slow | verified | affected docs/Help passed | 29c9f1a |
-| `main_python/web/help.html` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | uncommitted |
-| `docs/systems/agents.md` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | uncommitted |
+| `main_python/web/help.html` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | 9641ce0 |
+| `docs/systems/agents.md` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | 9641ce0 |
 | `docs/systems/app-voice.md` | record lifecycle trap | verified | independent review approved | 29c9f1a |
 | `_out/voice-helper-audit/baseline.log` | baseline regression evidence (ignored) | saved | 19/3 expected | not committed |
 | `_out/voice-helper-audit/fixed-helper.log` | fixed focused result (ignored) | saved | 22/0, exit0 | not committed |
@@ -57,7 +57,7 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 | `qc/checks/check_extensions.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `main_python/gacha.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `qc/checks/check_gacha_config_concurrency.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
-| `main_python/web/help/parts/hub.html` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | uncommitted |
+| `main_python/web/help/parts/hub.html` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | 9641ce0 |
 | `main_python/web/help/parts/gacha.html` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `docs/systems/app-gacha.md` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `docs/systems/qc.md` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
@@ -102,8 +102,8 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 | `_out/voice-helper-audit/video-sabotage-baseline.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
 | `_out/voice-helper-audit/video-sabotage-mutated.log` | isolated QC evidence | saved | expected regression failure caught | not committed |
 | `_out/voice-helper-audit/video-sabotage-restored.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
-| `promote.py` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | uncommitted |
-| `qc/checks/check_parallel_runs.py` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | uncommitted |
+| `promote.py` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | 9641ce0 |
+| `qc/checks/check_parallel_runs.py` | promotion root/fixture/Help repair | implemented | final independent review approved; tests pending | 9641ce0 |
 | `qc/checks/check_build_web.py` | diagnosis only; temp fixture not drift cause | unchanged | no repair needed | no change |
 | `apps/camera/index.html` | canonical LF generator preparation | prepared | canonical LF; normalized HEAD identity verified | 5bc6d2e byte-only |
 | `apps/voice/index.html` | canonical LF generator preparation | prepared | canonical LF; normalized HEAD identity verified | 5bc6d2e byte-only |
