@@ -1,7 +1,7 @@
 # Independent Voice acceptance audit and duplicate-start fix
 
 Owner: codex:voice-1030-01a1891e
-Updated: 2026-10-30 07:46 +0700
+Updated: 2026-10-30 07:54 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
@@ -11,10 +11,10 @@ User: check all Voice features requested from Claude, fix remaining bugs and
 verify actual results until complete. Do not disturb other work or live services.
 
 ## Doing now
-Rebased onto upstream5bc6d2e (PR115), resolving only generated agents inventory.
-Reviewed runtime/test/Voice Help source content is unchanged. Quiet window granted;
-QC runner will prepare isolated caches/assets, freeze input manifest, run quick
-and full gate under exclusive software lease. No live service/GPU/hardware actions.
+Quick finished6659/11 exit1, all3893 tracked byte hashes unchanged. Full held.
+Parent setup correction: move own checkout to supported .staging/voice-audit-1030,
+then compile firmware prerequisites and diagnose remaining Windows/fixture failures.
+QC runner read-only, no test driver remains; live services untouched.
 
 ## File status
 Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
@@ -53,6 +53,15 @@ Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
 | `_out/voice-helper-audit/gate-preflight.txt` | ignored verification evidence | saved | actual results preserved | not committed |
 | `_out/voice-helper-audit/metadata-fixed.log` | ignored verification evidence | saved | actual results preserved | not committed |
 
+| `_out/voice-helper-audit/after-quick-manifest.json` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/before-manifest.json` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/cache-copy.log` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/gate-web-build.log` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/quick-console.log` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/quick-exit.txt` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/quick-full.log` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/snapshot_inputs.py` | ignored verification evidence | saved | actual results preserved | not committed |
+
 ## Facts found
 - A55-1 is explicitly done in main's plan; PR111 merged8658d42. Its source is stable;
   remaining deployment and real app checks remain separate, not claimed from Claude.
@@ -64,6 +73,10 @@ Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
 - Root main has unrelated RL changes; this isolated worktree starts clean origin/main4c25306.
 
 ## Done
+- Quick6659/11 exit1 (314.2s), 3893 inputs byte-exact; full not run.
+- Failures: firmware binaries not built, two unsupported-copy layout expectations,
+  watcher priority, extension separators, gacha atomic rename and video fixture keyCue.
+  These remain diagnoses, not waived passes; no source fixes yet.
 - Rebased onto main5bc6d2e; only own7file delta. Runtime/test/Voice Help content
   unchanged from independent review; generated agents conflict resolved from registry.
 - Corrected generated agents header; systems/handoff/web metadata checks84/0 exit0.
@@ -80,7 +93,7 @@ Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
 - Read project debugging, verification, communication and subsystem instructions.
 
 ## Next
-1. Regenerate systems header, verify systems/handoff/build/Help and run required quick/full gate.
+1. Move only own checkout to supported staging path; build prerequisites, diagnose failures, then re-freeze/recheck.
 2. Full gate only after QC lease and heavy-job constraints are satisfied; do not skip failures.
 3. Continue feature acceptance: packaged launch, authenticated ask/say, STT, fallback,
    conversation/Stop and physical audio evidence; source/fakes are not hardware proof.
