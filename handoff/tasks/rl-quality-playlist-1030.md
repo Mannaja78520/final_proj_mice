@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-30 13:45:15 +07:00
+Updated: 2026-10-30 13:54:50 +07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Completed bounded common-revision audit/native trials and all6diagnostic/source videos. Explicitly released heavy block early; no own jobs. Reconcile ledger/report/handoff checkpoint only. Next full temporal reference review and native export safety remain open; no final quality approval.
+Lightweight observation-validity diagnosis complete: actual stale-mask regression reproduced; private adapter passed9before/after checks. All8cases audited for current-image visibility versus scored labels; no reference regeneration or score improvement claimed. Heavy block remains released; next controlled world-visibility/tracking replay requires resource coordination.
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
 | File | Change | State | Verification | Commit |
@@ -40,6 +40,9 @@ Original baseline1283955; preserve all other dirty work. Complete exact per-file
 | .local/rl_playlist_1030/review_index.html | links to all6source/comparison/report artifacts | review-ready only |linked6clips; final quality pending | git-ignored |
 | .local/rl_playlist_1030/monitor_status.json | latest resource/quality state | current |explicit grant/release recorded; no quota evidence | git-ignored |
 ## Facts found
+- NEW reference defect: video_body_motion.js:45 difference skips non-common visible arms; :105 hold and :118 returns this.accepted, including old arm.ok. Actual-class synthetic150-frame occlusion stays trusted/oktrue; initially missing arms remain okfalse after restoration. observation_policy_regression.json proves actual-code behavior, not real150-frame duration.
+- observation_label_audit.json covers8cases/6videos:676scored arm samples below CURRENT IMAGE visibility0.55 (0.7-2.0pct percase), ALLactionhold;692image-visible but unscored. Distinguish image from world visibility and independent human truth. Other low-visibility arms were already correctly excluded; do NOT call all low-visibility trusted rows mislabeled. No original data or scores changed.
+- Private observation_policy.cjs corrects held per-arm validity and restored-arm fitting in its VM only. verify_observation.cjs passed9actual-class before/after checks, including visible geometry exact, per-arm separation, noBody/ambiguous remains uncertain. Not integrated/shared, no regenerated reference, no real-world fidelity approval. observation_review.md and private index flag all previous comparisons as conditional on uncertified references.
 - Latest bounded block:48canonical replays,80native smoother trials,6held-out folds. Updated native_trials/review.md has all6comparison and raw per-arm/P95/worst5s/coverage. Initial default10mm metric mistake retained; exact saved curves rescored explicit5mm in native_trials/common_results_5mm.json. Shared input hashes stable; no training/shared code/hardware.
 - All6leave-one-video-out folds choose identity under +0.25deg raw-mean/no-added-approx5mm/limits and worst-video jerk criteria. Same-video tuning only: Blood/Cheer/First jerk -63.5/-58.2/-69.2pct, Great -6.1pct; old2videos identity. These are candidates, NOT held-out generalization or exported safety/flick approval.
 - Six source_review/*_reference_review.mp4 cover ORIGINAL FULL source/audio30fps including intro/end, with separate candidate skeletons. Six comparison_review/*_comparison.mp4 cover full rig range15fps, actual source/audio/skeleton plus RAW ghost and2robot views. No blank pane; all stream/duration checks pass. Sixworst images inspected, visual_notes.json records observed arm errors/depth/visibility uncertainty. Full temporal/beat/flick review remains pending. Header text slightly overlaps; fix final renderer;15fps is diagnostic only.
@@ -87,6 +90,7 @@ Playlist PLp0S6kSqcUg_V2y6azyYTEjBmJuQ-vfQN has15entries/six lead. Exclude clapp
 6. Deliver editable rig/project, matching checked sequence/preview/audio, comparison/cost report and index per eligible clip/choreography. Inaccessible clips stay pending. Product changes need normal staging/claims/Help parity/QC/review. No such product change yet.
 
 ## Done
+Observed-validity audit and private actual-class adapter regression done;9checks pass. Saved all6dataset diagnostics and caveats, preserved references/checkpoints/results. No train/fit/render in this step.
 Completed common-version raw/native audit,9setting80trial grid/6fold selection,6full-source overlays and6two-angle simulation videos. Sixworst samples show material remaining arm errors; no final acceptance. review_index.html provides per-video diagnostic links. Heavy lease released, exact ledger refreshed.
 
 Quiet-window research: prepared source-cited algorithm shortlist and ordered, budgeted six-video trials without running models or installing dependencies. Continuous export/reference checks and actual candidate benchmarks remain pending.
@@ -94,7 +98,7 @@ All4short pilots complete; released GPU/CPU and granted peer quiet gate window. 
 Six sources prepared; new4dense references/candidates and YAML verified structurally. Private missing-helper fix has before/after regression. Original4training completed; safety/smoothing/reference failures documented;4human-pane copies repaired and sampled. Full quality and final delivery remain open.
 
 ## Next
-00. Open review_index.html and visual_notes.json; review all6source/comparison timelines, then flagged low-visibility/cut/fast/worst windows. Diagnose reference/body-frame/depth/startup versus control before altering targets/training. Preserve separate actual choreography groups. Use algorithm_trials.md for justified collision-safe hybrid/constrained IK/trajectory experiments after references; literature remains unbenchmarked.
+00. FIRST read observation_review.md, observation_label_audit.json and adapter validation. Verify world visibility at flagged events; next bounded window replay all8track cases into a separate explicitly observed/held/filled reference variant with frozen inputs and compare masks/gaps/geometry/identity before fit or training. No false score improvement from excluded observations. Then open review_index.html and visual_notes.json; review all6source/comparison timelines, then flagged low-visibility/cut/fast/worst windows. Diagnose reference/body-frame/depth/startup versus control before altering targets/training. Preserve separate actual choreography groups. Use algorithm_trials.md for justified collision-safe hybrid/constrained IK/trajectory experiments after references; literature remains unbenchmarked.
 0. Common-revision smoother audit DONE for all8cases/6videos with stable hashes. Do not repeat it absent changes/failures. Own bounded heavy window released EARLY; read current peer QC claims before new heavy work and coordinate another bounded window. Quiet-time full video/image review and saved-result analysis can continue. Preserve native_trials candidates; no universal setting passed.
 1. Pilots finished; no duplicate launch. Preserve3round checkpoints. rl.py ignores rounds only when checking same-config resume: after source/reference compatibility review, extend useful runs in new private output snapshots using saved optimizer/checkpoints, not fresh training; never call unequal budgets fair rankings.
 2. After pilots, compare raw-human errors/timing/safety/cost across six clips (old4sets represent2clips). Do not rank methods from3round undertraining. Plan useful next candidates: constraints/retarget reference fixes, collision-safe hybrid blending, board-playable smoother parameter trials. Never merely train longer against wrong reference.
