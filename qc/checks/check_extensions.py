@@ -63,10 +63,10 @@ def run(t):
                          partners=lambda: templates, apps=lambda: shipped)
 
         # ---- folders follow the tree ------------------------------------
-        t.eq(E.expand("{parent}/Face_Regonize"), str(box / "Face_Regonize"),
+        t.eq(Path(E.expand("{parent}/Face_Regonize")).resolve(), friend.resolve(),
              "{parent} is the folder the hub's tree sits in")
         rec = E.partner("reconize", templates["reconize"])
-        t.ok(rec["installed"] and rec["folder"] == str(friend),
+        t.ok(rec["installed"] and Path(rec["folder"]).resolve() == friend.resolve(),
              "a partner beside the tree is found and installed", rec)
         booth = E.partner("booth", templates["booth"])
         t.ok(not booth["installed"], "a partner whose folder is missing is not installed", booth)

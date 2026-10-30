@@ -4,6 +4,8 @@ PC helper (user 2026-10-29): watches Codex, Gemini and Claude logs for a usage l
 
 ## Rules and traps
 
+- Windows priority calls need typed HANDLE/DWORD signatures; ctypes defaults truncate the pseudo-handle on 64-bit Python.
+
 - Never starts at logon (user 2026-10-29: RAM and heat while gaming). `install` only puts the ON / OFF desktop shortcuts (config `control.shortcuts`) and deletes the PR #105 logon task / Startup .vbs. `start` / `stop` / `status` from a console too.
 - OFF = the `_out/ai_watch/stop` flag; the sleeping loop stats it every `stop_check_seconds`, a hung tick is killed after `stop_wait_seconds`. Resumed AI workers keep running after OFF.
 - `watcher.pid` is touched after every pass; a pid file older than 2 polls + 60 s reads OFF (a reused pid after a reboot is not ON).

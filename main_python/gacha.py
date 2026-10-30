@@ -165,10 +165,13 @@ class Gacha:
 
     def cfg(self):
         c = json.loads(json.dumps(DEFAULT_CFG))
-        try:
-            raw = read_json(self.cfg_path, {})
-        except ValueError:
-            raw = {}
+        # Windows cannot replace a file while another thread holds its read handle.
+        # Use save_cfg's reentrant lock for the raw read as well as the write.
+        with self.lock:
+            try:
+                raw = read_json(self.cfg_path, {})
+            except ValueError:
+                raw = {}
         for k, v in raw.items():
             if isinstance(v, dict) and isinstance(c.get(k), dict):
                 c[k].update(v)
