@@ -11,9 +11,10 @@ User: check all Voice features requested from Claude, fix remaining bugs and
 verify actual results until complete. Do not disturb other work or live services.
 
 ## Doing now
-Resume after reviewer usage-limit interruption. Affected suite1237/1: only stale
-agents subsystem header after adding own handoff file. Regenerate that metadata,
-verify it, then complete quick/full gate after fresh process/lease preflight.
+Metadata verification passed84/0. Upstream has advanced through PR115; rebase only
+our follow-up commits onto latest main before gate, regenerate merged headers/Help
+and confirm runtime/test/Voice Help content still matches independent approval.
+Quiet CPU/QC window explicitly granted by other chat; no competing driver.
 
 ## File status
 Baseline: 4c25306 (origin/main, PR112); runtime/test/Help changes committed b4faef5.
@@ -60,6 +61,7 @@ Baseline: 4c25306 (origin/main, PR112); runtime/test/Help changes committed b4fa
 - Root main has unrelated RL changes; this isolated worktree starts clean origin/main4c25306.
 
 ## Done
+- Corrected generated agents header; systems/handoff/web metadata checks84/0 exit0.
 - Sabotage exit0: baseline22/0, mutation19/3 exit1, restored22/0 exit0;
   runtime SHA256 a6609c67cdcfd6705d0436b3e086ff7f0fa0e9c070db6741f65d637a67862763 identical.
 - Affected Voice/Help1237/1 exit1 in278.4s; only check_systems stale agents header.
