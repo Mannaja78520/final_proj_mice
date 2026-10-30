@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-30 18:54:41 +07:00
+Updated: 2026-10-30 18:57:47 +07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-All21coarse source sheets/105samples actually viewed,8cases/6clips; gap-aware/detection-overlap audit complete. Prepared global discover_observed_routines.cjs, syntax/hash/metadata6sources pass, actual discovery NOT RUN. Peer Voice quick/full quiet lease active. Next bounded CPU window after explicit peer release: global routine/fragment discovery, validate source roles before corrected IK/control/training. No final quality pass.
+All21coarse source sheets/105samples actually viewed,8cases/6clips; gap-aware/detection-overlap audit complete. Prepared global discover_observed_routines.cjs, syntax/hash/metadata6sources pass, actual discovery NOT RUN. Peer Voice quiet lease active; latest inventory full-style QC16348 and firmware compile children running. No own heavy work; do not infer release from elapsed time. Next bounded CPU window after explicit peer release: global routine/fragment discovery, validate source roles before corrected IK/control/training. No final quality pass.
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
 | File | Change | State | Verification | Commit |
