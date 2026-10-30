@@ -1,7 +1,7 @@
 # Independent Voice acceptance audit and duplicate-start fix
 
 Owner: codex:voice-1030-01a1891e
-Updated: 2026-10-30 07:41 +0700
+Updated: 2026-10-30 07:46 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
@@ -11,23 +11,23 @@ User: check all Voice features requested from Claude, fix remaining bugs and
 verify actual results until complete. Do not disturb other work or live services.
 
 ## Doing now
-Metadata verification passed84/0. Upstream has advanced through PR115; rebase only
-our follow-up commits onto latest main before gate, regenerate merged headers/Help
-and confirm runtime/test/Voice Help content still matches independent approval.
-Quiet CPU/QC window explicitly granted by other chat; no competing driver.
+Rebased onto upstream5bc6d2e (PR115), resolving only generated agents inventory.
+Reviewed runtime/test/Voice Help source content is unchanged. Quiet window granted;
+QC runner will prepare isolated caches/assets, freeze input manifest, run quick
+and full gate under exclusive software lease. No live service/GPU/hardware actions.
 
 ## File status
-Baseline: 4c25306 (origin/main, PR112); runtime/test/Help changes committed b4faef5.
+Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
 
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | `handoff/tasks/voice-helper-audit-1030.md` | own audit/checkpoint | active | task claimed | this checkpoint |
-| `main_python/voice_helper.py` | retain alive timed-out child, report error | fixed | 22/0, sabotage/restoration exact, review approved | b4faef5 |
-| `qc/checks/check_voice_helper.py` | timeout boundary/concurrency/recovery regression | verified | baseline19/3; fixed22/0; sabotage caught | 88e9884 |
-| `main_python/web/help/parts/voice.html` | document no duplicate helper while slow | verified | affected docs/Help passed | b4faef5 |
-| `main_python/web/help.html` | rebuild Help from source | verified | affected docs/Help passed | b4faef5 |
+| `main_python/voice_helper.py` | retain alive timed-out child, report error | fixed | 22/0, sabotage/restoration exact, review approved | 29c9f1a |
+| `qc/checks/check_voice_helper.py` | timeout boundary/concurrency/recovery regression | verified | baseline19/3; fixed22/0; sabotage caught | bddff00 |
+| `main_python/web/help/parts/voice.html` | document no duplicate helper while slow | verified | affected docs/Help passed | 29c9f1a |
+| `main_python/web/help.html` | rebuild Help from source | verified | affected docs/Help passed | 29c9f1a |
 | `docs/systems/agents.md` | regenerate header for own handoff file | rebuilt | only own handoff added; verification next | this checkpoint |
-| `docs/systems/app-voice.md` | record lifecycle trap | verified | independent review approved | b4faef5 |
+| `docs/systems/app-voice.md` | record lifecycle trap | verified | independent review approved | 29c9f1a |
 
 | `_out/voice-helper-audit/baseline.log` | baseline regression evidence (ignored) | saved | 19/3 expected | not committed |
 | `_out/voice-helper-audit/fixed-helper.log` | fixed focused result (ignored) | saved | 22/0, exit0 | not committed |
@@ -50,6 +50,9 @@ Baseline: 4c25306 (origin/main, PR112); runtime/test/Help changes committed b4fa
 | `_out/voice-helper-audit/sabotage-spec.json` | ignored verification evidence | saved | actual results preserved | not committed |
 | `_out/voice-helper-audit/sabotage.log` | ignored verification evidence | saved | actual results preserved | not committed |
 
+| `_out/voice-helper-audit/gate-preflight.txt` | ignored verification evidence | saved | actual results preserved | not committed |
+| `_out/voice-helper-audit/metadata-fixed.log` | ignored verification evidence | saved | actual results preserved | not committed |
+
 ## Facts found
 - A55-1 is explicitly done in main's plan; PR111 merged8658d42. Its source is stable;
   remaining deployment and real app checks remain separate, not claimed from Claude.
@@ -61,6 +64,8 @@ Baseline: 4c25306 (origin/main, PR112); runtime/test/Help changes committed b4fa
 - Root main has unrelated RL changes; this isolated worktree starts clean origin/main4c25306.
 
 ## Done
+- Rebased onto main5bc6d2e; only own7file delta. Runtime/test/Voice Help content
+  unchanged from independent review; generated agents conflict resolved from registry.
 - Corrected generated agents header; systems/handoff/web metadata checks84/0 exit0.
 - Sabotage exit0: baseline22/0, mutation19/3 exit1, restored22/0 exit0;
   runtime SHA256 a6609c67cdcfd6705d0436b3e086ff7f0fa0e9c070db6741f65d637a67862763 identical.
@@ -82,5 +87,5 @@ Baseline: 4c25306 (origin/main, PR112); runtime/test/Help changes committed b4fa
 
 ## Blocked
 - Deployment/authenticated end-to-end and physical microphone/speaker checks are unverified.
-- Quick/full gate not started. Old pilot17580 ended05:35 per reports/process inventory;
-  other-chat source/GPU claims remain, new quiet-window preflight required.
+- Quick/full gate pending. Other chat explicitly released heavy driver and granted
+  quiet window; fresh inventory only live Hub/Voice/faces. Keep its source ownership.
