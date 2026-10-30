@@ -7,7 +7,7 @@ Plan: A55-2
 ## Goal
 Finish requested Voice acceptance/fixes, preserving other work; no fake hardware claims.
 ## Doing now
-Full9323/11 red; read-only triage3UI failuregroups. Archive full1/current evidence then restore only baseline-hash-proven private fixture drift; preserve five canonical LF assets. No new gate/source repair yet.
+Full1 archived89entries; exact2fixturedata baselines restored. Run one bounded instrumented diagnostic of3UI failures (unchanged assertions); capture Gacha completion/status, Home apps readiness and fractional panel geometry. No production fix yet; no source edits while probe active.
 ## File status
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
@@ -129,6 +129,13 @@ Full9323/11 red; read-only triage3UI failuregroups. Archive full1/current eviden
 | `main_python/reports/2026-10-30T12-33-07.053Z_b59f931f9d91.json` | full-run diagnosis/archive/data preservation | saved | own QC output; archived, untracked retained | not committed |
 | `_out/voice-helper-audit/full-r1-bb75299-20261030.zip` | full-run diagnosis/archive/data preservation | saved | 89entries SHA-verified; all receipts/postdata | not committed |
 | `_out/voice-helper-audit/full-diagnosis.md` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
+| `qc/checks/check_gacha_ui.py` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
+| `qc/checks/check_one_module_list.py` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
+| `qc/checks/check_studio_panels.py` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
+| `qc/checks/check_studio_edits.py` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
+| `qc/checks/check_settings_transfer.py` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
+| `_out/voice-helper-audit/full-followup-driver.py` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
+| `_out/voice-helper-audit/full-followup-proof.json` | full UI/data isolation diagnosis and repair | pending | no source edits yet | uncommitted |
 ## Facts found
 promote MAIN normalized to real root; nested dev-tools sabotage regenerates web so canonical LF must remain. MiceHub.spec global kill calls require private safe recipe later. Peer-reported19:18 two-core Node overlap is not established failure cause/human instruction here.
 ## Done
