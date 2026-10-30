@@ -11,31 +11,27 @@ User: check all Voice features requested from Claude, fix remaining bugs and
 verify actual results until complete. Do not disturb other work or live services.
 
 ## Doing now
-Peer heavy block explicitly released13:44; fresh inventory no QC/heavy drivers.
-Own exclusive QC/build/timing re-claimed. Run focused Windows/gacha/fixture checks,
-sabotage restoration, compile-only nong prerequisite, then frozen quick/full.
-No source edits during drivers; no live services/models/hardware.
+Focused prerequisites190/0 exit0. QC runner performs sabotage/restoration,
+compile-only nong prerequisite, freeze quick/full serially. Exclusive own lease
+held; no tracked edits during gate, live services/models/hardware unchanged.
 
 ## File status
 Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
-
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | `handoff/tasks/voice-helper-audit-1030.md` | own audit/checkpoint | active | task claimed | this checkpoint |
 | `main_python/voice_helper.py` | retain alive timed-out child, report error | fixed | 22/0, sabotage/restoration exact, review approved | 29c9f1a |
 | `qc/checks/check_voice_helper.py` | timeout boundary/concurrency/recovery regression | verified | baseline19/3; fixed22/0; sabotage caught | bddff00 |
 | `main_python/web/help/parts/voice.html` | document no duplicate helper while slow | verified | affected docs/Help passed | 29c9f1a |
-| `main_python/web/help.html` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
+| `main_python/web/help.html` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `docs/systems/agents.md` | regenerate header for own handoff file | verified | metadata84/0; own task only | 83e53b9 |
 | `docs/systems/app-voice.md` | record lifecycle trap | verified | independent review approved | 29c9f1a |
-
 | `_out/voice-helper-audit/baseline.log` | baseline regression evidence (ignored) | saved | 19/3 expected | not committed |
 | `_out/voice-helper-audit/fixed-helper.log` | fixed focused result (ignored) | saved | 22/0, exit0 | not committed |
 | `_out/voice-helper-audit/live-readonly.json` | passive live status (ignored) | saved | GET only, no inference | not committed |
 | `docs/PLAN.html` | root-only A55-2 row | active | plan tool add/doing succeeded | uncommitted root bookkeeping |
 | `docs/plan_state.js` | root-only generated plan | active | plan tool sync | uncommitted root bookkeeping |
 | `docs/BRIDGE.md` | root-only exact claims/provenance notice | active | mutex append | uncommitted root bookkeeping |
-
 | `_out/voice-helper-audit/acceptance.md` | ignored verification evidence | saved | actual results preserved | not committed |
 | `_out/voice-helper-audit/affected-console.log` | ignored verification evidence | saved | actual results preserved | not committed |
 | `_out/voice-helper-audit/affected-exit.txt` | ignored verification evidence | saved | actual results preserved | not committed |
@@ -49,10 +45,8 @@ Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
 | `_out/voice-helper-audit/sabotage-restored.log` | ignored verification evidence | saved | actual results preserved | not committed |
 | `_out/voice-helper-audit/sabotage-spec.json` | ignored verification evidence | saved | actual results preserved | not committed |
 | `_out/voice-helper-audit/sabotage.log` | ignored verification evidence | saved | actual results preserved | not committed |
-
 | `_out/voice-helper-audit/gate-preflight.txt` | ignored verification evidence | saved | actual results preserved | not committed |
 | `_out/voice-helper-audit/metadata-fixed.log` | ignored verification evidence | saved | actual results preserved | not committed |
-
 | `_out/voice-helper-audit/after-quick-manifest.json` | ignored verification evidence | saved | actual results preserved | not committed |
 | `_out/voice-helper-audit/before-manifest.json` | ignored verification evidence | saved | actual results preserved | not committed |
 | `_out/voice-helper-audit/cache-copy.log` | ignored verification evidence | saved | actual results preserved | not committed |
@@ -61,18 +55,16 @@ Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
 | `_out/voice-helper-audit/quick-exit.txt` | ignored verification evidence | saved | actual results preserved | not committed |
 | `_out/voice-helper-audit/quick-full.log` | ignored verification evidence | saved | actual results preserved | not committed |
 | `_out/voice-helper-audit/snapshot_inputs.py` | ignored verification evidence | saved | actual results preserved | not committed |
-
-| `tools/ai_watch.py` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
-| `docs/systems/ai-watch.md` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
-| `qc/data/video_group.cjs` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
-| `qc/checks/check_extensions.py` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
-| `main_python/gacha.py` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
-| `qc/checks/check_gacha_config_concurrency.py` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
-| `main_python/web/help/parts/hub.html` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
-| `main_python/web/help/parts/gacha.html` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
-| `docs/systems/app-gacha.md` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
-| `docs/systems/qc.md` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
-
+| `tools/ai_watch.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
+| `docs/systems/ai-watch.md` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
+| `qc/data/video_group.cjs` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
+| `qc/checks/check_extensions.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
+| `main_python/gacha.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
+| `qc/checks/check_gacha_config_concurrency.py` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
+| `main_python/web/help/parts/hub.html` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
+| `main_python/web/help/parts/gacha.html` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
+| `docs/systems/app-gacha.md` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
+| `docs/systems/qc.md` | Windows gate prerequisite repair/Help | implemented | review approved; focused190/0; full pending | e194b12 |
 | `_out/voice-helper-audit/gacha-diagnostic-report.txt` | ignored diagnosis evidence | saved | actual diagnostic only | not committed |
 | `_out/voice-helper-audit/gacha-diagnostic.json` | ignored diagnosis evidence | saved | actual diagnostic only | not committed |
 | `_out/voice-helper-audit/gacha-diagnostic.log` | ignored diagnosis evidence | saved | actual diagnostic only | not committed |
@@ -80,20 +72,52 @@ Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
 | `_out/voice-helper-audit/priority-diagnostic.json` | ignored diagnosis evidence | saved | actual diagnostic only | not committed |
 | `_out/voice-helper-audit/priority-diagnostic.py` | ignored diagnosis evidence | saved | actual diagnostic only | not committed |
 | `_out/voice-helper-audit/quick-diagnosis.txt` | ignored diagnosis evidence | saved | actual diagnostic only | not committed |
-
 | `_out/voice-helper-audit/prerequisite-review.md` | exact source hashes + independent review | saved | approved read-only; not test proof | not committed |
+| `_out/voice-helper-audit/prerequisite-focused-console.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/prerequisite-focused-full.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/prerequisite-focused-exit.txt` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/prerequisite-sabotage.py` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/prerequisite-sabotage.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/prerequisite-sabotage-evidence.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/gacha-sabotage-spec.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/priority-sabotage-spec.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/extensions-sabotage-spec.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/video-sabotage-spec.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/firmware-prepare-console.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/firmware-prepare-exit.txt` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/before-final-gates-manifest.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/after-quick-r2-manifest.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/after-full-manifest.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/quick-r2-console.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/quick-r2-full.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/quick-r2-exit.txt` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/full-console.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/full-full.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/full-exit.txt` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/gacha-sabotage-baseline.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/gacha-sabotage-mutated.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/gacha-sabotage-restored.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/priority-sabotage-baseline.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/priority-sabotage-mutated.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/priority-sabotage-restored.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/extensions-sabotage-baseline.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/extensions-sabotage-mutated.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/extensions-sabotage-restored.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/video-sabotage-baseline.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/video-sabotage-mutated.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/video-sabotage-restored.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
 
 ## Facts found
 - A55-1 is explicitly done in main's plan; PR111 merged8658d42. Its source is stable;
   remaining deployment and real app checks remain separate, not claimed from Claude.
 - `main_python/voice_helper.py:139`: after60s start() replaces _proc although
   poll() is still None. Read-only fake Popen+clock at0/61 produced2 alive children.
-- Existing1194/0 Voice results do not cover timeout expiry. Full9072/11 is RED,
-  attributed to cloud environment by Claude; independent local gate still needed.
+- Claude full9072/11 is RED; independent current full required.
 - Live helper13744 and Hub26664 belong to Claude's voice-test tree. Do not touch.
 - Root main has unrelated RL changes; this isolated worktree starts clean origin/main4c25306.
 
 ## Done
+- Prerequisite focused190/0 exit0 in63.2s; new config/Windows/fixtures/Help checks passed.
 - Implemented six Windows/fixture failures with Help parity; review approved after
   correcting event-dict regression fixture. No new test/compile driver started.
 - Own checkout moved to supported path; RepoLayout now resolves real root correctly.
@@ -111,10 +135,6 @@ Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
 - Fixed focused check22/0 exit0 (35.5s), not full gate; preserved _out evidence.
 - Independent Codex review gpt-6-astra high approved exact final runtime/test/Help diff;
   no drivers/source edits by reviewer. UI may need Start/retry after a timeout.
-- Reproduced duplicate-start failure with fake process/clock only, no ports/models.
-- New regression: baseline check_voice_helper 19 passed / 3 expected failures; existing16 assertions pass.
-- Rebased task-only branch from local RL history to clean origin/main4c25306 before publishing; no unrelated commits pushed.
-- Read project debugging, verification, communication and subsystem instructions.
 
 ## Next
 1. After peer release, focused new gacha/priority/extensions/video checks + sabotage; compile-only nong prerequisite; freeze quick/full.
