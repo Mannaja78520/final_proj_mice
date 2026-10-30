@@ -1,16 +1,16 @@
 # Independent Voice acceptance audit and duplicate-start fix
 Owner: codex:voice-1030-01a1891e
-Updated: 2026-10-30 18:13 +0700
+Updated: 2026-10-30 18:20 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
 ## Goal
 Check all requested Voice behavior, fix bugs and verify actual results; preserve other work.
 ## Doing now
-Two-line promote MAIN fix and topology regression/Help implemented; independent
-final gpt-6-astra high review APPROVED exact hashes. New tests not run yet.
-Canonicalize generated LF before freeze, keep bytes through nested generator tests.
-Peer20min heavy block active until18:26:14; no QC/compile until explicit release.
+Peer explicit18:20 heavy release +clear inventory; exclusive own QC reclaimed.
+Run focused layout/promotion/Help then mutation/restoration; checkpoint before
+canonical-LF manifest quick-r3/full. Source9641ce0 review approved, tests pending.
+No input edits while drivers run; preserve five canonical-LF outputs.
 ## File status
 Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distinguish fakes/hardware.
 | File | Change | State | Verification | Commit |
@@ -137,4 +137,4 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 ## Next
 Fix/review layout, focused+sabotage, then stable canonical-LF quick/full; PR/integration/package/real Voice acceptance after green.
 ## Blocked
-Peer resource release required next QC; authenticated real STT/ask/say/mic/speaker/rig/package still unverified.
+No resource blocker now; authenticated real STT/ask/say/mic/speaker/rig/package still unverified.
