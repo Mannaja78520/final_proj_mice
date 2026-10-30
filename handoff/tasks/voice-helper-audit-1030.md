@@ -1,7 +1,7 @@
 # Independent Voice acceptance audit and duplicate-start fix
 
 Owner: codex:voice-1030-01a1891e
-Updated: 2026-10-30 14:04 +0700
+Updated: 2026-10-30 14:41 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
@@ -11,12 +11,13 @@ User: check all Voice features requested from Claude, fix remaining bugs and
 verify actual results until complete. Do not disturb other work or live services.
 
 ## Doing now
-Focused prerequisites190/0 exit0. QC runner performs sabotage/restoration,
-compile-only nong prerequisite, freeze quick/full serially. Exclusive own lease
-held; no tracked edits during gate, live services/models/hardware unchanged.
+Four sabotage cycles caught expected failures and restored byte-exact (exit0).
+QC runner next compiles isolated nong image; stop if tracked content changes.
+Then checkpoint, freeze manifest, quick/full serial; exclusive software lease held.
+No live services/neural models/mic/speaker/hardware.
 
 ## File status
-Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
+Baseline: 5bc6d2e (origin/main, PR115); own scoped delta only.
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | `handoff/tasks/voice-helper-audit-1030.md` | own audit/checkpoint | active | task claimed | this checkpoint |
@@ -73,16 +74,16 @@ Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
 | `_out/voice-helper-audit/priority-diagnostic.py` | ignored diagnosis evidence | saved | actual diagnostic only | not committed |
 | `_out/voice-helper-audit/quick-diagnosis.txt` | ignored diagnosis evidence | saved | actual diagnostic only | not committed |
 | `_out/voice-helper-audit/prerequisite-review.md` | exact source hashes + independent review | saved | approved read-only; not test proof | not committed |
-| `_out/voice-helper-audit/prerequisite-focused-console.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/prerequisite-focused-full.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/prerequisite-focused-exit.txt` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/prerequisite-sabotage.py` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/prerequisite-sabotage.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/prerequisite-sabotage-evidence.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/gacha-sabotage-spec.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/priority-sabotage-spec.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/extensions-sabotage-spec.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/video-sabotage-spec.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/prerequisite-focused-console.log` | isolated QC evidence | saved | 190/0 exit0 63.2s | not committed |
+| `_out/voice-helper-audit/prerequisite-focused-full.log` | isolated QC evidence | saved | 190/0 exit0 63.2s | not committed |
+| `_out/voice-helper-audit/prerequisite-focused-exit.txt` | isolated QC evidence | saved | 190/0 exit0 63.2s | not committed |
+| `_out/voice-helper-audit/prerequisite-sabotage.py` | isolated QC evidence | saved | phase results in prerequisite-sabotage-evidence.json | not committed |
+| `_out/voice-helper-audit/prerequisite-sabotage.log` | isolated QC evidence | saved | phase results in prerequisite-sabotage-evidence.json | not committed |
+| `_out/voice-helper-audit/prerequisite-sabotage-evidence.json` | isolated QC evidence | saved | phase results in prerequisite-sabotage-evidence.json | not committed |
+| `_out/voice-helper-audit/gacha-sabotage-spec.json` | isolated QC evidence | saved | phase results in prerequisite-sabotage-evidence.json | not committed |
+| `_out/voice-helper-audit/priority-sabotage-spec.json` | isolated QC evidence | saved | phase results in prerequisite-sabotage-evidence.json | not committed |
+| `_out/voice-helper-audit/extensions-sabotage-spec.json` | isolated QC evidence | saved | phase results in prerequisite-sabotage-evidence.json | not committed |
+| `_out/voice-helper-audit/video-sabotage-spec.json` | isolated QC evidence | saved | phase results in prerequisite-sabotage-evidence.json | not committed |
 | `_out/voice-helper-audit/firmware-prepare-console.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
 | `_out/voice-helper-audit/firmware-prepare-exit.txt` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
 | `_out/voice-helper-audit/before-final-gates-manifest.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
@@ -94,18 +95,18 @@ Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
 | `_out/voice-helper-audit/full-console.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
 | `_out/voice-helper-audit/full-full.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
 | `_out/voice-helper-audit/full-exit.txt` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/gacha-sabotage-baseline.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/gacha-sabotage-mutated.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/gacha-sabotage-restored.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/priority-sabotage-baseline.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/priority-sabotage-mutated.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/priority-sabotage-restored.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/extensions-sabotage-baseline.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/extensions-sabotage-mutated.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/extensions-sabotage-restored.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/video-sabotage-baseline.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/video-sabotage-mutated.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/video-sabotage-restored.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/gacha-sabotage-baseline.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
+| `_out/voice-helper-audit/gacha-sabotage-mutated.log` | isolated QC evidence | saved | expected regression failure caught | not committed |
+| `_out/voice-helper-audit/gacha-sabotage-restored.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
+| `_out/voice-helper-audit/priority-sabotage-baseline.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
+| `_out/voice-helper-audit/priority-sabotage-mutated.log` | isolated QC evidence | saved | expected regression failure caught | not committed |
+| `_out/voice-helper-audit/priority-sabotage-restored.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
+| `_out/voice-helper-audit/extensions-sabotage-baseline.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
+| `_out/voice-helper-audit/extensions-sabotage-mutated.log` | isolated QC evidence | saved | expected regression failure caught | not committed |
+| `_out/voice-helper-audit/extensions-sabotage-restored.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
+| `_out/voice-helper-audit/video-sabotage-baseline.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
+| `_out/voice-helper-audit/video-sabotage-mutated.log` | isolated QC evidence | saved | expected regression failure caught | not committed |
+| `_out/voice-helper-audit/video-sabotage-restored.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
 
 ## Facts found
 - A55-1 is explicitly done in main's plan; PR111 merged8658d42. Its source is stable;
@@ -114,30 +115,22 @@ Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
   poll() is still None. Read-only fake Popen+clock at0/61 produced2 alive children.
 - Claude full9072/11 is RED; independent current full required.
 - Live helper13744 and Hub26664 belong to Claude's voice-test tree. Do not touch.
-- Root main has unrelated RL changes; this isolated worktree starts clean origin/main4c25306.
+- Own tree based on origin/main5bc6d2e; unrelated root RL source/history excluded.
 
 ## Done
-- Prerequisite focused190/0 exit0 in63.2s; new config/Windows/fixtures/Help checks passed.
-- Implemented six Windows/fixture failures with Help parity; review approved after
-  correcting event-dict regression fixture. No new test/compile driver started.
-- Own checkout moved to supported path; RepoLayout now resolves real root correctly.
-- Quick6659/11 exit1 (314.2s), 3893 inputs byte-exact; full not run.
-- Failures: firmware binaries not built, two unsupported-copy layout expectations,
-  watcher priority, extension separators, gacha atomic rename and video fixture keyCue.
-  Minimal source/fixture repairs now reviewed; no new tests yet and no failures waived.
-- Rebased onto main5bc6d2e; only own7file delta. Runtime/test/Voice Help content
-  unchanged from independent review; generated agents conflict resolved from registry.
-- Corrected generated agents header; systems/handoff/web metadata checks84/0 exit0.
-- Sabotage exit0: baseline22/0, mutation19/3 exit1, restored22/0 exit0;
-  runtime SHA256 a6609c67cdcfd6705d0436b3e086ff7f0fa0e9c070db6741f65d637a67862763 identical.
-- Affected Voice/Help1237/1 exit1 in278.4s; only check_systems stale agents header.
-- QC runner hit provider usage limit after reporting actual results; not a final gate approval.
-- Fixed focused check22/0 exit0 (35.5s), not full gate; preserved _out evidence.
-- Independent Codex review gpt-6-astra high approved exact final runtime/test/Help diff;
-  no drivers/source edits by reviewer. UI may need Start/retry after a timeout.
+- Focused prerequisites190/0 exit0 63.2s; map/Help and all four repaired failure groups pass.
+- Four sabotage cycles exit0 154.17s: gacha7/0->6/1->7/0;
+  priority29/0->28/1->29/0; extensions28/0->26/2->28/0; video60/0->58/2->60/0.
+  All tracked-byte drift arrays empty. Last two are fixture proof only.
+- Voice timeout fixed22/0; sabotage22/0->19/3->22/0 byte-exact; review approved.
+- Windows/config/fixture source and same-step Help e194b12 independently approved;
+  reviewed regression fixture corrected to production event dict before focused check.
+- Earlier quick6659/11 red and affected1237/1 (stale agents header) preserved;
+  metadata header correction84/0. No failures waived; no current full yet.
+- Own checkout moved to supported .staging path; layout behavior awaits quick recheck.
 
 ## Next
-1. After peer release, focused new gacha/priority/extensions/video checks + sabotage; compile-only nong prerequisite; freeze quick/full.
+1. Compile-only nong prerequisite; checkpoint any prepare drift; freeze/re-run quick, then full only if green/stable.
 2. Full gate only after QC lease and heavy-job constraints are satisfied; do not skip failures.
 3. Continue feature acceptance: packaged launch, authenticated ask/say, STT, fallback,
    conversation/Stop and physical audio evidence; source/fakes are not hardware proof.
