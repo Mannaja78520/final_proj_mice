@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-30 05:19:27 +07:00
+Updated: 2026-10-30 07:46:28 +07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,30 +9,37 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Heartbeat every30min. All4 new raw references and center candidates/YAML complete; final quality NOT passed. Own sequential short-GPU pilot PID17580 active: first Blood round1/3 completed57.3s, no observed errors. Budget1024envs x3rounds x20updates per new clip, no-video, private reports; no full retraining. Other services untouched. CPU extraction4228 and compositor36332 finished; release only own completed CPU claims.
-
+All4 short pilots completed; PID17580 absent, batch4complete and no stderr. Own heavy GPU/CPU lease released; Voice A55-2 has requested/granted quiet full-gate window until explicit peer release. Lightweight six-clip/eight-case/64method/cost aggregation completed. No final human-reference/continuous-export approval. No new heavy work during quiet window.
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | handoff/tasks/rl-quality-playlist-1030.md | scope/evidence/next | active checkpoint | ledger reconciled | this checkpoint |
-| docs/PLAN.html | own A50-2 scope/progress | checkpoint | plan.py | ac03084 |
-| docs/plan_state.js | generated plan progress | checkpoint | plan.py | ac03084 |
+| docs/PLAN.html | own A50-2 refreshed doing/progress note | shared uncommitted | plan.py | uncommitted |
+| docs/plan_state.js | generated plan progress | shared uncommitted | plan.py | uncommitted |
 | docs/BRIDGE.md | own claims/checkpoints only | shared uncommitted | mutex; preserve earlier entries | uncommitted |
 | .local/rl_playlist_1030/extract_playlist.py | CPU extraction with private paths/drift guard | full batch done |4real-frame smoke,4dense schema/count/time checks | git-ignored |
 | .local/rl_playlist_1030/retarget_playlist.cjs | private explicit naming/paths/export-only |4center candidates done | syntax+inspect4+actual4fits; no final quality approval | git-ignored |
 | .local/rl_playlist_1030/context_compat.cjs | restore cue helpers from normalized read-only fragment | private fix | original missing; fixed read/write+cue preservation | git-ignored |
 | .local/rl_playlist_1030/verify_context.cjs | bounded actual regression | passed | original helper undefined, adapter correct | git-ignored |
 | .local/rl_playlist_1030/compose_previews.py | repair4original-human panes/audio | done presentation | full duration/streams and4worst-source images inspected | git-ignored |
-| .local/rl_playlist_1030/run_pilots.py | staged-budget sequential pilots | active PID17580 | syntax + first training round; full batch pending | git-ignored |
+| .local/rl_playlist_1030/run_pilots.py | staged-budget sequential pilots | all4complete | before/after input hashes unchanged during batch,4summaries | git-ignored |
 | .local/rl_playlist_1030/backend_lock.json | freeze65shared dependencies | recorded | original5unchanged before extending65 | git-ignored |
+| .local/rl_playlist_1030/summarize_six.py | saved-result aggregation only | done preliminary |6source/8case/64row assertions pass | git-ignored |
+| .local/rl_playlist_1030/six_clip_review.md | readable quality/cost inventory | preliminary | measured costs and revision limits explicit | git-ignored |
+| .local/rl_playlist_1030/six_clip_review.json | full preliminary comparisons/provenance | preliminary | frozen-input drift and result hashes recorded | git-ignored |
+| .local/rl_playlist_1030/six_clip_method_matrix.csv |64method rows | preliminary | count64; not final ranking | git-ignored |
 | .local/rl_playlist_1030/file_status.csv | complete exact private artifact ledger | this checkpoint | files/sizes/times; individual validation linked | git-ignored |
 
 ## Facts found
+- LATEST: pilot_batch.json all4complete, no driver active, total case wall1237.55s (~20.6min). Training wall152.86/144.61/144.37/136.29s (exact report values take precedence); separate costs stored, not integrated GPU utilization. Published6clip/eightcase/64method matrix in six_clip_review.md/json and six_clip_method_matrix.csv. All quality conclusions preliminary.
+- New4 same-frozen-revision pilots: RL raw mean vs music planner reduces47.7/38.5/39.6/63.5pct (Blood/Cheer/Great/First) but only3rounds, references unverified. Shared smoothing jerk change -3.7/-0.6/+9.7/-17.1pct respectively. Hybrid adds2Studio flags in Great before smoothing. Pareto screen uses raw mean/jerk and sampled flags only; NOT final winner selection.
+- SOURCE DRIFT AFTER pilot completion: motion_smooth.js, motion_smooth.json, tools/rl_compare/smooth.py and to_sequence.py, main_python/motion_smooth.py changed. Original results.json refreshed05:52 after frozen batch finished05:35. Current original RL smoothing jerk regression19.8-26.8pct replaces first audit32-38pct for that newer report only. Do not silently refresh locks or pool old/new smoothing revisions. Report explicitly records drift; common-version all6rerun needed before final selection.
+- Quiet window: peer Voice requested05:24; own heavy release/grant recorded07:40 with completed-batch proof. Peer resumed full-gate preparation07:40. No heavy train/inference/render until explicit Voice release, even if no process currently visible. Lightweight result/code review and bookkeeping allowed.
 - Original RL4 training DONE20/20: .local/rl_final_1030, input .local/cheer_rig_1029_30fps, servo_5mm. Training recorded reach.dancerTopPct95, marginDeg2, lift0.3, smooth0.5. All current output/reference methods need identical provenance for fair comparison.
 - IMPORTANT config discrepancy: original summary.record.config confirms95/2, but root config99/5; board-export logs robotTop38.7deg vs pilots41.7deg. Audit/re-score exported motions with training's recorded configuration before comparing remapped errors. Raw-human and remapped-reference scores are separate. Physical collision findings still apply to actual played curves.
 - Original final RL raw-human mean15.2-16.6deg is NOT full accuracy approval: reference itself needs validation. Ghost uses reach-remapped target, not raw human; relabel final previews. quality_audit_initial.json stores32rows/results hash; interim_training.json stores checkpoint/boundary evidence. Best round may precede last; preserve candidates and use held-out selection.
-- Three hybrid board exports REJECTED: Come center/left and Witsawa left, Studio flags32/20/17. Witsawa center hybrid plus remaining3 RL exports written, never physically executed. Shared smoothing increases RL jerk32-38pct and worsens raw error in all4; investigate, do not assume smooth=better. Approximate collision0 is not continuous full-geometry proof.
+- Three hybrid board exports REJECTED: Come center/left and Witsawa left, Studio flags32/20/17. Witsawa center hybrid plus remaining3 RL exports written, never physically executed. First-audit shared smoothing increased RL jerk32-38pct and raw error in all4; see newer revision below; investigate, do not assume smooth=better. Approximate collision0 is not continuous full-geometry proof.
 - Original4 comparison videos had blank human pane. review_previews/ contains repaired full158.47/158.47/85.03/85.03s copies with source/audio offset analysis.source.from(~4.938s), same robot motion. preview_composition.json records durations,video/audio and samples. Presentation repair is not motion repair.
 - selected_track_review.json and4tracked_sample.jpg show selected2D source skeleton at old4worst frames. Some trusted=true actors are tiny/background figures. Witsawa opening fade shows arms down while simulations start arms up. Need full temporal identity/depth/trust/start-state diagnosis; four samples do not prove identity continuity.
 - manifest.json: six original59.94FPSsources;4new downloaded,2old reused. All sampled footage lead performances. Entaneer First crouches around94.8s: robot lacks leg DOFs, preserve upper-body meaning and disclose morphology limits.
@@ -41,8 +48,8 @@ Original baseline1283955; preserve all other dirty work. Complete exact per-file
 - YAML issue reproduced: shared qc/data/video_group.cjs searches LF brace boundary in CRLF music_on_a_keyframe.js, leaving keyCue/setKeyCue undefined. Own context_compat normalizes/extracts existing functions in memory. Original failure preserved; verify_context passed actual read/write/unrelated-cue check. Shared source bytes untouched.
 - All4 candidate YAML exports now exist. candidate_export_validation.json verifies exact pose counts,10joint values within0.05deg and durations versus candidate JSON.44-86KB files are not board-ready chains, no matching MP3 yet, and final actual-playback/clearance/music checks pending.
 - retarget adapter CLI ID OUTPUT_NAME CANDIDATE_STYLE ANCHOR [--inspect|--export-only]. Explicit names/private roots, old CLI never runs. Existing targets refused. Candidate center not complete routine discovery; different routines must be evidenced and kept separate. YAML presence does not mean final delivery.
-- backend_lock65 plus pilot_input_hashes freeze Python experiment/simulator and shared JS/config. Pilot driver checks before/after each case and aborts on drift. Private repoSummary override prevents touching shared docs. Current models are read-only; no promotion or hardware.
-- Pilot launch first deferred correctly during peer voice check PID6596, then inventory empty before start. Own GPU claim recorded BRIDGE. PID17580 sequential4pilots, env1024/rounds3/updates20, no-video, BelowNormal. Short pilot scores are undertrained and cannot rank converged algorithms. Costs/peak Torch allocation recorded pilot_batch.json, not total NVIDIA VRAM.
+- backend_lock65 plus pilot_input_hashes freeze Python experiment/simulator and shared JS/config. Pilot driver checks before/after each case and aborts on drift. Private repoSummary override prevents touching shared docs. Existing models preserved; no promotion or hardware.
+- Pilot launch first deferred correctly during peer voice check PID6596, then inventory empty before start. Own GPU claim recorded BRIDGE. PID17580 finished all4sequential pilots, env1024/rounds3/updates20, no-video, BelowNormal. Short pilot scores are undertrained and cannot rank converged algorithms. Costs/peak Torch allocation recorded pilot_batch.json, not total NVIDIA VRAM.
 - Literature candidates, not automatic winners: https://xbpeng.github.io/projects/DeepMimic/index.html and https://atarilab.github.io/dynaretarget.io/ . Compare nong-compatible constrained IK/trajectory/MPC/imitation/hybrid using actual held-out results.
 
 ## Playlist inventory
@@ -65,13 +72,15 @@ Playlist PLp0S6kSqcUg_V2y6azyYTEjBmJuQ-vfQN has15entries/six lead. Exclude clapp
 6. Deliver editable rig/project, matching checked sequence/preview/audio, comparison/cost report and index per eligible clip/choreography. Inaccessible clips stay pending. Product changes need normal staging/claims/Help parity/QC/review. No such product change yet.
 
 ## Done
+All4short pilots complete; released GPU/CPU and granted peer quiet gate window. Generated preliminary six-clip method/cost/Pareto inventory and caught post-pilot shared-source revision drift. Do not treat mixed revisions as a final cross-clip benchmark.
 Six sources prepared; new4dense references/candidates and YAML verified structurally. Private missing-helper fix has before/after regression. Original4training completed; safety/smoothing/reference failures documented;4human-pane copies repaired and sampled. Full quality and final delivery remain open.
 
 ## Next
-1. Check pilot_process.json/PID17580, pilots.log/err and pilot_batch.json. Do NOT duplicate/restart finished pilots blindly. Driver refuses existing summaries on restart; inspect recorded hashes/config and preserve completed cases before adapting resume to remaining IDs. On failure fix actual cause, not retries. Release own GPU claim when driver stops; check status first.
+0. Read newest BRIDGE for Voice A55-2 explicit quiet-window RELEASE before any heavy work. During window inspect saved results/source ownership only. After release, review changed smoother with active Claude handoff/claims and freeze one consistent snapshot for all6candidate rescoring/trials. Do not overwrite cached pilots or refresh locks blindly.
+1. Pilots finished; no duplicate launch. Preserve3round checkpoints. rl.py ignores rounds only when checking same-config resume: after source/reference compatibility review, extend useful runs in new private output snapshots using saved optimizer/checkpoints, not fresh training; never call unequal budgets fair rankings.
 2. After pilots, compare raw-human errors/timing/safety/cost across six clips (old4sets represent2clips). Do not rank methods from3round undertraining. Plan useful next candidates: constraints/retarget reference fixes, collision-safe hybrid blending, board-playable smoother parameter trials. Never merely train longer against wrong reference.
 3. Resolve config discrepancy for original board-export rescoring; audit selected identities/depth and start states throughout footage. Expand distinct routines where evidenced. Validate native board playback/chain size/matching audio before final artifact packaging.
 4. Keep this task+file_status.csv/evidence and plan current at every stop, mutex for shared bookkeeping. Notify meaningful changes only. Automation continues every30min until ALL6scope complete, not training alone.
 
 ## Blocked
-No user action needed. Short GPU pilots are running; quality gate open. Active Claude exists, no verified quota handoff. Other source/task claims stay with their owners; own finished extraction/compositor CPU claims can be released.
+No user action needed. Pilots finished; heavy work waits for granted Voice quiet-window release; quality gate open. Active Claude exists, no verified quota handoff. Other source/task claims stay with their owners; own finished extraction/compositor CPU claims can be released.
