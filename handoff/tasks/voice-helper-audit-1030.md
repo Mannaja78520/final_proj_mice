@@ -123,11 +123,11 @@ Full9323/11 red; read-only triage3UI failuregroups. Archive full1/current eviden
 | `_out/voice-helper-audit/quick-r3-full.log` | current layout/gate evidence | saved | quick6777/0 exit0; all hashes stable | not committed |
 | `_out/voice-helper-audit/quick-r3-exit.txt` | current layout/gate evidence | saved | quick6777/0 exit0; all hashes stable | not committed |
 | `_out/voice-helper-audit/after-quick-r3-manifest.json` | current layout/gate evidence | saved | quick6777/0 exit0; all hashes stable | not committed |
-| `nong/main_python_set_nong/projects/qc_chain_proj.json` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
-| `nong/main_python_set_nong/settings_shared.json` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
-| `main_python/reports/2026-10-30T12-17-19.211Z_1700de7b8a49.json` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
-| `main_python/reports/2026-10-30T12-33-07.053Z_b59f931f9d91.json` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
-| `_out/voice-helper-audit/full-r1-bb75299-20261030.zip` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
+| `nong/main_python_set_nong/projects/qc_chain_proj.json` | full-run diagnosis/archive/data preservation | restored | exact pre-full SHA; postdata archived | not committed |
+| `nong/main_python_set_nong/settings_shared.json` | full-run diagnosis/archive/data preservation | restored | exact pre-full SHA; postdata archived | not committed |
+| `main_python/reports/2026-10-30T12-17-19.211Z_1700de7b8a49.json` | full-run diagnosis/archive/data preservation | saved | own QC output; archived, untracked retained | not committed |
+| `main_python/reports/2026-10-30T12-33-07.053Z_b59f931f9d91.json` | full-run diagnosis/archive/data preservation | saved | own QC output; archived, untracked retained | not committed |
+| `_out/voice-helper-audit/full-r1-bb75299-20261030.zip` | full-run diagnosis/archive/data preservation | saved | 89entries SHA-verified; all receipts/postdata | not committed |
 | `_out/voice-helper-audit/full-diagnosis.md` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
 ## Facts found
 promote MAIN normalized to real root; nested dev-tools sabotage regenerates web so canonical LF must remain. MiceHub.spec global kill calls require private safe recipe later. Peer-reported19:18 two-core Node overlap is not established failure cause/human instruction here.
