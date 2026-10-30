@@ -1,7 +1,7 @@
 # Independent Voice acceptance audit and duplicate-start fix
 
 Owner: codex:voice-1030-01a1891e
-Updated: 2026-10-30 13:30 +0700
+Updated: 2026-10-30 13:32 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
@@ -11,9 +11,9 @@ User: check all Voice features requested from Claude, fix remaining bugs and
 verify actual results until complete. Do not disturb other work or live services.
 
 ## Doing now
-Source repairs and Help generated; independent gpt-6-astra high review APPROVED.
-No new tests run during peer heavy grant ending13:55:29 Bangkok; require explicit
-peer completion/release before QC/compile. Next focused/sabotage, firmware, quick/full.
+Checkpoint while peer uses granted heavy block (through13:55:29 Bangkok).
+Source e194b12 and Help generated; independent review approved. No new tests.
+Resume from Next after explicit peer release/inventory; no own active driver.
 
 ## File status
 Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
@@ -24,8 +24,8 @@ Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
 | `main_python/voice_helper.py` | retain alive timed-out child, report error | fixed | 22/0, sabotage/restoration exact, review approved | 29c9f1a |
 | `qc/checks/check_voice_helper.py` | timeout boundary/concurrency/recovery regression | verified | baseline19/3; fixed22/0; sabotage caught | bddff00 |
 | `main_python/web/help/parts/voice.html` | document no duplicate helper while slow | verified | affected docs/Help passed | 29c9f1a |
-| `main_python/web/help.html` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | this checkpoint |
-| `docs/systems/agents.md` | regenerate header for own handoff file | rebuilt | only own handoff added; verification next | this checkpoint |
+| `main_python/web/help.html` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
+| `docs/systems/agents.md` | regenerate header for own handoff file | verified | metadata84/0; own task only | 83e53b9 |
 | `docs/systems/app-voice.md` | record lifecycle trap | verified | independent review approved | 29c9f1a |
 
 | `_out/voice-helper-audit/baseline.log` | baseline regression evidence (ignored) | saved | 19/3 expected | not committed |
@@ -61,16 +61,16 @@ Baseline: 5bc6d2e (origin/main, PR115); own seven-file delta only.
 | `_out/voice-helper-audit/quick-full.log` | ignored verification evidence | saved | actual results preserved | not committed |
 | `_out/voice-helper-audit/snapshot_inputs.py` | ignored verification evidence | saved | actual results preserved | not committed |
 
-| `tools/ai_watch.py` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | this checkpoint |
-| `docs/systems/ai-watch.md` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | this checkpoint |
-| `qc/data/video_group.cjs` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | this checkpoint |
-| `qc/checks/check_extensions.py` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | this checkpoint |
-| `main_python/gacha.py` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | this checkpoint |
-| `qc/checks/check_gacha_config_concurrency.py` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | this checkpoint |
-| `main_python/web/help/parts/hub.html` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | this checkpoint |
-| `main_python/web/help/parts/gacha.html` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | this checkpoint |
-| `docs/systems/app-gacha.md` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | this checkpoint |
-| `docs/systems/qc.md` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | this checkpoint |
+| `tools/ai_watch.py` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
+| `docs/systems/ai-watch.md` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
+| `qc/data/video_group.cjs` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
+| `qc/checks/check_extensions.py` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
+| `main_python/gacha.py` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
+| `qc/checks/check_gacha_config_concurrency.py` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
+| `main_python/web/help/parts/hub.html` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
+| `main_python/web/help/parts/gacha.html` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
+| `docs/systems/app-gacha.md` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
+| `docs/systems/qc.md` | Windows gate prerequisite repair/Help | implemented | independent review approved; tests pending | e194b12 |
 
 | `_out/voice-helper-audit/gacha-diagnostic-report.txt` | ignored diagnosis evidence | saved | actual diagnostic only | not committed |
 | `_out/voice-helper-audit/gacha-diagnostic.json` | ignored diagnosis evidence | saved | actual diagnostic only | not committed |
