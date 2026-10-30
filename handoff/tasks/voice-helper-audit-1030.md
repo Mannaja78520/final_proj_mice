@@ -1,18 +1,14 @@
-# Independent Voice acceptance audit and duplicate-start fix
+# Independent Voice acceptance audit
 Owner: codex:voice-1030-01a1891e
-Updated: 2026-10-30 18:22 +0700
+Updated: 2026-10-30 20:09 +0700
 Branch: codex/voice-helper-audit-1030
 Last commit: this checkpoint
 Plan: A55-2
 ## Goal
-Check all requested Voice behavior, fix bugs and verify actual results; preserve other work.
+Finish requested Voice acceptance/fixes, preserving other work; no fake hardware claims.
 ## Doing now
-Focused177/0 and layout sabotage40/0->29/11->40/0 passed;3894byte hashes invariant.
-QC runner now freezes canonical-LF tracked/QC manifest for quick-r3 then full
-ONLY if quick green/stable; no own-tree edits through BOTH gates. Root bookkeeping
-only at quick boundary; exclusive software lease held, no live/hardware/neural work.
+Full9323/11 red; read-only triage3UI failuregroups. Archive full1/current evidence then restore only baseline-hash-proven private fixture drift; preserve five canonical LF assets. No new gate/source repair yet.
 ## File status
-Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distinguish fakes/hardware.
 | File | Change | State | Verification | Commit |
 | --- | --- | --- | --- | --- |
 | `handoff/tasks/voice-helper-audit-1030.md` | own audit/checkpoint | active | task claimed | this checkpoint |
@@ -83,13 +79,13 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 | `_out/voice-helper-audit/firmware-prepare-exit.txt` | isolated QC evidence | saved | compile exit0; tracked bytes unchanged | not committed |
 | `_out/voice-helper-audit/before-final-gates-manifest.json` | isolated QC evidence | saved | quick6751/2 exit1; five newline drifts preserved | not committed |
 | `_out/voice-helper-audit/after-quick-r2-manifest.json` | isolated QC evidence | saved | quick6751/2 exit1; five newline drifts preserved | not committed |
-| `_out/voice-helper-audit/after-full-manifest.json` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/after-full-manifest.json` | isolated QC evidence | saved | full9323/11 exit1;2fixture drifts; no waiver | not committed |
 | `_out/voice-helper-audit/quick-r2-console.log` | isolated QC evidence | saved | quick6751/2 exit1; five newline drifts preserved | not committed |
 | `_out/voice-helper-audit/quick-r2-full.log` | isolated QC evidence | saved | quick6751/2 exit1; five newline drifts preserved | not committed |
 | `_out/voice-helper-audit/quick-r2-exit.txt` | isolated QC evidence | saved | quick6751/2 exit1; five newline drifts preserved | not committed |
-| `_out/voice-helper-audit/full-console.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/full-full.log` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
-| `_out/voice-helper-audit/full-exit.txt` | isolated QC evidence | pending | not run unless focused190/0 | not committed |
+| `_out/voice-helper-audit/full-console.log` | isolated QC evidence | saved | full9323/11 exit1;2fixture drifts; no waiver | not committed |
+| `_out/voice-helper-audit/full-full.log` | isolated QC evidence | saved | full9323/11 exit1;2fixture drifts; no waiver | not committed |
+| `_out/voice-helper-audit/full-exit.txt` | isolated QC evidence | saved | full9323/11 exit1;2fixture drifts; no waiver | not committed |
 | `_out/voice-helper-audit/gacha-sabotage-baseline.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
 | `_out/voice-helper-audit/gacha-sabotage-mutated.log` | isolated QC evidence | saved | expected regression failure caught | not committed |
 | `_out/voice-helper-audit/gacha-sabotage-restored.log` | isolated QC evidence | saved | green; tracked bytes restored | not committed |
@@ -122,20 +118,22 @@ Baseline5bc6d2e; own scoped delta only. Ignored evidence preserved; tests distin
 | `_out/voice-helper-audit/layout-sabotage-baseline.log` | current layout/gate evidence | saved | layout40/0->29/11->40/0; exact bytes restored | not committed |
 | `_out/voice-helper-audit/layout-sabotage-mutated.log` | current layout/gate evidence | saved | layout40/0->29/11->40/0; exact bytes restored | not committed |
 | `_out/voice-helper-audit/layout-sabotage-restored.log` | current layout/gate evidence | saved | layout40/0->29/11->40/0; exact bytes restored | not committed |
-| `_out/voice-helper-audit/before-r3-gates-manifest.json` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/quick-r3-console.log` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/quick-r3-full.log` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/quick-r3-exit.txt` | current layout/gate evidence | pending | not run | not committed |
-| `_out/voice-helper-audit/after-quick-r3-manifest.json` | current layout/gate evidence | pending | not run | not committed |
+| `_out/voice-helper-audit/before-r3-gates-manifest.json` | current layout/gate evidence | saved | quick6777/0 exit0; all hashes stable | not committed |
+| `_out/voice-helper-audit/quick-r3-console.log` | current layout/gate evidence | saved | quick6777/0 exit0; all hashes stable | not committed |
+| `_out/voice-helper-audit/quick-r3-full.log` | current layout/gate evidence | saved | quick6777/0 exit0; all hashes stable | not committed |
+| `_out/voice-helper-audit/quick-r3-exit.txt` | current layout/gate evidence | saved | quick6777/0 exit0; all hashes stable | not committed |
+| `_out/voice-helper-audit/after-quick-r3-manifest.json` | current layout/gate evidence | saved | quick6777/0 exit0; all hashes stable | not committed |
+| `nong/main_python_set_nong/projects/qc_chain_proj.json` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
+| `nong/main_python_set_nong/settings_shared.json` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
+| `main_python/reports/2026-10-30T12-17-19.211Z_1700de7b8a49.json` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
+| `main_python/reports/2026-10-30T12-33-07.053Z_b59f931f9d91.json` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
+| `_out/voice-helper-audit/full-r1-bb75299-20261030.zip` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
+| `_out/voice-helper-audit/full-diagnosis.md` | full-run diagnosis/archive/data preservation | pending | no edits yet | not committed |
 ## Facts found
-- promote.py:58/90/98 rooted MAIN back into the copy; fixing MAIN also corrects promotion destination/bookkeeping.
-- check_dev_tools.py:67 nested sabotage->QC rebuilds real web outputs despite outer--no-build; prepare canonical LF before freeze.
-- MiceHub.spec global kill calls prohibit direct build while live EXEs exist; private safe recipe needed later (acceptance.md).
+promote MAIN normalized to real root; nested dev-tools sabotage regenerates web so canonical LF must remain. MiceHub.spec global kill calls require private safe recipe later. Peer-reported19:18 two-core Node overlap is not established failure cause/human instruction here.
 ## Done
-- Layout focused177/0; sabotage40/0->29/11->40/0 exact restoration;3894tracked bytes invariant.
-- Sourcee194b12 independently approved; focused190/0, four sabotage cycles caught/restored exact; nong compile0/78.89s.
-- Quick-r2@8d79fff6751/2 exit1/968.8s, five newline drifts; full NOT run. Earlier red/Voice receipts preserved.
+Quick6777/0 byte-stable; full9323/11 red,1144QC inputs stable,2private data drifts. Voice22/0, prerequisites190/0/layout177/0 and all mutation receipts/reviews preserved.
 ## Next
-Frozen canonical-LF quick-r3 then full only if green/stable; PR/integration/package/real Voice acceptance after current full green.
+Diagnose and fix only proven gate prerequisites with retained assertions/Help/review; full rerun only after focused evidence. Then PR/integration/package/authenticated real Voice acceptance.
 ## Blocked
-No resource blocker now; authenticated real STT/ask/say/mic/speaker/rig/package still unverified.
+Full not green; actual STT/ask/say/mic/speaker/rig/package unverified. No source/QC conflict allowed.
