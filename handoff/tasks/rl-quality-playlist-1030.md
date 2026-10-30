@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-30 07:46:28 +07:00
+Updated: 2026-10-30 08:14:36 +07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-All4 short pilots completed; PID17580 absent, batch4complete and no stderr. Own heavy GPU/CPU lease released; Voice A55-2 has requested/granted quiet full-gate window until explicit peer release. Lightweight six-clip/eight-case/64method/cost aggregation completed. No final human-reference/continuous-export approval. No new heavy work during quiet window.
+Voice A55-2 retains quiet window during gate diagnosis; no own heavy jobs. Completed primary-source review and algorithm_trials.md shortlist/held-out protocol using lightweight reads only. Found source-level P95 masking issue; no shared code changed or actual impact claimed. Next common-version benchmark/reference audit waits for explicit resource release.
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
 | File | Change | State | Verification | Commit |
@@ -29,9 +29,12 @@ Original baseline1283955; preserve all other dirty work. Complete exact per-file
 | .local/rl_playlist_1030/six_clip_review.md | readable quality/cost inventory | preliminary | measured costs and revision limits explicit | git-ignored |
 | .local/rl_playlist_1030/six_clip_review.json | full preliminary comparisons/provenance | preliminary | frozen-input drift and result hashes recorded | git-ignored |
 | .local/rl_playlist_1030/six_clip_method_matrix.csv |64method rows | preliminary | count64; not final ranking | git-ignored |
+| .local/rl_playlist_1030/algorithm_trials.md | primary-source shortlist, six-video protocol and metric audit | research only | primary links fetched; no new method benchmark or install | git-ignored |
 | .local/rl_playlist_1030/file_status.csv | complete exact private artifact ledger | this checkpoint | files/sizes/times; individual validation linked | git-ignored |
 
 ## Facts found
+- Latest quiet-window work: algorithm_trials.md records verified primary docs/papers for GMR, Mink constrained IK, DynaRetarget trajectory optimization and MimicKit, with explicit proposed Nong adaptations, not performance claims. Checked local MuJoCo/SciPy/Torch present, Mink/CVXPY/OSQP absent; no installs/downloads/inference.
+- Metric audit from source: metrics.py worst=(now*w).amax then P95 over all frames turns wholly-unobserved frames into zero errors. Final evaluation needs valid-only raw-human P95 and coverage, not only reachable-target P95; actual dataset impact not yet computed. DTW end offset is not independent beat phase. Group both old routines by source video in6fold validation to avoid leakage.
 - LATEST: pilot_batch.json all4complete, no driver active, total case wall1237.55s (~20.6min). Training wall152.86/144.61/144.37/136.29s (exact report values take precedence); separate costs stored, not integrated GPU utilization. Published6clip/eightcase/64method matrix in six_clip_review.md/json and six_clip_method_matrix.csv. All quality conclusions preliminary.
 - New4 same-frozen-revision pilots: RL raw mean vs music planner reduces47.7/38.5/39.6/63.5pct (Blood/Cheer/Great/First) but only3rounds, references unverified. Shared smoothing jerk change -3.7/-0.6/+9.7/-17.1pct respectively. Hybrid adds2Studio flags in Great before smoothing. Pareto screen uses raw mean/jerk and sampled flags only; NOT final winner selection.
 - SOURCE DRIFT AFTER pilot completion: motion_smooth.js, motion_smooth.json, tools/rl_compare/smooth.py and to_sequence.py, main_python/motion_smooth.py changed. Original results.json refreshed05:52 after frozen batch finished05:35. Current original RL smoothing jerk regression19.8-26.8pct replaces first audit32-38pct for that newer report only. Do not silently refresh locks or pool old/new smoothing revisions. Report explicitly records drift; common-version all6rerun needed before final selection.
@@ -72,10 +75,12 @@ Playlist PLp0S6kSqcUg_V2y6azyYTEjBmJuQ-vfQN has15entries/six lead. Exclude clapp
 6. Deliver editable rig/project, matching checked sequence/preview/audio, comparison/cost report and index per eligible clip/choreography. Inaccessible clips stay pending. Product changes need normal staging/claims/Help parity/QC/review. No such product change yet.
 
 ## Done
+Quiet-window research: prepared source-cited algorithm shortlist and ordered, budgeted six-video trials without running models or installing dependencies. Continuous export/reference checks and actual candidate benchmarks remain pending.
 All4short pilots complete; released GPU/CPU and granted peer quiet gate window. Generated preliminary six-clip method/cost/Pareto inventory and caught post-pilot shared-source revision drift. Do not treat mixed revisions as a final cross-clip benchmark.
 Six sources prepared; new4dense references/candidates and YAML verified structurally. Private missing-helper fix has before/after regression. Original4training completed; safety/smoothing/reference failures documented;4human-pane copies repaired and sampled. Full quality and final delivery remain open.
 
 ## Next
+00. Use algorithm_trials.md for next stage: reference/metric audit, one frozen newer-smoother baseline, collision-safe hybrid, then justified constrained-IK/short-horizon optimization trials. Distinguish library design proposals from tested implementations. Keep claims/quiet window; bounded heavy-work request recorded in BRIDGE, no grant inferred.
 0. Read newest BRIDGE for Voice A55-2 explicit quiet-window RELEASE before any heavy work. During window inspect saved results/source ownership only. After release, review changed smoother with active Claude handoff/claims and freeze one consistent snapshot for all6candidate rescoring/trials. Do not overwrite cached pilots or refresh locks blindly.
 1. Pilots finished; no duplicate launch. Preserve3round checkpoints. rl.py ignores rounds only when checking same-config resume: after source/reference compatibility review, extend useful runs in new private output snapshots using saved optimizer/checkpoints, not fresh training; never call unequal budgets fair rankings.
 2. After pilots, compare raw-human errors/timing/safety/cost across six clips (old4sets represent2clips). Do not rank methods from3round undertraining. Plan useful next candidates: constraints/retarget reference fixes, collision-safe hybrid blending, board-playable smoother parameter trials. Never merely train longer against wrong reference.
