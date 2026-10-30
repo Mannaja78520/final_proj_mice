@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-30 08:14:36 +07:00
+Updated: 2026-10-30 13:25:58 +07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -9,7 +9,7 @@ Plan: A50-2 (own); A50-1 remains Claude-owned
 Check all outputs against actual humans and improve algorithms as far as practical. Use ALL SIX lead clips jointly now, measure per-clip quality/cost and regressions, retain each best result. User authorizes takeover of unfinished Claude work upon verified limit, no reconfirmation. No Claude quota stop verified; do not take its files based on silence/process disappearance.
 
 ## Doing now
-Voice A55-2 retains quiet window during gate diagnosis; no own heavy jobs. Completed primary-source review and algorithm_trials.md shortlist/held-out protocol using lightweight reads only. Found source-level P95 masking issue; no shared code changed or actual impact claimed. Next common-version benchmark/reference audit waits for explicit resource release.
+Heartbeat reconciled with disk/processes and current peer compact snapshot. No Voice quiet RELEASE; peer turn inProgress. Saved monitor_status.json; corrected new4inventory to pilot complete. No own heavy jobs; common-version benchmark/reference audit waits for explicit release.
 ## File status
 Original baseline1283955; preserve all other dirty work. Complete exact per-file rows (File/Change/State/Verification/Commit plus size/time) for private inputs/generated models/media are in `.local/rl_playlist_1030/file_status.csv`; refresh each checkpoint, never treat running-file existence as completion. This ledger preserves per-file evidence without exceeding150lines in this task. Changed source/control files:
 | File | Change | State | Verification | Commit |
@@ -58,11 +58,11 @@ Original baseline1283955; preserve all other dirty work. Complete exact per-file
 ## Playlist inventory
 | ID | Lead title | Current |
 | --- | --- | --- |
-| 9xOEOfDo7NA | เลือดเอ็นทาเนียร์ | reference+center candidate/YAML; short pilot running |
-| hgB_vo7PEdw | เชียร์เรามาเชียร์ | reference+center candidate/YAML; short pilot queued |
-| YJwyYWiMWHI | Entaneer the Great | reference+center candidate/YAML; short pilot queued |
+| 9xOEOfDo7NA | เลือดเอ็นทาเนียร์ | reference+center candidate/YAML; short pilot complete; quality open |
+| hgB_vo7PEdw | เชียร์เรามาเชียร์ | reference+center candidate/YAML; short pilot complete; quality open |
+| YJwyYWiMWHI | Entaneer the Great | reference+center candidate/YAML; short pilot complete; quality open |
 | I0lCxX8373M | Come and Cheer | existing2RL outputs; quality open |
-| ctfNcvYev_U | Entaneer the First | reference+center candidate/YAML; short pilot queued |
+| ctfNcvYev_U | Entaneer the First | reference+center candidate/YAML; short pilot complete; quality open |
 | CLG7VdVhhLM | วิศวะเกรียงไกร | existing2RL outputs; quality open |
 Playlist PLp0S6kSqcUg_V2y6azyYTEjBmJuQ-vfQN has15entries/six lead. Exclude clapping/MV-only. Preserve all user projects; models/media remain private.
 
@@ -75,6 +75,7 @@ Playlist PLp0S6kSqcUg_V2y6azyYTEjBmJuQ-vfQN has15entries/six lead. Exclude clapp
 6. Deliver editable rig/project, matching checked sequence/preview/audio, comparison/cost report and index per eligible clip/choreography. Inaccessible clips stay pending. Product changes need normal staging/claims/Help parity/QC/review. No such product change yet.
 
 ## Done
+Latest heartbeat: monitor_status.json records unchanged completed training/pilots, current peer inProgress quiet hold, and no own heavy job. Corrected stale inventory labels; full quality remains pending.
 Quiet-window research: prepared source-cited algorithm shortlist and ordered, budgeted six-video trials without running models or installing dependencies. Continuous export/reference checks and actual candidate benchmarks remain pending.
 All4short pilots complete; released GPU/CPU and granted peer quiet gate window. Generated preliminary six-clip method/cost/Pareto inventory and caught post-pilot shared-source revision drift. Do not treat mixed revisions as a final cross-clip benchmark.
 Six sources prepared; new4dense references/candidates and YAML verified structurally. Private missing-helper fix has before/after regression. Original4training completed; safety/smoothing/reference failures documented;4human-pane copies repaired and sampled. Full quality and final delivery remain open.
@@ -88,4 +89,4 @@ Six sources prepared; new4dense references/candidates and YAML verified structur
 4. Keep this task+file_status.csv/evidence and plan current at every stop, mutex for shared bookkeeping. Notify meaningful changes only. Automation continues every30min until ALL6scope complete, not training alone.
 
 ## Blocked
-No user action needed. Pilots finished; heavy work waits for granted Voice quiet-window release; quality gate open. Active Claude exists, no verified quota handoff. Other source/task claims stay with their owners; own finished extraction/compositor CPU claims can be released.
+No user action needed. Pilots finished; heavy work waits for granted Voice quiet-window release; quality gate open. No Claude/Python training process currently visible; no verified quota handoff. Process absence does not release source ownership. Other source/task claims stay with their owners; own finished extraction/compositor CPU claims can be released.
