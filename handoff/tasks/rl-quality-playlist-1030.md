@@ -1,6 +1,6 @@
 # RL quality audit and six-clip CMU cheer playlist
 Owner: codex:rl-1030-01a1891f
-Updated: 2026-10-31T00:33:17.493224+07:00
+Updated: 2026-10-31T01:03:12.478827+07:00
 Branch: main bookkeeping only; experiments private; no shared source changes
 Last commit: this checkpoint
 Plan: A50-2 (own); A50-1 remains Claude-owned
@@ -40,7 +40,7 @@ Original baseline1283955; preserve all other dirty work. Complete exact per-file
 | .local/rl_playlist_1030/review_index.html | links to all6source/comparison/report artifacts | review-ready only |linked6clips; final quality pending | git-ignored |
 | .local/rl_playlist_1030/monitor_status.json | latest resource/quality state | current |explicit grant/release recorded; no quota evidence | git-ignored |
 ## Facts found
-- Latest worker check: 2026-10-31T00:33:17.493224+07:00; PID/create-time match, 33completed chunkSHA checks PASS; 3source-observation videos complete, remaining active; no reference/rig quality pass. Evidence dense_monitor_latest.json.
+- Latest worker check: 2026-10-31T01:03:12.478827+07:00; PID/create-time match, 58completed chunkSHA checks PASS; 4source-observation videos complete, remaining active; no reference/rig quality pass. Evidence dense_monitor_latest.json.
 - Latest human provenance: Voicechat item01a18db2-ed45-7ad1-88ec-08c741ddbc38 explicitly requests RL first then Voice to save tokens without lowering quality; actual message verified, peer resource RELEASE23:46. No Voice work/restart/source takeover. Automation remainsACTIVE30min; full original requirements saved unchanged in private user_scope_automation_original.md, concise continuation prompt points to evidence/current worker.
 - Source-repair short stage ACTUAL complete all6: person_pilots_review.md,18frame13.055s +718frame165.176s (119/120 per4s exact grid), OSpeak0.839GiB. Armgate saved-input regression rejects Wits WORLD-valid mixed arm while retaining other arm/Blood pair; no human accuracy score.6source-audio videos streams/time checked,6midframe samples viewed. Full dense data not final reference/rig.
 - NEW actual-source defect: pose_conflict_review.md and6identical-pixel comparisons show mixed/displaced torso/arms despite model-valid masks in all6sources.17shot sheets/84shots viewed. Original extractor fixed4image anchors cannot establish all-group coverage; prepare all-box single-pose plus independent detector-keypoint consistency pilot. StrictNMS0suppression49.379s; broader variant fails false-merge regression before output. Do not train on these competing detections as truth.
